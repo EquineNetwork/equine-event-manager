@@ -52,8 +52,10 @@ class EN_Event_Manager_Reservations_CPT {
 
 	/**
 	 * Register reservation setup meta boxes.
+	 *
+	 * @param WP_Post|null $post Current post.
 	 */
-	public function register_meta_boxes() {
+	public function register_meta_boxes( $post = null ) {
 		add_meta_box(
 			'en_event_manager_event_link',
 			__( 'Event Link', 'en-event-manager' ),
@@ -242,6 +244,10 @@ class EN_Event_Manager_Reservations_CPT {
 						<label><input name="en_reservation[stalls_enabled]" type="checkbox" value="1" <?php checked( $data['stalls_enabled'], 1 ); ?> /> <?php esc_html_e( 'Stalls enabled', 'en-event-manager' ); ?></label><br />
 						<label><input name="en_reservation[rv_enabled]" type="checkbox" value="1" <?php checked( $data['rv_enabled'], 1 ); ?> /> <?php esc_html_e( 'RV enabled', 'en-event-manager' ); ?></label>
 					</td>
+				</tr>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Reservation Shortcode', 'en-event-manager' ); ?></th>
+					<td><?php $this->render_shortcode_control( $post ); ?></td>
 				</tr>
 			</tbody>
 		</table>
@@ -847,9 +853,9 @@ class EN_Event_Manager_Reservations_CPT {
 		<tr>
 			<th scope="row"><label for="en_<?php echo esc_attr( $name ); ?>"><?php echo esc_html( $label ); ?></label></th>
 			<td>
-				<div class="en-currency-field">
-					<span class="en-currency-symbol" aria-hidden="true">$</span>
-					<input name="en_reservation[<?php echo esc_attr( $name ); ?>]" id="en_<?php echo esc_attr( $name ); ?>" class="en-currency-input" type="text" inputmode="decimal" value="<?php echo esc_attr( number_format( (float) $value, 2, '.', '' ) ); ?>" />
+				<div class="en-currency-field" style="position: relative; display: inline-block; max-width: 180px;">
+					<span class="en-currency-symbol" aria-hidden="true" style="position: absolute; top: 50%; left: 9px; z-index: 1; transform: translateY(-50%); color: #50575e; pointer-events: none;">$</span>
+					<input name="en_reservation[<?php echo esc_attr( $name ); ?>]" id="en_<?php echo esc_attr( $name ); ?>" class="en-currency-input" type="text" inputmode="decimal" value="<?php echo esc_attr( number_format( (float) $value, 2, '.', '' ) ); ?>" style="width: 160px; padding-left: 24px;" />
 				</div>
 			</td>
 		</tr>

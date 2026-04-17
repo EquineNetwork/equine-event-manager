@@ -54,7 +54,7 @@ class EN_Event_Manager {
 	 */
 	public function run() {
 		add_action( 'init', array( $this->reservations_cpt, 'register_post_type' ) );
-		add_action( 'add_meta_boxes', array( $this->reservations_cpt, 'register_meta_boxes' ) );
+		add_action( 'add_meta_boxes_en_reservation', array( $this->reservations_cpt, 'register_meta_boxes' ) );
 		add_action( 'save_post_en_reservation', array( $this->reservations_cpt, 'save_meta' ), 10, 2 );
 		add_action( 'save_post_en_reservation', array( $this->reservations_cpt, 'sync_shortcode_to_linked_event_after_save' ), 20, 2 );
 		add_action( 'post_submitbox_misc_actions', array( $this->reservations_cpt, 'render_submitbox_shortcode' ) );
