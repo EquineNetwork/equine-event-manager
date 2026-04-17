@@ -18,8 +18,48 @@ class EN_Event_Manager_Shortcodes {
 	 * Register shortcodes.
 	 */
 	public function register() {
+		add_shortcode( 'en_reservation', array( $this, 'render_reservation' ) );
 		add_shortcode( 'en_stall_reservation_form', array( $this, 'render_stall_reservation_form' ) );
 		add_shortcode( 'en_rv_reservation_form', array( $this, 'render_rv_reservation_form' ) );
+	}
+
+	/**
+	 * Render the generated reservation shortcode placeholder.
+	 *
+	 * @param array $atts Shortcode attributes.
+	 * @return string
+	 */
+	public function render_reservation( $atts ) {
+		$atts = shortcode_atts(
+			array(
+				'id' => 0,
+			),
+			$atts,
+			'en_reservation'
+		);
+
+		$reservation_id = absint( $atts['id'] );
+
+		ob_start();
+		?>
+		<div class="en-event-manager-reservation-form-shell" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>">
+			<h2><?php esc_html_e( 'Event Reservation', 'en-event-manager' ); ?></h2>
+			<p><?php esc_html_e( 'Reservation form coming soon.', 'en-event-manager' ); ?></p>
+			<?php if ( $reservation_id ) : ?>
+				<p>
+					<?php
+					printf(
+						/* translators: %d: Reservation setup ID. */
+						esc_html__( 'Reservation ID: %d', 'en-event-manager' ),
+						$reservation_id
+					);
+					?>
+				</p>
+			<?php endif; ?>
+		</div>
+		<?php
+
+		return ob_get_clean();
 	}
 
 	/**

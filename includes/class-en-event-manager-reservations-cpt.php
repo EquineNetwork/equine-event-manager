@@ -103,17 +103,36 @@ class EN_Event_Manager_Reservations_CPT {
 			return;
 		}
 
+		$script_dependencies = array( 'jquery' );
+		$style_dependencies  = array();
+
+		if ( wp_script_is( 'select2', 'registered' ) ) {
+			wp_enqueue_script( 'select2' );
+			$script_dependencies[] = 'select2';
+		} elseif ( wp_script_is( 'selectWoo', 'registered' ) ) {
+			wp_enqueue_script( 'selectWoo' );
+			$script_dependencies[] = 'selectWoo';
+		}
+
+		if ( wp_style_is( 'select2', 'registered' ) ) {
+			wp_enqueue_style( 'select2' );
+			$style_dependencies[] = 'select2';
+		} elseif ( wp_style_is( 'selectWoo', 'registered' ) ) {
+			wp_enqueue_style( 'selectWoo' );
+			$style_dependencies[] = 'selectWoo';
+		}
+
 		wp_enqueue_style(
 			'en-event-manager-admin',
 			EN_EVENT_MANAGER_URL . 'admin/css/en-event-manager-admin.css',
-			array(),
+			$style_dependencies,
 			EN_EVENT_MANAGER_VERSION
 		);
 
 		wp_enqueue_script(
 			'en-event-manager-admin',
 			EN_EVENT_MANAGER_URL . 'admin/js/en-event-manager-admin.js',
-			array( 'jquery' ),
+			$script_dependencies,
 			EN_EVENT_MANAGER_VERSION,
 			true
 		);
@@ -125,9 +144,10 @@ class EN_Event_Manager_Reservations_CPT {
 				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 				'nonce'   => wp_create_nonce( 'en_event_manager_search_tec_events' ),
 				'strings' => array(
-					'searching' => __( 'Searching events...', 'en-event-manager' ),
-					'noResults' => __( 'No events found.', 'en-event-manager' ),
-					'error'     => __( 'Event search failed. Please try again.', 'en-event-manager' ),
+					'placeholder' => __( 'Search events by title', 'en-event-manager' ),
+					'searching'   => __( 'Searching events...', 'en-event-manager' ),
+					'noResults'   => __( 'No events found.', 'en-event-manager' ),
+					'error'       => __( 'Event search failed. Please try again.', 'en-event-manager' ),
 				),
 			)
 		);
@@ -163,6 +183,7 @@ class EN_Event_Manager_Reservations_CPT {
 
 		$data                 = $this->get_meta_values( $post->ID );
 		$selected_event_title = $data['event_id'] ? get_the_title( absint( $data['event_id'] ) ) : '';
+		$initial_events       = $this->is_the_events_calendar_available() ? $this->query_tec_events_by_start_date( '', 50 ) : array();
 
 		?>
 		<table class="form-table" role="presentation">
@@ -180,15 +201,20 @@ class EN_Event_Manager_Reservations_CPT {
 				</tr>
 				<?php if ( $this->is_the_events_calendar_available() ) : ?>
 					<tr class="en-tec-event-row">
-						<th scope="row"><label for="en_tec_event_search"><?php esc_html_e( 'The Events Calendar Event', 'en-event-manager' ); ?></label></th>
+						<th scope="row"><label for="en_event_id"><?php esc_html_e( 'The Events Calendar Event', 'en-event-manager' ); ?></label></th>
 						<td>
-							<input type="hidden" name="en_reservation[event_id]" id="en_event_id" value="<?php echo esc_attr( absint( $data['event_id'] ) ); ?>" />
-							<div class="en-event-picker" data-selected-label="<?php echo esc_attr( $selected_event_title ); ?>">
-								<input type="search" id="en_tec_event_search" class="regular-text en-event-picker__search" value="<?php echo esc_attr( $selected_event_title ); ?>" placeholder="<?php esc_attr_e( 'Search events by title', 'en-event-manager' ); ?>" autocomplete="off" />
-								<button type="button" class="button en-event-picker__clear"><?php esc_html_e( 'Clear', 'en-event-manager' ); ?></button>
-								<div class="en-event-picker__status" aria-live="polite"></div>
-								<ul class="en-event-picker__results" role="listbox"></ul>
-							</div>
+							<select name="en_reservation[event_id]" id="en_event_id" class="regular-text en-event-manager-tec-event-select" data-placeholder="<?php esc_attr_e( 'Search events by title', 'en-event-manager' ); ?>">
+								<option value="0"><?php esc_html_e( 'Select an event', 'en-event-manager' ); ?></option>
+								<?php if ( $data['event_id'] && $selected_event_title ) : ?>
+									<option value="<?php echo esc_attr( absint( $data['event_id'] ) ); ?>" selected="selected"><?php echo esc_html( $selected_event_title ); ?></option>
+								<?php endif; ?>
+								<?php foreach ( $initial_events as $event ) : ?>
+									<?php if ( absint( $data['event_id'] ) === absint( $event->ID ) ) : ?>
+										<?php continue; ?>
+									<?php endif; ?>
+									<option value="<?php echo esc_attr( $event->ID ); ?>"><?php echo esc_html( get_the_title( $event ) ); ?></option>
+								<?php endforeach; ?>
+							</select>
 							<p class="description"><?php esc_html_e( 'Search by event title. Upcoming events are listed first using The Events Calendar start date.', 'en-event-manager' ); ?></p>
 						</td>
 					</tr>
@@ -226,15 +252,15 @@ class EN_Event_Manager_Reservations_CPT {
 			<tbody>
 				<?php $this->render_datetime_row( 'stalls_open_at', __( 'Stalls Open Date/Time', 'en-event-manager' ), $data['stalls_open_at'] ); ?>
 				<?php $this->render_datetime_row( 'stalls_close_at', __( 'Stalls Close Date/Time', 'en-event-manager' ), $data['stalls_close_at'] ); ?>
-				<?php $this->render_money_row( 'stall_nightly_rate', __( 'Stall Nightly Rate', 'en-event-manager' ), $data['stall_nightly_rate'] ); ?>
-				<?php $this->render_money_row( 'stall_weekend_rate', __( 'Stall Weekend Rate', 'en-event-manager' ), $data['stall_weekend_rate'] ); ?>
+				<?php $this->render_currency_row( 'stall_nightly_rate', __( 'Stall Nightly Rate', 'en-event-manager' ), $data['stall_nightly_rate'] ); ?>
+				<?php $this->render_currency_row( 'stall_weekend_rate', __( 'Stall Weekend Rate', 'en-event-manager' ), $data['stall_weekend_rate'] ); ?>
 				<tr>
 					<th scope="row"><?php esc_html_e( 'Stall Early Bird', 'en-event-manager' ); ?></th>
 					<td><label><input name="en_reservation[stall_early_bird_enabled]" type="checkbox" value="1" <?php checked( $data['stall_early_bird_enabled'], 1 ); ?> /> <?php esc_html_e( 'Enable stall early bird pricing', 'en-event-manager' ); ?></label></td>
 				</tr>
 				<?php $this->render_datetime_row( 'stall_early_bird_cutoff', __( 'Stall Early Bird Cutoff', 'en-event-manager' ), $data['stall_early_bird_cutoff'] ); ?>
-				<?php $this->render_money_row( 'stall_early_bird_nightly_rate', __( 'Stall Early Bird Nightly Rate', 'en-event-manager' ), $data['stall_early_bird_nightly_rate'] ); ?>
-				<?php $this->render_money_row( 'stall_early_bird_weekend_rate', __( 'Stall Early Bird Weekend Rate', 'en-event-manager' ), $data['stall_early_bird_weekend_rate'] ); ?>
+				<?php $this->render_currency_row( 'stall_early_bird_nightly_rate', __( 'Stall Early Bird Nightly Rate', 'en-event-manager' ), $data['stall_early_bird_nightly_rate'] ); ?>
+				<?php $this->render_currency_row( 'stall_early_bird_weekend_rate', __( 'Stall Early Bird Weekend Rate', 'en-event-manager' ), $data['stall_early_bird_weekend_rate'] ); ?>
 				<tr>
 					<th scope="row"><label for="en_required_shavings_per_stall"><?php esc_html_e( 'Required Shavings Per Stall', 'en-event-manager' ); ?></label></th>
 					<td><input name="en_reservation[required_shavings_per_stall]" id="en_required_shavings_per_stall" type="number" min="0" step="1" value="<?php echo esc_attr( $data['required_shavings_per_stall'] ); ?>" /></td>
@@ -243,7 +269,7 @@ class EN_Event_Manager_Reservations_CPT {
 					<th scope="row"><?php esc_html_e( 'Additional Shavings', 'en-event-manager' ); ?></th>
 					<td><label><input name="en_reservation[additional_shavings_enabled]" type="checkbox" value="1" <?php checked( $data['additional_shavings_enabled'], 1 ); ?> /> <?php esc_html_e( 'Allow additional shavings', 'en-event-manager' ); ?></label></td>
 				</tr>
-				<?php $this->render_money_row( 'additional_shavings_price', __( 'Additional Shavings Price', 'en-event-manager' ), $data['additional_shavings_price'] ); ?>
+				<?php $this->render_currency_row( 'additional_shavings_price', __( 'Additional Shavings Price', 'en-event-manager' ), $data['additional_shavings_price'] ); ?>
 			</tbody>
 		</table>
 		<?php
@@ -262,15 +288,15 @@ class EN_Event_Manager_Reservations_CPT {
 			<tbody>
 				<?php $this->render_datetime_row( 'rv_open_at', __( 'RV Open Date/Time', 'en-event-manager' ), $data['rv_open_at'] ); ?>
 				<?php $this->render_datetime_row( 'rv_close_at', __( 'RV Close Date/Time', 'en-event-manager' ), $data['rv_close_at'] ); ?>
-				<?php $this->render_money_row( 'rv_nightly_rate', __( 'RV Nightly Rate', 'en-event-manager' ), $data['rv_nightly_rate'] ); ?>
-				<?php $this->render_money_row( 'rv_weekend_rate', __( 'RV Weekend Rate', 'en-event-manager' ), $data['rv_weekend_rate'] ); ?>
+				<?php $this->render_currency_row( 'rv_nightly_rate', __( 'RV Nightly Rate', 'en-event-manager' ), $data['rv_nightly_rate'] ); ?>
+				<?php $this->render_currency_row( 'rv_weekend_rate', __( 'RV Weekend Rate', 'en-event-manager' ), $data['rv_weekend_rate'] ); ?>
 				<tr>
 					<th scope="row"><?php esc_html_e( 'RV Early Bird', 'en-event-manager' ); ?></th>
 					<td><label><input name="en_reservation[rv_early_bird_enabled]" type="checkbox" value="1" <?php checked( $data['rv_early_bird_enabled'], 1 ); ?> /> <?php esc_html_e( 'Enable RV early bird pricing', 'en-event-manager' ); ?></label></td>
 				</tr>
 				<?php $this->render_datetime_row( 'rv_early_bird_cutoff', __( 'RV Early Bird Cutoff', 'en-event-manager' ), $data['rv_early_bird_cutoff'] ); ?>
-				<?php $this->render_money_row( 'rv_early_bird_nightly_rate', __( 'RV Early Bird Nightly Rate', 'en-event-manager' ), $data['rv_early_bird_nightly_rate'] ); ?>
-				<?php $this->render_money_row( 'rv_early_bird_weekend_rate', __( 'RV Early Bird Weekend Rate', 'en-event-manager' ), $data['rv_early_bird_weekend_rate'] ); ?>
+				<?php $this->render_currency_row( 'rv_early_bird_nightly_rate', __( 'RV Early Bird Nightly Rate', 'en-event-manager' ), $data['rv_early_bird_nightly_rate'] ); ?>
+				<?php $this->render_currency_row( 'rv_early_bird_weekend_rate', __( 'RV Early Bird Weekend Rate', 'en-event-manager' ), $data['rv_early_bird_weekend_rate'] ); ?>
 			</tbody>
 		</table>
 		<?php
@@ -326,12 +352,18 @@ class EN_Event_Manager_Reservations_CPT {
 			return;
 		}
 
-		$source = isset( $_POST['en_reservation'] ) && is_array( $_POST['en_reservation'] ) ? wp_unslash( $_POST['en_reservation'] ) : array();
-		$data   = $this->sanitize_meta_submission( $source );
+		$source   = isset( $_POST['en_reservation'] ) && is_array( $_POST['en_reservation'] ) ? wp_unslash( $_POST['en_reservation'] ) : array();
+		$data     = $this->sanitize_meta_submission( $source );
+		$old_data = $this->get_meta_values( $post_id );
 
 		foreach ( $data as $key => $value ) {
 			update_post_meta( $post_id, '_en_' . $key, $value );
 		}
+
+		$shortcode = $this->get_reservation_shortcode( $post_id );
+		update_post_meta( $post_id, '_en_reservation_shortcode', $shortcode );
+
+		$this->sync_reservation_shortcode_to_event( $data, $old_data, $shortcode );
 	}
 
 	/**
@@ -537,15 +569,10 @@ class EN_Event_Manager_Reservations_CPT {
 			return array();
 		}
 
-		$events = $this->query_tec_events_by_start_date( $term, 'upcoming', 20 );
-
-		if ( count( $events ) < 20 ) {
-			$past_events = $this->query_tec_events_by_start_date( $term, 'past', 20 - count( $events ) );
-			$events      = array_merge( $events, $past_events );
-		}
+		$events = $this->query_tec_events_by_start_date( $term, 20 );
 
 		if ( empty( $events ) ) {
-			$events = get_posts(
+			$fallback_query = new WP_Query(
 				array(
 					'post_type'      => 'tribe_events',
 					'post_status'    => array( 'publish', 'future', 'draft' ),
@@ -553,16 +580,18 @@ class EN_Event_Manager_Reservations_CPT {
 					's'              => $term,
 					'orderby'        => 'date',
 					'order'          => 'DESC',
+					'no_found_rows'  => true,
 				)
 			);
+			$events = $fallback_query->posts;
 		}
 
 		$results = array();
 
 		foreach ( $events as $event ) {
 			$results[] = array(
-				'id'    => absint( $event->ID ),
-				'label' => get_the_title( $event ),
+				'id'   => absint( $event->ID ),
+				'text' => get_the_title( $event ),
 			);
 		}
 
@@ -573,16 +602,11 @@ class EN_Event_Manager_Reservations_CPT {
 	 * Query TEC events by _EventStartDate.
 	 *
 	 * @param string $term Search term.
-	 * @param string $range Event range.
 	 * @param int    $limit Result limit.
 	 * @return array
 	 */
-	private function query_tec_events_by_start_date( $term, $range, $limit ) {
-		$now     = current_time( 'mysql' );
-		$compare = 'past' === $range ? '<' : '>=';
-		$order   = 'past' === $range ? 'DESC' : 'ASC';
-
-		return get_posts(
+	private function query_tec_events_by_start_date( $term, $limit ) {
+		$query = new WP_Query(
 			array(
 				'post_type'      => 'tribe_events',
 				'post_status'    => array( 'publish', 'future', 'draft' ),
@@ -591,17 +615,20 @@ class EN_Event_Manager_Reservations_CPT {
 				'meta_key'       => '_EventStartDate',
 				'orderby'        => 'meta_value',
 				'meta_type'      => 'DATETIME',
-				'order'          => $order,
+				'order'          => 'ASC',
+				'no_found_rows'  => true,
 				'meta_query'     => array(
 					array(
 						'key'     => '_EventStartDate',
-						'value'   => $now,
-						'compare' => $compare,
+						'value'   => current_time( 'mysql' ),
+						'compare' => '>=',
 						'type'    => 'DATETIME',
 					),
 				),
 			)
 		);
+
+		return $query->posts;
 	}
 
 	/**
@@ -673,6 +700,27 @@ class EN_Event_Manager_Reservations_CPT {
 	}
 
 	/**
+	 * Render a currency field row with a dollar prefix.
+	 *
+	 * @param string $name Field name.
+	 * @param string $label Field label.
+	 * @param mixed  $value Field value.
+	 */
+	private function render_currency_row( $name, $label, $value ) {
+		?>
+		<tr>
+			<th scope="row"><label for="en_<?php echo esc_attr( $name ); ?>"><?php echo esc_html( $label ); ?></label></th>
+			<td>
+				<label class="en-event-manager-currency-field">
+					<span class="en-event-manager-currency-field__symbol" aria-hidden="true">$</span>
+					<input name="en_reservation[<?php echo esc_attr( $name ); ?>]" id="en_<?php echo esc_attr( $name ); ?>" class="en-event-manager-currency-field__input" type="text" inputmode="decimal" pattern="[0-9]*[.]?[0-9]{0,2}" value="<?php echo esc_attr( number_format( (float) $value, 2, '.', '' ) ); ?>" />
+				</label>
+			</td>
+		</tr>
+		<?php
+	}
+
+	/**
 	 * Sanitize a datetime-local value.
 	 *
 	 * @param string $value Raw value.
@@ -729,6 +777,68 @@ class EN_Event_Manager_Reservations_CPT {
 		}
 
 		return number_format( (float) $value, 2, '.', '' );
+	}
+
+	/**
+	 * Build the reservation shortcode for a setup.
+	 *
+	 * @param int $post_id Reservation post ID.
+	 * @return string
+	 */
+	private function get_reservation_shortcode( $post_id ) {
+		return sprintf( '[en_reservation id="%d"]', absint( $post_id ) );
+	}
+
+	/**
+	 * Sync the reservation shortcode to the linked TEC event's ACF field.
+	 *
+	 * @param array  $data Saved reservation meta.
+	 * @param array  $old_data Previous reservation meta.
+	 * @param string $shortcode Reservation shortcode.
+	 */
+	private function sync_reservation_shortcode_to_event( $data, $old_data, $shortcode ) {
+		$event_id     = ( 'tec' === $data['event_source'] && ! empty( $data['event_id'] ) ) ? absint( $data['event_id'] ) : 0;
+		$old_event_id = ( 'tec' === $old_data['event_source'] && ! empty( $old_data['event_id'] ) ) ? absint( $old_data['event_id'] ) : 0;
+
+		if ( $old_event_id && $old_event_id !== $event_id && $this->event_reservations_field_matches_shortcode( $old_event_id, $shortcode ) ) {
+			$this->update_event_reservations_field( $old_event_id, '' );
+		}
+
+		if ( ! $event_id || ! $this->is_the_events_calendar_available() || 'tribe_events' !== get_post_type( $event_id ) ) {
+			return;
+		}
+
+		$this->update_event_reservations_field( $event_id, $shortcode );
+	}
+
+	/**
+	 * Update the reservations field on a TEC event.
+	 *
+	 * @param int    $event_id Event post ID.
+	 * @param string $value Field value.
+	 */
+	private function update_event_reservations_field( $event_id, $value ) {
+		if ( function_exists( 'update_field' ) ) {
+			update_field( 'reservations', $value, $event_id );
+			return;
+		}
+
+		update_post_meta( $event_id, 'reservations', $value );
+	}
+
+	/**
+	 * Check whether the event reservations field currently contains this shortcode.
+	 *
+	 * @param int    $event_id Event post ID.
+	 * @param string $shortcode Reservation shortcode.
+	 * @return bool
+	 */
+	private function event_reservations_field_matches_shortcode( $event_id, $shortcode ) {
+		if ( function_exists( 'get_field' ) ) {
+			return $shortcode === get_field( 'reservations', $event_id );
+		}
+
+		return $shortcode === get_post_meta( $event_id, 'reservations', true );
 	}
 
 	/**

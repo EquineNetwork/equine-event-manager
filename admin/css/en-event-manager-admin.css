@@ -1,45 +1,94 @@
-.en-event-picker {
+.en-event-manager-tec-event-select {
+	width: 360px;
+	max-width: 100%;
+}
+
+.select2-container {
+	max-width: 100%;
+}
+
+.en-event-manager-select-hidden {
+	display: none;
+}
+
+.en-event-manager-event-picker {
 	position: relative;
 	max-width: 520px;
 }
 
-.en-event-picker__search {
+.en-event-manager-event-picker__search {
 	width: 360px;
 	max-width: 100%;
 }
 
-.en-event-picker__clear {
-	margin-left: 6px !important;
+.en-event-manager-event-picker__clear {
+	margin-left: 6px;
+	vertical-align: top;
 }
 
-.en-event-picker__status {
+.en-event-manager-event-picker__status {
 	margin-top: 6px;
 	color: #646970;
 }
 
-.en-event-picker__results {
+.en-event-manager-event-picker__results {
 	display: none;
 	position: absolute;
 	z-index: 1000;
-	box-sizing: border-box;
 	width: 360px;
 	max-width: 100%;
-	max-height: 260px;
-	overflow-y: auto;
+	max-height: 240px;
 	margin: 2px 0 0;
 	padding: 0;
-	border: 1px solid #8c8f94;
+	overflow-y: auto;
 	background: #fff;
-	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+	border: 1px solid #8c8f94;
+	box-shadow: 0 2px 4px rgba( 0, 0, 0, 0.12 );
 }
 
-.en-event-picker__result {
+.en-event-manager-event-picker__result {
 	margin: 0;
 	padding: 8px 10px;
 	cursor: pointer;
 }
 
-.en-event-picker__result:hover,
-.en-event-picker__result:focus {
-	background: #f0f6fc;
+.en-event-manager-event-picker__result:hover,
+.en-event-manager-event-picker__result:focus {
+	background: #f0f0f1;
+}
+
+.en-event-manager-currency-field {
+	display: inline-flex;
+	align-items: center;
+	max-width: 180px;
+	border: 1px solid #8c8f94;
+	border-radius: 4px;
+	background: #fff;
+}
+
+.en-event-manager-currency-field:focus-within {
+	border-color: #2271b1;
+	box-shadow: 0 0 0 1px #2271b1;
+}
+
+.en-event-manager-currency-field__symbol {
+	padding: 0 8px;
+	color: #50575e;
+	line-height: 2;
+	background: #f6f7f7;
+	border-right: 1px solid #c3c4c7;
+}
+
+.en-event-manager-currency-field__input {
+	width: 120px;
+	min-height: 30px;
+	margin: 0;
+	border: 0;
+	box-shadow: none;
+}
+
+.en-event-manager-currency-field__input:focus {
+	border: 0;
+	box-shadow: none;
+	outline: none;
 }
