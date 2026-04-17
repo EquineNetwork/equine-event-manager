@@ -57,38 +57,38 @@
 	background: #f0f0f1;
 }
 
-.en-event-manager-currency-field {
-	display: inline-flex;
-	align-items: center;
+.en-currency-field {
+	position: relative;
+	display: inline-block;
 	max-width: 180px;
-	border: 1px solid #8c8f94;
-	border-radius: 4px;
-	background: #fff;
 }
 
-.en-event-manager-currency-field:focus-within {
-	border-color: #2271b1;
-	box-shadow: 0 0 0 1px #2271b1;
-}
-
-.en-event-manager-currency-field__symbol {
-	padding: 0 8px;
+.en-currency-symbol {
+	position: absolute;
+	top: 50%;
+	left: 9px;
+	z-index: 1;
+	transform: translateY(-50%);
 	color: #50575e;
-	line-height: 2;
-	background: #f6f7f7;
-	border-right: 1px solid #c3c4c7;
+	pointer-events: none;
 }
 
-.en-event-manager-currency-field__input {
-	width: 120px;
-	min-height: 30px;
-	margin: 0;
-	border: 0;
-	box-shadow: none;
+.en-currency-input {
+	width: 160px;
+	padding-left: 24px;
+	font-variant-numeric: tabular-nums;
 }
 
-.en-event-manager-currency-field__input:focus {
-	border: 0;
-	box-shadow: none;
-	outline: none;
+.en-event-manager-shortcode-field,
+.en-event-manager-list-shortcode {
+	font-family: Consolas, Monaco, monospace;
+	font-size: 12px;
+}
+
+.en-event-manager-list-shortcode {
+	width: 190px;
+}
+
+.en-event-manager-submitbox-shortcode .en-event-manager-shortcode-field {
+	margin-top: 6px;
 }

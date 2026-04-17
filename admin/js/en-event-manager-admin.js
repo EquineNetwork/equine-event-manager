@@ -182,7 +182,7 @@
 		$eventSource.on( 'change', syncEventSourceRows );
 		syncEventSourceRows();
 
-		$( '.en-event-manager-currency-field__input' ).on( 'blur', function () {
+		$( '.en-currency-input' ).on( 'blur', function () {
 			formatCurrencyInput( this );
 		} );
 

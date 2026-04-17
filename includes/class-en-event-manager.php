@@ -56,6 +56,10 @@ class EN_Event_Manager {
 		add_action( 'init', array( $this->reservations_cpt, 'register_post_type' ) );
 		add_action( 'add_meta_boxes', array( $this->reservations_cpt, 'register_meta_boxes' ) );
 		add_action( 'save_post_en_reservation', array( $this->reservations_cpt, 'save_meta' ), 10, 2 );
+		add_action( 'save_post_en_reservation', array( $this->reservations_cpt, 'sync_shortcode_to_linked_event_after_save' ), 20, 2 );
+		add_action( 'post_submitbox_misc_actions', array( $this->reservations_cpt, 'render_submitbox_shortcode' ) );
+		add_action( 'trashed_post', array( $this->reservations_cpt, 'clear_shortcode_from_linked_event' ) );
+		add_action( 'before_delete_post', array( $this->reservations_cpt, 'clear_shortcode_from_linked_event' ) );
 		add_action( 'admin_enqueue_scripts', array( $this->reservations_cpt, 'enqueue_admin_assets' ) );
 		add_action( 'wp_ajax_en_event_manager_search_tec_events', array( $this->reservations_cpt, 'ajax_search_tec_events' ) );
 		add_filter( 'manage_en_reservation_posts_columns', array( $this->reservations_cpt, 'filter_columns' ) );

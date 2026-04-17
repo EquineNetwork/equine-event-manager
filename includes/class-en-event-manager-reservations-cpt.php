@@ -89,6 +89,15 @@ class EN_Event_Manager_Reservations_CPT {
 			'normal',
 			'default'
 		);
+
+		add_meta_box(
+			'en_reservation_shortcode',
+			__( 'Reservation Shortcode', 'en-event-manager' ),
+			array( $this, 'render_shortcode_meta_box' ),
+			'en_reservation',
+			'side',
+			'high'
+		);
 	}
 
 	/**
@@ -330,12 +339,41 @@ class EN_Event_Manager_Reservations_CPT {
 	}
 
 	/**
+	 * Render the generated reservation shortcode sidebar box.
+	 *
+	 * @param WP_Post $post Reservation post.
+	 */
+	public function render_shortcode_meta_box( $post ) {
+		$this->render_shortcode_control( $post );
+	}
+
+	/**
+	 * Render the generated reservation shortcode inside the publish box.
+	 */
+	public function render_submitbox_shortcode() {
+		global $post;
+
+		if ( ! $post instanceof WP_Post || self::POST_TYPE !== $post->post_type ) {
+			return;
+		}
+
+		echo '<div class="misc-pub-section en-event-manager-submitbox-shortcode">';
+		echo '<strong>' . esc_html__( 'Reservation Shortcode', 'en-event-manager' ) . '</strong>';
+		$this->render_shortcode_control( $post );
+		echo '</div>';
+	}
+
+	/**
 	 * Save reservation setup meta.
 	 *
 	 * @param int     $post_id Post ID.
 	 * @param WP_Post $post Post object.
 	 */
 	public function save_meta( $post_id, $post ) {
+		if ( wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) {
+			return;
+		}
+
 		if ( ! isset( $_POST['en_event_manager_reservation_meta_nonce'] ) ) {
 			return;
 		}
@@ -354,16 +392,104 @@ class EN_Event_Manager_Reservations_CPT {
 
 		$source   = isset( $_POST['en_reservation'] ) && is_array( $_POST['en_reservation'] ) ? wp_unslash( $_POST['en_reservation'] ) : array();
 		$data     = $this->sanitize_meta_submission( $source );
-		$old_data = $this->get_meta_values( $post_id );
 
 		foreach ( $data as $key => $value ) {
 			update_post_meta( $post_id, '_en_' . $key, $value );
 		}
 
-		$shortcode = $this->get_reservation_shortcode( $post_id );
+		if ( 'publish' === get_post_status( $post_id ) ) {
+			$shortcode = $this->get_reservation_shortcode( $post_id );
+			update_post_meta( $post_id, '_en_reservation_shortcode', $shortcode );
+		} else {
+			delete_post_meta( $post_id, '_en_reservation_shortcode' );
+		}
+	}
+
+	/**
+	 * Sync the generated shortcode to the linked TEC event after reservation meta is saved.
+	 *
+	 * @param int     $post_id Reservation post ID.
+	 * @param WP_Post $post Post object.
+	 */
+	public function sync_shortcode_to_linked_event_after_save( $post_id, $post ) {
+		if ( ! $this->can_process_reservation_save( $post_id, $post ) ) {
+			return;
+		}
+
+		$event_source = sanitize_key( get_post_meta( $post_id, '_en_event_source', true ) );
+		$event_id     = absint( get_post_meta( $post_id, '_en_event_id', true ) );
+		$shortcode    = $this->get_reservation_shortcode( $post_id );
+
+		if ( 'publish' !== $post->post_status ) {
+			delete_post_meta( $post_id, '_en_reservation_shortcode' );
+			$this->debug_log(
+				sprintf(
+					'event sync skipped: reservation_id=%d status=%s is not published.',
+					absint( $post_id ),
+					sanitize_key( $post->post_status )
+				)
+			);
+			return;
+		}
+
 		update_post_meta( $post_id, '_en_reservation_shortcode', $shortcode );
 
-		$this->sync_reservation_shortcode_to_event( $data, $old_data, $shortcode );
+		$this->debug_log(
+			sprintf(
+				'reservation_id=%d linked_tec_event_id=%d generated_shortcode=%s',
+				absint( $post_id ),
+				$event_id,
+				$shortcode
+			)
+		);
+
+		if ( 'tec' !== $event_source || ! $event_id ) {
+			$this->debug_log( 'event sync skipped: reservation is not linked to a TEC event.' );
+			return;
+		}
+
+		if ( 'tribe_events' !== get_post_type( $event_id ) ) {
+			$this->debug_log( 'event sync skipped: linked post is not tribe_events.' );
+			return;
+		}
+
+		$this->update_event_reservations_field( $event_id, $shortcode );
+	}
+
+	/**
+	 * Clear the linked event field when a reservation is trashed or deleted.
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	public function clear_shortcode_from_linked_event( $post_id ) {
+		if ( self::POST_TYPE !== get_post_type( $post_id ) ) {
+			return;
+		}
+
+		$event_source = sanitize_key( get_post_meta( $post_id, '_en_event_source', true ) );
+		$event_id     = absint( get_post_meta( $post_id, '_en_event_id', true ) );
+		$shortcode    = $this->get_reservation_shortcode( $post_id );
+
+		$this->debug_log(
+			sprintf(
+				'cleanup reservation_id=%d linked_tec_event_id=%d generated_shortcode=%s',
+				absint( $post_id ),
+				$event_id,
+				$shortcode
+			)
+		);
+
+		if ( 'tec' !== $event_source || ! $event_id || 'tribe_events' !== get_post_type( $event_id ) ) {
+			$this->debug_log( 'cleanup skipped: no valid linked TEC event.' );
+			return;
+		}
+
+		if ( ! $this->event_reservations_field_matches_shortcode( $event_id, $shortcode ) ) {
+			$this->debug_log( 'cleanup skipped: event reservations field does not match this reservation shortcode.' );
+			return;
+		}
+
+		$this->update_event_reservations_field( $event_id, '' );
 	}
 
 	/**
@@ -381,6 +507,7 @@ class EN_Event_Manager_Reservations_CPT {
 		$new_columns['event_source'] = __( 'Event Source', 'en-event-manager' );
 		$new_columns['stalls']       = __( 'Stalls', 'en-event-manager' );
 		$new_columns['rv']           = __( 'RV', 'en-event-manager' );
+		$new_columns['shortcode']    = __( 'Shortcode', 'en-event-manager' );
 		$new_columns['date']         = isset( $columns['date'] ) ? $columns['date'] : __( 'Date', 'en-event-manager' );
 
 		return $new_columns;
@@ -403,6 +530,15 @@ class EN_Event_Manager_Reservations_CPT {
 			echo $data['stalls_enabled'] ? esc_html__( 'Enabled', 'en-event-manager' ) : esc_html__( 'Disabled', 'en-event-manager' );
 		} elseif ( 'rv' === $column ) {
 			echo $data['rv_enabled'] ? esc_html__( 'Enabled', 'en-event-manager' ) : esc_html__( 'Disabled', 'en-event-manager' );
+		} elseif ( 'shortcode' === $column ) {
+			if ( 'publish' === get_post_status( $post_id ) ) {
+				printf(
+					'<input type="text" class="en-event-manager-list-shortcode" readonly="readonly" value="%s" onclick="this.select();" />',
+					esc_attr( $this->get_reservation_shortcode( $post_id ) )
+				);
+			} else {
+				echo esc_html__( 'Publish to generate', 'en-event-manager' );
+			}
 		}
 	}
 
@@ -711,12 +847,31 @@ class EN_Event_Manager_Reservations_CPT {
 		<tr>
 			<th scope="row"><label for="en_<?php echo esc_attr( $name ); ?>"><?php echo esc_html( $label ); ?></label></th>
 			<td>
-				<label class="en-event-manager-currency-field">
-					<span class="en-event-manager-currency-field__symbol" aria-hidden="true">$</span>
-					<input name="en_reservation[<?php echo esc_attr( $name ); ?>]" id="en_<?php echo esc_attr( $name ); ?>" class="en-event-manager-currency-field__input" type="text" inputmode="decimal" pattern="[0-9]*[.]?[0-9]{0,2}" value="<?php echo esc_attr( number_format( (float) $value, 2, '.', '' ) ); ?>" />
-				</label>
+				<div class="en-currency-field">
+					<span class="en-currency-symbol" aria-hidden="true">$</span>
+					<input name="en_reservation[<?php echo esc_attr( $name ); ?>]" id="en_<?php echo esc_attr( $name ); ?>" class="en-currency-input" type="text" inputmode="decimal" value="<?php echo esc_attr( number_format( (float) $value, 2, '.', '' ) ); ?>" />
+				</div>
 			</td>
 		</tr>
+		<?php
+	}
+
+	/**
+	 * Render a reusable copyable shortcode control.
+	 *
+	 * @param WP_Post $post Reservation post.
+	 */
+	private function render_shortcode_control( $post ) {
+		if ( ! $post->ID || 'publish' !== $post->post_status ) {
+			echo '<p>' . esc_html__( 'Publish this reservation to generate the shortcode.', 'en-event-manager' ) . '</p>';
+			return;
+		}
+
+		$shortcode = $this->get_reservation_shortcode( $post->ID );
+		?>
+		<p><?php esc_html_e( 'This shortcode is generated automatically for this reservation setup.', 'en-event-manager' ); ?></p>
+		<input type="text" class="widefat en-event-manager-shortcode-field" readonly="readonly" value="<?php echo esc_attr( $shortcode ); ?>" onclick="this.select();" />
+		<p class="description"><?php esc_html_e( 'Click the field to select and copy it.', 'en-event-manager' ); ?></p>
 		<?php
 	}
 
@@ -780,6 +935,33 @@ class EN_Event_Manager_Reservations_CPT {
 	}
 
 	/**
+	 * Determine whether a reservation save should be processed.
+	 *
+	 * @param int     $post_id Reservation post ID.
+	 * @param WP_Post $post Post object.
+	 * @return bool
+	 */
+	private function can_process_reservation_save( $post_id, $post ) {
+		if ( wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) {
+			return false;
+		}
+
+		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+			return false;
+		}
+
+		if ( ! $post instanceof WP_Post || self::POST_TYPE !== $post->post_type ) {
+			return false;
+		}
+
+		if ( ! current_user_can( 'edit_post', $post_id ) ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
 	 * Build the reservation shortcode for a setup.
 	 *
 	 * @param int $post_id Reservation post ID.
@@ -790,28 +972,6 @@ class EN_Event_Manager_Reservations_CPT {
 	}
 
 	/**
-	 * Sync the reservation shortcode to the linked TEC event's ACF field.
-	 *
-	 * @param array  $data Saved reservation meta.
-	 * @param array  $old_data Previous reservation meta.
-	 * @param string $shortcode Reservation shortcode.
-	 */
-	private function sync_reservation_shortcode_to_event( $data, $old_data, $shortcode ) {
-		$event_id     = ( 'tec' === $data['event_source'] && ! empty( $data['event_id'] ) ) ? absint( $data['event_id'] ) : 0;
-		$old_event_id = ( 'tec' === $old_data['event_source'] && ! empty( $old_data['event_id'] ) ) ? absint( $old_data['event_id'] ) : 0;
-
-		if ( $old_event_id && $old_event_id !== $event_id && $this->event_reservations_field_matches_shortcode( $old_event_id, $shortcode ) ) {
-			$this->update_event_reservations_field( $old_event_id, '' );
-		}
-
-		if ( ! $event_id || ! $this->is_the_events_calendar_available() || 'tribe_events' !== get_post_type( $event_id ) ) {
-			return;
-		}
-
-		$this->update_event_reservations_field( $event_id, $shortcode );
-	}
-
-	/**
 	 * Update the reservations field on a TEC event.
 	 *
 	 * @param int    $event_id Event post ID.
@@ -819,11 +979,19 @@ class EN_Event_Manager_Reservations_CPT {
 	 */
 	private function update_event_reservations_field( $event_id, $value ) {
 		if ( function_exists( 'update_field' ) ) {
-			update_field( 'reservations', $value, $event_id );
-			return;
+			$updated = update_field( 'reservations', $value, $event_id );
+			$this->debug_log( 'acf update_field ran for reservations field. result=' . ( $updated ? 'true' : 'false' ) );
+
+			if ( $updated ) {
+				$this->debug_log( 'fallback update_post_meta skipped because ACF update_field succeeded.' );
+				return;
+			}
+		} else {
+			$this->debug_log( 'acf update_field did not run because ACF is not active.' );
 		}
 
-		update_post_meta( $event_id, 'reservations', $value );
+		$updated = update_post_meta( $event_id, 'reservations', $value );
+		$this->debug_log( 'fallback update_post_meta ran for reservations field. result=' . ( false === $updated ? 'false' : 'true' ) );
 	}
 
 	/**
@@ -835,10 +1003,23 @@ class EN_Event_Manager_Reservations_CPT {
 	 */
 	private function event_reservations_field_matches_shortcode( $event_id, $shortcode ) {
 		if ( function_exists( 'get_field' ) ) {
-			return $shortcode === get_field( 'reservations', $event_id );
+			$acf_value = get_field( 'reservations', $event_id );
+
+			if ( $shortcode === $acf_value ) {
+				return true;
+			}
 		}
 
 		return $shortcode === get_post_meta( $event_id, 'reservations', true );
+	}
+
+	/**
+	 * Temporary reservation sync debug logging.
+	 *
+	 * @param string $message Log message.
+	 */
+	private function debug_log( $message ) {
+		error_log( '[EN Event Manager Reservations] ' . $message ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 	}
 
 	/**
