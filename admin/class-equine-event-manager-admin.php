@@ -197,8 +197,8 @@ class EEM_Admin {
 		}
 
 		wp_enqueue_style(
-			'equine-event-manager-admin-shell',
-			EQUINE_EVENT_MANAGER_URL . 'admin/css/equine-event-manager-admin.css',
+			'eem-admin-shell',
+			EQUINE_EVENT_MANAGER_URL . 'assets/css/admin.css',
 			array(),
 			defined( 'EQUINE_EVENT_MANAGER_VERSION' ) ? EQUINE_EVENT_MANAGER_VERSION : false
 		);
