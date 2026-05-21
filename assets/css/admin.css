@@ -1073,3 +1073,690 @@
 		justify-content: center;
 	}
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   C1.3 — List + table patterns
+   Toolbar, table, sortable headers, mobile cards, meatballs, pagination.
+   Used by: Reservations list, Orders list, Stall Charts list, Reports
+   history, Activity Log table.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────
+   List toolbar — filters + search + count above the table
+   ───────────────────────────────────────────────────────────── */
+.eem-toolbar {
+	background: var(--eem-bg-alt);
+	border-bottom: 1px solid #dcdcde;
+}
+
+.eem-toolbar-row {
+	padding: 10px 18px;
+	display: flex;
+	align-items: center;
+	gap: var(--eem-space-2);
+	flex-wrap: wrap;
+}
+
+.eem-toolbar-row + .eem-toolbar-row {
+	border-top: 1px solid var(--eem-border-soft);
+	padding-top: 9px;
+	padding-bottom: 9px;
+}
+
+.eem-toolbar-left {
+	display: flex;
+	align-items: center;
+	gap: var(--eem-space-2);
+	flex: 1;
+	flex-wrap: wrap;
+}
+
+.eem-toolbar-right {
+	display: flex;
+	align-items: center;
+	gap: var(--eem-space-2);
+	flex-shrink: 0;
+}
+
+.eem-toolbar-label {
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.07em;
+	text-transform: uppercase;
+	color: var(--eem-text-muted);
+	white-space: nowrap;
+}
+
+.eem-list-count {
+	font-size: 13px;
+	color: #50575e;
+	white-space: nowrap;
+	margin-left: auto;
+}
+
+/* Search input — magnifier icon + text input */
+.eem-search-wrap {
+	position: relative;
+	flex: 1;
+	min-width: 150px;
+	max-width: 280px;
+}
+
+.eem-search-wrap svg {
+	position: absolute;
+	left: 9px;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 13px;
+	height: 13px;
+	color: var(--eem-text-muted);
+	pointer-events: none;
+}
+
+.eem-search-input {
+	width: 100%;
+	padding: 6px 10px 6px 28px;
+	border: 1px solid var(--eem-text-muted);
+	border-radius: var(--eem-radius);
+	font-size: 13px;
+	font-family: var(--eem-font-ui);
+	color: var(--eem-text);
+	background: var(--eem-surface);
+	outline: none;
+}
+
+.eem-search-input::placeholder {
+	color: #b0b0b0;
+}
+
+.eem-search-input:focus {
+	border-color: var(--eem-electric);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Filter tabs (ORD-1 billing-status tabs) — segmented pill row
+   ───────────────────────────────────────────────────────────── */
+.eem-filter-tabs {
+	display: flex;
+	background: #f0f0f1;
+	border-radius: var(--eem-radius);
+	padding: 2px;
+	gap: 1px;
+}
+
+.eem-filter-tab {
+	padding: 5px 12px;
+	border-radius: var(--eem-radius-sm);
+	font-size: 12.5px;
+	font-weight: 500;
+	color: #50575e;
+	cursor: pointer;
+	white-space: nowrap;
+	border: none;
+	background: transparent;
+	font-family: var(--eem-font-ui);
+}
+
+.eem-filter-tab.active {
+	background: var(--eem-surface);
+	color: var(--eem-text);
+	font-weight: 600;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Type chips (ORD-1 multi-select chips: stall/rv/addon/group)
+   ───────────────────────────────────────────────────────────── */
+.eem-type-chips {
+	display: flex;
+	gap: 5px;
+	flex-wrap: wrap;
+}
+
+.eem-type-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 4px 10px;
+	border-radius: 20px;
+	font-size: 12px;
+	font-weight: 600;
+	cursor: pointer;
+	border: 1.5px solid;
+	transition: opacity 0.15s;
+	user-select: none;
+}
+
+.eem-type-chip.inactive {
+	opacity: 0.4;
+}
+
+.eem-type-chip--stall  { background: var(--eem-type-stall-bg);  color: var(--eem-type-stall-text);  border-color: var(--eem-type-stall-border); }
+.eem-type-chip--rv     { background: var(--eem-type-rv-bg);     color: var(--eem-type-rv-text);     border-color: var(--eem-type-rv-border); }
+.eem-type-chip--addon  { background: var(--eem-type-addon-bg);  color: var(--eem-type-addon-text);  border-color: var(--eem-type-addon-border); }
+.eem-type-chip--group  { background: var(--eem-type-group-bg);  color: var(--eem-type-group-text);  border-color: var(--eem-type-group-border); }
+
+.eem-type-chip-dot {
+	width: 5px;
+	height: 5px;
+	border-radius: 50%;
+	background: currentColor;
+	flex-shrink: 0;
+}
+
+/* Select (event filter, etc.) — chevron-suffixed dropdown */
+.eem-list-select {
+	padding: 6px 28px 6px 10px;
+	border: 1px solid var(--eem-text-muted);
+	border-radius: var(--eem-radius);
+	font-size: 13px;
+	font-family: var(--eem-font-ui);
+	color: var(--eem-text);
+	background: var(--eem-surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 8px center;
+	appearance: none;
+	min-width: 200px;
+	outline: none;
+}
+
+.eem-list-select:focus {
+	border-color: var(--eem-electric);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Bulk action bar (ORD-2 / RES-3 / ORD-6) — appears below toolbar when
+   row checkboxes have selections
+   ───────────────────────────────────────────────────────────── */
+.eem-bulk-action-bar {
+	padding: 10px 18px;
+	display: flex;
+	align-items: center;
+	gap: var(--eem-space-2);
+	border-top: 1px solid var(--eem-border-soft);
+	flex-wrap: wrap;
+	background: var(--eem-bg-alt);
+}
+
+.eem-bulk-action-bar select {
+	padding: 6px 12px;
+	border: 1px solid var(--eem-border-card);
+	border-radius: var(--eem-radius);
+	font-size: 13px;
+	font-family: var(--eem-font-ui);
+	color: var(--eem-text);
+	background: var(--eem-surface);
+	cursor: pointer;
+}
+
+.eem-bulk-action-bar button {
+	padding: 6px 14px;
+	border: 1px solid var(--eem-electric);
+	background: var(--eem-electric);
+	color: var(--eem-text-on-navy);
+	border-radius: var(--eem-radius);
+	font-size: 13px;
+	font-weight: 600;
+	font-family: var(--eem-font-ui);
+	cursor: pointer;
+}
+
+.eem-bulk-action-bar button:hover {
+	background: var(--eem-electric-hover);
+}
+
+.eem-bulk-action-bar button:disabled {
+	background: var(--eem-border-card);
+	border-color: var(--eem-border-card);
+	cursor: not-allowed;
+}
+
+.eem-bulk-selected-count {
+	font-size: 12.5px;
+	color: var(--eem-text-secondary);
+	margin-left: 8px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Tables — list-screen primary data presentation
+   ───────────────────────────────────────────────────────────── */
+.eem-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.eem-table thead tr {
+	border-bottom: 1px solid #dcdcde;
+	background: var(--eem-bg-alt);
+}
+
+.eem-table thead th {
+	padding: 9px 14px;
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.07em;
+	text-transform: uppercase;
+	color: var(--eem-text-muted);
+	text-align: left;
+	white-space: nowrap;
+}
+
+.eem-table thead th.sortable {
+	cursor: pointer;
+}
+
+.eem-table thead th.sortable:hover {
+	color: var(--eem-text);
+}
+
+.eem-table tbody tr {
+	border-bottom: 1px solid var(--eem-border-soft);
+}
+
+.eem-table tbody tr:last-child {
+	border-bottom: none;
+}
+
+.eem-table tbody tr:hover {
+	background: #f6f7f7;
+}
+
+.eem-table td {
+	padding: 12px 14px;
+	font-size: 13.5px;
+	color: var(--eem-text);
+	vertical-align: middle;
+}
+
+/* Checkbox column for bulk-action lists */
+.eem-table .eem-col-checkbox,
+.eem-table th.eem-col-checkbox {
+	width: 32px;
+	padding-left: 14px;
+}
+
+.eem-table .eem-col-checkbox input[type="checkbox"] {
+	margin: 0;
+	cursor: pointer;
+}
+
+/* Sort indicator (CSS-only paired triangles) */
+.eem-sort-icon {
+	display: inline-flex;
+	flex-direction: column;
+	gap: 1px;
+	margin-left: 3px;
+	vertical-align: middle;
+	opacity: 0.45;
+}
+
+.eem-sort-icon span {
+	display: block;
+	width: 0;
+	height: 0;
+	border-left: 3px solid transparent;
+	border-right: 3px solid transparent;
+}
+
+.eem-sort-icon span:first-child {
+	border-bottom: 4px solid currentColor;
+}
+
+.eem-sort-icon span:last-child {
+	border-top: 4px solid currentColor;
+}
+
+th.sorted-asc .eem-sort-icon,
+th.sorted-desc .eem-sort-icon {
+	opacity: 1;
+	color: var(--eem-electric);
+}
+
+th.sorted-asc .eem-sort-icon span:last-child,
+th.sorted-desc .eem-sort-icon span:first-child {
+	opacity: 0.3;
+}
+
+/* Common cell helpers (data formatters) */
+.eem-cell-order-num {
+	font-weight: 700;
+	color: var(--eem-navy);
+	font-size: 13px;
+	white-space: nowrap;
+}
+
+.eem-cell-customer {
+	font-weight: 500;
+}
+
+.eem-cell-event {
+	color: #50575e;
+	max-width: 200px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.eem-cell-date {
+	color: var(--eem-text-muted);
+	white-space: nowrap;
+	font-size: 13px;
+}
+
+.eem-cell-amount {
+	font-weight: 700;
+	color: var(--eem-navy);
+	white-space: nowrap;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Row actions cell — icon buttons + meatballs menu
+   ───────────────────────────────────────────────────────────── */
+.eem-actions-cell {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+}
+
+.eem-action-icon-btn {
+	width: 28px;
+	height: 28px;
+	border-radius: var(--eem-radius);
+	border: 1px solid var(--eem-border-card);
+	background: var(--eem-surface);
+	color: var(--eem-text-secondary);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	padding: 0;
+}
+
+.eem-action-icon-btn:hover {
+	background: #f0f0f1;
+	color: var(--eem-text);
+}
+
+.eem-action-icon-btn svg {
+	width: 13px;
+	height: 13px;
+}
+
+.eem-meatballs-btn {
+	width: 28px;
+	height: 28px;
+	border-radius: var(--eem-radius);
+	border: 1px solid var(--eem-border-card);
+	background: var(--eem-surface);
+	color: #50575e;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	font-size: 15px;
+	letter-spacing: 0.05em;
+	line-height: 1;
+	padding: 0;
+}
+
+.eem-meatballs-btn:hover {
+	background: #f0f0f1;
+}
+
+/* Meatballs dropdown panel */
+.eem-row-menu-wrap {
+	position: relative;
+	display: inline-block;
+}
+
+.eem-row-dropdown {
+	display: none;
+	position: absolute;
+	top: calc(100% + 4px);
+	right: 0;
+	background: var(--eem-surface);
+	border: 1px solid var(--eem-border-card);
+	border-radius: var(--eem-radius);
+	box-shadow: var(--eem-shadow-dropdown);
+	min-width: 190px;
+	z-index: var(--eem-z-dropdown);
+	overflow: hidden;
+}
+
+.eem-row-dropdown.open {
+	display: block;
+}
+
+.eem-row-dd-item {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	padding: 9px 14px;
+	font-size: 13px;
+	color: var(--eem-text);
+	cursor: pointer;
+	border-bottom: 1px solid var(--eem-border-soft);
+	white-space: nowrap;
+	background: transparent;
+	border-left: none;
+	border-right: none;
+	border-top: none;
+	font-family: var(--eem-font-ui);
+	width: 100%;
+	text-align: left;
+	text-decoration: none;
+}
+
+.eem-row-dd-item:last-child {
+	border-bottom: none;
+}
+
+.eem-row-dd-item:hover {
+	background: #f6f7f7;
+	text-decoration: none;
+}
+
+.eem-row-dd-item svg {
+	width: 13px;
+	height: 13px;
+	color: var(--eem-text-secondary);
+	flex-shrink: 0;
+}
+
+.eem-row-dd-danger {
+	color: var(--eem-error-text);
+}
+
+.eem-row-dd-danger svg {
+	color: #fca5a5;
+}
+
+.eem-row-dd-danger:hover {
+	background: var(--eem-error-bg);
+}
+
+.eem-row-dd-divider {
+	height: 1px;
+	background: var(--eem-border-soft);
+	margin: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Pagination
+   ───────────────────────────────────────────────────────────── */
+.eem-pagination {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 12px 14px;
+	border-top: 1px solid #dcdcde;
+	background: var(--eem-bg-alt);
+	flex-wrap: wrap;
+	gap: var(--eem-space-2);
+}
+
+.eem-pagination-info {
+	font-size: 13px;
+	color: #50575e;
+}
+
+.eem-pagination-controls {
+	display: flex;
+	align-items: center;
+	gap: 3px;
+}
+
+.eem-page-btn {
+	width: 28px;
+	height: 28px;
+	border-radius: var(--eem-radius);
+	border: 1px solid var(--eem-border-card);
+	background: var(--eem-surface);
+	color: #50575e;
+	font-size: 13px;
+	font-weight: 500;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-family: var(--eem-font-ui);
+	padding: 0;
+}
+
+.eem-page-btn:hover {
+	background: #f0f0f1;
+}
+
+.eem-page-btn.active {
+	background: var(--eem-electric);
+	color: var(--eem-text-on-navy);
+	border-color: var(--eem-electric);
+}
+
+.eem-page-btn:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.eem-page-btn svg {
+	width: 12px;
+	height: 12px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Mobile cards — replace tables under 767px
+   ───────────────────────────────────────────────────────────── */
+.eem-mobile-cards {
+	display: none;
+}
+
+.eem-mobile-card {
+	background: var(--eem-surface);
+	border: 1px solid #dcdcde;
+	border-radius: var(--eem-radius);
+	padding: 14px;
+	margin-bottom: 8px;
+}
+
+.eem-mobile-card-top {
+	display: flex;
+	justify-content: space-between;
+	margin-bottom: 6px;
+}
+
+.eem-mobile-card-id {
+	font-weight: 700;
+	color: var(--eem-electric);
+	font-size: 14px;
+}
+
+.eem-mobile-card-meta {
+	font-size: 12px;
+	color: var(--eem-text-muted);
+}
+
+.eem-mobile-card-title {
+	font-size: 14px;
+	font-weight: 500;
+	margin-bottom: 3px;
+}
+
+.eem-mobile-card-sub {
+	font-size: 12.5px;
+	color: #50575e;
+	margin-bottom: 8px;
+}
+
+.eem-mobile-card-bottom {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--eem-space-2);
+	flex-wrap: wrap;
+}
+
+.eem-mobile-card-badges {
+	display: flex;
+	gap: 4px;
+	flex-wrap: wrap;
+	align-items: center;
+}
+
+.eem-mobile-card-actions {
+	display: flex;
+	gap: 6px;
+}
+
+/* Mobile breakpoint — flip table → cards */
+@media (max-width: 767px) {
+	.eem-desktop-table {
+		display: none;
+	}
+
+	.eem-mobile-cards {
+		display: block;
+		padding: 12px 14px;
+	}
+
+	.eem-toolbar-row {
+		flex-wrap: wrap;
+		gap: var(--eem-space-2);
+		padding: 10px 12px;
+	}
+
+	.eem-list-select {
+		width: 100%;
+	}
+
+	/* Convert filter pill row to scroll/wrap-friendly tabs on mobile */
+	.eem-filter-tabs {
+		width: 100%;
+		overflow-x: auto;
+		flex-wrap: nowrap;
+		background: none;
+		padding: 0;
+		gap: 4px;
+	}
+
+	.eem-filter-tab {
+		background: var(--eem-surface);
+		border: 1px solid #dcdcde;
+		border-radius: 20px;
+		flex-shrink: 0;
+	}
+
+	.eem-filter-tab.active {
+		background: var(--eem-navy);
+		color: var(--eem-text-on-navy);
+		border-color: var(--eem-navy);
+		box-shadow: none;
+	}
+
+	.eem-search-wrap {
+		max-width: 100%;
+		min-width: unset;
+		flex: 1;
+	}
+
+	.eem-pagination {
+		padding: 10px 14px;
+	}
+}
