@@ -4289,20 +4289,6 @@ RV Lot: " . $rv_lot['name'] );
 	}
 
 	/**
-	 * Extract venue agreement status from notes.
-	 *
-	 * @param string $notes Raw notes value.
-	 * @return string
-	 */
-	private function extract_venue_agreement_status_from_notes( $notes ) {
-		if ( preg_match( '/(?:^|\n)Venue Agreement (Accepted|Provided):\s*(Yes)/i', (string) $notes, $matches ) ) {
-			return sanitize_text_field( $matches[2] );
-		}
-
-		return '';
-	}
-
-	/**
 	 * Check whether a submission token has already been processed.
 	 *
 	 * @param string $submission_token Submission token.
@@ -5876,37 +5862,6 @@ RV Lot: " . $rv_lot['name'] );
 			'Wisconsin',
 			'Wyoming',
 		);
-	}
-
-	/**
-	 * Get a display summary for current rates.
-	 *
-	 * @param array  $data Reservation setup data.
-	 * @param string $type Reservation type.
-	 * @return string
-	 */
-	private function get_rate_summary( $data, $type ) {
-		$parts = array();
-		$nightly_enabled_key = 'stall' === $type ? 'stall_nightly_enabled' : 'rv_nightly_enabled';
-		$weekend_enabled_key = 'stall' === $type ? 'stall_weekend_enabled' : 'rv_weekend_enabled';
-
-		if ( ! empty( $data[ $nightly_enabled_key ] ) ) {
-			$parts[] = sprintf(
-				/* translators: %s: nightly rate. */
-				__( '%s per night', 'equine-event-manager' ),
-				$this->format_money( $this->get_current_rate( $data, $type, 'nightly' ) )
-			);
-		}
-
-		if ( ! empty( $data[ $weekend_enabled_key ] ) ) {
-			$parts[] = sprintf(
-				/* translators: %s: weekend rate. */
-				__( '%s weekend', 'equine-event-manager' ),
-				$this->format_money( $this->get_current_rate( $data, $type, 'weekend' ) )
-			);
-		}
-
-		return implode( ' / ', $parts );
 	}
 
 	/**

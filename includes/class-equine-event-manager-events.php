@@ -2121,62 +2121,6 @@ class EEM_Events {
 	}
 
 	/**
-	 * Render event card markup for shortcodes/widgets.
-	 *
-	 * @param int  $event_id Event post ID.
-	 * @param bool $single Whether rendering a single-event spotlight.
-	 * @return string
-	 */
-	private function render_event_card_markup( $event, $single = false ) {
-		$event_data = is_array( $event ) ? $event : self::get_normalized_event_data( absint( $event ) );
-
-		if ( empty( $event_data ) ) {
-			return '';
-		}
-
-		$excerpt    = $event_data['excerpt'] ? $event_data['excerpt'] : wp_trim_words( wp_strip_all_tags( $event_data['content_raw'] ), 28 );
-		$date_label = self::format_date_range_label( $event_data['start_date'], $event_data['end_date'] );
-		$event_url  = self::get_event_frontend_url( $event_data );
-
-		ob_start();
-		?>
-		<div class="eem-event-card<?php echo $single ? ' is-single' : ''; ?>">
-			<div class="eem-event-card__body">
-				<div class="eem-event-card__eyebrow"><?php esc_html_e( 'Equine Event', 'equine-event-manager' ); ?></div>
-				<h3 class="eem-event-card__title"><?php echo esc_html( $event_data['title'] ); ?></h3>
-				<div class="eem-event-card__meta">
-					<?php if ( $date_label ) : ?>
-						<div><strong><?php esc_html_e( 'Dates:', 'equine-event-manager' ); ?></strong> <?php echo esc_html( $date_label ); ?></div>
-					<?php endif; ?>
-					<?php if ( $event_data['venue_name'] ) : ?>
-						<div><strong><?php esc_html_e( 'Venue:', 'equine-event-manager' ); ?></strong> <?php echo esc_html( $event_data['venue_name'] ); ?></div>
-					<?php endif; ?>
-					<?php if ( $event_data['location'] ) : ?>
-						<div><strong><?php esc_html_e( 'Location:', 'equine-event-manager' ); ?></strong> <?php echo esc_html( $event_data['location'] ); ?></div>
-					<?php endif; ?>
-					<?php if ( $event_data['producer']['name'] ) : ?>
-						<div><strong><?php esc_html_e( 'Producer:', 'equine-event-manager' ); ?></strong> <?php echo esc_html( $event_data['producer']['name'] ); ?></div>
-					<?php endif; ?>
-				</div>
-				<?php if ( $excerpt ) : ?>
-					<div class="eem-event-card__excerpt"><?php echo esc_html( $excerpt ); ?></div>
-				<?php endif; ?>
-				<div class="eem-event-card__actions">
-					<?php if ( $event_url ) : ?>
-						<a class="eem-event-card__button is-secondary" href="<?php echo esc_url( $event_url ); ?>"><?php esc_html_e( 'View Event', 'equine-event-manager' ); ?></a>
-					<?php endif; ?>
-					<?php if ( $event_data['reservation_id'] ) : ?>
-						<a class="eem-event-card__button" href="<?php echo esc_url( $event_url ? $event_url . '#reservation' : '#reservation' ); ?>"><?php echo esc_html( $event_data['cta_label'] ? $event_data['cta_label'] : __( 'Reserve Now', 'equine-event-manager' ) ); ?></a>
-					<?php endif; ?>
-				</div>
-			</div>
-		</div>
-		<?php
-
-		return (string) ob_get_clean();
-	}
-
-	/**
 	 * Render the frontend event list row markup.
 	 *
 	 * @param array<string, mixed> $event_data Normalized event data.

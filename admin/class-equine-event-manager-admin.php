@@ -688,19 +688,6 @@ class EEM_Admin {
 	}
 
 	/**
-	 * Determine whether the current screen is a native content list table.
-	 *
-	 * @return bool
-	 */
-	private function is_native_content_list_screen() {
-		$screen = get_current_screen();
-
-		return $screen
-			&& 'edit' === $screen->base
-			&& in_array( $screen->post_type, array( 'en_event', 'en_venue', 'en_producer' ), true );
-	}
-
-	/**
 	 * Resolve the current native content list post type.
 	 *
 	 * @return string
@@ -2458,38 +2445,6 @@ class EEM_Admin {
 	}
 
 	/**
-	 * Render Orders screen view counts.
-	 *
-	 * @param int    $total_order_count Total order count.
-	 * @param int    $filtered_order_count Filtered order count.
-	 * @param string $event_filter Active event filter.
-	 * @return void
-	 */
-	private function render_orders_views( $total_order_count, $filtered_order_count, $event_filter, $attention = false, $billing_flag = '' ) {
-		?>
-		<ul class="subsubsub">
-			<li class="all">
-				<a href="<?php echo esc_url( $this->get_orders_page_url( array( 'attention' => $attention ? '1' : null, 'billing_flag' => $billing_flag ) ) ); ?>" class="<?php echo '' === $event_filter ? 'current' : ''; ?>">
-					<?php esc_html_e( 'All', 'equine-event-manager' ); ?>
-					<span class="count">(<?php echo esc_html( number_format_i18n( $total_order_count ) ); ?>)</span>
-				</a>
-				<?php if ( '' !== $event_filter ) : ?>
-					<span class="separator"> | </span>
-				<?php endif; ?>
-			</li>
-			<?php if ( '' !== $event_filter ) : ?>
-				<li class="current">
-					<span class="current">
-						<?php esc_html_e( 'Filtered', 'equine-event-manager' ); ?>
-						<span class="count">(<?php echo esc_html( number_format_i18n( $filtered_order_count ) ); ?>)</span>
-					</span>
-				</li>
-			<?php endif; ?>
-		</ul>
-		<?php
-	}
-
-	/**
 	 * Render dashboard recent order view counts.
 	 *
 	 * @param int    $total_order_count Total order count.
@@ -3527,60 +3482,6 @@ class EEM_Admin {
 	public function render_import_tec_events_page() {
 		wp_safe_redirect( admin_url( 'admin.php?page=equine-event-manager-settings&tab=integrations' ) );
 		exit;
-	}
-
-	/**
-	 * Render the The Events Calendar import panel contents.
-	 *
-	 * @return void
-	 */
-	private function render_import_tec_events_panel() {
-		$events = EEM_Events::get_tec_events_for_import( 150 );
-		?>
-		<?php if ( ! EEM_Events::is_the_events_calendar_available() ) : ?>
-			<p><?php esc_html_e( 'The Events Calendar is not active, so there are no events available to import.', 'equine-event-manager' ); ?></p>
-		<?php else : ?>
-			<?php $this->render_import_tec_events_notice(); ?>
-			<input type="hidden" name="action" value="equine_event_manager_import_tec_events" />
-			<?php wp_nonce_field( EEM_Events::IMPORT_TEC_ACTION, 'equine_event_manager_import_tec_events_nonce' ); ?>
-			<p><?php esc_html_e( 'Select one or more The Events Calendar events to import into Equine Event Manager.', 'equine-event-manager' ); ?></p>
-			<?php if ( empty( $events ) ) : ?>
-				<p><?php esc_html_e( 'No The Events Calendar events were found.', 'equine-event-manager' ); ?></p>
-			<?php else : ?>
-				<ul role="group" aria-label="<?php esc_attr_e( 'Available The Events Calendar events', 'equine-event-manager' ); ?>">
-					<?php foreach ( $events as $event ) : ?>
-						<?php $dates = EEM_Events::get_tec_event_date_values( $event->ID ); ?>
-						<li>
-							<label>
-								<input type="checkbox" name="tec_event_ids[]" value="<?php echo esc_attr( $event->ID ); ?>" />
-								<strong><?php echo esc_html( get_the_title( $event ) ); ?></strong>
-								<span>
-								<?php
-								echo esc_html(
-									$dates['start_date']
-										? sprintf(
-											/* translators: 1: start date, 2: end date. */
-											__( '(%1$s - %2$s)', 'equine-event-manager' ),
-											$dates['start_date'],
-											$dates['end_date'] ? $dates['end_date'] : $dates['start_date']
-										)
-										: __( '(Dates unavailable)', 'equine-event-manager' )
-								);
-								?>
-								</span>
-							</label>
-						</li>
-					<?php endforeach; ?>
-				</ul>
-				<p class="description"><?php esc_html_e( 'Already-imported events will be skipped instead of duplicated.', 'equine-event-manager' ); ?></p>
-				<p>
-					<button type="submit" class="button button-primary" formaction="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" formmethod="post">
-						<?php esc_html_e( 'Import Selected Events', 'equine-event-manager' ); ?>
-					</button>
-				</p>
-			<?php endif; ?>
-		<?php endif; ?>
-		<?php
 	}
 
 	/**
@@ -8250,21 +8151,6 @@ class EEM_Admin {
 	}
 
 	/**
-	 * Render two explicit definition columns for easier scanning.
-	 *
-	 * @param array $left_items Left column items.
-	 * @param array $right_items Right column items.
-	 */
-	private function render_key_value_columns( $left_items, $right_items ) {
-		?>
-		<?php $this->render_key_value_grid( $left_items ); ?>
-		<?php if ( ! empty( $right_items ) ) : ?>
-			<?php $this->render_key_value_grid( $right_items ); ?>
-		<?php endif; ?>
-		<?php
-	}
-
-	/**
 	 * Render grouped key/value rows for cleaner reservation layouts.
 	 *
 	 * @param array $rows Array of row item arrays.
@@ -8293,28 +8179,6 @@ class EEM_Admin {
 	}
 
 	/**
-	 * Render reservation details in clearer event/stall/rv sections.
-	 *
-	 * @param array $event_details Event details.
-	 * @param array $stall_details Stall reservation detail rows.
-	 * @param array $rv_details    RV reservation detail rows.
-	 */
-	private function render_reservation_details_layout( $event_details, $stall_details, $rv_details ) {
-		?>
-		<h3><?php esc_html_e( 'Event', 'equine-event-manager' ); ?></h3>
-		<?php $this->render_key_value_grid( $event_details ); ?>
-		<?php if ( ! empty( $stall_details ) ) : ?>
-			<h3><?php esc_html_e( 'Stall Reservation', 'equine-event-manager' ); ?></h3>
-			<?php $this->render_key_value_rows( $stall_details ); ?>
-		<?php endif; ?>
-		<?php if ( ! empty( $rv_details ) ) : ?>
-			<h3><?php esc_html_e( 'RV Reservation', 'equine-event-manager' ); ?></h3>
-			<?php $this->render_key_value_rows( $rv_details ); ?>
-		<?php endif; ?>
-		<?php
-	}
-
-	/**
 	 * Format a stored phone number for display.
 	 *
 	 * @param string $phone Raw phone value.
@@ -8339,18 +8203,6 @@ class EEM_Admin {
 		}
 
 		return $phone;
-	}
-
-	/**
-	 * Format a payment status label for display.
-	 *
-	 * @param string $status Raw status.
-	 * @return string
-	 */
-	private function format_status_label( $status ) {
-		$status = str_replace( '_', ' ', (string) $status );
-
-		return ucwords( $status );
 	}
 
 	/**

@@ -2834,99 +2834,6 @@ class EEM_Reservations_CPT {
 	}
 
 	/**
-	 * Render a time picker row with hour, minute, and AM/PM selectors.
-	 *
-	 * @param string $name Field name.
-	 * @param string $label Field label.
-	 * @param string $value Saved field value.
-	 * @param string $description Optional description.
-	 * @return void
-	 */
-	private function render_time_picker_row( $name, $label, $value, $description = '' ) {
-		$time_parts = $this->parse_time_value( $value );
-		?>
-		<tr>
-			<th scope="row"><label for="en_<?php echo esc_attr( $name ); ?>_hour"><?php echo esc_html( $label ); ?></label></th>
-			<td>
-				<div class="eem-time-picker-fields">
-					<select name="en_reservation[<?php echo esc_attr( $name ); ?>][hour]" id="en_<?php echo esc_attr( $name ); ?>_hour">
-						<option value=""><?php esc_html_e( 'Hour', 'equine-event-manager' ); ?></option>
-						<?php for ( $hour = 1; $hour <= 12; $hour++ ) : ?>
-							<option value="<?php echo esc_attr( str_pad( (string) $hour, 2, '0', STR_PAD_LEFT ) ); ?>" <?php selected( $time_parts['hour'], str_pad( (string) $hour, 2, '0', STR_PAD_LEFT ) ); ?>><?php echo esc_html( $hour ); ?></option>
-						<?php endfor; ?>
-					</select>
-					<span class="eem-time-picker-separator" aria-hidden="true">:</span>
-					<select name="en_reservation[<?php echo esc_attr( $name ); ?>][minute]" id="en_<?php echo esc_attr( $name ); ?>_minute">
-						<option value=""><?php esc_html_e( 'Min', 'equine-event-manager' ); ?></option>
-						<?php foreach ( array( '00', '15', '30', '45' ) as $minute ) : ?>
-							<option value="<?php echo esc_attr( $minute ); ?>" <?php selected( $time_parts['minute'], $minute ); ?>><?php echo esc_html( $minute ); ?></option>
-						<?php endforeach; ?>
-					</select>
-					<select name="en_reservation[<?php echo esc_attr( $name ); ?>][meridiem]" id="en_<?php echo esc_attr( $name ); ?>_meridiem">
-						<option value=""><?php esc_html_e( 'AM/PM', 'equine-event-manager' ); ?></option>
-						<option value="AM" <?php selected( $time_parts['meridiem'], 'AM' ); ?>><?php esc_html_e( 'AM', 'equine-event-manager' ); ?></option>
-						<option value="PM" <?php selected( $time_parts['meridiem'], 'PM' ); ?>><?php esc_html_e( 'PM', 'equine-event-manager' ); ?></option>
-					</select>
-				</div>
-				<?php if ( $description ) : ?>
-					<p class="description"><?php echo esc_html( $description ); ?></p>
-				<?php endif; ?>
-			</td>
-		</tr>
-		<?php
-	}
-
-	/**
-	 * Render a toggle-controlled time picker row.
-	 *
-	 * @param string $name Field name.
-	 * @param string $enabled_key Toggle field key.
-	 * @param string $label Field label.
-	 * @param string $value Field value.
-	 * @param bool   $is_enabled Whether the time row is enabled.
-	 * @param string $description Optional description.
-	 * @return void
-	 */
-	private function render_toggle_time_picker_row( $name, $enabled_key, $label, $value, $is_enabled, $description = '' ) {
-		$time_parts = $this->parse_time_value( $value );
-		?>
-		<tr class="eem-time-picker-toggle-row<?php echo $is_enabled ? '' : ' eem-rate-mode-row--disabled'; ?>" data-eem-time-toggle-row="<?php echo esc_attr( $name ); ?>">
-			<th scope="row"><?php echo esc_html( $label ); ?></th>
-			<td>
-				<label class="eem-inline-toggle-control eem-inline-toggle-control--time">
-					<input name="en_reservation[<?php echo esc_attr( $enabled_key ); ?>]" id="en_<?php echo esc_attr( $enabled_key ); ?>" type="checkbox" value="1" data-eem-time-toggle="<?php echo esc_attr( $name ); ?>" <?php checked( $is_enabled ); ?> />
-					<span class="eem-inline-toggle-control__track" aria-hidden="true"></span>
-					<span class="eem-inline-toggle-control__label"><?php esc_html_e( 'Show on title card', 'equine-event-manager' ); ?></span>
-				</label>
-				<div class="eem-time-picker-fields eem-time-picker-fields--toggle"<?php echo $is_enabled ? '' : ' hidden'; ?> data-eem-time-toggle-fields="<?php echo esc_attr( $name ); ?>">
-					<select name="en_reservation[<?php echo esc_attr( $name ); ?>][hour]" id="en_<?php echo esc_attr( $name ); ?>_hour">
-						<option value=""><?php esc_html_e( 'Hour', 'equine-event-manager' ); ?></option>
-						<?php for ( $hour = 1; $hour <= 12; $hour++ ) : ?>
-							<option value="<?php echo esc_attr( str_pad( (string) $hour, 2, '0', STR_PAD_LEFT ) ); ?>" <?php selected( $time_parts['hour'], str_pad( (string) $hour, 2, '0', STR_PAD_LEFT ) ); ?>><?php echo esc_html( $hour ); ?></option>
-						<?php endfor; ?>
-					</select>
-					<span class="eem-time-picker-separator" aria-hidden="true">:</span>
-					<select name="en_reservation[<?php echo esc_attr( $name ); ?>][minute]" id="en_<?php echo esc_attr( $name ); ?>_minute">
-						<option value=""><?php esc_html_e( 'Min', 'equine-event-manager' ); ?></option>
-						<?php foreach ( array( '00', '15', '30', '45' ) as $minute ) : ?>
-							<option value="<?php echo esc_attr( $minute ); ?>" <?php selected( $time_parts['minute'], $minute ); ?>><?php echo esc_html( $minute ); ?></option>
-						<?php endforeach; ?>
-					</select>
-					<select name="en_reservation[<?php echo esc_attr( $name ); ?>][meridiem]" id="en_<?php echo esc_attr( $name ); ?>_meridiem">
-						<option value=""><?php esc_html_e( 'AM/PM', 'equine-event-manager' ); ?></option>
-						<option value="AM" <?php selected( $time_parts['meridiem'], 'AM' ); ?>><?php esc_html_e( 'AM', 'equine-event-manager' ); ?></option>
-						<option value="PM" <?php selected( $time_parts['meridiem'], 'PM' ); ?>><?php esc_html_e( 'PM', 'equine-event-manager' ); ?></option>
-					</select>
-				</div>
-				<?php if ( $description ) : ?>
-					<p class="description"<?php echo $is_enabled ? '' : ' hidden'; ?> data-eem-time-toggle-description="<?php echo esc_attr( $name ); ?>"><?php echo esc_html( $description ); ?></p>
-				<?php endif; ?>
-			</td>
-		</tr>
-		<?php
-	}
-
-	/**
 	 * Render a date range field row.
 	 *
 	 * @param string $start_name Start date field name.
@@ -3027,33 +2934,6 @@ class EEM_Reservations_CPT {
 	}
 
 	/**
-	 * Sanitize a submitted time selector value.
-	 *
-	 * @param mixed $value Submitted time value.
-	 * @return string
-	 */
-	private function sanitize_time_value( $value ) {
-		if ( is_array( $value ) ) {
-			$hour     = isset( $value['hour'] ) ? str_pad( sanitize_text_field( wp_unslash( $value['hour'] ) ), 2, '0', STR_PAD_LEFT ) : '';
-			$minute   = isset( $value['minute'] ) ? str_pad( sanitize_text_field( wp_unslash( $value['minute'] ) ), 2, '0', STR_PAD_LEFT ) : '';
-			$meridiem = isset( $value['meridiem'] ) ? strtoupper( sanitize_text_field( wp_unslash( $value['meridiem'] ) ) ) : '';
-
-			if ( '' === $hour || '' === $minute || ! in_array( $meridiem, array( 'AM', 'PM' ), true ) ) {
-				return '';
-			}
-
-			$time_string = $hour . ':' . $minute . ' ' . $meridiem;
-			$timestamp   = strtotime( $time_string );
-
-			return $timestamp ? gmdate( 'g:i A', $timestamp ) : '';
-		}
-
-		$timestamp = strtotime( preg_replace( '/\b(after|before|by)\b/i', '', (string) $value ) );
-
-		return $timestamp ? gmdate( 'g:i A', $timestamp ) : '';
-	}
-
-	/**
 	 * Render a file picker field row.
 	 *
 	 * @param string $name Field name.
@@ -3112,22 +2992,6 @@ class EEM_Reservations_CPT {
 					<p class="description"><?php echo esc_html( $description ); ?></p>
 				<?php endif; ?>
 			</td>
-		</tr>
-		<?php
-	}
-
-	/**
-	 * Render a money field row.
-	 *
-	 * @param string $name Field name.
-	 * @param string $label Field label.
-	 * @param mixed  $value Field value.
-	 */
-	private function render_money_row( $name, $label, $value ) {
-		?>
-		<tr>
-			<th scope="row"><label for="en_<?php echo esc_attr( $name ); ?>"><?php echo esc_html( $label ); ?></label></th>
-			<td><input name="en_reservation[<?php echo esc_attr( $name ); ?>]" id="en_<?php echo esc_attr( $name ); ?>" type="number" min="0" step="0.01" value="<?php echo esc_attr( number_format( (float) $value, 2, '.', '' ) ); ?>" /></td>
 		</tr>
 		<?php
 	}
@@ -3335,25 +3199,6 @@ class EEM_Reservations_CPT {
 				</p>
 			</td>
 		</tr>
-		<?php
-	}
-
-	/**
-	 * Render a reusable copyable shortcode control.
-	 *
-	 * @param WP_Post $post Reservation post.
-	 */
-	private function render_shortcode_control( $post ) {
-		if ( ! $post->ID || 'publish' !== $post->post_status ) {
-			echo '<p>' . esc_html__( 'Publish this reservation to generate the shortcode.', 'equine-event-manager' ) . '</p>';
-			return;
-		}
-
-		$shortcode = $this->get_reservation_shortcode( $post->ID );
-		?>
-		<p><?php esc_html_e( 'This shortcode is generated automatically for this reservation setup.', 'equine-event-manager' ); ?></p>
-		<input type="text" class="widefat code" readonly="readonly" value="<?php echo esc_attr( $shortcode ); ?>" onclick="this.select();" />
-		<p class="description"><?php esc_html_e( 'Click the field to select and copy it.', 'equine-event-manager' ); ?></p>
 		<?php
 	}
 
