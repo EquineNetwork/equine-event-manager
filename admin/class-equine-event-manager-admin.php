@@ -9760,6 +9760,34 @@ class Equine_Event_Manager_Admin {
 	}
 
 	/**
+	 * Redirect to a plugin admin page with a notice payload, then exit.
+	 *
+	 * Empty/null values in $extra_args and the notice/error pair are dropped
+	 * via array_filter so the resulting URL only carries meaningful args.
+	 *
+	 * @param string      $page_slug  Admin page slug (the `page=` query arg).
+	 * @param array       $extra_args Additional query args specific to the destination.
+	 * @param string      $notice     Notice slug.
+	 * @param string|null $error      Optional error text.
+	 * @return void
+	 */
+	private function redirect_with_notice( $page_slug, array $extra_args, $notice, $error = null ) {
+		wp_safe_redirect(
+			add_query_arg(
+				array_filter(
+					array_merge(
+						array( 'page' => $page_slug ),
+						$extra_args,
+						array( 'en_notice' => $notice, 'en_error' => $error )
+					)
+				),
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
 	 * Redirect back to the order details page with a notice payload.
 	 *
 	 * @param string      $order_key Order key.
@@ -9768,79 +9796,38 @@ class Equine_Event_Manager_Admin {
 	 * @return void
 	 */
 	private function redirect_to_order_notice( $order_key, $notice, $error = null ) {
-		wp_safe_redirect(
-			add_query_arg(
-				array_filter(
-					array(
-						'page'      => 'equine-event-manager-order',
-						'order_key' => $order_key,
-						'en_notice' => $notice,
-						'en_error'  => $error,
-					)
-				),
-				admin_url( 'admin.php' )
-			)
+		$this->redirect_with_notice(
+			'equine-event-manager-order',
+			array( 'order_key' => $order_key ),
+			$notice,
+			$error
 		);
-		exit;
-	}
-
-	/**
-	 * Redirect back to the reservation overview page with a notice payload.
-	 *
-	 * @param int         $reservation_id Reservation ID.
-	 * @param string      $notice Notice slug.
-	 * @param string|null $error Optional error text.
-	 * @return void
-	 */
-	private function redirect_to_reservation_overview_notice( $reservation_id, $notice, $error = null ) {
-		wp_safe_redirect(
-			add_query_arg(
-				array_filter(
-					array(
-						'page'           => 'equine-event-manager-reservation-overview',
-						'reservation_id' => absint( $reservation_id ),
-						'en_notice'      => $notice,
-						'en_error'       => $error,
-					)
-				),
-				admin_url( 'admin.php' )
-			)
-		);
-		exit;
 	}
 
 	/**
 	 * Redirect back to the stall chart page with a notice payload.
 	 *
-	 * @param int         $reservation_id Reservation ID.
+	 * @param int         $reservation_id Reservation ID (omitted from the URL when zero).
 	 * @param string      $notice Notice slug.
 	 * @param string|null $error Optional error text.
 	 * @return void
 	 */
 	private function redirect_to_stall_chart_notice( $reservation_id, $notice, $error = null ) {
-		wp_safe_redirect(
-			add_query_arg(
-				array_filter(
-					array(
-						'page'           => 'equine-event-manager-stall-chart',
-						'reservation_id' => $reservation_id > 0 ? absint( $reservation_id ) : null,
-						'en_notice'      => $notice,
-						'en_error'       => $error,
-					)
-				),
-				admin_url( 'admin.php' )
-			)
+		$this->redirect_with_notice(
+			'equine-event-manager-stall-chart',
+			array( 'reservation_id' => $reservation_id > 0 ? absint( $reservation_id ) : null ),
+			$notice,
+			$error
 		);
-		exit;
 	}
 
 	/**
-	 * Redirect to the preferred reservation notice destination.
+	 * Redirect to the reservation overview or stall chart depending on caller preference.
 	 *
 	 * @param int         $reservation_id Reservation ID.
 	 * @param string      $notice Notice slug.
 	 * @param string|null $error Optional error text.
-	 * @param string      $return_page Preferred return page.
+	 * @param string      $return_page Preferred return page (`stall_chart` routes to chart, anything else to overview).
 	 * @return void
 	 */
 	private function redirect_to_reservation_notice_destination( $reservation_id, $notice, $error = null, $return_page = '' ) {
@@ -9848,7 +9835,12 @@ class Equine_Event_Manager_Admin {
 			$this->redirect_to_stall_chart_notice( $reservation_id, $notice, $error );
 		}
 
-		$this->redirect_to_reservation_overview_notice( $reservation_id, $notice, $error );
+		$this->redirect_with_notice(
+			'equine-event-manager-reservation-overview',
+			array( 'reservation_id' => absint( $reservation_id ) ),
+			$notice,
+			$error
+		);
 	}
 
 	/**
