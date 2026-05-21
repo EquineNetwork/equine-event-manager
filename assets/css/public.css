@@ -1,4 +1,4 @@
-.equine-event-manager-event-spotlight {
+.eem-event-spotlight {
 	--eem-surface: #ffffff;
 	--eem-surface-alt: #f7f9fc;
 	--eem-line: #d7e0ea;
@@ -11,18 +11,18 @@
 	--eem-card-gap: 0.875rem;
 	color: var(--eem-text);
 }
-.equine-event-manager-event-grid {
+.eem-event-grid {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 	gap: var(--eem-card-gap);
 	margin: 24px 0;
 }
-.equine-event-manager-event-list {
+.eem-event-list {
 	display: grid;
 	gap: var(--eem-card-gap);
 	margin: 24px 0;
 }
-.equine-event-manager-event-list-empty {
+.eem-event-list-empty {
 	display: grid;
 	gap: 8px;
 	padding: 28px 32px;
@@ -32,35 +32,35 @@
 	box-shadow: 0 18px 38px rgba(23, 32, 51, 0.06);
 	color: #273244;
 }
-.equine-event-manager-event-list-empty strong {
+.eem-event-list-empty strong {
 	color: #172033;
 	font-size: 1.05rem;
 }
-.equine-event-manager-event-list-empty p {
+.eem-event-list-empty p {
 	margin: 0;
 	color: #617086;
 	line-height: 1.6;
 }
-.equine-event-manager-event-directory-page__inner {
+.eem-event-directory-page__inner {
 	max-width: min(1120px, calc(100vw - 32px));
 	margin: 0 auto;
 	padding: 24px 0 48px;
 }
-.equine-event-manager-event-directory-page__title {
+.eem-event-directory-page__title {
 	margin: 0 0 20px;
 	color: #172033;
 	font-size: clamp(1.8rem, 3vw, 2.4rem);
 	line-height: 1.08;
 	letter-spacing: -0.03em;
 }
-.equine-event-manager-event-card,
-.equine-event-manager-event-spotlight {
+.eem-event-card,
+.eem-event-spotlight {
 	border-radius: var(--eem-radius);
 }
-.equine-event-manager-event-card__body {
+.eem-event-card__body {
 	padding: 24px;
 }
-.equine-event-manager-event-card__eyebrow {
+.eem-event-card__eyebrow {
 	font-size: 12px;
 	font-weight: 700;
 	text-transform: uppercase;
@@ -68,28 +68,28 @@
 	color: var(--eem-accent);
 	margin-bottom: 10px;
 }
-.equine-event-manager-event-card__title {
+.eem-event-card__title {
 	margin: 0 0 14px;
 	color: var(--eem-text);
 }
-.equine-event-manager-event-card__meta {
+.eem-event-card__meta {
 	display: grid;
 	gap: 8px;
 	margin-bottom: 16px;
 	color: var(--eem-muted);
 }
-.equine-event-manager-event-card__excerpt,
-.equine-event-manager-event-spotlight__content {
+.eem-event-card__excerpt,
+.eem-event-spotlight__content {
 	color: var(--eem-text);
 	line-height: 1.65;
 }
-.equine-event-manager-event-card__actions {
+.eem-event-card__actions {
 	margin-top: 20px;
 	display: flex;
 	flex-wrap: wrap;
 	gap: var(--eem-card-gap);
 }
-.equine-event-manager-event-card__button {
+.eem-event-card__button {
 	display: inline-block;
 	padding: 12px 18px;
 	border-radius: 999px;
@@ -98,18 +98,18 @@
 	text-decoration: none;
 	font-weight: 700;
 }
-.equine-event-manager-event-card__button.is-secondary {
+.eem-event-card__button.is-secondary {
 	background: transparent;
 	border: 1px solid var(--eem-line);
 	color: var(--eem-accent-dark) !important;
 }
-.equine-event-manager-event-card {
+.eem-event-card {
 	background: linear-gradient(180deg, #ffffff 0%, #f7f9fc 100%);
 	border: 1px solid var(--eem-line);
 	box-shadow: var(--eem-shadow);
 	overflow: hidden;
 }
-.equine-event-manager-event-list-row {
+.eem-event-list-row {
 	display: grid;
 	grid-template-columns: 240px minmax(0, 1fr);
 	gap: var(--eem-card-gap);
@@ -120,7 +120,7 @@
 	background: linear-gradient(180deg, #ffffff 0%, #f8fbfe 100%);
 	box-shadow: 0 18px 38px rgba(23, 32, 51, 0.06);
 }
-.equine-event-manager-event-list-row__media {
+.eem-event-list-row__media {
 	position: relative;
 	min-height: 210px;
 	border-radius: var(--eem-radius);
@@ -128,13 +128,13 @@
 	background: linear-gradient(180deg, #f4f8fc 0%, #e8eef5 100%);
 	border: 1px solid #dbe5ee;
 }
-.equine-event-manager-event-list-row__media img {
+.eem-event-list-row__media img {
 	display: block;
 	width: 100%;
 	height: 100%;
 	object-fit: cover;
 }
-.equine-event-manager-event-list-row__media-badge {
+.eem-event-list-row__media-badge {
 	position: absolute;
 	top: 14px;
 	left: 14px;
@@ -150,18 +150,18 @@
 	line-height: 1;
 	box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
 }
-.equine-event-manager-event-list-row__media-badge-icon {
+.eem-event-list-row__media-badge-icon {
 	display: inline-flex;
 	width: 16px;
 	height: 16px;
 	color: #18212f;
 }
-.equine-event-manager-event-list-row__media-badge-icon svg {
+.eem-event-list-row__media-badge-icon svg {
 	display: block;
 	width: 16px;
 	height: 16px;
 }
-.equine-event-manager-event-list-row__media-placeholder {
+.eem-event-list-row__media-placeholder {
 	display: grid;
 	place-items: center;
 	width: 100%;
@@ -169,49 +169,49 @@
 	padding: 20px;
 	color: #6a7a91;
 }
-.equine-event-manager-event-list-row__media-placeholder-icon {
+.eem-event-list-row__media-placeholder-icon {
 	display: inline-flex;
 	width: 54px;
 	height: 54px;
 }
-.equine-event-manager-event-list-row__media-placeholder-icon svg {
+.eem-event-list-row__media-placeholder-icon svg {
 	display: block;
 	width: 54px;
 	height: 54px;
 }
-.equine-event-manager-event-list-row__content {
+.eem-event-list-row__content {
 	display: grid;
 	gap: 16px;
 	min-width: 0;
 }
-.equine-event-manager-event-list-row__header {
+.eem-event-list-row__header {
 	display: grid;
 	gap: 8px;
 }
-.equine-event-manager-event-list-row__title {
+.eem-event-list-row__title {
 	margin: 0;
 	color: inherit;
 }
-.equine-event-manager-event-list-row__title a {
+.eem-event-list-row__title a {
 	color: #172033;
 	text-decoration: none;
 }
-.equine-event-manager-event-list-row__title a:hover,
-.equine-event-manager-event-list-row__title a:focus {
+.eem-event-list-row__title a:hover,
+.eem-event-list-row__title a:focus {
 	color: var(--eem-accent);
 }
-.equine-event-manager-event-list-row__date {
+.eem-event-list-row__date {
 	margin: 0;
 }
-.equine-event-manager-event-list-row__facts {
+.eem-event-list-row__facts {
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
 	gap: 14px 26px;
 }
-.equine-event-manager-event-list-row__fact {
+.eem-event-list-row__fact {
 	display: block;
 }
-.equine-event-manager-event-list-row__fact-label {
+.eem-event-list-row__fact-label {
 	display: block;
 	margin-bottom: 4px;
 	color: #617086;
@@ -220,21 +220,21 @@
 	letter-spacing: 0.1em;
 	text-transform: uppercase;
 }
-.equine-event-manager-event-list-row__fact-value {
+.eem-event-list-row__fact-value {
 	color: #273244;
 	font-size: 1rem;
 	line-height: 1.5;
 }
-.equine-event-manager-event-list-row__fact-value strong,
-.equine-event-manager-event-list-row__fact-value a {
+.eem-event-list-row__fact-value strong,
+.eem-event-list-row__fact-value a {
 	color: #172033;
 	text-decoration: none;
 }
-.equine-event-manager-event-list-row__fact-value a:hover,
-.equine-event-manager-event-list-row__fact-value a:focus {
+.eem-event-list-row__fact-value a:hover,
+.eem-event-list-row__fact-value a:focus {
 	color: var(--eem-accent);
 }
-.equine-event-manager-event-list-row__footer {
+.eem-event-list-row__footer {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
@@ -242,12 +242,12 @@
 	gap: 14px;
 	padding-top: 8px;
 }
-.equine-event-manager-event-list-row__actions {
+.eem-event-list-row__actions {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 10px;
 }
-.equine-event-manager-event-list-row__view-link {
+.eem-event-list-row__view-link {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -261,20 +261,20 @@
 	text-decoration: none;
 	text-transform: uppercase;
 }
-.equine-event-manager-event-list-row__view-link:hover,
-.equine-event-manager-event-list-row__view-link:focus {
+.eem-event-list-row__view-link:hover,
+.eem-event-list-row__view-link:focus {
 	background: #dde7f1;
 	color: #31445e;
 }
-.equine-event-manager-event-pagination {
+.eem-event-pagination {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
 	gap: 10px;
 	margin-top: 20px;
 }
-.equine-event-manager-event-pagination__link,
-.equine-event-manager-event-pagination__current {
+.eem-event-pagination__link,
+.eem-event-pagination__current {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -290,27 +290,27 @@
 	text-decoration: none;
 	box-shadow: 0 10px 24px rgba(23, 32, 51, 0.05);
 }
-.equine-event-manager-event-pagination__current {
+.eem-event-pagination__current {
 	background: #172033;
 	border-color: #172033;
 	color: #fff;
 }
-.equine-event-manager-event-pagination__link:hover,
-.equine-event-manager-event-pagination__link:focus {
+.eem-event-pagination__link:hover,
+.eem-event-pagination__link:focus {
 	border-color: #172033;
 	color: #172033;
 }
-.equine-event-manager-event-spotlight {
+.eem-event-spotlight {
 	background: transparent;
 	padding: 16px;
 }
-.equine-event-manager-event-hero {
+.eem-event-hero {
 	display: grid;
 	grid-template-columns: minmax(280px, 0.88fr) minmax(0, 1.32fr);
 	gap: var(--eem-card-gap);
 	align-items: stretch;
 }
-.equine-event-manager-event-hero__panel {
+.eem-event-hero__panel {
 	background: var(--eem-surface);
 	border: 1px solid var(--eem-line);
 	border-radius: var(--eem-radius);
@@ -318,14 +318,14 @@
 	overflow: hidden;
 	min-width: 0;
 }
-.equine-event-manager-event-hero__panel--media {
+.eem-event-hero__panel--media {
 	padding: 18px;
 }
-.equine-event-manager-event-media-card {
+.eem-event-media-card {
 	display: grid;
 	gap: var(--eem-card-gap);
 }
-.equine-event-manager-event-media-card__visual {
+.eem-event-media-card__visual {
 	border-radius: var(--eem-radius);
 	background: linear-gradient(180deg, #eef2f7 0%, #dce6f0 100%);
 	border: 1px solid #d6e0ea;
@@ -335,13 +335,13 @@
 	justify-content: center;
 	overflow: hidden;
 }
-.equine-event-manager-event-media-card__visual.has-image img {
+.eem-event-media-card__visual.has-image img {
 	display: block;
 	width: 100%;
 	height: 100%;
 	object-fit: cover;
 }
-.equine-event-manager-event-media-card__placeholder {
+.eem-event-media-card__placeholder {
 	display: grid;
 	gap: 12px;
 	justify-items: center;
@@ -349,7 +349,7 @@
 	text-align: center;
 	color: var(--eem-accent-dark);
 }
-.equine-event-manager-event-media-card__placeholder-icon {
+.eem-event-media-card__placeholder-icon {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -361,15 +361,15 @@
 	font-weight: 800;
 	letter-spacing: 0.08em;
 }
-.equine-event-manager-event-media-card__actions {
+.eem-event-media-card__actions {
 	display: flex;
 }
-.equine-event-manager-event-app-card {
+.eem-event-app-card {
 	padding: 24px 26px;
 	display: grid;
 	gap: var(--eem-card-gap);
 }
-.equine-event-manager-event-app-card__eyebrow {
+.eem-event-app-card__eyebrow {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -383,20 +383,20 @@
 	letter-spacing: 0.16em;
 	text-transform: uppercase;
 }
-.equine-event-manager-event-app-card h3.equine-event-manager-event-app-card__title {
+.eem-event-app-card h3.eem-event-app-card__title {
 	margin: 0;
 	color: inherit;
 }
-.equine-event-manager-event-app-card__date {
+.eem-event-app-card__date {
 	margin: 0;
 	color: inherit;
 }
-.equine-event-manager-event-chip-row {
+.eem-event-chip-row {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 8px;
 }
-.equine-event-manager-event-chip {
+.eem-event-chip {
 	display: inline-flex;
 	align-items: center;
 	padding: 4px 9px;
@@ -408,79 +408,79 @@
 	letter-spacing: 0.04em;
 	text-transform: uppercase;
 }
-.equine-event-manager-event-chip--muted {
+.eem-event-chip--muted {
 	background: #e7eef6;
 	color: #5a6981;
 }
-.equine-event-manager-event-app-card__content {
+.eem-event-app-card__content {
 	font-size: 1rem;
 	line-height: 1.72;
 	color: var(--eem-text);
 	font-family: inherit;
 }
-.equine-event-manager-event-app-card__content,
-.equine-event-manager-event-app-card__content * {
+.eem-event-app-card__content,
+.eem-event-app-card__content * {
 	font-family: inherit;
 }
-.equine-event-manager-event-app-card__content p,
-.equine-event-manager-event-app-card__content ul,
-.equine-event-manager-event-app-card__content ol,
-.equine-event-manager-event-app-card__content li,
-.equine-event-manager-event-app-card__content span,
-.equine-event-manager-event-app-card__content a,
-.equine-event-manager-event-app-card__content strong,
-.equine-event-manager-event-app-card__content em,
-.equine-event-manager-event-app-card__content b,
-.equine-event-manager-event-app-card__content i {
+.eem-event-app-card__content p,
+.eem-event-app-card__content ul,
+.eem-event-app-card__content ol,
+.eem-event-app-card__content li,
+.eem-event-app-card__content span,
+.eem-event-app-card__content a,
+.eem-event-app-card__content strong,
+.eem-event-app-card__content em,
+.eem-event-app-card__content b,
+.eem-event-app-card__content i {
 	font-family: inherit;
 }
-.equine-event-manager-event-app-card__content p:first-child {
+.eem-event-app-card__content p:first-child {
 	margin-top: 0;
 }
-.equine-event-manager-event-info-list {
+.eem-event-info-list {
 	display: grid;
 	gap: var(--eem-card-gap);
 }
-.equine-event-manager-event-info-list__row {
+.eem-event-info-list__row {
 	display: grid;
 	grid-template-columns: 128px minmax(0, 1fr);
 	gap: 14px;
 	padding-top: 16px;
 	border-top: 1px solid #edf1f5;
 }
-.equine-event-manager-event-info-list__label {
+.eem-event-info-list__label {
 	font-size: 0.78rem;
 	font-weight: 800;
 	letter-spacing: 0.14em;
 	text-transform: uppercase;
 	color: var(--eem-muted);
 }
-.equine-event-manager-event-info-list__value {
+.eem-event-info-list__value {
 	display: grid;
 	gap: 6px;
 	min-width: 0;
 }
-.equine-event-manager-event-info-list__heading {
+.eem-event-info-list__heading {
 	margin: 0;
 	color: var(--eem-text);
 }
-.equine-event-manager-event-info-list__value span,
-.equine-event-manager-event-info-list__value a {
+.eem-event-info-list__value span,
+.eem-event-info-list__value a {
 	color: var(--eem-text);
 	text-decoration: none;
 	overflow-wrap: anywhere;
 }
-.equine-event-manager-event-info-list__value a:hover,
-.equine-event-manager-event-info-list__value a:focus {
+.eem-event-info-list__value a:hover,
+.eem-event-info-list__value a:focus {
 	color: var(--eem-accent);
 }
-.equine-event-manager-event-app-card__actions {
+.eem-event-app-card__actions {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 12px;
 	margin-top: 18px;
 }
-.equine-event-manager-event-button {
+.eem-event-button {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -494,21 +494,21 @@
 	letter-spacing: 0.02em;
 	box-shadow: 0 10px 24px rgba(18, 25, 36, 0.18);
 }
-.equine-event-manager-event-button--ghost {
+.eem-event-button--ghost {
 	background: #f1f5f9;
 	color: var(--eem-accent-dark) !important;
 	box-shadow: none;
 	border: 1px solid var(--eem-line);
 }
-.equine-event-manager-event-button--dark {
+.eem-event-button--dark {
 	width: 100%;
 	background: #141a23;
 }
-.equine-event-manager-event-button:hover,
-.equine-event-manager-event-button:focus {
+.eem-event-button:hover,
+.eem-event-button:focus {
 	filter: brightness(1.03);
 }
-.equine-event-manager-event-app-card__footer {
+.eem-event-app-card__footer {
 	display: grid;
 	gap: 10px;
 	padding-top: 16px;
@@ -519,7 +519,7 @@
 	letter-spacing: 0.12em;
 	text-transform: uppercase;
 }
-.equine-event-manager-event-spotlight__reservation {
+.eem-event-spotlight__reservation {
 	margin-top: 18px;
 	background: var(--eem-surface);
 	border: 1px solid var(--eem-line);
@@ -527,41 +527,41 @@
 	box-shadow: var(--eem-shadow);
 	padding: 18px;
 }
-.equine-event-manager-event-spotlight__reservation .en-event-details-card {
+.eem-event-spotlight__reservation .en-event-details-card {
 	box-shadow: none;
 	border: 1px solid #e5ebf1;
 }
-.equine-event-manager-event-spotlight__reservation .en-reservation-form-wrap {
+.eem-event-spotlight__reservation .en-reservation-form-wrap {
 	margin: 0;
 }
-.equine-event-manager-event-spotlight__reservation .en-event-details-card,
-.equine-event-manager-event-spotlight__reservation .en-reservation-section,
-.equine-event-manager-event-spotlight__reservation .en-reservation-summary {
+.eem-event-spotlight__reservation .en-event-details-card,
+.eem-event-spotlight__reservation .en-reservation-section,
+.eem-event-spotlight__reservation .en-reservation-summary {
 	border-radius: var(--eem-radius);
 }
 @media (max-width: 960px) {
-	.equine-event-manager-event-list-row {
+	.eem-event-list-row {
 		grid-template-columns: 1fr;
 	}
-	.equine-event-manager-event-list-row__media {
+	.eem-event-list-row__media {
 		min-height: 260px;
 	}
-	.equine-event-manager-event-list-row__facts {
+	.eem-event-list-row__facts {
 		grid-template-columns: 1fr;
 	}
-	.equine-event-manager-event-list-row__footer {
+	.eem-event-list-row__footer {
 		align-items: stretch;
 	}
-	.equine-event-manager-event-list-row__actions {
+	.eem-event-list-row__actions {
 		width: 100%;
 	}
-	.equine-event-manager-event-hero {
+	.eem-event-hero {
 		grid-template-columns: 1fr;
 	}
-	.equine-event-manager-event-info-list__row {
+	.eem-event-info-list__row {
 		grid-template-columns: 1fr;
 	}
-	.equine-event-manager-event-media-card__visual {
+	.eem-event-media-card__visual {
 		min-height: 320px;
 	}
 	.equine-event-manager-calendar__weekdays,
@@ -570,31 +570,31 @@
 	}
 }
 @media (max-width: 640px) {
-	.equine-event-manager-event-list-row {
+	.eem-event-list-row {
 		padding: 14px;
 		border-radius: var(--eem-radius);
 	}
-	.equine-event-manager-event-list-row__media {
+	.eem-event-list-row__media {
 		min-height: 220px;
 		border-radius: var(--eem-radius);
 	}
-	.equine-event-manager-event-list-row__media-badge {
+	.eem-event-list-row__media-badge {
 		top: 10px;
 		left: 10px;
 		padding: 8px 12px;
 		font-size: 0.8rem;
 	}
-	.equine-event-manager-event-list-row__title {
+	.eem-event-list-row__title {
 		font-size: 1.35rem;
 	}
-	.equine-event-manager-event-list-row__actions,
-	.equine-event-manager-event-pagination {
+	.eem-event-list-row__actions,
+	.eem-event-pagination {
 		width: 100%;
 	}
-	.equine-event-manager-event-pagination__link,
-	.equine-event-manager-event-pagination__current,
-	.equine-event-manager-event-list-row__actions .equine-event-manager-event-card__button,
-	.equine-event-manager-event-list-row__actions .equine-event-manager-event-list-row__view-link {
+	.eem-event-pagination__link,
+	.eem-event-pagination__current,
+	.eem-event-list-row__actions .eem-event-card__button,
+	.eem-event-list-row__actions .eem-event-list-row__view-link {
 		flex: 1 1 auto;
 	}
 }
@@ -670,11 +670,11 @@
 	background: #172033;
 	color: #fff;
 }
-.equine-event-manager-event-list-row,
-.equine-event-manager-event-list-row__media,
-.equine-event-manager-event-hero__panel,
-.equine-event-manager-event-media-card__visual,
-.equine-event-manager-event-spotlight__reservation,
+.eem-event-list-row,
+.eem-event-list-row__media,
+.eem-event-hero__panel,
+.eem-event-media-card__visual,
+.eem-event-spotlight__reservation,
 .equine-event-manager-calendar__weekday,
 .equine-event-manager-calendar__day,
 .equine-event-manager-calendar__event {

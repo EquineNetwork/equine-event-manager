@@ -1092,9 +1092,9 @@ class EEM_Events {
 			get_header();
 		}
 
-		echo '<main class="equine-event-manager-virtual-event-page equine-event-manager-event-directory-page">';
-		echo '<div class="equine-event-manager-event-directory-page__inner">';
-		echo '<h1 class="equine-event-manager-event-directory-page__title">' . esc_html( $page_title ) . '</h1>';
+		echo '<main class="equine-event-manager-virtual-event-page eem-event-directory-page">';
+		echo '<div class="eem-event-directory-page__inner">';
+		echo '<h1 class="eem-event-directory-page__title">' . esc_html( $page_title ) . '</h1>';
 		echo wp_kses_post(
 			$this->render_events_shortcode(
 				array(
@@ -1340,62 +1340,62 @@ class EEM_Events {
 			$location_snapshot = __( 'One partner selected', 'equine-event-manager' );
 		}
 		?>
-		<div class="equine-event-manager-event-editor-card">
-			<div class="equine-event-manager-event-editor-card__intro">
+		<div class="eem-event-editor-card">
+			<div class="eem-event-editor-card__intro">
 				<div>
-					<span class="equine-event-manager-event-editor-card__eyebrow"><?php esc_html_e( 'Event Setup', 'equine-event-manager' ); ?></span>
+					<span class="eem-event-editor-card__eyebrow"><?php esc_html_e( 'Event Setup', 'equine-event-manager' ); ?></span>
 					<h3><?php esc_html_e( 'Build The Reservation-Facing Event', 'equine-event-manager' ); ?></h3>
 					<p><?php esc_html_e( 'Use this area to set the event dates, venue, producer, action button, and flyer so the event page feels like a polished reservation experience instead of a standard post.', 'equine-event-manager' ); ?></p>
-					<div class="equine-event-manager-event-editor-card__status-row">
-						<span class="equine-event-manager-event-editor-card__status-pill<?php echo $reservation ? ' is-linked' : ' is-unlinked'; ?>">
+					<div class="eem-event-editor-card__status-row">
+						<span class="eem-event-editor-card__status-pill<?php echo $reservation ? ' is-linked' : ' is-unlinked'; ?>">
 							<?php echo esc_html( $reservation ? __( 'Linked Reservation Ready', 'equine-event-manager' ) : __( 'Link a Reservation', 'equine-event-manager' ) ); ?>
 						</span>
 						<?php if ( $featured ) : ?>
-							<span class="equine-event-manager-event-editor-card__status-pill is-featured"><?php esc_html_e( 'Featured Event', 'equine-event-manager' ); ?></span>
+							<span class="eem-event-editor-card__status-pill is-featured"><?php esc_html_e( 'Featured Event', 'equine-event-manager' ); ?></span>
 						<?php endif; ?>
 						<?php if ( $featured_image_id ) : ?>
-							<span class="equine-event-manager-event-editor-card__status-pill is-media"><?php esc_html_e( 'Featured Image Ready', 'equine-event-manager' ); ?></span>
+							<span class="eem-event-editor-card__status-pill is-media"><?php esc_html_e( 'Featured Image Ready', 'equine-event-manager' ); ?></span>
 						<?php endif; ?>
 						<?php if ( $flyer_file_id ) : ?>
-							<span class="equine-event-manager-event-editor-card__status-pill is-flyer"><?php esc_html_e( 'Flyer Attached', 'equine-event-manager' ); ?></span>
+							<span class="eem-event-editor-card__status-pill is-flyer"><?php esc_html_e( 'Flyer Attached', 'equine-event-manager' ); ?></span>
 						<?php endif; ?>
-						<span class="equine-event-manager-event-editor-card__status-pill<?php echo $has_description ? ' is-ready' : ' is-unlinked'; ?>">
+						<span class="eem-event-editor-card__status-pill<?php echo $has_description ? ' is-ready' : ' is-unlinked'; ?>">
 							<?php echo esc_html( $has_description ? __( 'Description Ready', 'equine-event-manager' ) : __( 'Add Description', 'equine-event-manager' ) ); ?>
 						</span>
 					</div>
-					<div class="equine-event-manager-event-editor-card__actions">
+					<div class="eem-event-editor-card__actions">
 						<?php if ( $event_url ) : ?>
-							<a class="equine-event-manager-event-editor-card__action equine-event-manager-event-editor-card__action--primary" href="<?php echo esc_url( $event_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Preview Event Page', 'equine-event-manager' ); ?></a>
+							<a class="eem-event-editor-card__action eem-event-editor-card__action--primary" href="<?php echo esc_url( $event_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Preview Event Page', 'equine-event-manager' ); ?></a>
 						<?php endif; ?>
 						<?php if ( $reservation_url ) : ?>
-							<a class="equine-event-manager-event-editor-card__action" href="<?php echo esc_url( $reservation_url ); ?>"><?php esc_html_e( 'Edit Linked Reservation', 'equine-event-manager' ); ?></a>
+							<a class="eem-event-editor-card__action" href="<?php echo esc_url( $reservation_url ); ?>"><?php esc_html_e( 'Edit Linked Reservation', 'equine-event-manager' ); ?></a>
 						<?php endif; ?>
 						<?php if ( $venue_edit_url ) : ?>
-							<a class="equine-event-manager-event-editor-card__action" href="<?php echo esc_url( $venue_edit_url ); ?>"><?php esc_html_e( 'Manage Venue', 'equine-event-manager' ); ?></a>
+							<a class="eem-event-editor-card__action" href="<?php echo esc_url( $venue_edit_url ); ?>"><?php esc_html_e( 'Manage Venue', 'equine-event-manager' ); ?></a>
 						<?php endif; ?>
 						<?php if ( $producer_edit_url ) : ?>
-							<a class="equine-event-manager-event-editor-card__action" href="<?php echo esc_url( $producer_edit_url ); ?>"><?php esc_html_e( 'Manage Producer', 'equine-event-manager' ); ?></a>
+							<a class="eem-event-editor-card__action" href="<?php echo esc_url( $producer_edit_url ); ?>"><?php esc_html_e( 'Manage Producer', 'equine-event-manager' ); ?></a>
 						<?php endif; ?>
 						<?php if ( $flyer_url ) : ?>
-							<a class="equine-event-manager-event-editor-card__action" href="<?php echo esc_url( $flyer_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Open Flyer PDF', 'equine-event-manager' ); ?></a>
+							<a class="eem-event-editor-card__action" href="<?php echo esc_url( $flyer_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Open Flyer PDF', 'equine-event-manager' ); ?></a>
 						<?php endif; ?>
 					</div>
 				</div>
-				<div class="equine-event-manager-event-editor-card__meta">
-					<span class="equine-event-manager-event-editor-card__meta-label"><?php esc_html_e( 'Linked Reservation', 'equine-event-manager' ); ?></span>
+				<div class="eem-event-editor-card__meta">
+					<span class="eem-event-editor-card__meta-label"><?php esc_html_e( 'Linked Reservation', 'equine-event-manager' ); ?></span>
 					<strong><?php echo esc_html( $reservation ? $reservation->post_title : __( 'Not linked yet', 'equine-event-manager' ) ); ?></strong>
-					<span class="equine-event-manager-event-editor-card__meta-label"><?php esc_html_e( 'Event Dates', 'equine-event-manager' ); ?></span>
+					<span class="eem-event-editor-card__meta-label"><?php esc_html_e( 'Event Dates', 'equine-event-manager' ); ?></span>
 					<strong><?php echo esc_html( $date_snapshot ); ?></strong>
-					<span class="equine-event-manager-event-editor-card__meta-label"><?php esc_html_e( 'Location Stack', 'equine-event-manager' ); ?></span>
+					<span class="eem-event-editor-card__meta-label"><?php esc_html_e( 'Location Stack', 'equine-event-manager' ); ?></span>
 					<strong><?php echo esc_html( $location_snapshot ); ?></strong>
 				</div>
 			</div>
 
-			<div class="equine-event-manager-event-editor-card__summary-grid">
-				<div class="equine-event-manager-event-editor-card__summary-card">
-					<span class="equine-event-manager-event-editor-card__summary-label"><?php esc_html_e( 'Content', 'equine-event-manager' ); ?></span>
-					<strong class="equine-event-manager-event-editor-card__summary-value"><?php echo esc_html( $has_description ? __( 'Description ready', 'equine-event-manager' ) : __( 'Needs description', 'equine-event-manager' ) ); ?></strong>
-					<span class="equine-event-manager-event-editor-card__summary-note">
+			<div class="eem-event-editor-card__summary-grid">
+				<div class="eem-event-editor-card__summary-card">
+					<span class="eem-event-editor-card__summary-label"><?php esc_html_e( 'Content', 'equine-event-manager' ); ?></span>
+					<strong class="eem-event-editor-card__summary-value"><?php echo esc_html( $has_description ? __( 'Description ready', 'equine-event-manager' ) : __( 'Needs description', 'equine-event-manager' ) ); ?></strong>
+					<span class="eem-event-editor-card__summary-note">
 						<?php
 						echo esc_html(
 							sprintf(
@@ -1407,45 +1407,45 @@ class EEM_Events {
 						?>
 					</span>
 				</div>
-				<div class="equine-event-manager-event-editor-card__summary-card">
-					<span class="equine-event-manager-event-editor-card__summary-label"><?php esc_html_e( 'Media', 'equine-event-manager' ); ?></span>
-					<strong class="equine-event-manager-event-editor-card__summary-value"><?php echo esc_html( $featured_image_id ? __( 'Featured image ready', 'equine-event-manager' ) : __( 'Add featured image', 'equine-event-manager' ) ); ?></strong>
-					<span class="equine-event-manager-event-editor-card__summary-note"><?php echo esc_html( $flyer_file_id ? __( 'Flyer PDF is attached', 'equine-event-manager' ) : __( 'Flyer PDF is optional', 'equine-event-manager' ) ); ?></span>
+				<div class="eem-event-editor-card__summary-card">
+					<span class="eem-event-editor-card__summary-label"><?php esc_html_e( 'Media', 'equine-event-manager' ); ?></span>
+					<strong class="eem-event-editor-card__summary-value"><?php echo esc_html( $featured_image_id ? __( 'Featured image ready', 'equine-event-manager' ) : __( 'Add featured image', 'equine-event-manager' ) ); ?></strong>
+					<span class="eem-event-editor-card__summary-note"><?php echo esc_html( $flyer_file_id ? __( 'Flyer PDF is attached', 'equine-event-manager' ) : __( 'Flyer PDF is optional', 'equine-event-manager' ) ); ?></span>
 				</div>
-				<div class="equine-event-manager-event-editor-card__summary-card">
-					<span class="equine-event-manager-event-editor-card__summary-label"><?php esc_html_e( 'Taxonomies', 'equine-event-manager' ); ?></span>
-					<strong class="equine-event-manager-event-editor-card__summary-value"><?php echo esc_html( sprintf( _n( '%d category', '%d categories', $category_count, 'equine-event-manager' ), $category_count ) ); ?></strong>
-					<span class="equine-event-manager-event-editor-card__summary-note"><?php echo esc_html( sprintf( _n( '%d tag attached', '%d tags attached', $tag_count, 'equine-event-manager' ), $tag_count ) ); ?></span>
+				<div class="eem-event-editor-card__summary-card">
+					<span class="eem-event-editor-card__summary-label"><?php esc_html_e( 'Taxonomies', 'equine-event-manager' ); ?></span>
+					<strong class="eem-event-editor-card__summary-value"><?php echo esc_html( sprintf( _n( '%d category', '%d categories', $category_count, 'equine-event-manager' ), $category_count ) ); ?></strong>
+					<span class="eem-event-editor-card__summary-note"><?php echo esc_html( sprintf( _n( '%d tag attached', '%d tags attached', $tag_count, 'equine-event-manager' ), $tag_count ) ); ?></span>
 				</div>
-				<div class="equine-event-manager-event-editor-card__summary-card">
-					<span class="equine-event-manager-event-editor-card__summary-label"><?php esc_html_e( 'Connections', 'equine-event-manager' ); ?></span>
-					<strong class="equine-event-manager-event-editor-card__summary-value"><?php echo esc_html( $reservation ? __( 'Reservation linked', 'equine-event-manager' ) : __( 'Reservation optional', 'equine-event-manager' ) ); ?></strong>
-					<span class="equine-event-manager-event-editor-card__summary-note"><?php echo esc_html( $location_snapshot ); ?></span>
+				<div class="eem-event-editor-card__summary-card">
+					<span class="eem-event-editor-card__summary-label"><?php esc_html_e( 'Connections', 'equine-event-manager' ); ?></span>
+					<strong class="eem-event-editor-card__summary-value"><?php echo esc_html( $reservation ? __( 'Reservation linked', 'equine-event-manager' ) : __( 'Reservation optional', 'equine-event-manager' ) ); ?></strong>
+					<span class="eem-event-editor-card__summary-note"><?php echo esc_html( $location_snapshot ); ?></span>
 				</div>
 			</div>
 
-			<div class="equine-event-manager-event-editor-card__quicklinks">
-				<a class="equine-event-manager-event-editor-card__quicklink" href="#titlediv"><?php esc_html_e( 'Jump To Title', 'equine-event-manager' ); ?></a>
-				<a class="equine-event-manager-event-editor-card__quicklink" href="#postdivrich"><?php esc_html_e( 'Jump To Description', 'equine-event-manager' ); ?></a>
-				<a class="equine-event-manager-event-editor-card__quicklink" href="#postimagediv"><?php esc_html_e( 'Open Featured Image', 'equine-event-manager' ); ?></a>
-				<a class="equine-event-manager-event-editor-card__quicklink" href="#en_event_categorydiv"><?php esc_html_e( 'Open Categories', 'equine-event-manager' ); ?></a>
-				<a class="equine-event-manager-event-editor-card__quicklink" href="#tagsdiv-en_event_tag"><?php esc_html_e( 'Open Tags', 'equine-event-manager' ); ?></a>
-				<a class="equine-event-manager-event-editor-card__quicklink" href="#submitdiv"><?php esc_html_e( 'Open Publish Tools', 'equine-event-manager' ); ?></a>
+			<div class="eem-event-editor-card__quicklinks">
+				<a class="eem-event-editor-card__quicklink" href="#titlediv"><?php esc_html_e( 'Jump To Title', 'equine-event-manager' ); ?></a>
+				<a class="eem-event-editor-card__quicklink" href="#postdivrich"><?php esc_html_e( 'Jump To Description', 'equine-event-manager' ); ?></a>
+				<a class="eem-event-editor-card__quicklink" href="#postimagediv"><?php esc_html_e( 'Open Featured Image', 'equine-event-manager' ); ?></a>
+				<a class="eem-event-editor-card__quicklink" href="#en_event_categorydiv"><?php esc_html_e( 'Open Categories', 'equine-event-manager' ); ?></a>
+				<a class="eem-event-editor-card__quicklink" href="#tagsdiv-en_event_tag"><?php esc_html_e( 'Open Tags', 'equine-event-manager' ); ?></a>
+				<a class="eem-event-editor-card__quicklink" href="#submitdiv"><?php esc_html_e( 'Open Publish Tools', 'equine-event-manager' ); ?></a>
 			</div>
 
-			<div class="equine-event-manager-event-editor-grid">
-				<label class="equine-event-manager-event-editor-field">
-					<span class="equine-event-manager-event-editor-field__label"><?php esc_html_e( 'Start Date', 'equine-event-manager' ); ?></span>
+			<div class="eem-event-editor-grid">
+				<label class="eem-event-editor-field">
+					<span class="eem-event-editor-field__label"><?php esc_html_e( 'Start Date', 'equine-event-manager' ); ?></span>
 					<input type="date" id="equine_event_manager_event_start_date" name="equine_event_manager_event_start_date" value="<?php echo esc_attr( $start_date ); ?>" />
 				</label>
 
-				<label class="equine-event-manager-event-editor-field">
-					<span class="equine-event-manager-event-editor-field__label"><?php esc_html_e( 'End Date', 'equine-event-manager' ); ?></span>
+				<label class="eem-event-editor-field">
+					<span class="eem-event-editor-field__label"><?php esc_html_e( 'End Date', 'equine-event-manager' ); ?></span>
 					<input type="date" id="equine_event_manager_event_end_date" name="equine_event_manager_event_end_date" value="<?php echo esc_attr( $end_date ); ?>" />
 				</label>
 
-				<label class="equine-event-manager-event-editor-field">
-					<span class="equine-event-manager-event-editor-field__label"><?php esc_html_e( 'Venue', 'equine-event-manager' ); ?></span>
+				<label class="eem-event-editor-field">
+					<span class="eem-event-editor-field__label"><?php esc_html_e( 'Venue', 'equine-event-manager' ); ?></span>
 					<select id="equine_event_manager_event_venue_id" name="equine_event_manager_event_venue_id">
 						<option value="0"><?php esc_html_e( 'Select a venue', 'equine-event-manager' ); ?></option>
 						<?php foreach ( $venues as $venue ) : ?>
@@ -1454,8 +1454,8 @@ class EEM_Events {
 					</select>
 				</label>
 
-				<label class="equine-event-manager-event-editor-field">
-					<span class="equine-event-manager-event-editor-field__label"><?php esc_html_e( 'Producer', 'equine-event-manager' ); ?></span>
+				<label class="eem-event-editor-field">
+					<span class="eem-event-editor-field__label"><?php esc_html_e( 'Producer', 'equine-event-manager' ); ?></span>
 					<select id="equine_event_manager_event_producer_id" name="equine_event_manager_event_producer_id">
 						<option value="0"><?php esc_html_e( 'Select a producer', 'equine-event-manager' ); ?></option>
 						<?php foreach ( $producers as $producer ) : ?>
@@ -1464,19 +1464,19 @@ class EEM_Events {
 					</select>
 				</label>
 
-				<label class="equine-event-manager-event-editor-field equine-event-manager-event-editor-field--full">
-					<span class="equine-event-manager-event-editor-field__label"><?php esc_html_e( 'Location Override', 'equine-event-manager' ); ?></span>
+				<label class="eem-event-editor-field eem-event-editor-field--full">
+					<span class="eem-event-editor-field__label"><?php esc_html_e( 'Location Override', 'equine-event-manager' ); ?></span>
 					<input type="text" class="regular-text" id="equine_event_manager_event_location_label" name="equine_event_manager_event_location_label" value="<?php echo esc_attr( $location_label ); ?>" />
-					<span class="equine-event-manager-event-editor-field__description"><?php esc_html_e( 'Optional location label shown on event cards if you want something more specific than the venue city/state.', 'equine-event-manager' ); ?></span>
+					<span class="eem-event-editor-field__description"><?php esc_html_e( 'Optional location label shown on event cards if you want something more specific than the venue city/state.', 'equine-event-manager' ); ?></span>
 				</label>
 
-				<label class="equine-event-manager-event-editor-field">
-					<span class="equine-event-manager-event-editor-field__label"><?php esc_html_e( 'Button Label', 'equine-event-manager' ); ?></span>
+				<label class="eem-event-editor-field">
+					<span class="eem-event-editor-field__label"><?php esc_html_e( 'Button Label', 'equine-event-manager' ); ?></span>
 					<input type="text" class="regular-text" id="equine_event_manager_event_cta_label" name="equine_event_manager_event_cta_label" value="<?php echo esc_attr( $cta_label ? $cta_label : __( 'Reserve Now', 'equine-event-manager' ) ); ?>" />
 				</label>
 
-				<div class="equine-event-manager-event-editor-field equine-event-manager-event-editor-field--full">
-					<span class="equine-event-manager-event-editor-field__label"><?php esc_html_e( 'Event Flyer PDF', 'equine-event-manager' ); ?></span>
+				<div class="eem-event-editor-field eem-event-editor-field--full">
+					<span class="eem-event-editor-field__label"><?php esc_html_e( 'Event Flyer PDF', 'equine-event-manager' ); ?></span>
 					<div>
 						<input type="hidden" id="equine_event_manager_event_flyer_file_id" name="equine_event_manager_event_flyer_file_id" value="<?php echo esc_attr( $flyer_file_id ); ?>" />
 						<input type="text" class="regular-text" value="<?php echo esc_attr( $flyer_label ); ?>" readonly="readonly" placeholder="<?php esc_attr_e( 'No file selected', 'equine-event-manager' ); ?>" />
@@ -1488,14 +1488,14 @@ class EEM_Events {
 							<a href="#" target="_blank" rel="noopener noreferrer" hidden><?php esc_html_e( 'View file', 'equine-event-manager' ); ?></a>
 						<?php endif; ?>
 					</div>
-					<span class="equine-event-manager-event-editor-field__description"><?php esc_html_e( 'Upload the event flyer PDF customers should be able to open from the event page.', 'equine-event-manager' ); ?></span>
+					<span class="eem-event-editor-field__description"><?php esc_html_e( 'Upload the event flyer PDF customers should be able to open from the event page.', 'equine-event-manager' ); ?></span>
 				</div>
 
-				<div class="equine-event-manager-event-editor-field equine-event-manager-event-editor-field--full">
-					<label class="equine-event-manager-event-editor-toggle">
-						<span class="equine-event-manager-event-editor-toggle__copy">
-							<span class="equine-event-manager-event-editor-field__label"><?php esc_html_e( 'Featured Event', 'equine-event-manager' ); ?></span>
-							<span class="equine-event-manager-event-editor-field__description"><?php esc_html_e( 'Use this event in featured widgets and shortcodes.', 'equine-event-manager' ); ?></span>
+				<div class="eem-event-editor-field eem-event-editor-field--full">
+					<label class="eem-event-editor-toggle">
+						<span class="eem-event-editor-toggle__copy">
+							<span class="eem-event-editor-field__label"><?php esc_html_e( 'Featured Event', 'equine-event-manager' ); ?></span>
+							<span class="eem-event-editor-field__description"><?php esc_html_e( 'Use this event in featured widgets and shortcodes.', 'equine-event-manager' ); ?></span>
 						</span>
 						<span class="en-inline-toggle-control">
 							<input type="checkbox" name="equine_event_manager_event_featured" value="1" <?php checked( $featured, 1 ); ?> />
@@ -1529,99 +1529,99 @@ class EEM_Events {
 		$has_address        = '' !== $address_1 || '' !== $address_2;
 		$website_url        = $website ? esc_url( $website ) : '';
 		?>
-		<div class="equine-event-manager-event-editor-card">
-			<div class="equine-event-manager-event-editor-card__intro">
+		<div class="eem-event-editor-card">
+			<div class="eem-event-editor-card__intro">
 				<div>
-					<span class="equine-event-manager-event-editor-card__eyebrow"><?php esc_html_e( 'Venue Setup', 'equine-event-manager' ); ?></span>
+					<span class="eem-event-editor-card__eyebrow"><?php esc_html_e( 'Venue Setup', 'equine-event-manager' ); ?></span>
 					<h3><?php esc_html_e( 'Shape The Location Experience', 'equine-event-manager' ); ?></h3>
 					<p><?php esc_html_e( 'Set the venue address, phone, and website so linked events inherit a complete destination for exhibitors and customers.', 'equine-event-manager' ); ?></p>
-					<div class="equine-event-manager-event-editor-card__status-row">
-						<span class="equine-event-manager-event-editor-card__status-pill<?php echo $has_address ? ' is-ready' : ' is-unlinked'; ?>">
+					<div class="eem-event-editor-card__status-row">
+						<span class="eem-event-editor-card__status-pill<?php echo $has_address ? ' is-ready' : ' is-unlinked'; ?>">
 							<?php echo esc_html( $has_address ? __( 'Address Ready', 'equine-event-manager' ) : __( 'Add Venue Address', 'equine-event-manager' ) ); ?>
 						</span>
-						<span class="equine-event-manager-event-editor-card__status-pill<?php echo $phone ? ' is-ready' : ' is-unlinked'; ?>">
+						<span class="eem-event-editor-card__status-pill<?php echo $phone ? ' is-ready' : ' is-unlinked'; ?>">
 							<?php echo esc_html( $phone ? __( 'Phone Ready', 'equine-event-manager' ) : __( 'Add Venue Phone', 'equine-event-manager' ) ); ?>
 						</span>
 						<?php if ( $website ) : ?>
-							<span class="equine-event-manager-event-editor-card__status-pill is-media"><?php esc_html_e( 'Website Linked', 'equine-event-manager' ); ?></span>
+							<span class="eem-event-editor-card__status-pill is-media"><?php esc_html_e( 'Website Linked', 'equine-event-manager' ); ?></span>
 						<?php endif; ?>
 					</div>
-					<div class="equine-event-manager-event-editor-card__actions">
-						<a class="equine-event-manager-event-editor-card__action" href="#titlediv"><?php esc_html_e( 'Jump To Title', 'equine-event-manager' ); ?></a>
-						<a class="equine-event-manager-event-editor-card__action" href="#postdivrich"><?php esc_html_e( 'Jump To Description', 'equine-event-manager' ); ?></a>
+					<div class="eem-event-editor-card__actions">
+						<a class="eem-event-editor-card__action" href="#titlediv"><?php esc_html_e( 'Jump To Title', 'equine-event-manager' ); ?></a>
+						<a class="eem-event-editor-card__action" href="#postdivrich"><?php esc_html_e( 'Jump To Description', 'equine-event-manager' ); ?></a>
 						<?php if ( $website_url ) : ?>
-							<a class="equine-event-manager-event-editor-card__action equine-event-manager-event-editor-card__action--primary" href="<?php echo esc_url( $website_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Open Venue Website', 'equine-event-manager' ); ?></a>
+							<a class="eem-event-editor-card__action eem-event-editor-card__action--primary" href="<?php echo esc_url( $website_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Open Venue Website', 'equine-event-manager' ); ?></a>
 						<?php endif; ?>
 					</div>
 				</div>
-				<div class="equine-event-manager-event-editor-card__meta">
-					<span class="equine-event-manager-event-editor-card__meta-label"><?php esc_html_e( 'Linked Events', 'equine-event-manager' ); ?></span>
+				<div class="eem-event-editor-card__meta">
+					<span class="eem-event-editor-card__meta-label"><?php esc_html_e( 'Linked Events', 'equine-event-manager' ); ?></span>
 					<strong><?php echo esc_html( sprintf( _n( '%d event uses this venue', '%d events use this venue', $linked_event_count, 'equine-event-manager' ), $linked_event_count ) ); ?></strong>
-					<span class="equine-event-manager-event-editor-card__meta-label"><?php esc_html_e( 'Location Snapshot', 'equine-event-manager' ); ?></span>
+					<span class="eem-event-editor-card__meta-label"><?php esc_html_e( 'Location Snapshot', 'equine-event-manager' ); ?></span>
 					<strong><?php echo esc_html( $location_label ? $location_label : __( 'Add city and state', 'equine-event-manager' ) ); ?></strong>
-					<span class="equine-event-manager-event-editor-card__meta-label"><?php esc_html_e( 'Contact Status', 'equine-event-manager' ); ?></span>
+					<span class="eem-event-editor-card__meta-label"><?php esc_html_e( 'Contact Status', 'equine-event-manager' ); ?></span>
 					<strong><?php echo esc_html( $phone ? __( 'Venue phone available', 'equine-event-manager' ) : __( 'Add venue phone', 'equine-event-manager' ) ); ?></strong>
 				</div>
 			</div>
 
-			<div class="equine-event-manager-event-editor-card__summary-grid">
-				<div class="equine-event-manager-event-editor-card__summary-card">
-					<span class="equine-event-manager-event-editor-card__summary-label"><?php esc_html_e( 'Address', 'equine-event-manager' ); ?></span>
-					<strong class="equine-event-manager-event-editor-card__summary-value"><?php echo esc_html( $has_address ? __( 'Physical address set', 'equine-event-manager' ) : __( 'Needs street address', 'equine-event-manager' ) ); ?></strong>
-					<span class="equine-event-manager-event-editor-card__summary-note"><?php echo esc_html( $address_1 ? $address_1 : __( 'Add address line 1 to complete the venue profile.', 'equine-event-manager' ) ); ?></span>
+			<div class="eem-event-editor-card__summary-grid">
+				<div class="eem-event-editor-card__summary-card">
+					<span class="eem-event-editor-card__summary-label"><?php esc_html_e( 'Address', 'equine-event-manager' ); ?></span>
+					<strong class="eem-event-editor-card__summary-value"><?php echo esc_html( $has_address ? __( 'Physical address set', 'equine-event-manager' ) : __( 'Needs street address', 'equine-event-manager' ) ); ?></strong>
+					<span class="eem-event-editor-card__summary-note"><?php echo esc_html( $address_1 ? $address_1 : __( 'Add address line 1 to complete the venue profile.', 'equine-event-manager' ) ); ?></span>
 				</div>
-				<div class="equine-event-manager-event-editor-card__summary-card">
-					<span class="equine-event-manager-event-editor-card__summary-label"><?php esc_html_e( 'Region', 'equine-event-manager' ); ?></span>
-					<strong class="equine-event-manager-event-editor-card__summary-value"><?php echo esc_html( $location_label ? __( 'Location ready', 'equine-event-manager' ) : __( 'Needs city and state', 'equine-event-manager' ) ); ?></strong>
-					<span class="equine-event-manager-event-editor-card__summary-note"><?php echo esc_html( $location_label ? $location_label : __( 'Venue cards use this location for linked events.', 'equine-event-manager' ) ); ?></span>
+				<div class="eem-event-editor-card__summary-card">
+					<span class="eem-event-editor-card__summary-label"><?php esc_html_e( 'Region', 'equine-event-manager' ); ?></span>
+					<strong class="eem-event-editor-card__summary-value"><?php echo esc_html( $location_label ? __( 'Location ready', 'equine-event-manager' ) : __( 'Needs city and state', 'equine-event-manager' ) ); ?></strong>
+					<span class="eem-event-editor-card__summary-note"><?php echo esc_html( $location_label ? $location_label : __( 'Venue cards use this location for linked events.', 'equine-event-manager' ) ); ?></span>
 				</div>
-				<div class="equine-event-manager-event-editor-card__summary-card">
-					<span class="equine-event-manager-event-editor-card__summary-label"><?php esc_html_e( 'Website', 'equine-event-manager' ); ?></span>
-					<strong class="equine-event-manager-event-editor-card__summary-value"><?php echo esc_html( $website ? __( 'External link ready', 'equine-event-manager' ) : __( 'Website optional', 'equine-event-manager' ) ); ?></strong>
-					<span class="equine-event-manager-event-editor-card__summary-note"><?php echo esc_html( $website ? $website : __( 'Useful for maps, facility info, or venue policies.', 'equine-event-manager' ) ); ?></span>
+				<div class="eem-event-editor-card__summary-card">
+					<span class="eem-event-editor-card__summary-label"><?php esc_html_e( 'Website', 'equine-event-manager' ); ?></span>
+					<strong class="eem-event-editor-card__summary-value"><?php echo esc_html( $website ? __( 'External link ready', 'equine-event-manager' ) : __( 'Website optional', 'equine-event-manager' ) ); ?></strong>
+					<span class="eem-event-editor-card__summary-note"><?php echo esc_html( $website ? $website : __( 'Useful for maps, facility info, or venue policies.', 'equine-event-manager' ) ); ?></span>
 				</div>
-				<div class="equine-event-manager-event-editor-card__summary-card">
-					<span class="equine-event-manager-event-editor-card__summary-label"><?php esc_html_e( 'Connected Events', 'equine-event-manager' ); ?></span>
-					<strong class="equine-event-manager-event-editor-card__summary-value"><?php echo esc_html( number_format_i18n( $linked_event_count ) ); ?></strong>
-					<span class="equine-event-manager-event-editor-card__summary-note"><?php esc_html_e( 'Linked native events will inherit this venue automatically.', 'equine-event-manager' ); ?></span>
+				<div class="eem-event-editor-card__summary-card">
+					<span class="eem-event-editor-card__summary-label"><?php esc_html_e( 'Connected Events', 'equine-event-manager' ); ?></span>
+					<strong class="eem-event-editor-card__summary-value"><?php echo esc_html( number_format_i18n( $linked_event_count ) ); ?></strong>
+					<span class="eem-event-editor-card__summary-note"><?php esc_html_e( 'Linked native events will inherit this venue automatically.', 'equine-event-manager' ); ?></span>
 				</div>
 			</div>
 
-			<div class="equine-event-manager-event-editor-grid">
-				<label class="equine-event-manager-event-editor-field equine-event-manager-event-editor-field--full">
-					<span class="equine-event-manager-event-editor-field__label"><?php esc_html_e( 'Address Line 1', 'equine-event-manager' ); ?></span>
+			<div class="eem-event-editor-grid">
+				<label class="eem-event-editor-field eem-event-editor-field--full">
+					<span class="eem-event-editor-field__label"><?php esc_html_e( 'Address Line 1', 'equine-event-manager' ); ?></span>
 					<input type="text" class="regular-text" id="equine_event_manager_venue_address_1" name="equine_event_manager_venue_address_1" value="<?php echo esc_attr( $address_1 ); ?>" />
 				</label>
 
-				<label class="equine-event-manager-event-editor-field equine-event-manager-event-editor-field--full">
-					<span class="equine-event-manager-event-editor-field__label"><?php esc_html_e( 'Address Line 2', 'equine-event-manager' ); ?></span>
+				<label class="eem-event-editor-field eem-event-editor-field--full">
+					<span class="eem-event-editor-field__label"><?php esc_html_e( 'Address Line 2', 'equine-event-manager' ); ?></span>
 					<input type="text" class="regular-text" id="equine_event_manager_venue_address_2" name="equine_event_manager_venue_address_2" value="<?php echo esc_attr( $address_2 ); ?>" />
 				</label>
 
-				<label class="equine-event-manager-event-editor-field">
-					<span class="equine-event-manager-event-editor-field__label"><?php esc_html_e( 'City', 'equine-event-manager' ); ?></span>
+				<label class="eem-event-editor-field">
+					<span class="eem-event-editor-field__label"><?php esc_html_e( 'City', 'equine-event-manager' ); ?></span>
 					<input type="text" class="regular-text" id="equine_event_manager_venue_city" name="equine_event_manager_venue_city" value="<?php echo esc_attr( $city ); ?>" />
 				</label>
 
-				<label class="equine-event-manager-event-editor-field">
-					<span class="equine-event-manager-event-editor-field__label"><?php esc_html_e( 'State', 'equine-event-manager' ); ?></span>
+				<label class="eem-event-editor-field">
+					<span class="eem-event-editor-field__label"><?php esc_html_e( 'State', 'equine-event-manager' ); ?></span>
 					<input type="text" class="regular-text" id="equine_event_manager_venue_state" name="equine_event_manager_venue_state" value="<?php echo esc_attr( $state ); ?>" />
 				</label>
 
-				<label class="equine-event-manager-event-editor-field">
-					<span class="equine-event-manager-event-editor-field__label"><?php esc_html_e( 'Postal Code', 'equine-event-manager' ); ?></span>
+				<label class="eem-event-editor-field">
+					<span class="eem-event-editor-field__label"><?php esc_html_e( 'Postal Code', 'equine-event-manager' ); ?></span>
 					<input type="text" class="regular-text" id="equine_event_manager_venue_postal_code" name="equine_event_manager_venue_postal_code" value="<?php echo esc_attr( $postal_code ); ?>" />
 				</label>
 
-				<label class="equine-event-manager-event-editor-field">
-					<span class="equine-event-manager-event-editor-field__label"><?php esc_html_e( 'Phone', 'equine-event-manager' ); ?></span>
+				<label class="eem-event-editor-field">
+					<span class="eem-event-editor-field__label"><?php esc_html_e( 'Phone', 'equine-event-manager' ); ?></span>
 					<input type="text" class="regular-text" id="equine_event_manager_venue_phone" name="equine_event_manager_venue_phone" value="<?php echo esc_attr( $phone ); ?>" />
 				</label>
 
-				<label class="equine-event-manager-event-editor-field equine-event-manager-event-editor-field--full">
-					<span class="equine-event-manager-event-editor-field__label"><?php esc_html_e( 'Website', 'equine-event-manager' ); ?></span>
+				<label class="eem-event-editor-field eem-event-editor-field--full">
+					<span class="eem-event-editor-field__label"><?php esc_html_e( 'Website', 'equine-event-manager' ); ?></span>
 					<input type="text" class="regular-text" id="equine_event_manager_venue_website" name="equine_event_manager_venue_website" value="<?php echo esc_attr( $website ); ?>" />
-					<span class="equine-event-manager-event-editor-field__description"><?php esc_html_e( 'Use the full URL if linked events should send visitors to the venue website.', 'equine-event-manager' ); ?></span>
+					<span class="eem-event-editor-field__description"><?php esc_html_e( 'Use the full URL if linked events should send visitors to the venue website.', 'equine-event-manager' ); ?></span>
 				</label>
 			</div>
 		</div>
@@ -1645,82 +1645,82 @@ class EEM_Events {
 		$website_url        = $website ? esc_url( $website ) : '';
 		$contact_ready      = $contact_name || $email || $phone;
 		?>
-		<div class="equine-event-manager-event-editor-card">
-			<div class="equine-event-manager-event-editor-card__intro">
+		<div class="eem-event-editor-card">
+			<div class="eem-event-editor-card__intro">
 				<div>
-					<span class="equine-event-manager-event-editor-card__eyebrow"><?php esc_html_e( 'Producer Setup', 'equine-event-manager' ); ?></span>
+					<span class="eem-event-editor-card__eyebrow"><?php esc_html_e( 'Producer Setup', 'equine-event-manager' ); ?></span>
 					<h3><?php esc_html_e( 'Define The Organizer Profile', 'equine-event-manager' ); ?></h3>
 					<p><?php esc_html_e( 'Use this profile to supply the producer contact details and website that linked events will surface on the frontend experience.', 'equine-event-manager' ); ?></p>
-					<div class="equine-event-manager-event-editor-card__status-row">
-						<span class="equine-event-manager-event-editor-card__status-pill<?php echo $contact_name ? ' is-ready' : ' is-unlinked'; ?>">
+					<div class="eem-event-editor-card__status-row">
+						<span class="eem-event-editor-card__status-pill<?php echo $contact_name ? ' is-ready' : ' is-unlinked'; ?>">
 							<?php echo esc_html( $contact_name ? __( 'Primary Contact Ready', 'equine-event-manager' ) : __( 'Add Primary Contact', 'equine-event-manager' ) ); ?>
 						</span>
-						<span class="equine-event-manager-event-editor-card__status-pill<?php echo $email ? ' is-ready' : ' is-unlinked'; ?>">
+						<span class="eem-event-editor-card__status-pill<?php echo $email ? ' is-ready' : ' is-unlinked'; ?>">
 							<?php echo esc_html( $email ? __( 'Email Ready', 'equine-event-manager' ) : __( 'Add Producer Email', 'equine-event-manager' ) ); ?>
 						</span>
 						<?php if ( $website ) : ?>
-							<span class="equine-event-manager-event-editor-card__status-pill is-media"><?php esc_html_e( 'Website Linked', 'equine-event-manager' ); ?></span>
+							<span class="eem-event-editor-card__status-pill is-media"><?php esc_html_e( 'Website Linked', 'equine-event-manager' ); ?></span>
 						<?php endif; ?>
 					</div>
-					<div class="equine-event-manager-event-editor-card__actions">
-						<a class="equine-event-manager-event-editor-card__action" href="#titlediv"><?php esc_html_e( 'Jump To Title', 'equine-event-manager' ); ?></a>
-						<a class="equine-event-manager-event-editor-card__action" href="#postdivrich"><?php esc_html_e( 'Jump To Description', 'equine-event-manager' ); ?></a>
+					<div class="eem-event-editor-card__actions">
+						<a class="eem-event-editor-card__action" href="#titlediv"><?php esc_html_e( 'Jump To Title', 'equine-event-manager' ); ?></a>
+						<a class="eem-event-editor-card__action" href="#postdivrich"><?php esc_html_e( 'Jump To Description', 'equine-event-manager' ); ?></a>
 						<?php if ( $website_url ) : ?>
-							<a class="equine-event-manager-event-editor-card__action equine-event-manager-event-editor-card__action--primary" href="<?php echo esc_url( $website_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Open Producer Website', 'equine-event-manager' ); ?></a>
+							<a class="eem-event-editor-card__action eem-event-editor-card__action--primary" href="<?php echo esc_url( $website_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Open Producer Website', 'equine-event-manager' ); ?></a>
 						<?php endif; ?>
 					</div>
 				</div>
-				<div class="equine-event-manager-event-editor-card__meta">
-					<span class="equine-event-manager-event-editor-card__meta-label"><?php esc_html_e( 'Linked Events', 'equine-event-manager' ); ?></span>
+				<div class="eem-event-editor-card__meta">
+					<span class="eem-event-editor-card__meta-label"><?php esc_html_e( 'Linked Events', 'equine-event-manager' ); ?></span>
 					<strong><?php echo esc_html( sprintf( _n( '%d event uses this producer', '%d events use this producer', $linked_event_count, 'equine-event-manager' ), $linked_event_count ) ); ?></strong>
-					<span class="equine-event-manager-event-editor-card__meta-label"><?php esc_html_e( 'Primary Contact', 'equine-event-manager' ); ?></span>
+					<span class="eem-event-editor-card__meta-label"><?php esc_html_e( 'Primary Contact', 'equine-event-manager' ); ?></span>
 					<strong><?php echo esc_html( $contact_name ? $contact_name : __( 'Not set yet', 'equine-event-manager' ) ); ?></strong>
-					<span class="equine-event-manager-event-editor-card__meta-label"><?php esc_html_e( 'Contact Status', 'equine-event-manager' ); ?></span>
+					<span class="eem-event-editor-card__meta-label"><?php esc_html_e( 'Contact Status', 'equine-event-manager' ); ?></span>
 					<strong><?php echo esc_html( $contact_ready ? __( 'Producer profile is filling out', 'equine-event-manager' ) : __( 'Add producer contact details', 'equine-event-manager' ) ); ?></strong>
 				</div>
 			</div>
 
-			<div class="equine-event-manager-event-editor-card__summary-grid">
-				<div class="equine-event-manager-event-editor-card__summary-card">
-					<span class="equine-event-manager-event-editor-card__summary-label"><?php esc_html_e( 'Contact', 'equine-event-manager' ); ?></span>
-					<strong class="equine-event-manager-event-editor-card__summary-value"><?php echo esc_html( $contact_name ? __( 'Lead contact ready', 'equine-event-manager' ) : __( 'Needs contact name', 'equine-event-manager' ) ); ?></strong>
-					<span class="equine-event-manager-event-editor-card__summary-note"><?php echo esc_html( $contact_name ? $contact_name : __( 'Add the organizer or production company contact.', 'equine-event-manager' ) ); ?></span>
+			<div class="eem-event-editor-card__summary-grid">
+				<div class="eem-event-editor-card__summary-card">
+					<span class="eem-event-editor-card__summary-label"><?php esc_html_e( 'Contact', 'equine-event-manager' ); ?></span>
+					<strong class="eem-event-editor-card__summary-value"><?php echo esc_html( $contact_name ? __( 'Lead contact ready', 'equine-event-manager' ) : __( 'Needs contact name', 'equine-event-manager' ) ); ?></strong>
+					<span class="eem-event-editor-card__summary-note"><?php echo esc_html( $contact_name ? $contact_name : __( 'Add the organizer or production company contact.', 'equine-event-manager' ) ); ?></span>
 				</div>
-				<div class="equine-event-manager-event-editor-card__summary-card">
-					<span class="equine-event-manager-event-editor-card__summary-label"><?php esc_html_e( 'Email', 'equine-event-manager' ); ?></span>
-					<strong class="equine-event-manager-event-editor-card__summary-value"><?php echo esc_html( $email ? __( 'Inbox linked', 'equine-event-manager' ) : __( 'Needs email', 'equine-event-manager' ) ); ?></strong>
-					<span class="equine-event-manager-event-editor-card__summary-note"><?php echo esc_html( $email ? $email : __( 'Add an email customers can use from linked events.', 'equine-event-manager' ) ); ?></span>
+				<div class="eem-event-editor-card__summary-card">
+					<span class="eem-event-editor-card__summary-label"><?php esc_html_e( 'Email', 'equine-event-manager' ); ?></span>
+					<strong class="eem-event-editor-card__summary-value"><?php echo esc_html( $email ? __( 'Inbox linked', 'equine-event-manager' ) : __( 'Needs email', 'equine-event-manager' ) ); ?></strong>
+					<span class="eem-event-editor-card__summary-note"><?php echo esc_html( $email ? $email : __( 'Add an email customers can use from linked events.', 'equine-event-manager' ) ); ?></span>
 				</div>
-				<div class="equine-event-manager-event-editor-card__summary-card">
-					<span class="equine-event-manager-event-editor-card__summary-label"><?php esc_html_e( 'Website', 'equine-event-manager' ); ?></span>
-					<strong class="equine-event-manager-event-editor-card__summary-value"><?php echo esc_html( $website ? __( 'Website ready', 'equine-event-manager' ) : __( 'Website optional', 'equine-event-manager' ) ); ?></strong>
-					<span class="equine-event-manager-event-editor-card__summary-note"><?php echo esc_html( $website ? $website : __( 'Useful for schedules, memberships, or organizer information.', 'equine-event-manager' ) ); ?></span>
+				<div class="eem-event-editor-card__summary-card">
+					<span class="eem-event-editor-card__summary-label"><?php esc_html_e( 'Website', 'equine-event-manager' ); ?></span>
+					<strong class="eem-event-editor-card__summary-value"><?php echo esc_html( $website ? __( 'Website ready', 'equine-event-manager' ) : __( 'Website optional', 'equine-event-manager' ) ); ?></strong>
+					<span class="eem-event-editor-card__summary-note"><?php echo esc_html( $website ? $website : __( 'Useful for schedules, memberships, or organizer information.', 'equine-event-manager' ) ); ?></span>
 				</div>
-				<div class="equine-event-manager-event-editor-card__summary-card">
-					<span class="equine-event-manager-event-editor-card__summary-label"><?php esc_html_e( 'Connected Events', 'equine-event-manager' ); ?></span>
-					<strong class="equine-event-manager-event-editor-card__summary-value"><?php echo esc_html( number_format_i18n( $linked_event_count ) ); ?></strong>
-					<span class="equine-event-manager-event-editor-card__summary-note"><?php esc_html_e( 'Linked native events will show this producer automatically.', 'equine-event-manager' ); ?></span>
+				<div class="eem-event-editor-card__summary-card">
+					<span class="eem-event-editor-card__summary-label"><?php esc_html_e( 'Connected Events', 'equine-event-manager' ); ?></span>
+					<strong class="eem-event-editor-card__summary-value"><?php echo esc_html( number_format_i18n( $linked_event_count ) ); ?></strong>
+					<span class="eem-event-editor-card__summary-note"><?php esc_html_e( 'Linked native events will show this producer automatically.', 'equine-event-manager' ); ?></span>
 				</div>
 			</div>
 
-			<div class="equine-event-manager-event-editor-grid">
-				<label class="equine-event-manager-event-editor-field">
-					<span class="equine-event-manager-event-editor-field__label"><?php esc_html_e( 'Primary Contact', 'equine-event-manager' ); ?></span>
+			<div class="eem-event-editor-grid">
+				<label class="eem-event-editor-field">
+					<span class="eem-event-editor-field__label"><?php esc_html_e( 'Primary Contact', 'equine-event-manager' ); ?></span>
 					<input type="text" class="regular-text" id="equine_event_manager_producer_contact_name" name="equine_event_manager_producer_contact_name" value="<?php echo esc_attr( $contact_name ); ?>" />
 				</label>
 
-				<label class="equine-event-manager-event-editor-field">
-					<span class="equine-event-manager-event-editor-field__label"><?php esc_html_e( 'Email', 'equine-event-manager' ); ?></span>
+				<label class="eem-event-editor-field">
+					<span class="eem-event-editor-field__label"><?php esc_html_e( 'Email', 'equine-event-manager' ); ?></span>
 					<input type="text" class="regular-text" id="equine_event_manager_producer_email" name="equine_event_manager_producer_email" value="<?php echo esc_attr( $email ); ?>" />
 				</label>
 
-				<label class="equine-event-manager-event-editor-field">
-					<span class="equine-event-manager-event-editor-field__label"><?php esc_html_e( 'Phone', 'equine-event-manager' ); ?></span>
+				<label class="eem-event-editor-field">
+					<span class="eem-event-editor-field__label"><?php esc_html_e( 'Phone', 'equine-event-manager' ); ?></span>
 					<input type="text" class="regular-text" id="equine_event_manager_producer_phone" name="equine_event_manager_producer_phone" value="<?php echo esc_attr( $phone ); ?>" />
 				</label>
 
-				<label class="equine-event-manager-event-editor-field">
-					<span class="equine-event-manager-event-editor-field__label"><?php esc_html_e( 'Website', 'equine-event-manager' ); ?></span>
+				<label class="eem-event-editor-field">
+					<span class="eem-event-editor-field__label"><?php esc_html_e( 'Website', 'equine-event-manager' ); ?></span>
 					<input type="text" class="regular-text" id="equine_event_manager_producer_website" name="equine_event_manager_producer_website" value="<?php echo esc_attr( $website ); ?>" />
 				</label>
 			</div>
@@ -1793,7 +1793,7 @@ class EEM_Events {
 			echo wp_kses_post( $this->render_event_calendar_markup( $events, (string) $atts['month'] ) );
 		} else {
 			?>
-			<div class="equine-event-manager-event-list" data-eem-events-page="<?php echo esc_attr( $current_page ); ?>">
+			<div class="eem-event-list" data-eem-events-page="<?php echo esc_attr( $current_page ); ?>">
 				<?php foreach ( $events as $event_data ) : ?>
 					<?php echo wp_kses_post( $this->render_event_list_row_markup( $event_data ) ); ?>
 				<?php endforeach; ?>
@@ -1836,7 +1836,7 @@ class EEM_Events {
 
 		ob_start();
 		?>
-		<div class="equine-event-manager-event-list-empty" role="status">
+		<div class="eem-event-list-empty" role="status">
 			<strong><?php echo esc_html( $message ); ?></strong>
 			<p><?php echo esc_html( $hint ); ?></p>
 		</div>
@@ -2113,8 +2113,8 @@ class EEM_Events {
 	 */
 	public static function render_frontend_styles() {
 		wp_enqueue_style(
-			'equine-event-manager-public',
-			EQUINE_EVENT_MANAGER_URL . 'public/css/equine-event-manager-public.css',
+			'eem-public',
+			EQUINE_EVENT_MANAGER_URL . 'assets/css/public.css',
 			array(),
 			EQUINE_EVENT_MANAGER_VERSION
 		);
@@ -2140,11 +2140,11 @@ class EEM_Events {
 
 		ob_start();
 		?>
-		<div class="equine-event-manager-event-card<?php echo $single ? ' is-single' : ''; ?>">
-			<div class="equine-event-manager-event-card__body">
-				<div class="equine-event-manager-event-card__eyebrow"><?php esc_html_e( 'Equine Event', 'equine-event-manager' ); ?></div>
-				<h3 class="equine-event-manager-event-card__title"><?php echo esc_html( $event_data['title'] ); ?></h3>
-				<div class="equine-event-manager-event-card__meta">
+		<div class="eem-event-card<?php echo $single ? ' is-single' : ''; ?>">
+			<div class="eem-event-card__body">
+				<div class="eem-event-card__eyebrow"><?php esc_html_e( 'Equine Event', 'equine-event-manager' ); ?></div>
+				<h3 class="eem-event-card__title"><?php echo esc_html( $event_data['title'] ); ?></h3>
+				<div class="eem-event-card__meta">
 					<?php if ( $date_label ) : ?>
 						<div><strong><?php esc_html_e( 'Dates:', 'equine-event-manager' ); ?></strong> <?php echo esc_html( $date_label ); ?></div>
 					<?php endif; ?>
@@ -2159,14 +2159,14 @@ class EEM_Events {
 					<?php endif; ?>
 				</div>
 				<?php if ( $excerpt ) : ?>
-					<div class="equine-event-manager-event-card__excerpt"><?php echo esc_html( $excerpt ); ?></div>
+					<div class="eem-event-card__excerpt"><?php echo esc_html( $excerpt ); ?></div>
 				<?php endif; ?>
-				<div class="equine-event-manager-event-card__actions">
+				<div class="eem-event-card__actions">
 					<?php if ( $event_url ) : ?>
-						<a class="equine-event-manager-event-card__button is-secondary" href="<?php echo esc_url( $event_url ); ?>"><?php esc_html_e( 'View Event', 'equine-event-manager' ); ?></a>
+						<a class="eem-event-card__button is-secondary" href="<?php echo esc_url( $event_url ); ?>"><?php esc_html_e( 'View Event', 'equine-event-manager' ); ?></a>
 					<?php endif; ?>
 					<?php if ( $event_data['reservation_id'] ) : ?>
-						<a class="equine-event-manager-event-card__button" href="<?php echo esc_url( $event_url ? $event_url . '#reservation' : '#reservation' ); ?>"><?php echo esc_html( $event_data['cta_label'] ? $event_data['cta_label'] : __( 'Reserve Now', 'equine-event-manager' ) ); ?></a>
+						<a class="eem-event-card__button" href="<?php echo esc_url( $event_url ? $event_url . '#reservation' : '#reservation' ); ?>"><?php echo esc_html( $event_data['cta_label'] ? $event_data['cta_label'] : __( 'Reserve Now', 'equine-event-manager' ) ); ?></a>
 					<?php endif; ?>
 				</div>
 			</div>
@@ -2201,11 +2201,11 @@ class EEM_Events {
 
 		ob_start();
 		?>
-		<article class="equine-event-manager-event-list-row">
-			<div class="equine-event-manager-event-list-row__media">
+		<article class="eem-event-list-row">
+			<div class="eem-event-list-row__media">
 				<?php if ( $days_until_label ) : ?>
-					<div class="equine-event-manager-event-list-row__media-badge">
-						<span class="equine-event-manager-event-list-row__media-badge-icon" aria-hidden="true">
+					<div class="eem-event-list-row__media-badge">
+						<span class="eem-event-list-row__media-badge-icon" aria-hidden="true">
 							<svg viewBox="0 0 24 24" fill="none" role="presentation" focusable="false">
 								<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"></circle>
 								<path d="M12 7.5v5l3.2 1.9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -2217,8 +2217,8 @@ class EEM_Events {
 				<?php if ( ! empty( $event_data['featured_image'] ) ) : ?>
 					<img src="<?php echo esc_url( $event_data['featured_image'] ); ?>" alt="<?php echo esc_attr( $event_data['title'] ); ?>" />
 				<?php else : ?>
-					<div class="equine-event-manager-event-list-row__media-placeholder" aria-hidden="true">
-						<span class="equine-event-manager-event-list-row__media-placeholder-icon">
+					<div class="eem-event-list-row__media-placeholder" aria-hidden="true">
+						<span class="eem-event-list-row__media-placeholder-icon">
 							<svg viewBox="0 0 24 24" fill="none" role="presentation" focusable="false">
 								<path d="M4.75 6.75A2 2 0 016.75 4.75h10.5a2 2 0 012 2v10.5a2 2 0 01-2 2H6.75a2 2 0 01-2-2V6.75z" stroke="currentColor" stroke-width="1.8"></path>
 								<path d="M8 15l2.5-2.5L13 15l2.5-3 2.5 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -2228,9 +2228,9 @@ class EEM_Events {
 					</div>
 				<?php endif; ?>
 			</div>
-			<div class="equine-event-manager-event-list-row__content">
-				<header class="equine-event-manager-event-list-row__header">
-					<h4 class="equine-event-manager-event-list-row__title">
+			<div class="eem-event-list-row__content">
+				<header class="eem-event-list-row__header">
+					<h4 class="eem-event-list-row__title">
 						<?php if ( $event_url ) : ?>
 							<a href="<?php echo esc_url( $event_url ); ?>"><?php echo esc_html( $event_data['title'] ); ?></a>
 						<?php else : ?>
@@ -2238,24 +2238,24 @@ class EEM_Events {
 						<?php endif; ?>
 					</h4>
 					<?php if ( $date_label ) : ?>
-						<h5 class="equine-event-manager-event-list-row__date"><?php echo esc_html( $date_label ); ?></h5>
+						<h5 class="eem-event-list-row__date"><?php echo esc_html( $date_label ); ?></h5>
 					<?php endif; ?>
 				</header>
 
-				<div class="equine-event-manager-event-list-row__facts">
+				<div class="eem-event-list-row__facts">
 					<?php if ( $primary_category ) : ?>
-						<div class="equine-event-manager-event-list-row__fact">
-							<div class="equine-event-manager-event-list-row__fact-value">
-								<span class="equine-event-manager-event-list-row__fact-label"><?php esc_html_e( 'Event Type', 'equine-event-manager' ); ?></span>
+						<div class="eem-event-list-row__fact">
+							<div class="eem-event-list-row__fact-value">
+								<span class="eem-event-list-row__fact-label"><?php esc_html_e( 'Event Type', 'equine-event-manager' ); ?></span>
 								<strong><?php echo esc_html( $primary_category ); ?></strong>
 							</div>
 						</div>
 					<?php endif; ?>
 
 					<?php if ( $venue_name ) : ?>
-						<div class="equine-event-manager-event-list-row__fact">
-							<div class="equine-event-manager-event-list-row__fact-value">
-								<span class="equine-event-manager-event-list-row__fact-label"><?php esc_html_e( 'Venue', 'equine-event-manager' ); ?></span>
+						<div class="eem-event-list-row__fact">
+							<div class="eem-event-list-row__fact-value">
+								<span class="eem-event-list-row__fact-label"><?php esc_html_e( 'Venue', 'equine-event-manager' ); ?></span>
 								<?php if ( $venue_filter_url ) : ?>
 									<a href="<?php echo esc_url( $venue_filter_url ); ?>"><strong><?php echo esc_html( $venue_name ); ?></strong></a>
 								<?php else : ?>
@@ -2266,9 +2266,9 @@ class EEM_Events {
 					<?php endif; ?>
 
 					<?php if ( $producer_name ) : ?>
-						<div class="equine-event-manager-event-list-row__fact">
-							<div class="equine-event-manager-event-list-row__fact-value">
-								<span class="equine-event-manager-event-list-row__fact-label"><?php esc_html_e( 'Organizer', 'equine-event-manager' ); ?></span>
+						<div class="eem-event-list-row__fact">
+							<div class="eem-event-list-row__fact-value">
+								<span class="eem-event-list-row__fact-label"><?php esc_html_e( 'Organizer', 'equine-event-manager' ); ?></span>
 								<?php if ( $producer_filter ) : ?>
 									<a href="<?php echo esc_url( $producer_filter ); ?>"><strong><?php echo esc_html( $producer_name ); ?></strong></a>
 								<?php else : ?>
@@ -2279,22 +2279,22 @@ class EEM_Events {
 					<?php endif; ?>
 
 					<?php if ( $location_label ) : ?>
-						<div class="equine-event-manager-event-list-row__fact">
-							<div class="equine-event-manager-event-list-row__fact-value">
-								<span class="equine-event-manager-event-list-row__fact-label"><?php esc_html_e( 'City, State', 'equine-event-manager' ); ?></span>
+						<div class="eem-event-list-row__fact">
+							<div class="eem-event-list-row__fact-value">
+								<span class="eem-event-list-row__fact-label"><?php esc_html_e( 'City, State', 'equine-event-manager' ); ?></span>
 								<strong><?php echo esc_html( $location_label ); ?></strong>
 							</div>
 						</div>
 					<?php endif; ?>
 				</div>
 
-				<footer class="equine-event-manager-event-list-row__footer">
-					<div class="equine-event-manager-event-list-row__actions">
+				<footer class="eem-event-list-row__footer">
+					<div class="eem-event-list-row__actions">
 						<?php if ( $event_url ) : ?>
-							<a class="equine-event-manager-event-list-row__view-link" href="<?php echo esc_url( $event_url ); ?>"><?php esc_html_e( 'View Event', 'equine-event-manager' ); ?></a>
+							<a class="eem-event-list-row__view-link" href="<?php echo esc_url( $event_url ); ?>"><?php esc_html_e( 'View Event', 'equine-event-manager' ); ?></a>
 						<?php endif; ?>
 						<?php if ( $reserve_url ) : ?>
-							<a class="equine-event-manager-event-card__button" href="<?php echo esc_url( $reserve_url ); ?>"><?php echo esc_html( $reserve_label ); ?></a>
+							<a class="eem-event-card__button" href="<?php echo esc_url( $reserve_url ); ?>"><?php echo esc_html( $reserve_label ); ?></a>
 						<?php endif; ?>
 					</div>
 				</footer>
@@ -2326,21 +2326,21 @@ class EEM_Events {
 
 		ob_start();
 		?>
-		<nav class="equine-event-manager-event-pagination" aria-label="<?php esc_attr_e( 'Event list pagination', 'equine-event-manager' ); ?>">
+		<nav class="eem-event-pagination" aria-label="<?php esc_attr_e( 'Event list pagination', 'equine-event-manager' ); ?>">
 			<?php if ( $current_page > 1 ) : ?>
-				<a class="equine-event-manager-event-pagination__link" href="<?php echo esc_url( 1 === ( $current_page - 1 ) ? $base_url : add_query_arg( 'eem_events_page', $current_page - 1, $base_url ) ); ?>"><?php esc_html_e( 'Previous', 'equine-event-manager' ); ?></a>
+				<a class="eem-event-pagination__link" href="<?php echo esc_url( 1 === ( $current_page - 1 ) ? $base_url : add_query_arg( 'eem_events_page', $current_page - 1, $base_url ) ); ?>"><?php esc_html_e( 'Previous', 'equine-event-manager' ); ?></a>
 			<?php endif; ?>
 
 			<?php for ( $page = $start; $page <= $end; $page++ ) : ?>
 				<?php if ( $page === $current_page ) : ?>
-					<span class="equine-event-manager-event-pagination__current" aria-current="page"><?php echo esc_html( (string) $page ); ?></span>
+					<span class="eem-event-pagination__current" aria-current="page"><?php echo esc_html( (string) $page ); ?></span>
 				<?php else : ?>
-					<a class="equine-event-manager-event-pagination__link" href="<?php echo esc_url( 1 === $page ? $base_url : add_query_arg( 'eem_events_page', $page, $base_url ) ); ?>"><?php echo esc_html( (string) $page ); ?></a>
+					<a class="eem-event-pagination__link" href="<?php echo esc_url( 1 === $page ? $base_url : add_query_arg( 'eem_events_page', $page, $base_url ) ); ?>"><?php echo esc_html( (string) $page ); ?></a>
 				<?php endif; ?>
 			<?php endfor; ?>
 
 			<?php if ( $current_page < $total_pages ) : ?>
-				<a class="equine-event-manager-event-pagination__link" href="<?php echo esc_url( add_query_arg( 'eem_events_page', $current_page + 1, $base_url ) ); ?>"><?php esc_html_e( 'Next', 'equine-event-manager' ); ?></a>
+				<a class="eem-event-pagination__link" href="<?php echo esc_url( add_query_arg( 'eem_events_page', $current_page + 1, $base_url ) ); ?>"><?php esc_html_e( 'Next', 'equine-event-manager' ); ?></a>
 			<?php endif; ?>
 		</nav>
 		<?php
@@ -2985,59 +2985,59 @@ class EEM_Events {
 		ob_start();
 		self::render_frontend_styles();
 		?>
-		<article class="equine-event-manager-event-spotlight">
-			<div class="equine-event-manager-event-hero">
-				<section class="equine-event-manager-event-hero__panel equine-event-manager-event-hero__panel--media">
-					<div class="equine-event-manager-event-media-card">
-						<div class="equine-event-manager-event-media-card__visual<?php echo ! empty( $event_data['featured_image'] ) ? ' has-image' : ''; ?>">
+		<article class="eem-event-spotlight">
+			<div class="eem-event-hero">
+				<section class="eem-event-hero__panel eem-event-hero__panel--media">
+					<div class="eem-event-media-card">
+						<div class="eem-event-media-card__visual<?php echo ! empty( $event_data['featured_image'] ) ? ' has-image' : ''; ?>">
 							<?php if ( ! empty( $event_data['featured_image'] ) ) : ?>
 								<img src="<?php echo esc_url( $event_data['featured_image'] ); ?>" alt="<?php echo esc_attr( $event_data['title'] ); ?>" />
 							<?php else : ?>
-								<div class="equine-event-manager-event-media-card__placeholder">
-									<span class="equine-event-manager-event-media-card__placeholder-icon" aria-hidden="true">PDF</span>
+								<div class="eem-event-media-card__placeholder">
+									<span class="eem-event-media-card__placeholder-icon" aria-hidden="true">PDF</span>
 									<strong><?php esc_html_e( 'Event Flyer', 'equine-event-manager' ); ?></strong>
 								</div>
 							<?php endif; ?>
 						</div>
 						<?php if ( ! empty( $event_data['flyer_url'] ) ) : ?>
-							<div class="equine-event-manager-event-media-card__actions">
-								<a class="equine-event-manager-event-button equine-event-manager-event-button--dark" href="<?php echo esc_url( $event_data['flyer_url'] ); ?>" target="_blank" rel="noopener noreferrer" onclick="window.open(this.href,'_blank','noopener'); return false;"><?php esc_html_e( 'View Event Flyer PDF', 'equine-event-manager' ); ?></a>
+							<div class="eem-event-media-card__actions">
+								<a class="eem-event-button eem-event-button--dark" href="<?php echo esc_url( $event_data['flyer_url'] ); ?>" target="_blank" rel="noopener noreferrer" onclick="window.open(this.href,'_blank','noopener'); return false;"><?php esc_html_e( 'View Event Flyer PDF', 'equine-event-manager' ); ?></a>
 							</div>
 						<?php endif; ?>
 					</div>
 				</section>
 
-				<section class="equine-event-manager-event-hero__panel equine-event-manager-event-hero__panel--details">
-					<div class="equine-event-manager-event-app-card">
+				<section class="eem-event-hero__panel eem-event-hero__panel--details">
+					<div class="eem-event-app-card">
 						<?php if ( ! empty( $event_data['categories'] ) ) : ?>
-							<div class="equine-event-manager-event-chip-row">
+							<div class="eem-event-chip-row">
 								<?php foreach ( $event_data['categories'] as $category_name ) : ?>
-									<span class="equine-event-manager-event-chip"><?php echo esc_html( $category_name ); ?></span>
+									<span class="eem-event-chip"><?php echo esc_html( $category_name ); ?></span>
 								<?php endforeach; ?>
 							</div>
 						<?php endif; ?>
 
-						<h3 class="equine-event-manager-event-app-card__title"><?php echo esc_html( $event_data['title'] ); ?></h3>
+						<h3 class="eem-event-app-card__title"><?php echo esc_html( $event_data['title'] ); ?></h3>
 						<?php if ( $date_label ) : ?>
-							<h5 class="equine-event-manager-event-app-card__date"><?php echo esc_html( $date_label ); ?></h5>
+							<h5 class="eem-event-app-card__date"><?php echo esc_html( $date_label ); ?></h5>
 						<?php endif; ?>
 
 						<?php if ( $show_content && ! empty( $event_data['content_raw'] ) ) : ?>
-							<div class="equine-event-manager-event-app-card__content">
+							<div class="eem-event-app-card__content">
 								<?php echo wp_kses_post( $this->format_event_body_content( $event_data['content_raw'] ) ); ?>
 							</div>
 						<?php endif; ?>
 
-						<div class="equine-event-manager-event-info-list">
+						<div class="eem-event-info-list">
 							<?php if ( ! empty( $event_data['venue_name'] ) || ! empty( $event_data['venue']['address_display'] ) || ! empty( $event_data['location'] ) ) : ?>
-								<div class="equine-event-manager-event-info-list__row">
-									<span class="equine-event-manager-event-info-list__label"><?php esc_html_e( 'Location', 'equine-event-manager' ); ?></span>
-									<div class="equine-event-manager-event-info-list__value">
+								<div class="eem-event-info-list__row">
+									<span class="eem-event-info-list__label"><?php esc_html_e( 'Location', 'equine-event-manager' ); ?></span>
+									<div class="eem-event-info-list__value">
 										<?php if ( ! empty( $event_data['venue_name'] ) ) : ?>
 											<?php if ( ! empty( $event_data['venue']['filter_url'] ) ) : ?>
-												<h6 class="equine-event-manager-event-info-list__heading"><a href="<?php echo esc_url( $event_data['venue']['filter_url'] ); ?>"><?php echo esc_html( $event_data['venue_name'] ); ?></a></h6>
+												<h6 class="eem-event-info-list__heading"><a href="<?php echo esc_url( $event_data['venue']['filter_url'] ); ?>"><?php echo esc_html( $event_data['venue_name'] ); ?></a></h6>
 											<?php else : ?>
-												<h6 class="equine-event-manager-event-info-list__heading"><?php echo esc_html( $event_data['venue_name'] ); ?></h6>
+												<h6 class="eem-event-info-list__heading"><?php echo esc_html( $event_data['venue_name'] ); ?></h6>
 											<?php endif; ?>
 										<?php endif; ?>
 										<?php if ( ! empty( $event_data['venue']['address_display'] ) ) : ?>
@@ -3050,14 +3050,14 @@ class EEM_Events {
 							<?php endif; ?>
 
 							<?php if ( ! empty( $event_data['producer']['name'] ) || ! empty( $event_data['producer']['phone'] ) || ! empty( $event_data['producer']['email'] ) || ! empty( $event_data['producer']['website'] ) ) : ?>
-								<div class="equine-event-manager-event-info-list__row">
-									<span class="equine-event-manager-event-info-list__label"><?php esc_html_e( 'Producer', 'equine-event-manager' ); ?></span>
-									<div class="equine-event-manager-event-info-list__value">
+								<div class="eem-event-info-list__row">
+									<span class="eem-event-info-list__label"><?php esc_html_e( 'Producer', 'equine-event-manager' ); ?></span>
+									<div class="eem-event-info-list__value">
 										<?php if ( ! empty( $event_data['producer']['name'] ) ) : ?>
 											<?php if ( ! empty( $event_data['producer']['filter_url'] ) ) : ?>
-												<h6 class="equine-event-manager-event-info-list__heading"><a href="<?php echo esc_url( $event_data['producer']['filter_url'] ); ?>"><?php echo esc_html( $event_data['producer']['name'] ); ?></a></h6>
+												<h6 class="eem-event-info-list__heading"><a href="<?php echo esc_url( $event_data['producer']['filter_url'] ); ?>"><?php echo esc_html( $event_data['producer']['name'] ); ?></a></h6>
 											<?php else : ?>
-												<h6 class="equine-event-manager-event-info-list__heading"><?php echo esc_html( $event_data['producer']['name'] ); ?></h6>
+												<h6 class="eem-event-info-list__heading"><?php echo esc_html( $event_data['producer']['name'] ); ?></h6>
 											<?php endif; ?>
 										<?php endif; ?>
 										<?php if ( ! empty( $event_data['producer']['phone'] ) ) : ?>
@@ -3074,21 +3074,21 @@ class EEM_Events {
 							<?php endif; ?>
 						</div>
 
-						<div class="equine-event-manager-event-app-card__actions">
+						<div class="eem-event-app-card__actions">
 							<?php if ( ! empty( $event_data['reservation_id'] ) ) : ?>
-								<a class="equine-event-manager-event-button" href="#reservation"><?php echo esc_html( ! empty( $event_data['cta_label'] ) ? $event_data['cta_label'] : __( 'Reserve Now', 'equine-event-manager' ) ); ?></a>
+								<a class="eem-event-button" href="#reservation"><?php echo esc_html( ! empty( $event_data['cta_label'] ) ? $event_data['cta_label'] : __( 'Reserve Now', 'equine-event-manager' ) ); ?></a>
 							<?php endif; ?>
 							<?php if ( $directions_url ) : ?>
-								<a class="equine-event-manager-event-button equine-event-manager-event-button--ghost" href="<?php echo esc_url( $directions_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Directions', 'equine-event-manager' ); ?></a>
+								<a class="eem-event-button eem-event-button--ghost" href="<?php echo esc_url( $directions_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Directions', 'equine-event-manager' ); ?></a>
 							<?php endif; ?>
 						</div>
 
 						<?php if ( ! empty( $event_data['tags'] ) ) : ?>
-							<div class="equine-event-manager-event-app-card__footer">
+							<div class="eem-event-app-card__footer">
 								<span><?php esc_html_e( 'Tags', 'equine-event-manager' ); ?></span>
-								<div class="equine-event-manager-event-chip-row">
+								<div class="eem-event-chip-row">
 									<?php foreach ( $event_data['tags'] as $tag_name ) : ?>
-										<span class="equine-event-manager-event-chip equine-event-manager-event-chip--muted"><?php echo esc_html( $tag_name ); ?></span>
+										<span class="eem-event-chip eem-event-chip--muted"><?php echo esc_html( $tag_name ); ?></span>
 									<?php endforeach; ?>
 								</div>
 							</div>
@@ -3098,7 +3098,7 @@ class EEM_Events {
 			</div>
 
 			<?php if ( $show_reservation && ! empty( $event_data['reservation_id'] ) ) : ?>
-				<div id="reservation" class="equine-event-manager-event-spotlight__reservation">
+				<div id="reservation" class="eem-event-spotlight__reservation">
 					<?php echo do_shortcode( sprintf( '[en_reservation id="%d" show_event_header="0"]', absint( $event_data['reservation_id'] ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 				</div>
 			<?php endif; ?>
@@ -3202,7 +3202,7 @@ class EEM_Events {
 		}
 
 		// Drop self-referential template markup or reservation assets if they were pasted into event content.
-		if ( preg_match( '/(?:equine-event-manager-event-spotlight|equine-event-manager-event-hero|equine-event-manager-event-app-card|\.en-reservation-form-wrap\b|\.en-event-details-card\b|var\s+enStripeForms\b|initializeReservationForms\b)/i', $content_raw ) ) {
+		if ( preg_match( '/(?:eem-event-spotlight|eem-event-hero|eem-event-app-card|\.en-reservation-form-wrap\b|\.en-event-details-card\b|var\s+enStripeForms\b|initializeReservationForms\b)/i', $content_raw ) ) {
 			return '';
 		}
 
