@@ -380,3 +380,696 @@
 		grid-template-columns: 1fr;
 	}
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   C1.2 — Shared components
+   Cards, buttons, fields, toggles, badges. Used by every screen.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────
+   Card (generic container)
+   ───────────────────────────────────────────────────────────── */
+.eem-card {
+	background: var(--eem-surface);
+	border: var(--eem-border-card-rule);
+	border-radius: var(--eem-radius);
+	overflow: hidden;
+}
+
+.eem-card-header {
+	padding: 13px 18px;
+	border-bottom: 1px solid #dcdcde;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--eem-space-3);
+}
+
+.eem-card-title {
+	font-family: var(--eem-font-display);
+	font-size: 14px;
+	font-weight: 700;
+	color: var(--eem-navy);
+	display: flex;
+	align-items: center;
+	gap: 7px;
+}
+
+.eem-card-title svg {
+	width: 14px;
+	height: 14px;
+	color: var(--eem-electric);
+}
+
+.eem-card-body {
+	padding: 16px 18px;
+}
+
+.eem-card-link {
+	font-size: 12.5px;
+	color: var(--eem-electric);
+	text-decoration: none;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.eem-card-link:hover {
+	text-decoration: underline;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Section header (collapsible card section — Edit Reservation editor)
+   See edit_reservation_page.html for the toggleSection / toggleSectionEnabled
+   interaction patterns. Sections collapse via .eem-section-body.hidden.
+   ───────────────────────────────────────────────────────────── */
+.eem-section-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 13px 18px;
+	cursor: pointer;
+	user-select: none;
+	border-bottom: 1px solid #dcdcde;
+	gap: var(--eem-space-3);
+}
+
+.eem-section-header-left {
+	display: flex;
+	align-items: center;
+	gap: var(--eem-space-3);
+	min-width: 0;
+}
+
+.eem-section-header-right {
+	display: flex;
+	align-items: center;
+	gap: var(--eem-space-3);
+	flex-shrink: 0;
+}
+
+.eem-section-icon {
+	width: 28px;
+	height: 28px;
+	border-radius: var(--eem-radius);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+}
+
+.eem-section-icon svg {
+	width: 14px;
+	height: 14px;
+	stroke-width: 2;
+}
+
+.eem-section-icon--blue   { background: var(--eem-info-bg);    color: var(--eem-electric); }
+.eem-section-icon--green  { background: #F0FDF4;               color: var(--eem-success-accent); }
+.eem-section-icon--purple { background: var(--eem-type-rv-bg); color: #7c3aed; }
+.eem-section-icon--orange { background: var(--eem-type-addon-bg); color: var(--eem-type-addon-text); }
+.eem-section-icon--teal   { background: #F0FDFA;               color: var(--eem-success-text); }
+.eem-section-icon--pink   { background: #FFF1F2;               color: #be185d; }
+.eem-section-icon--navy   { background: var(--eem-info-bg);    color: var(--eem-navy); }
+
+.eem-section-title {
+	font-family: var(--eem-font-display);
+	font-size: 14px;
+	font-weight: 700;
+	color: var(--eem-navy);
+}
+
+.eem-section-chevron {
+	color: var(--eem-text-muted);
+	transition: transform 0.2s;
+	flex-shrink: 0;
+}
+
+.eem-section-chevron svg {
+	width: 16px;
+	height: 16px;
+}
+
+.eem-section-collapsed .eem-section-chevron {
+	transform: rotate(-90deg);
+}
+
+.eem-section-body {
+	padding: 16px 18px;
+}
+
+.eem-section-body.hidden {
+	display: none;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Toggle switch — pill control used in section headers and field rows
+   States are .eem-toggle.on / .eem-toggle.off (JS sets both).
+   ───────────────────────────────────────────────────────────── */
+.eem-toggle {
+	width: 36px;
+	height: 20px;
+	border-radius: 10px;
+	position: relative;
+	cursor: pointer;
+	flex-shrink: 0;
+	transition: background 0.15s;
+}
+
+.eem-toggle.on  { background: var(--eem-electric); }
+.eem-toggle.off { background: var(--eem-border-card); }
+
+.eem-toggle::after {
+	content: '';
+	position: absolute;
+	width: 14px;
+	height: 14px;
+	background: var(--eem-surface);
+	border-radius: 50%;
+	top: 3px;
+	transition: left 0.15s;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.eem-toggle.on::after  { left: 19px; }
+.eem-toggle.off::after { left: 3px; }
+
+/* "Enabled" toggle composite — label + toggle inline in a section header */
+.eem-enable-toggle {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 12px;
+	color: var(--eem-text-secondary);
+	cursor: pointer;
+	flex-shrink: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Buttons — BRAND_GUIDE.md button table
+   ───────────────────────────────────────────────────────────── */
+.eem-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	padding: 8px 16px;
+	border-radius: var(--eem-radius);
+	font-size: 13px;
+	font-weight: 600;
+	font-family: var(--eem-font-ui);
+	cursor: pointer;
+	white-space: nowrap;
+	border: none;
+	background: transparent;
+	color: inherit;
+	text-decoration: none;
+	line-height: 1.4;
+	transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.eem-btn svg {
+	width: 13px;
+	height: 13px;
+}
+
+.eem-btn:hover {
+	text-decoration: none;
+}
+
+/* Primary (Navy) — default primary action on form pages (Save, Update, Publish) */
+.eem-btn-primary {
+	background: var(--eem-navy);
+	color: var(--eem-text-on-navy);
+}
+
+.eem-btn-primary:hover {
+	background: #052569;
+	color: var(--eem-text-on-navy);
+}
+
+/* Primary (Electric Blue) — navigation-style CTAs (+ New Reservation, Create Order) */
+.eem-btn-electric {
+	background: var(--eem-electric);
+	color: var(--eem-text-on-navy);
+}
+
+.eem-btn-electric:hover {
+	background: var(--eem-electric-hover);
+	color: var(--eem-text-on-navy);
+}
+
+/* Secondary — Save Draft, Cancel, neutral */
+.eem-btn-secondary {
+	background: var(--eem-surface);
+	color: var(--eem-navy);
+	border: var(--eem-border-input);
+}
+
+.eem-btn-secondary:hover {
+	background: #f6f7f7;
+	border-color: var(--eem-electric);
+	color: var(--eem-navy);
+}
+
+/* Tertiary / text link */
+.eem-btn-tertiary {
+	background: transparent;
+	color: var(--eem-electric);
+	padding: 6px 8px;
+}
+
+.eem-btn-tertiary:hover {
+	color: var(--eem-electric-hover);
+	text-decoration: underline;
+}
+
+/* Teal accent — Print View, attention-getting */
+.eem-btn-teal {
+	background: var(--eem-teal);
+	color: var(--eem-text-on-navy);
+}
+
+.eem-btn-teal:hover {
+	background: #1fb8a0;
+	color: var(--eem-text-on-navy);
+}
+
+/* Danger — destructive small button (Move to Trash, Cancel Event) */
+.eem-btn-danger {
+	background: var(--eem-surface);
+	color: var(--eem-error-text);
+	border: 1.5px solid var(--eem-error-border);
+}
+
+.eem-btn-danger:hover {
+	background: var(--eem-error-bg);
+	border-color: var(--eem-error-accent);
+	color: var(--eem-error-text);
+}
+
+/* Welcome-bar variants (rendered on dark navy background) */
+.eem-btn-welcome-primary {
+	background: var(--eem-electric);
+	color: var(--eem-text-on-navy);
+}
+
+.eem-btn-welcome-primary:hover {
+	background: var(--eem-electric-hover);
+	color: var(--eem-text-on-navy);
+}
+
+.eem-btn-welcome-ghost {
+	background: rgba(255, 255, 255, 0.1);
+	color: var(--eem-text-on-navy);
+	border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.eem-btn-welcome-ghost:hover {
+	background: rgba(255, 255, 255, 0.18);
+	color: var(--eem-text-on-navy);
+}
+
+/* Collect — orange CTA on unpaid order rows (Orders list, Order detail banner) */
+.eem-btn-collect {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 5px 10px;
+	border-radius: var(--eem-radius);
+	font-size: 12px;
+	font-weight: 600;
+	font-family: var(--eem-font-ui);
+	cursor: pointer;
+	white-space: nowrap;
+	background: var(--eem-type-addon-bg);
+	color: var(--eem-type-addon-text);
+	border: 1px solid var(--eem-type-addon-border);
+}
+
+.eem-btn-collect:hover {
+	background: #FFEDD5;
+	color: var(--eem-type-addon-text);
+}
+
+.eem-btn-collect svg {
+	width: 11px;
+	height: 11px;
+}
+
+/* Add — dashed-outline "Add" button in repeating-row tables and row builders */
+.eem-btn-add {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 7px 14px;
+	border: 1.5px dashed var(--eem-border);
+	border-radius: var(--eem-radius-lg);
+	font-size: 13px;
+	font-weight: 600;
+	font-family: var(--eem-font-ui);
+	color: var(--eem-navy);
+	background: var(--eem-surface);
+	cursor: pointer;
+	align-self: flex-start;
+}
+
+.eem-btn-add:hover {
+	border-color: var(--eem-electric);
+	color: var(--eem-electric);
+	border-style: solid;
+}
+
+.eem-btn-add svg {
+	width: 13px;
+	height: 13px;
+	color: var(--eem-electric);
+}
+
+/* Delete — small square red trash button used in repeating rows */
+.eem-btn-delete {
+	width: 28px;
+	height: 28px;
+	border-radius: var(--eem-radius);
+	border: 1.5px solid var(--eem-error-border);
+	background: var(--eem-error-bg);
+	color: var(--eem-error-text);
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+}
+
+.eem-btn-delete:hover {
+	background: #fee2e2;
+}
+
+.eem-btn-delete svg {
+	width: 13px;
+	height: 13px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Form fields — labeled rows, inputs, textareas, selects
+   Standard 200px label + flexible control row.
+   ───────────────────────────────────────────────────────────── */
+.eem-field-row {
+	display: grid;
+	grid-template-columns: 200px 1fr;
+	gap: var(--eem-space-4);
+	align-items: start;
+	padding: var(--eem-space-3) 0;
+	border-bottom: 1px solid var(--eem-border-soft);
+}
+
+.eem-field-row:first-child {
+	padding-top: 0;
+}
+
+.eem-field-row:last-child {
+	border-bottom: none;
+	padding-bottom: 0;
+}
+
+.eem-field-label {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--eem-text);
+	padding-top: 9px;
+	line-height: 1.4;
+}
+
+.eem-field-label-sub {
+	font-size: 11.5px;
+	color: var(--eem-text-secondary);
+	font-weight: 400;
+	margin-top: 2px;
+}
+
+.eem-field-control {
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+}
+
+.eem-field-input,
+.eem-field-textarea,
+.eem-field-select {
+	padding: 8px 11px;
+	border: var(--eem-border-input);
+	border-radius: var(--eem-radius);
+	font-size: 13.5px;
+	font-family: var(--eem-font-ui);
+	color: var(--eem-navy);
+	background: var(--eem-surface);
+	width: 100%;
+	outline: none;
+}
+
+.eem-field-input:focus,
+.eem-field-textarea:focus,
+.eem-field-select:focus {
+	border-color: var(--eem-electric);
+	box-shadow: var(--eem-focus-ring);
+}
+
+.eem-field-input::placeholder,
+.eem-field-textarea::placeholder {
+	color: var(--eem-text-placeholder);
+}
+
+.eem-field-textarea {
+	resize: vertical;
+	min-height: 90px;
+	line-height: 1.6;
+}
+
+.eem-field-select {
+	padding: 8px 30px 8px 11px;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236B7A99' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 10px center;
+	appearance: none;
+}
+
+.eem-field-hint {
+	font-size: 12px;
+	color: var(--eem-text-secondary);
+	line-height: 1.6;
+}
+
+.eem-field-hint code {
+	background: #f0f0f1;
+	padding: 1px 5px;
+	border-radius: var(--eem-radius-sm);
+	font-size: 11px;
+}
+
+/* Price input — currency symbol + amount, paired */
+.eem-price-wrap {
+	display: flex;
+	align-items: center;
+	max-width: 180px;
+}
+
+.eem-price-symbol {
+	padding: 8px 10px;
+	background: #f6f7f7;
+	border: var(--eem-border-input);
+	border-right: none;
+	border-radius: var(--eem-radius) 0 0 var(--eem-radius);
+	font-size: 13px;
+	color: var(--eem-text-secondary);
+	font-weight: 600;
+}
+
+.eem-price-input {
+	padding: 8px 11px;
+	border: var(--eem-border-input);
+	border-radius: 0 var(--eem-radius) var(--eem-radius) 0;
+	font-size: 13.5px;
+	font-family: var(--eem-font-ui);
+	color: var(--eem-navy);
+	background: var(--eem-surface);
+	min-width: 0;
+	flex: 1;
+	outline: none;
+}
+
+.eem-price-input:focus {
+	border-color: var(--eem-electric);
+}
+
+/* Date range */
+.eem-date-range {
+	display: flex;
+	align-items: center;
+	gap: var(--eem-space-2);
+	flex-wrap: wrap;
+}
+
+.eem-date-sep {
+	font-size: 13px;
+	color: var(--eem-text-muted);
+}
+
+/* Stay-type pill row (Nightly / Weekend Rate) — applyControls drives visibility */
+.eem-stay-types {
+	display: flex;
+	gap: var(--eem-space-3);
+	flex-wrap: wrap;
+}
+
+.eem-stay-type-btn {
+	display: flex;
+	align-items: center;
+	gap: var(--eem-space-2);
+	padding: 8px 14px;
+	border: var(--eem-border-input);
+	border-radius: var(--eem-radius);
+	cursor: pointer;
+	font-size: 13.5px;
+	font-weight: 500;
+	color: var(--eem-navy);
+	background: var(--eem-surface);
+}
+
+.eem-stay-type-btn.active {
+	border-color: var(--eem-electric);
+	background: var(--eem-info-bg);
+	color: var(--eem-electric);
+}
+
+/* Mode buttons (Quantity Based vs Exact Map Selection, Fee type, etc.) */
+.eem-mode-btns {
+	display: flex;
+	gap: var(--eem-space-2);
+	flex-wrap: wrap;
+}
+
+.eem-mode-btn {
+	padding: 8px 18px;
+	border: var(--eem-border-input);
+	border-radius: var(--eem-radius);
+	font-size: 13.5px;
+	font-weight: 500;
+	color: var(--eem-navy);
+	cursor: pointer;
+	background: var(--eem-surface);
+}
+
+.eem-mode-btn.active {
+	border-color: var(--eem-navy);
+	background: var(--eem-navy);
+	color: var(--eem-text-on-navy);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Badges (CONV-2)
+   State badges have ::before dot. Type badges have no dot.
+   ───────────────────────────────────────────────────────────── */
+
+/* State badges — paid/unpaid/etc., dot prefix communicates traffic-light meaning */
+.eem-status-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 3px 9px;
+	border-radius: 20px;
+	font-size: 11.5px;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.eem-status-badge::before {
+	content: '';
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	flex-shrink: 0;
+}
+
+.eem-status-paid                { background: #F0FDF4; color: #15803d; border: 1px solid #bbf7d0; }
+.eem-status-paid::before        { background: #22c55e; }
+.eem-status-unpaid              { background: var(--eem-warn-bg); color: var(--eem-warn-text); border: 1px solid var(--eem-warn-border); }
+.eem-status-unpaid::before      { background: #f59e0b; }
+.eem-status-partial             { background: var(--eem-warn-bg); color: var(--eem-warn-text); border: 1px solid var(--eem-warn-border); }
+.eem-status-partial::before     { background: #f59e0b; }
+.eem-status-invoice             { background: #EFF6FF; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.eem-status-invoice::before     { background: #3b82f6; }
+.eem-status-refunded            { background: #FFF1F2; color: #be123c; border: 1px solid #fecdd3; }
+.eem-status-refunded::before    { background: #f43f5e; }
+.eem-status-cancelled           { background: #F8FAFC; color: #64748b; border: 1px solid #e2e8f0; }
+.eem-status-cancelled::before   { background: #94a3b8; }
+
+/* Reservation lifecycle (RES-4) */
+.eem-status-active              { background: #F0FDF4; color: #15803d; border: 1px solid #bbf7d0; }
+.eem-status-active::before      { background: #22c55e; }
+.eem-status-draft               { background: var(--eem-warn-bg); color: var(--eem-warn-text); border: 1px solid var(--eem-warn-border); }
+.eem-status-draft::before       { background: #f59e0b; }
+.eem-status-archived            { background: #F8FAFC; color: #64748b; border: 1px solid #e2e8f0; }
+.eem-status-archived::before    { background: #94a3b8; }
+.eem-status-trashed             { background: #FFF1F2; color: var(--eem-error-text); border: 1px solid var(--eem-error-border); }
+.eem-status-trashed::before     { background: var(--eem-error-accent); }
+
+/* Type badges — stall/rv/addon/group, no dot, color-tinted bg only */
+.eem-type-badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 2px 7px;
+	border-radius: var(--eem-radius-sm);
+	font-size: 11px;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.eem-type-stall  { background: var(--eem-type-stall-bg);  color: var(--eem-type-stall-text);  border: 1px solid var(--eem-type-stall-border); }
+.eem-type-rv     { background: var(--eem-type-rv-bg);     color: var(--eem-type-rv-text);     border: 1px solid var(--eem-type-rv-border); }
+.eem-type-addon  { background: var(--eem-type-addon-bg);  color: var(--eem-type-addon-text);  border: 1px solid var(--eem-type-addon-border); }
+.eem-type-group  { background: var(--eem-type-group-bg);  color: var(--eem-type-group-text);  border: 1px solid var(--eem-type-group-border); }
+
+/* ─────────────────────────────────────────────────────────────
+   Component responsive — stack labels above controls on mobile
+   ───────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+	.eem-field-row {
+		grid-template-columns: 1fr;
+		gap: 6px;
+		padding: 10px 0;
+	}
+
+	.eem-field-label {
+		padding-top: 0;
+	}
+
+	.eem-section-header {
+		padding: 11px 14px;
+	}
+
+	.eem-section-body {
+		padding: 14px;
+	}
+
+	.eem-card-header {
+		padding: 11px 14px;
+	}
+
+	.eem-card-body {
+		padding: 14px;
+	}
+
+	.eem-card-title {
+		font-size: 13px;
+	}
+
+	.eem-stay-types,
+	.eem-mode-btns {
+		width: 100%;
+	}
+
+	.eem-stay-type-btn,
+	.eem-mode-btn {
+		flex: 1 1 auto;
+		justify-content: center;
+	}
+}
