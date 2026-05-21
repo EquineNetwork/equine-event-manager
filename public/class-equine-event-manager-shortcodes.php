@@ -131,7 +131,7 @@ class EEM_Shortcodes {
 		}
 
 		$data    = $this->get_reservation_meta( $reservation_id );
-		$status  = $this->safe_get_reservation_status( $data, $reservation_id );
+		$status  = $this->get_reservation_status( $data, $reservation_id );
 		$message = '';
 		$min_date = ! empty( $data['available_start_date'] ) ? $data['available_start_date'] : '';
 		$max_date = ! empty( $data['available_end_date'] ) ? $data['available_end_date'] : '';
@@ -4371,7 +4371,7 @@ RV Lot: " . $rv_lot['name'] );
 		}
 
 		$data            = $this->get_reservation_meta( $reservation_id );
-		$status          = $this->safe_get_reservation_status( $data, $reservation_id );
+		$status          = $this->get_reservation_status( $data, $reservation_id );
 		$submission      = $this->sanitize_submission( $data );
 		$validation      = $this->validate_submission( $submission, $status, $data );
 		$stripe_config   = $this->get_active_stripe_configuration();
@@ -5400,36 +5400,6 @@ RV Lot: " . $rv_lot['name'] );
 		);
 	}
 
-	/**
-	 * Safely get reservation status, falling back to open/closed-only checks if needed.
-	 *
-	 * @param array $data Reservation setup data.
-	 * @param int   $reservation_id Reservation setup ID.
-	 * @return array
-	 */
-	private function safe_get_reservation_status( $data, $reservation_id = 0 ) {
-		try {
-			return $this->get_reservation_status( $data, $reservation_id );
-		} catch ( Throwable $exception ) {
-			return array(
-				'stalls_open'               => ! empty( $data['stalls_enabled'] ) && $this->is_reservation_type_open( $data, 'stalls' ),
-				'rv_open'                   => ! empty( $data['rv_enabled'] ) && $this->is_reservation_type_open( $data, 'rv' ),
-				'stall_inventory_total'     => null,
-				'stall_inventory_sold'      => 0,
-				'stall_inventory_remaining' => null,
-				'stalls_sold_out'           => false,
-				'stalls_bookable'           => ! empty( $data['stalls_enabled'] ) && $this->is_reservation_type_open( $data, 'stalls' ),
-				'shavings_open'             => false,
-				'shavings_bookable'         => false,
-				'rv_inventory_total'        => null,
-				'rv_inventory_sold'         => 0,
-				'rv_inventory_remaining'    => null,
-				'rv_lot_inventory'          => array(),
-				'rv_sold_out'               => false,
-				'rv_bookable'               => ! empty( $data['rv_enabled'] ) && $this->is_reservation_type_open( $data, 'rv' ),
-			);
-		}
-	}
 
 	/**
 	 * Get the current sold inventory for a reservation setup.
@@ -5684,7 +5654,7 @@ RV Lot: " . $rv_lot['name'] );
 	 * @return string
 	 */
 	private function get_reservation_status_message( $reservation, $data ) {
-		$status = $this->safe_get_reservation_status( $data, $reservation ? $reservation->ID : 0 );
+		$status = $this->get_reservation_status( $data, $reservation ? $reservation->ID : 0 );
 		$settings     = $this->get_reservation_message_settings();
 		$event_name   = $reservation ? $reservation->post_title : __( 'this event', 'equine-event-manager' );
 		$open_times   = array();
