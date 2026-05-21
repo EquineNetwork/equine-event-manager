@@ -29,16 +29,11 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager.ph
 register_activation_hook( __FILE__, array( 'EEM_Activator', 'activate' ) );
 
 /**
- * Start the plugin.
+ * Run Equine Event Manager.
  */
-if ( ! function_exists( 'equine_event_manager_run' ) ) {
-	/**
-	 * Run Equine Event Manager.
-	 */
-	function equine_event_manager_run() {
-		$plugin = new EEM_Plugin();
-		$plugin->run();
-	}
+function equine_event_manager_run() {
+	$plugin = new EEM_Plugin();
+	$plugin->run();
 }
 
 equine_event_manager_run();
