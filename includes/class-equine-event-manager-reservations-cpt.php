@@ -144,7 +144,7 @@ class EEM_Reservations_CPT {
 			<input type="text" class="widefat" value="<?php echo esc_attr( $flyer_label ); ?>" readonly="readonly" placeholder="<?php esc_attr_e( 'No file selected', 'equine-event-manager' ); ?>" />
 			<p>
 				<button type="button" class="button"><?php esc_html_e( 'Upload File', 'equine-event-manager' ); ?></button>
-				<button type="button" class="en-icon-delete-button" aria-label="<?php esc_attr_e( 'Remove flyer file', 'equine-event-manager' ); ?>" title="<?php esc_attr_e( 'Remove flyer file', 'equine-event-manager' ); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button>
+				<button type="button" class="eem-icon-delete-button" aria-label="<?php esc_attr_e( 'Remove flyer file', 'equine-event-manager' ); ?>" title="<?php esc_attr_e( 'Remove flyer file', 'equine-event-manager' ); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button>
 				<?php if ( $flyer_url ) : ?>
 					<a href="<?php echo esc_url( $flyer_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View file', 'equine-event-manager' ); ?></a>
 				<?php else : ?>
@@ -306,11 +306,11 @@ class EEM_Reservations_CPT {
 		$blocked_rv_lots  = $this->sanitize_chart_unit_list( isset( $data['stall_chart_blocked_rv_units'] ) && is_array( $data['stall_chart_blocked_rv_units'] ) ? $data['stall_chart_blocked_rv_units'] : array(), $rv_lot_names );
 
 		?>
-		<div class="en-section-toggle-row">
-			<label class="en-section-toggle-control">
-				<input name="en_reservation[rv_enabled]" id="en_rv_enabled" type="checkbox" value="1" data-en-section-toggle="rv" <?php checked( $data['rv_enabled'], 1 ); ?> />
-				<span class="en-section-toggle-control__label"><?php esc_html_e( 'Enable RV reservations', 'equine-event-manager' ); ?></span>
-				<span class="en-section-toggle-control__track" aria-hidden="true"><span class="en-section-toggle-control__thumb"></span></span>
+		<div class="eem-section-toggle-row">
+			<label class="eem-section-toggle-control">
+				<input name="en_reservation[rv_enabled]" id="en_rv_enabled" type="checkbox" value="1" data-eem-section-toggle="rv" <?php checked( $data['rv_enabled'], 1 ); ?> />
+				<span class="eem-section-toggle-control__label"><?php esc_html_e( 'Enable RV reservations', 'equine-event-manager' ); ?></span>
+				<span class="eem-section-toggle-control__track" aria-hidden="true"><span class="eem-section-toggle-control__thumb"></span></span>
 			</label>
 		</div>
 		<table class="form-table" role="presentation">
@@ -319,64 +319,64 @@ class EEM_Reservations_CPT {
 				<tr>
 					<th scope="row"><?php esc_html_e( 'Stay Types', 'equine-event-manager' ); ?></th>
 					<td>
-						<div class="en-stay-type-toggle-group">
-							<label class="en-inline-toggle-control">
+						<div class="eem-stay-type-toggle-group">
+							<label class="eem-inline-toggle-control">
 								<input name="en_reservation[rv_nightly_enabled]" id="en_rv_nightly_enabled" type="checkbox" value="1" <?php checked( $data['rv_nightly_enabled'], 1 ); ?> />
-								<span class="en-inline-toggle-control__track" aria-hidden="true"></span>
-								<span class="en-inline-toggle-control__label"><?php esc_html_e( 'Nightly', 'equine-event-manager' ); ?></span>
+								<span class="eem-inline-toggle-control__track" aria-hidden="true"></span>
+								<span class="eem-inline-toggle-control__label"><?php esc_html_e( 'Nightly', 'equine-event-manager' ); ?></span>
 							</label>
-							<label class="en-inline-toggle-control">
+							<label class="eem-inline-toggle-control">
 								<input name="en_reservation[rv_weekend_enabled]" id="en_rv_weekend_enabled" type="checkbox" value="1" <?php checked( $data['rv_weekend_enabled'], 1 ); ?> />
-								<span class="en-inline-toggle-control__track" aria-hidden="true"></span>
-								<span class="en-inline-toggle-control__label"><?php esc_html_e( 'Weekend Rate', 'equine-event-manager' ); ?></span>
+								<span class="eem-inline-toggle-control__track" aria-hidden="true"></span>
+								<span class="eem-inline-toggle-control__label"><?php esc_html_e( 'Weekend Rate', 'equine-event-manager' ); ?></span>
 							</label>
 						</div>
 						<p class="description"><?php esc_html_e( 'Enable one or both RV stay types. Weekend Rate uses the RV weekend package dates below.', 'equine-event-manager' ); ?></p>
 					</td>
 				</tr>
-				<?php $this->render_date_range_row( 'rv_weekend_package_start_date', 'rv_weekend_package_end_date', __( 'Weekend Package Dates', 'equine-event-manager' ), $data['rv_weekend_package_start_date'], $data['rv_weekend_package_end_date'], __( 'Customers choosing RV Weekend Rate will automatically use this package date range.', 'equine-event-manager' ), 'en-weekend-package-row en-rate-mode-row en-rate-mode-group--rv' ); ?>
+				<?php $this->render_date_range_row( 'rv_weekend_package_start_date', 'rv_weekend_package_end_date', __( 'Weekend Package Dates', 'equine-event-manager' ), $data['rv_weekend_package_start_date'], $data['rv_weekend_package_end_date'], __( 'Customers choosing RV Weekend Rate will automatically use this package date range.', 'equine-event-manager' ), 'eem-weekend-package-row eem-rate-mode-row eem-rate-mode-group--rv' ); ?>
 				<tr>
 					<th scope="row"><?php esc_html_e( 'Reservation Schedule', 'equine-event-manager' ); ?></th>
 					<td>
-						<label class="en-inline-toggle-control">
+						<label class="eem-inline-toggle-control">
 							<input name="en_reservation[rv_schedule_enabled]" id="en_rv_schedule_enabled" type="checkbox" value="1" <?php checked( $data['rv_schedule_enabled'], 1 ); ?> />
-							<span class="en-inline-toggle-control__track" aria-hidden="true"></span>
-							<span class="en-inline-toggle-control__label"><?php esc_html_e( 'Schedule RV Reservations', 'equine-event-manager' ); ?></span>
+							<span class="eem-inline-toggle-control__track" aria-hidden="true"></span>
+							<span class="eem-inline-toggle-control__label"><?php esc_html_e( 'Schedule RV Reservations', 'equine-event-manager' ); ?></span>
 						</label>
 						<p class="description"><?php esc_html_e( 'Turn this on to open and close RV reservations on specific dates and times.', 'equine-event-manager' ); ?></p>
 					</td>
 				</tr>
-				<?php $this->render_datetime_row( 'rv_open_at', __( 'RV Open Date/Time', 'equine-event-manager' ), $data['rv_open_at'], '', 'en-schedule-row en-schedule-group--rv' ); ?>
-				<?php $this->render_datetime_row( 'rv_close_at', __( 'RV Close Date/Time', 'equine-event-manager' ), $data['rv_close_at'], '', 'en-schedule-row en-schedule-group--rv' ); ?>
-				<?php $this->render_number_row( 'rv_inventory', __( 'Available RV Inventory', 'equine-event-manager' ), $data['rv_inventory'], __( 'Leave blank for unlimited inventory. Once inventory reaches zero, customers will see a sold out message.', 'equine-event-manager' ), 'en-rv-inventory-row' ); ?>
+				<?php $this->render_datetime_row( 'rv_open_at', __( 'RV Open Date/Time', 'equine-event-manager' ), $data['rv_open_at'], '', 'eem-schedule-row eem-schedule-group--rv' ); ?>
+				<?php $this->render_datetime_row( 'rv_close_at', __( 'RV Close Date/Time', 'equine-event-manager' ), $data['rv_close_at'], '', 'eem-schedule-row eem-schedule-group--rv' ); ?>
+				<?php $this->render_number_row( 'rv_inventory', __( 'Available RV Inventory', 'equine-event-manager' ), $data['rv_inventory'], __( 'Leave blank for unlimited inventory. Once inventory reaches zero, customers will see a sold out message.', 'equine-event-manager' ), 'eem-rv-inventory-row' ); ?>
 				<?php $this->render_currency_row( 'rv_nightly_rate', __( 'RV Nightly Rate', 'equine-event-manager' ), $data['rv_nightly_rate'], array( 'mode' => 'nightly', 'group' => 'rv' ) ); ?>
 				<?php $this->render_currency_row( 'rv_weekend_rate', __( 'RV Weekend Rate', 'equine-event-manager' ), $data['rv_weekend_rate'], array( 'mode' => 'weekend', 'group' => 'rv' ) ); ?>
 				<tr>
 					<th scope="row"><?php esc_html_e( 'RV Early Bird', 'equine-event-manager' ); ?></th>
 					<td>
-						<label class="en-inline-toggle-control">
+						<label class="eem-inline-toggle-control">
 							<input name="en_reservation[rv_early_bird_enabled]" id="en_rv_early_bird_enabled" type="checkbox" value="1" <?php checked( $data['rv_early_bird_enabled'], 1 ); ?> />
-							<span class="en-inline-toggle-control__track" aria-hidden="true"></span>
-							<span class="en-inline-toggle-control__label"><?php esc_html_e( 'Enable RV early bird pricing', 'equine-event-manager' ); ?></span>
+							<span class="eem-inline-toggle-control__track" aria-hidden="true"></span>
+							<span class="eem-inline-toggle-control__label"><?php esc_html_e( 'Enable RV early bird pricing', 'equine-event-manager' ); ?></span>
 						</label>
 					</td>
 				</tr>
-				<?php $this->render_datetime_row( 'rv_early_bird_cutoff', __( 'RV Early Bird Cutoff', 'equine-event-manager' ), $data['rv_early_bird_cutoff'], '', 'en-early-bird-row en-early-bird-group--rv' ); ?>
-				<?php $this->render_currency_row( 'rv_early_bird_nightly_rate', __( 'RV Early Bird Nightly Rate', 'equine-event-manager' ), $data['rv_early_bird_nightly_rate'], array( 'mode' => 'nightly', 'group' => 'rv', 'row_classes' => 'en-early-bird-row en-early-bird-group--rv' ) ); ?>
-				<?php $this->render_currency_row( 'rv_early_bird_weekend_rate', __( 'RV Early Bird Weekend Rate', 'equine-event-manager' ), $data['rv_early_bird_weekend_rate'], array( 'mode' => 'weekend', 'group' => 'rv', 'row_classes' => 'en-early-bird-row en-early-bird-group--rv' ) ); ?>
-				<tr class="en-rv-lot-selection-row">
-					<td colspan="2" class="en-rv-lot-selection-cell">
-						<div class="en-admin-structured-table">
-						<label class="en-inline-toggle-control">
+				<?php $this->render_datetime_row( 'rv_early_bird_cutoff', __( 'RV Early Bird Cutoff', 'equine-event-manager' ), $data['rv_early_bird_cutoff'], '', 'eem-early-bird-row eem-early-bird-group--rv' ); ?>
+				<?php $this->render_currency_row( 'rv_early_bird_nightly_rate', __( 'RV Early Bird Nightly Rate', 'equine-event-manager' ), $data['rv_early_bird_nightly_rate'], array( 'mode' => 'nightly', 'group' => 'rv', 'row_classes' => 'eem-early-bird-row eem-early-bird-group--rv' ) ); ?>
+				<?php $this->render_currency_row( 'rv_early_bird_weekend_rate', __( 'RV Early Bird Weekend Rate', 'equine-event-manager' ), $data['rv_early_bird_weekend_rate'], array( 'mode' => 'weekend', 'group' => 'rv', 'row_classes' => 'eem-early-bird-row eem-early-bird-group--rv' ) ); ?>
+				<tr class="eem-rv-lot-selection-row">
+					<td colspan="2" class="eem-rv-lot-selection-cell">
+						<div class="eem-admin-structured-table">
+						<label class="eem-inline-toggle-control">
 							<input name="en_reservation[rv_lot_selection_enabled]" id="en_rv_lot_selection_enabled" type="checkbox" value="1" <?php checked( $data['rv_lot_selection_enabled'], 1 ); ?> />
-							<span class="en-inline-toggle-control__track" aria-hidden="true"></span>
-							<span class="en-inline-toggle-control__label"><?php esc_html_e( 'Enable RV lot selection', 'equine-event-manager' ); ?></span>
+							<span class="eem-inline-toggle-control__track" aria-hidden="true"></span>
+							<span class="eem-inline-toggle-control__label"><?php esc_html_e( 'Enable RV lot selection', 'equine-event-manager' ); ?></span>
 						</label>
 						<p class="description"><?php esc_html_e( 'When enabled, customers can choose from named RV lots with their own nightly and weekend pricing.', 'equine-event-manager' ); ?></p>
-						<div class="en-structured-table-panel en-rv-lot-selection-panel">
-						<h4 class="en-rv-addon-section-title"><?php esc_html_e( 'RV Lots', 'equine-event-manager' ); ?></h4>
+						<div class="eem-structured-table-panel eem-rv-lot-selection-panel">
+						<h4 class="eem-rv-addon-section-title"><?php esc_html_e( 'RV Lots', 'equine-event-manager' ); ?></h4>
 						<p class="description"><?php esc_html_e( 'Leave a lot price blank to use the base RV rate. Set inventory on each lot so admin can control how many spaces are available in that specific lot.', 'equine-event-manager' ); ?></p>
-						<table class="widefat striped en-rv-lot-table">
+						<table class="widefat striped eem-rv-lot-table">
 							<thead>
 								<tr>
 									<th><?php esc_html_e( 'Lot Name', 'equine-event-manager' ); ?></th>
@@ -389,26 +389,26 @@ class EEM_Reservations_CPT {
 							</thead>
 							<tbody id="en_rv_lots_rows">
 								<?php foreach ( $rv_lots as $lot_index => $lot ) : ?>
-									<tr class="en-rv-lot-row">
-										<td><div class="en-admin-table-field"><input type="text" class="regular-text" name="en_reservation[rv_lots][<?php echo esc_attr( $lot_index ); ?>][name]" value="<?php echo esc_attr( $lot['name'] ); ?>" /></div></td>
-										<td><div class="en-admin-table-field"><input type="text" class="regular-text" name="en_reservation[rv_lots][<?php echo esc_attr( $lot_index ); ?>][description]" value="<?php echo esc_attr( $lot['description'] ); ?>" /></div></td>
-										<td><div class="en-admin-table-field"><div class="en-currency-field en-rv-addon-price-field"><span class="en-currency-symbol">$</span><input name="en_reservation[rv_lots][<?php echo esc_attr( $lot_index ); ?>][nightly_rate]" type="text" class="en-currency-input" inputmode="decimal" placeholder="<?php esc_attr_e( 'Base rate', 'equine-event-manager' ); ?>" value="<?php echo esc_attr( '' !== (string) $lot['nightly_rate'] ? number_format( (float) $lot['nightly_rate'], 2, '.', '' ) : '' ); ?>" /></div></div></td>
-										<td><div class="en-admin-table-field"><div class="en-currency-field en-rv-addon-price-field"><span class="en-currency-symbol">$</span><input name="en_reservation[rv_lots][<?php echo esc_attr( $lot_index ); ?>][weekend_rate]" type="text" class="en-currency-input" inputmode="decimal" placeholder="<?php esc_attr_e( 'Base rate', 'equine-event-manager' ); ?>" value="<?php echo esc_attr( '' !== (string) $lot['weekend_rate'] ? number_format( (float) $lot['weekend_rate'], 2, '.', '' ) : '' ); ?>" /></div></div></td>
-										<td><div class="en-admin-table-field"><input type="number" min="0" step="1" inputmode="numeric" name="en_reservation[rv_lots][<?php echo esc_attr( $lot_index ); ?>][inventory]" value="<?php echo esc_attr( isset( $lot['inventory'] ) ? (string) $lot['inventory'] : '' ); ?>" placeholder="<?php esc_attr_e( 'Unlimited', 'equine-event-manager' ); ?>" /></div></td>
-										<td><div class="en-admin-table-field en-admin-table-field--action"><button type="button" class="en-icon-delete-button en-remove-rv-lot" aria-label="<?php esc_attr_e( 'Remove RV lot', 'equine-event-manager' ); ?>" title="<?php esc_attr_e( 'Remove RV lot', 'equine-event-manager' ); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></div></td>
+									<tr class="eem-rv-lot-row">
+										<td><div class="eem-admin-table-field"><input type="text" class="regular-text" name="en_reservation[rv_lots][<?php echo esc_attr( $lot_index ); ?>][name]" value="<?php echo esc_attr( $lot['name'] ); ?>" /></div></td>
+										<td><div class="eem-admin-table-field"><input type="text" class="regular-text" name="en_reservation[rv_lots][<?php echo esc_attr( $lot_index ); ?>][description]" value="<?php echo esc_attr( $lot['description'] ); ?>" /></div></td>
+										<td><div class="eem-admin-table-field"><div class="eem-currency-field eem-rv-addon-price-field"><span class="eem-currency-symbol">$</span><input name="en_reservation[rv_lots][<?php echo esc_attr( $lot_index ); ?>][nightly_rate]" type="text" class="eem-currency-input" inputmode="decimal" placeholder="<?php esc_attr_e( 'Base rate', 'equine-event-manager' ); ?>" value="<?php echo esc_attr( '' !== (string) $lot['nightly_rate'] ? number_format( (float) $lot['nightly_rate'], 2, '.', '' ) : '' ); ?>" /></div></div></td>
+										<td><div class="eem-admin-table-field"><div class="eem-currency-field eem-rv-addon-price-field"><span class="eem-currency-symbol">$</span><input name="en_reservation[rv_lots][<?php echo esc_attr( $lot_index ); ?>][weekend_rate]" type="text" class="eem-currency-input" inputmode="decimal" placeholder="<?php esc_attr_e( 'Base rate', 'equine-event-manager' ); ?>" value="<?php echo esc_attr( '' !== (string) $lot['weekend_rate'] ? number_format( (float) $lot['weekend_rate'], 2, '.', '' ) : '' ); ?>" /></div></div></td>
+										<td><div class="eem-admin-table-field"><input type="number" min="0" step="1" inputmode="numeric" name="en_reservation[rv_lots][<?php echo esc_attr( $lot_index ); ?>][inventory]" value="<?php echo esc_attr( isset( $lot['inventory'] ) ? (string) $lot['inventory'] : '' ); ?>" placeholder="<?php esc_attr_e( 'Unlimited', 'equine-event-manager' ); ?>" /></div></td>
+										<td><div class="eem-admin-table-field eem-admin-table-field--action"><button type="button" class="eem-icon-delete-button eem-remove-rv-lot" aria-label="<?php esc_attr_e( 'Remove RV lot', 'equine-event-manager' ); ?>" title="<?php esc_attr_e( 'Remove RV lot', 'equine-event-manager' ); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></div></td>
 									</tr>
 								<?php endforeach; ?>
 							</tbody>
 						</table>
 						<p><button type="button" class="button button-secondary" id="en_add_rv_lot"><?php esc_html_e( 'Add RV Lot', 'equine-event-manager' ); ?></button></p>
-						<script type="text/html" id="tmpl-en-rv-lot-row">
-							<tr class="en-rv-lot-row">
-								<td><div class="en-admin-table-field"><input type="text" class="regular-text" name="en_reservation[rv_lots][{{data.index}}][name]" value="" /></div></td>
-								<td><div class="en-admin-table-field"><input type="text" class="regular-text" name="en_reservation[rv_lots][{{data.index}}][description]" value="" /></div></td>
-								<td><div class="en-admin-table-field"><div class="en-currency-field en-rv-addon-price-field"><span class="en-currency-symbol">$</span><input name="en_reservation[rv_lots][{{data.index}}][nightly_rate]" type="text" class="en-currency-input" inputmode="decimal" placeholder="<?php esc_attr_e( 'Base rate', 'equine-event-manager' ); ?>" value="" /></div></div></td>
-								<td><div class="en-admin-table-field"><div class="en-currency-field en-rv-addon-price-field"><span class="en-currency-symbol">$</span><input name="en_reservation[rv_lots][{{data.index}}][weekend_rate]" type="text" class="en-currency-input" inputmode="decimal" placeholder="<?php esc_attr_e( 'Base rate', 'equine-event-manager' ); ?>" value="" /></div></div></td>
-								<td><div class="en-admin-table-field"><input type="number" min="0" step="1" inputmode="numeric" name="en_reservation[rv_lots][{{data.index}}][inventory]" value="" placeholder="<?php esc_attr_e( 'Unlimited', 'equine-event-manager' ); ?>" /></div></td>
-								<td><div class="en-admin-table-field en-admin-table-field--action"><button type="button" class="en-icon-delete-button en-remove-rv-lot" aria-label="<?php esc_attr_e( 'Remove RV lot', 'equine-event-manager' ); ?>" title="<?php esc_attr_e( 'Remove RV lot', 'equine-event-manager' ); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></div></td>
+						<script type="text/html" id="tmpl-eem-rv-lot-row">
+							<tr class="eem-rv-lot-row">
+								<td><div class="eem-admin-table-field"><input type="text" class="regular-text" name="en_reservation[rv_lots][{{data.index}}][name]" value="" /></div></td>
+								<td><div class="eem-admin-table-field"><input type="text" class="regular-text" name="en_reservation[rv_lots][{{data.index}}][description]" value="" /></div></td>
+								<td><div class="eem-admin-table-field"><div class="eem-currency-field eem-rv-addon-price-field"><span class="eem-currency-symbol">$</span><input name="en_reservation[rv_lots][{{data.index}}][nightly_rate]" type="text" class="eem-currency-input" inputmode="decimal" placeholder="<?php esc_attr_e( 'Base rate', 'equine-event-manager' ); ?>" value="" /></div></div></td>
+								<td><div class="eem-admin-table-field"><div class="eem-currency-field eem-rv-addon-price-field"><span class="eem-currency-symbol">$</span><input name="en_reservation[rv_lots][{{data.index}}][weekend_rate]" type="text" class="eem-currency-input" inputmode="decimal" placeholder="<?php esc_attr_e( 'Base rate', 'equine-event-manager' ); ?>" value="" /></div></div></td>
+								<td><div class="eem-admin-table-field"><input type="number" min="0" step="1" inputmode="numeric" name="en_reservation[rv_lots][{{data.index}}][inventory]" value="" placeholder="<?php esc_attr_e( 'Unlimited', 'equine-event-manager' ); ?>" /></div></td>
+								<td><div class="eem-admin-table-field eem-admin-table-field--action"><button type="button" class="eem-icon-delete-button eem-remove-rv-lot" aria-label="<?php esc_attr_e( 'Remove RV lot', 'equine-event-manager' ); ?>" title="<?php esc_attr_e( 'Remove RV lot', 'equine-event-manager' ); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></div></td>
 							</tr>
 						</script>
 						<?php $this->render_chart_blocked_units_field( 'stall_chart_blocked_rv_units', __( 'Blocked RV Lots', 'equine-event-manager' ), $rv_lot_names, $blocked_rv_lots, __( 'Search and select the RV lots that should be held back from reservation assignment and occupancy.', 'equine-event-manager' ) ); ?>
@@ -416,18 +416,18 @@ class EEM_Reservations_CPT {
 						</div>
 					</td>
 				</tr>
-				<tr class="en-rv-addon-section-row">
-					<td colspan="2" class="en-rv-addon-section-cell">
-						<div class="en-admin-structured-table">
-						<label class="en-inline-toggle-control">
+				<tr class="eem-rv-addon-section-row">
+					<td colspan="2" class="eem-rv-addon-section-cell">
+						<div class="eem-admin-structured-table">
+						<label class="eem-inline-toggle-control">
 							<input name="en_reservation[rv_addons_enabled]" id="en_rv_addons_enabled" type="checkbox" value="1" <?php checked( $data['rv_addons_enabled'], 1 ); ?> />
-							<span class="en-inline-toggle-control__track" aria-hidden="true"></span>
-							<span class="en-inline-toggle-control__label"><?php esc_html_e( 'Enable RV add-ons', 'equine-event-manager' ); ?></span>
+							<span class="eem-inline-toggle-control__track" aria-hidden="true"></span>
+							<span class="eem-inline-toggle-control__label"><?php esc_html_e( 'Enable RV add-ons', 'equine-event-manager' ); ?></span>
 						</label>
 						<p class="description"><?php esc_html_e( 'Turn RV add-ons on to show optional RV upgrades on the front end.', 'equine-event-manager' ); ?></p>
 						<p class="description"><?php esc_html_e( 'Add-ons are optional RV upgrades. Their price is added on top of the base RV reservation total when selected on the front end.', 'equine-event-manager' ); ?></p>
-						<div class="en-structured-table-panel en-rv-addon-panel">
-						<table class="widefat striped en-rv-addon-pricing-table">
+						<div class="eem-structured-table-panel eem-rv-addon-panel">
+						<table class="widefat striped eem-rv-addon-pricing-table">
 							<thead>
 								<tr>
 									<th><?php esc_html_e( 'Add-On Name', 'equine-event-manager' ); ?></th>
@@ -438,22 +438,22 @@ class EEM_Reservations_CPT {
 							</thead>
 							<tbody id="en_rv_addons_rows">
 								<?php foreach ( $rv_addons as $addon_index => $addon ) : ?>
-									<tr class="en-rv-addon-row">
-										<td><div class="en-admin-table-field"><input type="text" class="regular-text" name="en_reservation[rv_addons][<?php echo esc_attr( $addon_index ); ?>][name]" value="<?php echo esc_attr( $addon['name'] ); ?>" /></div></td>
-										<td><div class="en-admin-table-field"><input type="text" class="regular-text" name="en_reservation[rv_addons][<?php echo esc_attr( $addon_index ); ?>][description]" value="<?php echo esc_attr( $addon['description'] ); ?>" /></div></td>
-										<td><div class="en-admin-table-field"><div class="en-currency-field en-rv-addon-price-field"><span class="en-currency-symbol">$</span><input name="en_reservation[rv_addons][<?php echo esc_attr( $addon_index ); ?>][price]" type="text" class="en-currency-input" inputmode="decimal" value="<?php echo esc_attr( number_format( (float) $addon['price'], 2, '.', '' ) ); ?>" /></div></div></td>
-										<td><div class="en-admin-table-field en-admin-table-field--action"><button type="button" class="en-icon-delete-button en-remove-rv-addon" aria-label="<?php esc_attr_e( 'Remove RV add-on', 'equine-event-manager' ); ?>" title="<?php esc_attr_e( 'Remove RV add-on', 'equine-event-manager' ); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></div></td>
+									<tr class="eem-rv-addon-row">
+										<td><div class="eem-admin-table-field"><input type="text" class="regular-text" name="en_reservation[rv_addons][<?php echo esc_attr( $addon_index ); ?>][name]" value="<?php echo esc_attr( $addon['name'] ); ?>" /></div></td>
+										<td><div class="eem-admin-table-field"><input type="text" class="regular-text" name="en_reservation[rv_addons][<?php echo esc_attr( $addon_index ); ?>][description]" value="<?php echo esc_attr( $addon['description'] ); ?>" /></div></td>
+										<td><div class="eem-admin-table-field"><div class="eem-currency-field eem-rv-addon-price-field"><span class="eem-currency-symbol">$</span><input name="en_reservation[rv_addons][<?php echo esc_attr( $addon_index ); ?>][price]" type="text" class="eem-currency-input" inputmode="decimal" value="<?php echo esc_attr( number_format( (float) $addon['price'], 2, '.', '' ) ); ?>" /></div></div></td>
+										<td><div class="eem-admin-table-field eem-admin-table-field--action"><button type="button" class="eem-icon-delete-button eem-remove-rv-addon" aria-label="<?php esc_attr_e( 'Remove RV add-on', 'equine-event-manager' ); ?>" title="<?php esc_attr_e( 'Remove RV add-on', 'equine-event-manager' ); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></div></td>
 									</tr>
 								<?php endforeach; ?>
 							</tbody>
 						</table>
 						<p><button type="button" class="button button-secondary" id="en_add_rv_addon"><?php esc_html_e( 'Add RV Add-On', 'equine-event-manager' ); ?></button></p>
-						<script type="text/html" id="tmpl-en-rv-addon-row">
-							<tr class="en-rv-addon-row">
-								<td><div class="en-admin-table-field"><input type="text" class="regular-text" name="en_reservation[rv_addons][{{data.index}}][name]" value="" /></div></td>
-								<td><div class="en-admin-table-field"><input type="text" class="regular-text" name="en_reservation[rv_addons][{{data.index}}][description]" value="" /></div></td>
-								<td><div class="en-admin-table-field"><div class="en-currency-field en-rv-addon-price-field"><span class="en-currency-symbol">$</span><input name="en_reservation[rv_addons][{{data.index}}][price]" type="text" class="en-currency-input" inputmode="decimal" value="0.00" /></div></div></td>
-								<td><div class="en-admin-table-field en-admin-table-field--action"><button type="button" class="en-icon-delete-button en-remove-rv-addon" aria-label="<?php esc_attr_e( 'Remove RV add-on', 'equine-event-manager' ); ?>" title="<?php esc_attr_e( 'Remove RV add-on', 'equine-event-manager' ); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></div></td>
+						<script type="text/html" id="tmpl-eem-rv-addon-row">
+							<tr class="eem-rv-addon-row">
+								<td><div class="eem-admin-table-field"><input type="text" class="regular-text" name="en_reservation[rv_addons][{{data.index}}][name]" value="" /></div></td>
+								<td><div class="eem-admin-table-field"><input type="text" class="regular-text" name="en_reservation[rv_addons][{{data.index}}][description]" value="" /></div></td>
+								<td><div class="eem-admin-table-field"><div class="eem-currency-field eem-rv-addon-price-field"><span class="eem-currency-symbol">$</span><input name="en_reservation[rv_addons][{{data.index}}][price]" type="text" class="eem-currency-input" inputmode="decimal" value="0.00" /></div></div></td>
+								<td><div class="eem-admin-table-field eem-admin-table-field--action"><button type="button" class="eem-icon-delete-button eem-remove-rv-addon" aria-label="<?php esc_attr_e( 'Remove RV add-on', 'equine-event-manager' ); ?>" title="<?php esc_attr_e( 'Remove RV add-on', 'equine-event-manager' ); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></div></td>
 							</tr>
 						</script>
 						</div>
@@ -503,18 +503,18 @@ class EEM_Reservations_CPT {
 			$stall_map_label = basename( (string) wp_parse_url( $stall_map_url, PHP_URL_PATH ) );
 		}
 		?>
-		<tr class="en-stall-chart-toggle-row">
+		<tr class="eem-stall-chart-toggle-row">
 			<th scope="row"><?php esc_html_e( 'Stall Assignments', 'equine-event-manager' ); ?></th>
 			<td>
-				<label class="en-inline-toggle-control">
+				<label class="eem-inline-toggle-control">
 					<input name="en_reservation[stall_chart_enabled]" id="en_stall_chart_enabled" type="checkbox" value="1" <?php checked( $data['stall_chart_enabled'], 1 ); ?> />
-					<span class="en-inline-toggle-control__track" aria-hidden="true"></span>
-					<span class="en-inline-toggle-control__label"><?php esc_html_e( 'Enable Stall Assignments', 'equine-event-manager' ); ?></span>
+					<span class="eem-inline-toggle-control__track" aria-hidden="true"></span>
+					<span class="eem-inline-toggle-control__label"><?php esc_html_e( 'Enable Stall Assignments', 'equine-event-manager' ); ?></span>
 				</label>
 				<p class="description"><?php esc_html_e( 'Turn this on to define numbered stall blocks, assign stalls, and open the assignments overview for this reservation.', 'equine-event-manager' ); ?></p>
 			</td>
 		</tr>
-		<tr class="en-stall-chart-selection-mode en-stall-chart-dependent">
+		<tr class="eem-stall-chart-selection-mode eem-stall-chart-dependent">
 			<th scope="row"><label for="en_stall_selection_mode"><?php esc_html_e( 'Stall Selection Mode', 'equine-event-manager' ); ?></label></th>
 			<td>
 				<select name="en_reservation[stall_selection_mode]" id="en_stall_selection_mode">
@@ -524,13 +524,13 @@ class EEM_Reservations_CPT {
 				<p class="description"><?php esc_html_e( 'Quantity Based uses the built-in stall quantity selector. Exact Map Selection reserves this reservation for a future add-on that lets customers choose specific stalls from an interactive map.', 'equine-event-manager' ); ?></p>
 			</td>
 		</tr>
-		<tr class="en-stall-chart-row">
+		<tr class="eem-stall-chart-row">
 			<td colspan="2">
-				<div class="en-admin-structured-table en-stall-chart-structured-table">
-					<div class="en-structured-table-panel en-stall-chart-panel">
-						<h4 class="en-rv-addon-section-title"><?php esc_html_e( 'Stall Blocks', 'equine-event-manager' ); ?></h4>
+				<div class="eem-admin-structured-table eem-stall-chart-structured-table">
+					<div class="eem-structured-table-panel eem-stall-chart-panel">
+						<h4 class="eem-rv-addon-section-title"><?php esc_html_e( 'Stall Blocks', 'equine-event-manager' ); ?></h4>
 						<p class="description"><?php esc_html_e( 'Example: Red Barn with a range from 7000 to 7010. Add as many stall ranges as needed for this reservation, but ranges cannot overlap.', 'equine-event-manager' ); ?></p>
-						<table class="widefat striped en-stall-chart-block-table">
+						<table class="widefat striped eem-stall-chart-block-table">
 							<thead>
 								<tr>
 									<th><?php esc_html_e( 'Title', 'equine-event-manager' ); ?></th>
@@ -541,18 +541,18 @@ class EEM_Reservations_CPT {
 							</thead>
 							<tbody id="en_stall_chart_stall_blocks_rows" data-stall-chart-group="stall">
 								<?php foreach ( $stall_blocks as $block_index => $block ) : ?>
-									<tr class="en-stall-chart-block-row">
-										<td><div class="en-admin-table-field"><input type="text" class="regular-text" name="en_reservation[stall_chart_stall_blocks][<?php echo esc_attr( $block_index ); ?>][label]" value="<?php echo esc_attr( $block['label'] ); ?>" placeholder="<?php esc_attr_e( 'Red Barn', 'equine-event-manager' ); ?>" autocomplete="off" /></div></td>
-										<td><div class="en-admin-table-field"><input type="number" min="0" step="1" inputmode="numeric" name="en_reservation[stall_chart_stall_blocks][<?php echo esc_attr( $block_index ); ?>][start]" value="<?php echo esc_attr( $block['start'] ); ?>" placeholder="<?php esc_attr_e( '7000', 'equine-event-manager' ); ?>" /></div></td>
-										<td><div class="en-admin-table-field"><input type="number" min="0" step="1" inputmode="numeric" name="en_reservation[stall_chart_stall_blocks][<?php echo esc_attr( $block_index ); ?>][end]" value="<?php echo esc_attr( $block['end'] ); ?>" placeholder="<?php esc_attr_e( '7010', 'equine-event-manager' ); ?>" /></div></td>
-										<td><div class="en-admin-table-field en-admin-table-field--action"><button type="button" class="en-icon-delete-button en-remove-stall-chart-block" aria-label="<?php esc_attr_e( 'Remove stall block', 'equine-event-manager' ); ?>" title="<?php esc_attr_e( 'Remove stall block', 'equine-event-manager' ); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></div></td>
+									<tr class="eem-stall-chart-block-row">
+										<td><div class="eem-admin-table-field"><input type="text" class="regular-text" name="en_reservation[stall_chart_stall_blocks][<?php echo esc_attr( $block_index ); ?>][label]" value="<?php echo esc_attr( $block['label'] ); ?>" placeholder="<?php esc_attr_e( 'Red Barn', 'equine-event-manager' ); ?>" autocomplete="off" /></div></td>
+										<td><div class="eem-admin-table-field"><input type="number" min="0" step="1" inputmode="numeric" name="en_reservation[stall_chart_stall_blocks][<?php echo esc_attr( $block_index ); ?>][start]" value="<?php echo esc_attr( $block['start'] ); ?>" placeholder="<?php esc_attr_e( '7000', 'equine-event-manager' ); ?>" /></div></td>
+										<td><div class="eem-admin-table-field"><input type="number" min="0" step="1" inputmode="numeric" name="en_reservation[stall_chart_stall_blocks][<?php echo esc_attr( $block_index ); ?>][end]" value="<?php echo esc_attr( $block['end'] ); ?>" placeholder="<?php esc_attr_e( '7010', 'equine-event-manager' ); ?>" /></div></td>
+										<td><div class="eem-admin-table-field eem-admin-table-field--action"><button type="button" class="eem-icon-delete-button eem-remove-stall-chart-block" aria-label="<?php esc_attr_e( 'Remove stall block', 'equine-event-manager' ); ?>" title="<?php esc_attr_e( 'Remove stall block', 'equine-event-manager' ); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></div></td>
 									</tr>
 								<?php endforeach; ?>
 							</tbody>
 						</table>
-						<div class="en-stall-chart-block-actions">
+						<div class="eem-stall-chart-block-actions">
 							<p><button type="button" class="button button-secondary" id="en_add_stall_chart_stall_block"><?php esc_html_e( 'Add Stall Block', 'equine-event-manager' ); ?></button></p>
-							<div class="en-stall-chart-block-summary" id="en_stall_chart_stall_summary" aria-live="polite">
+							<div class="eem-stall-chart-block-summary" id="en_stall_chart_stall_summary" aria-live="polite">
 								<?php
 								if ( $initial_stall_count > 0 ) {
 									printf(
@@ -568,23 +568,23 @@ class EEM_Reservations_CPT {
 								?>
 							</div>
 						</div>
-						<div class="en-stall-chart-block-errors" id="en_stall_chart_stall_errors" aria-live="polite"></div>
-						<script type="text/html" id="tmpl-en-stall-chart-stall-block-row">
-							<tr class="en-stall-chart-block-row">
-								<td><div class="en-admin-table-field"><input type="text" class="regular-text" name="en_reservation[stall_chart_stall_blocks][{{data.index}}][label]" value="" placeholder="<?php esc_attr_e( 'Red Barn', 'equine-event-manager' ); ?>" autocomplete="off" /></div></td>
-								<td><div class="en-admin-table-field"><input type="number" min="0" step="1" inputmode="numeric" name="en_reservation[stall_chart_stall_blocks][{{data.index}}][start]" value="" placeholder="<?php esc_attr_e( '7000', 'equine-event-manager' ); ?>" /></div></td>
-								<td><div class="en-admin-table-field"><input type="number" min="0" step="1" inputmode="numeric" name="en_reservation[stall_chart_stall_blocks][{{data.index}}][end]" value="" placeholder="<?php esc_attr_e( '7010', 'equine-event-manager' ); ?>" /></div></td>
-								<td><div class="en-admin-table-field en-admin-table-field--action"><button type="button" class="en-icon-delete-button en-remove-stall-chart-block" aria-label="<?php esc_attr_e( 'Remove stall block', 'equine-event-manager' ); ?>" title="<?php esc_attr_e( 'Remove stall block', 'equine-event-manager' ); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></div></td>
+						<div class="eem-stall-chart-block-errors" id="en_stall_chart_stall_errors" aria-live="polite"></div>
+						<script type="text/html" id="tmpl-eem-stall-chart-stall-block-row">
+							<tr class="eem-stall-chart-block-row">
+								<td><div class="eem-admin-table-field"><input type="text" class="regular-text" name="en_reservation[stall_chart_stall_blocks][{{data.index}}][label]" value="" placeholder="<?php esc_attr_e( 'Red Barn', 'equine-event-manager' ); ?>" autocomplete="off" /></div></td>
+								<td><div class="eem-admin-table-field"><input type="number" min="0" step="1" inputmode="numeric" name="en_reservation[stall_chart_stall_blocks][{{data.index}}][start]" value="" placeholder="<?php esc_attr_e( '7000', 'equine-event-manager' ); ?>" /></div></td>
+								<td><div class="eem-admin-table-field"><input type="number" min="0" step="1" inputmode="numeric" name="en_reservation[stall_chart_stall_blocks][{{data.index}}][end]" value="" placeholder="<?php esc_attr_e( '7010', 'equine-event-manager' ); ?>" /></div></td>
+								<td><div class="eem-admin-table-field eem-admin-table-field--action"><button type="button" class="eem-icon-delete-button eem-remove-stall-chart-block" aria-label="<?php esc_attr_e( 'Remove stall block', 'equine-event-manager' ); ?>" title="<?php esc_attr_e( 'Remove stall block', 'equine-event-manager' ); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></div></td>
 							</tr>
 						</script>
 						<?php $this->render_chart_blocked_units_field( 'stall_chart_blocked_stall_units', __( 'Blocked Stall Numbers', 'equine-event-manager' ), $stall_unit_options, $blocked_stall_units, __( 'Search and select the exact stall numbers to block from the generated range list.', 'equine-event-manager' ) ); ?>
-						<div class="en-stall-chart-blocked-field">
+						<div class="eem-stall-chart-blocked-field">
 							<h5><?php esc_html_e( 'Stall Map', 'equine-event-manager' ); ?></h5>
 							<div>
 								<input type="hidden" name="en_reservation[stall_map_file_id]" value="<?php echo esc_attr( $stall_map_file_id ); ?>" />
 								<input type="text" class="regular-text" value="<?php echo esc_attr( $stall_map_label ); ?>" readonly="readonly" placeholder="<?php esc_attr_e( 'No file selected', 'equine-event-manager' ); ?>" />
 								<button type="button" class="button"><?php esc_html_e( 'Upload File', 'equine-event-manager' ); ?></button>
-								<button type="button" class="en-icon-delete-button" aria-label="<?php esc_attr_e( 'Remove stall map file', 'equine-event-manager' ); ?>" title="<?php esc_attr_e( 'Remove stall map file', 'equine-event-manager' ); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button>
+								<button type="button" class="eem-icon-delete-button" aria-label="<?php esc_attr_e( 'Remove stall map file', 'equine-event-manager' ); ?>" title="<?php esc_attr_e( 'Remove stall map file', 'equine-event-manager' ); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button>
 								<?php if ( $stall_map_url ) : ?>
 									<a href="<?php echo esc_url( $stall_map_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View file', 'equine-event-manager' ); ?></a>
 								<?php else : ?>
@@ -612,12 +612,12 @@ class EEM_Reservations_CPT {
 	 */
 	private function render_chart_blocked_units_field( $field_key, $label, $options, $selected, $description = '' ) {
 		?>
-		<div class="en-stall-chart-blocked-field">
+		<div class="eem-stall-chart-blocked-field">
 			<h5><?php echo esc_html( $label ); ?></h5>
 			<select
 				name="en_reservation[<?php echo esc_attr( $field_key ); ?>][]"
 				multiple="multiple"
-				class="en-stall-chart-blocked-select"
+				class="eem-stall-chart-blocked-select"
 				data-placeholder="<?php esc_attr_e( 'Start typing a unit number', 'equine-event-manager' ); ?>"
 				data-stall-chart-field="<?php echo esc_attr( $field_key ); ?>"
 				<?php disabled( empty( $options ) ); ?>
@@ -674,10 +674,10 @@ class EEM_Reservations_CPT {
 				<tr>
 					<th scope="row"><?php esc_html_e( 'Agreement', 'equine-event-manager' ); ?></th>
 					<td>
-						<label class="en-inline-toggle-control">
+						<label class="eem-inline-toggle-control">
 							<input name="en_reservation[venue_agreement_enabled]" id="en_frontend_venue_agreement_enabled" type="checkbox" value="1" <?php checked( $data['venue_agreement_enabled'], 1 ); ?> />
-							<span class="en-inline-toggle-control__track" aria-hidden="true"></span>
-							<span class="en-inline-toggle-control__label"><?php esc_html_e( 'Require customers to accept a venue agreement before submitting.', 'equine-event-manager' ); ?></span>
+							<span class="eem-inline-toggle-control__track" aria-hidden="true"></span>
+							<span class="eem-inline-toggle-control__label"><?php esc_html_e( 'Require customers to accept a venue agreement before submitting.', 'equine-event-manager' ); ?></span>
 						</label>
 					</td>
 				</tr>
@@ -2848,14 +2848,14 @@ class EEM_Reservations_CPT {
 		<tr>
 			<th scope="row"><label for="en_<?php echo esc_attr( $name ); ?>_hour"><?php echo esc_html( $label ); ?></label></th>
 			<td>
-				<div class="en-time-picker-fields">
+				<div class="eem-time-picker-fields">
 					<select name="en_reservation[<?php echo esc_attr( $name ); ?>][hour]" id="en_<?php echo esc_attr( $name ); ?>_hour">
 						<option value=""><?php esc_html_e( 'Hour', 'equine-event-manager' ); ?></option>
 						<?php for ( $hour = 1; $hour <= 12; $hour++ ) : ?>
 							<option value="<?php echo esc_attr( str_pad( (string) $hour, 2, '0', STR_PAD_LEFT ) ); ?>" <?php selected( $time_parts['hour'], str_pad( (string) $hour, 2, '0', STR_PAD_LEFT ) ); ?>><?php echo esc_html( $hour ); ?></option>
 						<?php endfor; ?>
 					</select>
-					<span class="en-time-picker-separator" aria-hidden="true">:</span>
+					<span class="eem-time-picker-separator" aria-hidden="true">:</span>
 					<select name="en_reservation[<?php echo esc_attr( $name ); ?>][minute]" id="en_<?php echo esc_attr( $name ); ?>_minute">
 						<option value=""><?php esc_html_e( 'Min', 'equine-event-manager' ); ?></option>
 						<?php foreach ( array( '00', '15', '30', '45' ) as $minute ) : ?>
@@ -2890,22 +2890,22 @@ class EEM_Reservations_CPT {
 	private function render_toggle_time_picker_row( $name, $enabled_key, $label, $value, $is_enabled, $description = '' ) {
 		$time_parts = $this->parse_time_value( $value );
 		?>
-		<tr class="en-time-picker-toggle-row<?php echo $is_enabled ? '' : ' en-rate-mode-row--disabled'; ?>" data-en-time-toggle-row="<?php echo esc_attr( $name ); ?>">
+		<tr class="eem-time-picker-toggle-row<?php echo $is_enabled ? '' : ' eem-rate-mode-row--disabled'; ?>" data-eem-time-toggle-row="<?php echo esc_attr( $name ); ?>">
 			<th scope="row"><?php echo esc_html( $label ); ?></th>
 			<td>
-				<label class="en-inline-toggle-control en-inline-toggle-control--time">
-					<input name="en_reservation[<?php echo esc_attr( $enabled_key ); ?>]" id="en_<?php echo esc_attr( $enabled_key ); ?>" type="checkbox" value="1" data-en-time-toggle="<?php echo esc_attr( $name ); ?>" <?php checked( $is_enabled ); ?> />
-					<span class="en-inline-toggle-control__track" aria-hidden="true"></span>
-					<span class="en-inline-toggle-control__label"><?php esc_html_e( 'Show on title card', 'equine-event-manager' ); ?></span>
+				<label class="eem-inline-toggle-control eem-inline-toggle-control--time">
+					<input name="en_reservation[<?php echo esc_attr( $enabled_key ); ?>]" id="en_<?php echo esc_attr( $enabled_key ); ?>" type="checkbox" value="1" data-eem-time-toggle="<?php echo esc_attr( $name ); ?>" <?php checked( $is_enabled ); ?> />
+					<span class="eem-inline-toggle-control__track" aria-hidden="true"></span>
+					<span class="eem-inline-toggle-control__label"><?php esc_html_e( 'Show on title card', 'equine-event-manager' ); ?></span>
 				</label>
-				<div class="en-time-picker-fields en-time-picker-fields--toggle"<?php echo $is_enabled ? '' : ' hidden'; ?> data-en-time-toggle-fields="<?php echo esc_attr( $name ); ?>">
+				<div class="eem-time-picker-fields eem-time-picker-fields--toggle"<?php echo $is_enabled ? '' : ' hidden'; ?> data-eem-time-toggle-fields="<?php echo esc_attr( $name ); ?>">
 					<select name="en_reservation[<?php echo esc_attr( $name ); ?>][hour]" id="en_<?php echo esc_attr( $name ); ?>_hour">
 						<option value=""><?php esc_html_e( 'Hour', 'equine-event-manager' ); ?></option>
 						<?php for ( $hour = 1; $hour <= 12; $hour++ ) : ?>
 							<option value="<?php echo esc_attr( str_pad( (string) $hour, 2, '0', STR_PAD_LEFT ) ); ?>" <?php selected( $time_parts['hour'], str_pad( (string) $hour, 2, '0', STR_PAD_LEFT ) ); ?>><?php echo esc_html( $hour ); ?></option>
 						<?php endfor; ?>
 					</select>
-					<span class="en-time-picker-separator" aria-hidden="true">:</span>
+					<span class="eem-time-picker-separator" aria-hidden="true">:</span>
 					<select name="en_reservation[<?php echo esc_attr( $name ); ?>][minute]" id="en_<?php echo esc_attr( $name ); ?>_minute">
 						<option value=""><?php esc_html_e( 'Min', 'equine-event-manager' ); ?></option>
 						<?php foreach ( array( '00', '15', '30', '45' ) as $minute ) : ?>
@@ -2919,7 +2919,7 @@ class EEM_Reservations_CPT {
 					</select>
 				</div>
 				<?php if ( $description ) : ?>
-					<p class="description"<?php echo $is_enabled ? '' : ' hidden'; ?> data-en-time-toggle-description="<?php echo esc_attr( $name ); ?>"><?php echo esc_html( $description ); ?></p>
+					<p class="description"<?php echo $is_enabled ? '' : ' hidden'; ?> data-eem-time-toggle-description="<?php echo esc_attr( $name ); ?>"><?php echo esc_html( $description ); ?></p>
 				<?php endif; ?>
 			</td>
 		</tr>
@@ -2940,7 +2940,7 @@ class EEM_Reservations_CPT {
 		<tr class="<?php echo esc_attr( $row_class ); ?>">
 			<th scope="row"><?php echo esc_html( $label ); ?></th>
 			<td>
-				<div class="en-date-range-fields">
+				<div class="eem-date-range-fields">
 					<label for="en_<?php echo esc_attr( $start_name ); ?>">
 						<span><?php esc_html_e( 'Start Date', 'equine-event-manager' ); ?></span>
 						<input name="en_reservation[<?php echo esc_attr( $start_name ); ?>]" id="en_<?php echo esc_attr( $start_name ); ?>" type="date" value="<?php echo esc_attr( $start_value ); ?>" />
@@ -3078,7 +3078,7 @@ class EEM_Reservations_CPT {
 					<input type="hidden" name="en_reservation[<?php echo esc_attr( $name ); ?>]" value="<?php echo esc_attr( $attachment_id ); ?>" />
 					<input id="en_<?php echo esc_attr( $name ); ?>_label" type="text" class="regular-text" value="<?php echo esc_attr( $file_label ); ?>" readonly="readonly" placeholder="<?php esc_attr_e( 'No file selected', 'equine-event-manager' ); ?>" />
 					<button type="button" class="button"><?php esc_html_e( 'Upload File', 'equine-event-manager' ); ?></button>
-					<button type="button" class="en-icon-delete-button" aria-label="<?php esc_attr_e( 'Remove agreement file', 'equine-event-manager' ); ?>" title="<?php esc_attr_e( 'Remove agreement file', 'equine-event-manager' ); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button>
+					<button type="button" class="eem-icon-delete-button" aria-label="<?php esc_attr_e( 'Remove agreement file', 'equine-event-manager' ); ?>" title="<?php esc_attr_e( 'Remove agreement file', 'equine-event-manager' ); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button>
 					<?php if ( $file_url ) : ?>
 						<a href="<?php echo esc_url( $file_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View file', 'equine-event-manager' ); ?></a>
 					<?php else : ?>
@@ -3276,16 +3276,16 @@ class EEM_Reservations_CPT {
 		$row_classes = array();
 
 		if ( $args['mode'] ) {
-			$row_classes[] = 'en-rate-mode-row';
-			$row_classes[] = 'en-rate-mode-row--' . sanitize_html_class( $args['mode'] );
+			$row_classes[] = 'eem-rate-mode-row';
+			$row_classes[] = 'eem-rate-mode-row--' . sanitize_html_class( $args['mode'] );
 		}
 
 		if ( $args['group'] ) {
-			$row_classes[] = 'en-rate-mode-group--' . sanitize_html_class( $args['group'] );
+			$row_classes[] = 'eem-rate-mode-group--' . sanitize_html_class( $args['group'] );
 		}
 
 		if ( $args['disabled'] ) {
-			$row_classes[] = 'en-rate-mode-row--disabled';
+			$row_classes[] = 'eem-rate-mode-row--disabled';
 		}
 
 		if ( $args['row_classes'] ) {
@@ -3295,9 +3295,9 @@ class EEM_Reservations_CPT {
 		<tr class="<?php echo esc_attr( implode( ' ', $row_classes ) ); ?>">
 			<th scope="row"><label for="en_<?php echo esc_attr( $name ); ?>"><?php echo esc_html( $label ); ?></label></th>
 			<td>
-				<div class="en-currency-field">
-					<span class="en-currency-symbol" aria-hidden="true">$</span>
-					<input name="en_reservation[<?php echo esc_attr( $name ); ?>]" id="en_<?php echo esc_attr( $name ); ?>" class="en-currency-input" type="text" inputmode="decimal" value="<?php echo esc_attr( number_format( (float) $value, 2, '.', '' ) ); ?>" <?php disabled( (bool) $args['disabled'] ); ?> />
+				<div class="eem-currency-field">
+					<span class="eem-currency-symbol" aria-hidden="true">$</span>
+					<input name="en_reservation[<?php echo esc_attr( $name ); ?>]" id="en_<?php echo esc_attr( $name ); ?>" class="eem-currency-input" type="text" inputmode="decimal" value="<?php echo esc_attr( number_format( (float) $value, 2, '.', '' ) ); ?>" <?php disabled( (bool) $args['disabled'] ); ?> />
 				</div>
 			</td>
 		</tr>
@@ -3325,12 +3325,12 @@ class EEM_Reservations_CPT {
 		<tr>
 			<th scope="row"><label for="en_<?php echo esc_attr( $name ); ?>"><?php echo esc_html( $label ); ?></label></th>
 			<td>
-				<div class="en-fee-value-field <?php echo esc_attr( $field_class ); ?>">
-					<span class="en-fee-value-prefix" aria-hidden="true">$</span>
-					<input name="en_reservation[<?php echo esc_attr( $name ); ?>]" id="en_<?php echo esc_attr( $name ); ?>" class="en-fee-value-input" type="text" inputmode="decimal" value="<?php echo esc_attr( number_format( (float) $value, 2, '.', '' ) ); ?>" />
-					<span class="en-fee-value-suffix" aria-hidden="true">%</span>
+				<div class="eem-fee-value-field <?php echo esc_attr( $field_class ); ?>">
+					<span class="eem-fee-value-prefix" aria-hidden="true">$</span>
+					<input name="en_reservation[<?php echo esc_attr( $name ); ?>]" id="en_<?php echo esc_attr( $name ); ?>" class="eem-fee-value-input" type="text" inputmode="decimal" value="<?php echo esc_attr( number_format( (float) $value, 2, '.', '' ) ); ?>" />
+					<span class="eem-fee-value-suffix" aria-hidden="true">%</span>
 				</div>
-				<p class="description en-fee-value-description">
+				<p class="description eem-fee-value-description">
 					<?php esc_html_e( 'Percentage fees display as %, and flat fees display as currency. Saved values remain numeric.', 'equine-event-manager' ); ?>
 				</p>
 			</td>

@@ -4683,7 +4683,7 @@ class EEM_Admin {
 										<h3><?php esc_html_e( 'Invoice Link', 'equine-event-manager' ); ?></h3>
 										<div class="eem-order-payment-link-row">
 											<input class="regular-text code" type="text" readonly value="<?php echo esc_attr( $invoice_payment_url ); ?>" />
-											<button type="button" class="button" data-en-copy-url="<?php echo esc_attr( $invoice_payment_url ); ?>"><?php esc_html_e( 'Copy', 'equine-event-manager' ); ?></button>
+											<button type="button" class="button" data-eem-copy-url="<?php echo esc_attr( $invoice_payment_url ); ?>"><?php esc_html_e( 'Copy', 'equine-event-manager' ); ?></button>
 											<?php if ( in_array( $order['status_slug'], array( 'unpaid', 'invoice-sent' ), true ) ) : ?>
 												<a class="button button-primary" target="_blank" href="<?php echo esc_url( $invoice_payment_url ); ?>"><?php esc_html_e( 'Open Payment Page', 'equine-event-manager' ); ?></a>
 											<?php endif; ?>
@@ -4740,7 +4740,7 @@ class EEM_Admin {
 		</div>
 		<script>
 			(function() {
-				var copyButtons = document.querySelectorAll('[data-en-copy-url]');
+				var copyButtons = document.querySelectorAll('[data-eem-copy-url]');
 				function setCopiedState(button) {
 					var originalText = button.textContent;
 					button.textContent = '<?php echo esc_js( __( 'Copied', 'equine-event-manager' ) ); ?>';
@@ -4750,7 +4750,7 @@ class EEM_Admin {
 				}
 				copyButtons.forEach(function(button) {
 					button.addEventListener('click', function() {
-						var text = button.getAttribute('data-en-copy-url') || '';
+						var text = button.getAttribute('data-eem-copy-url') || '';
 						if (!text) {
 							return;
 						}
@@ -8186,7 +8186,7 @@ class EEM_Admin {
 									'button' => array(
 										'type'             => true,
 										'class'            => true,
-										'data-en-copy-url' => true,
+										'data-eem-copy-url' => true,
 									),
 									'br' => array(),
 									'div' => array(

@@ -422,7 +422,7 @@ body.post-type-en_reservation .postbox .description {
 	margin-top: 0.5rem !important;
 }
 
-body.post-type-en_reservation .en-section-toggle-row {
+body.post-type-en_reservation .eem-section-toggle-row {
 	display: flex !important;
 	align-items: center !important;
 	justify-content: space-between !important;
@@ -431,7 +431,7 @@ body.post-type-en_reservation .en-section-toggle-row {
 	margin-bottom: 1rem !important;
 }
 
-body.post-type-en_reservation .en-section-toggle-control {
+body.post-type-en_reservation .eem-section-toggle-control {
 	display: inline-flex !important;
 	align-items: center !important;
 	justify-content: space-between !important;
@@ -439,40 +439,40 @@ body.post-type-en_reservation .en-section-toggle-control {
 	gap: 1rem !important;
 }
 
-body.post-type-en_reservation .en-section-toggle-control__label,
-body.post-type-en_reservation .en-inline-toggle-control__label {
+body.post-type-en_reservation .eem-section-toggle-control__label,
+body.post-type-en_reservation .eem-inline-toggle-control__label {
 	color: var(--eem-app-heading) !important;
 	font-size: 0.95rem !important;
 	font-weight: 800 !important;
 	line-height: 1.35 !important;
 }
 
-body.post-type-en_reservation .en-stay-type-toggle-group {
+body.post-type-en_reservation .eem-stay-type-toggle-group {
 	display: flex !important;
 	flex-wrap: wrap !important;
 	gap: 0.875rem !important;
 }
 
-body.post-type-en_reservation .en-inline-toggle-control {
+body.post-type-en_reservation .eem-inline-toggle-control {
 	display: inline-flex !important;
 	align-items: center !important;
 	gap: 0.625rem !important;
 }
 
-body.post-type-en_reservation .en-admin-structured-table {
+body.post-type-en_reservation .eem-admin-structured-table {
 	display: grid !important;
 	gap: 0.875rem !important;
 }
 
-body.post-type-en_reservation .en-general-addon-table,
+body.post-type-en_reservation .eem-general-addon-table,
 body.post-type-en_reservation .widefat.striped {
 	border: 1px solid #e4eaf2 !important;
 	border-radius: 8px !important;
 	overflow: hidden !important;
 }
 
-body.post-type-en_reservation .en-general-addon-table th,
-body.post-type-en_reservation .en-general-addon-table td,
+body.post-type-en_reservation .eem-general-addon-table th,
+body.post-type-en_reservation .eem-general-addon-table td,
 body.post-type-en_reservation .widefat.striped th,
 body.post-type-en_reservation .widefat.striped td {
 	padding: 0.75rem !important;
@@ -531,12 +531,12 @@ body.post-type-en_reservation #submitdiv .wp-core-ui .button {
 		grid-template-columns: 1fr !important;
 	}
 
-	body.post-type-en_reservation .en-section-toggle-row,
-	body.post-type-en_reservation .en-section-toggle-control {
+	body.post-type-en_reservation .eem-section-toggle-row,
+	body.post-type-en_reservation .eem-section-toggle-control {
 		align-items: flex-start !important;
 	}
 
-	body.post-type-en_reservation .en-section-toggle-control {
+	body.post-type-en_reservation .eem-section-toggle-control {
 		flex-wrap: wrap !important;
 	}
 
@@ -1102,8 +1102,8 @@ body.post-type-en_reservation.post-new-php .postbox .inside {
 	padding: 1rem;
 }
 
-body.post-type-en_reservation.post-php .en-section-toggle-row,
-body.post-type-en_reservation.post-new-php .en-section-toggle-row {
+body.post-type-en_reservation.post-php .eem-section-toggle-row,
+body.post-type-en_reservation.post-new-php .eem-section-toggle-row {
 	position: absolute;
 	top: 0.75rem;
 	right: 1rem;
@@ -1113,10 +1113,10 @@ body.post-type-en_reservation.post-new-php .en-section-toggle-row {
 	z-index: 3;
 }
 
-body.post-type-en_reservation.post-php .en-section-toggle-control,
-body.post-type-en_reservation.post-new-php .en-section-toggle-control,
-body.post-type-en_reservation.post-php .en-inline-toggle-control,
-body.post-type-en_reservation.post-new-php .en-inline-toggle-control {
+body.post-type-en_reservation.post-php .eem-section-toggle-control,
+body.post-type-en_reservation.post-new-php .eem-section-toggle-control,
+body.post-type-en_reservation.post-php .eem-inline-toggle-control,
+body.post-type-en_reservation.post-new-php .eem-inline-toggle-control {
 	display: inline-flex;
 	align-items: center;
 	gap: 0.75rem;
@@ -1124,10 +1124,10 @@ body.post-type-en_reservation.post-new-php .en-inline-toggle-control {
 	font-weight: 700;
 }
 
-body.post-type-en_reservation.post-php .en-inline-toggle-control__label,
-body.post-type-en_reservation.post-new-php .en-inline-toggle-control__label,
-body.post-type-en_reservation.post-php .en-section-toggle-control__label,
-body.post-type-en_reservation.post-new-php .en-section-toggle-control__label {
+body.post-type-en_reservation.post-php .eem-inline-toggle-control__label,
+body.post-type-en_reservation.post-new-php .eem-inline-toggle-control__label,
+body.post-type-en_reservation.post-php .eem-section-toggle-control__label,
+body.post-type-en_reservation.post-new-php .eem-section-toggle-control__label {
 	display: inline-flex;
 	align-items: center;
 	min-height: 28px;
@@ -2685,14 +2685,14 @@ body.eem-shell-page--editor select {
 	max-width: 100%;
 }
 
-body.eem-shell-page--editor .en-section-toggle-row {
+body.eem-shell-page--editor .eem-section-toggle-row {
 	display: flex;
 	justify-content: flex-end;
 	margin: 0 0 1rem;
 }
 
-body.post-type-en_reservation.post-php .en-section-toggle-row,
-body.post-type-en_reservation.post-new-php .en-section-toggle-row {
+body.post-type-en_reservation.post-php .eem-section-toggle-row,
+body.post-type-en_reservation.post-new-php .eem-section-toggle-row {
 	position: absolute;
 	top: 0.625rem;
 	right: 1rem;
@@ -2702,8 +2702,8 @@ body.post-type-en_reservation.post-new-php .en-section-toggle-row {
 	margin: 0;
 }
 
-body.eem-shell-page--editor .en-section-toggle-control,
-body.eem-shell-page--editor .en-inline-toggle-control {
+body.eem-shell-page--editor .eem-section-toggle-control,
+body.eem-shell-page--editor .eem-inline-toggle-control {
 	position: relative;
 	display: inline-flex;
 	align-items: center;
@@ -2712,10 +2712,10 @@ body.eem-shell-page--editor .en-inline-toggle-control {
 	font-weight: 700;
 }
 
-body.post-type-en_reservation.post-php .en-section-toggle-control,
-body.post-type-en_reservation.post-php .en-inline-toggle-control,
-body.post-type-en_reservation.post-new-php .en-section-toggle-control,
-body.post-type-en_reservation.post-new-php .en-inline-toggle-control {
+body.post-type-en_reservation.post-php .eem-section-toggle-control,
+body.post-type-en_reservation.post-php .eem-inline-toggle-control,
+body.post-type-en_reservation.post-new-php .eem-section-toggle-control,
+body.post-type-en_reservation.post-new-php .eem-inline-toggle-control {
 	position: relative;
 	display: inline-flex;
 	align-items: center;
@@ -2724,7 +2724,7 @@ body.post-type-en_reservation.post-new-php .en-inline-toggle-control {
 	font-weight: 700;
 }
 
-body.eem-shell-page--editor .en-section-toggle-control {
+body.eem-shell-page--editor .eem-section-toggle-control {
 	justify-content: space-between;
 	width: min(100%, 380px);
 	padding: 0.75rem 0.875rem;
@@ -2734,8 +2734,8 @@ body.eem-shell-page--editor .en-section-toggle-control {
 	box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
 }
 
-body.post-type-en_reservation.post-php .en-section-toggle-control,
-body.post-type-en_reservation.post-new-php .en-section-toggle-control {
+body.post-type-en_reservation.post-php .eem-section-toggle-control,
+body.post-type-en_reservation.post-new-php .eem-section-toggle-control {
 	justify-content: flex-end;
 	width: auto;
 	padding: 0;
@@ -2745,28 +2745,28 @@ body.post-type-en_reservation.post-new-php .en-section-toggle-control {
 	box-shadow: none;
 }
 
-body.post-type-en_reservation.post-php .en-section-toggle-control__label,
-body.post-type-en_reservation.post-new-php .en-section-toggle-control__label {
+body.post-type-en_reservation.post-php .eem-section-toggle-control__label,
+body.post-type-en_reservation.post-new-php .eem-section-toggle-control__label {
 	font-size: 0.875rem;
 	font-weight: 700;
 	line-height: 1.2;
 }
 
-body.eem-shell-page--editor .en-section-toggle-control input,
-body.eem-shell-page--editor .en-inline-toggle-control input {
+body.eem-shell-page--editor .eem-section-toggle-control input,
+body.eem-shell-page--editor .eem-inline-toggle-control input {
 	position: absolute;
 	opacity: 0;
 	pointer-events: none;
 }
 
-body.eem-shell-page--editor .en-section-toggle-control__label,
-body.eem-shell-page--editor .en-inline-toggle-control__label {
+body.eem-shell-page--editor .eem-section-toggle-control__label,
+body.eem-shell-page--editor .eem-inline-toggle-control__label {
 	min-width: 0;
 	line-height: 1.4;
 }
 
-body.eem-shell-page--editor .en-section-toggle-control__track,
-body.eem-shell-page--editor .en-inline-toggle-control__track {
+body.eem-shell-page--editor .eem-section-toggle-control__track,
+body.eem-shell-page--editor .eem-inline-toggle-control__track {
 	display: inline-flex;
 	align-items: center;
 	width: 48px;
@@ -2779,10 +2779,10 @@ body.eem-shell-page--editor .en-inline-toggle-control__track {
 	transition: background-color 0.2s ease;
 }
 
-body.post-type-en_reservation.post-php .en-section-toggle-control__track,
-body.post-type-en_reservation.post-php .en-inline-toggle-control__track,
-body.post-type-en_reservation.post-new-php .en-section-toggle-control__track,
-body.post-type-en_reservation.post-new-php .en-inline-toggle-control__track {
+body.post-type-en_reservation.post-php .eem-section-toggle-control__track,
+body.post-type-en_reservation.post-php .eem-inline-toggle-control__track,
+body.post-type-en_reservation.post-new-php .eem-section-toggle-control__track,
+body.post-type-en_reservation.post-new-php .eem-inline-toggle-control__track {
 	display: inline-flex;
 	align-items: center;
 	width: 48px;
@@ -2795,8 +2795,8 @@ body.post-type-en_reservation.post-new-php .en-inline-toggle-control__track {
 	transition: background-color 0.2s ease;
 }
 
-body.eem-shell-page--editor .en-section-toggle-control__thumb,
-body.eem-shell-page--editor .en-inline-toggle-control__track::after {
+body.eem-shell-page--editor .eem-section-toggle-control__thumb,
+body.eem-shell-page--editor .eem-inline-toggle-control__track::after {
 	content: "";
 	display: block;
 	width: 22px;
@@ -2808,73 +2808,73 @@ body.eem-shell-page--editor .en-inline-toggle-control__track::after {
 	transition: transform 0.2s ease;
 }
 
-body.eem-shell-page--editor .en-section-toggle-control input:checked + .en-section-toggle-control__label + .en-section-toggle-control__track,
-body.eem-shell-page--editor .en-inline-toggle-control input:checked + .en-inline-toggle-control__track {
+body.eem-shell-page--editor .eem-section-toggle-control input:checked + .eem-section-toggle-control__label + .eem-section-toggle-control__track,
+body.eem-shell-page--editor .eem-inline-toggle-control input:checked + .eem-inline-toggle-control__track {
 	background: #52b788;
 }
 
-body.post-type-en_reservation.post-php .en-section-toggle-control input:checked + .en-section-toggle-control__label + .en-section-toggle-control__track,
-body.post-type-en_reservation.post-php .en-inline-toggle-control input:checked + .en-inline-toggle-control__track,
-body.post-type-en_reservation.post-new-php .en-section-toggle-control input:checked + .en-section-toggle-control__label + .en-section-toggle-control__track,
-body.post-type-en_reservation.post-new-php .en-inline-toggle-control input:checked + .en-inline-toggle-control__track {
+body.post-type-en_reservation.post-php .eem-section-toggle-control input:checked + .eem-section-toggle-control__label + .eem-section-toggle-control__track,
+body.post-type-en_reservation.post-php .eem-inline-toggle-control input:checked + .eem-inline-toggle-control__track,
+body.post-type-en_reservation.post-new-php .eem-section-toggle-control input:checked + .eem-section-toggle-control__label + .eem-section-toggle-control__track,
+body.post-type-en_reservation.post-new-php .eem-inline-toggle-control input:checked + .eem-inline-toggle-control__track {
 	background: #52b788;
 }
 
-body.eem-shell-page--editor .en-section-toggle-control input:checked + .en-section-toggle-control__label + .en-section-toggle-control__track .en-section-toggle-control__thumb,
-body.eem-shell-page--editor .en-inline-toggle-control input:checked + .en-inline-toggle-control__track::after {
+body.eem-shell-page--editor .eem-section-toggle-control input:checked + .eem-section-toggle-control__label + .eem-section-toggle-control__track .eem-section-toggle-control__thumb,
+body.eem-shell-page--editor .eem-inline-toggle-control input:checked + .eem-inline-toggle-control__track::after {
 	transform: translateX(20px);
 }
 
-body.eem-shell-page--editor .en-section-toggle-control input:focus-visible + .en-section-toggle-control__label + .en-section-toggle-control__track,
-body.eem-shell-page--editor .en-inline-toggle-control input:focus-visible + .en-inline-toggle-control__track {
+body.eem-shell-page--editor .eem-section-toggle-control input:focus-visible + .eem-section-toggle-control__label + .eem-section-toggle-control__track,
+body.eem-shell-page--editor .eem-inline-toggle-control input:focus-visible + .eem-inline-toggle-control__track {
 	outline: 2px solid rgba(82, 183, 136, 0.25);
 	outline-offset: 2px;
 }
 
-body.eem-shell-page--editor .en-stay-type-toggle-group {
+body.eem-shell-page--editor .eem-stay-type-toggle-group {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 0.75rem;
 }
 
-body.eem-shell-page--editor .en-inline-toggle-control {
+body.eem-shell-page--editor .eem-inline-toggle-control {
 	padding: 0.625rem 0.875rem;
 	border: 1px solid #d7dee8;
 	border-radius: 999px;
 	background: #f8fbff;
 }
 
-body.post-type-en_reservation.post-php .en-inline-toggle-control,
-body.post-type-en_reservation.post-new-php .en-inline-toggle-control {
+body.post-type-en_reservation.post-php .eem-inline-toggle-control,
+body.post-type-en_reservation.post-new-php .eem-inline-toggle-control {
 	min-height: 40px;
 	padding: 0.5rem 0.875rem;
 	align-items: center;
 }
 
-body.post-type-en_reservation.post-php .en-stay-type-toggle-group,
-body.post-type-en_reservation.post-new-php .en-stay-type-toggle-group {
+body.post-type-en_reservation.post-php .eem-stay-type-toggle-group,
+body.post-type-en_reservation.post-new-php .eem-stay-type-toggle-group {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
 	gap: 0.75rem;
 }
 
-body.eem-shell-page--editor .en-admin-structured-table {
+body.eem-shell-page--editor .eem-admin-structured-table {
 	display: grid;
 	gap: 0.875rem;
 }
 
-body.eem-shell-page--editor .en-admin-table-field {
+body.eem-shell-page--editor .eem-admin-table-field {
 	width: 100%;
 }
 
-body.eem-shell-page--editor .en-admin-table-field input,
-body.eem-shell-page--editor .en-admin-table-field select,
-body.eem-shell-page--editor .en-admin-table-field textarea {
+body.eem-shell-page--editor .eem-admin-table-field input,
+body.eem-shell-page--editor .eem-admin-table-field select,
+body.eem-shell-page--editor .eem-admin-table-field textarea {
 	width: 100%;
 }
 
-body.eem-shell-page--editor .en-icon-delete-button {
+body.eem-shell-page--editor .eem-icon-delete-button {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -2888,13 +2888,13 @@ body.eem-shell-page--editor .en-icon-delete-button {
 	cursor: pointer;
 }
 
-body.eem-shell-page--editor .en-icon-delete-button .dashicons {
+body.eem-shell-page--editor .eem-icon-delete-button .dashicons {
 	font-size: 18px;
 	width: 18px;
 	height: 18px;
 }
 
-body.eem-shell-page--editor .en-currency-field {
+body.eem-shell-page--editor .eem-currency-field {
 	display: inline-flex;
 	align-items: center;
 	min-width: 180px;
@@ -2906,13 +2906,13 @@ body.eem-shell-page--editor .en-currency-field {
 	overflow: hidden;
 }
 
-body.eem-shell-page--editor .en-currency-symbol {
+body.eem-shell-page--editor .eem-currency-symbol {
 	padding: 0 0.75rem;
 	color: #6b7890;
 	font-weight: 700;
 }
 
-body.eem-shell-page--editor .en-currency-field .en-currency-input {
+body.eem-shell-page--editor .eem-currency-field .eem-currency-input {
 	border: 0;
 	border-radius: 0;
 	box-shadow: none;
@@ -4434,9 +4434,9 @@ body.post-type-en_reservation.post-new-php .postbox > .inside {
 	padding: 1rem !important;
 }
 
-body.eem-shell-page--editor .en-section-toggle-row,
-body.post-type-en_reservation.post-php .en-section-toggle-row,
-body.post-type-en_reservation.post-new-php .en-section-toggle-row {
+body.eem-shell-page--editor .eem-section-toggle-row,
+body.post-type-en_reservation.post-php .eem-section-toggle-row,
+body.post-type-en_reservation.post-new-php .eem-section-toggle-row {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -4444,9 +4444,9 @@ body.post-type-en_reservation.post-new-php .en-section-toggle-row {
 	margin-bottom: 1rem;
 }
 
-body.eem-shell-page--editor .en-section-toggle-control,
-body.post-type-en_reservation.post-php .en-section-toggle-control,
-body.post-type-en_reservation.post-new-php .en-section-toggle-control {
+body.eem-shell-page--editor .eem-section-toggle-control,
+body.post-type-en_reservation.post-php .eem-section-toggle-control,
+body.post-type-en_reservation.post-new-php .eem-section-toggle-control {
 	display: inline-flex !important;
 	align-items: center !important;
 	justify-content: space-between;
@@ -4454,12 +4454,12 @@ body.post-type-en_reservation.post-new-php .en-section-toggle-control {
 	width: 100%;
 }
 
-body.eem-shell-page--editor .en-section-toggle-control__label,
-body.eem-shell-page--editor .en-inline-toggle-control__label,
-body.post-type-en_reservation.post-php .en-section-toggle-control__label,
-body.post-type-en_reservation.post-php .en-inline-toggle-control__label,
-body.post-type-en_reservation.post-new-php .en-section-toggle-control__label,
-body.post-type-en_reservation.post-new-php .en-inline-toggle-control__label {
+body.eem-shell-page--editor .eem-section-toggle-control__label,
+body.eem-shell-page--editor .eem-inline-toggle-control__label,
+body.post-type-en_reservation.post-php .eem-section-toggle-control__label,
+body.post-type-en_reservation.post-php .eem-inline-toggle-control__label,
+body.post-type-en_reservation.post-new-php .eem-section-toggle-control__label,
+body.post-type-en_reservation.post-new-php .eem-inline-toggle-control__label {
 	display: inline-flex;
 	align-items: center;
 	min-height: 28px;
@@ -4467,9 +4467,9 @@ body.post-type-en_reservation.post-new-php .en-inline-toggle-control__label {
 	font-weight: 700;
 }
 
-body.eem-shell-page--editor .en-inline-toggle-control,
-body.post-type-en_reservation.post-php .en-inline-toggle-control,
-body.post-type-en_reservation.post-new-php .en-inline-toggle-control {
+body.eem-shell-page--editor .eem-inline-toggle-control,
+body.post-type-en_reservation.post-php .eem-inline-toggle-control,
+body.post-type-en_reservation.post-new-php .eem-inline-toggle-control {
 	display: inline-flex !important;
 	align-items: center !important;
 	gap: 0.75rem !important;
@@ -4956,8 +4956,8 @@ body.post-type-en_reservation.post-new-php .postbox > h2 {
 	font-weight: 800 !important;
 }
 
-body.post-type-en_reservation.post-php .en-section-toggle-control,
-body.post-type-en_reservation.post-new-php .en-section-toggle-control {
+body.post-type-en_reservation.post-php .eem-section-toggle-control,
+body.post-type-en_reservation.post-new-php .eem-section-toggle-control {
 	display: inline-flex !important;
 	align-items: center !important;
 	justify-content: space-between !important;
@@ -4965,18 +4965,18 @@ body.post-type-en_reservation.post-new-php .en-section-toggle-control {
 	gap: 0.75rem !important;
 }
 
-body.post-type-en_reservation.post-php .en-section-toggle-control__label,
-body.post-type-en_reservation.post-php .en-inline-toggle-control__label,
-body.post-type-en_reservation.post-new-php .en-section-toggle-control__label,
-body.post-type-en_reservation.post-new-php .en-inline-toggle-control__label {
+body.post-type-en_reservation.post-php .eem-section-toggle-control__label,
+body.post-type-en_reservation.post-php .eem-inline-toggle-control__label,
+body.post-type-en_reservation.post-new-php .eem-section-toggle-control__label,
+body.post-type-en_reservation.post-new-php .eem-inline-toggle-control__label {
 	display: inline-flex !important;
 	align-items: center !important;
 	min-height: 28px !important;
 	font-weight: 700 !important;
 }
 
-body.post-type-en_reservation.post-php .en-inline-toggle-control,
-body.post-type-en_reservation.post-new-php .en-inline-toggle-control {
+body.post-type-en_reservation.post-php .eem-inline-toggle-control,
+body.post-type-en_reservation.post-new-php .eem-inline-toggle-control {
 	display: inline-flex !important;
 	align-items: center !important;
 	gap: 0.75rem !important;
@@ -5581,16 +5581,16 @@ body.post-type-en_reservation.post-new-php .postbox > h2 {
 	background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%) !important;
 }
 
-body.post-type-en_reservation.post-php .en-section-toggle-row,
-body.post-type-en_reservation.post-new-php .en-section-toggle-row {
+body.post-type-en_reservation.post-php .eem-section-toggle-row,
+body.post-type-en_reservation.post-new-php .eem-section-toggle-row {
 	display: flex !important;
 	align-items: center !important;
 	justify-content: space-between !important;
 	gap: 1rem !important;
 }
 
-body.post-type-en_reservation.post-php .en-section-toggle-control,
-body.post-type-en_reservation.post-new-php .en-section-toggle-control {
+body.post-type-en_reservation.post-php .eem-section-toggle-control,
+body.post-type-en_reservation.post-new-php .eem-section-toggle-control {
 	display: inline-flex !important;
 	align-items: center !important;
 	justify-content: space-between !important;
@@ -5598,27 +5598,27 @@ body.post-type-en_reservation.post-new-php .en-section-toggle-control {
 	gap: 0.75rem !important;
 }
 
-body.post-type-en_reservation.post-php .en-inline-toggle-control,
-body.post-type-en_reservation.post-new-php .en-inline-toggle-control {
+body.post-type-en_reservation.post-php .eem-inline-toggle-control,
+body.post-type-en_reservation.post-new-php .eem-inline-toggle-control {
 	display: inline-flex !important;
 	align-items: center !important;
 	gap: 0.75rem !important;
 }
 
-body.post-type-en_reservation.post-php .en-section-toggle-control__label,
-body.post-type-en_reservation.post-new-php .en-section-toggle-control__label,
-body.post-type-en_reservation.post-php .en-inline-toggle-control__label,
-body.post-type-en_reservation.post-new-php .en-inline-toggle-control__label {
+body.post-type-en_reservation.post-php .eem-section-toggle-control__label,
+body.post-type-en_reservation.post-new-php .eem-section-toggle-control__label,
+body.post-type-en_reservation.post-php .eem-inline-toggle-control__label,
+body.post-type-en_reservation.post-new-php .eem-inline-toggle-control__label {
 	display: inline-flex !important;
 	align-items: center !important;
 	min-height: 28px !important;
 	font-weight: 700 !important;
 }
 
-body.post-type-en_reservation.post-php .en-section-toggle-control input[type="checkbox"],
-body.post-type-en_reservation.post-new-php .en-section-toggle-control input[type="checkbox"],
-body.post-type-en_reservation.post-php .en-inline-toggle-control input[type="checkbox"],
-body.post-type-en_reservation.post-new-php .en-inline-toggle-control input[type="checkbox"] {
+body.post-type-en_reservation.post-php .eem-section-toggle-control input[type="checkbox"],
+body.post-type-en_reservation.post-new-php .eem-section-toggle-control input[type="checkbox"],
+body.post-type-en_reservation.post-php .eem-inline-toggle-control input[type="checkbox"],
+body.post-type-en_reservation.post-new-php .eem-inline-toggle-control input[type="checkbox"] {
 	position: absolute !important;
 	opacity: 0 !important;
 	pointer-events: none !important;
@@ -6302,16 +6302,16 @@ body.post-type-en_reservation.post-new-php #titlediv {
 	overflow: hidden !important;
 }
 
-body.post-type-en_reservation.post-php .en-section-toggle-row,
-body.post-type-en_reservation.post-new-php .en-section-toggle-row {
+body.post-type-en_reservation.post-php .eem-section-toggle-row,
+body.post-type-en_reservation.post-new-php .eem-section-toggle-row {
 	display: flex !important;
 	align-items: center !important;
 	justify-content: space-between !important;
 	gap: 0.875rem !important;
 }
 
-body.post-type-en_reservation.post-php .en-section-toggle-control,
-body.post-type-en_reservation.post-new-php .en-section-toggle-control {
+body.post-type-en_reservation.post-php .eem-section-toggle-control,
+body.post-type-en_reservation.post-new-php .eem-section-toggle-control {
 	display: inline-flex !important;
 	align-items: center !important;
 	justify-content: space-between !important;
@@ -6319,17 +6319,17 @@ body.post-type-en_reservation.post-new-php .en-section-toggle-control {
 	gap: 0.875rem !important;
 }
 
-body.post-type-en_reservation.post-php .en-inline-toggle-control,
-body.post-type-en_reservation.post-new-php .en-inline-toggle-control {
+body.post-type-en_reservation.post-php .eem-inline-toggle-control,
+body.post-type-en_reservation.post-new-php .eem-inline-toggle-control {
 	display: inline-flex !important;
 	align-items: center !important;
 	gap: 0.875rem !important;
 }
 
-body.post-type-en_reservation.post-php .en-section-toggle-control__label,
-body.post-type-en_reservation.post-new-php .en-section-toggle-control__label,
-body.post-type-en_reservation.post-php .en-inline-toggle-control__label,
-body.post-type-en_reservation.post-new-php .en-inline-toggle-control__label {
+body.post-type-en_reservation.post-php .eem-section-toggle-control__label,
+body.post-type-en_reservation.post-new-php .eem-section-toggle-control__label,
+body.post-type-en_reservation.post-php .eem-inline-toggle-control__label,
+body.post-type-en_reservation.post-new-php .eem-inline-toggle-control__label {
 	display: inline-flex !important;
 	align-items: center !important;
 	min-height: 28px !important;
@@ -7314,22 +7314,22 @@ body.post-type-en_reservation #post-body.columns-2 {
 	gap: 1rem !important;
 }
 
-body.post-type-en_reservation .en-section-toggle-row {
+body.post-type-en_reservation .eem-section-toggle-row {
 	display: flex !important;
 	align-items: center !important;
 	justify-content: space-between !important;
 	gap: 0.875rem !important;
 }
 
-body.post-type-en_reservation .en-section-toggle-control,
-body.post-type-en_reservation .en-inline-toggle-control {
+body.post-type-en_reservation .eem-section-toggle-control,
+body.post-type-en_reservation .eem-inline-toggle-control {
 	display: inline-flex !important;
 	align-items: center !important;
 	gap: 0.875rem !important;
 }
 
-body.post-type-en_reservation .en-section-toggle-control__label,
-body.post-type-en_reservation .en-inline-toggle-control__label {
+body.post-type-en_reservation .eem-section-toggle-control__label,
+body.post-type-en_reservation .eem-inline-toggle-control__label {
 	display: inline-flex !important;
 	align-items: center !important;
 	min-height: 28px !important;
@@ -7992,19 +7992,19 @@ body.post-type-en_reservation .postbox table.form-table td {
 	vertical-align: top !important;
 }
 
-body.post-type-en_reservation .en-section-toggle-row {
+body.post-type-en_reservation .eem-section-toggle-row {
 	padding: 0.125rem 0 0.875rem !important;
 	border-bottom: 1px solid #edf2f7 !important;
 	margin-bottom: 1rem !important;
 }
 
-body.post-type-en_reservation .en-section-toggle-control,
-body.post-type-en_reservation .en-inline-toggle-control {
+body.post-type-en_reservation .eem-section-toggle-control,
+body.post-type-en_reservation .eem-inline-toggle-control {
 	width: auto !important;
 }
 
-body.post-type-en_reservation .en-section-toggle-control__track,
-body.post-type-en_reservation .en-inline-toggle-control__track {
+body.post-type-en_reservation .eem-section-toggle-control__track,
+body.post-type-en_reservation .eem-inline-toggle-control__track {
 	flex: 0 0 auto !important;
 }
 
@@ -8780,22 +8780,22 @@ body.post-type-en_reservation .form-table td {
 	vertical-align: top !important;
 }
 
-body.post-type-en_reservation .en-section-toggle-row {
+body.post-type-en_reservation .eem-section-toggle-row {
 	padding: 0.125rem 0 0.875rem !important;
 	margin-bottom: 1rem !important;
 	border-bottom: 1px solid #edf2f7 !important;
 }
 
-body.post-type-en_reservation .en-section-toggle-control,
-body.post-type-en_reservation .en-inline-toggle-control {
+body.post-type-en_reservation .eem-section-toggle-control,
+body.post-type-en_reservation .eem-inline-toggle-control {
 	display: inline-flex !important;
 	align-items: center !important;
 	gap: 0.75rem !important;
 	width: auto !important;
 }
 
-body.post-type-en_reservation .en-section-toggle-control__label,
-body.post-type-en_reservation .en-inline-toggle-control__label {
+body.post-type-en_reservation .eem-section-toggle-control__label,
+body.post-type-en_reservation .eem-inline-toggle-control__label {
 	display: inline-flex !important;
 	align-items: center !important;
 	min-height: 28px !important;
@@ -8803,8 +8803,8 @@ body.post-type-en_reservation .en-inline-toggle-control__label {
 	color: var(--eem-shell-ink) !important;
 }
 
-body.post-type-en_reservation .en-section-toggle-control__track,
-body.post-type-en_reservation .en-inline-toggle-control__track {
+body.post-type-en_reservation .eem-section-toggle-control__track,
+body.post-type-en_reservation .eem-inline-toggle-control__track {
 	position: relative !important;
 	display: inline-flex !important;
 	flex: 0 0 auto !important;
@@ -8814,8 +8814,8 @@ body.post-type-en_reservation .en-inline-toggle-control__track {
 	background: #d7dee8 !important;
 }
 
-body.post-type-en_reservation .en-section-toggle-control__thumb,
-body.post-type-en_reservation .en-inline-toggle-control__track::after {
+body.post-type-en_reservation .eem-section-toggle-control__thumb,
+body.post-type-en_reservation .eem-inline-toggle-control__track::after {
 	content: "" !important;
 	position: absolute !important;
 	top: 4px !important;
@@ -8828,13 +8828,13 @@ body.post-type-en_reservation .en-inline-toggle-control__track::after {
 	transition: transform 0.2s ease !important;
 }
 
-body.post-type-en_reservation .en-section-toggle-control input:checked + .en-section-toggle-control__label + .en-section-toggle-control__track,
-body.post-type-en_reservation .en-inline-toggle-control input:checked + .en-inline-toggle-control__track {
+body.post-type-en_reservation .eem-section-toggle-control input:checked + .eem-section-toggle-control__label + .eem-section-toggle-control__track,
+body.post-type-en_reservation .eem-inline-toggle-control input:checked + .eem-inline-toggle-control__track {
 	background: #6cc08b !important;
 }
 
-body.post-type-en_reservation .en-section-toggle-control input:checked + .en-section-toggle-control__label + .en-section-toggle-control__track .en-section-toggle-control__thumb,
-body.post-type-en_reservation .en-inline-toggle-control input:checked + .en-inline-toggle-control__track::after {
+body.post-type-en_reservation .eem-section-toggle-control input:checked + .eem-section-toggle-control__label + .eem-section-toggle-control__track .eem-section-toggle-control__thumb,
+body.post-type-en_reservation .eem-inline-toggle-control input:checked + .eem-inline-toggle-control__track::after {
 	transform: translateX(18px) !important;
 }
 
@@ -12133,9 +12133,9 @@ body.eem-shell-page--invoicing .eem-invoicing-guide--workspace .inside > h2 {
 	margin-bottom: 14px !important;
 }
 
-body.eem-shell-page--invoicing .eem-invoicing-guide--workspace #en-reservation-admin,
-body.eem-shell-page--invoicing .eem-invoicing-guide--workspace .en-reservation-admin,
-body.eem-shell-page--invoicing .eem-invoicing-guide--workspace .en-reservation-form,
+body.eem-shell-page--invoicing .eem-invoicing-guide--workspace #eem-reservation-admin,
+body.eem-shell-page--invoicing .eem-invoicing-guide--workspace .eem-reservation-admin,
+body.eem-shell-page--invoicing .eem-invoicing-guide--workspace .eem-reservation-form,
 body.eem-shell-page--invoicing .eem-invoicing-guide--workspace .eem-reservation-form {
 	max-width: none !important;
 }

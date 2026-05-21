@@ -242,41 +242,41 @@ class EEM_Shortcodes {
 
 		ob_start();
 		?>
-		<div id="<?php echo esc_attr( $form_anchor_id ); ?>" class="en-reservation-form-wrap" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" tabindex="-1">
+		<div id="<?php echo esc_attr( $form_anchor_id ); ?>" class="eem-reservation-form-wrap" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" tabindex="-1">
 			<?php if ( $message ) : ?>
 				<?php echo wp_kses_post( $message ); ?>
 			<?php endif; ?>
 
 			<?php if ( $show_event_header && ! $is_admin_invoice ) : ?>
-				<div class="en-reservation-event-hero">
-					<div class="en-reservation-event-hero__media">
-						<div class="en-reservation-event-media-card">
-							<div class="en-reservation-event-media-card__visual<?php echo ! empty( $normalized_event_data['featured_image'] ) ? ' has-image' : ''; ?>">
+				<div class="eem-reservation-event-hero">
+					<div class="eem-reservation-event-hero__media">
+						<div class="eem-reservation-event-media-card">
+							<div class="eem-reservation-event-media-card__visual<?php echo ! empty( $normalized_event_data['featured_image'] ) ? ' has-image' : ''; ?>">
 								<?php if ( ! empty( $normalized_event_data['featured_image'] ) ) : ?>
 									<img src="<?php echo esc_url( $normalized_event_data['featured_image'] ); ?>" alt="<?php echo esc_attr( $event_label ); ?>" />
 								<?php else : ?>
-									<div class="en-reservation-event-media-card__placeholder">
-										<span class="en-reservation-event-media-card__placeholder-icon" aria-hidden="true">EVENT</span>
+									<div class="eem-reservation-event-media-card__placeholder">
+										<span class="eem-reservation-event-media-card__placeholder-icon" aria-hidden="true">EVENT</span>
 										<strong><?php esc_html_e( 'Event Image', 'equine-event-manager' ); ?></strong>
 									</div>
 								<?php endif; ?>
 							</div>
 							<?php if ( ! empty( $normalized_event_data['flyer_url'] ) ) : ?>
-								<div class="en-reservation-event-media-card__actions">
-									<a class="en-reservation-event-media-card__button" href="<?php echo esc_url( $normalized_event_data['flyer_url'] ); ?>" target="_blank" rel="noopener noreferrer" onclick="window.open(this.href,'_blank','noopener'); return false;"><?php esc_html_e( 'View Event Flyer PDF', 'equine-event-manager' ); ?></a>
+								<div class="eem-reservation-event-media-card__actions">
+									<a class="eem-reservation-event-media-card__button" href="<?php echo esc_url( $normalized_event_data['flyer_url'] ); ?>" target="_blank" rel="noopener noreferrer" onclick="window.open(this.href,'_blank','noopener'); return false;"><?php esc_html_e( 'View Event Flyer PDF', 'equine-event-manager' ); ?></a>
 								</div>
 							<?php endif; ?>
 						</div>
 					</div>
 
-					<div class="en-event-details-card">
-						<div class="en-event-details-card__eyebrow"><?php esc_html_e( 'Event Reservations', 'equine-event-manager' ); ?></div>
-						<h2 class="en-event-details-card__title"><?php echo esc_html( $event_label ); ?></h2>
+					<div class="eem-event-details-card">
+						<div class="eem-event-details-card__eyebrow"><?php esc_html_e( 'Event Reservations', 'equine-event-manager' ); ?></div>
+						<h2 class="eem-event-details-card__title"><?php echo esc_html( $event_label ); ?></h2>
 						<?php if ( $event_card_details['venue_name'] || $event_card_details['location'] || $event_date_summary || $support_phone ) : ?>
-							<div class="en-event-details-card__facts">
+							<div class="eem-event-details-card__facts">
 								<?php if ( $event_card_details['venue_name'] || $event_card_details['location'] ) : ?>
-									<div class="en-event-details-card__fact">
-										<span class="en-event-details-card__fact-icon" aria-hidden="true">
+									<div class="eem-event-details-card__fact">
+										<span class="eem-event-details-card__fact-icon" aria-hidden="true">
 											<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
 												<path d="M12 22s7-6.2 7-13a7 7 0 1 0-14 0c0 6.8 7 13 7 13Zm0-9.5A2.5 2.5 0 1 1 12 7a2.5 2.5 0 0 1 0 5.5Z" fill="currentColor"></path>
 											</svg>
@@ -285,7 +285,7 @@ class EEM_Shortcodes {
 											<strong><?php echo esc_html( $event_card_details['venue_name'] ); ?></strong>
 										<?php endif; ?>
 										<?php if ( $event_card_details['venue_name'] && $event_card_details['location'] ) : ?>
-											<span class="en-event-details-card__fact-separator" aria-hidden="true">&middot;</span>
+											<span class="eem-event-details-card__fact-separator" aria-hidden="true">&middot;</span>
 										<?php endif; ?>
 										<?php if ( $event_card_details['location'] ) : ?>
 											<span><?php echo esc_html( $event_card_details['location'] ); ?></span>
@@ -293,8 +293,8 @@ class EEM_Shortcodes {
 									</div>
 								<?php endif; ?>
 								<?php if ( $event_date_summary ) : ?>
-									<div class="en-event-details-card__fact">
-										<span class="en-event-details-card__fact-icon" aria-hidden="true">
+									<div class="eem-event-details-card__fact">
+										<span class="eem-event-details-card__fact-icon" aria-hidden="true">
 											<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
 												<path d="M7 2a1 1 0 0 1 1 1v1h8V3a1 1 0 1 1 2 0v1h1a3 3 0 0 1 3 3v11a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V7a3 3 0 0 1 3-3h1V3a1 1 0 0 1 1-1Zm13 8H4v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8ZM5 6a1 1 0 0 0-1 1v1h16V7a1 1 0 0 0-1-1H5Z" fill="currentColor"></path>
 											</svg>
@@ -303,8 +303,8 @@ class EEM_Shortcodes {
 									</div>
 								<?php endif; ?>
 								<?php if ( $support_phone ) : ?>
-									<div class="en-event-details-card__fact">
-										<span class="en-event-details-card__fact-icon" aria-hidden="true">
+									<div class="eem-event-details-card__fact">
+										<span class="eem-event-details-card__fact-icon" aria-hidden="true">
 											<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
 												<path d="M6.6 3A2.6 2.6 0 0 0 4 5.6c0 7.95 6.45 14.4 14.4 14.4a2.6 2.6 0 0 0 2.6-2.6v-2.03c0-.63-.45-1.17-1.06-1.29l-4.05-.81a1.5 1.5 0 0 0-1.43.46l-.9.99a11.54 11.54 0 0 1-4.28-4.28l.99-.9a1.5 1.5 0 0 0 .46-1.43l-.81-4.05A1.31 1.31 0 0 0 8.63 3H6.6Z" fill="currentColor"></path>
 											</svg>
@@ -315,25 +315,25 @@ class EEM_Shortcodes {
 							</div>
 						<?php endif; ?>
 						<?php if ( $checkin_time || $checkout_time ) : ?>
-							<div class="en-event-details-card__times">
+							<div class="eem-event-details-card__times">
 								<?php if ( $checkin_time ) : ?>
-									<div class="en-event-details-card__time-card">
-										<span class="en-event-details-card__time-label"><?php esc_html_e( 'Check-In', 'equine-event-manager' ); ?></span>
-										<strong class="en-event-details-card__time-value"><?php echo esc_html( $checkin_time ); ?></strong>
+									<div class="eem-event-details-card__time-card">
+										<span class="eem-event-details-card__time-label"><?php esc_html_e( 'Check-In', 'equine-event-manager' ); ?></span>
+										<strong class="eem-event-details-card__time-value"><?php echo esc_html( $checkin_time ); ?></strong>
 									</div>
 								<?php endif; ?>
 								<?php if ( $checkout_time ) : ?>
-									<div class="en-event-details-card__time-card">
-										<span class="en-event-details-card__time-label"><?php esc_html_e( 'Check-Out', 'equine-event-manager' ); ?></span>
-										<strong class="en-event-details-card__time-value"><?php echo esc_html( $checkout_time ); ?></strong>
+									<div class="eem-event-details-card__time-card">
+										<span class="eem-event-details-card__time-label"><?php esc_html_e( 'Check-Out', 'equine-event-manager' ); ?></span>
+										<strong class="eem-event-details-card__time-value"><?php echo esc_html( $checkout_time ); ?></strong>
 									</div>
 								<?php endif; ?>
 							</div>
 						<?php endif; ?>
 						<?php if ( $show_venue_map ) : ?>
-							<div class="en-event-details-card__map-link">
+							<div class="eem-event-details-card__map-link">
 								<a href="<?php echo esc_url( $venue_map_download_url ); ?>" target="_blank" rel="noopener noreferrer">
-									<span class="en-event-details-card__map-link-icon" aria-hidden="true">
+									<span class="eem-event-details-card__map-link-icon" aria-hidden="true">
 										<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
 											<path d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.29a1 1 0 1 1 1.4 1.41l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.41L11 12.59V4a1 1 0 0 1 1-1Zm-7 14a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v1a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3v-1a1 1 0 0 1 1-1Z" fill="currentColor"></path>
 										</svg>
@@ -342,7 +342,7 @@ class EEM_Shortcodes {
 								</a>
 							</div>
 						<?php elseif ( ! empty( $data['venue_name'] ) || ! empty( $data['venue_address'] ) ) : ?>
-							<div class="en-event-details-card__venue">
+							<div class="eem-event-details-card__venue">
 								<?php if ( ! empty( $data['venue_name'] ) ) : ?>
 									<strong><?php echo esc_html( $data['venue_name'] ); ?></strong>
 								<?php endif; ?>
@@ -359,7 +359,7 @@ class EEM_Shortcodes {
 				<?php echo wp_kses_post( $this->render_notice( $this->get_reservation_status_message( $reservation, $data ) ) ); ?>
 			<?php else : ?>
 				<form
-					class="en-reservation-form"
+					class="eem-reservation-form"
 					method="post"
 					action="<?php echo esc_url( $form_action_url ); ?>"
 					data-stall-nightly-rate="<?php echo esc_attr( $this->get_current_rate( $data, 'stall', 'nightly' ) ); ?>"
@@ -394,11 +394,11 @@ class EEM_Shortcodes {
 					<input type="hidden" name="stripe_payment_intent_id" value="" />
 					<input type="hidden" name="stripe_payment_gateway" value="<?php echo esc_attr( $payment_settings['selected_gateway'] ); ?>" />
 
-					<div class="en-reservation-workspace">
-						<div class="en-reservation-workspace__main">
-					<div class="en-reservation-section">
-						<h4 class="en-reservation-section__title"><?php esc_html_e( 'Contact Information', 'equine-event-manager' ); ?></h4>
-						<div class="en-reservation-grid en-reservation-grid--two">
+					<div class="eem-reservation-workspace">
+						<div class="eem-reservation-workspace__main">
+					<div class="eem-reservation-section">
+						<h4 class="eem-reservation-section__title"><?php esc_html_e( 'Contact Information', 'equine-event-manager' ); ?></h4>
+						<div class="eem-reservation-grid eem-reservation-grid--two">
 							<label>
 								<span><?php esc_html_e( 'First Name', 'equine-event-manager' ); ?> <strong>*</strong></span>
 								<input type="text" name="first_name" autocomplete="given-name" required />
@@ -408,15 +408,15 @@ class EEM_Shortcodes {
 								<input type="text" name="last_name" autocomplete="family-name" required />
 							</label>
 						</div>
-						<div class="en-reservation-grid en-reservation-grid--two">
+						<div class="eem-reservation-grid eem-reservation-grid--two">
 							<label>
 								<span><?php esc_html_e( 'Email', 'equine-event-manager' ); ?> <strong>*</strong></span>
 								<input type="email" name="email" autocomplete="email" required />
 							</label>
 							<label>
 								<span><?php esc_html_e( 'Phone', 'equine-event-manager' ); ?> <strong>*</strong></span>
-								<div class="en-phone-field">
-									<span class="en-phone-field__flag" aria-hidden="true">🇺🇸</span>
+								<div class="eem-phone-field">
+									<span class="eem-phone-field__flag" aria-hidden="true">🇺🇸</span>
 									<input type="tel" name="phone" autocomplete="tel-national" value="+1 " required />
 								</div>
 							</label>
@@ -424,52 +424,52 @@ class EEM_Shortcodes {
 					</div>
 
 					<?php if ( $data['stalls_enabled'] || $data['rv_enabled'] ) : ?>
-						<div class="en-reservation-section en-reservation-section--instructions">
-							<h4 class="en-reservation-section__title"><?php esc_html_e( 'Stay Details', 'equine-event-manager' ); ?></h4>
+						<div class="eem-reservation-section eem-reservation-section--instructions">
+							<h4 class="eem-reservation-section__title"><?php esc_html_e( 'Stay Details', 'equine-event-manager' ); ?></h4>
 							<?php if ( $reservation_description ) : ?>
-								<p class="en-reservation-help"><?php echo esc_html( $reservation_description ); ?></p>
+								<p class="eem-reservation-help"><?php echo esc_html( $reservation_description ); ?></p>
 							<?php endif; ?>
 						<?php if ( $nightly_date_summary ) : ?>
-							<p class="en-reservation-help"><?php echo esc_html( $nightly_date_summary ); ?></p>
+							<p class="eem-reservation-help"><?php echo esc_html( $nightly_date_summary ); ?></p>
 						<?php endif; ?>
 					</div>
 				<?php endif; ?>
 
 					<?php if ( $data['stalls_enabled'] ) : ?>
-						<div class="en-reservation-section" data-en-section="stall">
-							<div class="en-reservation-section-heading en-reservation-section-heading--collapsible">
-								<h4 class="en-reservation-section__title"><?php esc_html_e( 'Stall Reservations', 'equine-event-manager' ); ?></h4>
-								<label class="en-reservation-section-toggle" aria-label="<?php esc_attr_e( 'Toggle Stall Reservations section', 'equine-event-manager' ); ?>">
-									<input type="checkbox" data-en-section-collapse-toggle />
-									<span class="en-reservation-section-toggle__track" aria-hidden="true"></span>
+						<div class="eem-reservation-section" data-eem-section="stall">
+							<div class="eem-reservation-section-heading eem-reservation-section-heading--collapsible">
+								<h4 class="eem-reservation-section__title"><?php esc_html_e( 'Stall Reservations', 'equine-event-manager' ); ?></h4>
+								<label class="eem-reservation-section-toggle" aria-label="<?php esc_attr_e( 'Toggle Stall Reservations section', 'equine-event-manager' ); ?>">
+									<input type="checkbox" data-eem-section-collapse-toggle />
+									<span class="eem-reservation-section-toggle__track" aria-hidden="true"></span>
 								</label>
 							</div>
-							<div class="en-reservation-section__body" data-en-section-collapse-body>
+							<div class="eem-reservation-section__body" data-eem-section-collapse-body>
 								<?php if ( ! empty( $data['stall_description'] ) ) : ?>
-									<p class="en-reservation-help"><?php echo esc_html( $data['stall_description'] ); ?></p>
+									<p class="eem-reservation-help"><?php echo esc_html( $data['stall_description'] ); ?></p>
 								<?php endif; ?>
 								<?php if ( $status['stalls_bookable'] ) : ?>
 									<?php $stall_inventory_notice = $this->get_inventory_notice( 'stall', $status['stall_inventory_remaining'] ); ?>
 									<?php if ( $stall_inventory_notice ) : ?>
-										<p class="en-reservation-help en-reservation-help--inventory"><?php echo esc_html( $stall_inventory_notice ); ?></p>
+										<p class="eem-reservation-help eem-reservation-help--inventory"><?php echo esc_html( $stall_inventory_notice ); ?></p>
 									<?php endif; ?>
 								<?php endif; ?>
 								<?php if ( $stall_early_bird_notice ) : ?>
-									<p class="en-reservation-help en-reservation-help--early-bird"><?php echo esc_html( $stall_early_bird_notice ); ?></p>
+									<p class="eem-reservation-help eem-reservation-help--early-bird"><?php echo esc_html( $stall_early_bird_notice ); ?></p>
 								<?php endif; ?>
 								<?php if ( $status['stalls_open'] && ! $status['stalls_sold_out'] ) : ?>
 									<?php $stay_date_options = $this->get_available_stay_date_options( $min_date, $max_date ); ?>
 									<div
-										class="en-section-stay-controls"
+										class="eem-section-stay-controls"
 										data-section-stay-controls="stall"
 										data-nightly-summary="<?php echo esc_attr( $nightly_date_summary ); ?>"
 										data-weekend-summary="<?php echo esc_attr( $stall_weekend_date_summary ); ?>"
 										data-weekend-start-date="<?php echo esc_attr( $stall_weekend_start_date ); ?>"
 										data-weekend-end-date="<?php echo esc_attr( $stall_weekend_end_date ); ?>"
 									>
-										<p class="en-reservation-help en-section-stay-controls__help"><?php echo esc_html( 'weekend' === $stall_default_stay_type && $stall_weekend_date_summary ? $stall_weekend_date_summary : $nightly_date_summary ); ?></p>
-										<div class="en-reservation-grid en-reservation-grid--stay-controls">
-										<label class="en-stay-type-field">
+										<p class="eem-reservation-help eem-section-stay-controls__help"><?php echo esc_html( 'weekend' === $stall_default_stay_type && $stall_weekend_date_summary ? $stall_weekend_date_summary : $nightly_date_summary ); ?></p>
+										<div class="eem-reservation-grid eem-reservation-grid--stay-controls">
+										<label class="eem-stay-type-field">
 											<span><?php esc_html_e( 'Rate Type', 'equine-event-manager' ); ?></span>
 											<select name="stall_stay_type" data-default-stay-type="<?php echo esc_attr( $stall_default_stay_type ); ?>">
 												<?php foreach ( $stall_stay_type_options as $stay_type_value => $stay_type_label ) : ?>
@@ -477,7 +477,7 @@ class EEM_Shortcodes {
 												<?php endforeach; ?>
 											</select>
 										</label>
-										<label class="en-stay-date-field en-stay-date-field--arrival">
+										<label class="eem-stay-date-field eem-stay-date-field--arrival">
 											<span><?php esc_html_e( 'Arrival Date', 'equine-event-manager' ); ?> <strong>*</strong></span>
 											<?php if ( ! empty( $stay_date_options ) ) : ?>
 												<select name="stall_arrival_date" data-default-date="<?php echo esc_attr( $stall_default_arrival_date ); ?>" required>
@@ -489,7 +489,7 @@ class EEM_Shortcodes {
 												<input type="date" name="stall_arrival_date" min="<?php echo esc_attr( $min_date ); ?>" max="<?php echo esc_attr( $max_date ); ?>" value="<?php echo esc_attr( $stall_default_arrival_date ); ?>" data-default-date="<?php echo esc_attr( $stall_default_arrival_date ); ?>" required />
 											<?php endif; ?>
 										</label>
-										<label class="en-stay-date-field en-stay-date-field--departure">
+										<label class="eem-stay-date-field eem-stay-date-field--departure">
 											<span><?php esc_html_e( 'Departure Date', 'equine-event-manager' ); ?> <strong>*</strong></span>
 											<?php if ( ! empty( $stay_date_options ) ) : ?>
 												<select name="stall_departure_date" data-default-date="<?php echo esc_attr( $stall_default_departure_date ); ?>" required>
@@ -501,20 +501,20 @@ class EEM_Shortcodes {
 												<input type="date" name="stall_departure_date" min="<?php echo esc_attr( $min_date ); ?>" max="<?php echo esc_attr( $max_date ); ?>" value="<?php echo esc_attr( $stall_default_departure_date ); ?>" data-default-date="<?php echo esc_attr( $stall_default_departure_date ); ?>" required />
 											<?php endif; ?>
 										</label>
-										<div class="en-stay-night-field">
-											<span class="en-stay-night-field__label"><?php esc_html_e( 'Nights', 'equine-event-manager' ); ?></span>
-											<div class="en-stay-night-field__value">
+										<div class="eem-stay-night-field">
+											<span class="eem-stay-night-field__label"><?php esc_html_e( 'Nights', 'equine-event-manager' ); ?></span>
+											<div class="eem-stay-night-field__value">
 												<strong data-stay-nights-summary><?php echo esc_html( $this->get_night_count_label( $stall_default_night_count ) ); ?></strong>
 											</div>
 										</div>
 									</div>
-									<div class="en-weekend-package-summary" hidden>
-										<div class="en-reservation-grid en-reservation-grid--two">
-											<div class="en-weekend-package-field">
+									<div class="eem-weekend-package-summary" hidden>
+										<div class="eem-reservation-grid eem-reservation-grid--two">
+											<div class="eem-weekend-package-field">
 												<span><?php esc_html_e( 'Arrival Date', 'equine-event-manager' ); ?></span>
 												<strong data-weekend-arrival-label><?php echo esc_html( $stall_weekend_start_date ? $this->format_date_label( $stall_weekend_start_date ) : '' ); ?></strong>
 											</div>
-											<div class="en-weekend-package-field">
+											<div class="eem-weekend-package-field">
 												<span><?php esc_html_e( 'Departure Date', 'equine-event-manager' ); ?></span>
 												<strong data-weekend-departure-label><?php echo esc_html( $stall_weekend_end_date ? $this->format_date_label( $stall_weekend_end_date ) : '' ); ?></strong>
 											</div>
@@ -525,49 +525,49 @@ class EEM_Shortcodes {
 								<?php if ( $status['stalls_bookable'] ) : ?>
 									<?php $this->render_stall_selection_ui( $reservation_id, $data, $status, $stall_selection_context ); ?>
 								<?php elseif ( $status['stalls_sold_out'] ) : ?>
-									<p class="en-reservation-help en-reservation-help--sold-out"><?php echo esc_html( $this->get_sold_out_message( 'stall' ) ); ?></p>
+									<p class="eem-reservation-help eem-reservation-help--sold-out"><?php echo esc_html( $this->get_sold_out_message( 'stall' ) ); ?></p>
 								<?php else : ?>
-									<p class="en-reservation-help"><?php echo esc_html( $this->get_closed_message( $data, 'stalls' ) ); ?></p>
+									<p class="eem-reservation-help"><?php echo esc_html( $this->get_closed_message( $data, 'stalls' ) ); ?></p>
 								<?php endif; ?>
 							</div>
 						</div>
 					<?php endif; ?>
 
 					<?php if ( $data['rv_enabled'] ) : ?>
-						<div class="en-reservation-section" data-en-section="rv">
-							<div class="en-reservation-section-heading en-reservation-section-heading--collapsible">
-								<h4 class="en-reservation-section__title"><?php esc_html_e( 'RV Reservations', 'equine-event-manager' ); ?></h4>
-								<label class="en-reservation-section-toggle" aria-label="<?php esc_attr_e( 'Toggle RV Reservations section', 'equine-event-manager' ); ?>">
-									<input type="checkbox" data-en-section-collapse-toggle />
-									<span class="en-reservation-section-toggle__track" aria-hidden="true"></span>
+						<div class="eem-reservation-section" data-eem-section="rv">
+							<div class="eem-reservation-section-heading eem-reservation-section-heading--collapsible">
+								<h4 class="eem-reservation-section__title"><?php esc_html_e( 'RV Reservations', 'equine-event-manager' ); ?></h4>
+								<label class="eem-reservation-section-toggle" aria-label="<?php esc_attr_e( 'Toggle RV Reservations section', 'equine-event-manager' ); ?>">
+									<input type="checkbox" data-eem-section-collapse-toggle />
+									<span class="eem-reservation-section-toggle__track" aria-hidden="true"></span>
 								</label>
 							</div>
-							<div class="en-reservation-section__body" data-en-section-collapse-body>
+							<div class="eem-reservation-section__body" data-eem-section-collapse-body>
 								<?php if ( ! empty( $data['rv_description'] ) ) : ?>
-									<p class="en-reservation-help"><?php echo esc_html( $data['rv_description'] ); ?></p>
+									<p class="eem-reservation-help"><?php echo esc_html( $data['rv_description'] ); ?></p>
 								<?php endif; ?>
 								<?php if ( $status['rv_bookable'] ) : ?>
 									<?php $rv_inventory_notice = $this->get_inventory_notice( 'rv', $status['rv_inventory_remaining'] ); ?>
 									<?php if ( $rv_inventory_notice ) : ?>
-										<p class="en-reservation-help en-reservation-help--inventory"><?php echo esc_html( $rv_inventory_notice ); ?></p>
+										<p class="eem-reservation-help eem-reservation-help--inventory"><?php echo esc_html( $rv_inventory_notice ); ?></p>
 									<?php endif; ?>
 								<?php endif; ?>
 								<?php if ( $rv_early_bird_notice ) : ?>
-									<p class="en-reservation-help en-reservation-help--early-bird"><?php echo esc_html( $rv_early_bird_notice ); ?></p>
+									<p class="eem-reservation-help eem-reservation-help--early-bird"><?php echo esc_html( $rv_early_bird_notice ); ?></p>
 								<?php endif; ?>
 								<?php if ( $status['rv_open'] && ! $status['rv_sold_out'] ) : ?>
 									<?php $stay_date_options = $this->get_available_stay_date_options( $min_date, $max_date ); ?>
 									<div
-										class="en-section-stay-controls"
+										class="eem-section-stay-controls"
 										data-section-stay-controls="rv"
 										data-nightly-summary="<?php echo esc_attr( $nightly_date_summary ); ?>"
 										data-weekend-summary="<?php echo esc_attr( $rv_weekend_date_summary ); ?>"
 										data-weekend-start-date="<?php echo esc_attr( $rv_weekend_start_date ); ?>"
 										data-weekend-end-date="<?php echo esc_attr( $rv_weekend_end_date ); ?>"
 									>
-										<p class="en-reservation-help en-section-stay-controls__help"><?php echo esc_html( 'weekend' === $rv_default_stay_type && $rv_weekend_date_summary ? $rv_weekend_date_summary : $nightly_date_summary ); ?></p>
-										<div class="en-reservation-grid en-reservation-grid--stay-controls">
-											<label class="en-stay-type-field">
+										<p class="eem-reservation-help eem-section-stay-controls__help"><?php echo esc_html( 'weekend' === $rv_default_stay_type && $rv_weekend_date_summary ? $rv_weekend_date_summary : $nightly_date_summary ); ?></p>
+										<div class="eem-reservation-grid eem-reservation-grid--stay-controls">
+											<label class="eem-stay-type-field">
 												<span><?php esc_html_e( 'Rate Type', 'equine-event-manager' ); ?></span>
 												<select name="rv_stay_type" data-default-stay-type="<?php echo esc_attr( $rv_default_stay_type ); ?>">
 													<?php foreach ( $rv_stay_type_options as $stay_type_value => $stay_type_label ) : ?>
@@ -575,7 +575,7 @@ class EEM_Shortcodes {
 													<?php endforeach; ?>
 												</select>
 											</label>
-											<label class="en-stay-date-field en-stay-date-field--arrival">
+											<label class="eem-stay-date-field eem-stay-date-field--arrival">
 												<span><?php esc_html_e( 'Arrival Date', 'equine-event-manager' ); ?> <strong>*</strong></span>
 												<?php if ( ! empty( $stay_date_options ) ) : ?>
 													<select name="rv_arrival_date" data-default-date="<?php echo esc_attr( $rv_default_arrival_date ); ?>" required>
@@ -587,7 +587,7 @@ class EEM_Shortcodes {
 													<input type="date" name="rv_arrival_date" min="<?php echo esc_attr( $min_date ); ?>" max="<?php echo esc_attr( $max_date ); ?>" value="<?php echo esc_attr( $rv_default_arrival_date ); ?>" data-default-date="<?php echo esc_attr( $rv_default_arrival_date ); ?>" required />
 												<?php endif; ?>
 											</label>
-											<label class="en-stay-date-field en-stay-date-field--departure">
+											<label class="eem-stay-date-field eem-stay-date-field--departure">
 												<span><?php esc_html_e( 'Departure Date', 'equine-event-manager' ); ?> <strong>*</strong></span>
 												<?php if ( ! empty( $stay_date_options ) ) : ?>
 													<select name="rv_departure_date" data-default-date="<?php echo esc_attr( $rv_default_departure_date ); ?>" required>
@@ -599,20 +599,20 @@ class EEM_Shortcodes {
 													<input type="date" name="rv_departure_date" min="<?php echo esc_attr( $min_date ); ?>" max="<?php echo esc_attr( $max_date ); ?>" value="<?php echo esc_attr( $rv_default_departure_date ); ?>" data-default-date="<?php echo esc_attr( $rv_default_departure_date ); ?>" required />
 												<?php endif; ?>
 											</label>
-											<div class="en-stay-night-field">
-												<span class="en-stay-night-field__label"><?php esc_html_e( 'Nights', 'equine-event-manager' ); ?></span>
-												<div class="en-stay-night-field__value">
+											<div class="eem-stay-night-field">
+												<span class="eem-stay-night-field__label"><?php esc_html_e( 'Nights', 'equine-event-manager' ); ?></span>
+												<div class="eem-stay-night-field__value">
 													<strong data-stay-nights-summary><?php echo esc_html( $this->get_night_count_label( $rv_default_night_count ) ); ?></strong>
 												</div>
 											</div>
 										</div>
-										<div class="en-weekend-package-summary" hidden>
-											<div class="en-reservation-grid en-reservation-grid--two">
-												<div class="en-weekend-package-field">
+										<div class="eem-weekend-package-summary" hidden>
+											<div class="eem-reservation-grid eem-reservation-grid--two">
+												<div class="eem-weekend-package-field">
 													<span><?php esc_html_e( 'Arrival Date', 'equine-event-manager' ); ?></span>
 													<strong data-weekend-arrival-label><?php echo esc_html( $rv_weekend_start_date ? $this->format_date_label( $rv_weekend_start_date ) : '' ); ?></strong>
 												</div>
-												<div class="en-weekend-package-field">
+												<div class="eem-weekend-package-field">
 													<span><?php esc_html_e( 'Departure Date', 'equine-event-manager' ); ?></span>
 													<strong data-weekend-departure-label><?php echo esc_html( $rv_weekend_end_date ? $this->format_date_label( $rv_weekend_end_date ) : '' ); ?></strong>
 												</div>
@@ -620,7 +620,7 @@ class EEM_Shortcodes {
 										</div>
 									</div>
 									<?php if ( ! empty( $data['rv_lot_selection_enabled'] ) && ! empty( $rv_lot_options ) ) : ?>
-										<div class="en-reservation-grid en-reservation-grid--two en-rv-lot-selector-row">
+										<div class="eem-reservation-grid eem-reservation-grid--two eem-rv-lot-selector-row">
 											<label>
 												<span><?php esc_html_e( 'RV Lot', 'equine-event-manager' ); ?> <strong>*</strong></span>
 												<select name="rv_lot" data-default-rv-lot="<?php echo esc_attr( (string) $rv_default_lot ); ?>">
@@ -635,13 +635,13 @@ class EEM_Shortcodes {
 													<?php endforeach; ?>
 												</select>
 											</label>
-											<div class="en-rv-lot-selector-row__details" data-rv-lot-summary>
-												<p class="en-rv-lot-selector-row__title" data-rv-lot-summary-title hidden></p>
-												<p class="en-rv-lot-selector-row__description" data-rv-lot-summary-description hidden></p>
+											<div class="eem-rv-lot-selector-row__details" data-rv-lot-summary>
+												<p class="eem-rv-lot-selector-row__title" data-rv-lot-summary-title hidden></p>
+												<p class="eem-rv-lot-selector-row__description" data-rv-lot-summary-description hidden></p>
 											</div>
 										</div>
 									<?php endif; ?>
-									<div class="en-product-list">
+									<div class="eem-product-list">
 										<?php $this->render_product_list_header(); ?>
 										<?php
 										$this->render_product_line_item(
@@ -662,7 +662,7 @@ class EEM_Shortcodes {
 												$addon['name'],
 												$addon['description'],
 												'rv_addon_' . $addon_key,
-												'en-product-line-item--rv-addon',
+												'eem-product-line-item--rv-addon',
 												array(
 													'dynamic_price_type' => 'rv_addon',
 													'dynamic_price_key'  => $addon_key,
@@ -672,30 +672,30 @@ class EEM_Shortcodes {
 											?>
 										<?php endforeach; ?>
 									</div>
-									<div class="en-section-subtotal" aria-live="polite">
+									<div class="eem-section-subtotal" aria-live="polite">
 										<span><?php esc_html_e( 'RV Subtotal', 'equine-event-manager' ); ?></span>
-										<strong data-en-total="rv_section_subtotal">$0.00</strong>
+										<strong data-eem-total="rv_section_subtotal">$0.00</strong>
 									</div>
 								<?php elseif ( $status['rv_sold_out'] ) : ?>
-									<p class="en-reservation-help en-reservation-help--sold-out"><?php echo esc_html( $this->get_sold_out_message( 'rv' ) ); ?></p>
+									<p class="eem-reservation-help eem-reservation-help--sold-out"><?php echo esc_html( $this->get_sold_out_message( 'rv' ) ); ?></p>
 								<?php else : ?>
-									<p class="en-reservation-help"><?php echo esc_html( $this->get_closed_message( $data, 'rv' ) ); ?></p>
+									<p class="eem-reservation-help"><?php echo esc_html( $this->get_closed_message( $data, 'rv' ) ); ?></p>
 								<?php endif; ?>
 							</div>
 						</div>
 					<?php endif; ?>
 
 					<?php if ( ! empty( $general_addon_options ) ) : ?>
-						<div class="en-reservation-section" data-en-section="addons">
-							<div class="en-reservation-section-heading en-reservation-section-heading--collapsible">
-								<h4 class="en-reservation-section__title"><?php esc_html_e( 'Add-Ons', 'equine-event-manager' ); ?></h4>
-								<label class="en-reservation-section-toggle" aria-label="<?php esc_attr_e( 'Toggle Add-Ons section', 'equine-event-manager' ); ?>">
-									<input type="checkbox" data-en-section-collapse-toggle />
-									<span class="en-reservation-section-toggle__track" aria-hidden="true"></span>
+						<div class="eem-reservation-section" data-eem-section="addons">
+							<div class="eem-reservation-section-heading eem-reservation-section-heading--collapsible">
+								<h4 class="eem-reservation-section__title"><?php esc_html_e( 'Add-Ons', 'equine-event-manager' ); ?></h4>
+								<label class="eem-reservation-section-toggle" aria-label="<?php esc_attr_e( 'Toggle Add-Ons section', 'equine-event-manager' ); ?>">
+									<input type="checkbox" data-eem-section-collapse-toggle />
+									<span class="eem-reservation-section-toggle__track" aria-hidden="true"></span>
 								</label>
 							</div>
-							<div class="en-reservation-section__body" data-en-section-collapse-body>
-								<div class="en-product-list">
+							<div class="eem-reservation-section__body" data-eem-section-collapse-body>
+								<div class="eem-product-list">
 									<?php $this->render_product_list_header(); ?>
 									<?php foreach ( $general_addon_options as $addon_key => $addon ) : ?>
 										<?php
@@ -703,7 +703,7 @@ class EEM_Shortcodes {
 											$addon['name'],
 											$this->format_general_addon_description( $addon ),
 											'general_addon_' . $addon_key . '_qty',
-											'en-product-line-item--general-addon',
+											'eem-product-line-item--general-addon',
 											array(
 												'static_price'        => (float) $addon['price'],
 												'static_price_suffix' => $this->get_general_addon_price_suffix( $addon ),
@@ -714,40 +714,40 @@ class EEM_Shortcodes {
 										?>
 									<?php endforeach; ?>
 								</div>
-								<div class="en-section-subtotal" aria-live="polite">
+								<div class="eem-section-subtotal" aria-live="polite">
 									<span><?php esc_html_e( 'Add-On Subtotal', 'equine-event-manager' ); ?></span>
-									<strong data-en-total="general_addons_subtotal">$0.00</strong>
+									<strong data-eem-total="general_addons_subtotal">$0.00</strong>
 								</div>
 							</div>
 						</div>
 					<?php endif; ?>
 
 					<?php if ( $group_reservations_enabled ) : ?>
-						<div class="en-reservation-section en-reservation-section--group-reservation" data-en-section="group">
-							<div class="en-reservation-section-heading en-reservation-section-heading--collapsible">
-								<h4 class="en-reservation-section__title"><?php esc_html_e( 'Group Reservation', 'equine-event-manager' ); ?></h4>
-								<label class="en-reservation-section-toggle" aria-label="<?php esc_attr_e( 'Toggle Group Reservation section', 'equine-event-manager' ); ?>">
-									<input type="checkbox" name="group_reservation_enabled" value="1" data-en-group-toggle data-en-section-collapse-toggle />
-									<span class="en-reservation-section-toggle__track" aria-hidden="true"></span>
+						<div class="eem-reservation-section eem-reservation-section--group-reservation" data-eem-section="group">
+							<div class="eem-reservation-section-heading eem-reservation-section-heading--collapsible">
+								<h4 class="eem-reservation-section__title"><?php esc_html_e( 'Group Reservation', 'equine-event-manager' ); ?></h4>
+								<label class="eem-reservation-section-toggle" aria-label="<?php esc_attr_e( 'Toggle Group Reservation section', 'equine-event-manager' ); ?>">
+									<input type="checkbox" name="group_reservation_enabled" value="1" data-eem-group-toggle data-eem-section-collapse-toggle />
+									<span class="eem-reservation-section-toggle__track" aria-hidden="true"></span>
 								</label>
 							</div>
-							<div class="en-reservation-section__body" data-en-section-collapse-body>
-								<p class="en-reservation-help"><?php esc_html_e( 'Turn this on to capture the total rider count and a first and last name for each rider in the group.', 'equine-event-manager' ); ?></p>
-								<div class="en-group-reservation-fields" data-en-group-fields hidden>
-									<div class="en-product-list en-product-list--group-reservation">
+							<div class="eem-reservation-section__body" data-eem-section-collapse-body>
+								<p class="eem-reservation-help"><?php esc_html_e( 'Turn this on to capture the total rider count and a first and last name for each rider in the group.', 'equine-event-manager' ); ?></p>
+								<div class="eem-group-reservation-fields" data-eem-group-fields hidden>
+									<div class="eem-product-list eem-product-list--group-reservation">
 										<?php $this->render_product_list_header(); ?>
-										<div class="en-product-line-item en-product-line-item--group-riders">
-											<div class="en-product-line-item__content">
-												<div class="en-product-line-item__title">
-													<span class="en-product-line-item__title-text"><?php esc_html_e( 'Number of Riders', 'equine-event-manager' ); ?> <strong>*</strong></span>
+										<div class="eem-product-line-item eem-product-line-item--group-riders">
+											<div class="eem-product-line-item__content">
+												<div class="eem-product-line-item__title">
+													<span class="eem-product-line-item__title-text"><?php esc_html_e( 'Number of Riders', 'equine-event-manager' ); ?> <strong>*</strong></span>
 												</div>
-												<div class="en-product-line-item__description"><?php esc_html_e( 'Use the quantity controls to set how many riders are in the group reservation.', 'equine-event-manager' ); ?></div>
+												<div class="eem-product-line-item__description"><?php esc_html_e( 'Use the quantity controls to set how many riders are in the group reservation.', 'equine-event-manager' ); ?></div>
 											</div>
-											<div class="en-product-line-item__qty">
-												<div class="en-quantity-control">
-													<button type="button" class="en-quantity-button" data-en-quantity-step="-1" aria-label="<?php esc_attr_e( 'Decrease quantity', 'equine-event-manager' ); ?>">-</button>
-													<input type="number" name="group_rider_count" min="1" step="1" value="1" data-en-group-count inputmode="numeric" />
-													<button type="button" class="en-quantity-button" data-en-quantity-step="1" aria-label="<?php esc_attr_e( 'Increase quantity', 'equine-event-manager' ); ?>">+</button>
+											<div class="eem-product-line-item__qty">
+												<div class="eem-quantity-control">
+													<button type="button" class="eem-quantity-button" data-eem-quantity-step="-1" aria-label="<?php esc_attr_e( 'Decrease quantity', 'equine-event-manager' ); ?>">-</button>
+													<input type="number" name="group_rider_count" min="1" step="1" value="1" data-eem-group-count inputmode="numeric" />
+													<button type="button" class="eem-quantity-button" data-eem-quantity-step="1" aria-label="<?php esc_attr_e( 'Increase quantity', 'equine-event-manager' ); ?>">+</button>
 												</div>
 											</div>
 										</div>
@@ -778,80 +778,80 @@ class EEM_Shortcodes {
 											?>
 										<?php endif; ?>
 									</div>
-									<div class="en-group-riders-list" data-en-group-riders-list></div>
-									<div class="en-section-subtotal" aria-live="polite">
+									<div class="eem-group-riders-list" data-eem-group-riders-list></div>
+									<div class="eem-section-subtotal" aria-live="polite">
 										<span><?php esc_html_e( 'Group Reservation Subtotal', 'equine-event-manager' ); ?></span>
-										<strong data-en-total="group_subtotal">$0.00</strong>
+										<strong data-eem-total="group_subtotal">$0.00</strong>
 									</div>
 								</div>
 							</div>
 						</div>
 					<?php endif; ?>
 
-					<div class="en-reservation-section en-reservation-section--special-requests">
+					<div class="eem-reservation-section eem-reservation-section--special-requests">
 						<label>
-							<h4 class="en-checkout-subsection-title en-checkout-subsection-title--field"><?php esc_html_e( 'Special Requests', 'equine-event-manager' ); ?></h4>
+							<h4 class="eem-checkout-subsection-title eem-checkout-subsection-title--field"><?php esc_html_e( 'Special Requests', 'equine-event-manager' ); ?></h4>
 							<?php if ( $special_requests_description ) : ?>
-								<small class="en-reservation-help"><?php echo esc_html( $special_requests_description ); ?></small>
+								<small class="eem-reservation-help"><?php echo esc_html( $special_requests_description ); ?></small>
 							<?php endif; ?>
 							<textarea name="notes" rows="4"></textarea>
 						</label>
 					</div>
 
-					<div class="en-reservation-section en-reservation-section--payment">
+					<div class="eem-reservation-section eem-reservation-section--payment">
 						<?php if ( $is_admin_invoice ) : ?>
-							<div class="en-invoice-mode-card">
-								<div class="en-invoice-mode-card__copy">
+							<div class="eem-invoice-mode-card">
+								<div class="eem-invoice-mode-card__copy">
 									<h4><?php esc_html_e( 'Invoice Delivery', 'equine-event-manager' ); ?></h4>
-									<p class="en-reservation-help"><?php esc_html_e( 'Leave card entry off to email a secure payment link. Turn it on only when you are charging the customer directly and need to enter billing details here.', 'equine-event-manager' ); ?></p>
-									<div class="en-invoice-mode-actions">
-										<label class="en-inline-toggle-control en-invoice-mode-toggle">
-											<input type="checkbox" name="en_collect_billing_now" value="1" data-en-invoice-billing-toggle />
-											<span class="en-inline-toggle-control__track" aria-hidden="true"></span>
-											<span class="en-inline-toggle-control__label"><?php esc_html_e( 'Charge Customer', 'equine-event-manager' ); ?></span>
+									<p class="eem-reservation-help"><?php esc_html_e( 'Leave card entry off to email a secure payment link. Turn it on only when you are charging the customer directly and need to enter billing details here.', 'equine-event-manager' ); ?></p>
+									<div class="eem-invoice-mode-actions">
+										<label class="eem-inline-toggle-control eem-invoice-mode-toggle">
+											<input type="checkbox" name="en_collect_billing_now" value="1" data-eem-invoice-billing-toggle />
+											<span class="eem-inline-toggle-control__track" aria-hidden="true"></span>
+											<span class="eem-inline-toggle-control__label"><?php esc_html_e( 'Charge Customer', 'equine-event-manager' ); ?></span>
 										</label>
-										<div class="en-reservation-submit-actions en-reservation-submit-actions--invoice-mode">
-											<button type="submit" class="en-reservation-submit" data-en-invoice-send-button data-en-invoice-action="send_payment_link"><?php esc_html_e( 'Send Payment Link', 'equine-event-manager' ); ?></button>
-											<button type="submit" class="en-reservation-submit en-reservation-submit--secondary" data-en-invoice-show-bill-button data-en-invoice-action="add_to_show_bill"><?php esc_html_e( 'Add to Show Bill', 'equine-event-manager' ); ?></button>
-											<button type="submit" class="en-reservation-submit en-reservation-submit--secondary" data-en-invoice-charge-button data-en-invoice-action="charge_now" hidden><?php esc_html_e( 'Charge Card', 'equine-event-manager' ); ?></button>
+										<div class="eem-reservation-submit-actions eem-reservation-submit-actions--invoice-mode">
+											<button type="submit" class="eem-reservation-submit" data-eem-invoice-send-button data-eem-invoice-action="send_payment_link"><?php esc_html_e( 'Send Payment Link', 'equine-event-manager' ); ?></button>
+											<button type="submit" class="eem-reservation-submit eem-reservation-submit--secondary" data-eem-invoice-show-bill-button data-eem-invoice-action="add_to_show_bill"><?php esc_html_e( 'Add to Show Bill', 'equine-event-manager' ); ?></button>
+											<button type="submit" class="eem-reservation-submit eem-reservation-submit--secondary" data-eem-invoice-charge-button data-eem-invoice-action="charge_now" hidden><?php esc_html_e( 'Charge Card', 'equine-event-manager' ); ?></button>
 										</div>
 									</div>
 								</div>
 							</div>
 						<?php endif; ?>
-						<h4 class="en-reservation-section__title"<?php echo $is_admin_invoice ? ' data-en-invoice-billing-block hidden style="display:none;"' : ''; ?>><?php esc_html_e( 'Billing & Payment', 'equine-event-manager' ); ?></h4>
-								<div class="en-payment-checkout-block<?php echo $is_admin_invoice ? ' en-payment-checkout-block--admin-invoice' : ''; ?>"<?php echo $is_admin_invoice ? ' data-en-invoice-billing-block hidden style="display:none;"' : ''; ?>>
-							<h4 class="en-checkout-subsection-title"><?php esc_html_e( 'Billing Details', 'equine-event-manager' ); ?></h4>
-							<div class="en-reservation-grid en-reservation-grid--two">
+						<h4 class="eem-reservation-section__title"<?php echo $is_admin_invoice ? ' data-eem-invoice-billing-block hidden style="display:none;"' : ''; ?>><?php esc_html_e( 'Billing & Payment', 'equine-event-manager' ); ?></h4>
+								<div class="eem-payment-checkout-block<?php echo $is_admin_invoice ? ' eem-payment-checkout-block--admin-invoice' : ''; ?>"<?php echo $is_admin_invoice ? ' data-eem-invoice-billing-block hidden style="display:none;"' : ''; ?>>
+							<h4 class="eem-checkout-subsection-title"><?php esc_html_e( 'Billing Details', 'equine-event-manager' ); ?></h4>
+							<div class="eem-reservation-grid eem-reservation-grid--two">
 								<label>
 									<span><?php esc_html_e( 'Billing First Name', 'equine-event-manager' ); ?> <strong>*</strong></span>
-									<input type="text" name="billing_first_name" autocomplete="billing given-name" required data-en-required-for-charge="1" />
+									<input type="text" name="billing_first_name" autocomplete="billing given-name" required data-eem-required-for-charge="1" />
 								</label>
 								<label>
 									<span><?php esc_html_e( 'Billing Last Name', 'equine-event-manager' ); ?> <strong>*</strong></span>
-									<input type="text" name="billing_last_name" autocomplete="billing family-name" required data-en-required-for-charge="1" />
+									<input type="text" name="billing_last_name" autocomplete="billing family-name" required data-eem-required-for-charge="1" />
 								</label>
 							</div>
-							<div class="en-reservation-grid en-reservation-grid--single">
+							<div class="eem-reservation-grid eem-reservation-grid--single">
 								<label>
 									<span><?php esc_html_e( 'Billing Address', 'equine-event-manager' ); ?> <strong>*</strong></span>
-									<input type="text" name="billing_address_1" autocomplete="billing address-line1" required data-en-required-for-charge="1" />
+									<input type="text" name="billing_address_1" autocomplete="billing address-line1" required data-eem-required-for-charge="1" />
 								</label>
 							</div>
-							<div class="en-reservation-grid en-reservation-grid--single">
+							<div class="eem-reservation-grid eem-reservation-grid--single">
 								<label>
 									<span><?php esc_html_e( 'Apartment, suite, etc.', 'equine-event-manager' ); ?></span>
 									<input type="text" name="billing_address_2" autocomplete="billing address-line2" />
 								</label>
 							</div>
-							<div class="en-reservation-grid en-reservation-grid--three">
+							<div class="eem-reservation-grid eem-reservation-grid--three">
 								<label>
 									<span><?php esc_html_e( 'City', 'equine-event-manager' ); ?> <strong>*</strong></span>
-									<input type="text" name="billing_city" autocomplete="billing address-level2" required data-en-required-for-charge="1" />
+									<input type="text" name="billing_city" autocomplete="billing address-level2" required data-eem-required-for-charge="1" />
 								</label>
 								<label>
 									<span><?php esc_html_e( 'State / Province', 'equine-event-manager' ); ?> <strong>*</strong></span>
-									<select name="billing_state" autocomplete="billing address-level1" required data-en-required-for-charge="1">
+									<select name="billing_state" autocomplete="billing address-level1" required data-eem-required-for-charge="1">
 										<?php foreach ( $this->get_state_options() as $state ) : ?>
 											<option value="<?php echo esc_attr( $state ); ?>"><?php echo esc_html( $state ); ?></option>
 										<?php endforeach; ?>
@@ -859,13 +859,13 @@ class EEM_Shortcodes {
 								</label>
 								<label>
 									<span><?php esc_html_e( 'ZIP / Postal Code', 'equine-event-manager' ); ?> <strong>*</strong></span>
-									<input type="text" name="billing_postal_code" autocomplete="billing postal-code" required data-en-required-for-charge="1" />
+									<input type="text" name="billing_postal_code" autocomplete="billing postal-code" required data-eem-required-for-charge="1" />
 								</label>
 							</div>
-							<div class="en-reservation-grid en-reservation-grid--single">
+							<div class="eem-reservation-grid eem-reservation-grid--single">
 								<label>
 									<span><?php esc_html_e( 'Country', 'equine-event-manager' ); ?> <strong>*</strong></span>
-									<select name="billing_country" autocomplete="billing country-name" required data-en-required-for-charge="1">
+									<select name="billing_country" autocomplete="billing country-name" required data-eem-required-for-charge="1">
 										<?php foreach ( $this->get_billing_country_options() as $country ) : ?>
 											<option value="<?php echo esc_attr( $country ); ?>" <?php selected( $country, 'United States' ); ?>><?php echo esc_html( $country ); ?></option>
 										<?php endforeach; ?>
@@ -874,51 +874,51 @@ class EEM_Shortcodes {
 							</div>
 								</div>
 								<?php if ( 'stripe' === $payment_settings['selected_gateway'] ) : ?>
-						<div class="en-payment-card-field-wrap<?php echo $is_admin_invoice ? ' en-payment-card-field-wrap--admin-invoice' : ''; ?>"<?php echo $is_admin_invoice ? ' data-en-invoice-billing-block hidden style="display:none;"' : ''; ?>>
-							<h4 class="en-checkout-subsection-title"><?php esc_html_e( 'Credit Card', 'equine-event-manager' ); ?></h4>
+						<div class="eem-payment-card-field-wrap<?php echo $is_admin_invoice ? ' eem-payment-card-field-wrap--admin-invoice' : ''; ?>"<?php echo $is_admin_invoice ? ' data-eem-invoice-billing-block hidden style="display:none;"' : ''; ?>>
+							<h4 class="eem-checkout-subsection-title"><?php esc_html_e( 'Credit Card', 'equine-event-manager' ); ?></h4>
 							<?php if ( $stripe_card_enabled ) : ?>
-								<div class="en-payment-card-grid">
-									<div class="en-payment-card-field en-payment-card-field--full">
-										<label class="en-payment-card-label" for="en-stripe-card-number-<?php echo esc_attr( $reservation_id ); ?>">
+								<div class="eem-payment-card-grid">
+									<div class="eem-payment-card-field eem-payment-card-field--full">
+										<label class="eem-payment-card-label" for="eem-stripe-card-number-<?php echo esc_attr( $reservation_id ); ?>">
 											<span><?php esc_html_e( 'Card Number', 'equine-event-manager' ); ?> <strong>*</strong></span>
 										</label>
-										<div id="en-stripe-card-number-<?php echo esc_attr( $reservation_id ); ?>" class="en-stripe-card-element" data-en-stripe-card-number></div>
+										<div id="eem-stripe-card-number-<?php echo esc_attr( $reservation_id ); ?>" class="eem-stripe-card-element" data-eem-stripe-card-number></div>
 									</div>
-									<div class="en-payment-card-field">
-										<label class="en-payment-card-label" for="en-stripe-card-expiry-<?php echo esc_attr( $reservation_id ); ?>">
+									<div class="eem-payment-card-field">
+										<label class="eem-payment-card-label" for="eem-stripe-card-expiry-<?php echo esc_attr( $reservation_id ); ?>">
 											<span><?php esc_html_e( 'Expiration Date', 'equine-event-manager' ); ?> <strong>*</strong></span>
 										</label>
-										<div id="en-stripe-card-expiry-<?php echo esc_attr( $reservation_id ); ?>" class="en-stripe-card-element" data-en-stripe-card-expiry></div>
+										<div id="eem-stripe-card-expiry-<?php echo esc_attr( $reservation_id ); ?>" class="eem-stripe-card-element" data-eem-stripe-card-expiry></div>
 									</div>
-									<div class="en-payment-card-field">
-										<label class="en-payment-card-label" for="en-stripe-card-cvc-<?php echo esc_attr( $reservation_id ); ?>">
+									<div class="eem-payment-card-field">
+										<label class="eem-payment-card-label" for="eem-stripe-card-cvc-<?php echo esc_attr( $reservation_id ); ?>">
 											<span><?php esc_html_e( 'Security Code', 'equine-event-manager' ); ?> <strong>*</strong></span>
 										</label>
-										<div id="en-stripe-card-cvc-<?php echo esc_attr( $reservation_id ); ?>" class="en-stripe-card-element" data-en-stripe-card-cvc></div>
+										<div id="eem-stripe-card-cvc-<?php echo esc_attr( $reservation_id ); ?>" class="eem-stripe-card-element" data-eem-stripe-card-cvc></div>
 									</div>
 								</div>
-								<p class="en-reservation-help en-payment-card-help"><?php esc_html_e( 'Use a Stripe test card to complete your payment. Example: 4242 4242 4242 4242.', 'equine-event-manager' ); ?></p>
-								<div class="en-stripe-card-error" data-en-stripe-card-error hidden></div>
+								<p class="eem-reservation-help eem-payment-card-help"><?php esc_html_e( 'Use a Stripe test card to complete your payment. Example: 4242 4242 4242 4242.', 'equine-event-manager' ); ?></p>
+								<div class="eem-stripe-card-error" data-eem-stripe-card-error hidden></div>
 							<?php else : ?>
-								<p class="en-reservation-help en-reservation-help--error"><?php esc_html_e( 'Stripe test card entry is not available yet because your Stripe keys are not configured in Settings.', 'equine-event-manager' ); ?></p>
+								<p class="eem-reservation-help eem-reservation-help--error"><?php esc_html_e( 'Stripe test card entry is not available yet because your Stripe keys are not configured in Settings.', 'equine-event-manager' ); ?></p>
 							<?php endif; ?>
 						</div>
 					<?php elseif ( 'authorize_net' === $payment_settings['selected_gateway'] ) : ?>
-						<div class="en-payment-card-field-wrap<?php echo $is_admin_invoice ? ' en-payment-card-field-wrap--admin-invoice' : ''; ?>"<?php echo $is_admin_invoice ? ' data-en-invoice-billing-block hidden style="display:none;"' : ''; ?>>
-							<h4 class="en-checkout-subsection-title"><?php esc_html_e( 'Credit Card', 'equine-event-manager' ); ?></h4>
+						<div class="eem-payment-card-field-wrap<?php echo $is_admin_invoice ? ' eem-payment-card-field-wrap--admin-invoice' : ''; ?>"<?php echo $is_admin_invoice ? ' data-eem-invoice-billing-block hidden style="display:none;"' : ''; ?>>
+							<h4 class="eem-checkout-subsection-title"><?php esc_html_e( 'Credit Card', 'equine-event-manager' ); ?></h4>
 							<?php if ( $authorize_card_enabled ) : ?>
-								<div class="en-payment-card-grid">
-									<div class="en-payment-card-field en-payment-card-field--full">
-										<label class="en-payment-card-label" for="en-authorize-card-number-<?php echo esc_attr( $reservation_id ); ?>">
+								<div class="eem-payment-card-grid">
+									<div class="eem-payment-card-field eem-payment-card-field--full">
+										<label class="eem-payment-card-label" for="eem-authorize-card-number-<?php echo esc_attr( $reservation_id ); ?>">
 											<span><?php esc_html_e( 'Card Number', 'equine-event-manager' ); ?> <strong>*</strong></span>
 										</label>
-										<input id="en-authorize-card-number-<?php echo esc_attr( $reservation_id ); ?>" type="text" name="authorize_card_number" inputmode="numeric" autocomplete="cc-number" class="en-payment-card-input" placeholder="1234 1234 1234 1234" />
+										<input id="eem-authorize-card-number-<?php echo esc_attr( $reservation_id ); ?>" type="text" name="authorize_card_number" inputmode="numeric" autocomplete="cc-number" class="eem-payment-card-input" placeholder="1234 1234 1234 1234" />
 									</div>
-									<div class="en-payment-card-field">
-										<label class="en-payment-card-label" for="en-authorize-exp-month-<?php echo esc_attr( $reservation_id ); ?>">
+									<div class="eem-payment-card-field">
+										<label class="eem-payment-card-label" for="eem-authorize-exp-month-<?php echo esc_attr( $reservation_id ); ?>">
 											<span><?php esc_html_e( 'Exp. Month', 'equine-event-manager' ); ?> <strong>*</strong></span>
 										</label>
-										<select id="en-authorize-exp-month-<?php echo esc_attr( $reservation_id ); ?>" name="authorize_exp_month" class="en-payment-card-input">
+										<select id="eem-authorize-exp-month-<?php echo esc_attr( $reservation_id ); ?>" name="authorize_exp_month" class="eem-payment-card-input">
 											<option value=""><?php esc_html_e( 'Month', 'equine-event-manager' ); ?></option>
 											<?php for ( $month = 1; $month <= 12; $month++ ) : ?>
 												<?php $month_value = sprintf( '%02d', $month ); ?>
@@ -926,33 +926,33 @@ class EEM_Shortcodes {
 											<?php endfor; ?>
 										</select>
 									</div>
-									<div class="en-payment-card-field">
-										<label class="en-payment-card-label" for="en-authorize-exp-year-<?php echo esc_attr( $reservation_id ); ?>">
+									<div class="eem-payment-card-field">
+										<label class="eem-payment-card-label" for="eem-authorize-exp-year-<?php echo esc_attr( $reservation_id ); ?>">
 											<span><?php esc_html_e( 'Exp. Year', 'equine-event-manager' ); ?> <strong>*</strong></span>
 										</label>
-										<select id="en-authorize-exp-year-<?php echo esc_attr( $reservation_id ); ?>" name="authorize_exp_year" class="en-payment-card-input">
+										<select id="eem-authorize-exp-year-<?php echo esc_attr( $reservation_id ); ?>" name="authorize_exp_year" class="eem-payment-card-input">
 											<option value=""><?php esc_html_e( 'Year', 'equine-event-manager' ); ?></option>
 											<?php for ( $year = (int) gmdate( 'Y' ); $year <= ( (int) gmdate( 'Y' ) + 15 ); $year++ ) : ?>
 												<option value="<?php echo esc_attr( (string) $year ); ?>"><?php echo esc_html( (string) $year ); ?></option>
 											<?php endfor; ?>
 										</select>
 									</div>
-									<div class="en-payment-card-field">
-										<label class="en-payment-card-label" for="en-authorize-card-code-<?php echo esc_attr( $reservation_id ); ?>">
+									<div class="eem-payment-card-field">
+										<label class="eem-payment-card-label" for="eem-authorize-card-code-<?php echo esc_attr( $reservation_id ); ?>">
 											<span><?php esc_html_e( 'Security Code', 'equine-event-manager' ); ?> <strong>*</strong></span>
 										</label>
-										<input id="en-authorize-card-code-<?php echo esc_attr( $reservation_id ); ?>" type="text" name="authorize_card_code" inputmode="numeric" autocomplete="cc-csc" class="en-payment-card-input" placeholder="CVC" />
+										<input id="eem-authorize-card-code-<?php echo esc_attr( $reservation_id ); ?>" type="text" name="authorize_card_code" inputmode="numeric" autocomplete="cc-csc" class="eem-payment-card-input" placeholder="CVC" />
 									</div>
 								</div>
-								<p class="en-reservation-help en-payment-card-help"><?php esc_html_e( 'Enter your card details to process this payment through Authorize.net.', 'equine-event-manager' ); ?></p>
+								<p class="eem-reservation-help eem-payment-card-help"><?php esc_html_e( 'Enter your card details to process this payment through Authorize.net.', 'equine-event-manager' ); ?></p>
 							<?php else : ?>
-								<p class="en-reservation-help en-reservation-help--error"><?php esc_html_e( 'Authorize.net card entry is not available yet because your API Login ID and Transaction Key are not configured in Settings.', 'equine-event-manager' ); ?></p>
+								<p class="eem-reservation-help eem-reservation-help--error"><?php esc_html_e( 'Authorize.net card entry is not available yet because your API Login ID and Transaction Key are not configured in Settings.', 'equine-event-manager' ); ?></p>
 							<?php endif; ?>
 						</div>
 								<?php endif; ?>
 								<input type="hidden" name="en_invoice_action_mode" value="<?php echo esc_attr( $is_admin_invoice ? 'send_payment_link' : 'customer_submit' ); ?>" />
 								<?php if ( ! $is_admin_invoice ) : ?>
-									<button type="submit" class="en-reservation-submit"><?php esc_html_e( 'Complete Reservation', 'equine-event-manager' ); ?></button>
+									<button type="submit" class="eem-reservation-submit"><?php esc_html_e( 'Complete Reservation', 'equine-event-manager' ); ?></button>
 								<?php endif; ?>
 							</div>
 						</div>
@@ -991,58 +991,58 @@ class EEM_Shortcodes {
 	private function render_order_summary_sidebar( $data, $general_addon_options, $rv_addon_options, $group_grounds_fee_enabled, $group_deposit_enabled, $venue_agreement_url, $is_admin_invoice ) {
 		ob_start();
 		?>
-		<aside class="en-reservation-workspace__rail">
-			<div class="en-reservation-summary-card">
-				<div class="en-reservation-summary-card__sticky">
-					<h4 class="en-checkout-subsection-title"><?php esc_html_e( 'Order Summary', 'equine-event-manager' ); ?></h4>
-					<div class="en-payment-summary" aria-live="polite">
-						<div class="en-payment-summary-row" data-en-summary-row="stall_subtotal" hidden>
+		<aside class="eem-reservation-workspace__rail">
+			<div class="eem-reservation-summary-card">
+				<div class="eem-reservation-summary-card__sticky">
+					<h4 class="eem-checkout-subsection-title"><?php esc_html_e( 'Order Summary', 'equine-event-manager' ); ?></h4>
+					<div class="eem-payment-summary" aria-live="polite">
+						<div class="eem-payment-summary-row" data-eem-summary-row="stall_subtotal" hidden>
 							<span><?php esc_html_e( 'Stall Subtotal', 'equine-event-manager' ); ?></span>
-							<strong data-en-total="stall_subtotal">$0.00</strong>
+							<strong data-eem-total="stall_subtotal">$0.00</strong>
 						</div>
-						<div class="en-payment-summary-row" data-en-summary-row="required_shavings_subtotal" hidden>
+						<div class="eem-payment-summary-row" data-eem-summary-row="required_shavings_subtotal" hidden>
 							<span><?php esc_html_e( 'Required Shavings Subtotal', 'equine-event-manager' ); ?></span>
-							<strong data-en-total="required_shavings_subtotal">$0.00</strong>
+							<strong data-eem-total="required_shavings_subtotal">$0.00</strong>
 						</div>
-						<div class="en-payment-summary-row" data-en-summary-row="rv_subtotal" hidden>
+						<div class="eem-payment-summary-row" data-eem-summary-row="rv_subtotal" hidden>
 							<span><?php esc_html_e( 'RV Reservations Subtotal', 'equine-event-manager' ); ?></span>
-							<strong data-en-total="rv_subtotal">$0.00</strong>
+							<strong data-eem-total="rv_subtotal">$0.00</strong>
 						</div>
 						<?php if ( $group_grounds_fee_enabled ) : ?>
-							<div class="en-payment-summary-row" data-en-summary-row="group_rider_grounds_fee_subtotal" hidden>
+							<div class="eem-payment-summary-row" data-eem-summary-row="group_rider_grounds_fee_subtotal" hidden>
 								<span><?php esc_html_e( 'Rider Grounds Fee', 'equine-event-manager' ); ?></span>
-								<strong data-en-total="group_rider_grounds_fee_subtotal">$0.00</strong>
+								<strong data-eem-total="group_rider_grounds_fee_subtotal">$0.00</strong>
 							</div>
 						<?php endif; ?>
 						<?php if ( $group_deposit_enabled ) : ?>
-							<div class="en-payment-summary-row" data-en-summary-row="group_rider_deposit_subtotal" hidden>
+							<div class="eem-payment-summary-row" data-eem-summary-row="group_rider_deposit_subtotal" hidden>
 								<span><?php esc_html_e( 'Rider Deposit', 'equine-event-manager' ); ?></span>
-								<strong data-en-total="group_rider_deposit_subtotal">$0.00</strong>
+								<strong data-eem-total="group_rider_deposit_subtotal">$0.00</strong>
 							</div>
 						<?php endif; ?>
 						<?php foreach ( $general_addon_options as $addon_key => $addon ) : ?>
-							<div class="en-payment-summary-row" data-en-summary-row="general_addon_<?php echo esc_attr( $addon_key ); ?>_subtotal" hidden>
+							<div class="eem-payment-summary-row" data-eem-summary-row="general_addon_<?php echo esc_attr( $addon_key ); ?>_subtotal" hidden>
 								<span><?php echo esc_html( $addon['name'] ); ?></span>
-								<strong data-en-total="general_addon_<?php echo esc_attr( $addon_key ); ?>_subtotal">$0.00</strong>
+								<strong data-eem-total="general_addon_<?php echo esc_attr( $addon_key ); ?>_subtotal">$0.00</strong>
 							</div>
 						<?php endforeach; ?>
 						<?php foreach ( $rv_addon_options as $addon_key => $addon ) : ?>
-							<div class="en-payment-summary-row" data-en-summary-row="rv_addon_<?php echo esc_attr( $addon_key ); ?>_subtotal" hidden>
+							<div class="eem-payment-summary-row" data-eem-summary-row="rv_addon_<?php echo esc_attr( $addon_key ); ?>_subtotal" hidden>
 								<span><?php echo esc_html( $addon['name'] ); ?> <?php esc_html_e( 'Add-On', 'equine-event-manager' ); ?></span>
-								<strong data-en-total="rv_addon_<?php echo esc_attr( $addon_key ); ?>_subtotal">$0.00</strong>
+								<strong data-eem-total="rv_addon_<?php echo esc_attr( $addon_key ); ?>_subtotal">$0.00</strong>
 							</div>
 						<?php endforeach; ?>
-						<div class="en-payment-summary-row" data-en-summary-row="fees" hidden>
+						<div class="eem-payment-summary-row" data-eem-summary-row="fees" hidden>
 							<span><?php echo esc_html( ! empty( $data['convenience_fee_label'] ) ? $data['convenience_fee_label'] : __( 'Non-Refundable Convenience Fee', 'equine-event-manager' ) ); ?></span>
-							<strong data-en-total="fees">$0.00</strong>
+							<strong data-eem-total="fees">$0.00</strong>
 						</div>
-						<div class="en-payment-summary-row en-payment-summary-row--total">
+						<div class="eem-payment-summary-row eem-payment-summary-row--total">
 							<span><?php esc_html_e( 'Total Amount Due', 'equine-event-manager' ); ?></span>
-							<strong data-en-total="total">$0.00</strong>
+							<strong data-eem-total="total">$0.00</strong>
 						</div>
 					</div>
 					<?php if ( ! $is_admin_invoice && ! empty( $data['venue_agreement_enabled'] ) && $venue_agreement_url ) : ?>
-						<div class="en-venue-agreement-card">
+						<div class="eem-venue-agreement-card">
 							<p>
 								<?php esc_html_e( 'All transaction fees are non-refundable. Please be sure you have read the', 'equine-event-manager' ); ?>
 								<a href="<?php echo esc_url( $venue_agreement_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( ! empty( $data['venue_agreement_file_label'] ) ? $data['venue_agreement_file_label'] : __( 'Agreement', 'equine-event-manager' ) ); ?></a>
@@ -1181,7 +1181,7 @@ class EEM_Shortcodes {
 			}
 		}
 		?>
-		<div class="en-product-list">
+		<div class="eem-product-list">
 			<?php $this->render_product_list_header(); ?>
 			<?php
 			$this->render_product_line_item(
@@ -1206,7 +1206,7 @@ class EEM_Shortcodes {
 					),
 					__( 'Automatically added to cart.', 'equine-event-manager' ),
 					'required_shavings',
-					'en-product-line-item--required-shavings'
+					'eem-product-line-item--required-shavings'
 				);
 				?>
 			<?php endif; ?>
@@ -1214,9 +1214,9 @@ class EEM_Shortcodes {
 		<?php if ( $stall_assignment_enabled && ! empty( $stall_assignment_blocks ) ) : ?>
 			<?php $this->render_quantity_stall_assignment_selector( $stall_assignment_blocks, $stall_map_url ); ?>
 		<?php endif; ?>
-		<div class="en-section-subtotal" aria-live="polite">
+		<div class="eem-section-subtotal" aria-live="polite">
 			<span><?php esc_html_e( 'Stall Subtotal', 'equine-event-manager' ); ?></span>
-			<strong data-en-total="stall_section_subtotal">$0.00</strong>
+			<strong data-eem-total="stall_section_subtotal">$0.00</strong>
 		</div>
 		<?php
 	}
@@ -1230,30 +1230,30 @@ class EEM_Shortcodes {
 	 */
 	private function render_quantity_stall_assignment_selector( $stall_assignment_blocks, $stall_map_url ) {
 		?>
-		<div class="en-stall-assignment-selector">
-			<div class="en-stall-assignment-selector__toggle-row">
-				<div class="en-stall-assignment-selector__toggle-copy">
-					<h4 class="en-stall-assignment-selector__toggle-title"><?php esc_html_e( 'Stall Assignment', 'equine-event-manager' ); ?></h4>
-					<p class="en-stall-assignment-selector__toggle-note"><?php esc_html_e( 'This is not a map of facility stalls. Please refer to the stall map for actual stall placements. If you do not select a stall number, one will be automatically assigned to you after checkout.', 'equine-event-manager' ); ?></p>
+		<div class="eem-stall-assignment-selector">
+			<div class="eem-stall-assignment-selector__toggle-row">
+				<div class="eem-stall-assignment-selector__toggle-copy">
+					<h4 class="eem-stall-assignment-selector__toggle-title"><?php esc_html_e( 'Stall Assignment', 'equine-event-manager' ); ?></h4>
+					<p class="eem-stall-assignment-selector__toggle-note"><?php esc_html_e( 'This is not a map of facility stalls. Please refer to the stall map for actual stall placements. If you do not select a stall number, one will be automatically assigned to you after checkout.', 'equine-event-manager' ); ?></p>
 				</div>
-				<label class="en-reservation-section-toggle en-stall-assignment-selector__toggle" aria-label="<?php esc_attr_e( 'Toggle Stall Assignments section', 'equine-event-manager' ); ?>">
-					<input type="checkbox" data-en-stall-assignment-toggle />
-					<span class="en-reservation-section-toggle__track" aria-hidden="true"></span>
+				<label class="eem-reservation-section-toggle eem-stall-assignment-selector__toggle" aria-label="<?php esc_attr_e( 'Toggle Stall Assignments section', 'equine-event-manager' ); ?>">
+					<input type="checkbox" data-eem-stall-assignment-toggle />
+					<span class="eem-reservation-section-toggle__track" aria-hidden="true"></span>
 				</label>
 			</div>
-			<div class="en-stall-assignment-selector__panel" data-en-stall-assignment-panel hidden>
-				<div class="en-stall-assignment-selector__toolbar">
-					<label class="en-stall-assignment-selector__barn-field">
+			<div class="eem-stall-assignment-selector__panel" data-eem-stall-assignment-panel hidden>
+				<div class="eem-stall-assignment-selector__toolbar">
+					<label class="eem-stall-assignment-selector__barn-field">
 						<span><?php esc_html_e( 'Stall Barn', 'equine-event-manager' ); ?></span>
-						<select data-en-stall-barn-select>
+						<select data-eem-stall-barn-select>
 							<?php foreach ( $stall_assignment_blocks as $index => $block_group ) : ?>
 								<option value="<?php echo esc_attr( sanitize_title( $block_group['label'] ) ); ?>" <?php selected( 0, $index ); ?>><?php echo esc_html( $block_group['label'] ); ?></option>
 							<?php endforeach; ?>
 						</select>
 					</label>
 					<?php if ( $stall_map_url ) : ?>
-						<a class="en-stall-assignment-selector__map-link" href="<?php echo esc_url( $stall_map_url ); ?>" target="_blank" rel="noopener noreferrer" onclick="window.open(this.href, '_blank', 'noopener'); return false;">
-							<span class="en-stall-assignment-selector__map-link-icon" aria-hidden="true">
+						<a class="eem-stall-assignment-selector__map-link" href="<?php echo esc_url( $stall_map_url ); ?>" target="_blank" rel="noopener noreferrer" onclick="window.open(this.href, '_blank', 'noopener'); return false;">
+							<span class="eem-stall-assignment-selector__map-link-icon" aria-hidden="true">
 								<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
 									<path d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.29a1 1 0 1 1 1.4 1.41l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.41L11 12.59V4a1 1 0 0 1 1-1Zm-7 14a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v1a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3v-1a1 1 0 0 1 1-1Z" fill="currentColor"></path>
 								</svg>
@@ -1262,18 +1262,18 @@ class EEM_Shortcodes {
 						</a>
 					<?php endif; ?>
 				</div>
-				<div class="en-stall-assignment-selector__legend" aria-hidden="true">
-					<span class="en-stall-assignment-selector__legend-item en-stall-assignment-selector__legend-item--available"><?php esc_html_e( 'Available', 'equine-event-manager' ); ?></span>
-					<span class="en-stall-assignment-selector__legend-item en-stall-assignment-selector__legend-item--reserved"><?php esc_html_e( 'Reserved', 'equine-event-manager' ); ?></span>
-					<span class="en-stall-assignment-selector__legend-item en-stall-assignment-selector__legend-item--blocked"><?php esc_html_e( 'Blocked', 'equine-event-manager' ); ?></span>
+				<div class="eem-stall-assignment-selector__legend" aria-hidden="true">
+					<span class="eem-stall-assignment-selector__legend-item eem-stall-assignment-selector__legend-item--available"><?php esc_html_e( 'Available', 'equine-event-manager' ); ?></span>
+					<span class="eem-stall-assignment-selector__legend-item eem-stall-assignment-selector__legend-item--reserved"><?php esc_html_e( 'Reserved', 'equine-event-manager' ); ?></span>
+					<span class="eem-stall-assignment-selector__legend-item eem-stall-assignment-selector__legend-item--blocked"><?php esc_html_e( 'Blocked', 'equine-event-manager' ); ?></span>
 				</div>
-				<div class="en-stall-assignment-selector__groups">
+				<div class="eem-stall-assignment-selector__groups">
 					<?php foreach ( $stall_assignment_blocks as $index => $block_group ) : ?>
 						<?php $barn_slug = sanitize_title( $block_group['label'] ); ?>
-						<div class="en-stall-assignment-selector__group" data-en-stall-barn-group data-stall-barn="<?php echo esc_attr( $barn_slug ); ?>"<?php echo 0 === $index ? '' : ' hidden'; ?>>
-							<div class="en-stall-assignment-selector__grid">
+						<div class="eem-stall-assignment-selector__group" data-eem-stall-barn-group data-stall-barn="<?php echo esc_attr( $barn_slug ); ?>"<?php echo 0 === $index ? '' : ' hidden'; ?>>
+							<div class="eem-stall-assignment-selector__grid">
 								<?php foreach ( $block_group['units'] as $unit ) : ?>
-									<label class="en-stall-assignment-selector__unit" data-en-stall-unit data-stall-unit="<?php echo esc_attr( $unit ); ?>" data-stall-barn="<?php echo esc_attr( $barn_slug ); ?>">
+									<label class="eem-stall-assignment-selector__unit" data-eem-stall-unit data-stall-unit="<?php echo esc_attr( $unit ); ?>" data-stall-barn="<?php echo esc_attr( $barn_slug ); ?>">
 										<input type="checkbox" name="preferred_stall_units[]" value="<?php echo esc_attr( $unit ); ?>" />
 										<span><?php echo esc_html( $unit ); ?></span>
 									</label>
@@ -1282,7 +1282,7 @@ class EEM_Shortcodes {
 						</div>
 					<?php endforeach; ?>
 				</div>
-				<p class="en-reservation-help en-reservation-help--tight"><?php esc_html_e( 'Select up to the number of stalls you reserve. Any remaining stalls will be auto-assigned after checkout.', 'equine-event-manager' ); ?></p>
+				<p class="eem-reservation-help eem-reservation-help--tight"><?php esc_html_e( 'Select up to the number of stalls you reserve. Any remaining stalls will be auto-assigned after checkout.', 'equine-event-manager' ); ?></p>
 			</div>
 		</div>
 		<?php
@@ -3907,17 +3907,17 @@ RV Lot: " . $rv_lot['name'] );
 						<?php endif; ?>
 
 						<?php if ( $this->invoice_order_is_payable( $order ) ) : ?>
-							<form method="post" id="en-invoice-payment-form" style="margin-top:22px;">
+							<form method="post" id="eem-invoice-payment-form" style="margin-top:22px;">
 								<?php wp_nonce_field( 'equine_event_manager_invoice_payment_' . $invoice_token, 'en_invoice_payment_nonce' ); ?>
 								<input type="hidden" name="equine_event_manager_invoice" value="<?php echo esc_attr( $invoice_token ); ?>" />
 								<input type="hidden" name="stripe_payment_intent_id" value="" />
 								<?php if ( 'stripe' === $gateway ) : ?>
-									<div id="en-invoice-card-number" style="padding:14px 16px;border:1px solid #d9e1ea;border-radius:16px;background:#ffffff;margin-bottom:12px;"></div>
+									<div id="eem-invoice-card-number" style="padding:14px 16px;border:1px solid #d9e1ea;border-radius:16px;background:#ffffff;margin-bottom:12px;"></div>
 									<div style="display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr));">
-										<div id="en-invoice-card-expiry" style="padding:14px 16px;border:1px solid #d9e1ea;border-radius:8px;background:#ffffff;"></div>
-										<div id="en-invoice-card-cvc" style="padding:14px 16px;border:1px solid #d9e1ea;border-radius:8px;background:#ffffff;"></div>
+										<div id="eem-invoice-card-expiry" style="padding:14px 16px;border:1px solid #d9e1ea;border-radius:8px;background:#ffffff;"></div>
+										<div id="eem-invoice-card-cvc" style="padding:14px 16px;border:1px solid #d9e1ea;border-radius:8px;background:#ffffff;"></div>
 									</div>
-									<div id="en-invoice-card-error" style="display:none;margin-top:12px;color:#8a3528;"></div>
+									<div id="eem-invoice-card-error" style="display:none;margin-top:12px;color:#8a3528;"></div>
 								<?php else : ?>
 									<div style="display:grid;gap:12px;">
 										<input type="text" name="authorize_card_number" placeholder="<?php esc_attr_e( 'Card Number', 'equine-event-manager' ); ?>" style="padding:14px 16px;border:1px solid #d9e1ea;border-radius:16px;background:#ffffff;color:#111827;" />
@@ -3928,7 +3928,7 @@ RV Lot: " . $rv_lot['name'] );
 										</div>
 									</div>
 								<?php endif; ?>
-								<button type="submit" id="en-invoice-submit" style="width:100%;margin-top:18px;padding:16px 20px;border:0;border-radius:12px;background:#111827;color:#fff;font-size:16px;font-weight:700;cursor:pointer;"><?php echo esc_html( sprintf( __( 'Pay %s', 'equine-event-manager' ), $this->format_money( (float) $order['total'] ) ) ); ?></button>
+								<button type="submit" id="eem-invoice-submit" style="width:100%;margin-top:18px;padding:16px 20px;border:0;border-radius:12px;background:#111827;color:#fff;font-size:16px;font-weight:700;cursor:pointer;"><?php echo esc_html( sprintf( __( 'Pay %s', 'equine-event-manager' ), $this->format_money( (float) $order['total'] ) ) ); ?></button>
 							</form>
 						<?php else : ?>
 							<div style="margin-top:20px;padding:16px;border-radius:8px;background:#eef2f6;border:1px solid #d9e1ea;color:#111827;"><?php esc_html_e( 'This invoice has already been paid.', 'equine-event-manager' ); ?></div>
@@ -3949,12 +3949,12 @@ RV Lot: " . $rv_lot['name'] );
 						var number = elements.create('cardNumber');
 						var expiry = elements.create('cardExpiry');
 						var cvc = elements.create('cardCvc');
-						var form = document.getElementById('en-invoice-payment-form');
-						var errorTarget = document.getElementById('en-invoice-card-error');
-						var submitButton = document.getElementById('en-invoice-submit');
-						number.mount('#en-invoice-card-number');
-						expiry.mount('#en-invoice-card-expiry');
-						cvc.mount('#en-invoice-card-cvc');
+						var form = document.getElementById('eem-invoice-payment-form');
+						var errorTarget = document.getElementById('eem-invoice-card-error');
+						var submitButton = document.getElementById('eem-invoice-submit');
+						number.mount('#eem-invoice-card-number');
+						expiry.mount('#eem-invoice-card-expiry');
+						cvc.mount('#eem-invoice-card-cvc');
 						form.addEventListener('submit', function(event) {
 							event.preventDefault();
 							submitButton.disabled = true;
@@ -6470,7 +6470,7 @@ RV Lot: " . $rv_lot['name'] );
 	 */
 	private function render_product_list_header() {
 		?>
-		<div class="en-product-list__head">
+		<div class="eem-product-list__head">
 			<span><?php esc_html_e( 'Product', 'equine-event-manager' ); ?></span>
 			<span><?php esc_html_e( 'Qty', 'equine-event-manager' ); ?></span>
 		</div>
@@ -6498,7 +6498,7 @@ RV Lot: " . $rv_lot['name'] );
 				'general_addon_key'  => '',
 			)
 		);
-		$classes = 'en-product-line-item';
+		$classes = 'eem-product-line-item';
 		$title_attributes = '';
 		$line_attributes  = '';
 		$display_title    = $title;
@@ -6533,18 +6533,18 @@ RV Lot: " . $rv_lot['name'] );
 
 		?>
 		<div class="<?php echo esc_attr( $classes ); ?>"<?php echo $line_attributes; ?>>
-			<div class="en-product-line-item__content">
-				<div class="en-product-line-item__title"<?php echo $title_attributes; ?>>
-					<span class="en-product-line-item__title-text"><?php echo esc_html( $display_title ); ?></span>
+			<div class="eem-product-line-item__content">
+				<div class="eem-product-line-item__title"<?php echo $title_attributes; ?>>
+					<span class="eem-product-line-item__title-text"><?php echo esc_html( $display_title ); ?></span>
 					<?php if ( $args['early_bird_active'] ) : ?>
-						<span class="en-rate-badge en-rate-badge--inline"><?php esc_html_e( 'Early Bird Rate', 'equine-event-manager' ); ?></span>
+						<span class="eem-rate-badge eem-rate-badge--inline"><?php esc_html_e( 'Early Bird Rate', 'equine-event-manager' ); ?></span>
 					<?php endif; ?>
 				</div>
 				<?php if ( $description ) : ?>
-					<div class="en-product-line-item__description"><?php echo wp_kses_post( nl2br( esc_html( trim( (string) $description ) ) ) ); ?></div>
+					<div class="eem-product-line-item__description"><?php echo wp_kses_post( nl2br( esc_html( trim( (string) $description ) ) ) ); ?></div>
 				<?php endif; ?>
 			</div>
-			<div class="en-product-line-item__qty">
+			<div class="eem-product-line-item__qty">
 				<?php $this->render_quantity_control( $name, $args['max_quantity'] ); ?>
 			</div>
 		</div>
@@ -6570,7 +6570,7 @@ RV Lot: " . $rv_lot['name'] );
 				'disabled'           => false,
 			)
 		);
-		$classes = 'en-product-line-item en-product-line-item--checkbox';
+		$classes = 'eem-product-line-item eem-product-line-item--checkbox';
 		$title_attributes = '';
 		$disabled         = ! empty( $args['disabled'] );
 		$checkbox_attrs   = $disabled ? ' disabled="disabled" aria-disabled="true"' : '';
@@ -6580,7 +6580,7 @@ RV Lot: " . $rv_lot['name'] );
 		}
 
 		if ( $disabled ) {
-			$classes .= ' en-product-line-item--disabled';
+			$classes .= ' eem-product-line-item--disabled';
 		}
 
 		if ( $args['dynamic_price_type'] && '' !== (string) $args['dynamic_price_key'] ) {
@@ -6593,17 +6593,17 @@ RV Lot: " . $rv_lot['name'] );
 		}
 		?>
 		<div class="<?php echo esc_attr( $classes ); ?>">
-			<div class="en-product-line-item__content">
-				<div class="en-product-line-item__title"<?php echo $title_attributes; ?>>
-					<span class="en-product-line-item__title-text"><?php echo esc_html( $title ); ?></span>
-					<span class="en-rate-badge en-rate-badge--inline en-rate-badge--addon"><?php esc_html_e( 'Add-On', 'equine-event-manager' ); ?></span>
+			<div class="eem-product-line-item__content">
+				<div class="eem-product-line-item__title"<?php echo $title_attributes; ?>>
+					<span class="eem-product-line-item__title-text"><?php echo esc_html( $title ); ?></span>
+					<span class="eem-rate-badge eem-rate-badge--inline eem-rate-badge--addon"><?php esc_html_e( 'Add-On', 'equine-event-manager' ); ?></span>
 				</div>
 				<?php if ( $description ) : ?>
-					<div class="en-product-line-item__description"><?php echo wp_kses_post( nl2br( esc_html( trim( (string) $description ) ) ) ); ?></div>
+					<div class="eem-product-line-item__description"><?php echo wp_kses_post( nl2br( esc_html( trim( (string) $description ) ) ) ); ?></div>
 				<?php endif; ?>
 			</div>
-			<div class="en-product-line-item__qty">
-				<label class="en-checkbox-control">
+			<div class="eem-product-line-item__qty">
+				<label class="eem-checkbox-control">
 					<input type="checkbox" name="<?php echo esc_attr( $name ); ?>" value="1"<?php echo $checkbox_attrs; ?> />
 				</label>
 			</div>
@@ -6620,7 +6620,7 @@ RV Lot: " . $rv_lot['name'] );
 	 * @param string $modifier Optional CSS modifier.
 	 */
 	private function render_readonly_product_line_item( $title, $description, $data_source, $modifier = '' ) {
-		$classes = 'en-product-line-item en-product-line-item--readonly';
+		$classes = 'eem-product-line-item eem-product-line-item--readonly';
 
 		if ( $modifier ) {
 			$classes .= ' ' . $modifier;
@@ -6628,17 +6628,17 @@ RV Lot: " . $rv_lot['name'] );
 
 		?>
 		<div class="<?php echo esc_attr( $classes ); ?>">
-			<div class="en-product-line-item__content">
-				<div class="en-product-line-item__title"><?php echo esc_html( $title ); ?></div>
+			<div class="eem-product-line-item__content">
+				<div class="eem-product-line-item__title"><?php echo esc_html( $title ); ?></div>
 				<?php if ( $description ) : ?>
-					<div class="en-product-line-item__description"><?php echo wp_kses_post( nl2br( esc_html( trim( (string) $description ) ) ) ); ?></div>
+					<div class="eem-product-line-item__description"><?php echo wp_kses_post( nl2br( esc_html( trim( (string) $description ) ) ) ); ?></div>
 				<?php endif; ?>
 			</div>
-			<div class="en-product-line-item__qty">
-				<div class="en-quantity-control en-quantity-control--readonly" data-en-quantity-source="<?php echo esc_attr( $data_source ); ?>">
-					<button type="button" class="en-quantity-button" disabled="disabled" aria-hidden="true">-</button>
+			<div class="eem-product-line-item__qty">
+				<div class="eem-quantity-control eem-quantity-control--readonly" data-eem-quantity-source="<?php echo esc_attr( $data_source ); ?>">
+					<button type="button" class="eem-quantity-button" disabled="disabled" aria-hidden="true">-</button>
 					<input type="number" value="0" readonly="readonly" tabindex="-1" />
-					<button type="button" class="en-quantity-button" disabled="disabled" aria-hidden="true">+</button>
+					<button type="button" class="eem-quantity-button" disabled="disabled" aria-hidden="true">+</button>
 				</div>
 			</div>
 		</div>
@@ -6653,10 +6653,10 @@ RV Lot: " . $rv_lot['name'] );
 	 */
 	private function render_quantity_control( $name, $max = null ) {
 		?>
-		<div class="en-quantity-control">
-			<button type="button" class="en-quantity-button" data-en-quantity-step="-1" aria-label="<?php esc_attr_e( 'Decrease quantity', 'equine-event-manager' ); ?>">-</button>
+		<div class="eem-quantity-control">
+			<button type="button" class="eem-quantity-button" data-eem-quantity-step="-1" aria-label="<?php esc_attr_e( 'Decrease quantity', 'equine-event-manager' ); ?>">-</button>
 			<input type="number" name="<?php echo esc_attr( $name ); ?>" min="0" step="1" value="0" inputmode="numeric" <?php echo null !== $max ? 'max="' . esc_attr( $max ) . '"' : ''; ?> />
-			<button type="button" class="en-quantity-button" data-en-quantity-step="1" aria-label="<?php esc_attr_e( 'Increase quantity', 'equine-event-manager' ); ?>">+</button>
+			<button type="button" class="eem-quantity-button" data-eem-quantity-step="1" aria-label="<?php esc_attr_e( 'Increase quantity', 'equine-event-manager' ); ?>">+</button>
 		</div>
 		<?php
 	}
@@ -6978,7 +6978,7 @@ RV Lot: " . $rv_lot['name'] );
 	 */
 	private function render_notice( $message, $type = 'info' ) {
 		return sprintf(
-			'<div class="en-reservation-notice en-reservation-notice--%1$s" role="%3$s">%2$s</div>',
+			'<div class="eem-reservation-notice eem-reservation-notice--%1$s" role="%3$s">%2$s</div>',
 			esc_attr( $type ),
 			esc_html( $message ),
 			'error' === $type ? 'alert' : 'status'
@@ -7011,43 +7011,43 @@ RV Lot: " . $rv_lot['name'] );
 		$rendered = true;
 		?>
 		<style>
-			.en-reservation-form-wrap {
+			.eem-reservation-form-wrap {
 				max-width: 1120px;
-				--en-app-card-gap: 0.875rem;
+				--eem-app-card-gap: 0.875rem;
 			}
-			.en-reservation-form-wrap,
-			.en-reservation-form-wrap > *,
-			.en-reservation-form,
-			.en-event-details-card,
-			.en-venue-map-card,
-			.en-reservation-section,
-			.en-payment-layout,
-			.en-payment-main,
-			.en-payment-sidebar,
-			.en-payment-sidebar__inner {
+			.eem-reservation-form-wrap,
+			.eem-reservation-form-wrap > *,
+			.eem-reservation-form,
+			.eem-event-details-card,
+			.eem-venue-map-card,
+			.eem-reservation-section,
+			.eem-payment-layout,
+			.eem-payment-main,
+			.eem-payment-sidebar,
+			.eem-payment-sidebar__inner {
 				width: 100%;
 				max-width: none;
 				min-width: 0;
 				box-sizing: border-box;
 			}
-			.en-reservation-form-wrap:focus,
-			.en-reservation-form-wrap:focus-visible {
+			.eem-reservation-form-wrap:focus,
+			.eem-reservation-form-wrap:focus-visible {
 				outline: none;
 				box-shadow: none;
 			}
-			.en-reservation-event-hero {
+			.eem-reservation-event-hero {
 				display: grid;
 				grid-template-columns: minmax(280px, 0.84fr) minmax(0, 1.16fr);
-				gap: var(--en-app-card-gap);
+				gap: var(--eem-app-card-gap);
 				align-items: stretch;
-				margin-bottom: var(--en-app-card-gap);
+				margin-bottom: var(--eem-app-card-gap);
 			}
-			.en-reservation-event-hero__media {
+			.eem-reservation-event-hero__media {
 				min-width: 0;
 			}
-			.en-reservation-event-media-card {
+			.eem-reservation-event-media-card {
 				display: grid;
-				gap: var(--en-app-card-gap);
+				gap: var(--eem-app-card-gap);
 				height: 100%;
 				padding: 20px;
 				border: 1px solid #dbe4f0;
@@ -7055,7 +7055,7 @@ RV Lot: " . $rv_lot['name'] );
 				background: linear-gradient(180deg, #ffffff 0%, #f7fafc 100%);
 				box-shadow: 0 16px 34px rgba(15, 23, 42, 0.06);
 			}
-			.en-reservation-event-media-card__visual {
+			.eem-reservation-event-media-card__visual {
 				display: flex;
 				align-items: center;
 				justify-content: center;
@@ -7065,13 +7065,13 @@ RV Lot: " . $rv_lot['name'] );
 				overflow: hidden;
 				background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
 			}
-			.en-reservation-event-media-card__visual.has-image img {
+			.eem-reservation-event-media-card__visual.has-image img {
 				display: block;
 				width: 100%;
 				height: 100%;
 				object-fit: cover;
 			}
-			.en-reservation-event-media-card__placeholder {
+			.eem-reservation-event-media-card__placeholder {
 				display: grid;
 				gap: 12px;
 				justify-items: center;
@@ -7079,7 +7079,7 @@ RV Lot: " . $rv_lot['name'] );
 				text-align: center;
 				color: rgba(255, 255, 255, 0.88);
 			}
-			.en-reservation-event-media-card__placeholder-icon {
+			.eem-reservation-event-media-card__placeholder-icon {
 				display: inline-flex;
 				align-items: center;
 				justify-content: center;
@@ -7094,10 +7094,10 @@ RV Lot: " . $rv_lot['name'] );
 				letter-spacing: 0.12em;
 				text-transform: uppercase;
 			}
-			.en-reservation-event-media-card__actions {
+			.eem-reservation-event-media-card__actions {
 				display: flex;
 			}
-			.en-reservation-event-media-card__button {
+			.eem-reservation-event-media-card__button {
 				display: inline-flex;
 				align-items: center;
 				justify-content: center;
@@ -7111,14 +7111,14 @@ RV Lot: " . $rv_lot['name'] );
 				font-weight: 800;
 				text-decoration: none;
 			}
-			.en-reservation-event-media-card__button:hover,
-			.en-reservation-event-media-card__button:focus {
+			.eem-reservation-event-media-card__button:hover,
+			.eem-reservation-event-media-card__button:focus {
 				color: #ffffff;
 				text-decoration: none;
 				background: #0f172a;
 			}
-			.en-event-details-card,
-			.en-venue-map-card {
+			.eem-event-details-card,
+			.eem-venue-map-card {
 				margin-bottom: 22px;
 				padding: 24px;
 				border: 1px solid #dbe4f0;
@@ -7126,11 +7126,11 @@ RV Lot: " . $rv_lot['name'] );
 				background: linear-gradient(180deg, #ffffff 0%, #f7fafc 100%);
 				box-shadow: 0 16px 34px rgba(15, 23, 42, 0.06);
 			}
-			.en-reservation-event-hero > .en-event-details-card {
+			.eem-reservation-event-hero > .eem-event-details-card {
 				height: 100%;
 				margin-bottom: 0;
 			}
-			.en-event-details-card__eyebrow {
+			.eem-event-details-card__eyebrow {
 				display: inline-flex;
 				align-items: center;
 				width: fit-content;
@@ -7144,7 +7144,7 @@ RV Lot: " . $rv_lot['name'] );
 				letter-spacing: 0.08em;
 				text-transform: uppercase;
 			}
-			.en-reservation-form-wrap .en-event-details-card__title {
+			.eem-reservation-form-wrap .eem-event-details-card__title {
 				margin: 0 0 10px;
 				color: #0f172a;
 				font-size: 28px !important;
@@ -7153,7 +7153,7 @@ RV Lot: " . $rv_lot['name'] );
 				letter-spacing: -0.02em;
 				text-transform: none;
 			}
-			.en-event-details-card__meta-label {
+			.eem-event-details-card__meta-label {
 				margin: 0 0 4px;
 				color: #64748b;
 				font-size: 12px;
@@ -7161,7 +7161,7 @@ RV Lot: " . $rv_lot['name'] );
 				letter-spacing: 0.08em;
 				text-transform: uppercase;
 			}
-			.en-event-details-card__facts {
+			.eem-event-details-card__facts {
 				display: flex;
 				flex-wrap: wrap;
 				gap: 16px 28px;
@@ -7170,12 +7170,12 @@ RV Lot: " . $rv_lot['name'] );
 				font-size: 15px;
 				line-height: 1.5;
 			}
-			.en-event-details-card__fact {
+			.eem-event-details-card__fact {
 				display: inline-flex;
 				align-items: center;
 				gap: 6px;
 			}
-			.en-event-details-card__fact-icon {
+			.eem-event-details-card__fact-icon {
 				display: inline-flex;
 				align-items: center;
 				justify-content: center;
@@ -7184,43 +7184,43 @@ RV Lot: " . $rv_lot['name'] );
 				color: #cf2e2e;
 				line-height: 1;
 			}
-			.en-event-details-card__fact-icon svg {
+			.eem-event-details-card__fact-icon svg {
 				display: block;
 				width: 18px;
 				height: 18px;
 			}
-			.en-event-details-card__fact-separator {
+			.eem-event-details-card__fact-separator {
 				color: #94a3b8;
 				font-weight: 600;
 			}
-			.en-event-details-card__fact strong {
+			.eem-event-details-card__fact strong {
 				color: #0f172a;
 				font-weight: 700;
 			}
-			.en-event-details-card__fact a {
+			.eem-event-details-card__fact a {
 				color: #2563eb;
 				text-decoration: none;
 			}
-			.en-event-details-card__fact a:hover,
-			.en-event-details-card__fact a:focus {
+			.eem-event-details-card__fact a:hover,
+			.eem-event-details-card__fact a:focus {
 				text-decoration: underline;
 			}
-			.en-event-details-card__meta,
-			.en-event-details-card__location,
-			.en-event-details-card__summary,
-			.en-venue-map-card__header p {
+			.eem-event-details-card__meta,
+			.eem-event-details-card__location,
+			.eem-event-details-card__summary,
+			.eem-venue-map-card__header p {
 				margin: 0;
 				color: #475569;
 				font-size: 15px;
 				line-height: 1.6;
 			}
-			.en-event-details-card__times {
+			.eem-event-details-card__times {
 				display: flex;
 				flex-wrap: wrap;
 				gap: 14px;
 				margin-top: 18px;
 			}
-			.en-event-details-card__time-card {
+			.eem-event-details-card__time-card {
 				min-width: 180px;
 				padding: 14px 16px;
 				border: 1px solid #dbe4f0;
@@ -7228,7 +7228,7 @@ RV Lot: " . $rv_lot['name'] );
 				background: #f8fbff;
 				box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
 			}
-			.en-event-details-card__time-label {
+			.eem-event-details-card__time-label {
 				display: block;
 				margin-bottom: 4px;
 				color: #7c8ca5;
@@ -7237,21 +7237,21 @@ RV Lot: " . $rv_lot['name'] );
 				letter-spacing: 0.1em;
 				text-transform: uppercase;
 			}
-			.en-event-details-card__time-value {
+			.eem-event-details-card__time-value {
 				display: block;
 				color: #0f172a;
 				font-size: 18px;
 				line-height: 1.3;
 			}
-			.en-event-details-card__summary {
+			.eem-event-details-card__summary {
 				margin-top: 14px;
 			}
-			.en-event-details-card__map-link {
+			.eem-event-details-card__map-link {
 				margin-top: 22px;
 				padding-top: 22px;
 				border-top: 1px solid #e2e8f0;
 			}
-			.en-event-details-card__map-link a {
+			.eem-event-details-card__map-link a {
 				display: inline-flex;
 				align-items: center;
 				gap: 8px;
@@ -7260,7 +7260,7 @@ RV Lot: " . $rv_lot['name'] );
 				font-weight: 600;
 				text-decoration: none;
 			}
-			.en-event-details-card__map-link-icon {
+			.eem-event-details-card__map-link-icon {
 				display: inline-flex;
 				align-items: center;
 				justify-content: center;
@@ -7268,16 +7268,16 @@ RV Lot: " . $rv_lot['name'] );
 				min-width: 16px;
 				color: #cf2e2e;
 			}
-			.en-event-details-card__map-link-icon svg {
+			.eem-event-details-card__map-link-icon svg {
 				display: block;
 				width: 16px;
 				height: 16px;
 			}
-			.en-event-details-card__map-link a:hover,
-			.en-event-details-card__map-link a:focus {
+			.eem-event-details-card__map-link a:hover,
+			.eem-event-details-card__map-link a:focus {
 				text-decoration: underline;
 			}
-			.en-event-details-card__venue {
+			.eem-event-details-card__venue {
 				display: grid;
 				gap: 4px;
 				margin-top: 18px;
@@ -7285,32 +7285,32 @@ RV Lot: " . $rv_lot['name'] );
 				border-top: 1px solid #e2e8f0;
 				color: #0f172a;
 			}
-			.en-rv-lot-selector-row {
+			.eem-rv-lot-selector-row {
 				align-items: start;
 			}
-			.en-rv-lot-selector-row__details {
+			.eem-rv-lot-selector-row__details {
 				min-height: 100%;
 				padding: 14px 16px;
 				border: 1px solid #dbe4f0;
 				border-radius: 16px;
 				background: #f8fbff;
 			}
-			.en-rv-lot-selector-row__title,
-			.en-rv-lot-selector-row__description {
+			.eem-rv-lot-selector-row__title,
+			.eem-rv-lot-selector-row__description {
 				margin: 0;
 			}
-			.en-rv-lot-selector-row__title {
+			.eem-rv-lot-selector-row__title {
 				color: #0f172a;
 				font-size: 14px;
 				font-weight: 700;
 			}
-			.en-rv-lot-selector-row__description {
+			.eem-rv-lot-selector-row__description {
 				margin-top: 6px;
 				color: #64748b;
 				font-size: 14px;
 				line-height: 1.5;
 			}
-			.en-stall-assignment-selector {
+			.eem-stall-assignment-selector {
 				display: grid;
 				gap: 14px;
 				margin-top: 14px;
@@ -7319,71 +7319,71 @@ RV Lot: " . $rv_lot['name'] );
 				border-radius: 18px;
 				background: #f8fbff;
 			}
-			.en-stall-assignment-selector__toggle-row,
-			.en-stall-assignment-selector__toolbar {
+			.eem-stall-assignment-selector__toggle-row,
+			.eem-stall-assignment-selector__toolbar {
 				display: flex;
 				flex-wrap: wrap;
 				align-items: center;
 				justify-content: space-between;
 				gap: 12px;
 			}
-			.en-stall-assignment-selector__toggle-row {
+			.eem-stall-assignment-selector__toggle-row {
 				padding: 0;
 			}
-			.en-stall-assignment-selector__toggle-copy {
+			.eem-stall-assignment-selector__toggle-copy {
 				display: grid;
 				gap: 4px;
 				flex: 1 1 220px;
 			}
-			.en-stall-assignment-selector__toggle-title {
+			.eem-stall-assignment-selector__toggle-title {
 				margin: 0;
 				color: #0f172a;
 				font-size: 16px;
 				font-weight: 800;
 				line-height: 1.3;
 			}
-			.en-stall-assignment-selector__toggle-note {
+			.eem-stall-assignment-selector__toggle-note {
 				margin: 0;
 				color: #64748b;
 				font-size: 14px;
 				line-height: 1.55;
 			}
-			.en-stall-assignment-selector__panel {
+			.eem-stall-assignment-selector__panel {
 				display: grid;
 				gap: 16px;
 			}
-			.en-stall-assignment-selector--collapsed .en-stall-assignment-selector__panel,
-			.en-stall-assignment-selector__panel[hidden] {
+			.eem-stall-assignment-selector--collapsed .eem-stall-assignment-selector__panel,
+			.eem-stall-assignment-selector__panel[hidden] {
 				display: none !important;
 			}
-			.en-stall-assignment-selector__copy h4 {
+			.eem-stall-assignment-selector__copy h4 {
 				margin: 0 0 4px;
 				font-size: 16px;
 				line-height: 1.3;
 			}
-			.en-stall-assignment-selector__copy p {
+			.eem-stall-assignment-selector__copy p {
 				margin: 0;
 				color: #64748b;
 				font-size: 14px;
 				line-height: 1.55;
 			}
-			.en-stall-assignment-selector__barn-field {
+			.eem-stall-assignment-selector__barn-field {
 				display: grid;
 				gap: 8px;
 				flex: 1 1 240px;
 				max-width: 320px;
 			}
-			.en-stall-assignment-selector__barn-field span {
+			.eem-stall-assignment-selector__barn-field span {
 				color: #0f172a;
 				font-size: 13px;
 				font-weight: 800;
 				letter-spacing: 0.06em;
 				text-transform: uppercase;
 			}
-			.en-stall-assignment-selector__barn-field select {
+			.eem-stall-assignment-selector__barn-field select {
 				width: 100%;
 			}
-			.en-stall-assignment-selector__map-link {
+			.eem-stall-assignment-selector__map-link {
 				display: inline-flex;
 				align-items: center;
 				justify-content: center;
@@ -7398,7 +7398,7 @@ RV Lot: " . $rv_lot['name'] );
 				text-decoration: none;
 				white-space: nowrap;
 			}
-			.en-stall-assignment-selector__map-link-icon {
+			.eem-stall-assignment-selector__map-link-icon {
 				display: inline-flex;
 				align-items: center;
 				justify-content: center;
@@ -7406,26 +7406,26 @@ RV Lot: " . $rv_lot['name'] );
 				min-width: 16px;
 				color: #cf2e2e;
 			}
-			.en-stall-assignment-selector__map-link-icon svg {
+			.eem-stall-assignment-selector__map-link-icon svg {
 				display: block;
 				width: 16px;
 				height: 16px;
 			}
-			.en-stall-assignment-selector__map-link:hover,
-			.en-stall-assignment-selector__map-link:focus {
+			.eem-stall-assignment-selector__map-link:hover,
+			.eem-stall-assignment-selector__map-link:focus {
 				text-decoration: none;
 				border-color: #0f172a;
 			}
-			.en-stall-assignment-selector__groups {
+			.eem-stall-assignment-selector__groups {
 				display: grid;
 				gap: 16px;
 			}
-			.en-stall-assignment-selector__legend {
+			.eem-stall-assignment-selector__legend {
 				display: flex;
 				flex-wrap: wrap;
 				gap: 10px;
 			}
-			.en-stall-assignment-selector__legend-item {
+			.eem-stall-assignment-selector__legend-item {
 				display: inline-flex;
 				align-items: center;
 				gap: 8px;
@@ -7434,56 +7434,56 @@ RV Lot: " . $rv_lot['name'] );
 				font-size: 12px;
 				font-weight: 700;
 			}
-			.en-stall-assignment-selector__legend-item::before {
+			.eem-stall-assignment-selector__legend-item::before {
 				content: '';
 				width: 10px;
 				height: 10px;
 				border-radius: 999px;
 				background: currentColor;
 			}
-			.en-stall-assignment-selector__legend-item--available {
+			.eem-stall-assignment-selector__legend-item--available {
 				background: #eaf8ee;
 				color: #1f7a3d;
 			}
-			.en-stall-assignment-selector__legend-item--reserved {
+			.eem-stall-assignment-selector__legend-item--reserved {
 				background: #fdecec;
 				color: #b42318;
 			}
-			.en-stall-assignment-selector__legend-item--blocked {
+			.eem-stall-assignment-selector__legend-item--blocked {
 				background: #eef2f6;
 				color: #667085;
 			}
-			.en-stall-assignment-selector__group {
+			.eem-stall-assignment-selector__group {
 				display: grid;
 				gap: 10px;
 			}
-			.en-stall-assignment-selector__group[hidden],
-			.en-stall-assignment-selector__group.is-hidden {
+			.eem-stall-assignment-selector__group[hidden],
+			.eem-stall-assignment-selector__group.is-hidden {
 				display: none !important;
 			}
-			.en-stall-assignment-selector__group-title {
+			.eem-stall-assignment-selector__group-title {
 				color: #0f172a;
 				font-size: 13px;
 				font-weight: 800;
 				letter-spacing: 0.08em;
 				text-transform: uppercase;
 			}
-			.en-stall-assignment-selector__grid {
+			.eem-stall-assignment-selector__grid {
 				display: flex;
 				flex-wrap: wrap;
 				gap: 10px;
 			}
-			.en-stall-assignment-selector__unit {
+			.eem-stall-assignment-selector__unit {
 				position: relative;
 				display: inline-flex;
 				align-items: center;
 			}
-			.en-stall-assignment-selector__unit input {
+			.eem-stall-assignment-selector__unit input {
 				position: absolute;
 				opacity: 0;
 				pointer-events: none;
 			}
-			.en-stall-assignment-selector__unit span {
+			.eem-stall-assignment-selector__unit span {
 				display: inline-flex;
 				align-items: center;
 				justify-content: center;
@@ -7497,123 +7497,123 @@ RV Lot: " . $rv_lot['name'] );
 				font-weight: 700;
 				transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
 			}
-			.en-stall-assignment-selector__unit input:checked + span {
+			.eem-stall-assignment-selector__unit input:checked + span {
 				border-color: #0f172a;
 				background: #0f172a;
 				color: #fff;
 			}
-			.en-stall-assignment-selector__unit input:focus + span {
+			.eem-stall-assignment-selector__unit input:focus + span {
 				outline: 2px solid #2563eb;
 				outline-offset: 2px;
 			}
-			.en-stall-assignment-selector__unit[data-status="available"] span {
+			.eem-stall-assignment-selector__unit[data-status="available"] span {
 				border-color: #73c98f;
 				background: #eaf8ee;
 				color: #1f7a3d;
 			}
-			.en-stall-assignment-selector__unit[data-status="reserved"] span {
+			.eem-stall-assignment-selector__unit[data-status="reserved"] span {
 				border-color: #efb4b4;
 				background: #fdecec;
 				color: #b42318;
 			}
-			.en-stall-assignment-selector__unit[data-status="blocked"] span {
+			.eem-stall-assignment-selector__unit[data-status="blocked"] span {
 				border-color: #d0d5dd;
 				background: #eef2f6;
 				color: #667085;
 			}
-			.en-stall-assignment-selector__unit[data-status="reserved"] input,
-			.en-stall-assignment-selector__unit[data-status="blocked"] input {
+			.eem-stall-assignment-selector__unit[data-status="reserved"] input,
+			.eem-stall-assignment-selector__unit[data-status="blocked"] input {
 				display: none;
 			}
-			.en-stall-assignment-selector__unit[data-disabled="true"] {
+			.eem-stall-assignment-selector__unit[data-disabled="true"] {
 				pointer-events: none;
 			}
-			.en-stall-assignment-selector__unit[data-disabled="true"] span {
+			.eem-stall-assignment-selector__unit[data-disabled="true"] span {
 				opacity: 0.72;
 			}
-			.en-stall-assignment-selector__unit[data-status="available"] input:checked + span {
+			.eem-stall-assignment-selector__unit[data-status="available"] input:checked + span {
 				border-color: #0f172a;
 				background: #0f172a;
 				color: #fff;
 			}
 			@media (max-width: 782px) {
-				.en-stall-assignment-selector__toggle-row,
-				.en-stall-assignment-selector__toolbar {
+				.eem-stall-assignment-selector__toggle-row,
+				.eem-stall-assignment-selector__toolbar {
 					align-items: stretch;
 				}
-				.en-stall-assignment-selector__barn-field,
-				.en-stall-assignment-selector__toggle-copy,
-				.en-stall-assignment-selector__map-link {
+				.eem-stall-assignment-selector__barn-field,
+				.eem-stall-assignment-selector__toggle-copy,
+				.eem-stall-assignment-selector__map-link {
 					max-width: none;
 					width: 100%;
 				}
-				.en-stall-assignment-selector__map-link {
+				.eem-stall-assignment-selector__map-link {
 					min-height: 48px;
 				}
-				.en-stall-assignment-selector__unit span {
+				.eem-stall-assignment-selector__unit span {
 					min-width: 64px;
 					padding: 10px 12px;
 				}
 			}
-			.en-venue-map-card__header {
+			.eem-venue-map-card__header {
 				display: grid;
 				gap: 6px;
 				margin-bottom: 16px;
 			}
-			.en-venue-map-card__header h3 {
+			.eem-venue-map-card__header h3 {
 				margin: 0;
 				font-size: 18px;
 			}
-			.en-venue-map-card__image {
+			.eem-venue-map-card__image {
 				display: block;
 				width: 100%;
 				border-radius: 14px;
 				border: 1px solid #dbe4f0;
 			}
-			.en-reservation-form {
+			.eem-reservation-form {
 				display: grid;
 				gap: 22px;
 			}
-			.en-reservation-section {
+			.eem-reservation-section {
 				display: grid;
 				gap: 14px;
 				padding: 20px 0;
 				border-bottom: 1px solid #e2e8f0;
 			}
-			.en-reservation-section--instructions {
+			.eem-reservation-section--instructions {
 				padding: 18px;
 				border: 1px solid #dbe4f0;
 				border-radius: 18px;
 				background: #f8fbff;
 				box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
 			}
-			.en-reservation-section--instructions .en-reservation-section__title {
+			.eem-reservation-section--instructions .eem-reservation-section__title {
 				color: #0f172a;
 			}
-			.en-reservation-section--instructions .en-reservation-help {
+			.eem-reservation-section--instructions .eem-reservation-help {
 				color: #64748b;
 			}
-			.en-reservation-section__title {
+			.eem-reservation-section__title {
 				margin: 0;
 				min-width: 0;
 			}
-			.en-reservation-section-heading {
+			.eem-reservation-section-heading {
 				display: flex;
 				justify-content: space-between;
 				gap: 16px;
 				align-items: baseline;
 			}
-			.en-reservation-section-heading--collapsible {
+			.eem-reservation-section-heading--collapsible {
 				align-items: center;
 			}
-			.en-reservation-section-heading--collapsible .en-reservation-section__title {
+			.eem-reservation-section-heading--collapsible .eem-reservation-section__title {
 				flex: 1 1 auto;
 			}
-			.en-reservation-section__body {
+			.eem-reservation-section__body {
 				display: grid;
 				gap: 14px;
 			}
-			.en-group-reservation-toggle {
+			.eem-group-reservation-toggle {
 				display: flex !important;
 				align-items: center;
 				justify-content: space-between;
@@ -7623,28 +7623,28 @@ RV Lot: " . $rv_lot['name'] );
 				border-radius: 16px;
 				background: #f8fbff;
 			}
-			.en-group-reservation-toggle__copy {
+			.eem-group-reservation-toggle__copy {
 				display: grid;
 				gap: 4px;
 			}
-			.en-group-reservation-toggle__copy small {
+			.eem-group-reservation-toggle__copy small {
 				color: #64748b;
 				font-size: 13px;
 				font-weight: 500;
 				line-height: 1.5;
 			}
-			.en-group-reservation-toggle__switch {
+			.eem-group-reservation-toggle__switch {
 				position: relative;
 				display: inline-flex;
 				flex: 0 0 auto;
 			}
-			.en-group-reservation-toggle__switch input {
+			.eem-group-reservation-toggle__switch input {
 				position: absolute;
 				inset: 0;
 				opacity: 0;
 				cursor: pointer;
 			}
-			.en-group-reservation-toggle__track {
+			.eem-group-reservation-toggle__track {
 				position: relative;
 				display: inline-flex;
 				align-items: center;
@@ -7654,7 +7654,7 @@ RV Lot: " . $rv_lot['name'] );
 				background: #cbd5e1;
 				transition: background 0.2s ease;
 			}
-			.en-group-reservation-toggle__track::after {
+			.eem-group-reservation-toggle__track::after {
 				content: "";
 				position: absolute;
 				top: 4px;
@@ -7666,24 +7666,24 @@ RV Lot: " . $rv_lot['name'] );
 				box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
 				transition: transform 0.2s ease;
 			}
-			.en-group-reservation-toggle__switch input:checked + .en-group-reservation-toggle__track {
+			.eem-group-reservation-toggle__switch input:checked + .eem-group-reservation-toggle__track {
 				background: #52b788;
 			}
-			.en-group-reservation-toggle__switch input:checked + .en-group-reservation-toggle__track::after {
+			.eem-group-reservation-toggle__switch input:checked + .eem-group-reservation-toggle__track::after {
 				transform: translateX(24px);
 			}
-			.en-group-reservation-fields {
+			.eem-group-reservation-fields {
 				display: grid;
 				gap: 16px;
 			}
-			.en-group-reservation-fields[hidden] {
+			.eem-group-reservation-fields[hidden] {
 				display: none !important;
 			}
-			.en-group-riders-list {
+			.eem-group-riders-list {
 				display: grid;
 				gap: 14px;
 			}
-			.en-group-rider-card {
+			.eem-group-rider-card {
 				display: grid;
 				gap: 12px;
 				padding: 16px 18px;
@@ -7691,27 +7691,27 @@ RV Lot: " . $rv_lot['name'] );
 				border-radius: 16px;
 				background: #ffffff;
 			}
-			.en-group-rider-card h4 {
+			.eem-group-rider-card h4 {
 				margin: 0;
 				font-size: 15px;
 				line-height: 1.3;
 			}
-			.en-reservation-section--collapsed .en-reservation-section__body {
+			.eem-reservation-section--collapsed .eem-reservation-section__body {
 				display: none;
 			}
-			.en-reservation-section-toggle {
+			.eem-reservation-section-toggle {
 				position: relative;
 				display: inline-flex;
 				flex: 0 0 auto;
 				line-height: 0;
 			}
-			.en-reservation-section-toggle input {
+			.eem-reservation-section-toggle input {
 				position: absolute;
 				inset: 0;
 				opacity: 0;
 				cursor: pointer;
 			}
-			.en-reservation-section-toggle__track {
+			.eem-reservation-section-toggle__track {
 				position: relative;
 				display: inline-flex;
 				align-items: center;
@@ -7721,7 +7721,7 @@ RV Lot: " . $rv_lot['name'] );
 				background: #cbd5e1;
 				transition: background 0.2s ease;
 			}
-			.en-reservation-section-toggle__track::after {
+			.eem-reservation-section-toggle__track::after {
 				content: "";
 				position: absolute;
 				top: 4px;
@@ -7733,17 +7733,17 @@ RV Lot: " . $rv_lot['name'] );
 				box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
 				transition: transform 0.2s ease;
 			}
-			.en-reservation-section-toggle input:focus-visible + .en-reservation-section-toggle__track {
+			.eem-reservation-section-toggle input:focus-visible + .eem-reservation-section-toggle__track {
 				outline: 2px solid #93c5fd;
 				outline-offset: 3px;
 			}
-			.en-reservation-section-toggle input:checked + .en-reservation-section-toggle__track {
+			.eem-reservation-section-toggle input:checked + .eem-reservation-section-toggle__track {
 				background: #52b788;
 			}
-			.en-reservation-section-toggle input:checked + .en-reservation-section-toggle__track::after {
+			.eem-reservation-section-toggle input:checked + .eem-reservation-section-toggle__track::after {
 				transform: translateX(24px);
 			}
-			.en-rate-badge {
+			.eem-rate-badge {
 				display: inline-flex;
 				align-items: center;
 				justify-content: center;
@@ -7758,49 +7758,49 @@ RV Lot: " . $rv_lot['name'] );
 				letter-spacing: 0.04em;
 				white-space: nowrap;
 			}
-			.en-rate-badge--inline {
+			.eem-rate-badge--inline {
 				margin-left: 10px;
 				vertical-align: middle;
 			}
-			.en-rate-badge--addon {
+			.eem-rate-badge--addon {
 				background: #111827;
 				color: #ffffff;
 			}
-			.en-reservation-section-heading span,
-			.en-reservation-help {
+			.eem-reservation-section-heading span,
+			.eem-reservation-help {
 				color: #475569;
 				font-size: 14px;
 			}
-			.en-reservation-help--early-bird {
+			.eem-reservation-help--early-bird {
 				color: #166534;
 				font-weight: 600;
 			}
-			.en-reservation-help--inventory {
+			.eem-reservation-help--inventory {
 				color: #0f172a;
 				font-weight: 600;
 			}
-			.en-reservation-grid {
+			.eem-reservation-grid {
 				display: grid;
 				grid-template-columns: repeat(3, minmax(0, 1fr));
 				gap: 16px;
 			}
-			.en-reservation-grid--single {
+			.eem-reservation-grid--single {
 				grid-template-columns: minmax(0, 1fr);
 			}
-			.en-reservation-grid--two {
+			.eem-reservation-grid--two {
 				grid-template-columns: repeat(2, minmax(0, 1fr));
 			}
-			.en-reservation-grid--three {
+			.eem-reservation-grid--three {
 				grid-template-columns: repeat(3, minmax(0, 1fr));
 			}
-			.en-reservation-grid--hidden {
+			.eem-reservation-grid--hidden {
 				display: none;
 			}
-			.en-product-list {
+			.eem-product-list {
 				display: grid;
 				gap: 0;
 			}
-			.en-product-list__head {
+			.eem-product-list__head {
 				display: grid;
 				grid-template-columns: minmax(0, 1fr) auto;
 				gap: 20px;
@@ -7812,10 +7812,10 @@ RV Lot: " . $rv_lot['name'] );
 				letter-spacing: 0.04em;
 				text-transform: uppercase;
 			}
-			.en-product-list__head span:last-child {
+			.eem-product-list__head span:last-child {
 				text-align: right;
 			}
-			.en-product-line-item {
+			.eem-product-line-item {
 				display: grid;
 				grid-template-columns: minmax(0, 1fr) auto;
 				gap: 20px;
@@ -7823,13 +7823,13 @@ RV Lot: " . $rv_lot['name'] );
 				padding: 22px 0;
 				border-bottom: 1px solid #e2e8f0;
 			}
-			.en-product-line-item:last-child {
+			.eem-product-line-item:last-child {
 				border-bottom: 0;
 			}
-			.en-product-line-item--readonly {
+			.eem-product-line-item--readonly {
 				opacity: 0.58;
 			}
-			.en-product-line-item__title {
+			.eem-product-line-item__title {
 				display: flex;
 				flex-wrap: wrap;
 				align-items: center;
@@ -7839,17 +7839,17 @@ RV Lot: " . $rv_lot['name'] );
 				font-weight: 800;
 				line-height: 1.3;
 			}
-			.en-product-line-item__description {
+			.eem-product-line-item__description {
 				margin-top: 4px;
 				color: #475569;
 				font-size: 14px;
 				line-height: 1.5;
 			}
-			.en-product-line-item__qty {
+			.eem-product-line-item__qty {
 				display: flex;
 				justify-content: flex-end;
 			}
-			.en-section-subtotal {
+			.eem-section-subtotal {
 				display: flex;
 				justify-content: space-between;
 				align-items: center;
@@ -7862,19 +7862,19 @@ RV Lot: " . $rv_lot['name'] );
 				font-weight: 800;
 				line-height: 1.3;
 			}
-			.en-section-subtotal strong {
+			.eem-section-subtotal strong {
 				font-size: 18px;
 				font-weight: 800;
 			}
-			.en-reservation-form label {
+			.eem-reservation-form label {
 				display: grid;
 				gap: 6px;
 				font-size: 14px;
 				font-weight: 600;
 			}
-			.en-reservation-form input,
-			.en-reservation-form select,
-			.en-reservation-form textarea {
+			.eem-reservation-form input,
+			.eem-reservation-form select,
+			.eem-reservation-form textarea {
 				width: 100%;
 				min-height: 42px;
 				padding: 9px 11px;
@@ -7883,13 +7883,13 @@ RV Lot: " . $rv_lot['name'] );
 				background: #fff;
 				font: inherit;
 			}
-			.en-reservation-form textarea {
+			.eem-reservation-form textarea {
 				min-height: 110px;
 			}
-			.en-reservation-section--special-requests textarea {
+			.eem-reservation-section--special-requests textarea {
 				margin-top: 20px;
 			}
-			.en-checkbox-control {
+			.eem-checkbox-control {
 				display: inline-flex;
 				align-items: center;
 				justify-content: center;
@@ -7897,7 +7897,7 @@ RV Lot: " . $rv_lot['name'] );
 				height: 38px;
 				cursor: pointer;
 			}
-			.en-checkbox-control input[type="checkbox"] {
+			.eem-checkbox-control input[type="checkbox"] {
 				width: 28px;
 				height: 28px;
 				min-height: 28px;
@@ -7906,33 +7906,33 @@ RV Lot: " . $rv_lot['name'] );
 				cursor: pointer;
 				accent-color: #111827;
 			}
-			.en-product-line-item--disabled {
+			.eem-product-line-item--disabled {
 				opacity: 0.55;
 			}
-			.en-product-line-item--disabled .en-checkbox-control {
+			.eem-product-line-item--disabled .eem-checkbox-control {
 				cursor: not-allowed;
 			}
-			.en-product-line-item--disabled .en-checkbox-control input[type="checkbox"] {
+			.eem-product-line-item--disabled .eem-checkbox-control input[type="checkbox"] {
 				cursor: not-allowed;
 			}
-			.en-reservation-grid--stay-controls {
+			.eem-reservation-grid--stay-controls {
 				grid-template-columns: 0.72fr 1fr 1fr 0.72fr;
 				align-items: end;
 			}
-			.en-stay-type-field {
+			.eem-stay-type-field {
 				min-width: 0;
 			}
-			.en-stay-night-field {
+			.eem-stay-night-field {
 				display: grid;
 				gap: 8px;
 				min-width: 0;
 			}
-			.en-stay-night-field__label {
+			.eem-stay-night-field__label {
 				color: #475569;
 				font-size: 14px;
 				font-weight: 600;
 			}
-			.en-stay-night-field__value {
+			.eem-stay-night-field__value {
 				display: flex;
 				align-items: center;
 				min-height: 42px;
@@ -7941,19 +7941,19 @@ RV Lot: " . $rv_lot['name'] );
 				border-radius: 4px;
 				background: #f8fafc;
 			}
-			.en-stay-night-field strong {
+			.eem-stay-night-field strong {
 				color: #0f172a;
 				font-size: 14px;
 				font-weight: 700;
 				line-height: 1.35;
 			}
-			.en-reservation-help--tight {
+			.eem-reservation-help--tight {
 				margin-top: -8px;
 			}
-			.en-weekend-package-summary {
+			.eem-weekend-package-summary {
 				margin-top: 14px;
 			}
-			.en-weekend-package-field {
+			.eem-weekend-package-field {
 				display: grid;
 				gap: 6px;
 				padding: 12px 14px;
@@ -7961,27 +7961,27 @@ RV Lot: " . $rv_lot['name'] );
 				border-radius: 4px;
 				background: #f8fafc;
 			}
-			.en-weekend-package-field span {
+			.eem-weekend-package-field span {
 				color: #475569;
 				font-size: 14px;
 				font-weight: 600;
 			}
-			.en-weekend-package-field strong {
+			.eem-weekend-package-field strong {
 				color: #0f172a;
 				font-size: 16px;
 				font-weight: 700;
 				line-height: 1.35;
 			}
-			.en-reservation-help--emphasis {
+			.eem-reservation-help--emphasis {
 				font-style: italic;
 				font-weight: 700;
 				color: #0f172a;
 			}
-			.en-reservation-section-title--spaced {
+			.eem-reservation-section-title--spaced {
 				display: block;
 				margin-bottom: 10px;
 			}
-			.en-phone-field {
+			.eem-phone-field {
 				display: flex;
 				align-items: center;
 				gap: 10px;
@@ -7990,20 +7990,20 @@ RV Lot: " . $rv_lot['name'] );
 				border-radius: 4px;
 				background: #fff;
 			}
-			.en-phone-field__flag {
+			.eem-phone-field__flag {
 				font-size: 18px;
 				line-height: 1;
 			}
-			.en-phone-field input {
+			.eem-phone-field input {
 				border: 0;
 				padding-left: 0;
 				padding-right: 0;
 				box-shadow: none;
 			}
-			.en-phone-field input:focus {
+			.eem-phone-field input:focus {
 				box-shadow: none;
 			}
-			.en-quantity-control {
+			.eem-quantity-control {
 				display: grid;
 				grid-template-columns: 52px minmax(62px, 80px) 52px;
 				width: fit-content;
@@ -8013,11 +8013,11 @@ RV Lot: " . $rv_lot['name'] );
 				background: #ffffff;
 				box-shadow: none;
 			}
-			.en-quantity-control--readonly {
+			.eem-quantity-control--readonly {
 				border-color: #d1d5db;
 				background: #ffffff;
 			}
-			.en-quantity-control input {
+			.eem-quantity-control input {
 				width: 100%;
 				min-height: 44px;
 				padding: 8px;
@@ -8030,12 +8030,12 @@ RV Lot: " . $rv_lot['name'] );
 				appearance: textfield;
 				box-shadow: none !important;
 			}
-			.en-quantity-control input::-webkit-outer-spin-button,
-			.en-quantity-control input::-webkit-inner-spin-button {
+			.eem-quantity-control input::-webkit-outer-spin-button,
+			.eem-quantity-control input::-webkit-inner-spin-button {
 				margin: 0;
 				-webkit-appearance: none;
 			}
-			.en-quantity-button {
+			.eem-quantity-button {
 				min-height: 44px;
 				border: 0 !important;
 				background: #e5e7eb !important;
@@ -8045,18 +8045,18 @@ RV Lot: " . $rv_lot['name'] );
 				font-weight: 700;
 				cursor: pointer;
 			}
-			.en-quantity-control--readonly .en-quantity-button,
-			.en-quantity-control--readonly input {
+			.eem-quantity-control--readonly .eem-quantity-button,
+			.eem-quantity-control--readonly input {
 				color: #9ca3af !important;
 			}
-			.en-quantity-control--readonly .en-quantity-button {
+			.eem-quantity-control--readonly .eem-quantity-button {
 				background: #f3f4f6 !important;
 			}
-			.en-quantity-button:hover,
-			.en-quantity-button:focus {
+			.eem-quantity-button:hover,
+			.eem-quantity-button:focus {
 				background: #d1d5db !important;
 			}
-			.en-payment-summary {
+			.eem-payment-summary {
 				display: grid;
 				gap: 0;
 				width: 100%;
@@ -8066,7 +8066,7 @@ RV Lot: " . $rv_lot['name'] );
 				overflow: hidden;
 				background: #fff;
 			}
-			.en-payment-summary-row {
+			.eem-payment-summary-row {
 				display: flex;
 				justify-content: space-between;
 				gap: 16px;
@@ -8075,42 +8075,42 @@ RV Lot: " . $rv_lot['name'] );
 				color: #334155;
 				font-size: 14px;
 			}
-			.en-payment-summary-row[hidden] {
+			.eem-payment-summary-row[hidden] {
 				display: none;
 			}
-			.en-payment-summary-row:last-child {
+			.eem-payment-summary-row:last-child {
 				border-bottom: 0;
 			}
-			.en-payment-summary-row strong {
+			.eem-payment-summary-row strong {
 				color: #0f172a;
 				white-space: nowrap;
 			}
-			.en-payment-summary-row--total {
+			.eem-payment-summary-row--total {
 				background: #f8fafc;
 				color: #0f172a;
 				font-size: 16px;
 				font-weight: 700;
 			}
-			.en-payment-card-field-wrap {
+			.eem-payment-card-field-wrap {
 				display: grid;
 				gap: 10px;
 				margin-top: 18px;
 			}
-			.en-payment-checkout-block {
+			.eem-payment-checkout-block {
 				display: grid;
 				gap: 14px;
 			}
-			.en-payment-layout {
+			.eem-payment-layout {
 				display: grid;
 				grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.8fr);
 				gap: 28px;
 				align-items: start;
 			}
-			.en-payment-main {
+			.eem-payment-main {
 				display: grid;
 				gap: 18px;
 			}
-			.en-payment-sidebar__inner {
+			.eem-payment-sidebar__inner {
 				position: sticky;
 				top: 24px;
 				display: grid;
@@ -8120,7 +8120,7 @@ RV Lot: " . $rv_lot['name'] );
 				border-radius: 16px;
 				background: #f8fafc;
 			}
-			.en-venue-agreement-card {
+			.eem-venue-agreement-card {
 				margin-top: 14px;
 				padding: 18px 20px;
 				border: 1px solid #f5cf69;
@@ -8128,45 +8128,45 @@ RV Lot: " . $rv_lot['name'] );
 				background: #fff8e1;
 				color: #5f4b16;
 			}
-			.en-venue-agreement-card p {
+			.eem-venue-agreement-card p {
 				margin: 0;
 				font-size: 14px;
 				line-height: 1.7;
 			}
-			.en-venue-agreement-card a {
+			.eem-venue-agreement-card a {
 				color: #2563eb;
 				font-weight: 700;
 				text-decoration: none;
 			}
-			.en-venue-agreement-card a:hover,
-			.en-venue-agreement-card a:focus {
+			.eem-venue-agreement-card a:hover,
+			.eem-venue-agreement-card a:focus {
 				text-decoration: underline;
 			}
-			.en-checkout-subsection-title {
+			.eem-checkout-subsection-title {
 				margin: 0;
 				color: #0f172a;
 			}
-			.en-checkout-subsection-title--field {
+			.eem-checkout-subsection-title--field {
 				display: block;
 				margin-bottom: 10px;
 			}
-			.en-payment-card-grid {
+			.eem-payment-card-grid {
 				display: grid;
 				grid-template-columns: repeat(2, minmax(0, 1fr));
 				gap: 16px;
 			}
-			.en-payment-card-field {
+			.eem-payment-card-field {
 				display: grid;
 				gap: 6px;
 			}
-			.en-payment-card-field--full {
+			.eem-payment-card-field--full {
 				grid-column: 1 / -1;
 			}
-			.en-payment-card-label {
+			.eem-payment-card-label {
 				display: grid;
 				gap: 6px;
 			}
-			.en-stripe-card-element {
+			.eem-stripe-card-element {
 				min-height: 44px;
 				padding: 12px 14px;
 				border: 1px solid #cbd5e1;
@@ -8174,25 +8174,25 @@ RV Lot: " . $rv_lot['name'] );
 				background: #fff;
 				cursor: text;
 			}
-			.en-stripe-card-element.StripeElement--focus {
+			.eem-stripe-card-element.StripeElement--focus {
 				border-color: #94a3b8;
 			}
-			.en-stripe-card-element.StripeElement--invalid {
+			.eem-stripe-card-element.StripeElement--invalid {
 				border-color: #b91c1c;
 			}
-			.en-stripe-card-error,
-			.en-reservation-help--error {
+			.eem-stripe-card-error,
+			.eem-reservation-help--error {
 				color: #b91c1c;
 				font-weight: 600;
 			}
-			.en-payment-card-help {
+			.eem-payment-card-help {
 				margin: 0;
 			}
-			.en-reservation-submit[disabled] {
+			.eem-reservation-submit[disabled] {
 				opacity: 0.7;
 				cursor: wait;
 			}
-			.en-reservation-submit {
+			.eem-reservation-submit {
 				width: fit-content;
 				padding: 11px 18px;
 				border: 0;
@@ -8202,13 +8202,13 @@ RV Lot: " . $rv_lot['name'] );
 				font-weight: 700;
 				cursor: pointer;
 			}
-			.en-reservation-submit-actions {
+			.eem-reservation-submit-actions {
 				display: flex;
 				flex-wrap: wrap;
 				gap: 12px;
 				align-items: center;
 			}
-			.en-invoice-mode-card {
+			.eem-invoice-mode-card {
 				display: grid;
 				grid-template-columns: 1fr;
 				gap: 14px;
@@ -8218,19 +8218,19 @@ RV Lot: " . $rv_lot['name'] );
 				border-radius: 12px;
 				background: #f8fafc;
 			}
-			.en-invoice-mode-card__copy {
+			.eem-invoice-mode-card__copy {
 				display: grid;
 				gap: 14px;
 				min-width: 0;
 				max-width: 100%;
 			}
-			.en-invoice-mode-card__copy h4 {
+			.eem-invoice-mode-card__copy h4 {
 				margin: 0 0 6px;
 			}
-			.en-invoice-mode-card__copy .en-reservation-help {
+			.eem-invoice-mode-card__copy .eem-reservation-help {
 				margin: 0;
 			}
-			.en-invoice-mode-actions {
+			.eem-invoice-mode-actions {
 				display: flex;
 				flex-wrap: wrap;
 				align-items: center;
@@ -8238,32 +8238,32 @@ RV Lot: " . $rv_lot['name'] );
 				gap: 14px;
 				width: 100%;
 			}
-			.en-invoice-mode-toggle {
+			.eem-invoice-mode-toggle {
 				display: inline-flex;
 				align-items: center;
 				gap: 12px;
 				justify-self: start;
 				white-space: nowrap;
 			}
-			.en-invoice-mode-toggle .en-inline-toggle-control__label {
+			.eem-invoice-mode-toggle .eem-inline-toggle-control__label {
 				white-space: nowrap;
 			}
-			.en-reservation-submit-actions--invoice-mode {
+			.eem-reservation-submit-actions--invoice-mode {
 				justify-content: flex-start;
 				align-items: stretch;
 				flex-wrap: wrap;
 				margin-left: 0;
 			}
-			.en-payment-checkout-block--admin-invoice,
-			.en-payment-card-field-wrap--admin-invoice {
+			.eem-payment-checkout-block--admin-invoice,
+			.eem-payment-card-field-wrap--admin-invoice {
 				margin-top: 0;
 			}
-			.en-reservation-submit--secondary {
+			.eem-reservation-submit--secondary {
 				background: #ffffff;
 				color: #0f172a;
 				border: 1px solid #0f172a;
 			}
-			.en-reservation-notice {
+			.eem-reservation-notice {
 				margin: 0 0 .875rem;
 				padding: .875rem 1rem;
 				border: 1px solid #dfe7f0;
@@ -8274,493 +8274,493 @@ RV Lot: " . $rv_lot['name'] );
 				box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
 				line-height: 1.55;
 			}
-			.en-reservation-notice--success {
+			.eem-reservation-notice--success {
 				border-left-color: #55b985;
 			}
-			.en-reservation-notice--error {
+			.eem-reservation-notice--error {
 				border-left-color: #d35d4e;
 			}
-			[data-en-invoice-billing-block][hidden] {
+			[data-eem-invoice-billing-block][hidden] {
 				display: none !important;
 			}
 			@media (max-width: 980px) {
-				.en-reservation-form-wrap {
+				.eem-reservation-form-wrap {
 					max-width: 100%;
 				}
-				.en-reservation-event-hero {
+				.eem-reservation-event-hero {
 					grid-template-columns: 1fr;
 				}
-				.en-reservation-grid,
-				.en-reservation-grid--three,
-				.en-reservation-grid--stay-controls,
-				.en-payment-layout,
-				.en-payment-card-grid {
+				.eem-reservation-grid,
+				.eem-reservation-grid--three,
+				.eem-reservation-grid--stay-controls,
+				.eem-payment-layout,
+				.eem-payment-card-grid {
 					grid-template-columns: 1fr;
 				}
-				.en-reservation-grid--two {
+				.eem-reservation-grid--two {
 					grid-template-columns: repeat(2, minmax(0, 1fr));
 				}
-				.en-reservation-section-heading {
+				.eem-reservation-section-heading {
 					align-items: flex-start;
 				}
-				.en-event-details-card,
-				.en-venue-map-card,
-				.en-invoice-mode-card {
+				.eem-event-details-card,
+				.eem-venue-map-card,
+				.eem-invoice-mode-card {
 					padding: 20px;
 					border-radius: 20px;
 				}
-				.en-event-details-card__facts {
+				.eem-event-details-card__facts {
 					gap: 12px 18px;
 				}
-				.en-event-details-card__times {
+				.eem-event-details-card__times {
 					display: grid;
 					grid-template-columns: repeat(2, minmax(0, 1fr));
 				}
-				.en-payment-sidebar__inner {
+				.eem-payment-sidebar__inner {
 					position: static;
 				}
-				.en-invoice-mode-card__copy {
+				.eem-invoice-mode-card__copy {
 					max-width: 100%;
 				}
 			}
 			@media (max-width: 760px) {
-				.en-reservation-grid,
-				.en-reservation-grid--two,
-				.en-reservation-grid--three {
+				.eem-reservation-grid,
+				.eem-reservation-grid--two,
+				.eem-reservation-grid--three {
 					grid-template-columns: 1fr;
 					display: grid;
 				}
-				.en-reservation-section-heading {
+				.eem-reservation-section-heading {
 					display: flex;
 					grid-template-columns: none;
 					justify-content: space-between;
 					align-items: center;
 					flex-wrap: nowrap;
 				}
-				.en-payment-card-grid {
+				.eem-payment-card-grid {
 					grid-template-columns: 1fr;
 				}
-				.en-payment-layout {
+				.eem-payment-layout {
 					grid-template-columns: 1fr;
 				}
-				.en-reservation-submit-actions {
+				.eem-reservation-submit-actions {
 					flex-direction: column;
 					align-items: stretch;
 				}
-				.en-invoice-mode-card {
+				.eem-invoice-mode-card {
 					flex-direction: column;
 					align-items: flex-start;
 				}
-				.en-invoice-mode-actions,
-				.en-reservation-submit-actions--invoice-mode {
+				.eem-invoice-mode-actions,
+				.eem-reservation-submit-actions--invoice-mode {
 					width: 100%;
 					justify-content: stretch;
 				}
-				.en-reservation-submit,
-				.en-reservation-submit--secondary {
+				.eem-reservation-submit,
+				.eem-reservation-submit--secondary {
 					width: 100%;
 				}
-				.en-rv-lot-selector-row__details {
+				.eem-rv-lot-selector-row__details {
 					padding: 12px 14px;
 				}
-				.en-event-details-card__time-card {
+				.eem-event-details-card__time-card {
 					min-width: 0;
 				}
-				.en-payment-sidebar__inner {
+				.eem-payment-sidebar__inner {
 					position: static;
 				}
-				.en-product-list__head {
+				.eem-product-list__head {
 					display: none;
 				}
-				.en-product-line-item {
+				.eem-product-line-item {
 					grid-template-columns: 1fr;
 				}
-				.en-product-line-item__qty {
+				.eem-product-line-item__qty {
 					justify-content: flex-start;
 				}
-				.en-quantity-control {
+				.eem-quantity-control {
 					width: 100%;
 					grid-template-columns: 64px minmax(0, 1fr) 64px;
 				}
-				.en-quantity-control input {
+				.eem-quantity-control input {
 					min-width: 0;
 				}
-				.en-product-line-item--checkbox {
+				.eem-product-line-item--checkbox {
 					grid-template-columns: minmax(0, 1fr) auto;
 					align-items: center;
 				}
-				.en-product-line-item--checkbox .en-product-line-item__qty {
+				.eem-product-line-item--checkbox .eem-product-line-item__qty {
 					justify-content: flex-end;
 				}
-				.en-rate-badge--inline {
+				.eem-rate-badge--inline {
 					margin-left: 6px;
 				}
-				.en-rate-badge {
+				.eem-rate-badge {
 					padding: 3px 8px;
 					font-size: 10px;
 				}
 			}
 			@media (max-width: 640px) {
-				.en-reservation-form-wrap {
+				.eem-reservation-form-wrap {
 					margin-left: -4px;
 					margin-right: -4px;
 				}
-				.en-reservation-event-media-card {
+				.eem-reservation-event-media-card {
 					padding: 16px;
 					border-radius: 18px;
 				}
-				.en-reservation-event-media-card__visual {
+				.eem-reservation-event-media-card__visual {
 					min-height: 280px;
 					border-radius: 16px;
 				}
-				.en-event-details-card,
-				.en-venue-map-card {
+				.eem-event-details-card,
+				.eem-venue-map-card {
 					margin-bottom: 18px;
 					padding: 18px 16px;
 					border-radius: 18px;
 				}
-				.en-reservation-form-wrap .en-event-details-card__title {
+				.eem-reservation-form-wrap .eem-event-details-card__title {
 					font-size: 24px !important;
 					line-height: 1.12;
 				}
-				.en-event-details-card__facts {
+				.eem-event-details-card__facts {
 					display: grid;
 					grid-template-columns: 1fr;
 					gap: 10px;
 				}
-				.en-event-details-card__times {
+				.eem-event-details-card__times {
 					grid-template-columns: 1fr;
 					gap: 10px;
 				}
-				.en-event-details-card__time-card,
-				.en-group-reservation-toggle,
-				.en-group-rider-card,
-				.en-invoice-mode-card {
+				.eem-event-details-card__time-card,
+				.eem-group-reservation-toggle,
+				.eem-group-rider-card,
+				.eem-invoice-mode-card {
 					border-radius: 18px;
 				}
-				.en-reservation-form {
+				.eem-reservation-form {
 					gap: 18px;
 				}
-				.en-reservation-section {
+				.eem-reservation-section {
 					gap: 12px;
 					padding: 16px 0;
 				}
-				.en-reservation-section-heading,
-				.en-reservation-section-heading--collapsible {
+				.eem-reservation-section-heading,
+				.eem-reservation-section-heading--collapsible {
 					gap: 10px;
 				}
-				.en-product-line-item,
-				.en-product-line-item--checkbox {
+				.eem-product-line-item,
+				.eem-product-line-item--checkbox {
 					grid-template-columns: 1fr;
 					gap: 14px;
 					align-items: start;
 				}
-				.en-product-line-item__qty,
-				.en-product-line-item--checkbox .en-product-line-item__qty {
+				.eem-product-line-item__qty,
+				.eem-product-line-item--checkbox .eem-product-line-item__qty {
 					justify-content: flex-start;
 				}
-				.en-reservation-form input,
-				.en-reservation-form select,
-				.en-reservation-form textarea,
-				.en-phone-field,
-				.en-stripe-card-element,
-				.en-stay-night-field__value,
-				.en-weekend-package-field {
+				.eem-reservation-form input,
+				.eem-reservation-form select,
+				.eem-reservation-form textarea,
+				.eem-phone-field,
+				.eem-stripe-card-element,
+				.eem-stay-night-field__value,
+				.eem-weekend-package-field {
 					min-height: 48px;
 					border-radius: 12px;
 				}
-				.en-reservation-form textarea {
+				.eem-reservation-form textarea {
 					min-height: 132px;
 				}
-				.en-payment-summary {
+				.eem-payment-summary {
 					border-radius: 14px;
 				}
-				.en-payment-summary-row {
+				.eem-payment-summary-row {
 					flex-direction: column;
 					align-items: flex-start;
 					gap: 6px;
 				}
-				.en-payment-summary-row strong {
+				.eem-payment-summary-row strong {
 					white-space: normal;
 				}
-				.en-reservation-submit,
-				.en-reservation-submit--secondary,
-				.en-invoice-mode-actions .en-inline-toggle-control,
-				.en-invoice-mode-actions [data-en-invoice-action] {
+				.eem-reservation-submit,
+				.eem-reservation-submit--secondary,
+				.eem-invoice-mode-actions .eem-inline-toggle-control,
+				.eem-invoice-mode-actions [data-eem-invoice-action] {
 					width: 100%;
 				}
-				.en-invoice-mode-actions,
-				.en-reservation-submit-actions--invoice-mode {
+				.eem-invoice-mode-actions,
+				.eem-reservation-submit-actions--invoice-mode {
 					flex-direction: column;
 					align-items: stretch;
 				}
-				.en-invoice-mode-toggle {
+				.eem-invoice-mode-toggle {
 					width: 100%;
 					justify-content: space-between;
 				}
 			}
 			@media (max-width: 1100px) {
-				.en-payment-layout {
+				.eem-payment-layout {
 					grid-template-columns: 1fr;
 				}
-				.en-payment-sidebar__inner {
+				.eem-payment-sidebar__inner {
 					position: static;
 				}
-				.en-event-details-card__facts {
+				.eem-event-details-card__facts {
 					display: grid;
 					grid-template-columns: repeat(2, minmax(0, 1fr));
 					gap: 12px 16px;
 				}
-				.en-event-details-card__times {
+				.eem-event-details-card__times {
 					display: grid;
 					grid-template-columns: repeat(2, minmax(0, 1fr));
 				}
-				.en-reservation-grid--stay-controls {
+				.eem-reservation-grid--stay-controls {
 					grid-template-columns: repeat(2, minmax(0, 1fr));
 				}
 			}
 			@media (max-width: 860px) {
-				.en-reservation-form-wrap {
+				.eem-reservation-form-wrap {
 					max-width: 100%;
 				}
-				.en-event-details-card,
-				.en-venue-map-card,
-				.en-invoice-mode-card,
-				.en-group-reservation-toggle,
-				.en-group-rider-card {
+				.eem-event-details-card,
+				.eem-venue-map-card,
+				.eem-invoice-mode-card,
+				.eem-group-reservation-toggle,
+				.eem-group-rider-card {
 					padding: 18px 16px;
 					border-radius: 20px;
 				}
-				.en-reservation-grid,
-				.en-reservation-grid--two,
-				.en-reservation-grid--three,
-				.en-reservation-grid--stay-controls,
-				.en-payment-card-grid {
+				.eem-reservation-grid,
+				.eem-reservation-grid--two,
+				.eem-reservation-grid--three,
+				.eem-reservation-grid--stay-controls,
+				.eem-payment-card-grid {
 					grid-template-columns: 1fr;
 				}
-				.en-event-details-card__facts,
-				.en-event-details-card__times {
+				.eem-event-details-card__facts,
+				.eem-event-details-card__times {
 					grid-template-columns: 1fr;
 				}
-				.en-product-line-item,
-				.en-product-line-item--checkbox {
+				.eem-product-line-item,
+				.eem-product-line-item--checkbox {
 					grid-template-columns: 1fr;
 					gap: 14px;
 					align-items: start;
 				}
-				.en-product-line-item__qty,
-				.en-product-line-item--checkbox .en-product-line-item__qty {
+				.eem-product-line-item__qty,
+				.eem-product-line-item--checkbox .eem-product-line-item__qty {
 					justify-content: flex-start;
 				}
-				.en-reservation-submit,
-				.en-reservation-submit--secondary {
+				.eem-reservation-submit,
+				.eem-reservation-submit--secondary {
 					width: 100%;
 					min-height: 48px;
 				}
-				.en-invoice-mode-actions,
-				.en-reservation-submit-actions--invoice-mode {
+				.eem-invoice-mode-actions,
+				.eem-reservation-submit-actions--invoice-mode {
 					width: 100%;
 					flex-direction: column;
 					align-items: stretch;
 					gap: 12px;
 				}
-				.en-invoice-mode-toggle {
+				.eem-invoice-mode-toggle {
 					width: 100%;
 					justify-content: space-between;
 				}
 			}
 			@media (max-width: 700px) {
-				.en-reservation-form-wrap {
+				.eem-reservation-form-wrap {
 					padding-bottom: 18px;
 				}
-				.en-event-details-card,
-				.en-venue-map-card,
-				.en-invoice-mode-card,
-				.en-group-reservation-toggle,
-				.en-group-rider-card,
-				.en-payment-sidebar__inner {
+				.eem-event-details-card,
+				.eem-venue-map-card,
+				.eem-invoice-mode-card,
+				.eem-group-reservation-toggle,
+				.eem-group-rider-card,
+				.eem-payment-sidebar__inner {
 					border-radius: 22px;
 					box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
 				}
-				.en-reservation-section {
+				.eem-reservation-section {
 					padding: 18px 0;
 				}
-				.en-reservation-section-heading {
+				.eem-reservation-section-heading {
 					gap: 12px;
 				}
-				.en-event-details-card__title {
+				.eem-event-details-card__title {
 					letter-spacing: -0.02em;
 				}
-				.en-product-line-item {
+				.eem-product-line-item {
 					padding: 18px 0;
 				}
-				.en-quantity-control {
+				.eem-quantity-control {
 					width: 100%;
 					grid-template-columns: 64px minmax(0, 1fr) 64px;
 				}
-				.en-quantity-button,
-				.en-quantity-control input,
-				.en-reservation-submit,
-				.en-reservation-submit--secondary,
-				.en-invoice-mode-actions .en-inline-toggle-control,
-				.en-invoice-mode-actions [data-en-invoice-action] {
+				.eem-quantity-button,
+				.eem-quantity-control input,
+				.eem-reservation-submit,
+				.eem-reservation-submit--secondary,
+				.eem-invoice-mode-actions .eem-inline-toggle-control,
+				.eem-invoice-mode-actions [data-eem-invoice-action] {
 					min-height: 50px;
 				}
-				.en-reservation-form input,
-				.en-reservation-form select,
-				.en-reservation-form textarea,
-				.en-phone-field,
-				.en-stripe-card-element,
-				.en-stay-night-field__value,
-				.en-weekend-package-field {
+				.eem-reservation-form input,
+				.eem-reservation-form select,
+				.eem-reservation-form textarea,
+				.eem-phone-field,
+				.eem-stripe-card-element,
+				.eem-stay-night-field__value,
+				.eem-weekend-package-field {
 					border-radius: 14px;
 				}
-				.en-reservation-form-wrap .en-event-details-card__title {
+				.eem-reservation-form-wrap .eem-event-details-card__title {
 					font-size: 22px !important;
 					line-height: 1.08;
 				}
-				.en-event-details-card__facts {
+				.eem-event-details-card__facts {
 					display: grid;
 					grid-template-columns: 1fr;
 					gap: 12px;
 				}
-				.en-event-details-card__fact {
+				.eem-event-details-card__fact {
 					display: grid;
 					grid-template-columns: 18px minmax(0, 1fr);
 					align-items: start;
 					column-gap: 10px;
 					row-gap: 2px;
 				}
-				.en-event-details-card__fact-separator {
+				.eem-event-details-card__fact-separator {
 					display: none;
 				}
-				.en-event-details-card__fact-icon {
+				.eem-event-details-card__fact-icon {
 					width: 18px;
 					min-width: 18px;
 					margin-top: 2px;
 				}
-				.en-event-details-card__fact-icon svg {
+				.eem-event-details-card__fact-icon svg {
 					width: 16px;
 					height: 16px;
 				}
 			}
 			@media (max-width: 520px) {
-				.en-reservation-form-wrap {
+				.eem-reservation-form-wrap {
 					margin-left: 0;
 					margin-right: 0;
 				}
-				.en-reservation-event-media-card {
+				.eem-reservation-event-media-card {
 					padding: 14px;
 					border-radius: 16px;
 				}
-				.en-event-details-card,
-				.en-venue-map-card,
-				.en-invoice-mode-card,
-				.en-group-reservation-toggle,
-				.en-group-rider-card,
-				.en-payment-sidebar__inner {
+				.eem-event-details-card,
+				.eem-venue-map-card,
+				.eem-invoice-mode-card,
+				.eem-group-reservation-toggle,
+				.eem-group-rider-card,
+				.eem-payment-sidebar__inner {
 					padding: 16px 14px;
 					border-radius: 20px;
 				}
-				.en-event-details-card__eyebrow,
-				.en-payment-summary-row,
-				.en-reservation-help,
-				.en-product-line-item__description {
+				.eem-event-details-card__eyebrow,
+				.eem-payment-summary-row,
+				.eem-reservation-help,
+				.eem-product-line-item__description {
 					font-size: 13px;
 				}
-				.en-reservation-form-wrap .en-event-details-card__title {
+				.eem-reservation-form-wrap .eem-event-details-card__title {
 					font-size: 20px !important;
 				}
-				.en-event-details-card__facts {
+				.eem-event-details-card__facts {
 					gap: 10px;
 				}
-				.en-event-details-card__time-value {
+				.eem-event-details-card__time-value {
 					font-size: 17px;
 				}
-				.en-product-line-item__title {
+				.eem-product-line-item__title {
 					font-size: 15px;
 				}
-				.en-payment-summary-row--total {
+				.eem-payment-summary-row--total {
 					font-size: 15px;
 				}
 			}
 			@media (max-width: 900px) {
-				.en-reservation-form-wrap {
+				.eem-reservation-form-wrap {
 					max-width: 100%;
 					padding-left: 16px;
 					padding-right: 16px;
 					box-sizing: border-box;
 				}
-				.en-reservation-form {
+				.eem-reservation-form {
 					gap: 20px;
 				}
-				.en-event-details-card,
-				.en-venue-map-card,
-				.en-invoice-mode-card,
-				.en-group-reservation-toggle,
-				.en-group-rider-card,
-				.en-payment-sidebar__inner {
+				.eem-event-details-card,
+				.eem-venue-map-card,
+				.eem-invoice-mode-card,
+				.eem-group-reservation-toggle,
+				.eem-group-rider-card,
+				.eem-payment-sidebar__inner {
 					border-radius: 22px;
 				}
-				.en-reservation-form input,
-				.en-reservation-form select,
-				.en-reservation-form textarea,
-				.en-phone-field,
-				.en-stripe-card-element,
-				.en-stay-night-field__value,
-				.en-weekend-package-field,
-				.en-quantity-button,
-				.en-quantity-control input,
-				.en-reservation-submit,
-				.en-reservation-submit--secondary {
+				.eem-reservation-form input,
+				.eem-reservation-form select,
+				.eem-reservation-form textarea,
+				.eem-phone-field,
+				.eem-stripe-card-element,
+				.eem-stay-night-field__value,
+				.eem-weekend-package-field,
+				.eem-quantity-button,
+				.eem-quantity-control input,
+				.eem-reservation-submit,
+				.eem-reservation-submit--secondary {
 					font-size: 16px;
 				}
-				.en-reservation-submit,
-				.en-reservation-submit--secondary {
+				.eem-reservation-submit,
+				.eem-reservation-submit--secondary {
 					border-radius: 16px;
 				}
-				.en-payment-summary {
+				.eem-payment-summary {
 					border-radius: 18px;
 				}
 			}
 			@media (max-width: 600px) {
-				.en-reservation-form-wrap {
+				.eem-reservation-form-wrap {
 					padding-bottom: 20px;
 				}
-				.en-event-details-card,
-				.en-venue-map-card,
-				.en-invoice-mode-card,
-				.en-group-reservation-toggle,
-				.en-group-rider-card,
-				.en-payment-sidebar__inner {
+				.eem-event-details-card,
+				.eem-venue-map-card,
+				.eem-invoice-mode-card,
+				.eem-group-reservation-toggle,
+				.eem-group-rider-card,
+				.eem-payment-sidebar__inner {
 					padding: 16px 14px;
 					border-radius: 20px;
 				}
-				.en-reservation-form {
+				.eem-reservation-form {
 					gap: 18px;
 				}
-				.en-reservation-section {
+				.eem-reservation-section {
 					padding: 16px 14px;
 				}
-				.en-product-line-item {
+				.eem-product-line-item {
 					padding: 16px 0;
 				}
-				.en-product-line-item__title {
+				.eem-product-line-item__title {
 					font-size: 15px;
 					line-height: 1.4;
 				}
-				.en-product-line-item__description,
-				.en-reservation-help,
-				.en-payment-summary-row {
+				.eem-product-line-item__description,
+				.eem-reservation-help,
+				.eem-payment-summary-row {
 					font-size: 14px;
 					line-height: 1.55;
 				}
-				.en-payment-summary-row strong {
+				.eem-payment-summary-row strong {
 					font-size: 15px;
 				}
 			}
 			@media (max-width: 640px) {
-				.en-reservation-form-wrap {
+				.eem-reservation-form-wrap {
 					padding-left: 14px;
 					padding-right: 14px;
 					margin-left: 0 !important;
@@ -8770,41 +8770,41 @@ RV Lot: " . $rv_lot['name'] );
 					box-sizing: border-box;
 					overflow-x: hidden;
 				}
-				.en-reservation-section-heading {
+				.eem-reservation-section-heading {
 					gap: 10px;
 				}
-				.en-reservation-form-wrap,
-				.en-reservation-form,
-				.en-reservation-section,
-				.en-invoice-mode-card,
-				.en-invoice-mode-card__copy,
-				.en-invoice-mode-actions,
-				.en-reservation-submit-actions--invoice-mode,
-				.en-payment-layout,
-				.en-payment-main,
-				.en-payment-sidebar,
-				.en-payment-sidebar__inner,
-				.en-payment-summary,
-				.en-payment-summary-row,
-				.en-order-summary-card,
-				.en-card-field-wrap,
-				.en-payment-card-field-wrap,
-				.en-payment-checkout-block,
-				.en-payment-checkout-block--admin-invoice {
+				.eem-reservation-form-wrap,
+				.eem-reservation-form,
+				.eem-reservation-section,
+				.eem-invoice-mode-card,
+				.eem-invoice-mode-card__copy,
+				.eem-invoice-mode-actions,
+				.eem-reservation-submit-actions--invoice-mode,
+				.eem-payment-layout,
+				.eem-payment-main,
+				.eem-payment-sidebar,
+				.eem-payment-sidebar__inner,
+				.eem-payment-summary,
+				.eem-payment-summary-row,
+				.eem-order-summary-card,
+				.eem-card-field-wrap,
+				.eem-payment-card-field-wrap,
+				.eem-payment-checkout-block,
+				.eem-payment-checkout-block--admin-invoice {
 					width: 100%;
 					max-width: 100%;
 					min-width: 0;
 					box-sizing: border-box;
 				}
-				.en-event-details-card,
-				.en-venue-map-card,
-				.en-invoice-mode-card,
-				.en-group-reservation-toggle,
-				.en-group-rider-card,
-				.en-payment-sidebar__inner,
-				.en-order-summary-card,
-				.en-payment-checkout-block,
-				.en-payment-card-field-wrap {
+				.eem-event-details-card,
+				.eem-venue-map-card,
+				.eem-invoice-mode-card,
+				.eem-group-reservation-toggle,
+				.eem-group-rider-card,
+				.eem-payment-sidebar__inner,
+				.eem-order-summary-card,
+				.eem-payment-checkout-block,
+				.eem-payment-card-field-wrap {
 					margin-left: 0 !important;
 					margin-right: 0 !important;
 					width: 100%;
@@ -8812,23 +8812,23 @@ RV Lot: " . $rv_lot['name'] );
 					box-sizing: border-box;
 					overflow: hidden;
 				}
-				.en-invoice-mode-card {
+				.eem-invoice-mode-card {
 					display: grid;
 					grid-template-columns: 1fr;
 					gap: 14px;
 					overflow: hidden;
 				}
-				.en-invoice-mode-card__copy {
+				.eem-invoice-mode-card__copy {
 					max-width: 100%;
 				}
-				.en-invoice-mode-actions,
-				.en-reservation-submit-actions--invoice-mode {
+				.eem-invoice-mode-actions,
+				.eem-reservation-submit-actions--invoice-mode {
 					display: grid;
 					grid-template-columns: 1fr;
 					gap: 12px;
 					margin-left: 0;
 				}
-				.en-invoice-mode-toggle {
+				.eem-invoice-mode-toggle {
 					display: inline-flex;
 					align-items: center;
 					justify-content: flex-start;
@@ -8838,48 +8838,48 @@ RV Lot: " . $rv_lot['name'] );
 					width: auto !important;
 					max-width: 100%;
 				}
-				.en-invoice-mode-toggle .en-inline-toggle-control__label,
-				.en-invoice-mode-card__copy .en-reservation-help,
-				.en-reservation-help,
-				.en-product-line-item__description {
+				.eem-invoice-mode-toggle .eem-inline-toggle-control__label,
+				.eem-invoice-mode-card__copy .eem-reservation-help,
+				.eem-reservation-help,
+				.eem-product-line-item__description {
 					white-space: normal;
 					word-break: normal;
 					overflow-wrap: anywhere;
 				}
-				.en-invoice-mode-actions {
+				.eem-invoice-mode-actions {
 					justify-items: start;
 				}
-				.en-invoice-mode-actions .en-inline-toggle-control__track {
+				.eem-invoice-mode-actions .eem-inline-toggle-control__track {
 					justify-self: start;
 				}
-				.en-invoice-mode-actions .en-inline-toggle-control,
-				.en-invoice-mode-actions [data-en-invoice-action],
-				.en-reservation-submit,
-				.en-reservation-submit--secondary {
+				.eem-invoice-mode-actions .eem-inline-toggle-control,
+				.eem-invoice-mode-actions [data-eem-invoice-action],
+				.eem-reservation-submit,
+				.eem-reservation-submit--secondary {
 					width: 100%;
 					max-width: 100%;
 				}
-				.en-payment-summary-row {
+				.eem-payment-summary-row {
 					padding: 12px 14px;
 				}
-				.en-payment-summary-row strong,
-				.en-payment-summary-row span {
+				.eem-payment-summary-row strong,
+				.eem-payment-summary-row span {
 					word-break: break-word;
 					overflow-wrap: anywhere;
 				}
-				.en-reservation-form textarea {
+				.eem-reservation-form textarea {
 					width: 100%;
 					max-width: 100%;
 				}
-				.en-reservation-form input,
-				.en-reservation-form select,
-				.en-reservation-form textarea,
-				.en-phone-field,
-				.en-stripe-card-element,
-				.en-stay-night-field__value,
-				.en-weekend-package-field,
-				.en-quantity-control,
-				.en-quantity-control input {
+				.eem-reservation-form input,
+				.eem-reservation-form select,
+				.eem-reservation-form textarea,
+				.eem-phone-field,
+				.eem-stripe-card-element,
+				.eem-stay-night-field__value,
+				.eem-weekend-package-field,
+				.eem-quantity-control,
+				.eem-quantity-control input {
 					width: 100%;
 					max-width: 100%;
 					min-width: 0;
@@ -8887,103 +8887,103 @@ RV Lot: " . $rv_lot['name'] );
 				}
 			}
 			@media (max-width: 480px) {
-				.en-reservation-form-wrap {
+				.eem-reservation-form-wrap {
 					padding-left: 12px;
 					padding-right: 12px;
 				}
-				.en-event-details-card,
-				.en-venue-map-card,
-				.en-invoice-mode-card,
-				.en-group-reservation-toggle,
-				.en-group-rider-card,
-				.en-payment-sidebar__inner,
-				.en-order-summary-card,
-				.en-payment-checkout-block,
-				.en-payment-card-field-wrap {
+				.eem-event-details-card,
+				.eem-venue-map-card,
+				.eem-invoice-mode-card,
+				.eem-group-reservation-toggle,
+				.eem-group-rider-card,
+				.eem-payment-sidebar__inner,
+				.eem-order-summary-card,
+				.eem-payment-checkout-block,
+				.eem-payment-card-field-wrap {
 					padding: 14px 12px !important;
 					border-radius: 16px !important;
 				}
-				.en-reservation-form {
+				.eem-reservation-form {
 					gap: 16px;
 				}
-				.en-reservation-section {
+				.eem-reservation-section {
 					padding: 14px 12px;
 					gap: 10px;
 				}
-				.en-reservation-form input,
-				.en-reservation-form select,
-				.en-reservation-form textarea,
-				.en-phone-field,
-				.en-stripe-card-element,
-				.en-stay-night-field__value,
-				.en-weekend-package-field,
-				.en-quantity-button,
-				.en-quantity-control input,
-				.en-reservation-submit,
-				.en-reservation-submit--secondary,
-				.en-invoice-mode-actions .en-inline-toggle-control,
-				.en-invoice-mode-actions [data-en-invoice-action] {
+				.eem-reservation-form input,
+				.eem-reservation-form select,
+				.eem-reservation-form textarea,
+				.eem-phone-field,
+				.eem-stripe-card-element,
+				.eem-stay-night-field__value,
+				.eem-weekend-package-field,
+				.eem-quantity-button,
+				.eem-quantity-control input,
+				.eem-reservation-submit,
+				.eem-reservation-submit--secondary,
+				.eem-invoice-mode-actions .eem-inline-toggle-control,
+				.eem-invoice-mode-actions [data-eem-invoice-action] {
 					min-height: 48px !important;
 					border-radius: 12px !important;
 					font-size: 16px !important;
 				}
-				.en-reservation-form textarea {
+				.eem-reservation-form textarea {
 					min-height: 128px;
 				}
-				.en-invoice-mode-toggle {
+				.eem-invoice-mode-toggle {
 					grid-template-columns: 1fr auto;
 				}
-				.en-payment-summary-row,
-				.en-product-line-item__description,
-				.en-reservation-help {
+				.eem-payment-summary-row,
+				.eem-product-line-item__description,
+				.eem-reservation-help {
 					font-size: 13px;
 					line-height: 1.5;
 				}
-				.en-payment-summary-row {
+				.eem-payment-summary-row {
 					padding: 12px;
 				}
 			}
 			/* Mobile-first app refresh for the reservation experience. */
-			.en-reservation-form-wrap {
-				--en-app-border: #e5e7eb;
-				--en-app-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 10px 24px rgba(15, 23, 42, 0.04);
-				--en-app-shadow-soft: 0 1px 2px rgba(15, 23, 42, 0.03), 0 6px 18px rgba(15, 23, 42, 0.03);
-				--en-app-surface: #ffffff;
-				--en-app-surface-muted: #f8fafc;
-				--en-app-card-radius: 8px;
-				--en-app-control-radius: 8px;
+			.eem-reservation-form-wrap {
+				--eem-app-border: #e5e7eb;
+				--eem-app-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 10px 24px rgba(15, 23, 42, 0.04);
+				--eem-app-shadow-soft: 0 1px 2px rgba(15, 23, 42, 0.03), 0 6px 18px rgba(15, 23, 42, 0.03);
+				--eem-app-surface: #ffffff;
+				--eem-app-surface-muted: #f8fafc;
+				--eem-app-card-radius: 8px;
+				--eem-app-control-radius: 8px;
 				padding-left: 16px;
 				padding-right: 16px;
 				border-radius: 0;
 				background: transparent;
 				box-sizing: border-box;
 			}
-			.en-reservation-form {
+			.eem-reservation-form {
 				gap: 16px;
 			}
-			.en-event-details-card,
-			.en-venue-map-card,
-			.en-group-reservation-toggle,
-			.en-group-rider-card,
-			.en-invoice-mode-card,
-			.en-payment-sidebar__inner {
-				border: 1px solid var(--en-app-border);
+			.eem-event-details-card,
+			.eem-venue-map-card,
+			.eem-group-reservation-toggle,
+			.eem-group-rider-card,
+			.eem-invoice-mode-card,
+			.eem-payment-sidebar__inner {
+				border: 1px solid var(--eem-app-border);
 				border-radius: 24px;
-				background: var(--en-app-surface);
-				box-shadow: var(--en-app-shadow);
+				background: var(--eem-app-surface);
+				box-shadow: var(--eem-app-shadow);
 			}
-			.en-reservation-section {
+			.eem-reservation-section {
 				gap: 12px;
 				padding: 18px 16px;
-				border: 1px solid var(--en-app-border);
+				border: 1px solid var(--eem-app-border);
 				border-radius: 22px;
 				background: #ffffff;
-				box-shadow: var(--en-app-shadow-soft);
+				box-shadow: var(--eem-app-shadow-soft);
 			}
-			.en-reservation-form-wrap .en-event-details-card__title {
+			.eem-reservation-form-wrap .eem-event-details-card__title {
 				letter-spacing: -0.02em;
 			}
-			.en-event-details-card__eyebrow {
+			.eem-event-details-card__eyebrow {
 				display: inline-flex;
 				align-items: center;
 				width: fit-content;
@@ -8992,95 +8992,95 @@ RV Lot: " . $rv_lot['name'] );
 				background: #eef2f6;
 				color: #5f6b7a;
 			}
-			.en-product-list__head {
+			.eem-product-list__head {
 				display: none;
 			}
-			.en-product-line-item,
-			.en-product-line-item--checkbox {
+			.eem-product-line-item,
+			.eem-product-line-item--checkbox {
 				grid-template-columns: 1fr;
 				gap: 14px;
 				align-items: start;
 			}
-			.en-product-line-item__qty,
-			.en-product-line-item--checkbox .en-product-line-item__qty {
+			.eem-product-line-item__qty,
+			.eem-product-line-item--checkbox .eem-product-line-item__qty {
 				justify-content: flex-start;
 			}
-			.en-payment-layout,
-			.en-reservation-grid,
-			.en-reservation-grid--two,
-			.en-reservation-grid--three,
-			.en-reservation-grid--stay-controls,
-			.en-payment-card-grid,
-			.en-event-details-card__facts,
-			.en-event-details-card__times {
+			.eem-payment-layout,
+			.eem-reservation-grid,
+			.eem-reservation-grid--two,
+			.eem-reservation-grid--three,
+			.eem-reservation-grid--stay-controls,
+			.eem-payment-card-grid,
+			.eem-event-details-card__facts,
+			.eem-event-details-card__times {
 				grid-template-columns: 1fr;
 			}
-			.en-reservation-form input,
-			.en-reservation-form select,
-			.en-reservation-form textarea,
-			.en-phone-field,
-			.en-stripe-card-element,
-			.en-stay-night-field__value,
-			.en-weekend-package-field,
-			.en-reservation-submit,
-			.en-reservation-submit--secondary {
+			.eem-reservation-form input,
+			.eem-reservation-form select,
+			.eem-reservation-form textarea,
+			.eem-phone-field,
+			.eem-stripe-card-element,
+			.eem-stay-night-field__value,
+			.eem-weekend-package-field,
+			.eem-reservation-submit,
+			.eem-reservation-submit--secondary {
 				min-height: 50px;
 				border-radius: 14px;
 			}
-			.en-reservation-submit,
-			.en-reservation-submit--secondary,
-			.en-invoice-mode-actions .en-inline-toggle-control,
-			.en-invoice-mode-actions [data-en-invoice-action] {
+			.eem-reservation-submit,
+			.eem-reservation-submit--secondary,
+			.eem-invoice-mode-actions .eem-inline-toggle-control,
+			.eem-invoice-mode-actions [data-eem-invoice-action] {
 				width: 100%;
 			}
-			.en-payment-summary {
+			.eem-payment-summary {
 				border-radius: 18px;
 			}
-			.en-payment-summary-row {
+			.eem-payment-summary-row {
 				flex-direction: column;
 				align-items: flex-start;
 				gap: 6px;
 			}
-			.en-reservation-form,
-			.en-reservation-section,
-			.en-reservation-grid,
-			.en-reservation-grid--two,
-			.en-reservation-grid--three,
-			.en-reservation-grid--stay-controls,
-			.en-payment-card-grid,
-			.en-event-details-card__facts,
-			.en-event-details-card__times,
-			.en-invoice-mode-card,
-			.en-invoice-mode-actions,
-			.en-payment-layout,
-			.en-payment-main,
-			.en-payment-sidebar,
-			.en-payment-sidebar__inner {
+			.eem-reservation-form,
+			.eem-reservation-section,
+			.eem-reservation-grid,
+			.eem-reservation-grid--two,
+			.eem-reservation-grid--three,
+			.eem-reservation-grid--stay-controls,
+			.eem-payment-card-grid,
+			.eem-event-details-card__facts,
+			.eem-event-details-card__times,
+			.eem-invoice-mode-card,
+			.eem-invoice-mode-actions,
+			.eem-payment-layout,
+			.eem-payment-main,
+			.eem-payment-sidebar,
+			.eem-payment-sidebar__inner {
 				min-width: 0;
 				box-sizing: border-box;
 			}
 			@media (max-width: 640px) {
-				.en-reservation-grid,
-				.en-reservation-grid--two,
-				.en-reservation-grid--three,
-				.en-reservation-grid--stay-controls,
-				.en-payment-card-grid,
-				.en-event-details-card__facts,
-				.en-event-details-card__times,
-				.en-payment-layout {
+				.eem-reservation-grid,
+				.eem-reservation-grid--two,
+				.eem-reservation-grid--three,
+				.eem-reservation-grid--stay-controls,
+				.eem-payment-card-grid,
+				.eem-event-details-card__facts,
+				.eem-event-details-card__times,
+				.eem-payment-layout {
 					grid-template-columns: 1fr !important;
 				}
-				.en-reservation-form input,
-				.en-reservation-form select,
-				.en-reservation-form textarea,
-				.en-phone-field,
-				.en-stripe-card-element,
-				.en-stay-night-field__value,
-				.en-weekend-package-field,
-				.en-quantity-control,
-				.en-quantity-control input,
-				.en-reservation-submit,
-				.en-reservation-submit--secondary {
+				.eem-reservation-form input,
+				.eem-reservation-form select,
+				.eem-reservation-form textarea,
+				.eem-phone-field,
+				.eem-stripe-card-element,
+				.eem-stay-night-field__value,
+				.eem-weekend-package-field,
+				.eem-quantity-control,
+				.eem-quantity-control input,
+				.eem-reservation-submit,
+				.eem-reservation-submit--secondary {
 					width: 100%;
 					max-width: 100%;
 					min-width: 0;
@@ -9088,53 +9088,53 @@ RV Lot: " . $rv_lot['name'] );
 				}
 			}
 			@media (min-width: 760px) {
-				.en-reservation-form-wrap {
+				.eem-reservation-form-wrap {
 					padding: 0;
 				}
-				.en-reservation-grid--two,
-				.en-payment-card-grid,
-				.en-event-details-card__times,
-				.en-event-details-card__facts {
+				.eem-reservation-grid--two,
+				.eem-payment-card-grid,
+				.eem-event-details-card__times,
+				.eem-event-details-card__facts {
 					grid-template-columns: repeat(2, minmax(0, 1fr));
 				}
-				.en-product-list__head {
+				.eem-product-list__head {
 					display: grid;
 				}
-				.en-product-line-item {
+				.eem-product-line-item {
 					grid-template-columns: minmax(0, 1fr) auto;
 					align-items: center;
 				}
-				.en-product-line-item--checkbox {
+				.eem-product-line-item--checkbox {
 					grid-template-columns: minmax(0, 1fr) auto;
 					align-items: center;
 				}
-				.en-product-line-item__qty,
-				.en-product-line-item--checkbox .en-product-line-item__qty {
+				.eem-product-line-item__qty,
+				.eem-product-line-item--checkbox .eem-product-line-item__qty {
 					justify-content: flex-end;
 				}
-				.en-payment-summary-row {
+				.eem-payment-summary-row {
 					flex-direction: row;
 					align-items: center;
 				}
 			}
 			@media (min-width: 1040px) {
-				.en-reservation-form-wrap {
+				.eem-reservation-form-wrap {
 					max-width: 1320px;
 					padding: 0;
 				}
-				.en-reservation-workspace {
+				.eem-reservation-workspace {
 					display: grid;
 					grid-template-columns: minmax(0, 1.45fr) minmax(360px, 1fr);
-					column-gap: var(--en-app-card-gap);
-					row-gap: var(--en-app-card-gap);
+					column-gap: var(--eem-app-card-gap);
+					row-gap: var(--eem-app-card-gap);
 					align-items: start;
 				}
-				.en-reservation-workspace__main {
+				.eem-reservation-workspace__main {
 					display: grid;
-					gap: var(--en-app-card-gap);
+					gap: var(--eem-app-card-gap);
 					min-width: 0;
 				}
-				.en-reservation-workspace__rail {
+				.eem-reservation-workspace__rail {
 					display: block;
 					width: 100%;
 					min-width: 0;
@@ -9143,207 +9143,207 @@ RV Lot: " . $rv_lot['name'] );
 					position: sticky;
 					top: 24px;
 				}
-				.en-reservation-summary-card {
+				.eem-reservation-summary-card {
 					width: 100%;
 					max-width: none;
 				}
-				.en-reservation-summary-card__sticky {
+				.eem-reservation-summary-card__sticky {
 					position: static;
 					top: auto;
 					display: grid;
 					gap: 14px;
 					width: 100%;
 				}
-				.en-payment-layout {
+				.eem-payment-layout {
 					grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.82fr);
 				}
-				.en-reservation-grid--three {
+				.eem-reservation-grid--three {
 					grid-template-columns: repeat(3, minmax(0, 1fr));
 				}
-				.en-reservation-grid--stay-controls {
+				.eem-reservation-grid--stay-controls {
 					grid-template-columns: 0.72fr 1fr 1fr 0.72fr;
 				}
 			}
-			.en-reservation-workspace {
+			.eem-reservation-workspace {
 				display: grid;
-				gap: var(--en-app-card-gap);
+				gap: var(--eem-app-card-gap);
 			}
-			.en-reservation-workspace__main {
+			.eem-reservation-workspace__main {
 				display: grid;
-				gap: var(--en-app-card-gap);
+				gap: var(--eem-app-card-gap);
 			}
-			.en-reservation-workspace__main,
-			.en-reservation-workspace__rail {
+			.eem-reservation-workspace__main,
+			.eem-reservation-workspace__rail {
 				min-width: 0;
 			}
-			.en-reservation-summary-card {
+			.eem-reservation-summary-card {
 				width: 100%;
 				min-width: 0;
 			}
-			.en-reservation-summary-card__sticky {
+			.eem-reservation-summary-card__sticky {
 				width: 100%;
 				box-sizing: border-box;
 				display: grid;
-				gap: var(--en-app-card-gap);
+				gap: var(--eem-app-card-gap);
 				padding: 20px;
-				border: 1px solid var(--en-app-border);
-				border-radius: var(--en-app-card-radius);
+				border: 1px solid var(--eem-app-border);
+				border-radius: var(--eem-app-card-radius);
 				background: #ffffff;
-				box-shadow: var(--en-app-shadow-soft);
+				box-shadow: var(--eem-app-shadow-soft);
 			}
-			.en-reservation-summary-card .en-payment-summary {
+			.eem-reservation-summary-card .eem-payment-summary {
 				border: 1px solid #dbe4f0;
-				border-radius: var(--en-app-card-radius);
+				border-radius: var(--eem-app-card-radius);
 				overflow: hidden;
 				background: #ffffff;
 			}
-			.en-reservation-summary-card .en-payment-summary-row {
+			.eem-reservation-summary-card .eem-payment-summary-row {
 				padding: 14px 16px;
 			}
-			.en-reservation-section--payment {
+			.eem-reservation-section--payment {
 				padding: 22px;
-				border: 1px solid var(--en-app-border);
-				border-radius: var(--en-app-card-radius);
+				border: 1px solid var(--eem-app-border);
+				border-radius: var(--eem-app-card-radius);
 				background: #ffffff;
-				box-shadow: var(--en-app-shadow);
+				box-shadow: var(--eem-app-shadow);
 			}
-			.en-reservation-section--payment .en-payment-checkout-block,
-			.en-reservation-section--payment .en-payment-card-field-wrap {
+			.eem-reservation-section--payment .eem-payment-checkout-block,
+			.eem-reservation-section--payment .eem-payment-card-field-wrap {
 				padding: 18px;
 				border: 1px solid #dbe4f0;
-				border-radius: var(--en-app-card-radius);
+				border-radius: var(--eem-app-card-radius);
 				background: #f8fbff;
 			}
-			.en-reservation-section--payment .en-payment-card-field-wrap {
+			.eem-reservation-section--payment .eem-payment-card-field-wrap {
 				margin-top: 16px;
 			}
-			.en-reservation-section--payment .en-reservation-submit {
+			.eem-reservation-section--payment .eem-reservation-submit {
 				margin-top: 16px;
 			}
-			.en-reservation-section--instructions {
-				box-shadow: var(--en-app-shadow-soft);
+			.eem-reservation-section--instructions {
+				box-shadow: var(--eem-app-shadow-soft);
 			}
 			@media (max-width: 1039px) {
-				.en-reservation-workspace__rail {
+				.eem-reservation-workspace__rail {
 					position: static;
 					top: auto;
 				}
-				.en-reservation-summary-card__sticky {
+				.eem-reservation-summary-card__sticky {
 					position: static;
 				}
 			}
 			@media (max-width: 640px) {
-				.en-reservation-section--payment {
+				.eem-reservation-section--payment {
 					padding: 18px 16px;
-					border-radius: var(--en-app-card-radius);
+					border-radius: var(--eem-app-card-radius);
 				}
-				.en-reservation-section--payment .en-payment-checkout-block,
-				.en-reservation-section--payment .en-payment-card-field-wrap {
+				.eem-reservation-section--payment .eem-payment-checkout-block,
+				.eem-reservation-section--payment .eem-payment-card-field-wrap {
 					padding: 16px 14px;
-					border-radius: var(--en-app-card-radius);
+					border-radius: var(--eem-app-card-radius);
 				}
-				.en-reservation-summary-card__sticky {
+				.eem-reservation-summary-card__sticky {
 					padding: 16px 14px;
-					border-radius: var(--en-app-card-radius);
+					border-radius: var(--eem-app-card-radius);
 				}
 			}
 			/* Final frontend card polish */
-			.en-reservation-event-media-card,
-			.en-reservation-event-media-card__visual,
-			.en-event-details-card,
-			.en-venue-map-card,
-			.en-reservation-section,
-			.en-reservation-section--instructions,
-			.en-reservation-section--payment,
-			.en-reservation-summary-card,
-			.en-group-reservation-toggle,
-			.en-group-rider-card,
-			.en-invoice-mode-card,
-			.en-payment-sidebar__inner,
-			.en-reservation-summary-card__sticky,
-			.en-reservation-summary-card .en-payment-summary,
-			.en-reservation-section--payment .en-payment-checkout-block,
-			.en-reservation-section--payment .en-payment-card-field-wrap,
-			.en-event-details-card__time-card,
-			.en-rv-lot-selector-row__details,
-			.en-stall-assignment-selector,
-			.en-venue-agreement-card {
-				border-radius: var(--en-app-card-radius) !important;
+			.eem-reservation-event-media-card,
+			.eem-reservation-event-media-card__visual,
+			.eem-event-details-card,
+			.eem-venue-map-card,
+			.eem-reservation-section,
+			.eem-reservation-section--instructions,
+			.eem-reservation-section--payment,
+			.eem-reservation-summary-card,
+			.eem-group-reservation-toggle,
+			.eem-group-rider-card,
+			.eem-invoice-mode-card,
+			.eem-payment-sidebar__inner,
+			.eem-reservation-summary-card__sticky,
+			.eem-reservation-summary-card .eem-payment-summary,
+			.eem-reservation-section--payment .eem-payment-checkout-block,
+			.eem-reservation-section--payment .eem-payment-card-field-wrap,
+			.eem-event-details-card__time-card,
+			.eem-rv-lot-selector-row__details,
+			.eem-stall-assignment-selector,
+			.eem-venue-agreement-card {
+				border-radius: var(--eem-app-card-radius) !important;
 			}
-			.en-reservation-event-media-card,
-			.en-event-details-card,
-			.en-venue-map-card,
-			.en-reservation-section,
-			.en-reservation-section--payment,
-			.en-group-rider-card,
-			.en-invoice-mode-card,
-			.en-payment-sidebar__inner,
-			.en-reservation-summary-card__sticky,
-			.en-reservation-section--payment .en-payment-checkout-block,
-			.en-reservation-section--payment .en-payment-card-field-wrap {
-				border-color: var(--en-app-border);
-				background: var(--en-app-surface);
-				box-shadow: var(--en-app-shadow-soft);
+			.eem-reservation-event-media-card,
+			.eem-event-details-card,
+			.eem-venue-map-card,
+			.eem-reservation-section,
+			.eem-reservation-section--payment,
+			.eem-group-rider-card,
+			.eem-invoice-mode-card,
+			.eem-payment-sidebar__inner,
+			.eem-reservation-summary-card__sticky,
+			.eem-reservation-section--payment .eem-payment-checkout-block,
+			.eem-reservation-section--payment .eem-payment-card-field-wrap {
+				border-color: var(--eem-app-border);
+				background: var(--eem-app-surface);
+				box-shadow: var(--eem-app-shadow-soft);
 			}
-			.en-reservation-event-media-card {
-				background: var(--en-app-surface);
-				box-shadow: var(--en-app-shadow-soft);
+			.eem-reservation-event-media-card {
+				background: var(--eem-app-surface);
+				box-shadow: var(--eem-app-shadow-soft);
 			}
-			.en-reservation-event-media-card__visual,
-			.en-reservation-section--instructions,
-			.en-group-reservation-toggle,
-			.en-event-details-card__time-card,
-			.en-rv-lot-selector-row__details,
-			.en-stall-assignment-selector,
-			.en-reservation-summary-card .en-payment-summary,
-			.en-payment-summary-row--total {
-				border-color: var(--en-app-border);
-				background: var(--en-app-surface-muted);
+			.eem-reservation-event-media-card__visual,
+			.eem-reservation-section--instructions,
+			.eem-group-reservation-toggle,
+			.eem-event-details-card__time-card,
+			.eem-rv-lot-selector-row__details,
+			.eem-stall-assignment-selector,
+			.eem-reservation-summary-card .eem-payment-summary,
+			.eem-payment-summary-row--total {
+				border-color: var(--eem-app-border);
+				background: var(--eem-app-surface-muted);
 				box-shadow: none;
 			}
-			.en-payment-summary-row {
-				border-bottom-color: var(--en-app-border);
+			.eem-payment-summary-row {
+				border-bottom-color: var(--eem-app-border);
 			}
-			.en-reservation-form input,
-			.en-reservation-form select,
-			.en-reservation-form textarea,
-			.en-phone-field,
-			.en-stripe-card-element,
-			.en-stay-night-field__value,
-			.en-weekend-package-field,
-			.en-reservation-submit,
-			.en-reservation-submit--secondary {
-				border-radius: var(--en-app-control-radius);
+			.eem-reservation-form input,
+			.eem-reservation-form select,
+			.eem-reservation-form textarea,
+			.eem-phone-field,
+			.eem-stripe-card-element,
+			.eem-stay-night-field__value,
+			.eem-weekend-package-field,
+			.eem-reservation-submit,
+			.eem-reservation-submit--secondary {
+				border-radius: var(--eem-app-control-radius);
 			}
 			/* Final strict frontend card radius layer. */
-			.en-reservation-event-media-card,
-			.en-reservation-event-media-card__visual,
-			.en-event-details-card,
-			.en-venue-map-card,
-			.en-reservation-section,
-			.en-reservation-section--instructions,
-			.en-reservation-section--payment,
-			.en-reservation-summary-card,
-			.en-reservation-summary-card__sticky,
-			.en-reservation-summary-card .en-payment-summary,
-			.en-payment-summary,
-			.en-group-reservation-toggle,
-			.en-group-rider-card,
-			.en-invoice-mode-card,
-			.en-payment-sidebar__inner,
-			.en-reservation-section--payment .en-payment-checkout-block,
-			.en-reservation-section--payment .en-payment-card-field-wrap,
-			.en-event-details-card__time-card,
-			.en-rv-lot-selector-row__details,
-			.en-stall-assignment-selector,
-			.en-venue-agreement-card {
-				border-radius: var(--en-app-card-radius) !important;
+			.eem-reservation-event-media-card,
+			.eem-reservation-event-media-card__visual,
+			.eem-event-details-card,
+			.eem-venue-map-card,
+			.eem-reservation-section,
+			.eem-reservation-section--instructions,
+			.eem-reservation-section--payment,
+			.eem-reservation-summary-card,
+			.eem-reservation-summary-card__sticky,
+			.eem-reservation-summary-card .eem-payment-summary,
+			.eem-payment-summary,
+			.eem-group-reservation-toggle,
+			.eem-group-rider-card,
+			.eem-invoice-mode-card,
+			.eem-payment-sidebar__inner,
+			.eem-reservation-section--payment .eem-payment-checkout-block,
+			.eem-reservation-section--payment .eem-payment-card-field-wrap,
+			.eem-event-details-card__time-card,
+			.eem-rv-lot-selector-row__details,
+			.eem-stall-assignment-selector,
+			.eem-venue-agreement-card {
+				border-radius: var(--eem-app-card-radius) !important;
 			}
-			.en-event-details-card__eyebrow {
+			.eem-event-details-card__eyebrow {
 				background: #f3f4f6;
 				color: #6b7280;
 			}
-			.en-venue-agreement-card {
+			.eem-venue-agreement-card {
 				display: grid;
 				gap: 8px;
 				padding: 12px 14px;
@@ -9352,25 +9352,25 @@ RV Lot: " . $rv_lot['name'] );
 				box-shadow: none;
 				color: #7c5a00;
 			}
-			.en-venue-agreement-card p {
+			.eem-venue-agreement-card p {
 				margin: 0;
 				font-size: 14px;
 				line-height: 1.55;
 				color: inherit;
 			}
-			.en-venue-agreement-card a {
+			.eem-venue-agreement-card a {
 				color: #8b5e00;
 				font-weight: 700;
 				text-decoration: underline;
 			}
-			.en-venue-agreement-card a:hover,
-			.en-venue-agreement-card a:focus {
+			.eem-venue-agreement-card a:hover,
+			.eem-venue-agreement-card a:focus {
 				color: #6f4b00;
 			}
 			@media (min-width: 1040px) {
-				.en-reservation-summary-card__sticky {
+				.eem-reservation-summary-card__sticky {
 					padding: 20px;
-					box-shadow: var(--en-app-shadow);
+					box-shadow: var(--eem-app-shadow);
 				}
 			}
 		</style>
@@ -9379,7 +9379,7 @@ RV Lot: " . $rv_lot['name'] );
 			var enStripeLoaderPromise = null;
 
 			document.addEventListener('click', function(event) {
-				var button = event.target.closest('.en-quantity-button');
+				var button = event.target.closest('.eem-quantity-button');
 				var input;
 				var nextValue;
 
@@ -9393,7 +9393,7 @@ RV Lot: " . $rv_lot['name'] );
 					return;
 				}
 
-				nextValue = parseInt(input.value || '0', 10) + parseInt(button.getAttribute('data-en-quantity-step') || '0', 10);
+				nextValue = parseInt(input.value || '0', 10) + parseInt(button.getAttribute('data-eem-quantity-step') || '0', 10);
 				nextValue = Math.max(0, nextValue);
 
 				if (input.hasAttribute('max')) {
@@ -9405,7 +9405,7 @@ RV Lot: " . $rv_lot['name'] );
 			});
 
 			document.addEventListener('input', function(event) {
-				var form = event.target.closest('.en-reservation-form');
+				var form = event.target.closest('.eem-reservation-form');
 
 				if (form) {
 					updateReservationTotals(form);
@@ -9413,7 +9413,7 @@ RV Lot: " . $rv_lot['name'] );
 			});
 
 			document.addEventListener('change', function(event) {
-				var form = event.target.closest('.en-reservation-form');
+				var form = event.target.closest('.eem-reservation-form');
 
 				if (form) {
 					resetStripePaymentState(form);
@@ -9426,7 +9426,7 @@ RV Lot: " . $rv_lot['name'] );
 			});
 
 			document.addEventListener('blur', function(event) {
-				var form = event.target.closest('.en-reservation-form');
+				var form = event.target.closest('.eem-reservation-form');
 
 				if (!form) {
 					return;
@@ -9457,7 +9457,7 @@ RV Lot: " . $rv_lot['name'] );
 				}
 
 				enStripeLoaderPromise = new Promise(function(resolve, reject) {
-					existingScript = document.querySelector('script[data-en-stripe-js]');
+					existingScript = document.querySelector('script[data-eem-stripe-js]');
 
 					if (existingScript) {
 						existingScript.addEventListener('load', function() {
@@ -9487,7 +9487,7 @@ RV Lot: " . $rv_lot['name'] );
 			}
 
 			function initializeReservationForms(root) {
-				(root || document).querySelectorAll('.en-reservation-form').forEach(function(form) {
+				(root || document).querySelectorAll('.eem-reservation-form').forEach(function(form) {
 					initializeInvoiceActionButtons(form);
 					initializeInvoiceBillingToggle(form);
 					initializeStripeCardField(form);
@@ -9515,19 +9515,19 @@ RV Lot: " . $rv_lot['name'] );
 
 				actionField.dataset.enInvoiceActionReady = '1';
 
-				form.querySelectorAll('[data-en-invoice-action]').forEach(function(button) {
+				form.querySelectorAll('[data-eem-invoice-action]').forEach(function(button) {
 					button.addEventListener('click', function() {
-						actionField.value = button.getAttribute('data-en-invoice-action') || 'charge_now';
+						actionField.value = button.getAttribute('data-eem-invoice-action') || 'charge_now';
 					});
 				});
 			}
 
 			function initializeInvoiceBillingToggle(form) {
-				var toggle = form.querySelector('[data-en-invoice-billing-toggle]');
+				var toggle = form.querySelector('[data-eem-invoice-billing-toggle]');
 				var actionField = form.querySelector('[name="en_invoice_action_mode"]');
-				var sendButton = form.querySelector('[data-en-invoice-send-button]');
-				var chargeButton = form.querySelector('[data-en-invoice-charge-button]');
-				var billingBlocks = form.querySelectorAll('[data-en-invoice-billing-block]');
+				var sendButton = form.querySelector('[data-eem-invoice-send-button]');
+				var chargeButton = form.querySelector('[data-eem-invoice-charge-button]');
+				var billingBlocks = form.querySelectorAll('[data-eem-invoice-billing-block]');
 				var managedFields;
 
 				if (!toggle || toggle.dataset.enInvoiceBillingReady === '1') {
@@ -9535,7 +9535,7 @@ RV Lot: " . $rv_lot['name'] );
 				}
 
 				toggle.dataset.enInvoiceBillingReady = '1';
-				managedFields = form.querySelectorAll('[data-en-required-for-charge="1"], input[name="authorize_card_number"], input[name="authorize_card_code"], select[name="authorize_exp_month"], select[name="authorize_exp_year"]');
+				managedFields = form.querySelectorAll('[data-eem-required-for-charge="1"], input[name="authorize_card_number"], input[name="authorize_card_code"], select[name="authorize_exp_month"], select[name="authorize_exp_year"]');
 
 				function syncInvoiceBillingState() {
 					var chargingNow = !!toggle.checked;
@@ -9578,9 +9578,9 @@ RV Lot: " . $rv_lot['name'] );
 			}
 
 			function initializeCollapsibleReservationSections(form) {
-				form.querySelectorAll('[data-en-section-collapse-toggle]').forEach(function(toggle) {
-					var section = toggle.closest('.en-reservation-section');
-					var body = section ? section.querySelector('[data-en-section-collapse-body]') : null;
+				form.querySelectorAll('[data-eem-section-collapse-toggle]').forEach(function(toggle) {
+					var section = toggle.closest('.eem-reservation-section');
+					var body = section ? section.querySelector('[data-eem-section-collapse-body]') : null;
 
 					if (!section || !body || toggle.dataset.enCollapseReady === '1') {
 						return;
@@ -9596,26 +9596,26 @@ RV Lot: " . $rv_lot['name'] );
 			}
 
 			function setReservationSectionCollapsed(section, collapsed) {
-				var toggle = section.querySelector('[data-en-section-collapse-toggle]');
-				var body = section.querySelector('[data-en-section-collapse-body]');
-				var title = section.querySelector('.en-reservation-section__title');
+				var toggle = section.querySelector('[data-eem-section-collapse-toggle]');
+				var body = section.querySelector('[data-eem-section-collapse-body]');
+				var title = section.querySelector('.eem-reservation-section__title');
 				var label = title ? title.textContent.replace(/\s+/g, ' ').trim() : 'Reservation';
 
 				if (!toggle || !body) {
 					return;
 				}
 
-				section.classList.toggle('en-reservation-section--collapsed', !!collapsed);
+				section.classList.toggle('eem-reservation-section--collapsed', !!collapsed);
 				body.hidden = !!collapsed;
 				toggle.checked = !collapsed;
 				toggle.setAttribute('aria-label', (collapsed ? 'Open ' : 'Collapse ') + label + ' section');
 			}
 
 			function initializeGroupReservationFields(form) {
-				var toggle = form.querySelector('[data-en-group-toggle]');
-				var fields = form.querySelector('[data-en-group-fields]');
-				var countInput = form.querySelector('[data-en-group-count]');
-				var list = form.querySelector('[data-en-group-riders-list]');
+				var toggle = form.querySelector('[data-eem-group-toggle]');
+				var fields = form.querySelector('[data-eem-group-fields]');
+				var countInput = form.querySelector('[data-eem-group-count]');
+				var list = form.querySelector('[data-eem-group-riders-list]');
 
 				if (!toggle || !fields || !countInput || !list || toggle.dataset.enGroupReady === '1') {
 					return;
@@ -9630,10 +9630,10 @@ RV Lot: " . $rv_lot['name'] );
 					count = Math.max(1, count || 1);
 					countInput.value = count;
 
-					list.querySelectorAll('.en-group-rider-card').forEach(function(card) {
+					list.querySelectorAll('.eem-group-rider-card').forEach(function(card) {
 						existingValues.push({
-							first_name: (card.querySelector('[data-en-group-first-name]') || {}).value || '',
-							last_name: (card.querySelector('[data-en-group-last-name]') || {}).value || ''
+							first_name: (card.querySelector('[data-eem-group-first-name]') || {}).value || '',
+							last_name: (card.querySelector('[data-eem-group-last-name]') || {}).value || ''
 						});
 					});
 
@@ -9642,12 +9642,12 @@ RV Lot: " . $rv_lot['name'] );
 					for (var index = 0; index < count; index += 1) {
 						var rider = existingValues[index] || { first_name: '', last_name: '' };
 						var card = document.createElement('div');
-						card.className = 'en-group-rider-card';
+						card.className = 'eem-group-rider-card';
 						card.innerHTML =
 							'<h4>Rider ' + (index + 1) + '</h4>' +
-							'<div class=\"en-reservation-grid en-reservation-grid--two\">' +
-								'<label><span>First Name <strong>*</strong></span><input type=\"text\" name=\"group_riders[' + index + '][first_name]\" value=\"' + escapeHtml(rider.first_name) + '\" data-en-group-first-name /></label>' +
-								'<label><span>Last Name <strong>*</strong></span><input type=\"text\" name=\"group_riders[' + index + '][last_name]\" value=\"' + escapeHtml(rider.last_name) + '\" data-en-group-last-name /></label>' +
+							'<div class=\"eem-reservation-grid eem-reservation-grid--two\">' +
+								'<label><span>First Name <strong>*</strong></span><input type=\"text\" name=\"group_riders[' + index + '][first_name]\" value=\"' + escapeHtml(rider.first_name) + '\" data-eem-group-first-name /></label>' +
+								'<label><span>Last Name <strong>*</strong></span><input type=\"text\" name=\"group_riders[' + index + '][last_name]\" value=\"' + escapeHtml(rider.last_name) + '\" data-eem-group-last-name /></label>' +
 							'</div>';
 						list.appendChild(card);
 					}
@@ -9672,7 +9672,7 @@ RV Lot: " . $rv_lot['name'] );
 			}
 
 			function initializeStallAssignmentSelector(form) {
-				var selector = form.querySelector('.en-stall-assignment-selector');
+				var selector = form.querySelector('.eem-stall-assignment-selector');
 				var toggle;
 				var panel;
 				var barnSelect;
@@ -9681,9 +9681,9 @@ RV Lot: " . $rv_lot['name'] );
 					return;
 				}
 
-				toggle = selector.querySelector('[data-en-stall-assignment-toggle]');
-				panel = selector.querySelector('[data-en-stall-assignment-panel]');
-				barnSelect = selector.querySelector('[data-en-stall-barn-select]');
+				toggle = selector.querySelector('[data-eem-stall-assignment-toggle]');
+				panel = selector.querySelector('[data-eem-stall-assignment-panel]');
+				barnSelect = selector.querySelector('[data-eem-stall-barn-select]');
 
 				if (!toggle || !panel || !barnSelect) {
 					return;
@@ -9695,7 +9695,7 @@ RV Lot: " . $rv_lot['name'] );
 					var isEnabled = !!toggle.checked;
 
 					panel.hidden = !isEnabled;
-					selector.classList.toggle('en-stall-assignment-selector--collapsed', !isEnabled);
+					selector.classList.toggle('eem-stall-assignment-selector--collapsed', !isEnabled);
 
 					if (!isEnabled) {
 						selector.querySelectorAll('input[type="checkbox"][name="preferred_stall_units[]"]').forEach(function(input) {
@@ -9740,7 +9740,7 @@ RV Lot: " . $rv_lot['name'] );
 			}
 
 			function syncStallAssignmentAvailability(form) {
-				var selector = form.querySelector('.en-stall-assignment-selector');
+				var selector = form.querySelector('.eem-stall-assignment-selector');
 				var toggle;
 				var panel;
 				var barnSelect;
@@ -9756,9 +9756,9 @@ RV Lot: " . $rv_lot['name'] );
 					return;
 				}
 
-				toggle = selector.querySelector('[data-en-stall-assignment-toggle]');
-				panel = selector.querySelector('[data-en-stall-assignment-panel]');
-				barnSelect = selector.querySelector('[data-en-stall-barn-select]');
+				toggle = selector.querySelector('[data-eem-stall-assignment-toggle]');
+				panel = selector.querySelector('[data-eem-stall-assignment-panel]');
+				barnSelect = selector.querySelector('[data-eem-stall-barn-select]');
 				config = parseJsonAttribute(form.dataset.stallAssignmentConfig);
 				blockedUnits = Array.isArray(config.blocked_units) ? config.blocked_units : [];
 				occupiedMap = config.occupied && typeof config.occupied === 'object' ? config.occupied : {};
@@ -9771,7 +9771,7 @@ RV Lot: " . $rv_lot['name'] );
 					selectedUnits.push(String(input.value || ''));
 				});
 
-				selector.querySelectorAll('[data-en-stall-barn-group]').forEach(function(group) {
+				selector.querySelectorAll('[data-eem-stall-barn-group]').forEach(function(group) {
 					var groupBarn = group.getAttribute('data-stall-barn') || '';
 					var shouldHideGroup = !!selectedBarn && groupBarn !== selectedBarn;
 
@@ -9779,7 +9779,7 @@ RV Lot: " . $rv_lot['name'] );
 					group.classList.toggle('is-hidden', shouldHideGroup);
 				});
 
-				selector.querySelectorAll('[data-en-stall-unit]').forEach(function(unitLabel) {
+				selector.querySelectorAll('[data-eem-stall-unit]').forEach(function(unitLabel) {
 					var input = unitLabel.querySelector('input[type="checkbox"]');
 					var unit = unitLabel.getAttribute('data-stall-unit') || '';
 					var unitBarn = unitLabel.getAttribute('data-stall-barn') || '';
@@ -9854,10 +9854,10 @@ RV Lot: " . $rv_lot['name'] );
 
 			function initializeStripeCardField(form) {
 				var stripeKey = form.dataset.stripePublishableKey || '';
-				var cardNumberTarget = form.querySelector('[data-en-stripe-card-number]');
-				var cardExpiryTarget = form.querySelector('[data-en-stripe-card-expiry]');
-				var cardCvcTarget = form.querySelector('[data-en-stripe-card-cvc]');
-				var errorTarget = form.querySelector('[data-en-stripe-card-error]');
+				var cardNumberTarget = form.querySelector('[data-eem-stripe-card-number]');
+				var cardExpiryTarget = form.querySelector('[data-eem-stripe-card-expiry]');
+				var cardCvcTarget = form.querySelector('[data-eem-stripe-card-cvc]');
+				var errorTarget = form.querySelector('[data-eem-stripe-card-error]');
 				var initAttempts = parseInt(form.dataset.stripeInitAttempts || '0', 10) || 0;
 				var stripe;
 				var elements;
@@ -9965,7 +9965,7 @@ RV Lot: " . $rv_lot['name'] );
 				});
 
 				window.setTimeout(function() {
-					var iframeCount = form.querySelectorAll('.en-stripe-card-element iframe').length;
+					var iframeCount = form.querySelectorAll('.eem-stripe-card-element iframe').length;
 
 					if (!iframeCount) {
 						setStripeError(form, 'Secure payment fields could not load. Please refresh the page and try again.');
@@ -10083,11 +10083,11 @@ RV Lot: " . $rv_lot['name'] );
 			}
 
 			function syncReservationSectionToggles(form) {
-				form.querySelectorAll('[data-en-section-toggle]').forEach(function(toggle) {
-					var sectionKey = toggle.getAttribute('data-en-section-toggle');
+				form.querySelectorAll('[data-eem-section-toggle]').forEach(function(toggle) {
+					var sectionKey = toggle.getAttribute('data-eem-section-toggle');
 					var isEnabled = !!toggle.checked;
 
-					var sections = form.querySelectorAll('[data-en-section="' + sectionKey + '"]');
+					var sections = form.querySelectorAll('[data-eem-section="' + sectionKey + '"]');
 
 					if (!sections.length) {
 						return;
@@ -10124,7 +10124,7 @@ RV Lot: " . $rv_lot['name'] );
 				var rvQty = getNumberFieldValue(form, 'rv_qty');
 				var hasRvSelection = rvQty > 0;
 
-				form.querySelectorAll('.en-product-line-item--rv-addon').forEach(function(lineItem) {
+				form.querySelectorAll('.eem-product-line-item--rv-addon').forEach(function(lineItem) {
 					var checkbox = lineItem.querySelector('input[type="checkbox"]');
 
 					if (!checkbox) {
@@ -10133,7 +10133,7 @@ RV Lot: " . $rv_lot['name'] );
 
 					checkbox.disabled = !hasRvSelection;
 					checkbox.setAttribute('aria-disabled', hasRvSelection ? 'false' : 'true');
-					lineItem.classList.toggle('en-product-line-item--disabled', !hasRvSelection);
+					lineItem.classList.toggle('eem-product-line-item--disabled', !hasRvSelection);
 
 					if (!hasRvSelection) {
 						checkbox.checked = false;
@@ -10145,11 +10145,11 @@ RV Lot: " . $rv_lot['name'] );
 				var stallQty = getNumberFieldValue(form, 'stall_qty');
 				var rvQty = getNumberFieldValue(form, 'rv_qty');
 
-				form.querySelectorAll('.en-product-line-item--general-addon').forEach(function(lineItem) {
+				form.querySelectorAll('.eem-product-line-item--general-addon').forEach(function(lineItem) {
 					var appliesTo = lineItem.getAttribute('data-addon-applies-to') || 'any';
-					var control = lineItem.querySelector('.en-quantity-control');
+					var control = lineItem.querySelector('.eem-quantity-control');
 					var input = control ? control.querySelector('input[type="number"]') : null;
-					var buttons = control ? control.querySelectorAll('.en-quantity-button') : [];
+					var buttons = control ? control.querySelectorAll('.eem-quantity-button') : [];
 					var isEnabled = true;
 
 					if (appliesTo === 'stall') {
@@ -10160,7 +10160,7 @@ RV Lot: " . $rv_lot['name'] );
 						isEnabled = stallQty > 0 || rvQty > 0;
 					}
 
-					lineItem.classList.toggle('en-product-line-item--disabled', !isEnabled);
+					lineItem.classList.toggle('eem-product-line-item--disabled', !isEnabled);
 
 					if (input) {
 						input.disabled = !isEnabled;
@@ -10290,7 +10290,7 @@ RV Lot: " . $rv_lot['name'] );
 					var price = stallRate;
 					var stayType = stallStayType;
 					var stayTypeLabel = stayType === 'weekend' ? 'weekend' : 'per night';
-					var titleText = label.querySelector('.en-product-line-item__title-text');
+					var titleText = label.querySelector('.eem-product-line-item__title-text');
 
 					if (type === 'rv') {
 						price = rvRate;
@@ -10315,7 +10315,7 @@ RV Lot: " . $rv_lot['name'] );
 					var baseLabel = label.getAttribute('data-product-base-label') || '';
 					var staticPrice = label.getAttribute('data-static-price') || '$0.00';
 					var staticPriceSuffix = label.getAttribute('data-static-price-suffix') || '';
-					var titleText = label.querySelector('.en-product-line-item__title-text');
+					var titleText = label.querySelector('.eem-product-line-item__title-text');
 
 					if (titleText) {
 						titleText.textContent = baseLabel + ' - ' + staticPrice + staticPriceSuffix;
@@ -10340,7 +10340,7 @@ RV Lot: " . $rv_lot['name'] );
 				var stallUnits = getBillableStayUnits(getFieldValue(form, 'stall_arrival_date'), getFieldValue(form, 'stall_departure_date'), stallStayType);
 				var rvUnits = getBillableStayUnits(getFieldValue(form, 'rv_arrival_date'), getFieldValue(form, 'rv_departure_date'), rvStayType);
 				var requiredShavingsPrice = parseCurrency(form.dataset.requiredShavingsPrice);
-				var groupToggle = form.querySelector('[data-en-group-toggle]');
+				var groupToggle = form.querySelector('[data-eem-group-toggle]');
 				var groupEnabled = !!(groupToggle && groupToggle.checked);
 				var groupRiderCount = groupEnabled ? Math.max(1, getNumberFieldValue(form, 'group_rider_count')) : 0;
 				var groupGroundsFeeEnabled = form.dataset.groupGroundsFeeEnabled === '1';
@@ -10477,13 +10477,13 @@ RV Lot: " . $rv_lot['name'] );
 				var maxDate;
 				var weekendStart;
 				var weekendEnd;
-				var stayDetailsHelp = controls ? controls.querySelector('.en-section-stay-controls__help') : null;
+				var stayDetailsHelp = controls ? controls.querySelector('.eem-section-stay-controls__help') : null;
 				var nightlySummary = controls ? (controls.dataset.nightlySummary || '') : '';
 				var weekendSummary = controls ? (controls.dataset.weekendSummary || '') : '';
-				var weekendSummaryWrap = controls ? controls.querySelector('.en-weekend-package-summary') : null;
+				var weekendSummaryWrap = controls ? controls.querySelector('.eem-weekend-package-summary') : null;
 				var nightCountSummary = controls ? controls.querySelector('[data-stay-nights-summary]') : null;
-				var arrivalFieldWrap = controls ? controls.querySelector('.en-stay-date-field--arrival') : null;
-				var departureFieldWrap = controls ? controls.querySelector('.en-stay-date-field--departure') : null;
+				var arrivalFieldWrap = controls ? controls.querySelector('.eem-stay-date-field--arrival') : null;
+				var departureFieldWrap = controls ? controls.querySelector('.eem-stay-date-field--departure') : null;
 
 				if (!controls || !arrival || !departure) {
 					return;
@@ -10804,7 +10804,7 @@ RV Lot: " . $rv_lot['name'] );
 			}
 
 			function setStripeError(form, message) {
-				var errorTarget = form.querySelector('[data-en-stripe-card-error]');
+				var errorTarget = form.querySelector('[data-eem-stripe-card-error]');
 
 				if (!errorTarget) {
 					return;
@@ -10815,13 +10815,13 @@ RV Lot: " . $rv_lot['name'] );
 			}
 
 			function setSubmitDisabled(form, isDisabled) {
-				form.querySelectorAll('.en-reservation-submit').forEach(function(submitButton) {
+				form.querySelectorAll('.eem-reservation-submit').forEach(function(submitButton) {
 					submitButton.disabled = !!isDisabled;
 				});
 			}
 
 			function getTotalText(form, key) {
-				var output = form.querySelector('[data-en-total="' + key + '"]');
+				var output = form.querySelector('[data-eem-total="' + key + '"]');
 
 				return output ? output.textContent : '0';
 			}
@@ -10893,7 +10893,7 @@ RV Lot: " . $rv_lot['name'] );
 			}
 
 			function setTotal(form, key, value) {
-				var output = form.querySelector('[data-en-total="' + key + '"]');
+				var output = form.querySelector('[data-eem-total="' + key + '"]');
 
 				if (output) {
 					output.textContent = formatReservationMoney(value);
@@ -10901,7 +10901,7 @@ RV Lot: " . $rv_lot['name'] );
 			}
 
 			function toggleSummaryRow(form, key, shouldShow) {
-				var row = form.querySelector('[data-en-summary-row="' + key + '"]');
+				var row = form.querySelector('[data-eem-summary-row="' + key + '"]');
 
 				if (row) {
 					row.hidden = !shouldShow;
@@ -10913,7 +10913,7 @@ RV Lot: " . $rv_lot['name'] );
 			}
 
 			function setReadonlyQuantity(form, source, value) {
-				var control = form.querySelector('[data-en-quantity-source="' + source + '"]');
+				var control = form.querySelector('[data-eem-quantity-source="' + source + '"]');
 				var input;
 
 				if (!control) {

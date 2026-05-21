@@ -1481,7 +1481,7 @@ class EEM_Events {
 						<input type="hidden" id="equine_event_manager_event_flyer_file_id" name="equine_event_manager_event_flyer_file_id" value="<?php echo esc_attr( $flyer_file_id ); ?>" />
 						<input type="text" class="regular-text" value="<?php echo esc_attr( $flyer_label ); ?>" readonly="readonly" placeholder="<?php esc_attr_e( 'No file selected', 'equine-event-manager' ); ?>" />
 						<button type="button" class="button"><?php esc_html_e( 'Add File', 'equine-event-manager' ); ?></button>
-						<button type="button" class="en-icon-delete-button" aria-label="<?php esc_attr_e( 'Remove flyer file', 'equine-event-manager' ); ?>" title="<?php esc_attr_e( 'Remove flyer file', 'equine-event-manager' ); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button>
+						<button type="button" class="eem-icon-delete-button" aria-label="<?php esc_attr_e( 'Remove flyer file', 'equine-event-manager' ); ?>" title="<?php esc_attr_e( 'Remove flyer file', 'equine-event-manager' ); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button>
 						<?php if ( $flyer_url ) : ?>
 							<a href="<?php echo esc_url( $flyer_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View file', 'equine-event-manager' ); ?></a>
 						<?php else : ?>
@@ -1497,9 +1497,9 @@ class EEM_Events {
 							<span class="eem-event-editor-field__label"><?php esc_html_e( 'Featured Event', 'equine-event-manager' ); ?></span>
 							<span class="eem-event-editor-field__description"><?php esc_html_e( 'Use this event in featured widgets and shortcodes.', 'equine-event-manager' ); ?></span>
 						</span>
-						<span class="en-inline-toggle-control">
+						<span class="eem-inline-toggle-control">
 							<input type="checkbox" name="equine_event_manager_event_featured" value="1" <?php checked( $featured, 1 ); ?> />
-							<span class="en-inline-toggle-control__track" aria-hidden="true"></span>
+							<span class="eem-inline-toggle-control__track" aria-hidden="true"></span>
 						</span>
 					</label>
 				</div>
@@ -3202,7 +3202,7 @@ class EEM_Events {
 		}
 
 		// Drop self-referential template markup or reservation assets if they were pasted into event content.
-		if ( preg_match( '/(?:eem-event-spotlight|eem-event-hero|eem-event-app-card|\.en-reservation-form-wrap\b|\.en-event-details-card\b|var\s+enStripeForms\b|initializeReservationForms\b)/i', $content_raw ) ) {
+		if ( preg_match( '/(?:eem-event-spotlight|eem-event-hero|eem-event-app-card|\.eem-reservation-form-wrap\b|\.eem-event-details-card\b|var\s+enStripeForms\b|initializeReservationForms\b)/i', $content_raw ) ) {
 			return '';
 		}
 

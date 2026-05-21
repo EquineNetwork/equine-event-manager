@@ -527,16 +527,16 @@
 	box-shadow: var(--eem-shadow);
 	padding: 18px;
 }
-.eem-event-spotlight__reservation .en-event-details-card {
+.eem-event-spotlight__reservation .eem-event-details-card {
 	box-shadow: none;
 	border: 1px solid #e5ebf1;
 }
-.eem-event-spotlight__reservation .en-reservation-form-wrap {
+.eem-event-spotlight__reservation .eem-reservation-form-wrap {
 	margin: 0;
 }
-.eem-event-spotlight__reservation .en-event-details-card,
-.eem-event-spotlight__reservation .en-reservation-section,
-.eem-event-spotlight__reservation .en-reservation-summary {
+.eem-event-spotlight__reservation .eem-event-details-card,
+.eem-event-spotlight__reservation .eem-reservation-section,
+.eem-event-spotlight__reservation .eem-reservation-summary {
 	border-radius: var(--eem-radius);
 }
 @media (max-width: 960px) {

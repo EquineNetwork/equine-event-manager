@@ -528,7 +528,7 @@ class EEM_Reservation_Editor {
 		<table class="form-table" role="presentation">
 			<tbody>
 				<?php if ( $context['tec_events_enabled'] ) : ?>
-					<tr class="en-tec-event-row">
+					<tr class="eem-tec-event-row">
 						<th scope="row"><label for="en_event_id"><?php esc_html_e( 'Event', 'equine-event-manager' ); ?></label></th>
 						<td>
 							<select name="en_reservation[event_id]" id="en_event_id" class="regular-text" data-placeholder="<?php esc_attr_e( 'Search events by title', 'equine-event-manager' ); ?>">
@@ -548,7 +548,7 @@ class EEM_Reservation_Editor {
 					</tr>
 				<?php endif; ?>
 				<?php if ( $context['native_events_enabled'] ) : ?>
-					<tr class="en-native-event-row">
+					<tr class="eem-native-event-row">
 						<th scope="row"><label for="en_native_event_id"><?php esc_html_e( 'Event', 'equine-event-manager' ); ?></label></th>
 						<td>
 							<select name="en_reservation[native_event_id]" id="en_native_event_id" class="regular-text">
@@ -564,7 +564,7 @@ class EEM_Reservation_Editor {
 					</tr>
 				<?php endif; ?>
 				<?php if ( 'feed' === $context['default_event_source'] ) : ?>
-					<tr class="en-feed-event-row">
+					<tr class="eem-feed-event-row">
 						<th scope="row"><label for="en_feed_event_id"><?php esc_html_e( 'Event', 'equine-event-manager' ); ?></label></th>
 						<td>
 							<select id="en_feed_event_id" class="regular-text" data-placeholder="<?php esc_attr_e( 'Search feed events by title, venue, or producer', 'equine-event-manager' ); ?>" data-feed-url="<?php echo esc_attr( $context['default_feed_url'] ); ?>">
@@ -655,11 +655,11 @@ class EEM_Reservation_Editor {
 		$checkout_fallback = ! empty( $data['stalls_close_at'] ) ? $data['stalls_close_at'] : $data['available_end_date'];
 		?>
 		<div>
-			<div class="en-section-toggle-row">
-				<label class="en-section-toggle-control">
-					<input name="en_reservation[checkin_checkout_enabled]" id="en_checkin_checkout_enabled" type="checkbox" value="1" data-en-section-toggle="checkin-checkout" <?php checked( $data['checkin_checkout_enabled'], 1 ); ?> />
-					<span class="en-section-toggle-control__label"><?php esc_html_e( 'Enable check-in/check-out', 'equine-event-manager' ); ?></span>
-					<span class="en-section-toggle-control__track" aria-hidden="true"><span class="en-section-toggle-control__thumb"></span></span>
+			<div class="eem-section-toggle-row">
+				<label class="eem-section-toggle-control">
+					<input name="en_reservation[checkin_checkout_enabled]" id="en_checkin_checkout_enabled" type="checkbox" value="1" data-eem-section-toggle="checkin-checkout" <?php checked( $data['checkin_checkout_enabled'], 1 ); ?> />
+					<span class="eem-section-toggle-control__label"><?php esc_html_e( 'Enable check-in/check-out', 'equine-event-manager' ); ?></span>
+					<span class="eem-section-toggle-control__track" aria-hidden="true"><span class="eem-section-toggle-control__thumb"></span></span>
 				</label>
 			</div>
 			<p class="description"><?php esc_html_e( 'Set the customer check-in and check-out time for all reservations.', 'equine-event-manager' ); ?></p>
@@ -683,11 +683,11 @@ class EEM_Reservation_Editor {
 		$data = $this->reservations_cpt->get_editor_stall_context( $post->ID );
 		?>
 		<div>
-		<div class="en-section-toggle-row">
-			<label class="en-section-toggle-control">
-				<input name="en_reservation[stalls_enabled]" id="en_stalls_enabled" type="checkbox" value="1" data-en-section-toggle="stall" <?php checked( $data['stalls_enabled'], 1 ); ?> />
-				<span class="en-section-toggle-control__label"><?php esc_html_e( 'Enable stall reservations', 'equine-event-manager' ); ?></span>
-				<span class="en-section-toggle-control__track" aria-hidden="true"><span class="en-section-toggle-control__thumb"></span></span>
+		<div class="eem-section-toggle-row">
+			<label class="eem-section-toggle-control">
+				<input name="en_reservation[stalls_enabled]" id="en_stalls_enabled" type="checkbox" value="1" data-eem-section-toggle="stall" <?php checked( $data['stalls_enabled'], 1 ); ?> />
+				<span class="eem-section-toggle-control__label"><?php esc_html_e( 'Enable stall reservations', 'equine-event-manager' ); ?></span>
+				<span class="eem-section-toggle-control__track" aria-hidden="true"><span class="eem-section-toggle-control__thumb"></span></span>
 			</label>
 		</div>
 		<table class="form-table" role="presentation">
@@ -696,66 +696,66 @@ class EEM_Reservation_Editor {
 				<tr>
 					<th scope="row"><?php esc_html_e( 'Stay Types', 'equine-event-manager' ); ?></th>
 					<td>
-						<div class="en-stay-type-toggle-group">
-							<label class="en-inline-toggle-control">
+						<div class="eem-stay-type-toggle-group">
+							<label class="eem-inline-toggle-control">
 								<input name="en_reservation[stall_nightly_enabled]" id="en_stall_nightly_enabled" type="checkbox" value="1" <?php checked( $data['stall_nightly_enabled'], 1 ); ?> />
-								<span class="en-inline-toggle-control__track" aria-hidden="true"></span>
-								<span class="en-inline-toggle-control__label"><?php esc_html_e( 'Nightly', 'equine-event-manager' ); ?></span>
+								<span class="eem-inline-toggle-control__track" aria-hidden="true"></span>
+								<span class="eem-inline-toggle-control__label"><?php esc_html_e( 'Nightly', 'equine-event-manager' ); ?></span>
 							</label>
-							<label class="en-inline-toggle-control">
+							<label class="eem-inline-toggle-control">
 								<input name="en_reservation[stall_weekend_enabled]" id="en_stall_weekend_enabled" type="checkbox" value="1" <?php checked( $data['stall_weekend_enabled'], 1 ); ?> />
-								<span class="en-inline-toggle-control__track" aria-hidden="true"></span>
-								<span class="en-inline-toggle-control__label"><?php esc_html_e( 'Weekend Rate', 'equine-event-manager' ); ?></span>
+								<span class="eem-inline-toggle-control__track" aria-hidden="true"></span>
+								<span class="eem-inline-toggle-control__label"><?php esc_html_e( 'Weekend Rate', 'equine-event-manager' ); ?></span>
 							</label>
 						</div>
 						<p class="description"><?php esc_html_e( 'Enable one or both stall stay types. Weekend Rate uses the stall weekend package dates below.', 'equine-event-manager' ); ?></p>
 					</td>
 				</tr>
-				<?php $this->reservations_cpt->render_editor_date_range_row( 'stall_weekend_package_start_date', 'stall_weekend_package_end_date', __( 'Weekend Package Dates', 'equine-event-manager' ), $data['stall_weekend_package_start_date'], $data['stall_weekend_package_end_date'], __( 'Customers choosing Stall Weekend Rate will automatically use this package date range.', 'equine-event-manager' ), 'en-weekend-package-row en-rate-mode-row en-rate-mode-group--stall' ); ?>
+				<?php $this->reservations_cpt->render_editor_date_range_row( 'stall_weekend_package_start_date', 'stall_weekend_package_end_date', __( 'Weekend Package Dates', 'equine-event-manager' ), $data['stall_weekend_package_start_date'], $data['stall_weekend_package_end_date'], __( 'Customers choosing Stall Weekend Rate will automatically use this package date range.', 'equine-event-manager' ), 'eem-weekend-package-row eem-rate-mode-row eem-rate-mode-group--stall' ); ?>
 				<tr>
 					<th scope="row"><?php esc_html_e( 'Reservation Schedule', 'equine-event-manager' ); ?></th>
 					<td>
-						<label class="en-inline-toggle-control">
+						<label class="eem-inline-toggle-control">
 							<input name="en_reservation[stall_schedule_enabled]" id="en_stall_schedule_enabled" type="checkbox" value="1" <?php checked( $data['stall_schedule_enabled'], 1 ); ?> />
-							<span class="en-inline-toggle-control__track" aria-hidden="true"></span>
-							<span class="en-inline-toggle-control__label"><?php esc_html_e( 'Schedule Stall Reservations', 'equine-event-manager' ); ?></span>
+							<span class="eem-inline-toggle-control__track" aria-hidden="true"></span>
+							<span class="eem-inline-toggle-control__label"><?php esc_html_e( 'Schedule Stall Reservations', 'equine-event-manager' ); ?></span>
 						</label>
 						<p class="description"><?php esc_html_e( 'Turn this on to open and close stall reservations on specific dates and times.', 'equine-event-manager' ); ?></p>
 					</td>
 				</tr>
-				<?php $this->reservations_cpt->render_editor_datetime_row( 'stalls_open_at', __( 'Stalls Open Date/Time', 'equine-event-manager' ), $data['stalls_open_at'], '', 'en-schedule-row en-schedule-group--stall' ); ?>
-				<?php $this->reservations_cpt->render_editor_datetime_row( 'stalls_close_at', __( 'Stalls Close Date/Time', 'equine-event-manager' ), $data['stalls_close_at'], '', 'en-schedule-row en-schedule-group--stall' ); ?>
+				<?php $this->reservations_cpt->render_editor_datetime_row( 'stalls_open_at', __( 'Stalls Open Date/Time', 'equine-event-manager' ), $data['stalls_open_at'], '', 'eem-schedule-row eem-schedule-group--stall' ); ?>
+				<?php $this->reservations_cpt->render_editor_datetime_row( 'stalls_close_at', __( 'Stalls Close Date/Time', 'equine-event-manager' ), $data['stalls_close_at'], '', 'eem-schedule-row eem-schedule-group--stall' ); ?>
 				<?php $this->reservations_cpt->render_editor_number_row( 'stall_inventory', __( 'Available Stall Inventory', 'equine-event-manager' ), $data['stall_inventory'], __( 'Leave blank for unlimited inventory. Once inventory reaches zero, customers will see a sold out message.', 'equine-event-manager' ) ); ?>
 				<?php $this->reservations_cpt->render_editor_currency_row( 'stall_nightly_rate', __( 'Stall Nightly Rate', 'equine-event-manager' ), $data['stall_nightly_rate'], array( 'mode' => 'nightly', 'group' => 'stall' ) ); ?>
 				<?php $this->reservations_cpt->render_editor_currency_row( 'stall_weekend_rate', __( 'Stall Weekend Rate', 'equine-event-manager' ), $data['stall_weekend_rate'], array( 'mode' => 'weekend', 'group' => 'stall' ) ); ?>
 				<tr>
 					<th scope="row"><?php esc_html_e( 'Stall Early Bird', 'equine-event-manager' ); ?></th>
 					<td>
-						<label class="en-inline-toggle-control">
+						<label class="eem-inline-toggle-control">
 							<input name="en_reservation[stall_early_bird_enabled]" id="en_stall_early_bird_enabled" type="checkbox" value="1" <?php checked( $data['stall_early_bird_enabled'], 1 ); ?> />
-							<span class="en-inline-toggle-control__track" aria-hidden="true"></span>
-							<span class="en-inline-toggle-control__label"><?php esc_html_e( 'Enable stall early bird pricing', 'equine-event-manager' ); ?></span>
+							<span class="eem-inline-toggle-control__track" aria-hidden="true"></span>
+							<span class="eem-inline-toggle-control__label"><?php esc_html_e( 'Enable stall early bird pricing', 'equine-event-manager' ); ?></span>
 						</label>
 					</td>
 				</tr>
-				<?php $this->reservations_cpt->render_editor_datetime_row( 'stall_early_bird_cutoff', __( 'Stall Early Bird Cutoff', 'equine-event-manager' ), $data['stall_early_bird_cutoff'], '', 'en-early-bird-row en-early-bird-group--stall' ); ?>
-				<?php $this->reservations_cpt->render_editor_currency_row( 'stall_early_bird_nightly_rate', __( 'Stall Early Bird Nightly Rate', 'equine-event-manager' ), $data['stall_early_bird_nightly_rate'], array( 'mode' => 'nightly', 'group' => 'stall', 'row_classes' => 'en-early-bird-row en-early-bird-group--stall' ) ); ?>
-				<?php $this->reservations_cpt->render_editor_currency_row( 'stall_early_bird_weekend_rate', __( 'Stall Early Bird Weekend Rate', 'equine-event-manager' ), $data['stall_early_bird_weekend_rate'], array( 'mode' => 'weekend', 'group' => 'stall', 'row_classes' => 'en-early-bird-row en-early-bird-group--stall' ) ); ?>
+				<?php $this->reservations_cpt->render_editor_datetime_row( 'stall_early_bird_cutoff', __( 'Stall Early Bird Cutoff', 'equine-event-manager' ), $data['stall_early_bird_cutoff'], '', 'eem-early-bird-row eem-early-bird-group--stall' ); ?>
+				<?php $this->reservations_cpt->render_editor_currency_row( 'stall_early_bird_nightly_rate', __( 'Stall Early Bird Nightly Rate', 'equine-event-manager' ), $data['stall_early_bird_nightly_rate'], array( 'mode' => 'nightly', 'group' => 'stall', 'row_classes' => 'eem-early-bird-row eem-early-bird-group--stall' ) ); ?>
+				<?php $this->reservations_cpt->render_editor_currency_row( 'stall_early_bird_weekend_rate', __( 'Stall Early Bird Weekend Rate', 'equine-event-manager' ), $data['stall_early_bird_weekend_rate'], array( 'mode' => 'weekend', 'group' => 'stall', 'row_classes' => 'eem-early-bird-row eem-early-bird-group--stall' ) ); ?>
 				<tr>
 					<th scope="row"><?php esc_html_e( 'Required Shavings', 'equine-event-manager' ); ?></th>
 					<td>
-						<label class="en-inline-toggle-control">
+						<label class="eem-inline-toggle-control">
 							<input name="en_reservation[required_shavings_enabled]" id="en_required_shavings_enabled" type="checkbox" value="1" <?php checked( $data['required_shavings_enabled'], 1 ); ?> />
-							<span class="en-inline-toggle-control__track" aria-hidden="true"></span>
-							<span class="en-inline-toggle-control__label"><?php esc_html_e( 'Require shavings with each stall', 'equine-event-manager' ); ?></span>
+							<span class="eem-inline-toggle-control__track" aria-hidden="true"></span>
+							<span class="eem-inline-toggle-control__label"><?php esc_html_e( 'Require shavings with each stall', 'equine-event-manager' ); ?></span>
 						</label>
 					</td>
 				</tr>
-				<tr class="en-required-shavings-row">
+				<tr class="eem-required-shavings-row">
 					<th scope="row"><label for="en_required_shavings_per_stall"><?php esc_html_e( 'Required Shavings Per Stall', 'equine-event-manager' ); ?></label></th>
 					<td><input name="en_reservation[required_shavings_per_stall]" id="en_required_shavings_per_stall" type="number" min="0" step="1" value="<?php echo esc_attr( $data['required_shavings_per_stall'] ); ?>" /></td>
 				</tr>
-				<?php $this->reservations_cpt->render_editor_currency_row( 'required_shavings_price', __( 'Required Shavings Price Per Bag', 'equine-event-manager' ), $data['required_shavings_price'], array( 'row_classes' => 'en-required-shavings-row' ) ); ?>
+				<?php $this->reservations_cpt->render_editor_currency_row( 'required_shavings_price', __( 'Required Shavings Price Per Bag', 'equine-event-manager' ), $data['required_shavings_price'], array( 'row_classes' => 'eem-required-shavings-row' ) ); ?>
 				<?php $this->reservations_cpt->render_editor_stall_chart_rows( $data ); ?>
 			</tbody>
 		</table>
@@ -773,11 +773,11 @@ class EEM_Reservation_Editor {
 		$data = $this->reservations_cpt->get_editor_meta_values( $post->ID );
 		?>
 		<div>
-		<div class="en-section-toggle-row">
-			<label class="en-section-toggle-control">
-				<input name="en_reservation[venue_map_enabled]" id="en_venue_map_enabled" type="checkbox" value="1" data-en-section-toggle="venue-map" <?php checked( $data['venue_map_enabled'], 1 ); ?> />
-				<span class="en-section-toggle-control__label"><?php esc_html_e( 'Enable venue map', 'equine-event-manager' ); ?></span>
-				<span class="en-section-toggle-control__track" aria-hidden="true"><span class="en-section-toggle-control__thumb"></span></span>
+		<div class="eem-section-toggle-row">
+			<label class="eem-section-toggle-control">
+				<input name="en_reservation[venue_map_enabled]" id="en_venue_map_enabled" type="checkbox" value="1" data-eem-section-toggle="venue-map" <?php checked( $data['venue_map_enabled'], 1 ); ?> />
+				<span class="eem-section-toggle-control__label"><?php esc_html_e( 'Enable venue map', 'equine-event-manager' ); ?></span>
+				<span class="eem-section-toggle-control__track" aria-hidden="true"><span class="eem-section-toggle-control__thumb"></span></span>
 			</label>
 		</div>
 		<table class="form-table" role="presentation">
@@ -799,11 +799,11 @@ class EEM_Reservation_Editor {
 		$data = $this->reservations_cpt->get_editor_meta_values( $post->ID );
 		?>
 		<div>
-		<div class="en-section-toggle-row">
-			<label class="en-section-toggle-control">
-				<input name="en_reservation[venue_agreement_enabled]" id="en_venue_agreement_enabled" type="checkbox" value="1" data-en-section-toggle="agreement" <?php checked( $data['venue_agreement_enabled'], 1 ); ?> />
-				<span class="en-section-toggle-control__label"><?php esc_html_e( 'Enable agreement', 'equine-event-manager' ); ?></span>
-				<span class="en-section-toggle-control__track" aria-hidden="true"><span class="en-section-toggle-control__thumb"></span></span>
+		<div class="eem-section-toggle-row">
+			<label class="eem-section-toggle-control">
+				<input name="en_reservation[venue_agreement_enabled]" id="en_venue_agreement_enabled" type="checkbox" value="1" data-eem-section-toggle="agreement" <?php checked( $data['venue_agreement_enabled'], 1 ); ?> />
+				<span class="eem-section-toggle-control__label"><?php esc_html_e( 'Enable agreement', 'equine-event-manager' ); ?></span>
+				<span class="eem-section-toggle-control__track" aria-hidden="true"><span class="eem-section-toggle-control__thumb"></span></span>
 			</label>
 		</div>
 		<table class="form-table" role="presentation">
@@ -828,20 +828,20 @@ class EEM_Reservation_Editor {
 		$addons  = $context['addons'];
 		?>
 		<div>
-		<div class="en-section-toggle-row">
-			<label class="en-section-toggle-control">
-				<input name="en_reservation[general_addons_enabled]" id="en_general_addons_enabled" type="checkbox" value="1" data-en-section-toggle="general-addons" <?php checked( $data['general_addons_enabled'], 1 ); ?> />
-				<span class="en-section-toggle-control__label"><?php esc_html_e( 'Enable general add-ons', 'equine-event-manager' ); ?></span>
-				<span class="en-section-toggle-control__track" aria-hidden="true"><span class="en-section-toggle-control__thumb"></span></span>
+		<div class="eem-section-toggle-row">
+			<label class="eem-section-toggle-control">
+				<input name="en_reservation[general_addons_enabled]" id="en_general_addons_enabled" type="checkbox" value="1" data-eem-section-toggle="general-addons" <?php checked( $data['general_addons_enabled'], 1 ); ?> />
+				<span class="eem-section-toggle-control__label"><?php esc_html_e( 'Enable general add-ons', 'equine-event-manager' ); ?></span>
+				<span class="eem-section-toggle-control__track" aria-hidden="true"><span class="eem-section-toggle-control__thumb"></span></span>
 			</label>
 		</div>
 		<table class="form-table" role="presentation">
 			<tbody>
 				<tr>
 					<td colspan="2">
-						<div class="en-admin-structured-table">
+						<div class="eem-admin-structured-table">
 						<p class="description"><?php esc_html_e( 'Use general add-ons for items like hay, extra bedding, or other optional products that can be sold alongside stalls or RV reservations.', 'equine-event-manager' ); ?></p>
-						<table class="widefat striped en-general-addon-table">
+						<table class="widefat striped eem-general-addon-table">
 							<thead>
 								<tr>
 									<th><?php esc_html_e( 'Add-On Name', 'equine-event-manager' ); ?></th>
@@ -853,24 +853,24 @@ class EEM_Reservation_Editor {
 							</thead>
 							<tbody id="en_general_addons_rows">
 								<?php foreach ( $addons as $addon_index => $addon ) : ?>
-									<tr class="en-general-addon-row">
-										<td><div class="en-admin-table-field"><input type="text" class="regular-text" name="en_reservation[general_addons][<?php echo esc_attr( $addon_index ); ?>][name]" value="<?php echo esc_attr( $addon['name'] ); ?>" /></div></td>
-										<td><div class="en-admin-table-field"><input type="text" class="regular-text" name="en_reservation[general_addons][<?php echo esc_attr( $addon_index ); ?>][description]" value="<?php echo esc_attr( $addon['description'] ); ?>" /></div></td>
-										<td><div class="en-admin-table-field"><input type="hidden" name="en_reservation[general_addons][<?php echo esc_attr( $addon_index ); ?>][applies_to]" value="any" /><div class="en-currency-field en-rv-addon-price-field"><span class="en-currency-symbol">$</span><input name="en_reservation[general_addons][<?php echo esc_attr( $addon_index ); ?>][price]" type="text" class="en-currency-input" inputmode="decimal" value="<?php echo esc_attr( number_format( (float) $addon['price'], 2, '.', '' ) ); ?>" /></div></div></td>
-										<td><div class="en-admin-table-field"><input type="text" class="regular-text" name="en_reservation[general_addons][<?php echo esc_attr( $addon_index ); ?>][per_label]" value="<?php echo esc_attr( isset( $addon['per_label'] ) ? $addon['per_label'] : '' ); ?>" placeholder="<?php esc_attr_e( 'bale', 'equine-event-manager' ); ?>" /></div></td>
-										<td><div class="en-admin-table-field en-admin-table-field--action"><button type="button" class="en-icon-delete-button en-remove-general-addon" aria-label="<?php esc_attr_e( 'Remove add-on', 'equine-event-manager' ); ?>" title="<?php esc_attr_e( 'Remove add-on', 'equine-event-manager' ); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></div></td>
+									<tr class="eem-general-addon-row">
+										<td><div class="eem-admin-table-field"><input type="text" class="regular-text" name="en_reservation[general_addons][<?php echo esc_attr( $addon_index ); ?>][name]" value="<?php echo esc_attr( $addon['name'] ); ?>" /></div></td>
+										<td><div class="eem-admin-table-field"><input type="text" class="regular-text" name="en_reservation[general_addons][<?php echo esc_attr( $addon_index ); ?>][description]" value="<?php echo esc_attr( $addon['description'] ); ?>" /></div></td>
+										<td><div class="eem-admin-table-field"><input type="hidden" name="en_reservation[general_addons][<?php echo esc_attr( $addon_index ); ?>][applies_to]" value="any" /><div class="eem-currency-field eem-rv-addon-price-field"><span class="eem-currency-symbol">$</span><input name="en_reservation[general_addons][<?php echo esc_attr( $addon_index ); ?>][price]" type="text" class="eem-currency-input" inputmode="decimal" value="<?php echo esc_attr( number_format( (float) $addon['price'], 2, '.', '' ) ); ?>" /></div></div></td>
+										<td><div class="eem-admin-table-field"><input type="text" class="regular-text" name="en_reservation[general_addons][<?php echo esc_attr( $addon_index ); ?>][per_label]" value="<?php echo esc_attr( isset( $addon['per_label'] ) ? $addon['per_label'] : '' ); ?>" placeholder="<?php esc_attr_e( 'bale', 'equine-event-manager' ); ?>" /></div></td>
+										<td><div class="eem-admin-table-field eem-admin-table-field--action"><button type="button" class="eem-icon-delete-button eem-remove-general-addon" aria-label="<?php esc_attr_e( 'Remove add-on', 'equine-event-manager' ); ?>" title="<?php esc_attr_e( 'Remove add-on', 'equine-event-manager' ); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></div></td>
 									</tr>
 								<?php endforeach; ?>
 							</tbody>
 						</table>
 						<p><button type="button" class="button button-secondary" id="en_add_general_addon"><?php esc_html_e( 'Add Add-On', 'equine-event-manager' ); ?></button></p>
-						<template id="en-general-addon-row-template">
-							<tr class="en-general-addon-row">
-								<td><div class="en-admin-table-field"><input type="text" class="regular-text" name="en_reservation[general_addons][__index__][name]" value="" /></div></td>
-								<td><div class="en-admin-table-field"><input type="text" class="regular-text" name="en_reservation[general_addons][__index__][description]" value="" /></div></td>
-								<td><div class="en-admin-table-field"><input type="hidden" name="en_reservation[general_addons][__index__][applies_to]" value="any" /><div class="en-currency-field en-rv-addon-price-field"><span class="en-currency-symbol">$</span><input name="en_reservation[general_addons][__index__][price]" type="text" class="en-currency-input" inputmode="decimal" value="0.00" /></div></div></td>
-								<td><div class="en-admin-table-field"><input type="text" class="regular-text" name="en_reservation[general_addons][__index__][per_label]" value="" placeholder="<?php esc_attr_e( 'bale', 'equine-event-manager' ); ?>" /></div></td>
-								<td><div class="en-admin-table-field en-admin-table-field--action"><button type="button" class="en-icon-delete-button en-remove-general-addon" aria-label="<?php esc_attr_e( 'Remove add-on', 'equine-event-manager' ); ?>" title="<?php esc_attr_e( 'Remove add-on', 'equine-event-manager' ); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></div></td>
+						<template id="eem-general-addon-row-template">
+							<tr class="eem-general-addon-row">
+								<td><div class="eem-admin-table-field"><input type="text" class="regular-text" name="en_reservation[general_addons][__index__][name]" value="" /></div></td>
+								<td><div class="eem-admin-table-field"><input type="text" class="regular-text" name="en_reservation[general_addons][__index__][description]" value="" /></div></td>
+								<td><div class="eem-admin-table-field"><input type="hidden" name="en_reservation[general_addons][__index__][applies_to]" value="any" /><div class="eem-currency-field eem-rv-addon-price-field"><span class="eem-currency-symbol">$</span><input name="en_reservation[general_addons][__index__][price]" type="text" class="eem-currency-input" inputmode="decimal" value="0.00" /></div></div></td>
+								<td><div class="eem-admin-table-field"><input type="text" class="regular-text" name="en_reservation[general_addons][__index__][per_label]" value="" placeholder="<?php esc_attr_e( 'bale', 'equine-event-manager' ); ?>" /></div></td>
+								<td><div class="eem-admin-table-field eem-admin-table-field--action"><button type="button" class="eem-icon-delete-button eem-remove-general-addon" aria-label="<?php esc_attr_e( 'Remove add-on', 'equine-event-manager' ); ?>" title="<?php esc_attr_e( 'Remove add-on', 'equine-event-manager' ); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button></div></td>
 							</tr>
 						</template>
 						</div>
@@ -892,11 +892,11 @@ class EEM_Reservation_Editor {
 		$data = $this->reservations_cpt->get_editor_meta_values( $post->ID );
 		?>
 		<div>
-		<div class="en-section-toggle-row">
-			<label class="en-section-toggle-control">
-				<input name="en_reservation[group_reservations_enabled]" id="en_group_reservations_enabled" type="checkbox" value="1" data-en-section-toggle="group-reservations" <?php checked( $data['group_reservations_enabled'], 1 ); ?> />
-				<span class="en-section-toggle-control__label"><?php esc_html_e( 'Enable group reservations', 'equine-event-manager' ); ?></span>
-				<span class="en-section-toggle-control__track" aria-hidden="true"><span class="en-section-toggle-control__thumb"></span></span>
+		<div class="eem-section-toggle-row">
+			<label class="eem-section-toggle-control">
+				<input name="en_reservation[group_reservations_enabled]" id="en_group_reservations_enabled" type="checkbox" value="1" data-eem-section-toggle="group-reservations" <?php checked( $data['group_reservations_enabled'], 1 ); ?> />
+				<span class="eem-section-toggle-control__label"><?php esc_html_e( 'Enable group reservations', 'equine-event-manager' ); ?></span>
+				<span class="eem-section-toggle-control__track" aria-hidden="true"><span class="eem-section-toggle-control__thumb"></span></span>
 			</label>
 		</div>
 		<table class="form-table" role="presentation">
@@ -910,25 +910,25 @@ class EEM_Reservation_Editor {
 				<tr>
 					<th scope="row"><?php esc_html_e( 'Rider Grounds Fee', 'equine-event-manager' ); ?></th>
 					<td>
-						<label class="en-inline-toggle-control">
+						<label class="eem-inline-toggle-control">
 							<input name="en_reservation[group_rider_grounds_fee_enabled]" id="en_group_rider_grounds_fee_enabled" type="checkbox" value="1" <?php checked( $data['group_rider_grounds_fee_enabled'], 1 ); ?> />
-							<span class="en-inline-toggle-control__track" aria-hidden="true"></span>
-							<span class="en-inline-toggle-control__label"><?php esc_html_e( 'Charge a grounds fee for each rider in the group reservation.', 'equine-event-manager' ); ?></span>
+							<span class="eem-inline-toggle-control__track" aria-hidden="true"></span>
+							<span class="eem-inline-toggle-control__label"><?php esc_html_e( 'Charge a grounds fee for each rider in the group reservation.', 'equine-event-manager' ); ?></span>
 						</label>
 					</td>
 				</tr>
-				<?php $this->reservations_cpt->render_editor_currency_row( 'group_rider_grounds_fee_amount', __( 'Rider Grounds Fee Amount', 'equine-event-manager' ), $data['group_rider_grounds_fee_amount'], array( 'disabled' => empty( $data['group_rider_grounds_fee_enabled'] ), 'row_classes' => 'en-group-fee-row en-group-fee-row--grounds' ) ); ?>
+				<?php $this->reservations_cpt->render_editor_currency_row( 'group_rider_grounds_fee_amount', __( 'Rider Grounds Fee Amount', 'equine-event-manager' ), $data['group_rider_grounds_fee_amount'], array( 'disabled' => empty( $data['group_rider_grounds_fee_enabled'] ), 'row_classes' => 'eem-group-fee-row eem-group-fee-row--grounds' ) ); ?>
 				<tr>
 					<th scope="row"><?php esc_html_e( 'Rider Deposit', 'equine-event-manager' ); ?></th>
 					<td>
-						<label class="en-inline-toggle-control">
+						<label class="eem-inline-toggle-control">
 							<input name="en_reservation[group_rider_deposit_enabled]" id="en_group_rider_deposit_enabled" type="checkbox" value="1" <?php checked( $data['group_rider_deposit_enabled'], 1 ); ?> />
-							<span class="en-inline-toggle-control__track" aria-hidden="true"></span>
-							<span class="en-inline-toggle-control__label"><?php esc_html_e( 'Require a deposit for each rider in the group reservation.', 'equine-event-manager' ); ?></span>
+							<span class="eem-inline-toggle-control__track" aria-hidden="true"></span>
+							<span class="eem-inline-toggle-control__label"><?php esc_html_e( 'Require a deposit for each rider in the group reservation.', 'equine-event-manager' ); ?></span>
 						</label>
 					</td>
 				</tr>
-				<?php $this->reservations_cpt->render_editor_currency_row( 'group_rider_deposit_amount', __( 'Rider Deposit Amount', 'equine-event-manager' ), $data['group_rider_deposit_amount'], array( 'disabled' => empty( $data['group_rider_deposit_enabled'] ), 'row_classes' => 'en-group-fee-row en-group-fee-row--deposit' ) ); ?>
+				<?php $this->reservations_cpt->render_editor_currency_row( 'group_rider_deposit_amount', __( 'Rider Deposit Amount', 'equine-event-manager' ), $data['group_rider_deposit_amount'], array( 'disabled' => empty( $data['group_rider_deposit_enabled'] ), 'row_classes' => 'eem-group-fee-row eem-group-fee-row--deposit' ) ); ?>
 			</tbody>
 		</table>
 		</div>
@@ -945,11 +945,11 @@ class EEM_Reservation_Editor {
 		$data = $this->reservations_cpt->get_editor_meta_values( $post->ID );
 		?>
 		<div>
-		<div class="en-section-toggle-row">
-			<label class="en-section-toggle-control">
-				<input name="en_reservation[convenience_fee_enabled]" id="en_convenience_fee_enabled" type="checkbox" value="1" data-en-section-toggle="fees" <?php checked( $data['convenience_fee_enabled'], 1 ); ?> />
-				<span class="en-section-toggle-control__label"><?php esc_html_e( 'Enable convenience fee', 'equine-event-manager' ); ?></span>
-				<span class="en-section-toggle-control__track" aria-hidden="true"><span class="en-section-toggle-control__thumb"></span></span>
+		<div class="eem-section-toggle-row">
+			<label class="eem-section-toggle-control">
+				<input name="en_reservation[convenience_fee_enabled]" id="en_convenience_fee_enabled" type="checkbox" value="1" data-eem-section-toggle="fees" <?php checked( $data['convenience_fee_enabled'], 1 ); ?> />
+				<span class="eem-section-toggle-control__label"><?php esc_html_e( 'Enable convenience fee', 'equine-event-manager' ); ?></span>
+				<span class="eem-section-toggle-control__track" aria-hidden="true"><span class="eem-section-toggle-control__thumb"></span></span>
 			</label>
 		</div>
 		<table class="form-table" role="presentation">
