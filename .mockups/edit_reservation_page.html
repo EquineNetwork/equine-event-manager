@@ -162,6 +162,37 @@ body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;fon
 .row-card-preview-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8c8f94;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .row-card-preview-label .row-card-count{font-weight:500;text-transform:none;letter-spacing:0;color:#6B7A99;font-size:11.5px}
 
+/* ── Lot Zones (RV) ── */
+.zone-list{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.zone-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid #D9E2F2;border-radius:6px;background:#fff;flex-wrap:wrap}
+.zone-color-pick{width:24px;height:24px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1.5px #D9E2F2;cursor:pointer;flex-shrink:0;position:relative}
+.zone-color-pick.active{box-shadow:0 0 0 2px #031B4E}
+.zone-name-input{flex:1 1 180px;min-width:140px;padding:7px 10px;border:1.5px solid #D9E2F2;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#031B4E;outline:none}
+.zone-name-input:focus{border-color:#1668F2}
+.zone-price-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.zone-price-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8c8f94;white-space:nowrap}
+.zone-price-wrap{display:flex;align-items:center;border:1.5px solid #D9E2F2;border-radius:4px;background:#fff;overflow:hidden}
+.zone-price-sym{padding:0 8px;font-size:12.5px;font-weight:600;color:#6B7A99;background:#FAFBFE;border-right:1.5px solid #D9E2F2;line-height:32px}
+.zone-price-in{width:70px;padding:6px 8px;border:none;outline:none;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#031B4E}
+.zone-count{font-size:11.5px;color:#6B7A99;white-space:nowrap}
+.zone-count strong{color:#031B4E;font-weight:700}
+.zone-add-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1.5px dashed #D9E2F2;border-radius:6px;font-size:12.5px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;color:#031B4E;background:#fff;cursor:pointer;align-self:flex-start;margin-bottom:14px}
+.zone-add-btn:hover{border-color:#1668F2;color:#1668F2;border-style:solid}
+.zone-add-btn svg{width:13px;height:13px;color:#1668F2}
+
+/* Zone painter — active paint mode indicator */
+.zone-painter{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#FAFBFE;border:1.5px solid #D9E2F2;border-radius:6px;margin-bottom:14px;flex-wrap:wrap}
+.zone-painter-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#031B4E}
+.zone-painter-select{flex:1;min-width:160px;padding:7px 10px;border:1.5px solid #D9E2F2;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#031B4E;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236B7A99' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 9px center;appearance:none;padding-right:28px;outline:none}
+.zone-painter-select:focus{border-color:#1668F2}
+.zone-painter-hint{font-size:11.5px;color:#6B7A99;flex:1;min-width:180px}
+
+/* Lot box with zone dot overlay (extends .stall-box, applied via .lot-box modifier) */
+.stall-box.lot-box{position:relative;cursor:default}
+.stall-box.lot-box.paintable{cursor:pointer}
+.stall-box.lot-box.paintable:hover{border-color:#1668F2;background:#EEF4FF}
+.lot-zone-dot{position:absolute;top:-3px;right:-3px;width:10px;height:10px;border-radius:50%;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(3,27,78,.15)}
+
 /* Stall boxes (admin preview + customer picker share these) */
 .stall-row{display:flex;flex-wrap:wrap;gap:4px;padding:6px 0}
 .stall-row.back-to-back{flex-direction:column;gap:2px}
@@ -748,6 +779,442 @@ function openChartPreview(){
   modal.classList.add('open');
 }
 function closeChartPreview(){ document.getElementById('chart-preview-modal').classList.remove('open'); }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   RV Row Builder + Lot Zones
+   Mirrors the stall row builder but with:
+   - Each lot belongs to a zone (pricing tier)
+   - Lot preview boxes show a colored dot indicating their zone
+   - "Paint mode" lets admin click lots to reassign zones
+   - "Lot zones" are stored on the .stall-row container as a data-lot-zones JSON map
+     (mapping lot label → zone-id, e.g. {"1":"z1","2":"z2"})
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* Read all zones from the DOM (name, color, prices, count) */
+function getRvZones(){
+  return Array.from(document.querySelectorAll('#rv-zone-list .zone-row')).map(el => ({
+    id:    el.dataset.zoneId,
+    color: el.dataset.zoneColor,
+    name:  (el.querySelector('[data-role="zone-name"]')||{}).value || 'Untitled Zone',
+    nightly: parseFloat((el.querySelector('[data-role="zone-nightly"]')||{}).value || '0') || 0,
+    weekend: parseFloat((el.querySelector('[data-role="zone-weekend"]')||{}).value || '0') || 0,
+  }));
+}
+
+/* Helper: find a zone by id; returns the zone object or null */
+function getZoneById(zoneId){
+  return getRvZones().find(z => z.id === zoneId) || null;
+}
+
+/* Get the currently active paint zone (from the painter dropdown), or null if Off */
+function getActivePaintZone(){
+  const sel = document.getElementById('rv-paint-zone');
+  if(!sel || !sel.value) return null;
+  return getZoneById(sel.value);
+}
+
+/* Read lot-zone assignments from a row's preview container (returns plain object) */
+function getRowLotZones(rowEl){
+  const previewWrap = rowEl.querySelector('.row-card-preview-label').nextElementSibling;
+  if(!previewWrap) return {};
+  try {
+    return JSON.parse(previewWrap.getAttribute('data-lot-zones') || '{}');
+  } catch(e){
+    return {};
+  }
+}
+
+/* Save lot-zone assignments back to the row's preview container */
+function setRowLotZones(rowEl, zonesMap){
+  const previewWrap = rowEl.querySelector('.row-card-preview-label').nextElementSibling;
+  if(previewWrap) previewWrap.setAttribute('data-lot-zones', JSON.stringify(zonesMap));
+}
+
+/* Render a single lot box. Includes a colored dot for the zone. */
+function renderLotBox(label, zoneId, blocked){
+  const zone = zoneId ? getZoneById(zoneId) : null;
+  const cls = 'stall-box lot-box paintable' + (blocked ? ' blocked' : '');
+  const dot = zone ? `<span class="lot-zone-dot" style="background:${zone.color}" title="${zone.name}"></span>` : '';
+  return `<div class="${cls}" data-lot-label="${label}" data-zone-id="${zoneId||''}" onclick="paintLot(this)">${label}${dot}</div>`;
+}
+
+/* When a lot is clicked while a zone is active, reassign it. Otherwise no-op. */
+function paintLot(lotEl){
+  const zone = getActivePaintZone();
+  if(!zone) return; // paint mode off — clicking does nothing
+  const rowEl = lotEl.closest('.row-card');
+  const label = lotEl.dataset.lotLabel;
+  const zonesMap = getRowLotZones(rowEl);
+  zonesMap[label] = zone.id;
+  setRowLotZones(rowEl, zonesMap);
+  /* Re-render this row to update the dot color */
+  updateRvRowPreview(rowEl.querySelector('input,select'));
+  /* Update zone counts */
+  refreshZoneCounts();
+}
+
+/* Re-render an RV row's preview based on inputs + zone assignments */
+function updateRvRowPreview(triggerEl){
+  const card = triggerEl.closest('.row-card');
+  if(!card) return;
+  const layout = card.querySelector('[data-role="layout"]').value;
+  const oneSidedBlock = card.querySelector('.row-card-one-sided');
+  const sidesBlock = card.querySelector('.row-card-sides');
+  if(oneSidedBlock) oneSidedBlock.style.display = (layout === 'one-sided') ? '' : 'none';
+  if(sidesBlock)    sidesBlock.style.display    = (layout === 'back-to-back') ? '' : 'none';
+
+  const zonesMap = getRowLotZones(card);
+  const blocked = getBlockedRvLotsSet();
+  const previewWrap = card.querySelector('.row-card-preview-label').nextElementSibling;
+  const countLabel = card.querySelector('.row-card-count');
+
+  if(layout === 'back-to-back'){
+    const topFirst = (card.querySelector('[data-role="top-first"]') || {}).value || '';
+    const topLast  = (card.querySelector('[data-role="top-last"]')  || {}).value || '';
+    const botFirst = (card.querySelector('[data-role="bot-first"]') || {}).value || '';
+    const botLast  = (card.querySelector('[data-role="bot-last"]')  || {}).value || '';
+    const topLabels = stallLabelsBetween(topFirst, topLast);
+    const botLabels = stallLabelsBetween(botFirst, botLast);
+    /* Assign default zone (first zone) to any unzoned lot */
+    const allZones = getRvZones();
+    const defaultZoneId = allZones.length ? allZones[0].id : null;
+    [...topLabels, ...botLabels].forEach(l => {
+      if(!zonesMap[l] && defaultZoneId) zonesMap[l] = defaultZoneId;
+    });
+    setRowLotZones(card, zonesMap);
+    const total = topLabels.length + botLabels.length;
+    countLabel.textContent = `${total} lots · Back-to-back (${topLabels.length} top, ${botLabels.length} bottom)`;
+    const newPreview = document.createElement('div');
+    newPreview.className = 'stall-row back-to-back';
+    newPreview.setAttribute('data-lot-zones', JSON.stringify(zonesMap));
+    newPreview.innerHTML =
+      '<div class="stall-row-side">' + topLabels.map(l => renderLotBox(l, zonesMap[l], blocked.has(l))).join('') + '</div>' +
+      '<div class="stall-row-aisle" title="Aisle"></div>' +
+      '<div class="stall-row-side">' + botLabels.map(l => renderLotBox(l, zonesMap[l], blocked.has(l))).join('') + '</div>';
+    previewWrap.replaceWith(newPreview);
+  } else {
+    const start = (card.querySelector('[data-role="first"]') || {}).value || '';
+    const end   = (card.querySelector('[data-role="last"]')  || {}).value || '';
+    const labels = stallLabelsBetween(start, end);
+    const allZones = getRvZones();
+    const defaultZoneId = allZones.length ? allZones[0].id : null;
+    labels.forEach(l => {
+      if(!zonesMap[l] && defaultZoneId) zonesMap[l] = defaultZoneId;
+    });
+    setRowLotZones(card, zonesMap);
+    countLabel.textContent = `${labels.length} lots · One-sided`;
+    const newPreview = document.createElement('div');
+    newPreview.className = 'stall-row';
+    newPreview.setAttribute('data-lot-zones', JSON.stringify(zonesMap));
+    newPreview.innerHTML = labels.map(l => renderLotBox(l, zonesMap[l], blocked.has(l))).join('');
+    previewWrap.replaceWith(newPreview);
+  }
+
+  rebuildBlockedRvLotsDropdown();
+}
+
+/* Re-render every RV row preview */
+function refreshAllRvPreviews(){
+  document.querySelectorAll('#rv-row-builder-list .row-card').forEach(card => {
+    const anyInput = card.querySelector('input');
+    if(anyInput) updateRvRowPreview(anyInput);
+  });
+  refreshZoneCounts();
+  refreshPaintModeSelect();
+}
+
+/* Update each zone's "X lots" count by summing assignments across all rows */
+function refreshZoneCounts(){
+  const counts = {};
+  document.querySelectorAll('#rv-row-builder-list .row-card').forEach(card => {
+    const zonesMap = getRowLotZones(card);
+    Object.values(zonesMap).forEach(zid => {
+      counts[zid] = (counts[zid] || 0) + 1;
+    });
+  });
+  document.querySelectorAll('#rv-zone-list .zone-row').forEach(zoneEl => {
+    const zid = zoneEl.dataset.zoneId;
+    const countEl = zoneEl.querySelector('.zone-count strong');
+    if(countEl) countEl.textContent = counts[zid] || 0;
+  });
+}
+
+/* Rebuild the Paint Mode dropdown options from current zones */
+function refreshPaintModeSelect(){
+  const sel = document.getElementById('rv-paint-zone');
+  if(!sel) return;
+  const currentValue = sel.value;
+  const zones = getRvZones();
+  sel.innerHTML = '<option value="">Off — click to view lot details</option>' +
+    zones.map(z => `<option value="${z.id}" style="color:${z.color}">● ${z.name}</option>`).join('');
+  if(zones.find(z => z.id === currentValue)) sel.value = currentValue;
+}
+
+/* Cycle zone color through a fixed palette */
+const ZONE_PALETTE = ['#EF4444','#F59E0B','#26D0B5','#1668F2','#8B5CF6','#EC4899','#031B4E','#84CC16'];
+function cycleZoneColor(swatchEl){
+  const zoneRow = swatchEl.closest('.zone-row');
+  const current = zoneRow.dataset.zoneColor;
+  const idx = ZONE_PALETTE.indexOf(current);
+  const next = ZONE_PALETTE[(idx + 1) % ZONE_PALETTE.length];
+  zoneRow.dataset.zoneColor = next;
+  swatchEl.style.background = next;
+  refreshAllRvPreviews();
+}
+
+/* Add a new zone */
+function addZone(){
+  const list = document.getElementById('rv-zone-list');
+  const existing = list.querySelectorAll('.zone-row').length;
+  const newId = 'z' + Date.now();
+  const color = ZONE_PALETTE[existing % ZONE_PALETTE.length];
+  const html = `
+    <div class="zone-row" data-zone-id="${newId}" data-zone-color="${color}">
+      <div class="zone-color-pick" style="background:${color}" onclick="cycleZoneColor(this)" title="Click to change color"></div>
+      <input class="zone-name-input" value="New Zone" data-role="zone-name" oninput="refreshAllRvPreviews();rebuildBlockedRvLotsDropdown()">
+      <div class="zone-price-group">
+        <span class="zone-price-label">Nightly</span>
+        <div class="zone-price-wrap"><span class="zone-price-sym">$</span><input class="zone-price-in" type="number" value="0.00" data-role="zone-nightly"></div>
+      </div>
+      <div class="zone-price-group">
+        <span class="zone-price-label">Weekend</span>
+        <div class="zone-price-wrap"><span class="zone-price-sym">$</span><input class="zone-price-in" type="number" value="0.00" data-role="zone-weekend"></div>
+      </div>
+      <span class="zone-count"><strong>0</strong> lots</span>
+      <button class="row-card-delete" title="Delete zone" onclick="deleteZone(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+      </button>
+    </div>`;
+  list.insertAdjacentHTML('beforeend', html);
+  refreshAllRvPreviews();
+}
+
+/* Delete a zone. Lots assigned to it get reassigned to the first remaining zone. */
+function deleteZone(btn){
+  const zoneRow = btn.closest('.zone-row');
+  const deletedId = zoneRow.dataset.zoneId;
+  const remaining = getRvZones().filter(z => z.id !== deletedId);
+  if(remaining.length === 0){
+    alert('Cannot delete the last zone — every lot must belong to a zone.');
+    return;
+  }
+  const fallbackId = remaining[0].id;
+  /* Reassign any lots in this zone */
+  document.querySelectorAll('#rv-row-builder-list .row-card').forEach(card => {
+    const zonesMap = getRowLotZones(card);
+    let changed = false;
+    Object.keys(zonesMap).forEach(label => {
+      if(zonesMap[label] === deletedId){
+        zonesMap[label] = fallbackId;
+        changed = true;
+      }
+    });
+    if(changed) setRowLotZones(card, zonesMap);
+  });
+  zoneRow.remove();
+  refreshAllRvPreviews();
+}
+
+/* Add a new empty RV row card */
+function addRvRow(){
+  const list = document.getElementById('rv-row-builder-list');
+  const html = `
+    <div class="row-card" data-row-id="rv-${Date.now()}">
+      <div class="row-card-top">
+        <div class="row-card-field">
+          <span class="row-card-field-label">Row Name</span>
+          <input type="text" placeholder="e.g. RV Row C" data-role="name">
+        </div>
+        <div class="row-card-field row-card-field-layout">
+          <span class="row-card-field-label">Layout</span>
+          <select data-role="layout" onchange="updateRvRowPreview(this)">
+            <option value="one-sided" selected>One-sided</option>
+            <option value="back-to-back">Back-to-back</option>
+          </select>
+        </div>
+        <button class="row-card-delete" title="Delete row" onclick="this.closest('.row-card').remove();rebuildBlockedRvLotsDropdown();refreshZoneCounts()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+        </button>
+      </div>
+      <div class="row-card-one-sided">
+        <div class="row-card-field">
+          <span class="row-card-field-label">First Lot Label</span>
+          <input type="text" placeholder="1" data-role="first" oninput="updateRvRowPreview(this)">
+        </div>
+        <div class="row-card-field">
+          <span class="row-card-field-label">Last Lot Label</span>
+          <input type="text" placeholder="12" data-role="last" oninput="updateRvRowPreview(this)">
+        </div>
+      </div>
+      <div class="row-card-sides" style="display:none">
+        <div class="side-block">
+          <div class="side-block-label">Top Side</div>
+          <div class="side-block-row">
+            <div class="row-card-field">
+              <span class="row-card-field-label">First</span>
+              <input type="text" data-role="top-first" oninput="updateRvRowPreview(this)">
+            </div>
+            <div class="row-card-field">
+              <span class="row-card-field-label">Last</span>
+              <input type="text" data-role="top-last" oninput="updateRvRowPreview(this)">
+            </div>
+          </div>
+        </div>
+        <div class="side-block">
+          <div class="side-block-label">Bottom Side</div>
+          <div class="side-block-row">
+            <div class="row-card-field">
+              <span class="row-card-field-label">First</span>
+              <input type="text" data-role="bot-first" oninput="updateRvRowPreview(this)">
+            </div>
+            <div class="row-card-field">
+              <span class="row-card-field-label">Last</span>
+              <input type="text" data-role="bot-last" oninput="updateRvRowPreview(this)">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="row-card-preview-label">Preview <span class="row-card-count">No lots yet — fill in labels above</span></div>
+        <div class="stall-row" data-lot-zones="{}"></div>
+      </div>
+    </div>`;
+  list.insertAdjacentHTML('beforeend', html);
+}
+
+/* Toggle quantity-based vs map mode (mirrors toggleStay style) */
+function toggleRvMode(btn, mode){
+  btn.parentElement.querySelectorAll('.stay-type-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const rowsBuilder = document.getElementById('row-rv-rows-builder');
+  if(rowsBuilder) rowsBuilder.style.display = (mode === 'map') ? '' : 'none';
+}
+
+/* Blocked RV Lots — read chip values */
+function getBlockedRvLotsSet(){
+  const sel = document.getElementById('blocked-rv-lots-select');
+  const out = new Set();
+  if(!sel) return out;
+  sel.querySelectorAll('.tag-chip').forEach(chip => out.add(chip.dataset.value));
+  return out;
+}
+
+/* Collect every lot label currently defined across all RV rows */
+function getAllRvLotLabels(){
+  const out = [];
+  const seen = new Set();
+  document.querySelectorAll('#rv-row-builder-list .row-card').forEach(card => {
+    const layout = (card.querySelector('[data-role="layout"]') || {}).value;
+    let labels = [];
+    if(layout === 'back-to-back'){
+      const tf = (card.querySelector('[data-role="top-first"]') || {}).value || '';
+      const tl = (card.querySelector('[data-role="top-last"]')  || {}).value || '';
+      const bf = (card.querySelector('[data-role="bot-first"]') || {}).value || '';
+      const bl = (card.querySelector('[data-role="bot-last"]')  || {}).value || '';
+      labels = stallLabelsBetween(tf, tl).concat(stallLabelsBetween(bf, bl));
+    } else {
+      const f = (card.querySelector('[data-role="first"]') || {}).value || '';
+      const l = (card.querySelector('[data-role="last"]')  || {}).value || '';
+      labels = stallLabelsBetween(f, l);
+    }
+    labels.forEach(l => {
+      if(!seen.has(l)){ seen.add(l); out.push(l); }
+    });
+  });
+  return out;
+}
+
+/* Rebuild Blocked RV Lots dropdown options */
+function rebuildBlockedRvLotsDropdown(){
+  const sel = document.getElementById('blocked-rv-lots-select');
+  if(!sel) return;
+  const dropdown = sel.querySelector('.tag-dropdown');
+  const blocked = getBlockedRvLotsSet();
+  const labels = getAllRvLotLabels();
+  const empty = dropdown.querySelector('.tag-dropdown-empty');
+  dropdown.querySelectorAll('.tag-dropdown-item').forEach(el => el.remove());
+  labels.forEach(l => {
+    const item = document.createElement('div');
+    item.className = 'tag-dropdown-item' + (blocked.has(l) ? ' selected' : '');
+    item.dataset.value = l;
+    item.textContent = l;
+    item.onclick = () => { tagPick(item); rebuildBlockedRvLotsDropdown(); refreshAllRvPreviews(); };
+    dropdown.insertBefore(item, empty);
+  });
+}
+
+/* RV chart preview modal */
+function openRvChartPreview(){
+  const modal = document.getElementById('rv-chart-preview-modal');
+  const body  = modal.querySelector('.chart-modal-body');
+  body.querySelectorAll('.chart-modal-section').forEach(s => s.remove());
+
+  const blocked = getBlockedRvLotsSet();
+  /* Simulate some reserved lots: every 7th unblocked lot */
+  const reservedSimulated = new Set();
+  let cnt = 0;
+  getAllRvLotLabels().forEach(l => {
+    if(blocked.has(l)) return;
+    cnt++;
+    if(cnt % 7 === 0) reservedSimulated.add(l);
+  });
+
+  const fragments = [];
+  document.querySelectorAll('#rv-row-builder-list .row-card').forEach(card => {
+    const name   = (card.querySelector('[data-role="name"]')   || {}).value || 'Untitled Row';
+    const layout = (card.querySelector('[data-role="layout"]') || {}).value;
+    const zonesMap = getRowLotZones(card);
+    const classify = l => {
+      if(blocked.has(l)) return 'blocked';
+      if(reservedSimulated.has(l)) return 'reserved';
+      return 'clickable';
+    };
+    const box = l => {
+      const zone = zonesMap[l] ? getZoneById(zonesMap[l]) : null;
+      const dot = zone ? `<span class="lot-zone-dot" style="background:${zone.color}" title="${zone.name}"></span>` : '';
+      return `<div class="stall-box lot-box ${classify(l)}">${l}${dot}</div>`;
+    };
+    let inner;
+    if(layout === 'back-to-back'){
+      const topFirst = (card.querySelector('[data-role="top-first"]') || {}).value || '';
+      const topLast  = (card.querySelector('[data-role="top-last"]')  || {}).value || '';
+      const botFirst = (card.querySelector('[data-role="bot-first"]') || {}).value || '';
+      const botLast  = (card.querySelector('[data-role="bot-last"]')  || {}).value || '';
+      const topSide = stallLabelsBetween(topFirst, topLast).map(box).join('');
+      const botSide = stallLabelsBetween(botFirst, botLast).map(box).join('');
+      inner =
+        '<div class="stall-row back-to-back">' +
+          '<div class="stall-row-side">' + topSide + '</div>' +
+          '<div class="stall-row-aisle"></div>' +
+          '<div class="stall-row-side">' + botSide + '</div>' +
+        '</div>';
+    } else {
+      const first = (card.querySelector('[data-role="first"]') || {}).value || '';
+      const last  = (card.querySelector('[data-role="last"]')  || {}).value || '';
+      const labels = stallLabelsBetween(first, last);
+      inner = '<div class="stall-row">' + labels.map(box).join('') + '</div>';
+    }
+    fragments.push(
+      '<div class="chart-modal-section">' +
+        `<div class="chart-modal-section-name">${name}</div>` +
+        inner +
+      '</div>'
+    );
+  });
+  body.insertAdjacentHTML('beforeend', fragments.join(''));
+  modal.classList.add('open');
+}
+function closeRvChartPreview(){ document.getElementById('rv-chart-preview-modal').classList.remove('open'); }
+
+/* RV initial wire-up on load */
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('#rv-row-builder-list .row-card-delete').forEach(btn => {
+    if(!btn.onclick) btn.onclick = () => { btn.closest('.row-card').remove(); rebuildBlockedRvLotsDropdown(); refreshZoneCounts(); };
+  });
+  refreshPaintModeSelect();
+  rebuildBlockedRvLotsDropdown();
+  refreshAllRvPreviews();
+});
 
 /* Wire delete buttons on initial rows (later ones handled inline) */
 document.addEventListener('DOMContentLoaded', () => {
@@ -1408,48 +1875,267 @@ document.addEventListener('DOMContentLoaded', () => {
               <div class="field-label">RV Lot Selection</div>
               <div class="field-control">
                 <div class="toggle-label-row" onclick="toggleSwitch(this.querySelector('.toggle'))">
-                  <div class="toggle off" data-controls="row-rv-lots row-rv-blocked-lots"></div><span>Enable RV lot selection</span>
+                  <div class="toggle on" data-controls="row-rv-mode row-rv-zones row-rv-rows-builder row-rv-blocked-lots"></div><span>Enable RV lot selection</span>
                 </div>
-                <span class="field-hint">When enabled, customers can choose from named RV lots with their own nightly and weekend pricing.</span>
+                <span class="field-hint">When enabled, customers can choose RV lots with their own pricing zones and (optionally) pick specific lots from a visual map.</span>
               </div>
             </div>
-            <!-- RV Lots -->
-            <div class="field-row" id="row-rv-lots" style="align-items:start">
-              <div class="field-label">RV Lots<div class="field-label-sub">Leave price blank to use base rate</div></div>
+
+            <!-- RV Selection Mode -->
+            <div class="field-row" id="row-rv-mode">
+              <div class="field-label">Lot Selection Mode</div>
               <div class="field-control">
-                <div class="repeat-scroll">
-                  <table class="repeat-table">
-                    <thead><tr><th>Lot Name</th><th>Nightly</th><th>Weekend</th><th>Inventory</th><th></th></tr></thead>
-                    <tbody>
-                      <tr>
-                        <td><input class="repeat-input" value="Red Lot"></td>
-                        <td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" value="0.00"></div></td>
-                        <td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" value="0.00"></div></td>
-                        <td><input class="repeat-input" placeholder="Unlimited" style="width:90px"></td>
-                        <td><button class="btn-delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
-                      </tr>
-                    </tbody>
-                  </table>
+                <div class="stay-types">
+                  <div class="stay-type-btn active" data-controls="" onclick="toggleRvMode(this,'quantity')"><span>Quantity Based</span></div>
+                  <div class="stay-type-btn" data-controls="row-rv-rows-builder" onclick="toggleRvMode(this,'map')"><span>Exact Map Selection</span></div>
                 </div>
-                <button class="btn-add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add RV Lot</button>
+                <span class="field-hint">Quantity Based: customers pick how many lots they need by zone. Exact Map Selection: customers see the lot layout and click specific lots.</span>
               </div>
             </div>
+
+            <!-- Lot Zones — pricing tiers, always visible -->
+            <div class="field-row" id="row-rv-zones" style="align-items:start">
+              <div class="field-label">Lot Zones<div class="field-label-sub">Pricing tiers — every lot belongs to a zone</div></div>
+              <div class="field-control">
+                <div class="zone-list" id="rv-zone-list">
+
+                  <div class="zone-row" data-zone-id="z1" data-zone-color="#EF4444">
+                    <div class="zone-color-pick" style="background:#EF4444" onclick="cycleZoneColor(this)" title="Click to change color"></div>
+                    <input class="zone-name-input" value="Red Lot" data-role="zone-name" oninput="refreshAllRvPreviews();rebuildBlockedRvLotsDropdown()">
+                    <div class="zone-price-group">
+                      <span class="zone-price-label">Nightly</span>
+                      <div class="zone-price-wrap"><span class="zone-price-sym">$</span><input class="zone-price-in" type="number" value="35.00" data-role="zone-nightly"></div>
+                    </div>
+                    <div class="zone-price-group">
+                      <span class="zone-price-label">Weekend</span>
+                      <div class="zone-price-wrap"><span class="zone-price-sym">$</span><input class="zone-price-in" type="number" value="90.00" data-role="zone-weekend"></div>
+                    </div>
+                    <span class="zone-count"><strong>6</strong> lots</span>
+                    <button class="row-card-delete" title="Delete zone" onclick="deleteZone(this)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                    </button>
+                  </div>
+
+                  <div class="zone-row" data-zone-id="z2" data-zone-color="#1668F2">
+                    <div class="zone-color-pick" style="background:#1668F2" onclick="cycleZoneColor(this)" title="Click to change color"></div>
+                    <input class="zone-name-input" value="Blue Lot" data-role="zone-name" oninput="refreshAllRvPreviews();rebuildBlockedRvLotsDropdown()">
+                    <div class="zone-price-group">
+                      <span class="zone-price-label">Nightly</span>
+                      <div class="zone-price-wrap"><span class="zone-price-sym">$</span><input class="zone-price-in" type="number" value="25.00" data-role="zone-nightly"></div>
+                    </div>
+                    <div class="zone-price-group">
+                      <span class="zone-price-label">Weekend</span>
+                      <div class="zone-price-wrap"><span class="zone-price-sym">$</span><input class="zone-price-in" type="number" value="65.00" data-role="zone-weekend"></div>
+                    </div>
+                    <span class="zone-count"><strong>18</strong> lots</span>
+                    <button class="row-card-delete" title="Delete zone" onclick="deleteZone(this)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                    </button>
+                  </div>
+
+                </div>
+                <button class="zone-add-btn" onclick="addZone()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Add Zone
+                </button>
+              </div>
+            </div>
+
+            <!-- Lot Rows — only visible in Exact Map Selection mode -->
+            <div class="field-row" id="row-rv-rows-builder" style="align-items:start;display:none">
+              <div class="field-label">Lot Rows<div class="field-label-sub">Define the physical layout customers will see</div></div>
+              <div class="field-control">
+                <div class="row-builder-head">
+                  <div class="row-builder-summary"><strong style="color:#031B4E">2 rows · 24 lots total</strong> across this reservation</div>
+                  <button class="preview-chart-btn" onclick="openRvChartPreview()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    Preview Full Chart
+                  </button>
+                </div>
+
+                <div class="zone-painter">
+                  <span class="zone-painter-label">Paint Mode</span>
+                  <select class="zone-painter-select" id="rv-paint-zone" onchange="refreshAllRvPreviews()">
+                    <option value="">Off — click to view lot details</option>
+                    <option value="z1" style="color:#EF4444">● Red Lot</option>
+                    <option value="z2" style="color:#1668F2">● Blue Lot</option>
+                  </select>
+                  <span class="zone-painter-hint">Select a zone, then click lots in any row preview to assign them.</span>
+                </div>
+
+                <div class="row-builder" id="rv-row-builder-list">
+
+                  <!-- RV Row 1: one-sided, lots 1-12 -->
+                  <div class="row-card" data-row-id="rv-r1">
+                    <div class="row-card-top">
+                      <div class="row-card-field">
+                        <span class="row-card-field-label">Row Name</span>
+                        <input type="text" value="RV Row A" data-role="name">
+                      </div>
+                      <div class="row-card-field row-card-field-layout">
+                        <span class="row-card-field-label">Layout</span>
+                        <select data-role="layout" onchange="updateRvRowPreview(this)">
+                          <option value="one-sided" selected>One-sided</option>
+                          <option value="back-to-back">Back-to-back</option>
+                        </select>
+                      </div>
+                      <button class="row-card-delete" title="Delete row">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                      </button>
+                    </div>
+                    <div class="row-card-one-sided">
+                      <div class="row-card-field">
+                        <span class="row-card-field-label">First Lot Label</span>
+                        <input type="text" value="1" data-role="first" oninput="updateRvRowPreview(this)">
+                      </div>
+                      <div class="row-card-field">
+                        <span class="row-card-field-label">Last Lot Label</span>
+                        <input type="text" value="12" data-role="last" oninput="updateRvRowPreview(this)">
+                      </div>
+                    </div>
+                    <div class="row-card-sides" style="display:none">
+                      <div class="side-block">
+                        <div class="side-block-label">Top Side</div>
+                        <div class="side-block-row">
+                          <div class="row-card-field">
+                            <span class="row-card-field-label">First</span>
+                            <input type="text" data-role="top-first" oninput="updateRvRowPreview(this)">
+                          </div>
+                          <div class="row-card-field">
+                            <span class="row-card-field-label">Last</span>
+                            <input type="text" data-role="top-last" oninput="updateRvRowPreview(this)">
+                          </div>
+                        </div>
+                      </div>
+                      <div class="side-block">
+                        <div class="side-block-label">Bottom Side</div>
+                        <div class="side-block-row">
+                          <div class="row-card-field">
+                            <span class="row-card-field-label">First</span>
+                            <input type="text" data-role="bot-first" oninput="updateRvRowPreview(this)">
+                          </div>
+                          <div class="row-card-field">
+                            <span class="row-card-field-label">Last</span>
+                            <input type="text" data-role="bot-last" oninput="updateRvRowPreview(this)">
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <div class="row-card-preview-label">Preview <span class="row-card-count">12 lots · One-sided</span></div>
+                      <div class="stall-row" data-lot-zones='{"1":"z1","2":"z1","3":"z1","4":"z1","5":"z1","6":"z1","7":"z2","8":"z2","9":"z2","10":"z2","11":"z2","12":"z2"}'>
+                        <!-- Populated by JS on load via refreshAllRvPreviews() -->
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- RV Row 2: back-to-back, lots 13-24 -->
+                  <div class="row-card" data-row-id="rv-r2">
+                    <div class="row-card-top">
+                      <div class="row-card-field">
+                        <span class="row-card-field-label">Row Name</span>
+                        <input type="text" value="RV Row B" data-role="name">
+                      </div>
+                      <div class="row-card-field row-card-field-layout">
+                        <span class="row-card-field-label">Layout</span>
+                        <select data-role="layout" onchange="updateRvRowPreview(this)">
+                          <option value="one-sided">One-sided</option>
+                          <option value="back-to-back" selected>Back-to-back</option>
+                        </select>
+                      </div>
+                      <button class="row-card-delete" title="Delete row">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                      </button>
+                    </div>
+                    <div class="row-card-one-sided" style="display:none">
+                      <div class="row-card-field">
+                        <span class="row-card-field-label">First Lot Label</span>
+                        <input type="text" data-role="first" oninput="updateRvRowPreview(this)">
+                      </div>
+                      <div class="row-card-field">
+                        <span class="row-card-field-label">Last Lot Label</span>
+                        <input type="text" data-role="last" oninput="updateRvRowPreview(this)">
+                      </div>
+                    </div>
+                    <div class="row-card-sides">
+                      <div class="side-block">
+                        <div class="side-block-label">Top Side</div>
+                        <div class="side-block-row">
+                          <div class="row-card-field">
+                            <span class="row-card-field-label">First</span>
+                            <input type="text" value="13" data-role="top-first" oninput="updateRvRowPreview(this)">
+                          </div>
+                          <div class="row-card-field">
+                            <span class="row-card-field-label">Last</span>
+                            <input type="text" value="18" data-role="top-last" oninput="updateRvRowPreview(this)">
+                          </div>
+                        </div>
+                      </div>
+                      <div class="side-block">
+                        <div class="side-block-label">Bottom Side</div>
+                        <div class="side-block-row">
+                          <div class="row-card-field">
+                            <span class="row-card-field-label">First</span>
+                            <input type="text" value="19" data-role="bot-first" oninput="updateRvRowPreview(this)">
+                          </div>
+                          <div class="row-card-field">
+                            <span class="row-card-field-label">Last</span>
+                            <input type="text" value="24" data-role="bot-last" oninput="updateRvRowPreview(this)">
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <div class="row-card-preview-label">Preview <span class="row-card-count">12 lots · Back-to-back (6 top, 6 bottom)</span></div>
+                      <div class="stall-row back-to-back" data-lot-zones='{"13":"z2","14":"z2","15":"z2","16":"z2","17":"z2","18":"z2","19":"z2","20":"z2","21":"z2","22":"z2","23":"z2","24":"z2"}'>
+                        <!-- Populated by JS on load via refreshAllRvPreviews() -->
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+                <button class="row-add-btn" onclick="addRvRow()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Add Row
+                </button>
+
+                <span class="field-hint">Each lot's color dot shows which zone it's assigned to. Pick a zone in Paint Mode above, then click lots to reassign them. Click an already-zoned lot while the same zone is active to leave it unchanged.</span>
+              </div>
+            </div>
+
+            <!-- RV Chart Preview Modal -->
+            <div class="chart-modal" id="rv-chart-preview-modal" onclick="if(event.target===this)closeRvChartPreview()">
+              <div class="chart-modal-card">
+                <div class="chart-modal-head">
+                  <div class="chart-modal-title">RV Lot Chart Preview — Customer View</div>
+                  <button class="chart-modal-close" onclick="closeRvChartPreview()" aria-label="Close">✕</button>
+                </div>
+                <div class="chart-modal-body">
+                  <div class="chart-modal-legend">
+                    <span><span class="swatch"></span> Available</span>
+                    <span><span class="swatch selected"></span> Selected (customer's pick)</span>
+                    <span><span class="swatch reserved"></span> Already reserved</span>
+                    <span><span class="swatch blocked"></span> Blocked by admin</span>
+                  </div>
+                  <!-- Sections populated dynamically by openRvChartPreview() -->
+                </div>
+              </div>
+            </div>
+
             <div class="field-row" id="row-rv-blocked-lots">
-              <div class="field-label">Blocked RV Lots</div>
+              <div class="field-label">Blocked RV Lots<div class="field-label-sub">Hold back from reservation</div></div>
               <div class="field-control">
-                <div class="tag-select">
+                <div class="tag-select" id="blocked-rv-lots-select">
                   <div class="tag-select-input" onclick="tagToggle(this)">
-                    <span class="tag-chip" data-value="Red Lot">Red Lot <button type="button" class="tag-chip-remove" onclick="event.stopPropagation();tagRemove(this)" aria-label="Remove">×</button></span>
-                    <input class="tag-search" type="text" placeholder="Type a lot name…" oninput="tagFilter(this)" onfocus="this.closest('.tag-select').classList.add('open')">
+                    <input class="tag-search" type="text" placeholder="Type a lot label…" oninput="tagFilter(this)" onfocus="this.closest('.tag-select').classList.add('open')">
                   </div>
                   <div class="tag-dropdown">
-                    <div class="tag-dropdown-item selected" data-value="Red Lot" onclick="tagPick(this)">Red Lot</div>
-                    <div class="tag-dropdown-item" data-value="Blue Lot" onclick="tagPick(this)">Blue Lot</div>
-                    <div class="tag-dropdown-item" data-value="Green Lot" onclick="tagPick(this)">Green Lot</div>
+                    <!-- Options populated by rebuildBlockedRvLotsDropdown() on load + whenever rows/zones change -->
                     <div class="tag-dropdown-empty" style="display:none">No matching lots.</div>
                   </div>
                 </div>
-                <span class="field-hint">Type a lot name to filter, then click to block it from reservation assignment. Click ✕ on a chip to unblock.</span>
+                <span class="field-hint">Type a lot label to filter the list, then click to block it. Click ✕ on a chip to unblock.</span>
               </div>
             </div>
             <!-- RV Add-Ons -->
