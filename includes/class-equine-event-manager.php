@@ -17,6 +17,10 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-equine-event-manager-admin
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-equine-event-manager-reservation-editor.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'public/class-equine-event-manager-shortcodes.php';
 
+// Phase 3 admin template partials (eem_render_breadcrumb, eem_render_page_open/close).
+require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_breadcrumb.php';
+require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_page_shell.php';
+
 /**
  * Registers plugin hooks.
  */
@@ -83,6 +87,7 @@ class EEM_Plugin {
 		add_filter( 'admin_body_class', array( $this->reservation_editor, 'filter_editor_shell_body_class' ) );
 		add_filter( 'get_user_option_meta-box-order_en_reservation', array( $this->reservation_editor, 'filter_editor_meta_box_order' ) );
 		add_action( 'admin_enqueue_scripts', array( $this->reservation_editor, 'enqueue_editor_shell_styles' ) );
+		add_action( 'admin_footer', array( $this->admin, 'render_global_toast_container' ) );
 		add_action( 'admin_head', array( $this->reservation_editor, 'print_editor_shell_fallback_assets' ) );
 		add_action( 'edit_form_top', array( $this->reservation_editor, 'render_editor_header' ) );
 		add_action( 'edit_form_after_title', array( $this->reservation_editor, 'render_editor_overview' ) );

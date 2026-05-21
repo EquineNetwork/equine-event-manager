@@ -196,12 +196,32 @@ class EEM_Admin {
 			return;
 		}
 
-		wp_enqueue_style(
-			'eem-admin-shell',
-			EQUINE_EVENT_MANAGER_URL . 'assets/css/admin.css',
-			array(),
-			defined( 'EQUINE_EVENT_MANAGER_VERSION' ) ? EQUINE_EVENT_MANAGER_VERSION : false
-		);
+		$ver = defined( 'EQUINE_EVENT_MANAGER_VERSION' ) ? EQUINE_EVENT_MANAGER_VERSION : false;
+
+		// Phase 3 rebuild (tokenized) — loaded first so legacy rules can
+		// override it where pages haven't been ported yet.
+		wp_enqueue_style( 'eem-admin', EQUINE_EVENT_MANAGER_URL . 'assets/css/admin.css', array(), $ver );
+
+		// Phase 2 → Phase 3 transition stylesheet. Each page-port chunk
+		// migrates rules out of this file into admin.css; final commit of
+		// Phase 3 deletes it.
+		wp_enqueue_style( 'eem-admin-legacy', EQUINE_EVENT_MANAGER_URL . 'assets/css/admin-legacy.css', array( 'eem-admin' ), $ver );
+
+		// Shared admin JS (delegated handlers, EEM namespace).
+		wp_enqueue_script( 'eem-admin', EQUINE_EVENT_MANAGER_URL . 'assets/js/admin.js', array(), $ver, true );
+	}
+
+	/**
+	 * Inject the single global toast container into admin pages where the
+	 * shell loaded. JS at EEM.showSaveToast() reuses or creates this on demand.
+	 *
+	 * @return void
+	 */
+	public function render_global_toast_container() {
+		if ( ! wp_style_is( 'eem-admin', 'enqueued' ) ) {
+			return;
+		}
+		echo '<div class="eem-toast-wrap" aria-live="polite" aria-atomic="false"></div>';
 	}
 
 	/**

@@ -76,12 +76,10 @@ class EEM_Reservation_Editor {
 			return;
 		}
 
-		wp_enqueue_style(
-			'eem-admin-shell',
-			EQUINE_EVENT_MANAGER_URL . 'assets/css/admin.css',
-			array(),
-			defined( 'EQUINE_EVENT_MANAGER_VERSION' ) ? EQUINE_EVENT_MANAGER_VERSION : false
-		);
+		$ver = defined( 'EQUINE_EVENT_MANAGER_VERSION' ) ? EQUINE_EVENT_MANAGER_VERSION : false;
+		wp_enqueue_style( 'eem-admin', EQUINE_EVENT_MANAGER_URL . 'assets/css/admin.css', array(), $ver );
+		wp_enqueue_style( 'eem-admin-legacy', EQUINE_EVENT_MANAGER_URL . 'assets/css/admin-legacy.css', array( 'eem-admin' ), $ver );
+		wp_enqueue_script( 'eem-admin', EQUINE_EVENT_MANAGER_URL . 'assets/js/admin.js', array(), $ver, true );
 	}
 
 	/**
