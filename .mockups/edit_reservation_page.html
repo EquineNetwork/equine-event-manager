@@ -2296,8 +2296,15 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="field-row">
               <div class="field-label">Agreement Link Label</div>
               <div class="field-control">
-                <input class="field-input" type="text" value="Agreement" style="max-width:280px">
+                <input class="field-input" type="text" value="Venue Agreement" style="max-width:280px">
                 <span class="field-hint">Shown on the front end for the agreement file link, such as "Venue Agreement" or "Rider Agreement".</span>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field-label">Agreement Notice Text</div>
+              <div class="field-control">
+                <textarea class="field-textarea" style="min-height:80px">All transaction fees are non-refundable. Please be sure you have read the {{link}} before clicking SAVE.</textarea>
+                <span class="field-hint">Shown on the front end below the Order Summary. Use the <code>{{link}}</code> placeholder where you want the Agreement link to appear. The label above will be used as the link text.</span>
               </div>
             </div>
           </div>

@@ -121,6 +121,19 @@ body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;fon
 
 .summary-section{margin-bottom:14px;border:1px solid #D9E2F2;border-radius:4px;overflow:hidden}
 .summary-section-header{padding:8px 12px;background:#F7F9FC;border-bottom:1px solid #D9E2F2;display:flex;align-items:center;justify-content:space-between}
+
+.activity-entry{display:flex;align-items:flex-start;gap:14px;padding:14px 18px;border-bottom:1px solid #f0f0f1}
+.activity-entry:last-child{border-bottom:none}
+.activity-icon{flex-shrink:0;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.activity-icon svg{width:14px;height:14px}
+.activity-icon-create{background:#dcfce7;color:#15803d}
+.activity-icon-edit{background:#fef3c7;color:#a16207}
+.activity-icon-info{background:#dbeafe;color:#1d4ed8}
+.activity-icon-refund{background:#fee2e2;color:#b91c1c}
+.activity-body{flex:1;min-width:0}
+.activity-title{font-size:13px;font-weight:600;color:#031B4E;margin-bottom:2px}
+.activity-meta{font-size:11.5px;color:#6B7A99;line-height:1.5}
+.activity-date{flex-shrink:0;font-size:11px;color:#6B7A99;text-align:right;line-height:1.4;white-space:nowrap}
 .summary-section-title{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6B7A99}
 .summary-section-badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px}
 .summary-line{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid #F0F4FB;font-size:13px}
@@ -282,7 +295,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;fon
       <div>
         <div class="order-number">Order #0015</div>
         <div class="order-meta-badges">
-          <span class="status-badge status-paid">Paid</span>
+          <span class="status-badge status-invoice">Invoice Sent</span>
           <span class="type-badge type-stall">Stall</span>
           <span class="type-badge type-rv">RV</span>
           <span class="type-badge type-addon">Add-On</span>
@@ -302,11 +315,6 @@ body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;fon
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           Edit Reservation
         </button>
-        <button class="btn" style="background:#FFF7ED;color:#c2410c;border-color:#fed7aa;font-weight:700">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-          Collect Payment
-        </button>
-
         <!-- More dropdown -->
         <div style="position:relative;display:inline-block" id="more-wrap">
           <button class="btn btn-ghost" onclick="document.getElementById('more-menu').classList.toggle('open')" style="padding:7px 12px">
@@ -328,7 +336,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;fon
             </div>
             <div class="more-item more-item-danger">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-              Delete Order
+              Move to Trash
             </div>
           </div>
         </div>
@@ -475,8 +483,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;fon
             <div class="card-title">Customer</div>
           </div>
           <div style="padding:14px 18px">
-            <div class="customer-name-big">Whitney Mitchell</div>
-            <a href="#" class="customer-link">1 order →</a>
+            <a class="customer-name-big" href="customer_detail_page.html" style="text-decoration:none;color:#1668F2">Whitney Mitchell</a>
+            <a href="orders_page.html?customer=whitney-mitchell" class="customer-link">View all orders →</a>
 
             <div class="customer-section-label">Reservation</div>
             <div class="customer-val">2026 Southeast Region Super Sort</div>
@@ -506,16 +514,17 @@ body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;fon
           </div>
         </div>
 
+
         <!-- ORDER SUMMARY -->
         <div class="card">
           <div class="card-header">
             <div class="card-title">Order Summary</div>
-            <span class="status-badge status-paid">Paid</span>
+            <span class="status-badge status-invoice">Invoice Sent</span>
           </div>
           <div style="padding:14px 16px">
 
             <div class="summary-total-box">
-              <div class="summary-total-label">Total Paid</div>
+              <div class="summary-total-label">Total Due</div>
               <div class="summary-total-val">$170.56</div>
             </div>
 
@@ -570,8 +579,80 @@ body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;fon
           </div>
         </div>
 
-      </div><!-- /order-side -->
+      <!-- PAYMENT DETAILS -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Payment Details</div>
+          </div>
+          <div style="padding:14px 18px">
+            <div class="customer-section-label">Processor</div>
+            <div class="customer-val">Stripe</div>
+
+            <div class="customer-section-label">Card</div>
+            <div class="customer-val">
+              <span style="display:inline-flex;align-items:center;gap:6px">
+                <span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:20px;background:#1A1F71;color:#fff;border-radius:3px;font-size:9px;font-weight:700;letter-spacing:.04em">VISA</span>
+                <span>•••• 4242</span>
+              </span>
+            </div>
+
+            <div class="customer-section-label">Transaction ID</div>
+            <div class="customer-val" style="font-family:'IBM Plex Mono','SF Mono',monospace;font-size:11.5px;color:#6B7A99">pi_3OK7Bz2eZvKYlo2C1mNxqRfA</div>
+
+            <div class="customer-section-label">Charge ID</div>
+            <div class="customer-val" style="font-family:'IBM Plex Mono','SF Mono',monospace;font-size:11.5px;color:#6B7A99">ch_3OK7Bz2eZvKYlo2C0PdvFhAr</div>
+
+            <div class="customer-section-label">Captured</div>
+            <div class="customer-val"><strong>—</strong> <span style="color:#a16207;font-size:11.5px">(awaiting payment)</span></div>
+
+            <div class="customer-section-label" style="border-top:1px solid #E5EAF2;padding-top:10px;margin-top:10px">Refund History</div>
+            <div class="customer-val" style="font-size:12.5px;color:#8c8f94">No refunds processed</div>
+          </div>
+        </div>
+
+        </div><!-- /order-side -->
     </div><!-- /order-body -->
+
+    <!-- ACTIVITY LOG (full-width, must be last so it stacks at bottom on mobile) -->
+    <div class="card" style="margin-top:14px">
+      <div class="card-header">
+        <div class="card-title">Activity Log</div>
+        <span style="font-size:11.5px;color:#6B7A99">All edits, refunds, and notifications</span>
+      </div>
+      <div style="padding:0">
+
+        <div class="activity-entry">
+          <div class="activity-icon activity-icon-info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+          <div class="activity-body">
+            <div class="activity-title">Invoice email sent to customer</div>
+            <div class="activity-meta">Recipient: wmitchell@equinenetwork.com · Subject: "Invoice for Order #0015"</div>
+          </div>
+          <div class="activity-date">Apr 23, 2026<br>10:14 AM</div>
+        </div>
+
+        <div class="activity-entry">
+          <div class="activity-icon activity-icon-edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
+          <div class="activity-body">
+            <div class="activity-title">Order edited by Whitney Mitchell (admin)</div>
+            <div class="activity-meta">
+              <span style="display:inline-block;background:#f0f0f1;padding:2px 6px;border-radius:3px;font-family:monospace;font-size:11px">Shavings Qty:</span> <span style="color:#dc2626">2</span> → <span style="color:#15803d;font-weight:600">4</span>
+              <span style="margin-left:10px;color:#031B4E;font-weight:600">+$20.00 balance owed</span>
+            </div>
+          </div>
+          <div class="activity-date">Apr 23, 2026<br>10:09 AM</div>
+        </div>
+
+        <div class="activity-entry">
+          <div class="activity-icon activity-icon-create"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></div>
+          <div class="activity-body">
+            <div class="activity-title">Order created</div>
+            <div class="activity-meta">Status: Invoice Sent · Total: $170.56 · Created via customer event page</div>
+          </div>
+          <div class="activity-date">Apr 23, 2026<br>10:09 AM</div>
+        </div>
+
+      </div>
+    </div>
   </div><!-- /wp-content -->
 </div><!-- /wp-body -->
 <script>

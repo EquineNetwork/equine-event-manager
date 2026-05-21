@@ -98,6 +98,75 @@ td{padding:12px 14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
   .table-wrap table{display:none}
   .mobile-history{display:block}
 }
+
+/* ── ZIP card (top, highlighted as primary action) ── */
+.card-zip{border:1.5px solid #1668F2;background:linear-gradient(135deg,#EEF4FF 0%,#FAFBFE 100%)}
+.zip-header{margin-bottom:14px}
+.zip-controls{display:flex;gap:0;flex-wrap:wrap;align-items:stretch}
+.export-select-full{flex:1;min-width:240px;border-radius:4px 0 0 4px}
+.export-btn-zip{background:#1668F2;border-radius:0 4px 4px 0;padding:9px 18px;font-size:13px}
+.export-btn-zip:hover{background:#0d5cd9}
+
+/* ── Filter card ── */
+.card-filters{background:#FAFBFE}
+.filters-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.filters-applied-pill{font-size:10.5px;background:#E5EAF2;color:#031B4E;padding:3px 10px;border-radius:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.filter-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:12px}
+.filter-group{display:flex;flex-direction:column;gap:5px}
+.filter-label{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#6B7A99}
+.filter-select,.filter-input{padding:8px 12px;border:1px solid #c3c4c7;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#031B4E;background:#fff}
+.filter-select{padding-right:32px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;appearance:none}
+.filter-select:focus,.filter-input:focus{outline:none;border-color:#1668F2;box-shadow:0 0 0 3px rgba(22,104,242,.12)}
+.filter-daterange{display:flex;align-items:center;gap:8px}
+.filter-daterange .filter-input{flex:1;min-width:0}
+.filter-daterange-sep{font-size:12px;color:#6B7A99;flex-shrink:0}
+.filter-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-top:8px;border-top:1px solid #E5EAF2}
+.filter-reset{background:transparent;border:none;color:#6B7A99;font-size:12px;font-weight:500;cursor:pointer;text-decoration:underline;font-family:inherit;padding:0}
+.filter-reset:hover{color:#1668F2}
+.filter-summary{font-size:12px;color:#4a5a7a;text-align:right;flex:1}
+.filter-summary strong{font-weight:600;color:#031B4E}
+
+/* ── Report grid (6 reports, 2x3 on desktop, 1xN on mobile) ── */
+.report-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}
+.report-card{background:#fff;border:1px solid #c3c4c7;border-radius:4px;padding:16px;display:flex;flex-direction:column;justify-content:space-between;gap:14px}
+.report-card-head{display:flex;align-items:flex-start;gap:12px}
+.report-icon{flex-shrink:0;width:36px;height:36px;border-radius:4px;display:flex;align-items:center;justify-content:center}
+.report-icon svg{width:18px;height:18px;color:#fff}
+.report-icon-orders{background:#1668F2}
+.report-icon-reservations{background:#7c3aed}
+.report-icon-revenue{background:#15803d}
+.report-icon-occupancy{background:#0891b2}
+.report-icon-customers{background:#ea580c}
+.report-icon-refunds{background:#b91c1c}
+.report-card-title{font-family:'Space Grotesk',sans-serif;font-size:14.5px;font-weight:700;color:#031B4E;margin-bottom:3px}
+.report-card-desc{font-size:12.5px;color:#6B7A99;line-height:1.45}
+.report-card-actions{display:flex;gap:6px}
+.btn-export-csv,.btn-export-pdf{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:7px 12px;background:#fff;border:1px solid #c3c4c7;color:#031B4E;border-radius:4px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer}
+.btn-export-csv:hover,.btn-export-pdf:hover{border-color:#1668F2;color:#1668F2;background:#FAFBFE}
+.btn-export-csv svg,.btn-export-pdf svg{width:12px;height:12px}
+
+/* Add a column for Report and Format in history table */
+.td-report{font-weight:600;color:#031B4E;white-space:nowrap}
+.td-format{font-size:11.5px;font-weight:700;color:#1668F2;letter-spacing:.04em;text-transform:uppercase}
+
+/* Mobile */
+@media(max-width:960px){
+  .filter-grid{grid-template-columns:1fr 1fr}
+  .report-grid{grid-template-columns:1fr}
+}
+@media(max-width:767px){
+  .filter-grid{grid-template-columns:1fr;gap:10px}
+  .filter-daterange{flex-direction:row}
+  .filter-footer{flex-direction:column;align-items:stretch;gap:8px}
+  .filter-summary{text-align:left}
+  .zip-controls{flex-direction:column}
+  .export-select-full{border-radius:4px;width:100%;border-right:1px solid #8c8f94}
+  .export-btn-zip{border-radius:4px;width:100%;justify-content:center;margin-top:8px}
+  .report-card-head{flex-direction:row}
+  .report-card{padding:14px}
+  .btn-export-csv,.btn-export-pdf{font-size:13px;padding:8px 12px}
+}
+
 </style>
 </head>
 <body>
@@ -142,33 +211,220 @@ td{padding:12px 14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
 
     <div class="page-title">Reports</div>
 
-    <!-- Export Reservations -->
-    <div class="card">
+    <!-- Export ALL Reports for one Reservation -->
+    <div class="card card-zip">
       <div class="card-body">
-        <div class="section-title">Export Reservations</div>
-
-        <div class="export-meta">
-          <div class="export-meta-item"><span>Scope: </span>All Reservations</div>
-          <div class="export-meta-item"><span>History Entries: </span>1</div>
+        <div class="zip-header">
+          <div>
+            <div class="section-title" style="margin-bottom:4px">Export all reports for one reservation</div>
+            <p class="export-hint" style="margin:0">One ZIP file with all 6 reports (Orders, Reservations, Revenue, Stall Occupancy, Customer List, Refund Log) in both CSV and PDF format.</p>
+          </div>
         </div>
-
-        <div class="export-row">
-          <span class="export-label">Reservation to export</span>
-          <select class="export-select">
-            <option selected>All reservations</option>
+        <div class="zip-controls">
+          <select class="export-select export-select-full">
             <option>2026 Southeast Region Super Sort</option>
             <option>2026 Bluegrass Show</option>
             <option>2026 Sunshine Dressage</option>
             <option>2026 Gulf Coast Classic</option>
             <option>2026 Lone Star Invitational</option>
           </select>
-          <button class="export-btn">
+          <button class="export-btn export-btn-zip">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Export CSV
+            Export ZIP (6 reports × CSV+PDF)
           </button>
         </div>
-        <p class="export-hint">Choose one reservation or export the full reservation set for offline reporting.</p>
       </div>
+    </div>
+
+    <!-- Global Filters -->
+    <div class="card card-filters">
+      <div class="card-body">
+        <div class="filters-header">
+          <div class="section-title" style="margin-bottom:2px">Filters</div>
+          <span class="filters-applied-pill">Applies to all reports below</span>
+        </div>
+        <div class="filter-grid">
+          <div class="filter-group">
+            <label class="filter-label">Reservation</label>
+            <select class="filter-select">
+              <option>All reservations</option>
+              <option>2026 Southeast Region Super Sort</option>
+              <option>2026 Bluegrass Show</option>
+              <option>2026 Sunshine Dressage</option>
+              <option>2026 Gulf Coast Classic</option>
+              <option>2026 Lone Star Invitational</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label">Date range</label>
+            <div class="filter-daterange">
+              <input class="filter-input" type="date" value="2026-04-01">
+              <span class="filter-daterange-sep">to</span>
+              <input class="filter-input" type="date" value="2026-04-30">
+            </div>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label">Order status</label>
+            <select class="filter-select">
+              <option>All statuses</option>
+              <option>Paid</option>
+              <option>Unpaid</option>
+              <option>Invoice Sent</option>
+              <option>Partial</option>
+              <option>Refunded</option>
+              <option>Cancelled</option>
+            </select>
+          </div>
+        </div>
+        <div class="filter-footer">
+          <button class="filter-reset">Reset filters</button>
+          <span class="filter-summary"><strong>April 1 – April 30, 2026</strong> · 2026 Southeast Region Super Sort · All statuses</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Report Catalog -->
+    <div class="section-title" style="margin:18px 0 10px">Individual reports</div>
+    <div class="report-grid">
+
+      <!-- Orders Report -->
+      <div class="report-card">
+        <div class="report-card-head">
+          <div class="report-icon report-icon-orders">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3"/><path d="M3 12v6a2 2 0 002 2h14a2 2 0 002-2v-6"/></svg>
+          </div>
+          <div>
+            <div class="report-card-title">Orders</div>
+            <div class="report-card-desc">Every order with customer, items, payment status, totals. Best for transactional bookkeeping.</div>
+          </div>
+        </div>
+        <div class="report-card-actions">
+          <button class="btn-export-csv">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            CSV
+          </button>
+          <button class="btn-export-pdf">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- Reservations Report -->
+      <div class="report-card">
+        <div class="report-card-head">
+          <div class="report-icon report-icon-reservations">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+          <div>
+            <div class="report-card-title">Reservations</div>
+            <div class="report-card-desc">Event-level summary: dates, total orders, total revenue, occupancy %, capacity used.</div>
+          </div>
+        </div>
+        <div class="report-card-actions">
+          <button class="btn-export-csv">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            CSV
+          </button>
+          <button class="btn-export-pdf">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- Revenue Report -->
+      <div class="report-card">
+        <div class="report-card-head">
+          <div class="report-icon report-icon-revenue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+          </div>
+          <div>
+            <div class="report-card-title">Revenue</div>
+            <div class="report-card-desc">Gross sales, refunds, net revenue broken down by date and reservation. For accountants and tax filings.</div>
+          </div>
+        </div>
+        <div class="report-card-actions">
+          <button class="btn-export-csv">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            CSV
+          </button>
+          <button class="btn-export-pdf">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- Stall Occupancy Report -->
+      <div class="report-card">
+        <div class="report-card-head">
+          <div class="report-icon report-icon-occupancy">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          </div>
+          <div>
+            <div class="report-card-title">Stall Occupancy</div>
+            <div class="report-card-desc">Which stalls and RV lots were used each night. Useful for venue settlement and post-event analysis.</div>
+          </div>
+        </div>
+        <div class="report-card-actions">
+          <button class="btn-export-csv">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            CSV
+          </button>
+          <button class="btn-export-pdf">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- Customer List Report -->
+      <div class="report-card">
+        <div class="report-card-head">
+          <div class="report-icon report-icon-customers">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+          </div>
+          <div>
+            <div class="report-card-title">Customer List</div>
+            <div class="report-card-desc">All customers with contact info and lifetime spend. For mailing lists and CRM exports.</div>
+          </div>
+        </div>
+        <div class="report-card-actions">
+          <button class="btn-export-csv">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            CSV
+          </button>
+          <button class="btn-export-pdf">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- Refund Log Report -->
+      <div class="report-card">
+        <div class="report-card-head">
+          <div class="report-icon report-icon-refunds">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+          </div>
+          <div>
+            <div class="report-card-title">Refund Log</div>
+            <div class="report-card-desc">Every refund issued with reason, date, admin user. For compliance and audit trails.</div>
+          </div>
+        </div>
+        <div class="report-card-actions">
+          <button class="btn-export-csv">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            CSV
+          </button>
+          <button class="btn-export-pdf">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            PDF
+          </button>
+        </div>
+      </div>
+
     </div>
 
     <!-- Export History -->
@@ -182,8 +438,9 @@ td{padding:12px 14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
           <thead>
             <tr>
               <th>Exported At</th>
+              <th>Report</th>
               <th>Reservation</th>
-              <th>Scope</th>
+              <th>Format</th>
               <th>File Name</th>
               <th>Exported By</th>
             </tr>
@@ -191,23 +448,34 @@ td{padding:12px 14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
           <tbody>
             <tr>
               <td class="td-date">2026-04-24 11:35:33</td>
+              <td class="td-report">All Reports (ZIP)</td>
               <td class="td-reservation">2026 Southeast Region Super Sort</td>
-              <td class="td-scope">Single reservation</td>
-              <td class="td-filename">equine-event-manager-report-30597-20260424-173533.csv</td>
+              <td class="td-format">ZIP</td>
+              <td class="td-filename">eem-all-reports-30597-20260424.zip</td>
+              <td class="td-user">Whitney Mitchell</td>
+            </tr>
+            <tr>
+              <td class="td-date">2026-04-22 14:08:02</td>
+              <td class="td-report">Revenue</td>
+              <td class="td-reservation">2026 Southeast Region Super Sort</td>
+              <td class="td-format">PDF</td>
+              <td class="td-filename">eem-revenue-30597-20260422.pdf</td>
               <td class="td-user">Whitney Mitchell</td>
             </tr>
             <tr>
               <td class="td-date">2026-04-20 09:12:44</td>
+              <td class="td-report">Orders</td>
               <td class="td-reservation">All reservations</td>
-              <td class="td-scope">All reservations</td>
-              <td class="td-filename">equine-event-manager-report-all-20260420-091244.csv</td>
+              <td class="td-format">CSV</td>
+              <td class="td-filename">eem-orders-all-20260420.csv</td>
               <td class="td-user">Whitney Mitchell</td>
             </tr>
             <tr>
               <td class="td-date">2026-04-15 14:08:02</td>
+              <td class="td-report">Customer List</td>
               <td class="td-reservation">2026 Bluegrass Show</td>
-              <td class="td-scope">Single reservation</td>
-              <td class="td-filename">equine-event-manager-report-30412-20260415-140802.csv</td>
+              <td class="td-format">CSV</td>
+              <td class="td-filename">eem-customers-30412-20260415.csv</td>
               <td class="td-user">Whitney Mitchell</td>
             </tr>
           </tbody>
@@ -218,41 +486,39 @@ td{padding:12px 14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
       <div class="mobile-history">
         <div class="history-card">
           <div class="history-card-top">
-            <div class="history-card-res">2026 Southeast Region Super Sort</div>
+            <div class="history-card-res">All Reports (ZIP)</div>
             <div class="history-card-date">2026-04-24 11:35</div>
           </div>
           <div class="history-card-meta">
-            <div class="history-card-row">Scope: <span>Single reservation</span></div>
+            <div class="history-card-row">Reservation: <span>2026 SE Region Super Sort</span></div>
             <div class="history-card-row">Exported by: <span>Whitney Mitchell</span></div>
-            <div class="history-card-file">equine-event-manager-report-30597-20260424-173533.csv</div>
+            <div class="history-card-file">eem-all-reports-30597-20260424.zip</div>
           </div>
         </div>
         <div class="history-card">
           <div class="history-card-top">
-            <div class="history-card-res">All reservations</div>
+            <div class="history-card-res">Revenue · PDF</div>
+            <div class="history-card-date">2026-04-22 14:08</div>
+          </div>
+          <div class="history-card-meta">
+            <div class="history-card-row">Reservation: <span>2026 SE Region Super Sort</span></div>
+            <div class="history-card-row">Exported by: <span>Whitney Mitchell</span></div>
+            <div class="history-card-file">eem-revenue-30597-20260422.pdf</div>
+          </div>
+        </div>
+        <div class="history-card">
+          <div class="history-card-top">
+            <div class="history-card-res">Orders · CSV</div>
             <div class="history-card-date">2026-04-20 09:12</div>
           </div>
           <div class="history-card-meta">
-            <div class="history-card-row">Scope: <span>All reservations</span></div>
+            <div class="history-card-row">Reservation: <span>All reservations</span></div>
             <div class="history-card-row">Exported by: <span>Whitney Mitchell</span></div>
-            <div class="history-card-file">equine-event-manager-report-all-20260420-091244.csv</div>
-          </div>
-        </div>
-        <div class="history-card">
-          <div class="history-card-top">
-            <div class="history-card-res">2026 Bluegrass Show</div>
-            <div class="history-card-date">2026-04-15 14:08</div>
-          </div>
-          <div class="history-card-meta">
-            <div class="history-card-row">Scope: <span>Single reservation</span></div>
-            <div class="history-card-row">Exported by: <span>Whitney Mitchell</span></div>
-            <div class="history-card-file">equine-event-manager-report-30412-20260415-140802.csv</div>
+            <div class="history-card-file">eem-orders-all-20260420.csv</div>
           </div>
         </div>
       </div>
-
     </div>
-
   </div><!-- /wp-content -->
 </div><!-- /wp-body -->
 </body>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Equine Event Manager – Stall Charts</title>
+<title>Equine Event Manager – Stall & RV Charts</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -74,6 +74,7 @@ td{padding:14px 16px;font-size:13.5px;color:#1d2327;vertical-align:middle}
 /* Barn tags */
 .barn-tags{display:flex;gap:5px;flex-wrap:wrap}
 .barn-tag{padding:3px 9px;border-radius:4px;font-size:11.5px;font-weight:600;background:#F0F4FB;color:#031B4E;border:1px solid #D9E2F2}
+.rv-lot-tag{padding:3px 9px;border-radius:4px;font-size:11.5px;font-weight:600;background:#F5F3FF;color:#6d28d9;border:1px solid #ddd6fe;display:inline-block}
 
 /* Status */
 .chart-status{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;padding:4px 10px;border-radius:20px;white-space:nowrap}
@@ -158,14 +159,12 @@ td{padding:14px 16px;font-size:13.5px;color:#1d2327;vertical-align:middle}
     <div class="wp-sidebar-sep"></div>
     <div class="wp-sidebar-label">Equine EM</div>
     <div class="wp-sidebar-item active">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-      Stall Charts
-    </div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Stall & RV Charts</div>
     <div class="wp-sidebar-sub">Dashboard</div>
     <div class="wp-sidebar-sub">Events</div>
     <div class="wp-sidebar-sub">Orders</div>
     <div class="wp-sidebar-sub">Reservations</div>
-    <div class="wp-sidebar-sub active">Stall Charts</div>
+    <div class="wp-sidebar-sub active">Stall & RV Charts</div>
     <div class="wp-sidebar-sub">Invoicing</div>
     <div class="wp-sidebar-sub">Reports</div>
     <div class="wp-sidebar-sub">Settings</div>
@@ -178,16 +177,16 @@ td{padding:14px 16px;font-size:13.5px;color:#1d2327;vertical-align:middle}
     <div class="breadcrumb">
       <div class="breadcrumb-logo-box">Plugin Logo</div>
       <span class="breadcrumb-sep">/</span>
-      <span class="breadcrumb-page">Stall Charts</span>
+      <span class="breadcrumb-page">Stall & RV Charts</span>
     </div>
 
-    <div class="page-title">Stall Charts</div>
+    <div class="page-title">Stall & RV Charts</div>
 
     <div class="plugin-wrap">
 
       <div class="plugin-header">
         <div>
-          <div class="plugin-title">Stall Charts</div>
+          <div class="plugin-title">Stall & RV Charts</div>
           <div class="plugin-subtitle">View and manage stall assignments for each reservation. Click a reservation name to open its assignment board.</div>
         </div>
       </div>
@@ -215,7 +214,8 @@ td{padding:14px 16px;font-size:13.5px;color:#1d2327;vertical-align:middle}
           <thead>
             <tr>
               <th class="sortable">Reservation <span class="sort-icon"><span></span><span></span></span></th>
-              <th>Barns / Lots</th>
+              <th>Barns</th>
+              <th>RV Lots</th>
               <th class="sortable">Stall Status <span class="sort-icon"><span></span><span></span></span></th>
               <th>Actions</th>
             </tr>
@@ -236,7 +236,11 @@ td{padding:14px 16px;font-size:13.5px;color:#1d2327;vertical-align:middle}
                   <span class="barn-tag">Red Barn</span>
                   <span class="barn-tag">Blue Barn</span>
                   <span class="barn-tag">Green Barn</span>
-                  <span class="barn-tag">RV Lot A</span>
+                </div>
+              </td>
+              <td>
+                <div class="barn-tags">
+                  <span class="rv-lot-tag">RV Lot A</span>
                 </div>
               </td>
               <td><span class="chart-status status-configured">Configured</span></td>
@@ -244,7 +248,7 @@ td{padding:14px 16px;font-size:13.5px;color:#1d2327;vertical-align:middle}
                 <div class="actions-cell">
                   <button class="action-btn btn-view-chart">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-                    View Stall Chart
+                    View Chart
                   </button>
                   <button class="action-btn btn-edit-res">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -264,12 +268,13 @@ td{padding:14px 16px;font-size:13.5px;color:#1d2327;vertical-align:middle}
                 </div>
               </td>
               <td><div class="barn-tags"><span class="barn-tag">Main Barn</span><span class="barn-tag">Overflow Barn</span></div></td>
+              <td><span style="color:#94a3b8;font-size:11.5px">—</span></td>
               <td><span class="chart-status status-partial">Partial</span></td>
               <td>
                 <div class="actions-cell">
                   <button class="action-btn btn-view-chart">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-                    View Stall Chart
+                    View Chart
                   </button>
                   <button class="action-btn btn-edit-res">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -287,12 +292,13 @@ td{padding:14px 16px;font-size:13.5px;color:#1d2327;vertical-align:middle}
                 </div>
               </td>
               <td><div class="barn-tags"><span class="barn-tag" style="color:#94a3b8;border-color:#e2e8f0">No barns set</span></div></td>
+              <td><div class="barn-tags"><span class="barn-tag" style="color:#94a3b8;border-color:#e2e8f0">No lots set</span></div></td>
               <td><span class="chart-status status-empty">Not Configured</span></td>
               <td>
                 <div class="actions-cell">
                   <button class="action-btn btn-view-chart">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-                    View Stall Chart
+                    Set Up Chart
                   </button>
                   <button class="action-btn btn-edit-res">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -311,12 +317,13 @@ td{padding:14px 16px;font-size:13.5px;color:#1d2327;vertical-align:middle}
                 </div>
               </td>
               <td><div class="barn-tags"><span class="barn-tag">North Barn</span><span class="barn-tag">South Barn</span></div></td>
+              <td><span style="color:#94a3b8;font-size:11.5px">—</span></td>
               <td><span class="chart-status status-configured">Configured</span></td>
               <td>
                 <div class="actions-cell">
                   <button class="action-btn btn-view-chart">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-                    View Stall Chart
+                    View Chart
                   </button>
                   <button class="action-btn btn-edit-res">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -334,12 +341,13 @@ td{padding:14px 16px;font-size:13.5px;color:#1d2327;vertical-align:middle}
                 </div>
               </td>
               <td><div class="barn-tags"><span class="barn-tag" style="color:#94a3b8;border-color:#e2e8f0">No barns set</span></div></td>
+              <td><div class="barn-tags"><span class="barn-tag" style="color:#94a3b8;border-color:#e2e8f0">No lots set</span></div></td>
               <td><span class="chart-status status-empty">Not Configured</span></td>
               <td>
                 <div class="actions-cell">
                   <button class="action-btn btn-view-chart">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-                    View Stall Chart
+                    Set Up Chart
                   </button>
                   <button class="action-btn btn-edit-res">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -362,6 +370,7 @@ td{padding:14px 16px;font-size:13.5px;color:#1d2327;vertical-align:middle}
           <div class="mob-card-body">
             <div class="mob-card-dates">May 8, 2026 – May 10, 2026</div>
             <div class="barn-tags" style="margin-bottom:6px"><span class="barn-tag">Red Barn</span><span class="barn-tag">Blue Barn</span><span class="barn-tag">Green Barn</span></div>
+            <div class="barn-tags" style="margin-bottom:6px"><span class="rv-lot-tag">RV Lot A</span></div>
             <div class="chart-stats">
               <div class="chart-stat"><div class="stat-dot" style="background:#22c55e"></div>82 Available</div>
               <div class="chart-stat"><div class="stat-dot" style="background:#ef4444"></div>28 Reserved</div>
@@ -395,7 +404,7 @@ td{padding:14px 16px;font-size:13.5px;color:#1d2327;vertical-align:middle}
             <div class="mob-card-dates">May 20, 2026 – May 22, 2026</div>
           </div>
           <div class="mob-card-bottom">
-            <button class="action-btn btn-view-chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>View Chart</button>
+            <button class="action-btn btn-view-chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Set Up Chart</button>
             <button class="action-btn btn-edit-res"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Reservation</button>
           </div>
         </div>

@@ -264,6 +264,20 @@ img{display:block;max-width:100%}
   .section-title{font-size:11px}
   .complete-btn{font-size:14px;padding:13px}
 }
+
+/* Agreement Notice (below Order Summary, controlled by admin Agreement card) */
+.agreement-notice{display:flex;align-items:flex-start;gap:10px;background:#FFFBEB;border:1px solid #fbbf24;border-radius:8px;padding:14px 16px;margin-top:14px;font-family:'IBM Plex Sans',sans-serif}
+.agreement-notice-icon{flex-shrink:0;width:18px;height:18px;color:#f59e0b;margin-top:1px}
+.agreement-notice-text{font-size:13.5px;line-height:1.55;color:#1d2327}
+.agreement-notice-text strong{font-weight:700;color:#031B4E}
+.agreement-notice-link{color:#1668F2;text-decoration:underline;font-weight:500}
+.agreement-notice-link:hover{color:#0d5cd9}
+@media(max-width:900px){
+  .agreement-notice{margin:14px 0;font-size:13px}
+  .agreement-notice-icon{width:16px;height:16px}
+  .agreement-notice-text{font-size:13px}
+}
+
 </style>
 </head>
 <body>
@@ -368,7 +382,6 @@ img{display:block;max-width:100%}
       <div class="section-header">
         <div class="section-header-left">
           <div class="section-title">Stay Details</div>
-          <div class="section-desc">Dates and general stabling information</div>
         </div>
       </div>
       <div class="section-body-padded">
@@ -382,7 +395,6 @@ img{display:block;max-width:100%}
       <div class="section-header">
         <div class="section-header-left">
           <div class="section-title">Stall Reservations</div>
-          <div class="section-desc">Select stall type, dates, and quantity</div>
         </div>
         <div class="toggle on"></div>
       </div>
@@ -555,7 +567,6 @@ img{display:block;max-width:100%}
       <div class="section-header">
         <div class="section-header-left">
           <div class="section-title">RV Reservations</div>
-          <div class="section-desc">Full hook-up RV spots for the event</div>
         </div>
         <div class="toggle on"></div>
       </div>
@@ -606,7 +617,6 @@ img{display:block;max-width:100%}
       <div class="section-header">
         <div class="section-header-left">
           <div class="section-title">Add-Ons</div>
-          <div class="section-desc">Extra supplies and services</div>
         </div>
         <div class="toggle on"></div>
       </div>
@@ -632,7 +642,6 @@ img{display:block;max-width:100%}
       <div class="section-header">
         <div class="section-header-left">
           <div class="section-title">Group Reservation</div>
-          <div class="section-desc">Capture names for each rider in your group</div>
         </div>
         <div class="toggle on"></div>
       </div>
@@ -738,7 +747,6 @@ img{display:block;max-width:100%}
     <div class="order-card">
       <div class="order-card-head">
         <h3>Order Summary</h3>
-        <p>Updates as you fill in the form</p>
       </div>
       <div class="order-card-body">
         <div class="order-event-name">2026 Southeast Region Super Sort</div>
@@ -764,6 +772,14 @@ img{display:block;max-width:100%}
         <div class="order-info-box"><span>ℹ</span><span>Your reservation will be confirmed by email after checkout. Changes can be requested through your account.</span></div>
         <button class="order-reserve-btn">Reserve Now</button>
         <div class="order-secure">🔒 Secured Checkout · SSL Encrypted</div>
+      </div>
+    </div>
+
+    <!-- Agreement Notice (controlled by admin Agreement card on Edit Reservation) -->
+    <div class="agreement-notice">
+      <svg class="agreement-notice-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <div class="agreement-notice-text">
+        All transaction fees are non-refundable. Please be sure you have read the <a href="#" class="agreement-notice-link">Venue Agreement</a> before clicking <strong>SAVE</strong>.
       </div>
     </div>
   </div>

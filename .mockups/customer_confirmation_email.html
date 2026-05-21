@@ -156,6 +156,40 @@ body{background:#f0f2f5;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;
   .confirm-bar{padding:10px 14px}
   .res-fields{grid-template-columns:1fr}
 }
+
+/* Stall Assignments section */
+.assignments-section{background:#F0F4FB;border:1px solid #D9E2F2;border-radius:6px;padding:14px 16px;margin:0 0 20px}
+.assignments-title{font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#031B4E;margin-bottom:10px}
+.assignments-table{width:100%;border-collapse:collapse}
+.assignments-table td{vertical-align:top;padding:5px 0;border-bottom:1px solid #E5EAF2;font-size:13px;line-height:1.55}
+.assignments-table tr:last-child td{border-bottom:none}
+.assign-label{font-weight:700;color:#031B4E;width:80px;padding-right:14px}
+.assign-value{color:#1d2327;font-weight:500}
+.assign-nights{color:#6B7A99;font-size:12px;text-align:right;white-space:nowrap;padding-left:14px}
+.hosted-link{display:inline-flex;align-items:center;gap:4px;margin-top:10px;color:#1668F2;font-size:12.5px;font-weight:600;text-decoration:none}
+.hosted-link:hover{text-decoration:underline}
+
+/* What's Next section */
+.whats-next{background:#F0FDF4;border:1px solid #BBF7D0;border-radius:6px;padding:14px 16px;margin:0 0 20px}
+.whats-next-head{display:flex;align-items:center;gap:8px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#15803d;margin-bottom:8px}
+.whats-next-body p{font-size:13px;line-height:1.55;color:#1d2327;margin:0 0 8px}
+.whats-next-body p:last-child{margin-bottom:0}
+.whats-next-body strong{color:#031B4E;font-weight:600}
+
+/* Cancellation Policy */
+.policy-section{background:#FAFBFE;border:1px solid #E5EAF2;border-radius:6px;padding:12px 16px;margin-top:8px}
+.policy-title{font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#031B4E;margin-bottom:6px}
+.policy-body{font-size:11.5px;line-height:1.5;color:#4a5a7a;margin:0}
+
+/* Mobile tweaks */
+@media(max-width:600px){
+  .assignments-table td{display:block;padding:3px 0;border:none}
+  .assignments-table tr{display:block;padding:8px 0;border-bottom:1px solid #E5EAF2}
+  .assignments-table tr:last-child{border-bottom:none}
+  .assign-label{width:auto;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#6B7A99;margin-bottom:2px}
+  .assign-nights{text-align:left;padding-left:0;margin-top:2px}
+}
+
 </style>
 </head>
 <body>
@@ -187,7 +221,7 @@ body{background:#f0f2f5;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;
   <!-- BODY -->
   <div class="email-body">
 
-    <p class="greeting">Hi <strong>Whitney</strong>, your reservation has been confirmed and payment received. Here's a full summary of your order below — a PDF copy is also attached to this email.</p>
+    <p class="greeting">Hi <strong>Whitney</strong>, your reservation is confirmed and payment received. A full summary is below, a PDF receipt is attached, and you can <a href="#" style="color:#1668F2;text-decoration:none;font-weight:600">view your order online ↗</a> anytime.</p>
 
     <!-- Order meta pills -->
     <div class="order-meta">
@@ -195,6 +229,28 @@ body{background:#f0f2f5;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;
       <div class="meta-pill"><span class="dot"></span>RV</div>
       <div class="meta-pill"><span class="dot"></span>Add-On</div>
       <div class="meta-pill"><span class="dot"></span>Group</div>
+    </div>
+
+    <!-- Stall Assignments -->
+    <div class="assignments-section">
+      <div class="assignments-title">Your Assignments</div>
+      <table class="assignments-table" cellpadding="0" cellspacing="0">
+        <tbody>
+          <tr>
+            <td class="assign-label">Stalls</td>
+            <td class="assign-value">Red Barn · Stall 100<br>Red Barn · Stall 101<br>Red Barn · Stall 102<br>Red Barn · Stall 104</td>
+            <td class="assign-nights">May 8 – May 10<br>2 nights each</td>
+          </tr>
+          <tr>
+            <td class="assign-label">RV Lot</td>
+            <td class="assign-value">Red Lot</td>
+            <td class="assign-nights">May 8 – May 10<br>2 nights</td>
+          </tr>
+        </tbody>
+      </table>
+      <a href="#" class="hosted-link">
+        View or print your order online ↗
+      </a>
     </div>
 
     <!-- Line Items -->
@@ -234,6 +290,20 @@ body{background:#f0f2f5;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;
       <div style="font-size:13px;color:#1a1a2e">Test TEst Test</div>
     </div>
 
+    <!-- What's Next / Event Day Info -->
+    <div class="whats-next">
+      <div class="whats-next-head">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span>What's Next — Event Day Info</span>
+      </div>
+      <div class="whats-next-body">
+        <p><strong>Check-in opens:</strong> Friday, May 8 at 7:00 AM at the main barn office.</p>
+        <p><strong>What to bring:</strong> Coggins certificate (within 12 months), feed and water buckets, your own bedding if you prefer to top up the shavings provided.</p>
+        <p><strong>Parking:</strong> Truck and trailer parking is on the east side of the barns. Day-trip parking is in the front lot.</p>
+        <p><strong>Questions on event day:</strong> Call the event hotline at <strong>555-555-5555</strong>.</p>
+      </div>
+    </div>
+
     <!-- PDF attachment note -->
     <div class="attachment-note">
       <div class="attach-icon">📎</div>
@@ -256,6 +326,12 @@ body{background:#f0f2f5;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;
     </div>
 
     <p style="font-size:12.5px;color:#6B7A99;text-align:center">We look forward to seeing you at the 2026 Southeast Region Super Sort.<br>Thank you for your reservation!</p>
+
+    <!-- Cancellation Policy -->
+    <div class="policy-section">
+      <div class="policy-title">Cancellation Policy</div>
+      <p class="policy-body">Cancellations made more than 14 days before the event will receive a full refund. Cancellations within 14 days of the event are non-refundable. Cancellations within 48 hours of the event will forfeit stall and lot deposits. Please contact the event office for any extenuating circumstances.</p>
+    </div>
 
   </div><!-- /email-body -->
 

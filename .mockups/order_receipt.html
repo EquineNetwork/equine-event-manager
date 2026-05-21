@@ -112,6 +112,14 @@ td{padding:6px 9px;font-size:12px;vertical-align:middle}
   /* Footer stacks */
   .footer{flex-direction:column;gap:4px;text-align:center}
 }
+
+.rcpt-policy{margin-top:24px;padding:12px 14px;background:#fafbfc;border:1px solid #e5eaf0;border-radius:4px;page-break-inside:avoid}
+.rcpt-policy-title{font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#031B4E;margin-bottom:6px}
+.rcpt-policy-body{font-size:10.5px;line-height:1.5;color:#4a5a7a;margin:0}
+@media print{
+  .rcpt-policy{break-inside:avoid;page-break-inside:avoid;background:#fff;border-color:#c0c4cc}
+}
+
 </style>
 </head>
 <body>
@@ -130,7 +138,7 @@ td{padding:6px 9px;font-size:12px;vertical-align:middle}
     <div class="obl">Payment Date</div>
     <div class="obv">04-24-2026</div>
     <div class="obl">Amount Paid</div>
-    <div class="obv paid">$170.56</div>
+    <div class="obv paid">$208.66</div>
   </div>
 </div>
 
@@ -228,9 +236,17 @@ td{padding:6px 9px;font-size:12px;vertical-align:middle}
     <div class="trow"><span class="tl">RV Reservation</span><span class="tv">$40.00</span></div>
     <div class="trow"><span class="tl">Water Add-On</span><span class="tv">$60.00</span></div>
     <div class="trow"><span class="tl">Shavings Add-On</span><span class="tv">$24.00</span></div>
+    <div class="trow"><span class="tl">Subtotal</span><span class="tv">$188.00</span></div>
     <div class="trow"><span class="tl">Non-Refundable Convenience Fee</span><span class="tv">$6.56</span></div>
-    <div class="trow grand"><span class="tl">Total Amount Paid</span><span class="tv">$170.56</span></div>
+    <div class="trow"><span class="tl">Sales Tax (7.5%)</span><span class="tv">$14.10</span></div>
+    <div class="trow grand"><span class="tl">Total Amount Paid</span><span class="tv">$208.66</span></div>
   </div>
+</div>
+
+<!-- CANCELLATION POLICY -->
+<div class="rcpt-policy">
+  <div class="rcpt-policy-title">Cancellation Policy</div>
+  <p class="rcpt-policy-body">Cancellations made more than 14 days before the event will receive a full refund. Cancellations within 14 days of the event are non-refundable. Cancellations within 48 hours of the event will forfeit stall and lot deposits. Please contact the event office for any extenuating circumstances.</p>
 </div>
 
 <!-- FOOTER -->
