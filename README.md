@@ -51,7 +51,7 @@ All mockup files live in `.mockups/`.
 Top-level menu **Equine EM** with submenu items in this order:
 
 1. Dashboard
-2. Events (placeholder — events come from a connected feed/source defined in Settings)
+2. Events (only shown when Settings → Events source mode is "Native Events"; hidden when using TEC or external feed)
 3. Orders
 4. Reservations
 5. Stall Charts
@@ -247,8 +247,8 @@ Order data model (`en_order` CPT or custom table):
 ## 11. Settings (6 tabs)
 
 1. **General** — business name, contact info, logo
-2. **Events** — event feed URL (Test Feed URL button calls the URL and validates JSON), active source
-3. **Payments** — Stripe keys, webhook secret, fee defaults
+2. **Events** — event source picker (Native Events / TEC / External Feed) with conditional sub-sections per choice. See CLAUDE.md "In-scope features → Event source" for details.
+3. **Payments** — Stripe keys + webhook secret, **Authorize.net credentials + sandbox toggle**, fee defaults. Both processors supported; admin picks which is active.
 4. **Email** — sender name/address, confirmation email enable, optional BCC
 5. **Notifications** — when to ping admin (new order, payment received, agreement signed, etc.)
 6. **Advanced** — debug logging, cache flush, plugin export/import

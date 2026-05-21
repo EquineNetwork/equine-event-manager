@@ -143,8 +143,33 @@ Goal: prove the overhaul didn't break anything.
 - Anything that changes the user-facing data model (renaming a meta key, changing CPT slug after the plugin is in use)
 - Anything that requires a one-time data migration
 - Deleting any feature that exists in the current plugin but not in the mockups — even if it looks unused, I may want it kept
-- Anything that touches Stripe/payment behavior beyond cosmetic changes
+- Anything that touches Stripe / Authorize.net / payment behavior beyond cosmetic changes
 - Adding any third-party JS library (Choices.js, SortableJS, Select2, etc.) — confirm the choice with me
+
+---
+
+## In-scope features not depicted in mockups
+
+The mockups are not exhaustive. The following features exist (or will exist) in code and are in-scope — **do not treat them as drift, do not delete them, do not treat the absence-from-mockups as "should be removed":**
+
+### Authorize.net payment processing
+
+The plugin supports both Stripe and Authorize.net as payment processors. Auth.net is currently partially implemented (refund handling exists, full flow is unfinished). When the mockups show "Stripe" specifically (e.g. in Settings → Payments), that's the example processor — the actual UI should accommodate both. Plan for finishing the Auth.net flow as part of this overhaul rather than treating it as Codex bloat.
+
+### Event source — three options, user picks one in Settings
+
+The plugin supports **three mutually-exclusive event sources**. The Settings → Events tab lets the site admin choose one:
+
+1. **Native Events** — `en_event`, `en_venue`, `en_producer` CPTs managed in the plugin itself. ~1,500 LOC. Currently partially built; needs to be finished after the cleanup pass is stable.
+2. **TEC Integration** — when The Events Calendar plugin is installed, pull events from it via TEC's APIs. ~500 LOC. Working integration today.
+3. **Event Feed** — pull events from an external JSON URL configured in Settings.
+
+All three must be preserved. Where the mockups reference an "event link" or "event source" (e.g. on `edit_reservation_page.html`, on the Settings page, in the Linked Event meta bar), the implementation should accept any of the three sources transparently — the reservation just needs a reference to an event, regardless of which source provided it.
+
+**Implementation notes for Phase 3:**
+- The reservation `_en_event_id` / `_en_native_event_id` / `_en_external_event_*` meta keys observed in the audit are the multi-source plumbing. Keep them.
+- Settings → Events tab needs a clear "source mode" switch (radio or segmented control) that gates which sub-section is visible (Native Events admin link, TEC connection status, or Feed URL).
+- The "Events" sidebar item should only appear when source mode is Native Events.
 
 ---
 
