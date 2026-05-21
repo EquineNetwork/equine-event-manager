@@ -88,6 +88,40 @@ body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;fon
 .toggle-row-title{font-size:14px;font-weight:600;color:#1d2327;margin-bottom:4px}
 .toggle-row-desc{font-size:13px;color:#6B7A99;line-height:1.6;max-width:700px}
 
+/* Radio source picker (Events tab, Payments active processor) */
+.source-row{display:flex;align-items:flex-start;gap:14px;padding:14px 16px;border:1.5px solid #D9E2F2;border-radius:6px;margin-bottom:8px;cursor:pointer;background:#fff;transition:border-color .15s,background .15s}
+.source-row:hover{border-color:#B0BDD4}
+.source-row.selected{border-color:#1668F2;background:#F7FAFF}
+.source-row.disabled{cursor:not-allowed;opacity:.6;background:#FAFBFD}
+.source-row.disabled:hover{border-color:#D9E2F2}
+.source-radio{width:18px;height:18px;border:1.5px solid #B0BDD4;border-radius:50%;flex-shrink:0;margin-top:2px;position:relative;background:#fff;transition:border-color .15s}
+.source-row.selected .source-radio{border-color:#1668F2}
+.source-row.selected .source-radio::after{content:'';position:absolute;top:3px;left:3px;width:9px;height:9px;border-radius:50%;background:#1668F2}
+.source-row-body{flex:1;min-width:0}
+.source-row-head{display:flex;align-items:center;gap:10px;margin-bottom:4px;flex-wrap:wrap}
+.source-row-title{font-size:14px;font-weight:600;color:#031B4E}
+.source-row-desc{font-size:13px;color:#6B7A99;line-height:1.5}
+
+/* Status pills */
+.status-pill{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:11px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;flex-shrink:0}
+.status-pill::before{content:'';width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.status-active{background:#F0FDFA;color:#0d9488;border:1px solid #99f6e4}
+.status-active::before{background:#26D0B5}
+.status-inactive{background:#F7F9FC;color:#6B7A99;border:1px solid #D9E2F2}
+.status-inactive::before{background:#B0BDD4}
+.status-available{background:#EEF4FF;color:#1668F2;border:1px solid #c0d8ff}
+.status-available::before{background:#1668F2}
+.status-not-installed{background:#FEF2F2;color:#b91c1c;border:1px solid #fecaca}
+.status-not-installed::before{background:#dc2626}
+.status-not-configured{background:#FFFBEB;color:#b45309;border:1px solid #fde68a}
+.status-not-configured::before{background:#d97706}
+
+/* Source detail panel — shown only when corresponding source is selected */
+.source-detail{margin-top:6px;padding:18px 20px;border:1px solid #D9E2F2;background:#F7FAFF;border-radius:6px;border-left:3px solid #1668F2}
+.source-detail-title{font-size:13px;font-weight:700;color:#031B4E;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px}
+.source-detail .field-row:first-child{padding-top:0;border-top:none}
+.source-detail .field-row:last-child{padding-bottom:0;border-bottom:none}
+
 /* Shortcode rows */
 .shortcode-row{display:grid;grid-template-columns:220px 1fr;gap:16px;align-items:start;padding:12px 0;border-bottom:1px solid #f0f0f1}
 .shortcode-row:last-child{border-bottom:none}
@@ -220,6 +254,61 @@ function showTab(tabId) {
   document.getElementById('nav-' + tabId).classList.add('active');
 }
 
+/* Source row picker (Events tab, Payments active processor)
+   - One row in a group is "selected"
+   - Disabled rows can't be picked
+   - Selecting a row updates the status pills in the group:
+     selected → Active, others (if previously Active) → Inactive */
+function pickSource(row){
+  if(row.classList.contains('disabled')) return;
+  const group = row.parentElement;
+  group.querySelectorAll('.source-row').forEach(r => {
+    if(r === row) return;
+    r.classList.remove('selected');
+    // Demote the previously-active one
+    const pill = r.querySelector('.status-pill.status-active');
+    if(pill){
+      pill.classList.remove('status-active');
+      pill.classList.add('status-inactive');
+      pill.textContent = 'Inactive';
+    }
+  });
+  row.classList.add('selected');
+  // Promote this one if it was Available or Inactive
+  const pill = row.querySelector('.status-pill');
+  if(pill && (pill.classList.contains('status-available') || pill.classList.contains('status-inactive'))){
+    pill.classList.remove('status-available','status-inactive');
+    pill.classList.add('status-active');
+    pill.textContent = 'Active';
+  }
+  // Show/hide source detail panels by data-detail-for attribute
+  const groupKey = group.dataset.group;
+  if(groupKey){
+    document.querySelectorAll('[data-detail-for]').forEach(panel => {
+      if(panel.dataset.detailFor.startsWith(groupKey + ':')){
+        const key = panel.dataset.detailFor.split(':')[1];
+        panel.style.display = (key === row.dataset.value) ? '' : 'none';
+      }
+    });
+  }
+  // Sync sub-section status pills (Payments tab)
+  if(groupKey === 'payment-processor'){
+    syncPaymentPills(row.dataset.value);
+  }
+}
+function syncPaymentPills(active){
+  const stripeSection  = document.querySelector('#panel-payments .sub-section:nth-of-type(1)');
+  const authnetSection = document.querySelector('#panel-payments .sub-section:nth-of-type(2)');
+  [['stripe',stripeSection],['authnet',authnetSection]].forEach(([key, sect]) => {
+    if(!sect) return;
+    const pill = sect.querySelector('.status-pill');
+    if(!pill) return;
+    pill.classList.remove('status-active','status-inactive');
+    if(key === active){ pill.classList.add('status-active'); pill.textContent = 'Active'; }
+    else { pill.classList.add('status-inactive'); pill.textContent = 'Inactive'; }
+  });
+}
+
 /* Save success toast */
 function showSaveToast(message){
   message = message || 'Settings saved';
@@ -324,38 +413,88 @@ function dismissToast(t){
         <!-- INTEGRATIONS -->
         <div class="tab-panel active" id="panel-integrations">
           <div class="settings-section">
-            <div class="section-title">Event Sources</div>
-            <div class="section-desc">Choose the one live event source Event Manager should use for reservations. Only one source can be active at a time.</div>
+            <div class="section-title">Event Source</div>
+            <div class="section-desc">Choose where reservations get their events from. Only one source can be active at a time.</div>
 
-            <div class="toggle-row">
-              <div class="toggle-row-left">
-                <div class="toggle-row-title">Native Events</div>
-                <div class="toggle-row-desc">Use Equine Event Manager as the main event system with native events, categories, venues, producers, widgets, and the shared frontend event template. Turn this on to make Native Events the live event source for reservations.</div>
+            <div class="source-group" data-group="event-source">
+              <!-- Native Events (currently selected/active) -->
+              <div class="source-row selected" data-value="native" onclick="pickSource(this)">
+                <div class="source-radio"></div>
+                <div class="source-row-body">
+                  <div class="source-row-head">
+                    <div class="source-row-title">Native Events</div>
+                    <span class="status-pill status-active">Active</span>
+                  </div>
+                  <div class="source-row-desc">Use Equine Event Manager as the main event system with native events, categories, venues, producers, widgets, and the shared frontend event template.</div>
+                </div>
               </div>
-              <div class="toggle off"></div>
+
+              <!-- TEC -->
+              <div class="source-row" data-value="tec" onclick="pickSource(this)">
+                <div class="source-radio"></div>
+                <div class="source-row-body">
+                  <div class="source-row-head">
+                    <div class="source-row-title">The Events Calendar (TEC)</div>
+                    <span class="status-pill status-available">Available</span>
+                  </div>
+                  <div class="source-row-desc">The Events Calendar plugin is installed. When active, reservations can search and link to live TEC events directly.</div>
+                </div>
+              </div>
+
+              <!-- External Feed -->
+              <div class="source-row" data-value="feed" onclick="pickSource(this)">
+                <div class="source-radio"></div>
+                <div class="source-row-body">
+                  <div class="source-row-head">
+                    <div class="source-row-title">External Feed URL</div>
+                    <span class="status-pill status-available">Available</span>
+                  </div>
+                  <div class="source-row-desc">Pull events from an external JSON or XML endpoint. Reservations inherit the feed URL automatically when this source is active.</div>
+                </div>
+              </div>
             </div>
 
-            <div class="toggle-row">
-              <div class="toggle-row-left">
-                <div class="toggle-row-title">The Events Calendar Events</div>
-                <div class="toggle-row-desc">This integration requires The Events Calendar plugin. It is currently active on this site, so reservations can search and link to live The Events Calendar events right away. When active, this integration keeps live The Events Calendar events searchable in reservations while Event Manager continues to handle reservations and the shared frontend event template.</div>
-              </div>
-              <div class="toggle on"></div>
+            <!-- Native Events detail (visible when Native is selected) -->
+            <div class="source-detail" data-detail-for="event-source:native">
+              <div class="source-detail-title">Native Events Settings</div>
+              <p class="field-hint" style="margin-bottom:0">Native events are managed under <a href="#" style="color:#1668F2;font-weight:600">EEM → Events</a> in the admin sidebar. Producers, venues, and categories are managed there too.</p>
             </div>
 
-            <div class="toggle-row">
-              <div class="toggle-row-left">
-                <div class="toggle-row-title">External Feed URL</div>
-                <div class="toggle-row-desc">Use a single external feed URL as the reservation event source. This URL is inherited automatically by reservations when this source is turned on.</div>
+            <!-- TEC detail (hidden until TEC is selected) -->
+            <div class="source-detail" data-detail-for="event-source:tec" style="display:none">
+              <div class="source-detail-title">The Events Calendar Connection</div>
+              <div class="field-row">
+                <div class="field-label">Event Category Filter</div>
+                <div class="field-control">
+                  <input class="field-input" type="text" placeholder="e.g. equestrian" style="max-width:300px">
+                  <p class="field-hint">Optional. Only TEC events with this category will be searchable when linking to a reservation. Leave blank to allow all events.</p>
+                </div>
               </div>
-              <div class="toggle off"></div>
+              <div class="field-row">
+                <div class="field-label">Connection Status</div>
+                <div class="field-control">
+                  <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#031B4E"><span class="status-pill status-active">Connected</span> TEC plugin detected and responding.</div>
+                </div>
+              </div>
             </div>
 
-            <div style="padding:16px;border:1px solid #dcdcde;border-radius:4px;margin-top:8px">
-              <div class="field-label" style="margin-bottom:8px">Feed URL</div>
-              <input class="field-input" style="max-width:500px" type="url" value="https://globalroping.com/patriot/schedule.aspx">
-              <button class="btn-test">Test Feed URL</button>
-              <p class="field-hint" style="margin-top:8px">Enter the API or feed endpoint that reservations should use when External Feed URL is the primary source. JSON or XML-style event endpoints are both supported.</p>
+            <!-- Feed detail (hidden until Feed is selected) -->
+            <div class="source-detail" data-detail-for="event-source:feed" style="display:none">
+              <div class="source-detail-title">External Feed URL</div>
+              <div class="field-row">
+                <div class="field-label">Feed URL</div>
+                <div class="field-control">
+                  <input class="field-input" style="max-width:500px" type="url" value="https://globalroping.com/patriot/schedule.aspx">
+                  <p class="field-hint">JSON or XML-style event endpoints are both supported. Use the Test Feed URL button to verify the response.</p>
+                </div>
+              </div>
+              <div class="field-row" style="border-bottom:none">
+                <div class="field-label">Test Connection</div>
+                <div class="field-control">
+                  <button class="btn-test">Test Feed URL</button>
+                  <p class="field-hint">Fetches the feed and validates the response structure. Saves nothing.</p>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -647,25 +786,40 @@ A PDF receipt is attached for your records.</textarea>
         <!-- PAYMENTS -->
         <div class="tab-panel" id="panel-payments">
           <div class="settings-section">
-            <div class="section-title">Payment Merchant Settings</div>
-            <div class="section-desc">Choose your active payment gateway and store the credentials for Stripe or Authorize.net.</div>
+            <div class="section-title">Active Payment Processor</div>
+            <div class="section-desc">Customers will check out using the active processor only. You can configure both below and switch between them at any time.</div>
 
-            <div class="field-row">
-              <div class="field-label">Payment Gateway</div>
-              <div class="field-control">
-                <select class="field-select">
-                  <option selected>Stripe</option>
-                  <option>Authorize.net</option>
-                </select>
-                <p class="field-hint">New reservation orders will inherit this gateway selection until live checkout is enabled.</p>
+            <div class="source-group" data-group="payment-processor">
+              <div class="source-row selected" data-value="stripe" onclick="pickSource(this)">
+                <div class="source-radio"></div>
+                <div class="source-row-body">
+                  <div class="source-row-head">
+                    <div class="source-row-title">Stripe</div>
+                    <span class="status-pill status-active">Active</span>
+                  </div>
+                  <div class="source-row-desc">Modern card processor with built-in webhooks. Recommended for most setups.</div>
+                </div>
+              </div>
+              <div class="source-row" data-value="authnet" onclick="pickSource(this)">
+                <div class="source-radio"></div>
+                <div class="source-row-body">
+                  <div class="source-row-head">
+                    <div class="source-row-title">Authorize.net</div>
+                    <span class="status-pill status-inactive">Inactive</span>
+                  </div>
+                  <div class="source-row-desc">Legacy processor support for merchants with existing Authorize.net accounts. Refunds and capture both supported.</div>
+                </div>
               </div>
             </div>
           </div>
 
           <div class="settings-section">
             <div class="sub-section">
-              <div class="sub-section-title">Stripe Connection</div>
-              <div class="sub-section-desc">Add your Stripe keys now so payment processing can be enabled in the next payment step.</div>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+                <div class="sub-section-title" style="margin-bottom:0">Stripe Connection</div>
+                <span class="status-pill status-active">Active</span>
+              </div>
+              <div class="sub-section-desc">Stripe is the active payment processor. These keys are used for live checkout and webhook handling.</div>
 
               <div class="field-row" style="border-top:1px solid #f0f0f1">
                 <div class="field-label">Mode</div>
@@ -701,14 +855,23 @@ A PDF receipt is attached for your records.</textarea>
                 <div class="field-label">Webhook Signing Secret</div>
                 <div class="field-control">
                   <input class="field-input" type="password" placeholder="whsec_...">
-                  <p class="field-hint">Payment logic is not active yet; these keys are saved for the upcoming Stripe payment step.</p>
+                  <p class="field-hint">Found in your Stripe Dashboard under Developers → Webhooks. Required to verify payment events.</p>
+                </div>
+              </div>
+              <div class="field-row" style="border-bottom:none">
+                <div class="field-label">Test Connection</div>
+                <div class="field-control">
+                  <button class="btn-test">Test Stripe Keys</button>
                 </div>
               </div>
             </div>
 
             <div class="sub-section">
-              <div class="sub-section-title">Authorize.net Connection</div>
-              <div class="sub-section-desc">Store your Authorize.net credentials now so we can route payments and supported refunds through Authorize.net too.</div>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+                <div class="sub-section-title" style="margin-bottom:0">Authorize.net Connection</div>
+                <span class="status-pill status-inactive">Inactive</span>
+              </div>
+              <div class="sub-section-desc">Store your Authorize.net credentials here. Selecting Authorize.net as the active processor above will route checkout through these credentials.</div>
 
               <div class="field-row" style="border-top:1px solid #f0f0f1">
                 <div class="field-label">Mode</div>
@@ -731,6 +894,12 @@ A PDF receipt is attached for your records.</textarea>
               <div class="field-row">
                 <div class="field-label">Live Transaction Key</div>
                 <div class="field-control"><input class="field-input" type="password" value="placeholder"></div>
+              </div>
+              <div class="field-row" style="border-bottom:none">
+                <div class="field-label">Test Connection</div>
+                <div class="field-control">
+                  <button class="btn-test">Test Authorize.net Credentials</button>
+                </div>
               </div>
             </div>
           </div>

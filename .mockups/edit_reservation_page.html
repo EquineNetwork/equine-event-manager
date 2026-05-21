@@ -127,6 +127,88 @@ body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;fon
 .btn-add svg{width:13px;height:13px;color:#1668F2}
 .range-summary{font-size:12px;color:#6B7A99;margin-top:4px}
 
+/* ── Stall Row Builder ── */
+.row-builder{display:flex;flex-direction:column;gap:10px;margin-bottom:10px}
+.row-card{border:1.5px solid #D9E2F2;border-radius:6px;background:#FAFBFE;padding:14px 16px;position:relative}
+
+/* Top header: row name + layout select + delete button (always visible) */
+.row-card-top{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;margin-bottom:12px}
+.row-card-top .row-card-field{flex:1 1 180px;min-width:160px}
+.row-card-top .row-card-field-layout{flex:0 0 160px;min-width:140px}
+.row-card-top .row-card-delete{flex:0 0 auto;align-self:flex-end}
+
+/* One-sided body: First + Last labels in a flex row */
+.row-card-one-sided{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+.row-card-one-sided .row-card-field{flex:1 1 140px;min-width:120px;max-width:220px}
+
+/* Back-to-back body: two independent side sub-blocks */
+.row-card-sides{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+.side-block{flex:1 1 260px;min-width:240px;border:1px solid #D9E2F2;background:#fff;border-radius:4px;padding:10px 12px}
+.side-block-label{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#1668F2;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.side-block-label::before{content:'';width:10px;height:10px;border-radius:2px;background:#1668F2}
+.side-block-row{display:flex;flex-wrap:wrap;gap:10px}
+.side-block-row .row-card-field{flex:1 1 100px;min-width:90px}
+
+/* Shared field styling (used in top, one-sided, side-blocks) */
+.row-card-field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.row-card-field-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8c8f94}
+.row-card-field input,.row-card-field select{padding:7px 10px;border:1.5px solid #D9E2F2;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#031B4E;background:#fff;outline:none;width:100%}
+.row-card-field input:focus,.row-card-field select:focus{border-color:#1668F2}
+.row-card-field select{padding-right:28px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236B7A99' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 9px center;appearance:none}
+.row-card-delete{width:32px;height:32px;border-radius:4px;border:1.5px solid #fecaca;background:#fef2f2;color:#b91c1c;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.row-card-delete svg{width:14px;height:14px}
+.row-card-delete:hover{background:#fee2e2}
+
+.row-card-preview-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8c8f94;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.row-card-preview-label .row-card-count{font-weight:500;text-transform:none;letter-spacing:0;color:#6B7A99;font-size:11.5px}
+
+/* Stall boxes (admin preview + customer picker share these) */
+.stall-row{display:flex;flex-wrap:wrap;gap:4px;padding:6px 0}
+.stall-row.back-to-back{flex-direction:column;gap:2px}
+.stall-row-side{display:flex;flex-wrap:wrap;gap:4px}
+.stall-row-aisle{height:8px;background:repeating-linear-gradient(90deg,transparent 0 6px,#D9E2F2 6px 10px);margin:2px 0;border-radius:2px;position:relative}
+.stall-box{min-width:34px;height:32px;padding:0 6px;display:inline-flex;align-items:center;justify-content:center;border:1.5px solid #D9E2F2;border-radius:4px;background:#fff;font-size:12px;font-weight:600;color:#031B4E;font-family:'IBM Plex Sans',sans-serif;line-height:1;text-align:center;white-space:nowrap}
+.stall-box.blocked{background:#F5F5F7;color:#B0BDD4;border-color:#E5E7EB;border-style:dashed;text-decoration:line-through}
+.stall-box.reserved{background:#F5F5F7;color:#B0BDD4;border-color:#E5E7EB}
+.stall-box.selected{background:#1668F2;color:#fff;border-color:#1668F2}
+.stall-box.clickable{cursor:pointer;transition:border-color .1s,background .1s}
+.stall-box.clickable:hover:not(.blocked):not(.reserved):not(.selected){border-color:#1668F2;background:#EEF4FF}
+
+/* Add Row button */
+.row-add-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border:1.5px dashed #D9E2F2;border-radius:6px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;color:#031B4E;background:#fff;cursor:pointer;align-self:flex-start;margin-bottom:8px}
+.row-add-btn:hover{border-color:#1668F2;color:#1668F2;border-style:solid}
+.row-add-btn svg{width:13px;height:13px;color:#1668F2}
+
+/* Preview Full Chart button + modal */
+.preview-chart-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1.5px solid #D9E2F2;border-radius:4px;font-size:12.5px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;color:#1668F2;background:#fff;cursor:pointer;margin-left:auto}
+.preview-chart-btn:hover{background:#EEF4FF;border-color:#1668F2}
+.preview-chart-btn svg{width:13px;height:13px}
+.row-builder-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px;flex-wrap:wrap}
+.row-builder-summary{font-size:12.5px;color:#6B7A99}
+
+/* Modal overlay */
+.chart-modal{position:fixed;inset:0;background:rgba(3,27,78,.55);z-index:500;display:none;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto}
+.chart-modal.open{display:flex}
+.chart-modal-card{background:#fff;border-radius:8px;max-width:1000px;width:100%;box-shadow:0 20px 60px rgba(3,27,78,.25);overflow:hidden;display:flex;flex-direction:column}
+.chart-modal-head{padding:16px 20px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.chart-modal-title{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:#031B4E}
+.chart-modal-close{background:none;border:none;cursor:pointer;color:#8c8f94;font-size:22px;line-height:1;padding:0 4px}
+.chart-modal-close:hover{color:#031B4E}
+.chart-modal-body{padding:20px;overflow-y:auto;flex:1}
+.chart-modal-legend{display:flex;gap:14px;font-size:12px;color:#6B7A99;margin-bottom:16px;padding:10px 12px;background:#F7F9FC;border-radius:4px;flex-wrap:wrap}
+.chart-modal-legend span{display:inline-flex;align-items:center;gap:6px}
+.chart-modal-legend .swatch{width:14px;height:14px;border-radius:3px;border:1.5px solid #D9E2F2;background:#fff;display:inline-block}
+.chart-modal-legend .swatch.blocked{background:#F5F5F7;border-style:dashed;border-color:#E5E7EB}
+.chart-modal-legend .swatch.reserved{background:#F5F5F7;border-color:#E5E7EB}
+.chart-modal-legend .swatch.selected{background:#1668F2;border-color:#1668F2}
+.chart-modal-section{margin-bottom:18px}
+.chart-modal-section:last-child{margin-bottom:0}
+.chart-modal-section-name{font-size:13px;font-weight:700;color:#031B4E;margin-bottom:6px;font-family:'Space Grotesk',sans-serif}
+
+@media(max-width:767px){
+  .row-card-top .row-card-field-layout{flex:1 1 140px}
+}
+
 /* Blocked numbers select */
 /* Tag multi-select (Blocked Stall Numbers, Blocked RV Lots) */
 .tag-select{position:relative;width:100%;max-width:520px}
@@ -389,7 +471,296 @@ document.addEventListener('click', e => {
   });
 });
 
-/* Run once on load so initial conditional state matches the on/off classes in markup */
+/* ── Stall Row Builder ── */
+/* Tries to compute a list of labels between `start` and `end`.
+   - If both are pure integers, generate the inclusive range.
+   - If both share a non-numeric prefix and end in integers (e.g. "Y1" → "Y12", "A-01" → "A-12"),
+     keep the prefix and generate the inclusive numeric range.
+   - Otherwise, return [start, end] (best-effort fallback). */
+function stallLabelsBetween(start, end){
+  start = (start || '').trim();
+  end = (end || '').trim();
+  if(!start || !end) return [];
+  // Pure integers
+  if(/^\d+$/.test(start) && /^\d+$/.test(end)){
+    const s = parseInt(start,10), e = parseInt(end,10);
+    if(e < s) return [start];
+    const out = [];
+    for(let i=s;i<=e;i++) out.push(String(i));
+    return out;
+  }
+  // Prefix + integers (e.g. "Y1" / "Y12", "A-01" / "A-12")
+  const m1 = start.match(/^(.+?)(\d+)$/);
+  const m2 = end.match(/^(.+?)(\d+)$/);
+  if(m1 && m2 && m1[1] === m2[1]){
+    const prefix = m1[1];
+    const s = parseInt(m1[2],10), e = parseInt(m2[2],10);
+    const pad = m1[2].length; // preserve leading zeros if any
+    if(e < s) return [start];
+    const out = [];
+    for(let i=s;i<=e;i++){
+      const num = pad > String(i).length ? String(i).padStart(pad,'0') : String(i);
+      out.push(prefix + num);
+    }
+    return out;
+  }
+  return [start, end];
+}
+
+/* Re-render a row's preview based on its current inputs.
+   - For "one-sided", uses [data-role="first"] + [data-role="last"]
+   - For "back-to-back", uses two independent side ranges:
+     top:    [data-role="top-first"] + [data-role="top-last"]
+     bottom: [data-role="bot-first"] + [data-role="bot-last"]
+   The other-mode block is hidden via display:none. */
+function updateRowPreview(triggerEl){
+  const card = triggerEl.closest('.row-card');
+  if(!card) return;
+  const layout = card.querySelector('[data-role="layout"]').value;
+  const oneSidedBlock = card.querySelector('.row-card-one-sided');
+  const sidesBlock = card.querySelector('.row-card-sides');
+  /* Swap visible block based on layout */
+  if(oneSidedBlock) oneSidedBlock.style.display = (layout === 'one-sided') ? '' : 'none';
+  if(sidesBlock)    sidesBlock.style.display    = (layout === 'back-to-back') ? '' : 'none';
+
+  const blocked = getBlockedSet();
+  const renderBox = l => `<div class="stall-box${blocked.has(l) ? ' blocked' : ''}">${l}</div>`;
+  const previewWrap = card.querySelector('.row-card-preview-label').nextElementSibling;
+  const countLabel = card.querySelector('.row-card-count');
+
+  if(layout === 'back-to-back'){
+    const topFirst = (card.querySelector('[data-role="top-first"]') || {}).value || '';
+    const topLast  = (card.querySelector('[data-role="top-last"]')  || {}).value || '';
+    const botFirst = (card.querySelector('[data-role="bot-first"]') || {}).value || '';
+    const botLast  = (card.querySelector('[data-role="bot-last"]')  || {}).value || '';
+    const topLabels = stallLabelsBetween(topFirst, topLast);
+    const botLabels = stallLabelsBetween(botFirst, botLast);
+    const total = topLabels.length + botLabels.length;
+    countLabel.textContent = `${total} stalls · Back-to-back (${topLabels.length} top, ${botLabels.length} bottom)`;
+    previewWrap.outerHTML =
+      '<div class="stall-row back-to-back">' +
+        '<div class="stall-row-side">' + topLabels.map(renderBox).join('') + '</div>' +
+        '<div class="stall-row-aisle" title="Aisle"></div>' +
+        '<div class="stall-row-side">' + botLabels.map(renderBox).join('') + '</div>' +
+      '</div>';
+  } else {
+    const start = (card.querySelector('[data-role="first"]') || {}).value || '';
+    const end   = (card.querySelector('[data-role="last"]')  || {}).value || '';
+    const labels = stallLabelsBetween(start, end);
+    countLabel.textContent = `${labels.length} stalls · One-sided`;
+    previewWrap.outerHTML = '<div class="stall-row">' + labels.map(renderBox).join('') + '</div>';
+  }
+
+  /* Row changed → universe of available labels may have changed → rebuild dropdown */
+  rebuildBlockedStallsDropdown();
+}
+
+/* Refresh every row card preview (used when blocked set changes) */
+function refreshAllRowPreviews(){
+  document.querySelectorAll('#row-builder-list .row-card').forEach(card => {
+    /* Pass any input as triggerEl — updateRowPreview only uses it to find the card */
+    const anyInput = card.querySelector('input');
+    if(anyInput) updateRowPreview(anyInput);
+  });
+}
+
+/* Collect every stall label currently defined across all rows */
+function getAllStallLabels(){
+  const out = [];
+  const seen = new Set();
+  document.querySelectorAll('#row-builder-list .row-card').forEach(card => {
+    const layout = (card.querySelector('[data-role="layout"]') || {}).value;
+    let labels = [];
+    if(layout === 'back-to-back'){
+      const tf = (card.querySelector('[data-role="top-first"]') || {}).value || '';
+      const tl = (card.querySelector('[data-role="top-last"]')  || {}).value || '';
+      const bf = (card.querySelector('[data-role="bot-first"]') || {}).value || '';
+      const bl = (card.querySelector('[data-role="bot-last"]')  || {}).value || '';
+      labels = stallLabelsBetween(tf, tl).concat(stallLabelsBetween(bf, bl));
+    } else {
+      const f = (card.querySelector('[data-role="first"]') || {}).value || '';
+      const l = (card.querySelector('[data-role="last"]')  || {}).value || '';
+      labels = stallLabelsBetween(f, l);
+    }
+    labels.forEach(l => {
+      if(!seen.has(l)){ seen.add(l); out.push(l); }
+    });
+  });
+  return out;
+}
+
+/* Current blocked-stall labels (read from chips) */
+function getBlockedSet(){
+  const sel = document.getElementById('blocked-stalls-select');
+  const out = new Set();
+  if(!sel) return out;
+  sel.querySelectorAll('.tag-chip').forEach(chip => out.add(chip.dataset.value));
+  return out;
+}
+
+/* Rebuild the Blocked Stall Numbers dropdown from the current row builder state.
+   Preserves selected chips (which already exist in DOM); just rebuilds the option list. */
+function rebuildBlockedStallsDropdown(){
+  const sel = document.getElementById('blocked-stalls-select');
+  if(!sel) return;
+  const dropdown = sel.querySelector('.tag-dropdown');
+  const blocked = getBlockedSet();
+  const labels = getAllStallLabels();
+  const empty = dropdown.querySelector('.tag-dropdown-empty');
+  /* Remove existing option items (keep the empty-state element) */
+  dropdown.querySelectorAll('.tag-dropdown-item').forEach(el => el.remove());
+  /* Insert fresh items */
+  labels.forEach(l => {
+    const item = document.createElement('div');
+    item.className = 'tag-dropdown-item' + (blocked.has(l) ? ' selected' : '');
+    item.dataset.value = l;
+    item.textContent = l;
+    item.onclick = () => { tagPick(item); rebuildBlockedStallsDropdown(); refreshAllRowPreviews(); };
+    dropdown.insertBefore(item, empty);
+  });
+}
+
+/* Add a new empty row card */
+function addRow(){
+  const list = document.getElementById('row-builder-list');
+  const html = `
+    <div class="row-card" data-row-id="r${Date.now()}">
+      <div class="row-card-top">
+        <div class="row-card-field">
+          <span class="row-card-field-label">Row Name</span>
+          <input type="text" placeholder="e.g. Blue Barn Row A" data-role="name">
+        </div>
+        <div class="row-card-field row-card-field-layout">
+          <span class="row-card-field-label">Layout</span>
+          <select data-role="layout" onchange="updateRowPreview(this)">
+            <option value="one-sided" selected>One-sided</option>
+            <option value="back-to-back">Back-to-back</option>
+          </select>
+        </div>
+        <button class="row-card-delete" title="Delete row" onclick="this.closest('.row-card').remove();rebuildBlockedStallsDropdown()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+        </button>
+      </div>
+      <div class="row-card-one-sided">
+        <div class="row-card-field">
+          <span class="row-card-field-label">First Stall Label</span>
+          <input type="text" placeholder="1" data-role="first" oninput="updateRowPreview(this)">
+        </div>
+        <div class="row-card-field">
+          <span class="row-card-field-label">Last Stall Label</span>
+          <input type="text" placeholder="12" data-role="last" oninput="updateRowPreview(this)">
+        </div>
+      </div>
+      <div class="row-card-sides" style="display:none">
+        <div class="side-block">
+          <div class="side-block-label">Top Side</div>
+          <div class="side-block-row">
+            <div class="row-card-field">
+              <span class="row-card-field-label">First</span>
+              <input type="text" data-role="top-first" oninput="updateRowPreview(this)">
+            </div>
+            <div class="row-card-field">
+              <span class="row-card-field-label">Last</span>
+              <input type="text" data-role="top-last" oninput="updateRowPreview(this)">
+            </div>
+          </div>
+        </div>
+        <div class="side-block">
+          <div class="side-block-label">Bottom Side</div>
+          <div class="side-block-row">
+            <div class="row-card-field">
+              <span class="row-card-field-label">First</span>
+              <input type="text" data-role="bot-first" oninput="updateRowPreview(this)">
+            </div>
+            <div class="row-card-field">
+              <span class="row-card-field-label">Last</span>
+              <input type="text" data-role="bot-last" oninput="updateRowPreview(this)">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="row-card-preview-label">Preview <span class="row-card-count">No stalls yet — fill in labels above</span></div>
+        <div class="stall-row"></div>
+      </div>
+    </div>`;
+  list.insertAdjacentHTML('beforeend', html);
+}
+
+/* Chart preview modal */
+function openChartPreview(){
+  /* Build modal sections from current row builder state.
+     For demo purposes the modal also marks ~10% of stalls as "reserved" so admins
+     see what the customer's full state map looks like. */
+  const modal = document.getElementById('chart-preview-modal');
+  const body  = modal.querySelector('.chart-modal-body');
+  /* Keep the legend, remove existing sections */
+  body.querySelectorAll('.chart-modal-section').forEach(s => s.remove());
+
+  const blocked = getBlockedSet();
+  /* Simulate some reserved stalls for the demo: every 7th unblocked stall */
+  const reservedSimulated = new Set();
+  let cnt = 0;
+  getAllStallLabels().forEach(l => {
+    if(blocked.has(l)) return;
+    cnt++;
+    if(cnt % 7 === 0) reservedSimulated.add(l);
+  });
+
+  const fragments = [];
+  document.querySelectorAll('#row-builder-list .row-card').forEach(card => {
+    const name   = (card.querySelector('[data-role="name"]')   || {}).value || 'Untitled Row';
+    const layout = (card.querySelector('[data-role="layout"]') || {}).value;
+    const classify = l => {
+      if(blocked.has(l)) return 'blocked';
+      if(reservedSimulated.has(l)) return 'reserved';
+      return 'clickable';
+    };
+    const box = l => `<div class="stall-box ${classify(l)}">${l}</div>`;
+    let inner;
+    if(layout === 'back-to-back'){
+      const topFirst = (card.querySelector('[data-role="top-first"]') || {}).value || '';
+      const topLast  = (card.querySelector('[data-role="top-last"]')  || {}).value || '';
+      const botFirst = (card.querySelector('[data-role="bot-first"]') || {}).value || '';
+      const botLast  = (card.querySelector('[data-role="bot-last"]')  || {}).value || '';
+      const topSide = stallLabelsBetween(topFirst, topLast).map(box).join('');
+      const botSide = stallLabelsBetween(botFirst, botLast).map(box).join('');
+      inner =
+        '<div class="stall-row back-to-back">' +
+          '<div class="stall-row-side">' + topSide + '</div>' +
+          '<div class="stall-row-aisle"></div>' +
+          '<div class="stall-row-side">' + botSide + '</div>' +
+        '</div>';
+    } else {
+      const first = (card.querySelector('[data-role="first"]') || {}).value || '';
+      const last  = (card.querySelector('[data-role="last"]')  || {}).value || '';
+      const labels = stallLabelsBetween(first, last);
+      inner = '<div class="stall-row">' + labels.map(box).join('') + '</div>';
+    }
+    fragments.push(
+      '<div class="chart-modal-section">' +
+        `<div class="chart-modal-section-name">${name}</div>` +
+        inner +
+      '</div>'
+    );
+  });
+  body.insertAdjacentHTML('beforeend', fragments.join(''));
+  modal.classList.add('open');
+}
+function closeChartPreview(){ document.getElementById('chart-preview-modal').classList.remove('open'); }
+
+/* Wire delete buttons on initial rows (later ones handled inline) */
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.row-card-delete').forEach(btn => {
+    if(!btn.onclick) btn.onclick = () => { btn.closest('.row-card').remove(); rebuildBlockedStallsDropdown(); };
+  });
+  /* Populate Blocked Stall Numbers dropdown from initial row state */
+  rebuildBlockedStallsDropdown();
+  /* Repaint initial row previews so 100 and 102 chips render as blocked in Row 1 */
+  refreshAllRowPreviews();
+});
+
+
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.toggle[data-controls], .stay-type-btn[data-controls]').forEach(applyControls);
   applyFeeTypeVisibility();
@@ -475,32 +846,6 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </div>
 
-        <!-- ── Available Reservation Dates ── -->
-        <div class="card">
-          <div class="section-header" id="hdr-dates" onclick="toggleSection('dates')">
-            <div class="section-header-left">
-              <div class="section-icon icon-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
-              <span class="section-title">Available Reservation Dates</span>
-            </div>
-            <div class="section-header-right">
-              <div class="section-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
-            </div>
-          </div>
-          <div class="section-body" id="body-dates">
-            <div class="field-row">
-              <div class="field-label">Date Range<div class="field-label-sub">Dates customers can reserve</div></div>
-              <div class="field-control">
-                <div class="date-range">
-                  <input class="field-input" type="date" value="2026-05-08" style="width:160px">
-                  <span class="date-sep">–</span>
-                  <input class="field-input" type="date" value="2026-05-10" style="width:160px">
-                </div>
-                <span class="field-hint">Select the dates for which you would like customers to be able to make reservations.</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <!-- ── Check-In / Check-Out ── -->
         <div class="card">
           <div class="section-header" id="hdr-checkin" onclick="toggleSection('checkin')">
@@ -551,8 +896,19 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="field-row">
               <div class="field-label">Reservation Description</div>
               <div class="field-control">
-                <textarea class="field-textarea">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</textarea>
+                <textarea class="field-textarea">Stalls are 10×10 with rubber mats. First night of shavings included; additional bags available as an add-on. Check-in begins at the time listed above — please bring your Coggins and proof of negative EIA test. Stalls are assigned by reservation order unless you've selected specific stalls below.</textarea>
                 <span class="field-hint">Describe stall amenities, bedding details, or other reservation notes shown on the front end.</span>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field-label">Available Reservation Dates<div class="field-label-sub">Dates customers can reserve stalls</div></div>
+              <div class="field-control">
+                <div class="date-range">
+                  <input class="field-input" type="date" value="2026-05-08" style="width:160px">
+                  <span class="date-sep">–</span>
+                  <input class="field-input" type="date" value="2026-05-10" style="width:160px">
+                </div>
+                <span class="field-hint">The bookable date window for stalls. Shown to customers in the Stall Reservations section header.</span>
               </div>
             </div>
             <div class="field-row">
@@ -672,44 +1028,259 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="field-hint">Quantity Based uses the built-in stall quantity selector. Exact Map Selection reserves this reservation for a future add-on that lets customers choose specific stalls from an interactive map.</span>
               </div>
             </div>
-            <!-- Stall Blocks -->
+            <!-- Stall Rows (Row Builder) -->
             <div class="field-row" id="row-stall-blocks" style="align-items:start">
-              <div class="field-label">Stall Blocks<div class="field-label-sub">Title + range, no overlaps</div></div>
+              <div class="field-label">Stall Rows<div class="field-label-sub">Define the physical layout customers will see</div></div>
               <div class="field-control">
-                <div class="repeat-scroll">
-                  <table class="repeat-table">
-                    <thead><tr><th>Title</th><th>Start #</th><th>End #</th><th></th></tr></thead>
-                    <tbody>
-                      <tr><td><input class="repeat-input" value="Red Barn"></td><td><input class="repeat-input" type="number" value="100" style="width:80px"></td><td><input class="repeat-input" type="number" value="150" style="width:80px"></td><td><button class="btn-delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td></tr>
-                      <tr><td><input class="repeat-input" value="Yellow Barn"></td><td><input class="repeat-input" type="number" value="151" style="width:80px"></td><td><input class="repeat-input" type="number" value="200" style="width:80px"></td><td><button class="btn-delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td></tr>
-                    </tbody>
-                  </table>
+                <div class="row-builder-head">
+                  <div class="row-builder-summary"><strong style="color:#031B4E">3 rows · 36 stalls total</strong> across this reservation</div>
+                  <button class="preview-chart-btn" onclick="openChartPreview()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    Preview Full Chart
+                  </button>
                 </div>
-                <div class="range-summary">2 stall ranges generating 101 unit numbers.</div>
-                <button class="btn-add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Stall Block</button>
+
+                <div class="row-builder" id="row-builder-list">
+
+                  <!-- Row 1: Red Barn Row A — one-sided -->
+                  <div class="row-card" data-row-id="r1">
+                    <div class="row-card-top">
+                      <div class="row-card-field">
+                        <span class="row-card-field-label">Row Name</span>
+                        <input type="text" value="Red Barn Row A" data-role="name">
+                      </div>
+                      <div class="row-card-field row-card-field-layout">
+                        <span class="row-card-field-label">Layout</span>
+                        <select data-role="layout" onchange="updateRowPreview(this)">
+                          <option value="one-sided" selected>One-sided</option>
+                          <option value="back-to-back">Back-to-back</option>
+                        </select>
+                      </div>
+                      <button class="row-card-delete" title="Delete row">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                      </button>
+                    </div>
+                    <div class="row-card-one-sided">
+                      <div class="row-card-field">
+                        <span class="row-card-field-label">First Stall Label</span>
+                        <input type="text" value="100" data-role="first" oninput="updateRowPreview(this)">
+                      </div>
+                      <div class="row-card-field">
+                        <span class="row-card-field-label">Last Stall Label</span>
+                        <input type="text" value="111" data-role="last" oninput="updateRowPreview(this)">
+                      </div>
+                    </div>
+                    <div class="row-card-sides" style="display:none">
+                      <div class="side-block">
+                        <div class="side-block-label">Top Side</div>
+                        <div class="side-block-row">
+                          <div class="row-card-field">
+                            <span class="row-card-field-label">First</span>
+                            <input type="text" data-role="top-first" oninput="updateRowPreview(this)">
+                          </div>
+                          <div class="row-card-field">
+                            <span class="row-card-field-label">Last</span>
+                            <input type="text" data-role="top-last" oninput="updateRowPreview(this)">
+                          </div>
+                        </div>
+                      </div>
+                      <div class="side-block">
+                        <div class="side-block-label">Bottom Side</div>
+                        <div class="side-block-row">
+                          <div class="row-card-field">
+                            <span class="row-card-field-label">First</span>
+                            <input type="text" data-role="bot-first" oninput="updateRowPreview(this)">
+                          </div>
+                          <div class="row-card-field">
+                            <span class="row-card-field-label">Last</span>
+                            <input type="text" data-role="bot-last" oninput="updateRowPreview(this)">
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <div class="row-card-preview-label">Preview <span class="row-card-count">12 stalls · One-sided</span></div>
+                      <div class="stall-row">
+                        <div class="stall-box">100</div><div class="stall-box">101</div><div class="stall-box">102</div><div class="stall-box">103</div><div class="stall-box">104</div><div class="stall-box">105</div><div class="stall-box">106</div><div class="stall-box">107</div><div class="stall-box">108</div><div class="stall-box">109</div><div class="stall-box">110</div><div class="stall-box">111</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Row 2: Red Barn Row B — back-to-back -->
+                  <div class="row-card" data-row-id="r2">
+                    <div class="row-card-top">
+                      <div class="row-card-field">
+                        <span class="row-card-field-label">Row Name</span>
+                        <input type="text" value="Red Barn Row B" data-role="name">
+                      </div>
+                      <div class="row-card-field row-card-field-layout">
+                        <span class="row-card-field-label">Layout</span>
+                        <select data-role="layout" onchange="updateRowPreview(this)">
+                          <option value="one-sided">One-sided</option>
+                          <option value="back-to-back" selected>Back-to-back</option>
+                        </select>
+                      </div>
+                      <button class="row-card-delete" title="Delete row">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                      </button>
+                    </div>
+                    <div class="row-card-one-sided" style="display:none">
+                      <div class="row-card-field">
+                        <span class="row-card-field-label">First Stall Label</span>
+                        <input type="text" data-role="first" oninput="updateRowPreview(this)">
+                      </div>
+                      <div class="row-card-field">
+                        <span class="row-card-field-label">Last Stall Label</span>
+                        <input type="text" data-role="last" oninput="updateRowPreview(this)">
+                      </div>
+                    </div>
+                    <div class="row-card-sides">
+                      <div class="side-block">
+                        <div class="side-block-label">Top Side</div>
+                        <div class="side-block-row">
+                          <div class="row-card-field">
+                            <span class="row-card-field-label">First</span>
+                            <input type="text" value="112" data-role="top-first" oninput="updateRowPreview(this)">
+                          </div>
+                          <div class="row-card-field">
+                            <span class="row-card-field-label">Last</span>
+                            <input type="text" value="123" data-role="top-last" oninput="updateRowPreview(this)">
+                          </div>
+                        </div>
+                      </div>
+                      <div class="side-block">
+                        <div class="side-block-label">Bottom Side</div>
+                        <div class="side-block-row">
+                          <div class="row-card-field">
+                            <span class="row-card-field-label">First</span>
+                            <input type="text" value="124" data-role="bot-first" oninput="updateRowPreview(this)">
+                          </div>
+                          <div class="row-card-field">
+                            <span class="row-card-field-label">Last</span>
+                            <input type="text" value="135" data-role="bot-last" oninput="updateRowPreview(this)">
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <div class="row-card-preview-label">Preview <span class="row-card-count">24 stalls · Back-to-back (12 top, 12 bottom)</span></div>
+                      <div class="stall-row back-to-back">
+                        <div class="stall-row-side">
+                          <div class="stall-box">112</div><div class="stall-box">113</div><div class="stall-box">114</div><div class="stall-box">115</div><div class="stall-box">116</div><div class="stall-box">117</div><div class="stall-box">118</div><div class="stall-box">119</div><div class="stall-box">120</div><div class="stall-box">121</div><div class="stall-box">122</div><div class="stall-box">123</div>
+                        </div>
+                        <div class="stall-row-aisle" title="Aisle"></div>
+                        <div class="stall-row-side">
+                          <div class="stall-box">124</div><div class="stall-box">125</div><div class="stall-box">126</div><div class="stall-box">127</div><div class="stall-box">128</div><div class="stall-box">129</div><div class="stall-box">130</div><div class="stall-box">131</div><div class="stall-box">132</div><div class="stall-box">133</div><div class="stall-box">134</div><div class="stall-box">135</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Row 3: Yellow Barn Row A — one-sided, mixed labels -->
+                  <div class="row-card" data-row-id="r3">
+                    <div class="row-card-top">
+                      <div class="row-card-field">
+                        <span class="row-card-field-label">Row Name</span>
+                        <input type="text" value="Yellow Barn Row A" data-role="name">
+                      </div>
+                      <div class="row-card-field row-card-field-layout">
+                        <span class="row-card-field-label">Layout</span>
+                        <select data-role="layout" onchange="updateRowPreview(this)">
+                          <option value="one-sided" selected>One-sided</option>
+                          <option value="back-to-back">Back-to-back</option>
+                        </select>
+                      </div>
+                      <button class="row-card-delete" title="Delete row">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                      </button>
+                    </div>
+                    <div class="row-card-one-sided">
+                      <div class="row-card-field">
+                        <span class="row-card-field-label">First Stall Label</span>
+                        <input type="text" value="Y1" data-role="first" oninput="updateRowPreview(this)">
+                      </div>
+                      <div class="row-card-field">
+                        <span class="row-card-field-label">Last Stall Label</span>
+                        <input type="text" value="Y12" data-role="last" oninput="updateRowPreview(this)">
+                      </div>
+                    </div>
+                    <div class="row-card-sides" style="display:none">
+                      <div class="side-block">
+                        <div class="side-block-label">Top Side</div>
+                        <div class="side-block-row">
+                          <div class="row-card-field">
+                            <span class="row-card-field-label">First</span>
+                            <input type="text" data-role="top-first" oninput="updateRowPreview(this)">
+                          </div>
+                          <div class="row-card-field">
+                            <span class="row-card-field-label">Last</span>
+                            <input type="text" data-role="top-last" oninput="updateRowPreview(this)">
+                          </div>
+                        </div>
+                      </div>
+                      <div class="side-block">
+                        <div class="side-block-label">Bottom Side</div>
+                        <div class="side-block-row">
+                          <div class="row-card-field">
+                            <span class="row-card-field-label">First</span>
+                            <input type="text" data-role="bot-first" oninput="updateRowPreview(this)">
+                          </div>
+                          <div class="row-card-field">
+                            <span class="row-card-field-label">Last</span>
+                            <input type="text" data-role="bot-last" oninput="updateRowPreview(this)">
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <div class="row-card-preview-label">Preview <span class="row-card-count">12 stalls · One-sided · Custom labels</span></div>
+                      <div class="stall-row">
+                        <div class="stall-box">Y1</div><div class="stall-box">Y2</div><div class="stall-box">Y3</div><div class="stall-box">Y4</div><div class="stall-box">Y5</div><div class="stall-box">Y6</div><div class="stall-box">Y7</div><div class="stall-box">Y8</div><div class="stall-box">Y9</div><div class="stall-box">Y10</div><div class="stall-box">Y11</div><div class="stall-box">Y12</div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+                <button class="row-add-btn" onclick="addRow()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Add Row
+                </button>
+
+                <span class="field-hint">Each row appears as a horizontal strip of stall boxes on the customer-facing reservation form. <strong>One-sided</strong> is a single row of stalls. <strong>Back-to-back</strong> shows two rows separated by an aisle — stalls in the first half of the label range appear on top, second half on the bottom. Stall labels can be numbers (100–111) or strings (Y1–Y12, A-01–A-12).</span>
+              </div>
+            </div>
+
+            <!-- Chart Preview Modal -->
+            <div class="chart-modal" id="chart-preview-modal" onclick="if(event.target===this)closeChartPreview()">
+              <div class="chart-modal-card">
+                <div class="chart-modal-head">
+                  <div class="chart-modal-title">Stall Chart Preview — Customer View</div>
+                  <button class="chart-modal-close" onclick="closeChartPreview()" aria-label="Close">✕</button>
+                </div>
+                <div class="chart-modal-body">
+                  <div class="chart-modal-legend">
+                    <span><span class="swatch"></span> Available</span>
+                    <span><span class="swatch selected"></span> Selected (customer's pick)</span>
+                    <span><span class="swatch reserved"></span> Already reserved</span>
+                    <span><span class="swatch blocked"></span> Blocked by admin</span>
+                  </div>
+
+                  <!-- Sections populated dynamically by openChartPreview() from current row data + blocked set -->
+                </div>
               </div>
             </div>
             <div class="field-row" id="row-stall-blocked">
               <div class="field-label">Blocked Stall Numbers<div class="field-label-sub">Hold back from reservation</div></div>
               <div class="field-control">
-                <div class="tag-select">
+                <div class="tag-select" id="blocked-stalls-select">
                   <div class="tag-select-input" onclick="tagToggle(this)">
-                    <span class="tag-chip" data-value="100">100 <button type="button" class="tag-chip-remove" onclick="event.stopPropagation();tagRemove(this)" aria-label="Remove">×</button></span>
-                    <span class="tag-chip" data-value="102">102 <button type="button" class="tag-chip-remove" onclick="event.stopPropagation();tagRemove(this)" aria-label="Remove">×</button></span>
+                    <span class="tag-chip" data-value="100">100 <button type="button" class="tag-chip-remove" onclick="event.stopPropagation();tagRemove(this);rebuildBlockedStallsDropdown();refreshAllRowPreviews()" aria-label="Remove">×</button></span>
+                    <span class="tag-chip" data-value="102">102 <button type="button" class="tag-chip-remove" onclick="event.stopPropagation();tagRemove(this);rebuildBlockedStallsDropdown();refreshAllRowPreviews()" aria-label="Remove">×</button></span>
                     <input class="tag-search" type="text" placeholder="Type a stall number…" oninput="tagFilter(this)" onfocus="this.closest('.tag-select').classList.add('open')">
                   </div>
                   <div class="tag-dropdown">
-                    <div class="tag-dropdown-item selected" data-value="100" onclick="tagPick(this)">100</div>
-                    <div class="tag-dropdown-item" data-value="101" onclick="tagPick(this)">101</div>
-                    <div class="tag-dropdown-item selected" data-value="102" onclick="tagPick(this)">102</div>
-                    <div class="tag-dropdown-item" data-value="103" onclick="tagPick(this)">103</div>
-                    <div class="tag-dropdown-item" data-value="104" onclick="tagPick(this)">104</div>
-                    <div class="tag-dropdown-item" data-value="105" onclick="tagPick(this)">105</div>
-                    <div class="tag-dropdown-item" data-value="106" onclick="tagPick(this)">106</div>
-                    <div class="tag-dropdown-item" data-value="107" onclick="tagPick(this)">107</div>
-                    <div class="tag-dropdown-item" data-value="108" onclick="tagPick(this)">108</div>
-                    <div class="tag-dropdown-item" data-value="109" onclick="tagPick(this)">109</div>
-                    <div class="tag-dropdown-item" data-value="110" onclick="tagPick(this)">110</div>
+                    <!-- Options populated by rebuildBlockedStallsDropdown() on load + whenever rows change -->
                     <div class="tag-dropdown-empty" style="display:none">No matching stall numbers.</div>
                   </div>
                 </div>
@@ -750,8 +1321,19 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="field-row">
               <div class="field-label">Reservation Description</div>
               <div class="field-control">
-                <textarea class="field-textarea" placeholder="Describe RV amenities, hookups, or other reservation notes shown on the front end."></textarea>
+                <textarea class="field-textarea" placeholder="Describe RV amenities, hookups, or other reservation notes shown on the front end.">RV lots include 30/50 amp electric and water hookups. Lots are gravel and approximately 30×60 feet. Dump station available on-site. Quiet hours 10pm–6am. Generator use limited to designated areas only.</textarea>
                 <span class="field-hint">Describe RV amenities, hookups, or other reservation notes shown on the front end.</span>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field-label">Available Reservation Dates<div class="field-label-sub">Dates customers can reserve RV lots</div></div>
+              <div class="field-control">
+                <div class="date-range">
+                  <input class="field-input" type="date" value="2026-05-08" style="width:160px">
+                  <span class="date-sep">–</span>
+                  <input class="field-input" type="date" value="2026-05-10" style="width:160px">
+                </div>
+                <span class="field-hint">The bookable date window for RV lots. Shown to customers in the RV Reservations section header.</span>
               </div>
             </div>
             <div class="field-row">

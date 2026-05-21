@@ -24,6 +24,7 @@ This folder *is* the existing plugin codebase. The overhaul happens in place —
 equine-event-manager/              ← you are here (the plugin root)
 ├── CLAUDE.md                      ← this file
 ├── README.md                      ← spec
+├── decisions.md                   ← product decisions log (TEC integration, refunds, etc.)
 ├── BRAND_GUIDE.md                 ← visual tokens (authoritative text)
 ├── BRAND_GUIDE.png                ← visual tokens (reference image)
 ├── .mockups/                      ← pixel-accurate HTML mockups + assets
@@ -35,7 +36,7 @@ equine-event-manager/              ← you are here (the plugin root)
 └── ... (rest of existing plugin)
 ```
 
-**The plugin code to overhaul is everything except** the spec files (`CLAUDE.md`, `README.md`, `BRAND_GUIDE.*`) and the `.mockups/` folder. Those are reference material only — never deploy them or modify the mockups to match the code (the code should match the mockups, not the other way around).
+**The plugin code to overhaul is everything except** the spec files (`CLAUDE.md`, `README.md`, `decisions.md`, `BRAND_GUIDE.*`) and the `.mockups/` folder. Those are reference material only — never deploy them or modify the mockups to match the code (the code should match the mockups, not the other way around).
 
 When the spec says "see `edit_reservation_page.html`", look in `.mockups/edit_reservation_page.html`.
 
@@ -51,6 +52,7 @@ The real logo lives at `.mockups/Equine Event Manager Logo.png`. When you implem
 2. **`BRAND_GUIDE.md`** — color tokens, typography scale, component specs, DO/DON'T rules
 3. **`BRAND_GUIDE.png`** — marketing-style overview of the identity (visual reference only; `BRAND_GUIDE.md` is the authoritative text version)
 4. **`README.md`** — file inventory, data model, conditional visibility rules, naming conventions
+5. **`decisions.md`** — product decisions for behaviors the mockups don't cover (TEC integration lifecycle, refund flows, etc.). Check here for "should the system do X or Y" questions before guessing.
 
 When two references disagree, the higher-priority one wins. If the disagreement is significant, stop and ask me before proceeding.
 
@@ -62,7 +64,8 @@ Mockup behaviors that must work in the final plugin:
 - Section enable toggle that *also* collapses the body when off
 - Conditional row visibility driven by `data-controls` attributes — see README §4 for the complete map
 - At-least-one-stay-type constraint with inline error hint
-- Tag multi-select for Blocked Stall Numbers / Blocked RV Lots
+- Tag multi-select for Blocked Stall Numbers / Blocked RV Lots — dropdown options are dynamically populated from the configured stall rows (not a static list)
+- **Stall Row Builder** (Edit Reservation → Stall Reservations → Stall Assignments) — replaces the older "Stall Blocks" range table. Each row card defines a physical strip of stalls with live in-place preview. One-sided rows use a single First/Last range; back-to-back rows have two independent side blocks (Top Side and Bottom Side), each with its own First/Last labels. Labels are strings: integers (`100`–`111`), prefixed (`Y1`–`Y12`), or padded prefixed (`A-01`–`A-12`). Each side of a back-to-back row is independent — sides don't have to be sequential, symmetric, or the same length. "Preview Full Chart" button renders a modal showing the complete customer view with simulated reserved + blocked stalls. Data shape documented in README §4 under `_en_stall_rows`. Customer-facing renderer in `event_page.html` reuses the same row structure.
 - Save success toast (top-right on desktop, bottom on mobile)
 - Dashboard "Needs Attention" items link to the relevant admin screens
 - "+ New Reservation" button on Reservations list page
