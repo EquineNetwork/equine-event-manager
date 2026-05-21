@@ -1,0 +1,10000 @@
+<?php
+/**
+ * Admin pages for Equine Event Manager.
+ *
+ * @package Equine_Event_Manager
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Registers Orders, Reports, and Settings admin pages.
+ */
+class Equine_Event_Manager_Admin {
+
+	const MENU_SLUG = 'equine-event-manager-orders';
+
+	const SPECIAL_REQUESTS_DESCRIPTION_OPTION = 'equine_event_manager_special_requests_description';
+
+	const DEFAULT_SPECIAL_REQUESTS_DESCRIPTION = 'Please let us know if you have any special requests for your stay including stallion accommodations, preferred contestant proximity stalling, etc.';
+
+	const PAYMENT_SETTINGS_OPTION = 'equine_event_manager_payment_settings';
+
+	const COMPANY_SETTINGS_OPTION = 'equine_event_manager_company_settings';
+	const FEATURE_SETTINGS_OPTION = 'equine_event_manager_feature_settings';
+	const INTEGRATION_SETTINGS_OPTION = 'equine_event_manager_integration_settings';
+
+	const RESERVATION_MESSAGE_SETTINGS_OPTION = 'equine_event_manager_reservation_message_settings';
+
+	const RECEIPT_SETTINGS_OPTION = 'equine_event_manager_receipt_settings';
+
+	const DEFAULT_PREOPEN_MESSAGE = 'Reservations for [event_name] will open on [open_date_time]. If you have questions please call [phone].';
+
+	const DEFAULT_CLOSED_MESSAGE = 'Reservations for [event_name] are now closed. Please call [phone] for assistance.';
+
+	const DEFAULT_CUSTOMER_RECEIPT_SUBJECT = 'Your reservation receipt for [event_name]';
+
+	const DEFAULT_ADMIN_RECEIPT_SUBJECT = 'New reservation received for [event_name]';
+
+	const DEFAULT_CUSTOMER_RECEIPT_BODY = "Hi [customer_name],\n\nThank you for your reservation for [event_name]. Your order number is [order_number] and the total amount due is [total]. A PDF copy of your receipt is attached.\n\nIf you have questions, please contact us at [support_phone] or [support_email].";
+
+	const DEFAULT_ADMIN_RECEIPT_BODY = "A new reservation has been received for [event_name].\n\nOrder Number: [order_number]\nCustomer: [customer_name]\nTotal: [total]";
+
+	/**
+	 * Orders repository.
+	 *
+	 * @var Equine_Event_Manager_Orders_Repository
+	 */
+	private $orders_repository;
+
+	/**
+	 * Orders screen hook.
+	 *
+	 * @var string
+	 */
+	private $orders_hook = '';
+
+	/**
+	 * Invoicing screen hook.
+	 *
+	 * @var string
+	 */
+	private $invoicing_hook = '';
+
+	/**
+	 * Reservation overview screen hook.
+	 *
+	 * @var string
+	 */
+	private $reservation_overview_hook = '';
+
+	/**
+	 * Set up admin dependencies.
+	 */
+	public function __construct() {
+		$this->orders_repository = new Equine_Event_Manager_Orders_Repository();
+		add_filter( 'set-screen-option', array( $this, 'save_screen_option' ), 10, 3 );
+		add_filter( 'screen_options_show_screen', array( $this, 'filter_screen_options_visibility' ), 10, 2 );
+		add_filter( 'admin_body_class', array( $this, 'filter_backend_shell_body_class' ) );
+		add_action( 'admin_init', array( $this, 'maybe_redirect_disabled_native_event_admin_screens' ) );
+		add_action( 'admin_init', array( $this, 'maybe_redirect_legacy_event_manager_admin_routes' ) );
+		add_action( 'admin_menu', array( $this, 'position_event_manager_after_tec_events' ), 1002 );
+		add_action( 'admin_menu', array( $this, 'normalize_event_manager_submenu_order' ), 1001 );
+		add_action( 'admin_menu', array( $this, 'maybe_remove_disabled_native_event_menu_items' ), 999 );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_backend_shell_styles' ) );
+		add_action( 'admin_footer', array( $this, 'print_reservations_list_toolbar_normalizer' ) );
+		add_action( 'all_admin_notices', array( $this, 'render_reservations_list_banner' ) );
+		add_action( 'all_admin_notices', array( $this, 'render_native_content_list_banner' ) );
+	}
+
+	/**
+	 * Add minimal body classes for the canonical backend shell patterns.
+	 *
+	 * @param string $classes Existing body classes.
+	 * @return string
+	 */
+	public function filter_backend_shell_body_class( $classes ) {
+		$screen = get_current_screen();
+
+		if ( ! $screen ) {
+			return $classes;
+		}
+
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		$post_type = $screen->post_type;
+
+		if ( empty( $post_type ) ) {
+			$post_id = isset( $_GET['post'] ) ? absint( wp_unslash( $_GET['post'] ) ) : 0;
+
+			if ( $post_id > 0 ) {
+				$post_type = get_post_type( $post_id );
+			} elseif ( isset( $_GET['post_type'] ) ) {
+				$post_type = sanitize_key( wp_unslash( $_GET['post_type'] ) );
+			}
+		}
+
+		if ( 'edit-en_reservation' === $screen->id && 'edit' === $screen->base ) {
+			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--reservations' );
+		}
+
+		if ( Equine_Event_Manager_Reservations_CPT::POST_TYPE === $post_type && in_array( $screen->base, array( 'post', 'post-new' ), true ) ) {
+			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--editor' );
+		}
+
+		if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-order', 'equine-event-manager-order-refund' ), true ) ) {
+			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--orders' );
+		}
+
+		if ( 'equine-event-manager-stall-chart' === $page ) {
+			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--stall-chart' );
+		}
+
+		if ( 'equine-event-manager-invoicing' === $page ) {
+			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--invoicing' );
+		}
+
+		if ( 'equine-event-manager-reports' === $page ) {
+			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--reports' );
+		}
+
+		if ( 'equine-event-manager-reservation-overview' === $page ) {
+			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--overview' );
+		}
+
+		if ( 'equine-event-manager-settings' === $page ) {
+			return trim( $classes . ' eem-shell-page eem-shell-page--rail eem-shell-page--settings' );
+		}
+
+		return $classes;
+	}
+
+	/**
+	 * Enqueue the new minimal backend shell stylesheet for canonical patterns only.
+	 *
+	 * @return void
+	 */
+	public function enqueue_backend_shell_styles( $hook_suffix = '' ) {
+		$screen = get_current_screen();
+
+		if ( ! $screen ) {
+			$screen = (object) array(
+				'id'        => '',
+				'base'      => '',
+				'post_type' => '',
+			);
+		}
+
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		$post_type = $screen->post_type;
+		$post_id   = isset( $_GET['post'] ) ? absint( wp_unslash( $_GET['post'] ) ) : 0;
+
+		if ( empty( $post_type ) && $post_id > 0 ) {
+			$post_type = get_post_type( $post_id );
+		}
+
+		if ( empty( $post_type ) && isset( $_GET['post_type'] ) ) {
+			$post_type = sanitize_key( wp_unslash( $_GET['post_type'] ) );
+		}
+
+		$should_load = false;
+
+		if ( 'edit-en_reservation' === $screen->id && 'edit' === $screen->base ) {
+			$should_load = true;
+		}
+
+		if ( Equine_Event_Manager_Reservations_CPT::POST_TYPE === $post_type && in_array( $hook_suffix, array( 'post.php', 'post-new.php' ), true ) ) {
+			$should_load = true;
+		}
+
+		if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-order', 'equine-event-manager-order-refund', 'equine-event-manager-settings', 'equine-event-manager-stall-chart', 'equine-event-manager-invoicing', 'equine-event-manager-reports', 'equine-event-manager-reservation-overview' ), true ) ) {
+			$should_load = true;
+		}
+
+		if ( ! $should_load ) {
+			return;
+		}
+
+		wp_enqueue_style(
+			'equine-event-manager-admin-shell',
+			EQUINE_EVENT_MANAGER_URL . 'admin/css/equine-event-manager-admin.css',
+			array(),
+			defined( 'EQUINE_EVENT_MANAGER_VERSION' ) ? EQUINE_EVENT_MANAGER_VERSION : false
+		);
+	}
+
+	/**
+	 * Keep the top-level Event Manager menu directly after TEC Events.
+	 *
+	 * @return void
+	 */
+	public function position_event_manager_after_tec_events() {
+		global $menu;
+
+		if ( empty( $menu ) || ! is_array( $menu ) ) {
+			return;
+		}
+
+		$tec_index           = null;
+		$event_manager_index = null;
+		$event_manager_item  = null;
+
+		foreach ( $menu as $index => $item ) {
+			if ( ! is_array( $item ) || empty( $item[2] ) ) {
+				continue;
+			}
+
+			if ( 'edit.php?post_type=tribe_events' === $item[2] ) {
+				$tec_index = $index;
+			}
+
+			if ( self::MENU_SLUG === $item[2] ) {
+				$event_manager_index = $index;
+				$event_manager_item  = $item;
+			}
+		}
+
+		if ( null === $tec_index || null === $event_manager_index || null === $event_manager_item ) {
+			return;
+		}
+
+		unset( $menu[ $event_manager_index ] );
+		$menu = array_values( $menu );
+
+		foreach ( $menu as $index => $item ) {
+			if ( is_array( $item ) && isset( $item[2] ) && 'edit.php?post_type=tribe_events' === $item[2] ) {
+				array_splice( $menu, $index + 1, 0, array( $event_manager_item ) );
+				return;
+			}
+		}
+	}
+
+	/**
+	 * Keep the Event Manager submenu in the intended order.
+	 *
+	 * @return void
+	 */
+	public function normalize_event_manager_submenu_order() {
+		global $submenu;
+
+		if ( empty( $submenu[ self::MENU_SLUG ] ) || ! is_array( $submenu[ self::MENU_SLUG ] ) ) {
+			return;
+		}
+
+		$preferred_order = array(
+			self::MENU_SLUG,
+			'edit.php?post_type=en_reservation',
+			'equine-event-manager-stall-chart',
+			'equine-event-manager-orders',
+			'equine-event-manager-invoicing',
+			'edit.php?post_type=en_event',
+			'post-new.php?post_type=en_event',
+			'edit-tags.php?taxonomy=en_event_tag&post_type=en_event',
+			'edit-tags.php?taxonomy=en_event_category&post_type=en_event',
+			'edit.php?post_type=en_venue',
+			'edit-tags.php?taxonomy=en_venue_category&post_type=en_venue',
+			'edit.php?post_type=en_producer',
+			'edit-tags.php?taxonomy=en_producer_category&post_type=en_producer',
+			'equine-event-manager-reports',
+			'equine-event-manager-settings',
+		);
+		$existing = $submenu[ self::MENU_SLUG ];
+		$ordered  = array();
+
+		if ( ! $this->submenu_contains_slug( $existing, 'edit.php?post_type=en_reservation' ) ) {
+			$existing[] = array(
+				__( 'Reservations', 'equine-event-manager' ),
+				'manage_options',
+				'edit.php?post_type=en_reservation',
+			);
+		}
+
+		foreach ( $preferred_order as $slug ) {
+			foreach ( $existing as $index => $item ) {
+				if ( isset( $item[2] ) && $item[2] === $slug ) {
+					$ordered[] = $item;
+					unset( $existing[ $index ] );
+				}
+			}
+		}
+
+		$submenu[ self::MENU_SLUG ] = array_values( array_merge( $ordered, $existing ) );
+	}
+
+	/**
+	 * Check whether a submenu item already exists for a given slug.
+	 *
+	 * @param array<int, array<int, string>> $items Menu items.
+	 * @param string                         $slug  Target slug.
+	 * @return bool
+	 */
+	private function submenu_contains_slug( $items, $slug ) {
+		foreach ( $items as $item ) {
+			if ( isset( $item[2] ) && $slug === $item[2] ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Redirect native event admin screens back to Settings when the feature is off.
+	 *
+	 * @return void
+	 */
+	public function maybe_redirect_disabled_native_event_admin_screens() {
+		if ( Equine_Event_Manager_Events::is_native_events_enabled() || wp_doing_ajax() ) {
+			return;
+		}
+
+		global $pagenow;
+
+		$blocked_post_types = array( 'en_event', 'en_venue', 'en_producer' );
+		$blocked_taxonomies = array( 'en_event_category', 'en_event_tag', 'en_venue_category', 'en_producer_category' );
+		$current_post_type  = '';
+		$current_taxonomy   = isset( $_GET['taxonomy'] ) ? sanitize_key( wp_unslash( $_GET['taxonomy'] ) ) : '';
+
+		if ( ! empty( $_GET['post_type'] ) ) {
+			$current_post_type = sanitize_key( wp_unslash( $_GET['post_type'] ) );
+		} elseif ( ! empty( $_GET['post'] ) ) {
+			$current_post_type = (string) get_post_type( absint( $_GET['post'] ) );
+		}
+
+		$is_blocked_post_type = in_array( $current_post_type, $blocked_post_types, true ) && in_array( $pagenow, array( 'post-new.php', 'post.php', 'edit.php' ), true );
+		$is_blocked_taxonomy  = in_array( $current_taxonomy, $blocked_taxonomies, true ) && in_array( $pagenow, array( 'edit-tags.php', 'term.php' ), true );
+
+		if ( ! $is_blocked_post_type && ! $is_blocked_taxonomy ) {
+			return;
+		}
+
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page'      => 'equine-event-manager-settings',
+					'tab'       => 'integrations',
+					'en_notice' => 'native_events_disabled',
+				),
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
+	 * Redirect legacy Event Manager page routes that still carry the reservation post type parent.
+	 *
+	 * @return void
+	 */
+	public function maybe_redirect_legacy_event_manager_admin_routes() {
+		if ( wp_doing_ajax() || empty( $_GET['page'] ) ) {
+			return;
+		}
+
+		$page = sanitize_key( wp_unslash( $_GET['page'] ) );
+
+		if ( 'equine-event-manager-dashboard' === $page ) {
+			$query_args         = wp_unslash( $_GET );
+			$query_args['page'] = self::MENU_SLUG;
+
+			wp_safe_redirect(
+				add_query_arg(
+					array_map(
+						static function ( $value ) {
+							return is_scalar( $value ) ? sanitize_text_field( (string) $value ) : '';
+						},
+						$query_args
+					),
+					admin_url( 'admin.php' )
+				)
+			);
+			exit;
+		}
+
+		if ( ! in_array( $page, array( 'equine-event-manager-orders', 'equine-event-manager-invoicing', 'equine-event-manager-reports', 'equine-event-manager-settings', 'equine-event-manager-stall-chart', 'equine-event-manager-reservation-overview' ), true ) ) {
+			return;
+		}
+
+		if ( empty( $_GET['post_type'] ) || 'en_reservation' !== sanitize_key( wp_unslash( $_GET['post_type'] ) ) ) {
+			return;
+		}
+
+		$query_args = wp_unslash( $_GET );
+		unset( $query_args['post_type'] );
+
+		wp_safe_redirect(
+			add_query_arg(
+				array_map(
+					static function ( $value ) {
+						return is_scalar( $value ) ? sanitize_text_field( (string) $value ) : '';
+					},
+					$query_args
+				),
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
+	 * Explicitly remove native event menu items when the feature is disabled.
+	 *
+	 * @return void
+	 */
+	public function maybe_remove_disabled_native_event_menu_items() {
+		if ( Equine_Event_Manager_Events::is_native_events_enabled() ) {
+			return;
+		}
+
+		global $submenu;
+
+		$event_submenus = array(
+			'edit.php?post_type=en_event',
+			'post-new.php?post_type=en_event',
+			'edit-tags.php?taxonomy=en_event_tag&post_type=en_event',
+			'edit-tags.php?taxonomy=en_event_category&post_type=en_event',
+			'edit.php?post_type=en_venue',
+			'edit-tags.php?taxonomy=en_venue_category&post_type=en_venue',
+			'edit.php?post_type=en_producer',
+			'edit-tags.php?taxonomy=en_producer_category&post_type=en_producer',
+		);
+
+		foreach ( $event_submenus as $submenu_slug ) {
+			remove_submenu_page( self::MENU_SLUG, $submenu_slug );
+		}
+
+		if ( isset( $submenu[ self::MENU_SLUG ] ) && is_array( $submenu[ self::MENU_SLUG ] ) ) {
+			$submenu[ self::MENU_SLUG ] = array_values(
+				array_filter(
+					$submenu[ self::MENU_SLUG ],
+					function ( $item ) use ( $event_submenus ) {
+						return empty( $item[2] ) || ! in_array( $item[2], $event_submenus, true );
+					}
+				)
+			);
+		}
+
+		remove_menu_page( 'edit.php?post_type=en_event' );
+		remove_menu_page( 'edit.php?post_type=en_venue' );
+		remove_menu_page( 'edit.php?post_type=en_producer' );
+	}
+
+	/**
+	 * Hide Screen Options on plugin-managed screens.
+	 *
+	 * @param bool      $show   Whether to show the Screen Options UI.
+	 * @param WP_Screen $screen Current screen object.
+	 * @return bool
+	 */
+	public function filter_screen_options_visibility( $show, $screen ) {
+		if ( ! $screen ) {
+			return $show;
+		}
+
+		$is_plugin_screen = ! empty( $screen->id ) && false !== strpos( (string) $screen->id, 'equine-event-manager' );
+		$is_native_editor = ! empty( $screen->post_type ) && in_array( $screen->post_type, array( 'en_event', 'en_venue', 'en_producer', 'en_reservation' ), true );
+
+		if ( $is_plugin_screen || $is_native_editor ) {
+			return false;
+		}
+
+		return $show;
+	}
+
+	/**
+	 * Register admin pages under the Reservations CPT menu.
+	 */
+	public function register_menu() {
+		$native_events_enabled = Equine_Event_Manager_Events::is_native_events_enabled();
+
+		$this->orders_hook = add_menu_page(
+			__( 'Orders', 'equine-event-manager' ),
+			__( 'Event Manager', 'equine-event-manager' ),
+			'manage_options',
+			self::MENU_SLUG,
+			array( $this, 'render_orders_page' ),
+			'dashicons-tickets-alt',
+			20
+		);
+
+		add_submenu_page(
+			self::MENU_SLUG,
+			__( 'Orders', 'equine-event-manager' ),
+			__( 'Orders', 'equine-event-manager' ),
+			'manage_options',
+			self::MENU_SLUG,
+			array( $this, 'render_orders_page' )
+		);
+
+		add_submenu_page(
+			self::MENU_SLUG,
+			__( 'Reservations', 'equine-event-manager' ),
+			__( 'Reservations', 'equine-event-manager' ),
+			'manage_options',
+			'edit.php?post_type=en_reservation'
+		);
+
+		$this->invoicing_hook = add_submenu_page(
+			self::MENU_SLUG,
+			__( 'Invoicing', 'equine-event-manager' ),
+			__( 'Invoicing', 'equine-event-manager' ),
+			'manage_options',
+			'equine-event-manager-invoicing',
+			array( $this, 'render_invoicing_page' )
+		);
+
+		$this->reservation_overview_hook = add_submenu_page(
+			self::MENU_SLUG,
+			__( 'View Event', 'equine-event-manager' ),
+			__( 'View Event', 'equine-event-manager' ),
+			'manage_options',
+			'equine-event-manager-reservation-overview',
+			array( $this, 'render_reservation_overview_page' )
+		);
+
+		add_submenu_page(
+			self::MENU_SLUG,
+			__( 'Stall Charts', 'equine-event-manager' ),
+			__( 'Stall Charts', 'equine-event-manager' ),
+			'manage_options',
+			'equine-event-manager-stall-chart',
+			array( $this, 'render_stall_chart_page' )
+		);
+
+		if ( $native_events_enabled ) {
+			add_submenu_page(
+				self::MENU_SLUG,
+				__( 'Events', 'equine-event-manager' ),
+				__( 'Events', 'equine-event-manager' ),
+				'manage_options',
+				'edit.php?post_type=en_event'
+			);
+
+			add_submenu_page(
+				self::MENU_SLUG,
+				__( 'Add New Event', 'equine-event-manager' ),
+				__( 'Add New Event', 'equine-event-manager' ),
+				'manage_options',
+				'post-new.php?post_type=en_event'
+			);
+
+			add_submenu_page(
+				self::MENU_SLUG,
+				__( 'Tags', 'equine-event-manager' ),
+				__( 'Tags', 'equine-event-manager' ),
+				'manage_options',
+				'edit-tags.php?taxonomy=en_event_tag&post_type=en_event'
+			);
+
+			add_submenu_page(
+				self::MENU_SLUG,
+				__( 'Event Categories', 'equine-event-manager' ),
+				__( 'Event Categories', 'equine-event-manager' ),
+				'manage_options',
+				'edit-tags.php?taxonomy=en_event_category&post_type=en_event'
+			);
+
+			add_submenu_page(
+				self::MENU_SLUG,
+				__( 'Locations', 'equine-event-manager' ),
+				__( 'Locations', 'equine-event-manager' ),
+				'manage_options',
+				'edit.php?post_type=en_venue'
+			);
+
+			add_submenu_page(
+				self::MENU_SLUG,
+				__( 'Location Categories', 'equine-event-manager' ),
+				__( 'L Categories', 'equine-event-manager' ),
+				'manage_options',
+				'edit-tags.php?taxonomy=en_venue_category&post_type=en_venue'
+			);
+
+			add_submenu_page(
+				self::MENU_SLUG,
+				__( 'Producers', 'equine-event-manager' ),
+				__( 'Producers', 'equine-event-manager' ),
+				'manage_options',
+				'edit.php?post_type=en_producer'
+			);
+
+			add_submenu_page(
+				self::MENU_SLUG,
+				__( 'Producer Categories', 'equine-event-manager' ),
+				__( 'L Categories', 'equine-event-manager' ),
+				'manage_options',
+				'edit-tags.php?taxonomy=en_producer_category&post_type=en_producer'
+			);
+
+		}
+
+		add_submenu_page(
+			self::MENU_SLUG,
+			__( 'Reports', 'equine-event-manager' ),
+			__( 'Reports', 'equine-event-manager' ),
+			'manage_options',
+			'equine-event-manager-reports',
+			array( $this, 'render_reports_page' )
+		);
+
+		add_submenu_page(
+			self::MENU_SLUG,
+			__( 'Settings', 'equine-event-manager' ),
+			__( 'Settings', 'equine-event-manager' ),
+			'manage_options',
+			'equine-event-manager-settings',
+			array( $this, 'render_settings_page' )
+		);
+
+		add_submenu_page(
+			self::MENU_SLUG,
+			__( 'Order Details', 'equine-event-manager' ),
+			__( 'Order Details', 'equine-event-manager' ),
+			'manage_options',
+			'equine-event-manager-order',
+			array( $this, 'render_order_details_page' )
+		);
+
+		add_submenu_page(
+			self::MENU_SLUG,
+			__( 'Refund Order', 'equine-event-manager' ),
+			__( 'Refund Order', 'equine-event-manager' ),
+			'manage_options',
+			'equine-event-manager-order-refund',
+			array( $this, 'render_order_refund_page' )
+		);
+
+		if ( $this->orders_hook ) {
+			add_action( 'load-' . $this->orders_hook, array( $this, 'add_orders_screen_options' ) );
+		}
+	}
+
+	/**
+	 * Hide the Order Details submenu item while keeping the page registered.
+	 *
+	 * WordPress access checks can block hidden pages if we remove the submenu
+	 * after registration, so we keep it registered and hide it visually.
+	 *
+	 * @return void
+	 */
+	public function hide_order_details_submenu() {
+		?>
+		<style>
+			#adminmenu a[href="admin.php?page=equine-event-manager-order"] {
+				display: none !important;
+			}
+
+			#adminmenu a[href="admin.php?page=equine-event-manager-order-refund"] {
+				display: none !important;
+			}
+
+			#adminmenu a[href="admin.php?page=equine-event-manager-reservation-overview"] {
+				display: none !important;
+			}
+		</style>
+		<?php
+	}
+
+	/**
+	 * Determine whether the current screen is the Reservations list table.
+	 *
+	 * @return bool
+	 */
+	private function is_reservations_list_screen() {
+		$screen = get_current_screen();
+
+		return $screen && 'edit-en_reservation' === $screen->id && 'edit' === $screen->base;
+	}
+
+	/**
+	 * Determine whether the current screen is a native content list table.
+	 *
+	 * @return bool
+	 */
+	private function is_native_content_list_screen() {
+		$screen = get_current_screen();
+
+		return $screen
+			&& 'edit' === $screen->base
+			&& in_array( $screen->post_type, array( 'en_event', 'en_venue', 'en_producer' ), true );
+	}
+
+	/**
+	 * Resolve the current native content list post type.
+	 *
+	 * @return string
+	 */
+	private function get_native_content_list_post_type() {
+		$screen = get_current_screen();
+
+		if ( ! $screen || 'edit' !== $screen->base ) {
+			return '';
+		}
+
+		return in_array( $screen->post_type, array( 'en_event', 'en_venue', 'en_producer' ), true ) ? (string) $screen->post_type : '';
+	}
+
+	/**
+	 * Render the branded banner above the Reservations list table.
+	 *
+	 * @return void
+	 */
+	public function render_reservations_list_banner() {
+		if ( ! $this->is_reservations_list_screen() ) {
+			return;
+		}
+
+		$metrics            = $this->get_reservations_list_metrics();
+		$total_reservations = isset( $metrics['total'] ) ? (int) $metrics['total'] : 0;
+		?>
+		<div class="wrap eem-shell-wrap eem-shell-wrap--header">
+			<?php
+			$this->render_brand_banner(
+				__( 'Reservations', 'equine-event-manager' ),
+				''
+			);
+			?>
+			<div class="eem-shell-actions">
+				<a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-invoicing' ) ); ?>"><?php esc_html_e( 'Create Order', 'equine-event-manager' ); ?></a>
+			</div>
+			<?php
+
+			if ( 0 === $total_reservations ) {
+				$this->render_empty_data_diagnostics( 'reservations' );
+			}
+			?>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Normalize the native Reservations list markup into one toolbar surface.
+	 *
+	 * WordPress outputs the status row, search box, tablenav, and table as
+	 * separate blocks. This rearranges the native markup into the same app-style
+	 * structure every time so CSS is styling one stable layout instead of
+	 * fighting several disconnected surfaces.
+	 *
+	 * @return void
+	 */
+	public function print_reservations_list_toolbar_normalizer() {
+		if ( ! $this->is_reservations_list_screen() ) {
+			return;
+		}
+		?>
+		<script>
+			(function () {
+				var form = document.getElementById('posts-filter');
+				if (!form) {
+					return;
+				}
+
+				var toolbar = form.querySelector(':scope > .tablenav.top');
+				var table = form.querySelector(':scope > .wp-list-table');
+				var searchBox = form.querySelector(':scope > .search-box');
+				if (!toolbar || !table) {
+					return;
+				}
+
+				if (toolbar.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING) {
+					// already above the table
+				} else {
+					form.insertBefore(toolbar, table);
+				}
+
+				var right = toolbar.querySelector('.eem-reservations-toolbar-right');
+				if (!right) {
+					right = document.createElement('div');
+					right.className = 'eem-reservations-toolbar-right';
+				}
+
+				if (searchBox && searchBox.parentNode !== right) {
+					right.appendChild(searchBox);
+				}
+
+				var count = toolbar.querySelector('.displaying-num');
+				if (count && count.parentNode !== right) {
+					right.appendChild(count);
+				}
+
+				if (right.childNodes.length && right.parentNode !== toolbar) {
+					toolbar.appendChild(right);
+				}
+
+				form.classList.add('eem-reservations-toolbar-ready');
+			}());
+		</script>
+		<?php
+	}
+
+	/**
+	 * Render the branded banner above native content list tables.
+	 *
+	 * @return void
+	 */
+	public function render_native_content_list_banner() {
+		$post_type = $this->get_native_content_list_post_type();
+
+		if ( '' === $post_type ) {
+			return;
+		}
+
+		$context = $this->get_native_content_list_context( $post_type );
+		$metrics = $this->get_native_content_list_metrics( $post_type );
+		?>
+		<div>
+			<?php
+			$this->render_brand_banner(
+				$context['title'],
+				$context['description']
+			);
+			?>
+			<p>
+					<?php foreach ( $context['actions'] as $action ) : ?>
+						<a href="<?php echo esc_url( $action['url'] ); ?>"><?php echo esc_html( $action['label'] ); ?></a>
+					<?php endforeach; ?>
+			</p>
+			<div>
+					<?php foreach ( $metrics as $metric ) : ?>
+						<p>
+							<strong><?php echo esc_html( $metric['label'] ); ?>:</strong>
+							<?php echo esc_html( number_format_i18n( (int) $metric['value'] ) ); ?>
+							<?php if ( '' !== $metric['meta'] ) : ?>
+								<?php echo esc_html( ' - ' . $metric['meta'] ); ?>
+							<?php endif; ?>
+						</p>
+					<?php endforeach; ?>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Build summary metrics for the Reservations list screen.
+	 *
+	 * @return array<string,int>
+	 */
+	private function get_reservations_list_metrics() {
+		$reservation_counts = wp_count_posts( 'en_reservation' );
+		$metrics            = array(
+			'total'             => 0,
+			'published'         => 0,
+			'linked'            => 0,
+			'assignments_ready' => 0,
+		);
+
+		if ( $reservation_counts ) {
+			foreach ( array( 'publish', 'draft', 'private', 'future', 'pending' ) as $status_key ) {
+				$metrics['total'] += isset( $reservation_counts->{$status_key} ) ? (int) $reservation_counts->{$status_key} : 0;
+			}
+
+			$metrics['published'] = isset( $reservation_counts->publish ) ? (int) $reservation_counts->publish : 0;
+		}
+
+		$reservation_ids = get_posts(
+			array(
+				'post_type'      => 'en_reservation',
+				'post_status'    => array( 'publish', 'draft', 'private', 'future', 'pending' ),
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+				'no_found_rows'  => true,
+				'orderby'        => 'ID',
+				'order'          => 'DESC',
+			)
+		);
+
+		foreach ( $reservation_ids as $reservation_id ) {
+			$event_id         = absint( get_post_meta( $reservation_id, '_en_event_id', true ) );
+			$native_event_id  = absint( get_post_meta( $reservation_id, '_en_native_event_id', true ) );
+			$stall_chart      = ! empty( get_post_meta( $reservation_id, '_en_stall_chart_enabled', true ) );
+			$rv_lot_selection = ! empty( get_post_meta( $reservation_id, '_en_rv_lot_selection_enabled', true ) );
+
+			if ( $event_id || $native_event_id ) {
+				$metrics['linked']++;
+			}
+
+			if ( $stall_chart || $rv_lot_selection ) {
+				$metrics['assignments_ready']++;
+			}
+		}
+
+		return $metrics;
+	}
+
+	/**
+	 * Build content and actions for a native content list screen.
+	 *
+	 * @param string $post_type Current post type.
+	 * @return array<string,mixed>
+	 */
+	private function get_native_content_list_context( $post_type ) {
+		$contexts = array(
+			'en_event'    => array(
+				'title'           => __( 'Events', 'equine-event-manager' ),
+				'description'     => __( 'Manage the event catalog, keep reservations linked, and maintain the shared frontend experience from one workspace.', 'equine-event-manager' ),
+				'actions'         => array(
+					array(
+						'label'   => __( 'Add Event', 'equine-event-manager' ),
+						'url'     => admin_url( 'post-new.php?post_type=en_event' ),
+						'primary' => true,
+					),
+					array(
+						'label' => __( 'View Venues', 'equine-event-manager' ),
+						'url'   => admin_url( 'edit.php?post_type=en_venue' ),
+					),
+					array(
+						'label' => __( 'View Producers', 'equine-event-manager' ),
+						'url'   => admin_url( 'edit.php?post_type=en_producer' ),
+					),
+				),
+			),
+			'en_venue'    => array(
+				'title'           => __( 'Venues', 'equine-event-manager' ),
+				'description'     => __( 'Maintain venue records, location details, and the event connections that power the shared frontend event experience.', 'equine-event-manager' ),
+				'actions'         => array(
+					array(
+						'label'   => __( 'Add Venue', 'equine-event-manager' ),
+						'url'     => admin_url( 'post-new.php?post_type=en_venue' ),
+						'primary' => true,
+					),
+					array(
+						'label' => __( 'View Events', 'equine-event-manager' ),
+						'url'   => admin_url( 'edit.php?post_type=en_event' ),
+					),
+					array(
+						'label' => __( 'View Producers', 'equine-event-manager' ),
+						'url'   => admin_url( 'edit.php?post_type=en_producer' ),
+					),
+				),
+			),
+			'en_producer' => array(
+				'title'           => __( 'Producers', 'equine-event-manager' ),
+				'description'     => __( 'Manage organizer records, contact details, and the event relationships used throughout the native event workspace.', 'equine-event-manager' ),
+				'actions'         => array(
+					array(
+						'label'   => __( 'Add Producer', 'equine-event-manager' ),
+						'url'     => admin_url( 'post-new.php?post_type=en_producer' ),
+						'primary' => true,
+					),
+					array(
+						'label' => __( 'View Events', 'equine-event-manager' ),
+						'url'   => admin_url( 'edit.php?post_type=en_event' ),
+					),
+					array(
+						'label' => __( 'View Venues', 'equine-event-manager' ),
+						'url'   => admin_url( 'edit.php?post_type=en_venue' ),
+					),
+				),
+			),
+		);
+
+		return isset( $contexts[ $post_type ] ) ? $contexts[ $post_type ] : $contexts['en_event'];
+	}
+
+	/**
+	 * Build summary metrics for native content list screens.
+	 *
+	 * @param string $post_type Current post type.
+	 * @return array<string,array<string,string|int>>
+	 */
+	private function get_native_content_list_metrics( $post_type ) {
+		$total     = 0;
+		$published = 0;
+		$counts    = wp_count_posts( $post_type );
+
+		if ( $counts ) {
+			foreach ( array( 'publish', 'draft', 'private', 'future', 'pending' ) as $status_key ) {
+				$total += isset( $counts->{$status_key} ) ? (int) $counts->{$status_key} : 0;
+			}
+
+			$published = isset( $counts->publish ) ? (int) $counts->publish : 0;
+		}
+
+		$metrics = array(
+			'total' => array(
+				'label' => __( 'Total', 'equine-event-manager' ),
+				'value' => $total,
+				'meta'  => __( 'All active records across editorial statuses.', 'equine-event-manager' ),
+			),
+		);
+
+		if ( 'en_event' === $post_type ) {
+			$metrics['published'] = array(
+				'label' => __( 'Published', 'equine-event-manager' ),
+				'value' => $published,
+				'meta'  => __( 'Live event pages available on the frontend.', 'equine-event-manager' ),
+			);
+			$metrics['linked']    = array(
+				'label' => __( 'Linked Reservations', 'equine-event-manager' ),
+				'value' => $this->count_posts_with_positive_meta( 'en_event', '_equine_event_manager_reservation_id' ),
+				'meta'  => __( 'Events already connected to a reservation setup.', 'equine-event-manager' ),
+			);
+			$metrics['upcoming']  = array(
+				'label' => __( 'Current + Upcoming', 'equine-event-manager' ),
+				'value' => $this->count_current_upcoming_native_events(),
+				'meta'  => __( 'Events still active or coming up next on the schedule.', 'equine-event-manager' ),
+			);
+		} elseif ( 'en_venue' === $post_type ) {
+			$metrics['published'] = array(
+				'label' => __( 'Published', 'equine-event-manager' ),
+				'value' => $published,
+				'meta'  => __( 'Venue records currently live in the directory.', 'equine-event-manager' ),
+			);
+			$metrics['in_use']    = array(
+				'label' => __( 'In Use', 'equine-event-manager' ),
+				'value' => $this->count_referenced_native_objects( '_equine_event_manager_event_venue_id' ),
+				'meta'  => __( 'Venue records connected to at least one native event.', 'equine-event-manager' ),
+			);
+			$metrics['website']   = array(
+				'label' => __( 'With Website', 'equine-event-manager' ),
+				'value' => $this->count_posts_with_nonempty_meta( 'en_venue', '_equine_event_manager_venue_website' ),
+				'meta'  => __( 'Venue records with an outbound website link ready to use.', 'equine-event-manager' ),
+			);
+		} else {
+			$metrics['published'] = array(
+				'label' => __( 'Published', 'equine-event-manager' ),
+				'value' => $published,
+				'meta'  => __( 'Producer records currently live in the directory.', 'equine-event-manager' ),
+			);
+			$metrics['in_use']    = array(
+				'label' => __( 'In Use', 'equine-event-manager' ),
+				'value' => $this->count_referenced_native_objects( '_equine_event_manager_event_producer_id' ),
+				'meta'  => __( 'Producer records connected to at least one native event.', 'equine-event-manager' ),
+			);
+			$metrics['contact']   = array(
+				'label' => __( 'With Contact', 'equine-event-manager' ),
+				'value' => $this->count_posts_with_nonempty_meta( 'en_producer', '_equine_event_manager_producer_email' ),
+				'meta'  => __( 'Producer records ready with a primary email contact.', 'equine-event-manager' ),
+			);
+		}
+
+		return $metrics;
+	}
+
+	/**
+	 * Count posts where a given numeric meta key stores a positive value.
+	 *
+	 * @param string $post_type Post type.
+	 * @param string $meta_key  Meta key.
+	 * @return int
+	 */
+	private function count_posts_with_positive_meta( $post_type, $meta_key ) {
+		$post_ids = get_posts(
+			array(
+				'post_type'      => $post_type,
+				'post_status'    => array( 'publish', 'draft', 'private', 'future', 'pending' ),
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+				'no_found_rows'  => true,
+				'orderby'        => 'ID',
+				'order'          => 'DESC',
+			)
+		);
+
+		$count = 0;
+
+		foreach ( $post_ids as $post_id ) {
+			if ( absint( get_post_meta( $post_id, $meta_key, true ) ) > 0 ) {
+				$count++;
+			}
+		}
+
+		return $count;
+	}
+
+	/**
+	 * Count posts where a given meta key contains a non-empty string value.
+	 *
+	 * @param string $post_type Post type.
+	 * @param string $meta_key  Meta key.
+	 * @return int
+	 */
+	private function count_posts_with_nonempty_meta( $post_type, $meta_key ) {
+		$post_ids = get_posts(
+			array(
+				'post_type'      => $post_type,
+				'post_status'    => array( 'publish', 'draft', 'private', 'future', 'pending' ),
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+				'no_found_rows'  => true,
+				'orderby'        => 'ID',
+				'order'          => 'DESC',
+			)
+		);
+
+		$count = 0;
+
+		foreach ( $post_ids as $post_id ) {
+			if ( '' !== trim( (string) get_post_meta( $post_id, $meta_key, true ) ) ) {
+				$count++;
+			}
+		}
+
+		return $count;
+	}
+
+	/**
+	 * Count unique referenced native objects from event post meta.
+	 *
+	 * @param string $meta_key Event meta key containing the linked object ID.
+	 * @return int
+	 */
+	private function count_referenced_native_objects( $meta_key ) {
+		$event_ids = get_posts(
+			array(
+				'post_type'      => 'en_event',
+				'post_status'    => array( 'publish', 'draft', 'private', 'future', 'pending' ),
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+				'no_found_rows'  => true,
+				'orderby'        => 'ID',
+				'order'          => 'DESC',
+			)
+		);
+
+		$linked_ids = array();
+
+		foreach ( $event_ids as $event_id ) {
+			$linked_id = absint( get_post_meta( $event_id, $meta_key, true ) );
+
+			if ( $linked_id > 0 ) {
+				$linked_ids[] = $linked_id;
+			}
+		}
+
+		return count( array_unique( $linked_ids ) );
+	}
+
+	/**
+	 * Count current and upcoming native events using the saved end date.
+	 *
+	 * @return int
+	 */
+	private function count_current_upcoming_native_events() {
+		$event_ids = get_posts(
+			array(
+				'post_type'      => 'en_event',
+				'post_status'    => array( 'publish', 'draft', 'private', 'future', 'pending' ),
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+				'no_found_rows'  => true,
+				'orderby'        => 'ID',
+				'order'          => 'DESC',
+			)
+		);
+
+		$today = gmdate( 'Y-m-d' );
+		$count = 0;
+
+		foreach ( $event_ids as $event_id ) {
+			$start_date = trim( (string) get_post_meta( $event_id, '_equine_event_manager_event_start_date', true ) );
+			$end_date   = trim( (string) get_post_meta( $event_id, '_equine_event_manager_event_end_date', true ) );
+			$end_date   = '' !== $end_date ? $end_date : $start_date;
+
+			if ( '' !== $end_date && $end_date >= $today ) {
+				$count++;
+			}
+		}
+
+		return $count;
+	}
+
+	/**
+	 * Keep the custom Reservations menu highlighted on plugin admin screens.
+	 *
+	 * @param string $parent_file Current parent file.
+	 * @return string
+	 */
+	public function filter_parent_file( $parent_file ) {
+		$screen = get_current_screen();
+
+		if ( $screen && in_array( $screen->post_type, array( 'en_reservation', 'en_event', 'en_venue', 'en_producer' ), true ) ) {
+			return self::MENU_SLUG;
+		}
+
+		if ( isset( $_GET['page'] ) && 0 === strpos( sanitize_key( wp_unslash( $_GET['page'] ) ), 'equine-event-manager' ) ) {
+			return self::MENU_SLUG;
+		}
+
+		return $parent_file;
+	}
+
+	/**
+	 * Keep the correct submenu item active on reservation-related admin screens.
+	 *
+	 * @param string $submenu_file Current submenu file.
+	 * @return string
+	 */
+	public function filter_submenu_file( $submenu_file ) {
+		$screen = get_current_screen();
+
+		if ( $screen && 'en_reservation' === $screen->post_type ) {
+			if ( in_array( $screen->base, array( 'post-new', 'post', 'edit' ), true ) ) {
+				return 'edit.php?post_type=en_reservation';
+			}
+		}
+
+		if ( $screen && 'en_event' === $screen->post_type ) {
+			if ( 'post-new' === $screen->base ) {
+				return 'post-new.php?post_type=en_event';
+			}
+
+			if ( in_array( $screen->base, array( 'post', 'edit' ), true ) ) {
+				return 'edit.php?post_type=en_event';
+			}
+		}
+
+		if ( $screen && 'en_venue' === $screen->post_type ) {
+			if ( 'post-new' === $screen->base ) {
+				return 'post-new.php?post_type=en_venue';
+			}
+
+			if ( in_array( $screen->base, array( 'post', 'edit' ), true ) ) {
+				return 'edit.php?post_type=en_venue';
+			}
+		}
+
+		if ( $screen && 'en_producer' === $screen->post_type ) {
+			if ( 'post-new' === $screen->base ) {
+				return 'post-new.php?post_type=en_producer';
+			}
+
+			if ( in_array( $screen->base, array( 'post', 'edit' ), true ) ) {
+				return 'edit.php?post_type=en_producer';
+			}
+		}
+
+		if ( isset( $_GET['page'] ) ) {
+			$page = sanitize_key( wp_unslash( $_GET['page'] ) );
+
+			if ( 'equine-event-manager-order' === $page ) {
+				return 'equine-event-manager-orders';
+			}
+
+			if ( 'equine-event-manager-order-refund' === $page ) {
+				return 'equine-event-manager-orders';
+			}
+
+			if ( 'equine-event-manager-reservation-overview' === $page ) {
+				return 'edit.php?post_type=en_reservation';
+			}
+
+			if ( 'equine-event-manager-stall-chart' === $page ) {
+				return 'equine-event-manager-stall-chart';
+			}
+
+			if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-invoicing', 'equine-event-manager-reports', 'equine-event-manager-settings' ), true ) ) {
+				return $page;
+			}
+
+		}
+
+		if ( isset( $_GET['taxonomy'] ) ) {
+			$taxonomy = sanitize_key( wp_unslash( $_GET['taxonomy'] ) );
+
+			if ( 'en_event_category' === $taxonomy ) {
+				return 'edit-tags.php?taxonomy=en_event_category&post_type=en_event';
+			}
+
+			if ( 'en_event_tag' === $taxonomy ) {
+				return 'edit-tags.php?taxonomy=en_event_tag&post_type=en_event';
+			}
+
+			if ( 'en_venue_category' === $taxonomy ) {
+				return 'edit-tags.php?taxonomy=en_venue_category&post_type=en_venue';
+			}
+
+			if ( 'en_producer_category' === $taxonomy ) {
+				return 'edit-tags.php?taxonomy=en_producer_category&post_type=en_producer';
+			}
+		}
+
+		return $submenu_file;
+	}
+
+
+	/**
+	 * Add screen options for the dashboard recent orders list.
+	 *
+	 * @return void
+	 */
+	public function add_orders_screen_options() {
+		add_screen_option(
+			'per_page',
+			array(
+				'label'   => __( 'Orders per page', 'equine-event-manager' ),
+				'default' => 20,
+				'option'  => 'equine_event_manager_orders_per_page',
+			)
+		);
+	}
+
+	/**
+	 * Persist supported screen option values.
+	 *
+	 * @param mixed  $status Default status.
+	 * @param string $option Option name.
+	 * @param mixed  $value Submitted value.
+	 * @return mixed
+	 */
+	public function save_screen_option( $status, $option, $value ) {
+		if ( 'equine_event_manager_orders_per_page' !== $option ) {
+			return $status;
+		}
+
+		$value = (int) $value;
+
+		if ( $value < 1 ) {
+			return 20;
+		}
+
+		return min( 100, $value );
+	}
+
+	/**
+	 * Resolve a saved per-page value for order lists.
+	 *
+	 * @param string $option_name Option name.
+	 * @return int
+	 */
+	private function get_order_list_per_page( $option_name ) {
+		$value = (int) get_user_meta( get_current_user_id(), $option_name, true );
+
+		if ( $value < 1 ) {
+			return 20;
+		}
+
+		return min( 100, $value );
+	}
+
+	/**
+	 * Build a consistent Orders page URL.
+	 *
+	 * @param array<string, scalar|null> $args Optional query arguments.
+	 * @return string
+	 */
+	private function get_orders_page_url( $args = array() ) {
+		$query_args = array_merge(
+			array(
+				'page' => 'equine-event-manager-orders',
+			),
+			(array) $args
+		);
+
+		$query_args = array_filter(
+			$query_args,
+			static function ( $value ) {
+				if ( is_array( $value ) || is_object( $value ) ) {
+					return false;
+				}
+
+				return null !== $value && '' !== (string) $value;
+			}
+		);
+
+		return add_query_arg( $query_args, admin_url( 'admin.php' ) );
+	}
+
+	/**
+	 * Render the Reservations dashboard landing page.
+	 */
+	public function render_dashboard_page() {
+		$this->guard_admin_page();
+
+		$dashboard_event_filter         = isset( $_GET['dashboard_event_filter'] ) ? sanitize_text_field( wp_unslash( $_GET['dashboard_event_filter'] ) ) : '';
+		$dashboard_per_page             = $this->get_order_list_per_page( 'equine_event_manager_dashboard_per_page' );
+		$order_rows                     = $this->orders_repository->get_orders( '', 'date', 'desc' );
+		$recent_orders_source           = '' !== $dashboard_event_filter ? $this->orders_repository->get_orders( $dashboard_event_filter, 'date', 'desc' ) : $order_rows;
+		$recent_orders                  = array_slice( $recent_orders_source, 0, $dashboard_per_page );
+		$dashboard_event_filter_options = $this->orders_repository->get_recent_event_filter_options();
+		$reservation_counts             = wp_count_posts( 'en_reservation' );
+		$total_reservations             = 0;
+		$published_reservations         = $reservation_counts && isset( $reservation_counts->publish ) ? (int) $reservation_counts->publish : 0;
+		$attention_statuses             = array( 'unpaid', 'invoice-sent', 'partially-refunded' );
+		$attention_orders               = array();
+		$booking_mix                    = array(
+			'stall' => 0,
+			'rv'    => 0,
+			'group' => 0,
+			'addon' => 0,
+		);
+		$assigned_stall_units_total     = 0;
+		$revenue_total                  = 0.0;
+
+		if ( $reservation_counts ) {
+			foreach ( array( 'publish', 'draft', 'private', 'future', 'pending' ) as $status_key ) {
+				$total_reservations += isset( $reservation_counts->{$status_key} ) ? (int) $reservation_counts->{$status_key} : 0;
+			}
+		}
+
+		foreach ( $order_rows as $order ) {
+			$revenue_total += isset( $order['total'] ) ? (float) $order['total'] : 0.0;
+
+			if ( ! empty( $order['status_slug'] ) && in_array( $order['status_slug'], $attention_statuses, true ) ) {
+				$attention_orders[] = $order;
+			}
+
+			$type_parts = array_filter( array_map( 'trim', explode( ',', isset( $order['type'] ) ? (string) $order['type'] : '' ) ) );
+
+			foreach ( $type_parts as $type_part ) {
+				$type_slug = sanitize_title( $type_part );
+
+				if ( 'add-on' === $type_slug ) {
+					$type_slug = 'addon';
+				}
+
+				if ( isset( $booking_mix[ $type_slug ] ) ) {
+					$booking_mix[ $type_slug ]++;
+				}
+			}
+
+			$assigned_stall_units_total += count(
+				$this->parse_assigned_units_string(
+					$this->get_order_component_note_value( $order, 'stall', 'Assigned Stall Units' )
+				)
+			);
+		}
+
+		$reservations_url    = admin_url( 'edit.php?post_type=en_reservation' );
+		$orders_url          = $this->get_orders_page_url();
+		$attention_orders_url = add_query_arg(
+			array(
+				'page'      => 'equine-event-manager-orders',
+				'attention' => '1',
+			),
+			admin_url( 'admin.php' )
+		);
+		?>
+		<div class="wrap">
+			<?php
+			$this->render_brand_banner(
+				__( 'Dashboard', 'equine-event-manager' ),
+				__( 'Get a quick overview of reservations, orders, and recent booking activity.', 'equine-event-manager' )
+			);
+			?>
+			<?php $this->render_admin_notice(); ?>
+			<div>
+				<div class="postbox eem-invoicing-guide eem-invoicing-guide--picker">
+					<h2><?php esc_html_e( 'Overview', 'equine-event-manager' ); ?></h2>
+					<table class="widefat striped">
+						<tbody>
+							<tr>
+								<th scope="row"><?php esc_html_e( 'Reservations', 'equine-event-manager' ); ?></th>
+								<td>
+									<a href="<?php echo esc_url( $reservations_url ); ?>"><?php echo esc_html( number_format_i18n( $total_reservations ) ); ?></a>
+									<?php
+									echo ' - ' . esc_html(
+										sprintf(
+											/* translators: %s: published reservation count. */
+											__( '%s published', 'equine-event-manager' ),
+											number_format_i18n( $published_reservations )
+										)
+									);
+									?>
+								</td>
+							</tr>
+							<tr>
+								<th scope="row"><?php esc_html_e( 'Orders', 'equine-event-manager' ); ?></th>
+								<td><a href="<?php echo esc_url( $orders_url ); ?>"><?php echo esc_html( number_format_i18n( count( $order_rows ) ) ); ?></a></td>
+							</tr>
+							<tr>
+								<th scope="row"><?php esc_html_e( 'Needs Attention', 'equine-event-manager' ); ?></th>
+								<td><a href="<?php echo esc_url( $attention_orders_url ); ?>"><?php echo esc_html( number_format_i18n( count( $attention_orders ) ) ); ?></a></td>
+							</tr>
+							<tr>
+								<th scope="row"><?php esc_html_e( 'Revenue', 'equine-event-manager' ); ?></th>
+								<td><?php echo esc_html( $this->format_money( $revenue_total ) ); ?></td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+
+				<div class="postbox eem-reports-guide eem-reports-guide--export">
+					<h2><?php esc_html_e( 'Quick Actions', 'equine-event-manager' ); ?></h2>
+					<p><?php esc_html_e( 'Open the tools you use most.', 'equine-event-manager' ); ?></p>
+					<p>
+						<a class="button button-primary" href="<?php echo esc_url( admin_url( 'post-new.php?post_type=en_reservation' ) ); ?>"><?php esc_html_e( 'Add Reservation', 'equine-event-manager' ); ?></a>
+						<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-invoicing' ) ); ?>"><?php esc_html_e( 'Create Invoice', 'equine-event-manager' ); ?></a>
+						<a class="button" href="<?php echo esc_url( admin_url( 'edit.php?post_type=en_reservation' ) ); ?>"><?php esc_html_e( 'View Reservations', 'equine-event-manager' ); ?></a>
+					</p>
+				</div>
+
+				<div class="postbox eem-reports-guide eem-reports-guide--history">
+					<h2><?php esc_html_e( 'Booking Mix', 'equine-event-manager' ); ?></h2>
+					<p><?php esc_html_e( 'See which reservation types are driving bookings.', 'equine-event-manager' ); ?></p>
+					<table class="widefat striped">
+						<tbody>
+							<tr>
+								<th scope="row"><?php esc_html_e( 'Stall Orders', 'equine-event-manager' ); ?></th>
+								<td><?php echo esc_html( number_format_i18n( $booking_mix['stall'] ) ); ?></td>
+							</tr>
+							<tr>
+								<th scope="row"><?php esc_html_e( 'RV Orders', 'equine-event-manager' ); ?></th>
+								<td><?php echo esc_html( number_format_i18n( $booking_mix['rv'] ) ); ?></td>
+							</tr>
+							<tr>
+								<th scope="row"><?php esc_html_e( 'Group Orders', 'equine-event-manager' ); ?></th>
+								<td><?php echo esc_html( number_format_i18n( $booking_mix['group'] ) ); ?></td>
+							</tr>
+							<tr>
+								<th scope="row"><?php esc_html_e( 'Stall Assignments', 'equine-event-manager' ); ?></th>
+								<td><?php echo esc_html( number_format_i18n( $assigned_stall_units_total ) ); ?></td>
+							</tr>
+							<tr>
+								<th scope="row"><?php esc_html_e( 'Add-On Orders', 'equine-event-manager' ); ?></th>
+								<td>
+									<?php
+									echo esc_html(
+										sprintf(
+											/* translators: %s: add-on order count. */
+											__( '%s (counted when they appear as part of an order type mix)', 'equine-event-manager' ),
+											number_format_i18n( $booking_mix['addon'] )
+										)
+									);
+									?>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+
+				<div class="postbox">
+					<h2><?php esc_html_e( 'Recent Orders', 'equine-event-manager' ); ?></h2>
+					<p><?php esc_html_e( 'Latest bookings across your events.', 'equine-event-manager' ); ?></p>
+					<p><a class="button button-secondary" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-orders' ) ); ?>"><?php esc_html_e( 'View All Orders', 'equine-event-manager' ); ?></a></p>
+					<div>
+						<?php $this->render_dashboard_orders_views( count( $order_rows ), count( $recent_orders_source ), $dashboard_event_filter ); ?>
+						<form method="get">
+							<input type="hidden" name="page" value="<?php echo esc_attr( self::MENU_SLUG ); ?>" />
+							<label for="dashboard_event_filter" class="screen-reader-text"><?php esc_html_e( 'Filter recent orders by event', 'equine-event-manager' ); ?></label>
+							<select id="dashboard_event_filter" name="dashboard_event_filter">
+								<option value=""><?php esc_html_e( 'Select event', 'equine-event-manager' ); ?></option>
+								<?php foreach ( $dashboard_event_filter_options as $event_option_value => $event_option_label ) : ?>
+									<option value="<?php echo esc_attr( $event_option_value ); ?>" <?php selected( $dashboard_event_filter, $event_option_value ); ?>><?php echo esc_html( $event_option_label ); ?></option>
+								<?php endforeach; ?>
+							</select>
+							<?php submit_button( __( 'Filter', 'equine-event-manager' ), 'secondary', '', false ); ?>
+							<?php if ( '' !== $dashboard_event_filter ) : ?>
+								<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::MENU_SLUG ) ); ?>"><?php esc_html_e( 'Clear', 'equine-event-manager' ); ?></a>
+							<?php endif; ?>
+						</form>
+						<span>
+							<?php
+							echo esc_html(
+								sprintf(
+									/* translators: %s: number of orders */
+									_n( '%s order', '%s orders', count( $recent_orders_source ), 'equine-event-manager' ),
+									number_format_i18n( count( $recent_orders_source ) )
+								)
+							);
+							?>
+						</span>
+					</div>
+					<?php if ( empty( $recent_orders ) ) : ?>
+						<?php $this->render_empty_data_diagnostics( 'orders' ); ?>
+						<div class="notice notice-info inline">
+							<strong><?php esc_html_e( 'No orders have been placed yet', 'equine-event-manager' ); ?></strong>
+							<p><?php esc_html_e( 'Once customers start reserving stalls, RVs, or add-ons, the live order feed will appear here.', 'equine-event-manager' ); ?></p>
+						</div>
+					<?php else : ?>
+						<table class="widefat fixed striped">
+							<thead>
+								<tr>
+									<th><?php esc_html_e( 'Order', 'equine-event-manager' ); ?></th>
+									<th><?php esc_html_e( 'Customer', 'equine-event-manager' ); ?></th>
+									<th><?php esc_html_e( 'Event', 'equine-event-manager' ); ?></th>
+								</tr>
+							</thead>
+							<tbody>
+								<?php foreach ( $recent_orders as $order ) : ?>
+									<tr>
+										<td data-label="<?php esc_attr_e( 'Order', 'equine-event-manager' ); ?>"><a href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-order&order_key=' . rawurlencode( $order['order_key'] ) ) ); ?>">#<?php echo esc_html( $order['order_number'] ); ?></a></td>
+										<td data-label="<?php esc_attr_e( 'Customer', 'equine-event-manager' ); ?>"><?php echo esc_html( $order['customer_name'] ); ?></td>
+										<td data-label="<?php esc_attr_e( 'Event', 'equine-event-manager' ); ?>"><?php echo esc_html( $order['reservation_title'] ? $order['reservation_title'] : $order['event_name'] ); ?></td>
+									</tr>
+								<?php endforeach; ?>
+							</tbody>
+						</table>
+					<?php endif; ?>
+				</div>
+			</div>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Render the Orders list page.
+	 */
+	public function render_orders_page() {
+		$this->guard_admin_page();
+
+		$event_filter = isset( $_GET['event_filter'] ) ? sanitize_text_field( wp_unslash( $_GET['event_filter'] ) ) : '';
+		$search_term  = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
+		$orderby      = isset( $_GET['orderby'] ) ? sanitize_key( wp_unslash( $_GET['orderby'] ) ) : 'date';
+		$order        = isset( $_GET['order'] ) ? sanitize_key( wp_unslash( $_GET['order'] ) ) : 'desc';
+		$attention    = isset( $_GET['attention'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['attention'] ) );
+		$billing_flag = isset( $_GET['billing_flag'] ) ? sanitize_key( wp_unslash( $_GET['billing_flag'] ) ) : '';
+
+		$load_error = '';
+
+		try {
+			$current_page         = isset( $_GET['paged'] ) ? max( 1, absint( wp_unslash( $_GET['paged'] ) ) ) : 1;
+			$per_page             = $this->get_order_list_per_page( 'equine_event_manager_orders_per_page' );
+			$event_filter_options = $this->orders_repository->get_recent_event_filter_options();
+			$all_orders           = $this->orders_repository->get_orders( '', $orderby, $order );
+			$orders               = $this->orders_repository->get_orders( $event_filter, $orderby, $order, $search_term );
+
+			if ( $attention ) {
+				$attention_statuses = array( 'unpaid', 'invoice-sent', 'partially-refunded' );
+				$all_orders         = array_values(
+					array_filter(
+						$all_orders,
+						function ( $order_row ) use ( $attention_statuses ) {
+							return ! empty( $order_row['status_slug'] ) && in_array( $order_row['status_slug'], $attention_statuses, true );
+						}
+					)
+				);
+				$orders             = array_values(
+					array_filter(
+						$orders,
+						function ( $order_row ) use ( $attention_statuses ) {
+							return ! empty( $order_row['status_slug'] ) && in_array( $order_row['status_slug'], $attention_statuses, true );
+						}
+					)
+				);
+			}
+
+			if ( 'show_bill' === $billing_flag ) {
+				$all_orders = array_values(
+					array_filter(
+						$all_orders,
+						function ( $order_row ) {
+							return ! empty( $order_row['status_slug'] ) && 'outstanding-show-bill' === $order_row['status_slug'];
+						}
+					)
+				);
+				$orders = array_values(
+					array_filter(
+						$orders,
+						function ( $order_row ) {
+							return ! empty( $order_row['status_slug'] ) && 'outstanding-show-bill' === $order_row['status_slug'];
+						}
+					)
+				);
+			}
+
+			$order_count          = count( $orders );
+			$total_order_count    = count( $all_orders );
+			$total_pages          = max( 1, (int) ceil( $order_count / $per_page ) );
+			$current_page         = min( $current_page, $total_pages );
+			$orders               = array_slice( $orders, ( $current_page - 1 ) * $per_page, $per_page );
+		} catch ( Throwable $exception ) {
+			$event_filter_options = array();
+			$orders               = array();
+			$order_count          = 0;
+			$total_order_count    = 0;
+			$total_pages          = 1;
+			$current_page         = 1;
+			$per_page             = 20;
+
+			error_log( '[Equine Event Manager] Orders page load failed: ' . $exception->getMessage() );
+			$load_error = __( 'We could not load that order search. Please try again.', 'equine-event-manager' );
+		}
+
+		?>
+		<div class="wrap eem-shell-wrap eem-shell-wrap--header">
+			<?php
+			$this->render_brand_banner(
+				__( 'Orders', 'equine-event-manager' ),
+				''
+			);
+			?>
+			<div class="eem-shell-actions">
+				<a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-invoicing' ) ); ?>"><?php esc_html_e( 'Create Order', 'equine-event-manager' ); ?></a>
+			</div>
+			<div class="eem-shell-content eem-shell-content--app eem-orders-guide">
+				<?php $this->render_admin_notice(); ?>
+				<?php if ( '' !== $load_error ) : ?>
+					<div class="notice notice-error inline"><p><?php echo esc_html( $load_error ); ?></p></div>
+				<?php endif; ?>
+				<div class="postbox eem-card eem-card--orders-list">
+					<div class="eem-orders-guide__head">
+						<div>
+							<h2><?php esc_html_e( 'All Orders', 'equine-event-manager' ); ?></h2>
+							<p><?php esc_html_e( 'Use filters to narrow the booking feed by event, show bill status, or keyword search.', 'equine-event-manager' ); ?></p>
+						</div>
+					</div>
+					<div class="eem-orders-guide__toolbar">
+						<form class="eem-orders-guide__toolbar-form" method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>">
+							<input type="hidden" name="page" value="equine-event-manager-orders" />
+							<input type="hidden" name="orderby" value="<?php echo esc_attr( $orderby ); ?>" />
+							<input type="hidden" name="order" value="<?php echo esc_attr( $order ); ?>" />
+							<?php if ( $attention ) : ?>
+								<input type="hidden" name="attention" value="1" />
+							<?php endif; ?>
+							<div class="eem-orders-guide__toolbar-left">
+								<label for="event_filter" class="screen-reader-text"><?php esc_html_e( 'Filter by event', 'equine-event-manager' ); ?></label>
+								<select id="event_filter" name="event_filter">
+									<option value=""><?php esc_html_e( 'Select event', 'equine-event-manager' ); ?></option>
+									<?php foreach ( $event_filter_options as $event_option_value => $event_option_label ) : ?>
+										<option value="<?php echo esc_attr( $event_option_value ); ?>" <?php selected( $event_filter, $event_option_value ); ?>><?php echo esc_html( $event_option_label ); ?></option>
+									<?php endforeach; ?>
+								</select>
+								<label for="billing_flag" class="screen-reader-text"><?php esc_html_e( 'Filter by show bill status', 'equine-event-manager' ); ?></label>
+								<select id="billing_flag" name="billing_flag">
+									<option value=""><?php esc_html_e( 'All billing', 'equine-event-manager' ); ?></option>
+									<option value="show_bill" <?php selected( $billing_flag, 'show_bill' ); ?>><?php esc_html_e( 'Show Bills', 'equine-event-manager' ); ?></option>
+								</select>
+								<label for="orders_search" class="screen-reader-text"><?php esc_html_e( 'Search orders', 'equine-event-manager' ); ?></label>
+								<div class="eem-orders-guide__search">
+									<input type="search" id="orders_search" name="s" value="<?php echo esc_attr( $search_term ); ?>" placeholder="<?php esc_attr_e( 'Search orders...', 'equine-event-manager' ); ?>" />
+								</div>
+							</div>
+							<div class="eem-orders-guide__toolbar-right">
+								<?php submit_button( __( 'Search', 'equine-event-manager' ), 'secondary eem-orders-guide__button', 'search_orders', false ); ?>
+								<?php submit_button( __( 'Filter', 'equine-event-manager' ), 'secondary eem-orders-guide__button eem-orders-guide__button--filter', 'filter_orders', false ); ?>
+								<?php if ( '' !== $event_filter || '' !== $search_term || $attention || '' !== $billing_flag ) : ?>
+									<a class="button eem-orders-guide__button eem-orders-guide__button--ghost" href="<?php echo esc_url( $this->get_orders_page_url( array( 'orderby' => $orderby, 'order' => $order ) ) ); ?>"><?php esc_html_e( 'Clear', 'equine-event-manager' ); ?></a>
+								<?php endif; ?>
+								<p class="eem-orders-guide__count">
+								<?php
+								echo esc_html(
+									sprintf(
+										/* translators: %s: number of orders */
+										_n( '%s order', '%s orders', $order_count, 'equine-event-manager' ),
+										number_format_i18n( $order_count )
+									)
+								);
+								?>
+								</p>
+							</div>
+						</form>
+					</div>
+					<?php $this->render_orders_table( $orders, $orderby, $order, $event_filter, $search_term, $current_page, $total_pages, $order_count, $per_page, $attention, $billing_flag ); ?>
+					<?php if ( empty( $orders ) ) : ?>
+						<?php $this->render_empty_data_diagnostics( 'orders' ); ?>
+						<div class="notice notice-info inline">
+							<strong><?php esc_html_e( 'No orders match this view', 'equine-event-manager' ); ?></strong>
+							<p><?php esc_html_e( 'Try clearing one of the filters or search terms to widen the booking feed.', 'equine-event-manager' ); ?></p>
+						</div>
+					<?php endif; ?>
+				</div>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Render diagnostics when Reservations or Orders resolve empty.
+	 *
+	 * @param string $context Screen context.
+	 * @return void
+	 */
+	private function render_empty_data_diagnostics( $context ) {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		$diagnostics = $this->orders_repository->get_diagnostics();
+		$title       = 'reservations' === $context ? __( 'Reservations Diagnostic', 'equine-event-manager' ) : __( 'Orders Diagnostic', 'equine-event-manager' );
+		?>
+		<div>
+			<h3><?php echo esc_html( $title ); ?></h3>
+			<p>
+				<?php
+				echo esc_html(
+					sprintf(
+						__( 'Detected reservation posts: %1$d. Stall rows: %2$d. RV rows: %3$d.', 'equine-event-manager' ),
+						(int) $diagnostics['reservation_posts'],
+						(int) $diagnostics['stall_rows'],
+						(int) $diagnostics['rv_rows']
+					)
+				);
+				?>
+			</p>
+			<p>
+				<?php
+				echo esc_html(
+					sprintf(
+						__( 'Stall tables: %1$s. RV tables: %2$s.', 'equine-event-manager' ),
+						implode( ', ', array_map( 'strval', (array) $diagnostics['stall_tables'] ) ),
+						implode( ', ', array_map( 'strval', (array) $diagnostics['rv_tables'] ) )
+					)
+				);
+				?>
+			</p>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Render the admin invoicing page.
+	 *
+	 * @return void
+	 */
+	public function render_invoicing_page() {
+		$this->guard_admin_page();
+
+		$selected_reservation_id = isset( $_REQUEST['reservation_id'] ) ? absint( wp_unslash( $_REQUEST['reservation_id'] ) ) : 0;
+		$reservation_options     = $this->get_invoicing_reservation_options();
+		$form_markup             = '';
+		$selected_label          = $selected_reservation_id && isset( $reservation_options[ $selected_reservation_id ] ) ? $reservation_options[ $selected_reservation_id ] : __( 'No reservation selected yet', 'equine-event-manager' );
+
+		if ( $selected_reservation_id && isset( $reservation_options[ $selected_reservation_id ] ) ) {
+			$form_markup = do_shortcode( sprintf( '[en_reservation id="%d" admin_invoice="1"]', $selected_reservation_id ) );
+		}
+		?>
+		<div class="wrap eem-shell-wrap eem-shell-wrap--header">
+			<?php
+			$this->render_brand_banner(
+				__( 'Invoicing', 'equine-event-manager' ),
+				__( 'Create a manual customer invoice from an existing reservation setup, then either charge the card now or send a secure payment link to the customer.', 'equine-event-manager' )
+			);
+			?>
+			<div class="eem-shell-content eem-shell-content--app">
+				<?php $this->render_admin_notice(); ?>
+
+				<div class="postbox">
+					<div class="inside">
+						<h2><?php esc_html_e( 'Choose Reservation', 'equine-event-manager' ); ?></h2>
+						<form method="get" class="eem-shell-form-inline">
+							<input type="hidden" name="page" value="equine-event-manager-invoicing" />
+							<label for="reservation_id" class="screen-reader-text"><?php esc_html_e( 'Select reservation', 'equine-event-manager' ); ?></label>
+							<select id="reservation_id" name="reservation_id">
+								<option value="0"><?php esc_html_e( 'Select an event reservation', 'equine-event-manager' ); ?></option>
+								<?php foreach ( $reservation_options as $reservation_id => $reservation_label ) : ?>
+									<option value="<?php echo esc_attr( $reservation_id ); ?>" <?php selected( $selected_reservation_id, $reservation_id ); ?>><?php echo esc_html( $reservation_label ); ?></option>
+								<?php endforeach; ?>
+							</select>
+							<?php submit_button( __( 'Load Invoice Form', 'equine-event-manager' ), 'primary', '', false ); ?>
+						</form>
+						<p>
+							<?php esc_html_e( 'Select an event reservation to open the invoice workspace.', 'equine-event-manager' ); ?>
+						</p>
+					</div>
+				</div>
+
+				<?php if ( $form_markup ) : ?>
+					<div class="postbox eem-invoicing-guide eem-invoicing-guide--workspace">
+						<div class="inside">
+							<h2><?php echo esc_html( $selected_label ); ?></h2>
+							<?php echo $form_markup; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+						</div>
+					</div>
+				<?php endif; ?>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Render the reservation event overview page.
+	 *
+	 * @return void
+	 */
+	public function render_reservation_overview_page() {
+		$this->guard_admin_page();
+
+		$reservation_id = isset( $_GET['reservation_id'] ) ? absint( wp_unslash( $_GET['reservation_id'] ) ) : 0;
+		$reservation    = $reservation_id ? get_post( $reservation_id ) : null;
+
+		if ( ! $reservation instanceof WP_Post || 'en_reservation' !== $reservation->post_type ) {
+			?>
+			<div class="wrap eem-shell-wrap eem-shell-wrap--header">
+				<?php $this->render_brand_banner( __( 'Event Overview', 'equine-event-manager' ) ); ?>
+				<div class="eem-shell-content eem-shell-content--app">
+					<div class="postbox">
+						<p><?php esc_html_e( 'That reservation overview could not be loaded.', 'equine-event-manager' ); ?></p>
+						<p><a class="button" href="<?php echo esc_url( admin_url( 'edit.php?post_type=en_reservation' ) ); ?>"><?php esc_html_e( 'Back to Reservations', 'equine-event-manager' ); ?></a></p>
+					</div>
+				</div>
+			</div>
+			<?php
+			return;
+		}
+
+		$overview = $this->get_reservation_overview_data( $reservation_id );
+		?>
+		<div class="wrap eem-shell-wrap eem-shell-wrap--header">
+			<?php
+			$this->render_brand_banner(
+				$overview['event_label'],
+				__( 'Review what has sold, what inventory remains, and which products are moving for this event.', 'equine-event-manager' )
+			);
+			?>
+			<div class="eem-shell-content eem-shell-content--app">
+				<?php $this->render_admin_notice(); ?>
+				<div class="eem-shell-actions eem-shell-inline-actions">
+					<a class="button" href="<?php echo esc_url( admin_url( 'edit.php?post_type=en_reservation' ) ); ?>"><?php esc_html_e( 'Back to Reservations', 'equine-event-manager' ); ?></a>
+					<a class="button" href="<?php echo esc_url( get_edit_post_link( $reservation_id, '' ) ); ?>"><?php esc_html_e( 'Edit Reservation', 'equine-event-manager' ); ?></a>
+					<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-stall-chart&reservation_id=' . $reservation_id ) ); ?>"><?php esc_html_e( 'Stall Assignments', 'equine-event-manager' ); ?></a>
+					<a class="button button-primary" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=equine_event_manager_generate_stall_assignments&reservation_id=' . $reservation_id ), 'equine_event_manager_generate_stall_assignments_' . $reservation_id ) ); ?>"><?php esc_html_e( 'Generate Stall Assignments', 'equine-event-manager' ); ?></a>
+					<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-invoicing&reservation_id=' . $reservation_id ) ); ?>"><?php esc_html_e( 'Create Invoice', 'equine-event-manager' ); ?></a>
+					<a class="button" target="_blank" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=equine_event_manager_print_reservation_overview&reservation_id=' . $reservation_id ), 'equine_event_manager_print_reservation_overview_' . $reservation_id ) ); ?>"><?php esc_html_e( 'Print PDF', 'equine-event-manager' ); ?></a>
+				</div>
+
+				<div class="postbox">
+					<div class="inside">
+						<div class="eem-shell-metrics-grid">
+							<div class="eem-shell-metric-card">
+								<p class="eem-shell-metric-label"><?php esc_html_e( 'Orders', 'equine-event-manager' ); ?></p>
+								<p class="eem-shell-metric-value"><?php echo esc_html( number_format_i18n( $overview['order_count'] ) ); ?></p>
+							</div>
+							<div class="eem-shell-metric-card">
+								<p class="eem-shell-metric-label"><?php esc_html_e( 'Revenue', 'equine-event-manager' ); ?></p>
+								<p class="eem-shell-metric-value"><?php echo esc_html( '$' . number_format_i18n( (float) $overview['revenue_total'], 2 ) ); ?></p>
+							</div>
+							<div class="eem-shell-metric-card">
+								<p class="eem-shell-metric-label"><?php esc_html_e( 'Stalls Sold', 'equine-event-manager' ); ?></p>
+								<p class="eem-shell-metric-value"><?php echo esc_html( number_format_i18n( $overview['stall_sold'] ) . ' (' . $overview['stall_remaining_label'] . ')' ); ?></p>
+							</div>
+							<div class="eem-shell-metric-card">
+								<p class="eem-shell-metric-label"><?php esc_html_e( 'RVs Sold', 'equine-event-manager' ); ?></p>
+								<p class="eem-shell-metric-value"><?php echo esc_html( number_format_i18n( $overview['rv_sold'] ) . ' (' . $overview['rv_remaining_label'] . ')' ); ?></p>
+							</div>
+							<div class="eem-shell-metric-card">
+								<p class="eem-shell-metric-label"><?php esc_html_e( 'Rider Groups', 'equine-event-manager' ); ?></p>
+								<p class="eem-shell-metric-value">
+									<?php
+									echo esc_html(
+										sprintf(
+											_n( '%d group reservation', '%d group reservations', $overview['group_reservation_count'], 'equine-event-manager' ),
+											$overview['group_reservation_count']
+										)
+									);
+									?>
+								</p>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="postbox">
+					<h2><?php esc_html_e( 'Event Snapshot', 'equine-event-manager' ); ?></h2>
+					<div class="inside">
+						<table class="widefat striped">
+							<tbody>
+								<tr>
+									<th scope="row"><?php esc_html_e( 'Reservation', 'equine-event-manager' ); ?></th>
+									<td><?php echo esc_html( get_the_title( $reservation_id ) ); ?></td>
+								</tr>
+								<tr>
+									<th scope="row"><?php esc_html_e( 'Event Source', 'equine-event-manager' ); ?></th>
+									<td><?php echo esc_html( $overview['event_source_label'] ); ?></td>
+								</tr>
+								<tr>
+									<th scope="row"><?php esc_html_e( 'Event Dates', 'equine-event-manager' ); ?></th>
+									<td><?php echo esc_html( $overview['event_dates_label'] ); ?></td>
+								</tr>
+								<tr>
+									<th scope="row"><?php esc_html_e( 'Type', 'equine-event-manager' ); ?></th>
+									<td><?php echo esc_html( $overview['type_label'] ); ?></td>
+								</tr>
+								<tr>
+									<th scope="row"><?php esc_html_e( 'Stall Inventory', 'equine-event-manager' ); ?></th>
+									<td><?php echo esc_html( $overview['stall_inventory_label'] ); ?></td>
+								</tr>
+								<tr>
+									<th scope="row"><?php esc_html_e( 'RV Inventory', 'equine-event-manager' ); ?></th>
+									<td><?php echo esc_html( $overview['rv_inventory_label'] ); ?></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+
+				<div class="postbox">
+					<h2><?php esc_html_e( 'Inventory Overview', 'equine-event-manager' ); ?></h2>
+					<div class="inside">
+						<table class="widefat striped">
+							<thead>
+								<tr>
+									<th><?php esc_html_e( 'Item', 'equine-event-manager' ); ?></th>
+									<th><?php esc_html_e( 'Status', 'equine-event-manager' ); ?></th>
+									<th><?php esc_html_e( 'Inventory', 'equine-event-manager' ); ?></th>
+									<th><?php esc_html_e( 'Sold', 'equine-event-manager' ); ?></th>
+									<th><?php esc_html_e( 'Remaining', 'equine-event-manager' ); ?></th>
+								</tr>
+							</thead>
+							<tbody>
+								<?php foreach ( $overview['inventory_rows'] as $row ) : ?>
+									<tr>
+										<td><?php echo esc_html( $row['label'] ); ?></td>
+										<td><?php echo esc_html( $row['status_label'] ); ?></td>
+										<?php if ( ! empty( $row['display'] ) && 'group_reservations' === $row['display'] ) : ?>
+											<td><?php echo esc_html( $row['summary_label'] ); ?></td>
+											<td><?php echo esc_html( $row['summary_value'] ); ?></td>
+											<td><?php echo esc_html( $row['summary_meta'] ); ?></td>
+										<?php else : ?>
+											<td><?php echo esc_html( $row['inventory_label'] ); ?></td>
+											<td><?php echo esc_html( number_format_i18n( $row['sold'] ) ); ?></td>
+											<td><?php echo esc_html( $row['remaining_label'] ); ?></td>
+										<?php endif; ?>
+									</tr>
+								<?php endforeach; ?>
+							</tbody>
+						</table>
+					</div>
+				</div>
+
+				<div class="postbox">
+					<h2><?php esc_html_e( 'Product Activity', 'equine-event-manager' ); ?></h2>
+					<div class="inside">
+						<?php if ( empty( $overview['product_rows'] ) ) : ?>
+							<p><?php esc_html_e( 'No products have been sold for this event yet.', 'equine-event-manager' ); ?></p>
+						<?php else : ?>
+							<table class="widefat striped">
+								<thead>
+									<tr>
+										<th><?php esc_html_e( 'Product', 'equine-event-manager' ); ?></th>
+										<th><?php esc_html_e( 'Category', 'equine-event-manager' ); ?></th>
+										<th><?php esc_html_e( 'Sold', 'equine-event-manager' ); ?></th>
+									</tr>
+								</thead>
+								<tbody>
+									<?php foreach ( $overview['product_rows'] as $row ) : ?>
+										<tr>
+											<td><?php echo esc_html( $row['label'] ); ?></td>
+											<td><?php echo esc_html( $row['category'] ); ?></td>
+											<td><?php echo esc_html( number_format_i18n( $row['sold'] ) ); ?></td>
+										</tr>
+									<?php endforeach; ?>
+								</tbody>
+							</table>
+						<?php endif; ?>
+					</div>
+				</div>
+
+				<div class="postbox">
+					<h2><?php esc_html_e( 'Recent Orders', 'equine-event-manager' ); ?></h2>
+					<div class="inside">
+						<p><a class="button button-secondary" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-orders&event_id=' . $reservation_id ) ); ?>"><?php esc_html_e( 'View Recent Orders', 'equine-event-manager' ); ?></a></p>
+						<table class="widefat fixed striped">
+							<thead>
+								<tr>
+									<th><?php esc_html_e( 'Order', 'equine-event-manager' ); ?></th>
+									<th><?php esc_html_e( 'Customer', 'equine-event-manager' ); ?></th>
+									<th><?php esc_html_e( 'Type', 'equine-event-manager' ); ?></th>
+									<th><?php esc_html_e( 'Date', 'equine-event-manager' ); ?></th>
+								</tr>
+							</thead>
+							<tbody>
+								<?php if ( empty( $overview['orders'] ) ) : ?>
+									<tr>
+										<td colspan="4"><?php esc_html_e( 'No orders have been placed for this event yet.', 'equine-event-manager' ); ?></td>
+									</tr>
+								<?php else : ?>
+									<?php foreach ( array_slice( $overview['orders'], 0, 8 ) as $order ) : ?>
+										<tr>
+											<td><a href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-order&order_key=' . rawurlencode( $order['order_key'] ) ) ); ?>">#<?php echo esc_html( $order['order_number'] ); ?></a></td>
+											<td><?php echo esc_html( $order['customer_name'] ); ?></td>
+											<td><?php echo $this->render_order_type_badges( $order['type'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
+											<td><?php echo esc_html( wp_date( 'F j, Y', strtotime( $order['created_at'] ) ) ); ?></td>
+										</tr>
+									<?php endforeach; ?>
+								<?php endif; ?>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Render the stall chart overview page.
+	 *
+	 * @return void
+	 */
+	public function render_stall_chart_page() {
+		$this->guard_admin_page();
+
+		$reservation_id = isset( $_GET['reservation_id'] ) ? absint( wp_unslash( $_GET['reservation_id'] ) ) : 0;
+		$reservation    = $reservation_id ? get_post( $reservation_id ) : null;
+
+		if ( ! $reservation instanceof WP_Post || 'en_reservation' !== $reservation->post_type ) {
+			$reservation_options = $this->get_stall_assignment_reservations();
+			?>
+			<div class="wrap eem-shell-wrap eem-shell-wrap--header">
+				<?php
+				$this->render_brand_banner(
+					__( 'Stall Charts', 'equine-event-manager' ),
+					__( 'Choose a reservation to view its stall and RV occupancy board.', 'equine-event-manager' )
+				);
+				?>
+				<div class="eem-shell-content eem-shell-content--app">
+					<div class="postbox">
+						<div class="inside">
+							<?php if ( $reservation_id > 0 ) : ?>
+								<p><?php esc_html_e( 'That assignments board could not be loaded for the selected reservation. Choose another reservation below.', 'equine-event-manager' ); ?></p>
+							<?php else : ?>
+								<p><?php esc_html_e( 'Choose a reservation with stall assignments enabled to open its assignments board.', 'equine-event-manager' ); ?></p>
+							<?php endif; ?>
+							<?php if ( empty( $reservation_options ) ) : ?>
+								<p><?php esc_html_e( 'No reservations with stall assignment data are available yet.', 'equine-event-manager' ); ?></p>
+								<p><a class="button" href="<?php echo esc_url( admin_url( 'edit.php?post_type=en_reservation' ) ); ?>"><?php esc_html_e( 'Back to Reservations', 'equine-event-manager' ); ?></a></p>
+							<?php else : ?>
+								<div class="eem-shell-selection-list">
+									<?php foreach ( $reservation_options as $option ) : ?>
+										<div class="eem-shell-selection-item">
+											<div class="eem-shell-selection-meta">
+												<strong><?php echo esc_html( $option['title'] ); ?></strong>
+												<?php if ( ! empty( $option['dates'] ) ) : ?>
+													<span><?php echo esc_html( $option['dates'] ); ?></span>
+												<?php endif; ?>
+											</div>
+											<div class="eem-shell-inline-actions">
+												<a class="button button-secondary" href="<?php echo esc_url( get_edit_post_link( $option['id'], '' ) ); ?>"><?php esc_html_e( 'Edit Reservation', 'equine-event-manager' ); ?></a>
+												<a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-stall-chart&reservation_id=' . absint( $option['id'] ) ) ); ?>"><?php esc_html_e( 'Open Stall Assignments', 'equine-event-manager' ); ?></a>
+											</div>
+										</div>
+									<?php endforeach; ?>
+								</div>
+								<p><a class="button" href="<?php echo esc_url( admin_url( 'edit.php?post_type=en_reservation' ) ); ?>"><?php esc_html_e( 'Back to Reservations', 'equine-event-manager' ); ?></a></p>
+							<?php endif; ?>
+						</div>
+					</div>
+				</div>
+			</div>
+			<?php
+			return;
+		}
+
+		$config            = $this->get_stall_chart_config( $reservation_id );
+		$view              = isset( $_GET['view'] ) ? sanitize_key( wp_unslash( $_GET['view'] ) ) : 'units';
+		$reservation_title = get_the_title( $reservation_id );
+		$screen_title      = sprintf(
+			/* translators: %s: reservation title. */
+			__( 'Stall Chart - %s', 'equine-event-manager' ),
+			$reservation_title
+		);
+
+		if ( empty( $config['enabled'] ) ) {
+			?>
+			<div class="wrap eem-shell-wrap eem-shell-wrap--header">
+				<?php $this->render_brand_banner( $screen_title, __( 'Numbered stall assignments and RV lot occupancy across the event date range.', 'equine-event-manager' ) ); ?>
+				<div class="eem-shell-content eem-shell-content--app">
+					<div class="postbox">
+						<div class="inside">
+							<p><?php esc_html_e( 'Stall Assignments are currently disabled for this reservation.', 'equine-event-manager' ); ?></p>
+							<p class="eem-shell-inline-actions">
+								<a class="button" href="<?php echo esc_url( get_edit_post_link( $reservation_id, '' ) ); ?>"><?php esc_html_e( 'Edit Reservation', 'equine-event-manager' ); ?></a>
+								<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-reservation-overview&reservation_id=' . $reservation_id ) ); ?>"><?php esc_html_e( 'Back to Overview', 'equine-event-manager' ); ?></a>
+							</p>
+						</div>
+					</div>
+				</div>
+			</div>
+			<?php
+			return;
+		}
+
+		$grid        = $this->build_stall_chart_grid( $reservation_id, $config );
+		$order_rows  = $this->build_stall_chart_rows( $reservation_id, $config );
+		$date_cols   = $grid['date_columns'];
+		$stall_count = count( $config['stall_units'] );
+		$rv_count    = count( $config['rv_lot_names'] );
+		$barn_options = $this->get_stall_chart_block_filter_options( isset( $config['stall_blocks'] ) ? $config['stall_blocks'] : array() );
+		$is_counts_view = 'counts' === $view;
+		$reservation_dates = $this->get_reservation_date_range_label( $reservation_id );
+		?>
+		<div class="wrap eem-shell-wrap eem-shell-wrap--header">
+			<?php
+			$this->render_brand_banner(
+				$screen_title,
+				__( 'Review assigned stalls and RV lot occupancy across the event date range.', 'equine-event-manager' )
+			);
+			?>
+			<div class="eem-shell-content eem-shell-content--app">
+			<?php $this->render_admin_notice(); ?>
+			<div class="postbox eem-stall-chart-overview eem-stall-chart-guide">
+				<div class="inside">
+					<div class="eem-shell-metrics-grid eem-stall-chart-metrics-grid">
+						<div class="eem-shell-metric-card eem-stall-chart-movement-card">
+							<p class="eem-shell-metric-label"><?php esc_html_e( 'Daily Movement', 'equine-event-manager' ); ?></p>
+							<?php if ( ! empty( $grid['movement_summary'] ) ) : ?>
+								<ul class="eem-stall-chart-movement-list">
+									<?php foreach ( $grid['movement_summary'] as $date_key => $movement ) : ?>
+										<li>
+											<strong><?php echo esc_html( isset( $date_cols[ $date_key ] ) ? $date_cols[ $date_key ] : $date_key ); ?>:</strong>
+											<?php
+											echo esc_html(
+												sprintf(
+													/* translators: 1: arriving count, 2: departing count. */
+													__( 'Arriving %1$s, Departing %2$s', 'equine-event-manager' ),
+													number_format_i18n( $movement['arriving'] ),
+													number_format_i18n( $movement['departing'] )
+												)
+											);
+											?>
+										</li>
+									<?php endforeach; ?>
+								</ul>
+							<?php elseif ( $reservation_dates ) : ?>
+								<p class="eem-shell-metric-value"><?php echo esc_html( $reservation_dates ); ?></p>
+							<?php else : ?>
+								<p class="eem-shell-metric-value"><?php echo esc_html( $reservation_title ); ?></p>
+							<?php endif; ?>
+						</div>
+						<div class="eem-shell-metric-card">
+							<p class="eem-shell-metric-label"><?php esc_html_e( 'Stall Units', 'equine-event-manager' ); ?></p>
+							<p class="eem-shell-metric-value"><?php echo esc_html( number_format_i18n( $stall_count ) ); ?></p>
+						</div>
+						<div class="eem-shell-metric-card">
+							<p class="eem-shell-metric-label"><?php esc_html_e( 'RV Lots', 'equine-event-manager' ); ?></p>
+							<p class="eem-shell-metric-value"><?php echo esc_html( number_format_i18n( $rv_count ) ); ?></p>
+						</div>
+						<div class="eem-shell-metric-card">
+							<p class="eem-shell-metric-label"><?php esc_html_e( 'Orders on Chart', 'equine-event-manager' ); ?></p>
+							<p class="eem-shell-metric-value"><?php echo esc_html( number_format_i18n( $grid['order_count'] ) ); ?></p>
+						</div>
+					</div>
+					<div class="eem-stall-chart-toolbar">
+						<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>" class="eem-shell-form-inline eem-stall-chart-view-form">
+							<input type="hidden" name="page" value="equine-event-manager-stall-chart" />
+							<input type="hidden" name="reservation_id" value="<?php echo esc_attr( $reservation_id ); ?>" />
+							<label for="equine_event_manager_stall_chart_view"><?php esc_html_e( 'View', 'equine-event-manager' ); ?></label>
+							<select id="equine_event_manager_stall_chart_view" name="view" onchange="this.form.submit()">
+								<option value="units" <?php selected( ! $is_counts_view ); ?>><?php esc_html_e( 'Stall Charts View', 'equine-event-manager' ); ?></option>
+								<option value="counts" <?php selected( $is_counts_view ); ?>><?php esc_html_e( 'Customer Night Count', 'equine-event-manager' ); ?></option>
+							</select>
+						</form>
+						<div class="eem-shell-inline-actions eem-stall-chart-actions">
+							<a class="button button-primary" href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( 'action' => 'equine_event_manager_generate_stall_assignments', 'reservation_id' => $reservation_id, 'return_page' => 'stall_chart' ), admin_url( 'admin-post.php' ) ), 'equine_event_manager_generate_stall_assignments_' . $reservation_id ) ); ?>"><?php esc_html_e( 'Generate Assignments', 'equine-event-manager' ); ?></a>
+							<button type="button" class="button" onclick="window.print(); return false;"><?php echo esc_html( $is_counts_view ? __( 'Print Night Counts', 'equine-event-manager' ) : __( 'Print Assignments', 'equine-event-manager' ) ); ?></button>
+							<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-reservation-overview&reservation_id=' . $reservation_id ) ); ?>"><?php esc_html_e( 'Back to Overview', 'equine-event-manager' ); ?></a>
+							<a class="button" href="<?php echo esc_url( get_edit_post_link( $reservation_id, '' ) ); ?>"><?php esc_html_e( 'Edit Reservation', 'equine-event-manager' ); ?></a>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<?php if ( empty( $grid['stall_rows'] ) && empty( $grid['rv_rows'] ) ) : ?>
+				<div class="postbox">
+					<div class="inside">
+						<h2><?php esc_html_e( 'Stall Charts', 'equine-event-manager' ); ?></h2>
+						<p><?php esc_html_e( 'No paid or reserved orders are currently linked to this reservation.', 'equine-event-manager' ); ?></p>
+					</div>
+				</div>
+			<?php else : ?>
+				<?php if ( $is_counts_view ) : ?>
+					<div class="postbox eem-stall-chart-table-card">
+						<div class="inside">
+							<h2><?php esc_html_e( 'Stall Charts', 'equine-event-manager' ); ?></h2>
+							<div class="eem-stall-chart-filterbar">
+								<div class="eem-stall-chart-filterbar__controls">
+									<label for="equine_event_manager_stall_chart_search"><?php esc_html_e( 'Search', 'equine-event-manager' ); ?></label>
+									<input type="search" id="equine_event_manager_stall_chart_search" class="regular-text" placeholder="<?php esc_attr_e( 'Search by name, stall number, lot, or block', 'equine-event-manager' ); ?>" />
+								</div>
+							</div>
+							<p class="eem-stall-chart-filter-note"><?php echo esc_html( __( 'Search by customer, order, stall, or RV lot.', 'equine-event-manager' ) ); ?></p>
+							<p class="eem-stall-chart-empty-note" hidden><?php esc_html_e( 'No assignment rows match this search.', 'equine-event-manager' ); ?></p>
+							<?php $this->render_stall_chart_order_count_table( $order_rows, $date_cols ); ?>
+						</div>
+					</div>
+				<?php else : ?>
+					<?php if ( ! empty( $grid['stall_rows'] ) ) : ?>
+						<div class="postbox eem-stall-chart-table-card">
+							<div class="inside">
+								<h2><?php esc_html_e( 'Stall Charts', 'equine-event-manager' ); ?></h2>
+								<div class="eem-stall-chart-filterbar">
+									<div class="eem-stall-chart-filterbar__controls">
+										<?php if ( ! empty( $barn_options ) ) : ?>
+											<label for="equine_event_manager_stall_chart_block_filter"><?php esc_html_e( 'Barn', 'equine-event-manager' ); ?></label>
+											<select id="equine_event_manager_stall_chart_block_filter">
+												<option value=""><?php esc_html_e( 'All Barns', 'equine-event-manager' ); ?></option>
+												<?php foreach ( $barn_options as $barn_option ) : ?>
+													<option value="<?php echo esc_attr( strtolower( $barn_option ) ); ?>"><?php echo esc_html( $barn_option ); ?></option>
+												<?php endforeach; ?>
+											</select>
+										<?php endif; ?>
+										<label for="equine_event_manager_stall_chart_search"><?php esc_html_e( 'Search', 'equine-event-manager' ); ?></label>
+										<input type="search" id="equine_event_manager_stall_chart_search" class="regular-text" placeholder="<?php esc_attr_e( 'Search by name, stall number, lot, or block', 'equine-event-manager' ); ?>" />
+									</div>
+								</div>
+								<p class="eem-stall-chart-filter-note"><?php echo esc_html( __( 'Search by customer name, stall number, RV lot, or block title.', 'equine-event-manager' ) ); ?></p>
+								<p class="eem-stall-chart-empty-note" hidden><?php esc_html_e( 'No assignment rows match this search.', 'equine-event-manager' ); ?></p>
+								<?php $this->render_stall_chart_matrix_table( $grid['stall_rows'], $date_cols, __( 'Stall', 'equine-event-manager' ), __( 'Block', 'equine-event-manager' ) ); ?>
+							</div>
+						</div>
+					<?php endif; ?>
+					<?php if ( ! empty( $grid['rv_rows'] ) ) : ?>
+						<div class="postbox">
+							<div class="inside">
+								<h2><?php esc_html_e( 'RV Lot Occupancy', 'equine-event-manager' ); ?></h2>
+								<?php $this->render_stall_chart_matrix_table( $grid['rv_rows'], $date_cols, __( 'RV Lot / Block', 'equine-event-manager' ), '' ); ?>
+							</div>
+						</div>
+					<?php endif; ?>
+				<?php endif; ?>
+			<?php endif; ?>
+
+			<?php if ( ! empty( $grid['issues'] ) ) : ?>
+				<div class="postbox">
+					<div class="inside">
+						<h2><?php esc_html_e( 'Assignment Issues', 'equine-event-manager' ); ?></h2>
+						<ul>
+							<?php foreach ( $grid['issues'] as $issue ) : ?>
+								<li><?php echo esc_html( $issue ); ?></li>
+							<?php endforeach; ?>
+						</ul>
+					</div>
+				</div>
+			<?php endif; ?>
+			<script>
+				(function () {
+					var cards = document.querySelectorAll('.eem-stall-chart-table-card');
+					if (!cards.length) {
+						return;
+					}
+
+					cards.forEach(function (card) {
+						var searchInput = card.querySelector('#equine_event_manager_stall_chart_search');
+						var blockFilter = card.querySelector('#equine_event_manager_stall_chart_block_filter');
+						var emptyNote = card.querySelector('.eem-stall-chart-empty-note');
+						var rows = Array.prototype.slice.call(card.querySelectorAll('table.widefat tbody tr[data-stall-chart-search]'));
+
+						if (!rows.length || (!searchInput && !blockFilter)) {
+							return;
+						}
+
+						var applyFilters = function () {
+							var searchValue = searchInput ? String(searchInput.value || '').toLowerCase().trim() : '';
+							var blockValue = blockFilter ? String(blockFilter.value || '').toLowerCase().trim() : '';
+							var visibleCount = 0;
+
+							rows.forEach(function (row) {
+								var haystack = String(row.getAttribute('data-stall-chart-search') || '').toLowerCase();
+								var block = String(row.getAttribute('data-stall-chart-block') || '').toLowerCase();
+								var matchesSearch = !searchValue || haystack.indexOf(searchValue) !== -1;
+								var matchesBlock = !blockValue || block === blockValue;
+								var isVisible = matchesSearch && matchesBlock;
+
+								row.hidden = !isVisible;
+
+								if (isVisible) {
+									visibleCount += 1;
+								}
+							});
+
+							if (emptyNote) {
+								emptyNote.hidden = visibleCount > 0;
+							}
+						};
+
+						if (searchInput) {
+							searchInput.addEventListener('input', applyFilters);
+							searchInput.addEventListener('search', applyFilters);
+						}
+
+						if (blockFilter) {
+							blockFilter.addEventListener('change', applyFilters);
+						}
+
+						applyFilters();
+					});
+				}());
+			</script>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Get reservations that can launch Stall Assignments.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function get_stall_assignment_reservations() {
+		$query = new WP_Query(
+			array(
+				'post_type'      => 'en_reservation',
+				'post_status'    => array( 'publish', 'draft', 'future', 'pending', 'private' ),
+				'posts_per_page' => 100,
+				'orderby'        => 'title',
+				'order'          => 'ASC',
+				'fields'         => 'ids',
+			)
+		);
+
+		if ( empty( $query->posts ) || ! is_array( $query->posts ) ) {
+			return array();
+		}
+
+		$reservations = array();
+
+		foreach ( $query->posts as $reservation_id ) {
+			$reservation_id = absint( $reservation_id );
+			if ( $reservation_id <= 0 ) {
+				continue;
+			}
+
+			$config = $this->get_stall_chart_config( $reservation_id );
+			$has_stall_assignments = ! empty( $config['enabled'] ) || ! empty( $config['stall_units'] ) || ! empty( $config['rv_lot_names'] );
+
+			if ( ! $has_stall_assignments ) {
+				continue;
+			}
+
+			$date_label = $this->get_reservation_date_range_label( $reservation_id );
+			$reservations[] = array(
+				'id'    => $reservation_id,
+				'title' => get_the_title( $reservation_id ),
+				'dates' => $date_label ? $date_label : __( 'Dates not set yet', 'equine-event-manager' ),
+			);
+		}
+
+		return $reservations;
+	}
+
+	/**
+	 * Get a friendly reservation date range label.
+	 *
+	 * @param int $reservation_id Reservation post ID.
+	 * @return string
+	 */
+	private function get_reservation_date_range_label( $reservation_id ) {
+		$start_date = (string) get_post_meta( $reservation_id, '_en_start_date', true );
+		$end_date   = (string) get_post_meta( $reservation_id, '_en_end_date', true );
+
+		if ( '' === $start_date && '' === $end_date ) {
+			return '';
+		}
+
+		if ( '' !== $start_date && '' !== $end_date ) {
+			return sprintf(
+				/* translators: 1: start date, 2: end date */
+				__( '%1$s to %2$s', 'equine-event-manager' ),
+				wp_date( 'F j, Y', strtotime( $start_date ) ),
+				wp_date( 'F j, Y', strtotime( $end_date ) )
+			);
+		}
+
+		$date_value = '' !== $start_date ? $start_date : $end_date;
+		return wp_date( 'F j, Y', strtotime( $date_value ) );
+	}
+
+	/**
+	 * Render Orders screen view counts.
+	 *
+	 * @param int    $total_order_count Total order count.
+	 * @param int    $filtered_order_count Filtered order count.
+	 * @param string $event_filter Active event filter.
+	 * @return void
+	 */
+	private function render_orders_views( $total_order_count, $filtered_order_count, $event_filter, $attention = false, $billing_flag = '' ) {
+		?>
+		<ul class="subsubsub">
+			<li class="all">
+				<a href="<?php echo esc_url( $this->get_orders_page_url( array( 'attention' => $attention ? '1' : null, 'billing_flag' => $billing_flag ) ) ); ?>" class="<?php echo '' === $event_filter ? 'current' : ''; ?>">
+					<?php esc_html_e( 'All', 'equine-event-manager' ); ?>
+					<span class="count">(<?php echo esc_html( number_format_i18n( $total_order_count ) ); ?>)</span>
+				</a>
+				<?php if ( '' !== $event_filter ) : ?>
+					<span class="separator"> | </span>
+				<?php endif; ?>
+			</li>
+			<?php if ( '' !== $event_filter ) : ?>
+				<li class="current">
+					<span class="current">
+						<?php esc_html_e( 'Filtered', 'equine-event-manager' ); ?>
+						<span class="count">(<?php echo esc_html( number_format_i18n( $filtered_order_count ) ); ?>)</span>
+					</span>
+				</li>
+			<?php endif; ?>
+		</ul>
+		<?php
+	}
+
+	/**
+	 * Render dashboard recent order view counts.
+	 *
+	 * @param int    $total_order_count Total order count.
+	 * @param int    $filtered_order_count Filtered order count.
+	 * @param string $event_filter Active event filter.
+	 * @return void
+	 */
+	private function render_dashboard_orders_views( $total_order_count, $filtered_order_count, $event_filter ) {
+		?>
+		<ul class="subsubsub">
+			<li class="all">
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::MENU_SLUG ) ); ?>" class="<?php echo '' === $event_filter ? 'current' : ''; ?>">
+					<?php esc_html_e( 'All', 'equine-event-manager' ); ?>
+					<span class="count">(<?php echo esc_html( number_format_i18n( $total_order_count ) ); ?>)</span>
+				</a>
+				<?php if ( '' !== $event_filter ) : ?>
+					<span class="separator"> | </span>
+				<?php endif; ?>
+			</li>
+			<?php if ( '' !== $event_filter ) : ?>
+				<li class="current">
+					<span class="current">
+						<?php esc_html_e( 'Filtered', 'equine-event-manager' ); ?>
+						<span class="count">(<?php echo esc_html( number_format_i18n( $filtered_order_count ) ); ?>)</span>
+					</span>
+				</li>
+			<?php endif; ?>
+		</ul>
+		<?php
+	}
+
+	/**
+	 * Render the reports page.
+	 */
+	public function render_reports_page() {
+		$this->guard_admin_page();
+
+		$reservation_id = isset( $_GET['reservation_id'] ) ? absint( $_GET['reservation_id'] ) : 0;
+		$reservations   = get_posts(
+			array(
+				'post_type'      => 'en_reservation',
+				'post_status'    => 'publish',
+				'posts_per_page' => -1,
+				'orderby'        => 'title',
+				'order'          => 'ASC',
+			)
+		);
+		$logs           = $this->get_report_export_logs();
+
+		?>
+		<div class="wrap eem-shell-wrap eem-shell-wrap--header">
+			<?php
+			$this->render_brand_banner(
+				__( 'Reports', 'equine-event-manager' ),
+				__( 'Export reservation data and review report history for Equine Event Manager.', 'equine-event-manager' )
+			);
+			?>
+			<div class="eem-shell-content eem-shell-content--app">
+				<?php $this->render_admin_notice(); ?>
+
+				<div class="postbox">
+					<div class="inside">
+						<h2><?php esc_html_e( 'Export Reservations', 'equine-event-manager' ); ?></h2>
+						<p>
+							<strong><?php esc_html_e( 'Scope', 'equine-event-manager' ); ?>:</strong>
+							<?php echo esc_html( $reservation_id ? get_the_title( $reservation_id ) : __( 'All Reservations', 'equine-event-manager' ) ); ?>
+						</p>
+						<p>
+							<strong><?php esc_html_e( 'History Entries', 'equine-event-manager' ); ?>:</strong>
+							<?php echo esc_html( number_format_i18n( count( $logs ) ) ); ?>
+						</p>
+						<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="eem-shell-form-inline">
+							<?php wp_nonce_field( 'equine_event_manager_export_report', 'equine_event_manager_export_report_nonce' ); ?>
+							<input type="hidden" name="action" value="equine_event_manager_export_report" />
+							<label for="reservation_id"><?php esc_html_e( 'Reservation to export', 'equine-event-manager' ); ?></label>
+							<select name="reservation_id" id="reservation_id">
+								<option value="0"><?php esc_html_e( 'All reservations', 'equine-event-manager' ); ?></option>
+								<?php foreach ( $reservations as $reservation ) : ?>
+									<option value="<?php echo esc_attr( $reservation->ID ); ?>" <?php selected( $reservation_id, $reservation->ID ); ?>><?php echo esc_html( $reservation->post_title ); ?></option>
+								<?php endforeach; ?>
+							</select>
+							<?php submit_button( __( 'Export CSV', 'equine-event-manager' ), 'primary', '', false ); ?>
+						</form>
+						<p><?php esc_html_e( 'Choose one reservation or export the full reservation set for offline reporting.', 'equine-event-manager' ); ?></p>
+					</div>
+				</div>
+
+				<div class="postbox">
+					<div class="inside">
+						<h2><?php esc_html_e( 'Export History', 'equine-event-manager' ); ?></h2>
+						<?php $this->render_report_logs_table( $logs ); ?>
+					</div>
+				</div>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Update saved stall/RV assignment overrides for an order.
+	 *
+	 * @return void
+	 */
+	public function handle_update_order_assignments() {
+		$this->guard_admin_action();
+
+		$order_key = isset( $_POST['order_key'] ) ? sanitize_text_field( wp_unslash( $_POST['order_key'] ) ) : '';
+		check_admin_referer( 'equine_event_manager_update_order_assignments_' . $order_key );
+		$order = $this->orders_repository->get_order( $order_key );
+
+		if ( ! $order ) {
+			$this->redirect_to_order_notice( $order_key, 'assignment_update_failed', __( 'Order not found.', 'equine-event-manager' ) );
+		}
+
+		$stall_unit_values = isset( $_POST['assigned_stall_units'] ) ? (array) wp_unslash( $_POST['assigned_stall_units'] ) : array();
+		$stall_limit       = max( 0, absint( isset( $order['stall_quantity'] ) ? $order['stall_quantity'] : 0 ) );
+
+		if ( $stall_limit > 0 && count( array_filter( array_map( 'trim', $stall_unit_values ) ) ) > $stall_limit ) {
+			$this->redirect_to_order_notice(
+				$order_key,
+				'assignment_update_failed',
+				sprintf(
+					/* translators: %d: paid stall quantity. */
+					_n( 'This order only includes %d paid stall, so only that many stall assignments can be selected.', 'This order only includes %d paid stalls, so only that many stall assignments can be selected.', $stall_limit, 'equine-event-manager' ),
+					$stall_limit
+				)
+			);
+		}
+
+		$stall_units = ! empty( $stall_unit_values ) ? $this->sanitize_assignment_selection( $stall_unit_values, $stall_limit ) : '';
+		$rv_lots     = isset( $_POST['assigned_rv_lots'] ) ? $this->sanitize_assignment_selection( wp_unslash( $_POST['assigned_rv_lots'] ) ) : '';
+		$updated     = $this->orders_repository->update_order_unit_assignments( $order_key, $stall_units, $rv_lots );
+
+		if ( ! $updated ) {
+			$this->redirect_to_order_notice( $order_key, 'assignment_update_failed', __( 'Assignments could not be updated.', 'equine-event-manager' ) );
+		}
+
+		$this->redirect_to_order_notice( $order_key, 'assignment_update_success' );
+	}
+
+	/**
+	 * Get stall chart configuration for a reservation.
+	 *
+	 * @param int $reservation_id Reservation post ID.
+	 * @return array
+	 */
+	private function get_stall_chart_config( $reservation_id ) {
+		$stall_blocks        = get_post_meta( $reservation_id, '_en_stall_chart_stall_blocks', true );
+		$blocked_stall_units = get_post_meta( $reservation_id, '_en_stall_chart_blocked_stall_units', true );
+		$rv_lots             = get_post_meta( $reservation_id, '_en_rv_lots', true );
+		$blocked_rv_lots     = get_post_meta( $reservation_id, '_en_stall_chart_blocked_rv_units', true );
+		$stall_units         = $this->expand_stall_chart_units( is_array( $stall_blocks ) ? $stall_blocks : array() );
+		$blocked_stall_units = $this->sanitize_chart_unit_list( is_array( $blocked_stall_units ) ? $blocked_stall_units : array(), $stall_units );
+		$rv_lot_names        = $this->get_stall_chart_rv_lot_names( $rv_lots );
+		$blocked_rv_lots     = $this->sanitize_chart_unit_list( is_array( $blocked_rv_lots ) ? $blocked_rv_lots : array(), $rv_lot_names );
+
+		return array(
+			'enabled'               => (bool) get_post_meta( $reservation_id, '_en_stall_chart_enabled', true ),
+			'stall_blocks'          => is_array( $stall_blocks ) ? $stall_blocks : array(),
+			'stall_units'           => $stall_units,
+			'rv_lot_names'          => $rv_lot_names,
+			'blocked_stall_units'   => $blocked_stall_units,
+			'blocked_rv_lots'       => $blocked_rv_lots,
+			'available_stall_units' => array_values( array_diff( $stall_units, $blocked_stall_units ) ),
+			'available_rv_lot_names'=> array_values( array_diff( $rv_lot_names, $blocked_rv_lots ) ),
+			'auto_assign_rv_lot_names' => $this->get_stall_chart_auto_assignable_rv_lot_names( is_array( $rv_lots ) ? $rv_lots : array(), $blocked_rv_lots ),
+			'rv_lots'               => is_array( $rv_lots ) ? $rv_lots : array(),
+		);
+	}
+
+	/**
+	 * Build the full stall chart occupancy grid.
+	 *
+	 * @param int   $reservation_id Reservation post ID.
+	 * @param array $config Chart config.
+	 * @return array
+	 */
+	private function build_stall_chart_grid( $reservation_id, $config ) {
+		$orders = array_filter(
+			$this->orders_repository->get_orders( '', 'date', 'asc' ),
+			function ( $order ) use ( $reservation_id ) {
+				return absint( isset( $order['reservation_id'] ) ? $order['reservation_id'] : 0 ) === absint( $reservation_id );
+			}
+		);
+
+		$date_columns = $this->get_stall_chart_date_columns( $reservation_id, array() );
+		$stall_rows   = $this->initialize_stall_chart_unit_rows( $config['stall_units'], $config['stall_blocks'], $config['blocked_stall_units'], $date_columns );
+		$rv_rows      = $this->initialize_rv_lot_chart_rows( $config['rv_lot_names'], isset( $config['blocked_rv_lots'] ) ? $config['blocked_rv_lots'] : array(), $date_columns );
+		$movement     = $this->build_stall_chart_movement_summary( $orders, $date_columns );
+		$issues       = array();
+		$stall_map    = array();
+		$rv_map       = array();
+
+		foreach ( $orders as $order ) {
+			$stall_dates  = $this->get_stall_chart_occupied_dates( $order['stall_arrival_date'], $order['stall_departure_date'] );
+			$rv_dates     = $this->get_stall_chart_occupied_dates( $order['rv_arrival_date'], $order['rv_departure_date'] );
+			$stall_needed = absint( $order['stall_quantity'] );
+			$rv_needed    = $this->order_requires_rv_assignment( $order ) ? absint( $order['rv_quantity'] ) : 0;
+			$stall_manual = $this->parse_assigned_units_string( $this->get_order_component_note_value( $order, 'stall', 'Assigned Stall Units' ) );
+			$rv_manual    = $this->parse_assigned_units_string( $this->get_order_component_note_value( $order, 'rv', 'Assigned RV Lots' ) );
+			if ( empty( $rv_manual ) ) {
+				$rv_manual = $this->parse_assigned_units_string( $this->get_order_component_note_value( $order, 'rv', 'Assigned RV Units' ) );
+			}
+			$rv_lot_name  = $this->parse_rv_lot_name_from_notes( $order['notes'] );
+			$stall_units  = $this->allocate_stall_chart_units( $config['available_stall_units'], $stall_map, $stall_dates, $stall_needed, $stall_manual, $order['order_key'] );
+			$rv_units     = $this->allocate_rv_lot_rows( isset( $config['rv_lot_names'] ) ? $config['rv_lot_names'] : array(), isset( $config['auto_assign_rv_lot_names'] ) ? $config['auto_assign_rv_lot_names'] : ( isset( $config['available_rv_lot_names'] ) ? $config['available_rv_lot_names'] : array() ), $rv_map, $rv_dates, $rv_needed, $rv_lot_name, $rv_manual, $order['order_key'] );
+
+			foreach ( $stall_units['assigned'] as $unit ) {
+				foreach ( $stall_dates as $date_key ) {
+					if ( isset( $stall_rows[ $unit ]['cells'][ $date_key ] ) ) {
+						$stall_rows[ $unit ]['cells'][ $date_key ] = array(
+							'type'      => 'occupied',
+							'label'     => $order['customer_name'],
+							'order_key' => $order['order_key'],
+						);
+					}
+				}
+			}
+
+			foreach ( $rv_units['assigned'] as $unit ) {
+				foreach ( $rv_dates as $date_key ) {
+					if ( isset( $rv_rows[ $unit ]['cells'][ $date_key ] ) ) {
+						$rv_rows[ $unit ]['cells'][ $date_key ] = array(
+							'type'      => 'occupied',
+							'label'     => $order['customer_name'],
+							'order_key' => $order['order_key'],
+						);
+					}
+				}
+			}
+
+			if ( $stall_units['unassigned'] > 0 ) {
+				$issues[] = sprintf( __( 'Order #%1$s still has %2$d unassigned stall(s).', 'equine-event-manager' ), $order['order_number'], $stall_units['unassigned'] );
+			}
+
+			if ( $rv_units['unassigned'] > 0 ) {
+				$issues[] = sprintf( __( 'Order #%1$s still has %2$d unassigned RV lot(s).', 'equine-event-manager' ), $order['order_number'], $rv_units['unassigned'] );
+			}
+		}
+
+		return array(
+			'date_columns' => $date_columns,
+			'stall_rows'   => array_values( $stall_rows ),
+			'rv_rows'      => array_values( $rv_rows ),
+			'movement_summary' => $movement,
+			'issues'       => array_values( array_unique( $issues ) ),
+			'order_count'  => count( $orders ),
+		);
+	}
+
+	/**
+	 * Build arriving/departing counts for each chart date.
+	 *
+	 * @param array $orders Order rows.
+	 * @param array $date_columns Date columns keyed by Y-m-d.
+	 * @return array<string, array<string, int>>
+	 */
+	private function build_stall_chart_movement_summary( $orders, $date_columns ) {
+		$summary = array();
+
+		foreach ( array_keys( $date_columns ) as $date_key ) {
+			$summary[ $date_key ] = array(
+				'arriving'  => 0,
+				'departing' => 0,
+			);
+		}
+
+		foreach ( (array) $orders as $order ) {
+			$movement_dates = $this->get_order_stall_chart_movement_dates( $order );
+
+			if ( ! empty( $movement_dates['arrival'] ) && isset( $summary[ $movement_dates['arrival'] ] ) ) {
+				$summary[ $movement_dates['arrival'] ]['arriving']++;
+			}
+
+			if ( ! empty( $movement_dates['departure'] ) && isset( $summary[ $movement_dates['departure'] ] ) ) {
+				$summary[ $movement_dates['departure'] ]['departing']++;
+			}
+		}
+
+		return $summary;
+	}
+
+	/**
+	 * Resolve a single arrival/departure pair for chart movement summaries.
+	 *
+	 * @param array $order Order row.
+	 * @return array<string, string>
+	 */
+	private function get_order_stall_chart_movement_dates( $order ) {
+		$arrival_candidates   = array_filter(
+			array(
+				isset( $order['stall_arrival_date'] ) ? sanitize_text_field( $order['stall_arrival_date'] ) : '',
+				isset( $order['rv_arrival_date'] ) ? sanitize_text_field( $order['rv_arrival_date'] ) : '',
+			)
+		);
+		$departure_candidates = array_filter(
+			array(
+				isset( $order['stall_departure_date'] ) ? sanitize_text_field( $order['stall_departure_date'] ) : '',
+				isset( $order['rv_departure_date'] ) ? sanitize_text_field( $order['rv_departure_date'] ) : '',
+			)
+		);
+
+		sort( $arrival_candidates );
+		sort( $departure_candidates );
+
+		return array(
+			'arrival'   => ! empty( $arrival_candidates ) ? reset( $arrival_candidates ) : '',
+			'departure' => ! empty( $departure_candidates ) ? end( $departure_candidates ) : '',
+		);
+	}
+
+	/**
+	 * Initialize chart rows for each configured unit.
+	 *
+	 * @param array $units Flat unit list.
+	 * @param array $blocks Block definitions.
+	 * @param array $blocked_units Blocked unit list.
+	 * @param array $date_columns Date columns.
+	 * @return array
+	 */
+	private function initialize_stall_chart_unit_rows( $units, $blocks, $blocked_units, $date_columns ) {
+		$rows      = array();
+		$block_map = $this->map_stall_chart_unit_blocks( $blocks );
+
+		foreach ( (array) $units as $unit ) {
+			$cells = array();
+
+			foreach ( array_keys( $date_columns ) as $date_key ) {
+				$is_blocked        = in_array( $unit, $blocked_units, true );
+				$cells[ $date_key ] = array(
+					'type'      => $is_blocked ? 'blocked' : 'available',
+					'label'     => $is_blocked ? __( 'Blocked', 'equine-event-manager' ) : __( 'Available', 'equine-event-manager' ),
+					'order_key' => '',
+				);
+			}
+
+			$rows[ $unit ] = array(
+				'unit'  => $unit,
+				'block' => isset( $block_map[ $unit ] ) ? $block_map[ $unit ] : '',
+				'cells' => $cells,
+			);
+		}
+
+		return $rows;
+	}
+
+	/**
+	 * Initialize RV occupancy rows from configured lot names.
+	 *
+	 * @param array $lot_names Configured RV lot names.
+	 * @param array $date_columns Date columns.
+	 * @return array
+	 */
+	private function initialize_rv_lot_chart_rows( $lot_names, $blocked_lot_names, $date_columns ) {
+		$rows = array();
+
+		foreach ( (array) $lot_names as $lot_name ) {
+			$cells = array();
+
+			foreach ( array_keys( $date_columns ) as $date_key ) {
+				$is_blocked        = in_array( $lot_name, (array) $blocked_lot_names, true );
+				$cells[ $date_key ] = array(
+					'type'      => $is_blocked ? 'blocked' : 'available',
+					'label'     => $is_blocked ? __( 'Blocked', 'equine-event-manager' ) : __( 'Available', 'equine-event-manager' ),
+					'order_key' => '',
+				);
+			}
+
+			$rows[ $lot_name ] = array(
+				'unit'  => $lot_name,
+				'block' => __( 'RV Lot', 'equine-event-manager' ),
+				'cells' => $cells,
+			);
+		}
+
+		return $rows;
+	}
+
+	/**
+	 * Map each expanded unit to its block label.
+	 *
+	 * @param array $blocks Block definitions.
+	 * @return array
+	 */
+	private function map_stall_chart_unit_blocks( $blocks ) {
+		$map = array();
+
+		foreach ( (array) $blocks as $block ) {
+			$label = isset( $block['label'] ) ? sanitize_text_field( $block['label'] ) : '';
+			$start = isset( $block['start'] ) ? absint( $block['start'] ) : 0;
+			$end   = isset( $block['end'] ) ? absint( $block['end'] ) : 0;
+
+			if ( '' === $label || ! $start || ! $end ) {
+				continue;
+			}
+
+			for ( $number = min( $start, $end ); $number <= max( $start, $end ); $number++ ) {
+				$map[ (string) $number ] = $label;
+			}
+		}
+
+		return $map;
+	}
+
+	/**
+	 * Get unique block labels for the stall chart barn filter.
+	 *
+	 * @param array $blocks Block definitions.
+	 * @return array<int, string>
+	 */
+	private function get_stall_chart_block_filter_options( $blocks ) {
+		$options = array();
+
+		foreach ( (array) $blocks as $block ) {
+			$label = isset( $block['label'] ) ? sanitize_text_field( $block['label'] ) : '';
+
+			if ( '' === $label ) {
+				continue;
+			}
+
+			$options[] = $label;
+		}
+
+		$options = array_values( array_unique( array_filter( $options ) ) );
+		sort( $options, SORT_NATURAL | SORT_FLAG_CASE );
+
+		return $options;
+	}
+
+	/**
+	 * Render a stall/RV occupancy matrix table.
+	 *
+	 * @param array $rows Unit rows.
+	 * @param array $date_columns Date columns.
+	 * @return void
+	 */
+	private function render_stall_chart_matrix_table( $rows, $date_columns, $primary_label = 'Unit', $secondary_label = 'Block' ) {
+		$show_secondary_column = '' !== (string) $secondary_label;
+		?>
+		<div>
+			<table class="widefat striped">
+				<thead>
+					<tr>
+						<th><?php echo esc_html( $primary_label ); ?></th>
+						<?php if ( $show_secondary_column ) : ?>
+							<th><?php echo esc_html( $secondary_label ); ?></th>
+						<?php endif; ?>
+						<?php foreach ( $date_columns as $date_label ) : ?>
+							<th><?php echo esc_html( $date_label ); ?></th>
+						<?php endforeach; ?>
+					</tr>
+				</thead>
+				<tbody>
+					<?php foreach ( $rows as $row ) : ?>
+						<?php
+						$search_parts = array( (string) $row['unit'], (string) $row['block'] );
+						foreach ( array_keys( $date_columns ) as $date_key ) {
+							if ( ! empty( $row['cells'][ $date_key ]['label'] ) ) {
+								$search_parts[] = (string) $row['cells'][ $date_key ]['label'];
+							}
+						}
+						?>
+						<tr data-stall-chart-search="<?php echo esc_attr( strtolower( implode( ' ', array_filter( $search_parts ) ) ) ); ?>" data-stall-chart-block="<?php echo esc_attr( strtolower( (string) $row['block'] ) ); ?>">
+							<td data-label="<?php echo esc_attr( $primary_label ); ?>"><strong><?php echo esc_html( $row['unit'] ); ?></strong></td>
+							<?php if ( $show_secondary_column ) : ?>
+								<td data-label="<?php echo esc_attr( $secondary_label ); ?>"><?php echo esc_html( $row['block'] ); ?></td>
+							<?php endif; ?>
+							<?php foreach ( array_keys( $date_columns ) as $date_key ) : ?>
+								<?php $cell = isset( $row['cells'][ $date_key ] ) ? $row['cells'][ $date_key ] : array( 'type' => 'available', 'label' => __( 'Available', 'equine-event-manager' ) ); ?>
+								<td class="eem-stall-chart-cell eem-stall-chart-cell--<?php echo esc_attr( sanitize_html_class( (string) $cell['type'] ) ); ?>" data-label="<?php echo esc_attr( isset( $date_columns[ $date_key ] ) ? $date_columns[ $date_key ] : $date_key ); ?>">
+									<?php if ( 'occupied' === $cell['type'] && ! empty( $cell['order_key'] ) ) : ?>
+										<a href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-order&order_key=' . rawurlencode( $cell['order_key'] ) ) ); ?>"><?php echo esc_html( $cell['label'] ); ?></a>
+									<?php elseif ( 'blocked' === $cell['type'] || 'available' === $cell['type'] ) : ?>
+										<span><?php echo esc_html( $cell['label'] ); ?></span>
+									<?php else : ?>
+										<span><?php esc_html_e( 'Available', 'equine-event-manager' ); ?></span>
+									<?php endif; ?>
+								</td>
+							<?php endforeach; ?>
+						</tr>
+					<?php endforeach; ?>
+				</tbody>
+			</table>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Render a customer-by-night count table.
+	 *
+	 * @param array $rows Chart rows grouped by order/customer.
+	 * @param array $date_columns Date columns.
+	 * @return void
+	 */
+	private function render_stall_chart_order_count_table( $rows, $date_columns ) {
+		?>
+		<div>
+			<table class="widefat striped">
+				<thead>
+					<tr>
+						<th><?php esc_html_e( 'Customer', 'equine-event-manager' ); ?></th>
+						<th><?php esc_html_e( 'Order', 'equine-event-manager' ); ?></th>
+						<?php foreach ( $date_columns as $date_label ) : ?>
+							<th><?php echo esc_html( $date_label ); ?></th>
+						<?php endforeach; ?>
+						<th><?php esc_html_e( 'Stall Assignments', 'equine-event-manager' ); ?></th>
+						<th><?php esc_html_e( 'RV Lots', 'equine-event-manager' ); ?></th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php foreach ( (array) $rows as $row ) : ?>
+						<?php
+						$search_parts = array(
+							(string) $row['customer_name'],
+							(string) $row['order_number'],
+							implode( ' ', (array) $row['stall_units'] ),
+							implode( ' ', (array) $row['rv_units'] ),
+						);
+						?>
+						<tr data-stall-chart-search="<?php echo esc_attr( strtolower( implode( ' ', array_filter( $search_parts ) ) ) ); ?>" data-stall-chart-block="">
+							<td data-label="<?php esc_attr_e( 'Customer', 'equine-event-manager' ); ?>">
+								<a href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-order&order_key=' . rawurlencode( $row['order_key'] ) ) ); ?>"><strong><?php echo esc_html( $row['customer_name'] ); ?></strong></a>
+							</td>
+							<td data-label="<?php esc_attr_e( 'Order', 'equine-event-manager' ); ?>">#<?php echo esc_html( $row['order_number'] ); ?></td>
+							<?php foreach ( array_keys( $date_columns ) as $date_key ) : ?>
+								<?php $count = isset( $row['daily_counts'][ $date_key ] ) ? absint( $row['daily_counts'][ $date_key ] ) : 0; ?>
+								<td data-label="<?php echo esc_attr( $date_columns[ $date_key ] ); ?>">
+									<span><?php echo esc_html( $count > 0 ? number_format_i18n( $count ) : '—' ); ?></span>
+								</td>
+							<?php endforeach; ?>
+							<td data-label="<?php esc_attr_e( 'Stall Assignments', 'equine-event-manager' ); ?>"><?php echo ! empty( $row['stall_units'] ) ? wp_kses_post( $this->render_assignment_summary_chips( $row['stall_units'], 'stall' ) ) : '<span>&mdash;</span>'; ?></td>
+							<td data-label="<?php esc_attr_e( 'RV Lots', 'equine-event-manager' ); ?>"><?php echo ! empty( $row['rv_units'] ) ? wp_kses_post( $this->render_assignment_summary_chips( $row['rv_units'], 'rv' ) ) : '<span>&mdash;</span>'; ?></td>
+						</tr>
+					<?php endforeach; ?>
+				</tbody>
+			</table>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Expand block ranges into flat unit numbers.
+	 *
+	 * @param array $blocks Configured blocks.
+	 * @return array
+	 */
+	private function expand_stall_chart_units( $blocks ) {
+		$units = array();
+
+		foreach ( (array) $blocks as $block ) {
+			$start = isset( $block['start'] ) ? absint( $block['start'] ) : 0;
+			$end   = isset( $block['end'] ) ? absint( $block['end'] ) : 0;
+
+			if ( ! $start || ! $end ) {
+				continue;
+			}
+
+			for ( $number = min( $start, $end ); $number <= max( $start, $end ); $number++ ) {
+				$units[] = (string) $number;
+			}
+		}
+
+		return array_values( array_unique( $units ) );
+	}
+
+	/**
+	 * Sanitize a selected chart unit list against the configured unit pool.
+	 *
+	 * @param array $values Submitted unit values.
+	 * @param array $allowed Allowed unit pool.
+	 * @return array
+	 */
+	private function sanitize_chart_unit_list( $values, $allowed ) {
+		$values = array_map( 'sanitize_text_field', array_filter( array_map( 'trim', (array) $values ) ) );
+
+		return array_values( array_intersect( array_unique( $values ), (array) $allowed ) );
+	}
+
+	/**
+	 * Sanitize a posted assignment selection into a stored comma-separated string.
+	 *
+	 * @param mixed $values Selected values.
+	 * @return string
+	 */
+	private function sanitize_assignment_selection( $values, $max_items = 0 ) {
+		$values = array_map( 'sanitize_text_field', array_filter( array_map( 'trim', (array) $values ) ) );
+		$values = array_values( array_unique( $values ) );
+
+		if ( $max_items > 0 ) {
+			$values = array_slice( $values, 0, absint( $max_items ) );
+		}
+
+		return implode( ', ', $values );
+	}
+
+	/**
+	 * Render a unit assignment select field.
+	 *
+	 * @param string $field_name Field name.
+	 * @param array  $options Available unit options.
+	 * @param array  $selected Selected unit values.
+	 * @param array  $blocked Blocked unit values.
+	 * @return void
+	 */
+	private function render_assignment_select_field( $field_name, $options, $selected, $blocked = array(), $max_items = 0 ) {
+		$options  = array_values( array_unique( array_map( 'strval', (array) $options ) ) );
+		$selected = array_values( array_unique( array_map( 'strval', (array) $selected ) ) );
+		$blocked  = array_values( array_unique( array_map( 'strval', (array) $blocked ) ) );
+		$visible_rows = $max_items > 0 ? absint( $max_items ) + 1 : max( count( $selected ), min( count( $options ), 6 ) );
+		$visible_rows = max( 4, min( 8, $visible_rows ) );
+		?>
+		<div class="eem-order-assignment-form__picker">
+			<select class="eem-order-assignment-form__select" name="<?php echo esc_attr( $field_name ); ?>[]" multiple="multiple" size="<?php echo esc_attr( $visible_rows ); ?>">
+				<?php foreach ( $options as $option ) : ?>
+					<?php $is_blocked = in_array( $option, $blocked, true ); ?>
+					<option value="<?php echo esc_attr( $option ); ?>" <?php selected( in_array( $option, $selected, true ) ); ?><?php disabled( $is_blocked && ! in_array( $option, $selected, true ) ); ?>>
+						<?php echo esc_html( $is_blocked ? $option . ' (' . __( 'Blocked', 'equine-event-manager' ) . ')' : $option ); ?>
+					</option>
+				<?php endforeach; ?>
+			</select>
+		</div>
+		<p class="description eem-order-assignment-form__help"><?php esc_html_e( 'Select one or more assigned units from the configured stall chart numbers.', 'equine-event-manager' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Render a searchable RV lot assignment picker.
+	 *
+	 * @param string $field_name Field name.
+	 * @param array  $options Available lot names.
+	 * @param array  $selected Selected lot names.
+	 * @return void
+	 */
+	private function render_rv_lot_assignment_select_field( $field_name, $options, $selected, $blocked = array() ) {
+		$options  = array_values( array_unique( array_map( 'strval', (array) $options ) ) );
+		$selected = array_values( array_unique( array_map( 'strval', (array) $selected ) ) );
+		$blocked  = array_values( array_unique( array_map( 'strval', (array) $blocked ) ) );
+		$visible_rows = max( 4, min( 8, max( count( $selected ), min( count( $options ), 6 ) ) ) );
+		?>
+		<div class="eem-order-assignment-form__picker">
+			<select class="eem-order-assignment-form__select" name="<?php echo esc_attr( $field_name ); ?>[]" multiple="multiple" size="<?php echo esc_attr( $visible_rows ); ?>">
+				<?php foreach ( $options as $option ) : ?>
+					<?php $is_blocked = in_array( $option, $blocked, true ); ?>
+					<option value="<?php echo esc_attr( $option ); ?>" <?php selected( in_array( $option, $selected, true ) ); ?><?php disabled( $is_blocked && ! in_array( $option, $selected, true ) ); ?>>
+						<?php echo esc_html( $is_blocked ? $option . ' (' . __( 'Blocked', 'equine-event-manager' ) . ')' : $option ); ?>
+					</option>
+				<?php endforeach; ?>
+			</select>
+		</div>
+		<p class="description eem-order-assignment-form__help"><?php esc_html_e( 'Choose the reserved RV lot from the configured lot list for this reservation.', 'equine-event-manager' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Render assigned units as chips for quick review.
+	 *
+	 * @param array  $values Assigned values.
+	 * @param string $type Assignment type.
+	 * @return string
+	 */
+	private function render_assignment_summary_chips( $values, $type = 'stall' ) {
+		$values = array_values( array_unique( array_map( 'sanitize_text_field', array_filter( (array) $values ) ) ) );
+
+		if ( empty( $values ) ) {
+			return '';
+		}
+
+		return esc_html( implode( ', ', $values ) );
+	}
+
+	/**
+	 * Build chart rows for a reservation.
+	 *
+	 * @param int   $reservation_id Reservation post ID.
+	 * @param array $config         Stall chart config.
+	 * @return array
+	 */
+	private function build_stall_chart_rows( $reservation_id, $config ) {
+		$orders    = array_filter(
+			$this->orders_repository->get_orders(),
+			function ( $order ) use ( $reservation_id ) {
+				return absint( isset( $order['reservation_id'] ) ? $order['reservation_id'] : 0 ) === absint( $reservation_id );
+			}
+		);
+		$rows      = array();
+		$stall_map = array();
+		$rv_map    = array();
+
+		foreach ( $orders as $order ) {
+			$stall_dates  = $this->get_stall_chart_occupied_dates( $order['stall_arrival_date'], $order['stall_departure_date'] );
+			$rv_dates     = $this->get_stall_chart_occupied_dates( $order['rv_arrival_date'], $order['rv_departure_date'] );
+			$stall_needed = absint( $order['stall_quantity'] );
+			$rv_needed    = $this->order_requires_rv_assignment( $order ) ? absint( $order['rv_quantity'] ) : 0;
+			$stall_manual = $this->parse_assigned_units_string( $this->get_order_component_note_value( $order, 'stall', 'Assigned Stall Units' ) );
+			$rv_manual    = $this->parse_assigned_units_string( $this->get_order_component_note_value( $order, 'rv', 'Assigned RV Lots' ) );
+			$rv_lot_name  = $this->parse_rv_lot_name_from_notes( $order['notes'] );
+			if ( empty( $rv_manual ) ) {
+				$rv_manual = $this->parse_assigned_units_string( $this->get_order_component_note_value( $order, 'rv', 'Assigned RV Units' ) );
+			}
+			$stall_units  = $this->allocate_stall_chart_units( $config['available_stall_units'], $stall_map, $stall_dates, $stall_needed, $stall_manual, $order['order_key'] );
+			$rv_units     = $this->allocate_rv_lot_rows( isset( $config['rv_lot_names'] ) ? $config['rv_lot_names'] : array(), isset( $config['auto_assign_rv_lot_names'] ) ? $config['auto_assign_rv_lot_names'] : ( isset( $config['available_rv_lot_names'] ) ? $config['available_rv_lot_names'] : array() ), $rv_map, $rv_dates, $rv_needed, $rv_lot_name, $rv_manual, $order['order_key'] );
+			$daily_counts = array();
+
+			foreach ( $stall_dates as $date_key ) {
+				$daily_counts[ $date_key ] = ( isset( $daily_counts[ $date_key ] ) ? $daily_counts[ $date_key ] : 0 ) + count( $stall_units['assigned'] );
+			}
+
+			foreach ( $rv_dates as $date_key ) {
+				$daily_counts[ $date_key ] = ( isset( $daily_counts[ $date_key ] ) ? $daily_counts[ $date_key ] : 0 ) + count( $rv_units['assigned'] );
+			}
+
+			$unassigned = array();
+
+			if ( $stall_units['unassigned'] > 0 ) {
+				$unassigned[] = sprintf( _n( '%d stall unassigned', '%d stalls unassigned', $stall_units['unassigned'], 'equine-event-manager' ), $stall_units['unassigned'] );
+			}
+
+			if ( $rv_units['unassigned'] > 0 ) {
+				$unassigned[] = sprintf( _n( '%d RV lot unassigned', '%d RV lots unassigned', $rv_units['unassigned'], 'equine-event-manager' ), $rv_units['unassigned'] );
+			}
+
+			$rows[] = array(
+				'order_key'    => $order['order_key'],
+				'order_number' => $order['order_number'],
+				'customer_name'=> $order['customer_name'],
+				'daily_counts' => $daily_counts,
+				'stall_units'  => $stall_units['assigned'],
+				'rv_units'     => $rv_units['assigned'],
+				'unassigned'   => implode( ' | ', $unassigned ),
+			);
+		}
+
+		return $rows;
+	}
+
+	/**
+	 * Allocate RV lot rows by configured lot names.
+	 *
+	 * @param array  $lot_names Available RV lot names.
+	 * @param array  $map Occupancy map, passed by reference.
+	 * @param array  $dates Occupied dates.
+	 * @param int    $needed Needed lots.
+	 * @param string $preferred_lot Preferred lot from order notes.
+	 * @param array  $manual_lots Admin-selected lot overrides.
+	 * @param string $order_key Order key.
+	 * @return array
+	 */
+	private function allocate_rv_lot_rows( $all_lot_names, $auto_assign_lot_names, &$map, $dates, $needed, $preferred_lot, $manual_lots, $order_key ) {
+		$assigned = array();
+		$candidates = array();
+
+		foreach ( (array) $manual_lots as $manual_lot ) {
+			$manual_lot = sanitize_text_field( $manual_lot );
+			if ( '' !== $manual_lot ) {
+				$candidates[] = $manual_lot;
+			}
+		}
+
+		if ( '' !== $preferred_lot ) {
+			array_unshift( $candidates, $preferred_lot );
+		}
+
+		$candidates = array_values( array_unique( array_filter( $candidates ) ) );
+
+		foreach ( $candidates as $lot_name ) {
+			if ( count( $assigned ) >= $needed ) {
+				break;
+			}
+
+			if ( in_array( $lot_name, $all_lot_names, true ) && $this->stall_chart_unit_is_available( $map, $lot_name, $dates ) ) {
+				$assigned[] = $lot_name;
+				$this->mark_stall_chart_unit_occupied( $map, $lot_name, $dates, $order_key );
+			}
+		}
+
+		foreach ( (array) $auto_assign_lot_names as $lot_name ) {
+			if ( count( $assigned ) >= $needed ) {
+				break;
+			}
+
+			if ( in_array( $lot_name, $assigned, true ) ) {
+				continue;
+			}
+
+			if ( $this->stall_chart_unit_is_available( $map, $lot_name, $dates ) ) {
+				$assigned[] = $lot_name;
+				$this->mark_stall_chart_unit_occupied( $map, $lot_name, $dates, $order_key );
+			}
+		}
+
+		return array(
+			'assigned'   => $assigned,
+			'unassigned' => max( 0, $needed - count( $assigned ) ),
+		);
+	}
+
+	/**
+	 * Get RV lot names that are safe for automatic assignment.
+	 *
+	 * @param array $rv_lots Configured RV lots.
+	 * @param array $blocked_rv_lots Blocked RV lot names.
+	 * @return array
+	 */
+	private function get_stall_chart_auto_assignable_rv_lot_names( $rv_lots, $blocked_rv_lots ) {
+		$lot_names = array();
+
+		foreach ( (array) $rv_lots as $rv_lot ) {
+			if ( ! is_array( $rv_lot ) || empty( $rv_lot['name'] ) ) {
+				continue;
+			}
+
+			$lot_name      = sanitize_text_field( $rv_lot['name'] );
+			$nightly_rate  = isset( $rv_lot['nightly_rate'] ) ? trim( (string) $rv_lot['nightly_rate'] ) : '';
+			$weekend_rate  = isset( $rv_lot['weekend_rate'] ) ? trim( (string) $rv_lot['weekend_rate'] ) : '';
+			$has_addon_fee = ( '' !== $nightly_rate && (float) $nightly_rate > 0 ) || ( '' !== $weekend_rate && (float) $weekend_rate > 0 );
+
+			if ( $has_addon_fee || in_array( $lot_name, (array) $blocked_rv_lots, true ) ) {
+				continue;
+			}
+
+			$lot_names[] = $lot_name;
+		}
+
+		$lot_names = array_values( array_unique( array_filter( $lot_names ) ) );
+		sort( $lot_names, SORT_NATURAL );
+
+		return $lot_names;
+	}
+
+	/**
+	 * Normalize configured RV lot names for the assignments board.
+	 *
+	 * @param mixed $rv_lots Raw RV lot configuration.
+	 * @return array
+	 */
+	private function get_stall_chart_rv_lot_names( $rv_lots ) {
+		$names = array();
+
+		foreach ( (array) $rv_lots as $rv_lot ) {
+			if ( ! is_array( $rv_lot ) || empty( $rv_lot['name'] ) ) {
+				continue;
+			}
+
+			$names[] = sanitize_text_field( $rv_lot['name'] );
+		}
+
+		$names = array_values( array_unique( array_filter( $names ) ) );
+		sort( $names, SORT_NATURAL );
+
+		return $names;
+	}
+
+	/**
+	 * Allocate units from a pool across occupied dates.
+	 *
+	 * @param array  $pool      Available unit pool.
+	 * @param array  $map       Occupancy map, passed by reference.
+	 * @param array  $dates     Occupied dates.
+	 * @param int    $needed    Needed units.
+	 * @param array  $preferred Preferred/manual units.
+	 * @param string $order_key Order key.
+	 * @return array
+	 */
+	private function allocate_stall_chart_units( $pool, &$map, $dates, $needed, $preferred, $order_key ) {
+		$assigned = array();
+
+		foreach ( (array) $preferred as $unit ) {
+			if ( count( $assigned ) >= $needed ) {
+				break;
+			}
+
+			if ( in_array( $unit, $pool, true ) && $this->stall_chart_unit_is_available( $map, $unit, $dates ) ) {
+				$assigned[] = $unit;
+				$this->mark_stall_chart_unit_occupied( $map, $unit, $dates, $order_key );
+			}
+		}
+
+		foreach ( (array) $pool as $unit ) {
+			if ( count( $assigned ) >= $needed ) {
+				break;
+			}
+
+			if ( in_array( $unit, $assigned, true ) ) {
+				continue;
+			}
+
+			if ( $this->stall_chart_unit_is_available( $map, $unit, $dates ) ) {
+				$assigned[] = $unit;
+				$this->mark_stall_chart_unit_occupied( $map, $unit, $dates, $order_key );
+			}
+		}
+
+		return array(
+			'assigned'   => $assigned,
+			'unassigned' => max( 0, $needed - count( $assigned ) ),
+		);
+	}
+
+	/**
+	 * Check whether a unit is free for the supplied dates.
+	 *
+	 * @param array  $map  Occupancy map.
+	 * @param string $unit Unit identifier.
+	 * @param array  $dates Occupied dates.
+	 * @return bool
+	 */
+	private function stall_chart_unit_is_available( $map, $unit, $dates ) {
+		foreach ( (array) $dates as $date_key ) {
+			if ( ! empty( $map[ $unit ][ $date_key ] ) ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Mark a unit occupied on each date in the range.
+	 *
+	 * @param array  $map       Occupancy map, passed by reference.
+	 * @param string $unit      Unit identifier.
+	 * @param array  $dates     Occupied dates.
+	 * @param string $order_key Order key.
+	 * @return void
+	 */
+	private function mark_stall_chart_unit_occupied( &$map, $unit, $dates, $order_key ) {
+		foreach ( (array) $dates as $date_key ) {
+			$map[ $unit ][ $date_key ] = $order_key;
+		}
+	}
+
+	/**
+	 * Build displayed chart date columns.
+	 *
+	 * @param int   $reservation_id Reservation post ID.
+	 * @param array $rows           Chart rows.
+	 * @return array
+	 */
+	private function get_stall_chart_date_columns( $reservation_id, $rows ) {
+		$start_date = get_post_meta( $reservation_id, '_en_available_start_date', true );
+		$end_date   = get_post_meta( $reservation_id, '_en_available_end_date', true );
+		$keys       = array();
+
+		if ( $start_date && $end_date ) {
+			$keys = $this->get_stall_chart_occupied_dates( $start_date, gmdate( 'Y-m-d', strtotime( $end_date . ' +1 day' ) ) );
+		}
+
+		if ( empty( $keys ) ) {
+			foreach ( (array) $rows as $row ) {
+				$keys = array_merge( $keys, array_keys( isset( $row['daily_counts'] ) ? $row['daily_counts'] : array() ) );
+			}
+
+			$keys = array_values( array_unique( $keys ) );
+			sort( $keys );
+		}
+
+		$columns = array();
+
+		foreach ( $keys as $key ) {
+			$columns[ $key ] = wp_date( 'M j', strtotime( $key ) );
+		}
+
+		return $columns;
+	}
+
+	/**
+	 * Build occupied nightly dates from arrival/departure.
+	 *
+	 * @param string $arrival_date Arrival date.
+	 * @param string $departure_date Departure date.
+	 * @return array
+	 */
+	private function get_stall_chart_occupied_dates( $arrival_date, $departure_date ) {
+		$arrival_timestamp   = $arrival_date ? strtotime( $arrival_date ) : 0;
+		$departure_timestamp = $departure_date ? strtotime( $departure_date ) : 0;
+		$dates               = array();
+
+		if ( ! $arrival_timestamp ) {
+			return $dates;
+		}
+
+		if ( ! $departure_timestamp || $departure_timestamp <= $arrival_timestamp ) {
+			return array( gmdate( 'Y-m-d', $arrival_timestamp ) );
+		}
+
+		for ( $current = $arrival_timestamp; $current < $departure_timestamp; $current = strtotime( '+1 day', $current ) ) {
+			$dates[] = gmdate( 'Y-m-d', $current );
+		}
+
+		return $dates;
+	}
+
+	/**
+	 * Parse a comma-separated unit string into normalized values.
+	 *
+	 * @param string $value Raw units string.
+	 * @return array
+	 */
+	private function parse_assigned_units_string( $value ) {
+		$units = array_filter( array_map( 'trim', explode( ',', (string) $value ) ) );
+		$units = array_map( 'sanitize_text_field', $units );
+
+		return array_values( array_unique( $units ) );
+	}
+
+	/**
+	 * Read a note value from the first matching order component.
+	 *
+	 * @param array  $order Order payload.
+	 * @param string $table Component table slug.
+	 * @param string $label Note label.
+	 * @return string
+	 */
+	private function get_order_component_note_value( $order, $table, $label ) {
+		foreach ( (array) $order['components'] as $component ) {
+			if ( $table !== $component['table'] ) {
+				continue;
+			}
+
+			$value = $this->get_order_note_value( isset( $component['notes'] ) ? $component['notes'] : '', $label );
+
+			if ( '' !== $value ) {
+				return $value;
+			}
+		}
+
+		return '';
+	}
+
+	/**
+	 * Render the The Events Calendar import page.
+	 *
+	 * @return void
+	 */
+	public function render_import_tec_events_page() {
+		wp_safe_redirect( admin_url( 'admin.php?page=equine-event-manager-settings&tab=integrations' ) );
+		exit;
+	}
+
+	/**
+	 * Render the The Events Calendar import panel contents.
+	 *
+	 * @return void
+	 */
+	private function render_import_tec_events_panel() {
+		$events = Equine_Event_Manager_Events::get_tec_events_for_import( 150 );
+		?>
+		<?php if ( ! Equine_Event_Manager_Events::is_the_events_calendar_available() ) : ?>
+			<p><?php esc_html_e( 'The Events Calendar is not active, so there are no events available to import.', 'equine-event-manager' ); ?></p>
+		<?php else : ?>
+			<?php $this->render_import_tec_events_notice(); ?>
+			<input type="hidden" name="action" value="equine_event_manager_import_tec_events" />
+			<?php wp_nonce_field( Equine_Event_Manager_Events::IMPORT_TEC_ACTION, 'equine_event_manager_import_tec_events_nonce' ); ?>
+			<p><?php esc_html_e( 'Select one or more The Events Calendar events to import into Equine Event Manager.', 'equine-event-manager' ); ?></p>
+			<?php if ( empty( $events ) ) : ?>
+				<p><?php esc_html_e( 'No The Events Calendar events were found.', 'equine-event-manager' ); ?></p>
+			<?php else : ?>
+				<ul role="group" aria-label="<?php esc_attr_e( 'Available The Events Calendar events', 'equine-event-manager' ); ?>">
+					<?php foreach ( $events as $event ) : ?>
+						<?php $dates = Equine_Event_Manager_Events::get_tec_event_date_values( $event->ID ); ?>
+						<li>
+							<label>
+								<input type="checkbox" name="tec_event_ids[]" value="<?php echo esc_attr( $event->ID ); ?>" />
+								<strong><?php echo esc_html( get_the_title( $event ) ); ?></strong>
+								<span>
+								<?php
+								echo esc_html(
+									$dates['start_date']
+										? sprintf(
+											/* translators: 1: start date, 2: end date. */
+											__( '(%1$s - %2$s)', 'equine-event-manager' ),
+											$dates['start_date'],
+											$dates['end_date'] ? $dates['end_date'] : $dates['start_date']
+										)
+										: __( '(Dates unavailable)', 'equine-event-manager' )
+								);
+								?>
+								</span>
+							</label>
+						</li>
+					<?php endforeach; ?>
+				</ul>
+				<p class="description"><?php esc_html_e( 'Already-imported events will be skipped instead of duplicated.', 'equine-event-manager' ); ?></p>
+				<p>
+					<button type="submit" class="button button-primary" formaction="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" formmethod="post">
+						<?php esc_html_e( 'Import Selected Events', 'equine-event-manager' ); ?>
+					</button>
+				</p>
+			<?php endif; ?>
+		<?php endif; ?>
+		<?php
+	}
+
+	/**
+	 * Handle TEC event imports.
+	 *
+	 * @return void
+	 */
+	public function handle_import_tec_events() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to import events.', 'equine-event-manager' ) );
+		}
+
+		check_admin_referer( Equine_Event_Manager_Events::IMPORT_TEC_ACTION, 'equine_event_manager_import_tec_events_nonce' );
+
+		$event_ids = isset( $_POST['tec_event_ids'] ) ? array_map( 'absint', (array) wp_unslash( $_POST['tec_event_ids'] ) ) : array();
+		$event_ids = array_values( array_filter( $event_ids ) );
+		$counts    = array(
+			'imported' => 0,
+			'existing' => 0,
+			'error'    => 0,
+		);
+
+		foreach ( $event_ids as $event_id ) {
+			$result = Equine_Event_Manager_Events::import_tec_event( $event_id );
+
+			if ( isset( $counts[ $result['status'] ] ) ) {
+				++$counts[ $result['status'] ];
+			}
+		}
+
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page'     => 'equine-event-manager-settings',
+					'tab'      => 'integrations',
+					'imported' => $counts['imported'],
+					'existing' => $counts['existing'],
+					'error'    => $counts['error'],
+				),
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
+	 * Render import result notice when present.
+	 *
+	 * @return void
+	 */
+	private function render_import_tec_events_notice() {
+		$imported = isset( $_GET['imported'] ) ? absint( wp_unslash( $_GET['imported'] ) ) : 0;
+		$existing = isset( $_GET['existing'] ) ? absint( wp_unslash( $_GET['existing'] ) ) : 0;
+		$error    = isset( $_GET['error'] ) ? absint( wp_unslash( $_GET['error'] ) ) : 0;
+
+		if ( ! $imported && ! $existing && ! $error ) {
+			return;
+		}
+
+		$parts = array();
+
+		if ( $imported ) {
+			$parts[] = sprintf(
+				/* translators: %d: number of imported events. */
+				_n( '%d event imported.', '%d events imported.', $imported, 'equine-event-manager' ),
+				$imported
+			);
+		}
+
+		if ( $existing ) {
+			$parts[] = sprintf(
+				/* translators: %d: number of already imported events. */
+				_n( '%d event was already imported.', '%d events were already imported.', $existing, 'equine-event-manager' ),
+				$existing
+			);
+		}
+
+		if ( $error ) {
+			$parts[] = sprintf(
+				/* translators: %d: number of failed imports. */
+				_n( '%d event failed to import.', '%d events failed to import.', $error, 'equine-event-manager' ),
+				$error
+			);
+		}
+		?>
+		<div class="notice notice-info is-dismissible" role="status"><p><?php echo esc_html( implode( ' ', $parts ) ); ?></p></div>
+		<?php
+	}
+
+	/**
+	 * Get reservation options for the invoicing selector.
+	 *
+	 * @return array<int, string>
+	 */
+	private function get_invoicing_reservation_options() {
+		$reservations = get_posts(
+			array(
+				'post_type'      => 'en_reservation',
+				'post_status'    => 'publish',
+				'posts_per_page' => -1,
+				'orderby'        => 'title',
+				'order'          => 'ASC',
+			)
+		);
+		$options      = array();
+
+		foreach ( $reservations as $reservation ) {
+			$label = $reservation->post_title;
+			$event_id = absint( get_post_meta( $reservation->ID, '_en_event_id', true ) );
+			$event_source = $this->get_effective_reservation_event_source( $reservation->ID );
+
+			if ( in_array( $event_source, array( 'tec', 'native' ), true ) && $event_id ) {
+				$event_title = get_the_title( $event_id );
+
+				if ( $event_title ) {
+					$label = $event_title;
+				}
+			}
+
+			$options[ $reservation->ID ] = $label;
+		}
+
+		return $options;
+	}
+
+	/**
+	 * Build the reservation overview dataset.
+	 *
+	 * @param int $reservation_id Reservation post ID.
+	 * @return array
+	 */
+	private function get_reservation_overview_data( $reservation_id ) {
+		$reservation_id = absint( $reservation_id );
+		$orders         = array_values(
+			array_filter(
+				$this->orders_repository->get_orders(),
+				static function ( $order ) use ( $reservation_id ) {
+					return absint( isset( $order['reservation_id'] ) ? $order['reservation_id'] : 0 ) === $reservation_id;
+				}
+			)
+		);
+		$data                     = $this->get_reservation_meta_values( $reservation_id );
+		$general_addon_sales      = array();
+		$rv_addon_sales           = array();
+		$rv_lot_sales             = array();
+		$required_shavings_sold   = 0;
+		$additional_shavings_sold = 0;
+		$stall_sold               = 0;
+		$rv_sold                  = 0;
+		$group_rider_total        = 0;
+		$group_reservation_count  = 0;
+		$revenue_total            = 0.0;
+
+		foreach ( $orders as $order ) {
+			$notes                    = isset( $order['notes'] ) ? $order['notes'] : '';
+			$stall_sold               += absint( isset( $order['stall_quantity'] ) ? $order['stall_quantity'] : 0 );
+			$rv_sold                  += absint( isset( $order['rv_quantity'] ) ? $order['rv_quantity'] : 0 );
+			$required_shavings_sold   += absint( isset( $order['required_shavings_qty'] ) ? $order['required_shavings_qty'] : 0 );
+			$additional_shavings_sold += absint( isset( $order['additional_shavings_qty'] ) ? $order['additional_shavings_qty'] : 0 );
+			$revenue_total            += (float) ( isset( $order['total'] ) ? $order['total'] : 0 );
+			$group_rider_count         = $this->parse_group_rider_count_from_notes( $notes );
+
+			if ( $group_rider_count > 0 ) {
+				$group_rider_total += $group_rider_count;
+				$group_reservation_count++;
+			}
+
+			foreach ( $this->parse_general_addon_quantities_from_notes( $notes ) as $addon_name => $quantity ) {
+				if ( ! isset( $general_addon_sales[ $addon_name ] ) ) {
+					$general_addon_sales[ $addon_name ] = 0;
+				}
+
+				$general_addon_sales[ $addon_name ] += $quantity;
+			}
+
+			$rv_addon_labels = $this->get_order_rv_addon_labels( $order );
+
+			foreach ( $rv_addon_labels as $addon_label ) {
+				if ( ! isset( $rv_addon_sales[ $addon_label ] ) ) {
+					$rv_addon_sales[ $addon_label ] = 0;
+				}
+
+				$rv_addon_sales[ $addon_label ] += absint( isset( $order['rv_quantity'] ) ? $order['rv_quantity'] : 0 );
+			}
+
+			$rv_lot_name = $this->parse_rv_lot_name_from_notes( $notes );
+
+			if ( '' !== $rv_lot_name ) {
+				if ( ! isset( $rv_lot_sales[ $rv_lot_name ] ) ) {
+					$rv_lot_sales[ $rv_lot_name ] = 0;
+				}
+
+				$rv_lot_sales[ $rv_lot_name ] += absint( isset( $order['rv_quantity'] ) ? $order['rv_quantity'] : 0 );
+			}
+		}
+
+		$stall_inventory_total = $this->normalize_inventory_limit( $data['stall_inventory'] );
+		$rv_inventory_total    = $this->normalize_inventory_limit( $data['rv_inventory'] );
+		$stall_remaining       = null === $stall_inventory_total ? null : max( 0, $stall_inventory_total - $stall_sold );
+		$rv_remaining          = null === $rv_inventory_total ? null : max( 0, $rv_inventory_total - $rv_sold );
+		$inventory_rows        = array();
+
+		if ( ! empty( $data['stalls_enabled'] ) || $stall_sold > 0 ) {
+			$inventory_rows[] = $this->build_inventory_overview_row( __( 'Stall Reservations', 'equine-event-manager' ), __( 'Core Inventory', 'equine-event-manager' ), $stall_inventory_total, $stall_sold );
+		}
+
+		if ( ! empty( $data['rv_enabled'] ) || $rv_sold > 0 ) {
+			$inventory_rows[] = $this->build_inventory_overview_row( __( 'RV Reservations', 'equine-event-manager' ), __( 'Core Inventory', 'equine-event-manager' ), $rv_inventory_total, $rv_sold );
+		}
+
+		if ( ! empty( $data['group_reservations_enabled'] ) || $group_reservation_count > 0 ) {
+			$inventory_rows[] = array(
+				'label'         => __( 'Group Reservations', 'equine-event-manager' ),
+				'category'      => __( 'Order Activity', 'equine-event-manager' ),
+				'status_slug'   => 'available',
+				'status_label'  => __( 'Available', 'equine-event-manager' ),
+				'display'       => 'group_reservations',
+				'summary_label' => __( 'Submitted Groups', 'equine-event-manager' ),
+				'summary_value' => number_format_i18n( $group_reservation_count ),
+				'summary_meta'  => sprintf(
+					_n( '%d order includes a group reservation', '%d orders include a group reservation', $group_reservation_count, 'equine-event-manager' ),
+					$group_reservation_count
+				),
+			);
+		}
+
+		$product_rows = array();
+
+		if ( $required_shavings_sold > 0 ) {
+			$product_rows[] = array(
+				'label'    => __( 'Required Shavings', 'equine-event-manager' ),
+				'category' => __( 'Stall Product', 'equine-event-manager' ),
+				'sold'     => $required_shavings_sold,
+			);
+		}
+
+		if ( $additional_shavings_sold > 0 ) {
+			$product_rows[] = array(
+				'label'    => __( 'Additional Shavings', 'equine-event-manager' ),
+				'category' => __( 'Legacy Product', 'equine-event-manager' ),
+				'sold'     => $additional_shavings_sold,
+			);
+		}
+
+		foreach ( $data['general_addons'] as $configured_addon ) {
+			if ( empty( $configured_addon['name'] ) ) {
+				continue;
+			}
+
+			$addon_name = sanitize_text_field( $configured_addon['name'] );
+
+			if ( ! isset( $general_addon_sales[ $addon_name ] ) ) {
+				$general_addon_sales[ $addon_name ] = 0;
+			}
+		}
+
+		foreach ( $general_addon_sales as $addon_name => $quantity ) {
+			$product_rows[] = array(
+				'label'    => $addon_name,
+				'category' => __( 'General Add-On', 'equine-event-manager' ),
+				'sold'     => $quantity,
+			);
+		}
+
+		foreach ( $data['rv_addons'] as $configured_addon ) {
+			if ( empty( $configured_addon['name'] ) ) {
+				continue;
+			}
+
+			$addon_label = sanitize_text_field( $configured_addon['name'] );
+
+			if ( ! isset( $rv_addon_sales[ $addon_label ] ) ) {
+				$rv_addon_sales[ $addon_label ] = 0;
+			}
+		}
+
+		foreach ( $rv_addon_sales as $addon_label => $quantity ) {
+			$product_rows[] = array(
+				'label'    => $addon_label,
+				'category' => __( 'RV Add-On', 'equine-event-manager' ),
+				'sold'     => $quantity,
+			);
+		}
+
+		foreach ( $data['rv_lots'] as $lot ) {
+			if ( empty( $lot['name'] ) ) {
+				continue;
+			}
+
+			$lot_name = sanitize_text_field( $lot['name'] );
+
+			if ( ! isset( $rv_lot_sales[ $lot_name ] ) ) {
+				$rv_lot_sales[ $lot_name ] = 0;
+			}
+		}
+
+		foreach ( $rv_lot_sales as $lot_name => $quantity ) {
+			$product_rows[] = array(
+				'label'    => $lot_name,
+				'category' => __( 'RV Lot Selection', 'equine-event-manager' ),
+				'sold'     => $quantity,
+			);
+		}
+
+		usort(
+			$product_rows,
+			static function ( $left, $right ) {
+				$category_order = array(
+					'Stall Product'     => 10,
+					'Legacy Product'    => 20,
+					'RV Lot Selection'  => 30,
+					'RV Add-On'         => 40,
+					'General Add-On'    => 50,
+				);
+
+				$left_category_order  = isset( $category_order[ $left['category'] ] ) ? $category_order[ $left['category'] ] : 999;
+				$right_category_order = isset( $category_order[ $right['category'] ] ) ? $category_order[ $right['category'] ] : 999;
+
+				if ( $left_category_order !== $right_category_order ) {
+					return $left_category_order - $right_category_order;
+				}
+
+				return strcasecmp( $left['label'], $right['label'] );
+			}
+		);
+
+		return array(
+			'orders'                => $orders,
+			'order_count'           => count( $orders ),
+			'revenue_total'         => $revenue_total,
+			'stall_sold'            => $stall_sold,
+			'rv_sold'               => $rv_sold,
+			'group_rider_total'     => $group_rider_total,
+			'group_reservation_count' => $group_reservation_count,
+			'stall_remaining_label' => $this->format_remaining_inventory_label( $stall_remaining ),
+			'rv_remaining_label'    => $this->format_remaining_inventory_label( $rv_remaining ),
+			'stall_inventory_label' => $this->format_inventory_limit_label( $stall_inventory_total ),
+			'rv_inventory_label'    => $this->format_inventory_limit_label( $rv_inventory_total ),
+			'event_label'           => $this->get_reservation_event_label( $reservation_id, $data ),
+			'event_dates_label'     => $this->get_reservation_event_dates_label( $data ),
+			'event_source_label'    => $this->get_reservation_event_source_label( $data ),
+			'type_label'            => $this->get_reservation_type_label( $data ),
+			'inventory_rows'        => $inventory_rows,
+			'product_rows'          => $product_rows,
+		);
+	}
+
+	/**
+	 * Get reservation meta values needed for the overview screen.
+	 *
+	 * @param int $reservation_id Reservation post ID.
+	 * @return array
+	 */
+	private function get_reservation_meta_values( $reservation_id ) {
+		$data = array(
+			'event_source'                => $this->get_effective_reservation_event_source( $reservation_id ),
+			'event_id'                    => absint( get_post_meta( $reservation_id, '_en_event_id', true ) ),
+			'external_event_name'         => (string) get_post_meta( $reservation_id, '_en_external_event_name', true ),
+			'available_start_date'        => (string) get_post_meta( $reservation_id, '_en_available_start_date', true ),
+			'available_end_date'          => (string) get_post_meta( $reservation_id, '_en_available_end_date', true ),
+			'stalls_enabled'              => ! empty( get_post_meta( $reservation_id, '_en_stalls_enabled', true ) ) ? 1 : 0,
+			'rv_enabled'                  => ! empty( get_post_meta( $reservation_id, '_en_rv_enabled', true ) ) ? 1 : 0,
+			'general_addons_enabled'      => ! empty( get_post_meta( $reservation_id, '_en_general_addons_enabled', true ) ) ? 1 : 0,
+			'group_reservations_enabled'  => ! empty( get_post_meta( $reservation_id, '_en_group_reservations_enabled', true ) ) ? 1 : 0,
+			'group_rider_grounds_fee_enabled' => ! empty( get_post_meta( $reservation_id, '_en_group_rider_grounds_fee_enabled', true ) ) ? 1 : 0,
+			'group_rider_grounds_fee_amount'  => (string) get_post_meta( $reservation_id, '_en_group_rider_grounds_fee_amount', true ),
+			'group_rider_deposit_enabled'     => ! empty( get_post_meta( $reservation_id, '_en_group_rider_deposit_enabled', true ) ) ? 1 : 0,
+			'group_rider_deposit_amount'      => (string) get_post_meta( $reservation_id, '_en_group_rider_deposit_amount', true ),
+			'general_addons'              => get_post_meta( $reservation_id, '_en_general_addons', true ),
+			'rv_addons'                   => get_post_meta( $reservation_id, '_en_rv_addons', true ),
+			'rv_lots'                     => get_post_meta( $reservation_id, '_en_rv_lots', true ),
+			'stall_inventory'             => get_post_meta( $reservation_id, '_en_stall_inventory', true ),
+			'rv_inventory'                => get_post_meta( $reservation_id, '_en_rv_inventory', true ),
+		);
+
+		if ( ! is_array( $data['general_addons'] ) ) {
+			$data['general_addons'] = array();
+		}
+
+		if ( ! is_array( $data['rv_lots'] ) ) {
+			$data['rv_lots'] = array();
+		}
+
+		if ( ! is_array( $data['rv_addons'] ) ) {
+			$data['rv_addons'] = array();
+		}
+
+		return $data;
+	}
+
+	/**
+	 * Build one inventory overview table row.
+	 *
+	 * @param string   $label Row label.
+	 * @param string   $category Row category.
+	 * @param int|null $inventory_total Inventory limit.
+	 * @param int      $sold Sold quantity.
+	 * @return array
+	 */
+	private function build_inventory_overview_row( $label, $category, $inventory_total, $sold ) {
+		$remaining = null === $inventory_total ? null : max( 0, $inventory_total - $sold );
+
+		if ( null === $inventory_total ) {
+			$status_slug  = 'unlimited';
+			$status_label = __( 'Unlimited', 'equine-event-manager' );
+		} elseif ( $remaining <= 0 ) {
+			$status_slug  = 'sold-out';
+			$status_label = __( 'Sold Out', 'equine-event-manager' );
+		} elseif ( $remaining <= 5 ) {
+			$status_slug  = 'low';
+			$status_label = __( 'Low', 'equine-event-manager' );
+		} else {
+			$status_slug  = 'available';
+			$status_label = __( 'Available', 'equine-event-manager' );
+		}
+
+		return array(
+			'label'           => $label,
+			'category'        => $category,
+			'inventory_label' => $this->format_inventory_limit_label( $inventory_total ),
+			'sold'            => absint( $sold ),
+			'remaining_label' => $this->format_remaining_inventory_label( $remaining ),
+			'status_slug'     => $status_slug,
+			'status_label'    => $status_label,
+		);
+	}
+
+	/**
+	 * Parse general add-on quantities from saved notes.
+	 *
+	 * @param string $notes Order notes.
+	 * @return array<string, int>
+	 */
+	private function parse_general_addon_quantities_from_notes( $notes ) {
+		$results = array();
+
+		if ( preg_match_all( '/(?:^|\n)Add-On:\s*(.+?)\s*\|\s*Qty:\s*(\d+)/mi', (string) $notes, $matches, PREG_SET_ORDER ) ) {
+			foreach ( $matches as $match ) {
+				$addon_name = sanitize_text_field( trim( $match[1] ) );
+				$quantity   = absint( $match[2] );
+
+				if ( '' === $addon_name || $quantity <= 0 ) {
+					continue;
+				}
+
+				if ( ! isset( $results[ $addon_name ] ) ) {
+					$results[ $addon_name ] = 0;
+				}
+
+				$results[ $addon_name ] += $quantity;
+			}
+		}
+
+		return $results;
+	}
+
+	/**
+	 * Parse saved general add-on rows from notes.
+	 *
+	 * @param string $notes Order notes.
+	 * @return array
+	 */
+	private function parse_general_addon_breakdown_from_notes( $notes ) {
+		$results = array();
+
+		if ( preg_match_all( '/(?:^|\n)Add-On:\s*(.+?)\s*\|\s*Qty:\s*(\d+)(?:\s*\|\s*Per:\s*(.+?))?\s*\|\s*Subtotal:\s*\$?\s*([0-9,]+(?:\.\d{1,2})?)/mi', (string) $notes, $matches, PREG_SET_ORDER ) ) {
+			foreach ( $matches as $match ) {
+				$addon_name = sanitize_text_field( trim( $match[1] ) );
+				$quantity   = absint( $match[2] );
+				$per_label  = ! empty( $match[3] ) ? sanitize_text_field( trim( $match[3] ) ) : '';
+				$subtotal   = (float) str_replace( ',', '', trim( $match[4] ) );
+
+				if ( '' === $addon_name || $quantity <= 0 ) {
+					continue;
+				}
+
+				if ( ! isset( $results[ $addon_name ] ) ) {
+					$results[ $addon_name ] = array(
+						'label'     => $addon_name,
+						'quantity'  => 0,
+						'per_label' => $per_label,
+						'subtotal'  => 0.0,
+					);
+				}
+
+				$results[ $addon_name ]['quantity'] += $quantity;
+				if ( '' === $results[ $addon_name ]['per_label'] && '' !== $per_label ) {
+					$results[ $addon_name ]['per_label'] = $per_label;
+				}
+				$results[ $addon_name ]['subtotal'] += $subtotal;
+			}
+		}
+
+		return array_values( $results );
+	}
+
+	/**
+	 * Parse group charge rows from notes.
+	 *
+	 * @param string $notes Order notes.
+	 * @return array<int, array{label:string, quantity:int, rate:float, subtotal:float}>
+	 */
+	private function parse_group_charge_breakdown_from_notes( $notes ) {
+		$results = array();
+
+		if ( preg_match_all( '/(?:^|\n)Group Charge:\s*(.+?)\s*\|\s*Qty:\s*(\d+)\s*\|\s*Rate:\s*\$?\s*([0-9,]+(?:\.\d{1,2})?)\s*\|\s*Subtotal:\s*\$?\s*([0-9,]+(?:\.\d{1,2})?)/mi', (string) $notes, $matches, PREG_SET_ORDER ) ) {
+			foreach ( $matches as $match ) {
+				$label    = sanitize_text_field( trim( $match[1] ) );
+				$quantity = absint( $match[2] );
+				$rate     = (float) str_replace( ',', '', trim( $match[3] ) );
+				$subtotal = (float) str_replace( ',', '', trim( $match[4] ) );
+
+				if ( '' === $label || $quantity <= 0 ) {
+					continue;
+				}
+
+				$results[] = array(
+					'label'    => $label,
+					'quantity' => $quantity,
+					'rate'     => $rate,
+					'subtotal' => $subtotal,
+				);
+			}
+		}
+
+		return $results;
+	}
+
+	/**
+	 * Parse an RV lot name from notes.
+	 *
+	 * @param string $notes Order notes.
+	 * @return string
+	 */
+	private function parse_rv_lot_name_from_notes( $notes ) {
+		if ( preg_match( '/(?:^|\n)RV Lot:\s*(.+)$/mi', (string) $notes, $matches ) ) {
+			return sanitize_text_field( trim( $matches[1] ) );
+		}
+
+		return '';
+	}
+
+	/**
+	 * Parse saved group rider count from notes.
+	 *
+	 * @param string $notes Order notes.
+	 * @return int
+	 */
+	private function parse_group_rider_count_from_notes( $notes ) {
+		if ( preg_match( '/(?:^|\n)Group Riders Count:\s*(\d+)/i', (string) $notes, $matches ) ) {
+			return absint( $matches[1] );
+		}
+
+		return 0;
+	}
+
+	/**
+	 * Parse saved group rider names from notes.
+	 *
+	 * @param string $notes Order notes.
+	 * @return array
+	 */
+	private function parse_group_rider_names_from_notes( $notes ) {
+		if ( empty( $notes ) || ! preg_match( '/(?:^|\n)Group Riders:\s*(.+)$/mi', (string) $notes, $matches ) ) {
+			return array();
+		}
+
+		$names = array();
+
+		foreach ( preg_split( '/\s*\|\s*/', trim( $matches[1] ) ) as $name ) {
+			$name = sanitize_text_field( trim( (string) $name ) );
+
+			if ( '' !== $name ) {
+				$names[] = $name;
+			}
+		}
+
+		return array_values( array_unique( $names ) );
+	}
+
+	/**
+	 * Normalize an inventory limit to an integer or null.
+	 *
+	 * @param mixed $value Raw inventory value.
+	 * @return int|null
+	 */
+	private function normalize_inventory_limit( $value ) {
+		if ( '' === $value || null === $value ) {
+			return null;
+		}
+
+		return max( 0, absint( $value ) );
+	}
+
+	/**
+	 * Format an inventory limit label.
+	 *
+	 * @param int|null $inventory_total Inventory count.
+	 * @return string
+	 */
+	private function format_inventory_limit_label( $inventory_total ) {
+		if ( null === $inventory_total ) {
+			return __( 'Unlimited', 'equine-event-manager' );
+		}
+
+		return number_format_i18n( absint( $inventory_total ) );
+	}
+
+	/**
+	 * Format a remaining inventory label.
+	 *
+	 * @param int|null $remaining Remaining count.
+	 * @return string
+	 */
+	private function format_remaining_inventory_label( $remaining ) {
+		if ( null === $remaining ) {
+			return __( 'Not tracked', 'equine-event-manager' );
+		}
+
+		return number_format_i18n( absint( $remaining ) );
+	}
+
+	/**
+	 * Get a display event label for a reservation.
+	 *
+	 * @param int   $reservation_id Reservation post ID.
+	 * @param array $data Reservation meta values.
+	 * @return string
+	 */
+	private function get_reservation_event_label( $reservation_id, $data ) {
+		if ( 'tec' === $data['event_source'] && ! empty( $data['event_id'] ) ) {
+			$event_title = get_the_title( absint( $data['event_id'] ) );
+
+			if ( $event_title ) {
+				return $event_title;
+			}
+		}
+
+		if ( 'native' === $data['event_source'] && ! empty( $data['event_id'] ) ) {
+			$event_title = get_the_title( absint( $data['event_id'] ) );
+
+			if ( $event_title ) {
+				return $event_title;
+			}
+		}
+
+		$reservation_title = get_the_title( $reservation_id );
+
+		return $reservation_title ? $reservation_title : __( 'Event Overview', 'equine-event-manager' );
+	}
+
+	/**
+	 * Get display event dates for a reservation.
+	 *
+	 * @param array $data Reservation meta values.
+	 * @return string
+	 */
+	private function get_reservation_event_dates_label( $data ) {
+		if ( 'tec' === $data['event_source'] && ! empty( $data['event_id'] ) ) {
+			$start = get_post_meta( absint( $data['event_id'] ), '_EventStartDate', true );
+			$end   = get_post_meta( absint( $data['event_id'] ), '_EventEndDate', true );
+
+			if ( $start ) {
+				return $this->format_admin_date_range_label( $start, $end ? $end : $start );
+			}
+		}
+
+		if ( 'native' === $data['event_source'] && ! empty( $data['event_id'] ) ) {
+			$event_dates = Equine_Event_Manager_Events::get_native_event_date_values( absint( $data['event_id'] ) );
+
+			if ( ! empty( $event_dates['start_date'] ) ) {
+				return $this->format_admin_date_range_label( $event_dates['start_date'], ! empty( $event_dates['end_date'] ) ? $event_dates['end_date'] : $event_dates['start_date'] );
+			}
+		}
+
+		if ( ! empty( $data['available_start_date'] ) ) {
+			return $this->format_admin_date_range_label( $data['available_start_date'], ! empty( $data['available_end_date'] ) ? $data['available_end_date'] : $data['available_start_date'] );
+		}
+
+		return __( 'Dates unavailable', 'equine-event-manager' );
+	}
+
+	/**
+	 * Get a display event source label.
+	 *
+	 * @param array $data Reservation meta values.
+	 * @return string
+	 */
+	private function get_reservation_event_source_label( $data ) {
+		return Equine_Event_Manager_Events::get_event_source_label( $data['event_source'] );
+	}
+
+	/**
+	 * Resolve the effective event source for a reservation in admin views.
+	 *
+	 * @param int $reservation_id Reservation post ID.
+	 * @return string
+	 */
+	private function get_effective_reservation_event_source( $reservation_id ) {
+		$use_global_event_source = ! empty( get_post_meta( $reservation_id, '_en_use_global_event_source', true ) );
+		$event_source            = sanitize_key( (string) get_post_meta( $reservation_id, '_en_event_source', true ) );
+		$allowed_sources         = array( 'native', 'tec', 'feed', 'external' );
+
+		if ( $use_global_event_source || ! in_array( $event_source, $allowed_sources, true ) ) {
+			$event_source = Equine_Event_Manager_Events::get_default_event_source();
+		}
+
+		return in_array( $event_source, $allowed_sources, true ) ? $event_source : 'external';
+	}
+
+	/**
+	 * Get a display type label.
+	 *
+	 * @param array $data Reservation meta values.
+	 * @return string
+	 */
+	private function get_reservation_type_label( $data ) {
+		$types = array();
+
+		if ( ! empty( $data['stalls_enabled'] ) ) {
+			$types[] = __( 'Stall', 'equine-event-manager' );
+		}
+
+		if ( ! empty( $data['rv_enabled'] ) ) {
+			$types[] = __( 'RV', 'equine-event-manager' );
+		}
+
+		if ( ! empty( $data['general_addons_enabled'] ) && ! empty( $data['general_addons'] ) ) {
+			$types[] = __( 'Add-On', 'equine-event-manager' );
+		}
+
+		return ! empty( $types ) ? implode( ', ', $types ) : __( 'None', 'equine-event-manager' );
+	}
+
+	/**
+	 * Format an admin-facing date range label.
+	 *
+	 * @param string $start Start date/datetime.
+	 * @param string $end End date/datetime.
+	 * @return string
+	 */
+	private function format_admin_date_range_label( $start, $end ) {
+		$start_timestamp = strtotime( (string) $start );
+		$end_timestamp   = strtotime( (string) $end );
+
+		if ( ! $start_timestamp ) {
+			return __( 'Dates unavailable', 'equine-event-manager' );
+		}
+
+		if ( ! $end_timestamp || gmdate( 'Y-m-d', $start_timestamp ) === gmdate( 'Y-m-d', $end_timestamp ) ) {
+			return wp_date( 'F j, Y', $start_timestamp );
+		}
+
+		return sprintf(
+			/* translators: 1: start date, 2: end date. */
+			__( '%1$s - %2$s', 'equine-event-manager' ),
+			wp_date( 'F j, Y', $start_timestamp ),
+			wp_date( 'F j, Y', $end_timestamp )
+		);
+	}
+
+	/**
+	 * Render a single order details page.
+	 */
+	public function render_order_details_page() {
+		$this->guard_admin_page();
+
+		$order_key = isset( $_GET['order_key'] ) ? sanitize_text_field( wp_unslash( $_GET['order_key'] ) ) : '';
+		$order     = $this->orders_repository->get_order( $order_key );
+
+		if ( ! $order ) {
+			?>
+			<div class="wrap eem-shell-wrap eem-shell-wrap--header">
+				<?php $this->render_brand_banner( __( 'Order Details', 'equine-event-manager' ) ); ?>
+				<div class="eem-shell-content">
+					<div class="postbox eem-card">
+						<p><?php esc_html_e( 'Order not found.', 'equine-event-manager' ); ?></p>
+					</div>
+				</div>
+			</div>
+			<?php
+			return;
+		}
+
+		?>
+		<div class="wrap eem-shell-wrap eem-shell-wrap--header">
+			<?php $this->render_admin_notice(); ?>
+			<?php
+			$invoice_token      = $this->get_invoice_token_for_order( $order );
+			$invoice_payment_url = $this->get_invoice_payment_url( $invoice_token );
+			$invoice_sent_at    = $this->get_order_note_value( isset( $order['notes'] ) ? $order['notes'] : '', 'Invoice Sent At' );
+			$reservation_id     = ! empty( $order['reservation_id'] ) ? absint( $order['reservation_id'] ) : 0;
+			$reservation_title  = $order['reservation_title'] ? $order['reservation_title'] : __( 'Unknown', 'equine-event-manager' );
+			$reservation_edit_url = $reservation_id ? get_edit_post_link( $reservation_id, '' ) : '';
+			$payment_state_badges = $this->render_order_type_badges( $order['type'] );
+			$payment_status_badge = $this->render_order_status_badge( $order['status_label'], isset( $order['status_slug'] ) ? $order['status_slug'] : '' );
+			$assigned_stall_units = $this->get_order_component_note_value( $order, 'stall', 'Assigned Stall Units' );
+			$assigned_rv_lots     = $this->get_order_component_note_value( $order, 'rv', 'Assigned RV Lots' );
+			if ( '' === $assigned_rv_lots ) {
+				$assigned_rv_lots = $this->get_order_component_note_value( $order, 'rv', 'Assigned RV Units' );
+			}
+			$assigned_stall_unit_list = $this->parse_assigned_units_string( $assigned_stall_units );
+			$assigned_rv_lot_list     = $this->parse_assigned_units_string( $assigned_rv_lots );
+			$stall_nights_label       = absint( $order['stall_quantity'] ) > 0 ? $this->get_stay_nights_label( $order['stall_arrival_date'], $order['stall_departure_date'] ) : '';
+			$rv_nights_label          = absint( $order['rv_quantity'] ) > 0 ? $this->get_stay_nights_label( $order['rv_arrival_date'], $order['rv_departure_date'] ) : '';
+			$total_shavings_needed    = absint( $order['required_shavings_qty'] ) + absint( $order['additional_shavings_qty'] );
+			$this->render_brand_banner(
+				sprintf( __( 'Order #%s', 'equine-event-manager' ), $order['order_number'] ),
+				$order['event_name']
+			);
+			?>
+			<h1 class="screen-reader-text"><?php echo esc_html( sprintf( __( 'Order #%s', 'equine-event-manager' ), $order['order_number'] ) ); ?></h1>
+
+			<?php
+			$group_rider_count       = $this->parse_group_rider_count_from_notes( $order['notes'] );
+			$group_rider_names       = $this->parse_group_rider_names_from_notes( $order['notes'] );
+			$general_addons          = $this->parse_general_addon_breakdown_from_notes( $order['notes'] );
+			$stall_chart_enabled     = $reservation_id ? (bool) get_post_meta( $reservation_id, '_en_stall_chart_enabled', true ) : false;
+			$stall_chart_config      = $reservation_id ? $this->get_stall_chart_config( $reservation_id ) : array();
+			$stall_assignment_ready  = $stall_chart_enabled || ! empty( $stall_chart_config['stall_units'] );
+			$rv_assignment_ready     = $stall_chart_enabled || ! empty( $stall_chart_config['rv_lot_names'] );
+			$refund_details          = $this->get_refund_details_from_order( $order );
+			$special_requests        = $this->get_special_requests_from_order_notes( $order['notes'] );
+			$billing_address         = $this->get_billing_details_from_order_notes( $order['notes'] );
+			$has_agreement           = $this->has_venue_agreement_from_order_notes( $order['notes'] );
+			$transaction_summary     = $this->get_transaction_id_summary( $order );
+			$customer_email_value    = $this->get_email_definition_value( $order['email'] );
+			$customer_phone_value    = $this->get_phone_definition_value( $order['phone'] );
+			$customer_email_html     = is_array( $customer_email_value ) && ! empty( $customer_email_value['html'] ) ? $customer_email_value['html'] : esc_html( (string) $customer_email_value );
+			$customer_phone_html     = is_array( $customer_phone_value ) && ! empty( $customer_phone_value['html'] ) ? $customer_phone_value['html'] : esc_html( (string) $customer_phone_value );
+
+			$stall_detail_rows       = array();
+			$stall_assignment_html   = '';
+			$rv_detail_rows          = array();
+			$rv_assignment_html      = '';
+
+			if ( absint( $order['stall_quantity'] ) > 0 ) {
+				$stall_detail_rows[] = array(
+					__( 'Stay Type', 'equine-event-manager' ) => $this->format_stay_type_label( $order['stall_stay_type'] ),
+					__( 'Nights', 'equine-event-manager' )    => $stall_nights_label,
+				);
+				$stall_detail_rows[] = array(
+					__( 'Arrival Date', 'equine-event-manager' )   => $this->format_reservation_date_label( $order['stall_arrival_date'] ),
+					__( 'Departure Date', 'equine-event-manager' ) => $this->format_reservation_date_label( $order['stall_departure_date'] ),
+				);
+				$stall_detail_rows[] = array(
+					__( 'Stall Quantity', 'equine-event-manager' )             => (string) absint( $order['stall_quantity'] ),
+					__( 'Required Shavings Quantity', 'equine-event-manager' ) => (string) absint( $order['required_shavings_qty'] ),
+				);
+				$stall_detail_rows[] = array(
+					__( 'Additional Shavings', 'equine-event-manager' ) => (string) absint( $order['additional_shavings_qty'] ),
+					__( 'Subtotal', 'equine-event-manager' )            => $this->format_money( (float) $order['stall_subtotal'] ),
+				);
+
+				if ( ! empty( $assigned_stall_unit_list ) ) {
+					$stall_detail_rows[] = array(
+						__( 'Assigned Units', 'equine-event-manager' ) => array(
+							'html' => $this->render_assignment_summary_chips( $assigned_stall_unit_list, 'stall' ),
+						),
+					);
+				}
+
+				if ( $stall_assignment_ready ) {
+					ob_start();
+					?>
+					<form class="eem-order-assignment-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+						<?php wp_nonce_field( 'equine_event_manager_update_order_assignments_' . $order['order_key'] ); ?>
+						<input type="hidden" name="action" value="equine_event_manager_update_order_assignments" />
+						<input type="hidden" name="order_key" value="<?php echo esc_attr( $order['order_key'] ); ?>" />
+						<p class="eem-order-assignment-form__intro">
+							<strong><?php esc_html_e( 'Assign Stall Units', 'equine-event-manager' ); ?></strong>
+						</p>
+						<div class="eem-order-assignment-form__controls">
+							<?php $this->render_assignment_select_field( 'assigned_stall_units', isset( $stall_chart_config['stall_units'] ) ? $stall_chart_config['stall_units'] : array(), $assigned_stall_unit_list, isset( $stall_chart_config['blocked_stall_units'] ) ? $stall_chart_config['blocked_stall_units'] : array(), absint( $order['stall_quantity'] ) ); ?>
+							<div class="eem-order-assignment-form__actions">
+								<button type="submit" class="button button-primary eem-order-assignment-form__submit"><?php esc_html_e( 'Save Stall Assignment', 'equine-event-manager' ); ?></button>
+							</div>
+						</div>
+						<p class="eem-order-assignment-form__help"><?php esc_html_e( 'Select the stall units assigned to this order from the stall chart.', 'equine-event-manager' ); ?></p>
+					</form>
+					<?php
+					$stall_assignment_html = ob_get_clean();
+				}
+			}
+
+			if ( absint( $order['rv_quantity'] ) > 0 ) {
+				$rv_detail_rows[] = array(
+					__( 'Stay Type', 'equine-event-manager' )      => $this->format_stay_type_label( $order['rv_stay_type'] ),
+					__( 'Nights', 'equine-event-manager' )         => $rv_nights_label,
+					__( 'RV Quantity', 'equine-event-manager' )    => (string) absint( $order['rv_quantity'] ),
+				);
+				$rv_detail_rows[] = array(
+					__( 'Arrival Date', 'equine-event-manager' )   => $this->format_reservation_date_label( $order['rv_arrival_date'] ),
+					__( 'Departure Date', 'equine-event-manager' ) => $this->format_reservation_date_label( $order['rv_departure_date'] ),
+				);
+
+				if ( ! empty( $order['rv_type'] ) ) {
+					$rv_detail_rows[] = array(
+						__( 'RV Add-Ons', 'equine-event-manager' ) => $this->get_rv_addon_definition_value( $order['rv_type'] ),
+						__( 'Subtotal', 'equine-event-manager' )   => $this->format_money( (float) $order['rv_subtotal'] ),
+					);
+				}
+
+				if ( ! empty( $assigned_rv_lot_list ) ) {
+					$rv_detail_rows[] = array(
+						__( 'Assigned Lots', 'equine-event-manager' ) => array(
+							'html' => $this->render_assignment_summary_chips( $assigned_rv_lot_list, 'rv' ),
+						),
+					);
+				}
+
+				if ( $rv_assignment_ready ) {
+					ob_start();
+					?>
+					<form class="eem-order-assignment-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+						<?php wp_nonce_field( 'equine_event_manager_update_order_assignments_' . $order['order_key'] ); ?>
+						<input type="hidden" name="action" value="equine_event_manager_update_order_assignments" />
+						<input type="hidden" name="order_key" value="<?php echo esc_attr( $order['order_key'] ); ?>" />
+						<p class="eem-order-assignment-form__intro">
+							<strong><?php esc_html_e( 'Assign RV Lots', 'equine-event-manager' ); ?></strong>
+						</p>
+						<div class="eem-order-assignment-form__controls">
+							<?php $this->render_rv_lot_assignment_select_field( 'assigned_rv_lots', isset( $stall_chart_config['rv_lot_names'] ) ? $stall_chart_config['rv_lot_names'] : array(), $this->parse_assigned_units_string( $assigned_rv_lots ), isset( $stall_chart_config['blocked_rv_lots'] ) ? $stall_chart_config['blocked_rv_lots'] : array() ); ?>
+							<div class="eem-order-assignment-form__actions">
+								<button type="submit" class="button button-primary eem-order-assignment-form__submit"><?php esc_html_e( 'Save RV Lot Assignment', 'equine-event-manager' ); ?></button>
+							</div>
+						</div>
+						<p class="eem-order-assignment-form__help"><?php esc_html_e( 'Select the RV lots assigned to this order from the stall chart.', 'equine-event-manager' ); ?></p>
+					</form>
+					<?php
+					$rv_assignment_html = ob_get_clean();
+				}
+			}
+			?>
+
+			<div class="eem-shell-content eem-shell-content--app eem-shell-content--order-detail">
+				<div class="postbox eem-card eem-order-detail-toolbar-card eem-order-detail-headercard">
+					<div class="inside">
+						<div class="eem-order-detail-headercard__row">
+							<div class="eem-order-detail-headercard__meta">
+								<h2 class="eem-order-detail-toolbar-card__title"><?php echo esc_html( sprintf( __( 'Order #%s', 'equine-event-manager' ), $order['order_number'] ) ); ?></h2>
+								<div class="eem-order-detail-toolbar-card__badges">
+									<?php echo wp_kses_post( $payment_status_badge ); ?>
+									<?php if ( ! empty( $payment_state_badges ) ) : ?>
+										<?php echo wp_kses_post( $payment_state_badges ); ?>
+									<?php endif; ?>
+								</div>
+								<div class="eem-order-detail-headercard__subline">
+									<span><?php echo esc_html( $order['created_at'] ); ?></span>
+									<span><?php echo esc_html( $reservation_title ); ?></span>
+								</div>
+							</div>
+							<div class="eem-shell-inline-actions eem-order-detail-toolbar-card__actions">
+								<a class="button" href="<?php echo esc_url( $this->get_orders_page_url() ); ?>"><?php esc_html_e( 'Back to Orders', 'equine-event-manager' ); ?></a>
+								<?php if ( $reservation_edit_url ) : ?>
+									<a class="button" href="<?php echo esc_url( $reservation_edit_url ); ?>"><?php esc_html_e( 'Edit Reservation', 'equine-event-manager' ); ?></a>
+								<?php endif; ?>
+								<a class="button" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=equine_event_manager_export_order_csv&order_key=' . rawurlencode( $order['order_key'] ) ), 'equine_event_manager_export_order_' . $order['order_key'] ) ); ?>"><?php esc_html_e( 'Export CSV', 'equine-event-manager' ); ?></a>
+								<?php if ( in_array( $order['status_slug'], array( 'unpaid', 'invoice-sent' ), true ) ) : ?>
+									<a class="button" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=equine_event_manager_mark_order_paid&order_key=' . rawurlencode( $order['order_key'] ) . '&method=cash' ), 'equine_event_manager_mark_order_paid_' . $order['order_key'] ) ); ?>" onclick="return confirm('<?php echo esc_js( __( 'Mark this order as paid by cash?', 'equine-event-manager' ) ); ?>');"><?php esc_html_e( 'Mark Cash', 'equine-event-manager' ); ?></a>
+									<a class="button" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=equine_event_manager_mark_order_paid&order_key=' . rawurlencode( $order['order_key'] ) . '&method=check' ), 'equine_event_manager_mark_order_paid_' . $order['order_key'] ) ); ?>" onclick="return confirm('<?php echo esc_js( __( 'Mark this order as paid by check?', 'equine-event-manager' ) ); ?>');"><?php esc_html_e( 'Mark Check', 'equine-event-manager' ); ?></a>
+								<?php endif; ?>
+								<?php if ( ! empty( $order['email'] ) ) : ?>
+									<a class="button" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=equine_event_manager_resend_customer_notification&order_key=' . rawurlencode( $order['order_key'] ) ), 'equine_event_manager_resend_customer_notification_' . $order['order_key'] ) ); ?>"><?php esc_html_e( 'Resend Customer Notification', 'equine-event-manager' ); ?></a>
+								<?php endif; ?>
+								<?php if ( in_array( $order['status_slug'], array( 'unpaid', 'invoice-sent' ), true ) && ! empty( $order['email'] ) ) : ?>
+									<a class="button" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=equine_event_manager_send_invoice_email&order_key=' . rawurlencode( $order['order_key'] ) ), 'equine_event_manager_send_invoice_email_' . $order['order_key'] ) ); ?>"><?php esc_html_e( 'Email Payment Link', 'equine-event-manager' ); ?></a>
+								<?php endif; ?>
+								<?php if ( $order['can_refund'] ) : ?>
+									<a class="button" href="<?php echo esc_url( add_query_arg( array( 'page' => 'equine-event-manager-order-refund', 'order_key' => $order['order_key'] ), admin_url( 'admin.php' ) ) ); ?>"><?php esc_html_e( 'Refund Order', 'equine-event-manager' ); ?></a>
+								<?php endif; ?>
+								<a class="button button-link-delete" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=equine_event_manager_delete_order&order_key=' . rawurlencode( $order['order_key'] ) ), 'equine_event_manager_delete_order_' . $order['order_key'] ) ); ?>" onclick="return confirm('<?php echo esc_js( __( 'Delete this order permanently?', 'equine-event-manager' ) ); ?>');"><?php esc_html_e( 'Delete Order', 'equine-event-manager' ); ?></a>
+								<a class="button button-primary" target="_blank" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=equine_event_manager_print_order&order_key=' . rawurlencode( $order['order_key'] ) ), 'equine_event_manager_print_order_' . $order['order_key'] ) ); ?>"><?php esc_html_e( 'Print as PDF', 'equine-event-manager' ); ?></a>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="eem-order-detail-layout">
+					<div class="eem-order-detail-main">
+						<?php if ( ! empty( $stall_detail_rows ) ) : ?>
+							<div class="postbox eem-card eem-order-product-card eem-order-product-card--stall">
+								<div class="inside">
+									<div class="eem-order-product-card__header">
+										<div>
+											<h2><?php esc_html_e( 'Stall Reservation', 'equine-event-manager' ); ?></h2>
+											<p class="eem-order-product-card__subcopy"><?php echo esc_html( $reservation_title ); ?></p>
+										</div>
+										<div class="eem-order-product-card__meta">
+											<?php if ( '' !== $stall_nights_label ) : ?><span class="eem-shell-badge eem-shell-badge--status"><?php echo esc_html( $stall_nights_label ); ?></span><?php endif; ?>
+										</div>
+									</div>
+									<?php $this->render_key_value_rows( $stall_detail_rows ); ?>
+									<?php if ( '' !== $stall_assignment_html ) : ?>
+										<div class="eem-order-product-card__section">
+											<?php echo wp_kses_post( $stall_assignment_html ); ?>
+										</div>
+									<?php endif; ?>
+								</div>
+							</div>
+						<?php endif; ?>
+
+						<?php if ( ! empty( $rv_detail_rows ) ) : ?>
+							<div class="postbox eem-card eem-order-product-card eem-order-product-card--rv">
+								<div class="inside">
+									<div class="eem-order-product-card__header">
+										<div>
+											<h2><?php esc_html_e( 'RV Reservation', 'equine-event-manager' ); ?></h2>
+											<p class="eem-order-product-card__subcopy"><?php echo esc_html( $reservation_title ); ?></p>
+										</div>
+										<div class="eem-order-product-card__meta">
+											<?php if ( '' !== $rv_nights_label ) : ?><span class="eem-shell-badge eem-shell-badge--status"><?php echo esc_html( $rv_nights_label ); ?></span><?php endif; ?>
+										</div>
+									</div>
+									<?php $this->render_key_value_rows( $rv_detail_rows ); ?>
+									<?php if ( '' !== $rv_assignment_html ) : ?>
+										<div class="eem-order-product-card__section">
+											<?php echo wp_kses_post( $rv_assignment_html ); ?>
+										</div>
+									<?php endif; ?>
+								</div>
+							</div>
+						<?php endif; ?>
+
+						<?php if ( ! empty( $general_addons ) ) : ?>
+							<div class="postbox eem-card eem-order-product-card eem-order-product-card--addons">
+								<div class="inside">
+									<div class="eem-order-product-card__header">
+										<div>
+											<h2><?php esc_html_e( 'Add-Ons', 'equine-event-manager' ); ?></h2>
+											<p class="eem-order-product-card__subcopy"><?php esc_html_e( 'Additional products included in this order.', 'equine-event-manager' ); ?></p>
+										</div>
+									</div>
+									<?php
+									foreach ( $general_addons as $addon ) :
+										$addon_label    = isset( $addon['label'] ) ? $addon['label'] : '';
+										$addon_quantity = isset( $addon['quantity'] ) ? absint( $addon['quantity'] ) : 0;
+										$addon_per      = ! empty( $addon['per_label'] ) ? $addon['per_label'] : __( 'qty', 'equine-event-manager' );
+										$addon_subtotal = isset( $addon['subtotal'] ) ? (float) $addon['subtotal'] : 0;
+										?>
+										<div class="eem-order-line-item">
+											<div class="eem-order-line-item__title"><?php echo esc_html( $addon_label ); ?></div>
+											<div class="eem-order-line-item__meta"><?php echo esc_html( sprintf( __( '%1$d %2$s', 'equine-event-manager' ), $addon_quantity, $addon_per ) ); ?></div>
+											<div class="eem-order-line-item__amount"><?php echo esc_html( $this->format_money( $addon_subtotal ) ); ?></div>
+										</div>
+									<?php endforeach; ?>
+								</div>
+							</div>
+						<?php endif; ?>
+
+						<?php if ( $group_rider_count > 0 ) : ?>
+							<div class="postbox eem-card eem-order-product-card eem-order-product-card--group">
+								<div class="inside">
+									<div class="eem-order-product-card__header">
+										<div>
+											<h2><?php esc_html_e( 'Group Reservation', 'equine-event-manager' ); ?></h2>
+											<p class="eem-order-product-card__subcopy"><?php esc_html_e( 'Group rider details captured on this reservation.', 'equine-event-manager' ); ?></p>
+										</div>
+									</div>
+									<?php
+									$this->render_key_value_rows(
+										array(
+											array(
+												__( 'Rider Count', 'equine-event-manager' ) => (string) $group_rider_count,
+											),
+											! empty( $group_rider_names ) ? array(
+												__( 'Riders', 'equine-event-manager' ) => implode( ', ', $group_rider_names ),
+											) : array(),
+										)
+									);
+									?>
+								</div>
+							</div>
+						<?php endif; ?>
+
+						<div class="postbox eem-card eem-order-payment-card">
+							<div class="inside">
+								<div class="eem-order-product-card__header">
+									<div>
+										<h2><?php esc_html_e( 'Order Summary', 'equine-event-manager' ); ?></h2>
+										<p class="eem-order-product-card__subcopy"><?php esc_html_e( 'Payment details and order totals.', 'equine-event-manager' ); ?></p>
+									</div>
+									<div class="eem-order-product-card__meta">
+										<?php echo wp_kses_post( $payment_status_badge ); ?>
+									</div>
+								</div>
+								<div class="eem-order-payment-card__hero">
+									<div class="eem-order-payment-card__hero-label"><?php esc_html_e( 'Total Paid', 'equine-event-manager' ); ?></div>
+									<div class="eem-order-payment-card__hero-amount"><?php echo esc_html( $this->format_money( (float) $order['total'] ) ); ?></div>
+								</div>
+								<?php $this->render_order_totals_table( $order ); ?>
+								<?php if ( ! empty( $refund_details ) ) : ?>
+									<div class="eem-order-product-card__section">
+										<h3><?php esc_html_e( 'Refund Details', 'equine-event-manager' ); ?></h3>
+										<?php $this->render_key_value_rows( $refund_details ); ?>
+									</div>
+								<?php endif; ?>
+								<?php if ( $invoice_payment_url ) : ?>
+									<div class="eem-order-product-card__section">
+										<h3><?php esc_html_e( 'Invoice Link', 'equine-event-manager' ); ?></h3>
+										<div class="eem-order-payment-link-row">
+											<input class="regular-text code" type="text" readonly value="<?php echo esc_attr( $invoice_payment_url ); ?>" />
+											<button type="button" class="button" data-en-copy-url="<?php echo esc_attr( $invoice_payment_url ); ?>"><?php esc_html_e( 'Copy', 'equine-event-manager' ); ?></button>
+											<?php if ( in_array( $order['status_slug'], array( 'unpaid', 'invoice-sent' ), true ) ) : ?>
+												<a class="button button-primary" target="_blank" href="<?php echo esc_url( $invoice_payment_url ); ?>"><?php esc_html_e( 'Open Payment Page', 'equine-event-manager' ); ?></a>
+											<?php endif; ?>
+										</div>
+										<div class="eem-order-payment-card__meta-grid">
+											<div><span><?php esc_html_e( 'Invoice Status', 'equine-event-manager' ); ?></span><strong><?php echo esc_html( $order['status_label'] ); ?></strong></div>
+											<div><span><?php esc_html_e( 'Last Sent', 'equine-event-manager' ); ?></span><strong><?php echo esc_html( $invoice_sent_at ? $invoice_sent_at : __( 'Not sent yet', 'equine-event-manager' ) ); ?></strong></div>
+											<div><span><?php esc_html_e( 'Transaction', 'equine-event-manager' ); ?></span><strong><?php echo esc_html( $transaction_summary ); ?></strong></div>
+										</div>
+									</div>
+								<?php endif; ?>
+							</div>
+						</div>
+					</div>
+
+					<aside class="eem-order-detail-sidebar">
+						<div class="postbox eem-card eem-order-side-card eem-order-side-card--requests">
+							<div class="inside">
+								<h2><?php esc_html_e( 'Special Instructions', 'equine-event-manager' ); ?></h2>
+								<div class="eem-order-side-card__content">
+									<?php if ( '' !== trim( $special_requests ) ) : ?>
+										<div class="eem-order-side-card__text"><?php echo nl2br( esc_html( trim( $special_requests ) ) ); ?></div>
+									<?php else : ?>
+										<div class="eem-order-side-card__empty"><?php esc_html_e( 'No special instructions were provided with this order.', 'equine-event-manager' ); ?></div>
+									<?php endif; ?>
+								</div>
+							</div>
+						</div>
+
+						<div class="postbox eem-card eem-order-side-card eem-order-side-card--customer">
+							<div class="inside">
+								<h2><?php esc_html_e( 'Customer', 'equine-event-manager' ); ?></h2>
+								<div class="eem-order-side-card__content">
+									<div class="eem-order-side-card__customer-name"><?php echo esc_html( $order['customer_name'] ); ?></div>
+									<div class="eem-order-side-card__summary-link"><?php esc_html_e( '1 order', 'equine-event-manager' ); ?></div>
+									<div class="eem-order-side-card__meta-label"><?php esc_html_e( 'Reservation', 'equine-event-manager' ); ?></div>
+									<div class="eem-order-side-card__text"><?php echo esc_html( $reservation_title ); ?></div>
+									<div class="eem-order-side-card__meta-label"><?php esc_html_e( 'Contact information', 'equine-event-manager' ); ?></div>
+									<div class="eem-order-side-card__text"><?php echo wp_kses_post( $customer_email_html ); ?></div>
+									<div class="eem-order-side-card__text"><?php echo wp_kses_post( $customer_phone_html ); ?></div>
+									<div class="eem-order-side-card__meta-label"><?php esc_html_e( 'Billing address', 'equine-event-manager' ); ?></div>
+									<div class="eem-order-side-card__text"><?php echo nl2br( esc_html( $billing_address ) ); ?></div>
+									<div class="eem-order-side-card__meta-grid">
+										<div><span><?php esc_html_e( 'Order Number', 'equine-event-manager' ); ?></span><strong><?php echo esc_html( '#' . $order['order_number'] ); ?></strong></div>
+										<div><span><?php esc_html_e( 'Created', 'equine-event-manager' ); ?></span><strong><?php echo esc_html( $order['created_at'] ); ?></strong></div>
+										<div><span><?php esc_html_e( 'Agreement', 'equine-event-manager' ); ?></span><strong><?php echo esc_html( $has_agreement ? __( 'Yes', 'equine-event-manager' ) : __( 'No', 'equine-event-manager' ) ); ?></strong></div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</aside>
+				</div>
+			</div>
+		</div>
+		<script>
+			(function() {
+				var copyButtons = document.querySelectorAll('[data-en-copy-url]');
+				function setCopiedState(button) {
+					var originalText = button.textContent;
+					button.textContent = '<?php echo esc_js( __( 'Copied', 'equine-event-manager' ) ); ?>';
+					window.setTimeout(function() {
+						button.textContent = originalText;
+					}, 1800);
+				}
+				copyButtons.forEach(function(button) {
+					button.addEventListener('click', function() {
+						var text = button.getAttribute('data-en-copy-url') || '';
+						if (!text) {
+							return;
+						}
+						if (navigator.clipboard && navigator.clipboard.writeText) {
+							navigator.clipboard.writeText(text).then(function() {
+								setCopiedState(button);
+							});
+							return;
+						}
+						var temp = document.createElement('input');
+						temp.value = text;
+						document.body.appendChild(temp);
+						temp.select();
+						document.execCommand('copy');
+						document.body.removeChild(temp);
+						setCopiedState(button);
+					});
+				});
+			})();
+		</script>
+		<?php
+	}
+
+	/**
+	 * Render the refund selection page for a single order.
+	 *
+	 * @return void
+	 */
+	public function render_order_refund_page() {
+		$this->guard_admin_page();
+
+		$order_key     = isset( $_GET['order_key'] ) ? sanitize_text_field( wp_unslash( $_GET['order_key'] ) ) : '';
+		$order         = $this->orders_repository->get_order( $order_key );
+		$refund_groups = $order ? $this->build_refund_groups_for_order( $order ) : array();
+		$has_auth_only = false;
+
+		if ( ! $order ) {
+			?>
+			<div class="wrap eem-shell-wrap eem-shell-wrap--header">
+				<?php $this->render_brand_banner( __( 'Refund Order', 'equine-event-manager' ) ); ?>
+				<div class="eem-shell-content">
+				<div class="postbox eem-card">
+					<div class="inside">
+					<p><?php esc_html_e( 'Order not found.', 'equine-event-manager' ); ?></p>
+					</div>
+				</div>
+				</div>
+			</div>
+			<?php
+			return;
+		}
+
+		foreach ( $refund_groups as $group ) {
+			if ( 'authorize_net' === $group['gateway'] ) {
+				$has_auth_only = true;
+				break;
+			}
+		}
+		?>
+		<div class="wrap eem-shell-wrap eem-shell-wrap--header">
+			<?php
+			$this->render_brand_banner(
+				sprintf( __( 'Refund Order #%s', 'equine-event-manager' ), $order['order_number'] ),
+				$order['event_name']
+			);
+			?>
+			<?php $this->render_admin_notice(); ?>
+
+			<div class="eem-shell-content">
+			<div class="postbox eem-card">
+				<div class="inside">
+				<h1 class="screen-reader-text"><?php echo esc_html( sprintf( __( 'Refund Order #%s', 'equine-event-manager' ), $order['order_number'] ) ); ?></h1>
+				<p>
+					<a href="<?php echo esc_url( add_query_arg( array( 'page' => 'equine-event-manager-order', 'order_key' => $order['order_key'] ), admin_url( 'admin.php' ) ) ); ?>"><?php esc_html_e( 'Back to Order', 'equine-event-manager' ); ?></a>
+					|
+					<a href="<?php echo esc_url( $this->get_orders_page_url() ); ?>"><?php esc_html_e( 'Back to Orders', 'equine-event-manager' ); ?></a>
+				</p>
+				</div>
+			</div>
+
+			<div class="postbox eem-card">
+				<div class="inside">
+				<h2><?php esc_html_e( 'Choose Refund Items', 'equine-event-manager' ); ?></h2>
+				<p>
+					<?php
+					echo esc_html(
+						sprintf(
+							/* translators: %s: customer name */
+							__( 'Select the charge lines you want to refund for %s. We will only refund the selected amounts.', 'equine-event-manager' ),
+							$order['customer_name']
+						)
+					);
+					?>
+				</p>
+				<?php if ( $has_auth_only ) : ?>
+					<p class="description"><?php esc_html_e( 'Authorize.net orders can currently be refunded only as full charged components, so those sections appear as one full-refund option.', 'equine-event-manager' ); ?></p>
+				<?php endif; ?>
+				<?php if ( empty( $refund_groups ) ) : ?>
+					<p><?php esc_html_e( 'There are no refundable transactions left on this order.', 'equine-event-manager' ); ?></p>
+				<?php else : ?>
+					<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+						<input type="hidden" name="action" value="equine_event_manager_refund_order" />
+						<input type="hidden" name="order_key" value="<?php echo esc_attr( $order['order_key'] ); ?>" />
+						<?php wp_nonce_field( 'equine_event_manager_refund_order_' . $order['order_key'] ); ?>
+
+						<div>
+							<?php foreach ( $refund_groups as $group ) : ?>
+								<div class="postbox eem-card">
+									<div class="inside">
+									<div>
+										<div>
+											<h3><?php echo esc_html( $group['title'] ); ?></h3>
+											<p class="description"><?php echo esc_html( $group['meta'] ); ?></p>
+										</div>
+										<div>
+											<span><?php echo esc_html( sprintf( __( 'Gateway: %s', 'equine-event-manager' ), $this->orders_repository->get_gateway_label( $group['gateway'] ) ) ); ?></span>
+											<strong><?php echo esc_html( sprintf( __( 'Available: %s', 'equine-event-manager' ), $this->format_money( $group['remaining_amount'] ) ) ); ?></strong>
+										</div>
+									</div>
+									<div>
+										<?php foreach ( $group['items'] as $item ) : ?>
+											<label>
+												<input type="checkbox" name="refund_lines[]" value="<?php echo esc_attr( $item['id'] ); ?>" />
+												<span>
+													<span><strong><?php echo esc_html( $item['label'] ); ?></strong></span>
+													<?php if ( ! empty( $item['description'] ) ) : ?>
+														<span><?php echo esc_html( $item['description'] ); ?></span>
+													<?php endif; ?>
+												</span>
+												<strong><?php echo esc_html( $this->format_money( $item['amount'] ) ); ?></strong>
+											</label>
+											<br />
+										<?php endforeach; ?>
+									</div>
+									</div>
+								</div>
+							<?php endforeach; ?>
+						</div>
+
+						<?php submit_button( __( 'Refund Selected Items', 'equine-event-manager' ) ); ?>
+					</form>
+				<?php endif; ?>
+				</div>
+			</div>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Build refund groups for an order.
+	 *
+	 * @param array $order Order payload.
+	 * @return array
+	 */
+	private function build_refund_groups_for_order( $order ) {
+		$groups = array();
+
+		foreach ( (array) $order['components'] as $component ) {
+			if ( empty( $component['transaction_id'] ) || ! in_array( $component['payment_status'], array( 'paid', 'captured', 'completed', 'partially_paid', 'partially_refunded' ), true ) ) {
+				continue;
+			}
+
+			$remaining_amount = $this->get_component_remaining_refundable_amount( $component );
+
+			if ( $remaining_amount <= 0 ) {
+				continue;
+			}
+
+			$items = $this->build_refund_items_for_component( $order, $component, $remaining_amount );
+
+			if ( empty( $items ) ) {
+				continue;
+			}
+
+			$groups[] = array(
+				'component'           => $component,
+				'component_signature' => $this->get_component_signature( $component ),
+				'title'               => $this->get_component_refund_title( $component ),
+				'meta'                => $this->get_component_refund_meta( $component ),
+				'gateway'             => isset( $component['payment_gateway'] ) ? sanitize_key( $component['payment_gateway'] ) : '',
+				'remaining_amount'    => $remaining_amount,
+				'items'               => $items,
+			);
+		}
+
+		return $groups;
+	}
+
+	/**
+	 * Build refund items for a single charged component.
+	 *
+	 * @param array $order Order payload.
+	 * @param array $component Component payload.
+	 * @param float $remaining_amount Remaining refundable amount.
+	 * @return array
+	 */
+	private function build_refund_items_for_component( $order, $component, $remaining_amount ) {
+		$gateway = isset( $component['payment_gateway'] ) ? sanitize_key( $component['payment_gateway'] ) : '';
+
+		if ( 'authorize_net' === $gateway ) {
+			return array(
+				array(
+					'id'          => $this->build_refund_item_id( $component, 'full-component' ),
+					'label'       => sprintf( __( 'Full %s refund', 'equine-event-manager' ), $this->get_component_refund_title( $component ) ),
+					'description' => __( 'This gateway currently supports only full component refunds in the admin.', 'equine-event-manager' ),
+					'amount'      => $remaining_amount,
+				),
+			);
+		}
+
+		$items = 'stall' === $component['table']
+			? $this->build_stall_component_refund_items( $order, $component )
+			: $this->build_rv_component_refund_items( $order, $component );
+
+		$refunded_item_ids = $this->get_component_refunded_item_ids( $component );
+		$valid_items       = array();
+
+		foreach ( $items as $item ) {
+			if ( empty( $item['amount'] ) || (float) $item['amount'] <= 0 ) {
+				continue;
+			}
+
+			$item['id']   = $this->build_refund_item_id( $component, $item['slug'] );
+
+			if ( in_array( $item['id'], $refunded_item_ids, true ) ) {
+				continue;
+			}
+
+			$valid_items[] = $item;
+		}
+
+		if ( empty( $valid_items ) ) {
+			$valid_items[] = array(
+				'id'          => $this->build_refund_item_id( $component, 'component-total' ),
+				'label'       => $this->get_component_refund_title( $component ),
+				'description' => __( 'Refund the remaining component total.', 'equine-event-manager' ),
+				'amount'      => $remaining_amount,
+			);
+		}
+
+		return $valid_items;
+	}
+
+	/**
+	 * Get the refunded amount already recorded against a component.
+	 *
+	 * @param array $component Component payload.
+	 * @return float
+	 */
+	private function get_component_refunded_amount( $component ) {
+		$notes = isset( $component['notes'] ) ? (string) $component['notes'] : '';
+		$value = $this->get_order_note_value( $notes, 'Refunded Amount' );
+
+		if ( '' !== $value ) {
+			return max( 0, (float) preg_replace( '/[^0-9.\-]/', '', $value ) );
+		}
+
+		if ( isset( $component['payment_status'] ) && 'refunded' === $component['payment_status'] ) {
+			return isset( $component['total'] ) ? max( 0, (float) $component['total'] ) : 0.0;
+		}
+
+		return 0.0;
+	}
+
+	/**
+	 * Get the remaining refundable amount for a component.
+	 *
+	 * @param array $component Component payload.
+	 * @return float
+	 */
+	private function get_component_remaining_refundable_amount( $component ) {
+		$total_amount    = isset( $component['total'] ) ? max( 0, (float) $component['total'] ) : 0.0;
+		$refunded_amount = $this->get_component_refunded_amount( $component );
+
+		return max( 0, $total_amount - $refunded_amount );
+	}
+
+	/**
+	 * Get already-refunded line item IDs for a component.
+	 *
+	 * @param array $component Component payload.
+	 * @return array
+	 */
+	private function get_component_refunded_item_ids( $component ) {
+		$notes     = isset( $component['notes'] ) ? (string) $component['notes'] : '';
+		$raw_value = $this->get_order_note_value( $notes, 'Refunded Items' );
+
+		if ( '' === $raw_value ) {
+			return array();
+		}
+
+		$items = array_map( 'trim', explode( ',', $raw_value ) );
+		$items = array_map( 'sanitize_text_field', $items );
+
+		return array_values( array_unique( array_filter( $items ) ) );
+	}
+
+	/**
+	 * Persist refund bookkeeping on a refunded component row.
+	 *
+	 * @param array  $component Component payload.
+	 * @param float  $refund_amount Refunded amount.
+	 * @param string $refund_transaction_id Refund transaction/reference ID.
+	 * @param array  $refunded_item_ids Refunded item IDs.
+	 * @return bool
+	 */
+	private function persist_component_refund( $component, $refund_amount, $refund_transaction_id, $refunded_item_ids ) {
+		$current_refunded_amount = $this->get_component_refunded_amount( $component );
+		$new_refunded_amount     = max( 0, $current_refunded_amount + (float) $refund_amount );
+		$total_amount            = isset( $component['total'] ) ? max( 0, (float) $component['total'] ) : 0.0;
+		$new_status              = $new_refunded_amount + 0.009 >= $total_amount ? 'refunded' : 'partially_refunded';
+		$existing_item_ids       = $this->get_component_refunded_item_ids( $component );
+		$merged_item_ids         = array_values( array_unique( array_filter( array_merge( $existing_item_ids, $refunded_item_ids ) ) ) );
+		$notes                   = isset( $component['notes'] ) ? (string) $component['notes'] : '';
+		$notes                   = $this->upsert_order_note_line( $notes, 'Refunded Amount', number_format( $new_refunded_amount, 2, '.', '' ) );
+		$notes                   = $this->upsert_order_note_line( $notes, 'Refunded Items', implode( ', ', $merged_item_ids ) );
+		$notes                   = $this->upsert_order_note_line( $notes, 'Last Refund Transaction', sanitize_text_field( $refund_transaction_id ) );
+		$notes                   = $this->upsert_order_note_line( $notes, 'Last Refunded At', current_time( 'mysql' ) );
+
+		return $this->orders_repository->update_component_fields(
+			$component['table'],
+			$component['row_id'],
+			array(
+				'payment_status'        => $new_status,
+				'refund_transaction_id' => sanitize_text_field( $refund_transaction_id ),
+				'refunded_at'           => current_time( 'mysql' ),
+				'notes'                 => $notes,
+			),
+			array( '%s', '%s', '%s', '%s' )
+		);
+	}
+
+	/**
+	 * Build itemized refund rows for a stall component.
+	 *
+	 * @param array $order Order payload.
+	 * @param array $component Component payload.
+	 * @return array
+	 */
+	private function build_stall_component_refund_items( $order, $component ) {
+		$row = $this->get_component_db_row( $component );
+
+		if ( empty( $row ) ) {
+			return array();
+		}
+
+		$items                = array();
+		$general_addons       = $this->parse_general_addon_breakdown_from_notes( isset( $row['notes'] ) ? $row['notes'] : '' );
+		$group_charges        = $this->parse_group_charge_breakdown_from_notes( isset( $row['notes'] ) ? $row['notes'] : '' );
+		$general_addon_total  = array_sum( wp_list_pluck( $general_addons, 'subtotal' ) );
+		$group_charge_total   = array_sum( wp_list_pluck( $group_charges, 'subtotal' ) );
+		$stall_quantity       = absint( $row['stall_qty'] ) + absint( $row['tack_stall_qty'] );
+		$stay_units           = $this->get_billable_stay_units( $row['arrival_date'], $row['departure_date'], $row['stay_type'] );
+		$base_subtotal        = $stall_quantity * (float) $row['unit_price'] * $stay_units;
+		$shavings_pool        = max( 0, (float) $row['subtotal'] - $base_subtotal - $general_addon_total - $group_charge_total );
+		$required_qty         = absint( $row['required_shavings_qty'] );
+		$additional_qty       = absint( $row['additional_shavings_qty'] );
+		$total_shavings_qty   = $required_qty + $additional_qty;
+		$required_subtotal    = 0.0;
+		$additional_subtotal  = 0.0;
+		$fees                 = max( 0, (float) $row['total'] - (float) $row['subtotal'] );
+
+		if ( $total_shavings_qty > 0 && $shavings_pool > 0 ) {
+			if ( $required_qty > 0 && $additional_qty > 0 ) {
+				$required_ratio     = $required_qty / $total_shavings_qty;
+				$required_subtotal  = $shavings_pool * $required_ratio;
+				$additional_subtotal = $shavings_pool - $required_subtotal;
+			} elseif ( $required_qty > 0 ) {
+				$required_subtotal = $shavings_pool;
+			} elseif ( $additional_qty > 0 ) {
+				$additional_subtotal = $shavings_pool;
+			}
+		}
+
+		if ( $base_subtotal > 0 ) {
+			$items[] = array(
+				'slug'        => 'stall-reservation',
+				'label'       => __( 'Stall Reservation', 'equine-event-manager' ),
+				'description' => sprintf(
+					/* translators: 1: stay type, 2: arrival date, 3: departure date. */
+					__( '%1$s stay from %2$s to %3$s', 'equine-event-manager' ),
+					$this->format_stay_type_label( $row['stay_type'] ),
+					$this->format_reservation_date_label( $row['arrival_date'] ),
+					$this->format_reservation_date_label( $row['departure_date'] )
+				),
+				'amount'      => $base_subtotal,
+			);
+		}
+
+		if ( $required_subtotal > 0 ) {
+			$items[] = array(
+				'slug'        => 'required-shavings',
+				'label'       => __( 'Required Shavings', 'equine-event-manager' ),
+				'description' => sprintf( _n( '%d bag', '%d bags', $required_qty, 'equine-event-manager' ), $required_qty ),
+				'amount'      => $required_subtotal,
+			);
+		}
+
+		if ( $additional_subtotal > 0 ) {
+			$items[] = array(
+				'slug'        => 'additional-shavings',
+				'label'       => __( 'Additional Shavings', 'equine-event-manager' ),
+				'description' => sprintf( _n( '%d bag', '%d bags', $additional_qty, 'equine-event-manager' ), $additional_qty ),
+				'amount'      => $additional_subtotal,
+			);
+		}
+
+		foreach ( $general_addons as $index => $addon ) {
+			$items[] = array(
+				'slug'        => 'general-addon-' . $index,
+				'label'       => isset( $addon['label'] ) ? $addon['label'] : __( 'Add-On', 'equine-event-manager' ),
+				'description' => ! empty( $addon['per_label'] ) ? sprintf( __( '%1$d x %2$s', 'equine-event-manager' ), absint( $addon['quantity'] ), $addon['per_label'] ) : sprintf( _n( '%d unit', '%d units', absint( $addon['quantity'] ), 'equine-event-manager' ), absint( $addon['quantity'] ) ),
+				'amount'      => isset( $addon['subtotal'] ) ? (float) $addon['subtotal'] : 0.0,
+			);
+		}
+
+		foreach ( $group_charges as $index => $charge ) {
+			$items[] = array(
+				'slug'        => 'group-charge-' . $index,
+				'label'       => isset( $charge['label'] ) ? $charge['label'] : __( 'Group Charge', 'equine-event-manager' ),
+				'description' => sprintf( _n( '%d rider', '%d riders', absint( $charge['quantity'] ), 'equine-event-manager' ), absint( $charge['quantity'] ) ),
+				'amount'      => isset( $charge['subtotal'] ) ? (float) $charge['subtotal'] : 0.0,
+			);
+		}
+
+		if ( $fees > 0 ) {
+			$items[] = array(
+				'slug'        => 'fees',
+				'label'       => __( 'Fees', 'equine-event-manager' ),
+				'description' => __( 'Refund the charged fees for this component.', 'equine-event-manager' ),
+				'amount'      => $fees,
+			);
+		}
+
+		return $items;
+	}
+
+	/**
+	 * Build itemized refund rows for an RV component.
+	 *
+	 * @param array $order Order payload.
+	 * @param array $component Component payload.
+	 * @return array
+	 */
+	private function build_rv_component_refund_items( $order, $component ) {
+		$row = $this->get_component_db_row( $component );
+
+		if ( empty( $row ) ) {
+			return array();
+		}
+
+		$items               = array();
+		$general_addons      = $this->parse_general_addon_breakdown_from_notes( isset( $row['notes'] ) ? $row['notes'] : '' );
+		$group_charges       = $this->parse_group_charge_breakdown_from_notes( isset( $row['notes'] ) ? $row['notes'] : '' );
+		$general_addon_total = array_sum( wp_list_pluck( $general_addons, 'subtotal' ) );
+		$group_charge_total  = array_sum( wp_list_pluck( $group_charges, 'subtotal' ) );
+		$rv_quantity         = absint( $row['rv_qty'] );
+		$stay_type           = ! empty( $row['stay_type'] ) ? sanitize_key( $row['stay_type'] ) : 'nightly';
+		$stay_units          = $this->get_billable_stay_units( $row['arrival_date'], $row['departure_date'], $stay_type );
+		$base_subtotal       = $rv_quantity * (float) $row['unit_price'] * $stay_units;
+		$rv_addon_total      = max( 0, (float) $row['subtotal'] - $base_subtotal - $general_addon_total - $group_charge_total );
+		$rv_labels           = $this->get_rv_addon_labels_from_row_payload( $row );
+		$row_breakdown       = array();
+		$row_priced_total    = 0.0;
+		$reservation_id      = self::extract_reservation_id_from_notes( isset( $row['notes'] ) ? $row['notes'] : '' );
+		$reservation_meta    = $reservation_id ? $this->get_reservation_meta_values( $reservation_id ) : array( 'rv_addons' => array() );
+		$fees                = max( 0, (float) $row['total'] - (float) $row['subtotal'] );
+
+		foreach ( $rv_labels as $addon_label ) {
+			$rate = $this->get_named_rv_addon_price( isset( $reservation_meta['rv_addons'] ) ? $reservation_meta['rv_addons'] : array(), $addon_label );
+
+			if ( $rate <= 0 ) {
+				$row_breakdown[ $addon_label ] = array(
+					'label'    => $addon_label,
+					'subtotal' => 0.0,
+				);
+				continue;
+			}
+
+			$row_breakdown[ $addon_label ] = array(
+				'label'    => $addon_label,
+				'subtotal' => $rv_quantity * $rate * $stay_units,
+			);
+			$row_priced_total += $row_breakdown[ $addon_label ]['subtotal'];
+		}
+
+		if ( $rv_addon_total > 0 && ! empty( $row_breakdown ) ) {
+			if ( $row_priced_total > 0 ) {
+				$scale = $rv_addon_total / $row_priced_total;
+
+				foreach ( $row_breakdown as $addon_label => $addon_row ) {
+					$row_breakdown[ $addon_label ]['subtotal'] = $addon_row['subtotal'] * $scale;
+				}
+			} else {
+				$equal_share = $rv_addon_total / count( $row_breakdown );
+
+				foreach ( $row_breakdown as $addon_label => $addon_row ) {
+					$row_breakdown[ $addon_label ]['subtotal'] = $equal_share;
+				}
+			}
+		}
+
+		if ( $base_subtotal > 0 ) {
+			$items[] = array(
+				'slug'        => 'rv-reservation',
+				'label'       => __( 'RV Reservation', 'equine-event-manager' ),
+				'description' => sprintf(
+					/* translators: 1: stay type, 2: arrival date, 3: departure date. */
+					__( '%1$s stay from %2$s to %3$s', 'equine-event-manager' ),
+					$this->format_stay_type_label( $stay_type ),
+					$this->format_reservation_date_label( $row['arrival_date'] ),
+					$this->format_reservation_date_label( $row['departure_date'] )
+				),
+				'amount'      => $base_subtotal,
+			);
+		}
+
+		foreach ( $row_breakdown as $index => $addon_row ) {
+			$items[] = array(
+				'slug'        => 'rv-addon-' . sanitize_title( $index ),
+				'label'       => sprintf( __( '%s Add-On', 'equine-event-manager' ), $addon_row['label'] ),
+				'description' => sprintf( _n( '%d RV spot', '%d RV spots', $rv_quantity, 'equine-event-manager' ), $rv_quantity ),
+				'amount'      => (float) $addon_row['subtotal'],
+			);
+		}
+
+		foreach ( $general_addons as $index => $addon ) {
+			$items[] = array(
+				'slug'        => 'general-addon-' . $index,
+				'label'       => isset( $addon['label'] ) ? $addon['label'] : __( 'Add-On', 'equine-event-manager' ),
+				'description' => ! empty( $addon['per_label'] ) ? sprintf( __( '%1$d x %2$s', 'equine-event-manager' ), absint( $addon['quantity'] ), $addon['per_label'] ) : sprintf( _n( '%d unit', '%d units', absint( $addon['quantity'] ), 'equine-event-manager' ), absint( $addon['quantity'] ) ),
+				'amount'      => isset( $addon['subtotal'] ) ? (float) $addon['subtotal'] : 0.0,
+			);
+		}
+
+		foreach ( $group_charges as $index => $charge ) {
+			$items[] = array(
+				'slug'        => 'group-charge-' . $index,
+				'label'       => isset( $charge['label'] ) ? $charge['label'] : __( 'Group Charge', 'equine-event-manager' ),
+				'description' => sprintf( _n( '%d rider', '%d riders', absint( $charge['quantity'] ), 'equine-event-manager' ), absint( $charge['quantity'] ) ),
+				'amount'      => isset( $charge['subtotal'] ) ? (float) $charge['subtotal'] : 0.0,
+			);
+		}
+
+		if ( $fees > 0 ) {
+			$items[] = array(
+				'slug'        => 'fees',
+				'label'       => __( 'Fees', 'equine-event-manager' ),
+				'description' => __( 'Refund the charged fees for this component.', 'equine-event-manager' ),
+				'amount'      => $fees,
+			);
+		}
+
+		return $items;
+	}
+
+	/**
+	 * Get the DB row payload for a component.
+	 *
+	 * @param array $component Component payload.
+	 * @return array
+	 */
+	private function get_component_db_row( $component ) {
+		global $wpdb;
+
+		if ( empty( $component['table'] ) || empty( $component['row_id'] ) ) {
+			return array();
+		}
+
+		$table_name = 'stall' === $component['table'] ? $wpdb->prefix . 'en_stall_reservations' : $wpdb->prefix . 'en_rv_reservations';
+
+		$query = $wpdb->prepare(
+			"SELECT * FROM {$table_name} WHERE id = %d LIMIT 1",
+			absint( $component['row_id'] )
+		);
+
+		$row = $wpdb->get_row( $query, ARRAY_A );
+
+		return is_array( $row ) ? $row : array();
+	}
+
+	/**
+	 * Get a stable signature for a component.
+	 *
+	 * @param array $component Component payload.
+	 * @return string
+	 */
+	private function get_component_signature( $component ) {
+		return sanitize_key( $component['table'] ) . ':' . absint( $component['row_id'] );
+	}
+
+	/**
+	 * Build a stable refund item ID for a component row.
+	 *
+	 * @param array  $component Component payload.
+	 * @param string $slug Item slug.
+	 * @return string
+	 */
+	private function build_refund_item_id( $component, $slug ) {
+		return $this->get_component_signature( $component ) . '|' . sanitize_title( $slug );
+	}
+
+	/**
+	 * Get a user-facing title for a refundable component.
+	 *
+	 * @param array $component Component payload.
+	 * @return string
+	 */
+	private function get_component_refund_title( $component ) {
+		return 'stall' === $component['table'] ? __( 'Stall Charge', 'equine-event-manager' ) : __( 'RV Charge', 'equine-event-manager' );
+	}
+
+	/**
+	 * Get component meta text for refund UI.
+	 *
+	 * @param array $component Component payload.
+	 * @return string
+	 */
+	private function get_component_refund_meta( $component ) {
+		$parts = array();
+
+		if ( ! empty( $component['order_number'] ) ) {
+			$parts[] = '#' . $component['order_number'];
+		}
+
+		if ( ! empty( $component['transaction_id'] ) ) {
+			$parts[] = sprintf( __( 'Transaction: %s', 'equine-event-manager' ), $component['transaction_id'] );
+		}
+
+		return ! empty( $parts ) ? implode( ' | ', $parts ) : __( 'Refundable transaction', 'equine-event-manager' );
+	}
+
+	/**
+	 * Render the plugin settings page.
+	 */
+	public function render_settings_page() {
+		$this->guard_admin_page();
+		$active_tab = isset( $_POST['equine_event_manager_active_tab'] ) ? sanitize_key( wp_unslash( $_POST['equine_event_manager_active_tab'] ) ) : '';
+
+		if ( '' === $active_tab && isset( $_GET['tab'] ) ) {
+			$active_tab = sanitize_key( wp_unslash( $_GET['tab'] ) );
+		}
+
+		if ( ! in_array( $active_tab, array( 'integrations', 'addons', 'shortcodes', 'company', 'communications', 'payments' ), true ) ) {
+			$active_tab = 'integrations';
+		}
+
+		$stored_payment_settings = wp_parse_args(
+			get_option( self::PAYMENT_SETTINGS_OPTION, array() ),
+			array(
+				'selected_gateway' => 'stripe',
+				'stripe'           => array(),
+				'authorize_net'    => array(),
+			)
+		);
+		$stored_stripe = wp_parse_args(
+			$stored_payment_settings['stripe'],
+			array(
+				'mode'                   => 'test',
+				'test_publishable_key'   => '',
+				'test_secret_key'        => '',
+				'live_publishable_key'   => '',
+				'live_secret_key'        => '',
+				'webhook_signing_secret' => '',
+			)
+		);
+		$stored_authorize_net = wp_parse_args(
+			$stored_payment_settings['authorize_net'],
+			array(
+				'mode'                 => 'test',
+				'test_api_login'       => '',
+				'test_transaction_key' => '',
+				'live_api_login'       => '',
+				'live_transaction_key' => '',
+			)
+		);
+
+		if ( isset( $_POST['equine_event_manager_settings_nonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['equine_event_manager_settings_nonce'] ) ), 'equine_event_manager_save_settings' ) ) {
+			$description      = isset( $_POST['special_requests_description'] ) ? sanitize_textarea_field( wp_unslash( $_POST['special_requests_description'] ) ) : '';
+			$previous_feature_settings = $this->get_feature_settings();
+			$posted_source = isset( $_POST['integration_default_event_source'] ) ? sanitize_key( wp_unslash( $_POST['integration_default_event_source'] ) ) : '';
+
+			if ( ! in_array( $posted_source, array( 'native', 'tec', 'feed' ), true ) ) {
+				if ( ! empty( $_POST['integration_source_toggle_native'] ) ) {
+					$posted_source = 'native';
+				} elseif ( ! empty( $_POST['integration_source_toggle_tec'] ) ) {
+					$posted_source = 'tec';
+				} elseif ( ! empty( $_POST['integration_source_toggle_feed'] ) ) {
+					$posted_source = 'feed';
+				} else {
+					$posted_source = 'feed';
+				}
+			}
+
+			$feature_settings = array(
+				'native_events_enabled' => 'native' === $posted_source ? 1 : 0,
+			);
+			$integration_settings = array(
+				'tec_integration_enabled' => 'tec' === $posted_source ? 1 : 0,
+				'default_event_source'    => $posted_source,
+				'feed_url'                => isset( $_POST['integration_feed_url'] ) ? esc_url_raw( wp_unslash( $_POST['integration_feed_url'] ) ) : '',
+				'sendgrid_api_key'        => isset( $_POST['integration_sendgrid_api_key'] ) ? sanitize_text_field( wp_unslash( $_POST['integration_sendgrid_api_key'] ) ) : '',
+			);
+
+			if ( ! in_array( $integration_settings['default_event_source'], array( 'native', 'tec', 'feed' ), true ) ) {
+				$integration_settings['default_event_source'] = 'feed';
+			}
+
+			$company_settings = array(
+				'logo_id'       => isset( $_POST['company_logo_id'] ) ? absint( wp_unslash( $_POST['company_logo_id'] ) ) : 0,
+				'support_phone' => isset( $_POST['company_support_phone'] ) ? sanitize_text_field( wp_unslash( $_POST['company_support_phone'] ) ) : '',
+				'support_email' => isset( $_POST['company_support_email'] ) ? sanitize_email( wp_unslash( $_POST['company_support_email'] ) ) : '',
+			);
+			$reservation_message_settings = array(
+				'support_phone'    => isset( $_POST['reservation_support_phone'] ) ? sanitize_text_field( wp_unslash( $_POST['reservation_support_phone'] ) ) : '',
+				'support_email'    => isset( $_POST['reservation_support_email'] ) ? sanitize_email( wp_unslash( $_POST['reservation_support_email'] ) ) : '',
+				'preopen_message'  => isset( $_POST['reservation_preopen_message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['reservation_preopen_message'] ) ) : self::DEFAULT_PREOPEN_MESSAGE,
+				'closed_message'   => isset( $_POST['reservation_closed_message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['reservation_closed_message'] ) ) : self::DEFAULT_CLOSED_MESSAGE,
+			);
+			$receipt_settings = array(
+				'customer_receipt_enabled' => ! empty( $_POST['customer_receipt_enabled'] ) ? 1 : 0,
+				'admin_receipt_email'      => isset( $_POST['admin_receipt_email'] ) ? sanitize_email( wp_unslash( $_POST['admin_receipt_email'] ) ) : '',
+				'from_name'                => isset( $_POST['receipt_from_name'] ) ? sanitize_text_field( wp_unslash( $_POST['receipt_from_name'] ) ) : '',
+				'from_email'               => isset( $_POST['receipt_from_email'] ) ? sanitize_email( wp_unslash( $_POST['receipt_from_email'] ) ) : '',
+				'reply_to_email'           => isset( $_POST['receipt_reply_to_email'] ) ? sanitize_email( wp_unslash( $_POST['receipt_reply_to_email'] ) ) : '',
+				'customer_subject'         => isset( $_POST['customer_receipt_subject'] ) ? sanitize_text_field( wp_unslash( $_POST['customer_receipt_subject'] ) ) : self::DEFAULT_CUSTOMER_RECEIPT_SUBJECT,
+				'admin_subject'            => isset( $_POST['admin_receipt_subject'] ) ? sanitize_text_field( wp_unslash( $_POST['admin_receipt_subject'] ) ) : self::DEFAULT_ADMIN_RECEIPT_SUBJECT,
+				'customer_body'            => isset( $_POST['customer_receipt_body'] ) ? sanitize_textarea_field( wp_unslash( $_POST['customer_receipt_body'] ) ) : self::DEFAULT_CUSTOMER_RECEIPT_BODY,
+				'admin_body'               => isset( $_POST['admin_receipt_body'] ) ? sanitize_textarea_field( wp_unslash( $_POST['admin_receipt_body'] ) ) : self::DEFAULT_ADMIN_RECEIPT_BODY,
+			);
+			$payment_settings = array(
+				'selected_gateway' => isset( $_POST['selected_gateway'] ) && 'authorize_net' === sanitize_key( wp_unslash( $_POST['selected_gateway'] ) ) ? 'authorize_net' : 'stripe',
+				'stripe'           => array(
+					'mode'                   => isset( $_POST['stripe_mode'] ) ? ( 'live' === sanitize_key( wp_unslash( $_POST['stripe_mode'] ) ) ? 'live' : 'test' ) : $stored_stripe['mode'],
+					'test_publishable_key'   => isset( $_POST['stripe_test_publishable_key'] ) ? sanitize_text_field( wp_unslash( $_POST['stripe_test_publishable_key'] ) ) : $stored_stripe['test_publishable_key'],
+					'test_secret_key'        => isset( $_POST['stripe_test_secret_key'] ) ? sanitize_text_field( wp_unslash( $_POST['stripe_test_secret_key'] ) ) : $stored_stripe['test_secret_key'],
+					'live_publishable_key'   => isset( $_POST['stripe_live_publishable_key'] ) ? sanitize_text_field( wp_unslash( $_POST['stripe_live_publishable_key'] ) ) : $stored_stripe['live_publishable_key'],
+					'live_secret_key'        => isset( $_POST['stripe_live_secret_key'] ) ? sanitize_text_field( wp_unslash( $_POST['stripe_live_secret_key'] ) ) : $stored_stripe['live_secret_key'],
+					'webhook_signing_secret' => isset( $_POST['stripe_webhook_signing_secret'] ) ? sanitize_text_field( wp_unslash( $_POST['stripe_webhook_signing_secret'] ) ) : $stored_stripe['webhook_signing_secret'],
+				),
+				'authorize_net'    => array(
+					'mode'                 => isset( $_POST['authorize_net_mode'] ) ? ( 'live' === sanitize_key( wp_unslash( $_POST['authorize_net_mode'] ) ) ? 'live' : 'test' ) : $stored_authorize_net['mode'],
+					'test_api_login'       => isset( $_POST['authorize_net_test_api_login'] ) ? sanitize_text_field( wp_unslash( $_POST['authorize_net_test_api_login'] ) ) : $stored_authorize_net['test_api_login'],
+					'test_transaction_key' => isset( $_POST['authorize_net_test_transaction_key'] ) ? sanitize_text_field( wp_unslash( $_POST['authorize_net_test_transaction_key'] ) ) : $stored_authorize_net['test_transaction_key'],
+					'live_api_login'       => isset( $_POST['authorize_net_live_api_login'] ) ? sanitize_text_field( wp_unslash( $_POST['authorize_net_live_api_login'] ) ) : $stored_authorize_net['live_api_login'],
+					'live_transaction_key' => isset( $_POST['authorize_net_live_transaction_key'] ) ? sanitize_text_field( wp_unslash( $_POST['authorize_net_live_transaction_key'] ) ) : $stored_authorize_net['live_transaction_key'],
+				),
+			);
+
+			update_option( self::FEATURE_SETTINGS_OPTION, $feature_settings );
+			update_option( self::INTEGRATION_SETTINGS_OPTION, $integration_settings );
+			update_option( self::COMPANY_SETTINGS_OPTION, $company_settings );
+			update_option( self::SPECIAL_REQUESTS_DESCRIPTION_OPTION, $description );
+			update_option( self::RESERVATION_MESSAGE_SETTINGS_OPTION, $reservation_message_settings );
+			update_option( self::RECEIPT_SETTINGS_OPTION, $receipt_settings );
+			update_option( self::PAYMENT_SETTINGS_OPTION, $payment_settings );
+
+			if ( (int) $previous_feature_settings['native_events_enabled'] !== (int) $feature_settings['native_events_enabled'] ) {
+				if ( ! empty( $feature_settings['native_events_enabled'] ) ) {
+					$events = new Equine_Event_Manager_Events();
+					$events->register_content_types();
+				}
+
+				flush_rewrite_rules( false );
+			}
+
+			wp_safe_redirect(
+				add_query_arg(
+					array(
+						'page'      => 'equine-event-manager-settings',
+						'tab'       => $active_tab,
+						'en_notice' => 'settings_saved',
+					),
+					admin_url( 'admin.php' )
+				)
+			);
+			exit;
+		}
+
+		$feature_settings = $this->get_feature_settings();
+		$integration_settings = $this->get_integration_settings();
+		$integration_source_ui = 'external' === $integration_settings['default_event_source'] ? 'feed' : $integration_settings['default_event_source'];
+		$tec_is_active = Equine_Event_Manager_Events::is_tec_plugin_active();
+		$tec_has_existing_events = Equine_Event_Manager_Events::has_existing_tec_events();
+		$native_event_slug = Equine_Event_Manager_Events::get_event_rewrite_slug();
+		$description = get_option( self::SPECIAL_REQUESTS_DESCRIPTION_OPTION, self::DEFAULT_SPECIAL_REQUESTS_DESCRIPTION );
+		$company_settings = $this->get_company_settings();
+		$reservation_message_settings = $this->get_reservation_message_settings();
+		$receipt_settings = $this->get_receipt_settings();
+		$payment_settings = $stored_payment_settings;
+		$stripe = wp_parse_args(
+			$payment_settings['stripe'],
+			array(
+				'mode'                   => 'test',
+				'test_publishable_key'   => '',
+				'test_secret_key'        => '',
+				'live_publishable_key'   => '',
+				'live_secret_key'        => '',
+				'webhook_signing_secret' => '',
+			)
+		);
+		$authorize_net = wp_parse_args(
+			$payment_settings['authorize_net'],
+			array(
+				'mode'                 => 'test',
+				'test_api_login'       => '',
+				'test_transaction_key' => '',
+				'live_api_login'       => '',
+				'live_transaction_key' => '',
+			)
+		);
+		$stripe_is_active        = 'stripe' === $payment_settings['selected_gateway'];
+		$authorize_net_is_active = 'authorize_net' === $payment_settings['selected_gateway'];
+		$company_logo_url = ! empty( $company_settings['logo_id'] ) ? wp_get_attachment_image_url( absint( $company_settings['logo_id'] ), 'medium' ) : '';
+
+		$settings_tabs = array(
+			'integrations'  => array(
+				'label' => __( 'Integrations', 'equine-event-manager' ),
+				'icon'  => 'dashicons-admin-links',
+			),
+			'company'       => array(
+				'label' => __( 'Branding', 'equine-event-manager' ),
+				'icon'  => 'dashicons-format-image',
+			),
+			'communications' => array(
+				'label' => __( 'Communications', 'equine-event-manager' ),
+				'icon'  => 'dashicons-email-alt',
+			),
+			'shortcodes'    => array(
+				'label' => __( 'Shortcodes', 'equine-event-manager' ),
+				'icon'  => 'dashicons-editor-code',
+			),
+			'payments'      => array(
+				'label' => __( 'Payments', 'equine-event-manager' ),
+				'icon'  => 'dashicons-money-alt',
+			),
+			'addons'        => array(
+				'label' => __( 'Add-Ons', 'equine-event-manager' ),
+				'icon'  => 'dashicons-admin-plugins',
+			),
+		);
+		$active_tab_config = isset( $settings_tabs[ $active_tab ] ) ? $settings_tabs[ $active_tab ] : reset( $settings_tabs );
+
+		?>
+		<div class="wrap eem-shell-wrap eem-shell-wrap--rail">
+			<?php
+			$this->render_brand_banner(
+				__( 'Settings', 'equine-event-manager' ),
+				''
+			);
+			?>
+			<?php $this->render_admin_notice(); ?>
+			<form method="post">
+				<?php wp_nonce_field( 'equine_event_manager_save_settings', 'equine_event_manager_settings_nonce' ); ?>
+				<input type="hidden" name="equine_event_manager_active_tab" id="equine_event_manager_active_tab" value="<?php echo esc_attr( $active_tab ); ?>" />
+				<div class="eem-shell-rail">
+					<div class="eem-shell-rail__mobile-nav">
+						<details class="eem-shell-rail__mobile-picker">
+							<summary class="eem-shell-rail__mobile-trigger">
+								<span class="dashicons <?php echo esc_attr( $active_tab_config['icon'] ); ?>" aria-hidden="true"></span>
+								<span class="eem-shell-rail__mobile-label"><?php echo esc_html( $active_tab_config['label'] ); ?></span>
+							</summary>
+							<div class="eem-shell-rail__mobile-menu" aria-label="<?php esc_attr_e( 'Settings sections', 'equine-event-manager' ); ?>">
+								<?php foreach ( $settings_tabs as $tab_slug => $tab_config ) : ?>
+									<a class="eem-shell-rail__mobile-option<?php echo $active_tab === $tab_slug ? ' is-active' : ''; ?>" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-settings&tab=' . $tab_slug ) ); ?>">
+										<span class="dashicons <?php echo esc_attr( $tab_config['icon'] ); ?>" aria-hidden="true"></span>
+										<span><?php echo esc_html( $tab_config['label'] ); ?></span>
+									</a>
+								<?php endforeach; ?>
+							</div>
+						</details>
+					</div>
+					<nav class="nav-tab-wrapper eem-shell-rail__nav" aria-label="<?php esc_attr_e( 'Settings sections', 'equine-event-manager' ); ?>">
+						<?php foreach ( $settings_tabs as $tab_slug => $tab_config ) : ?>
+							<a class="nav-tab<?php echo $active_tab === $tab_slug ? ' nav-tab-active' : ''; ?>" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-settings&tab=' . $tab_slug ) ); ?>"><span class="dashicons <?php echo esc_attr( $tab_config['icon'] ); ?>" aria-hidden="true"></span><span class="eem-shell-rail__label"><?php echo esc_html( $tab_config['label'] ); ?></span></a>
+						<?php endforeach; ?>
+					</nav>
+
+					<div class="eem-shell-rail__content">
+				<?php if ( 'integrations' === $active_tab ) : ?>
+					<div class="postbox">
+						<h2><?php esc_html_e( 'Event Sources', 'equine-event-manager' ); ?></h2>
+						<p><?php esc_html_e( 'Choose the one live event source Event Manager should use for reservations. Only one source can be active at a time.', 'equine-event-manager' ); ?></p>
+						<input type="hidden" name="integration_default_event_source" id="integration_default_event_source" value="<?php echo esc_attr( $integration_source_ui ); ?>" />
+						<div class="eem-settings-source-grid">
+							<section class="eem-settings-source-card">
+								<div class="eem-settings-source-card__head">
+									<div class="eem-settings-source-card__copy">
+										<h3><?php esc_html_e( 'Native Events', 'equine-event-manager' ); ?></h3>
+										<p><?php esc_html_e( 'Use Equine Event Manager as the main event system with native events, categories, venues, producers, widgets, and the shared frontend event template.', 'equine-event-manager' ); ?></p>
+									</div>
+									<label class="eem-settings-toggle" for="integration_source_toggle_native">
+										<input type="checkbox" name="integration_source_toggle_native" id="integration_source_toggle_native" value="1" <?php checked( 'native' === $integration_source_ui ); ?> data-event-source-toggle="native" />
+										<span class="eem-settings-toggle__track" aria-hidden="true"><span class="eem-settings-toggle__thumb"></span></span>
+										<span class="screen-reader-text"><?php esc_html_e( 'Use Native Events', 'equine-event-manager' ); ?></span>
+									</label>
+								</div>
+								<p class="eem-settings-source-card__detail"><?php esc_html_e( 'Turn this on to make Native Events the live event source for reservations. Reservations will search and link to Event Manager events, and Event Manager will use its native event pages, categories, venues, producers, widgets, and shared frontend event template as the active event system.', 'equine-event-manager' ); ?></p>
+							</section>
+
+							<section class="eem-settings-source-card">
+								<div class="eem-settings-source-card__head">
+									<div class="eem-settings-source-card__copy">
+										<h3><?php esc_html_e( 'The Events Calendar Events', 'equine-event-manager' ); ?></h3>
+										<p>
+											<?php
+											echo esc_html(
+												$tec_is_active
+													? __( 'This integration requires The Events Calendar plugin. It is currently active on this site, so reservations can search and link to live The Events Calendar events right away.', 'equine-event-manager' )
+													: __( 'This integration requires The Events Calendar plugin. It is not active right now, so The Events Calendar event search, linking, and live event tools will not work until that plugin is installed and active.', 'equine-event-manager' )
+											);
+											?>
+										</p>
+									</div>
+									<label class="eem-settings-toggle" for="integration_source_toggle_tec">
+										<input type="checkbox" name="integration_source_toggle_tec" id="integration_source_toggle_tec" value="1" <?php checked( 'tec' === $integration_source_ui ); ?> data-event-source-toggle="tec" />
+										<span class="eem-settings-toggle__track" aria-hidden="true"><span class="eem-settings-toggle__thumb"></span></span>
+										<span class="screen-reader-text"><?php esc_html_e( 'Use The Events Calendar Events', 'equine-event-manager' ); ?></span>
+									</label>
+								</div>
+								<?php if ( $tec_has_existing_events ) : ?>
+									<p class="eem-settings-source-card__detail"><?php esc_html_e( 'When The Events Calendar plugin is active, this integration keeps live The Events Calendar events searchable in reservations while Event Manager continues to handle reservations and the shared frontend event template.', 'equine-event-manager' ); ?></p>
+								<?php endif; ?>
+							</section>
+
+							<section class="eem-settings-source-card">
+								<div class="eem-settings-source-card__head">
+									<div class="eem-settings-source-card__copy">
+										<h3><?php esc_html_e( 'External Feed URL', 'equine-event-manager' ); ?></h3>
+										<p><?php esc_html_e( 'Use a single external feed URL as the reservation event source. This URL is inherited automatically by reservations when this source is turned on.', 'equine-event-manager' ); ?></p>
+									</div>
+									<label class="eem-settings-toggle" for="integration_source_toggle_feed">
+										<input type="checkbox" name="integration_source_toggle_feed" id="integration_source_toggle_feed" value="1" <?php checked( 'feed' === $integration_source_ui ); ?> data-event-source-toggle="feed" />
+										<span class="eem-settings-toggle__track" aria-hidden="true"><span class="eem-settings-toggle__thumb"></span></span>
+										<span class="screen-reader-text"><?php esc_html_e( 'Use External Feed URL', 'equine-event-manager' ); ?></span>
+									</label>
+								</div>
+								<div class="eem-settings-source-card__field">
+									<label for="integration_feed_url"><?php esc_html_e( 'Feed URL', 'equine-event-manager' ); ?></label>
+									<input name="integration_feed_url" id="integration_feed_url" type="url" class="regular-text code" value="<?php echo esc_attr( $integration_settings['feed_url'] ); ?>" placeholder="https://globalroping.com/1914MobileApp/V3/api/Events?ListType=1" />
+									<div class="eem-settings-source-card__actions">
+										<button type="button" class="button button-secondary" id="equine_event_manager_test_feed_url"><?php esc_html_e( 'Test Feed URL', 'equine-event-manager' ); ?></button>
+									</div>
+									<div id="equine_event_manager_feed_test_result" hidden></div>
+									<p class="description"><?php esc_html_e( 'Enter the API or feed endpoint that reservations should use when External Feed URL is the primary source. JSON or XML-style event endpoints are both supported as source URLs for this workflow.', 'equine-event-manager' ); ?></p>
+								</div>
+							</section>
+						</div>
+					</div>
+
+					<div class="postbox">
+						<h2><?php esc_html_e( 'Email Delivery', 'equine-event-manager' ); ?></h2>
+						<p><?php esc_html_e( 'Optionally route customer receipts and payment-link emails through SendGrid instead of the default WordPress mailer.', 'equine-event-manager' ); ?></p>
+						<table class="form-table" role="presentation">
+							<tbody>
+								<tr>
+									<th scope="row"><label for="integration_sendgrid_api_key"><?php esc_html_e( 'SendGrid API Key', 'equine-event-manager' ); ?></label></th>
+									<td>
+										<input name="integration_sendgrid_api_key" id="integration_sendgrid_api_key" type="password" class="regular-text" value="<?php echo esc_attr( $integration_settings['sendgrid_api_key'] ); ?>" autocomplete="off" spellcheck="false" />
+										<p class="description"><?php esc_html_e( 'When this API key is saved, Equine Event Manager will use SendGrid for customer receipt emails and payment-link invoice emails. Leave blank to keep using the site’s default WordPress mail configuration.', 'equine-event-manager' ); ?></p>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				<?php endif; ?>
+
+				<?php if ( 'addons' === $active_tab ) : ?>
+					<div class="postbox">
+						<h2><?php esc_html_e( 'Add-On Access', 'equine-event-manager' ); ?></h2>
+						<p><?php esc_html_e( 'Future Equine Event Manager add-ons will appear here so you can enable and configure them from one place.', 'equine-event-manager' ); ?></p>
+						<div class="notice notice-info inline">
+							<strong><?php esc_html_e( 'No add-ons available yet', 'equine-event-manager' ); ?></strong>
+							<p><?php esc_html_e( 'This tab is reserved for upcoming expansion modules so future add-ons can be enabled and configured from one place.', 'equine-event-manager' ); ?></p>
+						</div>
+					</div>
+				<?php endif; ?>
+
+				<?php if ( 'shortcodes' === $active_tab ) : ?>
+					<div class="postbox">
+						<h2><?php esc_html_e( 'Event Display Shortcodes', 'equine-event-manager' ); ?></h2>
+						<p><?php esc_html_e( 'Use these shortcodes in any page builder, classic editor, shortcode block, or theme content area. The plugin handles the event source and shared layout for you.', 'equine-event-manager' ); ?></p>
+						<table class="form-table" role="presentation">
+							<tbody>
+								<tr>
+									<th scope="row"><?php esc_html_e( 'Reservation Form', 'equine-event-manager' ); ?></th>
+									<td>
+										<input type="text" class="regular-text code" readonly="readonly" value='[en_reservation id="123"]' />
+										<p class="description"><?php esc_html_e( 'Displays a reservation form directly when you know the reservation post ID. Useful in builder pages, landing pages, or manual reservation links.', 'equine-event-manager' ); ?></p>
+									</td>
+								</tr>
+								<tr>
+									<th scope="row"><?php esc_html_e( 'Current Event Page', 'equine-event-manager' ); ?></th>
+									<td>
+										<input type="text" class="regular-text code" readonly="readonly" value='[equine_event_manager_event]' />
+										<p class="description"><?php esc_html_e( 'Displays the current event in the shared Event Manager single-event layout. Works on native event pages, The Events Calendar event pages, and reservation-backed event routes.', 'equine-event-manager' ); ?></p>
+									</td>
+								</tr>
+								<tr>
+									<th scope="row"><?php esc_html_e( 'Single Event By Event ID', 'equine-event-manager' ); ?></th>
+									<td>
+										<input type="text" class="regular-text code" readonly="readonly" value='[equine_event_manager_event id="123"]' />
+										<p class="description"><?php esc_html_e( 'Targets a native or The Events Calendar event post directly when you know the event post ID.', 'equine-event-manager' ); ?></p>
+									</td>
+								</tr>
+								<tr>
+									<th scope="row"><?php esc_html_e( 'Single Event By Reservation', 'equine-event-manager' ); ?></th>
+									<td>
+										<input type="text" class="regular-text code" readonly="readonly" value='[equine_event_manager_event reservation_id="123"]' />
+										<p class="description"><?php esc_html_e( 'Displays a reservation-backed event source such as Event Feed or External using the same shared event template.', 'equine-event-manager' ); ?></p>
+									</td>
+								</tr>
+								<tr>
+									<th scope="row"><?php esc_html_e( 'All Events List', 'equine-event-manager' ); ?></th>
+									<td>
+										<input type="text" class="regular-text code" readonly="readonly" value='[equine_event_manager_events view="list" source="all" limit="12"]' />
+										<p class="description"><?php esc_html_e( 'Displays a mixed-source event list using the Event Manager card layout.', 'equine-event-manager' ); ?></p>
+									</td>
+								</tr>
+								<tr>
+									<th scope="row"><?php esc_html_e( 'All Events Calendar', 'equine-event-manager' ); ?></th>
+									<td>
+										<input type="text" class="regular-text code" readonly="readonly" value='[equine_event_manager_events view="calendar" source="all" limit="31"]' />
+										<p class="description"><?php esc_html_e( 'Displays the same mixed event collection in a calendar view.', 'equine-event-manager' ); ?></p>
+									</td>
+								</tr>
+								<tr>
+									<th scope="row"><?php esc_html_e( 'Source Examples', 'equine-event-manager' ); ?></th>
+									<td>
+										<input type="text" class="regular-text code" readonly="readonly" value='[equine_event_manager_events view="list" source="native,tec,feed"]' />
+										<p class="description"><?php esc_html_e( 'Filter by source using `native`, `tec`, `feed`, or `external`, or combine multiple sources with commas.', 'equine-event-manager' ); ?></p>
+									</td>
+								</tr>
+								<tr>
+									<th scope="row"><?php esc_html_e( 'Month Example', 'equine-event-manager' ); ?></th>
+									<td>
+										<input type="text" class="regular-text code" readonly="readonly" value='[equine_event_manager_events view="calendar" month="2026-05" source="all" limit="50"]' />
+										<p class="description"><?php esc_html_e( 'Use the optional `month` attribute in `YYYY-MM` format to lock a calendar to a specific month.', 'equine-event-manager' ); ?></p>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				<?php endif; ?>
+
+				<?php if ( 'company' === $active_tab ) : ?>
+					<div class="postbox">
+						<h2><?php esc_html_e( 'Branding', 'equine-event-manager' ); ?></h2>
+						<p><?php esc_html_e( 'Set the branding details used on receipts, PDFs, and customer-facing communications.', 'equine-event-manager' ); ?></p>
+						<table class="form-table" role="presentation">
+							<tbody>
+								<tr>
+									<th scope="row"><?php esc_html_e( 'Business Logo', 'equine-event-manager' ); ?></th>
+									<td>
+										<div>
+											<input type="hidden" name="company_logo_id" id="company_logo_id" value="<?php echo esc_attr( absint( $company_settings['logo_id'] ) ); ?>" />
+											<div>
+												<img src="<?php echo esc_url( $company_logo_url ); ?>" alt="<?php esc_attr_e( 'Business logo preview', 'equine-event-manager' ); ?>" width="240"<?php echo $company_logo_url ? '' : ' hidden'; ?> />
+												<span<?php echo $company_logo_url ? ' hidden' : ''; ?>><?php esc_html_e( 'No business logo uploaded yet.', 'equine-event-manager' ); ?></span>
+											</div>
+											<div>
+												<button type="button" class="button"><?php esc_html_e( 'Upload Logo', 'equine-event-manager' ); ?></button>
+												<button type="button" class="button-link-delete"><?php esc_html_e( 'Remove', 'equine-event-manager' ); ?></button>
+											</div>
+										</div>
+										<p class="description"><?php esc_html_e( 'This logo is used on printable PDF receipts and email receipt branding. It is not used in the plugin admin header. PNG with a transparent background works best.', 'equine-event-manager' ); ?></p>
+									</td>
+								</tr>
+								<tr>
+									<th scope="row"><label for="company_support_phone"><?php esc_html_e( 'Support Phone', 'equine-event-manager' ); ?></label></th>
+									<td>
+										<input name="company_support_phone" id="company_support_phone" type="text" class="regular-text" value="<?php echo esc_attr( $company_settings['support_phone'] ); ?>" />
+										<p class="description"><?php esc_html_e( 'Use this as your general support number. Reservation-specific messaging can override it in the Reservations tab.', 'equine-event-manager' ); ?></p>
+									</td>
+								</tr>
+								<tr>
+									<th scope="row"><label for="company_support_email"><?php esc_html_e( 'Support Email', 'equine-event-manager' ); ?></label></th>
+									<td>
+										<input name="company_support_email" id="company_support_email" type="email" class="regular-text" value="<?php echo esc_attr( $company_settings['support_email'] ); ?>" />
+										<p class="description"><?php esc_html_e( 'Shown as your default support email across messaging and receipt settings unless you override it below.', 'equine-event-manager' ); ?></p>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				<?php endif; ?>
+
+				<?php if ( 'communications' === $active_tab ) : ?>
+					<div class="postbox">
+						<h2><?php esc_html_e( 'Reservation Form', 'equine-event-manager' ); ?></h2>
+						<p><?php esc_html_e( 'Manage the reservation form helper text and the messages customers see when reservations are not currently available.', 'equine-event-manager' ); ?></p>
+						<table class="form-table" role="presentation">
+							<tbody>
+								<tr>
+									<th scope="row"><label for="special_requests_description"><?php esc_html_e( 'Special Requests Description', 'equine-event-manager' ); ?></label></th>
+									<td>
+										<textarea name="special_requests_description" id="special_requests_description" class="large-text" rows="5"><?php echo esc_textarea( $description ); ?></textarea>
+										<p class="description"><?php esc_html_e( 'This appears above the Special Requests field on the front-end reservation form.', 'equine-event-manager' ); ?></p>
+									</td>
+								</tr>
+								<tr>
+									<th scope="row"><label for="reservation_support_phone"><?php esc_html_e( 'Reservation Support Phone', 'equine-event-manager' ); ?></label></th>
+									<td>
+										<input name="reservation_support_phone" id="reservation_support_phone" type="text" class="regular-text" value="<?php echo esc_attr( $reservation_message_settings['support_phone'] ); ?>" />
+										<p class="description"><?php esc_html_e( 'Used in the reservation open and closed messages. Leave blank to fall back to the company support phone.', 'equine-event-manager' ); ?></p>
+									</td>
+								</tr>
+								<tr>
+									<th scope="row"><label for="reservation_support_email"><?php esc_html_e( 'Reservation Support Email', 'equine-event-manager' ); ?></label></th>
+									<td>
+										<input name="reservation_support_email" id="reservation_support_email" type="email" class="regular-text" value="<?php echo esc_attr( $reservation_message_settings['support_email'] ); ?>" />
+										<p class="description"><?php esc_html_e( 'Used in reservation notices when you include the [email] placeholder. Leave blank to fall back to the company support email.', 'equine-event-manager' ); ?></p>
+									</td>
+								</tr>
+								<tr>
+									<th scope="row"><label for="reservation_preopen_message"><?php esc_html_e( 'Pre-Open Reservation Message', 'equine-event-manager' ); ?></label></th>
+									<td>
+										<textarea name="reservation_preopen_message" id="reservation_preopen_message" class="large-text" rows="4"><?php echo esc_textarea( $reservation_message_settings['preopen_message'] ); ?></textarea>
+										<p class="description"><?php esc_html_e( 'Shown before reservations open. Available placeholders: [event_name], [open_date_time], [close_date_time], [phone], [email].', 'equine-event-manager' ); ?></p>
+									</td>
+								</tr>
+								<tr>
+									<th scope="row"><label for="reservation_closed_message"><?php esc_html_e( 'Closed Reservation Message', 'equine-event-manager' ); ?></label></th>
+									<td>
+										<textarea name="reservation_closed_message" id="reservation_closed_message" class="large-text" rows="4"><?php echo esc_textarea( $reservation_message_settings['closed_message'] ); ?></textarea>
+										<p class="description"><?php esc_html_e( 'Shown after reservations close. Available placeholders: [event_name], [open_date_time], [close_date_time], [phone], [email].', 'equine-event-manager' ); ?></p>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+
+					<div class="postbox">
+						<h2><?php esc_html_e( 'Email Receipt Settings', 'equine-event-manager' ); ?></h2>
+						<p><?php esc_html_e( 'Prepare the sender and routing settings for customer receipts and admin copies. These settings are stored now so receipt emails can use your preferred branding.', 'equine-event-manager' ); ?></p>
+						<table class="form-table" role="presentation">
+							<tbody>
+								<tr>
+									<th scope="row"><?php esc_html_e( 'Customer Receipt Email', 'equine-event-manager' ); ?></th>
+									<td>
+										<label>
+											<input type="checkbox" name="customer_receipt_enabled" value="1" <?php checked( ! empty( $receipt_settings['customer_receipt_enabled'] ) ); ?> />
+											<span><?php esc_html_e( 'Send a receipt to the customer email address on the reservation form', 'equine-event-manager' ); ?></span>
+										</label>
+									</td>
+								</tr>
+								<tr>
+									<th scope="row"><label for="admin_receipt_email"><?php esc_html_e( 'Admin Copy Email', 'equine-event-manager' ); ?></label></th>
+									<td>
+										<input name="admin_receipt_email" id="admin_receipt_email" type="email" class="regular-text" value="<?php echo esc_attr( $receipt_settings['admin_receipt_email'] ); ?>" />
+										<p class="description"><?php esc_html_e( 'Optional. Send an internal copy of each reservation receipt to this address.', 'equine-event-manager' ); ?></p>
+									</td>
+								</tr>
+								<tr>
+									<th scope="row"><label for="receipt_from_name"><?php esc_html_e( 'Receipt From Name', 'equine-event-manager' ); ?></label></th>
+									<td><input name="receipt_from_name" id="receipt_from_name" type="text" class="regular-text" value="<?php echo esc_attr( $receipt_settings['from_name'] ); ?>" /></td>
+								</tr>
+								<tr>
+									<th scope="row"><label for="receipt_from_email"><?php esc_html_e( 'Receipt From Email', 'equine-event-manager' ); ?></label></th>
+									<td><input name="receipt_from_email" id="receipt_from_email" type="email" class="regular-text" value="<?php echo esc_attr( $receipt_settings['from_email'] ); ?>" /></td>
+								</tr>
+								<tr>
+									<th scope="row"><label for="receipt_reply_to_email"><?php esc_html_e( 'Receipt Reply-To Email', 'equine-event-manager' ); ?></label></th>
+									<td><input name="receipt_reply_to_email" id="receipt_reply_to_email" type="email" class="regular-text" value="<?php echo esc_attr( $receipt_settings['reply_to_email'] ); ?>" /></td>
+								</tr>
+								<tr>
+									<th scope="row"><label for="customer_receipt_subject"><?php esc_html_e( 'Customer Receipt Subject', 'equine-event-manager' ); ?></label></th>
+									<td>
+										<input name="customer_receipt_subject" id="customer_receipt_subject" type="text" class="large-text" value="<?php echo esc_attr( $receipt_settings['customer_subject'] ); ?>" />
+										<p class="description"><?php esc_html_e( 'Available placeholders: [event_name], [order_number], [customer_name].', 'equine-event-manager' ); ?></p>
+									</td>
+								</tr>
+								<tr>
+									<th scope="row"><label for="admin_receipt_subject"><?php esc_html_e( 'Admin Receipt Subject', 'equine-event-manager' ); ?></label></th>
+									<td>
+										<input name="admin_receipt_subject" id="admin_receipt_subject" type="text" class="large-text" value="<?php echo esc_attr( $receipt_settings['admin_subject'] ); ?>" />
+										<p class="description"><?php esc_html_e( 'Available placeholders: [event_name], [order_number], [customer_name].', 'equine-event-manager' ); ?></p>
+									</td>
+								</tr>
+								<tr>
+									<th scope="row"><label for="customer_receipt_body"><?php esc_html_e( 'Customer Receipt Message', 'equine-event-manager' ); ?></label></th>
+									<td>
+										<textarea name="customer_receipt_body" id="customer_receipt_body" class="large-text" rows="6"><?php echo esc_textarea( $receipt_settings['customer_body'] ); ?></textarea>
+										<p class="description"><?php esc_html_e( 'Available placeholders: [event_name], [event_dates], [order_number], [customer_name], [total], [support_phone], [support_email].', 'equine-event-manager' ); ?></p>
+									</td>
+								</tr>
+								<tr>
+									<th scope="row"><label for="admin_receipt_body"><?php esc_html_e( 'Admin Receipt Message', 'equine-event-manager' ); ?></label></th>
+									<td>
+										<textarea name="admin_receipt_body" id="admin_receipt_body" class="large-text" rows="6"><?php echo esc_textarea( $receipt_settings['admin_body'] ); ?></textarea>
+										<p class="description"><?php esc_html_e( 'Available placeholders: [event_name], [event_dates], [order_number], [customer_name], [total], [support_phone], [support_email].', 'equine-event-manager' ); ?></p>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				<?php endif; ?>
+
+				<?php if ( 'payments' === $active_tab ) : ?>
+					<div class="postbox">
+						<h2><?php esc_html_e( 'Payment Merchant Settings', 'equine-event-manager' ); ?></h2>
+						<p><?php esc_html_e( 'Choose your active payment gateway and store the credentials for Stripe or Authorize.net.', 'equine-event-manager' ); ?></p>
+						<table class="form-table" role="presentation">
+							<tbody>
+								<tr>
+									<th scope="row"><label for="selected_gateway"><?php esc_html_e( 'Payment Gateway', 'equine-event-manager' ); ?></label></th>
+									<td>
+										<select name="selected_gateway" id="selected_gateway">
+											<option value="stripe" <?php selected( $payment_settings['selected_gateway'], 'stripe' ); ?>><?php esc_html_e( 'Stripe', 'equine-event-manager' ); ?></option>
+											<option value="authorize_net" <?php selected( $payment_settings['selected_gateway'], 'authorize_net' ); ?>><?php esc_html_e( 'Authorize.net', 'equine-event-manager' ); ?></option>
+										</select>
+										<p class="description"><?php esc_html_e( 'New reservation orders will inherit this gateway selection until live checkout is enabled.', 'equine-event-manager' ); ?></p>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+						<div class="postbox">
+							<h3><?php esc_html_e( 'Stripe Connection', 'equine-event-manager' ); ?></h3>
+							<p><?php esc_html_e( 'Add your Stripe keys now so payment processing can be enabled in the next payment step.', 'equine-event-manager' ); ?></p>
+							<table class="form-table" role="presentation">
+							<tbody>
+								<tr>
+									<th scope="row"><label for="stripe_mode"><?php esc_html_e( 'Mode', 'equine-event-manager' ); ?></label></th>
+									<td>
+										<select name="stripe_mode" id="stripe_mode" <?php disabled( ! $stripe_is_active ); ?>>
+											<option value="test" <?php selected( $stripe['mode'], 'test' ); ?>><?php esc_html_e( 'Test', 'equine-event-manager' ); ?></option>
+											<option value="live" <?php selected( $stripe['mode'], 'live' ); ?>><?php esc_html_e( 'Live', 'equine-event-manager' ); ?></option>
+										</select>
+									</td>
+								</tr>
+								<tr>
+									<th scope="row"><label for="stripe_test_publishable_key"><?php esc_html_e( 'Test Publishable Key', 'equine-event-manager' ); ?></label></th>
+									<td><input name="stripe_test_publishable_key" id="stripe_test_publishable_key" type="text" class="regular-text" value="<?php echo esc_attr( $stripe['test_publishable_key'] ); ?>" autocomplete="off" <?php disabled( ! $stripe_is_active ); ?> /></td>
+								</tr>
+								<tr>
+									<th scope="row"><label for="stripe_test_secret_key"><?php esc_html_e( 'Test Secret Key', 'equine-event-manager' ); ?></label></th>
+									<td><input name="stripe_test_secret_key" id="stripe_test_secret_key" type="password" class="regular-text" value="<?php echo esc_attr( $stripe['test_secret_key'] ); ?>" autocomplete="off" <?php disabled( ! $stripe_is_active ); ?> /></td>
+								</tr>
+								<tr>
+									<th scope="row"><label for="stripe_live_publishable_key"><?php esc_html_e( 'Live Publishable Key', 'equine-event-manager' ); ?></label></th>
+									<td><input name="stripe_live_publishable_key" id="stripe_live_publishable_key" type="text" class="regular-text" value="<?php echo esc_attr( $stripe['live_publishable_key'] ); ?>" autocomplete="off" <?php disabled( ! $stripe_is_active ); ?> /></td>
+								</tr>
+								<tr>
+									<th scope="row"><label for="stripe_live_secret_key"><?php esc_html_e( 'Live Secret Key', 'equine-event-manager' ); ?></label></th>
+									<td><input name="stripe_live_secret_key" id="stripe_live_secret_key" type="password" class="regular-text" value="<?php echo esc_attr( $stripe['live_secret_key'] ); ?>" autocomplete="off" <?php disabled( ! $stripe_is_active ); ?> /></td>
+								</tr>
+								<tr>
+									<th scope="row"><label for="stripe_webhook_signing_secret"><?php esc_html_e( 'Webhook Signing Secret', 'equine-event-manager' ); ?></label></th>
+									<td>
+										<input name="stripe_webhook_signing_secret" id="stripe_webhook_signing_secret" type="password" class="regular-text" value="<?php echo esc_attr( $stripe['webhook_signing_secret'] ); ?>" autocomplete="off" <?php disabled( ! $stripe_is_active ); ?> />
+										<p class="description"><?php esc_html_e( 'Payment logic is not active yet; these keys are saved for the upcoming Stripe payment step.', 'equine-event-manager' ); ?></p>
+									</td>
+								</tr>
+							</tbody>
+							</table>
+						</div>
+						<div class="postbox">
+							<h3><?php esc_html_e( 'Authorize.net Connection', 'equine-event-manager' ); ?></h3>
+						<p><?php esc_html_e( 'Store your Authorize.net credentials now so we can route payments and supported refunds through Authorize.net too.', 'equine-event-manager' ); ?></p>
+						<table class="form-table" role="presentation">
+							<tbody>
+								<tr>
+									<th scope="row"><label for="authorize_net_mode"><?php esc_html_e( 'Mode', 'equine-event-manager' ); ?></label></th>
+									<td>
+										<select name="authorize_net_mode" id="authorize_net_mode" <?php disabled( ! $authorize_net_is_active ); ?>>
+											<option value="test" <?php selected( $authorize_net['mode'], 'test' ); ?>><?php esc_html_e( 'Test', 'equine-event-manager' ); ?></option>
+											<option value="live" <?php selected( $authorize_net['mode'], 'live' ); ?>><?php esc_html_e( 'Live', 'equine-event-manager' ); ?></option>
+										</select>
+									</td>
+								</tr>
+								<tr>
+									<th scope="row"><label for="authorize_net_test_api_login"><?php esc_html_e( 'Test API Login ID', 'equine-event-manager' ); ?></label></th>
+									<td><input name="authorize_net_test_api_login" id="authorize_net_test_api_login" type="text" class="regular-text" value="<?php echo esc_attr( $authorize_net['test_api_login'] ); ?>" autocomplete="off" <?php disabled( ! $authorize_net_is_active ); ?> /></td>
+								</tr>
+								<tr>
+									<th scope="row"><label for="authorize_net_test_transaction_key"><?php esc_html_e( 'Test Transaction Key', 'equine-event-manager' ); ?></label></th>
+									<td><input name="authorize_net_test_transaction_key" id="authorize_net_test_transaction_key" type="password" class="regular-text" value="<?php echo esc_attr( $authorize_net['test_transaction_key'] ); ?>" autocomplete="off" <?php disabled( ! $authorize_net_is_active ); ?> /></td>
+								</tr>
+								<tr>
+									<th scope="row"><label for="authorize_net_live_api_login"><?php esc_html_e( 'Live API Login ID', 'equine-event-manager' ); ?></label></th>
+									<td><input name="authorize_net_live_api_login" id="authorize_net_live_api_login" type="text" class="regular-text" value="<?php echo esc_attr( $authorize_net['live_api_login'] ); ?>" autocomplete="off" <?php disabled( ! $authorize_net_is_active ); ?> /></td>
+								</tr>
+								<tr>
+									<th scope="row"><label for="authorize_net_live_transaction_key"><?php esc_html_e( 'Live Transaction Key', 'equine-event-manager' ); ?></label></th>
+									<td><input name="authorize_net_live_transaction_key" id="authorize_net_live_transaction_key" type="password" class="regular-text" value="<?php echo esc_attr( $authorize_net['live_transaction_key'] ); ?>" autocomplete="off" <?php disabled( ! $authorize_net_is_active ); ?> /></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				<?php endif; ?>
+					<?php submit_button( __( 'Save Settings', 'equine-event-manager' ) ); ?>
+					</div>
+				</div>
+			</form>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Get feature settings with defaults.
+	 *
+	 * @return array<string, int>
+	 */
+	private function get_feature_settings() {
+		return wp_parse_args(
+			get_option( self::FEATURE_SETTINGS_OPTION, array() ),
+			array(
+				'native_events_enabled' => 0,
+			)
+		);
+	}
+
+	/**
+	 * Get integration settings with defaults.
+	 *
+	 * @return array
+	 */
+	private function get_integration_settings() {
+		return wp_parse_args(
+			get_option( self::INTEGRATION_SETTINGS_OPTION, array() ),
+			array(
+				'tec_integration_enabled' => 1,
+				'default_event_source'    => 'feed',
+				'feed_url'                => '',
+				'sendgrid_api_key'        => '',
+			)
+		);
+	}
+
+	/**
+	 * Handle a report export request.
+	 */
+	public function handle_report_export() {
+		$this->guard_admin_action();
+
+		check_admin_referer( 'equine_event_manager_export_report', 'equine_event_manager_export_report_nonce' );
+
+		$reservation_id = isset( $_POST['reservation_id'] ) ? absint( $_POST['reservation_id'] ) : 0;
+		$orders         = $this->orders_repository->get_orders();
+		$export_orders  = array_filter(
+			$orders,
+			function ( $order ) use ( $reservation_id ) {
+				return 0 === $reservation_id || absint( $order['reservation_id'] ) === $reservation_id;
+			}
+		);
+
+		$reservation_name = 0 === $reservation_id ? __( 'All reservations', 'equine-event-manager' ) : get_the_title( $reservation_id );
+		$file_name        = sprintf(
+			'equine-event-manager-report-%s-%s.csv',
+			$reservation_id ? absint( $reservation_id ) : 'all',
+			gmdate( 'Ymd-His' )
+		);
+
+		$this->log_report_export( $reservation_id, $reservation_name, $file_name );
+		$this->stream_orders_csv( $file_name, $export_orders );
+	}
+
+	/**
+	 * Handle order CSV export.
+	 */
+	public function handle_order_export() {
+		$this->guard_admin_action();
+
+		$order_key = isset( $_GET['order_key'] ) ? sanitize_text_field( wp_unslash( $_GET['order_key'] ) ) : '';
+		check_admin_referer( 'equine_event_manager_export_order_' . $order_key );
+
+		$order = $this->orders_repository->get_order( $order_key );
+
+		if ( ! $order ) {
+			wp_die( esc_html__( 'Order not found.', 'equine-event-manager' ) );
+		}
+
+		$this->stream_orders_csv( 'equine-event-manager-order-' . $order['order_number'] . '.csv', array( $order ) );
+	}
+
+	/**
+	 * Handle deleting an order and its underlying reservation rows.
+	 */
+	public function handle_order_delete() {
+		$this->guard_admin_action();
+
+		$order_key = isset( $_GET['order_key'] ) ? sanitize_text_field( wp_unslash( $_GET['order_key'] ) ) : '';
+		check_admin_referer( 'equine_event_manager_delete_order_' . $order_key );
+
+		$deleted = $this->orders_repository->delete_order( $order_key );
+
+		wp_safe_redirect(
+			$this->get_orders_page_url(
+				array(
+					'en_notice' => $deleted ? 'order_deleted' : 'order_delete_failed',
+				)
+			)
+		);
+		exit;
+	}
+
+	/**
+	 * Handle refunding an order through its configured payment gateway.
+	 */
+	public function handle_order_refund() {
+		$this->guard_admin_action();
+
+		$order_key = isset( $_POST['order_key'] ) ? sanitize_text_field( wp_unslash( $_POST['order_key'] ) ) : '';
+		check_admin_referer( 'equine_event_manager_refund_order_' . $order_key );
+
+		$order = $this->orders_repository->get_order( $order_key );
+
+		if ( ! $order ) {
+			wp_die( esc_html__( 'Order not found.', 'equine-event-manager' ) );
+		}
+
+		$selected_lines = isset( $_POST['refund_lines'] ) ? array_map( 'sanitize_text_field', (array) wp_unslash( $_POST['refund_lines'] ) ) : array();
+		$selected_lines = array_values( array_unique( array_filter( $selected_lines ) ) );
+		$refund_groups  = $this->build_refund_groups_for_order( $order );
+		$error          = '';
+		$refunded_any   = false;
+		$group_totals    = array();
+		$group_item_ids  = array();
+		$group_index     = array();
+
+		if ( empty( $selected_lines ) ) {
+			$error = __( 'Select at least one product or charge line to refund.', 'equine-event-manager' );
+		}
+
+		foreach ( $refund_groups as $group ) {
+			$signature = $group['component_signature'];
+
+			$group_index[ $signature ]    = $group;
+			$group_totals[ $signature ]   = 0.0;
+			$group_item_ids[ $signature ] = array();
+
+			foreach ( (array) $group['items'] as $item ) {
+				if ( ! in_array( $item['id'], $selected_lines, true ) ) {
+					continue;
+				}
+
+				$group_totals[ $signature ]  += (float) $item['amount'];
+				$group_item_ids[ $signature ][] = $item['id'];
+			}
+		}
+
+		if ( ! $error ) {
+			foreach ( $group_totals as $signature => $refund_amount ) {
+				if ( $refund_amount <= 0 || empty( $group_index[ $signature ]['component'] ) ) {
+					continue;
+				}
+
+				$component     = $group_index[ $signature ]['component'];
+				$refund_result = $this->refund_order_component( $component, $refund_amount );
+
+				if ( is_wp_error( $refund_result ) ) {
+					$error = $refund_result->get_error_message();
+					break;
+				}
+
+				if ( ! $this->persist_component_refund( $component, $refund_amount, $refund_result, $group_item_ids[ $signature ] ) ) {
+					$error = __( 'The refund was sent to the gateway, but the order record could not be updated afterward.', 'equine-event-manager' );
+					break;
+				}
+
+				$refunded_any = true;
+			}
+		}
+
+		if ( ! $error && ! $refunded_any ) {
+			$error = __( 'There were no refundable line items selected on this order.', 'equine-event-manager' );
+		}
+
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page'      => 'equine-event-manager-order',
+					'order_key' => $order_key,
+					'en_notice' => $error ? 'refund_failed' : 'refund_success',
+					'en_error'  => $error ? $error : null,
+				),
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
+	 * Render a printer-friendly order page.
+	 */
+	public function handle_order_print() {
+		$this->guard_admin_action();
+
+		$order_key = isset( $_GET['order_key'] ) ? sanitize_text_field( wp_unslash( $_GET['order_key'] ) ) : '';
+		check_admin_referer( 'equine_event_manager_print_order_' . $order_key );
+
+		$order = $this->orders_repository->get_order( $order_key );
+
+		if ( ! $order ) {
+			wp_die( esc_html__( 'Order not found.', 'equine-event-manager' ) );
+		}
+
+		$company_logo_url    = $this->get_company_logo_url( 'medium' );
+		$company_settings    = $this->get_company_settings();
+		$special_requests    = $this->get_special_requests_from_order_notes( $order['notes'] );
+		$billing_details     = $this->get_billing_details_from_order_notes( $order['notes'] );
+		$group_rider_count   = $this->parse_group_rider_count_from_notes( $order['notes'] );
+		$group_rider_names   = $this->parse_group_rider_names_from_notes( $order['notes'] );
+		$event_label         = $order['reservation_title'] ? $order['reservation_title'] : $order['event_name'];
+		$is_paid             = in_array( $order['status_slug'], array( 'paid', 'refunded' ), true );
+		$payment_date        = '';
+		if ( ! empty( $order['created_at'] ) ) {
+			$payment_timestamp = strtotime( (string) $order['created_at'] );
+			if ( false !== $payment_timestamp ) {
+				$payment_date = wp_date( 'm-d-Y', $payment_timestamp );
+			}
+		}
+		if ( '' === $payment_date && ! empty( $order['created_at'] ) ) {
+			$payment_date = (string) $order['created_at'];
+		}
+		$support_phone       = trim( (string) $company_settings['support_phone'] );
+		$support_email       = trim( (string) $company_settings['support_email'] );
+		$stall_breakdown     = $this->get_order_stall_breakdown( $order );
+		$rv_addon_breakdown  = $this->get_order_rv_addon_breakdown( $order );
+		$rv_addon_total      = array_sum( wp_list_pluck( $rv_addon_breakdown, 'subtotal' ) );
+		$rv_base_subtotal    = max( 0, (float) $order['rv_subtotal'] - (float) $rv_addon_total );
+		$stall_nights        = $this->get_stay_nights_label( $order['stall_arrival_date'], $order['stall_departure_date'] );
+		$rv_nights           = $this->get_stay_nights_label( $order['rv_arrival_date'], $order['rv_departure_date'] );
+		$rv_addon_labels     = array();
+
+		if ( ! empty( $rv_addon_breakdown ) ) {
+			$rv_addon_labels = wp_list_pluck( $rv_addon_breakdown, 'label' );
+		} elseif ( ! empty( $order['rv_type'] ) ) {
+			$rv_addon_labels = array_filter( array_map( 'trim', explode( ',', $this->format_rv_type_label( $order['rv_type'] ) ) ) );
+		}
+
+		$footer_contacts         = array_filter(
+			array(
+				$support_phone ? sprintf( __( 'Support: %s', 'equine-event-manager' ), $support_phone ) : '',
+				$support_email ? sprintf( __( 'Email: %s', 'equine-event-manager' ), $support_email ) : '',
+			)
+		);
+		$reservation_data        = ! empty( $order['reservation_id'] ) ? $this->get_reservation_meta_values( absint( $order['reservation_id'] ) ) : array( 'general_addons' => array() );
+		$general_addon_breakdown = $this->parse_general_addon_breakdown_from_notes( $order['notes'] );
+		$group_charge_breakdown  = $this->parse_group_charge_breakdown_from_notes( $order['notes'] );
+		$general_addon_prices    = array();
+		$general_addon_units     = array();
+		$line_items              = array();
+		$summary_cards           = array();
+		$format_money            = static function ( $amount ) {
+			return '$' . number_format_i18n( (float) $amount, 2 );
+		};
+
+		foreach ( $reservation_data['general_addons'] as $addon ) {
+			if ( empty( $addon['name'] ) ) {
+				continue;
+			}
+
+			$addon_name = sanitize_text_field( $addon['name'] );
+
+			$general_addon_prices[ $addon_name ] = isset( $addon['price'] ) ? (float) $addon['price'] : 0.0;
+			$general_addon_units[ $addon_name ]  = isset( $addon['per_label'] ) ? sanitize_text_field( $addon['per_label'] ) : '';
+		}
+
+		$stall_stay_units = $this->get_billable_stay_units( $order['stall_arrival_date'], $order['stall_departure_date'], $order['stall_stay_type'] );
+		$rv_stay_units    = $this->get_billable_stay_units( $order['rv_arrival_date'], $order['rv_departure_date'], $order['rv_stay_type'] );
+
+		if ( absint( $order['stall_quantity'] ) > 0 ) {
+			$summary_cards[] = array(
+				'title' => __( 'Stall Reservation', 'equine-event-manager' ),
+				'badge' => sprintf( _n( '%d reserved', '%d reserved', absint( $order['stall_quantity'] ), 'equine-event-manager' ), absint( $order['stall_quantity'] ) ),
+				'rows'  => array(
+					array( 'label' => __( 'Stay Type', 'equine-event-manager' ), 'value' => $this->format_stay_type_label( $order['stall_stay_type'] ) ),
+					array( 'label' => __( 'Arrival', 'equine-event-manager' ), 'value' => $this->format_reservation_date_label( $order['stall_arrival_date'] ) ),
+					array( 'label' => __( 'Departure', 'equine-event-manager' ), 'value' => $this->format_reservation_date_label( $order['stall_departure_date'] ) ),
+					array( 'label' => __( 'Nights', 'equine-event-manager' ), 'value' => $stall_nights ),
+					array( 'label' => __( 'Stalls', 'equine-event-manager' ), 'value' => (string) absint( $order['stall_quantity'] ) ),
+					array( 'label' => __( 'Required Shavings', 'equine-event-manager' ), 'value' => (string) absint( $order['required_shavings_qty'] ) ),
+					array( 'label' => __( 'Additional Shavings', 'equine-event-manager' ), 'value' => (string) absint( $order['additional_shavings_qty'] ) ),
+				),
+			);
+
+			if ( (float) $stall_breakdown['base_subtotal'] > 0 ) {
+				$stall_unit_divisor = max( 1, absint( $order['stall_quantity'] ) * max( 1, $stall_stay_units ) );
+				$line_items[]       = array(
+					'section'     => __( 'Stall Reservation', 'equine-event-manager' ),
+					'description' => sprintf(
+						/* translators: 1: stay type label, 2: arrival date, 3: departure date */
+						__( '%1$s stay from %2$s to %3$s', 'equine-event-manager' ),
+						$this->format_stay_type_label( $order['stall_stay_type'] ),
+						$this->format_reservation_date_label( $order['stall_arrival_date'] ),
+						$this->format_reservation_date_label( $order['stall_departure_date'] )
+					),
+					'qty'         => absint( $order['stall_quantity'] ),
+					'units'       => $stall_nights,
+					'rate'        => $format_money( (float) $stall_breakdown['base_subtotal'] / $stall_unit_divisor ),
+					'total'       => $format_money( $stall_breakdown['base_subtotal'] ),
+				);
+			}
+
+			if ( (float) $stall_breakdown['required_shavings_subtotal'] > 0 ) {
+				$required_qty  = max( 1, absint( $order['required_shavings_qty'] ) );
+				$line_items[] = array(
+					'section'     => __( 'Stall Product', 'equine-event-manager' ),
+					'description' => __( 'Required Shavings', 'equine-event-manager' ),
+					'qty'         => absint( $order['required_shavings_qty'] ),
+					'units'       => __( 'bags', 'equine-event-manager' ),
+					'rate'        => $format_money( (float) $stall_breakdown['required_shavings_subtotal'] / $required_qty ),
+					'total'       => $format_money( $stall_breakdown['required_shavings_subtotal'] ),
+				);
+			}
+
+			if ( (float) $stall_breakdown['additional_shavings_subtotal'] > 0 ) {
+				$additional_qty = max( 1, absint( $order['additional_shavings_qty'] ) );
+				$line_items[]   = array(
+					'section'     => __( 'Stall Product', 'equine-event-manager' ),
+					'description' => __( 'Additional Shavings', 'equine-event-manager' ),
+					'qty'         => absint( $order['additional_shavings_qty'] ),
+					'units'       => __( 'bags', 'equine-event-manager' ),
+					'rate'        => $format_money( (float) $stall_breakdown['additional_shavings_subtotal'] / $additional_qty ),
+					'total'       => $format_money( $stall_breakdown['additional_shavings_subtotal'] ),
+				);
+			}
+		}
+
+		if ( absint( $order['rv_quantity'] ) > 0 ) {
+			$summary_cards[] = array(
+				'title' => __( 'RV Reservation', 'equine-event-manager' ),
+				'badge' => sprintf( _n( '%d reserved', '%d reserved', absint( $order['rv_quantity'] ), 'equine-event-manager' ), absint( $order['rv_quantity'] ) ),
+				'rows'  => array(
+					array( 'label' => __( 'Stay Type', 'equine-event-manager' ), 'value' => $this->format_stay_type_label( $order['rv_stay_type'] ) ),
+					array( 'label' => __( 'Arrival', 'equine-event-manager' ), 'value' => $this->format_reservation_date_label( $order['rv_arrival_date'] ) ),
+					array( 'label' => __( 'Departure', 'equine-event-manager' ), 'value' => $this->format_reservation_date_label( $order['rv_departure_date'] ) ),
+					array( 'label' => __( 'Nights', 'equine-event-manager' ), 'value' => $rv_nights ),
+					array( 'label' => __( 'RV Spots', 'equine-event-manager' ), 'value' => (string) absint( $order['rv_quantity'] ) ),
+					array( 'label' => __( 'Lot Selection', 'equine-event-manager' ), 'value' => $this->parse_rv_lot_name_from_notes( $order['notes'] ) ? $this->parse_rv_lot_name_from_notes( $order['notes'] ) : __( 'Not specified', 'equine-event-manager' ) ),
+					array( 'label' => __( 'RV Add-Ons', 'equine-event-manager' ), 'value' => ! empty( $rv_addon_labels ) ? implode( ', ', $rv_addon_labels ) : __( 'None', 'equine-event-manager' ) ),
+				),
+			);
+
+			if ( (float) $rv_base_subtotal > 0 ) {
+				$rv_unit_divisor = max( 1, absint( $order['rv_quantity'] ) * max( 1, $rv_stay_units ) );
+				$line_items[]    = array(
+					'section'     => __( 'RV Reservation', 'equine-event-manager' ),
+					'description' => sprintf(
+						/* translators: 1: stay type label, 2: arrival date, 3: departure date */
+						__( '%1$s stay from %2$s to %3$s', 'equine-event-manager' ),
+						$this->format_stay_type_label( $order['rv_stay_type'] ),
+						$this->format_reservation_date_label( $order['rv_arrival_date'] ),
+						$this->format_reservation_date_label( $order['rv_departure_date'] )
+					),
+					'qty'         => absint( $order['rv_quantity'] ),
+					'units'       => $rv_nights,
+					'rate'        => $format_money( (float) $rv_base_subtotal / $rv_unit_divisor ),
+					'total'       => $format_money( $rv_base_subtotal ),
+				);
+			}
+
+			foreach ( $rv_addon_breakdown as $addon_row ) {
+				if ( (float) $addon_row['subtotal'] <= 0 ) {
+					continue;
+				}
+
+				$rv_addon_divisor = max( 1, absint( $order['rv_quantity'] ) * max( 1, $rv_stay_units ) );
+				$line_items[]     = array(
+					'section'     => __( 'RV Add-On', 'equine-event-manager' ),
+					'description' => $addon_row['label'],
+					'qty'         => absint( $order['rv_quantity'] ),
+					'units'       => $rv_nights,
+					'rate'        => $format_money( (float) $addon_row['subtotal'] / $rv_addon_divisor ),
+					'total'       => $format_money( $addon_row['subtotal'] ),
+				);
+			}
+		}
+
+		foreach ( $general_addon_breakdown as $addon_row ) {
+			$addon_qty     = max( 1, absint( $addon_row['quantity'] ) );
+			$addon_rate    = isset( $general_addon_prices[ $addon_row['label'] ] ) && $general_addon_prices[ $addon_row['label'] ] > 0 ? (float) $general_addon_prices[ $addon_row['label'] ] : ( (float) $addon_row['subtotal'] / $addon_qty );
+			$addon_unit    = ! empty( $addon_row['per_label'] ) ? $addon_row['per_label'] : ( isset( $general_addon_units[ $addon_row['label'] ] ) ? $general_addon_units[ $addon_row['label'] ] : '' );
+			$line_items[]  = array(
+				'section'     => __( 'General Add-On', 'equine-event-manager' ),
+				'description' => $addon_row['label'],
+				'qty'         => absint( $addon_row['quantity'] ),
+				'units'       => '' !== $addon_unit ? $addon_unit : __( 'qty', 'equine-event-manager' ),
+				'rate'        => $format_money( $addon_rate ),
+				'total'       => $format_money( $addon_row['subtotal'] ),
+			);
+		}
+
+		if ( $group_rider_count > 0 ) {
+			$group_rows = array(
+				array( 'label' => __( 'Riders in Group', 'equine-event-manager' ), 'value' => (string) $group_rider_count ),
+				array( 'label' => __( 'Rider Names', 'equine-event-manager' ), 'value' => ! empty( $group_rider_names ) ? implode( ', ', $group_rider_names ) : __( 'Captured on order', 'equine-event-manager' ) ),
+			);
+
+			foreach ( $group_charge_breakdown as $group_charge ) {
+				if ( (float) $group_charge['subtotal'] <= 0 ) {
+					continue;
+				}
+
+				$group_rows[] = array(
+					'label' => $group_charge['label'],
+					'value' => sprintf(
+						/* translators: 1: quantity, 2: subtotal. */
+						__( '%1$d riders | %2$s', 'equine-event-manager' ),
+						absint( $group_charge['quantity'] ),
+						$format_money( $group_charge['subtotal'] )
+					),
+				);
+			}
+
+			$summary_cards[] = array(
+				'title' => __( 'Group Reservation', 'equine-event-manager' ),
+				'badge' => sprintf( _n( '%d rider', '%d riders', $group_rider_count, 'equine-event-manager' ), $group_rider_count ),
+				'rows'  => $group_rows,
+			);
+
+			if ( ! empty( $group_charge_breakdown ) ) {
+				foreach ( $group_charge_breakdown as $group_charge ) {
+					$line_items[] = array(
+						'section'     => __( 'Group Reservation', 'equine-event-manager' ),
+						'description' => $group_charge['label'],
+						'qty'         => absint( $group_charge['quantity'] ),
+						'units'       => __( 'riders', 'equine-event-manager' ),
+						'rate'        => $format_money( $group_charge['rate'] ),
+						'total'       => $format_money( $group_charge['subtotal'] ),
+					);
+				}
+			} else {
+				$line_items[] = array(
+					'section'     => __( 'Group Reservation', 'equine-event-manager' ),
+					'description' => ! empty( $group_rider_names ) ? implode( ', ', $group_rider_names ) : __( 'Rider roster captured for this order.', 'equine-event-manager' ),
+					'qty'         => $group_rider_count,
+					'units'       => __( 'riders', 'equine-event-manager' ),
+					'rate'        => __( 'Included', 'equine-event-manager' ),
+					'total'       => __( 'Included', 'equine-event-manager' ),
+				);
+			}
+		}
+		?>
+		<!doctype html>
+		<html <?php language_attributes(); ?>>
+		<head>
+			<meta charset="<?php bloginfo( 'charset' ); ?>" />
+			<title><?php echo esc_html( sprintf( __( 'Order #%s', 'equine-event-manager' ), $order['order_number'] ) ); ?></title>
+			<style>
+				@page {
+					size: auto;
+					margin: 0.45in;
+				}
+				* { box-sizing: border-box; }
+				body {
+					margin: 0;
+					background: #ffffff;
+					color: #111827;
+					font-family: "Helvetica Neue", Arial, sans-serif;
+					font-size: 11px;
+					line-height: 1.45;
+					-webkit-print-color-adjust: exact;
+					print-color-adjust: exact;
+				}
+				h1, h2, h3, p { margin: 0; }
+				.equprint-sheet {
+					max-width: 1000px;
+					margin: 0 auto;
+					padding: 0;
+					background: #ffffff;
+				}
+				.equprint-header {
+					display: grid;
+					grid-template-columns: minmax(0, 1.55fr) minmax(250px, 0.8fr);
+					gap: 18px;
+					align-items: start;
+					padding-bottom: 16px;
+					border-bottom: 2px solid #d9e1ea;
+				}
+				.equprint-brand {
+					display: grid;
+					gap: 10px;
+					align-items: flex-start;
+					justify-items: start;
+					min-width: 0;
+				}
+				.equprint-brand img {
+					display: block;
+					max-width: 190px;
+					max-height: 72px;
+					object-fit: contain;
+				}
+				.equprint-brand__fallback {
+					font-size: 18px;
+					font-weight: 800;
+					letter-spacing: -0.03em;
+				}
+				.equprint-brand__meta {
+					display: grid;
+					gap: 4px;
+					min-width: 0;
+					justify-items: start;
+					text-align: left;
+				}
+				.equprint-eyebrow {
+					color: #5b6472;
+					font-size: 9px;
+					font-weight: 800;
+					letter-spacing: 0.16em;
+					text-transform: uppercase;
+				}
+				.equprint-brand__meta h1 {
+					font-size: 22px;
+					line-height: 1.1;
+					letter-spacing: -0.02em;
+				}
+				.equprint-brand__meta p {
+					color: #4b5563;
+					font-size: 10px;
+					font-weight: 600;
+				}
+				.equprint-meta-line {
+					display: flex;
+					flex-wrap: wrap;
+					gap: 4px 10px;
+					color: #4b5563;
+					font-size: 10px;
+				}
+				.equprint-invoice-card {
+					padding: 11px 13px;
+					border: 1px solid #d9e1ea;
+					border-radius: 12px;
+					background: #eef2f6;
+				}
+				.equprint-meta-grid {
+					display: grid;
+					gap: 6px;
+				}
+				.equprint-meta-item {
+					display: grid;
+					gap: 2px;
+				}
+				.equprint-meta-item span {
+					color: #5b6472;
+					font-size: 9px;
+					font-weight: 800;
+					letter-spacing: 0.1em;
+					text-transform: uppercase;
+				}
+				.equprint-meta-item strong,
+				.equprint-meta-item div {
+					font-size: 12px;
+					font-weight: 700;
+					word-break: break-word;
+				}
+				.equprint-divider {
+					margin: 16px 0 14px;
+					border: 0;
+					border-top: 1px solid #d9e1ea;
+				}
+				.equprint-section {
+					margin-top: 16px;
+					page-break-inside: avoid;
+				}
+				.equprint-section--flush {
+					margin-top: 0;
+				}
+				.equprint-section h2 {
+					margin-bottom: 8px;
+					font-size: 10px;
+					font-weight: 800;
+					letter-spacing: 0.14em;
+					text-transform: uppercase;
+					color: #111827;
+				}
+				.equprint-two-column {
+					display: grid;
+					grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+					gap: 14px;
+				}
+				.equprint-card-grid {
+					display: grid;
+					grid-template-columns: repeat(2, minmax(0, 1fr));
+					gap: 12px;
+				}
+				.equprint-card {
+					padding: 13px 14px;
+					border: 1px solid #d9e1ea;
+					border-radius: 12px;
+					background: #eef2f6;
+					page-break-inside: avoid;
+				}
+				.equprint-card__header {
+					display: flex;
+					justify-content: space-between;
+					gap: 8px;
+					align-items: flex-start;
+					margin-bottom: 10px;
+					padding-bottom: 8px;
+					border-bottom: 1px solid #d9e1ea;
+				}
+				.equprint-card__header h3 {
+					font-size: 13px;
+					font-weight: 800;
+					letter-spacing: -0.01em;
+				}
+				.equprint-badge {
+					display: inline-flex;
+					align-items: center;
+					padding: 4px 8px;
+					border-radius: 999px;
+					background: #e5e7eb;
+					color: #5b6472;
+					font-size: 9px;
+					font-weight: 800;
+					letter-spacing: 0.08em;
+					text-transform: uppercase;
+					white-space: nowrap;
+				}
+				.equprint-card__rows {
+					display: grid;
+					grid-template-columns: repeat(2, minmax(0, 1fr));
+					gap: 8px 12px;
+				}
+				.equprint-card__row {
+					display: grid;
+					gap: 2px;
+				}
+				.equprint-card__row span {
+					color: #5b6472;
+					font-size: 9px;
+					font-weight: 800;
+					letter-spacing: 0.08em;
+					text-transform: uppercase;
+				}
+				.equprint-card__row strong {
+					font-size: 11px;
+					font-weight: 700;
+					word-break: break-word;
+				}
+				.equprint-table-wrap {
+					border: 1px solid #d9e1ea;
+					border-radius: 12px;
+					overflow: hidden;
+					background: #eef2f6;
+				}
+				.equprint-table {
+					width: 100%;
+					border-collapse: collapse;
+					table-layout: fixed;
+				}
+				.equprint-table thead th {
+					padding: 9px 10px;
+					border-bottom: 1px solid #d9e1ea;
+					background: #e5e7eb;
+					font-size: 9px;
+					font-weight: 800;
+					letter-spacing: 0.08em;
+					text-align: left;
+					text-transform: uppercase;
+					color: #5b6472;
+				}
+				.equprint-table tbody td {
+					padding: 10px;
+					border-top: 1px solid #d9e1ea;
+					vertical-align: top;
+					word-wrap: break-word;
+				}
+				.equprint-table tbody tr:first-child td {
+					border-top: 0;
+				}
+				.equprint-table tbody tr:nth-child(even) td {
+					background: #eef2f6;
+				}
+				.equprint-table__section {
+					font-size: 9px;
+					font-weight: 800;
+					letter-spacing: 0.08em;
+					text-transform: uppercase;
+					color: #5b6472;
+				}
+				.equprint-table__description {
+					font-size: 11px;
+					font-weight: 700;
+				}
+				.equprint-table__numeric {
+					text-align: right;
+					white-space: nowrap;
+				}
+				.equprint-table__muted {
+					color: #5b6472;
+					font-size: 10px;
+				}
+				.equprint-note,
+				.equprint-address {
+					white-space: pre-line;
+					font-size: 11px;
+					line-height: 1.6;
+				}
+				.equprint-totals-card {
+					padding: 12px 14px;
+					border: 1px solid #d9e1ea;
+					border-radius: 12px;
+					background: #eef2f6;
+				}
+				.equprint-totals-table {
+					width: 100%;
+					border-collapse: collapse;
+				}
+				.equprint-totals-table td {
+					padding: 7px 0;
+					border-top: 1px solid #d9e1ea;
+					font-size: 11px;
+				}
+				.equprint-totals-table tr:first-child td {
+					border-top: 0;
+				}
+				.equprint-totals-table td:last-child {
+					text-align: right;
+					font-weight: 700;
+				}
+				.equprint-totals-table .equprint-total-row td {
+					padding-top: 10px;
+					font-size: 16px;
+					font-weight: 800;
+					color: #111827;
+				}
+				.equprint-footer {
+					margin-top: 16px;
+					padding-top: 12px;
+					border-top: 1px solid #d9e1ea;
+					color: #5b6472;
+					font-size: 10px;
+					text-align: center;
+				}
+				.equprint-footer__contacts + .equprint-footer__event {
+					margin-top: 4px;
+				}
+				.equprint-table th:nth-child(1) { width: 19%; }
+				.equprint-table th:nth-child(2) { width: 42%; }
+				.equprint-table th:nth-child(3) { width: 8%; }
+				.equprint-table th:nth-child(4) { width: 11%; }
+				.equprint-table th:nth-child(5) { width: 10%; }
+				.equprint-table th:nth-child(6) { width: 10%; }
+				@media screen {
+					body {
+						padding: 20px;
+						background: #f5f7fb;
+					}
+					.equprint-sheet {
+						max-width: 980px;
+						padding: 24px 26px 20px;
+						box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+					}
+				}
+				@media print {
+					body {
+						background: #ffffff;
+						-webkit-print-color-adjust: exact;
+						print-color-adjust: exact;
+					}
+					.equprint-sheet {
+						max-width: none;
+						margin: 0;
+						padding: 0;
+						box-shadow: none;
+					}
+					.equprint-section,
+					.equprint-card,
+					.equprint-invoice-card,
+					.equprint-totals-card,
+					.equprint-table-wrap {
+						page-break-inside: avoid;
+					}
+				}
+			</style>
+		</head>
+		<body onload="window.print()">
+			<div class="equprint-sheet">
+				<header class="equprint-header">
+					<div class="equprint-brand">
+						<?php if ( $company_logo_url ) : ?>
+							<img src="<?php echo esc_url( $company_logo_url ); ?>" alt="<?php esc_attr_e( 'Company logo', 'equine-event-manager' ); ?>" />
+						<?php else : ?>
+							<div class="equprint-brand__fallback"><?php esc_html_e( 'Equine Event Manager', 'equine-event-manager' ); ?></div>
+						<?php endif; ?>
+						<div class="equprint-brand__meta">
+							<span class="equprint-eyebrow">
+								<?php
+								echo esc_html(
+									sprintf(
+										/* translators: 1: receipt/invoice label, 2: order number */
+										__( '%1$s #%2$s', 'equine-event-manager' ),
+										$is_paid ? __( 'Order Receipt', 'equine-event-manager' ) : __( 'Reservation Invoice', 'equine-event-manager' ),
+										$order['order_number']
+									)
+								);
+								?>
+							</span>
+							<h1><?php echo esc_html( $event_label ); ?></h1>
+							<p><?php echo esc_html( $order['event_dates'] ); ?></p>
+							<div class="equprint-meta-line">
+								<?php if ( $support_phone ) : ?>
+									<span><?php echo esc_html( $support_phone ); ?></span>
+								<?php endif; ?>
+								<?php if ( $support_email ) : ?>
+									<span><?php echo esc_html( $support_email ); ?></span>
+								<?php endif; ?>
+							</div>
+						</div>
+					</div>
+					<div class="equprint-invoice-card">
+						<div class="equprint-meta-grid">
+							<div class="equprint-meta-item">
+								<span><?php esc_html_e( 'Order Number', 'equine-event-manager' ); ?></span>
+								<strong>#<?php echo esc_html( $order['order_number'] ); ?></strong>
+							</div>
+							<div class="equprint-meta-item">
+								<span><?php esc_html_e( 'Payment Date', 'equine-event-manager' ); ?></span>
+								<div><?php echo esc_html( $payment_date ); ?></div>
+							</div>
+							<div class="equprint-meta-item">
+								<span><?php echo esc_html( $is_paid ? __( 'Amount Paid', 'equine-event-manager' ) : __( 'Amount Due', 'equine-event-manager' ) ); ?></span>
+								<div><?php echo esc_html( $format_money( $order['total'] ) ); ?></div>
+							</div>
+						</div>
+					</div>
+				</header>
+
+				<hr class="equprint-divider" />
+
+				<div class="equprint-two-column">
+					<section class="equprint-section equprint-section--flush">
+						<h2><?php esc_html_e( 'Customer Details', 'equine-event-manager' ); ?></h2>
+						<div class="equprint-invoice-card">
+							<div class="equprint-meta-grid">
+								<div class="equprint-meta-item">
+									<span><?php esc_html_e( 'Customer', 'equine-event-manager' ); ?></span>
+									<div><?php echo esc_html( $order['customer_name'] ); ?></div>
+								</div>
+								<div class="equprint-meta-item">
+									<span><?php esc_html_e( 'Reservation Type', 'equine-event-manager' ); ?></span>
+									<div><?php echo esc_html( $order['type'] ); ?></div>
+								</div>
+								<div class="equprint-meta-item">
+									<span><?php esc_html_e( 'Email', 'equine-event-manager' ); ?></span>
+									<div><?php echo esc_html( $order['email'] ); ?></div>
+								</div>
+								<div class="equprint-meta-item">
+									<span><?php esc_html_e( 'Phone', 'equine-event-manager' ); ?></span>
+									<div><?php echo esc_html( $this->format_phone_label( $order['phone'] ) ); ?></div>
+								</div>
+							</div>
+						</div>
+					</section>
+
+					<section class="equprint-section equprint-section--flush">
+						<h2><?php esc_html_e( 'Billing Details', 'equine-event-manager' ); ?></h2>
+						<div class="equprint-invoice-card">
+							<div class="equprint-address"><?php echo esc_html( $billing_details ); ?></div>
+						</div>
+					</section>
+				</div>
+
+				<?php if ( ! empty( $summary_cards ) ) : ?>
+					<section class="equprint-section">
+						<h2><?php esc_html_e( 'Reservation Summary', 'equine-event-manager' ); ?></h2>
+						<div class="equprint-card-grid">
+							<?php foreach ( $summary_cards as $summary_card ) : ?>
+								<div class="equprint-card">
+									<div class="equprint-card__header">
+										<h3><?php echo esc_html( $summary_card['title'] ); ?></h3>
+										<?php if ( ! empty( $summary_card['badge'] ) ) : ?>
+											<span class="equprint-badge"><?php echo esc_html( $summary_card['badge'] ); ?></span>
+										<?php endif; ?>
+									</div>
+									<div class="equprint-card__rows">
+										<?php foreach ( $summary_card['rows'] as $row ) : ?>
+											<div class="equprint-card__row">
+												<span><?php echo esc_html( $row['label'] ); ?></span>
+												<strong><?php echo esc_html( $row['value'] ); ?></strong>
+											</div>
+										<?php endforeach; ?>
+									</div>
+								</div>
+							<?php endforeach; ?>
+						</div>
+					</section>
+				<?php endif; ?>
+
+				<section class="equprint-section">
+					<h2><?php esc_html_e( 'Purchased Items', 'equine-event-manager' ); ?></h2>
+					<div class="equprint-table-wrap">
+						<table class="equprint-table">
+							<thead>
+								<tr>
+									<th><?php esc_html_e( 'Section', 'equine-event-manager' ); ?></th>
+									<th><?php esc_html_e( 'Description', 'equine-event-manager' ); ?></th>
+									<th class="equprint-table__numeric"><?php esc_html_e( 'Qty', 'equine-event-manager' ); ?></th>
+									<th class="equprint-table__numeric"><?php esc_html_e( 'Units', 'equine-event-manager' ); ?></th>
+									<th class="equprint-table__numeric"><?php esc_html_e( 'Rate', 'equine-event-manager' ); ?></th>
+									<th class="equprint-table__numeric"><?php esc_html_e( 'Total', 'equine-event-manager' ); ?></th>
+								</tr>
+							</thead>
+							<tbody>
+								<?php foreach ( $line_items as $line_item ) : ?>
+									<tr>
+										<td><span class="equprint-table__section"><?php echo esc_html( $line_item['section'] ); ?></span></td>
+										<td><span class="equprint-table__description"><?php echo esc_html( $line_item['description'] ); ?></span></td>
+										<td class="equprint-table__numeric"><?php echo esc_html( (string) $line_item['qty'] ); ?></td>
+										<td class="equprint-table__numeric"><span class="equprint-table__muted"><?php echo esc_html( (string) $line_item['units'] ); ?></span></td>
+										<td class="equprint-table__numeric"><?php echo esc_html( (string) $line_item['rate'] ); ?></td>
+										<td class="equprint-table__numeric"><?php echo esc_html( (string) $line_item['total'] ); ?></td>
+									</tr>
+								<?php endforeach; ?>
+							</tbody>
+						</table>
+					</div>
+				</section>
+
+				<div class="equprint-two-column">
+					<?php if ( '' !== $special_requests ) : ?>
+						<section class="equprint-section">
+							<h2><?php esc_html_e( 'Special Requests', 'equine-event-manager' ); ?></h2>
+							<div class="equprint-invoice-card">
+								<div class="equprint-note"><?php echo esc_html( $special_requests ); ?></div>
+							</div>
+						</section>
+					<?php else : ?>
+						<div></div>
+					<?php endif; ?>
+
+					<section class="equprint-section">
+						<h2><?php esc_html_e( 'Totals', 'equine-event-manager' ); ?></h2>
+						<div class="equprint-totals-card">
+							<table class="equprint-totals-table">
+								<tbody>
+									<?php if ( (float) $stall_breakdown['base_subtotal'] > 0 ) : ?>
+										<tr><td><?php esc_html_e( 'Stall Reservation', 'equine-event-manager' ); ?></td><td><?php echo esc_html( $format_money( $stall_breakdown['base_subtotal'] ) ); ?></td></tr>
+									<?php endif; ?>
+									<?php if ( (float) $stall_breakdown['required_shavings_subtotal'] > 0 ) : ?>
+										<tr><td><?php esc_html_e( 'Required Shavings', 'equine-event-manager' ); ?></td><td><?php echo esc_html( $format_money( $stall_breakdown['required_shavings_subtotal'] ) ); ?></td></tr>
+									<?php endif; ?>
+									<?php if ( (float) $stall_breakdown['additional_shavings_subtotal'] > 0 ) : ?>
+										<tr><td><?php esc_html_e( 'Additional Shavings', 'equine-event-manager' ); ?></td><td><?php echo esc_html( $format_money( $stall_breakdown['additional_shavings_subtotal'] ) ); ?></td></tr>
+									<?php endif; ?>
+									<?php if ( (float) $rv_base_subtotal > 0 ) : ?>
+										<tr><td><?php esc_html_e( 'RV Reservation', 'equine-event-manager' ); ?></td><td><?php echo esc_html( $format_money( $rv_base_subtotal ) ); ?></td></tr>
+									<?php endif; ?>
+									<?php foreach ( $rv_addon_breakdown as $addon_row ) : ?>
+										<?php if ( (float) $addon_row['subtotal'] <= 0 ) { continue; } ?>
+										<tr><td><?php echo esc_html( $addon_row['label'] ); ?></td><td><?php echo esc_html( $format_money( $addon_row['subtotal'] ) ); ?></td></tr>
+									<?php endforeach; ?>
+									<?php foreach ( $general_addon_breakdown as $addon_row ) : ?>
+										<tr><td><?php echo esc_html( $addon_row['label'] ); ?></td><td><?php echo esc_html( $format_money( $addon_row['subtotal'] ) ); ?></td></tr>
+									<?php endforeach; ?>
+									<?php if ( (float) $order['fees'] > 0 ) : ?>
+										<tr><td><?php esc_html_e( 'Non-Refundable Convenience Fee', 'equine-event-manager' ); ?></td><td><?php echo esc_html( $format_money( $order['fees'] ) ); ?></td></tr>
+									<?php endif; ?>
+									<tr class="equprint-total-row"><td><?php echo esc_html( $is_paid ? __( 'Total Amount Paid', 'equine-event-manager' ) : __( 'Total Amount Due', 'equine-event-manager' ) ); ?></td><td><?php echo esc_html( $format_money( $order['total'] ) ); ?></td></tr>
+								</tbody>
+							</table>
+						</div>
+					</section>
+				</div>
+
+				<?php if ( ! empty( $footer_contacts ) || '' !== trim( $event_label ) ) : ?>
+					<div class="equprint-footer">
+						<?php if ( ! empty( $footer_contacts ) ) : ?>
+							<div class="equprint-footer__contacts"><?php echo esc_html( implode( '  |  ', $footer_contacts ) ); ?></div>
+						<?php endif; ?>
+						<?php if ( '' !== trim( $event_label ) ) : ?>
+							<div class="equprint-footer__event"><?php echo esc_html( $event_label ); ?></div>
+						<?php endif; ?>
+					</div>
+				<?php endif; ?>
+			</div>
+		</body>
+		</html>
+		<?php
+		exit;
+	}
+
+	/**
+	 * Send a hosted invoice payment link email for an unpaid order.
+	 *
+	 * @return void
+	 */
+	public function handle_send_invoice_email() {
+		$this->guard_admin_action();
+
+		$order_key = isset( $_GET['order_key'] ) ? sanitize_text_field( wp_unslash( $_GET['order_key'] ) ) : '';
+		check_admin_referer( 'equine_event_manager_send_invoice_email_' . $order_key );
+
+		$order = $this->orders_repository->get_order( $order_key );
+
+		if ( ! $order || empty( $order['email'] ) ) {
+			$this->redirect_to_order_notice( $order_key, 'invoice_email_failed', __( 'A customer email address is required before sending an invoice.', 'equine-event-manager' ) );
+		}
+
+		$sent = $this->send_invoice_email_for_order( $order );
+
+		if ( is_wp_error( $sent ) ) {
+			$this->redirect_to_order_notice( $order_key, 'invoice_email_failed', $sent->get_error_message() );
+		}
+
+		$this->redirect_to_order_notice( $order_key, 'invoice_email_sent' );
+	}
+
+	/**
+	 * Resend the customer-facing order notification email for an order.
+	 *
+	 * @return void
+	 */
+	public function handle_resend_customer_notification() {
+		$this->guard_admin_action();
+
+		$order_key = isset( $_GET['order_key'] ) ? sanitize_text_field( wp_unslash( $_GET['order_key'] ) ) : '';
+		check_admin_referer( 'equine_event_manager_resend_customer_notification_' . $order_key );
+
+		$order = $this->orders_repository->get_order( $order_key );
+
+		if ( ! $order ) {
+			$this->redirect_to_order_notice( $order_key, 'customer_notification_failed', __( 'Order not found.', 'equine-event-manager' ) );
+		}
+
+		$shortcodes = new Equine_Event_Manager_Shortcodes();
+		$sent       = $shortcodes->send_customer_notification_email_for_order( $order );
+
+		if ( is_wp_error( $sent ) ) {
+			$this->redirect_to_order_notice( $order_key, 'customer_notification_failed', $sent->get_error_message() );
+		}
+
+		$resent_at = current_time( 'mysql' );
+
+		foreach ( $order['components'] as $component ) {
+			$notes = isset( $component['notes'] ) ? (string) $component['notes'] : '';
+			$notes = $this->upsert_order_note_line( $notes, 'Customer Notification Resent At', $resent_at );
+
+			$this->orders_repository->update_component_fields(
+				$component['table'],
+				$component['id'],
+				array(
+					'notes' => $notes,
+				)
+			);
+		}
+
+		$this->redirect_to_order_notice( $order_key, 'customer_notification_sent' );
+	}
+
+	/**
+	 * Generate stall and RV assignments for all orders on a reservation.
+	 *
+	 * @return void
+	 */
+	public function handle_generate_stall_assignments() {
+		$this->guard_admin_action();
+
+		$reservation_id = isset( $_GET['reservation_id'] ) ? absint( wp_unslash( $_GET['reservation_id'] ) ) : 0;
+		$return_page    = isset( $_GET['return_page'] ) ? sanitize_key( wp_unslash( $_GET['return_page'] ) ) : '';
+		check_admin_referer( 'equine_event_manager_generate_stall_assignments_' . $reservation_id );
+
+		$reservation = $reservation_id ? get_post( $reservation_id ) : null;
+		$config      = $reservation_id ? $this->get_stall_chart_config( $reservation_id ) : array();
+
+		if ( ! $reservation instanceof WP_Post || 'en_reservation' !== $reservation->post_type ) {
+			$this->redirect_to_stall_chart_notice( 0, 'stall_assignments_generation_failed', __( 'That reservation could not be loaded.', 'equine-event-manager' ) );
+		}
+
+		if ( empty( $config['enabled'] ) && empty( $config['rv_lot_names'] ) ) {
+			$this->redirect_to_reservation_notice_destination( $reservation_id, 'stall_assignments_generation_failed', __( 'Turn on Stall Assignments or configure RV lots before generating assignments.', 'equine-event-manager' ), $return_page );
+		}
+
+		$orders = array_filter(
+			$this->orders_repository->get_orders( '', 'date', 'asc' ),
+			function ( $order ) use ( $reservation_id ) {
+				return absint( isset( $order['reservation_id'] ) ? $order['reservation_id'] : 0 ) === $reservation_id;
+			}
+		);
+
+		if ( empty( $orders ) ) {
+			$this->redirect_to_reservation_notice_destination( $reservation_id, 'stall_assignments_generation_failed', __( 'There are no orders on this reservation to assign yet.', 'equine-event-manager' ), $return_page );
+		}
+
+		$stall_map   = array();
+		$rv_map      = array();
+		$updated_any = false;
+
+		foreach ( $orders as $order ) {
+			$stall_dates  = $this->get_stall_chart_occupied_dates( $order['stall_arrival_date'], $order['stall_departure_date'] );
+			$rv_dates     = $this->get_stall_chart_occupied_dates( $order['rv_arrival_date'], $order['rv_departure_date'] );
+			$stall_needed = absint( $order['stall_quantity'] );
+			$rv_needed    = $this->order_requires_rv_assignment( $order ) ? absint( $order['rv_quantity'] ) : 0;
+			$stall_manual = $this->parse_assigned_units_string( $this->get_order_component_note_value( $order, 'stall', 'Assigned Stall Units' ) );
+			$rv_manual    = $this->parse_assigned_units_string( $this->get_order_component_note_value( $order, 'rv', 'Assigned RV Lots' ) );
+			$rv_preferred = $this->get_order_component_note_value( $order, 'rv', 'RV Lot' );
+
+			if ( empty( $rv_manual ) ) {
+				$rv_manual = $this->parse_assigned_units_string( $this->get_order_component_note_value( $order, 'rv', 'Assigned RV Units' ) );
+			}
+
+			$stall_units = $this->allocate_stall_chart_units( $config['available_stall_units'], $stall_map, $stall_dates, $stall_needed, $stall_manual, $order['order_key'] );
+			$rv_units    = $this->allocate_rv_lot_rows( $config['rv_lot_names'], isset( $config['auto_assign_rv_lot_names'] ) ? $config['auto_assign_rv_lot_names'] : $config['available_rv_lot_names'], $rv_map, $rv_dates, $rv_needed, $rv_preferred, $rv_manual, $order['order_key'] );
+
+			$updated_any = $this->orders_repository->update_order_unit_assignments(
+				$order['order_key'],
+				implode( ', ', $stall_units['assigned'] ),
+				implode( ', ', $rv_units['assigned'] )
+			) || $updated_any;
+		}
+
+		$this->redirect_to_reservation_notice_destination(
+			$reservation_id,
+			$updated_any ? 'stall_assignments_generated' : 'stall_assignments_generation_failed',
+			$updated_any ? null : __( 'Assignments were generated, but no order records needed updating.', 'equine-event-manager' ),
+			$return_page
+		);
+	}
+
+	/**
+	 * Determine whether an order truly requires an RV lot assignment.
+	 *
+	 * This avoids false-positive RV assignment issues from stray or legacy RV-side
+	 * rows that do not represent an actual RV reservation purchase.
+	 *
+	 * @param array $order Order payload.
+	 * @return bool
+	 */
+	private function order_requires_rv_assignment( $order ) {
+		$rv_quantity = absint( isset( $order['rv_quantity'] ) ? $order['rv_quantity'] : 0 );
+
+		if ( $rv_quantity < 1 ) {
+			return false;
+		}
+
+		if ( ! empty( $order['rv_arrival_date'] ) || ! empty( $order['rv_departure_date'] ) ) {
+			return true;
+		}
+
+		if ( ! empty( $order['rv_subtotal'] ) && (float) $order['rv_subtotal'] > 0 ) {
+			return true;
+		}
+
+		$preferred_rv_lot = $this->get_order_component_note_value( $order, 'rv', 'RV Lot' );
+
+		if ( '' !== $preferred_rv_lot ) {
+			return true;
+		}
+
+		$assigned_rv_lots = $this->get_order_component_note_value( $order, 'rv', 'Assigned RV Lots' );
+
+		if ( '' === $assigned_rv_lots ) {
+			$assigned_rv_lots = $this->get_order_component_note_value( $order, 'rv', 'Assigned RV Units' );
+		}
+
+		return '' !== $assigned_rv_lots;
+	}
+
+	/**
+	 * Mark an unpaid order as manually paid for cash or in-person collection.
+	 *
+	 * @return void
+	 */
+	public function handle_mark_order_paid() {
+		$this->guard_admin_action();
+
+		$order_key = isset( $_GET['order_key'] ) ? sanitize_text_field( wp_unslash( $_GET['order_key'] ) ) : '';
+		$method    = isset( $_GET['method'] ) ? sanitize_key( wp_unslash( $_GET['method'] ) ) : '';
+		check_admin_referer( 'equine_event_manager_mark_order_paid_' . $order_key );
+
+		$order = $this->orders_repository->get_order( $order_key );
+
+		if ( ! $order ) {
+			$this->redirect_to_order_notice( $order_key, 'manual_payment_failed', __( 'Order not found.', 'equine-event-manager' ) );
+		}
+
+		if ( ! in_array( $order['status_slug'], array( 'unpaid', 'invoice-sent' ), true ) ) {
+			$this->redirect_to_order_notice( $order_key, 'manual_payment_failed', __( 'Only unpaid orders can be marked paid manually.', 'equine-event-manager' ) );
+		}
+
+		$method_map = array(
+			'cash'  => __( 'Cash', 'equine-event-manager' ),
+			'check' => __( 'Check', 'equine-event-manager' ),
+		);
+
+		if ( ! isset( $method_map[ $method ] ) ) {
+			$this->redirect_to_order_notice( $order_key, 'manual_payment_failed', __( 'Please choose either Cash or Check when marking an order paid.', 'equine-event-manager' ) );
+		}
+
+		$updated = $this->orders_repository->mark_order_paid_manually( $order_key, $method_map[ $method ] );
+
+		if ( ! $updated ) {
+			$this->redirect_to_order_notice( $order_key, 'manual_payment_failed', __( 'The order could not be marked paid.', 'equine-event-manager' ) );
+		}
+
+		$this->redirect_to_order_notice( $order_key, 'manual_payment_recorded' );
+	}
+
+	/**
+	 * Send a hosted invoice payment link email for an unpaid order payload.
+	 *
+	 * @param array $order Grouped order payload.
+	 * @return true|WP_Error
+	 */
+	public function send_invoice_email_for_order( $order ) {
+		if ( empty( $order ) || empty( $order['email'] ) ) {
+			return new WP_Error( 'invoice_email_missing_email', __( 'A customer email address is required before sending an invoice.', 'equine-event-manager' ) );
+		}
+
+		if ( ! in_array( $order['status_slug'], array( 'unpaid', 'invoice-sent' ), true ) ) {
+			return new WP_Error( 'invoice_email_invalid_status', __( 'Only unpaid orders can receive a payment-link invoice.', 'equine-event-manager' ) );
+		}
+
+		$invoice_token     = wp_generate_password( 32, false, false );
+		$sent_at           = current_time( 'mysql' );
+		$receipt_settings  = $this->get_receipt_settings();
+		$headers           = array( 'Content-Type: text/html; charset=UTF-8' );
+		$reservation_label = ! empty( $order['reservation_title'] ) ? $order['reservation_title'] : $order['event_name'];
+
+		if ( ! empty( $receipt_settings['from_name'] ) && is_email( $receipt_settings['from_email'] ) ) {
+			$headers[] = 'From: ' . wp_specialchars_decode( $receipt_settings['from_name'], ENT_QUOTES ) . ' <' . $receipt_settings['from_email'] . '>';
+		}
+
+		if ( is_email( $receipt_settings['reply_to_email'] ) ) {
+			$headers[] = 'Reply-To: ' . $receipt_settings['reply_to_email'];
+		}
+
+		$subject = sprintf(
+			/* translators: %s: event or reservation title. */
+			__( 'Payment link for %s', 'equine-event-manager' ),
+			$reservation_label
+		);
+
+		$sent = Equine_Event_Manager_Mailer::send_html_email(
+			sanitize_email( $order['email'] ),
+			$subject,
+			$this->build_invoice_email_html( $order, $invoice_token ),
+			$headers
+		);
+
+		if ( is_wp_error( $sent ) ) {
+			return $sent;
+		}
+
+		foreach ( $order['components'] as $component ) {
+			$notes = isset( $component['notes'] ) ? (string) $component['notes'] : '';
+			$notes = $this->upsert_order_note_line( $notes, 'Invoice Token', $invoice_token );
+			$notes = $this->upsert_order_note_line( $notes, 'Invoice Status', 'Sent' );
+			$notes = $this->upsert_order_note_line( $notes, 'Invoice Sent At', $sent_at );
+
+			$this->orders_repository->update_component_fields(
+				$component['table'],
+				$component['row_id'],
+				array(
+					'notes'          => $notes,
+					'payment_status' => 'invoice_sent',
+				),
+				array( '%s', '%s' )
+			);
+		}
+
+		return true;
+	}
+
+	/**
+	 * Render a printer-friendly reservation overview page.
+	 */
+	public function handle_reservation_overview_print() {
+		$this->guard_admin_action();
+
+		$reservation_id = isset( $_GET['reservation_id'] ) ? absint( wp_unslash( $_GET['reservation_id'] ) ) : 0;
+		check_admin_referer( 'equine_event_manager_print_reservation_overview_' . $reservation_id );
+
+		$reservation = $reservation_id ? get_post( $reservation_id ) : null;
+
+		if ( ! $reservation instanceof WP_Post || 'en_reservation' !== $reservation->post_type ) {
+			wp_die( esc_html__( 'Reservation overview not found.', 'equine-event-manager' ) );
+		}
+
+		$overview         = $this->get_reservation_overview_data( $reservation_id );
+		$company_logo_url = $this->get_company_logo_url( 'medium' );
+		$company_settings = $this->get_company_settings();
+		$support_phone    = trim( (string) $company_settings['support_phone'] );
+		$support_email    = trim( (string) $company_settings['support_email'] );
+		?>
+		<!doctype html>
+		<html <?php language_attributes(); ?>>
+		<head>
+			<meta charset="<?php bloginfo( 'charset' ); ?>" />
+			<title><?php echo esc_html( sprintf( __( '%s Overview', 'equine-event-manager' ), $overview['event_label'] ) ); ?></title>
+			<style>
+				* { box-sizing: border-box; }
+				body {
+					margin: 0;
+					padding: 20px;
+					background: #f4f6f8;
+					color: #172033;
+					font-family: Arial, sans-serif;
+					font-size: 12px;
+					line-height: 1.45;
+				}
+				h1, h2, h3, p { margin: 0; }
+				.equprint-sheet {
+					max-width: 980px;
+					margin: 0 auto;
+					padding: 20px 22px;
+					border: 1px solid #e3e7ee;
+					border-radius: 16px;
+					background: #fff;
+					box-shadow: 0 12px 32px rgba(23, 32, 51, 0.06);
+				}
+				.equprint-header {
+					display: flex;
+					justify-content: space-between;
+					gap: 18px;
+					align-items: flex-start;
+					padding-bottom: 14px;
+					border-bottom: 1px solid #e8edf3;
+				}
+				.equprint-brand {
+					display: flex;
+					gap: 14px;
+					align-items: flex-start;
+					min-width: 0;
+				}
+				.equprint-brand img {
+					display: block;
+					max-width: 120px;
+					max-height: 40px;
+					object-fit: contain;
+				}
+				.equprint-brand__fallback {
+					font-size: 16px;
+					font-weight: 800;
+					letter-spacing: -0.03em;
+				}
+				.equprint-brand__meta {
+					display: grid;
+					gap: 4px;
+				}
+				.equprint-eyebrow {
+					color: #6a7789;
+					font-size: 9px;
+					font-weight: 800;
+					letter-spacing: 0.12em;
+					text-transform: uppercase;
+				}
+				.equprint-brand__meta h1 {
+					font-size: 22px;
+					line-height: 1.15;
+					letter-spacing: -0.02em;
+				}
+				.equprint-brand__meta p {
+					color: #5d6b7d;
+					font-size: 12px;
+				}
+				.equprint-meta {
+					display: grid;
+					gap: 6px;
+					min-width: 180px;
+					text-align: right;
+				}
+				.equprint-meta__item span {
+					display: block;
+					color: #6a7789;
+					font-size: 9px;
+					font-weight: 800;
+					letter-spacing: 0.12em;
+					text-transform: uppercase;
+				}
+				.equprint-meta__item strong {
+					display: block;
+					margin-top: 3px;
+					font-size: 13px;
+				}
+				.equprint-metrics {
+					display: grid;
+					grid-template-columns: repeat(5, minmax(0, 1fr));
+					gap: 12px;
+					margin-top: 18px;
+				}
+				.equprint-metric {
+					padding: 12px;
+					border: 1px solid #e3e7ee;
+					border-radius: 14px;
+					background: #fbfdff;
+				}
+				.equprint-metric span {
+					display: block;
+					margin-bottom: 6px;
+					color: #6a7789;
+					font-size: 9px;
+					font-weight: 800;
+					letter-spacing: 0.1em;
+					text-transform: uppercase;
+				}
+				.equprint-metric strong {
+					display: block;
+					font-size: 28px;
+					line-height: 1.05;
+				}
+				.equprint-metric small {
+					display: block;
+					margin-top: 6px;
+					color: #64748b;
+					font-size: 11px;
+				}
+				.equprint-grid {
+					display: grid;
+					grid-template-columns: repeat(2, minmax(0, 1fr));
+					gap: 20px;
+					margin-top: 20px;
+				}
+				.equprint-card {
+					padding: 18px;
+					border: 1px solid #e3e7ee;
+					border-radius: 16px;
+					background: #fff;
+					page-break-inside: avoid;
+				}
+				.equprint-card h2 {
+					margin-bottom: 14px;
+					font-size: 12px;
+					font-weight: 800;
+					letter-spacing: 0.1em;
+					text-transform: uppercase;
+				}
+				.equprint-definition-columns {
+					display: grid;
+					grid-template-columns: repeat(2, minmax(0, 1fr));
+					gap: 14px;
+				}
+				.equprint-definition-grid {
+					display: grid;
+					gap: 12px;
+				}
+				.equprint-definition-item {
+					padding: 12px;
+					border: 1px solid #e8edf3;
+					border-radius: 12px;
+					background: #fbfdff;
+				}
+				.equprint-definition-item span {
+					display: block;
+					margin-bottom: 6px;
+					color: #6a7789;
+					font-size: 9px;
+					font-weight: 800;
+					letter-spacing: 0.1em;
+					text-transform: uppercase;
+				}
+				.equprint-definition-item strong {
+					display: block;
+					font-size: 14px;
+				}
+				.equprint-overview-cards {
+					display: grid;
+					grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+					gap: 14px;
+				}
+				.equprint-overview-card {
+					padding: 14px;
+					border: 1px solid #e3e7ee;
+					border-radius: 14px;
+					background: #fbfdff;
+				}
+				.equprint-overview-card__header {
+					display: flex;
+					align-items: flex-start;
+					justify-content: space-between;
+					gap: 12px;
+					margin-bottom: 14px;
+				}
+				.equprint-overview-card__header h3 {
+					margin-bottom: 4px;
+					font-size: 14px;
+				}
+				.equprint-overview-card__header p {
+					color: #64748b;
+					font-size: 11px;
+				}
+				.equprint-pill {
+					display: inline-flex;
+					align-items: center;
+					border-radius: 999px;
+					padding: 6px 10px;
+					background: #e6f6eb;
+					color: #18794e;
+					font-size: 11px;
+					font-weight: 700;
+					line-height: 1;
+				}
+				.equprint-overview-stats {
+					display: grid;
+					grid-template-columns: repeat(3, minmax(0, 1fr));
+					gap: 10px;
+				}
+				.equprint-overview-stats span {
+					display: block;
+					margin-bottom: 4px;
+					color: #6a7789;
+					font-size: 9px;
+					font-weight: 800;
+					letter-spacing: 0.08em;
+					text-transform: uppercase;
+				}
+				.equprint-overview-stats strong {
+					display: block;
+					font-size: 16px;
+					line-height: 1.1;
+				}
+				.equprint-table {
+					width: 100%;
+					border-collapse: collapse;
+				}
+				.equprint-table th,
+				.equprint-table td {
+					padding: 10px 8px;
+					border-bottom: 1px solid #e8edf3;
+					text-align: left;
+					vertical-align: top;
+				}
+				.equprint-table th {
+					color: #6a7789;
+					font-size: 9px;
+					font-weight: 800;
+					letter-spacing: 0.08em;
+					text-transform: uppercase;
+				}
+				.equprint-table td {
+					font-size: 12px;
+				}
+				.equprint-table td strong {
+					font-size: 13px;
+				}
+				@media print {
+					body {
+						padding: 0;
+						background: #fff;
+					}
+					.equprint-sheet {
+						max-width: none;
+						border: 0;
+						border-radius: 0;
+						box-shadow: none;
+					}
+				}
+			</style>
+		</head>
+		<body onload="window.print()">
+			<div class="equprint-sheet">
+				<div class="equprint-header">
+					<div class="equprint-brand">
+						<?php if ( $company_logo_url ) : ?>
+							<img src="<?php echo esc_url( $company_logo_url ); ?>" alt="<?php esc_attr_e( 'Equine Event Manager logo', 'equine-event-manager' ); ?>" />
+						<?php else : ?>
+							<div class="equprint-brand__fallback"><?php esc_html_e( 'Equine Event Manager', 'equine-event-manager' ); ?></div>
+						<?php endif; ?>
+						<div class="equprint-brand__meta">
+							<span class="equprint-eyebrow"><?php esc_html_e( 'Equine Event Manager', 'equine-event-manager' ); ?></span>
+							<h1><?php echo esc_html( $overview['event_label'] ); ?></h1>
+							<p><?php esc_html_e( 'Reservation Overview', 'equine-event-manager' ); ?></p>
+						</div>
+					</div>
+					<div class="equprint-meta">
+						<div class="equprint-meta__item">
+							<span><?php esc_html_e( 'Printed', 'equine-event-manager' ); ?></span>
+							<strong><?php echo esc_html( wp_date( 'F j, Y g:i a' ) ); ?></strong>
+						</div>
+						<?php if ( $support_phone || $support_email ) : ?>
+							<div class="equprint-meta__item">
+								<span><?php esc_html_e( 'Contact', 'equine-event-manager' ); ?></span>
+								<strong><?php echo esc_html( trim( implode( ' | ', array_filter( array( $support_phone, $support_email ) ) ) ) ); ?></strong>
+							</div>
+						<?php endif; ?>
+					</div>
+				</div>
+
+				<div class="equprint-metrics">
+					<div class="equprint-metric">
+						<span><?php esc_html_e( 'Orders', 'equine-event-manager' ); ?></span>
+						<strong><?php echo esc_html( number_format_i18n( $overview['order_count'] ) ); ?></strong>
+					</div>
+					<div class="equprint-metric">
+						<span><?php esc_html_e( 'Revenue', 'equine-event-manager' ); ?></span>
+						<strong><?php echo esc_html( '$' . number_format_i18n( (float) $overview['revenue_total'], 2 ) ); ?></strong>
+					</div>
+					<div class="equprint-metric">
+						<span><?php esc_html_e( 'Stalls Sold', 'equine-event-manager' ); ?></span>
+						<strong><?php echo esc_html( number_format_i18n( $overview['stall_sold'] ) ); ?></strong>
+						<small><?php echo esc_html( $overview['stall_remaining_label'] ); ?></small>
+					</div>
+					<div class="equprint-metric">
+						<span><?php esc_html_e( 'RVs Sold', 'equine-event-manager' ); ?></span>
+						<strong><?php echo esc_html( number_format_i18n( $overview['rv_sold'] ) ); ?></strong>
+						<small><?php echo esc_html( $overview['rv_remaining_label'] ); ?></small>
+					</div>
+					<div class="equprint-metric">
+						<span><?php esc_html_e( 'Group Riders', 'equine-event-manager' ); ?></span>
+						<strong><?php echo esc_html( number_format_i18n( $overview['group_reservation_count'] ) ); ?></strong>
+						<small>
+							<?php
+							echo esc_html(
+								sprintf(
+									_n( '%d group reservation', '%d group reservations', $overview['group_reservation_count'], 'equine-event-manager' ),
+									$overview['group_reservation_count']
+								)
+							);
+							?>
+						</small>
+					</div>
+				</div>
+
+				<div class="equprint-grid">
+					<div class="equprint-card">
+						<h2><?php esc_html_e( 'Event Snapshot', 'equine-event-manager' ); ?></h2>
+						<div class="equprint-definition-columns">
+							<div class="equprint-definition-grid">
+								<div class="equprint-definition-item">
+									<span><?php esc_html_e( 'Reservation', 'equine-event-manager' ); ?></span>
+									<strong><?php echo esc_html( get_the_title( $reservation_id ) ); ?></strong>
+								</div>
+								<div class="equprint-definition-item">
+									<span><?php esc_html_e( 'Event Source', 'equine-event-manager' ); ?></span>
+									<strong><?php echo esc_html( $overview['event_source_label'] ); ?></strong>
+								</div>
+								<div class="equprint-definition-item">
+									<span><?php esc_html_e( 'Event Dates', 'equine-event-manager' ); ?></span>
+									<strong><?php echo esc_html( $overview['event_dates_label'] ); ?></strong>
+								</div>
+							</div>
+							<div class="equprint-definition-grid">
+								<div class="equprint-definition-item">
+									<span><?php esc_html_e( 'Type', 'equine-event-manager' ); ?></span>
+									<strong><?php echo esc_html( $overview['type_label'] ); ?></strong>
+								</div>
+								<div class="equprint-definition-item">
+									<span><?php esc_html_e( 'Stall Inventory', 'equine-event-manager' ); ?></span>
+									<strong><?php echo esc_html( $overview['stall_inventory_label'] ); ?></strong>
+								</div>
+								<div class="equprint-definition-item">
+									<span><?php esc_html_e( 'RV Inventory', 'equine-event-manager' ); ?></span>
+									<strong><?php echo esc_html( $overview['rv_inventory_label'] ); ?></strong>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<div class="equprint-card">
+						<h2><?php esc_html_e( 'Inventory Overview', 'equine-event-manager' ); ?></h2>
+						<div class="equprint-overview-cards">
+							<?php foreach ( $overview['inventory_rows'] as $row ) : ?>
+								<div class="equprint-overview-card">
+									<div class="equprint-overview-card__header">
+										<div>
+											<h3><?php echo esc_html( $row['label'] ); ?></h3>
+										</div>
+										<span class="equprint-pill"><?php echo esc_html( $row['status_label'] ); ?></span>
+									</div>
+									<div class="equprint-overview-stats">
+										<div>
+											<span><?php esc_html_e( 'Inventory', 'equine-event-manager' ); ?></span>
+											<strong><?php echo esc_html( $row['inventory_label'] ); ?></strong>
+										</div>
+										<div>
+											<span><?php esc_html_e( 'Sold', 'equine-event-manager' ); ?></span>
+											<strong><?php echo esc_html( number_format_i18n( $row['sold'] ) ); ?></strong>
+										</div>
+										<div>
+											<span><?php esc_html_e( 'Remaining', 'equine-event-manager' ); ?></span>
+											<strong><?php echo esc_html( $row['remaining_label'] ); ?></strong>
+										</div>
+									</div>
+								</div>
+							<?php endforeach; ?>
+						</div>
+					</div>
+				</div>
+
+				<div class="equprint-grid">
+					<div class="equprint-card">
+						<h2><?php esc_html_e( 'Product Activity', 'equine-event-manager' ); ?></h2>
+						<table class="equprint-table">
+							<thead>
+								<tr>
+									<th><?php esc_html_e( 'Product', 'equine-event-manager' ); ?></th>
+									<th><?php esc_html_e( 'Category', 'equine-event-manager' ); ?></th>
+									<th><?php esc_html_e( 'Sold', 'equine-event-manager' ); ?></th>
+								</tr>
+							</thead>
+							<tbody>
+								<?php if ( empty( $overview['product_rows'] ) ) : ?>
+									<tr>
+										<td colspan="3"><?php esc_html_e( 'No products have been sold for this event yet.', 'equine-event-manager' ); ?></td>
+									</tr>
+								<?php else : ?>
+									<?php foreach ( $overview['product_rows'] as $row ) : ?>
+										<tr>
+											<td><strong><?php echo esc_html( $row['label'] ); ?></strong></td>
+											<td><?php echo esc_html( $row['category'] ); ?></td>
+											<td><?php echo esc_html( number_format_i18n( $row['sold'] ) ); ?></td>
+										</tr>
+									<?php endforeach; ?>
+								<?php endif; ?>
+							</tbody>
+						</table>
+					</div>
+
+					<div class="equprint-card">
+						<h2><?php esc_html_e( 'Recent Orders', 'equine-event-manager' ); ?></h2>
+						<table class="equprint-table">
+							<thead>
+								<tr>
+									<th><?php esc_html_e( 'Order', 'equine-event-manager' ); ?></th>
+									<th><?php esc_html_e( 'Customer', 'equine-event-manager' ); ?></th>
+									<th><?php esc_html_e( 'Type', 'equine-event-manager' ); ?></th>
+									<th><?php esc_html_e( 'Date', 'equine-event-manager' ); ?></th>
+								</tr>
+							</thead>
+							<tbody>
+								<?php if ( empty( $overview['orders'] ) ) : ?>
+									<tr>
+										<td colspan="4"><?php esc_html_e( 'No orders have been placed for this event yet.', 'equine-event-manager' ); ?></td>
+									</tr>
+								<?php else : ?>
+									<?php foreach ( array_slice( $overview['orders'], 0, 12 ) as $order ) : ?>
+										<tr>
+											<td><strong>#<?php echo esc_html( $order['order_number'] ); ?></strong></td>
+											<td><?php echo esc_html( $order['customer_name'] ); ?></td>
+											<td><?php echo wp_kses_post( $this->render_order_type_badges( $order['type'] ) ); ?></td>
+											<td><?php echo esc_html( wp_date( 'F j, Y', strtotime( $order['created_at'] ) ) ); ?></td>
+										</tr>
+									<?php endforeach; ?>
+								<?php endif; ?>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</body>
+		</html>
+		<?php
+		exit;
+	}
+
+	/**
+	 * Render orders rows.
+	 *
+	 * @param array $orders Order rows.
+	 */
+	private function render_orders_table( $orders, $orderby = 'date', $order = 'desc', $event_filter = '', $search_term = '', $current_page = 1, $total_pages = 1, $total_items = 0, $per_page = 20, $attention = false, $billing_flag = '' ) {
+		?>
+		<div class="eem-orders-guide__table-wrap">
+			<table class="widefat fixed striped eem-orders-table">
+				<thead>
+					<tr>
+						<th><?php echo wp_kses_post( $this->get_orders_sort_link( 'order', __( 'Order', 'equine-event-manager' ), $orderby, $order, $event_filter, $search_term, $attention, $billing_flag ) ); ?></th>
+						<th><?php echo wp_kses_post( $this->get_orders_sort_link( 'customer', __( 'Customer', 'equine-event-manager' ), $orderby, $order, $event_filter, $search_term, $attention, $billing_flag ) ); ?></th>
+						<th><?php echo wp_kses_post( $this->get_orders_sort_link( 'event', __( 'Event', 'equine-event-manager' ), $orderby, $order, $event_filter, $search_term, $attention, $billing_flag ) ); ?></th>
+						<th><?php echo wp_kses_post( $this->get_orders_sort_link( 'type', __( 'Type', 'equine-event-manager' ), $orderby, $order, $event_filter, $search_term, $attention, $billing_flag ) ); ?></th>
+						<th><?php echo wp_kses_post( $this->get_orders_sort_link( 'status', __( 'Status', 'equine-event-manager' ), $orderby, $order, $event_filter, $search_term, $attention, $billing_flag ) ); ?></th>
+						<th><?php echo wp_kses_post( $this->get_orders_sort_link( 'date', __( 'Date', 'equine-event-manager' ), $orderby, $order, $event_filter, $search_term, $attention, $billing_flag ) ); ?></th>
+						<th><?php esc_html_e( 'Actions', 'equine-event-manager' ); ?></th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php if ( empty( $orders ) ) : ?>
+						<tr>
+							<td colspan="7"><?php esc_html_e( 'No orders found.', 'equine-event-manager' ); ?></td>
+						</tr>
+					<?php else : ?>
+						<?php foreach ( $orders as $order ) : ?>
+							<?php
+							$order_url = admin_url( 'admin.php?page=equine-event-manager-order&order_key=' . rawurlencode( $order['order_key'] ) );
+							$print_url = wp_nonce_url( admin_url( 'admin-post.php?action=equine_event_manager_print_order&order_key=' . rawurlencode( $order['order_key'] ) ), 'equine_event_manager_print_order_' . $order['order_key'] );
+							$event_name = $order['reservation_title'] ? $order['reservation_title'] : $order['event_name'];
+							?>
+							<tr>
+								<td class="eem-orders-table__cell eem-orders-table__cell--order" data-label="<?php esc_attr_e( 'Order', 'equine-event-manager' ); ?>"><a class="eem-orders-table__order-link" href="<?php echo esc_url( $order_url ); ?>">#<?php echo esc_html( $order['order_number'] ); ?></a></td>
+								<td class="eem-orders-table__cell eem-orders-table__cell--customer" data-label="<?php esc_attr_e( 'Customer', 'equine-event-manager' ); ?>"><span class="eem-orders-table__customer-name"><?php echo esc_html( $order['customer_name'] ); ?></span></td>
+								<td class="eem-orders-table__cell eem-orders-table__cell--event" data-label="<?php esc_attr_e( 'Event', 'equine-event-manager' ); ?>"><span class="eem-orders-table__event-name"><?php echo esc_html( $event_name ); ?></span></td>
+								<td data-label="<?php esc_attr_e( 'Type', 'equine-event-manager' ); ?>"><?php echo $this->render_order_type_badges( $order['type'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
+								<td data-label="<?php esc_attr_e( 'Status', 'equine-event-manager' ); ?>"><?php echo $this->render_order_status_badge( $order['status_label'], isset( $order['status_slug'] ) ? $order['status_slug'] : '' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
+								<td class="eem-orders-table__cell eem-orders-table__cell--date" data-label="<?php esc_attr_e( 'Date', 'equine-event-manager' ); ?>"><span class="eem-orders-table__date"><?php echo esc_html( wp_date( 'M j, Y', strtotime( $order['created_at'] ) ) ); ?></span></td>
+								<td data-label="<?php esc_attr_e( 'Actions', 'equine-event-manager' ); ?>">
+									<div class="eem-orders-guide__actions">
+										<a class="eem-shell-icon-button" aria-label="<?php esc_attr_e( 'Print', 'equine-event-manager' ); ?>" title="<?php esc_attr_e( 'Print', 'equine-event-manager' ); ?>" href="<?php echo esc_url( $print_url ); ?>" target="_blank"><span class="dashicons dashicons-printer" aria-hidden="true"></span></a>
+										<a class="eem-shell-icon-button eem-shell-icon-button--ghost" aria-label="<?php esc_attr_e( 'Open order', 'equine-event-manager' ); ?>" title="<?php esc_attr_e( 'Open order', 'equine-event-manager' ); ?>" href="<?php echo esc_url( $order_url ); ?>"><span class="dashicons dashicons-ellipsis" aria-hidden="true"></span></a>
+									</div>
+								</td>
+							</tr>
+						<?php endforeach; ?>
+					<?php endif; ?>
+				</tbody>
+			</table>
+		</div>
+		<div class="eem-orders-guide__mobile-list">
+			<?php foreach ( $orders as $order ) : ?>
+				<?php
+				$order_url  = admin_url( 'admin.php?page=equine-event-manager-order&order_key=' . rawurlencode( $order['order_key'] ) );
+				$print_url  = wp_nonce_url( admin_url( 'admin-post.php?action=equine_event_manager_print_order&order_key=' . rawurlencode( $order['order_key'] ) ), 'equine_event_manager_print_order_' . $order['order_key'] );
+				$event_name = $order['reservation_title'] ? $order['reservation_title'] : $order['event_name'];
+				?>
+				<div class="eem-orders-guide__mobile-card">
+					<div class="eem-orders-guide__mobile-top">
+						<a class="eem-orders-guide__mobile-order" href="<?php echo esc_url( $order_url ); ?>">#<?php echo esc_html( $order['order_number'] ); ?></a>
+						<span class="eem-orders-guide__mobile-date"><?php echo esc_html( wp_date( 'M j, Y', strtotime( $order['created_at'] ) ) ); ?></span>
+					</div>
+					<p class="eem-orders-guide__mobile-customer"><?php echo esc_html( $order['customer_name'] ); ?></p>
+					<p class="eem-orders-guide__mobile-event"><?php echo esc_html( $event_name ); ?></p>
+					<div class="eem-orders-guide__mobile-bottom">
+						<div class="eem-orders-guide__mobile-badges">
+							<?php echo $this->render_order_type_badges( $order['type'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+							<?php echo $this->render_order_status_badge( $order['status_label'], isset( $order['status_slug'] ) ? $order['status_slug'] : '' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+						</div>
+						<div class="eem-orders-guide__actions">
+							<a class="eem-shell-icon-button" aria-label="<?php esc_attr_e( 'Print', 'equine-event-manager' ); ?>" title="<?php esc_attr_e( 'Print', 'equine-event-manager' ); ?>" href="<?php echo esc_url( $print_url ); ?>" target="_blank"><span class="dashicons dashicons-printer" aria-hidden="true"></span></a>
+							<a class="eem-shell-icon-button eem-shell-icon-button--ghost" aria-label="<?php esc_attr_e( 'Open order', 'equine-event-manager' ); ?>" title="<?php esc_attr_e( 'Open order', 'equine-event-manager' ); ?>" href="<?php echo esc_url( $order_url ); ?>"><span class="dashicons dashicons-ellipsis" aria-hidden="true"></span></a>
+						</div>
+					</div>
+				</div>
+			<?php endforeach; ?>
+		</div>
+		<?php $this->render_orders_pagination( $current_page, $total_pages, $total_items, 'bottom', $orderby, $order, $event_filter, $search_term, $per_page, $attention, $billing_flag ); ?>
+		<?php
+	}
+
+	/**
+	 * Render pagination controls for the Orders table.
+	 *
+	 * @param int    $current_page Current page number.
+	 * @param int    $total_pages Total number of pages.
+	 * @param int    $total_items Total number of items in current result set.
+	 * @param string $position top|bottom.
+	 * @param string $orderby Active sort column.
+	 * @param string $order Active sort direction.
+	 * @param string $event_filter Current event filter.
+	 * @return void
+	 */
+	private function render_orders_pagination( $current_page, $total_pages, $total_items, $position, $orderby, $order, $event_filter, $search_term, $per_page = 20, $attention = false, $billing_flag = '' ) {
+		if ( 'top' === $position ) {
+			return;
+		}
+
+		$base_url = $this->get_orders_page_url(
+			array(
+				'event_filter' => $event_filter,
+				's'            => $search_term,
+				'orderby'      => $orderby,
+				'order'        => $order,
+				'attention'    => $attention ? '1' : null,
+				'billing_flag' => $billing_flag,
+			)
+		);
+
+		$pagination = paginate_links(
+			array(
+				'base'      => add_query_arg( 'paged', '%#%', $base_url ),
+				'format'    => '',
+				'current'   => max( 1, $current_page ),
+				'total'     => max( 1, $total_pages ),
+				'type'      => 'array',
+				'prev_text' => '&lsaquo;',
+				'next_text' => '&rsaquo;',
+			)
+		);
+
+		if ( empty( $pagination ) ) {
+			return;
+		}
+		?>
+		<div class="tablenav <?php echo esc_attr( $position ); ?>">
+			<div class="tablenav-pages">
+				<?php if ( ! empty( $pagination ) ) : ?>
+					<span class="pagination-links">
+						<?php foreach ( $pagination as $page_link ) : ?>
+							<?php echo wp_kses_post( $page_link ); ?>
+						<?php endforeach; ?>
+					</span>
+				<?php endif; ?>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Build a sortable Orders table header link.
+	 *
+	 * @param string $column Column key.
+	 * @param string $label Column label.
+	 * @param string $current_orderby Current sort key.
+	 * @param string $current_order Current direction.
+	 * @param string $event_filter Current event filter.
+	 * @return string
+	 */
+	private function get_orders_sort_link( $column, $label, $current_orderby, $current_order, $event_filter, $search_term = '', $attention = false, $billing_flag = '' ) {
+		$is_current = $column === $current_orderby;
+		$next_order = ( $is_current && 'asc' === strtolower( (string) $current_order ) ) ? 'desc' : 'asc';
+		$url        = $this->get_orders_page_url(
+			array(
+				'event_filter' => $event_filter,
+				's'            => $search_term,
+				'orderby'      => $column,
+				'order'        => $next_order,
+				'attention'    => $attention ? '1' : null,
+				'billing_flag' => $billing_flag,
+			)
+		);
+		return sprintf(
+			'<a href="%1$s">%2$s</a>',
+			esc_url( $url ),
+			esc_html( $label )
+		);
+	}
+
+	/**
+	 * Refund a row through the selected payment gateway.
+	 *
+	 * @param array $component Order component.
+	 * @param float $amount Amount to refund.
+	 * @return string|WP_Error Refund transaction/reference ID.
+	 */
+	private function refund_order_component( $component, $amount = 0.0 ) {
+		if ( 'stripe' === $component['payment_gateway'] ) {
+			return $this->refund_with_stripe( $component, $amount );
+		}
+
+		if ( 'authorize_net' === $component['payment_gateway'] ) {
+			return $this->refund_with_authorize_net( $component, $amount );
+		}
+
+		return new WP_Error( 'unsupported_gateway', __( 'This order does not have a supported payment gateway for refunds yet.', 'equine-event-manager' ) );
+	}
+
+	/**
+	 * Refund a Stripe transaction.
+	 *
+	 * @param array $component Order component.
+	 * @param float $amount Amount to refund.
+	 * @return string|WP_Error
+	 */
+	private function refund_with_stripe( $component, $amount = 0.0 ) {
+		$settings = $this->get_payment_settings();
+		$stripe   = $settings['stripe'];
+		$secret   = 'live' === $stripe['mode'] ? $stripe['live_secret_key'] : $stripe['test_secret_key'];
+
+		if ( empty( $secret ) ) {
+			return new WP_Error( 'missing_credentials', __( 'Stripe credentials are missing.', 'equine-event-manager' ) );
+		}
+
+		$body = array();
+
+		if ( 0 === strpos( $component['transaction_id'], 'pi_' ) ) {
+			$body['payment_intent'] = $component['transaction_id'];
+		} else {
+			$body['charge'] = $component['transaction_id'];
+		}
+
+		if ( $amount > 0 ) {
+			$body['amount'] = max( 1, (int) round( $amount * 100 ) );
+		}
+
+		$response = wp_remote_post(
+			'https://api.stripe.com/v1/refunds',
+			array(
+				'timeout' => 30,
+				'headers' => array(
+					'Authorization' => 'Bearer ' . $secret,
+				),
+				'body'    => $body,
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		$payload = json_decode( wp_remote_retrieve_body( $response ), true );
+
+		if ( wp_remote_retrieve_response_code( $response ) >= 300 || empty( $payload['id'] ) ) {
+			$message = ! empty( $payload['error']['message'] ) ? $payload['error']['message'] : __( 'Stripe refund failed.', 'equine-event-manager' );
+			return new WP_Error( 'stripe_refund_failed', $message );
+		}
+
+		return sanitize_text_field( $payload['id'] );
+	}
+
+	/**
+	 * Attempt an Authorize.net void/refund.
+	 *
+	 * @param array $component Order component.
+	 * @param float $amount Amount to refund.
+	 * @return string|WP_Error
+	 */
+	private function refund_with_authorize_net( $component, $amount = 0.0 ) {
+		$remaining_amount = $this->get_component_remaining_refundable_amount( $component );
+
+		if ( $amount > 0 && abs( $remaining_amount - $amount ) > 0.009 ) {
+			return new WP_Error( 'authorize_partial_refund_unsupported', __( 'Authorize.net refunds currently need to be refunded as a full charged component in the admin.', 'equine-event-manager' ) );
+		}
+
+		$settings      = $this->get_payment_settings();
+		$authorize_net = $settings['authorize_net'];
+		$login_id      = 'live' === $authorize_net['mode'] ? $authorize_net['live_api_login'] : $authorize_net['test_api_login'];
+		$transaction_key = 'live' === $authorize_net['mode'] ? $authorize_net['live_transaction_key'] : $authorize_net['test_transaction_key'];
+
+		if ( empty( $login_id ) || empty( $transaction_key ) ) {
+			return new WP_Error( 'missing_credentials', __( 'Authorize.net credentials are missing.', 'equine-event-manager' ) );
+		}
+
+		$endpoint = 'live' === $authorize_net['mode']
+			? 'https://api.authorize.net/xml/v1/request.api'
+			: 'https://apitest.authorize.net/xml/v1/request.api';
+
+		$response = wp_remote_post(
+			$endpoint,
+			array(
+				'timeout' => 30,
+				'headers' => array(
+					'Content-Type' => 'application/json',
+					'Accept'       => 'application/json',
+				),
+				'body'    => wp_json_encode(
+					array(
+						'createTransactionRequest' => array(
+							'merchantAuthentication' => array(
+								'name'           => $login_id,
+								'transactionKey' => $transaction_key,
+							),
+							'transactionRequest'     => array(
+								'transactionType' => 'voidTransaction',
+								'refTransId'      => $component['transaction_id'],
+							),
+						),
+					)
+				),
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		$payload = json_decode( wp_remote_retrieve_body( $response ), true );
+		$result  = isset( $payload['transactionResponse']['responseCode'] ) ? (string) $payload['transactionResponse']['responseCode'] : '';
+
+		if ( '1' !== $result ) {
+			$message = ! empty( $payload['messages']['message'][0]['text'] ) ? $payload['messages']['message'][0]['text'] : __( 'Authorize.net refund/void failed. Settled refunds may require more card detail storage.', 'equine-event-manager' );
+			return new WP_Error( 'authorize_refund_failed', $message );
+		}
+
+		return ! empty( $payload['transactionResponse']['transId'] ) ? sanitize_text_field( $payload['transactionResponse']['transId'] ) : 'authorize-net-refund';
+	}
+
+	/**
+	 * Render report export history.
+	 *
+	 * @param array $logs Logged exports.
+	 */
+	private function render_report_logs_table( $logs ) {
+		?>
+		<table class="widefat fixed striped">
+			<thead>
+				<tr>
+					<th><?php esc_html_e( 'Exported At', 'equine-event-manager' ); ?></th>
+					<th><?php esc_html_e( 'Reservation', 'equine-event-manager' ); ?></th>
+					<th><?php esc_html_e( 'Scope', 'equine-event-manager' ); ?></th>
+					<th><?php esc_html_e( 'File Name', 'equine-event-manager' ); ?></th>
+					<th><?php esc_html_e( 'Exported By', 'equine-event-manager' ); ?></th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php if ( empty( $logs ) ) : ?>
+					<tr>
+						<td colspan="5"><?php esc_html_e( 'No reports exported yet.', 'equine-event-manager' ); ?></td>
+					</tr>
+				<?php else : ?>
+					<?php foreach ( $logs as $log ) : ?>
+						<tr>
+							<td data-label="<?php esc_attr_e( 'Exported At', 'equine-event-manager' ); ?>"><?php echo esc_html( $log['created_at'] ); ?></td>
+							<td data-label="<?php esc_attr_e( 'Reservation', 'equine-event-manager' ); ?>"><?php echo esc_html( $log['reservation_name'] ); ?></td>
+							<td data-label="<?php esc_attr_e( 'Scope', 'equine-event-manager' ); ?>"><?php echo esc_html( 'all' === $log['export_scope'] ? __( 'All reservations', 'equine-event-manager' ) : __( 'Single reservation', 'equine-event-manager' ) ); ?></td>
+							<td data-label="<?php esc_attr_e( 'File Name', 'equine-event-manager' ); ?>"><?php echo esc_html( $log['file_name'] ); ?></td>
+							<td data-label="<?php esc_attr_e( 'Exported By', 'equine-event-manager' ); ?>"><?php echo esc_html( $log['exported_by_name'] ); ?></td>
+						</tr>
+					<?php endforeach; ?>
+				<?php endif; ?>
+			</tbody>
+		</table>
+		<?php
+	}
+
+	/**
+	 * Render the branded page banner.
+	 *
+	 * @param string $title Banner title.
+	 * @param string $description Optional supporting text.
+	 */
+	private function render_brand_banner( $title, $description = '' ) {
+		$logo_url = EQUINE_EVENT_MANAGER_URL . 'admin/images/equine-event-manager-logo.png';
+		?>
+		<header class="eem-shell-header">
+			<div class="eem-shell-header__inner">
+				<div class="eem-shell-header__brand">
+					<img class="eem-shell-header__logo" src="<?php echo esc_url( $logo_url ); ?>" alt="<?php esc_attr_e( 'Equine Event Manager', 'equine-event-manager' ); ?>" width="150" style="display:block;width:150px;max-width:150px;height:auto;flex:0 0 auto;">
+					<div class="eem-shell-header__copy">
+						<h1 class="eem-shell-header__title"><?php echo esc_html( $title ); ?></h1>
+					</div>
+				</div>
+			</div>
+		</header>
+		<?php
+	}
+
+	/**
+	 * Render a simple key/value definition grid.
+	 *
+	 * @param array $items Items to render.
+	 */
+	private function render_key_value_grid( $items ) {
+		?>
+		<table class="widefat striped" role="presentation">
+			<tbody>
+			<?php foreach ( $items as $label => $value ) : ?>
+				<tr>
+					<th scope="row"><?php echo esc_html( $label ); ?></th>
+					<td>
+						<?php
+						if ( is_array( $value ) && ! empty( $value['html'] ) ) {
+							echo wp_kses(
+								$value['html'],
+								array(
+									'a' => array(
+										'href'   => true,
+										'class'  => true,
+										'target' => true,
+										'rel'    => true,
+									),
+									'button' => array(
+										'type'             => true,
+										'class'            => true,
+										'data-en-copy-url' => true,
+									),
+									'br' => array(),
+									'div' => array(
+										'class' => true,
+									),
+									'form' => array(
+										'method' => true,
+										'action' => true,
+										'class'  => true,
+									),
+									'input' => array(
+										'type'     => true,
+										'readonly' => true,
+										'value'    => true,
+										'name'     => true,
+										'placeholder' => true,
+										'class'    => true,
+										'id'       => true,
+									),
+									'label' => array(
+										'class' => true,
+									),
+									'option' => array(
+										'value'    => true,
+										'selected' => true,
+										'disabled' => true,
+									),
+									'select' => array(
+										'name'     => true,
+										'multiple' => true,
+										'size'     => true,
+										'class'    => true,
+									),
+									'span' => array(
+										'class' => true,
+									),
+									'ul' => array(
+										'class' => true,
+									),
+									'li' => array(
+										'class' => true,
+									),
+									'p'  => array(
+										'class' => true,
+									),
+									'strong' => array(
+										'class' => true,
+									),
+								)
+							);
+						} else {
+							echo esc_html( $value );
+						}
+						?>
+					</td>
+				</tr>
+			<?php endforeach; ?>
+			</tbody>
+		</table>
+		<?php
+	}
+
+	/**
+	 * Render two explicit definition columns for easier scanning.
+	 *
+	 * @param array $left_items Left column items.
+	 * @param array $right_items Right column items.
+	 */
+	private function render_key_value_columns( $left_items, $right_items ) {
+		?>
+		<?php $this->render_key_value_grid( $left_items ); ?>
+		<?php if ( ! empty( $right_items ) ) : ?>
+			<?php $this->render_key_value_grid( $right_items ); ?>
+		<?php endif; ?>
+		<?php
+	}
+
+	/**
+	 * Render grouped key/value rows for cleaner reservation layouts.
+	 *
+	 * @param array $rows Array of row item arrays.
+	 */
+	private function render_key_value_rows( $rows ) {
+		?>
+		<?php foreach ( $rows as $row_items ) : ?>
+			<?php
+			if ( empty( $row_items ) || ! is_array( $row_items ) ) {
+				continue;
+			}
+			?>
+			<?php $this->render_key_value_grid( $row_items ); ?>
+		<?php endforeach; ?>
+		<?php
+	}
+
+	/**
+	 * Format a currency value for admin display.
+	 *
+	 * @param float|int|string $value Amount to format.
+	 * @return string
+	 */
+	private function format_money( $value ) {
+		return '$' . number_format_i18n( (float) $value, 2 );
+	}
+
+	/**
+	 * Render reservation details in clearer event/stall/rv sections.
+	 *
+	 * @param array $event_details Event details.
+	 * @param array $stall_details Stall reservation detail rows.
+	 * @param array $rv_details    RV reservation detail rows.
+	 */
+	private function render_reservation_details_layout( $event_details, $stall_details, $rv_details ) {
+		?>
+		<h3><?php esc_html_e( 'Event', 'equine-event-manager' ); ?></h3>
+		<?php $this->render_key_value_grid( $event_details ); ?>
+		<?php if ( ! empty( $stall_details ) ) : ?>
+			<h3><?php esc_html_e( 'Stall Reservation', 'equine-event-manager' ); ?></h3>
+			<?php $this->render_key_value_rows( $stall_details ); ?>
+		<?php endif; ?>
+		<?php if ( ! empty( $rv_details ) ) : ?>
+			<h3><?php esc_html_e( 'RV Reservation', 'equine-event-manager' ); ?></h3>
+			<?php $this->render_key_value_rows( $rv_details ); ?>
+		<?php endif; ?>
+		<?php
+	}
+
+	/**
+	 * Format a stored phone number for display.
+	 *
+	 * @param string $phone Raw phone value.
+	 * @return string
+	 */
+	private function format_phone_label( $phone ) {
+		$phone       = trim( (string) $phone );
+		$digits_only = preg_replace( '/\D+/', '', $phone );
+
+		if ( strlen( $digits_only ) >= 10 ) {
+			$local_digits   = substr( $digits_only, -10 );
+			$country_digits = substr( $digits_only, 0, -10 );
+
+			if ( '' === $country_digits || preg_match( '/^1+$/', $country_digits ) ) {
+				return sprintf(
+					'(%1$s) %2$s-%3$s',
+					substr( $local_digits, 0, 3 ),
+					substr( $local_digits, 3, 3 ),
+					substr( $local_digits, 6, 4 )
+				);
+			}
+		}
+
+		return $phone;
+	}
+
+	/**
+	 * Format a payment status label for display.
+	 *
+	 * @param string $status Raw status.
+	 * @return string
+	 */
+	private function format_status_label( $status ) {
+		$status = str_replace( '_', ' ', (string) $status );
+
+		return ucwords( $status );
+	}
+
+	/**
+	 * Render Shopify-style type badges for an order.
+	 *
+	 * @param string $type_label Comma-separated type label string.
+	 * @return string
+	 */
+	private function render_order_type_badges( $type_label ) {
+		$parts = array_filter( array_map( 'trim', explode( ',', (string) $type_label ) ) );
+
+		if ( empty( $parts ) ) {
+			return '';
+		}
+
+		$badges = array();
+		$styles = array(
+			'stall'   => 'background:#eaf1ff !important;border-color:#bad0ff !important;color:#2453a6 !important;',
+			'rv'      => 'background:#ecf9ef !important;border-color:#bbe5c8 !important;color:#247548 !important;',
+			'addon'   => 'background:#fff7dc !important;border-color:#efd58a !important;color:#9b6a12 !important;',
+			'group'   => 'background:#f4ecff !important;border-color:#d7c2ff !important;color:#6c41b7 !important;',
+			'default' => '',
+		);
+
+		foreach ( $parts as $part ) {
+			$label = sanitize_text_field( $part );
+			$key   = sanitize_title( $label );
+
+			if ( false !== strpos( $key, 'add-on' ) || false !== strpos( $key, 'addon' ) ) {
+				$key   = 'addon';
+				$label = __( 'Add-On', 'equine-event-manager' );
+			} elseif ( false !== strpos( $key, 'stall' ) ) {
+				$key   = 'stall';
+				$label = __( 'Stall', 'equine-event-manager' );
+			} elseif ( 'rv' === $key || false !== strpos( $key, 'rv-' ) || false !== strpos( $key, '-rv' ) ) {
+				$key   = 'rv';
+				$label = __( 'RV', 'equine-event-manager' );
+			} elseif ( false !== strpos( $key, 'group' ) ) {
+				$key   = 'group';
+				$label = __( 'Group', 'equine-event-manager' );
+			} else {
+				$key = 'default';
+			}
+
+			$badges[] = sprintf(
+				'<span class="eem-shell-badge eem-shell-badge--%1$s"%3$s>%2$s</span>',
+				esc_attr( $key ),
+				esc_html( $label ),
+				! empty( $styles[ $key ] ) ? ' style="' . esc_attr( $styles[ $key ] ) . '"' : ''
+			);
+		}
+
+		return sprintf(
+			'<span class="eem-shell-badges">%s</span>',
+			implode( '', $badges )
+		);
+	}
+
+	/**
+	 * Render an app-style status badge for an order.
+	 *
+	 * @param string $status_label Readable status label.
+	 * @param string $status_slug  Machine status slug.
+	 * @return string
+	 */
+	private function render_order_status_badge( $status_label, $status_slug = '' ) {
+		$label = sanitize_text_field( (string) $status_label );
+		$slug  = sanitize_key( $status_slug ? $status_slug : sanitize_title( $label ) );
+
+		if ( '' === $label ) {
+			return '';
+		}
+
+		$variant = 'default';
+
+		if ( in_array( $slug, array( 'paid', 'completed' ), true ) ) {
+			$variant = 'paid';
+		} elseif ( in_array( $slug, array( 'unpaid', 'failed' ), true ) ) {
+			$variant = 'unpaid';
+		} elseif ( in_array( $slug, array( 'invoice-sent', 'pending', 'outstanding-show-bill' ), true ) ) {
+			$variant = 'pending';
+		} elseif ( in_array( $slug, array( 'partially-refunded', 'refunded' ), true ) ) {
+			$variant = 'refund';
+		}
+
+		$styles = array(
+			'paid'    => 'background:#ecf9ef !important;border-color:#bbe5c8 !important;color:#247548 !important;',
+			'pending' => 'background:#fff7dc !important;border-color:#efd58a !important;color:#9b6a12 !important;',
+			'unpaid'  => 'background:#fff0f0 !important;border-color:#f2b6b6 !important;color:#b44040 !important;',
+			'refund'  => 'background:#fff2e8 !important;border-color:#f0be91 !important;color:#b86a18 !important;',
+		);
+
+		return sprintf(
+			'<span class="eem-shell-badge eem-shell-badge--status eem-shell-badge--%1$s"%3$s>%2$s</span>',
+			esc_attr( $variant ),
+			esc_html( $label ),
+			! empty( $styles[ $variant ] ) ? ' style="' . esc_attr( $styles[ $variant ] ) . '"' : ''
+		);
+	}
+
+	/**
+	 * Format the number of nights between arrival and departure.
+	 *
+	 * @param string $arrival_date Arrival date.
+	 * @param string $departure_date Departure date.
+	 * @return string
+	 */
+	private function get_stay_nights_label( $arrival_date, $departure_date ) {
+		$arrival_timestamp   = strtotime( (string) $arrival_date );
+		$departure_timestamp = strtotime( (string) $departure_date );
+
+		if ( ! $arrival_timestamp || ! $departure_timestamp ) {
+			return '1';
+		}
+
+		$nights = max( 1, (int) round( ( $departure_timestamp - $arrival_timestamp ) / DAY_IN_SECONDS ) );
+
+		return sprintf(
+			/* translators: %d: number of nights. */
+			_n( '%d Night', '%d Nights', $nights, 'equine-event-manager' ),
+			$nights
+		);
+	}
+
+	/**
+	 * Get a clickable email definition value payload.
+	 *
+	 * @param string $email Email address.
+	 * @return array|string
+	 */
+	private function get_email_definition_value( $email ) {
+		$email = sanitize_email( (string) $email );
+
+		if ( '' === $email ) {
+			return '';
+		}
+
+		return array(
+			'html' => sprintf(
+				'<a href="mailto:%1$s">%2$s</a>',
+				esc_attr( $email ),
+				esc_html( $email )
+			),
+		);
+	}
+
+	/**
+	 * Get a clickable phone definition value payload.
+	 *
+	 * @param string $phone Raw phone number.
+	 * @return array|string
+	 */
+	private function get_phone_definition_value( $phone ) {
+		$phone       = trim( (string) $phone );
+		$digits_only = preg_replace( '/\D+/', '', $phone );
+		$formatted   = $this->format_phone_label( $phone );
+
+		if ( '' === $formatted ) {
+			return '';
+		}
+
+		if ( strlen( $digits_only ) >= 10 ) {
+			$local_digits   = substr( $digits_only, -10 );
+			$country_digits = substr( $digits_only, 0, -10 );
+			$href_number    = preg_match( '/^1+$/', $country_digits ) || '' === $country_digits ? '1' . $local_digits : $digits_only;
+
+			return array(
+				'html' => sprintf(
+					'<a href="tel:+%1$s">%2$s</a>',
+					esc_attr( $href_number ),
+					esc_html( $formatted )
+				),
+			);
+		}
+
+		return $formatted;
+	}
+
+	/**
+	 * Get a readable transaction ID summary for the order.
+	 *
+	 * @param array $order Order payload.
+	 * @return string
+	 */
+	private function get_transaction_id_summary( $order ) {
+		if ( empty( $order['components'] ) || ! is_array( $order['components'] ) ) {
+			return __( 'Pending', 'equine-event-manager' );
+		}
+
+		$transaction_ids = array();
+
+		foreach ( $order['components'] as $component ) {
+			if ( empty( $component['transaction_id'] ) ) {
+				continue;
+			}
+
+			$transaction_ids[] = sanitize_text_field( $component['transaction_id'] );
+		}
+
+		$transaction_ids = array_values( array_unique( array_filter( $transaction_ids ) ) );
+
+		if ( empty( $transaction_ids ) ) {
+			return __( 'Pending', 'equine-event-manager' );
+		}
+
+		if ( 1 === count( $transaction_ids ) ) {
+			return $transaction_ids[0];
+		}
+
+		return sprintf(
+			/* translators: 1: first transaction ID, 2: number of additional transaction IDs. */
+			__( '%1$s + %2$d more', 'equine-event-manager' ),
+			$transaction_ids[0],
+			count( $transaction_ids ) - 1
+		);
+	}
+
+	/**
+	 * Format a stay type key for display.
+	 *
+	 * @param string $stay_type Raw stay type value.
+	 * @return string
+	 */
+	private function format_stay_type_label( $stay_type ) {
+		$stay_type = sanitize_key( $stay_type );
+
+		if ( 'weekend' === $stay_type ) {
+			return __( 'Weekend', 'equine-event-manager' );
+		}
+
+		if ( 'nightly' === $stay_type ) {
+			return __( 'Nightly', 'equine-event-manager' );
+		}
+
+		return $stay_type ? ucfirst( $stay_type ) : '';
+	}
+
+	/**
+	 * Format an RV hookup type key for display.
+	 *
+	 * @param string $rv_type Raw RV type value.
+	 * @return string
+	 */
+	private function format_rv_type_label( $rv_type ) {
+		$labels = array(
+			'electric_water' => __( 'Electrical & Water', 'equine-event-manager' ),
+			'electric_only'  => __( 'Electrical Only', 'equine-event-manager' ),
+			'water_only'     => __( 'Water Only', 'equine-event-manager' ),
+			'electric'       => __( 'Electric', 'equine-event-manager' ),
+			'water'          => __( 'Water', 'equine-event-manager' ),
+			'sewage'         => __( 'Sewage', 'equine-event-manager' ),
+		);
+
+		$formatted_labels = array();
+		$raw_parts        = preg_split( '/\s*,\s*/', trim( (string) $rv_type ) );
+
+		foreach ( (array) $raw_parts as $raw_part ) {
+			$normalized = sanitize_key( $raw_part );
+
+			if ( isset( $labels[ $normalized ] ) ) {
+				$formatted_labels[] = $labels[ $normalized ];
+			}
+		}
+
+		if ( empty( $formatted_labels ) ) {
+			$raw_value = sanitize_key( trim( (string) $rv_type ) );
+
+			foreach ( $labels as $normalized => $label ) {
+				if ( false !== strpos( $raw_value, $normalized ) ) {
+					$formatted_labels[] = $label;
+				}
+			}
+		}
+
+		$formatted_labels = array_values( array_unique( array_filter( $formatted_labels ) ) );
+
+		if ( empty( $formatted_labels ) ) {
+			$raw_value = trim( (string) $rv_type );
+
+			return $raw_value ? ucwords( str_replace( '_', ' ', $raw_value ) ) : '';
+		}
+
+		return implode( ', ', $formatted_labels );
+	}
+
+	/**
+	 * Get an RV add-on definition payload for card rendering.
+	 *
+	 * @param string $rv_type Raw RV add-on value.
+	 * @return array|string
+	 */
+	private function get_rv_addon_definition_value( $rv_type ) {
+		$labels = array_filter( array_map( 'trim', explode( ',', $this->format_rv_type_label( $rv_type ) ) ) );
+
+		if ( empty( $labels ) ) {
+			return '';
+		}
+
+		if ( 1 === count( $labels ) ) {
+			return $labels[0];
+		}
+
+		$list_items = '';
+
+		foreach ( $labels as $label ) {
+			$list_items .= '<li>' . esc_html( $label ) . '</li>';
+		}
+
+		return array(
+			'html' => '<ul>' . $list_items . '</ul>',
+		);
+	}
+
+	/**
+	 * Format a reservation date for display.
+	 *
+	 * @param string $value Raw date value.
+	 * @return string
+	 */
+	private function format_reservation_date_label( $value ) {
+		$value = trim( (string) $value );
+
+		if ( '' === $value ) {
+			return '';
+		}
+
+		$timezone = wp_timezone();
+		$date     = date_create_immutable_from_format( '!Y-m-d', $value, $timezone );
+
+		if ( $date ) {
+			return wp_date( 'l, F j, Y', $date->getTimestamp(), $timezone );
+		}
+
+		$timestamp = strtotime( $value );
+
+		return $timestamp ? wp_date( 'l, F j, Y', $timestamp, $timezone ) : $value;
+	}
+
+	/**
+	 * Extract customer special requests from stored order notes.
+	 *
+	 * @param string $notes Raw notes value.
+	 * @return string
+	 */
+	private function get_special_requests_from_order_notes( $notes ) {
+		$lines = preg_split( "/\r\n|\r|\n/", trim( (string) $notes ) );
+
+		if ( empty( $lines ) ) {
+			return '';
+		}
+
+		$filtered            = array();
+		$skipping_billing    = false;
+		$metadata_line_regex = '/^(Reservation setup ID:|Submission token:|RV Add-Ons:|Group Charge:|Group Reservation:|Group Riders Count:|Group Riders:|RV Lot:|Assigned Stall Units:|Assigned RV Lots:|Assigned RV Units:|Add-On:|Venue Agreement (Accepted|Provided):|Invoice Type:|Invoice Token:|Invoice Status:|Invoice Sent At:|Invoice Paid At:|Refunded Amount:|Refunded Items:|Last Refund Transaction:|Last Refunded At:)/i';
+
+		foreach ( $lines as $line ) {
+			$line = trim( (string) $line );
+
+			if ( '' === $line ) {
+				if ( ! $skipping_billing ) {
+					$filtered[] = '';
+				}
+				continue;
+			}
+
+			if ( preg_match( '/^Billing Name:/i', $line ) || preg_match( '/^Billing Address:/i', $line ) ) {
+				$skipping_billing = true;
+				continue;
+			}
+
+			if ( preg_match( $metadata_line_regex, $line ) ) {
+				$skipping_billing = false;
+				continue;
+			}
+
+			if ( $skipping_billing ) {
+				continue;
+			}
+
+			$filtered[] = $line;
+		}
+
+		$notes = trim( preg_replace( "/\n{3,}/", "\n\n", implode( "\n", $filtered ) ) );
+
+		return $this->strip_billing_lines_from_special_requests(
+			$notes,
+			$this->get_billing_details_from_order_notes( $notes )
+		);
+	}
+
+	/**
+	 * Remove leaked billing lines from the special requests output.
+	 *
+	 * @param string $special_requests Parsed special requests text.
+	 * @param string $billing_details Parsed billing details text.
+	 * @return string
+	 */
+	private function strip_billing_lines_from_special_requests( $special_requests, $billing_details ) {
+		$special_lines = preg_split( "/\r\n|\r|\n/", trim( (string) $special_requests ) );
+		$billing_lines = preg_split( "/\r\n|\r|\n/", trim( (string) $billing_details ) );
+		$billing_map   = array();
+		$filtered      = array();
+
+		foreach ( $billing_lines as $billing_line ) {
+			$billing_line = trim( (string) $billing_line );
+
+			if ( '' !== $billing_line ) {
+				$billing_map[ strtolower( $billing_line ) ] = true;
+			}
+		}
+
+		foreach ( $special_lines as $special_line ) {
+			$special_line = trim( (string) $special_line );
+
+			if ( '' === $special_line ) {
+				if ( ! empty( $filtered ) && '' !== end( $filtered ) ) {
+					$filtered[] = '';
+				}
+				continue;
+			}
+
+			if ( isset( $billing_map[ strtolower( $special_line ) ] ) ) {
+				continue;
+			}
+
+			$filtered[] = $special_line;
+		}
+
+		return trim( preg_replace( "/\n{3,}/", "\n\n", implode( "\n", $filtered ) ) );
+	}
+
+	/**
+	 * Build refund detail rows for the order details screen.
+	 *
+	 * @param array $order Grouped order payload.
+	 * @return array<int, array<string, string>>
+	 */
+	private function get_refund_details_from_order( $order ) {
+		$rows = array();
+
+		if ( empty( $order['components'] ) || ! is_array( $order['components'] ) ) {
+			return $rows;
+		}
+
+		foreach ( $order['components'] as $component ) {
+			$notes             = isset( $component['notes'] ) ? (string) $component['notes'] : '';
+			$refunded_amount   = $this->get_order_note_value( $notes, 'Refunded Amount' );
+			$refund_txn        = $this->get_order_note_value( $notes, 'Last Refund Transaction' );
+			$refunded_at       = $this->get_order_note_value( $notes, 'Last Refunded At' );
+			$refunded_item_ids = $this->get_component_refunded_item_ids( $component );
+
+			if ( '' === $refunded_amount && '' === $refund_txn && '' === $refunded_at && empty( $refunded_item_ids ) ) {
+				continue;
+			}
+
+			$row = array(
+				__( 'Component', 'equine-event-manager' ) => $this->get_component_refund_title( $component ),
+			);
+
+			if ( '' !== $refunded_amount ) {
+				$row[ __( 'Refunded Amount', 'equine-event-manager' ) ] = $this->format_money( (float) $refunded_amount );
+			}
+
+			if ( ! empty( $refunded_item_ids ) ) {
+				$row[ __( 'Refunded Items', 'equine-event-manager' ) ] = $this->format_refunded_item_labels_for_component( $order, $component, $refunded_item_ids );
+			}
+
+			if ( '' !== $refund_txn ) {
+				$row[ __( 'Refund Transaction', 'equine-event-manager' ) ] = $refund_txn;
+			}
+
+			if ( '' !== $refunded_at ) {
+				$row[ __( 'Refunded At', 'equine-event-manager' ) ] = $refunded_at;
+			}
+
+			$rows[] = $row;
+		}
+
+		return $rows;
+	}
+
+	/**
+	 * Format refunded item labels for display.
+	 *
+	 * @param array $order Grouped order payload.
+	 * @param array $component Order component payload.
+	 * @param array $refunded_item_ids Refunded item IDs.
+	 * @return string
+	 */
+	private function format_refunded_item_labels_for_component( $order, $component, $refunded_item_ids ) {
+		$label_map = $this->get_component_refund_item_label_map( $order, $component );
+		$labels    = array();
+
+		foreach ( (array) $refunded_item_ids as $item_id ) {
+			$item_id = sanitize_text_field( (string) $item_id );
+
+			if ( '' === $item_id ) {
+				continue;
+			}
+
+			if ( isset( $label_map[ $item_id ] ) ) {
+				$labels[] = $label_map[ $item_id ];
+				continue;
+			}
+
+			$raw_label = preg_replace( '/^.*\|/', '', $item_id );
+			$raw_label = str_replace( array( '-', '_' ), ' ', (string) $raw_label );
+			$labels[]  = ucwords( trim( $raw_label ) );
+		}
+
+		$labels = array_values( array_unique( array_filter( $labels ) ) );
+
+		return ! empty( $labels ) ? implode( ', ', $labels ) : __( 'Not specified', 'equine-event-manager' );
+	}
+
+	/**
+	 * Build a refund item label map for a component.
+	 *
+	 * @param array $order Grouped order payload.
+	 * @param array $component Order component payload.
+	 * @return array<string, string>
+	 */
+	private function get_component_refund_item_label_map( $order, $component ) {
+		$items = array();
+
+		if ( 'authorize_net' === ( isset( $component['payment_gateway'] ) ? $component['payment_gateway'] : '' ) ) {
+			$items[] = array(
+				'slug'  => 'full-component',
+				'label' => sprintf( __( 'Full %s refund', 'equine-event-manager' ), $this->get_component_refund_title( $component ) ),
+			);
+		} elseif ( 'stall' === $component['type'] ) {
+			$items = $this->build_stall_component_refund_items( $order, $component );
+		} else {
+			$items = $this->build_rv_component_refund_items( $order, $component );
+		}
+
+		$map = array();
+
+		foreach ( $items as $item ) {
+			if ( empty( $item['slug'] ) || empty( $item['label'] ) ) {
+				continue;
+			}
+
+			$map[ $this->build_refund_item_id( $component, $item['slug'] ) ] = (string) $item['label'];
+		}
+
+		$map[ $this->build_refund_item_id( $component, 'component-total' ) ] = $this->get_component_refund_title( $component );
+
+		return $map;
+	}
+
+	/**
+	 * Extract billing details from stored order notes.
+	 *
+	 * @param string $notes Raw notes value.
+	 * @return string
+	 */
+	private function get_billing_details_from_order_notes( $notes ) {
+		$lines                 = preg_split( "/\r\n|\r|\n/", (string) $notes );
+		$billing_name          = '';
+		$billing_address_lines = array();
+		$capturing             = false;
+		$metadata_line_regex   = '/^(Venue Agreement (Accepted|Provided):|Add-On:|Group Charge:|Group Reservation:|Group Riders Count:|Group Riders:|Invoice Type:|Reservation setup ID:|Submission token:|RV Lot:|RV Add-Ons:|Invoice Token:|Invoice Status:|Invoice Sent At:|Invoice Paid At:)/i';
+
+		foreach ( $lines as $line ) {
+			$line = trim( (string) $line );
+
+			if ( '' === $line ) {
+				if ( $capturing ) {
+					break;
+				}
+				continue;
+			}
+
+			if ( preg_match( '/^Billing Name:\s*(.+)$/i', $line, $matches ) ) {
+				$billing_name = trim( $matches[1] );
+				$capturing    = true;
+				continue;
+			}
+
+			if ( preg_match( '/^Billing Address:\s*(.+)$/i', $line, $matches ) ) {
+				$billing_address_lines[] = trim( $matches[1] );
+				$capturing               = true;
+				continue;
+			}
+
+			if ( $capturing ) {
+				if ( preg_match( $metadata_line_regex, $line ) ) {
+					break;
+				}
+
+				$billing_address_lines[] = $line;
+			}
+		}
+
+		$billing = trim( $billing_name . "\n" . implode( "\n", array_filter( $billing_address_lines ) ) );
+
+		if ( '' !== $billing ) {
+			return $billing;
+		}
+
+		if ( preg_match( '/Billing Address:\s*(.+)$/mi', (string) $notes, $matches ) ) {
+			$billing = trim( $matches[1] );
+
+			if ( '' !== $billing ) {
+				return $billing;
+			}
+		}
+
+		return __( 'No billing details provided.', 'equine-event-manager' );
+	}
+
+	/**
+	 * Detect whether venue agreement was provided for an order.
+	 *
+	 * @param string $notes Raw order notes.
+	 * @return bool
+	 */
+	private function has_venue_agreement_from_order_notes( $notes ) {
+		return (bool) preg_match( '/(?:^|\n)Venue Agreement (Accepted|Provided):\s*Yes(?:\n|$)/i', (string) $notes );
+	}
+
+	/**
+	 * Extract reservation setup ID from component notes.
+	 *
+	 * @param string $notes Raw notes value.
+	 * @return int
+	 */
+	private static function extract_reservation_id_from_notes( $notes ) {
+		if ( preg_match( '/(?:^|\n)Reservation setup ID:\s*(\d+)/i', (string) $notes, $matches ) ) {
+			return absint( $matches[1] );
+		}
+
+		return 0;
+	}
+
+	/**
+	 * Render order totals.
+	 *
+	 * @param array $order Order data.
+	 */
+	private function render_order_totals_table( $order ) {
+		$rows                     = array();
+		$stall_breakdown          = $this->get_order_stall_breakdown( $order );
+		$rv_addon_breakdown       = $this->get_order_rv_addon_breakdown( $order );
+		$rows[ __( 'Stall Subtotal', 'equine-event-manager' ) ] = $stall_breakdown['base_subtotal'];
+
+		if ( $stall_breakdown['required_shavings_qty'] > 0 || $stall_breakdown['required_shavings_subtotal'] > 0 ) {
+			$rows[ __( 'Required Shavings', 'equine-event-manager' ) ] = $stall_breakdown['required_shavings_subtotal'];
+		}
+
+		if ( $stall_breakdown['additional_shavings_qty'] > 0 || $stall_breakdown['additional_shavings_subtotal'] > 0 ) {
+			$rows[ __( 'Additional Shavings', 'equine-event-manager' ) ] = $stall_breakdown['additional_shavings_subtotal'];
+		}
+
+		if ( ! empty( $rv_addon_breakdown ) ) {
+			$rv_base_subtotal = max( 0, (float) $order['rv_subtotal'] - array_sum( wp_list_pluck( $rv_addon_breakdown, 'subtotal' ) ) );
+			$rows[ __( 'RV Subtotal', 'equine-event-manager' ) ] = $rv_base_subtotal;
+
+			foreach ( $rv_addon_breakdown as $addon_label => $addon_row ) {
+				$rows[ sprintf( __( '%s Add-On', 'equine-event-manager' ), $addon_row['label'] ) ] = $addon_row['subtotal'];
+			}
+		} else {
+			$rows[ __( 'RV Subtotal', 'equine-event-manager' ) ] = $order['rv_subtotal'];
+		}
+
+		$rows[ __( 'Non-Refundable Convenience Fee', 'equine-event-manager' ) ] = $order['fees'];
+		$rows[ __( 'Total', 'equine-event-manager' ) ]                           = $order['total'];
+
+		?>
+		<table class="widefat fixed striped">
+			<tbody>
+				<?php foreach ( $rows as $label => $amount ) : ?>
+					<tr>
+						<th><?php echo esc_html( $label ); ?></th>
+						<td>
+							<?php if ( __( 'Total', 'equine-event-manager' ) === $label ) : ?>
+								<strong><?php echo esc_html( '$' . number_format_i18n( (float) $amount, 2 ) ); ?></strong>
+							<?php else : ?>
+								<?php echo esc_html( '$' . number_format_i18n( (float) $amount, 2 ) ); ?>
+							<?php endif; ?>
+						</td>
+					</tr>
+				<?php endforeach; ?>
+			</tbody>
+		</table>
+		<?php
+	}
+
+	/**
+	 * Get a derived stall subtotal breakdown for an order.
+	 *
+	 * @param array $order Order payload.
+	 * @return array
+	 */
+	private function get_order_stall_breakdown( $order ) {
+		$reservation_id               = ! empty( $order['reservation_id'] ) ? absint( $order['reservation_id'] ) : 0;
+		$required_price              = $reservation_id ? (float) get_post_meta( $reservation_id, 'required_shavings_price', true ) : 0.0;
+		$additional_price            = $reservation_id ? (float) get_post_meta( $reservation_id, 'additional_shavings_price', true ) : 0.0;
+		$required_shavings_qty       = 0;
+		$additional_shavings_qty     = 0;
+		$base_subtotal               = 0.0;
+		$required_shavings_subtotal  = 0.0;
+		$additional_shavings_subtotal = 0.0;
+		$stall_rows                  = $this->get_order_component_rows( $order, 'stall' );
+
+		foreach ( $stall_rows as $row ) {
+			$row_reservation_id         = self::extract_reservation_id_from_notes( isset( $row['notes'] ) ? $row['notes'] : '' );
+			$row_reservation_id         = $row_reservation_id ? $row_reservation_id : $reservation_id;
+			$row_required_price         = $row_reservation_id ? (float) get_post_meta( $row_reservation_id, 'required_shavings_price', true ) : $required_price;
+			$row_additional_price       = $row_reservation_id ? (float) get_post_meta( $row_reservation_id, 'additional_shavings_price', true ) : $additional_price;
+			$stall_quantity             = absint( $row['stall_qty'] ) + absint( $row['tack_stall_qty'] );
+			$row_required_qty           = absint( $row['required_shavings_qty'] );
+			$row_additional_qty         = absint( $row['additional_shavings_qty'] );
+			$stay_units                 = $this->get_billable_stay_units( $row['arrival_date'], $row['departure_date'], $row['stay_type'] );
+			$row_base_subtotal          = $stall_quantity * (float) $row['unit_price'] * $stay_units;
+			$row_required_subtotal      = $row_required_qty * $row_required_price;
+			$row_additional_subtotal    = $row_additional_qty * $row_additional_price;
+			$row_shavings_total         = max( 0, (float) $row['subtotal'] - $row_base_subtotal );
+			$row_priced_shavings_total  = $row_required_subtotal + $row_additional_subtotal;
+
+			if ( $row_shavings_total > 0 && ( $row_required_qty > 0 || $row_additional_qty > 0 ) ) {
+				if ( $row_priced_shavings_total > 0 ) {
+					$shavings_scale = $row_shavings_total / $row_priced_shavings_total;
+
+					$row_required_subtotal   *= $shavings_scale;
+					$row_additional_subtotal *= $shavings_scale;
+				} else {
+					$total_shavings_qty = $row_required_qty + $row_additional_qty;
+
+					if ( $total_shavings_qty > 0 ) {
+						$derived_per_bag = $row_shavings_total / $total_shavings_qty;
+
+						$row_required_subtotal   = $row_required_qty * $derived_per_bag;
+						$row_additional_subtotal = $row_additional_qty * $derived_per_bag;
+					}
+				}
+			}
+
+			$required_shavings_qty      += $row_required_qty;
+			$additional_shavings_qty    += $row_additional_qty;
+			$base_subtotal              += $row_base_subtotal;
+			$required_shavings_subtotal += $row_required_subtotal;
+			$additional_shavings_subtotal += $row_additional_subtotal;
+		}
+
+		if ( empty( $stall_rows ) ) {
+			$required_shavings_qty       = absint( $order['required_shavings_qty'] );
+			$additional_shavings_qty     = absint( $order['additional_shavings_qty'] );
+			$required_shavings_subtotal  = $required_shavings_qty * $required_price;
+			$additional_shavings_subtotal = $additional_shavings_qty * $additional_price;
+			$base_subtotal               = max( 0, (float) $order['stall_subtotal'] - $required_shavings_subtotal - $additional_shavings_subtotal );
+		}
+
+		$total_shavings_qty = $required_shavings_qty + $additional_shavings_qty;
+		$stored_stall_total = (float) $order['stall_subtotal'];
+		$derived_shavings_total = $required_shavings_subtotal + $additional_shavings_subtotal;
+
+		if ( $total_shavings_qty > 0 && $stored_stall_total > 0 ) {
+			$derived_base_subtotal = max( 0, $stored_stall_total - $derived_shavings_total );
+
+			if ( $derived_shavings_total <= 0 || $derived_base_subtotal > $base_subtotal + 0.01 ) {
+				$fallback_shavings_total = max( 0, $stored_stall_total - $base_subtotal );
+
+				if ( $fallback_shavings_total > 0 ) {
+					if ( $derived_shavings_total > 0 ) {
+						$shavings_scale = $fallback_shavings_total / $derived_shavings_total;
+
+						$required_shavings_subtotal   *= $shavings_scale;
+						$additional_shavings_subtotal *= $shavings_scale;
+					} elseif ( $required_shavings_qty > 0 && $additional_shavings_qty > 0 ) {
+						$required_ratio = $required_shavings_qty / $total_shavings_qty;
+
+						$required_shavings_subtotal   = $fallback_shavings_total * $required_ratio;
+						$additional_shavings_subtotal = $fallback_shavings_total - $required_shavings_subtotal;
+					} elseif ( $required_shavings_qty > 0 ) {
+						$required_shavings_subtotal   = $fallback_shavings_total;
+						$additional_shavings_subtotal = 0.0;
+					} elseif ( $additional_shavings_qty > 0 ) {
+						$required_shavings_subtotal   = 0.0;
+						$additional_shavings_subtotal = $fallback_shavings_total;
+					}
+				}
+			}
+		}
+
+		return array(
+			'base_subtotal'               => $base_subtotal,
+			'required_shavings_qty'       => $required_shavings_qty,
+			'required_shavings_subtotal'  => $required_shavings_subtotal,
+			'additional_shavings_qty'     => $additional_shavings_qty,
+			'additional_shavings_subtotal' => $additional_shavings_subtotal,
+		);
+	}
+
+	/**
+	 * Get a derived RV add-on subtotal breakdown for an order.
+	 *
+	 * @param array $order Order payload.
+	 * @return array
+	 */
+	private function get_order_rv_addon_breakdown( $order ) {
+		$breakdown = array();
+		$rv_rows   = $this->get_order_component_rows( $order, 'rv' );
+		$rv_base_subtotal = 0.0;
+
+		foreach ( $rv_rows as $row ) {
+			$reservation_id = self::extract_reservation_id_from_notes( isset( $row['notes'] ) ? $row['notes'] : '' );
+			$reservation_id = $reservation_id ? $reservation_id : ( ! empty( $order['reservation_id'] ) ? absint( $order['reservation_id'] ) : 0 );
+			$rv_labels      = $this->get_rv_addon_labels_from_row_payload( $row );
+			$rv_labels      = ! empty( $rv_labels ) ? $rv_labels : $this->get_order_rv_addon_labels( $order );
+			$rv_quantity    = absint( $row['rv_qty'] );
+
+			if ( empty( $rv_labels ) || $rv_quantity < 1 ) {
+				continue;
+			}
+
+			$stay_type  = ! empty( $row['stay_type'] ) ? sanitize_key( $row['stay_type'] ) : 'nightly';
+			$stay_units = $this->get_billable_stay_units( $row['arrival_date'], $row['departure_date'], $stay_type );
+			$row_base_subtotal = $rv_quantity * (float) $row['unit_price'] * $stay_units;
+			$row_addon_total   = max( 0, (float) $row['subtotal'] - $row_base_subtotal );
+			$row_priced_total  = 0.0;
+			$row_breakdown     = array();
+			$rv_base_subtotal += $row_base_subtotal;
+
+			$reservation_rv_addons = $reservation_id ? $this->get_reservation_meta_values( $reservation_id )['rv_addons'] : array();
+
+			foreach ( $rv_labels as $addon_label ) {
+				$rate = $this->get_named_rv_addon_price( $reservation_rv_addons, $addon_label );
+
+				if ( $rate <= 0 ) {
+					$row_breakdown[ $addon_label ] = array(
+						'label'    => $addon_label,
+						'subtotal' => 0.0,
+					);
+					continue;
+				}
+
+				$row_breakdown[ $addon_label ] = array(
+					'label'    => $addon_label,
+					'subtotal' => $rv_quantity * $rate * $stay_units,
+				);
+				$row_priced_total += $row_breakdown[ $addon_label ]['subtotal'];
+			}
+
+			if ( $row_addon_total > 0 && ! empty( $row_breakdown ) ) {
+				if ( $row_priced_total > 0 ) {
+					$addon_scale = $row_addon_total / $row_priced_total;
+
+					foreach ( $row_breakdown as $addon_label => $addon_row ) {
+						$row_breakdown[ $addon_label ]['subtotal'] = $addon_row['subtotal'] * $addon_scale;
+					}
+				} else {
+					$equal_share = $row_addon_total / count( $row_breakdown );
+
+					foreach ( $row_breakdown as $addon_label => $addon_row ) {
+						$row_breakdown[ $addon_label ]['subtotal'] = $equal_share;
+					}
+				}
+			}
+
+			foreach ( $row_breakdown as $addon_label => $addon_row ) {
+				if ( ! isset( $breakdown[ $addon_label ] ) ) {
+					$breakdown[ $addon_label ] = array(
+						'label'    => $addon_label,
+						'subtotal' => 0.0,
+					);
+				}
+
+				$breakdown[ $addon_label ]['subtotal'] += $addon_row['subtotal'];
+			}
+		}
+
+		if ( ! empty( $breakdown ) ) {
+			return $breakdown;
+		}
+
+		$reservation_id = ! empty( $order['reservation_id'] ) ? absint( $order['reservation_id'] ) : 0;
+		$rv_labels      = $this->get_order_rv_addon_labels( $order );
+		$stored_rv_total = (float) $order['rv_subtotal'];
+		$fallback_addon_total = max( 0, $stored_rv_total - $rv_base_subtotal );
+
+		if ( empty( $rv_labels ) ) {
+			return $breakdown;
+		}
+
+		$rv_quantity = absint( $order['rv_quantity'] );
+
+		if ( $rv_quantity < 1 && $fallback_addon_total <= 0 ) {
+			return $breakdown;
+		}
+
+		$stay_type  = ! empty( $order['rv_stay_type'] ) ? sanitize_key( $order['rv_stay_type'] ) : 'nightly';
+		$stay_units = $this->get_billable_stay_units( $order['rv_arrival_date'], $order['rv_departure_date'], $stay_type );
+		$priced_total = 0.0;
+
+		$reservation_rv_addons = $reservation_id ? $this->get_reservation_meta_values( $reservation_id )['rv_addons'] : array();
+
+		foreach ( $rv_labels as $addon_label ) {
+			$rate = $this->get_named_rv_addon_price( $reservation_rv_addons, $addon_label );
+
+			if ( $rate <= 0 ) {
+				$breakdown[ $addon_label ] = array(
+					'label'    => $addon_label,
+					'subtotal' => 0.0,
+				);
+				continue;
+			}
+
+			$breakdown[ $addon_label ] = array(
+				'label'    => $addon_label,
+				'subtotal' => $rv_quantity * $rate * $stay_units,
+			);
+			$priced_total += $breakdown[ $addon_label ]['subtotal'];
+		}
+
+		if ( $fallback_addon_total > 0 && ! empty( $breakdown ) ) {
+			if ( $priced_total > 0 ) {
+				$scale = $fallback_addon_total / $priced_total;
+
+				foreach ( $breakdown as $addon_label => $addon_row ) {
+					$breakdown[ $addon_label ]['subtotal'] = $addon_row['subtotal'] * $scale;
+				}
+			} else {
+				$equal_share = $fallback_addon_total / count( $breakdown );
+
+				foreach ( $breakdown as $addon_label => $addon_row ) {
+					$breakdown[ $addon_label ]['subtotal'] = $equal_share;
+				}
+			}
+		}
+
+		return $breakdown;
+	}
+
+	/**
+	 * Get the configured price for a saved RV add-on by name.
+	 *
+	 * @param array  $rv_addons Saved RV add-on rows.
+	 * @param string $addon_label Add-on label.
+	 * @return float
+	 */
+	private function get_named_rv_addon_price( $rv_addons, $addon_label ) {
+		$addon_label = sanitize_text_field( $addon_label );
+
+		foreach ( (array) $rv_addons as $addon ) {
+			if ( ! is_array( $addon ) || empty( $addon['name'] ) ) {
+				continue;
+			}
+
+			if ( sanitize_text_field( $addon['name'] ) !== $addon_label ) {
+				continue;
+			}
+
+			if ( isset( $addon['price'] ) ) {
+				return (float) $addon['price'];
+			}
+
+			if ( isset( $addon['nightly_rate'] ) ) {
+				return (float) $addon['nightly_rate'];
+			}
+
+			if ( isset( $addon['weekend_rate'] ) ) {
+				return (float) $addon['weekend_rate'];
+			}
+		}
+
+		return 0.0;
+	}
+
+	/**
+	 * Get saved DB rows for order components of a given type.
+	 *
+	 * @param array  $order Grouped order payload.
+	 * @param string $component_type Component type.
+	 * @return array
+	 */
+	private function get_order_component_rows( $order, $component_type ) {
+		global $wpdb;
+
+		$row_ids = array();
+
+		foreach ( (array) $order['components'] as $component ) {
+			if ( empty( $component['table'] ) || $component_type !== $component['table'] || empty( $component['row_id'] ) ) {
+				continue;
+			}
+
+			$row_ids[] = absint( $component['row_id'] );
+		}
+
+		$row_ids = array_values( array_unique( array_filter( $row_ids ) ) );
+
+		if ( empty( $row_ids ) ) {
+			return array();
+		}
+
+		$table_name   = 'stall' === $component_type ? $wpdb->prefix . 'en_stall_reservations' : $wpdb->prefix . 'en_rv_reservations';
+		$placeholders = implode( ',', array_fill( 0, count( $row_ids ), '%d' ) );
+		$query        = $wpdb->prepare( "SELECT * FROM {$table_name} WHERE id IN ({$placeholders})", $row_ids );
+
+		return (array) $wpdb->get_results( $query, ARRAY_A );
+	}
+
+	/**
+	 * Get selected RV add-on labels from an order.
+	 *
+	 * @param array $order Order payload.
+	 * @return array
+	 */
+	private function get_order_rv_addon_labels( $order ) {
+		$raw = ! empty( $order['rv_type'] ) ? (string) $order['rv_type'] : '';
+
+		if ( '' === $raw && ! empty( $order['notes'] ) && preg_match( '/(?:^|\n)RV Add-Ons:\s*(.+)$/mi', (string) $order['notes'], $matches ) ) {
+			$raw = trim( $matches[1] );
+		}
+
+		if ( '' === $raw ) {
+			return array();
+		}
+
+		$raw_parts = preg_split( '/\s*,\s*/', trim( (string) $raw ) );
+		$labels    = array();
+
+		foreach ( (array) $raw_parts as $raw_part ) {
+			$raw_part = trim( (string) $raw_part );
+
+			if ( '' === $raw_part ) {
+				continue;
+			}
+
+			$labels[] = sanitize_text_field( $raw_part );
+		}
+
+		return array_values( array_unique( array_filter( $labels ) ) );
+	}
+
+	/**
+	 * Get selected RV add-on labels from a raw RV row payload.
+	 *
+	 * @param array $row Raw RV row.
+	 * @return array
+	 */
+	private function get_rv_addon_labels_from_row_payload( $row ) {
+		$raw = ! empty( $row['rv_type'] ) ? (string) $row['rv_type'] : '';
+
+		if ( '' === $raw && ! empty( $row['notes'] ) && preg_match( '/(?:^|\n)RV Add-Ons:\s*(.+)$/mi', (string) $row['notes'], $matches ) ) {
+			$raw = trim( $matches[1] );
+		}
+
+		if ( '' === $raw ) {
+			return array();
+		}
+
+		$raw_parts = preg_split( '/\s*,\s*/', trim( (string) $raw ) );
+		$labels    = array();
+
+		foreach ( (array) $raw_parts as $raw_part ) {
+			$raw_part = trim( (string) $raw_part );
+
+			if ( '' === $raw_part ) {
+				continue;
+			}
+
+			$labels[] = sanitize_text_field( $raw_part );
+		}
+
+		return array_values( array_unique( array_filter( $labels ) ) );
+	}
+
+	/**
+	 * Get billable stay units for pricing.
+	 *
+	 * @param string $arrival_date Arrival date.
+	 * @param string $departure_date Departure date.
+	 * @param string $stay_type Stay type.
+	 * @return int
+	 */
+	private function get_billable_stay_units( $arrival_date, $departure_date, $stay_type ) {
+		if ( 'weekend' === $stay_type ) {
+			return 1;
+		}
+
+		$arrival_timestamp   = strtotime( (string) $arrival_date );
+		$departure_timestamp = strtotime( (string) $departure_date );
+
+		if ( ! $arrival_timestamp || ! $departure_timestamp ) {
+			return 1;
+		}
+
+		return max( 1, (int) round( ( $departure_timestamp - $arrival_timestamp ) / DAY_IN_SECONDS ) );
+	}
+
+	/**
+	 * Stream a CSV download.
+	 *
+	 * @param string $file_name File name.
+	 * @param array  $orders Order rows.
+	 */
+	private function stream_orders_csv( $file_name, $orders ) {
+		nocache_headers();
+		header( 'Content-Type: text/csv; charset=utf-8' );
+		header( 'Content-Disposition: attachment; filename=' . sanitize_file_name( $file_name ) );
+
+		$output = fopen( 'php://output', 'w' );
+
+		fputcsv(
+			$output,
+			array(
+				'Order Number',
+				'Event Name',
+				'Event Dates',
+				'Customer Name',
+				'Email',
+				'Phone',
+				'Type',
+				'Stall Quantity',
+				'RV Quantity',
+				'Required Shavings Quantity',
+				'Additional Shavings Quantity',
+				'Stall Subtotal',
+				'RV Subtotal',
+				'Non-Refundable Convenience Fee',
+				'Total',
+				'Payment Status',
+				'Created At',
+				'Stall Stay Type',
+				'Stall Arrival Date',
+				'Stall Departure Date',
+				'RV Type',
+				'RV Stay Type',
+				'RV Arrival Date',
+				'RV Departure Date',
+				'Notes',
+			)
+		);
+
+		foreach ( $orders as $order ) {
+			fputcsv(
+				$output,
+				array(
+					$order['order_number'],
+					$order['event_name'],
+					$order['event_dates'],
+					$order['customer_name'],
+					$order['email'],
+					$order['phone'],
+					$order['type'],
+					$order['stall_quantity'],
+					$order['rv_quantity'],
+					$order['required_shavings_qty'],
+					$order['additional_shavings_qty'],
+					$order['stall_subtotal'],
+					$order['rv_subtotal'],
+					$order['fees'],
+					$order['total'],
+					$order['payment_status'],
+					$order['created_at'],
+					$order['stall_stay_type'],
+					$order['stall_arrival_date'],
+					$order['stall_departure_date'],
+					$this->format_rv_type_label( $order['rv_type'] ),
+					$order['rv_stay_type'],
+					$order['rv_arrival_date'],
+					$order['rv_departure_date'],
+					$order['notes'],
+				)
+			);
+		}
+
+		fclose( $output );
+		exit;
+	}
+
+	/**
+	 * Log a report export.
+	 *
+	 * @param int    $reservation_id Reservation ID.
+	 * @param string $reservation_name Reservation name.
+	 * @param string $file_name File name.
+	 */
+	private function log_report_export( $reservation_id, $reservation_name, $file_name ) {
+		global $wpdb;
+
+		$table_name = $wpdb->prefix . 'en_report_exports';
+
+		$wpdb->insert(
+			$table_name,
+			array(
+				'export_scope'     => $reservation_id ? 'reservation' : 'all',
+				'reservation_id'   => $reservation_id,
+				'reservation_name' => $reservation_name ? $reservation_name : __( 'All reservations', 'equine-event-manager' ),
+				'file_name'        => $file_name,
+				'exported_by'      => get_current_user_id(),
+				'created_at'       => current_time( 'mysql' ),
+			)
+		);
+	}
+
+	/**
+	 * Get report export logs.
+	 *
+	 * @return array
+	 */
+	private function get_report_export_logs() {
+		global $wpdb;
+
+		$table_name = $wpdb->prefix . 'en_report_exports';
+		$rows       = $wpdb->get_results( "SELECT * FROM {$table_name} ORDER BY created_at DESC LIMIT 50", ARRAY_A );
+
+		foreach ( $rows as &$row ) {
+			$user                    = ! empty( $row['exported_by'] ) ? get_user_by( 'id', absint( $row['exported_by'] ) ) : null;
+			$row['exported_by_name'] = $user ? $user->display_name : __( 'Unknown user', 'equine-event-manager' );
+		}
+		unset( $row );
+
+		return $rows;
+	}
+
+	/**
+	 * Render a simple admin notice based on query args.
+	 */
+	private function render_admin_notice() {
+		$notice = isset( $_GET['en_notice'] ) ? sanitize_key( wp_unslash( $_GET['en_notice'] ) ) : '';
+		$error  = isset( $_GET['en_error'] ) ? sanitize_text_field( wp_unslash( $_GET['en_error'] ) ) : '';
+
+		if ( '' === $notice ) {
+			return;
+		}
+
+		$map = array(
+			'order_deleted'      => array( 'success', __( 'Order deleted.', 'equine-event-manager' ) ),
+			'order_delete_failed'=> array( 'error', __( 'Order could not be deleted.', 'equine-event-manager' ) ),
+			'refund_success'     => array( 'success', __( 'Order refund completed.', 'equine-event-manager' ) ),
+			'refund_failed'      => array( 'error', $error ? $error : __( 'Refund failed.', 'equine-event-manager' ) ),
+			'invoice_email_sent' => array( 'success', __( 'Payment-link invoice email sent.', 'equine-event-manager' ) ),
+			'invoice_email_failed' => array( 'error', $error ? $error : __( 'Invoice email could not be sent.', 'equine-event-manager' ) ),
+			'customer_notification_sent' => array( 'success', __( 'Customer notification resent.', 'equine-event-manager' ) ),
+			'customer_notification_failed' => array( 'error', $error ? $error : __( 'Customer notification could not be sent.', 'equine-event-manager' ) ),
+			'manual_payment_recorded' => array( 'success', __( 'Order marked paid for a manual cash/in-person payment.', 'equine-event-manager' ) ),
+			'manual_payment_failed' => array( 'error', $error ? $error : __( 'The order could not be marked paid.', 'equine-event-manager' ) ),
+			'assignment_update_success' => array( 'success', __( 'Unit assignments updated.', 'equine-event-manager' ) ),
+			'assignment_update_failed' => array( 'error', $error ? $error : __( 'Assignments could not be updated.', 'equine-event-manager' ) ),
+			'stall_assignments_generated' => array( 'success', __( 'Stall assignments generated for this reservation.', 'equine-event-manager' ) ),
+			'stall_assignments_generation_failed' => array( 'error', $error ? $error : __( 'Stall assignments could not be generated.', 'equine-event-manager' ) ),
+			'settings_saved'     => array( 'success', __( 'Settings saved.', 'equine-event-manager' ) ),
+			'native_events_disabled' => array( 'info', __( 'Native Events is currently turned off. Re-enable it in Settings > Features to access those event screens again.', 'equine-event-manager' ) ),
+		);
+
+		if ( ! isset( $map[ $notice ] ) ) {
+			return;
+		}
+
+		list( $type, $message ) = $map[ $notice ];
+		printf(
+			'<div class="notice notice-%1$s is-dismissible" role="status"><p>%2$s</p></div>',
+			esc_attr( $type ),
+			esc_html( $message )
+		);
+	}
+
+	/**
+	 * Get payment settings with defaults.
+	 *
+	 * @return array
+	 */
+	private function get_payment_settings() {
+		$settings = wp_parse_args(
+			get_option( self::PAYMENT_SETTINGS_OPTION, array() ),
+			array(
+				'selected_gateway' => 'stripe',
+				'stripe'           => array(),
+				'authorize_net'    => array(),
+			)
+		);
+
+		$settings['stripe'] = wp_parse_args(
+			$settings['stripe'],
+			array(
+				'mode'                   => 'test',
+				'test_publishable_key'   => '',
+				'test_secret_key'        => '',
+				'live_publishable_key'   => '',
+				'live_secret_key'        => '',
+				'webhook_signing_secret' => '',
+			)
+		);
+
+		$settings['authorize_net'] = wp_parse_args(
+			$settings['authorize_net'],
+			array(
+				'mode'                 => 'test',
+				'test_api_login'       => '',
+				'test_transaction_key' => '',
+				'live_api_login'       => '',
+				'live_transaction_key' => '',
+			)
+		);
+
+		return $settings;
+	}
+
+	/**
+	 * Get company settings with defaults.
+	 *
+	 * @return array
+	 */
+	private function get_company_settings() {
+		return wp_parse_args(
+			get_option( self::COMPANY_SETTINGS_OPTION, array() ),
+			array(
+				'logo_id'       => 0,
+				'support_phone' => '',
+				'support_email' => get_option( 'admin_email', '' ),
+			)
+		);
+	}
+
+	/**
+	 * Get the effective company logo URL for admin and print views.
+	 *
+	 * @param string $size Image size.
+	 * @return string
+	 */
+	private function get_company_logo_url( $size = 'full' ) {
+		$company_settings = $this->get_company_settings();
+		$logo_url         = ! empty( $company_settings['logo_id'] ) ? wp_get_attachment_image_url( absint( $company_settings['logo_id'] ), $size ) : '';
+
+		if ( ! $logo_url ) {
+			$logo_url = EQUINE_EVENT_MANAGER_URL . 'admin/images/equine-event-manager-logo.png';
+		}
+
+		return $logo_url;
+	}
+
+	/**
+	 * Get reservation message settings with defaults.
+	 *
+	 * @return array
+	 */
+	private function get_reservation_message_settings() {
+		$company_settings = $this->get_company_settings();
+
+		return wp_parse_args(
+			get_option( self::RESERVATION_MESSAGE_SETTINGS_OPTION, array() ),
+			array(
+				'support_phone' => $company_settings['support_phone'],
+				'support_email' => $company_settings['support_email'],
+				'preopen_message' => self::DEFAULT_PREOPEN_MESSAGE,
+				'closed_message' => self::DEFAULT_CLOSED_MESSAGE,
+			)
+		);
+	}
+
+	/**
+	 * Get email receipt settings with defaults.
+	 *
+	 * @return array
+	 */
+	private function get_receipt_settings() {
+		$company_settings = $this->get_company_settings();
+		$saved            = get_option( self::RECEIPT_SETTINGS_OPTION, array() );
+		$fallback_email   = ! empty( $company_settings['support_email'] ) && is_email( $company_settings['support_email'] ) ? $company_settings['support_email'] : get_option( 'admin_email', '' );
+		$settings         = wp_parse_args(
+			$saved,
+			array(
+				'customer_receipt_enabled' => 1,
+				'admin_receipt_email'      => '',
+				'from_name'                => '',
+				'from_email'               => '',
+				'reply_to_email'           => '',
+				'customer_subject'         => self::DEFAULT_CUSTOMER_RECEIPT_SUBJECT,
+				'admin_subject'            => self::DEFAULT_ADMIN_RECEIPT_SUBJECT,
+				'customer_body'            => self::DEFAULT_CUSTOMER_RECEIPT_BODY,
+				'admin_body'               => self::DEFAULT_ADMIN_RECEIPT_BODY,
+			)
+		);
+
+		$settings['customer_receipt_enabled'] = isset( $saved['customer_receipt_enabled'] ) ? (int) ! empty( $saved['customer_receipt_enabled'] ) : 1;
+		$settings['admin_receipt_email']      = ! empty( $settings['admin_receipt_email'] ) && is_email( $settings['admin_receipt_email'] ) ? $settings['admin_receipt_email'] : $fallback_email;
+		$settings['from_name']                = ! empty( $settings['from_name'] ) ? $settings['from_name'] : get_bloginfo( 'name' );
+		$settings['from_email']               = ! empty( $settings['from_email'] ) && is_email( $settings['from_email'] ) ? $settings['from_email'] : $fallback_email;
+		$settings['reply_to_email']           = ! empty( $settings['reply_to_email'] ) && is_email( $settings['reply_to_email'] ) ? $settings['reply_to_email'] : $fallback_email;
+		$settings['customer_subject']         = ! empty( $settings['customer_subject'] ) ? $settings['customer_subject'] : self::DEFAULT_CUSTOMER_RECEIPT_SUBJECT;
+		$settings['admin_subject']            = ! empty( $settings['admin_subject'] ) ? $settings['admin_subject'] : self::DEFAULT_ADMIN_RECEIPT_SUBJECT;
+		$settings['customer_body']            = ! empty( $settings['customer_body'] ) ? $settings['customer_body'] : self::DEFAULT_CUSTOMER_RECEIPT_BODY;
+		$settings['admin_body']               = ! empty( $settings['admin_body'] ) ? $settings['admin_body'] : self::DEFAULT_ADMIN_RECEIPT_BODY;
+
+		return $settings;
+	}
+
+	/**
+	 * Ensure the current user can access plugin admin pages.
+	 */
+	private function guard_admin_page() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'equine-event-manager' ) );
+		}
+	}
+
+	/**
+	 * Ensure the current user can run admin actions.
+	 */
+	private function guard_admin_action() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to run this action.', 'equine-event-manager' ) );
+		}
+	}
+
+	/**
+	 * Redirect back to the order details page with a notice payload.
+	 *
+	 * @param string      $order_key Order key.
+	 * @param string      $notice    Notice slug.
+	 * @param string|null $error     Optional error text.
+	 * @return void
+	 */
+	private function redirect_to_order_notice( $order_key, $notice, $error = null ) {
+		wp_safe_redirect(
+			add_query_arg(
+				array_filter(
+					array(
+						'page'      => 'equine-event-manager-order',
+						'order_key' => $order_key,
+						'en_notice' => $notice,
+						'en_error'  => $error,
+					)
+				),
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
+	 * Redirect back to the reservation overview page with a notice payload.
+	 *
+	 * @param int         $reservation_id Reservation ID.
+	 * @param string      $notice Notice slug.
+	 * @param string|null $error Optional error text.
+	 * @return void
+	 */
+	private function redirect_to_reservation_overview_notice( $reservation_id, $notice, $error = null ) {
+		wp_safe_redirect(
+			add_query_arg(
+				array_filter(
+					array(
+						'page'           => 'equine-event-manager-reservation-overview',
+						'reservation_id' => absint( $reservation_id ),
+						'en_notice'      => $notice,
+						'en_error'       => $error,
+					)
+				),
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
+	 * Redirect back to the stall chart page with a notice payload.
+	 *
+	 * @param int         $reservation_id Reservation ID.
+	 * @param string      $notice Notice slug.
+	 * @param string|null $error Optional error text.
+	 * @return void
+	 */
+	private function redirect_to_stall_chart_notice( $reservation_id, $notice, $error = null ) {
+		wp_safe_redirect(
+			add_query_arg(
+				array_filter(
+					array(
+						'page'           => 'equine-event-manager-stall-chart',
+						'reservation_id' => $reservation_id > 0 ? absint( $reservation_id ) : null,
+						'en_notice'      => $notice,
+						'en_error'       => $error,
+					)
+				),
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
+	 * Redirect to the preferred reservation notice destination.
+	 *
+	 * @param int         $reservation_id Reservation ID.
+	 * @param string      $notice Notice slug.
+	 * @param string|null $error Optional error text.
+	 * @param string      $return_page Preferred return page.
+	 * @return void
+	 */
+	private function redirect_to_reservation_notice_destination( $reservation_id, $notice, $error = null, $return_page = '' ) {
+		if ( 'stall_chart' === $return_page ) {
+			$this->redirect_to_stall_chart_notice( $reservation_id, $notice, $error );
+		}
+
+		$this->redirect_to_reservation_overview_notice( $reservation_id, $notice, $error );
+	}
+
+	/**
+	 * Extract a metadata value from notes by label.
+	 *
+	 * @param string $notes Notes text.
+	 * @param string $label Metadata label.
+	 * @return string
+	 */
+	private function get_order_note_value( $notes, $label ) {
+		if ( preg_match( '/(?:^|\n)' . preg_quote( $label, '/' ) . ':\s*(.+?)(?:\n|$)/i', (string) $notes, $matches ) ) {
+			return trim( sanitize_text_field( $matches[1] ) );
+		}
+
+		return '';
+	}
+
+	/**
+	 * Get an order invoice token from stored notes.
+	 *
+	 * @param array $order Grouped order payload.
+	 * @return string
+	 */
+	private function get_invoice_token_for_order( $order ) {
+		foreach ( $order['components'] as $component ) {
+			if ( empty( $component['notes'] ) ) {
+				continue;
+			}
+
+			$invoice_token = $this->get_order_note_value( $component['notes'], 'Invoice Token' );
+
+			if ( '' !== $invoice_token ) {
+				return $invoice_token;
+			}
+		}
+
+		return '';
+	}
+
+	/**
+	 * Build the hosted payment URL for an invoice token.
+	 *
+	 * @param string $invoice_token Invoice token.
+	 * @return string
+	 */
+	private function get_invoice_payment_url( $invoice_token ) {
+		$invoice_token = sanitize_text_field( $invoice_token );
+
+		if ( '' === $invoice_token ) {
+			return '';
+		}
+
+		return add_query_arg(
+			array(
+				'equine_event_manager_invoice' => rawurlencode( $invoice_token ),
+			),
+			home_url( '/' )
+		);
+	}
+
+	/**
+	 * Insert or replace a metadata line within stored notes.
+	 *
+	 * @param string $notes Notes value.
+	 * @param string $label Metadata label.
+	 * @param string $value Metadata value.
+	 * @return string
+	 */
+	private function upsert_order_note_line( $notes, $label, $value ) {
+		$notes   = trim( (string) $notes );
+		$pattern = '/^' . preg_quote( $label, '/' ) . ':\s*.*$/mi';
+		$line    = $label . ': ' . $value;
+
+		if ( preg_match( $pattern, $notes ) ) {
+			$notes = preg_replace( $pattern, $line, $notes );
+		} else {
+			$notes = trim( $notes . "\n" . $line );
+		}
+
+		return trim( preg_replace( "/\n{3,}/", "\n\n", $notes ) );
+	}
+
+	/**
+	 * Build the hosted invoice email markup.
+	 *
+	 * @param array  $order         Order payload.
+	 * @param string $invoice_token Invoice token.
+	 * @return string
+	 */
+	private function build_invoice_email_html( $order, $invoice_token ) {
+		$company_settings = $this->get_company_settings();
+		$company_logo_url = $this->get_company_logo_url( 'medium' );
+		$event_label      = ! empty( $order['reservation_title'] ) ? $order['reservation_title'] : $order['event_name'];
+		$payment_url      = add_query_arg(
+			array(
+				'equine_event_manager_invoice' => rawurlencode( $invoice_token ),
+			),
+			home_url( '/' )
+		);
+		$support_chunks   = array_filter(
+			array(
+				! empty( $company_settings['support_phone'] ) ? $this->format_phone_label( $company_settings['support_phone'] ) : '',
+				! empty( $company_settings['support_email'] ) ? $company_settings['support_email'] : '',
+			)
+		);
+		$invoice_rows = array(
+			__( 'Order Number', 'equine-event-manager' )    => '#' . $order['order_number'],
+			__( 'Event', 'equine-event-manager' )           => $event_label,
+			__( 'Event Dates', 'equine-event-manager' )     => ! empty( $order['event_dates'] ) ? $order['event_dates'] : __( 'Dates unavailable', 'equine-event-manager' ),
+			__( 'Reservation Type', 'equine-event-manager' ) => $order['type'],
+			__( 'Amount Due', 'equine-event-manager' )      => '$' . number_format_i18n( (float) $order['total'], 2 ),
+		);
+
+		ob_start();
+		?>
+		<div style="margin:0;padding:28px;background:#f5f7fb;font-family:Arial,sans-serif;color:#111827;">
+			<div style="max-width:680px;margin:0 auto;">
+				<div style="margin:0 0 18px;padding:28px 30px;background:#eef2f6;border:1px solid #d9e1ea;border-radius:24px;color:#111827;">
+					<?php if ( $company_logo_url ) : ?>
+						<p style="margin:0 0 20px;"><img src="<?php echo esc_url( $company_logo_url ); ?>" alt="<?php esc_attr_e( 'Company logo', 'equine-event-manager' ); ?>" style="max-width:180px;max-height:54px;display:block;object-fit:contain;" /></p>
+					<?php endif; ?>
+					<div style="font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#5b6472;"><?php esc_html_e( 'Reservation Invoice', 'equine-event-manager' ); ?></div>
+					<h1 style="margin:10px 0 12px;font-size:30px;line-height:1.1;color:#111827;"><?php echo esc_html( $event_label ); ?></h1>
+					<p style="margin:0;font-size:16px;line-height:1.7;color:#111827;"><?php echo esc_html( sprintf( __( 'A payment link is ready for order #%s.', 'equine-event-manager' ), $order['order_number'] ) ); ?></p>
+				</div>
+
+				<div style="margin:0 0 18px;padding:26px 28px;background:#eef2f6;border:1px solid #d9e1ea;border-radius:24px;color:#111827;">
+					<p style="margin:0 0 16px;font-size:16px;line-height:1.7;color:#111827;"><?php echo esc_html( sprintf( __( 'Hi %s, use the secure button below to review your reservation and complete payment.', 'equine-event-manager' ), $order['customer_name'] ) ); ?></p>
+					<p style="margin:0 0 22px;"><a href="<?php echo esc_url( $payment_url ); ?>" style="display:inline-block;padding:14px 22px;border-radius:12px;background:#111827;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;"><?php esc_html_e( 'Review Invoice & Pay Now', 'equine-event-manager' ); ?></a></p>
+					<div style="display:grid;gap:12px;">
+						<?php foreach ( $invoice_rows as $label => $value ) : ?>
+							<div style="display:flex;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid #d9e1ea;">
+								<span style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5b6472;"><?php echo esc_html( $label ); ?></span>
+								<strong style="font-size:15px;color:#111827;text-align:right;"><?php echo esc_html( $value ); ?></strong>
+							</div>
+						<?php endforeach; ?>
+					</div>
+				</div>
+
+				<?php if ( ! empty( $support_chunks ) ) : ?>
+					<p style="margin:0;padding:0 10px;text-align:center;color:#4b5563;font-size:13px;line-height:1.7;"><?php echo esc_html( implode( ' | ', $support_chunks ) ); ?></p>
+				<?php endif; ?>
+			</div>
+		</div>
+		<?php
+
+		return (string) ob_get_clean();
+	}
+}

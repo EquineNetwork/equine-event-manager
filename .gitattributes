@@ -1,0 +1,4 @@
+.DS_Store export-ignore
+admin/.DS_Store export-ignore
+docs/ export-ignore
+*.zip export-ignore
