@@ -110,14 +110,9 @@ class Equine_Event_Manager {
 		add_action( 'wp_ajax_equine_event_manager_create_stripe_payment_intent', array( $this->shortcodes, 'ajax_create_stripe_payment_intent' ) );
 		add_action( 'wp_ajax_nopriv_equine_event_manager_create_stripe_payment_intent', array( $this->shortcodes, 'ajax_create_stripe_payment_intent' ) );
 
-		if ( method_exists( $this->shortcodes, 'maybe_render_invoice_payment_page' ) ) {
-			add_action( 'template_redirect', array( $this->shortcodes, 'maybe_render_invoice_payment_page' ) );
-		}
-
-		if ( method_exists( $this->shortcodes, 'ajax_create_invoice_payment_intent' ) ) {
-			add_action( 'wp_ajax_equine_event_manager_create_invoice_payment_intent', array( $this->shortcodes, 'ajax_create_invoice_payment_intent' ) );
-			add_action( 'wp_ajax_nopriv_equine_event_manager_create_invoice_payment_intent', array( $this->shortcodes, 'ajax_create_invoice_payment_intent' ) );
-		}
+		add_action( 'template_redirect', array( $this->shortcodes, 'maybe_render_invoice_payment_page' ) );
+		add_action( 'wp_ajax_equine_event_manager_create_invoice_payment_intent', array( $this->shortcodes, 'ajax_create_invoice_payment_intent' ) );
+		add_action( 'wp_ajax_nopriv_equine_event_manager_create_invoice_payment_intent', array( $this->shortcodes, 'ajax_create_invoice_payment_intent' ) );
 
 		add_action( 'init', array( $this->events, 'register_event_routes' ) );
 		add_filter( 'query_vars', array( $this->events, 'filter_query_vars' ) );
