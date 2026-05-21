@@ -19,14 +19,14 @@ define( 'EQUINE_EVENT_MANAGER_PATH', plugin_dir_path( __FILE__ ) );
 
 define( 'EQUINE_EVENT_MANAGER_URL', plugin_dir_url( __FILE__ ) );
 
-if ( class_exists( 'Equine_Event_Manager' ) || class_exists( 'Equine_Event_Manager_Activator' ) ) {
+if ( class_exists( 'EEM_Plugin' ) || class_exists( 'EEM_Activator' ) ) {
 	return;
 }
 
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-activator.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager.php';
 
-register_activation_hook( __FILE__, array( 'Equine_Event_Manager_Activator', 'activate' ) );
+register_activation_hook( __FILE__, array( 'EEM_Activator', 'activate' ) );
 
 /**
  * Start the plugin.
@@ -36,7 +36,7 @@ if ( ! function_exists( 'equine_event_manager_run' ) ) {
 	 * Run Equine Event Manager.
 	 */
 	function equine_event_manager_run() {
-		$plugin = new Equine_Event_Manager();
+		$plugin = new EEM_Plugin();
 		$plugin->run();
 	}
 }

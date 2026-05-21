@@ -2,7 +2,7 @@
 /**
  * Shortcodes for Equine Event Manager.
  *
- * @package Equine_Event_Manager
+ * @package EEM_Plugin
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Registers and renders reservation shortcodes.
  */
-class Equine_Event_Manager_Shortcodes {
+class EEM_Shortcodes {
 
 	const DEFAULT_SPECIAL_REQUESTS_DESCRIPTION = 'Please let us know if you have any special requests for your stay including stallion accommodations, preferred contestant proximity stalling, etc.';
 	const SUBMISSION_TOKEN_TRANSIENT_PREFIX = 'equine_event_manager_submission_';
@@ -177,7 +177,7 @@ class Equine_Event_Manager_Shortcodes {
 		$company_settings             = $this->get_company_settings();
 		$support_phone                = ! empty( $company_settings['support_phone'] ) ? $this->format_phone_label( $company_settings['support_phone'] ) : '';
 		$event_card_details           = $this->get_reservation_event_card_details( $data );
-		$normalized_event_data        = class_exists( 'Equine_Event_Manager_Events' ) ? Equine_Event_Manager_Events::get_normalized_reservation_event_data( $reservation_id ) : array();
+		$normalized_event_data        = class_exists( 'EEM_Events' ) ? EEM_Events::get_normalized_reservation_event_data( $reservation_id ) : array();
 		$venue_map_url                = ! empty( $data['venue_map_image_id'] ) ? wp_get_attachment_image_url( absint( $data['venue_map_image_id'] ), 'large' ) : '';
 		$venue_map_download_url       = ! empty( $data['venue_map_download_url'] ) ? esc_url( $data['venue_map_download_url'] ) : ( $venue_map_url ? esc_url( $venue_map_url ) : '' );
 		$show_venue_map               = ! empty( $data['venue_map_enabled'] ) && ! empty( $venue_map_download_url );
@@ -1344,14 +1344,14 @@ class Equine_Event_Manager_Shortcodes {
 		}
 
 		if ( empty( $insert_result['duplicate'] ) && ! empty( $insert_result['submission_token'] ) && $is_send_link ) {
-			$orders_repository = new Equine_Event_Manager_Orders_Repository();
+			$orders_repository = new EEM_Orders_Repository();
 			$order             = $orders_repository->get_order_by_submission_token( $insert_result['submission_token'] );
 
 			if ( ! $order ) {
 				return $this->render_notice( __( 'The invoice was created, but the payment link could not be prepared. Please open the order and send the invoice again.', 'equine-event-manager' ), 'error' );
 			}
 
-			$admin_helper = new Equine_Event_Manager_Admin();
+			$admin_helper = new EEM_Admin();
 			$sent         = $admin_helper->send_invoice_email_for_order( $order );
 
 			if ( is_wp_error( $sent ) ) {
@@ -1822,7 +1822,7 @@ class Equine_Event_Manager_Shortcodes {
 		}
 
 		$orders = array_filter(
-			( new Equine_Event_Manager_Orders_Repository() )->get_orders( '', 'date', 'asc' ),
+			( new EEM_Orders_Repository() )->get_orders( '', 'date', 'asc' ),
 			function ( $order ) use ( $reservation_id ) {
 				return absint( isset( $order['reservation_id'] ) ? $order['reservation_id'] : 0 ) === $reservation_id;
 			}
@@ -1928,7 +1928,7 @@ class Equine_Event_Manager_Shortcodes {
 
 		$occupied_units = array();
 		$orders         = array_filter(
-			( new Equine_Event_Manager_Orders_Repository() )->get_orders( '', 'date', 'asc' ),
+			( new EEM_Orders_Repository() )->get_orders( '', 'date', 'asc' ),
 			function ( $order ) use ( $reservation_id ) {
 				return absint( isset( $order['reservation_id'] ) ? $order['reservation_id'] : 0 ) === $reservation_id;
 			}
@@ -2581,7 +2581,7 @@ class Equine_Event_Manager_Shortcodes {
 		}
 
 		if ( $has_stall_order || $has_rv_order || ! empty( $totals['general_addons_subtotal'] ) || $has_group_fees ) {
-			$order_number = ( new Equine_Event_Manager_Orders_Repository() )->reserve_order_number();
+			$order_number = ( new EEM_Orders_Repository() )->reserve_order_number();
 		}
 		$customer_name = trim( $submission['first_name'] . ' ' . $submission['last_name'] );
 		$billing_notes = sprintf(
@@ -2764,7 +2764,7 @@ RV Lot: " . $rv_lot['name'] );
 		if ( $inserted ) {
 			$this->mark_submission_token_processed( $submission_token );
 
-			$order_repository = new Equine_Event_Manager_Orders_Repository();
+			$order_repository = new EEM_Orders_Repository();
 			$saved_order      = $order_repository->get_order_by_submission_token( $submission_token );
 
 			if ( $saved_order && ! empty( $saved_order['order_key'] ) ) {
@@ -2786,7 +2786,7 @@ RV Lot: " . $rv_lot['name'] );
 	 * @return void
 	 */
 	private function maybe_send_receipt_emails( $submission_token ) {
-		$orders_repository = new Equine_Event_Manager_Orders_Repository();
+		$orders_repository = new EEM_Orders_Repository();
 		$order             = $orders_repository->get_order_by_submission_token( $submission_token );
 
 		if ( ! $order ) {
@@ -2811,7 +2811,7 @@ RV Lot: " . $rv_lot['name'] );
 		}
 
 		if ( ! empty( $receipt_settings['admin_receipt_email'] ) && is_email( $receipt_settings['admin_receipt_email'] ) ) {
-			Equine_Event_Manager_Mailer::send_html_email(
+			EEM_Mailer::send_html_email(
 				$receipt_settings['admin_receipt_email'],
 				$this->replace_receipt_tokens( $receipt_settings['admin_subject'], $order ),
 				$this->build_receipt_email_html( $order, $receipt_settings['admin_body'] ),
@@ -2835,7 +2835,7 @@ RV Lot: " . $rv_lot['name'] );
 			return new WP_Error( 'customer_notification_missing_email', __( 'A customer email address is required before sending this notification.', 'equine-event-manager' ) );
 		}
 
-		return Equine_Event_Manager_Mailer::send_html_email(
+		return EEM_Mailer::send_html_email(
 			$customer_email,
 			$this->replace_receipt_tokens( $receipt_settings['customer_subject'], $order ),
 			$this->build_receipt_email_html( $order, $receipt_settings['customer_body'] ),
@@ -4490,7 +4490,7 @@ RV Lot: " . $rv_lot['name'] );
 	 * @return array|null
 	 */
 	private function get_invoice_order( $invoice_token ) {
-		$orders_repository = new Equine_Event_Manager_Orders_Repository();
+		$orders_repository = new EEM_Orders_Repository();
 
 		return $orders_repository->get_order_by_invoice_token( $invoice_token );
 	}
@@ -4565,7 +4565,7 @@ RV Lot: " . $rv_lot['name'] );
 
 		$this->mark_invoice_order_paid( $order, $invoice_token, $result['payment_gateway'], $result['transaction_id'] );
 
-		$orders_repository = new Equine_Event_Manager_Orders_Repository();
+		$orders_repository = new EEM_Orders_Repository();
 		$updated_order     = $orders_repository->get_order( $order['order_key'] );
 
 		if ( $updated_order ) {
@@ -4602,7 +4602,7 @@ RV Lot: " . $rv_lot['name'] );
 	 * @return void
 	 */
 	private function mark_invoice_order_paid( $order, $invoice_token, $payment_gateway, $transaction_id ) {
-		$orders_repository = new Equine_Event_Manager_Orders_Repository();
+		$orders_repository = new EEM_Orders_Repository();
 		$paid_at           = current_time( 'mysql' );
 
 		foreach ( $order['components'] as $component ) {
@@ -5160,7 +5160,7 @@ RV Lot: " . $rv_lot['name'] );
 		}
 
 		if ( ! empty( $data['use_global_event_source'] ) ) {
-			$data['event_source'] = Equine_Event_Manager_Events::get_default_event_source();
+			$data['event_source'] = EEM_Events::get_default_event_source();
 		}
 
 		if ( empty( $data['stall_schedule_enabled'] ) && ( ! empty( $data['stalls_open_at'] ) || ! empty( $data['stalls_close_at'] ) ) ) {
@@ -5802,8 +5802,8 @@ RV Lot: " . $rv_lot['name'] );
 	private function get_special_requests_description() {
 		$default = self::DEFAULT_SPECIAL_REQUESTS_DESCRIPTION;
 
-		if ( class_exists( 'Equine_Event_Manager_Admin' ) ) {
-			$default = Equine_Event_Manager_Admin::DEFAULT_SPECIAL_REQUESTS_DESCRIPTION;
+		if ( class_exists( 'EEM_Admin' ) ) {
+			$default = EEM_Admin::DEFAULT_SPECIAL_REQUESTS_DESCRIPTION;
 		}
 
 		return get_option( 'equine_event_manager_special_requests_description', $default );
@@ -6822,7 +6822,7 @@ RV Lot: " . $rv_lot['name'] );
 		}
 
 		if ( 'native' === $data['event_source'] && ! empty( $data['event_id'] ) ) {
-			$native_details = Equine_Event_Manager_Events::get_native_event_card_details( absint( $data['event_id'] ) );
+			$native_details = EEM_Events::get_native_event_card_details( absint( $data['event_id'] ) );
 
 			if ( ! empty( $native_details['venue_name'] ) ) {
 				$venue_name = $native_details['venue_name'];
@@ -6862,7 +6862,7 @@ RV Lot: " . $rv_lot['name'] );
 		}
 
 		if ( 'native' === $data['event_source'] && ! empty( $data['event_id'] ) ) {
-			$event_dates = Equine_Event_Manager_Events::get_native_event_date_values( absint( $data['event_id'] ) );
+			$event_dates = EEM_Events::get_native_event_date_values( absint( $data['event_id'] ) );
 
 			if ( ! empty( $event_dates['start_date'] ) ) {
 				$start_value = $event_dates['start_date'];

@@ -2,7 +2,7 @@
 /**
  * Plugin activation tasks.
  *
- * @package Equine_Event_Manager
+ * @package EEM_Plugin
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Handles activation tasks for Equine Event Manager.
  */
-class Equine_Event_Manager_Activator {
+class EEM_Activator {
 
 	/**
 	 * DB version option key.
@@ -183,19 +183,19 @@ class Equine_Event_Manager_Activator {
 	 * @return void
 	 */
 	private static function maybe_refresh_native_event_rewrite_rules() {
-		if ( ! class_exists( 'Equine_Event_Manager_Events' ) ) {
+		if ( ! class_exists( 'EEM_Events' ) ) {
 			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-events.php';
 		}
 
-		if ( ! class_exists( 'Equine_Event_Manager_Events' ) ) {
+		if ( ! class_exists( 'EEM_Events' ) ) {
 			flush_rewrite_rules( false );
 			return;
 		}
 
-		$events = new Equine_Event_Manager_Events();
+		$events = new EEM_Events();
 		$events->register_event_routes();
 
-		if ( Equine_Event_Manager_Events::is_native_events_enabled() ) {
+		if ( EEM_Events::is_native_events_enabled() ) {
 			$events->register_content_types();
 		}
 
@@ -208,17 +208,17 @@ class Equine_Event_Manager_Activator {
 	 * @return string
 	 */
 	private static function get_native_event_rewrite_signature() {
-		if ( ! class_exists( 'Equine_Event_Manager_Events' ) ) {
+		if ( ! class_exists( 'EEM_Events' ) ) {
 			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-events.php';
 		}
 
-		if ( ! class_exists( 'Equine_Event_Manager_Events' ) ) {
+		if ( ! class_exists( 'EEM_Events' ) ) {
 			return EQUINE_EVENT_MANAGER_VERSION . '|missing-events-class';
 		}
 
-		$enabled      = Equine_Event_Manager_Events::is_native_events_enabled() ? 'enabled' : 'disabled';
-		$slug         = Equine_Event_Manager_Events::get_event_rewrite_slug();
-		$virtual_base = Equine_Event_Manager_Events::VIRTUAL_EVENT_ROUTE_BASE;
+		$enabled      = EEM_Events::is_native_events_enabled() ? 'enabled' : 'disabled';
+		$slug         = EEM_Events::get_event_rewrite_slug();
+		$virtual_base = EEM_Events::VIRTUAL_EVENT_ROUTE_BASE;
 
 		return EQUINE_EVENT_MANAGER_VERSION . '|' . $enabled . '|' . $slug . '|' . $virtual_base . '|event-directory-v1';
 	}

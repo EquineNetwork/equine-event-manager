@@ -2,7 +2,7 @@
 /**
  * Native event content types, metadata, and frontend output.
  *
- * @package Equine_Event_Manager
+ * @package EEM_Plugin
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Registers native events, venues, producers, frontend shortcodes, and widgets.
  */
-class Equine_Event_Manager_Events {
+class EEM_Events {
 
 	const FEATURES_SETTINGS_OPTION = 'equine_event_manager_feature_settings';
 	const INTEGRATION_SETTINGS_OPTION = 'equine_event_manager_integration_settings';
@@ -1160,8 +1160,8 @@ class Equine_Event_Manager_Events {
 	 * @return void
 	 */
 	public function register_widgets() {
-		register_widget( 'Equine_Event_Manager_Upcoming_Events_Widget' );
-		register_widget( 'Equine_Event_Manager_Featured_Event_Widget' );
+		register_widget( 'EEM_Upcoming_Events_Widget' );
+		register_widget( 'EEM_Featured_Event_Widget' );
 	}
 
 	/**
@@ -3918,7 +3918,7 @@ class Equine_Event_Manager_Events {
 /**
  * Upcoming native events widget.
  */
-class Equine_Event_Manager_Upcoming_Events_Widget extends WP_Widget {
+class EEM_Upcoming_Events_Widget extends WP_Widget {
 
 	/**
 	 * Set up widget details.
@@ -3991,7 +3991,7 @@ class Equine_Event_Manager_Upcoming_Events_Widget extends WP_Widget {
 /**
  * Featured native event widget.
  */
-class Equine_Event_Manager_Featured_Event_Widget extends WP_Widget {
+class EEM_Featured_Event_Widget extends WP_Widget {
 
 	/**
 	 * Set up widget details.

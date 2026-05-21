@@ -2,7 +2,7 @@
 /**
  * Reservation editor screen controller.
  *
- * @package Equine_Event_Manager
+ * @package EEM_Plugin
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -12,19 +12,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Handles reservation editor metaboxes and screen assets.
  */
-class Equine_Event_Manager_Reservation_Editor {
+class EEM_Reservation_Editor {
 
 	/**
 	 * Reservations CPT service.
 	 *
-	 * @var Equine_Event_Manager_Reservations_CPT
+	 * @var EEM_Reservations_CPT
 	 */
 	private $reservations_cpt;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param Equine_Event_Manager_Reservations_CPT $reservations_cpt Reservations CPT handler.
+	 * @param EEM_Reservations_CPT $reservations_cpt Reservations CPT handler.
 	 */
 	public function __construct( $reservations_cpt ) {
 		$this->reservations_cpt = $reservations_cpt;
@@ -238,7 +238,7 @@ class Equine_Event_Manager_Reservation_Editor {
 	private function is_reservation_editor_request( $hook_suffix = '' ) {
 		$screen = get_current_screen();
 
-		if ( $screen && Equine_Event_Manager_Reservations_CPT::POST_TYPE === $screen->post_type && in_array( $screen->base, array( 'post', 'post-new' ), true ) ) {
+		if ( $screen && EEM_Reservations_CPT::POST_TYPE === $screen->post_type && in_array( $screen->base, array( 'post', 'post-new' ), true ) ) {
 			return true;
 		}
 
@@ -255,7 +255,7 @@ class Equine_Event_Manager_Reservation_Editor {
 			$post_type = sanitize_key( wp_unslash( $_GET['post_type'] ) );
 		}
 
-		return Equine_Event_Manager_Reservations_CPT::POST_TYPE === $post_type;
+		return EEM_Reservations_CPT::POST_TYPE === $post_type;
 	}
 
 	/**
@@ -269,7 +269,7 @@ class Equine_Event_Manager_Reservation_Editor {
 			'equine_event_manager_event_link',
 			__( 'Event Link', 'equine-event-manager' ),
 			array( $this, 'render_event_link_meta_box' ),
-			Equine_Event_Manager_Reservations_CPT::POST_TYPE,
+			EEM_Reservations_CPT::POST_TYPE,
 			'side',
 			'high'
 		);
@@ -278,7 +278,7 @@ class Equine_Event_Manager_Reservation_Editor {
 			'equine_event_manager_reservation_description',
 			__( 'Reservation Description', 'equine-event-manager' ),
 			array( $this, 'render_reservation_description_meta_box' ),
-			Equine_Event_Manager_Reservations_CPT::POST_TYPE,
+			EEM_Reservations_CPT::POST_TYPE,
 			'normal',
 			'high'
 		);
@@ -287,7 +287,7 @@ class Equine_Event_Manager_Reservation_Editor {
 			'equine_event_manager_available_dates',
 			__( 'Available Reservation Dates', 'equine-event-manager' ),
 			array( $this, 'render_available_dates_meta_box' ),
-			Equine_Event_Manager_Reservations_CPT::POST_TYPE,
+			EEM_Reservations_CPT::POST_TYPE,
 			'normal',
 			'high'
 		);
@@ -296,7 +296,7 @@ class Equine_Event_Manager_Reservation_Editor {
 			'equine_event_manager_checkin_checkout',
 			__( 'Check-In/Check-Out', 'equine-event-manager' ),
 			array( $this, 'render_checkin_checkout_meta_box' ),
-			Equine_Event_Manager_Reservations_CPT::POST_TYPE,
+			EEM_Reservations_CPT::POST_TYPE,
 			'normal',
 			'default'
 		);
@@ -305,7 +305,7 @@ class Equine_Event_Manager_Reservation_Editor {
 			'equine_event_manager_stall_rules',
 			__( 'Stall Reservations', 'equine-event-manager' ),
 			array( $this, 'render_stall_rules_meta_box' ),
-			Equine_Event_Manager_Reservations_CPT::POST_TYPE,
+			EEM_Reservations_CPT::POST_TYPE,
 			'normal',
 			'default'
 		);
@@ -314,7 +314,7 @@ class Equine_Event_Manager_Reservation_Editor {
 			'equine_event_manager_rv_rules',
 			__( 'RV Reservations', 'equine-event-manager' ),
 			array( $this->reservations_cpt, 'render_rv_rules_meta_box' ),
-			Equine_Event_Manager_Reservations_CPT::POST_TYPE,
+			EEM_Reservations_CPT::POST_TYPE,
 			'normal',
 			'default'
 		);
@@ -323,7 +323,7 @@ class Equine_Event_Manager_Reservation_Editor {
 			'equine_event_manager_general_addons',
 			__( 'General Add-Ons', 'equine-event-manager' ),
 			array( $this, 'render_general_addons_meta_box' ),
-			Equine_Event_Manager_Reservations_CPT::POST_TYPE,
+			EEM_Reservations_CPT::POST_TYPE,
 			'normal',
 			'default'
 		);
@@ -332,7 +332,7 @@ class Equine_Event_Manager_Reservation_Editor {
 			'equine_event_manager_group_reservations',
 			__( 'Group Reservations', 'equine-event-manager' ),
 			array( $this, 'render_group_reservations_meta_box' ),
-			Equine_Event_Manager_Reservations_CPT::POST_TYPE,
+			EEM_Reservations_CPT::POST_TYPE,
 			'normal',
 			'default'
 		);
@@ -341,7 +341,7 @@ class Equine_Event_Manager_Reservation_Editor {
 			'equine_event_manager_venue_map',
 			__( 'Venue Map', 'equine-event-manager' ),
 			array( $this, 'render_venue_map_meta_box' ),
-			Equine_Event_Manager_Reservations_CPT::POST_TYPE,
+			EEM_Reservations_CPT::POST_TYPE,
 			'normal',
 			'default'
 		);
@@ -350,7 +350,7 @@ class Equine_Event_Manager_Reservation_Editor {
 			'equine_event_manager_venue_agreement',
 			__( 'Agreement', 'equine-event-manager' ),
 			array( $this, 'render_venue_agreement_meta_box' ),
-			Equine_Event_Manager_Reservations_CPT::POST_TYPE,
+			EEM_Reservations_CPT::POST_TYPE,
 			'normal',
 			'default'
 		);
@@ -359,7 +359,7 @@ class Equine_Event_Manager_Reservation_Editor {
 			'equine_event_manager_fees',
 			__( 'Fees', 'equine-event-manager' ),
 			array( $this, 'render_fees_meta_box' ),
-			Equine_Event_Manager_Reservations_CPT::POST_TYPE,
+			EEM_Reservations_CPT::POST_TYPE,
 			'normal',
 			'default'
 		);
@@ -373,7 +373,7 @@ class Equine_Event_Manager_Reservation_Editor {
 	 * @return void
 	 */
 	public function render_editor_header( $post ) {
-		if ( ! $post instanceof WP_Post || Equine_Event_Manager_Reservations_CPT::POST_TYPE !== $post->post_type ) {
+		if ( ! $post instanceof WP_Post || EEM_Reservations_CPT::POST_TYPE !== $post->post_type ) {
 			return;
 		}
 		$logo_url = EQUINE_EVENT_MANAGER_URL . 'admin/images/equine-event-manager-logo.png';
@@ -398,7 +398,7 @@ class Equine_Event_Manager_Reservation_Editor {
 	 * @return void
 	 */
 	public function render_editor_overview( $post ) {
-		if ( ! $post instanceof WP_Post || Equine_Event_Manager_Reservations_CPT::POST_TYPE !== $post->post_type ) {
+		if ( ! $post instanceof WP_Post || EEM_Reservations_CPT::POST_TYPE !== $post->post_type ) {
 			return;
 		}
 
@@ -440,7 +440,7 @@ class Equine_Event_Manager_Reservation_Editor {
 			return $actions;
 		}
 
-		$preview_url = home_url( user_trailingslashit( Equine_Event_Manager_Events::VIRTUAL_EVENT_ROUTE_BASE . '/' . absint( $post->ID ) ) );
+		$preview_url = home_url( user_trailingslashit( EEM_Events::VIRTUAL_EVENT_ROUTE_BASE . '/' . absint( $post->ID ) ) );
 		$actions[]   = array(
 			'label'        => __( 'Preview Reservation Page', 'equine-event-manager' ),
 			'url'          => $preview_url,

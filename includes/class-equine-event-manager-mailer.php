@@ -2,7 +2,7 @@
 /**
  * Shared email delivery helper.
  *
- * @package Equine_Event_Manager
+ * @package EEM_Plugin
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * SendGrid-aware mail helper with WordPress mail fallback.
  */
-class Equine_Event_Manager_Mailer {
+class EEM_Mailer {
 
 	/**
 	 * Integration settings option name.

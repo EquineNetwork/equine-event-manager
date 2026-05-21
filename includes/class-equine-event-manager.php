@@ -2,7 +2,7 @@
 /**
  * Main plugin loader.
  *
- * @package Equine_Event_Manager
+ * @package EEM_Plugin
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -20,40 +20,40 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'public/class-equine-event-manager-shor
 /**
  * Registers plugin hooks.
  */
-class Equine_Event_Manager {
+class EEM_Plugin {
 
 	/**
 	 * Admin screen handler.
 	 *
-	 * @var Equine_Event_Manager_Admin
+	 * @var EEM_Admin
 	 */
 	private $admin;
 
 	/**
 	 * Reservations custom post type handler.
 	 *
-	 * @var Equine_Event_Manager_Reservations_CPT
+	 * @var EEM_Reservations_CPT
 	 */
 	private $reservations_cpt;
 
 	/**
 	 * Native event handler.
 	 *
-	 * @var Equine_Event_Manager_Events
+	 * @var EEM_Events
 	 */
 	private $events;
 
 	/**
 	 * Shortcode handler.
 	 *
-	 * @var Equine_Event_Manager_Shortcodes
+	 * @var EEM_Shortcodes
 	 */
 	private $shortcodes;
 
 	/**
 	 * Reservation editor screen controller.
 	 *
-	 * @var Equine_Event_Manager_Reservation_Editor
+	 * @var EEM_Reservation_Editor
 	 */
 	private $reservation_editor;
 
@@ -61,19 +61,19 @@ class Equine_Event_Manager {
 	 * Set up plugin components.
 	 */
 	public function __construct() {
-		$this->admin            = new Equine_Event_Manager_Admin();
-		$this->reservations_cpt = new Equine_Event_Manager_Reservations_CPT();
-		$this->events           = new Equine_Event_Manager_Events();
-		$this->shortcodes       = new Equine_Event_Manager_Shortcodes();
-		$this->reservation_editor = new Equine_Event_Manager_Reservation_Editor( $this->reservations_cpt );
+		$this->admin            = new EEM_Admin();
+		$this->reservations_cpt = new EEM_Reservations_CPT();
+		$this->events           = new EEM_Events();
+		$this->shortcodes       = new EEM_Shortcodes();
+		$this->reservation_editor = new EEM_Reservation_Editor( $this->reservations_cpt );
 	}
 
 	/**
 	 * Register WordPress hooks.
 	 */
 	public function run() {
-		add_action( 'init', array( 'Equine_Event_Manager_Activator', 'maybe_upgrade' ) );
-		add_action( 'init', array( 'Equine_Event_Manager_Activator', 'maybe_refresh_runtime_rewrite_rules' ), 30 );
+		add_action( 'init', array( 'EEM_Activator', 'maybe_upgrade' ) );
+		add_action( 'init', array( 'EEM_Activator', 'maybe_refresh_runtime_rewrite_rules' ), 30 );
 		add_action( 'init', array( $this->reservations_cpt, 'register_post_type' ) );
 		add_action( 'add_meta_boxes_en_reservation', array( $this->reservation_editor, 'register_meta_boxes' ) );
 		add_action( 'save_post_en_reservation', array( $this->reservations_cpt, 'save_meta' ), 10, 2 );
@@ -122,7 +122,7 @@ class Equine_Event_Manager {
 		add_action( 'wp_ajax_equine_event_manager_test_feed_url', array( $this->events, 'ajax_test_feed_url' ) );
 		add_action( 'wp_ajax_equine_event_manager_search_feed_events', array( $this->events, 'ajax_search_feed_events' ) );
 
-		if ( Equine_Event_Manager_Events::is_native_events_enabled() ) {
+		if ( EEM_Events::is_native_events_enabled() ) {
 			add_action( 'init', array( $this->events, 'register_content_types' ) );
 			add_filter( 'use_block_editor_for_post_type', array( $this->events, 'filter_use_block_editor_for_post_type' ), 10, 2 );
 			add_action( 'add_meta_boxes', array( $this->events, 'register_meta_boxes' ) );
@@ -134,7 +134,7 @@ class Equine_Event_Manager {
 			add_action( 'widgets_init', array( $this->events, 'register_widgets' ) );
 		}
 
-		if ( Equine_Event_Manager_Events::is_tec_integration_configured() ) {
+		if ( EEM_Events::is_tec_integration_configured() ) {
 			add_action( 'add_meta_boxes_tribe_events', array( $this->reservations_cpt, 'register_tec_event_meta_box' ) );
 			add_action( 'save_post_tribe_events', array( $this->reservations_cpt, 'save_tec_event_meta' ), 10, 2 );
 			add_action( 'wp_ajax_equine_event_manager_search_tec_events', array( $this->reservations_cpt, 'ajax_search_tec_events' ) );

@@ -2,7 +2,7 @@
 /**
  * Reservations custom post type and meta fields.
  *
- * @package Equine_Event_Manager
+ * @package EEM_Plugin
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Registers and manages the reservation setup CPT.
  */
-class Equine_Event_Manager_Reservations_CPT {
+class EEM_Reservations_CPT {
 
 	const POST_TYPE = 'en_reservation';
 	const VALIDATION_TRANSIENT_PREFIX = 'en_reservation_validation_';
@@ -79,7 +79,7 @@ class Equine_Event_Manager_Reservations_CPT {
 			'equine_event_manager_native_event_reservation_link',
 			__( 'Link Reservation', 'equine-event-manager' ),
 			array( $this, 'render_native_event_meta_box' ),
-			Equine_Event_Manager_Events::EVENT_POST_TYPE,
+			EEM_Events::EVENT_POST_TYPE,
 			'side',
 			'default'
 		);
@@ -250,7 +250,7 @@ class Equine_Event_Manager_Reservations_CPT {
 			return;
 		}
 
-		if ( ! $post instanceof WP_Post || Equine_Event_Manager_Events::EVENT_POST_TYPE !== $post->post_type || ! current_user_can( 'edit_post', $post_id ) ) {
+		if ( ! $post instanceof WP_Post || EEM_Events::EVENT_POST_TYPE !== $post->post_type || ! current_user_can( 'edit_post', $post_id ) ) {
 			return;
 		}
 
@@ -765,7 +765,7 @@ class Equine_Event_Manager_Reservations_CPT {
 		$stall_units         = $this->expand_chart_units( is_array( $stall_blocks ) ? $stall_blocks : array() );
 		$rv_lots             = get_post_meta( $post_id, '_en_rv_lots', true );
 		$rv_lot_names        = $this->get_chart_rv_lot_names( is_array( $rv_lots ) ? $rv_lots : array() );
-		$orders_repository   = new Equine_Event_Manager_Orders_Repository();
+		$orders_repository   = new EEM_Orders_Repository();
 		$orders              = array_filter(
 			$orders_repository->get_orders( '', 'date', 'asc' ),
 			function ( $order ) use ( $post_id ) {
@@ -1072,8 +1072,8 @@ class Equine_Event_Manager_Reservations_CPT {
 	 */
 	public function get_editor_event_link_context( $post_id ) {
 		$data                  = $this->get_meta_values( $post_id );
-		$default_event_source  = $this->sanitize_reservation_event_source( Equine_Event_Manager_Events::get_default_event_source() );
-		$default_feed_url      = Equine_Event_Manager_Events::get_default_feed_url();
+		$default_event_source  = $this->sanitize_reservation_event_source( EEM_Events::get_default_event_source() );
+		$default_feed_url      = EEM_Events::get_default_feed_url();
 		$selected_event_title  = ( 'tec' === $default_event_source && $data['event_id'] ) ? get_the_title( absint( $data['event_id'] ) ) : '';
 		$selected_event_dates  = ( 'tec' === $default_event_source && $data['event_id'] ) ? $this->get_tec_event_date_values( absint( $data['event_id'] ) ) : array(
 			'start_date' => '',
@@ -1081,7 +1081,7 @@ class Equine_Event_Manager_Reservations_CPT {
 		);
 		$tec_events_enabled    = $this->is_tec_event_source_available();
 		$initial_events        = array();
-		$native_events_enabled = Equine_Event_Manager_Events::is_native_events_enabled();
+		$native_events_enabled = EEM_Events::is_native_events_enabled();
 		$native_events         = array();
 		$selected_feed_event   = array();
 
@@ -1098,13 +1098,13 @@ class Equine_Event_Manager_Reservations_CPT {
 		}
 
 		if ( $native_events_enabled ) {
-			$selected_native_dates = ( 'native' === $default_event_source && $data['event_id'] ) ? Equine_Event_Manager_Events::get_native_event_date_values( absint( $data['event_id'] ) ) : array(
+			$selected_native_dates = ( 'native' === $default_event_source && $data['event_id'] ) ? EEM_Events::get_native_event_date_values( absint( $data['event_id'] ) ) : array(
 				'start_date' => '',
 				'end_date'   => '',
 			);
 
-			foreach ( Equine_Event_Manager_Events::get_upcoming_native_events( 200 ) as $event ) {
-				$event_dates     = Equine_Event_Manager_Events::get_native_event_date_values( absint( $event->ID ) );
+			foreach ( EEM_Events::get_upcoming_native_events( 200 ) as $event ) {
+				$event_dates     = EEM_Events::get_native_event_date_values( absint( $event->ID ) );
 				$native_events[] = array(
 					'id'         => absint( $event->ID ),
 					'title'      => get_the_title( $event ),
@@ -1115,7 +1115,7 @@ class Equine_Event_Manager_Reservations_CPT {
 		}
 
 		if ( 'feed' === $default_event_source && ! empty( $data['external_event_id'] ) ) {
-			$selected_feed_event = Equine_Event_Manager_Events::get_feed_event_by_external_id( $data['external_event_id'], $default_feed_url );
+			$selected_feed_event = EEM_Events::get_feed_event_by_external_id( $data['external_event_id'], $default_feed_url );
 		}
 
 		return array(
@@ -1295,7 +1295,7 @@ class Equine_Event_Manager_Reservations_CPT {
 			return;
 		}
 
-		if ( ! in_array( get_post_type( $event_id ), array( 'tribe_events', Equine_Event_Manager_Events::EVENT_POST_TYPE ), true ) ) {
+		if ( ! in_array( get_post_type( $event_id ), array( 'tribe_events', EEM_Events::EVENT_POST_TYPE ), true ) ) {
 			$this->debug_log( 'event sync skipped: linked post is not a supported event type.' );
 			return;
 		}
@@ -1326,7 +1326,7 @@ class Equine_Event_Manager_Reservations_CPT {
 			)
 		);
 
-		if ( ! in_array( $event_source, array( 'tec', 'native' ), true ) || ! $event_id || ! in_array( get_post_type( $event_id ), array( 'tribe_events', Equine_Event_Manager_Events::EVENT_POST_TYPE ), true ) ) {
+		if ( ! in_array( $event_source, array( 'tec', 'native' ), true ) || ! $event_id || ! in_array( get_post_type( $event_id ), array( 'tribe_events', EEM_Events::EVENT_POST_TYPE ), true ) ) {
 			$this->debug_log( 'cleanup skipped: no valid linked event.' );
 			return;
 		}
@@ -1510,7 +1510,7 @@ class Equine_Event_Manager_Reservations_CPT {
 
 		$selected_event_source = isset( $source['event_source'] ) ? sanitize_key( $source['event_source'] ) : $existing['event_source'];
 		$selected_event_source = $this->sanitize_reservation_event_source( $selected_event_source );
-		$event_source          = $use_global_event_source ? $this->sanitize_reservation_event_source( Equine_Event_Manager_Events::get_default_event_source() ) : $selected_event_source;
+		$event_source          = $use_global_event_source ? $this->sanitize_reservation_event_source( EEM_Events::get_default_event_source() ) : $selected_event_source;
 
 		$event_id = 0;
 
@@ -1522,7 +1522,7 @@ class Equine_Event_Manager_Reservations_CPT {
 
 		if ( 'external' === $event_source ) {
 			$event_id = 0;
-		} elseif ( 'native' === $event_source && Equine_Event_Manager_Events::EVENT_POST_TYPE !== get_post_type( $event_id ) ) {
+		} elseif ( 'native' === $event_source && EEM_Events::EVENT_POST_TYPE !== get_post_type( $event_id ) ) {
 			$event_id = 0;
 		} elseif ( 'tec' === $event_source && 'tribe_events' !== get_post_type( $event_id ) ) {
 			$event_id = 0;
@@ -1655,7 +1655,7 @@ class Equine_Event_Manager_Reservations_CPT {
 		$data['weekend_enabled'] = $data['stall_weekend_enabled'] || $data['rv_weekend_enabled'] ? 1 : 0;
 
 		if ( 'feed' === $data['event_source'] && empty( $data['event_feed_url'] ) ) {
-			$data['event_feed_url'] = Equine_Event_Manager_Events::get_default_feed_url();
+			$data['event_feed_url'] = EEM_Events::get_default_feed_url();
 		}
 
 		$data = $this->normalize_date_range( $data, 'stalls_open_at', 'stalls_close_at' );
@@ -1900,7 +1900,7 @@ class Equine_Event_Manager_Reservations_CPT {
 	private function get_default_meta_values() {
 		$defaults = array(
 			'use_global_event_source'        => 1,
-			'event_source'                    => Equine_Event_Manager_Events::get_default_event_source(),
+			'event_source'                    => EEM_Events::get_default_event_source(),
 			'event_id'                        => 0,
 			'event_feed_url'                  => '',
 			'external_event_name'             => '',
@@ -2418,7 +2418,7 @@ class Equine_Event_Manager_Reservations_CPT {
 			'external' => __( 'External Event', 'equine-event-manager' ),
 		);
 
-		if ( Equine_Event_Manager_Events::is_native_events_enabled() ) {
+		if ( EEM_Events::is_native_events_enabled() ) {
 			$sources = array_merge(
 				array(
 					'native' => __( 'Equine Event Manager Event', 'equine-event-manager' ),
@@ -2446,10 +2446,10 @@ class Equine_Event_Manager_Reservations_CPT {
 	 */
 	private function get_configured_primary_event_sources() {
 		$sources = array(
-			$this->sanitize_reservation_event_source( Equine_Event_Manager_Events::get_default_event_source() ) => true,
+			$this->sanitize_reservation_event_source( EEM_Events::get_default_event_source() ) => true,
 		);
 
-		if ( Equine_Event_Manager_Events::is_native_events_enabled() ) {
+		if ( EEM_Events::is_native_events_enabled() ) {
 			$sources['native'] = true;
 		}
 
@@ -2474,7 +2474,7 @@ class Equine_Event_Manager_Reservations_CPT {
 			return $event_source;
 		}
 
-		$default_event_source = sanitize_key( Equine_Event_Manager_Events::get_default_event_source() );
+		$default_event_source = sanitize_key( EEM_Events::get_default_event_source() );
 
 		if ( in_array( $default_event_source, $available_sources, true ) ) {
 			return $default_event_source;
@@ -2491,7 +2491,7 @@ class Equine_Event_Manager_Reservations_CPT {
 	 */
 	private function get_effective_event_source( $data ) {
 		if ( ! empty( $data['use_global_event_source'] ) ) {
-			return $this->sanitize_reservation_event_source( Equine_Event_Manager_Events::get_default_event_source() );
+			return $this->sanitize_reservation_event_source( EEM_Events::get_default_event_source() );
 		}
 
 		return $this->sanitize_reservation_event_source( isset( $data['event_source'] ) ? $data['event_source'] : '' );
@@ -2515,7 +2515,7 @@ class Equine_Event_Manager_Reservations_CPT {
 	 * @return bool
 	 */
 	private function is_tec_event_source_available() {
-		return Equine_Event_Manager_Events::is_tec_integration_enabled();
+		return EEM_Events::is_tec_integration_enabled();
 	}
 
 	/**
@@ -2753,7 +2753,7 @@ class Equine_Event_Manager_Reservations_CPT {
 		}
 
 		if ( 'native' === $data['event_source'] && ! empty( $data['event_id'] ) ) {
-			$event_dates = Equine_Event_Manager_Events::get_native_event_date_values( absint( $data['event_id'] ) );
+			$event_dates = EEM_Events::get_native_event_date_values( absint( $data['event_id'] ) );
 
 			if ( ! empty( $event_dates['start_date'] ) ) {
 				if ( empty( $event_dates['end_date'] ) || $event_dates['start_date'] === $event_dates['end_date'] ) {
@@ -2806,7 +2806,7 @@ class Equine_Event_Manager_Reservations_CPT {
 	 * @return string
 	 */
 	private function get_event_source_label( $event_source ) {
-		return Equine_Event_Manager_Events::get_event_source_label( $event_source );
+		return EEM_Events::get_event_source_label( $event_source );
 	}
 
 	/**
@@ -3666,7 +3666,7 @@ class Equine_Event_Manager_Reservations_CPT {
 		if ( 'tec' === $data['event_source'] ) {
 			$event_dates = $this->get_tec_event_date_values( absint( $data['event_id'] ) );
 		} elseif ( 'native' === $data['event_source'] ) {
-			$event_dates = Equine_Event_Manager_Events::get_native_event_date_values( absint( $data['event_id'] ) );
+			$event_dates = EEM_Events::get_native_event_date_values( absint( $data['event_id'] ) );
 		} else {
 			return $data;
 		}

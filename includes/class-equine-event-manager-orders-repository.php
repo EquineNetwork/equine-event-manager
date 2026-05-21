@@ -2,7 +2,7 @@
 /**
  * Reservation order data access.
  *
- * @package Equine_Event_Manager
+ * @package EEM_Plugin
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Reads and mutates customer reservation/order rows.
  */
-class Equine_Event_Manager_Orders_Repository {
+class EEM_Orders_Repository {
 
 	/**
 	 * Next stable order number option key.

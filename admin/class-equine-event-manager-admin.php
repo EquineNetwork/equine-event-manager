@@ -2,7 +2,7 @@
 /**
  * Admin pages for Equine Event Manager.
  *
- * @package Equine_Event_Manager
+ * @package EEM_Plugin
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Registers Orders, Reports, and Settings admin pages.
  */
-class Equine_Event_Manager_Admin {
+class EEM_Admin {
 
 	const MENU_SLUG = 'equine-event-manager-orders';
 
@@ -45,7 +45,7 @@ class Equine_Event_Manager_Admin {
 	/**
 	 * Orders repository.
 	 *
-	 * @var Equine_Event_Manager_Orders_Repository
+	 * @var EEM_Orders_Repository
 	 */
 	private $orders_repository;
 
@@ -74,7 +74,7 @@ class Equine_Event_Manager_Admin {
 	 * Set up admin dependencies.
 	 */
 	public function __construct() {
-		$this->orders_repository = new Equine_Event_Manager_Orders_Repository();
+		$this->orders_repository = new EEM_Orders_Repository();
 		add_filter( 'set-screen-option', array( $this, 'save_screen_option' ), 10, 3 );
 		add_filter( 'screen_options_show_screen', array( $this, 'filter_screen_options_visibility' ), 10, 2 );
 		add_filter( 'admin_body_class', array( $this, 'filter_backend_shell_body_class' ) );
@@ -119,7 +119,7 @@ class Equine_Event_Manager_Admin {
 			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--reservations' );
 		}
 
-		if ( Equine_Event_Manager_Reservations_CPT::POST_TYPE === $post_type && in_array( $screen->base, array( 'post', 'post-new' ), true ) ) {
+		if ( EEM_Reservations_CPT::POST_TYPE === $post_type && in_array( $screen->base, array( 'post', 'post-new' ), true ) ) {
 			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--editor' );
 		}
 
@@ -184,7 +184,7 @@ class Equine_Event_Manager_Admin {
 			$should_load = true;
 		}
 
-		if ( Equine_Event_Manager_Reservations_CPT::POST_TYPE === $post_type && in_array( $hook_suffix, array( 'post.php', 'post-new.php' ), true ) ) {
+		if ( EEM_Reservations_CPT::POST_TYPE === $post_type && in_array( $hook_suffix, array( 'post.php', 'post-new.php' ), true ) ) {
 			$should_load = true;
 		}
 
@@ -325,7 +325,7 @@ class Equine_Event_Manager_Admin {
 	 * @return void
 	 */
 	public function maybe_redirect_disabled_native_event_admin_screens() {
-		if ( Equine_Event_Manager_Events::is_native_events_enabled() || wp_doing_ajax() ) {
+		if ( EEM_Events::is_native_events_enabled() || wp_doing_ajax() ) {
 			return;
 		}
 
@@ -423,7 +423,7 @@ class Equine_Event_Manager_Admin {
 	 * @return void
 	 */
 	public function maybe_remove_disabled_native_event_menu_items() {
-		if ( Equine_Event_Manager_Events::is_native_events_enabled() ) {
+		if ( EEM_Events::is_native_events_enabled() ) {
 			return;
 		}
 
@@ -486,7 +486,7 @@ class Equine_Event_Manager_Admin {
 	 * Register admin pages under the Reservations CPT menu.
 	 */
 	public function register_menu() {
-		$native_events_enabled = Equine_Event_Manager_Events::is_native_events_enabled();
+		$native_events_enabled = EEM_Events::is_native_events_enabled();
 
 		$this->orders_hook = add_menu_page(
 			__( 'Orders', 'equine-event-manager' ),
@@ -3535,21 +3535,21 @@ class Equine_Event_Manager_Admin {
 	 * @return void
 	 */
 	private function render_import_tec_events_panel() {
-		$events = Equine_Event_Manager_Events::get_tec_events_for_import( 150 );
+		$events = EEM_Events::get_tec_events_for_import( 150 );
 		?>
-		<?php if ( ! Equine_Event_Manager_Events::is_the_events_calendar_available() ) : ?>
+		<?php if ( ! EEM_Events::is_the_events_calendar_available() ) : ?>
 			<p><?php esc_html_e( 'The Events Calendar is not active, so there are no events available to import.', 'equine-event-manager' ); ?></p>
 		<?php else : ?>
 			<?php $this->render_import_tec_events_notice(); ?>
 			<input type="hidden" name="action" value="equine_event_manager_import_tec_events" />
-			<?php wp_nonce_field( Equine_Event_Manager_Events::IMPORT_TEC_ACTION, 'equine_event_manager_import_tec_events_nonce' ); ?>
+			<?php wp_nonce_field( EEM_Events::IMPORT_TEC_ACTION, 'equine_event_manager_import_tec_events_nonce' ); ?>
 			<p><?php esc_html_e( 'Select one or more The Events Calendar events to import into Equine Event Manager.', 'equine-event-manager' ); ?></p>
 			<?php if ( empty( $events ) ) : ?>
 				<p><?php esc_html_e( 'No The Events Calendar events were found.', 'equine-event-manager' ); ?></p>
 			<?php else : ?>
 				<ul role="group" aria-label="<?php esc_attr_e( 'Available The Events Calendar events', 'equine-event-manager' ); ?>">
 					<?php foreach ( $events as $event ) : ?>
-						<?php $dates = Equine_Event_Manager_Events::get_tec_event_date_values( $event->ID ); ?>
+						<?php $dates = EEM_Events::get_tec_event_date_values( $event->ID ); ?>
 						<li>
 							<label>
 								<input type="checkbox" name="tec_event_ids[]" value="<?php echo esc_attr( $event->ID ); ?>" />
@@ -3593,7 +3593,7 @@ class Equine_Event_Manager_Admin {
 			wp_die( esc_html__( 'You do not have permission to import events.', 'equine-event-manager' ) );
 		}
 
-		check_admin_referer( Equine_Event_Manager_Events::IMPORT_TEC_ACTION, 'equine_event_manager_import_tec_events_nonce' );
+		check_admin_referer( EEM_Events::IMPORT_TEC_ACTION, 'equine_event_manager_import_tec_events_nonce' );
 
 		$event_ids = isset( $_POST['tec_event_ids'] ) ? array_map( 'absint', (array) wp_unslash( $_POST['tec_event_ids'] ) ) : array();
 		$event_ids = array_values( array_filter( $event_ids ) );
@@ -3604,7 +3604,7 @@ class Equine_Event_Manager_Admin {
 		);
 
 		foreach ( $event_ids as $event_id ) {
-			$result = Equine_Event_Manager_Events::import_tec_event( $event_id );
+			$result = EEM_Events::import_tec_event( $event_id );
 
 			if ( isset( $counts[ $result['status'] ] ) ) {
 				++$counts[ $result['status'] ];
@@ -4249,7 +4249,7 @@ class Equine_Event_Manager_Admin {
 		}
 
 		if ( 'native' === $data['event_source'] && ! empty( $data['event_id'] ) ) {
-			$event_dates = Equine_Event_Manager_Events::get_native_event_date_values( absint( $data['event_id'] ) );
+			$event_dates = EEM_Events::get_native_event_date_values( absint( $data['event_id'] ) );
 
 			if ( ! empty( $event_dates['start_date'] ) ) {
 				return $this->format_admin_date_range_label( $event_dates['start_date'], ! empty( $event_dates['end_date'] ) ? $event_dates['end_date'] : $event_dates['start_date'] );
@@ -4270,7 +4270,7 @@ class Equine_Event_Manager_Admin {
 	 * @return string
 	 */
 	private function get_reservation_event_source_label( $data ) {
-		return Equine_Event_Manager_Events::get_event_source_label( $data['event_source'] );
+		return EEM_Events::get_event_source_label( $data['event_source'] );
 	}
 
 	/**
@@ -4285,7 +4285,7 @@ class Equine_Event_Manager_Admin {
 		$allowed_sources         = array( 'native', 'tec', 'feed', 'external' );
 
 		if ( $use_global_event_source || ! in_array( $event_source, $allowed_sources, true ) ) {
-			$event_source = Equine_Event_Manager_Events::get_default_event_source();
+			$event_source = EEM_Events::get_default_event_source();
 		}
 
 		return in_array( $event_source, $allowed_sources, true ) ? $event_source : 'external';
@@ -5511,7 +5511,7 @@ class Equine_Event_Manager_Admin {
 
 			if ( (int) $previous_feature_settings['native_events_enabled'] !== (int) $feature_settings['native_events_enabled'] ) {
 				if ( ! empty( $feature_settings['native_events_enabled'] ) ) {
-					$events = new Equine_Event_Manager_Events();
+					$events = new EEM_Events();
 					$events->register_content_types();
 				}
 
@@ -5534,9 +5534,9 @@ class Equine_Event_Manager_Admin {
 		$feature_settings = $this->get_feature_settings();
 		$integration_settings = $this->get_integration_settings();
 		$integration_source_ui = 'external' === $integration_settings['default_event_source'] ? 'feed' : $integration_settings['default_event_source'];
-		$tec_is_active = Equine_Event_Manager_Events::is_tec_plugin_active();
-		$tec_has_existing_events = Equine_Event_Manager_Events::has_existing_tec_events();
-		$native_event_slug = Equine_Event_Manager_Events::get_event_rewrite_slug();
+		$tec_is_active = EEM_Events::is_tec_plugin_active();
+		$tec_has_existing_events = EEM_Events::has_existing_tec_events();
+		$native_event_slug = EEM_Events::get_event_rewrite_slug();
 		$description = get_option( self::SPECIAL_REQUESTS_DESCRIPTION_OPTION, self::DEFAULT_SPECIAL_REQUESTS_DESCRIPTION );
 		$company_settings = $this->get_company_settings();
 		$reservation_message_settings = $this->get_reservation_message_settings();
@@ -7070,7 +7070,7 @@ class Equine_Event_Manager_Admin {
 			$this->redirect_to_order_notice( $order_key, 'customer_notification_failed', __( 'Order not found.', 'equine-event-manager' ) );
 		}
 
-		$shortcodes = new Equine_Event_Manager_Shortcodes();
+		$shortcodes = new EEM_Shortcodes();
 		$sent       = $shortcodes->send_customer_notification_email_for_order( $order );
 
 		if ( is_wp_error( $sent ) ) {
@@ -7278,7 +7278,7 @@ class Equine_Event_Manager_Admin {
 			$reservation_label
 		);
 
-		$sent = Equine_Event_Manager_Mailer::send_html_email(
+		$sent = EEM_Mailer::send_html_email(
 			sanitize_email( $order['email'] ),
 			$subject,
 			$this->build_invoice_email_html( $order, $invoice_token ),
