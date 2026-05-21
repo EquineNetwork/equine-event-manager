@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Order Receipt #0020</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',sans-serif;color:#1a1a2e;background:#fff;font-size:12.5px;line-height:1.5;padding:28px 36px;max-width:800px;margin:0 auto}
+
+/* HEADER */
+.header{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:start;margin-bottom:16px;padding-bottom:14px;border-bottom:2px solid #031B4E}
+.logo-box{width:150px;height:42px;background:#f0f0f0;border:1px dashed #ccc;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#999;margin-bottom:10px}
+.receipt-tag{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#1668F2;margin-bottom:3px}
+.event-name{font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:700;color:#031B4E;margin-bottom:2px}
+.event-sub{font-size:12px;color:#50575e}
+.order-box{background:#F7F9FC;border:1px solid #D9E2F2;border-radius:6px;padding:11px 15px;text-align:right;min-width:155px}
+.obl{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#8c8f94;margin-bottom:1px}
+.obv{font-size:13px;font-weight:700;color:#031B4E;margin-bottom:7px}
+.obv:last-child{margin-bottom:0}
+.obv.paid{font-size:16px;color:#1668F2}
+
+/* TWO-COL DETAILS */
+.details{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.dblock{background:#F7F9FC;border:1px solid #e8eaf0;border-radius:5px;padding:10px 13px}
+.dblock-title{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#8c8f94;margin-bottom:7px}
+.dr{margin-bottom:4px}
+.dr:last-child{margin-bottom:0}
+.dl{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8c8f94;margin-bottom:1px}
+.dv{font-size:12.5px;font-weight:600;color:#1a1a2e}
+address{font-style:normal;font-size:12.5px;line-height:1.6;color:#1a1a2e}
+
+/* RESERVATION SUMMARY GRID */
+.res-section-label{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#8c8f94;margin-bottom:6px}
+.res-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.res-card{border:1px solid #e8eaf0;border-radius:5px;overflow:hidden}
+.res-card.full{grid-column:1/-1}
+.rch{background:#F7F9FC;border-bottom:1px solid #e8eaf0;padding:7px 12px;display:flex;justify-content:space-between;align-items:center}
+.rct{font-size:12px;font-weight:700;color:#031B4E}
+.rcb{font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:10px;background:#EEF4FF;color:#1668F2;border:1px solid #c0d8ff}
+.rcb.rv{background:#F5F3FF;color:#7c3aed;border-color:#ddd6fe}
+.rcb.group{background:#F0FDF4;color:#16a34a;border-color:#bbf7d0}
+.rcbody{padding:9px 12px}
+.rf-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.rfl{font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8c8f94;margin-bottom:1px}
+.rfv{font-size:12px;font-weight:600;color:#1a1a2e}
+.rfv.span2{grid-column:1/-1}
+
+/* LINE ITEMS TABLE */
+.tbl-label{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#8c8f94;margin-bottom:5px}
+table{width:100%;border-collapse:collapse;margin-bottom:12px}
+thead tr{background:#031B4E}
+thead th{padding:6px 9px;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#fff;text-align:left}
+thead th.c{text-align:center}
+thead th.r{text-align:right}
+tbody tr{border-bottom:1px solid #f0f0f1}
+tbody tr:nth-child(even){background:#FAFBFE}
+td{padding:6px 9px;font-size:12px;vertical-align:middle}
+.ts{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#8c8f94;white-space:nowrap}
+.tc{text-align:center;color:#50575e}
+.tr{text-align:right;font-weight:700;color:#031B4E}
+
+/* Special requests */
+.special-note{background:#FFFBEB;border:1px solid #fde68a;border-radius:5px;padding:8px 12px;margin-bottom:12px}
+.special-note-label{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#b45309;margin-bottom:3px}
+.special-note-text{font-size:12px;color:#1a1a2e}
+
+/* TOTALS */
+.totals-wrap{display:flex;justify-content:flex-end;margin-bottom:14px}
+.totals-inner{min-width:220px}
+.trow{display:flex;justify-content:space-between;gap:20px;padding:4px 0;font-size:12px;border-bottom:1px solid #f0f0f1}
+.trow:last-child{border-bottom:none;padding-top:7px;border-top:2px solid #031B4E;margin-top:3px}
+.tl{color:#50575e}
+.tv{font-weight:600;color:#1a1a2e}
+.trow.grand .tl{font-weight:700;color:#031B4E;font-size:13px}
+.trow.grand .tv{font-weight:800;color:#1668F2;font-size:14px}
+
+/* FOOTER */
+.footer{border-top:1px solid #e8eaf0;padding-top:9px;display:flex;justify-content:space-between;align-items:center}
+.footer-l,.footer-r{font-size:11px;color:#6B7A99}
+
+@media print{
+  body{padding:16px 20px;max-width:100%}
+  @page{size:letter;margin:0.35in}
+}
+
+/* ── MOBILE ── */
+@media(max-width:600px){
+  body{padding:16px}
+
+  /* Header stacks */
+  .header{grid-template-columns:1fr;gap:12px}
+  .order-box{text-align:left;min-width:0}
+
+  /* Details stack */
+  .details{grid-template-columns:1fr}
+
+  /* Res grid single col */
+  .res-grid{grid-template-columns:1fr}
+  .res-card.full{grid-column:1}
+
+  /* Table scrolls */
+  .table-scroll-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -16px;padding:0 16px}
+  table{min-width:460px;font-size:11.5px}
+  thead th,td{padding:5px 7px}
+
+  /* Totals full width */
+  .totals-wrap{justify-content:stretch}
+  .totals-inner{min-width:0;width:100%}
+
+  /* Footer stacks */
+  .footer{flex-direction:column;gap:4px;text-align:center}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <div class="logo-box">Business Logo</div>
+    <div class="receipt-tag">Order Receipt #0020</div>
+    <div class="event-name">2026 Southeast Region Super Sort</div>
+    <div class="event-sub">May 8, 2026 – May 10, 2026 &nbsp;·&nbsp; 555-555-5555 &nbsp;·&nbsp; office@rsnc.us</div>
+  </div>
+  <div class="order-box">
+    <div class="obl">Order Number</div>
+    <div class="obv">#0020</div>
+    <div class="obl">Payment Date</div>
+    <div class="obv">04-24-2026</div>
+    <div class="obl">Amount Paid</div>
+    <div class="obv paid">$170.56</div>
+  </div>
+</div>
+
+<!-- CUSTOMER + BILLING -->
+<div class="details">
+  <div class="dblock">
+    <div class="dblock-title">Customer Details</div>
+    <div class="dr"><div class="dl">Customer</div><div class="dv">Whitney Mitchell</div></div>
+    <div class="dr"><div class="dl">Reservation Type</div><div class="dv">Stall, Add-On, Group, RV</div></div>
+    <div class="dr"><div class="dl">Email</div><div class="dv">info@wmpromotions.com</div></div>
+    <div class="dr"><div class="dl">Phone</div><div class="dv">(559) 393-5352</div></div>
+  </div>
+  <div class="dblock">
+    <div class="dblock-title">Billing Details</div>
+    <address>Whitney Mitchell<br>12253 Avenue 472<br>Orange Cove, California 93646<br>United States</address>
+  </div>
+</div>
+
+<!-- RESERVATION SUMMARY -->
+<div class="res-section-label">Reservation Summary</div>
+<div class="res-grid">
+  <!-- Stall -->
+  <div class="res-card">
+    <div class="rch"><span class="rct">Stall Reservation</span><span class="rcb">1 Reserved</span></div>
+    <div class="rcbody">
+      <div class="rf-grid">
+        <div><div class="rfl">Stay Type</div><div class="rfv">Nightly</div></div>
+        <div><div class="rfl">Nights</div><div class="rfv">2 Nights</div></div>
+        <div><div class="rfl">Arrival</div><div class="rfv">Fri, May 8, 2026</div></div>
+        <div><div class="rfl">Departure</div><div class="rfv">Sun, May 10, 2026</div></div>
+        <div><div class="rfl">Stalls</div><div class="rfv">1</div></div>
+        <div><div class="rfl">Req. Shavings</div><div class="rfv">2 bags</div></div>
+        <div><div class="rfl">Addl. Shavings</div><div class="rfv">0</div></div>
+      </div>
+    </div>
+  </div>
+  <!-- RV -->
+  <div class="res-card">
+    <div class="rch"><span class="rct">RV Reservation</span><span class="rcb rv">1 Reserved</span></div>
+    <div class="rcbody">
+      <div class="rf-grid">
+        <div><div class="rfl">Stay Type</div><div class="rfv">Nightly</div></div>
+        <div><div class="rfl">Nights</div><div class="rfv">2 Nights</div></div>
+        <div><div class="rfl">Arrival</div><div class="rfv">Fri, May 8, 2026</div></div>
+        <div><div class="rfl">Departure</div><div class="rfv">Sun, May 10, 2026</div></div>
+        <div><div class="rfl">RV Spots</div><div class="rfv">1</div></div>
+        <div><div class="rfl">Lot Selection</div><div class="rfv">Red Lot</div></div>
+        <div class="rfv span2" style="margin-top:2px"><div class="rfl">RV Add-Ons</div><div class="rfv">Electric, Water, Sewage</div></div>
+      </div>
+    </div>
+  </div>
+  <!-- Group -->
+  <div class="res-card">
+    <div class="rch"><span class="rct">Group Reservation</span><span class="rcb group">1 Rider</span></div>
+    <div class="rcbody">
+      <div class="rf-grid">
+        <div><div class="rfl">Riders in Group</div><div class="rfv">1</div></div>
+        <div><div class="rfl">Rider Names</div><div class="rfv">Spencer Mitchell</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LINE ITEMS -->
+<div class="tbl-label">Purchased Items</div>
+<div class="table-scroll-wrap">
+<table>
+  <thead>
+    <tr>
+      <th>Section</th><th>Description</th><th class="c">Qty</th><th class="c">Units</th><th class="c">Rate</th><th class="r">Total</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td class="ts">Stall Res.</td><td>Nightly stay, Fri May 8 – Sun May 10, 2026</td><td class="tc">1</td><td class="tc">2 Nights</td><td class="tc">$10.00</td><td class="tr">$20.00</td></tr>
+    <tr><td class="ts">Stall Product</td><td>Required Shavings</td><td class="tc">2</td><td class="tc">bags</td><td class="tc">$22.00</td><td class="tr">$44.00</td></tr>
+    <tr><td class="ts">RV Res.</td><td>Nightly stay, Fri May 8 – Sun May 10, 2026</td><td class="tc">1</td><td class="tc">2 Nights</td><td class="tc">$20.00</td><td class="tr">$40.00</td></tr>
+    <tr><td class="ts">RV Add-On</td><td>Water</td><td class="tc">1</td><td class="tc">2 Nights</td><td class="tc">$30.00</td><td class="tr">$60.00</td></tr>
+    <tr><td class="ts">General Add-On</td><td>Shavings</td><td class="tc">2</td><td class="tc">bag</td><td class="tc">$12.00</td><td class="tr">$24.00</td></tr>
+    <tr><td class="ts">Group Res.</td><td>Spencer Mitchell</td><td class="tc">1</td><td class="tc">rider</td><td class="tc">—</td><td class="tr">Included</td></tr>
+  </tbody>
+</table>
+</div><!-- /table-scroll-wrap -->
+
+<!-- Special Requests -->
+<div class="special-note">
+  <div class="special-note-label">Special Requests</div>
+  <div class="special-note-text">Test TEst Test</div>
+</div>
+
+<!-- TOTALS -->
+<div class="totals-wrap">
+  <div class="totals-inner">
+    <div class="trow"><span class="tl">Stall Reservation</span><span class="tv">$20.00</span></div>
+    <div class="trow"><span class="tl">Required Shavings</span><span class="tv">$44.00</span></div>
+    <div class="trow"><span class="tl">RV Reservation</span><span class="tv">$40.00</span></div>
+    <div class="trow"><span class="tl">Water Add-On</span><span class="tv">$60.00</span></div>
+    <div class="trow"><span class="tl">Shavings Add-On</span><span class="tv">$24.00</span></div>
+    <div class="trow"><span class="tl">Non-Refundable Convenience Fee</span><span class="tv">$6.56</span></div>
+    <div class="trow grand"><span class="tl">Total Amount Paid</span><span class="tv">$170.56</span></div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <span class="footer-l">Support: 555-555-5555 &nbsp;|&nbsp; office@rsnc.us</span>
+  <span class="footer-r">2026 Southeast Region Super Sort</span>
+</div>
+
+</body>
+</html>

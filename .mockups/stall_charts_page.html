@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equine Event Manager – Stall Charts</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
+
+/* ── WP SHELL ── */
+.wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;position:sticky;top:0;z-index:200}
+.wp-admin-bar span{font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-admin-bar span.site{color:#fff;font-weight:600}
+.wp-body{display:flex;flex:1}
+.wp-sidebar{width:160px;min-width:160px;background:#1d2327;min-height:calc(100vh - 32px)}
+.wp-sidebar-item{padding:8px 12px;font-size:13px;color:#c3c4c7;cursor:pointer;display:flex;align-items:center;gap:8px;border-left:3px solid transparent}
+.wp-sidebar-item:hover{background:#2c3338;color:#fff}
+.wp-sidebar-item.active{background:#1668F2;color:#fff;border-left-color:#90c4ff}
+.wp-sidebar-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 0}
+.wp-sidebar-label{padding:8px 12px 4px;font-size:10px;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.wp-sidebar-sub{padding:6px 12px 6px 28px;font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-sidebar-sub:hover{color:#fff}
+.wp-sidebar-sub.active{color:#90c4ff;font-weight:600}
+
+/* ── CONTENT ── */
+.wp-content{flex:1;padding:12px 20px 40px;min-width:0}
+.breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.breadcrumb-logo-box{width:160px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb;flex-shrink:0}
+.breadcrumb-sep{font-size:13px;color:#8c8f94}
+.breadcrumb-page{font-size:13px;font-weight:600;color:#1d2327}
+.page-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;margin-bottom:14px}
+
+/* ── PLUGIN WRAP ── */
+.plugin-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
+
+/* Page header inside card */
+.plugin-header{padding:14px 18px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.plugin-title{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;color:#031B4E}
+.plugin-subtitle{font-size:12.5px;color:#6B7A99;margin-top:2px}
+
+/* Toolbar */
+.toolbar{padding:12px 18px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#fafafa}
+.toolbar-left{display:flex;align-items:center;gap:8px;flex:1;flex-wrap:wrap}
+.toolbar-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.toolbar-select{padding:6px 28px 6px 10px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 8px center;appearance:none}
+.search-wrap{position:relative;flex:1;min-width:140px;max-width:280px}
+.search-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:#8c8f94}
+.search-input{width:100%;padding:6px 10px 6px 28px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;outline:none}
+.search-input::placeholder{color:#b0b0b0}
+.item-count{font-size:13px;color:#50575e;white-space:nowrap}
+
+/* ── TABLE ── */
+table{width:100%;border-collapse:collapse}
+thead tr{border-bottom:1px solid #dcdcde;background:#fafafa}
+thead th{padding:10px 16px;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8c8f94;text-align:left;white-space:nowrap}
+thead th.sortable{cursor:pointer}
+thead th.sortable:hover{color:#1d2327}
+.sort-icon{display:inline-flex;flex-direction:column;gap:1px;margin-left:3px;vertical-align:middle;opacity:.45}
+.sort-icon span{display:block;width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent}
+.sort-icon span:first-child{border-bottom:4px solid currentColor}
+.sort-icon span:last-child{border-top:4px solid currentColor}
+
+tbody tr{border-bottom:1px solid #f0f0f1}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:#f6f7f7}
+td{padding:14px 16px;font-size:13.5px;color:#1d2327;vertical-align:middle}
+
+.res-name{font-weight:700;color:#031B4E;font-size:14px;display:block;cursor:pointer}
+.res-name:hover{color:#1668F2;text-decoration:underline}
+.res-dates{font-size:12.5px;color:#6B7A99;margin-top:2px}
+
+/* Barn tags */
+.barn-tags{display:flex;gap:5px;flex-wrap:wrap}
+.barn-tag{padding:3px 9px;border-radius:4px;font-size:11.5px;font-weight:600;background:#F0F4FB;color:#031B4E;border:1px solid #D9E2F2}
+
+/* Status */
+.chart-status{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;padding:4px 10px;border-radius:20px;white-space:nowrap}
+.chart-status::before{content:'';width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.status-configured{background:#F0FDF4;color:#15803d;border:1px solid #bbf7d0}
+.status-configured::before{background:#22c55e}
+.status-partial{background:#FFFBEB;color:#b45309;border:1px solid #fde68a}
+.status-partial::before{background:#f59e0b}
+.status-empty{background:#F8FAFC;color:#64748b;border:1px solid #e2e8f0}
+.status-empty::before{background:#94a3b8}
+
+/* Actions */
+.actions-cell{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.action-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:4px;font-size:12.5px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap;border:1px solid}
+.action-btn svg{width:13px;height:13px}
+.btn-view-chart{background:#1668F2;color:#fff;border-color:#1668F2}
+.btn-view-chart:hover{background:#1355cc}
+.btn-edit-res{background:#fff;color:#031B4E;border-color:#c3c4c7}
+.btn-edit-res:hover{background:#f6f7f7}
+
+/* Stats row */
+.chart-stats{display:flex;gap:12px;flex-wrap:wrap;margin-top:3px}
+.chart-stat{font-size:12px;color:#6B7A99;display:flex;align-items:center;gap:4px}
+.chart-stat span{font-weight:600;color:#031B4E}
+.stat-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+/* Pagination */
+.pagination-row{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid #dcdcde;background:#fafafa;flex-wrap:wrap;gap:8px}
+.pagination-info{font-size:13px;color:#50575e}
+.pagination{display:flex;align-items:center;gap:3px}
+.page-btn{width:28px;height:28px;border-radius:4px;border:1px solid #c3c4c7;background:#fff;color:#50575e;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Sans',sans-serif}
+.page-btn.active{background:#1668F2;color:#fff;border-color:#1668F2}
+.page-btn svg{width:12px;height:12px}
+
+/* Mobile cards */
+.mobile-list{display:none;padding:12px 14px}
+.mobile-card{background:#fff;border:1px solid #dcdcde;border-radius:4px;padding:14px;margin-bottom:8px}
+.mob-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;gap:8px}
+.mob-res-name{font-size:14px;font-weight:700;color:#031B4E;cursor:pointer}
+.mob-res-name:hover{color:#1668F2}
+.mob-card-body{margin-bottom:10px}
+.mob-card-dates{font-size:12.5px;color:#6B7A99;margin-bottom:6px}
+.mob-card-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+
+/* ════ TABLET ════ */
+@media(max-width:960px){
+  .wp-sidebar{display:none}
+  .wp-content{padding:10px 14px 40px}
+}
+/* ════ MOBILE ════ */
+@media(max-width:767px){
+  .wp-admin-bar span:not(.site):not(:first-child):not(:last-child){display:none}
+  .wp-content{padding:8px 10px 32px}
+  .breadcrumb-logo-box{width:120px;height:30px;font-size:10px}
+  .page-title{font-size:18px}
+  .plugin-header{padding:12px 14px}
+  .toolbar{flex-direction:column;align-items:stretch;padding:10px 12px;gap:8px}
+  .toolbar-left{flex-direction:column;gap:8px}
+  .search-wrap{max-width:100%;min-width:unset}
+  .desktop-table{display:none}
+  .mobile-list{display:block}
+  .pagination-row{padding:10px 12px}
+  .actions-cell{gap:5px}
+  .action-btn{padding:5px 10px;font-size:12px}
+}
+</style>
+</head>
+<body>
+
+<div class="wp-admin-bar">
+  <span>&#9776;</span>
+  <span class="site">My Equestrian Site</span>
+  <span>+ New</span>
+  <span style="margin-left:auto">Howdy, Whitney Mitchell</span>
+</div>
+
+<div class="wp-body">
+  <div class="wp-sidebar">
+    <div class="wp-sidebar-item">&#9632; Dashboard</div>
+    <div class="wp-sidebar-item">&#9632; Posts</div>
+    <div class="wp-sidebar-item">&#9632; Pages</div>
+    <div class="wp-sidebar-sep"></div>
+    <div class="wp-sidebar-label">Equine EM</div>
+    <div class="wp-sidebar-item active">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      Stall Charts
+    </div>
+    <div class="wp-sidebar-sub">Dashboard</div>
+    <div class="wp-sidebar-sub">Events</div>
+    <div class="wp-sidebar-sub">Orders</div>
+    <div class="wp-sidebar-sub">Reservations</div>
+    <div class="wp-sidebar-sub active">Stall Charts</div>
+    <div class="wp-sidebar-sub">Invoicing</div>
+    <div class="wp-sidebar-sub">Reports</div>
+    <div class="wp-sidebar-sub">Settings</div>
+    <div class="wp-sidebar-sep"></div>
+    <div class="wp-sidebar-item">&#9632; Plugins</div>
+    <div class="wp-sidebar-item">&#9632; Settings</div>
+  </div>
+
+  <div class="wp-content">
+    <div class="breadcrumb">
+      <div class="breadcrumb-logo-box">Plugin Logo</div>
+      <span class="breadcrumb-sep">/</span>
+      <span class="breadcrumb-page">Stall Charts</span>
+    </div>
+
+    <div class="page-title">Stall Charts</div>
+
+    <div class="plugin-wrap">
+
+      <div class="plugin-header">
+        <div>
+          <div class="plugin-title">Stall Charts</div>
+          <div class="plugin-subtitle">View and manage stall assignments for each reservation. Click a reservation name to open its assignment board.</div>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <select class="toolbar-select">
+            <option>All dates</option>
+            <option>May 2026</option>
+            <option>June 2026</option>
+          </select>
+          <div class="search-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input class="search-input" type="text" placeholder="Search reservations...">
+          </div>
+        </div>
+        <div class="toolbar-right">
+          <span class="item-count">5 reservations</span>
+        </div>
+      </div>
+
+      <!-- Desktop Table -->
+      <div class="desktop-table">
+        <table>
+          <thead>
+            <tr>
+              <th class="sortable">Reservation <span class="sort-icon"><span></span><span></span></span></th>
+              <th>Barns / Lots</th>
+              <th class="sortable">Stall Status <span class="sort-icon"><span></span><span></span></span></th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <span class="res-name">2026 Southeast Region Super Sort</span>
+                <div class="res-dates">May 8, 2026 – May 10, 2026</div>
+                <div class="chart-stats">
+                  <div class="chart-stat"><div class="stat-dot" style="background:#22c55e"></div>82 Available</div>
+                  <div class="chart-stat"><div class="stat-dot" style="background:#ef4444"></div>28 Reserved</div>
+                  <div class="chart-stat"><div class="stat-dot" style="background:#94a3b8"></div>10 Blocked</div>
+                </div>
+              </td>
+              <td>
+                <div class="barn-tags">
+                  <span class="barn-tag">Red Barn</span>
+                  <span class="barn-tag">Blue Barn</span>
+                  <span class="barn-tag">Green Barn</span>
+                  <span class="barn-tag">RV Lot A</span>
+                </div>
+              </td>
+              <td><span class="chart-status status-configured">Configured</span></td>
+              <td>
+                <div class="actions-cell">
+                  <button class="action-btn btn-view-chart">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                    View Stall Chart
+                  </button>
+                  <button class="action-btn btn-edit-res">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    Edit Reservation
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <span class="res-name">2026 Bluegrass Show</span>
+                <div class="res-dates">May 17, 2026 – May 19, 2026</div>
+                <div class="chart-stats">
+                  <div class="chart-stat"><div class="stat-dot" style="background:#22c55e"></div>60 Available</div>
+                  <div class="chart-stat"><div class="stat-dot" style="background:#ef4444"></div>5 Reserved</div>
+                  <div class="chart-stat"><div class="stat-dot" style="background:#94a3b8"></div>0 Blocked</div>
+                </div>
+              </td>
+              <td><div class="barn-tags"><span class="barn-tag">Main Barn</span><span class="barn-tag">Overflow Barn</span></div></td>
+              <td><span class="chart-status status-partial">Partial</span></td>
+              <td>
+                <div class="actions-cell">
+                  <button class="action-btn btn-view-chart">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                    View Stall Chart
+                  </button>
+                  <button class="action-btn btn-edit-res">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    Edit Reservation
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <span class="res-name">2026 Sunshine Dressage</span>
+                <div class="res-dates">May 20, 2026 – May 22, 2026</div>
+                <div class="chart-stats">
+                  <div class="chart-stat"><div class="stat-dot" style="background:#94a3b8"></div>Not yet configured</div>
+                </div>
+              </td>
+              <td><div class="barn-tags"><span class="barn-tag" style="color:#94a3b8;border-color:#e2e8f0">No barns set</span></div></td>
+              <td><span class="chart-status status-empty">Not Configured</span></td>
+              <td>
+                <div class="actions-cell">
+                  <button class="action-btn btn-view-chart">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                    View Stall Chart
+                  </button>
+                  <button class="action-btn btn-edit-res">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    Edit Reservation
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <span class="res-name">2026 Gulf Coast Classic</span>
+                <div class="res-dates">Jun 5, 2026 – Jun 7, 2026</div>
+                <div class="chart-stats">
+                  <div class="chart-stat"><div class="stat-dot" style="background:#22c55e"></div>44 Available</div>
+                  <div class="chart-stat"><div class="stat-dot" style="background:#ef4444"></div>12 Reserved</div>
+                </div>
+              </td>
+              <td><div class="barn-tags"><span class="barn-tag">North Barn</span><span class="barn-tag">South Barn</span></div></td>
+              <td><span class="chart-status status-configured">Configured</span></td>
+              <td>
+                <div class="actions-cell">
+                  <button class="action-btn btn-view-chart">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                    View Stall Chart
+                  </button>
+                  <button class="action-btn btn-edit-res">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    Edit Reservation
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <span class="res-name">2026 Lone Star Invitational</span>
+                <div class="res-dates">Jun 12, 2026 – Jun 14, 2026</div>
+                <div class="chart-stats">
+                  <div class="chart-stat"><div class="stat-dot" style="background:#94a3b8"></div>Not yet configured</div>
+                </div>
+              </td>
+              <td><div class="barn-tags"><span class="barn-tag" style="color:#94a3b8;border-color:#e2e8f0">No barns set</span></div></td>
+              <td><span class="chart-status status-empty">Not Configured</span></td>
+              <td>
+                <div class="actions-cell">
+                  <button class="action-btn btn-view-chart">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                    View Stall Chart
+                  </button>
+                  <button class="action-btn btn-edit-res">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    Edit Reservation
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Mobile Cards -->
+      <div class="mobile-list">
+        <div class="mobile-card">
+          <div class="mob-card-top">
+            <span class="mob-res-name">2026 Southeast Region Super Sort</span>
+            <span class="chart-status status-configured">Configured</span>
+          </div>
+          <div class="mob-card-body">
+            <div class="mob-card-dates">May 8, 2026 – May 10, 2026</div>
+            <div class="barn-tags" style="margin-bottom:6px"><span class="barn-tag">Red Barn</span><span class="barn-tag">Blue Barn</span><span class="barn-tag">Green Barn</span></div>
+            <div class="chart-stats">
+              <div class="chart-stat"><div class="stat-dot" style="background:#22c55e"></div>82 Available</div>
+              <div class="chart-stat"><div class="stat-dot" style="background:#ef4444"></div>28 Reserved</div>
+            </div>
+          </div>
+          <div class="mob-card-bottom">
+            <button class="action-btn btn-view-chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>View Chart</button>
+            <button class="action-btn btn-edit-res"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Reservation</button>
+          </div>
+        </div>
+        <div class="mobile-card">
+          <div class="mob-card-top">
+            <span class="mob-res-name">2026 Bluegrass Show</span>
+            <span class="chart-status status-partial">Partial</span>
+          </div>
+          <div class="mob-card-body">
+            <div class="mob-card-dates">May 17, 2026 – May 19, 2026</div>
+            <div class="barn-tags" style="margin-bottom:6px"><span class="barn-tag">Main Barn</span><span class="barn-tag">Overflow Barn</span></div>
+          </div>
+          <div class="mob-card-bottom">
+            <button class="action-btn btn-view-chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>View Chart</button>
+            <button class="action-btn btn-edit-res"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Reservation</button>
+          </div>
+        </div>
+        <div class="mobile-card">
+          <div class="mob-card-top">
+            <span class="mob-res-name">2026 Sunshine Dressage</span>
+            <span class="chart-status status-empty">Not Configured</span>
+          </div>
+          <div class="mob-card-body">
+            <div class="mob-card-dates">May 20, 2026 – May 22, 2026</div>
+          </div>
+          <div class="mob-card-bottom">
+            <button class="action-btn btn-view-chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>View Chart</button>
+            <button class="action-btn btn-edit-res"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Reservation</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="pagination-row">
+        <span class="pagination-info">Showing 1–5 of 5 reservations</span>
+        <div class="pagination">
+          <button class="page-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <button class="page-btn active">1</button>
+          <button class="page-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
+      </div>
+
+    </div><!-- /plugin-wrap -->
+  </div><!-- /wp-content -->
+</div><!-- /wp-body -->
+</body>
+</html>

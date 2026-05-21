@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equine Event Manager – Settings</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
+
+/* ── WP SHELL ── */
+.wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;position:sticky;top:0;z-index:200}
+.wp-admin-bar span{font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-admin-bar span.site{color:#fff;font-weight:600}
+.wp-body{display:flex;flex:1}
+.wp-sidebar{width:160px;min-width:160px;background:#1d2327;min-height:calc(100vh - 32px)}
+.wp-sidebar-item{padding:8px 12px;font-size:13px;color:#c3c4c7;cursor:pointer;display:flex;align-items:center;gap:8px;border-left:3px solid transparent}
+.wp-sidebar-item:hover{background:#2c3338;color:#fff}
+.wp-sidebar-item.active{background:#1668F2;color:#fff;border-left-color:#90c4ff}
+.wp-sidebar-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 0}
+.wp-sidebar-label{padding:8px 12px 4px;font-size:10px;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.wp-sidebar-sub{padding:6px 12px 6px 28px;font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-sidebar-sub:hover{color:#fff}
+.wp-sidebar-sub.active{color:#90c4ff;font-weight:600}
+
+/* ── CONTENT ── */
+.wp-content{flex:1;padding:12px 20px 40px;min-width:0}
+
+.breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.breadcrumb-logo-box{width:160px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb;flex-shrink:0}
+.breadcrumb-sep{font-size:13px;color:#8c8f94}
+.breadcrumb-page{font-size:13px;font-weight:600;color:#1d2327}
+
+.page-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;margin-bottom:14px}
+
+/* ── SETTINGS LAYOUT ── */
+.settings-wrap{display:grid;grid-template-columns:200px 1fr;gap:0;background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
+
+/* Left nav */
+.settings-nav{border-right:1px solid #dcdcde;padding:8px 0;background:#fafafa}
+.settings-nav-item{display:flex;align-items:center;gap:9px;padding:10px 16px;font-size:13.5px;color:#50575e;cursor:pointer;border-left:3px solid transparent}
+.settings-nav-item:hover{background:#f0f0f1;color:#1d2327}
+.settings-nav-item.active{color:#1668F2;background:#EEF4FF;border-left-color:#1668F2;font-weight:500}
+.settings-nav-item svg{width:15px;height:15px;flex-shrink:0}
+
+/* Right content */
+.settings-content{padding:0;display:flex;flex-direction:column}
+
+/* Section */
+.settings-section{padding:22px 28px;border-bottom:1px solid #dcdcde}
+.settings-section:last-of-type{border-bottom:none}
+.section-title{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:#031B4E;margin-bottom:6px}
+.section-desc{font-size:13px;color:#6B7A99;line-height:1.6;margin-bottom:20px}
+
+/* Sub-section (e.g. Stripe Connection) */
+.sub-section{border:1px solid #dcdcde;border-radius:4px;padding:18px 22px;margin-bottom:16px}
+.sub-section-title{font-size:14px;font-weight:600;color:#031B4E;margin-bottom:6px}
+.sub-section-desc{font-size:13px;color:#6B7A99;margin-bottom:16px}
+
+/* Field rows */
+.field-row{display:grid;grid-template-columns:220px 1fr;gap:16px;align-items:start;padding:12px 0;border-bottom:1px solid #f0f0f1}
+.field-row:last-child{border-bottom:none}
+.field-label{font-size:13.5px;font-weight:600;color:#1d2327;padding-top:9px}
+.field-label-sub{font-size:12px;color:#6B7A99;font-weight:400;margin-top:2px}
+.field-control{display:flex;flex-direction:column;gap:6px}
+.field-input{padding:8px 12px;border:1px solid #8c8f94;border-radius:4px;font-size:13.5px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;outline:none;width:100%}
+.field-input:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
+.field-input::placeholder{color:#b0b0b0}
+.field-textarea{padding:8px 12px;border:1px solid #8c8f94;border-radius:4px;font-size:13.5px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;outline:none;width:100%;resize:vertical;min-height:80px;line-height:1.6}
+.field-textarea:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
+.field-select{padding:8px 32px 8px 12px;border:1px solid #8c8f94;border-radius:4px;font-size:13.5px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center;appearance:none;width:auto;min-width:120px}
+.field-hint{font-size:12px;color:#6B7A99;line-height:1.6}
+.field-hint code{background:#f0f0f1;padding:1px 5px;border-radius:3px;font-size:11.5px;color:#1d2327;font-family:monospace}
+
+/* Toggle */
+.toggle{width:44px;height:24px;border-radius:12px;position:relative;cursor:pointer;flex-shrink:0}
+.toggle.on{background:#1668F2}
+.toggle.off{background:#c3c4c7}
+.toggle::after{content:'';position:absolute;width:18px;height:18px;background:#fff;border-radius:50%;top:3px;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:left .15s}
+.toggle.on::after{left:23px}
+.toggle.off::after{left:3px}
+
+/* Toggle field row */
+.toggle-row{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:14px 0;border-bottom:1px solid #f0f0f1}
+.toggle-row:last-child{border-bottom:none}
+.toggle-row-left{}
+.toggle-row-title{font-size:14px;font-weight:600;color:#1d2327;margin-bottom:4px}
+.toggle-row-desc{font-size:13px;color:#6B7A99;line-height:1.6;max-width:700px}
+
+/* Shortcode rows */
+.shortcode-row{display:grid;grid-template-columns:220px 1fr;gap:16px;align-items:start;padding:12px 0;border-bottom:1px solid #f0f0f1}
+.shortcode-row:last-child{border-bottom:none}
+.shortcode-label{font-size:13.5px;font-weight:600;color:#1d2327;padding-top:9px}
+.shortcode-code{display:flex;flex-direction:column;gap:6px}
+.code-box{background:#f6f7f7;border:1px solid #dcdcde;border-radius:4px;padding:8px 12px;font-family:monospace;font-size:13px;color:#1d2327;word-break:break-all}
+
+/* Logo upload area */
+.logo-upload-area{border:1px solid #dcdcde;border-radius:4px;padding:14px;display:inline-flex;flex-direction:column;gap:10px;background:#fafafa}
+.logo-preview{max-height:60px;max-width:200px;object-fit:contain}
+.logo-preview-placeholder{width:160px;height:60px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb}
+.upload-btn-row{display:flex;gap:8px}
+.btn-upload{padding:6px 14px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;cursor:pointer}
+.btn-remove{padding:6px 14px;border:1px solid #fca5a5;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#b91c1c;background:#fff;cursor:pointer}
+
+/* Checkbox */
+.checkbox-row{display:flex;align-items:center;gap:8px;padding:10px 0}
+.checkbox-row input[type=checkbox]{width:16px;height:16px;accent-color:#1668F2;cursor:pointer;flex-shrink:0}
+.checkbox-row label{font-size:13.5px;color:#1d2327;cursor:pointer}
+
+/* Empty state */
+.empty-state{background:#f6f7f7;border:1px solid #dcdcde;border-radius:4px;padding:20px 16px;text-align:center}
+.empty-state-title{font-size:13.5px;font-weight:600;color:#1d2327;margin-bottom:4px}
+.empty-state-desc{font-size:13px;color:#6B7A99}
+
+/* Test button */
+.btn-test{padding:7px 16px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;cursor:pointer;margin-top:6px;display:inline-block}
+.btn-test:hover{background:#f6f7f7}
+
+/* Save bar */
+.save-bar{padding:16px 28px;border-top:1px solid #dcdcde;background:#fafafa;display:flex;align-items:center;gap:10px}
+.btn-save{background:#031B4E;color:#fff;border:none;padding:9px 24px;border-radius:4px;font-size:13.5px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
+.btn-save:hover{background:#052569}
+
+/* Save success toast */
+.toast-wrap{position:fixed;top:48px;right:20px;z-index:500;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #d1f0e8;border-left:4px solid #26D0B5;border-radius:6px;padding:11px 14px 11px 12px;box-shadow:0 8px 24px rgba(3,27,78,.12);min-width:240px;max-width:340px;font-size:13.5px;color:#031B4E;pointer-events:auto;opacity:0;transform:translateX(20px);transition:opacity .25s ease,transform .25s ease}
+.toast.show{opacity:1;transform:translateX(0)}
+.toast-icon{width:24px;height:24px;border-radius:50%;background:#26D0B5;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:700}
+.toast-body{flex:1;min-width:0}
+.toast-title{font-weight:600;color:#031B4E;line-height:1.3}
+.toast-sub{font-size:12px;color:#6B7A99;margin-top:1px}
+.toast-close{background:none;border:none;color:#8c8f94;cursor:pointer;padding:2px 4px;font-size:16px;line-height:1;flex-shrink:0}
+.toast-close:hover{color:#031B4E}
+@media(max-width:767px){
+  .toast-wrap{top:auto;bottom:16px;right:12px;left:12px}
+  .toast{max-width:none}
+}
+
+/* Tab panels */
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* ════════ TABLET 960px ════════ */
+@media(max-width:960px){
+  .wp-sidebar{display:none}
+  .wp-content{padding:10px 14px 40px}
+  .settings-wrap{grid-template-columns:170px 1fr}
+  .field-row{grid-template-columns:180px 1fr}
+  .shortcode-row{grid-template-columns:180px 1fr}
+}
+
+/* ════════ MOBILE 767px ════════ */
+@media(max-width:767px){
+  .wp-admin-bar span:not(.site):not(:first-child):not(:last-child){display:none}
+  .wp-content{padding:8px 10px 32px}
+  .breadcrumb-logo-box{width:120px;height:30px;font-size:10px}
+  .page-title{font-size:18px;margin-bottom:10px}
+
+  /* Settings layout stacks vertically */
+  .settings-wrap{grid-template-columns:1fr}
+
+  /* Nav becomes horizontal scroll strip */
+  .settings-nav{
+    border-right:none;
+    border-bottom:1px solid #dcdcde;
+    display:flex;
+    flex-direction:row;
+    overflow-x:auto;
+    overflow-y:hidden;
+    -webkit-overflow-scrolling:touch;
+    padding:0;
+    scroll-snap-type:x mandatory;
+    background:#fafafa;
+  }
+  .settings-nav::-webkit-scrollbar{display:none}
+  .settings-nav-item{
+    flex-shrink:0;
+    white-space:nowrap;
+    border-left:none;
+    border-bottom:3px solid transparent;
+    padding:12px 14px;
+    font-size:13px;
+    scroll-snap-align:start;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .settings-nav-item.active{
+    border-left:none;
+    border-bottom-color:#1668F2;
+    background:#EEF4FF;
+    color:#1668F2;
+  }
+  .settings-nav-item svg{width:14px;height:14px}
+
+  /* Field rows stack vertically */
+  .field-row{grid-template-columns:1fr;gap:6px;padding:10px 0}
+  .field-label{padding-top:0}
+  .shortcode-row{grid-template-columns:1fr;gap:6px;padding:10px 0}
+  .shortcode-label{padding-top:0;font-size:13px}
+
+  /* Toggle rows */
+  .toggle-row{flex-wrap:wrap;gap:10px}
+  .toggle-row .toggle{flex-shrink:0}
+
+  .settings-section{padding:14px}
+  .sub-section{padding:12px 14px;margin-bottom:12px}
+  .save-bar{padding:12px 14px}
+
+  /* Inputs full width on mobile */
+  .field-input,.field-textarea,.field-select{max-width:100%!important;width:100%!important}
+}
+</style>
+<script>
+function showTab(tabId) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.settings-nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-' + tabId).classList.add('active');
+  document.getElementById('nav-' + tabId).classList.add('active');
+}
+
+/* Save success toast */
+function showSaveToast(message){
+  message = message || 'Settings saved';
+  let wrap = document.querySelector('.toast-wrap');
+  if(!wrap){
+    wrap = document.createElement('div');
+    wrap.className = 'toast-wrap';
+    document.body.appendChild(wrap);
+  }
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = '<div class="toast-icon">✓</div>' +
+                '<div class="toast-body"><div class="toast-title">' + message + '</div>' +
+                '<div class="toast-sub">Your changes have been applied.</div></div>' +
+                '<button class="toast-close" onclick="dismissToast(this.parentNode)" aria-label="Dismiss">×</button>';
+  wrap.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => dismissToast(t), 3200);
+}
+function dismissToast(t){
+  if(!t || !t.classList.contains('show')) return;
+  t.classList.remove('show');
+  setTimeout(() => t.remove(), 300);
+}
+</script>
+</head>
+<body>
+
+<div class="wp-admin-bar">
+  <span>&#9776;</span>
+  <span class="site">My Equestrian Site</span>
+  <span>+ New</span>
+  <span style="margin-left:auto">Howdy, Whitney Mitchell</span>
+</div>
+
+<div class="wp-body">
+  <div class="wp-sidebar">
+    <div class="wp-sidebar-item">&#9632; Dashboard</div>
+    <div class="wp-sidebar-item">&#9632; Posts</div>
+    <div class="wp-sidebar-item">&#9632; Pages</div>
+    <div class="wp-sidebar-sep"></div>
+    <div class="wp-sidebar-label">Equine EM</div>
+    <div class="wp-sidebar-item active">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      Settings
+    </div>
+    <div class="wp-sidebar-sub">Dashboard</div>
+    <div class="wp-sidebar-sub">Events</div>
+    <div class="wp-sidebar-sub">Orders</div>
+    <div class="wp-sidebar-sub">Reservations</div>
+    <div class="wp-sidebar-sub">Stall Charts</div>
+    <div class="wp-sidebar-sub">Invoicing</div>
+    <div class="wp-sidebar-sub">Reports</div>
+    <div class="wp-sidebar-sub active">Settings</div>
+    <div class="wp-sidebar-sep"></div>
+    <div class="wp-sidebar-item">&#9632; Plugins</div>
+    <div class="wp-sidebar-item">&#9632; Settings</div>
+  </div>
+
+  <div class="wp-content">
+    <div class="breadcrumb">
+      <div class="breadcrumb-logo-box">Plugin Logo</div>
+      <span class="breadcrumb-sep">/</span>
+      <span class="breadcrumb-page">Settings</span>
+    </div>
+
+    <div class="page-title">Settings</div>
+
+    <div class="settings-wrap">
+
+      <!-- Left nav -->
+      <div class="settings-nav">
+        <div class="settings-nav-item active" id="nav-integrations" onclick="showTab('integrations')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          Integrations
+        </div>
+        <div class="settings-nav-item" id="nav-branding" onclick="showTab('branding')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          Branding
+        </div>
+        <div class="settings-nav-item" id="nav-communications" onclick="showTab('communications')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Communications
+        </div>
+        <div class="settings-nav-item" id="nav-shortcodes" onclick="showTab('shortcodes')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          Shortcodes
+        </div>
+        <div class="settings-nav-item" id="nav-payments" onclick="showTab('payments')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Payments
+        </div>
+        <div class="settings-nav-item" id="nav-addons" onclick="showTab('addons')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+          Add-Ons
+        </div>
+      </div>
+
+      <!-- Right content panels -->
+      <div class="settings-content">
+
+        <!-- INTEGRATIONS -->
+        <div class="tab-panel active" id="panel-integrations">
+          <div class="settings-section">
+            <div class="section-title">Event Sources</div>
+            <div class="section-desc">Choose the one live event source Event Manager should use for reservations. Only one source can be active at a time.</div>
+
+            <div class="toggle-row">
+              <div class="toggle-row-left">
+                <div class="toggle-row-title">Native Events</div>
+                <div class="toggle-row-desc">Use Equine Event Manager as the main event system with native events, categories, venues, producers, widgets, and the shared frontend event template. Turn this on to make Native Events the live event source for reservations.</div>
+              </div>
+              <div class="toggle off"></div>
+            </div>
+
+            <div class="toggle-row">
+              <div class="toggle-row-left">
+                <div class="toggle-row-title">The Events Calendar Events</div>
+                <div class="toggle-row-desc">This integration requires The Events Calendar plugin. It is currently active on this site, so reservations can search and link to live The Events Calendar events right away. When active, this integration keeps live The Events Calendar events searchable in reservations while Event Manager continues to handle reservations and the shared frontend event template.</div>
+              </div>
+              <div class="toggle on"></div>
+            </div>
+
+            <div class="toggle-row">
+              <div class="toggle-row-left">
+                <div class="toggle-row-title">External Feed URL</div>
+                <div class="toggle-row-desc">Use a single external feed URL as the reservation event source. This URL is inherited automatically by reservations when this source is turned on.</div>
+              </div>
+              <div class="toggle off"></div>
+            </div>
+
+            <div style="padding:16px;border:1px solid #dcdcde;border-radius:4px;margin-top:8px">
+              <div class="field-label" style="margin-bottom:8px">Feed URL</div>
+              <input class="field-input" style="max-width:500px" type="url" value="https://globalroping.com/patriot/schedule.aspx">
+              <button class="btn-test">Test Feed URL</button>
+              <p class="field-hint" style="margin-top:8px">Enter the API or feed endpoint that reservations should use when External Feed URL is the primary source. JSON or XML-style event endpoints are both supported.</p>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <div class="section-title">Email Delivery</div>
+            <div class="section-desc">Optionally route customer receipts and payment-link emails through SendGrid instead of the default WordPress mailer.</div>
+            <div class="field-row">
+              <div class="field-label">SendGrid API Key</div>
+              <div class="field-control">
+                <input class="field-input" type="password" placeholder="SG.xxxxxxxxxxxxxxxxxxxx" style="max-width:400px">
+                <p class="field-hint">When this API key is saved, Equine Event Manager will use SendGrid for customer receipt emails and payment-link invoice emails. Leave blank to keep using the site's default WordPress mail configuration.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="save-bar">
+            <button class="btn-save" onclick="showSaveToast()">Save Settings</button>
+          </div>
+        </div>
+
+        <!-- BRANDING -->
+        <div class="tab-panel" id="panel-branding">
+          <div class="settings-section">
+            <div class="section-title">Branding</div>
+            <div class="section-desc">Set the branding details used on receipts, PDFs, and customer-facing communications.</div>
+
+            <div class="field-row">
+              <div>
+                <div class="field-label">Business Logo</div>
+              </div>
+              <div class="field-control">
+                <div class="logo-upload-area">
+                  <div class="logo-preview-placeholder">Logo Preview</div>
+                  <div class="upload-btn-row">
+                    <button class="btn-upload">Upload Logo</button>
+                    <button class="btn-remove">Remove</button>
+                  </div>
+                </div>
+                <p class="field-hint">This logo is used on printable PDF receipts and email receipt branding. It is not used in the plugin admin header. PNG with a transparent background works best.</p>
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div class="field-label">Support Phone</div>
+              <div class="field-control">
+                <input class="field-input" type="tel" value="555-555-5555" style="max-width:280px">
+                <p class="field-hint">Use this as your general support number. Reservation-specific messaging can override it in the Communications tab.</p>
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div class="field-label">Support Email</div>
+              <div class="field-control">
+                <input class="field-input" type="email" value="office@rsnc.us" style="max-width:320px">
+                <p class="field-hint">Shown as your default support email across messaging and receipt settings unless you override it below.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="save-bar">
+            <button class="btn-save" onclick="showSaveToast()">Save Settings</button>
+          </div>
+        </div>
+
+        <!-- COMMUNICATIONS -->
+        <div class="tab-panel" id="panel-communications">
+          <div class="settings-section">
+            <div class="section-title">Reservation Form</div>
+            <div class="section-desc">Manage the reservation form helper text and the messages customers see when reservations are not currently available.</div>
+
+            <div class="field-row">
+              <div>
+                <div class="field-label">Special Requests Description</div>
+              </div>
+              <div class="field-control">
+                <textarea class="field-textarea">Please let us know if you have any special requests for your stay including stallion accommodations, preferred contestant proximity stalling, etc.</textarea>
+                <p class="field-hint">This appears above the Special Requests field on the front-end reservation form.</p>
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div>
+                <div class="field-label">Reservation Support Phone</div>
+              </div>
+              <div class="field-control">
+                <input class="field-input" type="tel" value="444-444-4444" style="max-width:280px">
+                <p class="field-hint">Used in the reservation open and closed messages. Leave blank to fall back to the company support phone.</p>
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div>
+                <div class="field-label">Reservation Support Email</div>
+              </div>
+              <div class="field-control">
+                <input class="field-input" type="email" value="office@rsnc.us" style="max-width:320px">
+                <p class="field-hint">Used in reservation notices when you include the [email] placeholder. Leave blank to fall back to the company support email.</p>
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div>
+                <div class="field-label">Pre-Open Reservation Message</div>
+              </div>
+              <div class="field-control">
+                <textarea class="field-textarea">Reservations for [event_name] will open on [open_date_time]. If you have questions please call [phone].</textarea>
+                <p class="field-hint">Shown before reservations open. Available placeholders: [event_name], [open_date_time], [close_date_time], [phone], [email].</p>
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div>
+                <div class="field-label">Closed Reservation Message</div>
+              </div>
+              <div class="field-control">
+                <textarea class="field-textarea">Reservations for [event_name] are now closed. Please call [phone] for assistance.</textarea>
+                <p class="field-hint">Shown after reservations close. Available placeholders: [event_name], [open_date_time], [close_date_time], [phone], [email].</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <div class="section-title">Email Receipt Settings</div>
+            <div class="section-desc">Prepare the sender and routing settings for customer receipts and admin copies.</div>
+
+            <div class="field-row">
+              <div class="field-label">Customer Receipt Email</div>
+              <div class="field-control">
+                <div class="checkbox-row">
+                  <input type="checkbox" id="send-receipt" checked>
+                  <label for="send-receipt">Send a receipt to the customer email address on the reservation form</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div class="field-label">Admin Copy Email</div>
+              <div class="field-control">
+                <input class="field-input" type="email" value="wmitchell@equinenetwork.com" style="max-width:360px">
+                <p class="field-hint">Optional. Send an internal copy of each reservation receipt to this address.</p>
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div class="field-label">Receipt From Name</div>
+              <div class="field-control">
+                <input class="field-input" type="text" value="Equine Event Manager" style="max-width:300px">
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div class="field-label">Receipt From Email</div>
+              <div class="field-control">
+                <input class="field-input" type="email" value="office@rsnc.us" style="max-width:320px">
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div class="field-label">Receipt Reply-To Email</div>
+              <div class="field-control">
+                <input class="field-input" type="email" value="office@rsnc.us" style="max-width:320px">
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div class="field-label">Customer Receipt Subject</div>
+              <div class="field-control">
+                <input class="field-input" type="text" value="Your reservation receipt for [event_name]">
+                <p class="field-hint">Available placeholders: [event_name], [order_number], [customer_name].</p>
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div class="field-label">Admin Receipt Subject</div>
+              <div class="field-control">
+                <input class="field-input" type="text" value="New reservation received for [event_name]">
+                <p class="field-hint">Available placeholders: [event_name], [order_number], [customer_name].</p>
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div class="field-label">Customer Receipt Message</div>
+              <div class="field-control">
+                <textarea class="field-textarea" style="min-height:120px">Hi [customer_name],
+
+Thank you for your reservation for [event_name]. Your order number is [order_number] and the total amount due is [total]. A PDF copy of your receipt is attached.
+
+If you have questions, please contact us at [support_phone] or [support_email].</textarea>
+                <p class="field-hint">Available placeholders: [event_name], [event_dates], [order_number], [customer_name], [total], [support_phone], [support_email].</p>
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div class="field-label">Admin Receipt Message</div>
+              <div class="field-control">
+                <textarea class="field-textarea" style="min-height:120px">A new reservation has been received for [event_name].
+
+Order Number: [order_number]
+Customer: [customer_name]
+Total: [total]
+
+A PDF receipt is attached for your records.</textarea>
+                <p class="field-hint">Available placeholders: [event_name], [event_dates], [order_number], [customer_name], [total], [support_phone], [support_email].</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="save-bar">
+            <button class="btn-save" onclick="showSaveToast()">Save Settings</button>
+          </div>
+        </div>
+
+        <!-- SHORTCODES -->
+        <div class="tab-panel" id="panel-shortcodes">
+          <div class="settings-section">
+            <div class="section-title">Event Display Shortcodes</div>
+            <div class="section-desc">Use these shortcodes in any page builder, classic editor, shortcode block, or theme content area. The plugin handles the event source and shared layout for you.</div>
+
+            <div class="shortcode-row">
+              <div class="shortcode-label">Reservation Form</div>
+              <div class="shortcode-code">
+                <div class="code-box">[en_reservation id="123"]</div>
+                <p class="field-hint">Displays a reservation form directly when you know the reservation post ID. Useful in builder pages, landing pages, or manual reservation links.</p>
+              </div>
+            </div>
+
+            <div class="shortcode-row">
+              <div class="shortcode-label">Current Event Page</div>
+              <div class="shortcode-code">
+                <div class="code-box">[equine_event_manager_event]</div>
+                <p class="field-hint">Displays the current event in the shared Event Manager single-event layout. Works on native event pages, The Events Calendar event pages, and reservation-backed event routes.</p>
+              </div>
+            </div>
+
+            <div class="shortcode-row">
+              <div class="shortcode-label">Single Event By Event ID</div>
+              <div class="shortcode-code">
+                <div class="code-box">[equine_event_manager_event id="123"]</div>
+                <p class="field-hint">Targets a native or The Events Calendar event post directly when you know the event post ID.</p>
+              </div>
+            </div>
+
+            <div class="shortcode-row">
+              <div class="shortcode-label">Single Event By Reservation</div>
+              <div class="shortcode-code">
+                <div class="code-box">[equine_event_manager_event reservation="123"]</div>
+                <p class="field-hint">Displays a reservation-backed event source such as Event Feed or External using the same shared event template.</p>
+              </div>
+            </div>
+
+            <div class="shortcode-row">
+              <div class="shortcode-label">All Events List</div>
+              <div class="shortcode-code">
+                <div class="code-box">[equine_event_manager_events view="list"]</div>
+                <p class="field-hint">Displays a mixed-source event list using the Event Manager card layout.</p>
+              </div>
+            </div>
+
+            <div class="shortcode-row">
+              <div class="shortcode-label">All Events Calendar</div>
+              <div class="shortcode-code">
+                <div class="code-box">[equine_event_manager_events view="calendar"]</div>
+                <p class="field-hint">Displays the same mixed event collection in a calendar view.</p>
+              </div>
+            </div>
+
+            <div class="shortcode-row">
+              <div class="shortcode-label">Source Examples</div>
+              <div class="shortcode-code">
+                <div class="code-box">[equine_event_manager_events view="list" source="native,tec"]</div>
+                <p class="field-hint">Filter by source using <code>native</code>, <code>tec</code>, <code>feed</code>, or <code>external</code>, or combine multiple sources with commas.</p>
+              </div>
+            </div>
+
+            <div class="shortcode-row">
+              <div class="shortcode-label">Month Example</div>
+              <div class="shortcode-code">
+                <div class="code-box">[equine_event_manager_events view="calendar" month="2026-05"]</div>
+                <p class="field-hint">Use the optional <code>month</code> attribute in <code>YYYY-MM</code> format to lock a calendar to a specific month.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="save-bar">
+            <button class="btn-save" onclick="showSaveToast()">Save Settings</button>
+          </div>
+        </div>
+
+        <!-- PAYMENTS -->
+        <div class="tab-panel" id="panel-payments">
+          <div class="settings-section">
+            <div class="section-title">Payment Merchant Settings</div>
+            <div class="section-desc">Choose your active payment gateway and store the credentials for Stripe or Authorize.net.</div>
+
+            <div class="field-row">
+              <div class="field-label">Payment Gateway</div>
+              <div class="field-control">
+                <select class="field-select">
+                  <option selected>Stripe</option>
+                  <option>Authorize.net</option>
+                </select>
+                <p class="field-hint">New reservation orders will inherit this gateway selection until live checkout is enabled.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <div class="sub-section">
+              <div class="sub-section-title">Stripe Connection</div>
+              <div class="sub-section-desc">Add your Stripe keys now so payment processing can be enabled in the next payment step.</div>
+
+              <div class="field-row" style="border-top:1px solid #f0f0f1">
+                <div class="field-label">Mode</div>
+                <div class="field-control">
+                  <select class="field-select"><option selected>Test</option><option>Live</option></select>
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field-label">Test Publishable Key</div>
+                <div class="field-control">
+                  <input class="field-input" type="text" value="pk_test_51TNZinD87HH5XSeA6JZ0AxbxEncLB7J">
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field-label">Test Secret Key</div>
+                <div class="field-control">
+                  <input class="field-input" type="password" value="sk_test_placeholder">
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field-label">Live Publishable Key</div>
+                <div class="field-control">
+                  <input class="field-input" type="text" placeholder="pk_live_...">
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field-label">Live Secret Key</div>
+                <div class="field-control">
+                  <input class="field-input" type="password" placeholder="sk_live_...">
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field-label">Webhook Signing Secret</div>
+                <div class="field-control">
+                  <input class="field-input" type="password" placeholder="whsec_...">
+                  <p class="field-hint">Payment logic is not active yet; these keys are saved for the upcoming Stripe payment step.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="sub-section">
+              <div class="sub-section-title">Authorize.net Connection</div>
+              <div class="sub-section-desc">Store your Authorize.net credentials now so we can route payments and supported refunds through Authorize.net too.</div>
+
+              <div class="field-row" style="border-top:1px solid #f0f0f1">
+                <div class="field-label">Mode</div>
+                <div class="field-control">
+                  <select class="field-select"><option>Test</option><option selected>Live</option></select>
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field-label">Test API Login ID</div>
+                <div class="field-control"><input class="field-input" type="text" placeholder=""></div>
+              </div>
+              <div class="field-row">
+                <div class="field-label">Test Transaction Key</div>
+                <div class="field-control"><input class="field-input" type="password" placeholder=""></div>
+              </div>
+              <div class="field-row">
+                <div class="field-label">Live API Login ID</div>
+                <div class="field-control"><input class="field-input" type="text" value="9V8kGNw2278"></div>
+              </div>
+              <div class="field-row">
+                <div class="field-label">Live Transaction Key</div>
+                <div class="field-control"><input class="field-input" type="password" value="placeholder"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="save-bar">
+            <button class="btn-save" onclick="showSaveToast()">Save Settings</button>
+          </div>
+        </div>
+
+        <!-- ADD-ONS -->
+        <div class="tab-panel" id="panel-addons">
+          <div class="settings-section">
+            <div class="section-title">Add-On Access</div>
+            <div class="section-desc">Future Equine Event Manager add-ons will appear here so you can enable and configure them from one place.</div>
+            <div class="empty-state">
+              <div class="empty-state-title">No add-ons available yet</div>
+              <div class="empty-state-desc">This tab is reserved for upcoming expansion modules so future add-ons can be enabled and configured from one place.</div>
+            </div>
+          </div>
+          <div class="save-bar">
+            <button class="btn-save" onclick="showSaveToast()">Save Settings</button>
+          </div>
+        </div>
+
+      </div><!-- /settings-content -->
+    </div><!-- /settings-wrap -->
+  </div><!-- /wp-content -->
+</div><!-- /wp-body -->
+</body>
+</html>

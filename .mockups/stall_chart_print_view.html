@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equine Event Manager – Stall Chart Print View</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',sans-serif;color:#1a1a2e;background:#fff;font-size:14px;line-height:1.5}
+
+#print-view{display:block;background:#fff}
+
+.pv-topbar{background:#031B4E;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:10}
+.pv-topbar-left{display:flex;align-items:center;gap:10px}
+.pv-topbar-title{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#fff}
+.pv-topbar-sub{font-size:12px;color:#90aed4;margin-top:1px}
+.pv-topbar-btns{display:flex;gap:8px;flex-shrink:0}
+.btn-pv-print{background:#1668F2;color:#fff;border:none;padding:8px 16px;border-radius:4px;font-size:13px;font-weight:700;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px}
+.btn-pv-print svg{width:13px;height:13px}
+.btn-pv-exit{background:transparent;color:#90aed4;border:1px solid rgba(255,255,255,.2);padding:8px 14px;border-radius:4px;font-size:13px;font-weight:500;font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
+.btn-pv-exit:hover{color:#fff;border-color:rgba(255,255,255,.5)}
+.pv-body{padding:16px}
+.pv-header{margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #031B4E}
+.pv-event{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:#031B4E;margin-bottom:4px}
+.pv-meta{font-size:13px;color:#6B7A99;display:flex;gap:20px;flex-wrap:wrap}
+.pv-meta strong{color:#1d2327}
+.pv-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.pv-stat{background:#F0F4FB;border-radius:4px;padding:10px 12px;text-align:center}
+.pv-stat-label{font-size:9.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#8c8f94;margin-bottom:3px}
+.pv-stat-val{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:#031B4E}
+.pv-section-title{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#8c8f94;margin-bottom:8px;margin-top:16px}
+.pv-table{width:100%;border-collapse:collapse;margin-bottom:16px}
+.pv-table thead tr{background:#031B4E}
+.pv-table thead th{padding:8px 10px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;text-align:left}
+.pv-table thead th.c{text-align:center}
+.pv-table tbody tr{border-bottom:1px solid #f0f0f1}
+.pv-table tbody tr:nth-child(even){background:#fafafa}
+.pv-table td{padding:9px 10px;font-size:13px;vertical-align:middle}
+.pv-stall-num{font-weight:700;color:#031B4E;font-size:13.5px}
+.pv-block{color:#6B7A99;font-size:12.5px}
+.pv-customer{font-weight:600;color:#031B4E}
+.pv-night-cell{text-align:center}
+.pv-occ{display:inline-block;padding:3px 8px;border-radius:12px;font-size:11px;font-weight:600}
+.pv-occ-res{background:#EEF4FF;color:#1668F2;border:1px solid #c0d8ff}
+.pv-occ-avail{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
+.pv-occ-block{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
+.pv-barn-header{background:#F0F4FB;padding:7px 10px;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#1668F2}
+.pv-movement{background:#FFFBEB;border:1px solid #fde68a;border-radius:4px;padding:12px;margin-bottom:16px}
+.pv-movement-title{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#b45309;margin-bottom:8px}
+.pv-movement-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pv-movement-day{text-align:center}
+.pv-movement-date{font-size:11px;font-weight:700;color:#031B4E;margin-bottom:4px}
+.pv-movement-vals{font-size:12px;color:#4a5a7a}
+.pv-movement-vals span{display:block}
+.pv-footer{margin-top:16px;padding-top:12px;border-top:1px solid #e8eaf0;display:flex;justify-content:space-between;font-size:11.5px;color:#8c8f94;flex-wrap:wrap;gap:8px}
+
+/* ── MOBILE ── */
+@media(max-width:767px){
+  /* Topbar stacks */
+  .pv-topbar{flex-direction:column;align-items:flex-start;gap:10px;padding:12px 14px}
+  .pv-topbar-btns{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .btn-pv-print,.btn-pv-exit{width:100%;justify-content:center;font-size:12px;padding:9px 10px}
+
+  .pv-body{padding:12px}
+  .pv-event{font-size:15px}
+  .pv-meta{gap:8px;font-size:12px}
+
+  /* Stats 3-col stays but shrinks */
+  .pv-stats{gap:6px}
+  .pv-stat{padding:8px 10px}
+  .pv-stat-val{font-size:18px}
+
+  /* Movement grid stacks to 1 col */
+  .pv-movement-grid{grid-template-columns:1fr}
+  .pv-movement-day{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .pv-movement-vals{display:flex;gap:16px}
+  .pv-movement-vals span{display:inline}
+
+  /* Table scrolls horizontally */
+  .pv-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -12px;padding:0 12px}
+  .pv-table{min-width:420px;font-size:12px}
+  .pv-table thead th{padding:6px 8px;font-size:9px}
+  .pv-table td{padding:7px 8px;font-size:12px}
+  .pv-occ{font-size:10px;padding:2px 6px}
+
+  .pv-footer{flex-direction:column;gap:4px;font-size:11px}
+}
+
+@media(max-width:390px){
+  .pv-stats{grid-template-columns:1fr 1fr}
+  .pv-topbar-btns{grid-template-columns:1fr}
+}
+
+
+@media print{
+  .pv-topbar{display:none!important}
+  .pv-body{padding:12px}
+  .pv-event{font-size:16px}
+  .pv-table td,.pv-table th{padding:5px 7px;font-size:11px}
+}
+</style>
+</head>
+<body>
+
+<div id="print-view">
+  <div class="pv-topbar">
+    <div class="pv-topbar-left">
+      <div>
+        <div class="pv-topbar-title">Print View — Stall Chart</div>
+        <div class="pv-topbar-sub">2026 Southeast Region Super Sort · May 7–9, 2026</div>
+      </div>
+    </div>
+    <div class="pv-topbar-btns">
+      <button class="btn-pv-print" onclick="window.print()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Print / Save PDF
+      </button>
+      <button class="btn-pv-exit" onclick="exitPrintView()">✕ Exit Print View</button>
+    </div>
+  </div>
+
+  <div class="pv-body">
+
+    <!-- Header -->
+    <div class="pv-header">
+      <div class="pv-event">2026 Southeast Region Super Sort</div>
+      <div class="pv-meta">
+        <span><strong>Dates:</strong> May 7–9, 2026</span>
+        <span><strong>Printed:</strong> May 21, 2026 7:08 AM</span>
+        <span><strong>View:</strong> <span id="pv-view-label">Stall Assignments</span></span>
+      </div>
+    </div>
+
+    <!-- Daily Movement -->
+    <div class="pv-movement">
+      <div class="pv-movement-title">Daily Movement</div>
+      <div class="pv-movement-grid">
+        <div class="pv-movement-day">
+          <div class="pv-movement-date">May 7</div>
+          <div class="pv-movement-vals"><span>↓ 22 Arriving</span><span>↑ 0 Departing</span></div>
+        </div>
+        <div class="pv-movement-day">
+          <div class="pv-movement-date">May 8</div>
+          <div class="pv-movement-vals"><span>↓ 0 Arriving</span><span>↑ 0 Departing</span></div>
+        </div>
+        <div class="pv-movement-day">
+          <div class="pv-movement-date">May 9</div>
+          <div class="pv-movement-vals"><span>↓ 0 Arriving</span><span>↑ 23 Departing</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="pv-stats">
+      <div class="pv-stat"><div class="pv-stat-label">Stall Units</div><div class="pv-stat-val">101</div></div>
+      <div class="pv-stat"><div class="pv-stat-label">RV Lots</div><div class="pv-stat-val">1</div></div>
+      <div class="pv-stat"><div class="pv-stat-label">Orders</div><div class="pv-stat-val">23</div></div>
+    </div>
+
+    <!-- Stall Assignments Table -->
+    <div id="pv-stall-section">
+      <div class="pv-section-title">Stall Assignments — All Barns</div>
+      <div class="pv-table-wrap"><table class="pv-table">
+        <thead>
+          <tr>
+            <th>Stall</th>
+            <th>Block</th>
+            <th>Customer</th>
+            <th class="c">May 7</th>
+            <th class="c">May 8</th>
+            <th class="c">May 9</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="6" class="pv-barn-header">Red Barn · Stalls 100–120</td></tr>
+          <tr><td class="pv-stall-num">100</td><td class="pv-block">Red Barn</td><td class="pv-customer">Whitney Mitchell</td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
+          <tr><td class="pv-stall-num">101</td><td class="pv-block">Red Barn</td><td class="pv-customer">Whitney Mitchell</td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
+          <tr><td class="pv-stall-num">102</td><td class="pv-block">Red Barn</td><td class="pv-customer">Whitney Mitchell</td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
+          <tr><td class="pv-stall-num">103</td><td class="pv-block">Red Barn</td><td class="pv-customer">Jane Doe</td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
+          <tr><td class="pv-stall-num">104</td><td class="pv-block">Red Barn</td><td class="pv-customer">Whitney Mitchell</td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
+          <tr><td class="pv-stall-num">105</td><td class="pv-block">Red Barn</td><td class="pv-customer">Marcus Trevino</td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
+          <tr><td class="pv-stall-num">106</td><td class="pv-block">Red Barn</td><td class="pv-customer">—</td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
+          <tr><td class="pv-stall-num">107</td><td class="pv-block">Red Barn</td><td class="pv-customer">—</td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
+          <tr><td colspan="6" class="pv-barn-header">Blue Barn · Stalls 121–160</td></tr>
+          <tr><td class="pv-stall-num">121</td><td class="pv-block">Blue Barn</td><td class="pv-customer">Devon Lacroix</td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
+          <tr><td class="pv-stall-num">122</td><td class="pv-block">Blue Barn</td><td class="pv-customer">—</td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
+          <tr><td class="pv-stall-num">123</td><td class="pv-block">Blue Barn</td><td class="pv-customer">—</td><td class="pv-night-cell"><span class="pv-occ pv-occ-block">Blocked</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-block">Blocked</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-block">Blocked</span></td></tr>
+          <tr><td colspan="6" class="pv-barn-header">Yellow Barn · Stalls 161–200</td></tr>
+          <tr><td class="pv-stall-num">197</td><td class="pv-block">Yellow Barn</td><td class="pv-customer">—</td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
+          <tr><td class="pv-stall-num">200</td><td class="pv-block">Yellow Barn</td><td class="pv-customer">—</td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
+        </tbody>
+      </table></div>
+
+      <!-- RV Lots -->
+      <div class="pv-section-title">RV Lot Occupancy</div>
+      <div class="pv-table-wrap"><table class="pv-table">
+        <thead><tr><th>RV Lot</th><th>Customer</th><th class="c">May 7</th><th class="c">May 8</th><th class="c">May 9</th></tr></thead>
+        <tbody>
+          <tr><td class="pv-stall-num">Red Lot</td><td class="pv-customer">Whitney Mitchell</td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Footer -->
+    <div class="pv-footer">
+      <span>2026 Southeast Region Super Sort · Stall Chart</span>
+      <span>Printed May 21, 2026 · Equine Event Manager</span>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function enterPrintView() {
+  const viewEl = document.querySelector('.view-select');
+  const view = viewEl ? viewEl.value : 'stall';
+  document.getElementById('pv-view-label').textContent = view === 'stall' ? 'Stall Assignments' : 'Customer Night Count';
+  document.getElementById('print-view').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+function exitPrintView() {
+  document.getElementById('print-view').classList.remove('active');
+  document.body.style.overflow = '';
+}
+function filterBarn(barn, el) {
+  // Update active tab
+  document.querySelectorAll('.barn-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  // Show/hide rows
+  document.querySelectorAll('[data-barn]').forEach(row => {
+    row.style.display = (barn === 'all' || row.dataset.barn === barn) ? '' : 'none';
+  });
+}
+function switchView(val) {
+  document.getElementById('panel-stall').classList.toggle('active', val==='stall');
+  document.getElementById('panel-customer').classList.toggle('active', val==='customer');
+  document.getElementById('print-label').textContent = val==='stall' ? 'Print Assignments' : 'Print Night Counts';
+}
+function openModal(stall, block, night, customer) {
+  document.getElementById('modal-stall').textContent = stall;
+  document.getElementById('modal-block').textContent = block;
+  document.getElementById('modal-night').textContent = night;
+  document.getElementById('modal-customer').textContent = customer;
+  document.getElementById('modal').style.display = 'flex';
+}
+function closeModal() {
+  document.getElementById('modal').style.display = 'none';
+}
+</script>
+
+</body>
+</html>

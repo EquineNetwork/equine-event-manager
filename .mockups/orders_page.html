@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equine Event Manager – Orders</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
+
+.wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;position:sticky;top:0;z-index:200;flex-shrink:0}
+.wp-admin-bar span{font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-admin-bar span.site{color:#fff;font-weight:600}
+
+.wp-body{display:flex;flex:1}
+
+.wp-sidebar{width:160px;min-width:160px;background:#1d2327;min-height:calc(100vh - 32px)}
+.wp-sidebar-item{padding:8px 12px;font-size:13px;color:#c3c4c7;cursor:pointer;display:flex;align-items:center;gap:8px;border-left:3px solid transparent}
+.wp-sidebar-item:hover{background:#2c3338;color:#fff}
+.wp-sidebar-item.active{background:#1668F2;color:#fff;border-left-color:#90c4ff}
+.wp-sidebar-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 0}
+.wp-sidebar-label{padding:8px 12px 4px;font-size:10px;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.wp-sidebar-sub{padding:6px 12px 6px 28px;font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-sidebar-sub:hover{color:#fff}
+.wp-sidebar-sub.active{color:#90c4ff;font-weight:600}
+
+.wp-content{flex:1;padding:12px 20px 40px;min-width:0}
+
+.breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.breadcrumb-logo{display:flex;align-items:center;gap:6px;padding:4px 10px;background:#031B4E;border-radius:5px}
+.breadcrumb-logo svg{width:16px;height:16px}
+.breadcrumb-logo-text{font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;color:#fff;letter-spacing:.04em;line-height:1}
+.breadcrumb-logo-sub{font-family:'Space Grotesk',sans-serif;font-size:6.5px;font-weight:500;color:#26D0B5;letter-spacing:.12em;display:block}
+.breadcrumb-sep{font-size:13px;color:#8c8f94}
+.breadcrumb-page{font-size:13px;color:#50575e}
+
+.plugin-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
+
+.plugin-header{padding:14px 18px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.plugin-title{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;color:#031B4E}
+.plugin-subtitle{font-size:12.5px;color:#6B7A99;margin-top:2px;line-height:1.5}
+.btn-primary{background:#1668F2;color:#fff;border:none;padding:8px 16px;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.btn-primary svg{width:13px;height:13px}
+
+.toolbar{padding:12px 18px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#fafafa}
+.toolbar-left{display:flex;align-items:center;gap:8px;flex:1;flex-wrap:wrap}
+.toolbar-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+
+.toolbar{padding:0;border-bottom:1px solid #dcdcde;background:#fafafa}
+.toolbar-row{padding:10px 18px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.toolbar-row+.toolbar-row{border-top:1px solid #f0f0f1;padding-top:9px;padding-bottom:9px}
+
+.event-select{padding:6px 28px 6px 10px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 8px center;appearance:none;min-width:200px}
+
+.billing-tabs{display:flex;background:#f0f0f1;border-radius:4px;padding:2px;gap:1px}
+.billing-tab{padding:5px 12px;border-radius:3px;font-size:12.5px;font-weight:500;color:#50575e;cursor:pointer;white-space:nowrap}
+.billing-tab.active{background:#fff;color:#1d2327;font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.1)}
+
+.type-filter-label{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8c8f94;white-space:nowrap}
+.type-chips{display:flex;gap:5px;flex-wrap:wrap}
+.type-chip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid;transition:opacity .1s;user-select:none}
+.type-chip.inactive{opacity:.4}
+.chip-stall{background:#EEF4FF;color:#1668F2;border-color:#c0d8ff}
+.chip-rv{background:#F5F3FF;color:#6d28d9;border-color:#ddd6fe}
+.chip-addon{background:#FFF7ED;color:#c2410c;border-color:#fed7aa}
+.chip-group{background:#F0FDF4;color:#15803d;border-color:#bbf7d0}
+.chip-dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+
+.search-wrap{position:relative;flex:1;min-width:150px;max-width:280px}
+.search-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:#8c8f94}
+.search-input{width:100%;padding:6px 10px 6px 28px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;outline:none}
+.search-input::placeholder{color:#b0b0b0}
+
+.orders-count{font-size:13px;color:#50575e;white-space:nowrap;margin-left:auto}
+
+table{width:100%;border-collapse:collapse}
+thead tr{border-bottom:1px solid #dcdcde;background:#fafafa}
+thead th{padding:9px 14px;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8c8f94;text-align:left;white-space:nowrap;cursor:pointer}
+thead th:hover{color:#1d2327}
+.sort-icon{display:inline-flex;flex-direction:column;gap:1px;margin-left:3px;vertical-align:middle;opacity:.45}
+.sort-icon span{display:block;width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent}
+.sort-icon span:first-child{border-bottom:4px solid currentColor}
+.sort-icon span:last-child{border-top:4px solid currentColor}
+
+tbody tr{border-bottom:1px solid #f0f0f1}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:#f6f7f7}
+td{padding:12px 14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
+
+.order-num{font-weight:700;color:#031B4E;font-size:13px;white-space:nowrap}
+.customer-name{font-weight:500}
+.event-name{color:#50575e;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.date-val{color:#8c8f94;white-space:nowrap;font-size:13px}
+
+.type-badges{display:flex;gap:4px;flex-wrap:wrap}
+.type-badge{padding:2px 7px;border-radius:3px;font-size:11px;font-weight:600;white-space:nowrap}
+.type-stall{background:#EEF4FF;color:#1668F2;border:1px solid #c0d8ff}
+.type-addon{background:#F0FDF4;color:#15803d;border:1px solid #bbf7d0}
+.type-group{background:#FFF7ED;color:#c2410c;border:1px solid #fed7aa}
+.type-rv{background:#F5F3FF;color:#6d28d9;border:1px solid #ddd6fe}
+
+.status-badge{padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+.status-badge::before{content:'';width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.status-paid{background:#F0FDF4;color:#15803d;border:1px solid #bbf7d0}
+.status-paid::before{background:#22c55e}
+.status-partial{background:#FFFBEB;color:#b45309;border:1px solid #fde68a}
+.status-partial::before{background:#f59e0b}
+.status-invoice{background:#EFF6FF;color:#1d4ed8;border:1px solid #bfdbfe}
+.status-invoice::before{background:#3b82f6}
+.status-refunded{background:#FFF1F2;color:#be123c;border:1px solid #fecdd3}
+.status-refunded::before{background:#f43f5e}
+.status-cancelled{background:#F8FAFC;color:#64748b;border:1px solid #e2e8f0}
+.status-cancelled::before{background:#94a3b8}
+
+.actions-cell{display:flex;align-items:center;gap:5px}
+.action-icon-btn{width:28px;height:28px;border-radius:4px;border:1px solid #c3c4c7;background:#fff;color:#6B7A99;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.action-icon-btn:hover{background:#f0f0f1;color:#1d2327}
+.action-icon-btn svg{width:13px;height:13px}
+.more-btn{width:28px;height:28px;border-radius:4px;border:1px solid #c3c4c7;background:#fff;color:#50575e;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;letter-spacing:.05em;line-height:1}
+.btn-collect{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:4px;font-size:12px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap;background:#FFF7ED;color:#c2410c;border:1px solid #fed7aa}
+.btn-collect:hover{background:#FFEDD5}
+.btn-collect svg{width:11px;height:11px}
+
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-top:1px solid #dcdcde;background:#fafafa;flex-wrap:wrap;gap:8px}
+.pagination-info{font-size:13px;color:#50575e}
+.pagination-controls{display:flex;align-items:center;gap:3px}
+.page-btn{width:28px;height:28px;border-radius:4px;border:1px solid #c3c4c7;background:#fff;color:#50575e;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Sans',sans-serif}
+.page-btn.active{background:#1668F2;color:#fff;border-color:#1668F2}
+.page-btn svg{width:12px;height:12px}
+
+
+.row-menu-wrap{position:relative;display:inline-block}
+.row-dropdown{display:none;position:absolute;top:calc(100% + 4px);right:0;background:#fff;border:1px solid #c3c4c7;border-radius:4px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:190px;z-index:100;overflow:hidden}
+.row-dropdown.open{display:block}
+.row-dd-item{display:flex;align-items:center;gap:9px;padding:9px 14px;font-size:13px;color:#1d2327;cursor:pointer;border-bottom:1px solid #f0f0f1;white-space:nowrap}
+.row-dd-item:last-child{border-bottom:none}
+.row-dd-item:hover{background:#f6f7f7}
+.row-dd-item svg{width:13px;height:13px;color:#6B7A99;flex-shrink:0}
+.row-dd-danger{color:#b91c1c}
+.row-dd-danger svg{color:#fca5a5}
+.row-dd-danger:hover{background:#fef2f2}
+
+/* Mobile cards */
+.mobile-orders{display:none}
+.mobile-order-card{background:#fff;border:1px solid #dcdcde;border-radius:4px;padding:14px;margin-bottom:8px}
+.mob-card-top{display:flex;justify-content:space-between;margin-bottom:6px}
+.mob-card-num{font-weight:700;color:#1668F2;font-size:14px}
+.mob-card-date{font-size:12px;color:#8c8f94}
+.mob-card-customer{font-size:14px;font-weight:500;margin-bottom:3px}
+.mob-card-event{font-size:12.5px;color:#50575e;margin-bottom:8px}
+.mob-card-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.mob-card-badges{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.mob-card-actions{display:flex;gap:6px}
+
+@media(max-width:960px){
+  .wp-sidebar{display:none}
+  .wp-content{padding:10px 14px 40px}
+}
+@media(max-width:767px){
+  .wp-content{padding:8px 10px 32px}
+  .plugin-header{flex-direction:column;align-items:flex-start;gap:10px;padding:12px 14px}
+  .btn-primary{width:100%;justify-content:center}
+  .toolbar-row{flex-wrap:wrap;gap:8px;padding:10px 12px}
+  .event-select{width:100%}
+  .billing-tabs{width:100%;overflow-x:auto;flex-wrap:nowrap;background:none;padding:0;gap:4px}
+  .billing-tab{background:#fff;border:1px solid #dcdcde;border-radius:20px;flex-shrink:0}
+  .billing-tab.active{background:#031B4E;color:#fff;border-color:#031B4E;box-shadow:none}
+  .type-chips{flex-wrap:wrap}
+  .search-wrap{max-width:100%;min-width:unset;flex:1}
+  .desktop-table{display:none}
+  .mobile-orders{display:block;padding:12px 14px}
+  .pagination{padding:10px 14px}
+}
+</style>
+<script>
+let activeBilling = 'all';
+let activeTypes = new Set(['stall','rv','addon','group']);
+
+function setBilling(el, val) {
+  document.querySelectorAll('.billing-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  activeBilling = val;
+  filterOrders();
+}
+
+function toggleChip(el, type) {
+  if (activeTypes.has(type)) {
+    activeTypes.delete(type);
+    el.classList.add('inactive');
+  } else {
+    activeTypes.add(type);
+    el.classList.remove('inactive');
+  }
+  filterOrders();
+}
+
+function filterOrders() {
+  const search = document.querySelector('.search-input').value.toLowerCase();
+  const rows = document.querySelectorAll('tbody tr');
+  let visible = 0;
+  rows.forEach(row => {
+    const billing = row.dataset.billing || '';
+    const types = (row.dataset.types || '').split(',');
+    const text = row.textContent.toLowerCase();
+    const billingOk = activeBilling === 'all' || billing === activeBilling;
+    const typeOk = types.some(t => activeTypes.has(t));
+    const searchOk = !search || text.includes(search);
+    const show = billingOk && typeOk && searchOk;
+    row.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+  document.getElementById('orders-count').textContent = visible + ' order' + (visible !== 1 ? 's' : '');
+}
+</script>
+</head>
+<body>
+
+<div class="wp-admin-bar">
+  <span>&#9776;</span>
+  <span class="site">My Equestrian Site</span>
+  <span>+ New</span>
+  <span style="margin-left:auto">Howdy, Whitney Mitchell</span>
+</div>
+
+<div class="wp-body">
+
+  <div class="wp-sidebar">
+    <div class="wp-sidebar-item">&#9632; Dashboard</div>
+    <div class="wp-sidebar-item">&#9632; Posts</div>
+    <div class="wp-sidebar-item">&#9632; Pages</div>
+    <div class="wp-sidebar-sep"></div>
+    <div class="wp-sidebar-label">Equine EM</div>
+    <div class="wp-sidebar-item active">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      Orders
+    </div>
+    <div class="wp-sidebar-sub">Dashboard</div>
+    <div class="wp-sidebar-sub">Events</div>
+    <div class="wp-sidebar-sub active">Orders</div>
+    <div class="wp-sidebar-sub">Reservations</div>
+    <div class="wp-sidebar-sub">Stall Charts</div>
+    <div class="wp-sidebar-sub">Invoicing</div>
+    <div class="wp-sidebar-sub">Reports</div>
+    <div class="wp-sidebar-sub">Settings</div>
+    <div class="wp-sidebar-sep"></div>
+    <div class="wp-sidebar-item">&#9632; Plugins</div>
+    <div class="wp-sidebar-item">&#9632; Settings</div>
+  </div>
+
+  <div class="wp-content">
+
+    <div class="breadcrumb">
+      <div style="width:160px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;font-family:'IBM Plex Sans',sans-serif;border:1px dashed #bbb">Plugin Logo</div>
+      <span class="breadcrumb-sep">/</span>
+      <span class="breadcrumb-page">Orders</span>
+    </div>
+
+    <div class="plugin-wrap">
+
+      <div class="plugin-header">
+        <div>
+          <div class="plugin-title">Orders</div>
+          <div class="plugin-subtitle">View and manage all customer orders. Filter by event or billing status, search orders, and take quick actions.</div>
+        </div>
+        <button class="btn-primary" onclick="window.location.href='invoicing_page.html'" style="background:#031B4E;font-size:14px;padding:10px 20px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Create Order
+        </button>
+      </div>
+
+      <div class="toolbar">
+        <!-- Row 1: Event + Billing status -->
+        <div class="toolbar-row">
+          <select class="event-select" onchange="filterOrders()">
+            <option value="all">All events</option>
+            <option value="sort" selected>2026 SE Region Super Sort</option>
+            <option value="bluegrass">2026 Bluegrass Show</option>
+            <option value="dressage">2026 Sunshine Dressage</option>
+          </select>
+          <div class="billing-tabs">
+            <div class="billing-tab active" onclick="setBilling(this,'all')">All</div>
+            <div class="billing-tab" onclick="setBilling(this,'paid')">Paid</div>
+            <div class="billing-tab" onclick="setBilling(this,'unpaid')">Unpaid</div>
+            <div class="billing-tab" onclick="setBilling(this,'refunded')">Refunded</div>
+            <div class="billing-tab" onclick="setBilling(this,'cancelled')">Cancelled</div>
+          </div>
+        </div>
+        <!-- Row 2: Type chips + search + count -->
+        <div class="toolbar-row">
+          <span class="type-filter-label">Type:</span>
+          <div class="type-chips">
+            <div class="type-chip chip-stall" onclick="toggleChip(this,'stall')"><span class="chip-dot"></span>Stall</div>
+            <div class="type-chip chip-rv" onclick="toggleChip(this,'rv')"><span class="chip-dot"></span>RV</div>
+            <div class="type-chip chip-addon" onclick="toggleChip(this,'addon')"><span class="chip-dot"></span>Add-On</div>
+            <div class="type-chip chip-group" onclick="toggleChip(this,'group')"><span class="chip-dot"></span>Group</div>
+          </div>
+          <div class="search-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input class="search-input" type="text" placeholder="Search by customer, order #, event…" oninput="filterOrders()">
+          </div>
+          <span class="orders-count" id="orders-count">23 orders</span>
+        </div>
+      </div>
+
+      <div class="desktop-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Order <span class="sort-icon"><span></span><span></span></span></th>
+              <th>Customer</th>
+              <th>Event</th>
+              <th>Type</th>
+              <th>Status <span class="sort-icon"><span></span><span></span></span></th>
+              <th>Date <span class="sort-icon"><span></span><span></span></span></th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr data-billing="paid" data-types="stall,addon"><td><span class="order-num">#0028</span></td><td><span class="customer-name">Whitney Mitchell</span></td><td><span class="event-name">2026 Southeast Region Super Sort</span></td><td><div class="type-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-addon">Add-On</span></div></td><td><span class="status-badge status-paid">Paid</span></td><td><span class="date-val">May 8, 2026</span></td><td><div class="actions-cell"><button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button><div class="row-menu-wrap"><button class="more-btn" onclick="toggleRowMenu('menu-0028',event)">···</button>
+          <div class="row-dropdown" id="menu-0028">
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View Order</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Reservation</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Resend Notification</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 12 3 6 21 6 21 12"/><polyline points="3 18 3 12 21 12 21 18"/></svg>Refund Order</div>
+            <div class="row-dd-item row-dd-danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Delete Order</div>
+          </div></div></div></td></tr>
+            <tr data-billing="paid" data-types="stall,addon"><td><span class="order-num">#0027</span></td><td><span class="customer-name">Whitney Mitchell</span></td><td><span class="event-name">2026 Southeast Region Super Sort</span></td><td><div class="type-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-addon">Add-On</span></div></td><td><span class="status-badge status-paid">Paid</span></td><td><span class="date-val">May 8, 2026</span></td><td><div class="actions-cell"><button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button><div class="row-menu-wrap"><button class="more-btn" onclick="toggleRowMenu('menu-0027',event)">···</button>
+          <div class="row-dropdown" id="menu-0027">
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View Order</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Reservation</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Resend Notification</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 12 3 6 21 6 21 12"/><polyline points="3 18 3 12 21 12 21 18"/></svg>Refund Order</div>
+            <div class="row-dd-item row-dd-danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Delete Order</div>
+          </div></div></div></td></tr>
+            <tr data-billing="paid" data-types="stall,addon"><td><span class="order-num">#0026</span></td><td><span class="customer-name">Whitney Mitchell</span></td><td><span class="event-name">2026 Southeast Region Super Sort</span></td><td><div class="type-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-addon">Add-On</span></div></td><td><span class="status-badge status-paid">Paid</span></td><td><span class="date-val">May 8, 2026</span></td><td><div class="actions-cell"><button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button><div class="row-menu-wrap"><button class="more-btn" onclick="toggleRowMenu('menu-0026',event)">···</button>
+          <div class="row-dropdown" id="menu-0026">
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View Order</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Reservation</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Resend Notification</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 12 3 6 21 6 21 12"/><polyline points="3 18 3 12 21 12 21 18"/></svg>Refund Order</div>
+            <div class="row-dd-item row-dd-danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Delete Order</div>
+          </div></div></div></td></tr>
+            <tr data-billing="paid" data-types="rv"><td><span class="order-num">#0025</span></td><td><span class="customer-name">James Hartwell</span></td><td><span class="event-name">2026 Southeast Region Super Sort</span></td><td><div class="type-badges"><span class="type-badge type-rv">RV</span></div></td><td><span class="status-badge status-paid">Paid</span></td><td><span class="date-val">May 8, 2026</span></td><td><div class="actions-cell"><button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button><div class="row-menu-wrap"><button class="more-btn" onclick="toggleRowMenu('menu-0025',event)">···</button>
+          <div class="row-dropdown" id="menu-0025">
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View Order</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Reservation</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Resend Notification</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 12 3 6 21 6 21 12"/><polyline points="3 18 3 12 21 12 21 18"/></svg>Refund Order</div>
+            <div class="row-dd-item row-dd-danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Delete Order</div>
+          </div></div></div></td></tr>
+            <tr data-billing="paid" data-types="stall,addon"><td><span class="order-num">#0024</span></td><td><span class="customer-name">Sara Calloway</span></td><td><span class="event-name">2026 Southeast Region Super Sort</span></td><td><div class="type-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-addon">Add-On</span></div></td><td><span class="status-badge status-paid">Paid</span></td><td><span class="date-val">May 1, 2026</span></td><td><div class="actions-cell"><button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button><div class="row-menu-wrap"><button class="more-btn" onclick="toggleRowMenu('menu-0024',event)">···</button>
+          <div class="row-dropdown" id="menu-0024">
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View Order</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Reservation</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Resend Notification</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 12 3 6 21 6 21 12"/><polyline points="3 18 3 12 21 12 21 18"/></svg>Refund Order</div>
+            <div class="row-dd-item row-dd-danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Delete Order</div>
+          </div></div></div></td></tr>
+            <tr data-billing="refunded" data-types="stall,addon"><td><span class="order-num">#0023</span></td><td><span class="customer-name">Marcus Trevino</span></td><td><span class="event-name">2026 Southeast Region Super Sort</span></td><td><div class="type-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-addon">Add-On</span></div></td><td><span class="status-badge status-partial">Partially Refunded</span></td><td><span class="date-val">Apr 24, 2026</span></td><td><div class="actions-cell"><button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button><div class="row-menu-wrap"><button class="more-btn" onclick="toggleRowMenu('menu-0023',event)">···</button>
+          <div class="row-dropdown" id="menu-0023">
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View Order</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Reservation</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Resend Notification</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 12 3 6 21 6 21 12"/><polyline points="3 18 3 12 21 12 21 18"/></svg>Refund Order</div>
+            <div class="row-dd-item row-dd-danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Delete Order</div>
+          </div></div></div></td></tr>
+            <tr data-billing="paid" data-types="stall,addon"><td><span class="order-num">#0022</span></td><td><span class="customer-name">Sara Calloway</span></td><td><span class="event-name">2026 Southeast Region Super Sort</span></td><td><div class="type-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-addon">Add-On</span></div></td><td><span class="status-badge status-paid">Paid</span></td><td><span class="date-val">Apr 24, 2026</span></td><td><div class="actions-cell"><button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button><div class="row-menu-wrap"><button class="more-btn" onclick="toggleRowMenu('menu-0022',event)">···</button>
+          <div class="row-dropdown" id="menu-0022">
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View Order</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Reservation</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Resend Notification</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 12 3 6 21 6 21 12"/><polyline points="3 18 3 12 21 12 21 18"/></svg>Refund Order</div>
+            <div class="row-dd-item row-dd-danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Delete Order</div>
+          </div></div></div></td></tr>
+            <tr data-billing="unpaid" data-types="stall,addon"><td><span class="order-num">#0021</span></td><td><span class="customer-name">Devon Lacroix</span></td><td><span class="event-name">2026 Southeast Region Super Sort</span></td><td><div class="type-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-addon">Add-On</span></div></td><td><span class="status-badge status-invoice">Invoice Sent</span></td><td><span class="date-val">Apr 24, 2026</span></td><td><div class="actions-cell"><button class="btn-collect"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Collect</button><button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button><div class="row-menu-wrap"><button class="more-btn" onclick="toggleRowMenu('menu-0021',event)">···</button>
+          <div class="row-dropdown" id="menu-0021">
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View Order</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Reservation</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Resend Notification</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 12 3 6 21 6 21 12"/><polyline points="3 18 3 12 21 12 21 18"/></svg>Refund Order</div>
+            <div class="row-dd-item row-dd-danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Delete Order</div>
+          </div></div></div></td></tr>
+            <tr data-billing="paid" data-types="group,rv"><td><span class="order-num">#0020</span></td><td><span class="customer-name">James Hartwell</span></td><td><span class="event-name">2026 Southeast Region Super Sort</span></td><td><div class="type-badges"><span class="type-badge type-group">Group</span><span class="type-badge type-rv">RV</span></div></td><td><span class="status-badge status-paid">Paid</span></td><td><span class="date-val">Apr 24, 2026</span></td><td><div class="actions-cell"><button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button><div class="row-menu-wrap"><button class="more-btn" onclick="toggleRowMenu('menu-0020',event)">···</button>
+          <div class="row-dropdown" id="menu-0020">
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View Order</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Reservation</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Resend Notification</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 12 3 6 21 6 21 12"/><polyline points="3 18 3 12 21 12 21 18"/></svg>Refund Order</div>
+            <div class="row-dd-item row-dd-danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Delete Order</div>
+          </div></div></div></td></tr>
+            <tr data-billing="refunded" data-types="stall"><td><span class="order-num">#0019</span></td><td><span class="customer-name">Priya Anand</span></td><td><span class="event-name">2026 Bluegrass Show</span></td><td><div class="type-badges"><span class="type-badge type-stall">Stall</span></div></td><td><span class="status-badge status-refunded">Refunded</span></td><td><span class="date-val">Apr 18, 2026</span></td><td><div class="actions-cell"><button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button><div class="row-menu-wrap"><button class="more-btn" onclick="toggleRowMenu('menu-0019',event)">···</button>
+          <div class="row-dropdown" id="menu-0019">
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View Order</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Reservation</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Resend Notification</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 12 3 6 21 6 21 12"/><polyline points="3 18 3 12 21 12 21 18"/></svg>Refund Order</div>
+            <div class="row-dd-item row-dd-danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Delete Order</div>
+          </div></div></div></td></tr>
+            <tr data-billing="cancelled" data-types="addon"><td><span class="order-num">#0018</span></td><td><span class="customer-name">Priya Anand</span></td><td><span class="event-name">2026 Bluegrass Show</span></td><td><div class="type-badges"><span class="type-badge type-addon">Add-On</span></div></td><td><span class="status-badge status-cancelled">Cancelled</span></td><td><span class="date-val">Apr 18, 2026</span></td><td><div class="actions-cell"><button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button><div class="row-menu-wrap"><button class="more-btn" onclick="toggleRowMenu('menu-0018',event)">···</button>
+          <div class="row-dropdown" id="menu-0018">
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View Order</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Reservation</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Resend Notification</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV</div>
+            <div class="row-dd-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 12 3 6 21 6 21 12"/><polyline points="3 18 3 12 21 12 21 18"/></svg>Refund Order</div>
+            <div class="row-dd-item row-dd-danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Delete Order</div>
+          </div></div></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mobile-orders">
+        <div class="mobile-order-card"><div class="mob-card-top"><span class="mob-card-num">#0028</span><span class="mob-card-date">May 8, 2026</span></div><div class="mob-card-customer">Whitney Mitchell</div><div class="mob-card-event">2026 Southeast Region Super Sort</div><div class="mob-card-bottom"><div class="mob-card-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-addon">Add-On</span><span class="status-badge status-paid">Paid</span></div><div class="mob-card-actions"><button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button><button class="more-btn">···</button></div></div></div>
+        <div class="mobile-order-card"><div class="mob-card-top"><span class="mob-card-num">#0025</span><span class="mob-card-date">May 8, 2026</span></div><div class="mob-card-customer">James Hartwell</div><div class="mob-card-event">2026 Southeast Region Super Sort</div><div class="mob-card-bottom"><div class="mob-card-badges"><span class="type-badge type-rv">RV</span><span class="status-badge status-paid">Paid</span></div><div class="mob-card-actions"><button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button><button class="more-btn">···</button></div></div></div>
+        <div class="mobile-order-card"><div class="mob-card-top"><span class="mob-card-num">#0023</span><span class="mob-card-date">Apr 24, 2026</span></div><div class="mob-card-customer">Marcus Trevino</div><div class="mob-card-event">2026 Southeast Region Super Sort</div><div class="mob-card-bottom"><div class="mob-card-badges"><span class="type-badge type-stall">Stall</span><span class="status-badge status-partial">Partially Refunded</span></div><div class="mob-card-actions"><button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button><button class="more-btn">···</button></div></div></div>
+        <div class="mobile-order-card"><div class="mob-card-top"><span class="mob-card-num">#0021</span><span class="mob-card-date">Apr 24, 2026</span></div><div class="mob-card-customer">Devon Lacroix</div><div class="mob-card-event">2026 Southeast Region Super Sort</div><div class="mob-card-bottom"><div class="mob-card-badges"><span class="type-badge type-stall">Stall</span><span class="status-badge status-invoice">Invoice Sent</span></div><div class="mob-card-actions"><button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button><button class="more-btn">···</button></div></div></div>
+      </div>
+
+      <div class="pagination">
+        <span class="pagination-info">Showing 1–11 of 23 orders</span>
+        <div class="pagination-controls">
+          <button class="page-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <button class="page-btn active">1</button>
+          <button class="page-btn">2</button>
+          <button class="page-btn">3</button>
+          <button class="page-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<script>
+function toggleRowMenu(id, e) {
+  e.stopPropagation();
+  document.querySelectorAll('.row-dropdown').forEach(d => {
+    if (d.id !== id) d.classList.remove('open');
+  });
+  document.getElementById(id).classList.toggle('open');
+}
+document.addEventListener('click', function() {
+  document.querySelectorAll('.row-dropdown').forEach(d => d.classList.remove('open'));
+});
+</script>
+
+</body>
+</html>

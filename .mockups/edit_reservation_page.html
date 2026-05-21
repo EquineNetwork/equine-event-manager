@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Edit Reservation – 2026 Southeast Region Super Sort</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
+
+/* ── WP SHELL ── */
+.wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;position:sticky;top:0;z-index:300}
+.wp-admin-bar span{font-size:13px;color:#c3c4c7}
+.wp-admin-bar span.site{color:#fff;font-weight:600}
+.wp-body{display:flex;flex:1}
+.wp-sidebar{width:160px;min-width:160px;background:#1d2327;min-height:calc(100vh - 32px)}
+.wp-sidebar-item{padding:8px 12px;font-size:13px;color:#c3c4c7;cursor:pointer;display:flex;align-items:center;gap:8px;border-left:3px solid transparent}
+.wp-sidebar-item.active{background:#1668F2;color:#fff;border-left-color:#90c4ff}
+.wp-sidebar-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 0}
+.wp-sidebar-label{padding:8px 12px 4px;font-size:10px;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.wp-sidebar-sub{padding:6px 12px 6px 28px;font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-sidebar-sub:hover{color:#fff}
+.wp-sidebar-sub.active{color:#90c4ff;font-weight:600}
+
+/* ── PAGE LAYOUT ── */
+.wp-content{flex:1;padding:12px 20px 60px;min-width:0}
+.breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.breadcrumb-logo-box{width:140px;height:32px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb;flex-shrink:0}
+.breadcrumb-sep{font-size:13px;color:#8c8f94}
+.breadcrumb-page{font-size:13px;color:#50575e}
+.breadcrumb-page a{color:#50575e;text-decoration:none}
+.page-title{font-family:'Space Grotesk',sans-serif;font-size:21px;font-weight:700;color:#031B4E;margin-bottom:14px}
+
+/* Two-column body */
+.edit-body{display:grid;grid-template-columns:1fr 280px;gap:14px;align-items:start}
+.edit-main{min-width:0;display:flex;flex-direction:column;gap:10px}
+.edit-rail{display:flex;flex-direction:column;gap:10px;position:sticky;top:44px}
+
+/* ── SHARED CARD & SECTION ── */
+.card{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
+.section-header{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;cursor:pointer;user-select:none;border-bottom:1px solid #dcdcde;gap:10px}
+.section-header-left{display:flex;align-items:center;gap:10px;min-width:0}
+.section-icon{width:28px;height:28px;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.section-icon svg{width:14px;height:14px}
+.icon-blue{background:#EEF4FF;color:#1668F2}
+.icon-green{background:#F0FDF4;color:#16a34a}
+.icon-purple{background:#F5F3FF;color:#7c3aed}
+.icon-orange{background:#FFF7ED;color:#c2410c}
+.icon-teal{background:#F0FDFA;color:#0d9488}
+.icon-pink{background:#FFF1F2;color:#be185d}
+.icon-navy{background:#EEF4FF;color:#031B4E}
+.section-title{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#031B4E}
+.section-header-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.section-chevron{color:#8c8f94;transition:transform .2s;flex-shrink:0}
+.section-chevron svg{width:16px;height:16px}
+.section-collapsed .section-chevron{transform:rotate(-90deg)}
+.section-body{padding:16px 18px}
+.section-body.hidden{display:none}
+
+/* Enable toggle inline in header */
+.enable-toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:#6B7A99;cursor:pointer;flex-shrink:0}
+.toggle{width:36px;height:20px;border-radius:10px;position:relative;cursor:pointer;flex-shrink:0;transition:background .15s}
+.toggle.on{background:#1668F2}
+.toggle.off{background:#c3c4c7}
+.toggle::after{content:'';position:absolute;width:14px;height:14px;background:#fff;border-radius:50%;top:3px;transition:left .15s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle.on::after{left:19px}
+.toggle.off::after{left:3px}
+
+/* ── FIELD ROWS ── */
+.field-row{display:grid;grid-template-columns:200px 1fr;gap:16px;align-items:start;padding:12px 0;border-bottom:1px solid #f0f0f1}
+.field-row:first-child{padding-top:0}
+.field-row:last-child{border-bottom:none;padding-bottom:0}
+.field-label{font-size:13px;font-weight:600;color:#1d2327;padding-top:9px;line-height:1.4}
+.field-label-sub{font-size:11.5px;color:#6B7A99;font-weight:400;margin-top:2px}
+.field-control{display:flex;flex-direction:column;gap:5px}
+.field-input{padding:8px 11px;border:1.5px solid #D9E2F2;border-radius:4px;font-size:13.5px;font-family:'IBM Plex Sans',sans-serif;color:#031B4E;background:#fff;width:100%;outline:none}
+.field-input:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.1)}
+.field-input::placeholder{color:#B0BDD4}
+.field-textarea{padding:8px 11px;border:1.5px solid #D9E2F2;border-radius:4px;font-size:13.5px;font-family:'IBM Plex Sans',sans-serif;color:#031B4E;background:#fff;width:100%;resize:vertical;min-height:90px;line-height:1.6;outline:none}
+.field-textarea:focus{border-color:#1668F2}
+.field-select{padding:8px 30px 8px 11px;border:1.5px solid #D9E2F2;border-radius:4px;font-size:13.5px;font-family:'IBM Plex Sans',sans-serif;color:#031B4E;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236B7A99' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center;appearance:none;width:100%;outline:none}
+.field-hint{font-size:12px;color:#6B7A99;line-height:1.6}
+.field-hint code{background:#f0f0f1;padding:1px 5px;border-radius:3px;font-size:11px}
+
+/* Price input */
+.price-wrap{display:flex;align-items:center;gap:0;max-width:180px}
+.price-symbol{padding:8px 10px;background:#f6f7f7;border:1.5px solid #D9E2F2;border-right:none;border-radius:4px 0 0 4px;font-size:13px;color:#6B7A99;font-weight:600}
+.price-input{padding:8px 11px;border:1.5px solid #D9E2F2;border-radius:0 4px 4px 0;font-size:13.5px;font-family:'IBM Plex Sans',sans-serif;color:#031B4E;background:#fff;min-width:0;flex:1;outline:none}
+.price-input:focus{border-color:#1668F2}
+
+/* Date range */
+.date-range{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.date-sep{font-size:13px;color:#8c8f94}
+
+/* Toggle-label row (inline) */
+.toggle-label-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border:1.5px solid #D9E2F2;border-radius:4px;cursor:pointer;max-width:320px}
+.toggle-label-row span{font-size:13.5px;color:#031B4E;font-weight:500}
+
+/* Stay types */
+.stay-types{display:flex;gap:10px;flex-wrap:wrap}
+.stay-type-btn{display:flex;align-items:center;gap:8px;padding:8px 14px;border:1.5px solid #D9E2F2;border-radius:4px;cursor:pointer;font-size:13.5px;font-weight:500;color:#031B4E}
+.stay-type-btn.active{border-color:#1668F2;background:#EEF4FF;color:#1668F2}
+
+/* Selection mode buttons */
+.mode-btns{display:flex;gap:8px;flex-wrap:wrap}
+.mode-btn{padding:8px 18px;border:1.5px solid #D9E2F2;border-radius:4px;font-size:13.5px;font-weight:500;color:#031B4E;cursor:pointer;background:#fff}
+.mode-btn.active{border-color:#031B4E;background:#031B4E;color:#fff}
+
+/* ── REPEATING ROWS (stall blocks, rv lots, add-ons) ── */
+.repeat-table{width:100%;border-collapse:collapse;margin-bottom:10px}
+.repeat-table thead tr{border-bottom:1px solid #dcdcde;background:#fafafa}
+.repeat-table thead th{padding:8px 10px;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8c8f94;text-align:left}
+.repeat-table tbody tr{border-bottom:1px solid #f0f0f1}
+.repeat-table tbody tr:last-child{border-bottom:none}
+.repeat-table td{padding:8px 10px;vertical-align:middle}
+.repeat-input{padding:7px 10px;border:1.5px solid #D9E2F2;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#031B4E;background:#fff;width:100%;outline:none}
+.repeat-input:focus{border-color:#1668F2}
+.repeat-price-wrap{display:flex;align-items:center}
+.repeat-price-sym{padding:7px 8px;background:#f6f7f7;border:1.5px solid #D9E2F2;border-right:none;border-radius:4px 0 0 4px;font-size:12px;color:#6B7A99}
+.repeat-price-in{padding:7px 9px;border:1.5px solid #D9E2F2;border-radius:0 4px 4px 0;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#031B4E;background:#fff;width:90px;outline:none}
+.repeat-price-in:focus{border-color:#1668F2}
+.btn-delete{width:28px;height:28px;border-radius:4px;border:1.5px solid #fecaca;background:#fef2f2;color:#b91c1c;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.btn-delete svg{width:13px;height:13px}
+.btn-add{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:1.5px solid #D9E2F2;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;color:#031B4E;background:#fff;cursor:pointer}
+.btn-add:hover{background:#f6f7f7}
+.btn-add svg{width:13px;height:13px;color:#1668F2}
+.range-summary{font-size:12px;color:#6B7A99;margin-top:4px}
+
+/* Blocked numbers select */
+/* Tag multi-select (Blocked Stall Numbers, Blocked RV Lots) */
+.tag-select{position:relative;width:100%;max-width:520px}
+.tag-select-input{display:flex;flex-wrap:wrap;align-items:center;gap:5px;min-height:38px;padding:5px 8px;border:1.5px solid #D9E2F2;border-radius:4px;background:#fff;cursor:text}
+.tag-select-input:focus-within{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.1)}
+.tag-chip{display:inline-flex;align-items:center;gap:4px;background:#EEF4FF;color:#1668F2;border:1px solid #c0d8ff;border-radius:3px;padding:2px 4px 2px 8px;font-size:12.5px;font-weight:600;line-height:1.4;font-family:'IBM Plex Sans',sans-serif}
+.tag-chip-remove{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:3px;cursor:pointer;color:#1668F2;font-size:14px;line-height:1;background:transparent;border:none;padding:0}
+.tag-chip-remove:hover{background:#c0d8ff;color:#031B4E}
+.tag-search{flex:1;min-width:80px;border:none;outline:none;padding:4px 2px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#031B4E;background:transparent}
+.tag-search::placeholder{color:#B0BDD4}
+.tag-dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1.5px solid #D9E2F2;border-radius:4px;box-shadow:0 6px 16px rgba(3,27,78,.08);max-height:180px;overflow-y:auto;z-index:10;display:none}
+.tag-select.open .tag-dropdown{display:block}
+.tag-dropdown-item{padding:7px 12px;font-size:13px;color:#1d2327;cursor:pointer;display:flex;align-items:center;gap:8px}
+.tag-dropdown-item:hover{background:#F0F4FB;color:#031B4E}
+.tag-dropdown-item.selected{color:#8c8f94}
+.tag-dropdown-item.selected::after{content:'✓';margin-left:auto;color:#1668F2;font-weight:700}
+.tag-dropdown-empty{padding:10px 12px;font-size:12.5px;color:#8c8f94;font-style:italic}
+
+/* File upload */
+.file-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.file-name{padding:7px 11px;border:1.5px solid #D9E2F2;border-radius:4px;font-size:13px;color:#6B7A99;flex:1;min-width:140px;background:#fafafa}
+.btn-upload{padding:7px 14px;border:1.5px solid #D9E2F2;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;color:#031B4E;background:#fff;cursor:pointer}
+.btn-file-del{width:28px;height:28px;border-radius:4px;border:1.5px solid #fecaca;background:#fef2f2;color:#b91c1c;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.btn-file-del svg{width:13px;height:13px}
+.view-link{font-size:13px;color:#1668F2;text-decoration:none;font-weight:600}
+
+/* Fee type + value row */
+.fee-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.fee-type-btn{padding:7px 16px;border:1.5px solid #D9E2F2;border-radius:4px;font-size:13px;font-weight:500;color:#031B4E;cursor:pointer;background:#fff}
+.fee-type-btn.active{border-color:#031B4E;background:#031B4E;color:#fff}
+.fee-val-wrap{display:flex;align-items:center;max-width:180px}
+.fee-sym{padding:7px 8px;background:#f6f7f7;border:1.5px solid #D9E2F2;border-right:none;border-radius:4px 0 0 4px;font-size:12px;color:#6B7A99}
+.fee-val-in{padding:7px 9px;border:1.5px solid #D9E2F2;border-radius:0 4px 4px 0;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#031B4E;background:#fff;width:80px;outline:none}
+.fee-pct{padding:7px 8px;background:#f6f7f7;border:1.5px solid #D9E2F2;border-left:none;border-radius:0 4px 4px 0;font-size:12px;color:#6B7A99}
+
+/* ── RIGHT RAIL ── */
+.rail-card{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
+.rail-header{padding:12px 16px;border-bottom:1px solid #dcdcde;background:#fafafa;display:flex;align-items:center;justify-content:space-between}
+.rail-title{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#031B4E}
+.rail-body{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.publish-row{display:flex;align-items:center;gap:8px;font-size:13px;color:#1d2327}
+.publish-row svg{width:14px;height:14px;color:#6B7A99;flex-shrink:0}
+.publish-row strong{color:#031B4E}
+.publish-row a{color:#1668F2;font-size:12px;text-decoration:none;margin-left:auto;font-weight:600}
+.btn-publish{width:100%;background:#031B4E;color:#fff;border:none;padding:10px;border-radius:4px;font-size:13.5px;font-weight:700;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;margin-top:4px}
+.btn-publish:hover{background:#052569}
+.btn-save-draft{width:100%;background:#fff;color:#031B4E;border:1.5px solid #D9E2F2;padding:9px;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
+.btn-preview{width:100%;background:#fff;color:#1668F2;border:1.5px solid #D9E2F2;padding:9px;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px}
+.btn-preview svg{width:13px;height:13px}
+.btn-danger-sm{width:100%;background:#fff;color:#b91c1c;border:1.5px solid #fecaca;padding:8px;border-radius:4px;font-size:12.5px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
+
+/* Event link rail search */
+.event-search{width:100%;padding:8px 11px;border:1.5px solid #D9E2F2;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#031B4E;background:#fff;outline:none;margin-bottom:8px}
+.event-search:focus{border-color:#1668F2}
+.event-linked{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:#F0F4FB;border:1px solid #D9E2F2;border-radius:4px;font-size:13px}
+.event-linked-name{font-weight:600;color:#031B4E;font-size:13px}
+.event-linked-date{font-size:11.5px;color:#6B7A99;margin-top:2px}
+.event-unlink{font-size:12px;color:#b91c1c;cursor:pointer;font-weight:600;white-space:nowrap;margin-left:8px}
+
+/* Sticky save bar (mobile) */
+.sticky-save{display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #dcdcde;padding:12px 16px;z-index:200;gap:8px}
+.sticky-save .btn-publish{width:auto;flex:1}
+.sticky-save .btn-save-draft{width:auto;flex:1}
+
+/* ════════ TABLET ════════ */
+@media(max-width:1024px){
+  .wp-sidebar{display:none}
+  .wp-content{padding:10px 14px 80px}
+  .edit-body{grid-template-columns:1fr 260px}
+}
+
+/* ════════ MOBILE ════════ */
+@media(max-width:767px){
+  .wp-admin-bar span:not(.site):not(:first-child):not(:last-child){display:none}
+  .wp-content{padding:8px 10px 90px}
+  .breadcrumb-logo-box{width:110px;height:28px;font-size:10px}
+  .page-title{font-size:17px;margin-bottom:10px}
+
+  /* Stack layout — rail goes on top */
+  .edit-body{grid-template-columns:1fr}
+  .edit-rail{position:static;order:-1}
+
+  /* Publish/Event rail inline grid on mobile */
+  .rail-publish-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .rail-publish-grid .btn-publish,.rail-publish-grid .btn-save-draft{width:auto}
+
+  /* Sticky save bar appears */
+  .sticky-save{display:flex}
+
+  /* Field rows stack */
+  .field-row{grid-template-columns:1fr;gap:6px;padding:10px 0}
+  .field-label{padding-top:0}
+  .section-body{padding:12px 14px}
+  .section-header{padding:11px 14px}
+
+  /* Repeat tables scroll */
+  .repeat-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .repeat-table{min-width:400px}
+
+  /* Full width price/date inputs */
+  .price-wrap,.date-range{flex-wrap:wrap}
+  .price-wrap{max-width:100%}
+  .price-input{min-width:100px}
+}
+</style>
+<script>
+/* ── Section collapse (chevron) ── */
+function toggleSection(id) {
+  document.getElementById('body-' + id).classList.toggle('hidden');
+  document.getElementById('hdr-' + id).classList.toggle('section-collapsed');
+}
+
+/* ── Section "Enabled" toggle in header: also collapses body when off ── */
+function toggleSectionEnabled(toggleEl, sectionId, ev){
+  if(ev) ev.stopPropagation();
+  const on = !toggleEl.classList.contains('on');
+  toggleEl.classList.toggle('on', on);
+  toggleEl.classList.toggle('off', !on);
+  const body = document.getElementById('body-' + sectionId);
+  const hdr  = document.getElementById('hdr-' + sectionId);
+  if(body && hdr){
+    body.classList.toggle('hidden', !on);
+    hdr.classList.toggle('section-collapsed', !on);
+  }
+}
+
+/* ── Fee type buttons (mutually exclusive) ── */
+function toggleFeeType(btn) {
+  const grp = btn.parentElement;
+  grp.querySelectorAll('.fee-type-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  applyFeeTypeVisibility();
+}
+
+/* ── Mode buttons ── */
+function toggleMode(btn) {
+  const grp = btn.parentElement;
+  grp.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+/* ── Declarative on/off switch ──
+   Any element with class .toggle and data-controls="id1 id2..." will
+   show/hide the listed elements when its on/off state changes.
+   For stay-type buttons, .stay-type-btn wraps a non-clickable .toggle
+   inside — handled by toggleStay. ── */
+function setSwitchState(toggleEl, on){
+  toggleEl.classList.toggle('on', on);
+  toggleEl.classList.toggle('off', !on);
+  applyControls(toggleEl);
+}
+function toggleSwitch(el){
+  setSwitchState(el, !el.classList.contains('on'));
+}
+function toggleStay(btn){
+  const on = !btn.classList.contains('active');
+  /* Block deactivating the last active stay-type within this group */
+  if(!on){
+    const group = btn.closest('.stay-types');
+    const active = group ? group.querySelectorAll('.stay-type-btn.active').length : 0;
+    if(active <= 1){
+      flashStayHint(group);
+      return;
+    }
+  }
+  btn.classList.toggle('active', on);
+  const t = btn.querySelector('.toggle');
+  t.classList.toggle('on', on);
+  t.classList.toggle('off', !on);
+  applyControls(btn);
+}
+function flashStayHint(group){
+  if(!group) return;
+  let hint = group.parentElement.querySelector('.stay-hint');
+  if(!hint){
+    hint = document.createElement('span');
+    hint.className = 'stay-hint field-hint';
+    hint.style.cssText = 'color:#b91c1c;margin-top:6px;display:block';
+    hint.textContent = 'At least one stay type must remain enabled.';
+    group.parentElement.appendChild(hint);
+  }
+  hint.style.opacity = '1';
+  clearTimeout(hint._t);
+  hint._t = setTimeout(() => { hint.style.transition='opacity .4s'; hint.style.opacity='0'; }, 1800);
+  setTimeout(() => { hint.style.transition=''; }, 2400);
+}
+
+/* Apply visibility for a given controller (.toggle or .stay-type-btn) */
+function applyControls(controller){
+  const ids = (controller.dataset.controls || '').trim();
+  if(!ids) return;
+  const on = controller.classList.contains('on') || controller.classList.contains('active');
+  ids.split(/\s+/).forEach(id => {
+    const row = document.getElementById(id);
+    if(row) row.style.display = on ? '' : 'none';
+  });
+}
+
+/* Fees: show $ input when Flat, % input when Percentage, neither when None */
+function applyFeeTypeVisibility(){
+  const active = document.querySelector('.fee-type-btn.active');
+  const type = active ? active.dataset.feeType : 'none';
+  const valRow = document.getElementById('row-fee-value');
+  const flat = document.getElementById('fee-val-flat');
+  const pct  = document.getElementById('fee-val-pct');
+  const orSep= document.getElementById('fee-val-or');
+  if(!valRow) return;
+  if(type === 'none'){ valRow.style.display = 'none'; return; }
+  valRow.style.display = '';
+  flat.style.display = (type === 'flat') ? '' : 'none';
+  pct.style.display  = (type === 'pct')  ? '' : 'none';
+  if(orSep) orSep.style.display = 'none'; /* never show "or" — only one input visible at a time */
+}
+
+/* ── Tag multi-select ── */
+function tagToggle(host){
+  /* Click anywhere on the input area opens the dropdown and focuses input */
+  host.closest('.tag-select').classList.add('open');
+  host.querySelector('.tag-search').focus();
+}
+function tagFilter(input){
+  const q = input.value.trim().toLowerCase();
+  const dd = input.closest('.tag-select').querySelector('.tag-dropdown');
+  let shown = 0;
+  dd.querySelectorAll('.tag-dropdown-item').forEach(item => {
+    const match = item.dataset.value.toLowerCase().includes(q);
+    item.style.display = match ? '' : 'none';
+    if(match) shown++;
+  });
+  const empty = dd.querySelector('.tag-dropdown-empty');
+  if(empty) empty.style.display = shown === 0 ? '' : 'none';
+}
+function tagPick(item){
+  if(item.classList.contains('selected')) return;
+  const host = item.closest('.tag-select');
+  const search = host.querySelector('.tag-search');
+  const value = item.dataset.value;
+  const chip = document.createElement('span');
+  chip.className = 'tag-chip';
+  chip.dataset.value = value;
+  chip.innerHTML = value + ' <button type="button" class="tag-chip-remove" onclick="tagRemove(this)" aria-label="Remove">×</button>';
+  search.parentNode.insertBefore(chip, search);
+  item.classList.add('selected');
+  search.value = '';
+  tagFilter(search);
+  search.focus();
+}
+function tagRemove(btn){
+  const chip = btn.closest('.tag-chip');
+  const host = chip.closest('.tag-select');
+  const val = chip.dataset.value;
+  const item = host.querySelector('.tag-dropdown-item[data-value="' + CSS.escape(val) + '"]');
+  if(item) item.classList.remove('selected');
+  chip.remove();
+}
+/* Click outside closes dropdowns */
+document.addEventListener('click', e => {
+  document.querySelectorAll('.tag-select.open').forEach(host => {
+    if(!host.contains(e.target)) host.classList.remove('open');
+  });
+});
+
+/* Run once on load so initial conditional state matches the on/off classes in markup */
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.toggle[data-controls], .stay-type-btn[data-controls]').forEach(applyControls);
+  applyFeeTypeVisibility();
+});
+</script>
+</head>
+<body>
+
+<div class="wp-admin-bar">
+  <span>&#9776;</span>
+  <span class="site">My Equestrian Site</span>
+  <span>+ New</span>
+  <span style="margin-left:auto">Howdy, Whitney Mitchell</span>
+</div>
+
+<div class="wp-body">
+  <div class="wp-sidebar">
+    <div class="wp-sidebar-sep"></div>
+    <div class="wp-sidebar-label">Equine EM</div>
+    <div class="wp-sidebar-item active">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+      Reservations
+    </div>
+    <div class="wp-sidebar-sub">Orders</div>
+    <div class="wp-sidebar-sub active">Reservations</div>
+    <div class="wp-sidebar-sub">Stall Charts</div>
+    <div class="wp-sidebar-sub">Invoicing</div>
+    <div class="wp-sidebar-sub">Reports</div>
+    <div class="wp-sidebar-sub">Settings</div>
+  </div>
+
+  <div class="wp-content">
+    <div class="breadcrumb">
+      <div class="breadcrumb-logo-box">Plugin Logo</div>
+      <span class="breadcrumb-sep">/</span>
+      <span class="breadcrumb-page"><a href="#">Reservations</a> / Edit Reservation</span>
+    </div>
+    <div class="page-title">Edit Reservation</div>
+
+    <div class="edit-body">
+
+      <!-- ══════════════════ LEFT: MAIN FORM ══════════════════ -->
+      <div class="edit-main">
+
+        <!-- Title -->
+        <div class="card">
+          <div class="section-body" style="padding:16px 18px">
+            <input class="field-input" style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;border:none;border-bottom:2px solid #D9E2F2;border-radius:0;padding:4px 0 8px;color:#031B4E" value="2026 Southeast Region Super Sort" placeholder="Reservation title">
+          </div>
+        </div>
+
+        <!-- Linked Event + Dates meta bar -->
+        <div class="card" style="display:grid;grid-template-columns:1fr 1fr;overflow:hidden">
+          <div style="padding:12px 18px;border-right:1px solid #dcdcde">
+            <div style="font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#8c8f94;margin-bottom:4px">Linked Event</div>
+            <div style="font-size:13.5px;font-weight:600;color:#031B4E">Perry, GA – 2026 Southeast Region Super Sort</div>
+          </div>
+          <div style="padding:12px 18px">
+            <div style="font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#8c8f94;margin-bottom:4px">Dates</div>
+            <div style="font-size:13.5px;font-weight:600;color:#031B4E">May 8, 2026 – May 10, 2026</div>
+          </div>
+        </div>
+
+        <!-- ── Reservation Description ── -->
+        <div class="card">
+          <div class="section-header" id="hdr-desc" onclick="toggleSection('desc')">
+            <div class="section-header-left">
+              <div class="section-icon icon-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+              <span class="section-title">Reservation Description</span>
+            </div>
+            <div class="section-header-right">
+              <div class="section-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+            </div>
+          </div>
+          <div class="section-body" id="body-desc">
+            <div class="field-row">
+              <div class="field-label">Description<div class="field-label-sub">Shown on front-end Stay Details card</div></div>
+              <div class="field-control">
+                <textarea class="field-textarea">Welcome to the 2026 Southeast Region Super Sort at Georgia National Fairgrounds. Stabling is available from Thursday, May 7 through Sunday, May 9.</textarea>
+                <span class="field-hint">Shown on the front-end Stay Details card above the default reservation date and rate instructions.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Available Reservation Dates ── -->
+        <div class="card">
+          <div class="section-header" id="hdr-dates" onclick="toggleSection('dates')">
+            <div class="section-header-left">
+              <div class="section-icon icon-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+              <span class="section-title">Available Reservation Dates</span>
+            </div>
+            <div class="section-header-right">
+              <div class="section-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+            </div>
+          </div>
+          <div class="section-body" id="body-dates">
+            <div class="field-row">
+              <div class="field-label">Date Range<div class="field-label-sub">Dates customers can reserve</div></div>
+              <div class="field-control">
+                <div class="date-range">
+                  <input class="field-input" type="date" value="2026-05-08" style="width:160px">
+                  <span class="date-sep">–</span>
+                  <input class="field-input" type="date" value="2026-05-10" style="width:160px">
+                </div>
+                <span class="field-hint">Select the dates for which you would like customers to be able to make reservations.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Check-In / Check-Out ── -->
+        <div class="card">
+          <div class="section-header" id="hdr-checkin" onclick="toggleSection('checkin')">
+            <div class="section-header-left">
+              <div class="section-icon icon-teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+              <span class="section-title">Check-In / Check-Out</span>
+            </div>
+            <div class="section-header-right">
+              <div class="enable-toggle" onclick="event.stopPropagation()">
+                <div class="toggle on" onclick="toggleSectionEnabled(this,'checkin',event)"></div>
+                <span>Enabled</span>
+              </div>
+              <div class="section-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+            </div>
+          </div>
+          <div class="section-body" id="body-checkin">
+            <div class="field-row">
+              <div class="field-label">Check-In Time</div>
+              <div class="field-control">
+                <input class="field-input" type="datetime-local" value="2026-04-17T11:00" style="max-width:260px">
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field-label">Check-Out Time</div>
+              <div class="field-control">
+                <input class="field-input" type="datetime-local" value="2026-05-10T08:00" style="max-width:260px">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Stall Reservations ── -->
+        <div class="card">
+          <div class="section-header" id="hdr-stall" onclick="toggleSection('stall')">
+            <div class="section-header-left">
+              <div class="section-icon icon-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div>
+              <span class="section-title">Stall Reservations</span>
+            </div>
+            <div class="section-header-right">
+              <div class="enable-toggle" onclick="event.stopPropagation()">
+                <div class="toggle on" onclick="toggleSectionEnabled(this,'stall',event)"></div>
+                <span>Enabled</span>
+              </div>
+              <div class="section-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+            </div>
+          </div>
+          <div class="section-body" id="body-stall">
+            <div class="field-row">
+              <div class="field-label">Reservation Description</div>
+              <div class="field-control">
+                <textarea class="field-textarea">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</textarea>
+                <span class="field-hint">Describe stall amenities, bedding details, or other reservation notes shown on the front end.</span>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field-label">Stay Types<div class="field-label-sub">Enable one or both</div></div>
+              <div class="field-control">
+                <div class="stay-types">
+                  <div class="stay-type-btn active" data-controls="row-stall-rate-nightly row-stall-eb-nightly" onclick="toggleStay(this)"><div class="toggle on" style="pointer-events:none"></div><span>Nightly</span></div>
+                  <div class="stay-type-btn active" data-controls="row-stall-weekend-dates row-stall-rate-weekend row-stall-eb-weekend" onclick="toggleStay(this)"><div class="toggle on" style="pointer-events:none"></div><span>Weekend Rate</span></div>
+                </div>
+                <span class="field-hint">Weekend Rate uses the stall weekend package dates below.</span>
+              </div>
+            </div>
+            <div class="field-row" id="row-stall-weekend-dates">
+              <div class="field-label">Weekend Package Dates</div>
+              <div class="field-control">
+                <div class="date-range">
+                  <span style="font-size:12px;color:#6B7A99;padding-top:9px">Start</span>
+                  <input class="field-input" type="date" value="2026-05-08" style="width:150px">
+                  <span style="font-size:12px;color:#6B7A99;padding-top:9px">End</span>
+                  <input class="field-input" type="date" value="2026-05-10" style="width:150px">
+                </div>
+                <span class="field-hint">Customers choosing Stall Weekend Rate will automatically use this package date range.</span>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field-label">Reservation Schedule</div>
+              <div class="field-control">
+                <div class="toggle-label-row" onclick="toggleSwitch(this.querySelector('.toggle'))">
+                  <div class="toggle off" data-controls="row-stall-open row-stall-close"></div>
+                  <span>Schedule Stall Reservations</span>
+                </div>
+                <span class="field-hint">Turn this on to open and close stall reservations on specific dates and times.</span>
+              </div>
+            </div>
+            <div class="field-row" id="row-stall-open">
+              <div class="field-label">Stalls Open Date/Time</div>
+              <div class="field-control"><input class="field-input" type="datetime-local" style="max-width:260px" placeholder="mm/dd/yyyy, --:-- --"></div>
+            </div>
+            <div class="field-row" id="row-stall-close">
+              <div class="field-label">Stalls Close Date/Time</div>
+              <div class="field-control"><input class="field-input" type="datetime-local" style="max-width:260px" placeholder="mm/dd/yyyy, --:-- --"></div>
+            </div>
+            <div class="field-row">
+              <div class="field-label">Available Stall Inventory<div class="field-label-sub">Blank = unlimited</div></div>
+              <div class="field-control">
+                <input class="field-input" type="number" placeholder="Unlimited" style="max-width:120px">
+                <span class="field-hint">Leave blank for unlimited inventory. Once inventory reaches zero, customers will see a sold out message.</span>
+              </div>
+            </div>
+            <div class="field-row" id="row-stall-rate-nightly">
+              <div class="field-label">Stall Nightly Rate</div>
+              <div class="field-control">
+                <div class="price-wrap"><span class="price-symbol">$</span><input class="price-input" type="number" value="1.00"></div>
+              </div>
+            </div>
+            <div class="field-row" id="row-stall-rate-weekend">
+              <div class="field-label">Stall Weekend Rate</div>
+              <div class="field-control">
+                <div class="price-wrap"><span class="price-symbol">$</span><input class="price-input" type="number" value="100.00"></div>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field-label">Stall Early Bird Pricing</div>
+              <div class="field-control">
+                <div class="toggle-label-row" onclick="toggleSwitch(this.querySelector('.toggle'))">
+                  <div class="toggle off" data-controls="row-stall-eb-cutoff row-stall-eb-nightly row-stall-eb-weekend"></div>
+                  <span>Enable stall early bird pricing</span>
+                </div>
+              </div>
+            </div>
+            <div class="field-row" id="row-stall-eb-cutoff">
+              <div class="field-label">Early Bird Cutoff</div>
+              <div class="field-control"><input class="field-input" type="datetime-local" style="max-width:260px"></div>
+            </div>
+            <div class="field-row" id="row-stall-eb-nightly">
+              <div class="field-label">Early Bird Nightly Rate</div>
+              <div class="field-control"><div class="price-wrap"><span class="price-symbol">$</span><input class="price-input" type="number" value="10.00"></div></div>
+            </div>
+            <div class="field-row" id="row-stall-eb-weekend">
+              <div class="field-label">Early Bird Weekend Rate</div>
+              <div class="field-control"><div class="price-wrap"><span class="price-symbol">$</span><input class="price-input" type="number" value="50.00"></div></div>
+            </div>
+            <div class="field-row">
+              <div class="field-label">Required Shavings</div>
+              <div class="field-control">
+                <div class="toggle-label-row" onclick="toggleSwitch(this.querySelector('.toggle'))">
+                  <div class="toggle on" data-controls="row-stall-shavings-qty row-stall-shavings-price"></div>
+                  <span>Require shavings with each stall</span>
+                </div>
+              </div>
+            </div>
+            <div class="field-row" id="row-stall-shavings-qty">
+              <div class="field-label">Required Shavings Per Stall</div>
+              <div class="field-control"><input class="field-input" type="number" value="2" style="max-width:100px"></div>
+            </div>
+            <div class="field-row" id="row-stall-shavings-price">
+              <div class="field-label">Shavings Price Per Bag</div>
+              <div class="field-control"><div class="price-wrap"><span class="price-symbol">$</span><input class="price-input" type="number" value="10.00"></div></div>
+            </div>
+            <div class="field-row">
+              <div class="field-label">Stall Assignments</div>
+              <div class="field-control">
+                <div class="toggle-label-row" onclick="toggleSwitch(this.querySelector('.toggle'))">
+                  <div class="toggle on" data-controls="row-stall-mode row-stall-blocks row-stall-blocked row-stall-map"></div>
+                  <span>Enable Stall Assignments</span>
+                </div>
+                <span class="field-hint">Turn this on to define numbered stall blocks, assign stalls, and open the assignments overview for this reservation.</span>
+              </div>
+            </div>
+            <div class="field-row" id="row-stall-mode">
+              <div class="field-label">Stall Selection Mode</div>
+              <div class="field-control">
+                <div class="mode-btns">
+                  <button class="mode-btn active" onclick="toggleMode(this)">Quantity Based</button>
+                  <button class="mode-btn" onclick="toggleMode(this)">Exact Map Selection</button>
+                </div>
+                <span class="field-hint">Quantity Based uses the built-in stall quantity selector. Exact Map Selection reserves this reservation for a future add-on that lets customers choose specific stalls from an interactive map.</span>
+              </div>
+            </div>
+            <!-- Stall Blocks -->
+            <div class="field-row" id="row-stall-blocks" style="align-items:start">
+              <div class="field-label">Stall Blocks<div class="field-label-sub">Title + range, no overlaps</div></div>
+              <div class="field-control">
+                <div class="repeat-scroll">
+                  <table class="repeat-table">
+                    <thead><tr><th>Title</th><th>Start #</th><th>End #</th><th></th></tr></thead>
+                    <tbody>
+                      <tr><td><input class="repeat-input" value="Red Barn"></td><td><input class="repeat-input" type="number" value="100" style="width:80px"></td><td><input class="repeat-input" type="number" value="150" style="width:80px"></td><td><button class="btn-delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td></tr>
+                      <tr><td><input class="repeat-input" value="Yellow Barn"></td><td><input class="repeat-input" type="number" value="151" style="width:80px"></td><td><input class="repeat-input" type="number" value="200" style="width:80px"></td><td><button class="btn-delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="range-summary">2 stall ranges generating 101 unit numbers.</div>
+                <button class="btn-add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Stall Block</button>
+              </div>
+            </div>
+            <div class="field-row" id="row-stall-blocked">
+              <div class="field-label">Blocked Stall Numbers<div class="field-label-sub">Hold back from reservation</div></div>
+              <div class="field-control">
+                <div class="tag-select">
+                  <div class="tag-select-input" onclick="tagToggle(this)">
+                    <span class="tag-chip" data-value="100">100 <button type="button" class="tag-chip-remove" onclick="event.stopPropagation();tagRemove(this)" aria-label="Remove">×</button></span>
+                    <span class="tag-chip" data-value="102">102 <button type="button" class="tag-chip-remove" onclick="event.stopPropagation();tagRemove(this)" aria-label="Remove">×</button></span>
+                    <input class="tag-search" type="text" placeholder="Type a stall number…" oninput="tagFilter(this)" onfocus="this.closest('.tag-select').classList.add('open')">
+                  </div>
+                  <div class="tag-dropdown">
+                    <div class="tag-dropdown-item selected" data-value="100" onclick="tagPick(this)">100</div>
+                    <div class="tag-dropdown-item" data-value="101" onclick="tagPick(this)">101</div>
+                    <div class="tag-dropdown-item selected" data-value="102" onclick="tagPick(this)">102</div>
+                    <div class="tag-dropdown-item" data-value="103" onclick="tagPick(this)">103</div>
+                    <div class="tag-dropdown-item" data-value="104" onclick="tagPick(this)">104</div>
+                    <div class="tag-dropdown-item" data-value="105" onclick="tagPick(this)">105</div>
+                    <div class="tag-dropdown-item" data-value="106" onclick="tagPick(this)">106</div>
+                    <div class="tag-dropdown-item" data-value="107" onclick="tagPick(this)">107</div>
+                    <div class="tag-dropdown-item" data-value="108" onclick="tagPick(this)">108</div>
+                    <div class="tag-dropdown-item" data-value="109" onclick="tagPick(this)">109</div>
+                    <div class="tag-dropdown-item" data-value="110" onclick="tagPick(this)">110</div>
+                    <div class="tag-dropdown-empty" style="display:none">No matching stall numbers.</div>
+                  </div>
+                </div>
+                <span class="field-hint">Type a stall number to filter the list, then click to block it. Click ✕ on a chip to unblock.</span>
+              </div>
+            </div>
+            <div class="field-row" id="row-stall-map">
+              <div class="field-label">Stall Map<div class="field-label-sub">PDF or image customers can open</div></div>
+              <div class="field-control">
+                <div class="file-row">
+                  <span class="file-name">Screenshot-2026-04-30-at-11.39.57-AM.png</span>
+                  <button class="btn-upload">Upload File</button>
+                  <button class="btn-file-del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+                  <a class="view-link" href="#">View file</a>
+                </div>
+                <span class="field-hint">Upload a stall map customers can open in a new browser tab while choosing a stall.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── RV Reservations ── -->
+        <div class="card">
+          <div class="section-header" id="hdr-rv" onclick="toggleSection('rv')">
+            <div class="section-header-left">
+              <div class="section-icon icon-purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
+              <span class="section-title">RV Reservations</span>
+            </div>
+            <div class="section-header-right">
+              <div class="enable-toggle" onclick="event.stopPropagation()">
+                <div class="toggle on" onclick="toggleSectionEnabled(this,'rv',event)"></div>
+                <span>Enabled</span>
+              </div>
+              <div class="section-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+            </div>
+          </div>
+          <div class="section-body" id="body-rv">
+            <div class="field-row">
+              <div class="field-label">Reservation Description</div>
+              <div class="field-control">
+                <textarea class="field-textarea" placeholder="Describe RV amenities, hookups, or other reservation notes shown on the front end."></textarea>
+                <span class="field-hint">Describe RV amenities, hookups, or other reservation notes shown on the front end.</span>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field-label">Stay Types</div>
+              <div class="field-control">
+                <div class="stay-types">
+                  <div class="stay-type-btn active" data-controls="row-rv-rate-nightly row-rv-eb-nightly" onclick="toggleStay(this)"><div class="toggle on" style="pointer-events:none"></div><span>Nightly</span></div>
+                  <div class="stay-type-btn" data-controls="row-rv-weekend-dates row-rv-rate-weekend row-rv-eb-weekend" onclick="toggleStay(this)"><div class="toggle off" style="pointer-events:none"></div><span>Weekend Rate</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="field-row" id="row-rv-weekend-dates">
+              <div class="field-label">Weekend Package Dates</div>
+              <div class="field-control">
+                <div class="date-range">
+                  <span style="font-size:12px;color:#6B7A99;padding-top:9px">Start</span>
+                  <input class="field-input" type="date" value="2026-05-01" style="width:150px">
+                  <span style="font-size:12px;color:#6B7A99;padding-top:9px">End</span>
+                  <input class="field-input" type="date" value="2026-05-10" style="width:150px">
+                </div>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field-label">Reservation Schedule</div>
+              <div class="field-control">
+                <div class="toggle-label-row" onclick="toggleSwitch(this.querySelector('.toggle'))">
+                  <div class="toggle off" data-controls="row-rv-open row-rv-close"></div><span>Schedule RV Reservations</span>
+                </div>
+              </div>
+            </div>
+            <div class="field-row" id="row-rv-open">
+              <div class="field-label">RV Open Date/Time</div>
+              <div class="field-control"><input class="field-input" type="datetime-local" style="max-width:260px"></div>
+            </div>
+            <div class="field-row" id="row-rv-close">
+              <div class="field-label">RV Close Date/Time</div>
+              <div class="field-control"><input class="field-input" type="datetime-local" style="max-width:260px"></div>
+            </div>
+            <div class="field-row">
+              <div class="field-label">Available RV Inventory</div>
+              <div class="field-control"><input class="field-input" type="number" placeholder="Unlimited" style="max-width:120px"></div>
+            </div>
+            <div class="field-row" id="row-rv-rate-nightly">
+              <div class="field-label">RV Nightly Rate</div>
+              <div class="field-control"><div class="price-wrap"><span class="price-symbol">$</span><input class="price-input" type="number" value="20.00"></div></div>
+            </div>
+            <div class="field-row" id="row-rv-rate-weekend">
+              <div class="field-label">RV Weekend Rate</div>
+              <div class="field-control"><div class="price-wrap"><span class="price-symbol">$</span><input class="price-input" type="number" value="100.00"></div></div>
+            </div>
+            <div class="field-row">
+              <div class="field-label">RV Early Bird Pricing</div>
+              <div class="field-control">
+                <div class="toggle-label-row" onclick="toggleSwitch(this.querySelector('.toggle'))">
+                  <div class="toggle off" data-controls="row-rv-eb-cutoff row-rv-eb-nightly row-rv-eb-weekend"></div><span>Enable RV early bird pricing</span>
+                </div>
+              </div>
+            </div>
+            <div class="field-row" id="row-rv-eb-cutoff">
+              <div class="field-label">Early Bird Cutoff</div>
+              <div class="field-control"><input class="field-input" type="datetime-local" style="max-width:260px"></div>
+            </div>
+            <div class="field-row" id="row-rv-eb-nightly">
+              <div class="field-label">Early Bird Nightly Rate</div>
+              <div class="field-control"><div class="price-wrap"><span class="price-symbol">$</span><input class="price-input" type="number" value="10.00"></div></div>
+            </div>
+            <div class="field-row" id="row-rv-eb-weekend">
+              <div class="field-label">Early Bird Weekend Rate</div>
+              <div class="field-control"><div class="price-wrap"><span class="price-symbol">$</span><input class="price-input" type="number" value="50.00"></div></div>
+            </div>
+            <div class="field-row">
+              <div class="field-label">RV Lot Selection</div>
+              <div class="field-control">
+                <div class="toggle-label-row" onclick="toggleSwitch(this.querySelector('.toggle'))">
+                  <div class="toggle off" data-controls="row-rv-lots row-rv-blocked-lots"></div><span>Enable RV lot selection</span>
+                </div>
+                <span class="field-hint">When enabled, customers can choose from named RV lots with their own nightly and weekend pricing.</span>
+              </div>
+            </div>
+            <!-- RV Lots -->
+            <div class="field-row" id="row-rv-lots" style="align-items:start">
+              <div class="field-label">RV Lots<div class="field-label-sub">Leave price blank to use base rate</div></div>
+              <div class="field-control">
+                <div class="repeat-scroll">
+                  <table class="repeat-table">
+                    <thead><tr><th>Lot Name</th><th>Nightly</th><th>Weekend</th><th>Inventory</th><th></th></tr></thead>
+                    <tbody>
+                      <tr>
+                        <td><input class="repeat-input" value="Red Lot"></td>
+                        <td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" value="0.00"></div></td>
+                        <td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" value="0.00"></div></td>
+                        <td><input class="repeat-input" placeholder="Unlimited" style="width:90px"></td>
+                        <td><button class="btn-delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <button class="btn-add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add RV Lot</button>
+              </div>
+            </div>
+            <div class="field-row" id="row-rv-blocked-lots">
+              <div class="field-label">Blocked RV Lots</div>
+              <div class="field-control">
+                <div class="tag-select">
+                  <div class="tag-select-input" onclick="tagToggle(this)">
+                    <span class="tag-chip" data-value="Red Lot">Red Lot <button type="button" class="tag-chip-remove" onclick="event.stopPropagation();tagRemove(this)" aria-label="Remove">×</button></span>
+                    <input class="tag-search" type="text" placeholder="Type a lot name…" oninput="tagFilter(this)" onfocus="this.closest('.tag-select').classList.add('open')">
+                  </div>
+                  <div class="tag-dropdown">
+                    <div class="tag-dropdown-item selected" data-value="Red Lot" onclick="tagPick(this)">Red Lot</div>
+                    <div class="tag-dropdown-item" data-value="Blue Lot" onclick="tagPick(this)">Blue Lot</div>
+                    <div class="tag-dropdown-item" data-value="Green Lot" onclick="tagPick(this)">Green Lot</div>
+                    <div class="tag-dropdown-empty" style="display:none">No matching lots.</div>
+                  </div>
+                </div>
+                <span class="field-hint">Type a lot name to filter, then click to block it from reservation assignment. Click ✕ on a chip to unblock.</span>
+              </div>
+            </div>
+            <!-- RV Add-Ons -->
+            <div class="field-row" style="align-items:start">
+              <div class="field-label">RV Add-Ons<div class="field-label-sub">Optional upgrades shown on front end</div></div>
+              <div class="field-control">
+                <div class="toggle-label-row" style="margin-bottom:10px" onclick="toggleSwitch(this.querySelector('.toggle'))">
+                  <div class="toggle on" data-controls="rv-addons-table-wrap"></div><span>Enable RV add-ons</span>
+                </div>
+                <div id="rv-addons-table-wrap">
+                <div class="repeat-scroll">
+                  <table class="repeat-table">
+                    <thead><tr><th>Add-On Name</th><th>Price</th><th></th></tr></thead>
+                    <tbody>
+                      <tr><td><input class="repeat-input" value="Electric"></td><td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" value="0.00"></div></td><td><button class="btn-delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td></tr>
+                      <tr><td><input class="repeat-input" value="Water"></td><td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" value="10.00"></div></td><td><button class="btn-delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <button class="btn-add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add RV Add-On</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── General Add-Ons ── -->
+        <div class="card">
+          <div class="section-header" id="hdr-addons" onclick="toggleSection('addons')">
+            <div class="section-header-left">
+              <div class="section-icon icon-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></div>
+              <span class="section-title">General Add-Ons</span>
+            </div>
+            <div class="section-header-right">
+              <div class="enable-toggle" onclick="event.stopPropagation()">
+                <div class="toggle on" onclick="toggleSectionEnabled(this,'addons',event)"></div>
+                <span>Enabled</span>
+              </div>
+              <div class="section-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+            </div>
+          </div>
+          <div class="section-body" id="body-addons">
+            <div class="field-hint" style="margin-bottom:12px">Use general add-ons for items like hay, extra bedding, or other optional products that can be sold alongside stalls or RV reservations.</div>
+            <div class="repeat-scroll">
+              <table class="repeat-table">
+                <thead><tr><th>Add-On Name</th><th>Price</th><th>Description</th><th></th></tr></thead>
+                <tbody>
+                  <tr>
+                    <td><input class="repeat-input" value="Shavings"></td>
+                    <td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" value="12.00"></div></td>
+                    <td><input class="repeat-input" value="3.5 Cu. Ft." style="min-width:120px"></td>
+                    <td><button class="btn-delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <button class="btn-add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Add-On</button>
+          </div>
+        </div>
+
+        <!-- ── Group Reservations ── -->
+        <div class="card">
+          <div class="section-header" id="hdr-group" onclick="toggleSection('group')">
+            <div class="section-header-left">
+              <div class="section-icon icon-teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></div>
+              <span class="section-title">Group Reservations</span>
+            </div>
+            <div class="section-header-right">
+              <div class="enable-toggle" onclick="event.stopPropagation()">
+                <div class="toggle on" onclick="toggleSectionEnabled(this,'group',event)"></div>
+                <span>Enabled</span>
+              </div>
+              <div class="section-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+            </div>
+          </div>
+          <div class="section-body" id="body-group">
+            <div class="field-hint" style="margin-bottom:12px">When enabled, customers can turn on a group reservation on the front end, enter the rider count, and provide a first and last name for each rider.</div>
+            <div class="field-row">
+              <div class="field-label">Rider Grounds Fee</div>
+              <div class="field-control">
+                <div class="toggle-label-row" onclick="toggleSwitch(this.querySelector('.toggle'))">
+                  <div class="toggle off" data-controls="row-grounds-amt"></div><span>Charge a grounds fee for each rider</span>
+                </div>
+              </div>
+            </div>
+            <div class="field-row" id="row-grounds-amt">
+              <div class="field-label">Rider Grounds Fee Amount</div>
+              <div class="field-control"><div class="price-wrap"><span class="price-symbol">$</span><input class="price-input" type="number" value="0.00"></div></div>
+            </div>
+            <div class="field-row">
+              <div class="field-label">Rider Deposit</div>
+              <div class="field-control">
+                <div class="toggle-label-row" onclick="toggleSwitch(this.querySelector('.toggle'))">
+                  <div class="toggle off" data-controls="row-deposit-amt"></div><span>Require a deposit for each rider</span>
+                </div>
+              </div>
+            </div>
+            <div class="field-row" id="row-deposit-amt">
+              <div class="field-label">Rider Deposit Amount</div>
+              <div class="field-control"><div class="price-wrap"><span class="price-symbol">$</span><input class="price-input" type="number" value="0.00"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Venue Map ── -->
+        <div class="card">
+          <div class="section-header" id="hdr-venue" onclick="toggleSection('venue')">
+            <div class="section-header-left">
+              <div class="section-icon icon-navy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg></div>
+              <span class="section-title">Venue Map</span>
+            </div>
+            <div class="section-header-right">
+              <div class="enable-toggle" onclick="event.stopPropagation()">
+                <div class="toggle on" onclick="toggleSectionEnabled(this,'venue',event)"></div>
+                <span>Enabled</span>
+              </div>
+              <div class="section-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+            </div>
+          </div>
+          <div class="section-body" id="body-venue">
+            <div class="field-row">
+              <div class="field-label">Download Venue Map URL<div class="field-label-sub">Optional direct download link</div></div>
+              <div class="field-control">
+                <input class="field-input" type="url" placeholder="https://...">
+                <span class="field-hint">Optional URL for the title-card "Download Venue Map" link.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Agreement ── -->
+        <div class="card">
+          <div class="section-header" id="hdr-agree" onclick="toggleSection('agree')">
+            <div class="section-header-left">
+              <div class="section-icon icon-pink"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
+              <span class="section-title">Agreement</span>
+            </div>
+            <div class="section-header-right">
+              <div class="enable-toggle" onclick="event.stopPropagation()">
+                <div class="toggle on" onclick="toggleSectionEnabled(this,'agree',event)"></div>
+                <span>Enabled</span>
+              </div>
+              <div class="section-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+            </div>
+          </div>
+          <div class="section-body" id="body-agree">
+            <div class="field-row">
+              <div class="field-label">Agreement File</div>
+              <div class="field-control">
+                <div class="file-row">
+                  <span class="file-name">No file selected</span>
+                  <button class="btn-upload">Upload File</button>
+                  <button class="btn-file-del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+                </div>
+                <span class="field-hint">Upload the agreement form customers should review before submitting.</span>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field-label">Agreement Link Label</div>
+              <div class="field-control">
+                <input class="field-input" type="text" value="Agreement" style="max-width:280px">
+                <span class="field-hint">Shown on the front end for the agreement file link, such as "Venue Agreement" or "Rider Agreement".</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Fees ── -->
+        <div class="card">
+          <div class="section-header" id="hdr-fees" onclick="toggleSection('fees')">
+            <div class="section-header-left">
+              <div class="section-icon icon-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+              <span class="section-title">Fees</span>
+            </div>
+            <div class="section-header-right">
+              <div class="enable-toggle" onclick="event.stopPropagation()">
+                <div class="toggle on" onclick="toggleSectionEnabled(this,'fees',event)"></div>
+                <span>Enabled</span>
+              </div>
+              <div class="section-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+            </div>
+          </div>
+          <div class="section-body" id="body-fees">
+            <div class="field-row">
+              <div class="field-label">Fee Label</div>
+              <div class="field-control">
+                <input class="field-input" type="text" value="Non-Refundable Convenience Fee" style="max-width:340px">
+                <span class="field-hint">This label appears on the front-end payment summary.</span>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field-label">Convenience Fee Type</div>
+              <div class="field-control">
+                <div class="fee-row">
+                  <button class="fee-type-btn active" data-fee-type="none" onclick="toggleFeeType(this)">None</button>
+                  <button class="fee-type-btn" data-fee-type="flat" onclick="toggleFeeType(this)">Flat $</button>
+                  <button class="fee-type-btn" data-fee-type="pct" onclick="toggleFeeType(this)">Percentage %</button>
+                </div>
+              </div>
+            </div>
+            <div class="field-row" id="row-fee-value">
+              <div class="field-label">Convenience Fee Value</div>
+              <div class="field-control">
+                <div class="fee-row">
+                  <div class="fee-val-wrap" id="fee-val-flat"><span class="fee-sym">$</span><input class="fee-val-in" type="number" value="0.00"></div>
+                  <span id="fee-val-or" style="font-size:13px;color:#6B7A99;padding:4px;display:none">or</span>
+                  <div class="fee-val-wrap" id="fee-val-pct" style="flex-direction:row">
+                    <input class="fee-val-in" style="border-radius:4px 0 0 4px" type="number" value="0.00"><span class="fee-pct">%</span>
+                  </div>
+                </div>
+                <span class="field-hint">Percentage fees display as %, and flat fees display as currency. Saved values remain numeric.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /edit-main -->
+
+      <!-- ══════════════════ RIGHT RAIL ══════════════════ -->
+      <div class="edit-rail">
+
+        <!-- Publish -->
+        <div class="rail-card">
+          <div class="rail-header">
+            <span class="rail-title">Publish</span>
+          </div>
+          <div class="rail-body">
+            <div class="publish-row">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Status: <strong>Published</strong>
+              <a href="#">Edit</a>
+            </div>
+            <div class="publish-row">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              Visibility: <strong>Public</strong>
+              <a href="#">Edit</a>
+            </div>
+            <div class="publish-row">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              Published: <strong>Apr 17, 2026</strong>
+              <a href="#">Edit</a>
+            </div>
+            <!-- Preview Form button -->
+            <a href="event_page.html" target="_blank" class="btn-preview" style="margin-top:4px">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              Preview Frontend Form
+            </a>
+            <button class="btn-save-draft">Save as Draft</button>
+            <button class="btn-publish">Update Reservation</button>
+            <button class="btn-danger-sm">Move to Trash</button>
+          </div>
+        </div>
+
+        <!-- Event Link -->
+        <div class="rail-card">
+          <div class="rail-header">
+            <span class="rail-title">Event Link</span>
+          </div>
+          <div class="rail-body">
+            <p style="font-size:12.5px;color:#6B7A99;margin-bottom:8px">Link this reservation to an event from your active event source.</p>
+            <input class="event-search" type="text" placeholder="Search events…">
+            <div class="event-linked">
+              <div>
+                <div class="event-linked-name">Perry, GA – 2026 Southeast Region Super Sort</div>
+                <div class="event-linked-date">May 8 – 10, 2026</div>
+              </div>
+              <span class="event-unlink">✕ Unlink</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Shortcode -->
+        <div class="rail-card">
+          <div class="rail-header">
+            <span class="rail-title">Shortcode</span>
+          </div>
+          <div class="rail-body">
+            <p style="font-size:12.5px;color:#6B7A99;margin-bottom:8px">Paste this shortcode on any page to display the reservation form.</p>
+            <div style="background:#F0F4FB;border:1px solid #D9E2F2;border-radius:4px;padding:9px 12px;font-family:monospace;font-size:13px;color:#031B4E;word-break:break-all">[en_reservation id="42"]</div>
+          </div>
+        </div>
+
+      </div><!-- /edit-rail -->
+    </div><!-- /edit-body -->
+  </div><!-- /wp-content -->
+</div><!-- /wp-body -->
+
+<!-- Mobile sticky save bar -->
+<div class="sticky-save">
+  <button class="btn-save-draft">Save Draft</button>
+  <button class="btn-publish">Update Reservation</button>
+</div>
+
+</body>
+</html>

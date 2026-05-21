@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equine Event Manager – Reservations</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
+
+/* ── WP SHELL ── */
+.wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;position:sticky;top:0;z-index:200}
+.wp-admin-bar span{font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-admin-bar span.site{color:#fff;font-weight:600}
+.wp-body{display:flex;flex:1}
+.wp-sidebar{width:160px;min-width:160px;background:#1d2327;min-height:calc(100vh - 32px)}
+.wp-sidebar-item{padding:8px 12px;font-size:13px;color:#c3c4c7;cursor:pointer;display:flex;align-items:center;gap:8px;border-left:3px solid transparent}
+.wp-sidebar-item:hover{background:#2c3338;color:#fff}
+.wp-sidebar-item.active{background:#1668F2;color:#fff;border-left-color:#90c4ff}
+.wp-sidebar-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 0}
+.wp-sidebar-label{padding:8px 12px 4px;font-size:10px;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.wp-sidebar-sub{padding:6px 12px 6px 28px;font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-sidebar-sub:hover{color:#fff}
+.wp-sidebar-sub.active{color:#90c4ff;font-weight:600}
+
+/* ── CONTENT ── */
+.wp-content{flex:1;padding:12px 20px 40px;min-width:0}
+
+.breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.breadcrumb-logo-box{width:160px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb;flex-shrink:0}
+.breadcrumb-sep{font-size:13px;color:#8c8f94}
+.breadcrumb-page{font-size:13px;color:#50575e;font-weight:600;color:#1d2327}
+
+/* ── PAGE HEADER ── */
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap}
+.page-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E}
+.btn-create{background:#1668F2;color:#fff;border:none;padding:9px 18px;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;text-decoration:none}
+.btn-create:hover{background:#0d52cc;color:#fff}
+.btn-create svg{width:13px;height:13px}
+
+/* ── PLUGIN WRAP ── */
+.plugin-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
+
+/* Status tabs (WP-style) */
+.status-tabs{padding:10px 16px 0;border-bottom:1px solid #dcdcde;display:flex;align-items:center;gap:0;flex-wrap:wrap}
+.status-tab{font-size:13px;color:#50575e;padding:6px 10px 8px;cursor:pointer;border-bottom:2px solid transparent;text-decoration:none;white-space:nowrap}
+.status-tab:hover{color:#031B4E}
+.status-tab.active{color:#031B4E;font-weight:600;border-bottom-color:#1668F2}
+.status-tab-sep{color:#8c8f94;font-size:12px;padding:6px 2px}
+
+/* ── TOOLBAR ── */
+.toolbar{padding:12px 16px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#fafafa}
+.toolbar-left{display:flex;align-items:center;gap:8px;flex:1;flex-wrap:wrap}
+.toolbar-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+
+.toolbar-select{padding:5px 28px 5px 10px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 8px center;appearance:none;cursor:pointer}
+.toolbar-btn{padding:5px 14px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;cursor:pointer;white-space:nowrap}
+.toolbar-btn:hover{background:#f6f7f7}
+
+.search-wrap{position:relative;flex:1;min-width:140px;max-width:280px}
+.search-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:#8c8f94}
+.search-input{width:100%;padding:5px 10px 5px 28px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;outline:none}
+.search-input::placeholder{color:#b0b0b0}
+.search-btn{padding:5px 14px;border:1px solid #8c8f94;border-left:none;border-radius:0 4px 4px 0;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;cursor:pointer;white-space:nowrap}
+
+.item-count{font-size:13px;color:#50575e;white-space:nowrap}
+
+/* ── TABLE ── */
+table{width:100%;border-collapse:collapse}
+thead tr{border-bottom:1px solid #dcdcde;background:#fafafa}
+thead th{padding:10px 14px;font-size:13px;font-weight:600;color:#1d2327;text-align:left;white-space:nowrap}
+thead th.col-cb{width:36px;padding:10px 8px 10px 14px}
+thead th.sortable{cursor:pointer;color:#1668F2}
+thead th.sortable:hover{color:#1355cc}
+.sort-icon{display:inline-flex;flex-direction:column;gap:1px;margin-left:3px;vertical-align:middle;opacity:.5}
+.sort-icon span{display:block;width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent}
+.sort-icon span:first-child{border-bottom:4px solid currentColor}
+.sort-icon span:last-child{border-top:4px solid currentColor}
+
+tbody tr{border-bottom:1px solid #f0f0f1;transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:#f6f7f7}
+tbody tr:hover .row-actions{opacity:1}
+td{padding:12px 14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
+td.col-cb{padding:12px 8px 12px 14px;width:36px}
+
+.res-name{font-weight:700;color:#031B4E;cursor:pointer;font-size:14px}
+.res-name:hover{color:#1668F2;text-decoration:underline}
+.event-dates{color:#50575e;font-size:13px}
+
+.type-badges{display:flex;gap:5px;flex-wrap:wrap}
+.type-badge{padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.type-stall{background:#EEF4FF;color:#1668F2;border:1px solid #c0d8ff}
+.type-rv{background:#F5F3FF;color:#6d28d9;border:1px solid #ddd6fe}
+.type-addon{background:#FFF7ED;color:#c2410c;border:1px solid #fed7aa}
+.type-group{background:#F0FDF4;color:#15803d;border:1px solid #bbf7d0}
+
+/* Row actions */
+.actions-cell{display:flex;align-items:center;gap:5px}
+.action-icon-btn{width:30px;height:30px;border-radius:4px;border:1px solid #c3c4c7;background:#fff;color:#50575e;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.action-icon-btn:hover{background:#f0f0f1;color:#1d2327;border-color:#8c8f94}
+.action-icon-btn svg{width:14px;height:14px}
+.action-icon-btn[title="Edit"]{color:#1668F2;border-color:#c0d8ff;background:#EEF4FF}
+.action-icon-btn[title="View"]{color:#6d28d9;border-color:#ddd6fe;background:#F5F3FF}
+.action-icon-btn[title="Stall Chart"]{color:#0e7490;border-color:#a5f3fc;background:#ecfeff}
+
+/* Pagination */
+.table-footer{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid #dcdcde;background:#fafafa;flex-wrap:wrap;gap:8px}
+.table-footer-info{font-size:13px;color:#50575e}
+.pagination{display:flex;align-items:center;gap:3px}
+.page-btn{width:28px;height:28px;border-radius:4px;border:1px solid #c3c4c7;background:#fff;color:#50575e;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Sans',sans-serif}
+.page-btn.active{background:#1668F2;color:#fff;border-color:#1668F2}
+.page-btn svg{width:12px;height:12px}
+
+/* Mobile card list */
+.mobile-reservations{display:none;padding:12px 14px}
+.mobile-res-card{background:#fff;border:1px solid #dcdcde;border-radius:4px;padding:14px;margin-bottom:8px}
+.mob-res-name{font-size:14px;font-weight:700;color:#031B4E;margin-bottom:4px;cursor:pointer}
+.mob-res-name:hover{color:#1668F2}
+.mob-res-dates{font-size:12.5px;color:#50575e;margin-bottom:8px}
+.mob-res-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.mob-res-badges{display:flex;gap:4px;flex-wrap:wrap}
+.mob-res-actions{display:flex;gap:5px}
+
+/* ════════ TABLET 960px ════════ */
+@media(max-width:960px){
+  .wp-sidebar{display:none}
+  .wp-content{padding:10px 14px 40px}
+}
+
+/* ════════ MOBILE 767px ════════ */
+@media(max-width:767px){
+  .wp-admin-bar span:not(.site):not(:first-child):not(:last-child){display:none}
+  .wp-content{padding:8px 10px 32px}
+  .breadcrumb-logo-box{width:120px;height:30px;font-size:10px}
+
+  /* Page header stays inline */
+  .page-header{flex-direction:row;align-items:center;justify-content:space-between}
+  .page-title{font-size:18px}
+  .btn-create{padding:8px 12px;font-size:12px}
+
+  /* Status tabs scroll horizontally */
+  .status-tabs{overflow-x:auto;flex-wrap:nowrap;padding:8px 12px 0;-webkit-overflow-scrolling:touch}
+  .status-tab{font-size:12px;padding:5px 8px 7px;white-space:nowrap}
+
+  /* Toolbar — two clean rows */
+  .toolbar{flex-direction:column;align-items:stretch;padding:10px 12px;gap:8px}
+  .toolbar-left{display:flex;flex-direction:row;gap:6px;flex-wrap:nowrap}
+  .toolbar-left .toolbar-select{flex:1;min-width:0}
+  .toolbar-left .toolbar-btn{flex-shrink:0}
+  .toolbar-right{display:flex;flex-direction:row;gap:6px;align-items:center}
+  .search-wrap{flex:1;max-width:100%;min-width:0}
+  .search-btn,.toolbar-right .toolbar-btn{flex-shrink:0;font-size:12px;padding:5px 10px}
+  .item-count{white-space:nowrap;font-size:12px}
+
+  /* Hide desktop table, show cards */
+  .desktop-table{display:none}
+  .mobile-reservations{display:block}
+  .table-footer{padding:10px 12px}
+}
+</style>
+</head>
+<body>
+
+<div class="wp-admin-bar">
+  <span>&#9776;</span>
+  <span class="site">My Equestrian Site</span>
+  <span>+ New</span>
+  <span style="margin-left:auto">Howdy, Whitney Mitchell</span>
+</div>
+
+<div class="wp-body">
+  <div class="wp-sidebar">
+    <div class="wp-sidebar-item">&#9632; Dashboard</div>
+    <div class="wp-sidebar-item">&#9632; Posts</div>
+    <div class="wp-sidebar-item">&#9632; Pages</div>
+    <div class="wp-sidebar-sep"></div>
+    <div class="wp-sidebar-label">Equine EM</div>
+    <div class="wp-sidebar-item active">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+      Reservations
+    </div>
+    <div class="wp-sidebar-sub">Dashboard</div>
+    <div class="wp-sidebar-sub">Events</div>
+    <div class="wp-sidebar-sub">Orders</div>
+    <div class="wp-sidebar-sub active">Reservations</div>
+    <div class="wp-sidebar-sub">Stall Charts</div>
+    <div class="wp-sidebar-sub">Invoicing</div>
+    <div class="wp-sidebar-sub">Reports</div>
+    <div class="wp-sidebar-sub">Settings</div>
+    <div class="wp-sidebar-sep"></div>
+    <div class="wp-sidebar-item">&#9632; Plugins</div>
+    <div class="wp-sidebar-item">&#9632; Settings</div>
+  </div>
+
+  <div class="wp-content">
+
+    <div class="breadcrumb">
+      <div class="breadcrumb-logo-box">Plugin Logo</div>
+      <span class="breadcrumb-sep">/</span>
+      <span class="breadcrumb-page">Reservations</span>
+    </div>
+
+    <div class="page-header">
+      <div class="page-title">Reservations</div>
+      <a href="edit_reservation_page.html" class="btn-create">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New Reservation
+      </a>
+    </div>
+
+    <div class="plugin-wrap">
+
+      <!-- Status tabs -->
+      <div class="status-tabs">
+        <a class="status-tab active">All <span style="color:#8c8f94;font-weight:400">(8)</span></a>
+        <span class="status-tab-sep">|</span>
+        <a class="status-tab">Published <span style="color:#8c8f94;font-weight:400">(6)</span></a>
+        <span class="status-tab-sep">|</span>
+        <a class="status-tab">Draft <span style="color:#8c8f94;font-weight:400">(1)</span></a>
+        <span class="status-tab-sep">|</span>
+        <a class="status-tab">Trash <span style="color:#8c8f94;font-weight:400">(1)</span></a>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <select class="toolbar-select"><option>Bulk actions</option><option>Edit</option><option>Move to Trash</option></select>
+          <button class="toolbar-btn">Apply</button>
+          <select class="toolbar-select"><option>All dates</option><option>May 2026</option><option>April 2026</option></select>
+          <button class="toolbar-btn">Filter</button>
+        </div>
+        <div class="toolbar-right">
+          <div class="search-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input class="search-input" type="text" placeholder="Search reservations...">
+          </div>
+          <button class="toolbar-btn">Search Reservations</button>
+          <span class="item-count">8 items</span>
+        </div>
+      </div>
+
+      <!-- Desktop Table -->
+      <div class="desktop-table">
+        <table>
+          <thead>
+            <tr>
+              <th class="col-cb"><input type="checkbox"></th>
+              <th class="sortable">Reservation <span class="sort-icon"><span></span><span></span></span></th>
+              <th class="sortable">Event Dates <span class="sort-icon"><span></span><span></span></span></th>
+              <th>Type</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="col-cb"><input type="checkbox"></td>
+              <td><div class="res-name">2026 Southeast Region Super Sort</div></td>
+              <td><span class="event-dates">May 8, 2026 – May 10, 2026</span></td>
+              <td><div class="type-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-rv">RV</span><span class="type-badge type-addon">Add-On</span></div></td>
+              <td><div class="actions-cell">
+                <button class="action-icon-btn" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                <button class="action-icon-btn" title="View"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button class="action-icon-btn" title="Stall Chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></button>
+              </div></td>
+            </tr>
+            <tr>
+              <td class="col-cb"><input type="checkbox"></td>
+              <td><div class="res-name">2026 Bluegrass Show</div></td>
+              <td><span class="event-dates">May 17, 2026 – May 19, 2026</span></td>
+              <td><div class="type-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-addon">Add-On</span></div></td>
+              <td><div class="actions-cell">
+                <button class="action-icon-btn" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                <button class="action-icon-btn" title="View"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button class="action-icon-btn" title="Stall Chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></button>
+              </div></td>
+            </tr>
+            <tr>
+              <td class="col-cb"><input type="checkbox"></td>
+              <td><div class="res-name">2026 Sunshine Dressage</div></td>
+              <td><span class="event-dates">May 20, 2026 – May 22, 2026</span></td>
+              <td><div class="type-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-rv">RV</span><span class="type-badge type-group">Group</span></div></td>
+              <td><div class="actions-cell">
+                <button class="action-icon-btn" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                <button class="action-icon-btn" title="View"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button class="action-icon-btn" title="Stall Chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></button>
+              </div></td>
+            </tr>
+            <tr>
+              <td class="col-cb"><input type="checkbox"></td>
+              <td><div class="res-name">2026 Gulf Coast Classic</div></td>
+              <td><span class="event-dates">Jun 5, 2026 – Jun 7, 2026</span></td>
+              <td><div class="type-badges"><span class="type-badge type-stall">Stall</span></div></td>
+              <td><div class="actions-cell">
+                <button class="action-icon-btn" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                <button class="action-icon-btn" title="View"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button class="action-icon-btn" title="Stall Chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></button>
+              </div></td>
+            </tr>
+            <tr>
+              <td class="col-cb"><input type="checkbox"></td>
+              <td><div class="res-name">2026 Lone Star Invitational</div></td>
+              <td><span class="event-dates">Jun 12, 2026 – Jun 14, 2026</span></td>
+              <td><div class="type-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-rv">RV</span><span class="type-badge type-addon">Add-On</span><span class="type-badge type-group">Group</span></div></td>
+              <td><div class="actions-cell">
+                <button class="action-icon-btn" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                <button class="action-icon-btn" title="View"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button class="action-icon-btn" title="Stall Chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></button>
+              </div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Mobile Cards -->
+      <div class="mobile-reservations">
+        <div class="mobile-res-card">
+          <div class="mob-res-name">2026 Southeast Region Super Sort</div>
+          <div class="mob-res-dates">May 8, 2026 – May 10, 2026</div>
+          <div class="mob-res-bottom">
+            <div class="mob-res-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-rv">RV</span><span class="type-badge type-addon">Add-On</span></div>
+            <div class="mob-res-actions">
+              <button class="action-icon-btn" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+              <button class="action-icon-btn" title="View"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+              <button class="action-icon-btn" title="Stall Chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></button>
+            </div>
+          </div>
+        </div>
+        <div class="mobile-res-card">
+          <div class="mob-res-name">2026 Bluegrass Show</div>
+          <div class="mob-res-dates">May 17, 2026 – May 19, 2026</div>
+          <div class="mob-res-bottom">
+            <div class="mob-res-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-addon">Add-On</span></div>
+            <div class="mob-res-actions">
+              <button class="action-icon-btn" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+              <button class="action-icon-btn" title="View"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+              <button class="action-icon-btn" title="Stall Chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></button>
+            </div>
+          </div>
+        </div>
+        <div class="mobile-res-card">
+          <div class="mob-res-name">2026 Sunshine Dressage</div>
+          <div class="mob-res-dates">May 20, 2026 – May 22, 2026</div>
+          <div class="mob-res-bottom">
+            <div class="mob-res-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-rv">RV</span><span class="type-badge type-group">Group</span></div>
+            <div class="mob-res-actions">
+              <button class="action-icon-btn" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+              <button class="action-icon-btn" title="View"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+              <button class="action-icon-btn" title="Stall Chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer / Pagination -->
+      <div class="table-footer">
+        <span class="table-footer-info">Showing 1–5 of 8 reservations</span>
+        <div class="pagination">
+          <button class="page-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <button class="page-btn active">1</button>
+          <button class="page-btn">2</button>
+          <button class="page-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
+      </div>
+
+    </div><!-- /plugin-wrap -->
+  </div><!-- /wp-content -->
+</div><!-- /wp-body -->
+</body>
+</html>

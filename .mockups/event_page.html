@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equine Event Manager – Event Page</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',sans-serif;background:#F7F9FC;color:#031B4E;font-size:15px;line-height:1.5}
+a{text-decoration:none;color:inherit}
+img{display:block;max-width:100%}
+
+/* ── HERO ── */
+.hero{background:#fff;overflow:hidden}
+.hero-inner{display:grid;grid-template-columns:420px 1fr;min-height:420px}
+.hero-img-col{overflow:hidden;flex-shrink:0;display:flex;align-items:flex-start}
+.hero-img-col svg{width:100%;height:auto}
+.hero-info-col{padding:36px 40px 32px 36px;display:flex;flex-direction:column;border-left:1px solid #D9E2F2}
+.hero-tags{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.tag{padding:4px 11px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;border:1px solid}
+.tag-featured{background:#E8FBF8;color:#0a7a62;border-color:#b3e4da}
+.tag-prod{background:#EEF4FF;color:#1668F2;border-color:#c0d8ff}
+.hero-title{font-family:'Space Grotesk',sans-serif;font-size:30px;font-weight:700;color:#031B4E;line-height:1.15;margin-bottom:8px}
+.hero-dates{font-size:14px;color:#6B7A99;font-weight:500;margin-bottom:18px}
+.hero-bullets{list-style:none;margin-bottom:20px;display:flex;flex-direction:column;gap:8px}
+.hero-bullets li{display:flex;align-items:flex-start;gap:8px;font-size:13px;color:#4a5a7a;line-height:1.55}
+.hero-bullets li::before{content:'•';color:#1668F2;font-size:15px;flex-shrink:0;margin-top:0px}
+.hero-bullets li strong{color:#031B4E}
+.hero-meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid #D9E2F2;padding-top:16px;margin-bottom:18px}
+.hero-meta-item{padding:8px 16px 8px 0}
+.hero-meta-label{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#8a9ab8;margin-bottom:3px}
+.hero-meta-val{font-size:13px;color:#031B4E;font-weight:500}
+.hero-meta-sub{font-size:12px;color:#6B7A99}
+.hero-ctas{display:flex;gap:10px;flex-wrap:wrap}
+.btn-reserve{background:#1668F2;color:#fff;padding:12px 26px;border-radius:8px;font-size:14px;font-weight:700;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;border:none;letter-spacing:.01em}
+.btn-directions{background:#fff;color:#031B4E;border:1.5px solid #D9E2F2;padding:11px 20px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;font-family:'IBM Plex Sans',sans-serif}
+
+/* ── MOBILE ORDER SUMMARY BANNER (hidden on desktop) ── */
+.mobile-order-banner{display:none;background:#031B4E;padding:14px 16px;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:50}
+.mob-banner-label{font-size:12px;color:#90aed4;font-weight:500}
+.mob-banner-total{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:#fff}
+.mob-banner-btn{background:#1668F2;color:#fff;border:none;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:700;font-family:'IBM Plex Sans',sans-serif;white-space:nowrap;cursor:pointer}
+
+/* ── PAGE BODY ── */
+.page-body{display:grid;grid-template-columns:1fr 340px;gap:28px;padding:28px 40px 60px;align-items:start;max-width:1440px;margin:0 auto}
+
+/* ── FORM SECTIONS ── */
+.form-section{background:#fff;border-radius:8px;border:1px solid #D9E2F2;margin-bottom:16px;overflow:hidden}
+.section-header{padding:16px 22px;display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+.section-header-left{display:flex;flex-direction:column;gap:2px}
+.section-title{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#031B4E}
+.section-desc{font-size:13px;color:#6B7A99;font-weight:400;margin-top:1px}
+.section-body{padding:0 22px 20px}
+.section-body-padded{padding:4px 22px 20px}
+
+/* Toggle */
+.toggle{width:44px;height:24px;background:#D9E2F2;border-radius:8px;position:relative;cursor:pointer;flex-shrink:0}
+.toggle.on{background:#1668F2}
+.toggle::after{content:'';position:absolute;width:18px;height:18px;background:#fff;border-radius:50%;top:3px;left:3px;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.toggle.on::after{left:23px}
+
+/* Form fields */
+.field-row{display:grid;gap:12px;margin-bottom:12px}
+.field-row.cols-2{grid-template-columns:1fr 1fr}
+.field-row.cols-3{grid-template-columns:1fr 1fr 1fr}
+.field-row.cols-4{grid-template-columns:1fr 1fr 1fr 1fr}
+.field-group{display:flex;flex-direction:column;gap:5px}
+.field-label{font-size:12px;font-weight:600;color:#4a5a7a;letter-spacing:.02em}
+.req{color:#E24B4A}
+.field-input{padding:10px 13px;border:1.5px solid #D9E2F2;border-radius:8px;font-size:14px;font-family:'IBM Plex Sans',sans-serif;color:#031B4E;background:#fff;outline:none;width:100%}
+.field-input::placeholder{color:#B0BDD4}
+.phone-wrap{position:relative}
+.phone-prefix{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:13px;color:#6B7A99;font-weight:500;display:flex;align-items:center;gap:4px;pointer-events:none}
+.phone-input{padding-left:58px!important}
+.field-select{padding:10px 32px 10px 13px;border:1.5px solid #D9E2F2;border-radius:8px;font-size:14px;font-family:'IBM Plex Sans',sans-serif;color:#031B4E;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' viewBox='0 0 12 7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B7A99' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 12px center;width:100%;appearance:none}
+.field-textarea{padding:10px 13px;border:1.5px solid #D9E2F2;border-radius:8px;font-size:14px;font-family:'IBM Plex Sans',sans-serif;color:#031B4E;background:#fff;width:100%;resize:vertical;min-height:90px}
+
+/* Stay info */
+.stay-info-text{font-size:13.5px;color:#4a5a7a;line-height:1.7;margin-bottom:12px}
+.stay-dates-note{font-size:13px;color:#6B7A99}
+.stay-dates-note strong{color:#031B4E}
+
+/* Products */
+.products-header{display:flex;justify-content:space-between;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#8a9ab8;padding:0 0 8px;border-bottom:1px solid #EEF2F9;margin-bottom:4px}
+.product-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #F0F4FB;gap:12px}
+.product-row:last-of-type{border-bottom:1px solid #D9E2F2}
+.addon-row:last-of-type{border-bottom:1px solid #D9E2F2}.product-info{flex:1;min-width:0}
+.product-name{font-size:14px;font-weight:600;color:#031B4E}
+.product-sub{font-size:12px;color:#6B7A99;margin-top:2px}
+.product-auto-badge{display:inline-block;background:#EEF4FF;color:#1668F2;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;letter-spacing:.04em;margin-left:6px;vertical-align:middle}
+.qty-control{display:flex;align-items:center;flex-shrink:0}
+.qty-btn{width:32px;height:32px;border-radius:50%;border:1.5px solid #D9E2F2;background:#fff;color:#1668F2;font-size:18px;font-weight:400;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
+.qty-num{font-size:15px;font-weight:700;color:#031B4E;min-width:34px;text-align:center}
+.subtotal-row{display:flex;justify-content:space-between;font-size:14px;font-weight:700;color:#031B4E;padding-top:12px;margin-top:4px}
+.subtotal-row span:last-child{color:#1668F2}
+
+/* Stall assignment */
+.stall-assign-box{background:#FAFBFE;border:1px solid #D9E2F2;border-radius:8px;padding:16px;margin-top:14px;margin-bottom:12px}
+.stall-assign-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.stall-assign-title{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#031B4E}
+.stall-assign-desc{font-size:12.5px;color:#6B7A99;line-height:1.6;margin-bottom:12px}
+.stall-barn-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.stall-barn-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#4a5a7a;white-space:nowrap}
+.stall-barn-select{flex:1;min-width:140px;max-width:220px}
+.view-map-btn{display:flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:#1668F2;border:1.5px solid #D9E2F2;padding:7px 12px;border-radius:8px;cursor:pointer;background:#fff;white-space:nowrap}
+.stall-legend{display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:12px;color:#4a5a7a;font-weight:500}
+.legend-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.legend-dot.avail{background:#22c55e}
+.legend-dot.reserved{background:#ef4444}
+.legend-dot.blocked{background:#94a3b8}
+.stall-grid{display:flex;flex-wrap:wrap;gap:6px}
+.stall-num{width:50px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid}
+.stall-num.avail{background:#f0fdf4;color:#15803d;border-color:#bbf7d0}
+.stall-num.reserved{background:#fef2f2;color:#b91c1c;border-color:#fecaca}
+.stall-num.blocked{background:#f8fafc;color:#94a3b8;border-color:#e2e8f0;cursor:not-allowed}
+.stall-num.selected{background:#1668F2;color:#fff;border-color:#1668F2}
+.stall-hint{font-size:12px;color:#6B7A99;margin-top:10px;line-height:1.5}
+
+/* Add-on rows */
+.addon-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #F0F4FB;gap:12px}
+.addon-row:last-of-type{border-bottom:none}
+.addon-left{display:flex;align-items:center;gap:10px}
+.addon-checkbox{width:20px;height:20px;border-radius:5px;border:1.5px solid #D9E2F2;background:#fff;flex-shrink:0}
+.addon-label{font-size:14px;font-weight:600;color:#031B4E}
+.addon-price-badge{display:inline-block;background:#EEF4FF;color:#1668F2;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:.04em;margin-left:6px}
+
+/* Rider cards */
+.rider-card{background:#FAFBFE;border:1px solid #D9E2F2;border-radius:8px;padding:14px 16px;margin-top:10px}
+.rider-card-title{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#031B4E;margin-bottom:10px}
+
+/* Billing */
+.billing-sub-box{background:#FAFBFE;border:1px solid #D9E2F2;border-radius:8px;padding:16px;margin-bottom:12px}
+.billing-sub-title{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#031B4E;margin-bottom:12px}
+.card-input-wrap{position:relative}
+.card-icons{position:absolute;right:12px;top:50%;transform:translateY(-50%);display:flex;gap:4px}
+.card-icon{width:30px;height:19px;border-radius:3px;border:1px solid #E2E8F0;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800}
+.card-icon.visa{background:#1a1f71;color:#fff}
+.card-icon.mc{background:#eb001b;color:#fff}
+.stripe-note{font-size:12px;color:#8a9ab8;margin-top:8px}
+.complete-btn{width:100%;background:#1668F2;color:#fff;border:none;padding:15px;border-radius:8px;font-size:15px;font-weight:700;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;letter-spacing:.01em}
+
+/* ── ORDER SIDEBAR ── */
+.order-sidebar{position:sticky;top:20px}
+.order-card{background:#fff;border-radius:8px;border:1px solid #D9E2F2;overflow:hidden}
+.order-card-head{background:#031B4E;padding:14px 18px}
+.order-card-head h3{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#fff;margin-bottom:1px}
+.order-card-head p{font-size:11px;color:#7a9cc8}
+.order-card-body{padding:16px 18px}
+.order-event-name{font-size:13px;font-weight:600;color:#031B4E;margin-bottom:2px}
+.order-event-dates{font-size:12px;color:#6B7A99;margin-bottom:12px}
+.order-line{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;font-size:13px;gap:8px}
+.order-line-label{color:#4a5a7a;font-weight:500}
+.order-line-qty{font-size:11px;color:#8a9ab8;display:block}
+.order-line-price{font-weight:700;color:#031B4E;white-space:nowrap}
+.order-divider{border:none;border-top:1px dashed #D9E2F2;margin:10px 0}
+.order-total-row{display:flex;justify-content:space-between;align-items:center;font-size:15px;font-weight:800;color:#031B4E;border-top:2px solid #D9E2F2;padding-top:12px;margin-top:8px;margin-bottom:14px;font-family:'Space Grotesk',sans-serif}
+.order-total-row span:last-child{color:#1668F2}
+.order-info-box{background:#EEF7F5;border:1px solid #b3e4da;border-radius:8px;padding:9px 12px;font-size:12px;color:#0a5c4a;line-height:1.6;margin-bottom:12px;display:flex;gap:7px}
+.order-reserve-btn{width:100%;background:linear-gradient(90deg,#1668F2,#26D0B5);color:#fff;border:none;padding:12px;border-radius:8px;font-size:14px;font-weight:700;font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
+.order-secure{text-align:center;font-size:11px;color:#8a9ab8;margin-top:9px}
+
+/* ── MOBILE BOTTOM ORDER DRAWER (shown on mobile) ── */
+.mobile-order-drawer{display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #D9E2F2;padding:12px 16px;z-index:100;box-shadow:0 -4px 20px rgba(3,27,78,.08)}
+.mob-drawer-row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.mob-drawer-label{font-size:12px;color:#6B7A99}
+.mob-drawer-total{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:#031B4E}
+.mob-drawer-btn{background:#1668F2;color:#fff;border:none;padding:13px 24px;border-radius:8px;font-size:14px;font-weight:700;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap}
+
+/* ════════════════════════════
+   TABLET  (≤ 1024px)
+   ════════════════════════════ */
+@media (max-width:1024px){
+  .page-body{grid-template-columns:1fr;padding:20px 20px 100px}
+  .order-sidebar{display:none}
+  .mobile-order-drawer{display:block}
+  .hero-inner{grid-template-columns:300px 1fr}
+  .hero-title{font-size:24px}
+}
+
+/* ════════════════════════════
+   MOBILE  (≤ 767px)
+   ════════════════════════════ */
+@media (max-width:767px){
+  /* Hero stacks vertically */
+  .hero-inner{grid-template-columns:1fr;min-height:auto}
+  .hero-img-col{padding:16px 16px 0}
+  .hero-img-col svg{max-width:100%;height:260px}
+  .hero-info-col{padding:20px 16px 24px;border-left:none;border-top:1px solid #D9E2F2}
+  .hero-title{font-size:22px}
+  .hero-dates{font-size:13px;margin-bottom:14px}
+  .hero-bullets{margin-bottom:16px}
+  .hero-bullets li{font-size:12.5px}
+  .hero-meta-grid{grid-template-columns:1fr}
+  .hero-meta-item{padding:8px 0;border-bottom:1px solid #F0F4FB}
+  .hero-meta-item:last-child{border-bottom:none}
+  .hero-ctas{flex-direction:column}
+  .btn-reserve,.btn-directions{width:100%;text-align:center;justify-content:center}
+
+  /* Page body */
+  .page-body{padding:12px 12px 100px}
+
+  /* Section cards */
+  .section-header{padding:14px 16px}
+  .section-body{padding:0 16px 16px}
+  .section-body-padded{padding:4px 16px 16px}
+
+  /* All multi-col grids collapse to single column */
+  .field-row.cols-2,
+  .field-row.cols-3,
+  .field-row.cols-4{grid-template-columns:1fr}
+
+  /* Stall grid — smaller buttons on mobile */
+  .stall-num{width:44px;height:30px;font-size:11px}
+  .stall-barn-row{flex-direction:column;align-items:flex-start;gap:8px}
+  .stall-barn-select{max-width:100%;width:100%}
+
+  /* Product rows */
+  .product-row{flex-wrap:wrap;gap:8px}
+  .product-info{width:100%}
+  .qty-control{margin-left:auto}
+
+  /* Billing sub-boxes */
+  .billing-sub-box{padding:14px 12px}
+
+  /* Mobile drawer */
+  .mob-drawer-btn{padding:12px 18px;font-size:13px}
+}
+
+/* ════════════════════════════
+   SMALL MOBILE  (≤ 390px)
+   ════════════════════════════ */
+@media (max-width:390px){
+  .hero-title{font-size:19px}
+  .stall-num{width:40px;height:28px;font-size:10.5px;border-radius:8px}
+  .stall-grid{gap:5px}
+  .section-title{font-size:11px}
+  .complete-btn{font-size:14px;padding:13px}
+}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-img-col" style="padding:28px 0 28px 28px">
+      <svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 480 620" style="display:block;border-radius:8px;max-width:360px">
+        <rect width="480" height="620" fill="#E8EEF9" rx="12"/>
+        <rect x="160" y="220" width="160" height="100" rx="8" fill="#C8D5EA"/>
+        <circle cx="210" cy="258" r="20" fill="#A0B4D4"/>
+        <polygon points="160,320 240,240 320,320" fill="#B0C4E0"/>
+        <text x="240" y="400" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="15" fill="#6B7A99" font-weight="500">Event Featured Image</text>
+      </svg>
+    </div>
+    <div class="hero-info-col">
+      <div class="hero-tags">
+        <span class="tag tag-featured">Featured Event</span>
+        <span class="tag tag-prod">RSNC Production Events</span>
+      </div>
+      <h1 class="hero-title">Perry, GA – 2026 Southeast Region Super Sort</h1>
+      <div class="hero-dates">May 7, 2026 – May 9, 2026</div>
+      <ul class="hero-bullets">
+        <li>Early Bird Stall Pricing: $145/stall/weekend rate or $40/night/stall for nightly rates.</li>
+        <li>2 bags of shavings are required to be purchased per stall at the time of check-in.</li>
+        <li>Additional Shavings will be sold on-site.</li>
+        <li>Early Bird Stall Pricing ends Wednesday, January 15th. Stall prices will then be sold nightly at $40/stall/night.</li>
+        <li>For RV Reservations, click here.</li>
+      </ul>
+      <div class="hero-meta-grid">
+        <div class="hero-meta-item">
+          <div class="hero-meta-label">Location</div>
+          <div class="hero-meta-val">Georgia National Fairgrounds</div>
+          <div class="hero-meta-sub">401 Larry Walker Pkwy, Perry, GA</div>
+        </div>
+        <div class="hero-meta-item">
+          <div class="hero-meta-label">Producer</div>
+          <div class="hero-meta-val">RSNC USA</div>
+          <div class="hero-meta-sub">970-897-2901 · office@rsnc.us</div>
+        </div>
+      </div>
+      <div class="hero-ctas">
+        <button class="btn-reserve">Reserve Now</button>
+        <button class="btn-directions">Directions</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MOBILE STICKY BOTTOM DRAWER -->
+<div class="mobile-order-drawer">
+  <div class="mob-drawer-row">
+    <div>
+      <div class="mob-drawer-label">Total Amount Due</div>
+      <div class="mob-drawer-total">$84.00</div>
+    </div>
+    <button class="mob-drawer-btn">Review &amp; Pay</button>
+  </div>
+</div>
+
+<!-- MAIN FORM + SIDEBAR -->
+<div class="page-body">
+  <div class="form-col">
+
+    <!-- CONTACT INFORMATION -->
+    <div class="form-section">
+      <div class="section-header">
+        <div class="section-header-left">
+          <div class="section-title">Contact Information</div>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="field-row cols-2">
+          <div class="field-group">
+            <label class="field-label">First Name <span class="req">*</span></label>
+            <input class="field-input" type="text" placeholder="Whitney">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Last Name <span class="req">*</span></label>
+            <input class="field-input" type="text" placeholder="Mitchell">
+          </div>
+        </div>
+        <div class="field-row cols-2">
+          <div class="field-group">
+            <label class="field-label">Email <span class="req">*</span></label>
+            <input class="field-input" type="email" placeholder="whitney@stables.com">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Phone <span class="req">*</span></label>
+            <div class="phone-wrap">
+              <div class="phone-prefix"><span>🇺🇸</span><span>+1</span></div>
+              <input class="field-input phone-input" type="tel" placeholder="(970) 555-0100">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STAY DETAILS -->
+    <div class="form-section">
+      <div class="section-header">
+        <div class="section-header-left">
+          <div class="section-title">Stay Details</div>
+          <div class="section-desc">Dates and general stabling information</div>
+        </div>
+      </div>
+      <div class="section-body-padded">
+        <p class="stay-info-text">Welcome to the 2026 Southeast Region Super Sort at Georgia National Fairgrounds! Stabling is available from Thursday, May 7 through Sunday, May 9. All competitors are required to purchase a minimum of 2 bags of shavings per stall at check-in.</p>
+        <p class="stay-dates-note"><strong>Available reservation dates:</strong> May 8, 2026 to May 10, 2026</p>
+      </div>
+    </div>
+
+    <!-- STALL RESERVATIONS -->
+    <div class="form-section">
+      <div class="section-header">
+        <div class="section-header-left">
+          <div class="section-title">Stall Reservations</div>
+          <div class="section-desc">Select stall type, dates, and quantity</div>
+        </div>
+        <div class="toggle on"></div>
+      </div>
+      <div class="section-body">
+        <p class="stay-info-text">Reserve stalls for the duration of your stay. Stall assignments are available by barn selection below, or one will be automatically assigned after checkout.</p>
+        <p class="stay-dates-note" style="margin-bottom:16px"><strong>Available reservation dates:</strong> May 8, 2026 to May 10, 2026</p>
+
+        <div class="field-row cols-4" style="margin-bottom:18px">
+          <div class="field-group">
+            <label class="field-label">Rate Type</label>
+            <select class="field-select"><option>Nightly</option><option>Weekend</option></select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Arrival Date <span class="req">*</span></label>
+            <select class="field-select"><option>Friday, May 8, 2026</option></select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Departure Date <span class="req">*</span></label>
+            <select class="field-select"><option>Sunday, May 10, 2026</option></select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Nights</label>
+            <input class="field-input" type="text" value="2 Nights" readonly style="background:#FAFBFE;color:#6B7A99">
+          </div>
+        </div>
+
+        <div class="products-header"><span>Product</span><span>QTY</span></div>
+        <div class="product-row">
+          <div class="product-info">
+            <div class="product-name">Stalls – $1.00 per night</div>
+            <div class="product-sub">2 bags of shavings are required to be purchased per stall.</div>
+          </div>
+          <div class="qty-control">
+            <button class="qty-btn">−</button>
+            <span class="qty-num">2</span>
+            <button class="qty-btn">+</button>
+          </div>
+        </div>
+        <div class="product-row">
+          <div class="product-info">
+            <div class="product-name" style="color:#B0BDD4">Required Shavings – $10.00 per bag <span class="product-auto-badge">Auto-added</span></div>
+            <div class="product-sub">Automatically added to cart.</div>
+          </div>
+          <div class="qty-control">
+            <button class="qty-btn" style="opacity:.45;cursor:default">−</button>
+            <span class="qty-num" style="color:#B0BDD4">4</span>
+            <button class="qty-btn" style="opacity:.45;cursor:default">+</button>
+          </div>
+        </div>
+
+        <!-- STALL ASSIGNMENT -->
+        <div class="stall-assign-box">
+          <div class="stall-assign-header">
+            <div class="stall-assign-title">Stall Assignment</div>
+            <div class="toggle on" style="transform:scale(.85);transform-origin:right center"></div>
+          </div>
+          <p class="stall-assign-desc">This is not a map of facility stalls. Please refer to the stall map for actual stall placements. If you do not select a stall number, one will be automatically assigned after checkout.</p>
+          <div class="stall-barn-row">
+            <span class="stall-barn-label">Stall Barn</span>
+            <select class="field-select stall-barn-select"><option>Red Barn</option><option>Blue Barn</option><option>Green Barn</option></select>
+            <button class="view-map-btn">⬇ View Stall Map</button>
+          </div>
+          <div class="stall-legend">
+            <div class="legend-item"><div class="legend-dot avail"></div> Available</div>
+            <div class="legend-item"><div class="legend-dot reserved"></div> Reserved</div>
+            <div class="legend-item"><div class="legend-dot blocked"></div> Blocked</div>
+          </div>
+          <div class="stall-grid">
+            <div class="stall-num reserved">100</div><div class="stall-num reserved">101</div><div class="stall-num reserved">102</div><div class="stall-num reserved">103</div><div class="stall-num reserved">104</div><div class="stall-num reserved">105</div><div class="stall-num reserved">106</div>
+            <div class="stall-num reserved">107</div><div class="stall-num reserved">108</div><div class="stall-num reserved">109</div><div class="stall-num reserved">110</div><div class="stall-num reserved">111</div><div class="stall-num reserved">112</div><div class="stall-num reserved">113</div>
+            <div class="stall-num reserved">114</div><div class="stall-num reserved">115</div><div class="stall-num reserved">116</div><div class="stall-num reserved">117</div><div class="stall-num reserved">118</div><div class="stall-num reserved">119</div><div class="stall-num reserved">120</div>
+            <div class="stall-num avail">121</div><div class="stall-num selected">122</div><div class="stall-num reserved">123</div><div class="stall-num selected">124</div><div class="stall-num reserved">125</div><div class="stall-num avail">126</div><div class="stall-num avail">127</div>
+            <div class="stall-num avail">128</div><div class="stall-num avail">129</div><div class="stall-num avail">130</div><div class="stall-num avail">131</div><div class="stall-num avail">132</div><div class="stall-num avail">133</div><div class="stall-num avail">134</div>
+            <div class="stall-num avail">135</div><div class="stall-num avail">136</div><div class="stall-num avail">137</div><div class="stall-num avail">138</div><div class="stall-num avail">139</div><div class="stall-num avail">140</div><div class="stall-num avail">141</div>
+            <div class="stall-num avail">142</div><div class="stall-num avail">143</div><div class="stall-num avail">144</div><div class="stall-num avail">145</div><div class="stall-num avail">146</div><div class="stall-num avail">147</div><div class="stall-num avail">148</div>
+            <div class="stall-num avail">149</div><div class="stall-num avail">150</div>
+          </div>
+          <p class="stall-hint">Select up to the number of stalls you reserve. Any remaining stalls will be auto-assigned after checkout.</p>
+        </div>
+
+        <div class="subtotal-row"><span>Stall Subtotal</span><span>$4.00</span></div>
+      </div>
+    </div>
+
+    <!-- RV RESERVATIONS -->
+    <div class="form-section">
+      <div class="section-header">
+        <div class="section-header-left">
+          <div class="section-title">RV Reservations</div>
+          <div class="section-desc">Full hook-up RV spots for the event</div>
+        </div>
+        <div class="toggle on"></div>
+      </div>
+      <div class="section-body">
+        <p class="stay-info-text">Full hook-up RV spots are available on a first-come, first-served basis. Each spot includes 30A electric and water connection for the duration of your stay.</p>
+        <p class="stay-dates-note" style="margin-bottom:16px"><strong>Available reservation dates:</strong> May 8, 2026 to May 10, 2026</p>
+
+        <div class="field-row cols-4" style="margin-bottom:18px">
+          <div class="field-group">
+            <label class="field-label">Rate Type</label>
+            <select class="field-select"><option>Nightly</option></select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Arrival Date <span class="req">*</span></label>
+            <select class="field-select"><option>Friday, May 8, 2026</option></select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Departure Date <span class="req">*</span></label>
+            <select class="field-select"><option>Sunday, May 10, 2026</option></select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Nights</label>
+            <input class="field-input" type="text" value="2 Nights" readonly style="background:#FAFBFE;color:#6B7A99">
+          </div>
+        </div>
+
+        <div class="products-header"><span>Product</span><span>QTY</span></div>
+        <div class="product-row">
+          <div class="product-info"><div class="product-name">RV Spots – $20.00 per night</div></div>
+          <div class="qty-control">
+            <button class="qty-btn">−</button>
+            <span class="qty-num">1</span>
+            <button class="qty-btn">+</button>
+          </div>
+        </div>
+        <div class="addon-row">
+          <div class="addon-left">
+            <div class="addon-checkbox"></div>
+            <div><div class="addon-label">Water – $10.00 <span class="addon-price-badge">Add-On</span></div></div>
+          </div>
+        </div>
+        <div class="subtotal-row"><span>RV Subtotal</span><span>$40.00</span></div>
+      </div>
+    </div>
+
+    <!-- ADD-ONS -->
+    <div class="form-section">
+      <div class="section-header">
+        <div class="section-header-left">
+          <div class="section-title">Add-Ons</div>
+          <div class="section-desc">Extra supplies and services</div>
+        </div>
+        <div class="toggle on"></div>
+      </div>
+      <div class="section-body">
+        <div class="products-header"><span>Product</span><span>QTY</span></div>
+        <div class="product-row">
+          <div class="product-info">
+            <div class="product-name">Shavings – $12.00 per bag</div>
+            <div class="product-sub">3.5 Cu. Ft.</div>
+          </div>
+          <div class="qty-control">
+            <button class="qty-btn">−</button>
+            <span class="qty-num">0</span>
+            <button class="qty-btn">+</button>
+          </div>
+        </div>
+        <div class="subtotal-row"><span>Add-On Subtotal</span><span>$0.00</span></div>
+      </div>
+    </div>
+
+    <!-- GROUP RESERVATION -->
+    <div class="form-section">
+      <div class="section-header">
+        <div class="section-header-left">
+          <div class="section-title">Group Reservation</div>
+          <div class="section-desc">Capture names for each rider in your group</div>
+        </div>
+        <div class="toggle on"></div>
+      </div>
+      <div class="section-body">
+        <p class="stay-info-text">Turn this on to capture the total rider count and a first and last name for each rider in the group.</p>
+        <div class="products-header"><span>Product</span><span>QTY</span></div>
+        <div class="product-row">
+          <div class="product-info">
+            <div class="product-name">Number of Riders <span class="req">*</span></div>
+            <div class="product-sub">Use the quantity controls to set how many riders are in the group reservation.</div>
+          </div>
+          <div class="qty-control">
+            <button class="qty-btn">−</button>
+            <span class="qty-num">2</span>
+            <button class="qty-btn">+</button>
+          </div>
+        </div>
+        <div class="rider-card">
+          <div class="rider-card-title">Rider 1</div>
+          <div class="field-row cols-2" style="margin-bottom:0">
+            <div class="field-group"><label class="field-label">First Name <span class="req">*</span></label><input class="field-input" placeholder="First name"></div>
+            <div class="field-group"><label class="field-label">Last Name <span class="req">*</span></label><input class="field-input" placeholder="Last name"></div>
+          </div>
+        </div>
+        <div class="rider-card">
+          <div class="rider-card-title">Rider 2</div>
+          <div class="field-row cols-2" style="margin-bottom:0">
+            <div class="field-group"><label class="field-label">First Name <span class="req">*</span></label><input class="field-input" placeholder="First name"></div>
+            <div class="field-group"><label class="field-label">Last Name <span class="req">*</span></label><input class="field-input" placeholder="Last name"></div>
+          </div>
+        </div>
+        <div class="subtotal-row" style="margin-top:14px"><span>Group Reservation Subtotal</span><span>$0.00</span></div>
+      </div>
+    </div>
+
+    <!-- SPECIAL REQUESTS -->
+    <div class="form-section">
+      <div class="section-header">
+        <div class="section-header-left">
+          <div class="section-title">Special Requests</div>
+        </div>
+      </div>
+      <div class="section-body">
+        <p class="stay-info-text" style="margin-bottom:10px">Please let us know if you have any special requests for your stay including stallion accommodations, preferred contestant proximity stalling, etc.</p>
+        <textarea class="field-textarea" placeholder="Enter any special requests here..."></textarea>
+      </div>
+    </div>
+
+    <!-- BILLING & PAYMENT -->
+    <div class="form-section">
+      <div class="section-header">
+        <div class="section-header-left">
+          <div class="section-title">Billing &amp; Payment</div>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="billing-sub-box">
+          <div class="billing-sub-title">Billing Details</div>
+          <div class="field-row cols-2">
+            <div class="field-group"><label class="field-label">Billing First Name <span class="req">*</span></label><input class="field-input" placeholder="Whitney"></div>
+            <div class="field-group"><label class="field-label">Billing Last Name <span class="req">*</span></label><input class="field-input" placeholder="Mitchell"></div>
+          </div>
+          <div class="field-row">
+            <div class="field-group"><label class="field-label">Billing Address <span class="req">*</span></label><input class="field-input" placeholder="123 Main St"></div>
+          </div>
+          <div class="field-row">
+            <div class="field-group"><label class="field-label">Apartment, suite, etc.</label><input class="field-input" placeholder="Apt, suite, unit (optional)"></div>
+          </div>
+          <div class="field-row cols-3">
+            <div class="field-group"><label class="field-label">City <span class="req">*</span></label><input class="field-input" placeholder="Perry"></div>
+            <div class="field-group"><label class="field-label">State / Province <span class="req">*</span></label><select class="field-select"><option>Georgia</option><option>Alabama</option><option>Florida</option></select></div>
+            <div class="field-group"><label class="field-label">ZIP / Postal Code <span class="req">*</span></label><input class="field-input" placeholder="31069"></div>
+          </div>
+          <div class="field-row">
+            <div class="field-group"><label class="field-label">Country <span class="req">*</span></label><select class="field-select"><option>United States</option><option>Canada</option></select></div>
+          </div>
+        </div>
+
+        <div class="billing-sub-box">
+          <div class="billing-sub-title">Credit Card</div>
+          <div class="field-group" style="margin-bottom:12px">
+            <label class="field-label">Card Number <span class="req">*</span></label>
+            <div class="card-input-wrap">
+              <input class="field-input" placeholder="1234 1234 1234 1234" style="padding-right:90px">
+              <div class="card-icons"><div class="card-icon visa">VISA</div><div class="card-icon mc">MC</div></div>
+            </div>
+          </div>
+          <div class="field-row cols-2">
+            <div class="field-group"><label class="field-label">Expiration Date <span class="req">*</span></label><input class="field-input" placeholder="MM / YY"></div>
+            <div class="field-group"><label class="field-label">Security Code <span class="req">*</span></label><input class="field-input" placeholder="CVC"></div>
+          </div>
+          <p class="stripe-note">Use a Stripe test card to complete your payment. Example: 4242 4242 4242 4242.</p>
+        </div>
+
+        <button class="complete-btn">Complete Reservation</button>
+      </div>
+    </div>
+
+  </div><!-- /form-col -->
+
+  <!-- ORDER SUMMARY SIDEBAR (desktop only) -->
+  <div class="order-sidebar">
+    <div class="order-card">
+      <div class="order-card-head">
+        <h3>Order Summary</h3>
+        <p>Updates as you fill in the form</p>
+      </div>
+      <div class="order-card-body">
+        <div class="order-event-name">2026 Southeast Region Super Sort</div>
+        <div class="order-event-dates">May 7–9, 2026 · Perry, GA</div>
+        <div class="order-line">
+          <div><span class="order-line-label">Stalls (×2, 2 nights)</span><span class="order-line-qty">Nightly · Red Barn #122, #124</span></div>
+          <span class="order-line-price">$4.00</span>
+        </div>
+        <div class="order-line">
+          <div><span class="order-line-label">Required Shavings (×4)</span><span class="order-line-qty">Auto-added · $10/bag</span></div>
+          <span class="order-line-price">$40.00</span>
+        </div>
+        <div class="order-line">
+          <div><span class="order-line-label">RV Spot (×1, 2 nights)</span><span class="order-line-qty">Nightly · $20/night</span></div>
+          <span class="order-line-price">$40.00</span>
+        </div>
+        <div class="order-line">
+          <div><span class="order-line-label">Group — 2 Riders</span><span class="order-line-qty">Group reservation</span></div>
+          <span class="order-line-price">$0.00</span>
+        </div>
+        <div class="order-divider"></div>
+        <div class="order-total-row"><span>Total Amount Due</span><span>$84.00</span></div>
+        <div class="order-info-box"><span>ℹ</span><span>Your reservation will be confirmed by email after checkout. Changes can be requested through your account.</span></div>
+        <button class="order-reserve-btn">Reserve Now</button>
+        <div class="order-secure">🔒 Secured by Stripe · SSL Encrypted</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page-body -->
+
+</body>
+</html>

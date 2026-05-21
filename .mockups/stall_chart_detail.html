@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stall Chart – 2026 Southeast Region Super Sort</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
+
+/* ── WP SHELL ── */
+.wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;position:sticky;top:0;z-index:200}
+.wp-admin-bar span{font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-admin-bar span.site{color:#fff;font-weight:600}
+.wp-body{display:flex;flex:1}
+.wp-sidebar{width:160px;min-width:160px;background:#1d2327;min-height:calc(100vh - 32px)}
+.wp-sidebar-item{padding:8px 12px;font-size:13px;color:#c3c4c7;cursor:pointer;display:flex;align-items:center;gap:8px;border-left:3px solid transparent}
+.wp-sidebar-item:hover{background:#2c3338;color:#fff}
+.wp-sidebar-item.active{background:#1668F2;color:#fff;border-left-color:#90c4ff}
+.wp-sidebar-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 0}
+.wp-sidebar-label{padding:8px 12px 4px;font-size:10px;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.wp-sidebar-sub{padding:6px 12px 6px 28px;font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-sidebar-sub:hover{color:#fff}
+.wp-sidebar-sub.active{color:#90c4ff;font-weight:600}
+
+/* ── CONTENT ── */
+.wp-content{flex:1;padding:12px 20px 40px;min-width:0}
+.breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.breadcrumb-logo-box{width:160px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb;flex-shrink:0}
+.breadcrumb-sep{font-size:13px;color:#8c8f94}
+.breadcrumb-page{font-size:13px;color:#50575e}
+.breadcrumb-page a{color:#50575e;text-decoration:none}
+.breadcrumb-page a:hover{color:#1668F2}
+.page-title{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:#031B4E;margin-bottom:14px}
+
+/* ── STATS BAR ── */
+.stats-bar{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:12px;margin-bottom:12px}
+.stat-card{background:#fff;border:1px solid #c3c4c7;border-radius:4px;padding:14px 18px}
+.stat-label{font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#8c8f94;margin-bottom:8px}
+.stat-value{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:#031B4E}
+.stat-daily{font-size:13px;color:#4a5a7a;line-height:1.8}
+.stat-daily span{font-weight:600;color:#031B4E}
+
+/* ── ACTION BAR ── */
+.action-bar{background:#fff;border:1px solid #c3c4c7;border-radius:4px;padding:12px 18px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.view-wrap{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.view-label{font-size:13px;font-weight:600;color:#50575e;white-space:nowrap}
+.view-select{padding:7px 28px 7px 12px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 8px center;appearance:none;min-width:200px;cursor:pointer}
+.action-divider{width:1px;height:28px;background:#dcdcde;flex-shrink:0}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap;border:1px solid}
+.btn svg{width:13px;height:13px;flex-shrink:0}
+.action-bar-btns{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1}
+.btn-primary{background:#1668F2;color:#fff;border-color:#1668F2}
+.btn-primary:hover{background:#1355cc}
+.btn-ghost{background:#fff;color:#031B4E;border-color:#c3c4c7}
+.btn-ghost:hover{background:#f6f7f7}
+.btn-print{background:#fff;color:#031B4E;border-color:#c3c4c7}
+.btn-print:hover{background:#f6f7f7}
+
+/* ── MAIN CONTENT CARD ── */
+.content-card{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden;margin-bottom:12px}
+.content-card-header{padding:14px 18px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.content-card-title{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:#031B4E}
+
+/* Barn filter + search */
+.filter-row{padding:12px 18px;border-bottom:1px solid #dcdcde;background:#fafafa;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.barn-tabs{display:flex;gap:2px;flex-wrap:wrap}
+.barn-tab{padding:5px 14px;border-radius:4px;font-size:12.5px;font-weight:500;color:#50575e;cursor:pointer;border:1px solid #dcdcde;background:#fff}
+.barn-tab:hover{background:#f0f0f1}
+.barn-tab.active{background:#031B4E;color:#fff;border-color:#031B4E}
+.filter-search{position:relative;flex:1;min-width:200px;max-width:380px}
+.filter-search svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:#8c8f94}
+.filter-search input{width:100%;padding:6px 10px 6px 28px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;outline:none}
+.filter-search input::placeholder{color:#b0b0b0}
+.filter-hint{font-size:12px;color:#8c8f94;white-space:nowrap}
+
+/* ── STALL CHART TABLE ── */
+.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.stall-table{width:100%;border-collapse:collapse;min-width:600px}
+.stall-table thead tr{border-bottom:2px solid #dcdcde;background:#fafafa}
+.stall-table thead th{padding:9px 12px;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8c8f94;text-align:left;white-space:nowrap}
+.stall-table thead th.date-col{text-align:center;min-width:130px}
+
+/* Barn group header row */
+.barn-group-row td{background:#F0F4FB;padding:8px 14px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#1668F2;border-bottom:1px solid #dcdcde;border-top:2px solid #D9E2F2}
+.barn-group-row td span{font-weight:400;color:#8a9ab8;margin-left:8px;font-size:11px;text-transform:none;letter-spacing:0}
+
+/* Stall rows */
+.stall-table tbody tr.stall-row{border-bottom:1px solid #f0f0f1}
+.stall-table tbody tr.stall-row:hover{background:#fafbff}
+.stall-table td{padding:9px 12px;font-size:13px;color:#1d2327;vertical-align:middle}
+.stall-num{font-weight:700;color:#031B4E;font-size:13.5px;width:60px}
+.block-name{color:#50575e;font-size:13px;white-space:nowrap}
+
+/* Occupancy cells */
+.cell-wrap{display:flex;justify-content:center}
+.occ-pill{display:inline-flex;align-items:center;padding:4px 11px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:opacity .1s;border:1.5px solid}
+.occ-pill:hover{opacity:.85}
+.occ-reserved{background:#EEF4FF;color:#1668F2;border-color:#c0d8ff}
+.occ-available{background:#f0fdf4;color:#15803d;border-color:#bbf7d0}
+.occ-blocked{background:#fef2f2;color:#b91c1c;border-color:#fecaca;cursor:default}
+
+/* ── CUSTOMER NIGHT COUNT TABLE ── */
+.cust-table{width:100%;border-collapse:collapse;min-width:700px}
+.cust-table thead tr{border-bottom:2px solid #dcdcde;background:#fafafa}
+.cust-table thead th{padding:9px 12px;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8c8f94;text-align:left;white-space:nowrap}
+.cust-table thead th.center{text-align:center}
+.cust-table tbody tr{border-bottom:1px solid #f0f0f1}
+.cust-table tbody tr:hover{background:#fafbff}
+.cust-table td{padding:10px 12px;font-size:13px;color:#1d2327;vertical-align:middle}
+.cust-link{color:#1668F2;font-weight:600;cursor:pointer;text-decoration:none}
+.cust-link:hover{text-decoration:underline}
+.order-num{color:#6B7A99;font-size:12.5px}
+.order-link{color:#1668F2;font-weight:600;text-decoration:none;font-size:12.5px}
+.order-link:hover{text-decoration:underline}
+.night-count{text-align:center;font-weight:600;color:#031B4E}
+.night-count.zero{color:#c3c4c7}
+.night-count.has-nights{background:#EEF4FF;border-radius:4px;color:#1668F2}
+.stall-assignment{font-size:13px;color:#031B4E;font-weight:500}
+.rv-assignment{font-size:13px;color:#6d28d9;font-weight:500}
+.dash{color:#c3c4c7}
+
+/* ── RV LOT SECTION ── */
+.rv-table{width:100%;border-collapse:collapse;min-width:500px}
+.rv-table thead tr{border-bottom:2px solid #dcdcde;background:#fafafa}
+.rv-table thead th{padding:9px 12px;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8c8f94;text-align:left;white-space:nowrap}
+.rv-table thead th.date-col{text-align:center;min-width:130px}
+.rv-table tbody tr{border-bottom:1px solid #f0f0f1}
+.rv-table tbody tr:hover{background:#fafbff}
+.rv-table td{padding:10px 12px;font-size:13px;vertical-align:middle}
+.rv-lot-name{font-weight:600;color:#031B4E}
+
+/* ── ASSIGNMENT ISSUES ── */
+.issues-card{background:#fff;border:1px solid #fca5a5;border-radius:4px;overflow:hidden;margin-bottom:12px}
+.issues-header{background:#FFF1F2;padding:12px 18px;border-bottom:1px solid #fecdd3;display:flex;align-items:center;gap:8px}
+.issues-header svg{width:16px;height:16px;color:#b91c1c;flex-shrink:0}
+.issues-header-title{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#b91c1c}
+.issues-header-count{background:#fecdd3;color:#b91c1c;font-size:11px;font-weight:700;padding:2px 7px;border-radius:10px}
+.issues-body{padding:14px 18px}
+.issue-row{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:4px;border:1px solid #fecdd3;background:#fff9f9;margin-bottom:6px;gap:12px;cursor:pointer}
+.issue-row:last-child{margin-bottom:0}
+.issue-row:hover{background:#fef2f2}
+.issue-text{font-size:13px;color:#b91c1c;flex:1}
+.issue-text strong{color:#7f1d1d}
+.issue-action{font-size:12px;font-weight:600;color:#1668F2;white-space:nowrap;display:flex;align-items:center;gap:4px}
+.issue-action svg{width:12px;height:12px}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:#fff;border-radius:4px;width:100%;max-width:480px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-header{padding:16px 20px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:#031B4E}
+.modal-close{width:28px;height:28px;border-radius:4px;border:none;background:#f0f0f1;color:#50575e;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;line-height:1}
+.modal-close:hover{background:#dcdcde}
+.modal-body{padding:18px 20px}
+.modal-stall-info{background:#F0F4FB;border-radius:4px;padding:12px 14px;margin-bottom:16px;display:flex;gap:16px;flex-wrap:wrap}
+.modal-stall-info-item{display:flex;flex-direction:column;gap:2px}
+.modal-stall-info-label{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8a9ab8}
+.modal-stall-info-val{font-size:14px;font-weight:600;color:#031B4E}
+.modal-field-label{font-size:12px;font-weight:600;color:#4a5a7a;margin-bottom:5px;display:block}
+.modal-select{width:100%;padding:9px 12px;border:1.5px solid #D9E2F2;border-radius:4px;font-size:13.5px;font-family:'IBM Plex Sans',sans-serif;color:#031B4E;background:#fff;margin-bottom:12px}
+.modal-footer{padding:14px 20px;border-top:1px solid #dcdcde;display:flex;gap:8px;justify-content:flex-end}
+.btn-modal-cancel{background:#fff;color:#031B4E;border:1px solid #c3c4c7;padding:8px 18px;border-radius:4px;font-size:13px;font-weight:500;font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
+.btn-modal-save{background:#1668F2;color:#fff;border:none;padding:8px 18px;border-radius:4px;font-size:13px;font-weight:700;font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
+
+/* Tab panels */
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* ── PRINT VIEW OVERLAY ── */
+#print-view{display:none;position:fixed;inset:0;background:#fff;z-index:1000;overflow-y:auto;padding:0}
+#print-view.active{display:block}
+.pv-topbar{background:#031B4E;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:10}
+.pv-topbar-left{display:flex;align-items:center;gap:10px}
+.pv-topbar-title{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#fff}
+.pv-topbar-sub{font-size:12px;color:#90aed4;margin-top:1px}
+.pv-topbar-btns{display:flex;gap:8px;flex-shrink:0}
+.btn-pv-print{background:#1668F2;color:#fff;border:none;padding:8px 16px;border-radius:4px;font-size:13px;font-weight:700;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px}
+.btn-pv-print svg{width:13px;height:13px}
+.btn-pv-exit{background:transparent;color:#90aed4;border:1px solid rgba(255,255,255,.2);padding:8px 14px;border-radius:4px;font-size:13px;font-weight:500;font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
+.btn-pv-exit:hover{color:#fff;border-color:rgba(255,255,255,.5)}
+.pv-body{padding:16px}
+.pv-header{margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #031B4E}
+.pv-event{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:#031B4E;margin-bottom:4px}
+.pv-meta{font-size:13px;color:#6B7A99;display:flex;gap:20px;flex-wrap:wrap}
+.pv-meta strong{color:#1d2327}
+.pv-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.pv-stat{background:#F0F4FB;border-radius:4px;padding:10px 12px;text-align:center}
+.pv-stat-label{font-size:9.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#8c8f94;margin-bottom:3px}
+.pv-stat-val{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:#031B4E}
+.pv-section-title{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#8c8f94;margin-bottom:8px;margin-top:16px}
+.pv-table{width:100%;border-collapse:collapse;margin-bottom:16px}
+.pv-table thead tr{background:#031B4E}
+.pv-table thead th{padding:8px 10px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;text-align:left}
+.pv-table thead th.c{text-align:center}
+.pv-table tbody tr{border-bottom:1px solid #f0f0f1}
+.pv-table tbody tr:nth-child(even){background:#fafafa}
+.pv-table td{padding:9px 10px;font-size:13px;vertical-align:middle}
+.pv-stall-num{font-weight:700;color:#031B4E;font-size:13.5px}
+.pv-block{color:#6B7A99;font-size:12.5px}
+.pv-customer{font-weight:600;color:#031B4E}
+.pv-night-cell{text-align:center}
+.pv-occ{display:inline-block;padding:3px 8px;border-radius:12px;font-size:11px;font-weight:600}
+.pv-occ-res{background:#EEF4FF;color:#1668F2;border:1px solid #c0d8ff}
+.pv-occ-avail{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
+.pv-occ-block{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
+.pv-barn-header{background:#F0F4FB;padding:7px 10px;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#1668F2}
+.pv-movement{background:#FFFBEB;border:1px solid #fde68a;border-radius:4px;padding:12px;margin-bottom:16px}
+.pv-movement-title{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#b45309;margin-bottom:8px}
+.pv-movement-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pv-movement-day{text-align:center}
+.pv-movement-date{font-size:11px;font-weight:700;color:#031B4E;margin-bottom:4px}
+.pv-movement-vals{font-size:12px;color:#4a5a7a}
+.pv-movement-vals span{display:block}
+.pv-footer{margin-top:16px;padding-top:12px;border-top:1px solid #e8eaf0;display:flex;justify-content:space-between;font-size:11.5px;color:#8c8f94;flex-wrap:wrap;gap:8px}
+
+@media print{
+  #print-view .pv-topbar{display:none!important}
+  #print-view{padding:0}
+  #print-view .pv-body{padding:12px}
+  .pv-event{font-size:16px}
+  .pv-table td,.pv-table th{padding:5px 7px;font-size:11px}
+  .wp-admin-bar,.wp-sidebar,.action-bar .btn-ghost,.action-bar .btn-print,.breadcrumb,.issues-card{display:none!important}
+  body{background:#fff}
+  .wp-content{padding:0}
+  .stats-bar{grid-template-columns:repeat(4,1fr);margin-bottom:8px}
+  .stat-card{border:1px solid #ddd;padding:8px 12px}
+  .stat-value{font-size:20px}
+  .occ-pill{font-size:11px;padding:2px 7px}
+  .stall-table thead th,.cust-table thead th,.rv-table thead th{font-size:10px;padding:6px 8px}
+  .stall-table td,.cust-table td,.rv-table td{padding:6px 8px;font-size:12px}
+  .content-card{border:1px solid #ddd;margin-bottom:8px}
+  .filter-row{display:none}
+  .barn-group-row td{padding:5px 8px;font-size:10px}
+  .page-title{font-size:14px;margin-bottom:6px}
+}
+
+/* ── RESPONSIVE ── */
+@media(max-width:960px){
+  .wp-content{padding:10px 14px 40px}
+  .stats-bar{grid-template-columns:1fr 1fr}
+}
+
+@media(max-width:767px){
+  .wp-admin-bar span:not(.site):not(:first-child):not(:last-child){display:none}
+  .wp-content{padding:8px 10px 32px}
+  .breadcrumb-logo-box{width:120px;height:30px;font-size:10px}
+  .breadcrumb-page{font-size:12px}
+  .page-title{font-size:16px;margin-bottom:10px}
+
+  /* Stats — 2 col on mobile */
+  .stats-bar{grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+  .stat-card{padding:10px 12px}
+  .stat-value{font-size:22px}
+  .stat-daily{font-size:12px}
+
+  /* Action bar — stack cleanly */
+  .action-bar{flex-direction:column;align-items:stretch;gap:8px;padding:12px}
+  .view-wrap{width:100%}
+  .view-select{width:100%;min-width:0}
+  .action-divider{display:none}
+  /* Buttons in a 2-col grid */
+  .action-bar-btns{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%}
+  .btn-primary{grid-column:1 / -1;justify-content:center}
+  .btn-print,.btn-ghost{justify-content:center}
+
+  /* Filter row */
+  .filter-row{flex-direction:column;align-items:stretch;padding:10px 12px;gap:8px}
+  .barn-tabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;padding-bottom:2px}
+  .barn-tab{flex-shrink:0}
+  .filter-search{max-width:100%}
+  .filter-hint{display:none}
+
+  /* Table scrolls horizontally */
+  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .stall-table{min-width:480px}
+  .cust-table{min-width:580px}
+  .rv-table{min-width:400px}
+
+  /* Tighten table cells on mobile */
+  .stall-table th,.stall-table td{padding:7px 8px;font-size:12px}
+  .occ-pill{font-size:11px;padding:3px 8px}
+  .stall-num{font-size:12.5px}
+
+  /* Issues */
+  .issue-row{flex-direction:column;align-items:flex-start;gap:5px}
+  .issue-action{align-self:flex-end}
+
+  /* Modal */
+  .modal{margin:10px}
+  .modal-stall-info{gap:10px}
+
+  /* Content card header */
+  .content-card-header{padding:12px 14px}
+  .content-card-title{font-size:14px}
+}
+
+@media(max-width:390px){
+  .stats-bar{grid-template-columns:1fr}
+  .page-title{font-size:15px}
+  .stat-value{font-size:20px}
+  .occ-pill{font-size:10.5px;padding:2px 7px}
+}
+</style>
+</head>
+<body>
+
+<div class="wp-admin-bar">
+  <span>&#9776;</span>
+  <span class="site">My Equestrian Site</span>
+  <span>+ New</span>
+  <span style="margin-left:auto">Howdy, Whitney Mitchell</span>
+</div>
+
+<div class="wp-body">
+  <div class="wp-sidebar">
+    <div class="wp-sidebar-item">&#9632; Dashboard</div>
+    <div class="wp-sidebar-item">&#9632; Posts</div>
+    <div class="wp-sidebar-sep"></div>
+    <div class="wp-sidebar-label">Equine EM</div>
+    <div class="wp-sidebar-item active">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      Stall Charts
+    </div>
+    <div class="wp-sidebar-sub">Dashboard</div>
+    <div class="wp-sidebar-sub">Events</div>
+    <div class="wp-sidebar-sub">Orders</div>
+    <div class="wp-sidebar-sub">Reservations</div>
+    <div class="wp-sidebar-sub active">Stall Charts</div>
+    <div class="wp-sidebar-sub">Invoicing</div>
+    <div class="wp-sidebar-sub">Reports</div>
+    <div class="wp-sidebar-sub">Settings</div>
+    <div class="wp-sidebar-sep"></div>
+    <div class="wp-sidebar-item">&#9632; Plugins</div>
+    <div class="wp-sidebar-item">&#9632; Settings</div>
+  </div>
+
+  <div class="wp-content">
+    <div class="breadcrumb">
+      <div class="breadcrumb-logo-box">Plugin Logo</div>
+      <span class="breadcrumb-sep">/</span>
+      <span class="breadcrumb-page"><a href="#">Stall Charts</a> / 2026 Southeast Region Super Sort</span>
+    </div>
+
+    <div class="page-title">Stall Chart – 2026 Southeast Region Super Sort</div>
+
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div class="stat-label">Daily Movement</div>
+        <div class="stat-daily">
+          <div><span>May 7:</span> Arriving 22, Departing 0</div>
+          <div><span>May 8:</span> Arriving 0, Departing 0</div>
+          <div><span>May 9:</span> Arriving 0, Departing 23</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Stall Units</div>
+        <div class="stat-value">101</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">RV Lots</div>
+        <div class="stat-value">1</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Orders on Chart</div>
+        <div class="stat-value">23</div>
+      </div>
+    </div>
+
+    <!-- Action Bar -->
+    <div class="action-bar">
+      <div class="view-wrap">
+        <span class="view-label">View</span>
+        <select class="view-select" onchange="switchView(this.value)">
+          <option value="stall">Stall Charts View</option>
+          <option value="customer">Customer Night Count</option>
+        </select>
+      </div>
+      <div class="action-divider"></div>
+      <div class="action-bar-btns">
+        <button class="btn btn-primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          Generate Assignments
+        </button>
+        <button class="btn btn-print" id="print-btn" onclick="enterPrintView()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          <span id="print-label">Print View</span>
+        </button>
+        <button class="btn btn-ghost">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          Back to Overview
+        </button>
+        <button class="btn btn-ghost">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Edit Reservation
+        </button>
+      </div>
+    </div>
+
+    <!-- ── STALL CHARTS VIEW ── -->
+    <div class="tab-panel active" id="panel-stall">
+      <div class="content-card">
+        <div class="content-card-header">
+          <div class="content-card-title">Stall Charts</div>
+        </div>
+        <div class="filter-row">
+          <div class="barn-tabs">
+            <div class="barn-tab active" onclick="filterBarn('all', this)">All Barns</div>
+            <div class="barn-tab" onclick="filterBarn('red', this)">Red Barn</div>
+            <div class="barn-tab" onclick="filterBarn('blue', this)">Blue Barn</div>
+            <div class="barn-tab" onclick="filterBarn('yellow', this)">Yellow Barn</div>
+          </div>
+          <div class="filter-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" placeholder="Search by name, stall number, lot, or block">
+          </div>
+          <span class="filter-hint">Search by customer name, stall number, RV lot, or block title.</span>
+        </div>
+        <div class="table-scroll">
+          <table class="stall-table">
+            <thead>
+              <tr>
+                <th>Stall</th>
+                <th>Block</th>
+                <th class="date-col">May 7</th>
+                <th class="date-col">May 8</th>
+                <th class="date-col">May 9</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Red Barn -->
+              <tr class="barn-group-row" data-barn="red"><td colspan="5">Red Barn <span>· Stalls 100–120</span></td></tr>
+              <tr class="stall-row" data-barn="red"><td class="stall-num">100</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" onclick="openModal(100,'Red Barn','May 7','Whitney Mitchell')">Whitney Mitchell</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" onclick="openModal(100,'Red Barn','May 8','Whitney Mitchell')">Whitney Mitchell</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
+              <tr class="stall-row" data-barn="red"><td class="stall-num">101</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" onclick="openModal(101,'Red Barn','May 7','Whitney Mitchell')">Whitney Mitchell</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" onclick="openModal(101,'Red Barn','May 8','Whitney Mitchell')">Whitney Mitchell</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
+              <tr class="stall-row" data-barn="red"><td class="stall-num">102</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" onclick="openModal(102,'Red Barn','May 7','Whitney Mitchell')">Whitney Mitchell</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" onclick="openModal(102,'Red Barn','May 8','Whitney Mitchell')">Whitney Mitchell</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
+              <tr class="stall-row" data-barn="red"><td class="stall-num">103</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" onclick="openModal(103,'Red Barn','May 7','Jane Doe')">Jane Doe</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" onclick="openModal(103,'Red Barn','May 8','Jane Doe')">Jane Doe</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
+              <tr class="stall-row" data-barn="red"><td class="stall-num">104</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" onclick="openModal(104,'Red Barn','May 7','Whitney Mitchell')">Whitney Mitchell</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" onclick="openModal(104,'Red Barn','May 8','Whitney Mitchell')">Whitney Mitchell</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
+              <tr class="stall-row" data-barn="red"><td class="stall-num">105</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" onclick="openModal(105,'Red Barn','May 7','Marcus Trevino')">Marcus Trevino</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" onclick="openModal(105,'Red Barn','May 8','Marcus Trevino')">Marcus Trevino</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
+              <tr class="stall-row" data-barn="red"><td class="stall-num">106</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
+              <tr class="stall-row" data-barn="red"><td class="stall-num">107</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
+              <!-- Blue Barn -->
+              <tr class="barn-group-row" data-barn="blue"><td colspan="5">Blue Barn <span>· Stalls 121–160</span></td></tr>
+              <tr class="stall-row" data-barn="blue"><td class="stall-num">121</td><td class="block-name">Blue Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" onclick="openModal(121,'Blue Barn','May 7','Devon Lacroix')">Devon Lacroix</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" onclick="openModal(121,'Blue Barn','May 8','Devon Lacroix')">Devon Lacroix</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
+              <tr class="stall-row" data-barn="blue"><td class="stall-num">122</td><td class="block-name">Blue Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
+              <tr class="stall-row" data-barn="blue"><td class="stall-num">123</td><td class="block-name">Blue Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-blocked">Blocked</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-blocked">Blocked</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-blocked">Blocked</span></div></td></tr>
+              <!-- Yellow Barn -->
+              <tr class="barn-group-row" data-barn="yellow"><td colspan="5">Yellow Barn <span>· Stalls 161–200</span></td></tr>
+              <tr class="stall-row" data-barn="yellow"><td class="stall-num">197</td><td class="block-name">Yellow Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
+              <tr class="stall-row" data-barn="yellow"><td class="stall-num">198</td><td class="block-name">Yellow Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
+              <tr class="stall-row" data-barn="yellow"><td class="stall-num">199</td><td class="block-name">Yellow Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
+              <tr class="stall-row" data-barn="yellow"><td class="stall-num">200</td><td class="block-name">Yellow Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- RV Lot Occupancy -->
+      <div class="content-card">
+        <div class="content-card-header">
+          <div class="content-card-title">RV Lot Occupancy</div>
+        </div>
+        <div class="table-scroll">
+          <table class="rv-table">
+            <thead>
+              <tr>
+                <th>RV Lot / Block</th>
+                <th class="date-col">May 7</th>
+                <th class="date-col">May 8</th>
+                <th class="date-col">May 9</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="rv-lot-name">Red Lot</td>
+                <td><div class="cell-wrap"><span class="occ-pill occ-reserved" onclick="openModal('Red Lot','RV','May 7','Whitney Mitchell')">Whitney Mitchell</span></div></td>
+                <td><div class="cell-wrap"><span class="occ-pill occ-reserved" onclick="openModal('Red Lot','RV','May 8','Whitney Mitchell')">Whitney Mitchell</span></div></td>
+                <td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CUSTOMER NIGHT COUNT VIEW ── -->
+    <div class="tab-panel" id="panel-customer">
+      <div class="content-card">
+        <div class="content-card-header">
+          <div class="content-card-title">Customer Night Count</div>
+        </div>
+        <div class="filter-row">
+          <div class="filter-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" placeholder="Search by customer, order, stall, or RV lot">
+          </div>
+          <span class="filter-hint">Search by customer, order, stall, or RV lot.</span>
+        </div>
+        <div class="table-scroll">
+          <table class="cust-table">
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Order</th>
+                <th class="center">May 7</th>
+                <th class="center">May 8</th>
+                <th class="center">May 9</th>
+                <th>Stall Assignments</th>
+                <th>RV Lots</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><a class="cust-link">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="#">#0028</a></td><td class="night-count has-nights">1</a></td><td class="night-count has-nights">1</a></td><td class="night-count zero">—</td><td class="stall-assignment">120</td><td class="dash">—</td></tr>
+              <tr><td><a class="cust-link">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="#">#0027</a></td><td class="night-count has-nights">1</a></td><td class="night-count has-nights">1</a></td><td class="night-count zero">—</td><td class="stall-assignment">119</td><td class="dash">—</td></tr>
+              <tr><td><a class="cust-link">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="#">#0026</a></td><td class="night-count has-nights">1</a></td><td class="night-count has-nights">1</a></td><td class="night-count zero">—</td><td class="stall-assignment">125</td><td class="dash">—</td></tr>
+              <tr><td><a class="cust-link">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="#">#0025</a></td><td class="night-count has-nights">1</a></td><td class="night-count has-nights">1</a></td><td class="night-count zero">—</td><td class="stall-assignment">123</td><td class="dash">—</td></tr>
+              <tr><td><a class="cust-link">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="#">#0024</a></td><td class="night-count has-nights">1</a></td><td class="night-count has-nights">1</a></td><td class="night-count zero">—</td><td class="stall-assignment">118</td><td class="dash">—</td></tr>
+              <tr><td><a class="cust-link">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="#">#0023</a></td><td class="night-count has-nights">1</a></td><td class="night-count has-nights">1</a></td><td class="night-count zero">—</td><td class="stall-assignment">117</td><td class="dash">—</td></tr>
+              <tr><td><a class="cust-link">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="#">#0022</a></td><td class="night-count has-nights">1</a></td><td class="night-count has-nights">1</a></td><td class="night-count zero">—</td><td class="stall-assignment">116</td><td class="dash">—</td></tr>
+              <tr><td><a class="cust-link">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="#">#0021</a></td><td class="night-count has-nights">1</a></td><td class="night-count has-nights">1</a></td><td class="night-count zero">—</td><td class="stall-assignment">115</td><td class="dash">—</td></tr>
+              <tr><td><a class="cust-link">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="#">#0020</a></td><td class="night-count has-nights">1</a></td><td class="night-count has-nights">1</a></td><td class="night-count zero">—</td><td class="stall-assignment">109</td><td class="rv-assignment">Red Lot</td></tr>
+              <tr><td><a class="cust-link">Jane Doe</a></td><td class="order-num"><a class="order-link" href="#">#0009</a></td><td class="night-count has-nights">1</a></td><td class="night-count has-nights">1</a></td><td class="night-count zero">—</td><td class="stall-assignment">103</td><td class="dash">—</td></tr>
+              <tr><td><a class="cust-link">Marcus Trevino</a></td><td class="order-num"><a class="order-link" href="#">#0015</a></td><td class="night-count has-nights">1</a></td><td class="night-count has-nights">1</a></td><td class="night-count zero">—</td><td class="stall-assignment">105</td><td class="dash">—</td></tr>
+              <tr><td><a class="cust-link">Devon Lacroix</a></td><td class="order-num"><a class="order-link" href="#">#0014</a></td><td class="night-count zero">—</a></td><td class="night-count has-nights">1</a></td><td class="night-count zero">—</td><td class="stall-assignment">121</td><td class="dash">—</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- RV Lot Occupancy (Customer view) -->
+      <div class="content-card">
+        <div class="content-card-header">
+          <div class="content-card-title">RV Lot Occupancy</div>
+        </div>
+        <div class="table-scroll">
+          <table class="rv-table">
+            <thead>
+              <tr>
+                <th>RV Lot / Block</th>
+                <th class="date-col">May 7</th>
+                <th class="date-col">May 8</th>
+                <th class="date-col">May 9</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="rv-lot-name">Red Lot</td>
+                <td><div class="cell-wrap"><span class="occ-pill occ-reserved" onclick="openModal('Red Lot','RV','May 7','Whitney Mitchell')">Whitney Mitchell</span></div></td>
+                <td><div class="cell-wrap"><span class="occ-pill occ-reserved" onclick="openModal('Red Lot','RV','May 8','Whitney Mitchell')">Whitney Mitchell</span></div></td>
+                <td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Assignment Issues -->
+    <div class="issues-card">
+      <div class="issues-header">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span class="issues-header-title">Assignment Issues</span>
+        <span class="issues-header-count">10 issues</span>
+      </div>
+      <div class="issues-body">
+        <div class="issue-row" onclick="alert('Navigate to Order #0007')">
+          <span class="issue-text">Order <strong>#0007</strong> (Whitney Mitchell) still has 1 unassigned RV lot(s).</span>
+          <span class="issue-action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>View Order</span>
+        </div>
+        <div class="issue-row" onclick="alert('Navigate to Order #0008')">
+          <span class="issue-text">Order <strong>#0008</strong> (Whitney Mitchell) still has 1 unassigned RV lot(s).</span>
+          <span class="issue-action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>View Order</span>
+        </div>
+        <div class="issue-row" onclick="alert('Navigate to Order #0009')">
+          <span class="issue-text">Order <strong>#0009</strong> (Jane Doe) still has 1 unassigned RV lot(s).</span>
+          <span class="issue-action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>View Order</span>
+        </div>
+        <div class="issue-row" onclick="alert('Navigate to Order #0010')">
+          <span class="issue-text">Order <strong>#0010</strong> (Whitney Mitchell) still has 1 unassigned RV lot(s).</span>
+          <span class="issue-action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>View Order</span>
+        </div>
+        <div class="issue-row" onclick="alert('Navigate to Order #0020')">
+          <span class="issue-text">Order <strong>#0020</strong> (James Hartwell) still has 1 unassigned RV lot(s).</span>
+          <span class="issue-action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>View Order</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /wp-content -->
+</div><!-- /wp-body -->
+
+<!-- Assignment Modal -->
+<div class="modal-overlay" id="modal" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Reassign Stall</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-stall-info">
+        <div class="modal-stall-info-item">
+          <span class="modal-stall-info-label">Stall / Lot</span>
+          <span class="modal-stall-info-val" id="modal-stall">—</span>
+        </div>
+        <div class="modal-stall-info-item">
+          <span class="modal-stall-info-label">Block</span>
+          <span class="modal-stall-info-val" id="modal-block">—</span>
+        </div>
+        <div class="modal-stall-info-item">
+          <span class="modal-stall-info-label">Night</span>
+          <span class="modal-stall-info-val" id="modal-night">—</span>
+        </div>
+        <div class="modal-stall-info-item">
+          <span class="modal-stall-info-label">Current Customer</span>
+          <span class="modal-stall-info-val" id="modal-customer">—</span>
+        </div>
+      </div>
+      <label class="modal-field-label">Reassign to customer / order</label>
+      <select class="modal-select">
+        <option>— Keep current assignment —</option>
+        <option>Whitney Mitchell (#0028)</option>
+        <option>Whitney Mitchell (#0027)</option>
+        <option>Jane Doe (#0009)</option>
+        <option>Marcus Trevino (#0015)</option>
+        <option>Devon Lacroix (#0014)</option>
+        <option>James Hartwell (#0020)</option>
+        <option>— Mark as Available —</option>
+        <option>— Mark as Blocked —</option>
+      </select>
+      <label class="modal-field-label">Note (optional)</label>
+      <input type="text" class="modal-select" placeholder="e.g. VIP stall, stallion accommodation..." style="font-family:'IBM Plex Sans',sans-serif">
+    </div>
+    <div class="modal-footer">
+      <button class="btn-modal-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-modal-save" onclick="closeModal()">Save Assignment</button>
+    </div>
+  </div>
+</div>
+
+<!-- Print View Overlay -->
+<div id="print-view">
+  <div class="pv-topbar">
+    <div class="pv-topbar-left">
+      <div>
+        <div class="pv-topbar-title">Print View — Stall Chart</div>
+        <div class="pv-topbar-sub">2026 Southeast Region Super Sort · May 7–9, 2026</div>
+      </div>
+    </div>
+    <div class="pv-topbar-btns">
+      <button class="btn-pv-print" onclick="window.print()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Print / Save PDF
+      </button>
+      <button class="btn-pv-exit" onclick="exitPrintView()">✕ Exit Print View</button>
+    </div>
+  </div>
+
+  <div class="pv-body">
+
+    <!-- Header -->
+    <div class="pv-header">
+      <div class="pv-event">2026 Southeast Region Super Sort</div>
+      <div class="pv-meta">
+        <span><strong>Dates:</strong> May 7–9, 2026</span>
+        <span><strong>Printed:</strong> May 21, 2026 7:08 AM</span>
+        <span><strong>View:</strong> <span id="pv-view-label">Stall Assignments</span></span>
+      </div>
+    </div>
+
+    <!-- Daily Movement -->
+    <div class="pv-movement">
+      <div class="pv-movement-title">Daily Movement</div>
+      <div class="pv-movement-grid">
+        <div class="pv-movement-day">
+          <div class="pv-movement-date">May 7</div>
+          <div class="pv-movement-vals"><span>↓ 22 Arriving</span><span>↑ 0 Departing</span></div>
+        </div>
+        <div class="pv-movement-day">
+          <div class="pv-movement-date">May 8</div>
+          <div class="pv-movement-vals"><span>↓ 0 Arriving</span><span>↑ 0 Departing</span></div>
+        </div>
+        <div class="pv-movement-day">
+          <div class="pv-movement-date">May 9</div>
+          <div class="pv-movement-vals"><span>↓ 0 Arriving</span><span>↑ 23 Departing</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="pv-stats">
+      <div class="pv-stat"><div class="pv-stat-label">Stall Units</div><div class="pv-stat-val">101</div></div>
+      <div class="pv-stat"><div class="pv-stat-label">RV Lots</div><div class="pv-stat-val">1</div></div>
+      <div class="pv-stat"><div class="pv-stat-label">Orders</div><div class="pv-stat-val">23</div></div>
+    </div>
+
+    <!-- Stall Assignments Table -->
+    <div id="pv-stall-section">
+      <div class="pv-section-title">Stall Assignments — All Barns</div>
+      <table class="pv-table">
+        <thead>
+          <tr>
+            <th>Stall</th>
+            <th>Block</th>
+            <th>Customer</th>
+            <th class="c">May 7</th>
+            <th class="c">May 8</th>
+            <th class="c">May 9</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="6" class="pv-barn-header">Red Barn · Stalls 100–120</td></tr>
+          <tr><td class="pv-stall-num">100</td><td class="pv-block">Red Barn</td><td class="pv-customer">Whitney Mitchell</td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
+          <tr><td class="pv-stall-num">101</td><td class="pv-block">Red Barn</td><td class="pv-customer">Whitney Mitchell</td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
+          <tr><td class="pv-stall-num">102</td><td class="pv-block">Red Barn</td><td class="pv-customer">Whitney Mitchell</td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
+          <tr><td class="pv-stall-num">103</td><td class="pv-block">Red Barn</td><td class="pv-customer">Jane Doe</td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
+          <tr><td class="pv-stall-num">104</td><td class="pv-block">Red Barn</td><td class="pv-customer">Whitney Mitchell</td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
+          <tr><td class="pv-stall-num">105</td><td class="pv-block">Red Barn</td><td class="pv-customer">Marcus Trevino</td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
+          <tr><td class="pv-stall-num">106</td><td class="pv-block">Red Barn</td><td class="pv-customer">—</td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
+          <tr><td class="pv-stall-num">107</td><td class="pv-block">Red Barn</td><td class="pv-customer">—</td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
+          <tr><td colspan="6" class="pv-barn-header">Blue Barn · Stalls 121–160</td></tr>
+          <tr><td class="pv-stall-num">121</td><td class="pv-block">Blue Barn</td><td class="pv-customer">Devon Lacroix</td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
+          <tr><td class="pv-stall-num">122</td><td class="pv-block">Blue Barn</td><td class="pv-customer">—</td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
+          <tr><td class="pv-stall-num">123</td><td class="pv-block">Blue Barn</td><td class="pv-customer">—</td><td class="pv-night-cell"><span class="pv-occ pv-occ-block">Blocked</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-block">Blocked</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-block">Blocked</span></td></tr>
+          <tr><td colspan="6" class="pv-barn-header">Yellow Barn · Stalls 161–200</td></tr>
+          <tr><td class="pv-stall-num">197</td><td class="pv-block">Yellow Barn</td><td class="pv-customer">—</td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
+          <tr><td class="pv-stall-num">200</td><td class="pv-block">Yellow Barn</td><td class="pv-customer">—</td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
+        </tbody>
+      </table>
+
+      <!-- RV Lots -->
+      <div class="pv-section-title">RV Lot Occupancy</div>
+      <table class="pv-table">
+        <thead><tr><th>RV Lot</th><th>Customer</th><th class="c">May 7</th><th class="c">May 8</th><th class="c">May 9</th></tr></thead>
+        <tbody>
+          <tr><td class="pv-stall-num">Red Lot</td><td class="pv-customer">Whitney Mitchell</td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Footer -->
+    <div class="pv-footer">
+      <span>2026 Southeast Region Super Sort · Stall Chart</span>
+      <span>Printed May 21, 2026 · Equine Event Manager</span>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function enterPrintView() {
+  const viewEl = document.querySelector('.view-select');
+  const view = viewEl ? viewEl.value : 'stall';
+  document.getElementById('pv-view-label').textContent = view === 'stall' ? 'Stall Assignments' : 'Customer Night Count';
+  document.getElementById('print-view').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+function exitPrintView() {
+  document.getElementById('print-view').classList.remove('active');
+  document.body.style.overflow = '';
+}
+function filterBarn(barn, el) {
+  // Update active tab
+  document.querySelectorAll('.barn-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  // Show/hide rows
+  document.querySelectorAll('[data-barn]').forEach(row => {
+    row.style.display = (barn === 'all' || row.dataset.barn === barn) ? '' : 'none';
+  });
+}
+function switchView(val) {
+  document.getElementById('panel-stall').classList.toggle('active', val==='stall');
+  document.getElementById('panel-customer').classList.toggle('active', val==='customer');
+  document.getElementById('print-label').textContent = val==='stall' ? 'Print Assignments' : 'Print Night Counts';
+}
+function openModal(stall, block, night, customer) {
+  document.getElementById('modal-stall').textContent = stall;
+  document.getElementById('modal-block').textContent = block;
+  document.getElementById('modal-night').textContent = night;
+  document.getElementById('modal-customer').textContent = customer;
+  document.getElementById('modal').style.display = 'flex';
+}
+function closeModal() {
+  document.getElementById('modal').style.display = 'none';
+}
+</script>
+</body>
+</html>

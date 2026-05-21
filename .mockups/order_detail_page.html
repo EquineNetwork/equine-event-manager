@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equine Event Manager – Order #0015</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
+
+/* ── WP SHELL ── */
+.wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;position:sticky;top:0;z-index:200}
+.wp-admin-bar span{font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-admin-bar span.site{color:#fff;font-weight:600}
+.wp-body{display:flex;flex:1}
+.wp-sidebar{width:160px;min-width:160px;background:#1d2327;min-height:calc(100vh - 32px)}
+.wp-sidebar-item{padding:8px 12px;font-size:13px;color:#c3c4c7;cursor:pointer;display:flex;align-items:center;gap:8px;border-left:3px solid transparent}
+.wp-sidebar-item:hover{background:#2c3338;color:#fff}
+.wp-sidebar-item.active{background:#1668F2;color:#fff;border-left-color:#90c4ff}
+.wp-sidebar-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 0}
+.wp-sidebar-label{padding:8px 12px 4px;font-size:10px;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.wp-sidebar-sub{padding:6px 12px 6px 28px;font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-sidebar-sub:hover{color:#fff}
+.wp-sidebar-sub.active{color:#90c4ff;font-weight:600}
+
+/* ── CONTENT ── */
+.wp-content{flex:1;padding:12px 20px 40px;min-width:0}
+
+.breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.breadcrumb-logo-box{width:160px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb;flex-shrink:0}
+.breadcrumb-sep{font-size:13px;color:#8c8f94}
+.breadcrumb-page{font-size:13px;color:#50575e}
+.breadcrumb-page a{color:#50575e;text-decoration:none}
+
+/* ── TITLE BAR ── */
+.order-title-bar{background:#fff;border:1px solid #c3c4c7;border-radius:4px;padding:16px 20px;margin-bottom:12px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.order-number{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:#031B4E;margin-bottom:8px}
+.order-meta-badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.order-meta-line{font-size:13px;color:#6B7A99;display:flex;gap:16px;flex-wrap:wrap}
+.order-meta-line span strong{color:#1d2327}
+
+/* Badges */
+.status-badge{padding:4px 11px;border-radius:20px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.status-badge::before{content:'';width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.status-paid{background:#F0FDF4;color:#15803d;border:1px solid #bbf7d0}
+.status-paid::before{background:#22c55e}
+.type-badge{padding:4px 11px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap}
+.type-stall{background:#EEF4FF;color:#1668F2;border:1px solid #c0d8ff}
+.type-addon{background:#FFF7ED;color:#c2410c;border:1px solid #fed7aa}
+.type-rv{background:#F5F3FF;color:#6d28d9;border:1px solid #ddd6fe}
+.type-group{background:#F0FDF4;color:#15803d;border:1px solid #bbf7d0}
+
+/* Action buttons */
+.action-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex-shrink:0}
+.btn{padding:7px 13px;border-radius:4px;font-size:12.5px;font-weight:500;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;border:1px solid}
+.btn svg{width:13px;height:13px;flex-shrink:0}
+.btn-ghost{background:#fff;color:#1d2327;border-color:#c3c4c7}
+.btn-ghost:hover{background:#f6f7f7}
+.btn-danger{background:#fff;color:#b91c1c;border-color:#fca5a5}
+.btn-dark{background:#031B4E;color:#fff;border-color:#031B4E}
+.btn-primary{background:#1668F2;color:#fff;border-color:#1668F2}
+.more-item{display:flex;align-items:center;gap:8px;padding:9px 14px;font-size:13px;color:#1d2327;cursor:pointer;border-bottom:1px solid #f0f0f1}
+.more-item:last-child{border-bottom:none}
+.more-item:hover{background:#f6f7f7}
+.more-item svg{width:13px;height:13px;color:#6B7A99;flex-shrink:0}
+.more-item-danger{color:#b91c1c}
+.more-item-danger svg{color:#fca5a5}
+.more-item-danger:hover{background:#fef2f2}
+#more-menu.open{display:block!important}
+
+/* ── BODY LAYOUT ── */
+.order-body{display:grid;grid-template-columns:1fr 300px;gap:14px;align-items:start}
+.order-main{display:flex;flex-direction:column;gap:14px}
+.order-side{display:flex;flex-direction:column;gap:14px}
+
+/* ── CARDS ── */
+.card{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
+.card-header{padding:14px 18px;border-bottom:1px solid #dcdcde;display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.card-header-left{}
+.card-title{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:#031B4E}
+.card-subtitle{font-size:12.5px;color:#6B7A99;margin-top:2px}
+.card-nights{padding:4px 10px;border-radius:20px;font-size:11.5px;font-weight:600;background:#F0F4FB;color:#1668F2;border:1px solid #D9E2F2;white-space:nowrap}
+
+/* Detail table */
+.detail-table{width:100%;border-collapse:collapse}
+.detail-table tr{border-bottom:1px solid #f0f0f1}
+.detail-table tr:last-child{border-bottom:none}
+.detail-table td{padding:10px 14px;font-size:13px;vertical-align:top}
+.detail-table td:first-child{font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8c8f94;width:42%;background:#fafafa;border-right:1px solid #f0f0f1}
+.detail-table td:last-child{font-weight:500;color:#1d2327}
+.detail-subtotal td{background:#F8FAFF!important;border-top:2px solid #D9E2F2!important}
+.detail-subtotal td:last-child{color:#1668F2;font-weight:700;font-size:14px}
+
+/* Stall grid */
+.stall-section{padding:14px 18px;border-top:1px solid #dcdcde}
+.stall-section-label{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8c8f94;margin-bottom:10px}
+.stall-grid{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+.stall-unit{width:44px;height:28px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:600;cursor:pointer;border:1.5px solid}
+.su-avail{background:#f0fdf4;color:#15803d;border-color:#bbf7d0}
+.su-reserved{background:#fef2f2;color:#b91c1c;border-color:#fecaca}
+.su-selected{background:#1668F2;color:#fff;border-color:#1668F2}
+.stall-hint{font-size:12px;color:#6B7A99;line-height:1.5}
+
+/* Add-on row */
+.addon-row{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;border-bottom:1px solid #f0f0f1}
+.addon-row:last-child{border-bottom:none}
+.addon-name{font-size:13.5px;font-weight:600;color:#031B4E}
+.addon-qty{font-size:12px;color:#6B7A99;margin-top:1px}
+.addon-price{font-size:14px;font-weight:700;color:#031B4E}
+
+/* Group riders */
+.rider-row{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid #f0f0f1;font-size:13.5px}
+.rider-row:last-child{border-bottom:none}
+.rider-num{width:22px;height:22px;border-radius:50%;background:#EEF4FF;color:#1668F2;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* ── ORDER SUMMARY SIDEBAR ── */
+.summary-total-box{background:#031B4E;border-radius:4px;padding:14px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.summary-total-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#90aed4}
+.summary-total-val{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:#fff}
+
+.summary-section{margin-bottom:14px;border:1px solid #D9E2F2;border-radius:4px;overflow:hidden}
+.summary-section-header{padding:8px 12px;background:#F7F9FC;border-bottom:1px solid #D9E2F2;display:flex;align-items:center;justify-content:space-between}
+.summary-section-title{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6B7A99}
+.summary-section-badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px}
+.summary-line{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid #F0F4FB;font-size:13px}
+.summary-line:last-child{border-bottom:none}
+.summary-line-label{color:#4a5a7a}
+.summary-line-val{font-weight:600;color:#1d2327}
+.summary-section-subtotal{display:flex;justify-content:space-between;padding:9px 12px;background:#F0F4FB;border-top:1px solid #D9E2F2;font-size:13px;font-weight:700}
+.summary-section-subtotal span:last-child{color:#1668F2}
+
+.summary-grand-total{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border:2px solid #031B4E;border-radius:4px;margin-top:4px}
+.summary-grand-label{font-size:13px;font-weight:700;color:#031B4E;text-transform:uppercase;letter-spacing:.04em}
+.summary-grand-val{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:#1668F2}
+
+/* Customer card */
+.customer-name-big{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:#031B4E;margin-bottom:3px}
+.customer-link{font-size:13px;color:#50575e;text-decoration:none;display:block;margin-bottom:10px}
+.customer-section-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#8c8f94;margin:10px 0 4px}
+.customer-val{font-size:13px;color:#1d2327;line-height:1.65}
+.customer-val a{color:#1668F2;text-decoration:none}
+
+.instructions-text{font-size:13.5px;color:#6B7A99;font-style:italic;line-height:1.6}
+
+.save-bar{display:flex;justify-content:flex-end;gap:8px;padding:12px 0 4px}
+
+/* ── PRINT ── */
+@media print{
+  .wp-admin-bar,.wp-sidebar,.action-bar,.save-bar{display:none!important}
+  .wp-content{padding:0}
+  body{background:#fff}
+  .order-body{grid-template-columns:1fr 280px}
+  .card,.summary-section{box-shadow:none}
+}
+
+/* ── TABLET 1024px ── */
+@media(max-width:1024px){
+  .wp-sidebar{display:none}
+  .wp-content{padding:10px 14px 40px}
+  .order-body{grid-template-columns:1fr;gap:12px}
+  .order-side{order:-1;display:grid!important;grid-template-columns:1fr 1fr;gap:12px}
+  /* Action buttons wrap into 3-col grid, Print full width */
+  .action-bar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+  .action-bar .btn{justify-content:center;font-size:12px;padding:8px 8px}
+  .action-bar .btn-dark{grid-column:1 / -1}
+}
+
+/* ── MOBILE 767px ── */
+@media(max-width:767px){
+  .wp-admin-bar span:not(.site):not(:first-child):not(:last-child){display:none}
+  .wp-content{padding:8px 10px 32px}
+  .breadcrumb-logo-box{width:120px;height:30px;font-size:10px}
+  .order-title-bar{flex-direction:column;padding:14px}
+  .order-number{font-size:20px}
+  .order-meta-line{flex-direction:column;gap:4px}
+
+  /* Action buttons — 2 per row, Print full width */
+  .action-bar{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .action-bar .btn{justify-content:center;font-size:12px;padding:9px 8px}
+  .action-bar .btn-dark{grid-column:1 / -1}
+
+  /* Sidebar stacks to single column */
+  .order-side{order:-1;display:flex!important;flex-direction:column;gap:12px}
+
+  /* Cards */
+  .card-header{padding:12px 14px;flex-wrap:wrap;gap:8px}
+
+  /* Detail table — stack label above value */
+  .detail-table tr{display:flex;flex-direction:column;border-bottom:1px solid #f0f0f1}
+  .detail-table td{width:100%!important;border:none!important;padding:3px 12px}
+  .detail-table td:first-child{background:none;font-size:10px;color:#8c8f94;padding-top:8px;padding-bottom:1px}
+  .detail-table td:last-child{font-size:14px;padding-bottom:8px}
+  .detail-subtotal{background:#F8FAFF}
+  .detail-subtotal td:first-child{padding-top:10px}
+  .detail-subtotal td:last-child{padding-bottom:10px}
+
+  /* Stall grid */
+  .stall-unit{width:38px;height:26px;font-size:11px}
+  .stall-section{padding:12px 14px}
+
+  /* Summary */
+  .summary-total-val{font-size:22px}
+  .summary-section-header{flex-wrap:wrap;gap:4px}
+
+  /* Save bar */
+  .save-bar{flex-direction:column}
+  .save-bar .btn{width:100%;justify-content:center}
+}
+
+/* ── SMALL MOBILE 390px ── */
+@media(max-width:390px){
+  .order-number{font-size:18px}
+  .stall-unit{width:34px;height:24px;font-size:10px}
+  .stall-grid{gap:4px}
+  .action-bar{grid-template-columns:1fr}
+  .action-bar .btn-dark{grid-column:1}
+  .summary-total-val{font-size:19px}
+}
+</style>
+</head>
+<body>
+
+<div class="wp-admin-bar">
+  <span>&#9776;</span>
+  <span class="site">My Equestrian Site</span>
+  <span>+ New</span>
+  <span style="margin-left:auto">Howdy, Whitney Mitchell</span>
+</div>
+
+<div class="wp-body">
+  <div class="wp-sidebar">
+    <div class="wp-sidebar-item">&#9632; Dashboard</div>
+    <div class="wp-sidebar-item">&#9632; Posts</div>
+    <div class="wp-sidebar-item">&#9632; Pages</div>
+    <div class="wp-sidebar-sep"></div>
+    <div class="wp-sidebar-label">Equine EM</div>
+    <div class="wp-sidebar-item active">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      Orders
+    </div>
+    <div class="wp-sidebar-sub">Dashboard</div>
+    <div class="wp-sidebar-sub">Events</div>
+    <div class="wp-sidebar-sub active">Orders</div>
+    <div class="wp-sidebar-sub">Reservations</div>
+    <div class="wp-sidebar-sub">Stall Charts</div>
+    <div class="wp-sidebar-sub">Invoicing</div>
+    <div class="wp-sidebar-sub">Reports</div>
+    <div class="wp-sidebar-sub">Settings</div>
+    <div class="wp-sidebar-sep"></div>
+    <div class="wp-sidebar-item">&#9632; Plugins</div>
+    <div class="wp-sidebar-item">&#9632; Settings</div>
+  </div>
+
+  <div class="wp-content">
+
+    <div class="breadcrumb">
+      <div class="breadcrumb-logo-box">Plugin Logo</div>
+      <span class="breadcrumb-sep">/</span>
+      <span class="breadcrumb-page"><a href="#">Orders</a> / Order #0015</span>
+    </div>
+
+    <!-- Unpaid Banner — shown when order status is unpaid/invoice sent -->
+    <div style="background:#FFF7ED;border:1px solid #fed7aa;border-radius:4px;padding:12px 20px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:32px;height:32px;background:#FED7AA;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c2410c" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:#92400e">Payment Outstanding</div>
+          <div style="font-size:12.5px;color:#b45309;margin-top:1px">$170.56 has not been collected for this order. Invoice sent April 23, 2026.</div>
+        </div>
+      </div>
+      <button class="btn" style="background:#c2410c;color:#fff;border-color:#c2410c;font-weight:700;white-space:nowrap;flex-shrink:0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        Collect Payment
+      </button>
+    </div>
+
+    <!-- Title bar -->
+    <div class="order-title-bar">
+      <div>
+        <div class="order-number">Order #0015</div>
+        <div class="order-meta-badges">
+          <span class="status-badge status-paid">Paid</span>
+          <span class="type-badge type-stall">Stall</span>
+          <span class="type-badge type-rv">RV</span>
+          <span class="type-badge type-addon">Add-On</span>
+          <span class="type-badge type-group">Group</span>
+        </div>
+        <div class="order-meta-line">
+          <span><strong>2026-04-23</strong> at 10:09:12</span>
+          <span><strong>2026 Southeast Region Super Sort</strong></span>
+        </div>
+      </div>
+      <div class="action-bar">
+        <button class="btn btn-ghost">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          Back to Orders
+        </button>
+        <button class="btn btn-ghost">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Edit Reservation
+        </button>
+        <button class="btn" style="background:#FFF7ED;color:#c2410c;border-color:#fed7aa;font-weight:700">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          Collect Payment
+        </button>
+
+        <!-- More dropdown -->
+        <div style="position:relative;display:inline-block" id="more-wrap">
+          <button class="btn btn-ghost" onclick="document.getElementById('more-menu').classList.toggle('open')" style="padding:7px 12px">
+            More
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div id="more-menu" style="display:none;position:absolute;top:calc(100% + 4px);right:0;background:#fff;border:1px solid #c3c4c7;border-radius:4px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:180px;z-index:100;overflow:hidden">
+            <div class="more-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export CSV
+            </div>
+            <div class="more-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              Resend Notification
+            </div>
+            <div class="more-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 12 3 6 21 6 21 12"/><polyline points="3 18 3 12 21 12 21 18"/></svg>
+              Refund Order
+            </div>
+            <div class="more-item more-item-danger">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+              Delete Order
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-dark" onclick="window.print()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Print as PDF
+        </button>
+      </div>
+    </div>
+
+    <div class="order-body">
+
+      <!-- ── LEFT: Order sections ── -->
+      <div class="order-main">
+
+        <!-- STALL RESERVATION -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-header-left">
+              <div class="card-title">Stall Reservation</div>
+              <div class="card-subtitle">2026 Southeast Region Super Sort</div>
+            </div>
+            <span class="card-nights">2 Nights</span>
+          </div>
+          <table class="detail-table">
+            <tr><td>Stay Type</td><td>Nightly</td></tr>
+            <tr><td>Nights</td><td>2 Nights</td></tr>
+            <tr><td>Arrival Date</td><td>Friday, May 8, 2026</td></tr>
+            <tr><td>Departure Date</td><td>Sunday, May 10, 2026</td></tr>
+            <tr><td>Stall Quantity</td><td>1</td></tr>
+            <tr><td>Required Shavings</td><td>2 bags</td></tr>
+            <tr><td>Additional Shavings</td><td>0</td></tr>
+            <tr><td>Assigned Units</td><td><strong style="color:#1668F2">#109</strong></td></tr>
+            <tr class="detail-subtotal"><td>Stall Subtotal</td><td>$64.00</td></tr>
+          </table>
+          <div class="stall-section">
+            <div class="stall-section-label">Assign Stall Units</div>
+            <div class="stall-grid">
+              <div class="su-reserved stall-unit">100</div><div class="su-reserved stall-unit">101</div><div class="su-reserved stall-unit">102</div><div class="su-reserved stall-unit">103</div><div class="su-reserved stall-unit">104</div><div class="su-reserved stall-unit">105</div><div class="su-reserved stall-unit">106</div><div class="su-reserved stall-unit">107</div><div class="su-reserved stall-unit">108</div><div class="su-selected stall-unit">109</div><div class="su-avail stall-unit">110</div><div class="su-avail stall-unit">111</div><div class="su-avail stall-unit">112</div><div class="su-avail stall-unit">113</div><div class="su-avail stall-unit">114</div><div class="su-avail stall-unit">115</div><div class="su-avail stall-unit">116</div><div class="su-avail stall-unit">117</div><div class="su-avail stall-unit">118</div><div class="su-avail stall-unit">119</div><div class="su-avail stall-unit">120</div><div class="su-avail stall-unit">121</div><div class="su-avail stall-unit">122</div><div class="su-avail stall-unit">123</div><div class="su-avail stall-unit">124</div><div class="su-avail stall-unit">125</div>
+            </div>
+            <p class="stall-hint">Select one or more units from the configured stall chart. Any unselected stalls will be auto-assigned after saving.</p>
+          </div>
+        </div>
+
+        <!-- RV RESERVATION -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-header-left">
+              <div class="card-title">RV Reservation</div>
+              <div class="card-subtitle">2026 Southeast Region Super Sort</div>
+            </div>
+            <span class="card-nights">2 Nights</span>
+          </div>
+          <table class="detail-table">
+            <tr><td>Stay Type</td><td>Nightly</td></tr>
+            <tr><td>Nights</td><td>2 Nights</td></tr>
+            <tr><td>RV Quantity</td><td>1</td></tr>
+            <tr><td>Arrival Date</td><td>Friday, May 8, 2026</td></tr>
+            <tr><td>Departure Date</td><td>Sunday, May 10, 2026</td></tr>
+            <tr><td>RV Add-Ons</td><td>Electric, Water, Sewage</td></tr>
+            <tr><td>Assigned Lot</td><td><strong style="color:#6d28d9">Red Lot</strong></td></tr>
+            <tr class="detail-subtotal"><td>RV Subtotal</td><td>$100.00</td></tr>
+          </table>
+          <div class="stall-section">
+            <div class="stall-section-label">Assign RV Lots</div>
+            <p class="stall-hint" style="margin-bottom:8px">Choose the reserved RV lot from the configured lot list for this reservation.</p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <div style="padding:7px 14px;border-radius:4px;border:1.5px solid #1668F2;background:#EEF4FF;font-size:13px;font-weight:600;color:#1668F2;cursor:pointer">Red Lot ✓</div>
+              <div style="padding:7px 14px;border-radius:4px;border:1.5px solid #D9E2F2;background:#fff;font-size:13px;font-weight:500;color:#6B7A99;cursor:pointer">Blue Lot</div>
+              <div style="padding:7px 14px;border-radius:4px;border:1.5px solid #D9E2F2;background:#fff;font-size:13px;font-weight:500;color:#6B7A99;cursor:pointer">Green Lot</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ADD-ONS -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-header-left">
+              <div class="card-title">Add-Ons</div>
+              <div class="card-subtitle">Additional products included in this order</div>
+            </div>
+          </div>
+          <div class="addon-row">
+            <div>
+              <div class="addon-name">Shavings</div>
+              <div class="addon-qty">2 qty</div>
+            </div>
+            <div class="addon-price">$24.00</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:10px 14px;background:#F0F4FB;border-top:1px solid #D9E2F2;font-size:13px;font-weight:700">
+            <span style="color:#6B7A99;font-size:10.5px;text-transform:uppercase;letter-spacing:.07em">Add-On Subtotal</span>
+            <span style="color:#1668F2">$24.00</span>
+          </div>
+        </div>
+
+        <!-- GROUP RESERVATION -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-header-left">
+              <div class="card-title">Group Reservation</div>
+              <div class="card-subtitle">Group rider details captured on this reservation</div>
+            </div>
+          </div>
+          <table class="detail-table">
+            <tr><td>Rider Count</td><td>1</td></tr>
+            <tr>
+              <td>Riders</td>
+              <td>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div class="rider-num">1</div>
+                  <span>Tanner Sperle</span>
+                </div>
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- SPECIAL INSTRUCTIONS -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Special Instructions</div>
+          </div>
+          <div style="padding:14px 18px">
+            <p class="instructions-text">Test Test Test</p>
+          </div>
+        </div>
+
+        <div class="save-bar">
+          <button class="btn btn-ghost">Cancel</button>
+          <button class="btn btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Save Changes
+          </button>
+        </div>
+      </div>
+
+      <!-- ── RIGHT: Sidebar ── -->
+      <div class="order-side">
+
+        <!-- CUSTOMER -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Customer</div>
+          </div>
+          <div style="padding:14px 18px">
+            <div class="customer-name-big">Whitney Mitchell</div>
+            <a href="#" class="customer-link">1 order →</a>
+
+            <div class="customer-section-label">Reservation</div>
+            <div class="customer-val">2026 Southeast Region Super Sort</div>
+
+            <div class="customer-section-label">Contact Information</div>
+            <div class="customer-val">
+              <a href="mailto:wmitchell@equinenetwork.com">wmitchell@equinenetwork.com</a><br>
+              <a href="tel:5593935352">(559) 393-5352</a>
+            </div>
+
+            <div class="customer-section-label">Billing Address</div>
+            <div class="customer-val">
+              Whitney Mitchell<br>
+              12253 Avenue 472<br>
+              Orange Cove, California 93646<br>
+              United States
+            </div>
+
+            <div class="customer-section-label">Order Number</div>
+            <div class="customer-val"><strong>#0015</strong></div>
+
+            <div class="customer-section-label">Created</div>
+            <div class="customer-val"><strong>2026-04-23 10:09:12</strong></div>
+
+            <div class="customer-section-label">Agreement Signed</div>
+            <div class="customer-val"><strong style="color:#15803d">Yes</strong></div>
+          </div>
+        </div>
+
+        <!-- ORDER SUMMARY -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Order Summary</div>
+            <span class="status-badge status-paid">Paid</span>
+          </div>
+          <div style="padding:14px 16px">
+
+            <div class="summary-total-box">
+              <div class="summary-total-label">Total Paid</div>
+              <div class="summary-total-val">$170.56</div>
+            </div>
+
+            <!-- Stall section -->
+            <div class="summary-section">
+              <div class="summary-section-header">
+                <span class="summary-section-title">Stall Reservation</span>
+                <span class="summary-section-badge type-stall">2 nights</span>
+              </div>
+              <div class="summary-line"><span class="summary-line-label">Stall Subtotal</span><span class="summary-line-val">$20.00</span></div>
+              <div class="summary-line"><span class="summary-line-label">Required Shavings</span><span class="summary-line-val">$44.00</span></div>
+              <div class="summary-section-subtotal"><span>Section Total</span><span>$64.00</span></div>
+            </div>
+
+            <!-- RV section -->
+            <div class="summary-section">
+              <div class="summary-section-header">
+                <span class="summary-section-title">RV Reservation</span>
+                <span class="summary-section-badge type-rv">2 nights</span>
+              </div>
+              <div class="summary-line"><span class="summary-line-label">RV Subtotal</span><span class="summary-line-val">$40.00</span></div>
+              <div class="summary-line"><span class="summary-line-label">Electric Add-On</span><span class="summary-line-val">$0.00</span></div>
+              <div class="summary-line"><span class="summary-line-label">Water Add-On</span><span class="summary-line-val">$60.00</span></div>
+              <div class="summary-line"><span class="summary-line-label">Sewage Add-On</span><span class="summary-line-val">$0.00</span></div>
+              <div class="summary-section-subtotal"><span>Section Total</span><span>$100.00</span></div>
+            </div>
+
+            <!-- Add-Ons section -->
+            <div class="summary-section">
+              <div class="summary-section-header">
+                <span class="summary-section-title">Add-Ons</span>
+                <span class="summary-section-badge type-addon">2 items</span>
+              </div>
+              <div class="summary-line"><span class="summary-line-label">Shavings (×2)</span><span class="summary-line-val">$24.00</span></div>
+              <div class="summary-section-subtotal"><span>Section Total</span><span>$24.00</span></div>
+            </div>
+
+            <!-- Fees -->
+            <div class="summary-section">
+              <div class="summary-section-header">
+                <span class="summary-section-title">Fees</span>
+              </div>
+              <div class="summary-line"><span class="summary-line-label">Non-Refundable Convenience Fee</span><span class="summary-line-val">$6.56</span></div>
+              <div class="summary-section-subtotal"><span>Section Total</span><span>$6.56</span></div>
+            </div>
+
+            <div class="summary-grand-total">
+              <span class="summary-grand-label">Total</span>
+              <span class="summary-grand-val">$170.56</span>
+            </div>
+
+          </div>
+        </div>
+
+      </div><!-- /order-side -->
+    </div><!-- /order-body -->
+  </div><!-- /wp-content -->
+</div><!-- /wp-body -->
+<script>
+document.addEventListener('click', function(e) {
+  const wrap = document.getElementById('more-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('more-menu').classList.remove('open');
+  }
+});
+</script>
+</body>
+</html>
