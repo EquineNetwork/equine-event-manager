@@ -46,6 +46,9 @@ class Equine_Event_Manager_Shortcodes {
 		add_shortcode( 'en_reservation', array( $this, 'render_reservation' ) );
 		add_shortcode( 'en_stall_reservation_form', array( $this, 'render_stall_reservation_form' ) );
 		add_shortcode( 'en_rv_reservation_form', array( $this, 'render_rv_reservation_form' ) );
+
+		// Deprecated alias kept for any Elementor templates / posts that still embed the long form.
+		// New pages should use [en_reservation id="N"] (or the event-id variants above).
 		add_shortcode( 'equine_event_manager_event_reservation', array( $this, 'render_event_reservation_shortcode' ) );
 		add_action( 'wp_footer', array( $this, 'render_frontend_form_assets_in_footer' ), 5 );
 	}
@@ -55,6 +58,12 @@ class Equine_Event_Manager_Shortcodes {
 	 *
 	 * This is intended for Elementor event templates so a single shortcode
 	 * can render whatever reservation setup is linked to the current TEC event.
+	 *
+	 * @deprecated Use [en_reservation id="N"] for new pages, or
+	 *             [en_stall_reservation_form event_id="N"] / [en_rv_reservation_form event_id="N"]
+	 *             when the template only has the event id available. This alias remains so legacy
+	 *             Elementor templates already wired to [equine_event_manager_event_reservation]
+	 *             keep rendering.
 	 *
 	 * @param array $atts Shortcode attributes.
 	 * @return string
