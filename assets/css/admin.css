@@ -36,7 +36,19 @@
 	/* Neutrals */
 	--eem-dark-surface: #071833;
 	--eem-bg: #F7F9FC;
-	--eem-bg-alt: #fafafa;
+	/* Bar backgrounds (toolbars, footers, save bars, table headers,
+	   modal footers) on white cards. Originally #fafafa per the
+	   mockup spec — that value was only 5/255 off white and rendered
+	   effectively invisible against white cards. #f3f4f5 (12/255 off)
+	   provides clear separation while staying soft. Sits between
+	   hover state (#f6f7f7) and WP body (#f0f0f1) to avoid semantic
+	   collision with either.
+
+	   NOT used for: structural sidebars with their own border
+	   dividers (e.g. .eem-settings-nav) or empty-state placeholders
+	   with dashed borders (e.g. .eem-logo-upload). Those have
+	   different visual roles and stay at their own values. */
+	--eem-bg-alt: #f3f4f5;
 	--eem-bg-hover: #fafbff;
 	--eem-surface: #FFFFFF;
 	--eem-border: #D9E2F2;
@@ -1335,13 +1347,15 @@ a.eem-btn-tertiary {
 	background: var(--eem-bg-alt);
 }
 
+/* Mixed-case column headers per mockup line 72 — earlier draft of
+   this rule had text-transform:uppercase + letter-spacing + tiny
+   muted text, which didn't match the mockup spec at all (mockup is
+   normal 13px/600/#1d2327). Corrected in c4-polish-1. */
 .eem-table thead th {
-	padding: 9px 14px;
-	font-size: 11px;
-	font-weight: 700;
-	letter-spacing: 0.07em;
-	text-transform: uppercase;
-	color: var(--eem-text-muted);
+	padding: 10px 14px;
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--eem-text);
 	text-align: left;
 	white-space: nowrap;
 }
@@ -2370,13 +2384,15 @@ a.eem-settings-nav-item:focus {
 
 /* Save bar — flat strip at the bottom of the settings card per mockup
    line 155: padding 16px 28px, border-top only (divider from last
-   section), #fafafa fill, no radius/shadow, no sticky. */
+   section), var(--eem-bg-alt) fill, no radius/shadow, no sticky.
+   (Mockup spec was #fafafa; bumped via the variable to #f3f4f5 in
+   c4-polish-1 to be visible against the white card. See :root.) */
 .eem-settings-save-bar {
 	display: flex;
 	align-items: center;
 	gap: 10px;
 	padding: 16px 28px;
-	background: #fafafa;
+	background: var(--eem-bg-alt);
 	border: none;
 	border-top: 1px solid #dcdcde;
 	border-radius: 0;
@@ -2808,7 +2824,10 @@ a.eem-settings-nav-item:focus {
 	height: 80px;
 	border: 1px dashed var(--eem-border-card);
 	border-radius: var(--eem-radius);
-	background: var(--eem-bg-alt);
+	/* Intentionally NOT --eem-bg-alt — this is an empty-state
+	   placeholder with a dashed border, not a "bar on white card".
+	   See :root note on --eem-bg-alt for the exclusion rationale. */
+	background: #fafafa;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -2969,7 +2988,12 @@ a.eem-settings-nav-item:focus {
 	flex-wrap: wrap;
 }
 
-.eem-status-tab {
+/* `a.` chains on each color rule win specificity against the global
+   .eem-page a { color: var(--eem-electric) } rule that would
+   otherwise force every tab to Electric Blue. Same pattern as the
+   button + res-name fixes. */
+.eem-status-tab,
+a.eem-status-tab {
 	font-size: 13px;
 	color: #50575e;
 	padding: 6px 10px 8px;
@@ -2979,16 +3003,15 @@ a.eem-settings-nav-item:focus {
 	white-space: nowrap;
 }
 
-.eem-status-tab:hover {
-	color: var(--eem-navy);
-}
-
+.eem-status-tab:hover,
 a.eem-status-tab:hover,
 a.eem-status-tab:focus {
+	color: var(--eem-navy);
 	text-decoration: none;
 }
 
-.eem-status-tab.is-active {
+.eem-status-tab.is-active,
+a.eem-status-tab.is-active {
 	color: var(--eem-navy);
 	font-weight: 600;
 	border-bottom-color: var(--eem-electric);
@@ -3008,7 +3031,8 @@ a.eem-status-tab:focus {
 
 /* List toolbar — bulk action + date filter on left, search + count on right.
    Mockup line 53: `.toolbar`. NOT the generic .eem-toolbar — that one has a
-   different shape inherited from C1.3 dashboard toolbars. */
+   different shape inherited from C1.3 dashboard toolbars. (Mockup spec
+   was #fafafa; bumped via the variable to #f3f4f5 in c4-polish-1.) */
 .eem-list-toolbar {
 	padding: 12px 16px;
 	border-bottom: 1px solid #dcdcde;
@@ -3016,7 +3040,7 @@ a.eem-status-tab:focus {
 	align-items: center;
 	gap: 8px;
 	flex-wrap: wrap;
-	background: #fafafa;
+	background: var(--eem-bg-alt);
 }
 
 .eem-list-toolbar-left {
@@ -3131,14 +3155,22 @@ a.eem-status-tab:focus {
 	padding-right: 8px;
 }
 
-/* Reservation name link — blue, bold, hover underline. Mockup line 88-89. */
-.eem-res-name {
+/* Reservation name link — Navy bold default, Electric Blue on hover
+   with underline. Mockup lines 88-89 (`.res-name { color:#031B4E }`
+   default + `.res-name:hover { color:#1668F2; text-decoration:
+   underline }`). Earlier draft had electric-blue default which
+   conflicted with the row-action icon palette and didn't match
+   mockup. `a.` chain on every rule wins specificity against the
+   global .eem-page a { color: var(--eem-electric) } rule. */
+.eem-res-name,
+a.eem-res-name {
 	font-weight: 700;
-	color: var(--eem-electric);
+	color: var(--eem-navy);
 	font-size: 14px;
 	text-decoration: none;
 }
 
+.eem-res-name:hover,
 a.eem-res-name:hover,
 a.eem-res-name:focus {
 	color: var(--eem-electric);
@@ -3282,14 +3314,16 @@ a.eem-res-name:focus {
 	border-color: var(--eem-text-muted);
 }
 
-/* Table footer with pagination + range info. Mockup line 137. */
+/* Table footer with pagination + range info. Mockup line 137.
+   (Mockup spec was #fafafa; bumped via the variable to #f3f4f5
+   in c4-polish-1.) */
 .eem-table-footer {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 	padding: 12px 16px;
 	border-top: 1px solid #dcdcde;
-	background: #fafafa;
+	background: var(--eem-bg-alt);
 	flex-wrap: wrap;
 	gap: 8px;
 }
@@ -3313,15 +3347,19 @@ a.eem-res-name:focus {
 	margin-bottom: 8px;
 }
 
-.eem-mob-res-name {
+/* Mirror of .eem-res-name for the mobile-card view. Same Navy default
+   + Electric Blue on hover treatment per mockup. */
+.eem-mob-res-name,
+a.eem-mob-res-name {
 	font-size: 14px;
 	font-weight: 700;
-	color: var(--eem-electric);
+	color: var(--eem-navy);
 	margin-bottom: 4px;
 	text-decoration: none;
 	display: block;
 }
 
+.eem-mob-res-name:hover,
 a.eem-mob-res-name:hover,
 a.eem-mob-res-name:focus {
 	color: var(--eem-electric);

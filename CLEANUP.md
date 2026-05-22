@@ -65,6 +65,20 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 - **Resolution:** All five replaced with real implementations across C3.C.1–C3.C.5. No stubs remain in `EEM_Settings_Page`.
 - **Closed in:** C3.C.5 (Add-Ons was the last)
 
+### 12. `.eem-page a` global anchor color rule — recurring specificity bully
+- **What:** `assets/css/admin.css:172` sets `.eem-page a { color: var(--eem-electric); }` as a page-wide default. Specificity (0,1,1) wins against every class-level color rule (typically 0,1,0), forcing every anchor inside the EEM admin chrome to Electric Blue unless explicitly fought.
+- **Why deferred:** Every new component with an anchor element has to chain `a.` on its color rules to win specificity. Documented regressions so far:
+  - C4.B "+ New Reservation" button text invisible on electric-on-electric (hotfix `ab2fa05`)
+  - C4-polish-1 status tabs forced to Electric Blue when mockup specifies gray
+  - C4-polish-1 reservation title links blocked from Navy default per mockup
+  Each was patched locally with `a.` chains. The recurring pattern is the real issue — every future component port (C5, C6, C7, C8...) will hit the same trap on first render.
+- **Added in:** c4-polish-1 (issue identified across all of C4)
+- **Unblocks deletion:** C13 polish pass. Two refactor candidates:
+  - **(a) Remove the default `color` on `.eem-page a`** — require every component CSS to color its own anchors. Forces all current `a.` chains to become unnecessary; new components don't trip the trap. Risk: any unstyled anchor reverts to WP/browser default link blue, which differs from `--eem-electric`. Mitigation: sweep all anchors at audit time and ensure each has a class with explicit color.
+  - **(b) Scope the rule** to `.eem-page a:not([class*="eem-"])` — applies only to anchors with no `eem-*` class. Cleverer but more brittle; depends on every component anchor having an `eem-*` class.
+  - **Prefer (a)** — cleaner contract, even if it requires a one-time anchor-color audit.
+- **Status:** awaiting C13
+
 ### 10. Bulk Edit on Reservations list — handler returns "unsupported" notice
 - **What:** The Reservations list bulk-action dropdown offers `Edit` and `Move to Trash` per RES-3. C4.D wires Move to Trash end-to-end; Edit currently redirects with `eem_notice=bulk_edit_unsupported` ("Bulk Edit is not available yet — it will land in a future release. Use the per-row Edit link for now.").
 - **Why deferred:** WP-native bulk edit relies on `WP_List_Table`'s inline-edit machinery which the Phase 3 custom page (Path B) deliberately doesn't extend. A proper bulk-edit UX needs its own modal (similar to the Email Customers modal) with the fields-to-change form. Scope is meaningfully larger than C4.D could accommodate and the per-row Edit link covers the immediate use case.
