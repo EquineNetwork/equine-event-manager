@@ -988,7 +988,6 @@ class EEM_Settings_Page {
 					<label class="eem-field-label" for="<?php echo esc_attr( $body_id ); ?>"><?php esc_html_e( 'Body', 'equine-event-manager' ); ?></label>
 					<div class="eem-field-control">
 						<textarea class="eem-field-textarea eem-template-body" id="<?php echo esc_attr( $body_id ); ?>" name="payload[templates][<?php echo esc_attr( $template_id ); ?>][body]" rows="10" data-eem-tinymce-target><?php echo esc_textarea( $template['body'] ); ?></textarea>
-						<p class="eem-field-hint"><?php esc_html_e( 'Plain textarea in C3.B.1 — TinyMCE rich editor lands in C3.B.2.', 'equine-event-manager' ); ?></p>
 					</div>
 				</div>
 
@@ -1019,7 +1018,7 @@ class EEM_Settings_Page {
 				<div class="eem-field-row">
 					<label class="eem-field-label" for="eem-policy-cancel"><?php esc_html_e( 'Cancellation Policy', 'equine-event-manager' ); ?></label>
 					<div class="eem-field-control">
-						<textarea class="eem-field-textarea" id="eem-policy-cancel" name="payload[policies][cancellation]" rows="6"><?php echo esc_textarea( $policies['cancellation'] ); ?></textarea>
+						<textarea class="eem-field-textarea" id="eem-policy-cancel" name="payload[policies][cancellation]" rows="6" data-eem-tinymce-target><?php echo esc_textarea( $policies['cancellation'] ); ?></textarea>
 						<p class="eem-field-hint"><?php esc_html_e( 'Shown at checkout and inserted into the Cancellation email template via the {{cancellation_policy}} placeholder.', 'equine-event-manager' ); ?></p>
 					</div>
 				</div>
@@ -1027,7 +1026,7 @@ class EEM_Settings_Page {
 				<div class="eem-field-row">
 					<label class="eem-field-label" for="eem-policy-terms"><?php esc_html_e( 'Terms &amp; Conditions', 'equine-event-manager' ); ?></label>
 					<div class="eem-field-control">
-						<textarea class="eem-field-textarea" id="eem-policy-terms" name="payload[policies][terms]" rows="8"><?php echo esc_textarea( $policies['terms'] ); ?></textarea>
+						<textarea class="eem-field-textarea" id="eem-policy-terms" name="payload[policies][terms]" rows="8" data-eem-tinymce-target><?php echo esc_textarea( $policies['terms'] ); ?></textarea>
 						<p class="eem-field-hint"><?php esc_html_e( 'Shown at checkout; customer must acknowledge before paying.', 'equine-event-manager' ); ?></p>
 					</div>
 				</div>

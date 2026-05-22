@@ -180,43 +180,26 @@
 	flex-wrap: wrap;
 }
 
+/* Breadcrumb logo — actual plugin PNG, not a text tile.
+   Sized to ~36px tall to match mockup breadcrumb-logo-box dimensions.
+   The PNG already contains the wordmark; we don't render text alongside. */
 .eem-breadcrumb-logo {
 	display: inline-flex;
 	align-items: center;
-	gap: 6px;
-	padding: 4px 10px;
-	background: var(--eem-navy);
-	border-radius: 5px;
 	text-decoration: none;
+	flex-shrink: 0;
 }
 
 .eem-breadcrumb-logo:hover {
 	text-decoration: none;
-	background: var(--eem-dark-surface);
+	opacity: 0.85;
 }
 
 .eem-breadcrumb-logo svg,
 .eem-breadcrumb-logo img {
-	width: 16px;
-	height: 16px;
-	flex-shrink: 0;
-}
-
-.eem-breadcrumb-logo-text {
-	font-family: var(--eem-font-display);
-	font-size: 11px;
-	font-weight: 700;
-	color: var(--eem-text-on-navy);
-	letter-spacing: 0.04em;
-	line-height: 1;
-}
-
-.eem-breadcrumb-logo-sub {
-	font-family: var(--eem-font-display);
-	font-size: 6.5px;
-	font-weight: 500;
-	color: var(--eem-teal);
-	letter-spacing: 0.12em;
+	height: 36px;
+	width: auto;
+	max-width: 200px;
 	display: block;
 }
 
@@ -370,8 +353,8 @@
 		gap: var(--eem-space-2);
 	}
 
-	.eem-breadcrumb-logo {
-		padding: 3px 8px;
+	.eem-breadcrumb-logo img {
+		height: 28px;
 	}
 }
 
@@ -2274,18 +2257,27 @@ th.sorted-desc .eem-sort-icon span:first-child {
    Settings page layout — left-nav + active panel grid
    Minimal pattern in C3.B; C3.C may polish.
    ───────────────────────────────────────────────────────────── */
+/* Settings shell — matches settings_page.html lines 38-45.
+   Architecture: single bordered card wraps a left sidebar nav (200px,
+   #fafafa background, right divider) and the right content panel.
+   Active nav row gets a 3px electric border-left + soft blue background.
+   Do NOT split this into two floating cards — the mockup specifies one
+   unified panel with an internal divider. */
 .eem-settings {
 	display: grid;
-	grid-template-columns: 220px 1fr;
-	gap: var(--eem-space-4);
-	align-items: start;
+	grid-template-columns: 200px 1fr;
+	gap: 0;
+	background: var(--eem-surface);
+	border: 1px solid #c3c4c7;
+	border-radius: var(--eem-radius);
+	overflow: hidden;
+	align-items: stretch;
 }
 
 .eem-settings-nav {
-	background: var(--eem-bg);
-	border: 1px solid #dcdcde;
-	border-radius: var(--eem-radius);
-	padding: 6px;
+	background: #fafafa;
+	border-right: 1px solid #dcdcde;
+	padding: 8px 0;
 }
 
 .eem-settings-nav ul {
@@ -2297,32 +2289,33 @@ th.sorted-desc .eem-sort-icon span:first-child {
 .eem-settings-nav-item {
 	display: flex;
 	align-items: center;
-	gap: var(--eem-space-2);
-	padding: 9px 12px;
+	gap: 9px;
+	padding: 10px 16px;
 	font-size: 13.5px;
-	color: var(--eem-text);
+	color: #50575e;
 	text-decoration: none;
-	border-radius: var(--eem-radius-sm);
-	margin: 2px 0;
-	transition: background 0.1s, color 0.1s;
+	border-left: 3px solid transparent;
+	transition: background 0.1s, color 0.1s, border-color 0.1s;
 }
 
 .eem-settings-nav-item:hover {
-	background: var(--eem-surface);
-	color: var(--eem-navy);
+	background: #f0f0f1;
+	color: var(--eem-text);
 	text-decoration: none;
 }
 
 .eem-settings-nav-item.is-active {
 	background: var(--eem-info-bg);
 	color: var(--eem-electric);
-	font-weight: 600;
+	border-left-color: var(--eem-electric);
+	font-weight: 500;
 }
 
 .eem-settings-nav-item .dashicons {
-	width: 16px;
-	height: 16px;
-	font-size: 16px;
+	width: 15px;
+	height: 15px;
+	font-size: 15px;
+	flex-shrink: 0;
 }
 
 .eem-settings-panel {
@@ -2330,6 +2323,7 @@ th.sorted-desc .eem-sort-icon span:first-child {
 	flex-direction: column;
 	gap: var(--eem-space-3);
 	min-width: 0;
+	padding: var(--eem-space-4);
 }
 
 /* Settings form spans the panel; per-section cards stack inside */
@@ -2542,27 +2536,39 @@ th.sorted-desc .eem-sort-icon span:first-child {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Responsive — stack settings layout below 1024px (sidebar over content)
+   Responsive — stack settings layout at WP-admin's own mobile
+   breakpoint (782px), NOT at 1024px. Above 782px the mockup keeps
+   the left sidebar at every width; WP's content column on a typical
+   1280-1440px laptop is ~1080-1280px wide, which is plenty for the
+   200px sidebar + content. Collapsing at 1024px was breaking the
+   intended architecture on standard desktop viewports.
    ───────────────────────────────────────────────────────────── */
-@media (max-width: 1024px) {
+@media (max-width: 782px) {
 	.eem-settings {
 		grid-template-columns: 1fr;
 	}
 
 	.eem-settings-nav {
-		position: static;
+		border-right: none;
+		border-bottom: 1px solid #dcdcde;
 	}
 
 	.eem-settings-nav ul {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 4px;
+		padding: 6px;
 	}
 
 	.eem-settings-nav-item {
 		flex: 1 1 auto;
 		justify-content: center;
-		margin: 0;
+		border-left: none;
+		border-radius: var(--eem-radius-sm);
+	}
+
+	.eem-settings-nav-item.is-active {
+		border-left: none;
 	}
 }
 

@@ -639,8 +639,14 @@
 			});
 	}
 
-	function initTemplateCardEditor(card) {
-		var textarea = card.querySelector('[data-eem-tinymce-target]');
+	/* Initialize wp.editor TinyMCE on a single textarea (must have an id).
+	   Used by:
+	     - Template card lazy-init (initTemplateCardEditor) — fires on first
+	       card expand to keep page load light.
+	     - Eager-init pass (initEagerTinyMceTargets) — fires on DOMContentLoaded
+	       for textareas NOT inside a template card (e.g. Communications panel
+	       Policies fields, which are always visible). */
+	function initTinyMceOn(textarea) {
 		if (!textarea || !textarea.id) return;
 
 		// Graceful no-op if wp.editor isn't available (e.g., wp_enqueue_editor
@@ -670,6 +676,30 @@
 				window.console.warn('EEM: TinyMCE initialize failed for ' + textarea.id, e);
 			}
 		}
+	}
+
+	function initTemplateCardEditor(card) {
+		var textarea = card.querySelector('[data-eem-tinymce-target]');
+		initTinyMceOn(textarea);
+	}
+
+	/* Eager-init pass: find all [data-eem-tinymce-target] textareas that are
+	   NOT inside a .eem-template-card (those stay lazy via toggleTemplateCard)
+	   and initialize them right away. Covers the Communications panel's
+	   Policies fields (Cancellation Policy + Terms & Conditions) which are
+	   always visible and don't have an expand toggle. */
+	function initEagerTinyMceTargets() {
+		var targets = document.querySelectorAll('[data-eem-tinymce-target]');
+		targets.forEach(function (textarea) {
+			if (textarea.closest('.eem-template-card')) return;
+			initTinyMceOn(textarea);
+		});
+	}
+
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', initEagerTinyMceTargets);
+	} else {
+		initEagerTinyMceTargets();
 	}
 
 	function closeAllDropdowns() {
