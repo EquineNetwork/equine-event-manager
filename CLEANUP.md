@@ -84,6 +84,17 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
   - **Prefer (a)** — cleaner contract, even if it requires a one-time anchor-color audit.
 - **Status:** awaiting C13
 
+### 13. Search input + button visual attachment didn't fully land in C4
+- **What:** The Reservations list search pair (`.eem-search-input` + `.eem-search-btn`) was supposed to render visually attached per mockup line 65 (input right corners squared, button left corners squared, button no left border, zero gap between them). After 4 rounds of polish (c4-polish-1 attached treatment, c4-polish-2 specificity bumps, round-3 source-order reorder, round-4 flex-gap fix), the gap between the two elements closed but the button's corner-radius and possibly its left border still don't render per spec.
+- **Why deferred:** The cascade analysis points to my class rules at (0,3,0) winning over WP-core's (0,1,1) — they SHOULD apply. Live admin.css being served matches HEAD (verified via curl + grep). But empirically the visual still shows the button with all four corners rounded and a visible seam break. Diagnosis ran out of cheap leads; needed a DevTools cascade dump from Whitney to pin which rule is actually winning, and we chose to accept current state per the hard-stop rule and move on rather than keep guessing.
+- **Symptoms still visible at c4-close:**
+  - Button border-radius not asymmetric per `.eem-list-toolbar .eem-search-btn { border-radius: 0 4px 4px 0 }` rule (round-3 source-order reorder confirmed in commit 7bbcf5b but visual unchanged)
+  - Possibly button left border still present despite `.eem-search-btn { border-left: none }` rule
+  - Functionally: search input + button both work; clicking either submits the form. Visual-only defect.
+- **Added in:** c4-polish-2 (Whitney accepted current state after 4 polish rounds)
+- **Unblocks deletion:** C13 polish pass, OR sooner if it turns out to be downstream of the admin-legacy.css wholesale strip planned for C13 (entry #1). Worth a DevTools investigation when that strip lands — most likely a legacy `!important` block on `button` element that I missed in the c4-polish-2 form-control sweep (the sweep covered `input` + `select` + `textarea`, not `button`). Verify by inspecting the search button in DevTools after the wholesale strip; if the seam visibility improves, the legacy bare-button overrides were the cause.
+- **Status:** accepted at c4-close; revisit in C13
+
 ### 10. Bulk Edit on Reservations list — handler returns "unsupported" notice
 - **What:** The Reservations list bulk-action dropdown offers `Edit` and `Move to Trash` per RES-3. C4.D wires Move to Trash end-to-end; Edit currently redirects with `eem_notice=bulk_edit_unsupported` ("Bulk Edit is not available yet — it will land in a future release. Use the per-row Edit link for now.").
 - **Why deferred:** WP-native bulk edit relies on `WP_List_Table`'s inline-edit machinery which the Phase 3 custom page (Path B) deliberately doesn't extend. A proper bulk-edit UX needs its own modal (similar to the Email Customers modal) with the fields-to-change form. Scope is meaningfully larger than C4.D could accommodate and the per-row Edit link covers the immediate use case.
