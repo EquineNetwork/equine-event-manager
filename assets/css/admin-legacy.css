@@ -1,3 +1,32 @@
+/* =========================================================================
+ * admin-legacy.css — GRANDFATHERED. Read these rules before editing:
+ *
+ * 1. NO NEW CODE BELONGS HERE. This file is the bulk of the pre-Phase-3
+ *    plugin admin styling, preserved during the Phase 2/3 transition so
+ *    legacy admin pages (Dashboard, Orders, Reservations list, Stall
+ *    Charts, Reports, Invoicing) keep rendering until their Phase 3
+ *    ports land.
+ *
+ * 2. NEW PHASE 3 COMPONENT CLASSES MUST NOT APPEAR in selectors here.
+ *    When a new `.eem-foo` component is introduced in assets/css/admin.css,
+ *    if it visually collides with a legacy rule (typically because of
+ *    `!important` declarations below), the fix is to surgically remove
+ *    the new class from the legacy selector list — NOT to add `!important`
+ *    to the new admin.css rule. See CLAUDE.md Phase 3 hygiene rule #7.
+ *
+ * 3. The `!important` declarations throughout this file exist because
+ *    legacy admin pages need to beat WordPress core's own admin CSS.
+ *    Do not strip them wholesale; they are load-bearing for the legacy
+ *    visual until each page is ported.
+ *
+ * 4. Every time you touch this file, the touched section gets an inline
+ *    comment naming the Phase 3 chunk and what it changed (see lines
+ *    29-34 below for the C3.D.3.5 .eem-card decoupling example).
+ *
+ * 5. This file disappears at the end of Phase 3 once every admin page
+ *    is ported. Until then, treat it as an append-only quarantine zone.
+ * ========================================================================= */
+
 body.eem-shell-page #wpcontent {
 	padding-left: 0;
 	padding-right: 0;
@@ -26,8 +55,13 @@ body.post-type-en_reservation {
 	--eem-app-success: #6cc08b;
 }
 
+/* Legacy card styling targets WordPress's own .postbox + edit-screen
+   containers. `.eem-card` was removed from these selectors in C3.D.3.5
+   because it's now a Phase 3 component owned by assets/css/admin.css —
+   the legacy `!important` here was beating new admin.css overrides
+   on the Settings page. WP-core .postbox keeps the !important
+   because it needs to override WP's own postbox styling. */
 body.eem-shell-page .postbox,
-body.eem-shell-page .eem-card,
 body.post-type-en_reservation .postbox,
 body.post-type-en_reservation #titlediv,
 body.post-type-en_reservation #submitdiv {
@@ -39,7 +73,6 @@ body.post-type-en_reservation #submitdiv {
 }
 
 body.eem-shell-page .postbox > .inside,
-body.eem-shell-page .eem-card > .inside,
 body.post-type-en_reservation .postbox > .inside,
 body.post-type-en_reservation #titlediv,
 body.post-type-en_reservation #submitdiv .inside {

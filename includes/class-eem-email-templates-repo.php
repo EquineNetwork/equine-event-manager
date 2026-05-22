@@ -159,6 +159,8 @@ class EEM_Email_Templates_Repo {
 		return array(
 			'customer_name'       => __( "Customer's full name", 'equine-event-manager' ),
 			'event_name'          => __( 'Event name', 'equine-event-manager' ),
+			'event_venue'         => __( 'Venue / facility name', 'equine-event-manager' ),
+			'event_address'       => __( 'Venue street address', 'equine-event-manager' ),
 			'event_dates'         => __( 'Event date range', 'equine-event-manager' ),
 			'order_number'        => __( 'Plugin order number (e.g. #0042)', 'equine-event-manager' ),
 			'total'               => __( 'Total paid for this order', 'equine-event-manager' ),

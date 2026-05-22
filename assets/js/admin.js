@@ -341,6 +341,367 @@
 		if (!isOpen) host.classList.add('open');
 	}
 
+	/* ─────────────────────────────────────────────────────────────
+	 * Template card — toggle open/closed + lazy-init TinyMCE on first open.
+	 * Card markup: <article.eem-template-card>
+	 *   <header.eem-template-card-head data-eem-action="template-toggle">
+	 *   <div.eem-template-card-body>
+	 *     <textarea[data-eem-tinymce-target]>...</textarea>
+	 *
+	 * WP's bundled wp.editor.initialize() takes a textarea id and a settings
+	 * object, returning a wired-up TinyMCE instance. We initialize on first
+	 * expand to keep page-load light (5 editors × ~200KB of WP-TinyMCE deps
+	 * is a lot to fire eagerly).
+	 * ───────────────────────────────────────────────────────────── */
+	function toggleTemplateCard(headEl) {
+		var card = headEl.closest('.eem-template-card');
+		if (!card) return;
+
+		var willOpen = !card.classList.contains('is-open');
+		card.classList.toggle('is-open', willOpen);
+
+		if (willOpen && !card._eemTinymceReady) {
+			initTemplateCardEditor(card);
+			card._eemTinymceReady = true;
+		}
+	}
+
+	/* ─────────────────────────────────────────────────────────────
+	 * Placeholder chip → click-to-copy
+	 * Chip markup carries data-eem-value="{{token}}" + .is-copied state
+	 * for visual feedback. Modern clipboard API with execCommand fallback
+	 * so it works on older browsers / non-https admins.
+	 * ───────────────────────────────────────────────────────────── */
+	function copyPlaceholderChip(chip) {
+		var value = chip.dataset.eemValue || chip.textContent.trim();
+		if (!value) return;
+
+		var done = function () {
+			chip.classList.add('is-copied');
+			clearTimeout(chip._eemCopyTimer);
+			chip._eemCopyTimer = setTimeout(function () {
+				chip.classList.remove('is-copied');
+			}, 1500);
+		};
+
+		if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+			navigator.clipboard.writeText(value).then(done, function () {
+				fallbackCopy(value, done);
+			});
+		} else {
+			fallbackCopy(value, done);
+		}
+	}
+
+	function fallbackCopy(value, done) {
+		var temp = document.createElement('textarea');
+		temp.value = value;
+		temp.style.position = 'fixed';
+		temp.style.opacity = '0';
+		document.body.appendChild(temp);
+		temp.select();
+		try { document.execCommand('copy'); } catch (e) { /* clipboard blocked, no-op */ }
+		document.body.removeChild(temp);
+		done();
+	}
+
+	/* ─────────────────────────────────────────────────────────────
+	 * Settings form save (delegated submit handler)
+	 * Posts <form data-eem-settings-form> to admin-ajax.php via fetch +
+	 * FormData. Server response shape: { success: bool, data: { message }}.
+	 * Either path → toast.
+	 * ───────────────────────────────────────────────────────────── */
+	document.addEventListener('submit', function (ev) {
+		var form = ev.target;
+		if (!form || !form.matches || !form.matches('[data-eem-settings-form]')) return;
+		ev.preventDefault();
+
+		// If TinyMCE is mounted, push its content back into the underlying textarea
+		// before serializing — otherwise the form sees stale textarea content.
+		if (window.tinymce && typeof window.tinymce.triggerSave === 'function') {
+			window.tinymce.triggerSave();
+		}
+
+		submitSettingsForm(form);
+	});
+
+	function submitSettingsForm(form) {
+		var submitBtn = form.querySelector('button[type="submit"]');
+		if (submitBtn) submitBtn.disabled = true;
+
+		var data = new FormData(form);
+
+		fetch(form.getAttribute('action'), {
+			method: 'POST',
+			credentials: 'same-origin',
+			body: data
+		})
+			.then(function (res) { return res.json(); })
+			.then(function (json) {
+				if (json && json.success) {
+					EEM.showSaveToast(
+						(json.data && json.data.message) || 'Saved.'
+					);
+				} else {
+					var msg = (json && json.data && json.data.message) || 'Save failed.';
+					EEM.showSaveToast(msg, { variant: 'error', sub: '' });
+				}
+			})
+			.catch(function () {
+				EEM.showSaveToast('Could not reach the server.', { variant: 'error', sub: '' });
+			})
+			.then(function () {
+				if (submitBtn) submitBtn.disabled = false;
+			});
+	}
+
+	/* ─────────────────────────────────────────────────────────────
+	 * Send-test-email — per-template card button
+	 * Posts to admin-ajax.php action=eem_send_test_email with the
+	 * template id + the form's existing nonce. Disables the button
+	 * during the request to prevent double-sends.
+	 * ───────────────────────────────────────────────────────────── */
+	function sendTestEmail(btn) {
+		var templateId = btn.dataset.eemTemplateId;
+		if (!templateId) return;
+
+		var form = btn.closest('[data-eem-settings-form]');
+		var nonceInput = form ? form.querySelector('input[name="nonce"]') : null;
+		var nonce = nonceInput ? nonceInput.value : '';
+		if (!nonce) {
+			EEM.showSaveToast('Missing nonce — refresh the page.', { variant: 'error', sub: '' });
+			return;
+		}
+
+		btn.disabled = true;
+		var originalLabel = btn.textContent;
+		btn.textContent = 'Sending…';
+
+		var data = new FormData();
+		data.append('action', 'eem_send_test_email');
+		data.append('template_id', templateId);
+		data.append('nonce', nonce);
+
+		var ajaxUrl = (window.ajaxurl || '/wp-admin/admin-ajax.php');
+
+		fetch(ajaxUrl, {
+			method: 'POST',
+			credentials: 'same-origin',
+			body: data
+		})
+			.then(function (res) { return res.json(); })
+			.then(function (json) {
+				if (json && json.success) {
+					EEM.showSaveToast(
+						(json.data && json.data.message) || 'Test email sent.'
+					);
+				} else {
+					var msg = (json && json.data && json.data.message) || 'Send failed.';
+					EEM.showSaveToast(msg, { variant: 'error', sub: '' });
+				}
+			})
+			.catch(function () {
+				EEM.showSaveToast('Could not reach the server.', { variant: 'error', sub: '' });
+			})
+			.then(function () {
+				btn.disabled = false;
+				btn.textContent = originalLabel;
+			});
+	}
+
+	/* ─────────────────────────────────────────────────────────────
+	 * Source picker (Integrations event source + Payments processor).
+	 * Radio change → host gets .is-selected, siblings lose it, the
+	 * matching .eem-source-detail block becomes visible (others hide).
+	 * Pure delegation — wired here, not inside a panel-specific handler.
+	 * ───────────────────────────────────────────────────────────── */
+	document.addEventListener('change', function (ev) {
+		var radio = ev.target;
+		if (!radio || !radio.matches || radio.type !== 'radio') return;
+
+		var row = radio.closest('.eem-source-row');
+		if (!row) return;
+
+		var group = row.closest('[data-eem-source-group]');
+		if (group) {
+			group.querySelectorAll('.eem-source-row').forEach(function (r) {
+				r.classList.toggle('is-selected', r.contains(radio));
+			});
+		}
+
+		// Show the matching source-detail block (Integrations panel) by data-eem-source-value
+		var value = row.dataset.eemSourceValue;
+		if (value) {
+			document.querySelectorAll('[data-eem-source-detail]').forEach(function (detail) {
+				if (detail.dataset.eemSourceDetail === value) {
+					detail.removeAttribute('hidden');
+				} else {
+					detail.setAttribute('hidden', 'hidden');
+				}
+			});
+		}
+	});
+
+	/* ─────────────────────────────────────────────────────────────
+	 * Branding — WP media library logo pick + remove
+	 * Uses wp.media (available on admin pages that wp_enqueue_media'd
+	 * — Settings page calls it via wp_enqueue_editor side-effect).
+	 * ───────────────────────────────────────────────────────────── */
+	function pickLogo(btn) {
+		if (!window.wp || !window.wp.media) {
+			EEM.showSaveToast('WP media library not available.', { variant: 'error', sub: '' });
+			return;
+		}
+		var host = btn.closest('[data-eem-logo-upload]');
+		if (!host) return;
+
+		var frame = window.wp.media({
+			title: 'Choose Business Logo',
+			button: { text: 'Use this logo' },
+			multiple: false,
+			library: { type: 'image' }
+		});
+
+		frame.on('select', function () {
+			var attachment = frame.state().get('selection').first().toJSON();
+			var idInput   = host.querySelector('[data-eem-logo-id]');
+			var preview   = host.querySelector('[data-eem-logo-preview]');
+			var removeBtn = host.querySelector('[data-eem-action="logo-remove"]');
+
+			if (idInput) idInput.value = attachment.id || '';
+			if (preview && attachment.url) {
+				preview.innerHTML = '<img src="' + attachment.url + '" alt="" />';
+			}
+			if (removeBtn) removeBtn.disabled = false;
+		});
+
+		frame.open();
+	}
+
+	function removeLogo(btn) {
+		var host = btn.closest('[data-eem-logo-upload]');
+		if (!host) return;
+		var idInput = host.querySelector('[data-eem-logo-id]');
+		var preview = host.querySelector('[data-eem-logo-preview]');
+		if (idInput) idInput.value = '0';
+		if (preview) preview.innerHTML = '<span class="eem-logo-preview-empty">No logo set</span>';
+		btn.disabled = true;
+	}
+
+	/* ─────────────────────────────────────────────────────────────
+	 * Integrations — Test Feed URL button
+	 * Calls the existing equine_event_manager_test_feed_url AJAX action
+	 * (registered by EEM_Events) with the current value of the Feed URL input.
+	 * ───────────────────────────────────────────────────────────── */
+	function testFeedUrl(btn) {
+		var input = document.getElementById('eem-feed-url');
+		if (!input) return;
+		var url = (input.value || '').trim();
+		if (!url) {
+			EEM.showSaveToast('Enter a feed URL first.', { variant: 'error', sub: '' });
+			return;
+		}
+
+		btn.disabled = true;
+		var originalLabel = btn.textContent;
+		btn.textContent = 'Testing…';
+
+		var data = new FormData();
+		data.append('action', 'equine_event_manager_test_feed_url');
+		data.append('feed_url', url);
+
+		// Try to find a nonce in any nearby form (this AJAX action might use
+		// its own nonce name; if it 403s the toast will say so and admin
+		// can investigate). The existing handler in EEM_Events may have its
+		// own nonce setup; here we just POST what we have.
+		var form = btn.closest('form');
+		var nonceInput = form ? form.querySelector('input[name="nonce"]') : null;
+		if (nonceInput) data.append('nonce', nonceInput.value);
+
+		var ajaxUrl = (window.ajaxurl || '/wp-admin/admin-ajax.php');
+		fetch(ajaxUrl, { method: 'POST', credentials: 'same-origin', body: data })
+			.then(function (res) { return res.json(); })
+			.then(function (json) {
+				if (json && json.success) {
+					var count = json.data && json.data.count ? json.data.count : '';
+					EEM.showSaveToast(count ? ('Feed OK — ' + count + ' events found.') : 'Feed reachable.', { sub: '' });
+				} else {
+					var msg = (json && json.data && json.data.message) || 'Feed test failed.';
+					EEM.showSaveToast(msg, { variant: 'error', sub: '' });
+				}
+			})
+			.catch(function () {
+				EEM.showSaveToast('Could not reach the server.', { variant: 'error', sub: '' });
+			})
+			.then(function () {
+				btn.disabled = false;
+				btn.textContent = originalLabel;
+			});
+	}
+
+	/* Initialize wp.editor TinyMCE on a single textarea (must have an id).
+	   Used by:
+	     - Template card lazy-init (initTemplateCardEditor) — fires on first
+	       card expand to keep page load light.
+	     - Eager-init pass (initEagerTinyMceTargets) — fires on DOMContentLoaded
+	       for textareas NOT inside a template card (e.g. Communications panel
+	       Policies fields, which are always visible). */
+	function initTinyMceOn(textarea) {
+		if (!textarea || !textarea.id) return;
+
+		// Graceful no-op if wp.editor isn't available (e.g., wp_enqueue_editor
+		// wasn't called server-side). Textarea remains plain — admin can still
+		// edit raw HTML.
+		if (!window.wp || !window.wp.editor || typeof window.wp.editor.initialize !== 'function') {
+			return;
+		}
+
+		try {
+			window.wp.editor.initialize(textarea.id, {
+				tinymce: {
+					wpautop: true,
+					toolbar1: 'bold,italic,underline,bullist,numlist,link,unlink,undo,redo',
+					menubar: false,
+					branding: false,
+					statusbar: false
+				},
+				quicktags: {
+					buttons: 'strong,em,link,ul,ol,li'
+				},
+				mediaButtons: false
+			});
+		} catch (e) {
+			// Logged for the smoke-test debug.log pass; doesn't crash the page.
+			if (window.console && window.console.warn) {
+				window.console.warn('EEM: TinyMCE initialize failed for ' + textarea.id, e);
+			}
+		}
+	}
+
+	function initTemplateCardEditor(card) {
+		var textarea = card.querySelector('[data-eem-tinymce-target]');
+		initTinyMceOn(textarea);
+	}
+
+	/* Eager-init pass: find all [data-eem-tinymce-target] textareas that are
+	   NOT inside a .eem-template-card (those stay lazy via toggleTemplateCard)
+	   and initialize them right away. Covers the Communications panel's
+	   Policies fields (Cancellation Policy + Terms & Conditions) which are
+	   always visible and don't have an expand toggle. */
+	function initEagerTinyMceTargets() {
+		var targets = document.querySelectorAll('[data-eem-tinymce-target]');
+		targets.forEach(function (textarea) {
+			if (textarea.closest('.eem-template-card')) return;
+			initTinyMceOn(textarea);
+		});
+	}
+
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', initEagerTinyMceTargets);
+	} else {
+		initEagerTinyMceTargets();
+	}
+
 	function closeAllDropdowns() {
 		document.querySelectorAll('.eem-dropdown.open, .eem-row-menu-wrap.open')
 			.forEach(function (host) { host.classList.remove('open'); });
@@ -397,6 +758,24 @@
 			} else if (toast) {
 				toast.remove();
 			}
+		},
+		'template-toggle': function (target) {
+			toggleTemplateCard(target);
+		},
+		'placeholder-copy': function (target) {
+			copyPlaceholderChip(target);
+		},
+		'send-test-email': function (target) {
+			sendTestEmail(target);
+		},
+		'logo-pick': function (target) {
+			pickLogo(target);
+		},
+		'logo-remove': function (target) {
+			removeLogo(target);
+		},
+		'test-feed-url': function (target) {
+			testFeedUrl(target);
 		}
 	};
 

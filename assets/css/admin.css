@@ -131,6 +131,13 @@
 	color: var(--eem-text);
 	font-size: 14px;
 	line-height: 1.5;
+	/* Mirrors the mockup's `.wp-content { padding: 12px 20px 40px }`
+	   (settings_page.html line 28). Our submenu callbacks render
+	   `.eem-page` directly inside `#wpbody-content` (no `.wrap`
+	   wrapper), so we own the page-area padding ourselves. This is
+	   what gives the breadcrumb its left inset and the page-wrap /
+	   settings card the breathing room on both sides of the viewport. */
+	padding: 12px 20px 40px;
 }
 
 /* Normalize headings inside our pages without overriding WP's defaults */
@@ -172,51 +179,39 @@
    Breadcrumb header (CONV-1)
    Renders at the top of every plugin admin page beneath the WP admin bar.
    ───────────────────────────────────────────────────────────── */
+/* Breadcrumb — plain flex row per mockup spec (settings_page.html
+   line 30). Logo + segment text vertically center via align-items;
+   there is intentionally NO background fill, NO min-height, and NO
+   horizontal padding here — the inset comes from `.eem-page`'s
+   12px/20px padding above. */
 .eem-breadcrumb {
 	display: flex;
 	align-items: center;
 	gap: var(--eem-space-2);
-	margin: 0 0 var(--eem-space-3);
+	margin: 0 0 10px;
 	flex-wrap: wrap;
 }
 
+/* Breadcrumb logo — actual plugin PNG, not a text tile.
+   Sized to ~36px tall to match mockup breadcrumb-logo-box dimensions.
+   The PNG already contains the wordmark; we don't render text alongside. */
 .eem-breadcrumb-logo {
 	display: inline-flex;
 	align-items: center;
-	gap: 6px;
-	padding: 4px 10px;
-	background: var(--eem-navy);
-	border-radius: 5px;
 	text-decoration: none;
+	flex-shrink: 0;
 }
 
 .eem-breadcrumb-logo:hover {
 	text-decoration: none;
-	background: var(--eem-dark-surface);
+	opacity: 0.85;
 }
 
 .eem-breadcrumb-logo svg,
 .eem-breadcrumb-logo img {
-	width: 16px;
-	height: 16px;
-	flex-shrink: 0;
-}
-
-.eem-breadcrumb-logo-text {
-	font-family: var(--eem-font-display);
-	font-size: 11px;
-	font-weight: 700;
-	color: var(--eem-text-on-navy);
-	letter-spacing: 0.04em;
-	line-height: 1;
-}
-
-.eem-breadcrumb-logo-sub {
-	font-family: var(--eem-font-display);
-	font-size: 6.5px;
-	font-weight: 500;
-	color: var(--eem-teal);
-	letter-spacing: 0.12em;
+	height: 36px;
+	width: auto;
+	max-width: 160px;
 	display: block;
 }
 
@@ -370,8 +365,8 @@
 		gap: var(--eem-space-2);
 	}
 
-	.eem-breadcrumb-logo {
-		padding: 3px 8px;
+	.eem-breadcrumb-logo img {
+		height: 28px;
 	}
 }
 
@@ -2261,5 +2256,662 @@ th.sorted-desc .eem-sort-icon span:first-child {
 		grid-column: 2;
 		text-align: left;
 		padding-top: 4px;
+	}
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   C3.B — Settings page (Communications panel)
+   Settings layout, placeholder reference, template cards, checkbox row,
+   save bar. Other panels' CSS lands in C3.C alongside their markup.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────
+   Settings page layout — left-nav + active panel grid
+   Minimal pattern in C3.B; C3.C may polish.
+   ───────────────────────────────────────────────────────────── */
+/* Settings shell — matches settings_page.html lines 38-45.
+   Architecture: single bordered card wraps a left sidebar nav (200px,
+   #fafafa background, right divider) and the right content panel.
+   Active nav row gets a 3px electric border-left + soft blue background.
+   Do NOT split this into two floating cards — the mockup specifies one
+   unified panel with an internal divider. */
+.eem-settings {
+	display: grid;
+	grid-template-columns: 200px 1fr;
+	gap: 0;
+	background: var(--eem-surface);
+	/* Intentional departure from mockup line 38 (which specifies
+	   `border: 1px solid #c3c4c7; border-radius: 4px;`). Confirmed
+	   via DevTools that the legacy admin shell wrapping `.eem-page`
+	   already provides the visual containment we want for the
+	   settings card; adding the mockup's border+radius on top double-
+	   frames the panel. overflow:hidden retained so the nav rail
+	   and content panel stay contained within the grid bounds. */
+	overflow: hidden;
+	align-items: stretch;
+}
+
+.eem-settings-nav {
+	background: #fafafa;
+	border-right: 1px solid #dcdcde;
+	padding: 8px 0;
+}
+
+.eem-settings-nav ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.eem-settings-nav-item {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	padding: 10px 16px;
+	font-size: 13.5px;
+	color: #50575e;
+	text-decoration: none;
+	border-left: 3px solid transparent;
+	transition: background 0.1s, color 0.1s, border-color 0.1s;
+}
+
+/* Chain `a.` to win specificity against the global `.eem-page a:hover`
+   underline rule (assets/css/admin.css line ~158). Without this, the
+   nav item picks up an underline on hover. */
+a.eem-settings-nav-item:hover,
+a.eem-settings-nav-item:focus {
+	background: #f0f0f1;
+	color: var(--eem-text);
+	text-decoration: none;
+}
+
+.eem-settings-nav-item.is-active {
+	background: var(--eem-info-bg);
+	color: var(--eem-electric);
+	border-left-color: var(--eem-electric);
+	font-weight: 500;
+}
+
+.eem-settings-nav-item .dashicons {
+	width: 15px;
+	height: 15px;
+	font-size: 15px;
+	flex-shrink: 0;
+}
+
+/* Mockup: .settings-content { padding:0; display:flex; flex-direction:column }
+   (settings_page.html line 48). Sections inside divide themselves via
+   border-bottom — no gap or padding at the panel/form level. */
+.eem-settings-panel {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+	min-width: 0;
+	padding: 0;
+}
+
+.eem-settings-form {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+}
+
+/* Save bar — flat strip at the bottom of the settings card per mockup
+   line 155: padding 16px 28px, border-top only (divider from last
+   section), #fafafa fill, no radius/shadow, no sticky. */
+.eem-settings-save-bar {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 16px 28px;
+	background: #fafafa;
+	border: none;
+	border-top: 1px solid #dcdcde;
+	border-radius: 0;
+	position: static;
+	box-shadow: none;
+}
+
+.eem-settings-save-hint {
+	font-size: 12px;
+	color: var(--eem-text-secondary);
+}
+
+/* Inside the settings shell, .eem-card sections flatten to the
+   mockup's .settings-section shape (settings_page.html line 51):
+   padding 22px 28px + a single bottom divider; the last section
+   removes the divider. Header and body sub-blocks lose their own
+   strip borders / extra padding since the section provides the
+   padding. Scoped to .eem-settings so other admin pages keep .eem-card
+   as a full bordered/rounded card. */
+.eem-settings .eem-card {
+	background: transparent;
+	border: none;
+	border-radius: 0;
+	border-bottom: 1px solid #dcdcde;
+	overflow: visible;
+}
+
+.eem-settings .eem-card:last-of-type {
+	border-bottom: none;
+}
+
+.eem-settings .eem-card-header {
+	padding: 22px 28px 0;
+	border-bottom: none;
+	background: transparent;
+}
+
+.eem-settings .eem-card-body {
+	padding: 6px 28px 22px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Checkbox row — used by the "Send Customer Emails" master toggle
+   and any future boolean settings rendered with a label-right layout.
+   ───────────────────────────────────────────────────────────── */
+.eem-checkbox-row {
+	display: flex;
+	align-items: center;
+	gap: var(--eem-space-2);
+	cursor: pointer;
+	padding: 8px 0;
+}
+
+.eem-checkbox-row input[type="checkbox"] {
+	margin: 0;
+	cursor: pointer;
+}
+
+.eem-checkbox-row span {
+	font-size: 13.5px;
+	color: var(--eem-text);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Placeholder reference panel
+   Sits above the 5 template cards, lists every {{token}} as a
+   click-to-copy chip. Chip-copy JS lands in C3.B.3.
+   ───────────────────────────────────────────────────────────── */
+.eem-placeholder-reference {
+	background: #FAFBFE;
+	border: 1px solid #E5EAF2;
+	border-radius: var(--eem-radius);
+	padding: 12px 14px;
+	margin-bottom: var(--eem-space-4);
+}
+
+.eem-placeholder-ref-title {
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--eem-navy);
+	margin-bottom: var(--eem-space-2);
+	display: flex;
+	align-items: center;
+	gap: var(--eem-space-3);
+}
+
+.eem-placeholder-ref-hint {
+	font-weight: 500;
+	font-size: 10.5px;
+	color: var(--eem-text-secondary);
+	letter-spacing: 0.02em;
+	text-transform: none;
+}
+
+.eem-placeholder-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.eem-placeholder-chip {
+	background: var(--eem-surface);
+	border: 1px solid var(--eem-border-card);
+	color: var(--eem-navy);
+	font-family: 'IBM Plex Mono', 'SFMono-Regular', Menlo, monospace;
+	font-size: 11.5px;
+	padding: 4px 9px;
+	border-radius: var(--eem-radius-sm);
+	cursor: pointer;
+	font-weight: 500;
+	line-height: 1.4;
+}
+
+.eem-placeholder-chip:hover {
+	border-color: var(--eem-electric);
+	color: var(--eem-electric);
+	background: var(--eem-info-bg);
+}
+
+.eem-placeholder-chip.is-copied {
+	background: #F0FDF4;
+	color: var(--eem-success-accent);
+	border-color: #bbf7d0;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Template card — collapsible per-template editor block
+   Each card holds: head (title+sub+chevron) and body (subject +
+   TinyMCE editor + send-test action). Body hidden until card
+   gains .is-open class via JS template-toggle handler.
+   ───────────────────────────────────────────────────────────── */
+.eem-template-cards {
+	display: flex;
+	flex-direction: column;
+	gap: var(--eem-space-2);
+}
+
+.eem-template-card {
+	background: var(--eem-surface);
+	border: 1px solid var(--eem-border-card);
+	border-radius: var(--eem-radius);
+	overflow: hidden;
+}
+
+.eem-template-card-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--eem-space-3);
+	padding: 12px 14px;
+	cursor: pointer;
+	background: var(--eem-surface);
+	transition: background 0.12s;
+	user-select: none;
+}
+
+.eem-template-card-head:hover {
+	background: #FAFBFE;
+}
+
+.eem-template-card-head-text {
+	flex: 1;
+	min-width: 0;
+}
+
+.eem-template-card-title {
+	font-family: var(--eem-font-display);
+	font-size: 14px;
+	font-weight: 700;
+	color: var(--eem-navy);
+	margin-bottom: 2px;
+}
+
+.eem-template-card-sub {
+	font-size: 12px;
+	color: var(--eem-text-secondary);
+	line-height: 1.4;
+}
+
+.eem-template-card-chevron {
+	color: var(--eem-text-muted);
+	font-size: 16px;
+	transition: transform 0.2s;
+	flex-shrink: 0;
+}
+
+.eem-template-card.is-open .eem-template-card-chevron {
+	transform: rotate(180deg);
+}
+
+.eem-template-card-body {
+	display: none;
+	padding: 14px 16px 16px;
+	border-top: 1px solid #E5EAF2;
+	background: #FAFBFE;
+}
+
+.eem-template-card.is-open .eem-template-card-body {
+	display: block;
+}
+
+.eem-template-card-actions {
+	display: flex;
+	justify-content: flex-end;
+	margin-top: var(--eem-space-3);
+	padding-top: var(--eem-space-3);
+	border-top: 1px solid #E5EAF2;
+}
+
+/* TinyMCE override — keep the editor visually consistent with the
+   eem-field-textarea (matches border + radius so cards don't look
+   stitched together from two design systems). */
+.eem-template-card .wp-editor-wrap .wp-editor-tabs,
+.eem-template-card .wp-editor-wrap .mce-toolbar-grp {
+	background: var(--eem-surface);
+}
+
+.eem-template-card .wp-editor-wrap .wp-editor-container {
+	border: var(--eem-border-input);
+	border-radius: var(--eem-radius);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Responsive — stack settings layout at WP-admin's own mobile
+   breakpoint (782px), NOT at 1024px. Above 782px the mockup keeps
+   the left sidebar at every width; WP's content column on a typical
+   1280-1440px laptop is ~1080-1280px wide, which is plenty for the
+   200px sidebar + content. Collapsing at 1024px was breaking the
+   intended architecture on standard desktop viewports.
+   ───────────────────────────────────────────────────────────── */
+@media (max-width: 782px) {
+	.eem-settings {
+		grid-template-columns: 1fr;
+	}
+
+	.eem-settings-nav {
+		border-right: none;
+		border-bottom: 1px solid #dcdcde;
+	}
+
+	.eem-settings-nav ul {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px;
+		padding: 6px;
+	}
+
+	.eem-settings-nav-item {
+		flex: 1 1 auto;
+		justify-content: center;
+		border-left: none;
+		border-radius: var(--eem-radius-sm);
+	}
+
+	.eem-settings-nav-item.is-active {
+		border-left: none;
+	}
+}
+
+@media (max-width: 767px) {
+	.eem-settings-save-bar {
+		flex-direction: column;
+		align-items: stretch;
+		text-align: center;
+	}
+
+	.eem-template-card-head {
+		padding: 10px 12px;
+	}
+
+	.eem-template-card-body {
+		padding: 12px;
+	}
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   C3.C — Other Settings panels (Integrations, Branding, Payments,
+   Shortcodes, Add-Ons). Components shared across panels:
+     - .eem-source-row (radio-as-card picker, used by Integrations
+       event-source + Payments processor)
+     - .eem-source-detail (per-source detail block)
+     - .eem-source-status (status pill: is-active / is-info / is-warning)
+     - .eem-logo-upload (Branding)
+     - .eem-shortcode-row + .eem-code-box (Shortcodes)
+     - .eem-empty-state (Add-Ons)
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────
+   Source picker — radio rendered as a clickable card
+   ───────────────────────────────────────────────────────────── */
+.eem-source-group {
+	display: flex;
+	flex-direction: column;
+	gap: var(--eem-space-2);
+	margin-bottom: var(--eem-space-3);
+}
+
+.eem-source-row {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--eem-space-3);
+	padding: 14px 16px;
+	border: 1.5px solid var(--eem-border);
+	border-radius: var(--eem-radius);
+	background: var(--eem-surface);
+	cursor: pointer;
+	transition: border-color 0.12s, background 0.12s;
+}
+
+.eem-source-row input[type="radio"] {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.eem-source-row:hover {
+	border-color: var(--eem-electric);
+	background: #FAFBFE;
+}
+
+.eem-source-row.is-selected {
+	border-color: var(--eem-electric);
+	background: var(--eem-info-bg);
+}
+
+.eem-source-radio {
+	width: 18px;
+	height: 18px;
+	border-radius: 50%;
+	border: 2px solid var(--eem-border-card);
+	background: var(--eem-surface);
+	flex-shrink: 0;
+	margin-top: 2px;
+	position: relative;
+	transition: border-color 0.12s;
+}
+
+.eem-source-row.is-selected .eem-source-radio {
+	border-color: var(--eem-electric);
+}
+
+.eem-source-row.is-selected .eem-source-radio::after {
+	content: '';
+	position: absolute;
+	inset: 3px;
+	border-radius: 50%;
+	background: var(--eem-electric);
+}
+
+.eem-source-row-body {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.eem-source-row-head {
+	display: flex;
+	align-items: center;
+	gap: var(--eem-space-2);
+	flex-wrap: wrap;
+}
+
+.eem-source-row-title {
+	font-family: var(--eem-font-display);
+	font-size: 14px;
+	font-weight: 700;
+	color: var(--eem-navy);
+}
+
+.eem-source-row-desc {
+	font-size: 12.5px;
+	color: var(--eem-text-secondary);
+	line-height: 1.5;
+}
+
+/* Per-source detail block — visible only when its source is picked */
+.eem-source-detail {
+	margin-top: var(--eem-space-3);
+	padding: var(--eem-space-4);
+	background: #FAFBFE;
+	border: 1px solid #E5EAF2;
+	border-radius: var(--eem-radius);
+}
+
+.eem-source-detail[hidden] {
+	display: none;
+}
+
+.eem-source-detail-title {
+	font-family: var(--eem-font-display);
+	font-size: 13px;
+	font-weight: 700;
+	color: var(--eem-navy);
+	margin-bottom: var(--eem-space-3);
+}
+
+/* Status pill — small badge used inside source-row-head + source-detail */
+.eem-source-status {
+	display: inline-flex;
+	align-items: center;
+	padding: 2px 8px;
+	border-radius: 20px;
+	font-size: 11px;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.eem-source-status.is-active  { background: #F0FDF4;               color: var(--eem-success-text); border: 1px solid #bbf7d0; }
+.eem-source-status.is-info    { background: var(--eem-info-bg);    color: var(--eem-electric);    border: 1px solid var(--eem-info-border); }
+.eem-source-status.is-warning { background: var(--eem-warn-bg);    color: var(--eem-warn-text);   border: 1px solid var(--eem-warn-border); }
+
+/* ─────────────────────────────────────────────────────────────
+   Branding — logo upload UI
+   ───────────────────────────────────────────────────────────── */
+.eem-logo-upload {
+	display: flex;
+	flex-direction: column;
+	gap: var(--eem-space-2);
+	align-items: flex-start;
+	max-width: 320px;
+}
+
+.eem-logo-preview {
+	width: 200px;
+	height: 80px;
+	border: 1px dashed var(--eem-border-card);
+	border-radius: var(--eem-radius);
+	background: var(--eem-bg-alt);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 6px;
+	overflow: hidden;
+}
+
+.eem-logo-preview img {
+	max-width: 100%;
+	max-height: 100%;
+	object-fit: contain;
+}
+
+.eem-logo-preview-empty {
+	font-size: 12px;
+	color: var(--eem-text-muted);
+}
+
+.eem-logo-upload-actions {
+	display: flex;
+	gap: var(--eem-space-2);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Shortcodes — reference rows with code boxes
+   ───────────────────────────────────────────────────────────── */
+.eem-shortcode-row {
+	display: grid;
+	grid-template-columns: 220px 1fr;
+	gap: var(--eem-space-4);
+	align-items: start;
+	padding: var(--eem-space-3) 0;
+	border-bottom: 1px solid var(--eem-border-soft);
+}
+
+.eem-shortcode-row:last-child {
+	border-bottom: none;
+}
+
+.eem-shortcode-label {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--eem-navy);
+	padding-top: 9px;
+}
+
+.eem-shortcode-body {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.eem-code-box {
+	display: block;
+	width: 100%;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: var(--eem-radius);
+	padding: 9px 12px;
+	font-family: 'IBM Plex Mono', 'SFMono-Regular', Menlo, monospace;
+	font-size: 12.5px;
+	color: var(--eem-text);
+	cursor: pointer;
+	text-align: left;
+	transition: border-color 0.12s, background 0.12s;
+}
+
+.eem-code-box:hover {
+	border-color: var(--eem-electric);
+	background: var(--eem-info-bg);
+}
+
+.eem-code-box.is-copied {
+	background: #F0FDF4;
+	border-color: #bbf7d0;
+	color: var(--eem-success-text);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Empty-state card body (Add-Ons)
+   ───────────────────────────────────────────────────────────── */
+.eem-empty-state {
+	background: var(--eem-bg);
+	border: 1px solid #dcdcde;
+	border-radius: var(--eem-radius);
+	padding: 20px 16px;
+	text-align: center;
+}
+
+.eem-empty-state-title {
+	font-size: 13.5px;
+	font-weight: 600;
+	color: var(--eem-text);
+	margin-bottom: 4px;
+}
+
+.eem-empty-state-desc {
+	font-size: 13px;
+	color: var(--eem-text-secondary);
+	line-height: 1.5;
+}
+
+/* Mobile — shortcode rows stack like field rows do */
+@media (max-width: 767px) {
+	.eem-shortcode-row {
+		grid-template-columns: 1fr;
+		gap: 6px;
+		padding: 10px 0;
+	}
+
+	.eem-shortcode-label {
+		padding-top: 0;
+	}
+
+	.eem-source-row {
+		padding: 12px;
 	}
 }

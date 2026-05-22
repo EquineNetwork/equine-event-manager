@@ -33,11 +33,7 @@ if ( ! function_exists( 'eem_render_breadcrumb' ) ) {
 		?>
 		<nav class="eem-breadcrumb" aria-label="<?php esc_attr_e( 'Breadcrumb', 'equine-event-manager' ); ?>">
 			<a class="eem-breadcrumb-logo" href="<?php echo esc_url( $logo_url ); ?>" aria-label="<?php esc_attr_e( 'Equine Event Manager dashboard', 'equine-event-manager' ); ?>">
-				<img src="<?php echo esc_url( EQUINE_EVENT_MANAGER_URL . 'assets/images/logo.png' ); ?>" alt="" />
-				<span>
-					<span class="eem-breadcrumb-logo-text"><?php esc_html_e( 'EQUINE EVENT', 'equine-event-manager' ); ?></span>
-					<span class="eem-breadcrumb-logo-sub"><?php esc_html_e( 'MANAGER', 'equine-event-manager' ); ?></span>
-				</span>
+				<img src="<?php echo esc_url( EQUINE_EVENT_MANAGER_URL . 'assets/images/logo.png' ); ?>" alt="<?php esc_attr_e( 'Equine Event Manager', 'equine-event-manager' ); ?>" />
 			</a>
 
 			<?php

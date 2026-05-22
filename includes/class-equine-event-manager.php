@@ -108,6 +108,8 @@ class EEM_Plugin {
 		add_action( 'admin_enqueue_scripts', array( $this->reservation_editor, 'enqueue_editor_shell_styles' ) );
 		add_action( 'admin_footer', array( $this->admin, 'render_global_toast_container' ) );
 		add_action( 'wp_ajax_eem_save_settings', array( $this->settings_page, 'handle_ajax_save_settings' ) );
+		add_action( 'wp_ajax_eem_send_test_email', array( $this->settings_page, 'handle_ajax_send_test_email' ) );
+		add_action( 'admin_enqueue_scripts', array( $this->settings_page, 'enqueue_assets' ) );
 		add_action( 'admin_head', array( $this->reservation_editor, 'print_editor_shell_fallback_assets' ) );
 		add_action( 'edit_form_top', array( $this->reservation_editor, 'render_editor_header' ) );
 		add_action( 'edit_form_after_title', array( $this->reservation_editor, 'render_editor_overview' ) );
