@@ -150,6 +150,17 @@ Every chunk that adds or modifies code follows these rules. Skipping them turns 
 
 These add ~5–8% LOC per chunk vs. a giant audit pass in C13. Keep them in.
 
+#### Hygiene-rule LOC tax — Phase 3 estimating baseline (established C4.A)
+
+The seven hygiene rules above add **~25–30% on top of functional-code LOC** in real Phase 3 chunks. Pre-C4 estimates ("functional code only") were tripping the 40% pause-and-report alarm on hygiene-driven overruns rather than real complexity. Calibrated against C4.A actuals: 267-LOC repo file = ~187 functional + ~80 docblock/comment LOC (~30% tax); 134-LOC controller = ~85 functional + ~49 docblock (~36% tax).
+
+**Standing rule for the rest of Phase 3:**
+
+1. Per-sub-chunk LOC estimates are **functional-code only**, then multiplied by **×1.275** (midpoint of 25–30%) before being committed to the chunk plan. State both numbers in the estimate so the math is auditable.
+2. The 40% pause-and-report alarm measures against the **post-multiplier** estimate. Real overruns (spec mismatch, hidden complexity, scope creep) trip the alarm; docblock-discipline overhead does not.
+3. CSS-heavy chunks carry a lighter tax (~10–15%) because CSS doesn't get the docblock treatment. Note the lower multiplier in those chunk estimates explicitly.
+4. If a chunk comes in materially below the tax baseline (e.g. ≤+10% over functional estimate), flag in the wrap-up — it usually means the docblocks got skimped on and need a revisit before merge.
+
 ### Phase 4 — Verify
 
 Goal: prove the overhaul didn't break anything.
