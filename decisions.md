@@ -1104,3 +1104,29 @@ The notice is controlled by the Edit Reservation page's Agreement card (admin si
 
 This makes the entire notice editable per-reservation without code changes. Empty agreement file or disabled Agreement section means the notice doesn't show on the front-end. Mobile/desktop layouts both render the notice in the sidebar position with appropriate spacing.
 
+
+---
+
+## Visual Polish Corrections (mockup deviations)
+
+### VIS-1. Bar background — deviate from mockup #fafafa to #f3f4f5
+**Decided:** 2026-05-22 (during C4 polish)
+
+Mockup spec uses `#fafafa` as the background for all "subtle bar" surfaces — toolbars, table headers, footer pagination bars, save bars, modal footers. That value is only 5/255 brightness off white (`#ffffff`), which renders effectively invisible against the white `.eem-list-card` / `.eem-page-wrap` backgrounds that contain them. The "Showing X of Y" footer bar on Reservations made the deficiency obvious — the footer text appeared to float on the page with no visible chrome.
+
+**Correction:** the CSS variable `--eem-bg-alt` (which already centralized the bar background pattern in admin.css) was retargeted from `#fafafa` to `#f3f4f5`. The 12/255 brightness offset gives clear separation from white while staying soft and professional. The value sits between the existing hover state (`#f6f7f7`) and the WP admin body background (`#f0f0f1`), avoiding semantic collision with either.
+
+**Scope:** applies globally via the variable. All current consumers automatically benefit:
+- `.eem-list-toolbar` (Reservations toolbar)
+- `.eem-table thead tr` (Reservations table header row)
+- `.eem-table-footer` (Reservations pagination/info footer)
+- `.eem-settings-save-bar` (Settings page save bar)
+- `.eem-modal-foot` (modal footers including Email Customers)
+- `.eem-toolbar` + `.eem-toolbar-row` (defined for future page ports)
+- `.eem-pagination` (when used standalone)
+
+**Excluded** (intentionally still at `#fafafa`):
+- `.eem-settings-nav` — structural sidebar identity comes from its border-right divider, not bg contrast. Changing it would over-darken the rail.
+- `.eem-logo-preview` — empty-state placeholder with dashed border; different visual role from "bar on white card."
+
+Future Phase 3 chunks should use `var(--eem-bg-alt)` for any bar-style subtle background and inherit this correction automatically. Don't "fix" it back to the mockup value — the mockup is the source the deviation is documented against.
