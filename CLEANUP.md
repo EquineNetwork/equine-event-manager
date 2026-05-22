@@ -1,0 +1,77 @@
+# CLEANUP.md
+
+Standing tracker for everything that should be deleted/removed during Phase 3 but isn't yet. Reviewed at every chunk merge.
+
+## Rules (standing for the rest of Phase 3)
+
+1. **Every chunk that touches legacy code adds entries here** for anything that "should be removed eventually but isn't this chunk's job."
+2. **Every chunk that COMPLETES a legacy area checks this file** for entries that can NOW be removed because the dependency is gone — and removes them in the same chunk.
+3. **Reviewed at every chunk merge.** Entries that have been sitting for **3+ chunks** without progress are flagged for forced cleanup in the next chunk.
+4. **Don't leave commented-out legacy code in commits.** Delete it; git history is the reference. Same goes for "TODO: remove" stubs — those go here, not in code.
+5. **The last commit of Phase 3** processes any remaining entries and verifies nothing legacy ships to production.
+
+Each entry includes: what, where (file:line if applicable), why deferred, when added, and the chunk/condition that unblocks deletion.
+
+---
+
+## Active entries
+
+### 1. `assets/css/admin-legacy.css` — full file
+- **What:** 12,343-line legacy admin CSS, renamed from `admin/css/equine-event-manager-admin.css` during Phase 2.
+- **Why deferred:** Each Phase 3 page-port chunk migrates rules from this file into the new `assets/css/admin.css`. Deleting it before all pages are ported would break unported screens visually.
+- **Added in:** C1 (Phase 2 cleanup tag — kept through Phase 3 transition)
+- **Unblocks deletion:** Final Phase 3 commit, after C3.D + C4 + C5 + C6 + C7 + C8 + C9 + C12 each migrate their page's rules out. Also delete the second `wp_enqueue_style( 'eem-admin-legacy', … )` call in `EEM_Admin::enqueue_backend_shell_styles` + `EEM_Reservation_Editor::enqueue_editor_shell_styles`.
+- **Status:** unchanged since C1
+
+### 2. `admin/images/equine-event-manager-logo.png` — duplicate of `assets/images/logo.png`
+- **What:** Pre-existing legacy logo PNG used by `EEM_Reservation_Editor::render_editor_header` (admin/class-equine-event-manager-reservation-editor.php:377).
+- **Why deferred:** Phase 3 added a parallel copy at `assets/images/logo.png` for the breadcrumb partial; the legacy file still has one live consumer in the Reservation Editor's header shim.
+- **Added in:** C1 (flagged during the C1 wrap-up)
+- **Unblocks deletion:** C7 (Edit Reservation port), when `render_editor_header` is rewritten or removed. At that point: switch the surviving reference to `assets/images/logo.png` (or remove if no longer needed) and `git rm admin/images/equine-event-manager-logo.png`.
+- **Status:** unchanged since C1
+
+### 3. `EEM_Admin::render_settings_page` — legacy 668-line method
+- **What:** Original Settings page renderer in `admin/class-equine-event-manager-admin.php`. Still wired as the menu callback through C3.A–C3.C so the live Settings page keeps working during the parallel build-up.
+- **Why deferred:** New `EEM_Settings_Page::render` lives parallel through C3.A–C3.C; menu callback swap is scheduled for C3.D.
+- **Added in:** C3.A
+- **Unblocks deletion:** C3.D, after the menu callback is repointed to `EEM_Settings_Page::render`. Also delete any private helpers used exclusively by the legacy method (e.g., the per-section render helpers within it that no other code calls).
+- **Status:** awaiting C3.D
+
+### 4. Communications-panel sub-section method scope
+- **What:** `EEM_Settings_Page` private methods `render_communications_sender_section`, `render_communications_templates_section`, `render_communications_template_card`, `render_communications_policies_section`, plus the helpers `build_sample_placeholder_values` and `apply_placeholders`.
+- **Why noted (not cleanup yet):** These are real code, not legacy. Tracking here only because they're SETTINGS-SPECIFIC helpers — if any other panel in C3.C reuses the `apply_placeholders` substitution pattern, that one should be extracted to a shared place. Re-evaluate at C3.C wrap-up.
+- **Added in:** C3.B
+- **Unblocks deletion:** N/A — this is a "verify generalization" item, not a removal item. Drop the entry if C3.C confirms no extraction is needed.
+- **Status:** to re-evaluate at C3.C wrap-up
+
+### 5. Three deferred mockups (decisions.md "Pending Mockups")
+- **What:** `create_order_page.html`, `customer_detail_page.html`, Cancel Event button amendment on `edit_reservation_page.html`.
+- **Why deferred:** Mockups not built. The corresponding code surfaces:
+  - Invoicing → New Order mode is a "Coming next release" placeholder in C12.
+  - Customer Detail link on Order Detail card (C9 — ODET-5) renders as plain text, not a link.
+  - Cancel Event button on Edit Reservation (C7) is omitted; the bulk-refund engine is still built so the button can be added in a future chunk.
+- **Added in:** Phase 3 plan
+- **Unblocks deletion:** N/A (these are stubs waiting for spec, not legacy to remove). When mockups land, the stubs get replaced with real implementations. Track here to make sure they don't ship as placeholders to production.
+- **Status:** awaiting spec
+
+### 6. `[equine_event_manager_event_reservation]` long-form shortcode
+- **What:** Deprecated-alias shortcode in `public/class-equine-event-manager-shortcodes.php:49` + handler at line ~62. Marked `@deprecated` in P2.2 but kept active because Elementor templates on the test site use it.
+- **Why deferred:** User confirmed it's actively used. Keep until at least one full event cycle has run on the new `[en_reservation]` / `[en_stall_reservation_form]` shortcodes without breakage.
+- **Added in:** P2.2
+- **Unblocks deletion:** Post-Phase-3, after a full event cycle confirms no live page still depends on it. Removal is then: drop `add_shortcode` registration + `render_event_reservation_shortcode` method + the `find_reservation_by_event_id` helper if it has no other callers.
+- **Status:** indefinite hold
+
+### 7. Settings panel stub methods (5 of 6)
+- **What:** `EEM_Settings_Page::render_integrations_panel`, `render_branding_panel`, `render_shortcodes_panel`, `render_payments_panel`, `render_addons_panel` — all currently render the same `render_panel_stub` placeholder.
+- **Why deferred:** C3.C fills 4 of them (Integrations, Branding, Payments, Add-Ons) plus Shortcodes (which is mostly static reference text).
+- **Added in:** C3.A
+- **Unblocks deletion:** Each is "removed" when C3.C replaces its body with real markup. Not deletion — replacement. Drop entries here when each ships.
+- **Status:** awaiting C3.C
+
+---
+
+## Removed entries (history)
+
+*Entries are moved here when their cleanup actually ships, so we can audit what got removed and when.*
+
+— *(empty so far)*
