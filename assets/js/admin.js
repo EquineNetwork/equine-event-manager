@@ -366,6 +366,149 @@
 		}
 	}
 
+	/* ─────────────────────────────────────────────────────────────
+	 * Placeholder chip → click-to-copy
+	 * Chip markup carries data-eem-value="{{token}}" + .is-copied state
+	 * for visual feedback. Modern clipboard API with execCommand fallback
+	 * so it works on older browsers / non-https admins.
+	 * ───────────────────────────────────────────────────────────── */
+	function copyPlaceholderChip(chip) {
+		var value = chip.dataset.eemValue || chip.textContent.trim();
+		if (!value) return;
+
+		var done = function () {
+			chip.classList.add('is-copied');
+			clearTimeout(chip._eemCopyTimer);
+			chip._eemCopyTimer = setTimeout(function () {
+				chip.classList.remove('is-copied');
+			}, 1500);
+		};
+
+		if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+			navigator.clipboard.writeText(value).then(done, function () {
+				fallbackCopy(value, done);
+			});
+		} else {
+			fallbackCopy(value, done);
+		}
+	}
+
+	function fallbackCopy(value, done) {
+		var temp = document.createElement('textarea');
+		temp.value = value;
+		temp.style.position = 'fixed';
+		temp.style.opacity = '0';
+		document.body.appendChild(temp);
+		temp.select();
+		try { document.execCommand('copy'); } catch (e) { /* clipboard blocked, no-op */ }
+		document.body.removeChild(temp);
+		done();
+	}
+
+	/* ─────────────────────────────────────────────────────────────
+	 * Settings form save (delegated submit handler)
+	 * Posts <form data-eem-settings-form> to admin-ajax.php via fetch +
+	 * FormData. Server response shape: { success: bool, data: { message }}.
+	 * Either path → toast.
+	 * ───────────────────────────────────────────────────────────── */
+	document.addEventListener('submit', function (ev) {
+		var form = ev.target;
+		if (!form || !form.matches || !form.matches('[data-eem-settings-form]')) return;
+		ev.preventDefault();
+
+		// If TinyMCE is mounted, push its content back into the underlying textarea
+		// before serializing — otherwise the form sees stale textarea content.
+		if (window.tinymce && typeof window.tinymce.triggerSave === 'function') {
+			window.tinymce.triggerSave();
+		}
+
+		submitSettingsForm(form);
+	});
+
+	function submitSettingsForm(form) {
+		var submitBtn = form.querySelector('button[type="submit"]');
+		if (submitBtn) submitBtn.disabled = true;
+
+		var data = new FormData(form);
+
+		fetch(form.getAttribute('action'), {
+			method: 'POST',
+			credentials: 'same-origin',
+			body: data
+		})
+			.then(function (res) { return res.json(); })
+			.then(function (json) {
+				if (json && json.success) {
+					EEM.showSaveToast(
+						(json.data && json.data.message) || 'Saved.'
+					);
+				} else {
+					var msg = (json && json.data && json.data.message) || 'Save failed.';
+					EEM.showSaveToast(msg, { variant: 'error', sub: '' });
+				}
+			})
+			.catch(function () {
+				EEM.showSaveToast('Could not reach the server.', { variant: 'error', sub: '' });
+			})
+			.then(function () {
+				if (submitBtn) submitBtn.disabled = false;
+			});
+	}
+
+	/* ─────────────────────────────────────────────────────────────
+	 * Send-test-email — per-template card button
+	 * Posts to admin-ajax.php action=eem_send_test_email with the
+	 * template id + the form's existing nonce. Disables the button
+	 * during the request to prevent double-sends.
+	 * ───────────────────────────────────────────────────────────── */
+	function sendTestEmail(btn) {
+		var templateId = btn.dataset.eemTemplateId;
+		if (!templateId) return;
+
+		var form = btn.closest('[data-eem-settings-form]');
+		var nonceInput = form ? form.querySelector('input[name="nonce"]') : null;
+		var nonce = nonceInput ? nonceInput.value : '';
+		if (!nonce) {
+			EEM.showSaveToast('Missing nonce — refresh the page.', { variant: 'error', sub: '' });
+			return;
+		}
+
+		btn.disabled = true;
+		var originalLabel = btn.textContent;
+		btn.textContent = 'Sending…';
+
+		var data = new FormData();
+		data.append('action', 'eem_send_test_email');
+		data.append('template_id', templateId);
+		data.append('nonce', nonce);
+
+		var ajaxUrl = (window.ajaxurl || '/wp-admin/admin-ajax.php');
+
+		fetch(ajaxUrl, {
+			method: 'POST',
+			credentials: 'same-origin',
+			body: data
+		})
+			.then(function (res) { return res.json(); })
+			.then(function (json) {
+				if (json && json.success) {
+					EEM.showSaveToast(
+						(json.data && json.data.message) || 'Test email sent.'
+					);
+				} else {
+					var msg = (json && json.data && json.data.message) || 'Send failed.';
+					EEM.showSaveToast(msg, { variant: 'error', sub: '' });
+				}
+			})
+			.catch(function () {
+				EEM.showSaveToast('Could not reach the server.', { variant: 'error', sub: '' });
+			})
+			.then(function () {
+				btn.disabled = false;
+				btn.textContent = originalLabel;
+			});
+	}
+
 	function initTemplateCardEditor(card) {
 		var textarea = card.querySelector('[data-eem-tinymce-target]');
 		if (!textarea || !textarea.id) return;
@@ -458,6 +601,12 @@
 		},
 		'template-toggle': function (target) {
 			toggleTemplateCard(target);
+		},
+		'placeholder-copy': function (target) {
+			copyPlaceholderChip(target);
+		},
+		'send-test-email': function (target) {
+			sendTestEmail(target);
 		}
 	};
 

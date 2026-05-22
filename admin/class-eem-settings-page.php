@@ -235,9 +235,6 @@ class EEM_Settings_Page {
 				<button type="submit" class="eem-btn eem-btn-primary">
 					<?php esc_html_e( 'Save Communications Settings', 'equine-event-manager' ); ?>
 				</button>
-				<span class="eem-settings-save-hint">
-					<?php esc_html_e( 'Saving is wired in C3.B.3 — this button currently has no effect.', 'equine-event-manager' ); ?>
-				</span>
 			</div>
 		</form>
 		<?php
@@ -552,5 +549,124 @@ class EEM_Settings_Page {
 		}
 
 		return $errors;
+	}
+
+	/* ─────────────────────────────────────────────────────────────
+	 * Send-test-email (SET-4)
+	 *
+	 * Per-template "Send test email to me" button hits
+	 * wp_ajax_eem_send_test_email. Server renders the chosen template
+	 * with sample placeholder values, sends via wp_mail() to the current
+	 * admin's email using the Sender repo settings as From / Reply-To
+	 * headers. JSON response feeds EEM.showSaveToast on the client.
+	 * ───────────────────────────────────────────────────────────── */
+
+	/**
+	 * AJAX endpoint — render a template with sample values and email it to
+	 * the current admin user.
+	 *
+	 * @return void  Always exits via wp_send_json_*.
+	 */
+	public function handle_ajax_send_test_email() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to send test emails.', 'equine-event-manager' ) ), 403 );
+		}
+
+		check_ajax_referer( 'eem_settings_save', 'nonce' );
+
+		$template_id = isset( $_POST['template_id'] ) ? sanitize_key( wp_unslash( $_POST['template_id'] ) ) : '';
+		if ( ! in_array( $template_id, EEM_Email_Templates_Repo::ids(), true ) ) {
+			wp_send_json_error( array( 'message' => __( 'Unknown template.', 'equine-event-manager' ) ), 400 );
+		}
+
+		$user = wp_get_current_user();
+		if ( ! $user || empty( $user->user_email ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your WordPress account has no email address on file.', 'equine-event-manager' ) ), 422 );
+		}
+
+		$template = EEM_Email_Templates_Repo::get( $template_id );
+		$sample   = $this->build_sample_placeholder_values( $user );
+		$subject  = $this->apply_placeholders( $template['subject'], $sample );
+		$body     = $this->apply_placeholders( $template['body'], $sample );
+
+		$sender  = EEM_Settings_Repo::get_email_sender();
+		$headers = array( 'Content-Type: text/html; charset=UTF-8' );
+		if ( '' !== $sender['from_email'] ) {
+			$from_name = '' !== $sender['from_name'] ? $sender['from_name'] : $sender['from_email'];
+			$headers[] = sprintf( 'From: %s <%s>', $from_name, $sender['from_email'] );
+		}
+		if ( '' !== $sender['reply_to'] ) {
+			$headers[] = 'Reply-To: ' . $sender['reply_to'];
+		}
+
+		$test_subject = sprintf(
+			/* translators: %s: template label */
+			__( '[TEST] %s', 'equine-event-manager' ),
+			$subject
+		);
+
+		$sent = wp_mail( $user->user_email, $test_subject, $body, $headers );
+
+		if ( ! $sent ) {
+			wp_send_json_error( array(
+				'message' => __( 'wp_mail returned false. Check your site\'s mail configuration (SMTP plugin, mail server, etc.).', 'equine-event-manager' ),
+			), 500 );
+		}
+
+		wp_send_json_success( array(
+			'message' => sprintf(
+				/* translators: %s: admin email address */
+				__( 'Test email sent to %s.', 'equine-event-manager' ),
+				$user->user_email
+			),
+		) );
+	}
+
+	/**
+	 * Build the sample-value map used to render placeholders in a test email.
+	 * Pulls real values where the system has them (sender from settings,
+	 * policy text from settings, user display name) and fills the rest with
+	 * representative dummies so the admin sees what the rendered email will
+	 * look like in production.
+	 *
+	 * @param WP_User $user Current admin (recipient of the test).
+	 * @return array<string, string>
+	 */
+	private function build_sample_placeholder_values( $user ) {
+		$sender   = EEM_Settings_Repo::get_email_sender();
+		$policies = EEM_Settings_Repo::get_policies();
+
+		return array(
+			'customer_name'       => $user->display_name,
+			'event_name'          => __( 'Sample Show — Spring Classic', 'equine-event-manager' ),
+			'event_venue'         => __( 'Sample Equestrian Center', 'equine-event-manager' ),
+			'event_address'       => __( '123 Show Lane, Anywhere, USA', 'equine-event-manager' ),
+			'event_dates'         => __( 'March 15–17, 2026', 'equine-event-manager' ),
+			'order_number'        => '#0001',
+			'total'               => '$285.00',
+			'balance'             => '$0.00',
+			'payment_link'        => admin_url( 'admin.php?page=equine-event-manager-orders' ),
+			'stall_assignments'   => __( 'Barn A · Stalls 12, 13', 'equine-event-manager' ),
+			'support_phone'       => '555-555-0100',
+			'support_email'       => '' !== $sender['from_email'] ? $sender['from_email'] : get_option( 'admin_email' ),
+			'cancellation_policy' => '' !== $policies['cancellation'] ? wp_strip_all_tags( $policies['cancellation'] ) : __( '(Cancellation policy not set — configure in Settings → Communications → Policies.)', 'equine-event-manager' ),
+		);
+	}
+
+	/**
+	 * Replace {{token}} occurrences in a string with values from a map.
+	 * Unknown tokens are left in place — admins notice and either remove
+	 * them or extend the placeholder whitelist.
+	 *
+	 * @param string                $template String containing zero or more {{tokens}}.
+	 * @param array<string, string> $values   token => replacement.
+	 * @return string
+	 */
+	private function apply_placeholders( $template, array $values ) {
+		$replacements = array();
+		foreach ( $values as $token => $value ) {
+			$replacements[ '{{' . $token . '}}' ] = (string) $value;
+		}
+		return strtr( (string) $template, $replacements );
 	}
 }
