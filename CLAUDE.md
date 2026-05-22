@@ -120,6 +120,33 @@ Goal: the plugin matches the mockups pixel-for-pixel and behavior-for-behavior.
 4. Wire AJAX save handlers. On success, call `EEM.showSaveToast()`. Use WordPress nonces and capability checks on every endpoint.
 5. Localize all user-facing strings: `__('...', 'equine-event-manager')`.
 
+#### Layout-shell verification procedure (mandatory for every page-port chunk)
+
+Before writing any markup or CSS for a new page, complete these six steps **in order**. Skipping leads to wasted work — a Settings-page rebuild was substituted with WordPress horizontal nav-tabs in C3 when the mockup specified a vertical left sidebar.
+
+1. **Read the mockup HTML file end-to-end** (not skim — actually view the full file, top to bottom).
+2. **Identify the top-level layout container.** Search the `<style>` block for class definitions containing `wrap`, `grid`, `flex`, `sidebar`, `content`, `panel`.
+3. **Inspect the CSS that defines that container's display mode** — `display`, `grid-template-columns`, `flex-direction`. Write the exact rule down before continuing.
+4. **State the architectural pattern in plain English** in the chunk's working notes — e.g. "Left sidebar (200px) + right content panel," "Horizontal tabs over stacked content," "Single column with section-stacked cards." Add this to the chunk's first commit message.
+5. **Confirm the pattern matches WordPress admin conventions OR intentionally departs from them.** If it departs, note that in the commit message.
+6. **Implement to match the mockup, not the WordPress default pattern.**
+
+WordPress admin conventions are **not** the source of truth for this plugin. The mockups are. If a mockup specifies a vertical left nav where WordPress would conventionally use `nav-tab-wrapper` horizontal tabs, build the vertical left nav. Don't substitute familiar WP patterns for specified ones.
+
+When you finish the implementation, do one final visual diff: load the mockup in a browser tab and the live page in another; confirm container architecture matches before claiming the chunk done.
+
+#### Per-chunk hygiene rules (effective from C4 onward)
+
+Every chunk that adds or modifies code follows these rules. Skipping them turns C13 (Polish Pass) into a giant catch-up effort:
+
+1. **Every new class** gets a class-level docblock explaining its purpose, role in the system, and any caller contract.
+2. **Every public method** (including AJAX handlers, render methods, repo getters/setters) gets a docblock with `@param` and `@return` annotations.
+3. **No `error_log()` in new code.** If something needs logging, use a properly-gated mechanism (e.g. `if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) { error_log( ... ); }` only if truly necessary; prefer surfacing errors through the response shape).
+4. **All user-facing strings wrapped in `__()` / `esc_html__()` / `esc_attr__()`** with the `equine-event-manager` text domain. Strings inside server-side `wp_send_json_error` messages, admin notices, tooltip hints, label text — all of it.
+5. **Type declarations on new code.** Typed properties, return types, parameter types. Apply aggressively on private/internal methods and conservatively on `public function`s hooked into WordPress (filter callbacks where WP passes `mixed` stay loose).
+
+These add ~5–8% LOC per chunk vs. a giant audit pass in C13. Keep them in.
+
 ### Phase 4 — Verify
 
 Goal: prove the overhaul didn't break anything.
