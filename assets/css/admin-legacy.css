@@ -23,24 +23,76 @@
  *    comment naming the Phase 3 chunk and what it changed (see lines
  *    29-34 below for the C3.D.3.5 .eem-card decoupling example).
  *
- *    c4-polish-2 (this file edit): SIX `!important` blocks targeting
- *    `body.eem-shell-page input[type="*"] / select / textarea` (lines
- *    142, 5910, 6569, 7600, 8260, 11812 — plus their .post-type-
- *    en_reservation mirrors) were collectively forcing min-heights
- *    of 42-44px, padding overrides, border-radius 8-12px, background
- *    color (which killed the SVG chevron on our .eem-toolbar-select),
- *    box-shadows, and color/font overrides on every form control. To
- *    decouple the C4 Reservations list toolbar without touching the
- *    declarations themselves (so legacy admin pages still get them),
- *    `:not(.eem-search-input)` was appended to every `input[type=
- *    "search"]` occurrence in those 6 blocks and `:not(.eem-toolbar-
- *    select)` was appended to every `select` occurrence. 22 selector
- *    lines modified total. New Phase 3 form-control components should
- *    expect the same multi-block damage and add their own :not()
- *    exclusion across all 6 blocks at first commit, not as polish.
+ *    c4-polish-2 (historical, SUPERSEDED by C4.5 — see item 6 below):
+ *    SIX `!important` blocks targeting `body.eem-shell-page input[type=
+ *    "*"] / select / textarea` (lines 142, 5910, 6569, 7600, 8260,
+ *    11812 — plus their .post-type-en_reservation mirrors) were
+ *    collectively forcing min-heights of 42-44px, padding overrides,
+ *    border-radius 8-12px, background color (which killed the SVG
+ *    chevron on our .eem-toolbar-select), box-shadows, and color/font
+ *    overrides on every form control. The c4-polish-2 approach was
+ *    to append `:not(.eem-search-input)` to every input[type="search"]
+ *    occurrence and `:not(.eem-toolbar-select)` to every select
+ *    occurrence — 22 selector lines, component-class scoped. C4.5
+ *    replaces that with body-class scoping (one :not() chain per rule,
+ *    covers all components on a ported page automatically); the
+ *    component-class :not() exclusions added here in c4-polish-2 were
+ *    removed in C4.5.D.
  *
  * 5. This file disappears at the end of Phase 3 once every admin page
  *    is ported. Until then, treat it as an append-only quarantine zone.
+ *
+ * 6. C4.5 legacy-remediation pass (this file edit): the c4-polish-2
+ *    component-class :not() approach worked but was getting expensive
+ *    per chunk — every new form-control component (.eem-search-input,
+ *    .eem-toolbar-select, eventually C5/C7/C8/C12's inputs and selects)
+ *    needed its own :not() applied to every occurrence across all 6
+ *    form-control blocks + every relevant button block. C4.5 switches
+ *    the pattern to body-class scope: rules that should NOT apply to
+ *    Phase-3-ported pages get `:not(.eem-shell-page--settings)
+ *    :not(.eem-shell-page--reservations-list)` (and so on as more
+ *    pages port). The cartel still applies on body classes that
+ *    haven't been ported yet (--editor / --orders / --stall-chart /
+ *    --invoicing / --reports / --overview / --reservation-overview).
+ *
+ *    BODY-CLASS PORT-STATUS MAP (as of C4.5):
+ *
+ *      Phase 3 ported (cartel should NOT apply):
+ *        body.eem-shell-page--settings           ← C3 (Settings page)
+ *        body.eem-shell-page--reservations-list  ← C4 (Reservations list)
+ *
+ *      Still legacy (cartel should keep applying):
+ *        body.eem-shell-page--editor             ← retires when C7 ports
+ *                                                  the Reservation editor
+ *        body.eem-shell-page--orders             ← retires when C5 ports
+ *                                                  the Orders list
+ *        body.eem-shell-page--stall-chart        ← retires when C8 ports
+ *        body.eem-shell-page--invoicing          ← retires when C12 ports
+ *        body.eem-shell-page--reports            ← retires when C11 ports
+ *        body.eem-shell-page--overview           ← retires when its port
+ *                                                  chunk lands (C9 or
+ *                                                  per Phase 3 plan)
+ *        body.eem-shell-page--reservation-overview ← same
+ *
+ *      Sub-modifiers (not primary scope identifiers — coexist with one
+ *      of the page classes above):
+ *        body.eem-shell-page--header
+ *        body.eem-shell-page--rail
+ *
+ *    When a Phase 3 chunk ports a previously-legacy page:
+ *      a) Add its new body class to the `:not()` exclusion chain on the
+ *         affected cartel selectors in this file (e.g. add
+ *         `:not(.eem-shell-page--editor)` when C7 ships).
+ *      b) Remove any component-class `:not(.eem-X)` exclusions for
+ *         components specific to that page if they were added pre-C4.5.
+ *      c) Confirm the legacy page that JUST ported is no longer hit by
+ *         the cartel by spot-checking computed styles on a representative
+ *         form control on the new page.
+ *
+ *    body.post-type-en_reservation selectors are NOT touched in C4.5 —
+ *    they target the WP-native CPT edit screen which is still legacy.
+ *    C7 retires them when it ships the new Reservation editor.
+ *
  * ========================================================================= */
 
 body.eem-shell-page #wpcontent {
@@ -122,7 +174,7 @@ body.post-type-en_reservation #submitdiv > .postbox-header + .inside {
 	padding-top: 0.875rem !important;
 }
 
-body.eem-shell-page .button,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button,
 body.eem-shell-page .wp-core-ui .button,
 body.post-type-en_reservation .button,
 body.post-type-en_reservation .wp-core-ui .button {
@@ -137,7 +189,7 @@ body.post-type-en_reservation .wp-core-ui .button {
 	line-height: 1.2 !important;
 }
 
-body.eem-shell-page .button.button-primary,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button.button-primary,
 body.eem-shell-page .wp-core-ui .button.button-primary,
 body.post-type-en_reservation .button.button-primary,
 body.post-type-en_reservation .wp-core-ui .button.button-primary {
@@ -147,27 +199,27 @@ body.post-type-en_reservation .wp-core-ui .button.button-primary {
 	box-shadow: 0 10px 20px rgba(214, 43, 81, 0.18) !important;
 }
 
-body.eem-shell-page .button.button-primary:hover,
-body.eem-shell-page .button.button-primary:focus,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button.button-primary:hover,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button.button-primary:focus,
 body.post-type-en_reservation .button.button-primary:hover,
 body.post-type-en_reservation .button.button-primary:focus {
 	background: var(--eem-app-accent-hover) !important;
 	border-color: var(--eem-app-accent-hover) !important;
 }
 
-body.eem-shell-page input[type="text"],
-body.eem-shell-page input[type="search"]:not(.eem-search-input),
-body.eem-shell-page input[type="email"],
-body.eem-shell-page input[type="url"],
-body.eem-shell-page input[type="number"],
-body.eem-shell-page input[type="password"],
-body.eem-shell-page input[type="date"],
-body.eem-shell-page input[type="time"],
-body.eem-shell-page input[type="datetime-local"],
-body.eem-shell-page select:not(.eem-toolbar-select),
-body.eem-shell-page textarea,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="text"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="search"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="email"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="url"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="number"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="password"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="date"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="time"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="datetime-local"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) select,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) textarea,
 body.post-type-en_reservation input[type="text"],
-body.post-type-en_reservation input[type="search"]:not(.eem-search-input),
+body.post-type-en_reservation input[type="search"],
 body.post-type-en_reservation input[type="email"],
 body.post-type-en_reservation input[type="url"],
 body.post-type-en_reservation input[type="number"],
@@ -175,7 +227,7 @@ body.post-type-en_reservation input[type="password"],
 body.post-type-en_reservation input[type="date"],
 body.post-type-en_reservation input[type="time"],
 body.post-type-en_reservation input[type="datetime-local"],
-body.post-type-en_reservation select:not(.eem-toolbar-select),
+body.post-type-en_reservation select,
 body.post-type-en_reservation textarea {
 	min-height: 44px !important;
 	border: 1px solid #d8e1eb !important;
@@ -185,7 +237,7 @@ body.post-type-en_reservation textarea {
 	color: var(--eem-app-heading) !important;
 }
 
-body.eem-shell-page textarea,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) textarea,
 body.post-type-en_reservation textarea {
 	min-height: 112px !important;
 	padding-top: 0.875rem !important;
@@ -5894,9 +5946,9 @@ body.eem-shell-page--orders .postbox > p {
 	line-height: 1.65 !important;
 }
 
-body.eem-shell-page .button,
-body.eem-shell-page .button.button-secondary,
-body.eem-shell-page .button.button-primary,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button.button-secondary,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button.button-primary,
 body.post-type-en_reservation .button,
 body.post-type-en_reservation .button.button-secondary,
 body.post-type-en_reservation .button.button-primary {
@@ -5907,37 +5959,37 @@ body.post-type-en_reservation .button.button-primary {
 	box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06) !important;
 }
 
-body.eem-shell-page .button.button-primary,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button.button-primary,
 body.post-type-en_reservation .button.button-primary {
 	border-color: #151d2b !important;
 	background: #151d2b !important;
 	color: #ffffff !important;
 }
 
-body.eem-shell-page .button.button-secondary,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button.button-secondary,
 body.post-type-en_reservation .button.button-secondary,
-body.eem-shell-page .button:not(.button-primary):not(.button-link-delete),
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button:not(.button-primary):not(.button-link-delete),
 body.post-type-en_reservation .button:not(.button-primary):not(.button-link-delete) {
 	border-color: #d7e0ea !important;
 	background: linear-gradient(180deg, #ffffff 0%, #f5f8fc 100%) !important;
 	color: #1d2840 !important;
 }
 
-body.eem-shell-page input[type="text"],
-body.eem-shell-page input[type="search"]:not(.eem-search-input),
-body.eem-shell-page input[type="email"],
-body.eem-shell-page input[type="url"],
-body.eem-shell-page input[type="number"],
-body.eem-shell-page input[type="password"],
-body.eem-shell-page select:not(.eem-toolbar-select),
-body.eem-shell-page textarea,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="text"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="search"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="email"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="url"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="number"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="password"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) select,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) textarea,
 body.post-type-en_reservation input[type="text"],
-body.post-type-en_reservation input[type="search"]:not(.eem-search-input),
+body.post-type-en_reservation input[type="search"],
 body.post-type-en_reservation input[type="email"],
 body.post-type-en_reservation input[type="url"],
 body.post-type-en_reservation input[type="number"],
 body.post-type-en_reservation input[type="password"],
-body.post-type-en_reservation select:not(.eem-toolbar-select),
+body.post-type-en_reservation select,
 body.post-type-en_reservation textarea {
 	border-radius: 8px !important;
 	border-color: #d1dbe7 !important;
@@ -6552,9 +6604,9 @@ body.post-type-en_reservation .eem-editor-overview-card {
 	padding: 1rem 1.125rem !important;
 }
 
-body.eem-shell-page .button,
-body.eem-shell-page .button-primary,
-body.eem-shell-page .button-secondary,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button-primary,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button-secondary,
 body.post-type-en_reservation .button,
 body.post-type-en_reservation .button-primary,
 body.post-type-en_reservation .button-secondary {
@@ -6565,8 +6617,8 @@ body.post-type-en_reservation .button-secondary {
 	box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08) !important;
 }
 
-body.eem-shell-page .button,
-body.eem-shell-page .button-secondary,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button-secondary,
 body.post-type-en_reservation .button-secondary,
 body.post-type-en_reservation .button:not(.button-primary):not(.button-link-delete) {
 	border-color: #d7e0ea !important;
@@ -6574,7 +6626,7 @@ body.post-type-en_reservation .button:not(.button-primary):not(.button-link-dele
 	color: #202c45 !important;
 }
 
-body.eem-shell-page .button-primary,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button-primary,
 body.post-type-en_reservation .button-primary {
 	border-color: #171f2d !important;
 	background: #171f2d !important;
@@ -6582,21 +6634,21 @@ body.post-type-en_reservation .button-primary {
 	box-shadow: 0 10px 22px rgba(23, 31, 45, 0.16) !important;
 }
 
-body.eem-shell-page input[type="text"],
-body.eem-shell-page input[type="search"]:not(.eem-search-input),
-body.eem-shell-page input[type="email"],
-body.eem-shell-page input[type="url"],
-body.eem-shell-page input[type="number"],
-body.eem-shell-page input[type="password"],
-body.eem-shell-page select:not(.eem-toolbar-select),
-body.eem-shell-page textarea,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="text"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="search"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="email"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="url"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="number"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="password"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) select,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) textarea,
 body.post-type-en_reservation input[type="text"],
-body.post-type-en_reservation input[type="search"]:not(.eem-search-input),
+body.post-type-en_reservation input[type="search"],
 body.post-type-en_reservation input[type="email"],
 body.post-type-en_reservation input[type="url"],
 body.post-type-en_reservation input[type="number"],
 body.post-type-en_reservation input[type="password"],
-body.post-type-en_reservation select:not(.eem-toolbar-select),
+body.post-type-en_reservation select,
 body.post-type-en_reservation textarea {
 	border-radius: 8px !important;
 	border-color: #d3dde8 !important;
@@ -7582,7 +7634,7 @@ body.post-type-en_reservation #poststuff .inside {
 	padding: 1rem 1.25rem 1.25rem !important;
 }
 
-body.eem-shell-page .button,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button,
 body.post-type-en_reservation .button,
 body.post-type-en_reservation #submitdiv .button {
 	display: inline-flex !important;
@@ -7597,7 +7649,7 @@ body.post-type-en_reservation #submitdiv .button {
 	box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06) !important;
 }
 
-body.eem-shell-page .button.button-primary,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button.button-primary,
 body.post-type-en_reservation .button.button-primary,
 body.post-type-en_reservation #submitdiv .button.button-primary {
 	border-color: #151b28 !important;
@@ -7605,7 +7657,7 @@ body.post-type-en_reservation #submitdiv .button.button-primary {
 	color: #fff !important;
 }
 
-body.eem-shell-page .button:not(.button-primary),
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button:not(.button-primary),
 body.post-type-en_reservation .button:not(.button-primary),
 body.post-type-en_reservation #submitdiv .button:not(.button-primary) {
 	border-color: #d6e0eb !important;
@@ -7613,24 +7665,24 @@ body.post-type-en_reservation #submitdiv .button:not(.button-primary) {
 	color: #1f2c44 !important;
 }
 
-body.eem-shell-page input[type="text"],
-body.eem-shell-page input[type="search"]:not(.eem-search-input),
-body.eem-shell-page input[type="email"],
-body.eem-shell-page input[type="url"],
-body.eem-shell-page input[type="number"],
-body.eem-shell-page input[type="date"],
-body.eem-shell-page input[type="time"],
-body.eem-shell-page select:not(.eem-toolbar-select),
-body.eem-shell-page textarea,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="text"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="search"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="email"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="url"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="number"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="date"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="time"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) select,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) textarea,
 body.post-type-en_reservation input[type="text"],
-body.post-type-en_reservation input[type="search"]:not(.eem-search-input),
+body.post-type-en_reservation input[type="search"],
 body.post-type-en_reservation input[type="email"],
 body.post-type-en_reservation input[type="url"],
 body.post-type-en_reservation input[type="number"],
 body.post-type-en_reservation input[type="date"],
 body.post-type-en_reservation input[type="time"],
 body.post-type-en_reservation input[type="datetime-local"],
-body.post-type-en_reservation select:not(.eem-toolbar-select),
+body.post-type-en_reservation select,
 body.post-type-en_reservation textarea {
 	border: 1px solid #cfd9e6 !important;
 	border-radius: 8px !important;
@@ -8219,7 +8271,7 @@ body.post-type-en_reservation .postbox .inside {
 	padding: 1rem !important;
 }
 
-body.eem-shell-page .button,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button,
 body.eem-shell-page .wp-core-ui .button,
 body.post-type-en_reservation .button,
 body.post-type-en_reservation .wp-core-ui .button {
@@ -8235,8 +8287,8 @@ body.post-type-en_reservation .wp-core-ui .button {
 	line-height: 1.1 !important;
 }
 
-body.eem-shell-page .button:hover,
-body.eem-shell-page .button:focus,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button:hover,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button:focus,
 body.eem-shell-page .wp-core-ui .button:hover,
 body.eem-shell-page .wp-core-ui .button:focus,
 body.post-type-en_reservation .button:hover,
@@ -8248,7 +8300,7 @@ body.post-type-en_reservation .wp-core-ui .button:focus {
 	color: var(--eem-shell-ink) !important;
 }
 
-body.eem-shell-page .button.button-primary,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button.button-primary,
 body.eem-shell-page .wp-core-ui .button.button-primary,
 body.eem-shell-page .wp-core-ui .button-primary,
 body.post-type-en_reservation .button.button-primary,
@@ -8260,8 +8312,8 @@ body.post-type-en_reservation .wp-core-ui .button-primary {
 	box-shadow: 0 10px 20px rgba(15, 23, 42, 0.14) !important;
 }
 
-body.eem-shell-page .button.button-primary:hover,
-body.eem-shell-page .button.button-primary:focus,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button.button-primary:hover,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button.button-primary:focus,
 body.eem-shell-page .wp-core-ui .button.button-primary:hover,
 body.eem-shell-page .wp-core-ui .button.button-primary:focus,
 body.post-type-en_reservation .button.button-primary:hover,
@@ -8273,27 +8325,27 @@ body.post-type-en_reservation .wp-core-ui .button.button-primary:focus {
 	color: #fff !important;
 }
 
-body.eem-shell-page input[type="text"],
-body.eem-shell-page input[type="email"],
-body.eem-shell-page input[type="url"],
-body.eem-shell-page input[type="number"],
-body.eem-shell-page input[type="password"],
-body.eem-shell-page input[type="search"]:not(.eem-search-input),
-body.eem-shell-page input[type="date"],
-body.eem-shell-page input[type="time"],
-body.eem-shell-page input[type="datetime-local"],
-body.eem-shell-page select:not(.eem-toolbar-select),
-body.eem-shell-page textarea,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="text"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="email"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="url"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="number"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="password"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="search"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="date"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="time"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="datetime-local"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) select,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) textarea,
 body.post-type-en_reservation input[type="text"],
 body.post-type-en_reservation input[type="email"],
 body.post-type-en_reservation input[type="url"],
 body.post-type-en_reservation input[type="number"],
 body.post-type-en_reservation input[type="password"],
-body.post-type-en_reservation input[type="search"]:not(.eem-search-input),
+body.post-type-en_reservation input[type="search"],
 body.post-type-en_reservation input[type="date"],
 body.post-type-en_reservation input[type="time"],
 body.post-type-en_reservation input[type="datetime-local"],
-body.post-type-en_reservation select:not(.eem-toolbar-select),
+body.post-type-en_reservation select,
 body.post-type-en_reservation textarea {
 	min-height: 42px !important;
 	padding: 0.65rem 0.85rem !important;
@@ -8304,7 +8356,7 @@ body.post-type-en_reservation textarea {
 	box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
 }
 
-body.eem-shell-page textarea,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) textarea,
 body.post-type-en_reservation textarea {
 	min-height: 132px !important;
 }
@@ -11825,16 +11877,16 @@ body.eem-shell-page .postbox > p {
 	color: var(--eem-guide-text-secondary) !important;
 }
 
-body.eem-shell-page input[type="text"],
-body.eem-shell-page input[type="number"],
-body.eem-shell-page input[type="email"],
-body.eem-shell-page input[type="url"],
-body.eem-shell-page input[type="date"],
-body.eem-shell-page input[type="time"],
-body.eem-shell-page input[type="search"]:not(.eem-search-input),
-body.eem-shell-page input[type="password"],
-body.eem-shell-page select:not(.eem-toolbar-select),
-body.eem-shell-page textarea {
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="text"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="number"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="email"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="url"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="date"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="time"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="search"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) input[type="password"],
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) select,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) textarea {
 	border-radius: 12px !important;
 	border: 1.5px solid var(--eem-guide-border) !important;
 	box-shadow: none !important;
@@ -11842,23 +11894,23 @@ body.eem-shell-page textarea {
 	font-family: "IBM Plex Sans", sans-serif !important;
 }
 
-body.eem-shell-page .button,
-body.eem-shell-page .button-primary,
-body.eem-shell-page .button-secondary {
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button-primary,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button-secondary {
 	border-radius: 12px !important;
 	font-family: "IBM Plex Sans", sans-serif !important;
 	font-weight: 600 !important;
 	box-shadow: none !important;
 }
 
-body.eem-shell-page .button-primary {
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button-primary {
 	background: var(--eem-guide-blue) !important;
 	border-color: var(--eem-guide-blue) !important;
 	color: #fff !important;
 }
 
-body.eem-shell-page .button-primary:hover,
-body.eem-shell-page .button-primary:focus {
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button-primary:hover,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button-primary:focus {
 	background: #1668F2 !important;
 	border-color: #1668F2 !important;
 }
