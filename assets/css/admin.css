@@ -3444,3 +3444,21 @@ a.eem-mob-res-name:focus {
 	border-left: 3px solid var(--eem-electric);
 	border-radius: var(--eem-radius);
 }
+
+/* C4.D — toolbar form wrappers + search-input padding lift.
+   The toolbar's three forms (bulk / date filter / search) sit inside
+   the toolbar's flex layout; display:contents makes them transparent
+   so flex gap + alignment still works on the underlying controls.
+   Search padding-left bumped from 28px → 36px because the legacy
+   `min-height: 44px !important` on input[type="search"] makes the
+   input taller than C1.3 sized for; the icon stays centered but the
+   placeholder text rides closer to it without the extra clearance. */
+.eem-bulk-form,
+.eem-date-filter-form,
+.eem-search-form {
+	display: contents;
+}
+
+.eem-search-wrap .eem-search-input {
+	padding-left: 36px;
+}

@@ -744,6 +744,42 @@
 		form.submit();
 	}
 
+	/* Bulk action — collects selected row ids from the table checkboxes,
+	   stuffs them into the hidden _eem_selected_ids field, then submits
+	   the bulk form. The PHP handler explodes on comma + absint each. */
+	function submitBulkAction(applyBtn) {
+		var form = applyBtn.closest('form');
+		if (!form) return;
+		var sel = form.querySelector('[data-eem-bulk-action]');
+		var hidden = form.querySelector('[data-eem-bulk-selected-ids]');
+		if (!sel || !hidden) return;
+
+		// Find the reservations list checkboxes (in the desktop table OR
+		// the mobile cards). Both render <input name="reservation_ids[]">.
+		var checked = document.querySelectorAll('input[name="reservation_ids[]"]:checked');
+		var ids = Array.prototype.map.call(checked, function (cb) { return cb.value; });
+		hidden.value = ids.join(',');
+
+		// Confirm on trash bulk.
+		if (sel.value === 'trash' && ids.length > 0) {
+			if (!window.confirm('Move ' + ids.length + ' reservation' + (ids.length === 1 ? '' : 's') + ' to Trash?')) return;
+		}
+		form.submit();
+	}
+
+	/* Select-all checkbox in the table header — toggles every row
+	   checkbox + every mobile-card checkbox together. */
+	document.addEventListener('change', function (ev) {
+		var t = ev.target;
+		if (!t || !t.matches) return;
+		// Header checkbox = the th.eem-col-cb's input.
+		if (t.matches('th.eem-col-cb input[type="checkbox"]')) {
+			document.querySelectorAll('input[name="reservation_ids[]"]').forEach(function (cb) {
+				cb.checked = t.checked;
+			});
+		}
+	});
+
 	function openEmailCustomersModal(target) {
 		var reservationId = target.dataset.reservationId;
 		var modal = document.getElementById('eem-email-customers-modal');
@@ -909,6 +945,13 @@
 		},
 		'reservation-restore': function (target) {
 			submitReservationAction(target, 'eem_reservation_restore', 'eem_reservation_restore');
+		},
+		'bulk-apply': function (target, ev) {
+			// Hook the bulk form's submit — collect selected reservation ids
+			// from the table checkboxes into the hidden input, validate basics,
+			// then let the form submit normally to admin-post.php.
+			ev.preventDefault();
+			submitBulkAction(target);
 		},
 		'reservation-export-roster': function (target) {
 			submitReservationAction(target, 'eem_reservation_export_roster', 'eem_reservation_export_roster');

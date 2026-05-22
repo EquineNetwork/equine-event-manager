@@ -98,19 +98,26 @@ class EEM_Reservations_List_Page {
 		if ( ! isset( $tabs[ $active_tab ] ) ) {
 			$active_tab = 'all';
 		}
-		$search  = isset( $_GET['s'] )     ? sanitize_text_field( wp_unslash( $_GET['s'] ) )    : '';
-		$paged   = isset( $_GET['paged'] ) ? max( 1, absint( wp_unslash( $_GET['paged'] ) ) )  : 1;
-		$orderby = isset( $_GET['orderby'] ) ? sanitize_key( wp_unslash( $_GET['orderby'] ) ) : 'event_dates';
-		$order   = isset( $_GET['order'] )   ? sanitize_key( wp_unslash( $_GET['order'] ) )   : 'asc';
+		$search      = isset( $_GET['s'] )        ? sanitize_text_field( wp_unslash( $_GET['s'] ) )    : '';
+		$paged       = isset( $_GET['paged'] )    ? max( 1, absint( wp_unslash( $_GET['paged'] ) ) )  : 1;
+		$orderby     = isset( $_GET['orderby'] )  ? sanitize_key( wp_unslash( $_GET['orderby'] ) )   : 'event_dates';
+		$order       = isset( $_GET['order'] )    ? sanitize_key( wp_unslash( $_GET['order'] ) )     : 'asc';
+		$date_filter = isset( $_GET['eem_date'] ) ? sanitize_text_field( wp_unslash( $_GET['eem_date'] ) ) : '';
+
+		// Validate date filter (yyyy-mm only).
+		if ( ! preg_match( '/^\d{4}-\d{2}$/', $date_filter ) ) {
+			$date_filter = '';
+		}
 
 		$counts = EEM_Reservations_List_Repo::counts_by_tab();
 		$page   = EEM_Reservations_List_Repo::get_paginated( array(
-			'status'   => $active_tab,
-			'search'   => $search,
-			'orderby'  => $orderby,
-			'order'    => $order,
-			'paged'    => $paged,
-			'per_page' => 25,
+			'status'      => $active_tab,
+			'search'      => $search,
+			'orderby'     => $orderby,
+			'order'       => $order,
+			'paged'       => $paged,
+			'per_page'    => 25,
+			'date_filter' => $date_filter,
 		) );
 
 		eem_render_page_open(
@@ -120,7 +127,7 @@ class EEM_Reservations_List_Page {
 					array( 'label' => __( 'Reservations', 'equine-event-manager' ) ),
 				),
 				'actions'    => sprintf(
-					'<a class="eem-btn eem-btn-primary" href="%s">+ %s</a>',
+					'<a class="eem-btn eem-btn-electric" href="%s">+ %s</a>',
 					esc_url( admin_url( 'post-new.php?post_type=' . EEM_Reservations_List_Repo::POST_TYPE ) ),
 					esc_html__( 'New Reservation', 'equine-event-manager' )
 				),
@@ -132,9 +139,9 @@ class EEM_Reservations_List_Page {
 		<?php $this->render_action_notice(); ?>
 		<div class="eem-list-card eem-reservations-list" data-eem-reservations-list>
 			<?php $this->render_status_tabs( $active_tab, $counts ); ?>
-			<?php $this->render_toolbar( $search, $page['total'] ); ?>
-			<?php $this->render_desktop_table( $page['items'], $orderby, $order ); ?>
-			<?php $this->render_mobile_cards( $page['items'] ); ?>
+			<?php $this->render_toolbar( $search, $date_filter, $page['total'], $active_tab ); ?>
+			<?php $this->render_desktop_table( $page['items'], $orderby, $order, $active_tab ); ?>
+			<?php $this->render_mobile_cards( $page['items'], $active_tab ); ?>
 			<?php $this->render_table_footer( $page ); ?>
 		</div>
 		<?php $this->render_email_customers_modal(); ?>
@@ -155,13 +162,22 @@ class EEM_Reservations_List_Page {
 		if ( '' === $code ) {
 			return;
 		}
+		$bulk_count = isset( $_GET['eem_bulk_count'] ) ? absint( wp_unslash( $_GET['eem_bulk_count'] ) ) : 0;
 		$messages = array(
-			'duplicated' => array( 'type' => 'success', 'text' => __( 'Reservation duplicated as draft.', 'equine-event-manager' ) ),
-			'trashed'    => array( 'type' => 'success', 'text' => __( 'Reservation moved to Trash.', 'equine-event-manager' ) ),
-			'restored'   => array( 'type' => 'success', 'text' => __( 'Reservation restored from Trash.', 'equine-event-manager' ) ),
-			'denied'     => array( 'type' => 'error',   'text' => __( 'You do not have permission to perform that action.', 'equine-event-manager' ) ),
-			'notfound'   => array( 'type' => 'error',   'text' => __( 'Reservation not found.', 'equine-event-manager' ) ),
-			'failed'     => array( 'type' => 'error',   'text' => __( 'Action failed. Check the WordPress error log for details.', 'equine-event-manager' ) ),
+			'duplicated'            => array( 'type' => 'success', 'text' => __( 'Reservation duplicated as draft.', 'equine-event-manager' ) ),
+			'trashed'               => array( 'type' => 'success', 'text' => __( 'Reservation moved to Trash.', 'equine-event-manager' ) ),
+			'restored'              => array( 'type' => 'success', 'text' => __( 'Reservation restored from Trash.', 'equine-event-manager' ) ),
+			'bulk_trashed'          => array( 'type' => 'success', 'text' => sprintf(
+				/* translators: %d: number of reservations moved to trash */
+				_n( '%d reservation moved to Trash.', '%d reservations moved to Trash.', $bulk_count, 'equine-event-manager' ),
+				$bulk_count
+			) ),
+			'bulk_edit_unsupported' => array( 'type' => 'warning', 'text' => __( 'Bulk Edit is not available yet — it will land in a future release. Use the per-row Edit link for now.', 'equine-event-manager' ) ),
+			'bulk_no_selection'     => array( 'type' => 'warning', 'text' => __( 'Pick at least one reservation before clicking Apply.', 'equine-event-manager' ) ),
+			'bulk_no_action'        => array( 'type' => 'warning', 'text' => __( 'Pick a bulk action before clicking Apply.', 'equine-event-manager' ) ),
+			'denied'                => array( 'type' => 'error',   'text' => __( 'You do not have permission to perform that action.', 'equine-event-manager' ) ),
+			'notfound'              => array( 'type' => 'error',   'text' => __( 'Reservation not found.', 'equine-event-manager' ) ),
+			'failed'                => array( 'type' => 'error',   'text' => __( 'Action failed. Check the WordPress error log for details.', 'equine-event-manager' ) ),
 		);
 		if ( ! isset( $messages[ $code ] ) ) {
 			return;
@@ -286,12 +302,33 @@ class EEM_Reservations_List_Page {
 	 */
 	public static function handle_trash() {
 		$reservation_id = self::check_action_request( 'eem_reservation_trash' );
-
-		$result = wp_trash_post( $reservation_id );
-		if ( ! $result ) {
+		if ( ! self::trash_one( $reservation_id ) ) {
 			self::redirect_with_notice( 'failed' );
 		}
+		self::redirect_with_notice( 'trashed', array( 'status' => 'trash' ) );
+	}
 
+	/**
+	 * Reusable trash primitive — moves one reservation to Trash + writes
+	 * the activity log entry. Used by both handle_trash (single-row
+	 * action) and handle_bulk (bulk Move to Trash). Returns true on
+	 * success so the caller can decide redirect / response shape.
+	 *
+	 * @param int $reservation_id
+	 * @return bool
+	 */
+	private static function trash_one( $reservation_id ) {
+		$reservation_id = absint( $reservation_id );
+		if ( $reservation_id <= 0 ) {
+			return false;
+		}
+		if ( EEM_Reservations_List_Repo::POST_TYPE !== get_post_type( $reservation_id ) ) {
+			return false;
+		}
+		$result = wp_trash_post( $reservation_id );
+		if ( ! $result ) {
+			return false;
+		}
 		EEM_Activity_Log::write(
 			'reservation_trashed',
 			array( 'reservation_id' => $reservation_id ),
@@ -301,8 +338,7 @@ class EEM_Reservations_List_Page {
 				'actor_id'       => get_current_user_id(),
 			)
 		);
-
-		self::redirect_with_notice( 'trashed', array( 'status' => 'trash' ) );
+		return true;
 	}
 
 	/**
@@ -388,6 +424,59 @@ class EEM_Reservations_List_Page {
 		}
 		fclose( $fh );
 		exit;
+	}
+
+	/**
+	 * Bulk-action dispatcher. Handles the toolbar's bulk-action <select>
+	 * + Apply form. Supported actions:
+	 *   - 'edit'  → redirects back with eem_notice=bulk_edit_unsupported;
+	 *               WP-native bulk edit is intentionally not wired (the
+	 *               new Phase 3 page can't reuse WP_List_Table's bulk
+	 *               edit UI without bringing back the legacy chrome).
+	 *               When this is needed it'll get its own modal in a
+	 *               future chunk.
+	 *   - 'trash' → loops through selected ids, calls trash_one() on
+	 *               each, redirects with a count summary.
+	 *
+	 * @return void  Exits.
+	 */
+	public static function handle_bulk() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			self::redirect_with_notice( 'denied' );
+		}
+		check_admin_referer( 'eem_reservations_bulk', '_eem_bulk_nonce' );
+
+		$action = isset( $_POST['bulk_action'] ) ? sanitize_key( wp_unslash( $_POST['bulk_action'] ) ) : '';
+		$status = isset( $_POST['status'] )      ? sanitize_key( wp_unslash( $_POST['status'] ) )      : 'all';
+		$raw    = isset( $_POST['_eem_selected_ids'] ) ? sanitize_text_field( wp_unslash( $_POST['_eem_selected_ids'] ) ) : '';
+		$ids    = array_filter( array_map( 'absint', explode( ',', $raw ) ) );
+
+		if ( empty( $ids ) ) {
+			self::redirect_with_notice( 'bulk_no_selection', array( 'status' => $status ) );
+		}
+
+		switch ( $action ) {
+			case 'trash':
+				$count = 0;
+				foreach ( $ids as $id ) {
+					if ( self::trash_one( $id ) ) {
+						$count++;
+					}
+				}
+				self::redirect_with_notice(
+					$count > 0 ? 'bulk_trashed' : 'failed',
+					array( 'status' => 'trash', 'eem_bulk_count' => $count )
+				);
+				break;
+
+			case 'edit':
+				self::redirect_with_notice( 'bulk_edit_unsupported', array( 'status' => $status ) );
+				break;
+
+			default:
+				self::redirect_with_notice( 'bulk_no_action', array( 'status' => $status ) );
+				break;
+		}
 	}
 
 	/**
@@ -589,34 +678,70 @@ class EEM_Reservations_List_Page {
 	/**
 	 * Toolbar — bulk actions select + Apply, date filter + Filter,
 	 * search box + Search button + item count. Mockup lines 254–270.
-	 * Bulk-action submit + search submit wire in C4.D.
 	 *
-	 * @param string $search   Current search term (echoed back into the input).
-	 * @param int    $total    Total matching items (for the "N items" pill).
+	 * Form structure:
+	 *   - Bulk-action form wraps the bulk select + Apply. Posts to
+	 *     admin-post.php?action=eem_reservations_bulk so the existing
+	 *     redirect-with-notice pattern handles the response.
+	 *   - Date-filter form wraps the date select + Filter button.
+	 *     GET ?eem_date=…&page=… reload to apply the filter.
+	 *   - Search form wraps the search input + Search Reservations
+	 *     button. Both Enter-in-input AND click-on-button submit.
+	 *   - .eem-item-count stays outside any form (semantic — it's
+	 *     a display element, not a form control).
+	 *
+	 * @param string $search      Current search term (echoed back into the input).
+	 * @param string $date_filter Current date filter (yyyy-mm) or ''.
+	 * @param int    $total       Total matching items (for the "N items" pill).
+	 * @param string $active_tab  Active status tab (forwarded as a hidden field
+	 *                            so search/filter stays on the same tab).
 	 * @return void
 	 */
-	private function render_toolbar( $search, $total ) {
+	private function render_toolbar( $search, $date_filter, $total, $active_tab ) {
+		$date_options = $this->get_date_filter_options();
 		?>
 		<div class="eem-list-toolbar">
 			<div class="eem-list-toolbar-left">
-				<select class="eem-toolbar-select" name="bulk_action" disabled>
-					<option><?php esc_html_e( 'Bulk actions', 'equine-event-manager' ); ?></option>
-					<option value="edit"><?php esc_html_e( 'Edit', 'equine-event-manager' ); ?></option>
-					<option value="trash"><?php esc_html_e( 'Move to Trash', 'equine-event-manager' ); ?></option>
-				</select>
-				<button type="button" class="eem-toolbar-btn" disabled><?php esc_html_e( 'Apply', 'equine-event-manager' ); ?></button>
-				<select class="eem-toolbar-select" name="date_filter" disabled>
-					<option><?php esc_html_e( 'All dates', 'equine-event-manager' ); ?></option>
-				</select>
-				<button type="button" class="eem-toolbar-btn" disabled><?php esc_html_e( 'Filter', 'equine-event-manager' ); ?></button>
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="eem-bulk-form">
+					<input type="hidden" name="action" value="eem_reservations_bulk" />
+					<input type="hidden" name="status" value="<?php echo esc_attr( $active_tab ); ?>" />
+					<?php wp_nonce_field( 'eem_reservations_bulk', '_eem_bulk_nonce' ); ?>
+					<input type="hidden" name="_eem_selected_ids" data-eem-bulk-selected-ids value="" />
+					<select class="eem-toolbar-select" name="bulk_action" data-eem-bulk-action>
+						<option value=""><?php esc_html_e( 'Bulk actions', 'equine-event-manager' ); ?></option>
+						<option value="edit"><?php esc_html_e( 'Edit', 'equine-event-manager' ); ?></option>
+						<option value="trash"><?php esc_html_e( 'Move to Trash', 'equine-event-manager' ); ?></option>
+					</select>
+					<button type="submit" class="eem-toolbar-btn" data-eem-action="bulk-apply"><?php esc_html_e( 'Apply', 'equine-event-manager' ); ?></button>
+				</form>
+				<form method="get" class="eem-date-filter-form">
+					<input type="hidden" name="page" value="<?php echo esc_attr( self::MENU_SLUG ); ?>" />
+					<input type="hidden" name="status" value="<?php echo esc_attr( $active_tab ); ?>" />
+					<?php if ( '' !== $search ) : ?>
+						<input type="hidden" name="s" value="<?php echo esc_attr( $search ); ?>" />
+					<?php endif; ?>
+					<select class="eem-toolbar-select" name="eem_date">
+						<option value=""><?php esc_html_e( 'All dates', 'equine-event-manager' ); ?></option>
+						<?php foreach ( $date_options as $value => $label ) : ?>
+							<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $date_filter, $value ); ?>><?php echo esc_html( $label ); ?></option>
+						<?php endforeach; ?>
+					</select>
+					<button type="submit" class="eem-toolbar-btn"><?php esc_html_e( 'Filter', 'equine-event-manager' ); ?></button>
+				</form>
 			</div>
 			<div class="eem-list-toolbar-right">
-				<form method="get" class="eem-search-wrap" role="search">
+				<form method="get" class="eem-search-form" role="search">
 					<input type="hidden" name="page" value="<?php echo esc_attr( self::MENU_SLUG ); ?>" />
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-					<input class="eem-search-input" type="search" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="<?php esc_attr_e( 'Search reservations…', 'equine-event-manager' ); ?>" />
+					<input type="hidden" name="status" value="<?php echo esc_attr( $active_tab ); ?>" />
+					<?php if ( '' !== $date_filter ) : ?>
+						<input type="hidden" name="eem_date" value="<?php echo esc_attr( $date_filter ); ?>" />
+					<?php endif; ?>
+					<div class="eem-search-wrap">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+						<input class="eem-search-input" type="search" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="<?php esc_attr_e( 'Search reservations…', 'equine-event-manager' ); ?>" />
+					</div>
+					<button type="submit" class="eem-toolbar-btn"><?php esc_html_e( 'Search Reservations', 'equine-event-manager' ); ?></button>
 				</form>
-				<button type="button" class="eem-toolbar-btn" disabled><?php esc_html_e( 'Search Reservations', 'equine-event-manager' ); ?></button>
 				<span class="eem-item-count">
 					<?php
 					echo esc_html(
@@ -634,6 +759,34 @@ class EEM_Reservations_List_Page {
 	}
 
 	/**
+	 * Build the date-filter dropdown options — every month that has at
+	 * least one reservation falling within it (per nightly start/end).
+	 *
+	 * @return array<string, string>  yyyy-mm => "Month YYYY" label.
+	 */
+	private function get_date_filter_options() {
+		global $wpdb;
+		$rows = $wpdb->get_col( $wpdb->prepare(
+			"SELECT meta_value FROM {$wpdb->postmeta}
+			 WHERE meta_key = %s AND meta_value <> ''
+			 ORDER BY meta_value DESC",
+			'_en_nightly_start_date'
+		) );
+		$months = array();
+		foreach ( (array) $rows as $date_string ) {
+			$ts = strtotime( (string) $date_string );
+			if ( ! $ts ) {
+				continue;
+			}
+			$key = gmdate( 'Y-m', $ts );
+			if ( ! isset( $months[ $key ] ) ) {
+				$months[ $key ] = date_i18n( 'F Y', $ts );
+			}
+		}
+		return $months;
+	}
+
+	/**
 	 * Desktop table — checkbox / Reservation / Event Dates / Type /
 	 * Status / Orders / Actions columns. Sortable headers send the user
 	 * to ?orderby=…&order=…. C4.D wires real sort handling; C4.B emits
@@ -644,7 +797,7 @@ class EEM_Reservations_List_Page {
 	 * @param string    $order
 	 * @return void
 	 */
-	private function render_desktop_table( array $items, $orderby, $order ) {
+	private function render_desktop_table( array $items, $orderby, $order, $active_tab = 'all' ) {
 		?>
 		<div class="eem-desktop-table">
 			<table class="eem-table">
@@ -666,7 +819,7 @@ class EEM_Reservations_List_Page {
 						</tr>
 					<?php else : ?>
 						<?php foreach ( $items as $post ) : ?>
-							<?php $this->render_table_row( $post ); ?>
+							<?php $this->render_table_row( $post, $active_tab ); ?>
 						<?php endforeach; ?>
 					<?php endif; ?>
 				</tbody>
@@ -710,7 +863,7 @@ class EEM_Reservations_List_Page {
 	 * @param WP_Post $post
 	 * @return void
 	 */
-	private function render_table_row( $post ) {
+	private function render_table_row( $post, $active_tab = 'all' ) {
 		$id           = (int) $post->ID;
 		$edit_url     = get_edit_post_link( $id );
 		$dates        = EEM_Reservations_List_Repo::get_event_date_range_label( $id );
@@ -719,6 +872,7 @@ class EEM_Reservations_List_Page {
 		$has_stalls   = in_array( 'stall', $badges, true );
 		$status_id    = $this->derive_status_id( $post );
 		$status_label = $this->status_label_for( $status_id );
+		$is_trashed   = ( 'trashed' === $status_id );
 		?>
 		<tr data-reservation-id="<?php echo esc_attr( $id ); ?>">
 			<td class="eem-col-cb"><input type="checkbox" name="reservation_ids[]" value="<?php echo esc_attr( $id ); ?>" aria-label="<?php echo esc_attr( sprintf( __( 'Select %s', 'equine-event-manager' ), get_the_title( $post ) ) ); ?>" /></td>
@@ -727,7 +881,7 @@ class EEM_Reservations_List_Page {
 			<td><?php $this->render_type_badges( $badges ); ?></td>
 			<td><span class="eem-res-status eem-res-status--<?php echo esc_attr( $status_id ); ?>"><?php echo esc_html( $status_label ); ?></span></td>
 			<td><span class="eem-orders-count<?php echo $orders_count === 0 ? ' is-zero' : ''; ?>"><?php echo esc_html( number_format_i18n( $orders_count ) ); ?></span></td>
-			<td><?php $this->render_row_actions( $id, $has_stalls ); ?></td>
+			<td><?php $this->render_row_actions( $id, $has_stalls, $is_trashed ); ?></td>
 		</tr>
 		<?php
 	}
@@ -773,7 +927,7 @@ class EEM_Reservations_List_Page {
 	 * @param bool $has_stalls
 	 * @return void
 	 */
-	private function render_row_actions( $reservation_id, $has_stalls ) {
+	private function render_row_actions( $reservation_id, $has_stalls, $is_trashed = false ) {
 		$stall_chart_url = add_query_arg(
 			array(
 				'page'           => 'equine-event-manager-stall-chart',
@@ -822,10 +976,17 @@ class EEM_Reservations_List_Page {
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
 						<?php esc_html_e( 'Email Customers', 'equine-event-manager' ); ?>
 					</button>
-					<button type="button" class="eem-row-dd-item eem-row-dd-danger" data-eem-action="reservation-trash" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" role="menuitem">
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-						<?php esc_html_e( 'Move to Trash', 'equine-event-manager' ); ?>
-					</button>
+					<?php if ( $is_trashed ) : ?>
+						<button type="button" class="eem-row-dd-item" data-eem-action="reservation-restore" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" role="menuitem">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+							<?php esc_html_e( 'Restore', 'equine-event-manager' ); ?>
+						</button>
+					<?php else : ?>
+						<button type="button" class="eem-row-dd-item eem-row-dd-danger" data-eem-action="reservation-trash" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" role="menuitem">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+							<?php esc_html_e( 'Move to Trash', 'equine-event-manager' ); ?>
+						</button>
+					<?php endif; ?>
 				</div>
 			</div>
 		</div>
@@ -840,7 +1001,7 @@ class EEM_Reservations_List_Page {
 	 * @param WP_Post[] $items
 	 * @return void
 	 */
-	private function render_mobile_cards( array $items ) {
+	private function render_mobile_cards( array $items, $active_tab = 'all' ) {
 		?>
 		<div class="eem-mobile-reservations">
 			<?php foreach ( $items as $post ) :
@@ -852,6 +1013,7 @@ class EEM_Reservations_List_Page {
 				$has_stalls   = in_array( 'stall', $badges, true );
 				$status_id    = $this->derive_status_id( $post );
 				$status_label = $this->status_label_for( $status_id );
+				$is_trashed   = ( 'trashed' === $status_id );
 				?>
 				<div class="eem-mobile-res-card">
 					<a class="eem-mob-res-name" href="<?php echo esc_url( $edit_url ); ?>"><?php echo esc_html( get_the_title( $post ) ); ?></a>
@@ -873,7 +1035,7 @@ class EEM_Reservations_List_Page {
 							</span>
 						</div>
 						<div class="eem-mob-res-actions">
-							<?php $this->render_row_actions( $id, $has_stalls ); ?>
+							<?php $this->render_row_actions( $id, $has_stalls, $is_trashed ); ?>
 						</div>
 					</div>
 				</div>

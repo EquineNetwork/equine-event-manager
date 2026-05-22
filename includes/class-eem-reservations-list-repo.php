@@ -93,38 +93,57 @@ class EEM_Reservations_List_Repo {
 	}
 
 	/**
-	 * Paginated fetch with sort + search + status filter.
+	 * Paginated fetch with sort + search + status filter + date filter.
+	 *
+	 * Sort modes:
+	 *   - 'title'       → WP-native ORDER BY post_title
+	 *   - 'event_dates' → ORDER BY _en_nightly_start_date meta (string
+	 *                     YYYY-MM-DD sorts correctly lexicographically)
+	 *   - 'orders'      → fetched in two passes: first WP_Query for
+	 *                     candidate posts, then PHP-sorts by computed
+	 *                     orders count. Acceptable up to a few hundred
+	 *                     reservations; C11 revisits if perf demands.
 	 *
 	 * @param array $args {
-	 *     @type string $status   Tab id (all/publish/draft/trash). Default 'all'.
-	 *     @type string $search   Search by reservation post_title (LIKE). Default ''.
-	 *     @type string $orderby  'title' | 'event_dates' | 'orders'. Default 'event_dates'.
-	 *     @type string $order    'asc' | 'desc'. Default 'asc'.
-	 *     @type int    $paged    Page number (1-based). Default 1.
-	 *     @type int    $per_page Default 25.
+	 *     @type string $status      Tab id. Default 'all'.
+	 *     @type string $search      Title LIKE. Default ''.
+	 *     @type string $orderby     'title' | 'event_dates' | 'orders'. Default 'event_dates'.
+	 *     @type string $order       'asc' | 'desc'. Default 'asc'.
+	 *     @type int    $paged       Page number (1-based). Default 1.
+	 *     @type int    $per_page    Default 25.
+	 *     @type string $date_filter yyyy-mm — restricts to reservations whose
+	 *                               nightly start date falls within this month.
+	 *                               '' = no filter. Default ''.
 	 * }
 	 * @return array{ items: WP_Post[], total: int, total_pages: int, page: int, per_page: int }
 	 */
 	public static function get_paginated( array $args = array() ) {
 		$defaults = array(
-			'status'   => 'all',
-			'search'   => '',
-			'orderby'  => 'event_dates',
-			'order'    => 'asc',
-			'paged'    => 1,
-			'per_page' => 25,
+			'status'      => 'all',
+			'search'      => '',
+			'orderby'     => 'event_dates',
+			'order'       => 'asc',
+			'paged'       => 1,
+			'per_page'    => 25,
+			'date_filter' => '',
 		);
 		$args = wp_parse_args( $args, $defaults );
 
-		$tabs   = self::status_tabs();
-		$status = isset( $tabs[ $args['status'] ] ) ? $tabs[ $args['status'] ] : $tabs['all'];
+		$tabs    = self::status_tabs();
+		$status  = isset( $tabs[ $args['status'] ] ) ? $tabs[ $args['status'] ] : $tabs['all'];
+		$order   = 'desc' === strtolower( (string) $args['order'] ) ? 'DESC' : 'ASC';
+		$orderby = (string) $args['orderby'];
 
-		// orderby translation. C4.A scaffold only honours the WP-native
-		// orderby keys; the 'event_dates' and 'orders' custom sorts get
-		// wired in C4.D once the meta-query joins are designed.
-		$wp_orderby = 'title';
-		if ( 'title' === $args['orderby'] ) {
-			$wp_orderby = 'title';
+		$meta_query = array();
+		if ( '' !== $args['date_filter'] && preg_match( '/^(\d{4})-(\d{2})$/', $args['date_filter'], $m ) ) {
+			$month_start = sprintf( '%s-%s-01', $m[1], $m[2] );
+			$month_end   = gmdate( 'Y-m-t', strtotime( $month_start ) );
+			$meta_query[] = array(
+				'key'     => '_en_nightly_start_date',
+				'value'   => array( $month_start, $month_end ),
+				'compare' => 'BETWEEN',
+				'type'    => 'DATE',
+			);
 		}
 
 		$query_args = array(
@@ -132,10 +151,50 @@ class EEM_Reservations_List_Repo {
 			'post_status'    => $status,
 			'posts_per_page' => max( 1, (int) $args['per_page'] ),
 			'paged'          => max( 1, (int) $args['paged'] ),
-			'orderby'        => $wp_orderby,
-			'order'          => 'desc' === strtolower( (string) $args['order'] ) ? 'DESC' : 'ASC',
 			's'              => (string) $args['search'],
 		);
+		if ( ! empty( $meta_query ) ) {
+			$query_args['meta_query'] = $meta_query;
+		}
+
+		if ( 'event_dates' === $orderby ) {
+			$query_args['orderby']  = 'meta_value';
+			$query_args['meta_key'] = '_en_nightly_start_date';
+			$query_args['order']    = $order;
+		} elseif ( 'orders' === $orderby ) {
+			// PHP-side sort path: pull all matching posts (capped at 500
+			// for safety), compute orders count for each, sort, then
+			// hand-paginate. WP_Query alone can't do this since the
+			// orders table isn't joinable.
+			$all_args             = $query_args;
+			$all_args['orderby']  = 'title';
+			$all_args['order']    = 'ASC';
+			$all_args['posts_per_page'] = 500;
+			$all_args['paged']    = 1;
+			$all = ( new WP_Query( $all_args ) )->posts;
+			$counts = array();
+			foreach ( $all as $p ) {
+				$counts[ $p->ID ] = self::get_orders_count_for_reservation( $p->ID );
+			}
+			usort( $all, function( $a, $b ) use ( $counts, $order ) {
+				$cmp = $counts[ $a->ID ] <=> $counts[ $b->ID ];
+				return 'DESC' === $order ? -$cmp : $cmp;
+			} );
+			$total       = count( $all );
+			$per_page    = max( 1, (int) $args['per_page'] );
+			$paged       = max( 1, (int) $args['paged'] );
+			$page_items  = array_slice( $all, ( $paged - 1 ) * $per_page, $per_page );
+			return array(
+				'items'       => $page_items,
+				'total'       => $total,
+				'total_pages' => (int) ceil( $total / $per_page ),
+				'page'        => $paged,
+				'per_page'    => $per_page,
+			);
+		} else {
+			$query_args['orderby'] = 'title';
+			$query_args['order']   = $order;
+		}
 
 		$query = new WP_Query( $query_args );
 

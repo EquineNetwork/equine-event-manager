@@ -123,6 +123,7 @@ class EEM_Plugin {
 		add_action( 'admin_post_eem_reservation_trash',           array( 'EEM_Reservations_List_Page', 'handle_trash' ) );
 		add_action( 'admin_post_eem_reservation_restore',         array( 'EEM_Reservations_List_Page', 'handle_restore' ) );
 		add_action( 'admin_post_eem_reservation_export_roster',   array( 'EEM_Reservations_List_Page', 'handle_export_roster' ) );
+		add_action( 'admin_post_eem_reservations_bulk',           array( 'EEM_Reservations_List_Page', 'handle_bulk' ) );
 		add_action( 'wp_ajax_eem_email_customers',                array( 'EEM_Reservations_List_Page', 'handle_email_customers_ajax' ) );
 		add_action( 'wp_ajax_eem_email_customers_count',          array( 'EEM_Reservations_List_Page', 'handle_email_customers_count_ajax' ) );
 		add_action( 'admin_enqueue_scripts',                      array( 'EEM_Reservations_List_Page', 'localize_row_action_nonces' ), 20 );
