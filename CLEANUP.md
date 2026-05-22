@@ -30,12 +30,10 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 - **Unblocks deletion:** C7 (Edit Reservation port), when `render_editor_header` is rewritten or removed. At that point: switch the surviving reference to `assets/images/logo.png` (or remove if no longer needed) and `git rm admin/images/equine-event-manager-logo.png`.
 - **Status:** unchanged since C1
 
-### 3. `EEM_Admin::render_settings_page` — legacy 668-line method
-- **What:** Original Settings page renderer in `admin/class-equine-event-manager-admin.php`. Still wired as the menu callback through C3.A–C3.C so the live Settings page keeps working during the parallel build-up.
-- **Why deferred:** New `EEM_Settings_Page::render` lives parallel through C3.A–C3.C; menu callback swap is scheduled for C3.D.
-- **Added in:** C3.A
-- **Unblocks deletion:** C3.D, after the menu callback is repointed to `EEM_Settings_Page::render`. Also delete any private helpers used exclusively by the legacy method (e.g., the per-section render helpers within it that no other code calls).
-- **Status:** awaiting C3.D
+### 3. ~~`EEM_Admin::render_settings_page` — legacy 662-line method~~ ✅ Resolved in C3.D.4
+- **What:** Original Settings page renderer in `admin/class-equine-event-manager-admin.php`. Was wired as the menu callback through C3.A–C3.C so the live Settings page kept working during the parallel build-up.
+- **Resolution:** Method + its docblock deleted (lines 5311–5975, −665 LOC). All seven settings getters it used (`get_company_settings`, `get_feature_settings`, `get_integration_settings`, `get_receipt_settings`, `get_reservation_message_settings`) plus `render_admin_notice` / `render_brand_banner` retained — confirmed in use by other admin pages.
+- **Closed in:** C3.D.4 (post browser-verification of the new EEM_Settings_Page)
 
 ### 4. Communications-panel sub-section method scope
 - **What:** `EEM_Settings_Page` private methods `render_communications_sender_section`, `render_communications_templates_section`, `render_communications_template_card`, `render_communications_policies_section`, plus the helpers `build_sample_placeholder_values` and `apply_placeholders`.
