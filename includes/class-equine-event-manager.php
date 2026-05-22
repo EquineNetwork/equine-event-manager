@@ -20,6 +20,12 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'public/class-equine-event-manager-shor
 // Phase 3 — Activity Log subsystem (ODET-7, CDET-5).
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-activity-log.php';
 
+// Phase 3 — Settings subsystem (SET-*). Repos load eagerly so any code path
+// (admin page render OR AJAX save) can use them without a separate guard.
+require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-email-templates-repo.php';
+require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-settings-repo.php';
+require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-settings-page.php';
+
 // Phase 3 admin template partials.
 require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_breadcrumb.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_page_shell.php';
@@ -66,6 +72,14 @@ class EEM_Plugin {
 	private $reservation_editor;
 
 	/**
+	 * Settings page controller (Phase 3 port). Renderable parallel to the
+	 * legacy render_settings_page through C3.A–C; menu callback swap in C3.D.
+	 *
+	 * @var EEM_Settings_Page
+	 */
+	private $settings_page;
+
+	/**
 	 * Set up plugin components.
 	 */
 	public function __construct() {
@@ -74,6 +88,7 @@ class EEM_Plugin {
 		$this->events           = new EEM_Events();
 		$this->shortcodes       = new EEM_Shortcodes();
 		$this->reservation_editor = new EEM_Reservation_Editor( $this->reservations_cpt );
+		$this->settings_page    = new EEM_Settings_Page();
 	}
 
 	/**
@@ -92,6 +107,7 @@ class EEM_Plugin {
 		add_filter( 'get_user_option_meta-box-order_en_reservation', array( $this->reservation_editor, 'filter_editor_meta_box_order' ) );
 		add_action( 'admin_enqueue_scripts', array( $this->reservation_editor, 'enqueue_editor_shell_styles' ) );
 		add_action( 'admin_footer', array( $this->admin, 'render_global_toast_container' ) );
+		add_action( 'wp_ajax_eem_save_settings', array( $this->settings_page, 'handle_ajax_save_settings' ) );
 		add_action( 'admin_head', array( $this->reservation_editor, 'print_editor_shell_fallback_assets' ) );
 		add_action( 'edit_form_top', array( $this->reservation_editor, 'render_editor_header' ) );
 		add_action( 'edit_form_after_title', array( $this->reservation_editor, 'render_editor_overview' ) );

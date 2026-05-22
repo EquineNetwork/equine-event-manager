@@ -174,4 +174,115 @@ class EEM_Settings_Page {
 	private function render_shortcodes_panel()     { $this->render_panel_stub( 'shortcodes' ); }
 	private function render_payments_panel()       { $this->render_panel_stub( 'payments' ); }
 	private function render_addons_panel()         { $this->render_panel_stub( 'addons' ); }
+
+	/* ─────────────────────────────────────────────────────────────
+	 * Save dispatcher (AJAX)
+	 *
+	 * One endpoint (wp_ajax_eem_save_settings) accepts a `panel` param +
+	 * a nested `payload` array. Per-panel save methods dispatch the payload
+	 * to the right repo. JSON response on success/failure with a message
+	 * the JS layer feeds into EEM.showSaveToast().
+	 *
+	 * Nonce action: `eem_settings_save` (one per page load — checked here).
+	 * ───────────────────────────────────────────────────────────── */
+
+	/**
+	 * Top-level AJAX handler. Validates auth + nonce, then routes to the
+	 * panel-specific save method. Always exits via wp_send_json_*.
+	 *
+	 * @return void
+	 */
+	public function handle_ajax_save_settings() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to save these settings.', 'equine-event-manager' ) ), 403 );
+		}
+
+		check_ajax_referer( 'eem_settings_save', 'nonce' );
+
+		$panel   = isset( $_POST['panel'] ) ? sanitize_key( wp_unslash( $_POST['panel'] ) ) : '';
+		$payload = isset( $_POST['payload'] ) && is_array( $_POST['payload'] ) ? wp_unslash( $_POST['payload'] ) : array();
+
+		if ( ! isset( self::panels()[ $panel ] ) ) {
+			wp_send_json_error( array( 'message' => __( 'Unknown settings panel.', 'equine-event-manager' ) ), 400 );
+		}
+
+		$errors = array();
+		switch ( $panel ) {
+			case 'communications':
+				$errors = $this->save_communications_panel( $payload );
+				break;
+
+			case 'payments':
+				$errors = $this->save_payments_panel( $payload );
+				break;
+
+			case 'integrations':
+			case 'branding':
+			case 'shortcodes':
+			case 'addons':
+			default:
+				/* translators: 1: panel label */
+				$message = sprintf( __( 'Saving the %s panel is not wired yet — coming in a later sub-chunk.', 'equine-event-manager' ), self::panels()[ $panel ]['label'] );
+				wp_send_json_error( array( 'message' => $message ), 501 );
+		}
+
+		if ( ! empty( $errors ) ) {
+			wp_send_json_error( array(
+				'message' => __( 'Some settings could not be saved.', 'equine-event-manager' ),
+				'errors'  => $errors,
+			), 422 );
+		}
+
+		wp_send_json_success( array( 'message' => __( 'Settings saved.', 'equine-event-manager' ) ) );
+	}
+
+	/**
+	 * Communications save — dispatches sender / templates / policies to their repos.
+	 * Returns an array of failed-write keys; empty means everything saved.
+	 *
+	 * @param array $payload Expected shape: [ sender => [...], templates => [...], policies => [...] ]
+	 * @return array<int, string>
+	 */
+	private function save_communications_panel( array $payload ) {
+		$errors = array();
+
+		if ( isset( $payload['sender'] ) && is_array( $payload['sender'] ) ) {
+			if ( ! EEM_Settings_Repo::update_email_sender( $payload['sender'] ) ) {
+				$errors[] = 'sender';
+			}
+		}
+
+		if ( isset( $payload['templates'] ) && is_array( $payload['templates'] ) ) {
+			if ( ! EEM_Email_Templates_Repo::update_all( $payload['templates'] ) ) {
+				$errors[] = 'templates';
+			}
+		}
+
+		if ( isset( $payload['policies'] ) && is_array( $payload['policies'] ) ) {
+			if ( ! EEM_Settings_Repo::update_policies( $payload['policies'] ) ) {
+				$errors[] = 'policies';
+			}
+		}
+
+		return $errors;
+	}
+
+	/**
+	 * Payments save — dispatches tax to its repo. Stripe / Authorize.net
+	 * credential persistence lands in C3.C alongside the panel UI.
+	 *
+	 * @param array $payload Expected shape: [ tax => [...] ]
+	 * @return array<int, string>
+	 */
+	private function save_payments_panel( array $payload ) {
+		$errors = array();
+
+		if ( isset( $payload['tax'] ) && is_array( $payload['tax'] ) ) {
+			if ( ! EEM_Settings_Repo::update_tax( $payload['tax'] ) ) {
+				$errors[] = 'tax';
+			}
+		}
+
+		return $errors;
+	}
 }
