@@ -2166,3 +2166,100 @@ th.sorted-desc .eem-sort-icon span:first-child {
 		padding-top: 88px;
 	}
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   C2 — Activity Log entries (ODET-7 + CDET-5)
+   Rendered by templates/admin/_activity_log.php on Order Detail and
+   Stall Chart Detail. Each entry: variant-colored icon + title + meta +
+   right-aligned timestamp.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.eem-activity-log {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+}
+
+.eem-activity-log-empty {
+	font-size: 13px;
+	color: var(--eem-text-secondary);
+	padding: var(--eem-space-3) 0;
+	font-style: italic;
+}
+
+.eem-activity-log-entry {
+	display: grid;
+	grid-template-columns: 32px 1fr auto;
+	gap: var(--eem-space-3);
+	align-items: flex-start;
+	padding: var(--eem-space-3) 0;
+	border-bottom: 1px solid var(--eem-border-soft);
+}
+
+.eem-activity-log-entry:last-child {
+	border-bottom: none;
+}
+
+.eem-activity-log-icon {
+	width: 28px;
+	height: 28px;
+	border-radius: var(--eem-radius);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-family: var(--eem-font-display);
+	font-size: 14px;
+	font-weight: 700;
+	line-height: 1;
+	flex-shrink: 0;
+}
+
+/* Icon color variants — ODET-7 spec */
+.eem-activity-log-entry--create .eem-activity-log-icon       { background: #F0FDF4;                    color: var(--eem-success-accent); }
+.eem-activity-log-entry--edit .eem-activity-log-icon         { background: var(--eem-warn-bg);         color: var(--eem-warn-accent); }
+.eem-activity-log-entry--info .eem-activity-log-icon         { background: var(--eem-info-bg);         color: var(--eem-electric); }
+.eem-activity-log-entry--refund .eem-activity-log-icon       { background: var(--eem-error-bg);        color: var(--eem-error-accent); }
+.eem-activity-log-entry--assignment .eem-activity-log-icon   { background: var(--eem-type-rv-bg);      color: var(--eem-type-rv-text); }
+.eem-activity-log-entry--notification .eem-activity-log-icon { background: #F0FDFA;                    color: var(--eem-success-text); }
+
+.eem-activity-log-body {
+	min-width: 0;
+}
+
+.eem-activity-log-title {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--eem-navy);
+	line-height: 1.4;
+}
+
+.eem-activity-log-meta {
+	font-size: 12px;
+	color: var(--eem-text-secondary);
+	line-height: 1.5;
+	margin-top: 2px;
+}
+
+.eem-activity-log-stamp {
+	font-size: 11.5px;
+	color: var(--eem-text-muted);
+	white-space: nowrap;
+	text-align: right;
+	padding-top: 2px;
+}
+
+/* Mobile — stamp drops under the body so the row stays readable */
+@media (max-width: 767px) {
+	.eem-activity-log-entry {
+		grid-template-columns: 28px 1fr;
+		gap: var(--eem-space-2);
+	}
+
+	.eem-activity-log-stamp {
+		grid-column: 2;
+		text-align: left;
+		padding-top: 4px;
+	}
+}
