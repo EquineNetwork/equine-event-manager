@@ -380,6 +380,12 @@ class EEM_Shortcodes {
 					data-group-deposit-amount="<?php echo esc_attr( (float) $data['group_rider_deposit_amount'] ); ?>"
 					data-fee-type="<?php echo esc_attr( $data['convenience_fee_type'] ); ?>"
 					data-fee-value="<?php echo esc_attr( (float) $data['convenience_fee_value'] ); ?>"
+					<?php
+					// Tax (SET-6 / C3.D.1). Rate is resolved per-reservation so
+					// the override meta (C7 wires its UI) flows transparently to JS.
+					$eem_tax_rate_for_js = class_exists( 'EEM_Settings_Repo' ) ? EEM_Settings_Repo::get_tax_rate_for_reservation( $reservation_id ) : 0.0;
+					?>
+					data-tax-rate="<?php echo esc_attr( (float) $eem_tax_rate_for_js ); ?>"
 					data-payment-gateway="<?php echo esc_attr( $payment_settings['selected_gateway'] ); ?>"
 					data-stripe-enabled="<?php echo esc_attr( $stripe_card_enabled ? '1' : '0' ); ?>"
 					data-stripe-publishable-key="<?php echo esc_attr( $stripe_config['publishable_key'] ); ?>"
@@ -1035,6 +1041,15 @@ class EEM_Shortcodes {
 						<div class="eem-payment-summary-row" data-eem-summary-row="fees" hidden>
 							<span><?php echo esc_html( ! empty( $data['convenience_fee_label'] ) ? $data['convenience_fee_label'] : __( 'Non-Refundable Convenience Fee', 'equine-event-manager' ) ); ?></span>
 							<strong data-eem-total="fees">$0.00</strong>
+						</div>
+						<?php
+						// Tax row (SET-6 / C3.D.1). Label comes from Settings → Payments;
+						// row stays hidden when tax is disabled or the computed amount is 0.
+						$eem_tax_settings = class_exists( 'EEM_Settings_Repo' ) ? EEM_Settings_Repo::get_tax() : array( 'label' => __( 'Sales Tax', 'equine-event-manager' ) );
+						?>
+						<div class="eem-payment-summary-row" data-eem-summary-row="tax" hidden>
+							<span><?php echo esc_html( $eem_tax_settings['label'] ); ?></span>
+							<strong data-eem-total="tax">$0.00</strong>
 						</div>
 						<div class="eem-payment-summary-row eem-payment-summary-row--total">
 							<span><?php esc_html_e( 'Total Amount Due', 'equine-event-manager' ); ?></span>
@@ -2274,7 +2289,7 @@ class EEM_Shortcodes {
 	 */
 	private function process_payment_submission( $reservation_id, $data, $submission, $status ) {
 		$gateway = $this->get_configured_payment_gateway();
-		$totals  = $this->calculate_submission_totals( $data, $submission, $status );
+		$totals  = $this->calculate_submission_totals( $data, $submission, $status, $reservation_id );
 		$is_send_link = ( 'manual' === $submission['invoice_type'] && 'send_payment_link' === $submission['invoice_action_mode'] );
 		$is_show_bill = ( 'manual' === $submission['invoice_type'] && 'add_to_show_bill' === $submission['invoice_action_mode'] );
 
@@ -2363,9 +2378,10 @@ class EEM_Shortcodes {
 	 * @param array $data Reservation setup data.
 	 * @param array $submission Submission values.
 	 * @param array $status Open/closed status.
+	 * @param int   $reservation_id Reservation post id (used to resolve per-reservation tax override). 0 = global default only.
 	 * @return array
 	 */
-	private function calculate_submission_totals( $data, $submission, $status ) {
+	private function calculate_submission_totals( $data, $submission, $status, $reservation_id = 0 ) {
 		$submission = $this->maybe_sync_submission_stay_values( $submission, $data );
 		$stall_qty_total               = $this->get_stall_billable_quantity( $submission, $data, $status );
 		$stall_unit_price              = $this->get_current_rate( $data, 'stall', $submission['stall_stay_type'] );
@@ -2412,6 +2428,12 @@ class EEM_Shortcodes {
 		$subtotal = $stall_subtotal + $rv_subtotal + $general_addons_subtotal + $group_subtotal;
 		$fees     = $this->calculate_convenience_fee( $subtotal, $data );
 
+		// Tax (SET-6 / C3.D.1). Resolves per-reservation override via post meta when present;
+		// returns 0.0 when tax is disabled globally in Settings → Payments.
+		$tax_rate  = class_exists( 'EEM_Settings_Repo' ) ? EEM_Settings_Repo::get_tax_rate_for_reservation( $reservation_id ) : 0.0;
+		$tax_label = class_exists( 'EEM_Settings_Repo' ) ? EEM_Settings_Repo::get_tax()['label'] : __( 'Sales Tax', 'equine-event-manager' );
+		$tax       = $tax_rate > 0 ? round( $subtotal * ( $tax_rate / 100 ), 2 ) : 0.0;
+
 		return array(
 			'stall_qty_total'              => $stall_qty_total,
 			'stall_unit_price'             => $stall_unit_price,
@@ -2432,7 +2454,10 @@ class EEM_Shortcodes {
 			'rv_subtotal'                  => $rv_subtotal,
 			'subtotal'                     => $subtotal,
 			'fees'                         => $fees,
-			'total'                        => $subtotal + $fees,
+			'tax_rate'                     => $tax_rate,
+			'tax_label'                    => $tax_label,
+			'tax'                          => $tax,
+			'total'                        => $subtotal + $fees + $tax,
 		);
 	}
 
@@ -2567,7 +2592,13 @@ class EEM_Shortcodes {
 		$payment_status  = ! empty( $payment_result['payment_status'] ) ? $payment_result['payment_status'] : 'pending';
 		$transaction_id  = ! empty( $payment_result['transaction_id'] ) ? $payment_result['transaction_id'] : '';
 		$order_number    = '';
-		$totals          = $this->calculate_submission_totals( $data, $submission, $status );
+		$totals          = $this->calculate_submission_totals( $data, $submission, $status, $reservation_id );
+		// NOTE (C3.D.1 / SET-6): $totals['tax'] is the aggregate tax for this submission.
+		// The per-order rows persisted below (stall + rv) keep their pre-tax `total` column
+		// for now — tax allocation between split orders + a dedicated `tax` schema column is
+		// C11 scope (receipt/email breakouts). Customer is still charged the correct
+		// tax-inclusive total via $totals['total'] in process_payment_submission /
+		// ajax_create_stripe_payment_intent.
 		$has_stall_order = ( $status['stalls_open'] && $this->has_stall_selection( $submission, $data, $status ) ) || ( ! empty( $status['shavings_open'] ) && $submission['additional_shavings_qty'] > 0 );
 		$has_rv_order    = $status['rv_open'] && $submission['rv_qty'] > 0;
 		$has_group_fees  = ! empty( $totals['group_subtotal'] );
@@ -4375,7 +4406,7 @@ RV Lot: " . $rv_lot['name'] );
 			wp_send_json_error( array( 'message' => __( 'Stripe keys are not configured yet in plugin Settings.', 'equine-event-manager' ) ), 400 );
 		}
 
-		$totals = $this->calculate_submission_totals( $data, $submission, $status );
+		$totals = $this->calculate_submission_totals( $data, $submission, $status, $reservation_id );
 
 		if ( $totals['total'] <= 0 ) {
 			wp_send_json_error( array( 'message' => __( 'Please select at least one paid reservation item before paying.', 'equine-event-manager' ) ), 400 );
@@ -10310,7 +10341,10 @@ RV Lot: " . $rv_lot['name'] );
 
 				subtotal = stallSubtotal + requiredShavingsSubtotal + rvSubtotal + generalAddonsSubtotal + groupSubtotal;
 				fees = calculateReservationFee(subtotal, feeType, feeValue);
-				total = subtotal + fees;
+				// Tax (SET-6 / C3.D.1). Rate is the effective rate (post-override) from PHP.
+				var taxRate = parseFloat(form.dataset.taxRate || '0') || 0;
+				var tax = taxRate > 0 ? Math.round(subtotal * (taxRate / 100) * 100) / 100 : 0;
+				total = subtotal + fees + tax;
 
 				setTotal(form, 'stall_subtotal', stallSubtotal);
 				setTotal(form, 'stall_section_subtotal', stallSectionSubtotal);
@@ -10328,6 +10362,7 @@ RV Lot: " . $rv_lot['name'] );
 					setTotal(form, 'rv_addon_' + addonKey + '_subtotal', rvAddonSubtotals[addonKey] || 0);
 				});
 				setTotal(form, 'fees', fees);
+				setTotal(form, 'tax', tax);
 				setTotal(form, 'total', total);
 				setReadonlyQuantity(form, 'required_shavings', requiredShavingsQty);
 				setReadonlyQuantity(form, 'group_rider_grounds_fee', groupRiderCount);
@@ -10344,6 +10379,7 @@ RV Lot: " . $rv_lot['name'] );
 					toggleSummaryRow(form, 'rv_addon_' + addonKey + '_subtotal', (rvAddonSubtotals[addonKey] || 0) > 0);
 				});
 				toggleSummaryRow(form, 'fees', fees > 0);
+				toggleSummaryRow(form, 'tax', tax > 0);
 				syncStallAssignmentAvailability(form);
 			}
 

@@ -66,6 +66,13 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 - **Resolution:** All five replaced with real implementations across C3.C.1–C3.C.5. No stubs remain in `EEM_Settings_Page`.
 - **Closed in:** C3.C.5 (Add-Ons was the last)
 
+### 9. Per-order persisted `total` columns exclude tax allocation
+- **What:** `wp_en_stall_reservations.total` and `wp_en_rv_reservations.total` columns store `subtotal + convenience_fee` only — they do NOT include the tax that was actually charged at checkout. C3.D.1 wires tax into the *aggregate* `$totals['total']` (what the customer pays via Stripe / Auth.net), but defers the per-order allocation question.
+- **Why deferred:** Tax allocation between split stall + rv orders is a real product decision (proportional to subtotal? all on stall? add a dedicated `tax` column on each table?), AND a dedicated `tax` schema column requires a dbDelta migration. Both are receipts/email-breakout shaped work.
+- **Added in:** C3.D.1
+- **Unblocks deletion:** C11 (Email/Receipt port — EMAIL-5). At that point: add `tax` column to both `en_stall_reservations` and `en_rv_reservations` via dbDelta in EEM_Activator, allocate `$totals['tax']` proportionally during insert in `insert_reservation_orders`, update `total` to include tax, and surface as a line item on the customer receipt + admin order detail.
+- **Status:** awaiting C11
+
 ### 8. `render_panel_stub` helper itself
 - **What:** `EEM_Settings_Page::render_panel_stub( $panel_id )` — the "Coming soon" placeholder card used during the C3.A → C3.C build-up.
 - **Why deferred (not deleted now):** Still useful infrastructure if a future panel needs a placeholder during its build-up, AND `render_panel( $panel_id )` falls through to it via `method_exists` lookup if any `render_<id>_panel` method is missing. Removing it would change failure mode from "shows placeholder" to "fatal" — worse UX.
