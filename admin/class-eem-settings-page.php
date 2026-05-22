@@ -193,10 +193,107 @@ class EEM_Settings_Page {
 	 *           render_addons_panel
 	 * ───────────────────────────────────────────────────────────── */
 
-	private function render_branding_panel()       { $this->render_panel_stub( 'branding' ); }
 	private function render_shortcodes_panel()     { $this->render_panel_stub( 'shortcodes' ); }
 	private function render_payments_panel()       { $this->render_panel_stub( 'payments' ); }
 	private function render_addons_panel()         { $this->render_panel_stub( 'addons' ); }
+
+	/**
+	 * Branding panel (settings_page mockup tab-panel:#panel-branding).
+	 *
+	 * Three fields, one section:
+	 *   - Business Logo (WP media library upload, attachment id stored)
+	 *   - Support Phone
+	 *   - Support Email
+	 *
+	 * Reads/writes equine_event_manager_company_settings option directly
+	 * (existing key, populated by the legacy admin). Save dispatch in C3.C.6.
+	 *
+	 * Logo upload uses WP's wp.media library — JS in C3.C.6 wires the
+	 * Upload button. The hidden input carries the attachment id; the
+	 * preview img refreshes from the selected attachment URL on pick.
+	 *
+	 * @return void
+	 */
+	private function render_branding_panel() {
+		$company = wp_parse_args(
+			get_option( 'equine_event_manager_company_settings', array() ),
+			array(
+				'logo_id'       => 0,
+				'support_phone' => '',
+				'support_email' => get_option( 'admin_email', '' ),
+			)
+		);
+
+		$logo_id  = absint( $company['logo_id'] );
+		$logo_url = $logo_id ? (string) wp_get_attachment_image_url( $logo_id, 'medium' ) : '';
+		?>
+		<form class="eem-settings-form" data-eem-settings-form data-eem-panel="branding" method="post" action="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>">
+			<input type="hidden" name="action" value="eem_save_settings" />
+			<input type="hidden" name="panel" value="branding" />
+			<?php wp_nonce_field( 'eem_settings_save', 'nonce' ); ?>
+
+			<section class="eem-card">
+				<header class="eem-card-header">
+					<h2 class="eem-card-title"><?php esc_html_e( 'Branding', 'equine-event-manager' ); ?></h2>
+				</header>
+				<div class="eem-card-body">
+					<p class="eem-field-hint" style="margin-bottom:14px;">
+						<?php esc_html_e( 'Branding details used on receipts, PDFs, and customer-facing communications.', 'equine-event-manager' ); ?>
+					</p>
+
+					<div class="eem-field-row">
+						<span class="eem-field-label"><?php esc_html_e( 'Business Logo', 'equine-event-manager' ); ?></span>
+						<div class="eem-field-control">
+							<div class="eem-logo-upload" data-eem-logo-upload>
+								<div class="eem-logo-preview" data-eem-logo-preview>
+									<?php if ( $logo_url ) : ?>
+										<img src="<?php echo esc_url( $logo_url ); ?>" alt="" />
+									<?php else : ?>
+										<span class="eem-logo-preview-empty"><?php esc_html_e( 'No logo set', 'equine-event-manager' ); ?></span>
+									<?php endif; ?>
+								</div>
+								<div class="eem-logo-upload-actions">
+									<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="logo-pick">
+										<?php esc_html_e( 'Upload Logo', 'equine-event-manager' ); ?>
+									</button>
+									<button type="button" class="eem-btn eem-btn-danger" data-eem-action="logo-remove" <?php disabled( 0 === $logo_id ); ?>>
+										<?php esc_html_e( 'Remove', 'equine-event-manager' ); ?>
+									</button>
+								</div>
+								<input type="hidden" name="payload[logo_id]" value="<?php echo esc_attr( $logo_id ); ?>" data-eem-logo-id />
+							</div>
+							<p class="eem-field-hint">
+								<?php esc_html_e( 'Used on printable PDF receipts and email receipt branding. Not used in the plugin admin header. PNG with a transparent background works best.', 'equine-event-manager' ); ?>
+							</p>
+						</div>
+					</div>
+
+					<div class="eem-field-row">
+						<label class="eem-field-label" for="eem-brand-phone"><?php esc_html_e( 'Support Phone', 'equine-event-manager' ); ?></label>
+						<div class="eem-field-control">
+							<input class="eem-field-input" id="eem-brand-phone" type="tel" name="payload[support_phone]" value="<?php echo esc_attr( $company['support_phone'] ); ?>" style="max-width:280px;" />
+							<p class="eem-field-hint"><?php esc_html_e( 'General support number. Reservation-specific messaging can override it in the Communications panel.', 'equine-event-manager' ); ?></p>
+						</div>
+					</div>
+
+					<div class="eem-field-row">
+						<label class="eem-field-label" for="eem-brand-email"><?php esc_html_e( 'Support Email', 'equine-event-manager' ); ?></label>
+						<div class="eem-field-control">
+							<input class="eem-field-input" id="eem-brand-email" type="email" name="payload[support_email]" value="<?php echo esc_attr( $company['support_email'] ); ?>" style="max-width:320px;" />
+							<p class="eem-field-hint"><?php esc_html_e( 'Default support email across messaging and receipt settings.', 'equine-event-manager' ); ?></p>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<div class="eem-settings-save-bar">
+				<button type="submit" class="eem-btn eem-btn-primary">
+					<?php esc_html_e( 'Save Branding Settings', 'equine-event-manager' ); ?>
+				</button>
+			</div>
+		</form>
+		<?php
+	}
 
 	/**
 	 * Integrations panel (CLAUDE.md "In-scope features → Event source"
