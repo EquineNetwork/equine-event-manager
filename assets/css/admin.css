@@ -2915,3 +2915,521 @@ a.eem-settings-nav-item:focus {
 		padding: 12px;
 	}
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   C4 — Reservations list page
+   Port of .mockups/reservations_page.html. Mockup classes translated to
+   eem-* prefix; rules copied verbatim where the mockup spec is authoritative
+   (status tabs, type/lifecycle badges, table footer, mobile-cards swap).
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* Standalone page header — used when eem_render_page_open( wrap => false ).
+   Title left, "+ New Reservation" CTA right. Mockup line 36. */
+.eem-page-header--standalone {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 12px;
+	gap: 12px;
+	flex-wrap: wrap;
+	padding: 0;
+	border: none;
+	background: transparent;
+}
+
+/* Bordered list card — wraps tabs / toolbar / table / mobile / footer.
+   Mockup line 43: `.plugin-wrap`. */
+.eem-list-card {
+	background: var(--eem-surface);
+	border: 1px solid #c3c4c7;
+	border-radius: var(--eem-radius);
+	overflow: hidden;
+}
+
+/* Status tabs strip (CONV-style filter tabs at top of card).
+   Mockup lines 46-50. */
+.eem-status-tabs {
+	padding: 10px 16px 0;
+	border-bottom: 1px solid #dcdcde;
+	display: flex;
+	align-items: center;
+	gap: 0;
+	flex-wrap: wrap;
+}
+
+.eem-status-tab {
+	font-size: 13px;
+	color: #50575e;
+	padding: 6px 10px 8px;
+	cursor: pointer;
+	border-bottom: 2px solid transparent;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.eem-status-tab:hover {
+	color: var(--eem-navy);
+}
+
+a.eem-status-tab:hover,
+a.eem-status-tab:focus {
+	text-decoration: none;
+}
+
+.eem-status-tab.is-active {
+	color: var(--eem-navy);
+	font-weight: 600;
+	border-bottom-color: var(--eem-electric);
+}
+
+.eem-status-tab-count {
+	color: var(--eem-text-muted);
+	font-weight: 400;
+	margin-left: 3px;
+}
+
+.eem-status-tab-sep {
+	color: var(--eem-text-muted);
+	font-size: 12px;
+	padding: 6px 2px;
+}
+
+/* List toolbar — bulk action + date filter on left, search + count on right.
+   Mockup line 53: `.toolbar`. NOT the generic .eem-toolbar — that one has a
+   different shape inherited from C1.3 dashboard toolbars. */
+.eem-list-toolbar {
+	padding: 12px 16px;
+	border-bottom: 1px solid #dcdcde;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+	background: #fafafa;
+}
+
+.eem-list-toolbar-left {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex: 1;
+	flex-wrap: wrap;
+}
+
+.eem-list-toolbar-right {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-shrink: 0;
+}
+
+.eem-toolbar-select {
+	padding: 5px 28px 5px 10px;
+	border: 1px solid var(--eem-text-muted);
+	border-radius: var(--eem-radius);
+	font-size: 13px;
+	font-family: var(--eem-font-ui);
+	color: var(--eem-text);
+	background: var(--eem-surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 8px center;
+	appearance: none;
+	cursor: pointer;
+}
+
+.eem-toolbar-btn {
+	padding: 5px 14px;
+	border: 1px solid var(--eem-text-muted);
+	border-radius: var(--eem-radius);
+	font-size: 13px;
+	font-family: var(--eem-font-ui);
+	color: var(--eem-text);
+	background: var(--eem-surface);
+	cursor: pointer;
+	white-space: nowrap;
+}
+
+.eem-toolbar-btn:hover:not(:disabled) {
+	background: #f6f7f7;
+}
+
+.eem-toolbar-btn:disabled {
+	opacity: 0.55;
+	cursor: not-allowed;
+}
+
+.eem-item-count {
+	font-size: 13px;
+	color: #50575e;
+	white-space: nowrap;
+}
+
+/* Empty-state row inside the table. */
+.eem-table-empty {
+	text-align: center;
+	padding: 40px 16px;
+	color: var(--eem-text-muted);
+	font-size: 13px;
+}
+
+/* Sortable header — uses C1.3 .eem-table thead th.sortable; this adds the
+   chevron-stack icon + active-sort emphasis. */
+.eem-sort-icon {
+	display: inline-flex;
+	flex-direction: column;
+	gap: 1px;
+	margin-left: 3px;
+	vertical-align: middle;
+	opacity: 0.5;
+}
+
+.eem-sort-icon span {
+	display: block;
+	width: 0;
+	height: 0;
+	border-left: 3px solid transparent;
+	border-right: 3px solid transparent;
+}
+
+.eem-sort-icon span:first-child {
+	border-bottom: 4px solid currentColor;
+}
+
+.eem-sort-icon span:last-child {
+	border-top: 4px solid currentColor;
+}
+
+.eem-table thead th.sortable a {
+	color: inherit;
+	text-decoration: none;
+	display: inline-flex;
+	align-items: center;
+}
+
+.eem-table thead th.sortable.is-sorted {
+	color: var(--eem-electric);
+}
+
+.eem-table thead th.sortable.is-sorted .eem-sort-icon {
+	opacity: 1;
+}
+
+/* Checkbox column. */
+.eem-table .eem-col-cb,
+.eem-table th.eem-col-cb {
+	width: 36px;
+	padding-left: 14px;
+	padding-right: 8px;
+}
+
+/* Reservation name link — blue, bold, hover underline. Mockup line 88-89. */
+.eem-res-name {
+	font-weight: 700;
+	color: var(--eem-electric);
+	font-size: 14px;
+	text-decoration: none;
+}
+
+a.eem-res-name:hover,
+a.eem-res-name:focus {
+	color: var(--eem-electric);
+	text-decoration: underline;
+}
+
+.eem-event-dates {
+	color: #50575e;
+	font-size: 13px;
+}
+
+/* Type badges (Stall / RV / Add-On / Group). Mockup lines 92-97. */
+.eem-type-badges {
+	display: flex;
+	gap: 5px;
+	flex-wrap: wrap;
+}
+
+.eem-type-badges-empty {
+	color: var(--eem-text-muted);
+}
+
+.eem-type-badge {
+	padding: 3px 9px;
+	border-radius: 20px;
+	font-size: 11.5px;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.eem-type-badge--stall {
+	background: #EEF4FF;
+	color: #1668F2;
+	border: 1px solid #c0d8ff;
+}
+
+.eem-type-badge--rv {
+	background: #F5F3FF;
+	color: #6d28d9;
+	border: 1px solid #ddd6fe;
+}
+
+.eem-type-badge--addon {
+	background: #FFF7ED;
+	color: #c2410c;
+	border: 1px solid #fed7aa;
+}
+
+.eem-type-badge--group {
+	background: #F0FDF4;
+	color: #15803d;
+	border: 1px solid #bbf7d0;
+}
+
+/* Lifecycle status pill with state dot. Mockup lines 103-112. */
+.eem-res-status {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 3px 9px;
+	border-radius: 12px;
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	font-family: var(--eem-font-ui);
+	line-height: 1.4;
+	white-space: nowrap;
+}
+
+.eem-res-status::before {
+	content: '';
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	flex-shrink: 0;
+}
+
+.eem-res-status--active   { background: #dcfce7; color: #15803d; }
+.eem-res-status--active::before   { background: #16a34a; }
+.eem-res-status--draft    { background: #fef3c7; color: #a16207; }
+.eem-res-status--draft::before    { background: #ca8a04; }
+.eem-res-status--archived { background: #e5e7eb; color: #52525b; }
+.eem-res-status--archived::before { background: #71717a; }
+.eem-res-status--trashed  { background: #fee2e2; color: #b91c1c; }
+.eem-res-status--trashed::before  { background: #dc2626; }
+
+/* Orders count cell. Zero counts dim per RES-5. Mockup lines 115-116. */
+.eem-orders-count {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--eem-navy);
+	font-family: var(--eem-font-ui);
+}
+
+.eem-orders-count.is-zero {
+	color: #8c8f94;
+	font-weight: 400;
+}
+
+/* Row actions cell — wraps the conditional Stall Chart icon + meatballs. */
+.eem-actions-cell {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+}
+
+/* Stall Chart icon variant (cyan tint per mockup line 120). */
+.eem-action-icon-btn--stall-chart {
+	color: #0e7490;
+	border-color: #a5f3fc;
+	background: #ecfeff;
+}
+
+.eem-action-icon-btn--stall-chart:hover {
+	background: #cffafe;
+	color: #0e7490;
+}
+
+/* Meatballs ··· button. Shares geometry with .eem-action-icon-btn but the
+   character glyph wants its own line-height tuning. Mockup line 123. */
+.eem-more-btn {
+	width: 30px;
+	height: 30px;
+	border-radius: var(--eem-radius);
+	border: 1px solid #c3c4c7;
+	background: var(--eem-surface);
+	color: #50575e;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	font-size: 15px;
+	letter-spacing: 0.05em;
+	line-height: 1;
+}
+
+.eem-more-btn:hover {
+	background: #f0f0f1;
+	color: var(--eem-text);
+	border-color: var(--eem-text-muted);
+}
+
+/* Table footer with pagination + range info. Mockup line 137. */
+.eem-table-footer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 12px 16px;
+	border-top: 1px solid #dcdcde;
+	background: #fafafa;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.eem-table-footer-info {
+	font-size: 13px;
+	color: #50575e;
+}
+
+/* Mobile cards container — hidden on desktop, shown at <768px. */
+.eem-mobile-reservations {
+	display: none;
+	padding: 12px 14px;
+}
+
+.eem-mobile-res-card {
+	background: var(--eem-surface);
+	border: 1px solid #dcdcde;
+	border-radius: var(--eem-radius);
+	padding: 14px;
+	margin-bottom: 8px;
+}
+
+.eem-mob-res-name {
+	font-size: 14px;
+	font-weight: 700;
+	color: var(--eem-electric);
+	margin-bottom: 4px;
+	text-decoration: none;
+	display: block;
+}
+
+a.eem-mob-res-name:hover,
+a.eem-mob-res-name:focus {
+	color: var(--eem-electric);
+	text-decoration: underline;
+}
+
+.eem-mob-res-dates {
+	font-size: 12.5px;
+	color: #50575e;
+	margin-bottom: 8px;
+}
+
+.eem-mob-res-bottom {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.eem-mob-res-badges {
+	display: flex;
+	gap: 4px;
+	flex-wrap: wrap;
+	align-items: center;
+}
+
+.eem-mob-res-actions {
+	display: flex;
+	gap: 5px;
+}
+
+/* Tablet — drop WP sidebar at 960px (handled by WP itself; we trim our
+   own page padding here). */
+@media (max-width: 960px) {
+	.eem-page {
+		padding: 10px 14px 40px;
+	}
+}
+
+/* Mobile — swap desktop table for card list at <768px. Mockup lines 161-189. */
+@media (max-width: 767px) {
+	.eem-page {
+		padding: 8px 10px 32px;
+	}
+
+	.eem-page-header--standalone {
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	.eem-page-title {
+		font-size: 18px;
+	}
+
+	.eem-status-tabs {
+		overflow-x: auto;
+		flex-wrap: nowrap;
+		padding: 8px 12px 0;
+		-webkit-overflow-scrolling: touch;
+	}
+
+	.eem-status-tab {
+		font-size: 12px;
+		padding: 5px 8px 7px;
+	}
+
+	.eem-list-toolbar {
+		flex-direction: column;
+		align-items: stretch;
+		padding: 10px 12px;
+		gap: 8px;
+	}
+
+	.eem-list-toolbar-left {
+		display: flex;
+		flex-direction: row;
+		gap: 6px;
+		flex-wrap: nowrap;
+	}
+
+	.eem-list-toolbar-left .eem-toolbar-select {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.eem-list-toolbar-right {
+		display: flex;
+		flex-direction: row;
+		gap: 6px;
+		align-items: center;
+	}
+
+	.eem-list-toolbar-right .eem-search-wrap {
+		flex: 1;
+		max-width: 100%;
+		min-width: 0;
+	}
+
+	.eem-list-toolbar-right .eem-toolbar-btn {
+		flex-shrink: 0;
+		font-size: 12px;
+		padding: 5px 10px;
+	}
+
+	.eem-item-count {
+		white-space: nowrap;
+		font-size: 12px;
+	}
+
+	.eem-desktop-table {
+		display: none;
+	}
+
+	.eem-mobile-reservations {
+		display: block;
+	}
+
+	.eem-table-footer {
+		padding: 10px 12px;
+	}
+}
