@@ -3569,12 +3569,6 @@ a.eem-mob-res-name:focus {
 	border-bottom-right-radius: 0;
 }
 
-.eem-list-toolbar .eem-search-btn {
-	border-top-left-radius: 0;
-	border-bottom-left-radius: 0;
-	border-radius: 0 4px 4px 0;
-}
-
 /* Toolbar buttons — WP-core doesn't have a `.wp-core-ui button` rule
    matching bare <button> elements (only `.button` class which our toolbar
    doesn't use), but explicit anyway for consistency at the same specificity
@@ -3585,4 +3579,17 @@ a.eem-mob-res-name:focus {
 	font-size: 13px;
 	border-radius: 4px;
 	padding: 5px 14px;
+}
+
+/* Attached-pair asymmetric radius — MUST come after .eem-list-toolbar
+   .eem-toolbar-btn above, because the search button carries BOTH classes
+   (eem-toolbar-btn + eem-search-btn) and both rules have the same
+   specificity (0,2,0). Source order is the tiebreaker; if this block
+   moves above the .eem-toolbar-btn rule, `border-radius: 4px` will reset
+   all four corners and the visual attachment to the search input breaks.
+   Diagnosed in c4-polish-2 round 3 via DevTools cascade audit. */
+.eem-list-toolbar .eem-search-btn {
+	border-top-left-radius: 0;
+	border-bottom-left-radius: 0;
+	border-radius: 0 4px 4px 0;
 }
