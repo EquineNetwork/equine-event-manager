@@ -131,6 +131,13 @@
 	color: var(--eem-text);
 	font-size: 14px;
 	line-height: 1.5;
+	/* Mirrors the mockup's `.wp-content { padding: 12px 20px 40px }`
+	   (settings_page.html line 28). Our submenu callbacks render
+	   `.eem-page` directly inside `#wpbody-content` (no `.wrap`
+	   wrapper), so we own the page-area padding ourselves. This is
+	   what gives the breadcrumb its left inset and the page-wrap /
+	   settings card the breathing room on both sides of the viewport. */
+	padding: 12px 20px 40px;
 }
 
 /* Normalize headings inside our pages without overriding WP's defaults */
@@ -172,17 +179,16 @@
    Breadcrumb header (CONV-1)
    Renders at the top of every plugin admin page beneath the WP admin bar.
    ───────────────────────────────────────────────────────────── */
-/* Breadcrumb bar — sits above the page-wrap as a visual "brand bar".
-   Vertical padding + min-height give it bar-like proportions so the
-   36px logo and the 13px text segments share a coherent baseline.
-   Left padding insets the logo from the WP content-area edge. */
+/* Breadcrumb — plain flex row per mockup spec (settings_page.html
+   line 30). Logo + segment text vertically center via align-items;
+   there is intentionally NO background fill, NO min-height, and NO
+   horizontal padding here — the inset comes from `.eem-page`'s
+   12px/20px padding above. */
 .eem-breadcrumb {
 	display: flex;
 	align-items: center;
 	gap: var(--eem-space-2);
-	margin: 0 0 var(--eem-space-3);
-	padding: 4px 0 4px var(--eem-space-2);
-	min-height: 44px;
+	margin: 0 0 10px;
 	flex-wrap: wrap;
 }
 
@@ -205,7 +211,7 @@
 .eem-breadcrumb-logo img {
 	height: 36px;
 	width: auto;
-	max-width: 200px;
+	max-width: 160px;
 	display: block;
 }
 
@@ -2274,14 +2280,12 @@ th.sorted-desc .eem-sort-icon span:first-child {
 	grid-template-columns: 200px 1fr;
 	gap: 0;
 	background: var(--eem-surface);
-	/* No border-left → settings-nav sits flush against the WP admin
-	   sidebar edge. No border-radius → flat top, so the left rail reads
-	   as a continuation of the WP admin chrome rather than a floating
-	   card with a curved top-left corner. */
-	border-top: 1px solid #c3c4c7;
-	border-right: 1px solid #c3c4c7;
-	border-bottom: 1px solid #c3c4c7;
-	border-radius: 0;
+	/* Full 4-side bordered card with radius per mockup
+	   (settings_page.html line 38). Breathing room on both viewport
+	   edges is provided by `.eem-page`'s 20px horizontal padding, NOT
+	   by trimming this card's borders. */
+	border: 1px solid #c3c4c7;
+	border-radius: var(--eem-radius);
 	overflow: hidden;
 	align-items: stretch;
 }
