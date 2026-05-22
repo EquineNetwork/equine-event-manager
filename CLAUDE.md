@@ -161,6 +161,30 @@ The seven hygiene rules above add **~25–30% on top of functional-code LOC** in
 3. CSS-heavy chunks carry a lighter tax (~10–15%) because CSS doesn't get the docblock treatment. Note the lower multiplier in those chunk estimates explicitly.
 4. If a chunk comes in materially below the tax baseline (e.g. ≤+10% over functional estimate), flag in the wrap-up — it usually means the docblocks got skimped on and need a revisit before merge.
 
+#### CSS-port heuristic (established C4.B)
+
+Verbatim CSS port from a mockup's `<style>` block into `admin.css` runs at **~×2.5 the source LOC** as a floor. Drivers: multi-line property formatting (mockup uses dense one-liners; admin.css uses one prop per line for readability), BEM-style state modifier expansion (`.status-active` → `.eem-res-status--active`), responsive `@media` breakpoint repetition, inline comments naming the mockup line numbers, and the small extra cross-cutting helpers each page needs (sort-icon stack, page-header standalone variant, etc.) that don't appear in the mockup source.
+
+Calibration data:
+- **C3 Settings:** 292 mockup CSS LOC → 652 admin.css additions = **×2.23**.
+- **C4.B Reservations list:** ~190 mockup CSS LOC → 518 admin.css additions = **×2.73**.
+- **Standing rule: ×2.5** as the CSS floor for any mockup-driven port chunk. Refine as more port chunks land.
+
+Estimating procedure:
+1. Open the mockup HTML, count the page-unique CSS rules in its `<style>` block (skip rules for components already in `admin.css` from C1).
+2. Multiply by 2.5 → that's the CSS-bucket LOC budget.
+3. Apply the CSS multiplier (×1.125 hygiene tax) on top — CSS gets a lighter tax than PHP. So `CSS budget = source × 2.5 × 1.125 ≈ source × 2.8`.
+4. PHP-heavy chunks (handlers, repos) still use the standard PHP `×1.275` tax.
+5. Mixed chunks: split the estimate into PHP-bucket and CSS-bucket, apply each multiplier separately, sum.
+
+#### Layout-shell verification — outer-structure comparison (refined C4.B)
+
+The 7-step verification procedure caught the inner-card architecture of the Reservations mockup correctly but missed that the mockup's **outer structure** (page-header sits OUTSIDE the bordered card) didn't match the existing `_page_shell.php` partial (which renders page-header INSIDE `.eem-page-wrap`). The shell modification surfaced mid-implementation and cost ~52 unbudgeted LOC.
+
+**Step 4 refinement:** When stating the architectural pattern in plain English, separately describe **(a) what's INSIDE the bordered card** and **(b) what's BETWEEN the breadcrumb and the bordered card**. Both halves are part of the page architecture.
+
+**New step 4.5 (mandatory):** Compare the mockup's outer structure against `templates/admin/_page_shell.php`. Specifically: does the existing shell wrap the page-header inside `.eem-page-wrap` or render it as a standalone sibling? Does the mockup match? If they disagree, **propose the shell partial modification in the chunk's planning conversation BEFORE writing render code**, not as a surprise mid-implementation. C7 (Edit Reservation editor with overview card above the form) and C8 (Stall Charts with the chart grid below a separate header bar) are both likely to need shell variations — catch them at step 4.5.
+
 ### Phase 4 — Verify
 
 Goal: prove the overhaul didn't break anything.
