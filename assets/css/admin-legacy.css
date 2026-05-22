@@ -23,6 +23,22 @@
  *    comment naming the Phase 3 chunk and what it changed (see lines
  *    29-34 below for the C3.D.3.5 .eem-card decoupling example).
  *
+ *    c4-polish-2 (this file edit): SIX `!important` blocks targeting
+ *    `body.eem-shell-page input[type="*"] / select / textarea` (lines
+ *    142, 5910, 6569, 7600, 8260, 11812 — plus their .post-type-
+ *    en_reservation mirrors) were collectively forcing min-heights
+ *    of 42-44px, padding overrides, border-radius 8-12px, background
+ *    color (which killed the SVG chevron on our .eem-toolbar-select),
+ *    box-shadows, and color/font overrides on every form control. To
+ *    decouple the C4 Reservations list toolbar without touching the
+ *    declarations themselves (so legacy admin pages still get them),
+ *    `:not(.eem-search-input)` was appended to every `input[type=
+ *    "search"]` occurrence in those 6 blocks and `:not(.eem-toolbar-
+ *    select)` was appended to every `select` occurrence. 22 selector
+ *    lines modified total. New Phase 3 form-control components should
+ *    expect the same multi-block damage and add their own :not()
+ *    exclusion across all 6 blocks at first commit, not as polish.
+ *
  * 5. This file disappears at the end of Phase 3 once every admin page
  *    is ported. Until then, treat it as an append-only quarantine zone.
  * ========================================================================= */
@@ -140,7 +156,7 @@ body.post-type-en_reservation .button.button-primary:focus {
 }
 
 body.eem-shell-page input[type="text"],
-body.eem-shell-page input[type="search"],
+body.eem-shell-page input[type="search"]:not(.eem-search-input),
 body.eem-shell-page input[type="email"],
 body.eem-shell-page input[type="url"],
 body.eem-shell-page input[type="number"],
@@ -148,10 +164,10 @@ body.eem-shell-page input[type="password"],
 body.eem-shell-page input[type="date"],
 body.eem-shell-page input[type="time"],
 body.eem-shell-page input[type="datetime-local"],
-body.eem-shell-page select,
+body.eem-shell-page select:not(.eem-toolbar-select),
 body.eem-shell-page textarea,
 body.post-type-en_reservation input[type="text"],
-body.post-type-en_reservation input[type="search"],
+body.post-type-en_reservation input[type="search"]:not(.eem-search-input),
 body.post-type-en_reservation input[type="email"],
 body.post-type-en_reservation input[type="url"],
 body.post-type-en_reservation input[type="number"],
@@ -159,7 +175,7 @@ body.post-type-en_reservation input[type="password"],
 body.post-type-en_reservation input[type="date"],
 body.post-type-en_reservation input[type="time"],
 body.post-type-en_reservation input[type="datetime-local"],
-body.post-type-en_reservation select,
+body.post-type-en_reservation select:not(.eem-toolbar-select),
 body.post-type-en_reservation textarea {
 	min-height: 44px !important;
 	border: 1px solid #d8e1eb !important;
@@ -5908,20 +5924,20 @@ body.post-type-en_reservation .button:not(.button-primary):not(.button-link-dele
 }
 
 body.eem-shell-page input[type="text"],
-body.eem-shell-page input[type="search"],
+body.eem-shell-page input[type="search"]:not(.eem-search-input),
 body.eem-shell-page input[type="email"],
 body.eem-shell-page input[type="url"],
 body.eem-shell-page input[type="number"],
 body.eem-shell-page input[type="password"],
-body.eem-shell-page select,
+body.eem-shell-page select:not(.eem-toolbar-select),
 body.eem-shell-page textarea,
 body.post-type-en_reservation input[type="text"],
-body.post-type-en_reservation input[type="search"],
+body.post-type-en_reservation input[type="search"]:not(.eem-search-input),
 body.post-type-en_reservation input[type="email"],
 body.post-type-en_reservation input[type="url"],
 body.post-type-en_reservation input[type="number"],
 body.post-type-en_reservation input[type="password"],
-body.post-type-en_reservation select,
+body.post-type-en_reservation select:not(.eem-toolbar-select),
 body.post-type-en_reservation textarea {
 	border-radius: 8px !important;
 	border-color: #d1dbe7 !important;
@@ -6567,20 +6583,20 @@ body.post-type-en_reservation .button-primary {
 }
 
 body.eem-shell-page input[type="text"],
-body.eem-shell-page input[type="search"],
+body.eem-shell-page input[type="search"]:not(.eem-search-input),
 body.eem-shell-page input[type="email"],
 body.eem-shell-page input[type="url"],
 body.eem-shell-page input[type="number"],
 body.eem-shell-page input[type="password"],
-body.eem-shell-page select,
+body.eem-shell-page select:not(.eem-toolbar-select),
 body.eem-shell-page textarea,
 body.post-type-en_reservation input[type="text"],
-body.post-type-en_reservation input[type="search"],
+body.post-type-en_reservation input[type="search"]:not(.eem-search-input),
 body.post-type-en_reservation input[type="email"],
 body.post-type-en_reservation input[type="url"],
 body.post-type-en_reservation input[type="number"],
 body.post-type-en_reservation input[type="password"],
-body.post-type-en_reservation select,
+body.post-type-en_reservation select:not(.eem-toolbar-select),
 body.post-type-en_reservation textarea {
 	border-radius: 8px !important;
 	border-color: #d3dde8 !important;
@@ -7598,23 +7614,23 @@ body.post-type-en_reservation #submitdiv .button:not(.button-primary) {
 }
 
 body.eem-shell-page input[type="text"],
-body.eem-shell-page input[type="search"],
+body.eem-shell-page input[type="search"]:not(.eem-search-input),
 body.eem-shell-page input[type="email"],
 body.eem-shell-page input[type="url"],
 body.eem-shell-page input[type="number"],
 body.eem-shell-page input[type="date"],
 body.eem-shell-page input[type="time"],
-body.eem-shell-page select,
+body.eem-shell-page select:not(.eem-toolbar-select),
 body.eem-shell-page textarea,
 body.post-type-en_reservation input[type="text"],
-body.post-type-en_reservation input[type="search"],
+body.post-type-en_reservation input[type="search"]:not(.eem-search-input),
 body.post-type-en_reservation input[type="email"],
 body.post-type-en_reservation input[type="url"],
 body.post-type-en_reservation input[type="number"],
 body.post-type-en_reservation input[type="date"],
 body.post-type-en_reservation input[type="time"],
 body.post-type-en_reservation input[type="datetime-local"],
-body.post-type-en_reservation select,
+body.post-type-en_reservation select:not(.eem-toolbar-select),
 body.post-type-en_reservation textarea {
 	border: 1px solid #cfd9e6 !important;
 	border-radius: 8px !important;
@@ -8262,22 +8278,22 @@ body.eem-shell-page input[type="email"],
 body.eem-shell-page input[type="url"],
 body.eem-shell-page input[type="number"],
 body.eem-shell-page input[type="password"],
-body.eem-shell-page input[type="search"],
+body.eem-shell-page input[type="search"]:not(.eem-search-input),
 body.eem-shell-page input[type="date"],
 body.eem-shell-page input[type="time"],
 body.eem-shell-page input[type="datetime-local"],
-body.eem-shell-page select,
+body.eem-shell-page select:not(.eem-toolbar-select),
 body.eem-shell-page textarea,
 body.post-type-en_reservation input[type="text"],
 body.post-type-en_reservation input[type="email"],
 body.post-type-en_reservation input[type="url"],
 body.post-type-en_reservation input[type="number"],
 body.post-type-en_reservation input[type="password"],
-body.post-type-en_reservation input[type="search"],
+body.post-type-en_reservation input[type="search"]:not(.eem-search-input),
 body.post-type-en_reservation input[type="date"],
 body.post-type-en_reservation input[type="time"],
 body.post-type-en_reservation input[type="datetime-local"],
-body.post-type-en_reservation select,
+body.post-type-en_reservation select:not(.eem-toolbar-select),
 body.post-type-en_reservation textarea {
 	min-height: 42px !important;
 	padding: 0.65rem 0.85rem !important;
@@ -11815,9 +11831,9 @@ body.eem-shell-page input[type="email"],
 body.eem-shell-page input[type="url"],
 body.eem-shell-page input[type="date"],
 body.eem-shell-page input[type="time"],
-body.eem-shell-page input[type="search"],
+body.eem-shell-page input[type="search"]:not(.eem-search-input),
 body.eem-shell-page input[type="password"],
-body.eem-shell-page select,
+body.eem-shell-page select:not(.eem-toolbar-select),
 body.eem-shell-page textarea {
 	border-radius: 12px !important;
 	border: 1.5px solid var(--eem-guide-border) !important;

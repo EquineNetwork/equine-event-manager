@@ -17,11 +17,16 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 ## Active entries
 
 ### 1. `assets/css/admin-legacy.css` — full file
-- **What:** 12,343-line legacy admin CSS, renamed from `admin/css/equine-event-manager-admin.css` during Phase 2.
+- **What:** 12,376-line legacy admin CSS, renamed from `admin/css/equine-event-manager-admin.css` during Phase 2. **Damage scope substantially worse than the original entry suggested** — see findings below.
 - **Why deferred:** Each Phase 3 page-port chunk migrates rules from this file into the new `assets/css/admin.css`. Deleting it before all pages are ported would break unported screens visually.
 - **Added in:** C1 (Phase 2 cleanup tag — kept through Phase 3 transition)
+- **C4-discovered damage profile:** the file is not just "12k lines to migrate" — it contains **massive duplication of `!important` overrides on common selectors**. Empirically catalogued during c4-polish-2 form-control remediation:
+  - **6 distinct `!important` blocks** target `body.eem-shell-page input[type="*"] / select / textarea` (lines 142, 5910, 6569, 7600, 8260, 11812 + their `body.post-type-en_reservation` mirrors). Collectively they force `min-height: 42-44px`, `padding: 0.65rem 0.85rem`, border, border-radius (8-12px depending on block), background (kills SVG chevron backgrounds), box-shadow, color, and font-family on every form control. ~180 LOC of redundant overrides.
+  - **~15 distinct `.button` / `.button-primary` / `.button-secondary` blocks** (lines 109, 124, 134, 5881, 5894, 5901, 6539, 6552, 6561, 7569, 7584, 7592, 8206, 8222, 8235, 8247, 11829, 11838, 11844) similarly stack overrides. New `.eem-toolbar-btn` style components were unaffected because the legacy blocks target the WP `.button` class, but any future component using a bare `<button>` element under shell pages will need similar audit.
+  - Each Phase 3 component port that introduces form-control elements has to defend against ALL 6 blocks. c4-polish-2 added `:not(.eem-search-input)` and `:not(.eem-toolbar-select)` exclusions to 22 selector lines across the 6 input/select blocks. Documented as a recurring tax in CLAUDE.md hygiene rule #7 with a new prospective-port checklist (see CLAUDE.md C4-discoveries section).
 - **Unblocks deletion:** Final Phase 3 commit, after C3.D + C4 + C5 + C6 + C7 + C8 + C9 + C12 each migrate their page's rules out. Also delete the second `wp_enqueue_style( 'eem-admin-legacy', … )` call in `EEM_Admin::enqueue_backend_shell_styles` + `EEM_Reservation_Editor::enqueue_editor_shell_styles`.
-- **Status:** unchanged since C1
+- **C13 remediation scope (revised — substantially larger than originally estimated):** rather than per-page `:not()` decoupling for every new component, C13 should **strip the entire form-control + button restyle stacks wholesale**. Six form-control blocks ÷ ~180 LOC each + fifteen button blocks ÷ ~250 LOC each ≈ **~430 LOC of legacy CSS** are pure `!important` cartels duplicating each other. Removing them outright (rather than piecemeal-excluding from each) is cleaner. Risk: any legacy admin screen still relying on the 44px form-control look will look slightly different after C13 — accepted, since by C13 every page is ported anyway.
+- **Status:** active remediation in progress per Phase 3 chunks; full strip queued for C13
 
 ### 2. `admin/images/equine-event-manager-logo.png` — duplicate of `assets/images/logo.png`
 - **What:** Pre-existing legacy logo PNG used by `EEM_Reservation_Editor::render_editor_header` (admin/class-equine-event-manager-reservation-editor.php:377).
