@@ -2298,7 +2298,11 @@ th.sorted-desc .eem-sort-icon span:first-child {
 	transition: background 0.1s, color 0.1s, border-color 0.1s;
 }
 
-.eem-settings-nav-item:hover {
+/* Chain `a.` to win specificity against the global `.eem-page a:hover`
+   underline rule (assets/css/admin.css line ~158). Without this, the
+   nav item picks up an underline on hover. */
+a.eem-settings-nav-item:hover,
+a.eem-settings-nav-item:focus {
 	background: #f0f0f1;
 	color: var(--eem-text);
 	text-decoration: none;
