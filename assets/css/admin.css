@@ -172,11 +172,17 @@
    Breadcrumb header (CONV-1)
    Renders at the top of every plugin admin page beneath the WP admin bar.
    ───────────────────────────────────────────────────────────── */
+/* Breadcrumb bar — sits above the page-wrap as a visual "brand bar".
+   Vertical padding + min-height give it bar-like proportions so the
+   36px logo and the 13px text segments share a coherent baseline.
+   Left padding insets the logo from the WP content-area edge. */
 .eem-breadcrumb {
 	display: flex;
 	align-items: center;
 	gap: var(--eem-space-2);
 	margin: 0 0 var(--eem-space-3);
+	padding: 4px 0 4px var(--eem-space-2);
+	min-height: 44px;
 	flex-wrap: wrap;
 }
 
@@ -2268,8 +2274,14 @@ th.sorted-desc .eem-sort-icon span:first-child {
 	grid-template-columns: 200px 1fr;
 	gap: 0;
 	background: var(--eem-surface);
-	border: 1px solid #c3c4c7;
-	border-radius: var(--eem-radius);
+	/* No border-left → settings-nav sits flush against the WP admin
+	   sidebar edge. No border-radius → flat top, so the left rail reads
+	   as a continuation of the WP admin chrome rather than a floating
+	   card with a curved top-left corner. */
+	border-top: 1px solid #c3c4c7;
+	border-right: 1px solid #c3c4c7;
+	border-bottom: 1px solid #c3c4c7;
+	border-radius: 0;
 	overflow: hidden;
 	align-items: stretch;
 }
