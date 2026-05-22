@@ -70,6 +70,11 @@ class EEM_Settings_Page {
 		if ( function_exists( 'wp_enqueue_editor' ) ) {
 			wp_enqueue_editor();
 		}
+
+		// Loads wp.media — required by the Branding panel's logo picker.
+		if ( function_exists( 'wp_enqueue_media' ) ) {
+			wp_enqueue_media();
+		}
 	}
 
 	/**
@@ -1073,12 +1078,24 @@ class EEM_Settings_Page {
 				break;
 
 			case 'integrations':
+				$errors = $this->save_integrations_panel( $payload );
+				break;
+
 			case 'branding':
+				$errors = $this->save_branding_panel( $payload );
+				break;
+
 			case 'shortcodes':
 			case 'addons':
+				// Both are read-only panels (Shortcodes is a reference list,
+				// Add-Ons is a future-expansion placeholder). Submitting either
+				// is a no-op success so the JS submit handler still gets a
+				// well-formed response.
+				break;
+
 			default:
 				/* translators: 1: panel label */
-				$message = sprintf( __( 'Saving the %s panel is not wired yet — coming in a later sub-chunk.', 'equine-event-manager' ), self::panels()[ $panel ]['label'] );
+				$message = sprintf( __( 'Saving the %s panel is not wired yet.', 'equine-event-manager' ), self::panels()[ $panel ]['label'] );
 				wp_send_json_error( array( 'message' => $message ), 501 );
 		}
 
@@ -1124,10 +1141,11 @@ class EEM_Settings_Page {
 	}
 
 	/**
-	 * Payments save — dispatches tax to its repo. Stripe / Authorize.net
-	 * credential persistence lands in C3.C alongside the panel UI.
+	 * Payments save — dispatches Tax to EEM_Settings_Repo and persists the
+	 * selected gateway + Stripe + Authorize.net credentials to the existing
+	 * equine_event_manager_payment_settings option.
 	 *
-	 * @param array $payload Expected shape: [ tax => [...] ]
+	 * @param array $payload Expected: { tax: {...}, selected_gateway: 'stripe'|'authorize_net', stripe: {...}, authorize_net: {...} }
 	 * @return array<int, string>
 	 */
 	private function save_payments_panel( array $payload ) {
@@ -1139,7 +1157,136 @@ class EEM_Settings_Page {
 			}
 		}
 
+		$current = wp_parse_args(
+			get_option( 'equine_event_manager_payment_settings', array() ),
+			array( 'selected_gateway' => 'stripe', 'stripe' => array(), 'authorize_net' => array() )
+		);
+
+		$gateway = isset( $payload['selected_gateway'] ) ? sanitize_key( $payload['selected_gateway'] ) : '';
+		if ( in_array( $gateway, array( 'stripe', 'authorize_net' ), true ) ) {
+			$current['selected_gateway'] = $gateway;
+		}
+
+		if ( isset( $payload['stripe'] ) && is_array( $payload['stripe'] ) ) {
+			$current['stripe'] = $this->sanitize_credential_group( $payload['stripe'], array(
+				'mode'                   => 'mode',
+				'test_publishable_key'   => 'text',
+				'test_secret_key'        => 'text',
+				'live_publishable_key'   => 'text',
+				'live_secret_key'        => 'text',
+				'webhook_signing_secret' => 'text',
+			) );
+		}
+
+		if ( isset( $payload['authorize_net'] ) && is_array( $payload['authorize_net'] ) ) {
+			$current['authorize_net'] = $this->sanitize_credential_group( $payload['authorize_net'], array(
+				'mode'                 => 'mode',
+				'test_api_login'       => 'text',
+				'test_transaction_key' => 'text',
+				'live_api_login'       => 'text',
+				'live_transaction_key' => 'text',
+			) );
+		}
+
+		if ( ! update_option( 'equine_event_manager_payment_settings', $current, false ) ) {
+			// update_option returns false when the value is unchanged — not an
+			// actual failure. Only count it as an error if the stored value
+			// genuinely doesn't match what we tried to save.
+			$readback = get_option( 'equine_event_manager_payment_settings', array() );
+			if ( $readback !== $current ) {
+				$errors[] = 'payment_settings';
+			}
+		}
+
 		return $errors;
+	}
+
+	/**
+	 * Integrations save — Event source picker + per-source fields +
+	 * SendGrid key. All keys live in equine_event_manager_integration_settings.
+	 * The native_events_enabled feature flag is mirrored from the picker
+	 * value so the "Events" sidebar item appears/hides correctly per
+	 * CLAUDE.md In-scope-features → Event-source.
+	 *
+	 * @param array $payload Expected: { source: 'native'|'tec'|'feed', tec_event_category, feed_url, sendgrid_api_key }
+	 * @return array<int, string>
+	 */
+	private function save_integrations_panel( array $payload ) {
+		$errors = array();
+
+		$current = wp_parse_args(
+			get_option( 'equine_event_manager_integration_settings', array() ),
+			array( 'default_event_source' => 'feed', 'feed_url' => '', 'tec_event_category' => '', 'sendgrid_api_key' => '', 'tec_integration_enabled' => 1 )
+		);
+
+		$source = isset( $payload['source'] ) ? sanitize_key( $payload['source'] ) : '';
+		if ( ! in_array( $source, array( 'native', 'tec', 'feed' ), true ) ) {
+			$source = $current['default_event_source'];
+		}
+		$current['default_event_source']    = $source;
+		$current['tec_integration_enabled'] = ( 'tec' === $source ) ? 1 : 0;
+		$current['feed_url']                = isset( $payload['feed_url'] ) ? esc_url_raw( (string) $payload['feed_url'] ) : '';
+		$current['tec_event_category']      = isset( $payload['tec_event_category'] ) ? sanitize_text_field( (string) $payload['tec_event_category'] ) : '';
+		$current['sendgrid_api_key']        = isset( $payload['sendgrid_api_key'] ) ? sanitize_text_field( (string) $payload['sendgrid_api_key'] ) : '';
+
+		if ( false === update_option( 'equine_event_manager_integration_settings', $current, false ) && get_option( 'equine_event_manager_integration_settings' ) !== $current ) {
+			$errors[] = 'integration_settings';
+		}
+
+		// Mirror to feature_settings so EEM_Events::is_native_events_enabled()
+		// resolves consistently with the picker (sidebar visibility).
+		$features = wp_parse_args( get_option( 'equine_event_manager_feature_settings', array() ), array( 'native_events_enabled' => 0 ) );
+		$features['native_events_enabled'] = ( 'native' === $source ) ? 1 : 0;
+		update_option( 'equine_event_manager_feature_settings', $features, false );
+
+		return $errors;
+	}
+
+	/**
+	 * Branding save — logo attachment id + support phone/email.
+	 * Writes to the existing equine_event_manager_company_settings option.
+	 *
+	 * @param array $payload Expected: { logo_id, support_phone, support_email }
+	 * @return array<int, string>
+	 */
+	private function save_branding_panel( array $payload ) {
+		$errors = array();
+
+		$current = wp_parse_args(
+			get_option( 'equine_event_manager_company_settings', array() ),
+			array( 'logo_id' => 0, 'support_phone' => '', 'support_email' => '' )
+		);
+		$current['logo_id']       = isset( $payload['logo_id'] )       ? absint( $payload['logo_id'] )                       : 0;
+		$current['support_phone'] = isset( $payload['support_phone'] ) ? sanitize_text_field( $payload['support_phone'] )    : '';
+		$current['support_email'] = isset( $payload['support_email'] ) ? sanitize_email( $payload['support_email'] )         : '';
+
+		if ( false === update_option( 'equine_event_manager_company_settings', $current, false ) && get_option( 'equine_event_manager_company_settings' ) !== $current ) {
+			$errors[] = 'company_settings';
+		}
+
+		return $errors;
+	}
+
+	/**
+	 * Sanitize a credential group (Stripe or Authorize.net) by field-type
+	 * whitelist. Unknown payload keys are dropped; missing keys become empty
+	 * strings. 'mode' fields clamp to 'test'|'live'.
+	 *
+	 * @param array               $input    Raw POST payload.
+	 * @param array<string,string> $schema   field_name => 'text'|'mode'
+	 * @return array<string, string>
+	 */
+	private function sanitize_credential_group( array $input, array $schema ) {
+		$out = array();
+		foreach ( $schema as $field => $type ) {
+			$value = isset( $input[ $field ] ) ? (string) $input[ $field ] : '';
+			if ( 'mode' === $type ) {
+				$out[ $field ] = in_array( $value, array( 'test', 'live' ), true ) ? $value : 'test';
+			} else {
+				$out[ $field ] = sanitize_text_field( $value );
+			}
+		}
+		return $out;
 	}
 
 	/* ─────────────────────────────────────────────────────────────

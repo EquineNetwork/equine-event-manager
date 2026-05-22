@@ -61,12 +61,17 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 - **Unblocks deletion:** Post-Phase-3, after a full event cycle confirms no live page still depends on it. Removal is then: drop `add_shortcode` registration + `render_event_reservation_shortcode` method + the `find_reservation_by_event_id` helper if it has no other callers.
 - **Status:** indefinite hold
 
-### 7. Settings panel stub methods (5 of 6)
-- **What:** `EEM_Settings_Page::render_integrations_panel`, `render_branding_panel`, `render_shortcodes_panel`, `render_payments_panel`, `render_addons_panel` — all currently render the same `render_panel_stub` placeholder.
-- **Why deferred:** C3.C fills 4 of them (Integrations, Branding, Payments, Add-Ons) plus Shortcodes (which is mostly static reference text).
-- **Added in:** C3.A
-- **Unblocks deletion:** Each is "removed" when C3.C replaces its body with real markup. Not deletion — replacement. Drop entries here when each ships.
-- **Status:** awaiting C3.C
+### 7. ~~Settings panel stub methods (5 of 6)~~ ✅ Resolved in C3.C
+- **What:** `EEM_Settings_Page::render_integrations_panel`, `render_branding_panel`, `render_shortcodes_panel`, `render_payments_panel`, `render_addons_panel` — were all stubs in C3.A.
+- **Resolution:** All five replaced with real implementations across C3.C.1–C3.C.5. No stubs remain in `EEM_Settings_Page`.
+- **Closed in:** C3.C.5 (Add-Ons was the last)
+
+### 8. `render_panel_stub` helper itself
+- **What:** `EEM_Settings_Page::render_panel_stub( $panel_id )` — the "Coming soon" placeholder card used during the C3.A → C3.C build-up.
+- **Why deferred (not deleted now):** Still useful infrastructure if a future panel needs a placeholder during its build-up, AND `render_panel( $panel_id )` falls through to it via `method_exists` lookup if any `render_<id>_panel` method is missing. Removing it would change failure mode from "shows placeholder" to "fatal" — worse UX.
+- **Added in:** C3.C
+- **Unblocks deletion:** Never, intentionally. Leave as the safety net. Drop this entry on next review if we agree it stays.
+- **Status:** keep indefinitely; review-and-drop-entry candidate
 
 ---
 

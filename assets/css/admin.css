@@ -2581,3 +2581,277 @@ th.sorted-desc .eem-sort-icon span:first-child {
 		padding: 12px;
 	}
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   C3.C — Other Settings panels (Integrations, Branding, Payments,
+   Shortcodes, Add-Ons). Components shared across panels:
+     - .eem-source-row (radio-as-card picker, used by Integrations
+       event-source + Payments processor)
+     - .eem-source-detail (per-source detail block)
+     - .eem-source-status (status pill: is-active / is-info / is-warning)
+     - .eem-logo-upload (Branding)
+     - .eem-shortcode-row + .eem-code-box (Shortcodes)
+     - .eem-empty-state (Add-Ons)
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────
+   Source picker — radio rendered as a clickable card
+   ───────────────────────────────────────────────────────────── */
+.eem-source-group {
+	display: flex;
+	flex-direction: column;
+	gap: var(--eem-space-2);
+	margin-bottom: var(--eem-space-3);
+}
+
+.eem-source-row {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--eem-space-3);
+	padding: 14px 16px;
+	border: 1.5px solid var(--eem-border);
+	border-radius: var(--eem-radius);
+	background: var(--eem-surface);
+	cursor: pointer;
+	transition: border-color 0.12s, background 0.12s;
+}
+
+.eem-source-row input[type="radio"] {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.eem-source-row:hover {
+	border-color: var(--eem-electric);
+	background: #FAFBFE;
+}
+
+.eem-source-row.is-selected {
+	border-color: var(--eem-electric);
+	background: var(--eem-info-bg);
+}
+
+.eem-source-radio {
+	width: 18px;
+	height: 18px;
+	border-radius: 50%;
+	border: 2px solid var(--eem-border-card);
+	background: var(--eem-surface);
+	flex-shrink: 0;
+	margin-top: 2px;
+	position: relative;
+	transition: border-color 0.12s;
+}
+
+.eem-source-row.is-selected .eem-source-radio {
+	border-color: var(--eem-electric);
+}
+
+.eem-source-row.is-selected .eem-source-radio::after {
+	content: '';
+	position: absolute;
+	inset: 3px;
+	border-radius: 50%;
+	background: var(--eem-electric);
+}
+
+.eem-source-row-body {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.eem-source-row-head {
+	display: flex;
+	align-items: center;
+	gap: var(--eem-space-2);
+	flex-wrap: wrap;
+}
+
+.eem-source-row-title {
+	font-family: var(--eem-font-display);
+	font-size: 14px;
+	font-weight: 700;
+	color: var(--eem-navy);
+}
+
+.eem-source-row-desc {
+	font-size: 12.5px;
+	color: var(--eem-text-secondary);
+	line-height: 1.5;
+}
+
+/* Per-source detail block — visible only when its source is picked */
+.eem-source-detail {
+	margin-top: var(--eem-space-3);
+	padding: var(--eem-space-4);
+	background: #FAFBFE;
+	border: 1px solid #E5EAF2;
+	border-radius: var(--eem-radius);
+}
+
+.eem-source-detail[hidden] {
+	display: none;
+}
+
+.eem-source-detail-title {
+	font-family: var(--eem-font-display);
+	font-size: 13px;
+	font-weight: 700;
+	color: var(--eem-navy);
+	margin-bottom: var(--eem-space-3);
+}
+
+/* Status pill — small badge used inside source-row-head + source-detail */
+.eem-source-status {
+	display: inline-flex;
+	align-items: center;
+	padding: 2px 8px;
+	border-radius: 20px;
+	font-size: 11px;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.eem-source-status.is-active  { background: #F0FDF4;               color: var(--eem-success-text); border: 1px solid #bbf7d0; }
+.eem-source-status.is-info    { background: var(--eem-info-bg);    color: var(--eem-electric);    border: 1px solid var(--eem-info-border); }
+.eem-source-status.is-warning { background: var(--eem-warn-bg);    color: var(--eem-warn-text);   border: 1px solid var(--eem-warn-border); }
+
+/* ─────────────────────────────────────────────────────────────
+   Branding — logo upload UI
+   ───────────────────────────────────────────────────────────── */
+.eem-logo-upload {
+	display: flex;
+	flex-direction: column;
+	gap: var(--eem-space-2);
+	align-items: flex-start;
+	max-width: 320px;
+}
+
+.eem-logo-preview {
+	width: 200px;
+	height: 80px;
+	border: 1px dashed var(--eem-border-card);
+	border-radius: var(--eem-radius);
+	background: var(--eem-bg-alt);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 6px;
+	overflow: hidden;
+}
+
+.eem-logo-preview img {
+	max-width: 100%;
+	max-height: 100%;
+	object-fit: contain;
+}
+
+.eem-logo-preview-empty {
+	font-size: 12px;
+	color: var(--eem-text-muted);
+}
+
+.eem-logo-upload-actions {
+	display: flex;
+	gap: var(--eem-space-2);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Shortcodes — reference rows with code boxes
+   ───────────────────────────────────────────────────────────── */
+.eem-shortcode-row {
+	display: grid;
+	grid-template-columns: 220px 1fr;
+	gap: var(--eem-space-4);
+	align-items: start;
+	padding: var(--eem-space-3) 0;
+	border-bottom: 1px solid var(--eem-border-soft);
+}
+
+.eem-shortcode-row:last-child {
+	border-bottom: none;
+}
+
+.eem-shortcode-label {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--eem-navy);
+	padding-top: 9px;
+}
+
+.eem-shortcode-body {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.eem-code-box {
+	display: block;
+	width: 100%;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: var(--eem-radius);
+	padding: 9px 12px;
+	font-family: 'IBM Plex Mono', 'SFMono-Regular', Menlo, monospace;
+	font-size: 12.5px;
+	color: var(--eem-text);
+	cursor: pointer;
+	text-align: left;
+	transition: border-color 0.12s, background 0.12s;
+}
+
+.eem-code-box:hover {
+	border-color: var(--eem-electric);
+	background: var(--eem-info-bg);
+}
+
+.eem-code-box.is-copied {
+	background: #F0FDF4;
+	border-color: #bbf7d0;
+	color: var(--eem-success-text);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Empty-state card body (Add-Ons)
+   ───────────────────────────────────────────────────────────── */
+.eem-empty-state {
+	background: var(--eem-bg);
+	border: 1px solid #dcdcde;
+	border-radius: var(--eem-radius);
+	padding: 20px 16px;
+	text-align: center;
+}
+
+.eem-empty-state-title {
+	font-size: 13.5px;
+	font-weight: 600;
+	color: var(--eem-text);
+	margin-bottom: 4px;
+}
+
+.eem-empty-state-desc {
+	font-size: 13px;
+	color: var(--eem-text-secondary);
+	line-height: 1.5;
+}
+
+/* Mobile — shortcode rows stack like field rows do */
+@media (max-width: 767px) {
+	.eem-shortcode-row {
+		grid-template-columns: 1fr;
+		gap: 6px;
+		padding: 10px 0;
+	}
+
+	.eem-shortcode-label {
+		padding-top: 0;
+	}
+
+	.eem-source-row {
+		padding: 12px;
+	}
+}

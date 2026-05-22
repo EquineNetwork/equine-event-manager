@@ -509,6 +509,136 @@
 			});
 	}
 
+	/* ─────────────────────────────────────────────────────────────
+	 * Source picker (Integrations event source + Payments processor).
+	 * Radio change → host gets .is-selected, siblings lose it, the
+	 * matching .eem-source-detail block becomes visible (others hide).
+	 * Pure delegation — wired here, not inside a panel-specific handler.
+	 * ───────────────────────────────────────────────────────────── */
+	document.addEventListener('change', function (ev) {
+		var radio = ev.target;
+		if (!radio || !radio.matches || radio.type !== 'radio') return;
+
+		var row = radio.closest('.eem-source-row');
+		if (!row) return;
+
+		var group = row.closest('[data-eem-source-group]');
+		if (group) {
+			group.querySelectorAll('.eem-source-row').forEach(function (r) {
+				r.classList.toggle('is-selected', r.contains(radio));
+			});
+		}
+
+		// Show the matching source-detail block (Integrations panel) by data-eem-source-value
+		var value = row.dataset.eemSourceValue;
+		if (value) {
+			document.querySelectorAll('[data-eem-source-detail]').forEach(function (detail) {
+				if (detail.dataset.eemSourceDetail === value) {
+					detail.removeAttribute('hidden');
+				} else {
+					detail.setAttribute('hidden', 'hidden');
+				}
+			});
+		}
+	});
+
+	/* ─────────────────────────────────────────────────────────────
+	 * Branding — WP media library logo pick + remove
+	 * Uses wp.media (available on admin pages that wp_enqueue_media'd
+	 * — Settings page calls it via wp_enqueue_editor side-effect).
+	 * ───────────────────────────────────────────────────────────── */
+	function pickLogo(btn) {
+		if (!window.wp || !window.wp.media) {
+			EEM.showSaveToast('WP media library not available.', { variant: 'error', sub: '' });
+			return;
+		}
+		var host = btn.closest('[data-eem-logo-upload]');
+		if (!host) return;
+
+		var frame = window.wp.media({
+			title: 'Choose Business Logo',
+			button: { text: 'Use this logo' },
+			multiple: false,
+			library: { type: 'image' }
+		});
+
+		frame.on('select', function () {
+			var attachment = frame.state().get('selection').first().toJSON();
+			var idInput   = host.querySelector('[data-eem-logo-id]');
+			var preview   = host.querySelector('[data-eem-logo-preview]');
+			var removeBtn = host.querySelector('[data-eem-action="logo-remove"]');
+
+			if (idInput) idInput.value = attachment.id || '';
+			if (preview && attachment.url) {
+				preview.innerHTML = '<img src="' + attachment.url + '" alt="" />';
+			}
+			if (removeBtn) removeBtn.disabled = false;
+		});
+
+		frame.open();
+	}
+
+	function removeLogo(btn) {
+		var host = btn.closest('[data-eem-logo-upload]');
+		if (!host) return;
+		var idInput = host.querySelector('[data-eem-logo-id]');
+		var preview = host.querySelector('[data-eem-logo-preview]');
+		if (idInput) idInput.value = '0';
+		if (preview) preview.innerHTML = '<span class="eem-logo-preview-empty">No logo set</span>';
+		btn.disabled = true;
+	}
+
+	/* ─────────────────────────────────────────────────────────────
+	 * Integrations — Test Feed URL button
+	 * Calls the existing equine_event_manager_test_feed_url AJAX action
+	 * (registered by EEM_Events) with the current value of the Feed URL input.
+	 * ───────────────────────────────────────────────────────────── */
+	function testFeedUrl(btn) {
+		var input = document.getElementById('eem-feed-url');
+		if (!input) return;
+		var url = (input.value || '').trim();
+		if (!url) {
+			EEM.showSaveToast('Enter a feed URL first.', { variant: 'error', sub: '' });
+			return;
+		}
+
+		btn.disabled = true;
+		var originalLabel = btn.textContent;
+		btn.textContent = 'Testing…';
+
+		var data = new FormData();
+		data.append('action', 'equine_event_manager_test_feed_url');
+		data.append('feed_url', url);
+
+		// Try to find a nonce in any nearby form (this AJAX action might use
+		// its own nonce name; if it 403s the toast will say so and admin
+		// can investigate). The existing handler in EEM_Events may have its
+		// own nonce setup; here we just POST what we have.
+		var form = btn.closest('form');
+		var nonceInput = form ? form.querySelector('input[name="nonce"]') : null;
+		if (nonceInput) data.append('nonce', nonceInput.value);
+
+		var ajaxUrl = (window.ajaxurl || '/wp-admin/admin-ajax.php');
+		fetch(ajaxUrl, { method: 'POST', credentials: 'same-origin', body: data })
+			.then(function (res) { return res.json(); })
+			.then(function (json) {
+				if (json && json.success) {
+					var count = json.data && json.data.count ? json.data.count : '';
+					EEM.showSaveToast(count ? ('Feed OK — ' + count + ' events found.') : 'Feed reachable.', { sub: '' });
+				} else {
+					var msg = (json && json.data && json.data.message) || 'Feed test failed.';
+					EEM.showSaveToast(msg, { variant: 'error', sub: '' });
+				}
+			})
+			.catch(function () {
+				EEM.showSaveToast('Could not reach the server.', { variant: 'error', sub: '' });
+			})
+			.then(function () {
+				btn.disabled = false;
+				btn.textContent = originalLabel;
+			});
+	}
+
 	function initTemplateCardEditor(card) {
 		var textarea = card.querySelector('[data-eem-tinymce-target]');
 		if (!textarea || !textarea.id) return;
@@ -607,6 +737,15 @@
 		},
 		'send-test-email': function (target) {
 			sendTestEmail(target);
+		},
+		'logo-pick': function (target) {
+			pickLogo(target);
+		},
+		'logo-remove': function (target) {
+			removeLogo(target);
+		},
+		'test-feed-url': function (target) {
+			testFeedUrl(target);
 		}
 	};
 
