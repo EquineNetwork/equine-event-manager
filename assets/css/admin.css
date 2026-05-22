@@ -3503,10 +3503,23 @@ a.eem-mob-res-name:focus {
    `min-height: 44px !important` on input[type="search"] makes the
    input taller than C1.3 sized for; the icon stays centered but the
    placeholder text rides closer to it without the extra clearance. */
+/* Bulk-action + date-filter forms stay transparent to flex layout —
+   their dropdown and Apply/Filter button are SUPPOSED to have the
+   toolbar's 8px gap between them per mockup. */
 .eem-bulk-form,
-.eem-date-filter-form,
-.eem-search-form {
+.eem-date-filter-form {
 	display: contents;
+}
+
+/* Search form is its own tight flex container with gap:0 — the
+   search input and "Search Reservations" button must touch with no
+   gap so they read as one attached unit per mockup line 53-65. The
+   8px toolbar gap still applies BETWEEN this form and other siblings
+   in .eem-list-toolbar-right (the item-count span). */
+.eem-search-form {
+	display: flex;
+	align-items: center;
+	gap: 0;
 }
 
 .eem-search-wrap .eem-search-input {
