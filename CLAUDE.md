@@ -168,7 +168,9 @@ Verbatim CSS port from a mockup's `<style>` block into `admin.css` runs at **~×
 Calibration data:
 - **C3 Settings:** 292 mockup CSS LOC → 652 admin.css additions = **×2.23**.
 - **C4.B Reservations list:** ~190 mockup CSS LOC → 518 admin.css additions = **×2.73**.
-- **Standing rule: ×2.5** as the CSS floor for any mockup-driven port chunk. Refine as more port chunks land.
+- **Standing rule: ×2.5** as the CSS floor for any mockup-driven port chunk.
+
+**Derivation note:** ×2.5 is a judgment call within the observed [×2.23, ×2.73] range (range midpoint = 2.48, rounded to 2.5), **not** an arithmetic mean of the two ratios (which would be 2.48 either way given two near-symmetric points). With only two data points, treating either endpoint as authoritative would overfit; the midpoint is the most defensible floor that doesn't favor one observed chunk over the other. Refine as more port chunks land — if C5/C6 cluster above ×2.5, raise the floor; if they cluster below, lower it. Always cite the data points behind the current number when leaning on the heuristic for a chunk's plan.
 
 Estimating procedure:
 1. Open the mockup HTML, count the page-unique CSS rules in its `<style>` block (skip rules for components already in `admin.css` from C1).
