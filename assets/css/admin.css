@@ -591,43 +591,55 @@
 	text-decoration: none;
 }
 
-/* Primary (Navy) — default primary action on form pages (Save, Update, Publish) */
-.eem-btn-primary {
+/* Primary (Navy) — default primary action on form pages (Save, Update, Publish).
+   `a.` chain on each color rule wins specificity against the global
+   .eem-page a { color: var(--eem-electric) } rule — without it, anchor
+   buttons inherit electric-blue text and become invisible on the
+   electric-blue background (and washed-out on navy). Hotfix applied
+   post-C4-merge when the "+ New Reservation" CTA shipped unreadable. */
+.eem-btn-primary,
+a.eem-btn-primary {
 	background: var(--eem-navy);
 	color: var(--eem-text-on-navy);
 }
 
-.eem-btn-primary:hover {
+.eem-btn-primary:hover,
+a.eem-btn-primary:hover {
 	background: #052569;
 	color: var(--eem-text-on-navy);
 }
 
 /* Primary (Electric Blue) — navigation-style CTAs (+ New Reservation, Create Order) */
-.eem-btn-electric {
+.eem-btn-electric,
+a.eem-btn-electric {
 	background: var(--eem-electric);
 	color: var(--eem-text-on-navy);
 }
 
-.eem-btn-electric:hover {
+.eem-btn-electric:hover,
+a.eem-btn-electric:hover {
 	background: var(--eem-electric-hover);
 	color: var(--eem-text-on-navy);
 }
 
 /* Secondary — Save Draft, Cancel, neutral */
-.eem-btn-secondary {
+.eem-btn-secondary,
+a.eem-btn-secondary {
 	background: var(--eem-surface);
 	color: var(--eem-navy);
 	border: var(--eem-border-input);
 }
 
-.eem-btn-secondary:hover {
+.eem-btn-secondary:hover,
+a.eem-btn-secondary:hover {
 	background: #f6f7f7;
 	border-color: var(--eem-electric);
 	color: var(--eem-navy);
 }
 
 /* Tertiary / text link */
-.eem-btn-tertiary {
+.eem-btn-tertiary,
+a.eem-btn-tertiary {
 	background: transparent;
 	color: var(--eem-electric);
 	padding: 6px 8px;
