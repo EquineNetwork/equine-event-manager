@@ -341,6 +341,64 @@
 		if (!isOpen) host.classList.add('open');
 	}
 
+	/* ─────────────────────────────────────────────────────────────
+	 * Template card — toggle open/closed + lazy-init TinyMCE on first open.
+	 * Card markup: <article.eem-template-card>
+	 *   <header.eem-template-card-head data-eem-action="template-toggle">
+	 *   <div.eem-template-card-body>
+	 *     <textarea[data-eem-tinymce-target]>...</textarea>
+	 *
+	 * WP's bundled wp.editor.initialize() takes a textarea id and a settings
+	 * object, returning a wired-up TinyMCE instance. We initialize on first
+	 * expand to keep page-load light (5 editors × ~200KB of WP-TinyMCE deps
+	 * is a lot to fire eagerly).
+	 * ───────────────────────────────────────────────────────────── */
+	function toggleTemplateCard(headEl) {
+		var card = headEl.closest('.eem-template-card');
+		if (!card) return;
+
+		var willOpen = !card.classList.contains('is-open');
+		card.classList.toggle('is-open', willOpen);
+
+		if (willOpen && !card._eemTinymceReady) {
+			initTemplateCardEditor(card);
+			card._eemTinymceReady = true;
+		}
+	}
+
+	function initTemplateCardEditor(card) {
+		var textarea = card.querySelector('[data-eem-tinymce-target]');
+		if (!textarea || !textarea.id) return;
+
+		// Graceful no-op if wp.editor isn't available (e.g., wp_enqueue_editor
+		// wasn't called server-side). Textarea remains plain — admin can still
+		// edit raw HTML.
+		if (!window.wp || !window.wp.editor || typeof window.wp.editor.initialize !== 'function') {
+			return;
+		}
+
+		try {
+			window.wp.editor.initialize(textarea.id, {
+				tinymce: {
+					wpautop: true,
+					toolbar1: 'bold,italic,underline,bullist,numlist,link,unlink,undo,redo',
+					menubar: false,
+					branding: false,
+					statusbar: false
+				},
+				quicktags: {
+					buttons: 'strong,em,link,ul,ol,li'
+				},
+				mediaButtons: false
+			});
+		} catch (e) {
+			// Logged for the smoke-test debug.log pass; doesn't crash the page.
+			if (window.console && window.console.warn) {
+				window.console.warn('EEM: TinyMCE initialize failed for ' + textarea.id, e);
+			}
+		}
+	}
+
 	function closeAllDropdowns() {
 		document.querySelectorAll('.eem-dropdown.open, .eem-row-menu-wrap.open')
 			.forEach(function (host) { host.classList.remove('open'); });
@@ -397,6 +455,9 @@
 			} else if (toast) {
 				toast.remove();
 			}
+		},
+		'template-toggle': function (target) {
+			toggleTemplateCard(target);
 		}
 	};
 

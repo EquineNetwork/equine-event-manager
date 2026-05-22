@@ -2263,3 +2263,321 @@ th.sorted-desc .eem-sort-icon span:first-child {
 		padding-top: 4px;
 	}
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   C3.B — Settings page (Communications panel)
+   Settings layout, placeholder reference, template cards, checkbox row,
+   save bar. Other panels' CSS lands in C3.C alongside their markup.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────
+   Settings page layout — left-nav + active panel grid
+   Minimal pattern in C3.B; C3.C may polish.
+   ───────────────────────────────────────────────────────────── */
+.eem-settings {
+	display: grid;
+	grid-template-columns: 220px 1fr;
+	gap: var(--eem-space-4);
+	align-items: start;
+}
+
+.eem-settings-nav {
+	background: var(--eem-bg);
+	border: 1px solid #dcdcde;
+	border-radius: var(--eem-radius);
+	padding: 6px;
+}
+
+.eem-settings-nav ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.eem-settings-nav-item {
+	display: flex;
+	align-items: center;
+	gap: var(--eem-space-2);
+	padding: 9px 12px;
+	font-size: 13.5px;
+	color: var(--eem-text);
+	text-decoration: none;
+	border-radius: var(--eem-radius-sm);
+	margin: 2px 0;
+	transition: background 0.1s, color 0.1s;
+}
+
+.eem-settings-nav-item:hover {
+	background: var(--eem-surface);
+	color: var(--eem-navy);
+	text-decoration: none;
+}
+
+.eem-settings-nav-item.is-active {
+	background: var(--eem-info-bg);
+	color: var(--eem-electric);
+	font-weight: 600;
+}
+
+.eem-settings-nav-item .dashicons {
+	width: 16px;
+	height: 16px;
+	font-size: 16px;
+}
+
+.eem-settings-panel {
+	display: flex;
+	flex-direction: column;
+	gap: var(--eem-space-3);
+	min-width: 0;
+}
+
+/* Settings form spans the panel; per-section cards stack inside */
+.eem-settings-form {
+	display: flex;
+	flex-direction: column;
+	gap: var(--eem-space-3);
+}
+
+/* Save bar — pinned to bottom of the form (in flow, not fixed) */
+.eem-settings-save-bar {
+	display: flex;
+	align-items: center;
+	gap: var(--eem-space-3);
+	padding: var(--eem-space-4);
+	background: var(--eem-surface);
+	border: 1px solid var(--eem-border-card);
+	border-radius: var(--eem-radius);
+	position: sticky;
+	bottom: 12px;
+	box-shadow: 0 -2px 8px rgba(3, 27, 78, 0.06);
+}
+
+.eem-settings-save-hint {
+	font-size: 12px;
+	color: var(--eem-text-secondary);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Checkbox row — used by the "Send Customer Emails" master toggle
+   and any future boolean settings rendered with a label-right layout.
+   ───────────────────────────────────────────────────────────── */
+.eem-checkbox-row {
+	display: flex;
+	align-items: center;
+	gap: var(--eem-space-2);
+	cursor: pointer;
+	padding: 8px 0;
+}
+
+.eem-checkbox-row input[type="checkbox"] {
+	margin: 0;
+	cursor: pointer;
+}
+
+.eem-checkbox-row span {
+	font-size: 13.5px;
+	color: var(--eem-text);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Placeholder reference panel
+   Sits above the 5 template cards, lists every {{token}} as a
+   click-to-copy chip. Chip-copy JS lands in C3.B.3.
+   ───────────────────────────────────────────────────────────── */
+.eem-placeholder-reference {
+	background: #FAFBFE;
+	border: 1px solid #E5EAF2;
+	border-radius: var(--eem-radius);
+	padding: 12px 14px;
+	margin-bottom: var(--eem-space-4);
+}
+
+.eem-placeholder-ref-title {
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--eem-navy);
+	margin-bottom: var(--eem-space-2);
+	display: flex;
+	align-items: center;
+	gap: var(--eem-space-3);
+}
+
+.eem-placeholder-ref-hint {
+	font-weight: 500;
+	font-size: 10.5px;
+	color: var(--eem-text-secondary);
+	letter-spacing: 0.02em;
+	text-transform: none;
+}
+
+.eem-placeholder-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.eem-placeholder-chip {
+	background: var(--eem-surface);
+	border: 1px solid var(--eem-border-card);
+	color: var(--eem-navy);
+	font-family: 'IBM Plex Mono', 'SFMono-Regular', Menlo, monospace;
+	font-size: 11.5px;
+	padding: 4px 9px;
+	border-radius: var(--eem-radius-sm);
+	cursor: pointer;
+	font-weight: 500;
+	line-height: 1.4;
+}
+
+.eem-placeholder-chip:hover {
+	border-color: var(--eem-electric);
+	color: var(--eem-electric);
+	background: var(--eem-info-bg);
+}
+
+.eem-placeholder-chip.is-copied {
+	background: #F0FDF4;
+	color: var(--eem-success-accent);
+	border-color: #bbf7d0;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Template card — collapsible per-template editor block
+   Each card holds: head (title+sub+chevron) and body (subject +
+   TinyMCE editor + send-test action). Body hidden until card
+   gains .is-open class via JS template-toggle handler.
+   ───────────────────────────────────────────────────────────── */
+.eem-template-cards {
+	display: flex;
+	flex-direction: column;
+	gap: var(--eem-space-2);
+}
+
+.eem-template-card {
+	background: var(--eem-surface);
+	border: 1px solid var(--eem-border-card);
+	border-radius: var(--eem-radius);
+	overflow: hidden;
+}
+
+.eem-template-card-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--eem-space-3);
+	padding: 12px 14px;
+	cursor: pointer;
+	background: var(--eem-surface);
+	transition: background 0.12s;
+	user-select: none;
+}
+
+.eem-template-card-head:hover {
+	background: #FAFBFE;
+}
+
+.eem-template-card-head-text {
+	flex: 1;
+	min-width: 0;
+}
+
+.eem-template-card-title {
+	font-family: var(--eem-font-display);
+	font-size: 14px;
+	font-weight: 700;
+	color: var(--eem-navy);
+	margin-bottom: 2px;
+}
+
+.eem-template-card-sub {
+	font-size: 12px;
+	color: var(--eem-text-secondary);
+	line-height: 1.4;
+}
+
+.eem-template-card-chevron {
+	color: var(--eem-text-muted);
+	font-size: 16px;
+	transition: transform 0.2s;
+	flex-shrink: 0;
+}
+
+.eem-template-card.is-open .eem-template-card-chevron {
+	transform: rotate(180deg);
+}
+
+.eem-template-card-body {
+	display: none;
+	padding: 14px 16px 16px;
+	border-top: 1px solid #E5EAF2;
+	background: #FAFBFE;
+}
+
+.eem-template-card.is-open .eem-template-card-body {
+	display: block;
+}
+
+.eem-template-card-actions {
+	display: flex;
+	justify-content: flex-end;
+	margin-top: var(--eem-space-3);
+	padding-top: var(--eem-space-3);
+	border-top: 1px solid #E5EAF2;
+}
+
+/* TinyMCE override — keep the editor visually consistent with the
+   eem-field-textarea (matches border + radius so cards don't look
+   stitched together from two design systems). */
+.eem-template-card .wp-editor-wrap .wp-editor-tabs,
+.eem-template-card .wp-editor-wrap .mce-toolbar-grp {
+	background: var(--eem-surface);
+}
+
+.eem-template-card .wp-editor-wrap .wp-editor-container {
+	border: var(--eem-border-input);
+	border-radius: var(--eem-radius);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Responsive — stack settings layout below 1024px (sidebar over content)
+   ───────────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+	.eem-settings {
+		grid-template-columns: 1fr;
+	}
+
+	.eem-settings-nav {
+		position: static;
+	}
+
+	.eem-settings-nav ul {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px;
+	}
+
+	.eem-settings-nav-item {
+		flex: 1 1 auto;
+		justify-content: center;
+		margin: 0;
+	}
+}
+
+@media (max-width: 767px) {
+	.eem-settings-save-bar {
+		flex-direction: column;
+		align-items: stretch;
+		text-align: center;
+	}
+
+	.eem-template-card-head {
+		padding: 10px 12px;
+	}
+
+	.eem-template-card-body {
+		padding: 12px;
+	}
+}

@@ -48,6 +48,31 @@ class EEM_Settings_Page {
 	}
 
 	/**
+	 * Conditional enqueue for Settings-page-specific assets. Hooked in the
+	 * main loader on admin_enqueue_scripts; fires only when the current
+	 * admin screen is our Settings page so we don't load TinyMCE on every
+	 * admin page.
+	 *
+	 * Loads:
+	 *   - WP's bundled TinyMCE via wp_enqueue_editor() so the wp.editor
+	 *     JS API is available on the client for lazy per-card init.
+	 *
+	 * @param string $hook_suffix Current admin screen hook (passed by WP).
+	 * @return void
+	 */
+	public function enqueue_assets( $hook_suffix = '' ) {
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		if ( self::MENU_SLUG !== $page ) {
+			return;
+		}
+
+		// Loads tinymce + wp-tinymce + the wp.editor JS API surface.
+		if ( function_exists( 'wp_enqueue_editor' ) ) {
+			wp_enqueue_editor();
+		}
+	}
+
+	/**
 	 * Render the Settings page. Wired into the admin menu callback in C3.D —
 	 * until then, this method is called only by the C3.A smoke test.
 	 *
