@@ -350,8 +350,8 @@ Meatballs menu contents:
 - Existing options stand: **Edit**, **Move to Trash**.
 - No bulk Duplicate, Archive, or Export Roster for v1. Those are single-row meatballs actions; if customers ask for bulk equivalents we add them later.
 
-### RES-4. New Status column with lifecycle badges
-**Decided:** 2026-05-22
+### RES-4. New Status column with lifecycle badges + status tabs above table
+**Decided:** 2026-05-22 (initial) · **Revised:** 2026-05-22 (added status tabs per mockup)
 
 A new "Status" column shows each reservation's lifecycle state as a pill badge. Four states:
 
@@ -362,7 +362,7 @@ A new "Status" column shows each reservation's lifecycle state as a pill badge. 
 | **Archived** | grey | Hidden from default view | Past events admin wants to retain but not see daily. Use the filter to show. |
 | **Trashed** | red | Hidden from default view (in WP trash) | Soft delete; recoverable |
 
-**No filter tabs at the top** — keep the table simple. Admins who want to see Drafts or Archived sort by the column or use the future filter dropdown (currently the toolbar has "All dates" — that placeholder is where a status filter could live in v2).
+**Status tabs at top of table** — `All (count) | Published (count) | Draft (count) | Trash (count)` per mockup lines 244–252. Default tab = All. Tabs are the primary filter mechanism for Draft and Trashed reservations; clicking a tab sets `?status=X` on the URL and re-queries. The original RES-4 decision ("no filter tabs") was made before seeing the rendered mockup comparison and was reverted in C4 planning to honor the mockup spec.
 
 ### RES-5. New Orders count column (sortable)
 **Decided:** 2026-05-22

@@ -42,13 +42,14 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 - **Unblocks deletion:** N/A — this is a "verify generalization" item, not a removal item. Drop the entry if C3.C confirms no extraction is needed.
 - **Status:** to re-evaluate at C3.C wrap-up
 
-### 5. Three deferred mockups (decisions.md "Pending Mockups")
-- **What:** `create_order_page.html`, `customer_detail_page.html`, Cancel Event button amendment on `edit_reservation_page.html`.
+### 5. Four deferred mockups (decisions.md "Pending Mockups" + C4 modal)
+- **What:** `create_order_page.html`, `customer_detail_page.html`, Cancel Event button amendment on `edit_reservation_page.html`, **Email Customers compose modal** (no mockup file).
 - **Why deferred:** Mockups not built. The corresponding code surfaces:
   - Invoicing → New Order mode is a "Coming next release" placeholder in C12.
   - Customer Detail link on Order Detail card (C9 — ODET-5) renders as plain text, not a link.
   - Cancel Event button on Edit Reservation (C7) is omitted; the bulk-refund engine is still built so the button can be added in a future chunk.
-- **Added in:** Phase 3 plan
+  - Email Customers modal (C4.C — reservations list meatballs item): no mockup depicts the compose UI. C4.C ships a minimal subject/body/Send modal designed to the brand-guide token system; spec-faithful redesign drops in when the mockup lands.
+- **Added in:** Phase 3 plan (first 3) + C4.C (modal)
 - **Unblocks deletion:** N/A (these are stubs waiting for spec, not legacy to remove). When mockups land, the stubs get replaced with real implementations. Track here to make sure they don't ship as placeholders to production.
 - **Status:** awaiting spec
 
@@ -63,6 +64,20 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 - **What:** `EEM_Settings_Page::render_integrations_panel`, `render_branding_panel`, `render_shortcodes_panel`, `render_payments_panel`, `render_addons_panel` — were all stubs in C3.A.
 - **Resolution:** All five replaced with real implementations across C3.C.1–C3.C.5. No stubs remain in `EEM_Settings_Page`.
 - **Closed in:** C3.C.5 (Add-Ons was the last)
+
+### 10. Bulk Edit on Reservations list — handler returns "unsupported" notice
+- **What:** The Reservations list bulk-action dropdown offers `Edit` and `Move to Trash` per RES-3. C4.D wires Move to Trash end-to-end; Edit currently redirects with `eem_notice=bulk_edit_unsupported` ("Bulk Edit is not available yet — it will land in a future release. Use the per-row Edit link for now.").
+- **Why deferred:** WP-native bulk edit relies on `WP_List_Table`'s inline-edit machinery which the Phase 3 custom page (Path B) deliberately doesn't extend. A proper bulk-edit UX needs its own modal (similar to the Email Customers modal) with the fields-to-change form. Scope is meaningfully larger than C4.D could accommodate and the per-row Edit link covers the immediate use case.
+- **Added in:** C4.D
+- **Unblocks deletion:** Future chunk (likely C13 polish or a dedicated follow-up). Either ship a real bulk-edit modal, or remove the `Edit` option from the dropdown and the corresponding handler branch. Don't ship a "not available yet" notice to production.
+- **Status:** awaiting decision
+
+### 11. `orderby=orders` sort uses PHP two-pass instead of SQL
+- **What:** `EEM_Reservations_List_Repo::get_paginated` honors `orderby=orders` by fetching up to 500 candidate posts, computing the orders count per post in PHP, sorting, then hand-paginating. SQL ORDER BY can't be used directly because the orders count is derived from `notes LIKE '%Reservation setup ID: N%'` across two tables.
+- **Why deferred:** Works fine at the scale of a single venue's reservation list (typically <100 reservations). Becomes a problem if a producer has 500+ reservations or a multi-tenant deployment.
+- **Added in:** C4.D
+- **Unblocks deletion:** C11 (EMAIL-5 / order schema). When per-order rows gain a denormalized `reservation_id` column (per CLEANUP entry #9), the sort can become a proper SQL JOIN + COUNT + ORDER BY. Also drop the 500-row safety cap.
+- **Status:** awaiting C11
 
 ### 9. Per-order persisted `total` columns exclude tax allocation
 - **What:** `wp_en_stall_reservations.total` and `wp_en_rv_reservations.total` columns store `subtotal + convenience_fee` only — they do NOT include the tax that was actually charged at checkout. C3.D.1 wires tax into the *aggregate* `$totals['total']` (what the customer pays via Stripe / Auth.net), but defers the per-order allocation question.
