@@ -26,6 +26,11 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-email-templates-rep
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-settings-repo.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-settings-page.php';
 
+// Phase 3 — Reservations list subsystem (C4 — replaces WP-native
+// edit.php?post_type=en_reservation with a custom mockup-faithful page).
+require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-reservations-list-repo.php';
+require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-reservations-list-page.php';
+
 // Phase 3 admin template partials.
 require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_breadcrumb.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_page_shell.php';
@@ -110,6 +115,8 @@ class EEM_Plugin {
 		add_action( 'wp_ajax_eem_save_settings', array( $this->settings_page, 'handle_ajax_save_settings' ) );
 		add_action( 'wp_ajax_eem_send_test_email', array( $this->settings_page, 'handle_ajax_send_test_email' ) );
 		add_action( 'admin_enqueue_scripts', array( $this->settings_page, 'enqueue_assets' ) );
+		// C4 — redirect WP-native en_reservation list to our custom page.
+		add_action( 'current_screen', array( 'EEM_Reservations_List_Page', 'maybe_redirect_old_list' ) );
 		add_action( 'admin_head', array( $this->reservation_editor, 'print_editor_shell_fallback_assets' ) );
 		add_action( 'edit_form_top', array( $this->reservation_editor, 'render_editor_header' ) );
 		add_action( 'edit_form_after_title', array( $this->reservation_editor, 'render_editor_overview' ) );

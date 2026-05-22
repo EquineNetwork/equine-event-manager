@@ -147,6 +147,10 @@ class EEM_Admin {
 			return trim( $classes . ' eem-shell-page eem-shell-page--rail eem-shell-page--settings' );
 		}
 
+		if ( EEM_Reservations_List_Page::MENU_SLUG === $page ) {
+			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--reservations-list' );
+		}
+
 		return $classes;
 	}
 
@@ -188,7 +192,7 @@ class EEM_Admin {
 			$should_load = true;
 		}
 
-		if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-order', 'equine-event-manager-order-refund', 'equine-event-manager-settings', 'equine-event-manager-stall-chart', 'equine-event-manager-invoicing', 'equine-event-manager-reports', 'equine-event-manager-reservation-overview' ), true ) ) {
+		if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-order', 'equine-event-manager-order-refund', 'equine-event-manager-settings', 'equine-event-manager-stall-chart', 'equine-event-manager-invoicing', 'equine-event-manager-reports', 'equine-event-manager-reservation-overview', EEM_Reservations_List_Page::MENU_SLUG ), true ) ) {
 			$should_load = true;
 		}
 
@@ -527,12 +531,19 @@ class EEM_Admin {
 			array( $this, 'render_orders_page' )
 		);
 
+		// C4 — Reservations submenu points at the new Phase 3 custom page
+		// (admin/class-eem-reservations-list-page.php). The WP-native CPT
+		// list at edit.php?post_type=en_reservation still exists and is
+		// reachable via direct URL; current_screen redirect (wired in
+		// includes/class-equine-event-manager.php) bounces accidental
+		// hits to the new page.
 		add_submenu_page(
 			self::MENU_SLUG,
 			__( 'Reservations', 'equine-event-manager' ),
 			__( 'Reservations', 'equine-event-manager' ),
 			'manage_options',
-			'edit.php?post_type=en_reservation'
+			EEM_Reservations_List_Page::MENU_SLUG,
+			array( new EEM_Reservations_List_Page(), 'render' )
 		);
 
 		$this->invoicing_hook = add_submenu_page(
