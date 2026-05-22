@@ -2338,38 +2338,71 @@ a.eem-settings-nav-item:focus {
 	flex-shrink: 0;
 }
 
+/* Mockup: .settings-content { padding:0; display:flex; flex-direction:column }
+   (settings_page.html line 48). Sections inside divide themselves via
+   border-bottom — no gap or padding at the panel/form level. */
 .eem-settings-panel {
 	display: flex;
 	flex-direction: column;
-	gap: var(--eem-space-3);
+	gap: 0;
 	min-width: 0;
-	padding: var(--eem-space-4);
+	padding: 0;
 }
 
-/* Settings form spans the panel; per-section cards stack inside */
 .eem-settings-form {
 	display: flex;
 	flex-direction: column;
-	gap: var(--eem-space-3);
+	gap: 0;
 }
 
-/* Save bar — pinned to bottom of the form (in flow, not fixed) */
+/* Save bar — flat strip at the bottom of the settings card per mockup
+   line 155: padding 16px 28px, border-top only (divider from last
+   section), #fafafa fill, no radius/shadow, no sticky. */
 .eem-settings-save-bar {
 	display: flex;
 	align-items: center;
-	gap: var(--eem-space-3);
-	padding: var(--eem-space-4);
-	background: var(--eem-surface);
-	border: 1px solid var(--eem-border-card);
-	border-radius: var(--eem-radius);
-	position: sticky;
-	bottom: 12px;
-	box-shadow: 0 -2px 8px rgba(3, 27, 78, 0.06);
+	gap: 10px;
+	padding: 16px 28px;
+	background: #fafafa;
+	border: none;
+	border-top: 1px solid #dcdcde;
+	border-radius: 0;
+	position: static;
+	box-shadow: none;
 }
 
 .eem-settings-save-hint {
 	font-size: 12px;
 	color: var(--eem-text-secondary);
+}
+
+/* Inside the settings shell, .eem-card sections flatten to the
+   mockup's .settings-section shape (settings_page.html line 51):
+   padding 22px 28px + a single bottom divider; the last section
+   removes the divider. Header and body sub-blocks lose their own
+   strip borders / extra padding since the section provides the
+   padding. Scoped to .eem-settings so other admin pages keep .eem-card
+   as a full bordered/rounded card. */
+.eem-settings .eem-card {
+	background: transparent;
+	border: none;
+	border-radius: 0;
+	border-bottom: 1px solid #dcdcde;
+	overflow: visible;
+}
+
+.eem-settings .eem-card:last-of-type {
+	border-bottom: none;
+}
+
+.eem-settings .eem-card-header {
+	padding: 22px 28px 0;
+	border-bottom: none;
+	background: transparent;
+}
+
+.eem-settings .eem-card-body {
+	padding: 6px 28px 22px;
 }
 
 /* ─────────────────────────────────────────────────────────────
