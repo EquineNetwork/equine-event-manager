@@ -31,6 +31,7 @@ class EEM_Activator {
 	public static function activate() {
 		self::create_reservation_tables();
 		self::create_reports_log_table();
+		self::create_activity_log_table();
 		self::maybe_refresh_native_event_rewrite_rules();
 		update_option( self::DB_VERSION_OPTION, EQUINE_EVENT_MANAGER_VERSION );
 		update_option( self::NATIVE_EVENT_REWRITE_VERSION_OPTION, self::get_native_event_rewrite_signature() );
@@ -172,6 +173,40 @@ class EEM_Activator {
 			PRIMARY KEY  (id),
 			KEY reservation_id (reservation_id),
 			KEY created_at (created_at)
+		) {$charset_collate};";
+
+		dbDelta( $sql );
+	}
+
+	/**
+	 * Create the activity log table ({prefix}en_activity_log).
+	 *
+	 * Append-only event log used by Order Detail (ODET-7) and Stall Chart
+	 * Detail (CDET-5). Idempotent via dbDelta — re-running upgrades the
+	 * schema rather than recreating.
+	 */
+	private static function create_activity_log_table() {
+		global $wpdb;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$charset_collate = $wpdb->get_charset_collate();
+		$table_name      = $wpdb->prefix . 'en_activity_log';
+
+		$sql = "CREATE TABLE {$table_name} (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			order_id bigint(20) unsigned DEFAULT NULL,
+			reservation_id bigint(20) unsigned DEFAULT NULL,
+			event_type varchar(64) NOT NULL DEFAULT '',
+			payload longtext NULL,
+			actor_type varchar(32) NOT NULL DEFAULT 'system',
+			actor_id bigint(20) unsigned DEFAULT NULL,
+			actor_label varchar(255) NOT NULL DEFAULT '',
+			created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY  (id),
+			KEY order_created (order_id, created_at),
+			KEY reservation_created (reservation_id, created_at),
+			KEY event_type_created (event_type, created_at)
 		) {$charset_collate};";
 
 		dbDelta( $sql );

@@ -36,12 +36,6 @@ class EEM_Activity_Log {
 	const NOTIFICATION_SENT            = 'notification_sent';
 	const SPECIAL_INSTRUCTIONS_EDITED  = 'special_instructions_edited';
 
-	/** Schema version — bump to trigger maybe_upgrade re-run of dbDelta. */
-	const SCHEMA_VERSION = '1';
-
-	/** wp_options key holding the installed schema version. */
-	const SCHEMA_OPTION = 'eem_activity_log_schema_version';
-
 	/**
 	 * Custom table name with site prefix.
 	 *
