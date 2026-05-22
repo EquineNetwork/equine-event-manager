@@ -43,31 +43,37 @@ class EEM_Settings_Repo {
 	 * ───────────────────────────────────────────────────────────── */
 
 	/**
-	 * @return array{from_name:string, from_email:string, reply_to:string}
+	 * @return array{send_customer_emails:bool, admin_copy_email:string, from_name:string, from_email:string, reply_to:string}
 	 */
 	public static function get_email_sender() {
 		$stored = get_option( self::OPTION_EMAIL_SENDER, array() );
 		if ( ! is_array( $stored ) ) {
 			$stored = array();
 		}
-		$site_email = get_option( 'admin_email' );
+		$site_email = (string) get_option( 'admin_email' );
 
 		return array(
-			'from_name'  => isset( $stored['from_name'] )  ? (string) $stored['from_name']  : (string) get_bloginfo( 'name' ),
-			'from_email' => isset( $stored['from_email'] ) ? (string) $stored['from_email'] : (string) $site_email,
-			'reply_to'   => isset( $stored['reply_to'] )   ? (string) $stored['reply_to']   : '',
+			// Master switch — defaults true so a fresh install sends receipts.
+			'send_customer_emails' => isset( $stored['send_customer_emails'] ) ? (bool) $stored['send_customer_emails'] : true,
+			// Optional BCC to internal address on every customer-facing email.
+			'admin_copy_email'     => isset( $stored['admin_copy_email'] ) ? (string) $stored['admin_copy_email'] : '',
+			'from_name'            => isset( $stored['from_name'] )  ? (string) $stored['from_name']  : (string) get_bloginfo( 'name' ),
+			'from_email'           => isset( $stored['from_email'] ) ? (string) $stored['from_email'] : $site_email,
+			'reply_to'             => isset( $stored['reply_to'] )   ? (string) $stored['reply_to']   : '',
 		);
 	}
 
 	/**
-	 * @param array{from_name?:string, from_email?:string, reply_to?:string} $sender
+	 * @param array{send_customer_emails?:bool|string, admin_copy_email?:string, from_name?:string, from_email?:string, reply_to?:string} $sender
 	 * @return bool
 	 */
 	public static function update_email_sender( array $sender ) {
 		$next = array(
-			'from_name'  => isset( $sender['from_name'] )  ? sanitize_text_field( (string) $sender['from_name'] )  : '',
-			'from_email' => isset( $sender['from_email'] ) ? sanitize_email( (string) $sender['from_email'] )      : '',
-			'reply_to'   => isset( $sender['reply_to'] )   ? sanitize_email( (string) $sender['reply_to'] )        : '',
+			'send_customer_emails' => ! empty( $sender['send_customer_emails'] ),
+			'admin_copy_email'     => isset( $sender['admin_copy_email'] ) ? sanitize_email( (string) $sender['admin_copy_email'] ) : '',
+			'from_name'            => isset( $sender['from_name'] )  ? sanitize_text_field( (string) $sender['from_name'] )  : '',
+			'from_email'           => isset( $sender['from_email'] ) ? sanitize_email( (string) $sender['from_email'] )      : '',
+			'reply_to'             => isset( $sender['reply_to'] )   ? sanitize_email( (string) $sender['reply_to'] )        : '',
 		);
 
 		return (bool) update_option( self::OPTION_EMAIL_SENDER, $next, false );

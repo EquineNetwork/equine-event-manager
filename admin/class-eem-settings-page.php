@@ -170,10 +170,253 @@ class EEM_Settings_Page {
 
 	private function render_integrations_panel()   { $this->render_panel_stub( 'integrations' ); }
 	private function render_branding_panel()       { $this->render_panel_stub( 'branding' ); }
-	private function render_communications_panel() { $this->render_panel_stub( 'communications' ); }
 	private function render_shortcodes_panel()     { $this->render_panel_stub( 'shortcodes' ); }
 	private function render_payments_panel()       { $this->render_panel_stub( 'payments' ); }
 	private function render_addons_panel()         { $this->render_panel_stub( 'addons' ); }
+
+	/**
+	 * Communications panel (SET-2, SET-3, SET-5, SET-7). The largest single
+	 * panel — three concerns wrapped in one form:
+	 *   1. Email Sender Settings (master toggle + BCC + sender identity)
+	 *   2. Email Templates (placeholder reference + 5 collapsible cards)
+	 *   3. Policies (Cancellation + Terms textareas)
+	 *
+	 * Form POSTs (via JS wired in C3.B.3) to admin-ajax.php
+	 * action=eem_save_settings with panel=communications and a nested
+	 * payload[] structure mirroring the repo APIs. Until C3.B.3 ships the
+	 * JS submit handler, the Save button renders but is inert.
+	 *
+	 * Template-card bodies use plain textareas in C3.B.1; C3.B.2 upgrades
+	 * them to TinyMCE instances.
+	 *
+	 * @return void
+	 */
+	private function render_communications_panel() {
+		$sender    = EEM_Settings_Repo::get_email_sender();
+		$templates = EEM_Email_Templates_Repo::all();
+		$policies  = EEM_Settings_Repo::get_policies();
+		$placeholders = EEM_Email_Templates_Repo::placeholders();
+		?>
+		<form class="eem-settings-form" data-eem-settings-form data-eem-panel="communications" method="post" action="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>">
+			<input type="hidden" name="action" value="eem_save_settings" />
+			<input type="hidden" name="panel" value="communications" />
+			<?php wp_nonce_field( 'eem_settings_save', 'nonce' ); ?>
+
+			<?php $this->render_communications_sender_section( $sender ); ?>
+			<?php $this->render_communications_templates_section( $templates, $placeholders ); ?>
+			<?php $this->render_communications_policies_section( $policies ); ?>
+
+			<div class="eem-settings-save-bar">
+				<button type="submit" class="eem-btn eem-btn-primary">
+					<?php esc_html_e( 'Save Communications Settings', 'equine-event-manager' ); ?>
+				</button>
+				<span class="eem-settings-save-hint">
+					<?php esc_html_e( 'Saving is wired in C3.B.3 — this button currently has no effect.', 'equine-event-manager' ); ?>
+				</span>
+			</div>
+		</form>
+		<?php
+	}
+
+	/**
+	 * Email Sender Settings (SET-7) — 5 fields per the settings_page mockup:
+	 * master send toggle, BCC, From Name, From Email, Reply-To.
+	 *
+	 * @param array $sender Row from EEM_Settings_Repo::get_email_sender().
+	 * @return void
+	 */
+	private function render_communications_sender_section( array $sender ) {
+		?>
+		<section class="eem-card">
+			<header class="eem-card-header">
+				<h2 class="eem-card-title"><?php esc_html_e( 'Email Sender Settings', 'equine-event-manager' ); ?></h2>
+			</header>
+			<div class="eem-card-body">
+				<p class="eem-field-hint" style="margin-bottom:14px;">
+					<?php esc_html_e( 'Sender identity and routing for all transactional emails. Applies to every template below.', 'equine-event-manager' ); ?>
+				</p>
+
+				<div class="eem-field-row">
+					<label class="eem-field-label" for="eem-sender-send"><?php esc_html_e( 'Send Customer Emails', 'equine-event-manager' ); ?></label>
+					<div class="eem-field-control">
+						<label class="eem-checkbox-row">
+							<input type="checkbox" id="eem-sender-send" name="payload[sender][send_customer_emails]" value="1" <?php checked( $sender['send_customer_emails'] ); ?> />
+							<span><?php esc_html_e( 'Send transactional emails to customers (receipts, reminders, etc.)', 'equine-event-manager' ); ?></span>
+						</label>
+					</div>
+				</div>
+
+				<div class="eem-field-row">
+					<label class="eem-field-label" for="eem-sender-bcc"><?php esc_html_e( 'Admin Copy Email', 'equine-event-manager' ); ?></label>
+					<div class="eem-field-control">
+						<input class="eem-field-input" id="eem-sender-bcc" type="email" name="payload[sender][admin_copy_email]" value="<?php echo esc_attr( $sender['admin_copy_email'] ); ?>" placeholder="admin@example.com" />
+						<p class="eem-field-hint"><?php esc_html_e( 'Optional. Sends an internal copy of every customer email to this address.', 'equine-event-manager' ); ?></p>
+					</div>
+				</div>
+
+				<div class="eem-field-row">
+					<label class="eem-field-label" for="eem-sender-name"><?php esc_html_e( 'From Name', 'equine-event-manager' ); ?></label>
+					<div class="eem-field-control">
+						<input class="eem-field-input" id="eem-sender-name" type="text" name="payload[sender][from_name]" value="<?php echo esc_attr( $sender['from_name'] ); ?>" />
+					</div>
+				</div>
+
+				<div class="eem-field-row">
+					<label class="eem-field-label" for="eem-sender-from"><?php esc_html_e( 'From Email', 'equine-event-manager' ); ?></label>
+					<div class="eem-field-control">
+						<input class="eem-field-input" id="eem-sender-from" type="email" name="payload[sender][from_email]" value="<?php echo esc_attr( $sender['from_email'] ); ?>" />
+					</div>
+				</div>
+
+				<div class="eem-field-row">
+					<label class="eem-field-label" for="eem-sender-reply"><?php esc_html_e( 'Reply-To Email', 'equine-event-manager' ); ?></label>
+					<div class="eem-field-control">
+						<input class="eem-field-input" id="eem-sender-reply" type="email" name="payload[sender][reply_to]" value="<?php echo esc_attr( $sender['reply_to'] ); ?>" />
+						<p class="eem-field-hint"><?php esc_html_e( 'Where replies land. Often the same as From Email, or a monitored support inbox.', 'equine-event-manager' ); ?></p>
+					</div>
+				</div>
+			</div>
+		</section>
+		<?php
+	}
+
+	/**
+	 * Email Templates section (SET-2, SET-3). Renders the placeholder
+	 * reference chip strip, then one collapsible card per template id.
+	 *
+	 * Card bodies in C3.B.1 are simple textareas — they POST clean HTML
+	 * already (sanitization happens repo-side via wp_kses_post). C3.B.2
+	 * replaces the body textarea with a TinyMCE instance for the editor
+	 * experience the mockup specifies.
+	 *
+	 * @param array $templates    Result of EEM_Email_Templates_Repo::all().
+	 * @param array $placeholders Result of EEM_Email_Templates_Repo::placeholders().
+	 * @return void
+	 */
+	private function render_communications_templates_section( array $templates, array $placeholders ) {
+		?>
+		<section class="eem-card">
+			<header class="eem-card-header">
+				<h2 class="eem-card-title"><?php esc_html_e( 'Email Templates', 'equine-event-manager' ); ?></h2>
+			</header>
+			<div class="eem-card-body">
+				<p class="eem-field-hint" style="margin-bottom:14px;">
+					<?php
+					echo wp_kses_post(
+						__( 'Edit the subject and body for each transactional email. Use placeholders like <code>{{customer_name}}</code> to insert dynamic content. Click any chip below to copy the placeholder.', 'equine-event-manager' )
+					);
+					?>
+				</p>
+
+				<div class="eem-placeholder-reference">
+					<div class="eem-placeholder-ref-title">
+						<?php esc_html_e( 'Available placeholders', 'equine-event-manager' ); ?>
+						<span class="eem-placeholder-ref-hint"><?php esc_html_e( 'Click to copy', 'equine-event-manager' ); ?></span>
+					</div>
+					<div class="eem-placeholder-chips">
+						<?php foreach ( $placeholders as $token => $description ) :
+							$value = '{{' . $token . '}}';
+							?>
+							<button type="button" class="eem-placeholder-chip" data-eem-action="placeholder-copy" data-eem-value="<?php echo esc_attr( $value ); ?>" title="<?php echo esc_attr( $description ); ?>">
+								<?php echo esc_html( $value ); ?>
+							</button>
+						<?php endforeach; ?>
+					</div>
+				</div>
+
+				<div class="eem-template-cards">
+					<?php foreach ( EEM_Email_Templates_Repo::ids() as $template_id ) :
+						$this->render_communications_template_card( $template_id, $templates[ $template_id ] );
+					endforeach; ?>
+				</div>
+			</div>
+		</section>
+		<?php
+	}
+
+	/**
+	 * One template card. Collapsible head + subject input + body editor +
+	 * Send-test action row.
+	 *
+	 * @param string $template_id One of EEM_Email_Templates_Repo's id constants.
+	 * @param array  $template    { subject, body }
+	 * @return void
+	 */
+	private function render_communications_template_card( $template_id, array $template ) {
+		$label   = EEM_Email_Templates_Repo::label( $template_id );
+		$desc    = EEM_Email_Templates_Repo::description( $template_id );
+		$subj_id = 'eem-tmpl-subject-' . $template_id;
+		$body_id = 'eem-tmpl-body-' . $template_id;
+		?>
+		<article class="eem-template-card" data-eem-template-id="<?php echo esc_attr( $template_id ); ?>">
+			<header class="eem-template-card-head" data-eem-action="template-toggle">
+				<div class="eem-template-card-head-text">
+					<div class="eem-template-card-title"><?php echo esc_html( $label ); ?></div>
+					<?php if ( '' !== $desc ) : ?>
+						<div class="eem-template-card-sub"><?php echo esc_html( $desc ); ?></div>
+					<?php endif; ?>
+				</div>
+				<span class="eem-template-card-chevron" aria-hidden="true">▾</span>
+			</header>
+			<div class="eem-template-card-body">
+				<div class="eem-field-row">
+					<label class="eem-field-label" for="<?php echo esc_attr( $subj_id ); ?>"><?php esc_html_e( 'Subject', 'equine-event-manager' ); ?></label>
+					<div class="eem-field-control">
+						<input class="eem-field-input" id="<?php echo esc_attr( $subj_id ); ?>" type="text" name="payload[templates][<?php echo esc_attr( $template_id ); ?>][subject]" value="<?php echo esc_attr( $template['subject'] ); ?>" />
+					</div>
+				</div>
+
+				<div class="eem-field-row">
+					<label class="eem-field-label" for="<?php echo esc_attr( $body_id ); ?>"><?php esc_html_e( 'Body', 'equine-event-manager' ); ?></label>
+					<div class="eem-field-control">
+						<textarea class="eem-field-textarea eem-template-body" id="<?php echo esc_attr( $body_id ); ?>" name="payload[templates][<?php echo esc_attr( $template_id ); ?>][body]" rows="10" data-eem-tinymce-target><?php echo esc_textarea( $template['body'] ); ?></textarea>
+						<p class="eem-field-hint"><?php esc_html_e( 'Plain textarea in C3.B.1 — TinyMCE rich editor lands in C3.B.2.', 'equine-event-manager' ); ?></p>
+					</div>
+				</div>
+
+				<div class="eem-template-card-actions">
+					<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="send-test-email" data-eem-template-id="<?php echo esc_attr( $template_id ); ?>">
+						<?php esc_html_e( 'Send test email to me', 'equine-event-manager' ); ?>
+					</button>
+				</div>
+			</div>
+		</article>
+		<?php
+	}
+
+	/**
+	 * Policies section (SET-5): Cancellation Policy + Terms & Conditions
+	 * textareas. Both sanitize via wp_kses_post on save.
+	 *
+	 * @param array $policies Result of EEM_Settings_Repo::get_policies().
+	 * @return void
+	 */
+	private function render_communications_policies_section( array $policies ) {
+		?>
+		<section class="eem-card">
+			<header class="eem-card-header">
+				<h2 class="eem-card-title"><?php esc_html_e( 'Policies', 'equine-event-manager' ); ?></h2>
+			</header>
+			<div class="eem-card-body">
+				<div class="eem-field-row">
+					<label class="eem-field-label" for="eem-policy-cancel"><?php esc_html_e( 'Cancellation Policy', 'equine-event-manager' ); ?></label>
+					<div class="eem-field-control">
+						<textarea class="eem-field-textarea" id="eem-policy-cancel" name="payload[policies][cancellation]" rows="6"><?php echo esc_textarea( $policies['cancellation'] ); ?></textarea>
+						<p class="eem-field-hint"><?php esc_html_e( 'Shown at checkout and inserted into the Cancellation email template via the {{cancellation_policy}} placeholder.', 'equine-event-manager' ); ?></p>
+					</div>
+				</div>
+
+				<div class="eem-field-row">
+					<label class="eem-field-label" for="eem-policy-terms"><?php esc_html_e( 'Terms &amp; Conditions', 'equine-event-manager' ); ?></label>
+					<div class="eem-field-control">
+						<textarea class="eem-field-textarea" id="eem-policy-terms" name="payload[policies][terms]" rows="8"><?php echo esc_textarea( $policies['terms'] ); ?></textarea>
+						<p class="eem-field-hint"><?php esc_html_e( 'Shown at checkout; customer must acknowledge before paying.', 'equine-event-manager' ); ?></p>
+					</div>
+				</div>
+			</div>
+		</section>
+		<?php
+	}
 
 	/* ─────────────────────────────────────────────────────────────
 	 * Save dispatcher (AJAX)
