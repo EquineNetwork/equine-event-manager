@@ -3530,3 +3530,59 @@ a.eem-mob-res-name:focus {
 	border-top-left-radius: 0;
 	border-bottom-left-radius: 0;
 }
+
+/* c4-polish-2 (round 2) — beat WP-core `.wp-core-ui select` (forms.css:340,
+   specificity 0,1,1) which was winning over .eem-toolbar-select (0,1,0) and
+   forcing min-height 40px, line-height 2.71 (= 38px effective), border-
+   radius 2px, font-size 14px, padding 0 24px 0 12px, max-width 25rem on
+   every <select> on the page. Same WP-core trap for `input[type="search"]`
+   (forms.css:65). Parent-chain to .eem-list-toolbar bumps our toolbar
+   controls to specificity (0,2,0) so they beat WP-core unambiguously.
+   Scoped to the list toolbar only — keeps blast radius narrow. */
+.eem-list-toolbar .eem-toolbar-select,
+.eem-list-toolbar .eem-search-input {
+	min-height: 0;
+	line-height: normal;
+	max-width: none;
+	border-radius: 4px;
+	font-size: 13px;
+}
+
+.eem-list-toolbar .eem-toolbar-select {
+	padding: 5px 28px 5px 10px;
+}
+
+.eem-list-toolbar .eem-search-input {
+	padding: 5px 10px;
+}
+
+/* Re-apply the attached-pair padding-left override at the new specificity
+   tier — (0,3,0) beats the parent-chain rule above and the original
+   .eem-search-wrap .eem-search-input override. */
+.eem-list-toolbar .eem-search-wrap--attached .eem-search-input {
+	padding-left: 36px;
+}
+
+/* Re-square the corners on the attached pair at the bumped specificity. */
+.eem-list-toolbar .eem-search-wrap--attached .eem-search-input {
+	border-top-right-radius: 0;
+	border-bottom-right-radius: 0;
+}
+
+.eem-list-toolbar .eem-search-btn {
+	border-top-left-radius: 0;
+	border-bottom-left-radius: 0;
+	border-radius: 0 4px 4px 0;
+}
+
+/* Toolbar buttons — WP-core doesn't have a `.wp-core-ui button` rule
+   matching bare <button> elements (only `.button` class which our toolbar
+   doesn't use), but explicit anyway for consistency at the same specificity
+   tier as the selects/inputs above. */
+.eem-list-toolbar .eem-toolbar-btn {
+	min-height: 0;
+	line-height: normal;
+	font-size: 13px;
+	border-radius: 4px;
+	padding: 5px 14px;
+}
