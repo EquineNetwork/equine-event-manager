@@ -194,8 +194,227 @@ class EEM_Settings_Page {
 	 * ───────────────────────────────────────────────────────────── */
 
 	private function render_shortcodes_panel()     { $this->render_panel_stub( 'shortcodes' ); }
-	private function render_payments_panel()       { $this->render_panel_stub( 'payments' ); }
 	private function render_addons_panel()         { $this->render_panel_stub( 'addons' ); }
+
+	/**
+	 * Payments panel (settings_page mockup tab-panel:#panel-payments).
+	 *
+	 * Four sections, one form:
+	 *   1. Tax Rate (apply + default_rate + label) — uses EEM_Settings_Repo from C3.A
+	 *   2. Active Payment Processor (mutually-exclusive picker: stripe / authorize_net)
+	 *   3. Stripe Connection (mode + 4 keys + webhook signing secret + test btn)
+	 *   4. Authorize.net Connection (mode + 4 credentials + test btn)
+	 *
+	 * Reads equine_event_manager_payment_settings option directly. Save dispatch
+	 * in C3.C.6 (which extends the existing communications/payments dispatcher
+	 * branch with the new stripe + authorize_net + processor subkeys).
+	 *
+	 * Credential rows render via render_credential_field() helper to keep
+	 * the body lean — 11 credential fields would otherwise be 11×15 lines
+	 * of repeated markup.
+	 *
+	 * @return void
+	 */
+	private function render_payments_panel() {
+		$tax     = EEM_Settings_Repo::get_tax();
+		$payment = wp_parse_args(
+			get_option( 'equine_event_manager_payment_settings', array() ),
+			array(
+				'selected_gateway' => 'stripe',
+				'stripe'           => array(),
+				'authorize_net'    => array(),
+			)
+		);
+		$payment['stripe']        = wp_parse_args( $payment['stripe'], array(
+			'mode'                   => 'test',
+			'test_publishable_key'   => '',
+			'test_secret_key'        => '',
+			'live_publishable_key'   => '',
+			'live_secret_key'        => '',
+			'webhook_signing_secret' => '',
+		) );
+		$payment['authorize_net'] = wp_parse_args( $payment['authorize_net'], array(
+			'mode'                 => 'test',
+			'test_api_login'       => '',
+			'test_transaction_key' => '',
+			'live_api_login'       => '',
+			'live_transaction_key' => '',
+		) );
+
+		$active = in_array( $payment['selected_gateway'], array( 'stripe', 'authorize_net' ), true ) ? $payment['selected_gateway'] : 'stripe';
+		?>
+		<form class="eem-settings-form" data-eem-settings-form data-eem-panel="payments" method="post" action="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>">
+			<input type="hidden" name="action" value="eem_save_settings" />
+			<input type="hidden" name="panel" value="payments" />
+			<?php wp_nonce_field( 'eem_settings_save', 'nonce' ); ?>
+
+			<section class="eem-card">
+				<header class="eem-card-header">
+					<h2 class="eem-card-title"><?php esc_html_e( 'Tax Rate', 'equine-event-manager' ); ?></h2>
+				</header>
+				<div class="eem-card-body">
+					<p class="eem-field-hint" style="margin-bottom:14px;">
+						<?php esc_html_e( 'Default sales tax applied at checkout. Each reservation can override this in its own settings (Edit Reservation, ported in C7).', 'equine-event-manager' ); ?>
+					</p>
+					<div class="eem-field-row">
+						<label class="eem-field-label" for="eem-tax-apply"><?php esc_html_e( 'Apply Tax', 'equine-event-manager' ); ?></label>
+						<div class="eem-field-control">
+							<label class="eem-checkbox-row">
+								<input type="checkbox" id="eem-tax-apply" name="payload[tax][apply]" value="1" <?php checked( $tax['apply'] ); ?> />
+								<span><?php esc_html_e( 'Charge sales tax on orders', 'equine-event-manager' ); ?></span>
+							</label>
+							<p class="eem-field-hint"><?php esc_html_e( 'Uncheck if you handle tax outside the plugin. Disabling hides tax lines from checkout and receipts.', 'equine-event-manager' ); ?></p>
+						</div>
+					</div>
+					<div class="eem-field-row">
+						<label class="eem-field-label" for="eem-tax-rate"><?php esc_html_e( 'Default Tax Rate', 'equine-event-manager' ); ?></label>
+						<div class="eem-field-control">
+							<div class="eem-price-wrap" style="max-width:180px;">
+								<input class="eem-price-input" id="eem-tax-rate" type="number" step="0.01" min="0" max="100" name="payload[tax][default_rate]" value="<?php echo esc_attr( $tax['default_rate'] ); ?>" />
+								<span class="eem-price-symbol" style="border-left:none;border-right:1.5px solid var(--eem-border);border-radius:0 var(--eem-radius) var(--eem-radius) 0;">%</span>
+							</div>
+							<p class="eem-field-hint"><?php esc_html_e( 'Applied to all reservations unless overridden. Shown as a line item on checkout and receipts.', 'equine-event-manager' ); ?></p>
+						</div>
+					</div>
+					<div class="eem-field-row">
+						<label class="eem-field-label" for="eem-tax-label"><?php esc_html_e( 'Tax Label', 'equine-event-manager' ); ?></label>
+						<div class="eem-field-control">
+							<input class="eem-field-input" id="eem-tax-label" type="text" name="payload[tax][label]" value="<?php echo esc_attr( $tax['label'] ); ?>" style="max-width:280px;" />
+							<p class="eem-field-hint"><?php esc_html_e( 'How tax appears on checkout and receipts (e.g. "Sales Tax", "VAT", "GST").', 'equine-event-manager' ); ?></p>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<section class="eem-card">
+				<header class="eem-card-header">
+					<h2 class="eem-card-title"><?php esc_html_e( 'Active Payment Processor', 'equine-event-manager' ); ?></h2>
+				</header>
+				<div class="eem-card-body">
+					<p class="eem-field-hint" style="margin-bottom:14px;">
+						<?php esc_html_e( 'Customers check out using the active processor only. You can configure both below and switch at any time.', 'equine-event-manager' ); ?>
+					</p>
+					<div class="eem-source-group" data-eem-source-group>
+						<?php
+						$processors = array(
+							'stripe'        => array(
+								'title' => __( 'Stripe', 'equine-event-manager' ),
+								'desc'  => __( 'Modern card processor with built-in webhooks. Recommended for most setups.', 'equine-event-manager' ),
+							),
+							'authorize_net' => array(
+								'title' => __( 'Authorize.net', 'equine-event-manager' ),
+								'desc'  => __( 'Legacy processor for merchants with existing Authorize.net accounts. Refunds and capture both supported.', 'equine-event-manager' ),
+							),
+						);
+						foreach ( $processors as $value => $row ) :
+							$checked = ( $value === $active );
+							?>
+							<label class="eem-source-row<?php echo $checked ? ' is-selected' : ''; ?>" data-eem-source-value="<?php echo esc_attr( $value ); ?>">
+								<input type="radio" name="payload[selected_gateway]" value="<?php echo esc_attr( $value ); ?>" <?php checked( $checked ); ?> />
+								<span class="eem-source-radio" aria-hidden="true"></span>
+								<span class="eem-source-row-body">
+									<span class="eem-source-row-head">
+										<span class="eem-source-row-title"><?php echo esc_html( $row['title'] ); ?></span>
+										<span class="eem-source-status <?php echo $checked ? 'is-active' : 'is-info'; ?>"><?php echo esc_html( $checked ? __( 'Active', 'equine-event-manager' ) : __( 'Inactive', 'equine-event-manager' ) ); ?></span>
+									</span>
+									<span class="eem-source-row-desc"><?php echo esc_html( $row['desc'] ); ?></span>
+								</span>
+							</label>
+						<?php endforeach; ?>
+					</div>
+				</div>
+			</section>
+
+			<section class="eem-card">
+				<header class="eem-card-header">
+					<h2 class="eem-card-title"><?php esc_html_e( 'Stripe Connection', 'equine-event-manager' ); ?></h2>
+				</header>
+				<div class="eem-card-body">
+					<?php
+					$this->render_credential_mode_row( 'stripe-mode', 'payload[stripe][mode]', $payment['stripe']['mode'] );
+					$this->render_credential_field( array( 'id' => 'stripe-test-pub',     'name' => 'payload[stripe][test_publishable_key]',   'label' => __( 'Test Publishable Key', 'equine-event-manager' ), 'value' => $payment['stripe']['test_publishable_key'] ) );
+					$this->render_credential_field( array( 'id' => 'stripe-test-secret', 'name' => 'payload[stripe][test_secret_key]',        'label' => __( 'Test Secret Key', 'equine-event-manager' ),      'value' => $payment['stripe']['test_secret_key'], 'type' => 'password' ) );
+					$this->render_credential_field( array( 'id' => 'stripe-live-pub',     'name' => 'payload[stripe][live_publishable_key]',   'label' => __( 'Live Publishable Key', 'equine-event-manager' ), 'value' => $payment['stripe']['live_publishable_key'] ) );
+					$this->render_credential_field( array( 'id' => 'stripe-live-secret', 'name' => 'payload[stripe][live_secret_key]',        'label' => __( 'Live Secret Key', 'equine-event-manager' ),      'value' => $payment['stripe']['live_secret_key'], 'type' => 'password' ) );
+					$this->render_credential_field( array(
+						'id'    => 'stripe-webhook',
+						'name'  => 'payload[stripe][webhook_signing_secret]',
+						'label' => __( 'Webhook Signing Secret', 'equine-event-manager' ),
+						'value' => $payment['stripe']['webhook_signing_secret'],
+						'type'  => 'password',
+						'hint'  => __( 'Found in your Stripe Dashboard under Developers → Webhooks. Required to verify payment events.', 'equine-event-manager' ),
+					) );
+					?>
+				</div>
+			</section>
+
+			<section class="eem-card">
+				<header class="eem-card-header">
+					<h2 class="eem-card-title"><?php esc_html_e( 'Authorize.net Connection', 'equine-event-manager' ); ?></h2>
+				</header>
+				<div class="eem-card-body">
+					<?php
+					$this->render_credential_mode_row( 'authnet-mode', 'payload[authorize_net][mode]', $payment['authorize_net']['mode'] );
+					$this->render_credential_field( array( 'id' => 'authnet-test-login', 'name' => 'payload[authorize_net][test_api_login]',       'label' => __( 'Test API Login ID', 'equine-event-manager' ),     'value' => $payment['authorize_net']['test_api_login'] ) );
+					$this->render_credential_field( array( 'id' => 'authnet-test-key',   'name' => 'payload[authorize_net][test_transaction_key]', 'label' => __( 'Test Transaction Key', 'equine-event-manager' ),  'value' => $payment['authorize_net']['test_transaction_key'], 'type' => 'password' ) );
+					$this->render_credential_field( array( 'id' => 'authnet-live-login', 'name' => 'payload[authorize_net][live_api_login]',       'label' => __( 'Live API Login ID', 'equine-event-manager' ),     'value' => $payment['authorize_net']['live_api_login'] ) );
+					$this->render_credential_field( array( 'id' => 'authnet-live-key',   'name' => 'payload[authorize_net][live_transaction_key]', 'label' => __( 'Live Transaction Key', 'equine-event-manager' ),  'value' => $payment['authorize_net']['live_transaction_key'], 'type' => 'password' ) );
+					?>
+				</div>
+			</section>
+
+			<div class="eem-settings-save-bar">
+				<button type="submit" class="eem-btn eem-btn-primary">
+					<?php esc_html_e( 'Save Payment Settings', 'equine-event-manager' ); ?>
+				</button>
+			</div>
+		</form>
+		<?php
+	}
+
+	/**
+	 * Render a single credential input row (Stripe / Authorize.net keys).
+	 *
+	 * @param array $args { id, name, label, value, type?, hint? }
+	 * @return void
+	 */
+	private function render_credential_field( array $args ) {
+		$args = wp_parse_args( $args, array( 'type' => 'text', 'hint' => '' ) );
+		?>
+		<div class="eem-field-row">
+			<label class="eem-field-label" for="eem-<?php echo esc_attr( $args['id'] ); ?>"><?php echo esc_html( $args['label'] ); ?></label>
+			<div class="eem-field-control">
+				<input class="eem-field-input" id="eem-<?php echo esc_attr( $args['id'] ); ?>" type="<?php echo esc_attr( $args['type'] ); ?>" name="<?php echo esc_attr( $args['name'] ); ?>" value="<?php echo esc_attr( $args['value'] ); ?>" autocomplete="off" />
+				<?php if ( '' !== $args['hint'] ) : ?>
+					<p class="eem-field-hint"><?php echo esc_html( $args['hint'] ); ?></p>
+				<?php endif; ?>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Mode select row (Test / Live) used by both processor sub-sections.
+	 *
+	 * @param string $id    Element id suffix.
+	 * @param string $name  Form name (e.g. payload[stripe][mode]).
+	 * @param string $value Current value ('test' or 'live').
+	 * @return void
+	 */
+	private function render_credential_mode_row( $id, $name, $value ) {
+		$value = in_array( $value, array( 'test', 'live' ), true ) ? $value : 'test';
+		?>
+		<div class="eem-field-row">
+			<label class="eem-field-label" for="eem-<?php echo esc_attr( $id ); ?>"><?php esc_html_e( 'Mode', 'equine-event-manager' ); ?></label>
+			<div class="eem-field-control">
+				<select class="eem-field-select" id="eem-<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>" style="max-width:160px;">
+					<option value="test" <?php selected( 'test', $value ); ?>><?php esc_html_e( 'Test', 'equine-event-manager' ); ?></option>
+					<option value="live" <?php selected( 'live', $value ); ?>><?php esc_html_e( 'Live', 'equine-event-manager' ); ?></option>
+				</select>
+			</div>
+		</div>
+		<?php
+	}
 
 	/**
 	 * Branding panel (settings_page mockup tab-panel:#panel-branding).
