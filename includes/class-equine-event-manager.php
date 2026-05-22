@@ -17,9 +17,13 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-equine-event-manager-admin
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-equine-event-manager-reservation-editor.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'public/class-equine-event-manager-shortcodes.php';
 
-// Phase 3 admin template partials (eem_render_breadcrumb, eem_render_page_open/close).
+// Phase 3 — Activity Log subsystem (ODET-7, CDET-5).
+require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-activity-log.php';
+
+// Phase 3 admin template partials.
 require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_breadcrumb.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_page_shell.php';
+require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_activity_log.php';
 
 /**
  * Registers plugin hooks.

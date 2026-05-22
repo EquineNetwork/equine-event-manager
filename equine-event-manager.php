@@ -2,7 +2,7 @@
 /*
 Plugin Name: Equine Event Manager
 Description: Event reservation management for stalls and RV spaces.
-Version: 2.1.57
+Version: 2.2.0
 Author: Whitney Mitchell
 Text Domain: equine-event-manager
 */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'EQUINE_EVENT_MANAGER_VERSION', '2.1.57' );
+define( 'EQUINE_EVENT_MANAGER_VERSION', '2.2.0' );
 
 define( 'EQUINE_EVENT_MANAGER_FILE', __FILE__ );
 
