@@ -193,11 +193,181 @@ class EEM_Settings_Page {
 	 *           render_addons_panel
 	 * ───────────────────────────────────────────────────────────── */
 
-	private function render_integrations_panel()   { $this->render_panel_stub( 'integrations' ); }
 	private function render_branding_panel()       { $this->render_panel_stub( 'branding' ); }
 	private function render_shortcodes_panel()     { $this->render_panel_stub( 'shortcodes' ); }
 	private function render_payments_panel()       { $this->render_panel_stub( 'payments' ); }
 	private function render_addons_panel()         { $this->render_panel_stub( 'addons' ); }
+
+	/**
+	 * Integrations panel (CLAUDE.md "In-scope features → Event source"
+	 * + settings_page mockup tab-panel:#panel-integrations).
+	 *
+	 * Two sections in one form:
+	 *   1. Event Source — mutually-exclusive picker (Native / TEC / Feed)
+	 *      + per-source detail block (only the picked source's detail visible)
+	 *   2. Email Delivery — SendGrid API key (optional override of the WP mailer)
+	 *
+	 * Reads the existing equine_event_manager_integration_settings + ..._feature_settings
+	 * options directly. Save dispatch lands in EEM_Settings_Page::save_integrations_panel
+	 * (C3.C.6) — until then the Save button submits but the integrations branch of
+	 * handle_ajax_save_settings still returns 501.
+	 *
+	 * @return void
+	 */
+	private function render_integrations_panel() {
+		$integration = wp_parse_args(
+			get_option( 'equine_event_manager_integration_settings', array() ),
+			array(
+				'default_event_source' => 'feed',
+				'feed_url'             => '',
+				'tec_event_category'   => '',
+				'sendgrid_api_key'     => '',
+			)
+		);
+
+		$source       = sanitize_key( $integration['default_event_source'] );
+		if ( ! in_array( $source, array( 'native', 'tec', 'feed' ), true ) ) {
+			$source = 'feed';
+		}
+		$tec_active   = class_exists( 'Tribe__Events__Main' );
+		$tec_status   = $tec_active
+			? array( 'class' => 'is-active',    'label' => __( 'Available', 'equine-event-manager' ) )
+			: array( 'class' => 'is-warning',   'label' => __( 'Plugin not active', 'equine-event-manager' ) );
+		?>
+		<form class="eem-settings-form" data-eem-settings-form data-eem-panel="integrations" method="post" action="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>">
+			<input type="hidden" name="action" value="eem_save_settings" />
+			<input type="hidden" name="panel" value="integrations" />
+			<?php wp_nonce_field( 'eem_settings_save', 'nonce' ); ?>
+
+			<section class="eem-card">
+				<header class="eem-card-header">
+					<h2 class="eem-card-title"><?php esc_html_e( 'Event Source', 'equine-event-manager' ); ?></h2>
+				</header>
+				<div class="eem-card-body">
+					<p class="eem-field-hint" style="margin-bottom:14px;">
+						<?php esc_html_e( 'Choose where reservations get their events from. Only one source can be active at a time.', 'equine-event-manager' ); ?>
+					</p>
+
+					<div class="eem-source-group" data-eem-source-group>
+						<?php
+						$sources = array(
+							'native' => array(
+								'title'  => __( 'Native Events', 'equine-event-manager' ),
+								'desc'   => __( 'Use Equine Event Manager as the main event system with native events, categories, venues, producers, widgets, and the shared frontend event template.', 'equine-event-manager' ),
+								'status' => array( 'class' => 'is-info', 'label' => __( 'Built-in', 'equine-event-manager' ) ),
+							),
+							'tec' => array(
+								'title'  => __( 'The Events Calendar (TEC)', 'equine-event-manager' ),
+								'desc'   => __( 'When the TEC plugin is active, reservations can search and link to live TEC events directly.', 'equine-event-manager' ),
+								'status' => $tec_status,
+							),
+							'feed' => array(
+								'title'  => __( 'External Feed URL', 'equine-event-manager' ),
+								'desc'   => __( 'Pull events from an external JSON or XML endpoint. Reservations inherit the feed URL automatically when this source is active.', 'equine-event-manager' ),
+								'status' => array( 'class' => 'is-info', 'label' => __( 'Available', 'equine-event-manager' ) ),
+							),
+						);
+						foreach ( $sources as $value => $row ) :
+							$checked = ( $value === $source );
+							?>
+							<label class="eem-source-row<?php echo $checked ? ' is-selected' : ''; ?>" data-eem-source-value="<?php echo esc_attr( $value ); ?>">
+								<input type="radio" name="payload[source]" value="<?php echo esc_attr( $value ); ?>" <?php checked( $checked ); ?> />
+								<span class="eem-source-radio" aria-hidden="true"></span>
+								<span class="eem-source-row-body">
+									<span class="eem-source-row-head">
+										<span class="eem-source-row-title"><?php echo esc_html( $row['title'] ); ?></span>
+										<span class="eem-source-status <?php echo esc_attr( $row['status']['class'] ); ?>"><?php echo esc_html( $row['status']['label'] ); ?></span>
+									</span>
+									<span class="eem-source-row-desc"><?php echo esc_html( $row['desc'] ); ?></span>
+								</span>
+							</label>
+						<?php endforeach; ?>
+					</div>
+
+					<div class="eem-source-detail" data-eem-source-detail="native" <?php if ( 'native' !== $source ) { echo 'hidden'; } ?>>
+						<div class="eem-source-detail-title"><?php esc_html_e( 'Native Events Settings', 'equine-event-manager' ); ?></div>
+						<p class="eem-field-hint">
+							<?php
+							printf(
+								/* translators: %s: admin URL for Native Events */
+								wp_kses( __( 'Native events are managed under <a href="%s">EEM → Events</a> in the admin sidebar. Producers, venues, and categories are managed there too.', 'equine-event-manager' ), array( 'a' => array( 'href' => array() ) ) ),
+								esc_url( admin_url( 'edit.php?post_type=en_event' ) )
+							);
+							?>
+						</p>
+					</div>
+
+					<div class="eem-source-detail" data-eem-source-detail="tec" <?php if ( 'tec' !== $source ) { echo 'hidden'; } ?>>
+						<div class="eem-source-detail-title"><?php esc_html_e( 'The Events Calendar Connection', 'equine-event-manager' ); ?></div>
+						<div class="eem-field-row">
+							<label class="eem-field-label" for="eem-tec-category"><?php esc_html_e( 'Event Category Filter', 'equine-event-manager' ); ?></label>
+							<div class="eem-field-control">
+								<input class="eem-field-input" id="eem-tec-category" type="text" name="payload[tec_event_category]" value="<?php echo esc_attr( $integration['tec_event_category'] ); ?>" placeholder="e.g. equestrian" style="max-width:300px;" />
+								<p class="eem-field-hint"><?php esc_html_e( 'Optional. Only TEC events with this category will be searchable when linking to a reservation. Leave blank to allow all events.', 'equine-event-manager' ); ?></p>
+							</div>
+						</div>
+						<div class="eem-field-row">
+							<span class="eem-field-label"><?php esc_html_e( 'Connection Status', 'equine-event-manager' ); ?></span>
+							<div class="eem-field-control">
+								<span class="eem-source-status <?php echo esc_attr( $tec_status['class'] ); ?>"><?php echo esc_html( $tec_status['label'] ); ?></span>
+								<span style="margin-left:8px;font-size:13px;color:var(--eem-text);">
+									<?php
+									echo esc_html( $tec_active
+										? __( 'TEC plugin detected and responding.', 'equine-event-manager' )
+										: __( 'TEC plugin not detected. Install + activate The Events Calendar to use this source.', 'equine-event-manager' )
+									);
+									?>
+								</span>
+							</div>
+						</div>
+					</div>
+
+					<div class="eem-source-detail" data-eem-source-detail="feed" <?php if ( 'feed' !== $source ) { echo 'hidden'; } ?>>
+						<div class="eem-source-detail-title"><?php esc_html_e( 'External Feed URL', 'equine-event-manager' ); ?></div>
+						<div class="eem-field-row">
+							<label class="eem-field-label" for="eem-feed-url"><?php esc_html_e( 'Feed URL', 'equine-event-manager' ); ?></label>
+							<div class="eem-field-control">
+								<input class="eem-field-input" id="eem-feed-url" type="url" name="payload[feed_url]" value="<?php echo esc_attr( $integration['feed_url'] ); ?>" placeholder="https://example.com/events.json" />
+								<p class="eem-field-hint"><?php esc_html_e( 'JSON or XML event endpoints are both supported. Use the Test Feed URL button to verify the response.', 'equine-event-manager' ); ?></p>
+							</div>
+						</div>
+						<div class="eem-field-row">
+							<span class="eem-field-label"><?php esc_html_e( 'Test Connection', 'equine-event-manager' ); ?></span>
+							<div class="eem-field-control">
+								<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="test-feed-url"><?php esc_html_e( 'Test Feed URL', 'equine-event-manager' ); ?></button>
+								<p class="eem-field-hint"><?php esc_html_e( 'Fetches the feed and validates the response structure. Saves nothing.', 'equine-event-manager' ); ?></p>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<section class="eem-card">
+				<header class="eem-card-header">
+					<h2 class="eem-card-title"><?php esc_html_e( 'Email Delivery', 'equine-event-manager' ); ?></h2>
+				</header>
+				<div class="eem-card-body">
+					<p class="eem-field-hint" style="margin-bottom:14px;">
+						<?php esc_html_e( 'Optionally route customer receipts and payment-link emails through SendGrid instead of the default WordPress mailer.', 'equine-event-manager' ); ?>
+					</p>
+					<div class="eem-field-row">
+						<label class="eem-field-label" for="eem-sendgrid"><?php esc_html_e( 'SendGrid API Key', 'equine-event-manager' ); ?></label>
+						<div class="eem-field-control">
+							<input class="eem-field-input" id="eem-sendgrid" type="password" name="payload[sendgrid_api_key]" value="<?php echo esc_attr( $integration['sendgrid_api_key'] ); ?>" placeholder="SG.xxxxxxxxxxxxxxxxxxxx" autocomplete="off" />
+							<p class="eem-field-hint"><?php esc_html_e( 'When set, EEM will use SendGrid for customer receipt + payment-link invoice emails. Leave blank to keep using the site\'s default WordPress mail configuration.', 'equine-event-manager' ); ?></p>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<div class="eem-settings-save-bar">
+				<button type="submit" class="eem-btn eem-btn-primary">
+					<?php esc_html_e( 'Save Integrations Settings', 'equine-event-manager' ); ?>
+				</button>
+			</div>
+		</form>
+		<?php
+	}
 
 	/**
 	 * Communications panel (SET-2, SET-3, SET-5, SET-7). The largest single
