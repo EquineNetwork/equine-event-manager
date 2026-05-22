@@ -193,8 +193,88 @@ class EEM_Settings_Page {
 	 *           render_addons_panel
 	 * ───────────────────────────────────────────────────────────── */
 
-	private function render_shortcodes_panel()     { $this->render_panel_stub( 'shortcodes' ); }
 	private function render_addons_panel()         { $this->render_panel_stub( 'addons' ); }
+
+	/**
+	 * Shortcodes panel (settings_page mockup tab-panel:#panel-shortcodes).
+	 *
+	 * Read-only reference list of registered shortcodes. Each row shows the
+	 * shortcode + a one-line description; clicking the code box copies it
+	 * to the clipboard (reusing the placeholder-copy action from C3.B.3 —
+	 * data-eem-action="placeholder-copy" + data-eem-value).
+	 *
+	 * No save button — nothing to persist.
+	 *
+	 * @return void
+	 */
+	private function render_shortcodes_panel() {
+		$shortcodes = array(
+			array(
+				'label' => __( 'Reservation Form', 'equine-event-manager' ),
+				'code'  => '[en_reservation id="123"]',
+				'hint'  => __( 'Displays a reservation form by post ID. Useful in builder pages, landing pages, or manual reservation links.', 'equine-event-manager' ),
+			),
+			array(
+				'label' => __( 'Current Event Page', 'equine-event-manager' ),
+				'code'  => '[equine_event_manager_event]',
+				'hint'  => __( 'Renders the current event using the shared single-event layout. Works on native event pages, TEC event pages, and reservation-backed routes.', 'equine-event-manager' ),
+			),
+			array(
+				'label' => __( 'Single Event by Event ID', 'equine-event-manager' ),
+				'code'  => '[equine_event_manager_event id="123"]',
+				'hint'  => __( 'Targets a native or TEC event post directly by its post ID.', 'equine-event-manager' ),
+			),
+			array(
+				'label' => __( 'Single Event by Reservation', 'equine-event-manager' ),
+				'code'  => '[equine_event_manager_event reservation="123"]',
+				'hint'  => __( 'Displays a reservation-backed event source (Event Feed or External) using the same shared template.', 'equine-event-manager' ),
+			),
+			array(
+				'label' => __( 'All Events — List View', 'equine-event-manager' ),
+				'code'  => '[equine_event_manager_events view="list"]',
+				'hint'  => __( 'Displays a mixed-source event list using the Event Manager card layout.', 'equine-event-manager' ),
+			),
+			array(
+				'label' => __( 'All Events — Calendar View', 'equine-event-manager' ),
+				'code'  => '[equine_event_manager_events view="calendar"]',
+				'hint'  => __( 'Same mixed event collection in a calendar view.', 'equine-event-manager' ),
+			),
+			array(
+				'label' => __( 'Filter by Source', 'equine-event-manager' ),
+				'code'  => '[equine_event_manager_events view="list" source="native,tec"]',
+				'hint'  => __( 'Comma-separated source filter: native, tec, feed, or external.', 'equine-event-manager' ),
+			),
+			array(
+				'label' => __( 'Lock to a Specific Month', 'equine-event-manager' ),
+				'code'  => '[equine_event_manager_events view="calendar" month="2026-05"]',
+				'hint'  => __( 'Use the month attribute in YYYY-MM format to lock the calendar to a specific month.', 'equine-event-manager' ),
+			),
+		);
+		?>
+		<section class="eem-card">
+			<header class="eem-card-header">
+				<h2 class="eem-card-title"><?php esc_html_e( 'Event Display Shortcodes', 'equine-event-manager' ); ?></h2>
+			</header>
+			<div class="eem-card-body">
+				<p class="eem-field-hint" style="margin-bottom:14px;">
+					<?php esc_html_e( 'Use these in any page builder, classic editor, or theme content area. The plugin handles event source resolution and shared layout for you. Click any code box to copy.', 'equine-event-manager' ); ?>
+				</p>
+
+				<?php foreach ( $shortcodes as $row ) : ?>
+					<div class="eem-shortcode-row">
+						<div class="eem-shortcode-label"><?php echo esc_html( $row['label'] ); ?></div>
+						<div class="eem-shortcode-body">
+							<button type="button" class="eem-code-box" data-eem-action="placeholder-copy" data-eem-value="<?php echo esc_attr( $row['code'] ); ?>" title="<?php esc_attr_e( 'Click to copy', 'equine-event-manager' ); ?>">
+								<?php echo esc_html( $row['code'] ); ?>
+							</button>
+							<p class="eem-field-hint"><?php echo esc_html( $row['hint'] ); ?></p>
+						</div>
+					</div>
+				<?php endforeach; ?>
+			</div>
+		</section>
+		<?php
+	}
 
 	/**
 	 * Payments panel (settings_page mockup tab-panel:#panel-payments).
