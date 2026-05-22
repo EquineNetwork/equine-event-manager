@@ -2280,12 +2280,13 @@ th.sorted-desc .eem-sort-icon span:first-child {
 	grid-template-columns: 200px 1fr;
 	gap: 0;
 	background: var(--eem-surface);
-	/* Full 4-side bordered card with radius per mockup
-	   (settings_page.html line 38). Breathing room on both viewport
-	   edges is provided by `.eem-page`'s 20px horizontal padding, NOT
-	   by trimming this card's borders. */
-	border: 1px solid #c3c4c7;
-	border-radius: var(--eem-radius);
+	/* Intentional departure from mockup line 38 (which specifies
+	   `border: 1px solid #c3c4c7; border-radius: 4px;`). Confirmed
+	   via DevTools that the legacy admin shell wrapping `.eem-page`
+	   already provides the visual containment we want for the
+	   settings card; adding the mockup's border+radius on top double-
+	   frames the panel. overflow:hidden retained so the nav rail
+	   and content panel stay contained within the grid bounds. */
 	overflow: hidden;
 	align-items: stretch;
 }
