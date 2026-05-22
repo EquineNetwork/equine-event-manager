@@ -174,7 +174,7 @@ body.post-type-en_reservation #submitdiv > .postbox-header + .inside {
 	padding-top: 0.875rem !important;
 }
 
-body.eem-shell-page .button,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button,
 body.eem-shell-page .wp-core-ui .button,
 body.post-type-en_reservation .button,
 body.post-type-en_reservation .wp-core-ui .button {
@@ -189,7 +189,7 @@ body.post-type-en_reservation .wp-core-ui .button {
 	line-height: 1.2 !important;
 }
 
-body.eem-shell-page .button.button-primary,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button.button-primary,
 body.eem-shell-page .wp-core-ui .button.button-primary,
 body.post-type-en_reservation .button.button-primary,
 body.post-type-en_reservation .wp-core-ui .button.button-primary {
@@ -199,8 +199,8 @@ body.post-type-en_reservation .wp-core-ui .button.button-primary {
 	box-shadow: 0 10px 20px rgba(214, 43, 81, 0.18) !important;
 }
 
-body.eem-shell-page .button.button-primary:hover,
-body.eem-shell-page .button.button-primary:focus,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button.button-primary:hover,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button.button-primary:focus,
 body.post-type-en_reservation .button.button-primary:hover,
 body.post-type-en_reservation .button.button-primary:focus {
 	background: var(--eem-app-accent-hover) !important;
@@ -5946,9 +5946,9 @@ body.eem-shell-page--orders .postbox > p {
 	line-height: 1.65 !important;
 }
 
-body.eem-shell-page .button,
-body.eem-shell-page .button.button-secondary,
-body.eem-shell-page .button.button-primary,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button.button-secondary,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button.button-primary,
 body.post-type-en_reservation .button,
 body.post-type-en_reservation .button.button-secondary,
 body.post-type-en_reservation .button.button-primary {
@@ -5959,16 +5959,16 @@ body.post-type-en_reservation .button.button-primary {
 	box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06) !important;
 }
 
-body.eem-shell-page .button.button-primary,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button.button-primary,
 body.post-type-en_reservation .button.button-primary {
 	border-color: #151d2b !important;
 	background: #151d2b !important;
 	color: #ffffff !important;
 }
 
-body.eem-shell-page .button.button-secondary,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button.button-secondary,
 body.post-type-en_reservation .button.button-secondary,
-body.eem-shell-page .button:not(.button-primary):not(.button-link-delete),
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button:not(.button-primary):not(.button-link-delete),
 body.post-type-en_reservation .button:not(.button-primary):not(.button-link-delete) {
 	border-color: #d7e0ea !important;
 	background: linear-gradient(180deg, #ffffff 0%, #f5f8fc 100%) !important;
@@ -6604,9 +6604,9 @@ body.post-type-en_reservation .eem-editor-overview-card {
 	padding: 1rem 1.125rem !important;
 }
 
-body.eem-shell-page .button,
-body.eem-shell-page .button-primary,
-body.eem-shell-page .button-secondary,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button-primary,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button-secondary,
 body.post-type-en_reservation .button,
 body.post-type-en_reservation .button-primary,
 body.post-type-en_reservation .button-secondary {
@@ -6617,8 +6617,8 @@ body.post-type-en_reservation .button-secondary {
 	box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08) !important;
 }
 
-body.eem-shell-page .button,
-body.eem-shell-page .button-secondary,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button-secondary,
 body.post-type-en_reservation .button-secondary,
 body.post-type-en_reservation .button:not(.button-primary):not(.button-link-delete) {
 	border-color: #d7e0ea !important;
@@ -6626,7 +6626,7 @@ body.post-type-en_reservation .button:not(.button-primary):not(.button-link-dele
 	color: #202c45 !important;
 }
 
-body.eem-shell-page .button-primary,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button-primary,
 body.post-type-en_reservation .button-primary {
 	border-color: #171f2d !important;
 	background: #171f2d !important;
@@ -7634,7 +7634,7 @@ body.post-type-en_reservation #poststuff .inside {
 	padding: 1rem 1.25rem 1.25rem !important;
 }
 
-body.eem-shell-page .button,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button,
 body.post-type-en_reservation .button,
 body.post-type-en_reservation #submitdiv .button {
 	display: inline-flex !important;
@@ -7649,7 +7649,7 @@ body.post-type-en_reservation #submitdiv .button {
 	box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06) !important;
 }
 
-body.eem-shell-page .button.button-primary,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button.button-primary,
 body.post-type-en_reservation .button.button-primary,
 body.post-type-en_reservation #submitdiv .button.button-primary {
 	border-color: #151b28 !important;
@@ -7657,7 +7657,7 @@ body.post-type-en_reservation #submitdiv .button.button-primary {
 	color: #fff !important;
 }
 
-body.eem-shell-page .button:not(.button-primary),
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button:not(.button-primary),
 body.post-type-en_reservation .button:not(.button-primary),
 body.post-type-en_reservation #submitdiv .button:not(.button-primary) {
 	border-color: #d6e0eb !important;
@@ -8271,7 +8271,7 @@ body.post-type-en_reservation .postbox .inside {
 	padding: 1rem !important;
 }
 
-body.eem-shell-page .button,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button,
 body.eem-shell-page .wp-core-ui .button,
 body.post-type-en_reservation .button,
 body.post-type-en_reservation .wp-core-ui .button {
@@ -8287,8 +8287,8 @@ body.post-type-en_reservation .wp-core-ui .button {
 	line-height: 1.1 !important;
 }
 
-body.eem-shell-page .button:hover,
-body.eem-shell-page .button:focus,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button:hover,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button:focus,
 body.eem-shell-page .wp-core-ui .button:hover,
 body.eem-shell-page .wp-core-ui .button:focus,
 body.post-type-en_reservation .button:hover,
@@ -8300,7 +8300,7 @@ body.post-type-en_reservation .wp-core-ui .button:focus {
 	color: var(--eem-shell-ink) !important;
 }
 
-body.eem-shell-page .button.button-primary,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button.button-primary,
 body.eem-shell-page .wp-core-ui .button.button-primary,
 body.eem-shell-page .wp-core-ui .button-primary,
 body.post-type-en_reservation .button.button-primary,
@@ -8312,8 +8312,8 @@ body.post-type-en_reservation .wp-core-ui .button-primary {
 	box-shadow: 0 10px 20px rgba(15, 23, 42, 0.14) !important;
 }
 
-body.eem-shell-page .button.button-primary:hover,
-body.eem-shell-page .button.button-primary:focus,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button.button-primary:hover,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button.button-primary:focus,
 body.eem-shell-page .wp-core-ui .button.button-primary:hover,
 body.eem-shell-page .wp-core-ui .button.button-primary:focus,
 body.post-type-en_reservation .button.button-primary:hover,
@@ -11894,23 +11894,23 @@ body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservat
 	font-family: "IBM Plex Sans", sans-serif !important;
 }
 
-body.eem-shell-page .button,
-body.eem-shell-page .button-primary,
-body.eem-shell-page .button-secondary {
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button-primary,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button-secondary {
 	border-radius: 12px !important;
 	font-family: "IBM Plex Sans", sans-serif !important;
 	font-weight: 600 !important;
 	box-shadow: none !important;
 }
 
-body.eem-shell-page .button-primary {
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button-primary {
 	background: var(--eem-guide-blue) !important;
 	border-color: var(--eem-guide-blue) !important;
 	color: #fff !important;
 }
 
-body.eem-shell-page .button-primary:hover,
-body.eem-shell-page .button-primary:focus {
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button-primary:hover,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list) .button-primary:focus {
 	background: #1668F2 !important;
 	border-color: #1668F2 !important;
 }
