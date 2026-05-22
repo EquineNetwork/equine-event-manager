@@ -193,7 +193,32 @@ class EEM_Settings_Page {
 	 *           render_addons_panel
 	 * ───────────────────────────────────────────────────────────── */
 
-	private function render_addons_panel()         { $this->render_panel_stub( 'addons' ); }
+	/**
+	 * Add-Ons panel (settings_page mockup tab-panel:#panel-addons).
+	 *
+	 * Future-expansion slot. Empty state copy now; toggles will land here
+	 * as add-on packages ship. No save button — nothing to persist yet.
+	 *
+	 * @return void
+	 */
+	private function render_addons_panel() {
+		?>
+		<section class="eem-card">
+			<header class="eem-card-header">
+				<h2 class="eem-card-title"><?php esc_html_e( 'Add-On Access', 'equine-event-manager' ); ?></h2>
+			</header>
+			<div class="eem-card-body">
+				<p class="eem-field-hint" style="margin-bottom:14px;">
+					<?php esc_html_e( 'Future Equine Event Manager add-ons will appear here so you can enable and configure them from one place.', 'equine-event-manager' ); ?>
+				</p>
+				<div class="eem-empty-state">
+					<div class="eem-empty-state-title"><?php esc_html_e( 'No add-ons available yet', 'equine-event-manager' ); ?></div>
+					<div class="eem-empty-state-desc"><?php esc_html_e( 'This tab is reserved for upcoming expansion modules. When add-ons ship, you\'ll see their toggles and configuration here.', 'equine-event-manager' ); ?></div>
+				</div>
+			</div>
+		</section>
+		<?php
+	}
 
 	/**
 	 * Shortcodes panel (settings_page mockup tab-panel:#panel-shortcodes).
