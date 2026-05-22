@@ -736,11 +736,11 @@ class EEM_Reservations_List_Page {
 					<?php if ( '' !== $date_filter ) : ?>
 						<input type="hidden" name="eem_date" value="<?php echo esc_attr( $date_filter ); ?>" />
 					<?php endif; ?>
-					<div class="eem-search-wrap">
+					<div class="eem-search-wrap eem-search-wrap--attached">
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
 						<input class="eem-search-input" type="search" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="<?php esc_attr_e( 'Search reservations…', 'equine-event-manager' ); ?>" />
 					</div>
-					<button type="submit" class="eem-toolbar-btn"><?php esc_html_e( 'Search Reservations', 'equine-event-manager' ); ?></button>
+					<button type="submit" class="eem-toolbar-btn eem-search-btn"><?php esc_html_e( 'Search Reservations', 'equine-event-manager' ); ?></button>
 				</form>
 				<span class="eem-item-count">
 					<?php

@@ -3474,3 +3474,21 @@ a.eem-mob-res-name:focus {
 .eem-search-wrap .eem-search-input {
 	padding-left: 36px;
 }
+
+/* Attached search input + Search Reservations button.
+   Mockup CSS line 65 defines `.search-btn { border-left:none;
+   border-radius:0 4px 4px 0 }` but the mockup markup never actually
+   applies that class — author oversight in the static demo. C4-polish
+   wires the CSS intent: input squares its right edge, button squares
+   its left edge and drops the duplicate border so the input's right
+   border becomes the seam between them. */
+.eem-search-wrap--attached .eem-search-input {
+	border-top-right-radius: 0;
+	border-bottom-right-radius: 0;
+}
+
+.eem-search-btn {
+	border-left: none;
+	border-top-left-radius: 0;
+	border-bottom-left-radius: 0;
+}
