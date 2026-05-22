@@ -41,6 +41,58 @@
  *
  * 5. This file disappears at the end of Phase 3 once every admin page
  *    is ported. Until then, treat it as an append-only quarantine zone.
+ *
+ * 6. C4.5 legacy-remediation pass (this file edit): the c4-polish-2
+ *    component-class :not() approach worked but was getting expensive
+ *    per chunk — every new form-control component (.eem-search-input,
+ *    .eem-toolbar-select, eventually C5/C7/C8/C12's inputs and selects)
+ *    needed its own :not() applied to every occurrence across all 6
+ *    form-control blocks + every relevant button block. C4.5 switches
+ *    the pattern to body-class scope: rules that should NOT apply to
+ *    Phase-3-ported pages get `:not(.eem-shell-page--settings)
+ *    :not(.eem-shell-page--reservations-list)` (and so on as more
+ *    pages port). The cartel still applies on body classes that
+ *    haven't been ported yet (--editor / --orders / --stall-chart /
+ *    --invoicing / --reports / --overview / --reservation-overview).
+ *
+ *    BODY-CLASS PORT-STATUS MAP (as of C4.5):
+ *
+ *      Phase 3 ported (cartel should NOT apply):
+ *        body.eem-shell-page--settings           ← C3 (Settings page)
+ *        body.eem-shell-page--reservations-list  ← C4 (Reservations list)
+ *
+ *      Still legacy (cartel should keep applying):
+ *        body.eem-shell-page--editor             ← retires when C7 ports
+ *                                                  the Reservation editor
+ *        body.eem-shell-page--orders             ← retires when C5 ports
+ *                                                  the Orders list
+ *        body.eem-shell-page--stall-chart        ← retires when C8 ports
+ *        body.eem-shell-page--invoicing          ← retires when C12 ports
+ *        body.eem-shell-page--reports            ← retires when C11 ports
+ *        body.eem-shell-page--overview           ← retires when its port
+ *                                                  chunk lands (C9 or
+ *                                                  per Phase 3 plan)
+ *        body.eem-shell-page--reservation-overview ← same
+ *
+ *      Sub-modifiers (not primary scope identifiers — coexist with one
+ *      of the page classes above):
+ *        body.eem-shell-page--header
+ *        body.eem-shell-page--rail
+ *
+ *    When a Phase 3 chunk ports a previously-legacy page:
+ *      a) Add its new body class to the `:not()` exclusion chain on the
+ *         affected cartel selectors in this file (e.g. add
+ *         `:not(.eem-shell-page--editor)` when C7 ships).
+ *      b) Remove any component-class `:not(.eem-X)` exclusions for
+ *         components specific to that page if they were added pre-C4.5.
+ *      c) Confirm the legacy page that JUST ported is no longer hit by
+ *         the cartel by spot-checking computed styles on a representative
+ *         form control on the new page.
+ *
+ *    body.post-type-en_reservation selectors are NOT touched in C4.5 —
+ *    they target the WP-native CPT edit screen which is still legacy.
+ *    C7 retires them when it ships the new Reservation editor.
+ *
  * ========================================================================= */
 
 body.eem-shell-page #wpcontent {
