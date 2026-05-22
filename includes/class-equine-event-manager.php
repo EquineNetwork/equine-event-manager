@@ -117,6 +117,15 @@ class EEM_Plugin {
 		add_action( 'admin_enqueue_scripts', array( $this->settings_page, 'enqueue_assets' ) );
 		// C4 — redirect WP-native en_reservation list to our custom page.
 		add_action( 'current_screen', array( 'EEM_Reservations_List_Page', 'maybe_redirect_old_list' ) );
+
+		// C4.C — Reservations list row-action handlers.
+		add_action( 'admin_post_eem_reservation_duplicate',       array( 'EEM_Reservations_List_Page', 'handle_duplicate' ) );
+		add_action( 'admin_post_eem_reservation_trash',           array( 'EEM_Reservations_List_Page', 'handle_trash' ) );
+		add_action( 'admin_post_eem_reservation_restore',         array( 'EEM_Reservations_List_Page', 'handle_restore' ) );
+		add_action( 'admin_post_eem_reservation_export_roster',   array( 'EEM_Reservations_List_Page', 'handle_export_roster' ) );
+		add_action( 'wp_ajax_eem_email_customers',                array( 'EEM_Reservations_List_Page', 'handle_email_customers_ajax' ) );
+		add_action( 'wp_ajax_eem_email_customers_count',          array( 'EEM_Reservations_List_Page', 'handle_email_customers_count_ajax' ) );
+		add_action( 'admin_enqueue_scripts',                      array( 'EEM_Reservations_List_Page', 'localize_row_action_nonces' ), 20 );
 		add_action( 'admin_head', array( $this->reservation_editor, 'print_editor_shell_fallback_assets' ) );
 		add_action( 'edit_form_top', array( $this->reservation_editor, 'render_editor_header' ) );
 		add_action( 'edit_form_after_title', array( $this->reservation_editor, 'render_editor_overview' ) );

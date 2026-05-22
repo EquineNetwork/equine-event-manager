@@ -55,6 +55,29 @@ class EEM_Reservations_List_Page {
 	}
 
 	/**
+	 * Localize the row-action nonces + admin-post URL so admin.js can
+	 * dispatch admin_post submits without re-fetching nonces. Hooked
+	 * to admin_enqueue_scripts; runs only when the eem-admin script is
+	 * registered (i.e. on a Phase 3 page).
+	 *
+	 * @return void
+	 */
+	public static function localize_row_action_nonces() {
+		if ( ! wp_script_is( 'eem-admin', 'registered' ) ) {
+			return;
+		}
+		wp_localize_script( 'eem-admin', 'eemRowActions', array(
+			'adminPostUrl' => admin_url( 'admin-post.php' ),
+			'nonces'       => array(
+				'eem_reservation_duplicate'     => wp_create_nonce( 'eem_reservation_duplicate' ),
+				'eem_reservation_trash'         => wp_create_nonce( 'eem_reservation_trash' ),
+				'eem_reservation_restore'       => wp_create_nonce( 'eem_reservation_restore' ),
+				'eem_reservation_export_roster' => wp_create_nonce( 'eem_reservation_export_roster' ),
+			),
+		) );
+	}
+
+	/**
 	 * Render the page. Renders the standalone page header + a bordered
 	 * .eem-list-card containing status tabs, toolbar, desktop table,
 	 * mobile cards, and pagination footer per the mockup at
@@ -106,6 +129,7 @@ class EEM_Reservations_List_Page {
 		);
 
 		?>
+		<?php $this->render_action_notice(); ?>
 		<div class="eem-list-card eem-reservations-list" data-eem-reservations-list>
 			<?php $this->render_status_tabs( $active_tab, $counts ); ?>
 			<?php $this->render_toolbar( $search, $page['total'] ); ?>
@@ -113,9 +137,417 @@ class EEM_Reservations_List_Page {
 			<?php $this->render_mobile_cards( $page['items'] ); ?>
 			<?php $this->render_table_footer( $page ); ?>
 		</div>
+		<?php $this->render_email_customers_modal(); ?>
 		<?php
 
 		eem_render_page_close( array( 'wrap' => false ) );
+	}
+
+	/**
+	 * Inline notice rendered after admin_post handlers redirect back
+	 * with ?eem_notice=… on the URL. Renders as a dismissible WP notice
+	 * inline above the list card.
+	 *
+	 * @return void
+	 */
+	private function render_action_notice() {
+		$code = isset( $_GET['eem_notice'] ) ? sanitize_key( wp_unslash( $_GET['eem_notice'] ) ) : '';
+		if ( '' === $code ) {
+			return;
+		}
+		$messages = array(
+			'duplicated' => array( 'type' => 'success', 'text' => __( 'Reservation duplicated as draft.', 'equine-event-manager' ) ),
+			'trashed'    => array( 'type' => 'success', 'text' => __( 'Reservation moved to Trash.', 'equine-event-manager' ) ),
+			'restored'   => array( 'type' => 'success', 'text' => __( 'Reservation restored from Trash.', 'equine-event-manager' ) ),
+			'denied'     => array( 'type' => 'error',   'text' => __( 'You do not have permission to perform that action.', 'equine-event-manager' ) ),
+			'notfound'   => array( 'type' => 'error',   'text' => __( 'Reservation not found.', 'equine-event-manager' ) ),
+			'failed'     => array( 'type' => 'error',   'text' => __( 'Action failed. Check the WordPress error log for details.', 'equine-event-manager' ) ),
+		);
+		if ( ! isset( $messages[ $code ] ) ) {
+			return;
+		}
+		$m = $messages[ $code ];
+		printf(
+			'<div class="notice notice-%1$s is-dismissible" style="margin-bottom:12px;"><p>%2$s</p></div>',
+			esc_attr( $m['type'] ),
+			esc_html( $m['text'] )
+		);
+	}
+
+	/**
+	 * Email Customers compose modal. Hidden by default; opened via
+	 * data-eem-action="reservation-email-customers" on a meatballs item.
+	 * JS populates the reservation id + recipient count before opening.
+	 *
+	 * NOTE: no mockup file depicts this modal — see CLEANUP.md entry #5.
+	 * Designed against the C1.4 .eem-modal component + brand-guide tokens.
+	 *
+	 * @return void
+	 */
+	private function render_email_customers_modal() {
+		?>
+		<div class="eem-modal" id="eem-email-customers-modal" role="dialog" aria-modal="true" aria-labelledby="eem-email-customers-title" aria-hidden="true">
+			<div class="eem-modal-card">
+				<header class="eem-modal-head">
+					<h2 class="eem-modal-title" id="eem-email-customers-title"><?php esc_html_e( 'Email Customers', 'equine-event-manager' ); ?></h2>
+					<button type="button" class="eem-modal-close" data-eem-action="email-customers-close" aria-label="<?php esc_attr_e( 'Close', 'equine-event-manager' ); ?>">&times;</button>
+				</header>
+				<form class="eem-modal-body" data-eem-email-customers-form>
+					<input type="hidden" name="reservation_id" value="" />
+					<?php wp_nonce_field( 'eem_email_customers', '_eem_email_customers_nonce' ); ?>
+					<p class="eem-email-customers-summary" data-eem-recipient-summary>
+						<?php esc_html_e( 'Recipients will load when the modal opens.', 'equine-event-manager' ); ?>
+					</p>
+					<div class="eem-field-row" style="margin-top:14px;">
+						<label class="eem-field-label" for="eem-email-customers-subject"><?php esc_html_e( 'Subject', 'equine-event-manager' ); ?></label>
+						<div class="eem-field-control">
+							<input class="eem-field-input" id="eem-email-customers-subject" type="text" name="subject" required maxlength="200" />
+						</div>
+					</div>
+					<div class="eem-field-row">
+						<label class="eem-field-label" for="eem-email-customers-body"><?php esc_html_e( 'Message', 'equine-event-manager' ); ?></label>
+						<div class="eem-field-control">
+							<textarea class="eem-field-textarea" id="eem-email-customers-body" name="body" rows="8" required></textarea>
+							<p class="eem-field-hint"><?php esc_html_e( 'Plain text — line breaks are preserved. HTML is stripped before sending.', 'equine-event-manager' ); ?></p>
+						</div>
+					</div>
+				</form>
+				<footer class="eem-modal-foot eem-modal-foot--split">
+					<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="email-customers-close"><?php esc_html_e( 'Cancel', 'equine-event-manager' ); ?></button>
+					<button type="button" class="eem-btn eem-btn-primary" data-eem-action="email-customers-send"><?php esc_html_e( 'Send to customers', 'equine-event-manager' ); ?></button>
+				</footer>
+			</div>
+		</div>
+		<?php
+	}
+
+	/* ─────────────────────────────────────────────────────────────
+	 * Row-action handlers (admin_post + AJAX). All verify nonce + cap
+	 * + reservation_id existence before mutating; redirect back to the
+	 * list with ?eem_notice=<code> for the inline notice renderer.
+	 * Static so the loader can hook them without instantiating.
+	 * ───────────────────────────────────────────────────────────── */
+
+	/**
+	 * Duplicate a reservation as a new draft. All post meta is copied;
+	 * the title is suffixed with " (Copy)". Activity log entry written.
+	 *
+	 * @return void  Redirects + exits; never returns.
+	 */
+	public static function handle_duplicate() {
+		$reservation_id = self::check_action_request( 'eem_reservation_duplicate' );
+
+		$source = get_post( $reservation_id );
+		if ( ! $source || EEM_Reservations_List_Repo::POST_TYPE !== $source->post_type ) {
+			self::redirect_with_notice( 'notfound' );
+		}
+
+		$new_id = wp_insert_post( array(
+			'post_type'   => EEM_Reservations_List_Repo::POST_TYPE,
+			'post_status' => 'draft',
+			'post_title'  => sprintf( '%s %s', $source->post_title, __( '(Copy)', 'equine-event-manager' ) ),
+		), true );
+
+		if ( is_wp_error( $new_id ) || ! $new_id ) {
+			self::redirect_with_notice( 'failed' );
+		}
+
+		// Copy all post meta verbatim — reservations are configuration
+		// records, not customer-facing content, so a verbatim clone is
+		// the expected behaviour (admin tweaks dates/title afterwards).
+		$meta = get_post_meta( $reservation_id );
+		foreach ( $meta as $key => $values ) {
+			foreach ( (array) $values as $value ) {
+				add_post_meta( $new_id, $key, maybe_unserialize( $value ) );
+			}
+		}
+
+		EEM_Activity_Log::write(
+			'reservation_duplicated',
+			array(
+				'source_reservation_id' => $reservation_id,
+				'new_reservation_id'    => $new_id,
+			),
+			array(
+				'reservation_id' => $new_id,
+				'actor_type'     => 'admin',
+				'actor_id'       => get_current_user_id(),
+			)
+		);
+
+		self::redirect_with_notice( 'duplicated' );
+	}
+
+	/**
+	 * Move a reservation to Trash. Native wp_trash_post; activity log
+	 * captures the lifecycle change.
+	 *
+	 * @return void  Redirects + exits.
+	 */
+	public static function handle_trash() {
+		$reservation_id = self::check_action_request( 'eem_reservation_trash' );
+
+		$result = wp_trash_post( $reservation_id );
+		if ( ! $result ) {
+			self::redirect_with_notice( 'failed' );
+		}
+
+		EEM_Activity_Log::write(
+			'reservation_trashed',
+			array( 'reservation_id' => $reservation_id ),
+			array(
+				'reservation_id' => $reservation_id,
+				'actor_type'     => 'admin',
+				'actor_id'       => get_current_user_id(),
+			)
+		);
+
+		self::redirect_with_notice( 'trashed', array( 'status' => 'trash' ) );
+	}
+
+	/**
+	 * Restore a reservation from Trash. wp_untrash_post restores the
+	 * previous post_status (typically 'publish' or 'draft').
+	 *
+	 * @return void  Redirects + exits.
+	 */
+	public static function handle_restore() {
+		$reservation_id = self::check_action_request( 'eem_reservation_restore' );
+
+		$result = wp_untrash_post( $reservation_id );
+		if ( ! $result ) {
+			self::redirect_with_notice( 'failed' );
+		}
+
+		EEM_Activity_Log::write(
+			'reservation_restored',
+			array( 'reservation_id' => $reservation_id ),
+			array(
+				'reservation_id' => $reservation_id,
+				'actor_type'     => 'admin',
+				'actor_id'       => get_current_user_id(),
+			)
+		);
+
+		self::redirect_with_notice( 'restored' );
+	}
+
+	/**
+	 * Export a CSV roster for one reservation. Streams the CSV directly
+	 * to the browser (Content-Disposition: attachment); does NOT use
+	 * the eem_notice redirect path because the response body IS the CSV.
+	 *
+	 * Roster shape: one row per stall or RV order with customer name,
+	 * email, phone, qty, dates, status, order number.
+	 *
+	 * @return void  Streams + exits.
+	 */
+	public static function handle_export_roster() {
+		$reservation_id = self::check_action_request( 'eem_reservation_export_roster' );
+
+		global $wpdb;
+		$stall_table = $wpdb->prefix . 'en_stall_reservations';
+		$rv_table    = $wpdb->prefix . 'en_rv_reservations';
+		$needle      = '%Reservation setup ID: ' . $reservation_id . '%';
+
+		// Same notes-based lookup the orders-count uses. C4.D / C11
+		// may swap to a denormalized reservation_id column if perf
+		// becomes a concern.
+		$stall_orders = $wpdb->get_results( $wpdb->prepare(
+			"SELECT 'Stall' AS kind, customer_name, email, phone, stall_qty AS qty, stay_type, arrival_date, departure_date, payment_status, order_number FROM `{$stall_table}` WHERE notes LIKE %s ORDER BY created_at DESC",
+			$needle
+		), ARRAY_A );
+		$rv_orders = $wpdb->get_results( $wpdb->prepare(
+			"SELECT 'RV' AS kind, customer_name, email, phone, rv_qty AS qty, stay_type, arrival_date, departure_date, payment_status, order_number FROM `{$rv_table}` WHERE notes LIKE %s ORDER BY created_at DESC",
+			$needle
+		), ARRAY_A );
+		$rows = array_merge( (array) $stall_orders, (array) $rv_orders );
+
+		$slug     = sanitize_title( get_the_title( $reservation_id ) );
+		$filename = sprintf( 'eem-roster-%s-%s.csv', $slug !== '' ? $slug : (string) $reservation_id, gmdate( 'Y-m-d' ) );
+
+		nocache_headers();
+		header( 'Content-Type: text/csv; charset=utf-8' );
+		header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
+
+		$fh = fopen( 'php://output', 'w' );
+		fputcsv( $fh, array( 'Kind', 'Customer', 'Email', 'Phone', 'Qty', 'Stay Type', 'Arrival', 'Departure', 'Payment Status', 'Order #' ) );
+		foreach ( $rows as $r ) {
+			fputcsv( $fh, array(
+				$r['kind'],
+				$r['customer_name'],
+				$r['email'],
+				$r['phone'],
+				$r['qty'],
+				$r['stay_type'],
+				$r['arrival_date'],
+				$r['departure_date'],
+				$r['payment_status'],
+				$r['order_number'],
+			) );
+		}
+		fclose( $fh );
+		exit;
+	}
+
+	/**
+	 * AJAX handler — send the compose-modal email to every customer
+	 * with an order against the reservation. Returns JSON with the
+	 * recipient count + delivery summary.
+	 *
+	 * @return void  wp_send_json_*; never returns.
+	 */
+	public static function handle_email_customers_ajax() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+		check_ajax_referer( 'eem_email_customers', '_eem_email_customers_nonce' );
+
+		$reservation_id = isset( $_POST['reservation_id'] ) ? absint( wp_unslash( $_POST['reservation_id'] ) ) : 0;
+		$subject        = isset( $_POST['subject'] ) ? sanitize_text_field( wp_unslash( $_POST['subject'] ) ) : '';
+		$body           = isset( $_POST['body'] )    ? wp_strip_all_tags( wp_unslash( $_POST['body'] ) )    : '';
+
+		if ( $reservation_id <= 0 || '' === $subject || '' === $body ) {
+			wp_send_json_error( array( 'message' => __( 'Subject and message are required.', 'equine-event-manager' ) ), 400 );
+		}
+
+		$recipients = self::resolve_recipients_for_reservation( $reservation_id );
+		if ( empty( $recipients ) ) {
+			wp_send_json_error( array( 'message' => __( 'No customers found for this reservation.', 'equine-event-manager' ) ), 404 );
+		}
+
+		$sender = class_exists( 'EEM_Settings_Repo' ) ? EEM_Settings_Repo::get_email_sender() : array();
+		$headers = array();
+		if ( ! empty( $sender['from_name'] ) && ! empty( $sender['from_email'] ) ) {
+			$headers[] = sprintf( 'From: %s <%s>', $sender['from_name'], $sender['from_email'] );
+		}
+		if ( ! empty( $sender['reply_to'] ) ) {
+			$headers[] = sprintf( 'Reply-To: %s', $sender['reply_to'] );
+		}
+
+		$sent   = 0;
+		$failed = 0;
+		foreach ( $recipients as $email ) {
+			if ( wp_mail( $email, $subject, $body, $headers ) ) {
+				$sent++;
+			} else {
+				$failed++;
+			}
+		}
+
+		EEM_Activity_Log::write(
+			EEM_Activity_Log::NOTIFICATION_SENT,
+			array(
+				'channel'         => 'bulk_email_customers',
+				'recipient_count' => count( $recipients ),
+				'sent'            => $sent,
+				'failed'          => $failed,
+				'subject'         => $subject,
+			),
+			array(
+				'reservation_id' => $reservation_id,
+				'actor_type'     => 'admin',
+				'actor_id'       => get_current_user_id(),
+			)
+		);
+
+		wp_send_json_success( array(
+			'message' => sprintf(
+				/* translators: 1: sent count, 2: total recipient count */
+				_n( 'Sent to %1$d of %2$d recipient.', 'Sent to %1$d of %2$d recipients.', count( $recipients ), 'equine-event-manager' ),
+				$sent,
+				count( $recipients )
+			),
+			'sent'    => $sent,
+			'failed'  => $failed,
+		) );
+	}
+
+	/**
+	 * AJAX recipient-count peek so the modal can show the count before
+	 * the user composes. Cheap (one query per table).
+	 *
+	 * @return void
+	 */
+	public static function handle_email_customers_count_ajax() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+		check_ajax_referer( 'eem_email_customers', '_eem_email_customers_nonce' );
+
+		$reservation_id = isset( $_POST['reservation_id'] ) ? absint( wp_unslash( $_POST['reservation_id'] ) ) : 0;
+		if ( $reservation_id <= 0 ) {
+			wp_send_json_error( array( 'message' => __( 'Reservation id required.', 'equine-event-manager' ) ), 400 );
+		}
+
+		$recipients = self::resolve_recipients_for_reservation( $reservation_id );
+		wp_send_json_success( array( 'count' => count( $recipients ) ) );
+	}
+
+	/**
+	 * Distinct customer emails for a reservation across both stall + RV
+	 * orders. De-duplicated by lowercase email.
+	 *
+	 * @param int $reservation_id
+	 * @return string[]
+	 */
+	private static function resolve_recipients_for_reservation( $reservation_id ) {
+		global $wpdb;
+		$stall_table = $wpdb->prefix . 'en_stall_reservations';
+		$rv_table    = $wpdb->prefix . 'en_rv_reservations';
+		$needle      = '%Reservation setup ID: ' . absint( $reservation_id ) . '%';
+
+		$stall_emails = (array) $wpdb->get_col( $wpdb->prepare( "SELECT email FROM `{$stall_table}` WHERE notes LIKE %s AND email <> ''", $needle ) );
+		$rv_emails    = (array) $wpdb->get_col( $wpdb->prepare( "SELECT email FROM `{$rv_table}` WHERE notes LIKE %s AND email <> ''", $needle ) );
+
+		$all = array_merge( $stall_emails, $rv_emails );
+		$dedupe = array();
+		foreach ( $all as $e ) {
+			$lower = strtolower( trim( (string) $e ) );
+			if ( '' !== $lower && is_email( $lower ) ) {
+				$dedupe[ $lower ] = $e;
+			}
+		}
+		return array_values( $dedupe );
+	}
+
+	/**
+	 * Shared front-door for the admin_post handlers — verifies nonce
+	 * + cap + reservation_id presence, exits/redirects on failure,
+	 * returns the validated reservation id on success.
+	 *
+	 * @param string $action_name  Nonce action name (e.g. 'eem_reservation_trash').
+	 * @return int                 Validated reservation id.
+	 */
+	private static function check_action_request( $action_name ) {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			self::redirect_with_notice( 'denied' );
+		}
+		check_admin_referer( $action_name, '_eem_action_nonce' );
+
+		$reservation_id = isset( $_POST['reservation_id'] ) ? absint( wp_unslash( $_POST['reservation_id'] ) ) : 0;
+		if ( $reservation_id <= 0 ) {
+			self::redirect_with_notice( 'notfound' );
+		}
+		if ( EEM_Reservations_List_Repo::POST_TYPE !== get_post_type( $reservation_id ) ) {
+			self::redirect_with_notice( 'notfound' );
+		}
+
+		return $reservation_id;
+	}
+
+	/**
+	 * Redirect back to the list with a notice code. Optional extra
+	 * query args (e.g. ['status' => 'trash']) get forwarded so the
+	 * destination tab makes sense for the action just taken.
+	 *
+	 * @param string $code
+	 * @param array<string, string|int> $extra
+	 * @return void  Exits.
+	 */
+	private static function redirect_with_notice( $code, array $extra = array() ) {
+		wp_safe_redirect( self::url( array_merge( array( 'eem_notice' => $code ), $extra ) ) );
+		exit;
 	}
 
 	/**

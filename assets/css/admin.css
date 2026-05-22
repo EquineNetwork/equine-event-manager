@@ -3433,3 +3433,14 @@ a.eem-mob-res-name:focus {
 		padding: 10px 12px;
 	}
 }
+
+/* C4.C — Email Customers compose modal. Uses the C1.4 .eem-modal
+   component; only the recipient summary needs page-specific style. */
+.eem-email-customers-summary {
+	font-size: 13px;
+	color: #50575e;
+	padding: 10px 12px;
+	background: #f6f7f7;
+	border-left: 3px solid var(--eem-electric);
+	border-radius: var(--eem-radius);
+}

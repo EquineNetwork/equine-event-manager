@@ -42,13 +42,14 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 - **Unblocks deletion:** N/A — this is a "verify generalization" item, not a removal item. Drop the entry if C3.C confirms no extraction is needed.
 - **Status:** to re-evaluate at C3.C wrap-up
 
-### 5. Three deferred mockups (decisions.md "Pending Mockups")
-- **What:** `create_order_page.html`, `customer_detail_page.html`, Cancel Event button amendment on `edit_reservation_page.html`.
+### 5. Four deferred mockups (decisions.md "Pending Mockups" + C4 modal)
+- **What:** `create_order_page.html`, `customer_detail_page.html`, Cancel Event button amendment on `edit_reservation_page.html`, **Email Customers compose modal** (no mockup file).
 - **Why deferred:** Mockups not built. The corresponding code surfaces:
   - Invoicing → New Order mode is a "Coming next release" placeholder in C12.
   - Customer Detail link on Order Detail card (C9 — ODET-5) renders as plain text, not a link.
   - Cancel Event button on Edit Reservation (C7) is omitted; the bulk-refund engine is still built so the button can be added in a future chunk.
-- **Added in:** Phase 3 plan
+  - Email Customers modal (C4.C — reservations list meatballs item): no mockup depicts the compose UI. C4.C ships a minimal subject/body/Send modal designed to the brand-guide token system; spec-faithful redesign drops in when the mockup lands.
+- **Added in:** Phase 3 plan (first 3) + C4.C (modal)
 - **Unblocks deletion:** N/A (these are stubs waiting for spec, not legacy to remove). When mockups land, the stubs get replaced with real implementations. Track here to make sure they don't ship as placeholders to production.
 - **Status:** awaiting spec
 

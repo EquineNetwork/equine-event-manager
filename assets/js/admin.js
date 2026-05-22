@@ -702,6 +702,124 @@
 		initEagerTinyMceTargets();
 	}
 
+	/* ─────────────────────────────────────────────────────────────
+	 * C4.C — Reservations list row actions.
+	 *
+	 * submitReservationAction builds a hidden form pointed at
+	 * admin-post.php, fills in the reservation_id + nonce + action,
+	 * and submits — gives us the browser-native redirect-with-message
+	 * UX without maintaining AJAX state in the meatballs dropdown.
+	 *
+	 * The Email Customers flow uses an AJAX modal instead because the
+	 * compose step needs round-tripping data; helpers below cover open,
+	 * close, recipient-count preload, and form submit.
+	 * ───────────────────────────────────────────────────────────── */
+	function submitReservationAction(target, actionName, nonceAction) {
+		var reservationId = target.dataset.reservationId;
+		if (!reservationId) return;
+		var nonce = window.eemRowActions && window.eemRowActions.nonces && window.eemRowActions.nonces[nonceAction];
+		if (!nonce) {
+			if (window.console && window.console.warn) {
+				window.console.warn('EEM: missing nonce for ' + actionName);
+			}
+			return;
+		}
+		var adminPostUrl = (window.eemRowActions && window.eemRowActions.adminPostUrl) || (window.ajaxurl || '').replace('admin-ajax.php', 'admin-post.php');
+		var form = document.createElement('form');
+		form.method = 'POST';
+		form.action = adminPostUrl;
+		form.style.display = 'none';
+		[
+			['action', actionName],
+			['reservation_id', reservationId],
+			['_eem_action_nonce', nonce]
+		].forEach(function (pair) {
+			var i = document.createElement('input');
+			i.type = 'hidden';
+			i.name = pair[0];
+			i.value = pair[1];
+			form.appendChild(i);
+		});
+		document.body.appendChild(form);
+		form.submit();
+	}
+
+	function openEmailCustomersModal(target) {
+		var reservationId = target.dataset.reservationId;
+		var modal = document.getElementById('eem-email-customers-modal');
+		if (!modal || !reservationId) return;
+
+		var resInput = modal.querySelector('input[name="reservation_id"]');
+		if (resInput) resInput.value = reservationId;
+		var summary = modal.querySelector('[data-eem-recipient-summary]');
+		if (summary) summary.textContent = 'Loading recipient count…';
+
+		modal.classList.add('open');
+		modal.setAttribute('aria-hidden', 'false');
+		closeAllDropdowns();
+
+		// Pre-load recipient count.
+		var nonce = modal.querySelector('input[name="_eem_email_customers_nonce"]');
+		if (!nonce || !nonce.value || !window.ajaxurl) return;
+		var data = new FormData();
+		data.append('action', 'eem_email_customers_count');
+		data.append('reservation_id', reservationId);
+		data.append('_eem_email_customers_nonce', nonce.value);
+		fetch(window.ajaxurl, { method: 'POST', credentials: 'same-origin', body: data })
+			.then(function (r) { return r.json(); })
+			.then(function (json) {
+				if (json && json.success && summary) {
+					var n = json.data && json.data.count ? json.data.count : 0;
+					summary.textContent = n === 1
+						? 'This will email 1 customer with an order against this reservation.'
+						: 'This will email ' + n + ' customers with an order against this reservation.';
+				}
+			})
+			.catch(function () {
+				if (summary) summary.textContent = 'Recipient count unavailable — proceed only if you know who you\'re emailing.';
+			});
+	}
+
+	function closeEmailCustomersModal() {
+		var modal = document.getElementById('eem-email-customers-modal');
+		if (!modal) return;
+		modal.classList.remove('open');
+		modal.setAttribute('aria-hidden', 'true');
+		var form = modal.querySelector('[data-eem-email-customers-form]');
+		if (form) form.reset();
+	}
+
+	function sendEmailCustomersForm() {
+		var modal = document.getElementById('eem-email-customers-modal');
+		if (!modal || !window.ajaxurl) return;
+		var form = modal.querySelector('[data-eem-email-customers-form]');
+		if (!form) return;
+
+		var sendBtn = modal.querySelector('[data-eem-action="email-customers-send"]');
+		if (sendBtn) sendBtn.disabled = true;
+
+		var data = new FormData(form);
+		data.append('action', 'eem_email_customers');
+
+		fetch(window.ajaxurl, { method: 'POST', credentials: 'same-origin', body: data })
+			.then(function (r) { return r.json(); })
+			.then(function (json) {
+				if (json && json.success) {
+					EEM.showSaveToast((json.data && json.data.message) || 'Sent.');
+					closeEmailCustomersModal();
+				} else {
+					var msg = (json && json.data && json.data.message) || 'Send failed.';
+					EEM.showSaveToast(msg, { variant: 'error', sub: '' });
+				}
+			})
+			.catch(function () {
+				EEM.showSaveToast('Send failed — network error.', { variant: 'error', sub: '' });
+			})
+			.then(function () {
+				if (sendBtn) sendBtn.disabled = false;
+			});
+	}
+
 	function closeAllDropdowns() {
 		document.querySelectorAll('.eem-dropdown.open, .eem-row-menu-wrap.open')
 			.forEach(function (host) { host.classList.remove('open'); });
@@ -776,6 +894,33 @@
 		},
 		'test-feed-url': function (target) {
 			testFeedUrl(target);
+		},
+		/* C4.C — Reservations list row actions. The first four are
+		   admin-post form submits (JS builds a hidden form + submits
+		   so we redirect-with-message rather than maintaining AJAX
+		   state in the dropdown). Email Customers is AJAX because
+		   it has a compose modal. */
+		'reservation-duplicate': function (target) {
+			submitReservationAction(target, 'eem_reservation_duplicate', 'eem_reservation_duplicate');
+		},
+		'reservation-trash': function (target) {
+			if (!window.confirm('Move this reservation to Trash?')) return;
+			submitReservationAction(target, 'eem_reservation_trash', 'eem_reservation_trash');
+		},
+		'reservation-restore': function (target) {
+			submitReservationAction(target, 'eem_reservation_restore', 'eem_reservation_restore');
+		},
+		'reservation-export-roster': function (target) {
+			submitReservationAction(target, 'eem_reservation_export_roster', 'eem_reservation_export_roster');
+		},
+		'reservation-email-customers': function (target) {
+			openEmailCustomersModal(target);
+		},
+		'email-customers-close': function () {
+			closeEmailCustomersModal();
+		},
+		'email-customers-send': function () {
+			sendEmailCustomersForm();
 		}
 	};
 
