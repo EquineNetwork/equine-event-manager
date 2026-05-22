@@ -638,13 +638,16 @@ class EEM_Admin {
 			array( $this, 'render_reports_page' )
 		);
 
+		// C3.D.2: Menu callback now points at the new EEM_Settings_Page renderer
+		// (Phase 3 port). Legacy render_settings_page method below remains in this
+		// file until C3.D.4 deletion after the browser smoke test passes.
 		add_submenu_page(
 			self::MENU_SLUG,
 			__( 'Settings', 'equine-event-manager' ),
 			__( 'Settings', 'equine-event-manager' ),
 			'manage_options',
 			'equine-event-manager-settings',
-			array( $this, 'render_settings_page' )
+			array( new EEM_Settings_Page(), 'render' )
 		);
 
 		add_submenu_page(
