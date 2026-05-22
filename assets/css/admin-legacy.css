@@ -26,8 +26,13 @@ body.post-type-en_reservation {
 	--eem-app-success: #6cc08b;
 }
 
+/* Legacy card styling targets WordPress's own .postbox + edit-screen
+   containers. `.eem-card` was removed from these selectors in C3.D.3.5
+   because it's now a Phase 3 component owned by assets/css/admin.css —
+   the legacy `!important` here was beating new admin.css overrides
+   on the Settings page. WP-core .postbox keeps the !important
+   because it needs to override WP's own postbox styling. */
 body.eem-shell-page .postbox,
-body.eem-shell-page .eem-card,
 body.post-type-en_reservation .postbox,
 body.post-type-en_reservation #titlediv,
 body.post-type-en_reservation #submitdiv {
@@ -39,7 +44,6 @@ body.post-type-en_reservation #submitdiv {
 }
 
 body.eem-shell-page .postbox > .inside,
-body.eem-shell-page .eem-card > .inside,
 body.post-type-en_reservation .postbox > .inside,
 body.post-type-en_reservation #titlediv,
 body.post-type-en_reservation #submitdiv .inside {

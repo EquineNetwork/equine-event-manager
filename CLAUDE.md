@@ -144,6 +144,8 @@ Every chunk that adds or modifies code follows these rules. Skipping them turns 
 3. **No `error_log()` in new code.** If something needs logging, use a properly-gated mechanism (e.g. `if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) { error_log( ... ); }` only if truly necessary; prefer surfacing errors through the response shape).
 4. **All user-facing strings wrapped in `__()` / `esc_html__()` / `esc_attr__()`** with the `equine-event-manager` text domain. Strings inside server-side `wp_send_json_error` messages, admin notices, tooltip hints, label text — all of it.
 5. **Type declarations on new code.** Typed properties, return types, parameter types. Apply aggressively on private/internal methods and conservatively on `public function`s hooked into WordPress (filter callbacks where WP passes `mixed` stay loose).
+6. **No `!important` in new CSS.** Solve specificity by scoping the selector instead. If you find yourself wanting `!important`, you're either fighting a legacy rule (in which case fix the legacy rule — see next bullet) or your new selector is under-scoped. `admin-legacy.css` is grandfathered; `admin.css` and any new stylesheet is not.
+7. **`admin-legacy.css` is remediated, not extended.** When a new component (e.g. `.eem-card`, `.eem-settings-nav`) collides with a legacy `!important` rule, the fix is to surgically remove that component class from the legacy selector list — not to add `!important` to the new rule. Document the change inline in the legacy file with a comment pointing at the Phase 3 chunk that took ownership of the class.
 
 These add ~5–8% LOC per chunk vs. a giant audit pass in C13. Keep them in.
 
