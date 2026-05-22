@@ -130,6 +130,7 @@ Before writing any markup or CSS for a new page, complete these six steps **in o
 4. **State the architectural pattern in plain English** in the chunk's working notes — e.g. "Left sidebar (200px) + right content panel," "Horizontal tabs over stacked content," "Single column with section-stacked cards." Add this to the chunk's first commit message.
 5. **Confirm the pattern matches WordPress admin conventions OR intentionally departs from them.** If it departs, note that in the commit message.
 6. **Implement to match the mockup, not the WordPress default pattern.**
+7. **DevTools regression check.** When the page renders for the first time, open browser DevTools and inspect every component class introduced by the chunk (`.eem-*` selectors you authored). For each, scan the Computed / Rules pane for any `admin-legacy.css` declaration that targets the same class — especially `!important` ones. If found, remediate per hygiene rule #7 in the same chunk (don't ship the page until the legacy rule no longer targets your new component). This is the discipline that would have caught the C3.D `.eem-card` double-border regression at C3.B instead of C3.D.3.5.
 
 WordPress admin conventions are **not** the source of truth for this plugin. The mockups are. If a mockup specifies a vertical left nav where WordPress would conventionally use `nav-tab-wrapper` horizontal tabs, build the vertical left nav. Don't substitute familiar WP patterns for specified ones.
 
