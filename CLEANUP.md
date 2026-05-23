@@ -16,6 +16,19 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 
 ## Active entries
 
+### 28. AJAX smoke harness for wp_die paths
+- **What:** Subshell wp-cli for isolated `wp_send_json_*` / `wp_die` paths so AJAX handlers can be exercised end-to-end in smokes without killing the runner. Surfaced during C6.B; current workaround is gate-only testing + manual browser verify.
+- **Why deferred:** Discovered mid-C6.B when c6b-smoke tried to invoke `EEM_Admin::handle_ajax_refund_single()` directly and the call exited the PHP process. The workaround (assert capability + nonce gates separately, defer end-to-end coverage to manual browser verify) is sufficient for individual AJAX endpoints but does not scale — C6.C bulk-engine will compound the gap, and C7+ will all need it.
+- **Root cause:** `wp_send_json_error` / `wp_send_json_success` invoke `wp_die()` which in CLI context calls `_default_wp_die_handler` and ultimately PHP's `die()`. Both `wp_die_handler` and `wp_die_ajax_handler` filters fire BEFORE the handler is invoked (handler-selection-time), but the default CLI handler still exits the process — the filter mechanism is about WHICH handler runs, not about preventing the exit.
+- **Shape of the fix:**
+  1. New `tests/smoke/harness/ajax-subshell.sh` — takes a PHP snippet, runs it via `wp eval` in a SUBPROCESS, returns stdout (the JSON response) + exit code as captured strings to the calling smoke.
+  2. New `tests/smoke/harness/ajax-helpers.php` — wrapper functions like `ajax_post_assert_success($action, $payload)` and `ajax_post_assert_error($action, $payload, $expected_code)` that smoke files call instead of invoking the handler directly.
+  3. C6.B's [5] section gets a follow-on subshell-driven test that POSTs to `wp_ajax_eem_order_refund_single` with bogus nonce → asserts JSON `{success:false, data:{code:'nonce'}}`. Same pattern for capability + happy-path (against a refund-able test order with a mocked gateway).
+- **Added in:** C6.B (smoke limitation surfaced during the AJAX gate testing).
+- **Sequence:** Before C6.C if possible (would give C6.C bulk engine real end-to-end coverage from the start), otherwise immediately after C6.E close as part of the C6 chunk-end audit work. Trivial in isolation (~80 LOC bash + ~60 LOC PHP helpers); the real cost is retrofitting existing AJAX smokes (c6b currently, c6c when it lands) to use the new pattern.
+- **Unblocks:** end-to-end AJAX coverage for every present + future AJAX endpoint. Reduces the "manual browser verify" surface considerably.
+- **Status:** queued; gate-only workaround in place for C6.B and C6.C as a deliberate stopgap.
+
 ### 27. Extract EEM_Refund_Engine — gateway-dispatch + amount-distribution + persistence
 - **What:** C6.B introduced `EEM_Admin::process_amount_refund( $order_key, $amount, $reason )` as a public adapter around the legacy private refund stack (`refund_order_component` → gateway dispatch → `persist_component_refund`). Wraps were chosen over class extraction in C6.B to keep the chunk small and let C6.C's bulk-engine requirements clarify the contract. **After C6.C ships**, extract into a clean `EEM_Refund_Engine` class:
   1. Move `refund_order_component` + `refund_with_stripe` + `refund_with_authorize_net` + `get_component_refunded_amount` + `get_component_remaining_refundable_amount` + `persist_component_refund` off EEM_Admin into the new class.

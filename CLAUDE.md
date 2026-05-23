@@ -163,6 +163,8 @@ The seven hygiene rules above add **~25–30% on top of functional-code LOC** in
 3. CSS-heavy chunks carry a lighter tax (~10–15%) because CSS doesn't get the docblock treatment. Note the lower multiplier in those chunk estimates explicitly.
 4. If a chunk comes in materially below the tax baseline (e.g. ≤+10% over functional estimate), flag in the wrap-up — it usually means the docblocks got skimped on and need a revisit before merge.
 
+**AJAX+modal chunk surcharge (observed C6.A + C6.B):** AJAX+modal chunks consistently overshoot the ×1.275 multiplier by 1.5–2×. Drivers: BEM-element expansion (each modal sub-region gets its own `__label`/`__input`/`__prefix` class), docblock fraction (~30%, consistent with C4.A baseline), and smoke complexity (Reflection on private helpers + multiple shape variations per assertion). Re-baseline after C7 lands a third data point.
+
 #### CSS-port heuristic (established C4.B)
 
 Verbatim CSS port from a mockup's `<style>` block into `admin.css` runs at **~×2.5 the source LOC** as a floor. Drivers: multi-line property formatting (mockup uses dense one-liners; admin.css uses one prop per line for readability), BEM-style state modifier expansion (`.status-active` → `.eem-res-status--active`), responsive `@media` breakpoint repetition, inline comments naming the mockup line numbers, and the small extra cross-cutting helpers each page needs (sort-icon stack, page-header standalone variant, etc.) that don't appear in the mockup source.
