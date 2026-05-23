@@ -3282,7 +3282,7 @@ class EEM_Admin {
 			$required_shavings_sold   += absint( isset( $order['required_shavings_qty'] ) ? $order['required_shavings_qty'] : 0 );
 			$additional_shavings_sold += absint( isset( $order['additional_shavings_qty'] ) ? $order['additional_shavings_qty'] : 0 );
 			$revenue_total            += (float) ( isset( $order['total'] ) ? $order['total'] : 0 );
-			$group_rider_count         = $this->parse_group_rider_count_from_notes( $notes );
+			$group_rider_count         = self::parse_group_rider_count_from_notes( $notes );
 
 			if ( $group_rider_count > 0 ) {
 				$group_rider_total += $group_rider_count;
@@ -3670,7 +3670,7 @@ class EEM_Admin {
 	 * @param string $notes Order notes.
 	 * @return int
 	 */
-	private function parse_group_rider_count_from_notes( $notes ) {
+	public static function parse_group_rider_count_from_notes( $notes ) {
 		if ( preg_match( '/(?:^|\n)Group Riders Count:\s*(\d+)/i', (string) $notes, $matches ) ) {
 			return absint( $matches[1] );
 		}
@@ -3684,7 +3684,7 @@ class EEM_Admin {
 	 * @param string $notes Order notes.
 	 * @return array
 	 */
-	private function parse_group_rider_names_from_notes( $notes ) {
+	public static function parse_group_rider_names_from_notes( $notes ) {
 		if ( empty( $notes ) || ! preg_match( '/(?:^|\n)Group Riders:\s*(.+)$/mi', (string) $notes, $matches ) ) {
 			return array();
 		}
@@ -3936,8 +3936,8 @@ class EEM_Admin {
 			<h1 class="screen-reader-text"><?php echo esc_html( sprintf( __( 'Order #%s', 'equine-event-manager' ), $order['order_number'] ) ); ?></h1>
 
 			<?php
-			$group_rider_count       = $this->parse_group_rider_count_from_notes( $order['notes'] );
-			$group_rider_names       = $this->parse_group_rider_names_from_notes( $order['notes'] );
+			$group_rider_count       = self::parse_group_rider_count_from_notes( $order['notes'] );
+			$group_rider_names       = self::parse_group_rider_names_from_notes( $order['notes'] );
 			$general_addons          = $this->parse_general_addon_breakdown_from_notes( $order['notes'] );
 			$stall_chart_enabled     = $reservation_id ? (bool) get_post_meta( $reservation_id, '_en_stall_chart_enabled', true ) : false;
 			$stall_chart_config      = $reservation_id ? $this->get_stall_chart_config( $reservation_id ) : array();
@@ -5488,8 +5488,8 @@ class EEM_Admin {
 		$company_settings    = $this->get_company_settings();
 		$special_requests    = $this->get_special_requests_from_order_notes( $order['notes'] );
 		$billing_details     = $this->get_billing_details_from_order_notes( $order['notes'] );
-		$group_rider_count   = $this->parse_group_rider_count_from_notes( $order['notes'] );
-		$group_rider_names   = $this->parse_group_rider_names_from_notes( $order['notes'] );
+		$group_rider_count   = self::parse_group_rider_count_from_notes( $order['notes'] );
+		$group_rider_names   = self::parse_group_rider_names_from_notes( $order['notes'] );
 		$event_label         = $order['reservation_title'] ? $order['reservation_title'] : $order['event_name'];
 		$is_paid             = in_array( $order['status_slug'], array( 'paid', 'refunded' ), true );
 		$payment_date        = '';

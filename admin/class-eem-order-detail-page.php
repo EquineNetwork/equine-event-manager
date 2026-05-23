@@ -160,6 +160,24 @@ class EEM_Order_Detail_Page {
 
 		<?php $this->render_special_instructions_card( $reservation_id ); ?>
 
+		<?php
+		/*
+		 * SAVE BAR — DEFERRED to C7 per CLEANUP #33.
+		 *
+		 * Mockup: .mockups/order_detail_page.html lines 586-592 spec a
+		 * Cancel + "Save Changes" pair that lives here, between the
+		 * Special Instructions card and the Activity Log section. C6
+		 * scope is display-only (refund/CSV/trash live in the header
+		 * More menu) — there is no inline-editable field to save yet,
+		 * so the bar would dispatch nowhere. C7 wires an inline-edit
+		 * save flow and reinstates this region.
+		 *
+		 * Grep targets for the C7 implementer: "CLEANUP #33" OR
+		 * "mockup lines 586-592". Both appear in this single comment
+		 * so either search lands here.
+		 */
+		?>
+
 		<?php $this->render_activity_log( $order, $reservation_id ); ?>
 
 		<?php $this->render_refund_modal( $order ); ?>
@@ -222,8 +240,11 @@ class EEM_Order_Detail_Page {
 			'addon' => __( 'Add-On', 'equine-event-manager' ),
 			'group' => __( 'Group',  'equine-event-manager' ),
 		);
-		$customer_email = isset( $order['customer_email'] ) ? (string) $order['customer_email'] : '';
-		$customer_name  = isset( $order['customer_name'] )  ? (string) $order['customer_name']  : '';
+		// C6.A.2 fix: the order's top-level customer email key is 'email'
+		// (not 'customer_email' — see EEM_Orders_Repository::get_order).
+		// CLAUDE.md Note 3 captures the silent-degrade lesson.
+		$customer_email = isset( $order['email'] ) ? (string) $order['email'] : '';
+		$customer_name  = isset( $order['customer_name'] ) ? (string) $order['customer_name'] : '';
 		$reservation_url = $reservation_id > 0 ? (string) get_edit_post_link( $reservation_id ) : '';
 
 		ob_start();
@@ -484,6 +505,7 @@ class EEM_Order_Detail_Page {
 		$required   = isset( $order['required_shavings_qty'] )   ? (int) $order['required_shavings_qty']   : 0;
 		$additional = isset( $order['additional_shavings_qty'] ) ? (int) $order['additional_shavings_qty'] : 0;
 		$total_qty  = $required + $additional;
+		$subtotal   = $this->compute_addon_subtotal( $order );
 
 		?>
 		<div class="eem-card eem-order-card">
@@ -495,9 +517,9 @@ class EEM_Order_Detail_Page {
 			</div>
 			<table class="eem-detail-table">
 				<?php if ( $total_qty > 0 ) : ?>
-					<tr><td><?php echo esc_html( sprintf( __( 'Shavings (×%d)', 'equine-event-manager' ), $total_qty ) ); ?></td><td><?php esc_html_e( 'See section subtotal', 'equine-event-manager' ); ?></td></tr>
+					<tr><td><?php echo esc_html( sprintf( __( 'Shavings (×%d)', 'equine-event-manager' ), $total_qty ) ); ?></td><td><?php echo esc_html( '$' . number_format_i18n( $subtotal, 2 ) ); ?></td></tr>
 				<?php endif; ?>
-				<tr class="eem-detail-table__subtotal"><td><?php esc_html_e( 'Add-On Subtotal', 'equine-event-manager' ); ?></td><td><?php esc_html_e( 'See summary', 'equine-event-manager' ); ?></td></tr>
+				<tr class="eem-detail-table__subtotal"><td><?php esc_html_e( 'Add-On Subtotal', 'equine-event-manager' ); ?></td><td><?php echo esc_html( '$' . number_format_i18n( $subtotal, 2 ) ); ?></td></tr>
 			</table>
 		</div>
 		<?php
@@ -516,11 +538,19 @@ class EEM_Order_Detail_Page {
 			return;
 		}
 
-		// Group rider data lives in component notes; C6.A surfaces the
-		// section as a placeholder with rider-count = component count.
-		// Real rider extraction (parse "Group Riders: A, B, C" from notes)
-		// is a separate parser pass deferred to a focused follow-on.
-		$rider_count = isset( $order['components'] ) && is_array( $order['components'] ) ? count( $order['components'] ) : 1;
+		// Group rider data lives in the order's notes string. We promoted
+		// EEM_Admin::parse_group_rider_count_from_notes /
+		// parse_group_rider_names_from_notes from private to public static
+		// in C6.A.2 specifically so this renderer can reuse them — single
+		// source of truth for the parse format.
+		$notes = isset( $order['notes'] ) ? (string) $order['notes'] : '';
+		$names = EEM_Admin::parse_group_rider_names_from_notes( $notes );
+		$count = EEM_Admin::parse_group_rider_count_from_notes( $notes );
+		if ( $count < 1 ) {
+			$count = ! empty( $names )
+				? count( $names )
+				: ( isset( $order['components'] ) && is_array( $order['components'] ) ? count( $order['components'] ) : 1 );
+		}
 
 		?>
 		<div class="eem-card eem-order-card">
@@ -531,8 +561,18 @@ class EEM_Order_Detail_Page {
 				</div>
 			</div>
 			<table class="eem-detail-table">
-				<tr><td><?php esc_html_e( 'Rider Count', 'equine-event-manager' ); ?></td><td><?php echo esc_html( (string) $rider_count ); ?></td></tr>
+				<tr><td><?php esc_html_e( 'Rider Count', 'equine-event-manager' ); ?></td><td><?php echo esc_html( (string) $count ); ?></td></tr>
 			</table>
+			<?php if ( ! empty( $names ) ) : ?>
+				<div class="eem-rider-list">
+					<?php foreach ( $names as $i => $name ) : ?>
+						<div class="eem-rider-row">
+							<span class="eem-rider-num"><?php echo esc_html( (string) ( $i + 1 ) ); ?></span>
+							<span class="eem-rider-name"><?php echo esc_html( $name ); ?></span>
+						</div>
+					<?php endforeach; ?>
+				</div>
+			<?php endif; ?>
 		</div>
 		<?php
 	}
@@ -545,31 +585,65 @@ class EEM_Order_Detail_Page {
 	 * @return void
 	 */
 	private function render_summary_card( array $order ) {
-		$has_stall = ( isset( $order['stall_subtotal'] ) ? (float) $order['stall_subtotal'] : 0.0 ) > 0;
-		$has_rv    = ( isset( $order['rv_subtotal'] )    ? (float) $order['rv_subtotal']    : 0.0 ) > 0;
-		$fees      = isset( $order['fees'] ) ? (float) $order['fees'] : 0.0;
-		$total     = isset( $order['total'] ) ? (float) $order['total'] : 0.0;
+		$stall_subtotal = isset( $order['stall_subtotal'] ) ? (float) $order['stall_subtotal'] : 0.0;
+		$rv_subtotal    = isset( $order['rv_subtotal'] )    ? (float) $order['rv_subtotal']    : 0.0;
+		$fees           = isset( $order['fees'] ) ? (float) $order['fees'] : 0.0;
+		$total          = isset( $order['total'] ) ? (float) $order['total'] : 0.0;
+		$addon_subtotal = $this->compute_addon_subtotal( $order );
 
+		$stall_nights = $this->compute_nights(
+			isset( $order['stall_arrival_date'] )   ? (string) $order['stall_arrival_date']   : '',
+			isset( $order['stall_departure_date'] ) ? (string) $order['stall_departure_date'] : ''
+		);
+		$rv_nights    = $this->compute_nights(
+			isset( $order['rv_arrival_date'] )   ? (string) $order['rv_arrival_date']   : '',
+			isset( $order['rv_departure_date'] ) ? (string) $order['rv_departure_date'] : ''
+		);
+		$required     = isset( $order['required_shavings_qty'] )   ? (int) $order['required_shavings_qty']   : 0;
+		$additional   = isset( $order['additional_shavings_qty'] ) ? (int) $order['additional_shavings_qty'] : 0;
+		$addon_qty    = $required + $additional;
 		?>
 		<div class="eem-card eem-order-card">
 			<div class="eem-order-card__header">
 				<div class="eem-order-card__title"><?php esc_html_e( 'Order Summary', 'equine-event-manager' ); ?></div>
 			</div>
 			<div class="eem-order-summary__body">
-				<?php if ( $has_stall ) : ?>
+				<?php if ( $stall_subtotal > 0 ) : ?>
 					<div class="eem-order-summary__section">
 						<div class="eem-order-summary__section-header">
 							<span class="eem-order-summary__section-title"><?php esc_html_e( 'Stall Reservation', 'equine-event-manager' ); ?></span>
+							<?php if ( $stall_nights > 0 ) : ?>
+								<span class="eem-order-summary__section-badge eem-order-summary__section-badge--stall"><?php echo esc_html( sprintf( _n( '%d night', '%d nights', $stall_nights, 'equine-event-manager' ), $stall_nights ) ); ?></span>
+							<?php endif; ?>
 						</div>
-						<div class="eem-order-summary__line"><span><?php esc_html_e( 'Stall Subtotal', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( (float) $order['stall_subtotal'], 2 ) ); ?></span></div>
+						<div class="eem-order-summary__line"><span><?php esc_html_e( 'Stall Subtotal', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $stall_subtotal, 2 ) ); ?></span></div>
+						<div class="eem-order-summary__section-subtotal"><span><?php esc_html_e( 'Section Total', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $stall_subtotal, 2 ) ); ?></span></div>
 					</div>
 				<?php endif; ?>
-				<?php if ( $has_rv ) : ?>
+				<?php if ( $rv_subtotal > 0 ) : ?>
 					<div class="eem-order-summary__section">
 						<div class="eem-order-summary__section-header">
 							<span class="eem-order-summary__section-title"><?php esc_html_e( 'RV Reservation', 'equine-event-manager' ); ?></span>
+							<?php if ( $rv_nights > 0 ) : ?>
+								<span class="eem-order-summary__section-badge eem-order-summary__section-badge--rv"><?php echo esc_html( sprintf( _n( '%d night', '%d nights', $rv_nights, 'equine-event-manager' ), $rv_nights ) ); ?></span>
+							<?php endif; ?>
 						</div>
-						<div class="eem-order-summary__line"><span><?php esc_html_e( 'RV Subtotal', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( (float) $order['rv_subtotal'], 2 ) ); ?></span></div>
+						<div class="eem-order-summary__line"><span><?php esc_html_e( 'RV Subtotal', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $rv_subtotal, 2 ) ); ?></span></div>
+						<div class="eem-order-summary__section-subtotal"><span><?php esc_html_e( 'Section Total', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $rv_subtotal, 2 ) ); ?></span></div>
+					</div>
+				<?php endif; ?>
+				<?php if ( $addon_subtotal > 0 ) : ?>
+					<div class="eem-order-summary__section">
+						<div class="eem-order-summary__section-header">
+							<span class="eem-order-summary__section-title"><?php esc_html_e( 'Add-Ons', 'equine-event-manager' ); ?></span>
+							<?php if ( $addon_qty > 0 ) : ?>
+								<span class="eem-order-summary__section-badge eem-order-summary__section-badge--addon"><?php echo esc_html( sprintf( _n( '%d item', '%d items', $addon_qty, 'equine-event-manager' ), $addon_qty ) ); ?></span>
+							<?php endif; ?>
+						</div>
+						<?php if ( $addon_qty > 0 ) : ?>
+							<div class="eem-order-summary__line"><span><?php echo esc_html( sprintf( __( 'Shavings (×%d)', 'equine-event-manager' ), $addon_qty ) ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $addon_subtotal, 2 ) ); ?></span></div>
+						<?php endif; ?>
+						<div class="eem-order-summary__section-subtotal"><span><?php esc_html_e( 'Section Total', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $addon_subtotal, 2 ) ); ?></span></div>
 					</div>
 				<?php endif; ?>
 				<?php if ( $fees > 0 ) : ?>
@@ -577,7 +651,8 @@ class EEM_Order_Detail_Page {
 						<div class="eem-order-summary__section-header">
 							<span class="eem-order-summary__section-title"><?php esc_html_e( 'Fees', 'equine-event-manager' ); ?></span>
 						</div>
-						<div class="eem-order-summary__line"><span><?php esc_html_e( 'Convenience Fee', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $fees, 2 ) ); ?></span></div>
+						<div class="eem-order-summary__line"><span><?php esc_html_e( 'Non-Refundable Convenience Fee', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $fees, 2 ) ); ?></span></div>
+						<div class="eem-order-summary__section-subtotal"><span><?php esc_html_e( 'Section Total', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $fees, 2 ) ); ?></span></div>
 					</div>
 				<?php endif; ?>
 				<div class="eem-order-summary__grand-total">
@@ -590,6 +665,22 @@ class EEM_Order_Detail_Page {
 	}
 
 	/**
+	 * Compute the add-on subtotal from order totals (no per-line price data
+	 * is currently persisted — shavings are the only add-on). Equals the
+	 * residual: total - stall - rv - fees.
+	 *
+	 * @param array<string, mixed> $order
+	 * @return float
+	 */
+	private function compute_addon_subtotal( array $order ) {
+		$total          = isset( $order['total'] ) ? (float) $order['total'] : 0.0;
+		$stall_subtotal = isset( $order['stall_subtotal'] ) ? (float) $order['stall_subtotal'] : 0.0;
+		$rv_subtotal    = isset( $order['rv_subtotal'] )    ? (float) $order['rv_subtotal']    : 0.0;
+		$fees           = isset( $order['fees'] ) ? (float) $order['fees'] : 0.0;
+		return max( 0.0, $total - $stall_subtotal - $rv_subtotal - $fees );
+	}
+
+	/**
 	 * Payment Details sidebar card — customer block + processor +
 	 * transaction details + refund history.
 	 *
@@ -597,15 +688,27 @@ class EEM_Order_Detail_Page {
 	 * @return void
 	 */
 	private function render_payment_details_card( array $order ) {
-		$customer_email = isset( $order['customer_email'] ) ? (string) $order['customer_email'] : '';
-		$customer_name  = isset( $order['customer_name'] )  ? (string) $order['customer_name']  : '';
-		$customer_phone = isset( $order['customer_phone'] ) ? (string) $order['customer_phone'] : '';
+		// NOTE (C6.A.2 fix): the C6.A first-draft used keys 'customer_email'
+		// and 'customer_phone' which don't exist on the order shape. The
+		// actual top-level keys are 'email' and 'phone' (see
+		// EEM_Orders_Repository::get_order). Captured as CLAUDE.md Note 3
+		// (missing-key silent-degrade lesson).
+		$customer_email = isset( $order['email'] ) ? (string) $order['email'] : '';
+		$customer_name  = isset( $order['customer_name'] ) ? (string) $order['customer_name'] : '';
+		$customer_phone = isset( $order['phone'] ) ? (string) $order['phone'] : '';
 		$gateway        = isset( $order['payment_gateway'] ) ? (string) $order['payment_gateway'] : '';
 		$status_slug    = isset( $order['status_slug'] ) ? (string) $order['status_slug'] : 'unpaid';
 		$captured       = in_array( $status_slug, array( 'paid', 'partially-refunded', 'refunded' ), true );
 
 		$first_component = isset( $order['components'][0] ) && is_array( $order['components'][0] ) ? $order['components'][0] : array();
 		$transaction_id  = isset( $first_component['transaction_id'] ) ? (string) $first_component['transaction_id'] : '';
+
+		// Card display block (mockup lines 548-554) intentionally OMITTED.
+		// Per the C6.A.2 meta-existence audit: _en_card_brand / _en_card_last4
+		// (and every other card/brand/last4/cc_ key variant) do not exist
+		// anywhere in wp_postmeta. Honest representation beats fake '—'.
+		// Deferred via CLEANUP #34 — re-add when card-data persistence
+		// lands (likely C10/C11).
 
 		?>
 		<div class="eem-card eem-order-card">
@@ -667,10 +770,12 @@ class EEM_Order_Detail_Page {
 	 * @return void
 	 */
 	private function render_special_instructions_card( $reservation_id ) {
+		// C6.A.2: always render — empty-guard removed so the card is
+		// visible even when no instructions are saved (mockup parity:
+		// the section is part of the page chrome, not conditional on
+		// content). Empty state shows an em-dash placeholder.
 		$text = $reservation_id > 0 ? (string) get_post_meta( $reservation_id, '_en_special_instructions', true ) : '';
-		if ( '' === trim( $text ) ) {
-			return;
-		}
+		$has  = '' !== trim( $text );
 		?>
 		<div class="eem-order-full-width">
 			<div class="eem-card eem-order-card">
@@ -678,7 +783,11 @@ class EEM_Order_Detail_Page {
 					<div class="eem-order-card__title"><?php esc_html_e( 'Special Instructions', 'equine-event-manager' ); ?></div>
 				</div>
 				<div class="eem-order-instructions__body">
-					<p class="eem-order-instructions__text"><?php echo esc_html( $text ); ?></p>
+					<?php if ( $has ) : ?>
+						<p class="eem-order-instructions__text"><?php echo esc_html( $text ); ?></p>
+					<?php else : ?>
+						<p class="eem-order-instructions__text eem-order-instructions__text--empty">&mdash;</p>
+					<?php endif; ?>
 				</div>
 			</div>
 		</div>

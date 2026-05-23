@@ -4117,6 +4117,91 @@ a.eem-orders-count-link:focus {
 	color: var(--eem-electric);
 }
 
+/* C6.A.2: per-section type badge + Section Total row inside summary. */
+.eem-order-summary__section-badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 2px 8px;
+	border-radius: 10px;
+	font-size: 10px;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	line-height: 1.4;
+}
+
+.eem-order-summary__section-badge--stall {
+	background: #fef3c7;
+	color: #92400e;
+}
+
+.eem-order-summary__section-badge--rv {
+	background: #dbeafe;
+	color: #1e40af;
+}
+
+.eem-order-summary__section-badge--addon {
+	background: #ede9fe;
+	color: #6d28d9;
+}
+
+.eem-order-summary__section-subtotal {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 8px 12px;
+	background: var(--eem-bg-alt);
+	border-top: 1px solid var(--eem-border-soft);
+	font-size: 12px;
+	font-weight: 700;
+	color: var(--eem-navy);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+/* C6.A.2: Group reservation rider list (mockup lines 468-471). */
+.eem-rider-list {
+	padding: 0 14px 14px;
+}
+
+.eem-rider-row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 8px 0;
+	border-top: 1px solid var(--eem-border-soft);
+	font-size: 13px;
+	color: var(--eem-text);
+}
+
+.eem-rider-row:first-child {
+	border-top: none;
+}
+
+.eem-rider-num {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	border-radius: 50%;
+	background: var(--eem-navy);
+	color: #fff;
+	font-size: 11px;
+	font-weight: 700;
+	flex-shrink: 0;
+}
+
+.eem-rider-name {
+	font-weight: 500;
+}
+
+/* C6.A.2: Special Instructions empty placeholder. */
+.eem-order-instructions__text--empty {
+	color: var(--eem-text-muted);
+	font-style: italic;
+}
+
 /* ── PAYMENT DETAILS sidebar (right column) ── */
 .eem-order-payment__body {
 	padding: 14px 16px;

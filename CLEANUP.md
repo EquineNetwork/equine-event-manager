@@ -16,6 +16,20 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 
 ## Active entries
 
+### 34. Order Detail Payment Details — card brand / last4 display block deferred
+- **What:** The mockup at `.mockups/order_detail_page.html` lines 548-554 specs a "Card" row in the Payment Details sidebar (VISA badge + `•••• 4242` masked number). C6.A.2 OMITS this block entirely.
+- **Why deferred:** The C6.A.2 meta-existence audit probed candidate keys `_en_card_brand`, `_en_card_last4`, `_en_payment_card_brand`, `_en_payment_card_last4`, `_en_card_brand_normalized`, `_en_cc_brand`, `_en_cc_last4`, `_en_stripe_card_brand`, `_en_stripe_card_last4`, `_card_brand`, `_card_last4` against all seeded reservations AND ran a broad `LIKE '%card%' OR '%last4%' OR '%brand%' OR '%cc_%'` scan across the entire `wp_postmeta` table — zero hits. Card brand/last4 are not persisted anywhere in the current data shape. Per C6.A.2 discipline ("honest representation beats fake '—'"), the block is omitted rather than shipping placeholder rows.
+- **Added in:** C6.A.2
+- **Unblocks deletion:** C10 or C11 (likely as part of the Stripe/Auth.net receipt port). Required work: (a) capture `payment_method_details.card.brand` + `payment_method_details.card.last4` from the Stripe PaymentIntent (and the Auth.net equivalent) at the moment of charge, (b) persist to `_en_card_brand` + `_en_card_last4` post_meta on the reservation, (c) re-add the Card display block to `EEM_Order_Detail_Page::render_payment_details_card` with a graceful degrade for orders predating capture. Inline comment marker at the omission point references "CLEANUP #34".
+- **Status:** awaiting C10/C11
+
+### 33. Order Detail save bar — deferred to C7 (inline-edit save flow)
+- **What:** The mockup at `.mockups/order_detail_page.html` lines 586-592 specs a Cancel + "Save Changes" pair that sits between the Special Instructions card and the Activity Log section. C6.A.2 OMITS this region.
+- **Why deferred:** C6 scope is display-only (refund/CSV/trash live in the header More menu). There is no inline-editable field on the Order Detail page yet, so the save bar would dispatch nowhere. C7 lands the inline-edit save flow (Special Instructions editor + line-item edits) and reinstates the save bar at the same DOM position.
+- **Added in:** C6.A.2
+- **Unblocks deletion:** C7 (Order Detail inline edits). Inline comment marker in `EEM_Order_Detail_Page::render()` between `render_special_instructions_card()` and `render_activity_log()` references BOTH "CLEANUP #33" and "mockup lines 586-592" — single grep target for the C7 implementer.
+- **Status:** awaiting C7
+
 ### 32. Activity log get_for_order_key — indexed order_key column instead of LIKE-on-JSON
 - **What:** `EEM_Activity_Log::get_for_order_key( $order_key, $limit )` (added in C6.E.1) queries the `payload` column with `LIKE '%"order_key":"<key>"%'`. No index on payload — every call scans the whole table.
 - **Why deferred:** Admin-only view (Order Detail page), infrequent visits, typical order has fewer than 20 activity entries. At v2.2.0 scale (single tenant, ~thousands of activity rows across all orders) the LIKE scan is fast enough that a fix isn't blocking. The `$limit` floor (default 100, internal cap 500) bounds the worst case. Real fix is a proper indexed column — but that's a schema migration that doesn't belong inside a UI-render chunk.
