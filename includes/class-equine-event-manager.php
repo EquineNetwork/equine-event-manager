@@ -39,6 +39,10 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-reservations-list-page
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-orders-list-repo.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-orders-list-page.php';
 
+// Phase 3 — Order Detail page (C6.A — single-order view; refund + activity-log
+// telemetry land in C6.B/C/D/E).
+require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-order-detail-page.php';
+
 // Phase 3 admin template partials.
 require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_breadcrumb.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_page_shell.php';
@@ -149,6 +153,12 @@ class EEM_Plugin {
 		// replaces this stub when the planned-roadmap chunk ships
 		// (see CLEANUP.md "Customer Profile chunk sequencing").
 		add_action( 'admin_menu',                                 array( 'EEM_Orders_List_Page', 'register_customer_profile_stub' ), 25 );
+
+		// C6.A — hidden Order Detail page. Reachable via direct URL only
+		// (admin.php?page=equine-event-manager-order&order_key=...).
+		// Orders list View Order / order # / customer-name anchors all
+		// converge here.
+		add_action( 'admin_menu',                                 array( 'EEM_Order_Detail_Page', 'register_page' ), 25 );
 		add_action( 'admin_enqueue_scripts',                      array( 'EEM_Orders_List_Page', 'localize_row_action_nonces' ), 20 );
 		add_action( 'admin_head', array( $this->reservation_editor, 'print_editor_shell_fallback_assets' ) );
 		add_action( 'edit_form_top', array( $this->reservation_editor, 'render_editor_header' ) );

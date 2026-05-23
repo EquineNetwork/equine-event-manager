@@ -414,15 +414,15 @@ class EEM_Orders_List_Page {
 		);
 		$status_slug  = isset( $order['status_slug'] )  ? (string) $order['status_slug']  : '';
 		$status_label = isset( $order['status_label'] ) ? (string) $order['status_label'] : '';
-		$status_css   = $this->status_slug_to_css_class( $status_slug );
+		$status_css   = self::status_slug_to_css_class( $status_slug );
 		$created_at   = isset( $order['created_at'] )   ? (string) $order['created_at']   : '';
-		$date_label   = $this->format_date_label( $created_at );
+		$date_label   = self::format_date_label( $created_at );
 		$billing_tab  = EEM_Orders_List_Repo::map_status_slug_to_tab( $status_slug );
 		$data_types   = implode( ',', $type_keys );
 		?>
 		<tr data-order-key="<?php echo esc_attr( $order_key ); ?>" data-billing="<?php echo esc_attr( $billing_tab ); ?>" data-types="<?php echo esc_attr( $data_types ); ?>">
 			<td class="eem-col-cb"><input type="checkbox" class="eem-orders-row-cb" name="order_keys[]" value="<?php echo esc_attr( $order_key ); ?>" aria-label="<?php echo esc_attr( sprintf( __( 'Select order %s', 'equine-event-manager' ), $order_number ) ); ?>" /></td>
-			<td><a class="eem-order-num" href="<?php echo esc_url( self::order_detail_url( $order_key ) ); ?>"><?php echo esc_html( $this->format_order_number_display( $order_number ) ); ?></a></td>
+			<td><a class="eem-order-num" href="<?php echo esc_url( self::order_detail_url( $order_key ) ); ?>"><?php echo esc_html( self::format_order_number_display( $order_number ) ); ?></a></td>
 			<td><a class="eem-customer-name" href="<?php echo esc_url( self::customer_profile_url( isset( $order['email'] ) ? (string) $order['email'] : '' ) ); ?>"><?php echo esc_html( $customer ); ?></a></td>
 			<td><?php
 				// C5.G.10: Event name now renders as a link to the reservation's
@@ -566,9 +566,9 @@ class EEM_Orders_List_Page {
 				$type_keys    = EEM_Orders_List_Repo::derive_type_keys( $order );
 				$status_slug  = isset( $order['status_slug'] )  ? (string) $order['status_slug']  : '';
 				$status_label = isset( $order['status_label'] ) ? (string) $order['status_label'] : '';
-				$status_css   = $this->status_slug_to_css_class( $status_slug );
+				$status_css   = self::status_slug_to_css_class( $status_slug );
 				$created_at   = isset( $order['created_at'] )   ? (string) $order['created_at']   : '';
-				$date_label   = $this->format_date_label( $created_at );
+				$date_label   = self::format_date_label( $created_at );
 				$type_labels  = array(
 					'stall' => __( 'Stall',  'equine-event-manager' ),
 					'rv'    => __( 'RV',     'equine-event-manager' ),
@@ -578,7 +578,7 @@ class EEM_Orders_List_Page {
 				?>
 				<div class="eem-mobile-card" data-order-key="<?php echo esc_attr( $order_key ); ?>">
 					<div class="eem-mobile-card-top">
-						<a class="eem-mobile-card-id eem-order-num" href="<?php echo esc_url( self::order_detail_url( $order_key ) ); ?>"><?php echo esc_html( $this->format_order_number_display( $order_number ) ); ?></a>
+						<a class="eem-mobile-card-id eem-order-num" href="<?php echo esc_url( self::order_detail_url( $order_key ) ); ?>"><?php echo esc_html( self::format_order_number_display( $order_number ) ); ?></a>
 						<span class="eem-mobile-card-meta"><?php echo esc_html( $date_label ); ?></span>
 					</div>
 					<div class="eem-mobile-card-title"><a class="eem-customer-name" href="<?php echo esc_url( self::customer_profile_url( isset( $order['email'] ) ? (string) $order['email'] : '' ) ); ?>"><?php echo esc_html( $customer ); ?></a></div>
@@ -705,7 +705,8 @@ class EEM_Orders_List_Page {
 	 * @param string $status_slug
 	 * @return string
 	 */
-	private function status_slug_to_css_class( $status_slug ) {
+	// C6.A: promoted to public static so EEM_Order_Detail_Page can share the same status→class map.
+	public static function status_slug_to_css_class( $status_slug ) {
 		// C5.G.6: legacy EEM_Orders_Repository::get_order_status_display()
 		// emits HYPHENATED slugs ('invoice-sent', 'partially-refunded',
 		// 'outstanding-show-bill'). C5.B shipped underscored case arms
@@ -731,7 +732,8 @@ class EEM_Orders_List_Page {
 	 * @param string $mysql_datetime
 	 * @return string
 	 */
-	private function format_date_label( $mysql_datetime ) {
+	// C6.A: promoted to public static so EEM_Order_Detail_Page can share the same "May 8, 2026" label format.
+	public static function format_date_label( $mysql_datetime ) {
 		$ts = '' === $mysql_datetime ? 0 : strtotime( $mysql_datetime );
 		return $ts ? date_i18n( __( 'M j, Y', 'equine-event-manager' ), $ts ) : '';
 	}
@@ -750,7 +752,8 @@ class EEM_Orders_List_Page {
 	 * @param string $order_number  Whatever the legacy repo stored.
 	 * @return string  "#NNNNN"
 	 */
-	private function format_order_number_display( $order_number ) {
+	// C6.A: promoted to public static so EEM_Order_Detail_Page can share the same "#NNNNN" rendering.
+	public static function format_order_number_display( $order_number ) {
 		$digits = preg_replace( '/\D/', '', (string) $order_number );
 		$n      = '' === $digits ? 0 : (int) $digits;
 		return sprintf( '#%05d', $n );

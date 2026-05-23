@@ -16,6 +16,27 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 
 ## Active entries
 
+### 26. Activity Log save_meta diff logger — deferred from C6.D
+- **What:** C6.D delivers 5 simple-event auto-fire hooks for the Activity Log (order created, payment received, refund processed, email sent, status changes). The **6th auto-fire path** — admin edits via the reservation CPT save_meta — is deferred as its own chunk because it's a different problem shape: requires reading old → new diff and formatting a per-meta-key change-list display (like the mockup's `"Shavings Qty: 2 → 4"`). The other 5 hooks are simple "an event happened" inserts; this one needs:
+  1. **Snapshot meta values BEFORE save** (via `pre_post_update` or a `save_post_en_reservation` priority-5 hook that fires before the cpt's own save_meta at priority 10) into a transient or a request-scoped static cache.
+  2. **Diff old vs new** after save_meta completes — read the same meta keys back, compute per-key changes.
+  3. **Format the diff** for the activity log payload (struct: `{ field, old, new, label }`) — Activity Log render partial then shows the strikethrough → arrow → new value treatment.
+  4. **Filter "noise" meta keys** that change on every save (e.g. cache timestamps, derived fields) so the log doesn't fill with irrelevant entries.
+- **Why deferred:** distinct from the 5 simple-event hooks both in mechanism (pre/post snapshot pair vs single insert) and in display rendering (diff struct vs single message). Folding into C6.D would double the chunk's complexity and delay the Activity Log shipping at all.
+- **Added in:** C6.A (during the C6 chunk-planning conversation as the Q3 deferred scope).
+- **Sequence:** between C7 (Edit Reservation editor port — increases save_meta surface area) and C8 (Stall Charts — orthogonal). Likely chunk name "C7.5 activity-log diff logger" or rolled into C13 polish.
+- **Unblocks:** the mockup's "Order edited by X" activity entry with field-level diff display.
+- **Status:** queued; deferred from C6.D scope decision.
+
+### 25. VIS-4 deviation — Settings save buttons use navy instead of Electric Blue
+- **What:** All 6 Settings tab save buttons (Integrations, Branding, Communications, Shortcodes, Payments, Add-Ons) render with navy background `#031B4E` instead of the Electric Blue `#1668F2` required by VIS-4 for primary CTAs. Affected class is likely `.btn-dark` or `.eem-btn-navy` (TBD at fix time via grep).
+- **Why deferred:** discovered during the C6 mockup audit; trivial class swap but doesn't belong inside C6 itself.
+- **Fix:** Replace the navy class with `.eem-btn-electric` (established VIS-4 primary CTA class per the C5.G.11 reversal). 6-12 LOC change across the Settings page template, possibly a shared button-row partial.
+- **Risk:** very low — pure visual swap, no behavior change, no DB or markup-structure impact.
+- **Added in:** C6.A (during C6 mockup orientation pass).
+- **Sequence:** between C6 close and C7 start, as a small dedicated cleanup chunk (`c6.cleanup-vis4` or bundled with other small VIS deviations surfaced during C6's end-of-chunk audit).
+- **Status:** queued; ready to execute.
+
 ### 23. Plugin URI + Author URI placeholders — must be set before external release
 - **What:** `equine-event-manager.php` plugin header carries placeholder URIs (`https://example.com/equine-event-manager`) for both `Plugin URI` and `Author URI`. Same placeholders in `composer.json` `support.source` / `support.issues`. These are fine for in-development / private use but MUST be replaced before:
   - WordPress.org plugin directory submission

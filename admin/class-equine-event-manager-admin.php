@@ -679,14 +679,12 @@ class EEM_Admin {
 			array( new EEM_Settings_Page(), 'render' )
 		);
 
-		add_submenu_page(
-			self::MENU_SLUG,
-			__( 'Order Details', 'equine-event-manager' ),
-			__( 'Order Details', 'equine-event-manager' ),
-			'manage_options',
-			'equine-event-manager-order',
-			array( $this, 'render_order_details_page' )
-		);
+		// C6.A: legacy `equine-event-manager-order` submenu callback swap.
+		// The mockup-faithful Order Detail page (EEM_Order_Detail_Page) now
+		// owns this slug, registered as a hidden submenu via
+		// EEM_Order_Detail_Page::register_page() in the bootstrap loader.
+		// The legacy render_order_details_page method becomes dead and is
+		// scheduled for removal in the next CLEANUP #20 audit (post-C6 merge).
 
 		add_submenu_page(
 			self::MENU_SLUG,
