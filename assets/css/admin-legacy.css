@@ -1784,55 +1784,7 @@ body.eem-shell-page--orders .wrap.eem-shell-wrap--header {
 	background: #f0f0f1;
 }
 
-.eem-orders-toolbar {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr) auto;
-	gap: 0.875rem;
-	align-items: center;
-	padding: 1rem 1rem 1.25rem;
-	margin: 0;
-	background: transparent;
-	border: 0;
-	border-bottom: 1px solid #dde5ee;
-	border-radius: 0;
-	box-shadow: none;
-	min-height: 72px;
-}
-
-.eem-orders-toolbar .subsubsub {
-	float: none;
-	margin: 0;
-}
-
-.eem-orders-toolbar__form {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 0.75rem;
-	align-items: center;
-	margin: 0;
-	min-height: 40px;
-}
-
-.eem-orders-toolbar__form select,
-.eem-orders-toolbar__form input[type="search"] {
-	min-height: 40px;
-}
-
-.eem-orders-toolbar__count {
-	margin: 0;
-	display: flex;
-	align-items: center;
-	justify-content: flex-end;
-	min-height: 40px;
-	color: #172033;
-	font-weight: 800;
-	justify-self: end;
-	align-self: center;
-	text-align: right;
-	line-height: 1.2;
-	padding: 0;
-	white-space: nowrap;
-}
+/* C5.5: removed dead .eem-orders-toolbar block (display:grid + 4 .eem-orders-toolbar__* descendant rules) — verified zero markup uses after C5.F-toolbar dropped the class. Body-scoped .eem-orders-toolbar rules elsewhere in this file are equally dead but left to CLEANUP #1 (wholesale admin-legacy.css strip). */
 
 body.eem-shell-page--orders .tablenav.top {
 	margin: 0 0 0.875rem;

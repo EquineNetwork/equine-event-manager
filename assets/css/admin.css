@@ -1244,50 +1244,9 @@ a.eem-filter-tab.active {
 	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-/* ─────────────────────────────────────────────────────────────
-   Type chips (ORD-1 multi-select chips: stall/rv/addon/group)
-   ───────────────────────────────────────────────────────────── */
-.eem-type-chips {
-	display: flex;
-	gap: 5px;
-	flex-wrap: wrap;
-}
+/* C5.5: removed dead .eem-type-chips + .eem-type-chip (base, .inactive, --stall/--rv/--addon/--group variants) + .eem-type-chip-dot — verified zero markup/JS uses (Orders filter switched to Type dropdown in C5.F-toolbar). */
 
-.eem-type-chip {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	padding: 4px 10px;
-	border-radius: 20px;
-	font-size: 12px;
-	font-weight: 600;
-	cursor: pointer;
-	border: 1.5px solid;
-	transition: opacity 0.15s;
-	user-select: none;
-}
-
-.eem-type-chip.inactive {
-	opacity: 0.4;
-}
-
-/* `a.` chain wins specificity (0,2,0) against the global
-   .eem-page a { color: var(--eem-electric) } rule (0,1,1) — without
-   it, anchor-rendered type chips (Orders filter chips since C5.D)
-   would all paint Electric Blue and lose their per-variant tint.
-   Same pattern as .eem-filter-tab above. */
-.eem-type-chip--stall, a.eem-type-chip--stall  { background: var(--eem-type-stall-bg);  color: var(--eem-type-stall-text);  border-color: var(--eem-type-stall-border); text-decoration: none; }
-.eem-type-chip--rv,    a.eem-type-chip--rv     { background: var(--eem-type-rv-bg);     color: var(--eem-type-rv-text);     border-color: var(--eem-type-rv-border);    text-decoration: none; }
-.eem-type-chip--addon, a.eem-type-chip--addon  { background: var(--eem-type-addon-bg);  color: var(--eem-type-addon-text);  border-color: var(--eem-type-addon-border); text-decoration: none; }
-.eem-type-chip--group, a.eem-type-chip--group  { background: var(--eem-type-group-bg);  color: var(--eem-type-group-text);  border-color: var(--eem-type-group-border); text-decoration: none; }
-
-.eem-type-chip-dot {
-	width: 5px;
-	height: 5px;
-	border-radius: 50%;
-	background: currentColor;
-	flex-shrink: 0;
-}
+/* C5.5: removed dead .eem-bulk-action-bar (+ select, button, button:hover, button:disabled) + .eem-bulk-selected-count — verified zero markup/JS uses (Orders dropped the bulk-action-bar primitive in C5.F-toolbar). */
 
 /* Select (event filter, etc.) — chevron-suffixed dropdown */
 .eem-list-select {
@@ -1305,59 +1264,6 @@ a.eem-filter-tab.active {
 
 .eem-list-select:focus {
 	border-color: var(--eem-electric);
-}
-
-/* ─────────────────────────────────────────────────────────────
-   Bulk action bar (ORD-2 / RES-3 / ORD-6) — appears below toolbar when
-   row checkboxes have selections
-   ───────────────────────────────────────────────────────────── */
-.eem-bulk-action-bar {
-	padding: 10px 18px;
-	display: flex;
-	align-items: center;
-	gap: var(--eem-space-2);
-	border-top: 1px solid var(--eem-border-soft);
-	flex-wrap: wrap;
-	background: var(--eem-bg-alt);
-}
-
-.eem-bulk-action-bar select {
-	padding: 6px 12px;
-	border: 1px solid var(--eem-border-card);
-	border-radius: var(--eem-radius);
-	font-size: 13px;
-	font-family: var(--eem-font-ui);
-	color: var(--eem-text);
-	background: var(--eem-surface);
-	cursor: pointer;
-}
-
-.eem-bulk-action-bar button {
-	padding: 6px 14px;
-	border: 1px solid var(--eem-electric);
-	background: var(--eem-electric);
-	color: var(--eem-text-on-navy);
-	border-radius: var(--eem-radius);
-	font-size: 13px;
-	font-weight: 600;
-	font-family: var(--eem-font-ui);
-	cursor: pointer;
-}
-
-.eem-bulk-action-bar button:hover {
-	background: var(--eem-electric-hover);
-}
-
-.eem-bulk-action-bar button:disabled {
-	background: var(--eem-border-card);
-	border-color: var(--eem-border-card);
-	cursor: not-allowed;
-}
-
-.eem-bulk-selected-count {
-	font-size: 12.5px;
-	color: var(--eem-text-secondary);
-	margin-left: 8px;
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -2988,19 +2894,7 @@ a.eem-settings-nav-item:focus {
    (status tabs, type/lifecycle badges, table footer, mobile-cards swap).
    ═════════════════════════════════════════════════════════════════════════ */
 
-/* Standalone page header — used when eem_render_page_open( wrap => false ).
-   Title left, "+ New Reservation" CTA right. Mockup line 36. */
-.eem-page-header--standalone {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	margin-bottom: 12px;
-	gap: 12px;
-	flex-wrap: wrap;
-	padding: 0;
-	border: none;
-	background: transparent;
-}
+/* C5.5: removed dead .eem-page-header--standalone — verified zero callers (only consumer was the wrap=false branch of templates/admin/_page_shell.php, which had no callers anywhere; that branch was removed in this same commit). */
 
 /* Bordered list card — wraps tabs / toolbar / table / mobile / footer.
    Mockup line 43: `.plugin-wrap`. */
@@ -3444,11 +3338,7 @@ a.eem-mob-res-name:focus {
 		padding: 8px 10px 32px;
 	}
 
-	.eem-page-header--standalone {
-		flex-direction: row;
-		align-items: center;
-		justify-content: space-between;
-	}
+	/* C5.5: removed dead mobile override for .eem-page-header--standalone (parent rule already deleted above). */
 
 	.eem-page-title {
 		font-size: 18px;
