@@ -31,6 +31,11 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-settings-page.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-reservations-list-repo.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-reservations-list-page.php';
 
+// Phase 3 — Orders list subsystem (C5 — replaces legacy
+// EEM_Admin::render_orders_page with a mockup-faithful page).
+require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-orders-list-repo.php';
+require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-orders-list-page.php';
+
 // Phase 3 admin template partials.
 require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_breadcrumb.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_page_shell.php';
