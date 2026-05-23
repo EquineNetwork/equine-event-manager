@@ -876,7 +876,13 @@ class EEM_Reservations_List_Page {
 		$dates        = EEM_Reservations_List_Repo::get_event_date_range_label( $id );
 		$badges       = EEM_Reservations_List_Repo::get_type_badges( $id );
 		$orders_count = EEM_Reservations_List_Repo::get_orders_count_for_reservation( $id );
-		$has_stalls   = in_array( 'stall', $badges, true );
+		// C5.G.4: stall-chart icon visibility now reads the canonical
+		// _en_stall_chart_enabled meta (via the repo helper) instead of
+		// the type-badge proxy "has stall capacity". A reservation can
+		// have stalls without a chart layout drawn — the icon links to
+		// the chart page, so the precise signal is whether a chart is
+		// actually enabled.
+		$has_stall_chart = EEM_Reservations_List_Repo::has_stall_chart_enabled( $id );
 		$status_id    = $this->derive_status_id( $post );
 		$status_label = $this->status_label_for( $status_id );
 		$is_trashed   = ( 'trashed' === $status_id );
@@ -888,7 +894,7 @@ class EEM_Reservations_List_Page {
 			<td><?php $this->render_type_badges( $badges ); ?></td>
 			<td><span class="eem-res-status eem-res-status--<?php echo esc_attr( $status_id ); ?>"><?php echo esc_html( $status_label ); ?></span></td>
 			<td><span class="eem-orders-count<?php echo $orders_count === 0 ? ' is-zero' : ''; ?>"><?php echo esc_html( number_format_i18n( $orders_count ) ); ?></span></td>
-			<td><?php $this->render_row_actions( $id, $has_stalls, $is_trashed ); ?></td>
+			<td><?php $this->render_row_actions( $id, $has_stall_chart, $is_trashed ); ?></td>
 		</tr>
 		<?php
 	}
@@ -931,10 +937,16 @@ class EEM_Reservations_List_Page {
 	 * dropdown-toggle delegated handler.
 	 *
 	 * @param int  $reservation_id
-	 * @param bool $has_stalls
+	 * @param bool $has_stall_chart  True when _en_stall_chart_enabled
+	 *                               meta is truthy. C5.G.4 replaced the
+	 *                               older $has_stalls argument (which
+	 *                               proxied "stall capacity > 0") with
+	 *                               this precise signal so the icon
+	 *                               only renders when a chart is
+	 *                               actually configured.
 	 * @return void
 	 */
-	private function render_row_actions( $reservation_id, $has_stalls, $is_trashed = false ) {
+	private function render_row_actions( $reservation_id, $has_stall_chart, $is_trashed = false ) {
 		$stall_chart_url = add_query_arg(
 			array(
 				'page'           => 'equine-event-manager-stall-chart',
@@ -953,7 +965,7 @@ class EEM_Reservations_List_Page {
 		$menu_id = 'eem-res-menu-' . $reservation_id;
 		?>
 		<div class="eem-actions-cell">
-			<?php if ( $has_stalls ) : ?>
+			<?php if ( $has_stall_chart ) : ?>
 				<a class="eem-action-icon-btn eem-action-icon-btn--stall-chart" href="<?php echo esc_url( $stall_chart_url ); ?>" title="<?php esc_attr_e( 'Stall Chart', 'equine-event-manager' ); ?>" aria-label="<?php esc_attr_e( 'Stall Chart', 'equine-event-manager' ); ?>">
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
 				</a>
@@ -1017,7 +1029,8 @@ class EEM_Reservations_List_Page {
 				$dates        = EEM_Reservations_List_Repo::get_event_date_range_label( $id );
 				$badges       = EEM_Reservations_List_Repo::get_type_badges( $id );
 				$orders_count = EEM_Reservations_List_Repo::get_orders_count_for_reservation( $id );
-				$has_stalls   = in_array( 'stall', $badges, true );
+				// C5.G.4: see render_table_row above — same signal.
+				$has_stall_chart = EEM_Reservations_List_Repo::has_stall_chart_enabled( $id );
 				$status_id    = $this->derive_status_id( $post );
 				$status_label = $this->status_label_for( $status_id );
 				$is_trashed   = ( 'trashed' === $status_id );
@@ -1042,7 +1055,7 @@ class EEM_Reservations_List_Page {
 							</span>
 						</div>
 						<div class="eem-mob-res-actions">
-							<?php $this->render_row_actions( $id, $has_stalls, $is_trashed ); ?>
+							<?php $this->render_row_actions( $id, $has_stall_chart, $is_trashed ); ?>
 						</div>
 					</div>
 				</div>
