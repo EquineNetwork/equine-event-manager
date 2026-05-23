@@ -458,7 +458,11 @@ class EEM_Orders_List_Page {
 	private function render_row_action_cell( array $order, $context = 'desktop' ) {
 		$order_key   = isset( $order['order_key'] )   ? (string) $order['order_key']   : '';
 		$status_slug = isset( $order['status_slug'] ) ? (string) $order['status_slug'] : '';
-		$can_collect = in_array( $status_slug, array( 'pending', 'invoice_sent' ), true );
+		// C5.G.6: per ORD-3 visible only when status is Unpaid or Invoice
+		// Sent. Legacy emits HYPHENATED 'invoice-sent' + 'unpaid' (default
+		// fallback) — earlier underscored arms were dead, producing zero
+		// Collect buttons on any real row. Defect 12.5 from C5.F audit.
+		$can_collect = in_array( $status_slug, array( 'unpaid', 'invoice-sent' ), true );
 		$can_refund  = ! in_array( $status_slug, array( 'refunded', 'cancelled' ), true );
 		$menu_id     = sprintf( 'eem-order-menu-%s-%s', 'mobile' === $context ? 'mob' : 'desk', $order_key );
 		$detail_url  = self::order_detail_url( $order_key );
@@ -669,14 +673,21 @@ class EEM_Orders_List_Page {
 	 * @return string
 	 */
 	private function status_slug_to_css_class( $status_slug ) {
+		// C5.G.6: legacy EEM_Orders_Repository::get_order_status_display()
+		// emits HYPHENATED slugs ('invoice-sent', 'partially-refunded',
+		// 'outstanding-show-bill'). C5.B shipped underscored case arms
+		// that silently fell through to the default 'unpaid' branch,
+		// painting Invoice Sent + Partially Refunded rows with the wrong
+		// (warning-yellow) badge variant — defect 10.2/10.3 from the
+		// C5.F audit. Hyphen arms added here for correctness.
 		switch ( (string) $status_slug ) {
-			case 'paid':               return 'paid';
-			case 'partially_refunded': return 'partial';
-			case 'invoice_sent':       return 'invoice';
-			case 'refunded':           return 'refunded';
-			case 'cancelled':          return 'cancelled';
-			case 'pending':
-			default:                   return 'unpaid';
+			case 'paid':                return 'paid';
+			case 'partially-refunded':  return 'partial';
+			case 'invoice-sent':        return 'invoice';
+			case 'refunded':            return 'refunded';
+			case 'cancelled':           return 'cancelled';
+			case 'unpaid':
+			default:                    return 'unpaid';
 		}
 	}
 

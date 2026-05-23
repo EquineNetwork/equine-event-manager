@@ -84,6 +84,12 @@ class EEM_Orders_List_Repo {
 	 * @return string  One of: paid, unpaid, refunded, cancelled.
 	 */
 	public static function map_status_slug_to_tab( $status_slug ) {
+		// C5.G.6: legacy emits HYPHENATED slugs (invoice-sent,
+		// partially-refunded), not underscored. The underscore arms
+		// here were dead — they happened to produce the right answer
+		// ('unpaid' via default fallback) but only by coincidence.
+		// Hyphen arms added for correctness + so the mapping doesn't
+		// silently drift if the default branch ever changes.
 		switch ( (string) $status_slug ) {
 			case 'paid':
 				return 'paid';
@@ -91,9 +97,9 @@ class EEM_Orders_List_Repo {
 				return 'refunded';
 			case 'cancelled':
 				return 'cancelled';
-			case 'pending':
-			case 'invoice_sent':
-			case 'partially_refunded':
+			case 'unpaid':
+			case 'invoice-sent':
+			case 'partially-refunded':
 			default:
 				return 'unpaid';
 		}
