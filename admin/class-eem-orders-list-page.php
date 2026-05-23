@@ -409,7 +409,7 @@ class EEM_Orders_List_Page {
 		?>
 		<tr data-order-key="<?php echo esc_attr( $order_key ); ?>" data-billing="<?php echo esc_attr( $billing_tab ); ?>" data-types="<?php echo esc_attr( $data_types ); ?>">
 			<td class="eem-col-cb"><input type="checkbox" class="eem-orders-row-cb" name="order_keys[]" value="<?php echo esc_attr( $order_key ); ?>" aria-label="<?php echo esc_attr( sprintf( __( 'Select order %s', 'equine-event-manager' ), $order_number ) ); ?>" /></td>
-			<td><span class="eem-order-num"><?php echo esc_html( $order_number ); ?></span></td>
+			<td><span class="eem-order-num"><?php echo esc_html( $this->format_order_number_display( $order_number ) ); ?></span></td>
 			<td><span class="eem-customer-name"><?php echo esc_html( $customer ); ?></span></td>
 			<td><span class="eem-event-name"><?php echo esc_html( $event_name ); ?></span></td>
 			<td>
@@ -546,7 +546,7 @@ class EEM_Orders_List_Page {
 				?>
 				<div class="eem-mobile-card" data-order-key="<?php echo esc_attr( $order_key ); ?>">
 					<div class="eem-mobile-card-top">
-						<span class="eem-mobile-card-id"><?php echo esc_html( $order_number ); ?></span>
+						<span class="eem-mobile-card-id"><?php echo esc_html( $this->format_order_number_display( $order_number ) ); ?></span>
 						<span class="eem-mobile-card-meta"><?php echo esc_html( $date_label ); ?></span>
 					</div>
 					<div class="eem-mobile-card-title"><?php echo esc_html( $customer ); ?></div>
@@ -690,6 +690,26 @@ class EEM_Orders_List_Page {
 	private function format_date_label( $mysql_datetime ) {
 		$ts = '' === $mysql_datetime ? 0 : strtotime( $mysql_datetime );
 		return $ts ? date_i18n( __( 'M j, Y', 'equine-event-manager' ), $ts ) : '';
+	}
+
+	/**
+	 * Render-side order number formatting: strip non-digit characters
+	 * from whatever the legacy repo's order_number field holds (e.g.
+	 * "C4F-001", "SEED-001", or a bare "0028") and emit as #%05d.
+	 * Matches ORD-4's mockup-spec "#NNNN" pattern visually, normalized
+	 * to 5-digit zero-padding (mockup line 99 shows #0028; one extra
+	 * leading zero accommodates orders past #9999 cleanly).
+	 *
+	 * Display-side only — does NOT modify the underlying field or
+	 * persisted value. Empty / no-digit inputs render as "#00000".
+	 *
+	 * @param string $order_number  Whatever the legacy repo stored.
+	 * @return string  "#NNNNN"
+	 */
+	private function format_order_number_display( $order_number ) {
+		$digits = preg_replace( '/\D/', '', (string) $order_number );
+		$n      = '' === $digits ? 0 : (int) $digits;
+		return sprintf( '#%05d', $n );
 	}
 
 	/**

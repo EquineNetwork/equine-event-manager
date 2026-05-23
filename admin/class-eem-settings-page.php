@@ -93,6 +93,7 @@ class EEM_Settings_Page {
 
 		eem_render_page_open( array(
 			'title'      => __( 'Settings', 'equine-event-manager' ),
+			'subtitle'   => __( 'Configure event source integrations, branding, communications, shortcodes, payments, and add-ons.', 'equine-event-manager' ),
 			'breadcrumb' => array(
 				array( 'label' => __( 'Settings', 'equine-event-manager' ) ),
 			),
