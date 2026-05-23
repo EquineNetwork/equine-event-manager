@@ -517,12 +517,21 @@ class EEM_Admin {
 		// C5.E; the legacy render_orders_page method + its private helpers
 		// stay until a separate cleanup chunk audits remaining callers and
 		// removes them (same staging as C3.D.4).
+		//
+		// IMPORTANT: $orders_list_page is shared between add_menu_page() and
+		// add_submenu_page() so WP's callback dedup (which compares object
+		// identity for [object, method] pairs) collapses both registrations
+		// against the same page hook into a single callback. Two separate
+		// `new EEM_Orders_List_Page()` calls would register as two distinct
+		// callbacks and render() would fire twice on every page load —
+		// caught the hard way at C5.F first browser verify.
+		$orders_list_page = new EEM_Orders_List_Page();
 		$this->orders_hook = add_menu_page(
 			__( 'Orders', 'equine-event-manager' ),
 			__( 'Event Manager', 'equine-event-manager' ),
 			'manage_options',
 			self::MENU_SLUG,
-			array( new EEM_Orders_List_Page(), 'render' ),
+			array( $orders_list_page, 'render' ),
 			'dashicons-tickets-alt',
 			20
 		);
@@ -533,7 +542,7 @@ class EEM_Admin {
 			__( 'Orders', 'equine-event-manager' ),
 			'manage_options',
 			self::MENU_SLUG,
-			array( new EEM_Orders_List_Page(), 'render' )
+			array( $orders_list_page, 'render' )
 		);
 
 		// C4 — Reservations submenu points at the new Phase 3 custom page

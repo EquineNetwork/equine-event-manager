@@ -111,12 +111,18 @@ class EEM_Orders_List_Page {
 		?>
 		<?php $this->render_action_notice(); ?>
 		<?php $this->render_bulk_refund_modal(); ?>
-		<div class="eem-list-card eem-orders-list" data-eem-orders-list>
-			<?php $this->render_toolbar( $billing, $types, $event, $search, $page['total'] ); ?>
-			<?php $this->render_desktop_table( $page['items'], $orderby, $order, $billing, $types, $event, $search ); ?>
-			<?php $this->render_mobile_cards( $page['items'] ); ?>
-			<?php $this->render_table_footer( $page, $billing, $types, $event, $search ); ?>
-		</div>
+		<?php /* C5.F: page-header lives inside .eem-page-wrap (wrap=true). The
+		         shell IS the bordered card, so we render the toolbar / table /
+		         mobile / footer directly into .eem-page-body — no inner
+		         .eem-list-card wrapper. The earlier C5.B render erroneously
+		         nested a second bordered card, which interfered with toolbar
+		         flex layout and pushed the header visually outside the card.
+		         data-eem-orders-list attribute moves to .eem-orders-toolbar
+		         (same JS hook target, different parent). */ ?>
+		<?php $this->render_toolbar( $billing, $types, $event, $search, $page['total'] ); ?>
+		<?php $this->render_desktop_table( $page['items'], $orderby, $order, $billing, $types, $event, $search ); ?>
+		<?php $this->render_mobile_cards( $page['items'] ); ?>
+		<?php $this->render_table_footer( $page, $billing, $types, $event, $search ); ?>
 		<?php
 
 		eem_render_page_close( array( 'wrap' => true ) );
@@ -185,7 +191,7 @@ class EEM_Orders_List_Page {
 			'group' => __( 'Group',  'equine-event-manager' ),
 		);
 		?>
-		<div class="eem-orders-toolbar">
+		<div class="eem-orders-toolbar" data-eem-orders-list>
 			<form class="eem-orders-toolbar-form" method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>" data-eem-orders-filter-form>
 				<input type="hidden" name="page" value="<?php echo esc_attr( self::MENU_SLUG ); ?>" />
 				<input type="hidden" name="billing" value="<?php echo esc_attr( $billing ); ?>" />

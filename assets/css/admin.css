@@ -1203,7 +1203,15 @@ a.eem-btn-tertiary {
 	gap: 1px;
 }
 
-.eem-filter-tab {
+/* `a.` chain wins specificity (0,2,0) against the global
+   .eem-page a { color: var(--eem-electric) } rule (0,1,1) — without
+   it, anchor-rendered filter tabs (Orders billing-status tabs since
+   C5.D) would all paint Electric Blue. Same pattern as
+   .eem-status-tab below. CLEANUP #12 tracks the long-term fix:
+   scope the global anchor rule to :where() so any class rule wins
+   naturally. */
+.eem-filter-tab,
+a.eem-filter-tab {
 	padding: 5px 12px;
 	border-radius: var(--eem-radius-sm);
 	font-size: 12.5px;
@@ -1214,9 +1222,11 @@ a.eem-btn-tertiary {
 	border: none;
 	background: transparent;
 	font-family: var(--eem-font-ui);
+	text-decoration: none;
 }
 
-.eem-filter-tab.active {
+.eem-filter-tab.active,
+a.eem-filter-tab.active {
 	background: var(--eem-surface);
 	color: var(--eem-text);
 	font-weight: 600;
@@ -1250,10 +1260,15 @@ a.eem-btn-tertiary {
 	opacity: 0.4;
 }
 
-.eem-type-chip--stall  { background: var(--eem-type-stall-bg);  color: var(--eem-type-stall-text);  border-color: var(--eem-type-stall-border); }
-.eem-type-chip--rv     { background: var(--eem-type-rv-bg);     color: var(--eem-type-rv-text);     border-color: var(--eem-type-rv-border); }
-.eem-type-chip--addon  { background: var(--eem-type-addon-bg);  color: var(--eem-type-addon-text);  border-color: var(--eem-type-addon-border); }
-.eem-type-chip--group  { background: var(--eem-type-group-bg);  color: var(--eem-type-group-text);  border-color: var(--eem-type-group-border); }
+/* `a.` chain wins specificity (0,2,0) against the global
+   .eem-page a { color: var(--eem-electric) } rule (0,1,1) — without
+   it, anchor-rendered type chips (Orders filter chips since C5.D)
+   would all paint Electric Blue and lose their per-variant tint.
+   Same pattern as .eem-filter-tab above. */
+.eem-type-chip--stall, a.eem-type-chip--stall  { background: var(--eem-type-stall-bg);  color: var(--eem-type-stall-text);  border-color: var(--eem-type-stall-border); text-decoration: none; }
+.eem-type-chip--rv,    a.eem-type-chip--rv     { background: var(--eem-type-rv-bg);     color: var(--eem-type-rv-text);     border-color: var(--eem-type-rv-border);    text-decoration: none; }
+.eem-type-chip--addon, a.eem-type-chip--addon  { background: var(--eem-type-addon-bg);  color: var(--eem-type-addon-text);  border-color: var(--eem-type-addon-border); text-decoration: none; }
+.eem-type-chip--group, a.eem-type-chip--group  { background: var(--eem-type-group-bg);  color: var(--eem-type-group-text);  border-color: var(--eem-type-group-border); text-decoration: none; }
 
 .eem-type-chip-dot {
 	width: 5px;
@@ -3655,8 +3670,11 @@ a.eem-mob-res-name:focus {
 	margin-left: auto;
 }
 
-/* Order number — bold navy, mockup line 99 */
-.eem-orders-list .eem-order-num {
+/* Order number — bold navy, mockup line 99.
+   Scope via body class because C5.F dropped the .eem-orders-list
+   wrapper div; the body.eem-shell-page--orders class is reliably
+   set per admin/class-equine-event-manager-admin.php line 127. */
+body.eem-shell-page--orders .eem-order-num {
 	font-weight: 700;
 	color: var(--eem-navy);
 	font-size: 13px;
@@ -3665,9 +3683,9 @@ a.eem-mob-res-name:focus {
 
 /* Customer + event cells — restrained typography per mockup
    lines 100–102 */
-.eem-orders-list .eem-customer-name { font-weight: 500; }
-.eem-orders-list .eem-event-name    { color: #50575e; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.eem-orders-list .eem-date-val      { color: var(--eem-text-muted); white-space: nowrap; font-size: 13px; }
+body.eem-shell-page--orders .eem-customer-name { font-weight: 500; }
+body.eem-shell-page--orders .eem-event-name    { color: #50575e; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body.eem-shell-page--orders .eem-date-val      { color: var(--eem-text-muted); white-space: nowrap; font-size: 13px; }
 
 /* Bulk-action bar sits INSIDE the .eem-orders-toolbar (mockup
    places it as the third toolbar row, not as a standalone
@@ -3680,10 +3698,11 @@ a.eem-mob-res-name:focus {
 	}
 	/* Bare orders search expands to fill the row at small viewports;
 	   the shared .eem-search-wrap min-width:150px / max-width:280px
-	   constraint is overridden ONLY inside the orders toolbar to
-	   honour the mockup's mobile breakpoint (line 178). Other pages
-	   reuse the wrapper unmodified. */
-	.eem-orders-list .eem-search-wrap {
+	   constraint is overridden ONLY on the orders page to honour
+	   the mockup's mobile breakpoint (line 178). Other pages reuse
+	   the wrapper unmodified. Scoped via body class (C5.F dropped
+	   the .eem-orders-list wrapper div). */
+	body.eem-shell-page--orders .eem-search-wrap {
 		max-width: 100%;
 		min-width: 0;
 		flex: 1;
