@@ -769,7 +769,12 @@ class EEM_Reservations_List_Page {
 
 	/**
 	 * Build the date-filter dropdown options — every month that has at
-	 * least one reservation falling within it (per nightly start/end).
+	 * least one reservation falling within it.
+	 *
+	 * C6.6 / RES-ARCH-1: dropdown source is the `_en_source_event_start_date`
+	 * cache (written by the save_post hook in EEM_Reservation_Source_Resolver
+	 * from the resolved source event), not the deprecated `_en_nightly_*_date`
+	 * meta keys.
 	 *
 	 * @return array<string, string>  yyyy-mm => "Month YYYY" label.
 	 */
@@ -779,7 +784,7 @@ class EEM_Reservations_List_Page {
 			"SELECT meta_value FROM {$wpdb->postmeta}
 			 WHERE meta_key = %s AND meta_value <> ''
 			 ORDER BY meta_value DESC",
-			'_en_nightly_start_date'
+			EEM_Reservation_Source_Resolver::SORT_CACHE_META_KEY
 		) );
 		$months = array();
 		foreach ( (array) $rows as $date_string ) {
@@ -875,7 +880,14 @@ class EEM_Reservations_List_Page {
 	private function render_table_row( $post, $active_tab = 'all' ) {
 		$id           = (int) $post->ID;
 		$edit_url     = get_edit_post_link( $id );
-		$dates        = EEM_Reservations_List_Repo::get_event_date_range_label( $id );
+		// C6.6 / RES-ARCH-1: title + dates come from the source event via
+		// the resolver, NOT from the reservation's own post_title or the
+		// deprecated _en_nightly_*_date / _en_weekend_*_date meta keys.
+		// Falls back to '' when the source is unreachable; the template
+		// substitutes a '—' placeholder below.
+		$event_fields = EEM_Reservation_Source_Resolver::resolve_event_fields( $id );
+		$event_title  = '' !== $event_fields['title'] ? $event_fields['title'] : $post->post_title;
+		$dates        = EEM_Reservation_Source_Resolver::get_date_range_label( $id );
 		$badges       = EEM_Reservations_List_Repo::get_type_badges( $id );
 		$orders_count = EEM_Reservations_List_Repo::get_orders_count_for_reservation( $id );
 		// C5.G.4: stall-chart icon visibility now reads the canonical
@@ -890,8 +902,8 @@ class EEM_Reservations_List_Page {
 		$is_trashed   = ( 'trashed' === $status_id );
 		?>
 		<tr data-reservation-id="<?php echo esc_attr( $id ); ?>">
-			<td class="eem-col-cb"><input type="checkbox" name="reservation_ids[]" value="<?php echo esc_attr( $id ); ?>" aria-label="<?php echo esc_attr( sprintf( __( 'Select %s', 'equine-event-manager' ), get_the_title( $post ) ) ); ?>" /></td>
-			<td><a class="eem-res-name" href="<?php echo esc_url( $edit_url ); ?>"><?php echo esc_html( get_the_title( $post ) ); ?></a></td>
+			<td class="eem-col-cb"><input type="checkbox" name="reservation_ids[]" value="<?php echo esc_attr( $id ); ?>" aria-label="<?php echo esc_attr( sprintf( __( 'Select %s', 'equine-event-manager' ), $event_title ) ); ?>" /></td>
+			<td><a class="eem-res-name" href="<?php echo esc_url( $edit_url ); ?>"><?php echo esc_html( $event_title ); ?></a></td>
 			<td><span class="eem-event-dates"><?php echo esc_html( $dates !== '' ? $dates : '—' ); ?></span></td>
 			<td><?php $this->render_type_badges( $badges ); ?></td>
 			<td><span class="eem-res-status eem-res-status--<?php echo esc_attr( $status_id ); ?>"><?php echo esc_html( $status_label ); ?></span></td>
@@ -908,11 +920,12 @@ class EEM_Reservations_List_Page {
 				// future per-reservation filter mode would require a new
 				// repo arg + tab — out of C5.G scope.
 				if ( $orders_count > 0 ) :
-					$event_label    = get_the_title( $post );
+					// C6.6 / RES-ARCH-1: filter target is the source-event title
+					// already resolved above, not the reservation's post_title.
 					$orders_link_url = add_query_arg(
 						array(
 							'page'  => EEM_Orders_List_Page::MENU_SLUG,
-							'event' => $event_label,
+							'event' => $event_title,
 						),
 						admin_url( 'admin.php' )
 					);
@@ -1053,7 +1066,10 @@ class EEM_Reservations_List_Page {
 			<?php foreach ( $items as $post ) :
 				$id           = (int) $post->ID;
 				$edit_url     = get_edit_post_link( $id );
-				$dates        = EEM_Reservations_List_Repo::get_event_date_range_label( $id );
+				// C6.6 / RES-ARCH-1: source-event resolver (see render_table_row above for the architectural note).
+				$event_fields = EEM_Reservation_Source_Resolver::resolve_event_fields( $id );
+				$event_title  = '' !== $event_fields['title'] ? $event_fields['title'] : $post->post_title;
+				$dates        = EEM_Reservation_Source_Resolver::get_date_range_label( $id );
 				$badges       = EEM_Reservations_List_Repo::get_type_badges( $id );
 				$orders_count = EEM_Reservations_List_Repo::get_orders_count_for_reservation( $id );
 				// C5.G.4: see render_table_row above — same signal.
@@ -1063,7 +1079,7 @@ class EEM_Reservations_List_Page {
 				$is_trashed   = ( 'trashed' === $status_id );
 				?>
 				<div class="eem-mobile-res-card">
-					<a class="eem-mob-res-name" href="<?php echo esc_url( $edit_url ); ?>"><?php echo esc_html( get_the_title( $post ) ); ?></a>
+					<a class="eem-mob-res-name" href="<?php echo esc_url( $edit_url ); ?>"><?php echo esc_html( $event_title ); ?></a>
 					<div class="eem-mob-res-dates"><?php echo esc_html( $dates !== '' ? $dates : '—' ); ?></div>
 					<div class="eem-mob-res-bottom">
 						<div class="eem-mob-res-badges">
@@ -1079,11 +1095,11 @@ class EEM_Reservations_List_Page {
 								number_format_i18n( $orders_count )
 							);
 							if ( $orders_count > 0 ) :
-								$mob_event_label    = get_the_title( $post );
+								// C6.6 / RES-ARCH-1: source-event title resolved above.
 								$mob_orders_link_url = add_query_arg(
 									array(
 										'page'  => EEM_Orders_List_Page::MENU_SLUG,
-										'event' => $mob_event_label,
+										'event' => $event_title,
 									),
 									admin_url( 'admin.php' )
 								);

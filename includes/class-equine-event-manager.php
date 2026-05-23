@@ -30,6 +30,7 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-settings-page.php';
 
 // Phase 3 — Reservations list subsystem (C4 — replaces WP-native
 // edit.php?post_type=en_reservation with a custom mockup-faithful page).
+require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-reservation-source-resolver.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-reservations-list-repo.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-reservations-list-page.php';
 
@@ -113,6 +114,9 @@ class EEM_Plugin {
 		add_action( 'add_meta_boxes_en_reservation', array( $this->reservation_editor, 'register_meta_boxes' ) );
 		add_action( 'save_post_en_reservation', array( $this->reservations_cpt, 'save_meta' ), 10, 2 );
 		add_action( 'save_post_en_reservation', array( $this->reservations_cpt, 'sync_shortcode_to_linked_event_after_save' ), 20, 2 );
+		// C6.6 / RES-ARCH-1: write the source-event start_date sort cache after
+		// save_meta + sync_shortcode have updated any linked-event meta keys.
+		add_action( 'save_post_en_reservation', array( 'EEM_Reservation_Source_Resolver', 'cache_source_event_start_date' ), 30, 2 );
 		add_action( 'trashed_post', array( $this->reservations_cpt, 'clear_shortcode_from_linked_event' ) );
 		add_action( 'before_delete_post', array( $this->reservations_cpt, 'clear_shortcode_from_linked_event' ) );
 		add_filter( 'admin_body_class', array( $this->reservation_editor, 'filter_editor_shell_body_class' ) );

@@ -341,11 +341,12 @@ A reservation post in this plugin represents a **setup configuration** (stall ty
 - Single source of truth simplifies sync logic (one direction: source → reservation cache, never reservation → source).
 - Aligns with the existing "three event sources" pluggability that already exists for choosing where events come from (per the README's in-scope-features note); extending that authority to identity fields is the consistent move.
 
-**Migration cost (current non-conformance — see CLEANUP #22):**
-- `EEM_Reservations_List_Repo::get_event_date_range_label()` currently reads `_en_nightly_start_date` / `_en_nightly_end_date` / `_en_weekend_start_date` / `_en_weekend_end_date` from reservation post_meta. These should become resolver calls.
-- `EEM_Reservations_List_Page::render_table_row()` (and `render_mobile_cards()`) currently call `get_the_title( $post )`. Should call the resolver instead.
-- The four date meta keys + `post_title` may continue to exist as a derived cache (faster reads, no resolver round-trip on every list-page render) — but with a clear cache-invalidation discipline: written ONLY by a sync handler that fires on source-event change, never by user input on the reservation editor.
-- Migration target chunk: **must precede C7** (Edit Reservation editor port), because C7 is where the user-facing impact lands. Likely lives in C6.5 or as a dedicated "C6.6 source-event resolver" chunk between C6 (Order Detail) and C7.
+**Canonical resolver (C6.6, 2026-05-23 — formalises RES-ARCH-1 in code):**
+- `EEM_Reservation_Source_Resolver::resolve_event_fields( int $reservation_id ): array{title,start_date,end_date,venue}` is the **only** approved entry point for reading reservation title or event dates for display. Convenience accessors: `get_title( int )`, `get_date_range_label( int )`.
+- The four pre-C6.6 meta keys (`_en_nightly_start_date` / `_en_nightly_end_date` / `_en_weekend_start_date` / `_en_weekend_end_date`) are deprecated. Direct reads of them are forbidden in new code.
+- Cache strategy: **hybrid**. Display reads go live through the resolver (Native/TEC paths are object-cached post_meta reads, Feed path is transient-cached). Sort/filter SQL uses a single narrow cache key `_en_source_event_start_date` (constant `EEM_Reservation_Source_Resolver::SORT_CACHE_META_KEY`) written by the `save_post_en_reservation` priority 30 hook.
+- Source-event-side sync hook (push from source change → linked reservations' caches) is deferred to CLEANUP #24. Until that lands, source-event edits don't refresh linked reservations' sort caches until the reservation itself is next saved. Acceptable for in-development.
+- **Migration was C6.6** (closed 2026-05-23, tag `c6.6-complete`, CLEANUP entry #22 marked resolved).
 
 **Out-of-scope clarifications:**
 - Setup configuration meta (`_en_stall_quantity_available`, `_en_stall_chart_enabled`, `_en_stall_rows`, fees, add-ons, blocked stall numbers, etc.) **stays** on the reservation post — that's the reservation's actual owned data.

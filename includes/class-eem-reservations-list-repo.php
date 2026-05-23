@@ -99,8 +99,11 @@ class EEM_Reservations_List_Repo {
 	 *
 	 * Sort modes:
 	 *   - 'title'       → WP-native ORDER BY post_title
-	 *   - 'event_dates' → ORDER BY _en_nightly_start_date meta (string
-	 *                     YYYY-MM-DD sorts correctly lexicographically)
+	 *   - 'event_dates' → ORDER BY EEM_Reservation_Source_Resolver::SORT_CACHE_META_KEY
+	 *                     (the `_en_source_event_start_date` cache, written
+	 *                     by the save_post_en_reservation hook on every
+	 *                     reservation save — C6.6 / RES-ARCH-1 migration).
+	 *                     YYYY-MM-DD string sorts correctly lexicographically.
 	 *   - 'orders'      → fetched in two passes: first WP_Query for
 	 *                     candidate posts, then PHP-sorts by computed
 	 *                     orders count. Acceptable up to a few hundred
@@ -140,8 +143,11 @@ class EEM_Reservations_List_Repo {
 		if ( '' !== $args['date_filter'] && preg_match( '/^(\d{4})-(\d{2})$/', $args['date_filter'], $m ) ) {
 			$month_start = sprintf( '%s-%s-01', $m[1], $m[2] );
 			$month_end   = gmdate( 'Y-m-t', strtotime( $month_start ) );
+			// C6.6 / RES-ARCH-1: date filter targets the same source-event
+			// start_date cache as the orderby — single key, single writer
+			// (the save_post hook in EEM_Reservation_Source_Resolver).
 			$meta_query[] = array(
-				'key'     => '_en_nightly_start_date',
+				'key'     => EEM_Reservation_Source_Resolver::SORT_CACHE_META_KEY,
 				'value'   => array( $month_start, $month_end ),
 				'compare' => 'BETWEEN',
 				'type'    => 'DATE',
@@ -161,7 +167,9 @@ class EEM_Reservations_List_Repo {
 
 		if ( 'event_dates' === $orderby ) {
 			$query_args['orderby']  = 'meta_value';
-			$query_args['meta_key'] = '_en_nightly_start_date';
+			// C6.6 / RES-ARCH-1: sort cache key replaces the four deprecated
+			// nightly/weekend date keys.
+			$query_args['meta_key'] = EEM_Reservation_Source_Resolver::SORT_CACHE_META_KEY;
 			$query_args['order']    = $order;
 		} elseif ( 'orders' === $orderby ) {
 			// PHP-side sort path: pull all matching posts (capped at 500
@@ -306,46 +314,25 @@ class EEM_Reservations_List_Repo {
 	}
 
 	/**
-	 * Display label for a reservation's event date range. Pulls the
-	 * earliest start + latest end across whichever stay-type fields
-	 * are populated (stall + rv ranges sit in separate meta keys).
+	 * Display label for a reservation's event date range.
+	 *
+	 * @deprecated 2.2.0 C6.6 / RES-ARCH-1 migration — date display now reads
+	 *                   from the source event via the resolver instead of
+	 *                   the deprecated `_en_nightly_*_date` / `_en_weekend_*_date`
+	 *                   meta keys on the reservation. This method survives
+	 *                   only as a thin proxy for any callers the C6.6 audit
+	 *                   missed; new code MUST call
+	 *                   {@see EEM_Reservation_Source_Resolver::get_date_range_label()}
+	 *                   directly.
+	 *
+	 *                   **C13 removal target:** delete this method outright
+	 *                   once the C13 wholesale polish pass re-audits and
+	 *                   confirms no remaining direct callers.
 	 *
 	 * @param int $reservation_id
 	 * @return string  Formatted as "May 8, 2026 – May 10, 2026", or '' when no dates.
 	 */
 	public static function get_event_date_range_label( $reservation_id ) {
-		$id = absint( $reservation_id );
-		if ( $id <= 0 ) {
-			return '';
-		}
-
-		$candidate_starts = array(
-			get_post_meta( $id, '_en_nightly_start_date', true ),
-			get_post_meta( $id, '_en_weekend_start_date', true ),
-		);
-		$candidate_ends = array(
-			get_post_meta( $id, '_en_nightly_end_date', true ),
-			get_post_meta( $id, '_en_weekend_end_date', true ),
-		);
-
-		$starts = array_filter( $candidate_starts, 'strlen' );
-		$ends   = array_filter( $candidate_ends,   'strlen' );
-
-		if ( empty( $starts ) || empty( $ends ) ) {
-			return '';
-		}
-
-		sort( $starts );
-		rsort( $ends );
-
-		$start_ts = strtotime( $starts[0] );
-		$end_ts   = strtotime( $ends[0] );
-
-		if ( ! $start_ts || ! $end_ts ) {
-			return '';
-		}
-
-		$fmt = 'M j, Y';
-		return sprintf( '%s – %s', date_i18n( $fmt, $start_ts ), date_i18n( $fmt, $end_ts ) );
+		return EEM_Reservation_Source_Resolver::get_date_range_label( (int) $reservation_id );
 	}
 }

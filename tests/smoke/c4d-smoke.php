@@ -29,6 +29,31 @@ function ok($l,$c,&$p,&$f,&$lg,$d=''){if($c){$p++;$lg[]="  ✓ {$l}";}else{$f++;
 
 echo "\n=== C4.D SMOKE ===\n";
 
+// C6.6 / RES-ARCH-1 backfill — the pre-C6.6 seed reservations in this test
+// DB (loaded by the legacy /tmp/c4-seed.php on prior sessions) wrote
+// `_en_nightly_start_date` for the orderby=event_dates SQL key. Post-C6.6
+// the orderby targets `_en_source_event_start_date` (the resolver's sort
+// cache). For test fixtures that pre-date the migration, copy the legacy
+// value across so the sort/filter assertions below have rows to operate
+// on. Production has no `_en_nightly_*` writers per the C6.6 audit; this
+// backfill is a smoke-test concern only.
+$legacy_seeded = get_posts( array(
+	'post_type'   => 'en_reservation',
+	'post_status' => array( 'publish', 'draft', 'trash' ),
+	'numberposts' => -1,
+	'fields'      => 'ids',
+	'meta_query'  => array(
+		array( 'key' => '_en_nightly_start_date', 'compare' => 'EXISTS' ),
+		array( 'key' => EEM_Reservation_Source_Resolver::SORT_CACHE_META_KEY, 'compare' => 'NOT EXISTS' ),
+	),
+) );
+foreach ( $legacy_seeded as $legacy_id ) {
+	$legacy_start = (string) get_post_meta( $legacy_id, '_en_nightly_start_date', true );
+	if ( '' !== $legacy_start ) {
+		update_post_meta( $legacy_id, EEM_Reservation_Source_Resolver::SORT_CACHE_META_KEY, $legacy_start );
+	}
+}
+
 wp_set_current_user( 1 );
 $_GET = array( 'page' => EEM_Reservations_List_Page::MENU_SLUG );
 
