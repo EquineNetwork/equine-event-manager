@@ -1,11 +1,27 @@
 <?php
-/** C4.A smoke — Repo + page controller scaffold + class loading. */
+/** C4.A smoke — Repo + page controller scaffold + class loading.
+ *
+ * C6.6 / RES-ARCH-1 migration (2026-05-23): the original C4.A smoke seeded
+ * `_en_nightly_start_date` / `_en_nightly_end_date` directly on each test
+ * reservation and asserted that `EEM_Reservations_List_Repo::get_event_date_range_label`
+ * returned a label built from those keys. Post-migration:
+ *   - The date label comes from the source event via
+ *     EEM_Reservation_Source_Resolver (which delegates to
+ *     EEM_Events::get_normalized_reservation_event_data).
+ *   - The sort/filter SQL targets the `_en_source_event_start_date` cache
+ *     written by save_post_en_reservation hook.
+ * Fixture rewrites below: (a) the date-label test now seeds a native
+ * source event + links the reservation, exercising the resolver
+ * end-to-end; (b) the orderby=event_dates sort test seeds the cache key
+ * directly since sort behavior is independent of source.
+ */
 if ( ! function_exists( 'get_option' ) ) { echo "FAIL: WP not loaded\n"; exit( 1 ); }
 $pass=0;$fail=0;$log=array();
 function ok($l,$c,&$p,&$f,&$lg,$d=''){if($c){$p++;$lg[]="  ✓ {$l}";}else{$f++;$lg[]="  ✗ {$l}".($d?" — {$d}":'');}}
 
 ok( 'EEM_Reservations_List_Repo exists', class_exists( 'EEM_Reservations_List_Repo' ), $pass, $fail, $log );
 ok( 'EEM_Reservations_List_Page exists', class_exists( 'EEM_Reservations_List_Page' ), $pass, $fail, $log );
+ok( 'EEM_Reservation_Source_Resolver exists (C6.6)', class_exists( 'EEM_Reservation_Source_Resolver' ), $pass, $fail, $log );
 $tabs = EEM_Reservations_List_Repo::status_tabs();
 ok( 'status_tabs returns 4 entries', count( $tabs ) === 4, $pass, $fail, $log );
 foreach ( array( 'all', 'publish', 'draft', 'trash' ) as $tab ) {
@@ -23,22 +39,52 @@ ok( 'get_paginated returns total_pages int', isset( $page['total_pages'] ),     
 ok( 'get_paginated returns page int = 1',    isset( $page['page'] ) && $page['page'] === 1,         $pass, $fail, $log );
 ok( 'get_paginated returns per_page = 5',    isset( $page['per_page'] ) && $page['per_page'] === 5, $pass, $fail, $log );
 
+// C6.6 / RES-ARCH-1: build a native source event with start/end dates, then
+// link a reservation to it. Resolver must return the SOURCE event's title +
+// dates, not the reservation's own post_title or any reservation-side meta.
+$event_id = wp_insert_post( array( 'post_type' => 'en_event', 'post_status' => 'publish', 'post_title' => 'C45A SOURCE EVENT' ) );
+ok( 'created native source event', $event_id > 0, $pass, $fail, $log );
+update_post_meta( $event_id, '_equine_event_manager_event_start_date', '2026-05-08' );
+update_post_meta( $event_id, '_equine_event_manager_event_end_date',   '2026-05-10' );
+
 $res_id = wp_insert_post( array( 'post_type' => 'en_reservation', 'post_status' => 'publish', 'post_title' => 'C45A SMOKE' ) );
 ok( 'created test reservation', $res_id > 0, $pass, $fail, $log );
 update_post_meta( $res_id, '_en_stall_quantity_available', 10 );
 update_post_meta( $res_id, '_en_rv_quantity_available', 5 );
-update_post_meta( $res_id, '_en_nightly_start_date', '2026-05-08' );
-update_post_meta( $res_id, '_en_nightly_end_date', '2026-05-10' );
+// C6.6 — RES-ARCH-1 wiring: tell the resolver to dispatch through the
+// native CPT, and point it at the source event we just created.
+update_post_meta( $res_id, '_en_event_source', 'native' );
+update_post_meta( $res_id, '_en_event_id', $event_id );
+// The save_post hook would normally populate this on real reservation save,
+// but wp_insert_post above ran save_post BEFORE the _en_event_id meta was
+// set, so trigger the cache write explicitly to mirror the post-save state.
+EEM_Reservation_Source_Resolver::cache_source_event_start_date( $res_id, get_post( $res_id ) );
+
 $badges = EEM_Reservations_List_Repo::get_type_badges( $res_id );
 ok( 'type badges include stall', in_array( 'stall', $badges, true ), $pass, $fail, $log );
 ok( 'type badges include rv',    in_array( 'rv',    $badges, true ), $pass, $fail, $log );
 ok( 'type badges exclude addon', ! in_array( 'addon', $badges, true ), $pass, $fail, $log );
 ok( 'type badges exclude group', ! in_array( 'group', $badges, true ), $pass, $fail, $log );
+
+// C6.6 / RES-ARCH-1: resolver returns source-event fields (title + dates).
+$resolved = EEM_Reservation_Source_Resolver::resolve_event_fields( $res_id );
+ok( 'resolver title = source event title (not reservation post_title)',  'C45A SOURCE EVENT' === $resolved['title'],      $pass, $fail, $log, "got '{$resolved['title']}'" );
+ok( 'resolver start_date = source event start_date',                     '2026-05-08'         === $resolved['start_date'], $pass, $fail, $log, "got '{$resolved['start_date']}'" );
+ok( 'resolver end_date   = source event end_date',                       '2026-05-10'         === $resolved['end_date'],   $pass, $fail, $log, "got '{$resolved['end_date']}'" );
+ok( 'get_title convenience accessor matches',                            'C45A SOURCE EVENT' === EEM_Reservation_Source_Resolver::get_title( $res_id ),                $pass, $fail, $log );
+
+// Sort cache: save-post hook wrote it from resolver output.
+$sort_cache = get_post_meta( $res_id, EEM_Reservation_Source_Resolver::SORT_CACHE_META_KEY, true );
+ok( 'sort cache _en_source_event_start_date populated', '2026-05-08' === (string) $sort_cache, $pass, $fail, $log, "got '{$sort_cache}'" );
+
+// Date-range label: proxied through the resolver — pulls source-event start/end.
 $label = EEM_Reservations_List_Repo::get_event_date_range_label( $res_id );
-ok( 'event date range label has en-dash', str_contains( $label, '–' ), $pass, $fail, $log );
+ok( 'event date range label has en-dash', str_contains( $label, '–' ), $pass, $fail, $log, "got '{$label}'" );
+
 $orders_count = EEM_Reservations_List_Repo::get_orders_count_for_reservation( $res_id );
 ok( 'orders count is 0 for new reservation', $orders_count === 0, $pass, $fail, $log );
 wp_delete_post( $res_id, true );
+wp_delete_post( $event_id, true );
 
 wp_set_current_user( 1 );
 $_GET['page'] = EEM_Reservations_List_Page::MENU_SLUG;
@@ -70,14 +116,15 @@ try {
 // C5.G.4 — conditional stall-chart icon. Verify both paths render correctly:
 // (a) reservation WITH _en_stall_chart_enabled meta → icon present
 // (b) reservation WITHOUT the meta → icon absent (meatballs still present)
+// C6.6 — sort-cache seed: orderby=event_dates targets the new
+// _en_source_event_start_date cache key. Seed it directly here since the
+// sort behavior under test doesn't depend on which source produced the
+// value (covered by the resolver assertions above).
 $with_chart = wp_insert_post( array( 'post_type' => 'en_reservation', 'post_status' => 'publish', 'post_title' => 'C5G4 WITH chart' ) );
 update_post_meta( $with_chart, '_en_stall_chart_enabled', 1 );
-// Set event_dates meta so the test reservation appears in the default
-// event_dates-sorted render output (without it, the row sorts last
-// outside the per_page window).
-update_post_meta( $with_chart, '_en_nightly_start_date', '2030-01-01' );
+update_post_meta( $with_chart, EEM_Reservation_Source_Resolver::SORT_CACHE_META_KEY, '2030-01-01' );
 $no_chart   = wp_insert_post( array( 'post_type' => 'en_reservation', 'post_status' => 'publish', 'post_title' => 'C5G4 NO chart' ) );
-update_post_meta( $no_chart, '_en_nightly_start_date', '2030-01-02' );
+update_post_meta( $no_chart, EEM_Reservation_Source_Resolver::SORT_CACHE_META_KEY, '2030-01-02' );
 ok( 'has_stall_chart_enabled true when meta set',     true  === EEM_Reservations_List_Repo::has_stall_chart_enabled( $with_chart ), $pass, $fail, $log );
 ok( 'has_stall_chart_enabled false when meta unset',  false === EEM_Reservations_List_Repo::has_stall_chart_enabled( $no_chart ),   $pass, $fail, $log );
 $_GET = array( 'page' => EEM_Reservations_List_Page::MENU_SLUG, 'orderby' => 'event_dates', 'order' => 'desc' );

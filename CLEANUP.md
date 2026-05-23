@@ -30,19 +30,29 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
   4. Audit `README.md` for any placeholder URLs and update them too.
 - **Status:** placeholders shipped intentionally; awaiting external-release decision.
 
-### 22. RES-ARCH-1 non-conformance — reservation title + dates read from post, not source event
-- **What:** Per decisions.md RES-ARCH-1 (added 2026-05-23), the reservation's user-visible title and event dates are read-only mirrors of the source event (Native / TEC / External Feed). Current code violates this: `EEM_Reservations_List_Page::render_table_row()` + `render_mobile_cards()` call `get_the_title( $post )` (reads `wp_posts.post_title` on the reservation), and `EEM_Reservations_List_Repo::get_event_date_range_label()` reads `_en_nightly_start_date` / `_en_nightly_end_date` / `_en_weekend_start_date` / `_en_weekend_end_date` from reservation post_meta. None of the six call sites resolves to a source event.
-- **Why deferred:** The fix requires a new source-event resolver (single function returning `[ title, start_date, end_date ]` from the active source) plus refactor of every call site that reads title/dates from the reservation. Substantial — definitely a discrete chunk. Plus an in-flight cache-invalidation decision: do title/dates become resolver-only (no cache, slower list-page renders) or do they stay in post_meta as a derived cache written by a source-change sync handler? That trade-off needs discussion, not improvisation.
-- **Added in:** C5.G.13 (defect discovered during the C5.G.10 RES-ARCH-1 verification audit)
-- **Migration plan:**
-  1. Build `EEM_Reservation_Source_Resolver::resolve_event_fields( $reservation_id )` returning `[ 'title' => string, 'start_date' => string, 'end_date' => string, 'venue' => string ]` from the active source (dispatches to Native CPT / TEC API / External Feed per the Settings event-source mode).
-  2. Update `EEM_Reservations_List_Repo::get_event_date_range_label()` to call the resolver instead of reading post_meta directly.
-  3. Update `EEM_Reservations_List_Page::render_table_row()` + `render_mobile_cards()` to call the resolver for the title instead of `get_the_title()`.
-  4. Decide cache-invalidation discipline (resolver-only vs. cached-meta-with-sync-handler). If cached: write a `EEM_Reservation_Source_Sync::on_source_change( $source_event_id )` action that pushes title + dates to the linked reservation's post_meta + post_title.
-  5. C7 Edit Reservation editor renders title + dates as read-only labels with "Linked to: {source event}" hint instead of input fields.
-- **Sequence target:** **Between C6 and C7** — must precede C7 because C7 is where the user-facing UI lands (read-only labels instead of input fields). Candidate chunk name "C6.6 source-event resolver" (slotted AFTER C6 and AFTER the C6.5 professionalization sprint per entry #17, BEFORE the C7 editor port). Updated sequence as of C6.5.A: **C6.5 → C6 → C6.6 → C7** (C6.5 promoted ahead of C6, see entry #17).
-- **Unblocks deletion:** the four nightly/weekend date meta keys MAY survive as a derived cache (per the migration-plan step 4 decision) — if they do, they retain a single writer (the sync handler) instead of the current admin-input writer. If they don't, the four meta keys + the date-range-label helper become resolver-call-only.
-- **Status:** non-conforming code identified + documented; awaiting the C6.6 resolver chunk
+### 22. ~~RES-ARCH-1 non-conformance — reservation title + dates read from post, not source event~~ ✅ Resolved in C6.6
+- **What was wrong:** Per decisions.md RES-ARCH-1, reservation's user-visible title and event dates are read-only mirrors of the source event (Native / TEC / External Feed). Pre-C6.6 code violated this: `EEM_Reservations_List_Page::render_table_row()` + `render_mobile_cards()` called `get_the_title( $post )` (reservation post_title), `EEM_Reservations_List_Repo::get_event_date_range_label()` read `_en_nightly_*_date` / `_en_weekend_*_date` from reservation post_meta, and `get_date_filter_options()` queried the same meta key.
+- **How it was resolved (C6.6, 2026-05-23):**
+  1. New `EEM_Reservation_Source_Resolver` class at `includes/class-eem-reservation-source-resolver.php` — thin façade over the existing `EEM_Events::get_normalized_reservation_event_data()` that returns just the RES-ARCH-1 trio (title, start_date, end_date, venue) + convenience accessors.
+  2. Migrated 4 call sites on the Reservations list (render_table_row title + dates + orders-count link target; render_mobile_cards same; get_date_filter_options dropdown query; get_event_date_range_label proxied to resolver + @deprecated for C13 removal).
+  3. Hybrid cache strategy: pure resolver for display reads, single narrow cache key `_en_source_event_start_date` (constant `EEM_Reservation_Source_Resolver::SORT_CACHE_META_KEY`) for the `orderby=event_dates` SQL path + the date_filter month range. Written by `save_post_en_reservation` priority 30 hook.
+  4. Smoke updates: c4a now seeds a native source event + linked reservation and asserts the resolver returns source-event fields; c4d carries a self-healing backfill for any legacy pre-C6.6 seed reservations.
+- **Migration impact on production data:** None. The four deprecated keys (`_en_nightly_*_date`, `_en_weekend_*_date`) had zero production writers — they were write-only-by-test (confirmed by the C6.6 audit grep). The `get_event_date_range_label` proxy means existing callers we may have missed still work.
+- **Known limitation tracked in CLEANUP #24 below:** the sort cache is reservation-side-written only. Source-event changes don't push to linked reservations. Acceptable for in-development deployments; #24 must land before production where source events are edited frequently.
+- **Closed:** C6.6 (2026-05-23). Tag: `c6.6-complete`.
+
+### 24. Source-event → reservation sync handler (RES-ARCH-1 follow-on)
+- **What:** The C6.6 resolver + sort cache work writes the cache from the reservation side only. If a source event's start_date changes (Native CPT save / TEC API edit / Feed refresh) AFTER a reservation is linked, the reservation's `_en_source_event_start_date` cache stays stale until the reservation itself is next saved. Display reads through the resolver are always correct (live dispatch), but the sort/filter SQL uses the cache.
+- **Why deferred:** Source events in the typical deployment shape are set up once per season and rarely edited. The reservation-side cache refresh on every reservation save handles the common case. The other-direction sync handler is meaningful overhead (3 source-type hooks: `save_post_en_event`, `save_post_tribe_events`, post-feed-refresh transient bust) for a low-probability staleness window. Defer until there's a production deployment where source events are edited frequently.
+- **Scope when picked up:**
+  1. `save_post_en_event` hook → find all `en_reservation` posts with `_en_event_id = $event_id` AND `_en_event_source = 'native'`, call `EEM_Reservation_Source_Resolver::cache_source_event_start_date()` on each.
+  2. Same pattern for `save_post_tribe_events` + `_en_event_source = 'tec'`.
+  3. For feed: harder — no save hook on external feeds; would need a wp-cron job that walks feed-sourced reservations + refreshes caches when their feed transients expire.
+  4. Add coverage to c4d-smoke that edits a source event and asserts linked reservations' cache key updates.
+- **Added in:** C6.6 (resolver chunk closure).
+- **Sequence:** before any production deployment where source events are edited frequently. Probably runs alongside or after C13 polish.
+- **Unblocks:** removes the stale-cache failure mode for the sort/filter SQL.
+- **Status:** known limitation documented; safe to defer for in-development use.
 
 ### 21. Searchable Event-filter dropdown (Choices.js) — UX scaling, not polish
 - **What:** Orders + Reservations both use a native `<select>` for the Event filter. Becomes unwieldy past ~50 events (long scroll, no typeahead, no in-place filtering). Replace with Choices.js — adds searchable typeahead + better keyboard navigation. Apply to BOTH list pages for parity. Style the Choices.js shell to match EEM design tokens: navy borders, Electric Blue focus ring, proper border-radius matching `.eem-toolbar-select`. Audit Reservations during this chunk for similar issues with the Date filter dropdown + any future filters (Type, etc.) that might need the same treatment.
