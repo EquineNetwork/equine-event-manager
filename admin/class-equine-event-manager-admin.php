@@ -5130,6 +5130,28 @@ class EEM_Admin {
 		// Reload to capture the recomputed payment_status across components.
 		$updated_order = $this->orders_repository->get_order( $order_key );
 
+		// C6.C prep — activity-log write moved into the kernel so both
+		// single-order (C6.B) and bulk (C6.C) callers get telemetry for
+		// free. Pre-C6.C this lived in handle_ajax_refund_single only.
+		if ( class_exists( 'EEM_Activity_Log' ) ) {
+			$current_user = wp_get_current_user();
+			EEM_Activity_Log::write(
+				'order.refund',
+				array(
+					'order_key'        => $order_key,
+					'amount'           => $requested_amount,
+					'reason'           => $reason,
+					'components'       => $refunded_components,
+					'new_status_slug'  => isset( $updated_order['status_slug'] ) ? (string) $updated_order['status_slug'] : 'partially-refunded',
+				),
+				array(
+					'actor_type'  => 'user',
+					'actor_id'    => (int) get_current_user_id(),
+					'actor_label' => $current_user ? (string) $current_user->display_name : '',
+				)
+			);
+		}
+
 		return array(
 			'refunded_amount'  => $requested_amount,
 			'components'       => $refunded_components,
@@ -5137,6 +5159,31 @@ class EEM_Admin {
 			'new_status_label' => isset( $updated_order['status_label'] ) ? (string) $updated_order['status_label'] : __( 'Partially Refunded', 'equine-event-manager' ),
 			'reason'           => $reason,
 		);
+	}
+
+	/**
+	 * Get the remaining refundable amount for an order across all its
+	 * components (C6.C prep helper). Wraps the private per-component
+	 * helper so external callers — the C6.C bulk-refund step endpoint
+	 * primarily — can ask "what should I refund for this order?" without
+	 * duplicating the math.
+	 *
+	 * @param string $order_key Order key.
+	 * @return float Sum of remaining refundable across all components, or 0.0 when order missing / already fully refunded.
+	 */
+	public function get_order_remaining_refundable( $order_key ) {
+		$order = $this->orders_repository->get_order( $order_key );
+
+		if ( ! is_array( $order ) || empty( $order['components'] ) ) {
+			return 0.0;
+		}
+
+		$total = 0.0;
+		foreach ( (array) $order['components'] as $component ) {
+			$total += $this->get_component_remaining_refundable_amount( $component );
+		}
+
+		return (float) $total;
 	}
 
 	/**
@@ -5185,28 +5232,9 @@ class EEM_Admin {
 			), 400 );
 		}
 
-		// Write activity-log entry (manual write here; C6.D's auto-fire
-		// hooks will cover the systematic refund-event capture, but this
-		// chunk's refund flow surfaces the entry from the AJAX path so
-		// the log reflects the action immediately).
-		if ( class_exists( 'EEM_Activity_Log' ) ) {
-			$current_user = wp_get_current_user();
-			EEM_Activity_Log::write(
-				'order.refund',
-				array(
-					'order_key'        => $order_key,
-					'amount'           => $result['refunded_amount'],
-					'reason'           => $reason,
-					'components'       => $result['components'],
-					'new_status_slug'  => $result['new_status_slug'],
-				),
-				array(
-					'actor_type'  => 'user',
-					'actor_id'    => (int) get_current_user_id(),
-					'actor_label' => $current_user ? (string) $current_user->display_name : '',
-				)
-			);
-		}
+		// C6.C: activity-log write moved into process_amount_refund kernel so
+		// both single (this) and bulk (handle_ajax_bulk_refund_step) callers
+		// get telemetry without duplicating the write.
 
 		// Build in-place fragments.
 		$reloaded = $this->orders_repository->get_order( $order_key );
@@ -5260,6 +5288,98 @@ class EEM_Admin {
 			'banner_html'          => $banner_html,
 			'refund_history_html'  => $refund_history_html,
 			'requires_reload'      => false,
+		) );
+	}
+
+	/**
+	 * AJAX endpoint: bulk-refund single step (C6.C).
+	 *
+	 * Processes ONE order from a bulk-refund batch. The JS layer
+	 * (runBulkRefundQueue) calls this endpoint sequentially for each
+	 * selected order; each call is fully independent so per-order
+	 * failures don't halt the batch (option-3 batch-error-attribution
+	 * per the C6.C kickoff Q2 decision).
+	 *
+	 * **Important contract — payload is order_key + reason ONLY, never
+	 * an amount.** The endpoint computes the refund amount server-side
+	 * via get_order_remaining_refundable() at call time. This is the
+	 * retry-safety mechanism: when the user clicks "Retry failed"
+	 * after a parallel admin action has changed the order's state, the
+	 * retry call refunds the CURRENT remaining_refundable, never a
+	 * stale amount from the original batch attempt.
+	 *
+	 * Returns wp_send_json_success with:
+	 *   - order_key:       echo of the input
+	 *   - refunded_amount: amount actually refunded (may be 0 if already
+	 *                      fully refunded between batch start and this step)
+	 *   - new_status_slug + new_status_label
+	 *   - components:      per-component transaction IDs (empty when no-op)
+	 *   - was_noop:        true when remaining_refundable was 0 at call time
+	 *
+	 * Or wp_send_json_error with:
+	 *   - order_key:       echo of the input (always present even on error,
+	 *                      so the JS queue can attribute the failure)
+	 *   - code:            order_not_found / nonce / capability / gateway / persist_failed / etc.
+	 *   - message:         human-readable error
+	 *
+	 * Nonce: action = 'eem_bulk_refund_step' (NOT per-order — the batch
+	 * shares one nonce, granted on bulk-modal open).
+	 *
+	 * @return void  Always exits via wp_send_json_*.
+	 */
+	public function handle_ajax_bulk_refund_step() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'code' => 'capability', 'message' => __( 'You do not have permission to refund orders.', 'equine-event-manager' ) ), 403 );
+		}
+
+		$nonce = isset( $_POST['_eem_bulk_refund_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['_eem_bulk_refund_nonce'] ) ) : '';
+		if ( ! wp_verify_nonce( $nonce, 'eem_bulk_refund_step' ) ) {
+			wp_send_json_error( array( 'code' => 'nonce', 'message' => __( 'Security check failed. Please reload and try again.', 'equine-event-manager' ) ), 400 );
+		}
+
+		$order_key = isset( $_POST['order_key'] ) ? sanitize_text_field( wp_unslash( $_POST['order_key'] ) ) : '';
+		$reason    = isset( $_POST['reason'] ) ? sanitize_textarea_field( wp_unslash( $_POST['reason'] ) ) : '';
+
+		if ( '' === $order_key ) {
+			wp_send_json_error( array( 'order_key' => '', 'code' => 'invalid_payload', 'message' => __( 'Missing order_key.', 'equine-event-manager' ) ), 400 );
+		}
+
+		// Compute the refund amount server-side at call time. NEVER trust
+		// a client-supplied amount in the bulk flow — that's the retry-
+		// safety property documented in the method docblock above.
+		$remaining = $this->get_order_remaining_refundable( $order_key );
+
+		// No-op success: order has nothing left to refund. Common in
+		// the "Retry failed" path when a parallel refund landed between
+		// the batch attempt and the retry click.
+		if ( $remaining <= 0.009 ) {
+			wp_send_json_success( array(
+				'order_key'        => $order_key,
+				'refunded_amount'  => 0.0,
+				'components'       => array(),
+				'new_status_slug'  => 'refunded',
+				'new_status_label' => __( 'Refunded', 'equine-event-manager' ),
+				'was_noop'         => true,
+			) );
+		}
+
+		$result = $this->process_amount_refund( $order_key, $remaining, $reason );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array(
+				'order_key' => $order_key,
+				'code'      => $result->get_error_code(),
+				'message'   => $result->get_error_message(),
+			), 400 );
+		}
+
+		wp_send_json_success( array(
+			'order_key'        => $order_key,
+			'refunded_amount'  => $result['refunded_amount'],
+			'components'       => $result['components'],
+			'new_status_slug'  => $result['new_status_slug'],
+			'new_status_label' => $result['new_status_label'],
+			'was_noop'         => false,
 		) );
 	}
 

@@ -785,6 +785,45 @@
 	   the modal's hidden field, then opens the modal. Per ORD-2 modal
 	   confirmation flow — the actual POST happens from the modal's
 	   Confirm button (handler below). */
+	/* ── C6.C — Bulk refund engine (AJAX-driven sequential) ──
+	   Replaces the C5.D form-POST stub with a real queue-driven engine.
+	   3-state modal (intro / processing / summary). Per-order AJAX call
+	   to wp_ajax_eem_order_bulk_refund_step (which computes refund amount
+	   server-side at call time — no client amount, guarantees retry
+	   safety against parallel admin actions). Continue past failures,
+	   surface per-order outcomes, render summary at end with retry-failed
+	   affordance. Option-3 batch error attribution per C6.C kickoff Q2. */
+
+	// Per-modal-open state. Reset on each open.
+	var _bulkRefundState = {
+		queue: [],          // remaining order_keys to process
+		inFlight: null,     // order_key currently being processed
+		successes: [],      // [{order_key, refunded_amount, was_noop}]
+		failures: []        // [{order_key, code, message}]
+	};
+
+	function setBulkRefundModalState(modal, state) {
+		// state ∈ 'intro' | 'processing' | 'summary'
+		modal.classList.remove('eem-bulk-refund--state-intro', 'eem-bulk-refund--state-processing', 'eem-bulk-refund--state-summary');
+		modal.classList.add('eem-bulk-refund--state-' + state);
+		var primaryBtn = modal.querySelector('[data-eem-bulk-refund-primary-btn]');
+		if (primaryBtn) {
+			if ('intro' === state) {
+				primaryBtn.textContent = 'Confirm refund';
+				primaryBtn.disabled = false;
+				primaryBtn.hidden = false;
+				primaryBtn.setAttribute('data-eem-action', 'orders-bulk-refund-confirm');
+			} else if ('processing' === state) {
+				primaryBtn.hidden = true;
+			} else if ('summary' === state) {
+				primaryBtn.hidden = (_bulkRefundState.failures.length === 0);
+				primaryBtn.disabled = false;
+				primaryBtn.textContent = 'Retry failed (' + _bulkRefundState.failures.length + ')';
+				primaryBtn.setAttribute('data-eem-action', 'orders-bulk-refund-retry');
+			}
+		}
+	}
+
 	function openOrdersBulkRefundModal() {
 		var bulkSelect = document.querySelector('[data-eem-orders-bulk-action]');
 		if (!bulkSelect || bulkSelect.value !== 'refund') {
@@ -799,10 +838,16 @@
 		var keys = Array.prototype.map.call(checked, function (cb) { return cb.value; });
 		var modal = document.getElementById('eem-orders-bulk-refund-modal');
 		if (!modal) return;
-		var keysField = modal.querySelector('[data-eem-orders-bulk-refund-keys]');
+
+		// Reset state for fresh modal open.
+		_bulkRefundState = { queue: keys.slice(), inFlight: null, successes: [], failures: [] };
+
+		var keysField = modal.querySelector('[data-eem-bulk-refund-keys]');
 		if (keysField) keysField.value = keys.join(',');
 		var summary = modal.querySelector('[data-eem-orders-bulk-refund-summary]');
 		if (summary) summary.textContent = 'Refund ' + keys.length + ' selected order' + (keys.length === 1 ? '' : 's') + '?';
+
+		setBulkRefundModalState(modal, 'intro');
 		modal.classList.add('open');
 		modal.setAttribute('aria-hidden', 'false');
 	}
@@ -814,11 +859,158 @@
 		modal.setAttribute('aria-hidden', 'true');
 	}
 
-	function submitOrdersBulkRefundForm() {
+	// User clicked "Confirm refund" in intro state — collect inputs,
+	// switch to processing state, start the queue.
+	function startBulkRefundQueue() {
 		var modal = document.getElementById('eem-orders-bulk-refund-modal');
 		if (!modal) return;
-		var form = modal.querySelector('[data-eem-orders-bulk-refund-form]');
-		if (form) form.submit();
+		var keys = _bulkRefundState.queue.slice();
+		if (!keys.length) return;
+
+		var reasonField = modal.querySelector('[data-eem-bulk-refund-reason]');
+		var reason = reasonField ? reasonField.value : '';
+		var nonceField = modal.querySelector('input[name="_eem_bulk_refund_nonce"]');
+		var nonce = nonceField ? nonceField.value : '';
+
+		// Seed the processing-state progress list with one entry per order.
+		var progressList = modal.querySelector('[data-eem-bulk-refund-progress-list]');
+		if (progressList) {
+			progressList.innerHTML = '';
+			keys.forEach(function (k) {
+				var li = document.createElement('li');
+				li.className = 'eem-bulk-refund-progress-item eem-bulk-refund-progress-item--queued';
+				li.setAttribute('data-order-key', k);
+				li.innerHTML = '<span class="eem-bulk-refund-progress-status">⏵</span> <span class="eem-bulk-refund-progress-key">' + k.substring(0, 12) + '…</span> <span class="eem-bulk-refund-progress-detail">Queued</span>';
+				progressList.appendChild(li);
+			});
+		}
+
+		setBulkRefundModalState(modal, 'processing');
+
+		// Kick off the queue.
+		processNextBulkRefundStep(reason, nonce);
+	}
+
+	function processNextBulkRefundStep(reason, nonce) {
+		var modal = document.getElementById('eem-orders-bulk-refund-modal');
+		if (!modal) return;
+		if (!_bulkRefundState.queue.length) {
+			showBulkRefundSummary(modal);
+			return;
+		}
+
+		var orderKey = _bulkRefundState.queue.shift();
+		_bulkRefundState.inFlight = orderKey;
+		updateBulkRefundProgressItem(modal, orderKey, 'in-flight', '⟳', 'Processing…');
+
+		var formData = new FormData();
+		formData.append('action', 'eem_order_bulk_refund_step');
+		formData.append('order_key', orderKey);
+		formData.append('reason', reason);
+		formData.append('_eem_bulk_refund_nonce', nonce);
+
+		fetch(window.ajaxurl || '/wp-admin/admin-ajax.php', {
+			method: 'POST',
+			credentials: 'same-origin',
+			body: formData
+		}).then(function (response) {
+			return response.json().catch(function () { return { success: false, data: { order_key: orderKey, code: 'parse_error', message: 'Server returned unparseable response.' } }; });
+		}).then(function (json) {
+			_bulkRefundState.inFlight = null;
+			if (json && json.success && json.data) {
+				var d = json.data;
+				_bulkRefundState.successes.push({ order_key: orderKey, refunded_amount: d.refunded_amount || 0, was_noop: !!d.was_noop });
+				var detail = d.was_noop ? 'Already refunded' : 'Refunded $' + Number(d.refunded_amount).toFixed(2);
+				updateBulkRefundProgressItem(modal, orderKey, 'success', '✓', detail);
+			} else {
+				var err = (json && json.data) ? json.data : { code: 'unknown', message: 'Unknown error' };
+				_bulkRefundState.failures.push({ order_key: orderKey, code: err.code, message: err.message });
+				updateBulkRefundProgressItem(modal, orderKey, 'failure', '✗', err.message || err.code || 'Failed');
+			}
+			// Process next regardless of success/failure — option-3 continue-past-failures.
+			processNextBulkRefundStep(reason, nonce);
+		}).catch(function () {
+			_bulkRefundState.inFlight = null;
+			_bulkRefundState.failures.push({ order_key: orderKey, code: 'network', message: 'Network error' });
+			updateBulkRefundProgressItem(modal, orderKey, 'failure', '✗', 'Network error');
+			processNextBulkRefundStep(reason, nonce);
+		});
+	}
+
+	function updateBulkRefundProgressItem(modal, orderKey, statusClass, glyph, detail) {
+		var item = modal.querySelector('.eem-bulk-refund-progress-item[data-order-key="' + orderKey + '"]');
+		if (!item) return;
+		item.classList.remove('eem-bulk-refund-progress-item--queued', 'eem-bulk-refund-progress-item--in-flight', 'eem-bulk-refund-progress-item--success', 'eem-bulk-refund-progress-item--failure');
+		item.classList.add('eem-bulk-refund-progress-item--' + statusClass);
+		var statusEl = item.querySelector('.eem-bulk-refund-progress-status');
+		var detailEl = item.querySelector('.eem-bulk-refund-progress-detail');
+		if (statusEl) statusEl.textContent = glyph;
+		if (detailEl) detailEl.textContent = detail;
+	}
+
+	function showBulkRefundSummary(modal) {
+		var totals = modal.querySelector('[data-eem-bulk-refund-summary-totals]');
+		var failList = modal.querySelector('[data-eem-bulk-refund-failure-list]');
+
+		if (totals) {
+			var successCount = _bulkRefundState.successes.length;
+			var failCount    = _bulkRefundState.failures.length;
+			var totalRefunded = 0;
+			_bulkRefundState.successes.forEach(function (s) { totalRefunded += Number(s.refunded_amount) || 0; });
+			totals.innerHTML = '<div class="eem-bulk-refund-totals-line"><strong>' + successCount + '</strong> refunded · <strong>' + failCount + '</strong> failed</div>' +
+				(totalRefunded > 0 ? '<div class="eem-bulk-refund-totals-amount">$' + totalRefunded.toFixed(2) + ' total refunded</div>' : '');
+		}
+
+		if (failList) {
+			failList.innerHTML = '';
+			_bulkRefundState.failures.forEach(function (f) {
+				var li = document.createElement('li');
+				li.className = 'eem-bulk-refund-failure-item';
+				li.innerHTML = '<span class="eem-bulk-refund-failure-key">' + f.order_key.substring(0, 12) + '…</span> <span class="eem-bulk-refund-failure-msg">' + (f.message || f.code || 'Failed') + '</span>';
+				failList.appendChild(li);
+			});
+		}
+
+		setBulkRefundModalState(modal, 'summary');
+	}
+
+	// Retry failed: re-queue just the failed order_keys, run again.
+	// Critical: each retried step still gets a fresh server-side
+	// remaining_refundable compute — JS does NOT pass an amount, so
+	// parallel admin actions between batch and retry are handled
+	// correctly by the server.
+	function retryFailedBulkRefunds() {
+		var modal = document.getElementById('eem-orders-bulk-refund-modal');
+		if (!modal) return;
+		var failedKeys = _bulkRefundState.failures.map(function (f) { return f.order_key; });
+		if (!failedKeys.length) return;
+
+		// Reset for the retry pass. Failures roll forward into the new
+		// queue; previous-pass successes stay in the running tally.
+		_bulkRefundState.queue = failedKeys;
+		_bulkRefundState.failures = [];
+		_bulkRefundState.inFlight = null;
+
+		var reasonField = modal.querySelector('[data-eem-bulk-refund-reason]');
+		var reason = reasonField ? reasonField.value : '';
+		var nonceField = modal.querySelector('input[name="_eem_bulk_refund_nonce"]');
+		var nonce = nonceField ? nonceField.value : '';
+
+		// Re-seed the progress list with just the retry items.
+		var progressList = modal.querySelector('[data-eem-bulk-refund-progress-list]');
+		if (progressList) {
+			progressList.innerHTML = '';
+			failedKeys.forEach(function (k) {
+				var li = document.createElement('li');
+				li.className = 'eem-bulk-refund-progress-item eem-bulk-refund-progress-item--queued';
+				li.setAttribute('data-order-key', k);
+				li.innerHTML = '<span class="eem-bulk-refund-progress-status">⏵</span> <span class="eem-bulk-refund-progress-key">' + k.substring(0, 12) + '…</span> <span class="eem-bulk-refund-progress-detail">Queued (retry)</span>';
+				progressList.appendChild(li);
+			});
+		}
+
+		setBulkRefundModalState(modal, 'processing');
+		processNextBulkRefundStep(reason, nonce);
 	}
 
 	/* ── C6.B — Single-order Refund Order modal (Order Detail page) ──
@@ -1218,7 +1410,10 @@
 			closeOrdersBulkRefundModal();
 		},
 		'orders-bulk-refund-confirm': function () {
-			submitOrdersBulkRefundForm();
+			startBulkRefundQueue();
+		},
+		'orders-bulk-refund-retry': function () {
+			retryFailedBulkRefunds();
 		},
 		/* C6.B — Single-order Refund modal (Order Detail page). */
 		'order-refund-single': function () {

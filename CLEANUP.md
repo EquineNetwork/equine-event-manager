@@ -16,6 +16,19 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 
 ## Active entries
 
+### 29. Bulk refund order-fetch optimization
+- **What:** Each `process_amount_refund` call invokes `get_grouped_orders()` (full table scan in orders-repository line ~460). For a 20-order batch this is 20 scans; for a 50-order batch, 50. Address by adding `get_orders_by_keys(array)` repo method + engine-level caching so a bulk batch performs ONE scan and serves all step calls from the cached result.
+- **Why deferred:** Admin-only operation + bulk refunds are infrequent (post-event cancellations, typically), so the perf impact is real but not blocking. C6.C ships sequentially-correct functionality first; the optimization is a polish item.
+- **Shape of the fix:**
+  1. New repo method: `EEM_Orders_Repository::get_orders_by_keys( array $order_keys ): array<string,array>`. Returns map keyed by order_key. Single `get_grouped_orders()` call internally, filtered.
+  2. Bulk-step handler (or a wrapper) accepts an optional `$batch_token` query arg. Engine maintains a transient/object-cache map keyed by token holding the get_grouped_orders result for the batch duration (~5 min TTL).
+  3. Per-step handler reads from the cached map when present, falls back to fresh `get_order` when not.
+  4. JS bulk runner generates a `batch_token = crypto.randomUUID()` on modal open, includes it on every step call.
+- **Added in:** C6.C (audit-time surfacing).
+- **Sequence:** any time after C6 closes; folds naturally into C13 polish or its own focused chunk. CLEANUP #27 (EEM_Refund_Engine extraction) is a natural co-landing because both touch the same per-order/per-batch boundary.
+- **Unblocks:** larger bulk batches (100+ orders) without quadratic-feeling delays.
+- **Status:** queued; functional impact only at large batch sizes.
+
 ### 28. AJAX smoke harness for wp_die paths
 - **What:** Subshell wp-cli for isolated `wp_send_json_*` / `wp_die` paths so AJAX handlers can be exercised end-to-end in smokes without killing the runner. Surfaced during C6.B; current workaround is gate-only testing + manual browser verify.
 - **Why deferred:** Discovered mid-C6.B when c6b-smoke tried to invoke `EEM_Admin::handle_ajax_refund_single()` directly and the call exited the PHP process. The workaround (assert capability + nonce gates separately, defer end-to-end coverage to manual browser verify) is sufficient for individual AJAX endpoints but does not scale — C6.C bulk-engine will compound the gap, and C7+ will all need it.
@@ -172,12 +185,20 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 - **Unblocks deletion:** Customer Profile chunk (when sequenced) replaces the stub callback in `EEM_Orders_List_Page::register_customer_profile_stub()` with the real page registration. The stub method + the placeholder render method can be removed (or repurposed if the real page wants the same shell pattern). The `CUSTOMER_PROFILE_MENU_SLUG` constant stays — it's the URL convention contract.
 - **Status:** stub shipped; awaiting Customer Profile chunk to be sequenced into the Phase 3 plan
 
-### 15. Bulk refund async engine (REF-3 / ORD-2)
-- **What:** `EEM_Orders_List_Page::handle_bulk_refund` validates the modal POST (cap + nonce + at least one valid order_key) and then redirects with `?eem_notice=bulk_refund_deferred&eem_bulk_count=N` — no refunds are actually processed. Per REF-3 / ORD-2 the engine is: queue refunds asynchronously via the merchant API one at a time (respecting rate limits), update Order state per the REF-2 status rules, write activity log entries, send the "Event Cancelled — Refund Processed" notification email to each customer (when notify=1), and collect failures into a "Needs Attention" list. None of that exists yet.
-- **Why deferred:** The async queue + progress UI + error collection are sizeable in their own right, AND the Order Detail page (C6) is where the SINGLE-order refund flow lives that this engine ultimately calls per-order — building the engine in isolation from C6's per-order refund code path would duplicate plumbing. Build C6's single-order refund first, then lift the per-order helper into a queue runner.
-- **Added in:** C5.D
-- **Unblocks deletion:** C6 (Order Detail port) — once a `refund_single_order( $order_key, $amount, $reason, $notify )` helper exists, `handle_bulk_refund` calls it in a loop (sync first cut; async queue follows once the UX needs progress feedback).
-- **Status:** dispatcher shipped; awaiting engine in C6
+### 15. ~~Bulk refund async engine (REF-3 / ORD-2)~~ ✅ Resolved in C6.C
+- **What was deferred:** `EEM_Orders_List_Page::handle_bulk_refund` (C5.D) validated the modal POST and redirected with a `bulk_refund_deferred` notice — no refunds were actually processed.
+- **How it was resolved (C6.C, 2026-05-23):**
+  1. New AJAX endpoint `wp_ajax_eem_order_bulk_refund_step` on EEM_Admin processes one order per call. Server computes refund amount via `get_order_remaining_refundable($order_key)` at call time (no client-supplied amount) — retry-safety property documented in the handler's docblock.
+  2. JS layer (`runBulkRefundQueue` + `processNextBulkRefundStep` in admin.js) drives the batch sequentially via per-order AJAX calls. Per-order outcomes (success / failure / was_noop) attribute cleanly to individual order_keys.
+  3. Modal 3-state UI: **intro** (confirm form + tab-close warning) → **processing** (per-order progress list with live status glyphs) → **summary** (totals + failure list + "Retry failed (N)" button).
+  4. Continue-past-failures (option-3 batch error attribution per C6.C kickoff Q2): every order processes regardless of upstream failures; failures collected into a separate list with retry affordance.
+  5. Retry re-validates remaining_refundable at call time (smoke-verified): parallel admin actions between batch and retry do not produce stale-amount refunds.
+  6. Activity-log writing moved into the `process_amount_refund` kernel so both single (C6.B) and bulk (C6.C) callers inherit telemetry without duplication.
+  7. Notification email (the `notify=1` checkbox) wiring is part of C6.D — the email-send hook joins the 5 auto-fire telemetry points there; the checkbox value is captured in the activity-log payload now and surfaces in the C6.D mailer integration when it lands.
+- **Closed:** C6.C (2026-05-23). Reuse-pattern audit confirmed `process_amount_refund` works clean in the bulk loop — `EEM_Refund_Engine` extraction (CLEANUP #27) remains queued for post-C6 polish.
+- **Known follow-on:** CLEANUP #29 (bulk refund order-fetch optimization) surfaced during the C6.C audit — admin-only + infrequent perf concern, deferred.
+
+### 14. Orders soft-delete schema (Move to Trash for orders)
 
 ### 14. Orders soft-delete schema (Move to Trash for orders)
 - **What:** `EEM_Orders_List_Page::handle_trash` is a stub. Per ORD-3 ("Move to Trash (renamed from the original 'Delete Order') is WP-standard soft delete: the order is recoverable from the trash for 30 days") the orders list should support reversible trash semantics, but the underlying `wp_en_stall_reservations` / `wp_en_rv_reservations` tables have no `trashed_at` column. The handler currently redirects with a `?eem_notice=order_trash_deferred` warning rather than fall back to the legacy hard-delete (`EEM_Orders_Repository::delete_order`), which would surprise users expecting soft semantics.

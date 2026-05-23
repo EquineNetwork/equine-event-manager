@@ -904,24 +904,33 @@ class EEM_Orders_List_Page {
 	 * @return void
 	 */
 	private function render_bulk_refund_modal() {
+		// C6.C: modal now has three render states the JS toggles between:
+		//   - intro      (default open state — confirm form, tab-close warning)
+		//   - processing (per-order progress list)
+		//   - summary    (success/failure recap + retry-failed button)
+		// State swap is handled by JS adding/removing .eem-bulk-refund--state-* on
+		// the modal-card. Server-side nonce is `eem_bulk_refund_step` — shared
+		// across all step calls in the batch (NOT per-order — granted once on
+		// modal open).
 		?>
-		<div class="eem-modal" id="eem-orders-bulk-refund-modal" role="dialog" aria-modal="true" aria-labelledby="eem-orders-bulk-refund-title" aria-hidden="true">
+		<div class="eem-modal eem-bulk-refund-modal eem-bulk-refund--state-intro" id="eem-orders-bulk-refund-modal" role="dialog" aria-modal="true" aria-labelledby="eem-orders-bulk-refund-title" aria-hidden="true" data-eem-bulk-refund-modal>
 			<div class="eem-modal-card">
 				<header class="eem-modal-head">
 					<h2 class="eem-modal-title" id="eem-orders-bulk-refund-title"><?php esc_html_e( 'Refund Selected Orders', 'equine-event-manager' ); ?></h2>
 					<button type="button" class="eem-modal-close" data-eem-action="orders-bulk-refund-close" aria-label="<?php esc_attr_e( 'Close', 'equine-event-manager' ); ?>">&times;</button>
 				</header>
-				<form class="eem-modal-body" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" data-eem-orders-bulk-refund-form>
-					<input type="hidden" name="action" value="eem_orders_bulk_refund" />
-					<?php wp_nonce_field( 'eem_orders_bulk_refund', '_eem_bulk_refund_nonce' ); ?>
-					<input type="hidden" name="order_keys" value="" data-eem-orders-bulk-refund-keys />
+
+				<!-- INTRO STATE — confirm form + tab-close warning -->
+				<div class="eem-modal-body eem-bulk-refund-state eem-bulk-refund-state--intro">
+					<?php wp_nonce_field( 'eem_bulk_refund_step', '_eem_bulk_refund_nonce' ); ?>
+					<input type="hidden" data-eem-bulk-refund-keys value="" />
 					<p class="eem-orders-bulk-refund-summary" data-eem-orders-bulk-refund-summary>
 						<?php esc_html_e( 'Recipients will load when the modal opens.', 'equine-event-manager' ); ?>
 					</p>
-					<div class="eem-field-row" style="margin-top:14px;">
+					<div class="eem-field-row">
 						<label class="eem-field-label" for="eem-orders-bulk-refund-reason"><?php esc_html_e( 'Reason (optional)', 'equine-event-manager' ); ?></label>
 						<div class="eem-field-control">
-							<textarea class="eem-field-textarea" id="eem-orders-bulk-refund-reason" name="reason" rows="3" maxlength="500" placeholder="<?php esc_attr_e( 'e.g. Event cancelled due to weather', 'equine-event-manager' ); ?>"></textarea>
+							<textarea class="eem-field-textarea" id="eem-orders-bulk-refund-reason" data-eem-bulk-refund-reason rows="3" maxlength="500" placeholder="<?php esc_attr_e( 'e.g. Event cancelled due to weather', 'equine-event-manager' ); ?>"></textarea>
 							<p class="eem-field-hint"><?php esc_html_e( 'Stored on each refund record. Surfaced in the activity log; not sent to customers by default.', 'equine-event-manager' ); ?></p>
 						</div>
 					</div>
@@ -931,10 +940,26 @@ class EEM_Orders_List_Page {
 							<label><input type="checkbox" id="eem-orders-bulk-refund-notify" name="notify" value="1" checked /> <?php esc_html_e( 'Send the "Event Cancelled — Refund Processed" email to each customer.', 'equine-event-manager' ); ?></label>
 						</div>
 					</div>
-				</form>
+					<p class="eem-bulk-refund-tab-warning">
+						<?php esc_html_e( 'If you close this window, refunds in progress will complete but remaining orders will need to be re-submitted.', 'equine-event-manager' ); ?>
+					</p>
+				</div>
+
+				<!-- PROCESSING STATE — per-order progress list (populated by JS) -->
+				<div class="eem-modal-body eem-bulk-refund-state eem-bulk-refund-state--processing">
+					<p class="eem-bulk-refund-processing-headline"><?php esc_html_e( 'Processing refunds…', 'equine-event-manager' ); ?></p>
+					<ul class="eem-bulk-refund-progress-list" data-eem-bulk-refund-progress-list></ul>
+				</div>
+
+				<!-- SUMMARY STATE — totals + failure list + retry button (populated by JS) -->
+				<div class="eem-modal-body eem-bulk-refund-state eem-bulk-refund-state--summary">
+					<div class="eem-bulk-refund-summary-totals" data-eem-bulk-refund-summary-totals></div>
+					<ul class="eem-bulk-refund-failure-list" data-eem-bulk-refund-failure-list></ul>
+				</div>
+
 				<footer class="eem-modal-foot eem-modal-foot--split">
-					<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="orders-bulk-refund-close"><?php esc_html_e( 'Cancel', 'equine-event-manager' ); ?></button>
-					<button type="button" class="eem-btn eem-btn-primary" data-eem-action="orders-bulk-refund-confirm"><?php esc_html_e( 'Confirm refund', 'equine-event-manager' ); ?></button>
+					<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="orders-bulk-refund-close"><?php esc_html_e( 'Close', 'equine-event-manager' ); ?></button>
+					<button type="button" class="eem-btn eem-btn-primary" data-eem-action="orders-bulk-refund-confirm" data-eem-bulk-refund-primary-btn><?php esc_html_e( 'Confirm refund', 'equine-event-manager' ); ?></button>
 				</footer>
 			</div>
 		</div>

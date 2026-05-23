@@ -184,6 +184,12 @@ class EEM_Plugin {
 		// (refund_order_component + persist_component_refund) via the
 		// new public process_amount_refund() adapter on EEM_Admin.
 		add_action( 'wp_ajax_eem_order_refund_single', array( $this->admin, 'handle_ajax_refund_single' ) );
+
+		// C6.C — bulk-refund step endpoint. Called sequentially by the
+		// runBulkRefundQueue JS layer, once per selected order. Server
+		// computes amount = remaining_refundable at call time (no
+		// client-supplied amount) — that's the retry-safety property.
+		add_action( 'wp_ajax_eem_order_bulk_refund_step', array( $this->admin, 'handle_ajax_bulk_refund_step' ) );
 		add_action( 'admin_post_equine_event_manager_send_invoice_email', array( $this->admin, 'handle_send_invoice_email' ) );
 		add_action( 'admin_post_equine_event_manager_resend_customer_notification', array( $this->admin, 'handle_resend_customer_notification' ) );
 		add_action( 'admin_post_equine_event_manager_mark_order_paid', array( $this->admin, 'handle_mark_order_paid' ) );

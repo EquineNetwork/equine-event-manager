@@ -81,10 +81,12 @@ ok( 'Status column anchor (orderby=status)',     preg_match( '/<a[^>]*href="[^"]
 echo "\n[5] Bulk Refund modal markup\n";
 ok( 'modal container present',                 str_contains( $html, 'id="eem-orders-bulk-refund-modal"' ),  $pass, $fail, $log );
 ok( 'modal title present',                     str_contains( $html, 'Refund Selected Orders' ),             $pass, $fail, $log );
-ok( 'modal form posts to admin-post.php',      preg_match( '/<form[^>]*method="post"[^>]*action="' . preg_quote( esc_url( admin_url( 'admin-post.php' ) ), '/' ) . '"[^>]*data-eem-orders-bulk-refund-form/', $html ) > 0, $pass, $fail, $log );
-ok( 'modal action input set',                  str_contains( $html, 'name="action" value="eem_orders_bulk_refund"' ), $pass, $fail, $log );
-ok( 'modal nonce field present',               str_contains( $html, '_eem_bulk_refund_nonce' ),             $pass, $fail, $log );
-ok( 'modal hidden order_keys input present',   str_contains( $html, 'data-eem-orders-bulk-refund-keys' ),   $pass, $fail, $log );
+// C6.C: modal converted from admin-post form submit to AJAX-driven 3-state UI.
+// The 4 pre-C6.C assertions (admin-post action, eem_orders_bulk_refund nonce
+// action, eem-orders-bulk-refund-form data-attr, eem-orders-bulk-refund-keys
+// data-attr) no longer apply. New contract verified in c6c-smoke section [6].
+ok( 'modal nonce field present (now eem_bulk_refund_step nonce action)', str_contains( $html, '_eem_bulk_refund_nonce' ), $pass, $fail, $log );
+ok( 'modal hidden keys input present (renamed data-eem-bulk-refund-keys in C6.C)', str_contains( $html, 'data-eem-bulk-refund-keys' ), $pass, $fail, $log );
 ok( 'modal reason textarea present',           str_contains( $html, 'id="eem-orders-bulk-refund-reason"' ), $pass, $fail, $log );
 ok( 'modal notify checkbox present',           str_contains( $html, 'id="eem-orders-bulk-refund-notify"' ), $pass, $fail, $log );
 ok( 'modal Confirm button',                    str_contains( $html, 'data-eem-action="orders-bulk-refund-confirm"' ), $pass, $fail, $log );
@@ -158,7 +160,8 @@ ok( 'date DESC returns items', ! empty( $desc_dt['items'] ), $pass, $fail, $log 
 
 echo "\n[9] CLEANUP entry exists\n";
 $cleanup = file_get_contents( '/Users/whitneymitchell/Projects/equine-event-manager/CLEANUP.md' );
-ok( 'CLEANUP.md has entry #15 for bulk-refund engine', $cleanup && str_contains( $cleanup, '### 15. Bulk refund async engine' ), $pass, $fail, $log );
+// C6.C closed #15. Entry now reads "### 15. ~~Bulk refund async engine ...~~ ✅ Resolved in C6.C".
+ok( 'CLEANUP.md entry #15 marked resolved in C6.C', $cleanup && str_contains( $cleanup, '### 15.' ) && str_contains( $cleanup, 'Resolved in C6.C' ), $pass, $fail, $log );
 
 echo "\n" . implode( "\n", $log ) . "\n\n=== RESULT: {$pass} passed, {$fail} failed ===\n";
 exit( $fail > 0 ? 1 : 0 );
