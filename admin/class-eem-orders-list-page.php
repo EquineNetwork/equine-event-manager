@@ -422,7 +422,22 @@ class EEM_Orders_List_Page {
 			<td class="eem-col-cb"><input type="checkbox" class="eem-orders-row-cb" name="order_keys[]" value="<?php echo esc_attr( $order_key ); ?>" aria-label="<?php echo esc_attr( sprintf( __( 'Select order %s', 'equine-event-manager' ), $order_number ) ); ?>" /></td>
 			<td><a class="eem-order-num" href="<?php echo esc_url( self::order_detail_url( $order_key ) ); ?>"><?php echo esc_html( $this->format_order_number_display( $order_number ) ); ?></a></td>
 			<td><a class="eem-customer-name" href="<?php echo esc_url( self::customer_profile_url( isset( $order['email'] ) ? (string) $order['email'] : '' ) ); ?>"><?php echo esc_html( $customer ); ?></a></td>
-			<td><span class="eem-event-name"><?php echo esc_html( $event_name ); ?></span></td>
+			<td><?php
+				// C5.G.10: Event name now renders as a link to the reservation's
+				// edit screen (when the order traces back to a reservation via
+				// the legacy "Reservation setup ID: N" note pattern). Completes
+				// the link-affordance pattern across all clickable cell types
+				// in the Orders list — order number → order detail (C6 stub),
+				// customer name → customer profile (stub), event name →
+				// reservation edit screen (existing WP CPT edit URL).
+				$event_reservation_id  = $this->lookup_reservation_id_from_order( $order );
+				$event_reservation_url = $event_reservation_id ? get_edit_post_link( $event_reservation_id ) : '';
+				if ( $event_reservation_url ) :
+				?><a class="eem-event-link" href="<?php echo esc_url( $event_reservation_url ); ?>"><?php echo esc_html( $event_name ); ?></a><?php
+				else :
+				?><span class="eem-event-name"><?php echo esc_html( $event_name ); ?></span><?php
+				endif;
+			?></td>
 			<td>
 				<?php if ( empty( $type_keys ) ) : ?>
 					<span class="eem-type-badges-empty">—</span>
@@ -565,7 +580,12 @@ class EEM_Orders_List_Page {
 						<span class="eem-mobile-card-meta"><?php echo esc_html( $date_label ); ?></span>
 					</div>
 					<div class="eem-mobile-card-title"><a class="eem-customer-name" href="<?php echo esc_url( self::customer_profile_url( isset( $order['email'] ) ? (string) $order['email'] : '' ) ); ?>"><?php echo esc_html( $customer ); ?></a></div>
-					<div class="eem-mobile-card-sub"><?php echo esc_html( $event_name ); ?></div>
+					<?php
+					// C5.G.10: mobile parallel of the desktop event-link cell.
+					$mob_event_reservation_id  = $this->lookup_reservation_id_from_order( $order );
+					$mob_event_reservation_url = $mob_event_reservation_id ? get_edit_post_link( $mob_event_reservation_id ) : '';
+					?>
+					<div class="eem-mobile-card-sub"><?php if ( $mob_event_reservation_url ) : ?><a class="eem-event-link" href="<?php echo esc_url( $mob_event_reservation_url ); ?>"><?php echo esc_html( $event_name ); ?></a><?php else : ?><?php echo esc_html( $event_name ); ?><?php endif; ?></div>
 					<div class="eem-mobile-card-bottom">
 						<div class="eem-mobile-card-badges">
 							<?php foreach ( $type_keys as $key ) : ?>

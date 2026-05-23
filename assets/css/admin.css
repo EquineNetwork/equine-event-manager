@@ -3773,3 +3773,27 @@ body.eem-shell-page--orders a.eem-customer-name:focus {
 	color: var(--eem-electric);
 	text-decoration: none;
 }
+
+/* C5.G.10 — Event column link affordance (Orders list).
+   Anchor variant of the previous .eem-event-name span; targets the
+   reservation's WP CPT edit screen when the order traces back via
+   the "Reservation setup ID: N" note pattern. `a.` chain wins
+   specificity against .eem-page a per the EEM hover convention
+   block above. */
+a.eem-event-link {
+	font-weight: 700;
+	color: var(--eem-navy);
+	max-width: 200px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	display: inline-block;
+	vertical-align: middle;
+	text-decoration: none;
+}
+
+a.eem-event-link:hover,
+a.eem-event-link:focus {
+	color: var(--eem-electric);
+	text-decoration: none;
+}
