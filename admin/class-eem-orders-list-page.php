@@ -17,22 +17,31 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Architecture (per CLAUDE.md layout-shell verification step 4):
  *   Bordered list-card containing five stacked internal sections —
  *   page-header (inside the card per step 4.5; reuses C4 .eem-page-header
- *   primitive via `wrap=true` on the shell), toolbar (#fafafa with two
- *   horizontal rows + a bulk-action row), desktop table, mobile cards
- *   (hidden on desktop), pagination footer (#fafafa).
+ *   primitive via `wrap=true` on the shell), TWO toolbar rows (each
+ *   .eem-list-toolbar primitive: Row 1 event-filter + billing-tabs,
+ *   Row 2 bulk-form + type-filter form + search + count), desktop
+ *   table, mobile cards (hidden on desktop), pagination footer.
  *
  * Inherited constraints (do not modify in C5):
  *   - Shared C4 primitives — .eem-page-header / .eem-page-title /
- *     .eem-page-subtitle / .eem-page-actions / .eem-search-input —
- *     are READ-ONLY. New page-unique chrome lives under .eem-orders-*.
+ *     .eem-page-subtitle / .eem-page-actions / .eem-list-toolbar /
+ *     .eem-toolbar-select / .eem-toolbar-btn / .eem-bulk-form /
+ *     .eem-search-form / .eem-search-wrap / .eem-search-input /
+ *     .eem-search-btn / .eem-item-count — are READ-ONLY consumed.
  *   - Search-pair visual seam is CLEANUP #13, deferred to C13. C5
  *     does not attempt to fix it.
  *
  * Sub-chunks land here in order:
- *   C5.A — Scaffold + repo wiring + smoke (this file)
- *   C5.B — Full render body (toolbar / table / mobile / footer / CSS)
- *   C5.C — Row actions + Collect button + Print Receipt
- *   C5.D — Toolbar dispatcher + bulk Refund Selected stub
+ *   C5.A          — Scaffold + repo wiring + smoke (this file)
+ *   C5.B          — Full render body (toolbar / table / mobile / footer / CSS)
+ *   C5.C          — Row actions + Collect button + Print Receipt
+ *   C5.D          — Toolbar dispatcher + bulk Refund Selected stub
+ *   C5.F-toolbar  — Toolbar restructured to reuse C4 primitives;
+ *                   C5-specific .eem-orders-toolbar component class
+ *                   dropped (mooted the class-name collision with the
+ *                   legacy CSS grid rule), bulk-action-bar bottom
+ *                   strip dropped, type multi-select chips replaced
+ *                   with single-select Type dropdown.
  */
 class EEM_Orders_List_Page {
 
@@ -72,18 +81,24 @@ class EEM_Orders_List_Page {
 		if ( ! isset( $tabs[ $billing ] ) ) {
 			$billing = 'all';
 		}
-		$types_raw = isset( $_GET['types'] ) ? (array) wp_unslash( $_GET['types'] ) : EEM_Orders_List_Repo::type_filter_keys();
-		$types     = array_values( array_intersect( EEM_Orders_List_Repo::type_filter_keys(), array_map( 'sanitize_key', $types_raw ) ) );
-		$event     = isset( $_GET['event'] )   ? sanitize_text_field( wp_unslash( $_GET['event'] ) )   : '';
-		$search    = isset( $_GET['s'] )       ? sanitize_text_field( wp_unslash( $_GET['s'] ) )       : '';
-		$orderby   = isset( $_GET['orderby'] ) ? sanitize_key( wp_unslash( $_GET['orderby'] ) )        : 'date';
-		$order     = isset( $_GET['order'] )   ? sanitize_key( wp_unslash( $_GET['order'] ) )          : 'desc';
-		$paged     = isset( $_GET['paged'] )   ? max( 1, absint( wp_unslash( $_GET['paged'] ) ) )       : 1;
+		// Type filter is now a single-select dropdown (C5.F-toolbar). Empty
+		// string = "All Types" (no filter). Backward-compat: legacy
+		// ?types[]=... params silently dropped — the dropdown is the only
+		// way to select a type going forward.
+		$type    = isset( $_GET['type'] )    ? sanitize_key( wp_unslash( $_GET['type'] ) )            : '';
+		if ( '' !== $type && ! in_array( $type, EEM_Orders_List_Repo::type_filter_keys(), true ) ) {
+			$type = '';
+		}
+		$event   = isset( $_GET['event'] )   ? sanitize_text_field( wp_unslash( $_GET['event'] ) )    : '';
+		$search  = isset( $_GET['s'] )       ? sanitize_text_field( wp_unslash( $_GET['s'] ) )        : '';
+		$orderby = isset( $_GET['orderby'] ) ? sanitize_key( wp_unslash( $_GET['orderby'] ) )         : 'date';
+		$order   = isset( $_GET['order'] )   ? sanitize_key( wp_unslash( $_GET['order'] ) )           : 'desc';
+		$paged   = isset( $_GET['paged'] )   ? max( 1, absint( wp_unslash( $_GET['paged'] ) ) )       : 1;
 
 		$counts = EEM_Orders_List_Repo::counts_by_billing_status();
 		$page   = EEM_Orders_List_Repo::get_paginated( array(
 			'billing_status' => $billing,
-			'types'          => $types,
+			'type'           => $type,
 			'event'          => $event,
 			'search'         => $search,
 			'orderby'        => $orderby,
@@ -111,18 +126,19 @@ class EEM_Orders_List_Page {
 		?>
 		<?php $this->render_action_notice(); ?>
 		<?php $this->render_bulk_refund_modal(); ?>
-		<?php /* C5.F: page-header lives inside .eem-page-wrap (wrap=true). The
-		         shell IS the bordered card, so we render the toolbar / table /
-		         mobile / footer directly into .eem-page-body — no inner
-		         .eem-list-card wrapper. The earlier C5.B render erroneously
-		         nested a second bordered card, which interfered with toolbar
-		         flex layout and pushed the header visually outside the card.
-		         data-eem-orders-list attribute moves to .eem-orders-toolbar
-		         (same JS hook target, different parent). */ ?>
-		<?php $this->render_toolbar( $billing, $types, $event, $search, $page['total'] ); ?>
-		<?php $this->render_desktop_table( $page['items'], $orderby, $order, $billing, $types, $event, $search ); ?>
+		<?php /* C5.F-toolbar: toolbar restructured to mirror the C4
+		         Reservations pattern — two stacked .eem-list-toolbar rows
+		         using shared C1.3 primitives. Row 1 = event filter + billing
+		         tabs; Row 2 = bulk-form + type-filter dropdown + search +
+		         count. The pre-restructure C5-specific .eem-orders-toolbar
+		         class + .eem-bulk-action-bar bottom strip + chip multi-
+		         select are gone; their class-name collision with the legacy
+		         CSS (admin-legacy.css .eem-orders-toolbar { display: grid })
+		         is mooted by the rewrite. */ ?>
+		<?php $this->render_toolbar( $billing, $type, $event, $search, $page['total'] ); ?>
+		<?php $this->render_desktop_table( $page['items'], $orderby, $order, $billing ); ?>
 		<?php $this->render_mobile_cards( $page['items'] ); ?>
-		<?php $this->render_table_footer( $page, $billing, $types, $event, $search ); ?>
+		<?php $this->render_table_footer( $page, $billing, $type, $event, $search ); ?>
 		<?php
 
 		eem_render_page_close( array( 'wrap' => true ) );
@@ -165,25 +181,34 @@ class EEM_Orders_List_Page {
 	}
 
 	/**
-	 * Toolbar — three stacked rows per mockup lines 299–339:
-	 *   Row 1: event-filter <select> + billing-status segmented tabs
-	 *   Row 2: type-chip filter label + 4 type chips + bare search input + live order count
-	 *   Row 3: bulk-action <select> + Apply + selected count (reuses .eem-bulk-action-bar primitive)
+	 * Toolbar — two stacked rows using shared C4 .eem-list-toolbar
+	 * primitives (C5.F-toolbar restructure replaces the C5.B-D custom
+	 * .eem-orders-toolbar / .eem-bulk-action-bar markup).
 	 *
-	 * Row 3 form POST + nonce wiring lands in C5.D. C5.B emits the
-	 * static markup so the visual rendering matches the mockup.
+	 *   Row 1: Event filter <select> (LEFT) + Payment-status tabs (RIGHT)
+	 *   Row 2: Bulk-actions form + Type-filter form (LEFT) +
+	 *          Search form + Order count (RIGHT)
 	 *
-	 * @param string         $billing
-	 * @param array<string>  $types
-	 * @param string         $event
-	 * @param string         $search
-	 * @param int            $total
+	 * Row-1 event filter is its own GET form that auto-submits on
+	 * change (no Filter button — single-control row). Row-2 mirrors
+	 * the C4 Reservations row exactly: bulk-form (Apply opens the
+	 * Bulk Refund modal via JS — modal POSTs to admin-post separately),
+	 * type-filter form (single-select dropdown + Filter button), and
+	 * search form (input + Search Orders button). Each form preserves
+	 * other filter state via its own hidden inputs — no
+	 * preserve_filters() helper threading required.
+	 *
+	 * @param string $billing Active billing-status tab id.
+	 * @param string $type    Active type-filter slug ('' = All Types).
+	 * @param string $event   Active event-filter label ('' = All events).
+	 * @param string $search  Active search term.
+	 * @param int    $total   Total orders matching current filter (drives the count).
 	 * @return void
 	 */
-	private function render_toolbar( $billing, array $types, $event, $search, $total ) {
-		$tabs        = EEM_Orders_List_Repo::billing_tabs();
-		$type_keys   = EEM_Orders_List_Repo::type_filter_keys();
-		$event_opts  = EEM_Orders_List_Repo::get_event_filter_options();
+	private function render_toolbar( $billing, $type, $event, $search, $total ) {
+		$tabs       = EEM_Orders_List_Repo::billing_tabs();
+		$type_keys  = EEM_Orders_List_Repo::type_filter_keys();
+		$event_opts = EEM_Orders_List_Repo::get_event_filter_options();
 		$type_labels = array(
 			'stall' => __( 'Stall',  'equine-event-manager' ),
 			'rv'    => __( 'RV',     'equine-event-manager' ),
@@ -191,98 +216,90 @@ class EEM_Orders_List_Page {
 			'group' => __( 'Group',  'equine-event-manager' ),
 		);
 		?>
-		<div class="eem-orders-toolbar" data-eem-orders-list>
-			<form class="eem-orders-toolbar-form" method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>" data-eem-orders-filter-form>
-				<input type="hidden" name="page" value="<?php echo esc_attr( self::MENU_SLUG ); ?>" />
-				<input type="hidden" name="billing" value="<?php echo esc_attr( $billing ); ?>" />
-				<?php foreach ( $types as $t ) : ?>
-					<input type="hidden" name="types[]" value="<?php echo esc_attr( $t ); ?>" />
-				<?php endforeach; ?>
-				<div class="eem-orders-toolbar-row">
-					<select class="eem-list-select" name="event" data-eem-orders-event-select onchange="this.form.submit()">
+		<div class="eem-list-toolbar" data-eem-orders-list>
+			<div class="eem-list-toolbar-left">
+				<form method="get" class="eem-orders-event-filter-form">
+					<input type="hidden" name="page" value="<?php echo esc_attr( self::MENU_SLUG ); ?>" />
+					<input type="hidden" name="billing" value="<?php echo esc_attr( $billing ); ?>" />
+					<?php if ( '' !== $type )   : ?><input type="hidden" name="type"  value="<?php echo esc_attr( $type ); ?>" /><?php endif; ?>
+					<?php if ( '' !== $search ) : ?><input type="hidden" name="s"     value="<?php echo esc_attr( $search ); ?>" /><?php endif; ?>
+					<select class="eem-toolbar-select" name="event" data-eem-orders-event-select onchange="this.form.submit()">
 						<option value=""><?php esc_html_e( 'All events', 'equine-event-manager' ); ?></option>
 						<?php foreach ( $event_opts as $label => $value ) : ?>
 							<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $event, $value ); ?>><?php echo esc_html( $label ); ?></option>
 						<?php endforeach; ?>
 					</select>
-					<div class="eem-filter-tabs" role="tablist" aria-label="<?php esc_attr_e( 'Billing status', 'equine-event-manager' ); ?>">
-						<?php foreach ( $tabs as $tab_id => $tab_label ) :
-							$is_active = ( $tab_id === $billing );
-							$href = self::url( array_merge( $this->preserve_filters( $billing, $types, $event, $search ), array( 'billing' => $tab_id, 'paged' => 1 ) ) );
-							?>
-							<a class="eem-filter-tab<?php echo $is_active ? ' active' : ''; ?>" href="<?php echo esc_url( $href ); ?>" role="tab" aria-selected="<?php echo $is_active ? 'true' : 'false'; ?>"><?php echo esc_html( $tab_label ); ?></a>
-						<?php endforeach; ?>
-					</div>
-				</div>
-				<div class="eem-orders-toolbar-row">
-					<span class="eem-orders-type-filter-label"><?php esc_html_e( 'Type:', 'equine-event-manager' ); ?></span>
-					<div class="eem-type-chips" role="group" aria-label="<?php esc_attr_e( 'Type filters', 'equine-event-manager' ); ?>">
-						<?php foreach ( $type_keys as $key ) :
-							$is_active = in_array( $key, $types, true );
-							// Toggle this chip's key in or out of the current set, preserve other filters.
-							$next_types = $is_active ? array_values( array_diff( $types, array( $key ) ) ) : array_values( array_unique( array_merge( $types, array( $key ) ) ) );
-							$href = self::url( array_merge( $this->preserve_filters( $billing, $next_types, $event, $search ), array( 'paged' => 1 ) ) );
-							?>
-							<a class="eem-type-chip eem-type-chip--<?php echo esc_attr( $key ); ?><?php echo $is_active ? '' : ' inactive'; ?>" href="<?php echo esc_url( $href ); ?>" data-type-key="<?php echo esc_attr( $key ); ?>" aria-pressed="<?php echo $is_active ? 'true' : 'false'; ?>">
-								<span class="eem-type-chip-dot"></span><?php echo esc_html( $type_labels[ $key ] ); ?>
-							</a>
-						<?php endforeach; ?>
-					</div>
-					<div class="eem-search-wrap">
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-						<input class="eem-search-input" type="text" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="<?php esc_attr_e( 'Search by customer, order #, event…', 'equine-event-manager' ); ?>" />
-					</div>
-					<span class="eem-orders-list-count" data-eem-orders-list-count>
-						<?php
-						echo esc_html( sprintf(
-							/* translators: %s: total order count */
-							_n( '%s order', '%s orders', $total, 'equine-event-manager' ),
-							number_format_i18n( $total )
-						) );
+				</form>
+			</div>
+			<div class="eem-list-toolbar-right">
+				<div class="eem-filter-tabs" role="tablist" aria-label="<?php esc_attr_e( 'Billing status', 'equine-event-manager' ); ?>">
+					<?php foreach ( $tabs as $tab_id => $tab_label ) :
+						$is_active = ( $tab_id === $billing );
+						// Tabs preserve event + type + s so switching tab keeps the
+						// other filters in place; resets paged. Matches the spirit
+						// of C4's status-tab links (which preserve other URL state
+						// via plain href composition).
+						$tab_args = array( 'billing' => $tab_id, 'paged' => 1 );
+						if ( '' !== $type )   { $tab_args['type']  = $type; }
+						if ( '' !== $event )  { $tab_args['event'] = $event; }
+						if ( '' !== $search ) { $tab_args['s']     = $search; }
 						?>
-					</span>
-					<button type="submit" class="screen-reader-text"><?php esc_html_e( 'Apply filters', 'equine-event-manager' ); ?></button>
+						<a class="eem-filter-tab<?php echo $is_active ? ' active' : ''; ?>" href="<?php echo esc_url( self::url( $tab_args ) ); ?>" role="tab" aria-selected="<?php echo $is_active ? 'true' : 'false'; ?>"><?php echo esc_html( $tab_label ); ?></a>
+					<?php endforeach; ?>
 				</div>
-			</form>
-			<div class="eem-bulk-action-bar">
-				<select name="bulk_action" data-eem-orders-bulk-action>
-					<option value=""><?php esc_html_e( 'Bulk actions', 'equine-event-manager' ); ?></option>
-					<option value="refund"><?php esc_html_e( 'Refund Selected', 'equine-event-manager' ); ?></option>
-				</select>
-				<button type="button" data-eem-action="orders-bulk-apply"><?php esc_html_e( 'Apply', 'equine-event-manager' ); ?></button>
-				<span class="eem-bulk-selected-count" data-eem-orders-bulk-count>
+			</div>
+		</div>
+		<div class="eem-list-toolbar">
+			<div class="eem-list-toolbar-left">
+				<form class="eem-bulk-form" data-eem-orders-bulk-form>
+					<?php /* Apply is type="button" — opens the Bulk Refund modal
+					         via JS (data-eem-action). The modal carries its own
+					         POST form with the nonce + selected order_keys. */ ?>
+					<input type="hidden" name="_eem_selected_ids" data-eem-orders-bulk-selected-ids value="" />
+					<select class="eem-toolbar-select" name="bulk_action" data-eem-orders-bulk-action>
+						<option value=""><?php esc_html_e( 'Bulk actions', 'equine-event-manager' ); ?></option>
+						<option value="refund"><?php esc_html_e( 'Refund Selected', 'equine-event-manager' ); ?></option>
+					</select>
+					<button type="button" class="eem-toolbar-btn" data-eem-action="orders-bulk-apply"><?php esc_html_e( 'Apply', 'equine-event-manager' ); ?></button>
+				</form>
+				<form method="get" class="eem-type-filter-form">
+					<input type="hidden" name="page" value="<?php echo esc_attr( self::MENU_SLUG ); ?>" />
+					<input type="hidden" name="billing" value="<?php echo esc_attr( $billing ); ?>" />
+					<?php if ( '' !== $event )  : ?><input type="hidden" name="event" value="<?php echo esc_attr( $event ); ?>" /><?php endif; ?>
+					<?php if ( '' !== $search ) : ?><input type="hidden" name="s"     value="<?php echo esc_attr( $search ); ?>" /><?php endif; ?>
+					<select class="eem-toolbar-select" name="type">
+						<option value=""><?php esc_html_e( 'All Types', 'equine-event-manager' ); ?></option>
+						<?php foreach ( $type_keys as $key ) : ?>
+							<option value="<?php echo esc_attr( $key ); ?>" <?php selected( $type, $key ); ?>><?php echo esc_html( $type_labels[ $key ] ); ?></option>
+						<?php endforeach; ?>
+					</select>
+					<button type="submit" class="eem-toolbar-btn"><?php esc_html_e( 'Filter', 'equine-event-manager' ); ?></button>
+				</form>
+			</div>
+			<div class="eem-list-toolbar-right">
+				<form method="get" class="eem-search-form" role="search">
+					<input type="hidden" name="page" value="<?php echo esc_attr( self::MENU_SLUG ); ?>" />
+					<input type="hidden" name="billing" value="<?php echo esc_attr( $billing ); ?>" />
+					<?php if ( '' !== $type )  : ?><input type="hidden" name="type"  value="<?php echo esc_attr( $type ); ?>" /><?php endif; ?>
+					<?php if ( '' !== $event ) : ?><input type="hidden" name="event" value="<?php echo esc_attr( $event ); ?>" /><?php endif; ?>
+					<div class="eem-search-wrap eem-search-wrap--attached">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+						<input class="eem-search-input" type="search" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="<?php esc_attr_e( 'Search by customer, order #, event…', 'equine-event-manager' ); ?>" />
+					</div>
+					<button type="submit" class="eem-toolbar-btn eem-search-btn"><?php esc_html_e( 'Search Orders', 'equine-event-manager' ); ?></button>
+				</form>
+				<span class="eem-item-count">
 					<?php
 					echo esc_html( sprintf(
-						/* translators: %d: number of selected orders */
-						_n( '%d selected', '%d selected', 0, 'equine-event-manager' ),
-						0
+						/* translators: %s: total order count (already number_format_i18n'd) */
+						_n( '%s order', '%s orders', $total, 'equine-event-manager' ),
+						number_format_i18n( $total )
 					) );
 					?>
 				</span>
 			</div>
 		</div>
 		<?php
-	}
-
-	/**
-	 * Build the canonical "preserve all toolbar filters" arg set used
-	 * by both billing-tab anchors and chip-toggle anchors. Centralized
-	 * so adding a new filter dimension touches one place.
-	 *
-	 * @param string         $billing
-	 * @param array<string>  $types
-	 * @param string         $event
-	 * @param string         $search
-	 * @return array<string, mixed>
-	 */
-	private function preserve_filters( $billing, array $types, $event, $search ) {
-		$args = array(
-			'billing' => $billing,
-			'types'   => array_values( $types ),
-		);
-		if ( '' !== $event )  { $args['event'] = $event; }
-		if ( '' !== $search ) { $args['s']     = $search; }
-		return $args;
 	}
 
 	/**
@@ -294,20 +311,19 @@ class EEM_Orders_List_Page {
 	 * @param string $order
 	 * @return void
 	 */
-	private function render_desktop_table( array $items, $orderby, $order, $billing = 'all', array $types = array(), $event = '', $search = '' ) {
-		$preserve = $this->preserve_filters( $billing, $types, $event, $search );
+	private function render_desktop_table( array $items, $orderby, $order, $billing = 'all' ) {
 		?>
 		<div class="eem-desktop-table">
 			<table class="eem-table">
 				<thead>
 					<tr>
 						<th class="eem-col-cb"><input type="checkbox" data-eem-action="orders-toggle-all" aria-label="<?php esc_attr_e( 'Select all', 'equine-event-manager' ); ?>" /></th>
-						<?php $this->render_sortable_th( 'order_number', __( 'Order', 'equine-event-manager' ), $orderby, $order, $preserve ); ?>
+						<?php $this->render_sortable_th( 'order_number', __( 'Order', 'equine-event-manager' ), $orderby, $order, $billing ); ?>
 						<th><?php esc_html_e( 'Customer', 'equine-event-manager' ); ?></th>
 						<th><?php esc_html_e( 'Event',    'equine-event-manager' ); ?></th>
 						<th><?php esc_html_e( 'Type',     'equine-event-manager' ); ?></th>
-						<?php $this->render_sortable_th( 'status', __( 'Status', 'equine-event-manager' ), $orderby, $order, $preserve ); ?>
-						<?php $this->render_sortable_th( 'date',   __( 'Date',   'equine-event-manager' ), $orderby, $order, $preserve ); ?>
+						<?php $this->render_sortable_th( 'status', __( 'Status', 'equine-event-manager' ), $orderby, $order, $billing ); ?>
+						<?php $this->render_sortable_th( 'date',   __( 'Date',   'equine-event-manager' ), $orderby, $order, $billing ); ?>
 						<th><?php esc_html_e( 'Actions',  'equine-event-manager' ); ?></th>
 					</tr>
 				</thead>
@@ -337,15 +353,21 @@ class EEM_Orders_List_Page {
 	 * @param string $current_order
 	 * @return void
 	 */
-	private function render_sortable_th( $key, $label, $current_orderby, $current_order, array $preserve = array() ) {
+	private function render_sortable_th( $key, $label, $current_orderby, $current_order, $billing = 'all' ) {
 		$is_active  = ( $key === $current_orderby );
 		$next_order = ( $is_active && 'asc' === $current_order ) ? 'desc' : 'asc';
-		$href       = self::url( array_merge( $preserve, array(
+		// Sort flip preserves the active billing tab (so flipping sort
+		// doesn't drop the tab the user is filtering by) but not the
+		// row-2 filters (type/event/search) — matches C4 Reservations'
+		// minimal sort URL composition. If the user has those filters
+		// applied and sorts, they need to re-apply.
+		$href = self::url( array(
 			'orderby' => $key,
 			'order'   => $next_order,
 			'paged'   => 1,
-		) ) );
-		$classes    = 'sortable' . ( $is_active ? ' is-sorted is-sorted--' . $current_order : '' );
+			'billing' => $billing,
+		) );
+		$classes = 'sortable' . ( $is_active ? ' is-sorted is-sorted--' . $current_order : '' );
 		?>
 		<th class="<?php echo esc_attr( $classes ); ?>">
 			<a href="<?php echo esc_url( $href ); ?>">
@@ -550,7 +572,7 @@ class EEM_Orders_List_Page {
 	 * @param array{ items: array<int, array<string, mixed>>, total: int, total_pages: int, page: int, per_page: int } $page
 	 * @return void
 	 */
-	private function render_table_footer( array $page, $billing = 'all', array $types = array(), $event = '', $search = '' ) {
+	private function render_table_footer( array $page, $billing = 'all', $type = '', $event = '', $search = '' ) {
 		$total       = (int) $page['total'];
 		$current     = (int) $page['page'];
 		$total_pages = max( 1, (int) $page['total_pages'] );
@@ -559,7 +581,14 @@ class EEM_Orders_List_Page {
 		$start = $total > 0 ? ( ( $current - 1 ) * $per_page ) + 1 : 0;
 		$end   = min( $start + $per_page - 1, $total );
 
-		$preserve = $this->preserve_filters( $billing, $types, $event, $search );
+		// Pagination links preserve ALL active filters so paging through
+		// a filtered view doesn't drop the filters mid-flow. Sort + tab
+		// flips drop other filters per their own minimal-args composition.
+		$preserve = array( 'billing' => $billing );
+		if ( '' !== $type )   { $preserve['type']  = $type; }
+		if ( '' !== $event )  { $preserve['event'] = $event; }
+		if ( '' !== $search ) { $preserve['s']     = $search; }
+
 		$prev_url = $current > 1            ? self::url( array_merge( $preserve, array( 'paged' => $current - 1 ) ) ) : '';
 		$next_url = $current < $total_pages ? self::url( array_merge( $preserve, array( 'paged' => $current + 1 ) ) ) : '';
 		?>

@@ -181,23 +181,28 @@ class EEM_Orders_List_Repo {
 	 *   - 'date'         → strtotime(created_at)
 	 *
 	 * @param array $args {
-	 *     @type string   $billing_status  Tab id. Default 'all'.
-	 *     @type string[] $types           Type-chip keys to keep (OR
-	 *                                     match). Default all four.
-	 *     @type string   $event           Event filter label ('' = all).
-	 *     @type string   $search          Customer / order # / event LIKE.
-	 *     @type string   $orderby         'order_number' | 'status' | 'date'.
-	 *                                     Default 'date'.
-	 *     @type string   $order           'asc' | 'desc'. Default 'desc'.
-	 *     @type int      $paged           1-based page number. Default 1.
-	 *     @type int      $per_page        Default 25.
+	 *     @type string $billing_status  Tab id. Default 'all'.
+	 *     @type string $type            Single type slug (stall/rv/addon/group)
+	 *                                   or '' for All Types. Default ''.
+	 *                                   (C5.F-toolbar: replaced the prior
+	 *                                   `types` array signature from C5.B-D
+	 *                                   when the toolbar restructure swapped
+	 *                                   the multi-select chip array for a
+	 *                                   single-select dropdown.)
+	 *     @type string $event           Event filter label ('' = all).
+	 *     @type string $search          Customer / order # / event LIKE.
+	 *     @type string $orderby         'order_number' | 'status' | 'date'.
+	 *                                   Default 'date'.
+	 *     @type string $order           'asc' | 'desc'. Default 'desc'.
+	 *     @type int    $paged           1-based page number. Default 1.
+	 *     @type int    $per_page        Default 25.
 	 * }
 	 * @return array{ items: array<int, array<string, mixed>>, total: int, total_pages: int, page: int, per_page: int }
 	 */
 	public static function get_paginated( array $args = array() ) {
 		$defaults = array(
 			'billing_status' => 'all',
-			'types'          => self::type_filter_keys(),
+			'type'           => '',
 			'event'          => '',
 			'search'         => '',
 			'orderby'        => 'date',
@@ -210,13 +215,14 @@ class EEM_Orders_List_Repo {
 		$repo   = new EEM_Orders_Repository();
 		$orders = $repo->get_orders( (string) $args['event'], 'date', 'desc', (string) $args['search'] );
 
-		$wanted_types = array_values( array_intersect(
-			self::type_filter_keys(),
-			array_map( 'sanitize_key', (array) $args['types'] )
-		) );
-		// Empty types[] = show none (matches the mockup's chip-toggle
-		// semantics: deselect all four chips and the table empties).
-		$skip_type_filter = count( $wanted_types ) === count( self::type_filter_keys() );
+		// C5.F-toolbar: type filter is now a SINGLE-select dropdown.
+		// '' = "All Types" (no type filter). A non-empty type that
+		// isn't in type_filter_keys() falls through to "no filter" so
+		// stale URL params don't blank the table.
+		$type = sanitize_key( (string) $args['type'] );
+		if ( '' !== $type && ! in_array( $type, self::type_filter_keys(), true ) ) {
+			$type = '';
+		}
 
 		$billing = sanitize_key( (string) $args['billing_status'] );
 		$tabs    = self::billing_tabs();
@@ -232,9 +238,9 @@ class EEM_Orders_List_Repo {
 					continue;
 				}
 			}
-			if ( ! $skip_type_filter ) {
+			if ( '' !== $type ) {
 				$row_types = self::derive_type_keys( $order );
-				if ( empty( array_intersect( $row_types, $wanted_types ) ) ) {
+				if ( ! in_array( $type, $row_types, true ) ) {
 					continue;
 				}
 			}

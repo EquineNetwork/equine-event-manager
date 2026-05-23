@@ -3623,57 +3623,24 @@ a.eem-mob-res-name:focus {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   C5.B — Orders list toolbar (mockup .toolbar lines 46–60)
+   C5.F-toolbar — Orders list per-cell typography
 
-   Multi-row container holding three stacked filter rows separated
-   by hairline borders, on a #fafafa background. Distinct from
-   .eem-list-toolbar (C4) which is a single-row layout with a
-   horizontally-attached search-pair. Renders inside .eem-orders-list
-   only — never reused.
+   The C5.B-D toolbar component classes (.eem-orders-toolbar,
+   .eem-orders-toolbar-row, .eem-orders-type-filter-label,
+   .eem-orders-list-count) plus their orders-only mobile overrides
+   were removed when the Orders toolbar was restructured to reuse
+   the shared C4 .eem-list-toolbar primitive directly (no more
+   C5-specific toolbar component class). The class-name collision
+   with admin-legacy.css `.eem-orders-toolbar { display: grid }`
+   (line 1787) is mooted by virtue of dropping the class entirely.
+
+   The order-row table-cell typography below stays — it targets
+   row cells inside the .eem-table on the Orders page, scoped via
+   body.eem-shell-page--orders (the body class is reliably set
+   per admin/class-equine-event-manager-admin.php line 127).
    ───────────────────────────────────────────────────────────── */
-.eem-orders-toolbar {
-	padding: 0;
-	border-bottom: 1px solid var(--eem-border-card);
-	background: var(--eem-bg-alt);
-}
 
-.eem-orders-toolbar-row {
-	padding: 10px 18px;
-	display: flex;
-	align-items: center;
-	gap: var(--eem-space-2);
-	flex-wrap: wrap;
-}
-
-/* Hairline separator between stacked rows — first row has no top
-   border because the page-header above already supplies one. */
-.eem-orders-toolbar-row + .eem-orders-toolbar-row {
-	border-top: 1px solid var(--eem-border-soft);
-}
-
-.eem-orders-type-filter-label {
-	font-size: 11px;
-	font-weight: 700;
-	letter-spacing: 0.07em;
-	text-transform: uppercase;
-	color: var(--eem-text-muted);
-	white-space: nowrap;
-}
-
-/* Live filter count — separate class from .eem-orders-count (C4
-   per-row orders badge for the Reservations Orders column).
-   Naming collision deliberate-avoid; see C5.B working notes. */
-.eem-orders-list-count {
-	font-size: 13px;
-	color: var(--eem-text-secondary);
-	white-space: nowrap;
-	margin-left: auto;
-}
-
-/* Order number — bold navy, mockup line 99.
-   Scope via body class because C5.F dropped the .eem-orders-list
-   wrapper div; the body.eem-shell-page--orders class is reliably
-   set per admin/class-equine-event-manager-admin.php line 127. */
+/* Order number — bold navy, mockup line 99 */
 body.eem-shell-page--orders .eem-order-num {
 	font-weight: 700;
 	color: var(--eem-navy);
@@ -3681,30 +3648,7 @@ body.eem-shell-page--orders .eem-order-num {
 	white-space: nowrap;
 }
 
-/* Customer + event cells — restrained typography per mockup
-   lines 100–102 */
+/* Customer + event cells — restrained typography per mockup lines 100–102 */
 body.eem-shell-page--orders .eem-customer-name { font-weight: 500; }
 body.eem-shell-page--orders .eem-event-name    { color: #50575e; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 body.eem-shell-page--orders .eem-date-val      { color: var(--eem-text-muted); white-space: nowrap; font-size: 13px; }
-
-/* Bulk-action bar sits INSIDE the .eem-orders-toolbar (mockup
-   places it as the third toolbar row, not as a standalone
-   element above the table). The default .eem-bulk-action-bar
-   already has a top-border separator which matches. */
-
-@media (max-width: 767px) {
-	.eem-orders-toolbar-row {
-		padding: 10px 12px;
-	}
-	/* Bare orders search expands to fill the row at small viewports;
-	   the shared .eem-search-wrap min-width:150px / max-width:280px
-	   constraint is overridden ONLY on the orders page to honour
-	   the mockup's mobile breakpoint (line 178). Other pages reuse
-	   the wrapper unmodified. Scoped via body class (C5.F dropped
-	   the .eem-orders-list wrapper div). */
-	body.eem-shell-page--orders .eem-search-wrap {
-		max-width: 100%;
-		min-width: 0;
-		flex: 1;
-	}
-}
