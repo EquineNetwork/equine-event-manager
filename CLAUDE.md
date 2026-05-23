@@ -165,6 +165,8 @@ The seven hygiene rules above add **~25–30% on top of functional-code LOC** in
 
 **AJAX+modal chunk surcharge (observed C6.A + C6.B):** AJAX+modal chunks consistently overshoot the ×1.275 multiplier by 1.5–2×. Drivers: BEM-element expansion (each modal sub-region gets its own `__label`/`__input`/`__prefix` class), docblock fraction (~30%, consistent with C4.A baseline), and smoke complexity (Reflection on private helpers + multiple shape variations per assertion). Re-baseline after C7 lands a third data point.
 
+**Pre-kickoff audit reduces overshoot (observed C6.C):** Chunks with a pre-kickoff audit that surfaces explicit decision questions + an LOC ceiling correlate with reduced post-kickoff overshoot. C6.C followed the three-question audit pattern (reuse decision, batch error attribution, AJAX shape) with an explicit 925-LOC alarm and landed at 1.14× the post-tax estimate, vs. C6.A/B which lacked the same depth and landed at 1.7–2×. The audit cost is small (~30 minutes of conversation) relative to the LOC delta saved. Default to this pattern for any AJAX+modal chunk of comparable size.
+
 #### CSS-port heuristic (established C4.B)
 
 Verbatim CSS port from a mockup's `<style>` block into `admin.css` runs at **~×2.5 the source LOC** as a floor. Drivers: multi-line property formatting (mockup uses dense one-liners; admin.css uses one prop per line for readability), BEM-style state modifier expansion (`.status-active` → `.eem-res-status--active`), responsive `@media` breakpoint repetition, inline comments naming the mockup line numbers, and the small extra cross-cutting helpers each page needs (sort-icon stack, page-header standalone variant, etc.) that don't appear in the mockup source.
