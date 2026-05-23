@@ -295,5 +295,52 @@ ok( 'CLEANUP #34 entry exists',                         str_contains( $cleanup, 
 ok( 'CLEANUP #34 mentions card brand/last4',            str_contains( $cleanup, '_en_card_brand' ) && str_contains( $cleanup, '_en_card_last4' ), $pass, $fail, $log );
 ok( 'CLEANUP #34 cites mockup lines 548-554',           str_contains( $cleanup, '548-554' ),                                    $pass, $fail, $log );
 
+// ── [17] C6.A.3 polish — canonical palette + status-badge + markers ──
+echo "\n[17] C6.A.3 polish — palette, Section Total case, status-badge naming, markers\n";
+
+// Section-badge colors must match the canonical .eem-type-badge--{X} palette
+// (mockup lines 66-71). Three variants × hex+border = 6 assertions.
+ok( 'CSS section-badge--stall has canonical bg #EEF4FF',
+	(bool) preg_match( '/\.eem-order-summary__section-badge--stall\s*\{[^}]*#EEF4FF/i', $css ), $pass, $fail, $log );
+ok( 'CSS section-badge--stall has canonical color #1668F2',
+	(bool) preg_match( '/\.eem-order-summary__section-badge--stall\s*\{[^}]*#1668F2/i', $css ), $pass, $fail, $log );
+ok( 'CSS section-badge--rv has canonical bg #F5F3FF',
+	(bool) preg_match( '/\.eem-order-summary__section-badge--rv\s*\{[^}]*#F5F3FF/i', $css ), $pass, $fail, $log );
+ok( 'CSS section-badge--rv has canonical color #6d28d9',
+	(bool) preg_match( '/\.eem-order-summary__section-badge--rv\s*\{[^}]*#6d28d9/i', $css ), $pass, $fail, $log );
+ok( 'CSS section-badge--addon has canonical bg #FFF7ED',
+	(bool) preg_match( '/\.eem-order-summary__section-badge--addon\s*\{[^}]*#FFF7ED/i', $css ), $pass, $fail, $log );
+ok( 'CSS section-badge--addon has canonical color #c2410c',
+	(bool) preg_match( '/\.eem-order-summary__section-badge--addon\s*\{[^}]*#c2410c/i', $css ), $pass, $fail, $log );
+
+// Section-Total no longer uppercase per mockup (lines 163-164 use title-case).
+ok( 'CSS section-subtotal does NOT use text-transform: uppercase',
+	(bool) preg_match( '/\.eem-order-summary__section-subtotal\s*\{(?:(?!\}).)*\}/s', $css, $m ) && false === stripos( $m[0], 'text-transform' ),
+	$pass, $fail, $log );
+ok( 'rendered output uses title-case "Section Total" (not all-caps)',
+	str_contains( $html, '>Section Total<' ),
+	$pass, $fail, $log );
+
+// Status-badge render uses legacy single-dash class to match existing CSS.
+ok( 'status badge renders as legacy .eem-status-{slug} (no BEM -- prefix)',
+	(bool) preg_match( '/class="eem-status-badge eem-status-[a-z-]+"/', $html ),
+	$pass, $fail, $log );
+ok( 'NO BEM-style eem-status-badge--{slug} in render output',
+	false === strpos( $html, 'eem-status-badge--' ),
+	$pass, $fail, $log );
+
+// Diagnostic markers removed.
+ok( 'NO C6A2-MARKER strings in render output',
+	false === strpos( $html, 'C6A2-MARKER' ),
+	$pass, $fail, $log );
+ok( 'NO C6A2-MARKER strings in source file',
+	false === strpos( file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-order-detail-page.php' ), 'C6A2-MARKER' ),
+	$pass, $fail, $log );
+
+// CLEANUP #36 entry exists.
+ok( 'CLEANUP #36 entry exists (dev-seed reservation_id gap)',
+	str_contains( $cleanup, '### 36.' ) && str_contains( $cleanup, 'reservation_id' ),
+	$pass, $fail, $log );
+
 echo implode( "\n", $log ) . "\n=== RESULT: {$pass} passed, {$fail} failed ===\n";
 exit( $fail > 0 ? 1 : 0 );

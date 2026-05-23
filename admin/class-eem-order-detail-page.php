@@ -250,7 +250,7 @@ class EEM_Order_Detail_Page {
 		ob_start();
 		?>
 		<div class="eem-order-meta-badges">
-			<span class="eem-status-badge eem-status-badge--<?php echo esc_attr( $status_css ); ?>"><?php echo esc_html( $status_label ); ?></span>
+			<span class="eem-status-badge eem-status-<?php echo esc_attr( $status_css ); ?>"><?php echo esc_html( $status_label ); ?></span>
 			<?php foreach ( $type_keys as $key ) : ?>
 				<?php if ( isset( $type_labels[ $key ] ) ) : ?>
 					<span class="eem-type-badge eem-type-badge--<?php echo esc_attr( $key ); ?>"><?php echo esc_html( $type_labels[ $key ] ); ?></span>

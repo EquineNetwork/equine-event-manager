@@ -16,6 +16,14 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 
 ## Active entries
 
+### 36. Dev-seed `reservation_id` gap — 25/26 seeded orders lack a reservation_id, blocking visual verify of reservation-dependent UI
+- **What:** The dev seed (`scripts/seed-orders.php` or whichever shipper populates the SEED-NNN orders) creates orders without a populated `reservation_id` on the order row. Audit during C6.A.3 found 25 of 26 seeded orders have `reservation_id = NULL/0`. Only 1 order has it set.
+- **Why this matters now:** The C6.A.2 "Edit Reservation" header button (and any future render code that conditions on `reservation_id > 0`, like C7's inline-edit flow) will silently hide for almost every seeded order. Visual verification of the button — and any reservation-derived data in the order detail render — becomes essentially impossible without manually back-filling `reservation_id` on individual seed orders.
+- **Why deferred (not fixed now):** Out of C6.A.3 scope (pre-merge polish chunk, not a seed-data overhaul). The render code is correct — it gracefully degrades when `reservation_id` is empty. The fix is on the seed-data side.
+- **Added in:** C6.A.3
+- **Unblocks deletion:** **C7 kickoff** (Edit Reservation editor) — C7 will need seeded reservation_ids for its own visual verification, so the seeder fix becomes a prerequisite for C7 work rather than optional cleanup. Required work: update `scripts/seed-orders.php` (or equivalent) to (a) ensure each seeded order references a real reservation post in the `en_reservations` (or whatever) CPT, AND (b) populate the `reservation_id` column on the order row to that post's ID. May also require seeding the reservation posts themselves if the dev DB doesn't have enough.
+- **Status:** **blocks C7 visual verify**; resolve at C7 kickoff or earlier
+
 ### 35. Git committer attribution — hostname-derived email exposes machine name in commit history
 - **What:** Existing commits on `phase-3/c6-order-detail` (and likely all branches since the repo was cloned to `~/Projects/equine-event-manager`) carry the auto-derived attribution `Whitney Mitchell <whitneymitchell@Whitneys-iMac.local>`. Git falls back to this when `user.email` isn't set in any config scope (system/global/local). Functional locally, but the hostname segment (`Whitneys-iMac.local`) becomes part of the public commit metadata if the repo ever ships to WordPress.org SVN, GitHub, or any public mirror.
 - **Why deferred:** Pre-release concern, not today's problem. The plugin is on a private dev branch — no public exposure yet. Mid-branch git config changes only fix attribution going forward, not the existing history; a `git filter-branch` or `git filter-repo` rewrite would touch every commit and is meaningfully larger work than a single chunk should absorb.
