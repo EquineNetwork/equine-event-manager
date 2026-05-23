@@ -123,6 +123,7 @@ class EEM_Reservations_List_Page {
 		eem_render_page_open(
 			array(
 				'title'      => __( 'Reservations', 'equine-event-manager' ),
+				'subtitle'   => __( 'Manage reservation setups for your events. Each setup defines the stay types, capacity, pricing, and add-ons customers see at checkout.', 'equine-event-manager' ),
 				'breadcrumb' => array(
 					array( 'label' => __( 'Reservations', 'equine-event-manager' ) ),
 				),
@@ -131,23 +132,29 @@ class EEM_Reservations_List_Page {
 					esc_url( admin_url( 'post-new.php?post_type=' . EEM_Reservations_List_Repo::POST_TYPE ) ),
 					esc_html__( 'New Reservation', 'equine-event-manager' )
 				),
-				'wrap'       => false,
+				'wrap'       => true,
 			)
 		);
 
 		?>
+		<?php /* C5.G.3 (re-applies the reverted C5.F-polish Commit 2 C4.E):
+		         page-header now lives INSIDE the bordered .eem-page-wrap via
+		         wrap=true (matches the Orders inside-card pattern that became
+		         the standard list-page header treatment). Status tabs /
+		         toolbar / table / mobile / footer render directly into
+		         .eem-page-body — no inner .eem-list-card wrapper.
+		         data-eem-reservations-list JS hook moves to the status-tabs
+		         strip (canonical Reservations marker that survives the rewrap). */ ?>
 		<?php $this->render_action_notice(); ?>
-		<div class="eem-list-card eem-reservations-list" data-eem-reservations-list>
-			<?php $this->render_status_tabs( $active_tab, $counts ); ?>
-			<?php $this->render_toolbar( $search, $date_filter, $page['total'], $active_tab ); ?>
-			<?php $this->render_desktop_table( $page['items'], $orderby, $order, $active_tab ); ?>
-			<?php $this->render_mobile_cards( $page['items'], $active_tab ); ?>
-			<?php $this->render_table_footer( $page ); ?>
-		</div>
+		<?php $this->render_status_tabs( $active_tab, $counts ); ?>
+		<?php $this->render_toolbar( $search, $date_filter, $page['total'], $active_tab ); ?>
+		<?php $this->render_desktop_table( $page['items'], $orderby, $order, $active_tab ); ?>
+		<?php $this->render_mobile_cards( $page['items'], $active_tab ); ?>
+		<?php $this->render_table_footer( $page ); ?>
 		<?php $this->render_email_customers_modal(); ?>
 		<?php
 
-		eem_render_page_close( array( 'wrap' => false ) );
+		eem_render_page_close( array( 'wrap' => true ) );
 	}
 
 	/**
@@ -655,7 +662,7 @@ class EEM_Reservations_List_Page {
 			'trash'   => EEM_Reservations_List_Repo::tab_label( 'trash' ),
 		);
 		?>
-		<nav class="eem-status-tabs" aria-label="<?php esc_attr_e( 'Filter by status', 'equine-event-manager' ); ?>">
+		<nav class="eem-status-tabs" data-eem-reservations-list aria-label="<?php esc_attr_e( 'Filter by status', 'equine-event-manager' ); ?>">
 			<?php
 			$first = true;
 			foreach ( $tabs as $id => $label ) :

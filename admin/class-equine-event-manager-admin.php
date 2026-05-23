@@ -286,9 +286,18 @@ class EEM_Admin {
 			return;
 		}
 
+		// C5.G.3: 'edit.php?post_type=en_reservation' (the WP-native CPT
+		// list URL) used to be the only Reservations submenu entry; C4
+		// added a separate equine-event-manager-reservations page that
+		// the user actually reaches via this sidebar. Leaving the old
+		// edit.php URL in the preferred order + auto-adding it below
+		// produced TWO "Reservations" entries in the sidebar. Removed
+		// both — the new Phase 3 slug controls ordering, and the legacy
+		// CPT URL is still reachable via direct nav (the C4
+		// maybe_redirect_old_list bounce handles accidental hits).
 		$preferred_order = array(
 			self::MENU_SLUG,
-			'edit.php?post_type=en_reservation',
+			'equine-event-manager-reservations',
 			'equine-event-manager-stall-chart',
 			'equine-event-manager-orders',
 			'equine-event-manager-invoicing',
@@ -305,14 +314,6 @@ class EEM_Admin {
 		);
 		$existing = $submenu[ self::MENU_SLUG ];
 		$ordered  = array();
-
-		if ( ! $this->submenu_contains_slug( $existing, 'edit.php?post_type=en_reservation' ) ) {
-			$existing[] = array(
-				__( 'Reservations', 'equine-event-manager' ),
-				'manage_options',
-				'edit.php?post_type=en_reservation',
-			);
-		}
 
 		foreach ( $preferred_order as $slug ) {
 			foreach ( $existing as $index => $item ) {
