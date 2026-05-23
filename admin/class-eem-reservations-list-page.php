@@ -123,6 +123,7 @@ class EEM_Reservations_List_Page {
 		eem_render_page_open(
 			array(
 				'title'      => __( 'Reservations', 'equine-event-manager' ),
+				'subtitle'   => __( 'Manage reservation setups for your events. Each setup defines the stay types, capacity, pricing, and add-ons customers see at checkout.', 'equine-event-manager' ),
 				'breadcrumb' => array(
 					array( 'label' => __( 'Reservations', 'equine-event-manager' ) ),
 				),
@@ -131,23 +132,29 @@ class EEM_Reservations_List_Page {
 					esc_url( admin_url( 'post-new.php?post_type=' . EEM_Reservations_List_Repo::POST_TYPE ) ),
 					esc_html__( 'New Reservation', 'equine-event-manager' )
 				),
-				'wrap'       => false,
+				'wrap'       => true,
 			)
 		);
 
 		?>
+		<?php /* C5.G.3 (re-applies the reverted C5.F-polish Commit 2 C4.E):
+		         page-header now lives INSIDE the bordered .eem-page-wrap via
+		         wrap=true (matches the Orders inside-card pattern that became
+		         the standard list-page header treatment). Status tabs /
+		         toolbar / table / mobile / footer render directly into
+		         .eem-page-body — no inner .eem-list-card wrapper.
+		         data-eem-reservations-list JS hook moves to the status-tabs
+		         strip (canonical Reservations marker that survives the rewrap). */ ?>
 		<?php $this->render_action_notice(); ?>
-		<div class="eem-list-card eem-reservations-list" data-eem-reservations-list>
-			<?php $this->render_status_tabs( $active_tab, $counts ); ?>
-			<?php $this->render_toolbar( $search, $date_filter, $page['total'], $active_tab ); ?>
-			<?php $this->render_desktop_table( $page['items'], $orderby, $order, $active_tab ); ?>
-			<?php $this->render_mobile_cards( $page['items'], $active_tab ); ?>
-			<?php $this->render_table_footer( $page ); ?>
-		</div>
+		<?php $this->render_status_tabs( $active_tab, $counts ); ?>
+		<?php $this->render_toolbar( $search, $date_filter, $page['total'], $active_tab ); ?>
+		<?php $this->render_desktop_table( $page['items'], $orderby, $order, $active_tab ); ?>
+		<?php $this->render_mobile_cards( $page['items'], $active_tab ); ?>
+		<?php $this->render_table_footer( $page ); ?>
 		<?php $this->render_email_customers_modal(); ?>
 		<?php
 
-		eem_render_page_close( array( 'wrap' => false ) );
+		eem_render_page_close( array( 'wrap' => true ) );
 	}
 
 	/**
@@ -655,7 +662,7 @@ class EEM_Reservations_List_Page {
 			'trash'   => EEM_Reservations_List_Repo::tab_label( 'trash' ),
 		);
 		?>
-		<nav class="eem-status-tabs" aria-label="<?php esc_attr_e( 'Filter by status', 'equine-event-manager' ); ?>">
+		<nav class="eem-status-tabs" data-eem-reservations-list aria-label="<?php esc_attr_e( 'Filter by status', 'equine-event-manager' ); ?>">
 			<?php
 			$first = true;
 			foreach ( $tabs as $id => $label ) :
@@ -738,7 +745,7 @@ class EEM_Reservations_List_Page {
 					<?php endif; ?>
 					<div class="eem-search-wrap eem-search-wrap--attached">
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-						<input class="eem-search-input" type="search" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="<?php esc_attr_e( 'Search reservations…', 'equine-event-manager' ); ?>" />
+						<input class="eem-search-input" type="search" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="<?php esc_attr_e( 'Search…', 'equine-event-manager' ); ?>" />
 					</div>
 					<button type="submit" class="eem-toolbar-btn eem-search-btn"><?php esc_html_e( 'Search Reservations', 'equine-event-manager' ); ?></button>
 				</form>
@@ -869,7 +876,13 @@ class EEM_Reservations_List_Page {
 		$dates        = EEM_Reservations_List_Repo::get_event_date_range_label( $id );
 		$badges       = EEM_Reservations_List_Repo::get_type_badges( $id );
 		$orders_count = EEM_Reservations_List_Repo::get_orders_count_for_reservation( $id );
-		$has_stalls   = in_array( 'stall', $badges, true );
+		// C5.G.4: stall-chart icon visibility now reads the canonical
+		// _en_stall_chart_enabled meta (via the repo helper) instead of
+		// the type-badge proxy "has stall capacity". A reservation can
+		// have stalls without a chart layout drawn — the icon links to
+		// the chart page, so the precise signal is whether a chart is
+		// actually enabled.
+		$has_stall_chart = EEM_Reservations_List_Repo::has_stall_chart_enabled( $id );
 		$status_id    = $this->derive_status_id( $post );
 		$status_label = $this->status_label_for( $status_id );
 		$is_trashed   = ( 'trashed' === $status_id );
@@ -880,8 +893,33 @@ class EEM_Reservations_List_Page {
 			<td><span class="eem-event-dates"><?php echo esc_html( $dates !== '' ? $dates : '—' ); ?></span></td>
 			<td><?php $this->render_type_badges( $badges ); ?></td>
 			<td><span class="eem-res-status eem-res-status--<?php echo esc_attr( $status_id ); ?>"><?php echo esc_html( $status_label ); ?></span></td>
-			<td><span class="eem-orders-count<?php echo $orders_count === 0 ? ' is-zero' : ''; ?>"><?php echo esc_html( number_format_i18n( $orders_count ) ); ?></span></td>
-			<td><?php $this->render_row_actions( $id, $has_stalls, $is_trashed ); ?></td>
+			<td><?php
+				// C5.G.12: per WP-core post-counts-in-category-lists convention,
+				// count=0 renders as plain unstyled text (no link, no hover);
+				// count>0 renders as a link to the Orders list filtered by this
+				// reservation's event label (post title). Caveat: the Orders
+				// list event filter compares against the legacy order's
+				// derived event label — if that label doesn't match the
+				// reservation post title (e.g. order references a different
+				// external event identifier), the filtered Orders view may
+				// surface zero matches. Acceptable graceful degrade for v1;
+				// future per-reservation filter mode would require a new
+				// repo arg + tab — out of C5.G scope.
+				if ( $orders_count > 0 ) :
+					$event_label    = get_the_title( $post );
+					$orders_link_url = add_query_arg(
+						array(
+							'page'  => EEM_Orders_List_Page::MENU_SLUG,
+							'event' => $event_label,
+						),
+						admin_url( 'admin.php' )
+					);
+					?><a class="eem-orders-count eem-orders-count-link" href="<?php echo esc_url( $orders_link_url ); ?>"><?php echo esc_html( number_format_i18n( $orders_count ) ); ?></a><?php
+				else :
+					?><span class="eem-orders-count is-zero"><?php echo esc_html( number_format_i18n( $orders_count ) ); ?></span><?php
+				endif;
+			?></td>
+			<td><?php $this->render_row_actions( $id, $has_stall_chart, $is_trashed ); ?></td>
 		</tr>
 		<?php
 	}
@@ -924,10 +962,16 @@ class EEM_Reservations_List_Page {
 	 * dropdown-toggle delegated handler.
 	 *
 	 * @param int  $reservation_id
-	 * @param bool $has_stalls
+	 * @param bool $has_stall_chart  True when _en_stall_chart_enabled
+	 *                               meta is truthy. C5.G.4 replaced the
+	 *                               older $has_stalls argument (which
+	 *                               proxied "stall capacity > 0") with
+	 *                               this precise signal so the icon
+	 *                               only renders when a chart is
+	 *                               actually configured.
 	 * @return void
 	 */
-	private function render_row_actions( $reservation_id, $has_stalls, $is_trashed = false ) {
+	private function render_row_actions( $reservation_id, $has_stall_chart, $is_trashed = false ) {
 		$stall_chart_url = add_query_arg(
 			array(
 				'page'           => 'equine-event-manager-stall-chart',
@@ -946,7 +990,7 @@ class EEM_Reservations_List_Page {
 		$menu_id = 'eem-res-menu-' . $reservation_id;
 		?>
 		<div class="eem-actions-cell">
-			<?php if ( $has_stalls ) : ?>
+			<?php if ( $has_stall_chart ) : ?>
 				<a class="eem-action-icon-btn eem-action-icon-btn--stall-chart" href="<?php echo esc_url( $stall_chart_url ); ?>" title="<?php esc_attr_e( 'Stall Chart', 'equine-event-manager' ); ?>" aria-label="<?php esc_attr_e( 'Stall Chart', 'equine-event-manager' ); ?>">
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
 				</a>
@@ -1010,7 +1054,8 @@ class EEM_Reservations_List_Page {
 				$dates        = EEM_Reservations_List_Repo::get_event_date_range_label( $id );
 				$badges       = EEM_Reservations_List_Repo::get_type_badges( $id );
 				$orders_count = EEM_Reservations_List_Repo::get_orders_count_for_reservation( $id );
-				$has_stalls   = in_array( 'stall', $badges, true );
+				// C5.G.4: see render_table_row above — same signal.
+				$has_stall_chart = EEM_Reservations_List_Repo::has_stall_chart_enabled( $id );
 				$status_id    = $this->derive_status_id( $post );
 				$status_label = $this->status_label_for( $status_id );
 				$is_trashed   = ( 'trashed' === $status_id );
@@ -1022,20 +1067,32 @@ class EEM_Reservations_List_Page {
 						<div class="eem-mob-res-badges">
 							<?php $this->render_type_badges( $badges ); ?>
 							<span class="eem-res-status eem-res-status--<?php echo esc_attr( $status_id ); ?>"><?php echo esc_html( $status_label ); ?></span>
-							<span class="eem-orders-count<?php echo $orders_count === 0 ? ' is-zero' : ''; ?>">
-								<?php
-								echo esc_html(
-									sprintf(
-										/* translators: %s: order count (already number_format_i18n'd) */
-										_n( '%s order', '%s orders', $orders_count, 'equine-event-manager' ),
-										number_format_i18n( $orders_count )
-									)
+							<?php
+							// C5.G.12: mobile parallel of the desktop conditional —
+							// count=0 stays plain text, count>0 becomes an anchor
+							// to the Orders list filtered by event label.
+							$mob_orders_label = sprintf(
+								/* translators: %s: order count (already number_format_i18n'd) */
+								_n( '%s order', '%s orders', $orders_count, 'equine-event-manager' ),
+								number_format_i18n( $orders_count )
+							);
+							if ( $orders_count > 0 ) :
+								$mob_event_label    = get_the_title( $post );
+								$mob_orders_link_url = add_query_arg(
+									array(
+										'page'  => EEM_Orders_List_Page::MENU_SLUG,
+										'event' => $mob_event_label,
+									),
+									admin_url( 'admin.php' )
 								);
-								?>
-							</span>
+								?><a class="eem-orders-count eem-orders-count-link" href="<?php echo esc_url( $mob_orders_link_url ); ?>"><?php echo esc_html( $mob_orders_label ); ?></a><?php
+							else :
+								?><span class="eem-orders-count is-zero"><?php echo esc_html( $mob_orders_label ); ?></span><?php
+							endif;
+							?>
 						</div>
 						<div class="eem-mob-res-actions">
-							<?php $this->render_row_actions( $id, $has_stalls, $is_trashed ); ?>
+							<?php $this->render_row_actions( $id, $has_stall_chart, $is_trashed ); ?>
 						</div>
 					</div>
 				</div>

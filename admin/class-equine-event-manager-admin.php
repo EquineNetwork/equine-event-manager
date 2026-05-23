@@ -286,9 +286,18 @@ class EEM_Admin {
 			return;
 		}
 
+		// C5.G.3: 'edit.php?post_type=en_reservation' (the WP-native CPT
+		// list URL) used to be the only Reservations submenu entry; C4
+		// added a separate equine-event-manager-reservations page that
+		// the user actually reaches via this sidebar. Leaving the old
+		// edit.php URL in the preferred order + auto-adding it below
+		// produced TWO "Reservations" entries in the sidebar. Removed
+		// both — the new Phase 3 slug controls ordering, and the legacy
+		// CPT URL is still reachable via direct nav (the C4
+		// maybe_redirect_old_list bounce handles accidental hits).
 		$preferred_order = array(
 			self::MENU_SLUG,
-			'edit.php?post_type=en_reservation',
+			'equine-event-manager-reservations',
 			'equine-event-manager-stall-chart',
 			'equine-event-manager-orders',
 			'equine-event-manager-invoicing',
@@ -305,14 +314,6 @@ class EEM_Admin {
 		);
 		$existing = $submenu[ self::MENU_SLUG ];
 		$ordered  = array();
-
-		if ( ! $this->submenu_contains_slug( $existing, 'edit.php?post_type=en_reservation' ) ) {
-			$existing[] = array(
-				__( 'Reservations', 'equine-event-manager' ),
-				'manage_options',
-				'edit.php?post_type=en_reservation',
-			);
-		}
 
 		foreach ( $preferred_order as $slug ) {
 			foreach ( $existing as $index => $item ) {
@@ -512,12 +513,26 @@ class EEM_Admin {
 	public function register_menu() {
 		$native_events_enabled = EEM_Events::is_native_events_enabled();
 
+		// Orders page is rendered by the Phase 3 EEM_Orders_List_Page controller
+		// (admin/class-eem-orders-list-page.php). Menu callback was swapped in
+		// C5.E; the legacy render_orders_page method + its private helpers
+		// stay until a separate cleanup chunk audits remaining callers and
+		// removes them (same staging as C3.D.4).
+		//
+		// IMPORTANT: $orders_list_page is shared between add_menu_page() and
+		// add_submenu_page() so WP's callback dedup (which compares object
+		// identity for [object, method] pairs) collapses both registrations
+		// against the same page hook into a single callback. Two separate
+		// `new EEM_Orders_List_Page()` calls would register as two distinct
+		// callbacks and render() would fire twice on every page load —
+		// caught the hard way at C5.F first browser verify.
+		$orders_list_page = new EEM_Orders_List_Page();
 		$this->orders_hook = add_menu_page(
 			__( 'Orders', 'equine-event-manager' ),
 			__( 'Event Manager', 'equine-event-manager' ),
 			'manage_options',
 			self::MENU_SLUG,
-			array( $this, 'render_orders_page' ),
+			array( $orders_list_page, 'render' ),
 			'dashicons-tickets-alt',
 			20
 		);
@@ -528,7 +543,7 @@ class EEM_Admin {
 			__( 'Orders', 'equine-event-manager' ),
 			'manage_options',
 			self::MENU_SLUG,
-			array( $this, 'render_orders_page' )
+			array( $orders_list_page, 'render' )
 		);
 
 		// C4 — Reservations submenu points at the new Phase 3 custom page

@@ -31,6 +31,11 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-settings-page.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-reservations-list-repo.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-reservations-list-page.php';
 
+// Phase 3 — Orders list subsystem (C5 — replaces legacy
+// EEM_Admin::render_orders_page with a mockup-faithful page).
+require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-orders-list-repo.php';
+require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-orders-list-page.php';
+
 // Phase 3 admin template partials.
 require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_breadcrumb.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_page_shell.php';
@@ -127,6 +132,18 @@ class EEM_Plugin {
 		add_action( 'wp_ajax_eem_email_customers',                array( 'EEM_Reservations_List_Page', 'handle_email_customers_ajax' ) );
 		add_action( 'wp_ajax_eem_email_customers_count',          array( 'EEM_Reservations_List_Page', 'handle_email_customers_count_ajax' ) );
 		add_action( 'admin_enqueue_scripts',                      array( 'EEM_Reservations_List_Page', 'localize_row_action_nonces' ), 20 );
+
+		// C5.C — Orders list row-action handlers.
+		add_action( 'admin_post_eem_order_resend_notification',   array( 'EEM_Orders_List_Page', 'handle_resend_notification' ) );
+		add_action( 'admin_post_eem_order_export_csv',            array( 'EEM_Orders_List_Page', 'handle_export_csv' ) );
+		add_action( 'admin_post_eem_order_trash',                 array( 'EEM_Orders_List_Page', 'handle_trash' ) );
+		add_action( 'admin_post_eem_order_print_receipt',         array( 'EEM_Orders_List_Page', 'handle_print_receipt' ) );
+		add_action( 'admin_post_eem_orders_bulk_refund',          array( 'EEM_Orders_List_Page', 'handle_bulk_refund' ) );
+		// C5.G.8 — hidden Customer Profile placeholder page. Real page
+		// replaces this stub when the planned-roadmap chunk ships
+		// (see CLEANUP.md "Customer Profile chunk sequencing").
+		add_action( 'admin_menu',                                 array( 'EEM_Orders_List_Page', 'register_customer_profile_stub' ), 25 );
+		add_action( 'admin_enqueue_scripts',                      array( 'EEM_Orders_List_Page', 'localize_row_action_nonces' ), 20 );
 		add_action( 'admin_head', array( $this->reservation_editor, 'print_editor_shell_fallback_assets' ) );
 		add_action( 'edit_form_top', array( $this->reservation_editor, 'render_editor_header' ) );
 		add_action( 'edit_form_after_title', array( $this->reservation_editor, 'render_editor_overview' ) );

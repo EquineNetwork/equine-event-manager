@@ -744,6 +744,83 @@
 		form.submit();
 	}
 
+	/* C5.G.2 — Orders row-action helper. Mirror of submitReservationAction
+	   pointed at the eemOrderRowActions JS-localized nonces + the order_key
+	   form field (vs reservation_id). C5.C registered the PHP handlers +
+	   the JS-localized nonces but never authored the JS handler arms —
+	   added here so Print Receipt + meatballs items actually dispatch. */
+	function submitOrderAction(target, actionName, nonceAction, confirmMessage) {
+		var orderKey = target.dataset.orderKey;
+		if (!orderKey) return;
+		if (confirmMessage && !window.confirm(confirmMessage)) return;
+		var nonce = window.eemOrderRowActions && window.eemOrderRowActions.nonces && window.eemOrderRowActions.nonces[nonceAction];
+		if (!nonce) {
+			if (window.console && window.console.warn) {
+				window.console.warn('EEM: missing nonce for ' + actionName);
+			}
+			return;
+		}
+		var adminPostUrl = (window.eemOrderRowActions && window.eemOrderRowActions.adminPostUrl) || (window.ajaxurl || '').replace('admin-ajax.php', 'admin-post.php');
+		var form = document.createElement('form');
+		form.method = 'POST';
+		form.action = adminPostUrl;
+		form.style.display = 'none';
+		[
+			['action', actionName],
+			['order_key', orderKey],
+			['_eem_action_nonce', nonce]
+		].forEach(function (pair) {
+			var i = document.createElement('input');
+			i.type = 'hidden';
+			i.name = pair[0];
+			i.value = pair[1];
+			form.appendChild(i);
+		});
+		document.body.appendChild(form);
+		form.submit();
+	}
+
+	/* C5.G.2 — Orders Bulk Refund modal trigger. Reads the bulk-action
+	   <select> + collects checked order_keys from row checkboxes into
+	   the modal's hidden field, then opens the modal. Per ORD-2 modal
+	   confirmation flow — the actual POST happens from the modal's
+	   Confirm button (handler below). */
+	function openOrdersBulkRefundModal() {
+		var bulkSelect = document.querySelector('[data-eem-orders-bulk-action]');
+		if (!bulkSelect || bulkSelect.value !== 'refund') {
+			window.alert('Pick "Refund Selected" before clicking Apply.');
+			return;
+		}
+		var checked = document.querySelectorAll('input.eem-orders-row-cb:checked');
+		if (!checked.length) {
+			window.alert('Select at least one order before clicking Apply.');
+			return;
+		}
+		var keys = Array.prototype.map.call(checked, function (cb) { return cb.value; });
+		var modal = document.getElementById('eem-orders-bulk-refund-modal');
+		if (!modal) return;
+		var keysField = modal.querySelector('[data-eem-orders-bulk-refund-keys]');
+		if (keysField) keysField.value = keys.join(',');
+		var summary = modal.querySelector('[data-eem-orders-bulk-refund-summary]');
+		if (summary) summary.textContent = 'Refund ' + keys.length + ' selected order' + (keys.length === 1 ? '' : 's') + '?';
+		modal.classList.add('open');
+		modal.setAttribute('aria-hidden', 'false');
+	}
+
+	function closeOrdersBulkRefundModal() {
+		var modal = document.getElementById('eem-orders-bulk-refund-modal');
+		if (!modal) return;
+		modal.classList.remove('open');
+		modal.setAttribute('aria-hidden', 'true');
+	}
+
+	function submitOrdersBulkRefundForm() {
+		var modal = document.getElementById('eem-orders-bulk-refund-modal');
+		if (!modal) return;
+		var form = modal.querySelector('[data-eem-orders-bulk-refund-form]');
+		if (form) form.submit();
+	}
+
 	/* Bulk action — collects selected row ids from the table checkboxes,
 	   stuffs them into the hidden _eem_selected_ids field, then submits
 	   the bulk form. The PHP handler explodes on comma + absint each. */
@@ -964,6 +1041,38 @@
 		},
 		'email-customers-send': function () {
 			sendEmailCustomersForm();
+		},
+		/* C5.G.2 — Orders list row actions. Pattern parallels the
+		   C4.C reservation-* arms; submitOrderAction helper above
+		   handles nonce lookup via window.eemOrderRowActions. */
+		'order-print-receipt': function (target) {
+			submitOrderAction(target, 'eem_order_print_receipt', 'eem_order_print_receipt');
+		},
+		'order-trash': function (target) {
+			submitOrderAction(target, 'eem_order_trash', 'eem_order_trash', 'Move this order to Trash?');
+		},
+		'order-resend-notification': function (target) {
+			submitOrderAction(target, 'eem_order_resend_notification', 'eem_order_resend_notification');
+		},
+		'order-export-csv': function (target) {
+			submitOrderAction(target, 'eem_order_export_csv', 'eem_order_export_csv');
+		},
+		'orders-toggle-all': function (target) {
+			// Dispatcher already called ev.preventDefault() which suppresses
+			// the browser's default checkbox-toggle, so flip manually first
+			// before propagating to row checkboxes.
+			target.checked = !target.checked;
+			var checked = !!target.checked;
+			document.querySelectorAll('input.eem-orders-row-cb').forEach(function (cb) { cb.checked = checked; });
+		},
+		'orders-bulk-apply': function () {
+			openOrdersBulkRefundModal();
+		},
+		'orders-bulk-refund-close': function () {
+			closeOrdersBulkRefundModal();
+		},
+		'orders-bulk-refund-confirm': function () {
+			submitOrdersBulkRefundForm();
 		}
 	};
 

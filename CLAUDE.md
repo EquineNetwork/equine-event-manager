@@ -181,6 +181,20 @@ Estimating procedure:
 4. PHP-heavy chunks (handlers, repos) still use the standard PHP `×1.275` tax.
 5. Mixed chunks: split the estimate into PHP-bucket and CSS-bucket, apply each multiplier separately, sum.
 
+**C1.x-primitives carve-out (established C5):** the ×2.5 floor assumes the page-port chunk is introducing genuinely new CSS for most of the mockup's component vocabulary. When a port chunk's mockup is **predominantly composed of components C1.2/C1.3/C1.4 already shipped** — status badges, filter tabs, type chips, list selects, bulk action bars, mobile cards, modal chrome, field rows — the chunk runs **materially under the ×2.5 floor** because the reused primitives don't re-add to admin.css. The ×2.5 number is correct as a *first-pass* estimate and a *ceiling* for new-CSS scope; the underrun is the right shape of result, not a hygiene failure.
+
+C5 actuals confirming the carve-out:
+- **C5.B Orders list table+toolbar:** ~210 mockup CSS LOC → 83 admin.css additions = **×0.4** (37% under the 820 post-tax budget). Net-new CSS scope was only `.eem-orders-toolbar` / `--row` / `--type-filter-label` / `--list-count` + responsive override; everything else (.eem-status-badge × 6 variants, .eem-filter-tabs, .eem-type-chips × 4 variants, .eem-list-select, .eem-bulk-action-bar, .eem-mobile-cards, .eem-search-wrap, .eem-btn-collect) was C1.x anticipatory groundwork landing 1:1 against the mockup.
+- **C5.D bulk-refund modal + toolbar dispatch:** 0 new CSS LOC (modal chrome inherited from C1.4 `.eem-modal`, field elements from C1.2 `.eem-field-*`). 36% under the post-tax PHP+CSS budget.
+
+**How to apply the carve-out in chunk planning (do this at the planning conversation, not mid-implementation):**
+1. After step 1 (count page-unique CSS rules in mockup's `<style>` block), do a separate `grep` pass over `assets/css/admin.css` for each component name (`.eem-status-badge`, `.eem-filter-tabs`, `.eem-mobile-card*`, `.eem-modal`, `.eem-field-*`, `.eem-list-select`, `.eem-bulk-action-bar`, `.eem-search-wrap`, `.eem-btn-collect`, `.eem-btn-add`, `.eem-btn-delete`, `.eem-type-badge`, `.eem-type-chip`, etc.).
+2. For each one already shipped, deduct its mockup source LOC from the count BEFORE applying the ×2.5 multiplier. Only NEW classes you'll be authoring count toward the multiplier base.
+3. If after the deduction the net-new CSS count is small (<60 source LOC), expect a sub-chunk CSS budget under ~170 LOC and state that in the plan — don't budget for ×2.5 against the gross mockup count.
+4. Hygiene audit at wrap-up is unchanged: docblocks intact, i18n complete, no error_log, no !important. The carve-out justifies the LOC delta; it does NOT excuse skipped hygiene.
+
+**Forward note for C6 Order Detail:** likely to hit the same carve-out. Order Detail (`.mockups/order_detail_page.html`) reuses `.eem-status-badge`, `.eem-type-badge`, `.eem-modal` (for refund panel), `.eem-field-*`, `.eem-card`, `.eem-page-header`, plus probably the C2 activity-log render partial. Expect the C6 mockup-CSS-to-actual ratio to land somewhere in [×0.4, ×1.5] rather than near ×2.5. After C6 lands, revisit this carve-out with three data points and decide whether to formalize a separate "composed page" heuristic vs. the "novel page" ×2.5 heuristic.
+
 #### Layout-shell verification — outer-structure comparison (refined C4.B)
 
 The 7-step verification procedure caught the inner-card architecture of the Reservations mockup correctly but missed that the mockup's **outer structure** (page-header sits OUTSIDE the bordered card) didn't match the existing `_page_shell.php` partial (which renders page-header INSIDE `.eem-page-wrap`). The shell modification surfaced mid-implementation and cost ~52 unbudgeted LOC.

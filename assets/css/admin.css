@@ -708,8 +708,16 @@ a.eem-btn-tertiary {
 	color: var(--eem-text-on-navy);
 }
 
-/* Collect — orange CTA on unpaid order rows (Orders list, Order detail banner) */
-.eem-btn-collect {
+/* Collect — orange CTA on unpaid order rows (Orders list, Order detail banner).
+   `a.` chain wins specificity (0,2,0) against the global
+   `.eem-page a { color: var(--eem-electric) }` rule (0,1,1) — without
+   it, the anchor-rendered button (per render_row_action_cell) paints
+   text + currentColor-stroked SVG icon Electric Blue instead of the
+   mockup-spec orange (#c2410c). Same pattern as a.eem-filter-tab and
+   a.eem-status-tab. Fixed C5.G.7 against mockup line 129 spec.
+   CLEANUP #12 long-term fix: scope `.eem-page a` to `:where()`. */
+.eem-btn-collect,
+a.eem-btn-collect {
 	display: inline-flex;
 	align-items: center;
 	gap: 5px;
@@ -723,11 +731,14 @@ a.eem-btn-tertiary {
 	background: var(--eem-type-addon-bg);
 	color: var(--eem-type-addon-text);
 	border: 1px solid var(--eem-type-addon-border);
+	text-decoration: none;
 }
 
-.eem-btn-collect:hover {
+.eem-btn-collect:hover,
+a.eem-btn-collect:hover {
 	background: #FFEDD5;
 	color: var(--eem-type-addon-text);
+	text-decoration: none;
 }
 
 .eem-btn-collect svg {
@@ -1203,7 +1214,15 @@ a.eem-btn-tertiary {
 	gap: 1px;
 }
 
-.eem-filter-tab {
+/* `a.` chain wins specificity (0,2,0) against the global
+   .eem-page a { color: var(--eem-electric) } rule (0,1,1) — without
+   it, anchor-rendered filter tabs (Orders billing-status tabs since
+   C5.D) would all paint Electric Blue. Same pattern as
+   .eem-status-tab below. CLEANUP #12 tracks the long-term fix:
+   scope the global anchor rule to :where() so any class rule wins
+   naturally. */
+.eem-filter-tab,
+a.eem-filter-tab {
 	padding: 5px 12px;
 	border-radius: var(--eem-radius-sm);
 	font-size: 12.5px;
@@ -1214,9 +1233,11 @@ a.eem-btn-tertiary {
 	border: none;
 	background: transparent;
 	font-family: var(--eem-font-ui);
+	text-decoration: none;
 }
 
-.eem-filter-tab.active {
+.eem-filter-tab.active,
+a.eem-filter-tab.active {
 	background: var(--eem-surface);
 	color: var(--eem-text);
 	font-weight: 600;
@@ -1250,10 +1271,15 @@ a.eem-btn-tertiary {
 	opacity: 0.4;
 }
 
-.eem-type-chip--stall  { background: var(--eem-type-stall-bg);  color: var(--eem-type-stall-text);  border-color: var(--eem-type-stall-border); }
-.eem-type-chip--rv     { background: var(--eem-type-rv-bg);     color: var(--eem-type-rv-text);     border-color: var(--eem-type-rv-border); }
-.eem-type-chip--addon  { background: var(--eem-type-addon-bg);  color: var(--eem-type-addon-text);  border-color: var(--eem-type-addon-border); }
-.eem-type-chip--group  { background: var(--eem-type-group-bg);  color: var(--eem-type-group-text);  border-color: var(--eem-type-group-border); }
+/* `a.` chain wins specificity (0,2,0) against the global
+   .eem-page a { color: var(--eem-electric) } rule (0,1,1) — without
+   it, anchor-rendered type chips (Orders filter chips since C5.D)
+   would all paint Electric Blue and lose their per-variant tint.
+   Same pattern as .eem-filter-tab above. */
+.eem-type-chip--stall, a.eem-type-chip--stall  { background: var(--eem-type-stall-bg);  color: var(--eem-type-stall-text);  border-color: var(--eem-type-stall-border); text-decoration: none; }
+.eem-type-chip--rv,    a.eem-type-chip--rv     { background: var(--eem-type-rv-bg);     color: var(--eem-type-rv-text);     border-color: var(--eem-type-rv-border);    text-decoration: none; }
+.eem-type-chip--addon, a.eem-type-chip--addon  { background: var(--eem-type-addon-bg);  color: var(--eem-type-addon-text);  border-color: var(--eem-type-addon-border); text-decoration: none; }
+.eem-type-chip--group, a.eem-type-chip--group  { background: var(--eem-type-group-bg);  color: var(--eem-type-group-text);  border-color: var(--eem-type-group-border); text-decoration: none; }
 
 .eem-type-chip-dot {
 	width: 5px;
@@ -1542,7 +1568,15 @@ th.sorted-desc .eem-sort-icon span:first-child {
 	overflow: hidden;
 }
 
-.eem-row-dropdown.open {
+/* C5.G.2: open-state lives on the wrap, not the dropdown.
+   admin.js toggleDropdown() adds .open to the closest
+   .eem-row-menu-wrap (parent), not to .eem-row-dropdown (child) —
+   so the prior `.eem-row-dropdown.open` selector never matched and
+   meatballs never visually opened on either list page. Pre-existing
+   C4-era contract mismatch that didn't surface until live browser
+   review in C5.G. Fixed by targeting the wrap's .open state and
+   applying display:block to the child dropdown. */
+.eem-row-menu-wrap.open .eem-row-dropdown {
 	display: block;
 }
 
@@ -3173,8 +3207,12 @@ a.eem-res-name {
 .eem-res-name:hover,
 a.eem-res-name:hover,
 a.eem-res-name:focus {
+	/* C5.G.8: hover convention is color-only, no underline (see the
+	   "EEM hover convention" block near the end of admin.css). Prior
+	   underline-on-hover was a deliberate C4-era link affordance that
+	   the new convention overrides for cross-page consistency. */
 	color: var(--eem-electric);
-	text-decoration: underline;
+	text-decoration: none;
 }
 
 .eem-event-dates {
@@ -3605,4 +3643,177 @@ a.eem-mob-res-name:focus {
 	border-top-left-radius: 0;
 	border-bottom-left-radius: 0;
 	border-radius: 0 4px 4px 0;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   C5.F-toolbar — Orders list per-cell typography
+
+   The C5.B-D toolbar component classes (.eem-orders-toolbar,
+   .eem-orders-toolbar-row, .eem-orders-type-filter-label,
+   .eem-orders-list-count) plus their orders-only mobile overrides
+   were removed when the Orders toolbar was restructured to reuse
+   the shared C4 .eem-list-toolbar primitive directly (no more
+   C5-specific toolbar component class). The class-name collision
+   with admin-legacy.css `.eem-orders-toolbar { display: grid }`
+   (line 1787) is mooted by virtue of dropping the class entirely.
+
+   The order-row table-cell typography below stays — it targets
+   row cells inside the .eem-table on the Orders page, scoped via
+   body.eem-shell-page--orders (the body class is reliably set
+   per admin/class-equine-event-manager-admin.php line 127).
+   ───────────────────────────────────────────────────────────── */
+
+/* Order number — bold navy, mockup line 99 */
+body.eem-shell-page--orders .eem-order-num {
+	font-weight: 700;
+	color: var(--eem-navy);
+	font-size: 13px;
+	white-space: nowrap;
+}
+
+/* Customer + event cells — restrained typography per mockup lines 100–102 */
+body.eem-shell-page--orders .eem-customer-name { font-weight: 500; }
+body.eem-shell-page--orders .eem-event-name    { color: #50575e; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body.eem-shell-page--orders .eem-date-val      { color: var(--eem-text-muted); white-space: nowrap; font-size: 13px; }
+
+/* ─────────────────────────────────────────────────────────────
+   C5.G.5 — Defeat global .eem-page a:hover underline on
+   anchor-based components.
+
+   The global rule `.eem-page a:hover { text-decoration: underline }`
+   (admin.css line 177) has specificity (0,2,1) and wins against
+   the per-component (0,1,1) `a.eem-filter-tab` etc base rules on
+   hover. Adding `a.{class}:hover` rules at matching (0,2,1)
+   specificity — source order wins since these load later than
+   line 177.
+
+   Components covered (audited C5.G.5):
+   - .eem-filter-tab    (Orders billing tabs; anchors since C5.D)
+   - .eem-row-dd-item   (meatballs items; some are anchors —
+                          View Order / Edit Reservation / Refund
+                          Order on Orders; View on Front-End /
+                          View Orders on Reservations)
+   - .eem-page-btn      (pagination prev/next/numbered; anchors)
+
+   NOT covered (deliberately retain underline-on-hover):
+   - .eem-res-name      (reservation title link — underline is
+                          expected link affordance per admin.css:3199)
+
+   Long-term fix tracked in CLEANUP #12: scope the global
+   `.eem-page a` to `:where()` so any class rule wins naturally.
+   These per-component workarounds drop out then.
+   ───────────────────────────────────────────────────────────── */
+a.eem-filter-tab:hover,
+a.eem-row-dd-item:hover,
+a.eem-page-btn:hover {
+	text-decoration: none;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   C5.G.8 — EEM hover convention: color-only, no underlines.
+
+   Universal rule for all clickable text/link elements across
+   the plugin: hover state shifts COLOR only (typically navy →
+   electric blue, or a darker shade of the rest color), NEVER
+   adds an underline. Underlines are reserved for the front-end
+   public-facing content — admin chrome uses pointer + color
+   shift as the hover affordance.
+
+   Audited components (each verified earlier in C5.G or here):
+   - .eem-res-name        : navy → electric on hover, no underline (admin.css:3199)
+   - .eem-status-tab      : muted → navy on hover, no underline (admin.css:3030)
+   - .eem-filter-tab      : muted → no change on hover, no underline (C5.G.5)
+   - .eem-row-dd-item     : text → no change on hover, no underline (C5.G.5)
+   - .eem-page-btn        : muted → no change on hover, no underline (C5.G.5)
+   - .eem-btn-collect     : orange → orange on hover (bg shifts), no underline (C5.G.7)
+   - .eem-order-num       : navy → electric on hover, no underline (this block)
+   - .eem-customer-name   : navy → electric on hover, no underline (this block)
+
+   New components ship under this convention by default. CLEANUP
+   #12 long-term fix: scope `.eem-page a` to `:where()` so any
+   class rule wins naturally — the per-component `a.` chains in
+   this block (and the others) drop out then.
+   ───────────────────────────────────────────────────────────── */
+
+/* Order number — bold navy link, electric on hover. Render-site
+   styling applies on both .eem-order-num (desktop table cell)
+   and .eem-mobile-card-id.eem-order-num (mobile card chip).
+   The body.eem-shell-page--orders .eem-order-num base color
+   rule (admin.css C5.F-toolbar) sets the rest color; this block
+   adds the a.-chain + hover for the anchor-rendered version. */
+a.eem-order-num,
+body.eem-shell-page--orders a.eem-order-num {
+	color: var(--eem-navy);
+	text-decoration: none;
+	font-weight: 700;
+}
+
+a.eem-order-num:hover,
+a.eem-order-num:focus,
+body.eem-shell-page--orders a.eem-order-num:hover,
+body.eem-shell-page--orders a.eem-order-num:focus {
+	color: var(--eem-electric);
+	text-decoration: none;
+}
+
+/* Customer name — medium-weight body color rest, navy on hover.
+   Mobile card variant carries both classes
+   (.eem-mobile-card-title > a.eem-customer-name). */
+a.eem-customer-name,
+body.eem-shell-page--orders a.eem-customer-name {
+	color: var(--eem-text);
+	text-decoration: none;
+	font-weight: 500;
+}
+
+a.eem-customer-name:hover,
+a.eem-customer-name:focus,
+body.eem-shell-page--orders a.eem-customer-name:hover,
+body.eem-shell-page--orders a.eem-customer-name:focus {
+	color: var(--eem-electric);
+	text-decoration: none;
+}
+
+/* C5.G.10 — Event column link affordance (Orders list).
+   Anchor variant of the previous .eem-event-name span; targets the
+   reservation's WP CPT edit screen when the order traces back via
+   the "Reservation setup ID: N" note pattern. `a.` chain wins
+   specificity against .eem-page a per the EEM hover convention
+   block above. */
+a.eem-event-link {
+	font-weight: 700;
+	color: var(--eem-navy);
+	max-width: 200px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	display: inline-block;
+	vertical-align: middle;
+	text-decoration: none;
+}
+
+a.eem-event-link:hover,
+a.eem-event-link:focus {
+	color: var(--eem-electric);
+	text-decoration: none;
+}
+
+/* C5.G.12 — Reservations Orders-count link variant.
+   Per WP-core convention: count=0 renders as the existing
+   .eem-orders-count.is-zero (dimmed span, no link), count>0
+   renders as an anchor to the Orders list filtered by event
+   label. The base .eem-orders-count rule supplies pill chrome
+   when present; the link variant adds navy bold + color-only
+   hover per the EEM hover convention. `a.` chain wins
+   specificity against the global .eem-page a rule. */
+a.eem-orders-count-link {
+	color: var(--eem-navy);
+	font-weight: 700;
+	text-decoration: none;
+}
+
+a.eem-orders-count-link:hover,
+a.eem-orders-count-link:focus {
+	color: var(--eem-electric);
+	text-decoration: none;
 }

@@ -16,6 +16,102 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 
 ## Active entries
 
+### 22. RES-ARCH-1 non-conformance — reservation title + dates read from post, not source event
+- **What:** Per decisions.md RES-ARCH-1 (added 2026-05-23), the reservation's user-visible title and event dates are read-only mirrors of the source event (Native / TEC / External Feed). Current code violates this: `EEM_Reservations_List_Page::render_table_row()` + `render_mobile_cards()` call `get_the_title( $post )` (reads `wp_posts.post_title` on the reservation), and `EEM_Reservations_List_Repo::get_event_date_range_label()` reads `_en_nightly_start_date` / `_en_nightly_end_date` / `_en_weekend_start_date` / `_en_weekend_end_date` from reservation post_meta. None of the six call sites resolves to a source event.
+- **Why deferred:** The fix requires a new source-event resolver (single function returning `[ title, start_date, end_date ]` from the active source) plus refactor of every call site that reads title/dates from the reservation. Substantial — definitely a discrete chunk. Plus an in-flight cache-invalidation decision: do title/dates become resolver-only (no cache, slower list-page renders) or do they stay in post_meta as a derived cache written by a source-change sync handler? That trade-off needs discussion, not improvisation.
+- **Added in:** C5.G.13 (defect discovered during the C5.G.10 RES-ARCH-1 verification audit)
+- **Migration plan:**
+  1. Build `EEM_Reservation_Source_Resolver::resolve_event_fields( $reservation_id )` returning `[ 'title' => string, 'start_date' => string, 'end_date' => string, 'venue' => string ]` from the active source (dispatches to Native CPT / TEC API / External Feed per the Settings event-source mode).
+  2. Update `EEM_Reservations_List_Repo::get_event_date_range_label()` to call the resolver instead of reading post_meta directly.
+  3. Update `EEM_Reservations_List_Page::render_table_row()` + `render_mobile_cards()` to call the resolver for the title instead of `get_the_title()`.
+  4. Decide cache-invalidation discipline (resolver-only vs. cached-meta-with-sync-handler). If cached: write a `EEM_Reservation_Source_Sync::on_source_change( $source_event_id )` action that pushes title + dates to the linked reservation's post_meta + post_title.
+  5. C7 Edit Reservation editor renders title + dates as read-only labels with "Linked to: {source event}" hint instead of input fields.
+- **Sequence target:** **Between C6 and C7** — must precede C7 because C7 is where the user-facing UI lands (read-only labels instead of input fields). Candidate chunk name "C6.6 source-event resolver" (slotted between the C6.5 professionalization sprint per entry #17 and the C7 editor port).
+- **Unblocks deletion:** the four nightly/weekend date meta keys MAY survive as a derived cache (per the migration-plan step 4 decision) — if they do, they retain a single writer (the sync handler) instead of the current admin-input writer. If they don't, the four meta keys + the date-range-label helper become resolver-call-only.
+- **Status:** non-conforming code identified + documented; awaiting the C6.6 resolver chunk
+
+### 21. Searchable Event-filter dropdown (Choices.js) — UX scaling, not polish
+- **What:** Orders + Reservations both use a native `<select>` for the Event filter. Becomes unwieldy past ~50 events (long scroll, no typeahead, no in-place filtering). Replace with Choices.js — adds searchable typeahead + better keyboard navigation. Apply to BOTH list pages for parity. Style the Choices.js shell to match EEM design tokens: navy borders, Electric Blue focus ring, proper border-radius matching `.eem-toolbar-select`. Audit Reservations during this chunk for similar issues with the Date filter dropdown + any future filters (Type, etc.) that might need the same treatment.
+- **Why deferred:** Current native `<select>` works fine for the seeded test data (~3 events) but visibly degrades at production scale. Not a polish issue — a UX scaling issue that becomes a real blocker before user testing.
+- **Added in:** C5.G.10
+- **Sequence:** After C6 (Order Detail) or C7 (Edit Reservation), whichever has lighter dependencies. **Tag as "UX scaling" — do NOT defer to C13.** Must land before user testing because users with real event histories will hit the unusable native-select first.
+- **Estimated scope:** ~100–150 LOC across PHP enqueue + JS init + CSS shell styling. Adding Choices.js requires explicit user approval (third-party JS library — per CLAUDE.md decision policy "Adding any third-party JS library — confirm the choice with me").
+- **Unblocks deletion:** N/A — this is an additive UX upgrade, not legacy code removal.
+- **Status:** queued; awaiting sequencing decision
+
+### 20. Recurring dead-code audit after each chunk merge
+- **What:** Run a focused dead-code sweep AFTER each chunk merges to main, BEFORE the next chunk starts. Check four categories:
+  - **(a)** Old page-render callbacks that got replaced when menu swaps happened (precedent: `EEM_Admin::render_settings_page` deleted in C3.D.4 after C3.D.2 swap; `EEM_Admin::render_orders_page` body still present after C5.E swap — flag for C5.5 audit).
+  - **(b)** CSS classes defined in admin.css that no longer have any markup using them. Grep-verify each class name → if zero hits in PHP render code, delete.
+  - **(c)** PHP helper methods no longer called by any active code path. Grep-verify each `private function` against all callers; if zero, delete.
+  - **(d)** JS handlers bound to data-eem-action selectors that no longer exist in any rendered markup. Audit admin.js dispatch table against PHP render output.
+- **Why a standing practice, not a one-time:** Phase 3 chunks have been replacing components (C5.F-toolbar dropped 3 component classes; C5.G.3 dropped the `.eem-reservations-list` wrapper; C5.G.7 reverted then re-removed `.eem-btn-navy`). Each chunk produces orphans. Without the sweep they accumulate into a wholesale audit (C13 territory) which is far harder than catching incrementally. Lessons-learned cost: it took C5.F-toolbar + C5.G to discover the `.eem-orders-toolbar` legacy-CSS class collision because nobody audited after C5.B introduced the collision-prone name.
+- **Process shape:** small "C{n}.5" audit chunk between merges. Single commit. Findings: a punch-list of removed selectors / methods / hooks with grep verification of zero remaining callers, plus the actual deletions.
+- **Added in:** C5.G.10
+- **Sequence:** Recurring — first instance is "C5.5 dead code audit" before C6 begins. Then "C6.5" before C7, "C7.5" before C8, etc.
+- **Status:** queued; C5.5 ready to run after the C5 merge completes
+
+### 19. Bucket 3 — End-of-build polish + asset pipeline
+- **What:** Final-build hardening that doesn't make sense earlier. Three concerns:
+  - **Asset build pipeline:** CSS minification, JS bundling/minification, source maps. Currently `admin.css` + `admin.js` ship un-minified.
+  - **Lint configs:** ESLint config for `assets/js/`, Stylelint config for `assets/css/`. Run in CI + pre-commit hook.
+  - **Performance pass:** query caching audit (object cache hits on legacy `EEM_Orders_Repository::get_grouped_orders` are unverified), lazy-enqueue audit (legacy `wp_enqueue_script` calls that fire on every admin page even when not needed), transient hot-path identification.
+  - **Wholesale admin-legacy.css strip:** entry #1 wholesale-strip lands here too — by end-of-build every page is ported and admin-legacy.css can be removed wholesale (was C13-tagged in entry #1).
+- **Why deferred:** Build pipeline + lint configs need the codebase to be feature-stable so the build doesn't have to re-tune for every chunk. Performance pass needs all pages built so the audit is comprehensive. admin-legacy.css strip needs every page ported.
+- **Added in:** C5.G.10
+- **Sequence:** End of Phase 3 (with C13 / Polish Pass).
+- **Unblocks deletion:** assets/css/admin-legacy.css (per entry #1); legacy CSS rules each Phase 3 chunk excluded via `:not()` chains (those exclusion chains get reverted once the parent rule is gone).
+- **Status:** queued; final-build bucket
+
+### 18. Bucket 2 — Developer documentation
+- **What:** Three docs deliverables for any future developer onboarding to the codebase:
+  - **Expand README.md** with a "Developer onboarding" section: local dev setup (Local-by-Flywheel + WP version + wp-cli), how to run smoke scripts in /tmp/, branch naming convention (phase-3/cN-shortname), the chunk-based workflow.
+  - **New CONTRIBUTING.md** explaining the chunk-based workflow + the per-chunk hygiene rules (the 7 rules currently in CLAUDE.md) + the LOC alarm protocol + the layout-shell verification procedure.
+  - **New docs/ARCHITECTURE.md** documenting: the repo pattern (`EEM_*_Repo` static query helpers + `EEM_*_Page` controllers), the page-shell pattern (`templates/admin/_page_shell.php` + `eem_render_page_open/_close`), body-class scoping (the `eem-shell-page--{page}` convention from C4.5), the dual-repo rationale (`Projects/equine-event-manager` for git work + iCloud copy for visual review), and the JS dispatch pattern (`data-eem-action` delegated handlers).
+- **Why deferred:** Mid-build docs go stale fast — each chunk adds patterns that would need re-documenting. Better to wait until the chunk vocabulary is stable.
+- **Added in:** C5.G.10
+- **Sequence:** After C7 (Edit Reservation) or C8 (Stall Charts), whichever lands first. At that point the core patterns will have been exercised across ~6 page ports and won't shift significantly.
+- **Unblocks deletion:** N/A (additive docs).
+- **Status:** queued; mid-build bucket
+
+### 17. Bucket 1 — Plugin professionalization (sprint between C6 and C7)
+- **What:** Move the codebase from "in-progress overhaul" to "shippable plugin" shape:
+  - **Move /tmp/ smoke scripts + seeders into a versioned `tests/` directory** (currently `c4a-smoke.php`, `c5a-smoke.php`, … `c5d-smoke.php`, `c5-seed.php` all live in `/tmp/` — lost on machine reboot). Decide: namespace under `tests/smoke/` or `scripts/`. Convert at least the smokes to a runner pattern (single command runs all, exit code aggregates).
+  - **Add `composer.json`** declaring the plugin's PHP requirement + dev dependencies (phpcs + WPCS standard, maybe phpunit if we want unit tests separate from the smokes).
+  - **Add `phpcs.xml`** configured to WordPress Coding Standards. Audit the current codebase for violations — likely many in legacy files; new code should be clean.
+  - **License headers audit** on every PHP file. Plugin needs consistent licensing.
+  - **Properly format the plugin header** in `equine-event-manager.php` per [WP plugin header conventions](https://developer.wordpress.org/plugins/plugin-basics/header-requirements/) — version, license, requires-at-least, tested-up-to, network, update URI.
+- **Why deferred:** Premature standardization mid-build slows iteration. By post-C5 the codebase has stable patterns; standardizing now locks them in for the rest of the build.
+- **Added in:** C5.G.10
+- **Sequence:** "C6.5" sprint between C6 and C7.
+- **Unblocks deletion:** N/A (additive infra).
+- **Status:** queued; post-C5 sprint candidate
+
+### 16. Customer Profile chunk sequencing — link targets pre-wired
+- **What:** Orders list page wires customer-name spans as `<a class="eem-customer-name" href="admin.php?page=equine-event-manager-customer&customer_email=X">` anchors and order-number spans as `<a class="eem-order-num" href="admin.php?page=equine-event-manager-order&order_key=Y">` anchors. Order Detail destination (`equine-event-manager-order` slug) is the existing legacy `EEM_Admin::render_order_detail_page` callback — C6 replaces. Customer Profile destination (`equine-event-manager-customer` slug) is a hidden placeholder admin page registered by `EEM_Orders_List_Page::register_customer_profile_stub()` with `EEM_Orders_List_Page::render_customer_profile_stub()` as the callback — renders a "Customer Profile is on the planned roadmap" card.
+- **Why deferred:** Customer Profile is NOT currently sequenced in the Phase 3 chunk plan (C1–C13). The page needs sequencing before C13 — otherwise these anchors land on a permanent placeholder. Listing here so the next chunk-planning conversation explicitly slots it in.
+- **URL convention to honor when the real chunk lands:**
+  - Customer Profile: `admin.php?page=equine-event-manager-customer&customer_email={email}` — keyed by customer email since order rows don't carry a customer_id.
+  - Order Detail: `admin.php?page=equine-event-manager-order&order_key={key}` — keyed by the legacy order_key.
+  - Both URLs additionally accept `&panel=refund` / `&panel=collect` extras per C5.C's `order_detail_url()` helper.
+- **Added in:** C5.G.8
+- **Unblocks deletion:** Customer Profile chunk (when sequenced) replaces the stub callback in `EEM_Orders_List_Page::register_customer_profile_stub()` with the real page registration. The stub method + the placeholder render method can be removed (or repurposed if the real page wants the same shell pattern). The `CUSTOMER_PROFILE_MENU_SLUG` constant stays — it's the URL convention contract.
+- **Status:** stub shipped; awaiting Customer Profile chunk to be sequenced into the Phase 3 plan
+
+### 15. Bulk refund async engine (REF-3 / ORD-2)
+- **What:** `EEM_Orders_List_Page::handle_bulk_refund` validates the modal POST (cap + nonce + at least one valid order_key) and then redirects with `?eem_notice=bulk_refund_deferred&eem_bulk_count=N` — no refunds are actually processed. Per REF-3 / ORD-2 the engine is: queue refunds asynchronously via the merchant API one at a time (respecting rate limits), update Order state per the REF-2 status rules, write activity log entries, send the "Event Cancelled — Refund Processed" notification email to each customer (when notify=1), and collect failures into a "Needs Attention" list. None of that exists yet.
+- **Why deferred:** The async queue + progress UI + error collection are sizeable in their own right, AND the Order Detail page (C6) is where the SINGLE-order refund flow lives that this engine ultimately calls per-order — building the engine in isolation from C6's per-order refund code path would duplicate plumbing. Build C6's single-order refund first, then lift the per-order helper into a queue runner.
+- **Added in:** C5.D
+- **Unblocks deletion:** C6 (Order Detail port) — once a `refund_single_order( $order_key, $amount, $reason, $notify )` helper exists, `handle_bulk_refund` calls it in a loop (sync first cut; async queue follows once the UX needs progress feedback).
+- **Status:** dispatcher shipped; awaiting engine in C6
+
+### 14. Orders soft-delete schema (Move to Trash for orders)
+- **What:** `EEM_Orders_List_Page::handle_trash` is a stub. Per ORD-3 ("Move to Trash (renamed from the original 'Delete Order') is WP-standard soft delete: the order is recoverable from the trash for 30 days") the orders list should support reversible trash semantics, but the underlying `wp_en_stall_reservations` / `wp_en_rv_reservations` tables have no `trashed_at` column. The handler currently redirects with a `?eem_notice=order_trash_deferred` warning rather than fall back to the legacy hard-delete (`EEM_Orders_Repository::delete_order`), which would surprise users expecting soft semantics.
+- **Why deferred:** Schema migration via dbDelta is its own chunk-shaped piece of work AND the related "purge after 30 days" cron + a Trash status badge + a Restore handler all need to ship together to be coherent.
+- **Added in:** C5.C
+- **Unblocks deletion:** A future C11-or-later chunk that adds the `trashed_at` column on both order-component tables, wires a daily purge cron, adds an orders Trash status filter + Restore meatballs item on trashed rows, and replaces the stub redirect with a real soft-delete call.
+- **Status:** stub shipped; awaiting schema chunk
+
 ### 1. `assets/css/admin-legacy.css` — full file
 - **What:** 12,376-line legacy admin CSS, renamed from `admin/css/equine-event-manager-admin.css` during Phase 2. **Damage scope substantially worse than the original entry suggested** — see findings below.
 - **Why deferred:** Each Phase 3 page-port chunk migrates rules from this file into the new `assets/css/admin.css`. Deleting it before all pages are ported would break unported screens visually.

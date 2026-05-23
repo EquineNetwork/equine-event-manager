@@ -281,6 +281,29 @@ class EEM_Reservations_List_Repo {
 	}
 
 	/**
+	 * Whether this reservation has a stall chart layout enabled.
+	 *
+	 * Drives the conditional Stall Chart icon on Reservations row
+	 * actions (C5.G.4). Distinct from get_type_badges() including
+	 * 'stall' — that signal just says "stall capacity > 0" which
+	 * doesn't guarantee a chart layout has been drawn. The canonical
+	 * "is the chart actually configured" signal is the
+	 * `_en_stall_chart_enabled` post meta (same field consumed by 6+
+	 * other call sites: orders repo, reservation editor, admin
+	 * dashboard, CPT meta-box).
+	 *
+	 * @param int $reservation_id
+	 * @return bool
+	 */
+	public static function has_stall_chart_enabled( $reservation_id ) {
+		$id = absint( $reservation_id );
+		if ( $id <= 0 ) {
+			return false;
+		}
+		return (bool) get_post_meta( $id, '_en_stall_chart_enabled', true );
+	}
+
+	/**
 	 * Display label for a reservation's event date range. Pulls the
 	 * earliest start + latest end across whichever stay-type fields
 	 * are populated (stall + rv ranges sit in separate meta keys).
