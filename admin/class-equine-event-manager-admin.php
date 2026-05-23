@@ -512,12 +512,17 @@ class EEM_Admin {
 	public function register_menu() {
 		$native_events_enabled = EEM_Events::is_native_events_enabled();
 
+		// Orders page is rendered by the Phase 3 EEM_Orders_List_Page controller
+		// (admin/class-eem-orders-list-page.php). Menu callback was swapped in
+		// C5.E; the legacy render_orders_page method + its private helpers
+		// stay until a separate cleanup chunk audits remaining callers and
+		// removes them (same staging as C3.D.4).
 		$this->orders_hook = add_menu_page(
 			__( 'Orders', 'equine-event-manager' ),
 			__( 'Event Manager', 'equine-event-manager' ),
 			'manage_options',
 			self::MENU_SLUG,
-			array( $this, 'render_orders_page' ),
+			array( new EEM_Orders_List_Page(), 'render' ),
 			'dashicons-tickets-alt',
 			20
 		);
@@ -528,7 +533,7 @@ class EEM_Admin {
 			__( 'Orders', 'equine-event-manager' ),
 			'manage_options',
 			self::MENU_SLUG,
-			array( $this, 'render_orders_page' )
+			array( new EEM_Orders_List_Page(), 'render' )
 		);
 
 		// C4 — Reservations submenu points at the new Phase 3 custom page
@@ -1631,16 +1636,6 @@ class EEM_Admin {
 	 */
 	public function render_orders_page() {
 		$this->guard_admin_page();
-
-		// C5 browser-verification gate. While the menu callback still
-		// points at this legacy renderer (C5.E swap is deferred to a
-		// separate follow-up), `?eem_preview=c5` lets the user load the
-		// new EEM_Orders_List_Page render in-place for visual review.
-		// Remove this branch as part of C5.E when the callback swaps.
-		if ( isset( $_GET['eem_preview'] ) && 'c5' === sanitize_key( wp_unslash( $_GET['eem_preview'] ) ) && class_exists( 'EEM_Orders_List_Page' ) ) {
-			( new EEM_Orders_List_Page() )->render();
-			return;
-		}
 
 		$event_filter = isset( $_GET['event_filter'] ) ? sanitize_text_field( wp_unslash( $_GET['event_filter'] ) ) : '';
 		$search_term  = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
