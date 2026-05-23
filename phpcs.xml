@@ -1,0 +1,129 @@
+<?xml version="1.0"?>
+<ruleset name="EquineEventManager">
+    <description>
+        Coding-standards ruleset for the Equine Event Manager plugin.
+
+        Established in C6.5.B (CLEANUP entry #17 / Bucket 1). This file is
+        configuration only — no auto-fixes are applied until a developer runs
+        `composer install` + `composer run lint`. See README.md / CLEANUP #17
+        for the wider professionalization context.
+
+        New code (admin/class-eem-*.php, includes/class-eem-*.php, anything
+        landed from C4 onward) is expected to be clean. Legacy code in
+        admin/class-equine-event-manager-admin.php + public/ + the
+        admin-legacy.css companion will report violations — those are tracked
+        for C13 (Polish Pass) wholesale-cleanup, not for this chunk.
+    </description>
+
+    <!-- Default: scan the entire plugin root, excluding the directories below. -->
+    <file>.</file>
+
+    <!-- Scan PHP only. -->
+    <arg name="extensions" value="php"/>
+
+    <!-- Performance: parallel + colorized + show sniff codes on failures. -->
+    <arg name="parallel" value="8"/>
+    <arg name="colors"/>
+    <arg value="ps"/>
+
+    <!-- Cache results between runs. .phpcs-cache is gitignored. -->
+    <arg name="cache" value=".phpcs-cache"/>
+
+    <!-- ============================================================ -->
+    <!-- Exclusions                                                   -->
+    <!-- ============================================================ -->
+
+    <!-- Test scripts: relaxed (echo-heavy, no docblocks expected, intentionally global). -->
+    <exclude-pattern>tests/*</exclude-pattern>
+
+    <!-- Dev-only utilities: relaxed (same rationale as tests/). -->
+    <exclude-pattern>scripts/*</exclude-pattern>
+
+    <!-- Vendor + node_modules: third-party code, never our concern. -->
+    <exclude-pattern>vendor/*</exclude-pattern>
+    <exclude-pattern>node_modules/*</exclude-pattern>
+
+    <!-- Mockups: reference HTML, not plugin code. -->
+    <exclude-pattern>.mockups/*</exclude-pattern>
+
+    <!-- Asset directories: CSS/JS only, no PHP. -->
+    <exclude-pattern>assets/css/*</exclude-pattern>
+    <exclude-pattern>assets/js/*</exclude-pattern>
+
+    <!-- Build artefacts. -->
+    <exclude-pattern>*.min.*</exclude-pattern>
+
+    <!-- ============================================================ -->
+    <!-- Rulesets                                                     -->
+    <!-- ============================================================ -->
+
+    <!-- Full WordPress standard: WordPress-Core + WordPress-Docs + WordPress-Extra. -->
+    <rule ref="WordPress"/>
+
+    <!-- PHP 7.4+ compatibility (matches composer.json `require.php`). -->
+    <rule ref="PHPCompatibilityWP"/>
+    <config name="testVersion" value="7.4-"/>
+
+    <!-- ============================================================ -->
+    <!-- WordPress rule configuration                                 -->
+    <!-- ============================================================ -->
+
+    <!-- Text-domain check: only allow the canonical domain. -->
+    <rule ref="WordPress.WP.I18n">
+        <properties>
+            <property name="text_domain" type="array">
+                <element value="equine-event-manager"/>
+            </property>
+        </properties>
+    </rule>
+
+    <!-- Function / class / variable prefix rules: enforce the EEM_ family
+         documented in README §13 + CLAUDE.md naming canon. -->
+    <rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+        <properties>
+            <property name="prefixes" type="array">
+                <element value="eem_"/>
+                <element value="EEM_"/>
+                <element value="_en_"/>
+                <element value="en_"/>
+            </property>
+        </properties>
+    </rule>
+
+    <!-- Minimum WP version supported (matches the plugin header's
+         "Requires at least" — kept in sync manually with C6.5.C). -->
+    <config name="minimum_supported_wp_version" value="6.0"/>
+
+    <!-- ============================================================ -->
+    <!-- Legacy-code carve-outs                                       -->
+    <!-- ============================================================ -->
+
+    <!-- File-naming: legacy filenames like class-equine-event-manager-admin.php
+         predate the EEM_ naming canon (C1.x onward). Renaming them is a
+         distinct migration tracked in CLEANUP #1. Don't flag here. -->
+    <rule ref="WordPress.Files.FileName">
+        <exclude-pattern>admin/class-equine-event-manager-*.php</exclude-pattern>
+        <exclude-pattern>includes/class-equine-event-manager-*.php</exclude-pattern>
+        <exclude-pattern>public/class-equine-event-manager-*.php</exclude-pattern>
+    </rule>
+
+    <!-- Yoda conditions: WordPress-style but optional in this codebase. New
+         code is welcome to use either form; not worth a wholesale rewrite. -->
+    <rule ref="WordPress.PHP.YodaConditions.NotYoda">
+        <severity>3</severity>
+    </rule>
+
+    <!-- ============================================================ -->
+    <!-- Severity bumps                                                -->
+    <!-- ============================================================ -->
+
+    <!-- Direct DB query without prepare: keep as error (security). -->
+    <rule ref="WordPress.DB.DirectDatabaseQuery">
+        <severity>5</severity>
+    </rule>
+
+    <!-- Nonce verification on form submission: keep as error (security). -->
+    <rule ref="WordPress.Security.NonceVerification">
+        <severity>5</severity>
+    </rule>
+</ruleset>

@@ -2,3 +2,21 @@
 */.DS_Store
 en-event-manager-*.zip
 equine-event-manager-*.zip
+
+# Composer (C6.5.B) — manifest + lock committed, deps not.
+# Run `composer install` to populate vendor/ from composer.lock.
+vendor/
+composer.phar
+
+# phpcs cache (C6.5.B) — populated by `composer run lint`.
+.phpcs-cache
+
+# Editor / OS noise.
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Local logs and scratch.
+*.log
+.scratch/
