@@ -785,6 +785,45 @@
 	   the modal's hidden field, then opens the modal. Per ORD-2 modal
 	   confirmation flow — the actual POST happens from the modal's
 	   Confirm button (handler below). */
+	/* ── C6.C — Bulk refund engine (AJAX-driven sequential) ──
+	   Replaces the C5.D form-POST stub with a real queue-driven engine.
+	   3-state modal (intro / processing / summary). Per-order AJAX call
+	   to wp_ajax_eem_order_bulk_refund_step (which computes refund amount
+	   server-side at call time — no client amount, guarantees retry
+	   safety against parallel admin actions). Continue past failures,
+	   surface per-order outcomes, render summary at end with retry-failed
+	   affordance. Option-3 batch error attribution per C6.C kickoff Q2. */
+
+	// Per-modal-open state. Reset on each open.
+	var _bulkRefundState = {
+		queue: [],          // remaining order_keys to process
+		inFlight: null,     // order_key currently being processed
+		successes: [],      // [{order_key, refunded_amount, was_noop}]
+		failures: []        // [{order_key, code, message}]
+	};
+
+	function setBulkRefundModalState(modal, state) {
+		// state ∈ 'intro' | 'processing' | 'summary'
+		modal.classList.remove('eem-bulk-refund--state-intro', 'eem-bulk-refund--state-processing', 'eem-bulk-refund--state-summary');
+		modal.classList.add('eem-bulk-refund--state-' + state);
+		var primaryBtn = modal.querySelector('[data-eem-bulk-refund-primary-btn]');
+		if (primaryBtn) {
+			if ('intro' === state) {
+				primaryBtn.textContent = 'Confirm refund';
+				primaryBtn.disabled = false;
+				primaryBtn.hidden = false;
+				primaryBtn.setAttribute('data-eem-action', 'orders-bulk-refund-confirm');
+			} else if ('processing' === state) {
+				primaryBtn.hidden = true;
+			} else if ('summary' === state) {
+				primaryBtn.hidden = (_bulkRefundState.failures.length === 0);
+				primaryBtn.disabled = false;
+				primaryBtn.textContent = 'Retry failed (' + _bulkRefundState.failures.length + ')';
+				primaryBtn.setAttribute('data-eem-action', 'orders-bulk-refund-retry');
+			}
+		}
+	}
+
 	function openOrdersBulkRefundModal() {
 		var bulkSelect = document.querySelector('[data-eem-orders-bulk-action]');
 		if (!bulkSelect || bulkSelect.value !== 'refund') {
@@ -799,10 +838,16 @@
 		var keys = Array.prototype.map.call(checked, function (cb) { return cb.value; });
 		var modal = document.getElementById('eem-orders-bulk-refund-modal');
 		if (!modal) return;
-		var keysField = modal.querySelector('[data-eem-orders-bulk-refund-keys]');
+
+		// Reset state for fresh modal open.
+		_bulkRefundState = { queue: keys.slice(), inFlight: null, successes: [], failures: [] };
+
+		var keysField = modal.querySelector('[data-eem-bulk-refund-keys]');
 		if (keysField) keysField.value = keys.join(',');
 		var summary = modal.querySelector('[data-eem-orders-bulk-refund-summary]');
 		if (summary) summary.textContent = 'Refund ' + keys.length + ' selected order' + (keys.length === 1 ? '' : 's') + '?';
+
+		setBulkRefundModalState(modal, 'intro');
 		modal.classList.add('open');
 		modal.setAttribute('aria-hidden', 'false');
 	}
@@ -814,11 +859,304 @@
 		modal.setAttribute('aria-hidden', 'true');
 	}
 
-	function submitOrdersBulkRefundForm() {
+	// User clicked "Confirm refund" in intro state — collect inputs,
+	// switch to processing state, start the queue.
+	function startBulkRefundQueue() {
 		var modal = document.getElementById('eem-orders-bulk-refund-modal');
 		if (!modal) return;
-		var form = modal.querySelector('[data-eem-orders-bulk-refund-form]');
-		if (form) form.submit();
+		var keys = _bulkRefundState.queue.slice();
+		if (!keys.length) return;
+
+		var reasonField = modal.querySelector('[data-eem-bulk-refund-reason]');
+		var reason = reasonField ? reasonField.value : '';
+		var nonceField = modal.querySelector('input[name="_eem_bulk_refund_nonce"]');
+		var nonce = nonceField ? nonceField.value : '';
+
+		// Seed the processing-state progress list with one entry per order.
+		var progressList = modal.querySelector('[data-eem-bulk-refund-progress-list]');
+		if (progressList) {
+			progressList.innerHTML = '';
+			keys.forEach(function (k) {
+				var li = document.createElement('li');
+				li.className = 'eem-bulk-refund-progress-item eem-bulk-refund-progress-item--queued';
+				li.setAttribute('data-order-key', k);
+				li.innerHTML = '<span class="eem-bulk-refund-progress-status">⏵</span> <span class="eem-bulk-refund-progress-key">' + k.substring(0, 12) + '…</span> <span class="eem-bulk-refund-progress-detail">Queued</span>';
+				progressList.appendChild(li);
+			});
+		}
+
+		setBulkRefundModalState(modal, 'processing');
+
+		// Kick off the queue.
+		processNextBulkRefundStep(reason, nonce);
+	}
+
+	function processNextBulkRefundStep(reason, nonce) {
+		var modal = document.getElementById('eem-orders-bulk-refund-modal');
+		if (!modal) return;
+		if (!_bulkRefundState.queue.length) {
+			showBulkRefundSummary(modal);
+			return;
+		}
+
+		var orderKey = _bulkRefundState.queue.shift();
+		_bulkRefundState.inFlight = orderKey;
+		updateBulkRefundProgressItem(modal, orderKey, 'in-flight', '⟳', 'Processing…');
+
+		var formData = new FormData();
+		formData.append('action', 'eem_order_bulk_refund_step');
+		formData.append('order_key', orderKey);
+		formData.append('reason', reason);
+		formData.append('_eem_bulk_refund_nonce', nonce);
+
+		fetch(window.ajaxurl || '/wp-admin/admin-ajax.php', {
+			method: 'POST',
+			credentials: 'same-origin',
+			body: formData
+		}).then(function (response) {
+			return response.json().catch(function () { return { success: false, data: { order_key: orderKey, code: 'parse_error', message: 'Server returned unparseable response.' } }; });
+		}).then(function (json) {
+			_bulkRefundState.inFlight = null;
+			if (json && json.success && json.data) {
+				var d = json.data;
+				_bulkRefundState.successes.push({ order_key: orderKey, refunded_amount: d.refunded_amount || 0, was_noop: !!d.was_noop });
+				var detail = d.was_noop ? 'Already refunded' : 'Refunded $' + Number(d.refunded_amount).toFixed(2);
+				updateBulkRefundProgressItem(modal, orderKey, 'success', '✓', detail);
+			} else {
+				var err = (json && json.data) ? json.data : { code: 'unknown', message: 'Unknown error' };
+				_bulkRefundState.failures.push({ order_key: orderKey, code: err.code, message: err.message });
+				updateBulkRefundProgressItem(modal, orderKey, 'failure', '✗', err.message || err.code || 'Failed');
+			}
+			// Process next regardless of success/failure — option-3 continue-past-failures.
+			processNextBulkRefundStep(reason, nonce);
+		}).catch(function () {
+			_bulkRefundState.inFlight = null;
+			_bulkRefundState.failures.push({ order_key: orderKey, code: 'network', message: 'Network error' });
+			updateBulkRefundProgressItem(modal, orderKey, 'failure', '✗', 'Network error');
+			processNextBulkRefundStep(reason, nonce);
+		});
+	}
+
+	function updateBulkRefundProgressItem(modal, orderKey, statusClass, glyph, detail) {
+		var item = modal.querySelector('.eem-bulk-refund-progress-item[data-order-key="' + orderKey + '"]');
+		if (!item) return;
+		item.classList.remove('eem-bulk-refund-progress-item--queued', 'eem-bulk-refund-progress-item--in-flight', 'eem-bulk-refund-progress-item--success', 'eem-bulk-refund-progress-item--failure');
+		item.classList.add('eem-bulk-refund-progress-item--' + statusClass);
+		var statusEl = item.querySelector('.eem-bulk-refund-progress-status');
+		var detailEl = item.querySelector('.eem-bulk-refund-progress-detail');
+		if (statusEl) statusEl.textContent = glyph;
+		if (detailEl) detailEl.textContent = detail;
+	}
+
+	function showBulkRefundSummary(modal) {
+		var totals = modal.querySelector('[data-eem-bulk-refund-summary-totals]');
+		var failList = modal.querySelector('[data-eem-bulk-refund-failure-list]');
+
+		if (totals) {
+			var successCount = _bulkRefundState.successes.length;
+			var failCount    = _bulkRefundState.failures.length;
+			var totalRefunded = 0;
+			_bulkRefundState.successes.forEach(function (s) { totalRefunded += Number(s.refunded_amount) || 0; });
+			totals.innerHTML = '<div class="eem-bulk-refund-totals-line"><strong>' + successCount + '</strong> refunded · <strong>' + failCount + '</strong> failed</div>' +
+				(totalRefunded > 0 ? '<div class="eem-bulk-refund-totals-amount">$' + totalRefunded.toFixed(2) + ' total refunded</div>' : '');
+		}
+
+		if (failList) {
+			failList.innerHTML = '';
+			_bulkRefundState.failures.forEach(function (f) {
+				var li = document.createElement('li');
+				li.className = 'eem-bulk-refund-failure-item';
+				li.innerHTML = '<span class="eem-bulk-refund-failure-key">' + f.order_key.substring(0, 12) + '…</span> <span class="eem-bulk-refund-failure-msg">' + (f.message || f.code || 'Failed') + '</span>';
+				failList.appendChild(li);
+			});
+		}
+
+		setBulkRefundModalState(modal, 'summary');
+	}
+
+	// Retry failed: re-queue just the failed order_keys, run again.
+	// Critical: each retried step still gets a fresh server-side
+	// remaining_refundable compute — JS does NOT pass an amount, so
+	// parallel admin actions between batch and retry are handled
+	// correctly by the server.
+	function retryFailedBulkRefunds() {
+		var modal = document.getElementById('eem-orders-bulk-refund-modal');
+		if (!modal) return;
+		var failedKeys = _bulkRefundState.failures.map(function (f) { return f.order_key; });
+		if (!failedKeys.length) return;
+
+		// Reset for the retry pass. Failures roll forward into the new
+		// queue; previous-pass successes stay in the running tally.
+		_bulkRefundState.queue = failedKeys;
+		_bulkRefundState.failures = [];
+		_bulkRefundState.inFlight = null;
+
+		var reasonField = modal.querySelector('[data-eem-bulk-refund-reason]');
+		var reason = reasonField ? reasonField.value : '';
+		var nonceField = modal.querySelector('input[name="_eem_bulk_refund_nonce"]');
+		var nonce = nonceField ? nonceField.value : '';
+
+		// Re-seed the progress list with just the retry items.
+		var progressList = modal.querySelector('[data-eem-bulk-refund-progress-list]');
+		if (progressList) {
+			progressList.innerHTML = '';
+			failedKeys.forEach(function (k) {
+				var li = document.createElement('li');
+				li.className = 'eem-bulk-refund-progress-item eem-bulk-refund-progress-item--queued';
+				li.setAttribute('data-order-key', k);
+				li.innerHTML = '<span class="eem-bulk-refund-progress-status">⏵</span> <span class="eem-bulk-refund-progress-key">' + k.substring(0, 12) + '…</span> <span class="eem-bulk-refund-progress-detail">Queued (retry)</span>';
+				progressList.appendChild(li);
+			});
+		}
+
+		setBulkRefundModalState(modal, 'processing');
+		processNextBulkRefundStep(reason, nonce);
+	}
+
+	/* ── C6.B — Single-order Refund Order modal (Order Detail page) ──
+	   Triggered by the More menu's "Refund Order" item. Reuses the C5.D
+	   modal vocabulary; this is a single-order AJAX flow (not the C5.D
+	   bulk redirect flow). On confirm: POST to wp-admin/admin-ajax.php,
+	   handle JSON response with in-place fragments (option-3 UX per
+	   the C6.B kickoff), fall back to toast+reload when the handler
+	   sets requires_reload=true (mixed-gateway partial failure case). */
+
+	function openOrderRefundModal() {
+		var modal = document.getElementById('eem-order-refund-modal');
+		if (!modal) return;
+		// Reset any prior error surface from a previous open.
+		var errEl = modal.querySelector('[data-eem-order-refund-error]');
+		if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
+		modal.classList.add('open');
+		modal.setAttribute('aria-hidden', 'false');
+		closeAllDropdowns();
+		// Focus the amount field for fast keyboard flow.
+		var amt = modal.querySelector('#eem-order-refund-amount');
+		if (amt) setTimeout(function () { amt.focus(); amt.select(); }, 50);
+	}
+
+	function closeOrderRefundModal() {
+		var modal = document.getElementById('eem-order-refund-modal');
+		if (!modal) return;
+		modal.classList.remove('open');
+		modal.setAttribute('aria-hidden', 'true');
+	}
+
+	function showOrderRefundError(message) {
+		var modal = document.getElementById('eem-order-refund-modal');
+		if (!modal) return;
+		var errEl = modal.querySelector('[data-eem-order-refund-error]');
+		if (!errEl) { window.alert(message); return; }
+		errEl.textContent = message;
+		errEl.hidden = false;
+	}
+
+	function applyOrderRefundFragments(payload) {
+		// 1) Status badge in the .eem-page-meta header (first .eem-status-badge match).
+		var headerBadge = document.querySelector('.eem-page-meta .eem-status-badge');
+		if (headerBadge && payload.status_badge_html) {
+			var tmp = document.createElement('div');
+			tmp.innerHTML = payload.status_badge_html.trim();
+			var newBadge = tmp.firstChild;
+			if (newBadge) headerBadge.replaceWith(newBadge);
+		}
+
+		// 2) Payment-outstanding banner.
+		var banner = document.querySelector('.eem-order-payment-banner');
+		if (banner) {
+			if (payload.banner_html) {
+				// Status still outstanding (rare for a refund-flow but
+				// possible if amount was partial AND order wasn't paid
+				// to begin with). Replace the banner's content block.
+				var bannerContent = banner.querySelector('.eem-order-payment-banner__content');
+				if (bannerContent) {
+					var tmp2 = document.createElement('div');
+					tmp2.innerHTML = payload.banner_html.trim();
+					var newContent = tmp2.querySelector('.eem-order-payment-banner__content');
+					if (newContent) bannerContent.replaceWith(newContent);
+				}
+			} else {
+				// Order is no longer in an outstanding state — remove banner entirely.
+				banner.remove();
+			}
+		}
+
+		// 3) Refund History block in the Payment Details sidebar.
+		var history = document.querySelector('[data-eem-refund-history]');
+		if (history && payload.refund_history_html) {
+			var tmp3 = document.createElement('div');
+			tmp3.innerHTML = payload.refund_history_html.trim();
+			var newHistory = tmp3.firstChild;
+			if (newHistory) {
+				newHistory.setAttribute('data-eem-refund-history', '');
+				history.replaceWith(newHistory);
+			}
+		}
+
+		// 4) Toast confirmation.
+		if (window.EEM && typeof window.EEM.showSaveToast === 'function') {
+			window.EEM.showSaveToast('Refund of $' + Number(payload.refunded_amount).toFixed(2) + ' processed.');
+		}
+	}
+
+	function submitOrderRefundForm() {
+		var modal = document.getElementById('eem-order-refund-modal');
+		if (!modal) return;
+		var form = modal.querySelector('[data-eem-order-refund-form]');
+		if (!form) return;
+
+		// Reset prior error surface.
+		var errEl = modal.querySelector('[data-eem-order-refund-error]');
+		if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
+
+		// Client-side sanity check — server enforces authoritatively, but
+		// catch obviously bogus inputs without a round-trip.
+		var amtInput = modal.querySelector('#eem-order-refund-amount');
+		var amount = amtInput ? parseFloat(amtInput.value) : 0;
+		if (!amount || amount <= 0) {
+			showOrderRefundError('Refund amount must be greater than zero.');
+			return;
+		}
+
+		// Disable the Confirm button while in-flight.
+		var confirmBtn = modal.querySelector('[data-eem-action="order-refund-single-confirm"]');
+		if (confirmBtn) confirmBtn.disabled = true;
+
+		var formData = new FormData(form);
+
+		fetch(window.ajaxurl || '/wp-admin/admin-ajax.php', {
+			method: 'POST',
+			credentials: 'same-origin',
+			body: formData
+		}).then(function (response) {
+			return response.json().catch(function () { return { success: false, data: { message: 'Unexpected server response.' } }; });
+		}).then(function (json) {
+			if (confirmBtn) confirmBtn.disabled = false;
+
+			if (!json || !json.success) {
+				var msg = (json && json.data && json.data.message) ? json.data.message : 'Refund failed.';
+				showOrderRefundError(msg);
+				return;
+			}
+
+			// Fallback condition: handler sets requires_reload=true when
+			// in-place update isn't safe (mixed-gateway partial failure,
+			// data shape it can't cleanly express). Toast + reload.
+			if (json.data && json.data.requires_reload) {
+				if (window.EEM && typeof window.EEM.showSaveToast === 'function') {
+					window.EEM.showSaveToast('Refund processed. Reloading…');
+				}
+				setTimeout(function () { window.location.reload(); }, 600);
+				return;
+			}
+
+			// In-place update path (option 3).
+			applyOrderRefundFragments(json.data || {});
+			closeOrderRefundModal();
+		}).catch(function () {
+			if (confirmBtn) confirmBtn.disabled = false;
+			showOrderRefundError('Network error. Please try again.');
+		});
 	}
 
 	/* Bulk action — collects selected row ids from the table checkboxes,
@@ -932,6 +1270,108 @@
 				if (sendBtn) sendBtn.disabled = false;
 			});
 	}
+
+	/* ─────────────────────────────────────────────────────────────
+	 * C6.E.2 — Add Note form (Order Detail Activity Log).
+	 *
+	 * Submit flow:
+	 *   1. Read textarea value, abort if empty after trim (button is
+	 *      disabled-when-empty anyway, but defend against any stale
+	 *      enabled-state).
+	 *   2. Disable submit + clear prior error.
+	 *   3. POST form data via fetch → admin-ajax.php (action is in
+	 *      the form's hidden 'action' input).
+	 *   4. On success: prepend returned entry HTML into the activity-
+	 *      list mount node, update the count badge, clear the textarea
+	 *      (re-disables submit via the input listener below), and
+	 *      surface a toast confirmation.
+	 *   5. On error: show inline error from server message, re-enable
+	 *      submit so the user can edit + retry.
+	 * ───────────────────────────────────────────────────────────── */
+
+	function submitAddNoteForm(target) {
+		var form = target.closest('[data-eem-add-note-form]');
+		if (!form) return;
+		var section = form.closest('.eem-order-activity');
+		var textarea = form.querySelector('[data-eem-add-note-textarea]');
+		var errEl    = form.querySelector('[data-eem-add-note-error]');
+		var btn      = form.querySelector('[data-eem-add-note-submit]');
+		var note     = textarea ? (textarea.value || '').trim() : '';
+
+		if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
+		if (!note) return;  // defensive — button should be disabled
+
+		if (btn) btn.disabled = true;
+
+		var formData = new FormData(form);
+		// Defensively re-set trimmed value so server sees the same thing JS validated.
+		formData.set('note', note);
+
+		fetch(window.ajaxurl || '/wp-admin/admin-ajax.php', {
+			method: 'POST',
+			credentials: 'same-origin',
+			body: formData
+		}).then(function (response) {
+			return response.json().catch(function () { return { success: false, data: { message: 'Unexpected server response.' } }; });
+		}).then(function (json) {
+			if (!json || !json.success) {
+				var msg = (json && json.data && json.data.message) ? json.data.message : 'Failed to save note.';
+				if (errEl) { errEl.textContent = msg; errEl.hidden = false; }
+				if (btn) btn.disabled = false;
+				return;
+			}
+
+			// Prepend the entry HTML — list partial may have rendered
+			// the empty-state <p> instead of a <ul>, in which case
+			// replace the empty paragraph with a fresh <ul> wrapping
+			// the new entry.
+			if (section) {
+				var listMount = section.querySelector('[data-eem-activity-list]');
+				if (listMount && json.data && json.data.html) {
+					var ul = listMount.querySelector('ul.eem-activity-log');
+					if (!ul) {
+						listMount.innerHTML = '<ul class="eem-activity-log">' + json.data.html + '</ul>';
+					} else {
+						ul.insertAdjacentHTML('afterbegin', json.data.html);
+					}
+				}
+				// Update count badge — server returns authoritative new_count.
+				if (json.data && typeof json.data.new_count !== 'undefined') {
+					var countBadge = section.querySelector('[data-eem-activity-count]');
+					if (countBadge) {
+						var n = parseInt(json.data.new_count, 10) || 0;
+						countBadge.textContent = (n === 1) ? '1 entry' : (n + ' entries');
+					}
+				}
+			}
+
+			// Reset textarea (input listener re-disables submit).
+			if (textarea) {
+				textarea.value = '';
+				textarea.dispatchEvent(new Event('input', { bubbles: true }));
+			}
+
+			if (window.EEM && typeof window.EEM.showSaveToast === 'function') {
+				window.EEM.showSaveToast('Note added.');
+			}
+		}).catch(function () {
+			if (errEl) { errEl.textContent = 'Network error. Please try again.'; errEl.hidden = false; }
+			if (btn) btn.disabled = false;
+		});
+	}
+
+	/* Enable/disable the Add Note submit button based on textarea content.
+	   Wired via document-level input event delegation alongside the
+	   existing tag-search input handler. */
+	document.addEventListener('input', function (ev) {
+		var t = ev.target;
+		if (!t || !t.matches || !t.matches('[data-eem-add-note-textarea]')) return;
+		var form = t.closest('[data-eem-add-note-form]');
+		if (!form) return;
+		var btn = form.querySelector('[data-eem-add-note-submit]');
+		if (!btn) return;
+		btn.disabled = ('' === (t.value || '').trim());
+	});
 
 	function closeAllDropdowns() {
 		document.querySelectorAll('.eem-dropdown.open, .eem-row-menu-wrap.open')
@@ -1072,7 +1512,34 @@
 			closeOrdersBulkRefundModal();
 		},
 		'orders-bulk-refund-confirm': function () {
-			submitOrdersBulkRefundForm();
+			startBulkRefundQueue();
+		},
+		'orders-bulk-refund-retry': function () {
+			retryFailedBulkRefunds();
+		},
+		/* C6.E.1 — Activity log section collapsible toggle.
+		   Click on the .eem-order-activity__toggle div flips .collapsed
+		   on the parent .eem-order-activity section. CSS hides
+		   .eem-order-activity__list when .collapsed is set. */
+		'activity-toggle': function (target) {
+			var section = target.closest('.eem-order-activity');
+			if (!section) return;
+			var collapsed = section.classList.toggle('collapsed');
+			target.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+		},
+		/* C6.B — Single-order Refund modal (Order Detail page). */
+		'order-refund-single': function () {
+			openOrderRefundModal();
+		},
+		'order-refund-single-close': function () {
+			closeOrderRefundModal();
+		},
+		'order-refund-single-confirm': function () {
+			submitOrderRefundForm();
+		},
+		/* C6.E.2 — Add Note form submit (Order Detail activity log). */
+		'add-note-submit': function (target) {
+			submitAddNoteForm(target);
 		}
 	};
 

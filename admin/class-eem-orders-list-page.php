@@ -414,15 +414,15 @@ class EEM_Orders_List_Page {
 		);
 		$status_slug  = isset( $order['status_slug'] )  ? (string) $order['status_slug']  : '';
 		$status_label = isset( $order['status_label'] ) ? (string) $order['status_label'] : '';
-		$status_css   = $this->status_slug_to_css_class( $status_slug );
+		$status_css   = self::status_slug_to_css_class( $status_slug );
 		$created_at   = isset( $order['created_at'] )   ? (string) $order['created_at']   : '';
-		$date_label   = $this->format_date_label( $created_at );
+		$date_label   = self::format_date_label( $created_at );
 		$billing_tab  = EEM_Orders_List_Repo::map_status_slug_to_tab( $status_slug );
 		$data_types   = implode( ',', $type_keys );
 		?>
 		<tr data-order-key="<?php echo esc_attr( $order_key ); ?>" data-billing="<?php echo esc_attr( $billing_tab ); ?>" data-types="<?php echo esc_attr( $data_types ); ?>">
 			<td class="eem-col-cb"><input type="checkbox" class="eem-orders-row-cb" name="order_keys[]" value="<?php echo esc_attr( $order_key ); ?>" aria-label="<?php echo esc_attr( sprintf( __( 'Select order %s', 'equine-event-manager' ), $order_number ) ); ?>" /></td>
-			<td><a class="eem-order-num" href="<?php echo esc_url( self::order_detail_url( $order_key ) ); ?>"><?php echo esc_html( $this->format_order_number_display( $order_number ) ); ?></a></td>
+			<td><a class="eem-order-num" href="<?php echo esc_url( self::order_detail_url( $order_key ) ); ?>"><?php echo esc_html( self::format_order_number_display( $order_number ) ); ?></a></td>
 			<td><a class="eem-customer-name" href="<?php echo esc_url( self::customer_profile_url( isset( $order['email'] ) ? (string) $order['email'] : '' ) ); ?>"><?php echo esc_html( $customer ); ?></a></td>
 			<td><?php
 				// C5.G.10: Event name now renders as a link to the reservation's
@@ -566,9 +566,9 @@ class EEM_Orders_List_Page {
 				$type_keys    = EEM_Orders_List_Repo::derive_type_keys( $order );
 				$status_slug  = isset( $order['status_slug'] )  ? (string) $order['status_slug']  : '';
 				$status_label = isset( $order['status_label'] ) ? (string) $order['status_label'] : '';
-				$status_css   = $this->status_slug_to_css_class( $status_slug );
+				$status_css   = self::status_slug_to_css_class( $status_slug );
 				$created_at   = isset( $order['created_at'] )   ? (string) $order['created_at']   : '';
-				$date_label   = $this->format_date_label( $created_at );
+				$date_label   = self::format_date_label( $created_at );
 				$type_labels  = array(
 					'stall' => __( 'Stall',  'equine-event-manager' ),
 					'rv'    => __( 'RV',     'equine-event-manager' ),
@@ -578,7 +578,7 @@ class EEM_Orders_List_Page {
 				?>
 				<div class="eem-mobile-card" data-order-key="<?php echo esc_attr( $order_key ); ?>">
 					<div class="eem-mobile-card-top">
-						<a class="eem-mobile-card-id eem-order-num" href="<?php echo esc_url( self::order_detail_url( $order_key ) ); ?>"><?php echo esc_html( $this->format_order_number_display( $order_number ) ); ?></a>
+						<a class="eem-mobile-card-id eem-order-num" href="<?php echo esc_url( self::order_detail_url( $order_key ) ); ?>"><?php echo esc_html( self::format_order_number_display( $order_number ) ); ?></a>
 						<span class="eem-mobile-card-meta"><?php echo esc_html( $date_label ); ?></span>
 					</div>
 					<div class="eem-mobile-card-title"><a class="eem-customer-name" href="<?php echo esc_url( self::customer_profile_url( isset( $order['email'] ) ? (string) $order['email'] : '' ) ); ?>"><?php echo esc_html( $customer ); ?></a></div>
@@ -705,7 +705,8 @@ class EEM_Orders_List_Page {
 	 * @param string $status_slug
 	 * @return string
 	 */
-	private function status_slug_to_css_class( $status_slug ) {
+	// C6.A: promoted to public static so EEM_Order_Detail_Page can share the same status→class map.
+	public static function status_slug_to_css_class( $status_slug ) {
 		// C5.G.6: legacy EEM_Orders_Repository::get_order_status_display()
 		// emits HYPHENATED slugs ('invoice-sent', 'partially-refunded',
 		// 'outstanding-show-bill'). C5.B shipped underscored case arms
@@ -731,7 +732,8 @@ class EEM_Orders_List_Page {
 	 * @param string $mysql_datetime
 	 * @return string
 	 */
-	private function format_date_label( $mysql_datetime ) {
+	// C6.A: promoted to public static so EEM_Order_Detail_Page can share the same "May 8, 2026" label format.
+	public static function format_date_label( $mysql_datetime ) {
 		$ts = '' === $mysql_datetime ? 0 : strtotime( $mysql_datetime );
 		return $ts ? date_i18n( __( 'M j, Y', 'equine-event-manager' ), $ts ) : '';
 	}
@@ -750,7 +752,8 @@ class EEM_Orders_List_Page {
 	 * @param string $order_number  Whatever the legacy repo stored.
 	 * @return string  "#NNNNN"
 	 */
-	private function format_order_number_display( $order_number ) {
+	// C6.A: promoted to public static so EEM_Order_Detail_Page can share the same "#NNNNN" rendering.
+	public static function format_order_number_display( $order_number ) {
 		$digits = preg_replace( '/\D/', '', (string) $order_number );
 		$n      = '' === $digits ? 0 : (int) $digits;
 		return sprintf( '#%05d', $n );
@@ -901,24 +904,33 @@ class EEM_Orders_List_Page {
 	 * @return void
 	 */
 	private function render_bulk_refund_modal() {
+		// C6.C: modal now has three render states the JS toggles between:
+		//   - intro      (default open state — confirm form, tab-close warning)
+		//   - processing (per-order progress list)
+		//   - summary    (success/failure recap + retry-failed button)
+		// State swap is handled by JS adding/removing .eem-bulk-refund--state-* on
+		// the modal-card. Server-side nonce is `eem_bulk_refund_step` — shared
+		// across all step calls in the batch (NOT per-order — granted once on
+		// modal open).
 		?>
-		<div class="eem-modal" id="eem-orders-bulk-refund-modal" role="dialog" aria-modal="true" aria-labelledby="eem-orders-bulk-refund-title" aria-hidden="true">
+		<div class="eem-modal eem-bulk-refund-modal eem-bulk-refund--state-intro" id="eem-orders-bulk-refund-modal" role="dialog" aria-modal="true" aria-labelledby="eem-orders-bulk-refund-title" aria-hidden="true" data-eem-bulk-refund-modal>
 			<div class="eem-modal-card">
 				<header class="eem-modal-head">
 					<h2 class="eem-modal-title" id="eem-orders-bulk-refund-title"><?php esc_html_e( 'Refund Selected Orders', 'equine-event-manager' ); ?></h2>
 					<button type="button" class="eem-modal-close" data-eem-action="orders-bulk-refund-close" aria-label="<?php esc_attr_e( 'Close', 'equine-event-manager' ); ?>">&times;</button>
 				</header>
-				<form class="eem-modal-body" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" data-eem-orders-bulk-refund-form>
-					<input type="hidden" name="action" value="eem_orders_bulk_refund" />
-					<?php wp_nonce_field( 'eem_orders_bulk_refund', '_eem_bulk_refund_nonce' ); ?>
-					<input type="hidden" name="order_keys" value="" data-eem-orders-bulk-refund-keys />
+
+				<!-- INTRO STATE — confirm form + tab-close warning -->
+				<div class="eem-modal-body eem-bulk-refund-state eem-bulk-refund-state--intro">
+					<?php wp_nonce_field( 'eem_bulk_refund_step', '_eem_bulk_refund_nonce' ); ?>
+					<input type="hidden" data-eem-bulk-refund-keys value="" />
 					<p class="eem-orders-bulk-refund-summary" data-eem-orders-bulk-refund-summary>
 						<?php esc_html_e( 'Recipients will load when the modal opens.', 'equine-event-manager' ); ?>
 					</p>
-					<div class="eem-field-row" style="margin-top:14px;">
+					<div class="eem-field-row">
 						<label class="eem-field-label" for="eem-orders-bulk-refund-reason"><?php esc_html_e( 'Reason (optional)', 'equine-event-manager' ); ?></label>
 						<div class="eem-field-control">
-							<textarea class="eem-field-textarea" id="eem-orders-bulk-refund-reason" name="reason" rows="3" maxlength="500" placeholder="<?php esc_attr_e( 'e.g. Event cancelled due to weather', 'equine-event-manager' ); ?>"></textarea>
+							<textarea class="eem-field-textarea" id="eem-orders-bulk-refund-reason" data-eem-bulk-refund-reason rows="3" maxlength="500" placeholder="<?php esc_attr_e( 'e.g. Event cancelled due to weather', 'equine-event-manager' ); ?>"></textarea>
 							<p class="eem-field-hint"><?php esc_html_e( 'Stored on each refund record. Surfaced in the activity log; not sent to customers by default.', 'equine-event-manager' ); ?></p>
 						</div>
 					</div>
@@ -928,10 +940,26 @@ class EEM_Orders_List_Page {
 							<label><input type="checkbox" id="eem-orders-bulk-refund-notify" name="notify" value="1" checked /> <?php esc_html_e( 'Send the "Event Cancelled — Refund Processed" email to each customer.', 'equine-event-manager' ); ?></label>
 						</div>
 					</div>
-				</form>
+					<p class="eem-bulk-refund-tab-warning">
+						<?php esc_html_e( 'If you close this window, refunds in progress will complete but remaining orders will need to be re-submitted.', 'equine-event-manager' ); ?>
+					</p>
+				</div>
+
+				<!-- PROCESSING STATE — per-order progress list (populated by JS) -->
+				<div class="eem-modal-body eem-bulk-refund-state eem-bulk-refund-state--processing">
+					<p class="eem-bulk-refund-processing-headline"><?php esc_html_e( 'Processing refunds…', 'equine-event-manager' ); ?></p>
+					<ul class="eem-bulk-refund-progress-list" data-eem-bulk-refund-progress-list></ul>
+				</div>
+
+				<!-- SUMMARY STATE — totals + failure list + retry button (populated by JS) -->
+				<div class="eem-modal-body eem-bulk-refund-state eem-bulk-refund-state--summary">
+					<div class="eem-bulk-refund-summary-totals" data-eem-bulk-refund-summary-totals></div>
+					<ul class="eem-bulk-refund-failure-list" data-eem-bulk-refund-failure-list></ul>
+				</div>
+
 				<footer class="eem-modal-foot eem-modal-foot--split">
-					<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="orders-bulk-refund-close"><?php esc_html_e( 'Cancel', 'equine-event-manager' ); ?></button>
-					<button type="button" class="eem-btn eem-btn-primary" data-eem-action="orders-bulk-refund-confirm"><?php esc_html_e( 'Confirm refund', 'equine-event-manager' ); ?></button>
+					<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="orders-bulk-refund-close"><?php esc_html_e( 'Close', 'equine-event-manager' ); ?></button>
+					<button type="button" class="eem-btn eem-btn-primary" data-eem-action="orders-bulk-refund-confirm" data-eem-bulk-refund-primary-btn><?php esc_html_e( 'Confirm refund', 'equine-event-manager' ); ?></button>
 				</footer>
 			</div>
 		</div>

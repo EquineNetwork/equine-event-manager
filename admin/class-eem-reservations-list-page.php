@@ -523,10 +523,27 @@ class EEM_Reservations_List_Page {
 			$headers[] = sprintf( 'Reply-To: %s', $sender['reply_to'] );
 		}
 
+		// C6.D — route through EEM_Mailer for unified telemetry. Per-recipient
+		// context carries reservation_id (no order_key — this is a per-event
+		// bulk notification, not per-order). Listener silently skips activity
+		// log writes for these (no order_key) because the per-batch NOTIFICATION_SENT
+		// write below is the canonical entry; the per-message do_action fires
+		// remain available for future listeners (audit log, send-rate tracking).
 		$sent   = 0;
 		$failed = 0;
+		$context_base = array(
+			'type'           => 'email_customers',
+			'reservation_id' => isset( $reservation_id ) ? (int) $reservation_id : 0,
+		);
 		foreach ( $recipients as $email ) {
-			if ( wp_mail( $email, $subject, $body, $headers ) ) {
+			$result = EEM_Mailer::send_html_email(
+				$email,
+				$subject,
+				$body,
+				$headers,
+				array_merge( $context_base, array( 'recipient' => $email ) )
+			);
+			if ( true === $result ) {
 				$sent++;
 			} else {
 				$failed++;

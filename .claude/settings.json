@@ -1,8 +1,72 @@
 {
   "permissions": {
     "allow": [
+      "Bash(git status:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(git branch:*)",
+      "Bash(git show:*)",
+      "Bash(git remote:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(git tag --list:*)",
+      "Bash(git fetch:*)",
+
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(wc:*)",
+      "Bash(diff:*)",
+      "Bash(which:*)",
+      "Bash(sed -n:*)",
+      "Bash(awk:*)",
+
+      "Bash(php -l:*)",
+      "Bash(/Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.2.29+0/bin/darwin-arm64/bin/php -l:*)",
+
+      "Bash(bash tests/smoke/run-all.sh)",
+      "Bash(bash tests/smoke/:*)",
+
+      "Edit(/Users/whitneymitchell/Projects/equine-event-manager/**)",
+      "Write(/Users/whitneymitchell/Projects/equine-event-manager/**)",
+      "MultiEdit(/Users/whitneymitchell/Projects/equine-event-manager/**)",
+      "Read(/Users/whitneymitchell/Projects/equine-event-manager/**)"
+    ],
+    "ask": [
+      "Bash(git commit:*)",
+      "Bash(git tag:*)",
+      "Bash(git merge:*)",
+      "Bash(git checkout:*)",
+      "Bash(git rebase:*)",
+      "Bash(git cherry-pick:*)",
+
+      "Bash(git reset:*)",
+      "Bash(git push:*)",
+      "Bash(git restore:*)",
+      "Bash(git clean:*)",
+
+      "Bash(rm:*)",
+      "Bash(mv:*)",
+      "Bash(chmod:*)",
+      "Bash(chown:*)",
+      "Bash(cp -R:*)",
+
+      "Bash(sudo:*)",
+
+      "Bash(wp eval:*)",
+      "Bash(wp db:*)",
+      "Bash(wp plugin activate:*)",
+      "Bash(wp plugin deactivate:*)",
+      "Bash(wp plugin delete:*)",
+
+      "Edit(/Users/whitneymitchell/.claude/**)",
+      "Edit(/Users/whitneymitchell/Library/**)",
+      "Write(/Users/whitneymitchell/.claude/**)",
+      "Write(/Users/whitneymitchell/Library/**)"
     ]
   }
 }

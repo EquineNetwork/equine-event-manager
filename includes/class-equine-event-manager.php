@@ -31,6 +31,11 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-settings-page.php';
 // Phase 3 — Reservations list subsystem (C4 — replaces WP-native
 // edit.php?post_type=en_reservation with a custom mockup-faithful page).
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-reservation-source-resolver.php';
+
+// C6.D — activity-log auto-fire telemetry. Listens for eem_order_created,
+// eem_order_payment_status_changed, eem_email_sent and writes
+// corresponding EEM_Activity_Log entries.
+require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-order-telemetry.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-reservations-list-repo.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-reservations-list-page.php';
 
@@ -38,6 +43,10 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-reservations-list-page
 // EEM_Admin::render_orders_page with a mockup-faithful page).
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-orders-list-repo.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-orders-list-page.php';
+
+// Phase 3 — Order Detail page (C6.A — single-order view; refund + activity-log
+// telemetry land in C6.B/C/D/E).
+require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-order-detail-page.php';
 
 // Phase 3 admin template partials.
 require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_breadcrumb.php';
@@ -149,6 +158,12 @@ class EEM_Plugin {
 		// replaces this stub when the planned-roadmap chunk ships
 		// (see CLEANUP.md "Customer Profile chunk sequencing").
 		add_action( 'admin_menu',                                 array( 'EEM_Orders_List_Page', 'register_customer_profile_stub' ), 25 );
+
+		// C6.A — hidden Order Detail page. Reachable via direct URL only
+		// (admin.php?page=equine-event-manager-order&order_key=...).
+		// Orders list View Order / order # / customer-name anchors all
+		// converge here.
+		add_action( 'admin_menu',                                 array( 'EEM_Order_Detail_Page', 'register_page' ), 25 );
 		add_action( 'admin_enqueue_scripts',                      array( 'EEM_Orders_List_Page', 'localize_row_action_nonces' ), 20 );
 		add_action( 'admin_head', array( $this->reservation_editor, 'print_editor_shell_fallback_assets' ) );
 		add_action( 'edit_form_top', array( $this->reservation_editor, 'render_editor_header' ) );
@@ -168,6 +183,27 @@ class EEM_Plugin {
 		add_action( 'admin_post_equine_event_manager_print_reservation_overview', array( $this->admin, 'handle_reservation_overview_print' ) );
 		add_action( 'admin_post_equine_event_manager_delete_order', array( $this->admin, 'handle_order_delete' ) );
 		add_action( 'admin_post_equine_event_manager_refund_order', array( $this->admin, 'handle_order_refund' ) );
+
+		// C6.B — AJAX endpoint for the Order Detail page's single-order
+		// Refund Order modal. Wraps the legacy refund infrastructure
+		// (refund_order_component + persist_component_refund) via the
+		// new public process_amount_refund() adapter on EEM_Admin.
+		add_action( 'wp_ajax_eem_order_refund_single', array( $this->admin, 'handle_ajax_refund_single' ) );
+
+		// C6.C — bulk-refund step endpoint. Called sequentially by the
+		// runBulkRefundQueue JS layer, once per selected order. Server
+		// computes amount = remaining_refundable at call time (no
+		// client-supplied amount) — that's the retry-safety property.
+		add_action( 'wp_ajax_eem_order_bulk_refund_step', array( $this->admin, 'handle_ajax_bulk_refund_step' ) );
+
+		// C6.E.2 — Add Note form AJAX (writes ordernote entry to
+		// EEM_Activity_Log, returns rendered entry HTML for the JS
+		// `add-note-submit` arm to prepend).
+		add_action( 'wp_ajax_eem_order_add_note', array( $this->admin, 'handle_ajax_order_add_note' ) );
+
+		// C6.D — activity-log auto-fire telemetry listeners (order.create,
+		// order.payment_received / order.status_change funnel, order.email_sent).
+		EEM_Order_Telemetry::register();
 		add_action( 'admin_post_equine_event_manager_send_invoice_email', array( $this->admin, 'handle_send_invoice_email' ) );
 		add_action( 'admin_post_equine_event_manager_resend_customer_notification', array( $this->admin, 'handle_resend_customer_notification' ) );
 		add_action( 'admin_post_equine_event_manager_mark_order_paid', array( $this->admin, 'handle_mark_order_paid' ) );

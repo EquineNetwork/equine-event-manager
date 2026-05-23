@@ -24,6 +24,14 @@ if ( ! function_exists( 'eem_render_page_open' ) ) {
 	 * @param array $args {
 	 *     @type string $title      Page title (h1).
 	 *     @type string $subtitle   Optional subtitle under the title.
+	 *     @type string $meta       Optional pre-rendered HTML (badges row, meta
+	 *                              line, link cluster) that renders below the
+	 *                              subtitle inside .eem-page-header-left. Added
+	 *                              in C6.A for Order Detail; reusable by C7
+	 *                              (Edit Reservation overview meta), C8 (Stall
+	 *                              Chart Detail event-meta), and any other page
+	 *                              whose title band needs secondary structured
+	 *                              content beyond a simple subtitle string.
 	 *     @type array  $breadcrumb Segments passed to eem_render_breadcrumb().
 	 *     @type string $actions    Pre-rendered HTML for the right-side actions slot.
 	 * }
@@ -36,6 +44,7 @@ if ( ! function_exists( 'eem_render_page_open' ) ) {
 			array(
 				'title'      => '',
 				'subtitle'   => '',
+				'meta'       => '',
 				'breadcrumb' => array(),
 				'actions'    => '',
 			)
@@ -51,6 +60,9 @@ if ( ! function_exists( 'eem_render_page_open' ) ) {
 						<?php endif; ?>
 						<?php if ( '' !== $args['subtitle'] ) : ?>
 							<p class="eem-page-subtitle"><?php echo esc_html( $args['subtitle'] ); ?></p>
+						<?php endif; ?>
+						<?php if ( '' !== $args['meta'] ) : ?>
+							<div class="eem-page-meta"><?php echo wp_kses_post( $args['meta'] ); ?></div>
 						<?php endif; ?>
 					</div>
 					<?php if ( '' !== $args['actions'] ) : ?>

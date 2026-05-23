@@ -16,6 +16,137 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 
 ## Active entries
 
+### 36. Dev-seed `reservation_id` gap — 25/26 seeded orders lack a reservation_id, blocking visual verify of reservation-dependent UI
+- **What:** The dev seed (`scripts/seed-orders.php` or whichever shipper populates the SEED-NNN orders) creates orders without a populated `reservation_id` on the order row. Audit during C6.A.3 found 25 of 26 seeded orders have `reservation_id = NULL/0`. Only 1 order has it set.
+- **Why this matters now:** The C6.A.2 "Edit Reservation" header button (and any future render code that conditions on `reservation_id > 0`, like C7's inline-edit flow) will silently hide for almost every seeded order. Visual verification of the button — and any reservation-derived data in the order detail render — becomes essentially impossible without manually back-filling `reservation_id` on individual seed orders.
+- **Why deferred (not fixed now):** Out of C6.A.3 scope (pre-merge polish chunk, not a seed-data overhaul). The render code is correct — it gracefully degrades when `reservation_id` is empty. The fix is on the seed-data side.
+- **Added in:** C6.A.3
+- **Unblocks deletion:** **C7 kickoff** (Edit Reservation editor) — C7 will need seeded reservation_ids for its own visual verification, so the seeder fix becomes a prerequisite for C7 work rather than optional cleanup. Required work: update `scripts/seed-orders.php` (or equivalent) to (a) ensure each seeded order references a real reservation post in the `en_reservations` (or whatever) CPT, AND (b) populate the `reservation_id` column on the order row to that post's ID. May also require seeding the reservation posts themselves if the dev DB doesn't have enough.
+- **Status:** **blocks C7 visual verify**; resolve at C7 kickoff or earlier
+
+### 35. Git committer attribution — hostname-derived email exposes machine name in commit history
+- **What:** Existing commits on `phase-3/c6-order-detail` (and likely all branches since the repo was cloned to `~/Projects/equine-event-manager`) carry the auto-derived attribution `Whitney Mitchell <whitneymitchell@Whitneys-iMac.local>`. Git falls back to this when `user.email` isn't set in any config scope (system/global/local). Functional locally, but the hostname segment (`Whitneys-iMac.local`) becomes part of the public commit metadata if the repo ever ships to WordPress.org SVN, GitHub, or any public mirror.
+- **Why deferred:** Pre-release concern, not today's problem. The plugin is on a private dev branch — no public exposure yet. Mid-branch git config changes only fix attribution going forward, not the existing history; a `git filter-branch` or `git filter-repo` rewrite would touch every commit and is meaningfully larger work than a single chunk should absorb.
+- **Added in:** C6.A.2 close (observed in commit `282c92a` post-commit warning)
+- **Unblocks deletion:** Pre-release prep chunk (likely C13 or the dedicated release-cut chunk). Required work: (a) `git config --global user.email <real@email>` + `git config --global user.name "Whitney Mitchell"` on dev machine, (b) decide whether to rewrite existing commit history via `git filter-repo` (preserves authorship intent, mass-rewrites SHAs — disruptive for any open branches) or accept the existing-history attribution and only fix forward (zero SHA churn, leaves hostname in history). Recommendation: fix-forward unless we need clean history for compliance/audit reasons. Both options are cheap; the choice is between disruption-now-clean-history-forever vs no-disruption-mixed-history.
+- **Status:** awaiting C13 / release-cut
+
+### 34. Order Detail Payment Details — card brand / last4 display block deferred
+- **What:** The mockup at `.mockups/order_detail_page.html` lines 548-554 specs a "Card" row in the Payment Details sidebar (VISA badge + `•••• 4242` masked number). C6.A.2 OMITS this block entirely.
+- **Why deferred:** The C6.A.2 meta-existence audit probed candidate keys `_en_card_brand`, `_en_card_last4`, `_en_payment_card_brand`, `_en_payment_card_last4`, `_en_card_brand_normalized`, `_en_cc_brand`, `_en_cc_last4`, `_en_stripe_card_brand`, `_en_stripe_card_last4`, `_card_brand`, `_card_last4` against all seeded reservations AND ran a broad `LIKE '%card%' OR '%last4%' OR '%brand%' OR '%cc_%'` scan across the entire `wp_postmeta` table — zero hits. Card brand/last4 are not persisted anywhere in the current data shape. Per C6.A.2 discipline ("honest representation beats fake '—'"), the block is omitted rather than shipping placeholder rows.
+- **Added in:** C6.A.2
+- **Unblocks deletion:** C10 or C11 (likely as part of the Stripe/Auth.net receipt port). Required work: (a) capture `payment_method_details.card.brand` + `payment_method_details.card.last4` from the Stripe PaymentIntent (and the Auth.net equivalent) at the moment of charge, (b) persist to `_en_card_brand` + `_en_card_last4` post_meta on the reservation, (c) re-add the Card display block to `EEM_Order_Detail_Page::render_payment_details_card` with a graceful degrade for orders predating capture. Inline comment marker at the omission point references "CLEANUP #34".
+- **Status:** awaiting C10/C11
+
+### 33. Order Detail save bar — deferred to C7 (inline-edit save flow)
+- **What:** The mockup at `.mockups/order_detail_page.html` lines 586-592 specs a Cancel + "Save Changes" pair that sits between the Special Instructions card and the Activity Log section. C6.A.2 OMITS this region.
+- **Why deferred:** C6 scope is display-only (refund/CSV/trash live in the header More menu). There is no inline-editable field on the Order Detail page yet, so the save bar would dispatch nowhere. C7 lands the inline-edit save flow (Special Instructions editor + line-item edits) and reinstates the save bar at the same DOM position.
+- **Added in:** C6.A.2
+- **Unblocks deletion:** C7 (Order Detail inline edits). Inline comment marker in `EEM_Order_Detail_Page::render()` between `render_special_instructions_card()` and `render_activity_log()` references BOTH "CLEANUP #33" and "mockup lines 586-592" — single grep target for the C7 implementer.
+- **Status:** awaiting C7
+
+### 32. Activity log get_for_order_key — indexed order_key column instead of LIKE-on-JSON
+- **What:** `EEM_Activity_Log::get_for_order_key( $order_key, $limit )` (added in C6.E.1) queries the `payload` column with `LIKE '%"order_key":"<key>"%'`. No index on payload — every call scans the whole table.
+- **Why deferred:** Admin-only view (Order Detail page), infrequent visits, typical order has fewer than 20 activity entries. At v2.2.0 scale (single tenant, ~thousands of activity rows across all orders) the LIKE scan is fast enough that a fix isn't blocking. The `$limit` floor (default 100, internal cap 500) bounds the worst case. Real fix is a proper indexed column — but that's a schema migration that doesn't belong inside a UI-render chunk.
+- **Shape of the fix:**
+  1. Activator migration adds `order_key VARCHAR(64) NOT NULL DEFAULT ''` column to `wp_en_activity_log` + index on `(order_key, created_at DESC)`.
+  2. Backfill UPDATE pulls `order_key` out of existing payloads: `UPDATE wp_en_activity_log SET order_key = JSON_UNQUOTE(JSON_EXTRACT(payload, '$.order_key')) WHERE order_key = '' AND payload LIKE '%"order_key":%'`.
+  3. EEM_Activity_Log::write() captures `$payload['order_key']` and writes the dedicated column.
+  4. EEM_Activity_Log::get_for_order_key() switches to `WHERE order_key = %s`.
+- **Added in:** C6.E.1 (audit-time surfacing).
+- **Sequence:** before any production deployment with high activity-log volume, OR alongside C13 polish. Trivial in isolation (~40 LOC schema + ~10 LOC method swap); the real cost is the backfill verification.
+- **Unblocks:** O(1) lookup per order regardless of table size; reporting / analytics features that scan by order_key.
+- **Status:** queued; LIKE-on-JSON acceptable at v2.2.0 scale.
+
+### 31. Activity log event-type sanitization quirk — dotted names normalize to flat strings
+- **What:** `EEM_Activity_Log::write()` runs `sanitize_key()` on the `$event_type` argument. `sanitize_key` strips dots, so code-level event names diverge from the strings actually persisted to the `wp_en_activity_log.event_type` column:
+  - `'order.create'`              → stored as `'ordercreate'`
+  - `'order.refund'`              → stored as `'orderrefund'`
+  - `'order.payment_received'`    → stored as `'orderpayment_received'`
+  - `'order.status_change'`       → stored as `'orderstatus_change'`
+  - `'order.email_sent'`          → stored as `'orderemail_sent'`
+- **Why deferred:** Pattern matches the pre-existing `order.refund` writes shipped in C6.B/C6.C, so the persisted data is internally consistent — no historical-row migration needed. Functional impact is zero today because no code currently queries by event_type. The break is latent: future query-by-event-type code (admin filters, reporting, analytics export) will surface the divergence as "I wrote `'order.create'` and queried `'order.create'`, why zero rows?".
+- **Three fix options (decide pre-production):**
+  - **(a) Document the mapping explicitly** in `EEM_Activity_Log::write()` docblock + add a `normalize_event_type()` helper that callers MUST use for both writes and queries. Lowest-effort but rule-by-discipline only — easy to forget.
+  - **(b) Switch to underscore-separated event names** at every call site (`order_create`, `order_refund`, `order_payment_received`, etc.). Makes `sanitize_key` a no-op, eliminates the divergence entirely. Code edit cost is moderate (touches every write site in C6.B/C/D); historical rows still carry the dotted-sanitized form so adds a quirky transition window unless backfilled.
+  - **(c) Bypass sanitize_key for this specific field** — rewrite `EEM_Activity_Log::write` to use a custom whitelist regex like `/^[a-z0-9._-]+$/` that preserves dots. Cleanest semantically; requires the most thinking about what's actually a safe event-type charset.
+- **Recommended:** (b) — underscore-separated names. Simplest mental model long-term; the historical-row backfill is a one-line `UPDATE wp_en_activity_log SET event_type = REPLACE(...) WHERE event_type LIKE 'order%'` migration.
+- **Added in:** C6.D (surfaced when c6d-smoke initially queried for dotted names and got zero hits).
+- **Sequence:** before any production deployment that will ship a query-by-event-type feature. Folds naturally into C11 (mailer telemetry surfacing) or C13 polish — whichever first introduces an event-type filter UI.
+- **Status:** quirk documented; behavioral fix queued.
+
+### 30. Refund-notify email wiring for C6.B notify checkbox
+- **What:** The C6.B single-order refund modal carries a "Notify customer" checkbox; its checked state is captured in the form payload (currently sent as `notify` POST field, surfaced via the activity-log payload's `notify` key when refund processes). The actual email send — rendering an "Event Cancelled — Refund Processed" template and shipping it via EEM_Mailer — is **not wired** in C6.B.
+- **Why deferred:** The "Event Cancelled — Refund Processed" template doesn't exist yet (Communications panel from C3.B shipped the template UI but not this specific template). Wiring an unsendable email is hollow. C11 lands SendGrid transport + the remaining canonical templates (refund-processed, payment-reminder, etc.) together — refund-notify rides along naturally.
+- **Shape of the fix (lands with C11):**
+  1. Add `refund_processed` template to `EEM_Email_Templates_Repo::ids()` with subject + body defaults.
+  2. In `EEM_Admin::handle_ajax_refund_single` (and the bulk equivalent in `handle_ajax_bulk_refund_step`), after the refund succeeds, if `notify=1` was passed, render the refund_processed template with refund context (amount, order_number, customer_name, etc.) and ship via `EEM_Mailer::send_html_email` with `type='refund_notification'` context. The C6.D email-sent telemetry hook will then write a corresponding `order.email_sent` activity-log entry automatically.
+  3. JS modal: surface "Notification email sent to {customer}" in the success toast when notify was checked.
+- **Added in:** C6.D (refund-notify scope decision during the telemetry chunk).
+- **Sequence:** lands with C11 (SendGrid + canonical templates work).
+- **Unblocks:** the C6.B notify checkbox stops being decorative.
+- **Status:** captured-but-not-sent (payload preserves intent; transport pending).
+
+### 29. Bulk refund order-fetch optimization
+- **What:** Each `process_amount_refund` call invokes `get_grouped_orders()` (full table scan in orders-repository line ~460). For a 20-order batch this is 20 scans; for a 50-order batch, 50. Address by adding `get_orders_by_keys(array)` repo method + engine-level caching so a bulk batch performs ONE scan and serves all step calls from the cached result.
+- **Why deferred:** Admin-only operation + bulk refunds are infrequent (post-event cancellations, typically), so the perf impact is real but not blocking. C6.C ships sequentially-correct functionality first; the optimization is a polish item.
+- **Shape of the fix:**
+  1. New repo method: `EEM_Orders_Repository::get_orders_by_keys( array $order_keys ): array<string,array>`. Returns map keyed by order_key. Single `get_grouped_orders()` call internally, filtered.
+  2. Bulk-step handler (or a wrapper) accepts an optional `$batch_token` query arg. Engine maintains a transient/object-cache map keyed by token holding the get_grouped_orders result for the batch duration (~5 min TTL).
+  3. Per-step handler reads from the cached map when present, falls back to fresh `get_order` when not.
+  4. JS bulk runner generates a `batch_token = crypto.randomUUID()` on modal open, includes it on every step call.
+- **Added in:** C6.C (audit-time surfacing).
+- **Sequence:** any time after C6 closes; folds naturally into C13 polish or its own focused chunk. CLEANUP #27 (EEM_Refund_Engine extraction) is a natural co-landing because both touch the same per-order/per-batch boundary.
+- **Unblocks:** larger bulk batches (100+ orders) without quadratic-feeling delays.
+- **Status:** queued; functional impact only at large batch sizes.
+
+### 28. AJAX smoke harness for wp_die paths
+- **What:** Subshell wp-cli for isolated `wp_send_json_*` / `wp_die` paths so AJAX handlers can be exercised end-to-end in smokes without killing the runner. Surfaced during C6.B; current workaround is gate-only testing + manual browser verify.
+- **Why deferred:** Discovered mid-C6.B when c6b-smoke tried to invoke `EEM_Admin::handle_ajax_refund_single()` directly and the call exited the PHP process. The workaround (assert capability + nonce gates separately, defer end-to-end coverage to manual browser verify) is sufficient for individual AJAX endpoints but does not scale — C6.C bulk-engine will compound the gap, and C7+ will all need it.
+- **Root cause:** `wp_send_json_error` / `wp_send_json_success` invoke `wp_die()` which in CLI context calls `_default_wp_die_handler` and ultimately PHP's `die()`. Both `wp_die_handler` and `wp_die_ajax_handler` filters fire BEFORE the handler is invoked (handler-selection-time), but the default CLI handler still exits the process — the filter mechanism is about WHICH handler runs, not about preventing the exit.
+- **Shape of the fix:**
+  1. New `tests/smoke/harness/ajax-subshell.sh` — takes a PHP snippet, runs it via `wp eval` in a SUBPROCESS, returns stdout (the JSON response) + exit code as captured strings to the calling smoke.
+  2. New `tests/smoke/harness/ajax-helpers.php` — wrapper functions like `ajax_post_assert_success($action, $payload)` and `ajax_post_assert_error($action, $payload, $expected_code)` that smoke files call instead of invoking the handler directly.
+  3. C6.B's [5] section gets a follow-on subshell-driven test that POSTs to `wp_ajax_eem_order_refund_single` with bogus nonce → asserts JSON `{success:false, data:{code:'nonce'}}`. Same pattern for capability + happy-path (against a refund-able test order with a mocked gateway).
+- **Added in:** C6.B (smoke limitation surfaced during the AJAX gate testing).
+- **Sequence:** Before C6.C if possible (would give C6.C bulk engine real end-to-end coverage from the start), otherwise immediately after C6.E close as part of the C6 chunk-end audit work. Trivial in isolation (~80 LOC bash + ~60 LOC PHP helpers); the real cost is retrofitting existing AJAX smokes (c6b currently, c6c when it lands) to use the new pattern.
+- **Unblocks:** end-to-end AJAX coverage for every present + future AJAX endpoint. Reduces the "manual browser verify" surface considerably.
+- **Status:** queued; gate-only workaround in place for C6.B and C6.C as a deliberate stopgap.
+
+### 27. Extract EEM_Refund_Engine — gateway-dispatch + amount-distribution + persistence
+- **What:** C6.B introduced `EEM_Admin::process_amount_refund( $order_key, $amount, $reason )` as a public adapter around the legacy private refund stack (`refund_order_component` → gateway dispatch → `persist_component_refund`). Wraps were chosen over class extraction in C6.B to keep the chunk small and let C6.C's bulk-engine requirements clarify the contract. **After C6.C ships**, extract into a clean `EEM_Refund_Engine` class:
+  1. Move `refund_order_component` + `refund_with_stripe` + `refund_with_authorize_net` + `get_component_refunded_amount` + `get_component_remaining_refundable_amount` + `persist_component_refund` off EEM_Admin into the new class.
+  2. Move `process_amount_refund` to `EEM_Refund_Engine::process_amount_refund( $order_key, $amount, $reason )`.
+  3. EEM_Admin retains the AJAX endpoint (`handle_ajax_refund_single`) but delegates the actual refund work to the engine.
+  4. C6.C bulk engine becomes `EEM_Refund_Engine::process_bulk( $order_keys, $reason )` — same kernel, looped.
+  5. Smoke coverage expands: engine-level unit assertions (math helpers, distribution logic), AJAX-level integration assertions (capability/nonce/payload shape).
+- **Why deferred:** C6.B alone doesn't have the surface area to justify a new class; the wrapping pattern is sufficient for one caller. C6.C bulk-engine adds a second caller and an error-attribution dimension (per-order success/failure tracking, partial-batch recovery) that genuinely warrants its own type. Extracting before C6.C ships would also lock in a contract that C6.C might want to evolve.
+- **Added in:** C6.B (during the C6.B kickoff Q1 decision).
+- **Sequence:** between C6.C close and C6.D start, OR folded into C13 polish — call it at C6.C close based on how complex the bulk engine's per-order error attribution turns out to be.
+- **Unblocks deletion:** ~6 private methods migrate cleanly off EEM_Admin, which is already CLEANUP #1 territory (the full legacy file strip).
+- **Status:** queued; C6.B uses the wrap pattern as a stopgap.
+
+### 26. Activity Log save_meta diff logger — deferred from C6.D
+- **What:** C6.D delivers 5 simple-event auto-fire hooks for the Activity Log (order created, payment received, refund processed, email sent, status changes). The **6th auto-fire path** — admin edits via the reservation CPT save_meta — is deferred as its own chunk because it's a different problem shape: requires reading old → new diff and formatting a per-meta-key change-list display (like the mockup's `"Shavings Qty: 2 → 4"`). The other 5 hooks are simple "an event happened" inserts; this one needs:
+  1. **Snapshot meta values BEFORE save** (via `pre_post_update` or a `save_post_en_reservation` priority-5 hook that fires before the cpt's own save_meta at priority 10) into a transient or a request-scoped static cache.
+  2. **Diff old vs new** after save_meta completes — read the same meta keys back, compute per-key changes.
+  3. **Format the diff** for the activity log payload (struct: `{ field, old, new, label }`) — Activity Log render partial then shows the strikethrough → arrow → new value treatment.
+  4. **Filter "noise" meta keys** that change on every save (e.g. cache timestamps, derived fields) so the log doesn't fill with irrelevant entries.
+- **Why deferred:** distinct from the 5 simple-event hooks both in mechanism (pre/post snapshot pair vs single insert) and in display rendering (diff struct vs single message). Folding into C6.D would double the chunk's complexity and delay the Activity Log shipping at all.
+- **Added in:** C6.A (during the C6 chunk-planning conversation as the Q3 deferred scope).
+- **Sequence:** between C7 (Edit Reservation editor port — increases save_meta surface area) and C8 (Stall Charts — orthogonal). Likely chunk name "C7.5 activity-log diff logger" or rolled into C13 polish.
+- **Unblocks:** the mockup's "Order edited by X" activity entry with field-level diff display.
+- **Status:** queued; deferred from C6.D scope decision.
+
+### 25. VIS-4 deviation — Settings save buttons use navy instead of Electric Blue
+- **What:** All 6 Settings tab save buttons (Integrations, Branding, Communications, Shortcodes, Payments, Add-Ons) render with navy background `#031B4E` instead of the Electric Blue `#1668F2` required by VIS-4 for primary CTAs. Affected class is likely `.btn-dark` or `.eem-btn-navy` (TBD at fix time via grep).
+- **Why deferred:** discovered during the C6 mockup audit; trivial class swap but doesn't belong inside C6 itself.
+- **Fix:** Replace the navy class with `.eem-btn-electric` (established VIS-4 primary CTA class per the C5.G.11 reversal). 6-12 LOC change across the Settings page template, possibly a shared button-row partial.
+- **Risk:** very low — pure visual swap, no behavior change, no DB or markup-structure impact.
+- **Added in:** C6.A (during C6 mockup orientation pass).
+- **Sequence:** between C6 close and C7 start, as a small dedicated cleanup chunk (`c6.cleanup-vis4` or bundled with other small VIS deviations surfaced during C6's end-of-chunk audit).
+- **Status:** queued; ready to execute.
+
 ### 23. Plugin URI + Author URI placeholders — must be set before external release
 - **What:** `equine-event-manager.php` plugin header carries placeholder URIs (`https://example.com/equine-event-manager`) for both `Plugin URI` and `Author URI`. Same placeholders in `composer.json` `support.source` / `support.issues`. These are fine for in-development / private use but MUST be replaced before:
   - WordPress.org plugin directory submission
@@ -125,12 +256,20 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 - **Unblocks deletion:** Customer Profile chunk (when sequenced) replaces the stub callback in `EEM_Orders_List_Page::register_customer_profile_stub()` with the real page registration. The stub method + the placeholder render method can be removed (or repurposed if the real page wants the same shell pattern). The `CUSTOMER_PROFILE_MENU_SLUG` constant stays — it's the URL convention contract.
 - **Status:** stub shipped; awaiting Customer Profile chunk to be sequenced into the Phase 3 plan
 
-### 15. Bulk refund async engine (REF-3 / ORD-2)
-- **What:** `EEM_Orders_List_Page::handle_bulk_refund` validates the modal POST (cap + nonce + at least one valid order_key) and then redirects with `?eem_notice=bulk_refund_deferred&eem_bulk_count=N` — no refunds are actually processed. Per REF-3 / ORD-2 the engine is: queue refunds asynchronously via the merchant API one at a time (respecting rate limits), update Order state per the REF-2 status rules, write activity log entries, send the "Event Cancelled — Refund Processed" notification email to each customer (when notify=1), and collect failures into a "Needs Attention" list. None of that exists yet.
-- **Why deferred:** The async queue + progress UI + error collection are sizeable in their own right, AND the Order Detail page (C6) is where the SINGLE-order refund flow lives that this engine ultimately calls per-order — building the engine in isolation from C6's per-order refund code path would duplicate plumbing. Build C6's single-order refund first, then lift the per-order helper into a queue runner.
-- **Added in:** C5.D
-- **Unblocks deletion:** C6 (Order Detail port) — once a `refund_single_order( $order_key, $amount, $reason, $notify )` helper exists, `handle_bulk_refund` calls it in a loop (sync first cut; async queue follows once the UX needs progress feedback).
-- **Status:** dispatcher shipped; awaiting engine in C6
+### 15. ~~Bulk refund async engine (REF-3 / ORD-2)~~ ✅ Resolved in C6.C
+- **What was deferred:** `EEM_Orders_List_Page::handle_bulk_refund` (C5.D) validated the modal POST and redirected with a `bulk_refund_deferred` notice — no refunds were actually processed.
+- **How it was resolved (C6.C, 2026-05-23):**
+  1. New AJAX endpoint `wp_ajax_eem_order_bulk_refund_step` on EEM_Admin processes one order per call. Server computes refund amount via `get_order_remaining_refundable($order_key)` at call time (no client-supplied amount) — retry-safety property documented in the handler's docblock.
+  2. JS layer (`runBulkRefundQueue` + `processNextBulkRefundStep` in admin.js) drives the batch sequentially via per-order AJAX calls. Per-order outcomes (success / failure / was_noop) attribute cleanly to individual order_keys.
+  3. Modal 3-state UI: **intro** (confirm form + tab-close warning) → **processing** (per-order progress list with live status glyphs) → **summary** (totals + failure list + "Retry failed (N)" button).
+  4. Continue-past-failures (option-3 batch error attribution per C6.C kickoff Q2): every order processes regardless of upstream failures; failures collected into a separate list with retry affordance.
+  5. Retry re-validates remaining_refundable at call time (smoke-verified): parallel admin actions between batch and retry do not produce stale-amount refunds.
+  6. Activity-log writing moved into the `process_amount_refund` kernel so both single (C6.B) and bulk (C6.C) callers inherit telemetry without duplication.
+  7. Notification email (the `notify=1` checkbox) wiring is part of C6.D — the email-send hook joins the 5 auto-fire telemetry points there; the checkbox value is captured in the activity-log payload now and surfaces in the C6.D mailer integration when it lands.
+- **Closed:** C6.C (2026-05-23). Reuse-pattern audit confirmed `process_amount_refund` works clean in the bulk loop — `EEM_Refund_Engine` extraction (CLEANUP #27) remains queued for post-C6 polish.
+- **Known follow-on:** CLEANUP #29 (bulk refund order-fetch optimization) surfaced during the C6.C audit — admin-only + infrequent perf concern, deferred.
+
+### 14. Orders soft-delete schema (Move to Trash for orders)
 
 ### 14. Orders soft-delete schema (Move to Trash for orders)
 - **What:** `EEM_Orders_List_Page::handle_trash` is a stub. Per ORD-3 ("Move to Trash (renamed from the original 'Delete Order') is WP-standard soft delete: the order is recoverable from the trash for 30 days") the orders list should support reversible trash semantics, but the underlying `wp_en_stall_reservations` / `wp_en_rv_reservations` tables have no `trashed_at` column. The handler currently redirects with a `?eem_notice=order_trash_deferred` warning rather than fall back to the legacy hard-delete (`EEM_Orders_Repository::delete_order`), which would surprise users expecting soft semantics.

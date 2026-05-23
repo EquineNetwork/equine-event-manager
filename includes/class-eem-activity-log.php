@@ -163,6 +163,67 @@ class EEM_Activity_Log {
 	}
 
 	/**
+	 * Fetch entries for one order BY ORDER KEY (string md5 hash), newest first.
+	 *
+	 * C6.E.1 — the original get_for_order() filters on the numeric `order_id`
+	 * column. C6.B/C/D telemetry writes (order.create, order.refund,
+	 * order.payment_received, order.status_change, order.email_sent) all
+	 * leave `order_id = NULL` and embed the string `order_key` in the JSON
+	 * payload, so get_for_order() returns zero rows for them. This method
+	 * queries via LIKE on the payload column instead.
+	 *
+	 * **Performance caveat (CLEANUP #32):** scans the payload column with
+	 * no index. Acceptable at v2.2.0 scale (admin-only view, infrequent
+	 * visits, ~dozens of entries per order). Proper fix is a dedicated
+	 * `order_key` column + index — tracked as CLEANUP #32 for pre-
+	 * production. Until then, the `$limit` floor (default 100, capped at
+	 * 500 internally by self::query()) bounds the worst case.
+	 *
+	 * @param string $order_key Order key (the md5 hash assigned by the orders repo).
+	 * @param int    $limit     Optional max rows. Default 100.
+	 * @return array<int, array<string, mixed>>
+	 */
+	public static function get_for_order_key( $order_key, $limit = 100 ) {
+		global $wpdb;
+
+		$order_key = sanitize_text_field( (string) $order_key );
+		if ( '' === $order_key ) {
+			return array();
+		}
+
+		$table = self::table_name();
+		$like  = '%' . $wpdb->esc_like( '"order_key":"' . $order_key . '"' ) . '%';
+		$cap   = $limit > 0 ? min( (int) $limit, 500 ) : 100;
+
+		$sql = "SELECT id, order_id, reservation_id, event_type, payload, actor_type, actor_id, actor_label, created_at
+			FROM {$table}
+			WHERE payload LIKE %s
+			ORDER BY created_at DESC, id DESC
+			LIMIT %d";
+
+		$rows = $wpdb->get_results( $wpdb->prepare( $sql, $like, $cap ), ARRAY_A );
+
+		if ( ! is_array( $rows ) ) {
+			return array();
+		}
+
+		// Decode payload JSON for caller convenience (matches the existing
+		// query() helper's contract — render partials expect an array,
+		// not a JSON string).
+		foreach ( $rows as &$row ) {
+			$row['payload'] = isset( $row['payload'] ) && '' !== $row['payload']
+				? json_decode( $row['payload'], true )
+				: array();
+			if ( ! is_array( $row['payload'] ) ) {
+				$row['payload'] = array();
+			}
+		}
+		unset( $row );
+
+		return $rows;
+	}
+
+	/**
 	 * Fetch entries for one reservation, newest first.
 	 *
 	 * @param int $reservation_id Reservation post id.

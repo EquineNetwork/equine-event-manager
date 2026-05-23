@@ -3707,3 +3707,1049 @@ a.eem-orders-count-link:focus {
 	color: var(--eem-electric);
 	text-decoration: none;
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   C6.A — Order Detail page
+   Port of .mockups/order_detail_page.html (the post-VIS rewrite). Single
+   `.eem-page-wrap` card holding everything per VIS-3, with the title-band
+   header rendered inside via the shared shell partial. Reuses C1.x
+   primitives (.eem-card, .eem-page-header, .eem-status-badge,
+   .eem-type-badge, .eem-btn-electric, .eem-btn-collect, .eem-row-menu-wrap,
+   .eem-row-dropdown, .eem-row-dd-item) wherever possible — see C1.x
+   carve-out note in CLAUDE.md.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* Shell `meta` slot — badges row + meta-line below subtitle inside
+   .eem-page-header-left. Added in C6.A; reusable by C7/C8. */
+.eem-page-meta {
+	margin-top: 6px;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+/* Order Detail header meta (badges + date/event/customer line). */
+.eem-order-meta-badges {
+	display: flex;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+
+.eem-order-meta-line {
+	font-size: 13px;
+	color: var(--eem-text-secondary);
+	display: flex;
+	gap: 16px;
+	flex-wrap: wrap;
+}
+
+.eem-order-meta-line span strong {
+	color: var(--eem-text);
+	font-weight: 600;
+}
+
+.eem-order-meta-line a {
+	color: var(--eem-navy);
+	font-weight: 600;
+	text-decoration: none;
+}
+
+.eem-order-meta-line a:hover {
+	color: var(--eem-electric);
+	text-decoration: none;
+}
+
+/* Ghost button — used for Back to Orders / Edit Reservation / More.
+   Shipped in C1.2 as the secondary CTA pattern; restated here for the
+   compact 12.5px variant the Order Detail action bar uses. */
+.eem-btn-ghost {
+	background: var(--eem-surface);
+	color: var(--eem-text);
+	border: 1px solid var(--eem-border-card);
+}
+
+.eem-btn-ghost:hover {
+	background: var(--eem-bg-alt);
+	color: var(--eem-text);
+}
+
+/* Stubbed action items (Send Receipt / Print Receipt — C11 deferral). */
+.eem-btn-stub {
+	opacity: 0.55;
+	cursor: not-allowed;
+	pointer-events: none;
+}
+
+.eem-row-dd-tag {
+	margin-left: auto;
+	font-size: 10px;
+	font-weight: 700;
+	color: var(--eem-text-muted);
+	letter-spacing: 0.05em;
+	padding: 1px 5px;
+	background: var(--eem-bg-alt);
+	border-radius: 8px;
+}
+
+/* Danger variant on dropdown menu items (Move to Trash). */
+.eem-row-dd-item--danger {
+	color: var(--eem-danger);
+}
+
+.eem-row-dd-item--danger:hover {
+	background: #fef2f2;
+	color: var(--eem-danger);
+}
+
+/* ── PAYMENT OUTSTANDING BANNER (conditional, inside .eem-page-wrap) ── */
+.eem-order-payment-banner {
+	background: #FFF7ED;
+	border-bottom: 1px solid #fed7aa;
+	padding: 14px 20px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	flex-wrap: wrap;
+}
+
+.eem-order-payment-banner__left {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex: 1;
+	min-width: 0;
+}
+
+.eem-order-payment-banner__icon {
+	width: 36px;
+	height: 36px;
+	background: #fed7aa;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	color: #c2410c;
+	font-weight: 700;
+	font-size: 18px;
+}
+
+.eem-order-payment-banner__title {
+	font-family: var(--eem-font-display);
+	font-size: 14px;
+	font-weight: 700;
+	color: #92400e;
+	line-height: 1.3;
+}
+
+.eem-order-payment-banner__meta {
+	font-size: 12.5px;
+	color: #b45309;
+	margin-top: 2px;
+}
+
+.eem-order-payment-banner__amount {
+	font-weight: 700;
+	color: #92400e;
+}
+
+/* Solid orange Collect Payment button — banner-specific variant. */
+.eem-btn-collect-banner {
+	padding: 9px 18px;
+	border-radius: var(--eem-radius);
+	font-size: 13px;
+	font-weight: 700;
+	font-family: var(--eem-font-ui);
+	cursor: pointer;
+	white-space: nowrap;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	border: 1px solid #c2410c;
+	background: #c2410c;
+	color: #fff;
+	text-decoration: none;
+	flex-shrink: 0;
+}
+
+.eem-btn-collect-banner:hover {
+	background: #9a3412;
+	border-color: #9a3412;
+	color: #fff;
+}
+
+/* ── BODY 2-COL GRID (1fr + 320px sidebar) ── */
+.eem-order-body {
+	padding: 16px 20px;
+	display: grid;
+	grid-template-columns: 1fr 320px;
+	gap: 16px;
+	align-items: start;
+}
+
+.eem-order-main {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	min-width: 0;
+}
+
+.eem-order-side {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+/* Inner cards inside the body grid (Stall/RV/Add-On/Group/Summary/Payment). */
+.eem-order-card {
+	background: var(--eem-surface);
+	border: 1px solid var(--eem-border-soft);
+	border-radius: var(--eem-radius);
+	overflow: hidden;
+}
+
+.eem-order-card__header {
+	padding: 13px 16px;
+	border-bottom: 1px solid var(--eem-border-soft);
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 10px;
+	background: var(--eem-surface);
+}
+
+.eem-order-card__title {
+	font-family: var(--eem-font-display);
+	font-size: 14px;
+	font-weight: 700;
+	color: var(--eem-navy);
+	line-height: 1.3;
+}
+
+.eem-order-card__subtitle {
+	font-size: 12.5px;
+	color: var(--eem-text-secondary);
+	margin-top: 2px;
+}
+
+.eem-order-card__nights {
+	padding: 3px 9px;
+	border-radius: 20px;
+	font-size: 11px;
+	font-weight: 600;
+	background: var(--eem-type-stall-bg);
+	color: var(--eem-type-stall-text);
+	border: 1px solid var(--eem-type-stall-border);
+	white-space: nowrap;
+}
+
+/* Detail table (label/value pairs). VIS-1 token applied to label-column bg. */
+.eem-detail-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.eem-detail-table tr {
+	border-bottom: 1px solid var(--eem-border-soft);
+}
+
+.eem-detail-table tr:last-child {
+	border-bottom: none;
+}
+
+.eem-detail-table td {
+	padding: 9px 14px;
+	font-size: 13px;
+	vertical-align: top;
+}
+
+.eem-detail-table td:first-child {
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	color: var(--eem-text-secondary);
+	width: 42%;
+	background: var(--eem-bg-alt);
+	border-right: 1px solid var(--eem-border-soft);
+}
+
+.eem-detail-table td:last-child {
+	font-weight: 500;
+	color: var(--eem-text);
+}
+
+.eem-detail-table__subtotal td {
+	background: #F8FAFF;
+	border-top: 2px solid #c0d8ff;
+}
+
+.eem-detail-table__subtotal td:first-child {
+	color: var(--eem-navy);
+	font-weight: 700;
+}
+
+.eem-detail-table__subtotal td:last-child {
+	color: var(--eem-electric);
+	font-weight: 700;
+	font-size: 14px;
+}
+
+/* Stall assignment readout (read-only badge — interactive grid in C8). */
+.eem-stall-assignment {
+	padding: 12px 16px;
+	border-top: 1px solid var(--eem-border-soft);
+	background: var(--eem-bg-alt);
+}
+
+.eem-stall-assignment__label {
+	font-size: 10.5px;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--eem-text-secondary);
+	margin-bottom: 5px;
+}
+
+.eem-stall-assignment__value {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--eem-navy);
+}
+
+.eem-stall-assignment__badge {
+	display: inline-block;
+	padding: 3px 10px;
+	background: var(--eem-electric);
+	color: var(--eem-text-on-navy);
+	border-radius: var(--eem-radius);
+	font-size: 12.5px;
+	font-weight: 700;
+}
+
+.eem-stall-assignment__none {
+	color: var(--eem-text-muted);
+	font-weight: 500;
+	font-style: italic;
+}
+
+.eem-stall-assignment__note {
+	font-size: 12px;
+	color: var(--eem-text-secondary);
+	margin-top: 6px;
+	font-style: italic;
+}
+
+/* ── ORDER SUMMARY sidebar (right column) ── */
+.eem-order-summary__body {
+	padding: 12px;
+}
+
+.eem-order-summary__section {
+	border: 1px solid var(--eem-border-soft);
+	border-radius: var(--eem-radius);
+	overflow: hidden;
+	margin-bottom: 10px;
+}
+
+.eem-order-summary__section-header {
+	padding: 8px 12px;
+	background: var(--eem-bg-alt);
+	border-bottom: 1px solid var(--eem-border-soft);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.eem-order-summary__section-title {
+	font-size: 10.5px;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--eem-text-secondary);
+}
+
+.eem-order-summary__line {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 8px 12px;
+	border-bottom: 1px solid var(--eem-border-soft);
+	font-size: 13px;
+}
+
+.eem-order-summary__line:last-child {
+	border-bottom: none;
+}
+
+.eem-order-summary__line span:first-child {
+	color: var(--eem-text-secondary);
+}
+
+.eem-order-summary__line span:last-child {
+	font-weight: 600;
+	color: var(--eem-text);
+}
+
+.eem-order-summary__grand-total {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 13px 14px;
+	border: 2px solid var(--eem-navy);
+	border-radius: var(--eem-radius);
+	margin-top: 4px;
+}
+
+.eem-order-summary__grand-label {
+	font-size: 13px;
+	font-weight: 700;
+	color: var(--eem-navy);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.eem-order-summary__grand-val {
+	font-family: var(--eem-font-display);
+	font-size: 20px;
+	font-weight: 700;
+	color: var(--eem-electric);
+}
+
+/* C6.A.2: per-section type badge + Section Total row inside summary. */
+.eem-order-summary__section-badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 2px 8px;
+	border-radius: 10px;
+	font-size: 10px;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	line-height: 1.4;
+}
+
+/* C6.A.3 palette alignment: sidebar section badges share the canonical
+   .eem-type-badge--{X} palette (mockup lines 66-71). Header type badges
+   and sidebar section badges label the same concepts — single source of
+   truth for stall/rv/addon color identity. */
+.eem-order-summary__section-badge--stall {
+	background: #EEF4FF;
+	color: #1668F2;
+	border: 1px solid #c0d8ff;
+}
+
+.eem-order-summary__section-badge--rv {
+	background: #F5F3FF;
+	color: #6d28d9;
+	border: 1px solid #ddd6fe;
+}
+
+.eem-order-summary__section-badge--addon {
+	background: #FFF7ED;
+	color: #c2410c;
+	border: 1px solid #fed7aa;
+}
+
+/* C6.A.3: text-transform: uppercase + letter-spacing removed to match
+   canonical mockup `.summary-section-subtotal` (lines 163-164) which
+   uses title-case "Section Total" + the brand-blue value color. */
+.eem-order-summary__section-subtotal {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 9px 12px;
+	background: #F8FAFF;
+	border-top: 1px solid #c0d8ff;
+	font-size: 13px;
+	font-weight: 700;
+	color: var(--eem-navy);
+}
+
+.eem-order-summary__section-subtotal span:last-child {
+	color: #1668F2;
+}
+
+/* C6.A.2: Group reservation rider list (mockup lines 468-471). */
+.eem-rider-list {
+	padding: 0 14px 14px;
+}
+
+.eem-rider-row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 8px 0;
+	border-top: 1px solid var(--eem-border-soft);
+	font-size: 13px;
+	color: var(--eem-text);
+}
+
+.eem-rider-row:first-child {
+	border-top: none;
+}
+
+.eem-rider-num {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	border-radius: 50%;
+	background: var(--eem-navy);
+	color: #fff;
+	font-size: 11px;
+	font-weight: 700;
+	flex-shrink: 0;
+}
+
+.eem-rider-name {
+	font-weight: 500;
+}
+
+/* C6.A.2: Special Instructions empty placeholder. */
+.eem-order-instructions__text--empty {
+	color: var(--eem-text-muted);
+	font-style: italic;
+}
+
+/* ── PAYMENT DETAILS sidebar (right column) ── */
+.eem-order-payment__body {
+	padding: 14px 16px;
+}
+
+.eem-order-payment__label {
+	font-size: 10px;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--eem-text-secondary);
+	margin: 10px 0 4px;
+}
+
+.eem-order-payment__label:first-child {
+	margin-top: 0;
+}
+
+.eem-order-payment__label--sep {
+	border-top: 1px solid var(--eem-border-soft);
+	padding-top: 10px;
+	margin-top: 12px;
+}
+
+.eem-order-payment__customer-name {
+	font-family: var(--eem-font-display);
+	font-size: 15px;
+	font-weight: 700;
+	color: var(--eem-navy);
+	margin-bottom: 3px;
+}
+
+.eem-order-payment__customer-name a {
+	color: var(--eem-navy);
+	text-decoration: none;
+}
+
+.eem-order-payment__customer-name a:hover {
+	color: var(--eem-electric);
+	text-decoration: none;
+}
+
+.eem-order-payment__val {
+	font-size: 13px;
+	color: var(--eem-text);
+	line-height: 1.65;
+}
+
+.eem-order-payment__val a {
+	color: var(--eem-navy);
+	font-weight: 500;
+	text-decoration: none;
+}
+
+.eem-order-payment__val a:hover {
+	color: var(--eem-electric);
+	text-decoration: none;
+}
+
+.eem-order-payment__mono {
+	font-family: 'IBM Plex Mono', 'SF Mono', monospace;
+	font-size: 11.5px;
+	color: var(--eem-text-secondary);
+}
+
+.eem-order-payment__hint {
+	color: var(--eem-text-muted);
+	font-size: 12.5px;
+}
+
+/* ── FULL-WIDTH sections below the 2-col grid ── */
+.eem-order-full-width {
+	padding: 0 20px 16px;
+}
+
+.eem-order-instructions__body {
+	padding: 14px 16px;
+}
+
+.eem-order-instructions__text {
+	font-size: 13.5px;
+	color: var(--eem-text-secondary);
+	font-style: italic;
+	line-height: 1.6;
+}
+
+/* ── ACTIVITY LOG placeholder (C6.E will flesh out) ── */
+.eem-order-activity {
+	border-top: 1px solid var(--eem-border-card);
+	background: var(--eem-surface);
+}
+
+.eem-order-activity__toggle {
+	padding: 14px 20px;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	background: var(--eem-surface);
+}
+
+.eem-order-activity__toggle-left {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.eem-order-activity__title {
+	font-family: var(--eem-font-display);
+	font-size: 15px;
+	font-weight: 700;
+	color: var(--eem-navy);
+}
+
+.eem-order-activity__count {
+	font-size: 11.5px;
+	color: var(--eem-text-secondary);
+	padding: 2px 8px;
+	background: var(--eem-bg-alt);
+	border-radius: 10px;
+	font-weight: 600;
+}
+
+/* ── C6.E.1 — Activity log collapsible + real-entry render ── */
+
+/* Toggle row is clickable; visually distinct on hover. */
+.eem-order-activity__toggle {
+	cursor: pointer;
+	user-select: none;
+}
+
+.eem-order-activity__toggle:hover {
+	background: var(--eem-bg-alt);
+}
+
+.eem-order-activity__chevron {
+	font-size: 14px;
+	color: var(--eem-text-secondary);
+	transition: transform 0.15s ease;
+	display: inline-block;
+}
+
+.eem-order-activity.collapsed .eem-order-activity__chevron {
+	transform: rotate(-90deg);
+}
+
+.eem-order-activity.collapsed .eem-order-activity__list {
+	display: none;
+}
+
+/* C6.E.2: hide the Add Note form too when the activity section is
+   collapsed — keeps the section visually atomic. */
+.eem-order-activity.collapsed .eem-add-note-form {
+	display: none;
+}
+
+/* C6.E.2: Add Note form — sits at the bottom of the .eem-order-activity
+   section below the entries list. Submit button is disabled-when-empty
+   per the JS input listener. */
+.eem-add-note-form {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 12px 20px 16px;
+	border-top: 1px solid var(--eem-border-soft);
+}
+
+.eem-add-note-form__textarea {
+	width: 100%;
+	min-height: 72px;
+	padding: 8px 10px;
+	font-family: inherit;
+	font-size: 13px;
+	line-height: 1.5;
+	color: var(--eem-text);
+	background: #fff;
+	border: 1px solid var(--eem-border);
+	border-radius: var(--eem-radius);
+	resize: vertical;
+}
+
+.eem-add-note-form__textarea:focus {
+	outline: none;
+	border-color: var(--eem-electric);
+	box-shadow: 0 0 0 3px rgba(0, 119, 255, 0.15);
+}
+
+.eem-add-note-form__error {
+	color: #b91c1c;
+	font-size: 12.5px;
+	background: #fef2f2;
+	border: 1px solid #fecaca;
+	border-radius: var(--eem-radius);
+	padding: 6px 10px;
+}
+
+.eem-add-note-form__actions {
+	display: flex;
+	justify-content: flex-end;
+}
+
+.eem-add-note-form__actions .eem-btn[disabled] {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* Entry-list container. C2 partial renders .eem-activity-log <ul>
+   inside this wrapper; pad to match the rest of the section. */
+.eem-order-activity__list {
+	padding: 4px 20px 16px;
+	border-top: 1px solid var(--eem-border-soft);
+}
+
+/* Nudge the C2 partial's entry typography slightly tighter when it
+   lands inside the Order Detail section (vs. the standalone list page
+   the C2 partial was originally designed for). The base .eem-activity-log
+   rules from C2.4 do most of the work; these refinements line up icon
+   spacing with the rest of the Order Detail body. */
+.eem-order-activity__list .eem-activity-log {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.eem-order-activity__list .eem-activity-log-empty {
+	font-size: 13px;
+	color: var(--eem-text-secondary);
+	font-style: italic;
+	padding: 12px 0;
+	margin: 0;
+}
+
+/* ── NOT FOUND card ── */
+.eem-order-not-found {
+	padding: 32px 20px;
+	text-align: center;
+	color: var(--eem-text-secondary);
+}
+
+.eem-order-not-found p {
+	margin-bottom: 12px;
+	font-size: 14px;
+}
+
+/* ── RESPONSIVE — tablet (≤1024) collapse 2-col grid to 1-col ── */
+@media (max-width: 1024px) {
+	.eem-order-body {
+		grid-template-columns: 1fr;
+		gap: 14px;
+		padding: 14px;
+	}
+	.eem-order-side {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 12px;
+	}
+}
+
+/* ── RESPONSIVE — mobile (≤767) stack everything ── */
+@media (max-width: 767px) {
+	.eem-order-payment-banner {
+		padding: 12px 14px;
+		flex-direction: column;
+		align-items: stretch;
+	}
+	.eem-order-payment-banner__left {
+		width: 100%;
+	}
+	.eem-btn-collect-banner {
+		width: 100%;
+		justify-content: center;
+	}
+	.eem-order-body {
+		padding: 12px;
+	}
+	.eem-order-side {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+	.eem-detail-table tr {
+		display: flex;
+		flex-direction: column;
+		border-bottom: 1px solid var(--eem-border-soft);
+	}
+	.eem-detail-table td {
+		width: 100%;
+		border: none;
+		padding: 3px 12px;
+	}
+	.eem-detail-table td:first-child {
+		background: none;
+		font-size: 10px;
+		color: var(--eem-text-secondary);
+		padding-top: 8px;
+		padding-bottom: 1px;
+	}
+	.eem-detail-table td:last-child {
+		font-size: 14px;
+		padding-bottom: 8px;
+	}
+	.eem-order-full-width {
+		padding: 0 12px 12px;
+	}
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   C6.B — Single-order Refund modal
+   Pure additive vocabulary for the amount-input row + summary + error
+   surface. Modal chrome (.eem-modal*, .eem-field-*, .eem-btn-*) is fully
+   reused from C5.D / C1.2 / C1.4 — see C6.B kickoff for the inheritance
+   inventory.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.eem-order-refund-summary {
+	font-size: 13px;
+	color: var(--eem-text-secondary);
+	margin-bottom: 12px;
+	line-height: 1.5;
+}
+
+.eem-order-refund-summary strong {
+	color: var(--eem-text);
+	font-weight: 600;
+}
+
+.eem-order-refund-amount-row {
+	margin-bottom: 12px;
+}
+
+.eem-order-refund-amount-input {
+	display: flex;
+	align-items: stretch;
+	max-width: 220px;
+}
+
+.eem-order-refund-amount-prefix {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0 12px;
+	background: var(--eem-bg-alt);
+	border: 1px solid var(--eem-border-card);
+	border-right: none;
+	border-radius: var(--eem-radius) 0 0 var(--eem-radius);
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--eem-text-secondary);
+}
+
+.eem-order-refund-amount-input input[type="number"] {
+	flex: 1;
+	padding: 8px 11px;
+	border: 1px solid var(--eem-border-card);
+	border-radius: 0 var(--eem-radius) var(--eem-radius) 0;
+	font-size: 14px;
+	font-family: var(--eem-font-ui);
+	color: var(--eem-text);
+}
+
+.eem-order-refund-amount-input input[type="number"]:focus {
+	outline: none;
+	border-color: var(--eem-electric);
+	box-shadow: 0 0 0 1px var(--eem-electric);
+}
+
+.eem-field-hint {
+	font-size: 12px;
+	color: var(--eem-text-secondary);
+	margin-top: 4px;
+	line-height: 1.4;
+}
+
+/* Error surface — JS toggles [hidden] when the AJAX endpoint returns
+   wp_send_json_error. */
+.eem-order-refund-error {
+	padding: 10px 12px;
+	background: #fef2f2;
+	border: 1px solid #fecaca;
+	border-radius: var(--eem-radius);
+	color: var(--eem-danger);
+	font-size: 13px;
+	margin-top: 8px;
+}
+
+/* Per-component refund line in Payment Details > Refund History
+   (rendered by handle_ajax_refund_single's refund_history_html fragment). */
+.eem-order-payment__refund-line {
+	display: flex;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 4px 0;
+	font-size: 13px;
+	color: var(--eem-text);
+}
+
+.eem-order-payment__refund-line:not(:last-child) {
+	border-bottom: 1px solid var(--eem-border-soft);
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   C6.C — Bulk refund engine (3-state modal: intro / processing / summary)
+   Single .eem-bulk-refund-modal has three body sections, only one visible
+   at a time via .eem-bulk-refund--state-* class on the modal root.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* State gating — show only the matching body section. */
+.eem-bulk-refund-modal .eem-bulk-refund-state {
+	display: none;
+}
+
+.eem-bulk-refund-modal.eem-bulk-refund--state-intro      .eem-bulk-refund-state--intro      { display: block; }
+.eem-bulk-refund-modal.eem-bulk-refund--state-processing .eem-bulk-refund-state--processing { display: block; }
+.eem-bulk-refund-modal.eem-bulk-refund--state-summary    .eem-bulk-refund-state--summary    { display: block; }
+
+/* Intro-state tab-close warning. */
+.eem-bulk-refund-tab-warning {
+	margin-top: 12px;
+	padding: 8px 12px;
+	background: #fef9e7;
+	border: 1px solid #fde68a;
+	border-radius: var(--eem-radius);
+	font-size: 12.5px;
+	color: #92400e;
+	line-height: 1.5;
+}
+
+/* Processing-state progress list. */
+.eem-bulk-refund-processing-headline {
+	font-size: 13px;
+	color: var(--eem-text-secondary);
+	margin-bottom: 10px;
+}
+
+.eem-bulk-refund-progress-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	max-height: 320px;
+	overflow-y: auto;
+	border: 1px solid var(--eem-border-soft);
+	border-radius: var(--eem-radius);
+}
+
+.eem-bulk-refund-progress-item {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 8px 12px;
+	font-size: 13px;
+	border-bottom: 1px solid var(--eem-border-soft);
+}
+
+.eem-bulk-refund-progress-item:last-child {
+	border-bottom: none;
+}
+
+.eem-bulk-refund-progress-status {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 20px;
+	height: 20px;
+	border-radius: 50%;
+	font-size: 12px;
+	font-weight: 700;
+	flex-shrink: 0;
+}
+
+.eem-bulk-refund-progress-item--queued    .eem-bulk-refund-progress-status { background: var(--eem-bg-alt); color: var(--eem-text-muted); }
+.eem-bulk-refund-progress-item--in-flight .eem-bulk-refund-progress-status { background: #fef3c7; color: #a16207; }
+.eem-bulk-refund-progress-item--success   .eem-bulk-refund-progress-status { background: #dcfce7; color: #15803d; }
+.eem-bulk-refund-progress-item--failure   .eem-bulk-refund-progress-status { background: #fee2e2; color: #b91c1c; }
+
+.eem-bulk-refund-progress-key {
+	font-family: 'IBM Plex Mono', 'SF Mono', monospace;
+	font-size: 12px;
+	color: var(--eem-text-secondary);
+	min-width: 110px;
+}
+
+.eem-bulk-refund-progress-detail {
+	flex: 1;
+	color: var(--eem-text);
+}
+
+.eem-bulk-refund-progress-item--failure .eem-bulk-refund-progress-detail {
+	color: var(--eem-danger);
+}
+
+/* Summary-state totals + failure list. */
+.eem-bulk-refund-summary-totals {
+	margin-bottom: 12px;
+	padding: 12px;
+	background: var(--eem-bg-alt);
+	border-radius: var(--eem-radius);
+}
+
+.eem-bulk-refund-totals-line {
+	font-size: 14px;
+	color: var(--eem-text);
+	margin-bottom: 4px;
+}
+
+.eem-bulk-refund-totals-amount {
+	font-family: var(--eem-font-display);
+	font-size: 18px;
+	font-weight: 700;
+	color: var(--eem-electric);
+}
+
+.eem-bulk-refund-failure-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.eem-bulk-refund-failure-item {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 8px 12px;
+	font-size: 13px;
+	background: #fef2f2;
+	border: 1px solid #fecaca;
+	border-radius: var(--eem-radius);
+	margin-bottom: 6px;
+}
+
+.eem-bulk-refund-failure-key {
+	font-family: 'IBM Plex Mono', 'SF Mono', monospace;
+	font-size: 12px;
+	color: var(--eem-text-secondary);
+	min-width: 110px;
+}
+
+.eem-bulk-refund-failure-msg {
+	flex: 1;
+	color: var(--eem-danger);
+}
