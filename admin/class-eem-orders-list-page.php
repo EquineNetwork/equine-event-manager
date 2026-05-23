@@ -109,6 +109,7 @@ class EEM_Orders_List_Page {
 		);
 
 		?>
+		<?php $this->render_action_notice(); ?>
 		<div class="eem-list-card eem-orders-list" data-eem-orders-list>
 			<?php $this->render_toolbar( $billing, $types, $event, $search, $page['total'] ); ?>
 			<?php $this->render_desktop_table( $page['items'], $orderby, $order ); ?>
@@ -118,6 +119,39 @@ class EEM_Orders_List_Page {
 		<?php
 
 		eem_render_page_close( array( 'wrap' => true ) );
+	}
+
+	/**
+	 * Inline notice rendered after admin_post handlers redirect back
+	 * with ?eem_notice=… on the URL. Matches the pattern C4 uses on
+	 * the Reservations list page so the visual treatment is identical.
+	 *
+	 * @return void
+	 */
+	private function render_action_notice() {
+		$code = isset( $_GET['eem_notice'] ) ? sanitize_key( wp_unslash( $_GET['eem_notice'] ) ) : '';
+		if ( '' === $code ) {
+			return;
+		}
+		$messages = array(
+			'notification_resent'      => array( 'type' => 'success', 'text' => __( 'Customer notification email resent.', 'equine-event-manager' ) ),
+			'notification_no_email'    => array( 'type' => 'warning', 'text' => __( 'Cannot resend — this order has no customer email on file.', 'equine-event-manager' ) ),
+			'notification_failed'      => array( 'type' => 'error',   'text' => __( 'Could not resend the notification email. Check the WordPress error log.', 'equine-event-manager' ) ),
+			'export_failed'            => array( 'type' => 'error',   'text' => __( 'Could not generate the CSV export. The order may have been deleted.', 'equine-event-manager' ) ),
+			'order_trash_deferred'     => array( 'type' => 'warning', 'text' => __( 'Move to Trash for orders is not yet wired — the soft-delete schema lands in a future chunk. No changes were made.', 'equine-event-manager' ) ),
+			'print_receipt_deferred'   => array( 'type' => 'info',    'text' => __( 'Receipt print view lands with the Order Detail page in C6. No action taken.', 'equine-event-manager' ) ),
+			'denied'                   => array( 'type' => 'error',   'text' => __( 'You do not have permission to perform that action.', 'equine-event-manager' ) ),
+			'notfound'                 => array( 'type' => 'error',   'text' => __( 'Order not found.', 'equine-event-manager' ) ),
+		);
+		if ( ! isset( $messages[ $code ] ) ) {
+			return;
+		}
+		$m = $messages[ $code ];
+		printf(
+			'<div class="notice notice-%1$s is-dismissible" style="margin-bottom:12px;"><p>%2$s</p></div>',
+			esc_attr( $m['type'] ),
+			esc_html( $m['text'] )
+		);
 	}
 
 	/**
@@ -325,21 +359,92 @@ class EEM_Orders_List_Page {
 			</td>
 			<td><span class="eem-status-badge eem-status-<?php echo esc_attr( $status_css ); ?>"><?php echo esc_html( $status_label ); ?></span></td>
 			<td><span class="eem-date-val"><?php echo esc_html( $date_label ); ?></span></td>
-			<td>
-				<div class="eem-actions-cell">
-					<?php /* C5.C wires Print Receipt + conditional Collect button + meatballs items. */ ?>
-					<button type="button" class="eem-action-icon-btn" data-eem-action="order-print-receipt" data-order-key="<?php echo esc_attr( $order_key ); ?>" title="<?php esc_attr_e( 'Print Receipt', 'equine-event-manager' ); ?>" aria-label="<?php esc_attr_e( 'Print Receipt', 'equine-event-manager' ); ?>">
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-					</button>
-					<div class="eem-row-menu-wrap">
-						<button type="button" class="eem-more-btn" data-eem-action="dropdown-toggle" aria-haspopup="menu" aria-expanded="false" aria-controls="eem-order-menu-<?php echo esc_attr( $order_key ); ?>" title="<?php esc_attr_e( 'More actions', 'equine-event-manager' ); ?>">···</button>
-						<div class="eem-row-dropdown" id="eem-order-menu-<?php echo esc_attr( $order_key ); ?>" role="menu">
-							<?php /* C5.C fills meatballs items here. */ ?>
-						</div>
-					</div>
-				</div>
-			</td>
+			<td><?php $this->render_row_action_cell( $order, 'desktop' ); ?></td>
 		</tr>
+		<?php
+	}
+
+	/**
+	 * Action cell — Print Receipt + conditional Collect button + meatballs
+	 * with the ORD-3 6-item menu. Shared between desktop rows and mobile
+	 * cards so the action surface stays consistent.
+	 *
+	 * Conditional rules (per ORD-3):
+	 *   - Collect button visible only when status is `pending` or
+	 *     `invoice_sent` (unpaid + invoice-sent collapse to the same
+	 *     billing tab but are distinct statuses).
+	 *   - Refund Order menu item hidden when status is `refunded` or
+	 *     `cancelled` (nothing left to refund).
+	 *
+	 * The dropdown items mix plain <a> links (View Order, Edit
+	 * Reservation, Refund Order, Collect — all pointing at the
+	 * forthcoming Order Detail page in C6) and admin_post button
+	 * dispatchers (Resend Notification, Export CSV, Trash, Print
+	 * Receipt — wired below).
+	 *
+	 * @param array<string, mixed> $order
+	 * @param string               $context 'desktop' | 'mobile' — used
+	 *                                      to compose unique aria-controls
+	 *                                      ids so the same dropdown is
+	 *                                      reachable from both surfaces.
+	 * @return void
+	 */
+	private function render_row_action_cell( array $order, $context = 'desktop' ) {
+		$order_key   = isset( $order['order_key'] )   ? (string) $order['order_key']   : '';
+		$status_slug = isset( $order['status_slug'] ) ? (string) $order['status_slug'] : '';
+		$can_collect = in_array( $status_slug, array( 'pending', 'invoice_sent' ), true );
+		$can_refund  = ! in_array( $status_slug, array( 'refunded', 'cancelled' ), true );
+		$menu_id     = sprintf( 'eem-order-menu-%s-%s', 'mobile' === $context ? 'mob' : 'desk', $order_key );
+		$detail_url  = self::order_detail_url( $order_key );
+		$refund_url  = self::order_detail_url( $order_key, array( 'panel' => 'refund' ) );
+		$collect_url = self::order_detail_url( $order_key, array( 'panel' => 'collect' ) );
+		$reservation_id = $this->lookup_reservation_id_from_order( $order );
+		$edit_reservation_url = $reservation_id ? get_edit_post_link( $reservation_id ) : '';
+		?>
+		<div class="eem-actions-cell">
+			<?php if ( $can_collect ) : ?>
+				<a class="eem-btn-collect" href="<?php echo esc_url( $collect_url ); ?>" data-order-key="<?php echo esc_attr( $order_key ); ?>">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+					<?php esc_html_e( 'Collect', 'equine-event-manager' ); ?>
+				</a>
+			<?php endif; ?>
+			<button type="button" class="eem-action-icon-btn" data-eem-action="order-print-receipt" data-order-key="<?php echo esc_attr( $order_key ); ?>" title="<?php esc_attr_e( 'Print Receipt', 'equine-event-manager' ); ?>" aria-label="<?php esc_attr_e( 'Print Receipt', 'equine-event-manager' ); ?>">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+			</button>
+			<div class="eem-row-menu-wrap">
+				<button type="button" class="eem-more-btn" data-eem-action="dropdown-toggle" aria-haspopup="menu" aria-expanded="false" aria-controls="<?php echo esc_attr( $menu_id ); ?>" title="<?php esc_attr_e( 'More actions', 'equine-event-manager' ); ?>">···</button>
+				<div class="eem-row-dropdown" id="<?php echo esc_attr( $menu_id ); ?>" role="menu">
+					<a class="eem-row-dd-item" href="<?php echo esc_url( $detail_url ); ?>" role="menuitem">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+						<?php esc_html_e( 'View Order', 'equine-event-manager' ); ?>
+					</a>
+					<?php if ( $edit_reservation_url ) : ?>
+						<a class="eem-row-dd-item" href="<?php echo esc_url( $edit_reservation_url ); ?>" role="menuitem">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+							<?php esc_html_e( 'Edit Reservation', 'equine-event-manager' ); ?>
+						</a>
+					<?php endif; ?>
+					<button type="button" class="eem-row-dd-item" data-eem-action="order-resend-notification" data-order-key="<?php echo esc_attr( $order_key ); ?>" role="menuitem">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+						<?php esc_html_e( 'Resend Notification', 'equine-event-manager' ); ?>
+					</button>
+					<button type="button" class="eem-row-dd-item" data-eem-action="order-export-csv" data-order-key="<?php echo esc_attr( $order_key ); ?>" role="menuitem">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+						<?php esc_html_e( 'Export CSV', 'equine-event-manager' ); ?>
+					</button>
+					<?php if ( $can_refund ) : ?>
+						<a class="eem-row-dd-item" href="<?php echo esc_url( $refund_url ); ?>" role="menuitem">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 12 3 6 21 6 21 12"/><polyline points="3 18 3 12 21 12 21 18"/></svg>
+							<?php esc_html_e( 'Refund Order', 'equine-event-manager' ); ?>
+						</a>
+					<?php endif; ?>
+					<button type="button" class="eem-row-dd-item eem-row-dd-danger" data-eem-action="order-trash" data-order-key="<?php echo esc_attr( $order_key ); ?>" role="menuitem">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+						<?php esc_html_e( 'Move to Trash', 'equine-event-manager' ); ?>
+					</button>
+				</div>
+			</div>
+		</div>
 		<?php
 	}
 
@@ -387,12 +492,7 @@ class EEM_Orders_List_Page {
 							<?php endforeach; ?>
 							<span class="eem-status-badge eem-status-<?php echo esc_attr( $status_css ); ?>"><?php echo esc_html( $status_label ); ?></span>
 						</div>
-						<div class="eem-mobile-card-actions">
-							<button type="button" class="eem-action-icon-btn" data-eem-action="order-print-receipt" data-order-key="<?php echo esc_attr( $order_key ); ?>" aria-label="<?php esc_attr_e( 'Print Receipt', 'equine-event-manager' ); ?>">
-								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-							</button>
-							<button type="button" class="eem-more-btn" data-eem-action="dropdown-toggle" aria-haspopup="menu" aria-expanded="false" aria-controls="eem-order-menu-mob-<?php echo esc_attr( $order_key ); ?>" aria-label="<?php esc_attr_e( 'More actions', 'equine-event-manager' ); ?>">···</button>
-						</div>
+						<?php $this->render_row_action_cell( $order, 'mobile' ); ?>
 					</div>
 				</div>
 			<?php endforeach; ?>
@@ -516,5 +616,224 @@ class EEM_Orders_List_Page {
 	private function format_date_label( $mysql_datetime ) {
 		$ts = '' === $mysql_datetime ? 0 : strtotime( $mysql_datetime );
 		return $ts ? date_i18n( __( 'M j, Y', 'equine-event-manager' ), $ts ) : '';
+	}
+
+	/**
+	 * Build an Order Detail page URL for the given order key. The
+	 * detail page itself lands in C6 — for C5.C the link target may
+	 * 404 if visited, which is acceptable: View Order / Refund Order /
+	 * Collect all converge on this URL and will start working once C6
+	 * ships.
+	 *
+	 * @param string                       $order_key
+	 * @param array<string, string|int>    $extra_args  Additional query
+	 *                                                  args (e.g. panel=refund).
+	 * @return string
+	 */
+	public static function order_detail_url( $order_key, array $extra_args = array() ) {
+		return add_query_arg(
+			array_merge(
+				array(
+					'page'      => 'equine-event-manager-order',
+					'order_key' => $order_key,
+				),
+				$extra_args
+			),
+			admin_url( 'admin.php' )
+		);
+	}
+
+	/**
+	 * Look up the reservation post id tied to an order. Reads from the
+	 * order's notes field which carries "Reservation setup ID: N" per
+	 * the legacy insert_reservation_orders pipeline. Returns 0 when
+	 * the order isn't tied to a reservation (rare — orphan orders).
+	 *
+	 * @param array<string, mixed> $order
+	 * @return int
+	 */
+	private function lookup_reservation_id_from_order( array $order ) {
+		$notes = '';
+		if ( isset( $order['notes'] ) ) {
+			$notes = (string) $order['notes'];
+		} elseif ( ! empty( $order['components'] ) && is_array( $order['components'] ) ) {
+			foreach ( $order['components'] as $component ) {
+				if ( ! empty( $component['notes'] ) ) {
+					$notes .= "\n" . (string) $component['notes'];
+				}
+			}
+		}
+		if ( '' === $notes ) {
+			return 0;
+		}
+		if ( preg_match( '/Reservation setup ID:\s*(\d+)/i', $notes, $m ) ) {
+			return (int) $m[1];
+		}
+		return 0;
+	}
+
+	/**
+	 * Localize the row-action nonces so admin.js can dispatch the
+	 * four admin_post handlers without re-fetching nonces. Hooked to
+	 * admin_enqueue_scripts; runs only when the eem-admin script is
+	 * registered (i.e. on a Phase 3 page).
+	 *
+	 * @return void
+	 */
+	public static function localize_row_action_nonces() {
+		if ( ! wp_script_is( 'eem-admin', 'registered' ) ) {
+			return;
+		}
+		wp_localize_script( 'eem-admin', 'eemOrderRowActions', array(
+			'adminPostUrl' => admin_url( 'admin-post.php' ),
+			'nonces'       => array(
+				'eem_order_resend_notification' => wp_create_nonce( 'eem_order_resend_notification' ),
+				'eem_order_export_csv'          => wp_create_nonce( 'eem_order_export_csv' ),
+				'eem_order_trash'               => wp_create_nonce( 'eem_order_trash' ),
+				'eem_order_print_receipt'       => wp_create_nonce( 'eem_order_print_receipt' ),
+			),
+		) );
+	}
+
+	/**
+	 * Shared admin_post entry guard — verifies capability + nonce +
+	 * order_key presence. Returns the order array on success; on
+	 * failure, redirects with the appropriate notice and exits.
+	 *
+	 * @param string $action  The nonce action.
+	 * @return array<string, mixed>
+	 */
+	private static function check_order_action_request( $action ) {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			self::redirect_with_notice( 'denied' );
+		}
+		check_admin_referer( $action, '_eem_action_nonce' );
+		$order_key = isset( $_POST['order_key'] ) ? sanitize_text_field( wp_unslash( $_POST['order_key'] ) ) : '';
+		if ( '' === $order_key ) {
+			self::redirect_with_notice( 'notfound' );
+		}
+		$repo  = new EEM_Orders_Repository();
+		$order = $repo->get_order( $order_key );
+		if ( ! is_array( $order ) ) {
+			self::redirect_with_notice( 'notfound' );
+		}
+		return $order;
+	}
+
+	/**
+	 * Redirect back to the Orders list with a ?eem_notice=… code.
+	 *
+	 * @param string $code
+	 * @param array<string, string|int> $extra
+	 * @return void
+	 */
+	private static function redirect_with_notice( $code, array $extra = array() ) {
+		wp_safe_redirect( self::url( array_merge( array( 'eem_notice' => $code ), $extra ) ) );
+		exit;
+	}
+
+	/**
+	 * Resend the customer order-notification email for a single order.
+	 * Delegates to EEM_Shortcodes::send_customer_notification_email_for_order
+	 * which is the canonical sender (same one used on initial checkout
+	 * + post-payment webhook receipt flow).
+	 *
+	 * @return void
+	 */
+	public static function handle_resend_notification() {
+		$order = self::check_order_action_request( 'eem_order_resend_notification' );
+		if ( ! class_exists( 'EEM_Shortcodes' ) || ! method_exists( 'EEM_Shortcodes', 'send_customer_notification_email_for_order' ) ) {
+			self::redirect_with_notice( 'notification_failed' );
+		}
+		$shortcodes = new EEM_Shortcodes();
+		$result = $shortcodes->send_customer_notification_email_for_order( $order );
+		if ( is_wp_error( $result ) ) {
+			$code = $result->get_error_code();
+			if ( 'customer_notification_missing_email' === $code ) {
+				self::redirect_with_notice( 'notification_no_email' );
+			}
+			self::redirect_with_notice( 'notification_failed' );
+		}
+		self::redirect_with_notice( 'notification_resent' );
+	}
+
+	/**
+	 * Stream a single order's components as a CSV download.
+	 *
+	 * @return void
+	 */
+	public static function handle_export_csv() {
+		$order = self::check_order_action_request( 'eem_order_export_csv' );
+		$order_number = isset( $order['order_number'] ) ? (string) $order['order_number'] : 'order';
+		$slug = sanitize_title( $order_number );
+		nocache_headers();
+		header( 'Content-Type: text/csv; charset=utf-8' );
+		header( 'Content-Disposition: attachment; filename="eem-' . $slug . '.csv"' );
+		$out = fopen( 'php://output', 'w' );
+		fputcsv( $out, array(
+			__( 'Order #',        'equine-event-manager' ),
+			__( 'Customer',       'equine-event-manager' ),
+			__( 'Email',          'equine-event-manager' ),
+			__( 'Event',          'equine-event-manager' ),
+			__( 'Component',      'equine-event-manager' ),
+			__( 'Stay Type',      'equine-event-manager' ),
+			__( 'Arrival',        'equine-event-manager' ),
+			__( 'Departure',      'equine-event-manager' ),
+			__( 'Subtotal',       'equine-event-manager' ),
+			__( 'Convenience Fee','equine-event-manager' ),
+			__( 'Total',          'equine-event-manager' ),
+			__( 'Payment Status', 'equine-event-manager' ),
+		) );
+		$customer = isset( $order['customer_name'] ) ? (string) $order['customer_name'] : '';
+		$email    = isset( $order['email'] )         ? (string) $order['email']         : '';
+		$event    = isset( $order['event_name'] )    ? (string) $order['event_name']    : '';
+		$components = isset( $order['components'] ) && is_array( $order['components'] ) ? $order['components'] : array();
+		if ( empty( $components ) ) {
+			fputcsv( $out, array( $order_number, $customer, $email, $event, '', '', '', '', '', '', isset( $order['total'] ) ? (string) $order['total'] : '', isset( $order['payment_status'] ) ? (string) $order['payment_status'] : '' ) );
+		} else {
+			foreach ( $components as $c ) {
+				fputcsv( $out, array(
+					$order_number, $customer, $email, $event,
+					isset( $c['table'] )          ? (string) $c['table']          : '',
+					isset( $c['stay_type'] )      ? (string) $c['stay_type']      : '',
+					isset( $c['arrival_date'] )   ? (string) $c['arrival_date']   : '',
+					isset( $c['departure_date'] ) ? (string) $c['departure_date'] : '',
+					isset( $c['subtotal'] )       ? (string) $c['subtotal']       : '',
+					isset( $c['convenience_fee'] )? (string) $c['convenience_fee']: '',
+					isset( $c['total'] )          ? (string) $c['total']          : '',
+					isset( $c['payment_status'] ) ? (string) $c['payment_status'] : '',
+				) );
+			}
+		}
+		fclose( $out );
+		exit;
+	}
+
+	/**
+	 * Move-to-Trash stub. Per ORD-3 this is a WP-standard soft delete
+	 * with 30-day recovery, which requires a `trashed_at` column on the
+	 * stall/rv tables. Schema migration is out of scope for C5.C and
+	 * deferred to a future chunk — for now this handler redirects with
+	 * a clear "not yet wired" notice instead of falling back to the
+	 * legacy hard-delete (which would surprise users expecting soft
+	 * semantics). See CLEANUP.md.
+	 *
+	 * @return void
+	 */
+	public static function handle_trash() {
+		self::check_order_action_request( 'eem_order_trash' );
+		self::redirect_with_notice( 'order_trash_deferred' );
+	}
+
+	/**
+	 * Print-Receipt stub. The receipt render template lands with the
+	 * Order Detail page in C6; until then this handler redirects with
+	 * a deferred-notice so the meatballs item visibly does something.
+	 *
+	 * @return void
+	 */
+	public static function handle_print_receipt() {
+		self::check_order_action_request( 'eem_order_print_receipt' );
+		self::redirect_with_notice( 'print_receipt_deferred' );
 	}
 }

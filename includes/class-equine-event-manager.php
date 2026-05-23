@@ -132,6 +132,13 @@ class EEM_Plugin {
 		add_action( 'wp_ajax_eem_email_customers',                array( 'EEM_Reservations_List_Page', 'handle_email_customers_ajax' ) );
 		add_action( 'wp_ajax_eem_email_customers_count',          array( 'EEM_Reservations_List_Page', 'handle_email_customers_count_ajax' ) );
 		add_action( 'admin_enqueue_scripts',                      array( 'EEM_Reservations_List_Page', 'localize_row_action_nonces' ), 20 );
+
+		// C5.C — Orders list row-action handlers.
+		add_action( 'admin_post_eem_order_resend_notification',   array( 'EEM_Orders_List_Page', 'handle_resend_notification' ) );
+		add_action( 'admin_post_eem_order_export_csv',            array( 'EEM_Orders_List_Page', 'handle_export_csv' ) );
+		add_action( 'admin_post_eem_order_trash',                 array( 'EEM_Orders_List_Page', 'handle_trash' ) );
+		add_action( 'admin_post_eem_order_print_receipt',         array( 'EEM_Orders_List_Page', 'handle_print_receipt' ) );
+		add_action( 'admin_enqueue_scripts',                      array( 'EEM_Orders_List_Page', 'localize_row_action_nonces' ), 20 );
 		add_action( 'admin_head', array( $this->reservation_editor, 'print_editor_shell_fallback_assets' ) );
 		add_action( 'edit_form_top', array( $this->reservation_editor, 'render_editor_header' ) );
 		add_action( 'edit_form_after_title', array( $this->reservation_editor, 'render_editor_overview' ) );

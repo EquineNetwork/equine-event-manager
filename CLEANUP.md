@@ -16,6 +16,13 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 
 ## Active entries
 
+### 14. Orders soft-delete schema (Move to Trash for orders)
+- **What:** `EEM_Orders_List_Page::handle_trash` is a stub. Per ORD-3 ("Move to Trash (renamed from the original 'Delete Order') is WP-standard soft delete: the order is recoverable from the trash for 30 days") the orders list should support reversible trash semantics, but the underlying `wp_en_stall_reservations` / `wp_en_rv_reservations` tables have no `trashed_at` column. The handler currently redirects with a `?eem_notice=order_trash_deferred` warning rather than fall back to the legacy hard-delete (`EEM_Orders_Repository::delete_order`), which would surprise users expecting soft semantics.
+- **Why deferred:** Schema migration via dbDelta is its own chunk-shaped piece of work AND the related "purge after 30 days" cron + a Trash status badge + a Restore handler all need to ship together to be coherent.
+- **Added in:** C5.C
+- **Unblocks deletion:** A future C11-or-later chunk that adds the `trashed_at` column on both order-component tables, wires a daily purge cron, adds an orders Trash status filter + Restore meatballs item on trashed rows, and replaces the stub redirect with a real soft-delete call.
+- **Status:** stub shipped; awaiting schema chunk
+
 ### 1. `assets/css/admin-legacy.css` — full file
 - **What:** 12,376-line legacy admin CSS, renamed from `admin/css/equine-event-manager-admin.css` during Phase 2. **Damage scope substantially worse than the original entry suggested** — see findings below.
 - **Why deferred:** Each Phase 3 page-port chunk migrates rules from this file into the new `assets/css/admin.css`. Deleting it before all pages are ported would break unported screens visually.
