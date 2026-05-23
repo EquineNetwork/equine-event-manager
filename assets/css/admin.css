@@ -3797,3 +3797,23 @@ a.eem-event-link:focus {
 	color: var(--eem-electric);
 	text-decoration: none;
 }
+
+/* C5.G.12 — Reservations Orders-count link variant.
+   Per WP-core convention: count=0 renders as the existing
+   .eem-orders-count.is-zero (dimmed span, no link), count>0
+   renders as an anchor to the Orders list filtered by event
+   label. The base .eem-orders-count rule supplies pill chrome
+   when present; the link variant adds navy bold + color-only
+   hover per the EEM hover convention. `a.` chain wins
+   specificity against the global .eem-page a rule. */
+a.eem-orders-count-link {
+	color: var(--eem-navy);
+	font-weight: 700;
+	text-decoration: none;
+}
+
+a.eem-orders-count-link:hover,
+a.eem-orders-count-link:focus {
+	color: var(--eem-electric);
+	text-decoration: none;
+}

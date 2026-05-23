@@ -893,7 +893,32 @@ class EEM_Reservations_List_Page {
 			<td><span class="eem-event-dates"><?php echo esc_html( $dates !== '' ? $dates : '—' ); ?></span></td>
 			<td><?php $this->render_type_badges( $badges ); ?></td>
 			<td><span class="eem-res-status eem-res-status--<?php echo esc_attr( $status_id ); ?>"><?php echo esc_html( $status_label ); ?></span></td>
-			<td><span class="eem-orders-count<?php echo $orders_count === 0 ? ' is-zero' : ''; ?>"><?php echo esc_html( number_format_i18n( $orders_count ) ); ?></span></td>
+			<td><?php
+				// C5.G.12: per WP-core post-counts-in-category-lists convention,
+				// count=0 renders as plain unstyled text (no link, no hover);
+				// count>0 renders as a link to the Orders list filtered by this
+				// reservation's event label (post title). Caveat: the Orders
+				// list event filter compares against the legacy order's
+				// derived event label — if that label doesn't match the
+				// reservation post title (e.g. order references a different
+				// external event identifier), the filtered Orders view may
+				// surface zero matches. Acceptable graceful degrade for v1;
+				// future per-reservation filter mode would require a new
+				// repo arg + tab — out of C5.G scope.
+				if ( $orders_count > 0 ) :
+					$event_label    = get_the_title( $post );
+					$orders_link_url = add_query_arg(
+						array(
+							'page'  => EEM_Orders_List_Page::MENU_SLUG,
+							'event' => $event_label,
+						),
+						admin_url( 'admin.php' )
+					);
+					?><a class="eem-orders-count eem-orders-count-link" href="<?php echo esc_url( $orders_link_url ); ?>"><?php echo esc_html( number_format_i18n( $orders_count ) ); ?></a><?php
+				else :
+					?><span class="eem-orders-count is-zero"><?php echo esc_html( number_format_i18n( $orders_count ) ); ?></span><?php
+				endif;
+			?></td>
 			<td><?php $this->render_row_actions( $id, $has_stall_chart, $is_trashed ); ?></td>
 		</tr>
 		<?php
@@ -1042,17 +1067,29 @@ class EEM_Reservations_List_Page {
 						<div class="eem-mob-res-badges">
 							<?php $this->render_type_badges( $badges ); ?>
 							<span class="eem-res-status eem-res-status--<?php echo esc_attr( $status_id ); ?>"><?php echo esc_html( $status_label ); ?></span>
-							<span class="eem-orders-count<?php echo $orders_count === 0 ? ' is-zero' : ''; ?>">
-								<?php
-								echo esc_html(
-									sprintf(
-										/* translators: %s: order count (already number_format_i18n'd) */
-										_n( '%s order', '%s orders', $orders_count, 'equine-event-manager' ),
-										number_format_i18n( $orders_count )
-									)
+							<?php
+							// C5.G.12: mobile parallel of the desktop conditional —
+							// count=0 stays plain text, count>0 becomes an anchor
+							// to the Orders list filtered by event label.
+							$mob_orders_label = sprintf(
+								/* translators: %s: order count (already number_format_i18n'd) */
+								_n( '%s order', '%s orders', $orders_count, 'equine-event-manager' ),
+								number_format_i18n( $orders_count )
+							);
+							if ( $orders_count > 0 ) :
+								$mob_event_label    = get_the_title( $post );
+								$mob_orders_link_url = add_query_arg(
+									array(
+										'page'  => EEM_Orders_List_Page::MENU_SLUG,
+										'event' => $mob_event_label,
+									),
+									admin_url( 'admin.php' )
 								);
-								?>
-							</span>
+								?><a class="eem-orders-count eem-orders-count-link" href="<?php echo esc_url( $mob_orders_link_url ); ?>"><?php echo esc_html( $mob_orders_label ); ?></a><?php
+							else :
+								?><span class="eem-orders-count is-zero"><?php echo esc_html( $mob_orders_label ); ?></span><?php
+							endif;
+							?>
 						</div>
 						<div class="eem-mob-res-actions">
 							<?php $this->render_row_actions( $id, $has_stall_chart, $is_trashed ); ?>
