@@ -933,7 +933,64 @@ class EEM_Order_Detail_Page {
 				}
 				?>
 			</div>
+			<?php $this->render_add_note_form( $order ); ?>
 		</div>
+		<?php
+	}
+
+	/**
+	 * Add-Note form (C6.E.2) — single textarea + Submit button at the
+	 * bottom of the Activity Log section. AJAX-submitted via the
+	 * `add-note-submit` dispatch arm in admin.js. On success the AJAX
+	 * handler returns pre-rendered entry HTML which JS prepends to the
+	 * `[data-eem-activity-list]` mount node, bumps the count badge, and
+	 * shows a toast confirmation.
+	 *
+	 * Validation contract — server is authoritative (cap, nonce, trim,
+	 * maxlength 2000, order_key exists); client mirrors trim + maxlength
+	 * + disable-on-empty/in-flight for UX. HTML maxlength="2000" attr
+	 * provides browser-level enforcement on top.
+	 *
+	 * Decisions locked at C6.E parent kickoff:
+	 *   Q1 position — (a) bottom of activity log section
+	 *   Q2 fields   — (a) single textarea + Submit
+	 *   Q3 valid    — three-layer (HTML maxlength + JS disable + server)
+	 *   Q4 attrib   — "Admin note by {actor_label}" w/ "Admin note" fallback
+	 *
+	 * @param array<string, mixed> $order
+	 * @return void
+	 */
+	private function render_add_note_form( array $order ) {
+		$order_key = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
+		if ( '' === $order_key ) {
+			return;
+		}
+		?>
+		<form class="eem-add-note-form" data-eem-add-note-form data-eem-order-key="<?php echo esc_attr( $order_key ); ?>">
+			<?php wp_nonce_field( 'eem_order_add_note_' . $order_key, '_eem_add_note_nonce' ); ?>
+			<input type="hidden" name="action" value="eem_order_add_note" />
+			<input type="hidden" name="order_key" value="<?php echo esc_attr( $order_key ); ?>" />
+			<label class="screen-reader-text" for="eem-add-note-textarea-<?php echo esc_attr( $order_key ); ?>"><?php esc_html_e( 'Add an internal note about this order', 'equine-event-manager' ); ?></label>
+			<textarea
+				class="eem-add-note-form__textarea"
+				id="eem-add-note-textarea-<?php echo esc_attr( $order_key ); ?>"
+				name="note"
+				rows="3"
+				maxlength="2000"
+				placeholder="<?php esc_attr_e( 'Add an internal note about this order…', 'equine-event-manager' ); ?>"
+				data-eem-add-note-textarea
+			></textarea>
+			<div class="eem-add-note-form__error" data-eem-add-note-error hidden></div>
+			<div class="eem-add-note-form__actions">
+				<button
+					type="button"
+					class="eem-btn eem-btn-primary"
+					data-eem-action="add-note-submit"
+					data-eem-add-note-submit
+					disabled
+				><?php esc_html_e( 'Add Note', 'equine-event-manager' ); ?></button>
+			</div>
+		</form>
 		<?php
 	}
 

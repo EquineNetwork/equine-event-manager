@@ -54,7 +54,12 @@ ok( 'process_amount_refund body contains EEM_Activity_Log::write call',
 	$pass, $fail, $log );
 
 $single_pos = strpos( $admin_src, 'public function handle_ajax_refund_single' );
-$next_method2_pos = strpos( $admin_src, 'public function handle_ajax_bulk_refund_step' );
+// Anchor updated in C6.E.2: handle_ajax_order_add_note was inserted
+// between single and bulk, so slice now ends at the new method's
+// declaration. Original intent preserved: assert handle_ajax_refund_
+// single's body does NOT write to activity log (write was moved to
+// the process_amount_refund kernel in C6.C).
+$next_method2_pos = strpos( $admin_src, 'public function handle_ajax_order_add_note' );
 $single_block = $single_pos && $next_method2_pos ? substr( $admin_src, $single_pos, $next_method2_pos - $single_pos ) : '';
 ok( 'handle_ajax_refund_single no longer writes activity log (moved to kernel)',
 	false === strpos( $single_block, 'EEM_Activity_Log::write' ),

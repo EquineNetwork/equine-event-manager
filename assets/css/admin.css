@@ -4351,6 +4351,62 @@ a.eem-orders-count-link:focus {
 	display: none;
 }
 
+/* C6.E.2: hide the Add Note form too when the activity section is
+   collapsed — keeps the section visually atomic. */
+.eem-order-activity.collapsed .eem-add-note-form {
+	display: none;
+}
+
+/* C6.E.2: Add Note form — sits at the bottom of the .eem-order-activity
+   section below the entries list. Submit button is disabled-when-empty
+   per the JS input listener. */
+.eem-add-note-form {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 12px 20px 16px;
+	border-top: 1px solid var(--eem-border-soft);
+}
+
+.eem-add-note-form__textarea {
+	width: 100%;
+	min-height: 72px;
+	padding: 8px 10px;
+	font-family: inherit;
+	font-size: 13px;
+	line-height: 1.5;
+	color: var(--eem-text);
+	background: #fff;
+	border: 1px solid var(--eem-border);
+	border-radius: var(--eem-radius);
+	resize: vertical;
+}
+
+.eem-add-note-form__textarea:focus {
+	outline: none;
+	border-color: var(--eem-electric);
+	box-shadow: 0 0 0 3px rgba(0, 119, 255, 0.15);
+}
+
+.eem-add-note-form__error {
+	color: #b91c1c;
+	font-size: 12.5px;
+	background: #fef2f2;
+	border: 1px solid #fecaca;
+	border-radius: var(--eem-radius);
+	padding: 6px 10px;
+}
+
+.eem-add-note-form__actions {
+	display: flex;
+	justify-content: flex-end;
+}
+
+.eem-add-note-form__actions .eem-btn[disabled] {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
 /* Entry-list container. C2 partial renders .eem-activity-log <ul>
    inside this wrapper; pad to match the rest of the section. */
 .eem-order-activity__list {

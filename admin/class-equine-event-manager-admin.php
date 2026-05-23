@@ -5327,6 +5327,127 @@ class EEM_Admin {
 	 *
 	 * @return void  Always exits via wp_send_json_*.
 	 */
+	/**
+	 * AJAX endpoint: Add Note from the C6.E.2 Order Detail activity log
+	 * form. Validates cap + nonce + length + order_key existence, writes
+	 * an EEM_Activity_Log entry with event_type 'ordernote' (per CLEANUP
+	 * #31 flat-string convention — `sanitize_key('ordernote')` is a no-
+	 * op), enriches via EEM_Order_Telemetry::enrich_entry_for_render,
+	 * and returns a JSON response carrying server-rendered entry HTML
+	 * (via the same C2 partial the live list uses) for the JS arm to
+	 * prepend into `[data-eem-activity-list]`.
+	 *
+	 * Response shape on success:
+	 *   { html, entry_id, new_count }
+	 *
+	 * Validation envelope (server is authoritative; client mirrors for
+	 * UX but the server rejects bypassed clients):
+	 *   - cap         → 403 capability
+	 *   - nonce       → 400 nonce
+	 *   - missing key → 400 invalid_request
+	 *   - unknown key → 404 not_found
+	 *   - empty note  → 400 empty
+	 *   - too long    → 400 too_long  (>2000 chars after trim)
+	 *
+	 * Note on smoke-anchor placement: this method's docblock is included
+	 * in the c6c slice for handle_ajax_refund_single (which ends at the
+	 * next public-function declaration — i.e. this one). Keep the
+	 * docblock free of the literal class::method string the c6c slice
+	 * is grepping for; describe what the method does in prose instead.
+	 *
+	 * @return void  Always exits via wp_send_json_*.
+	 */
+	public function handle_ajax_order_add_note() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'code' => 'capability', 'message' => __( 'You do not have permission to add notes to orders.', 'equine-event-manager' ) ), 403 );
+		}
+
+		$order_key = isset( $_POST['order_key'] ) ? sanitize_text_field( wp_unslash( $_POST['order_key'] ) ) : '';
+		$nonce     = isset( $_POST['_eem_add_note_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['_eem_add_note_nonce'] ) ) : '';
+
+		if ( '' === $order_key ) {
+			wp_send_json_error( array( 'code' => 'invalid_request', 'message' => __( 'Missing order reference.', 'equine-event-manager' ) ), 400 );
+		}
+		if ( ! wp_verify_nonce( $nonce, 'eem_order_add_note_' . $order_key ) ) {
+			wp_send_json_error( array( 'code' => 'nonce', 'message' => __( 'Security check failed. Please reload and try again.', 'equine-event-manager' ) ), 400 );
+		}
+
+		// Verify the order_key actually resolves to an order before we write.
+		$order = $this->orders_repository->get_order( $order_key );
+		if ( ! is_array( $order ) ) {
+			wp_send_json_error( array( 'code' => 'not_found', 'message' => __( 'Order not found.', 'equine-event-manager' ) ), 404 );
+		}
+
+		$note_raw  = isset( $_POST['note'] ) ? wp_unslash( $_POST['note'] ) : '';
+		$note      = trim( sanitize_textarea_field( $note_raw ) );
+
+		if ( '' === $note ) {
+			wp_send_json_error( array( 'code' => 'empty', 'message' => __( 'Note cannot be empty.', 'equine-event-manager' ) ), 400 );
+		}
+		if ( strlen( $note ) > 2000 ) {
+			wp_send_json_error( array( 'code' => 'too_long', 'message' => __( 'Note exceeds the 2,000-character limit.', 'equine-event-manager' ) ), 400 );
+		}
+
+		// Resolve actor for attribution + write title (Q4-locked at
+		// "Admin note by {actor_label}" w/ "Admin note" fallback).
+		$current_user = wp_get_current_user();
+		$actor_label  = ( $current_user && $current_user->exists() )
+			? (string) $current_user->display_name
+			: '';
+		$title = '' !== $actor_label
+			? sprintf(
+				/* translators: %s: admin display name */
+				__( 'Admin note by %s', 'equine-event-manager' ),
+				$actor_label
+			)
+			: __( 'Admin note', 'equine-event-manager' );
+
+		$reservation_id = isset( $order['reservation_id'] ) ? (int) $order['reservation_id'] : 0;
+
+		$entry_id = EEM_Activity_Log::write(
+			'ordernote',
+			array(
+				'order_key' => $order_key,
+				'title'     => $title,
+				'meta'      => $note,
+				'note'      => $note,
+			),
+			array(
+				'reservation_id' => $reservation_id ?: null,
+				'actor_type'     => 'admin',
+				'actor_id'       => $current_user ? (int) $current_user->ID : null,
+				'actor_label'    => $actor_label,
+			)
+		);
+
+		if ( ! $entry_id ) {
+			wp_send_json_error( array( 'code' => 'write_failed', 'message' => __( 'Failed to save note. Please try again.', 'equine-event-manager' ) ), 500 );
+		}
+
+		// Read the row back through the canonical consumer query so the
+		// server-rendered HTML matches exactly what the next page-load
+		// would render (per CLAUDE.md round-trip discipline).
+		$rows = EEM_Activity_Log::get_for_order_key( $order_key, 1 );
+		$new_entry = isset( $rows[0] ) ? EEM_Order_Telemetry::enrich_entry_for_render( $rows[0] ) : null;
+
+		$entry_html = '';
+		if ( is_array( $new_entry ) && function_exists( 'eem_render_activity_log_entry' ) ) {
+			ob_start();
+			eem_render_activity_log_entry( $new_entry );
+			$entry_html = (string) ob_get_clean();
+		}
+
+		// Authoritative new_count = full re-query length, so the badge
+		// stays correct even if a parallel write landed.
+		$new_count = count( EEM_Activity_Log::get_for_order_key( $order_key, 1000 ) );
+
+		wp_send_json_success( array(
+			'html'      => $entry_html,
+			'entry_id'  => (int) $entry_id,
+			'new_count' => $new_count,
+		) );
+	}
+
 	public function handle_ajax_bulk_refund_step() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'code' => 'capability', 'message' => __( 'You do not have permission to refund orders.', 'equine-event-manager' ) ), 403 );

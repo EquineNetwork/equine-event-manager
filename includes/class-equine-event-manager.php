@@ -196,6 +196,11 @@ class EEM_Plugin {
 		// client-supplied amount) — that's the retry-safety property.
 		add_action( 'wp_ajax_eem_order_bulk_refund_step', array( $this->admin, 'handle_ajax_bulk_refund_step' ) );
 
+		// C6.E.2 — Add Note form AJAX (writes ordernote entry to
+		// EEM_Activity_Log, returns rendered entry HTML for the JS
+		// `add-note-submit` arm to prepend).
+		add_action( 'wp_ajax_eem_order_add_note', array( $this->admin, 'handle_ajax_order_add_note' ) );
+
 		// C6.D — activity-log auto-fire telemetry listeners (order.create,
 		// order.payment_received / order.status_change funnel, order.email_sent).
 		EEM_Order_Telemetry::register();

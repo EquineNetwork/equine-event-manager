@@ -1271,6 +1271,108 @@
 			});
 	}
 
+	/* ─────────────────────────────────────────────────────────────
+	 * C6.E.2 — Add Note form (Order Detail Activity Log).
+	 *
+	 * Submit flow:
+	 *   1. Read textarea value, abort if empty after trim (button is
+	 *      disabled-when-empty anyway, but defend against any stale
+	 *      enabled-state).
+	 *   2. Disable submit + clear prior error.
+	 *   3. POST form data via fetch → admin-ajax.php (action is in
+	 *      the form's hidden 'action' input).
+	 *   4. On success: prepend returned entry HTML into the activity-
+	 *      list mount node, update the count badge, clear the textarea
+	 *      (re-disables submit via the input listener below), and
+	 *      surface a toast confirmation.
+	 *   5. On error: show inline error from server message, re-enable
+	 *      submit so the user can edit + retry.
+	 * ───────────────────────────────────────────────────────────── */
+
+	function submitAddNoteForm(target) {
+		var form = target.closest('[data-eem-add-note-form]');
+		if (!form) return;
+		var section = form.closest('.eem-order-activity');
+		var textarea = form.querySelector('[data-eem-add-note-textarea]');
+		var errEl    = form.querySelector('[data-eem-add-note-error]');
+		var btn      = form.querySelector('[data-eem-add-note-submit]');
+		var note     = textarea ? (textarea.value || '').trim() : '';
+
+		if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
+		if (!note) return;  // defensive — button should be disabled
+
+		if (btn) btn.disabled = true;
+
+		var formData = new FormData(form);
+		// Defensively re-set trimmed value so server sees the same thing JS validated.
+		formData.set('note', note);
+
+		fetch(window.ajaxurl || '/wp-admin/admin-ajax.php', {
+			method: 'POST',
+			credentials: 'same-origin',
+			body: formData
+		}).then(function (response) {
+			return response.json().catch(function () { return { success: false, data: { message: 'Unexpected server response.' } }; });
+		}).then(function (json) {
+			if (!json || !json.success) {
+				var msg = (json && json.data && json.data.message) ? json.data.message : 'Failed to save note.';
+				if (errEl) { errEl.textContent = msg; errEl.hidden = false; }
+				if (btn) btn.disabled = false;
+				return;
+			}
+
+			// Prepend the entry HTML — list partial may have rendered
+			// the empty-state <p> instead of a <ul>, in which case
+			// replace the empty paragraph with a fresh <ul> wrapping
+			// the new entry.
+			if (section) {
+				var listMount = section.querySelector('[data-eem-activity-list]');
+				if (listMount && json.data && json.data.html) {
+					var ul = listMount.querySelector('ul.eem-activity-log');
+					if (!ul) {
+						listMount.innerHTML = '<ul class="eem-activity-log">' + json.data.html + '</ul>';
+					} else {
+						ul.insertAdjacentHTML('afterbegin', json.data.html);
+					}
+				}
+				// Update count badge — server returns authoritative new_count.
+				if (json.data && typeof json.data.new_count !== 'undefined') {
+					var countBadge = section.querySelector('[data-eem-activity-count]');
+					if (countBadge) {
+						var n = parseInt(json.data.new_count, 10) || 0;
+						countBadge.textContent = (n === 1) ? '1 entry' : (n + ' entries');
+					}
+				}
+			}
+
+			// Reset textarea (input listener re-disables submit).
+			if (textarea) {
+				textarea.value = '';
+				textarea.dispatchEvent(new Event('input', { bubbles: true }));
+			}
+
+			if (window.EEM && typeof window.EEM.showSaveToast === 'function') {
+				window.EEM.showSaveToast('Note added.');
+			}
+		}).catch(function () {
+			if (errEl) { errEl.textContent = 'Network error. Please try again.'; errEl.hidden = false; }
+			if (btn) btn.disabled = false;
+		});
+	}
+
+	/* Enable/disable the Add Note submit button based on textarea content.
+	   Wired via document-level input event delegation alongside the
+	   existing tag-search input handler. */
+	document.addEventListener('input', function (ev) {
+		var t = ev.target;
+		if (!t || !t.matches || !t.matches('[data-eem-add-note-textarea]')) return;
+		var form = t.closest('[data-eem-add-note-form]');
+		if (!form) return;
+		var btn = form.querySelector('[data-eem-add-note-submit]');
+		if (!btn) return;
+		btn.disabled = ('' === (t.value || '').trim());
+	});
+
 	function closeAllDropdowns() {
 		document.querySelectorAll('.eem-dropdown.open, .eem-row-menu-wrap.open')
 			.forEach(function (host) { host.classList.remove('open'); });
@@ -1434,6 +1536,10 @@
 		},
 		'order-refund-single-confirm': function () {
 			submitOrderRefundForm();
+		},
+		/* C6.E.2 — Add Note form submit (Order Detail activity log). */
+		'add-note-submit': function (target) {
+			submitAddNoteForm(target);
 		}
 	};
 
