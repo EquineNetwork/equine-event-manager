@@ -6517,7 +6517,14 @@ class EEM_Admin {
 			sanitize_email( $order['email'] ),
 			$subject,
 			$this->build_invoice_email_html( $order, $invoice_token ),
-			$headers
+			$headers,
+			// C6.D telemetry context — surfaces this send in the order's
+			// activity log as type=invoice.
+			array(
+				'type'      => 'invoice',
+				'order_key' => isset( $order['order_key'] ) ? (string) $order['order_key'] : '',
+				'event_label' => isset( $order['event_label'] ) ? (string) $order['event_label'] : '',
+			)
 		);
 
 		if ( is_wp_error( $sent ) ) {

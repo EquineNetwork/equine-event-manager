@@ -1345,12 +1345,28 @@ class EEM_Settings_Page {
 			$subject
 		);
 
-		$sent = wp_mail( $user->user_email, $test_subject, $body, $headers );
+		// C6.D — route through EEM_Mailer for unified telemetry. No order_key
+		// in context (test emails aren't tied to a business entity); the
+		// telemetry listener silently skips on missing order_key so no
+		// activity-log entry is written — correct, since there's no order
+		// to attach it to.
+		$sent = EEM_Mailer::send_html_email(
+			$user->user_email,
+			$test_subject,
+			$body,
+			$headers,
+			array(
+				'type'        => 'test_email',
+				'template_id' => $template_id,
+				'recipient'   => $user->user_email,
+			)
+		);
 
-		if ( ! $sent ) {
-			wp_send_json_error( array(
-				'message' => __( 'wp_mail returned false. Check your site\'s mail configuration (SMTP plugin, mail server, etc.).', 'equine-event-manager' ),
-			), 500 );
+		if ( is_wp_error( $sent ) || ! $sent ) {
+			$msg = is_wp_error( $sent )
+				? $sent->get_error_message()
+				: __( 'wp_mail returned false. Check your site\'s mail configuration (SMTP plugin, mail server, etc.).', 'equine-event-manager' );
+			wp_send_json_error( array( 'message' => $msg ), 500 );
 		}
 
 		wp_send_json_success( array(

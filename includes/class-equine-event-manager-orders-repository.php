@@ -272,6 +272,10 @@ class EEM_Orders_Repository {
 			return false;
 		}
 
+		// C6.D — capture pre-update status for the status_change funnel.
+		$old_status_slug = isset( $order['status_slug'] ) ? (string) $order['status_slug'] : '';
+		$new_status_slug = sanitize_key( $payment_status );
+
 		$updated_any = false;
 
 		foreach ( $order['components'] as $component ) {
@@ -279,12 +283,34 @@ class EEM_Orders_Repository {
 				$component['table'],
 				$component['row_id'],
 				array(
-					'payment_status'  => sanitize_key( $payment_status ),
+					'payment_status'  => $new_status_slug,
 					'transaction_id'  => sanitize_text_field( $transaction_id ),
 					'payment_gateway' => sanitize_key( $payment_gateway ? $payment_gateway : $component['payment_gateway'] ),
 				),
 				array( '%s', '%s', '%s' )
 			) || $updated_any;
+		}
+
+		// C6.D — emit status_change telemetry when at least one component
+		// updated AND the order-level status_slug actually changed.
+		// EEM_Order_Telemetry::on_payment_status_changed listens; decision
+		// tree inside the listener splits into payment_received vs.
+		// status_change based on (old → new).
+		if ( $updated_any && $old_status_slug !== $new_status_slug ) {
+			/**
+			 * @since 2.2.0 (C6.D)
+			 * @param array $payload
+			 */
+			do_action( 'eem_order_payment_status_changed', array(
+				'order_key'      => (string) $order_key,
+				'old_status'     => $old_status_slug,
+				'new_status'     => $new_status_slug,
+				'gateway'        => (string) ( $payment_gateway ? $payment_gateway : '' ),
+				'transaction_id' => (string) $transaction_id,
+				'source'         => 'update_order_payment_details',
+				'actor_type'     => is_user_logged_in() ? 'admin' : 'system',
+				'actor_id'       => get_current_user_id() ?: null,
+			) );
 		}
 
 		return $updated_any;
@@ -303,6 +329,9 @@ class EEM_Orders_Repository {
 		if ( ! $order ) {
 			return false;
 		}
+
+		// C6.D — capture pre-update status for the status_change funnel.
+		$old_status_slug = isset( $order['status_slug'] ) ? (string) $order['status_slug'] : '';
 
 		$updated_any     = false;
 		$paid_at         = current_time( 'mysql' );
@@ -327,6 +356,26 @@ class EEM_Orders_Repository {
 				),
 				array( '%s', '%s', '%s', '%s' )
 			) || $updated_any;
+		}
+
+		// C6.D — emit status_change telemetry. Source distinguishes
+		// manual mark-paid from gateway-driven payment_received, which
+		// matters for forensics on edge cases (per implementation note #1).
+		if ( $updated_any && 'paid' !== $old_status_slug ) {
+			/**
+			 * @since 2.2.0 (C6.D)
+			 */
+			do_action( 'eem_order_payment_status_changed', array(
+				'order_key'      => (string) $order_key,
+				'old_status'     => $old_status_slug,
+				'new_status'     => 'paid',
+				'gateway'        => 'manual',
+				'transaction_id' => '',
+				'source'         => 'mark_order_paid_manually',
+				'actor_type'     => 'admin',
+				'actor_id'       => get_current_user_id() ?: null,
+				'payment_method' => $payment_method,
+			) );
 		}
 
 		return $updated_any;

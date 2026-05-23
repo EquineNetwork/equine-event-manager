@@ -16,6 +16,18 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 
 ## Active entries
 
+### 30. Refund-notify email wiring for C6.B notify checkbox
+- **What:** The C6.B single-order refund modal carries a "Notify customer" checkbox; its checked state is captured in the form payload (currently sent as `notify` POST field, surfaced via the activity-log payload's `notify` key when refund processes). The actual email send — rendering an "Event Cancelled — Refund Processed" template and shipping it via EEM_Mailer — is **not wired** in C6.B.
+- **Why deferred:** The "Event Cancelled — Refund Processed" template doesn't exist yet (Communications panel from C3.B shipped the template UI but not this specific template). Wiring an unsendable email is hollow. C11 lands SendGrid transport + the remaining canonical templates (refund-processed, payment-reminder, etc.) together — refund-notify rides along naturally.
+- **Shape of the fix (lands with C11):**
+  1. Add `refund_processed` template to `EEM_Email_Templates_Repo::ids()` with subject + body defaults.
+  2. In `EEM_Admin::handle_ajax_refund_single` (and the bulk equivalent in `handle_ajax_bulk_refund_step`), after the refund succeeds, if `notify=1` was passed, render the refund_processed template with refund context (amount, order_number, customer_name, etc.) and ship via `EEM_Mailer::send_html_email` with `type='refund_notification'` context. The C6.D email-sent telemetry hook will then write a corresponding `order.email_sent` activity-log entry automatically.
+  3. JS modal: surface "Notification email sent to {customer}" in the success toast when notify was checked.
+- **Added in:** C6.D (refund-notify scope decision during the telemetry chunk).
+- **Sequence:** lands with C11 (SendGrid + canonical templates work).
+- **Unblocks:** the C6.B notify checkbox stops being decorative.
+- **Status:** captured-but-not-sent (payload preserves intent; transport pending).
+
 ### 29. Bulk refund order-fetch optimization
 - **What:** Each `process_amount_refund` call invokes `get_grouped_orders()` (full table scan in orders-repository line ~460). For a 20-order batch this is 20 scans; for a 50-order batch, 50. Address by adding `get_orders_by_keys(array)` repo method + engine-level caching so a bulk batch performs ONE scan and serves all step calls from the cached result.
 - **Why deferred:** Admin-only operation + bulk refunds are infrequent (post-event cancellations, typically), so the perf impact is real but not blocking. C6.C ships sequentially-correct functionality first; the optimization is a polish item.

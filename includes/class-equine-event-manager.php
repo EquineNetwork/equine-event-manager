@@ -31,6 +31,11 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-settings-page.php';
 // Phase 3 — Reservations list subsystem (C4 — replaces WP-native
 // edit.php?post_type=en_reservation with a custom mockup-faithful page).
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-reservation-source-resolver.php';
+
+// C6.D — activity-log auto-fire telemetry. Listens for eem_order_created,
+// eem_order_payment_status_changed, eem_email_sent and writes
+// corresponding EEM_Activity_Log entries.
+require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-order-telemetry.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-reservations-list-repo.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-reservations-list-page.php';
 
@@ -190,6 +195,10 @@ class EEM_Plugin {
 		// computes amount = remaining_refundable at call time (no
 		// client-supplied amount) — that's the retry-safety property.
 		add_action( 'wp_ajax_eem_order_bulk_refund_step', array( $this->admin, 'handle_ajax_bulk_refund_step' ) );
+
+		// C6.D — activity-log auto-fire telemetry listeners (order.create,
+		// order.payment_received / order.status_change funnel, order.email_sent).
+		EEM_Order_Telemetry::register();
 		add_action( 'admin_post_equine_event_manager_send_invoice_email', array( $this->admin, 'handle_send_invoice_email' ) );
 		add_action( 'admin_post_equine_event_manager_resend_customer_notification', array( $this->admin, 'handle_resend_customer_notification' ) );
 		add_action( 'admin_post_equine_event_manager_mark_order_paid', array( $this->admin, 'handle_mark_order_paid' ) );

@@ -2802,6 +2802,46 @@ RV Lot: " . $rv_lot['name'] );
 
 			if ( $saved_order && ! empty( $saved_order['order_key'] ) ) {
 				$order_repository->auto_assign_units_for_order( $saved_order['order_key'] );
+
+				/**
+				 * Fires once per successful order creation (after the
+				 * duplicate-submission-token guard at the top of this
+				 * method has already short-circuited any replays).
+				 *
+				 * C6.D — wired to EEM_Order_Telemetry::on_order_created
+				 * which writes an `order.create` activity-log entry. The
+				 * payload's `source` field is the attribution channel for
+				 * future post-hoc forensics; `created_at` is the order's
+				 * actual creation moment so async listeners (queued jobs,
+				 * external API calls landing later) don't have to re-fetch.
+				 *
+				 * @since 2.2.0
+				 *
+				 * @param array $payload {
+				 *     @type string $order_key
+				 *     @type string $order_number
+				 *     @type string $customer_email
+				 *     @type string $customer_name
+				 *     @type string $payment_status
+				 *     @type float  $total
+				 *     @type string $event_label
+				 *     @type string $source         Always 'checkout_submission' from this emitter.
+				 *     @type string $created_at     MySQL DATETIME.
+				 * }
+				 */
+				do_action( 'eem_order_created', array(
+					'order_key'      => (string) $saved_order['order_key'],
+					'order_number'   => isset( $saved_order['order_number'] )   ? (string) $saved_order['order_number']   : '',
+					'customer_email' => isset( $saved_order['customer_email'] ) ? (string) $saved_order['customer_email'] : '',
+					'customer_name'  => isset( $saved_order['customer_name'] )  ? (string) $saved_order['customer_name']  : '',
+					'payment_status' => isset( $saved_order['payment_status'] ) ? (string) $saved_order['payment_status'] : '',
+					'total'          => isset( $saved_order['total'] )          ? (float) $saved_order['total']           : 0.0,
+					'event_label'    => isset( $saved_order['event_label'] )    ? (string) $saved_order['event_label']    : '',
+					'source'         => 'checkout_submission',
+					'created_at'     => isset( $saved_order['created_at'] ) && '' !== $saved_order['created_at']
+					                    ? (string) $saved_order['created_at']
+					                    : current_time( 'mysql' ),
+				) );
 			}
 		}
 
@@ -2848,7 +2888,12 @@ RV Lot: " . $rv_lot['name'] );
 				$receipt_settings['admin_receipt_email'],
 				$this->replace_receipt_tokens( $receipt_settings['admin_subject'], $order ),
 				$this->build_receipt_email_html( $order, $receipt_settings['admin_body'] ),
-				$headers
+				$headers,
+				// C6.D telemetry — admin BCC receipt at checkout time.
+				array(
+					'type'      => 'admin_receipt',
+					'order_key' => isset( $order['order_key'] ) ? (string) $order['order_key'] : '',
+				)
 			);
 		}
 	}
@@ -2872,7 +2917,12 @@ RV Lot: " . $rv_lot['name'] );
 			$customer_email,
 			$this->replace_receipt_tokens( $receipt_settings['customer_subject'], $order ),
 			$this->build_receipt_email_html( $order, $receipt_settings['customer_body'] ),
-			$headers
+			$headers,
+			// C6.D telemetry — customer-facing checkout/reservation confirmation email.
+			array(
+				'type'      => 'checkout_confirmation',
+				'order_key' => isset( $order['order_key'] ) ? (string) $order['order_key'] : '',
+			)
 		);
 	}
 

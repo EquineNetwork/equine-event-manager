@@ -28,13 +28,25 @@ class EEM_Mailer {
 	 * @param string $subject Subject line.
 	 * @param string $html HTML message body.
 	 * @param array  $headers Optional mail headers.
+	 * @param array  $context Optional. C6.D telemetry context. {
+	 *     @type string $type           Required for telemetry-capture: 'invoice' | 'checkout_confirmation' |
+	 *                                  'reservation_confirmation' | 'email_customers' | 'test_email' | future
+	 *                                  caller type. Empty = caller has no telemetry intent.
+	 *     @type string $order_key      When applicable — surfaces email in the order's activity log.
+	 *     @type int    $reservation_id When applicable.
+	 *     @type string $event_label    Optional event-name context for forensics.
+	 *     @type mixed  ...             Caller-specific extras (recipient_label, template_id, etc.).
+	 * }
+	 *                          Backward-compatible: existing callers without context still send fine
+	 *                          but their activity-log telemetry payload will be empty.
 	 * @return true|WP_Error
 	 */
-	public static function send_html_email( $to, $subject, $html, $headers = array() ) {
+	public static function send_html_email( $to, $subject, $html, $headers = array(), $context = array() ) {
 		$to      = sanitize_email( (string) $to );
 		$subject = wp_strip_all_tags( (string) $subject );
 		$html    = (string) $html;
 		$headers = is_array( $headers ) ? $headers : array();
+		$context = is_array( $context ) ? $context : array();
 
 		if ( '' === $to || ! is_email( $to ) ) {
 			return new WP_Error( 'equine_event_manager_mail_invalid_to', __( 'A valid recipient email address is required before sending this message.', 'equine-event-manager' ) );
@@ -42,11 +54,28 @@ class EEM_Mailer {
 
 		$api_key = self::get_sendgrid_api_key();
 
-		if ( '' !== $api_key ) {
-			return self::send_via_sendgrid( $api_key, $to, $subject, $html, $headers );
+		$result = '' !== $api_key
+			? self::send_via_sendgrid( $api_key, $to, $subject, $html, $headers )
+			: self::send_via_wp_mail( $to, $subject, $html, $headers );
+
+		// C6.D — emit eem_email_sent telemetry on a successful send.
+		// EEM_Order_Telemetry::on_email_sent listens; writes order.email_sent
+		// activity-log entry when the context payload identifies an order.
+		// Non-order emails (test-email from Settings, etc.) pass through
+		// silently because the listener requires context.order_key.
+		if ( true === $result ) {
+			/**
+			 * @since 2.2.0 (C6.D)
+			 * @param array $payload
+			 */
+			do_action( 'eem_email_sent', array(
+				'to'      => $to,
+				'subject' => $subject,
+				'context' => $context,
+			) );
 		}
 
-		return self::send_via_wp_mail( $to, $subject, $html, $headers );
+		return $result;
 	}
 
 	/**
