@@ -1632,6 +1632,16 @@ class EEM_Admin {
 	public function render_orders_page() {
 		$this->guard_admin_page();
 
+		// C5 browser-verification gate. While the menu callback still
+		// points at this legacy renderer (C5.E swap is deferred to a
+		// separate follow-up), `?eem_preview=c5` lets the user load the
+		// new EEM_Orders_List_Page render in-place for visual review.
+		// Remove this branch as part of C5.E when the callback swaps.
+		if ( isset( $_GET['eem_preview'] ) && 'c5' === sanitize_key( wp_unslash( $_GET['eem_preview'] ) ) && class_exists( 'EEM_Orders_List_Page' ) ) {
+			( new EEM_Orders_List_Page() )->render();
+			return;
+		}
+
 		$event_filter = isset( $_GET['event_filter'] ) ? sanitize_text_field( wp_unslash( $_GET['event_filter'] ) ) : '';
 		$search_term  = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
 		$orderby      = isset( $_GET['orderby'] ) ? sanitize_key( wp_unslash( $_GET['orderby'] ) ) : 'date';
