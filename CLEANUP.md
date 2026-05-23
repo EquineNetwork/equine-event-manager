@@ -26,7 +26,7 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
   3. Update `EEM_Reservations_List_Page::render_table_row()` + `render_mobile_cards()` to call the resolver for the title instead of `get_the_title()`.
   4. Decide cache-invalidation discipline (resolver-only vs. cached-meta-with-sync-handler). If cached: write a `EEM_Reservation_Source_Sync::on_source_change( $source_event_id )` action that pushes title + dates to the linked reservation's post_meta + post_title.
   5. C7 Edit Reservation editor renders title + dates as read-only labels with "Linked to: {source event}" hint instead of input fields.
-- **Sequence target:** **Between C6 and C7** — must precede C7 because C7 is where the user-facing UI lands (read-only labels instead of input fields). Candidate chunk name "C6.6 source-event resolver" (slotted between the C6.5 professionalization sprint per entry #17 and the C7 editor port).
+- **Sequence target:** **Between C6 and C7** — must precede C7 because C7 is where the user-facing UI lands (read-only labels instead of input fields). Candidate chunk name "C6.6 source-event resolver" (slotted AFTER C6 and AFTER the C6.5 professionalization sprint per entry #17, BEFORE the C7 editor port). Updated sequence as of C6.5.A: **C6.5 → C6 → C6.6 → C7** (C6.5 promoted ahead of C6, see entry #17).
 - **Unblocks deletion:** the four nightly/weekend date meta keys MAY survive as a derived cache (per the migration-plan step 4 decision) — if they do, they retain a single writer (the sync handler) instead of the current admin-input writer. If they don't, the four meta keys + the date-range-label helper become resolver-call-only.
 - **Status:** non-conforming code identified + documented; awaiting the C6.6 resolver chunk
 
@@ -65,7 +65,7 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 
 ### 18. Bucket 2 — Developer documentation
 - **What:** Three docs deliverables for any future developer onboarding to the codebase:
-  - **Expand README.md** with a "Developer onboarding" section: local dev setup (Local-by-Flywheel + WP version + wp-cli), how to run smoke scripts in /tmp/, branch naming convention (phase-3/cN-shortname), the chunk-based workflow.
+  - **Expand README.md** with a "Developer onboarding" section: local dev setup (Local-by-Flywheel + WP version + wp-cli), how to run smoke scripts via `bash tests/smoke/run-all.sh` (versioned under `tests/smoke/` as of C6.5.A; was `/tmp/` pre-C6.5), branch naming convention (phase-3/cN-shortname), the chunk-based workflow.
   - **New CONTRIBUTING.md** explaining the chunk-based workflow + the per-chunk hygiene rules (the 7 rules currently in CLAUDE.md) + the LOC alarm protocol + the layout-shell verification procedure.
   - **New docs/ARCHITECTURE.md** documenting: the repo pattern (`EEM_*_Repo` static query helpers + `EEM_*_Page` controllers), the page-shell pattern (`templates/admin/_page_shell.php` + `eem_render_page_open/_close`), body-class scoping (the `eem-shell-page--{page}` convention from C4.5), the dual-repo rationale (`Projects/equine-event-manager` for git work + iCloud copy for visual review), and the JS dispatch pattern (`data-eem-action` delegated handlers).
 - **Why deferred:** Mid-build docs go stale fast — each chunk adds patterns that would need re-documenting. Better to wait until the chunk vocabulary is stable.
@@ -74,18 +74,21 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 - **Unblocks deletion:** N/A (additive docs).
 - **Status:** queued; mid-build bucket
 
-### 17. Bucket 1 — Plugin professionalization (sprint between C6 and C7)
+### 17. Bucket 1 — Plugin professionalization (sprint promoted to BEFORE C6)
+
+> **Numbering note (C6.5.A, 2026-05-23):** Chunk-planning conversation referred to this entry as "#16" — the file numbers it **#17**. Using the file's number to avoid drift. Anything saying "Bucket 1 / CLEANUP #16" in commit messages or chunk plans refers to this entry.
+
 - **What:** Move the codebase from "in-progress overhaul" to "shippable plugin" shape:
-  - **Move /tmp/ smoke scripts + seeders into a versioned `tests/` directory** (currently `c4a-smoke.php`, `c5a-smoke.php`, … `c5d-smoke.php`, `c5-seed.php` all live in `/tmp/` — lost on machine reboot). Decide: namespace under `tests/smoke/` or `scripts/`. Convert at least the smokes to a runner pattern (single command runs all, exit code aggregates).
-  - **Add `composer.json`** declaring the plugin's PHP requirement + dev dependencies (phpcs + WPCS standard, maybe phpunit if we want unit tests separate from the smokes).
-  - **Add `phpcs.xml`** configured to WordPress Coding Standards. Audit the current codebase for violations — likely many in legacy files; new code should be clean.
-  - **License headers audit** on every PHP file. Plugin needs consistent licensing.
-  - **Properly format the plugin header** in `equine-event-manager.php` per [WP plugin header conventions](https://developer.wordpress.org/plugins/plugin-basics/header-requirements/) — version, license, requires-at-least, tested-up-to, network, update URI.
+  - ✅ **Move smoke scripts + seeders into versioned directories** (was `/tmp/c4a-smoke.php` … `c5d-smoke.php` + `c5-seed.php`). Landed in C6.5.A: smokes live under `tests/smoke/` with `tests/smoke/run-all.sh` runner (single command, aggregated exit code); seeder at `scripts/seed-orders.php`. See `tests/README.md` + `scripts/README.md` for invocation.
+  - **Add `composer.json`** declaring the plugin's PHP requirement + dev dependencies (phpcs + WPCS standard, maybe phpunit if we want unit tests separate from the smokes). — queued for C6.5.B.
+  - **Add `phpcs.xml`** configured to WordPress Coding Standards. Audit the current codebase for violations — likely many in legacy files; new code should be clean. — queued for C6.5.B.
+  - **License headers audit** on every PHP file. Plugin needs consistent licensing. — queued for C6.5.C.
+  - **Properly format the plugin header** in `equine-event-manager.php` per [WP plugin header conventions](https://developer.wordpress.org/plugins/plugin-basics/header-requirements/) — version, license, requires-at-least, tested-up-to, network, update URI. — queued for C6.5.C.
 - **Why deferred:** Premature standardization mid-build slows iteration. By post-C5 the codebase has stable patterns; standardizing now locks them in for the rest of the build.
 - **Added in:** C5.G.10
-- **Sequence:** "C6.5" sprint between C6 and C7.
+- **Sequence:** **"C6.5" sprint BEFORE C6** (promoted from the original between-C6-and-C7 slot). Rationale: shipping C6 into versioned infra (tests/, composer.json, phpcs.xml, license headers, full plugin header) avoids retrofitting all of that after C6 lands. C6 builds on top of stable infra from its first commit instead of getting decorated post-hoc. Updated chunk sequence: **C6.5.A → C6.5.B → C6.5.C → C6 → C6.6 → C7**.
 - **Unblocks deletion:** N/A (additive infra).
-- **Status:** queued; post-C5 sprint candidate
+- **Status:** C6.5.A done (test infra); C6.5.B + C6.5.C queued.
 
 ### 16. Customer Profile chunk sequencing — link targets pre-wired
 - **What:** Orders list page wires customer-name spans as `<a class="eem-customer-name" href="admin.php?page=equine-event-manager-customer&customer_email=X">` anchors and order-number spans as `<a class="eem-order-num" href="admin.php?page=equine-event-manager-order&order_key=Y">` anchors. Order Detail destination (`equine-event-manager-order` slug) is the existing legacy `EEM_Admin::render_order_detail_page` callback — C6 replaces. Customer Profile destination (`equine-event-manager-customer` slug) is a hidden placeholder admin page registered by `EEM_Orders_List_Page::register_customer_profile_stub()` with `EEM_Orders_List_Page::render_customer_profile_stub()` as the callback — renders a "Customer Profile is on the planned roadmap" card.
