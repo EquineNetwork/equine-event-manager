@@ -295,7 +295,7 @@ class EEM_Orders_List_Page {
 					<?php if ( '' !== $event ) : ?><input type="hidden" name="event" value="<?php echo esc_attr( $event ); ?>" /><?php endif; ?>
 					<div class="eem-search-wrap eem-search-wrap--attached">
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-						<input class="eem-search-input" type="search" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="<?php esc_attr_e( 'Search by customer, order #, event…', 'equine-event-manager' ); ?>" />
+						<input class="eem-search-input" type="search" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="<?php esc_attr_e( 'Search…', 'equine-event-manager' ); ?>" />
 					</div>
 					<button type="submit" class="eem-toolbar-btn eem-search-btn"><?php esc_html_e( 'Search Orders', 'equine-event-manager' ); ?></button>
 				</form>
