@@ -9,6 +9,10 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
 
+/* Universal hover convention — color only, NEVER underline */
+a{text-decoration:none}
+a:hover{text-decoration:none}
+
 /* ── WP SHELL ── */
 .wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;position:sticky;top:0;z-index:200}
 .wp-admin-bar span{font-size:13px;color:#c3c4c7;cursor:pointer}
@@ -30,18 +34,26 @@ body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;fon
 .breadcrumb-logo-box{width:160px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb;flex-shrink:0}
 .breadcrumb-sep{font-size:13px;color:#8c8f94}
 .breadcrumb-page{font-size:13px;font-weight:600;color:#1d2327}
-.page-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;margin-bottom:14px}
 
 /* ── PLUGIN WRAP ── */
 .plugin-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
 
-/* Page header inside card */
-.plugin-header{padding:14px 18px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.plugin-title{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;color:#031B4E}
-.plugin-subtitle{font-size:12.5px;color:#6B7A99;margin-top:2px}
+/* Page header inside card (matches shipped reservations_page pattern) */
+.plugin-header{padding:18px 22px;border-bottom:1px solid #dcdcde;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.plugin-header-left{flex:1;min-width:0}
+.plugin-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;line-height:1.2;margin-bottom:4px}
+.plugin-subtitle{font-size:13px;color:#6B7A99;line-height:1.45}
+
+/* Status tabs (DEC-4 — matches shipped reservations_page) */
+.status-tabs{padding:10px 18px 0;border-bottom:1px solid #dcdcde;display:flex;align-items:center;gap:0;flex-wrap:wrap}
+.status-tab{font-size:13px;color:#50575e;padding:6px 10px 8px;cursor:pointer;border-bottom:2px solid transparent;text-decoration:none;white-space:nowrap}
+.status-tab:hover{color:#031B4E}
+.status-tab.active{color:#031B4E;font-weight:600;border-bottom-color:#1668F2}
+.status-tab-count{color:#8c8f94;font-weight:400;margin-left:3px}
+.status-tab-sep{color:#8c8f94;font-size:12px;padding:6px 4px}
 
 /* Toolbar */
-.toolbar{padding:12px 18px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#fafafa}
+.toolbar{padding:12px 18px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#f3f4f5}
 .toolbar-left{display:flex;align-items:center;gap:8px;flex:1;flex-wrap:wrap}
 .toolbar-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .toolbar-select{padding:6px 28px 6px 10px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 8px center;appearance:none}
@@ -53,11 +65,11 @@ body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;fon
 
 /* ── TABLE ── */
 table{width:100%;border-collapse:collapse}
-thead tr{border-bottom:1px solid #dcdcde;background:#fafafa}
-thead th{padding:10px 16px;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8c8f94;text-align:left;white-space:nowrap}
-thead th.sortable{cursor:pointer}
-thead th.sortable:hover{color:#1d2327}
-.sort-icon{display:inline-flex;flex-direction:column;gap:1px;margin-left:3px;vertical-align:middle;opacity:.45}
+thead tr{border-bottom:1px solid #dcdcde;background:#f3f4f5}
+thead th{padding:11px 14px;font-size:13px;font-weight:600;color:#1d2327;text-align:left;white-space:nowrap}
+thead th.sortable{cursor:pointer;color:#1668F2}
+thead th.sortable:hover{color:#1257d1}
+.sort-icon{display:inline-flex;flex-direction:column;gap:1px;margin-left:4px;vertical-align:middle;opacity:.5}
 .sort-icon span{display:block;width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent}
 .sort-icon span:first-child{border-bottom:4px solid currentColor}
 .sort-icon span:last-child{border-top:4px solid currentColor}
@@ -65,25 +77,28 @@ thead th.sortable:hover{color:#1d2327}
 tbody tr{border-bottom:1px solid #f0f0f1}
 tbody tr:last-child{border-bottom:none}
 tbody tr:hover{background:#f6f7f7}
-td{padding:14px 16px;font-size:13.5px;color:#1d2327;vertical-align:middle}
+td{padding:14px 14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
 
-.res-name{font-weight:700;color:#031B4E;font-size:14px;display:block;cursor:pointer}
-.res-name:hover{color:#1668F2;text-decoration:underline}
+.res-name{font-weight:700;color:#031B4E;font-size:14px;display:block;text-decoration:none}
+.res-name:hover{color:#1668F2}
 .res-dates{font-size:12.5px;color:#6B7A99;margin-top:2px}
+
+/* Empty / no-data placeholder (shipped pattern from reservations_page) */
+.event-dates-empty{color:#8c8f94;font-size:13px}
 
 /* Barn tags */
 .barn-tags{display:flex;gap:5px;flex-wrap:wrap}
 .barn-tag{padding:3px 9px;border-radius:4px;font-size:11.5px;font-weight:600;background:#F0F4FB;color:#031B4E;border:1px solid #D9E2F2}
 .rv-lot-tag{padding:3px 9px;border-radius:4px;font-size:11.5px;font-weight:600;background:#F5F3FF;color:#6d28d9;border:1px solid #ddd6fe;display:inline-block}
 
-/* Status */
-.chart-status{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;padding:4px 10px;border-radius:20px;white-space:nowrap}
+/* Status (UPPERCASE per DEC-2) */
+.chart-status{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 10px;border-radius:12px;white-space:nowrap;font-family:'IBM Plex Sans',sans-serif;line-height:1.5}
 .chart-status::before{content:'';width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .status-configured{background:#F0FDF4;color:#15803d;border:1px solid #bbf7d0}
 .status-configured::before{background:#22c55e}
 .status-partial{background:#FFFBEB;color:#b45309;border:1px solid #fde68a}
 .status-partial::before{background:#f59e0b}
-.status-empty{background:#F8FAFC;color:#64748b;border:1px solid #e2e8f0}
+.status-empty{background:#f3f4f5;color:#52525b;border:1px solid #dcdcde}
 .status-empty::before{background:#94a3b8}
 
 /* Actions */
@@ -91,7 +106,7 @@ td{padding:14px 16px;font-size:13.5px;color:#1d2327;vertical-align:middle}
 .action-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:4px;font-size:12.5px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap;border:1px solid}
 .action-btn svg{width:13px;height:13px}
 .btn-view-chart{background:#1668F2;color:#fff;border-color:#1668F2}
-.btn-view-chart:hover{background:#1355cc}
+.btn-view-chart:hover{background:#1257d1;border-color:#1257d1}
 .btn-edit-res{background:#fff;color:#031B4E;border-color:#c3c4c7}
 .btn-edit-res:hover{background:#f6f7f7}
 
@@ -102,7 +117,7 @@ td{padding:14px 16px;font-size:13.5px;color:#1d2327;vertical-align:middle}
 .stat-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
 
 /* Pagination */
-.pagination-row{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid #dcdcde;background:#fafafa;flex-wrap:wrap;gap:8px}
+.pagination-row{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-top:1px solid #dcdcde;background:#f3f4f5;flex-wrap:wrap;gap:8px}
 .pagination-info{font-size:13px;color:#50575e}
 .pagination{display:flex;align-items:center;gap:3px}
 .page-btn{width:28px;height:28px;border-radius:4px;border:1px solid #c3c4c7;background:#fff;color:#50575e;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Sans',sans-serif}
@@ -113,7 +128,7 @@ td{padding:14px 16px;font-size:13.5px;color:#1d2327;vertical-align:middle}
 .mobile-list{display:none;padding:12px 14px}
 .mobile-card{background:#fff;border:1px solid #dcdcde;border-radius:4px;padding:14px;margin-bottom:8px}
 .mob-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;gap:8px}
-.mob-res-name{font-size:14px;font-weight:700;color:#031B4E;cursor:pointer}
+.mob-res-name{font-size:14px;font-weight:700;color:#031B4E;text-decoration:none;display:block}
 .mob-res-name:hover{color:#1668F2}
 .mob-card-body{margin-bottom:10px}
 .mob-card-dates{font-size:12.5px;color:#6B7A99;margin-bottom:6px}
@@ -129,8 +144,11 @@ td{padding:14px 16px;font-size:13.5px;color:#1d2327;vertical-align:middle}
   .wp-admin-bar span:not(.site):not(:first-child):not(:last-child){display:none}
   .wp-content{padding:8px 10px 32px}
   .breadcrumb-logo-box{width:120px;height:30px;font-size:10px}
-  .page-title{font-size:18px}
-  .plugin-header{padding:12px 14px}
+  .plugin-header{padding:14px;flex-direction:column;align-items:stretch;gap:10px}
+  .plugin-title{font-size:18px}
+  .plugin-subtitle{font-size:12.5px}
+  .status-tabs{overflow-x:auto;flex-wrap:nowrap;padding:8px 14px 0;-webkit-overflow-scrolling:touch}
+  .status-tab{font-size:12px;padding:5px 8px 7px;white-space:nowrap}
   .toolbar{flex-direction:column;align-items:stretch;padding:10px 12px;gap:8px}
   .toolbar-left{flex-direction:column;gap:8px}
   .search-wrap{max-width:100%;min-width:unset}
@@ -152,43 +170,46 @@ td{padding:14px 16px;font-size:13.5px;color:#1d2327;vertical-align:middle}
 </div>
 
 <div class="wp-body">
-  <div class="wp-sidebar">
-    <div class="wp-sidebar-item">&#9632; Dashboard</div>
-    <div class="wp-sidebar-item">&#9632; Posts</div>
-    <div class="wp-sidebar-item">&#9632; Pages</div>
+  <nav class="wp-sidebar">
+    <div class="wp-sidebar-item">Dashboard</div>
+    <div class="wp-sidebar-item">Media</div>
+    <div class="wp-sidebar-item">Posts</div>
+    <div class="wp-sidebar-item">Pages</div>
     <div class="wp-sidebar-sep"></div>
-    <div class="wp-sidebar-label">Equine EM</div>
-    <div class="wp-sidebar-item active">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Stall & RV Charts</div>
-    <div class="wp-sidebar-sub">Dashboard</div>
-    <div class="wp-sidebar-sub">Events</div>
+    <div class="wp-sidebar-label">Event Manager</div>
     <div class="wp-sidebar-sub">Orders</div>
     <div class="wp-sidebar-sub">Reservations</div>
-    <div class="wp-sidebar-sub active">Stall & RV Charts</div>
+    <div class="wp-sidebar-sub active">Stall &amp; RV Charts</div>
     <div class="wp-sidebar-sub">Invoicing</div>
     <div class="wp-sidebar-sub">Reports</div>
     <div class="wp-sidebar-sub">Settings</div>
-    <div class="wp-sidebar-sep"></div>
-    <div class="wp-sidebar-item">&#9632; Plugins</div>
-    <div class="wp-sidebar-item">&#9632; Settings</div>
-  </div>
+  </nav>
 
-  <div class="wp-content">
+  <main class="wp-content">
     <div class="breadcrumb">
       <div class="breadcrumb-logo-box">Plugin Logo</div>
       <span class="breadcrumb-sep">/</span>
       <span class="breadcrumb-page">Stall & RV Charts</span>
     </div>
 
-    <div class="page-title">Stall & RV Charts</div>
-
     <div class="plugin-wrap">
 
-      <div class="plugin-header">
-        <div>
-          <div class="plugin-title">Stall & RV Charts</div>
+      <header class="plugin-header">
+        <div class="plugin-header-left">
+          <h1 class="plugin-title">Stall &amp; RV Charts</h1>
           <div class="plugin-subtitle">View and manage stall assignments for each reservation. Click a reservation name to open its assignment board.</div>
         </div>
+      </header>
+
+      <!-- STATUS TABS (DEC-4) -->
+      <div class="status-tabs">
+        <a class="status-tab active" href="#">All <span class="status-tab-count">(5)</span></a>
+        <span class="status-tab-sep">|</span>
+        <a class="status-tab" href="#">Configured <span class="status-tab-count">(2)</span></a>
+        <span class="status-tab-sep">|</span>
+        <a class="status-tab" href="#">Partial <span class="status-tab-count">(1)</span></a>
+        <span class="status-tab-sep">|</span>
+        <a class="status-tab" href="#">Not Configured <span class="status-tab-count">(2)</span></a>
       </div>
 
       <div class="toolbar">
@@ -223,11 +244,11 @@ td{padding:14px 16px;font-size:13.5px;color:#1d2327;vertical-align:middle}
           <tbody>
             <tr>
               <td>
-                <span class="res-name">2026 Southeast Region Super Sort</span>
+                <a class="res-name" href="admin.php?page=equine-event-manager-stall-chart&amp;reservation_id=42">2026 Southeast Region Super Sort</a>
                 <div class="res-dates">May 8, 2026 – May 10, 2026</div>
                 <div class="chart-stats">
                   <div class="chart-stat"><div class="stat-dot" style="background:#22c55e"></div>82 Available</div>
-                  <div class="chart-stat"><div class="stat-dot" style="background:#ef4444"></div>28 Reserved</div>
+                  <div class="chart-stat"><div class="stat-dot" style="background:#dc2626"></div>28 Reserved</div>
                   <div class="chart-stat"><div class="stat-dot" style="background:#94a3b8"></div>10 Blocked</div>
                 </div>
               </td>
@@ -240,7 +261,9 @@ td{padding:14px 16px;font-size:13.5px;color:#1d2327;vertical-align:middle}
               </td>
               <td>
                 <div class="barn-tags">
-                  <span class="rv-lot-tag">RV Lot A</span>
+                  <span class="rv-lot-tag">Red Lot</span>
+                  <span class="rv-lot-tag">Blue Lot</span>
+                  <span class="rv-lot-tag">Green Lot</span>
                 </div>
               </td>
               <td><span class="chart-status status-configured">Configured</span></td>
@@ -259,16 +282,16 @@ td{padding:14px 16px;font-size:13.5px;color:#1d2327;vertical-align:middle}
             </tr>
             <tr>
               <td>
-                <span class="res-name">2026 Bluegrass Show</span>
+                <a class="res-name" href="admin.php?page=equine-event-manager-stall-chart&amp;reservation_id=43">2026 Bluegrass Show</a>
                 <div class="res-dates">May 17, 2026 – May 19, 2026</div>
                 <div class="chart-stats">
                   <div class="chart-stat"><div class="stat-dot" style="background:#22c55e"></div>60 Available</div>
-                  <div class="chart-stat"><div class="stat-dot" style="background:#ef4444"></div>5 Reserved</div>
+                  <div class="chart-stat"><div class="stat-dot" style="background:#dc2626"></div>5 Reserved</div>
                   <div class="chart-stat"><div class="stat-dot" style="background:#94a3b8"></div>0 Blocked</div>
                 </div>
               </td>
               <td><div class="barn-tags"><span class="barn-tag">Main Barn</span><span class="barn-tag">Overflow Barn</span></div></td>
-              <td><span style="color:#94a3b8;font-size:11.5px">—</span></td>
+              <td><span class="event-dates-empty">—</span></td>
               <td><span class="chart-status status-partial">Partial</span></td>
               <td>
                 <div class="actions-cell">
@@ -285,14 +308,14 @@ td{padding:14px 16px;font-size:13.5px;color:#1d2327;vertical-align:middle}
             </tr>
             <tr>
               <td>
-                <span class="res-name">2026 Sunshine Dressage</span>
+                <a class="res-name" href="admin.php?page=equine-event-manager-stall-chart&amp;reservation_id=44">2026 Sunshine Dressage</a>
                 <div class="res-dates">May 20, 2026 – May 22, 2026</div>
                 <div class="chart-stats">
                   <div class="chart-stat"><div class="stat-dot" style="background:#94a3b8"></div>Not yet configured</div>
                 </div>
               </td>
-              <td><div class="barn-tags"><span class="barn-tag" style="color:#94a3b8;border-color:#e2e8f0">No barns set</span></div></td>
-              <td><div class="barn-tags"><span class="barn-tag" style="color:#94a3b8;border-color:#e2e8f0">No lots set</span></div></td>
+              <td><span class="event-dates-empty">—</span></td>
+              <td><span class="event-dates-empty">—</span></td>
               <td><span class="chart-status status-empty">Not Configured</span></td>
               <td>
                 <div class="actions-cell">
@@ -309,15 +332,15 @@ td{padding:14px 16px;font-size:13.5px;color:#1d2327;vertical-align:middle}
             </tr>
             <tr>
               <td>
-                <span class="res-name">2026 Gulf Coast Classic</span>
+                <a class="res-name" href="admin.php?page=equine-event-manager-stall-chart&amp;reservation_id=45">2026 Gulf Coast Classic</a>
                 <div class="res-dates">Jun 5, 2026 – Jun 7, 2026</div>
                 <div class="chart-stats">
                   <div class="chart-stat"><div class="stat-dot" style="background:#22c55e"></div>44 Available</div>
-                  <div class="chart-stat"><div class="stat-dot" style="background:#ef4444"></div>12 Reserved</div>
+                  <div class="chart-stat"><div class="stat-dot" style="background:#dc2626"></div>12 Reserved</div>
                 </div>
               </td>
               <td><div class="barn-tags"><span class="barn-tag">North Barn</span><span class="barn-tag">South Barn</span></div></td>
-              <td><span style="color:#94a3b8;font-size:11.5px">—</span></td>
+              <td><span class="event-dates-empty">—</span></td>
               <td><span class="chart-status status-configured">Configured</span></td>
               <td>
                 <div class="actions-cell">
@@ -334,14 +357,14 @@ td{padding:14px 16px;font-size:13.5px;color:#1d2327;vertical-align:middle}
             </tr>
             <tr>
               <td>
-                <span class="res-name">2026 Lone Star Invitational</span>
+                <a class="res-name" href="admin.php?page=equine-event-manager-stall-chart&amp;reservation_id=46">2026 Lone Star Invitational</a>
                 <div class="res-dates">Jun 12, 2026 – Jun 14, 2026</div>
                 <div class="chart-stats">
                   <div class="chart-stat"><div class="stat-dot" style="background:#94a3b8"></div>Not yet configured</div>
                 </div>
               </td>
-              <td><div class="barn-tags"><span class="barn-tag" style="color:#94a3b8;border-color:#e2e8f0">No barns set</span></div></td>
-              <td><div class="barn-tags"><span class="barn-tag" style="color:#94a3b8;border-color:#e2e8f0">No lots set</span></div></td>
+              <td><span class="event-dates-empty">—</span></td>
+              <td><span class="event-dates-empty">—</span></td>
               <td><span class="chart-status status-empty">Not Configured</span></td>
               <td>
                 <div class="actions-cell">
@@ -364,16 +387,16 @@ td{padding:14px 16px;font-size:13.5px;color:#1d2327;vertical-align:middle}
       <div class="mobile-list">
         <div class="mobile-card">
           <div class="mob-card-top">
-            <span class="mob-res-name">2026 Southeast Region Super Sort</span>
+            <a class="mob-res-name" href="admin.php?page=equine-event-manager-stall-chart&amp;reservation_id=42">2026 Southeast Region Super Sort</a>
             <span class="chart-status status-configured">Configured</span>
           </div>
           <div class="mob-card-body">
             <div class="mob-card-dates">May 8, 2026 – May 10, 2026</div>
             <div class="barn-tags" style="margin-bottom:6px"><span class="barn-tag">Red Barn</span><span class="barn-tag">Blue Barn</span><span class="barn-tag">Green Barn</span></div>
-            <div class="barn-tags" style="margin-bottom:6px"><span class="rv-lot-tag">RV Lot A</span></div>
+            <div class="barn-tags" style="margin-bottom:6px"><span class="rv-lot-tag">Red Lot</span><span class="rv-lot-tag">Blue Lot</span><span class="rv-lot-tag">Green Lot</span></div>
             <div class="chart-stats">
               <div class="chart-stat"><div class="stat-dot" style="background:#22c55e"></div>82 Available</div>
-              <div class="chart-stat"><div class="stat-dot" style="background:#ef4444"></div>28 Reserved</div>
+              <div class="chart-stat"><div class="stat-dot" style="background:#dc2626"></div>28 Reserved</div>
             </div>
           </div>
           <div class="mob-card-bottom">
@@ -383,7 +406,7 @@ td{padding:14px 16px;font-size:13.5px;color:#1d2327;vertical-align:middle}
         </div>
         <div class="mobile-card">
           <div class="mob-card-top">
-            <span class="mob-res-name">2026 Bluegrass Show</span>
+            <a class="mob-res-name" href="admin.php?page=equine-event-manager-stall-chart&amp;reservation_id=43">2026 Bluegrass Show</a>
             <span class="chart-status status-partial">Partial</span>
           </div>
           <div class="mob-card-body">
@@ -397,7 +420,7 @@ td{padding:14px 16px;font-size:13.5px;color:#1d2327;vertical-align:middle}
         </div>
         <div class="mobile-card">
           <div class="mob-card-top">
-            <span class="mob-res-name">2026 Sunshine Dressage</span>
+            <a class="mob-res-name" href="admin.php?page=equine-event-manager-stall-chart&amp;reservation_id=44">2026 Sunshine Dressage</a>
             <span class="chart-status status-empty">Not Configured</span>
           </div>
           <div class="mob-card-body">
@@ -420,7 +443,7 @@ td{padding:14px 16px;font-size:13.5px;color:#1d2327;vertical-align:middle}
       </div>
 
     </div><!-- /plugin-wrap -->
-  </div><!-- /wp-content -->
+  </main>
 </div><!-- /wp-body -->
 </body>
 </html>

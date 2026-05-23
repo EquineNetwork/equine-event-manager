@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equine Event Manager – Collect Payment</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
+svg{flex-shrink:0}
+
+/* Universal hover convention */
+a{text-decoration:none}
+a:hover{text-decoration:none}
+
+/* ── WP SHELL ── */
+.wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;position:sticky;top:0;z-index:300}
+.wp-admin-bar span{font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-admin-bar span.site{color:#fff;font-weight:600}
+.wp-body{display:flex;flex:1}
+.wp-sidebar{width:160px;min-width:160px;background:#1d2327;min-height:calc(100vh - 32px)}
+.wp-sidebar-item{padding:8px 12px;font-size:13px;color:#c3c4c7;cursor:pointer;display:flex;align-items:center;gap:8px;border-left:3px solid transparent}
+.wp-sidebar-item:hover{background:#2c3338;color:#fff}
+.wp-sidebar-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 0}
+.wp-sidebar-label{padding:8px 12px 4px;font-size:10px;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.wp-sidebar-sub{padding:6px 12px 6px 28px;font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-sidebar-sub:hover{color:#fff}
+.wp-sidebar-sub.active{color:#90c4ff;font-weight:600}
+
+/* ── CONTENT ── */
+.wp-content{flex:1;padding:12px 20px 40px;min-width:0}
+
+/* Breadcrumb */
+.breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.breadcrumb-logo-box{width:160px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb;flex-shrink:0}
+.breadcrumb-sep{font-size:13px;color:#8c8f94}
+.breadcrumb-page{font-size:13px;color:#50575e}
+.breadcrumb-page a{color:#50575e}
+.breadcrumb-page a:hover{color:#1668F2}
+
+/* ── PLUGIN-WRAP ── */
+.plugin-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
+.plugin-header{padding:18px 22px;border-bottom:1px solid #dcdcde;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.plugin-header-left{flex:1;min-width:0}
+.plugin-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;line-height:1.2;margin-bottom:4px}
+.plugin-subtitle{font-size:13px;color:#50575e;line-height:1.45}
+
+.collect-body{padding:18px 22px;background:#fff}
+
+/* ── PAYMENT OUTSTANDING BANNER (matches shipped order_detail payment-banner) ── */
+.payment-banner{background:#FFF7ED;border:1px solid #fed7aa;border-radius:4px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.payment-banner-icon{width:36px;height:36px;border-radius:50%;background:#fed7aa;color:#c2410c;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.payment-banner-icon svg{width:18px;height:18px}
+.payment-banner-content{flex:1;min-width:0}
+.payment-banner-title{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#7c2d12}
+.payment-banner-meta{font-size:13px;color:#92400e;margin-top:2px}
+.payment-banner-amount{font-weight:700;color:#7c2d12}
+
+/* ── TWO-COL LAYOUT ── */
+.workspace{display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start}
+.workspace-main{display:flex;flex-direction:column;gap:14px;min-width:0}
+.workspace-rail{display:flex;flex-direction:column;gap:14px;position:sticky;top:44px}
+
+/* ── INNER CARDS ── */
+.form-card{background:#fff;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden}
+.form-card-header{padding:13px 18px;border-bottom:1px solid #dcdcde;background:#fff;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.form-card-title{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:#031B4E;display:flex;align-items:center;gap:8px}
+.form-card-title svg{width:15px;height:15px;color:#1668F2;flex-shrink:0}
+.form-card-body{padding:16px 18px}
+.view-full-order{font-size:12.5px;color:#1668F2;font-weight:600}
+.view-full-order:hover{color:#1257d1}
+
+/* Fields (read-only display style) */
+.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:12px}
+.field-grid.cols-1{grid-template-columns:1fr}
+.field-grid:last-child{margin-bottom:0}
+.field-group{display:flex;flex-direction:column;gap:4px}
+.field-label{font-size:11.5px;font-weight:600;color:#50575e;letter-spacing:.02em}
+.field-value{font-size:13.5px;color:#1d2327;font-weight:500;padding:9px 11px;background:#f3f4f5;border:1px solid #dcdcde;border-radius:4px}
+
+/* Status badge (Invoice Sent) — uses shipped Orders list palette */
+.status-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:12px;font-size:12px;font-weight:600;border:1px solid;font-family:'IBM Plex Sans',sans-serif}
+.status-badge::before{content:'';width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.status-invoice{background:#EFF6FF;color:#1d4ed8;border-color:#bfdbfe}
+.status-invoice::before{background:#3b82f6}
+.status-unpaid{background:#FEF2F2;color:#b91c1c;border-color:#fecaca}
+.status-unpaid::before{background:#b91c1c}
+
+/* Order items list (matches shipped Order Detail line-item pattern) */
+.items-list{display:flex;flex-direction:column}
+.item-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px 18px;border-bottom:1px solid #f0f0f1;font-size:13.5px}
+.item-row:last-child{border-bottom:none}
+.item-info{flex:1;min-width:0}
+.item-name{font-weight:600;color:#031B4E}
+.item-sub{font-size:12px;color:#50575e;margin-top:3px}
+.item-price{font-weight:700;color:#031B4E;white-space:nowrap;font-variant-numeric:tabular-nums}
+
+/* ── RAIL ── */
+.rail-card{background:#fff;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden}
+.rail-head{background:#f3f4f5;padding:13px 18px;border-bottom:1px solid #dcdcde}
+.rail-head-title{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:#031B4E}
+.rail-head-sub{font-size:12px;color:#50575e;margin-top:2px}
+.rail-body{padding:14px 18px}
+.rail-customer{font-size:13px;font-weight:600;color:#031B4E;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #f0f0f1}
+.summary-line{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;font-size:13px;padding:7px 0;border-bottom:1px solid #f0f0f1}
+.summary-line:last-of-type{border-bottom:none}
+.summary-line-label{color:#1d2327;flex:1}
+.summary-line-price{font-weight:700;color:#031B4E;white-space:nowrap;font-variant-numeric:tabular-nums}
+.summary-divider{border:none;border-top:1px solid #dcdcde;margin:10px 0}
+.summary-total{display:flex;justify-content:space-between;font-size:16px;font-weight:800;color:#031B4E;font-family:'Space Grotesk',sans-serif}
+.summary-total span:last-child{color:#1668F2}
+
+/* Discount affordance */
+.discount-section{margin:8px 0 4px}
+.btn-add-discount{display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px dashed #c3c4c7;color:#50575e;padding:7px 12px;border-radius:4px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;width:100%;justify-content:center}
+.btn-add-discount:hover{border-color:#1668F2;color:#1668F2}
+.btn-add-discount svg{width:13px;height:13px}
+.discount-section.open .btn-add-discount{display:none}
+.discount-fields{display:none}
+.discount-section.open .discount-fields{display:block}
+.discount-row{display:grid;grid-template-columns:1fr 120px;gap:8px;margin-bottom:6px}
+.discount-type{font-size:12.5px;padding:7px 8px;border:1px solid #8c8f94;border-radius:4px;background:#fff;color:#1d2327;font-family:'IBM Plex Sans',sans-serif;width:100%}
+.discount-value-wrap{position:relative}
+.discount-currency{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12.5px;font-weight:600;color:#50575e;pointer-events:none}
+.discount-value{padding:7px 8px 7px 22px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;font-size:12.5px;width:100%;border:1px solid #8c8f94;border-radius:4px;font-family:inherit;color:#1d2327}
+.discount-reason{font-size:12.5px;width:100%;margin-bottom:6px;padding:7px 10px;border:1px solid #8c8f94;border-radius:4px;font-family:inherit;color:#1d2327}
+.discount-applied-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 11px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:4px;font-size:12.5px}
+.discount-applied-label{color:#15803d;font-weight:600;flex:1}
+.discount-applied-value{color:#15803d;font-weight:700;font-variant-numeric:tabular-nums}
+.btn-remove-discount{background:transparent;border:none;color:#b91c1c;font-size:11.5px;font-weight:600;cursor:pointer;padding:0 0 0 6px;font-family:inherit}
+.btn-remove-discount:hover{color:#7f1d1d}
+
+/* ── PAYMENT CARD ── */
+.payment-card{background:#fff;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden}
+.payment-tabs{display:flex;border-bottom:1px solid #dcdcde;background:#f3f4f5}
+.payment-tab{flex:1;padding:11px 10px;font-size:13px;font-weight:600;color:#50575e;cursor:pointer;text-align:center;border-bottom:3px solid transparent;background:#f3f4f5;border-top:none;border-left:none;border-right:none;display:flex;align-items:center;justify-content:center;gap:6px;font-family:inherit}
+.payment-tab svg{width:13px;height:13px}
+.payment-tab:hover{color:#031B4E;background:#e9ebec}
+.payment-tab.active{color:#1668F2;border-bottom-color:#1668F2;background:#fff}
+.payment-body{padding:16px 18px}
+.payment-desc{font-size:13px;color:#50575e;line-height:1.55;margin-bottom:14px}
+
+.email-preview{background:#F0F4FB;border:1px solid #D9E2F2;border-radius:4px;padding:12px 14px;margin-bottom:14px;font-size:12.5px;color:#1d2327;line-height:1.65}
+.email-preview strong{color:#031B4E;font-weight:600}
+
+.btn-send,.btn-charge{width:100%;background:#1668F2;color:#fff;border:1px solid #1668F2;padding:11px;border-radius:4px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px}
+.btn-send:hover,.btn-charge:hover{background:#1257d1;border-color:#1257d1}
+.btn-send svg,.btn-charge svg{width:14px;height:14px;color:#fff}
+
+/* Card form (Charge Card panel) */
+.field-input{padding:9px 11px;border:1px solid #8c8f94;border-radius:4px;font-size:13.5px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;width:100%;outline:none}
+.field-input:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
+.field-input::placeholder{color:#b0b0b0}
+.card-input-wrap{position:relative;margin-bottom:10px}
+.card-icons{position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;gap:4px}
+.card-icon{width:28px;height:18px;border-radius:3px;border:1px solid #E2E8F0;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#fff}
+.card-icon.visa{background:#1a1f71}
+.card-icon.mc{background:#eb001b}
+.field-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.field-group-cc{display:flex;flex-direction:column;gap:4px}
+.field-label-cc{font-size:12px;font-weight:600;color:#1d2327}
+.req{color:#b91c1c;margin-left:2px}
+.secure-note{text-align:center;font-size:12px;color:#50575e;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:5px}
+.secure-note svg{width:12px;height:12px;color:#50575e}
+
+/* ── EMPTY STATE ── */
+.empty-state{padding:60px 22px;text-align:center}
+.empty-state-icon{width:56px;height:56px;border-radius:50%;background:#f3f4f5;color:#8c8f94;margin:0 auto 16px;display:flex;align-items:center;justify-content:center}
+.empty-state-icon svg{width:28px;height:28px}
+.empty-state-title{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:#031B4E;margin-bottom:6px}
+.empty-state-desc{font-size:13.5px;color:#50575e;max-width:420px;margin:0 auto 18px;line-height:1.55}
+.btn-back{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;background:#1668F2;color:#fff;border:1px solid #1668F2;border-radius:4px;font-size:13.5px;font-weight:600;font-family:inherit;text-decoration:none}
+.btn-back:hover{background:#1257d1;border-color:#1257d1;color:#fff}
+.btn-back svg{width:13px;height:13px;color:#fff}
+
+/* ── RESPONSIVE ── */
+@media(max-width:1024px){
+  .wp-sidebar{display:none}
+  .wp-content{padding:10px 14px 40px}
+  .workspace{grid-template-columns:1fr}
+  .workspace-rail{position:static;display:flex;flex-direction:column;gap:14px}
+}
+@media(max-width:767px){
+  .wp-admin-bar span:not(.site):not(:first-child):not(:last-child){display:none}
+  .wp-content{padding:8px 10px 32px}
+  .breadcrumb-logo-box{width:120px;height:30px;font-size:10px}
+  .plugin-header{padding:14px;flex-direction:column;align-items:stretch;gap:8px}
+  .plugin-title{font-size:18px}
+  .collect-body{padding:12px 14px}
+  .payment-banner{padding:12px 14px}
+  .field-grid,.field-grid-2{grid-template-columns:1fr}
+  .form-card-header{padding:11px 14px;flex-wrap:wrap}
+  .discount-row{grid-template-columns:1fr;gap:6px}
+}
+</style>
+</head>
+<body>
+
+<div class="wp-admin-bar">
+  <span>&#9776;</span>
+  <span class="site">My Equestrian Site</span>
+  <span>+ New</span>
+  <span style="margin-left:auto">Howdy, whitney</span>
+</div>
+
+<div class="wp-body">
+  <nav class="wp-sidebar">
+    <div class="wp-sidebar-item">Dashboard</div>
+    <div class="wp-sidebar-item">Media</div>
+    <div class="wp-sidebar-item">Posts</div>
+    <div class="wp-sidebar-item">Pages</div>
+    <div class="wp-sidebar-sep"></div>
+    <div class="wp-sidebar-label">Event Manager</div>
+    <div class="wp-sidebar-sub active">Orders</div>
+    <div class="wp-sidebar-sub">Reservations</div>
+    <div class="wp-sidebar-sub">Stall &amp; RV Charts</div>
+    <div class="wp-sidebar-sub">Reports</div>
+    <div class="wp-sidebar-sub">Settings</div>
+  </nav>
+
+  <main class="wp-content">
+
+    <!-- Breadcrumb -->
+    <div class="breadcrumb">
+      <div class="breadcrumb-logo-box">Plugin Logo</div>
+      <span class="breadcrumb-sep">/</span>
+      <span class="breadcrumb-page"><a href="admin.php?page=equine-event-manager-orders">Orders</a></span>
+      <span class="breadcrumb-sep">/</span>
+      <span class="breadcrumb-page"><a href="admin.php?page=equine-event-manager-order&amp;order_id=00021">#00021</a></span>
+      <span class="breadcrumb-sep">/</span>
+      <span class="breadcrumb-page">Collect Payment</span>
+    </div>
+
+    <!-- PLUGIN-WRAP -->
+    <div class="plugin-wrap">
+
+      <header class="plugin-header">
+        <div class="plugin-header-left">
+          <h1 class="plugin-title">Collect Payment — Order #00021</h1>
+          <div class="plugin-subtitle">Process payment for an existing order. The order details are locked here — to amend the order, return to the <a href="admin.php?page=equine-event-manager-order&amp;order_id=00021" style="color:#1668F2;font-weight:600">order detail page</a>.</div>
+        </div>
+      </header>
+
+      <div class="collect-body">
+
+        <!-- ════════════════════════════════════════════ -->
+        <!-- WITH ORDER_ID — full payment workspace      -->
+        <!-- ════════════════════════════════════════════ -->
+
+        <!-- Outstanding banner (matches shipped order_detail payment-banner) -->
+        <div class="payment-banner">
+          <div class="payment-banner-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <div class="payment-banner-content">
+            <div class="payment-banner-title">Payment Outstanding</div>
+            <div class="payment-banner-meta"><span class="payment-banner-amount">$42.40</span> has not been collected for this order. Invoice sent April 23, 2026.</div>
+          </div>
+        </div>
+
+        <div class="workspace">
+
+          <!-- ════ MAIN ════ -->
+          <div class="workspace-main">
+
+            <!-- Customer + Order info (read-only) -->
+            <div class="form-card">
+              <div class="form-card-header">
+                <div class="form-card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  Customer — Order #00021
+                </div>
+                <a href="admin.php?page=equine-event-manager-order&amp;order_id=00021" class="view-full-order">View Full Order →</a>
+              </div>
+              <div class="form-card-body">
+                <div class="field-grid">
+                  <div class="field-group">
+                    <label class="field-label">Customer</label>
+                    <div class="field-value">Devon Lacroix</div>
+                  </div>
+                  <div class="field-group">
+                    <label class="field-label">Email</label>
+                    <div class="field-value">devon@example.com</div>
+                  </div>
+                </div>
+                <div class="field-grid cols-1">
+                  <div class="field-group">
+                    <label class="field-label">Reservation</label>
+                    <div class="field-value">2026 Southeast Region Super Sort · May 8–10, 2026</div>
+                  </div>
+                </div>
+                <div class="field-grid">
+                  <div class="field-group">
+                    <label class="field-label">Order Type</label>
+                    <div class="field-value">Stall, Add-On</div>
+                  </div>
+                  <div class="field-group">
+                    <label class="field-label">Invoice Status</label>
+                    <div><span class="status-badge status-invoice">Invoice Sent</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Order Items (read-only) -->
+            <div class="form-card">
+              <div class="form-card-header">
+                <div class="form-card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                  Order Items
+                </div>
+              </div>
+              <div class="items-list">
+                <div class="item-row">
+                  <div class="item-info">
+                    <div class="item-name">Stall Reservation — Nightly</div>
+                    <div class="item-sub">1 stall · 2 nights · May 8–10</div>
+                  </div>
+                  <span class="item-price">$20.00</span>
+                </div>
+                <div class="item-row">
+                  <div class="item-info">
+                    <div class="item-name">Required Shavings</div>
+                    <div class="item-sub">2 bags × $10.00</div>
+                  </div>
+                  <span class="item-price">$20.00</span>
+                </div>
+                <div class="item-row">
+                  <div class="item-info">
+                    <div class="item-name">Convenience Fee</div>
+                  </div>
+                  <span class="item-price">$2.40</span>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /workspace-main -->
+
+          <!-- ════ RAIL ════ -->
+          <div class="workspace-rail">
+
+            <!-- Amount Due -->
+            <div class="rail-card">
+              <div class="rail-head">
+                <div class="rail-head-title">Amount Due</div>
+                <div class="rail-head-sub">Order #00021 · Invoice Sent</div>
+              </div>
+              <div class="rail-body">
+                <div class="rail-customer">Devon Lacroix</div>
+                <div class="summary-line"><span class="summary-line-label">Stall Reservation</span><span class="summary-line-price">$20.00</span></div>
+                <div class="summary-line"><span class="summary-line-label">Required Shavings</span><span class="summary-line-price">$20.00</span></div>
+                <div class="summary-line"><span class="summary-line-label">Convenience Fee</span><span class="summary-line-price">$2.40</span></div>
+
+                <div class="discount-section" id="discount-section">
+                  <button class="btn-add-discount" onclick="document.getElementById('discount-section').classList.add('open')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+                    Apply discount
+                  </button>
+                  <div class="discount-fields">
+                    <div class="discount-row">
+                      <select class="discount-type"><option>Dollar amount ($)</option><option>Percentage (%)</option></select>
+                      <div class="discount-value-wrap">
+                        <span class="discount-currency">$</span>
+                        <input class="discount-value" type="number" step="0.01" value="5.00">
+                      </div>
+                    </div>
+                    <input class="discount-reason" placeholder="Reason (required, logged in Activity Log)">
+                    <div class="discount-applied-row">
+                      <span class="discount-applied-label">Discount applied</span>
+                      <span class="discount-applied-value">−$5.00</span>
+                      <button class="btn-remove-discount" onclick="document.getElementById('discount-section').classList.remove('open')">Remove</button>
+                    </div>
+                  </div>
+                </div>
+
+                <hr class="summary-divider">
+                <div class="summary-total"><span>Total Due</span><span>$42.40</span></div>
+              </div>
+            </div>
+
+            <!-- Payment -->
+            <div class="payment-card">
+              <div class="payment-tabs">
+                <button class="payment-tab active" data-tab="link" onclick="showPaymentTab('link')">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                  Send Link
+                </button>
+                <button class="payment-tab" data-tab="charge" onclick="showPaymentTab('charge')">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                  Charge Card
+                </button>
+              </div>
+
+              <div class="payment-body payment-panel" id="pay-link">
+                <p class="payment-desc">Resend a fresh payment link to devon@example.com for the outstanding balance.</p>
+                <div class="email-preview">
+                  <strong>To:</strong> devon@example.com<br>
+                  <strong>Amount:</strong> $42.40
+                </div>
+                <button class="btn-send">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                  Resend Payment Link
+                </button>
+              </div>
+
+              <div class="payment-body payment-panel" id="pay-charge" style="display:none">
+                <p class="payment-desc">Charge the customer's card directly for the outstanding balance of $42.40.</p>
+                <div class="card-input-wrap">
+                  <input class="field-input" placeholder="1234 1234 1234 1234" style="padding-right:80px">
+                  <div class="card-icons"><div class="card-icon visa">VISA</div><div class="card-icon mc">MC</div></div>
+                </div>
+                <div class="field-grid-2">
+                  <div class="field-group-cc"><label class="field-label-cc">Expiry <span class="req">*</span></label><input class="field-input" placeholder="MM / YY"></div>
+                  <div class="field-group-cc"><label class="field-label-cc">CVC <span class="req">*</span></label><input class="field-input" placeholder="CVC"></div>
+                </div>
+                <button class="btn-charge" style="margin-top:6px">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                  Charge $42.40
+                </button>
+                <div class="secure-note">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                  Secured by Stripe
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /workspace-rail -->
+
+        </div><!-- /workspace -->
+
+        <!-- ════════════════════════════════════════════ -->
+        <!-- EMPTY STATE — no order_id present           -->
+        <!-- (toggle the display below to preview)       -->
+        <!-- ════════════════════════════════════════════ -->
+        <!--
+        <div class="empty-state">
+          <div class="empty-state-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <div class="empty-state-title">No Order Specified</div>
+          <div class="empty-state-desc">This page expects an order ID. Return to the Orders list and click the Collect button on any unpaid or invoice-sent order to start a payment.</div>
+          <a class="btn-back" href="admin.php?page=equine-event-manager-orders">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            Back to Orders
+          </a>
+        </div>
+        -->
+
+      </div><!-- /collect-body -->
+
+    </div><!-- /plugin-wrap -->
+
+  </main>
+</div>
+
+<script>
+function showPaymentTab(tab){
+  document.querySelectorAll('.payment-panel').forEach(p => p.style.display = 'none');
+  document.querySelectorAll('.payment-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.getElementById('pay-' + tab).style.display = 'block';
+}
+</script>
+
+</body>
+</html>

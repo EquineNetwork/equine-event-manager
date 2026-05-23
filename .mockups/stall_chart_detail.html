@@ -3,14 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Stall Chart – 2026 Southeast Region Super Sort</title>
+<title>Equine Event Manager – Stall Chart – 2026 Southeast Region Super Sort</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-/* Global SVG safety: only constrain flex-shrink — leave size to per-component rules */
-svg{flex-shrink:0}
-
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
+svg{flex-shrink:0}
+
+/* Universal hover convention — color only, NEVER underline */
+a{text-decoration:none}
+a:hover{text-decoration:none}
 
 /* ── WP SHELL ── */
 .wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;position:sticky;top:0;z-index:200}
@@ -29,254 +31,165 @@ body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;fon
 
 /* ── CONTENT ── */
 .wp-content{flex:1;padding:12px 20px 40px;min-width:0}
-.breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+
+/* Logo + breadcrumb */
+.breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
 .breadcrumb-logo-box{width:160px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb;flex-shrink:0}
 .breadcrumb-sep{font-size:13px;color:#8c8f94}
 .breadcrumb-page{font-size:13px;color:#50575e}
-.breadcrumb-page a{color:#50575e;text-decoration:none}
+.breadcrumb-page a{color:#50575e}
 .breadcrumb-page a:hover{color:#1668F2}
-.page-title{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:#031B4E;margin-bottom:14px}
+
+/* ── PLUGIN-WRAP (single bordered card per VIS-3) ── */
+.plugin-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
+
+/* PAGE HEADER inside wrap */
+.plugin-header{padding:18px 22px;border-bottom:1px solid #dcdcde;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.plugin-header-left{flex:1;min-width:0}
+.plugin-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;line-height:1.2;margin-bottom:4px}
+.plugin-subtitle{font-size:13px;color:#6B7A99;line-height:1.45}
+
+/* ── BODY ── */
+.chart-body{padding:18px 22px;background:#fff}
 
 /* ── STATS BAR ── */
-.stats-bar{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:12px;margin-bottom:12px}
-.stat-card{background:#fff;border:1px solid #c3c4c7;border-radius:4px;padding:14px 18px}
+.stats-bar{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:12px;margin-bottom:14px}
+.stat-card{background:#fff;border:1px solid #e5e7eb;border-radius:4px;padding:14px 18px}
 .stat-label{font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#8c8f94;margin-bottom:8px}
 .stat-value{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:#031B4E}
 .stat-daily{font-size:13px;color:#4a5a7a;line-height:1.8}
 .stat-daily span{font-weight:600;color:#031B4E}
 
-/* ── ACTION BAR ── */
-.action-bar{background:#fff;border:1px solid #c3c4c7;border-radius:4px;padding:12px 18px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.view-tabs{display:flex;gap:0;border-bottom:1px solid #c3c4c7;margin-bottom:14px;background:#fff}
-.view-tab{padding:11px 22px;font-size:13.5px;font-weight:600;color:#6B7A99;cursor:pointer;border-bottom:3px solid transparent;font-family:'IBM Plex Sans',sans-serif;transition:color .15s,border-color .15s;display:flex;align-items:center;gap:8px}
+/* ── VIEW TABS (live inside the content-card header per audit revision) ── */
+.view-tabs{display:flex;gap:0;background:#fff;padding:0 18px}
+.view-tab{padding:14px 22px 12px;font-size:14px;font-weight:600;color:#6B7A99;cursor:pointer;border-bottom:3px solid transparent;font-family:'IBM Plex Sans',sans-serif;transition:color .15s,border-color .15s;display:flex;align-items:center;gap:8px;background:none;border-left:none;border-right:none;border-top:none}
 .view-tab:hover{color:#031B4E}
 .view-tab.active{color:#1668F2;border-bottom-color:#1668F2}
 .view-tab svg{width:14px;height:14px}
-@media(max-width:768px){.view-tabs{flex-direction:row;overflow-x:auto;white-space:nowrap}.view-tab{padding:10px 16px;font-size:12.5px}}
+.view-tabs-card{background:#fff;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden;margin-bottom:14px}
+.view-tabs-card .view-tabs{border-bottom:1px solid #dcdcde}
 
-.view-wrap{display:flex;align-items:center;gap:8px;flex-shrink:0}
-.view-label{font-size:13px;font-weight:600;color:#50575e;white-space:nowrap}
-.view-select{padding:7px 28px 7px 12px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 8px center;appearance:none;min-width:200px;cursor:pointer}
-.action-divider{width:1px;height:28px;background:#dcdcde;flex-shrink:0}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap;border:1px solid}
-.btn svg{width:13px;height:13px;flex-shrink:0}
+/* ── ACTION BAR ── */
+.action-bar{background:#fff;border:1px solid #e5e7eb;border-radius:4px;padding:12px 18px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .action-bar-btns{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap;border:1px solid;text-decoration:none}
+.btn svg{width:13px;height:13px;flex-shrink:0}
 .btn-primary{background:#1668F2;color:#fff;border-color:#1668F2}
-.btn-primary:hover{background:#1355cc}
-.btn-ghost{background:#fff;color:#031B4E;border-color:#c3c4c7}
-.btn-ghost:hover{background:#f6f7f7}
-.btn-print{background:#fff;color:#031B4E;border-color:#c3c4c7}
-.btn-print:hover{background:#f6f7f7}
+.btn-primary:hover{background:#1257d1;border-color:#1257d1;color:#fff}
+.btn-ghost{background:#fff;color:#1d2327;border-color:#c3c4c7}
+.btn-ghost:hover{background:#f6f7f7;color:#1d2327}
 
 /* ── MAIN CONTENT CARD ── */
-.content-card{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden;margin-bottom:12px}
+.content-card{background:#fff;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden;margin-bottom:14px}
 .content-card-header{padding:14px 18px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .content-card-title{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:#031B4E}
 
-/* Barn filter + search */
-.filter-row{padding:12px 18px;border-bottom:1px solid #dcdcde;background:#fafafa;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-.barn-tabs{display:flex;gap:2px;flex-wrap:wrap}
-.barn-tab{padding:5px 14px;border-radius:4px;font-size:12.5px;font-weight:500;color:#50575e;cursor:pointer;border:1px solid #dcdcde;background:#fff}
-.barn-tab:hover{background:#f0f0f1}
-.barn-tab.active{background:#031B4E;color:#fff;border-color:#031B4E}
+/* Tip banner (flush inside content card, below header, above filter row) */
+.chart-help{display:flex;align-items:center;gap:10px;padding:11px 18px;background:#F0F4FB;border-bottom:1px solid #D9E2F2;font-size:13px;color:#031B4E;font-family:'IBM Plex Sans',sans-serif}
+.chart-help svg{width:14px;height:14px;color:#1668F2;flex-shrink:0}
+.chart-help strong{font-weight:600}
+
+/* Filter row */
+.filter-row{padding:12px 18px;border-bottom:1px solid #dcdcde;background:#f3f4f5;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.barn-tabs{display:flex;gap:6px;flex-wrap:wrap}
+.barn-tab{padding:6px 14px;border-radius:4px;font-size:12.5px;font-weight:500;color:#1d2327;cursor:pointer;border:1px solid #c3c4c7;background:#fff;font-family:'IBM Plex Sans',sans-serif}
+.barn-tab:hover{background:#f6f7f7;border-color:#8c8f94}
+.barn-tab.active{background:#1668F2;color:#fff;border-color:#1668F2}
 .filter-search{position:relative;flex:1;min-width:200px;max-width:380px}
 .filter-search svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:#8c8f94}
 .filter-search input{width:100%;padding:6px 10px 6px 28px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;outline:none}
+.filter-search input:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
 .filter-search input::placeholder{color:#b0b0b0}
 .filter-hint{font-size:12px;color:#8c8f94;white-space:nowrap}
 
 /* ── STALL CHART TABLE ── */
 .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
-.stall-table{width:100%;border-collapse:collapse;min-width:600px}
-.stall-table thead tr{border-bottom:2px solid #dcdcde;background:#fafafa}
-.stall-table thead th{padding:9px 12px;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8c8f94;text-align:left;white-space:nowrap}
-.stall-table thead th.date-col{text-align:center;min-width:130px}
+.stall-table,.cust-table,.rv-table{width:100%;border-collapse:collapse}
+.stall-table{min-width:600px}
+.cust-table{min-width:700px}
+.rv-table{min-width:500px}
+.stall-table thead tr,.cust-table thead tr,.rv-table thead tr{background:#f3f4f5;border-bottom:1px solid #dcdcde}
+.stall-table thead th,.cust-table thead th,.rv-table thead th{padding:11px 14px;font-size:13px;font-weight:600;color:#1d2327;text-align:left;white-space:nowrap}
+.stall-table thead th.date-col,.rv-table thead th.date-col,.cust-table thead th.center{text-align:center;min-width:130px}
+.stall-table thead th.sortable{cursor:pointer;color:#1668F2}
+.stall-table thead th.sortable:hover{color:#1257d1}
+.sort-icon{display:inline-flex;flex-direction:column;gap:1px;margin-left:4px;vertical-align:middle;opacity:.5}
+.sort-icon span{display:block;width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent}
+.sort-icon span:first-child{border-bottom:4px solid currentColor}
+.sort-icon span:last-child{border-top:4px solid currentColor}
 
-/* Barn group header row */
-.barn-group-row td{background:#F0F4FB;padding:8px 14px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#1668F2;border-bottom:1px solid #dcdcde;border-top:2px solid #D9E2F2}
-.barn-group-row td span{font-weight:400;color:#8a9ab8;margin-left:8px;font-size:11px;text-transform:none;letter-spacing:0}
+/* Barn group header row (mixed-case section break per AUDIT-C8-11) */
+.barn-group-row td{background:#f3f4f5;padding:9px 14px;font-size:13px;font-weight:600;color:#031B4E;border-bottom:1px solid #dcdcde;border-top:1px solid #dcdcde}
+.barn-group-row td span{font-weight:400;color:#6B7A99;margin-left:8px;font-size:12.5px}
 
 /* Stall rows */
-.stall-table tbody tr.stall-row{border-bottom:1px solid #f0f0f1}
-.stall-table tbody tr.stall-row:hover{background:#fafbff}
-.stall-table td{padding:9px 12px;font-size:13px;color:#1d2327;vertical-align:middle}
+.stall-table tbody tr.stall-row,.rv-table tbody tr,.cust-table tbody tr{border-bottom:1px solid #f0f0f1}
+.stall-table tbody tr.stall-row:hover,.rv-table tbody tr:hover,.cust-table tbody tr:hover{background:#f6f7f7}
+.stall-table td,.cust-table td,.rv-table td{padding:11px 14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
 .stall-num{font-weight:700;color:#031B4E;font-size:13.5px;width:60px}
 .block-name{color:#50575e;font-size:13px;white-space:nowrap}
 
 /* Occupancy cells */
 .cell-wrap{display:flex;justify-content:center}
-.occ-pill{display:inline-flex;align-items:center;padding:4px 11px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:opacity .1s;border:1.5px solid}
-.occ-pill:hover{opacity:.85}
-.occ-reserved{background:#EEF4FF;color:#1668F2;border-color:#c0d8ff}
-.occ-available{background:#f0fdf4;color:#15803d;border-color:#bbf7d0}
-.occ-blocked{background:#fef2f2;color:#b91c1c;border-color:#fecaca;cursor:default}
+.occ-pill{display:inline-flex;align-items:center;gap:4px;padding:4px 11px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap;border:1px solid;font-family:'IBM Plex Sans',sans-serif}
+.occ-reserved{background:#EEF4FF;color:#1668F2;border-color:#c0d8ff;cursor:pointer;padding-right:8px;transition:filter .12s,box-shadow .12s}
+.occ-reserved:hover{filter:brightness(.96);box-shadow:0 1px 4px rgba(22,104,242,.18)}
+.occ-reserved .occ-chevron{width:11px;height:11px;color:#1668F2;opacity:.3;transition:opacity .12s;flex-shrink:0}
+.occ-reserved:hover .occ-chevron{opacity:1}
+.occ-available{background:#F0FDF4;color:#15803d;border-color:#bbf7d0}
+.occ-blocked{background:#FEF2F2;color:#b91c1c;border-color:#fecaca;cursor:default}
 
-/* ── CUSTOMER NIGHT COUNT TABLE ── */
-.cust-table{width:100%;border-collapse:collapse;min-width:700px}
-.cust-table thead tr{border-bottom:2px solid #dcdcde;background:#fafafa}
-.cust-table thead th{padding:9px 12px;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8c8f94;text-align:left;white-space:nowrap}
-.cust-table thead th.center{text-align:center}
-.cust-table tbody tr{border-bottom:1px solid #f0f0f1}
-.cust-table tbody tr:hover{background:#fafbff}
-.cust-table td{padding:10px 12px;font-size:13px;color:#1d2327;vertical-align:middle}
-.cust-link{color:#1668F2;font-weight:600;cursor:pointer;text-decoration:none}
-.cust-link:hover{text-decoration:underline}
-.order-num{color:#6B7A99;font-size:12.5px}
-.order-link{color:#1668F2;font-weight:600;text-decoration:none;font-size:12.5px}
-.order-link:hover{text-decoration:underline}
+/* Customer Night Count cells */
+.cust-link{color:#031B4E;font-weight:700;font-size:13.5px}
+.cust-link:hover{color:#1668F2}
+.order-num{font-size:12.5px}
+.order-link{color:#031B4E;font-weight:600;font-size:12.5px;font-family:'IBM Plex Sans',sans-serif}
+.order-link:hover{color:#1668F2}
 .night-count{text-align:center;font-weight:600;color:#031B4E}
 .night-count.zero{color:#c3c4c7}
 .night-count.has-nights{background:#EEF4FF;border-radius:4px;color:#1668F2}
 .stall-assignment{font-size:13px;color:#031B4E;font-weight:500}
 .rv-assignment{font-size:13px;color:#6d28d9;font-weight:500}
-.dash{color:#c3c4c7}
-
-/* ── RV LOT SECTION ── */
-.rv-table{width:100%;border-collapse:collapse;min-width:500px}
-.rv-table thead tr{border-bottom:2px solid #dcdcde;background:#fafafa}
-.rv-table thead th{padding:9px 12px;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8c8f94;text-align:left;white-space:nowrap}
-.rv-table thead th.date-col{text-align:center;min-width:130px}
-.rv-table tbody tr{border-bottom:1px solid #f0f0f1}
-.rv-table tbody tr:hover{background:#fafbff}
-.rv-table td{padding:10px 12px;font-size:13px;vertical-align:middle}
+.dash{color:#8c8f94}
 .rv-lot-name{font-weight:600;color:#031B4E}
 
-/* ── ASSIGNMENT ISSUES ── */
-.issues-card{background:#fff;border:1px solid #fca5a5;border-radius:4px;overflow:hidden;margin-bottom:12px}
-.issues-header{background:#FFF1F2;padding:12px 18px;border-bottom:1px solid #fecdd3;display:flex;align-items:center;gap:8px}
+/* ── ASSIGNMENT ISSUES (option A — neutral card framing, red semantic accents only) ── */
+.issues-card{background:#fff;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden;margin-bottom:14px}
+.issues-header{background:#f3f4f5;padding:12px 18px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .issues-header svg{width:16px;height:16px;color:#b91c1c;flex-shrink:0}
 .issues-header-title{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#b91c1c}
-.issues-header-count{background:#fecdd3;color:#b91c1c;font-size:11px;font-weight:700;padding:2px 7px;border-radius:10px}
+.issues-header-count{background:#FEF2F2;color:#b91c1c;border:1px solid #fecaca;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px}
+.auto-assign-all-btn{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:#1668F2;color:#fff;border:1px solid #1668F2;border-radius:4px;font-size:12.5px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
+.auto-assign-all-btn:hover{background:#1257d1;border-color:#1257d1}
+.auto-assign-all-btn svg{width:13px;height:13px;color:#fff}
 .issues-body{padding:14px 18px}
-
-.issues-header{flex-wrap:wrap;gap:8px}
-.auto-assign-all-btn{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:#1668F2;color:#fff;border:none;border-radius:4px;font-size:12.5px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
-.auto-assign-all-btn:hover{background:#0d5cd9}
-.auto-assign-all-btn svg{width:13px;height:13px}
-.issue-auto-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;background:#1668F2;color:#fff;border:none;border-radius:4px;font-size:11.5px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;flex-shrink:0;white-space:nowrap}
-.issue-auto-btn:hover{background:#0d5cd9}
-.issue-auto-btn svg{width:11px;height:11px}
-.issue-view-link{font-size:11.5px;color:#1668F2;text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:4px;flex-shrink:0;white-space:nowrap}
-.issue-view-link:hover{text-decoration:underline}
-.issue-view-link svg{width:11px;height:11px}
-.issue-actions{display:flex;align-items:center;gap:10px;flex-shrink:0}
-.issue-row{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:4px;border:1px solid #fecdd3;background:#fff9f9;margin-bottom:6px;gap:12px;cursor:pointer}
+.issue-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:4px;border:1px solid #f0f0f1;background:#fff;margin-bottom:6px;gap:12px}
 .issue-row:last-child{margin-bottom:0}
-.issue-row:hover{background:#fef2f2}
-.issue-text{font-size:13px;color:#b91c1c;flex:1}
-.issue-text strong{color:#7f1d1d}
-.issue-action{font-size:12px;font-weight:600;color:#1668F2;white-space:nowrap;display:flex;align-items:center;gap:4px}
-.issue-action svg{width:12px;height:12px}
+.issue-row:hover{background:#f6f7f7;border-color:#dcdcde}
+.issue-text{font-size:13px;color:#1d2327;flex:1}
+.issue-text strong{color:#b91c1c;font-weight:700}
+.issue-actions{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.issue-auto-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:#1668F2;color:#fff;border:1px solid #1668F2;border-radius:4px;font-size:11.5px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap}
+.issue-auto-btn:hover{background:#1257d1;border-color:#1257d1}
+.issue-auto-btn svg{width:11px;height:11px;color:#fff}
+.issue-view-link{font-size:11.5px;color:#1668F2;font-weight:600;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.issue-view-link:hover{color:#1257d1}
+.issue-view-link svg{width:11px;height:11px}
 
-/* ── MODAL ── */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px}
-.modal{background:#fff;border-radius:4px;width:100%;max-width:480px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)}
-.modal-header{padding:16px 20px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;justify-content:space-between}
-.modal-title{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:#031B4E}
-.modal-close{width:28px;height:28px;border-radius:4px;border:none;background:#f0f0f1;color:#50575e;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;line-height:1}
-.modal-close:hover{background:#dcdcde}
-.modal-body{padding:18px 20px}
-.modal-stall-info{background:#F0F4FB;border-radius:4px;padding:12px 14px;margin-bottom:16px;display:flex;gap:16px;flex-wrap:wrap}
-.modal-stall-info-item{display:flex;flex-direction:column;gap:2px}
-.modal-stall-info-label{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8a9ab8}
-.modal-stall-info-val{font-size:14px;font-weight:600;color:#031B4E}
-.modal-field-label{font-size:12px;font-weight:600;color:#4a5a7a;margin-bottom:5px;display:block}
-.modal-select{width:100%;padding:9px 12px;border:1.5px solid #D9E2F2;border-radius:4px;font-size:13.5px;font-family:'IBM Plex Sans',sans-serif;color:#031B4E;background:#fff;margin-bottom:12px}
-.modal-footer{padding:14px 20px;border-top:1px solid #dcdcde;display:flex;gap:8px;justify-content:flex-end}
-.btn-modal-cancel{background:#fff;color:#031B4E;border:1px solid #c3c4c7;padding:8px 18px;border-radius:4px;font-size:13px;font-weight:500;font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
-.btn-modal-save{background:#1668F2;color:#fff;border:none;padding:8px 18px;border-radius:4px;font-size:13px;font-weight:700;font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
+/* ── CELL ACTION POPOVER (click a customer pill to see actions) ── */
+.cell-action-menu{position:absolute;z-index:120;background:#fff;border:1px solid #c3c4c7;border-radius:6px;box-shadow:0 8px 24px rgba(3,27,78,.18);padding:6px;display:none;min-width:200px;font-family:'IBM Plex Sans',sans-serif}
+.cell-action-menu.open{display:flex;flex-direction:column;gap:2px}
+.menu-title-wrap{padding:8px 12px 6px;border-bottom:1px solid #f0f0f1;margin-bottom:4px}
+.menu-title{font-size:13px;font-weight:600;color:#031B4E;line-height:1.3;margin-bottom:2px}
+.menu-subtitle{font-size:11.5px;color:#6B7A99}
+.menu-subtitle a{color:#031B4E;font-weight:600}
+.menu-subtitle a:hover{color:#1668F2}
+.cell-action-menu button{display:flex;align-items:center;gap:8px;padding:9px 12px;background:#fff;border:none;border-radius:4px;font-size:13px;font-weight:500;color:#1d2327;cursor:pointer;text-align:left;font-family:inherit;width:100%}
+.cell-action-menu button:hover{background:#f6f7f7;color:#1d2327}
+.cell-action-menu button svg{width:13px;height:13px;flex-shrink:0;color:#6B7A99}
+.cell-action-menu button:hover svg{color:#1668F2}
 
-/* Tab panels */
-.tab-panel{display:none}
-.tab-panel.active{display:block}
-
-/* ── PRINT VIEW OVERLAY ── */
-#print-view{display:none;position:fixed;inset:0;background:#fff;z-index:1000;overflow-y:auto;padding:0}
-#print-view.active{display:block}
-.pv-topbar{background:#031B4E;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:10}
-.pv-topbar-left{display:flex;align-items:center;gap:10px}
-.pv-topbar-title{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#fff}
-.pv-topbar-sub{font-size:12px;color:#90aed4;margin-top:1px}
-.pv-topbar-btns{display:flex;gap:8px;flex-shrink:0}
-.btn-pv-print{background:#1668F2;color:#fff;border:none;padding:8px 16px;border-radius:4px;font-size:13px;font-weight:700;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px}
-.btn-pv-print svg{width:13px;height:13px}
-.btn-pv-exit{background:transparent;color:#90aed4;border:1px solid rgba(255,255,255,.2);padding:8px 14px;border-radius:4px;font-size:13px;font-weight:500;font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
-.btn-pv-exit:hover{color:#fff;border-color:rgba(255,255,255,.5)}
-.pv-body{padding:16px}
-.pv-header{margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #031B4E}
-.pv-event{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:#031B4E;margin-bottom:4px}
-.pv-meta{font-size:13px;color:#6B7A99;display:flex;gap:20px;flex-wrap:wrap}
-.pv-meta strong{color:#1d2327}
-.pv-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
-.pv-stat{background:#F0F4FB;border-radius:4px;padding:10px 12px;text-align:center}
-.pv-stat-label{font-size:9.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#8c8f94;margin-bottom:3px}
-.pv-stat-val{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:#031B4E}
-.pv-section-title{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#8c8f94;margin-bottom:8px;margin-top:16px}
-.pv-table{width:100%;border-collapse:collapse;margin-bottom:16px}
-.pv-table thead tr{background:#031B4E}
-.pv-table thead th{padding:8px 10px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;text-align:left}
-.pv-table thead th.c{text-align:center}
-.pv-table tbody tr{border-bottom:1px solid #f0f0f1}
-.pv-table tbody tr:nth-child(even){background:#fafafa}
-.pv-table td{padding:9px 10px;font-size:13px;vertical-align:middle}
-.pv-stall-num{font-weight:700;color:#031B4E;font-size:13.5px}
-.pv-block{color:#6B7A99;font-size:12.5px}
-.pv-customer{font-weight:600;color:#031B4E}
-.pv-night-cell{text-align:center}
-.pv-occ{display:inline-block;padding:3px 8px;border-radius:12px;font-size:11px;font-weight:600}
-.pv-occ-res{background:#EEF4FF;color:#1668F2;border:1px solid #c0d8ff}
-.pv-occ-avail{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
-.pv-occ-block{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
-.pv-barn-header{background:#F0F4FB;padding:7px 10px;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#1668F2}
-.pv-movement{background:#FFFBEB;border:1px solid #fde68a;border-radius:4px;padding:12px;margin-bottom:16px}
-.pv-movement-title{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#b45309;margin-bottom:8px}
-.pv-movement-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.pv-movement-day{text-align:center}
-.pv-movement-date{font-size:11px;font-weight:700;color:#031B4E;margin-bottom:4px}
-.pv-movement-vals{font-size:12px;color:#4a5a7a}
-.pv-movement-vals span{display:block}
-.pv-footer{margin-top:16px;padding-top:12px;border-top:1px solid #e8eaf0;display:flex;justify-content:space-between;font-size:11.5px;color:#8c8f94;flex-wrap:wrap;gap:8px}
-
-@media print{
-  #print-view .pv-topbar{display:none!important}
-  #print-view{padding:0}
-  #print-view .pv-body{padding:12px}
-  .pv-event{font-size:16px}
-  .pv-table td,.pv-table th{padding:5px 7px;font-size:11px}
-  .wp-admin-bar,.wp-sidebar,.action-bar .btn-ghost,.action-bar .btn-print,.breadcrumb,.issues-card{display:none!important}
-  body{background:#fff}
-  .wp-content{padding:0}
-  .stats-bar{grid-template-columns:repeat(4,1fr);margin-bottom:8px}
-  .stat-card{border:1px solid #ddd;padding:8px 12px}
-  .stat-value{font-size:20px}
-  .occ-pill{font-size:11px;padding:2px 7px}
-  .stall-table thead th,.cust-table thead th,.rv-table thead th{font-size:10px;padding:6px 8px}
-  .stall-table td,.cust-table td,.rv-table td{padding:6px 8px;font-size:12px}
-  .content-card{border:1px solid #ddd;margin-bottom:8px}
-  .filter-row{display:none}
-  .barn-group-row td{padding:5px 8px;font-size:10px}
-  .page-title{font-size:14px;margin-bottom:6px}
-}
-
-/* Customer pill popover (click-to-move) */
-.cust-popover{display:none;position:absolute;background:#fff;border:1px solid #c3c4c7;border-radius:6px;box-shadow:0 8px 32px rgba(3,27,78,.18);min-width:300px;max-width:340px;z-index:200;font-family:'IBM Plex Sans',sans-serif;overflow:hidden}
-.cust-popover.open{display:block}
-.cust-popover-head{padding:14px 16px;background:#FAFBFE;border-bottom:1px solid #E5EAF2}
-.cust-popover-name{font-size:14px;font-weight:700;color:#031B4E;margin-bottom:2px}
-.cust-popover-meta{font-size:11.5px;color:#6B7A99}
-.cust-popover-meta a{color:#1668F2;text-decoration:none}
-.cust-popover-section{padding:10px 16px;border-bottom:1px solid #f0f0f1}
-.cust-popover-section-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8c8f94;margin-bottom:6px}
-.cust-popover-assignment{font-size:12.5px;color:#031B4E;line-height:1.7}
-.cust-popover-assignment strong{font-weight:600}
-.cust-popover-actions{padding:8px 0}
-.cust-popover-action{display:flex;align-items:center;gap:10px;padding:9px 16px;font-size:13px;color:#1d2327;cursor:pointer;background:#fff;border:none;width:100%;text-align:left;font-family:inherit}
-.cust-popover-action:hover{background:#f6f7f7}
-.cust-popover-action svg{width:14px;height:14px;color:#6B7A99;flex-shrink:0}
-.cust-popover-action.cust-popover-link{color:#1668F2;font-weight:500}
-.cust-popover-action.cust-popover-link svg{color:#1668F2}
-
-/* Destination-select mode banner */
+/* Destination-select banner mode */
 .destination-banner{display:none;position:fixed;top:0;left:0;right:0;z-index:300;padding:12px 18px;background:#1668F2;color:#fff;font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;font-weight:600;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 2px 8px rgba(22,104,242,.25)}
 .destination-banner.active{display:flex}
 body.destination-mode{padding-top:48px}
@@ -284,209 +197,17 @@ body.destination-mode{padding-top:48px}
 .destination-banner-msg svg{width:18px;height:18px}
 .destination-banner-cancel{background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.3);padding:6px 14px;border-radius:4px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}
 .destination-banner-cancel:hover{background:rgba(255,255,255,.28)}
-
-/* While destination-select mode is on, available cells highlight as targets */
-body.destination-mode .occ-pill.occ-available{outline:2px dashed #1668F2;outline-offset:-2px;cursor:pointer;background:#EEF4FF;color:#1668F2;font-weight:600}
+body.destination-mode .occ-pill.occ-available{outline:2px dashed #1668F2;outline-offset:-2px;cursor:pointer;background:#EEF4FF;color:#1668F2;font-weight:600;animation:destPulse 1.4s ease-in-out infinite}
 body.destination-mode .occ-pill.occ-available:hover{background:#1668F2;color:#fff;outline-color:#1668F2}
 body.destination-mode .occ-pill.occ-reserved,
 body.destination-mode .occ-pill.occ-blocked{opacity:.5}
-
-/* Reserved pill cursor hint */
-.occ-pill.occ-reserved{cursor:pointer}
-.occ-pill.occ-reserved:hover{filter:brightness(.95)}
-
-
-/* ── RESPONSIVE ── */
-@media(max-width:960px){
-  .wp-content{padding:10px 14px 40px}
-  .stats-bar{grid-template-columns:1fr 1fr}
-}
-
-@media(max-width:767px){
-  .wp-admin-bar span:not(.site):not(:first-child):not(:last-child){display:none}
-  .wp-content{padding:8px 10px 32px}
-  .breadcrumb-logo-box{width:120px;height:30px;font-size:10px}
-  .breadcrumb-page{font-size:12px}
-  .page-title{font-size:16px;margin-bottom:10px}
-
-  /* Stats — 2 col on mobile */
-  .stats-bar{grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
-  .stat-card{padding:10px 12px}
-  .stat-value{font-size:22px}
-  .stat-daily{font-size:12px}
-
-  /* Action bar — stack cleanly */
-  .action-bar{flex-direction:column;align-items:stretch;gap:8px;padding:12px}
-  .view-wrap{width:100%}
-  .view-select{width:100%;min-width:0}
-  .action-divider{display:none}
-  /* Buttons in a 2-col grid */
-  .action-bar-btns{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%}
-  .btn-primary{grid-column:1 / -1;justify-content:center}
-  .btn-print,.btn-ghost{justify-content:center}
-
-  /* Filter row */
-  .filter-row{flex-direction:column;align-items:stretch;padding:10px 12px;gap:8px}
-  .barn-tabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;padding-bottom:2px}
-  .barn-tab{flex-shrink:0}
-  .filter-search{max-width:100%}
-  .filter-hint{display:none}
-
-  /* Table scrolls horizontally */
-  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .stall-table{min-width:480px}
-  .cust-table{min-width:580px}
-  .rv-table{min-width:400px}
-
-  /* Tighten table cells on mobile */
-  .stall-table th,.stall-table td{padding:7px 8px;font-size:12px}
-  .occ-pill{font-size:11px;padding:3px 8px}
-  .stall-num{font-size:12.5px}
-
-  /* Issues */
-  .issue-row{flex-direction:column;align-items:flex-start;gap:5px}
-  .issue-action{align-self:flex-end}
-
-  
-
-/* Modal */
-  .modal{margin:10px}
-  .modal-stall-info{gap:10px}
-
-  /* Content card header */
-  .content-card-header{padding:12px 14px
-  /* Cell action menu — full-width on mobile (avoids popover positioning issues) */
-  .cell-action-menu{min-width:auto;width:calc(100vw - 32px);left:16px!important;max-width:320px}
-
-  /* Destination banner — wrap content on narrow screens */
-  .destination-banner{flex-direction:column;align-items:stretch;padding:10px 14px;gap:8px;font-size:12.5px}
-  .destination-banner-cancel{align-self:flex-end}
-  body.destination-mode{padding-top:88px}
-
-  /* Scope modal — tighter padding */
-  .scope-modal{max-width:calc(100vw - 24px);margin:12px}
-  .scope-modal-header{padding:14px 16px}
-  .scope-modal-body{padding:14px 16px}
-  .scope-modal-footer{padding:12px 16px;flex-direction:column-reverse;gap:8px}
-  .scope-modal-footer .scope-modal-btn{width:100%;text-align:center}
-  .scope-modal-title{font-size:14px;line-height:1.4}
-
-  /* Chart-help tip — slightly tighter */
-  .chart-help{padding:8px 12px;font-size:12px;gap:8px}
-
-  /* Issues panel — stack the new buttons + view link cleanly */
-  .issue-row{flex-direction:column;align-items:stretch;gap:8px;padding:10px 12px}
-  .issue-actions{justify-content:flex-end;flex-wrap:wrap;gap:8px}
-  .issue-auto-btn,.issue-view-link{flex:1;justify-content:center;text-align:center}
-  .auto-assign-all-btn{width:100%;justify-content:center;margin-left:0}
-  .issues-header{flex-wrap:wrap}
-  .issues-header-title{flex:1}
-
-}
-  .content-card-title{font-size:14px}
-}
-
-@media(max-width:390px){
-  .stats-bar{grid-template-columns:1fr}
-  .page-title{font-size:15px}
-  .stat-value{font-size:20px}
-  .occ-pill{font-size:10.5px;padding:2px 7px}
-}
-
-/* Customer pill — interactive states */
-.occ-pill.occ-reserved{cursor:pointer;transition:filter .12s,box-shadow .12s,transform .12s;position:relative}
-.occ-pill.occ-reserved:hover{filter:brightness(.93);box-shadow:0 2px 6px rgba(22,104,242,.18)}
-.occ-pill.occ-reserved::after{
-  content:"⋯";
-  position:absolute;
-  right:5px;
-  top:50%;
-  transform:translateY(-50%);
-  opacity:0;
-  font-size:11px;
-  font-weight:700;
-  letter-spacing:1px;
-  color:#031B4E;
-  transition:opacity .12s;
-  pointer-events:none;
-}
-.occ-pill.occ-reserved:hover::after{opacity:.55}
-
-/* Cell action menu (appears when admin clicks a reserved pill) */
-.cell-action-menu{
-  position:absolute;
-  z-index:120;
-  background:#fff;
-  border:1px solid #c3c4c7;
-  border-radius:6px;
-  box-shadow:0 8px 24px rgba(3,27,78,.18);
-  padding:6px;
-  display:none;
-  min-width:160px;
-  font-family:'IBM Plex Sans',sans-serif;
-}
-.cell-action-menu.open{display:flex;flex-direction:column;gap:2px}
-.cell-action-menu .menu-title{
-  font-size:11px;
-  font-weight:700;
-  color:#6B7A99;
-  letter-spacing:.05em;
-  padding:6px 10px 4px;
-  border-bottom:1px solid #f0f0f1;
-  margin-bottom:4px;
-}
-.cell-action-menu button{
-  display:flex;
-  align-items:center;
-  gap:7px;
-  padding:8px 10px;
-  background:#fff;
-  border:none;
-  border-radius:4px;
-  font-size:12.5px;
-  font-weight:500;
-  color:#031B4E;
-  cursor:pointer;
-  text-align:left;
-  font-family:inherit;
-}
-.cell-action-menu button:hover{background:#EEF4FF;color:#1668F2}
-.cell-action-menu button svg{width:13px;height:13px;flex-shrink:0;color:#6B7A99}
-.cell-action-menu button:hover svg{color:#1668F2}
-
-
-.menu-title-wrap{padding:8px 10px 6px;border-bottom:1px solid #f0f0f1;margin-bottom:4px}
-.cell-action-menu .menu-title{font-size:13px;font-weight:600;color:#031B4E;letter-spacing:0;text-transform:none;padding:0;border-bottom:none;margin-bottom:2px;line-height:1.3}
-.cell-action-menu .menu-subtitle{font-size:11px;color:#6B7A99;font-weight:500}
-.cell-action-menu .menu-subtitle a{color:#1668F2;text-decoration:none}
-.cell-action-menu .menu-subtitle a:hover{text-decoration:underline}
-
-/* Help banner above chart */
-.chart-help{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  padding:9px 14px;
-  background:#F0F4FB;
-  border:1px solid #D9E2F2;
-  border-radius:4px;
-  margin:0 0 12px;
-  font-size:12.5px;
-  color:#031B4E;
-  font-family:'IBM Plex Sans',sans-serif;
-}
-.chart-help svg{width:14px;height:14px;color:#1668F2;flex-shrink:0}
-.chart-help strong{font-weight:600}
-
-/* Pulsing animation on Available cells during destination-select mode */
 @keyframes destPulse{0%,100%{box-shadow:0 0 0 2px #1668F2}50%{box-shadow:0 0 0 4px rgba(22,104,242,.45)}}
-body.destination-mode .occ-pill.occ-available{animation:destPulse 1.4s ease-in-out infinite}
 
-
-/* Move scope modal */
-.scope-modal-overlay{position:fixed;inset:0;background:rgba(3,27,78,.5);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px;font-family:'IBM Plex Sans',sans-serif}
-.scope-modal{background:#fff;border-radius:8px;box-shadow:0 16px 48px rgba(3,27,78,.25);max-width:440px;width:100%;overflow:hidden}
-.scope-modal-header{padding:16px 20px;border-bottom:1px solid #E5EAF2;display:flex;align-items:center;justify-content:space-between;gap:12px}
+/* ── MOVE SCOPE MODAL (single-night vs all-nights) ── */
+.scope-modal-overlay{position:fixed;inset:0;background:rgba(3,27,78,.5);z-index:400;display:none;align-items:center;justify-content:center;padding:20px;font-family:'IBM Plex Sans',sans-serif}
+.scope-modal-overlay.open{display:flex}
+.scope-modal{background:#fff;border-radius:6px;box-shadow:0 16px 48px rgba(3,27,78,.25);max-width:440px;width:100%;overflow:hidden}
+.scope-modal-header{padding:16px 20px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .scope-modal-title{font-size:15px;font-weight:700;color:#031B4E;font-family:'Space Grotesk',sans-serif}
 .scope-modal-close{background:none;border:none;font-size:22px;color:#6B7A99;cursor:pointer;line-height:1;padding:0 4px}
 .scope-modal-close:hover{color:#031B4E}
@@ -494,703 +215,420 @@ body.destination-mode .occ-pill.occ-available{animation:destPulse 1.4s ease-in-o
 .scope-modal-section{margin-bottom:18px}
 .scope-modal-section:last-child{margin-bottom:0}
 .scope-modal-section-label{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6B7A99;margin-bottom:8px}
-.scope-modal-current{font-size:13px;color:#031B4E;line-height:1.6;padding:10px 12px;background:#FAFBFE;border-radius:4px;border:1px solid #E5EAF2}
+.scope-modal-current{font-size:13px;color:#031B4E;line-height:1.6;padding:10px 12px;background:#f3f4f5;border-radius:4px;border:1px solid #dcdcde}
 .scope-modal-current strong{font-weight:600}
-.scope-radio{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid #E5EAF2;border-radius:4px;cursor:pointer;margin-bottom:8px;transition:border-color .12s,background .12s}
-.scope-radio:hover{border-color:#1668F2;background:#FAFBFE}
+.scope-radio{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #dcdcde;border-radius:4px;cursor:pointer;margin-bottom:8px;transition:border-color .12s,background .12s}
+.scope-radio:hover{border-color:#1668F2;background:#f6f7f7}
 .scope-radio input[type="radio"]{cursor:pointer;accent-color:#1668F2}
 .scope-radio:has(input:checked){border-color:#1668F2;background:#EEF4FF}
 .scope-radio-label{font-size:13px;color:#031B4E;font-weight:500}
-.scope-modal-footer{padding:14px 20px;background:#FAFBFE;border-top:1px solid #E5EAF2;display:flex;justify-content:flex-end;gap:10px}
-.scope-modal-btn{padding:8px 18px;border-radius:4px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;border:1px solid transparent}
-.scope-modal-btn-ghost{background:#fff;color:#031B4E;border-color:#c3c4c7}
+.scope-modal-footer{padding:14px 20px;background:#f3f4f5;border-top:1px solid #dcdcde;display:flex;justify-content:flex-end;gap:10px}
+.scope-modal-btn-ghost{background:#fff;color:#1d2327;border:1px solid #c3c4c7;padding:8px 18px;border-radius:4px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer}
 .scope-modal-btn-ghost:hover{background:#f6f7f7}
-.scope-modal-btn-primary{background:#1668F2;color:#fff;border-color:#1668F2}
-.scope-modal-btn-primary:hover{background:#0d5cd9}
+.scope-modal-btn-primary{background:#1668F2;color:#fff;border:1px solid #1668F2;padding:8px 18px;border-radius:4px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer}
+.scope-modal-btn-primary:hover{background:#1257d1;border-color:#1257d1}
 
+/* ── TAB PANELS ── */
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* ════ TABLET ════ */
+@media(max-width:960px){
+  .wp-sidebar{display:none}
+  .wp-content{padding:10px 14px 40px}
+  .stats-bar{grid-template-columns:1fr 1fr}
+}
+
+/* ════ MOBILE ════ */
+@media(max-width:767px){
+  .wp-admin-bar span:not(.site):not(:first-child):not(:last-child){display:none}
+  .wp-content{padding:8px 10px 32px}
+  .breadcrumb-logo-box{width:120px;height:30px;font-size:10px}
+  .plugin-header{padding:14px;flex-direction:column;align-items:stretch;gap:10px}
+  .plugin-title{font-size:18px}
+  .plugin-subtitle{font-size:12.5px}
+  .chart-body{padding:12px}
+  .stats-bar{grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+  .stat-card{padding:10px 12px}
+  .stat-value{font-size:22px}
+  .stat-daily{font-size:12px}
+  .view-tabs{overflow-x:auto;flex-wrap:nowrap;white-space:nowrap}
+  .view-tab{padding:10px 16px;font-size:12.5px}
+  .action-bar{flex-direction:column;align-items:stretch;gap:8px;padding:12px}
+  .action-bar-btns{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%}
+  .btn-primary{grid-column:1 / -1;justify-content:center}
+  .btn-ghost{justify-content:center}
+  .chart-help{padding:10px 14px;font-size:12.5px}
+  .filter-row{flex-direction:column;align-items:stretch;padding:10px 12px;gap:8px}
+  .barn-tabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;padding-bottom:2px}
+  .barn-tab{flex-shrink:0}
+  .filter-search{max-width:100%}
+  .filter-hint{display:none}
+  .stall-table th,.stall-table td,.cust-table th,.cust-table td,.rv-table th,.rv-table td{padding:8px 10px;font-size:12.5px}
+  .occ-pill{font-size:11px;padding:3px 8px}
+  .stall-num{font-size:12.5px}
+  .issue-row{flex-direction:column;align-items:stretch;gap:8px;padding:10px 12px}
+  .issue-actions{justify-content:flex-end;flex-wrap:wrap;gap:8px}
+  .issue-auto-btn,.issue-view-link{flex:1;justify-content:center;text-align:center}
+  .auto-assign-all-btn{width:100%;justify-content:center;margin-left:0}
+  .cell-action-menu{min-width:auto;width:calc(100vw - 32px);left:16px!important;max-width:320px}
+  .destination-banner{flex-direction:column;align-items:stretch;padding:10px 14px;gap:8px;font-size:12.5px}
+  .destination-banner-cancel{align-self:flex-end}
+  body.destination-mode{padding-top:88px}
+  .scope-modal{max-width:calc(100vw - 24px);margin:12px}
+  .scope-modal-header{padding:14px 16px}
+  .scope-modal-body{padding:14px 16px}
+  .scope-modal-footer{padding:12px 16px;flex-direction:column-reverse;gap:8px}
+  .scope-modal-footer button{width:100%;text-align:center}
+}
+
+@media(max-width:390px){
+  .stats-bar{grid-template-columns:1fr}
+  .stat-value{font-size:20px}
+  .occ-pill{font-size:10.5px;padding:2px 7px}
+}
 </style>
 </head>
 <body>
 
+<!-- WP shell stub -->
 <div class="wp-admin-bar">
   <span>&#9776;</span>
   <span class="site">My Equestrian Site</span>
   <span>+ New</span>
-  <span style="margin-left:auto">Howdy, Whitney Mitchell</span>
+  <span style="margin-left:auto">Howdy, whitney</span>
 </div>
 
 <div class="wp-body">
-  <div class="wp-sidebar">
-    <div class="wp-sidebar-item">&#9632; Dashboard</div>
-    <div class="wp-sidebar-item">&#9632; Posts</div>
+  <nav class="wp-sidebar">
+    <div class="wp-sidebar-item">Dashboard</div>
+    <div class="wp-sidebar-item">Media</div>
+    <div class="wp-sidebar-item">Posts</div>
+    <div class="wp-sidebar-item">Pages</div>
     <div class="wp-sidebar-sep"></div>
-    <div class="wp-sidebar-label">Equine EM</div>
-    <div class="wp-sidebar-item active">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-      Stall Charts
-    </div>
-    <div class="wp-sidebar-sub">Dashboard</div>
-    <div class="wp-sidebar-sub">Events</div>
+    <div class="wp-sidebar-label">Event Manager</div>
     <div class="wp-sidebar-sub">Orders</div>
     <div class="wp-sidebar-sub">Reservations</div>
-    <div class="wp-sidebar-sub active">Stall Charts</div>
+    <div class="wp-sidebar-sub active">Stall &amp; RV Charts</div>
     <div class="wp-sidebar-sub">Invoicing</div>
     <div class="wp-sidebar-sub">Reports</div>
     <div class="wp-sidebar-sub">Settings</div>
-    <div class="wp-sidebar-sep"></div>
-    <div class="wp-sidebar-item">&#9632; Plugins</div>
-    <div class="wp-sidebar-item">&#9632; Settings</div>
-  </div>
+  </nav>
 
-  <div class="wp-content">
+  <main class="wp-content">
+
+    <!-- Breadcrumb -->
     <div class="breadcrumb">
       <div class="breadcrumb-logo-box">Plugin Logo</div>
       <span class="breadcrumb-sep">/</span>
-      <span class="breadcrumb-page"><a href="#">Stall Charts</a> / 2026 Southeast Region Super Sort</span>
+      <span class="breadcrumb-page"><a href="admin.php?page=equine-event-manager-stall-charts">Stall &amp; RV Charts</a></span>
+      <span class="breadcrumb-sep">/</span>
+      <span class="breadcrumb-page">2026 Southeast Region Super Sort</span>
     </div>
 
-    <div class="page-title">Stall Chart – 2026 Southeast Region Super Sort</div>
+    <!-- PLUGIN-WRAP (single bordered card per VIS-3) -->
+    <div class="plugin-wrap">
 
-    <!-- Stats Bar -->
-    <div class="stats-bar">
-      <div class="stat-card">
-        <div class="stat-label">Daily Movement</div>
-        <div class="stat-daily">
-          <div><span>May 7:</span> Arriving 22, Departing 0</div>
-          <div><span>May 8:</span> Arriving 0, Departing 0</div>
-          <div><span>May 9:</span> Arriving 0, Departing 23</div>
+      <!-- PAGE HEADER inside wrap -->
+      <header class="plugin-header">
+        <div class="plugin-header-left">
+          <h1 class="plugin-title">Stall Chart — 2026 Southeast Region Super Sort</h1>
+          <div class="plugin-subtitle">Manage stall and RV lot assignments for this reservation. Click any customer pill to view their order or move them to a different stall.</div>
         </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Stall Units</div>
-        <div class="stat-value">101</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">RV Lots</div>
-        <div class="stat-value">1</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Orders on Chart</div>
-        <div class="stat-value">23</div>
-      </div>
-    </div>
+      </header>
 
-    <!-- View Tabs -->
-    <div class="view-tabs">
-      <div class="view-tab active" onclick="switchView('stall', this)">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-        By Location
-      </div>
-      <div class="view-tab" onclick="switchView('customer', this)">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-        By Customer
-      </div>
-    </div>
+      <div class="chart-body">
 
-    <!-- Action Bar -->
-    <div class="action-bar">
-      <div class="action-bar-btns">
-        <button class="btn btn-primary">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-          Generate Assignments
-        </button>
-        <button class="btn btn-print" id="print-btn" onclick="enterPrintView()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-          <span id="print-label">Print View</span>
-        </button>
-        <button class="btn btn-ghost">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-          Back to Overview
-        </button>
-        <button class="btn btn-ghost">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          Edit Reservation
-        </button>
-      </div>
-    </div>
-
-    <!-- ── STALL CHARTS VIEW ── -->
-    <div class="tab-panel active" id="panel-stall">
-      <div class="content-card">
-        <div class="content-card-header">
-          <div class="content-card-title">Stall Charts</div>
-        </div>
-                <div class="chart-help">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <span><strong>Tip:</strong> Click any customer name to view their order or move them to a different stall.</span>
-        </div>
-        <div class="filter-row">
-          <div class="barn-tabs">
-            <div class="barn-tab active" onclick="filterBarn('all', this)">All Barns</div>
-            <div class="barn-tab" onclick="filterBarn('red', this)">Red Barn</div>
-            <div class="barn-tab" onclick="filterBarn('blue', this)">Blue Barn</div>
-            <div class="barn-tab" onclick="filterBarn('yellow', this)">Yellow Barn</div>
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+          <div class="stat-card">
+            <div class="stat-label">Daily Movement</div>
+            <div class="stat-daily">
+              <div><span>May 7:</span> Arriving 22, Departing 0</div>
+              <div><span>May 8:</span> Arriving 0, Departing 0</div>
+              <div><span>May 9:</span> Arriving 0, Departing 23</div>
+            </div>
           </div>
-          <div class="filter-search">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" placeholder="Search by name, stall number, lot, or block">
+          <div class="stat-card">
+            <div class="stat-label">Stall Units</div>
+            <div class="stat-value">101</div>
           </div>
-          <span class="filter-hint">Search by customer name, stall number, RV lot, or block title.</span>
-        </div>
-        <div class="table-scroll">
-          <table class="stall-table">
-            <thead>
-              <tr>
-                <th>Stall</th>
-                <th>Block</th>
-                <th class="date-col">May 7</th>
-                <th class="date-col">May 8</th>
-                <th class="date-col">May 9</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- Red Barn -->
-              <tr class="barn-group-row" data-barn="red"><td colspan="5">Red Barn <span>· Stalls 100–120</span></td></tr>
-              <tr class="stall-row" data-barn="red"><td class="stall-num">100</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="0028" title="Order #0028" onclick="togglePillActions(event, this, 'Whitney Mitchell', '0028')">Whitney Mitchell</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="0028" title="Order #0028" onclick="togglePillActions(event, this, 'Whitney Mitchell', '0028')">Whitney Mitchell</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
-              <tr class="stall-row" data-barn="red"><td class="stall-num">101</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="0028" title="Order #0028" onclick="togglePillActions(event, this, 'Whitney Mitchell', '0028')">Whitney Mitchell</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="0028" title="Order #0028" onclick="togglePillActions(event, this, 'Whitney Mitchell', '0028')">Whitney Mitchell</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
-              <tr class="stall-row" data-barn="red"><td class="stall-num">102</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="0028" title="Order #0028" onclick="togglePillActions(event, this, 'Whitney Mitchell', '0028')">Whitney Mitchell</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="0028" title="Order #0028" onclick="togglePillActions(event, this, 'Whitney Mitchell', '0028')">Whitney Mitchell</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
-              <tr class="stall-row" data-barn="red"><td class="stall-num">103</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="0030" title="Order #0030" onclick="togglePillActions(event, this, 'Jane Doe', '0030')">Jane Doe</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="0030" title="Order #0030" onclick="togglePillActions(event, this, 'Jane Doe', '0030')">Jane Doe</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
-              <tr class="stall-row" data-barn="red"><td class="stall-num">104</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="0028" title="Order #0028" onclick="togglePillActions(event, this, 'Whitney Mitchell', '0028')">Whitney Mitchell</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="0028" title="Order #0028" onclick="togglePillActions(event, this, 'Whitney Mitchell', '0028')">Whitney Mitchell</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
-              <tr class="stall-row" data-barn="red"><td class="stall-num">105</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="0024" title="Order #0024" onclick="togglePillActions(event, this, 'Marcus Trevino', '0024')">Marcus Trevino</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="0024" title="Order #0024" onclick="togglePillActions(event, this, 'Marcus Trevino', '0024')">Marcus Trevino</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
-              <tr class="stall-row" data-barn="red"><td class="stall-num">106</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
-              <tr class="stall-row" data-barn="red"><td class="stall-num">107</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
-              <!-- Blue Barn -->
-              <tr class="barn-group-row" data-barn="blue"><td colspan="5">Blue Barn <span>· Stalls 121–160</span></td></tr>
-              <tr class="stall-row" data-barn="blue"><td class="stall-num">121</td><td class="block-name">Blue Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="0029" title="Order #0029" onclick="togglePillActions(event, this, 'Devon Lacroix', '0029')">Devon Lacroix</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="0029" title="Order #0029" onclick="togglePillActions(event, this, 'Devon Lacroix', '0029')">Devon Lacroix</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
-              <tr class="stall-row" data-barn="blue"><td class="stall-num">122</td><td class="block-name">Blue Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
-              <tr class="stall-row" data-barn="blue"><td class="stall-num">123</td><td class="block-name">Blue Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-blocked">Blocked</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-blocked">Blocked</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-blocked">Blocked</span></div></td></tr>
-              <!-- Yellow Barn -->
-              <tr class="barn-group-row" data-barn="yellow"><td colspan="5">Yellow Barn <span>· Stalls 161–200</span></td></tr>
-              <tr class="stall-row" data-barn="yellow"><td class="stall-num">197</td><td class="block-name">Yellow Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
-              <tr class="stall-row" data-barn="yellow"><td class="stall-num">198</td><td class="block-name">Yellow Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
-              <tr class="stall-row" data-barn="yellow"><td class="stall-num">199</td><td class="block-name">Yellow Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
-              <tr class="stall-row" data-barn="yellow"><td class="stall-num">200</td><td class="block-name">Yellow Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- RV Lot Occupancy -->
-      <div class="content-card">
-        <div class="content-card-header">
-          <div class="content-card-title">RV Lot Occupancy</div>
-        </div>
-        <div class="table-scroll">
-          <table class="rv-table">
-            <thead>
-              <tr>
-                <th>RV Lot / Block</th>
-                <th class="date-col">May 7</th>
-                <th class="date-col">May 8</th>
-                <th class="date-col">May 9</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td class="rv-lot-name">Red Lot</td>
-                <td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="0031" title="Order #0031" onclick="togglePillActions(event, this, 'Whitney Mitchell', '0031')">Whitney Mitchell</span></div></td>
-                <td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="0031" title="Order #0031" onclick="togglePillActions(event, this, 'Whitney Mitchell', '0031')">Whitney Mitchell</span></div></td>
-                <td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── CUSTOMER NIGHT COUNT VIEW ── -->
-    <div class="tab-panel" id="panel-customer">
-      <div class="content-card">
-        <div class="content-card-header">
-          <div class="content-card-title">Customer Night Count</div>
-        </div>
-        <div class="filter-row">
-          <div class="filter-search">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" placeholder="Search by customer, order, stall, or RV lot">
+          <div class="stat-card">
+            <div class="stat-label">RV Lots</div>
+            <div class="stat-value">1</div>
           </div>
-          <span class="filter-hint">Search by customer, order, stall, or RV lot.</span>
+          <div class="stat-card">
+            <div class="stat-label">Orders on Chart</div>
+            <div class="stat-value">23</div>
+          </div>
         </div>
-        <div class="table-scroll">
-          <table class="cust-table">
-            <thead>
-              <tr>
-                <th>Customer</th>
-                <th>Order</th>
-                <th class="center">May 7</th>
-                <th class="center">May 8</th>
-                <th class="center">May 9</th>
-                <th>Stall Assignments</th>
-                <th>RV Lots</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td><a class="cust-link">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="#">#0028</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">120</td><td class="dash">—</td></tr>
-              <tr><td><a class="cust-link">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="#">#0027</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">119</td><td class="dash">—</td></tr>
-              <tr><td><a class="cust-link">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="#">#0026</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">125</td><td class="dash">—</td></tr>
-              <tr><td><a class="cust-link">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="#">#0025</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">123</td><td class="dash">—</td></tr>
-              <tr><td><a class="cust-link">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="#">#0024</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">118</td><td class="dash">—</td></tr>
-              <tr><td><a class="cust-link">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="#">#0023</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">117</td><td class="dash">—</td></tr>
-              <tr><td><a class="cust-link">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="#">#0022</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">116</td><td class="dash">—</td></tr>
-              <tr><td><a class="cust-link">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="#">#0021</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">115</td><td class="dash">—</td></tr>
-              <tr><td><a class="cust-link">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="#">#0020</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">109</td><td class="rv-assignment">Red Lot</td></tr>
-              <tr><td><a class="cust-link">Jane Doe</a></td><td class="order-num"><a class="order-link" href="#">#0009</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">103</td><td class="dash">—</td></tr>
-              <tr><td><a class="cust-link">Marcus Trevino</a></td><td class="order-num"><a class="order-link" href="#">#0015</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">105</td><td class="dash">—</td></tr>
-              <tr><td><a class="cust-link">Devon Lacroix</a></td><td class="order-num"><a class="order-link" href="#">#0014</a></td><td class="night-count zero">—</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">121</td><td class="dash">—</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
 
-      <!-- RV Lot Occupancy (Customer view) -->
-      <div class="content-card">
-        <div class="content-card-header">
-          <div class="content-card-title">RV Lot Occupancy</div>
-        </div>
-        <div class="table-scroll">
-          <table class="rv-table">
-            <thead>
-              <tr>
-                <th>RV Lot / Block</th>
-                <th class="date-col">May 7</th>
-                <th class="date-col">May 8</th>
-                <th class="date-col">May 9</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td class="rv-lot-name">Red Lot</td>
-                <td><div class="cell-wrap"><span class="occ-pill occ-reserved" onclick="togglePillActions(event, this, 'Whitney Mitchell')">Whitney Mitchell</span></div></td>
-                <td><div class="cell-wrap"><span class="occ-pill occ-reserved" onclick="togglePillActions(event, this, 'Whitney Mitchell')">Whitney Mitchell</span></div></td>
-                <td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+        <!-- View Tabs were here — now moved INSIDE the content card below per audit revision -->
 
-    <!-- Assignment Issues -->
-    <div class="issues-card">
-      <div class="issues-header">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <span class="issues-header-title">Assignment Issues</span>
-        <span class="issues-header-count">5 issues</span>
-        <button class="auto-assign-all-btn" onclick="autoAssignAll()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-          Auto-Assign All
-        </button>
-      </div>
-      <div class="issues-body">
-        <div class="issue-row">
-          <span class="issue-text">Order <strong>#0007</strong> (Whitney Mitchell) still has 1 unassigned RV lot(s).</span>
-          <div class="issue-actions">
-            <button class="issue-auto-btn" onclick="autoAssignOrder('0007')">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-              Auto-Assign
+        <!-- Action Bar -->
+        <div class="action-bar">
+          <div class="action-bar-btns">
+            <button class="btn btn-primary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+              Generate Assignments
             </button>
-            <a class="issue-view-link" href="order_detail_page.html?order=0007">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-              View Order
+            <a class="btn btn-ghost" href="stall_chart_print_view.html" target="_blank">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+              Print View
+            </a>
+            <a class="btn btn-ghost" href="admin.php?page=equine-event-manager-reservation&amp;reservation_id=42">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Edit Reservation
             </a>
           </div>
         </div>
-        <div class="issue-row">
-          <span class="issue-text">Order <strong>#0008</strong> (Whitney Mitchell) still has 1 unassigned RV lot(s).</span>
-          <div class="issue-actions">
-            <button class="issue-auto-btn" onclick="autoAssignOrder('0008')">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-              Auto-Assign
+
+        <!-- ══════════════════ TABBED VIEW CARD (tabs are the header) ══════════════════ -->
+        <div class="view-tabs-card">
+
+          <!-- View Tabs (now the card header) -->
+          <div class="view-tabs">
+            <button class="view-tab active" onclick="switchView('stall', this)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+              By Location
             </button>
-            <a class="issue-view-link" href="order_detail_page.html?order=0008">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-              View Order
-            </a>
+            <button class="view-tab" onclick="switchView('customer', this)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+              By Customer
+            </button>
+          </div>
+
+          <!-- ─── BY LOCATION PANEL ─── -->
+          <div class="tab-panel active" id="panel-stall">
+
+            <!-- Tip banner (flush below tabs) -->
+            <div class="chart-help">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <span><strong>Tip:</strong> Click any customer name to view their order or move them to a different stall.</span>
+            </div>
+
+            <!-- Filter row -->
+            <div class="filter-row">
+              <div class="barn-tabs">
+                <button class="barn-tab active" onclick="filterBarn('all', this)">All Barns</button>
+                <button class="barn-tab" onclick="filterBarn('red', this)">Red Barn</button>
+                <button class="barn-tab" onclick="filterBarn('blue', this)">Blue Barn</button>
+                <button class="barn-tab" onclick="filterBarn('yellow', this)">Yellow Barn</button>
+              </div>
+              <div class="filter-search">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" placeholder="Search by name, stall number, lot, or block">
+              </div>
+              <span class="filter-hint">Search by customer name, stall number, RV lot, or block title.</span>
+            </div>
+
+            <!-- Stall table -->
+            <div class="table-scroll">
+              <table class="stall-table">
+                <thead>
+                  <tr>
+                    <th class="sortable">Stall <span class="sort-icon"><span></span><span></span></span></th>
+                    <th>Block</th>
+                    <th class="date-col">May 7</th>
+                    <th class="date-col">May 8</th>
+                    <th class="date-col">May 9</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Red Barn -->
+                  <tr class="barn-group-row" data-barn="red"><td colspan="5">Red Barn <span>· Stalls 100–120</span></td></tr>
+                  <tr class="stall-row" data-barn="red"><td class="stall-num">100</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00028" onclick="togglePillActions(event, this, 'Whitney Mitchell', '00028')">Whitney Mitchell<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00028" onclick="togglePillActions(event, this, 'Whitney Mitchell', '00028')">Whitney Mitchell<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
+                  <tr class="stall-row" data-barn="red"><td class="stall-num">101</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00028" onclick="togglePillActions(event, this, 'Whitney Mitchell', '00028')">Whitney Mitchell<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00028" onclick="togglePillActions(event, this, 'Whitney Mitchell', '00028')">Whitney Mitchell<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
+                  <tr class="stall-row" data-barn="red"><td class="stall-num">102</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00028" onclick="togglePillActions(event, this, 'Whitney Mitchell', '00028')">Whitney Mitchell<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00028" onclick="togglePillActions(event, this, 'Whitney Mitchell', '00028')">Whitney Mitchell<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
+                  <tr class="stall-row" data-barn="red"><td class="stall-num">103</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00030" onclick="togglePillActions(event, this, 'Jane Doe', '00030')">Jane Doe<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00030" onclick="togglePillActions(event, this, 'Jane Doe', '00030')">Jane Doe<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
+                  <tr class="stall-row" data-barn="red"><td class="stall-num">104</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00028" onclick="togglePillActions(event, this, 'Whitney Mitchell', '00028')">Whitney Mitchell<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00028" onclick="togglePillActions(event, this, 'Whitney Mitchell', '00028')">Whitney Mitchell<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
+                  <tr class="stall-row" data-barn="red"><td class="stall-num">105</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00024" onclick="togglePillActions(event, this, 'Marcus Trevino', '00024')">Marcus Trevino<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00024" onclick="togglePillActions(event, this, 'Marcus Trevino', '00024')">Marcus Trevino<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
+                  <tr class="stall-row" data-barn="red"><td class="stall-num">106</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
+                  <tr class="stall-row" data-barn="red"><td class="stall-num">107</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
+                  <!-- Blue Barn -->
+                  <tr class="barn-group-row" data-barn="blue"><td colspan="5">Blue Barn <span>· Stalls 121–160</span></td></tr>
+                  <tr class="stall-row" data-barn="blue"><td class="stall-num">121</td><td class="block-name">Blue Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00029" onclick="togglePillActions(event, this, 'Devon Lacroix', '00029')">Devon Lacroix<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00029" onclick="togglePillActions(event, this, 'Devon Lacroix', '00029')">Devon Lacroix<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
+                  <tr class="stall-row" data-barn="blue"><td class="stall-num">122</td><td class="block-name">Blue Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
+                  <tr class="stall-row" data-barn="blue"><td class="stall-num">123</td><td class="block-name">Blue Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-blocked">Blocked</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-blocked">Blocked</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-blocked">Blocked</span></div></td></tr>
+                  <!-- Yellow Barn -->
+                  <tr class="barn-group-row" data-barn="yellow"><td colspan="5">Yellow Barn <span>· Stalls 161–200</span></td></tr>
+                  <tr class="stall-row" data-barn="yellow"><td class="stall-num">197</td><td class="block-name">Yellow Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
+                  <tr class="stall-row" data-barn="yellow"><td class="stall-num">198</td><td class="block-name">Yellow Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
+                  <tr class="stall-row" data-barn="yellow"><td class="stall-num">199</td><td class="block-name">Yellow Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
+                  <tr class="stall-row" data-barn="yellow"><td class="stall-num">200</td><td class="block-name">Yellow Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+
+          </div><!-- /panel-stall -->
+
+          <!-- ─── BY CUSTOMER PANEL ─── -->
+          <div class="tab-panel" id="panel-customer">
+
+            <!-- Tip banner (same instruction applies — customer names are also clickable in this view) -->
+            <div class="chart-help">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <span><strong>Tip:</strong> Click any customer name to open the customer profile, or click an order number to view the order.</span>
+            </div>
+
+            <!-- Filter row -->
+            <div class="filter-row">
+              <div class="filter-search">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" placeholder="Search by customer, order, stall, or RV lot">
+              </div>
+              <span class="filter-hint">Search by customer, order, stall, or RV lot.</span>
+            </div>
+
+            <!-- Customer Night Count table -->
+            <div class="table-scroll">
+              <table class="cust-table">
+                <thead>
+                  <tr>
+                    <th>Customer</th>
+                    <th>Order</th>
+                    <th class="center">May 7</th>
+                    <th class="center">May 8</th>
+                    <th class="center">May 9</th>
+                    <th>Stall Assignments</th>
+                    <th>RV Lots</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td><a class="cust-link" href="admin.php?page=equine-event-manager-customer&amp;customer_email=whitney@example.com">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00028">#00028</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">120</td><td class="dash">—</td></tr>
+                  <tr><td><a class="cust-link" href="admin.php?page=equine-event-manager-customer&amp;customer_email=whitney@example.com">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00027">#00027</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">119</td><td class="dash">—</td></tr>
+                  <tr><td><a class="cust-link" href="admin.php?page=equine-event-manager-customer&amp;customer_email=whitney@example.com">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00026">#00026</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">125</td><td class="dash">—</td></tr>
+                  <tr><td><a class="cust-link" href="admin.php?page=equine-event-manager-customer&amp;customer_email=whitney@example.com">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00025">#00025</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">123</td><td class="dash">—</td></tr>
+                  <tr><td><a class="cust-link" href="admin.php?page=equine-event-manager-customer&amp;customer_email=whitney@example.com">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00024">#00024</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">118</td><td class="dash">—</td></tr>
+                  <tr><td><a class="cust-link" href="admin.php?page=equine-event-manager-customer&amp;customer_email=whitney@example.com">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00023">#00023</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">117</td><td class="dash">—</td></tr>
+                  <tr><td><a class="cust-link" href="admin.php?page=equine-event-manager-customer&amp;customer_email=whitney@example.com">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00022">#00022</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">116</td><td class="dash">—</td></tr>
+                  <tr><td><a class="cust-link" href="admin.php?page=equine-event-manager-customer&amp;customer_email=whitney@example.com">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00021">#00021</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">115</td><td class="dash">—</td></tr>
+                  <tr><td><a class="cust-link" href="admin.php?page=equine-event-manager-customer&amp;customer_email=whitney@example.com">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00020">#00020</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">109</td><td class="rv-assignment">Red Lot</td></tr>
+                  <tr><td><a class="cust-link" href="admin.php?page=equine-event-manager-customer&amp;customer_email=jane@example.com">Jane Doe</a></td><td class="order-num"><a class="order-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00009">#00009</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">103</td><td class="dash">—</td></tr>
+                  <tr><td><a class="cust-link" href="admin.php?page=equine-event-manager-customer&amp;customer_email=marcus@example.com">Marcus Trevino</a></td><td class="order-num"><a class="order-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00015">#00015</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">105</td><td class="dash">—</td></tr>
+                  <tr><td><a class="cust-link" href="admin.php?page=equine-event-manager-customer&amp;customer_email=devon@example.com">Devon Lacroix</a></td><td class="order-num"><a class="order-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00014">#00014</a></td><td class="night-count zero">—</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">121</td><td class="dash">—</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+          </div><!-- /panel-customer -->
+
+        </div><!-- /view-tabs-card -->
+
+        <!-- RV Lot Occupancy (always visible — independent of view tab) -->
+        <div class="content-card">
+          <div class="content-card-header">
+            <div class="content-card-title">RV Lot Occupancy</div>
+          </div>
+          <div class="table-scroll">
+            <table class="rv-table">
+              <thead>
+                <tr>
+                  <th>RV Lot / Block</th>
+                  <th class="date-col">May 7</th>
+                  <th class="date-col">May 8</th>
+                  <th class="date-col">May 9</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="rv-lot-name">Red Lot</td>
+                  <td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00020" onclick="togglePillActions(event, this, 'Whitney Mitchell', '00020')">Whitney Mitchell<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td>
+                  <td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00020" onclick="togglePillActions(event, this, 'Whitney Mitchell', '00020')">Whitney Mitchell<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td>
+                  <td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
-        <div class="issue-row">
-          <span class="issue-text">Order <strong>#0009</strong> (Jane Doe) still has 1 unassigned RV lot(s).</span>
-          <div class="issue-actions">
-            <button class="issue-auto-btn" onclick="autoAssignOrder('0009')">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-              Auto-Assign
+
+        <!-- Assignment Issues -->
+        <div class="issues-card">
+          <div class="issues-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span class="issues-header-title">Assignment Issues</span>
+            <span class="issues-header-count">5 issues</span>
+            <button class="auto-assign-all-btn" onclick="autoAssignAll()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+              Auto-Assign All
             </button>
-            <a class="issue-view-link" href="order_detail_page.html?order=0009">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-              View Order
-            </a>
+          </div>
+          <div class="issues-body">
+            <div class="issue-row">
+              <span class="issue-text">Order <strong>#00007</strong> (Whitney Mitchell) still has 1 unassigned RV lot(s).</span>
+              <div class="issue-actions">
+                <button class="issue-auto-btn" onclick="autoAssignOrder('00007')">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                  Auto-Assign
+                </button>
+                <a class="issue-view-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00007">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                  View Order
+                </a>
+              </div>
+            </div>
+            <div class="issue-row">
+              <span class="issue-text">Order <strong>#00008</strong> (Whitney Mitchell) still has 1 unassigned RV lot(s).</span>
+              <div class="issue-actions">
+                <button class="issue-auto-btn" onclick="autoAssignOrder('00008')">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                  Auto-Assign
+                </button>
+                <a class="issue-view-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00008">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                  View Order
+                </a>
+              </div>
+            </div>
+            <div class="issue-row">
+              <span class="issue-text">Order <strong>#00009</strong> (Jane Doe) still has 1 unassigned RV lot(s).</span>
+              <div class="issue-actions">
+                <button class="issue-auto-btn" onclick="autoAssignOrder('00009')">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                  Auto-Assign
+                </button>
+                <a class="issue-view-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00009">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                  View Order
+                </a>
+              </div>
+            </div>
+            <div class="issue-row">
+              <span class="issue-text">Order <strong>#00010</strong> (Whitney Mitchell) still has 1 unassigned RV lot(s).</span>
+              <div class="issue-actions">
+                <button class="issue-auto-btn" onclick="autoAssignOrder('00010')">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                  Auto-Assign
+                </button>
+                <a class="issue-view-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00010">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                  View Order
+                </a>
+              </div>
+            </div>
+            <div class="issue-row">
+              <span class="issue-text">Order <strong>#00020</strong> (James Hartwell) still has 1 unassigned RV lot(s).</span>
+              <div class="issue-actions">
+                <button class="issue-auto-btn" onclick="autoAssignOrder('00020')">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                  Auto-Assign
+                </button>
+                <a class="issue-view-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00020">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                  View Order
+                </a>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="issue-row">
-          <span class="issue-text">Order <strong>#0010</strong> (Whitney Mitchell) still has 1 unassigned RV lot(s).</span>
-          <div class="issue-actions">
-            <button class="issue-auto-btn" onclick="autoAssignOrder('0010')">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-              Auto-Assign
-            </button>
-            <a class="issue-view-link" href="order_detail_page.html?order=0010">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-              View Order
-            </a>
-          </div>
-        </div>
-        <div class="issue-row">
-          <span class="issue-text">Order <strong>#0020</strong> (James Hartwell) still has 1 unassigned RV lot(s).</span>
-          <div class="issue-actions">
-            <button class="issue-auto-btn" onclick="autoAssignOrder('0020')">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-              Auto-Assign
-            </button>
-            <a class="issue-view-link" href="order_detail_page.html?order=0020">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-              View Order
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
 
-  </div><!-- /wp-content -->
-</div><!-- /wp-body -->
+      </div><!-- /chart-body -->
 
-<!-- Print View Overlay (hidden by default, shown when admin clicks Print View) -->
-<div id="print-view">
-  <div class="pv-topbar">
-    <div class="pv-topbar-left">
-      <div class="pv-topbar-title">Stall Chart – 2026 Southeast Region Super Sort</div>
-      <div class="pv-topbar-sub" id="pv-view-label">Stall Assignments</div>
-    </div>
-    <button class="btn-pv-print" onclick="exitPrintView()">Exit Print View</button>
-  </div>
+    </div><!-- /plugin-wrap -->
 
-  <div class="pv-body">
-
-
-
-
-
-
-    <!-- Stats -->
-    <div class="pv-stats">
-      <div class="pv-stat"><div class="pv-stat-label">Stall Units</div><div class="pv-stat-val">101</div></div>
-      <div class="pv-stat"><div class="pv-stat-label">RV Lots</div><div class="pv-stat-val">1</div></div>
-      <div class="pv-stat"><div class="pv-stat-label">Orders</div><div class="pv-stat-val">23</div></div>
-    </div>
-
-    <!-- Stall Assignments Table -->
-    <div id="pv-stall-section">
-      <div class="pv-section-title">Stall Assignments — All Barns</div>
-      <table class="pv-table">
-        <thead>
-          <tr>
-            <th>Stall</th>
-            <th>Block</th>
-            <th>Customer</th>
-            <th class="c">May 7</th>
-            <th class="c">May 8</th>
-            <th class="c">May 9</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td colspan="6" class="pv-barn-header">Red Barn · Stalls 100–120</td></tr>
-          <tr><td class="pv-stall-num">100</td><td class="pv-block">Red Barn</td><td class="pv-customer">Whitney Mitchell</td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
-          <tr><td class="pv-stall-num">101</td><td class="pv-block">Red Barn</td><td class="pv-customer">Whitney Mitchell</td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
-          <tr><td class="pv-stall-num">102</td><td class="pv-block">Red Barn</td><td class="pv-customer">Whitney Mitchell</td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
-          <tr><td class="pv-stall-num">103</td><td class="pv-block">Red Barn</td><td class="pv-customer">Jane Doe</td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
-          <tr><td class="pv-stall-num">104</td><td class="pv-block">Red Barn</td><td class="pv-customer">Whitney Mitchell</td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
-          <tr><td class="pv-stall-num">105</td><td class="pv-block">Red Barn</td><td class="pv-customer">Marcus Trevino</td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
-          <tr><td class="pv-stall-num">106</td><td class="pv-block">Red Barn</td><td class="pv-customer">—</td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
-          <tr><td class="pv-stall-num">107</td><td class="pv-block">Red Barn</td><td class="pv-customer">—</td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
-          <tr><td colspan="6" class="pv-barn-header">Blue Barn · Stalls 121–160</td></tr>
-          <tr><td class="pv-stall-num">121</td><td class="pv-block">Blue Barn</td><td class="pv-customer">Devon Lacroix</td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
-          <tr><td class="pv-stall-num">122</td><td class="pv-block">Blue Barn</td><td class="pv-customer">—</td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
-          <tr><td class="pv-stall-num">123</td><td class="pv-block">Blue Barn</td><td class="pv-customer">—</td><td class="pv-night-cell"><span class="pv-occ pv-occ-block">Blocked</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-block">Blocked</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-block">Blocked</span></td></tr>
-          <tr><td colspan="6" class="pv-barn-header">Yellow Barn · Stalls 161–200</td></tr>
-          <tr><td class="pv-stall-num">197</td><td class="pv-block">Yellow Barn</td><td class="pv-customer">—</td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
-          <tr><td class="pv-stall-num">200</td><td class="pv-block">Yellow Barn</td><td class="pv-customer">—</td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
-        </tbody>
-      </table>
-
-      <!-- RV Lots -->
-      <div class="pv-section-title">RV Lot Occupancy</div>
-      <table class="pv-table">
-        <thead><tr><th>RV Lot</th><th>Customer</th><th class="c">May 7</th><th class="c">May 8</th><th class="c">May 9</th></tr></thead>
-        <tbody>
-          <tr><td class="pv-stall-num">Red Lot</td><td class="pv-customer">Whitney Mitchell</td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Res.</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Avail.</span></td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Footer -->
-    <div class="pv-footer">
-      <span>2026 Southeast Region Super Sort · Stall Chart</span>
-      <span>Printed May 21, 2026 · Equine Event Manager</span>
-    </div>
-
-  </div>
+  </main>
 </div>
 
-<script>
-function enterPrintView() {
-  const view = document.body.dataset.activeView || 'stall';
-  document.getElementById('pv-view-label').textContent = view === 'stall' ? 'Stall Assignments' : 'Customer Night Count';
-  document.getElementById('print-view').classList.add('active');
-  document.body.style.overflow = 'hidden';
-}
-function exitPrintView() {
-  document.getElementById('print-view').classList.remove('active');
-  document.body.style.overflow = '';
-}
-function filterBarn(barn, el) {
-  // Update active tab
-  document.querySelectorAll('.barn-tab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
-  // Show/hide rows
-  document.querySelectorAll('[data-barn]').forEach(row => {
-    row.style.display = (barn === 'all' || row.dataset.barn === barn) ? '' : 'none';
-  });
-}
-function switchView(val, el) {
-  document.getElementById('panel-stall').classList.toggle('active', val==='stall');
-  document.getElementById('panel-customer').classList.toggle('active', val==='customer');
-  document.getElementById('print-label').textContent = val==='stall' ? 'Print Assignments' : 'Print Night Counts';
-  if (el) {
-    document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
-    el.classList.add('active');
-  }
-  // Remember which view is active for print
-  document.body.dataset.activeView = val;
-}
-function openModal(stall, block, night, customer) {
-  document.getElementById('modal-stall').textContent = stall;
-  document.getElementById('modal-block').textContent = block;
-  document.getElementById('modal-night').textContent = night;
-  document.getElementById('modal-customer').textContent = customer;
-  document.getElementById('modal').style.display = 'flex';
-}
-
-function closeModal() {
-  document.getElementById('modal').style.display = 'none';
-}
-
-
-
-
-// === Pill action menu (click a customer name to see actions) ===
-function togglePillActions(e, pillEl, customerName, orderId) {
-  e.stopPropagation();
-  if (document.body.classList.contains('destination-mode')) return;
-
-  const menu = document.getElementById('cell-action-menu');
-  // If already open for this pill, close it (toggle behavior)
-  if (menu.classList.contains('open') && window._activePillEl === pillEl) {
-    closeCellMenu();
-    return;
-  }
-
-  document.getElementById('cell-action-menu-title').textContent = customerName;
-  document.getElementById('cell-action-menu-subtitle').innerHTML =
-    'Order <a href="order_detail_page.html?order=' + orderId + '" target="_blank" onclick="event.stopPropagation()">#' + orderId + '</a>';
-  window._popoverCustomer = customerName;
-  window._popoverOrderId = orderId;
-  window._popoverSourcePill = pillEl;
-  window._activePillEl = pillEl;
-
-  // Position menu just below the clicked pill
-  const rect = pillEl.getBoundingClientRect();
-  menu.style.top = (window.scrollY + rect.bottom + 4) + 'px';
-  menu.style.left = (window.scrollX + Math.max(rect.left, 12)) + 'px';
-  menu.classList.add('open');
-}
-
-function closeCellMenu() {
-  const menu = document.getElementById('cell-action-menu');
-  if (menu) menu.classList.remove('open');
-  window._activePillEl = null;
-}
-
-function viewActiveOrder() {
-  const orderId = window._popoverOrderId || '';
-  window.open('order_detail_page.html?order=' + orderId, '_blank');
-  closeCellMenu();
-}
-
-// Click anywhere outside the menu (and not on a reserved pill) closes it
-document.addEventListener('click', function(e) {
-  const menu = document.getElementById('cell-action-menu');
-  if (menu && menu.classList.contains('open')
-      && !menu.contains(e.target)
-      && !e.target.closest('.occ-pill.occ-reserved')) {
-    closeCellMenu();
-  }
-});
-
-// === Destination-select mode ===
-function enterDestinationMode() {
-  closeCellMenu();
-  document.body.classList.add('destination-mode');
-  const customer = window._popoverCustomer || 'customer';
-  document.getElementById('destination-customer-name').textContent = customer;
-  document.getElementById('destination-banner').classList.add('active');
-  document.querySelectorAll('.occ-pill.occ-available').forEach(cell => {
-    cell.addEventListener('click', completeMove, { once: true });
-  });
-}
-function cancelDestinationMode() {
-  document.body.classList.remove('destination-mode');
-  document.getElementById('destination-banner').classList.remove('active');
-}
-function completeMove(e) {
-  e.stopPropagation();
-  // Stash the destination cell reference for later
-  window._moveDestinationPill = e.currentTarget;
-  // Find the date column of the destination cell so we know which night's column was clicked
-  const destTd = e.currentTarget.closest('td');
-  const destTr = destTd.closest('tr');
-  const destTable = destTr.closest('table');
-  // Column index of the clicked cell within its row
-  const cellsInRow = Array.from(destTr.children);
-  const colIndex = cellsInRow.indexOf(destTd);
-  // Date label from the header (account for table type — stall has [stall-num, block, date1, date2, date3])
-  const headerCells = destTable.querySelectorAll('thead th');
-  const dateHeaderText = (headerCells[colIndex] && headerCells[colIndex].textContent) || '';
-  window._moveDestDateLabel = dateHeaderText.trim();
-
-  // Determine the destination stall/lot description
-  const stallNumCell = destTr.querySelector('.stall-num') || destTr.querySelector('.rv-lot-name');
-  const blockCell = destTr.querySelector('.block-name');
-  const stallDesc = (blockCell ? blockCell.textContent + ' · ' : '') + 'Stall ' + (stallNumCell ? stallNumCell.textContent : '');
-  window._moveDestStallDesc = stallDesc;
-
-  // Determine the source assignments (all reserved cells with the same customer name)
-  const customer = window._popoverCustomer || '—';
-  const orderId = window._popoverOrderId || '';
-  // Match by data-order AND same source row, so "All nights" means "all nights at THIS stall"
-  // not "all stalls in this order" (admin moves stall-by-stall when group has many stalls)
-  const sourceRow = (window._popoverSourcePill && window._popoverSourcePill.closest('tr'));
-  const srcPills = Array.from((sourceRow || document).querySelectorAll('.occ-pill.occ-reserved[data-order="' + orderId + '"]'))
-    .filter(p => p !== window._popoverSourcePill);
-  window._moveSourcePills = srcPills;
-
-  // Populate the scope modal
-  document.getElementById('scope-modal-title').innerHTML = 'Move <strong>' + customer + '</strong> <span style="font-size:12px;color:#6B7A99;font-weight:500">(Order #' + orderId + ')</span> to ' + stallDesc + '?';
-  // Current assignments list (the source pills' rows/columns)
-  const currentAssignments = srcPills.map(p => {
-    const td = p.closest('td');
-    const tr = td.closest('tr');
-    const tbl = tr.closest('table');
-    const cells = Array.from(tr.children);
-    const idx = cells.indexOf(td);
-    const dateText = ((tbl.querySelectorAll('thead th')[idx] || {}).textContent || '').trim();
-    const stallNum = (tr.querySelector('.stall-num') || tr.querySelector('.rv-lot-name') || {}).textContent || '?';
-    const block = (tr.querySelector('.block-name') || {}).textContent || '';
-    return '<strong>' + dateText + '</strong> · ' + (block ? block + ' · ' : '') + 'Stall ' + stallNum;
-  }).join('<br>');
-  document.getElementById('scope-modal-current').innerHTML = currentAssignments || '<em>(no other assignments)</em>';
-
-  // Update radio labels with actual date info
-  document.getElementById('scope-radio-single-label').textContent = 'Just ' + dateHeaderText.trim() + ' (the night you clicked)';
-  document.getElementById('scope-radio-all-label').textContent = 'All ' + (srcPills.length + 1) + ' nights at this stall (Order #' + orderId + ')';
-
-  // Reset selection to "this-night" by default
-  document.querySelector('input[name="move-scope"][value="this-night"]').checked = true;
-
-  // Show the modal
-  document.getElementById('scope-modal').style.display = 'flex';
-}
-
-function closeScopeModal() {
-  document.getElementById('scope-modal').style.display = 'none';
-}
-
-function confirmMove() {
-  const scope = document.querySelector('input[name="move-scope"]:checked').value;
-  const destPill = window._moveDestinationPill;
-  const customer = window._popoverCustomer;
-  const orderId = window._popoverOrderId;
-  const srcPill = window._popoverSourcePill;
-
-  // The list of source pills to move
-  let pillsToMove = [srcPill];
-  if (scope === 'all-nights') {
-    pillsToMove = pillsToMove.concat(window._moveSourcePills || []);
-  }
-
-  // For each source pill, swap with an Available cell — but we only have ONE destination.
-  // For all-nights move, we move ALL pills to the SAME stall row (i.e., admin wants Whitney in Stall 142 every night).
-  // Find the destination stall row
-  const destTr = destPill.closest('tr');
-  const destTable = destTr.closest('table');
-  const destHeaders = destTable.querySelectorAll('thead th');
-
-  // For each source pill, identify its column index (= date), and target the same column index in the destTr
-  pillsToMove.forEach(src => {
-    const srcTd = src.closest('td');
-    const srcTr = srcTd.closest('tr');
-    const srcCells = Array.from(srcTr.children);
-    const colIndex = srcCells.indexOf(srcTd);
-
-    // The corresponding cell in the destination row at the same column
-    const destCellAtSameDate = destTr.children[colIndex];
-    if (!destCellAtSameDate) return;
-    const destPillAtSameDate = destCellAtSameDate.querySelector('.occ-pill');
-    if (!destPillAtSameDate) return;
-
-    // Only proceed if the destination cell is Available (don't overwrite another reservation)
-    if (!destPillAtSameDate.classList.contains('occ-available')) return;
-
-    // Swap content + classes
-    destPillAtSameDate.textContent = customer;
-    destPillAtSameDate.classList.remove('occ-available');
-    destPillAtSameDate.classList.add('occ-reserved');
-    destPillAtSameDate.setAttribute('data-order', orderId);
-    destPillAtSameDate.setAttribute('onclick', "togglePillActions(event, this, '" + customer.replace(/'/g, "\\'") + "', '" + orderId + "')");
-
-    src.textContent = 'Available';
-    src.classList.remove('occ-reserved');
-    src.classList.add('occ-available');
-    src.removeAttribute('onclick');
-    src.removeAttribute('data-order');
-  });
-
-  // Close modal + exit destination mode
-  closeScopeModal();
-  cancelDestinationMode();
-
-  // Show toast
-  showMoveToast(customer, scope, window._moveDestStallDesc);
-}
-
-function showMoveToast(customer, scope, destDesc) {
-  let toast = document.getElementById('move-toast');
-  if (!toast) {
-    toast = document.createElement('div');
-    toast.id = 'move-toast';
-    toast.style.cssText = 'position:fixed;bottom:24px;right:24px;padding:14px 20px;background:#031B4E;color:#fff;border-radius:6px;font-family:"IBM Plex Sans",sans-serif;font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.2);z-index:400;max-width:360px;opacity:0;transition:opacity .2s';
-    document.body.appendChild(toast);
-  }
-  const scopeText = scope === 'all-nights' ? 'all nights' : 'one night';
-  toast.innerHTML = '✓ Moved <strong>' + customer + '</strong> (' + scopeText + ') to ' + destDesc + '. <span style="opacity:.7">Logged in Activity Log.</span>';
-  toast.style.opacity = '1';
-  setTimeout(function() { toast.style.opacity = '0'; }, 4000);
-}
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') {
-    if (document.body.classList.contains('destination-mode')) cancelDestinationMode();
-    closeCellMenu();
-  }
-});
-
-// === Assignment Issues auto-assign ===
-function autoAssignOrder(orderNum) {
-  alert('Auto-assigning Order #' + orderNum + '. (Mock — would run the auto-assign algorithm for this single order.)');
-}
-function autoAssignAll() {
-  const count = document.querySelectorAll('.issue-row').length;
-  if (!confirm('Auto-assign all ' + count + ' unassigned orders? This will assign them to available stalls/lots based on customer preferences.')) return;
-  alert('Auto-assigned ' + count + ' orders. (Mock — would run the auto-assign algorithm across all listed issues.)');
-}
-</script>
 <!-- Cell action menu (re-positioned on each pill click) -->
 <div class="cell-action-menu" id="cell-action-menu">
   <div class="menu-title-wrap">
@@ -1198,31 +636,30 @@ function autoAssignAll() {
     <div class="menu-subtitle" id="cell-action-menu-subtitle">—</div>
   </div>
   <button onclick="enterDestinationMode()">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
     Move to different stall
   </button>
   <button onclick="viewActiveOrder()">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-    View order ↗
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+    View order
   </button>
 </div>
 
-<!-- Destination-Select Banner (appears when admin is choosing where to move someone) -->
-<div class="destination-banner" id="destination-banner" style="position:fixed!important;top:0!important;left:0!important;right:0!important;z-index:9999!important">
+<!-- Destination-Select Banner -->
+<div class="destination-banner" id="destination-banner">
   <div class="destination-banner-msg">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-    <span><strong>Click any green "Available" cell</strong> to move <strong id="destination-customer-name">—</strong> there. Or press Cancel to keep the current assignment.</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <span><strong>Click any green &ldquo;Available&rdquo; cell</strong> to move <strong id="destination-customer-name">—</strong> there. Or press Cancel to keep the current assignment.</span>
   </div>
   <button class="destination-banner-cancel" onclick="cancelDestinationMode()">Cancel</button>
 </div>
 
-
-<!-- Move scope-confirmation modal (asks single-night vs all-nights) -->
-<div class="scope-modal-overlay" id="scope-modal" style="display:none" onclick="if(event.target===this)closeScopeModal()">
+<!-- Move scope-confirmation modal -->
+<div class="scope-modal-overlay" id="scope-modal" onclick="if(event.target===this)closeScopeModal()">
   <div class="scope-modal">
     <div class="scope-modal-header">
       <div class="scope-modal-title" id="scope-modal-title">Move customer</div>
-      <button class="scope-modal-close" onclick="closeScopeModal()">×</button>
+      <button class="scope-modal-close" onclick="closeScopeModal()" aria-label="Close">×</button>
     </div>
     <div class="scope-modal-body">
       <div class="scope-modal-section">
@@ -1233,20 +670,110 @@ function autoAssignAll() {
         <div class="scope-modal-section-label">Move:</div>
         <label class="scope-radio">
           <input type="radio" name="move-scope" value="this-night" checked>
-          <span class="scope-radio-label" id="scope-radio-single-label">Just this night</span>
+          <span class="scope-radio-label">Just this night</span>
         </label>
         <label class="scope-radio">
           <input type="radio" name="move-scope" value="all-nights">
-          <span class="scope-radio-label" id="scope-radio-all-label">All nights</span>
+          <span class="scope-radio-label">All nights</span>
         </label>
       </div>
     </div>
     <div class="scope-modal-footer">
-      <button class="scope-modal-btn scope-modal-btn-ghost" onclick="closeScopeModal()">Cancel</button>
-      <button class="scope-modal-btn scope-modal-btn-primary" onclick="confirmMove()">Move</button>
+      <button class="scope-modal-btn-ghost" onclick="closeScopeModal()">Cancel</button>
+      <button class="scope-modal-btn-primary" onclick="confirmMove()">Move</button>
     </div>
   </div>
 </div>
+
+<script>
+/* ── View tab switching (By Location vs By Customer) ── */
+function switchView(val, el){
+  document.getElementById('panel-stall').classList.toggle('active', val==='stall');
+  document.getElementById('panel-customer').classList.toggle('active', val==='customer');
+  if(el){
+    document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+  }
+  document.body.dataset.activeView = val;
+}
+
+/* ── Barn filter ── */
+function filterBarn(barn, el){
+  document.querySelectorAll('.barn-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('[data-barn]').forEach(row => {
+    row.style.display = (barn === 'all' || row.dataset.barn === barn) ? '' : 'none';
+  });
+}
+
+/* ── Cell action menu (popover for customer pills) ── */
+function togglePillActions(e, pillEl, customerName, orderId){
+  e.stopPropagation();
+  if (document.body.classList.contains('destination-mode')) return;
+
+  const menu = document.getElementById('cell-action-menu');
+  if (menu.classList.contains('open') && window._activePillEl === pillEl){
+    closeCellMenu();
+    return;
+  }
+  document.getElementById('cell-action-menu-title').textContent = customerName;
+  document.getElementById('cell-action-menu-subtitle').innerHTML =
+    'Order <a href="admin.php?page=equine-event-manager-order&amp;order_id=' + orderId + '" onclick="event.stopPropagation()">#' + orderId + '</a>';
+  window._popoverCustomer = customerName;
+  window._popoverOrderId = orderId;
+  window._popoverSourcePill = pillEl;
+  window._activePillEl = pillEl;
+
+  const rect = pillEl.getBoundingClientRect();
+  menu.style.left = (rect.left + window.scrollX) + 'px';
+  menu.style.top = (rect.bottom + window.scrollY + 6) + 'px';
+  menu.classList.add('open');
+}
+
+function closeCellMenu(){
+  document.getElementById('cell-action-menu').classList.remove('open');
+  window._activePillEl = null;
+}
+
+document.addEventListener('click', function(e){
+  const menu = document.getElementById('cell-action-menu');
+  if (menu.classList.contains('open') && !menu.contains(e.target)){
+    closeCellMenu();
+  }
+});
+
+function viewActiveOrder(){
+  if (window._popoverOrderId){
+    window.open('admin.php?page=equine-event-manager-order&order_id=' + window._popoverOrderId, '_blank');
+  }
+  closeCellMenu();
+}
+
+/* ── Destination select mode ── */
+function enterDestinationMode(){
+  document.body.classList.add('destination-mode');
+  document.getElementById('destination-customer-name').textContent = window._popoverCustomer || '—';
+  document.getElementById('destination-banner').classList.add('active');
+  closeCellMenu();
+}
+function cancelDestinationMode(){
+  document.body.classList.remove('destination-mode');
+  document.getElementById('destination-banner').classList.remove('active');
+}
+
+/* ── Scope modal ── */
+function closeScopeModal(){
+  document.getElementById('scope-modal').classList.remove('open');
+}
+function confirmMove(){
+  closeScopeModal();
+  cancelDestinationMode();
+}
+
+/* Stubs for primary actions (mockup only) */
+function autoAssignAll(){ /* C8 implementation */ }
+function autoAssignOrder(id){ /* C8 implementation */ }
+</script>
 
 </body>
 </html>
