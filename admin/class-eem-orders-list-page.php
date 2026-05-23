@@ -110,11 +110,12 @@ class EEM_Orders_List_Page {
 
 		?>
 		<?php $this->render_action_notice(); ?>
+		<?php $this->render_bulk_refund_modal(); ?>
 		<div class="eem-list-card eem-orders-list" data-eem-orders-list>
 			<?php $this->render_toolbar( $billing, $types, $event, $search, $page['total'] ); ?>
-			<?php $this->render_desktop_table( $page['items'], $orderby, $order ); ?>
+			<?php $this->render_desktop_table( $page['items'], $orderby, $order, $billing, $types, $event, $search ); ?>
 			<?php $this->render_mobile_cards( $page['items'] ); ?>
-			<?php $this->render_table_footer( $page ); ?>
+			<?php $this->render_table_footer( $page, $billing, $types, $event, $search ); ?>
 		</div>
 		<?php
 
@@ -140,6 +141,9 @@ class EEM_Orders_List_Page {
 			'export_failed'            => array( 'type' => 'error',   'text' => __( 'Could not generate the CSV export. The order may have been deleted.', 'equine-event-manager' ) ),
 			'order_trash_deferred'     => array( 'type' => 'warning', 'text' => __( 'Move to Trash for orders is not yet wired — the soft-delete schema lands in a future chunk. No changes were made.', 'equine-event-manager' ) ),
 			'print_receipt_deferred'   => array( 'type' => 'info',    'text' => __( 'Receipt print view lands with the Order Detail page in C6. No action taken.', 'equine-event-manager' ) ),
+			'bulk_refund_deferred'     => array( 'type' => 'info',    'text' => $this->bulk_refund_deferred_text() ),
+			'bulk_no_selection'        => array( 'type' => 'warning', 'text' => __( 'Pick at least one order before clicking Apply.', 'equine-event-manager' ) ),
+			'bulk_no_action'           => array( 'type' => 'warning', 'text' => __( 'Pick a bulk action before clicking Apply.', 'equine-event-manager' ) ),
 			'denied'                   => array( 'type' => 'error',   'text' => __( 'You do not have permission to perform that action.', 'equine-event-manager' ) ),
 			'notfound'                 => array( 'type' => 'error',   'text' => __( 'Order not found.', 'equine-event-manager' ) ),
 		);
@@ -182,47 +186,58 @@ class EEM_Orders_List_Page {
 		);
 		?>
 		<div class="eem-orders-toolbar">
-			<div class="eem-orders-toolbar-row">
-				<select class="eem-list-select" name="event" data-eem-orders-event-select>
-					<option value=""><?php esc_html_e( 'All events', 'equine-event-manager' ); ?></option>
-					<?php foreach ( $event_opts as $label => $value ) : ?>
-						<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $event, $value ); ?>><?php echo esc_html( $label ); ?></option>
-					<?php endforeach; ?>
-				</select>
-				<div class="eem-filter-tabs" role="tablist" aria-label="<?php esc_attr_e( 'Billing status', 'equine-event-manager' ); ?>">
-					<?php foreach ( $tabs as $tab_id => $tab_label ) :
-						$is_active = ( $tab_id === $billing );
-						$href = self::url( array( 'billing' => $tab_id ) );
+			<form class="eem-orders-toolbar-form" method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>" data-eem-orders-filter-form>
+				<input type="hidden" name="page" value="<?php echo esc_attr( self::MENU_SLUG ); ?>" />
+				<input type="hidden" name="billing" value="<?php echo esc_attr( $billing ); ?>" />
+				<?php foreach ( $types as $t ) : ?>
+					<input type="hidden" name="types[]" value="<?php echo esc_attr( $t ); ?>" />
+				<?php endforeach; ?>
+				<div class="eem-orders-toolbar-row">
+					<select class="eem-list-select" name="event" data-eem-orders-event-select onchange="this.form.submit()">
+						<option value=""><?php esc_html_e( 'All events', 'equine-event-manager' ); ?></option>
+						<?php foreach ( $event_opts as $label => $value ) : ?>
+							<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $event, $value ); ?>><?php echo esc_html( $label ); ?></option>
+						<?php endforeach; ?>
+					</select>
+					<div class="eem-filter-tabs" role="tablist" aria-label="<?php esc_attr_e( 'Billing status', 'equine-event-manager' ); ?>">
+						<?php foreach ( $tabs as $tab_id => $tab_label ) :
+							$is_active = ( $tab_id === $billing );
+							$href = self::url( array_merge( $this->preserve_filters( $billing, $types, $event, $search ), array( 'billing' => $tab_id, 'paged' => 1 ) ) );
+							?>
+							<a class="eem-filter-tab<?php echo $is_active ? ' active' : ''; ?>" href="<?php echo esc_url( $href ); ?>" role="tab" aria-selected="<?php echo $is_active ? 'true' : 'false'; ?>"><?php echo esc_html( $tab_label ); ?></a>
+						<?php endforeach; ?>
+					</div>
+				</div>
+				<div class="eem-orders-toolbar-row">
+					<span class="eem-orders-type-filter-label"><?php esc_html_e( 'Type:', 'equine-event-manager' ); ?></span>
+					<div class="eem-type-chips" role="group" aria-label="<?php esc_attr_e( 'Type filters', 'equine-event-manager' ); ?>">
+						<?php foreach ( $type_keys as $key ) :
+							$is_active = in_array( $key, $types, true );
+							// Toggle this chip's key in or out of the current set, preserve other filters.
+							$next_types = $is_active ? array_values( array_diff( $types, array( $key ) ) ) : array_values( array_unique( array_merge( $types, array( $key ) ) ) );
+							$href = self::url( array_merge( $this->preserve_filters( $billing, $next_types, $event, $search ), array( 'paged' => 1 ) ) );
+							?>
+							<a class="eem-type-chip eem-type-chip--<?php echo esc_attr( $key ); ?><?php echo $is_active ? '' : ' inactive'; ?>" href="<?php echo esc_url( $href ); ?>" data-type-key="<?php echo esc_attr( $key ); ?>" aria-pressed="<?php echo $is_active ? 'true' : 'false'; ?>">
+								<span class="eem-type-chip-dot"></span><?php echo esc_html( $type_labels[ $key ] ); ?>
+							</a>
+						<?php endforeach; ?>
+					</div>
+					<div class="eem-search-wrap">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+						<input class="eem-search-input" type="text" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="<?php esc_attr_e( 'Search by customer, order #, event…', 'equine-event-manager' ); ?>" />
+					</div>
+					<span class="eem-orders-list-count" data-eem-orders-list-count>
+						<?php
+						echo esc_html( sprintf(
+							/* translators: %s: total order count */
+							_n( '%s order', '%s orders', $total, 'equine-event-manager' ),
+							number_format_i18n( $total )
+						) );
 						?>
-						<a class="eem-filter-tab<?php echo $is_active ? ' active' : ''; ?>" href="<?php echo esc_url( $href ); ?>" role="tab" aria-selected="<?php echo $is_active ? 'true' : 'false'; ?>"><?php echo esc_html( $tab_label ); ?></a>
-					<?php endforeach; ?>
+					</span>
+					<button type="submit" class="screen-reader-text"><?php esc_html_e( 'Apply filters', 'equine-event-manager' ); ?></button>
 				</div>
-			</div>
-			<div class="eem-orders-toolbar-row">
-				<span class="eem-orders-type-filter-label"><?php esc_html_e( 'Type:', 'equine-event-manager' ); ?></span>
-				<div class="eem-type-chips" role="group" aria-label="<?php esc_attr_e( 'Type filters', 'equine-event-manager' ); ?>">
-					<?php foreach ( $type_keys as $key ) :
-						$is_active = in_array( $key, $types, true );
-						?>
-						<button type="button" class="eem-type-chip eem-type-chip--<?php echo esc_attr( $key ); ?><?php echo $is_active ? '' : ' inactive'; ?>" data-eem-action="orders-type-chip" data-type-key="<?php echo esc_attr( $key ); ?>" aria-pressed="<?php echo $is_active ? 'true' : 'false'; ?>">
-							<span class="eem-type-chip-dot"></span><?php echo esc_html( $type_labels[ $key ] ); ?>
-						</button>
-					<?php endforeach; ?>
-				</div>
-				<div class="eem-search-wrap">
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-					<input class="eem-search-input" type="text" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="<?php esc_attr_e( 'Search by customer, order #, event…', 'equine-event-manager' ); ?>" />
-				</div>
-				<span class="eem-orders-list-count" data-eem-orders-list-count>
-					<?php
-					echo esc_html( sprintf(
-						/* translators: %s: total order count */
-						_n( '%s order', '%s orders', $total, 'equine-event-manager' ),
-						number_format_i18n( $total )
-					) );
-					?>
-				</span>
-			</div>
+			</form>
 			<div class="eem-bulk-action-bar">
 				<select name="bulk_action" data-eem-orders-bulk-action>
 					<option value=""><?php esc_html_e( 'Bulk actions', 'equine-event-manager' ); ?></option>
@@ -244,6 +259,27 @@ class EEM_Orders_List_Page {
 	}
 
 	/**
+	 * Build the canonical "preserve all toolbar filters" arg set used
+	 * by both billing-tab anchors and chip-toggle anchors. Centralized
+	 * so adding a new filter dimension touches one place.
+	 *
+	 * @param string         $billing
+	 * @param array<string>  $types
+	 * @param string         $event
+	 * @param string         $search
+	 * @return array<string, mixed>
+	 */
+	private function preserve_filters( $billing, array $types, $event, $search ) {
+		$args = array(
+			'billing' => $billing,
+			'types'   => array_values( $types ),
+		);
+		if ( '' !== $event )  { $args['event'] = $event; }
+		if ( '' !== $search ) { $args['s']     = $search; }
+		return $args;
+	}
+
+	/**
 	 * Desktop table — 8 columns per mockup lines 343–353.
 	 * Empty state renders inline as a tbody row spanning all columns.
 	 *
@@ -252,19 +288,20 @@ class EEM_Orders_List_Page {
 	 * @param string $order
 	 * @return void
 	 */
-	private function render_desktop_table( array $items, $orderby, $order ) {
+	private function render_desktop_table( array $items, $orderby, $order, $billing = 'all', array $types = array(), $event = '', $search = '' ) {
+		$preserve = $this->preserve_filters( $billing, $types, $event, $search );
 		?>
 		<div class="eem-desktop-table">
 			<table class="eem-table">
 				<thead>
 					<tr>
 						<th class="eem-col-cb"><input type="checkbox" data-eem-action="orders-toggle-all" aria-label="<?php esc_attr_e( 'Select all', 'equine-event-manager' ); ?>" /></th>
-						<?php $this->render_sortable_th( 'order_number', __( 'Order', 'equine-event-manager' ), $orderby, $order ); ?>
+						<?php $this->render_sortable_th( 'order_number', __( 'Order', 'equine-event-manager' ), $orderby, $order, $preserve ); ?>
 						<th><?php esc_html_e( 'Customer', 'equine-event-manager' ); ?></th>
 						<th><?php esc_html_e( 'Event',    'equine-event-manager' ); ?></th>
 						<th><?php esc_html_e( 'Type',     'equine-event-manager' ); ?></th>
-						<?php $this->render_sortable_th( 'status', __( 'Status', 'equine-event-manager' ), $orderby, $order ); ?>
-						<?php $this->render_sortable_th( 'date',   __( 'Date',   'equine-event-manager' ), $orderby, $order ); ?>
+						<?php $this->render_sortable_th( 'status', __( 'Status', 'equine-event-manager' ), $orderby, $order, $preserve ); ?>
+						<?php $this->render_sortable_th( 'date',   __( 'Date',   'equine-event-manager' ), $orderby, $order, $preserve ); ?>
 						<th><?php esc_html_e( 'Actions',  'equine-event-manager' ); ?></th>
 					</tr>
 				</thead>
@@ -294,13 +331,14 @@ class EEM_Orders_List_Page {
 	 * @param string $current_order
 	 * @return void
 	 */
-	private function render_sortable_th( $key, $label, $current_orderby, $current_order ) {
+	private function render_sortable_th( $key, $label, $current_orderby, $current_order, array $preserve = array() ) {
 		$is_active  = ( $key === $current_orderby );
 		$next_order = ( $is_active && 'asc' === $current_order ) ? 'desc' : 'asc';
-		$href       = self::url( array(
+		$href       = self::url( array_merge( $preserve, array(
 			'orderby' => $key,
 			'order'   => $next_order,
-		) );
+			'paged'   => 1,
+		) ) );
 		$classes    = 'sortable' . ( $is_active ? ' is-sorted is-sorted--' . $current_order : '' );
 		?>
 		<th class="<?php echo esc_attr( $classes ); ?>">
@@ -506,7 +544,7 @@ class EEM_Orders_List_Page {
 	 * @param array{ items: array<int, array<string, mixed>>, total: int, total_pages: int, page: int, per_page: int } $page
 	 * @return void
 	 */
-	private function render_table_footer( array $page ) {
+	private function render_table_footer( array $page, $billing = 'all', array $types = array(), $event = '', $search = '' ) {
 		$total       = (int) $page['total'];
 		$current     = (int) $page['page'];
 		$total_pages = max( 1, (int) $page['total_pages'] );
@@ -515,8 +553,9 @@ class EEM_Orders_List_Page {
 		$start = $total > 0 ? ( ( $current - 1 ) * $per_page ) + 1 : 0;
 		$end   = min( $start + $per_page - 1, $total );
 
-		$prev_url = $current > 1 ? self::url( array( 'paged' => $current - 1 ) ) : '';
-		$next_url = $current < $total_pages ? self::url( array( 'paged' => $current + 1 ) ) : '';
+		$preserve = $this->preserve_filters( $billing, $types, $event, $search );
+		$prev_url = $current > 1            ? self::url( array_merge( $preserve, array( 'paged' => $current - 1 ) ) ) : '';
+		$next_url = $current < $total_pages ? self::url( array_merge( $preserve, array( 'paged' => $current + 1 ) ) ) : '';
 		?>
 		<div class="eem-table-footer">
 			<span class="eem-table-footer-info">
@@ -545,7 +584,7 @@ class EEM_Orders_List_Page {
 						<?php if ( $i === $current ) : ?>
 							<span class="eem-page-btn active" aria-current="page"><?php echo esc_html( number_format_i18n( $i ) ); ?></span>
 						<?php else : ?>
-							<a class="eem-page-btn" href="<?php echo esc_url( self::url( array( 'paged' => $i ) ) ); ?>"><?php echo esc_html( number_format_i18n( $i ) ); ?></a>
+							<a class="eem-page-btn" href="<?php echo esc_url( self::url( array_merge( $preserve, array( 'paged' => $i ) ) ) ); ?>"><?php echo esc_html( number_format_i18n( $i ) ); ?></a>
 						<?php endif; ?>
 					<?php endfor; ?>
 					<?php if ( $next_url ) : ?>
@@ -691,8 +730,85 @@ class EEM_Orders_List_Page {
 				'eem_order_export_csv'          => wp_create_nonce( 'eem_order_export_csv' ),
 				'eem_order_trash'               => wp_create_nonce( 'eem_order_trash' ),
 				'eem_order_print_receipt'       => wp_create_nonce( 'eem_order_print_receipt' ),
+				'eem_orders_bulk_refund'        => wp_create_nonce( 'eem_orders_bulk_refund' ),
 			),
 		) );
+	}
+
+	/**
+	 * Compose the bulk_refund_deferred notice text. Inspects
+	 * ?eem_bulk_count=N (URL param set by handle_bulk_refund on
+	 * redirect) so the message reflects the actual selection size.
+	 *
+	 * @return string
+	 */
+	private function bulk_refund_deferred_text() {
+		$n = isset( $_GET['eem_bulk_count'] ) ? absint( wp_unslash( $_GET['eem_bulk_count'] ) ) : 0;
+		if ( $n > 0 ) {
+			return sprintf(
+				/* translators: %d: number of orders the admin selected for bulk refund */
+				_n(
+					'Bulk refund queued for %d order — the async refund engine lands with the Order Detail page in C6. No refunds processed yet.',
+					'Bulk refund queued for %d orders — the async refund engine lands with the Order Detail page in C6. No refunds processed yet.',
+					$n,
+					'equine-event-manager'
+				),
+				$n
+			);
+		}
+		return __( 'Bulk refund stub — the async refund engine lands in C6. No refunds processed yet.', 'equine-event-manager' );
+	}
+
+	/**
+	 * Bulk Refund Selected confirmation modal — per REF-3 / ORD-2.
+	 *
+	 * Opens via data-eem-action="orders-bulk-apply" when the bulk
+	 * action select is set to "refund" and at least one row is
+	 * checked. The Confirm button submits the modal form to
+	 * admin-post.php (action=eem_orders_bulk_refund) with the
+	 * selected order_keys[], the reason text, and the notify-customers
+	 * flag. Server-side engine deferred to C6 (see CLEANUP.md #15) —
+	 * for now the handler just validates and redirects with a
+	 * deferred-notice carrying the count.
+	 *
+	 * @return void
+	 */
+	private function render_bulk_refund_modal() {
+		?>
+		<div class="eem-modal" id="eem-orders-bulk-refund-modal" role="dialog" aria-modal="true" aria-labelledby="eem-orders-bulk-refund-title" aria-hidden="true">
+			<div class="eem-modal-card">
+				<header class="eem-modal-head">
+					<h2 class="eem-modal-title" id="eem-orders-bulk-refund-title"><?php esc_html_e( 'Refund Selected Orders', 'equine-event-manager' ); ?></h2>
+					<button type="button" class="eem-modal-close" data-eem-action="orders-bulk-refund-close" aria-label="<?php esc_attr_e( 'Close', 'equine-event-manager' ); ?>">&times;</button>
+				</header>
+				<form class="eem-modal-body" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" data-eem-orders-bulk-refund-form>
+					<input type="hidden" name="action" value="eem_orders_bulk_refund" />
+					<?php wp_nonce_field( 'eem_orders_bulk_refund', '_eem_bulk_refund_nonce' ); ?>
+					<input type="hidden" name="order_keys" value="" data-eem-orders-bulk-refund-keys />
+					<p class="eem-orders-bulk-refund-summary" data-eem-orders-bulk-refund-summary>
+						<?php esc_html_e( 'Recipients will load when the modal opens.', 'equine-event-manager' ); ?>
+					</p>
+					<div class="eem-field-row" style="margin-top:14px;">
+						<label class="eem-field-label" for="eem-orders-bulk-refund-reason"><?php esc_html_e( 'Reason (optional)', 'equine-event-manager' ); ?></label>
+						<div class="eem-field-control">
+							<textarea class="eem-field-textarea" id="eem-orders-bulk-refund-reason" name="reason" rows="3" maxlength="500" placeholder="<?php esc_attr_e( 'e.g. Event cancelled due to weather', 'equine-event-manager' ); ?>"></textarea>
+							<p class="eem-field-hint"><?php esc_html_e( 'Stored on each refund record. Surfaced in the activity log; not sent to customers by default.', 'equine-event-manager' ); ?></p>
+						</div>
+					</div>
+					<div class="eem-field-row">
+						<label class="eem-field-label" for="eem-orders-bulk-refund-notify"><?php esc_html_e( 'Notify customers', 'equine-event-manager' ); ?></label>
+						<div class="eem-field-control">
+							<label><input type="checkbox" id="eem-orders-bulk-refund-notify" name="notify" value="1" checked /> <?php esc_html_e( 'Send the "Event Cancelled — Refund Processed" email to each customer.', 'equine-event-manager' ); ?></label>
+						</div>
+					</div>
+				</form>
+				<footer class="eem-modal-foot eem-modal-foot--split">
+					<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="orders-bulk-refund-close"><?php esc_html_e( 'Cancel', 'equine-event-manager' ); ?></button>
+					<button type="button" class="eem-btn eem-btn-primary" data-eem-action="orders-bulk-refund-confirm"><?php esc_html_e( 'Confirm refund', 'equine-event-manager' ); ?></button>
+				</footer>
+			</div>
+		</div>
+		<?php
 	}
 
 	/**
@@ -835,5 +951,54 @@ class EEM_Orders_List_Page {
 	public static function handle_print_receipt() {
 		self::check_order_action_request( 'eem_order_print_receipt' );
 		self::redirect_with_notice( 'print_receipt_deferred' );
+	}
+
+	/**
+	 * Bulk Refund Selected dispatcher (per REF-3 / ORD-2). Validates
+	 * the modal POST (cap + nonce + at least one order_key + each key
+	 * resolves to an existing order), then redirects with
+	 * ?eem_notice=bulk_refund_deferred&eem_bulk_count=N until the
+	 * async refund engine ships in C6.
+	 *
+	 * The handler intentionally does NOT call the merchant API yet —
+	 * see CLEANUP.md #15 for the engine scope (queued per-order
+	 * processing, activity log entries, customer notifications,
+	 * error collection at the end). C5.D wires the dispatcher so the
+	 * modal form posts somewhere coherent; C6 fills in the engine.
+	 *
+	 * @return void
+	 */
+	public static function handle_bulk_refund() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			self::redirect_with_notice( 'denied' );
+		}
+		check_admin_referer( 'eem_orders_bulk_refund', '_eem_bulk_refund_nonce' );
+
+		$keys_raw = isset( $_POST['order_keys'] ) ? wp_unslash( $_POST['order_keys'] ) : '';
+		// The modal serializes selected keys as a comma-joined string
+		// into a single hidden input (data-eem-orders-bulk-refund-keys)
+		// so the JS layer doesn't have to manage multiple inputs.
+		$keys = array_values( array_filter( array_map( 'sanitize_text_field', explode( ',', (string) $keys_raw ) ) ) );
+		if ( empty( $keys ) ) {
+			self::redirect_with_notice( 'bulk_no_selection' );
+		}
+
+		$repo  = new EEM_Orders_Repository();
+		$valid = 0;
+		foreach ( $keys as $k ) {
+			$o = $repo->get_order( $k );
+			if ( is_array( $o ) ) {
+				$valid++;
+			}
+		}
+		if ( 0 === $valid ) {
+			self::redirect_with_notice( 'notfound' );
+		}
+
+		// Engine TODO (C6): per REF-3, queue async per-order refund
+		// processing via merchant API, write activity log entries,
+		// send notification emails (when notify=1), collect failures
+		// for a "Needs Attention" list. See CLEANUP #15.
+		self::redirect_with_notice( 'bulk_refund_deferred', array( 'eem_bulk_count' => $valid ) );
 	}
 }

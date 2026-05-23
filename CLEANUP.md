@@ -16,6 +16,13 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 
 ## Active entries
 
+### 15. Bulk refund async engine (REF-3 / ORD-2)
+- **What:** `EEM_Orders_List_Page::handle_bulk_refund` validates the modal POST (cap + nonce + at least one valid order_key) and then redirects with `?eem_notice=bulk_refund_deferred&eem_bulk_count=N` — no refunds are actually processed. Per REF-3 / ORD-2 the engine is: queue refunds asynchronously via the merchant API one at a time (respecting rate limits), update Order state per the REF-2 status rules, write activity log entries, send the "Event Cancelled — Refund Processed" notification email to each customer (when notify=1), and collect failures into a "Needs Attention" list. None of that exists yet.
+- **Why deferred:** The async queue + progress UI + error collection are sizeable in their own right, AND the Order Detail page (C6) is where the SINGLE-order refund flow lives that this engine ultimately calls per-order — building the engine in isolation from C6's per-order refund code path would duplicate plumbing. Build C6's single-order refund first, then lift the per-order helper into a queue runner.
+- **Added in:** C5.D
+- **Unblocks deletion:** C6 (Order Detail port) — once a `refund_single_order( $order_key, $amount, $reason, $notify )` helper exists, `handle_bulk_refund` calls it in a loop (sync first cut; async queue follows once the UX needs progress feedback).
+- **Status:** dispatcher shipped; awaiting engine in C6
+
 ### 14. Orders soft-delete schema (Move to Trash for orders)
 - **What:** `EEM_Orders_List_Page::handle_trash` is a stub. Per ORD-3 ("Move to Trash (renamed from the original 'Delete Order') is WP-standard soft delete: the order is recoverable from the trash for 30 days") the orders list should support reversible trash semantics, but the underlying `wp_en_stall_reservations` / `wp_en_rv_reservations` tables have no `trashed_at` column. The handler currently redirects with a `?eem_notice=order_trash_deferred` warning rather than fall back to the legacy hard-delete (`EEM_Orders_Repository::delete_order`), which would surprise users expecting soft semantics.
 - **Why deferred:** Schema migration via dbDelta is its own chunk-shaped piece of work AND the related "purge after 30 days" cron + a Trash status badge + a Restore handler all need to ship together to be coherent.
