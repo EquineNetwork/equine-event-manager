@@ -3207,8 +3207,12 @@ a.eem-res-name {
 .eem-res-name:hover,
 a.eem-res-name:hover,
 a.eem-res-name:focus {
+	/* C5.G.8: hover convention is color-only, no underline (see the
+	   "EEM hover convention" block near the end of admin.css). Prior
+	   underline-on-hover was a deliberate C4-era link affordance that
+	   the new convention overrides for cross-page consistency. */
 	color: var(--eem-electric);
-	text-decoration: underline;
+	text-decoration: none;
 }
 
 .eem-event-dates {
@@ -3702,5 +3706,70 @@ body.eem-shell-page--orders .eem-date-val      { color: var(--eem-text-muted); w
 a.eem-filter-tab:hover,
 a.eem-row-dd-item:hover,
 a.eem-page-btn:hover {
+	text-decoration: none;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   C5.G.8 — EEM hover convention: color-only, no underlines.
+
+   Universal rule for all clickable text/link elements across
+   the plugin: hover state shifts COLOR only (typically navy →
+   electric blue, or a darker shade of the rest color), NEVER
+   adds an underline. Underlines are reserved for the front-end
+   public-facing content — admin chrome uses pointer + color
+   shift as the hover affordance.
+
+   Audited components (each verified earlier in C5.G or here):
+   - .eem-res-name        : navy → electric on hover, no underline (admin.css:3199)
+   - .eem-status-tab      : muted → navy on hover, no underline (admin.css:3030)
+   - .eem-filter-tab      : muted → no change on hover, no underline (C5.G.5)
+   - .eem-row-dd-item     : text → no change on hover, no underline (C5.G.5)
+   - .eem-page-btn        : muted → no change on hover, no underline (C5.G.5)
+   - .eem-btn-collect     : orange → orange on hover (bg shifts), no underline (C5.G.7)
+   - .eem-order-num       : navy → electric on hover, no underline (this block)
+   - .eem-customer-name   : navy → electric on hover, no underline (this block)
+
+   New components ship under this convention by default. CLEANUP
+   #12 long-term fix: scope `.eem-page a` to `:where()` so any
+   class rule wins naturally — the per-component `a.` chains in
+   this block (and the others) drop out then.
+   ───────────────────────────────────────────────────────────── */
+
+/* Order number — bold navy link, electric on hover. Render-site
+   styling applies on both .eem-order-num (desktop table cell)
+   and .eem-mobile-card-id.eem-order-num (mobile card chip).
+   The body.eem-shell-page--orders .eem-order-num base color
+   rule (admin.css C5.F-toolbar) sets the rest color; this block
+   adds the a.-chain + hover for the anchor-rendered version. */
+a.eem-order-num,
+body.eem-shell-page--orders a.eem-order-num {
+	color: var(--eem-navy);
+	text-decoration: none;
+	font-weight: 700;
+}
+
+a.eem-order-num:hover,
+a.eem-order-num:focus,
+body.eem-shell-page--orders a.eem-order-num:hover,
+body.eem-shell-page--orders a.eem-order-num:focus {
+	color: var(--eem-electric);
+	text-decoration: none;
+}
+
+/* Customer name — medium-weight body color rest, navy on hover.
+   Mobile card variant carries both classes
+   (.eem-mobile-card-title > a.eem-customer-name). */
+a.eem-customer-name,
+body.eem-shell-page--orders a.eem-customer-name {
+	color: var(--eem-text);
+	text-decoration: none;
+	font-weight: 500;
+}
+
+a.eem-customer-name:hover,
+a.eem-customer-name:focus,
+body.eem-shell-page--orders a.eem-customer-name:hover,
+body.eem-shell-page--orders a.eem-customer-name:focus {
+	color: var(--eem-electric);
 	text-decoration: none;
 }

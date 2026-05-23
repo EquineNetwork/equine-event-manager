@@ -139,6 +139,10 @@ class EEM_Plugin {
 		add_action( 'admin_post_eem_order_trash',                 array( 'EEM_Orders_List_Page', 'handle_trash' ) );
 		add_action( 'admin_post_eem_order_print_receipt',         array( 'EEM_Orders_List_Page', 'handle_print_receipt' ) );
 		add_action( 'admin_post_eem_orders_bulk_refund',          array( 'EEM_Orders_List_Page', 'handle_bulk_refund' ) );
+		// C5.G.8 — hidden Customer Profile placeholder page. Real page
+		// replaces this stub when the planned-roadmap chunk ships
+		// (see CLEANUP.md "Customer Profile chunk sequencing").
+		add_action( 'admin_menu',                                 array( 'EEM_Orders_List_Page', 'register_customer_profile_stub' ), 25 );
 		add_action( 'admin_enqueue_scripts',                      array( 'EEM_Orders_List_Page', 'localize_row_action_nonces' ), 20 );
 		add_action( 'admin_head', array( $this->reservation_editor, 'print_editor_shell_fallback_assets' ) );
 		add_action( 'edit_form_top', array( $this->reservation_editor, 'render_editor_header' ) );

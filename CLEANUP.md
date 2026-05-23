@@ -16,6 +16,17 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 
 ## Active entries
 
+### 16. Customer Profile chunk sequencing — link targets pre-wired
+- **What:** Orders list page wires customer-name spans as `<a class="eem-customer-name" href="admin.php?page=equine-event-manager-customer&customer_email=X">` anchors and order-number spans as `<a class="eem-order-num" href="admin.php?page=equine-event-manager-order&order_key=Y">` anchors. Order Detail destination (`equine-event-manager-order` slug) is the existing legacy `EEM_Admin::render_order_detail_page` callback — C6 replaces. Customer Profile destination (`equine-event-manager-customer` slug) is a hidden placeholder admin page registered by `EEM_Orders_List_Page::register_customer_profile_stub()` with `EEM_Orders_List_Page::render_customer_profile_stub()` as the callback — renders a "Customer Profile is on the planned roadmap" card.
+- **Why deferred:** Customer Profile is NOT currently sequenced in the Phase 3 chunk plan (C1–C13). The page needs sequencing before C13 — otherwise these anchors land on a permanent placeholder. Listing here so the next chunk-planning conversation explicitly slots it in.
+- **URL convention to honor when the real chunk lands:**
+  - Customer Profile: `admin.php?page=equine-event-manager-customer&customer_email={email}` — keyed by customer email since order rows don't carry a customer_id.
+  - Order Detail: `admin.php?page=equine-event-manager-order&order_key={key}` — keyed by the legacy order_key.
+  - Both URLs additionally accept `&panel=refund` / `&panel=collect` extras per C5.C's `order_detail_url()` helper.
+- **Added in:** C5.G.8
+- **Unblocks deletion:** Customer Profile chunk (when sequenced) replaces the stub callback in `EEM_Orders_List_Page::register_customer_profile_stub()` with the real page registration. The stub method + the placeholder render method can be removed (or repurposed if the real page wants the same shell pattern). The `CUSTOMER_PROFILE_MENU_SLUG` constant stays — it's the URL convention contract.
+- **Status:** stub shipped; awaiting Customer Profile chunk to be sequenced into the Phase 3 plan
+
 ### 15. Bulk refund async engine (REF-3 / ORD-2)
 - **What:** `EEM_Orders_List_Page::handle_bulk_refund` validates the modal POST (cap + nonce + at least one valid order_key) and then redirects with `?eem_notice=bulk_refund_deferred&eem_bulk_count=N` — no refunds are actually processed. Per REF-3 / ORD-2 the engine is: queue refunds asynchronously via the merchant API one at a time (respecting rate limits), update Order state per the REF-2 status rules, write activity log entries, send the "Event Cancelled — Refund Processed" notification email to each customer (when notify=1), and collect failures into a "Needs Attention" list. None of that exists yet.
 - **Why deferred:** The async queue + progress UI + error collection are sizeable in their own right, AND the Order Detail page (C6) is where the SINGLE-order refund flow lives that this engine ultimately calls per-order — building the engine in isolation from C6's per-order refund code path would duplicate plumbing. Build C6's single-order refund first, then lift the per-order helper into a queue runner.

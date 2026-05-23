@@ -48,6 +48,17 @@ class EEM_Orders_List_Page {
 	const MENU_SLUG = 'equine-event-manager-orders';
 
 	/**
+	 * Planned-but-not-yet-shipped Customer Profile admin page slug.
+	 * Registered as a hidden submenu (parent=null) by register_customer_profile_stub()
+	 * so customer-name anchors in the Orders list resolve to a graceful
+	 * placeholder card instead of WP's "page not found" error. The real
+	 * page replaces the stub callback in a future chunk; URL convention
+	 * + email key are documented in CLEANUP.md so the future chunk
+	 * honours the link target Orders is already wiring.
+	 */
+	const CUSTOMER_PROFILE_MENU_SLUG = 'equine-event-manager-customer';
+
+	/**
 	 * Build the admin URL for this page with optional query args.
 	 *
 	 * @param array<string, string|int> $args
@@ -409,8 +420,8 @@ class EEM_Orders_List_Page {
 		?>
 		<tr data-order-key="<?php echo esc_attr( $order_key ); ?>" data-billing="<?php echo esc_attr( $billing_tab ); ?>" data-types="<?php echo esc_attr( $data_types ); ?>">
 			<td class="eem-col-cb"><input type="checkbox" class="eem-orders-row-cb" name="order_keys[]" value="<?php echo esc_attr( $order_key ); ?>" aria-label="<?php echo esc_attr( sprintf( __( 'Select order %s', 'equine-event-manager' ), $order_number ) ); ?>" /></td>
-			<td><span class="eem-order-num"><?php echo esc_html( $this->format_order_number_display( $order_number ) ); ?></span></td>
-			<td><span class="eem-customer-name"><?php echo esc_html( $customer ); ?></span></td>
+			<td><a class="eem-order-num" href="<?php echo esc_url( self::order_detail_url( $order_key ) ); ?>"><?php echo esc_html( $this->format_order_number_display( $order_number ) ); ?></a></td>
+			<td><a class="eem-customer-name" href="<?php echo esc_url( self::customer_profile_url( isset( $order['email'] ) ? (string) $order['email'] : '' ) ); ?>"><?php echo esc_html( $customer ); ?></a></td>
 			<td><span class="eem-event-name"><?php echo esc_html( $event_name ); ?></span></td>
 			<td>
 				<?php if ( empty( $type_keys ) ) : ?>
@@ -550,10 +561,10 @@ class EEM_Orders_List_Page {
 				?>
 				<div class="eem-mobile-card" data-order-key="<?php echo esc_attr( $order_key ); ?>">
 					<div class="eem-mobile-card-top">
-						<span class="eem-mobile-card-id"><?php echo esc_html( $this->format_order_number_display( $order_number ) ); ?></span>
+						<a class="eem-mobile-card-id eem-order-num" href="<?php echo esc_url( self::order_detail_url( $order_key ) ); ?>"><?php echo esc_html( $this->format_order_number_display( $order_number ) ); ?></a>
 						<span class="eem-mobile-card-meta"><?php echo esc_html( $date_label ); ?></span>
 					</div>
-					<div class="eem-mobile-card-title"><?php echo esc_html( $customer ); ?></div>
+					<div class="eem-mobile-card-title"><a class="eem-customer-name" href="<?php echo esc_url( self::customer_profile_url( isset( $order['email'] ) ? (string) $order['email'] : '' ) ); ?>"><?php echo esc_html( $customer ); ?></a></div>
 					<div class="eem-mobile-card-sub"><?php echo esc_html( $event_name ); ?></div>
 					<div class="eem-mobile-card-bottom">
 						<div class="eem-mobile-card-badges">
@@ -741,6 +752,34 @@ class EEM_Orders_List_Page {
 				array(
 					'page'      => 'equine-event-manager-order',
 					'order_key' => $order_key,
+				),
+				$extra_args
+			),
+			admin_url( 'admin.php' )
+		);
+	}
+
+	/**
+	 * Build a Customer Profile admin URL keyed by customer email.
+	 *
+	 * Per C5.G.8 link-affordance polish, customer-name spans in the
+	 * Orders list are anchor-rendered to support a future Customer
+	 * Profile page. The destination chunk is not yet sequenced into
+	 * Phase 3 — until it ships, `EEM_Orders_List_Page::render_customer_profile_stub()`
+	 * (registered as a hidden admin submenu) catches hits and shows a
+	 * "Customer Profile is on the planned roadmap" placeholder card.
+	 * See CLEANUP.md entry "Customer Profile chunk sequencing".
+	 *
+	 * @param string                       $customer_email
+	 * @param array<string, string|int>    $extra_args
+	 * @return string
+	 */
+	public static function customer_profile_url( $customer_email, array $extra_args = array() ) {
+		return add_query_arg(
+			array_merge(
+				array(
+					'page'           => self::CUSTOMER_PROFILE_MENU_SLUG,
+					'customer_email' => $customer_email,
 				),
 				$extra_args
 			),
@@ -1034,6 +1073,74 @@ class EEM_Orders_List_Page {
 	 *
 	 * @return void
 	 */
+	/**
+	 * Register the Customer Profile placeholder admin page. Hidden from
+	 * the menu (parent=null) so it doesn't pollute the sidebar, but
+	 * reachable at admin.php?page=equine-event-manager-customer so the
+	 * customer-name anchors emitted by render_table_row() resolve to
+	 * a graceful "Coming Soon" card instead of WP's permission-denied
+	 * error.
+	 *
+	 * Wired to admin_menu in includes/class-equine-event-manager.php.
+	 *
+	 * The placeholder is intentional plumbing — the real Customer
+	 * Profile page is on the planned roadmap (see CLEANUP.md "Customer
+	 * Profile chunk sequencing" entry) and will replace this stub
+	 * callback when it ships.
+	 *
+	 * @return void
+	 */
+	public static function register_customer_profile_stub() {
+		add_submenu_page(
+			'', // parent=null → hidden from menu but reachable via direct URL
+			__( 'Customer Profile', 'equine-event-manager' ),
+			__( 'Customer Profile', 'equine-event-manager' ),
+			'manage_options',
+			self::CUSTOMER_PROFILE_MENU_SLUG,
+			array( __CLASS__, 'render_customer_profile_stub' )
+		);
+	}
+
+	/**
+	 * Placeholder render for the Customer Profile page. Uses the shared
+	 * page shell + a simple "coming soon" card. Reads the customer_email
+	 * query arg so the placeholder can echo whose profile was requested,
+	 * matching the URL convention the Orders list is already wiring.
+	 *
+	 * @return void
+	 */
+	public static function render_customer_profile_stub() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'equine-event-manager' ) );
+		}
+		$email = isset( $_GET['customer_email'] ) ? sanitize_email( wp_unslash( $_GET['customer_email'] ) ) : '';
+		eem_render_page_open( array(
+			'title'      => __( 'Customer Profile', 'equine-event-manager' ),
+			'subtitle'   => '' !== $email
+				? sprintf(
+					/* translators: %s: customer email */
+					__( 'Requested profile: %s', 'equine-event-manager' ),
+					$email
+				)
+				: __( 'Customer Profile page is on the planned roadmap.', 'equine-event-manager' ),
+			'breadcrumb' => array(
+				array( 'label' => __( 'Orders',           'equine-event-manager' ), 'url' => self::url() ),
+				array( 'label' => __( 'Customer Profile', 'equine-event-manager' ) ),
+			),
+			'wrap'       => true,
+		) );
+		?>
+		<div style="padding:32px;text-align:center;color:#50575e;">
+			<p style="font-size:14px;margin-bottom:8px;"><?php esc_html_e( 'Customer Profile is a planned roadmap chunk.', 'equine-event-manager' ); ?></p>
+			<p style="font-size:13px;color:#8c8f94;">
+				<?php esc_html_e( 'Order numbers and customer names in list pages are pre-wired as links so this page will Just Work once the chunk ships. See CLEANUP.md for the URL convention.', 'equine-event-manager' ); ?>
+			</p>
+			<p style="margin-top:20px;"><a class="eem-btn eem-btn-electric" href="<?php echo esc_url( self::url() ); ?>"><?php esc_html_e( 'Back to Orders', 'equine-event-manager' ); ?></a></p>
+		</div>
+		<?php
+		eem_render_page_close( array( 'wrap' => true ) );
+	}
+
 	public static function handle_bulk_refund() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			self::redirect_with_notice( 'denied' );
