@@ -1557,7 +1557,15 @@ th.sorted-desc .eem-sort-icon span:first-child {
 	overflow: hidden;
 }
 
-.eem-row-dropdown.open {
+/* C5.G.2: open-state lives on the wrap, not the dropdown.
+   admin.js toggleDropdown() adds .open to the closest
+   .eem-row-menu-wrap (parent), not to .eem-row-dropdown (child) —
+   so the prior `.eem-row-dropdown.open` selector never matched and
+   meatballs never visually opened on either list page. Pre-existing
+   C4-era contract mismatch that didn't surface until live browser
+   review in C5.G. Fixed by targeting the wrap's .open state and
+   applying display:block to the child dropdown. */
+.eem-row-menu-wrap.open .eem-row-dropdown {
 	display: block;
 }
 
