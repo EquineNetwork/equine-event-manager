@@ -1,11 +1,26 @@
 <?php
-/*
-Plugin Name: Equine Event Manager
-Description: Event reservation management for stalls and RV spaces.
-Version: 2.2.0
-Author: Whitney Mitchell
-Text Domain: equine-event-manager
-*/
+/**
+ * Plugin Name:       Equine Event Manager
+ * Plugin URI:        https://example.com/equine-event-manager
+ * Description:       Event reservation management for stalls, RV spaces, and add-on bookings — multi-event with stall-chart visualization, payment processor support (Stripe + Authorize.net), and CSV / receipt export.
+ * Version:           2.2.0
+ * Requires at least: 6.0
+ * Tested up to:      6.8
+ * Requires PHP:      7.4
+ * Author:            Whitney Mitchell
+ * Author URI:        https://example.com/equine-event-manager
+ * License:           GPL-2.0-or-later
+ * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
+ * Text Domain:       equine-event-manager
+ * Domain Path:       /languages
+ * Update URI:        false
+ *
+ * @package           EEM_Plugin
+ * @copyright         2024-2026 Whitney Mitchell
+ *
+ * Plugin URI + Author URI are placeholders pending external release. See
+ * CLEANUP entry #23 for the to-do before publication / distribution.
+ */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

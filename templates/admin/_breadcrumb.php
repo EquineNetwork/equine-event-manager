@@ -8,6 +8,8 @@
  * current page (not a link).
  *
  * @package EEM_Plugin
+ * @license   GPL-2.0-or-later
+ * @copyright 2024-2026 Whitney Mitchell
  *
  * Usage:
  *   eem_render_breadcrumb( array(

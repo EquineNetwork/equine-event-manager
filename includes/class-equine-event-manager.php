@@ -3,6 +3,8 @@
  * Main plugin loader.
  *
  * @package EEM_Plugin
+ * @license   GPL-2.0-or-later
+ * @copyright 2024-2026 Whitney Mitchell
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

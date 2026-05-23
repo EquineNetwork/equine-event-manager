@@ -4,6 +4,8 @@
  * EEM_Admin::render_orders_page with a mockup-faithful page).
  *
  * @package EEM_Plugin
+ * @license   GPL-2.0-or-later
+ * @copyright 2024-2026 Whitney Mitchell
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

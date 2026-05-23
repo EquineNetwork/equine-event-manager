@@ -16,6 +16,8 @@
  *   EEM_Activity_Log::write( EEM_Activity_Log::ORDER_EDITED, $payload, $context )
  *
  * @package EEM_Plugin
+ * @license   GPL-2.0-or-later
+ * @copyright 2024-2026 Whitney Mitchell
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

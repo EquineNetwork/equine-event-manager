@@ -16,6 +16,20 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 
 ## Active entries
 
+### 23. Plugin URI + Author URI placeholders — must be set before external release
+- **What:** `equine-event-manager.php` plugin header carries placeholder URIs (`https://example.com/equine-event-manager`) for both `Plugin URI` and `Author URI`. Same placeholders in `composer.json` `support.source` / `support.issues`. These are fine for in-development / private use but MUST be replaced before:
+  - WordPress.org plugin directory submission
+  - Distribution outside the dev team (zip → customer / handover)
+  - Any publication that surfaces the header (`wp plugin list` output, plugin page in `/wp-admin/plugins.php`)
+- **Why deferred:** Real URLs (repo, support site, author homepage) are not yet decided. Promoting the plugin past the in-development boundary is itself a discrete decision — bundle the URI update with that decision rather than guess now.
+- **Added in:** C6.5.C
+- **Pre-release checklist (run when promoting):**
+  1. Replace both `Plugin URI` + `Author URI` lines in `equine-event-manager.php`.
+  2. Update `composer.json` → `support.source` and `support.issues`.
+  3. If publishing to WordPress.org, also remove the `Update URI: false` line in the plugin header (it suppresses WP.org update checks — intentional for in-development copies, wrong for published ones).
+  4. Audit `README.md` for any placeholder URLs and update them too.
+- **Status:** placeholders shipped intentionally; awaiting external-release decision.
+
 ### 22. RES-ARCH-1 non-conformance — reservation title + dates read from post, not source event
 - **What:** Per decisions.md RES-ARCH-1 (added 2026-05-23), the reservation's user-visible title and event dates are read-only mirrors of the source event (Native / TEC / External Feed). Current code violates this: `EEM_Reservations_List_Page::render_table_row()` + `render_mobile_cards()` call `get_the_title( $post )` (reads `wp_posts.post_title` on the reservation), and `EEM_Reservations_List_Repo::get_event_date_range_label()` reads `_en_nightly_start_date` / `_en_nightly_end_date` / `_en_weekend_start_date` / `_en_weekend_end_date` from reservation post_meta. None of the six call sites resolves to a source event.
 - **Why deferred:** The fix requires a new source-event resolver (single function returning `[ title, start_date, end_date ]` from the active source) plus refactor of every call site that reads title/dates from the reservation. Substantial — definitely a discrete chunk. Plus an in-flight cache-invalidation decision: do title/dates become resolver-only (no cache, slower list-page renders) or do they stay in post_meta as a derived cache written by a source-change sync handler? That trade-off needs discussion, not improvisation.
@@ -82,13 +96,13 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
   - ✅ **Move smoke scripts + seeders into versioned directories** (was `/tmp/c4a-smoke.php` … `c5d-smoke.php` + `c5-seed.php`). Landed in C6.5.A: smokes live under `tests/smoke/` with `tests/smoke/run-all.sh` runner (single command, aggregated exit code); seeder at `scripts/seed-orders.php`. See `tests/README.md` + `scripts/README.md` for invocation.
   - ✅ **Add `composer.json`** declaring the plugin's PHP requirement (>=7.4) + dev dependencies (squizlabs/php_codesniffer, wp-coding-standards/wpcs, phpcompatibility/phpcompatibility-wp, dealerdirect/phpcodesniffer-composer-installer). Manifest committed in C6.5.B; `composer install` is a developer-setup step (vendor/ gitignored). Composer scripts: `lint`, `lint:summary`, `lint:fix`, `test` (maps to the smoke runner).
   - ✅ **Add `phpcs.xml`** configured to WordPress + WordPress-Extra + WordPress-Docs + PHPCompatibilityWP rulesets, text-domain pinned to `equine-event-manager`, prefix rules (`eem_`, `EEM_`, `_en_`, `en_`), excludes (`tests/`, `scripts/`, `vendor/`, `node_modules/`, `.mockups/`, asset CSS/JS). Audit deferred to dev setup — see the C6.5.B commit body for the exact command, or `composer run lint:summary` once `composer install` is run.
-  - **License headers audit** on every PHP file. Plugin needs consistent licensing. — queued for C6.5.C.
-  - **Properly format the plugin header** in `equine-event-manager.php` per [WP plugin header conventions](https://developer.wordpress.org/plugins/plugin-basics/header-requirements/) — version, license, requires-at-least, tested-up-to, network, update URI. — queued for C6.5.C.
+  - ✅ **License headers audit** on every PHP file. Compact `@license GPL-2.0-or-later` + `@copyright 2024-2026 Whitney Mitchell` lines added inside the existing `@package EEM_Plugin` docblocks across all 20 admin/includes/public/templates PHP files. `tests/` + `scripts/` excluded per phpcs.xml carve-out (echo-heavy, no docblocks expected). Landed in C6.5.C.
+  - ✅ **Properly format the plugin header** in `equine-event-manager.php` per [WP plugin header conventions](https://developer.wordpress.org/plugins/plugin-basics/header-requirements/) — converted from bare `/* */` to `/** */` docblock; added Plugin URI, Requires at least (6.0), Tested up to (6.8), Requires PHP (7.4), Author URI, License, License URI, Domain Path, Update URI (false, suppresses WP.org update checks for in-development copies). Placeholder URIs flagged in CLEANUP entry #23 for pre-release fix. Landed in C6.5.C.
 - **Why deferred:** Premature standardization mid-build slows iteration. By post-C5 the codebase has stable patterns; standardizing now locks them in for the rest of the build.
 - **Added in:** C5.G.10
 - **Sequence:** **"C6.5" sprint BEFORE C6** (promoted from the original between-C6-and-C7 slot). Rationale: shipping C6 into versioned infra (tests/, composer.json, phpcs.xml, license headers, full plugin header) avoids retrofitting all of that after C6 lands. C6 builds on top of stable infra from its first commit instead of getting decorated post-hoc. Updated chunk sequence: **C6.5.A → C6.5.B → C6.5.C → C6 → C6.6 → C7**.
 - **Unblocks deletion:** N/A (additive infra).
-- **Status:** C6.5.A done (test infra); C6.5.B done (composer + phpcs); C6.5.C queued (license + plugin header).
+- **Status:** ✅ All 5 items complete. C6.5.A (test infra), C6.5.B (composer + phpcs), C6.5.C (license + plugin header). C6.5 sprint closed.
 
 ### 16. Customer Profile chunk sequencing — link targets pre-wired
 - **What:** Orders list page wires customer-name spans as `<a class="eem-customer-name" href="admin.php?page=equine-event-manager-customer&customer_email=X">` anchors and order-number spans as `<a class="eem-order-num" href="admin.php?page=equine-event-manager-order&order_key=Y">` anchors. Order Detail destination (`equine-event-manager-order` slug) is the existing legacy `EEM_Admin::render_order_detail_page` callback — C6 replaces. Customer Profile destination (`equine-event-manager-customer` slug) is a hidden placeholder admin page registered by `EEM_Orders_List_Page::register_customer_profile_stub()` with `EEM_Orders_List_Page::render_customer_profile_stub()` as the callback — renders a "Customer Profile is on the planned roadmap" card.
