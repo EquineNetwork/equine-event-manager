@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equine Event Manager – Customer Profile</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
+
+/* ── WP SHELL ── */
+.wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;position:sticky;top:0;z-index:200}
+.wp-admin-bar span{font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-admin-bar span.site{color:#fff;font-weight:600}
+.wp-body{display:flex;flex:1}
+.wp-sidebar{width:160px;min-width:160px;background:#1d2327;min-height:calc(100vh - 32px)}
+.wp-sidebar-item{padding:8px 12px;font-size:13px;color:#c3c4c7;cursor:pointer;display:flex;align-items:center;gap:8px;border-left:3px solid transparent}
+.wp-sidebar-item:hover{background:#2c3338;color:#fff}
+.wp-sidebar-item.active{background:#1668F2;color:#fff;border-left-color:#90c4ff}
+.wp-sidebar-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 0}
+.wp-sidebar-label{padding:8px 12px 4px;font-size:10px;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.wp-sidebar-sub{padding:6px 12px 6px 28px;font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-sidebar-sub:hover{color:#fff}
+.wp-sidebar-sub.active{color:#90c4ff;font-weight:600}
+
+/* ── CONTENT ── */
+.wp-content{flex:1;padding:12px 20px 40px;min-width:0}
+
+.breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.breadcrumb-logo-box{width:160px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb;flex-shrink:0}
+.breadcrumb-sep{font-size:13px;color:#8c8f94}
+.breadcrumb-page{font-size:13px;color:#50575e}
+.breadcrumb-page a{color:#50575e;text-decoration:none}
+
+/* ── PLUGIN-WRAP (bordered card containing entire page) ── */
+.plugin-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
+
+/* PAGE HEADER (inside plugin-wrap, per VIS-3) */
+.plugin-header{padding:14px 18px;border-bottom:1px solid #dcdcde;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.plugin-header-left{flex:1;min-width:0}
+.plugin-title{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;color:#031B4E;margin-bottom:2px;line-height:1.3}
+.plugin-subtitle{font-size:12.5px;color:#6B7A99;margin-top:2px}
+.plugin-subtitle a{color:#031B4E;font-weight:600;text-decoration:none}
+.plugin-subtitle a:hover{color:#1668F2}
+
+/* Action bar in header */
+.action-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex-shrink:0}
+.btn{padding:7px 13px;border-radius:4px;font-size:12.5px;font-weight:500;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;border:1px solid;text-decoration:none}
+.btn svg{width:13px;height:13px;flex-shrink:0}
+.btn-ghost{background:#fff;color:#1d2327;border-color:#c3c4c7}
+.btn-ghost:hover{background:#f6f7f7}
+.btn-primary{background:#1668F2;color:#fff;border-color:#1668F2}
+.btn-primary:hover{background:#1257d1;border-color:#1257d1}
+.btn-icon{padding:6px 8px}
+.more-wrap{position:relative}
+.more-menu{display:none;position:absolute;top:100%;right:0;margin-top:4px;background:#fff;border:1px solid #c3c4c7;border-radius:4px;box-shadow:0 4px 12px rgba(0,0,0,.08);min-width:200px;z-index:50}
+.more-menu.open{display:block}
+.more-item{display:flex;align-items:center;gap:8px;padding:9px 14px;font-size:13px;color:#1d2327;cursor:pointer;border-bottom:1px solid #f0f0f1;text-decoration:none}
+.more-item:last-child{border-bottom:none}
+.more-item:hover{background:#f6f7f7}
+.more-item svg{width:13px;height:13px;color:#6B7A99;flex-shrink:0}
+.more-item-danger{color:#b91c1c}
+.more-item-danger svg{color:#fca5a5}
+.more-item-danger:hover{background:#fef2f2}
+
+/* ── KPI STATS GRID ── */
+.stats-section{padding:16px 18px;border-bottom:1px solid #dcdcde;background:#fff}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.stat-card{background:#F7F9FC;border:1px solid #e8eaf0;border-radius:6px;padding:14px 16px}
+.stat-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#8c8f94;margin-bottom:6px}
+.stat-value{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;line-height:1.1;margin-bottom:3px}
+.stat-meta{font-size:11.5px;color:#6B7A99}
+.stat-card.accent-electric{border-color:#c0d8ff;background:#EEF4FF}
+.stat-card.accent-electric .stat-value{color:#1668F2}
+.stat-card.accent-teal{border-color:#a7e8d8;background:#E6FAF5}
+.stat-card.accent-teal .stat-value{color:#0d9488}
+
+/* ── SECTION HEADERS ── */
+.section-header{padding:14px 18px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fff}
+.section-title{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#031B4E}
+.section-actions{display:flex;align-items:center;gap:6px}
+
+/* ── CUSTOMER DETAILS SECTION ── */
+.details-grid{padding:16px 18px;border-bottom:1px solid #dcdcde;background:#fff;display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px}
+.detail-block .detail-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#8c8f94;margin-bottom:5px}
+.detail-block .detail-content{font-size:13px;color:#1d2327;line-height:1.6}
+.detail-block address{font-style:normal}
+.detail-block a{color:#031B4E;font-weight:500;text-decoration:none}
+.detail-block a:hover{color:#1668F2}
+
+/* ── NOTES SECTION ── */
+.notes-section{padding:14px 18px;border-bottom:1px solid #dcdcde;background:#fff}
+.notes-textarea{width:100%;min-height:70px;padding:9px 12px;border:1px solid #8c8f94;border-radius:4px;font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:#1d2327;resize:vertical;background:#fff}
+.notes-textarea:focus{outline:none;border-color:#1668F2;box-shadow:0 0 0 1px #1668F2}
+.notes-actions{margin-top:8px;display:flex;justify-content:flex-end}
+
+/* ── TABLE SECTION ── */
+.table-section{background:#fff;border-bottom:1px solid #dcdcde}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+thead{background:#f3f4f5;border-bottom:1px solid #dcdcde}
+th{padding:10px 14px;font-size:13px;font-weight:600;color:#1d2327;text-align:left;white-space:nowrap}
+th.r{text-align:right}
+th.c{text-align:center}
+th.sortable{cursor:pointer}
+th .sort-icons{display:inline-flex;flex-direction:column;gap:1px;margin-left:3px;vertical-align:middle;opacity:.45}
+th .sort-icons svg{width:8px;height:5px;display:block}
+tbody tr{border-bottom:1px solid #f0f0f1}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:#f6f7f7}
+td{padding:12px 14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
+td.r{text-align:right;font-weight:600}
+td.c{text-align:center}
+.cell-link{color:#031B4E;font-weight:700;text-decoration:none}
+.cell-link:hover{color:#1668F2}
+.cell-event{color:#50575e;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cell-event a{color:#031B4E;text-decoration:none}
+.cell-event a:hover{color:#1668F2}
+.cell-date{color:#8c8f94;font-size:13px;white-space:nowrap}
+.cell-amount{color:#031B4E;font-weight:600;text-align:right;white-space:nowrap}
+.actions-cell{display:flex;gap:5px;justify-content:flex-end}
+.action-icon-btn{width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #c3c4c7;background:#fff;color:#6B7A99;border-radius:4px;cursor:pointer}
+.action-icon-btn:hover{background:#f0f0f1}
+.action-icon-btn svg{width:14px;height:14px}
+.more-btn{width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #c3c4c7;background:#fff;color:#50575e;border-radius:4px;cursor:pointer;font-size:15px;line-height:1}
+
+/* Status badges */
+.status-badge{padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.status-badge::before{content:'';width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.status-paid{background:#F0FDF4;color:#15803d;border:1px solid #bbf7d0}
+.status-paid::before{background:#22c55e}
+.status-partial{background:#FFFBEB;color:#b45309;border:1px solid #fde68a}
+.status-partial::before{background:#f59e0b}
+.status-invoice{background:#EEF4FF;color:#1668F2;border:1px solid #c0d8ff}
+.status-invoice::before{background:#3b82f6}
+.status-refunded{background:#FEF2F2;color:#b91c1c;border:1px solid #fecaca}
+.status-refunded::before{background:#ef4444}
+.status-unpaid{background:#FFFBEB;color:#b45309;border:1px solid #fde68a}
+.status-unpaid::before{background:#f59e0b}
+.status-active{background:#F0FDF4;color:#15803d;border:1px solid #bbf7d0}
+.status-active::before{background:#22c55e}
+.status-draft{background:#FEF3C7;color:#92400e;border:1px solid #fde68a}
+.status-draft::before{background:#f59e0b}
+
+/* Type badges (no dot) */
+.type-badge{padding:2px 7px;border-radius:3px;font-size:11px;font-weight:600;white-space:nowrap;display:inline-block}
+.type-stall{background:#EEF4FF;color:#1668F2;border:1px solid #c0d8ff}
+.type-rv{background:#F5F3FF;color:#6d28d9;border:1px solid #ddd6fe}
+.type-addon{background:#FFF7ED;color:#c2410c;border:1px solid #fed7aa}
+.type-group{background:#F0FDF4;color:#15803d;border:1px solid #bbf7d0}
+.type-badges-wrap{display:inline-flex;gap:4px;flex-wrap:wrap}
+
+/* Collect button (orange) */
+.btn-collect{padding:3px 8px;border-radius:4px;font-size:11.5px;font-weight:600;background:#FFF7ED;color:#c2410c;border:1px solid #fed7aa;cursor:pointer;display:inline-flex;align-items:center;gap:4px;text-decoration:none}
+.btn-collect:hover{background:#fed7aa}
+.btn-collect svg{width:12px;height:12px}
+
+/* Table footer / pagination */
+.table-footer{padding:12px 14px;background:#f3f4f5;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.footer-showing{font-size:12.5px;color:#6B7A99}
+.pagination{display:flex;gap:4px;align-items:center}
+.page-btn{width:28px;height:28px;border:1px solid #c3c4c7;background:#fff;color:#50575e;border-radius:4px;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
+.page-btn:hover{background:#f6f7f7}
+.page-btn.active{background:#1668F2;color:#fff;border-color:#1668F2}
+.page-btn.disabled{opacity:.45;cursor:not-allowed}
+.page-btn svg{width:12px;height:12px}
+
+/* ── ACTIVITY LOG ── */
+.activity-section{padding:14px 18px;background:#fff}
+.activity-list{display:flex;flex-direction:column;gap:0}
+.activity-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid #f0f0f1;align-items:flex-start}
+.activity-item:last-child{border-bottom:none}
+.activity-icon{width:28px;height:28px;border-radius:50%;background:#F7F9FC;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:#6B7A99}
+.activity-icon svg{width:13px;height:13px}
+.activity-icon.icon-order{background:#EEF4FF;color:#1668F2}
+.activity-icon.icon-payment{background:#F0FDF4;color:#15803d}
+.activity-icon.icon-refund{background:#FEF2F2;color:#b91c1c}
+.activity-icon.icon-email{background:#F5F3FF;color:#6d28d9}
+.activity-icon.icon-note{background:#FFFBEB;color:#b45309}
+.activity-body{flex:1;min-width:0}
+.activity-text{font-size:13px;color:#1d2327;line-height:1.45}
+.activity-text strong{color:#031B4E}
+.activity-meta{font-size:11.5px;color:#8c8f94;margin-top:2px}
+.activity-note-body{font-size:12.5px;color:#50575e;margin-top:3px;padding:6px 10px;background:#FFFBEB;border-left:3px solid #fde68a;border-radius:0 4px 4px 0;line-height:1.5}
+.add-note-form{padding:10px 0 0;display:flex;gap:8px;align-items:flex-start;border-top:1px solid #dcdcde;margin-top:8px;padding-top:14px}
+.add-note-form textarea{flex:1;min-height:56px;padding:8px 11px;border:1px solid #8c8f94;border-radius:4px;font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:#1d2327;resize:vertical;background:#fff}
+.add-note-form textarea:focus{outline:none;border-color:#1668F2;box-shadow:0 0 0 1px #1668F2}
+
+/* ── MOBILE CARDS (hidden on desktop) ── */
+.mobile-cards{display:none;padding:12px 14px;background:#fff}
+.mobile-card{background:#fff;border:1px solid #dcdcde;border-radius:4px;padding:14px;margin-bottom:8px}
+.mobile-card:last-child{margin-bottom:0}
+.mobile-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.mobile-card-id{color:#031B4E;font-weight:700;font-size:13.5px;text-decoration:none}
+.mobile-card-id:hover{color:#1668F2}
+.mobile-card-date{font-size:12px;color:#8c8f94}
+.mobile-card-title{font-size:14px;font-weight:600;color:#1d2327;margin-bottom:2px}
+.mobile-card-sub{font-size:12.5px;color:#50575e;margin-bottom:8px}
+.mobile-card-sub a{color:#031B4E;text-decoration:none}
+.mobile-card-sub a:hover{color:#1668F2}
+.mobile-card-bottom{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.mobile-card-badges{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.mobile-card-actions{display:flex;gap:5px}
+
+/* ── MOBILE BREAKPOINT ── */
+@media (max-width:1024px){
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .details-grid{grid-template-columns:1fr 1fr}
+}
+@media (max-width:767px){
+  .wp-sidebar{display:none}
+  .wp-content{padding:10px 12px 32px}
+  .plugin-header{flex-direction:column;align-items:flex-start;padding:12px 14px;gap:10px}
+  .action-bar{width:100%;flex-wrap:wrap}
+  .action-bar .btn{flex:1;justify-content:center;min-width:100px}
+  .stats-grid{grid-template-columns:1fr;gap:8px}
+  .stat-card{padding:11px 13px}
+  .stat-value{font-size:19px}
+  .details-grid{grid-template-columns:1fr;gap:14px;padding:12px 14px}
+  .section-header{padding:12px 14px}
+  .notes-section{padding:12px 14px}
+  .activity-section{padding:12px 14px}
+  /* Tables become cards on mobile */
+  .table-wrap{display:none}
+  .mobile-cards{display:block}
+  .table-footer{padding:10px 14px}
+}
+
+/* ── HOVER CONVENTION (universal — color only, no underline) ── */
+a{text-decoration:none}
+a:hover{text-decoration:none}
+
+</style>
+</head>
+<body>
+
+<!-- WP shell stub (visual context only — not part of plugin code) -->
+<div class="wp-admin-bar">
+  <span class="site">My Site</span>
+  <span>+ New</span>
+  <span style="margin-left:auto">Howdy, Whitney</span>
+</div>
+<div class="wp-body">
+  <nav class="wp-sidebar">
+    <div class="wp-sidebar-item">Dashboard</div>
+    <div class="wp-sidebar-item">Posts</div>
+    <div class="wp-sidebar-item">Pages</div>
+    <div class="wp-sidebar-sep"></div>
+    <div class="wp-sidebar-label">Event Manager</div>
+    <div class="wp-sidebar-sub">Dashboard</div>
+    <div class="wp-sidebar-sub">Reservations</div>
+    <div class="wp-sidebar-sub active">Orders</div>
+    <div class="wp-sidebar-sub">Stall Charts</div>
+    <div class="wp-sidebar-sub">Invoicing</div>
+    <div class="wp-sidebar-sub">Reports</div>
+    <div class="wp-sidebar-sub">Settings</div>
+  </nav>
+  <main class="wp-content">
+
+    <!-- Breadcrumb -->
+    <div class="breadcrumb">
+      <div class="breadcrumb-logo-box">Plugin Logo</div>
+      <span class="breadcrumb-sep">/</span>
+      <span class="breadcrumb-page"><a href="#">Customers</a></span>
+      <span class="breadcrumb-sep">/</span>
+      <span class="breadcrumb-page">Whitney Mitchell</span>
+    </div>
+
+    <!-- PLUGIN-WRAP (everything inside the bordered card) -->
+    <div class="plugin-wrap">
+
+      <!-- PAGE HEADER (inside card per VIS-3) -->
+      <header class="plugin-header">
+        <div class="plugin-header-left">
+          <h1 class="plugin-title">Whitney Mitchell</h1>
+          <div class="plugin-subtitle">
+            <a href="mailto:info@wmpromotions.com">info@wmpromotions.com</a>
+            &nbsp;·&nbsp;
+            (559) 393-5352
+            &nbsp;·&nbsp;
+            Customer since May 2025
+          </div>
+        </div>
+        <div class="action-bar">
+          <button class="btn btn-ghost">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
+            Send Email
+          </button>
+          <button class="btn btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+            Edit Customer
+          </button>
+          <div class="more-wrap">
+            <button class="btn btn-ghost btn-icon" id="more-btn">···</button>
+            <div class="more-menu" id="more-menu">
+              <a class="more-item" href="#">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Export Customer Data (CSV)
+              </a>
+              <a class="more-item" href="#">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Merge with Another Customer
+              </a>
+              <a class="more-item more-item-danger" href="#">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                Delete Customer
+              </a>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- STATS GRID -->
+      <section class="stats-section">
+        <div class="stats-grid">
+          <div class="stat-card accent-electric">
+            <div class="stat-label">Lifetime Spend</div>
+            <div class="stat-value">$2,847.50</div>
+            <div class="stat-meta">across 14 orders</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Orders</div>
+            <div class="stat-value">14</div>
+            <div class="stat-meta">12 paid · 2 unpaid</div>
+          </div>
+          <div class="stat-card accent-teal">
+            <div class="stat-label">Avg Order Value</div>
+            <div class="stat-value">$203.39</div>
+            <div class="stat-meta">last 12 months</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Last Order</div>
+            <div class="stat-value">May 22, 2026</div>
+            <div class="stat-meta">2 days ago</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CUSTOMER DETAILS -->
+      <section class="section-header">
+        <h2 class="section-title">Customer Details</h2>
+      </section>
+      <section class="details-grid">
+        <div class="detail-block">
+          <div class="detail-label">Contact</div>
+          <div class="detail-content">
+            <a href="mailto:info@wmpromotions.com">info@wmpromotions.com</a><br>
+            (559) 393-5352
+          </div>
+        </div>
+        <div class="detail-block">
+          <div class="detail-label">Billing Address</div>
+          <div class="detail-content">
+            <address>
+              Whitney Mitchell<br>
+              12253 Avenue 472<br>
+              Orange Cove, CA 93646<br>
+              United States
+            </address>
+          </div>
+        </div>
+        <div class="detail-block">
+          <div class="detail-label">Account Info</div>
+          <div class="detail-content">
+            Customer since May 2025<br>
+            Communication: Email opt-in<br>
+            Status: <span class="status-badge status-active">Active</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ADMIN NOTES -->
+      <section class="section-header">
+        <h2 class="section-title">Internal Notes</h2>
+      </section>
+      <section class="notes-section">
+        <textarea class="notes-textarea" placeholder="Add internal notes about this customer (not visible to customer)…">Repeat customer for SE Region events. Prefers nightly stall reservations. Always pays on time. Spencer Mitchell is her son who rides with her.</textarea>
+        <div class="notes-actions">
+          <button class="btn btn-primary">Save Notes</button>
+        </div>
+      </section>
+
+      <!-- ORDER HISTORY -->
+      <section class="section-header">
+        <h2 class="section-title">Order History</h2>
+        <div class="section-actions">
+          <a href="#" class="btn btn-ghost">View All Orders</a>
+        </div>
+      </section>
+      <section class="table-section">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="sortable">Order # <span class="sort-icons"><svg viewBox="0 0 8 5"><path d="M4 0L0 5h8z" fill="currentColor"/></svg><svg viewBox="0 0 8 5"><path d="M4 5L0 0h8z" fill="currentColor"/></svg></span></th>
+                <th>Event</th>
+                <th>Type</th>
+                <th class="sortable">Status <span class="sort-icons"><svg viewBox="0 0 8 5"><path d="M4 0L0 5h8z" fill="currentColor"/></svg><svg viewBox="0 0 8 5"><path d="M4 5L0 0h8z" fill="currentColor"/></svg></span></th>
+                <th class="sortable">Date <span class="sort-icons"><svg viewBox="0 0 8 5"><path d="M4 0L0 5h8z" fill="currentColor"/></svg><svg viewBox="0 0 8 5"><path d="M4 5L0 0h8z" fill="currentColor"/></svg></span></th>
+                <th class="r">Total</th>
+                <th class="r">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><a class="cell-link" href="#">#00028</a></td>
+                <td class="cell-event"><a href="#">2026 Southeast Region Super Sort</a></td>
+                <td><div class="type-badges-wrap"><span class="type-badge type-stall">Stall</span><span class="type-badge type-addon">Add-On</span></div></td>
+                <td><span class="status-badge status-paid">Paid</span></td>
+                <td class="cell-date">May 22, 2026</td>
+                <td class="cell-amount">$208.66</td>
+                <td>
+                  <div class="actions-cell">
+                    <button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+                    <button class="more-btn">···</button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td><a class="cell-link" href="#">#00021</a></td>
+                <td class="cell-event"><a href="#">2026 Southeast Region Super Sort</a></td>
+                <td><div class="type-badges-wrap"><span class="type-badge type-stall">Stall</span><span class="type-badge type-addon">Add-On</span></div></td>
+                <td><span class="status-badge status-invoice">Invoice Sent</span></td>
+                <td class="cell-date">Apr 24, 2026</td>
+                <td class="cell-amount">$175.00</td>
+                <td>
+                  <div class="actions-cell">
+                    <a href="#" class="btn-collect">Collect</a>
+                    <button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+                    <button class="more-btn">···</button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td><a class="cell-link" href="#">#00018</a></td>
+                <td class="cell-event"><a href="#">2026 Bluegrass Show</a></td>
+                <td><div class="type-badges-wrap"><span class="type-badge type-stall">Stall</span><span class="type-badge type-rv">RV</span></div></td>
+                <td><span class="status-badge status-partial">Partially Refunded</span></td>
+                <td class="cell-date">Apr 18, 2026</td>
+                <td class="cell-amount">$320.00</td>
+                <td>
+                  <div class="actions-cell">
+                    <button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+                    <button class="more-btn">···</button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td><a class="cell-link" href="#">#00012</a></td>
+                <td class="cell-event"><a href="#">2025 Spring Classic</a></td>
+                <td><div class="type-badges-wrap"><span class="type-badge type-stall">Stall</span><span class="type-badge type-group">Group</span></div></td>
+                <td><span class="status-badge status-paid">Paid</span></td>
+                <td class="cell-date">Mar 10, 2025</td>
+                <td class="cell-amount">$455.00</td>
+                <td>
+                  <div class="actions-cell">
+                    <button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+                    <button class="more-btn">···</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <!-- Mobile order cards -->
+        <div class="mobile-cards">
+          <div class="mobile-card">
+            <div class="mobile-card-top"><a href="#" class="mobile-card-id">#00028</a><span class="mobile-card-date">May 22, 2026</span></div>
+            <div class="mobile-card-title"><a href="#" style="color:#031B4E;text-decoration:none">2026 Southeast Region Super Sort</a></div>
+            <div class="mobile-card-bottom">
+              <div class="mobile-card-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-addon">Add-On</span><span class="status-badge status-paid">Paid</span></div>
+              <div class="mobile-card-actions"><button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button><button class="more-btn">···</button></div>
+            </div>
+          </div>
+          <div class="mobile-card">
+            <div class="mobile-card-top"><a href="#" class="mobile-card-id">#00021</a><span class="mobile-card-date">Apr 24, 2026</span></div>
+            <div class="mobile-card-title"><a href="#" style="color:#031B4E;text-decoration:none">2026 Southeast Region Super Sort</a></div>
+            <div class="mobile-card-bottom">
+              <div class="mobile-card-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-addon">Add-On</span><span class="status-badge status-invoice">Invoice Sent</span></div>
+              <div class="mobile-card-actions"><a href="#" class="btn-collect">Collect</a><button class="more-btn">···</button></div>
+            </div>
+          </div>
+        </div>
+        <!-- Footer -->
+        <div class="table-footer">
+          <div class="footer-showing">Showing 1–4 of 14 orders</div>
+          <div class="pagination">
+            <a class="page-btn disabled"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="8 2 3 6 8 10"/></svg></a>
+            <a class="page-btn active" href="#">1</a>
+            <a class="page-btn" href="#">2</a>
+            <a class="page-btn" href="#">3</a>
+            <a class="page-btn" href="#"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 2 9 6 4 10"/></svg></a>
+          </div>
+        </div>
+      </section>
+
+      <!-- RESERVATION HISTORY -->
+      <section class="section-header">
+        <h2 class="section-title">Reservation History</h2>
+      </section>
+      <section class="table-section">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Event</th>
+                <th>Event Dates</th>
+                <th>Type</th>
+                <th class="c">Orders</th>
+                <th class="r">Total Spent</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="cell-event"><a href="#">2026 Southeast Region Super Sort</a></td>
+                <td class="cell-date">May 28 – May 30, 2026</td>
+                <td><div class="type-badges-wrap"><span class="type-badge type-stall">Stall</span><span class="type-badge type-rv">RV</span><span class="type-badge type-addon">Add-On</span></div></td>
+                <td class="c">3</td>
+                <td class="cell-amount">$583.66</td>
+              </tr>
+              <tr>
+                <td class="cell-event"><a href="#">2026 Bluegrass Show</a></td>
+                <td class="cell-date">Apr 15 – Apr 18, 2026</td>
+                <td><div class="type-badges-wrap"><span class="type-badge type-stall">Stall</span><span class="type-badge type-rv">RV</span></div></td>
+                <td class="c">2</td>
+                <td class="cell-amount">$640.00</td>
+              </tr>
+              <tr>
+                <td class="cell-event"><a href="#">2025 Spring Classic</a></td>
+                <td class="cell-date">Mar 10 – Mar 12, 2025</td>
+                <td><div class="type-badges-wrap"><span class="type-badge type-stall">Stall</span><span class="type-badge type-group">Group</span></div></td>
+                <td class="c">9</td>
+                <td class="cell-amount">$1,623.84</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <!-- Mobile reservation cards -->
+        <div class="mobile-cards">
+          <div class="mobile-card">
+            <div class="mobile-card-top"><a href="#" class="mobile-card-id">2026 Southeast Region Super Sort</a></div>
+            <div class="mobile-card-sub">May 28 – May 30, 2026 · 3 orders · $583.66</div>
+            <div class="mobile-card-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-rv">RV</span><span class="type-badge type-addon">Add-On</span></div>
+          </div>
+          <div class="mobile-card">
+            <div class="mobile-card-top"><a href="#" class="mobile-card-id">2026 Bluegrass Show</a></div>
+            <div class="mobile-card-sub">Apr 15 – Apr 18, 2026 · 2 orders · $640.00</div>
+            <div class="mobile-card-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-rv">RV</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ACTIVITY LOG -->
+      <section class="section-header">
+        <h2 class="section-title">Activity Log</h2>
+      </section>
+      <section class="activity-section">
+        <div class="activity-list">
+          <div class="activity-item">
+            <div class="activity-icon icon-order">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+            </div>
+            <div class="activity-body">
+              <div class="activity-text">Order <strong><a href="#" style="color:#031B4E">#00028</a></strong> created — $208.66 for 2026 Southeast Region Super Sort</div>
+              <div class="activity-meta">May 22, 2026 at 10:32 AM</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-icon icon-payment">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            </div>
+            <div class="activity-body">
+              <div class="activity-text">Payment received via Stripe — <strong>$208.66</strong></div>
+              <div class="activity-meta">May 22, 2026 at 10:33 AM</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-icon icon-email">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            </div>
+            <div class="activity-body">
+              <div class="activity-text">Receipt email sent to <strong>info@wmpromotions.com</strong></div>
+              <div class="activity-meta">May 22, 2026 at 10:33 AM</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-icon icon-note">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <div class="activity-body">
+              <div class="activity-text"><strong>Whitney (admin)</strong> added note</div>
+              <div class="activity-meta">May 20, 2026 at 3:14 PM</div>
+              <div class="activity-note-body">Customer called about RV hookup — confirmed Spot #12 in Red Lot.</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-icon icon-refund">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+            </div>
+            <div class="activity-body">
+              <div class="activity-text">Partial refund processed on order <strong><a href="#" style="color:#031B4E">#00018</a></strong> — <strong>$50.00</strong></div>
+              <div class="activity-meta">Apr 19, 2026 at 9:12 AM</div>
+            </div>
+          </div>
+        </div>
+        <!-- Add note form -->
+        <div class="add-note-form">
+          <textarea placeholder="Add a note about this customer…"></textarea>
+          <button class="btn btn-primary" style="align-self:flex-start">Add Note</button>
+        </div>
+      </section>
+
+    </div><!-- /plugin-wrap -->
+
+  </main>
+</div>
+
+<script>
+// Meatballs toggle (visual only)
+document.getElementById('more-btn').addEventListener('click', function(e){
+  e.stopPropagation();
+  document.getElementById('more-menu').classList.toggle('open');
+});
+document.addEventListener('click', function(){
+  document.getElementById('more-menu').classList.remove('open');
+});
+</script>
+
+</body>
+</html>
