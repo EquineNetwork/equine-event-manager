@@ -16,6 +16,20 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 
 ## Active entries
 
+### 22. RES-ARCH-1 non-conformance — reservation title + dates read from post, not source event
+- **What:** Per decisions.md RES-ARCH-1 (added 2026-05-23), the reservation's user-visible title and event dates are read-only mirrors of the source event (Native / TEC / External Feed). Current code violates this: `EEM_Reservations_List_Page::render_table_row()` + `render_mobile_cards()` call `get_the_title( $post )` (reads `wp_posts.post_title` on the reservation), and `EEM_Reservations_List_Repo::get_event_date_range_label()` reads `_en_nightly_start_date` / `_en_nightly_end_date` / `_en_weekend_start_date` / `_en_weekend_end_date` from reservation post_meta. None of the six call sites resolves to a source event.
+- **Why deferred:** The fix requires a new source-event resolver (single function returning `[ title, start_date, end_date ]` from the active source) plus refactor of every call site that reads title/dates from the reservation. Substantial — definitely a discrete chunk. Plus an in-flight cache-invalidation decision: do title/dates become resolver-only (no cache, slower list-page renders) or do they stay in post_meta as a derived cache written by a source-change sync handler? That trade-off needs discussion, not improvisation.
+- **Added in:** C5.G.13 (defect discovered during the C5.G.10 RES-ARCH-1 verification audit)
+- **Migration plan:**
+  1. Build `EEM_Reservation_Source_Resolver::resolve_event_fields( $reservation_id )` returning `[ 'title' => string, 'start_date' => string, 'end_date' => string, 'venue' => string ]` from the active source (dispatches to Native CPT / TEC API / External Feed per the Settings event-source mode).
+  2. Update `EEM_Reservations_List_Repo::get_event_date_range_label()` to call the resolver instead of reading post_meta directly.
+  3. Update `EEM_Reservations_List_Page::render_table_row()` + `render_mobile_cards()` to call the resolver for the title instead of `get_the_title()`.
+  4. Decide cache-invalidation discipline (resolver-only vs. cached-meta-with-sync-handler). If cached: write a `EEM_Reservation_Source_Sync::on_source_change( $source_event_id )` action that pushes title + dates to the linked reservation's post_meta + post_title.
+  5. C7 Edit Reservation editor renders title + dates as read-only labels with "Linked to: {source event}" hint instead of input fields.
+- **Sequence target:** **Between C6 and C7** — must precede C7 because C7 is where the user-facing UI lands (read-only labels instead of input fields). Candidate chunk name "C6.6 source-event resolver" (slotted between the C6.5 professionalization sprint per entry #17 and the C7 editor port).
+- **Unblocks deletion:** the four nightly/weekend date meta keys MAY survive as a derived cache (per the migration-plan step 4 decision) — if they do, they retain a single writer (the sync handler) instead of the current admin-input writer. If they don't, the four meta keys + the date-range-label helper become resolver-call-only.
+- **Status:** non-conforming code identified + documented; awaiting the C6.6 resolver chunk
+
 ### 21. Searchable Event-filter dropdown (Choices.js) — UX scaling, not polish
 - **What:** Orders + Reservations both use a native `<select>` for the Event filter. Becomes unwieldy past ~50 events (long scroll, no typeahead, no in-place filtering). Replace with Choices.js — adds searchable typeahead + better keyboard navigation. Apply to BOTH list pages for parity. Style the Choices.js shell to match EEM design tokens: navy borders, Electric Blue focus ring, proper border-radius matching `.eem-toolbar-select`. Audit Reservations during this chunk for similar issues with the Date filter dropdown + any future filters (Type, etc.) that might need the same treatment.
 - **Why deferred:** Current native `<select>` works fine for the seeded test data (~3 events) but visibly degrades at production scale. Not a polish issue — a UX scaling issue that becomes a real blocker before user testing.

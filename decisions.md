@@ -313,6 +313,47 @@ Trigger conditions that generate a Needs Attention entry on dashboard load:
 
 ---
 
+## Reservation Setup Architecture
+
+### RES-ARCH-1. Title + event dates are read-only mirrors of the source event
+**Decided:** 2026-05-23 (during C5.G verification of the Reservations list)
+
+A reservation post in this plugin represents a **setup configuration** (stall types, capacity, pricing, add-ons, blocked stall numbers, stall-chart layout, etc.) bound to a **source event** owned by an external system. The source-of-truth for identity fields (title, start_date, end_date, venue) is **always the source event**, never the reservation post.
+
+**Source event authority** comes from whichever event source is active in Settings:
+- **Native Events** — `en_event` CPT managed inside this plugin
+- **The Events Calendar (TEC)** — `tribe_events` CPT managed by the TEC plugin
+- **External Feed URL** — pulled from a JSON feed configured in Settings
+
+**Contract on every render:**
+1. Reservation title displays = source event's title (resolved live on render)
+2. Reservation dates display = source event's start/end dates (resolved live on render)
+3. Reservation post stores: a pointer to the source event + the setup configuration meta. It does NOT store its own copy of title/dates as canonical data.
+4. The reservation post's `post_title` field exists for WP internal use (admin sidebar search, edit screen URL slug derivation, REST API responses) but is NEVER displayed as the reservation's user-visible name. The user-visible name comes from the resolver.
+
+**UI implications (relevant to C7 Edit Reservation):**
+- Title + dates render as read-only labels (`<span>`), not input fields.
+- A small note below the title reads "Linked to: {source event name}" with a link to the source-event's native edit screen (if the source supports it).
+- The user-visible flow for renaming or rescheduling a reservation is "go edit the source event" — not "edit fields on the reservation post."
+
+**Rationale:**
+- Prevents reservations from being orphaned with stale or contradictory names that don't match the linked event (e.g. event renamed in TEC but reservation post keeps the old title).
+- Single source of truth simplifies sync logic (one direction: source → reservation cache, never reservation → source).
+- Aligns with the existing "three event sources" pluggability that already exists for choosing where events come from (per the README's in-scope-features note); extending that authority to identity fields is the consistent move.
+
+**Migration cost (current non-conformance — see CLEANUP #22):**
+- `EEM_Reservations_List_Repo::get_event_date_range_label()` currently reads `_en_nightly_start_date` / `_en_nightly_end_date` / `_en_weekend_start_date` / `_en_weekend_end_date` from reservation post_meta. These should become resolver calls.
+- `EEM_Reservations_List_Page::render_table_row()` (and `render_mobile_cards()`) currently call `get_the_title( $post )`. Should call the resolver instead.
+- The four date meta keys + `post_title` may continue to exist as a derived cache (faster reads, no resolver round-trip on every list-page render) — but with a clear cache-invalidation discipline: written ONLY by a sync handler that fires on source-event change, never by user input on the reservation editor.
+- Migration target chunk: **must precede C7** (Edit Reservation editor port), because C7 is where the user-facing impact lands. Likely lives in C6.5 or as a dedicated "C6.6 source-event resolver" chunk between C6 (Order Detail) and C7.
+
+**Out-of-scope clarifications:**
+- Setup configuration meta (`_en_stall_quantity_available`, `_en_stall_chart_enabled`, `_en_stall_rows`, fees, add-ons, blocked stall numbers, etc.) **stays** on the reservation post — that's the reservation's actual owned data.
+- The reservation → source-event pointer fields (`_en_event_id`, `_en_native_event_id`, `_en_external_event_id`, `_en_external_event_label`) **stay** as reservation-owned references to the source.
+- The orders → reservation linkage (legacy "Reservation setup ID: N" note pattern) is unaffected.
+
+---
+
 ## Reservations List (`reservations_page.html`)
 
 ### RES-1. Reservation name is the primary edit affordance
