@@ -5025,6 +5025,245 @@ class EEM_Admin {
 	}
 
 	/**
+	 * Process an amount-based refund against an order (C6.B).
+	 *
+	 * Distributes the requested refund amount across the order's payment
+	 * components SEQUENTIALLY — refunds the first component up to its
+	 * remaining-refundable capacity, then the next, until the requested
+	 * amount is exhausted. Per-component refunds hit the order's
+	 * configured gateway (Stripe or Authorize.net) via the existing
+	 * refund_order_component() infrastructure.
+	 *
+	 * Server-side validations (enforced regardless of any client-side checks):
+	 *   - amount > 0
+	 *   - amount <= sum of remaining refundable across all components
+	 *     (this single check covers both "<= captured" and
+	 *     "<= captured - already_refunded" cases — the components'
+	 *     `remaining_refundable` already accounts for prior partial
+	 *     refunds via get_component_refunded_amount).
+	 *
+	 * Wraps the legacy private refund stack (refund_order_component +
+	 * persist_component_refund) so external callers (the C6.B AJAX
+	 * endpoint, the future C6.C bulk engine) don't need access to
+	 * those internals. Scheduled for extraction into a dedicated
+	 * EEM_Refund_Engine class per CLEANUP #27 once C6.C lands and
+	 * clarifies the batch-error-attribution contract.
+	 *
+	 * @param string $order_key       Order key.
+	 * @param float  $requested_amount Refund amount in dollars (positive).
+	 * @param string $reason          Optional human-readable reason; stored on activity-log payload (currently unused by the gateway calls themselves).
+	 * @return array|WP_Error On success: array{ refunded_amount:float, components:array, new_status_slug:string, new_status_label:string }. On failure: WP_Error with code and message.
+	 */
+	public function process_amount_refund( $order_key, $requested_amount, $reason = '' ) {
+		$order = $this->orders_repository->get_order( $order_key );
+
+		if ( ! $order ) {
+			return new WP_Error( 'order_not_found', __( 'Order not found.', 'equine-event-manager' ) );
+		}
+
+		$requested_amount = (float) $requested_amount;
+
+		if ( $requested_amount <= 0 ) {
+			return new WP_Error( 'invalid_amount', __( 'Refund amount must be greater than zero.', 'equine-event-manager' ) );
+		}
+
+		$total_remaining = 0.0;
+		$components      = isset( $order['components'] ) && is_array( $order['components'] ) ? $order['components'] : array();
+
+		foreach ( $components as $component ) {
+			$total_remaining += $this->get_component_remaining_refundable_amount( $component );
+		}
+
+		// Float-tolerant comparison — accept amounts within $0.01 of the
+		// remaining balance (handles UI rounding without rejecting valid
+		// "refund full remaining" requests).
+		if ( $requested_amount > $total_remaining + 0.009 ) {
+			return new WP_Error(
+				'exceeds_remaining',
+				sprintf(
+					/* translators: 1: requested amount, 2: remaining refundable */
+					__( 'Refund amount $%1$s exceeds the remaining refundable balance of $%2$s.', 'equine-event-manager' ),
+					number_format( $requested_amount, 2 ),
+					number_format( $total_remaining, 2 )
+				)
+			);
+		}
+
+		$remaining_to_refund   = $requested_amount;
+		$refunded_components   = array();
+
+		foreach ( $components as $component ) {
+			if ( $remaining_to_refund <= 0.009 ) {
+				break;
+			}
+
+			$component_available = $this->get_component_remaining_refundable_amount( $component );
+			if ( $component_available <= 0.009 ) {
+				continue;
+			}
+
+			$component_refund_amount = min( $remaining_to_refund, $component_available );
+
+			$refund_result = $this->refund_order_component( $component, $component_refund_amount );
+			if ( is_wp_error( $refund_result ) ) {
+				return $refund_result;
+			}
+
+			$persisted = $this->persist_component_refund( $component, $component_refund_amount, $refund_result, array() );
+			if ( ! $persisted ) {
+				return new WP_Error(
+					'persist_failed',
+					__( 'The refund was sent to the gateway, but the order record could not be updated afterward.', 'equine-event-manager' )
+				);
+			}
+
+			$refunded_components[] = array(
+				'transaction_id' => (string) $refund_result,
+				'amount'         => $component_refund_amount,
+				'table'          => isset( $component['table'] ) ? (string) $component['table'] : '',
+				'row_id'         => isset( $component['row_id'] ) ? (int) $component['row_id'] : 0,
+			);
+
+			$remaining_to_refund -= $component_refund_amount;
+		}
+
+		// Reload to capture the recomputed payment_status across components.
+		$updated_order = $this->orders_repository->get_order( $order_key );
+
+		return array(
+			'refunded_amount'  => $requested_amount,
+			'components'       => $refunded_components,
+			'new_status_slug'  => isset( $updated_order['status_slug'] ) ? (string) $updated_order['status_slug'] : 'partially-refunded',
+			'new_status_label' => isset( $updated_order['status_label'] ) ? (string) $updated_order['status_label'] : __( 'Partially Refunded', 'equine-event-manager' ),
+			'reason'           => $reason,
+		);
+	}
+
+	/**
+	 * AJAX endpoint: single-order refund from the C6.B Order Detail modal.
+	 *
+	 * Validates nonce + capability, parses the POST payload, calls
+	 * process_amount_refund(), writes an activity-log entry on success,
+	 * and returns a JSON response with the fragments the C6.B JS handler
+	 * uses to update the page in-place (option-3 UX per C6.B kickoff):
+	 *   - new_status_slug / new_status_label / new_status_css for the
+	 *     status badge swap
+	 *   - banner_html for the payment-banner DOM update (empty string
+	 *     when the order is now fully paid/refunded — JS removes the
+	 *     banner element)
+	 *   - refund_history_html for the Payment Details sidebar block
+	 *   - requires_reload: true when in-place update isn't safe (mixed-
+	 *     gateway partial failure, etc.). JS falls back to toast+reload.
+	 *
+	 * On failure: wp_send_json_error with error code + message. JS
+	 * surfaces the message inline in the modal.
+	 *
+	 * @return void  Always exits via wp_send_json_*.
+	 */
+	public function handle_ajax_refund_single() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'code' => 'capability', 'message' => __( 'You do not have permission to refund orders.', 'equine-event-manager' ) ), 403 );
+		}
+
+		$order_key = isset( $_POST['order_key'] ) ? sanitize_text_field( wp_unslash( $_POST['order_key'] ) ) : '';
+		$nonce     = isset( $_POST['_eem_refund_single_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['_eem_refund_single_nonce'] ) ) : '';
+
+		if ( '' === $order_key || ! wp_verify_nonce( $nonce, 'eem_refund_single_' . $order_key ) ) {
+			wp_send_json_error( array( 'code' => 'nonce', 'message' => __( 'Security check failed. Please reload and try again.', 'equine-event-manager' ) ), 400 );
+		}
+
+		$amount_raw = isset( $_POST['amount'] ) ? sanitize_text_field( wp_unslash( $_POST['amount'] ) ) : '';
+		$amount     = (float) preg_replace( '/[^0-9.\-]/', '', $amount_raw );
+		$reason     = isset( $_POST['reason'] ) ? sanitize_textarea_field( wp_unslash( $_POST['reason'] ) ) : '';
+
+		$result = $this->process_amount_refund( $order_key, $amount, $reason );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array(
+				'code'    => $result->get_error_code(),
+				'message' => $result->get_error_message(),
+			), 400 );
+		}
+
+		// Write activity-log entry (manual write here; C6.D's auto-fire
+		// hooks will cover the systematic refund-event capture, but this
+		// chunk's refund flow surfaces the entry from the AJAX path so
+		// the log reflects the action immediately).
+		if ( class_exists( 'EEM_Activity_Log' ) ) {
+			$current_user = wp_get_current_user();
+			EEM_Activity_Log::write(
+				'order.refund',
+				array(
+					'order_key'        => $order_key,
+					'amount'           => $result['refunded_amount'],
+					'reason'           => $reason,
+					'components'       => $result['components'],
+					'new_status_slug'  => $result['new_status_slug'],
+				),
+				array(
+					'actor_type'  => 'user',
+					'actor_id'    => (int) get_current_user_id(),
+					'actor_label' => $current_user ? (string) $current_user->display_name : '',
+				)
+			);
+		}
+
+		// Build in-place fragments.
+		$reloaded = $this->orders_repository->get_order( $order_key );
+
+		// Status badge HTML (Payment Details sidebar carries one; the
+		// plugin-header carries another via .eem-page-meta).
+		$status_css = EEM_Orders_List_Page::status_slug_to_css_class( $result['new_status_slug'] );
+		$status_badge_html = sprintf(
+			'<span class="eem-status-badge eem-status-badge--%1$s">%2$s</span>',
+			esc_attr( $status_css ),
+			esc_html( $result['new_status_label'] )
+		);
+
+		// Payment-banner HTML — empty string when the order no longer
+		// has outstanding balance (Paid / Refunded / Partially Refunded
+		// with no remaining capture). JS removes the banner element
+		// when this is empty.
+		$banner_html = '';
+		$outstanding_states = array( 'unpaid', 'invoice-sent', 'partially-paid' );
+		if ( in_array( $result['new_status_slug'], $outstanding_states, true ) ) {
+			$amount_remaining = isset( $reloaded['total'] ) ? (float) $reloaded['total'] : 0.0;
+			$banner_html      = sprintf(
+				'<div class="eem-order-payment-banner__content"><div class="eem-order-payment-banner__title">%1$s</div><div class="eem-order-payment-banner__meta"><span class="eem-order-payment-banner__amount">$%2$s</span> %3$s</div></div>',
+				esc_html__( 'Payment Outstanding', 'equine-event-manager' ),
+				esc_html( number_format( $amount_remaining, 2 ) ),
+				esc_html__( 'has not been collected for this order.', 'equine-event-manager' )
+			);
+		}
+
+		// Refund history fragment — Payment Details sidebar replaces
+		// the "No refunds processed" hint with a per-component line.
+		ob_start();
+		?>
+		<div class="eem-order-payment__val">
+			<?php foreach ( $result['components'] as $rc ) : ?>
+				<div class="eem-order-payment__refund-line">
+					<strong>$<?php echo esc_html( number_format( (float) $rc['amount'], 2 ) ); ?></strong>
+					<span class="eem-order-payment__mono"><?php echo esc_html( $rc['transaction_id'] ); ?></span>
+				</div>
+			<?php endforeach; ?>
+		</div>
+		<?php
+		$refund_history_html = (string) ob_get_clean();
+
+		wp_send_json_success( array(
+			'refunded_amount'      => $result['refunded_amount'],
+			'new_status_slug'      => $result['new_status_slug'],
+			'new_status_label'     => $result['new_status_label'],
+			'new_status_css'       => $status_css,
+			'status_badge_html'    => $status_badge_html,
+			'banner_html'          => $banner_html,
+			'refund_history_html'  => $refund_history_html,
+			'requires_reload'      => false,
+		) );
+	}
+
+	/**
 	 * Handle refunding an order through its configured payment gateway.
 	 */
 	public function handle_order_refund() {

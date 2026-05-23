@@ -821,6 +821,152 @@
 		if (form) form.submit();
 	}
 
+	/* ── C6.B — Single-order Refund Order modal (Order Detail page) ──
+	   Triggered by the More menu's "Refund Order" item. Reuses the C5.D
+	   modal vocabulary; this is a single-order AJAX flow (not the C5.D
+	   bulk redirect flow). On confirm: POST to wp-admin/admin-ajax.php,
+	   handle JSON response with in-place fragments (option-3 UX per
+	   the C6.B kickoff), fall back to toast+reload when the handler
+	   sets requires_reload=true (mixed-gateway partial failure case). */
+
+	function openOrderRefundModal() {
+		var modal = document.getElementById('eem-order-refund-modal');
+		if (!modal) return;
+		// Reset any prior error surface from a previous open.
+		var errEl = modal.querySelector('[data-eem-order-refund-error]');
+		if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
+		modal.classList.add('open');
+		modal.setAttribute('aria-hidden', 'false');
+		closeAllDropdowns();
+		// Focus the amount field for fast keyboard flow.
+		var amt = modal.querySelector('#eem-order-refund-amount');
+		if (amt) setTimeout(function () { amt.focus(); amt.select(); }, 50);
+	}
+
+	function closeOrderRefundModal() {
+		var modal = document.getElementById('eem-order-refund-modal');
+		if (!modal) return;
+		modal.classList.remove('open');
+		modal.setAttribute('aria-hidden', 'true');
+	}
+
+	function showOrderRefundError(message) {
+		var modal = document.getElementById('eem-order-refund-modal');
+		if (!modal) return;
+		var errEl = modal.querySelector('[data-eem-order-refund-error]');
+		if (!errEl) { window.alert(message); return; }
+		errEl.textContent = message;
+		errEl.hidden = false;
+	}
+
+	function applyOrderRefundFragments(payload) {
+		// 1) Status badge in the .eem-page-meta header (first .eem-status-badge match).
+		var headerBadge = document.querySelector('.eem-page-meta .eem-status-badge');
+		if (headerBadge && payload.status_badge_html) {
+			var tmp = document.createElement('div');
+			tmp.innerHTML = payload.status_badge_html.trim();
+			var newBadge = tmp.firstChild;
+			if (newBadge) headerBadge.replaceWith(newBadge);
+		}
+
+		// 2) Payment-outstanding banner.
+		var banner = document.querySelector('.eem-order-payment-banner');
+		if (banner) {
+			if (payload.banner_html) {
+				// Status still outstanding (rare for a refund-flow but
+				// possible if amount was partial AND order wasn't paid
+				// to begin with). Replace the banner's content block.
+				var bannerContent = banner.querySelector('.eem-order-payment-banner__content');
+				if (bannerContent) {
+					var tmp2 = document.createElement('div');
+					tmp2.innerHTML = payload.banner_html.trim();
+					var newContent = tmp2.querySelector('.eem-order-payment-banner__content');
+					if (newContent) bannerContent.replaceWith(newContent);
+				}
+			} else {
+				// Order is no longer in an outstanding state — remove banner entirely.
+				banner.remove();
+			}
+		}
+
+		// 3) Refund History block in the Payment Details sidebar.
+		var history = document.querySelector('[data-eem-refund-history]');
+		if (history && payload.refund_history_html) {
+			var tmp3 = document.createElement('div');
+			tmp3.innerHTML = payload.refund_history_html.trim();
+			var newHistory = tmp3.firstChild;
+			if (newHistory) {
+				newHistory.setAttribute('data-eem-refund-history', '');
+				history.replaceWith(newHistory);
+			}
+		}
+
+		// 4) Toast confirmation.
+		if (window.EEM && typeof window.EEM.showSaveToast === 'function') {
+			window.EEM.showSaveToast('Refund of $' + Number(payload.refunded_amount).toFixed(2) + ' processed.');
+		}
+	}
+
+	function submitOrderRefundForm() {
+		var modal = document.getElementById('eem-order-refund-modal');
+		if (!modal) return;
+		var form = modal.querySelector('[data-eem-order-refund-form]');
+		if (!form) return;
+
+		// Reset prior error surface.
+		var errEl = modal.querySelector('[data-eem-order-refund-error]');
+		if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
+
+		// Client-side sanity check — server enforces authoritatively, but
+		// catch obviously bogus inputs without a round-trip.
+		var amtInput = modal.querySelector('#eem-order-refund-amount');
+		var amount = amtInput ? parseFloat(amtInput.value) : 0;
+		if (!amount || amount <= 0) {
+			showOrderRefundError('Refund amount must be greater than zero.');
+			return;
+		}
+
+		// Disable the Confirm button while in-flight.
+		var confirmBtn = modal.querySelector('[data-eem-action="order-refund-single-confirm"]');
+		if (confirmBtn) confirmBtn.disabled = true;
+
+		var formData = new FormData(form);
+
+		fetch(window.ajaxurl || '/wp-admin/admin-ajax.php', {
+			method: 'POST',
+			credentials: 'same-origin',
+			body: formData
+		}).then(function (response) {
+			return response.json().catch(function () { return { success: false, data: { message: 'Unexpected server response.' } }; });
+		}).then(function (json) {
+			if (confirmBtn) confirmBtn.disabled = false;
+
+			if (!json || !json.success) {
+				var msg = (json && json.data && json.data.message) ? json.data.message : 'Refund failed.';
+				showOrderRefundError(msg);
+				return;
+			}
+
+			// Fallback condition: handler sets requires_reload=true when
+			// in-place update isn't safe (mixed-gateway partial failure,
+			// data shape it can't cleanly express). Toast + reload.
+			if (json.data && json.data.requires_reload) {
+				if (window.EEM && typeof window.EEM.showSaveToast === 'function') {
+					window.EEM.showSaveToast('Refund processed. Reloading…');
+				}
+				setTimeout(function () { window.location.reload(); }, 600);
+				return;
+			}
+
+			// In-place update path (option 3).
+			applyOrderRefundFragments(json.data || {});
+			closeOrderRefundModal();
+		}).catch(function () {
+			if (confirmBtn) confirmBtn.disabled = false;
+			showOrderRefundError('Network error. Please try again.');
+		});
+	}
+
 	/* Bulk action — collects selected row ids from the table checkboxes,
 	   stuffs them into the hidden _eem_selected_ids field, then submits
 	   the bulk form. The PHP handler explodes on comma + absint each. */
@@ -1073,6 +1219,16 @@
 		},
 		'orders-bulk-refund-confirm': function () {
 			submitOrdersBulkRefundForm();
+		},
+		/* C6.B — Single-order Refund modal (Order Detail page). */
+		'order-refund-single': function () {
+			openOrderRefundModal();
+		},
+		'order-refund-single-close': function () {
+			closeOrderRefundModal();
+		},
+		'order-refund-single-confirm': function () {
+			submitOrderRefundForm();
 		}
 	};
 

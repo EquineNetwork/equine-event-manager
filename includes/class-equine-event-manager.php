@@ -178,6 +178,12 @@ class EEM_Plugin {
 		add_action( 'admin_post_equine_event_manager_print_reservation_overview', array( $this->admin, 'handle_reservation_overview_print' ) );
 		add_action( 'admin_post_equine_event_manager_delete_order', array( $this->admin, 'handle_order_delete' ) );
 		add_action( 'admin_post_equine_event_manager_refund_order', array( $this->admin, 'handle_order_refund' ) );
+
+		// C6.B — AJAX endpoint for the Order Detail page's single-order
+		// Refund Order modal. Wraps the legacy refund infrastructure
+		// (refund_order_component + persist_component_refund) via the
+		// new public process_amount_refund() adapter on EEM_Admin.
+		add_action( 'wp_ajax_eem_order_refund_single', array( $this->admin, 'handle_ajax_refund_single' ) );
 		add_action( 'admin_post_equine_event_manager_send_invoice_email', array( $this->admin, 'handle_send_invoice_email' ) );
 		add_action( 'admin_post_equine_event_manager_resend_customer_notification', array( $this->admin, 'handle_resend_customer_notification' ) );
 		add_action( 'admin_post_equine_event_manager_mark_order_paid', array( $this->admin, 'handle_mark_order_paid' ) );

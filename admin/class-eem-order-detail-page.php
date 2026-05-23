@@ -162,6 +162,8 @@ class EEM_Order_Detail_Page {
 
 		<?php $this->render_activity_log_placeholder( $order, $reservation_id ); ?>
 
+		<?php $this->render_refund_modal( $order ); ?>
+
 		<?php
 		eem_render_page_close();
 	}
@@ -650,7 +652,7 @@ class EEM_Order_Detail_Page {
 				</div>
 
 				<div class="eem-order-payment__label eem-order-payment__label--sep"><?php esc_html_e( 'Refund History', 'equine-event-manager' ); ?></div>
-				<div class="eem-order-payment__val eem-order-payment__hint"><?php esc_html_e( 'No refunds processed', 'equine-event-manager' ); ?></div>
+				<div class="eem-order-payment__val eem-order-payment__hint" data-eem-refund-history><?php esc_html_e( 'No refunds processed', 'equine-event-manager' ); ?></div>
 			</div>
 		</div>
 		<?php
@@ -678,6 +680,85 @@ class EEM_Order_Detail_Page {
 				<div class="eem-order-instructions__body">
 					<p class="eem-order-instructions__text"><?php echo esc_html( $text ); ?></p>
 				</div>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Single-order Refund modal (C6.B). Reuses the C5.D `.eem-modal*`
+	 * vocabulary (overlay, card, head, body, foot, close button, split
+	 * footer) and the C1.2 field primitives (`.eem-field-label`,
+	 * `.eem-field-textarea`). Zero new modal-chrome CSS in C6.B — only
+	 * the refund-amount field row + summary block are additive.
+	 *
+	 * Markup is rendered once per page load, populated client-side when
+	 * the More menu's "Refund Order" item dispatches `order-refund-single`.
+	 * The amount field defaults to the order's outstanding balance; user
+	 * can override down for partial refunds. Server-side validation in
+	 * EEM_Admin::process_amount_refund() enforces > 0 and <= remaining
+	 * refundable balance (which already accounts for prior partial
+	 * refunds via get_component_refunded_amount).
+	 *
+	 * @param array<string, mixed> $order
+	 * @return void
+	 */
+	private function render_refund_modal( array $order ) {
+		$order_key       = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
+		$customer_name   = isset( $order['customer_name'] ) ? (string) $order['customer_name'] : '';
+		$total           = isset( $order['total'] ) ? (float) $order['total'] : 0.0;
+		$default_amount  = number_format( $total, 2, '.', '' );
+
+		?>
+		<div class="eem-modal" id="eem-order-refund-modal" role="dialog" aria-modal="true" aria-labelledby="eem-order-refund-title" aria-hidden="true">
+			<div class="eem-modal-card">
+				<header class="eem-modal-head">
+					<h2 class="eem-modal-title" id="eem-order-refund-title"><?php esc_html_e( 'Refund Order', 'equine-event-manager' ); ?></h2>
+					<button type="button" class="eem-modal-close" data-eem-action="order-refund-single-close" aria-label="<?php esc_attr_e( 'Close', 'equine-event-manager' ); ?>">&times;</button>
+				</header>
+				<form class="eem-modal-body" method="post" data-eem-order-refund-form>
+					<?php wp_nonce_field( 'eem_refund_single_' . $order_key, '_eem_refund_single_nonce' ); ?>
+					<input type="hidden" name="action" value="eem_order_refund_single" />
+					<input type="hidden" name="order_key" value="<?php echo esc_attr( $order_key ); ?>" />
+
+					<p class="eem-order-refund-summary">
+						<?php
+						printf(
+							/* translators: 1: customer name */
+							esc_html__( 'Refund this order for %1$s. The amount will be reversed to the original payment method via the order\'s configured processor.', 'equine-event-manager' ),
+							'<strong>' . esc_html( $customer_name ) . '</strong>'
+						);
+						?>
+					</p>
+
+					<div class="eem-field-row eem-order-refund-amount-row">
+						<label class="eem-field-label" for="eem-order-refund-amount"><?php esc_html_e( 'Refund amount', 'equine-event-manager' ); ?></label>
+						<div class="eem-order-refund-amount-input">
+							<span class="eem-order-refund-amount-prefix">$</span>
+							<input type="number" id="eem-order-refund-amount" name="amount" step="0.01" min="0.01" value="<?php echo esc_attr( $default_amount ); ?>" required />
+						</div>
+						<p class="eem-field-hint">
+							<?php
+							printf(
+								/* translators: %s: order total */
+								esc_html__( 'Defaults to the full order total ($%s). Lower this for a partial refund.', 'equine-event-manager' ),
+								esc_html( number_format( $total, 2 ) )
+							);
+							?>
+						</p>
+					</div>
+
+					<div class="eem-field-row">
+						<label class="eem-field-label" for="eem-order-refund-reason"><?php esc_html_e( 'Reason (optional)', 'equine-event-manager' ); ?></label>
+						<textarea class="eem-field-textarea" id="eem-order-refund-reason" name="reason" rows="3" maxlength="500" placeholder="<?php esc_attr_e( 'e.g. Customer disputed shavings quantity', 'equine-event-manager' ); ?>"></textarea>
+					</div>
+
+					<div class="eem-order-refund-error" data-eem-order-refund-error hidden></div>
+				</form>
+				<footer class="eem-modal-foot eem-modal-foot--split">
+					<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="order-refund-single-close"><?php esc_html_e( 'Cancel', 'equine-event-manager' ); ?></button>
+					<button type="button" class="eem-btn eem-btn-primary" data-eem-action="order-refund-single-confirm"><?php esc_html_e( 'Confirm refund', 'equine-event-manager' ); ?></button>
+				</footer>
 			</div>
 		</div>
 		<?php

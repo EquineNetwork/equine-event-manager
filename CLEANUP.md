@@ -16,6 +16,19 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 
 ## Active entries
 
+### 27. Extract EEM_Refund_Engine — gateway-dispatch + amount-distribution + persistence
+- **What:** C6.B introduced `EEM_Admin::process_amount_refund( $order_key, $amount, $reason )` as a public adapter around the legacy private refund stack (`refund_order_component` → gateway dispatch → `persist_component_refund`). Wraps were chosen over class extraction in C6.B to keep the chunk small and let C6.C's bulk-engine requirements clarify the contract. **After C6.C ships**, extract into a clean `EEM_Refund_Engine` class:
+  1. Move `refund_order_component` + `refund_with_stripe` + `refund_with_authorize_net` + `get_component_refunded_amount` + `get_component_remaining_refundable_amount` + `persist_component_refund` off EEM_Admin into the new class.
+  2. Move `process_amount_refund` to `EEM_Refund_Engine::process_amount_refund( $order_key, $amount, $reason )`.
+  3. EEM_Admin retains the AJAX endpoint (`handle_ajax_refund_single`) but delegates the actual refund work to the engine.
+  4. C6.C bulk engine becomes `EEM_Refund_Engine::process_bulk( $order_keys, $reason )` — same kernel, looped.
+  5. Smoke coverage expands: engine-level unit assertions (math helpers, distribution logic), AJAX-level integration assertions (capability/nonce/payload shape).
+- **Why deferred:** C6.B alone doesn't have the surface area to justify a new class; the wrapping pattern is sufficient for one caller. C6.C bulk-engine adds a second caller and an error-attribution dimension (per-order success/failure tracking, partial-batch recovery) that genuinely warrants its own type. Extracting before C6.C ships would also lock in a contract that C6.C might want to evolve.
+- **Added in:** C6.B (during the C6.B kickoff Q1 decision).
+- **Sequence:** between C6.C close and C6.D start, OR folded into C13 polish — call it at C6.C close based on how complex the bulk engine's per-order error attribution turns out to be.
+- **Unblocks deletion:** ~6 private methods migrate cleanly off EEM_Admin, which is already CLEANUP #1 territory (the full legacy file strip).
+- **Status:** queued; C6.B uses the wrap pattern as a stopgap.
+
 ### 26. Activity Log save_meta diff logger — deferred from C6.D
 - **What:** C6.D delivers 5 simple-event auto-fire hooks for the Activity Log (order created, payment received, refund processed, email sent, status changes). The **6th auto-fire path** — admin edits via the reservation CPT save_meta — is deferred as its own chunk because it's a different problem shape: requires reading old → new diff and formatting a per-meta-key change-list display (like the mockup's `"Shavings Qty: 2 → 4"`). The other 5 hooks are simple "an event happened" inserts; this one needs:
   1. **Snapshot meta values BEFORE save** (via `pre_post_update` or a `save_post_en_reservation` priority-5 hook that fires before the cpt's own save_meta at priority 10) into a transient or a request-scoped static cache.

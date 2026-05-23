@@ -4312,3 +4312,97 @@ a.eem-orders-count-link:focus {
 		padding: 0 12px 12px;
 	}
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   C6.B — Single-order Refund modal
+   Pure additive vocabulary for the amount-input row + summary + error
+   surface. Modal chrome (.eem-modal*, .eem-field-*, .eem-btn-*) is fully
+   reused from C5.D / C1.2 / C1.4 — see C6.B kickoff for the inheritance
+   inventory.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.eem-order-refund-summary {
+	font-size: 13px;
+	color: var(--eem-text-secondary);
+	margin-bottom: 12px;
+	line-height: 1.5;
+}
+
+.eem-order-refund-summary strong {
+	color: var(--eem-text);
+	font-weight: 600;
+}
+
+.eem-order-refund-amount-row {
+	margin-bottom: 12px;
+}
+
+.eem-order-refund-amount-input {
+	display: flex;
+	align-items: stretch;
+	max-width: 220px;
+}
+
+.eem-order-refund-amount-prefix {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0 12px;
+	background: var(--eem-bg-alt);
+	border: 1px solid var(--eem-border-card);
+	border-right: none;
+	border-radius: var(--eem-radius) 0 0 var(--eem-radius);
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--eem-text-secondary);
+}
+
+.eem-order-refund-amount-input input[type="number"] {
+	flex: 1;
+	padding: 8px 11px;
+	border: 1px solid var(--eem-border-card);
+	border-radius: 0 var(--eem-radius) var(--eem-radius) 0;
+	font-size: 14px;
+	font-family: var(--eem-font-ui);
+	color: var(--eem-text);
+}
+
+.eem-order-refund-amount-input input[type="number"]:focus {
+	outline: none;
+	border-color: var(--eem-electric);
+	box-shadow: 0 0 0 1px var(--eem-electric);
+}
+
+.eem-field-hint {
+	font-size: 12px;
+	color: var(--eem-text-secondary);
+	margin-top: 4px;
+	line-height: 1.4;
+}
+
+/* Error surface — JS toggles [hidden] when the AJAX endpoint returns
+   wp_send_json_error. */
+.eem-order-refund-error {
+	padding: 10px 12px;
+	background: #fef2f2;
+	border: 1px solid #fecaca;
+	border-radius: var(--eem-radius);
+	color: var(--eem-danger);
+	font-size: 13px;
+	margin-top: 8px;
+}
+
+/* Per-component refund line in Payment Details > Refund History
+   (rendered by handle_ajax_refund_single's refund_history_html fragment). */
+.eem-order-payment__refund-line {
+	display: flex;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 4px 0;
+	font-size: 13px;
+	color: var(--eem-text);
+}
+
+.eem-order-payment__refund-line:not(:last-child) {
+	border-bottom: 1px solid var(--eem-border-soft);
+}
