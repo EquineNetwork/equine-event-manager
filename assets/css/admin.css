@@ -708,8 +708,16 @@ a.eem-btn-tertiary {
 	color: var(--eem-text-on-navy);
 }
 
-/* Collect — orange CTA on unpaid order rows (Orders list, Order detail banner) */
-.eem-btn-collect {
+/* Collect — orange CTA on unpaid order rows (Orders list, Order detail banner).
+   `a.` chain wins specificity (0,2,0) against the global
+   `.eem-page a { color: var(--eem-electric) }` rule (0,1,1) — without
+   it, the anchor-rendered button (per render_row_action_cell) paints
+   text + currentColor-stroked SVG icon Electric Blue instead of the
+   mockup-spec orange (#c2410c). Same pattern as a.eem-filter-tab and
+   a.eem-status-tab. Fixed C5.G.7 against mockup line 129 spec.
+   CLEANUP #12 long-term fix: scope `.eem-page a` to `:where()`. */
+.eem-btn-collect,
+a.eem-btn-collect {
 	display: inline-flex;
 	align-items: center;
 	gap: 5px;
@@ -723,11 +731,14 @@ a.eem-btn-tertiary {
 	background: var(--eem-type-addon-bg);
 	color: var(--eem-type-addon-text);
 	border: 1px solid var(--eem-type-addon-border);
+	text-decoration: none;
 }
 
-.eem-btn-collect:hover {
+.eem-btn-collect:hover,
+a.eem-btn-collect:hover {
 	background: #FFEDD5;
 	color: var(--eem-type-addon-text);
+	text-decoration: none;
 }
 
 .eem-btn-collect svg {
