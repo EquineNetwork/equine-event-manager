@@ -16,6 +16,23 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 
 ## Active entries
 
+### 31. Activity log event-type sanitization quirk — dotted names normalize to flat strings
+- **What:** `EEM_Activity_Log::write()` runs `sanitize_key()` on the `$event_type` argument. `sanitize_key` strips dots, so code-level event names diverge from the strings actually persisted to the `wp_en_activity_log.event_type` column:
+  - `'order.create'`              → stored as `'ordercreate'`
+  - `'order.refund'`              → stored as `'orderrefund'`
+  - `'order.payment_received'`    → stored as `'orderpayment_received'`
+  - `'order.status_change'`       → stored as `'orderstatus_change'`
+  - `'order.email_sent'`          → stored as `'orderemail_sent'`
+- **Why deferred:** Pattern matches the pre-existing `order.refund` writes shipped in C6.B/C6.C, so the persisted data is internally consistent — no historical-row migration needed. Functional impact is zero today because no code currently queries by event_type. The break is latent: future query-by-event-type code (admin filters, reporting, analytics export) will surface the divergence as "I wrote `'order.create'` and queried `'order.create'`, why zero rows?".
+- **Three fix options (decide pre-production):**
+  - **(a) Document the mapping explicitly** in `EEM_Activity_Log::write()` docblock + add a `normalize_event_type()` helper that callers MUST use for both writes and queries. Lowest-effort but rule-by-discipline only — easy to forget.
+  - **(b) Switch to underscore-separated event names** at every call site (`order_create`, `order_refund`, `order_payment_received`, etc.). Makes `sanitize_key` a no-op, eliminates the divergence entirely. Code edit cost is moderate (touches every write site in C6.B/C/D); historical rows still carry the dotted-sanitized form so adds a quirky transition window unless backfilled.
+  - **(c) Bypass sanitize_key for this specific field** — rewrite `EEM_Activity_Log::write` to use a custom whitelist regex like `/^[a-z0-9._-]+$/` that preserves dots. Cleanest semantically; requires the most thinking about what's actually a safe event-type charset.
+- **Recommended:** (b) — underscore-separated names. Simplest mental model long-term; the historical-row backfill is a one-line `UPDATE wp_en_activity_log SET event_type = REPLACE(...) WHERE event_type LIKE 'order%'` migration.
+- **Added in:** C6.D (surfaced when c6d-smoke initially queried for dotted names and got zero hits).
+- **Sequence:** before any production deployment that will ship a query-by-event-type feature. Folds naturally into C11 (mailer telemetry surfacing) or C13 polish — whichever first introduces an event-type filter UI.
+- **Status:** quirk documented; behavioral fix queued.
+
 ### 30. Refund-notify email wiring for C6.B notify checkbox
 - **What:** The C6.B single-order refund modal carries a "Notify customer" checkbox; its checked state is captured in the form payload (currently sent as `notify` POST field, surfaced via the activity-log payload's `notify` key when refund processes). The actual email send — rendering an "Event Cancelled — Refund Processed" template and shipping it via EEM_Mailer — is **not wired** in C6.B.
 - **Why deferred:** The "Event Cancelled — Refund Processed" template doesn't exist yet (Communications panel from C3.B shipped the template UI but not this specific template). Wiring an unsendable email is hollow. C11 lands SendGrid transport + the remaining canonical templates (refund-processed, payment-reminder, etc.) together — refund-notify rides along naturally.
