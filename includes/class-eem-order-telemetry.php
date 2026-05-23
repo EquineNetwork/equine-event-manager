@@ -51,7 +51,9 @@ class EEM_Order_Telemetry {
 	const OUTSTANDING_STATUSES = array( 'unpaid', 'invoice-sent', 'invoice_sent', 'partially-paid', 'partially_paid' );
 
 	/**
-	 * Register the three listener hooks. Wired from the plugin bootstrap.
+	 * Register the three listener hooks + the render-side filter that maps
+	 * our C6.D/E event types into the C2 activity-log render partial's
+	 * variant taxonomy. Wired from the plugin bootstrap.
 	 *
 	 * @return void
 	 */
@@ -59,6 +61,108 @@ class EEM_Order_Telemetry {
 		add_action( 'eem_order_created',                array( __CLASS__, 'on_order_created' ),                10, 1 );
 		add_action( 'eem_order_payment_status_changed', array( __CLASS__, 'on_payment_status_changed' ),       10, 1 );
 		add_action( 'eem_email_sent',                   array( __CLASS__, 'on_email_sent' ),                   10, 1 );
+
+		// C6.E.1 — render-side filter. Maps our sanitize_key-flattened event
+		// types (ordercreate / orderrefund / orderpayment_received /
+		// orderstatus_change / orderemail_sent / ordernote) onto the C2
+		// partial's variant taxonomy (create / refund / notification / info /
+		// edit) so each entry gets the right icon color. Pre-CLEANUP #31
+		// stopgap — once the event-type-naming fix lands, these will be
+		// underscore-separated and match C2's existing map naturally.
+		add_filter( 'eem_activity_log_variant', array( __CLASS__, 'filter_render_variant' ), 10, 2 );
+	}
+
+	/**
+	 * Variant-mapper filter for C6.D/E event types. Returns the passed-in
+	 * default for any event type we don't own.
+	 *
+	 * @param string $variant     Variant decided by C2's default map.
+	 * @param string $event_type  Event type from the activity log row.
+	 * @return string
+	 */
+	public static function filter_render_variant( $variant, $event_type ) {
+		switch ( (string) $event_type ) {
+			case 'ordercreate':           return 'create';
+			case 'orderrefund':           return 'refund';
+			case 'orderpayment_received': return 'notification';
+			case 'orderstatus_change':    return 'info';
+			case 'orderemail_sent':       return 'notification';
+			case 'ordernote':             return 'edit';
+		}
+		return $variant;
+	}
+
+	/**
+	 * Enrich an activity-log entry row with a render-ready `title` injected
+	 * into the payload so the C2 partial's default-title resolver doesn't
+	 * fire on our C6.D/E event types (which it wouldn't recognize). Called
+	 * by EEM_Order_Detail_Page::render_activity_log before passing the
+	 * entries array to eem_render_activity_log().
+	 *
+	 * @param array $entry Raw row from EEM_Activity_Log::get_for_order_key.
+	 * @return array Same shape, with payload.title populated.
+	 */
+	public static function enrich_entry_for_render( array $entry ) {
+		$event_type = isset( $entry['event_type'] ) ? (string) $entry['event_type'] : '';
+		$payload    = isset( $entry['payload'] ) && is_array( $entry['payload'] ) ? $entry['payload'] : array();
+		$actor      = isset( $entry['actor_label'] ) ? (string) $entry['actor_label'] : '';
+
+		// Caller-supplied title wins; otherwise we generate one per event type.
+		if ( ! empty( $payload['title'] ) ) {
+			return $entry;
+		}
+
+		switch ( $event_type ) {
+			case 'ordercreate':
+				$payload['title'] = __( 'Order created', 'equine-event-manager' );
+				break;
+			case 'orderrefund':
+				$amount = isset( $payload['amount'] ) ? (float) $payload['amount'] : 0.0;
+				$payload['title'] = $amount > 0
+					? sprintf(
+						/* translators: %s: refund amount */
+						__( 'Refund processed: $%s', 'equine-event-manager' ),
+						number_format_i18n( $amount, 2 )
+					)
+					: __( 'Refund processed', 'equine-event-manager' );
+				break;
+			case 'orderpayment_received':
+				$payload['title'] = __( 'Payment received', 'equine-event-manager' );
+				break;
+			case 'orderstatus_change':
+				$old = isset( $payload['old_status'] ) ? (string) $payload['old_status'] : '';
+				$new = isset( $payload['new_status'] ) ? (string) $payload['new_status'] : '';
+				$payload['title'] = ( '' !== $old && '' !== $new )
+					? sprintf(
+						/* translators: 1: old status, 2: new status */
+						__( 'Status changed: %1$s → %2$s', 'equine-event-manager' ),
+						$old,
+						$new
+					)
+					: __( 'Status changed', 'equine-event-manager' );
+				break;
+			case 'orderemail_sent':
+				$type_label = isset( $payload['type'] ) ? (string) $payload['type'] : 'email';
+				$payload['title'] = sprintf(
+					/* translators: %s: email type (invoice, checkout_confirmation, etc.) */
+					__( 'Email sent (%s)', 'equine-event-manager' ),
+					$type_label
+				);
+				break;
+			case 'ordernote':
+				// C6.E.2 — admin manual note. Title shows author when known.
+				$payload['title'] = '' !== $actor
+					? sprintf(
+						/* translators: %s: actor display name */
+						__( 'Admin note by %s', 'equine-event-manager' ),
+						$actor
+					)
+					: __( 'Admin note', 'equine-event-manager' );
+				break;
+		}
+
+		$entry['payload'] = $payload;
+		return $entry;
 	}
 
 	/**

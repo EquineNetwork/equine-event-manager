@@ -160,7 +160,7 @@ class EEM_Order_Detail_Page {
 
 		<?php $this->render_special_instructions_card( $reservation_id ); ?>
 
-		<?php $this->render_activity_log_placeholder( $order, $reservation_id ); ?>
+		<?php $this->render_activity_log( $order, $reservation_id ); ?>
 
 		<?php $this->render_refund_modal( $order ); ?>
 
@@ -765,25 +765,64 @@ class EEM_Order_Detail_Page {
 	}
 
 	/**
-	 * Activity Log placeholder — C6.A renders just the section frame and a
-	 * single read-only stub line. C6.D wires the 5 auto-fire hooks
-	 * (order created, payment received, refund processed, email sent,
-	 * status changes) and C6.E fleshes out the entry rendering + Add Note
-	 * form. Until then, this placeholder confirms the section's existence
-	 * + position so layout regressions get caught early.
+	 * Activity Log section — real render (C6.E.1).
+	 *
+	 * Fetches entries via EEM_Activity_Log::get_for_order_key (added in
+	 * C6.E.1 to bridge the order_id=NULL / order_key-in-payload gap from
+	 * C6.D telemetry), enriches each entry's payload with a render-ready
+	 * title via EEM_Order_Telemetry::enrich_entry_for_render, then hands
+	 * off to the shared C2 partial eem_render_activity_log() for the
+	 * actual entry HTML.
+	 *
+	 * Collapsible: default-expanded; toggle chevron flips on click via
+	 * the activity-toggle JS dispatch arm. Show-all-capped-at-100 per
+	 * the C6.E kickoff decision (pagination deferred — typical order has
+	 * <20 entries; revisit if anyone hits the 100 cap).
+	 *
+	 * C6.E.2 will add the Add Note form below the entries list inside
+	 * this same section.
 	 *
 	 * @param array<string, mixed> $order
 	 * @param int                  $reservation_id
 	 * @return void
 	 */
-	private function render_activity_log_placeholder( array $order, $reservation_id ) {
+	private function render_activity_log( array $order, $reservation_id ) {
+		$order_key = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
+		$entries   = '' !== $order_key
+			? EEM_Activity_Log::get_for_order_key( $order_key, 100 )
+			: array();
+
+		// Enrich each entry with a render-ready title so the C2 partial's
+		// default-title resolver doesn't fall through on our C6.D event
+		// type taxonomy (which it wouldn't recognize otherwise).
+		$entries = array_map( array( 'EEM_Order_Telemetry', 'enrich_entry_for_render' ), $entries );
+
+		$count = count( $entries );
 		?>
-		<div class="eem-order-activity eem-order-activity--placeholder">
-			<div class="eem-order-activity__toggle">
+		<div class="eem-order-activity" data-eem-activity-section>
+			<div class="eem-order-activity__toggle" data-eem-action="activity-toggle" role="button" tabindex="0" aria-expanded="true">
 				<div class="eem-order-activity__toggle-left">
 					<span class="eem-order-activity__title"><?php esc_html_e( 'Activity Log', 'equine-event-manager' ); ?></span>
-					<span class="eem-order-activity__count"><?php esc_html_e( 'C6.E will populate', 'equine-event-manager' ); ?></span>
+					<span class="eem-order-activity__count" data-eem-activity-count><?php
+						echo esc_html( sprintf(
+							/* translators: %s: number of activity log entries */
+							_n( '%s entry', '%s entries', $count, 'equine-event-manager' ),
+							number_format_i18n( $count )
+						) );
+					?></span>
 				</div>
+				<span class="eem-order-activity__chevron" aria-hidden="true">▾</span>
+			</div>
+			<div class="eem-order-activity__list" data-eem-activity-list>
+				<?php
+				// C2 partial. Entries already enriched; partial reuses
+				// the .eem-activity-log-* CSS class taxonomy shipped in C2.4.
+				if ( function_exists( 'eem_render_activity_log' ) ) {
+					eem_render_activity_log( $entries, array(
+						'empty_message' => __( 'No activity recorded yet for this order.', 'equine-event-manager' ),
+					) );
+				}
+				?>
 			</div>
 		</div>
 		<?php

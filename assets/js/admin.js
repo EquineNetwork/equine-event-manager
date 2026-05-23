@@ -1415,6 +1415,16 @@
 		'orders-bulk-refund-retry': function () {
 			retryFailedBulkRefunds();
 		},
+		/* C6.E.1 — Activity log section collapsible toggle.
+		   Click on the .eem-order-activity__toggle div flips .collapsed
+		   on the parent .eem-order-activity section. CSS hides
+		   .eem-order-activity__list when .collapsed is set. */
+		'activity-toggle': function (target) {
+			var section = target.closest('.eem-order-activity');
+			if (!section) return;
+			var collapsed = section.classList.toggle('collapsed');
+			target.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+		},
 		/* C6.B — Single-order Refund modal (Order Detail page). */
 		'order-refund-single': function () {
 			openOrderRefundModal();

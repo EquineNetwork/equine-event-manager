@@ -4239,6 +4239,59 @@ a.eem-orders-count-link:focus {
 	font-weight: 600;
 }
 
+/* ── C6.E.1 — Activity log collapsible + real-entry render ── */
+
+/* Toggle row is clickable; visually distinct on hover. */
+.eem-order-activity__toggle {
+	cursor: pointer;
+	user-select: none;
+}
+
+.eem-order-activity__toggle:hover {
+	background: var(--eem-bg-alt);
+}
+
+.eem-order-activity__chevron {
+	font-size: 14px;
+	color: var(--eem-text-secondary);
+	transition: transform 0.15s ease;
+	display: inline-block;
+}
+
+.eem-order-activity.collapsed .eem-order-activity__chevron {
+	transform: rotate(-90deg);
+}
+
+.eem-order-activity.collapsed .eem-order-activity__list {
+	display: none;
+}
+
+/* Entry-list container. C2 partial renders .eem-activity-log <ul>
+   inside this wrapper; pad to match the rest of the section. */
+.eem-order-activity__list {
+	padding: 4px 20px 16px;
+	border-top: 1px solid var(--eem-border-soft);
+}
+
+/* Nudge the C2 partial's entry typography slightly tighter when it
+   lands inside the Order Detail section (vs. the standalone list page
+   the C2 partial was originally designed for). The base .eem-activity-log
+   rules from C2.4 do most of the work; these refinements line up icon
+   spacing with the rest of the Order Detail body. */
+.eem-order-activity__list .eem-activity-log {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.eem-order-activity__list .eem-activity-log-empty {
+	font-size: 13px;
+	color: var(--eem-text-secondary);
+	font-style: italic;
+	padding: 12px 0;
+	margin: 0;
+}
+
 /* ── NOT FOUND card ── */
 .eem-order-not-found {
 	padding: 32px 20px;

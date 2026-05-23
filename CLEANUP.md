@@ -16,6 +16,19 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 
 ## Active entries
 
+### 32. Activity log get_for_order_key — indexed order_key column instead of LIKE-on-JSON
+- **What:** `EEM_Activity_Log::get_for_order_key( $order_key, $limit )` (added in C6.E.1) queries the `payload` column with `LIKE '%"order_key":"<key>"%'`. No index on payload — every call scans the whole table.
+- **Why deferred:** Admin-only view (Order Detail page), infrequent visits, typical order has fewer than 20 activity entries. At v2.2.0 scale (single tenant, ~thousands of activity rows across all orders) the LIKE scan is fast enough that a fix isn't blocking. The `$limit` floor (default 100, internal cap 500) bounds the worst case. Real fix is a proper indexed column — but that's a schema migration that doesn't belong inside a UI-render chunk.
+- **Shape of the fix:**
+  1. Activator migration adds `order_key VARCHAR(64) NOT NULL DEFAULT ''` column to `wp_en_activity_log` + index on `(order_key, created_at DESC)`.
+  2. Backfill UPDATE pulls `order_key` out of existing payloads: `UPDATE wp_en_activity_log SET order_key = JSON_UNQUOTE(JSON_EXTRACT(payload, '$.order_key')) WHERE order_key = '' AND payload LIKE '%"order_key":%'`.
+  3. EEM_Activity_Log::write() captures `$payload['order_key']` and writes the dedicated column.
+  4. EEM_Activity_Log::get_for_order_key() switches to `WHERE order_key = %s`.
+- **Added in:** C6.E.1 (audit-time surfacing).
+- **Sequence:** before any production deployment with high activity-log volume, OR alongside C13 polish. Trivial in isolation (~40 LOC schema + ~10 LOC method swap); the real cost is the backfill verification.
+- **Unblocks:** O(1) lookup per order regardless of table size; reporting / analytics features that scan by order_key.
+- **Status:** queued; LIKE-on-JSON acceptable at v2.2.0 scale.
+
 ### 31. Activity log event-type sanitization quirk — dotted names normalize to flat strings
 - **What:** `EEM_Activity_Log::write()` runs `sanitize_key()` on the `$event_type` argument. `sanitize_key` strips dots, so code-level event names diverge from the strings actually persisted to the `wp_en_activity_log.event_type` column:
   - `'order.create'`              → stored as `'ordercreate'`
