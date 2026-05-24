@@ -280,9 +280,23 @@ ds1b_ok( '.eem-card-link:hover NO LONGER uses text-decoration: underline',
 	0 === preg_match( '/\.eem-card-link:hover\s*\{\s*text-decoration\s*:\s*underline/', $css_src ),
 	$pass, $fail, $log );
 
-// Padding alignment with shipped pages (18px horizontal, not 22px).
-ds1b_ok( '.eem-dashboard-body uses 18px horizontal padding (matches .eem-page-header / .eem-toolbar-row)',
-	(bool) preg_match( '/\.eem-dashboard-body\s*\{\s*padding:\s*18px\s+18px/', $css_src ),
+// DS-1.B.3 (final): dashboard-body horizontal padding must MIRROR
+// page-header horizontal padding at every breakpoint so card box
+// left-edge === page title text left-edge.
+ds1b_ok( '.eem-dashboard-body desktop padding = 18px horizontal (matches .eem-page-header desktop)',
+	(bool) preg_match( '/^\.eem-dashboard-body\s*\{\s*padding:\s*18px\s+18px/m', $css_src ),
+	$pass, $fail, $log );
+ds1b_ok( '.eem-dashboard-body tablet padding = 14px horizontal (matches .eem-page-header @1024 override)',
+	(bool) preg_match( '/@media\s*\(\s*max-width:\s*1024px\s*\)\s*\{[\s\S]*?\.eem-dashboard-body\s*\{\s*padding:\s*14px\s+14px/', $css_src ),
+	$pass, $fail, $log );
+ds1b_ok( '.eem-dashboard-body mobile padding = 14px horizontal (matches .eem-page-header @767 override)',
+	(bool) preg_match( '/@media\s*\(\s*max-width:\s*767px\s*\)\s*\{[\s\S]*?\.eem-dashboard-body\s*\{\s*padding:\s*12px\s+14px/', $css_src ),
+	$pass, $fail, $log );
+// Parity guard — extract page-header padding at desktop and dashboard-body padding at desktop, confirm horizontal values match.
+preg_match( '/^\.eem-page-header\s*\{\s*padding:\s*\d+px\s+(\d+)px/m', $css_src, $hdr_m );
+preg_match( '/^\.eem-dashboard-body\s*\{\s*padding:\s*\d+px\s+(\d+)px/m', $css_src, $body_m );
+ds1b_ok( "desktop padding parity: page-header horizontal ({$hdr_m[1]}px) == dashboard-body horizontal ({$body_m[1]}px)",
+	isset( $hdr_m[1] ) && isset( $body_m[1] ) && $hdr_m[1] === $body_m[1],
 	$pass, $fail, $log );
 
 // Rev-chart bar — wrap stretches to fill the 90px container so % heights resolve.

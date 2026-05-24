@@ -4893,10 +4893,14 @@ a.eem-btn-collect-banner:focus {
    bars, this-week summary rows.
    ═════════════════════════════════════════════════════════════════════════ */
 
-/* DS-1.B.2: horizontal padding flipped 22px → 18px to align with
-   .eem-page-header (18px), .eem-toolbar-row (18px), .eem-card-body
-   (18px) across shipped pages. Dashboard content was visibly inset
-   further right than Orders/Reservations/Order Detail. */
+/* DS-1.B.3 (final): horizontal padding MUST mirror .eem-page-header
+   horizontal padding at every breakpoint so card box left-edge ===
+   page title text left-edge. Desktop both = 18px. Tablet (≤1024px)
+   page-header drops to 14px horizontal (line 354-357) — dashboard-
+   body must follow. Mobile (≤767px) both = 14px (override at the
+   bottom of this file). Earlier DS-1.B.2 fix matched at desktop
+   but missed the tablet breakpoint, leaving a 4px mismatch in the
+   768-1024 zone that surfaced on Whitney's window width. */
 .eem-dashboard-body { padding: 18px 18px; }
 
 /* Range filter bar */
@@ -5391,6 +5395,11 @@ a.eem-dashboard-qa-btn:focus {
 
 /* Responsive */
 @media (max-width: 1024px) {
+	/* DS-1.B.3 (final): mirror the tablet page-header padding drop
+	   (.eem-page-header → 12px 14px at ≤1024) so card box left-edge
+	   stays aligned with page title text left-edge. Without this,
+	   tablet-width windows saw cards 4px right of the title. */
+	.eem-dashboard-body { padding: 14px 14px; }
 	.eem-dashboard-kpi-grid { grid-template-columns: repeat(2, 1fr); }
 	.eem-dashboard-grid { grid-template-columns: 1fr; }
 	.eem-dashboard-side {
