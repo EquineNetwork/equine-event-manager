@@ -116,6 +116,11 @@ a:hover{text-decoration:none}
 .support-contact-row a{color:#1668F2;font-weight:600}
 .support-contact-row a:hover{color:#1257d1}
 
+/* ── CANCELLATION POLICY (per-reservation, standard light-gray card) ── */
+.cancellation-policy{background:#f3f4f5;border:1px solid #e5e7eb;border-radius:4px;padding:14px 16px;margin-bottom:22px}
+.cancellation-policy-title{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#031B4E;margin-bottom:6px}
+.cancellation-policy-body{font-size:12.5px;line-height:1.55;color:#50575e;margin:0}
+
 /* ── FOOTER (DEC-7 consistent: white with top divider, not heavy navy) ── */
 .email-footer{background:#fff;border-top:1px solid #e5e7eb;padding:18px 36px;text-align:center}
 .footer-event{font-size:13px;font-weight:600;color:#031B4E;margin-bottom:4px}
@@ -306,6 +311,12 @@ a:hover{text-decoration:none}
           <a href="mailto:office@rsnc.us">office@rsnc.us</a>
         </div>
       </div>
+    </div>
+
+    <!-- Cancellation Policy (per-reservation; Phase 3 sources from reservation's override OR event default) -->
+    <div class="cancellation-policy">
+      <div class="cancellation-policy-title">Cancellation Policy</div>
+      <p class="cancellation-policy-body">Cancellations made more than 14 days before the event will receive a full refund. Cancellations within 14 days of the event are non-refundable. Cancellations within 48 hours of the event will forfeit stall and lot deposits. Please contact the event office for any extenuating circumstances.</p>
     </div>
 
   </div><!-- /email-body -->

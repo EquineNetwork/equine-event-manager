@@ -40,8 +40,9 @@ address{font-style:normal;font-size:13px;line-height:1.65;color:#1d2327}
 .section-label{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#031B4E;margin-bottom:8px}
 .assignments-section{background:#F0F4FB;border:1px solid #D9E2F2;border-radius:4px;padding:12px 14px;margin-bottom:16px;page-break-inside:avoid}
 .assignments-title{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#031B4E;margin-bottom:8px}
-.assignments-table{width:100%;border-collapse:collapse}
-.assignments-table td{vertical-align:top;padding:5px 0;border-bottom:1px solid #E5EAF2;font-size:12.5px;line-height:1.5}
+.assignments-table{width:100%;border-collapse:collapse;background:transparent}
+.assignments-table tr{background:transparent}
+.assignments-table td{vertical-align:top;padding:5px 0;border-bottom:1px solid #E5EAF2;font-size:12.5px;line-height:1.5;background:transparent}
 .assignments-table tr:last-child td{border-bottom:none}
 .assign-label{font-weight:700;color:#031B4E;width:80px;padding-right:14px}
 .assign-value{color:#1d2327;font-weight:500}
@@ -71,9 +72,9 @@ thead tr{background:#f3f4f5;border-bottom:1px solid #dcdcde}
 thead th{padding:8px 10px;font-size:11.5px;font-weight:600;color:#1d2327;text-align:left}
 thead th.c{text-align:center}
 thead th.r{text-align:right}
-tbody tr{border-bottom:1px solid #f0f0f1}
-tbody tr:last-child{border-bottom:none}
-tbody tr:nth-child(even){background:#f9f9f9} /* DEC-2: aligned zebra color */
+.items-table tbody tr{border-bottom:1px solid #f0f0f1}
+.items-table tbody tr:last-child{border-bottom:none}
+.items-table tbody tr:nth-child(even){background:#f9f9f9} /* DEC-2: aligned zebra color */
 td{padding:7px 10px;font-size:12px;vertical-align:middle;color:#1d2327}
 .ts{font-size:11.5px;font-weight:600;color:#50575e;white-space:nowrap}
 .tc{text-align:center;color:#50575e}
@@ -96,6 +97,11 @@ td{padding:7px 10px;font-size:12px;vertical-align:middle;color:#1d2327}
 .trow.grand .tl{font-weight:800;color:#031B4E;font-size:14px;font-family:'Space Grotesk',sans-serif}
 .trow.grand .tv{font-weight:800;color:#1668F2;font-size:15px;font-family:'Space Grotesk',sans-serif}
 
+/* ── CANCELLATION POLICY (per-reservation, standard light-gray card) ── */
+.cancellation-policy{background:#f3f4f5;border:1px solid #e5e7eb;border-radius:4px;padding:12px 14px;margin-bottom:16px;page-break-inside:avoid}
+.cancellation-policy-title{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#031B4E;margin-bottom:5px}
+.cancellation-policy-body{font-size:11.5px;line-height:1.55;color:#50575e;margin:0}
+
 /* ── FOOTER ── */
 .footer{border-top:1px solid #e5e7eb;padding-top:12px;display:flex;justify-content:space-between;align-items:center;color:#50575e;font-size:11.5px}
 
@@ -105,7 +111,7 @@ td{padding:7px 10px;font-size:12px;vertical-align:middle;color:#1d2327}
   @page{size:letter;margin:0.35in}
   /* On print, lighten soft-blue accents that print as gray to keep ink usage down */
   .order-box,.assignments-section,.special-note{background:#fff;border-color:#c0c4cc}
-  .dblock,.rch,thead tr{background:#fff;border-color:#c0c4cc}
+  .dblock,.rch,thead tr,.cancellation-policy{background:#fff;border-color:#c0c4cc}
   tbody tr:nth-child(even){background:#fff}
 }
 
@@ -239,7 +245,7 @@ td{padding:7px 10px;font-size:12px;vertical-align:middle;color:#1d2327}
 <!-- LINE ITEMS -->
 <div class="tbl-label">Purchased Items</div>
 <div class="table-scroll-wrap">
-<table>
+<table class="items-table">
   <thead>
     <tr>
       <th>Section</th>
@@ -280,6 +286,12 @@ td{padding:7px 10px;font-size:12px;vertical-align:middle;color:#1d2327}
     <div class="trow"><span class="tl">Sales Tax (7.5%)</span><span class="tv">$14.10</span></div>
     <div class="trow grand"><span class="tl">Total Amount Paid</span><span class="tv">$208.66</span></div>
   </div>
+</div>
+
+<!-- Cancellation Policy (per-reservation; Phase 3 sources from reservation's override OR event default) -->
+<div class="cancellation-policy">
+  <div class="cancellation-policy-title">Cancellation Policy</div>
+  <p class="cancellation-policy-body">Cancellations made more than 14 days before the event will receive a full refund. Cancellations within 14 days of the event are non-refundable. Cancellations within 48 hours of the event will forfeit stall and lot deposits. Please contact the event office for any extenuating circumstances.</p>
 </div>
 
 <!-- FOOTER -->

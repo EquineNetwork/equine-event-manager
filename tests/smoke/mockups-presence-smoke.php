@@ -39,15 +39,15 @@ ok( '.mockups/ directory exists', is_dir( $mockups_dir ), $pass, $fail, $log );
 $canonical = array(
 	// 10 new/updated from handoff Step 1 (post-C6)
 	'dashboard_page.html'               => 'd373c7ca90da3e3f744e1b0a8950d9ef',
-	'edit_reservation_page.html'        => '548660a5c69c47368a3d827e11285f3a',
+	'edit_reservation_page.html'        => '7e9722dcc0890c5af75faf15c8553c13', // Step 1.7 cancellation-arch update
 	'stall_charts_page.html'            => 'f999373626398cac60b99930989bf2e9',
 	'stall_chart_detail.html'           => '91c79b2ce1f7583ad70c6d41ab12f90b',
 	'stall_chart_print_view.html'       => '8c76b6d1396dc757cb798b6734a6a83b',
 	'create_order_page.html'            => 'ea83953366dbf0b3a6364007ac971f80',
 	'collect_payment_page.html'         => '67ca3972922e3370532b45e571ce16c7',
 	'reports_page.html'                 => 'ee88a2ceab0be5a3ff8d1a30a038d354',
-	'customer_confirmation_email.html'  => 'bb3014326922af4f6103a4766886752a',
-	'order_receipt.html'                => '283417c7ef49d5de9bea5a284cc15bd8',
+	'customer_confirmation_email.html'  => '1705857179c8ee90053fae1304810cdc', // Step 1.7 cancellation-arch update
+	'order_receipt.html'                => 'f26a56fd6d5f8a4fb56059f7c340eb34', // Step 1.7 cancellation-arch update
 
 	// 6 "shipped/unchanged" from handoff Step 1 — three were resynced to
 	// audit-canonical versions in Step 1.6 (HANDOFF.md line refs resolve

@@ -1172,3 +1172,807 @@ Mockup spec uses `#fafafa` as the background for all "subtle bar" surfaces — t
 - `.eem-logo-preview` — empty-state placeholder with dashed border; different visual role from "bar on white card."
 
 Future Phase 3 chunks should use `var(--eem-bg-alt)` for any bar-style subtle background and inherit this correction automatically. Don't "fix" it back to the mockup value — the mockup is the source the deviation is documented against.
+
+---
+
+## Mockup Audit (Phase 3 prep — pre-shipped-design-system mockups reconciled to shipped state)
+
+These decisions came out of auditing mockups that were designed BEFORE the design system evolved through shipped chunks C3–C5. Each audit walked the mockup against shipped patterns (VIS-1/2/3/4, hover convention, link affordances, order/customer/event format, RES-ARCH-1) and resolved questions where the mockup couldn't be silently corrected without product input. Captured here so Phase 3 implementation knows the intent.
+
+### AUDIT-C7-1. Reservation editor scope decisions
+**Decided:** 2026-05-23
+
+The pre-shipped-design-system C7 mockup (`edit_reservation_page.html`) bundled features that didn't all belong in C7. The reservation editor scope was reconciled as follows:
+
+| Section | C7 disposition |
+|---|---|
+| Reservation Description | In-scope. Chevron-collapsible. No Enable toggle (always active). |
+| Check-In / Check-Out | In-scope. Section-level Enable toggle + chevron. Default Disabled. |
+| Stall Reservations | In-scope. Pricing + stay types + early bird + required shavings editable. **Stall layout = read-only summary** ("3 rows, 60 stalls total, 4 blocked") with "Manage Stall Layout" button stubbed with C8 badge. Full interactive row builder lives in C8. |
+| RV Reservations | In-scope. Pricing + stay types + early bird editable. **Lot Zones (pricing tiers) editable in C7** with color swatch + name + surcharge per zone. **Lot layout = read-only summary** with "Manage Lot Layout" button stubbed with C8 badge. Physical lot painter/zone painter deferred to C8. |
+| Exact Map Selection mode | REMOVED. Quantity-based is implicit in C7. |
+| Venue Map | REMOVED from C7. Will appear in C8 alongside the layout builders. |
+| General Add-Ons | In-scope. Repeating-row editor. |
+| Group Reservations | In-scope. Default Disabled. Grounds Fee toggle + amount, Deposit toggle + amount. |
+| Agreement | In-scope. Simple PDF file upload field. Customer-facing acknowledgment at checkout is C10's job (already in event_page.html). |
+| Fees | In-scope (reversed from earlier remove decision). Convenience Fee per-reservation with three modes: None / Flat $ / Percentage. Mutually exclusive. Conditional row visibility on the value field. **Tax stays global in Settings → Payments** per SET-6. Fees are per-reservation; tax is global. |
+
+### AUDIT-C7-2. Reservation title and dates are read-only mirrors of source event
+**Decided:** 2026-05-23
+
+Per RES-ARCH-1, the reservation editor's title and dates **are not editable on this page**. Both are derived from the linked source event.
+
+- The page title (Space Grotesk 22px navy bold in the plugin-header band) renders as a **read-only display element**, not an input. Mirrored from the linked source event's title.
+- A meta-line row sits below the title in the header band showing "Linked Event: [event title link]" and "Event Dates: [date range]" with mini-labels above each value (matches order_detail's plugin-meta-line pattern).
+- Reservation post_title is mirrored from the linked source event title on save_post hook.
+- One event = one reservation always (per TEC-3). No separate admin nickname is needed since the title is the same.
+- The reservation owns its CONFIGURATION (stall types, pricing, add-ons, group, agreement, fees) — those ARE editable. Title and dates are NOT.
+
+### AUDIT-C7-3. Section UX — collapsible + Enable toggle + colored icon chips
+**Decided:** 2026-05-23
+
+Sections on the reservation editor use a **two-control** pattern in their header:
+
+1. **Enable toggle** (Stall, RV, Check-In, Group, Add-Ons, Agreement, Fees, etc.): data-level on/off. When off, section body shows disabled diagonal-stripe shading + "This section is disabled" note; chevron is locked (can't expand a disabled section). Default state for optional sections (Check-In, Group) is Disabled; default state for required-ish sections (Stall, RV, Add-Ons, Agreement, Fees) is Enabled.
+2. **Chevron collapse**: UI-only on/off for screen real-estate. Independent of the Enable toggle. Reservation Description is the ONE section without an Enable toggle — chevron only.
+
+When admin flips Enable→on, section auto-expands. When Enable→off, section auto-collapses AND locks chevron. Default initial state is all sections collapsed; admin expands sections as they enable them.
+
+Each section header has a small **colored icon chip** (28×28px rounded square with light-color bg + matching icon) on the left of the section title for visual rhythm in a long form. Icon palette: blue (description), teal (check-in), green (stall, group), purple (RV), orange (add-ons, fees), navy (agreement). This is a documented deviation from shipped settings/order_detail (which use plain titles); it's permitted on the reservation editor because the form is long and benefits from visual hierarchy.
+
+### AUDIT-C7-4. Right rail Publish card and Save buttons
+**Decided:** 2026-05-23
+
+The reservation editor uses a **right-rail sticky card** for publish controls, not a footer save bar. This matches the WordPress Posts/Pages editor convention.
+
+The Publish card includes three WP-Posts-style metadata rows, each with an inline "Edit" link:
+- Status: **Published** [Edit]
+- Visibility: **Public** [Edit]
+- Published: **[date]** [Edit]
+
+Below the metadata: **Preview Frontend Form** (ghost link), **Save as Draft** (ghost), **Update Reservation** (Electric Blue primary per VIS-4), **Move to Trash** (red ghost).
+
+Both Save as Draft + Update Reservation buttons appear on the editor in the mockup. PHP implementation may conditionalize visibility (Save Draft only when status is Draft) but the mockup commits to showing both.
+
+The right rail also includes a **Linked Event card** (search input + currently-linked event with unlink) and a **Shortcode card** (`[eem_reservation id="N"]` per AUDIT-C7-5).
+
+### AUDIT-C7-5. Shortcode prefix
+**Decided:** 2026-05-23
+
+Reservation shortcodes use the `eem_` prefix established in C6.5.B phpcs.xml. Format: `[eem_reservation id="..."]`. NOT `[en_reservation]` (which was the placeholder in the pre-audit mockup).
+
+### AUDIT-C7-6. Stay Types validation rule
+**Decided:** 2026-05-23
+
+When a section has Stay Types toggles (Stall and RV both do — Nightly / Weekend Rate), at least one stay type must remain enabled while the parent section is Enabled.
+
+UX: when admin attempts to turn off the last-active stay type, the toggle is blocked from flipping, and an inline red error hint appears below the Stay Types row: *"At least one stay type must remain enabled."* Auto-dismisses after ~2.2 seconds.
+
+This applies equally to Stall Stay Types and RV Stay Types.
+
+### AUDIT-C7-7. Conditional row visibility — complete catalog
+**Decided:** 2026-05-23
+
+Toggle-driven row visibility within sections, beyond the section-level Enable toggle:
+
+**Stall section:**
+- Nightly off → hide Stall Nightly Rate row + Early Bird Nightly Rate row
+- Weekend Rate off → hide Weekend Package Dates + Stall Weekend Rate + Early Bird Weekend Rate rows
+- Reservation Schedule off → hide Stalls Open + Stalls Close datetime rows
+- Stall Early Bird Pricing off → hide Early Bird Cutoff + Early Bird Nightly Rate + Early Bird Weekend Rate rows
+- Required Shavings off → hide Shavings Per Stall + Shavings Price Per Bag rows
+
+**RV section (symmetric to Stall):**
+- Nightly off → hide RV Nightly Rate + Early Bird Nightly Rate
+- Weekend Rate off → hide RV Weekend Package Dates + RV Weekend Rate + Early Bird Weekend Rate
+- Reservation Schedule off → hide RV Open + RV Close datetime rows
+- RV Early Bird Pricing off → hide Cutoff + EB Nightly + EB Weekend
+- **Enable RV Add-Ons** master toggle wraps the RV add-ons table — when off, the entire add-ons table block hides (this is in addition to the per-row delete affordance)
+
+**Group section:**
+- Grounds Fee off → hide Grounds Fee Amount row
+- Deposit off → hide Deposit Amount row
+
+**Fees section:**
+- Fee Type "None" → hide both value rows
+- Fee Type "Flat Amount" → show Flat Fee Amount row, hide Percentage row
+- Fee Type "Percentage" → show Percentage Fee row, hide Flat row
+
+All visibility logic runs on `DOMContentLoaded` to set initial state correctly per toggle defaults.
+
+---
+
+## Mockup Audit — C8 Stall Charts list (`stall_charts_page.html`)
+
+### AUDIT-C8-1. Page name: "Stall & RV Charts" everywhere
+**Decided:** 2026-05-23
+
+The Stall Charts feature is now called **"Stall & RV Charts"** consistently across:
+- Sidebar nav entry
+- Breadcrumb
+- Page title (`.plugin-title`)
+- Browser title
+- Any link or label that references the page
+
+Rationale: this page (and the detail page) covers both stall and RV physical layouts, not just stalls. The earlier "Stall Charts" shorthand undersold the RV functionality.
+
+**Handoff task for Claude Code:** Update the sidebar entry on the already-shipped pages — `reservations_page.html`, `orders_page.html`, `settings_page.html`, `order_detail_page.html`, `customer_profile_page.html`, `event_page.html`. The change is mechanical: find `<div class="wp-sidebar-sub">Stall Charts</div>` (or active variant) and replace `Stall Charts` with `Stall &amp; RV Charts`. Same string in `eem-admin.php` menu registration. Hands-off rule means I (Claude.ai) did NOT modify these shipped pages directly.
+
+### AUDIT-C8-2. Status tabs on the Stall & RV Charts list
+**Decided:** 2026-05-23
+
+The list page has status tabs above the toolbar, matching the shipped Reservations page tab pattern:
+
+- **All (N)** — default active
+- **Configured (N)** — chart has barns + layouts set up
+- **Partial (N)** — chart has some layout but is incomplete
+- **Not Configured (N)** — no layout has been defined yet
+
+Tab styling matches shipped `.status-tab` from reservations_page (Electric Blue underline on active, color-only emphasis).
+
+### AUDIT-C8-3. Status pill casing — UPPERCASE
+**Decided:** 2026-05-23
+
+Chart status pills (Configured / Partial / Not Configured) render in **UPPERCASE** with 11px/700/letterspaced styling — matching the Reservations status pill convention, not the Orders Mixed-Case convention.
+
+Decision rationale: chart status describes the chart's lifecycle state (whether the admin has done the setup), which is closer to Reservations lifecycle (ACTIVE / DRAFT) than to Orders metadata (Paid / Invoice Sent).
+
+### AUDIT-C8-4. Barn tag color treatment
+**Decided:** 2026-05-23
+
+Barn tags (e.g. "Red Barn / Blue Barn / Green Barn" in the Barns column) keep their **custom soft-blue color** — `#F0F4FB` bg / `#031B4E` text / `#D9E2F2` border. This is distinct from the documented type-badge palette (Stall blue, RV purple, Add-On orange, Group green).
+
+Rationale: barns are a sub-category of the Stall type, not a parallel reservation type. Using the same blue as Stall type badges (`#1668F2`) would risk visual ambiguity. Using plain text loses scan-ability. The custom soft-blue treatment positions barns as their own logical tier.
+
+### AUDIT-C8-5. RV Lot column shows real zone names from C7
+**Decided:** 2026-05-23
+
+The RV Lots column on the Stall & RV Charts list shows the **actual zone names** from the linked reservation's C7 Lot Zones config (e.g. "Red Lot / Blue Lot / Green Lot"), not generic placeholders ("RV Lot A"). Where a reservation has no RV zones configured, the cell shows an em-dash `—` (the shipped `.event-dates-empty` placeholder pattern).
+
+### AUDIT-C8-6. Toolbar stays minimal — no Bulk Actions
+**Decided:** 2026-05-23
+
+The Stall & RV Charts list toolbar contains only: a date select, a search box, and the item count. **No Bulk Actions, no Filter button.** Charts are managed one at a time; the status tabs from AUDIT-C8-2 already provide the filter affordance.
+
+### AUDIT-C8-7. Empty-state placeholders use em-dash
+**Decided:** 2026-05-23
+
+Where a reservation has no barns or no RV lots configured, the corresponding cell on the list page renders the shipped `.event-dates-empty` em-dash placeholder, NOT a custom fake-tag with "No barns set" text in pale color. The em-dash is the documented empty-cell pattern across shipped pages.
+
+---
+
+## Mockup Audit — C8 Stall Chart Detail (`stall_chart_detail.html`)
+
+### AUDIT-C8-8. Customer-name pills are state pills with persistent click affordance
+**Decided:** 2026-05-23
+
+Customer-name pills inside the stall chart (`.occ-pill.occ-reserved`) are visually treated as **occupancy state pills** (matching the Available / Blocked pill family in the same column), NOT as customer-name links (which would otherwise follow the navy-bold convention).
+
+Pill styling: `#EEF4FF` background + `#1668F2` Electric Blue text + `#c0d8ff` border — same color family as a Stall type badge. The customer name sits inside the state pill as the label content.
+
+**Click affordance:** every reserved pill has a **persistent chevron-down SVG icon** on the right side at ~30% opacity (full opacity on hover). The pill has right-padding to give the chevron its own space — no overlap with the customer name text. This replaces the original `::after { content: "⋯" }` hack which overlaid the name text and read as a rendering bug.
+
+The chevron makes the click affordance discoverable at-a-glance, before the admin needs to hover. Together with the persistent "Tip" banner at the top of the chart, it should be unambiguous that the customer names are interactive.
+
+### AUDIT-C8-9. "Tip" banner above the stall chart
+**Decided:** 2026-05-23
+
+A persistent soft-blue tip banner sits flush at the top of the Stall Charts content card with text: *"💡 Tip: Click any customer name to view their order or move them to a different stall."* Styling: `#F0F4FB` bg + `#D9E2F2` border + navy text + Electric Blue info icon.
+
+Both this tip banner AND the persistent chevron from AUDIT-C8-8 stay. Belt-and-suspenders for first-time admin discoverability. Admin may not realize names are clickable even with the chevron alone; the explicit tip removes any ambiguity.
+
+The original mockup placed the tip with `margin:0 0 12px` which conflicted with the card's `overflow:hidden`. Fix: tip sits as a flush banner inside the content card, immediately below the `.content-card-header`, before the `.filter-row`.
+
+### AUDIT-C8-10. Action bar: no "Back to Overview" button
+**Decided:** 2026-05-23
+
+The detail page's action bar contains **only actions, not navigation**:
+- Generate Assignments (Electric Blue primary)
+- Print View (ghost) — opens `stall_chart_print_view.html` in new tab
+- Edit Reservation (ghost) — links to the reservation editor for this reservation
+
+The "Back to Overview" / "Back to All Charts" button is **dropped entirely**. The breadcrumb at the top of the page (`Stall & RV Charts / [reservation name]`) already provides this navigation path.
+
+### AUDIT-C8-11. Barn group rows — mixed-case section break
+**Decided:** 2026-05-23
+
+Section-break rows inside the stall chart table (e.g. "Red Barn · Stalls 100–120") render as **mixed-case 13px/600 navy on `#f3f4f5` row background** — matching the thead alt-row treatment. The original UPPERCASE small-caps blue treatment violated VIS-2 (no UPPERCASE small-caps for table content).
+
+### AUDIT-C8-12. Barn filter chips — Electric Blue solid active
+**Decided:** 2026-05-23
+
+Barn filter chips ("All Barns / Red Barn / Blue Barn / Yellow Barn") in the filter row use Electric Blue solid active state: `#1668F2` background + white text + `#1668F2` border. This matches the shipped pagination `.page-btn.active` pattern, which is the closest existing convention for "this filter chip is currently active."
+
+Solid navy active (the original treatment) was rejected as visually too heavy for a quick filter chip. The page-level view-tabs ("By Location / By Customer") keep the underline pattern — that's a different role (top-level view switch, not filter).
+
+### AUDIT-C8-13. Print View opens standalone page, not inline overlay
+**Decided:** 2026-05-23
+
+The "Print View" button on the detail page opens `stall_chart_print_view.html` in a new tab/window. **The inline `#print-view` overlay from the original mockup is dropped entirely** (~280 lines removed from the detail page).
+
+Rationale: DRY — one source of truth for the print rendering. The dedicated `stall_chart_print_view.html` page (next on the audit queue) is the canonical print rendering and can iterate independently. Maintaining the same content duplicated in two files would create sync risk.
+
+### AUDIT-C8-14. Customer + Order link affordances on the detail page
+**Decided:** 2026-05-23
+
+- **Customer name table links** in the Customer Night Count view (`.cust-link`) → wired to `admin.php?page=equine-event-manager-customer&customer_email=...`, styled per shipped customer-name convention (navy bold default, Electric Blue hover, no underline).
+- **Order number table links** (`.order-link`) → wired to `admin.php?page=equine-event-manager-order&order_id=...`, styled per shipped order-link convention (navy bold). Order IDs converted to 5-digit zero-padded format (`#00028`, `#00007`) per the standing rule.
+- **Popover customer name** (`.cust-popover-name` inside the click-pill move popover) → display-only label, NOT a link. The popover provides explicit action buttons below the name ("Move to different stall", "View order ↗"); making the name itself also a link adds redundancy with competing click targets.
+
+
+### AUDIT-C8-15. Print View page — `stall_chart_print_view.html`
+**Decided:** 2026-05-23
+
+Standalone print page (canonical print-rendering surface; opened in a new tab from the detail page's Print View button). Audit decisions:
+
+- **DEC-A=A** thead → `#f3f4f5` bg + navy text (not dark navy + white)
+- **DEC-B=B** section bands → white bg + `3px solid #031B4E` top border (not solid navy fill)
+- **DEC-C=B** topbar → light alt-bg + shipped button patterns
+- **DEC-D=A** Daily Movement card → soft-blue accent (matches Tip banner pattern)
+- **DEC-E** drop stats cards entirely (Total Stalls / Total Customers / etc.) — redundant with the chart itself
+- **DEC-F=C** drop section sub-taglines under barn headers
+- **DEC-G=B** drop "Section N" numeric prefix on barn headers
+- **DEC-H=A** barn header rows → mixed-case (match detail page treatment)
+- **DEC-I=A** zebra striping → `#f3f4f5`
+- **DEC-J=A** occupancy pills → light-fill matching detail page
+- **DEC-K=B** full-word state labels (Reserved / Available / Blocked, not single letters)
+- **DEC-L=C** no logo (event name carries the brand identity for this single-page print)
+- **DEC-M=A** drop "For:" header line above the event title
+- **DEC-N=A** `window.close()` JS on the "Close" button + label "✕ Close"
+- **DEC-O=A** check-in column kept (admin uses the printed sheet to track arrivals)
+- **DEC-P=A** page title (browser title bar / print header) includes the event name
+
+**Result:** 301-line standalone print page, black-and-white printer friendly, page-break-inside hints on key blocks.
+
+---
+
+## C11 — Order Creation + Payment Collection
+
+### AUDIT-C11-1. Invoicing page split into two pages
+**Decided:** 2026-05-23
+
+The original mockup `invoicing_page.html` collapsed Create Order and Collect Payment into one tabbed page. This is **wrong product structure**. Two separate pages instead:
+
+**`create_order_page.html`** — Admin manually creates a new order on behalf of a customer (phone orders, walk-ins). New admin route: `equine-event-manager-create-order`. Launched from the **"+ Create Order" primary button on the shipped Orders list page header**.
+
+**`collect_payment_page.html`** — Admin processes payment on an existing unpaid/invoice-sent order. New admin route: `equine-event-manager-collect-payment`. Receives an `order_id` URL param. Launched from:
+- The **"Collect" pill action** on each unpaid-order row in the shipped Orders list
+- The **"Collect Payment" button** in the orange payment-banner on the shipped Order Detail page
+
+**Handoff to Claude Code (mechanical edits to shipped files):**
+
+1. `orders_page.html` (shipped) — "+ Create Order" button (header, currently `href="#"`) → wire to `admin.php?page=equine-event-manager-create-order`
+2. `orders_page.html` (shipped) — each "Collect" pill in unpaid-order rows (currently `href="#"`) → wire to `admin.php?page=equine-event-manager-collect-payment&order_id=<id>` (template variable per row)
+3. `order_detail_page.html` (shipped) — "Collect Payment" button in the orange payment-banner (line ~381 in shipped, currently a `<button>` with no action) → convert to `<a href="admin.php?page=equine-event-manager-collect-payment&order_id=<id>" class="btn-collect-banner">` with the current order's ID
+4. **DELETE `invoicing_page.html`** entirely — obsolete; replaced by the two new files above
+5. Remove any "Invoicing" sidebar entry that was added during earlier scaffolding (sidebar = Dashboard / Orders / Reservations / Stall & RV Charts / Reports / Settings — NO Invoicing)
+6. Remove any `equine-event-manager-invoicing` admin route registration in `eem-admin.php`
+7. **Register** the two new admin routes: `equine-event-manager-create-order` and `equine-event-manager-collect-payment`
+
+### AUDIT-C11-2. Create Order — page scope decisions
+**Decided:** 2026-05-23
+
+- **PRE-4=A** Customer Search (typeahead) → **kept**. Top of page. Search by name/email/phone with prior-order count shown in results. Skip path for new customers.
+- **PRE-5=A** Custom Line Items section → **kept**. Repeating list where admin can add one-off charges (late fee, damage charge, transferred credit). Each row: description input + price input + delete button. Rolls up into Order Summary as line items.
+- **PRE-6=A** Discount affordance on Order Summary rail → **kept**. Dollar / percentage toggle, value input, **required reason field** logged in Activity Log. Applied state shows as green confirmation strip with Remove link.
+- **PRE-7=B** Payment options on Create Order → **Send Link + Charge Card only.** "Add to Show Bill" affordance **dropped** (deferred to future feature — needs more product thinking around when settlement triggers and where the show bill lives).
+- **PRE-11=C** Reservation picker → always present at top of page, optionally pre-filled by `?reservation_id=N` URL param. "Change" affordance preserves ability to swap reservations.
+- **PRE-12=B** Page section order: Customer Search → Reservation Picker → Contact Info → Stall Reservations → RV Reservations → Add-Ons → Custom Line Items → Group → Special Requests → (rail: Order Summary + Discount + Payment).
+
+**Rationale for customer-search-first ordering (PRE-12):** the customer typeahead's job is to prevent duplicate customer records. That decision (existing vs new) should be made before form fields populate. Once a customer is picked, contact info autofills; admin then picks the reservation.
+
+### AUDIT-C11-3. Collect Payment — page scope decisions
+**Decided:** 2026-05-23
+
+- **PRE-8=A** Page arrives with `order_id` URL param. **No order search picker.** Empty state placeholder if no `order_id` is present.
+- **PRE-9=B** Discount affordance present on Amount Due rail. Same UX as Create Order — admin can apply a discount at payment time with required reason field, order total updates accordingly. (Note: amending the order via Order Detail page is still the preferred path for substantive changes; Collect Payment's discount is for in-the-moment adjustments at payment.)
+- **DEC-3=A** Empty state placeholder card centered in body: "No Order Specified — return to Orders list" + back button. No search picker fallback (per PRE-8).
+- Read-only display of customer + order info. Status badge uses shipped Orders list `status-invoice` palette.
+- Three-segment breadcrumb: `Orders / #00021 / Collect Payment`.
+
+### AUDIT-C11-4. Create Order + Collect Payment — visual decisions
+**Decided:** 2026-05-23
+
+- **DEC-1=A** Rail Order Summary card header → `#f3f4f5` light alt-bg + navy mixed-case title + `#dcdcde` border-bottom (was solid navy fill). Cross-screen consistency with shipped card-header convention.
+- **DEC-2=A** Order Summary total amount renders in **Electric Blue accent** (`#1668F2`). Label "Total" stays navy. Draws the eye to the grand total (the number admin most cares about). Matches Order Detail's grand-total emphasis.
+
+---
+
+## C11 — Customer Confirmation Email
+
+### EMAIL-3 (REVISED). Cancellation Policy removed from email + receipt + hosted page
+**Decided:** 2026-05-23 (revises original EMAIL-3 decision)
+
+**REVERSED:** Cancellation Policy is **dropped from all three customer-facing surfaces** (email, receipt, hosted order page).
+
+**Rationale (user-supplied):** policies will change over time and will eventually be **per-reservation** (different events have different cancellation terms). Scaffolding a global cancellation policy that ships with v1 risks technical debt when the proper per-reservation feature is built later. Better to ship without the field and add it correctly when product is ready to design it.
+
+**Handoff to Claude Code:**
+
+In shipped `settings_page.html`:
+- Remove the "Cancellation Policy" textarea field from Settings → Notifications/Reservations area (around line 983 in shipped)
+- Remove the `{{cancellation_policy}}` placeholder chip from the email-templates placeholder palette (around line 766)
+- Remove the entire "Cancellation" email template card (around lines 899–940) including its title, preview, and editable RTE area
+- Remove any associated `wp_option` key, settings save handler, and database persistence for the cancellation policy field
+- Remove any references to cancellation policy in email template rendering code
+
+### EMAIL-4 (REVISED). Event Day Info — per-reservation configurable
+**Decided:** 2026-05-23
+
+The What's Next / Event Day Info content block (Check-in instructions / What to bring / Parking / Event-day contact) is **per-reservation configurable** via a new section on the Reservation editor.
+
+**Rendering surfaces:**
+- ✅ Customer confirmation email (when enabled)
+- ✅ Hosted order page (Phase 3 implementation)
+- ❌ **NOT** on the PDF receipt (per DEC-3 in the receipt audit — receipt stays a transactional/financial document only)
+
+**Editor (`edit_reservation_page.html`) — new section added:**
+
+- Location: Sibling card directly **between Check-In/Check-Out and Stall Reservations** in the section list
+- Section title: **Event Day Info**
+- Section icon chip: **icon-orange** (28×28, `#FFF7ED` bg + `#c2410c` map-pin SVG icon) — visually differentiated from Check-In/Check-Out's icon-teal clock icon
+- Enable toggle: **defaults to ON**
+- Helper text: "Customer-facing info shown in the confirmation email, on the hosted order page, and on the PDF receipt. Leave any field blank to omit that line from the email. Disable the section to hide it entirely."
+- **Four structured fields** (NOT a rich-text WYSIWYG):
+
+  | Field label in editor | Renders in customer email as |
+  |---|---|
+  | Check-in instructions | **Check-in opens:** [value] |
+  | What to bring | **What to bring:** [value] |
+  | Parking | **Parking:** [value] |
+  | Event-day contact | **Questions on event day:** Call the event hotline at [value] |
+
+  Each field is optional. If a field is empty, that bullet is omitted from the email. If all four are empty AND the section is disabled, the entire What's Next card in the email is omitted.
+
+  Each editor field has an inline hint showing how it renders in the email: "Appears as: *Check-in opens: [your text]*"
+
+**Why structured fields over WYSIWYG:**
+- Non-technical admins fill out simple text inputs
+- No formatting decisions
+- Consistent rendering across all customer emails
+- No risk of admin pasting bad HTML
+- Easier to migrate the structure later
+
+**Storage (Phase 3):** WordPress post-meta on the reservation post:
+- `_eem_event_day_enabled` (bool)
+- `_eem_event_day_checkin` (string)
+- `_eem_event_day_bring` (string)
+- `_eem_event_day_parking` (string)
+- `_eem_event_day_contact` (string)
+
+**Email template rendering (Phase 3 PHP):**
+```php
+<?php if ($event_day_enabled): ?>
+  <div class="whats-next">
+    <div class="whats-next-head">
+      <svg ...><!-- clock icon --></svg>
+      <span>What's Next — Event Day Info</span>
+    </div>
+    <div class="whats-next-body">
+      <?php if ($event_day_checkin): ?>
+        <p><strong>Check-in opens:</strong> <?= esc_html($event_day_checkin) ?></p>
+      <?php endif; ?>
+      <?php if ($event_day_bring): ?>
+        <p><strong>What to bring:</strong> <?= esc_html($event_day_bring) ?></p>
+      <?php endif; ?>
+      <?php if ($event_day_parking): ?>
+        <p><strong>Parking:</strong> <?= esc_html($event_day_parking) ?></p>
+      <?php endif; ?>
+      <?php if ($event_day_contact): ?>
+        <p><strong>Questions on event day:</strong> Call the event hotline at <strong><?= esc_html($event_day_contact) ?></strong>.</p>
+      <?php endif; ?>
+    </div>
+  </div>
+<?php endif; ?>
+```
+
+### AUDIT-C11-5. Confirmation email visual decisions
+**Decided:** 2026-05-23
+
+- **DEC-1=B** Mockup keeps `<style>` block for design-time readability. **Phase 3 mailer code inlines CSS at send-time** via a library (Premailer / juice / similar). This is required because Outlook desktop, Gmail mobile, and some Yahoo configurations strip `<style>` blocks. Without inlining, the email would render brokenly in those clients.
+- **DEC-2=A** All UPPERCASE small-caps labels in the email converted to mixed-case. Same VIS-2 treatment as admin pages.
+- **DEC-3=A** Items table thead → light alt-bg `#f3f4f5` + mixed-case 12px/600 navy. No more dark navy + white UPPERCASE.
+- **DEC-4=A** Special Requests palette → soft-blue info accent (`#F0F4FB` + `#D9E2F2`). No more amber warning palette (semantic misapplication).
+- **DEC-5=A** All emojis (`📎 📞 ✉️ ✓`) replaced with **inline SVG icons** using `stroke="currentColor"`. Reliable rendering across all email clients.
+- **DEC-6 resolved by DEC-7=B** Standard logo placeholder spec (`160×36`, `#e0e0e0` bg, `1px dashed #bbb`, `#999` text). No dark-bg variant needed since header is now white.
+- **DEC-7=B** Email header → **white bg with `border-bottom: 3px solid #031B4E`**. Logo + serif event name + dates render on white. Email footer also converted to white with `border-top: 1px solid #e5e7eb` for consistency (previously solid navy band).
+- **DEC-8 revised=B (soft Electric Blue info accent)** Confirmation bar treatment evolved through iteration:
+  - First decision: green success palette (semantically accurate but visually too aggressive — user feedback rejected)
+  - Final: **soft Electric Blue info accent** (`#F0F4FB` bg + `#D9E2F2` border + Electric Blue check circle with white SVG check + navy text + Electric Blue Amount Paid value). Matches the assignments card and PDF attachment note palette — visually integrated with the rest of the email's soft-blue accents.
+- **DEC-9=A** Order meta pill dots **removed entirely**. Decorative element with no semantic content.
+- **DEC-10=A** Order meta pills → **flat shipped type-badges** (3px radius rectangles, per-type colors): Stall blue / RV purple / Add-On orange / Group green. Matches shipped Orders list type-badge convention.
+- **DEC-11=A** No "view in browser" link at top. The greeting paragraph's "view your order online ↗" already serves as the fallback affordance.
+- **DEC-12=A** No unsubscribe / mailing preferences link. Purely transactional email — CAN-SPAM doesn't require it; adding one would suggest this is a marketing channel.
+- **"Reservation Confirmed" tag dropped** from the header. The (now soft-blue) confirmation bar carries the "you're confirmed" message all by itself; the redundant chip was iterated to teal palette → navy palette → then dropped entirely.
+- **Signoff paragraph dropped** ("We look forward to seeing you at the 2026 Southeast Region Super Sort. Thank you for your reservation!"). Email ends cleanly with the Support block + footer.
+- **Cancellation Policy dropped** per EMAIL-3 (REVISED) above.
+
+**Typography fixes during build:**
+- Body font: `'IBM Plex Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif` (was Helvetica Neue only). Web font with email-safe fallback chain.
+- Event title font: `'Space Grotesk'` (was Georgia serif). Matches shipped page titles.
+- All border-radii consolidated to 4px (was mixed 5px/6px/8px).
+
+**Order number:** 5-digit format `#00020` (was 4-digit `#0020`).
+
+---
+
+## C11 — PDF Receipt / Hosted Order Page
+
+### AUDIT-C11-6. Receipt page visual decisions
+**Decided:** 2026-05-23
+
+`order_receipt.html` serves dual purpose: PDF attached to confirmation email AND hosted page customers reach via "view your order online ↗".
+
+- **DEC-1=A** All UPPERCASE small-caps labels in receipt converted to mixed-case. Same treatment as email + admin pages.
+- **DEC-2=B** Items table zebra striping **kept**, color aligned to standard `#f9f9f9` (was custom `#FAFBFE`). Receipt is wider than email and shown in print/PDF context where zebra striping helps eye tracking across rows.
+- **DEC-3=B** Event Day Info **NOT** included on the receipt. Receipt stays a transactional/financial document only. (Event Day Info appears on the email and hosted page; the receipt's role is "proof of payment.")
+- **DEC-4=A** **Stall Assignments card added** to the receipt — same soft-blue info-accent treatment as the confirmation email. Shows specific stall numbers + RV lot + dates. Receipts at hotels show room numbers; receipts at parking show spot numbers — the equine equivalent is showing stall numbers. The original receipt only had aggregate counts ("1 Stall reserved · 2 nights"); the assignments card adds the operational/transactional specifics customers need at the venue.
+- **Cancellation Policy removed entirely** per EMAIL-3 (REVISED).
+
+**Other visual fixes:**
+- Items table thead → light alt-bg `#f3f4f5` + mixed-case navy (was dark navy + UPPERCASE white)
+- Special Requests → soft-blue info accent (was amber warning palette)
+- Order info box → soft-blue info accent aligned to documented `#F0F4FB` / `#D9E2F2`
+- Customer/Billing dblocks → standard `#f3f4f5` bg + `#e5e7eb` border (was custom `#F7F9FC` / `#e8eaf0`)
+- Reservation cards header → standard alt-bg + `#dcdcde` border-bottom
+- Reservation card badges (`.rcb`) → shipped type-badge palette colors (Stall blue, RV purple, Group green); **new `.rcb.addon` orange variant added** for consistency with shipped type palette
+- Logo placeholder → standard spec (`160×36`, `#e0e0e0` bg, `#bbb` dashed border) — was `150×42` with `#ccc`
+- Body color `#1d2327` (was custom `#1a1a2e`)
+- 5-digit order ID `#00020` (was `#0020`)
+- Subtotal row gets slight emphasis (bold navy) to break up the line-items vs fees+tax sections
+- Print stylesheet enhanced: prints soft-blue accent cards as white for ink savings; zebra disabled in print
+- `page-break-inside: avoid` on key blocks (Assignments, Special Requests, Totals, reservation cards) for cleaner page splits
+
+### AUDIT-C11-7. Items-table zebra striping scoped fix (post-delivery patch)
+**Decided:** 2026-05-23
+
+Bug found post-delivery: the global `tbody tr:nth-child(even){background:#f9f9f9}` zebra rule (intended for the Purchased Items table per DEC-2) was bleeding into the `.assignments-table` rows, causing the RV Lot row to render with a zebra-color background while the Stalls row stayed transparent. Visible as an unintended color mismatch inside the Your Assignments soft-blue card.
+
+**Fix applied:**
+- Scoped the zebra rule from global `tbody tr:nth-child(even)` to `.items-table tbody tr:nth-child(even)`
+- Added `class="items-table"` to the Purchased Items `<table>` element so the scoped rule still targets it
+- Also scoped the related `tbody tr` border rules (`border-bottom:1px solid #f0f0f1` and `:last-child{border-bottom:none}`) to `.items-table tbody tr` for the same reason
+- Print stylesheet override (`tbody tr:nth-child(even){background:#fff}`) also scoped to `.items-table tbody tr:nth-child(even)`
+- Added explicit `background:transparent` declarations on `.assignments-table`, its `tr`, and its `td` as belt-and-suspenders against any future global tbody styling
+
+**Lesson for Phase 3:** Avoid global element selectors (`table`, `tbody tr`, `td`) in stylesheets that contain multiple tables with different visual treatments. Always scope to a class. This pattern bit us once; the principle is to prevent it from biting us again as more tables get added to the receipt or other shared-CSS files.
+
+Same scoped-zebra fix was preventively applied to `.assignments-table` in `customer_confirmation_email.html` for consistency, though the email's items-table didn't have the same bleed issue (no shared global tbody rule was present in that file's CSS).
+
+---
+
+## C12 — Reports Page
+
+### AUDIT-C12-1. Reports page audit + visual decisions
+**Decided:** 2026-05-23
+
+- **DEC-1=A** Format codes (CSV / PDF / ZIP) stay **UPPERCASE as proper acronyms**. They're not the VIS-2 anti-pattern (decorative UPPERCASE labels); they're legitimate acronyms like "API" or "URL" rendered in their canonical case. Applies to the format column in Export History and the button labels on report cards.
+- **DEC-2=B** ZIP export card → **soft-blue info accent** (`#F0F4FB` bg + `#c0d8ff` border). No gradient. No thick Electric Blue border. Matches the established info-accent pattern from chart-help tip banner and Daily Movement card.
+- **DEC-3=B** Six-color report-icon palette **kept and documented as permitted deviation**. Each report has a distinct icon chip color for at-a-glance scanning: Orders blue, Reservations purple, Revenue green, Stall Occupancy teal, Customers orange, Refunds red. **Icons converted to chip style** (28×28 light tinted bg + saturated icon color matching tint family, 14×14 SVG) — matches the edit_reservation section-icon chip pattern, not the original saturated-fill 36×36 dark-bg + white-icon treatment.
+- **DEC-4=A** Standard **pagination footer** on Export History — matches shipped pagination convention from Reservations/Orders list pages. Page size 20.
+- **DEC-5=C** History rows = **static log entries, no click action**. Hover effect for affordance feedback only. Re-export happens via the per-row Download button (DEC-6).
+- **DEC-6=B** Per-row **Download button when file still cached** (`.btn-download` ghost button with download icon). When file expired/purged: italic gray "Expired — re-export" text with re-export link routing back to the relevant report card. Server-side: keep generated export files for N days (configurable in Settings → Reports, future), then auto-purge. History row checks file existence to decide which affordance to show.
+- **DEC-7=A** Date range filter gets a **preset dropdown** (matches DASH-2 metric range pattern). Options: Last 7 days / Last 30 days (default) / Last 90 days / This year / All time / Custom range. Picking a preset auto-fills the two date inputs. Manually editing dates flips the preset to "Custom." JS hooks in the mockup; full implementation in Phase 3.
+- **DEC-8=A** Filter state **persists to localStorage** (key: `eem_reports_filter_state`). Includes reservation selection, date preset + custom dates, and status. Matches DASH-2 dashboard filter persistence pattern. Easy reset via the existing "Reset filters" button.
+- **DEC-9=B** **Scheduled reports deferred to v2.** Out of scope for v1 — scheduled reports require non-trivial infrastructure (cron, email delivery, recipient management, failure handling, per-schedule history view). Captured here for future product planning.
+- **DEC-10=B** **Direct download behavior** on CSV/PDF buttons. No preview modal. Admin opens the downloaded file in Excel/PDF viewer.
+
+---
+
+## Dashboard
+
+### DASH-AUDIT-1. Dashboard page audit + visual decisions
+**Decided:** 2026-05-23
+
+- **DEC-1=A** Single `.plugin-wrap` shell containing everything. **Welcome bar dropped** — greeting + sub absorbed into the page header band. Page header band has title + subtitle + actions slot (matching shipped page-header pattern). Most consistent with VIS-3 across the rest of the app.
+- **DEC-2 (2a=A, 2b=status-line subtitle)** Page header:
+  - Title: **"Dashboard"** (consistent with every other admin page)
+  - Subtitle: status-line format — **"Good morning, Whitney · Thursday, May 21, 2026 · 3 reservations coming up in the next 30 days"**
+  - Action slot (right side of header band): **Create Order primary button + View Reservations ghost button**
+- **DEC-3=A** Emoji **dropped from greeting**. "Good morning, Whitney" — plain text. Admin pages don't use emojis anywhere else; consistency prevails over marginal warmth gain.
+- **DEC-4=C (revised)** Metric card top borders **kept**, but consolidated to **documented palette** only:
+  - Total Revenue → Electric Blue `#1668F2`
+  - Outstanding Payments → Add-On orange `#c2410c` (semantically "needs payment attention")
+  - Total Orders → Group green `#15803d`
+  - Unassigned Stalls → Red `#b91c1c` (documented permitted variant)
+
+  Original mockup used `#dc2626` / `#d97706` / `#16a34a` which are sibling shades not in the documented palette. Consolidation kills color drift.
+- **DEC-5=A** Quick Actions tiles → **documented info-accent** (`#F0F4FB` bg + `#D9E2F2` border + Electric Blue hover border). Was custom `#F7F9FC` + `#D9E2F2`.
+- **DEC-6=A** Revenue chart bars **all Electric Blue** `#1668F2`. Bars differentiated by height alone (color isn't carrying info). Replaces the original 5-color mix that introduced brand teal `#26D0B5`, amber `#d97706`, and red `#dc2626` for no semantic purpose.
+- **DEC-7=A** Needs Attention count badge → **documented red palette** (`#FEF2F2` bg + `#b91c1c` text + `#fecaca` border). Same red family used in Assignment Issues card (C8 detail) and Refunds report icon.
+
+### DASH-AUDIT-2. Dashboard color consolidation
+**Decided:** 2026-05-23
+
+Dashboard had 40+ unique colors with multiple shades for the same semantic role. Consolidated to documented palette:
+
+- **All greens** → `#15803d` (was 3 different shades: `#16a34a` / `#22c55e` / `#15803d`)
+- **All reds** → `#b91c1c` (was 3 different shades: `#dc2626` / `#be123c` / `#b91c1c`)
+- **All oranges** → `#c2410c` (was mixed `#d97706` / `#b45309` / `#c2410c`)
+- **Purples** → `#6d28d9` (was `#7c3aed` / `#6d28d9` mixed)
+- **Removed entirely:** brand teal `#26D0B5` (only used on the dashboard), custom blue-gray `#90aed4`, custom soft-blue hover `#fafbff`
+- Status badges (sb-paid / sb-unpaid / sb-invoice / sb-refunded) now use the documented shipped Orders list palette exactly
+
+Final color count: ~37 unique colors, all from documented palette or shipped UI tokens.
+
+### DASH-AUDIT-3. Semantic markup conversion
+**Decided:** 2026-05-23
+
+Recent Orders / Upcoming Reservations / Needs Attention rows converted from `onclick="window.location.href=..."` JavaScript navigation to **proper `<a>` tags with hrefs**. Adds:
+- Real link semantics (right-click "open in new tab" works)
+- Keyboard navigation (Tab + Enter)
+- Hover preview in browser status bar
+- Screen reader accessibility
+
+Row hover effects updated: row hover triggers `.res-name` / `.attention-title` / `.order-num-badge` color change to Electric Blue (clear feedback that the whole row is the link).
+
+All href URLs wired to `admin.php?page=...` routes.
+
+### DASH-AUDIT-4. Order ID format consistency
+**Decided:** 2026-05-23
+
+All dashboard order references converted to **5-digit zero-padded format** (`#00028`, `#00027`, `#00026`, `#00025`, `#00024`) per the standing rule.
+
+---
+
+## Cross-cutting handoff tasks for Claude Code (Phase 3)
+
+This section consolidates all the mechanical edits Claude Code needs to make to shipped/canonical files. The corrected mockups are ready; these edits apply the new routes and remove deprecated concepts.
+
+### Handoff 1: Stall & RV Charts rename (from earlier audit AUDIT-C8-1)
+Rename the sidebar entry "Stall Charts" → "Stall & RV Charts" on every shipped admin page:
+- `dashboard_page.html` ✅ (already in corrected version)
+- `orders_page.html`
+- `reservations_page.html`
+- `settings_page.html`
+- `order_detail_page.html`
+- `customer_profile_page.html`
+- `event_page.html` (n/a — customer-facing, no sidebar)
+
+Rename the admin route registration in `eem-admin.php` to match.
+
+### Handoff 2: Invoicing page removal + Create Order / Collect Payment routes (from AUDIT-C11-1)
+- DELETE shipped/legacy `invoicing_page.html`
+- Remove any "Invoicing" sidebar entry (the corrected mockups already have it removed; ensure shipped pages do too)
+- Remove any `equine-event-manager-invoicing` admin route registration in `eem-admin.php`
+- REGISTER two new admin routes: `equine-event-manager-create-order` (→ `create_order_page.html`) and `equine-event-manager-collect-payment` (→ `collect_payment_page.html`)
+- Wire shipped Orders list "+ Create Order" button (currently `href="#"`) → `admin.php?page=equine-event-manager-create-order`
+- Wire shipped Orders list "Collect" pill in each unpaid-order row → `admin.php?page=equine-event-manager-collect-payment&order_id=<id>`
+- Wire shipped Order Detail "Collect Payment" button in payment-banner → `admin.php?page=equine-event-manager-collect-payment&order_id=<id>` (convert from `<button>` to `<a href="...">`)
+
+### Handoff 3: Cancellation policy concept removal (from EMAIL-3 REVISED)
+In shipped `settings_page.html`:
+- Remove the "Cancellation Policy" textarea field from Settings → Notifications/Reservations area (around line 983)
+- Remove the `{{cancellation_policy}}` placeholder chip from the email-templates placeholder palette (around line 766)
+- Remove the entire "Cancellation" email template card (around lines 899–940)
+- Remove any associated `wp_option` key, settings save handler, and database persistence
+- Remove any references to cancellation policy in email template rendering code
+
+Cancellation policy concept is **deferred entirely** — will eventually be per-reservation, not global. Do not scaffold a global field that will be replaced.
+
+### Handoff 4: Event Day Info implementation (from EMAIL-4 REVISED)
+Edit Reservation page (`edit_reservation_page.html` — corrected mockup) includes the new "Event Day Info" section between Check-In/Check-Out and Stall Reservations. Phase 3 must:
+- Add WordPress post-meta fields: `_eem_event_day_enabled`, `_eem_event_day_checkin`, `_eem_event_day_bring`, `_eem_event_day_parking`, `_eem_event_day_contact`
+- Wire the save handler for the section's toggle + four text fields
+- Update the confirmation email template renderer to use the PHP template snippet documented in EMAIL-4 (REVISED) above
+- Update the hosted order page renderer to use the same Event Day Info block (NOT the receipt — explicitly excluded)
+- When the section is disabled, omit the entire What's Next card from the email; when individual fields are empty, omit only those bullets
+
+### Handoff 5: Email mailer CSS inlining (from AUDIT-C11-5 DEC-1)
+The corrected `customer_confirmation_email.html` mockup keeps a `<style>` block for design-time readability. The Phase 3 mailer code must inline CSS at send-time using a library (recommended: Premailer for PHP, or Roadrunner, or juice if migrating to Node). This is REQUIRED — without inlining, the email renders brokenly in Outlook desktop, Gmail mobile app, and some Yahoo configurations.
+
+A comment in the email template's `<head>` flags this requirement to future maintainers.
+
+### Handoff 6: Order ID format — 5-digit zero-padded
+Standing rule across all corrected mockups: order numbers display as 5-digit zero-padded (`#00020`, `#00128`, etc.). Phase 3 PHP rendering must use `sprintf('#%05d', $order_id)` or equivalent everywhere an order number is displayed: order detail page, orders list, dashboard, email, receipt, hosted order page, reports export filenames, activity log entries.
+
+### Handoff 7: Reports — per-row Download / Expired affordance (from AUDIT-C12-1 DEC-6)
+Phase 3 implements file-cache awareness:
+- Generated export files stored in a `/wp-content/uploads/eem-reports/` directory (or similar)
+- Files auto-purged after N days (configurable; default 30)
+- Reports page history row checks file existence:
+  - File exists → render `.btn-download` button with file URL
+  - File missing → render `.expired-link` text with re-export link routing back to the relevant report card with the original filter context restored
+
+### Handoff 8: Reports — filter state persistence (from AUDIT-C12-1 DEC-8)
+localStorage key: `eem_reports_filter_state`. Stored value: JSON with reservation_id, date_preset, date_from, date_to, status. Hydrated on page load; written on every filter change. "Reset filters" button clears the key and re-renders defaults.
+
+### Handoff 9: Reports — date range preset auto-fill (from AUDIT-C12-1 DEC-7)
+The preset dropdown's `onChange` updates the two date inputs:
+- `last-7` → 7 days ago to today
+- `last-30` → 30 days ago to today
+- `last-90` → 90 days ago to today
+- `this-year` → Jan 1 of current year to today
+- `all` → Jan 1, 2020 (or first export ever) to today
+- `custom` → no auto-fill; manual edit only
+
+Manual edit of either date input flips the dropdown to "Custom".
+
+### Handoff 10: Image search / report icon palette documented as permitted deviation (AUDIT-C12-1 DEC-3)
+Reports page uses six distinct icon chip colors that don't all exist in the four-color type-badge palette (blue/purple/orange/green). The two additional variants:
+- **Teal** (Stall Occupancy): `#F0FDFA` bg + `#0d9488` icon
+- **Red** (Refunds): `#FEF2F2` bg + `#b91c1c` icon
+
+These are **documented as permitted deviations** for the six-color report-icon palette specifically. NOT to be reused outside the Reports page report-icon context.
+
+---
+
+## Documented design system tokens — final reference
+
+### Section icon chip palette (28×28, light tinted bg + saturated icon, 14×14 SVG, 4px radius)
+Used on `edit_reservation_page.html` section headers, `reports_page.html` report cards, dashboard Quick Actions, dashboard Needs Attention rows.
+
+| Token | Background | Icon color |
+|---|---|---|
+| icon-blue / qi-blue / icon-blue (attention) | `#EEF4FF` | `#1668F2` |
+| icon-green / qi-green | `#F0FDF4` | `#15803d` |
+| icon-purple / qi-purple | `#F5F3FF` | `#6d28d9` |
+| icon-orange / qi-orange / icon-orange (attention) | `#FFF7ED` | `#c2410c` |
+| icon-teal | `#F0FDFA` | `#0d9488` |
+| icon-navy | `#EEF4FF` | `#031B4E` |
+| icon-red (attention) | `#FEF2F2` | `#b91c1c` |
+
+### Status badge palette (Orders)
+Used on shipped Orders list, Order Detail, dashboard Recent Orders, Collect Payment status display.
+
+| Status | Background | Text | Border | Dot |
+|---|---|---|---|---|
+| Paid | `#F0FDF4` | `#15803d` | `#bbf7d0` | `#15803d` |
+| Unpaid | `#FEF2F2` | `#b91c1c` | `#fecaca` | `#b91c1c` |
+| Invoice Sent | `#EFF6FF` | `#1d4ed8` | `#bfdbfe` | `#3b82f6` |
+| Refunded | `#F5F3FF` | `#6d28d9` | `#ddd6fe` | `#6d28d9` |
+| Partial | (TBD — Phase 3) | | | |
+| Cancelled | (TBD — Phase 3) | | | |
+
+### Reservation state badge palette
+UPPERCASE small-caps (legitimate exception for reservation states).
+
+| State | Background | Text | Border | Dot |
+|---|---|---|---|---|
+| ACTIVE | `#dcfce7` | `#15803d` | (none) | `#16a34a` |
+| DRAFT | `#fef3c7` | `#a16207` | (none) | `#ca8a04` |
+| ARCHIVED | `#e5e7eb` | `#52525b` | (none) | `#71717a` |
+| TRASHED | `#fee2e2` | `#b91c1c` | (none) | `#dc2626` |
+
+### Type badge palette (Stall/RV/Add-On/Group)
+Used everywhere reservation type is visualized: shipped Reservations list, Orders list type column, customer email order meta, receipt reservation cards, dashboard tag chips. Flat 3px radius rectangles. NO dots.
+
+| Type | Background | Text | Border |
+|---|---|---|---|
+| Stall | `#EEF4FF` | `#1668F2` | `#c0d8ff` |
+| RV | `#F5F3FF` | `#6d28d9` | `#ddd6fe` |
+| Add-On | `#FFF7ED` | `#c2410c` | `#fed7aa` |
+| Group | `#F0FDF4` | `#15803d` | `#bbf7d0` |
+
+### Info accent (soft-blue)
+Used for: assignments cards (email + receipt), PDF attachment note, chart-help tip banner, Daily Movement card, ZIP export card on Reports, Order Summary linked-event card, Quick Actions tiles on Dashboard, Order info box on Receipt, Special Requests on email + receipt, confirmation bar on email.
+
+- Background: `#F0F4FB`
+- Border: `#D9E2F2`
+- Hover background (when interactive): `#EEF4FF`
+- Hover border: `#1668F2`
+
+### Plugin-wrap shell border
+Outer shell of every admin page: `1px solid #c3c4c7`.
+
+### Inner card border
+Cards inside the plugin-wrap: `1px solid #e5e7eb`.
+
+### Card-header border-bottom
+`1px solid #dcdcde`.
+
+### Alt-bg (VIS-1)
+`#f3f4f5` — used for table headers, settings nav, save bars, footer bars, readonly inputs, payment tabs, card-headers with bg fill.
+
+### Standard logo placeholder
+- Width × height: `160px × 36px` (desktop), `120px × 30px` (mobile)
+- Background: `#e0e0e0`
+- Border: `1px dashed #bbb`
+- Radius: `4px`
+- Text size: `11px` (10px on mobile)
+- Text color: `#999`
+
+### Primary CTA (VIS-4)
+- Background: `#1668F2` (Electric Blue)
+- Text: `#fff`
+- Border: `1px solid #1668F2`
+- Hover background: `#1257d1`
+- Hover border: `#1257d1`
+
+### Universal hover convention
+- `a { text-decoration: none }` everywhere
+- `a:hover { text-decoration: none }` — never underline on hover
+- Color transitions: navy `#031B4E` → Electric Blue `#1668F2` (or `#1257d1` for primary CTA buttons)
+
+### Order number format
+`#XXXXX` — 5-digit zero-padded. Phase 3 implementation uses `sprintf('#%05d', $order_id)`.
+
+---
+
+## CANCELLATION-ARCH (revised) — Per-reservation cancellation policy with event-default inheritance
+**Decided:** 2026-05-23 (REVISES the earlier "remove entirely" call from EMAIL-3 REVISED and the prior HANDOFF Edit 4)
+
+**Decision summary:** Cancellation policy is **per-reservation with event-level default inheritance**, NOT globally configured in Settings, NOT removed entirely.
+
+**Rationale for revising the prior "remove entirely" call:** Removing cancellation policy from v1 was the wrong call. Customers form a contract at purchase time under the cancellation policy that was visible at that moment. Without a cancellation policy mechanism, the venue has no defensible terms for refund disputes. The right fix was never "remove the feature" — it was "fix the architecture." The global-Settings approach was wrong (policies vary per event/reservation); the answer is per-reservation with event-default inheritance, not deletion.
+
+### CANCELLATION-ARCH-Q1. Inheritance model
+**Decided:** A2 — per-event default, stored in the plugin (not in TEC), inherited at reservation creation, overridable per reservation.
+
+Three options were considered:
+- **A1** (rejected): Per-event default stored in TEC. Rejected because cancellation policy is plugin-owned transactional data tied to refund workflows (REF-1, REF-2), not TEC event metadata. Storing in TEC would break the clean TEC-1 through TEC-4 ownership boundary.
+- **A2** (chosen): Per-event default stored in the plugin (e.g., `wp_eem_event_defaults` table keyed by event_id). Inherited at reservation creation. Overridable per reservation.
+- **B** (rejected): Per-reservation only, no event default. Rejected because it forces admins to retype the same policy on every reservation when most reservations should share one event's terms.
+
+**Admin UI placement for editing event defaults:** Inside Edit Reservation (the plugin doesn't have an Edit Event page — events are TEC posts; admin's primary touchpoint with event-level data is via the linked reservation editor). Visual treatment: "edit the event default ↗" link from inside the Cancellation Policy section — opens an inline editor or modal. Final visual design call deferred to Phase 3 implementation; not blocking for handoff.
+
+### CANCELLATION-ARCH-Q2. Customer-facing display surfaces
+**Decided:** All four surfaces — with checkout treated as link-to-modal rather than full block.
+
+| Surface | Treatment |
+|---|---|
+| Checkout (`event_page.html`) | Single-line agreement above Reserve/Pay button. Link opens modal or inline-expands the full policy text. Implicit-by-submission — no required-checkbox; contract formed by clicking Pay with the link visible. Agreement line placed directly above Pay button (proximity matters for legal force). Standard SaaS / e-commerce pattern (Stripe Checkout, Shopify, Eventbrite). |
+| Confirmation email | Full block in `.cancellation-policy` card after Support block. Standard light-gray treatment. |
+| PDF receipt | Full block after Totals, before Footer. `page-break-inside: avoid` for print. |
+| Hosted order page | Same template as PDF receipt — full block. |
+
+**Implicit-by-submission rationale:** Forcing the modal/expand to be opened before Pay is enforcement theater — customers route around it (open + immediately close without reading). The contract is formed by clicking Pay with the linked agreement visible nearby. Clickwrap jurisprudence (Specht v. Netscape, Nguyen v. Barnes & Noble) treats reasonably-visible linked terms above a submit button as valid contract formation. A required checkbox is overkill for a stall reservation refund policy; reserved for higher-stakes contracts.
+
+### CANCELLATION-ARCH-Q3. Pre-existing reservations behavior
+**Decided:** C with override-snapshot refinement — one-time migration writes the existing global `cancellation_policy` wp_option value into each existing reservation's `_eem_cancellation_policy_override` post-meta.
+
+Three options considered:
+- **A** (rejected): Inherit from event default at ship time, no migration. Rejected because the venue would suddenly show blank cancellation sections for existing reservations whose events don't have a default set yet — creates legal ambiguity about whether the policy still applies for past purchases.
+- **B** (rejected): Migration writes global policy → all events' defaults at ship time. Rejected because future event-default changes would retroactively affect past purchases through the inheritance chain — wrong contract integrity behavior.
+- **C with refinement** (chosen): Migration writes global policy → each existing reservation's `_eem_cancellation_policy_override` post-meta directly. Snapshots the policy onto every reservation as it was at purchase time. Future event-default changes don't affect existing reservations because they already have their own override. New reservations use event-default inheritance per the normal flow.
+
+**Why snapshot onto override (not legacy-branch):** Putting the snapshot through the same code path as a freshly-customized reservation — "override is set, use the override" — means no special legacy-reservation code path. Clean.
+
+**After the migration:**
+- Global `cancellation_policy` wp_option becomes deprecated (no new writes; still readable until pre-launch cleanup strips it)
+- Each existing reservation has its own snapshot in `_eem_cancellation_policy_override` post-meta
+- New reservations created after the migration inherit from event default per Q1
+- Admins can override per reservation going forward
+- Pre-launch cleanup chunk eventually strips the Settings UI + the `wp_option` entirely (the snapshots persist as per-reservation data)
+
+**Result for customers:**
+- No customer ever sees their cancellation policy disappear
+- Future event-default changes don't retroactively affect past purchases
+- Clean architecture: every reservation has policy text by exactly two paths (explicit override stored, or event-default inheritance lookup at render time)
+
+### CANCELLATION-ARCH — Mockup changes applied this session
+
+**`edit_reservation_page.html` (corrected mockup):**
+- New section "Cancellation Policy" added at the end (after Agreement)
+- Section icon chip: **icon-red** (`#FEF2F2` bg + `#b91c1c` shield-with-X SVG icon) — semantic adjacency to refund flow + contracts
+- Enable toggle (defaults to ON; when OFF, omits the policy block from all four customer surfaces for this reservation specifically)
+- Inherited-default banner visible when no override is set: "Using event default cancellation policy" with explanatory copy
+- Read-only event default textarea (populated from event_id lookup; `#f3f4f5` bg + `cursor: not-allowed`)
+- "edit the event default ↗" link (Phase 3 wires to event-default editor)
+- Per-reservation override textarea (empty = inherit; non-empty = override)
+- Dynamic status hint below override:
+  - Empty: "Currently using event default. Type to customize."
+  - Non-empty: "Using this reservation's custom policy (event default is overridden)"
+- "Restore event default" button appears when override is active; clicking clears with confirmation prompt
+- CSS: new `.inherited-default-banner`, `.cancellation-override-actions`, `.btn-link-secondary` classes; `.cancellation-overridden` modifier on the section element drives the conditional rendering of the banner and restore button
+- JS: `updateCancellationOverrideState()` listener on the override textarea; `restoreCancellationDefault()` button handler with confirm()
+
+**`customer_confirmation_email.html` (corrected mockup):**
+- Cancellation Policy block restored after Support block, before footer
+- Treatment: `.cancellation-policy` card — standard light-gray (`#f3f4f5` bg + `#e5e7eb` border) matching the Support block treatment
+- Title "Cancellation Policy" in Space Grotesk 13px/700 navy
+- Body text in 12.5px `#50575e` line-height 1.55
+- Phase 3 sources from `eem_resolve_cancellation_policy($reservation_id)` (override OR event default); block omitted if resolver returns null
+
+**`order_receipt.html` (corrected mockup):**
+- Cancellation Policy block restored after Totals, before Footer
+- Treatment: same `.cancellation-policy` card pattern as email (consistent across email + receipt + hosted page)
+- `page-break-inside: avoid` to keep policy together on one PDF page
+- Print stylesheet includes `.cancellation-policy` in the lighten-on-print rule (`background:#fff; border-color:#c0c4cc`) for ink savings
+- Phase 3 sources from same resolver function as email
+
+**`settings_page.html`** — unchanged (shipped/hands-off per standing rule). The global `cancellation_policy` field continues to exist in Settings during the transition period; it serves as the source for the one-time migration (Q3 step 1). Pre-launch cleanup chunk strips it after migration runs and per-reservation flow is fully wired. See HANDOFF.md "Edit 4" (revised) for the explicit "leave in place" instruction.
+
+### CANCELLATION-ARCH — Handoff to Claude Code
+
+See HANDOFF.md "Backend 9: Per-reservation cancellation policy (architecture shift)" for the complete Phase 3 implementation plan: data model (9.1), resolution logic (9.2), one-time migration (9.3), edit-reservation UI (9.4), customer-facing surface treatments (9.5), enable-toggle behavior (9.6), and recommended order of implementation (9.7).
