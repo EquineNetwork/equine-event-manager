@@ -143,6 +143,22 @@ class EEM_Admin {
 			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--reservations-list' );
 		}
 
+		// DS-1.B.4: Dashboard branch added. Without this, the Dashboard
+		// page rendered with NO eem-shell-page class on body, causing
+		// admin-legacy.css `:not(.eem-shell-page--…)` carve-out rules to
+		// apply and shrink .eem-page by 20px (visible width discrepancy
+		// vs Orders/Reservations/Order Detail confirmed in DevTools).
+		// Also restores the body.eem-shell-page font-family rule.
+		if ( 'equine-event-manager-dashboard' === $page ) {
+			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--dashboard' );
+		}
+
+		// DS-1.B.4: Create Order + Collect Payment stub pages also need
+		// the shell-page class for the same reason (legacy carve-outs).
+		if ( in_array( $page, array( 'equine-event-manager-create-order', 'equine-event-manager-collect-payment' ), true ) ) {
+			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--' . $page );
+		}
+
 		return $classes;
 	}
 
@@ -302,7 +318,9 @@ class EEM_Admin {
 		// both — the new Phase 3 slug controls ordering, and the legacy
 		// CPT URL is still reachable via direct nav (the C4
 		// maybe_redirect_old_list bounce handles accidental hits).
+		// DS-1.B.4: Dashboard pinned to position 0 (above Orders).
 		$preferred_order = array(
+			'equine-event-manager-dashboard',
 			self::MENU_SLUG,
 			'equine-event-manager-reservations',
 			'equine-event-manager-stall-charts',
@@ -620,13 +638,20 @@ class EEM_Admin {
 		// entry; DS-1.B replaces the placeholder callback with
 		// EEM_Dashboard_Page::render. Stays visible in the sidebar
 		// (navigation destination, unlike Create Order / Collect Payment).
+		// DS-1.B.4: 7th arg `$position = 0` pins Dashboard to the top of
+		// the Event Manager submenu so navigation order reads Dashboard →
+		// Orders → Reservations → Stall & RV Charts → Reports → Settings.
+		// Final sidebar order also enforced via the `admin_menu` re-order
+		// hook below (position alone doesn't override WP's auto-added
+		// parent-slug submenu entry).
 		add_submenu_page(
 			self::MENU_SLUG,
 			__( 'Dashboard', 'equine-event-manager' ),
 			__( 'Dashboard', 'equine-event-manager' ),
 			'manage_options',
 			'equine-event-manager-dashboard',
-			array( 'EEM_Dashboard_Page', 'render' )
+			array( 'EEM_Dashboard_Page', 'render' ),
+			0
 		);
 
 		if ( $native_events_enabled ) {

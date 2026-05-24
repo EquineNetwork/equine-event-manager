@@ -324,5 +324,30 @@ ds1b_ok( '.eem-dashboard-qi-orange deepened',
 	(bool) preg_match( '/\.eem-dashboard-qi-orange\s*\{\s*background\s*:\s*#FFE3CC/i', $css_src ),
 	$pass, $fail, $log );
 
+// ── [18] DS-1.B.4 — body class + sidebar position ───────────────────
+echo "\n[18] DS-1.B.4 — body shell class + sidebar position\n";
+// Body-class filter: simulate Dashboard page context and assert shell class added.
+$_GET = array( 'page' => 'equine-event-manager-dashboard' );
+set_current_screen( 'admin_page_equine-event-manager-dashboard' );
+$dash_body_classes = apply_filters( 'admin_body_class', '' );
+ds1b_ok( 'Dashboard body classes include eem-shell-page',
+	false !== strpos( $dash_body_classes, 'eem-shell-page' ),
+	$pass, $fail, $log, "got: '{$dash_body_classes}'" );
+ds1b_ok( 'Dashboard body classes include eem-shell-page--dashboard',
+	false !== strpos( $dash_body_classes, 'eem-shell-page--dashboard' ),
+	$pass, $fail, $log, "got: '{$dash_body_classes}'" );
+
+// Sidebar position: Dashboard must be the FIRST entry under MENU_SLUG.
+global $submenu;
+if ( isset( $submenu[ EEM_Admin::MENU_SLUG ] ) ) {
+	$first = reset( $submenu[ EEM_Admin::MENU_SLUG ] );
+	$first_slug = isset( $first[2] ) ? (string) $first[2] : '';
+	ds1b_ok( 'Dashboard is the FIRST entry in Event Manager submenu',
+		'equine-event-manager-dashboard' === $first_slug,
+		$pass, $fail, $log, "first submenu slug is '{$first_slug}'" );
+} else {
+	ds1b_ok( 'Event Manager submenu exists', false, $pass, $fail, $log, 'submenu not registered' );
+}
+
 echo implode( "\n", $log ) . "\n=== RESULT: {$pass} passed, {$fail} failed ===\n";
 exit( $fail > 0 ? 1 : 0 );
