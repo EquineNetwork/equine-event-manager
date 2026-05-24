@@ -28,15 +28,15 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 - **What:** Existing commits on `phase-3/c6-order-detail` (and likely all branches since the repo was cloned to `~/Projects/equine-event-manager`) carry the auto-derived attribution `Whitney Mitchell <whitneymitchell@Whitneys-iMac.local>`. Git falls back to this when `user.email` isn't set in any config scope (system/global/local). Functional locally, but the hostname segment (`Whitneys-iMac.local`) becomes part of the public commit metadata if the repo ever ships to WordPress.org SVN, GitHub, or any public mirror.
 - **Why deferred:** Pre-release concern, not today's problem. The plugin is on a private dev branch — no public exposure yet. Mid-branch git config changes only fix attribution going forward, not the existing history; a `git filter-branch` or `git filter-repo` rewrite would touch every commit and is meaningfully larger work than a single chunk should absorb.
 - **Added in:** C6.A.2 close (observed in commit `282c92a` post-commit warning)
-- **Unblocks deletion:** Pre-release prep chunk (likely C13 or the dedicated release-cut chunk). Required work: (a) `git config --global user.email <real@email>` + `git config --global user.name "Whitney Mitchell"` on dev machine, (b) decide whether to rewrite existing commit history via `git filter-repo` (preserves authorship intent, mass-rewrites SHAs — disruptive for any open branches) or accept the existing-history attribution and only fix forward (zero SHA churn, leaves hostname in history). Recommendation: fix-forward unless we need clean history for compliance/audit reasons. Both options are cheap; the choice is between disruption-now-clean-history-forever vs no-disruption-mixed-history.
-- **Status:** awaiting C13 / release-cut
+- **Unblocks deletion:** Pre-release prep chunk (likely C16 or the dedicated release-cut chunk). Required work: (a) `git config --global user.email <real@email>` + `git config --global user.name "Whitney Mitchell"` on dev machine, (b) decide whether to rewrite existing commit history via `git filter-repo` (preserves authorship intent, mass-rewrites SHAs — disruptive for any open branches) or accept the existing-history attribution and only fix forward (zero SHA churn, leaves hostname in history). Recommendation: fix-forward unless we need clean history for compliance/audit reasons. Both options are cheap; the choice is between disruption-now-clean-history-forever vs no-disruption-mixed-history.
+- **Status:** awaiting C16 / release-cut
 
 ### 34. Order Detail Payment Details — card brand / last4 display block deferred
 - **What:** The mockup at `.mockups/order_detail_page.html` lines 548-554 specs a "Card" row in the Payment Details sidebar (VISA badge + `•••• 4242` masked number). C6.A.2 OMITS this block entirely.
 - **Why deferred:** The C6.A.2 meta-existence audit probed candidate keys `_en_card_brand`, `_en_card_last4`, `_en_payment_card_brand`, `_en_payment_card_last4`, `_en_card_brand_normalized`, `_en_cc_brand`, `_en_cc_last4`, `_en_stripe_card_brand`, `_en_stripe_card_last4`, `_card_brand`, `_card_last4` against all seeded reservations AND ran a broad `LIKE '%card%' OR '%last4%' OR '%brand%' OR '%cc_%'` scan across the entire `wp_postmeta` table — zero hits. Card brand/last4 are not persisted anywhere in the current data shape. Per C6.A.2 discipline ("honest representation beats fake '—'"), the block is omitted rather than shipping placeholder rows.
 - **Added in:** C6.A.2
-- **Unblocks deletion:** C10 or C11 (likely as part of the Stripe/Auth.net receipt port). Required work: (a) capture `payment_method_details.card.brand` + `payment_method_details.card.last4` from the Stripe PaymentIntent (and the Auth.net equivalent) at the moment of charge, (b) persist to `_en_card_brand` + `_en_card_last4` post_meta on the reservation, (c) re-add the Card display block to `EEM_Order_Detail_Page::render_payment_details_card` with a graceful degrade for orders predating capture. Inline comment marker at the omission point references "CLEANUP #34".
-- **Status:** awaiting C10/C11
+- **Unblocks deletion:** C14 (Collect Payment admin page — that's where Stripe/Auth.net charge dispatch happens, so it's the natural place to capture `payment_method_details.brand` + `last4` from the PaymentIntent response). Required work: (a) capture `payment_method_details.card.brand` + `payment_method_details.card.last4` from the Stripe PaymentIntent (and the Auth.net equivalent) at the moment of charge, (b) persist to `_en_card_brand` + `_en_card_last4` post_meta on the reservation, (c) re-add the Card display block to `EEM_Order_Detail_Page::render_payment_details_card` with a graceful degrade for orders predating capture. Inline comment marker at the omission point references "CLEANUP #34".
+- **Status:** awaiting C14 (chunk recategorization, post-handoff Step 2 — was C10/C11)
 
 ### 33. Order Detail save bar — deferred to C7 (inline-edit save flow)
 - **What:** The mockup at `.mockups/order_detail_page.html` lines 586-592 specs a Cancel + "Save Changes" pair that sits between the Special Instructions card and the Activity Log section. C6.A.2 OMITS this region.
@@ -54,7 +54,7 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
   3. EEM_Activity_Log::write() captures `$payload['order_key']` and writes the dedicated column.
   4. EEM_Activity_Log::get_for_order_key() switches to `WHERE order_key = %s`.
 - **Added in:** C6.E.1 (audit-time surfacing).
-- **Sequence:** before any production deployment with high activity-log volume, OR alongside C13 polish. Trivial in isolation (~40 LOC schema + ~10 LOC method swap); the real cost is the backfill verification.
+- **Sequence:** before any production deployment with high activity-log volume, OR alongside C16 polish. Trivial in isolation (~40 LOC schema + ~10 LOC method swap); the real cost is the backfill verification.
 - **Unblocks:** O(1) lookup per order regardless of table size; reporting / analytics features that scan by order_key.
 - **Status:** queued; LIKE-on-JSON acceptable at v2.2.0 scale.
 
@@ -72,7 +72,7 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
   - **(c) Bypass sanitize_key for this specific field** — rewrite `EEM_Activity_Log::write` to use a custom whitelist regex like `/^[a-z0-9._-]+$/` that preserves dots. Cleanest semantically; requires the most thinking about what's actually a safe event-type charset.
 - **Recommended:** (b) — underscore-separated names. Simplest mental model long-term; the historical-row backfill is a one-line `UPDATE wp_en_activity_log SET event_type = REPLACE(...) WHERE event_type LIKE 'order%'` migration.
 - **Added in:** C6.D (surfaced when c6d-smoke initially queried for dotted names and got zero hits).
-- **Sequence:** before any production deployment that will ship a query-by-event-type feature. Folds naturally into C11 (mailer telemetry surfacing) or C13 polish — whichever first introduces an event-type filter UI.
+- **Sequence:** before any production deployment that will ship a query-by-event-type feature. Folds naturally into C11 (mailer telemetry surfacing) or C16 polish — whichever first introduces an event-type filter UI.
 - **Status:** quirk documented; behavioral fix queued.
 
 ### 30. Refund-notify email wiring for C6.B notify checkbox
@@ -96,7 +96,7 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
   3. Per-step handler reads from the cached map when present, falls back to fresh `get_order` when not.
   4. JS bulk runner generates a `batch_token = crypto.randomUUID()` on modal open, includes it on every step call.
 - **Added in:** C6.C (audit-time surfacing).
-- **Sequence:** any time after C6 closes; folds naturally into C13 polish or its own focused chunk. CLEANUP #27 (EEM_Refund_Engine extraction) is a natural co-landing because both touch the same per-order/per-batch boundary.
+- **Sequence:** any time after C6 closes; folds naturally into C16 polish or its own focused chunk. CLEANUP #27 (EEM_Refund_Engine extraction) is a natural co-landing because both touch the same per-order/per-batch boundary.
 - **Unblocks:** larger bulk batches (100+ orders) without quadratic-feeling delays.
 - **Status:** queued; functional impact only at large batch sizes.
 
@@ -122,7 +122,7 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
   5. Smoke coverage expands: engine-level unit assertions (math helpers, distribution logic), AJAX-level integration assertions (capability/nonce/payload shape).
 - **Why deferred:** C6.B alone doesn't have the surface area to justify a new class; the wrapping pattern is sufficient for one caller. C6.C bulk-engine adds a second caller and an error-attribution dimension (per-order success/failure tracking, partial-batch recovery) that genuinely warrants its own type. Extracting before C6.C ships would also lock in a contract that C6.C might want to evolve.
 - **Added in:** C6.B (during the C6.B kickoff Q1 decision).
-- **Sequence:** between C6.C close and C6.D start, OR folded into C13 polish — call it at C6.C close based on how complex the bulk engine's per-order error attribution turns out to be.
+- **Sequence:** between C6.C close and C6.D start, OR folded into C16 polish — call it at C6.C close based on how complex the bulk engine's per-order error attribution turns out to be.
 - **Unblocks deletion:** ~6 private methods migrate cleanly off EEM_Admin, which is already CLEANUP #1 territory (the full legacy file strip).
 - **Status:** queued; C6.B uses the wrap pattern as a stopgap.
 
@@ -134,7 +134,7 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
   4. **Filter "noise" meta keys** that change on every save (e.g. cache timestamps, derived fields) so the log doesn't fill with irrelevant entries.
 - **Why deferred:** distinct from the 5 simple-event hooks both in mechanism (pre/post snapshot pair vs single insert) and in display rendering (diff struct vs single message). Folding into C6.D would double the chunk's complexity and delay the Activity Log shipping at all.
 - **Added in:** C6.A (during the C6 chunk-planning conversation as the Q3 deferred scope).
-- **Sequence:** between C7 (Edit Reservation editor port — increases save_meta surface area) and C8 (Stall Charts — orthogonal). Likely chunk name "C7.5 activity-log diff logger" or rolled into C13 polish.
+- **Sequence:** between C7 (Edit Reservation editor port — increases save_meta surface area) and C8 (Stall Charts — orthogonal). Likely chunk name "C7.5 activity-log diff logger" or rolled into C16 polish.
 - **Unblocks:** the mockup's "Order edited by X" activity entry with field-level diff display.
 - **Status:** queued; deferred from C6.D scope decision.
 
@@ -165,7 +165,7 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 - **What was wrong:** Per decisions.md RES-ARCH-1, reservation's user-visible title and event dates are read-only mirrors of the source event (Native / TEC / External Feed). Pre-C6.6 code violated this: `EEM_Reservations_List_Page::render_table_row()` + `render_mobile_cards()` called `get_the_title( $post )` (reservation post_title), `EEM_Reservations_List_Repo::get_event_date_range_label()` read `_en_nightly_*_date` / `_en_weekend_*_date` from reservation post_meta, and `get_date_filter_options()` queried the same meta key.
 - **How it was resolved (C6.6, 2026-05-23):**
   1. New `EEM_Reservation_Source_Resolver` class at `includes/class-eem-reservation-source-resolver.php` — thin façade over the existing `EEM_Events::get_normalized_reservation_event_data()` that returns just the RES-ARCH-1 trio (title, start_date, end_date, venue) + convenience accessors.
-  2. Migrated 4 call sites on the Reservations list (render_table_row title + dates + orders-count link target; render_mobile_cards same; get_date_filter_options dropdown query; get_event_date_range_label proxied to resolver + @deprecated for C13 removal).
+  2. Migrated 4 call sites on the Reservations list (render_table_row title + dates + orders-count link target; render_mobile_cards same; get_date_filter_options dropdown query; get_event_date_range_label proxied to resolver + @deprecated for C16 removal).
   3. Hybrid cache strategy: pure resolver for display reads, single narrow cache key `_en_source_event_start_date` (constant `EEM_Reservation_Source_Resolver::SORT_CACHE_META_KEY`) for the `orderby=event_dates` SQL path + the date_filter month range. Written by `save_post_en_reservation` priority 30 hook.
   4. Smoke updates: c4a now seeds a native source event + linked reservation and asserts the resolver returns source-event fields; c4d carries a self-healing backfill for any legacy pre-C6.6 seed reservations.
 - **Migration impact on production data:** None. The four deprecated keys (`_en_nightly_*_date`, `_en_weekend_*_date`) had zero production writers — they were write-only-by-test (confirmed by the C6.6 audit grep). The `get_event_date_range_label` proxy means existing callers we may have missed still work.
@@ -181,7 +181,7 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
   3. For feed: harder — no save hook on external feeds; would need a wp-cron job that walks feed-sourced reservations + refreshes caches when their feed transients expire.
   4. Add coverage to c4d-smoke that edits a source event and asserts linked reservations' cache key updates.
 - **Added in:** C6.6 (resolver chunk closure).
-- **Sequence:** before any production deployment where source events are edited frequently. Probably runs alongside or after C13 polish.
+- **Sequence:** before any production deployment where source events are edited frequently. Probably runs alongside or after C16 polish.
 - **Unblocks:** removes the stale-cache failure mode for the sort/filter SQL.
 - **Status:** known limitation documented; safe to defer for in-development use.
 
@@ -189,7 +189,7 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 - **What:** Orders + Reservations both use a native `<select>` for the Event filter. Becomes unwieldy past ~50 events (long scroll, no typeahead, no in-place filtering). Replace with Choices.js — adds searchable typeahead + better keyboard navigation. Apply to BOTH list pages for parity. Style the Choices.js shell to match EEM design tokens: navy borders, Electric Blue focus ring, proper border-radius matching `.eem-toolbar-select`. Audit Reservations during this chunk for similar issues with the Date filter dropdown + any future filters (Type, etc.) that might need the same treatment.
 - **Why deferred:** Current native `<select>` works fine for the seeded test data (~3 events) but visibly degrades at production scale. Not a polish issue — a UX scaling issue that becomes a real blocker before user testing.
 - **Added in:** C5.G.10
-- **Sequence:** After C6 (Order Detail) or C7 (Edit Reservation), whichever has lighter dependencies. **Tag as "UX scaling" — do NOT defer to C13.** Must land before user testing because users with real event histories will hit the unusable native-select first.
+- **Sequence:** After C6 (Order Detail) or C7 (Edit Reservation), whichever has lighter dependencies. **Tag as "UX scaling" — do NOT defer to C16.** Must land before user testing because users with real event histories will hit the unusable native-select first.
 - **Estimated scope:** ~100–150 LOC across PHP enqueue + JS init + CSS shell styling. Adding Choices.js requires explicit user approval (third-party JS library — per CLAUDE.md decision policy "Adding any third-party JS library — confirm the choice with me").
 - **Unblocks deletion:** N/A — this is an additive UX upgrade, not legacy code removal.
 - **Status:** queued; awaiting sequencing decision
@@ -200,7 +200,7 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
   - **(b)** CSS classes defined in admin.css that no longer have any markup using them. Grep-verify each class name → if zero hits in PHP render code, delete.
   - **(c)** PHP helper methods no longer called by any active code path. Grep-verify each `private function` against all callers; if zero, delete.
   - **(d)** JS handlers bound to data-eem-action selectors that no longer exist in any rendered markup. Audit admin.js dispatch table against PHP render output.
-- **Why a standing practice, not a one-time:** Phase 3 chunks have been replacing components (C5.F-toolbar dropped 3 component classes; C5.G.3 dropped the `.eem-reservations-list` wrapper; C5.G.7 reverted then re-removed `.eem-btn-navy`). Each chunk produces orphans. Without the sweep they accumulate into a wholesale audit (C13 territory) which is far harder than catching incrementally. Lessons-learned cost: it took C5.F-toolbar + C5.G to discover the `.eem-orders-toolbar` legacy-CSS class collision because nobody audited after C5.B introduced the collision-prone name.
+- **Why a standing practice, not a one-time:** Phase 3 chunks have been replacing components (C5.F-toolbar dropped 3 component classes; C5.G.3 dropped the `.eem-reservations-list` wrapper; C5.G.7 reverted then re-removed `.eem-btn-navy`). Each chunk produces orphans. Without the sweep they accumulate into a wholesale audit (C16 territory) which is far harder than catching incrementally. Lessons-learned cost: it took C5.F-toolbar + C5.G to discover the `.eem-orders-toolbar` legacy-CSS class collision because nobody audited after C5.B introduced the collision-prone name.
 - **Process shape:** small "C{n}.5" audit chunk between merges. Single commit. Findings: a punch-list of removed selectors / methods / hooks with grep verification of zero remaining callers, plus the actual deletions.
 - **Added in:** C5.G.10
 - **Sequence:** Recurring — first instance is "C5.5 dead code audit" before C6 begins. Then "C6.5" before C7, "C7.5" before C8, etc.
@@ -211,10 +211,10 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
   - **Asset build pipeline:** CSS minification, JS bundling/minification, source maps. Currently `admin.css` + `admin.js` ship un-minified.
   - **Lint configs:** ESLint config for `assets/js/`, Stylelint config for `assets/css/`. Run in CI + pre-commit hook.
   - **Performance pass:** query caching audit (object cache hits on legacy `EEM_Orders_Repository::get_grouped_orders` are unverified), lazy-enqueue audit (legacy `wp_enqueue_script` calls that fire on every admin page even when not needed), transient hot-path identification.
-  - **Wholesale admin-legacy.css strip:** entry #1 wholesale-strip lands here too — by end-of-build every page is ported and admin-legacy.css can be removed wholesale (was C13-tagged in entry #1).
+  - **Wholesale admin-legacy.css strip:** entry #1 wholesale-strip lands here too — by end-of-build every page is ported and admin-legacy.css can be removed wholesale (was C16-tagged in entry #1).
 - **Why deferred:** Build pipeline + lint configs need the codebase to be feature-stable so the build doesn't have to re-tune for every chunk. Performance pass needs all pages built so the audit is comprehensive. admin-legacy.css strip needs every page ported.
 - **Added in:** C5.G.10
-- **Sequence:** End of Phase 3 (with C13 / Polish Pass).
+- **Sequence:** End of Phase 3 (with C16 / Polish Pass).
 - **Unblocks deletion:** assets/css/admin-legacy.css (per entry #1); legacy CSS rules each Phase 3 chunk excluded via `:not()` chains (those exclusion chains get reverted once the parent rule is gone).
 - **Status:** queued; final-build bucket
 
@@ -247,7 +247,7 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 
 ### 16. Customer Profile chunk sequencing — link targets pre-wired
 - **What:** Orders list page wires customer-name spans as `<a class="eem-customer-name" href="admin.php?page=equine-event-manager-customer&customer_email=X">` anchors and order-number spans as `<a class="eem-order-num" href="admin.php?page=equine-event-manager-order&order_key=Y">` anchors. Order Detail destination (`equine-event-manager-order` slug) is the existing legacy `EEM_Admin::render_order_detail_page` callback — C6 replaces. Customer Profile destination (`equine-event-manager-customer` slug) is a hidden placeholder admin page registered by `EEM_Orders_List_Page::register_customer_profile_stub()` with `EEM_Orders_List_Page::render_customer_profile_stub()` as the callback — renders a "Customer Profile is on the planned roadmap" card.
-- **Why deferred:** Customer Profile is NOT currently sequenced in the Phase 3 chunk plan (C1–C13). The page needs sequencing before C13 — otherwise these anchors land on a permanent placeholder. Listing here so the next chunk-planning conversation explicitly slots it in.
+- **Why deferred:** Customer Profile is NOT currently sequenced in the Phase 3 chunk plan (C1–C16). The page needs sequencing before C16 — otherwise these anchors land on a permanent placeholder. Listing here so the next chunk-planning conversation explicitly slots it in.
 - **URL convention to honor when the real chunk lands:**
   - Customer Profile: `admin.php?page=equine-event-manager-customer&customer_email={email}` — keyed by customer email since order rows don't carry a customer_id.
   - Order Detail: `admin.php?page=equine-event-manager-order&order_key={key}` — keyed by the legacy order_key.
@@ -286,9 +286,9 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
   - **6 distinct `!important` blocks** target `body.eem-shell-page input[type="*"] / select / textarea` (lines 142, 5910, 6569, 7600, 8260, 11812 + their `body.post-type-en_reservation` mirrors). Collectively they force `min-height: 42-44px`, `padding: 0.65rem 0.85rem`, border, border-radius (8-12px depending on block), background (kills SVG chevron backgrounds), box-shadow, color, and font-family on every form control. ~180 LOC of redundant overrides.
   - **~15 distinct `.button` / `.button-primary` / `.button-secondary` blocks** (lines 109, 124, 134, 5881, 5894, 5901, 6539, 6552, 6561, 7569, 7584, 7592, 8206, 8222, 8235, 8247, 11829, 11838, 11844) similarly stack overrides. New `.eem-toolbar-btn` style components were unaffected because the legacy blocks target the WP `.button` class, but any future component using a bare `<button>` element under shell pages will need similar audit.
   - Each Phase 3 component port that introduces form-control elements has to defend against ALL 6 blocks. c4-polish-2 added `:not(.eem-search-input)` and `:not(.eem-toolbar-select)` exclusions to 22 selector lines across the 6 input/select blocks. Documented as a recurring tax in CLAUDE.md hygiene rule #7 with a new prospective-port checklist (see CLAUDE.md C4-discoveries section).
-- **Unblocks deletion:** Final Phase 3 commit, after C3.D + C4 + C5 + C6 + C7 + C8 + C9 + C12 each migrate their page's rules out. Also delete the second `wp_enqueue_style( 'eem-admin-legacy', … )` call in `EEM_Admin::enqueue_backend_shell_styles` + `EEM_Reservation_Editor::enqueue_editor_shell_styles`.
-- **C13 remediation scope (revised — substantially larger than originally estimated):** rather than per-page `:not()` decoupling for every new component, C13 should **strip the entire form-control + button restyle stacks wholesale**. Six form-control blocks ÷ ~180 LOC each + fifteen button blocks ÷ ~250 LOC each ≈ **~430 LOC of legacy CSS** are pure `!important` cartels duplicating each other. Removing them outright (rather than piecemeal-excluding from each) is cleaner. Risk: any legacy admin screen still relying on the 44px form-control look will look slightly different after C13 — accepted, since by C13 every page is ported anyway.
-- **Status:** active remediation in progress per Phase 3 chunks; full strip queued for C13
+- **Unblocks deletion:** Final Phase 3 commit (C16), after C3.D + C4 + C5 + C6 + C7 + C8 + C9 + C10 + C11 + C12 + C16 + C14 + C15 each migrate their page's rules out. Also delete the second `wp_enqueue_style( 'eem-admin-legacy', … )` call in `EEM_Admin::enqueue_backend_shell_styles` + `EEM_Reservation_Editor::enqueue_editor_shell_styles`.
+- **C16 remediation scope (revised — substantially larger than originally estimated):** rather than per-page `:not()` decoupling for every new component, C16 should **strip the entire form-control + button restyle stacks wholesale**. Six form-control blocks ÷ ~180 LOC each + fifteen button blocks ÷ ~250 LOC each ≈ **~430 LOC of legacy CSS** are pure `!important` cartels duplicating each other. Removing them outright (rather than piecemeal-excluding from each) is cleaner. Risk: any legacy admin screen still relying on the 44px form-control look will look slightly different after C16 — accepted, since by C16 every page is ported anyway.
+- **Status:** active remediation in progress per Phase 3 chunks; full strip queued for C16
 
 ### 2. `admin/images/equine-event-manager-logo.png` — duplicate of `assets/images/logo.png`
 - **What:** Pre-existing legacy logo PNG used by `EEM_Reservation_Editor::render_editor_header` (admin/class-equine-event-manager-reservation-editor.php:377).
@@ -312,7 +312,7 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 ### 5. Four deferred mockups (decisions.md "Pending Mockups" + C4 modal)
 - **What:** `create_order_page.html`, `customer_detail_page.html`, Cancel Event button amendment on `edit_reservation_page.html`, **Email Customers compose modal** (no mockup file).
 - **Why deferred:** Mockups not built. The corresponding code surfaces:
-  - Invoicing → New Order mode is a "Coming next release" placeholder in C12.
+  - Invoicing → New Order mode is a "Coming next release" placeholder; the canonical mockup `create_order_page.html` landed in handoff Step 1 and the chunk that builds the page is **C16 (Create Order admin page)** post-handoff (was conceptually C12 in the pre-handoff roadmap before C11 was split).
   - Customer Detail link on Order Detail card (C9 — ODET-5) renders as plain text, not a link.
   - Cancel Event button on Edit Reservation (C7) is omitted; the bulk-refund engine is still built so the button can be added in a future chunk.
   - Email Customers modal (C4.C — reservations list meatballs item): no mockup depicts the compose UI. C4.C ships a minimal subject/body/Send modal designed to the brand-guide token system; spec-faithful redesign drops in when the mockup lands.
@@ -340,11 +340,11 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
   - C4-polish-1 reservation title links blocked from Navy default per mockup
   Each was patched locally with `a.` chains. The recurring pattern is the real issue — every future component port (C5, C6, C7, C8...) will hit the same trap on first render.
 - **Added in:** c4-polish-1 (issue identified across all of C4)
-- **Unblocks deletion:** C13 polish pass. Two refactor candidates:
+- **Unblocks deletion:** C16 polish pass. Two refactor candidates:
   - **(a) Remove the default `color` on `.eem-page a`** — require every component CSS to color its own anchors. Forces all current `a.` chains to become unnecessary; new components don't trip the trap. Risk: any unstyled anchor reverts to WP/browser default link blue, which differs from `--eem-electric`. Mitigation: sweep all anchors at audit time and ensure each has a class with explicit color.
   - **(b) Scope the rule** to `.eem-page a:not([class*="eem-"])` — applies only to anchors with no `eem-*` class. Cleverer but more brittle; depends on every component anchor having an `eem-*` class.
   - **Prefer (a)** — cleaner contract, even if it requires a one-time anchor-color audit.
-- **Status:** awaiting C13
+- **Status:** awaiting C16
 
 ### 13. Search input + button visual attachment didn't fully land in C4
 - **What:** The Reservations list search pair (`.eem-search-input` + `.eem-search-btn`) was supposed to render visually attached per mockup line 65 (input right corners squared, button left corners squared, button no left border, zero gap between them). After 4 rounds of polish (c4-polish-1 attached treatment, c4-polish-2 specificity bumps, round-3 source-order reorder, round-4 flex-gap fix), the gap between the two elements closed but the button's corner-radius and possibly its left border still don't render per spec.
@@ -354,29 +354,29 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
   - Possibly button left border still present despite `.eem-search-btn { border-left: none }` rule
   - Functionally: search input + button both work; clicking either submits the form. Visual-only defect.
 - **Added in:** c4-polish-2 (Whitney accepted current state after 4 polish rounds)
-- **Unblocks deletion:** C13 polish pass, OR sooner if it turns out to be downstream of the admin-legacy.css wholesale strip planned for C13 (entry #1). Worth a DevTools investigation when that strip lands — most likely a legacy `!important` block on `button` element that I missed in the c4-polish-2 form-control sweep (the sweep covered `input` + `select` + `textarea`, not `button`). Verify by inspecting the search button in DevTools after the wholesale strip; if the seam visibility improves, the legacy bare-button overrides were the cause.
-- **Status:** accepted at c4-close; revisit in C13
+- **Unblocks deletion:** C16 polish pass, OR sooner if it turns out to be downstream of the admin-legacy.css wholesale strip planned for C16 (entry #1). Worth a DevTools investigation when that strip lands — most likely a legacy `!important` block on `button` element that I missed in the c4-polish-2 form-control sweep (the sweep covered `input` + `select` + `textarea`, not `button`). Verify by inspecting the search button in DevTools after the wholesale strip; if the seam visibility improves, the legacy bare-button overrides were the cause.
+- **Status:** accepted at c4-close; revisit in C16
 
 ### 10. Bulk Edit on Reservations list — handler returns "unsupported" notice
 - **What:** The Reservations list bulk-action dropdown offers `Edit` and `Move to Trash` per RES-3. C4.D wires Move to Trash end-to-end; Edit currently redirects with `eem_notice=bulk_edit_unsupported` ("Bulk Edit is not available yet — it will land in a future release. Use the per-row Edit link for now.").
 - **Why deferred:** WP-native bulk edit relies on `WP_List_Table`'s inline-edit machinery which the Phase 3 custom page (Path B) deliberately doesn't extend. A proper bulk-edit UX needs its own modal (similar to the Email Customers modal) with the fields-to-change form. Scope is meaningfully larger than C4.D could accommodate and the per-row Edit link covers the immediate use case.
 - **Added in:** C4.D
-- **Unblocks deletion:** Future chunk (likely C13 polish or a dedicated follow-up). Either ship a real bulk-edit modal, or remove the `Edit` option from the dropdown and the corresponding handler branch. Don't ship a "not available yet" notice to production.
+- **Unblocks deletion:** Future chunk (likely C16 polish or a dedicated follow-up). Either ship a real bulk-edit modal, or remove the `Edit` option from the dropdown and the corresponding handler branch. Don't ship a "not available yet" notice to production.
 - **Status:** awaiting decision
 
 ### 11. `orderby=orders` sort uses PHP two-pass instead of SQL
 - **What:** `EEM_Reservations_List_Repo::get_paginated` honors `orderby=orders` by fetching up to 500 candidate posts, computing the orders count per post in PHP, sorting, then hand-paginating. SQL ORDER BY can't be used directly because the orders count is derived from `notes LIKE '%Reservation setup ID: N%'` across two tables.
 - **Why deferred:** Works fine at the scale of a single venue's reservation list (typically <100 reservations). Becomes a problem if a producer has 500+ reservations or a multi-tenant deployment.
 - **Added in:** C4.D
-- **Unblocks deletion:** C11 (EMAIL-5 / order schema). When per-order rows gain a denormalized `reservation_id` column (per CLEANUP entry #9), the sort can become a proper SQL JOIN + COUNT + ORDER BY. Also drop the 500-row safety cap.
-- **Status:** awaiting C11
+- **Unblocks deletion:** C12 (Order Receipt + Hosted Order Page — receipt-rendering chunk owns the per-order schema work). When per-order rows gain a denormalized `reservation_id` column (per CLEANUP entry #9), the sort can become a proper SQL JOIN + COUNT + ORDER BY. Also drop the 500-row safety cap.
+- **Status:** awaiting C12 (chunk recategorization, post-handoff Step 2 — was C11)
 
 ### 9. Per-order persisted `total` columns exclude tax allocation
 - **What:** `wp_en_stall_reservations.total` and `wp_en_rv_reservations.total` columns store `subtotal + convenience_fee` only — they do NOT include the tax that was actually charged at checkout. C3.D.1 wires tax into the *aggregate* `$totals['total']` (what the customer pays via Stripe / Auth.net), but defers the per-order allocation question.
 - **Why deferred:** Tax allocation between split stall + rv orders is a real product decision (proportional to subtotal? all on stall? add a dedicated `tax` column on each table?), AND a dedicated `tax` schema column requires a dbDelta migration. Both are receipts/email-breakout shaped work.
 - **Added in:** C3.D.1
-- **Unblocks deletion:** C11 (Email/Receipt port — EMAIL-5). At that point: add `tax` column to both `en_stall_reservations` and `en_rv_reservations` via dbDelta in EEM_Activator, allocate `$totals['tax']` proportionally during insert in `insert_reservation_orders`, update `total` to include tax, and surface as a line item on the customer receipt + admin order detail.
-- **Status:** awaiting C11
+- **Unblocks deletion:** C12 (Order Receipt + Hosted Order Page — receipt-rendering needs accurate per-order totals). At that point: add `tax` column to both `en_stall_reservations` and `en_rv_reservations` via dbDelta in EEM_Activator, allocate `$totals['tax']` proportionally during insert in `insert_reservation_orders`, update `total` to include tax, and surface as a line item on the customer receipt + admin order detail.
+- **Status:** awaiting C12 (chunk recategorization, post-handoff Step 2 — was C11)
 
 ### 8. `render_panel_stub` helper itself
 - **What:** `EEM_Settings_Page::render_panel_stub( $panel_id )` — the "Coming soon" placeholder card used during the C3.A → C3.C build-up.

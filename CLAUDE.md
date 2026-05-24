@@ -138,7 +138,7 @@ When you finish the implementation, do one final visual diff: load the mockup in
 
 #### Per-chunk hygiene rules (effective from C4 onward)
 
-Every chunk that adds or modifies code follows these rules. Skipping them turns C13 (Polish Pass) into a giant catch-up effort:
+Every chunk that adds or modifies code follows these rules. Skipping them turns C16 (Polish Pass) into a giant catch-up effort:
 
 1. **Every new class** gets a class-level docblock explaining its purpose, role in the system, and any caller contract.
 2. **Every public method** (including AJAX handlers, render methods, repo getters/setters) gets a docblock with `@param` and `@return` annotations.
@@ -148,9 +148,9 @@ Every chunk that adds or modifies code follows these rules. Skipping them turns 
 6. **No `!important` in new CSS.** Solve specificity by scoping the selector instead. If you find yourself wanting `!important`, you're either fighting a legacy rule (in which case fix the legacy rule — see next bullet) or your new selector is under-scoped. `admin-legacy.css` is grandfathered; `admin.css` and any new stylesheet is not.
 7. **`admin-legacy.css` is remediated, not extended.** When a new component (e.g. `.eem-card`, `.eem-settings-nav`) collides with a legacy `!important` rule, the fix is to surgically remove that component class from the legacy selector list — not to add `!important` to the new rule. Document the change inline in the legacy file with a comment pointing at the Phase 3 chunk that took ownership of the class.
 
-   **Prospective form-control port checklist (established c4-polish-2):** before shipping any Phase 3 chunk that introduces a new form-control component (`<select>`, `<input>`, `<textarea>` with an `eem-*` class), run `grep -n 'body\.eem-shell-page input\[type=' assets/css/admin-legacy.css` plus the same for `select` and `textarea`. Expect to find **6 distinct `!important` blocks** (verified during C4 — lines 142, 5910, 6569, 7600, 8260, 11812 plus their `body.post-type-en_reservation` mirrors). Add `:not(.eem-YOUR-COMPONENT)` exclusions to EVERY occurrence across ALL 6 blocks **as part of the component's first commit, not as a polish pass**. C4 lost ~3 review cycles diagnosing this damage piecemeal across the toolbar diagnosis because the first remediation only patched block 1; the other 5 kept silently overriding. CLEANUP.md entry #1 has the full damage profile (form-controls + ~15 button blocks) and the C13 wholesale-strip remediation plan.
+   **Prospective form-control port checklist (established c4-polish-2):** before shipping any Phase 3 chunk that introduces a new form-control component (`<select>`, `<input>`, `<textarea>` with an `eem-*` class), run `grep -n 'body\.eem-shell-page input\[type=' assets/css/admin-legacy.css` plus the same for `select` and `textarea`. Expect to find **6 distinct `!important` blocks** (verified during C4 — lines 142, 5910, 6569, 7600, 8260, 11812 plus their `body.post-type-en_reservation` mirrors). Add `:not(.eem-YOUR-COMPONENT)` exclusions to EVERY occurrence across ALL 6 blocks **as part of the component's first commit, not as a polish pass**. C4 lost ~3 review cycles diagnosing this damage piecemeal across the toolbar diagnosis because the first remediation only patched block 1; the other 5 kept silently overriding. CLEANUP.md entry #1 has the full damage profile (form-controls + ~15 button blocks) and the C16 wholesale-strip remediation plan.
 
-These add ~5–8% LOC per chunk vs. a giant audit pass in C13. Keep them in.
+These add ~5–8% LOC per chunk vs. a giant audit pass in C16. Keep them in.
 
 #### Hygiene-rule LOC tax — Phase 3 estimating baseline (established C4.A)
 
@@ -229,6 +229,36 @@ The 7-step verification procedure caught the inner-card architecture of the Rese
 **Step 4 refinement:** When stating the architectural pattern in plain English, separately describe **(a) what's INSIDE the bordered card** and **(b) what's BETWEEN the breadcrumb and the bordered card**. Both halves are part of the page architecture.
 
 **New step 4.5 (mandatory):** Compare the mockup's outer structure against `templates/admin/_page_shell.php`. Specifically: does the existing shell wrap the page-header inside `.eem-page-wrap` or render it as a standalone sibling? Does the mockup match? If they disagree, **propose the shell partial modification in the chunk's planning conversation BEFORE writing render code**, not as a surprise mid-implementation. C7 (Edit Reservation editor with overview card above the form) and C8 (Stall Charts with the chart grid below a separate header bar) are both likely to need shell variations — catch them at step 4.5.
+
+### Phase 3 chunk roadmap (post-handoff, codified 2026-05-23)
+
+Post-handoff chunk plan reflecting the mockup-audit chat's decisions landed in handoff Steps 1 + 1.6. Replaces the implicit pre-handoff roadmap that bundled C11 as a single "Email + PDF" chunk. **C9, C10 mockup mapping locked at chunk kickoff** — current ordering by mockup-inventory adjacency, but reorderable if dependency analysis at kickoff time suggests otherwise.
+
+**C1–C6** — ✅ landed (foundational CSS / JS / activity log / Settings / Reservations list / Orders list / Order Detail). Tag `c6-complete`.
+
+**C7 — Edit Reservation editor** (next up). Mockup: `.mockups/edit_reservation_page.html`. Pre-handoff scope decisions stand; **handoff addition: Event Day Info section** — 5 new reservation post-meta keys (`_eem_event_day_enabled` bool, `_eem_event_day_checkin` / `_bring` / `_parking` / `_contact` strings); save handler wires the toggle + 4 text fields; section renders between Check-In/Check-Out and Stall Reservations per the corrected mockup; populates the "What's Next — Event Day Info" block in C11 (confirmation email) and the C12 hosted order page; explicitly NOT on the PDF receipt. **LOC estimate (pre-handoff ~5-6.5K) likely needs upward revision** given Event Day Info addition — re-estimate at C7 kickoff. Also: CLEANUP #36 (dev-seed reservation_id gap) must be resolved as a C7 prerequisite for visual verify.
+
+**C8 — Stall Charts** (3 mockup files): `stall_charts_page.html` (list), `stall_chart_detail.html` (single-chart editor — By Location + By Customer tabs), `stall_chart_print_view.html` (standalone print page opened in a new tab from the detail page).
+
+**C9 — Customer Profile page**. Mockup: `.mockups/customer_profile_page.html`. Replaces the C5.G.8 hidden stub.
+
+**C10 — Dashboard page**. Mockup: `.mockups/dashboard_page.html`. Includes KPI metric cards, upcoming reservations, attention-needed list, recent orders, quick actions, revenue chart, this-week summary.
+
+**C11 — Customer Confirmation Email** (NEW post-handoff split of the old C11). Mockup: `.mockups/customer_confirmation_email.html`. Template render with PHP variable substitution; **Emogrifier inlining at send-time** (see Cross-cutting backend systems); Event Day Info block conditional on `_eem_event_day_enabled` from C7; ships alongside the remaining canonical transactional templates (refund-processed, payment-reminder) that previously listed C11 as their target.
+
+**C12 — Order Receipt + Hosted Order Page** (NEW post-handoff split). Mockup: `.mockups/order_receipt.html`. PDF generation via Dompdf (per README.md §1 + §16). Hosted order page (web URL view of the same content). Tax allocation per-order column (CLEANUP #9 lands here). Per-order denormalized `reservation_id` column for SQL JOIN (CLEANUP #11 lands here).
+
+**C13 — Create Order admin page** (NEW post-handoff). Mockup: `.mockups/create_order_page.html`. Route: `equine-event-manager-create-order`. Custom Line Items section + Discount handling (both detailed in Cross-cutting backend systems). Replaces the legacy "Invoicing → New Order" placeholder mode.
+
+**C14 — Collect Payment admin page** (NEW post-handoff). Mockup: `.mockups/collect_payment_page.html`. Route: `equine-event-manager-collect-payment` accepts `?order_id=N` param. Stripe + Authorize.net charge dispatch. Discount handling. **Card brand/last4 metadata capture** lands here (CLEANUP #34 — once capture is wired, re-add the Order Detail Payment Details card display block).
+
+**C15 — Reports** (was C12 pre-handoff). Mockup: `.mockups/reports_page.html`. Existing scope: 6 individual reports (Orders / Reservations / Revenue / Stall Occupancy / Customer List / Refund Log) + ZIP export. **Post-handoff expansion:**
+- Export file caching in `/wp-content/uploads/eem-reports/` with 30-day auto-purge (configurable; hardcoded 30 for now)
+- Filter state localStorage persistence (key: `eem_reports_filter_state`, JSON: `{reservation_id, date_preset, date_from, date_to, status}`)
+- Date range preset auto-fill JS (presets: `last-7`, `last-30` default, `last-90`, `this-year`, `all`, `custom`; manual edit of either date input flips the dropdown to Custom)
+- Export History row logic per HANDOFF Backend 4: `file_exists($cached_export_path)` check → render `.btn-download` with file URL OR render `.expired-link` with re-export anchor (filename preserved across cache+purge for row reference)
+
+**C16 — Final polish + release-cut** (was C13 pre-handoff). admin-legacy.css wholesale strip (CLEANUP #1 + #25 form-control / button restyle blocks); git committer attribution fix (CLEANUP #35); Plugin URI + Author URI replacement (CLEANUP #23); all remaining "awaiting C16" entries that don't fit earlier chunks. Cross-cutting design-system fidelity work (BEM status-badge normalization, typography / font loading audit across pages) may run here OR as a separate **DS-1 (Design System Fidelity)** chunk — decide at C15 close based on remaining surface area.
 
 ### Phase 4 — Verify
 
