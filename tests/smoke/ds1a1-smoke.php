@@ -95,5 +95,23 @@ ds1a1_ok( 'Collect Payment does NOT appear in $submenu[equine-event-manager] sid
 ds1a1_ok( 'Dashboard DOES appear in $submenu[equine-event-manager] sidebar',
 	$dashboard_in_sidebar, $pass, $fail, $log );
 
+// ── [4] DS-1.A.1.1: anchor button COLOR specificity coverage ────────
+echo "\n[4] Anchor button color specificity (DS-1.A.1.1)\n";
+ds1a1_ok( '.eem-btn-collect-banner has a. chain on base block (color: #fff coverage)',
+	(bool) preg_match( '/\.eem-btn-collect-banner,\s*\n\s*a\.eem-btn-collect-banner[^{]*\{[^}]*color:\s*#fff/s', $css_src ),
+	$pass, $fail, $log );
+ds1a1_ok( '.eem-btn-collect-banner has a. chain on :hover/:focus (color: #fff coverage)',
+	(bool) preg_match( '/a\.eem-btn-collect-banner:hover[^{]*\{[^}]*color:\s*#fff/s', $css_src ),
+	$pass, $fail, $log );
+ds1a1_ok( '.eem-btn-ghost has a. chain (Back to Orders + Edit Reservation anchor coverage)',
+	(bool) preg_match( '/\.eem-btn-ghost,\s*\n\s*a\.eem-btn-ghost\s*\{/s', $css_src ),
+	$pass, $fail, $log );
+ds1a1_ok( '.eem-btn-teal has a. chain (defensive coverage)',
+	(bool) preg_match( '/\.eem-btn-teal,\s*\n\s*a\.eem-btn-teal\s*\{/s', $css_src ),
+	$pass, $fail, $log );
+ds1a1_ok( '.eem-btn-danger has a. chain (defensive coverage)',
+	(bool) preg_match( '/\.eem-btn-danger,\s*\n\s*a\.eem-btn-danger\s*\{/s', $css_src ),
+	$pass, $fail, $log );
+
 echo implode( "\n", $log ) . "\n=== RESULT: {$pass} passed, {$fail} failed ===\n";
 exit( $fail > 0 ? 1 : 0 );

@@ -697,48 +697,59 @@ a.eem-btn-tertiary {
 	text-decoration: underline;
 }
 
-/* Teal accent — Print View, attention-getting */
-.eem-btn-teal {
+/* Teal accent — Print View, attention-getting.
+   DS-1.A.1.1: `a.` chain wins specificity vs `.eem-page a` (0,1,1)
+   so anchor-rendered variants render the spec'd color instead of the
+   global link color. Same pattern as .eem-btn-primary above. */
+.eem-btn-teal,
+a.eem-btn-teal {
 	background: var(--eem-teal);
 	color: var(--eem-text-on-navy);
 }
 
-.eem-btn-teal:hover {
+.eem-btn-teal:hover,
+a.eem-btn-teal:hover {
 	background: #1fb8a0;
 	color: var(--eem-text-on-navy);
 }
 
 /* Danger — destructive small button (Move to Trash, Cancel Event) */
-.eem-btn-danger {
+.eem-btn-danger,
+a.eem-btn-danger {
 	background: var(--eem-surface);
 	color: var(--eem-error-text);
 	border: 1.5px solid var(--eem-error-border);
 }
 
-.eem-btn-danger:hover {
+.eem-btn-danger:hover,
+a.eem-btn-danger:hover {
 	background: var(--eem-error-bg);
 	border-color: var(--eem-error-accent);
 	color: var(--eem-error-text);
 }
 
 /* Welcome-bar variants (rendered on dark navy background) */
-.eem-btn-welcome-primary {
+.eem-btn-welcome-primary,
+a.eem-btn-welcome-primary {
 	background: var(--eem-electric);
 	color: var(--eem-text-on-navy);
 }
 
-.eem-btn-welcome-primary:hover {
+.eem-btn-welcome-primary:hover,
+a.eem-btn-welcome-primary:hover {
 	background: var(--eem-electric-hover);
 	color: var(--eem-text-on-navy);
 }
 
-.eem-btn-welcome-ghost {
+.eem-btn-welcome-ghost,
+a.eem-btn-welcome-ghost {
 	background: rgba(255, 255, 255, 0.1);
 	color: var(--eem-text-on-navy);
 	border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.eem-btn-welcome-ghost:hover {
+.eem-btn-welcome-ghost:hover,
+a.eem-btn-welcome-ghost:hover {
 	background: rgba(255, 255, 255, 0.18);
 	color: var(--eem-text-on-navy);
 }
@@ -781,8 +792,10 @@ a.eem-btn-collect:hover {
 	height: 11px;
 }
 
-/* Add — dashed-outline "Add" button in repeating-row tables and row builders */
-.eem-btn-add {
+/* Add — dashed-outline "Add" button in repeating-row tables and row builders.
+   DS-1.A.1.1: `a.` chain defensively added for future anchor renders. */
+.eem-btn-add,
+a.eem-btn-add {
 	display: inline-flex;
 	align-items: center;
 	gap: 6px;
@@ -798,7 +811,8 @@ a.eem-btn-collect:hover {
 	align-self: flex-start;
 }
 
-.eem-btn-add:hover {
+.eem-btn-add:hover,
+a.eem-btn-add:hover {
 	border-color: var(--eem-electric);
 	color: var(--eem-electric);
 	border-style: solid;
@@ -3796,14 +3810,18 @@ a.eem-orders-count-link:focus {
 
 /* Ghost button — used for Back to Orders / Edit Reservation / More.
    Shipped in C1.2 as the secondary CTA pattern; restated here for the
-   compact 12.5px variant the Order Detail action bar uses. */
-.eem-btn-ghost {
+   compact 12.5px variant the Order Detail action bar uses.
+   DS-1.A.1.1: `a.` chain wins specificity vs `.eem-page a` (0,1,1).
+   Back to Orders + Edit Reservation are both anchor-rendered. */
+.eem-btn-ghost,
+a.eem-btn-ghost {
 	background: var(--eem-surface);
 	color: var(--eem-text);
 	border: 1px solid var(--eem-border-card);
 }
 
-.eem-btn-ghost:hover {
+.eem-btn-ghost:hover,
+a.eem-btn-ghost:hover {
 	background: var(--eem-bg-alt);
 	color: var(--eem-text);
 }
@@ -3889,8 +3907,18 @@ a.eem-orders-count-link:focus {
 	color: #92400e;
 }
 
-/* Solid orange Collect Payment button — banner-specific variant. */
-.eem-btn-collect-banner {
+/* Solid orange Collect Payment button — banner-specific variant.
+   DS-1.A.1.1: `a.` chain wins specificity (0,2,0) over `.eem-page a`
+   (0,1,1). Without it, the DS-1.A button→anchor conversion paints the
+   text Electric Blue from the global link color rule instead of the
+   spec'd white-on-orange (mockup line 97-99). Same class of bug as
+   the hover-underline collision DS-1.A.1 fixed — color-side
+   equivalent on the same anchor-rendered button. Covers :link /
+   :visited / :hover / :focus so all interaction states match spec. */
+.eem-btn-collect-banner,
+a.eem-btn-collect-banner,
+a.eem-btn-collect-banner:link,
+a.eem-btn-collect-banner:visited {
 	padding: 9px 18px;
 	border-radius: var(--eem-radius);
 	font-size: 13px;
@@ -3908,7 +3936,10 @@ a.eem-orders-count-link:focus {
 	flex-shrink: 0;
 }
 
-.eem-btn-collect-banner:hover {
+.eem-btn-collect-banner:hover,
+.eem-btn-collect-banner:focus,
+a.eem-btn-collect-banner:hover,
+a.eem-btn-collect-banner:focus {
 	background: #9a3412;
 	border-color: #9a3412;
 	color: #fff;

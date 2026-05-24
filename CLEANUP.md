@@ -16,6 +16,13 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 
 ## Active entries
 
+### 41. Stub page mockup chrome cosmetic (preview-only, resolved at C13/C14)
+- **What:** DS-1.A.1's iframe-isolated stub pages (Create Order, Collect Payment) render canonical mockups via `<iframe srcdoc>`. The mockups in `.mockups/` contain simulated WordPress admin chrome (admin bar + left sidebar stubs) because they were designed as standalone-previewable HTML files. Inside the live admin's iframe, this produces visible double-chrome — once from the real WP shell wrapping the iframe, once from the mockup's simulated shell inside it.
+- **Why deferred:** Stub pages are explicitly labeled "Visual preview only — Coming in C13/C14." Functional implementations in C13 (Create Order) and C14 (Collect Payment) will pull from the page-body sections of the mockups only, ignoring the chrome stubs, so double-chrome resolves automatically at functional build time.
+- **Added in:** DS-1.A.1.1
+- **Unblocks deletion:** C13 + C14. Closes implicitly when both ship.
+- **Status:** no DS-1 action required
+
 ### 36. Dev-seed `reservation_id` gap — 25/26 seeded orders lack a reservation_id, blocking visual verify of reservation-dependent UI
 - **What:** The dev seed (`scripts/seed-orders.php` or whichever shipper populates the SEED-NNN orders) creates orders without a populated `reservation_id` on the order row. Audit during C6.A.3 found 25 of 26 seeded orders have `reservation_id = NULL/0`. Only 1 order has it set.
 - **Why this matters now:** The C6.A.2 "Edit Reservation" header button (and any future render code that conditions on `reservation_id > 0`, like C7's inline-edit flow) will silently hide for almost every seeded order. Visual verification of the button — and any reservation-derived data in the order detail render — becomes essentially impossible without manually back-filling `reservation_id` on individual seed orders.
