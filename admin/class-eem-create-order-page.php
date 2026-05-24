@@ -76,10 +76,14 @@ class EEM_Create_Order_Page {
 	}
 
 	/**
-	 * Inline-render the canonical mockup's <body> contents (everything
-	 * AFTER the `<!-- WP shell stub -->` comment and BEFORE the closing
-	 * `</main></div>`). Wraps in `.eem-mockup-preview` so DS-1.B + later
-	 * chunks can style-scope the preview without affecting real renders.
+	 * Render the canonical mockup inside an isolated `<iframe srcdoc>`.
+	 *
+	 * DS-1.A shipped this as an inline DOM injection of the mockup's
+	 * `<body>` contents, but the mockup carries its own `<style>` block
+	 * targeting generic selectors (`body`, `.wp-content`, etc.) that
+	 * cascaded out and broke the surrounding WP admin chrome. DS-1.A.1
+	 * swaps to `srcdoc` so the iframe gives a hard CSS/JS boundary —
+	 * future mockup re-imports are zero-touch on this stub.
 	 *
 	 * @return void
 	 */
@@ -90,9 +94,10 @@ class EEM_Create_Order_Page {
 			return;
 		}
 		$contents = (string) file_get_contents( $mockup_path );
-		// Extract the <body>…</body> inner content.
-		if ( preg_match( '#<body[^>]*>(.*)</body>#is', $contents, $matches ) ) {
-			echo '<div class="eem-mockup-preview">' . $matches[1] . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-		}
+		printf(
+			'<iframe class="eem-mockup-preview" sandbox="allow-same-origin" title="%s" srcdoc="%s"></iframe>',
+			esc_attr__( 'Create Order — canonical mockup preview', 'equine-event-manager' ),
+			esc_attr( $contents )
+		);
 	}
 }

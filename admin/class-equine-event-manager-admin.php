@@ -588,8 +588,13 @@ class EEM_Admin {
 		// DS-1.A: Create Order admin page stub (functional implementation
 		// lands in C13). EEM_Create_Order_Page::render renders the canonical
 		// mockup HTML with a "preview only" info banner at the top.
+		// DS-1.A.1: Registered as a HIDDEN submenu (parent='') — Create Order
+		// is a workflow destination reached from the Orders list "+ Create
+		// Order" button, not a top-level navigation entry. Mirrors the
+		// hidden-submenu pattern used by Collect Payment below and by
+		// EEM_Order_Detail_Page (C6).
 		add_submenu_page(
-			self::MENU_SLUG,
+			'',
 			__( 'Create Order', 'equine-event-manager' ),
 			'',
 			'manage_options',

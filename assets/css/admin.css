@@ -616,6 +616,22 @@ body.eem-shell-page {
 	text-decoration: none;
 }
 
+/* DS-1.A.1: WP-core's `.wrap a:hover` and the plugin-scoped
+   `.eem-page a:hover { text-decoration: underline }` rule (line 190)
+   each carry specificity (0,2,1), which beats the base `.eem-btn:hover`
+   (0,2,0) above when a button is rendered as an anchor (e.g. the Orders
+   list "+ Create Order" `<a class="eem-btn eem-btn-electric">`). The
+   `a.eem-btn:hover` chain below ties on specificity and wins on cascade
+   order, neutralising the underline for every anchor-rendered button
+   variant in one rule — fixes the systemic gap that affected primary /
+   electric / secondary / tertiary / teal / danger / welcome-* / ghost
+   variants. `.eem-btn-collect` and `.eem-btn-collect-banner` already
+   carried explicit text-decoration overrides and are unaffected. */
+a.eem-btn:hover,
+a.eem-btn:focus {
+	text-decoration: none;
+}
+
 /* Primary (Navy) — default primary action on form pages (Save, Update, Publish).
    `a.` chain on each color rule wins specificity against the global
    .eem-page a { color: var(--eem-electric) } rule — without it, anchor
@@ -4809,26 +4825,20 @@ a.eem-orders-count-link:focus {
 	background: #EEF4FF;
 }
 
+/* DS-1.A.1: mockup preview is now an `<iframe srcdoc>` instead of an
+   inline-injected `<div>` of mockup body HTML. Root cause of the
+   DS-1.A regression: the mockup HTML carries its own `<style>` block
+   inline, and once injected into the live admin DOM, those rules
+   (targeting generic selectors like `body`, `.wp-content`) cascaded
+   out and broke the surrounding WP admin chrome. Iframe gives a hard
+   CSS/JS boundary for free and makes future mockup re-imports zero-
+   touch on this stub. `sandbox="allow-same-origin"` defense-in-depth
+   in the renderer. */
 .eem-mockup-preview {
+	width: 100%;
+	height: 80vh;
 	border: 1px dashed var(--eem-border);
 	border-radius: var(--eem-radius);
-	overflow: hidden;
 	background: #fff;
-}
-
-/* Mockup preview HTML carries the mockup's own <style> block inline, so
-   most of its visual chrome (wp-sidebar, wp-admin-bar) renders inside
-   .eem-mockup-preview using the mockup's CSS. We hide the WP shell
-   stubs since the real WP admin chrome already provides them. */
-.eem-mockup-preview .wp-admin-bar,
-.eem-mockup-preview .wp-sidebar {
-	display: none;
-}
-
-.eem-mockup-preview .wp-body {
 	display: block;
-}
-
-.eem-mockup-preview .wp-content {
-	padding: 0;
 }

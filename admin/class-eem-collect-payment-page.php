@@ -92,8 +92,10 @@ class EEM_Collect_Payment_Page {
 	}
 
 	/**
-	 * Inline-render the canonical mockup's <body> contents. Mirrors the
-	 * pattern in `EEM_Create_Order_Page::render_mockup_preview`.
+	 * Render the canonical mockup inside an isolated `<iframe srcdoc>`.
+	 * See `EEM_Create_Order_Page::render_mockup_preview` for the DS-1.A.1
+	 * rationale (mockup's inline `<style>` block was cascading out and
+	 * breaking surrounding admin chrome; iframe boundary fixes it).
 	 *
 	 * @return void
 	 */
@@ -104,8 +106,10 @@ class EEM_Collect_Payment_Page {
 			return;
 		}
 		$contents = (string) file_get_contents( $mockup_path );
-		if ( preg_match( '#<body[^>]*>(.*)</body>#is', $contents, $matches ) ) {
-			echo '<div class="eem-mockup-preview">' . $matches[1] . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-		}
+		printf(
+			'<iframe class="eem-mockup-preview" sandbox="allow-same-origin" title="%s" srcdoc="%s"></iframe>',
+			esc_attr__( 'Collect Payment — canonical mockup preview', 'equine-event-manager' ),
+			esc_attr( $contents )
+		);
 	}
 }
