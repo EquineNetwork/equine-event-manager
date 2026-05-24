@@ -129,7 +129,7 @@ class EEM_Orders_List_Page {
 				),
 				'actions'    => sprintf(
 					'<a class="eem-btn eem-btn-electric" href="%s">+ %s</a>',
-					esc_url( admin_url( 'admin.php?page=equine-event-manager-invoicing' ) ),
+					esc_url( self::create_order_url() ),
 					esc_html__( 'Create Order', 'equine-event-manager' )
 				),
 				'wrap'       => true,
@@ -495,7 +495,7 @@ class EEM_Orders_List_Page {
 		$menu_id     = sprintf( 'eem-order-menu-%s-%s', 'mobile' === $context ? 'mob' : 'desk', $order_key );
 		$detail_url  = self::order_detail_url( $order_key );
 		$refund_url  = self::order_detail_url( $order_key, array( 'panel' => 'refund' ) );
-		$collect_url = self::order_detail_url( $order_key, array( 'panel' => 'collect' ) );
+		$collect_url = self::collect_payment_url( $order_key );
 		$reservation_id = $this->lookup_reservation_id_from_order( $order );
 		$edit_reservation_url = $reservation_id ? get_edit_post_link( $reservation_id ) : '';
 		?>
@@ -805,6 +805,48 @@ class EEM_Orders_List_Page {
 				array(
 					'page'           => self::CUSTOMER_PROFILE_MENU_SLUG,
 					'customer_email' => $customer_email,
+				),
+				$extra_args
+			),
+			admin_url( 'admin.php' )
+		);
+	}
+
+	/**
+	 * Build a Create Order admin page URL. Stub in DS-1.A (renders the
+	 * canonical mockup with a "Coming in C13" banner); real functional
+	 * implementation lands in C13.
+	 *
+	 * @param array<string, string|int> $extra_args Optional extra query args.
+	 * @return string
+	 */
+	public static function create_order_url( array $extra_args = array() ) {
+		return add_query_arg(
+			array_merge(
+				array( 'page' => 'equine-event-manager-create-order' ),
+				$extra_args
+			),
+			admin_url( 'admin.php' )
+		);
+	}
+
+	/**
+	 * Build a Collect Payment admin page URL for a specific order. Stub
+	 * in DS-1.A (renders the canonical mockup with a "Coming in C14"
+	 * banner); real functional implementation lands in C14. Per Q6 of
+	 * the DS-1.A scope kickoff: routes by `order_key` (shipped
+	 * convention), not `order_id` (mockup convention).
+	 *
+	 * @param string                       $order_key
+	 * @param array<string, string|int>    $extra_args
+	 * @return string
+	 */
+	public static function collect_payment_url( $order_key, array $extra_args = array() ) {
+		return add_query_arg(
+			array_merge(
+				array(
+					'page'      => 'equine-event-manager-collect-payment',
+					'order_key' => $order_key,
 				),
 				$extra_args
 			),

@@ -460,7 +460,7 @@ class EEM_Reservation_Editor {
 		if ( ! empty( $data['stall_chart_enabled'] ) || ! empty( $data['rv_lot_selection_enabled'] ) ) {
 			$actions[] = array(
 				'label'        => __( 'Open Assignment Chart', 'equine-event-manager' ),
-				'url'          => admin_url( 'admin.php?page=equine-event-manager-stall-chart&reservation_id=' . absint( $post->ID ) ),
+				'url'          => admin_url( 'admin.php?page=equine-event-manager-stall-charts&reservation_id=' . absint( $post->ID ) ),
 				'target'       => '',
 				'is_secondary' => true,
 			);

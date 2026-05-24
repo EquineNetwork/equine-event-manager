@@ -138,14 +138,14 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 - **Unblocks:** the mockup's "Order edited by X" activity entry with field-level diff display.
 - **Status:** queued; deferred from C6.D scope decision.
 
-### 25. VIS-4 deviation — Settings save buttons use navy instead of Electric Blue
+### 25. ~~VIS-4 deviation — Settings save buttons use navy instead of Electric Blue~~ ✅ Resolved in DS-1.A
 - **What:** All 6 Settings tab save buttons (Integrations, Branding, Communications, Shortcodes, Payments, Add-Ons) render with navy background `#031B4E` instead of the Electric Blue `#1668F2` required by VIS-4 for primary CTAs. Affected class is likely `.btn-dark` or `.eem-btn-navy` (TBD at fix time via grep).
 - **Why deferred:** discovered during the C6 mockup audit; trivial class swap but doesn't belong inside C6 itself.
 - **Fix:** Replace the navy class with `.eem-btn-electric` (established VIS-4 primary CTA class per the C5.G.11 reversal). 6-12 LOC change across the Settings page template, possibly a shared button-row partial.
 - **Risk:** very low — pure visual swap, no behavior change, no DB or markup-structure impact.
 - **Added in:** C6.A (during C6 mockup orientation pass).
 - **Sequence:** between C6 close and C7 start, as a small dedicated cleanup chunk (`c6.cleanup-vis4` or bundled with other small VIS deviations surfaced during C6's end-of-chunk audit).
-- **Status:** queued; ready to execute.
+- **Status:** ✅ Resolved in DS-1.A — `.eem-btn-primary` CSS rule in `assets/css/admin.css` flipped from `background: var(--eem-navy)` to `background: var(--eem-electric)`. Affects all `.eem-btn-primary` callers (Settings panel save buttons confirmed; no other shipped call sites per grep). Closed 2026-05-23 in the DS-1.A commit.
 
 ### 23. Plugin URI + Author URI placeholders — must be set before external release
 - **What:** `equine-event-manager.php` plugin header carries placeholder URIs (`https://example.com/equine-event-manager`) for both `Plugin URI` and `Author URI`. Same placeholders in `composer.json` `support.source` / `support.issues`. These are fine for in-development / private use but MUST be replaced before:

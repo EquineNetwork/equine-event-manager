@@ -1006,7 +1006,7 @@ class EEM_Reservations_List_Page {
 	private function render_row_actions( $reservation_id, $has_stall_chart, $is_trashed = false ) {
 		$stall_chart_url = add_query_arg(
 			array(
-				'page'           => 'equine-event-manager-stall-chart',
+				'page'           => 'equine-event-manager-stall-charts',
 				'reservation_id' => $reservation_id,
 			),
 			admin_url( 'admin.php' )

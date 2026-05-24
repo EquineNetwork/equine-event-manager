@@ -825,7 +825,7 @@ class EEM_Reservations_CPT {
 			'view_label'       => $view_label,
 			'empty_message'    => $empty_message,
 			'disabled_message' => $disabled_message,
-			'chart_url'        => admin_url( 'admin.php?page=equine-event-manager-stall-chart&reservation_id=' . $post_id ),
+			'chart_url'        => admin_url( 'admin.php?page=equine-event-manager-stall-charts&reservation_id=' . $post_id ),
 			'generate_url'     => wp_nonce_url(
 				add_query_arg(
 					array(
@@ -1391,7 +1391,7 @@ class EEM_Reservations_CPT {
 				if ( ! empty( $data['stall_chart_enabled'] ) ) {
 					$action_links[] = sprintf(
 					'<a class="eem-shell-icon-button" href="%1$s" aria-label="%2$s" title="%2$s"><span class="dashicons dashicons-grid-view" aria-hidden="true"></span><span class="screen-reader-text">%2$s</span></a>',
-						esc_url( admin_url( 'admin.php?page=equine-event-manager-stall-chart&reservation_id=' . absint( $post_id ) ) ),
+						esc_url( admin_url( 'admin.php?page=equine-event-manager-stall-charts&reservation_id=' . absint( $post_id ) ) ),
 						esc_html__( 'Stall Assignments', 'equine-event-manager' )
 					);
 				}

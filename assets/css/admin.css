@@ -138,6 +138,19 @@
 	box-sizing: border-box;
 }
 
+/* DS-1.A: body-level font-family rule. Sets IBM Plex Sans on every
+   plugin admin page via the .eem-shell-page body class
+   (`EEM_Admin::filter_admin_body_class` adds .eem-shell-page on each
+   of the 8 plugin admin slugs). Pages that didn't yet have an
+   `.eem-page` wrapper pick up the right font automatically; pages
+   that do still cascade-inherit correctly. Without this rule, only
+   `.eem-page`-wrapped content got the right typography; the rest fell
+   back to system-ui. Pairs with the Google Fonts enqueue added to
+   `EEM_Admin::enqueue_backend_shell_styles` in DS-1.A. */
+body.eem-shell-page {
+	font-family: var(--eem-font-ui);
+}
+
 .eem-page {
 	font-family: var(--eem-font-ui);
 	color: var(--eem-text);
@@ -609,15 +622,21 @@
    buttons inherit electric-blue text and become invisible on the
    electric-blue background (and washed-out on navy). Hotfix applied
    post-C4-merge when the "+ New Reservation" CTA shipped unreadable. */
+/* DS-1.A: closed CLEANUP #25 — primary CTA color flipped from navy to
+   Electric Blue per VIS-4 (primary CTAs are Electric Blue across the
+   plugin). Affects the 4 Settings save buttons + any future
+   `.eem-btn-primary` callers; grep at DS-1.A time confirmed no
+   non-Settings call sites in shipped PHP/JS, so this is a safe
+   in-place rule change. */
 .eem-btn-primary,
 a.eem-btn-primary {
-	background: var(--eem-navy);
+	background: var(--eem-electric);
 	color: var(--eem-text-on-navy);
 }
 
 .eem-btn-primary:hover,
 a.eem-btn-primary:hover {
-	background: #052569;
+	background: var(--eem-electric-hover);
 	color: var(--eem-text-on-navy);
 }
 
@@ -4752,4 +4771,64 @@ a.eem-orders-count-link:focus {
 .eem-bulk-refund-failure-msg {
 	flex: 1;
 	color: var(--eem-danger);
+}
+
+/* DS-1.A: stub-page chrome — the Create Order + Collect Payment +
+   Dashboard stubs each render a "Coming in X" info banner above a
+   mockup preview block. The banner is the soft-blue info-accent
+   pattern (matches HANDOFF.md DEC-2 / decisions.md soft-blue accent).
+   The mockup-preview wrapper isolates the inline-included mockup HTML
+   from cascading admin.css rules — DS-1.B + C13/C14 replace these
+   wrappers with the real renders. */
+.eem-info-banner {
+	background: #F0F4FB;
+	border: 1px solid #D9E2F2;
+	border-radius: var(--eem-radius);
+	padding: 12px 16px;
+	margin-bottom: 16px;
+	font-size: 13px;
+	line-height: 1.55;
+	color: var(--eem-text);
+}
+
+.eem-info-banner strong {
+	color: var(--eem-navy);
+	font-weight: 700;
+}
+
+.eem-info-banner code {
+	background: #fff;
+	padding: 1px 6px;
+	border: 1px solid var(--eem-border);
+	border-radius: 3px;
+	font-size: 12px;
+}
+
+.eem-info-banner--preview {
+	border-color: #c0d8ff;
+	background: #EEF4FF;
+}
+
+.eem-mockup-preview {
+	border: 1px dashed var(--eem-border);
+	border-radius: var(--eem-radius);
+	overflow: hidden;
+	background: #fff;
+}
+
+/* Mockup preview HTML carries the mockup's own <style> block inline, so
+   most of its visual chrome (wp-sidebar, wp-admin-bar) renders inside
+   .eem-mockup-preview using the mockup's CSS. We hide the WP shell
+   stubs since the real WP admin chrome already provides them. */
+.eem-mockup-preview .wp-admin-bar,
+.eem-mockup-preview .wp-sidebar {
+	display: none;
+}
+
+.eem-mockup-preview .wp-body {
+	display: block;
+}
+
+.eem-mockup-preview .wp-content {
+	padding: 0;
 }

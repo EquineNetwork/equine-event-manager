@@ -356,9 +356,19 @@ class EEM_Order_Detail_Page {
 					</div>
 				</div>
 			</div>
-			<button type="button" class="eem-btn eem-btn-collect-banner" data-eem-action="order-collect-single">
+			<?php
+			// DS-1.A: converted from <button data-eem-action="..."> to
+			// <a href="..."> per HANDOFF Edit 2. Collect Payment is its
+			// own admin page (`equine-event-manager-collect-payment`)
+			// reached by URL navigation, not a JS dispatch. Real charge
+			// dispatch logic lands in C14.
+			$collect_url = EEM_Orders_List_Page::collect_payment_url(
+				isset( $order['order_key'] ) ? (string) $order['order_key'] : ''
+			);
+			?>
+			<a class="eem-btn eem-btn-collect-banner" href="<?php echo esc_url( $collect_url ); ?>">
 				<?php esc_html_e( 'Collect Payment', 'equine-event-manager' ); ?>
-			</button>
+			</a>
 		</div>
 		<?php
 	}
@@ -428,7 +438,7 @@ class EEM_Order_Detail_Page {
 						<span class="eem-stall-assignment__none"><?php esc_html_e( '— not yet assigned —', 'equine-event-manager' ); ?></span>
 					<?php endif; ?>
 				</div>
-				<div class="eem-stall-assignment__note"><?php esc_html_e( 'Stall assignment editor will be available with Stall Charts (C8).', 'equine-event-manager' ); ?></div>
+				<div class="eem-stall-assignment__note"><?php esc_html_e( 'Stall assignment editor will be available with Stall & RV Charts (C8).', 'equine-event-manager' ); ?></div>
 			</div>
 		</div>
 		<?php

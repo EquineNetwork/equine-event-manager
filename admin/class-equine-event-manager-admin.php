@@ -59,12 +59,6 @@ class EEM_Admin {
 	private $orders_hook = '';
 
 	/**
-	 * Invoicing screen hook.
-	 *
-	 * @var string
-	 */
-	private $invoicing_hook = '';
-
 	/**
 	 * Reservation overview screen hook.
 	 *
@@ -129,12 +123,8 @@ class EEM_Admin {
 			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--orders' );
 		}
 
-		if ( 'equine-event-manager-stall-chart' === $page ) {
-			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--stall-chart' );
-		}
-
-		if ( 'equine-event-manager-invoicing' === $page ) {
-			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--invoicing' );
+		if ( 'equine-event-manager-stall-charts' === $page ) {
+			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--stall-charts' );
 		}
 
 		if ( 'equine-event-manager-reports' === $page ) {
@@ -194,7 +184,7 @@ class EEM_Admin {
 			$should_load = true;
 		}
 
-		if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-order', 'equine-event-manager-order-refund', 'equine-event-manager-settings', 'equine-event-manager-stall-chart', 'equine-event-manager-invoicing', 'equine-event-manager-reports', 'equine-event-manager-reservation-overview', EEM_Reservations_List_Page::MENU_SLUG ), true ) ) {
+		if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-order', 'equine-event-manager-order-refund', 'equine-event-manager-settings', 'equine-event-manager-stall-charts', 'equine-event-manager-reports', 'equine-event-manager-reservation-overview', 'equine-event-manager-create-order', 'equine-event-manager-collect-payment', 'equine-event-manager-dashboard', EEM_Reservations_List_Page::MENU_SLUG ), true ) ) {
 			$should_load = true;
 		}
 
@@ -204,9 +194,24 @@ class EEM_Admin {
 
 		$ver = defined( 'EQUINE_EVENT_MANAGER_VERSION' ) ? EQUINE_EVENT_MANAGER_VERSION : false;
 
+		// DS-1.A: Google Fonts (Space Grotesk + IBM Plex Sans) — load
+		// from the Google Fonts CDN. admin.css's `--eem-font-display` and
+		// `--eem-font-ui` CSS vars reference these by name; without the
+		// font files being loaded, every plugin admin page rendered with
+		// system-ui fallback (the single biggest visual-fidelity gap
+		// pre-DS-1). `display=swap` lets pages paint with the system
+		// fallback first, then re-render once the web fonts arrive —
+		// avoids FOIT (flash of invisible text) on slow connections.
+		wp_enqueue_style(
+			'eem-google-fonts',
+			'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap',
+			array(),
+			null
+		);
+
 		// Phase 3 rebuild (tokenized) — loaded first so legacy rules can
 		// override it where pages haven't been ported yet.
-		wp_enqueue_style( 'eem-admin', EQUINE_EVENT_MANAGER_URL . 'assets/css/admin.css', array(), $ver );
+		wp_enqueue_style( 'eem-admin', EQUINE_EVENT_MANAGER_URL . 'assets/css/admin.css', array( 'eem-google-fonts' ), $ver );
 
 		// Phase 2 → Phase 3 transition stylesheet. Each page-port chunk
 		// migrates rules out of this file into admin.css; final commit of
@@ -300,9 +305,8 @@ class EEM_Admin {
 		$preferred_order = array(
 			self::MENU_SLUG,
 			'equine-event-manager-reservations',
-			'equine-event-manager-stall-chart',
+			'equine-event-manager-stall-charts',
 			'equine-event-manager-orders',
-			'equine-event-manager-invoicing',
 			'edit.php?post_type=en_event',
 			'post-new.php?post_type=en_event',
 			'edit-tags.php?taxonomy=en_event_tag&post_type=en_event',
@@ -401,25 +405,11 @@ class EEM_Admin {
 
 		$page = sanitize_key( wp_unslash( $_GET['page'] ) );
 
-		if ( 'equine-event-manager-dashboard' === $page ) {
-			$query_args         = wp_unslash( $_GET );
-			$query_args['page'] = self::MENU_SLUG;
+		// DS-1.A: legacy `equine-event-manager-dashboard` bounce to
+		// MENU_SLUG removed — DS-1.A wires Dashboard as a real admin
+		// page (stub during DS-1.A, full render in DS-1.B).
 
-			wp_safe_redirect(
-				add_query_arg(
-					array_map(
-						static function ( $value ) {
-							return is_scalar( $value ) ? sanitize_text_field( (string) $value ) : '';
-						},
-						$query_args
-					),
-					admin_url( 'admin.php' )
-				)
-			);
-			exit;
-		}
-
-		if ( ! in_array( $page, array( 'equine-event-manager-orders', 'equine-event-manager-invoicing', 'equine-event-manager-reports', 'equine-event-manager-settings', 'equine-event-manager-stall-chart', 'equine-event-manager-reservation-overview' ), true ) ) {
+		if ( ! in_array( $page, array( 'equine-event-manager-orders', 'equine-event-manager-reports', 'equine-event-manager-settings', 'equine-event-manager-stall-charts', 'equine-event-manager-reservation-overview', 'equine-event-manager-create-order', 'equine-event-manager-collect-payment', 'equine-event-manager-dashboard' ), true ) ) {
 			return;
 		}
 
@@ -563,14 +553,15 @@ class EEM_Admin {
 			array( new EEM_Reservations_List_Page(), 'render' )
 		);
 
-		$this->invoicing_hook = add_submenu_page(
-			self::MENU_SLUG,
-			__( 'Invoicing', 'equine-event-manager' ),
-			__( 'Invoicing', 'equine-event-manager' ),
-			'manage_options',
-			'equine-event-manager-invoicing',
-			array( $this, 'render_invoicing_page' )
-		);
+		// DS-1.A: Invoicing menu/route removed entirely. Per HANDOFF Edit 5,
+		// "Invoicing" is superseded by:
+		//   - Create Order (admin manually creates an order; mockup
+		//     `.mockups/create_order_page.html`; functional impl in C13)
+		//   - Collect Payment (admin charges a customer for an existing
+		//     order; mockup `.mockups/collect_payment_page.html`;
+		//     functional impl in C14)
+		// DS-1.A registers stub controllers for both that render the
+		// canonical mockup HTML with a "coming in C13/C14" preview banner.
 
 		$this->reservation_overview_hook = add_submenu_page(
 			self::MENU_SLUG,
@@ -581,13 +572,56 @@ class EEM_Admin {
 			array( $this, 'render_reservation_overview_page' )
 		);
 
+		// DS-1.A: slug renamed equine-event-manager-stall-chart →
+		// equine-event-manager-stall-charts (plural) per HANDOFF Edit 5
+		// + Dashboard mockup convention. Sidebar label renamed
+		// "Stall Charts" → "Stall & RV Charts" per HANDOFF Edits 1-4.
 		add_submenu_page(
 			self::MENU_SLUG,
-			__( 'Stall Charts', 'equine-event-manager' ),
-			__( 'Stall Charts', 'equine-event-manager' ),
+			__( 'Stall & RV Charts', 'equine-event-manager' ),
+			__( 'Stall & RV Charts', 'equine-event-manager' ),
 			'manage_options',
-			'equine-event-manager-stall-chart',
+			'equine-event-manager-stall-charts',
 			array( $this, 'render_stall_chart_page' )
+		);
+
+		// DS-1.A: Create Order admin page stub (functional implementation
+		// lands in C13). EEM_Create_Order_Page::render renders the canonical
+		// mockup HTML with a "preview only" info banner at the top.
+		add_submenu_page(
+			self::MENU_SLUG,
+			__( 'Create Order', 'equine-event-manager' ),
+			'',
+			'manage_options',
+			'equine-event-manager-create-order',
+			array( 'EEM_Create_Order_Page', 'render' )
+		);
+
+		// DS-1.A: Collect Payment admin page stub (functional implementation
+		// lands in C14). Hidden from sidebar (label '') — reached via the
+		// Collect pill on Orders list rows + the Collect Payment button on
+		// the Order Detail payment-outstanding banner.
+		add_submenu_page(
+			'',
+			__( 'Collect Payment', 'equine-event-manager' ),
+			'',
+			'manage_options',
+			'equine-event-manager-collect-payment',
+			array( 'EEM_Collect_Payment_Page', 'render' )
+		);
+
+		// DS-1.A: Dashboard admin page slug reserved + stubbed; full
+		// implementation lands in DS-1.B (next chunk). Renders a
+		// placeholder during DS-1.A so the slug is wired and the sidebar
+		// label is visible. DS-1.B replaces the callback with the real
+		// Dashboard render.
+		add_submenu_page(
+			self::MENU_SLUG,
+			__( 'Dashboard', 'equine-event-manager' ),
+			__( 'Dashboard', 'equine-event-manager' ),
+			'manage_options',
+			'equine-event-manager-dashboard',
+			array( $this, 'render_dashboard_stub_page' )
 		);
 
 		if ( $native_events_enabled ) {
@@ -773,7 +807,7 @@ class EEM_Admin {
 			);
 			?>
 			<div class="eem-shell-actions">
-				<a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-invoicing' ) ); ?>"><?php esc_html_e( 'Create Order', 'equine-event-manager' ); ?></a>
+				<a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-create-order' ) ); ?>"><?php esc_html_e( 'Create Order', 'equine-event-manager' ); ?></a>
 			</div>
 			<?php
 
@@ -1297,11 +1331,11 @@ class EEM_Admin {
 				return 'edit.php?post_type=en_reservation';
 			}
 
-			if ( 'equine-event-manager-stall-chart' === $page ) {
-				return 'equine-event-manager-stall-chart';
+			if ( 'equine-event-manager-stall-charts' === $page ) {
+				return 'equine-event-manager-stall-charts';
 			}
 
-			if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-invoicing', 'equine-event-manager-reports', 'equine-event-manager-settings' ), true ) ) {
+			if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-reports', 'equine-event-manager-settings', 'equine-event-manager-create-order', 'equine-event-manager-collect-payment', 'equine-event-manager-dashboard' ), true ) ) {
 				return $page;
 			}
 
@@ -1445,60 +1479,31 @@ class EEM_Admin {
 	}
 
 	/**
-	 * Render the admin invoicing page.
+	 * DS-1.A stub for the Dashboard admin page (`equine-event-manager-dashboard`).
+	 * Renders a "Coming in DS-1.B" placeholder so the menu route is wired and
+	 * the sidebar entry resolves to a real page. DS-1.B replaces this method's
+	 * callback with the full Dashboard render against `dashboard_page.html`.
 	 *
 	 * @return void
 	 */
-	public function render_invoicing_page() {
+	public function render_dashboard_stub_page() {
 		$this->guard_admin_page();
-
-		$selected_reservation_id = isset( $_REQUEST['reservation_id'] ) ? absint( wp_unslash( $_REQUEST['reservation_id'] ) ) : 0;
-		$reservation_options     = $this->get_invoicing_reservation_options();
-		$form_markup             = '';
-		$selected_label          = $selected_reservation_id && isset( $reservation_options[ $selected_reservation_id ] ) ? $reservation_options[ $selected_reservation_id ] : __( 'No reservation selected yet', 'equine-event-manager' );
-
-		if ( $selected_reservation_id && isset( $reservation_options[ $selected_reservation_id ] ) ) {
-			$form_markup = do_shortcode( sprintf( '[en_reservation id="%d" admin_invoice="1"]', $selected_reservation_id ) );
-		}
 		?>
-		<div class="wrap eem-shell-wrap eem-shell-wrap--header">
-			<?php
-			$this->render_brand_banner(
-				__( 'Invoicing', 'equine-event-manager' ),
-				__( 'Create a manual customer invoice from an existing reservation setup, then either charge the card now or send a secure payment link to the customer.', 'equine-event-manager' )
-			);
-			?>
-			<div class="eem-shell-content eem-shell-content--app">
-				<?php $this->render_admin_notice(); ?>
-
-				<div class="postbox">
-					<div class="inside">
-						<h2><?php esc_html_e( 'Choose Reservation', 'equine-event-manager' ); ?></h2>
-						<form method="get" class="eem-shell-form-inline">
-							<input type="hidden" name="page" value="equine-event-manager-invoicing" />
-							<label for="reservation_id" class="screen-reader-text"><?php esc_html_e( 'Select reservation', 'equine-event-manager' ); ?></label>
-							<select id="reservation_id" name="reservation_id">
-								<option value="0"><?php esc_html_e( 'Select an event reservation', 'equine-event-manager' ); ?></option>
-								<?php foreach ( $reservation_options as $reservation_id => $reservation_label ) : ?>
-									<option value="<?php echo esc_attr( $reservation_id ); ?>" <?php selected( $selected_reservation_id, $reservation_id ); ?>><?php echo esc_html( $reservation_label ); ?></option>
-								<?php endforeach; ?>
-							</select>
-							<?php submit_button( __( 'Load Invoice Form', 'equine-event-manager' ), 'primary', '', false ); ?>
-						</form>
-						<p>
-							<?php esc_html_e( 'Select an event reservation to open the invoice workspace.', 'equine-event-manager' ); ?>
-						</p>
-					</div>
-				</div>
-
-				<?php if ( $form_markup ) : ?>
-					<div class="postbox eem-invoicing-guide eem-invoicing-guide--workspace">
-						<div class="inside">
-							<h2><?php echo esc_html( $selected_label ); ?></h2>
-							<?php echo $form_markup; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+		<div class="wrap">
+			<div class="eem-page">
+				<div class="eem-page-wrap">
+					<header class="eem-page-header">
+						<div class="eem-page-header-left">
+							<h1 class="eem-page-title"><?php esc_html_e( 'Dashboard', 'equine-event-manager' ); ?></h1>
+						</div>
+					</header>
+					<div class="eem-page-body">
+						<div class="eem-info-banner eem-info-banner--preview">
+							<strong><?php esc_html_e( 'Coming in DS-1.B.', 'equine-event-manager' ); ?></strong>
+							<?php esc_html_e( 'Admin Dashboard rendering against the canonical dashboard_page.html mockup lands in DS-1.B (the next sub-chunk after DS-1.A). This placeholder confirms the route is wired.', 'equine-event-manager' ); ?>
 						</div>
 					</div>
-				<?php endif; ?>
+				</div>
 			</div>
 		</div>
 		<?php
@@ -1544,9 +1549,9 @@ class EEM_Admin {
 				<div class="eem-shell-actions eem-shell-inline-actions">
 					<a class="button" href="<?php echo esc_url( admin_url( 'edit.php?post_type=en_reservation' ) ); ?>"><?php esc_html_e( 'Back to Reservations', 'equine-event-manager' ); ?></a>
 					<a class="button" href="<?php echo esc_url( get_edit_post_link( $reservation_id, '' ) ); ?>"><?php esc_html_e( 'Edit Reservation', 'equine-event-manager' ); ?></a>
-					<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-stall-chart&reservation_id=' . $reservation_id ) ); ?>"><?php esc_html_e( 'Stall Assignments', 'equine-event-manager' ); ?></a>
+					<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-stall-charts&reservation_id=' . $reservation_id ) ); ?>"><?php esc_html_e( 'Stall Assignments', 'equine-event-manager' ); ?></a>
 					<a class="button button-primary" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=equine_event_manager_generate_stall_assignments&reservation_id=' . $reservation_id ), 'equine_event_manager_generate_stall_assignments_' . $reservation_id ) ); ?>"><?php esc_html_e( 'Generate Stall Assignments', 'equine-event-manager' ); ?></a>
-					<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-invoicing&reservation_id=' . $reservation_id ) ); ?>"><?php esc_html_e( 'Create Invoice', 'equine-event-manager' ); ?></a>
+					<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-create-order' ) ); ?>"><?php esc_html_e( 'Create Order', 'equine-event-manager' ); ?></a>
 					<a class="button" target="_blank" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=equine_event_manager_print_reservation_overview&reservation_id=' . $reservation_id ), 'equine_event_manager_print_reservation_overview_' . $reservation_id ) ); ?>"><?php esc_html_e( 'Print PDF', 'equine-event-manager' ); ?></a>
 				</div>
 
@@ -1763,7 +1768,7 @@ class EEM_Admin {
 											</div>
 											<div class="eem-shell-inline-actions">
 												<a class="button button-secondary" href="<?php echo esc_url( get_edit_post_link( $option['id'], '' ) ); ?>"><?php esc_html_e( 'Edit Reservation', 'equine-event-manager' ); ?></a>
-												<a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-stall-chart&reservation_id=' . absint( $option['id'] ) ) ); ?>"><?php esc_html_e( 'Open Stall Assignments', 'equine-event-manager' ); ?></a>
+												<a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-stall-charts&reservation_id=' . absint( $option['id'] ) ) ); ?>"><?php esc_html_e( 'Open Stall Assignments', 'equine-event-manager' ); ?></a>
 											</div>
 										</div>
 									<?php endforeach; ?>
@@ -1869,7 +1874,7 @@ class EEM_Admin {
 					</div>
 					<div class="eem-stall-chart-toolbar">
 						<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>" class="eem-shell-form-inline eem-stall-chart-view-form">
-							<input type="hidden" name="page" value="equine-event-manager-stall-chart" />
+							<input type="hidden" name="page" value="equine-event-manager-stall-charts" />
 							<input type="hidden" name="reservation_id" value="<?php echo esc_attr( $reservation_id ); ?>" />
 							<label for="equine_event_manager_stall_chart_view"><?php esc_html_e( 'View', 'equine-event-manager' ); ?></label>
 							<select id="equine_event_manager_stall_chart_view" name="view" onchange="this.form.submit()">
@@ -3209,42 +3214,6 @@ class EEM_Admin {
 		?>
 		<div class="notice notice-info is-dismissible" role="status"><p><?php echo esc_html( implode( ' ', $parts ) ); ?></p></div>
 		<?php
-	}
-
-	/**
-	 * Get reservation options for the invoicing selector.
-	 *
-	 * @return array<int, string>
-	 */
-	private function get_invoicing_reservation_options() {
-		$reservations = get_posts(
-			array(
-				'post_type'      => 'en_reservation',
-				'post_status'    => 'publish',
-				'posts_per_page' => -1,
-				'orderby'        => 'title',
-				'order'          => 'ASC',
-			)
-		);
-		$options      = array();
-
-		foreach ( $reservations as $reservation ) {
-			$label = $reservation->post_title;
-			$event_id = absint( get_post_meta( $reservation->ID, '_en_event_id', true ) );
-			$event_source = $this->get_effective_reservation_event_source( $reservation->ID );
-
-			if ( in_array( $event_source, array( 'tec', 'native' ), true ) && $event_id ) {
-				$event_title = get_the_title( $event_id );
-
-				if ( $event_title ) {
-					$label = $event_title;
-				}
-			}
-
-			$options[ $reservation->ID ] = $label;
-		}
-
-		return $options;
 	}
 
 	/**
@@ -8960,7 +8929,7 @@ class EEM_Admin {
 	 */
 	private function redirect_to_stall_chart_notice( $reservation_id, $notice, $error = null ) {
 		$this->redirect_with_notice(
-			'equine-event-manager-stall-chart',
+			'equine-event-manager-stall-charts',
 			array( 'reservation_id' => $reservation_id > 0 ? absint( $reservation_id ) : null ),
 			$notice,
 			$error

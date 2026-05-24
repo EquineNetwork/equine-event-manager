@@ -49,13 +49,15 @@ $canonical = array(
 	'customer_confirmation_email.html'  => '1705857179c8ee90053fae1304810cdc', // Step 1.7 cancellation-arch update
 	'order_receipt.html'                => 'f26a56fd6d5f8a4fb56059f7c340eb34', // Step 1.7 cancellation-arch update
 
-	// 6 "shipped/unchanged" from handoff Step 1 — three were resynced to
-	// audit-canonical versions in Step 1.6 (HANDOFF.md line refs resolve
-	// correctly only on the Desktop versions; see Step 1.5 diagnostic).
-	'reservations_page.html'            => '2b4a92cc51852ef08f9e5f3e40344e07', // Step 1.6 canonical
-	'orders_page.html'                  => '9e388e32b865960c4c4fc428498e04fa', // Step 1.6 canonical
-	'settings_page.html'                => '25a27c6f558cbf6b4c32ef5edb2d49a1', // Step 1.6 canonical
-	'order_detail_page.html'            => 'dab6465b96bcf271946fea893695c436',
+	// 4 of the 6 "shipped" mockups were sidebar-updated in DS-1.A to
+	// reflect the post-HANDOFF canonical state ("Stall Charts" →
+	// "Stall & RV Charts"; Invoicing entry removed). The other 2
+	// (customer_profile_page.html, event_page.html) are off-canvas to
+	// DS-1.A's mechanical-edit scope.
+	'reservations_page.html'            => 'a86e33d416d19e81f7413e36b40aa78e', // DS-1.A sidebar update
+	'orders_page.html'                  => '7e783509d97de354b43f90f90389294e', // DS-1.A sidebar update
+	'settings_page.html'                => '6efd31e96700c2d4d7eb4902c7306248', // DS-1.A sidebar update
+	'order_detail_page.html'            => '2b47181000c2eac9d03aea4f06776085', // DS-1.A sidebar update
 	'customer_profile_page.html'        => 'd7bd2f3b28d59be697ccd97e03f86e46',
 	'event_page.html'                   => '341de9b586d4484e16dee45560d549f3',
 

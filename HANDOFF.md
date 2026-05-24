@@ -313,9 +313,9 @@ Recommended sequence to keep the system in a working state at every step:
 | Order number format | Search `5-digit zero-padded` |
 | C7 reservation editor (sections, icon chips, Publish card) | AUDIT-C7 entries |
 | C8 stall charts (3 files: list, detail, print view) | AUDIT-C8-1 through AUDIT-C8-15 |
-| C11 Create Order / Collect Payment | AUDIT-C11-1 through AUDIT-C11-4 |
+| C13 Create Order / C14 Collect Payment | AUDIT-C11-1 through AUDIT-C11-4 (post-handoff C11 split — see CLAUDE.md "Phase 3 chunk roadmap" Step 2a) |
 | C11 Confirmation email | AUDIT-C11-5, EMAIL-1 through EMAIL-5 (EMAIL-3 + EMAIL-4 are REVISED) |
-| C11 PDF receipt / hosted order page | AUDIT-C11-6 |
-| C12 Reports | AUDIT-C12-1 |
+| C12 Order Receipt + Hosted Order Page | AUDIT-C11-6 (post-handoff C11 split — receipt + hosted page split out) |
+| C15 Reports | AUDIT-C12-1 (post-handoff renumber — old C12 → C15) |
 | Dashboard audit | DASH-AUDIT-1 through DASH-AUDIT-4 |
 | Final design system token reference | Search `Documented design system tokens` at the very bottom |

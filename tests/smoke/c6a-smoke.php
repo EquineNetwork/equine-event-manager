@@ -141,7 +141,7 @@ foreach ( $rows as $r ) {
 		( new EEM_Order_Detail_Page() )->render();
 		$h_stall = ob_get_clean();
 		ok( 'stall card renders Assigned Stall Units label',            str_contains( $h_stall, 'Assigned Stall Units' ),    $pass, $fail, $log );
-		ok( 'stall card defers interactive editor to C8',               str_contains( $h_stall, 'Stall Charts (C8)' ),        $pass, $fail, $log );
+		ok( 'stall card defers interactive editor to C8',               str_contains( $h_stall, 'Stall &amp; RV Charts (C8)' ), $pass, $fail, $log );
 		break;
 	}
 }

@@ -44,6 +44,13 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-reservations-list-page
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-orders-list-repo.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-orders-list-page.php';
 
+// DS-1.A — Create Order + Collect Payment admin page stubs (functional
+// implementation lands in C13/C14). Each renders the canonical mockup
+// HTML with a "Coming in C13/C14" preview banner so the routes are
+// wired and the UI is browser-verifiable.
+require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-create-order-page.php';
+require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-collect-payment-page.php';
+
 // Phase 3 — Order Detail page (C6.A — single-order view; refund + activity-log
 // telemetry land in C6.B/C/D/E).
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-order-detail-page.php';
