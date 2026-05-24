@@ -316,6 +316,95 @@ All three must be preserved. Where the mockups reference an "event link" or "eve
 
 ---
 
+## Cross-cutting backend systems (apply across chunks)
+
+Systems that span multiple roadmap chunks rather than living in any single one. Documented here so they don't get surprise-introduced mid-chunk.
+
+### Email CSS inlining at send-time (Emogrifier)
+
+The customer-facing email templates (starting with `.mockups/customer_confirmation_email.html`) keep a `<style>` block for design-time readability. **Production mailer code MUST inline CSS at send-time** using a library — without it, the email renders brokenly in Outlook desktop, Gmail mobile, and some Yahoo Mail configurations. Non-negotiable for production email reliability.
+
+- **Library:** [Pelago/Emogrifier](https://github.com/MyIntervals/emogrifier) (current canonical fork — was `pelago/emogrifier`, now `MyIntervals/emogrifier`). PHP-native, MIT-licensed, single composer dependency.
+- **Hook point:** wraps the final HTML in the mailer's send pipeline (after template variable substitution, before `wp_mail()` / `wp_mail_smtp` / SendGrid transport).
+- **Lands with:** C11 (Customer Confirmation Email).
+- **Template-side requirement:** the email template `<head>` carries a comment flag pointing future maintainers at this requirement so anyone editing the template knows the styling is inlined at send-time, not consumed inline in source.
+
+### 5-digit zero-padded order ID rendering (`sprintf('#%05d', $order_id)`)
+
+Standing format rule across every site that surfaces an order number: `#00020`, `#00128`, `#01234`. Apply via PHP `sprintf('#%05d', $order_id)` everywhere — no ad-hoc `'#' . $order_id` patterns.
+
+**Audit surface:**
+- Order Detail page (`EEM_Order_Detail_Page::format_order_number_display`) ✅ already 5-digit
+- Orders list rows (`EEM_Orders_List_Page::format_order_number_display`) ✅
+- Dashboard Recent Orders block — verify at C10 kickoff
+- Customer Confirmation email — verify at C11 implementation
+- PDF receipt + hosted order page — verify at C12 implementation
+- Activity log entry titles + meta — verify; some C6.D telemetry rendering uses bare order_id, needs audit
+- **Reports export filenames are event-id-based** (`eem-orders-30597-20260424.csv`) so unaffected. Per-order activity entries inside reports still need 5-digit treatment.
+
+**Cross-cutting audit lands with:** DS-1 (Design System Fidelity) chunk, since DS-1 already does cross-page visual passes. Falls within typography/format-consistency scope.
+
+### Discount handling schema
+
+Used by C13 (Create Order) and C14 (Collect Payment); displayable + removable on Order Detail (C6).
+
+**Schema:**
+- `discount_type` — enum (`dollar` | `percent`)
+- `discount_value` — decimal
+- `discount_reason` — string, **REQUIRED** (server-side validation), logged to Activity Log on save AND on remove
+
+**Math:** discount applies to subtotal; convenience fee + tax recalculate from post-discount subtotal. Tax allocation interaction tracked in CLEANUP #9.
+
+**Order Detail surfacing:** an existing applied discount displays as a summary line with a navy chip showing the discount reason; admin can remove with a fresh reason (logged as a new Activity Log entry).
+
+### Custom Line Items schema
+
+Used by C13 (Create Order) for one-off charges not configured on the reservation (late fee, damage charge, transferred credit, etc.).
+
+**Schema:**
+- `description` — string
+- `amount` — decimal (positive standard; negative allowed but unusual — represents credit/comp)
+
+**Storage:** persisted as line items on the order alongside reservation-derived line items. Surface identically on PDF receipt + hosted page + confirmation email items table.
+
+---
+
+## Removed / deprecated decisions
+
+Tracks scope items explicitly REMOVED from v1 (vs. deferred). A removed decision should not be reintroduced without re-opening the original decision conversation.
+
+### Global cancellation policy — REMOVED from v1 (2026-05-23, handoff Step 3)
+
+The single cross-event "cancellation policy" textarea-in-Settings concept is **removed entirely from v1**. Per-event/per-reservation cancellation policy is a separate concept and is **deferred** (see "v2 deferred features" below).
+
+**Removal scope (executed in handoff Step 3, separate commit):**
+- Cancellation Policy textarea field in Settings → Notifications/Reservations area (mockup line 983)
+- `{{cancellation_policy}}` placeholder chip in the email-templates placeholder palette (mockup line 766)
+- "Cancellation" email template card in the Communications panel (mockup lines 899–940 region) — title + preview + editable RTE area, all removed
+- Associated `wp_option` key (whatever key Settings save handler persists the textarea content to)
+- Settings save handler branch for the cancellation policy field
+- Email template rendering code references to the placeholder
+- Customer-facing surfaces (event page checkout, confirmation email body) that previously included the policy text
+
+**Why removed (not just deferred):** the global policy concept doesn't survive contact with multi-event reality — different events have different cancellation rules (refundable vs non-refundable, days-before-event windows, deposit vs full payment policies). A single global string can't represent that surface honestly. Better to remove than to ship a placeholder that misleads.
+
+### Per-reservation cancellation policy — DEFERRED to v2
+
+Different concept from the removed global policy: each reservation could carry its own cancellation rules. Out of scope for v1 — requires schema design + workflow design (does a customer-initiated cancellation auto-trigger refund? What if outside window? Admin approval flow?). Defer until product surface is well-understood enough to design once and ship.
+
+---
+
+## v2 deferred features
+
+Features considered during Phase 3 planning but explicitly deferred to v2. Each entry includes the source decision so future product conversations can pick up the thread.
+
+- **Scheduled reports (recurring exports)** — repeating CSV/PDF exports delivered by email on a cron schedule. Requires: cron job infrastructure, email delivery + bounce handling, per-recipient management, per-schedule failure log + retry policy, history view per schedule. Source: HANDOFF.md "Deferred features" / AUDIT-C12-1.
+- **Bulk "Send Payment Link" action on Orders list** — multi-select unpaid orders → bulk-send invoice emails. Considered as an AUDIT-C11-1 candidate, deferred. Source: HANDOFF.md.
+- **"Add to Show Bill" deferred-payment option on Create Order** — alternative to immediate-charge: stage the charge against a show-bill settlement record that closes at end of event. Dropped per decisions.md PRE-7 because the settlement-trigger model + show-bill data model are unresolved product questions. Source: HANDOFF.md.
+- **Email templates beyond confirmation** — other transactional emails likely needed (invoice / payment received / refund / cancellation). Derivable from the confirmation email template structure once Emogrifier + the template render path are wired in C11. Defer the actual template authoring + send-trigger wiring; surface as a v1.1 incremental or v2 batch depending on traffic. Source: HANDOFF.md.
+
+---
+
 ## What "bloated" usually means in Codex-generated plugins
 
 Things to look for specifically, since I know these are common Codex patterns:
