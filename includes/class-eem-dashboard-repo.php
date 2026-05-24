@@ -399,7 +399,8 @@ class EEM_Dashboard_Repo {
 					__( '%s outstanding', 'equine-event-manager' ),
 					self::format_currency( $out_total )
 				),
-				'href'  => EEM_Orders_List_Page::url( array( 'status' => 'unpaid' ) ),
+				// DS-1.B.5: param is `billing` not `status` (see Orders list render).
+				'href'  => EEM_Orders_List_Page::url( array( 'billing' => 'unpaid' ) ),
 				'action'=> __( 'View →', 'equine-event-manager' ),
 			),
 			array(

@@ -155,8 +155,15 @@ ds1b_ok( 'status pill class .eem-status-badge rendered on at least one order',
 echo "\n[8] Quick Actions\n";
 ds1b_ok( 'Quick Actions title rendered', str_contains( $html, 'Quick Actions' ), $pass, $fail, $log );
 ds1b_ok( '4 quick-action tiles rendered', substr_count( $html, 'eem-dashboard-qa-btn' ) === 4, $pass, $fail, $log );
-ds1b_ok( 'Quick Actions "Collect Payment" tile routes to orders&status=unpaid (NOT collect-payment)',
-	(bool) preg_match( '/eem-dashboard-qa-btn" href="[^"]*page=equine-event-manager-orders[^"]*status=unpaid[^"]*">\s*<span class="eem-dashboard-qa-icon eem-dashboard-qi-purple/s', $html ),
+// DS-1.B.5: param renamed status → billing (Orders list reads ?billing=).
+ds1b_ok( 'Quick Actions "Collect Payment" tile routes to orders&billing=unpaid (NOT status, NOT collect-payment)',
+	(bool) preg_match( '/eem-dashboard-qa-btn" href="[^"]*page=equine-event-manager-orders[^"]*billing=unpaid[^"]*">\s*<span class="eem-dashboard-qa-icon eem-dashboard-qi-purple/s', $html ),
+	$pass, $fail, $log );
+ds1b_ok( 'Needs Attention "orders awaiting payment" row uses billing=unpaid (not status=)',
+	(bool) preg_match( '/eem-dashboard-attention-row" href="[^"]*page=equine-event-manager-orders[^"]*billing=unpaid/', $html ),
+	$pass, $fail, $log );
+ds1b_ok( 'No Dashboard hrefs use the wrong ?status= param against Orders (regression guard)',
+	0 === preg_match( '/page=equine-event-manager-orders[^"]*[?&]status=/', $html ),
 	$pass, $fail, $log );
 ds1b_ok( 'Quick Actions "Export Report" tile routes to reports',
 	(bool) preg_match( '/eem-dashboard-qa-btn" href="[^"]*page=equine-event-manager-reports/', $html ),

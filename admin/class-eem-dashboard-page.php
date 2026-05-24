@@ -304,7 +304,7 @@ class EEM_Dashboard_Page {
 
 	/**
 	 * Quick Actions tile grid — 4 tiles. Hrefs per kickoff route
-	 * resolutions: Collect Payment → orders&status=unpaid (workflow
+	 * resolutions: Collect Payment → orders&billing=unpaid (workflow
 	 * launcher, not the Collect Payment page directly); Export Report →
 	 * reports page (C15 deliverable).
 	 *
@@ -331,7 +331,11 @@ class EEM_Dashboard_Page {
 				'icon_key' => 'card',
 				'label' => __( 'Collect Payment', 'equine-event-manager' ),
 				'sub'   => __( 'Unpaid orders', 'equine-event-manager' ),
-				'href'  => EEM_Orders_List_Page::url( array( 'status' => 'unpaid' ) ),
+				// DS-1.B.5: Orders list reads ?billing= (not ?status=) — see
+				// EEM_Orders_List_Page::render line 92. Valid billing-tab
+				// keys: all / paid / unpaid / refunded / cancelled (from
+				// EEM_Orders_List_Repo::billing_tabs).
+				'href'  => EEM_Orders_List_Page::url( array( 'billing' => 'unpaid' ) ),
 			),
 			array(
 				'icon'  => 'orange',
