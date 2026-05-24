@@ -55,6 +55,12 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-collect-payment-page.p
 // telemetry land in C6.B/C/D/E).
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-order-detail-page.php';
 
+// DS-1.B — Admin Dashboard page + data repository (renders against
+// .mockups/dashboard_page.html; em-dash placeholders for C8/C11-blocked
+// data per CLEANUP #37-#40).
+require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-dashboard-repo.php';
+require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-dashboard-page.php';
+
 // Phase 3 admin template partials.
 require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_breadcrumb.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_page_shell.php';

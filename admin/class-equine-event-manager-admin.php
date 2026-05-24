@@ -615,18 +615,18 @@ class EEM_Admin {
 			array( 'EEM_Collect_Payment_Page', 'render' )
 		);
 
-		// DS-1.A: Dashboard admin page slug reserved + stubbed; full
-		// implementation lands in DS-1.B (next chunk). Renders a
-		// placeholder during DS-1.A so the slug is wired and the sidebar
-		// label is visible. DS-1.B replaces the callback with the real
-		// Dashboard render.
+		// DS-1.B: Admin Dashboard page — real render against
+		// .mockups/dashboard_page.html. DS-1.A reserved the slug + sidebar
+		// entry; DS-1.B replaces the placeholder callback with
+		// EEM_Dashboard_Page::render. Stays visible in the sidebar
+		// (navigation destination, unlike Create Order / Collect Payment).
 		add_submenu_page(
 			self::MENU_SLUG,
 			__( 'Dashboard', 'equine-event-manager' ),
 			__( 'Dashboard', 'equine-event-manager' ),
 			'manage_options',
 			'equine-event-manager-dashboard',
-			array( $this, 'render_dashboard_stub_page' )
+			array( 'EEM_Dashboard_Page', 'render' )
 		);
 
 		if ( $native_events_enabled ) {

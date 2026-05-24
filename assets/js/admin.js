@@ -1618,4 +1618,19 @@
 			return '\\' + c;
 		});
 	}
+
+	/* ─────────────────────────────────────────────────────────────
+	   DS-1.B — Dashboard range filter dispatch
+	   Full-page reload (no AJAX) on <select> change. Mirrors the
+	   Reports filter pattern; keeps the JS surface minimal.
+	   ───────────────────────────────────────────────────────────── */
+	document.addEventListener('change', function (ev) {
+		var t = ev.target;
+		if (!t || !t.matches || !t.matches('[data-eem-action="dashboard-range-change"]')) {
+			return;
+		}
+		var url = new URL(window.location.href);
+		url.searchParams.set('range', t.value);
+		window.location.href = url.toString();
+	});
 })();

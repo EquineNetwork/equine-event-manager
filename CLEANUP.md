@@ -16,6 +16,34 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 
 ## Active entries
 
+### 40. Dashboard Needs Attention — C11-dependent rows
+- **What:** `EEM_Dashboard_Repo::attention_items()` row 4 ("— customers haven't signed the agreement") ships as an em-dash placeholder pending C11 (Customer Confirmation Email + agreement-signature tracking). Live position: `includes/class-eem-dashboard-repo.php` → `attention_items()` → `em_dash => true` entry with `icon_key => 'mail'`.
+- **Why deferred:** Agreement-signature data doesn't exist yet — C11 introduces the agreement workflow + signature timestamps.
+- **Added in:** DS-1.B
+- **Unblocks deletion:** C11 close. Swap the em-dash title for `sprintf( _n('%d customer hasn\'t signed…','%d customers haven\'t signed…', $count) )`; populate `desc` with the relevant event names; remove the `em_dash` marker.
+- **Status:** awaiting C11
+
+### 39. Dashboard — C8-dependent rows (stall/RV unassigned + This Week stalls assigned)
+- **What:** Three em-dash placeholders in `includes/class-eem-dashboard-repo.php` pending C8 (Stall Charts) — (a) `attention_items()` rows 1, 3, 5 (stalls unassigned, RV lot issues, stall chart not configured), (b) `this_week()` row 5 (Stalls assigned).
+- **Why deferred:** Stall-chart assignment data doesn't exist — C8 builds it.
+- **Added in:** DS-1.B
+- **Unblocks deletion:** C8 close. Replace each em-dash row with the real query against the stall-chart tables / repo helpers that C8 ships; remove the `em_dash` markers.
+- **Status:** awaiting C8
+
+### 38. Dashboard Upcoming Reservations — stall progress bars
+- **What:** `EEM_Dashboard_Repo::upcoming_reservations()` ships each row's `stall_progress` block as `assigned => '—'`, `total => '—'`, `pct => 0`, `tone => 'red'`, `em_dash => true`. The mockup shows numeric assigned/total + colored fill bar; we render the chrome but the numbers are em-dashes pending C8.
+- **Why deferred:** Per-reservation stall-assignment counts come from C8 stall-chart data.
+- **Added in:** DS-1.B
+- **Unblocks deletion:** C8 close. Inside the `foreach` in `upcoming_reservations()`, compute `$assigned` + `$total` from the chart config for `$res_id`, derive `pct = $assigned/$total * 100`, set `tone` via thresholds (≥80% green, ≥50% amber, <50% red).
+- **Status:** awaiting C8
+
+### 37. Dashboard Unassigned Stalls KPI
+- **What:** KPI card #4 in `EEM_Dashboard_Repo::kpi_cards()` ships with `value => '—'` and `em_dash => true`. Mockup shows a count (e.g. "34") + "Needs attention across N events" subtitle.
+- **Why deferred:** Per-event unassigned-stall counts come from C8.
+- **Added in:** DS-1.B
+- **Unblocks deletion:** C8 close. Replace the em-dash with `SUM(total_stalls - assigned_stalls)` across all active stall charts; populate `sub` with affected-event count.
+- **Status:** awaiting C8
+
 ### 41. Stub page mockup chrome cosmetic (preview-only, resolved at C13/C14)
 - **What:** DS-1.A.1's iframe-isolated stub pages (Create Order, Collect Payment) render canonical mockups via `<iframe srcdoc>`. The mockups in `.mockups/` contain simulated WordPress admin chrome (admin bar + left sidebar stubs) because they were designed as standalone-previewable HTML files. Inside the live admin's iframe, this produces visible double-chrome — once from the real WP shell wrapping the iframe, once from the mockup's simulated shell inside it.
 - **Why deferred:** Stub pages are explicitly labeled "Visual preview only — Coming in C13/C14." Functional implementations in C13 (Create Order) and C14 (Collect Payment) will pull from the page-body sections of the mockups only, ignoring the chrome stubs, so double-chrome resolves automatically at functional build time.
