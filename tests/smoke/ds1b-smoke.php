@@ -267,5 +267,48 @@ ds1b_ok( 'handler rebuilds URL with ?range= param',
 	str_contains( $js_src, "searchParams.set('range'" ) || str_contains( $js_src, 'searchParams.set("range"' ),
 	$pass, $fail, $log );
 
+// ── [17] DS-1.B.2 regression guards ────────────────────────────────
+echo "\n[17] DS-1.B.2 — anchor umbrella + padding + chart bar + qa tints\n";
+// Anchor umbrella: each Dashboard anchor class has explicit text-decoration:none coverage.
+foreach ( array( 'res-row', 'attention-row', 'order-row', 'qa-btn' ) as $cls ) {
+	ds1b_ok( "a.eem-dashboard-{$cls} has text-decoration:none umbrella",
+		(bool) preg_match( '/a\.eem-dashboard-' . preg_quote( $cls, '/' ) . ':hover[\s\S]{0,800}?text-decoration\s*:\s*none/', $css_src ),
+		$pass, $fail, $log );
+}
+// Card-link no-underline fix (cross-page mockup convention).
+ds1b_ok( '.eem-card-link:hover NO LONGER uses text-decoration: underline',
+	0 === preg_match( '/\.eem-card-link:hover\s*\{\s*text-decoration\s*:\s*underline/', $css_src ),
+	$pass, $fail, $log );
+
+// Padding alignment with shipped pages (18px horizontal, not 22px).
+ds1b_ok( '.eem-dashboard-body uses 18px horizontal padding (matches .eem-page-header / .eem-toolbar-row)',
+	(bool) preg_match( '/\.eem-dashboard-body\s*\{\s*padding:\s*18px\s+18px/', $css_src ),
+	$pass, $fail, $log );
+
+// Rev-chart bar — wrap stretches to fill the 90px container so % heights resolve.
+ds1b_ok( '.eem-dashboard-rev-bar-wrap uses align-self:stretch (chart bar height bug fix)',
+	(bool) preg_match( '/\.eem-dashboard-rev-bar-wrap\s*\{[^}]*align-self\s*:\s*stretch/s', $css_src ),
+	$pass, $fail, $log );
+ds1b_ok( '.eem-dashboard-rev-bar-wrap uses justify-content:flex-end (children stack from bottom)',
+	(bool) preg_match( '/\.eem-dashboard-rev-bar-wrap\s*\{[^}]*justify-content\s*:\s*flex-end/s', $css_src ),
+	$pass, $fail, $log );
+ds1b_ok( '.eem-dashboard-rev-bars retains explicit 90px height',
+	(bool) preg_match( '/\.eem-dashboard-rev-bars\s*\{[^}]*height\s*:\s*90px/s', $css_src ),
+	$pass, $fail, $log );
+
+// Quick Actions tints — verify the deeper local values shipped (not the pale shared tokens).
+ds1b_ok( '.eem-dashboard-qi-blue uses deepened tint #DBE9FE (not the pale --eem-info-bg)',
+	(bool) preg_match( '/\.eem-dashboard-qi-blue\s*\{\s*background\s*:\s*#DBE9FE/i', $css_src ),
+	$pass, $fail, $log );
+ds1b_ok( '.eem-dashboard-qi-green deepened',
+	(bool) preg_match( '/\.eem-dashboard-qi-green\s*\{\s*background\s*:\s*#D1FAE5/i', $css_src ),
+	$pass, $fail, $log );
+ds1b_ok( '.eem-dashboard-qi-purple deepened',
+	(bool) preg_match( '/\.eem-dashboard-qi-purple\s*\{\s*background\s*:\s*#E5E0FF/i', $css_src ),
+	$pass, $fail, $log );
+ds1b_ok( '.eem-dashboard-qi-orange deepened',
+	(bool) preg_match( '/\.eem-dashboard-qi-orange\s*\{\s*background\s*:\s*#FFE3CC/i', $css_src ),
+	$pass, $fail, $log );
+
 echo implode( "\n", $log ) . "\n=== RESULT: {$pass} passed, {$fail} failed ===\n";
 exit( $fail > 0 ? 1 : 0 );

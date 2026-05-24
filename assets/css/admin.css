@@ -453,8 +453,15 @@ body.eem-shell-page {
 	white-space: nowrap;
 }
 
-.eem-card-link:hover {
-	text-decoration: underline;
+/* DS-1.B.2: removed `text-decoration: underline` per universal
+   mockup convention (no underline on hover anywhere — mockup line
+   13-15). Darker hover color stands in as the affordance. Applies
+   cross-page (Order Detail / Orders List / Reservations List also
+   use .eem-card-link). */
+.eem-card-link:hover,
+.eem-card-link:focus {
+	color: var(--eem-electric-hover);
+	text-decoration: none;
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -4886,7 +4893,11 @@ a.eem-btn-collect-banner:focus {
    bars, this-week summary rows.
    ═════════════════════════════════════════════════════════════════════════ */
 
-.eem-dashboard-body { padding: 18px 22px; }
+/* DS-1.B.2: horizontal padding flipped 22px → 18px to align with
+   .eem-page-header (18px), .eem-toolbar-row (18px), .eem-card-body
+   (18px) across shipped pages. Dashboard content was visibly inset
+   further right than Orders/Reservations/Order Detail. */
+.eem-dashboard-body { padding: 18px 18px; }
 
 /* Range filter bar */
 .eem-dashboard-range-bar {
@@ -5000,6 +5011,39 @@ a.eem-btn-collect-banner:focus {
 /* Inner card chrome shared with .eem-card — but reset card-title size
    to the Dashboard's slightly larger 15px scale (mockup line 84). */
 .eem-dashboard-card .eem-card-title { font-size: 15px; }
+
+/* DS-1.B.2: anchor umbrella for the 4 Dashboard anchor-capable row
+   classes — per DS-1.A.1 + DS-1.A.1.1 lesson. WP core
+   `.wrap a:hover { text-decoration: underline }` and the plugin
+   `.eem-page a:hover { text-decoration: underline }` (admin.css
+   line 190) both win specificity ties against single-class hover
+   rules — so anchor-rendered rows pick up the underline without
+   explicit `:link / :visited / :hover / :focus` coverage at the
+   row-class level. Mirrors the `a.eem-btn:hover` umbrella shipped
+   in DS-1.A.1 for the .eem-btn family. CLEANUP #12 is the
+   structural cure (scope `.eem-page a` to `:where()`). */
+a.eem-dashboard-res-row,
+a.eem-dashboard-res-row:link,
+a.eem-dashboard-res-row:visited,
+a.eem-dashboard-res-row:hover,
+a.eem-dashboard-res-row:focus,
+a.eem-dashboard-attention-row,
+a.eem-dashboard-attention-row:link,
+a.eem-dashboard-attention-row:visited,
+a.eem-dashboard-attention-row:hover,
+a.eem-dashboard-attention-row:focus,
+a.eem-dashboard-order-row,
+a.eem-dashboard-order-row:link,
+a.eem-dashboard-order-row:visited,
+a.eem-dashboard-order-row:hover,
+a.eem-dashboard-order-row:focus,
+a.eem-dashboard-qa-btn,
+a.eem-dashboard-qa-btn:link,
+a.eem-dashboard-qa-btn:visited,
+a.eem-dashboard-qa-btn:hover,
+a.eem-dashboard-qa-btn:focus {
+	text-decoration: none;
+}
 .eem-dashboard-empty {
 	padding: 18px;
 	font-size: 13px;
@@ -5237,10 +5281,18 @@ a.eem-btn-collect-banner:focus {
 	width: 15px;
 	height: 15px;
 }
-.eem-dashboard-qi-blue   { background: var(--eem-info-bg);       color: var(--eem-electric); }
-.eem-dashboard-qi-green  { background: #F0FDF4;                  color: #15803d; }
-.eem-dashboard-qi-purple { background: var(--eem-type-rv-bg);    color: #6d28d9; }
-.eem-dashboard-qi-orange { background: var(--eem-type-addon-bg); color: #c2410c; }
+/* DS-1.B.2: tints deepened from the global --eem-*-bg tokens
+   (#EEF4FF / #F0FDF4 / #F5F3FF / #FFF7ED) to slightly more
+   saturated values. Mockup-canonical tints visually disappear
+   against the .eem-dashboard-qa-btn tile background (#F0F4FB — also
+   a pale blue). The deeper local values preserve the pastel feel
+   while restoring contrast against the tile. Shared tokens left
+   untouched — other components (info banners, type chips) rely on
+   the original pale values. */
+.eem-dashboard-qi-blue   { background: #DBE9FE; color: var(--eem-electric); }
+.eem-dashboard-qi-green  { background: #D1FAE5; color: #15803d; }
+.eem-dashboard-qi-purple { background: #E5E0FF; color: #6d28d9; }
+.eem-dashboard-qi-orange { background: #FFE3CC; color: #c2410c; }
 .eem-dashboard-qa-label {
 	font-size: 13.5px;
 	font-weight: 600;
@@ -5264,9 +5316,19 @@ a.eem-btn-collect-banner:focus {
 }
 .eem-dashboard-rev-bar-wrap {
 	flex: 1;
+	/* DS-1.B.2: align-self:stretch overrides the parent row's
+	   `align-items:flex-end` for THIS column so the wrap fills the
+	   90px container height. Without it, the wrap was auto-sized
+	   (sum of children) and the bar's `height: N%` resolved against
+	   `auto` → collapsed to `min-height:4px`, rendering as a thin
+	   cap at the bottom. justify-content:flex-end stacks children
+	   from the bottom up so the bar reads as "growing up from the
+	   baseline" — val text floats above, label sits below. */
+	align-self: stretch;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
+	justify-content: flex-end;
 	gap: 4px;
 }
 .eem-dashboard-rev-bar {
