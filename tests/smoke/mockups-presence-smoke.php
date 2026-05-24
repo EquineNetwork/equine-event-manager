@@ -49,10 +49,12 @@ $canonical = array(
 	'customer_confirmation_email.html'  => 'bb3014326922af4f6103a4766886752a',
 	'order_receipt.html'                => '283417c7ef49d5de9bea5a284cc15bd8',
 
-	// 6 shipped/unchanged from handoff Step 1 (3 differ from desktop, see commit-msg flag)
-	'reservations_page.html'            => '92f7941a0051b6c917034f6293936390',
-	'orders_page.html'                  => '0fda8b9072bd2f0fc53d5a686ecc5cba',
-	'settings_page.html'                => 'c2e9c91e2c00d6686244ec2481ce6d00',
+	// 6 "shipped/unchanged" from handoff Step 1 — three were resynced to
+	// audit-canonical versions in Step 1.6 (HANDOFF.md line refs resolve
+	// correctly only on the Desktop versions; see Step 1.5 diagnostic).
+	'reservations_page.html'            => '2b4a92cc51852ef08f9e5f3e40344e07', // Step 1.6 canonical
+	'orders_page.html'                  => '9e388e32b865960c4c4fc428498e04fa', // Step 1.6 canonical
+	'settings_page.html'                => '25a27c6f558cbf6b4c32ef5edb2d49a1', // Step 1.6 canonical
 	'order_detail_page.html'            => 'dab6465b96bcf271946fea893695c436',
 	'customer_profile_page.html'        => 'd7bd2f3b28d59be697ccd97e03f86e46',
 	'event_page.html'                   => '341de9b586d4484e16dee45560d549f3',
