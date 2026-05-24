@@ -59,6 +59,7 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-order-detail-page.php'
 // .mockups/dashboard_page.html; em-dash placeholders for C8/C11-blocked
 // data per CLEANUP #37-#40).
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-dashboard-repo.php';
+require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-dashboard-icons.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-dashboard-page.php';
 
 // Phase 3 admin template partials.

@@ -131,60 +131,150 @@ class EEM_Dashboard_Repo {
 	 * @return array<int, array<string, mixed>>
 	 */
 	public function kpi_cards( $range ) {
-		list( $from, $to ) = self::range_window( $range );
-		$orders            = $this->in_window( $this->all_orders(), $from, $to );
+		list( $from, $to )          = self::range_window( $range );
+		list( $prior_from, $prior_to ) = self::prior_window( $range );
+		$all                        = $this->all_orders();
+		$orders                     = $this->in_window( $all, $from, $to );
+		$prior_orders               = $this->in_window( $all, $prior_from, $prior_to );
 
-		$total_revenue       = 0.0;
-		$outstanding_amount  = 0.0;
-		$outstanding_count   = 0;
-		$total_orders        = count( $orders );
-		$outstanding_statuses = array( 'unpaid', 'invoice-sent', 'partially-paid' );
+		$totals = $this->compute_revenue_outstanding_totals( $orders );
+		$prior  = $this->compute_revenue_outstanding_totals( $prior_orders );
 
-		foreach ( $orders as $o ) {
-			$slug = isset( $o['status_slug'] ) ? (string) $o['status_slug'] : '';
-			$amt  = isset( $o['total'] ) ? (float) $o['total'] : 0.0;
-			if ( 'paid' === $slug || 'partially-paid' === $slug ) {
-				$total_revenue += $amt;
-			}
-			if ( in_array( $slug, $outstanding_statuses, true ) ) {
-				$outstanding_amount += $amt;
-				$outstanding_count++;
-			}
-		}
+		$revenue_trend = self::format_trend_percent( $totals['revenue'], $prior['revenue'] );
+		$orders_trend  = self::format_trend_absolute( count( $orders ), count( $prior_orders ) );
 
 		return array(
 			array(
-				'border' => 'blue',
-				'label'  => __( 'Total Revenue', 'equine-event-manager' ),
-				'value'  => self::format_currency( $total_revenue ),
-				'sub'    => __( 'in selected range', 'equine-event-manager' ),
+				'border'   => 'blue',
+				'icon'     => 'dollar',
+				'label'    => __( 'Total Revenue', 'equine-event-manager' ),
+				'value'    => self::format_currency( $totals['revenue'] ),
+				'sub_pre'  => $revenue_trend['label'],
+				'sub_post' => $revenue_trend['suffix'],
+				'sub_tone' => $revenue_trend['tone'],
 			),
 			array(
 				'border'   => 'orange',
+				'icon'     => 'alert-circle',
 				'label'    => __( 'Outstanding Payments', 'equine-event-manager' ),
-				'value'    => self::format_currency( $outstanding_amount ),
+				'value'    => self::format_currency( $totals['outstanding_amount'] ),
 				'sub_pre'  => sprintf(
 					/* translators: %d: count of outstanding orders */
-					_n( '%d order', '%d orders', $outstanding_count, 'equine-event-manager' ),
-					$outstanding_count
+					_n( '%d order', '%d orders', $totals['outstanding_count'], 'equine-event-manager' ),
+					$totals['outstanding_count']
 				),
 				'sub_post' => __( ' awaiting payment', 'equine-event-manager' ),
 				'sub_tone' => 'warn',
 			),
 			array(
-				'border' => 'green',
-				'label'  => __( 'Total Orders', 'equine-event-manager' ),
-				'value'  => number_format_i18n( $total_orders ),
-				'sub'    => __( 'in selected range', 'equine-event-manager' ),
+				'border'   => 'green',
+				'icon'     => 'package',
+				'label'    => __( 'Total Orders', 'equine-event-manager' ),
+				'value'    => number_format_i18n( count( $orders ) ),
+				'sub_pre'  => $orders_trend['label'],
+				'sub_post' => $orders_trend['suffix'],
+				'sub_tone' => $orders_trend['tone'],
 			),
 			array(
 				'border'    => 'red',
+				'icon'      => 'grid',
 				'label'     => __( 'Unassigned Stalls', 'equine-event-manager' ),
 				'value'     => '—', // CLEANUP #37: wire to real query at C8 close.
 				'sub'       => __( 'pending C8 stall-chart data', 'equine-event-manager' ),
 				'sub_tone'  => 'down',
 				'em_dash'   => true,
 			),
+		);
+	}
+
+	/**
+	 * @param array<int, array<string, mixed>> $orders
+	 * @return array{revenue:float, outstanding_amount:float, outstanding_count:int}
+	 */
+	private function compute_revenue_outstanding_totals( array $orders ) {
+		$rev = 0.0; $out_amt = 0.0; $out_count = 0;
+		$outstanding_statuses = array( 'unpaid', 'invoice-sent', 'partially-paid' );
+		foreach ( $orders as $o ) {
+			$slug = (string) ( $o['status_slug'] ?? '' );
+			$amt  = (float) ( $o['total'] ?? 0 );
+			if ( 'paid' === $slug || 'partially-paid' === $slug ) {
+				$rev += $amt;
+			}
+			if ( in_array( $slug, $outstanding_statuses, true ) ) {
+				$out_amt += $amt;
+				$out_count++;
+			}
+		}
+		return array( 'revenue' => $rev, 'outstanding_amount' => $out_amt, 'outstanding_count' => $out_count );
+	}
+
+	/**
+	 * Compute the prior window for trend comparisons. For relative ranges
+	 * (last-7/30/90): the same length immediately preceding. For this-year:
+	 * the Jan-1-to-(today-anniversary) window of the prior year. For
+	 * all-time: returns `[0, 0]` (no comparable prior — trend hidden by
+	 * `format_trend_*`).
+	 *
+	 * @param string $range
+	 * @return array{0:int,1:int}
+	 */
+	public static function prior_window( $range ) {
+		list( $from, $to ) = self::range_window( $range );
+		switch ( $range ) {
+			case 'all-time':
+				return array( 0, 0 );
+			case 'this-year':
+				$prior_year = (int) date( 'Y', $to ) - 1;
+				$prior_from = strtotime( sprintf( '%d-01-01 00:00:00', $prior_year ) );
+				$prior_to   = strtotime( '+' . ( $to - $from ) . ' seconds', $prior_from );
+				return array( $prior_from, $prior_to );
+			default:
+				$length = $to - $from;
+				return array( $from - $length, $from );
+		}
+	}
+
+	/**
+	 * "↑ 12%" / "↓ 5%" trend label + suffix + tone. Returns neutral
+	 * label "—" when the prior window has no data, signalling no
+	 * comparable trend.
+	 *
+	 * @param float $current
+	 * @param float $prior
+	 * @return array{label:string, suffix:string, tone:string}
+	 */
+	public static function format_trend_percent( $current, $prior ) {
+		if ( $prior <= 0 ) {
+			return array( 'label' => '—', 'suffix' => ' ' . __( 'no prior data', 'equine-event-manager' ), 'tone' => 'flat' );
+		}
+		$delta = ( ( $current - $prior ) / $prior ) * 100;
+		$arrow = $delta > 0 ? '↑' : ( $delta < 0 ? '↓' : '→' );
+		$tone  = $delta > 0 ? 'up' : ( $delta < 0 ? 'down' : 'flat' );
+		return array(
+			'label'  => sprintf( '%s %s%%', $arrow, number_format_i18n( abs( $delta ), 0 ) ),
+			'suffix' => ' ' . __( 'vs prior period', 'equine-event-manager' ),
+			'tone'   => $tone,
+		);
+	}
+
+	/**
+	 * "↑ 23" / "↓ 4" absolute-count trend label.
+	 *
+	 * @param int $current
+	 * @param int $prior
+	 * @return array{label:string, suffix:string, tone:string}
+	 */
+	public static function format_trend_absolute( $current, $prior ) {
+		$delta = (int) $current - (int) $prior;
+		if ( 0 === $prior && 0 === $current ) {
+			return array( 'label' => '—', 'suffix' => ' ' . __( 'no prior data', 'equine-event-manager' ), 'tone' => 'flat' );
+		}
+		$arrow = $delta > 0 ? '↑' : ( $delta < 0 ? '↓' : '→' );
+		$tone  = $delta > 0 ? 'up' : ( $delta < 0 ? 'down' : 'flat' );
+		return array(
+			'label'  => sprintf( '%s %s', $arrow, number_format_i18n( abs( $delta ) ) ),
+			'suffix' => ' ' . __( 'vs prior period', 'equine-event-manager' ),
+			'tone'   => $tone,
 		);
 	}
 
@@ -289,7 +379,7 @@ class EEM_Dashboard_Repo {
 			array(
 				// CLEANUP #39: wire to C8 stall-chart unassigned query.
 				'icon'  => 'red',
-				'icon_key' => 'stall',
+				'icon_key' => 'grid',
 				'title' => __( '— stalls unassigned', 'equine-event-manager' ),
 				'desc'  => __( 'Pending C8 stall-chart data', 'equine-event-manager' ),
 				'href'  => admin_url( 'admin.php?page=equine-event-manager-stall-charts' ),
@@ -298,7 +388,7 @@ class EEM_Dashboard_Repo {
 			),
 			array(
 				'icon'  => 'orange',
-				'icon_key' => 'payment',
+				'icon_key' => 'card',
 				'title' => sprintf(
 					/* translators: %d: count of unpaid orders */
 					_n( '%d order awaiting payment', '%d orders awaiting payment', $out_count, 'equine-event-manager' ),
@@ -315,7 +405,7 @@ class EEM_Dashboard_Repo {
 			array(
 				// CLEANUP #39: wire to C8 RV-lot assignment query.
 				'icon'  => 'red',
-				'icon_key' => 'alert',
+				'icon_key' => 'alert-triangle',
 				'title' => __( '— RV lot assignment issues', 'equine-event-manager' ),
 				'desc'  => __( 'Pending C8 stall-chart data', 'equine-event-manager' ),
 				'href'  => admin_url( 'admin.php?page=equine-event-manager-stall-charts' ),
@@ -335,7 +425,7 @@ class EEM_Dashboard_Repo {
 			array(
 				// CLEANUP #39: wire to C8 stall-chart-not-configured query.
 				'icon'  => 'orange',
-				'icon_key' => 'config',
+				'icon_key' => 'users',
 				'title' => __( '— stall chart not configured', 'equine-event-manager' ),
 				'desc'  => __( 'Pending C8 stall-chart data', 'equine-event-manager' ),
 				'href'  => admin_url( 'admin.php?page=equine-event-manager-stall-charts' ),
@@ -344,7 +434,7 @@ class EEM_Dashboard_Repo {
 			),
 			array(
 				'icon'  => 'blue',
-				'icon_key' => 'gear',
+				'icon_key' => 'alert-circle',
 				'title' => __( 'Stripe webhook not configured', 'equine-event-manager' ),
 				'desc'  => __( 'Payment confirmations may be delayed without a webhook secret', 'equine-event-manager' ),
 				'href'  => admin_url( 'admin.php?page=equine-event-manager-settings' ),

@@ -4968,6 +4968,20 @@ a.eem-btn-collect-banner:focus {
 .eem-dashboard-kpi-tone--up   { color: #15803d; font-weight: 600; }
 .eem-dashboard-kpi-tone--down { color: #b91c1c; font-weight: 600; }
 .eem-dashboard-kpi-tone--warn { color: #c2410c; font-weight: 600; }
+.eem-dashboard-kpi-tone--flat { color: #6B7A99; font-weight: 600; }
+
+/* DS-1.B.1: KPI label inner layout — text on left, icon on right.
+   Mockup line 68 — `display:flex; justify-content:space-between`. */
+.eem-dashboard-kpi-label {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+.eem-dashboard-kpi-label svg {
+	width: 14px;
+	height: 14px;
+	color: var(--eem-text-muted);
+}
 
 /* Body grid (1fr + 340px side) */
 .eem-dashboard-grid {
@@ -5109,10 +5123,19 @@ a.eem-btn-collect-banner:focus {
 	height: 32px;
 	border-radius: var(--eem-radius);
 	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }
-.eem-dashboard-icon-orange { background: var(--eem-type-addon-bg); }
-.eem-dashboard-icon-red    { background: #FEF2F2; }
-.eem-dashboard-icon-blue   { background: var(--eem-info-bg); }
+/* DS-1.B.1: SVG glyph inherits color via currentColor (set on the
+   tone class). Sized to 15px per mockup line 125. */
+.eem-dashboard-attention-icon svg {
+	width: 15px;
+	height: 15px;
+}
+.eem-dashboard-icon-orange { background: var(--eem-type-addon-bg); color: #c2410c; }
+.eem-dashboard-icon-red    { background: #FEF2F2;                  color: #b91c1c; }
+.eem-dashboard-icon-blue   { background: var(--eem-info-bg);       color: var(--eem-electric); }
 .eem-dashboard-attention-text { flex: 1; min-width: 0; }
 .eem-dashboard-attention-title {
 	font-size: 13.5px;
@@ -5206,11 +5229,18 @@ a.eem-btn-collect-banner:focus {
 	height: 32px;
 	border-radius: var(--eem-radius);
 	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }
-.eem-dashboard-qi-blue   { background: var(--eem-info-bg); }
-.eem-dashboard-qi-green  { background: #F0FDF4; }
-.eem-dashboard-qi-purple { background: var(--eem-type-rv-bg); }
-.eem-dashboard-qi-orange { background: var(--eem-type-addon-bg); }
+.eem-dashboard-qa-icon svg {
+	width: 15px;
+	height: 15px;
+}
+.eem-dashboard-qi-blue   { background: var(--eem-info-bg);       color: var(--eem-electric); }
+.eem-dashboard-qi-green  { background: #F0FDF4;                  color: #15803d; }
+.eem-dashboard-qi-purple { background: var(--eem-type-rv-bg);    color: #6d28d9; }
+.eem-dashboard-qi-orange { background: var(--eem-type-addon-bg); color: #c2410c; }
 .eem-dashboard-qa-label {
 	font-size: 13.5px;
 	font-weight: 600;

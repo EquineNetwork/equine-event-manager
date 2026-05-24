@@ -51,7 +51,10 @@ class EEM_Dashboard_Page {
 		$upcoming_count = $repo->upcoming_reservations_count( 30 );
 
 		$user           = wp_get_current_user();
-		$display_name   = $user ? (string) $user->display_name : '';
+		// DS-1.B.1: ucwords() applied so a lowercase WP display_name
+		// (e.g. "whitney") renders capitalised ("Whitney") to match the
+		// mockup. Multi-word names retain per-word capitalisation.
+		$display_name   = $user ? ucwords( (string) $user->display_name ) : '';
 		$greeting       = EEM_Dashboard_Repo::format_greeting( $display_name );
 		$today          = date_i18n( 'l, F j, Y', current_time( 'timestamp' ) );
 
@@ -102,10 +105,12 @@ class EEM_Dashboard_Page {
 	private static function header_actions_html() {
 		$create  = esc_url( EEM_Orders_List_Page::create_order_url() );
 		$res_url = esc_url( admin_url( 'edit.php?post_type=en_reservation' ) );
+		$plus    = EEM_Dashboard_Icons::svg( 'plus' );
+		$cal     = EEM_Dashboard_Icons::svg( 'calendar' );
 		ob_start();
 		?>
-		<a class="eem-btn eem-btn-electric" href="<?php echo $create; ?>">+ <?php esc_html_e( 'Create Order', 'equine-event-manager' ); ?></a>
-		<a class="eem-btn eem-btn-ghost" href="<?php echo $res_url; ?>"><?php esc_html_e( 'View Reservations', 'equine-event-manager' ); ?></a>
+		<a class="eem-btn eem-btn-electric" href="<?php echo $create; ?>"><?php echo $plus; ?> <?php esc_html_e( 'Create Order', 'equine-event-manager' ); ?></a>
+		<a class="eem-btn eem-btn-ghost" href="<?php echo $res_url; ?>"><?php echo $cal; ?> <?php esc_html_e( 'View Reservations', 'equine-event-manager' ); ?></a>
 		<?php
 		return (string) ob_get_clean();
 	}
@@ -140,9 +145,14 @@ class EEM_Dashboard_Page {
 	private static function render_kpi_grid( array $cards ) {
 		?>
 		<div class="eem-dashboard-kpi-grid">
-			<?php foreach ( $cards as $card ) : ?>
+			<?php foreach ( $cards as $card ) :
+				$icon_key = isset( $card['icon'] ) ? (string) $card['icon'] : '';
+			?>
 				<div class="eem-dashboard-kpi-card eem-dashboard-kpi-card--<?php echo esc_attr( $card['border'] ); ?>">
-					<div class="eem-dashboard-kpi-label"><?php echo esc_html( $card['label'] ); ?></div>
+					<div class="eem-dashboard-kpi-label">
+						<span><?php echo esc_html( $card['label'] ); ?></span>
+						<?php if ( '' !== $icon_key ) : echo EEM_Dashboard_Icons::svg( $icon_key ); endif; ?>
+					</div>
 					<div class="eem-dashboard-kpi-value"><?php echo esc_html( $card['value'] ); ?></div>
 					<div class="eem-dashboard-kpi-sub">
 						<?php if ( ! empty( $card['sub_pre'] ) ) : ?>
@@ -169,7 +179,7 @@ class EEM_Dashboard_Page {
 		?>
 		<div class="eem-card eem-dashboard-card">
 			<div class="eem-card-header">
-				<div class="eem-card-title"><?php esc_html_e( 'Upcoming Reservations', 'equine-event-manager' ); ?></div>
+				<div class="eem-card-title"><?php echo EEM_Dashboard_Icons::svg( 'calendar' ); ?> <?php esc_html_e( 'Upcoming Reservations', 'equine-event-manager' ); ?></div>
 				<a class="eem-card-link" href="<?php echo esc_url( admin_url( 'edit.php?post_type=en_reservation' ) ); ?>"><?php esc_html_e( 'View all →', 'equine-event-manager' ); ?></a>
 			</div>
 			<?php if ( empty( $rows ) ) : ?>
@@ -228,7 +238,7 @@ class EEM_Dashboard_Page {
 		?>
 		<div class="eem-card eem-dashboard-card">
 			<div class="eem-card-header">
-				<div class="eem-card-title"><?php esc_html_e( 'Needs Attention', 'equine-event-manager' ); ?></div>
+				<div class="eem-card-title"><?php echo EEM_Dashboard_Icons::svg( 'alert-circle' ); ?> <?php esc_html_e( 'Needs Attention', 'equine-event-manager' ); ?></div>
 				<span class="eem-dashboard-attention-count"><?php
 					echo esc_html( sprintf(
 						/* translators: %d: count of attention items */
@@ -237,9 +247,12 @@ class EEM_Dashboard_Page {
 					) );
 				?></span>
 			</div>
-			<?php foreach ( $items as $item ) : ?>
+			<?php foreach ( $items as $item ) :
+				$icon_key = isset( $item['icon_key'] ) ? (string) $item['icon_key'] : '';
+				$svg      = '' !== $icon_key ? EEM_Dashboard_Icons::svg( $icon_key ) : '';
+			?>
 				<a class="eem-dashboard-attention-row" href="<?php echo esc_url( $item['href'] ); ?>">
-					<span class="eem-dashboard-attention-icon eem-dashboard-icon-<?php echo esc_attr( $item['icon'] ); ?>" aria-hidden="true"></span>
+					<span class="eem-dashboard-attention-icon eem-dashboard-icon-<?php echo esc_attr( $item['icon'] ); ?>"><?php echo $svg; ?></span>
 					<div class="eem-dashboard-attention-text">
 						<div class="eem-dashboard-attention-title"><?php echo esc_html( $item['title'] ); ?></div>
 						<div class="eem-dashboard-attention-desc"><?php echo esc_html( $item['desc'] ); ?></div>
@@ -263,7 +276,7 @@ class EEM_Dashboard_Page {
 		?>
 		<div class="eem-card eem-dashboard-card">
 			<div class="eem-card-header">
-				<div class="eem-card-title"><?php esc_html_e( 'Recent Orders', 'equine-event-manager' ); ?></div>
+				<div class="eem-card-title"><?php echo EEM_Dashboard_Icons::svg( 'package' ); ?> <?php esc_html_e( 'Recent Orders', 'equine-event-manager' ); ?></div>
 				<a class="eem-card-link" href="<?php echo esc_url( EEM_Orders_List_Page::url() ); ?>"><?php esc_html_e( 'View all →', 'equine-event-manager' ); ?></a>
 			</div>
 			<?php if ( empty( $orders ) ) : ?>
@@ -281,7 +294,7 @@ class EEM_Dashboard_Page {
 							<div class="eem-dashboard-order-event"><?php echo esc_html( $o['event'] ); ?></div>
 						</div>
 						<span class="eem-dashboard-order-amount"><?php echo esc_html( $o['total'] ); ?></span>
-						<span class="eem-status-badge <?php echo esc_attr( $css ); ?>"><?php echo esc_html( $o['status_label'] ); ?></span>
+						<span class="eem-status-badge eem-status-<?php echo esc_attr( $css ); ?>"><?php echo esc_html( $o['status_label'] ); ?></span>
 					</a>
 				<?php endforeach; ?>
 			<?php endif; ?>
@@ -301,24 +314,28 @@ class EEM_Dashboard_Page {
 		$tiles = array(
 			array(
 				'icon'  => 'blue',
+				'icon_key' => 'plus',
 				'label' => __( 'Create Order', 'equine-event-manager' ),
 				'sub'   => __( 'Manual entry', 'equine-event-manager' ),
 				'href'  => EEM_Orders_List_Page::create_order_url(),
 			),
 			array(
 				'icon'  => 'green',
+				'icon_key' => 'grid',
 				'label' => __( 'Stall Charts', 'equine-event-manager' ),
 				'sub'   => __( 'Assign stalls', 'equine-event-manager' ),
 				'href'  => admin_url( 'admin.php?page=equine-event-manager-stall-charts' ),
 			),
 			array(
 				'icon'  => 'purple',
+				'icon_key' => 'card',
 				'label' => __( 'Collect Payment', 'equine-event-manager' ),
 				'sub'   => __( 'Unpaid orders', 'equine-event-manager' ),
 				'href'  => EEM_Orders_List_Page::url( array( 'status' => 'unpaid' ) ),
 			),
 			array(
 				'icon'  => 'orange',
+				'icon_key' => 'download',
 				'label' => __( 'Export Report', 'equine-event-manager' ),
 				'sub'   => __( 'Download CSV', 'equine-event-manager' ),
 				'href'  => admin_url( 'admin.php?page=equine-event-manager-reports' ),
@@ -327,12 +344,12 @@ class EEM_Dashboard_Page {
 		?>
 		<div class="eem-card eem-dashboard-card">
 			<div class="eem-card-header">
-				<div class="eem-card-title"><?php esc_html_e( 'Quick Actions', 'equine-event-manager' ); ?></div>
+				<div class="eem-card-title"><?php echo EEM_Dashboard_Icons::svg( 'lightning' ); ?> <?php esc_html_e( 'Quick Actions', 'equine-event-manager' ); ?></div>
 			</div>
 			<div class="eem-dashboard-quick-actions">
 				<?php foreach ( $tiles as $tile ) : ?>
 					<a class="eem-dashboard-qa-btn" href="<?php echo esc_url( $tile['href'] ); ?>">
-						<span class="eem-dashboard-qa-icon eem-dashboard-qi-<?php echo esc_attr( $tile['icon'] ); ?>" aria-hidden="true"></span>
+						<span class="eem-dashboard-qa-icon eem-dashboard-qi-<?php echo esc_attr( $tile['icon'] ); ?>"><?php echo EEM_Dashboard_Icons::svg( $tile['icon_key'] ); ?></span>
 						<div>
 							<div class="eem-dashboard-qa-label"><?php echo esc_html( $tile['label'] ); ?></div>
 							<div class="eem-dashboard-qa-sub"><?php echo esc_html( $tile['sub'] ); ?></div>
@@ -355,7 +372,7 @@ class EEM_Dashboard_Page {
 		?>
 		<div class="eem-card eem-dashboard-card">
 			<div class="eem-card-header">
-				<div class="eem-card-title"><?php esc_html_e( 'Revenue by Reservation', 'equine-event-manager' ); ?></div>
+				<div class="eem-card-title"><?php echo EEM_Dashboard_Icons::svg( 'bar-chart' ); ?> <?php esc_html_e( 'Revenue by Reservation', 'equine-event-manager' ); ?></div>
 			</div>
 			<div class="eem-dashboard-rev-chart">
 				<?php if ( empty( $chart['bars'] ) ) : ?>
@@ -390,7 +407,7 @@ class EEM_Dashboard_Page {
 		?>
 		<div class="eem-card eem-dashboard-card">
 			<div class="eem-card-header">
-				<div class="eem-card-title"><?php esc_html_e( 'This Week', 'equine-event-manager' ); ?></div>
+				<div class="eem-card-title"><?php echo EEM_Dashboard_Icons::svg( 'clock' ); ?> <?php esc_html_e( 'This Week', 'equine-event-manager' ); ?></div>
 			</div>
 			<div class="eem-dashboard-tw-body">
 				<?php foreach ( $rows as $row ) : ?>

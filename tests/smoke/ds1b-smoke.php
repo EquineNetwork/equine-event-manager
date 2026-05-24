@@ -205,6 +205,59 @@ ds1b_ok( 'anchor-btn umbrella `a.eem-btn:hover` still present',
 	(bool) preg_match( '/a\.eem-btn:hover[^{]*\{[^}]*text-decoration\s*:\s*none/s', $css_src ),
 	$pass, $fail, $log );
 
+// ── [14] DS-1.B.1: Icon-density (SVG glyph presence, not just container) ──
+echo "\n[14] Icon-density (DS-1.B.1)\n";
+$svg_count = substr_count( $html, '<svg' );
+ds1b_ok( "Render contains >=20 inline <svg tags (mockup has 22), actual={$svg_count}",
+	$svg_count >= 20,
+	$pass, $fail, $log );
+// Each KPI card carries an icon inside its label.
+preg_match_all( '#<div class="eem-dashboard-kpi-card[^"]*">.*?<div class="eem-dashboard-kpi-label">(.*?)</div>#s', $html, $kpi_blocks );
+ds1b_ok( 'every KPI card label contains an <svg',
+	! empty( $kpi_blocks[1] ) && count( array_filter( $kpi_blocks[1], function( $h ) { return false !== strpos( $h, '<svg' ); } ) ) === count( $kpi_blocks[1] ),
+	$pass, $fail, $log );
+// Every Quick Action tile carries an icon.
+preg_match_all( '#<span class="eem-dashboard-qa-icon[^"]*">(.*?)</span>#s', $html, $qa_blocks );
+ds1b_ok( 'every Quick Action tile icon container contains an <svg',
+	! empty( $qa_blocks[1] ) && count( array_filter( $qa_blocks[1], function( $h ) { return false !== strpos( $h, '<svg' ); } ) ) === count( $qa_blocks[1] ),
+	$pass, $fail, $log );
+// Every attention row carries an icon.
+preg_match_all( '#<span class="eem-dashboard-attention-icon[^"]*">(.*?)</span>#s', $html, $att_blocks );
+ds1b_ok( 'every attention row icon container contains an <svg',
+	! empty( $att_blocks[1] ) && count( array_filter( $att_blocks[1], function( $h ) { return false !== strpos( $h, '<svg' ); } ) ) === count( $att_blocks[1] ),
+	$pass, $fail, $log );
+// Card titles carry icons.
+preg_match_all( '#<div class="eem-card-title">(.*?)</div>#s', $html, $title_blocks );
+ds1b_ok( 'every card title contains an <svg (6 cards: Upcoming/Attention/Recent/Quick/Revenue/ThisWeek)',
+	count( $title_blocks[1] ) >= 6 && count( array_filter( $title_blocks[1], function( $h ) { return false !== strpos( $h, '<svg' ); } ) ) === count( $title_blocks[1] ),
+	$pass, $fail, $log );
+// SVG bodies are non-empty (path/line/rect/polyline/circle/polygon present).
+ds1b_ok( 'rendered SVGs contain non-empty path data (path|line|rect|circle|polyline|polygon)',
+	(bool) preg_match( '/<svg[^>]*>\s*<(path|line|rect|circle|polyline|polygon)/', $html ),
+	$pass, $fail, $log );
+
+// ── [15] DS-1.B.1: status-pill class-prefix regression guard ────────
+echo "\n[15] Status pill class prefix\n";
+ds1b_ok( 'Recent Orders status pill uses eem-status-<slug> class (not bare slug)',
+	(bool) preg_match( '/<span class="eem-status-badge eem-status-(paid|unpaid|invoice|refunded|cancelled|partial)/', $html ),
+	$pass, $fail, $log );
+ds1b_ok( 'NO bare-slug status class shipped (regression guard)',
+	0 === preg_match( '/<span class="eem-status-badge (paid|unpaid|invoice|refunded|cancelled|partial)"/', $html ),
+	$pass, $fail, $log );
+
+// ── [16] DS-1.B.1: greeting capitalization + trend deltas ──────────
+echo "\n[16] Greeting capitalization + trend deltas\n";
+ds1b_ok( 'greeting renders with capitalised name (Good morning|afternoon|evening, X)',
+	(bool) preg_match( '/Good (morning|afternoon|evening)(,\s+[A-Z]|\s+·)/', $html ),
+	$pass, $fail, $log );
+// Trend delta — either ↑/↓ N% on Total Revenue OR "—" fallback when no prior data.
+ds1b_ok( 'Total Revenue KPI carries trend delta (↑/↓ N% or —)',
+	(bool) preg_match( '/Total Revenue.*?eem-dashboard-kpi-tone--(up|down|flat|warn)/s', $html ),
+	$pass, $fail, $log );
+ds1b_ok( 'Total Orders KPI carries trend delta (↑/↓ N or —)',
+	(bool) preg_match( '/Total Orders.*?eem-dashboard-kpi-tone--(up|down|flat|warn)/s', $html ),
+	$pass, $fail, $log );
+
 // ── [13] JS — range-change handler ──────────────────────────────────
 echo "\n[13] JS — range filter handler\n";
 ds1b_ok( 'dashboard-range-change handler present in admin.js',
