@@ -232,17 +232,21 @@ The 7-step verification procedure caught the inner-card architecture of the Rese
 
 ### Phase 3 chunk roadmap (post-handoff, codified 2026-05-23)
 
-Post-handoff chunk plan reflecting the mockup-audit chat's decisions landed in handoff Steps 1 + 1.6. Replaces the implicit pre-handoff roadmap that bundled C11 as a single "Email + PDF" chunk. **C9, C10 mockup mapping locked at chunk kickoff** — current ordering by mockup-inventory adjacency, but reorderable if dependency analysis at kickoff time suggests otherwise.
+Post-handoff chunk plan reflecting the mockup-audit chat's decisions landed in handoff Steps 1 + 1.6. Replaces the implicit pre-handoff roadmap that bundled C11 as a single "Email + PDF" chunk.
 
 **C1–C6** — ✅ landed (foundational CSS / JS / activity log / Settings / Reservations list / Orders list / Order Detail). Tag `c6-complete`.
 
-**C7 — Edit Reservation editor** (next up). Mockup: `.mockups/edit_reservation_page.html`. Pre-handoff scope decisions stand; **handoff addition: Event Day Info section** — 5 new reservation post-meta keys (`_eem_event_day_enabled` bool, `_eem_event_day_checkin` / `_bring` / `_parking` / `_contact` strings); save handler wires the toggle + 4 text fields; section renders between Check-In/Check-Out and Stall Reservations per the corrected mockup; populates the "What's Next — Event Day Info" block in C11 (confirmation email) and the C12 hosted order page; explicitly NOT on the PDF receipt. **LOC estimate (pre-handoff ~5-6.5K) likely needs upward revision** given Event Day Info addition — re-estimate at C7 kickoff. Also: CLEANUP #36 (dev-seed reservation_id gap) must be resolved as a C7 prerequisite for visual verify.
+**C7 — Edit Reservation editor** (next up). Mockup: `.mockups/edit_reservation_page.html`. Pre-handoff scope decisions stand; two **post-handoff scope additions** layered in:
+- **Scope addition #1 — Event Day Info section.** 5 new reservation post-meta keys (`_eem_event_day_enabled` bool, `_eem_event_day_checkin` / `_bring` / `_parking` / `_contact` strings); save handler wires the toggle + 4 text fields; section renders between Check-In/Check-Out and Stall Reservations per the corrected mockup; populates the "What's Next — Event Day Info" block in C11 (confirmation email) and the C12 hosted order page; explicitly NOT on the PDF receipt.
+- **Scope addition #2 — Per-reservation cancellation policy field** (per "Architecture decisions in flight" → Cancellation policy architecture below). New post-meta key on the reservation post: `_eem_cancellation_policy_override` (string, default empty). Field renders in the Edit Reservation editor near other policy/legal fields. Pre-populated with the event default at first render; admin can override. Render logic at downstream surfaces: customer-facing displays the override if non-empty, else inherits the event default (via the per-event Event CPT field also landing in this chunk's data layer). Mockup placement TBD per the mockup-audit chat's updated `edit_reservation_page.html` (in flight; imports via standard mockup-import protocol when delivered).
+
+**LOC estimate (pre-handoff ~5–6.5K) likely needs upward revision** given BOTH additions (Event Day Info + per-reservation cancellation policy field + event-CPT default field) — re-estimate at C7 kickoff with both scope additions on the table. Also: CLEANUP #36 (dev-seed reservation_id gap) must be resolved as a C7 prerequisite for visual verify.
 
 **C8 — Stall Charts** (3 mockup files): `stall_charts_page.html` (list), `stall_chart_detail.html` (single-chart editor — By Location + By Customer tabs), `stall_chart_print_view.html` (standalone print page opened in a new tab from the detail page).
 
 **C9 — Customer Profile page**. Mockup: `.mockups/customer_profile_page.html`. Replaces the C5.G.8 hidden stub.
 
-**C10 — Dashboard page**. Mockup: `.mockups/dashboard_page.html`. Includes KPI metric cards, upcoming reservations, attention-needed list, recent orders, quick actions, revenue chart, this-week summary.
+**C10 — Customer Event Page** (customer-facing reservation form). Mockup: `.mockups/event_page.html`. Stripe + Authorize.net checkout dispatch (processor picked in Settings — see decisions.md §"Customer Event Page"). Agreement display before SAVE per per-event Agreement card content (controlled from Edit Reservation in C7). Rendered via `[en_reservation id="N"]` shortcode at the customer-facing event URL — not an admin page.
 
 **C11 — Customer Confirmation Email** (NEW post-handoff split of the old C11). Mockup: `.mockups/customer_confirmation_email.html`. Template render with PHP variable substitution; **Emogrifier inlining at send-time** (see Cross-cutting backend systems); Event Day Info block conditional on `_eem_event_day_enabled` from C7; ships alongside the remaining canonical transactional templates (refund-processed, payment-reminder) that previously listed C11 as their target.
 
@@ -258,7 +262,15 @@ Post-handoff chunk plan reflecting the mockup-audit chat's decisions landed in h
 - Date range preset auto-fill JS (presets: `last-7`, `last-30` default, `last-90`, `this-year`, `all`, `custom`; manual edit of either date input flips the dropdown to Custom)
 - Export History row logic per HANDOFF Backend 4: `file_exists($cached_export_path)` check → render `.btn-download` with file URL OR render `.expired-link` with re-export anchor (filename preserved across cache+purge for row reference)
 
-**C16 — Final polish + release-cut** (was C13 pre-handoff). admin-legacy.css wholesale strip (CLEANUP #1 + #25 form-control / button restyle blocks); git committer attribution fix (CLEANUP #35); Plugin URI + Author URI replacement (CLEANUP #23); all remaining "awaiting C16" entries that don't fit earlier chunks. Cross-cutting design-system fidelity work (BEM status-badge normalization, typography / font loading audit across pages) may run here OR as a separate **DS-1 (Design System Fidelity)** chunk — decide at C15 close based on remaining surface area.
+**C16 — Final polish + release-cut** (was C13 pre-handoff). admin-legacy.css wholesale strip (CLEANUP #1 + #25 form-control / button restyle blocks); git committer attribution fix (CLEANUP #35); Plugin URI + Author URI replacement (CLEANUP #23); all remaining "awaiting C16" entries that don't fit earlier chunks. Cross-cutting visual-fidelity work splits out into **DS-1** (next).
+
+**DS-1 — Design System Fidelity + Admin Dashboard** (cross-cutting; may run alongside C16 or as its own focused chunk depending on combined surface). Two distinct deliverables, paired for execution because they share design-system context:
+
+- **DS-1.A — Cross-page design system fidelity.** BEM status-badge normalization (per CLAUDE.md "Status-badge class naming inconsistency" note from C6.A.3); typography + font loading audit across all shipped admin pages (loading Space Grotesk + IBM Plex Sans correctly, density passes, hierarchy alignment); mechanical edits HANDOFF.md Edit 1–4 specifies on shipped pages (sidebar `Stall Charts` → `Stall & RV Charts` rename, `Invoicing` sidebar entry removal, Create Order + Collect Payment href injection on Orders list, Collect Payment href on Order Detail's payment banner); WP-admin-route registration for `equine-event-manager-create-order` + `equine-event-manager-collect-payment` (stubs if C13/C14 not yet shipped, real bindings if they are); 5-digit `#%05d` order ID audit across remaining surfaces (Recent Orders block in DS-1.B Dashboard, activity log titles still using bare order_id).
+
+- **DS-1.B — Admin Dashboard rendering.** Mockup: `.mockups/dashboard_page.html`. Substantive new page work (KPI metric cards with 4-color top borders, Upcoming Reservations card with stall progress bars, Attention Needed card with 6 colored-icon rows, Recent Orders card with status pills, Quick Actions 4-tile grid, Revenue by Reservation 5-bar chart, This Week summary block, responsive at tablet + mobile + small-mobile). NOT polish — it's a full page port that just happens to ship paired with DS-1.A because both touch design-system primitives concurrently and Dashboard heavily reuses C1.x components (CSS-port carve-out applies).
+
+LOC estimate for combined DS-1 (A + B): ~1500–2000 (preliminary; re-baseline at kickoff). If combined surface threatens to overshoot meaningfully during execution, split into separate DS-1.A and DS-1.B chunks at that point — but starting paired is the right call.
 
 ### Phase 4 — Verify
 
@@ -336,7 +348,7 @@ Standing format rule across every site that surfaces an order number: `#00020`, 
 **Audit surface:**
 - Order Detail page (`EEM_Order_Detail_Page::format_order_number_display`) ✅ already 5-digit
 - Orders list rows (`EEM_Orders_List_Page::format_order_number_display`) ✅
-- Dashboard Recent Orders block — verify at C10 kickoff
+- Dashboard Recent Orders block — verify at DS-1.B kickoff (Dashboard is part of DS-1, not a numbered C-chunk)
 - Customer Confirmation email — verify at C11 implementation
 - PDF receipt + hosted order page — verify at C12 implementation
 - Activity log entry titles + meta — verify; some C6.D telemetry rendering uses bare order_id, needs audit
@@ -369,28 +381,33 @@ Used by C13 (Create Order) for one-off charges not configured on the reservation
 
 ---
 
+## Architecture decisions in flight
+
+In-flight architectural decisions whose final shape spans multiple chunks. Each entry locks intent now; chunk-level implementation lands where noted.
+
+### Cancellation policy architecture: shifted from global to per-reservation
+
+**Rationale:** Global cancellation policy (one policy text applied to all reservations across all events) is the wrong design. Different events have different cancellation terms, and individual reservations may need custom terms (VIP exceptions, group bookings with different conditions). Per-reservation is the correct architecture.
+
+**Implementation plan:**
+
+- **Per-event default cancellation policy:** new field on the Event CPT. Admins set it once per event; it propagates to reservations as the default. Schema lands in C7 (Edit Reservation editor's data layer touches Event CPT + reservation post-meta together).
+- **Per-reservation cancellation policy:** new post-meta key on each reservation (`_eem_cancellation_policy_override`, string, default empty). Inherits the event default at creation time; admins can override per reservation. Field renders in the C7 Edit Reservation editor scope (per C7 scope addition #2).
+- **Display surfaces:** customer checkout (C10), confirmation email (C11), PDF receipt + hosted page (C12). All four read from the reservation's policy (override if non-empty, else inherited event default; graceful blank if neither).
+- **Global cancellation policy UI** (Settings textarea, `{{cancellation_policy}}` placeholder chip referencing the global value, `wp_option` key, save handler branch, global render references): **DEPRECATED**. Strip in a focused pre-launch cleanup chunk once per-reservation is fully wired (mockups + code + data flow). Until then, the live shipped global UI continues to exist but is no longer the canonical source of cancellation policy text — per-reservation is.
+- **Pre-existing reservations on feature ship:** one-time migration writes the current global `cancellation_policy` `wp_option` value into each existing reservation's `_eem_cancellation_policy_override` post-meta as a snapshot. This puts each existing reservation through the same code path as a freshly-customized reservation ("override is set, use the override"). No special legacy-reservation render path needed. **Rationale: contract integrity** — the cancellation policy the customer agreed to at purchase time is part of their contract; silent-blank regression (display-time inheritance with no migration) or retroactive change (event-default-only migration that updates when admin edits event default) both create legal exposure on existing reservations.
+- **Post-migration:** the deprecated global `cancellation_policy` `wp_option` becomes read-no-write (no new writes through the deprecated path). The pre-launch cleanup chunk eventually strips the `wp_option` key + Settings textarea + save handler + global render references entirely. The snapshots on individual reservations persist as legitimate per-reservation data.
+- **The Cancellation email template card itself stays in Settings** (it's still a valid transactional email — order cancellation triggers it). The card renders the cancelled reservation's policy text, not the global placeholder.
+
+**Mockup status:** mockup-audit chat is updating `customer_confirmation_email.html`, `order_receipt.html`, and `edit_reservation_page.html` to reflect this shift. `settings_page.html` is **NOT** being updated by the audit chat — it remains shipped/hands-off until the deferred pre-launch cleanup chunk strips the deprecated global UI. When the 3 updated mockups are delivered, they import via the standard mockup-import protocol.
+
+---
+
 ## Removed / deprecated decisions
 
 Tracks scope items explicitly REMOVED from v1 (vs. deferred). A removed decision should not be reintroduced without re-opening the original decision conversation.
 
-### Global cancellation policy — REMOVED from v1 (2026-05-23, handoff Step 3)
-
-The single cross-event "cancellation policy" textarea-in-Settings concept is **removed entirely from v1**. Per-event/per-reservation cancellation policy is a separate concept and is **deferred** (see "v2 deferred features" below).
-
-**Removal scope (executed in handoff Step 3, separate commit):**
-- Cancellation Policy textarea field in Settings → Notifications/Reservations area (mockup line 983)
-- `{{cancellation_policy}}` placeholder chip in the email-templates placeholder palette (mockup line 766)
-- "Cancellation" email template card in the Communications panel (mockup lines 899–940 region) — title + preview + editable RTE area, all removed
-- Associated `wp_option` key (whatever key Settings save handler persists the textarea content to)
-- Settings save handler branch for the cancellation policy field
-- Email template rendering code references to the placeholder
-- Customer-facing surfaces (event page checkout, confirmation email body) that previously included the policy text
-
-**Why removed (not just deferred):** the global policy concept doesn't survive contact with multi-event reality — different events have different cancellation rules (refundable vs non-refundable, days-before-event windows, deposit vs full payment policies). A single global string can't represent that surface honestly. Better to remove than to ship a placeholder that misleads.
-
-### Per-reservation cancellation policy — DEFERRED to v2
-
-Different concept from the removed global policy: each reservation could carry its own cancellation rules. Out of scope for v1 — requires schema design + workflow design (does a customer-initiated cancellation auto-trigger refund? What if outside window? Admin approval flow?). Defer until product surface is well-understood enough to design once and ship.
+*(No active entries — global cancellation policy was previously listed here as REMOVED but has been reframed as DEPRECATED-LIVE-PENDING-CLEANUP under "Architecture decisions in flight" → Cancellation policy architecture, above.)*
 
 ---
 
