@@ -143,6 +143,16 @@ class EEM_Admin {
 			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--reservations-list' );
 		}
 
+		// C7.B.1: Reservation Editor branch — NEW variant
+		// `eem-shell-page--reservation-editor` (per Decision C, distinct
+		// from the legacy `eem-shell-page--editor` used by the WP CPT
+		// edit screen so legacy carve-out rules don't cross-apply).
+		// Required per DS-1.B.4 lesson — without this the new page
+		// renders narrower than other admin pages.
+		if ( 'equine-event-manager-reservation-editor' === $page ) {
+			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--reservation-editor' );
+		}
+
 		// DS-1.B.4: Dashboard branch added. Without this, the Dashboard
 		// page rendered with NO eem-shell-page class on body, causing
 		// admin-legacy.css `:not(.eem-shell-page--…)` carve-out rules to
@@ -200,7 +210,7 @@ class EEM_Admin {
 			$should_load = true;
 		}
 
-		if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-order', 'equine-event-manager-order-refund', 'equine-event-manager-settings', 'equine-event-manager-stall-charts', 'equine-event-manager-reports', 'equine-event-manager-reservation-overview', 'equine-event-manager-create-order', 'equine-event-manager-collect-payment', 'equine-event-manager-dashboard', EEM_Reservations_List_Page::MENU_SLUG ), true ) ) {
+		if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-order', 'equine-event-manager-order-refund', 'equine-event-manager-settings', 'equine-event-manager-stall-charts', 'equine-event-manager-reports', 'equine-event-manager-reservation-overview', 'equine-event-manager-create-order', 'equine-event-manager-collect-payment', 'equine-event-manager-dashboard', 'equine-event-manager-reservation-editor', EEM_Reservations_List_Page::MENU_SLUG ), true ) ) {
 			$should_load = true;
 		}
 
@@ -427,7 +437,7 @@ class EEM_Admin {
 		// MENU_SLUG removed — DS-1.A wires Dashboard as a real admin
 		// page (stub during DS-1.A, full render in DS-1.B).
 
-		if ( ! in_array( $page, array( 'equine-event-manager-orders', 'equine-event-manager-reports', 'equine-event-manager-settings', 'equine-event-manager-stall-charts', 'equine-event-manager-reservation-overview', 'equine-event-manager-create-order', 'equine-event-manager-collect-payment', 'equine-event-manager-dashboard' ), true ) ) {
+		if ( ! in_array( $page, array( 'equine-event-manager-orders', 'equine-event-manager-reports', 'equine-event-manager-settings', 'equine-event-manager-stall-charts', 'equine-event-manager-reservation-overview', 'equine-event-manager-create-order', 'equine-event-manager-collect-payment', 'equine-event-manager-dashboard', 'equine-event-manager-reservation-editor' ), true ) ) {
 			return;
 		}
 
@@ -631,6 +641,19 @@ class EEM_Admin {
 			'manage_options',
 			'equine-event-manager-collect-payment',
 			array( 'EEM_Collect_Payment_Page', 'render' )
+		);
+
+		// C7.B.1: Reservation Editor page — Path A custom-render,
+		// replaces the WP CPT meta-box editor over the course of C7.
+		// Hidden submenu (parent='') — reached via the Reservations
+		// list row "Edit" action, not a top-level nav entry (Decision A).
+		add_submenu_page(
+			'',
+			__( 'Edit Reservation', 'equine-event-manager' ),
+			'',
+			'manage_options',
+			'equine-event-manager-reservation-editor',
+			array( 'EEM_Reservation_Editor_Page', 'render' )
 		);
 
 		// DS-1.B: Admin Dashboard page — real render against
@@ -1365,7 +1388,7 @@ class EEM_Admin {
 				return 'equine-event-manager-stall-charts';
 			}
 
-			if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-reports', 'equine-event-manager-settings', 'equine-event-manager-create-order', 'equine-event-manager-collect-payment', 'equine-event-manager-dashboard' ), true ) ) {
+			if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-reports', 'equine-event-manager-settings', 'equine-event-manager-create-order', 'equine-event-manager-collect-payment', 'equine-event-manager-dashboard', 'equine-event-manager-reservation-editor' ), true ) ) {
 				return $page;
 			}
 

@@ -1620,6 +1620,51 @@
 	}
 
 	/* ─────────────────────────────────────────────────────────────
+	   C7.B.1 — Reservation Editor section toggles
+	   Skeleton-level interactivity for collapsing sections + flipping
+	   the "Enabled" toggle. State is visual-only in C7.B.1 — no
+	   persistence yet (save dispatcher lands in C7.B.2 + per-section
+	   wiring in C7.C).
+	   ───────────────────────────────────────────────────────────── */
+	document.addEventListener('click', function (ev) {
+		var t = ev.target;
+		if (!t || !t.closest) return;
+
+		var collapse = t.closest('[data-eem-action="reservation-editor-toggle-collapse"]');
+		if (collapse) {
+			// Ignore clicks bubbling from the enable-toggle inside the header.
+			if (t.closest('[data-eem-action="reservation-editor-toggle-enabled"]')) {
+				return;
+			}
+			var sectionKey = collapse.dataset.eemSection;
+			if (!sectionKey) return;
+			var card = document.getElementById('card-' + sectionKey);
+			var body = document.getElementById('body-' + sectionKey);
+			if (!card || !body) return;
+			card.classList.toggle('eem-section-collapsed');
+			body.classList.toggle('eem-section-body--hidden');
+			collapse.classList.toggle('is-open');
+			return;
+		}
+
+		var enable = t.closest('[data-eem-action="reservation-editor-toggle-enabled"]');
+		if (enable) {
+			ev.stopPropagation(); // don't trigger the parent collapse handler
+			var key = enable.dataset.eemSection;
+			if (!key) return;
+			var toggle = enable.querySelector('.eem-toggle');
+			var body2 = document.getElementById('body-' + key);
+			if (!toggle) return;
+			var nowOn = toggle.classList.contains('eem-toggle--on');
+			toggle.classList.toggle('eem-toggle--on', !nowOn);
+			toggle.classList.toggle('eem-toggle--off', nowOn);
+			if (body2) {
+				body2.classList.toggle('eem-section-body--disabled', nowOn);
+			}
+		}
+	});
+
+	/* ─────────────────────────────────────────────────────────────
 	   DS-1.B — Dashboard range filter dispatch
 	   Full-page reload (no AJAX) on <select> change. Mirrors the
 	   Reports filter pattern; keeps the JS surface minimal.

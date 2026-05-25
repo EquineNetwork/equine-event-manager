@@ -69,6 +69,12 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-dashboard-page.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-event-defaults-repo.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/eem-cancellation-policy.php';
 
+// C7.B.1 — Reservation Editor page (Path A custom-render). Replaces
+// the WP CPT meta-box editor over the course of C7. C7.B.1 ships the
+// render scaffold + section skeletons; C7.B.2 adds modal + save bar;
+// C7.C wires existing-section data; C7.D/E add Event Day + Cancellation.
+require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-reservation-editor-page.php';
+
 // Phase 3 admin template partials.
 require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_breadcrumb.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_page_shell.php';
