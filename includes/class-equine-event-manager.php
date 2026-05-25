@@ -62,6 +62,13 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-dashboard-repo.php'
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-dashboard-icons.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-dashboard-page.php';
 
+// C7.A — Event Defaults repository + Cancellation Policy resolver.
+// Repo backs the new wp_eem_event_defaults table (cancellation_policy
+// + venue_map_*). Resolver is consumed by C7.E editor UI + C10/C11/C12
+// customer-facing surfaces.
+require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-event-defaults-repo.php';
+require_once EQUINE_EVENT_MANAGER_PATH . 'includes/eem-cancellation-policy.php';
+
 // Phase 3 admin template partials.
 require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_breadcrumb.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_page_shell.php';

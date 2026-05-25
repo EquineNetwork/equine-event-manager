@@ -34,9 +34,74 @@ class EEM_Activator {
 		self::create_reservation_tables();
 		self::create_reports_log_table();
 		self::create_activity_log_table();
+		self::create_event_defaults_table();
 		self::maybe_refresh_native_event_rewrite_rules();
+		self::run_one_time_migrations();
 		update_option( self::DB_VERSION_OPTION, EQUINE_EVENT_MANAGER_VERSION );
 		update_option( self::NATIVE_EVENT_REWRITE_VERSION_OPTION, self::get_native_event_rewrite_signature() );
+	}
+
+	/**
+	 * Create the plugin-owned event defaults table ({prefix}eem_event_defaults).
+	 *
+	 * Composite PK (event_id, event_source) per Q4 — handles native/tec
+	 * (WP post IDs) + feed (remote feed string IDs) uniformly via the
+	 * varchar(191) event_id column. Idempotent via dbDelta — re-running
+	 * upgrades the schema rather than recreating.
+	 *
+	 * Per Q5 — canonical wp_eem_* prefix. Legacy wp_en_* tables get
+	 * renamed in a coordinated cleanup chunk.
+	 *
+	 * @return void
+	 */
+	private static function create_event_defaults_table() {
+		global $wpdb;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$charset_collate = $wpdb->get_charset_collate();
+		$table_name      = $wpdb->prefix . 'eem_event_defaults';
+
+		$sql = "CREATE TABLE {$table_name} (
+			event_id varchar(191) NOT NULL,
+			event_source varchar(32) NOT NULL DEFAULT 'native',
+			cancellation_policy longtext NULL,
+			venue_map_image_id bigint(20) unsigned NOT NULL DEFAULT 0,
+			venue_map_download_url varchar(2048) NULL,
+			venue_map_caption varchar(255) NULL,
+			created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY  (event_id, event_source),
+			KEY event_source (event_source)
+		) {$charset_collate};";
+
+		dbDelta( $sql );
+	}
+
+	/**
+	 * Run all one-time migrations, each gated by its own wp_options flag.
+	 *
+	 * Sequenced per Q6 in-flight D: #001 (cancellation snapshot from
+	 * global wp_option to per-reservation override) before #002
+	 * ('external'→'feed' event_source canonicalization in
+	 * wp_eem_event_defaults). Both idempotent at top level via flag;
+	 * #001 also row-level idempotent.
+	 *
+	 * Failure on any single migration does NOT block the others — they
+	 * each set their own flag on success; a re-fire next admin load
+	 * resumes any that didn't complete.
+	 *
+	 * @return void
+	 */
+	private static function run_one_time_migrations() {
+		if ( ! get_option( 'eem_mig_001_cancellation_snapshot_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-001-cancellation-snapshot.php';
+			eem_mig_001_cancellation_snapshot();
+		}
+		if ( ! get_option( 'eem_mig_002_feed_source_canon_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-002-feed-source-canon.php';
+			eem_mig_002_feed_source_canon();
+		}
 	}
 
 	/**

@@ -652,7 +652,10 @@ class EEM_Events {
 	 * @param int $reservation_id Reservation post ID.
 	 * @return string
 	 */
-	private static function get_effective_reservation_event_source( $reservation_id ) {
+	// C7.A: promoted to public so eem_resolve_cancellation_policy() in
+	// includes/eem-cancellation-policy.php can dispatch event-default
+	// lookups by source. Pure read function; no side effects.
+	public static function get_effective_reservation_event_source( $reservation_id ) {
 		$use_global_event_source = ! empty( get_post_meta( $reservation_id, '_en_use_global_event_source', true ) );
 		$event_source            = sanitize_key( (string) get_post_meta( $reservation_id, '_en_event_source', true ) );
 		$allowed_sources         = array( 'native', 'tec', 'feed', 'external' );
