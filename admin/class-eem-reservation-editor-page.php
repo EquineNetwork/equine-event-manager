@@ -74,12 +74,24 @@ class EEM_Reservation_Editor_Page {
 			'actions'    => self::build_header_actions_html(),
 		) );
 		?>
-		<div class="eem-reservation-editor-body">
+		<div class="eem-reservation-editor-body" data-eem-reservation-id="<?php echo esc_attr( (string) $reservation_id ); ?>">
 			<?php self::render_section_skeletons(); ?>
-			<?php /* C7.B.2: save bar lands here */ ?>
-			<div class="eem-reservation-editor-savebar-placeholder" aria-hidden="true">
-				<?php esc_html_e( 'Save bar — coming in C7.B.2 (Draft / Update / Publish actions).', 'equine-event-manager' ); ?>
-			</div>
+			<?php
+			// C7.B.2: save bar — sticky-bottom (Decision A), navy band
+			// (Decision B), button labels driven by post_status
+			// (Decision C). Partial accepts $args for Order Detail
+			// re-use in C7.F (Decision J).
+			$args = array(
+				'primary_action' => 'publish' === $post->post_status ? 'update' : 'draft',
+				'data_attrs'     => array( 'eem-reservation-id' => (string) $reservation_id ),
+			);
+			require EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_save-bar.php';
+
+			// C7.B.2: Linked Event modal (Q14.b). Hidden by default;
+			// JS launcher opens it on click of the meta-line change
+			// link.
+			require EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_modal-linked-event.php';
+			?>
 		</div>
 		<?php
 		eem_render_page_close();
@@ -161,6 +173,117 @@ class EEM_Reservation_Editor_Page {
 		<?php /* C7.B.2: Draft / Update / Publish buttons land here */ ?>
 		<?php
 		return (string) ob_get_clean();
+	}
+
+	/**
+	 * AJAX: save the reservation (post_status flip + future per-section
+	 * field saves). C7.B.2 dispatcher SHELL per Decision D — handles
+	 * post_status changes only; per-section meta saves wire in C7.C.
+	 *
+	 * Accepts `action` ∈ {save_draft, publish, update}; flips
+	 * post_status accordingly.
+	 *
+	 * @return void  Always emits wp_send_json_*; terminates.
+	 */
+	public static function ajax_save() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+		check_ajax_referer( 'eem_reservation_editor', '_eem_editor_nonce' );
+
+		$reservation_id = isset( $_POST['reservation_id'] ) ? absint( wp_unslash( $_POST['reservation_id'] ) ) : 0;
+		$action_kind    = isset( $_POST['save_kind'] ) ? sanitize_key( wp_unslash( $_POST['save_kind'] ) ) : '';
+
+		$post = $reservation_id > 0 ? get_post( $reservation_id ) : null;
+		if ( ! $post || EEM_Reservations_CPT::POST_TYPE !== $post->post_type ) {
+			wp_send_json_error( array( 'message' => __( 'Reservation not found.', 'equine-event-manager' ) ), 404 );
+		}
+
+		$new_status = null;
+		switch ( $action_kind ) {
+			case 'save_draft':
+				$new_status = 'draft';
+				break;
+			case 'publish':
+			case 'update':
+				$new_status = 'publish';
+				break;
+			default:
+				wp_send_json_error( array( 'message' => __( 'Unknown save action.', 'equine-event-manager' ) ), 400 );
+		}
+
+		if ( $new_status !== $post->post_status ) {
+			$result = wp_update_post( array(
+				'ID'          => $reservation_id,
+				'post_status' => $new_status,
+			), true );
+			if ( is_wp_error( $result ) ) {
+				wp_send_json_error( array( 'message' => $result->get_error_message() ), 500 );
+			}
+		}
+
+		// C7.C: per-section meta saves wire here.
+
+		wp_send_json_success( array(
+			'reservation_id' => $reservation_id,
+			'post_status'    => $new_status,
+			'primary_action' => 'publish' === $new_status ? 'update' : 'draft',
+			'message'        => 'publish' === $new_status
+				? __( 'Reservation published.', 'equine-event-manager' )
+				: __( 'Draft saved.', 'equine-event-manager' ),
+		) );
+	}
+
+	/**
+	 * AJAX: change the reservation's linked event (Q14.b modal save).
+	 * Validates source ∈ {native, tec, feed} + non-empty event_id;
+	 * updates the appropriate meta keys; returns refreshed meta-line
+	 * HTML for the JS to DOM-replace (per Decision K).
+	 *
+	 * @return void  Always emits wp_send_json_*; terminates.
+	 */
+	public static function ajax_change_linked_event() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+		check_ajax_referer( 'eem_reservation_editor', '_eem_editor_nonce' );
+
+		$reservation_id = isset( $_POST['reservation_id'] ) ? absint( wp_unslash( $_POST['reservation_id'] ) ) : 0;
+		$source         = isset( $_POST['source'] ) ? sanitize_key( wp_unslash( $_POST['source'] ) ) : '';
+		$event_id_raw   = isset( $_POST['event_id'] ) ? sanitize_text_field( wp_unslash( $_POST['event_id'] ) ) : '';
+
+		$post = $reservation_id > 0 ? get_post( $reservation_id ) : null;
+		if ( ! $post || EEM_Reservations_CPT::POST_TYPE !== $post->post_type ) {
+			wp_send_json_error( array( 'message' => __( 'Reservation not found.', 'equine-event-manager' ) ), 404 );
+		}
+
+		// Source validation — accept canonical native/tec/feed.
+		if ( ! in_array( $source, array( 'native', 'tec', 'feed' ), true ) ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid event source.', 'equine-event-manager' ) ), 400 );
+		}
+
+		// event_id validation — non-empty required.
+		if ( '' === trim( $event_id_raw ) ) {
+			wp_send_json_error( array( 'message' => __( 'Select an event before saving.', 'equine-event-manager' ) ), 400 );
+		}
+
+		update_post_meta( $reservation_id, '_en_event_source', $source );
+		if ( in_array( $source, array( 'native', 'tec' ), true ) ) {
+			update_post_meta( $reservation_id, '_en_event_id', absint( $event_id_raw ) );
+		} else {
+			update_post_meta( $reservation_id, '_en_external_event_id', $event_id_raw );
+		}
+
+		// Refresh the meta-line HTML — Decision K — DOM replacement.
+		$meta_html = self::build_meta_line_html( $reservation_id );
+
+		wp_send_json_success( array(
+			'reservation_id' => $reservation_id,
+			'source'         => $source,
+			'event_id'       => $event_id_raw,
+			'meta_line_html' => $meta_html,
+			'message'        => __( 'Linked event updated.', 'equine-event-manager' ),
+		) );
 	}
 
 	/**

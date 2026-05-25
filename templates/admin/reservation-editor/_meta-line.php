@@ -55,8 +55,12 @@ $venue = isset( $fields['venue'] ) ? (string) $fields['venue'] : '';
 		<span class="eem-reservation-editor-meta-value"><?php echo esc_html( $venue ); ?></span>
 	<?php endif; ?>
 	<span class="eem-reservation-editor-meta-sep" aria-hidden="true">·</span>
-	<?php /* C7.B.1: disabled placeholder. C7.B.2 wires the modal launcher per Q14.b. */ ?>
-	<span class="eem-reservation-editor-meta-change-placeholder" aria-disabled="true" title="<?php esc_attr_e( 'Change linked event — coming in C7.B.2', 'equine-event-manager' ); ?>">
+	<?php /* C7.B.2: promoted from disabled placeholder to real modal launcher (Q14.b). */ ?>
+	<a class="eem-reservation-editor-meta-change-link"
+	   href="#"
+	   data-eem-action="reservation-editor-launch-linked-event-modal"
+	   data-eem-reservation-id="<?php echo esc_attr( (string) $reservation_id ); ?>"
+	   data-eem-current-source="<?php echo esc_attr( EEM_Events::get_effective_reservation_event_source( $reservation_id ) ); ?>">
 		<?php esc_html_e( '(change linked event)', 'equine-event-manager' ); ?>
-	</span>
+	</a>
 </div>

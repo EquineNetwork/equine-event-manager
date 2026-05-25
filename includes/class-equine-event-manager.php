@@ -75,6 +75,13 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'includes/eem-cancellation-policy.php';
 // C7.C wires existing-section data; C7.D/E add Event Day + Cancellation.
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-reservation-editor-page.php';
 
+// C7.B.2 AJAX dispatchers — save bar (post_status flip) + Linked
+// Event modal. Per Decision I: single nonce action covers all
+// endpoints. Per Decision D: save dispatcher is SHELL only — per-
+// section meta saves wire in C7.C.
+add_action( 'wp_ajax_eem_reservation_editor_save', array( 'EEM_Reservation_Editor_Page', 'ajax_save' ) );
+add_action( 'wp_ajax_eem_reservation_editor_change_linked_event', array( 'EEM_Reservation_Editor_Page', 'ajax_change_linked_event' ) );
+
 // Phase 3 admin template partials.
 require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_breadcrumb.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_page_shell.php';

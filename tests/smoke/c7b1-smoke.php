@@ -196,19 +196,23 @@ c7b1_ok( 'admin.js carries reservation-editor-toggle-enabled handler',
 	str_contains( $js_src, 'reservation-editor-toggle-enabled' ),
 	$pass, $fail, $log );
 
-// ── [10] C7.B.2 scope guards (NO save bar, NO modal in C7.B.1) ──────
-echo "\n[10] C7.B.2 scope guards — features not yet present\n";
-c7b1_ok( 'render contains save-bar placeholder (real save bar lands in C7.B.2)',
-	str_contains( $html, 'eem-reservation-editor-savebar-placeholder' ),
+// ── [10] C7.B.1 scaffold guards (post-C7.B.2: scope guards inverted) ──
+echo "\n[10] C7.B.1 scaffold contract (now that C7.B.2 has landed)\n";
+// C7.B.2 landed the real save bar + Linked Event modal + promoted the
+// meta-line change link. Original C7.B.1 scope guards inverted to
+// regression-protect C7.B.2's additions live alongside the C7.B.1
+// scaffold.
+c7b1_ok( 'render contains the real save bar (.eem-save-bar) — landed in C7.B.2',
+	str_contains( $html, 'class="eem-save-bar"' ),
 	$pass, $fail, $log );
-c7b1_ok( 'render does NOT contain a save-bar component yet',
-	false === strpos( $html, 'class="eem-save-bar"' ),
+c7b1_ok( 'render contains the Linked Event modal — landed in C7.B.2',
+	str_contains( $html, 'id="eem-modal-linked-event"' ),
 	$pass, $fail, $log );
-c7b1_ok( 'meta-line carries the disabled change-event placeholder (per Decision F)',
-	str_contains( $html, 'eem-reservation-editor-meta-change-placeholder' ),
+c7b1_ok( 'meta-line carries the real change-link launcher — promoted in C7.B.2',
+	str_contains( $html, 'data-eem-action="reservation-editor-launch-linked-event-modal"' ),
 	$pass, $fail, $log );
-c7b1_ok( 'render does NOT contain a Linked Event modal markup yet',
-	false === strpos( $html, 'eem-modal-linked-event' ),
+c7b1_ok( 'C7.B.1 savebar-placeholder REMOVED in C7.B.2',
+	false === strpos( $html, 'eem-reservation-editor-savebar-placeholder' ),
 	$pass, $fail, $log );
 
 // ── [11] Anchor umbrella for section-header ─────────────────────────

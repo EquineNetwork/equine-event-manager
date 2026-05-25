@@ -1665,6 +1665,238 @@
 	});
 
 	/* ─────────────────────────────────────────────────────────────
+	   C7.B.2 — Reservation Editor save bar + Linked Event modal
+	   Save bar dispatches Save Draft / Publish / Update via AJAX.
+	   Modal opens via meta-line launcher, source-mode picker drives
+	   body switch (typeahead for native+tec, URL input for feed),
+	   typeahead debounced search hits a (placeholder for now) WP_Query
+	   endpoint, Save confirms then dispatches the change AJAX.
+	   ───────────────────────────────────────────────────────────── */
+
+	var EEM_EDITOR_AJAX_URL = (window.ajaxurl || '/wp-admin/admin-ajax.php');
+
+	function eemReservationEditorNonce() {
+		var input = document.querySelector('.eem-save-bar input[name="_eem_editor_nonce"]');
+		return input ? input.value : '';
+	}
+
+	function eemReservationEditorPostAjax(action, params) {
+		var body = new URLSearchParams();
+		body.set('action', action);
+		body.set('_eem_editor_nonce', eemReservationEditorNonce());
+		Object.keys(params || {}).forEach(function (k) { body.set(k, params[k]); });
+		return fetch(EEM_EDITOR_AJAX_URL, {
+			method: 'POST',
+			credentials: 'same-origin',
+			headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+			body: body.toString()
+		}).then(function (r) { return r.json(); });
+	}
+
+	function eemSaveBarToast(message, variant) {
+		if (window.EEM && typeof window.EEM.showSaveToast === 'function') {
+			window.EEM.showSaveToast(message, { variant: variant || 'success', sub: '' });
+		}
+	}
+
+	function eemDispatchSave(kind) {
+		var bar = document.querySelector('.eem-save-bar');
+		if (!bar) return;
+		var rid = bar.getAttribute('data-eem-reservation-id');
+		if (!rid) return;
+		eemReservationEditorPostAjax('eem_reservation_editor_save', {
+			reservation_id: rid,
+			save_kind: kind
+		}).then(function (resp) {
+			if (resp && resp.success) {
+				eemSaveBarToast(resp.data && resp.data.message ? resp.data.message : 'Saved.', 'success');
+				eemUpdateSaveBarButtons(resp.data && resp.data.primary_action ? resp.data.primary_action : 'draft');
+			} else {
+				var msg = (resp && resp.data && resp.data.message) ? resp.data.message : 'Save failed.';
+				eemSaveBarToast(msg, 'error');
+			}
+		}).catch(function () {
+			eemSaveBarToast('Could not reach the server.', 'error');
+		});
+	}
+
+	function eemUpdateSaveBarButtons(primary) {
+		var bar = document.querySelector('.eem-save-bar');
+		if (!bar) return;
+		var primaryContainer = bar.querySelector('.eem-save-bar__primary');
+		if (!primaryContainer) return;
+		if ('update' === primary) {
+			primaryContainer.innerHTML =
+				'<button type="button" class="eem-btn eem-btn-savebar-update" data-eem-action="reservation-editor-update">Update</button>';
+		} else {
+			primaryContainer.innerHTML =
+				'<button type="button" class="eem-btn eem-btn-savebar-draft" data-eem-action="reservation-editor-save-draft">Save Draft</button>' +
+				' <button type="button" class="eem-btn eem-btn-savebar-publish" data-eem-action="reservation-editor-publish">Publish</button>';
+		}
+	}
+
+	/* Save bar click handlers */
+	document.addEventListener('click', function (ev) {
+		var t = ev.target;
+		if (!t || !t.closest) return;
+		if (t.closest('[data-eem-action="reservation-editor-save-draft"]')) { ev.preventDefault(); eemDispatchSave('save_draft'); return; }
+		if (t.closest('[data-eem-action="reservation-editor-publish"]'))    { ev.preventDefault(); eemDispatchSave('publish');    return; }
+		if (t.closest('[data-eem-action="reservation-editor-update"]'))     { ev.preventDefault(); eemDispatchSave('update');     return; }
+		/* Cancel anchor is a real href — let the browser navigate, no dispatch needed */
+	});
+
+	/* Linked Event modal — launcher + source-mode picker + typeahead + Save */
+	function eemModalOpen(id) {
+		var modal = document.getElementById(id);
+		if (!modal) return;
+		modal.classList.add('open');
+	}
+	function eemModalClose(id) {
+		var modal = document.getElementById(id);
+		if (!modal) return;
+		modal.classList.remove('open');
+	}
+
+	function eemLinkedEventSetSource(modal, sourceKey) {
+		var btns = modal.querySelectorAll('.eem-source-mode-btn');
+		btns.forEach(function (b) { b.classList.toggle('is-active', b.getAttribute('data-eem-source') === sourceKey); });
+		var pickers = modal.querySelectorAll('[data-eem-source-picker]');
+		pickers.forEach(function (p) {
+			var match = p.getAttribute('data-eem-source-picker') === sourceKey;
+			p.hidden = !match;
+		});
+		modal.setAttribute('data-eem-current-source', sourceKey);
+		var err = modal.querySelector('.eem-modal-linked-event__error');
+		if (err) { err.hidden = true; err.textContent = ''; }
+	}
+
+	function eemReadModalEventId(modal) {
+		var source = modal.getAttribute('data-eem-current-source') || 'native';
+		if ('feed' === source) {
+			var feedInput = modal.querySelector('.eem-modal-linked-event__feed-url');
+			return feedInput ? feedInput.value.trim() : '';
+		}
+		var hidden = modal.querySelector('.eem-modal-linked-event__selected-id');
+		return hidden ? hidden.value.trim() : '';
+	}
+
+	document.addEventListener('click', function (ev) {
+		var t = ev.target;
+		if (!t || !t.closest) return;
+
+		var launcher = t.closest('[data-eem-action="reservation-editor-launch-linked-event-modal"]');
+		if (launcher) {
+			ev.preventDefault();
+			var modal = document.getElementById('eem-modal-linked-event');
+			if (!modal) return;
+			var currentSource = launcher.getAttribute('data-eem-current-source') || 'native';
+			eemLinkedEventSetSource(modal, currentSource);
+			eemModalOpen('eem-modal-linked-event');
+			return;
+		}
+
+		var closer = t.closest('[data-eem-action="reservation-editor-modal-close"]');
+		if (closer) {
+			ev.preventDefault();
+			eemModalClose(closer.getAttribute('data-eem-modal') || 'eem-modal-linked-event');
+			return;
+		}
+
+		var sourceBtn = t.closest('.eem-source-mode-btn');
+		if (sourceBtn && sourceBtn.closest('#eem-modal-linked-event')) {
+			ev.preventDefault();
+			var modal2 = document.getElementById('eem-modal-linked-event');
+			eemLinkedEventSetSource(modal2, sourceBtn.getAttribute('data-eem-source'));
+			return;
+		}
+
+		var saver = t.closest('[data-eem-action="reservation-editor-linked-event-save"]');
+		if (saver) {
+			ev.preventDefault();
+			var modal3 = document.getElementById('eem-modal-linked-event');
+			var source = modal3.getAttribute('data-eem-current-source') || 'native';
+			var eventId = eemReadModalEventId(modal3);
+			var errEl = modal3.querySelector('.eem-modal-linked-event__error');
+			if (!eventId) {
+				if (errEl) { errEl.textContent = 'Select an event before saving.'; errEl.hidden = false; }
+				return;
+			}
+			/* Decision H: confirmation prompt before AJAX dispatch */
+			if (!window.confirm(
+				'Changing the linked event will trigger rate recalculation, stall-chart re-resolution, and other downstream changes on next reservation save. Continue?'
+			)) { return; }
+			var rid = saver.getAttribute('data-eem-reservation-id');
+			eemReservationEditorPostAjax('eem_reservation_editor_change_linked_event', {
+				reservation_id: rid,
+				source: source,
+				event_id: eventId
+			}).then(function (resp) {
+				if (resp && resp.success) {
+					/* Decision K: DOM-replace the meta-line + close modal + toast */
+					if (resp.data && resp.data.meta_line_html) {
+						var existing = document.querySelector('.eem-reservation-editor-meta-line');
+						if (existing && existing.parentElement) {
+							var tmp = document.createElement('div');
+							tmp.innerHTML = resp.data.meta_line_html;
+							var fresh = tmp.querySelector('.eem-reservation-editor-meta-line');
+							if (fresh) { existing.parentElement.replaceChild(fresh, existing); }
+						}
+					}
+					eemModalClose('eem-modal-linked-event');
+					eemSaveBarToast(resp.data && resp.data.message ? resp.data.message : 'Updated.', 'success');
+				} else {
+					var msg = (resp && resp.data && resp.data.message) ? resp.data.message : 'Update failed.';
+					if (errEl) { errEl.textContent = msg; errEl.hidden = false; }
+				}
+			}).catch(function () {
+				if (errEl) { errEl.textContent = 'Could not reach the server.'; errEl.hidden = false; }
+			});
+		}
+	});
+
+	/* Typeahead input — debounced "echo what was typed" placeholder.
+	   C7.B.2 ships the input/results scaffolding; real WP_Query
+	   endpoint wires in C7.C alongside the per-section data layer. */
+	var eemTypeaheadTimer = null;
+	document.addEventListener('input', function (ev) {
+		var t = ev.target;
+		if (!t || !t.matches || !t.matches('.eem-event-typeahead-input')) return;
+		clearTimeout(eemTypeaheadTimer);
+		var input = t;
+		var sourceKey = input.getAttribute('data-eem-typeahead');
+		var resultsEl = document.querySelector('[data-eem-typeahead-results="' + sourceKey + '"]');
+		if (!resultsEl) return;
+		var q = input.value.trim();
+		if (q.length < 2) { resultsEl.hidden = true; resultsEl.innerHTML = ''; return; }
+		eemTypeaheadTimer = setTimeout(function () {
+			resultsEl.hidden = false;
+			resultsEl.innerHTML = '<div class="eem-event-typeahead-empty">Search endpoint wires in C7.C. Click a placeholder result to populate the selected event id.</div>' +
+				'<a class="eem-event-typeahead-result" href="#" data-eem-event-id="999">' +
+				'<div class="eem-event-typeahead-result-title">Placeholder event (id 999)</div>' +
+				'<div class="eem-event-typeahead-result-meta">Matches query: ' + q.replace(/[<>]/g, '') + '</div></a>';
+		}, 250);
+	});
+
+	document.addEventListener('click', function (ev) {
+		var t = ev.target;
+		if (!t || !t.closest) return;
+		var result = t.closest('.eem-event-typeahead-result');
+		if (!result) return;
+		ev.preventDefault();
+		var eventId = result.getAttribute('data-eem-event-id') || '';
+		var modal = document.getElementById('eem-modal-linked-event');
+		if (!modal) return;
+		var hidden = modal.querySelector('.eem-modal-linked-event__selected-id');
+		if (hidden) hidden.value = eventId;
+		var title = result.querySelector('.eem-event-typeahead-result-title');
+		var sourceKey = modal.getAttribute('data-eem-current-source') || 'native';
+		var input = modal.querySelector('.eem-event-typeahead-input[data-eem-typeahead="' + sourceKey + '"]');
+		if (input && title) input.value = title.textContent.trim();
+		var resultsEl = modal.querySelector('[data-eem-typeahead-results="' + sourceKey + '"]');
+		if (resultsEl) { resultsEl.hidden = true; resultsEl.innerHTML = ''; }
+	});
+
+	/* ─────────────────────────────────────────────────────────────
 	   DS-1.B — Dashboard range filter dispatch
 	   Full-page reload (no AJAX) on <select> change. Mirrors the
 	   Reports filter pattern; keeps the JS surface minimal.
