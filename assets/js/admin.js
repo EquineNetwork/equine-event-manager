@@ -2153,4 +2153,388 @@
 		url.searchParams.set('range', t.value);
 		window.location.href = url.toString();
 	});
+
+	/* ═════════════════════════════════════════════════════════════
+	   C7.X.2 — Mockup-canonical Reservation Editor JS handlers.
+	   Build-to-Mockup-Period port. Adds the mockup's canonical
+	   behavior shapes alongside existing C7.B/C handlers (old
+	   handlers stay until final commit retires them with the
+	   smoke assertions that reference them).
+
+	   New handlers (all sourced from mockup script block lines
+	   1224–1381):
+	     - applyControls(ctrl): ID-based data-controls visibility
+	     - toggleStay(btn): stay-type click + at-least-one validation
+	     - flashStayHint(group): red error text fade-in
+	     - toggleFeeMode(btn): mutex pill triplet + applyFeeModeVisibility
+	     - applyFeeModeVisibility(): show #row-fee-flat OR #row-fee-pct
+	     - lockChevronWhenDisabled: chevron click bail-out on disabled
+	     - enableLabelTextFlip: JS-side "Enabled" ↔ "Disabled" update
+	     - cancellation override state handlers
+	     - rail-card button handlers (Preview / Save Draft / Update /
+	       Trash / Unlink)
+	     - zone color preset picker
+	   ═════════════════════════════════════════════════════════════ */
+
+	/* Mockup applyControls() — ID-based. Reads data-controls (space-
+	   separated row IDs) from controller, applies display:'' or 'none'
+	   to each row based on controller's on/active state. */
+	function eemApplyControlsById(controller) {
+		if (!controller) return;
+		var ids = (controller.getAttribute('data-controls') || '').trim();
+		if (!ids) return;
+		var on = controller.classList.contains('on') || controller.classList.contains('eem-toggle--on') || controller.classList.contains('eem-stay-type-btn--active') || controller.classList.contains('active');
+		ids.split(/\s+/).forEach(function (id) {
+			var row = document.getElementById(id);
+			if (row) row.style.display = on ? '' : 'none';
+		});
+	}
+
+	/* Stay-type button click with at-least-one validation.
+	   Block deactivating the LAST active stay-type in a group;
+	   flash red hint instead. */
+	function eemFlashStayHint(group) {
+		if (!group) return;
+		var parent = group.parentElement;
+		if (!parent) return;
+		var hint = parent.querySelector('.eem-stay-hint');
+		if (!hint) {
+			hint = document.createElement('span');
+			hint.className = 'eem-stay-hint eem-field-hint';
+			hint.textContent = 'At least one stay type must remain enabled.';
+			parent.appendChild(hint);
+		}
+		hint.classList.add('eem-stay-hint--show');
+		clearTimeout(hint._eemT);
+		hint._eemT = setTimeout(function () { hint.classList.remove('eem-stay-hint--show'); }, 2200);
+	}
+
+	document.addEventListener('click', function (ev) {
+		var t = ev.target;
+		if (!t || !t.closest) return;
+
+		/* Stay-type button — mockup line 152 .stay-type-btn */
+		var stayBtn = t.closest('[data-eem-action="reservation-editor-toggle-stay-type"]');
+		if (stayBtn) {
+			ev.preventDefault();
+			var group = stayBtn.closest('.eem-stay-types');
+			var turningOn = !stayBtn.classList.contains('eem-stay-type-btn--active');
+			if (!turningOn && group) {
+				var active = group.querySelectorAll('.eem-stay-type-btn--active');
+				if (active.length <= 1) {
+					eemFlashStayHint(group);
+					return;
+				}
+			}
+			stayBtn.classList.toggle('eem-stay-type-btn--active', turningOn);
+			// Inner toggle indicator
+			var inner = stayBtn.querySelector('.eem-toggle');
+			if (inner) {
+				inner.classList.toggle('eem-toggle--on', turningOn);
+				inner.classList.toggle('eem-toggle--off', !turningOn);
+			}
+			// Hidden mirror for persistence
+			var mirror = stayBtn.querySelector('input[type="hidden"][data-eem-stay-type-mirror]');
+			if (mirror) mirror.value = turningOn ? '1' : '0';
+			eemApplyControlsById(stayBtn);
+			return;
+		}
+
+		/* Toggle-label-row click — mockup line 147 .toggle-label-row.
+		   data-controls listed on the WRAPPER, applied via the inner
+		   toggle's on/off state. */
+		var tlr = t.closest('[data-eem-action="reservation-editor-toggle-switch-row"]');
+		if (tlr) {
+			ev.preventDefault();
+			ev.stopPropagation();
+			var ti = tlr.querySelector('.eem-toggle');
+			if (!ti) return;
+			var turningOnT = ti.classList.contains('eem-toggle--off');
+			ti.classList.toggle('eem-toggle--on', turningOnT);
+			ti.classList.toggle('eem-toggle--off', !turningOnT);
+			var hi = tlr.querySelector('input[type="hidden"][data-eem-subsection-enabled]');
+			if (hi) hi.value = turningOnT ? '1' : '0';
+			eemApplyControlsById(tlr);
+			return;
+		}
+	});
+
+	/* Fee-mode pill triplet — mockup line 158 .fee-modes / .fee-mode-btn */
+	function eemApplyFeeModeVisibility() {
+		var active = document.querySelector('.eem-fee-mode-btn.eem-fee-mode-btn--active');
+		var mode = active ? active.getAttribute('data-eem-fee-mode') : 'none';
+		var flat = document.getElementById('row-fee-flat');
+		var pct  = document.getElementById('row-fee-pct');
+		if (flat) flat.style.display = ('flat' === mode) ? '' : 'none';
+		if (pct)  pct.style.display  = (('pct' === mode) || ('percentage' === mode)) ? '' : 'none';
+	}
+
+	/* Mockup toggleEnabled — updates enable-label text on click.
+	   C7.C.1.4.A computed initial text PHP-side but didn't flip on
+	   click; this closes that drift (J4 in audit). Also locks
+	   chevron expansion of disabled sections (E7 / J3 in audit). */
+	document.addEventListener('click', function (ev) {
+		var t = ev.target;
+		if (!t || !t.closest) return;
+
+		var enable2 = t.closest('[data-eem-action="reservation-editor-toggle-enabled"]');
+		if (enable2) {
+			// Update enable-label text per mockup line 1268
+			var key2 = enable2.dataset.eemSection;
+			if (key2) {
+				var lbl = enable2.querySelector('.eem-enable-toggle__label[data-eem-enable-label="' + key2 + '"]');
+				if (lbl) {
+					var toggleOn = enable2.querySelector('.eem-toggle').classList.contains('eem-toggle--on');
+					// existing handler ran FIRST and already flipped the class; toggleOn now reflects POST-click state
+					lbl.textContent = toggleOn ? 'Enabled' : 'Disabled';
+				}
+			}
+		}
+
+		/* Lock chevron when disabled — mockup line 1251 */
+		var collapse2 = t.closest('[data-eem-action="reservation-editor-toggle-collapse"]');
+		if (collapse2) {
+			var card2 = collapse2.closest('.eem-reservation-editor-section');
+			if (card2) {
+				var secToggle = card2.querySelector('.eem-toggle[data-eem-section]');
+				if (secToggle && secToggle.classList.contains('eem-toggle--off')) {
+					// disabled section — chevron locked. Existing handler already ran;
+					// undo its toggle so the section stays collapsed.
+					card2.classList.add('eem-section-collapsed');
+					var bd = collapse2.parentElement ? collapse2.parentElement.parentElement.querySelector('.eem-section-body') : null;
+					if (bd) bd.classList.add('eem-section-body--hidden');
+					collapse2.classList.remove('is-open');
+				}
+			}
+		}
+	});
+
+	/* ── Fee-mode pill click ── */
+	document.addEventListener('click', function (ev) {
+		var t = ev.target;
+		if (!t || !t.closest) return;
+		var fb = t.closest('[data-eem-action="reservation-editor-fee-mode"]');
+		if (!fb) return;
+		ev.preventDefault();
+		var grp = fb.closest('.eem-fee-modes');
+		if (grp) grp.querySelectorAll('.eem-fee-mode-btn').forEach(function (b) {
+			b.classList.toggle('eem-fee-mode-btn--active', b === fb);
+		});
+		var mode = fb.getAttribute('data-eem-fee-mode');
+		var section = fb.closest('.eem-reservation-editor-section');
+		var mirror2 = section ? section.querySelector('[data-eem-fee-mode-mirror]') : null;
+		if (mirror2) mirror2.value = mode;
+		eemApplyFeeModeVisibility();
+	});
+
+	/* ── Cancellation Policy override state ── */
+	function eemUpdateCancellationOverrideState() {
+		var section = document.getElementById('card-cancellation');
+		var textarea = document.getElementById('en_cancellation_policy_override');
+		var statusHint = document.getElementById('eem-cancellation-status-hint');
+		if (!section || !textarea || !statusHint) return;
+		var hasOverride = textarea.value.trim().length > 0;
+		section.classList.toggle('eem-cancellation-overridden', hasOverride);
+		if (hasOverride) {
+			statusHint.innerHTML = '<strong style="color:var(--eem-electric)">Using this reservation\'s custom policy</strong> (event default is overridden)';
+		} else {
+			statusHint.textContent = 'Currently using event default. Type to customize.';
+		}
+	}
+	window.eemRestoreCancellationDefault = function () {
+		var textarea = document.getElementById('en_cancellation_policy_override');
+		if (!textarea) return;
+		if (textarea.value.trim().length > 0) {
+			if (!confirm('Discard this reservation\'s custom cancellation policy and restore the event default?')) return;
+		}
+		textarea.value = '';
+		eemUpdateCancellationOverrideState();
+		textarea.focus();
+	};
+
+	/* ── Zone color preset picker ── */
+	document.addEventListener('click', function (ev) {
+		var t = ev.target;
+		if (!t || !t.closest) return;
+
+		/* Click swatch to open picker */
+		var swatch = t.closest('[data-eem-action="reservation-editor-zone-color-open"]');
+		if (swatch) {
+			ev.preventDefault();
+			ev.stopPropagation();
+			// Close any existing pickers
+			document.querySelectorAll('.eem-zone-color-picker').forEach(function (p) { p.remove(); });
+			var picker = document.createElement('div');
+			picker.className = 'eem-zone-color-picker';
+			var palette = (window.EEM && window.EEM.lotZonePalette) || [
+				{ slug: 'red',    hex: '#dc2626' },
+				{ slug: 'blue',   hex: '#1668F2' },
+				{ slug: 'green',  hex: '#15803d' },
+				{ slug: 'orange', hex: '#ea580c' },
+				{ slug: 'purple', hex: '#7c3aed' },
+				{ slug: 'navy',   hex: '#031B4E' },
+				{ slug: 'teal',   hex: '#0d9488' },
+				{ slug: 'pink',   hex: '#db2777' },
+			];
+			var currentSlug = swatch.getAttribute('data-eem-current-slug') || '';
+			palette.forEach(function (p) {
+				var b = document.createElement('button');
+				b.type = 'button';
+				b.className = 'eem-zone-color-preset' + (p.slug === currentSlug ? ' eem-zone-color-preset--active' : '');
+				b.style.background = p.hex;
+				b.setAttribute('data-eem-action', 'reservation-editor-zone-color-pick');
+				b.setAttribute('data-eem-color-slug', p.slug);
+				b.setAttribute('data-eem-color-hex', p.hex);
+				picker.appendChild(b);
+			});
+			var rect = swatch.getBoundingClientRect();
+			picker.style.left = (rect.left + window.scrollX) + 'px';
+			picker.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+			picker._eemSwatch = swatch;
+			document.body.appendChild(picker);
+			return;
+		}
+
+		/* Pick a color from the open picker */
+		var preset = t.closest('[data-eem-action="reservation-editor-zone-color-pick"]');
+		if (preset) {
+			ev.preventDefault();
+			var slug = preset.getAttribute('data-eem-color-slug');
+			var hex  = preset.getAttribute('data-eem-color-hex');
+			var picker2 = preset.closest('.eem-zone-color-picker');
+			if (picker2 && picker2._eemSwatch) {
+				picker2._eemSwatch.style.background = hex;
+				picker2._eemSwatch.setAttribute('data-eem-current-slug', slug);
+				var sib = picker2._eemSwatch.nextElementSibling;
+				// Find sibling hidden input that stores the slug
+				while (sib) {
+					if (sib.tagName === 'INPUT' && sib.getAttribute('data-eem-zone-color-mirror')) {
+						sib.value = slug;
+						break;
+					}
+					sib = sib.nextElementSibling;
+				}
+			}
+			picker2.remove();
+			return;
+		}
+
+		/* Click outside to close any open picker */
+		if (!t.closest('.eem-zone-color-picker')) {
+			document.querySelectorAll('.eem-zone-color-picker').forEach(function (p) { p.remove(); });
+		}
+	});
+
+	/* ── Zone row add/remove ── */
+	document.addEventListener('click', function (ev) {
+		var t = ev.target;
+		if (!t || !t.closest) return;
+
+		var zoneAdd = t.closest('[data-eem-action="reservation-editor-zone-add"]');
+		if (zoneAdd) {
+			ev.preventDefault();
+			var list = document.getElementById('eem-lot-zones-list');
+			var tmpl = document.getElementById('eem-lot-zone-row-template');
+			if (!list || !tmpl) return;
+			var clone = tmpl.content ? tmpl.content.cloneNode(true) : null;
+			if (!clone) {
+				var w = document.createElement('div');
+				w.innerHTML = tmpl.innerHTML;
+				clone = w.firstElementChild;
+			}
+			var nextIdx = list.children.length;
+			(function rewrite(node) {
+				if (node.nodeType === 1) {
+					Array.prototype.slice.call(node.attributes || []).forEach(function (a) {
+						if (a.value && a.value.indexOf('__index__') !== -1) {
+							node.setAttribute(a.name, a.value.split('__index__').join(String(nextIdx)));
+						}
+					});
+					Array.prototype.slice.call(node.childNodes).forEach(rewrite);
+				}
+			})(clone);
+			list.appendChild(clone);
+			return;
+		}
+
+		var zoneDel = t.closest('[data-eem-action="reservation-editor-zone-delete"]');
+		if (zoneDel) {
+			ev.preventDefault();
+			var row = zoneDel.closest('.eem-zone-row');
+			if (row && row.parentNode) row.parentNode.removeChild(row);
+			return;
+		}
+	});
+
+	/* ── Rail-card click handlers (Preview / Move to Trash / Unlink Event) ── */
+	document.addEventListener('click', function (ev) {
+		var t = ev.target;
+		if (!t || !t.closest) return;
+
+		var trashBtn = t.closest('[data-eem-action="reservation-editor-trash"]');
+		if (trashBtn) {
+			ev.preventDefault();
+			if (!confirm('Move this reservation to Trash? You can restore it from the Trash list within 30 days.')) return;
+			var bar = document.querySelector('.eem-edit-rail [data-eem-reservation-id], .eem-reservation-editor-body[data-eem-reservation-id]');
+			var rid = bar ? bar.getAttribute('data-eem-reservation-id') : '';
+			if (!rid) return;
+			var body = new URLSearchParams();
+			body.set('action', 'eem_reservation_editor_trash');
+			body.set('_eem_editor_nonce', (document.querySelector('input[name="_eem_editor_nonce"]') || {}).value || '');
+			body.set('reservation_id', rid);
+			fetch((window.ajaxurl || '/wp-admin/admin-ajax.php'), {
+				method: 'POST', credentials: 'same-origin',
+				headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+				body: body.toString()
+			}).then(function (r) { return r.json(); }).then(function (resp) {
+				if (resp && resp.success && resp.data && resp.data.redirect_url) {
+					window.location.href = resp.data.redirect_url;
+				} else if (window.EEM && window.EEM.showSaveToast) {
+					window.EEM.showSaveToast((resp.data && resp.data.message) || 'Trash failed.', { variant: 'error' });
+				}
+			}).catch(function () {
+				if (window.EEM && window.EEM.showSaveToast) window.EEM.showSaveToast('Could not reach the server.', { variant: 'error' });
+			});
+			return;
+		}
+
+		var unlinkBtn = t.closest('[data-eem-action="reservation-editor-event-unlink"]');
+		if (unlinkBtn) {
+			ev.preventDefault();
+			if (!confirm('Unlink this reservation from its source event? The reservation will keep its title + dates as a snapshot but lose the live event link.')) return;
+			var bar2 = document.querySelector('.eem-reservation-editor-body[data-eem-reservation-id]');
+			var rid2 = bar2 ? bar2.getAttribute('data-eem-reservation-id') : '';
+			if (!rid2) return;
+			var body2 = new URLSearchParams();
+			body2.set('action', 'eem_reservation_editor_unlink_event');
+			body2.set('_eem_editor_nonce', (document.querySelector('input[name="_eem_editor_nonce"]') || {}).value || '');
+			body2.set('reservation_id', rid2);
+			fetch((window.ajaxurl || '/wp-admin/admin-ajax.php'), {
+				method: 'POST', credentials: 'same-origin',
+				headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+				body: body2.toString()
+			}).then(function (r) { return r.json(); }).then(function (resp) {
+				if (resp && resp.success) {
+					window.location.reload();
+				} else if (window.EEM && window.EEM.showSaveToast) {
+					window.EEM.showSaveToast((resp.data && resp.data.message) || 'Unlink failed.', { variant: 'error' });
+				}
+			}).catch(function () {
+				if (window.EEM && window.EEM.showSaveToast) window.EEM.showSaveToast('Could not reach the server.', { variant: 'error' });
+			});
+			return;
+		}
+	});
+
+	/* ── On page load: initial visibility for ID-based controls,
+	   fee-mode visibility, cancellation override state ── */
+	document.addEventListener('DOMContentLoaded', function () {
+		document.querySelectorAll('[data-eem-action="reservation-editor-toggle-switch-row"], [data-eem-action="reservation-editor-toggle-stay-type"]').forEach(eemApplyControlsById);
+		eemApplyFeeModeVisibility();
+		var ct = document.getElementById('en_cancellation_policy_override');
+		if (ct) {
+			ct.addEventListener('input', eemUpdateCancellationOverrideState);
+			eemUpdateCancellationOverrideState();
+		}
+	});
 })();
