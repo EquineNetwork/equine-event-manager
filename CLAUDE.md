@@ -244,16 +244,19 @@ Discipline: when introducing a new `.eem-btn-*` variant OR converting an existin
 
 **Status-badge class naming inconsistency — context for DS-1 (observed C6.A → C6.A.3 fix-up):** Status-badge class naming is currently mixed across the codebase — legacy `.eem-status-{X}` in admin.css (pre-C6, used by C5 orders-list and C4 reservations-list renders) vs. BEM `.eem-status-badge--{X}` introduced in the C6.A Order Detail render. C6.A.3 reverted the detail-page render to the legacy `.eem-status-{X}` pattern for immediate consistency (and because the existing CSS only defines the legacy class names). Full migration to the BEM `.eem-status-badge--{X}` pattern is deferred to the **DS-1 (Design System Fidelity)** chunk, which will normalize the full status-badge taxonomy (including alignment of the `.eem-type-badge--{X}` and `.eem-order-summary__section-badge--{X}` siblings, which DO use BEM consistently). Until DS-1 lands, new render code should follow the legacy `.eem-status-{X}` pattern for status badges to match what CSS supports.
 
-### Standing rule — `.mockups/` is PERMANENTLY EXCLUDED from iCloud sync
+### Standing rule — Post-commit sync via `git push origin main` (RETIRED iCloud sync)
 
-**Established post-C6 (handoff Step 1, 2026-05-23).** C6 sub-chunks revealed that the standard post-commit iCloud sync was overwriting canonical mockups produced in a parallel mockup-audit chat — multiple `.mockups/` files were silently reverted to older versions during C6.A.2 / E.1 / E.2 before the issue was caught. The targeted-`cp` workaround used through C6.A.3 closure becomes the **permanent default** for all post-commit syncs going forward.
+**Established C7.C.1.4.A close (2026-05-26).** Repo migrated to
+`github.com/enwmitchell/equine-event-manager` (private). GitHub becomes
+the canonical durable remote; the iCloud sync workflow is RETIRED.
 
-**The rule:**
-1. `.mockups/` is git-tracked and **`Projects/equine-event-manager/.mockups/` is canonical**. Any new or updated mockup files land here first; git history is the audit trail.
-2. **Post-commit iCloud sync NEVER touches `.mockups/`** — not via `rsync`, not via `cp -R`, not via `git reset --hard` of the iCloud working tree, not via any other mechanism. The standing "iCloud sync after every commit" rule applies to all other paths but **explicitly excludes `.mockups/`** as a permanent carve-out.
-3. The targeted-`cp` sync method (per-file copy of only the files actually changed in the commit) is the supported sync mechanism. If a `git fetch + git reset --hard` style sync is ever reintroduced for the iCloud copy, it MUST be paired with a pre/post MD5 verification of `.mockups/` to catch unintended writes, AND a `--no-recurse` / explicit-path scope so `.mockups/` is never in the reset surface.
-4. **iCloud's `.mockups/` directory may drift indefinitely from `Projects/.mockups/`.** That drift is acceptable. The Projects/ copy is canonical; the iCloud copy is a sync artifact whose `.mockups/` subset is intentionally stale. If a panic-restore-from-iCloud ever happens, `.mockups/` MUST be excluded from the restore and the canonical Projects/ version preserved.
-5. A presence-smoke (`tests/smoke/mockups-presence-smoke.php`) was added in this same commit. It asserts every expected canonical mockup file exists at a known MD5 — so any future accidental wipe-out gets caught at smoke time rather than at visual verify several chunks later.
+**The new rule:**
+1. After every commit, run `git push origin main`. That's the entire post-commit sync workflow. No more targeted-`cp` to iCloud, no more per-file-copy ceremony.
+2. `.mockups/` is git-tracked and travels with every push. The "permanent exclusion from iCloud sync" carve-out from the pre-C7.C.1.4.A era is moot — GitHub doesn't have iCloud's `git fetch + git reset --hard` failure mode, and `.mockups/` updates flow through git like every other file.
+3. `Projects/equine-event-manager/.mockups/` remains canonical. GitHub's copy is the durable backup. The iCloud copy at `~/Library/Mobile Documents/com~apple~CloudDocs/Projects/Equine Event Manager/` is no longer maintained as a sync target — leave it as a historical snapshot or delete it; either is fine. **Do NOT continue syncing to it** — that workflow is retired and any future attempt risks re-introducing the C6-era `.mockups/` drift problem.
+4. The presence-smoke (`tests/smoke/mockups-presence-smoke.php`) STAYS. It asserts every expected canonical mockup file exists at a known MD5 — still useful as a regression guard against accidental in-repo wipes (`rm`, bad `git checkout`, merge conflicts resolved wrong) regardless of whether iCloud is in the loop.
+
+**Retired-workflow archaeology:** if you encounter pre-C7.C.1.4.A commits referencing the targeted-`cp` iCloud sync protocol, that's historical context — the protocol no longer applies. Replace any "iCloud sync per permanent rule" instructions in old chunk reports with "git push origin main."
 
 #### CSS-port heuristic (established C4.B)
 
