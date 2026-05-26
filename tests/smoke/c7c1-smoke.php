@@ -413,6 +413,35 @@ c7c1_ok( 'C7.C.1.2 JS: chevron-collapse handler still independent of enable hand
 	(bool) preg_match( '/data-eem-action="reservation-editor-toggle-collapse[\s\S]{0,400}?card\.classList\.toggle\(\s*[\'"]eem-section-collapsed[\'"]/', $js_src ),
 	$pass, $fail, $log );
 
+// ── [6d] C7.C.1.3 — chevron DOM presence (visual-cue regression) ───
+echo "\n[6d] C7.C.1.3 — chevron DOM presence per section\n";
+// Per-section iteration on the FIRST render ($html from way above —
+// the freshly-rendered editor with seeded reservation). Each section
+// header must carry a .eem-section-chevron div containing a non-empty
+// <svg> with the chevron-down polyline path data.
+preg_match_all( '#<div class="eem-section-chevron"[^>]*>(.*?)</div>#s', $html, $chevron_bodies );
+$chevrons_with_svg = 0;
+foreach ( $chevron_bodies[1] as $body ) {
+	if ( false !== strpos( $body, '<svg' ) && false !== strpos( $body, 'polyline' ) ) {
+		$chevrons_with_svg++;
+	}
+}
+c7c1_ok( "10/10 section chevrons contain inline <svg with polyline path (no empty chevron divs)",
+	10 === $chevrons_with_svg,
+	$pass, $fail, $log,
+	"chevrons with svg+polyline: {$chevrons_with_svg} / " . count( $chevron_bodies[1] ) );
+c7c1_ok( "EEM_Dashboard_Icons::svg('chevron-down') returns non-empty SVG with polyline path",
+	'' !== EEM_Dashboard_Icons::svg( 'chevron-down' )
+		&& false !== strpos( EEM_Dashboard_Icons::svg( 'chevron-down' ), '<svg' )
+		&& false !== strpos( EEM_Dashboard_Icons::svg( 'chevron-down' ), 'polyline' ),
+	$pass, $fail, $log );
+// Sanity — chevron container still rendered ONCE per section (regression
+// guard against duplicate-render edits to the partial).
+c7c1_ok( '.eem-section-chevron divs rendered exactly 10 times (one per section)',
+	10 === count( $chevron_bodies[1] ),
+	$pass, $fail, $log,
+	"found: " . count( $chevron_bodies[1] ) );
+
 // ── [6d] JS — header-toggle click flips hidden input + error-toast surfaces server message ──
 echo "\n[6d] JS — toggle-click hidden-input flip + error-toast wiring\n";
 c7c1_ok( 'admin.js header-toggle handler flips data-eem-section-enabled hidden input',

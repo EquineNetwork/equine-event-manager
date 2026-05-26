@@ -115,7 +115,18 @@ if ( ! function_exists( 'eem_render_reservation_editor_section' ) ) {
 							<span class="eem-enable-toggle__label"><?php esc_html_e( 'Enabled', 'equine-event-manager' ); ?></span>
 						</div>
 					<?php endif; ?>
-					<div class="eem-section-chevron" aria-hidden="true"></div>
+					<div class="eem-section-chevron" aria-hidden="true"><?php
+						// C7.C.1.3 — emit the chevron-down glyph. Prior to
+						// this, the container was empty and rendered as a
+						// 0×0 invisible div — the click target lived on
+						// the wrapping .eem-section-header so collapse
+						// still worked, but users had no visual cue. Per
+						// Decision B, click target stays on the header
+						// bar; the chevron is visual feedback only.
+						if ( class_exists( 'EEM_Dashboard_Icons' ) ) {
+							echo EEM_Dashboard_Icons::svg( 'chevron-down' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pre-escaped helper output.
+						}
+					?></div>
 				</div>
 			</div>
 			<div class="<?php echo esc_attr( $body_classes ); ?>" id="body-<?php echo esc_attr( $args['key'] ); ?>">

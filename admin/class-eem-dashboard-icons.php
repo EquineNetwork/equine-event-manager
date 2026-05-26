@@ -105,6 +105,14 @@ class EEM_Dashboard_Icons {
 			'file' => '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/>',
 			// Cancellation Policy (mockup line 1097) — shield with X.
 			'shield-x' => '<path d="M12 22s-8-4.5-8-11.8A8 8 0 0112 2a8 8 0 018 8.2c0 7.3-8 11.8-8 11.8z"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/>',
+
+			// C7.C.1.3 — Reservation Editor section-header collapse chevron.
+			// Mockup line 377 (and every other section): down-pointing
+			// caret that rotates -90deg into a right-pointing caret when
+			// the section is collapsed (CSS rule .eem-section-collapsed
+			// .eem-section-chevron). Reusable across future collapse /
+			// accordion / dropdown surfaces.
+			'chevron-down' => '<polyline points="6 9 12 15 18 9"/>',
 		);
 	}
 }
