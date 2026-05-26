@@ -16,6 +16,20 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 
 ## Active entries
 
+### 44. Reservation Editor section-enabled meta keys — rename to `_eem_section_enabled_{key}` canonical
+- **What:** Each section's enabled state lives in legacy `_en_*_enabled` post-meta keys (`_en_checkin_checkout_enabled`, `_en_general_addons_enabled`, `_en_group_reservations_enabled`, `_en_convenience_fee_enabled`, `_en_venue_agreement_enabled`, plus `_en_stalls_enabled` + `_en_rv_enabled` from C7.C.2). Names are inconsistent (`checkin_checkout_enabled` vs `general_addons_enabled` vs `convenience_fee_enabled` — no shared prefix) and inherited from the Codex-era meta-box schema. Canonical scheme: `_eem_section_enabled_{section_key}` (e.g. `_eem_section_enabled_checkin`, `_eem_section_enabled_addons`, `_eem_section_enabled_fees`).
+- **Why deferred (Option A vs Option C audit at C7.C.1.1):** Renaming requires coordinated cascade — customer-facing surfaces (C10 customer event page / C11 confirmation email / C12 receipt + hosted page) all read the legacy keys today. Splitting the rename across chunks would create a backend-writes-new-keys / frontend-reads-old-keys window that silently breaks customer-facing state for every reservation saved through the new editor. C7.C.1.1 took Option C (hidden-input mirrors the legacy name on the editor body; no rename) precisely to avoid that breakage window.
+- **Added in:** C7.C.1.1
+- **Unblocks deletion:** C16 polish pass — single coordinated commit window that lands C10/C11/C12 read-side migration in the same commit as the save-side rename. Migration step: snapshot existing `_en_*_enabled` values into `_eem_section_enabled_{key}` for every existing reservation in the activator's `maybe_upgrade` (flag-gated, one-time), then strip the legacy read paths.
+- **Status:** awaiting C16
+
+### 43. Throwaway audit scripts — `c7c1-audit-roundtrip.php` + `c7c1-audit-savemeta.php` (already deleted)
+- **What:** Two diagnostic scripts used to root-cause the C7.C.1 save-bug + double-toggle bug. Lived briefly under `tests/smoke/` to share the smoke runner's bootstrap path; deleted at C7.C.1.1 close per Decision F.
+- **Why deferred:** N/A — already deleted. Entry kept here as a record of the diagnostic pattern in case future similar bugs need the same approach.
+- **Added in:** C7.C.1.1 (deletion in same commit)
+- **Unblocks deletion:** N/A — already gone. Pattern documented: render the page, extract every `name^="en_reservation"` field exactly as the JS collector would, dump $_POST shape, call `ajax_save()` with the realistic shape, read back via canonical consumer. CLAUDE.md now codifies this as the canonical render-then-collect-then-post round-trip smoke discipline.
+- **Status:** done
+
 ### 42. Reservation editor save bar — missing mockup right-rail elements (deferred to C7.G)
 - **What:** The mockup's canonical save UI is a right-rail `.rail-card` Publish card (mockup lines 1149-1180) containing **more affordances** than C7.B.2 shipped. Specifically missing from the current fixed-bottom save bar:
   - Status display ("Status: Published")

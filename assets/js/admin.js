@@ -1651,6 +1651,15 @@
 			if (body2) {
 				body2.classList.toggle('eem-section-body--disabled', nowOn);
 			}
+			// C7.C.1.1 — Desync A/B fix. Header toggle is now the
+			// authoritative visible control; flip the matching body
+			// hidden input so save_meta sees the new persisted state.
+			// Selector matches the partial-emitted
+			// `<input data-eem-section-enabled="<key>">` mirror.
+			if (body2) {
+				var hidden = body2.querySelector('input[type="hidden"][data-eem-section-enabled="' + key + '"]');
+				if (hidden) { hidden.value = nowOn ? '0' : '1'; }
+			}
 			return;
 		}
 
@@ -1714,6 +1723,13 @@
 		var out = [];
 		body.querySelectorAll('input[name^="en_reservation"], select[name^="en_reservation"], textarea[name^="en_reservation"]').forEach(function (el) {
 			if ((el.type === 'checkbox' || el.type === 'radio') && !el.checked) return;
+			// C7.C.1.1 — hidden section-enabled mirrors with value="0"
+			// must be SKIPPED to mirror unchecked-checkbox behavior the
+			// legacy save_meta() sanitizer expects (`isset($source[X])
+			// ? 1 : 0` pattern — presence means on, absence means off).
+			// Without this, every section header toggle would persist
+			// as "on" because the hidden input is always present.
+			if (el.type === 'hidden' && el.hasAttribute('data-eem-section-enabled') && '1' !== el.value) return;
 			out.push([el.name, el.value]);
 		});
 		return out;
@@ -1740,6 +1756,11 @@
 				eemSaveBarToast(resp.data && resp.data.message ? resp.data.message : 'Saved.', 'success');
 				eemUpdateSaveBarButtons(resp.data && resp.data.primary_action ? resp.data.primary_action : 'draft');
 			} else {
+				// C7.C.1.1 — surface the actual validation error from
+				// the server, not a generic "Save failed." that hid the
+				// real reason. ajax_save now returns wp_send_json_error
+				// with `message` carrying the first validation-error
+				// string and `errors` carrying the full list.
 				var msg = (resp && resp.data && resp.data.message) ? resp.data.message : 'Save failed.';
 				eemSaveBarToast(msg, 'error');
 			}

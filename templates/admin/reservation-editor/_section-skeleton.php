@@ -56,6 +56,12 @@ if ( ! function_exists( 'eem_render_reservation_editor_section' ) ) {
 			'enable_toggle' => true,
 			'collapsed'     => false,
 			'body_html'     => '',
+			// C7.C.1.1 — header-toggle initial state. Was hardcoded
+			// `--on` for every section even when the underlying meta
+			// said the section was disabled (Desync C). Now driven by
+			// the per-section enabled flag computed in
+			// EEM_Reservation_Editor_Page::section_definitions().
+			'is_enabled'    => true,
 		);
 		$args = array_merge( $defaults, $args );
 		if ( '' === $args['key'] || '' === $args['title'] ) {
@@ -88,8 +94,9 @@ if ( ! function_exists( 'eem_render_reservation_editor_section' ) ) {
 				</div>
 				<div class="eem-section-header-right">
 					<?php if ( $args['enable_toggle'] ) : ?>
+						<?php $toggle_state_class = $args['is_enabled'] ? 'eem-toggle--on' : 'eem-toggle--off'; ?>
 						<div class="eem-enable-toggle" data-eem-action="reservation-editor-toggle-enabled" data-eem-section="<?php echo esc_attr( $args['key'] ); ?>">
-							<div class="eem-toggle eem-toggle--on" data-eem-section="<?php echo esc_attr( $args['key'] ); ?>"></div>
+							<div class="eem-toggle <?php echo esc_attr( $toggle_state_class ); ?>" data-eem-section="<?php echo esc_attr( $args['key'] ); ?>"></div>
 							<span class="eem-enable-toggle__label"><?php esc_html_e( 'Enabled', 'equine-event-manager' ); ?></span>
 						</div>
 					<?php endif; ?>

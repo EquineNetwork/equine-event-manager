@@ -117,7 +117,8 @@ class EEM_Reservation_Editor_Page {
 
 		$sections = self::section_definitions();
 		foreach ( $sections as $section ) {
-			$body_html = self::render_section_body( $section['key'], $data, $addons, $reservations_cpt );
+			$body_html  = self::render_section_body( $section['key'], $data, $addons, $reservations_cpt );
+			$is_enabled = self::compute_section_is_enabled( $section['key'], $data );
 			eem_render_reservation_editor_section( array(
 				'key'           => $section['key'],
 				'title'         => $section['title'],
@@ -126,8 +127,43 @@ class EEM_Reservation_Editor_Page {
 				'enable_toggle' => $section['enable_toggle'],
 				'collapsed'     => $section['collapsed'],
 				'body_html'     => $body_html,
+				'is_enabled'    => $is_enabled,      // C7.C.1.1 — Desync C fix
 			) );
 		}
+	}
+
+	/**
+	 * Compute the persisted enabled state for a section's header toggle.
+	 * Used by section-skeleton's `is_enabled` arg (C7.C.1.1 Desync C fix
+	 * — header-toggle CSS class now matches the underlying meta state,
+	 * was previously hardcoded `--on` regardless). Map keys are the
+	 * legacy `_en_*_enabled` post-meta names; description is always-on
+	 * by definition (no enable toggle); stall/rv/eventday/cancellation
+	 * stay placeholder until their respective sub-chunks land.
+	 *
+	 * @param string               $section_key
+	 * @param array<string, mixed> $data        Reservation meta values.
+	 * @return bool
+	 */
+	private static function compute_section_is_enabled( $section_key, array $data ) {
+		$meta_map = array(
+			'checkin'      => 'checkin_checkout_enabled',
+			'addons'       => 'general_addons_enabled',
+			'group'        => 'group_reservations_enabled',
+			'fees'         => 'convenience_fee_enabled',
+			'agreement'    => 'venue_agreement_enabled',
+			'stall'        => 'stalls_enabled',          // C7.C.2
+			'rv'           => 'rv_enabled',              // C7.C.2
+			'eventday'     => 'event_day_enabled',       // C7.D — meta key TBD
+			'cancellation' => 'cancellation_enabled',    // C7.E — meta key TBD
+		);
+		if ( 'description' === $section_key ) {
+			return true; // always-on per Decision E
+		}
+		if ( ! isset( $meta_map[ $section_key ] ) || ! isset( $data[ $meta_map[ $section_key ] ] ) ) {
+			return true; // default to on if we don't yet know
+		}
+		return ! empty( $data[ $meta_map[ $section_key ] ] );
 	}
 
 	/**
@@ -261,17 +297,33 @@ class EEM_Reservation_Editor_Page {
 			}
 		}
 
-		// C7.C.1 — Decision C — reuse the legacy 93-field
-		// EEM_Reservations_CPT::save_meta() handler rather than rewriting
-		// per-section sanitization. Inject the nonce that save_meta()
-		// expects (we've already passed our own AJAX nonce + capability
-		// check above), then hand off. `$_POST['en_reservation']` is
-		// already populated by the JS dispatcher which serializes every
-		// `en_reservation[*]` field in the editor body.
+		// C7.C.1.1 — pre-validate before invoking save_meta(). Without
+		// this, save_meta()'s cross-section validation (e.g. checkin
+		// enabled + empty times) silently aborts the entire write
+		// phase while AJAX returns success — the toast lies and no
+		// fields persist. Pre-validation surfaces errors back through
+		// wp_send_json_error so the JS toast shows the real reason.
+		// Save_meta still re-validates internally (defense in depth);
+		// the duplicate cost is ~3ms.
 		if ( isset( $_POST['en_reservation'] ) && is_array( $_POST['en_reservation'] ) ) {
+			$cpt        = new EEM_Reservations_CPT();
+			$source_raw = wp_unslash( $_POST['en_reservation'] );
+			$existing   = $cpt->get_meta_values( $reservation_id );
+			$candidate  = $cpt->sanitize_meta_submission( $source_raw, $existing );
+			$errors     = $cpt->validate_meta_submission( $candidate );
+
+			if ( ! empty( $errors ) ) {
+				wp_send_json_error( array(
+					'message' => $errors[0],
+					'errors'  => array_values( $errors ),
+					'code'    => 'validation_failed',
+				), 422 );
+			}
+
+			// Validation passed — hand the payload to legacy save_meta()
+			// per Decision C (reuse the 93-field sanitization surface).
 			$_POST['equine_event_manager_reservation_meta_nonce'] = wp_create_nonce( 'equine_event_manager_save_reservation_meta' );
-			$cpt          = new EEM_Reservations_CPT();
-			$refreshed    = get_post( $reservation_id );
+			$refreshed = get_post( $reservation_id );
 			$cpt->save_meta( $reservation_id, $refreshed );
 		}
 

@@ -1499,10 +1499,20 @@ class EEM_Reservations_CPT {
 	/**
 	 * Sanitize submitted reservation meta.
 	 *
+	 * Public since C7.C.1.1 so the Path A AJAX dispatcher
+	 * (EEM_Reservation_Editor_Page::ajax_save) can pre-sanitize +
+	 * pre-validate the payload BEFORE invoking save_meta() — closing
+	 * the toast-lies-about-success bug where validation errors caused
+	 * save_meta() to no-op silently while AJAX returned 200/success.
+	 * Legacy meta-box callers (now retired) used the private path; the
+	 * visibility flip is backwards-compatible — internal calls still
+	 * work exactly as before.
+	 *
 	 * @param array $source Raw meta source.
+	 * @param array $existing Existing reservation meta merged with defaults.
 	 * @return array
 	 */
-	private function sanitize_meta_submission( $source, $existing = array() ) {
+	public function sanitize_meta_submission( $source, $existing = array() ) {
 		$use_global_event_source = ! empty( $source['use_global_event_source'] ) ? 1 : 0;
 		$configured_primary_sources = $this->get_configured_primary_event_sources();
 
@@ -1675,10 +1685,14 @@ class EEM_Reservations_CPT {
 	/**
 	 * Validate enabled reservation cards before saving.
 	 *
+	 * Public since C7.C.1.1 — see sanitize_meta_submission() docblock
+	 * for the AJAX pre-validate rationale. Returns the list of
+	 * human-readable error strings; empty array means clean.
+	 *
 	 * @param array $data Sanitized reservation data.
 	 * @return string[]
 	 */
-	private function validate_meta_submission( $data ) {
+	public function validate_meta_submission( $data ) {
 		$errors = array();
 
 		if ( 'feed' === $data['event_source'] && empty( $data['event_feed_url'] ) ) {
@@ -1769,10 +1783,14 @@ class EEM_Reservations_CPT {
 	/**
 	 * Get saved meta values with defaults.
 	 *
+	 * Public since C7.C.1.1 — see sanitize_meta_submission() docblock
+	 * for the AJAX pre-validate rationale (callers need the merged
+	 * existing-with-defaults shape to pass into sanitize).
+	 *
 	 * @param int $post_id Post ID.
 	 * @return array
 	 */
-	private function get_meta_values( $post_id ) {
+	public function get_meta_values( $post_id ) {
 		$defaults = $this->get_default_meta_values();
 		$values   = array();
 

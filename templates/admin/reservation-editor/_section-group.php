@@ -19,13 +19,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 /** @var EEM_Reservations_CPT      $reservations_cpt */
 ?>
 <div class="eem-editor-fields">
-	<div class="eem-section-toggle-row">
-		<label class="eem-section-toggle-control">
-			<input name="en_reservation[group_reservations_enabled]" id="en_group_reservations_enabled" type="checkbox" value="1" data-eem-section-toggle="group-reservations" <?php checked( $data['group_reservations_enabled'], 1 ); ?> />
-			<span class="eem-section-toggle-control__label"><?php esc_html_e( 'Enable group reservations', 'equine-event-manager' ); ?></span>
-			<span class="eem-section-toggle-control__track" aria-hidden="true"><span class="eem-section-toggle-control__thumb"></span></span>
-		</label>
-	</div>
+	<?php // C7.C.1.1 — header-toggle is the only visible enable control; body carries a hidden mirror for persistence. ?>
+	<input type="hidden" name="en_reservation[group_reservations_enabled]" data-eem-section-enabled="group" value="<?php echo ! empty( $data['group_reservations_enabled'] ) ? '1' : '0'; ?>" />
 	<table class="form-table" role="presentation">
 		<tbody>
 			<tr>

@@ -49,13 +49,8 @@ $checkout_fallback = ! empty( $data['stalls_close_at'] ) ? $data['stalls_close_a
 		</tbody>
 	</table>
 
-	<div class="eem-section-toggle-row">
-		<label class="eem-section-toggle-control">
-			<input name="en_reservation[checkin_checkout_enabled]" id="en_checkin_checkout_enabled" type="checkbox" value="1" data-eem-section-toggle="checkin-checkout" <?php checked( $data['checkin_checkout_enabled'], 1 ); ?> />
-			<span class="eem-section-toggle-control__label"><?php esc_html_e( 'Enable check-in/check-out', 'equine-event-manager' ); ?></span>
-			<span class="eem-section-toggle-control__track" aria-hidden="true"><span class="eem-section-toggle-control__thumb"></span></span>
-		</label>
-	</div>
+	<?php // C7.C.1.1 — header-toggle is the only visible enable control; body carries a hidden mirror for persistence. ?>
+	<input type="hidden" name="en_reservation[checkin_checkout_enabled]" data-eem-section-enabled="checkin" value="<?php echo ! empty( $data['checkin_checkout_enabled'] ) ? '1' : '0'; ?>" />
 	<p class="description"><?php esc_html_e( 'Set the customer check-in and check-out time for all reservations.', 'equine-event-manager' ); ?></p>
 	<table class="form-table" role="presentation">
 		<tbody>

@@ -81,13 +81,8 @@ $template_renderer = function ( $args ) {
 };
 ?>
 <div class="eem-editor-fields">
-	<div class="eem-section-toggle-row">
-		<label class="eem-section-toggle-control">
-			<input name="en_reservation[general_addons_enabled]" id="en_general_addons_enabled" type="checkbox" value="1" data-eem-section-toggle="general-addons" <?php checked( $data['general_addons_enabled'], 1 ); ?> />
-			<span class="eem-section-toggle-control__label"><?php esc_html_e( 'Enable general add-ons', 'equine-event-manager' ); ?></span>
-			<span class="eem-section-toggle-control__track" aria-hidden="true"><span class="eem-section-toggle-control__thumb"></span></span>
-		</label>
-	</div>
+	<?php // C7.C.1.1 — header-toggle is the only visible enable control; body carries a hidden mirror for persistence. ?>
+	<input type="hidden" name="en_reservation[general_addons_enabled]" data-eem-section-enabled="addons" value="<?php echo ! empty( $data['general_addons_enabled'] ) ? '1' : '0'; ?>" />
 	<?php
 	eem_render_repeating_row_table( array(
 		'table_id'            => 'en_general_addons_rows',

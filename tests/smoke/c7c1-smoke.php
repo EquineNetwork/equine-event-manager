@@ -185,61 +185,221 @@ c7c1_ok( 'page class calls get_editor_general_addons_context() for $addons',
 	false !== strpos( $page_src, 'get_editor_general_addons_context' ),
 	$pass, $fail, $log );
 
-// ── [6] AJAX save: round-trip 6 wired fields via save_meta() ───────
-echo "\n[6] AJAX save dispatcher — round-trip via legacy save_meta()\n";
+// ── [6] AJAX save: RENDER-EXTRACT-POST round-trip ──────────────────
+// C7.C.1.1 — the C7.C.1 smoke used a hand-crafted payload that
+// bypassed the rendered-form path, so the validation-trip bug
+// (checkin_checkout_enabled=1 + empty times → save_meta no-op →
+// AJAX returns success while nothing persists) shipped to the user.
+// New canonical pattern per CLAUDE.md "render-then-collect-then-post
+// is the canonical browser-realistic save test" rule: render the
+// page, extract every form field exactly as eemCollectEditorFields()
+// would, POST through ajax_save, read-back via canonical consumer.
+echo "\n[6] AJAX save — RENDER-EXTRACT-POST round-trip\n";
+
+/**
+ * Mimic admin.js eemCollectEditorFields(): walk rendered HTML, collect
+ * every input/select/textarea whose name starts with `en_reservation`,
+ * skip unchecked checkboxes/radios (browser default), return as a
+ * flat key=>value map that parse_str-style unflattens into nested array.
+ */
+$extract_browser_payload = function ( $html ) {
+	$flat = array();
+	// inputs
+	preg_match_all( '/<input\s+[^>]*name="(en_reservation\[[^"]*\])"[^>]*>/i', $html, $m, PREG_SET_ORDER );
+	foreach ( $m as $row ) {
+		$type    = preg_match( '/type="([^"]+)"/i', $row[0], $tm ) ? $tm[1] : 'text';
+		$value   = preg_match( '/value="([^"]*)"/i', $row[0], $vm ) ? html_entity_decode( $vm[1], ENT_QUOTES, 'UTF-8' ) : '';
+		$checked = (bool) preg_match( '/\bchecked\b/i', $row[0] );
+		$is_section_enabled = (bool) preg_match( '/data-eem-section-enabled="/i', $row[0] );
+		if ( in_array( $type, array( 'checkbox', 'radio' ), true ) && ! $checked ) continue;
+		// Mirror the JS collector: hidden section-enabled mirrors with
+		// value !== "1" are SKIPPED (presence semantics expected by
+		// the legacy save_meta sanitizer).
+		if ( 'hidden' === $type && $is_section_enabled && '1' !== $value ) continue;
+		$flat[ $row[1] ] = $value;
+	}
+	// selects
+	preg_match_all( '/<select\s+[^>]*name="(en_reservation\[[^"]*\])"[^>]*>(.*?)<\/select>/is', $html, $m, PREG_SET_ORDER );
+	foreach ( $m as $row ) {
+		if ( preg_match( '/<option\s+[^>]*value="([^"]*)"[^>]*\bselected/i', $row[2], $sm ) ) {
+			$flat[ $row[1] ] = $sm[1];
+		} elseif ( preg_match( '/<option\s+[^>]*value="([^"]*)"[^>]*>/i', $row[2], $sm ) ) {
+			$flat[ $row[1] ] = $sm[1];
+		}
+	}
+	// textareas
+	preg_match_all( '/<textarea\s+[^>]*name="(en_reservation\[[^"]*\])"[^>]*>(.*?)<\/textarea>/is', $html, $m, PREG_SET_ORDER );
+	foreach ( $m as $row ) {
+		$flat[ $row[1] ] = html_entity_decode( $row[2], ENT_QUOTES, 'UTF-8' );
+	}
+	// PHP-side parse: en_reservation[key]=val → ['key' => 'val']; nested
+	// keys (e.g. general_addons[0][name]) preserved.
+	$query = '';
+	foreach ( $flat as $k => $v ) {
+		$query .= ( '' === $query ? '' : '&' ) . urlencode( $k ) . '=' . urlencode( (string) $v );
+	}
+	$parsed = array();
+	parse_str( $query, $parsed );
+	return isset( $parsed['en_reservation'] ) ? (array) $parsed['en_reservation'] : array();
+};
+
+// ── [6a] CLEAN-PAYLOAD scenario — no validation tripwires ──────────
+echo "\n[6a] CLEAN payload — should succeed + persist all wired fields\n";
+update_post_meta( $reservation_id, '_en_event_source', 'native' );
+// Force the section truly disabled: get_meta_values() at line 1892–1894
+// auto-coerces checkin_checkout_enabled back to 1 if ANY of
+// checkin_time / checkout_time / checkin_time_enabled /
+// checkout_time_enabled are non-empty. Set them all to 0/empty.
+update_post_meta( $reservation_id, '_en_checkin_checkout_enabled', 0 );
+update_post_meta( $reservation_id, '_en_checkin_time', '' );
+update_post_meta( $reservation_id, '_en_checkout_time', '' );
+update_post_meta( $reservation_id, '_en_checkin_time_enabled', 0 );
+update_post_meta( $reservation_id, '_en_checkout_time_enabled', 0 );
+update_post_meta( $reservation_id, '_en_reservation_description', 'pre-update value' );
+$_GET = array( 'page' => 'equine-event-manager-reservation-editor', 'reservation_id' => $reservation_id );
+ob_start();
+EEM_Reservation_Editor_Page::render();
+$rendered_clean = ob_get_clean();
+$payload_clean = $extract_browser_payload( $rendered_clean );
+$payload_clean['reservation_description'] = 'Round-trip clean test';
+$payload_clean['event_source'] = 'native'; // editor body doesn't carry this; preserve so feed-URL validation doesn't trip
+
 $nonce = wp_create_nonce( 'eem_reservation_editor' );
 $_POST = $_REQUEST = array(
 	'_eem_editor_nonce' => $nonce,
 	'reservation_id'    => $reservation_id,
 	'save_kind'         => 'save_draft',
-	// Validation-clean payload: checkin_checkout_enabled stays absent
-	// (else save_meta() validation requires checkin_time + checkout_time);
-	// event_source is overridden to 'native' so the feed-URL validation
-	// doesn't trip if Settings default is 'feed'.
-	'en_reservation'    => array(
-		'event_source'                    => 'native',
-		'reservation_description'         => 'Updated via AJAX dispatch.',
-		'available_start_date'            => '2026-07-01',
-		'available_end_date'              => '2026-07-05',
-		'checkin_time'                    => '2026-07-01T08:00',
-		'checkout_time'                   => '2026-07-05T17:00',
-		'convenience_fee_enabled'         => '1', // required for fee_type !== 'none' to survive sanitize line 1640
-		'convenience_fee_label'           => 'Updated Fee Label',
-		'convenience_fee_type'            => 'percentage',
-		'convenience_fee_value'           => '7.5',
-		'venue_agreement_file_label'      => 'Updated Agreement Label',
-	),
+	'en_reservation'    => $payload_clean,
 );
-try {
-	ob_start();
-	EEM_Reservation_Editor_Page::ajax_save();
-	$resp_raw = ob_get_clean();
-	$resp = json_decode( $resp_raw, true );
-} catch ( Exception $e ) {
-	$resp_raw = ob_get_clean();
-	$resp = json_decode( $resp_raw, true );
-}
-c7c1_ok( 'AJAX save returned success === true',
+try { ob_start(); EEM_Reservation_Editor_Page::ajax_save(); $resp_raw = ob_get_clean(); $resp = json_decode( $resp_raw, true ); }
+catch ( Exception $e ) { $resp_raw = ob_get_clean(); $resp = json_decode( $resp_raw, true ); }
+
+c7c1_ok( 'CLEAN payload: AJAX returns success === true',
 	is_array( $resp ) && ! empty( $resp['success'] ),
 	$pass, $fail, $log,
-	'raw: ' . substr( (string) $resp_raw, 0, 200 ) );
-
-// Read-back assertions via canonical consumer (get_post_meta)
-c7c1_ok( 'reservation_description persisted via save_meta() round-trip',
-	'Updated via AJAX dispatch.' === get_post_meta( $reservation_id, '_en_reservation_description', true ),
+	'raw: ' . substr( (string) $resp_raw, 0, 250 ) );
+c7c1_ok( 'CLEAN payload: description persisted via render-extract-post round-trip',
+	'Round-trip clean test' === get_post_meta( $reservation_id, '_en_reservation_description', true ),
 	$pass, $fail, $log,
 	'got: ' . get_post_meta( $reservation_id, '_en_reservation_description', true ) );
-c7c1_ok( 'available_start_date persisted',
-	'2026-07-01' === get_post_meta( $reservation_id, '_en_available_start_date', true ),
+
+// ── [6b] TRIPWIRE scenario — the exact bug C7.C.1 shipped ──────────
+// Seed checkin_checkout_enabled=1 with empty times. User would never
+// know to fix this because the section is collapsed by default; just
+// touching the description should not silently wipe state. New
+// behavior: ajax_save pre-validates and returns 422 with the real
+// error message; toast renders it. Nothing persists. This is the
+// canary that would have caught the C7.C.1 bug at smoke time.
+echo "\n[6b] TRIPWIRE payload — should error + NOT persist + surface the real reason\n";
+update_post_meta( $reservation_id, '_en_checkin_checkout_enabled', 1 );
+update_post_meta( $reservation_id, '_en_checkin_time', '' );
+update_post_meta( $reservation_id, '_en_checkout_time', '' );
+update_post_meta( $reservation_id, '_en_reservation_description', 'BEFORE_TRIPWIRE' );
+$_GET = array( 'page' => 'equine-event-manager-reservation-editor', 'reservation_id' => $reservation_id );
+ob_start();
+EEM_Reservation_Editor_Page::render();
+$rendered_trip = ob_get_clean();
+$payload_trip = $extract_browser_payload( $rendered_trip );
+$payload_trip['reservation_description'] = 'SHOULD_NOT_PERSIST';
+$payload_trip['event_source'] = 'native';
+
+$_POST = $_REQUEST = array(
+	'_eem_editor_nonce' => $nonce,
+	'reservation_id'    => $reservation_id,
+	'save_kind'         => 'update',
+	'en_reservation'    => $payload_trip,
+);
+try { ob_start(); EEM_Reservation_Editor_Page::ajax_save(); $resp_raw = ob_get_clean(); $resp = json_decode( $resp_raw, true ); }
+catch ( Exception $e ) { $resp_raw = ob_get_clean(); $resp = json_decode( $resp_raw, true ); }
+
+c7c1_ok( 'TRIPWIRE payload: AJAX returns success === false (no more silent no-op)',
+	is_array( $resp ) && empty( $resp['success'] ),
+	$pass, $fail, $log,
+	'raw: ' . substr( (string) $resp_raw, 0, 250 ) );
+c7c1_ok( 'TRIPWIRE payload: response carries the actual validation error in data.message',
+	is_array( $resp ) && isset( $resp['data']['message'] )
+		&& false !== stripos( $resp['data']['message'], 'check-in time' ),
+	$pass, $fail, $log,
+	'got message: ' . ( $resp['data']['message'] ?? '<missing>' ) );
+c7c1_ok( 'TRIPWIRE payload: response code is validation_failed',
+	is_array( $resp ) && isset( $resp['data']['code'] ) && 'validation_failed' === $resp['data']['code'],
 	$pass, $fail, $log );
-c7c1_ok( 'convenience_fee_label persisted',
-	'Updated Fee Label' === get_post_meta( $reservation_id, '_en_convenience_fee_label', true ),
+c7c1_ok( 'TRIPWIRE payload: description did NOT change (proves write phase aborted cleanly)',
+	'BEFORE_TRIPWIRE' === get_post_meta( $reservation_id, '_en_reservation_description', true ),
+	$pass, $fail, $log,
+	'got: ' . get_post_meta( $reservation_id, '_en_reservation_description', true ) );
+
+// ── [6c] Header-toggle hidden-input mirror present ─────────────────
+echo "\n[6c] Header-toggle / hidden-input architecture (Desync A/B/C fix)\n";
+foreach ( array( 'checkin', 'addons', 'group', 'fees', 'agreement' ) as $section ) {
+	c7c1_ok( "section '{$section}' body carries hidden enabled mirror input",
+		(bool) preg_match( '/<input\s+type="hidden"\s+name="en_reservation\[[a-z_]+_enabled\]"\s+data-eem-section-enabled="' . $section . '"/i', $rendered_clean ),
+		$pass, $fail, $log );
+}
+// Visible legacy inline checkbox markup REMOVED (was the second toggle)
+c7c1_ok( 'no visible <input type="checkbox" name="en_reservation[checkin_checkout_enabled]"> (Desync A/B removed)',
+	0 === preg_match( '/<input[^>]*type="checkbox"[^>]*name="en_reservation\[checkin_checkout_enabled\]"/', $rendered_clean ),
 	$pass, $fail, $log );
-c7c1_ok( 'convenience_fee_type persisted as percentage',
-	'percentage' === get_post_meta( $reservation_id, '_en_convenience_fee_type', true ),
+c7c1_ok( 'no visible <input type="checkbox" name="en_reservation[general_addons_enabled]"> (Desync A/B removed)',
+	0 === preg_match( '/<input[^>]*type="checkbox"[^>]*name="en_reservation\[general_addons_enabled\]"/', $rendered_clean ),
 	$pass, $fail, $log );
-c7c1_ok( 'venue_agreement_file_label persisted',
-	'Updated Agreement Label' === get_post_meta( $reservation_id, '_en_venue_agreement_file_label', true ),
+c7c1_ok( 'no visible <input type="checkbox" name="en_reservation[convenience_fee_enabled]"> (Desync A/B removed)',
+	0 === preg_match( '/<input[^>]*type="checkbox"[^>]*name="en_reservation\[convenience_fee_enabled\]"/', $rendered_clean ),
+	$pass, $fail, $log );
+// Header-toggle initial state now derived from data (Desync C fix)
+// Force convenience fee fully off: get_meta_values() line 1908–1909
+// auto-coerces convenience_fee_enabled to 1 if fee_type != 'none'.
+update_post_meta( $reservation_id, '_en_convenience_fee_enabled', 0 );
+update_post_meta( $reservation_id, '_en_convenience_fee_type', 'none' );
+ob_start();
+EEM_Reservation_Editor_Page::render();
+$rendered_off = ob_get_clean();
+// Structural slice from card-fees open to the next card- open
+$slice_off = function( $haystack ) {
+	$o = strpos( $haystack, 'id="card-fees"' );
+	$n = $o !== false ? strpos( $haystack, 'id="card-', $o + 5 ) : false;
+	return $o === false ? '' : substr( $haystack, $o, $n === false ? null : $n - $o );
+};
+c7c1_ok( "Desync C: section 'fees' header toggle renders eem-toggle--off when meta is 0",
+	false !== strpos( $slice_off( $rendered_off ), '<div class="eem-toggle eem-toggle--off"' ),
+	$pass, $fail, $log );
+update_post_meta( $reservation_id, '_en_convenience_fee_enabled', 1 );
+ob_start();
+EEM_Reservation_Editor_Page::render();
+$rendered_on = ob_get_clean();
+c7c1_ok( "Desync C: section 'fees' header toggle renders eem-toggle--on when meta is 1",
+	false !== strpos( $slice_off( $rendered_on ), '<div class="eem-toggle eem-toggle--on"' ),
+	$pass, $fail, $log );
+
+// ── [6d] JS — header-toggle click flips hidden input + error-toast surfaces server message ──
+echo "\n[6d] JS — toggle-click hidden-input flip + error-toast wiring\n";
+c7c1_ok( 'admin.js header-toggle handler flips data-eem-section-enabled hidden input',
+	false !== strpos( $js_src, 'data-eem-section-enabled="' ),
+	$pass, $fail, $log );
+c7c1_ok( 'admin.js error-response path renders server resp.data.message in toast',
+	(bool) preg_match( '/resp\.data\.message[\s\S]{0,200}eemSaveBarToast\([^)]*msg[^)]*error/', $js_src ),
+	$pass, $fail, $log );
+
+// ── [6e] CPT class — sanitize + validate + get_meta_values made public ──
+echo "\n[6e] CPT class — sanitize + validate + get_meta_values visibility flip\n";
+c7c1_ok( 'sanitize_meta_submission() is PUBLIC (was private; C7.C.1.1 flip)',
+	(new ReflectionMethod( 'EEM_Reservations_CPT', 'sanitize_meta_submission' ))->isPublic(),
+	$pass, $fail, $log );
+c7c1_ok( 'validate_meta_submission() is PUBLIC (was private; C7.C.1.1 flip)',
+	(new ReflectionMethod( 'EEM_Reservations_CPT', 'validate_meta_submission' ))->isPublic(),
+	$pass, $fail, $log );
+c7c1_ok( 'get_meta_values() is PUBLIC (was private; C7.C.1.1 flip)',
+	(new ReflectionMethod( 'EEM_Reservations_CPT', 'get_meta_values' ))->isPublic(),
+	$pass, $fail, $log );
+
+// ── [6f] ajax_save pre-validate code path ──────────────────────────
+echo "\n[6f] ajax_save pre-validate code path present\n";
+c7c1_ok( 'ajax_save calls cpt->sanitize_meta_submission BEFORE save_meta',
+	(bool) preg_match( '/sanitize_meta_submission\s*\([\s\S]{0,200}?validate_meta_submission\s*\([\s\S]{0,400}?save_meta/s', $page_src ),
+	$pass, $fail, $log );
+c7c1_ok( 'ajax_save returns 422 + validation_failed code on validation errors',
+	false !== strpos( $page_src, "'code'    => 'validation_failed'" )
+		&& false !== strpos( $page_src, '422' ),
 	$pass, $fail, $log );
 
 // ── [7] AJAX save: gating on en_reservation presence ───────────────
