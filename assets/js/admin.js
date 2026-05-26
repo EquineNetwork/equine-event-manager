@@ -1660,6 +1660,22 @@
 				var hidden = body2.querySelector('input[type="hidden"][data-eem-section-enabled="' + key + '"]');
 				if (hidden) { hidden.value = nowOn ? '0' : '1'; }
 			}
+			// C7.C.1.2 — disabling a section also collapses its body
+			// to header-only (no wasted vertical space, no implied
+			// interactability). Enabling re-expands. The chevron click
+			// handler still independently toggles collapse, so users
+			// can chevron-expand a disabled section to peek at filled
+			// data (which renders with the striped overlay applied
+			// above). `card` + `header` derived from the body's nearest
+			// ancestors so we don't depend on ID conventions.
+			var card2   = body2 ? body2.closest('.eem-reservation-editor-section') : null;
+			var header2 = card2 ? card2.querySelector('.eem-section-header') : null;
+			if (card2 && body2) {
+				// nowOn === true means user just turned the section OFF
+				card2.classList.toggle('eem-section-collapsed', nowOn);
+				body2.classList.toggle('eem-section-body--hidden', nowOn);
+				if (header2) { header2.classList.toggle('is-open', !nowOn); }
+			}
 			return;
 		}
 

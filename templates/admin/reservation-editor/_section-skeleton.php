@@ -68,17 +68,32 @@ if ( ! function_exists( 'eem_render_reservation_editor_section' ) ) {
 			return;
 		}
 
+		// C7.C.1.2 — disabled sections collapse to header-only at first
+		// render. effective_collapsed = !is_enabled || design_collapsed
+		// preserves Decision C: design-collapsed sections still default
+		// collapsed when enabled; disabling never overrides design
+		// intent in the more-open direction. Disabled-state striped
+		// overlay must also be applied at render time so the body
+		// renders correctly when the user expands a disabled section
+		// via chevron click (the JS click-handler used to be the sole
+		// source of --disabled, leaving first-render incorrect).
+		$is_disabled         = $args['enable_toggle'] && ! $args['is_enabled'];
+		$effective_collapsed = $is_disabled || $args['collapsed'];
+
 		$card_classes = 'eem-card eem-reservation-editor-section';
-		if ( $args['collapsed'] ) {
+		if ( $effective_collapsed ) {
 			$card_classes .= ' eem-section-collapsed';
 		}
 		$header_classes = 'eem-section-header';
-		if ( ! $args['collapsed'] ) {
+		if ( ! $effective_collapsed ) {
 			$header_classes .= ' is-open';
 		}
 		$body_classes = 'eem-section-body';
-		if ( $args['collapsed'] ) {
+		if ( $effective_collapsed ) {
 			$body_classes .= ' eem-section-body--hidden';
+		}
+		if ( $is_disabled ) {
+			$body_classes .= ' eem-section-body--disabled';
 		}
 		?>
 		<section class="<?php echo esc_attr( $card_classes ); ?>" id="card-<?php echo esc_attr( $args['key'] ); ?>">

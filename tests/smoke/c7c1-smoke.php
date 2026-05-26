@@ -371,6 +371,48 @@ c7c1_ok( "Desync C: section 'fees' header toggle renders eem-toggle--on when met
 	false !== strpos( $slice_off( $rendered_on ), '<div class="eem-toggle eem-toggle--on"' ),
 	$pass, $fail, $log );
 
+// ── [6c.bis] C7.C.1.2 — disabled section collapses to header-only ─
+echo "\n[6c.bis] C7.C.1.2 — disable-collapses-body wiring (render-time + JS)\n";
+// Build the fees slice when DISABLED (from $rendered_off above where
+// _en_convenience_fee_enabled and _en_convenience_fee_type=none).
+$fees_off = $slice_off( $rendered_off );
+c7c1_ok( "C7.C.1.2 render: disabled 'fees' card carries eem-section-collapsed",
+	false !== strpos( $fees_off, 'eem-section-collapsed' ),
+	$pass, $fail, $log );
+c7c1_ok( "C7.C.1.2 render: disabled 'fees' body carries eem-section-body--hidden (header-only)",
+	false !== strpos( $fees_off, 'eem-section-body eem-section-body--hidden' )
+		|| (bool) preg_match( '/class="eem-section-body[^"]*eem-section-body--hidden/', $fees_off ),
+	$pass, $fail, $log );
+c7c1_ok( "C7.C.1.2 render: disabled 'fees' body ALSO carries --disabled overlay (for chevron-expand peek)",
+	(bool) preg_match( '/class="eem-section-body[^"]*eem-section-body--disabled/', $fees_off ),
+	$pass, $fail, $log );
+c7c1_ok( "C7.C.1.2 render: disabled 'fees' header does NOT carry is-open (chevron collapsed)",
+	false === strpos( $fees_off, 'class="eem-section-header is-open"' ),
+	$pass, $fail, $log );
+
+// Enabled fees ($rendered_on) — body should be visible (no --hidden,
+// no --disabled), and the design_collapsed=true means it should be
+// collapsed-by-design even when enabled (Decision C preserved).
+$fees_on = $slice_off( $rendered_on );
+c7c1_ok( "C7.C.1.2 render: enabled 'fees' body has NO --disabled overlay",
+	0 === preg_match( '/class="eem-section-body[^"]*eem-section-body--disabled/', $fees_on ),
+	$pass, $fail, $log );
+
+// JS handler — enable-toggle click syncs all three collapse classes
+c7c1_ok( 'C7.C.1.2 JS: enable-toggle handler toggles eem-section-collapsed on the card',
+	(bool) preg_match( '/data-eem-action="reservation-editor-toggle-enabled[\s\S]{0,2500}?card2\.classList\.toggle\(\s*[\'"]eem-section-collapsed[\'"]/', $js_src ),
+	$pass, $fail, $log );
+c7c1_ok( 'C7.C.1.2 JS: enable-toggle handler toggles eem-section-body--hidden on the body',
+	(bool) preg_match( '/data-eem-action="reservation-editor-toggle-enabled[\s\S]{0,2500}?body2\.classList\.toggle\(\s*[\'"]eem-section-body--hidden[\'"]/', $js_src ),
+	$pass, $fail, $log );
+c7c1_ok( 'C7.C.1.2 JS: enable-toggle handler flips header is-open',
+	(bool) preg_match( '/data-eem-action="reservation-editor-toggle-enabled[\s\S]{0,2500}?header2\.classList\.toggle\(\s*[\'"]is-open[\'"]/', $js_src ),
+	$pass, $fail, $log );
+// Chevron handler still independently toggles collapse — regression guard
+c7c1_ok( 'C7.C.1.2 JS: chevron-collapse handler still independent of enable handler (regression)',
+	(bool) preg_match( '/data-eem-action="reservation-editor-toggle-collapse[\s\S]{0,400}?card\.classList\.toggle\(\s*[\'"]eem-section-collapsed[\'"]/', $js_src ),
+	$pass, $fail, $log );
+
 // ── [6d] JS — header-toggle click flips hidden input + error-toast surfaces server message ──
 echo "\n[6d] JS — toggle-click hidden-input flip + error-toast wiring\n";
 c7c1_ok( 'admin.js header-toggle handler flips data-eem-section-enabled hidden input',
