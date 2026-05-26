@@ -182,6 +182,8 @@ class EEM_Reservation_Editor_Page {
 		$wired_map = array(
 			'description' => '_section-description.php',
 			'checkin'     => '_section-checkin.php',
+			'stall'       => '_section-stall.php',     // C7.C.2.1 — rules body (Layout summary widget → C7.C.2.2; Row Builder → C8)
+			'rv'          => '_section-rv.php',        // C7.C.2.1 — rules body (Lot Zones + Add-Ons + Lot Layout summary → C7.C.2.2)
 			'addons'      => '_section-addons.php',
 			'group'       => '_section-group.php',
 			'fees'        => '_section-fees.php',
@@ -189,7 +191,7 @@ class EEM_Reservation_Editor_Page {
 		);
 		if ( ! isset( $wired_map[ $key ] ) ) {
 			return '<p class="eem-field-hint">' .
-				esc_html__( 'Section body wires in a later C7 sub-chunk (C7.C.2 for Stall + RV, C7.D for Event Day Info, C7.E for Cancellation Policy).', 'equine-event-manager' ) .
+				esc_html__( 'Section body wires in a later C7 sub-chunk (C7.C.2.2 for Lot Zones + summary widgets, C7.D for Event Day Info, C7.E for Cancellation Policy).', 'equine-event-manager' ) .
 				'</p>';
 		}
 		ob_start();
