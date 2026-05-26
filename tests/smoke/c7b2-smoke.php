@@ -140,13 +140,19 @@ c7b2_ok( 'save bar carries _eem_editor_nonce input',
 	(bool) preg_match( '/<input[^>]+name="_eem_editor_nonce"[^>]+value="[a-f0-9]{10}"/', $draft_html ),
 	$pass, $fail, $log );
 
-// ── [6] Save bar CSS — sticky-bottom + navy band ───────────────────
-echo "\n[6] Save bar CSS — sticky-bottom + navy band\n";
-c7b2_ok( '.eem-save-bar uses position:sticky bottom:0',
-	(bool) preg_match( '/\.eem-save-bar\s*\{[^}]*position\s*:\s*sticky[^}]*bottom\s*:\s*0/s', $css_src ),
+// ── [6] Save bar CSS — fixed-bottom (C7.B.2.1) + navy band ──────────
+echo "\n[6] Save bar CSS — fixed-bottom (C7.B.2.1) + navy band\n";
+c7b2_ok( '.eem-save-bar uses position:fixed bottom:0 (C7.B.2.1 — switched from sticky)',
+	(bool) preg_match( '/\.eem-save-bar\s*\{[^}]*position\s*:\s*fixed[^}]*bottom\s*:\s*0/s', $css_src ),
 	$pass, $fail, $log );
 c7b2_ok( '.eem-save-bar uses navy background',
 	(bool) preg_match( '/\.eem-save-bar\s*\{[^}]*background\s*:\s*var\(\s*--eem-navy\s*\)/s', $css_src ),
+	$pass, $fail, $log );
+c7b2_ok( '.eem-reservation-editor-body has padding-bottom for fixed save bar clearance (C7.B.2.1)',
+	(bool) preg_match( '/\.eem-reservation-editor-body\s*\{\s*padding-bottom\s*:\s*\d+px/', $css_src ),
+	$pass, $fail, $log );
+c7b2_ok( 'JS enable-toggle handler runs BEFORE collapse handler (C7.B.2.1 handler-ordering fix)',
+	(bool) preg_match( '/var enable = t\.closest\([^)]+reservation-editor-toggle-enabled[^)]+\);\s*if\s*\(\s*enable\s*\)\s*\{[\s\S]+?var collapse = t\.closest\([^)]+reservation-editor-toggle-collapse/', $js_src ),
 	$pass, $fail, $log );
 
 // ── [7] Linked Event modal partial renders ─────────────────────────

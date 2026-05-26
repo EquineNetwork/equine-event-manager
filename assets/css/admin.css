@@ -5683,21 +5683,41 @@ a.eem-reservation-editor-meta-change-link:hover {
 	color: var(--eem-electric-hover);
 }
 
-/* Save bar — sticky-bottom navy strip with Cancel + primary buttons */
+/* Save bar — fixed-bottom navy strip with Cancel + primary buttons.
+   C7.B.2.1: switched from position:sticky to position:fixed —
+   sticky requires the scrolling ancestor to be the immediate scroll
+   container, but in WP admin the scroll lives on <body>/#wpbody-
+   content, not on .eem-reservation-editor-body. Fixed positioning
+   gives true float-at-viewport-bottom regardless of the scroll
+   container nesting. The body wrapper gets bottom padding equal to
+   the save bar height so content doesn't hide underneath. */
 .eem-save-bar {
-	position: sticky;
+	position: fixed;
 	bottom: 0;
+	left: 160px;  /* WP admin sidebar width */
+	right: 0;
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 	gap: 12px;
-	padding: 12px 18px;
+	padding: 12px 22px;
 	background: var(--eem-navy);
 	color: var(--eem-text-on-navy);
-	border-radius: var(--eem-radius);
-	margin-top: 4px;
-	box-shadow: 0 -2px 8px rgba(3, 27, 78, 0.08);
+	box-shadow: 0 -2px 8px rgba(3, 27, 78, 0.18);
 	z-index: var(--eem-z-sticky);
+}
+/* Body bottom-padding so content above the fixed save bar isn't
+   obscured. Save bar height ≈ 60px; pad 80px for breathing room. */
+.eem-reservation-editor-body {
+	padding-bottom: 80px;
+}
+/* Folded WP admin sidebar (collapsed left rail, ≤960 traditionally) */
+@media (max-width: 960px) {
+	.eem-save-bar { left: 36px; }
+}
+/* Mobile WP admin hides the sidebar entirely */
+@media (max-width: 782px) {
+	.eem-save-bar { left: 0; padding: 10px 14px; }
 }
 .eem-save-bar__primary {
 	display: flex;

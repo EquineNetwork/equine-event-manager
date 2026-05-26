@@ -1630,23 +1630,13 @@
 		var t = ev.target;
 		if (!t || !t.closest) return;
 
-		var collapse = t.closest('[data-eem-action="reservation-editor-toggle-collapse"]');
-		if (collapse) {
-			// Ignore clicks bubbling from the enable-toggle inside the header.
-			if (t.closest('[data-eem-action="reservation-editor-toggle-enabled"]')) {
-				return;
-			}
-			var sectionKey = collapse.dataset.eemSection;
-			if (!sectionKey) return;
-			var card = document.getElementById('card-' + sectionKey);
-			var body = document.getElementById('body-' + sectionKey);
-			if (!card || !body) return;
-			card.classList.toggle('eem-section-collapsed');
-			body.classList.toggle('eem-section-body--hidden');
-			collapse.classList.toggle('is-open');
-			return;
-		}
-
+		// C7.B.2.1 — check enable BEFORE collapse. The enable toggle
+		// is nested inside the section-header (which carries the
+		// collapse action), so a click on the toggle matches BOTH
+		// selectors via t.closest(). Previous ordering returned out of
+		// the entire handler in the collapse branch when it noticed
+		// the click came from an enable toggle — meaning the enable
+		// handler below it never fired. Swap the order.
 		var enable = t.closest('[data-eem-action="reservation-editor-toggle-enabled"]');
 		if (enable) {
 			ev.stopPropagation(); // don't trigger the parent collapse handler
@@ -1661,6 +1651,19 @@
 			if (body2) {
 				body2.classList.toggle('eem-section-body--disabled', nowOn);
 			}
+			return;
+		}
+
+		var collapse = t.closest('[data-eem-action="reservation-editor-toggle-collapse"]');
+		if (collapse) {
+			var sectionKey = collapse.dataset.eemSection;
+			if (!sectionKey) return;
+			var card = document.getElementById('card-' + sectionKey);
+			var body = document.getElementById('body-' + sectionKey);
+			if (!card || !body) return;
+			card.classList.toggle('eem-section-collapsed');
+			body.classList.toggle('eem-section-body--hidden');
+			collapse.classList.toggle('is-open');
 		}
 	});
 
