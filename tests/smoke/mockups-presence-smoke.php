@@ -93,8 +93,13 @@ ok(
 // ── [3] Bonus: no stray .html files we forgot to inventory ──────────
 echo "\n[3] No undocumented mockup files in .mockups/\n";
 $expected_set = array_keys( $canonical );
+// `.archive/` (post-2026-05 addition) holds version-controlled retired
+// mockups — see `.mockups/.archive/README.md`. Excluded from the stray-
+// file inventory check because it's intentionally separate from the
+// active canonical set; promotions back into the active set go through
+// a fresh canonical-mockup import, not a scandir surprise.
 $actual_files = array_filter( scandir( $mockups_dir ), function ( $f ) {
-	return '.' !== $f && '..' !== $f && '.DS_Store' !== $f;
+	return '.' !== $f && '..' !== $f && '.DS_Store' !== $f && '.archive' !== $f;
 } );
 $stray = array_diff( $actual_files, $expected_set );
 ok(
