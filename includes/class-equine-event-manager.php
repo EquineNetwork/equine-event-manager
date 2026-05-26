@@ -154,7 +154,15 @@ class EEM_Plugin {
 		add_action( 'init', array( 'EEM_Activator', 'maybe_upgrade' ) );
 		add_action( 'init', array( 'EEM_Activator', 'maybe_refresh_runtime_rewrite_rules' ), 30 );
 		add_action( 'init', array( $this->reservations_cpt, 'register_post_type' ) );
-		add_action( 'add_meta_boxes_en_reservation', array( $this->reservation_editor, 'register_meta_boxes' ) );
+		// C7.C.1 — meta-box registration retired. The Reservation Editor
+		// is now a custom render page (EEM_Reservation_Editor_Page); the
+		// legacy EEM_Reservation_Editor class is kept ONLY as a "save +
+		// shell adapter" for save_meta() / body-class filter until the
+		// full migration completes at end of C7 lineage. The
+		// `add_meta_boxes_en_reservation` action wiring is intentionally
+		// absent — both the static smoke (no add_meta_box() calls remain
+		// in the editor class) and the runtime smoke (no boxes register
+		// when the action fires) protect the retirement.
 		add_action( 'save_post_en_reservation', array( $this->reservations_cpt, 'save_meta' ), 10, 2 );
 		add_action( 'save_post_en_reservation', array( $this->reservations_cpt, 'sync_shortcode_to_linked_event_after_save' ), 20, 2 );
 		// C6.6 / RES-ARCH-1: write the source-event start_date sort cache after

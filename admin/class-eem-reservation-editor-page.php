@@ -75,7 +75,7 @@ class EEM_Reservation_Editor_Page {
 		) );
 		?>
 		<div class="eem-reservation-editor-body" data-eem-reservation-id="<?php echo esc_attr( (string) $reservation_id ); ?>">
-			<?php self::render_section_skeletons(); ?>
+			<?php self::render_section_skeletons( $reservation_id ); ?>
 			<?php
 			// C7.B.2: save bar — sticky-bottom (Decision A), navy band
 			// (Decision B), button labels driven by post_status
@@ -98,19 +98,26 @@ class EEM_Reservation_Editor_Page {
 	}
 
 	/**
-	 * Render the 10 section card skeletons in mockup order. Each
-	 * section's body is a placeholder string per Decision G; real
-	 * bodies wire in C7.C / C7.D / C7.E.
+	 * Render the 10 section card skeletons in mockup order. C7.C.1
+	 * wires real bodies for 6 sections (description, checkin, addons,
+	 * group, fees, agreement); stall + rv defer to C7.C.2; eventday +
+	 * cancellation defer to C7.D + C7.E respectively. Per Decision A,
+	 * each section dispatches to a render_*_body() method that returns
+	 * captured HTML; per Decision B, body partials receive a pre-
+	 * collected `$data` array (no inline get_post_meta()).
 	 *
+	 * @param int $reservation_id
 	 * @return void
 	 */
-	private static function render_section_skeletons() {
-		$placeholder_body = '<p class="eem-field-hint">' .
-			esc_html__( 'Section body wires in a later C7 sub-chunk (C7.C for existing fields, C7.D for Event Day Info, C7.E for Cancellation Policy).', 'equine-event-manager' ) .
-			'</p>';
+	private static function render_section_skeletons( $reservation_id ) {
+		$reservations_cpt = new EEM_Reservations_CPT();
+		$data             = $reservations_cpt->get_editor_meta_values( $reservation_id );
+		$addons_context   = $reservations_cpt->get_editor_general_addons_context( $reservation_id );
+		$addons           = isset( $addons_context['addons'] ) ? (array) $addons_context['addons'] : array();
 
 		$sections = self::section_definitions();
 		foreach ( $sections as $section ) {
+			$body_html = self::render_section_body( $section['key'], $data, $addons, $reservations_cpt );
 			eem_render_reservation_editor_section( array(
 				'key'           => $section['key'],
 				'title'         => $section['title'],
@@ -118,9 +125,40 @@ class EEM_Reservation_Editor_Page {
 				'icon_key'      => $section['icon_key'], // C7.B.3 — Feather glyph
 				'enable_toggle' => $section['enable_toggle'],
 				'collapsed'     => $section['collapsed'],
-				'body_html'     => $placeholder_body,
+				'body_html'     => $body_html,
 			) );
 		}
+	}
+
+	/**
+	 * Dispatch a section key to its body partial and return the rendered
+	 * HTML (C7.C.1 Decision A — per-method dispatch). Sections still
+	 * awaiting wiring fall through to a placeholder so the chrome stays
+	 * intact while the data layer lands across C7.C.2 / C7.D / C7.E.
+	 *
+	 * @param string                              $key
+	 * @param array<string, mixed>                $data
+	 * @param array<int, array<string, mixed>>    $addons
+	 * @param EEM_Reservations_CPT                $reservations_cpt
+	 * @return string  Pre-rendered HTML; trusted by section-skeleton wp_kses_post pass.
+	 */
+	private static function render_section_body( $key, $data, $addons, $reservations_cpt ) {
+		$wired_map = array(
+			'description' => '_section-description.php',
+			'checkin'     => '_section-checkin.php',
+			'addons'      => '_section-addons.php',
+			'group'       => '_section-group.php',
+			'fees'        => '_section-fees.php',
+			'agreement'   => '_section-agreement.php',
+		);
+		if ( ! isset( $wired_map[ $key ] ) ) {
+			return '<p class="eem-field-hint">' .
+				esc_html__( 'Section body wires in a later C7 sub-chunk (C7.C.2 for Stall + RV, C7.D for Event Day Info, C7.E for Cancellation Policy).', 'equine-event-manager' ) .
+				'</p>';
+		}
+		ob_start();
+		require EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/' . $wired_map[ $key ];
+		return (string) ob_get_clean();
 	}
 
 	/**
@@ -223,7 +261,19 @@ class EEM_Reservation_Editor_Page {
 			}
 		}
 
-		// C7.C: per-section meta saves wire here.
+		// C7.C.1 — Decision C — reuse the legacy 93-field
+		// EEM_Reservations_CPT::save_meta() handler rather than rewriting
+		// per-section sanitization. Inject the nonce that save_meta()
+		// expects (we've already passed our own AJAX nonce + capability
+		// check above), then hand off. `$_POST['en_reservation']` is
+		// already populated by the JS dispatcher which serializes every
+		// `en_reservation[*]` field in the editor body.
+		if ( isset( $_POST['en_reservation'] ) && is_array( $_POST['en_reservation'] ) ) {
+			$_POST['equine_event_manager_reservation_meta_nonce'] = wp_create_nonce( 'equine_event_manager_save_reservation_meta' );
+			$cpt          = new EEM_Reservations_CPT();
+			$refreshed    = get_post( $reservation_id );
+			$cpt->save_meta( $reservation_id, $refreshed );
+		}
 
 		wp_send_json_success( array(
 			'reservation_id' => $reservation_id,

@@ -97,7 +97,15 @@ if ( ! function_exists( 'eem_render_reservation_editor_section' ) ) {
 				</div>
 			</div>
 			<div class="<?php echo esc_attr( $body_classes ); ?>" id="body-<?php echo esc_attr( $args['key'] ); ?>">
-				<?php echo wp_kses_post( $args['body_html'] ); ?>
+				<?php
+				// C7.C.1 — body_html is author-controlled output from the
+				// per-section partials under templates/admin/reservation-
+				// editor/_section-*.php (pre-escaped per-field via esc_attr
+				// / esc_html inside each partial). wp_kses_post strips
+				// <template>, structured form chrome, and select option
+				// trees we need; direct echo is correct here.
+				echo $args['body_html']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pre-escaped per-field by the caller partial.
+				?>
 			</div>
 		</section>
 		<?php

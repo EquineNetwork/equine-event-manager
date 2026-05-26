@@ -259,111 +259,27 @@ class EEM_Reservation_Editor {
 	}
 
 	/**
-	 * Register reservation setup meta boxes.
+	 * RETIRED in C7.C.1 — meta-box registration is no longer the editor
+	 * surface. The Reservation Editor is now a custom render page
+	 * (EEM_Reservation_Editor_Page); this method is intentionally a
+	 * no-op so any stray `add_meta_boxes_en_reservation` action wiring
+	 * registers zero boxes. The original 11 add-meta-box registrations
+	 * have been deleted; do NOT re-add them without a full architectural
+	 * conversation. The render_*_meta_box() callbacks below remain only
+	 * because nested workspace / event-link rendering still references
+	 * shared markup; full deletion happens at end of C7 lineage when
+	 * nothing left calls EEM_Reservation_Editor for render.
 	 *
+	 * @deprecated 2.4.0 No longer registers boxes. See EEM_Reservation_Editor_Page.
 	 * @param WP_Post|null $post Current post.
 	 * @return void
 	 */
 	public function register_meta_boxes( $post = null ) {
-		add_meta_box(
-			'equine_event_manager_event_link',
-			__( 'Event Link', 'equine-event-manager' ),
-			array( $this, 'render_event_link_meta_box' ),
-			EEM_Reservations_CPT::POST_TYPE,
-			'side',
-			'high'
-		);
-
-		add_meta_box(
-			'equine_event_manager_reservation_description',
-			__( 'Reservation Description', 'equine-event-manager' ),
-			array( $this, 'render_reservation_description_meta_box' ),
-			EEM_Reservations_CPT::POST_TYPE,
-			'normal',
-			'high'
-		);
-
-		add_meta_box(
-			'equine_event_manager_available_dates',
-			__( 'Available Reservation Dates', 'equine-event-manager' ),
-			array( $this, 'render_available_dates_meta_box' ),
-			EEM_Reservations_CPT::POST_TYPE,
-			'normal',
-			'high'
-		);
-
-		add_meta_box(
-			'equine_event_manager_checkin_checkout',
-			__( 'Check-In/Check-Out', 'equine-event-manager' ),
-			array( $this, 'render_checkin_checkout_meta_box' ),
-			EEM_Reservations_CPT::POST_TYPE,
-			'normal',
-			'default'
-		);
-
-		add_meta_box(
-			'equine_event_manager_stall_rules',
-			__( 'Stall Reservations', 'equine-event-manager' ),
-			array( $this, 'render_stall_rules_meta_box' ),
-			EEM_Reservations_CPT::POST_TYPE,
-			'normal',
-			'default'
-		);
-
-		add_meta_box(
-			'equine_event_manager_rv_rules',
-			__( 'RV Reservations', 'equine-event-manager' ),
-			array( $this->reservations_cpt, 'render_rv_rules_meta_box' ),
-			EEM_Reservations_CPT::POST_TYPE,
-			'normal',
-			'default'
-		);
-
-		add_meta_box(
-			'equine_event_manager_general_addons',
-			__( 'General Add-Ons', 'equine-event-manager' ),
-			array( $this, 'render_general_addons_meta_box' ),
-			EEM_Reservations_CPT::POST_TYPE,
-			'normal',
-			'default'
-		);
-
-		add_meta_box(
-			'equine_event_manager_group_reservations',
-			__( 'Group Reservations', 'equine-event-manager' ),
-			array( $this, 'render_group_reservations_meta_box' ),
-			EEM_Reservations_CPT::POST_TYPE,
-			'normal',
-			'default'
-		);
-
-		add_meta_box(
-			'equine_event_manager_venue_map',
-			__( 'Venue Map', 'equine-event-manager' ),
-			array( $this, 'render_venue_map_meta_box' ),
-			EEM_Reservations_CPT::POST_TYPE,
-			'normal',
-			'default'
-		);
-
-		add_meta_box(
-			'equine_event_manager_venue_agreement',
-			__( 'Agreement', 'equine-event-manager' ),
-			array( $this, 'render_venue_agreement_meta_box' ),
-			EEM_Reservations_CPT::POST_TYPE,
-			'normal',
-			'default'
-		);
-
-		add_meta_box(
-			'equine_event_manager_fees',
-			__( 'Fees', 'equine-event-manager' ),
-			array( $this, 'render_fees_meta_box' ),
-			EEM_Reservations_CPT::POST_TYPE,
-			'normal',
-			'default'
-		);
-
+		// Intentional no-op. See docblock above. C7.C.1 smoke Decision F
+		// guard asserts both the static-source absence of the
+		// add-meta-box function call in this file AND the runtime
+		// absence of registered boxes when the action fires.
+		return;
 	}
 
 	/**

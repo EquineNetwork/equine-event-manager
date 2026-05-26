@@ -191,9 +191,14 @@ $toggle_map = array(
 	'cancellation' => true,
 );
 foreach ( $toggle_map as $key => $expect_toggle ) {
-	$pattern = '/id="card-' . preg_quote( $key, '/' ) . '"[\s\S]{0,1500}<\/section>/';
-	preg_match( $pattern, $html, $section_html );
-	$has_toggle = isset( $section_html[0] ) && str_contains( $section_html[0], 'eem-enable-toggle' );
+	// Capture section card content from this card's open until the next
+	// section card open (or end-of-html). C7.C.1 expanded section bodies
+	// well beyond the original 1500-char window, so we now compute the
+	// section boundary structurally rather than by char count.
+	$open_pos = strpos( $html, 'id="card-' . $key . '"' );
+	$next_pos = $open_pos !== false ? strpos( $html, 'id="card-', $open_pos + 5 ) : false;
+	$slice    = $open_pos !== false ? substr( $html, $open_pos, ( $next_pos !== false ? $next_pos - $open_pos : null ) ) : '';
+	$has_toggle = '' !== $slice && str_contains( $slice, 'eem-enable-toggle' );
 	c7b1_ok( "section '{$key}' enable-toggle present == " . ( $expect_toggle ? 'true' : 'false' ),
 		$has_toggle === $expect_toggle,
 		$pass, $fail, $log );

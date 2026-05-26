@@ -1702,15 +1702,40 @@
 		}
 	}
 
+	/* C7.C.1 — serialize every `en_reservation[*]` field in the editor
+	   body so the AJAX dispatcher can hand the payload to the legacy
+	   EEM_Reservations_CPT::save_meta() 93-field handler. Unchecked
+	   checkboxes / radios deliberately skipped to match WP's native
+	   form-submit behavior — save_meta()'s sanitizer treats absent
+	   `*_enabled` keys as "off". */
+	function eemCollectEditorFields() {
+		var body = document.querySelector('.eem-reservation-editor-body');
+		if (!body) return [];
+		var out = [];
+		body.querySelectorAll('input[name^="en_reservation"], select[name^="en_reservation"], textarea[name^="en_reservation"]').forEach(function (el) {
+			if ((el.type === 'checkbox' || el.type === 'radio') && !el.checked) return;
+			out.push([el.name, el.value]);
+		});
+		return out;
+	}
+
 	function eemDispatchSave(kind) {
 		var bar = document.querySelector('.eem-save-bar');
 		if (!bar) return;
 		var rid = bar.getAttribute('data-eem-reservation-id');
 		if (!rid) return;
-		eemReservationEditorPostAjax('eem_reservation_editor_save', {
-			reservation_id: rid,
-			save_kind: kind
-		}).then(function (resp) {
+		var body = new URLSearchParams();
+		body.set('action', 'eem_reservation_editor_save');
+		body.set('_eem_editor_nonce', eemReservationEditorNonce());
+		body.set('reservation_id', rid);
+		body.set('save_kind', kind);
+		eemCollectEditorFields().forEach(function (pair) { body.append(pair[0], pair[1]); });
+		fetch(EEM_EDITOR_AJAX_URL, {
+			method: 'POST',
+			credentials: 'same-origin',
+			headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+			body: body.toString()
+		}).then(function (r) { return r.json(); }).then(function (resp) {
 			if (resp && resp.success) {
 				eemSaveBarToast(resp.data && resp.data.message ? resp.data.message : 'Saved.', 'success');
 				eemUpdateSaveBarButtons(resp.data && resp.data.primary_action ? resp.data.primary_action : 'draft');
@@ -1746,6 +1771,84 @@
 		if (t.closest('[data-eem-action="reservation-editor-publish"]'))    { ev.preventDefault(); eemDispatchSave('publish');    return; }
 		if (t.closest('[data-eem-action="reservation-editor-update"]'))     { ev.preventDefault(); eemDispatchSave('update');     return; }
 		/* Cancel anchor is a real href — let the browser navigate, no dispatch needed */
+	});
+
+	/* C7.C.1 — Repeating-row helper handlers (add + remove). Shared
+	   surface so C7.C.2's Stall Rows / RV Lot Zones reuse the same
+	   wiring. Each helper container exposes its config via
+	   `data-eem-repeating-*` attrs (template id + tbody id). New row
+	   indices are derived from `tbody.children.length` to keep
+	   `name="…[N][field]"` stable across add + remove cycles. */
+	document.addEventListener('click', function (ev) {
+		var t = ev.target;
+		if (!t || !t.closest) return;
+
+		var addBtn = t.closest('[data-eem-action="reservation-editor-add-repeating-row"]');
+		if (addBtn) {
+			ev.preventDefault();
+			var container = addBtn.closest('.eem-repeating-row-helper');
+			if (!container) return;
+			var templateId = container.getAttribute('data-eem-repeating-template');
+			var tbodyId    = container.getAttribute('data-eem-repeating-tbody');
+			var template   = document.getElementById(templateId);
+			var tbody      = document.getElementById(tbodyId);
+			if (!template || !tbody) return;
+			var clone = template.content ? template.content.cloneNode(true) : null;
+			if (!clone) {
+				// Fallback for browsers without <template>.content support.
+				var wrapper = document.createElement('tbody');
+				wrapper.innerHTML = template.innerHTML;
+				clone = wrapper.firstElementChild;
+			}
+			var nextIndex = tbody.children.length;
+			// Rewrite __index__ tokens to the new row index across every
+			// attribute on every descendant of the cloned row.
+			var walker = document.createTreeWalker(clone, NodeFilter.SHOW_ELEMENT, null, false);
+			var nodes = [];
+			var n;
+			while ((n = walker.nextNode())) { nodes.push(n); }
+			nodes.forEach(function (node) {
+				Array.prototype.slice.call(node.attributes || []).forEach(function (attr) {
+					if (attr.value && attr.value.indexOf('__index__') !== -1) {
+						node.setAttribute(attr.name, attr.value.split('__index__').join(String(nextIndex)));
+					}
+				});
+			});
+			tbody.appendChild(clone);
+			return;
+		}
+
+		var removeBtn = t.closest('[data-eem-action="reservation-editor-remove-repeating-row"]');
+		if (removeBtn) {
+			ev.preventDefault();
+			var row = removeBtn.closest('tr');
+			if (row && row.parentNode) { row.parentNode.removeChild(row); }
+			return;
+		}
+	});
+
+	/* C7.C.1 — Fee-type visibility helper. The Convenience Fee section's
+	   `[convenience_fee_type]` select toggles between None / Flat /
+	   Percentage. The render_fee_value_row() helper outputs both $ and
+	   % flavors with corresponding row classes; we show only the row
+	   matching the current selection. None hides both. */
+	function eemApplyFeeTypeVisibility(select) {
+		if (!select) return;
+		var value = select.value;
+		var scope = select.closest('.eem-editor-fields') || document;
+		var flatRow    = scope.querySelector('.eem-fee-value-row--flat');
+		var percentRow = scope.querySelector('.eem-fee-value-row--percentage');
+		if (flatRow)    { flatRow.style.display    = ('flat' === value)       ? '' : 'none'; }
+		if (percentRow) { percentRow.style.display = ('percentage' === value) ? '' : 'none'; }
+	}
+	document.addEventListener('change', function (ev) {
+		var t = ev.target;
+		if (!t || !t.closest) return;
+		var sel = t.closest('[data-eem-action="reservation-editor-fee-type-change"]');
+		if (sel) { eemApplyFeeTypeVisibility(sel); }
+	});
+	document.addEventListener('DOMContentLoaded', function () {
+		document.querySelectorAll('[data-eem-action="reservation-editor-fee-type-change"]').forEach(eemApplyFeeTypeVisibility);
 	});
 
 	/* Linked Event modal — launcher + source-mode picker + typeahead + Save */
