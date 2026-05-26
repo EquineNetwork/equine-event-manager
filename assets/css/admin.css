@@ -6000,3 +6000,178 @@ a.eem-reservation-editor-meta-change-link:hover {
 		padding: 8px 12px;
 	}
 }
+
+/* ═════════════════════════════════════════════════════════════════
+   C7.X — Mockup-canonical chrome primitives (Build to Mockup, Period).
+   Ports the editor mockup's full primitive set verbatim (with eem-
+   prefix). Source: .mockups/edit_reservation_page.html <style> block,
+   walked top to bottom. Each rule's mockup line number cited inline
+   so future audits can verify against source.
+   ═════════════════════════════════════════════════════════════════ */
+
+/* ── Plugin-wrap chrome (mockup line 43) ── */
+.eem-plugin-wrap { background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; overflow: hidden; }
+.eem-plugin-header { padding: 18px 22px; border-bottom: 1px solid #dcdcde; }
+.eem-plugin-title { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; color: var(--eem-navy); line-height: 1.2; margin-bottom: 4px; }
+.eem-plugin-subtitle { font-size: 13px; color: var(--eem-text-muted); line-height: 1.45; margin-bottom: 8px; }
+.eem-plugin-meta-line { font-size: 13px; color: var(--eem-text-muted); display: flex; gap: 18px; flex-wrap: wrap; margin-top: 6px; }
+.eem-plugin-meta-line .eem-meta-label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #8c8f94; display: block; margin-bottom: 2px; }
+.eem-plugin-meta-line .eem-meta-value { font-size: 13.5px; font-weight: 600; color: var(--eem-navy); }
+.eem-plugin-meta-line a.eem-meta-value { color: var(--eem-navy); }
+.eem-plugin-meta-line a.eem-meta-value:hover { color: var(--eem-electric); }
+
+/* ── Edit body 2-column grid + right rail (mockup line 360) ── */
+.eem-edit-body { padding: 18px 22px; display: grid; grid-template-columns: 1fr 300px; gap: 18px; align-items: start; background: #fff; }
+.eem-edit-main { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.eem-edit-rail { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 44px; }
+
+/* ── Rail cards (mockup line 235) ── */
+.eem-rail-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden; }
+.eem-rail-header { padding: 11px 16px; border-bottom: 1px solid #dcdcde; background: #f3f4f5; display: flex; align-items: center; justify-content: space-between; }
+.eem-rail-title { font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 700; color: var(--eem-navy); }
+.eem-rail-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.eem-rail-hint { font-size: 12.5px; color: var(--eem-text-muted); line-height: 1.5; margin-bottom: 6px; }
+
+/* ── Publish-meta rows in rail (mockup line 241) ── */
+.eem-publish-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--eem-text); }
+.eem-publish-row svg { width: 14px; height: 14px; color: var(--eem-text-muted); flex-shrink: 0; }
+.eem-publish-row strong { color: var(--eem-navy); font-weight: 600; }
+.eem-publish-row a { color: var(--eem-electric); font-size: 12px; font-weight: 600; margin-left: auto; }
+.eem-publish-row a:hover { color: #1257d1; }
+
+/* ── Rail buttons (mockup line 248) ── */
+.eem-btn-preview { width: 100%; background: #fff; color: var(--eem-electric); border: 1px solid #c0d8ff; padding: 9px; border-radius: 4px; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 4px; text-decoration: none; }
+.eem-btn-preview:hover { background: #EEF4FF; border-color: var(--eem-electric); }
+.eem-btn-preview svg { width: 13px; height: 13px; }
+.eem-btn-save-draft { width: 100%; background: #fff; color: var(--eem-text); border: 1px solid #8c8f94; padding: 9px; border-radius: 4px; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; }
+.eem-btn-save-draft:hover { background: #f6f7f7; }
+.eem-btn-update { width: 100%; background: var(--eem-electric); color: #fff; border: 1px solid var(--eem-electric); padding: 10px; border-radius: 4px; font-size: 13.5px; font-weight: 600; font-family: inherit; cursor: pointer; }
+.eem-btn-update:hover { background: #1257d1; border-color: #1257d1; }
+.eem-btn-danger-sm { width: 100%; background: #fff; color: #b91c1c; border: 1px solid #fecaca; padding: 8px; border-radius: 4px; font-size: 12.5px; font-weight: 600; font-family: inherit; cursor: pointer; }
+.eem-btn-danger-sm:hover { background: #fef2f2; }
+
+/* ── Event Link rail card (mockup line 260) ── */
+.eem-event-search { width: 100%; padding: 8px 12px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 13px; font-family: inherit; color: var(--eem-text); background: #fff; outline: none; margin-bottom: 8px; }
+.eem-event-search:focus { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
+.eem-event-linked { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: #f3f4f5; border: 1px solid #dcdcde; border-radius: 4px; font-size: 13px; gap: 8px; }
+.eem-event-linked-name { font-weight: 600; color: var(--eem-navy); font-size: 13px; }
+.eem-event-linked-name a { color: var(--eem-navy); }
+.eem-event-linked-name a:hover { color: var(--eem-electric); }
+.eem-event-linked-date { font-size: 11.5px; color: var(--eem-text-muted); margin-top: 2px; }
+.eem-event-unlink { font-size: 12px; color: #b91c1c; cursor: pointer; font-weight: 600; white-space: nowrap; background: none; border: none; padding: 0; font-family: inherit; }
+.eem-event-unlink:hover { color: #991b1b; }
+
+/* ── Shortcode rail card (mockup line 270) ── */
+.eem-code-box { background: #f3f4f5; border: 1px solid #dcdcde; border-radius: 4px; padding: 9px 12px; font-family: monospace; font-size: 13px; color: var(--eem-text); word-break: break-all; }
+
+/* ── Sticky mobile save (mockup line 275) ── */
+.eem-sticky-save { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #dcdcde; padding: 12px 16px; z-index: 200; gap: 8px; }
+.eem-sticky-save .eem-btn-update, .eem-sticky-save .eem-btn-save-draft { width: auto; flex: 1; }
+
+/* ── Layout summary (Stall + RV read-only widget, mockup line 170) ── */
+.eem-layout-summary { background: #f3f4f5; border: 1px solid #dcdcde; border-radius: 4px; padding: 16px 18px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.eem-layout-summary-left { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.eem-layout-summary-stat { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 700; color: var(--eem-navy); }
+.eem-layout-summary-stat-num { color: var(--eem-electric); }
+.eem-layout-summary-meta { font-size: 12.5px; color: var(--eem-text-muted); display: flex; gap: 12px; flex-wrap: wrap; }
+.eem-layout-summary-meta strong { color: var(--eem-navy); font-weight: 600; }
+
+/* Stub button with "C8" corner badge (mockup line 178) */
+.eem-btn-manage-layout { padding: 8px 16px; border: 1px solid #c3c4c7; border-radius: 4px; font-size: 13px; font-weight: 600; font-family: inherit; color: var(--eem-text); background: #fff; cursor: not-allowed; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; position: relative; opacity: 0.65; text-decoration: none; }
+.eem-btn-manage-layout svg { width: 13px; height: 13px; color: var(--eem-text-muted); }
+.eem-btn-manage-layout::after { content: 'C8'; position: absolute; top: -6px; right: -6px; background: #8c8f94; color: #fff; font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 8px; letter-spacing: 0.05em; }
+
+/* ── RV Lot Zones (mockup line 183) ── */
+.eem-zone-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.eem-zone-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #8c8f94; border-radius: 4px; background: #fff; flex-wrap: wrap; }
+.eem-zone-color-swatch { width: 18px; height: 18px; border-radius: 4px; flex-shrink: 0; border: 1px solid rgba(3, 27, 78, 0.15); cursor: pointer; }
+.eem-zone-name-input { flex: 1 1 180px; min-width: 140px; padding: 7px 10px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 13px; font-family: inherit; color: var(--eem-text); outline: none; background: #fff; }
+.eem-zone-name-input:focus { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
+.eem-zone-price-group { display: flex; align-items: center; gap: 8px; }
+.eem-zone-price-label { font-size: 11px; font-weight: 600; color: var(--eem-text-muted); white-space: nowrap; }
+.eem-zone-price-wrap { display: flex; align-items: stretch; overflow: hidden; border-radius: 4px; }
+.eem-zone-price-sym { padding: 7px 9px; background: #f3f4f5; border: 1px solid #8c8f94; border-right: none; border-radius: 4px 0 0 4px; font-size: 12.5px; color: var(--eem-text-muted); font-weight: 600; display: flex; align-items: center; }
+.eem-zone-price-in { width: 80px; padding: 7px 9px; border: 1px solid #8c8f94; border-radius: 0 4px 4px 0; font-size: 13px; font-family: inherit; color: var(--eem-text); outline: none; background: #fff; }
+.eem-zone-price-in:focus { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
+.eem-zone-delete-btn { width: 30px; height: 30px; border-radius: 4px; border: 1px solid #fecaca; background: #fef2f2; color: #b91c1c; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.eem-zone-delete-btn svg { width: 13px; height: 13px; }
+.eem-zone-delete-btn:hover { background: #fee2e2; }
+.eem-zone-add-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border: 1px dashed #c3c4c7; border-radius: 4px; font-size: 13px; font-weight: 600; font-family: inherit; color: var(--eem-text); background: #fff; cursor: pointer; align-self: flex-start; }
+.eem-zone-add-btn:hover { border-color: var(--eem-electric); color: var(--eem-electric); border-style: solid; }
+.eem-zone-add-btn svg { width: 13px; height: 13px; color: var(--eem-electric); }
+
+/* Zone-color preset picker popover (UX for 8-preset palette per Decision C-1) */
+.eem-zone-color-picker { position: absolute; background: #fff; border: 1px solid #dcdcde; border-radius: 4px; padding: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); display: flex; gap: 6px; z-index: 100; }
+.eem-zone-color-preset { width: 24px; height: 24px; border-radius: 4px; cursor: pointer; border: 2px solid transparent; }
+.eem-zone-color-preset:hover { border-color: rgba(0, 0, 0, 0.2); }
+.eem-zone-color-preset--active { border-color: var(--eem-navy); }
+
+/* ── Repeating rows (add-ons table, mockup line 202) ── */
+.eem-repeat-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+.eem-repeat-table thead { background: #f3f4f5; border-bottom: 1px solid #dcdcde; }
+.eem-repeat-table thead th { padding: 11px 12px; font-size: 13px; font-weight: 600; color: var(--eem-text); text-align: left; white-space: nowrap; }
+.eem-repeat-table tbody tr { border-bottom: 1px solid #f0f0f1; }
+.eem-repeat-table tbody tr:last-child { border-bottom: none; }
+.eem-repeat-table td { padding: 10px 12px; vertical-align: middle; }
+.eem-repeat-input { padding: 7px 10px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 13px; font-family: inherit; color: var(--eem-text); background: #fff; width: 100%; outline: none; }
+.eem-repeat-input:focus { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
+.eem-repeat-price-wrap { display: flex; align-items: stretch; }
+.eem-repeat-price-sym { padding: 7px 9px; background: #f3f4f5; border: 1px solid #8c8f94; border-right: none; border-radius: 4px 0 0 4px; font-size: 12px; color: var(--eem-text-muted); display: flex; align-items: center; }
+.eem-repeat-price-in { padding: 7px 10px; border: 1px solid #8c8f94; border-radius: 0 4px 4px 0; font-size: 13px; font-family: inherit; color: var(--eem-text); background: #fff; width: 90px; outline: none; }
+.eem-repeat-price-in:focus { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
+.eem-btn-delete { width: 30px; height: 30px; border-radius: 4px; border: 1px solid #fecaca; background: #fef2f2; color: #b91c1c; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.eem-btn-delete svg { width: 13px; height: 13px; }
+.eem-btn-delete:hover { background: #fee2e2; }
+.eem-btn-add { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border: 1px solid #c3c4c7; border-radius: 4px; font-size: 13px; font-weight: 600; font-family: inherit; color: var(--eem-text); background: #fff; cursor: pointer; }
+.eem-btn-add:hover { background: #f6f7f7; border-color: #8c8f94; }
+.eem-btn-add svg { width: 13px; height: 13px; color: var(--eem-electric); }
+
+/* ── Agreement file upload (mockup line 222) ── */
+.eem-file-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.eem-file-name { padding: 8px 12px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 13px; color: var(--eem-text); flex: 1; min-width: 160px; background: #f3f4f5; display: flex; align-items: center; gap: 8px; }
+.eem-file-name svg { width: 14px; height: 14px; color: var(--eem-text-muted); flex-shrink: 0; }
+.eem-file-name-empty { color: #8c8f94; font-style: italic; }
+.eem-btn-upload { padding: 7px 14px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 13px; font-weight: 500; font-family: inherit; color: var(--eem-text); background: #fff; cursor: pointer; }
+.eem-btn-upload:hover { background: #f6f7f7; }
+.eem-btn-file-del { width: 30px; height: 30px; border-radius: 4px; border: 1px solid #fecaca; background: #fef2f2; color: #b91c1c; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.eem-btn-file-del svg { width: 13px; height: 13px; }
+.eem-btn-file-del:hover { background: #fee2e2; }
+.eem-view-link { font-size: 13px; color: var(--eem-electric); font-weight: 600; text-decoration: none; }
+.eem-view-link:hover { color: #1257d1; }
+
+/* ── Cancellation Policy inherited-default banner (mockup line 115) ── */
+.eem-inherited-default-banner { display: flex; align-items: flex-start; gap: 10px; padding: 11px 14px; background: #F0F4FB; border: 1px solid #D9E2F2; border-radius: 4px; margin-bottom: 14px; }
+.eem-inherited-default-banner-icon { width: 24px; height: 24px; border-radius: 4px; background: var(--eem-electric); color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+.eem-inherited-default-banner-icon svg { width: 13px; height: 13px; }
+.eem-inherited-default-banner-content { flex: 1; min-width: 0; }
+.eem-inherited-default-banner-title { font-size: 13px; font-weight: 700; color: var(--eem-navy); line-height: 1.3; margin-bottom: 2px; }
+.eem-inherited-default-banner-text { font-size: 12px; color: #50575e; line-height: 1.5; }
+.eem-cancellation-overridden .eem-inherited-default-banner { display: none; }
+
+.eem-cancellation-override-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 6px; flex-wrap: wrap; }
+.eem-btn-link-secondary { background: transparent; border: none; color: var(--eem-electric); font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; padding: 0; }
+.eem-btn-link-secondary:hover { color: #1257d1; }
+
+.eem-cancellation-overridden #en_cancellation_policy_override { border-color: var(--eem-electric); }
+.eem-cancellation-overridden #eem-cancellation-restore-btn { display: inline-block !important; }
+
+/* ── Stay-type validation hint (mockup line 132) ── */
+.eem-stay-hint { color: #b91c1c; margin-top: 6px; display: block; opacity: 0; transition: opacity 0.25s; font-size: 12px; }
+.eem-stay-hint.eem-stay-hint--show { opacity: 1; }
+
+/* ── Mobile responsive breakpoints (mockup lines 279, 287) ── */
+@media (max-width: 1024px) {
+	.eem-edit-body { grid-template-columns: 1fr 260px; padding: 14px 16px; }
+}
+@media (max-width: 767px) {
+	.eem-plugin-header { padding: 14px; }
+	.eem-plugin-title { font-size: 18px; }
+	.eem-edit-body { grid-template-columns: 1fr; padding: 12px; gap: 14px; }
+	.eem-edit-rail { position: static; order: -1; }
+	.eem-section-header { padding: 11px 14px; }
+	.eem-section-body { padding: 12px 14px; }
+	.eem-enable-toggle .eem-enable-toggle__label { display: none; }
+	.eem-layout-summary { flex-direction: column; align-items: stretch; }
+	.eem-btn-manage-layout { align-self: flex-start; }
+	.eem-sticky-save { display: flex; }
+}
