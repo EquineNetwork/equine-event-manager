@@ -52,6 +52,7 @@ if ( ! function_exists( 'eem_render_reservation_editor_section' ) ) {
 			'key'           => '',
 			'title'         => '',
 			'icon_tone'     => 'blue',
+			'icon_key'      => '', // C7.B.3 — Feather glyph name per EEM_Dashboard_Icons registry
 			'enable_toggle' => true,
 			'collapsed'     => false,
 			'body_html'     => '',
@@ -77,7 +78,12 @@ if ( ! function_exists( 'eem_render_reservation_editor_section' ) ) {
 		<section class="<?php echo esc_attr( $card_classes ); ?>" id="card-<?php echo esc_attr( $args['key'] ); ?>">
 			<div class="<?php echo esc_attr( $header_classes ); ?>" data-eem-action="reservation-editor-toggle-collapse" data-eem-section="<?php echo esc_attr( $args['key'] ); ?>">
 				<div class="eem-section-header-left">
-					<div class="eem-section-icon eem-section-icon--<?php echo esc_attr( $args['icon_tone'] ); ?>" aria-hidden="true"></div>
+					<div class="eem-section-icon eem-section-icon--<?php echo esc_attr( $args['icon_tone'] ); ?>" aria-hidden="true"><?php
+						// C7.B.3 — inline SVG glyph per mockup chip pattern.
+						if ( '' !== $args['icon_key'] && class_exists( 'EEM_Dashboard_Icons' ) ) {
+							echo EEM_Dashboard_Icons::svg( $args['icon_key'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pre-escaped helper output.
+						}
+					?></div>
 					<span class="eem-section-title"><?php echo esc_html( $args['title'] ); ?></span>
 				</div>
 				<div class="eem-section-header-right">

@@ -116,8 +116,8 @@ c7b1_ok( 'sections render in mockup order',
 	$pass, $fail, $log,
 	'order: ' . implode( ',', $found_in_order ) );
 
-// ── [5] Each section has the correct icon-tone class (Decision E) ──
-echo "\n[5] Section icon tones (Decision E re-verified against mockup)\n";
+// ── [5] Each section has the correct icon-tone class + glyph (Decision E + C7.B.3) ──
+echo "\n[5] Section icon tones (Decision E) + Feather glyphs (C7.B.3)\n";
 $tone_map = array(
 	'description'  => 'blue',
 	'checkin'      => 'teal',
@@ -134,6 +134,45 @@ foreach ( $tone_map as $key => $tone ) {
 	$pattern = '/id="card-' . preg_quote( $key, '/' ) . '"[\s\S]{0,400}eem-section-icon--' . preg_quote( $tone, '/' ) . '/';
 	c7b1_ok( "section '{$key}' uses icon-tone '{$tone}'",
 		(bool) preg_match( $pattern, $html ),
+		$pass, $fail, $log );
+}
+
+// C7.B.3: per-section Feather glyph inside each chip (DS-1.B.1
+// icon-density discipline — assert SVG content, not just chip
+// container). Locked glyph mapping per the audit:
+$glyph_map = array(
+	'description'  => 'file-text',
+	'checkin'      => 'clock',
+	'eventday'     => 'map-pin',
+	'stall'        => 'grid',
+	'rv'           => 'truck',
+	'addons'       => 'plus',
+	'group'        => 'users',
+	'fees'         => 'dollar',
+	'agreement'    => 'file',
+	'cancellation' => 'shield-x',
+);
+foreach ( $glyph_map as $key => $glyph ) {
+	// Each section chip contains an inline <svg> with non-empty path/line/rect/polyline/circle/polygon body
+	$chip_pattern = '/id="card-' . preg_quote( $key, '/' ) . '"[\s\S]{0,800}?<div class="eem-section-icon eem-section-icon--[a-z]+"[^>]*><svg[^>]*>\s*<(path|line|rect|polyline|circle|polygon)/';
+	c7b1_ok( "section '{$key}' chip carries an SVG with non-empty {$glyph}-shape path data",
+		(bool) preg_match( $chip_pattern, $html ),
+		$pass, $fail, $log );
+}
+// Aggregate guard — every section chip has an SVG inside it
+preg_match_all( '#<div class="eem-section-icon eem-section-icon--[a-z]+"[^>]*>(.*?)</div>#s', $html, $chip_bodies );
+$chips_with_svg = 0;
+foreach ( $chip_bodies[1] as $body ) {
+	if ( false !== strpos( $body, '<svg' ) ) { $chips_with_svg++; }
+}
+c7b1_ok( 'all 10 section chips contain an inline <svg (no empty chips — DS-1.B.1 icon-density)',
+	10 === $chips_with_svg,
+	$pass, $fail, $log,
+	"chips with SVG: {$chips_with_svg} / " . count( $chip_bodies[1] ) );
+// Regression guard — EEM_Dashboard_Icons registry carries the 5 new C7.B.3 glyphs
+foreach ( array( 'file-text', 'map-pin', 'truck', 'file', 'shield-x' ) as $glyph ) {
+	c7b1_ok( "EEM_Dashboard_Icons::svg('{$glyph}') returns a non-empty SVG (C7.B.3 registry extension)",
+		'' !== EEM_Dashboard_Icons::svg( $glyph ) && false !== strpos( EEM_Dashboard_Icons::svg( $glyph ), '<svg' ),
 		$pass, $fail, $log );
 }
 

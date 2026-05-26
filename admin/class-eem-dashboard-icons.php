@@ -1,18 +1,27 @@
 <?php
 /**
- * Equine Event Manager — Dashboard inline SVG icons (DS-1.B.1).
+ * Equine Event Manager — plugin-wide inline SVG icons registry.
  *
- * Single source of truth for every icon glyph rendered on the Admin
- * Dashboard page. SVG paths extracted verbatim from
- * `.mockups/dashboard_page.html` so glyphs stay 1:1 with the canonical
- * mockup. Each key is registered once even when the mockup reuses the
- * same glyph in multiple slots (e.g. the `grid` glyph appears on the
- * Unassigned Stalls KPI, the Stall Charts quick-action tile, and the
- * "stalls unassigned" attention row).
+ * Single source of truth for every icon glyph rendered across the
+ * plugin's admin surfaces. Originally introduced in DS-1.B.1 to cover
+ * the Admin Dashboard page; expanded in C7.B.3 with 5 new glyphs
+ * for the Reservation Editor section chips (file-text, map-pin, truck,
+ * file, shield-x). The class name carries "Dashboard" for historical
+ * reasons — kept stable to avoid call-site churn across the 22+ existing
+ * Dashboard consumers. Treat as the plugin-wide icon registry.
+ *
+ * SVG paths extracted verbatim from canonical mockups
+ * (`.mockups/dashboard_page.html` for DS-1.B-vintage glyphs;
+ * `.mockups/edit_reservation_page.html` for C7.B.3 additions). Each key
+ * is registered once even when the same glyph appears in multiple slots
+ * (e.g. the `grid` glyph appears on the Unassigned Stalls KPI, the
+ * Stall Charts quick-action tile, the "stalls unassigned" attention row,
+ * AND the Reservation Editor Stall Reservations section chip).
  *
  * Call sites pass the icon key only — wrapper classes (icon-background
- * tones, sizing) live on the surrounding `<span>` in the render so the
- * glyph itself stays presentation-neutral.
+ * tones, sizing) live on the surrounding `<span>` / `<div>` in the
+ * render so the glyph itself stays presentation-neutral. Feather Icons
+ * naming convention used throughout for consistency.
  *
  * @package   EEM_Plugin
  * @license   GPL-2.0-or-later
@@ -82,6 +91,20 @@ class EEM_Dashboard_Icons {
 			'users' => '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>',
 			// Export Report quick-action (line 560) — download.
 			'download' => '<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+
+			// C7.B.3 — Reservation Editor section chip glyphs.
+			// Source: .mockups/edit_reservation_page.html (Feather Icons).
+
+			// Reservation Description (mockup line 372) — file with lines.
+			'file-text' => '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>',
+			// Event Day Info (mockup line 430) — map-pin.
+			'map-pin' => '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>',
+			// RV Reservations (mockup line 654) — truck/RV.
+			'truck' => '<rect x="1" y="6" width="15" height="12" rx="2"/><path d="M16 9h4l3 3v6h-7"/><circle cx="6" cy="20" r="2"/><circle cx="18" cy="20" r="2"/>',
+			// Agreement (mockup line 1059) — file with single line (variant of file-text).
+			'file' => '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/>',
+			// Cancellation Policy (mockup line 1097) — shield with X.
+			'shield-x' => '<path d="M12 22s-8-4.5-8-11.8A8 8 0 0112 2a8 8 0 018 8.2c0 7.3-8 11.8-8 11.8z"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/>',
 		);
 	}
 }

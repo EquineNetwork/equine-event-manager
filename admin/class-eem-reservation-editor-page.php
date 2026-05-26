@@ -115,6 +115,7 @@ class EEM_Reservation_Editor_Page {
 				'key'           => $section['key'],
 				'title'         => $section['title'],
 				'icon_tone'     => $section['icon_tone'],
+				'icon_key'      => $section['icon_key'], // C7.B.3 — Feather glyph
 				'enable_toggle' => $section['enable_toggle'],
 				'collapsed'     => $section['collapsed'],
 				'body_html'     => $placeholder_body,
@@ -132,16 +133,16 @@ class EEM_Reservation_Editor_Page {
 	 */
 	public static function section_definitions() {
 		return array(
-			array( 'key' => 'description',  'title' => __( 'Reservation Description', 'equine-event-manager' ), 'icon_tone' => 'blue',   'enable_toggle' => false, 'collapsed' => false ),
-			array( 'key' => 'checkin',      'title' => __( 'Check-In / Check-Out',    'equine-event-manager' ), 'icon_tone' => 'teal',   'enable_toggle' => true,  'collapsed' => true  ),
-			array( 'key' => 'eventday',     'title' => __( 'Event Day Info',          'equine-event-manager' ), 'icon_tone' => 'orange', 'enable_toggle' => true,  'collapsed' => false ),
-			array( 'key' => 'stall',        'title' => __( 'Stall Reservations',      'equine-event-manager' ), 'icon_tone' => 'green',  'enable_toggle' => true,  'collapsed' => false ),
-			array( 'key' => 'rv',           'title' => __( 'RV Reservations',         'equine-event-manager' ), 'icon_tone' => 'purple', 'enable_toggle' => true,  'collapsed' => false ),
-			array( 'key' => 'addons',       'title' => __( 'General Add-Ons',         'equine-event-manager' ), 'icon_tone' => 'orange', 'enable_toggle' => true,  'collapsed' => false ),
-			array( 'key' => 'group',        'title' => __( 'Group Reservations',      'equine-event-manager' ), 'icon_tone' => 'green',  'enable_toggle' => true,  'collapsed' => true  ),
-			array( 'key' => 'fees',         'title' => __( 'Convenience Fee',         'equine-event-manager' ), 'icon_tone' => 'orange', 'enable_toggle' => true,  'collapsed' => true  ),
-			array( 'key' => 'agreement',    'title' => __( 'Agreement',               'equine-event-manager' ), 'icon_tone' => 'navy',   'enable_toggle' => true,  'collapsed' => true  ),
-			array( 'key' => 'cancellation', 'title' => __( 'Cancellation Policy',     'equine-event-manager' ), 'icon_tone' => 'red',    'enable_toggle' => true,  'collapsed' => true  ),
+			array( 'key' => 'description',  'title' => __( 'Reservation Description', 'equine-event-manager' ), 'icon_tone' => 'blue',   'icon_key' => 'file-text', 'enable_toggle' => false, 'collapsed' => false ),
+			array( 'key' => 'checkin',      'title' => __( 'Check-In / Check-Out',    'equine-event-manager' ), 'icon_tone' => 'teal',   'icon_key' => 'clock',     'enable_toggle' => true,  'collapsed' => true  ),
+			array( 'key' => 'eventday',     'title' => __( 'Event Day Info',          'equine-event-manager' ), 'icon_tone' => 'orange', 'icon_key' => 'map-pin',   'enable_toggle' => true,  'collapsed' => false ),
+			array( 'key' => 'stall',        'title' => __( 'Stall Reservations',      'equine-event-manager' ), 'icon_tone' => 'green',  'icon_key' => 'grid',      'enable_toggle' => true,  'collapsed' => false ),
+			array( 'key' => 'rv',           'title' => __( 'RV Reservations',         'equine-event-manager' ), 'icon_tone' => 'purple', 'icon_key' => 'truck',     'enable_toggle' => true,  'collapsed' => false ),
+			array( 'key' => 'addons',       'title' => __( 'General Add-Ons',         'equine-event-manager' ), 'icon_tone' => 'orange', 'icon_key' => 'plus',      'enable_toggle' => true,  'collapsed' => false ),
+			array( 'key' => 'group',        'title' => __( 'Group Reservations',      'equine-event-manager' ), 'icon_tone' => 'green',  'icon_key' => 'users',     'enable_toggle' => true,  'collapsed' => true  ),
+			array( 'key' => 'fees',         'title' => __( 'Convenience Fee',         'equine-event-manager' ), 'icon_tone' => 'orange', 'icon_key' => 'dollar',    'enable_toggle' => true,  'collapsed' => true  ),
+			array( 'key' => 'agreement',    'title' => __( 'Agreement',               'equine-event-manager' ), 'icon_tone' => 'navy',   'icon_key' => 'file',      'enable_toggle' => true,  'collapsed' => true  ),
+			array( 'key' => 'cancellation', 'title' => __( 'Cancellation Policy',     'equine-event-manager' ), 'icon_tone' => 'red',    'icon_key' => 'shield-x',  'enable_toggle' => true,  'collapsed' => true  ),
 		);
 	}
 
