@@ -62,6 +62,18 @@ if ( ! function_exists( 'eem_render_reservation_editor_section' ) ) {
 			// the per-section enabled flag computed in
 			// EEM_Reservation_Editor_Page::section_definitions().
 			'is_enabled'    => true,
+			// C7.C.1.4.A — mockup line 83/403/950: enable-label flips
+			// between "Enabled" and "Disabled" per toggle state. Was
+			// hardcoded "Enabled" regardless of state.
+			'disabled_note' => '',
+			// C7.C.1.4.A — mockup pattern (line 409/956/1110): some
+			// sections render a body-level callout when disabled
+			// (e.g. "This section is disabled. Enable it to ...").
+			// Empty string = no note.
+			'intro_hint_html' => '',
+			// C7.C.1.4.A — mockup pattern (line 443/1110): some sections
+			// render an intro hint above the field rows (Event Day Info,
+			// Cancellation Policy). Empty string = no intro.
 		);
 		$args = array_merge( $defaults, $args );
 		if ( '' === $args['key'] || '' === $args['title'] ) {
@@ -109,10 +121,16 @@ if ( ! function_exists( 'eem_render_reservation_editor_section' ) ) {
 				</div>
 				<div class="eem-section-header-right">
 					<?php if ( $args['enable_toggle'] ) : ?>
-						<?php $toggle_state_class = $args['is_enabled'] ? 'eem-toggle--on' : 'eem-toggle--off'; ?>
+						<?php
+						$toggle_state_class = $args['is_enabled'] ? 'eem-toggle--on' : 'eem-toggle--off';
+						// C7.C.1.4.A — mockup-canonical: text flips with state.
+						$enable_label_text  = $args['is_enabled']
+							? __( 'Enabled', 'equine-event-manager' )
+							: __( 'Disabled', 'equine-event-manager' );
+						?>
 						<div class="eem-enable-toggle" data-eem-action="reservation-editor-toggle-enabled" data-eem-section="<?php echo esc_attr( $args['key'] ); ?>">
 							<div class="eem-toggle <?php echo esc_attr( $toggle_state_class ); ?>" data-eem-section="<?php echo esc_attr( $args['key'] ); ?>"></div>
-							<span class="eem-enable-toggle__label"><?php esc_html_e( 'Enabled', 'equine-event-manager' ); ?></span>
+							<span class="eem-enable-toggle__label" data-eem-enable-label="<?php echo esc_attr( $args['key'] ); ?>"><?php echo esc_html( $enable_label_text ); ?></span>
 						</div>
 					<?php endif; ?>
 					<div class="eem-section-chevron" aria-hidden="true"><?php
@@ -131,6 +149,23 @@ if ( ! function_exists( 'eem_render_reservation_editor_section' ) ) {
 			</div>
 			<div class="<?php echo esc_attr( $body_classes ); ?>" id="body-<?php echo esc_attr( $args['key'] ); ?>">
 				<?php
+				// C7.C.1.4.A — disabled-note callout. Renders only when
+				// the section's enable toggle is off (mockup line 98 +
+				// 409 + 956). Always emitted in markup so JS toggle-OFF
+				// can reveal it via the body's --disabled class without
+				// a re-render; CSS rule .eem-section-body--disabled
+				// .eem-section-disabled-note keeps it visible (the
+				// striped overlay is below the note).
+				if ( '' !== $args['disabled_note'] ) {
+					echo '<div class="eem-section-disabled-note" data-eem-section-disabled-note="' . esc_attr( $args['key'] ) . '">' . esc_html( $args['disabled_note'] ) . '</div>';
+				}
+				// C7.C.1.4.A — section-level intro hint above field rows
+				// (mockup line 443/1110). Pre-escaped author-controlled
+				// HTML; small links allowed (mockup line 1127 has an
+				// "edit the event default ↗" link).
+				if ( '' !== $args['intro_hint_html'] ) {
+					echo '<p class="eem-field-hint eem-section-intro-hint">' . $args['intro_hint_html'] . '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pre-escaped author HTML.
+				}
 				// C7.C.1 — body_html is author-controlled output from the
 				// per-section partials under templates/admin/reservation-
 				// editor/_section-*.php (pre-escaped per-field via esc_attr

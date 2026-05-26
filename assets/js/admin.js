@@ -1746,6 +1746,12 @@
 			// Without this, every section header toggle would persist
 			// as "on" because the hidden input is always present.
 			if (el.type === 'hidden' && el.hasAttribute('data-eem-section-enabled') && '1' !== el.value) return;
+			// C7.C.1.4.A — same skip for sub-section toggle mirrors
+			// (toggle-label-row hidden inputs). Without this, the
+			// legacy `isset($source[X_enabled]) ? 1 : 0` sanitize
+			// pattern treats value='0' as enabled, breaking the
+			// off-state persistence for grounds-fee / deposit / etc.
+			if (el.type === 'hidden' && el.hasAttribute('data-eem-subsection-enabled') && '1' !== el.value) return;
 			out.push([el.name, el.value]);
 		});
 		return out;
@@ -1887,6 +1893,100 @@
 	document.addEventListener('DOMContentLoaded', function () {
 		document.querySelectorAll('[data-eem-action="reservation-editor-fee-type-change"]').forEach(eemApplyFeeTypeVisibility);
 	});
+
+	/* ─────────────────────────────────────────────────────────────
+	   C7.C.1.4.A — Sub-section toggle (toggle-label-row) handler +
+	   applyControls() global re-evaluate + fee-mode pill handler.
+
+	   Sub-section toggle pattern (mockup line 147 .toggle-label-row):
+	   one click flips the `.eem-toggle--on/--off` indicator class
+	   AND the sibling hidden input's value AND re-evaluates conditional
+	   visibility across the entire editor body (Decision D: global
+	   re-evaluate; row hidden if ANY covering controller is off).
+
+	   data attributes (per Decision G):
+	     data-eem-action="reservation-editor-toggle-subsection"
+	     data-eem-controls="eem-ctrl--token-1 eem-ctrl--token-2"
+	     data-eem-subsection-enabled="<slug>"  (on the hidden input)
+
+	   Dependent rows carry `eem-ctrl--<token>` class plus the
+	   `eem-row--hidden` class when initially off (computed PHP-side).
+	   ───────────────────────────────────────────────────────────── */
+	function eemApplyControls() {
+		var editor = document.querySelector('.eem-reservation-editor-body');
+		if (!editor) return;
+		// Gather the set of "off" controller tokens — any toggle-label-row
+		// whose hidden input value is not '1' contributes its data-eem-
+		// controls tokens to the off-set. Union semantics: a row hides if
+		// ANY of its controllers is off.
+		var offTokens = {};
+		editor.querySelectorAll('[data-eem-action="reservation-editor-toggle-subsection"]').forEach(function (ctrl) {
+			var hidden = ctrl.querySelector('input[type="hidden"][data-eem-subsection-enabled]');
+			if (!hidden || '1' === hidden.value) return;
+			var tokens = (ctrl.getAttribute('data-eem-controls') || '').split(/\s+/).filter(Boolean);
+			tokens.forEach(function (tok) { offTokens[tok] = true; });
+		});
+		// Walk every row that carries any eem-ctrl-- token, apply or
+		// remove eem-row--hidden based on the offTokens union.
+		editor.querySelectorAll('.eem-field-row').forEach(function (row) {
+			var rowOff = false;
+			row.classList.forEach(function (cls) {
+				if (cls.indexOf('eem-ctrl--') === 0 && offTokens[cls]) { rowOff = true; }
+			});
+			row.classList.toggle('eem-row--hidden', rowOff);
+		});
+	}
+
+	/* Sub-section toggle click handler */
+	document.addEventListener('click', function (ev) {
+		var t = ev.target;
+		if (!t || !t.closest) return;
+		var toggleRow = t.closest('[data-eem-action="reservation-editor-toggle-subsection"]');
+		if (!toggleRow) return;
+		ev.preventDefault();
+		ev.stopPropagation();
+		var indicator = toggleRow.querySelector('.eem-toggle');
+		var hidden    = toggleRow.querySelector('input[type="hidden"][data-eem-subsection-enabled]');
+		if (!indicator || !hidden) return;
+		var nowOn = indicator.classList.contains('eem-toggle--on');
+		indicator.classList.toggle('eem-toggle--on', !nowOn);
+		indicator.classList.toggle('eem-toggle--off', nowOn);
+		hidden.value = nowOn ? '0' : '1';
+		eemApplyControls();
+	});
+
+	/* Fee-mode pill triplet handler (None / Flat / Percentage) */
+	document.addEventListener('click', function (ev) {
+		var t = ev.target;
+		if (!t || !t.closest) return;
+		var btn = t.closest('[data-eem-action="reservation-editor-fee-mode"]');
+		if (!btn) return;
+		ev.preventDefault();
+		var mode = btn.getAttribute('data-eem-fee-mode');
+		if (!mode) return;
+		var modes = btn.closest('.eem-fee-modes');
+		if (modes) {
+			modes.querySelectorAll('.eem-fee-mode-btn').forEach(function (b) {
+				b.classList.toggle('eem-fee-mode-btn--active', b === btn);
+			});
+		}
+		// Update the hidden mirror that persists the selection.
+		var section = btn.closest('.eem-reservation-editor-section');
+		var mirror  = section ? section.querySelector('[data-eem-fee-mode-mirror]') : null;
+		if (mirror) { mirror.value = mode; }
+		// Toggle conditional fee rows via the eem-ctrl-- class system.
+		// Flat row carries eem-ctrl--fee-flat, Percentage row carries
+		// eem-ctrl--fee-pct; both hidden when mode === 'none'.
+		if (section) {
+			var flatRow = section.querySelector('.eem-ctrl--fee-flat');
+			var pctRow  = section.querySelector('.eem-ctrl--fee-pct');
+			if (flatRow) { flatRow.classList.toggle('eem-row--hidden', 'flat' !== mode); }
+			if (pctRow)  { pctRow.classList.toggle('eem-row--hidden',  'percentage' !== mode); }
+		}
+	});
+
+	/* Initial applyControls() pass on page load */
+	document.addEventListener('DOMContentLoaded', eemApplyControls);
 
 	/* Linked Event modal — launcher + source-mode picker + typeahead + Save */
 	function eemModalOpen(id) {

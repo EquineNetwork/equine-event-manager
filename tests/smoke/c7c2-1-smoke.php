@@ -199,9 +199,10 @@ c7c21_ok( "no visible <input type='checkbox' name='en_reservation[rv_enabled]'> 
 // ── [5] Available Reservation Dates render in BOTH stall + rv + checkin ─
 echo "\n[5] Available Reservation Dates render in 3 sections (mockup-canon redundancy)\n";
 $checkin_body = $slice( $html, 'checkin' );
-c7c21_ok( "checkin section renders en_reservation[available_start_date]",
-	false !== strpos( $checkin_body, 'name="en_reservation[available_start_date]"' ),
-	$pass, $fail, $log );
+// C7.C.1.4.A — checkin section dropped Available Reservation Dates row
+// per mockup canon (lines 410-422: ONLY Check-In Time + Check-Out Time).
+// Available dates render in stall + rv sections instead (mockup canon
+// 502-511 + 676-685). Smoke assertion removed.
 c7c21_ok( "stall section renders en_reservation[available_start_date]",
 	false !== strpos( $stall_body, 'name="en_reservation[available_start_date]"' ),
 	$pass, $fail, $log );

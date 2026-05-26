@@ -16,6 +16,27 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 
 ## Active entries
 
+### 47. New `_en_group_description` + `_en_group_riders_per_group` meta keys — customer-facing C10 cascade
+- **What:** C7.C.1.4.A introduced two new reservation post-meta keys per mockup canon (mockup lines 958–970, Decision N1): `_en_group_description` (textarea — what a group reservation includes) and `_en_group_riders_per_group` (int — max riders one customer can register). Mockup-canonical fields with no legacy equivalent; added non-destructively (Option L1 pattern).
+- **Why deferred:** Editor save-side wires these in C7.C.1.4.A. Customer-facing C10 (Customer Event Page) needs to (a) display the group description text on the group-reservations toggle, (b) enforce the riders-per-group max on the rider-count input. Neither is wired today; values persist but aren't yet consumed by the customer flow.
+- **Added in:** C7.C.1.4.A
+- **Unblocks deletion:** C10 (Customer Event Page port). Add the readers in the same chunk that ports the customer event-page group section. No data migration needed — keys are read-as-empty for pre-C7.C.1.4.A reservations and that's the correct fallback behavior.
+- **Status:** awaiting C10
+
+### 46. Legacy `EEM_Reservations_CPT::render_editor_*_row()` helpers — wholesale strip
+- **What:** Six private render helpers (`render_textarea_row`, `render_text_row`, `render_currency_row`, `render_datetime_row`, `render_date_range_row`, `render_number_row`) plus the public `render_editor_*_row()` wrappers and `render_editor_fee_value_row()` / `render_editor_file_field_row()` / `render_editor_stall_chart_rows()`. They emit WordPress meta-box chrome (`<table class="form-table"><tr><th><td>`) and CSS classes (`.eem-currency-field`, `.eem-rate-mode-row`, `.eem-date-range-fields`, `.eem-inline-toggle-control`, etc.) that have NO rules in `admin.css` and fall through to browser defaults.
+- **Why deferred:** C7.C.1.4.A retires the helpers as callers for 4 of the 8 wired sections (description / checkin / group / fees) by rewriting their partials to use mockup-canonical chrome via `_partial-field-row.php` + `_partial-toggle-label-row.php`. C7.C.1.4.B retires the helpers for the remaining 4 (addons / agreement / stall / rv). Once C7.C.1.4.B lands, NOTHING in the editor calls these helpers anymore. Marking `@deprecated` in this commit + retaining callable as transitional safety in case of non-editor callers I haven't audited.
+- **Added in:** C7.C.1.4.A
+- **Unblocks deletion:** C16 polish wholesale-strip. By that point, C7.C.1.4.B has landed (all 8 sections on mockup-canonical chrome) and any remaining non-editor callers will have surfaced during ~9 chunks of running smoke. Delete the helpers + their CSS-classes-without-rules outright.
+- **Status:** awaiting C16 (depends on C7.C.1.4.B first)
+
+### 45. Mockup-canonical chrome retroactive port — C7.C.1.4.B
+- **What:** C7.C.1.4.A ported description / checkin / group / fees to mockup-canonical chrome. The remaining 4 wired sections (addons / agreement / stall / rv) are still on the legacy `<table class="form-table">` + `render_editor_*_row()` helper chrome.
+- **Why deferred:** C7.C.1.4 trips the 40% alarm if all 8 sections rewritten in one commit. Split per precedent.
+- **Added in:** C7.C.1.4.A
+- **Unblocks deletion:** N/A — this is the next-chunk pointer, not a code-deletion deferral. Execute C7.C.1.4.B after .A visual-verify passes.
+- **Status:** awaiting C7.C.1.4.B kickoff
+
 ### 44. Reservation Editor section-enabled meta keys — rename to `_eem_section_enabled_{key}` canonical
 - **What:** Each section's enabled state lives in legacy `_en_*_enabled` post-meta keys (`_en_checkin_checkout_enabled`, `_en_general_addons_enabled`, `_en_group_reservations_enabled`, `_en_convenience_fee_enabled`, `_en_venue_agreement_enabled`, plus `_en_stalls_enabled` + `_en_rv_enabled` from C7.C.2). Names are inconsistent (`checkin_checkout_enabled` vs `general_addons_enabled` vs `convenience_fee_enabled` — no shared prefix) and inherited from the Codex-era meta-box schema. Canonical scheme: `_eem_section_enabled_{section_key}` (e.g. `_eem_section_enabled_checkin`, `_eem_section_enabled_addons`, `_eem_section_enabled_fees`).
 - **Why deferred (Option A vs Option C audit at C7.C.1.1):** Renaming requires coordinated cascade — customer-facing surfaces (C10 customer event page / C11 confirmation email / C12 receipt + hosted page) all read the legacy keys today. Splitting the rename across chunks would create a backend-writes-new-keys / frontend-reads-old-keys window that silently breaks customer-facing state for every reservation saved through the new editor. C7.C.1.1 took Option C (hidden-input mirrors the legacy name on the editor body; no rename) precisely to avoid that breakage window.

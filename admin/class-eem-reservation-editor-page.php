@@ -117,18 +117,51 @@ class EEM_Reservation_Editor_Page {
 
 		$sections = self::section_definitions();
 		foreach ( $sections as $section ) {
-			$body_html  = self::render_section_body( $section['key'], $data, $addons, $reservations_cpt );
-			$is_enabled = self::compute_section_is_enabled( $section['key'], $data );
+			$body_html     = self::render_section_body( $section['key'], $data, $addons, $reservations_cpt );
+			$is_enabled    = self::compute_section_is_enabled( $section['key'], $data );
+			$disabled_note = self::section_disabled_note( $section['key'] );
 			eem_render_reservation_editor_section( array(
-				'key'           => $section['key'],
-				'title'         => $section['title'],
-				'icon_tone'     => $section['icon_tone'],
-				'icon_key'      => $section['icon_key'], // C7.B.3 — Feather glyph
-				'enable_toggle' => $section['enable_toggle'],
-				'collapsed'     => $section['collapsed'],
-				'body_html'     => $body_html,
-				'is_enabled'    => $is_enabled,      // C7.C.1.1 — Desync C fix
+				'key'             => $section['key'],
+				'title'           => $section['title'],
+				'icon_tone'       => $section['icon_tone'],
+				'icon_key'        => $section['icon_key'], // C7.B.3 — Feather glyph
+				'enable_toggle'   => $section['enable_toggle'],
+				'collapsed'       => $section['collapsed'],
+				'body_html'       => $body_html,
+				'is_enabled'      => $is_enabled,      // C7.C.1.1 — Desync C fix
+				'disabled_note'   => $disabled_note,   // C7.C.1.4.A — mockup callout
+				'intro_hint_html' => '',               // reserved for cancellation (C7.E) intro
 			) );
+		}
+	}
+
+	/**
+	 * Disabled-note callout text per section (mockup line 409/956/etc.).
+	 * Renders inside the section body when the section is disabled.
+	 * C7.C.1.4.A — empty string = no callout for sections that don't
+	 * need one (e.g. description has no enable toggle).
+	 *
+	 * @param string $section_key
+	 * @return string
+	 */
+	private static function section_disabled_note( $section_key ) {
+		switch ( $section_key ) {
+			case 'checkin':
+				return __( 'This section is disabled. Enable it to set check-in and check-out times.', 'equine-event-manager' );
+			case 'group':
+				return __( 'This section is disabled. Enable it to let customers register groups of riders.', 'equine-event-manager' );
+			case 'fees':
+				return __( 'This section is disabled. Enable it to charge a convenience fee at checkout.', 'equine-event-manager' );
+			case 'addons':
+				return __( 'This section is disabled. Enable it to offer optional add-ons to customers.', 'equine-event-manager' );
+			case 'agreement':
+				return __( 'This section is disabled. Enable it to require customers to acknowledge an agreement before booking.', 'equine-event-manager' );
+			case 'stall':
+				return __( 'This section is disabled. Enable it to offer stall reservations.', 'equine-event-manager' );
+			case 'rv':
+				return __( 'This section is disabled. Enable it to offer RV reservations.', 'equine-event-manager' );
+			default:
+				return '';
 		}
 	}
 
@@ -214,7 +247,7 @@ class EEM_Reservation_Editor_Page {
 			array( 'key' => 'eventday',     'title' => __( 'Event Day Info',          'equine-event-manager' ), 'icon_tone' => 'orange', 'icon_key' => 'map-pin',   'enable_toggle' => true,  'collapsed' => false ),
 			array( 'key' => 'stall',        'title' => __( 'Stall Reservations',      'equine-event-manager' ), 'icon_tone' => 'green',  'icon_key' => 'grid',      'enable_toggle' => true,  'collapsed' => false ),
 			array( 'key' => 'rv',           'title' => __( 'RV Reservations',         'equine-event-manager' ), 'icon_tone' => 'purple', 'icon_key' => 'truck',     'enable_toggle' => true,  'collapsed' => false ),
-			array( 'key' => 'addons',       'title' => __( 'General Add-Ons',         'equine-event-manager' ), 'icon_tone' => 'orange', 'icon_key' => 'plus',      'enable_toggle' => true,  'collapsed' => false ),
+			array( 'key' => 'addons',       'title' => __( 'General Add-Ons',         'equine-event-manager' ), 'icon_tone' => 'orange', 'icon_key' => 'plus',      'enable_toggle' => true,  'collapsed' => true  ), // C7.C.1.4.A — mockup line 890 collapsed-by-default
 			array( 'key' => 'group',        'title' => __( 'Group Reservations',      'equine-event-manager' ), 'icon_tone' => 'green',  'icon_key' => 'users',     'enable_toggle' => true,  'collapsed' => true  ),
 			array( 'key' => 'fees',         'title' => __( 'Convenience Fee',         'equine-event-manager' ), 'icon_tone' => 'orange', 'icon_key' => 'dollar',    'enable_toggle' => true,  'collapsed' => true  ),
 			array( 'key' => 'agreement',    'title' => __( 'Agreement',               'equine-event-manager' ), 'icon_tone' => 'navy',   'icon_key' => 'file',      'enable_toggle' => true,  'collapsed' => true  ),

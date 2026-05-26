@@ -1,20 +1,26 @@
 <?php
 /**
- * Reservation Editor — "Check-In / Check-Out" section body (C7.C.1).
+ * Reservation Editor — "Check-In / Check-Out" section body
+ * (C7.C.1.4.A rewrite — mockup-canonical chrome).
  *
- * Combines two legacy meta-boxes into the single mockup-canon section:
- *   - "Available Reservation Dates"  → date range pair
- *   - "Check-In/Check-Out"           → enable toggle + checkin / checkout
- *                                       datetimes (via render_editor_datetime_row)
+ * Mockup lines 391–423. Two datetime field rows. Collapsed by
+ * default. Body renders a `.eem-section-disabled-note` callout
+ * when section is disabled (via section-skeleton's `disabled_note`
+ * arg).
  *
- * Locals contract (provided by EEM_Reservation_Editor_Page::render_checkin_body):
- *   $data              array  reservation meta values
- *   $reservations_cpt  EEM_Reservations_CPT  for the datetime-row helper
+ * Walkthrough enumeration:
+ *   2.4 row → .eem-field-row "Check-In Time"
+ *   2.5 control → <input type="datetime-local" class="eem-field-input">
+ *               style="max-width:260px"
+ *               (populated from `_en_checkin_time`)
+ *   2.6 row → .eem-field-row "Check-Out Time"
+ *   2.7 control → <input type="datetime-local" class="eem-field-input">
+ *               (populated from `_en_checkout_time`)
  *
- * The inline `[checkin_checkout_enabled]` checkbox is the persisted source
- * of truth for the section's enabled state — the header-card toggle is
- * a separate visual-only surface (C7.B.2.1) until C7.G polish unifies the
- * two. Both stay rendered for now; users can click either to toggle.
+ * Hidden enabled-mirror per C7.C.1.1 Desync A/B fix.
+ *
+ * Locals contract:
+ *   $data  array  reservation meta values
  *
  * @package   EEM_Plugin
  * @license   GPL-2.0-or-later
@@ -25,37 +31,35 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-/** @var array<string, mixed>      $data */
-/** @var EEM_Reservations_CPT      $reservations_cpt */
+/** @var array<string, mixed> $data */
 
-$checkin_fallback  = ! empty( $data['stalls_open_at'] ) ? $data['stalls_open_at'] : $data['available_start_date'];
-$checkout_fallback = ! empty( $data['stalls_close_at'] ) ? $data['stalls_close_at'] : $data['available_end_date'];
+require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_partial-field-row.php';
+
+// Format datetime values for the datetime-local input (YYYY-MM-DDTHH:MM)
+$fmt_dt = function ( $value ) {
+	if ( '' === (string) $value ) return '';
+	// If already in datetime-local format, pass through
+	if ( preg_match( '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/', (string) $value ) ) {
+		return substr( (string) $value, 0, 16 );
+	}
+	// Try parsing common formats
+	$ts = strtotime( (string) $value );
+	return false === $ts ? '' : gmdate( 'Y-m-d\TH:i', $ts );
+};
 ?>
-<div class="eem-editor-fields">
-	<input type="hidden" name="en_reservation[available_dates_manually_edited]" id="en_available_dates_manually_edited" value="<?php echo esc_attr( (string) $data['available_dates_manually_edited'] ); ?>" />
-	<p class="description"><?php esc_html_e( 'Select the dates for which you would like customers to be able to make reservations.', 'equine-event-manager' ); ?></p>
-	<table class="form-table" role="presentation">
-		<tbody>
-			<tr>
-				<th scope="row"><label for="en_available_start_date"><?php esc_html_e( 'Date Range', 'equine-event-manager' ); ?></label></th>
-				<td>
-					<div>
-						<input name="en_reservation[available_start_date]" id="en_available_start_date" type="date" value="<?php echo esc_attr( (string) $data['available_start_date'] ); ?>" />
-						<span aria-hidden="true">-</span>
-						<input name="en_reservation[available_end_date]" id="en_available_end_date" type="date" value="<?php echo esc_attr( (string) $data['available_end_date'] ); ?>" />
-					</div>
-				</td>
-			</tr>
-		</tbody>
-	</table>
-
-	<?php // C7.C.1.1 — header-toggle is the only visible enable control; body carries a hidden mirror for persistence. ?>
-	<input type="hidden" name="en_reservation[checkin_checkout_enabled]" data-eem-section-enabled="checkin" value="<?php echo ! empty( $data['checkin_checkout_enabled'] ) ? '1' : '0'; ?>" />
-	<p class="description"><?php esc_html_e( 'Set the customer check-in and check-out time for all reservations.', 'equine-event-manager' ); ?></p>
-	<table class="form-table" role="presentation">
-		<tbody>
-			<?php $reservations_cpt->render_editor_datetime_row( 'checkin_time',  __( 'Check-In Time',  'equine-event-manager' ), $data['checkin_time'],  '', '', $checkin_fallback ); ?>
-			<?php $reservations_cpt->render_editor_datetime_row( 'checkout_time', __( 'Check-Out Time', 'equine-event-manager' ), $data['checkout_time'], '', '', $checkout_fallback ); ?>
-		</tbody>
-	</table>
-</div>
+<input type="hidden" name="en_reservation[checkin_checkout_enabled]" data-eem-section-enabled="checkin" value="<?php echo ! empty( $data['checkin_checkout_enabled'] ) ? '1' : '0'; ?>" />
+<?php
+eem_render_editor_field_row( array(
+	'label'        => __( 'Check-In Time', 'equine-event-manager' ),
+	'control_html' => sprintf(
+		'<input class="eem-field-input" name="en_reservation[checkin_time]" id="en_checkin_time" type="datetime-local" style="max-width:260px" value="%s" />',
+		esc_attr( $fmt_dt( $data['checkin_time'] ) )
+	),
+) );
+eem_render_editor_field_row( array(
+	'label'        => __( 'Check-Out Time', 'equine-event-manager' ),
+	'control_html' => sprintf(
+		'<input class="eem-field-input" name="en_reservation[checkout_time]" id="en_checkout_time" type="datetime-local" style="max-width:260px" value="%s" />',
+		esc_attr( $fmt_dt( $data['checkout_time'] ) )
+	),
+) );

@@ -5846,3 +5846,157 @@ a.eem-reservation-editor-meta-change-link:hover {
 	color: var(--eem-error-text);
 	font-size: 13px;
 }
+
+/* ─────────────────────────────────────────────────────────────────
+   C7.C.1.4.A — Mockup-canonical chrome retroactive port primitives.
+   New primitives the editor partials use for sub-section toggles,
+   conditional row visibility, body-level disabled callout, fee-mode
+   pill triplet, and percentage-with-symbol-on-right input.
+
+   Existing C1.2 primitives reused: .eem-field-row, .eem-field-label,
+   .eem-field-label-sub, .eem-field-control, .eem-field-input,
+   .eem-field-textarea, .eem-field-hint, .eem-price-wrap,
+   .eem-price-symbol, .eem-price-input, .eem-date-range, .eem-date-sep,
+   .eem-stay-types, .eem-stay-type-btn (consumed by C7.C.1.4.B for
+   stall + rv stay-type pair).
+   ───────────────────────────────────────────────────────────────── */
+
+/* Hide a field row when its controlling sub-section toggle is off.
+   Applied at render time by _partial-field-row.php is_hidden arg AND
+   by JS eemApplyControls() on user toggle clicks. */
+.eem-row--hidden {
+	display: none !important;
+}
+
+/* Section-level disabled callout. Renders inside the body when the
+   section's enable toggle is off. Sits ABOVE the striped overlay so
+   admins see the explanation, not just the disabled chrome. */
+.eem-section-disabled-note {
+	font-size: 12.5px;
+	color: var(--eem-text-muted);
+	font-style: italic;
+	padding: 10px 14px;
+	background: #f3f4f5;
+	border-radius: 4px;
+	margin-bottom: 14px;
+}
+/* Position above the disabled overlay (z-index above
+   .eem-section-body--disabled::after stripes) so it remains readable. */
+.eem-section-body--disabled .eem-section-disabled-note {
+	position: relative;
+	z-index: 2;
+}
+
+/* Section-level intro hint above field rows (Event Day / Cancellation
+   pattern from mockup line 443 + 1110). */
+.eem-section-intro-hint {
+	margin-top: 0;
+	margin-bottom: 14px;
+}
+
+/* Toggle-label-row — bordered chip with embedded .eem-toggle.
+   Mockup line 147. Used for sub-section toggles (Grounds Fee,
+   Deposit, Schedule, Early Bird, Required Shavings).
+   Entire chip is clickable; JS handles state. */
+.eem-toggle-label-row {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	padding: 8px 14px;
+	border: 1px solid #8c8f94;
+	border-radius: 4px;
+	cursor: pointer;
+	max-width: 380px;
+	background: #fff;
+	user-select: none;
+	transition: border-color 0.15s ease;
+}
+.eem-toggle-label-row:hover {
+	border-color: var(--eem-electric);
+}
+.eem-toggle-label-row > span {
+	font-size: 13.5px;
+	color: var(--eem-text);
+	font-weight: 500;
+}
+
+/* Fee-mode pill triplet (None / Flat / Percentage). Mockup line 158. */
+.eem-fee-modes {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+.eem-fee-mode-btn {
+	padding: 8px 18px;
+	border: 1px solid #8c8f94;
+	border-radius: 4px;
+	font-size: 13.5px;
+	font-weight: 500;
+	color: var(--eem-text);
+	cursor: pointer;
+	background: #fff;
+	font-family: inherit;
+	user-select: none;
+	transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.eem-fee-mode-btn:hover {
+	border-color: var(--eem-electric);
+}
+.eem-fee-mode-btn--active {
+	border-color: var(--eem-electric);
+	background: #EEF4FF;
+	color: var(--eem-electric);
+	font-weight: 600;
+}
+
+/* Percentage input variant — % symbol on RIGHT (mockup line 164).
+   Inverts .eem-price-wrap which puts $ on the LEFT. */
+.eem-pct-wrap {
+	display: flex;
+	align-items: stretch;
+	max-width: 160px;
+}
+.eem-pct-input {
+	padding: 8px 12px;
+	border: 1px solid #8c8f94;
+	border-radius: 4px 0 0 4px;
+	font-size: 13.5px;
+	font-family: inherit;
+	color: var(--eem-text);
+	background: #fff;
+	min-width: 0;
+	flex: 1;
+	outline: none;
+}
+.eem-pct-input:focus {
+	border-color: var(--eem-electric);
+	box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12);
+}
+.eem-pct-symbol {
+	padding: 8px 10px;
+	background: #f3f4f5;
+	border: 1px solid #8c8f94;
+	border-left: none;
+	border-radius: 0 4px 4px 0;
+	font-size: 13px;
+	color: var(--eem-text-muted);
+	font-weight: 600;
+	display: flex;
+	align-items: center;
+}
+
+/* Mobile responsive — collapse field-row grid to stacked, narrow
+   toggle-label-row, full-width fee-mode buttons. */
+@media (max-width: 600px) {
+	.eem-toggle-label-row {
+		max-width: 100%;
+	}
+	.eem-fee-modes {
+		gap: 6px;
+	}
+	.eem-fee-mode-btn {
+		flex: 1 1 auto;
+		text-align: center;
+		padding: 8px 12px;
+	}
+}

@@ -134,7 +134,11 @@ $expected_fields = array(
 	'en_reservation[group_rider_grounds_fee_enabled]'=> 'group section emits grounds fee toggle',
 	'en_reservation[group_rider_grounds_fee_amount]' => 'group section emits grounds fee amount input',
 	'en_reservation[convenience_fee_enabled]'        => 'fees section emits convenience_fee_enabled toggle',
-	'en_reservation[convenience_fee_label]'          => 'fees section emits convenience_fee_label input',
+	// C7.C.1.4.A — convenience_fee_label dropped per mockup canon
+	// (mockup line 1031 hardcodes the displayed string "Non-Refundable
+	// Convenience Fee" — no per-reservation override). Legacy meta key
+	// remains for backward compatibility; the editor just doesn't render
+	// an input for it anymore.
 	'en_reservation[convenience_fee_type]'           => 'fees section emits convenience_fee_type select',
 	'en_reservation[venue_agreement_enabled]'        => 'agreement section emits venue_agreement_enabled toggle',
 	'en_reservation[venue_agreement_file_label]'     => 'agreement section emits agreement file label input',
@@ -149,9 +153,8 @@ c7c1_ok( 'description textarea contains the seeded value',
 c7c1_ok( 'addons row carries seeded "Bedding Hay" name',
 	false !== strpos( $html, 'value="Bedding Hay"' ),
 	$pass, $fail, $log );
-c7c1_ok( 'fees label input carries the seeded "Service Fee" value',
-	false !== strpos( $html, 'value="Service Fee"' ),
-	$pass, $fail, $log );
+// C7.C.1.4.A — convenience_fee_label dropped per mockup canon (see note above).
+// Assertion removed; legacy meta key persists but no editor input renders it.
 
 // ── [4] Repeating-row helper rendered output ───────────────────────
 echo "\n[4] Repeating-row helper — template + tbody + add-button\n";
