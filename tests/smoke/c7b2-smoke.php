@@ -95,29 +95,36 @@ echo "\n[2] Save bar — draft post buttons\n";
 c7b2_ok( 'draft render contains .eem-save-bar',
 	str_contains( $draft_html, 'class="eem-save-bar"' ),
 	$pass, $fail, $log );
-c7b2_ok( 'draft render contains Cancel button',
-	str_contains( $draft_html, 'eem-btn-savebar-cancel' ),
+// C7.B.2.2: save-bar buttons consolidated onto existing C1.2 .eem-btn-*
+// variants (Cancel + Save Draft = .eem-btn-secondary; Publish/Update =
+// .eem-btn-primary). Custom .eem-btn-savebar-* variants removed.
+c7b2_ok( 'draft render contains Cancel button (data-eem-action)',
+	str_contains( $draft_html, 'data-eem-action="reservation-editor-cancel"' ),
 	$pass, $fail, $log );
-c7b2_ok( 'draft render contains Save Draft button',
-	str_contains( $draft_html, 'eem-btn-savebar-draft' ) && str_contains( $draft_html, 'Save Draft' ),
+c7b2_ok( 'draft render contains Save Draft button (data-eem-action + label)',
+	str_contains( $draft_html, 'data-eem-action="reservation-editor-save-draft"' ) && str_contains( $draft_html, 'Save Draft' ),
 	$pass, $fail, $log );
-c7b2_ok( 'draft render contains Publish button',
-	str_contains( $draft_html, 'eem-btn-savebar-publish' ) && (bool) preg_match( '/eem-btn-savebar-publish[^>]*>\s*Publish\s*<\/button>/s', $draft_html ),
+c7b2_ok( 'draft render contains Publish button (data-eem-action + label)',
+	str_contains( $draft_html, 'data-eem-action="reservation-editor-publish"' )
+		&& (bool) preg_match( '/data-eem-action="reservation-editor-publish"[^>]*>\s*Publish\s*<\/button>/s', $draft_html ),
 	$pass, $fail, $log );
-c7b2_ok( 'draft render does NOT contain Update button',
-	false === strpos( $draft_html, 'eem-btn-savebar-update' ),
+c7b2_ok( 'draft render does NOT contain Update button data-eem-action',
+	false === strpos( $draft_html, 'data-eem-action="reservation-editor-update"' ),
+	$pass, $fail, $log );
+c7b2_ok( 'C7.B.2.2 — no leftover .eem-btn-savebar-* custom variants in render (consolidated onto C1.2 .eem-btn-*)',
+	0 === preg_match( '/eem-btn-savebar-/', $draft_html ),
 	$pass, $fail, $log );
 
 // ── [3] Save bar — published post buttons ──────────────────────────
 echo "\n[3] Save bar — published post buttons\n";
 c7b2_ok( 'published render contains Cancel + Update buttons only',
-	str_contains( $pub_html, 'eem-btn-savebar-cancel' )
-		&& str_contains( $pub_html, 'eem-btn-savebar-update' )
-		&& false === strpos( $pub_html, 'eem-btn-savebar-draft' )
-		&& false === strpos( $pub_html, 'eem-btn-savebar-publish' ),
+	str_contains( $pub_html, 'data-eem-action="reservation-editor-cancel"' )
+		&& str_contains( $pub_html, 'data-eem-action="reservation-editor-update"' )
+		&& false === strpos( $pub_html, 'data-eem-action="reservation-editor-save-draft"' )
+		&& false === strpos( $pub_html, 'data-eem-action="reservation-editor-publish"' ),
 	$pass, $fail, $log );
 c7b2_ok( 'published render shows "Update" label',
-	(bool) preg_match( '/eem-btn-savebar-update[^>]*>\s*Update\s*<\/button>/s', $pub_html ),
+	(bool) preg_match( '/data-eem-action="reservation-editor-update"[^>]*>\s*Update\s*<\/button>/s', $pub_html ),
 	$pass, $fail, $log );
 
 // ── [4] Save bar partial accepts $args (Decision J) ─────────────────
@@ -132,7 +139,7 @@ require EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_save-ba
 $custom_html = ob_get_clean();
 c7b2_ok( 'partial honors custom cancel_label',  str_contains( $custom_html, 'Custom Cancel' ),  $pass, $fail, $log );
 c7b2_ok( 'partial honors custom update_label',  str_contains( $custom_html, 'Custom Update' ),  $pass, $fail, $log );
-c7b2_ok( 'partial honors primary_action=update', str_contains( $custom_html, 'eem-btn-savebar-update' ) && false === strpos( $custom_html, 'eem-btn-savebar-draft' ), $pass, $fail, $log );
+c7b2_ok( 'partial honors primary_action=update', str_contains( $custom_html, 'data-eem-action="reservation-editor-update"' ) && false === strpos( $custom_html, 'data-eem-action="reservation-editor-save-draft"' ), $pass, $fail, $log );
 
 // ── [5] Save bar carries AJAX nonce input ──────────────────────────
 echo "\n[5] AJAX nonce wired into save bar\n";
@@ -145,8 +152,14 @@ echo "\n[6] Save bar CSS — fixed-bottom (C7.B.2.1) + navy band\n";
 c7b2_ok( '.eem-save-bar uses position:fixed bottom:0 (C7.B.2.1 — switched from sticky)',
 	(bool) preg_match( '/\.eem-save-bar\s*\{[^}]*position\s*:\s*fixed[^}]*bottom\s*:\s*0/s', $css_src ),
 	$pass, $fail, $log );
-c7b2_ok( '.eem-save-bar uses navy background',
-	(bool) preg_match( '/\.eem-save-bar\s*\{[^}]*background\s*:\s*var\(\s*--eem-navy\s*\)/s', $css_src ),
+c7b2_ok( '.eem-save-bar uses WHITE background (C7.B.2.2 — corrected mockup drift; mockup line 275 sticky-save is white not navy)',
+	(bool) preg_match( '/\.eem-save-bar\s*\{[^}]*background\s*:\s*var\(\s*--eem-surface\s*\)/s', $css_src ),
+	$pass, $fail, $log );
+c7b2_ok( '.eem-save-bar carries 1px light gray top border (mockup line 275)',
+	(bool) preg_match( '/\.eem-save-bar\s*\{[^}]*border-top\s*:\s*1px\s+solid\s+#dcdcde/s', $css_src ),
+	$pass, $fail, $log );
+c7b2_ok( '.eem-save-bar no longer uses navy background (C7.B.2 drift removed)',
+	0 === preg_match( '/\.eem-save-bar\s*\{[^}]*background\s*:\s*var\(\s*--eem-navy\s*\)/s', $css_src ),
 	$pass, $fail, $log );
 c7b2_ok( '.eem-reservation-editor-body has padding-bottom for fixed save bar clearance (C7.B.2.1)',
 	(bool) preg_match( '/\.eem-reservation-editor-body\s*\{\s*padding-bottom\s*:\s*\d+px/', $css_src ),
@@ -333,8 +346,9 @@ c7b2_ok( 'response carries refreshed meta_line_html (Decision K — DOM replacem
 
 // ── [17] Anchor umbrellas on save-bar btn classes ──────────────────
 echo "\n[17] Anchor umbrellas on save-bar btn classes (DS-1.A.1 discipline)\n";
-c7b2_ok( 'a.eem-btn-savebar-cancel umbrella shipped',
-	(bool) preg_match( '/a\.eem-btn-savebar-cancel:hover[\s\S]{0,400}?text-decoration\s*:\s*none/s', $css_src ),
+c7b2_ok( 'C7.B.2.2 — save bar Cancel anchor reuses C1.2 .eem-btn-secondary (umbrella already shipped in C1.2)',
+	(bool) preg_match( '/a\.eem-btn-secondary,\s*\n?\s*a\.eem-btn-secondary:link[\s\S]{0,400}?text-decoration\s*:\s*none/s', $css_src )
+		|| (bool) preg_match( '/\.eem-btn-secondary,\s*\n?\s*a\.eem-btn-secondary\s*\{/s', $css_src ),
 	$pass, $fail, $log );
 c7b2_ok( 'a.eem-reservation-editor-meta-change-link umbrella shipped',
 	(bool) preg_match( '/a\.eem-reservation-editor-meta-change-link:hover[\s\S]{0,400}?text-decoration\s*:\s*none/s', $css_src ),

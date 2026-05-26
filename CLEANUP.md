@@ -16,6 +16,18 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 
 ## Active entries
 
+### 42. Reservation editor save bar — missing mockup right-rail elements (deferred to C7.G)
+- **What:** The mockup's canonical save UI is a right-rail `.rail-card` Publish card (mockup lines 1149-1180) containing **more affordances** than C7.B.2 shipped. Specifically missing from the current fixed-bottom save bar:
+  - Status display ("Status: Published")
+  - Visibility display ("Visibility: Public")
+  - Published-date display ("Published: Apr 17, 2026")
+  - **Preview Frontend Form** button
+  - **Move to Trash** button
+- **Why deferred:** Path A retired the side rails, so these affordances need to land somewhere in the single-column layout — either in the meta-line under the title, inside the save bar's primary group, or in a More dropdown (the Order Detail pattern). Decision pending; C7.G polish pass is the right venue once we have full context across all the editor surfaces.
+- **Added in:** C7.B.2.2 (audit triggered by Whitney's "navy band feels too heavy" visual-verify call — re-audit of mockup save UI surfaced the missing right-rail elements that the original C7.B audit didn't fully account for when Path A retired the side rails).
+- **Unblocks deletion:** C7.G polish pass — fold all 5 missing affordances into the fixed-bottom save bar OR distribute across header actions + More dropdown. Likely shape: status/visibility/date as a small meta strip ABOVE the buttons in the save bar; Preview + Move to Trash as ghost buttons next to Cancel.
+- **Status:** awaiting C7.G
+
 ### 40. Dashboard Needs Attention — C11-dependent rows
 - **What:** `EEM_Dashboard_Repo::attention_items()` row 4 ("— customers haven't signed the agreement") ships as an em-dash placeholder pending C11 (Customer Confirmation Email + agreement-signature tracking). Live position: `includes/class-eem-dashboard-repo.php` → `attention_items()` → `em_dash => true` entry with `icon_key => 'mail'`.
 - **Why deferred:** Agreement-signature data doesn't exist yet — C11 introduces the agreement workflow + signature timestamps.

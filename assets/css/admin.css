@@ -5683,14 +5683,25 @@ a.eem-reservation-editor-meta-change-link:hover {
 	color: var(--eem-electric-hover);
 }
 
-/* Save bar — fixed-bottom navy strip with Cancel + primary buttons.
-   C7.B.2.1: switched from position:sticky to position:fixed —
-   sticky requires the scrolling ancestor to be the immediate scroll
-   container, but in WP admin the scroll lives on <body>/#wpbody-
-   content, not on .eem-reservation-editor-body. Fixed positioning
-   gives true float-at-viewport-bottom regardless of the scroll
-   container nesting. The body wrapper gets bottom padding equal to
-   the save bar height so content doesn't hide underneath. */
+/* Save bar — fixed-bottom WHITE strip with subtle top border.
+   C7.B.2.2: re-styled from navy band to white bg + 1px light gray
+   top border, matching the mockup's `.sticky-save` rule
+   (.mockups/edit_reservation_page.html line 275):
+     background: #fff; border-top: 1px solid #dcdcde;
+     padding: 12px 16px; position: fixed; bottom: 0; left/right: 0
+   Path A retired the right rail, so this fixed-bottom bar is our
+   no-rail equivalent of the mockup's right-rail Publish card —
+   the closest mockup-spec styling reference is the mobile-only
+   sticky-save (which has the same fixed-bottom shape and no rail
+   context). Decision B in the C7.B.2 kickoff mis-cited the
+   mockup ("navy band at bottom") — that bar doesn't exist; the
+   navy treatment was a deviation. See CLAUDE.md
+   "Mockup-citation discipline" lesson.
+
+   Position fixed (NOT sticky — DS-1.B.4 lesson: sticky requires
+   the scrolling ancestor to be the immediate scroll container, and
+   WP admin scrolls on <body>, not on the editor body wrapper).
+   Body bottom-padding (80px) keeps content above the bar. */
 .eem-save-bar {
 	position: fixed;
 	bottom: 0;
@@ -5701,9 +5712,8 @@ a.eem-reservation-editor-meta-change-link:hover {
 	justify-content: space-between;
 	gap: 12px;
 	padding: 12px 22px;
-	background: var(--eem-navy);
-	color: var(--eem-text-on-navy);
-	box-shadow: 0 -2px 8px rgba(3, 27, 78, 0.18);
+	background: var(--eem-surface);
+	border-top: 1px solid #dcdcde;
 	z-index: var(--eem-z-sticky);
 }
 /* Body bottom-padding so content above the fixed save bar isn't
@@ -5725,47 +5735,7 @@ a.eem-reservation-editor-meta-change-link:hover {
 	gap: 8px;
 }
 
-/* Save bar button variants — Cancel = ghost on navy, Draft = secondary
-   on navy, Publish/Update = electric blue primary. Anchor umbrellas
-   per DS-1.A.1 discipline. */
-.eem-btn-savebar-cancel,
-a.eem-btn-savebar-cancel,
-a.eem-btn-savebar-cancel:link,
-a.eem-btn-savebar-cancel:visited,
-a.eem-btn-savebar-cancel:hover,
-a.eem-btn-savebar-cancel:focus {
-	background: transparent;
-	color: var(--eem-text-on-navy-soft);
-	border: 1px solid rgba(255, 255, 255, 0.18);
-	text-decoration: none;
-}
-.eem-btn-savebar-cancel:hover,
-a.eem-btn-savebar-cancel:hover {
-	background: rgba(255, 255, 255, 0.06);
-	color: var(--eem-text-on-navy);
-	border-color: rgba(255, 255, 255, 0.32);
-}
-.eem-btn-savebar-draft {
-	background: rgba(255, 255, 255, 0.1);
-	color: var(--eem-text-on-navy);
-	border: 1px solid rgba(255, 255, 255, 0.22);
-}
-.eem-btn-savebar-draft:hover {
-	background: rgba(255, 255, 255, 0.18);
-	color: var(--eem-text-on-navy);
-}
-.eem-btn-savebar-publish,
-.eem-btn-savebar-update {
-	background: var(--eem-electric);
-	color: var(--eem-text-on-navy);
-	border: 1px solid var(--eem-electric);
-}
-.eem-btn-savebar-publish:hover,
-.eem-btn-savebar-update:hover {
-	background: var(--eem-electric-hover);
-	color: var(--eem-text-on-navy);
-}
-
+/* Mobile: stack buttons + give primary visual weight via order */
 @media (max-width: 767px) {
 	.eem-save-bar {
 		flex-direction: column;
@@ -5777,7 +5747,7 @@ a.eem-btn-savebar-cancel:hover {
 		align-items: stretch;
 	}
 	.eem-save-bar__primary .eem-btn { width: 100%; justify-content: center; }
-	.eem-btn-savebar-cancel { width: 100%; justify-content: center; }
+	.eem-save-bar .eem-btn-secondary { width: 100%; justify-content: center; }
 }
 
 /* Linked Event modal — source-mode picker (segmented control) +

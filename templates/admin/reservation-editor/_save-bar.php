@@ -56,19 +56,19 @@ foreach ( $args['data_attrs'] as $k => $v ) {
 ?>
 <div class="eem-save-bar"<?php echo $data_attr_html; // phpcs:ignore WordPress.Security.EscapeOutput ?>>
 	<?php wp_nonce_field( $args['nonce_action'], $args['nonce_name'], false, true ); ?>
-	<a class="eem-btn eem-btn-savebar-cancel" href="<?php echo esc_url( $args['cancel_url'] ); ?>" data-eem-action="reservation-editor-cancel">
+	<a class="eem-btn eem-btn-secondary" href="<?php echo esc_url( $args['cancel_url'] ); ?>" data-eem-action="reservation-editor-cancel">
 		<?php echo esc_html( $args['cancel_label'] ); ?>
 	</a>
 	<div class="eem-save-bar__primary">
 		<?php if ( 'update' === $args['primary_action'] ) : ?>
-			<button type="button" class="eem-btn eem-btn-savebar-update" data-eem-action="reservation-editor-update">
+			<button type="button" class="eem-btn eem-btn-primary" data-eem-action="reservation-editor-update">
 				<?php echo esc_html( $args['update_label'] ); ?>
 			</button>
 		<?php else : ?>
-			<button type="button" class="eem-btn eem-btn-savebar-draft" data-eem-action="reservation-editor-save-draft">
+			<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="reservation-editor-save-draft">
 				<?php echo esc_html( $args['draft_label'] ); ?>
 			</button>
-			<button type="button" class="eem-btn eem-btn-savebar-publish" data-eem-action="reservation-editor-publish">
+			<button type="button" class="eem-btn eem-btn-primary" data-eem-action="reservation-editor-publish">
 				<?php echo esc_html( $args['publish_label'] ); ?>
 			</button>
 		<?php endif; ?>
