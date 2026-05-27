@@ -5,7 +5,79 @@ in-flight context that ISN'T already in CLAUDE.md, commit messages,
 or CLEANUP.md. Read after `git pull` on a new machine to pick up
 momentum across Claude Code sessions.
 
-**Last updated:** 2026-05-27 — C7.X.12 — VV-3 REAL fix (flex align-items, not cascade) + VV-4 Agreement Label field + Item 7 Linked Event rail card RETIRED. Three deliverables one commit. Editor architecturally complete pending Whitney short visual verify.
+**Last updated:** 2026-05-27 — C7.X.13 — WP core forms.css specificity tie. The cascade source we never enumerated across five commits. Affix seam fully closed; structural cross-stylesheet enumeration discipline landed in CLAUDE.md.
+
+---
+
+## C7.X.13 fix-up — WP core forms.css specificity tie (landed 2026-05-27)
+
+**Status:** committed + pushed. Smoke 1465/1465 green (was 1451; +14 from `c7x13-wp-core-specificity-smoke.php`).
+
+### Root cause — FIFTH commit on VV-3, finally the right file
+
+After C7.X.10 (admin-legacy.css `:not()` exclusions on 3 classes), C7.X.11 (extended to 5 classes + structural enumeration smoke), C7.X.12 (flex align-items fix), Whitney's verify of C7.X.12 caught a residual seam: `.eem-price-input` left border-radius still visibly rounded.
+
+**The winner was WP core**, not admin-legacy.css. `wp-admin/css/forms.css:42-56`:
+```css
+input[type="email"], input[type="number"], input[type="search"], ... {
+    border-radius: 2px;
+    border: 1px solid #949494;
+    ...
+}
+```
+Specificity `input[type="number"]` = **(0,1,1)**. Our `.eem-price-input` = **(0,1,0)**. WP wins, rounds all four corners to 2px → left corners rounded → seam.
+
+FIVE commits looked at admin-legacy.css exhaustively. None of them grepped WP core CSS. The C7.X.11 structural enumeration smoke caught form-control classes inside our own codebase but didn't cross-check WP core's same-specificity overrides.
+
+### Why this stayed hidden through the prior fixes
+
+Until C7.X.12's `align-items: stretch` fix, the alignment gap was the dominant visual artifact — it masked the 2px rounding-on-left that WP core was producing. Once C7.X.12 closed the alignment gap and the chip/input butted edge-to-edge, the small 2px curve on the input's left became the visible-and-obvious bug. Whitney sighted it immediately. The bug was always there; just hidden behind a worse bug.
+
+### Fix shape
+
+Bump our 5 affix/field input class selectors from `.classname` to `input.classname`. Specificity (0,1,0) → (0,1,1) — ties WP core. At a tie, cascade order wins; admin.css enqueues after WP forms.css → our rule wins.
+
+| Was | Becomes |
+|---|---|
+| `.eem-price-input` | `input.eem-price-input` |
+| `.eem-pct-input` | `input.eem-pct-input` |
+| `.eem-repeat-price-in` | `input.eem-repeat-price-in` |
+| `.eem-zone-price-in` | `input.eem-zone-price-in` |
+| `.eem-field-input` | `input.eem-field-input` (+ siblings `textarea.eem-field-textarea`, `select.eem-field-select`) |
+
+`:focus`, `::placeholder` variants too. ~12 selector lines updated in admin.css. EQUINE_EVENT_MANAGER_VERSION bumped 2.3.1 → 2.3.2 for cache-bust.
+
+### Process-miss escalation — paying forward
+
+**Container-flex parity check (C7.X.12) extended with cross-stylesheet cascade enumeration (C7.X.13).** When the cascade question IS the right question (after container parity verified), the enumeration of "every rule that could win" must cover ALL CSS sources:
+- Plugin's own admin.css + admin-legacy.css
+- **WP core** — `wp-admin/css/forms.css` (canonical first-place for form-control overrides), `dashboard.css`, `common.css`, `wp-admin.css`
+- Active theme CSS (if applicable to the surface)
+
+CLAUDE.md `Mockup Walkthrough Pre-Audit` section gained the WP-core grep step. For form-control classes specifically, `wp-admin/css/forms.css:42-56` is now flagged as the canonical first place to check — it applies `border-radius`, `border`, `background`, `color`, `box-shadow` to every standard input type at specificity (0,1,1). Any plugin class on those inputs MUST either prefix with element tag (`input.classname`) or use a parent-descendant compound to win the cascade.
+
+Sibling-test variant added: **when an affix-pattern visual works for one input class but not another, check whether the working one carries an `input.` prefix and the broken one doesn't**. (None of our 5 carried the prefix; visual correctness was masked by the prior alignment bug.)
+
+### C7.X.13 commit: `[hash filled after commit]`
+
+### Files changed (4)
+- `assets/css/admin.css` — 5 affix/field class selectors prefixed with `input.` (+ siblings for textarea/select), `:focus` + `::placeholder` variants updated. Audit-trail comment block at `.eem-price-input` documents the WP-core cause + cascade-tie rationale.
+- `equine-event-manager.php` — `EQUINE_EVENT_MANAGER_VERSION` 2.3.1 → 2.3.2 (plugin header `* Version:` in lockstep)
+- `tests/smoke/c7x13-wp-core-specificity-smoke.php` — NEW, 14 assertions:
+  - PRESENCE: each of 5 prefixed `input.classname` selectors present
+  - ABSENCE: zero bare unprefixed `.classname` rule-openings (comments excluded via pre-scan strip)
+  - PRESENCE: `.eem-price-input` border-radius shape (left corners zero) intact
+  - PRESENCE: WP core forms.css contains the overriding `input[type="number"] { border-radius: 2px; }` rule (root-cause confirmation, fails fast if WP version changes the selector shape)
+  - PRESENCE: `EQUINE_EVENT_MANAGER_VERSION === 2.3.2`
+- `tests/smoke/c7x11-affix-add-buttons-smoke.php` — version assertions made forward-compatible via `version_compare(..., '2.3.1', '>=')` so future cache-bust bumps don't trip the smoke
+- `CLAUDE.md` — cross-stylesheet cascade enumeration sub-step added to Container-flex parity check
+- `SESSION-NOTES.md` — this entry
+
+### Whitney's check (one-line, no DevTools required)
+
+- [ ] `.eem-price-input` left corners now FLAT against the chip on res 44. The seam closes, finally.
+
+---
 
 ---
 

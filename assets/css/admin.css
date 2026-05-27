@@ -898,9 +898,13 @@ a.eem-btn-add:hover {
 	gap: 5px;
 }
 
-.eem-field-input,
-.eem-field-textarea,
-.eem-field-select {
+/* C7.X.13 — element-prefixed selectors (input./textarea./select.)
+   tie WP core's `input[type="number"] { border-radius: 2px }` rule
+   at specificity (0,1,1). Without the tag prefix, WP core wins and
+   overrides our intended radius. */
+input.eem-field-input,
+textarea.eem-field-textarea,
+select.eem-field-select {
 	padding: 8px 11px;
 	border: var(--eem-border-input);
 	border-radius: var(--eem-radius);
@@ -912,15 +916,15 @@ a.eem-btn-add:hover {
 	outline: none;
 }
 
-.eem-field-input:focus,
-.eem-field-textarea:focus,
-.eem-field-select:focus {
+input.eem-field-input:focus,
+textarea.eem-field-textarea:focus,
+select.eem-field-select:focus {
 	border-color: var(--eem-electric);
 	box-shadow: var(--eem-focus-ring);
 }
 
-.eem-field-input::placeholder,
-.eem-field-textarea::placeholder {
+input.eem-field-input::placeholder,
+textarea.eem-field-textarea::placeholder {
 	color: var(--eem-text-placeholder);
 }
 
@@ -982,7 +986,18 @@ a.eem-btn-add:hover {
 	align-items: center;
 }
 
-.eem-price-input {
+/* C7.X.13 — selector compound `input.eem-price-input` (specificity
+   (0,1,1)) ties WordPress core `wp-admin/css/forms.css` rule
+   `input[type="number"] { border-radius: 2px; ... }` (same
+   specificity). At a tie, cascade order wins; admin.css loads after
+   WP forms.css → our rule wins. C7.X.10/11/12 exclusion work in
+   admin-legacy.css covered the legacy `!important` blocks but
+   missed WP core's same-specificity override — five commits looked
+   at the wrong file. CLAUDE.md `Container-flex parity check` sub-
+   step extended with `cross-stylesheet cascade enumeration` in
+   this commit (WP core + theme + plugin's own files all in scope
+   when chasing a cascade winner). */
+input.eem-price-input {
 	padding: 8px 12px;
 	border: 1px solid #8c8f94;
 	border-radius: 0 var(--eem-radius) var(--eem-radius) 0;
@@ -995,7 +1010,7 @@ a.eem-btn-add:hover {
 	outline: none;
 }
 
-.eem-price-input:focus {
+input.eem-price-input:focus {
 	border-color: var(--eem-electric);
 	box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12);
 }
@@ -5977,7 +5992,9 @@ a.eem-reservation-editor-meta-change-link:hover {
 	align-items: stretch;
 	max-width: 160px;
 }
-.eem-pct-input {
+/* C7.X.13 — `input.` prefix ties WP core forms.css (same fix as
+   .eem-price-input above; see audit-trail comment there). */
+input.eem-pct-input {
 	padding: 8px 12px;
 	border: 1px solid #8c8f94;
 	border-radius: 4px 0 0 4px;
@@ -5989,7 +6006,7 @@ a.eem-reservation-editor-meta-change-link:hover {
 	flex: 1;
 	outline: none;
 }
-.eem-pct-input:focus {
+input.eem-pct-input:focus {
 	border-color: var(--eem-electric);
 	box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12);
 }
@@ -6124,8 +6141,10 @@ a.eem-reservation-editor-meta-change-link:hover {
 .eem-zone-price-label { font-size: 11px; font-weight: 600; color: var(--eem-text-muted); white-space: nowrap; }
 .eem-zone-price-wrap { display: flex; align-items: stretch; overflow: hidden; border-radius: 4px; }
 .eem-zone-price-sym { padding: 7px 9px; background: #f3f4f5; border: 1px solid #8c8f94; border-right: none; border-radius: 4px 0 0 4px; font-size: 12.5px; color: var(--eem-text-muted); font-weight: 600; display: flex; align-items: center; }
-.eem-zone-price-in { width: 80px; padding: 7px 9px; border: 1px solid #8c8f94; border-radius: 0 4px 4px 0; font-size: 13px; font-family: inherit; color: var(--eem-text); outline: none; background: #fff; }
-.eem-zone-price-in:focus { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
+/* C7.X.13 — `input.` prefix ties WP core forms.css; see audit-trail
+   comment at .eem-price-input. */
+input.eem-zone-price-in { width: 80px; padding: 7px 9px; border: 1px solid #8c8f94; border-radius: 0 4px 4px 0; font-size: 13px; font-family: inherit; color: var(--eem-text); outline: none; background: #fff; }
+input.eem-zone-price-in:focus { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
 .eem-zone-delete-btn { width: 30px; height: 30px; border-radius: 4px; border: 1px solid #fecaca; background: #fef2f2; color: #b91c1c; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .eem-zone-delete-btn svg { width: 13px; height: 13px; }
 .eem-zone-delete-btn:hover { background: #fee2e2; }
@@ -6150,8 +6169,10 @@ a.eem-reservation-editor-meta-change-link:hover {
 .eem-repeat-input:focus { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
 .eem-repeat-price-wrap { display: flex; align-items: stretch; }
 .eem-repeat-price-sym { padding: 7px 9px; background: #f3f4f5; border: 1px solid #8c8f94; border-right: none; border-radius: 4px 0 0 4px; font-size: 12px; color: var(--eem-text-muted); display: flex; align-items: center; }
-.eem-repeat-price-in { padding: 7px 10px; border: 1px solid #8c8f94; border-radius: 0 4px 4px 0; font-size: 13px; font-family: inherit; color: var(--eem-text); background: #fff; width: 90px; outline: none; }
-.eem-repeat-price-in:focus { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
+/* C7.X.13 — `input.` prefix ties WP core forms.css; see audit-trail
+   comment at .eem-price-input. */
+input.eem-repeat-price-in { padding: 7px 10px; border: 1px solid #8c8f94; border-radius: 0 4px 4px 0; font-size: 13px; font-family: inherit; color: var(--eem-text); background: #fff; width: 90px; outline: none; }
+input.eem-repeat-price-in:focus { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
 .eem-btn-delete { width: 30px; height: 30px; border-radius: 4px; border: 1px solid #fecaca; background: #fef2f2; color: #b91c1c; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .eem-btn-delete svg { width: 13px; height: 13px; }
 .eem-btn-delete:hover { background: #fee2e2; }

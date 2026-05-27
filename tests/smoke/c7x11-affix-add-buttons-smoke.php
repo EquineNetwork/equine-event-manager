@@ -145,10 +145,17 @@ c7x11_ok( 'every enumerated <input type="number"> class has exclusion coverage i
 
 // ── [3] Cache-bust constant ─────────────────────────────────────
 echo "\n[3] EQUINE_EVENT_MANAGER_VERSION bumped for CSS cache-bust\n";
-c7x11_ok( 'EQUINE_EVENT_MANAGER_VERSION === 2.3.1', '2.3.1' === EQUINE_EVENT_MANAGER_VERSION, $pass, $fail, $log, EQUINE_EVENT_MANAGER_VERSION );
+// C7.X.13 — assertion made forward-compatible. Each cache-bust bump
+// (2.3.1, 2.3.2, …) shouldn't trip this smoke. Compare version ≥ 2.3.1
+// AND assert no `2.3.0` drift (the original cache-bust precondition).
+c7x11_ok( 'EQUINE_EVENT_MANAGER_VERSION >= 2.3.1 (cache-bust constant bumped post-C7.X.10)',
+	version_compare( EQUINE_EVENT_MANAGER_VERSION, '2.3.1', '>=' ),
+	$pass, $fail, $log, EQUINE_EVENT_MANAGER_VERSION );
 $main_file = file_get_contents( EQUINE_EVENT_MANAGER_FILE );
-c7x11_ok( 'plugin header Version: 2.3.1 (single source of truth, no drift)', false !== strpos( $main_file, ' * Version:           2.3.1' ), $pass, $fail, $log );
-c7x11_ok( 'no stale `2.3.0` hardcoded in plugin main file outside @since tags',
+c7x11_ok( 'plugin header Version: matches EQUINE_EVENT_MANAGER_VERSION constant (single source of truth, no drift)',
+	false !== strpos( $main_file, ' * Version:           ' . EQUINE_EVENT_MANAGER_VERSION ),
+	$pass, $fail, $log );
+c7x11_ok( 'no stale `2.3.0` hardcoded in plugin main file (Version: line + constant) outside @since tags',
 	false === strpos( $main_file, "'2.3.0'" )
 	&& false === strpos( $main_file, 'Version:           2.3.0' ),
 	$pass, $fail, $log );

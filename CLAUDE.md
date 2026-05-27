@@ -205,6 +205,18 @@ Operational test for "is this a cascade bug or a container bug?": find a sibling
 
 This sub-step adds ~5-10 minutes to the pre-audit. It would have saved the three C7.X.* cascade-chase commits.
 
+**Cross-stylesheet cascade enumeration extends the container-flex check (C7.X.13 lesson):** When the cascade question IS the right question (container properties match, but a child property is still being overridden), the enumeration of "every rule that could win" must cover ALL CSS sources, not just the plugin's own files. Specifically: WP core CSS (`wp-admin/css/forms.css`, `dashboard.css`, `common.css`, `wp-admin.css`), active theme CSS, and the plugin's `admin-legacy.css` AND `admin.css`. C4 → C7.X.4 → C7.X.10 → C7.X.11 → C7.X.12 was FIVE commits of cascade work that exhaustively covered `admin-legacy.css` but never enumerated WP core CSS. The actual winning rule was `input[type="number"] { border-radius: 2px; }` at `wp-admin/css/forms.css:42-56` — specificity (0,1,1), beating our `.eem-price-input` at (0,1,0). Adding `:not()` exclusions to admin-legacy.css couldn't fix it because admin-legacy wasn't where the winning rule lived.
+
+Operational discipline when chasing a cascade winner:
+1. `grep -rn 'classname-or-selector-pattern' assets/css/admin*.css` (plugin own)
+2. `grep -nE 'input\[type="..."\]' "$WP_ROOT/wp-admin/css/forms.css"` (WP core most-common offender)
+3. `grep -rn 'classname-pattern' "$WP_ROOT/wp-admin/css/"` (all WP admin CSS)
+4. If a theme is active and the page is admin-side, theme normally isn't loaded; if front-end, include `wp-content/themes/<active>/`.
+
+For form-control classes specifically, WP core `wp-admin/css/forms.css:42-56` is the canonical "first place to check" — it applies `border-radius`, `border`, `background`, `color`, `box-shadow` to every standard input type with specificity (0,1,1). Any plugin class on those inputs needs to either (a) prefix with the element tag (`input.classname` → (0,1,1) tie + cascade-order win, since plugin CSS enqueues after WP core), or (b) use a parent-descendant compound (`.eem-price-wrap > .eem-price-input` → (0,2,0) clean win).
+
+Sibling-test variant: find a `<input>` class in the codebase that has its intended radius/border rendering correctly. If it carries the `input.` prefix and ours doesn't, that's the diff. (None of our affix inputs carried the prefix; their visual correctness was masked by their containers' `align-items: stretch` until C7.X.12 fixed the alignment, at which point the WP-core override became visible. The chain was hidden behind the previous bug.)
+
 **Visual-element regression smokes must assert DOM presence, not just handler-shape (C7.C.1.3 lesson):** Smokes for visible UI cues (chevrons, icon glyphs, badges, dividers, status indicators) MUST assert the actual element + its non-empty content is in the rendered HTML — NOT just that a JS handler or CSS class is wired to a class name. The C7.B.1 chevron smoke shipped a "click handler is bound to data-eem-action='reservation-editor-toggle-collapse'" assertion that passed cleanly through ~10 commits while the chevron itself was an empty `<div class="eem-section-chevron">` with no SVG inside — 0×0 invisible, no visual cue for the user. The click handler was wired to the wrapping `.eem-section-header`, so collapse functionally worked when users clicked the header bar; the chevron itself was decorative-only AND invisible. Smoke never tripped because it asked the wrong question.
 
 C7.B.3's content-density lesson applied this canon to icon chips (per-section SVG + path assertions). C7.C.1.3 retrospectively applied the same canon to chevrons. The pattern generalizes to every visible element:
