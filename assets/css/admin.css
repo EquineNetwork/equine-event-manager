@@ -6135,8 +6135,10 @@ input.eem-pct-input:focus {
 .eem-zone-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
 .eem-zone-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #8c8f94; border-radius: 4px; background: #fff; flex-wrap: wrap; }
 .eem-zone-color-swatch { width: 18px; height: 18px; border-radius: 4px; flex-shrink: 0; border: 1px solid rgba(3, 27, 78, 0.15); cursor: pointer; }
-.eem-zone-name-input { flex: 1 1 180px; min-width: 140px; padding: 7px 10px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 13px; font-family: inherit; color: var(--eem-text); outline: none; background: #fff; }
-.eem-zone-name-input:focus { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
+/* C7.X.14 — `input.` prefix ties WP core forms.css; same fix as
+   .eem-price-input. See audit-trail comment at .eem-price-input. */
+input.eem-zone-name-input { flex: 1 1 180px; min-width: 140px; padding: 7px 10px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 13px; font-family: inherit; color: var(--eem-text); outline: none; background: #fff; }
+input.eem-zone-name-input:focus { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
 .eem-zone-price-group { display: flex; align-items: center; gap: 8px; }
 .eem-zone-price-label { font-size: 11px; font-weight: 600; color: var(--eem-text-muted); white-space: nowrap; }
 .eem-zone-price-wrap { display: flex; align-items: stretch; overflow: hidden; border-radius: 4px; }
@@ -6165,8 +6167,9 @@ input.eem-zone-price-in:focus { border-color: var(--eem-electric); box-shadow: 0
 .eem-repeat-table tbody tr { border-bottom: 1px solid #f0f0f1; }
 .eem-repeat-table tbody tr:last-child { border-bottom: none; }
 .eem-repeat-table td { padding: 10px 12px; vertical-align: middle; }
-.eem-repeat-input { padding: 7px 10px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 13px; font-family: inherit; color: var(--eem-text); background: #fff; width: 100%; outline: none; }
-.eem-repeat-input:focus { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
+/* C7.X.14 — `input.` prefix ties WP core forms.css. */
+input.eem-repeat-input { padding: 7px 10px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 13px; font-family: inherit; color: var(--eem-text); background: #fff; width: 100%; outline: none; }
+input.eem-repeat-input:focus { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
 .eem-repeat-price-wrap { display: flex; align-items: stretch; }
 .eem-repeat-price-sym { padding: 7px 9px; background: #f3f4f5; border: 1px solid #8c8f94; border-right: none; border-radius: 4px 0 0 4px; font-size: 12px; color: var(--eem-text-muted); display: flex; align-items: center; }
 /* C7.X.13 — `input.` prefix ties WP core forms.css; see audit-trail

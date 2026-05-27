@@ -5,7 +5,68 @@ in-flight context that ISN'T already in CLAUDE.md, commit messages,
 or CLEANUP.md. Read after `git pull` on a new machine to pick up
 momentum across Claude Code sessions.
 
-**Last updated:** 2026-05-27 — C7.X.13 — WP core forms.css specificity tie. The cascade source we never enumerated across five commits. Affix seam fully closed; structural cross-stylesheet enumeration discipline landed in CLAUDE.md.
+**Last updated:** 2026-05-27 — **C7 FINAL CLOSEOUT (C7.X.14)** — responsive breakpoints + two more vulnerable inputs prefixed + full-editor regression sweep clean. Editor functionally + structurally complete. Ready for end-to-end visual verify.
+
+---
+
+## C7.X.14 — C7 final closeout (landed 2026-05-27)
+
+**Status:** committed + pushed. Smoke 1496/1496 green (was 1465; +31 from `c7x14-responsive-and-sweep-smoke.php`). One walkthrough check away from C7 closing.
+
+### What landed in this consolidated closeout pass
+
+1. **VV-7 responsive breakpoints — already mockup-canonical, smoke added.** Audit found that admin.css already shipped the canonical mockup `@media` breakpoints (1024px → grid `1fr 260px`; 767px → grid `1fr`, rail static + order:-1, sticky-save reveals). Pre-existing work — `c7x14-responsive-and-sweep-smoke.php` adds presence-assertions so future regressions trip immediately.
+
+2. **Two MORE unprefixed input classes prefixed with `input.`** (extending C7.X.13 WP-core specificity tie to remaining vulnerable inputs surfaced during the regression sweep):
+   - `.eem-repeat-input` → `input.eem-repeat-input` (Add-On row name + per-unit inputs)
+   - `.eem-zone-name-input` → `input.eem-zone-name-input` (RV Lot Zone name input)
+   `:focus` variants too. Both are `<input type="text">` — same WP-core forms.css (0,1,1) override pattern as the number inputs from C7.X.13. Whitney didn't sight them because they're standalone inputs (not affix patterns), so the 2px-vs-4px corner difference is visually subtle. Fixed proactively.
+
+3. **Full-editor regression sweep — render res 44, every section enumerated.** Per-section element-shape inventory cross-checked against `.mockups/edit_reservation_page.html`:
+   - 10 sections render in canonical order (description → cancellation) ✓
+   - Section element counts (field-rows, toggle-label-rows, stay-type-btns, price-wraps, etc.) match expected shape per partial ✓
+   - Rail card count is 2 (Publish + Shortcode; Linked Event retired per Item 7) ✓
+   - Meta-line carries (change) + (unlink) action links ✓
+   - Agreement Label field renders ✓
+   - `.eem-price-wrap align-items: stretch` intact (C7.X.12 seam fix) ✓
+   - `input.eem-price-input` prefix intact (C7.X.13 WP-core tie) ✓
+   - Group section sub-toggles use ID-based controls (VV-2 fix intact) ✓
+   - Sticky-save mobile partial renders ✓
+   No structural drift found.
+
+4. **CLAUDE.md addition — "Full-editor regression sweep" as the canonical pre-release verification step.** The sweep this commit ran (render the canonical seed reservation, enumerate per-section element shape, cross-check against mockup) is now codified as a discipline. Prevents future "I forgot to check section X" misses.
+
+5. **Forward-compat version assertions.** C7.X.13's `EQUINE_EVENT_MANAGER_VERSION === 2.3.2` hard pin updated to `version_compare(..., '2.3.2', '>=')`. C7.X.11's same fix from earlier still in place. Future cache-bust bumps don't trip these smokes.
+
+6. **EQUINE_EVENT_MANAGER_VERSION 2.3.2 → 2.3.3.** Cache-bust for the two prefix bumps.
+
+### Files changed (5)
+
+- `assets/css/admin.css` — 2 more selector prefixes (`input.eem-repeat-input`, `input.eem-zone-name-input` + their `:focus` variants) ~6 LOC
+- `equine-event-manager.php` — version bump 2 LOC (constant + header)
+- `tests/smoke/c7x14-responsive-and-sweep-smoke.php` — NEW, 30 assertions across 3 groups (responsive breakpoints, 2 new prefixes, full-editor sweep)
+- `tests/smoke/c7x13-wp-core-specificity-smoke.php` — version assertion made forward-compatible
+- `CLAUDE.md` — "Full-editor regression sweep" discipline added as a closeout sub-step
+- `SESSION-NOTES.md` — this entry
+
+### NO OTHER C7 LOOSE ENDS FOUND
+
+Scan of CLEANUP.md surfaced only deferred items explicitly tagged to C8 / C10 / C16 / DS-1 (`#47` group meta keys → C10; `#46` legacy render helpers → C16; `#45` C7.C.1.4.B → already done; `#44` `_en_*_enabled` rename → C16; `#43` audit scripts → already deleted; `#42` save bar → already shipped via rail Publish card). None in C7 scope.
+
+SESSION-NOTES "awaiting Whitney" mentions are all closed: C7.X.9 visual verify (done), Item 7 decision (locked + landed in C7.X.12), C7.X.10/11 visual verify (done).
+
+### Walkthrough checklist for Whitney's final pass
+
+Open reservation 44, scroll top to bottom:
+
+- [ ] **Currency seam (VV-3)** — every `$` chip + input pair on the editor reads as one unified rectangle, no visible seam. Sites to spot-check: Pricing (description), RV Nightly/Weekend Rate, Group Grounds Fee Amount + Deposit Amount, Convenience Fee Flat, General Add-On price rows, RV Add-On price rows, RV Lot Zone surcharge.
+- [ ] **Agreement Label (VV-4)** — Agreement section toggled ON shows a single-line text input ABOVE the Agreement PDF row, placeholder "Agreement name (ex: Venue Agreement)".
+- [ ] **Linked Event meta-line (Item 7)** — meta-line at top shows event title with `(change)` and `(unlink)` small text links inline. Right rail has Publish + Shortcode cards only, no Linked Event card.
+- [ ] **Responsive (VV-7, optional)** — narrow the viewport below 1024px: rail shrinks from 300px to 260px. Below 767px: rail collapses ABOVE main column, fixed-bottom sticky save bar appears.
+
+If all four pass, C7 closes.
+
+---
 
 ---
 

@@ -106,7 +106,10 @@ if ( file_exists( $wp_forms_css_path ) ) {
 
 // ── [4] Cache-bust constant bumped ──────────────────────────────
 echo "\n[4] EQUINE_EVENT_MANAGER_VERSION cache-bust\n";
-c7x13_ok( 'EQUINE_EVENT_MANAGER_VERSION === 2.3.2', '2.3.2' === EQUINE_EVENT_MANAGER_VERSION, $pass, $fail, $log, EQUINE_EVENT_MANAGER_VERSION );
+// C7.X.14 — forward-compatible (each cache-bust bump shouldn't trip).
+c7x13_ok( 'EQUINE_EVENT_MANAGER_VERSION >= 2.3.2 (cache-bust at C7.X.13)',
+	version_compare( EQUINE_EVENT_MANAGER_VERSION, '2.3.2', '>=' ),
+	$pass, $fail, $log, EQUINE_EVENT_MANAGER_VERSION );
 
 echo implode( "\n", $log ) . "\n=== RESULT: {$pass} passed, {$fail} failed ===\n";
 exit( $fail > 0 ? 1 : 0 );

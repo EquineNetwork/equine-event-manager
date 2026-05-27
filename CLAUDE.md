@@ -217,6 +217,18 @@ For form-control classes specifically, WP core `wp-admin/css/forms.css:42-56` is
 
 Sibling-test variant: find a `<input>` class in the codebase that has its intended radius/border rendering correctly. If it carries the `input.` prefix and ours doesn't, that's the diff. (None of our affix inputs carried the prefix; their visual correctness was masked by their containers' `align-items: stretch` until C7.X.12 fixed the alignment, at which point the WP-core override became visible. The chain was hidden behind the previous bug.)
 
+**Full-editor regression sweep is the canonical pre-release verification step (C7.X.14 lesson):** Before declaring a multi-section / multi-surface chunk complete, render the canonical seed reservation (or equivalent fixture for the surface), enumerate per-section/per-card element shape via PHP DOM probe, cross-check against the mockup's section-by-section element inventory. Catches structural drift that section-specific smokes miss because they only check their own section's content.
+
+Operational shape (PHP/WP-CLI eval against a seeded fixture):
+1. Render the page once with all enable-toggles ON so every section body emits.
+2. For each canonical section/card, count occurrences of canonical element classes (`.eem-field-row`, `.eem-toggle-label-row`, `.eem-stay-type-btn`, `.eem-price-wrap`, `.eem-pct-wrap`, `.eem-fee-mode-btn`, `.eem-zone-row`, `.eem-file-row`, `.eem-btn-add`, `.eem-layout-summary`, etc.).
+3. Compare to expected per-section counts derived from the mockup walkthrough enumeration.
+4. Spot any drift before shipping to visual verify.
+
+Cost: ~10-15 minutes added to chunk close. Saves the multiple visual-verify cycles that surface "I forgot to check section X" misses one section at a time.
+
+C7.X.14 ran this sweep at C7 final closeout and surfaced two additional unprefixed input classes (`.eem-repeat-input` + `.eem-zone-name-input`) that would have been C7.X.15/16/17 if discovered piecemeal during visual verify. Fixed proactively in the same commit as the sweep.
+
 **Visual-element regression smokes must assert DOM presence, not just handler-shape (C7.C.1.3 lesson):** Smokes for visible UI cues (chevrons, icon glyphs, badges, dividers, status indicators) MUST assert the actual element + its non-empty content is in the rendered HTML — NOT just that a JS handler or CSS class is wired to a class name. The C7.B.1 chevron smoke shipped a "click handler is bound to data-eem-action='reservation-editor-toggle-collapse'" assertion that passed cleanly through ~10 commits while the chevron itself was an empty `<div class="eem-section-chevron">` with no SVG inside — 0×0 invisible, no visual cue for the user. The click handler was wired to the wrapping `.eem-section-header`, so collapse functionally worked when users clicked the header bar; the chevron itself was decorative-only AND invisible. Smoke never tripped because it asked the wrong question.
 
 C7.B.3's content-density lesson applied this canon to icon chips (per-section SVG + path assertions). C7.C.1.3 retrospectively applied the same canon to chevrons. The pattern generalizes to every visible element:
