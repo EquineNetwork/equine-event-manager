@@ -5505,11 +5505,52 @@ a.eem-dashboard-qa-btn:focus {
    mockup line 96-97 (striped overlay, opacity 0.55, pointer-events none).
    ═════════════════════════════════════════════════════════════════════════ */
 
-/* Editor body wrapper — same horizontal-padding-parity discipline as
-   .eem-dashboard-body (DS-1.B.3 lesson). Matches .eem-page-header
-   horizontal padding at every breakpoint. */
+/* C7.X.16 Issue I — publish-gate validation highlight. Applied by JS
+   to a `.eem-reservation-editor-section` card when its section fails
+   the validate_for_publish() rules. Red border draws attention; the
+   server-returned toast carries the per-section error message.
+   Auto-cleared after 6s; reapplied if user re-tries publish without
+   fixing. No-op on Save Draft (validator gate doesn't run). */
+.eem-reservation-editor-section.eem-section-invalid {
+	border-color: #b91c1c;
+	box-shadow: 0 0 0 1px #b91c1c;
+}
+.eem-reservation-editor-section.eem-section-invalid .eem-section-header {
+	background: #fef2f2;
+}
+
+/* C7.X.16 Issue E — defensive z-index raise on WordPress Media Library
+   modal. Whitney's C7.X.15 visual verify caught the WP admin sidebar's
+   "Menu ▾" toggle bleeding through the Media Library modal opened by
+   the Agreement Upload button. Z-index audit of our admin.css found
+   NO values approaching WP's modal default (100050) — our highest is
+   --eem-z-toast: 500. No transform/filter/fixed-position on body/wrap
+   ancestors that could trap modal stacking context. We don't directly
+   target .media-modal / .media-frame anywhere.
+
+   Root cause could not be reproduced from code-side CSS audit alone
+   (needs browser DevTools probe of computed stacking). Going with a
+   defensive symptomatic raise — no !important needed because we don't
+   target these elements elsewhere. CLEANUP entry queues a DevTools
+   investigation for C16. Cascade order alone wins for the raise to
+   200000 (plugin admin.css loads after WP core's media views CSS). */
+.media-modal-backdrop,
+.media-modal { z-index: 200000; }
+
+/* C7.X.16 Issue A — stripped `padding: 18px 18px` declaration here.
+   `<main>` carries both `.eem-edit-main` AND `.eem-reservation-editor
+   -body` classes; the `.eem-edit-body` grid container already provides
+   18px 22px outer padding around both main + rail columns. The legacy
+   18px 18px on this class compounded with the grid container's
+   padding → main column content started at 36px top / 40px left from
+   the editor card edge. Pre-C7.X.16 DS-1.B.3 discipline note about
+   "horizontal-padding-parity" doesn't apply here — `<main>` is inside
+   `.eem-edit-body`'s padded grid cell, not at the page-header level.
+   `display: flex; flex-direction: column; gap: 14px` retained because
+   `.eem-edit-main` only carries `gap: 14px` (not the flex setup),
+   and stripping flex from the body class would break vertical card
+   stacking. The two classes' rules will be DRY'd up at C16. */
 .eem-reservation-editor-body {
-	padding: 18px 18px;
 	display: flex;
 	flex-direction: column;
 	gap: 14px;
@@ -6091,6 +6132,13 @@ input.eem-pct-input:focus {
 
 /* ── Edit body 2-column grid + right rail (mockup line 360) ── */
 .eem-edit-body { padding: 18px 22px; display: grid; grid-template-columns: 1fr 300px; gap: 18px; align-items: start; background: #fff; }
+/* C7.X.16 Issue A — main column padding stripped. The .eem-edit-body
+   grid container provides the 18px 22px outer breathing room around
+   both columns; .eem-edit-main only needs gap between its child cards.
+   The pre-C7.X.16 inline `padding: 18px 18px 80px` compounded with
+   the grid container's 18px 22px → 36px top / 40px left before any
+   card content. Mockup and admin.css both had the legacy padding;
+   visual verify caught it. Mockup updated in lockstep. */
 .eem-edit-main { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .eem-edit-rail { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 44px; }
 
@@ -6109,8 +6157,21 @@ input.eem-pct-input:focus {
 .eem-publish-row a:hover { color: #1257d1; }
 
 /* ── Rail buttons (mockup line 248) ── */
-.eem-btn-preview { width: 100%; background: #fff; color: var(--eem-electric); border: 1px solid #c0d8ff; padding: 9px; border-radius: 4px; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 4px; text-decoration: none; }
-.eem-btn-preview:hover { background: #EEF4FF; border-color: var(--eem-electric); }
+/* C7.X.16 Issue D2 — umbrella anchor selector forces `text-decoration:
+   none` on hover via specificity tie with `.eem-page a:hover` (the
+   DS-1.A.1 lesson). The button can render as `<button>` (default,
+   C7.X.16) or `<a>` (legacy / future-rewire). Both shapes covered. */
+.eem-btn-preview,
+a.eem-btn-preview { width: 100%; background: #fff; color: var(--eem-electric); border: 1px solid #c0d8ff; padding: 9px; border-radius: 4px; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 4px; text-decoration: none; }
+.eem-btn-preview:hover,
+a.eem-btn-preview:hover { background: #EEF4FF; border-color: var(--eem-electric); text-decoration: none; }
+/* C7.X.16 Issue D3 — disabled state (button rendered <button disabled>
+   pending C10 customer-facing preview wire). Muted visual + no-cursor
+   + tooltip wired via title attribute on the partial. */
+.eem-btn-preview:disabled,
+.eem-btn-preview[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; background: #f6f7f7; border-color: #dcdcde; color: var(--eem-text-muted); }
+.eem-btn-preview:disabled:hover,
+.eem-btn-preview[aria-disabled="true"]:hover { background: #f6f7f7; border-color: #dcdcde; }
 .eem-btn-preview svg { width: 13px; height: 13px; }
 .eem-btn-save-draft { width: 100%; background: #fff; color: var(--eem-text); border: 1px solid #8c8f94; padding: 9px; border-radius: 4px; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; }
 .eem-btn-save-draft:hover { background: #f6f7f7; }

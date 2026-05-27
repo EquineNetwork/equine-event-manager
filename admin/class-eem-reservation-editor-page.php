@@ -284,6 +284,175 @@ class EEM_Reservation_Editor_Page {
 	}
 
 	/**
+	 * C7.X.16 Issue I — per-section publish-gate validator.
+	 *
+	 * Returns an array of `[section_key => error_message]` for every
+	 * section that is enabled but doesn't satisfy its "valid when ON"
+	 * criteria. Called by `ajax_save()` when the resulting status is
+	 * `publish` (covers `save_kind='publish'` AND `save_kind='update'`).
+	 * Save Draft skips the gate entirely — drafts are explicitly
+	 * allowed to be incomplete per Whitney's design rule.
+	 *
+	 * Rules per Whitney's C7.X.16 spec:
+	 *   - Description: always valid (no toggle)
+	 *   - Check-In/Check-Out: both times set
+	 *   - Event Day Info: ≥1 of 4 fields filled
+	 *   - Stall: ≥1 stay-type ON + that rate >0; if Schedule ON, both
+	 *     open/close datetimes; if EB ON, cutoff + ≥1 EB rate
+	 *   - RV: same shape as Stall
+	 *   - General Add-Ons: ≥1 row with name + price >0
+	 *   - Group: Riders Per Group >0
+	 *   - Convenience Fee: Flat → amount >0; Percentage → % >0
+	 *   - Agreement: PDF file uploaded
+	 *   - Cancellation: resolver returns non-empty (override OR event
+	 *     default — admin doesn't need to type custom text if event
+	 *     default exists)
+	 *
+	 * @param array<string,mixed> $c              Sanitized candidate meta payload.
+	 * @param int                  $reservation_id For resolver calls (cancellation).
+	 * @return array<string,string>                Empty = valid; keys = section ids.
+	 */
+	public static function validate_for_publish( array $c, int $reservation_id ) {
+		$err = array();
+
+		// Check-In / Check-Out
+		if ( ! empty( $c['checkin_checkout_enabled'] ) ) {
+			if ( empty( $c['checkin_time'] ) || empty( $c['checkout_time'] ) ) {
+				$err['checkin'] = __( 'Check-In/Check-Out is enabled but Check-In Time and Check-Out Time must both be set.', 'equine-event-manager' );
+			}
+		}
+
+		// Event Day Info — ≥1 of 4 fields
+		if ( ! empty( $c['event_day_enabled'] ) ) {
+			$any = ! empty( $c['event_day_checkin'] )
+				|| ! empty( $c['event_day_bring'] )
+				|| ! empty( $c['event_day_parking'] )
+				|| ! empty( $c['event_day_contact'] );
+			if ( ! $any ) {
+				$err['eventday'] = __( 'Event Day Info is enabled but at least one field (Check-In Instructions, What to Bring, Parking, or Event-Day Contact) must be filled.', 'equine-event-manager' );
+			}
+		}
+
+		// Stall Reservations
+		if ( ! empty( $c['stalls_enabled'] ) ) {
+			$nightly = ! empty( $c['stall_nightly_enabled'] );
+			$weekend = ! empty( $c['stall_weekend_enabled'] );
+			if ( ! $nightly && ! $weekend ) {
+				$err['stall'] = __( 'Stall Reservations is enabled but at least one stay type (Nightly or Weekend) must be on.', 'equine-event-manager' );
+			} else {
+				$nightly_rate_ok = $nightly && (float) ( $c['stall_nightly_rate'] ?? 0 ) > 0;
+				$weekend_rate_ok = $weekend && (float) ( $c['stall_weekend_rate'] ?? 0 ) > 0;
+				if ( ! $nightly_rate_ok && ! $weekend_rate_ok ) {
+					$err['stall'] = __( 'Stall Reservations needs a rate above $0 for at least one enabled stay type.', 'equine-event-manager' );
+				} elseif ( ! empty( $c['stall_schedule_enabled'] ) && ( empty( $c['stalls_open_at'] ) || empty( $c['stalls_close_at'] ) ) ) {
+					$err['stall'] = __( 'Stall Reservations: Schedule is enabled but Open and Close datetimes must both be set.', 'equine-event-manager' );
+				} elseif ( ! empty( $c['stall_early_bird_enabled'] ) ) {
+					$eb_cutoff_ok    = ! empty( $c['stall_early_bird_cutoff'] );
+					$eb_nightly_rate = $nightly && (float) ( $c['stall_early_bird_nightly_rate'] ?? 0 ) > 0;
+					$eb_weekend_rate = $weekend && (float) ( $c['stall_early_bird_weekend_rate'] ?? 0 ) > 0;
+					if ( ! $eb_cutoff_ok || ( ! $eb_nightly_rate && ! $eb_weekend_rate ) ) {
+						$err['stall'] = __( 'Stall Reservations: Early Bird is enabled but cutoff date and at least one Early Bird rate must be set.', 'equine-event-manager' );
+					}
+				}
+			}
+		}
+
+		// RV Reservations — parallel to Stall
+		if ( ! empty( $c['rv_enabled'] ) ) {
+			$nightly = ! empty( $c['rv_nightly_enabled'] );
+			$weekend = ! empty( $c['rv_weekend_enabled'] );
+			if ( ! $nightly && ! $weekend ) {
+				$err['rv'] = __( 'RV Reservations is enabled but at least one stay type (Nightly or Weekend) must be on.', 'equine-event-manager' );
+			} else {
+				$nightly_rate_ok = $nightly && (float) ( $c['rv_nightly_rate'] ?? 0 ) > 0;
+				$weekend_rate_ok = $weekend && (float) ( $c['rv_weekend_rate'] ?? 0 ) > 0;
+				if ( ! $nightly_rate_ok && ! $weekend_rate_ok ) {
+					$err['rv'] = __( 'RV Reservations needs a rate above $0 for at least one enabled stay type.', 'equine-event-manager' );
+				} elseif ( ! empty( $c['rv_schedule_enabled'] ) && ( empty( $c['rv_open_at'] ) || empty( $c['rv_close_at'] ) ) ) {
+					$err['rv'] = __( 'RV Reservations: Schedule is enabled but Open and Close datetimes must both be set.', 'equine-event-manager' );
+				} elseif ( ! empty( $c['rv_early_bird_enabled'] ) ) {
+					$eb_cutoff_ok    = ! empty( $c['rv_early_bird_cutoff'] );
+					$eb_nightly_rate = $nightly && (float) ( $c['rv_early_bird_nightly_rate'] ?? 0 ) > 0;
+					$eb_weekend_rate = $weekend && (float) ( $c['rv_early_bird_weekend_rate'] ?? 0 ) > 0;
+					if ( ! $eb_cutoff_ok || ( ! $eb_nightly_rate && ! $eb_weekend_rate ) ) {
+						$err['rv'] = __( 'RV Reservations: Early Bird is enabled but cutoff date and at least one Early Bird rate must be set.', 'equine-event-manager' );
+					}
+				}
+			}
+		}
+
+		// General Add-Ons — ≥1 row with name + price >0
+		if ( ! empty( $c['general_addons_enabled'] ) ) {
+			$addons = isset( $c['general_addons'] ) && is_array( $c['general_addons'] ) ? $c['general_addons'] : array();
+			$valid_row = false;
+			foreach ( $addons as $row ) {
+				$name  = isset( $row['name'] ) ? trim( (string) $row['name'] ) : '';
+				$price = isset( $row['price'] ) ? (float) $row['price'] : 0.0;
+				if ( '' !== $name && $price > 0 ) { $valid_row = true; break; }
+			}
+			if ( ! $valid_row ) {
+				$err['addons'] = __( 'General Add-Ons is enabled but at least one add-on with a name and a price above $0 is required.', 'equine-event-manager' );
+			}
+		}
+
+		// Group Reservations
+		if ( ! empty( $c['group_reservations_enabled'] ) ) {
+			$riders = isset( $c['group_riders_per_group'] ) ? (int) $c['group_riders_per_group'] : 0;
+			if ( $riders < 1 ) {
+				$err['group'] = __( 'Group Reservations is enabled but Riders Per Group must be at least 1.', 'equine-event-manager' );
+			}
+		}
+
+		// Convenience Fee
+		if ( ! empty( $c['convenience_fee_enabled'] ) ) {
+			$type  = isset( $c['convenience_fee_type'] ) ? (string) $c['convenience_fee_type'] : 'none';
+			$value = isset( $c['convenience_fee_value'] ) ? (float) $c['convenience_fee_value'] : 0.0;
+			if ( 'none' === $type ) {
+				$err['fees'] = __( 'Convenience Fee is enabled but Fee Type must be Flat or Percentage (not None).', 'equine-event-manager' );
+			} elseif ( $value <= 0 ) {
+				$err['fees'] = 'flat' === $type
+					? __( 'Convenience Fee (Flat): amount must be above $0.', 'equine-event-manager' )
+					: __( 'Convenience Fee (Percentage): percentage must be above 0.', 'equine-event-manager' );
+			}
+		}
+
+		// Agreement — PDF file uploaded
+		if ( ! empty( $c['venue_agreement_enabled'] ) ) {
+			$file_id = isset( $c['venue_agreement_file_id'] ) ? (int) $c['venue_agreement_file_id'] : 0;
+			if ( $file_id <= 0 ) {
+				$err['agreement'] = __( 'Agreement is enabled but an agreement PDF must be uploaded.', 'equine-event-manager' );
+			}
+		}
+
+		// Cancellation Policy — resolver returns non-empty (override OR
+		// event default OR global). Resolver is the source of truth so
+		// admins don't need to retype if event default is configured.
+		if ( ! empty( $c['cancellation_enabled'] ) ) {
+			$resolved = '';
+			if ( class_exists( 'EEM_Cancellation_Policy' )
+				&& method_exists( 'EEM_Cancellation_Policy', 'resolve_for_reservation' ) ) {
+				// Inject the candidate override into the resolver call by
+				// temporarily updating + reading. Cleaner: pass the
+				// candidate directly. Resolver currently takes the
+				// reservation_id and reads from post_meta — for the
+				// candidate-aware check, read the override directly from
+				// $c first, then fall back to resolver-without-override.
+				$override = isset( $c['cancellation_policy_override'] ) ? trim( (string) $c['cancellation_policy_override'] ) : '';
+				if ( '' !== $override ) {
+					$resolved = $override;
+				} else {
+					$resolved = (string) EEM_Cancellation_Policy::resolve_for_reservation( $reservation_id );
+				}
+			}
+			if ( '' === trim( $resolved ) ) {
+				$err['cancellation'] = __( 'Cancellation Policy is enabled but no policy text is set — either fill the override here or configure an event default on the linked event.', 'equine-event-manager' );
+			}
+		}
+
+		return $err;
+	}
+
+	/**
 	 * Dispatch a section key to its body partial and return the rendered HTML.
 	 *
 	 * @param string                              $key
@@ -393,6 +562,35 @@ class EEM_Reservation_Editor_Page {
 					'errors'  => array_values( $errors ),
 					'code'    => 'validation_failed',
 				), 422 );
+			}
+
+			// C7.X.16 Issue I — per-section publish-gate validation.
+			// Runs ONLY when the resulting status is `publish` (covers
+			// save_kind='publish' AND save_kind='update' which both
+			// land in publish state; save_kind='save_draft' skips per
+			// Whitney's "Drafts allowed to be incomplete" rule).
+			// Defense in depth — client-side mirror in admin.js gives
+			// immediate UX; this server gate is the source of truth.
+			if ( 'publish' === $new_status ) {
+				$publish_errors = self::validate_for_publish( $candidate, $reservation_id );
+				if ( ! empty( $publish_errors ) ) {
+					$first_key  = array_key_first( $publish_errors );
+					$count      = count( $publish_errors );
+					$summary    = 1 === $count
+						? $publish_errors[ $first_key ]
+						: sprintf(
+							/* translators: %d: number of sections needing attention */
+							_n( '%d section needs attention before publishing.', '%d sections need attention before publishing.', $count, 'equine-event-manager' ),
+							$count
+						);
+					wp_send_json_error( array(
+						'message'       => $summary,
+						'errors'        => $publish_errors,
+						'first_section' => $first_key,
+						'count'         => $count,
+						'code'          => 'publish_validation_failed',
+					), 422 );
+				}
 			}
 
 			$_POST['equine_event_manager_reservation_meta_nonce'] = wp_create_nonce( 'equine_event_manager_save_reservation_meta' );

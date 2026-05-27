@@ -1463,6 +1463,12 @@
 		'reservation-restore': function (target) {
 			submitReservationAction(target, 'eem_reservation_restore', 'eem_reservation_restore');
 		},
+		/* C7.X.16 Issue G — Delete Permanently. Confirm prompt with
+		   explicit "cannot be undone" warning before dispatching. */
+		'reservation-delete-permanently': function (target) {
+			if (!window.confirm('Delete this reservation PERMANENTLY? This cannot be undone — order history, activity log entries, and all reservation data will be removed.')) return;
+			submitReservationAction(target, 'eem_reservation_delete_permanently', 'eem_reservation_delete_permanently');
+		},
 		'bulk-apply': function (target, ev) {
 			// Hook the bulk form's submit — collect selected reservation ids
 			// from the table checkboxes into the hidden input, validate basics,
@@ -1800,6 +1806,37 @@
 				// with `message` carrying the first validation-error
 				// string and `errors` carrying the full list.
 				var msg = (resp && resp.data && resp.data.message) ? resp.data.message : 'Save failed.';
+				// C7.X.16 Issue I — publish-gate failure surfaces with a
+				// per-section error map + first_section key. Highlight
+				// every failed section's card with .eem-section-invalid
+				// + scroll-and-focus the first failure.
+				if (resp && resp.data && 'publish_validation_failed' === resp.data.code) {
+					// Strip any prior invalid highlights.
+					document.querySelectorAll('.eem-reservation-editor-section.eem-section-invalid')
+						.forEach(function (c) { c.classList.remove('eem-section-invalid'); });
+					// Apply highlight to each failed section.
+					var errs = (resp.data.errors && typeof resp.data.errors === 'object') ? resp.data.errors : {};
+					Object.keys(errs).forEach(function (sk) {
+						var card = document.getElementById('card-' + sk);
+						if (card) card.classList.add('eem-section-invalid');
+					});
+					// Scroll the first failed section into view + focus.
+					var firstKey = resp.data.first_section || '';
+					if (firstKey) {
+						var firstCard = document.getElementById('card-' + firstKey);
+						if (firstCard) {
+							firstCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+							// Brief auto-clear after 6s so the highlights
+							// don't persist into other interactions; user
+							// re-trying publish will re-trigger if still
+							// invalid.
+							setTimeout(function () {
+								document.querySelectorAll('.eem-reservation-editor-section.eem-section-invalid')
+									.forEach(function (c) { c.classList.remove('eem-section-invalid'); });
+							}, 6000);
+						}
+					}
+				}
 				eemSaveBarToast(msg, 'error');
 			}
 		}).catch(function () {
@@ -2640,7 +2677,7 @@
 		var changeBtn = t.closest('[data-eem-action="reservation-editor-event-change"]');
 		if (changeBtn) {
 			ev.preventDefault();
-			if (!confirm('Change the linked event? The current link will be cleared. You can then link a new event from the meta-line.')) return;
+			if (!confirm('Change the linked event? The current link will be cleared. You can then link a new event from the rail card.')) return;
 			var changeBar = document.querySelector('.eem-reservation-editor-body[data-eem-reservation-id]');
 			var changeRid = changeBar ? changeBar.getAttribute('data-eem-reservation-id') : '';
 			if (!changeRid) return;

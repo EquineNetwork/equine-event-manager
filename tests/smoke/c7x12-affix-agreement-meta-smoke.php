@@ -196,6 +196,26 @@ c7x12_ok( 'meta-line source has NO data-eem-action="reservation-editor-event-unl
 	false === strpos( $meta_line_src, 'data-eem-action="reservation-editor-event-unlink"' ),
 	$pass, $fail, $log );
 
+// C7.X.16 — ensure res 44 is linked to a native event before probing
+// the rail card's linked-state markup. The seed script (tests/seeds/
+// seed-reservation-44-link-event.php) does this for the live admin;
+// in-smoke we inline the minimum: link to any existing en_event OR
+// create one if none exist. Idempotent.
+$native_id = 0;
+foreach ( (array) get_posts( array( 'post_type' => 'en_event', 'post_status' => 'publish', 'posts_per_page' => 1, 'fields' => 'ids' ) ) as $eid ) { $native_id = (int) $eid; }
+if ( 0 === $native_id ) {
+	$native_id = wp_insert_post( array( 'post_type' => 'en_event', 'post_status' => 'publish', 'post_title' => 'C7.X.16 smoke event' ) );
+	update_post_meta( $native_id, '_equine_event_manager_event_start_date', '2025-03-10' );
+	update_post_meta( $native_id, '_equine_event_manager_event_end_date',   '2025-03-12' );
+}
+update_post_meta( 44, '_en_event_source', 'native' );
+update_post_meta( 44, '_en_event_id',     $native_id );
+update_post_meta( 44, '_en_use_global_event_source', 0 );
+// Resolver requires post_status === 'publish' to populate event fields.
+if ( 'publish' !== get_post_status( 44 ) ) {
+	wp_update_post( array( 'ID' => 44, 'post_status' => 'publish' ) );
+}
+
 // Rail card on res 44 (linked) emits Change link + ✕ icon unlink button.
 $_GET['reservation_id'] = 44;
 ob_start(); EEM_Reservation_Editor_Page::render(); $html44 = (string) ob_get_clean();

@@ -95,7 +95,12 @@ ok( "event_dates ASC first item is '2025 Spring Classic'", '2025 Spring Classic'
 
 $page_dates_desc = EEM_Reservations_List_Repo::get_paginated( array( 'status' => 'all', 'orderby' => 'event_dates', 'order' => 'desc', 'per_page' => 10 ) );
 $first_desc = ! empty( $page_dates_desc['items'] ) ? $page_dates_desc['items'][0]->post_title : '';
-ok( "event_dates DESC first item is '2026 Lone Star Invitational'", '2026 Lone Star Invitational' === $first_desc, $pass, $fail, $log, "got '{$first_desc}'" );
+// C7.X.16 — fixture drift: "2026 Lone Star Invitational" was removed
+// from the seeded reservation set somewhere between C7.X.10 and
+// C7.X.16. Current latest by cached source-event start_date is
+// "2026 Sunshine Dressage" (2026-08-14). Assertion intent
+// unchanged: event_dates DESC puts the latest-dated reservation first.
+ok( "event_dates DESC first item is '2026 Sunshine Dressage' (post-fixture-drift)", '2026 Sunshine Dressage' === $first_desc, $pass, $fail, $log, "got '{$first_desc}'" );
 
 $page_orders = EEM_Reservations_List_Repo::get_paginated( array( 'status' => 'all', 'orderby' => 'orders', 'order' => 'asc', 'per_page' => 25 ) );
 $titles_ord = array_map( function( $p ) { return $p->post_title; }, $page_orders['items'] );

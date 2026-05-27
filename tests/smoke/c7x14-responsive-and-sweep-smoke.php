@@ -112,6 +112,22 @@ foreach ( array(
 	update_post_meta( 44, $key, 1 );
 }
 
+// C7.X.16 — auto-link res 44 to a native event so the rail card's
+// linked-state markup renders for the C7.X.15-hybrid assertions.
+$native_id_14 = 0;
+foreach ( (array) get_posts( array( 'post_type' => 'en_event', 'post_status' => 'publish', 'posts_per_page' => 1, 'fields' => 'ids' ) ) as $eid ) { $native_id_14 = (int) $eid; }
+if ( 0 === $native_id_14 ) {
+	$native_id_14 = wp_insert_post( array( 'post_type' => 'en_event', 'post_status' => 'publish', 'post_title' => 'C7.X.16 smoke event' ) );
+	update_post_meta( $native_id_14, '_equine_event_manager_event_start_date', '2025-03-10' );
+	update_post_meta( $native_id_14, '_equine_event_manager_event_end_date',   '2025-03-12' );
+}
+update_post_meta( 44, '_en_event_source', 'native' );
+update_post_meta( 44, '_en_event_id',     $native_id_14 );
+update_post_meta( 44, '_en_use_global_event_source', 0 );
+if ( 'publish' !== get_post_status( 44 ) ) {
+	wp_update_post( array( 'ID' => 44, 'post_status' => 'publish' ) );
+}
+
 $_GET['reservation_id'] = 44;
 ob_start(); EEM_Reservation_Editor_Page::render(); $html = (string) ob_get_clean();
 $_GET = array();

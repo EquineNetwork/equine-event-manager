@@ -5,7 +5,90 @@ in-flight context that ISN'T already in CLAUDE.md, commit messages,
 or CLEANUP.md. Read after `git pull` on a new machine to pick up
 momentum across Claude Code sessions.
 
-**Last updated:** 2026-05-27 — C7.X.15 — Whitney's walkthrough fix-ups (7 issues consolidated). Cluster A save buttons functional, agreement upload wired to wp.media, Issue 7 hybrid-restored Linked Event rail card, 3 CLAUDE.md structural-defense additions.
+**Last updated:** 2026-05-27 — **C7.X.16** — Whitney's C7.X.15 walkthrough fix-ups, 9 issues consolidated, Issue I publish-gate validator landed (heaviest piece). Suite 1557/1557. Post-commit operational step: re-run seed-reservation-44-link-event.php.
+
+---
+
+## C7.X.16 — Whitney's C7.X.15 walkthrough fix-ups (landed 2026-05-27)
+
+**Status:** committed + pushed. Smoke 1557/1557 green (was 1520; +37 from new `c7x16-walkthrough-fixups-smoke.php`).
+
+### 9 issues consolidated
+
+| Issue | Action | Verdict |
+|---|---|---|
+| A — main column double padding | `.eem-reservation-editor-body { padding: 18px 18px }` stripped (real source, not `.eem-edit-main`). Mockup already matched canon — no mockup edit. | Fixed |
+| B — repeating-table border-radius | No code change. C7.X.15 actually landed; Whitney saw cached CSS. C7.X.16 cache-bust to 2.3.5 resolves. New smoke confirms all 4 classes use `var(--eem-radius-sm)`. | Cache-bust |
+| C — legacy SELECT exclusion sweep | All 37 bare `select` selectors in admin-legacy.css now carry `:not(.eem-dashboard-range-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-field-select)` exclusion chain. Same C7.X.10/11 pattern, applied to SELECT in legacy file. | Fixed |
+| D1 — Preview label | "Preview Frontend Form" → "Preview" | Fixed |
+| D2 — Preview underline-on-hover | `a.eem-btn-preview:hover` umbrella selector + `text-decoration: none` forces override of `.eem-page a:hover` (DS-1.A.1 lesson) | Fixed |
+| D3 — Preview 404 | Per recommendation (a): `<button disabled>` with tooltip "Customer preview available after C10 ships." Preserves visual presence; clicks no-op. CLEANUP #52 queues C10 wire-through. | Deferred to C10 |
+| E — Media Library modal bleed | Z-index audit found NO conflict in our CSS (highest is 500; modal is 100050). Defensive raise `.media-modal-backdrop, .media-modal { z-index: 200000 }`. No `!important` (cascade order wins). CLEANUP #53 queues C16 DevTools investigation. | Defensive fix |
+| F — meta-line shows "(no event linked)" on res 44 | Data regression, not code. `_en_event_id` got cleared (likely by Whitney's C7.X.15 (unlink) click during verify). Resolver correctly returns empty when unlinked → meta-line correctly displays the empty state. **Post-commit op:** re-run `wp eval-file tests/seeds/seed-reservation-44-link-event.php` to restore linkage. | No code change |
+| G — Trash row Restore-only | Added Delete Permanently button to trash branch + JS handler with "cannot be undone" confirm + `handle_delete_permanently()` page method (guards: trash status required) + admin-post hook wired + nonce in localized row-action map. Activity log writes `reservation_deleted_permanently` before the actual delete. | Fixed |
+| H — Count vs list mismatch | `counts_by_tab()` rewrote — no longer uses `wp_count_posts()`; now iterates each tab through a count-only WP_Query (matching `get_paginated()`'s query path) and returns `found_posts`. Aligns count and list under identical pre_get_posts filtering. | Fixed |
+| I — Publish-gate validator | **Heaviest piece (~290 LOC).** Per-section validator + server gate + JS highlight + CSS + smoke. Architecture per Whitney's audit-approval. Save Draft bypasses gate. | Fixed |
+
+### Issue F operational re-seed
+
+The seed script is idempotent and non-destructive. Run AFTER commit lands:
+
+```bash
+wp eval-file tests/seeds/seed-reservation-44-link-event.php
+```
+
+This restores `_en_event_source='native'` + `_en_event_id=<native event>` + the canonical `_equine_event_manager_event_*_date` keys on the seeded native event. Meta-line will then render real values: "2025 Spring Classic (seeded by C7.X.9)" / "Mar 10, 2025 – Mar 12, 2025".
+
+Note: the (change) and (unlink) handlers BOTH have confirm prompts already (verified in audit — Clarification A check found existing prompts; updated the (change) prompt wording to reference "rail card" instead of stale "meta-line" reference from pre-C7.X.15 Item 7 retirement era).
+
+### Issue I architecture detail (locked decisions)
+
+- **Server gate triggers when RESULTING STATUS is `publish`** (not just `save_kind === 'publish'`). Covers both `save_kind === 'publish'` AND `save_kind === 'update'` — Clarification B applied. Save Draft is the ONLY path that bypasses the gate.
+- **Per-section rules** implemented exactly to Whitney's spec (Check-In times, Event Day ≥1 of 4, Stall stay-type+rate+schedule+EB, RV parallel, Add-Ons row+price>0, Group riders>0, Fees Flat/Pct amount>0, Agreement file_id, Cancellation resolver non-empty).
+- **Cancellation rule** uses `EEM_Cancellation_Policy::resolve_for_reservation()` if override is blank — confirms admin doesn't need to retype if event default exists (Whitney's clarification 3).
+- **Toast wording (Clarification C):** single failure → specific section message; multi-failure → "N sections need attention before publishing." Implemented via `_n()` translatable string + count-based branching.
+- **Highlight CSS:** `.eem-reservation-editor-section.eem-section-invalid { border-color: #b91c1c; box-shadow: 0 0 0 1px #b91c1c; }` + header tint. Auto-clears after 6s; reapplies on next publish click.
+- **Scroll:** `firstCard.scrollIntoView({ behavior: 'smooth', block: 'start' })`.
+- **NO "Publish anyway" override** — Whitney's explicit direction. Admin must fix or toggle off.
+
+### CLAUDE.md additions (2 new structural-defense entries)
+
+1. **Cross-stylesheet cascade enumeration extends to SELECT in admin-legacy.css too** — the C7.X.13/15 prefix discipline tied WP core specificity in admin.css, but admin-legacy.css has its own (often higher-specificity) blocks that need parallel `:not()` exclusions. Pattern generalizes: any new plugin form-control class must check BOTH admin.css AND admin-legacy.css. Operational `grep` pattern documented.
+
+2. **Pre-publish validation as a pattern** — multi-section editor publish-gate architecture (PHP source of truth + server gate + JS highlight + CSS + smoke). Generalizes to C13 Create Order, C14 Collect Payment, future toggle-gated editors.
+
+### Files changed (10 modified + 1 NEW smoke)
+
+- `equine-event-manager.php` — version 2.3.4 → 2.3.5
+- `assets/css/admin.css` — Issue A padding strip, Issue D2 hover umbrella, Issue D3 disabled state, Issue E modal z-index raise, Issue I `.eem-section-invalid` highlight
+- `assets/css/admin-legacy.css` — 37 bare-select selectors get `:not()` exclusion chain (Issue C)
+- `assets/js/admin.js` — Issue I publish-validation response handler (highlight + scroll + auto-clear), Issue G delete-permanently arm, retired-context (change) confirm wording
+- `templates/admin/reservation-editor/_rail-publish-card.php` — Preview button label + render shape (Issues D1/D3)
+- `admin/class-eem-reservation-editor-page.php` — `validate_for_publish()` method (~150 LOC, Issue I) + ajax_save gate
+- `admin/class-eem-reservations-list-page.php` — Delete Permanently UI + `handle_delete_permanently()` method + nonce localization (Issue G)
+- `includes/class-eem-reservations-list-repo.php` — `counts_by_tab()` rewrite (Issue H)
+- `includes/class-equine-event-manager.php` — admin_post hook for delete-permanently (Issue G)
+- 4 existing smokes (c4d, c7c1, c7x12, c7x14, c7x15) — assertion drift fixes for Issue C/F/I cascade effects
+- `tests/smoke/c7x16-walkthrough-fixups-smoke.php` — NEW, 37 assertions across 9 issue groups
+- `CLAUDE.md` — 2 new structural-defense entries
+- `CLEANUP.md` — 2 new entries (#52 Preview C10 wire, #53 Modal z-index root-cause investigation)
+- `SESSION-NOTES.md` — this entry
+
+### C7.X.16 commit: `[hash filled after commit]`
+
+### Whitney's SHORT consolidated visual verify (post-commit + post-re-seed)
+
+1. **Issue A:** main column content starts at 18px top / 22px left from editor card edge (DevTools check). Right rail unchanged.
+2. **Issue B:** repeating-table inputs (RV Add-Ons, General Add-Ons, Lot Zones) render 3px border-radius.
+3. **Issue C:** Dashboard "Last 30 days" select matches editor select height.
+4. **Issue D:** Preview button reads "Preview" (no "Frontend Form"), no underline on hover, button is visually muted (disabled state), tooltip on hover says "Customer preview available after C10 ships."
+5. **Issue E:** Agreement Upload modal opens with native WP Media Library chrome (no admin sidebar bleed).
+6. **Issue F:** Meta-line shows "2025 Spring Classic (seeded by C7.X.9)" / "Mar 10, 2025 – Mar 12, 2025" (after seed re-run).
+7. **Issue G:** Trash list row meatballs shows both Restore AND Delete Permanently. Delete Permanently triggers confirm with "cannot be undone" warning.
+8. **Issue H:** Draft (N) tab header count matches the list "Showing N–N of N" line. Same for all tabs.
+9. **Issue I:** Toggle a section ON without filling its required fields, click Publish. Save blocks, toast surfaces specific error (1 failure) or "N sections need attention before publishing." (multi), section card highlighted red, scroll moves to first failed section. Save Draft still works without validation.
+
+---
 
 ---
 

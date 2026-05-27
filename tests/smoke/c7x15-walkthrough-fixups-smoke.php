@@ -247,6 +247,21 @@ c7x15_ok( count( $enumerated_keys ) . ' .eem-* class(es) enumerated on <select> 
 
 // ── [Issue 7 positive] hybrid restoration assertions ───────────
 echo "\n[7] Linked Event hybrid restoration — meta-line read-only + rail card actionable\n";
+// C7.X.16 — auto-link res 44 so the rail card's linked-state markup renders.
+$native_id_15 = 0;
+foreach ( (array) get_posts( array( 'post_type' => 'en_event', 'post_status' => 'publish', 'posts_per_page' => 1, 'fields' => 'ids' ) ) as $eid ) { $native_id_15 = (int) $eid; }
+if ( 0 === $native_id_15 ) {
+	$native_id_15 = wp_insert_post( array( 'post_type' => 'en_event', 'post_status' => 'publish', 'post_title' => 'C7.X.16 smoke event' ) );
+	update_post_meta( $native_id_15, '_equine_event_manager_event_start_date', '2025-03-10' );
+	update_post_meta( $native_id_15, '_equine_event_manager_event_end_date',   '2025-03-12' );
+}
+update_post_meta( 44, '_en_event_source', 'native' );
+update_post_meta( 44, '_en_event_id',     $native_id_15 );
+update_post_meta( 44, '_en_use_global_event_source', 0 );
+if ( 'publish' !== get_post_status( 44 ) ) {
+	wp_update_post( array( 'ID' => 44, 'post_status' => 'publish' ) );
+}
+
 $_GET = array(); $_GET['reservation_id'] = 44;
 ob_start(); EEM_Reservation_Editor_Page::render(); $html44 = (string) ob_get_clean();
 $_GET = array();

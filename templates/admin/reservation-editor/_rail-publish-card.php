@@ -47,6 +47,13 @@ $status_label   = isset( $status_labels[ $status ] ) ? $status_labels[ $status ]
 $visibility     = 'private' === $status ? __( 'Private', 'equine-event-manager' ) : __( 'Public', 'equine-event-manager' );
 $pub_date_ts    = strtotime( (string) $post->post_date );
 $pub_date_label = $pub_date_ts ? date_i18n( get_option( 'date_format' ), $pub_date_ts ) : __( '—', 'equine-event-manager' );
+// C7.X.16 Issue D3 — preview URL retained for future C10 wiring but
+// the button below is disabled with a tooltip explaining the C10
+// dependency. CPT `en_reservation` is `public => false / rewrite =>
+// false`, so this `event-reservation/N/` URL 404s. The proper
+// customer-facing render is the `[en_reservation id="N"]` shortcode
+// that C10 (Customer Event Page) will own. Until C10, the button
+// preserves visual presence in the rail card but doesn't dispatch.
 $preview_url    = home_url( user_trailingslashit( 'event-reservation/' . $reservation_id ) );
 $primary_action = 'publish' === $status ? 'update' : 'draft';
 $nonce          = wp_create_nonce( 'eem_reservation_editor' );
@@ -69,10 +76,13 @@ $nonce          = wp_create_nonce( 'eem_reservation_editor' );
 			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
 			<?php esc_html_e( 'Published:', 'equine-event-manager' ); ?> <strong><?php echo esc_html( $pub_date_label ); ?></strong>
 		</div>
-		<a class="eem-btn-preview" href="<?php echo esc_url( $preview_url ); ?>" target="_blank" rel="noopener noreferrer">
+		<?php /* C7.X.16 Issue D — label simplified to "Preview"; rendered
+		         as <button disabled> with tooltip pending C10 customer-
+		         facing wire. See $preview_url comment above. */ ?>
+		<button type="button" class="eem-btn-preview" disabled aria-disabled="true" title="<?php esc_attr_e( 'Customer preview available after C10 ships.', 'equine-event-manager' ); ?>">
 			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-			<?php esc_html_e( 'Preview Frontend Form', 'equine-event-manager' ); ?>
-		</a>
+			<?php esc_html_e( 'Preview', 'equine-event-manager' ); ?>
+		</button>
 		<?php if ( 'publish' === $primary_action ) : ?>
 			<button type="button" class="eem-btn-update" data-eem-action="reservation-editor-update"><?php esc_html_e( 'Update Reservation', 'equine-event-manager' ); ?></button>
 			<button type="button" class="eem-btn-save-draft" data-eem-action="reservation-editor-save-draft"><?php esc_html_e( 'Switch to Draft', 'equine-event-manager' ); ?></button>

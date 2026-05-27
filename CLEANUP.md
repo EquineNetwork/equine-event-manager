@@ -461,6 +461,20 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 - **Unblocks deletion:** C12 (Order Receipt + Hosted Order Page — receipt-rendering needs accurate per-order totals). At that point: add `tax` column to both `en_stall_reservations` and `en_rv_reservations` via dbDelta in EEM_Activator, allocate `$totals['tax']` proportionally during insert in `insert_reservation_orders`, update `total` to include tax, and surface as a line item on the customer receipt + admin order detail.
 - **Status:** awaiting C12 (chunk recategorization, post-handoff Step 2 — was C11)
 
+### 52. Preview button C10 customer-facing destination
+- **What:** `_rail-publish-card.php` Preview button is currently rendered `<button disabled>` with tooltip "Customer preview available after C10 ships." per C7.X.16 Issue D3. The button preserves visual presence in the rail card; clicking does nothing.
+- **Why deferred:** `en_reservation` CPT is registered `public => false / rewrite => false / has_archive => false`. The customer-facing surface is the `[en_reservation id="N"]` shortcode rendered on whatever WP page the admin embeds it on — there is no canonical "preview URL the plugin owns." C10 (Customer Event Page port) is the chunk that wires the customer-facing render properly.
+- **Added in:** C7.X.16
+- **Unblocks deletion:** C10 — wire the button to either (a) a query-arg admin preview page rendering the shortcode in an admin-styled wrapper, OR (b) the canonical front-end page once it ships. Remove the `disabled` + `aria-disabled` + tooltip; restore the click dispatch.
+- **Status:** awaiting C10
+
+### 53. Media Library modal z-index — root cause investigation
+- **What:** C7.X.16 Issue E applied a defensive `z-index: 200000` raise to `.media-modal-backdrop, .media-modal` to fix Whitney's bleed-through of WP admin sidebar "Menu ▾" toggle into the Agreement Upload modal. Z-index audit of our admin.css found nothing approaching WP's 100050 default; no transform/filter/fixed-position on body or wrap ancestors that could trap modal stacking context; no direct targets on `.media-modal` / `.media-frame` in our CSS.
+- **Why deferred:** Root cause could not be reproduced from code-side CSS audit alone. Needs browser DevTools probe of the computed stacking context when the modal is open. The defensive raise (no `!important`; cascade order wins) fixes the symptom without introducing technical debt — but the underlying cause stays unidentified.
+- **Added in:** C7.X.16
+- **Unblocks deletion:** C16 polish — investigate via DevTools, identify root cause (likely a stacking context created somewhere unexpected), fix at source, remove the defensive raise.
+- **Status:** awaiting C16
+
 ### 51. Linked Event rail card retired (C7.X.12 Item 7)
 - **What:** `templates/admin/reservation-editor/_rail-linked-event-card.php` — DELETED in C7.X.12. Linked-event editing migrated inline to the meta-line via `(change)` / `(unlink)` action links.
 - **Why deferred items (none for the partial itself — fully gone):** Two adjacent loose ends remain:

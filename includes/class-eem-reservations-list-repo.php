@@ -79,19 +79,35 @@ class EEM_Reservations_List_Repo {
 	 * @return array<string, int>
 	 */
 	public static function counts_by_tab() {
-		$counts = (array) wp_count_posts( self::POST_TYPE );
-
-		$publish = isset( $counts['publish'] ) ? (int) $counts['publish'] : 0;
-		$draft   = isset( $counts['draft'] )   ? (int) $counts['draft']   : 0;
-		$private = isset( $counts['private'] ) ? (int) $counts['private'] : 0;
-		$trash   = isset( $counts['trash'] )   ? (int) $counts['trash']   : 0;
-
-		return array(
-			'all'     => $publish + $draft + $private,
-			'publish' => $publish,
-			'draft'   => $draft,
-			'trash'   => $trash,
-		);
+		// C7.X.16 Issue H — pre-C7.X.16 used wp_count_posts() which
+		// could diverge from get_paginated()'s WP_Query results when
+		// hidden filters (e.g. capability checks via pre_get_posts,
+		// suppress_filters defaults, or per-user view filters) reduced
+		// the list-side count without affecting the wp_count_posts
+		// summary. Whitney's visual verify caught "Draft (2)" header
+		// vs "Showing 1–1 of 1" list — count and list out of sync.
+		// Fix: each tab count runs through a count-only WP_Query that
+		// MATCHES the get_paginated() query path (same post_type +
+		// post_status; no search/date filter so tab counts always show
+		// the full status total). Guarantees alignment under identical
+		// pre_get_posts filtering. Cheap — fields=ids + posts_per_page
+		// =1 means WP doesn't hydrate the post objects.
+		$tabs   = self::status_tabs();
+		$counts = array();
+		foreach ( array_keys( $tabs ) as $tab_id ) {
+			$status = $tabs[ $tab_id ];
+			$query  = new WP_Query( array(
+				'post_type'              => self::POST_TYPE,
+				'post_status'            => $status,
+				'posts_per_page'         => 1,
+				'fields'                 => 'ids',
+				'no_found_rows'          => false,
+				'update_post_meta_cache' => false,
+				'update_post_term_cache' => false,
+			) );
+			$counts[ $tab_id ] = (int) $query->found_posts;
+		}
+		return $counts;
 	}
 
 	/**

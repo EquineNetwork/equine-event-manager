@@ -465,7 +465,11 @@ c7c1_ok( 'admin.js header-toggle handler flips data-eem-section-enabled hidden i
 	false !== strpos( $js_src, 'data-eem-section-enabled="' ),
 	$pass, $fail, $log );
 c7c1_ok( 'admin.js error-response path renders server resp.data.message in toast',
-	(bool) preg_match( '/resp\.data\.message[\s\S]{0,200}eemSaveBarToast\([^)]*msg[^)]*error/', $js_src ),
+	// C7.X.16 — distance bumped from 200 to 3000 chars because the
+	// Issue I publish-validation block (~50 LOC) now sits between
+	// `var msg = ...` and `eemSaveBarToast(msg, 'error')`. Pattern
+	// intent unchanged: confirm the error path threads msg into toast.
+	(bool) preg_match( '/resp\.data\.message[\s\S]{0,3000}eemSaveBarToast\([^)]*msg[^)]*error/', $js_src ),
 	$pass, $fail, $log );
 
 // ── [6e] CPT class — sanitize + validate + get_meta_values made public ──
@@ -483,7 +487,12 @@ c7c1_ok( 'get_meta_values() is PUBLIC (was private; C7.C.1.1 flip)',
 // ── [6f] ajax_save pre-validate code path ──────────────────────────
 echo "\n[6f] ajax_save pre-validate code path present\n";
 c7c1_ok( 'ajax_save calls cpt->sanitize_meta_submission BEFORE save_meta',
-	(bool) preg_match( '/sanitize_meta_submission\s*\([\s\S]{0,200}?validate_meta_submission\s*\([\s\S]{0,400}?save_meta/s', $page_src ),
+	// C7.X.16 — distance bumped from 400 to 4000 chars because the
+	// Issue I publish-validation gate (~50 LOC of inline checks) now
+	// sits between validate_meta_submission and save_meta. Pattern
+	// intent unchanged: confirm the call order sanitize → validate
+	// → save still holds in ajax_save.
+	(bool) preg_match( '/sanitize_meta_submission\s*\([\s\S]{0,200}?validate_meta_submission\s*\([\s\S]{0,4000}?save_meta/s', $page_src ),
 	$pass, $fail, $log );
 c7c1_ok( 'ajax_save returns 422 + validation_failed code on validation errors',
 	false !== strpos( $page_src, "'code'    => 'validation_failed'" )

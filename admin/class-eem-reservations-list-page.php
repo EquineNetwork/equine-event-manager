@@ -74,6 +74,7 @@ class EEM_Reservations_List_Page {
 				'eem_reservation_duplicate'     => wp_create_nonce( 'eem_reservation_duplicate' ),
 				'eem_reservation_trash'         => wp_create_nonce( 'eem_reservation_trash' ),
 				'eem_reservation_restore'       => wp_create_nonce( 'eem_reservation_restore' ),
+				'eem_reservation_delete_permanently' => wp_create_nonce( 'eem_reservation_delete_permanently' ), // C7.X.16 Issue G
 				'eem_reservation_export_roster' => wp_create_nonce( 'eem_reservation_export_roster' ),
 			),
 		) );
@@ -375,6 +376,45 @@ class EEM_Reservations_List_Page {
 		);
 
 		self::redirect_with_notice( 'restored' );
+	}
+
+	/**
+	 * Delete a trashed reservation permanently. C7.X.16 Issue G — the
+	 * Trash status row meatballs now offers Delete Permanently alongside
+	 * Restore. Calls wp_delete_post() with force=true (irreversible).
+	 * Confirm prompt is JS-side in admin.js to give the admin one last
+	 * chance to back out before the delete fires.
+	 *
+	 * @return void  Redirects + exits.
+	 */
+	public static function handle_delete_permanently() {
+		$reservation_id = self::check_action_request( 'eem_reservation_delete_permanently' );
+
+		// Only allow permanent delete of already-trashed reservations.
+		// Defense in depth: the UI only surfaces the button on Trash
+		// rows, but a hand-crafted URL could attempt this on a
+		// published reservation. Reject anything not in trash.
+		$post = get_post( $reservation_id );
+		if ( ! $post || 'trash' !== $post->post_status ) {
+			self::redirect_with_notice( 'failed' );
+		}
+
+		EEM_Activity_Log::write(
+			'reservation_deleted_permanently',
+			array( 'reservation_id' => $reservation_id, 'title' => $post->post_title ),
+			array(
+				'reservation_id' => $reservation_id,
+				'actor_type'     => 'admin',
+				'actor_id'       => get_current_user_id(),
+			)
+		);
+
+		$result = wp_delete_post( $reservation_id, true );
+		if ( ! $result ) {
+			self::redirect_with_notice( 'failed' );
+		}
+
+		self::redirect_with_notice( 'deleted-permanently' );
 	}
 
 	/**
@@ -1056,6 +1096,11 @@ class EEM_Reservations_List_Page {
 						<button type="button" class="eem-row-dd-item" data-eem-action="reservation-restore" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" role="menuitem">
 							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
 							<?php esc_html_e( 'Restore', 'equine-event-manager' ); ?>
+						</button>
+						<?php /* C7.X.16 Issue G — Delete Permanently affordance on Trash status only. */ ?>
+						<button type="button" class="eem-row-dd-item eem-row-dd-danger" data-eem-action="reservation-delete-permanently" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" role="menuitem">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+							<?php esc_html_e( 'Delete Permanently', 'equine-event-manager' ); ?>
 						</button>
 					<?php else : ?>
 						<button type="button" class="eem-row-dd-item eem-row-dd-danger" data-eem-action="reservation-trash" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" role="menuitem">
