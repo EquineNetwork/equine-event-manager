@@ -141,7 +141,7 @@ $expected_fields = array(
 	// an input for it anymore.
 	'en_reservation[convenience_fee_type]'           => 'fees section emits convenience_fee_type select',
 	'en_reservation[venue_agreement_enabled]'        => 'agreement section emits venue_agreement_enabled toggle',
-	'en_reservation[venue_agreement_file_label]'     => 'agreement section emits agreement file label input',
+	// C7.X.4 — venue_agreement_file_label removed (mockup file-row chrome has no separate label input).
 );
 foreach ( $expected_fields as $field => $label ) {
 	c7c1_ok( $label, false !== strpos( $html, 'name="' . $field . '"' ), $pass, $fail, $log );
@@ -158,11 +158,11 @@ c7c1_ok( 'addons row carries seeded "Bedding Hay" name',
 
 // ── [4] Repeating-row helper rendered output ───────────────────────
 echo "\n[4] Repeating-row helper — template + tbody + add-button\n";
-c7c1_ok( 'addons <tbody id="en_general_addons_rows"> renders',
-	false !== strpos( $html, 'id="en_general_addons_rows"' ),
+c7c1_ok( 'addons <tbody id="eem-general-addons-rows"> renders (mockup-canonical)',
+	false !== strpos( $html, 'id="eem-general-addons-rows"' ),
 	$pass, $fail, $log );
-c7c1_ok( 'addons <template id="eem-general-addon-row-template"> renders',
-	false !== strpos( $html, 'id="eem-general-addon-row-template"' ),
+c7c1_ok( 'addons <template id="eem-general-addons-row-template"> renders (mockup-canonical)',
+	false !== strpos( $html, 'id="eem-general-addons-row-template"' ),
 	$pass, $fail, $log );
 c7c1_ok( 'add-button carries data-eem-action="reservation-editor-add-repeating-row"',
 	false !== strpos( $html, 'data-eem-action="reservation-editor-add-repeating-row"' ),
@@ -171,7 +171,7 @@ c7c1_ok( 'remove-button rendered with data-eem-action="reservation-editor-remove
 	false !== strpos( $html, 'data-eem-action="reservation-editor-remove-repeating-row"' ),
 	$pass, $fail, $log );
 c7c1_ok( 'repeating-row container exposes data-eem-repeating-template attribute',
-	false !== strpos( $html, 'data-eem-repeating-template="eem-general-addon-row-template"' ),
+	false !== strpos( $html, 'data-eem-repeating-template="eem-general-addons-row-template"' ),
 	$pass, $fail, $log );
 
 // ── [5] Page class wiring ──────────────────────────────────────────
@@ -215,10 +215,14 @@ $extract_browser_payload = function ( $html ) {
 		$value   = preg_match( '/value="([^"]*)"/i', $row[0], $vm ) ? html_entity_decode( $vm[1], ENT_QUOTES, 'UTF-8' ) : '';
 		$checked = (bool) preg_match( '/\bchecked\b/i', $row[0] );
 		$is_section_enabled = (bool) preg_match( '/data-eem-section-enabled="/i', $row[0] );
+		$is_subsection_enabled = (bool) preg_match( '/data-eem-subsection-enabled="/i', $row[0] );
+		$is_stay_type_mirror   = (bool) preg_match( '/data-eem-stay-type-mirror/i', $row[0] );
 		if ( in_array( $type, array( 'checkbox', 'radio' ), true ) && ! $checked ) continue;
-		// Mirror the JS collector: hidden section-enabled mirrors with
-		// value !== "1" are SKIPPED (presence semantics expected by
-		// the legacy save_meta sanitizer).
+		// Mirror the JS collector: hidden mirrors with value !== "1"
+		// are SKIPPED (presence semantics expected by the legacy
+		// save_meta sanitizer's isset() checks).
+		if ( 'hidden' === $type && $is_subsection_enabled && '1' !== $value ) continue;
+		if ( 'hidden' === $type && $is_stay_type_mirror   && '1' !== $value ) continue;
 		if ( 'hidden' === $type && $is_section_enabled && '1' !== $value ) continue;
 		$flat[ $row[1] ] = $value;
 	}
@@ -259,6 +263,13 @@ update_post_meta( $reservation_id, '_en_checkin_time', '' );
 update_post_meta( $reservation_id, '_en_checkout_time', '' );
 update_post_meta( $reservation_id, '_en_checkin_time_enabled', 0 );
 update_post_meta( $reservation_id, '_en_checkout_time_enabled', 0 );
+// C7.X.4 — same coercion shape for stall/rv schedule fields.
+update_post_meta( $reservation_id, '_en_stall_schedule_enabled', 0 );
+update_post_meta( $reservation_id, '_en_stalls_open_at', '' );
+update_post_meta( $reservation_id, '_en_stalls_close_at', '' );
+update_post_meta( $reservation_id, '_en_rv_schedule_enabled', 0 );
+update_post_meta( $reservation_id, '_en_rv_open_at', '' );
+update_post_meta( $reservation_id, '_en_rv_close_at', '' );
 update_post_meta( $reservation_id, '_en_reservation_description', 'pre-update value' );
 $_GET = array( 'page' => 'equine-event-manager-reservation-editor', 'reservation_id' => $reservation_id );
 ob_start();

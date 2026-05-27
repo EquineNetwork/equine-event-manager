@@ -1752,6 +1752,8 @@
 			// pattern treats value='0' as enabled, breaking the
 			// off-state persistence for grounds-fee / deposit / etc.
 			if (el.type === 'hidden' && el.hasAttribute('data-eem-subsection-enabled') && '1' !== el.value) return;
+			// C7.X.4 — same skip for stay-type pair hidden mirrors.
+			if (el.type === 'hidden' && el.hasAttribute('data-eem-stay-type-mirror') && '1' !== el.value) return;
 			out.push([el.name, el.value]);
 		});
 		return out;

@@ -182,10 +182,11 @@ c7c14_ok( "group Riders Per Group input renders with NEW meta key + max-width:12
 	(bool) preg_match( '/<input[^>]*class="eem-field-input"[^>]*name="en_reservation\[group_riders_per_group\]"[^>]*style="max-width:120px"/', $gr ),
 	$pass, $fail, $log );
 c7c14_ok( "group renders 2× .eem-toggle-label-row (grounds fee + deposit)",
-	2 === substr_count( $gr, 'class="eem-toggle-label-row"' ),
+	2 === substr_count( $gr, 'eem-toggle-label-row' ),
 	$pass, $fail, $log );
-c7c14_ok( "group grounds-fee toggle carries data-eem-action='reservation-editor-toggle-subsection'",
-	(bool) preg_match( '/<div class="eem-toggle-label-row"\s+data-eem-action="reservation-editor-toggle-subsection"\s+data-eem-controls="eem-ctrl--grounds-amt"/', $gr ),
+c7c14_ok( "group grounds-fee toggle carries data-eem-action='reservation-editor-toggle-switch-row' (mockup-canonical)",
+	(bool) preg_match( '/data-eem-action="reservation-editor-toggle-switch-row"[\s\S]{0,200}data-controls="row-grounds-amt"/', $gr )
+		|| (bool) preg_match( '/data-eem-action="reservation-editor-toggle-switch-row"[\s\S]{0,200}data-controls="eem-ctrl--grounds-amt"/', $gr ),
 	$pass, $fail, $log );
 c7c14_ok( "group grounds-fee toggle hidden mirror reads value='1' (seeded on)",
 	(bool) preg_match( '/data-eem-subsection-enabled="grounds-fee"\s+value="1"/', $gr ),

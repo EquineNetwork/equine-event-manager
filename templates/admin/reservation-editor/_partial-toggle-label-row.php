@@ -74,10 +74,19 @@ if ( ! function_exists( 'eem_render_editor_toggle_label_row' ) ) {
 
 		$toggle_state_class = $args['is_enabled'] ? 'eem-toggle--on' : 'eem-toggle--off';
 		$hidden_value       = $args['is_enabled'] ? '1' : '0';
+		// C7.X.4 — Build-to-Mockup: data-controls is ID-based per
+		// mockup (space-separated row ids). Legacy class-token system
+		// retired; .controls now accepts a list of HTML ids (or eem-
+		// ctrl-- class tokens for backward-compat callers — both work
+		// with the same applyControls() JS handler).
 		$controls_attr      = implode( ' ', array_map( 'sanitize_html_class', (array) $args['controls'] ) );
+		// Mockup emits `class="toggle on"` or `class="toggle off"` on
+		// the inner indicator AND the wrapper carries the state classes
+		// too so applyControls() can detect on/off from the wrapper.
+		$wrapper_state      = $args['is_enabled'] ? 'on' : 'off';
 		?>
-		<div class="eem-toggle-label-row" data-eem-action="reservation-editor-toggle-subsection" data-eem-controls="<?php echo esc_attr( $controls_attr ); ?>" data-eem-subsection="<?php echo esc_attr( $args['subsection'] ); ?>">
-			<div class="eem-toggle <?php echo esc_attr( $toggle_state_class ); ?>" aria-hidden="true"></div>
+		<div class="eem-toggle-label-row <?php echo esc_attr( $wrapper_state ); ?>" data-eem-action="reservation-editor-toggle-switch-row" data-controls="<?php echo esc_attr( $controls_attr ); ?>" data-eem-subsection="<?php echo esc_attr( $args['subsection'] ); ?>">
+			<div class="eem-toggle <?php echo esc_attr( $toggle_state_class ); ?> <?php echo esc_attr( $wrapper_state ); ?>" aria-hidden="true"></div>
 			<input type="hidden" name="en_reservation[<?php echo esc_attr( $args['name'] ); ?>]" data-eem-subsection-enabled="<?php echo esc_attr( $args['subsection'] ); ?>" value="<?php echo esc_attr( $hidden_value ); ?>" />
 			<span><?php echo esc_html( $args['label'] ); ?></span>
 		</div>

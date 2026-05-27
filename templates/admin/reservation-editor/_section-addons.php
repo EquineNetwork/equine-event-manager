@@ -1,16 +1,13 @@
 <?php
 /**
- * Reservation Editor — "General Add-Ons" section body (C7.C.1).
+ * Reservation Editor — "General Add-Ons" section body
+ * (C7.X.4 mockup-canonical rewrite).
  *
- * Uses the shared `eem_render_repeating_row_table()` helper to render
- * the addons table. Row + template renderers are local closures so the
- * column shape stays co-located with the section, while the JS hook
- * points (`data-eem-action="reservation-editor-add-repeating-row"` +
- * `eem-remove-general-addon`) match the handlers landed in admin.js.
- *
- * Locals contract (provided by EEM_Reservation_Editor_Page::render_addons_body):
- *   $data    array  reservation meta values
- *   $addons  array  normalized addon rows from get_editor_general_addons_context()
+ * Mockup lines 889–936. Single field-row containing the
+ * .eem-repeat-table with columns: Add-On Name / Price (120px) /
+ * Unit (120px) / Action (40px). Replaces the legacy
+ * .eem-admin-table-field chrome with mockup-canonical .eem-repeat-*
+ * primitives.
  *
  * @package   EEM_Plugin
  * @license   GPL-2.0-or-later
@@ -21,89 +18,58 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-/** @var array<string, mixed>           $data */
+/** @var array<string, mixed>            $data */
 /** @var array<int, array<string, mixed>> $addons */
 
-require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_repeating-row-helper.php';
+require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_partial-field-row.php';
 
-$row_renderer = function ( $args, $index, $row ) {
-	$prefix = $args['name_prefix'];
-	?>
-	<tr class="<?php echo esc_attr( (string) ( ! empty( $args['row_classes'] ) ? $args['row_classes'] : 'eem-general-addon-row' ) ); ?>">
-		<td><div class="eem-admin-table-field"><input type="text" class="regular-text" name="<?php echo esc_attr( $prefix ); ?>[<?php echo esc_attr( (string) $index ); ?>][name]" value="<?php echo esc_attr( (string) ( isset( $row['name'] ) ? $row['name'] : '' ) ); ?>" /></div></td>
-		<td><div class="eem-admin-table-field"><input type="text" class="regular-text" name="<?php echo esc_attr( $prefix ); ?>[<?php echo esc_attr( (string) $index ); ?>][description]" value="<?php echo esc_attr( (string) ( isset( $row['description'] ) ? $row['description'] : '' ) ); ?>" /></div></td>
-		<td>
-			<div class="eem-admin-table-field">
-				<input type="hidden" name="<?php echo esc_attr( $prefix ); ?>[<?php echo esc_attr( (string) $index ); ?>][applies_to]" value="any" />
-				<div class="eem-currency-field eem-rv-addon-price-field">
-					<span class="eem-currency-symbol">$</span>
-					<input name="<?php echo esc_attr( $prefix ); ?>[<?php echo esc_attr( (string) $index ); ?>][price]" type="text" class="eem-currency-input" inputmode="decimal" value="<?php echo esc_attr( number_format( (float) ( isset( $row['price'] ) ? $row['price'] : 0 ), 2, '.', '' ) ); ?>" />
-				</div>
-			</div>
-		</td>
-		<td><div class="eem-admin-table-field"><input type="text" class="regular-text" name="<?php echo esc_attr( $prefix ); ?>[<?php echo esc_attr( (string) $index ); ?>][per_label]" value="<?php echo esc_attr( (string) ( isset( $row['per_label'] ) ? $row['per_label'] : '' ) ); ?>" placeholder="<?php esc_attr_e( 'bale', 'equine-event-manager' ); ?>" /></div></td>
-		<td>
-			<div class="eem-admin-table-field eem-admin-table-field--action">
-				<button type="button" class="eem-icon-delete-button <?php echo esc_attr( (string) $args['remove_button_class'] ); ?>" data-eem-action="reservation-editor-remove-repeating-row" aria-label="<?php esc_attr_e( 'Remove add-on', 'equine-event-manager' ); ?>" title="<?php esc_attr_e( 'Remove add-on', 'equine-event-manager' ); ?>">
-					<span class="dashicons dashicons-trash" aria-hidden="true"></span>
-				</button>
-			</div>
-		</td>
-	</tr>
-	<?php
-};
-
-$template_renderer = function ( $args ) {
-	$prefix = $args['name_prefix'];
-	?>
-	<tr class="<?php echo esc_attr( (string) ( ! empty( $args['row_classes'] ) ? $args['row_classes'] : 'eem-general-addon-row' ) ); ?>">
-		<td><div class="eem-admin-table-field"><input type="text" class="regular-text" name="<?php echo esc_attr( $prefix ); ?>[__index__][name]" value="" /></div></td>
-		<td><div class="eem-admin-table-field"><input type="text" class="regular-text" name="<?php echo esc_attr( $prefix ); ?>[__index__][description]" value="" /></div></td>
-		<td>
-			<div class="eem-admin-table-field">
-				<input type="hidden" name="<?php echo esc_attr( $prefix ); ?>[__index__][applies_to]" value="any" />
-				<div class="eem-currency-field eem-rv-addon-price-field">
-					<span class="eem-currency-symbol">$</span>
-					<input name="<?php echo esc_attr( $prefix ); ?>[__index__][price]" type="text" class="eem-currency-input" inputmode="decimal" value="0.00" />
-				</div>
-			</div>
-		</td>
-		<td><div class="eem-admin-table-field"><input type="text" class="regular-text" name="<?php echo esc_attr( $prefix ); ?>[__index__][per_label]" value="" placeholder="<?php esc_attr_e( 'bale', 'equine-event-manager' ); ?>" /></div></td>
-		<td>
-			<div class="eem-admin-table-field eem-admin-table-field--action">
-				<button type="button" class="eem-icon-delete-button <?php echo esc_attr( (string) $args['remove_button_class'] ); ?>" data-eem-action="reservation-editor-remove-repeating-row" aria-label="<?php esc_attr_e( 'Remove add-on', 'equine-event-manager' ); ?>" title="<?php esc_attr_e( 'Remove add-on', 'equine-event-manager' ); ?>">
-					<span class="dashicons dashicons-trash" aria-hidden="true"></span>
-				</button>
-			</div>
-		</td>
-	</tr>
-	<?php
-};
+$fmt_money = function ( $v ) { return number_format( (float) $v, 2, '.', '' ); };
 ?>
-<div class="eem-editor-fields">
-	<?php // C7.C.1.1 — header-toggle is the only visible enable control; body carries a hidden mirror for persistence. ?>
-	<input type="hidden" name="en_reservation[general_addons_enabled]" data-eem-section-enabled="addons" value="<?php echo ! empty( $data['general_addons_enabled'] ) ? '1' : '0'; ?>" />
-	<?php
-	eem_render_repeating_row_table( array(
-		'table_id'            => 'en_general_addons_rows',
-		'template_id'         => 'eem-general-addon-row-template',
-		'add_button_id'       => 'en_add_general_addon',
-		'add_button_label'    => __( 'Add Add-On', 'equine-event-manager' ),
-		'row_classes'         => 'eem-general-addon-row',
-		'remove_button_class' => 'eem-remove-general-addon',
-		'name_prefix'         => 'en_reservation[general_addons]',
-		'columns'             => array(
-			__( 'Add-On Name',  'equine-event-manager' ),
-			__( 'Description',  'equine-event-manager' ),
-			__( 'Price',        'equine-event-manager' ),
-			__( 'Per',          'equine-event-manager' ),
-			__( 'Action',       'equine-event-manager' ),
-		),
-		'rows'                => $addons,
-		'row_renderer'        => $row_renderer,
-		'template_renderer'   => $template_renderer,
-		'extra_table_classes' => 'eem-general-addon-table',
-		'intro_html'          => '<p class="description">' . esc_html__( 'Use general add-ons for items like hay, extra bedding, or other optional products that can be sold alongside stalls or RV reservations.', 'equine-event-manager' ) . '</p>',
-	) );
-	?>
-</div>
+<input type="hidden" name="en_reservation[general_addons_enabled]" data-eem-section-enabled="addons" value="<?php echo ! empty( $data['general_addons_enabled'] ) ? '1' : '0'; ?>" />
+
+<?php
+ob_start();
+?>
+<table class="eem-repeat-table">
+	<thead>
+		<tr>
+			<th><?php esc_html_e( 'Add-On Name', 'equine-event-manager' ); ?></th>
+			<th style="width:120px"><?php esc_html_e( 'Price', 'equine-event-manager' ); ?></th>
+			<th style="width:120px"><?php esc_html_e( 'Unit', 'equine-event-manager' ); ?></th>
+			<th style="width:40px"></th>
+		</tr>
+	</thead>
+	<tbody id="eem-general-addons-rows">
+		<?php foreach ( (array) $addons as $idx => $addon ) :
+			$a_name = isset( $addon['name'] ) ? (string) $addon['name'] : '';
+			$a_price = isset( $addon['price'] ) ? (float) $addon['price'] : 0.0;
+			$a_unit  = isset( $addon['per_label'] ) ? (string) $addon['per_label'] : '';
+			?>
+			<tr>
+				<td><input class="eem-repeat-input" type="text" name="en_reservation[general_addons][<?php echo (int) $idx; ?>][name]" value="<?php echo esc_attr( $a_name ); ?>" /></td>
+				<td><div class="eem-repeat-price-wrap"><span class="eem-repeat-price-sym">$</span><input class="eem-repeat-price-in" type="number" step="0.01" min="0" name="en_reservation[general_addons][<?php echo (int) $idx; ?>][price]" value="<?php echo esc_attr( $fmt_money( $a_price ) ); ?>" /></div></td>
+				<td><input class="eem-repeat-input" type="text" name="en_reservation[general_addons][<?php echo (int) $idx; ?>][per_label]" value="<?php echo esc_attr( $a_unit ); ?>" placeholder="<?php esc_attr_e( 'bag, bale, each', 'equine-event-manager' ); ?>" /></td>
+				<td><button class="eem-btn-delete" type="button" aria-label="<?php esc_attr_e( 'Delete', 'equine-event-manager' ); ?>" data-eem-action="reservation-editor-remove-repeating-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
+				<input type="hidden" name="en_reservation[general_addons][<?php echo (int) $idx; ?>][applies_to]" value="any" />
+			</tr>
+		<?php endforeach; ?>
+	</tbody>
+</table>
+<button class="eem-btn-add" type="button" data-eem-action="reservation-editor-add-repeating-row" data-eem-repeating-template="eem-general-addons-row-template" data-eem-repeating-tbody="eem-general-addons-rows">
+	<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+	<?php esc_html_e( 'Add Add-On', 'equine-event-manager' ); ?>
+</button>
+<template id="eem-general-addons-row-template"><tr>
+	<td><input class="eem-repeat-input" type="text" name="en_reservation[general_addons][__index__][name]" value="" placeholder="<?php esc_attr_e( 'Add-on name', 'equine-event-manager' ); ?>" /></td>
+	<td><div class="eem-repeat-price-wrap"><span class="eem-repeat-price-sym">$</span><input class="eem-repeat-price-in" type="number" step="0.01" min="0" name="en_reservation[general_addons][__index__][price]" value="0.00" /></div></td>
+	<td><input class="eem-repeat-input" type="text" name="en_reservation[general_addons][__index__][per_label]" value="" placeholder="<?php esc_attr_e( 'bag, bale, each', 'equine-event-manager' ); ?>" /></td>
+	<td><button class="eem-btn-delete" type="button" aria-label="<?php esc_attr_e( 'Delete', 'equine-event-manager' ); ?>" data-eem-action="reservation-editor-remove-repeating-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
+	<input type="hidden" name="en_reservation[general_addons][__index__][applies_to]" value="any" />
+</tr></template>
+<?php
+$table_html = (string) ob_get_clean();
+eem_render_editor_field_row( array(
+	'label'        => __( 'Add-Ons', 'equine-event-manager' ),
+	'label_sub'    => __( 'Optional items customers can purchase', 'equine-event-manager' ),
+	'control_html' => $table_html,
+) );

@@ -1637,6 +1637,10 @@ class EEM_Reservations_CPT {
 			'group_rider_deposit_amount'      => isset( $source['group_rider_deposit_amount'] ) ? $this->sanitize_money_value( $source['group_rider_deposit_amount'] ) : '0.00',
 			'general_addons'                  => isset( $source['general_addons'] ) && is_array( $source['general_addons'] ) ? $this->sanitize_general_addons( $source['general_addons'] ) : $existing['general_addons'],
 			'rv_addons'                       => isset( $source['rv_addons'] ) && is_array( $source['rv_addons'] ) ? $this->sanitize_rv_addons( $source['rv_addons'] ) : $existing['rv_addons'],
+			// C7.X.4 — NEW: rv_lot_zones (pricing tiers — color slug from
+			// 8-preset palette + name + surcharge). Non-destructive
+			// additive schema (Option L1 — see CLEANUP #44).
+			'rv_lot_zones'                    => isset( $source['rv_lot_zones'] ) && is_array( $source['rv_lot_zones'] ) ? $this->sanitize_rv_lot_zones( $source['rv_lot_zones'] ) : ( isset( $existing['rv_lot_zones'] ) ? (array) $existing['rv_lot_zones'] : array() ),
 			'rv_nightly_rate'                 => isset( $source['rv_nightly_rate'] ) ? $this->sanitize_money_value( $source['rv_nightly_rate'] ) : $existing['rv_nightly_rate'],
 			'rv_weekend_rate'                 => isset( $source['rv_weekend_rate'] ) ? $this->sanitize_money_value( $source['rv_weekend_rate'] ) : $existing['rv_weekend_rate'],
 			'rv_early_bird_enabled'           => isset( $source['rv_early_bird_enabled'] ) ? 1 : 0,
@@ -2010,6 +2014,7 @@ class EEM_Reservations_CPT {
 			'group_rider_deposit_enabled'     => 0,
 			'group_rider_deposit_amount'      => '0.00',
 			'general_addons'                  => array(),
+			'rv_lot_zones'                    => array(),
 			'rv_addons'                       => array(),
 			'rv_nightly_rate'                 => '0.00',
 			'rv_weekend_rate'                 => '0.00',
@@ -2246,6 +2251,39 @@ class EEM_Reservations_CPT {
 		}
 
 		return array_values( $sanitized );
+	}
+
+	/**
+	 * Sanitize rv_lot_zones submission (C7.X.4 NEW). Each zone has
+	 * a color slug from the 8-preset palette, a non-empty name, and
+	 * a non-negative surcharge dollar amount.
+	 *
+	 * @param array $zones Raw zone rows.
+	 * @return array
+	 */
+	private function sanitize_rv_lot_zones( $zones ) {
+		$palette  = array( 'red', 'blue', 'green', 'orange', 'purple', 'navy', 'teal', 'pink' );
+		$out      = array();
+		foreach ( (array) $zones as $zone ) {
+			if ( ! is_array( $zone ) ) {
+				continue;
+			}
+			$name      = isset( $zone['name'] ) ? sanitize_text_field( $zone['name'] ) : '';
+			$color     = isset( $zone['color'] ) ? sanitize_key( $zone['color'] ) : '';
+			$surcharge = isset( $zone['surcharge'] ) ? $this->sanitize_money_value( $zone['surcharge'] ) : '0.00';
+			if ( '' === $name ) {
+				continue;
+			}
+			if ( ! in_array( $color, $palette, true ) ) {
+				$color = 'blue';
+			}
+			$out[] = array(
+				'name'      => $name,
+				'color'     => $color,
+				'surcharge' => $surcharge,
+			);
+		}
+		return array_values( $out );
 	}
 
 	/**

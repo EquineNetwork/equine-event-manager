@@ -95,7 +95,11 @@ update_post_meta( $reservation_id, '_en_checkout_time',            '' );
 update_post_meta( $reservation_id, '_en_checkin_time_enabled',     0 );
 update_post_meta( $reservation_id, '_en_checkout_time_enabled',    0 );
 update_post_meta( $reservation_id, '_en_stall_schedule_enabled',   0 );
+update_post_meta( $reservation_id, '_en_stalls_open_at',           '' );
+update_post_meta( $reservation_id, '_en_stalls_close_at',          '' );
 update_post_meta( $reservation_id, '_en_rv_schedule_enabled',      0 );
+update_post_meta( $reservation_id, '_en_rv_open_at',               '' );
+update_post_meta( $reservation_id, '_en_rv_close_at',              '' );
 
 $_GET = array( 'page' => 'equine-event-manager-reservation-editor', 'reservation_id' => $reservation_id );
 ob_start();
@@ -221,9 +225,13 @@ $extract = function ( $html ) {
 		$type    = preg_match( '/type="([^"]+)"/i', $row[0], $tm ) ? $tm[1] : 'text';
 		$value   = preg_match( '/value="([^"]*)"/i', $row[0], $vm ) ? html_entity_decode( $vm[1], ENT_QUOTES, 'UTF-8' ) : '';
 		$checked = (bool) preg_match( '/\bchecked\b/i', $row[0] );
-		$is_section_enabled = (bool) preg_match( '/data-eem-section-enabled="/i', $row[0] );
+		$is_section_enabled    = (bool) preg_match( '/data-eem-section-enabled="/i', $row[0] );
+		$is_subsection_enabled = (bool) preg_match( '/data-eem-subsection-enabled="/i', $row[0] );
+		$is_stay_type_mirror   = (bool) preg_match( '/data-eem-stay-type-mirror/i', $row[0] );
 		if ( in_array( $type, array( 'checkbox', 'radio' ), true ) && ! $checked ) continue;
-		if ( 'hidden' === $type && $is_section_enabled && '1' !== $value ) continue;
+		if ( 'hidden' === $type && $is_section_enabled    && '1' !== $value ) continue;
+		if ( 'hidden' === $type && $is_subsection_enabled && '1' !== $value ) continue;
+		if ( 'hidden' === $type && $is_stay_type_mirror   && '1' !== $value ) continue;
 		$flat[ $row[1] ] = $value;
 	}
 	preg_match_all( '/<select\s+[^>]*name="(en_reservation\[[^"]*\])"[^>]*>(.*?)<\/select>/is', $html, $m, PREG_SET_ORDER );
@@ -324,7 +332,11 @@ c7c21_ok( "TRIPWIRE stall: stall_description NOT collateral-changed (write phase
 
 // ── [6d] TRIPWIRE rv — schedule enabled + empty open ──────────────
 echo "\n[6d] TRIPWIRE rv schedule — enabled + empty rv_open_at\n";
-update_post_meta( $reservation_id, '_en_stall_schedule_enabled', 0 ); // clear stall tripwire first
+// Clear stall tripwire AND the open/close fields so the get_meta_values
+// coercion (line 1893) doesn't flip stall_schedule_enabled back to 1.
+update_post_meta( $reservation_id, '_en_stall_schedule_enabled', 0 );
+update_post_meta( $reservation_id, '_en_stalls_open_at',         '' );
+update_post_meta( $reservation_id, '_en_stalls_close_at',        '' );
 update_post_meta( $reservation_id, '_en_rv_schedule_enabled',    1 );
 update_post_meta( $reservation_id, '_en_rv_open_at',             '' );
 update_post_meta( $reservation_id, '_en_rv_close_at',            '' );
