@@ -50,8 +50,15 @@ if ( ! function_exists( 'eem_render_editor_stay_type_pair' ) ) {
 		), $args );
 
 		$render_btn = function ( $name, $label, $is_on, $controls ) {
-			$active_cls = $is_on ? ' eem-stay-type-btn--active active' : '';
-			$tog_cls    = $is_on ? 'eem-toggle--on on' : 'eem-toggle--off off';
+			// C7.X.9 — stale legacy duplicate tokens (`active`, `on`,
+			// `off`) stripped. The click handlers in admin.js only
+			// toggle the canonical mockup classes
+			// (`eem-stay-type-btn--active`, `eem-toggle--on/--off`);
+			// the bare tokens were never flipped off, so
+			// `eemApplyControlsById` read `on=true` forever and
+			// conditional rows never hid.
+			$active_cls = $is_on ? ' eem-stay-type-btn--active' : '';
+			$tog_cls    = $is_on ? 'eem-toggle--on' : 'eem-toggle--off';
 			$ctrl_attr  = implode( ' ', array_map( 'sanitize_html_class', (array) $controls ) );
 			$val        = $is_on ? '1' : '0';
 			?>

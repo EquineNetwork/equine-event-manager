@@ -2179,16 +2179,42 @@
 	   ═════════════════════════════════════════════════════════════ */
 
 	/* Mockup applyControls() — ID-based. Reads data-controls (space-
-	   separated row IDs) from controller, applies display:'' or 'none'
-	   to each row based on controller's on/active state. */
+	   separated row IDs) from controller, hides/reveals each listed row
+	   based on controller's on state.
+	   C7.X.9 — controller on-state is read from the canonical mockup
+	   classes ONLY (`eem-toggle--on` for toggle-label-row wrappers and
+	   inner toggles, `eem-stay-type-btn--active` for stay-type pills).
+	   The earlier read also accepted bare `on` / `active` tokens, but
+	   those duplicates were never toggled off by the click handlers, so
+	   any controller that ever shipped them was stuck reading
+	   `on=true` forever. Partials no longer emit the duplicates; this
+	   read is the source-of-truth for state.
+	   C7.X.9 — also toggles the `eem-row--hidden` class (CSS rule has
+	   `display:none !important`) rather than just inline style. Rows
+	   that PHP renders initially hidden carry `eem-row--hidden`, and
+	   inline `style.display = ''` alone could never reveal them
+	   because the class wins specificity. */
 	function eemApplyControlsById(controller) {
 		if (!controller) return;
 		var ids = (controller.getAttribute('data-controls') || '').trim();
 		if (!ids) return;
-		var on = controller.classList.contains('on') || controller.classList.contains('eem-toggle--on') || controller.classList.contains('eem-stay-type-btn--active') || controller.classList.contains('active');
+		var on = controller.classList.contains('eem-toggle--on') || controller.classList.contains('eem-stay-type-btn--active');
+		if (!on) {
+			// Toggle-label-row wrappers carry data-controls but the
+			// canonical state class lives on the inner .eem-toggle
+			// (C7.X.9 — wrapper duplicates stripped). Fall back to
+			// inspecting the inner toggle so the wrapper can still be
+			// the data-controls source.
+			var inner = controller.querySelector(':scope > .eem-toggle');
+			if (inner && inner.classList.contains('eem-toggle--on')) on = true;
+		}
 		ids.split(/\s+/).forEach(function (id) {
 			var row = document.getElementById(id);
-			if (row) row.style.display = on ? '' : 'none';
+			if (!row) return;
+			row.classList.toggle('eem-row--hidden', !on);
+			// Clear any stale inline style.display from earlier
+			// pre-C7.X.9 toggle clicks; class is now the sole gate.
+			row.style.display = '';
 		});
 	}
 
@@ -2293,22 +2319,16 @@
 			}
 		}
 
-		/* Lock chevron when disabled — mockup line 1251 */
-		var collapse2 = t.closest('[data-eem-action="reservation-editor-toggle-collapse"]');
-		if (collapse2) {
-			var card2 = collapse2.closest('.eem-reservation-editor-section');
-			if (card2) {
-				var secToggle = card2.querySelector('.eem-toggle[data-eem-section]');
-				if (secToggle && secToggle.classList.contains('eem-toggle--off')) {
-					// disabled section — chevron locked. Existing handler already ran;
-					// undo its toggle so the section stays collapsed.
-					card2.classList.add('eem-section-collapsed');
-					var bd = collapse2.parentElement ? collapse2.parentElement.parentElement.querySelector('.eem-section-body') : null;
-					if (bd) bd.classList.add('eem-section-body--hidden');
-					collapse2.classList.remove('is-open');
-				}
-			}
-		}
+		// C7.X.9 — chevron-lock handler removed. Per the canonical UX
+		// spec, users CAN chevron-expand a disabled section to peek at
+		// the filled data (read-only-ish state with .eem-section-body
+		// --disabled striped overlay applied at PHP render time). The
+		// previous lock handler also had a wrong-target body query
+		// (`collapse2.parentElement.parentElement.querySelector` walked
+		// past the card to the container, grabbing the FIRST section's
+		// body instead of the clicked section's body), which caused
+		// cross-section --hidden state to get stuck. Both problems
+		// disappear with the handler removed.
 	});
 
 	/* ── Fee-mode pill click ── */

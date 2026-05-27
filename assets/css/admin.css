@@ -5869,9 +5869,14 @@ a.eem-reservation-editor-meta-change-link:hover {
 }
 
 /* Section-level disabled callout. Renders inside the body when the
-   section's enable toggle is off. Sits ABOVE the striped overlay so
-   admins see the explanation, not just the disabled chrome. */
+   section's enable toggle is off. C7.X.9 — the partial emits this note
+   unconditionally so JS toggle-OFF can reveal it via the body's
+   `eem-section-body--disabled` ancestor class without a re-render. The
+   default rule below hides the note; the descendant override below
+   shows it only inside a disabled body. No `!important` — straight
+   specificity does the job. */
 .eem-section-disabled-note {
+	display: none;
 	font-size: 12.5px;
 	color: var(--eem-text-muted);
 	font-style: italic;
@@ -5880,9 +5885,11 @@ a.eem-reservation-editor-meta-change-link:hover {
 	border-radius: 4px;
 	margin-bottom: 14px;
 }
-/* Position above the disabled overlay (z-index above
-   .eem-section-body--disabled::after stripes) so it remains readable. */
+/* Show inside disabled body, and position above the striped overlay
+   (z-index above .eem-section-body--disabled::after stripes) so it
+   remains readable. */
 .eem-section-body--disabled .eem-section-disabled-note {
+	display: block;
 	position: relative;
 	z-index: 2;
 }

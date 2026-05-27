@@ -5,7 +5,143 @@ in-flight context that ISN'T already in CLAUDE.md, commit messages,
 or CLEANUP.md. Read after `git pull` on a new machine to pick up
 momentum across Claude Code sessions.
 
-**Last updated:** 2026-05-26 — Build-to-Mockup retroactive port COMPLETE
+**Last updated:** 2026-05-27 — C7.X.9 toggle-behaviors fix-up landed; awaiting Whitney visual verify + item 7 (Linked Event rail card) decision
+
+---
+
+## C7.X.9 fix-up — toggle behaviors, disabled-note, peek (landed 2026-05-27)
+
+**Status:** committed + pushed. Smoke 1381/1381 green (was 1359; +22 from new
+`c7x-toggle-behaviors-smoke.php`). Whitney to visual-verify after running the
+seed script.
+
+**The 6 items from Whitney's visual-verify report consolidated into 3 root-
+cause bugs + 1 seed gap + 1 open question:**
+
+1. **Item 1 — seed data.** Reservation 44 ("2025 Spring Classic") shipped
+   with no event-link meta. Fixed by `tests/seeds/seed-reservation-44-link-
+   event.php` (re-runnable). Run with:
+   `wp eval-file tests/seeds/seed-reservation-44-link-event.php`
+   Script picks a native `en_event` if available, else TEC `tribe_events`,
+   else seeds a minimal native fallback. Wires `_en_event_source` +
+   `_en_event_id` + `_en_use_global_event_source=0` and rewrites the
+   resolver sort-cache key. Prints before/after + resolver output.
+
+2. **Item 2 — disabled-note unconditional emission.** Root cause: skeleton
+   partial always emits the note when arg is non-empty; CSS had no
+   `display:none` default. Fix: CSS gate in `admin.css`:
+   - `.eem-section-disabled-note { display: none; ... }` (default hide)
+   - `.eem-section-body--disabled .eem-section-disabled-note { display: block; ... }`
+     (descendant override)
+   No `!important` — straight specificity. Skeleton continues to emit the
+   note unconditionally so JS toggle-OFF reveals it via ancestor class
+   without re-render.
+
+3. **Items 4 + 5 — stay-types + sub-section toggles non-functional. Single
+   bug.** Root cause: partials emitted duplicate stale state-class tokens
+   (` active` on stay-type-btn, ` on`/` off` on toggle-label-row wrapper +
+   inner toggle) on top of canonical `eem-stay-type-btn--active` /
+   `eem-toggle--on/--off`. Click handlers only flipped the canonical
+   classes; bare duplicates were never toggled off, so
+   `eemApplyControlsById` read `on=true` forever.
+   Fix:
+   - `_partial-stay-type-pair.php`: stripped ` active`, `' on'`/`' off'`
+     from `$active_cls` and `$tog_cls`.
+   - `_partial-toggle-label-row.php`: stripped `$wrapper_state` entirely
+     (wrapper no longer carries `on`/`off`); inner `.eem-toggle` no
+     longer carries duplicate.
+   - `eemApplyControlsById` in `admin.js`: state-class read narrowed to
+     canonical classes only. Added fallback to inspect inner
+     `.eem-toggle` for toggle-label-row wrappers (which carry
+     `data-controls` but no state class).
+   - **Secondary fix in same function:** now toggles `eem-row--hidden`
+     CSS class (which has `display:none !important`) instead of just
+     `style.display = ''`. Inline style alone could never reveal an
+     initially-hidden row because the class wins specificity.
+
+4. **Item 3 — collapse-on-disable / chevron-lock. Bug + spec mismatch.**
+   Live PHP render is correct at first paint (verified: stall card has
+   `eem-section-collapsed`, body has `eem-section-body--hidden
+   eem-section-body--disabled`). Whitney's observation came from clicking
+   the chevron to peek — which is the canonical UX per item 6 — but the
+   then-existing lock handler at `admin.js:2296-2311` mis-targeted the
+   body via `collapse2.parentElement.parentElement.querySelector
+   ('.eem-section-body')` (walks past the card to the container, grabs
+   the FIRST section body, not the clicked one), so:
+     (a) lock didn't actually re-collapse the clicked section
+     (b) wrong section's body got stuck `--hidden`
+   Fix: deleted the lock handler entirely. Peek-while-disabled is the
+   canonical UX per item 6 ("user CAN still click the chevron to expand
+   and peek at the fields"). Body keeps `--disabled` chrome (striped
+   overlay + pointer-events:none) when expanded by chevron click.
+
+5. **Item 6 — peek-while-disabled.** Spec, not a bug. The chevron-lock
+   removal above implements it. Chevron toggles collapse independently of
+   the enable state; section body keeps `--disabled` chrome on peek.
+
+6. **Item 7 — Linked Event rail card vs meta-line redundancy. OPEN —
+   awaiting Whitney's decision.** Both surfaces display the linked event.
+   Rail card adds typeahead/change/unlink (meta-line is read-only).
+   Possible paths if removing the rail card:
+   - (a) Make meta-line clickable to launch typeahead
+   - (b) Add "(change)" link next to meta-line
+   - (c) Keep rail card (status quo)
+   - (d) Remove linked-event editing from editor entirely
+   Whitney to decide after visual-verifying items 1-6 with reservation 44
+   linked to a real event (see seed script above).
+
+**C7.X.9 commit:** `[hash filled after commit]` — see `git log` for the
+final hash and message.
+
+**Smoke regression coverage shipped in `c7x-toggle-behaviors-smoke.php`:**
+   22 assertions across 4 groups. ABSENCE-assertions used per
+   Whitney's review note — smoke fails if anyone re-introduces the stale
+   `active` / `on` / `off` duplicates OR re-adds the lock handler OR
+   removes the CSS gate. Defense against C16-style regression.
+
+**Files touched (7):**
+- `assets/css/admin.css` — 6 LOC modified (disabled-note gate)
+- `assets/js/admin.js` — `eemApplyControlsById` rewritten (~12 LOC); lock
+  handler at 2296-2311 deleted (~16 LOC removed); replaced with a comment
+  explaining the canonical UX decision (~10 LOC).
+- `templates/admin/reservation-editor/_partial-stay-type-pair.php` — 9
+  LOC modified (strip duplicates + new audit-trail comment)
+- `templates/admin/reservation-editor/_partial-toggle-label-row.php` — 13
+  LOC modified (strip `$wrapper_state` + duplicates + new audit-trail
+  comment)
+- `tests/seeds/seed-reservation-44-link-event.php` — NEW, 134 LOC
+- `tests/smoke/c7x-toggle-behaviors-smoke.php` — NEW, 138 LOC
+- `SESSION-NOTES.md` — this entry.
+
+**Visual-verify checklist Whitney will walk after running the seed:**
+- [ ] Disabled-note appears ONLY when section is toggled OFF
+- [ ] Stay Types (Nightly/Weekend) toggle hides/reveals conditional rows
+- [ ] Sub-section toggles (Schedule / Early Bird / Required Shavings)
+      hide/reveal rows
+- [ ] Chevron-expand on disabled sections shows the body with striped
+      `--disabled` chrome (peek works)
+- [ ] Linked Event meta-line + rail card both render real values for
+      reservation 44 (sets up item 7 decision)
+
+**Handoff notes for next strategic chat:**
+- C7.X is functionally complete pending Whitney's visual-verify of C7.X.9
+  + her item 7 decision.
+- If item 7 lands as "remove rail card," the work is a small partial
+  retirement + meta-line interactivity wire — likely 1 commit, ~150 LOC.
+- If item 7 lands as "keep both," the editor is shipped and the next
+  chunk is C8 (Stall Charts).
+- The chevron-lock removal in C7.X.9 means the JS at `admin.js:2296-2311`
+  region is now a comment block. If C16 wholesale-strips legacy editor
+  code, that comment block can also go.
+- The CSS-gate pattern landed in C7.X.9 (`display:none` default + a
+  descendant `display:block` override, no `!important`) is the canonical
+  shape for any future "always-emit-in-DOM, gate-via-ancestor-class"
+  visibility pattern. See `.eem-section-disabled-note` rules in
+  `admin.css`.
+
+---
+
+## Original C7.X retroactive port summary (carry forward)
 
 ---
 

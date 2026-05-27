@@ -80,13 +80,17 @@ if ( ! function_exists( 'eem_render_editor_toggle_label_row' ) ) {
 		// ctrl-- class tokens for backward-compat callers — both work
 		// with the same applyControls() JS handler).
 		$controls_attr      = implode( ' ', array_map( 'sanitize_html_class', (array) $args['controls'] ) );
-		// Mockup emits `class="toggle on"` or `class="toggle off"` on
-		// the inner indicator AND the wrapper carries the state classes
-		// too so applyControls() can detect on/off from the wrapper.
-		$wrapper_state      = $args['is_enabled'] ? 'on' : 'off';
+		// C7.X.9 — stale legacy duplicate tokens (`on`/`off` on the
+		// outer wrapper AND on the inner toggle) stripped. The
+		// click handler in admin.js only flips `eem-toggle--on/--off`
+		// on the inner toggle; the bare tokens were never flipped,
+		// so `eemApplyControlsById` read `on=true` forever from
+		// either the wrapper or the inner duplicate. Canonical state
+		// now lives exclusively on the inner `.eem-toggle` via the
+		// `eem-toggle--on/--off` class.
 		?>
-		<div class="eem-toggle-label-row <?php echo esc_attr( $wrapper_state ); ?>" data-eem-action="reservation-editor-toggle-switch-row" data-controls="<?php echo esc_attr( $controls_attr ); ?>" data-eem-subsection="<?php echo esc_attr( $args['subsection'] ); ?>">
-			<div class="eem-toggle <?php echo esc_attr( $toggle_state_class ); ?> <?php echo esc_attr( $wrapper_state ); ?>" aria-hidden="true"></div>
+		<div class="eem-toggle-label-row" data-eem-action="reservation-editor-toggle-switch-row" data-controls="<?php echo esc_attr( $controls_attr ); ?>" data-eem-subsection="<?php echo esc_attr( $args['subsection'] ); ?>">
+			<div class="eem-toggle <?php echo esc_attr( $toggle_state_class ); ?>" aria-hidden="true"></div>
 			<input type="hidden" name="en_reservation[<?php echo esc_attr( $args['name'] ); ?>]" data-eem-subsection-enabled="<?php echo esc_attr( $args['subsection'] ); ?>" value="<?php echo esc_attr( $hidden_value ); ?>" />
 			<span><?php echo esc_html( $args['label'] ); ?></span>
 		</div>
