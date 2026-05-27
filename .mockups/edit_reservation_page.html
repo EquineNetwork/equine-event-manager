@@ -346,16 +346,15 @@ a:hover{text-decoration:none}
       <header class="plugin-header">
         <h1 class="plugin-title">2026 Southeast Region Super Sort</h1>
         <div class="plugin-subtitle">Configure the reservation setup for this event. Title and dates are mirrored from the linked source event and cannot be edited here.</div>
-        <!-- C7.X.12 Item 7 — Linked Event rail card retired. Meta-line
-             gains small "(change)" + "(unlink)" text links so admins
-             can still re-link / unlink without the duplicate rail card.
-             Right rail now contains 2 cards (Publish + Shortcode). -->
+        <!-- C7.X.15 Issue 7 — hybrid restoration. Meta-line reverts to
+             READ-ONLY context (no action links) so the workflow-first
+             signal isn't cluttered. Actionable linked-event controls
+             (typeahead + Change link + ✕ unlink icon) live in the
+             right rail's Linked Event card. -->
         <div class="plugin-meta-line">
           <span>
             <span class="meta-label">Linked Event</span>
-            <a class="meta-value" href="#">Perry, GA – 2026 Southeast Region Super Sort</a>
-            <a class="meta-action" href="#">(change)</a>
-            <a class="meta-action meta-action--danger" href="#">(unlink)</a>
+            <span class="meta-value">Perry, GA – 2026 Southeast Region Super Sort</span>
           </span>
           <span>
             <span class="meta-label">Event Dates</span>
@@ -1194,13 +1193,32 @@ a:hover{text-decoration:none}
             </div>
           </div>
 
-          <!-- C7.X.12 Item 7 — Linked Event rail card RETIRED.
-               Linked-event editing now lives inline in the meta-line
-               via "(change)" + "(unlink)" small text links at the top
-               of the editor header (see lines 349-364). Rail now
-               contains just Publish + Shortcode; the ~250px of
-               vertical the Linked Event card consumed is reclaimed
-               for Publish breathing room + future cards. -->
+          <!-- Linked Event card (C7.X.15 Issue 7 — restored from
+               C7.X.12 Item 7 retirement, hybrid placement). Meta-line
+               at top is read-only context; this card carries the
+               actionable controls: typeahead search, Change text
+               link, terse ✕ icon-only Unlink button. -->
+          <div class="rail-card">
+            <div class="rail-header">
+              <span class="rail-title">Linked Event</span>
+            </div>
+            <div class="rail-body">
+              <p class="rail-hint">Link this reservation to an event from your active event source. The reservation title and dates mirror the linked event.</p>
+              <input class="event-search" type="text" placeholder="Search events…">
+              <div class="event-linked">
+                <div class="event-linked-meta" style="min-width:0">
+                  <div class="event-linked-name"><a href="#">Perry, GA – 2026 Southeast Region Super Sort</a></div>
+                  <div class="event-linked-date">May 8 – 10, 2026</div>
+                  <div class="event-linked-actions">
+                    <a href="#" class="event-linked-change">Change</a>
+                    <button type="button" class="event-unlink-icon" aria-label="Unlink event" title="Unlink event">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <!-- Shortcode card -->
           <div class="rail-card">

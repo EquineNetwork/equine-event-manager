@@ -905,6 +905,7 @@ a.eem-btn-add:hover {
 input.eem-field-input,
 textarea.eem-field-textarea,
 select.eem-field-select {
+	margin: 0; /* C7.X.15 Issue 3 — reset WP core forms.css `input, select { margin: 0 1px; }` */
 	padding: 8px 11px;
 	border: var(--eem-border-input);
 	border-radius: var(--eem-radius);
@@ -934,7 +935,13 @@ textarea.eem-field-textarea::placeholder {
 	line-height: 1.6;
 }
 
-.eem-field-select {
+/* C7.X.15 Issue 5 — `select.` prefix ties WP core forms.css `select {...}`
+   rule at (0,1,1); cascade order wins. Same pattern as input. prefix
+   on the affix-pattern inputs (C7.X.13). Margin reset is redundant
+   with the GROUP rule above but kept here for defensive consistency
+   (catches the case where someone refactors the GROUP rule away). */
+select.eem-field-select {
+	margin: 0;
 	padding: 8px 30px 8px 11px;
 	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236B7A99' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
 	background-repeat: no-repeat;
@@ -998,6 +1005,7 @@ textarea.eem-field-textarea::placeholder {
    this commit (WP core + theme + plugin's own files all in scope
    when chasing a cascade winner). */
 input.eem-price-input {
+	margin: 0; /* C7.X.15 Issue 3 — reset WP core forms.css margin */
 	padding: 8px 12px;
 	border: 1px solid #8c8f94;
 	border-radius: 0 var(--eem-radius) var(--eem-radius) 0;
@@ -1333,8 +1341,10 @@ a.eem-filter-tab.active {
 
 /* C5.5: removed dead .eem-bulk-action-bar (+ select, button, button:hover, button:disabled) + .eem-bulk-selected-count — verified zero markup/JS uses (Orders dropped the bulk-action-bar primitive in C5.F-toolbar). */
 
-/* Select (event filter, etc.) — chevron-suffixed dropdown */
-.eem-list-select {
+/* Select (event filter, etc.) — chevron-suffixed dropdown.
+   C7.X.15 Issue 5 — `select.` prefix ties WP core forms.css. */
+select.eem-list-select {
+	margin: 0;
 	padding: 6px 28px 6px 10px;
 	border: 1px solid var(--eem-text-muted);
 	border-radius: var(--eem-radius);
@@ -1347,7 +1357,7 @@ a.eem-filter-tab.active {
 	outline: none;
 }
 
-.eem-list-select:focus {
+select.eem-list-select:focus {
 	border-color: var(--eem-electric);
 }
 
@@ -3071,7 +3081,9 @@ a.eem-status-tab.is-active {
 	flex-shrink: 0;
 }
 
-.eem-toolbar-select {
+/* C7.X.15 Issue 5 — `select.` prefix ties WP core forms.css. */
+select.eem-toolbar-select {
+	margin: 0;
 	padding: 5px 28px 5px 10px;
 	border: 1px solid var(--eem-text-muted);
 	border-radius: var(--eem-radius);
@@ -4946,7 +4958,13 @@ a.eem-btn-collect-banner:focus {
 	font-weight: 600;
 	color: #50575e;
 }
-.eem-dashboard-range-select {
+/* C7.X.15 Issue 5 — `select.` prefix ties WP core forms.css; same
+   fix as input. prefix on form-control inputs at C7.X.13. Dashboard
+   "Last 30 days" select was rendering with WP-core's `min-height:
+   42px; border-radius: 12px; border-width: 1.5px;` overrides until
+   the prefix landed. */
+select.eem-dashboard-range-select {
+	margin: 0;
 	padding: 7px 32px 7px 12px;
 	border: 1px solid var(--eem-text-muted);
 	border-radius: var(--eem-radius);
@@ -4959,7 +4977,7 @@ a.eem-btn-collect-banner:focus {
 	outline: none;
 	appearance: none;
 }
-.eem-dashboard-range-select:focus {
+select.eem-dashboard-range-select:focus {
 	border-color: var(--eem-electric);
 	box-shadow: var(--eem-focus-ring);
 }
@@ -5995,6 +6013,7 @@ a.eem-reservation-editor-meta-change-link:hover {
 /* C7.X.13 — `input.` prefix ties WP core forms.css (same fix as
    .eem-price-input above; see audit-trail comment there). */
 input.eem-pct-input {
+	margin: 0; /* C7.X.15 Issue 3 — reset WP core forms.css margin */
 	padding: 8px 12px;
 	border: 1px solid #8c8f94;
 	border-radius: 4px 0 0 4px;
@@ -6101,8 +6120,9 @@ input.eem-pct-input:focus {
 .eem-btn-danger-sm:hover { background: #fef2f2; }
 
 /* ── Event Link rail card (mockup line 260) ── */
-.eem-event-search { width: 100%; padding: 8px 12px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 13px; font-family: inherit; color: var(--eem-text); background: #fff; outline: none; margin-bottom: 8px; }
-.eem-event-search:focus { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
+/* C7.X.15 Issue 5 — `input.` prefix ties WP core forms.css (typeahead). */
+input.eem-event-search { margin: 0 0 8px; width: 100%; padding: 8px 12px; border: 1px solid #8c8f94; border-radius: var(--eem-radius); font-size: 13px; font-family: inherit; color: var(--eem-text); background: #fff; outline: none; }
+input.eem-event-search:focus { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
 .eem-event-linked { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: #f3f4f5; border: 1px solid #dcdcde; border-radius: 4px; font-size: 13px; gap: 8px; }
 .eem-event-linked-name { font-weight: 600; color: var(--eem-navy); font-size: 13px; }
 .eem-event-linked-name a { color: var(--eem-navy); }
@@ -6110,6 +6130,16 @@ input.eem-pct-input:focus {
 .eem-event-linked-date { font-size: 11.5px; color: var(--eem-text-muted); margin-top: 2px; }
 .eem-event-unlink { font-size: 12px; color: #b91c1c; cursor: pointer; font-weight: 600; white-space: nowrap; background: none; border: none; padding: 0; font-family: inherit; }
 .eem-event-unlink:hover { color: #991b1b; }
+
+/* C7.X.15 Issue 7 — Linked Event card actionable affordances (rail
+   card restored from C7.X.12 retirement). Change is the regular action
+   (text link); Unlink is the rare action (terse icon-only ✕ button). */
+.eem-event-linked-actions { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+.eem-event-linked-change { font-size: 12px; font-weight: 600; color: var(--eem-electric); text-decoration: none; }
+.eem-event-linked-change:hover { text-decoration: underline; }
+.eem-event-unlink-icon { width: 22px; height: 22px; padding: 0; display: inline-flex; align-items: center; justify-content: center; background: none; border: 1px solid transparent; border-radius: 3px; color: #b91c1c; cursor: pointer; }
+.eem-event-unlink-icon:hover { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+.eem-event-unlink-icon svg { width: 14px; height: 14px; }
 
 /* ── Shortcode rail card (mockup line 270) ── */
 .eem-code-box { background: #f3f4f5; border: 1px solid #dcdcde; border-radius: 4px; padding: 9px 12px; font-family: monospace; font-size: 13px; color: var(--eem-text); word-break: break-all; }
@@ -6137,7 +6167,8 @@ input.eem-pct-input:focus {
 .eem-zone-color-swatch { width: 18px; height: 18px; border-radius: 4px; flex-shrink: 0; border: 1px solid rgba(3, 27, 78, 0.15); cursor: pointer; }
 /* C7.X.14 — `input.` prefix ties WP core forms.css; same fix as
    .eem-price-input. See audit-trail comment at .eem-price-input. */
-input.eem-zone-name-input { flex: 1 1 180px; min-width: 140px; padding: 7px 10px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 13px; font-family: inherit; color: var(--eem-text); outline: none; background: #fff; }
+/* C7.X.15 Issue 3 + 4 — margin: 0 resets WP core forms.css margin; border-radius uses --eem-radius-sm (3px) for tighter repeating-table chrome. */
+input.eem-zone-name-input { margin: 0; flex: 1 1 180px; min-width: 140px; padding: 7px 10px; border: 1px solid #8c8f94; border-radius: var(--eem-radius-sm); font-size: 13px; font-family: inherit; color: var(--eem-text); outline: none; background: #fff; }
 input.eem-zone-name-input:focus { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
 .eem-zone-price-group { display: flex; align-items: center; gap: 8px; }
 .eem-zone-price-label { font-size: 11px; font-weight: 600; color: var(--eem-text-muted); white-space: nowrap; }
@@ -6145,7 +6176,8 @@ input.eem-zone-name-input:focus { border-color: var(--eem-electric); box-shadow:
 .eem-zone-price-sym { padding: 7px 9px; background: #f3f4f5; border: 1px solid #8c8f94; border-right: none; border-radius: 4px 0 0 4px; font-size: 12.5px; color: var(--eem-text-muted); font-weight: 600; display: flex; align-items: center; }
 /* C7.X.13 — `input.` prefix ties WP core forms.css; see audit-trail
    comment at .eem-price-input. */
-input.eem-zone-price-in { width: 80px; padding: 7px 9px; border: 1px solid #8c8f94; border-radius: 0 4px 4px 0; font-size: 13px; font-family: inherit; color: var(--eem-text); outline: none; background: #fff; }
+/* C7.X.15 Issue 3 + 4 — see input.eem-zone-name-input comment above. */
+input.eem-zone-price-in { margin: 0; width: 80px; padding: 7px 9px; border: 1px solid #8c8f94; border-radius: 0 var(--eem-radius-sm) var(--eem-radius-sm) 0; font-size: 13px; font-family: inherit; color: var(--eem-text); outline: none; background: #fff; }
 input.eem-zone-price-in:focus { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
 .eem-zone-delete-btn { width: 30px; height: 30px; border-radius: 4px; border: 1px solid #fecaca; background: #fef2f2; color: #b91c1c; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .eem-zone-delete-btn svg { width: 13px; height: 13px; }
@@ -6168,13 +6200,15 @@ input.eem-zone-price-in:focus { border-color: var(--eem-electric); box-shadow: 0
 .eem-repeat-table tbody tr:last-child { border-bottom: none; }
 .eem-repeat-table td { padding: 10px 12px; vertical-align: middle; }
 /* C7.X.14 — `input.` prefix ties WP core forms.css. */
-input.eem-repeat-input { padding: 7px 10px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 13px; font-family: inherit; color: var(--eem-text); background: #fff; width: 100%; outline: none; }
+/* C7.X.15 Issue 3 + 4 — margin: 0 resets WP core; border-radius uses --eem-radius-sm (3px) for tighter repeating-table chrome. */
+input.eem-repeat-input { margin: 0; padding: 7px 10px; border: 1px solid #8c8f94; border-radius: var(--eem-radius-sm); font-size: 13px; font-family: inherit; color: var(--eem-text); background: #fff; width: 100%; outline: none; }
 input.eem-repeat-input:focus { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
 .eem-repeat-price-wrap { display: flex; align-items: stretch; }
 .eem-repeat-price-sym { padding: 7px 9px; background: #f3f4f5; border: 1px solid #8c8f94; border-right: none; border-radius: 4px 0 0 4px; font-size: 12px; color: var(--eem-text-muted); display: flex; align-items: center; }
 /* C7.X.13 — `input.` prefix ties WP core forms.css; see audit-trail
    comment at .eem-price-input. */
-input.eem-repeat-price-in { padding: 7px 10px; border: 1px solid #8c8f94; border-radius: 0 4px 4px 0; font-size: 13px; font-family: inherit; color: var(--eem-text); background: #fff; width: 90px; outline: none; }
+/* C7.X.15 Issue 3 + 4 — see input.eem-repeat-input comment above. */
+input.eem-repeat-price-in { margin: 0; padding: 7px 10px; border: 1px solid #8c8f94; border-radius: 0 var(--eem-radius-sm) var(--eem-radius-sm) 0; font-size: 13px; font-family: inherit; color: var(--eem-text); background: #fff; width: 90px; outline: none; }
 input.eem-repeat-price-in:focus { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
 .eem-btn-delete { width: 30px; height: 30px; border-radius: 4px; border: 1px solid #fecaca; background: #fef2f2; color: #b91c1c; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .eem-btn-delete svg { width: 13px; height: 13px; }

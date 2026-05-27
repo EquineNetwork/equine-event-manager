@@ -5,7 +5,89 @@ in-flight context that ISN'T already in CLAUDE.md, commit messages,
 or CLEANUP.md. Read after `git pull` on a new machine to pick up
 momentum across Claude Code sessions.
 
-**Last updated:** 2026-05-27 — **C7 FINAL CLOSEOUT (C7.X.14)** — responsive breakpoints + two more vulnerable inputs prefixed + full-editor regression sweep clean. Editor functionally + structurally complete. Ready for end-to-end visual verify.
+**Last updated:** 2026-05-27 — C7.X.15 — Whitney's walkthrough fix-ups (7 issues consolidated). Cluster A save buttons functional, agreement upload wired to wp.media, Issue 7 hybrid-restored Linked Event rail card, 3 CLAUDE.md structural-defense additions.
+
+---
+
+## C7.X.15 — Whitney's walkthrough fix-ups (landed 2026-05-27)
+
+**Status:** committed + pushed. Smoke 1520/1520 green (was 1496; +24 from new `c7x15-walkthrough-fixups-smoke.php`, plus net +0 on updated c7b1/c7c1/c7c2-1/c7x-build-to-mockup/c7x12/c7x14 assertions reflecting Issue 7 reversal).
+
+### 7 issues consolidated
+
+| Issue | Status | LOC |
+|---|---|---|
+| 1 — main column "double padding" | NOT MODIFIED — values match mockup canon exactly; surfaced as DevTools follow-up question for Whitney | 0 |
+| 2A — Publish / Save Draft / Update dead | Fixed — generic selectors, reload-on-success, dead `eemUpdateSaveBarButtons` removed | ~15 |
+| 2B — Agreement Upload button dead | Fixed — `wp_enqueue_media()` on editor page + click handlers for wp.media flow + in-place file-row update | ~50 |
+| 2-structural — button-handler enumeration smoke | NEW — every `data-eem-action` button in editor must have a JS handler; typeahead-search skip-listed pending backend | ~25 |
+| 3 — WP core `input, select { margin: 0 1px }` leak | Fixed — `margin: 0;` reset on all prefixed `input./textarea./select.` rules; smoke walks every prefixed rule block | ~12 |
+| 4 — repeating-table border-radius | Fixed — 4 classes (`.eem-repeat-input`, `.eem-repeat-price-in`, `.eem-zone-name-input`, `.eem-zone-price-in`) use `var(--eem-radius-sm)` (3px) for tighter chrome per Whitney's pixel-explicit direction | ~6 |
+| 5 — select dropdowns WP core override | Fixed — `select.` prefix on 4 classes (`.eem-dashboard-range-select`, `.eem-list-select`, `.eem-toolbar-select`, `.eem-field-select`); select-enumeration smoke (extends C7.X.11 pattern to SELECT) | ~25 |
+| 6 — folded into Issue 7 | N/A | 0 |
+| 7 — Linked Event hybrid restoration | RESTORED — partial reversal of C7.X.12 Item 7. Rail card returns with typeahead + Change link + ✕ icon Unlink. Meta-line reverts to read-only context. Mockup updated. MD5 bumped. | ~120 |
+
+### Item 7 reversal rationale (logged)
+
+C7.X.12 Item 7 retired the rail Linked Event card and moved actions inline to the meta-line. Rationale at the time: reclaim ~250px of right-rail vertical, avoid duplicate display of linked event info between meta-line and rail.
+
+C7.X.15 Issue 7 partially reverses that decision based on Whitney's walkthrough findings:
+- Meta-line action links cluttered the workflow-first signal ("a lot of text here")
+- WP admin convention puts post-meta in the right rail; admins expect actionable controls there
+- "First step" workflow signal (the meta-line at the top) benefits from being pure read-only context
+
+New hybrid: **meta-line is read-only context (workflow signal); rail card carries actionable controls (Change link + ✕ icon Unlink)**. Best of both worlds. Mockup updated to match. Unlink is intentionally terse icon-only (with aria-label + title tooltip) per Whitney's "less verbose" spec — change is the regular action and gets a text link, unlink is the rare action and stays out of the way visually.
+
+This is a product-decision-driven reversal, not a bug-driven one. Item 7's original retirement was a reasonable interpretation of the spec at the time; visual verify with the actual editor in front of Whitney revealed the better answer was hybrid.
+
+### 3 CLAUDE.md structural-defense additions (per Whitney's directive)
+
+1. **Cross-stylesheet cascade enumeration must extend to SELECT, not just INPUT.** WP core forms.css applies same-specificity rules to `<select>` and `<textarea>` too. Plugin classes on those elements need parallel `select.classname` / `textarea.classname` prefixes. Going forward, the cross-stylesheet enumeration rule applies to all three form-control tags uniformly.
+
+2. **Cross-stylesheet enumeration must check ALL declared properties, not just the property that surfaced the visible bug.** C7.X.13 was scoped narrowly to `border-radius`; the same WP core rule also declared `margin: 0 1px` which surfaced as a separate visual bug at C7.X.15. Operational rule: dump the full WP-core rule block, list every property, cross-check our matching rule sets each one (or explicitly resets — `margin: 0`, `min-height: auto`, etc.).
+
+3. **Button-handler enumeration smoke.** Same shape as the form-control class enumeration smoke from C7.X.11, applied to button-action attributes. Render the page, extract every `data-eem-action="..."` attribute on buttons/links, assert each appears as a `t.closest('[data-eem-action="..."]')` match in JS source. Catches "shipped a button with no handler" bugs — exactly the latent agreement-upload bug surfaced this commit. Skip-list typeahead-search / backend-pending actions explicitly with a comment.
+
+### Implementation decisions made (Whitney's three clarifications)
+
+- **Clarification A — Issue 2B Media Library scope:** all 4 sub-requirements met. PDF MIME restriction (`library: { type: 'application/pdf' }`), persist attachment id to `_en_venue_agreement_file_id` hidden input, file-row display updates in place (filename + View link + Replace label + Delete button injected), Delete button clears the id and reverts to empty state. ~50 LOC, within the original ~40 estimate's tolerance.
+- **Clarification B — Issue 7 typeahead placement:** inline in rail card (the pre-C7.X.12 pattern), not modal-launched. Confirmed.
+- **Clarification C — Cache-bust verification:** pre-flight grep confirmed all 3 CSS/JS enqueues use `$ver` (constant). 2 hardcoded `2.3.3` literals (plugin header + constant) both updated atomically to 2.3.4. No drift.
+
+### Issue 4 token-scope question (surfaced for Whitney's follow-up)
+
+`--eem-radius` (4px) is the editor-wide standard for form inputs + buttons + chips (7 active usages site-wide). `--eem-radius-sm` (3px) is for tighter contexts. C7.X.15 applied `--eem-radius-sm` to 4 repeating-table input classes per Whitney's pixel-explicit direction. **If she wants `--eem-radius-sm` applied more broadly** (e.g. all editor inputs at 3px instead of 4px), that's a follow-up token-scope change touching many classes. Not in C7.X.15 scope. Surface for Whitney's review.
+
+### C7.X.15 commit: `[hash filled after commit]`
+
+### Files changed (12)
+
+- `equine-event-manager.php` — version bump 2.3.3 → 2.3.4
+- `admin/class-equine-event-manager-admin.php` — `wp_enqueue_media()` on editor page (~6 LOC)
+- `admin/class-eem-reservation-editor-page.php` — re-add rail-linked-event-card require
+- `assets/css/admin.css` — `margin: 0;` resets, `--eem-radius-sm` token swaps, `select.` prefixes, dead-code cleanup, new `.eem-event-linked-actions` + `.eem-event-unlink-icon` rules
+- `assets/js/admin.js` — `eemDispatchSave` + `eemReservationEditorNonce` generic-selector fix, removed dead `eemUpdateSaveBarButtons`, new agreement-upload + agreement-remove handlers
+- `templates/admin/reservation-editor/_meta-line.php` — REVERTED to read-only (Issue 7)
+- `templates/admin/reservation-editor/_rail-linked-event-card.php` — RESTORED + modified per spec (Change text link + ✕ icon Unlink) (Issue 7)
+- `.mockups/edit_reservation_page.html` — Issue 7 hybrid restoration (meta-line strip, rail card restore)
+- `tests/smoke/mockups-presence-smoke.php` — MD5 bump for edit_reservation_page.html
+- `tests/smoke/c7b1-smoke.php`, `c7c1-smoke.php`, `c7c2-1-smoke.php`, `c7x-build-to-mockup-smoke.php`, `c7x12-affix-agreement-meta-smoke.php`, `c7x14-responsive-and-sweep-smoke.php` — stale assertions updated to Issue 7 hybrid shape
+- `tests/smoke/c7x15-walkthrough-fixups-smoke.php` — NEW, 24 assertions across 7 issue groups
+- `CLAUDE.md` — 3 new structural-defense entries (cross-stylesheet enumeration extended to SELECT, all-properties enumeration, button-handler enumeration smoke)
+- `SESSION-NOTES.md` — this entry
+
+### Whitney's SHORT consolidated visual verify
+
+- [ ] Currency $ chip + input still seamless (Issue 3 margin fix didn't regress C7.X.13 prefix work)
+- [ ] Repeating-table inputs render 3px border-radius
+- [ ] Dashboard "Last 30 days" select matches standard editor select height
+- [ ] Publish / Save Draft / Update buttons functional (Cluster A fix)
+- [ ] Agreement section "Upload" button launches WP Media Library (Cluster B fix)
+- [ ] Meta-line is read-only context (no action links)
+- [ ] Right rail: Publish → Linked Event (typeahead + Change link + ✕ icon unlink) → Shortcode
+- [ ] Issue 1 padding visual sanity check — if it still feels doubled, Whitney inspects in DevTools and reports the specific element pair
+
+---
 
 ---
 

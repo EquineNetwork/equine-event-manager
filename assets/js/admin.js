@@ -1704,7 +1704,11 @@
 	var EEM_EDITOR_AJAX_URL = (window.ajaxurl || '/wp-admin/admin-ajax.php');
 
 	function eemReservationEditorNonce() {
-		var input = document.querySelector('.eem-save-bar input[name="_eem_editor_nonce"]');
+		// C7.X.15 Issue 2A — the original lookup queried `.eem-save-bar`,
+		// which was retired at C7.X.3. The nonce input now lives in the
+		// rail Publish card; use a generic name-based query so future
+		// markup moves don't re-break this.
+		var input = document.querySelector('input[name="_eem_editor_nonce"]');
 		return input ? input.value : '';
 	}
 
@@ -1760,9 +1764,17 @@
 	}
 
 	function eemDispatchSave(kind) {
-		var bar = document.querySelector('.eem-save-bar');
-		if (!bar) return;
-		var rid = bar.getAttribute('data-eem-reservation-id');
+		// C7.X.15 Issue 2A — the original lookup queried `.eem-save-bar`,
+		// which was retired at C7.X.3. Source the reservation-id from
+		// any element carrying the data attribute (rail Publish card,
+		// sticky-save mobile, or .eem-reservation-editor-body all carry
+		// it). On success, reload — the rail Publish card is PHP-rendered
+		// so a reload re-renders it with state-correct buttons (replaces
+		// the pre-C7.X.15 client-side eemUpdateSaveBarButtons morphing
+		// which is now no-op since `.eem-save-bar` is gone).
+		var src = document.querySelector('[data-eem-reservation-id]');
+		if (!src) return;
+		var rid = src.getAttribute('data-eem-reservation-id');
 		if (!rid) return;
 		var body = new URLSearchParams();
 		body.set('action', 'eem_reservation_editor_save');
@@ -1778,7 +1790,9 @@
 		}).then(function (r) { return r.json(); }).then(function (resp) {
 			if (resp && resp.success) {
 				eemSaveBarToast(resp.data && resp.data.message ? resp.data.message : 'Saved.', 'success');
-				eemUpdateSaveBarButtons(resp.data && resp.data.primary_action ? resp.data.primary_action : 'draft');
+				// Brief delay so the toast is visible before reload swaps
+				// the rail buttons. 600ms is short enough to feel snappy.
+				setTimeout(function () { window.location.reload(); }, 600);
 			} else {
 				// C7.C.1.1 — surface the actual validation error from
 				// the server, not a generic "Save failed." that hid the
@@ -1793,20 +1807,13 @@
 		});
 	}
 
-	function eemUpdateSaveBarButtons(primary) {
-		var bar = document.querySelector('.eem-save-bar');
-		if (!bar) return;
-		var primaryContainer = bar.querySelector('.eem-save-bar__primary');
-		if (!primaryContainer) return;
-		if ('update' === primary) {
-			primaryContainer.innerHTML =
-				'<button type="button" class="eem-btn eem-btn-savebar-update" data-eem-action="reservation-editor-update">Update</button>';
-		} else {
-			primaryContainer.innerHTML =
-				'<button type="button" class="eem-btn eem-btn-savebar-draft" data-eem-action="reservation-editor-save-draft">Save Draft</button>' +
-				' <button type="button" class="eem-btn eem-btn-savebar-publish" data-eem-action="reservation-editor-publish">Publish</button>';
-		}
-	}
+	// C7.X.15 Issue 2A — `eemUpdateSaveBarButtons` REMOVED. It morphed
+	// the legacy save bar's primary-button container client-side after
+	// a save; that ancestor element was retired at C7.X.3 (replaced by
+	// the rail Publish card). The function had been dead since C7.X.3
+	// because its container lookup always returned null. The new flow
+	// reloads the page on save success — the rail Publish card is
+	// PHP-rendered with state-correct buttons.
 
 	/* Save bar click handlers */
 	document.addEventListener('click', function (ev) {
@@ -2495,6 +2502,98 @@
 			ev.preventDefault();
 			var row = zoneDel.closest('.eem-zone-row');
 			if (row && row.parentNode) row.parentNode.removeChild(row);
+			return;
+		}
+	});
+
+	/* ── Agreement upload + remove (C7.X.15 Issue 2B) ──────────────
+	   `Upload` / `Replace` button opens the WordPress Media Library
+	   (wp.media), restricts MIME to PDF, persists the chosen
+	   attachment id to the `_en_venue_agreement_file_id` hidden input,
+	   and updates the file-row display in place (filename + View
+	   link + Replace/Delete affordances) without a page reload.
+	   `Remove file` clears the hidden input + collapses the row back
+	   to the empty state.
+
+	   Latent bug shipped pre-C7.X.15 — the button rendered but no
+	   handler existed; clicks silently no-op'd. Surfaced by Whitney's
+	   C7.X.15 button audit. */
+	document.addEventListener('click', function (ev) {
+		var t = ev.target;
+		if (!t || !t.closest) return;
+
+		var uploadBtn = t.closest('[data-eem-action="reservation-editor-agreement-upload"]');
+		if (uploadBtn) {
+			ev.preventDefault();
+			if (!(window.wp && wp.media)) {
+				if (window.EEM && window.EEM.showSaveToast) window.EEM.showSaveToast('Media Library not loaded.', { variant: 'error' });
+				return;
+			}
+			var frame = wp.media({
+				title: 'Choose Agreement PDF',
+				button: { text: 'Use this PDF' },
+				library: { type: 'application/pdf' },
+				multiple: false
+			});
+			frame.on('select', function () {
+				var att = frame.state().get('selection').first().toJSON();
+				if (!att || !att.id) return;
+				// Persist attachment id to the hidden input.
+				var hidden = document.getElementById('en_venue_agreement_file_id');
+				if (hidden) hidden.value = String(att.id);
+				// Update the file-row display in place.
+				var fileRow  = uploadBtn.closest('.eem-file-row');
+				if (!fileRow) return;
+				var fileName = fileRow.querySelector('[data-eem-file-name]');
+				if (fileName) {
+					fileName.textContent = att.filename || att.title || 'agreement.pdf';
+					fileName.classList.remove('eem-file-name-empty');
+				}
+				// Insert/refresh the View link.
+				var viewLink = fileRow.querySelector('.eem-view-link');
+				if (!viewLink) {
+					viewLink = document.createElement('a');
+					viewLink.className = 'eem-view-link';
+					viewLink.target = '_blank';
+					viewLink.rel = 'noopener noreferrer';
+					viewLink.textContent = 'View';
+					fileRow.insertBefore( viewLink, uploadBtn );
+				}
+				viewLink.href = att.url || '#';
+				// Swap button label Upload → Replace.
+				uploadBtn.textContent = 'Replace';
+				// Insert the Remove button if not already present.
+				if ( ! fileRow.querySelector('[data-eem-action="reservation-editor-agreement-remove"]') ) {
+					var rm = document.createElement('button');
+					rm.type = 'button';
+					rm.className = 'eem-btn-file-del';
+					rm.setAttribute('aria-label', 'Remove file');
+					rm.setAttribute('data-eem-action', 'reservation-editor-agreement-remove');
+					rm.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>';
+					uploadBtn.insertAdjacentElement('afterend', rm);
+				}
+			});
+			frame.open();
+			return;
+		}
+
+		var removeBtn = t.closest('[data-eem-action="reservation-editor-agreement-remove"]');
+		if (removeBtn) {
+			ev.preventDefault();
+			var hidden2 = document.getElementById('en_venue_agreement_file_id');
+			if (hidden2) hidden2.value = '0';
+			var fileRow2 = removeBtn.closest('.eem-file-row');
+			if (!fileRow2) return;
+			var fileName2 = fileRow2.querySelector('[data-eem-file-name]');
+			if (fileName2) {
+				fileName2.textContent = 'No agreement file uploaded yet';
+				fileName2.classList.add('eem-file-name-empty');
+			}
+			var view2 = fileRow2.querySelector('.eem-view-link');
+			if (view2 && view2.parentNode) view2.parentNode.removeChild(view2);
+			var upBtn = fileRow2.querySelector('[data-eem-action="reservation-editor-agreement-upload"]');
+			if (upBtn) upBtn.textContent = 'Upload';
+			if (removeBtn.parentNode) removeBtn.parentNode.removeChild(removeBtn);
 			return;
 		}
 	});

@@ -246,6 +246,14 @@ class EEM_Admin {
 
 		// Shared admin JS (delegated handlers, EEM namespace).
 		wp_enqueue_script( 'eem-admin', EQUINE_EVENT_MANAGER_URL . 'assets/js/admin.js', array(), $ver, true );
+
+		// C7.X.15 Issue 2B — Reservation Editor needs the WordPress
+		// Media Library for the Agreement upload button. Enqueue only on
+		// the editor page so we don't bloat every admin surface.
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( $screen && false !== strpos( (string) $screen->id, 'equine-event-manager-reservation-editor' ) ) {
+			wp_enqueue_media();
+		}
 	}
 
 	/**

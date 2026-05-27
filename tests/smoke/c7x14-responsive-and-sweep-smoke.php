@@ -130,18 +130,21 @@ c7x14_ok( 'section order matches mockup canon (description → cancellation)',
 	$pass, $fail, $log,
 	implode( ',', $order_matches[1] ?? array() ) );
 
-// C7.X.12 retirement check — rail card count is 2 (Publish + Shortcode).
-c7x14_ok( 'right rail has exactly 2 cards (Publish + Shortcode; Linked Event retired)',
-	2 === substr_count( $html, 'class="eem-rail-card' ),
+// C7.X.15 Issue 7 — rail card count returns to 3 (hybrid restoration).
+c7x14_ok( 'right rail has exactly 3 cards (Publish + Linked Event + Shortcode — C7.X.15 hybrid)',
+	3 === substr_count( $html, 'class="eem-rail-card' ),
 	$pass, $fail, $log,
 	'found ' . substr_count( $html, 'class="eem-rail-card' ) );
 
-// C7.X.12 retirement check — meta-line carries (change) + (unlink).
-c7x14_ok( 'meta-line has (change) action link',
-	false !== strpos( $html, 'data-eem-action="reservation-editor-event-change"' ),
+// C7.X.15 — Linked Event rail card carries the actionable controls;
+// meta-line is read-only context.
+c7x14_ok( 'Linked Event rail card present (C7.X.15 hybrid restoration)',
+	false !== strpos( $html, '<span class="eem-rail-title">Linked Event</span>' ),
 	$pass, $fail, $log );
-c7x14_ok( 'meta-line has (unlink) action link',
-	false !== strpos( $html, 'data-eem-action="reservation-editor-event-unlink"' ),
+c7x14_ok( 'rail card has Change link + ✕ icon Unlink button (actionable controls live here per Issue 7 hybrid)',
+	false !== strpos( $html, 'data-eem-action="reservation-editor-event-change"' )
+	&& false !== strpos( $html, 'data-eem-action="reservation-editor-event-unlink"' )
+	&& false !== strpos( $html, 'class="eem-event-unlink-icon"' ),
 	$pass, $fail, $log );
 
 // VV-4 — Agreement Label field renders ABOVE the Agreement PDF row.

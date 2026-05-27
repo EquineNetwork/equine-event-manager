@@ -39,7 +39,7 @@ ok( '.mockups/ directory exists', is_dir( $mockups_dir ), $pass, $fail, $log );
 $canonical = array(
 	// 10 new/updated from handoff Step 1 (post-C6)
 	'dashboard_page.html'               => 'd373c7ca90da3e3f744e1b0a8950d9ef',
-	'edit_reservation_page.html'        => '30251dd5ea2eab3b4ce3c2ba5d5945d3', // C7.X.12 — Agreement Label field + Item 7 rail-card retirement
+	'edit_reservation_page.html'        => 'ea55cb08d4cd586c2771f99d70f80f2b', // C7.X.15 — Issue 7 hybrid restoration: meta-line read-only, rail Linked Event card restored with terse icon-only unlink
 	'stall_charts_page.html'            => 'f999373626398cac60b99930989bf2e9',
 	'stall_chart_detail.html'           => '91c79b2ce1f7583ad70c6d41ab12f90b',
 	'stall_chart_print_view.html'       => '8c76b6d1396dc757cb798b6734a6a83b',

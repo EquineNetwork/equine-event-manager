@@ -245,24 +245,30 @@ c7b1_ok( 'admin.js carries reservation-editor-toggle-enabled handler',
 	$pass, $fail, $log );
 
 // ── [10] C7.X.3 mockup-canonical architecture guards ──
-echo "\n[10] C7.X.3 mockup-canonical architecture (post Build-to-Mockup rewrite + C7.X.12 rail retirement)\n";
-// C7.X.12 Item 7 — Linked Event rail card RETIRED. Linked-event
-// editing now lives inline in the meta-line via "(change)" +
-// "(unlink)" links. Rail card count is 2 (Publish + Shortcode);
-// the previous "3 including Linked Event" assertion is updated to
-// reflect the new architecture.
-c7b1_ok( 'render contains 2 rail cards (Publish, Shortcode — Linked Event retired in C7.X.12)',
-	2 === substr_count( $html, 'class="eem-rail-card' ),
+echo "\n[10] C7.X.3 mockup-canonical architecture (Build-to-Mockup + C7.X.15 Item 7 hybrid restoration)\n";
+// C7.X.15 Issue 7 — partial reversal of C7.X.12 Item 7. Hybrid
+// placement: meta-line is read-only context; Linked Event rail card
+// restored with actionable controls (typeahead + Change link +
+// ✕ icon unlink). Rail card count returns to 3 (Publish + Linked
+// Event + Shortcode).
+c7b1_ok( 'render contains 3 rail cards (Publish + Linked Event + Shortcode — C7.X.15 hybrid)',
+	3 === substr_count( $html, 'class="eem-rail-card' ),
 	$pass, $fail, $log,
 	'found: ' . substr_count( $html, 'class="eem-rail-card' ) );
 c7b1_ok( 'rail Publish card renders (rail-title = Publish)',
 	(bool) preg_match( '/<span class="eem-rail-title">Publish<\/span>/', $html ),
 	$pass, $fail, $log );
-c7b1_ok( 'NO rail Linked Event card (retired in C7.X.12 Item 7)',
-	false === strpos( $html, '<span class="eem-rail-title">Linked Event</span>' ),
+c7b1_ok( 'rail Linked Event card renders (C7.X.15 hybrid restoration)',
+	(bool) preg_match( '/<span class="eem-rail-title">Linked Event<\/span>/', $html ),
 	$pass, $fail, $log );
-c7b1_ok( 'meta-line has (change) action link replacing the rail card',
-	false !== strpos( $html, 'data-eem-action="reservation-editor-event-change"' ),
+// Slice the meta-line block out so we can assert it's read-only
+// without false positives from the rail card emitting the actions.
+$meta_line_block = '';
+if ( preg_match( '#<div class="eem-plugin-meta-line">.*?</div>#s', $html, $mlm ) ) {
+	$meta_line_block = $mlm[0];
+}
+c7b1_ok( 'meta-line block is READ-ONLY (no data-eem-action — actions live in rail card per C7.X.15 hybrid)',
+	'' !== $meta_line_block && false === strpos( $meta_line_block, 'data-eem-action' ),
 	$pass, $fail, $log );
 c7b1_ok( 'rail Shortcode card renders (rail-title = Shortcode)',
 	(bool) preg_match( '/<span class="eem-rail-title">Shortcode<\/span>/', $html ),

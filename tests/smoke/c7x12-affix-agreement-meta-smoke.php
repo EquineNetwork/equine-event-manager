@@ -153,75 +153,77 @@ c7x12_ok( 'mockup edit_reservation_page.html Agreement section contains "Agreeme
 	&& false !== strpos( $mockup, 'Agreement name (ex: Venue Agreement)' ),
 	$pass, $fail, $log );
 
-// ── [D3] Item 7 — Rail card retired, meta-line gets action links ─
-echo "\n[D3] Item 7 — Linked Event rail card retirement + meta-line action links\n";
+// ── [D3] Item 7 — C7.X.15 hybrid restoration (REVERSAL of C7.X.12) ─
+echo "\n[D3] Item 7 — C7.X.15 hybrid restoration: meta-line read-only + rail card with actions\n";
 
-// Rail card partial file is DELETED from disk.
-c7x12_ok( '_rail-linked-event-card.php partial DELETED from disk',
-	! file_exists( EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_rail-linked-event-card.php' ),
+// Rail card partial RESTORED.
+c7x12_ok( '_rail-linked-event-card.php partial exists on disk (C7.X.15 restoration)',
+	file_exists( EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_rail-linked-event-card.php' ),
 	$pass, $fail, $log );
 
-// Editor page no longer requires the rail card partial.
+// Editor page requires the rail card partial again.
 $editor_page_src = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-reservation-editor-page.php' );
-c7x12_ok( 'editor page does NOT require _rail-linked-event-card.php',
-	false === strpos( $editor_page_src, "_rail-linked-event-card.php" ),
+c7x12_ok( 'editor page requires _rail-linked-event-card.php (restored)',
+	false !== strpos( $editor_page_src, '_rail-linked-event-card.php' ),
 	$pass, $fail, $log );
 
-// Rendered HTML — no rail card, no rail typeahead search input.
-c7x12_ok( 'rendered editor has NO <span class="eem-rail-title">Linked Event</span>',
-	false === strpos( $html, '<span class="eem-rail-title">Linked Event</span>' ),
+// Rendered HTML — rail card AND its inline typeahead present.
+c7x12_ok( 'rendered editor has <span class="eem-rail-title">Linked Event</span>',
+	false !== strpos( $html, '<span class="eem-rail-title">Linked Event</span>' ),
 	$pass, $fail, $log );
-c7x12_ok( 'rendered editor has NO .eem-event-search typeahead (rail-card-only)',
-	false === strpos( $html, 'class="eem-event-search"' ),
+c7x12_ok( 'rendered editor has .eem-event-search typeahead (inline in rail card)',
+	false !== strpos( $html, 'class="eem-event-search"' )
+	|| false !== strpos( $html, 'input.eem-event-search' )
+	|| (bool) preg_match( '#<input[^>]*class="eem-event-search"#', $html ),
 	$pass, $fail, $log );
-c7x12_ok( 'rendered editor has exactly 2 rail cards (Publish + Shortcode)',
-	2 === substr_count( $html, 'class="eem-rail-card' ),
+c7x12_ok( 'rendered editor has exactly 3 rail cards (Publish + Linked Event + Shortcode)',
+	3 === substr_count( $html, 'class="eem-rail-card' ),
 	$pass, $fail, $log,
 	'found: ' . substr_count( $html, 'class="eem-rail-card' ) );
 
-// Meta-line gains (change) + (unlink) action links when linked.
-// Res 44 (seeded by C7.X.10) has a real linked event — reuse it for
-// the linked-state assertion. (Our $rid above has no event linked
-// so it shows "(link event)" instead.)
-c7x12_ok( 'meta-line source emits data-eem-action="reservation-editor-event-change"',
-	false !== strpos( $meta_line_src, 'data-eem-action="reservation-editor-event-change"' ),
+// Meta-line is now READ-ONLY — no action-link data attributes.
+$meta_block = '';
+if ( preg_match( '#<div class="eem-plugin-meta-line">.*?</div>#s', $html, $mlm ) ) {
+	$meta_block = $mlm[0];
+}
+c7x12_ok( 'meta-line is READ-ONLY (no data-eem-action attributes — actions live in rail card)',
+	'' !== $meta_block && false === strpos( $meta_block, 'data-eem-action' ),
 	$pass, $fail, $log );
-c7x12_ok( 'meta-line source emits data-eem-action="reservation-editor-event-unlink"',
-	false !== strpos( $meta_line_src, 'data-eem-action="reservation-editor-event-unlink"' ),
+c7x12_ok( 'meta-line source has NO data-eem-action="reservation-editor-event-change"',
+	false === strpos( $meta_line_src, 'data-eem-action="reservation-editor-event-change"' ),
 	$pass, $fail, $log );
-
-// On a reservation with no linked event (our $rid), render falls back
-// to "(link event)" affordance.
-c7x12_ok( 'unlinked reservation renders "(link event)" affordance in meta-line',
-	false !== strpos( $html, '(link event)' ),
+c7x12_ok( 'meta-line source has NO data-eem-action="reservation-editor-event-unlink"',
+	false === strpos( $meta_line_src, 'data-eem-action="reservation-editor-event-unlink"' ),
 	$pass, $fail, $log );
 
-// On a reservation WITH linked event (res 44), render emits (change) + (unlink).
+// Rail card on res 44 (linked) emits Change link + ✕ icon unlink button.
 $_GET['reservation_id'] = 44;
 ob_start(); EEM_Reservation_Editor_Page::render(); $html44 = (string) ob_get_clean();
 $_GET = array();
-c7x12_ok( 'res 44 (linked) meta-line emits (change) action link',
-	false !== strpos( $html44, '(change)' )
+c7x12_ok( 'res 44 rail card emits Change link (data-eem-action="reservation-editor-event-change")',
+	false !== strpos( $html44, 'class="eem-event-linked-change"' )
 	&& false !== strpos( $html44, 'data-eem-action="reservation-editor-event-change"' ),
 	$pass, $fail, $log );
-c7x12_ok( 'res 44 (linked) meta-line emits (unlink) action link',
-	false !== strpos( $html44, '(unlink)' )
-	&& false !== strpos( $html44, 'data-eem-action="reservation-editor-event-unlink"' ),
+c7x12_ok( 'res 44 rail card emits ✕ icon Unlink button (terse, not verbose word)',
+	false !== strpos( $html44, 'class="eem-event-unlink-icon"' )
+	&& false !== strpos( $html44, 'data-eem-action="reservation-editor-event-unlink"' )
+	&& false !== strpos( $html44, 'aria-label="Unlink event"' ),
 	$pass, $fail, $log );
 
-// JS handler for (change) — wired in admin.js this commit.
+// JS handler for change/unlink — still wired (unchanged).
 $js_src = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/js/admin.js' );
 c7x12_ok( 'admin.js has reservation-editor-event-change click handler',
 	false !== strpos( $js_src, "[data-eem-action=\"reservation-editor-event-change\"]" ),
 	$pass, $fail, $log );
 
-// Mockup file updated to reflect new meta-line pattern + retired rail.
-c7x12_ok( 'mockup edit_reservation_page.html reflects (change) + (unlink) in meta-line',
-	false !== strpos( $mockup, '(change)' )
-	&& false !== strpos( $mockup, '(unlink)' ),
+// Mockup file reflects hybrid pattern (meta-line read-only, rail card restored).
+c7x12_ok( 'mockup edit_reservation_page.html has restored rail-card>rail-title>Linked Event',
+	(bool) preg_match( '#<div class="rail-card">\s*<div class="rail-header">\s*<span class="rail-title">Linked Event<#s', $mockup ),
 	$pass, $fail, $log );
-c7x12_ok( 'mockup edit_reservation_page.html no longer renders the Linked Event rail card',
-	! preg_match( '#<div class="rail-card"[^>]*>\s*<span class="rail-title">Linked Event#', $mockup ),
+c7x12_ok( 'mockup meta-line is read-only (no (change) or (unlink) anchor text within meta-line block)',
+	(bool) ( preg_match( '#<div class="plugin-meta-line">.*?</div>\s*</div>#s', $mockup, $mockmeta )
+		&& false === strpos( $mockmeta[0], '(change)' )
+		&& false === strpos( $mockmeta[0], '(unlink)' ) ),
 	$pass, $fail, $log );
 
 wp_delete_post( $rid, true );
