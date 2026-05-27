@@ -1622,6 +1622,13 @@ class EEM_Reservations_CPT {
 			'venue_agreement_file_id'         => isset( $source['venue_agreement_file_id'] ) ? absint( $source['venue_agreement_file_id'] ) : 0,
 			'venue_agreement_file_label'      => isset( $source['venue_agreement_file_label'] ) ? sanitize_text_field( $source['venue_agreement_file_label'] ) : __( 'Agreement', 'equine-event-manager' ),
 			'venue_agreement_label'           => isset( $source['venue_agreement_label'] ) ? sanitize_text_field( $source['venue_agreement_label'] ) : __( 'I agree to the venue terms and conditions.', 'equine-event-manager' ),
+			// C7.X.12 VV-4 — customer-facing link text for the agreement
+			// in the event-page yellow callout + order summary. Distinct
+			// from `venue_agreement_label` (checkbox text) + `venue_
+			// agreement_file_label` (admin file display). Empty default
+			// — customer-facing renderers fall back to literal "Venue
+			// Agreement" when blank.
+			'venue_agreement_link_label'      => isset( $source['venue_agreement_link_label'] ) ? sanitize_text_field( $source['venue_agreement_link_label'] ) : '',
 			'venue_agreement_text'            => isset( $source['venue_agreement_text'] ) ? sanitize_textarea_field( $source['venue_agreement_text'] ) : '',
 			'general_addons_enabled'          => isset( $source['general_addons_enabled'] ) ? 1 : 0,
 			'group_reservations_enabled'      => isset( $source['group_reservations_enabled'] ) ? 1 : 0,
@@ -2014,6 +2021,7 @@ class EEM_Reservations_CPT {
 			'venue_agreement_file_id'         => 0,
 			'venue_agreement_file_label'      => __( 'Agreement', 'equine-event-manager' ),
 			'venue_agreement_label'           => __( 'I agree to the venue terms and conditions.', 'equine-event-manager' ),
+			'venue_agreement_link_label'      => '', // C7.X.12 VV-4 — empty default; customer-facing falls back to "Venue Agreement".
 			'venue_agreement_text'            => '',
 			'general_addons_enabled'          => 0,
 			'group_reservations_enabled'      => 0,

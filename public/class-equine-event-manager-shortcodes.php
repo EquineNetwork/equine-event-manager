@@ -1062,7 +1062,24 @@ class EEM_Shortcodes {
 						<div class="eem-venue-agreement-card">
 							<p>
 								<?php esc_html_e( 'All transaction fees are non-refundable. Please be sure you have read the', 'equine-event-manager' ); ?>
-								<a href="<?php echo esc_url( $venue_agreement_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( ! empty( $data['venue_agreement_file_label'] ) ? $data['venue_agreement_file_label'] : __( 'Agreement', 'equine-event-manager' ) ); ?></a>
+								<a href="<?php echo esc_url( $venue_agreement_url ); ?>" target="_blank" rel="noopener noreferrer"><?php
+									// C7.X.12 VV-4 — customer-facing link text. Prefers the
+									// admin-editable `venue_agreement_link_label`; falls
+									// back to the literal "Venue Agreement" when blank
+									// per the canonical spec. The pre-C7.X.12 read
+									// (`venue_agreement_file_label` → "Agreement"
+									// fallback) is preserved as a third-tier fallback so
+									// pre-existing reservations that set the older key
+									// still surface meaningful link text.
+									$eem_link_label = isset( $data['venue_agreement_link_label'] ) ? trim( (string) $data['venue_agreement_link_label'] ) : '';
+									if ( '' === $eem_link_label && ! empty( $data['venue_agreement_file_label'] ) ) {
+										$eem_link_label = (string) $data['venue_agreement_file_label'];
+									}
+									if ( '' === $eem_link_label ) {
+										$eem_link_label = __( 'Venue Agreement', 'equine-event-manager' );
+									}
+									echo esc_html( $eem_link_label );
+								?></a>
 								<?php esc_html_e( 'before clicking SAVE.', 'equine-event-manager' ); ?>
 							</p>
 						</div>
@@ -5188,6 +5205,7 @@ RV Lot: " . $rv_lot['name'] );
 			'venue_agreement_file_id'         => 0,
 			'venue_agreement_file_label'      => __( 'Agreement', 'equine-event-manager' ),
 			'venue_agreement_label'           => __( 'I agree to the venue terms and conditions.', 'equine-event-manager' ),
+			'venue_agreement_link_label'      => '', // C7.X.12 VV-4 — empty default; customer-facing falls back to "Venue Agreement" literal.
 			'venue_agreement_text'            => '',
 			'general_addons_enabled'          => 0,
 			'group_reservations_enabled'      => 0,

@@ -588,8 +588,8 @@ c7c1_ok( 'all 10 section cards still render (C7.B.1 regression)',
 c7c1_ok( 'rail Publish card renders (replaces retired .eem-save-bar)',
 	false !== strpos( $html, '<span class="eem-rail-title">Publish</span>' ),
 	$pass, $fail, $log );
-c7c1_ok( 'rail Linked Event card renders (replaces retired modal)',
-	false !== strpos( $html, '<span class="eem-rail-title">Linked Event</span>' ),
+c7c1_ok( 'NO rail Linked Event card (C7.X.12 Item 7 — retired; replaced by meta-line action links)',
+	false === strpos( $html, '<span class="eem-rail-title">Linked Event</span>' ),
 	$pass, $fail, $log );
 c7c1_ok( 'all 10 section chips still carry SVG glyphs (C7.B.3 regression)',
 	substr_count( $html, '<div class="eem-section-icon eem-section-icon--' ) === 10

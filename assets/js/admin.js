@@ -2531,6 +2531,40 @@
 			return;
 		}
 
+		// C7.X.12 Item 7 — "(change)" handler from the meta-line.
+		// Rail card retirement means the typeahead UI moves inline.
+		// Minimum-functional flow this commit: confirm + unlink, page
+		// reloads to "(link event)" state for the admin to pick a new
+		// event. Full inline typeahead modal is a focused follow-up
+		// (CLEANUP follow-up — keeps this commit scoped to the
+		// retirement + inline affordance change, not new UI work).
+		var changeBtn = t.closest('[data-eem-action="reservation-editor-event-change"]');
+		if (changeBtn) {
+			ev.preventDefault();
+			if (!confirm('Change the linked event? The current link will be cleared. You can then link a new event from the meta-line.')) return;
+			var changeBar = document.querySelector('.eem-reservation-editor-body[data-eem-reservation-id]');
+			var changeRid = changeBar ? changeBar.getAttribute('data-eem-reservation-id') : '';
+			if (!changeRid) return;
+			var changeBody = new URLSearchParams();
+			changeBody.set('action', 'eem_reservation_editor_unlink_event');
+			changeBody.set('_eem_editor_nonce', (document.querySelector('input[name="_eem_editor_nonce"]') || {}).value || '');
+			changeBody.set('reservation_id', changeRid);
+			fetch((window.ajaxurl || '/wp-admin/admin-ajax.php'), {
+				method: 'POST', credentials: 'same-origin',
+				headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+				body: changeBody.toString()
+			}).then(function (r) { return r.json(); }).then(function (resp) {
+				if (resp && resp.success) {
+					window.location.reload();
+				} else if (window.EEM && window.EEM.showSaveToast) {
+					window.EEM.showSaveToast((resp.data && resp.data.message) || 'Change failed.', { variant: 'error' });
+				}
+			}).catch(function () {
+				if (window.EEM && window.EEM.showSaveToast) window.EEM.showSaveToast('Could not reach the server.', { variant: 'error' });
+			});
+			return;
+		}
+
 		var unlinkBtn = t.closest('[data-eem-action="reservation-editor-event-unlink"]');
 		if (unlinkBtn) {
 			ev.preventDefault();

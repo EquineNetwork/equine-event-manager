@@ -25,10 +25,31 @@ $file_id   = isset( $data['venue_agreement_file_id'] ) ? (int) $data['venue_agre
 $file_url  = $file_id > 0 ? wp_get_attachment_url( $file_id ) : '';
 $file_name = $file_id > 0 ? basename( get_attached_file( $file_id ) ?: '' ) : '';
 $has_file  = $file_id > 0 && '' !== $file_name;
+
+// C7.X.12 VV-4 — Agreement Label is the admin-editable name of the
+// agreement that surfaces as link text in the customer-facing event
+// page yellow callout + order summary. Empty default; render path
+// falls back to literal "Venue Agreement" if blank. Meta key follows
+// existing `venue_agreement_*` family (paired with file_id + enabled).
+$agreement_label = isset( $data['venue_agreement_link_label'] ) ? (string) $data['venue_agreement_link_label'] : '';
 ?>
 <input type="hidden" name="en_reservation[venue_agreement_enabled]" data-eem-section-enabled="agreement" value="<?php echo ! empty( $data['venue_agreement_enabled'] ) ? '1' : '0'; ?>" />
 
 <?php
+// C7.X.12 VV-4 — Agreement Label row, ABOVE the Agreement PDF row per
+// canonical mockup. Single-line text input. Hint copy notes the
+// customer-facing fallback behavior so admins know what blank renders.
+eem_render_editor_field_row( array(
+	'label'        => __( 'Agreement Label', 'equine-event-manager' ),
+	'label_sub'    => __( 'Customer-facing link text', 'equine-event-manager' ),
+	'control_html' => sprintf(
+		'<input class="eem-field-input" type="text" name="en_reservation[venue_agreement_link_label]" id="en_venue_agreement_link_label" value="%s" placeholder="%s" style="max-width:360px" />',
+		esc_attr( $agreement_label ),
+		esc_attr__( 'Agreement name (ex: Venue Agreement)', 'equine-event-manager' )
+	),
+	'hint'         => __( 'Used as the link text in the customer checkout callout and order summary. Leave blank to use the default "Venue Agreement".', 'equine-event-manager' ),
+) );
+
 ob_start();
 ?>
 <div class="eem-file-row">

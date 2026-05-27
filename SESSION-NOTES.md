@@ -5,7 +5,122 @@ in-flight context that ISN'T already in CLAUDE.md, commit messages,
 or CLEANUP.md. Read after `git pull` on a new machine to pick up
 momentum across Claude Code sessions.
 
-**Last updated:** 2026-05-27 — C7.X.11 affix-seam (Add-On rows) + add-button handler + STRUCTURAL enumeration smoke landed; awaiting Whitney visual verify + item 7 decision
+**Last updated:** 2026-05-27 — C7.X.12 — VV-3 REAL fix (flex align-items, not cascade) + VV-4 Agreement Label field + Item 7 Linked Event rail card RETIRED. Three deliverables one commit. Editor architecturally complete pending Whitney short visual verify.
+
+---
+
+## C7.X.12 fix-up — three deliverables consolidated (landed 2026-05-27)
+
+**Status:** committed + pushed. Smoke 1451/1451 green (was 1419; +32 from new `c7x12-affix-agreement-meta-smoke.php`). Whitney to do SHORT visual verify (3 quick checks per spec).
+
+### Deliverable 1 — VV-3 REAL fix
+
+After **four** commits chasing CSS specificity (C4 → C7.X.4 → C7.X.10 → C7.X.11), the actual root cause of the visible seam on `.eem-price-input` affix sites was a **flex-alignment** bug, NOT a cascade bug. The C7.X.10/11 `:not()` exclusion work was correct AND necessary — it just wasn't the visual fix on its own.
+
+Side-by-side that should have been done at audit time (and now is, per the new CLAUDE.md sub-step):
+
+| Wrap | `align-items` | Visual result |
+|---|---|---|
+| `.eem-price-wrap` (BEFORE C7.X.12) | `center` | Chip + input render at natural heights, centered → visible vertical gap top + bottom of chip = "two boxes" seam |
+| `.eem-pct-wrap` (working from C1.2) | `stretch` | Chip stretches to input height → one continuous rectangle |
+| `.eem-repeat-price-wrap` (Add-On) | `stretch` (always was) | Fine after C7.X.11 cascade fix added |
+| `.eem-zone-price-wrap` (RV Lot Zone) | `stretch` (always was) | Fine after C7.X.11 cascade fix added |
+
+**Full mockup-canon pass landed in admin.css** (took the optional aesthetic alignments per Whitney's direction):
+- `.eem-price-wrap` `align-items: center` → `stretch` (THE seam fix)
+- `.eem-price-symbol` ADDED `display: flex; align-items: center;` (so `$` stays centered in the now-stretched chip)
+- `.eem-price-symbol` border `var(--eem-border-input)` (1.5px) → `1px solid #8c8f94` (mockup canon)
+- `.eem-price-symbol` background `#f6f7f7` → `#f3f4f5` (mockup canon)
+- `.eem-price-input` border `var(--eem-border-input)` (1.5px) → `1px solid #8c8f94`
+- `.eem-price-input` padding `8px 11px` → `8px 12px` (mockup canon)
+- `.eem-price-input:focus` ADDED `box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12)` (mockup canon focus glow)
+
+C7.X.10/11 `:not()` exclusions + C7.X.11 enumeration smoke KEPT. They're correct, they're necessary, they're structural defense for future form-control ports. They just weren't the visual fix here on their own.
+
+### Deliverable 2 — VV-4 Agreement Label field
+
+New admin-editable text field surfaces customer-facing link text for the agreement.
+
+**Meta key naming decision:** `_en_venue_agreement_link_label`. Three meta keys now make up the `venue_agreement_*` family:
+| Key | Purpose |
+|---|---|
+| `venue_agreement_label` | Checkbox label text — "I agree to the venue terms and conditions." (existing, unchanged) |
+| `venue_agreement_file_label` | Admin display label for the file — "Agreement" (existing, unchanged) |
+| `venue_agreement_link_label` | Customer-facing link text — empty default, falls back to literal "Venue Agreement" (NEW, C7.X.12) |
+
+The conflict (existing `venue_agreement_label`) was caught at wire time; per the standing "ask before renaming stored data" rule, the new field gets a distinct name rather than renaming the existing one. This sidesteps a stored-data migration.
+
+**Wired surfaces:**
+- `_section-agreement.php` partial renders the input ABOVE the Agreement PDF row, placeholder verbatim "Agreement name (ex: Venue Agreement)"
+- CPT `sanitize_meta_submission` reads + sanitizes via `sanitize_text_field`
+- CPT + shortcode `get_default_meta_values` declare `''` default
+- Customer-facing event-page yellow callout (`public/class-equine-event-manager-shortcodes.php:1065-1075`) reads the new key first, falls back to `venue_agreement_file_label` (3rd-tier fallback for pre-existing reservations that set the older admin display key), falls back to literal "Venue Agreement" when both blank
+- `.mockups/edit_reservation_page.html` updated — Agreement section now includes the new field row above PDF row, mockup MD5 in `mockups-presence-smoke.php` updated to match
+
+### Deliverable 3 — Item 7 Linked Event rail card retirement
+
+Right-rail "Linked Event" card retired entirely. Linked-event editing moved inline to the meta-line.
+
+**Changes:**
+- `_meta-line.php` — added `(change)` + `(unlink)` action links inline next to the linked event title. When no event is linked, renders single `(link event)` affordance.
+- `_rail-linked-event-card.php` partial DELETED from disk (`git rm`).
+- Editor page no longer `require`s the rail partial.
+- Right rail now: Publish card → Shortcode card. Reclaimed ~250px vertical for future cards + Publish breathing room.
+- `assets/css/admin.css` — added `.eem-meta-action` / `.eem-meta-action--danger` rules for the inline action links.
+- `assets/js/admin.js` — new `reservation-editor-event-change` click handler. Reuses the existing unlink dispatcher for a confirm-then-unlink-then-reload flow. **Full inline typeahead modal deferred** — current scope retires the rail card + delivers a functional change-flow without dragging into new UI work. Typeahead modal is a focused follow-up if Whitney wants it (low priority — the (link event) affordance after unlink is a working 2-click flow).
+- `_rail-linked-event-card.php` formal deletion logged in CLEANUP. The JS handler retains the `.eem-repeating-row-helper` fallback path (the C7.X.11 fix) and the `(unlink)` handler is identical to the rail-card's, so no JS orphan code added.
+- `.mockups/edit_reservation_page.html` updated — meta-line shows the new (change)/(unlink) pattern, rail card section replaced with an explanatory comment block referring back to the meta-line.
+
+### Pre-flight + during-flight regression handling
+
+Stale assertions from prior chunks updated to reflect the new architecture:
+- `c7b1-smoke.php` — "3 rail cards (Publish, Linked Event, Shortcode)" → "2 rail cards (Publish, Shortcode — Linked Event retired)"
+- `c7c1-smoke.php` — "rail Linked Event card renders" → "NO rail Linked Event card"
+- `c7c2-1-smoke.php` — same shape
+- `c7x-build-to-mockup-smoke.php` — count + Linked-Event presence + search-input assertions all updated; positive guard added for the meta-line action-link replacement
+
+`mockups-presence-smoke.php` MD5 for `edit_reservation_page.html` updated to `30251dd5ea2eab3b4ce3c2ba5d5945d3` matching the C7.X.12 mockup edits.
+
+### Process-miss escalation — "CSS-cascade tunnel vision" (paying forward)
+
+C4's `.eem-search-input` underline taught us to ask "which rule wins the cascade?" That lens IS the right one for some bugs (border-radius `!important` blocks) and the WRONG one for others (flex container alignment). C7.X.10/11 over-applied the lens.
+
+**Structural fix landed in CLAUDE.md** (new sub-step under Mockup Walkthrough Pre-Audit):
+
+> Container-flex parity check is the canonical audit sub-step for any affix/group/composite layout. Paste both the mockup's container `display`/`align-items`/`gap`/`flex-*` AND ours side-by-side BEFORE asking "which rule wins?". Identify drift FIRST; THEN — only if container properties match — proceed to cascade-specificity questions.
+
+The operational test added to the sub-step: **find a sibling component in the same codebase that uses the same pattern and works. If its container properties differ from the broken one's, the bug is container-level.** `.eem-pct-wrap` was the sibling for `.eem-price-wrap`. We didn't check across three commits.
+
+Adds ~5-10 minutes to pre-audit. Would have saved three C7.X.* commits.
+
+### C7.X.12 commit: `[hash filled after commit]`
+
+### Files touched (9 modified + 1 NEW smoke + 1 DELETED partial)
+
+- `assets/css/admin.css` — `.eem-price-*` rules brought to mockup canon (7 changes) + new `.eem-meta-action` rules for the inline meta-line links (3 LOC)
+- `templates/admin/reservation-editor/_section-agreement.php` — Agreement Label row added above PDF row (~12 LOC)
+- `includes/class-equine-event-manager-reservations-cpt.php` — `venue_agreement_link_label` in sanitize + defaults (~2 LOC + comments)
+- `public/class-equine-event-manager-shortcodes.php` — customer-facing fallback chain (link_label → file_label → literal) (~12 LOC) + defaults declaration (~1 LOC)
+- `templates/admin/reservation-editor/_meta-line.php` — REWROTE for new action-links pattern (~50 LOC, was ~25)
+- `admin/class-eem-reservation-editor-page.php` — removed rail-linked-event require + 4-line comment (~6 LOC delta)
+- `assets/js/admin.js` — new `reservation-editor-event-change` click handler (~25 LOC)
+- `templates/admin/reservation-editor/_rail-linked-event-card.php` — **DELETED** via `git rm`
+- `.mockups/edit_reservation_page.html` — meta-line action links + Agreement Label row + retired rail card block (3 edits)
+- `tests/smoke/c7b1-smoke.php`, `c7c1-smoke.php`, `c7c2-1-smoke.php`, `c7x-build-to-mockup-smoke.php` — stale assertions updated to new architecture
+- `tests/smoke/mockups-presence-smoke.php` — MD5 hash updated for edit_reservation_page.html
+- `tests/smoke/c7x12-affix-agreement-meta-smoke.php` — NEW, 32 assertions across 3 deliverables
+- `CLAUDE.md` — Container-flex parity check sub-step added to Mockup Walkthrough Pre-Audit
+- `SESSION-NOTES.md` — this entry
+
+### Visual-verify checklist (Whitney's three short checks)
+
+- [ ] Currency $ chip + input read as one unified rectangle on res 44 — no seam, matches mockup Stall Nightly Rate
+- [ ] Agreement section toggled ON: new "Agreement Label" text input ABOVE the Agreement PDF row, placeholder "Agreement name (ex: Venue Agreement)"
+- [ ] Linked Event area: meta-line at top shows "2025 Spring Classic (seeded by C7.X.9)" with small "(change)" and "(unlink)" links; right rail has Publish + Shortcode only (no Linked Event card)
+
+If all three pass, C7.X.12 closes and the editor is architecturally complete.
+
+---
 
 ---
 

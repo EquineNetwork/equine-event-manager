@@ -461,6 +461,13 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 - **Unblocks deletion:** C12 (Order Receipt + Hosted Order Page — receipt-rendering needs accurate per-order totals). At that point: add `tax` column to both `en_stall_reservations` and `en_rv_reservations` via dbDelta in EEM_Activator, allocate `$totals['tax']` proportionally during insert in `insert_reservation_orders`, update `total` to include tax, and surface as a line item on the customer receipt + admin order detail.
 - **Status:** awaiting C12 (chunk recategorization, post-handoff Step 2 — was C11)
 
+### 51. Linked Event rail card retired (C7.X.12 Item 7)
+- **What:** `templates/admin/reservation-editor/_rail-linked-event-card.php` — DELETED in C7.X.12. Linked-event editing migrated inline to the meta-line via `(change)` / `(unlink)` action links.
+- **Why deferred items (none for the partial itself — fully gone):** Two adjacent loose ends remain:
+  1. JS handler at admin.js:1834 retains `addBtn.closest('.eem-repeating-row-helper')` fallback (C7.X.11). Unrelated to this entry — same C16 strip candidate as #50.
+  2. The `(change)` flow in C7.X.12 is a functional "confirm → unlink → reload to (link event) affordance" flow. A proper inline typeahead modal launched from `(change)` is a focused follow-up if/when there's product appetite for the polish. Low priority — current 2-click flow is functional.
+- **Status:** partial deletion complete. Follow-up #2 is product-optional polish.
+
 ### 50. Orphan partial `_repeating-row-helper.php`
 - **What:** `templates/admin/reservation-editor/_repeating-row-helper.php` — emits a `.eem-repeating-row-helper` wrapper div carrying `data-eem-repeating-template` + `data-eem-repeating-tbody` attrs for the C7.C.1-era add-row JS handler.
 - **Why deferred:** Confirmed zero active callers (`grep -rn "_repeating-row-helper\|eem_render_repeating_row_helper\|repeating-row-helper.php" templates/ admin/ includes/` returns nothing). Not auto-included via `require_all` / `glob()` / autoloader. The C7.X.4 mockup-canonical port retired this wrapper in `_section-addons.php` + `_section-rv.php`; they now emit the data-attrs directly on `<button class="eem-btn-add">`. The partial file was not deleted, and the JS handler at admin.js:1831 retains a fallback `.closest('.eem-repeating-row-helper')` path in case any future caller resurrects the wrapper (C7.X.11 fix).

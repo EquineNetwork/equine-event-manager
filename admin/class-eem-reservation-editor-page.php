@@ -155,8 +155,11 @@ class EEM_Reservation_Editor_Page {
 					</main>
 					<aside class="eem-edit-rail">
 						<?php
+						// C7.X.12 Item 7 — rail Linked Event card retired.
+						// Linked-event editing now lives inline in the
+						// meta-line via "(change)" + "(unlink)" links.
+						// Rail card partial moved to CLEANUP for C16 strip.
 						require EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_rail-publish-card.php';
-						require EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_rail-linked-event-card.php';
 						require EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_rail-shortcode-card.php';
 						?>
 					</aside>

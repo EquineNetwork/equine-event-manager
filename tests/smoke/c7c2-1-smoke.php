@@ -402,8 +402,8 @@ c7c21_ok( "all 10 section cards still render (C7.B.1)",
 c7c21_ok( "rail Publish card renders (replaces retired .eem-save-bar)",
 	false !== strpos( $html, '<span class="eem-rail-title">Publish</span>' ),
 	$pass, $fail, $log );
-c7c21_ok( "rail Linked Event card renders (replaces retired modal)",
-	false !== strpos( $html, '<span class="eem-rail-title">Linked Event</span>' ),
+c7c21_ok( "NO rail Linked Event card (C7.X.12 Item 7 — retired; replaced by meta-line action links)",
+	false === strpos( $html, '<span class="eem-rail-title">Linked Event</span>' ),
 	$pass, $fail, $log );
 preg_match_all( '#<div class="eem-section-chevron"[^>]*>(.*?)</div>#s', $html, $cbods );
 $chevrons_with_polyline = 0;

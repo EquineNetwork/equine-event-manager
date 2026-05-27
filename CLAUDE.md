@@ -189,6 +189,22 @@ Cautionary tale: C7.C.1 and C7.C.2.1 shipped 8 section partials that "ported" th
 
 This rule applies to every section/page audit from C7.C.2.2 forward. Distinguish between (a) genuine new architectural decisions for the chunk and (b) already-decided patterns being applied to new scope — only (a) belongs in the kickoff decision-lock list; re-surfacing (b) as questions is the same drift pattern this rule fixes (treating canonical references as sketches to re-interpret instead of binding precedent).
 
+**Container-flex parity check is the canonical audit sub-step for any affix/group/composite layout (C7.X.12 lesson — "CSS-cascade tunnel vision"):** When a visual bug surfaces on a composite component (chip+input affix, button group, icon+label pill, any flex container with multiple children), paste both the mockup's container `display` / `align-items` / `gap` / `flex-*` properties AND ours, side-by-side, **BEFORE** asking "which rule wins the cascade?". The cascade question is the second pass, not the first.
+
+C7.X.12's `.eem-price-wrap` cost FOUR commits (C7.X.10, C7.X.11, two C4-era predecessors) of right-tool-wrong-problem debugging. The visible seam was `align-items: center` (our admin.css) vs `align-items: stretch` (mockup canon) — chip and input rendered at different natural heights, leaving visible vertical gap. Three prior commits added `:not()` exclusions in admin-legacy.css to fix the border-radius cascade. Border-radius was already correct on inner edges; the gap was alignment, not cascade. `.eem-pct-wrap` (the one Whitney never reported broken) shipped with `align-items: stretch` from C1.2 — same affix pattern, working all along, was the structural evidence sitting unread.
+
+The C4 lesson primed every visual bug as a cascade-specificity issue. That lens is RIGHT for some bugs and WRONG for others. Containers can produce gaps via flex alignment, child margins, gap properties, or even whitespace between inline-block children, none of which a `:not()` exclusion can repair.
+
+Audit discipline (apply during Mockup Walkthrough Pre-Audit when the chunk includes ANY composite layout):
+1. Open the mockup file's `<style>` block. For each composite class (the wrapper), capture: `display`, `align-items`, `justify-content`, `gap`, `flex-wrap`, child `flex` settings.
+2. Open our admin.css and capture the same set for our equivalent class.
+3. Paste both side-by-side in the audit notes as a table. Identify drift FIRST.
+4. THEN — only if the container properties match — proceed to cascade-specificity questions on individual children's `border-*`, `padding`, `background`.
+
+Operational test for "is this a cascade bug or a container bug?": find a sibling component in the same codebase that uses the same affix pattern and works. If it exists and ITS container properties differ from the broken one's, the bug is container-level. (`.eem-pct-wrap` was the sibling for `.eem-price-wrap`. We didn't check.)
+
+This sub-step adds ~5-10 minutes to the pre-audit. It would have saved the three C7.X.* cascade-chase commits.
+
 **Visual-element regression smokes must assert DOM presence, not just handler-shape (C7.C.1.3 lesson):** Smokes for visible UI cues (chevrons, icon glyphs, badges, dividers, status indicators) MUST assert the actual element + its non-empty content is in the rendered HTML — NOT just that a JS handler or CSS class is wired to a class name. The C7.B.1 chevron smoke shipped a "click handler is bound to data-eem-action='reservation-editor-toggle-collapse'" assertion that passed cleanly through ~10 commits while the chevron itself was an empty `<div class="eem-section-chevron">` with no SVG inside — 0×0 invisible, no visual cue for the user. The click handler was wired to the wrapping `.eem-section-header`, so collapse functionally worked when users clicked the header bar; the chevron itself was decorative-only AND invisible. Smoke never tripped because it asked the wrong question.
 
 C7.B.3's content-density lesson applied this canon to icon chips (per-section SVG + path assertions). C7.C.1.3 retrospectively applied the same canon to chevrons. The pattern generalizes to every visible element:

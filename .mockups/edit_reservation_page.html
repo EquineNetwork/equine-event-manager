@@ -346,10 +346,16 @@ a:hover{text-decoration:none}
       <header class="plugin-header">
         <h1 class="plugin-title">2026 Southeast Region Super Sort</h1>
         <div class="plugin-subtitle">Configure the reservation setup for this event. Title and dates are mirrored from the linked source event and cannot be edited here.</div>
+        <!-- C7.X.12 Item 7 — Linked Event rail card retired. Meta-line
+             gains small "(change)" + "(unlink)" text links so admins
+             can still re-link / unlink without the duplicate rail card.
+             Right rail now contains 2 cards (Publish + Shortcode). -->
         <div class="plugin-meta-line">
           <span>
             <span class="meta-label">Linked Event</span>
             <a class="meta-value" href="#">Perry, GA – 2026 Southeast Region Super Sort</a>
+            <a class="meta-action" href="#">(change)</a>
+            <a class="meta-action meta-action--danger" href="#">(unlink)</a>
           </span>
           <span>
             <span class="meta-label">Event Dates</span>
@@ -1069,6 +1075,17 @@ a:hover{text-decoration:none}
               </div>
             </div>
             <div class="section-body hidden" id="body-agreement">
+              <!-- C7.X.12 VV-4 — Agreement Label admin field. Customer-
+                   facing yellow callout + order summary use this text
+                   as the link label. Empty default → falls back to
+                   literal "Venue Agreement" downstream. -->
+              <div class="field-row">
+                <div class="field-label">Agreement Label<div class="field-label-sub">Customer-facing link text</div></div>
+                <div class="field-control">
+                  <input class="field-input" type="text" name="venue_agreement_link_label" value="" placeholder="Agreement name (ex: Venue Agreement)" style="max-width:360px" />
+                  <span class="field-hint">Used as the link text in the customer checkout callout and order summary. Leave blank to use the default "Venue Agreement".</span>
+                </div>
+              </div>
               <div class="field-row">
                 <div class="field-label">Agreement PDF<div class="field-label-sub">Customers acknowledge at checkout</div></div>
                 <div class="field-control">
@@ -1177,23 +1194,13 @@ a:hover{text-decoration:none}
             </div>
           </div>
 
-          <!-- Event Link card -->
-          <div class="rail-card">
-            <div class="rail-header">
-              <span class="rail-title">Linked Event</span>
-            </div>
-            <div class="rail-body">
-              <p class="rail-hint">Link this reservation to an event from your active event source. The reservation title and dates mirror the linked event.</p>
-              <input class="event-search" type="text" placeholder="Search events…">
-              <div class="event-linked">
-                <div style="min-width:0">
-                  <div class="event-linked-name"><a href="#">Perry, GA – 2026 Southeast Region Super Sort</a></div>
-                  <div class="event-linked-date">May 8 – 10, 2026</div>
-                </div>
-                <button class="event-unlink" type="button">✕ Unlink</button>
-              </div>
-            </div>
-          </div>
+          <!-- C7.X.12 Item 7 — Linked Event rail card RETIRED.
+               Linked-event editing now lives inline in the meta-line
+               via "(change)" + "(unlink)" small text links at the top
+               of the editor header (see lines 349-364). Rail now
+               contains just Publish + Shortcode; the ~250px of
+               vertical the Linked Event card consumed is reclaimed
+               for Publish breathing room + future cards. -->
 
           <!-- Shortcode card -->
           <div class="rail-card">

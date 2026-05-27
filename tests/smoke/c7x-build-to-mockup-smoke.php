@@ -83,16 +83,19 @@ c7x_ok( '.eem-edit-main wraps sections', false !== strpos( $html, 'eem-edit-main
 c7x_ok( '.eem-edit-rail renders',        false !== strpos( $html, 'class="eem-edit-rail"' ), $pass, $fail, $log );
 
 // ── [3] Right rail content ───────────────────────────────────────
-echo "\n[3] Rail cards — Publish + Linked Event + Shortcode + retired guards\n";
-c7x_ok( 'rail card count is exactly 3',  3 === substr_count( $html, 'class="eem-rail-card"' ), $pass, $fail, $log, 'found: ' . substr_count( $html, 'class="eem-rail-card"' ) );
+// C7.X.12 Item 7 — Linked Event rail card RETIRED. Right rail now
+// contains 2 cards (Publish + Shortcode); linked-event editing
+// moved inline to the meta-line via "(change)" + "(unlink)" links.
+echo "\n[3] Rail cards — Publish + Shortcode (Linked Event retired in C7.X.12) + meta-line action links\n";
+c7x_ok( 'rail card count is exactly 2',  2 === substr_count( $html, 'class="eem-rail-card"' ), $pass, $fail, $log, 'found: ' . substr_count( $html, 'class="eem-rail-card"' ) );
 c7x_ok( 'Publish rail card',     false !== strpos( $html, '<span class="eem-rail-title">Publish</span>' ),       $pass, $fail, $log );
-c7x_ok( 'Linked Event rail card', false !== strpos( $html, '<span class="eem-rail-title">Linked Event</span>' ), $pass, $fail, $log );
+c7x_ok( 'NO Linked Event rail card (C7.X.12 retirement)', false === strpos( $html, '<span class="eem-rail-title">Linked Event</span>' ), $pass, $fail, $log );
 c7x_ok( 'Shortcode rail card',   false !== strpos( $html, '<span class="eem-rail-title">Shortcode</span>' ),     $pass, $fail, $log );
 c7x_ok( 'Publish: Status row',           false !== strpos( $html, 'class="eem-publish-row"' ),     $pass, $fail, $log );
 c7x_ok( 'Publish: Preview button',       false !== strpos( $html, 'class="eem-btn-preview"' ),     $pass, $fail, $log );
 c7x_ok( 'Publish: Update button (Electric Blue per VIS-4)', false !== strpos( $html, 'class="eem-btn-update"' ),    $pass, $fail, $log );
 c7x_ok( 'Publish: Move to Trash danger',  false !== strpos( $html, 'class="eem-btn-danger-sm"' ),  $pass, $fail, $log );
-c7x_ok( 'Linked Event: search input',    false !== strpos( $html, 'class="eem-event-search"' ),    $pass, $fail, $log );
+c7x_ok( 'meta-line: (change) action link replaces rail typeahead', false !== strpos( $html, 'data-eem-action="reservation-editor-event-change"' ), $pass, $fail, $log );
 c7x_ok( 'Shortcode: code-box renders',   false !== strpos( $html, 'class="eem-code-box"' ),       $pass, $fail, $log );
 c7x_ok( 'RETIRED: no .eem-save-bar fixed-bottom',  false === strpos( $html, 'class="eem-save-bar"' ),   $pass, $fail, $log );
 c7x_ok( 'RETIRED: no #eem-modal-linked-event',     false === strpos( $html, 'id="eem-modal-linked-event"' ), $pass, $fail, $log );

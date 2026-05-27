@@ -952,26 +952,39 @@ a.eem-btn-add:hover {
 }
 
 /* Price input — currency symbol + amount, paired */
+/* C7.X.12 — full mockup-canon pass per .mockups/edit_reservation_page
+   .html lines 100-105. Three previous commits (C7.X.10, C7.X.11, prior
+   cascade chases) chased CSS-cascade tunnel vision — fixing border-
+   radius specificity — when the visible seam was actually a flex-
+   alignment bug. `align-items: center` left the chip floating shorter
+   than the input, with visible gaps top/bottom; mockup uses `stretch`
+   to unify heights. `.eem-price-symbol` also needed `display: flex;
+   align-items: center` so the `$` stays vertically centered inside
+   the now-stretched chip. Took the optional aesthetic alignments too
+   (1.5px → 1px border, background shade, padding +1px, focus box-
+   shadow) for a single pass to mockup canon. */
 .eem-price-wrap {
 	display: flex;
-	align-items: center;
+	align-items: stretch;
 	max-width: 180px;
 }
 
 .eem-price-symbol {
 	padding: 8px 10px;
-	background: #f6f7f7;
-	border: var(--eem-border-input);
+	background: #f3f4f5;
+	border: 1px solid #8c8f94;
 	border-right: none;
 	border-radius: var(--eem-radius) 0 0 var(--eem-radius);
 	font-size: 13px;
 	color: var(--eem-text-secondary);
 	font-weight: 600;
+	display: flex;
+	align-items: center;
 }
 
 .eem-price-input {
-	padding: 8px 11px;
-	border: var(--eem-border-input);
+	padding: 8px 12px;
+	border: 1px solid #8c8f94;
 	border-radius: 0 var(--eem-radius) var(--eem-radius) 0;
 	font-size: 13.5px;
 	font-family: var(--eem-font-ui);
@@ -984,6 +997,7 @@ a.eem-btn-add:hover {
 
 .eem-price-input:focus {
 	border-color: var(--eem-electric);
+	box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12);
 }
 
 /* Date range */
@@ -6026,6 +6040,18 @@ a.eem-reservation-editor-meta-change-link:hover {
 .eem-plugin-meta-line .eem-meta-value { font-size: 13.5px; font-weight: 600; color: var(--eem-navy); }
 .eem-plugin-meta-line a.eem-meta-value { color: var(--eem-navy); }
 .eem-plugin-meta-line a.eem-meta-value:hover { color: var(--eem-electric); }
+/* C7.X.12 Item 7 — meta-line action links replace the retired Linked
+   Event rail card. Small, muted, inline next to the linked-event
+   value. Danger variant for (unlink). */
+.eem-plugin-meta-line .eem-meta-action {
+	margin-left: 6px;
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--eem-text-muted);
+	text-decoration: none;
+}
+.eem-plugin-meta-line .eem-meta-action:hover { color: var(--eem-electric); text-decoration: underline; }
+.eem-plugin-meta-line .eem-meta-action--danger:hover { color: #b32d2e; }
 
 /* ── Edit body 2-column grid + right rail (mockup line 360) ── */
 .eem-edit-body { padding: 18px 22px; display: grid; grid-template-columns: 1fr 300px; gap: 18px; align-items: start; background: #fff; }
