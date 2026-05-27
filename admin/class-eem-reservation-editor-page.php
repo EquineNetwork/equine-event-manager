@@ -216,19 +216,19 @@ class EEM_Reservation_Editor_Page {
 	 */
 	private static function render_section_body( $key, $data, $addons, $reservations_cpt ) {
 		$wired_map = array(
-			'description' => '_section-description.php',
-			'checkin'     => '_section-checkin.php',
-			'stall'       => '_section-stall.php',
-			'rv'          => '_section-rv.php',
-			'addons'      => '_section-addons.php',
-			'group'       => '_section-group.php',
-			'fees'        => '_section-fees.php',
-			'agreement'   => '_section-agreement.php',
+			'description'  => '_section-description.php',
+			'checkin'      => '_section-checkin.php',
+			'eventday'     => '_section-eventday.php',
+			'stall'        => '_section-stall.php',
+			'rv'           => '_section-rv.php',
+			'addons'       => '_section-addons.php',
+			'group'        => '_section-group.php',
+			'fees'         => '_section-fees.php',
+			'agreement'    => '_section-agreement.php',
+			'cancellation' => '_section-cancellation.php',
 		);
 		if ( ! isset( $wired_map[ $key ] ) ) {
-			return '<p class="eem-field-hint">' .
-				esc_html__( 'Section body wires in a later C7 sub-chunk (Event Day Info, Cancellation Policy).', 'equine-event-manager' ) .
-				'</p>';
+			return '';
 		}
 		ob_start();
 		require EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/' . $wired_map[ $key ];

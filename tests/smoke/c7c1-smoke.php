@@ -95,9 +95,11 @@ $html = ob_get_clean();
 
 // ── [2] Wired vs deferred bodies ───────────────────────────────────
 echo "\n[2] 6 wired sections emit real bodies; 4 deferred stay at placeholder\n";
-// C7.C.2.1 — stall + rv graduated from deferred → wired
-$wired_keys    = array( 'description', 'checkin', 'stall', 'rv', 'addons', 'group', 'fees', 'agreement' );
-$deferred_keys = array( 'eventday', 'cancellation' );
+// C7.X — all 10 sections graduated from deferred → wired
+// (Build to Mockup, Period — Event Day + Cancellation no longer
+// placeholders).
+$wired_keys    = array( 'description', 'checkin', 'eventday', 'stall', 'rv', 'addons', 'group', 'fees', 'agreement', 'cancellation' );
+$deferred_keys = array();
 
 // Structural slicing: capture each body's contents from `id="body-X"`
 // up to the next `id="card-` or `id="body-` so the comparison is

@@ -1641,6 +1641,17 @@ class EEM_Reservations_CPT {
 			// 8-preset palette + name + surcharge). Non-destructive
 			// additive schema (Option L1 — see CLEANUP #44).
 			'rv_lot_zones'                    => isset( $source['rv_lot_zones'] ) && is_array( $source['rv_lot_zones'] ) ? $this->sanitize_rv_lot_zones( $source['rv_lot_zones'] ) : ( isset( $existing['rv_lot_zones'] ) ? (array) $existing['rv_lot_zones'] : array() ),
+			// C7.X.5 — Event Day Info section meta (mockup lines 425-473).
+			'event_day_enabled'               => isset( $source['event_day_enabled'] ) ? 1 : 0,
+			'event_day_checkin'               => isset( $source['event_day_checkin'] ) ? sanitize_text_field( $source['event_day_checkin'] ) : '',
+			'event_day_bring'                 => isset( $source['event_day_bring'] ) ? sanitize_textarea_field( $source['event_day_bring'] ) : '',
+			'event_day_parking'               => isset( $source['event_day_parking'] ) ? sanitize_textarea_field( $source['event_day_parking'] ) : '',
+			'event_day_contact'               => isset( $source['event_day_contact'] ) ? sanitize_text_field( $source['event_day_contact'] ) : '',
+			// C7.X.6 — Cancellation Policy section meta. Per-reservation
+			// override (empty = inherit event default). Event-level
+			// default lives on the Event CPT (event_defaults table from C7.A).
+			'cancellation_enabled'            => isset( $source['cancellation_enabled'] ) ? 1 : 0,
+			'cancellation_policy_override'    => isset( $source['cancellation_policy_override'] ) ? sanitize_textarea_field( $source['cancellation_policy_override'] ) : '',
 			'rv_nightly_rate'                 => isset( $source['rv_nightly_rate'] ) ? $this->sanitize_money_value( $source['rv_nightly_rate'] ) : $existing['rv_nightly_rate'],
 			'rv_weekend_rate'                 => isset( $source['rv_weekend_rate'] ) ? $this->sanitize_money_value( $source['rv_weekend_rate'] ) : $existing['rv_weekend_rate'],
 			'rv_early_bird_enabled'           => isset( $source['rv_early_bird_enabled'] ) ? 1 : 0,
@@ -2015,6 +2026,14 @@ class EEM_Reservations_CPT {
 			'group_rider_deposit_amount'      => '0.00',
 			'general_addons'                  => array(),
 			'rv_lot_zones'                    => array(),
+			// C7.X.5 + C7.X.6 — Event Day + Cancellation defaults.
+			'event_day_enabled'               => 1,
+			'event_day_checkin'               => '',
+			'event_day_bring'                 => '',
+			'event_day_parking'               => '',
+			'event_day_contact'               => '',
+			'cancellation_enabled'            => 1,
+			'cancellation_policy_override'    => '',
 			'rv_addons'                       => array(),
 			'rv_nightly_rate'                 => '0.00',
 			'rv_weekend_rate'                 => '0.00',

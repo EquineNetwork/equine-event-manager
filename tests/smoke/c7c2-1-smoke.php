@@ -51,10 +51,10 @@ echo "\n[1] Partials + page-class dispatch\n";
 c7c21_ok( "partial exists: _section-stall.php", file_exists( $tpl_dir . '_section-stall.php' ), $pass, $fail, $log );
 c7c21_ok( "partial exists: _section-rv.php",    file_exists( $tpl_dir . '_section-rv.php' ),    $pass, $fail, $log );
 c7c21_ok( "page-class wired_map carries 'stall' => _section-stall.php",
-	false !== strpos( $page_src, "'stall'       => '_section-stall.php'" ),
+	false !== strpos( $page_src, "'stall'        => '_section-stall.php'" ),
 	$pass, $fail, $log );
 c7c21_ok( "page-class wired_map carries 'rv'    => _section-rv.php",
-	false !== strpos( $page_src, "'rv'          => '_section-rv.php'" ),
+	false !== strpos( $page_src, "'rv'           => '_section-rv.php'" ),
 	$pass, $fail, $log );
 
 // Seed reservation
