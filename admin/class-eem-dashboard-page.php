@@ -180,13 +180,13 @@ class EEM_Dashboard_Page {
 		<div class="eem-card eem-dashboard-card">
 			<div class="eem-card-header">
 				<div class="eem-card-title"><?php echo EEM_Dashboard_Icons::svg( 'calendar' ); ?> <?php esc_html_e( 'Upcoming Reservations', 'equine-event-manager' ); ?></div>
-				<a class="eem-card-link" href="<?php echo esc_url( admin_url( 'edit.php?post_type=en_reservation' ) ); ?>"><?php esc_html_e( 'View all →', 'equine-event-manager' ); ?></a>
+				<a class="eem-card-link" href="<?php echo esc_url( EEM_Reservations_List_Page::url() ); ?>"><?php esc_html_e( 'View all →', 'equine-event-manager' ); ?></a>
 			</div>
 			<?php if ( empty( $rows ) ) : ?>
 				<div class="eem-dashboard-empty"><?php esc_html_e( 'No upcoming reservations.', 'equine-event-manager' ); ?></div>
 			<?php else : ?>
 				<?php foreach ( $rows as $row ) :
-					$edit_url = (string) get_edit_post_link( (int) $row['id'] );
+					$edit_url = EEM_Reservation_Editor_Page::url( (int) $row['id'] );
 				?>
 					<a class="eem-dashboard-res-row" href="<?php echo esc_url( $edit_url ); ?>">
 						<div class="eem-dashboard-res-main">

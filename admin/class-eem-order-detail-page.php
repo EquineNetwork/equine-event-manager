@@ -245,7 +245,7 @@ class EEM_Order_Detail_Page {
 		// CLAUDE.md Note 3 captures the silent-degrade lesson.
 		$customer_email = isset( $order['email'] ) ? (string) $order['email'] : '';
 		$customer_name  = isset( $order['customer_name'] ) ? (string) $order['customer_name'] : '';
-		$reservation_url = $reservation_id > 0 ? (string) get_edit_post_link( $reservation_id ) : '';
+		$reservation_url = $reservation_id > 0 ? EEM_Reservation_Editor_Page::url( (int) $reservation_id ) : '';
 
 		ob_start();
 		?>
@@ -299,7 +299,7 @@ class EEM_Order_Detail_Page {
 	 */
 	private function build_header_actions_html( array $order, $reservation_id ) {
 		$back_url        = EEM_Orders_List_Page::url();
-		$reservation_url = $reservation_id > 0 ? (string) get_edit_post_link( $reservation_id ) : '';
+		$reservation_url = $reservation_id > 0 ? EEM_Reservation_Editor_Page::url( (int) $reservation_id ) : '';
 
 		ob_start();
 		?>

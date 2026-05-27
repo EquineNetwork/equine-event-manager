@@ -896,7 +896,7 @@ class EEM_Reservations_List_Page {
 	 */
 	private function render_table_row( $post, $active_tab = 'all' ) {
 		$id           = (int) $post->ID;
-		$edit_url     = get_edit_post_link( $id );
+		$edit_url     = EEM_Reservation_Editor_Page::url( $id );
 		// C6.6 / RES-ARCH-1: title + dates come from the source event via
 		// the resolver, NOT from the reservation's own post_title or the
 		// deprecated _en_nightly_*_date / _en_weekend_*_date meta keys.
@@ -1082,7 +1082,7 @@ class EEM_Reservations_List_Page {
 		<div class="eem-mobile-reservations">
 			<?php foreach ( $items as $post ) :
 				$id           = (int) $post->ID;
-				$edit_url     = get_edit_post_link( $id );
+				$edit_url     = EEM_Reservation_Editor_Page::url( $id );
 				// C6.6 / RES-ARCH-1: source-event resolver (see render_table_row above for the architectural note).
 				$event_fields = EEM_Reservation_Source_Resolver::resolve_event_fields( $id );
 				$event_title  = '' !== $event_fields['title'] ? $event_fields['title'] : $post->post_title;

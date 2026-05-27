@@ -46,6 +46,78 @@ class EEM_Reservation_Editor_Page {
 	const MENU_SLUG = 'equine-event-manager-reservation-editor';
 
 	/**
+	 * Canonical admin URL for the editor for a given reservation. Single
+	 * source of truth — all callers (Reservations list rows, Dashboard
+	 * upcoming-rows, Orders list event-link, Order Detail "View
+	 * Reservation") route through here so the URL pattern stays
+	 * consistent and the legacy `get_edit_post_link()` (which returns
+	 * the WP CPT `post.php?post=N&action=edit` URL) is no longer the
+	 * authority for "edit a reservation".
+	 *
+	 * @param int $reservation_id
+	 * @return string
+	 */
+	public static function url( $reservation_id ) {
+		$reservation_id = (int) $reservation_id;
+		if ( $reservation_id <= 0 ) {
+			return admin_url( 'admin.php?page=' . self::MENU_SLUG );
+		}
+		return admin_url( 'admin.php?page=' . self::MENU_SLUG . '&reservation_id=' . $reservation_id );
+	}
+
+	/**
+	 * Redirect legacy WP CPT edit URL (`post.php?post=N&action=edit`)
+	 * to the new editor when the post type is `en_reservation`. Mirrors
+	 * the shape of `EEM_Reservations_List_Page::maybe_redirect_old_list()`
+	 * which intercepts the legacy list view at
+	 * `edit.php?post_type=en_reservation`. Wired to `load-post.php` so
+	 * it fires before WordPress renders any of the legacy meta-box
+	 * chrome.
+	 *
+	 * Bookmarked legacy URLs, third-party links, and stray
+	 * `get_edit_post_link()` callers we missed in the rewire all
+	 * funnel through here.
+	 *
+	 * @return void
+	 */
+	public static function maybe_redirect_legacy_edit() {
+		$url = self::resolve_legacy_edit_redirect_url();
+		if ( null === $url ) {
+			return;
+		}
+		wp_safe_redirect( $url, 302 );
+		exit;
+	}
+
+	/**
+	 * Pure resolver — returns the new editor URL if the current
+	 * `$_GET` corresponds to a legacy `en_reservation` edit URL, else
+	 * null. Split out from `maybe_redirect_legacy_edit()` so smokes
+	 * can verify the redirect target without triggering `exit`.
+	 *
+	 * @return string|null
+	 */
+	public static function resolve_legacy_edit_redirect_url() {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended
+		if ( ! isset( $_GET['post'] ) ) {
+			return null;
+		}
+		$action = isset( $_GET['action'] ) ? sanitize_key( wp_unslash( $_GET['action'] ) ) : '';
+		if ( '' !== $action && 'edit' !== $action ) {
+			return null;
+		}
+		$post_id = absint( wp_unslash( $_GET['post'] ) );
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+		if ( $post_id <= 0 ) {
+			return null;
+		}
+		if ( EEM_Reservations_CPT::POST_TYPE !== get_post_type( $post_id ) ) {
+			return null;
+		}
+		return self::url( $post_id );
+	}
+
+	/**
 	 * Render the editor page. Reads `?reservation_id=N`.
 	 *
 	 * @return void

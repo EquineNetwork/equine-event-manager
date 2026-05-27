@@ -85,6 +85,13 @@ add_action( 'wp_ajax_eem_reservation_editor_save', array( 'EEM_Reservation_Edito
 add_action( 'wp_ajax_eem_reservation_editor_unlink_event', array( 'EEM_Reservation_Editor_Page', 'ajax_unlink_event' ) );
 add_action( 'wp_ajax_eem_reservation_editor_trash',        array( 'EEM_Reservation_Editor_Page', 'ajax_trash' ) );
 
+// Redirect legacy WP CPT edit URL (`post.php?post=N&action=edit`) to the
+// new editor for `en_reservation` posts. Catches bookmarked URLs +
+// third-party links + any `get_edit_post_link()` callers we missed in
+// the C7.X.7+ rewire. Mirrors the list-view redirect on
+// `EEM_Reservations_List_Page::maybe_redirect_old_list`.
+add_action( 'load-post.php', array( 'EEM_Reservation_Editor_Page', 'maybe_redirect_legacy_edit' ) );
+
 // Phase 3 admin template partials.
 require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_breadcrumb.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_page_shell.php';

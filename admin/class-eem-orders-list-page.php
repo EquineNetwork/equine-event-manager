@@ -433,7 +433,7 @@ class EEM_Orders_List_Page {
 				// customer name → customer profile (stub), event name →
 				// reservation edit screen (existing WP CPT edit URL).
 				$event_reservation_id  = $this->lookup_reservation_id_from_order( $order );
-				$event_reservation_url = $event_reservation_id ? get_edit_post_link( $event_reservation_id ) : '';
+				$event_reservation_url = $event_reservation_id ? EEM_Reservation_Editor_Page::url( (int) $event_reservation_id ) : '';
 				if ( $event_reservation_url ) :
 				?><a class="eem-event-link" href="<?php echo esc_url( $event_reservation_url ); ?>"><?php echo esc_html( $event_name ); ?></a><?php
 				else :
@@ -497,7 +497,7 @@ class EEM_Orders_List_Page {
 		$refund_url  = self::order_detail_url( $order_key, array( 'panel' => 'refund' ) );
 		$collect_url = self::collect_payment_url( $order_key );
 		$reservation_id = $this->lookup_reservation_id_from_order( $order );
-		$edit_reservation_url = $reservation_id ? get_edit_post_link( $reservation_id ) : '';
+		$edit_reservation_url = $reservation_id ? EEM_Reservation_Editor_Page::url( (int) $reservation_id ) : '';
 		?>
 		<div class="eem-actions-cell">
 			<?php if ( $can_collect ) : ?>
@@ -585,7 +585,7 @@ class EEM_Orders_List_Page {
 					<?php
 					// C5.G.10: mobile parallel of the desktop event-link cell.
 					$mob_event_reservation_id  = $this->lookup_reservation_id_from_order( $order );
-					$mob_event_reservation_url = $mob_event_reservation_id ? get_edit_post_link( $mob_event_reservation_id ) : '';
+					$mob_event_reservation_url = $mob_event_reservation_id ? EEM_Reservation_Editor_Page::url( (int) $mob_event_reservation_id ) : '';
 					?>
 					<div class="eem-mobile-card-sub"><?php if ( $mob_event_reservation_url ) : ?><a class="eem-event-link" href="<?php echo esc_url( $mob_event_reservation_url ); ?>"><?php echo esc_html( $event_name ); ?></a><?php else : ?><?php echo esc_html( $event_name ); ?><?php endif; ?></div>
 					<div class="eem-mobile-card-bottom">
