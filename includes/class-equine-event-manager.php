@@ -80,7 +80,10 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-reservation-editor-pag
 // endpoints. Per Decision D: save dispatcher is SHELL only — per-
 // section meta saves wire in C7.C.
 add_action( 'wp_ajax_eem_reservation_editor_save', array( 'EEM_Reservation_Editor_Page', 'ajax_save' ) );
-add_action( 'wp_ajax_eem_reservation_editor_change_linked_event', array( 'EEM_Reservation_Editor_Page', 'ajax_change_linked_event' ) );
+// C7.X.3 — change_linked_event handler retired; replaced by ajax_unlink_event
+// (rail-card Unlink button) + event-search typeahead handler in a later commit.
+add_action( 'wp_ajax_eem_reservation_editor_unlink_event', array( 'EEM_Reservation_Editor_Page', 'ajax_unlink_event' ) );
+add_action( 'wp_ajax_eem_reservation_editor_trash',        array( 'EEM_Reservation_Editor_Page', 'ajax_trash' ) );
 
 // Phase 3 admin template partials.
 require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_breadcrumb.php';

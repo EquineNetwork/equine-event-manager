@@ -570,11 +570,13 @@ c7c1_ok( 'all 10 section cards still render (C7.B.1 regression)',
 	10 === substr_count( $html, '<section class="eem-card eem-reservation-editor-section' ),
 	$pass, $fail, $log,
 	'found: ' . substr_count( $html, '<section class="eem-card eem-reservation-editor-section' ) );
-c7c1_ok( 'save bar still renders (C7.B.2 regression)',
-	false !== strpos( $html, 'class="eem-save-bar"' ),
+// C7.X.3 — fixed-bottom save bar + Linked Event modal RETIRED per Build-
+// to-Mockup canon. Rail Publish card + Rail Linked Event card replace them.
+c7c1_ok( 'rail Publish card renders (replaces retired .eem-save-bar)',
+	false !== strpos( $html, '<span class="eem-rail-title">Publish</span>' ),
 	$pass, $fail, $log );
-c7c1_ok( 'Linked Event modal still renders (C7.B.2 regression)',
-	false !== strpos( $html, 'id="eem-modal-linked-event"' ),
+c7c1_ok( 'rail Linked Event card renders (replaces retired modal)',
+	false !== strpos( $html, '<span class="eem-rail-title">Linked Event</span>' ),
 	$pass, $fail, $log );
 c7c1_ok( 'all 10 section chips still carry SVG glyphs (C7.B.3 regression)',
 	substr_count( $html, '<div class="eem-section-icon eem-section-icon--' ) === 10

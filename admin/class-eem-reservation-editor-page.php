@@ -1,30 +1,30 @@
 <?php
 /**
- * Reservation Editor page controller — Path A custom-render (C7.B.1).
+ * Reservation Editor page controller — mockup-canonical architecture
+ * (C7.X.3 Build-to-Mockup rewrite).
  *
- * Replaces the WP CPT meta-box editor with a mockup-faithful custom
- * page per `.mockups/edit_reservation_page.html`. Per Q2 lock: meta-
- * boxes retire in C7; this controller owns the editor surface end-to-
- * end.
+ * Replaces the legacy WP CPT meta-box editor with a custom render page
+ * that ships the mockup verbatim per `.mockups/edit_reservation_page.html`.
+ * Two-column layout: .eem-edit-main (section cards) + .eem-edit-rail
+ * (Publish + Linked Event + Shortcode cards). Mobile drops to single
+ * column with a .eem-sticky-save fixed-bottom strip at <768px.
  *
- * C7.B.1 scope: render scaffold + section skeletons + meta-line readout.
- * NO data wiring (sections render placeholder bodies — Decision G).
- * NO save dispatcher (C7.B.2). NO Linked Event modal (C7.B.2 per Q14.b).
- * NO Event Defaults modal (C7.E per Q9). NO Event Day Info data (C7.D).
- * NO Cancellation Policy override + event default readout (C7.E).
+ * Architectural deltas from the C7.B.1–C7.C.1 lineage (all retired):
+ *   - Bypasses the shared _page_shell.php — that shell emits
+ *     .eem-page-wrap chrome; the mockup uses .eem-plugin-wrap with
+ *     different header anatomy (.eem-plugin-title +
+ *     .eem-plugin-subtitle + .eem-plugin-meta-line). Other admin
+ *     pages still use the shared shell unchanged.
+ *   - DELETED: fixed-bottom .eem-save-bar (was always visible) +
+ *     #eem-modal-linked-event modal. Save lives in the rail card on
+ *     desktop, sticky-save on mobile. Linked event lives in the rail.
+ *   - The change-link launcher anchor in the meta-line is removed;
+ *     editing the linked event happens in the rail card.
  *
- * Architecture per VIS-3 / DS-1.B Dashboard precedent:
- *   .eem-page
- *     .eem-page-wrap (bordered card)
- *       .eem-page-header (title + meta-line + actions)
- *       .eem-page-body
- *         .eem-reservation-editor-body
- *           10 stacked .eem-reservation-editor-section cards
- *
- * Locked icon-tone map (re-verified against mockup per Decision E):
+ * Locked icon-tone map (Decision E re-verified against mockup):
  *   description=blue, checkin=teal, eventday=orange, stall=green,
  *   rv=purple, addons=orange, group=green, fees=orange, agreement=navy,
- *   cancellation=red. Only `description` has no enable toggle (always-on).
+ *   cancellation=red. Only `description` has no enable toggle.
  *
  * @package   EEM_Plugin
  * @license   GPL-2.0-or-later
@@ -46,7 +46,7 @@ class EEM_Reservation_Editor_Page {
 	const MENU_SLUG = 'equine-event-manager-reservation-editor';
 
 	/**
-	 * Render the editor page. Reads `?reservation_id=N` per Decision B.
+	 * Render the editor page. Reads `?reservation_id=N`.
 	 *
 	 * @return void
 	 */
@@ -66,45 +66,58 @@ class EEM_Reservation_Editor_Page {
 		require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_section-skeleton.php';
 		require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_breadcrumb-helper.php';
 
-		eem_render_page_open( array(
-			'title'      => get_the_title( $post ),
-			'subtitle'   => '',
-			'breadcrumb' => eem_reservation_editor_breadcrumb( $reservation_id ),
-			'meta'       => self::build_meta_line_html( $reservation_id ),
-			'actions'    => self::build_header_actions_html(),
-		) );
+		$breadcrumb_segments = eem_reservation_editor_breadcrumb( $reservation_id );
+		$source_event_title  = self::resolve_page_title( $post, $reservation_id );
 		?>
-		<div class="eem-reservation-editor-body" data-eem-reservation-id="<?php echo esc_attr( (string) $reservation_id ); ?>">
-			<?php self::render_section_skeletons( $reservation_id ); ?>
-			<?php
-			// C7.B.2: save bar — sticky-bottom (Decision A), navy band
-			// (Decision B), button labels driven by post_status
-			// (Decision C). Partial accepts $args for Order Detail
-			// re-use in C7.F (Decision J).
-			$args = array(
-				'primary_action' => 'publish' === $post->post_status ? 'update' : 'draft',
-				'data_attrs'     => array( 'eem-reservation-id' => (string) $reservation_id ),
-			);
-			require EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_save-bar.php';
-
-			// C7.B.2: Linked Event modal (Q14.b). Hidden by default;
-			// JS launcher opens it on click of the meta-line change
-			// link.
-			require EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_modal-linked-event.php';
-			?>
+		<div class="eem-page">
+			<?php eem_render_breadcrumb( $breadcrumb_segments ); ?>
+			<div class="eem-plugin-wrap">
+				<header class="eem-plugin-header">
+					<h1 class="eem-plugin-title"><?php echo esc_html( $source_event_title ); ?></h1>
+					<div class="eem-plugin-subtitle"><?php esc_html_e( 'Configure the reservation setup for this event. Title and dates are mirrored from the linked source event and cannot be edited here.', 'equine-event-manager' ); ?></div>
+					<?php require EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_meta-line.php'; ?>
+				</header>
+				<div class="eem-edit-body">
+					<main class="eem-edit-main eem-reservation-editor-body" data-eem-reservation-id="<?php echo esc_attr( (string) $reservation_id ); ?>">
+						<?php self::render_section_skeletons( $reservation_id ); ?>
+					</main>
+					<aside class="eem-edit-rail">
+						<?php
+						require EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_rail-publish-card.php';
+						require EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_rail-linked-event-card.php';
+						require EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_rail-shortcode-card.php';
+						?>
+					</aside>
+				</div>
+			</div>
 		</div>
+		<?php require EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_sticky-save-mobile.php'; ?>
 		<?php
-		eem_render_page_close();
 	}
 
 	/**
-	 * Render the 10 section card skeletons in mockup order. C7.C.1
-	 * wires real bodies for 6 sections (description, checkin, addons,
-	 * group, fees, agreement); stall + rv defer to C7.C.2; eventday +
-	 * cancellation defer to C7.D + C7.E respectively. Per Decision A,
-	 * each section dispatches to a render_*_body() method that returns
-	 * captured HTML; per Decision B, body partials receive a pre-
-	 * collected `$data` array (no inline get_post_meta()).
+	 * Resolve the page-header title. Per RES-ARCH-1 + mockup line 347,
+	 * the editor displays the LINKED SOURCE EVENT title — not the
+	 * reservation post's own post_title (which is admin-internal).
+	 * Falls back to the reservation post title when no event is linked.
+	 *
+	 * @param WP_Post $post
+	 * @param int     $reservation_id
+	 * @return string
+	 */
+	private static function resolve_page_title( $post, $reservation_id ) {
+		if ( class_exists( 'EEM_Reservation_Source_Resolver' ) ) {
+			$fields = EEM_Reservation_Source_Resolver::resolve_event_fields( $reservation_id );
+			if ( ! empty( $fields['title'] ) ) {
+				return (string) $fields['title'];
+			}
+		}
+		return get_the_title( $post );
+	}
+
+	/**
+	 * Render the 10 section card skeletons in mockup order. Body partials
+	 * receive a pre-collected $data array (no inline get_post_meta()).
 	 *
 	 * @param int $reservation_id
 	 * @return void
@@ -124,22 +137,19 @@ class EEM_Reservation_Editor_Page {
 				'key'             => $section['key'],
 				'title'           => $section['title'],
 				'icon_tone'       => $section['icon_tone'],
-				'icon_key'        => $section['icon_key'], // C7.B.3 — Feather glyph
+				'icon_key'        => $section['icon_key'],
 				'enable_toggle'   => $section['enable_toggle'],
 				'collapsed'       => $section['collapsed'],
 				'body_html'       => $body_html,
-				'is_enabled'      => $is_enabled,      // C7.C.1.1 — Desync C fix
-				'disabled_note'   => $disabled_note,   // C7.C.1.4.A — mockup callout
-				'intro_hint_html' => '',               // reserved for cancellation (C7.E) intro
+				'is_enabled'      => $is_enabled,
+				'disabled_note'   => $disabled_note,
+				'intro_hint_html' => '',
 			) );
 		}
 	}
 
 	/**
-	 * Disabled-note callout text per section (mockup line 409/956/etc.).
-	 * Renders inside the section body when the section is disabled.
-	 * C7.C.1.4.A — empty string = no callout for sections that don't
-	 * need one (e.g. description has no enable toggle).
+	 * Disabled-note callout per section (mockup line 409/956/etc.).
 	 *
 	 * @param string $section_key
 	 * @return string
@@ -160,6 +170,8 @@ class EEM_Reservation_Editor_Page {
 				return __( 'This section is disabled. Enable it to offer stall reservations.', 'equine-event-manager' );
 			case 'rv':
 				return __( 'This section is disabled. Enable it to offer RV reservations.', 'equine-event-manager' );
+			case 'eventday':
+				return __( 'This section is disabled. Event-day info will be hidden from customers.', 'equine-event-manager' );
 			default:
 				return '';
 		}
@@ -167,15 +179,9 @@ class EEM_Reservation_Editor_Page {
 
 	/**
 	 * Compute the persisted enabled state for a section's header toggle.
-	 * Used by section-skeleton's `is_enabled` arg (C7.C.1.1 Desync C fix
-	 * — header-toggle CSS class now matches the underlying meta state,
-	 * was previously hardcoded `--on` regardless). Map keys are the
-	 * legacy `_en_*_enabled` post-meta names; description is always-on
-	 * by definition (no enable toggle); stall/rv/eventday/cancellation
-	 * stay placeholder until their respective sub-chunks land.
 	 *
 	 * @param string               $section_key
-	 * @param array<string, mixed> $data        Reservation meta values.
+	 * @param array<string, mixed> $data
 	 * @return bool
 	 */
 	private static function compute_section_is_enabled( $section_key, array $data ) {
@@ -185,38 +191,35 @@ class EEM_Reservation_Editor_Page {
 			'group'        => 'group_reservations_enabled',
 			'fees'         => 'convenience_fee_enabled',
 			'agreement'    => 'venue_agreement_enabled',
-			'stall'        => 'stalls_enabled',          // C7.C.2
-			'rv'           => 'rv_enabled',              // C7.C.2
-			'eventday'     => 'event_day_enabled',       // C7.D — meta key TBD
-			'cancellation' => 'cancellation_enabled',    // C7.E — meta key TBD
+			'stall'        => 'stalls_enabled',
+			'rv'           => 'rv_enabled',
+			'eventday'     => 'event_day_enabled',
+			'cancellation' => 'cancellation_enabled',
 		);
 		if ( 'description' === $section_key ) {
-			return true; // always-on per Decision E
+			return true;
 		}
 		if ( ! isset( $meta_map[ $section_key ] ) || ! isset( $data[ $meta_map[ $section_key ] ] ) ) {
-			return true; // default to on if we don't yet know
+			return true;
 		}
 		return ! empty( $data[ $meta_map[ $section_key ] ] );
 	}
 
 	/**
-	 * Dispatch a section key to its body partial and return the rendered
-	 * HTML (C7.C.1 Decision A — per-method dispatch). Sections still
-	 * awaiting wiring fall through to a placeholder so the chrome stays
-	 * intact while the data layer lands across C7.C.2 / C7.D / C7.E.
+	 * Dispatch a section key to its body partial and return the rendered HTML.
 	 *
 	 * @param string                              $key
 	 * @param array<string, mixed>                $data
 	 * @param array<int, array<string, mixed>>    $addons
 	 * @param EEM_Reservations_CPT                $reservations_cpt
-	 * @return string  Pre-rendered HTML; trusted by section-skeleton wp_kses_post pass.
+	 * @return string
 	 */
 	private static function render_section_body( $key, $data, $addons, $reservations_cpt ) {
 		$wired_map = array(
 			'description' => '_section-description.php',
 			'checkin'     => '_section-checkin.php',
-			'stall'       => '_section-stall.php',     // C7.C.2.1 — rules body (Layout summary widget → C7.C.2.2; Row Builder → C8)
-			'rv'          => '_section-rv.php',        // C7.C.2.1 — rules body (Lot Zones + Add-Ons + Lot Layout summary → C7.C.2.2)
+			'stall'       => '_section-stall.php',
+			'rv'          => '_section-rv.php',
 			'addons'      => '_section-addons.php',
 			'group'       => '_section-group.php',
 			'fees'        => '_section-fees.php',
@@ -224,7 +227,7 @@ class EEM_Reservation_Editor_Page {
 		);
 		if ( ! isset( $wired_map[ $key ] ) ) {
 			return '<p class="eem-field-hint">' .
-				esc_html__( 'Section body wires in a later C7 sub-chunk (C7.C.2.2 for Lot Zones + summary widgets, C7.D for Event Day Info, C7.E for Cancellation Policy).', 'equine-event-manager' ) .
+				esc_html__( 'Section body wires in a later C7 sub-chunk (Event Day Info, Cancellation Policy).', 'equine-event-manager' ) .
 				'</p>';
 		}
 		ob_start();
@@ -233,10 +236,9 @@ class EEM_Reservation_Editor_Page {
 	}
 
 	/**
-	 * Canonical section definitions (locked per Decision E mockup re-
-	 * verification). Order matches mockup top-to-bottom. icon_tone +
-	 * enable_toggle + initial collapsed state come straight from the
-	 * mockup; titles flow through __() for i18n.
+	 * Canonical section definitions. Order matches mockup top-to-bottom;
+	 * icon_tone + enable_toggle + initial collapsed state come straight
+	 * from the mockup.
 	 *
 	 * @return array<int, array<string, mixed>>
 	 */
@@ -246,8 +248,8 @@ class EEM_Reservation_Editor_Page {
 			array( 'key' => 'checkin',      'title' => __( 'Check-In / Check-Out',    'equine-event-manager' ), 'icon_tone' => 'teal',   'icon_key' => 'clock',     'enable_toggle' => true,  'collapsed' => true  ),
 			array( 'key' => 'eventday',     'title' => __( 'Event Day Info',          'equine-event-manager' ), 'icon_tone' => 'orange', 'icon_key' => 'map-pin',   'enable_toggle' => true,  'collapsed' => false ),
 			array( 'key' => 'stall',        'title' => __( 'Stall Reservations',      'equine-event-manager' ), 'icon_tone' => 'green',  'icon_key' => 'grid',      'enable_toggle' => true,  'collapsed' => false ),
-			array( 'key' => 'rv',           'title' => __( 'RV Reservations',         'equine-event-manager' ), 'icon_tone' => 'purple', 'icon_key' => 'truck',     'enable_toggle' => true,  'collapsed' => false ),
-			array( 'key' => 'addons',       'title' => __( 'General Add-Ons',         'equine-event-manager' ), 'icon_tone' => 'orange', 'icon_key' => 'plus',      'enable_toggle' => true,  'collapsed' => true  ), // C7.C.1.4.A — mockup line 890 collapsed-by-default
+			array( 'key' => 'rv',           'title' => __( 'RV Reservations',         'equine-event-manager' ), 'icon_tone' => 'purple', 'icon_key' => 'truck',     'enable_toggle' => true,  'collapsed' => true  ), // mockup line 650
+			array( 'key' => 'addons',       'title' => __( 'General Add-Ons',         'equine-event-manager' ), 'icon_tone' => 'orange', 'icon_key' => 'plus',      'enable_toggle' => true,  'collapsed' => true  ),
 			array( 'key' => 'group',        'title' => __( 'Group Reservations',      'equine-event-manager' ), 'icon_tone' => 'green',  'icon_key' => 'users',     'enable_toggle' => true,  'collapsed' => true  ),
 			array( 'key' => 'fees',         'title' => __( 'Convenience Fee',         'equine-event-manager' ), 'icon_tone' => 'orange', 'icon_key' => 'dollar',    'enable_toggle' => true,  'collapsed' => true  ),
 			array( 'key' => 'agreement',    'title' => __( 'Agreement',               'equine-event-manager' ), 'icon_tone' => 'navy',   'icon_key' => 'file',      'enable_toggle' => true,  'collapsed' => true  ),
@@ -256,44 +258,10 @@ class EEM_Reservation_Editor_Page {
 	}
 
 	/**
-	 * Meta-line HTML (Linked Event readout) for the page-header `meta`
-	 * slot — pre-escaped per shell partial's wp_kses_post() pass.
+	 * AJAX: save the reservation (post_status flip + per-section field
+	 * saves via legacy save_meta() with pre-validation).
 	 *
-	 * @param int $reservation_id
-	 * @return string
-	 */
-	private static function build_meta_line_html( $reservation_id ) {
-		ob_start();
-		require EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_meta-line.php';
-		return (string) ob_get_clean();
-	}
-
-	/**
-	 * Header action bar (right side of the page header). C7.B.1 ships
-	 * a placeholder; C7.B.2 adds the Draft/Publish save buttons per
-	 * Q2 verification finding.
-	 *
-	 * @return string
-	 */
-	private static function build_header_actions_html() {
-		$res_url = esc_url( admin_url( 'admin.php?page=' . EEM_Reservations_List_Page::MENU_SLUG ) );
-		ob_start();
-		?>
-		<a class="eem-btn eem-btn-ghost" href="<?php echo $res_url; ?>"><?php esc_html_e( 'Back to Reservations', 'equine-event-manager' ); ?></a>
-		<?php /* C7.B.2: Draft / Update / Publish buttons land here */ ?>
-		<?php
-		return (string) ob_get_clean();
-	}
-
-	/**
-	 * AJAX: save the reservation (post_status flip + future per-section
-	 * field saves). C7.B.2 dispatcher SHELL per Decision D — handles
-	 * post_status changes only; per-section meta saves wire in C7.C.
-	 *
-	 * Accepts `action` ∈ {save_draft, publish, update}; flips
-	 * post_status accordingly.
-	 *
-	 * @return void  Always emits wp_send_json_*; terminates.
+	 * @return void
 	 */
 	public static function ajax_save() {
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -332,14 +300,8 @@ class EEM_Reservation_Editor_Page {
 			}
 		}
 
-		// C7.C.1.1 — pre-validate before invoking save_meta(). Without
-		// this, save_meta()'s cross-section validation (e.g. checkin
-		// enabled + empty times) silently aborts the entire write
-		// phase while AJAX returns success — the toast lies and no
-		// fields persist. Pre-validation surfaces errors back through
-		// wp_send_json_error so the JS toast shows the real reason.
-		// Save_meta still re-validates internally (defense in depth);
-		// the duplicate cost is ~3ms.
+		// Pre-validate before invoking save_meta() — surfaces validation
+		// errors to the JS toast instead of silently no-op'ing.
 		if ( isset( $_POST['en_reservation'] ) && is_array( $_POST['en_reservation'] ) ) {
 			$cpt        = new EEM_Reservations_CPT();
 			$source_raw = wp_unslash( $_POST['en_reservation'] );
@@ -355,8 +317,6 @@ class EEM_Reservation_Editor_Page {
 				), 422 );
 			}
 
-			// Validation passed — hand the payload to legacy save_meta()
-			// per Decision C (reuse the 93-field sanitization surface).
 			$_POST['equine_event_manager_reservation_meta_nonce'] = wp_create_nonce( 'equine_event_manager_save_reservation_meta' );
 			$refreshed = get_post( $reservation_id );
 			$cpt->save_meta( $reservation_id, $refreshed );
@@ -373,60 +333,66 @@ class EEM_Reservation_Editor_Page {
 	}
 
 	/**
-	 * AJAX: change the reservation's linked event (Q14.b modal save).
-	 * Validates source ∈ {native, tec, feed} + non-empty event_id;
-	 * updates the appropriate meta keys; returns refreshed meta-line
-	 * HTML for the JS to DOM-replace (per Decision K).
+	 * AJAX: unlink the current event from the reservation. Clears
+	 * `_en_event_id` and `_en_external_event_id`. Source remains so the
+	 * editor knows which type of search to offer next. Reservation
+	 * title + dates persist as the pre-unlink snapshot.
 	 *
-	 * @return void  Always emits wp_send_json_*; terminates.
+	 * @return void
 	 */
-	public static function ajax_change_linked_event() {
+	public static function ajax_unlink_event() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
 		}
 		check_ajax_referer( 'eem_reservation_editor', '_eem_editor_nonce' );
 
 		$reservation_id = isset( $_POST['reservation_id'] ) ? absint( wp_unslash( $_POST['reservation_id'] ) ) : 0;
-		$source         = isset( $_POST['source'] ) ? sanitize_key( wp_unslash( $_POST['source'] ) ) : '';
-		$event_id_raw   = isset( $_POST['event_id'] ) ? sanitize_text_field( wp_unslash( $_POST['event_id'] ) ) : '';
-
-		$post = $reservation_id > 0 ? get_post( $reservation_id ) : null;
+		$post           = $reservation_id > 0 ? get_post( $reservation_id ) : null;
 		if ( ! $post || EEM_Reservations_CPT::POST_TYPE !== $post->post_type ) {
 			wp_send_json_error( array( 'message' => __( 'Reservation not found.', 'equine-event-manager' ) ), 404 );
 		}
 
-		// Source validation — accept canonical native/tec/feed.
-		if ( ! in_array( $source, array( 'native', 'tec', 'feed' ), true ) ) {
-			wp_send_json_error( array( 'message' => __( 'Invalid event source.', 'equine-event-manager' ) ), 400 );
-		}
-
-		// event_id validation — non-empty required.
-		if ( '' === trim( $event_id_raw ) ) {
-			wp_send_json_error( array( 'message' => __( 'Select an event before saving.', 'equine-event-manager' ) ), 400 );
-		}
-
-		update_post_meta( $reservation_id, '_en_event_source', $source );
-		if ( in_array( $source, array( 'native', 'tec' ), true ) ) {
-			update_post_meta( $reservation_id, '_en_event_id', absint( $event_id_raw ) );
-		} else {
-			update_post_meta( $reservation_id, '_en_external_event_id', $event_id_raw );
-		}
-
-		// Refresh the meta-line HTML — Decision K — DOM replacement.
-		$meta_html = self::build_meta_line_html( $reservation_id );
+		delete_post_meta( $reservation_id, '_en_event_id' );
+		delete_post_meta( $reservation_id, '_en_external_event_id' );
 
 		wp_send_json_success( array(
 			'reservation_id' => $reservation_id,
-			'source'         => $source,
-			'event_id'       => $event_id_raw,
-			'meta_line_html' => $meta_html,
-			'message'        => __( 'Linked event updated.', 'equine-event-manager' ),
+			'message'        => __( 'Event unlinked.', 'equine-event-manager' ),
 		) );
 	}
 
 	/**
-	 * Graceful "reservation not found" render — used when ?reservation_id
-	 * is missing/invalid. Mirrors the C6 Order Detail not-found shape.
+	 * AJAX: move the reservation to Trash. Returns the Reservations list
+	 * URL for the JS to redirect to.
+	 *
+	 * @return void
+	 */
+	public static function ajax_trash() {
+		if ( ! current_user_can( 'delete_posts' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+		check_ajax_referer( 'eem_reservation_editor', '_eem_editor_nonce' );
+
+		$reservation_id = isset( $_POST['reservation_id'] ) ? absint( wp_unslash( $_POST['reservation_id'] ) ) : 0;
+		$post           = $reservation_id > 0 ? get_post( $reservation_id ) : null;
+		if ( ! $post || EEM_Reservations_CPT::POST_TYPE !== $post->post_type ) {
+			wp_send_json_error( array( 'message' => __( 'Reservation not found.', 'equine-event-manager' ) ), 404 );
+		}
+
+		$result = wp_trash_post( $reservation_id );
+		if ( ! $result ) {
+			wp_send_json_error( array( 'message' => __( 'Unable to move to Trash.', 'equine-event-manager' ) ), 500 );
+		}
+
+		wp_send_json_success( array(
+			'reservation_id' => $reservation_id,
+			'redirect_url'   => admin_url( 'admin.php?page=' . EEM_Reservations_List_Page::MENU_SLUG ),
+			'message'        => __( 'Reservation moved to Trash.', 'equine-event-manager' ),
+		) );
+	}
+
+	/**
+	 * Graceful "reservation not found" render.
 	 *
 	 * @return void
 	 */

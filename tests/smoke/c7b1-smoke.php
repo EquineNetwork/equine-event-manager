@@ -86,14 +86,18 @@ $html = ob_get_clean();
 
 // ── [3] Page chrome ────────────────────────────────────────────────
 echo "\n[3] Page chrome\n";
+// C7.X.3 — mockup-canonical chrome (was .eem-page-wrap; now .eem-plugin-wrap).
 c7b1_ok( '.eem-page wrapper renders',          str_contains( $html, 'class="eem-page"' ),     $pass, $fail, $log );
-c7b1_ok( '.eem-page-wrap card renders',        str_contains( $html, 'class="eem-page-wrap"' ),$pass, $fail, $log );
-c7b1_ok( '.eem-page-header renders',           str_contains( $html, 'class="eem-page-header"' ), $pass, $fail, $log );
+c7b1_ok( '.eem-plugin-wrap card renders',      str_contains( $html, 'class="eem-plugin-wrap"' ), $pass, $fail, $log );
+c7b1_ok( '.eem-plugin-header renders',         str_contains( $html, 'class="eem-plugin-header"' ), $pass, $fail, $log );
 c7b1_ok( '.eem-breadcrumb renders',            str_contains( $html, 'eem-breadcrumb' ),       $pass, $fail, $log );
 c7b1_ok( 'breadcrumb includes "Reservations" segment', str_contains( $html, 'Reservations' ), $pass, $fail, $log );
-c7b1_ok( '.eem-reservation-editor-meta-line renders',  str_contains( $html, 'eem-reservation-editor-meta-line' ), $pass, $fail, $log );
+c7b1_ok( '.eem-plugin-meta-line renders',      str_contains( $html, 'eem-plugin-meta-line' ), $pass, $fail, $log );
 c7b1_ok( 'meta-line includes "Linked Event" label',    str_contains( $html, 'Linked Event' ), $pass, $fail, $log );
 c7b1_ok( '.eem-reservation-editor-body wrapper renders', str_contains( $html, 'eem-reservation-editor-body' ), $pass, $fail, $log );
+c7b1_ok( '.eem-edit-body two-column grid renders', str_contains( $html, 'class="eem-edit-body"' ), $pass, $fail, $log );
+c7b1_ok( '.eem-edit-main wraps section cards',     str_contains( $html, 'eem-edit-main' ),         $pass, $fail, $log );
+c7b1_ok( '.eem-edit-rail renders',                  str_contains( $html, 'class="eem-edit-rail"' ), $pass, $fail, $log );
 
 // ── [4] All 10 section card skeletons render in correct order ──────
 echo "\n[4] Section card skeletons — 10 in mockup order\n";
@@ -240,23 +244,41 @@ c7b1_ok( 'admin.js carries reservation-editor-toggle-enabled handler',
 	str_contains( $js_src, 'reservation-editor-toggle-enabled' ),
 	$pass, $fail, $log );
 
-// ── [10] C7.B.1 scaffold guards (post-C7.B.2: scope guards inverted) ──
-echo "\n[10] C7.B.1 scaffold contract (now that C7.B.2 has landed)\n";
-// C7.B.2 landed the real save bar + Linked Event modal + promoted the
-// meta-line change link. Original C7.B.1 scope guards inverted to
-// regression-protect C7.B.2's additions live alongside the C7.B.1
-// scaffold.
-c7b1_ok( 'render contains the real save bar (.eem-save-bar) — landed in C7.B.2',
-	str_contains( $html, 'class="eem-save-bar"' ),
+// ── [10] C7.X.3 mockup-canonical architecture guards ──
+echo "\n[10] C7.X.3 mockup-canonical architecture (post Build-to-Mockup rewrite)\n";
+// Per Build-to-Mockup rule: rail Publish card on desktop replaces the
+// retired fixed-bottom save bar; rail Linked Event card replaces the
+// retired modal launched from the meta-line.
+c7b1_ok( 'render contains 3 rail cards (Publish, Linked Event, Shortcode)',
+	3 === substr_count( $html, 'class="eem-rail-card' ),
+	$pass, $fail, $log,
+	'found: ' . substr_count( $html, 'class="eem-rail-card' ) );
+c7b1_ok( 'rail Publish card renders (rail-title = Publish)',
+	(bool) preg_match( '/<span class="eem-rail-title">Publish<\/span>/', $html ),
 	$pass, $fail, $log );
-c7b1_ok( 'render contains the Linked Event modal — landed in C7.B.2',
-	str_contains( $html, 'id="eem-modal-linked-event"' ),
+c7b1_ok( 'rail Linked Event card renders (rail-title = Linked Event)',
+	(bool) preg_match( '/<span class="eem-rail-title">Linked Event<\/span>/', $html ),
 	$pass, $fail, $log );
-c7b1_ok( 'meta-line carries the real change-link launcher — promoted in C7.B.2',
-	str_contains( $html, 'data-eem-action="reservation-editor-launch-linked-event-modal"' ),
+c7b1_ok( 'rail Shortcode card renders (rail-title = Shortcode)',
+	(bool) preg_match( '/<span class="eem-rail-title">Shortcode<\/span>/', $html ),
 	$pass, $fail, $log );
-c7b1_ok( 'C7.B.1 savebar-placeholder REMOVED in C7.B.2',
-	false === strpos( $html, 'eem-reservation-editor-savebar-placeholder' ),
+c7b1_ok( 'rail Update button uses .eem-btn-update (Electric Blue per VIS-4)',
+	false !== strpos( $html, 'class="eem-btn-update"' ),
+	$pass, $fail, $log );
+c7b1_ok( 'rail Trash button uses .eem-btn-danger-sm',
+	false !== strpos( $html, 'class="eem-btn-danger-sm"' ),
+	$pass, $fail, $log );
+c7b1_ok( 'mobile sticky save renders below the wrap',
+	false !== strpos( $html, 'class="eem-sticky-save"' ),
+	$pass, $fail, $log );
+c7b1_ok( 'RETIRED: fixed-bottom .eem-save-bar no longer rendered',
+	false === strpos( $html, 'class="eem-save-bar"' ),
+	$pass, $fail, $log );
+c7b1_ok( 'RETIRED: Linked Event modal no longer rendered',
+	false === strpos( $html, 'id="eem-modal-linked-event"' ),
+	$pass, $fail, $log );
+c7b1_ok( 'RETIRED: meta-line change-link launcher no longer rendered',
+	false === strpos( $html, 'data-eem-action="reservation-editor-launch-linked-event-modal"' ),
 	$pass, $fail, $log );
 
 // ── [11] Anchor umbrella for section-header ─────────────────────────
