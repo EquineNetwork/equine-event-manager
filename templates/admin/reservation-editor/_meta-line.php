@@ -44,10 +44,8 @@ $display_title  = '' !== $venue && '' !== $title ? $venue . ' – ' . $title : (
 			<span class="eem-meta-value"><?php echo esc_html( $display_title ); ?></span>
 		<?php endif; ?>
 	</span>
-	<?php if ( '' !== $date_range ) : ?>
-		<span>
-			<span class="eem-meta-label"><?php esc_html_e( 'Event Dates', 'equine-event-manager' ); ?></span>
-			<span class="eem-meta-value"><?php echo esc_html( $date_range ); ?></span>
-		</span>
-	<?php endif; ?>
+	<span>
+		<span class="eem-meta-label"><?php esc_html_e( 'Event Dates', 'equine-event-manager' ); ?></span>
+		<span class="eem-meta-value"><?php echo esc_html( '' !== $date_range ? $date_range : '—' ); ?></span>
+	</span>
 </div>

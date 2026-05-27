@@ -1,190 +1,226 @@
 # Session Notes — Bridge Doc
 
-**Purpose:** This file captures conversational nuance, calibration
-data, and in-flight context that ISN'T already in CLAUDE.md, commit
-messages, or CLEANUP.md. Read it after `git pull` on a new machine
-to pick up momentum across Claude Code sessions.
+**Purpose:** Captures conversational nuance, calibration data, and
+in-flight context that ISN'T already in CLAUDE.md, commit messages,
+or CLEANUP.md. Read after `git pull` on a new machine to pick up
+momentum across Claude Code sessions.
 
-**Last updated:** 2026-05-26 (end of C7.C.1.4.A session)
+**Last updated:** 2026-05-26 — Build-to-Mockup retroactive port COMPLETE
 
 ---
 
-## Current chunk state
+## Current state
 
-**Last landed:** `38fb142` — docs: retire iCloud-sync rule; canonical
-remote is GitHub. (And `fba7058` before it — C7.C.1.4.A: Mockup-
-canonical chrome retroactive port for 4 sections.)
+**Reservation Editor is fully ported to mockup canon.** All 54 drifts
+from the C7.X audit are addressed. The editor is built to
+`.mockups/edit_reservation_page.html` end-to-end:
 
-**Awaiting:** Visual verify on C7.C.1.4.A. The 4 mockup-canonical
-sections (description / checkin / group / fees) need to be eyeballed
-in the browser against the mockup. Expected mid-flight state:
-4 sections on mockup-canonical chrome, 4 still on legacy table-form
-chrome (addons / agreement / stall / rv). That contrast IS expected
-and called out in the commit body.
+- ✅ Page chrome: `.eem-plugin-wrap` + `.eem-plugin-header` with
+  mockup-canonical title/subtitle/meta-line
+- ✅ Body layout: two-column `.eem-edit-body` CSS grid (1fr + 300px rail)
+- ✅ Right rail: 3 cards — Publish (Status/Visibility/Published rows
+  + Preview/Save Draft/Update/Move to Trash buttons), Linked Event
+  (search + linked display + Unlink), Shortcode (code-box)
+- ✅ Mobile sticky-save (`.eem-sticky-save` display:flex only at <768px)
+- ✅ All 10 sections render mockup-canonical chrome:
+  - description, checkin, eventday (NEW), stall, rv, addons, group,
+    fees, agreement, cancellation (NEW)
+  - Section bodies use `.eem-field-row` grid (NOT `<table class="form-table">`)
+  - Sub-section toggles use `.eem-toggle-label-row` (NOT native checkbox)
+  - Stay-type pairs use `.eem-stay-type-btn` pills with ID-based data-controls
+  - Fee-mode pill triplet (None/Flat/Percentage) replaces legacy `<select>`
+  - Lot Zones repeating-row builder with 8-preset color swatches
+  - Layout summary widgets (Stall + Lot, read-only, C8-stub buttons)
+  - File-row agreement chrome
+  - Cancellation inherited-default-banner + override actions + restore button
+- ✅ RETIRED architecture: fixed-bottom `.eem-save-bar`, modal
+  `#eem-modal-linked-event`, meta-line change-link launcher,
+  `ajax_change_linked_event` handler. All replaced by rail-card UX.
 
-**On greenlight:** C7.C.1.4.B kicks off. Scope locked (4 remaining
-partials rewritten to mockup-canonical chrome). Same shared-helper
-pattern as .A. Smoke target ~1,330 (1,254 + ~75 new from c7c1-4
-extensions + c7c2-1 updates).
+**Final smoke: 1334/1334 green** (across 22 smoke files).
 
-**C7 lineage remaining after .4.B:**
-- C7.C.2.2 — Lot Zones (NEW `_eem_rv_lot_zones` meta) + RV Add-Ons
-  + read-only Stall + Lot Layout summary widgets
-- C7.D — Event Day Info section data wiring
-- C7.E — Cancellation Policy (per-reservation override + event-default
-  inherited-banner UX)
-- C7.F — Reservation Editor → Order Detail save-bar reuse
-- C7.G — Polish pass (right-rail Status/Visibility/Published/Preview/
-  Trash; missing-from-mockup save-bar elements; sub-section toggle
-  body/header desync cleanup if not absorbed by .4.B)
+**New behaviors / JS shipped:**
+- `eemApplyControlsById()` — ID-based data-controls visibility
+  (mockup applyControls pattern)
+- `eemFlashStayHint()` — at-least-one stay-type validation
+- `eemApplyFeeModeVisibility()` — fee-mode pill triplet → conditional rows
+- `eemUpdateCancellationOverrideState()` — override textarea state
+- `window.eemRestoreCancellationDefault` — Restore default button
+- Zone color preset picker (8-swatch popover)
+- Zone row add/remove handlers
+- Rail-card click handlers (Trash with confirm, Unlink with confirm)
 
-User has indicated they want to switch to browser-based Claude after
-C7 closes. That's the natural break (entire Edit Reservation page
-lineage done; C8 starts a fresh page port for Stall Charts).
+**New AJAX handlers:**
+- `eem_reservation_editor_unlink_event` — clears `_en_event_id` +
+  `_en_external_event_id`
+- `eem_reservation_editor_trash` — wp_trash_post + redirect to
+  Reservations list
+
+**New post-meta keys (Option L1 non-destructive additive):**
+- `_en_event_day_enabled` / `_en_event_day_checkin` / `_bring` /
+  `_parking` / `_contact` (5 keys, Event Day Info section)
+- `_en_cancellation_enabled` / `_en_cancellation_policy_override`
+  (2 keys, Cancellation Policy section)
+- `_en_rv_lot_zones` (1 key, RV Lot Zones repeating array)
+- `_en_group_description` / `_en_group_riders_per_group` (from
+  C7.C.1.4.A, Group section)
+
+All new keys go into `EEM_Reservations_CPT::sanitize_meta_submission()`
++ `get_default_meta_values()`. C10/C11/C12 customer-facing surfaces
+will read these in their own chunks per CLEANUP entries.
+
+---
+
+## Commits landed in the Build-to-Mockup rewrite (this session)
+
+```
+1c04541  C7.X.1: CSS primitives — full mockup-canonical port to admin.css
+541535b  C7.X.2: JS handlers — mockup-canonical behaviors
+58c0f06  C7.X.3: Page chrome rewrite — mockup-canonical rail architecture
+510bb01  C7.X.4: Sections — stall + RV + addons + agreement to mockup canon
+c84e576  C7.X.5 + C7.X.6: Event Day Info + Cancellation Policy sections
+[next]   C7.X.7: Build-to-mockup verification smoke + meta-line polish
+```
+
+All pushed to `github.com/enwmitchell/equine-event-manager`.
 
 ---
 
 ## Calibration data from today's session
 
-### LOC estimates — partial-rewrite multipliers
+### LOC actuals vs estimates
 
-**C7.C.2.1 baseline:** partials ran ~86% over plan-time estimate.
-Audit shipped a kickoff at ~404 taxed; actual landed ~754 taxed.
+| Chunk | Plan-time taxed | Actual taxed |
+|---|---|---|
+| C7.X.1 CSS primitives | ~220 | ~197 |
+| C7.X.2 JS handlers | ~250 | ~432 (heavy zone-picker + unlink + trash handlers) |
+| C7.X.3 Page chrome + rail | ~600 | ~720 |
+| C7.X.4 Stall + RV + addons + agreement | ~1,500 | ~1,260 (shared helpers compressed) |
+| C7.X.5+6 Event Day + Cancellation | ~650 | ~290 (shared helpers compressed further) |
+| C7.X.7 verification smoke | ~400 | ~410 |
+| **Total taxed** | **~3,620** | **~3,309** |
 
-**C7.C.1.4.A revision:** partials with shared-helper extraction
-(_partial-field-row.php, _partial-toggle-label-row.php) ran ~18%
-UNDER plan-time. Audit shipped at ~1,426 taxed; actual landed at
-~615 taxed (calibration-buffered worst case projection was ~1,825;
-came in well under).
+Final LOC came in ~9% under plan-time. The shared partial helpers
+(_partial-field-row + _partial-toggle-label-row + _partial-stay-type-pair
++ _partial-layout-summary) compressed per-section LOC significantly.
+JS handlers ran heavier than estimated due to the zone color picker
++ unlink + trash dispatchers.
 
-**Forward calibration rule:** when partials use shared helpers,
-multiply per-partial LOC by ~0.7x of the naive estimate. When
-partials hand-roll markup without shared helpers, use the C7.C.2.1
-calibration (×1.86 over naive). Shared-helper compression is the
-biggest lever for partial LOC.
+### Smoke discipline
 
-### 40% alarm shape
+- Render-then-collect-then-post round-trip canon: hardened across
+  all section smokes. Skip logic extended to cover hidden mirrors
+  with `data-eem-section-enabled`, `data-eem-subsection-enabled`,
+  AND `data-eem-stay-type-mirror` (all three use isset-presence
+  in the legacy sanitize and need the same off-skip).
+- Build-to-mockup verification: `c7x-build-to-mockup-smoke.php` is
+  the new canonical smoke that asserts every visual element + CSS
+  primitive + JS handler from the audit. 92 assertions.
 
-User locked: "every 40% alarm trip triggers a split." Precedent:
-C7.B → .1/.2, C7.C → .1/.2, C7.C.2 → .2.1/.2.2, C7.C.1.4 → .4.A/.4.B.
-Don't surface this as a decision in kickoff proposals — apply it
-automatically when the 40% alarm trips against the plan-time taxed
-estimate, propose the split as the recommended path. User accepts
-splits without debate when justified by the alarm.
+### Meta-key coercion (recurring trap)
 
-### Smoke target prediction
+`get_meta_values()` at lines 1892–1909 auto-coerces several `*_enabled`
+fields back to 1 when companion fields are non-empty:
+- `checkin_checkout_enabled` ← `checkin_time` / `checkout_time` / `checkin_time_enabled` / `checkout_time_enabled`
+- `stall_schedule_enabled` ← `stalls_open_at` / `stalls_close_at`
+- `rv_schedule_enabled` ← `rv_open_at` / `rv_close_at`
+- `venue_map_enabled` ← `venue_map_download_url` / `venue_map_image_id`
+- `convenience_fee_enabled` ← fee_type !== 'none'
 
-When predicting smoke targets, account for ~10-30% drift from initial
-projection. User's reaction is calibrated to honest estimates; don't
-inflate to "look ambitious" and don't deflate to "leave room."
+Any smoke that seeds `*_enabled = 0` MUST also clear the companion
+fields, or the coercion flips it back to 1 and validation trips.
+
+---
+
+## What's NEXT after this session
+
+User instructed: "I'll come back to a finished editor." The editor
+IS finished per the Build-to-Mockup rule. User will visual-verify
+when they return. If anything surfaces at visual verify, fix
+discipline is intact (Mockup Walkthrough Pre-Audit + Build-to-
+Mockup canon).
+
+**Subsequent chunks (per CLAUDE.md Phase 3 roadmap):**
+- C8 — Stall Charts (full chart editor that the C7 layout-summary
+  widgets currently stub to)
+- C9 — Customer Profile page
+- C10 — Customer Event Page (consumes the new meta keys
+  introduced in C7.X — `_en_event_day_*`, `_en_cancellation_*`,
+  `_en_rv_lot_zones`, `_en_group_*`)
+- C11 — Customer Confirmation Email
+- C12 — Order Receipt + Hosted Order Page
+- C13 — Create Order admin page
+- C14 — Collect Payment admin page
+- C15 — Reports
+- C16 — Final polish (wholesale strip of legacy
+  `render_editor_*_row()` helpers + `_en_*_enabled` →
+  `_eem_section_enabled_{key}` rename + retire `_en_rv_lots` in
+  favor of `_en_rv_lot_zones`)
+- DS-1 — Design system fidelity + Dashboard
+
+---
+
+## Active CLEANUP entries (carry forward)
+
+- **#44** — `_en_*_enabled` → `_eem_section_enabled_{key}` rename
+  (C16 with C10/C11/C12 cascade)
+- **#45** — Closed: C7.C.1.4.B was the next-chunk pointer for the
+  4 unchromed sections; that work is done in this session's C7.X.4
+- **#46** — Legacy `render_editor_*_row()` helpers wholesale strip
+  at C16 (still present, callable but no editor partial uses them
+  anymore)
+- **#47** — `_en_group_description` + `_en_group_riders_per_group`
+  customer-facing C10 cascade
+- **NEW (this session) #48** — `_en_event_day_*` (5 keys) +
+  `_en_cancellation_policy_override` + `_en_rv_lot_zones` customer-
+  facing C10/C11/C12 cascade
+- **NEW (this session) #49** — Event-level cancellation default
+  field on Event CPT (per CLAUDE.md scope add #2). Resolver
+  (`EEM_Cancellation_Policy::resolve_for_reservation`) already
+  exists from C7.A; the Edit-Event admin UI for setting the
+  per-event default still needs wiring. The Edit Reservation
+  editor reads from the resolver correctly.
 
 ---
 
 ## User communication patterns
 
-### Decision-shape discipline (the big one)
-
-User strongly distinguishes between (a) genuine new architectural
-decisions for THIS chunk and (b) already-decided patterns being
-re-applied to new scope. Only (a) belongs in kickoff decision-lock
-lists. Re-surfacing (b) as questions is treated as the same drift
-pattern that prompted the Mockup Walkthrough Pre-Audit rule.
-
-If you find yourself surfacing 6+ "decisions" in a kickoff proposal,
-audit them: 4 are probably already-decided patterns from CLEANUP or
-earlier chunks. Surface only the 1-2 genuinely-new architectural
-choices. The rest get a one-line "applying precedent" mention.
-
-### Honest LOC estimates required
-
-User has explicitly said "don't underestimate" and "estimate honestly."
-When plan-time estimate is in the right ballpark, say so. When the
-worst-case projection trips the 40% alarm, surface a split proactively
-— don't try to fit everything in one commit if the math says it'll
-trip the alarm.
-
-### Visual verify gates
-
-User does visual verify after every chunk commit. Don't propose
-multi-commit chunks that bypass visual-verify gates. If a chunk lands
-with a visible regression (chevron invisible, double toggles, save
-bug), user catches it at visual verify and triggers a fix-up
-sub-chunk. C7.C.1 → C7.C.1.1 → .1.2 → .1.3 → .1.4 lineage is the
-canonical example.
-
-### Calls out audit drift directly
-
-If user says "audit-shape problem" or "systemic," they're flagging
-that the issue isn't this one chunk — it's a pattern across multiple
-chunks. The fix is usually a new standing rule in CLAUDE.md + a
-retroactive correction chunk. See the Mockup Walkthrough Pre-Audit
-rule's introduction for the canonical example.
-
-### Tone
-
-Terse, technical, explicit. Skip pleasantries. Use tables for
-multi-item enumeration. Decision tables work better than prose.
-Code-fenced examples better than narrative. Avoid hedging language
-that doesn't carry information.
+- **Build to Mockup, Period:** Mockup is the spec. No "Path A
+  half-measures." If a partial uses WP form-table chrome instead
+  of mockup-canonical `.eem-field-row`, that's drift to fix, not
+  a design choice.
+- **No visual verify between commits during multi-commit projects.**
+  Smoke is the quality gate. Visual verify is once, at the end.
+- **Decision-shape discipline:** distinguish genuine new
+  architectural decisions for THIS chunk from already-decided
+  patterns being applied to new scope. Don't re-surface (b).
+- **Calibration-tighten estimates:** when actuals come in materially
+  under, capture in SESSION-NOTES so future estimates are calibrated.
+- **Honest scope surfacing:** when an instruction implies a scope
+  that exceeds safe session capacity, say so + propose a path,
+  don't power through and risk leaving a broken intermediate state.
 
 ---
 
-## Active CLEANUP entries most likely to surface in upcoming chunks
+## Workflow notes
 
-- **#44** — Section-enabled meta keys rename (`_en_*_enabled` →
-  `_eem_section_enabled_{key}`). Deferred to C16 with C10/C11/C12
-  read-side cascade. Don't propose this in C7 chunks.
-- **#45** — C7.C.1.4.B pending (4 remaining partials). This is the
-  NEXT chunk; not a deferral but a forward-pointer.
-- **#46** — Legacy `render_editor_*_row()` helpers wholesale strip
-  at C16. Callable retained transitionally. After C7.C.1.4.B lands,
-  NO editor code calls these — but non-editor callers may exist.
-- **#47** — New `_en_group_description` + `_en_group_riders_per_group`
-  meta keys (C7.C.1.4.A) — customer-facing C10 cascade pending.
-- **Cancellation Policy architecture (C7.E)** — global cancellation
-  policy DEPRECATED; per-reservation override is canonical; global
-  Settings textarea is read-no-write after migration. See CLAUDE.md
-  "Architecture decisions in flight" section.
-
----
-
-## Workflow notes (post-iCloud-retirement)
-
-- **Canonical remote:** `github.com/enwmitchell/equine-event-manager`
+- Canonical remote: `github.com/enwmitchell/equine-event-manager`
   (private). Push after every commit via `git push origin main`.
-- **Multi-machine flow:** `git pull origin main` before starting work
-  on a different machine. `git push origin main` after every commit.
-- **No more iCloud:** the iCloud copy at `~/Library/Mobile Documents/
-  com~apple~CloudDocs/Projects/Equine Event Manager/` is no longer
-  maintained. Don't sync to it. See CLAUDE.md "Standing rule —
-  Post-commit sync" section for the full context.
-- **Mockup-presence smoke retained:** Still guards against in-repo
-  `.mockups/` wipes (`rm`, bad merge resolution, etc.) even without
-  iCloud in the loop.
-
----
-
-## Browser-Claude / Codespaces context
-
-User considering switching to browser-based Claude (Codespaces with
-Claude extension) after C7 closes. Stage 2 setup not yet done. If
-user asks about this:
-- Don't recommend claude.ai/chat for active coding work — no tool
-  access; the chunk-execution workflow breaks
-- Codespaces with Claude extension is the right shape — needs
-  `.devcontainer/` config + WordPress + wp-cli + smoke-test fixture
-  replication (~60 min setup chunk)
-- Recommend Codespaces Stage 2 as a discrete chunk between C7 close
-  and C8 kickoff — natural project boundary
+- Multi-machine: `git pull origin main` before starting work on
+  a different machine. `git push origin main` after every commit.
+- iCloud sync RETIRED.
+- Mockups-presence smoke retained as in-repo wipe guard.
 
 ---
 
 ## Quick-resume checklist for new Claude on a different machine
 
-1. Read CLAUDE.md (standing rules)
+1. Read CLAUDE.md (standing rules — Build to Mockup, Mockup
+   Walkthrough Pre-Audit, render-collect-post, DOM-presence canon)
 2. Read CLEANUP.md (deferred items + decisions)
-3. Read this file (SESSION-NOTES.md) for verbal nuance
+3. Read this file (SESSION-NOTES.md) for verbal nuance + completion
+   state
 4. `git log --oneline -10` (see recent chunks)
-5. Run `bash tests/smoke/run-all.sh` to confirm green baseline
-6. User will probably say something like "let's continue with C7.C.1.4.B"
-   — at that point you have everything you need
+5. `bash tests/smoke/run-all.sh` to confirm 1334+ green baseline
+6. User will probably want to visual-verify the editor or kick off
+   the next chunk (likely C8 Stall Charts).
