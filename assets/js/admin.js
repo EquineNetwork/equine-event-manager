@@ -1831,10 +1831,21 @@
 		var addBtn = t.closest('[data-eem-action="reservation-editor-add-repeating-row"]');
 		if (addBtn) {
 			ev.preventDefault();
-			var container = addBtn.closest('.eem-repeating-row-helper');
-			if (!container) return;
-			var templateId = container.getAttribute('data-eem-repeating-template');
-			var tbodyId    = container.getAttribute('data-eem-repeating-tbody');
+			// C7.X.11 — read template/tbody IDs from the BUTTON when it
+			// carries them (C7.X.4+ mockup-canonical partials in
+			// _section-addons.php + _section-rv.php). Fall back to the
+			// .eem-repeating-row-helper ancestor for any caller still
+			// using the (now-orphan) _repeating-row-helper.php partial.
+			// Before C7.X.11, the handler ONLY read from the ancestor;
+			// the bare-button partials had no ancestor, so clicks
+			// silently no-op'd. Bug shipped at C7.X.4, caught at
+			// C7.X.10 visual verify (Whitney VV-6).
+			var source = addBtn.hasAttribute('data-eem-repeating-template')
+				? addBtn
+				: addBtn.closest('.eem-repeating-row-helper');
+			if (!source) return;
+			var templateId = source.getAttribute('data-eem-repeating-template');
+			var tbodyId    = source.getAttribute('data-eem-repeating-tbody');
 			var template   = document.getElementById(templateId);
 			var tbody      = document.getElementById(tbodyId);
 			if (!template || !tbody) return;

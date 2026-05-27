@@ -5,7 +5,153 @@ in-flight context that ISN'T already in CLAUDE.md, commit messages,
 or CLEANUP.md. Read after `git pull` on a new machine to pick up
 momentum across Claude Code sessions.
 
-**Last updated:** 2026-05-27 — C7.X.10 group sub-toggles + affix-seam fix-up landed; awaiting Whitney visual verify + item 7 (Linked Event rail card) decision
+**Last updated:** 2026-05-27 — C7.X.11 affix-seam (Add-On rows) + add-button handler + STRUCTURAL enumeration smoke landed; awaiting Whitney visual verify + item 7 decision
+
+---
+
+## C7.X.11 fix-up — affix recurrence + add-buttons + structural enumeration (landed 2026-05-27)
+
+**Status:** committed + pushed. Smoke 1419/1419 green (was 1402; +17 from
+new `c7x11-affix-add-buttons-smoke.php`). Whitney to visual-verify with
+**DevTools "Disable cache" enabled** in Network tab (isolates cache-bust
+from missing-class-enumeration fix).
+
+**2 root-cause bugs from C7.X.10 visual verify + 1 structural deliverable:**
+
+1. **VV-3 recurrence — Add-On price seam.** `.eem-repeat-price-in`
+   (the price input in `_section-addons.php` + `_section-rv.php`
+   repeating-row tables) was missing from the C7.X.10 exclusion list.
+   Whitney's review of C7.X.10 covered `.eem-price-input` +
+   `.eem-pct-input`; the manual class enumeration didn't include
+   `.eem-repeat-price-in` (same fragmented-naming pattern across
+   editor partials). Legacy `border-radius: 8px !important` still
+   won on Add-On price inputs, breaking the seam.
+
+   **+ 2 MORE classes the structural smoke caught.** When the
+   enumeration smoke ran on the rendered editor, it found 5 distinct
+   `<input type="number">` classes — not just the 3 the audit
+   enumerated. `.eem-field-input` (quantity-style inputs) +
+   `.eem-zone-price-in` (RV Lot Zone surcharge affix) ALSO need the
+   exclusion, both shipped pre-C7.X.10 without it. The smoke caught
+   exactly the gap the manual checklist missed — first run, first
+   commit. **This is the structural deliverable working as designed.**
+
+   **Fix:** extend exclusion list from 3 → 5 classes on all 19
+   `input[type="number"]` selectors in admin-legacy.css.
+
+2. **VV-6 — Add-row buttons non-functional since C7.X.4.** JS handler
+   at admin.js:1831 did
+   `addBtn.closest('.eem-repeating-row-helper')` to find template +
+   tbody IDs. C7.X.4 mockup-canonical partials emit those attrs ON
+   the button itself (no wrapper). The `.eem-repeating-row-helper`
+   wrapper lives only in `_repeating-row-helper.php` — a partial
+   that's been orphan since C7.X.4 (zero active callers, verified).
+   Result: handler returned early on every click. **Bug was latent
+   from C7.X.4 to C7.X.10; never caught at visual verify until
+   Whitney clicked "+ Add Add-On" on res 44.**
+
+   **Fix:** handler reads attrs from `addBtn` directly when present,
+   falls back to ancestor for any (orphan) caller still using the
+   wrapper. The fallback is C16-removable along with the orphan
+   partial (CLEANUP entry #50).
+
+3. **STRUCTURAL — form-control class enumeration cross-check smoke.**
+   C4 → C7.X.4 → C7.X.10 → C7.X.11 = FOUR iterations of the same
+   class of bug: developer ships a new form-control class, forgets
+   to add `:not(.classname)` exclusions in admin-legacy.css. The
+   C7.X.10 process-miss note said "checklist must be run." VV-3
+   recurring on `.eem-repeat-price-in` proved the checklist as
+   written is insufficient — relies on developer memory.
+
+   **C7.X.11 lands the structural fix:** new
+   `c7x11-affix-add-buttons-smoke.php` section [2] enumerates every
+   distinct class on `<input type="number">` elements in the
+   editor's live rendered HTML, then asserts every enumerated class
+   appears as `:not(.classname)` in every `input[type="number"]`
+   selector in admin-legacy.css. The smoke trips if a future
+   chunk:
+     - Ships a new form-control class without adding exclusions
+     - Adds a new `!important` block without including the
+       exclusion list
+   Removes the "did I remember to enumerate?" reliance. Tested in
+   anger on C7.X.11's own run — caught `.eem-field-input` +
+   `.eem-zone-price-in` immediately. **The recurring-bug cycle is
+   broken.**
+
+**Pre-flight verifications run before edits (per Whitney's
+clarifications):**
+- CSS enqueue uses `EQUINE_EVENT_MANAGER_VERSION` constant as `$ver`
+  for both admin.css and admin-legacy.css. ✓
+- Zero hardcoded `'2.3.0'` string literals in PHP outside `@since
+  2.3.0` docblocks (those mark introduction version of code, not
+  current plugin version — stay at 2.3.0). The plugin header `*
+  Version:` + the `EQUINE_EVENT_MANAGER_VERSION` constant were
+  bumped together to 2.3.1. ✓
+- Zero auto-include / `glob()` / `scandir()` patterns pulling in
+  `_repeating-row-helper.php`. Truly orphan. ✓
+
+**Cache-bust:** `EQUINE_EVENT_MANAGER_VERSION` → `2.3.1`. Bumps
+`?ver=2.3.1` on both CSS files. Forces fresh download on every
+browser regardless of cache policy. Whitney won't fight cache
+invalidation this session.
+
+**C7.X.11 commit:** `[hash filled after commit]`
+
+**Files touched (6):**
+- `equine-event-manager.php` — 2 LOC (plugin header `Version:` +
+  `EQUINE_EVENT_MANAGER_VERSION` constant, both `2.3.0` → `2.3.1`)
+- `assets/css/admin-legacy.css` — 19 lines modified (5-class
+  exclusion now: `.eem-price-input`, `.eem-pct-input`,
+  `.eem-repeat-price-in`, `.eem-zone-price-in`, `.eem-field-input`)
+- `assets/js/admin.js` — ~14 LOC (button-attr-first read with
+  ancestor fallback + audit-trail comment)
+- `tests/smoke/c7x11-affix-add-buttons-smoke.php` — NEW, 17
+  assertions across 4 groups. Section [2] is THE structural
+  deliverable.
+- `CLEANUP.md` — new entry #50 (orphan `_repeating-row-helper.php`
+  partial → C16)
+- `SESSION-NOTES.md` — this entry
+
+**Visual-verify checklist Whitney will walk (DevTools "Disable cache"
+enabled in Network tab):**
+- [ ] Currency $ chip + input unified on Pricing fields (description),
+      RV Nightly/Weekend Rate, Group Grounds Fee + Deposit Amount,
+      Convenience Fee Flat mode
+- [ ] Currency $ chip + input unified on General Add-On Price rows
+      AND RV Add-On Price rows (`.eem-repeat-price-in`)
+- [ ] Currency $ chip + input unified on RV Lot Zone surcharge
+      (`.eem-zone-price-in`) — bonus catch from structural smoke
+- [ ] Percentage % suffix unified on Convenience Fee Percentage mode
+- [ ] Click "+ Add Add-On" → new empty row appends to General
+      Add-Ons table
+- [ ] Click "+ Add RV Add-On" → new empty row appends to RV
+      Add-Ons table
+
+**Process-miss escalation note (paying forward):**
+The recurring-bug pattern across C4 / C7.X.4 / C7.X.10 / C7.X.11 is
+NOT a "developer didn't run the checklist" problem — it's a "manual
+enumeration is fragile" problem. The structural fix is automation:
+the enumeration cross-check smoke landed in C7.X.11 watches every
+`<input type="number">` rendered by the editor and demands matching
+admin-legacy.css coverage. Going forward:
+  - Future form-control ports do NOT need to manually update the
+    exclusion list at commit time — the smoke will fail at commit
+    time and tell the developer exactly which classes need
+    exclusions.
+  - The pattern generalizes: any other `input[type="<X>"]` family
+    with `!important` legacy blocks can land a parallel enumeration
+    smoke. (Today only `[type="number"]` has this concentration;
+    revisit if `[type="text"]` etc. accumulates similar problems.)
+  - The checklist in CLAUDE.md "Prospective form-control port
+    checklist" should be updated to point at this smoke instead of
+    relying on manual enumeration. (Not landed in C7.X.11 to keep
+    commit tight; will land if/when CLAUDE.md gets a maintenance
+    pass.)
+
+**Item 7 still OPEN (Linked Event rail card vs meta-line redundancy)** —
+awaiting Whitney's decision after C7.X.11 visual verify.
+
+---
 
 ---
 
