@@ -5,7 +5,151 @@ in-flight context that ISN'T already in CLAUDE.md, commit messages,
 or CLEANUP.md. Read after `git pull` on a new machine to pick up
 momentum across Claude Code sessions.
 
-**Last updated:** 2026-05-27 — C7.X.9 toggle-behaviors fix-up landed; awaiting Whitney visual verify + item 7 (Linked Event rail card) decision
+**Last updated:** 2026-05-27 — C7.X.10 group sub-toggles + affix-seam fix-up landed; awaiting Whitney visual verify + item 7 (Linked Event rail card) decision
+
+---
+
+## C7.X.10 fix-up — group sub-toggles + affix seam (landed 2026-05-27)
+
+**Status:** committed + pushed. Smoke 1402/1402 green (was 1381; +21 from new
+`c7x10-toggle-affix-smoke.php`). Whitney to visual-verify after re-running
+the seed (canonical event date keys + Step-1 backfill landed).
+
+**3 findings from C7.X.9 visual verify on res 44 consolidated:**
+
+1. **VV-2 — group sub-toggles non-functional.** Whitney called this
+   "Fees-section"; actual scope is `_section-group.php` (Grounds Fee +
+   Deposit toggles). Group was the only remaining partial still on the
+   retired class-token controls system (`eem-ctrl--grounds-amt`,
+   `eem-ctrl--deposit-amt`). C7.X.9's `eemApplyControlsById` does
+   `document.getElementById(id)` per token, so class tokens silently
+   no-op'd. **Fix:** converted to ID-based controls
+   (`row-group-grounds-amt`, `row-group-deposit-amt`); dropped
+   `row_classes` (legacy noise). 4 operative lines + audit-trail
+   comment.
+
+2. **VV-3 — affix seam (currency $ chip / percent % chip) — CSS
+   specificity collision.** Root cause: 6 distinct `!important` blocks
+   in `admin-legacy.css` target `input[type="number"]` and apply
+   `border-radius: 8px !important`, overriding our
+   `.eem-price-input { border-radius: 0 var(--eem-radius) var(--eem-
+   radius) 0 }`. Exactly the C4 lesson recurring. **Process miss:**
+   C7.X.4 form-control port shipped without running CLAUDE.md's
+   "Prospective form-control port checklist". The checklist would
+   have flagged this at C7.X.4 commit time and cost ~5 min to add the
+   exclusions instead of two visual-verify cycles ~weeks later.
+   Future form-control ports must run the checklist as part of
+   pre-commit review.
+   **Fix:** added `:not(.eem-price-input):not(.eem-pct-input)` to
+   every `input[type="number"]` selector in admin-legacy.css. 19
+   occurrences total, all covered. Count-based smoke assertion
+   guards against future regression where someone adds a 7th block
+   without the exclusion.
+   **Specificity check on line 2690 non-!important block:** `body
+   .eem-shell-page--editor input[type="number"]` = (0,2,2) beats
+   `.eem-price-input` = (0,1,0). Required remediation despite no
+   `!important`. Confirmed remediated.
+
+3. **VV-5 — section order matches mockup. DROPPED.** Verification
+   trail: `.mockups/edit_reservation_page.html` `.section-title`
+   enumeration matches `EEM_Reservation_Editor_Page::section_definitions()`
+   render order on res 44 exactly:
+   1. description / Reservation Description
+   2. checkin / Check-In / Check-Out
+   3. eventday / Event Day Info
+   4. stall / Stall Reservations
+   5. rv / RV Reservations
+   6. addons / General Add-Ons
+   7. group / Group Reservations
+   8. fees / Convenience Fee
+   9. agreement / Agreement
+   10. cancellation / Cancellation Policy
+
+**Process-miss note (calibration paying forward):**
+C7.X.4's port checklist miss cost ~2 visual-verify cycles + this
+fix-up commit. The pattern: when shipping a NEW form-control
+component (`.eem-search-input`, `.eem-price-input`, `.eem-pct-input`,
+or future `.eem-time-input` etc.) the developer must:
+  (a) `grep -nE 'input\[type="..."\]' admin-legacy.css` to find every
+      block targeting that input type.
+  (b) Add `:not(.eem-<new-component>)` to EVERY occurrence in the
+      same commit that introduces the component.
+  (c) State in commit message that the checklist was run + N
+      exclusions added.
+The C7.X.4 commit didn't do (a)/(b)/(c). Going forward, the smoke
+"every input[type=...] in admin-legacy carries :not(.eem-XYZ)" pattern
+landed in C7.X.10 is the structural enforcement — copy it forward
+when shipping any new form-control class.
+
+**C7.X.10 commit:** `[hash filled after commit]`
+
+**Seed script update (tests/seeds/seed-reservation-44-link-event.php):**
+C7.X.9's seed picked the first available event (TEC, 2026-06-26),
+which broke c4d-smoke's sort assertion that depends on res 44's
+start_date being 2025-03-10. C7.X.10 update:
+  - Step 1 prefers a native `en_event` with start_date 2025-03-10
+    (checks both `_equine_event_manager_event_start_date` canonical
+    key AND `_en_event_start_date` legacy mirror).
+  - Step 2 seeds a fresh native event with that date if no native
+    matches (skips TEC fallback because TEC events have arbitrary
+    dates).
+  - Step 1 reuses prior-seeded "2025 Spring Classic" native event
+    on re-run (idempotent, no duplicate piling).
+  - Post-pick: belt-and-braces backfill writes the canonical
+    `_equine_event_manager_event_*_date` keys from `_en_event_*_date`
+    if missing. The native event resolver reads the canonical keys;
+    the seed previously only wrote `_en_*` so the resolver returned
+    empty start/end dates even with a linked native event.
+  - Resolver output after seed: title='2025 Spring Classic (seeded
+    by C7.X.9)', date_range='Mar 10, 2025 – Mar 12, 2025'. c4d sort
+    + date-filter assertions pass.
+
+**c7c1-4-smoke updates (3 assertions):**
+Updated to match the new ID-based controls architecture:
+  - grounds-fee toggle: data-controls accepts `row-group-grounds-amt`
+    OR (backward-compat) `row-grounds-amt` OR
+    `eem-ctrl--grounds-amt`. Backward-compat fallbacks kept until
+    C16 wholesale legacy strip.
+  - Grounds Fee Amount row VISIBLE: matches new
+    `id="row-group-grounds-amt"` shape OR old `eem-ctrl--grounds-amt`
+    class shape.
+  - Deposit Amount row HIDDEN: same boundary handling.
+
+**Files touched (6 modified + 1 new smoke):**
+- `templates/admin/reservation-editor/_section-group.php` —
+  Grounds Fee + Deposit toggles converted to ID-based controls
+  (4 operative lines + audit-trail comments)
+- `assets/css/admin-legacy.css` — `:not(.eem-price-input):not(.eem-pct
+  -input)` added to 19 `input[type="number"]` selector occurrences
+  (6 !important blocks + the editor non-!important block + 12 other
+  scoped blocks where the exclusion is benign and the count-based
+  smoke requires uniform coverage)
+- `tests/seeds/seed-reservation-44-link-event.php` — Step-1 prefers
+  date-matching native, Step-2 seeds native with target date,
+  belt-and-braces canonical-key backfill
+- `tests/smoke/c7c1-4-smoke.php` — 3 assertions updated to new
+  ID-based shape with backward-compat fallbacks
+- `tests/smoke/c7x10-toggle-affix-smoke.php` — NEW, 21 assertions
+  across 2 root-cause bug groups
+- `SESSION-NOTES.md` — this entry
+
+**Visual-verify checklist Whitney will walk after re-running seed:**
+- [ ] Group section: toggle "Charge a grounds fee for each rider" OFF
+      → Grounds Fee Amount row hides
+- [ ] Toggle ON → Grounds Fee Amount row reveals (no `eem-row--hidden`)
+- [ ] Same shape for Deposit toggle
+- [ ] All currency $ chip + input fields read as ONE unified control
+      (no visible seam, no broken radius on inner edges) — Pricing,
+      Grounds Fee Amount, Deposit Amount, Flat Fee
+- [ ] Percentage Fee % suffix + input field same shape
+- [ ] Meta-line + rail card now show real values: '2025 Spring Classic
+      (seeded by C7.X.9)' / 'Mar 10, 2025 – Mar 12, 2025'
+
+**Item 7 still OPEN (Linked Event rail card vs meta-line redundancy)** —
+awaiting Whitney's decision after C7.X.10 visual verify. See C7.X.9
+entry below for context.
+
+---
 
 ---
 

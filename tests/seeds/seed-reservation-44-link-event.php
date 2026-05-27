@@ -66,57 +66,110 @@ foreach ( $before as $k => $v ) {
 	echo "  {$k} = " . var_export( $v, true ) . "\n";
 }
 
-// Pick a source event. Native preferred (no plugin dep); TEC as fallback.
-$event_id = 0;
-$source   = '';
+// Pick a source event whose start_date aligns with reservation 44's
+// title ("2025 Spring Classic" → 2025-03-10). C7.X.10 update: the
+// previous version of this seed picked the first available event
+// regardless of date, which broke c4d-smoke's sort + date-filter
+// assertions that depend on reservation 44 sorting to its 2025-03 slot.
+// Pick policy:
+//   1. Prefer a native en_event with start_date='2025-03-10'.
+//   2. Else prefer a TEC tribe_events whose post_date matches.
+//   3. Else seed a minimal native en_event with that exact date.
+$TARGET_START = '2025-03-10';
+$TARGET_END   = '2025-03-12';
+$event_id     = 0;
+$source       = '';
 
+// Step 1 — native en_event matching target date.
 $native = get_posts( array(
 	'post_type'      => 'en_event',
-	'posts_per_page' => 1,
+	'posts_per_page' => -1,
 	'post_status'    => 'publish',
 	'fields'         => 'ids',
-	'orderby'        => 'date',
-	'order'          => 'DESC',
 ) );
-if ( ! empty( $native ) ) {
-	$event_id = (int) $native[0];
-	$source   = 'native';
+foreach ( (array) $native as $candidate ) {
+	// Native event resolver stores dates under _equine_event_manager_*.
+	$candidate_start = (string) get_post_meta( $candidate, '_equine_event_manager_event_start_date', true );
+	if ( '' === $candidate_start ) {
+		$candidate_start = (string) get_post_meta( $candidate, '_en_event_start_date', true );
+	}
+	if ( $TARGET_START === $candidate_start ) {
+		$event_id = (int) $candidate;
+		$source   = 'native';
+		break;
+	}
 }
 
+// Step 2 — seed a native en_event with the target date so c4d-smoke's
+// sort + date-filter assertions remain stable. We deliberately skip
+// the "pick any native" + "fall back to TEC" branches here because
+// either path would yield an event with a different start_date,
+// which would break res 44's 2025-03 sort slot. Seeding a fresh
+// native event with the target date is the only deterministic path.
 if ( 0 === $event_id ) {
-	$tec = get_posts( array(
-		'post_type'      => 'tribe_events',
+	// First, look for a previously-seeded "Spring Classic" native event
+	// (so re-running the script is idempotent and doesn't pile up
+	// duplicate seed events on every run).
+	$prior_seeded = get_posts( array(
+		'post_type'      => 'en_event',
 		'posts_per_page' => 1,
 		'post_status'    => 'publish',
 		'fields'         => 'ids',
-		'orderby'        => 'date',
-		'order'          => 'DESC',
+		'title'          => '2025 Spring Classic (seeded by C7.X.9)',
 	) );
-	if ( ! empty( $tec ) ) {
-		$event_id = (int) $tec[0];
-		$source   = 'tec';
+	if ( ! empty( $prior_seeded ) ) {
+		$event_id = (int) $prior_seeded[0];
+		$source   = 'native';
+		// Ensure dates are still set (someone could've cleared them).
+		// Native event resolver reads _equine_event_manager_event_*_date
+		// (not _en_event_*_date). The _en_* mirror is written too as a
+		// belt-and-braces in case any legacy code path reads it.
+		update_post_meta( $event_id, '_equine_event_manager_event_start_date', $TARGET_START );
+		update_post_meta( $event_id, '_equine_event_manager_event_end_date',   $TARGET_END );
+		update_post_meta( $event_id, '_en_event_start_date', $TARGET_START );
+		update_post_meta( $event_id, '_en_event_end_date',   $TARGET_END );
+		echo "\n  · reused prior-seeded native event id={$event_id} (start={$TARGET_START})\n";
+	} else {
+		$event_id = wp_insert_post( array(
+			'post_type'   => 'en_event',
+			'post_status' => 'publish',
+			'post_title'  => '2025 Spring Classic (seeded by C7.X.9)',
+		) );
+		if ( is_wp_error( $event_id ) || ! $event_id ) {
+			echo "FAIL: could not seed a native en_event fallback.\n";
+			return;
+		}
+		// Native event resolver reads _equine_event_manager_event_*_date
+		// (not _en_event_*_date). The _en_* mirror is written too as a
+		// belt-and-braces in case any legacy code path reads it.
+		update_post_meta( $event_id, '_equine_event_manager_event_start_date', $TARGET_START );
+		update_post_meta( $event_id, '_equine_event_manager_event_end_date',   $TARGET_END );
+		update_post_meta( $event_id, '_en_event_start_date', $TARGET_START );
+		update_post_meta( $event_id, '_en_event_end_date',   $TARGET_END );
+		update_post_meta( $event_id, '_en_venue_name',       'Spring Classic Showgrounds' );
+		$source = 'native';
+		echo "\n  · seeded new native event id={$event_id} (title='2025 Spring Classic', start={$TARGET_START})\n";
 	}
-}
-
-if ( 0 === $event_id ) {
-	// Seed a minimal native event so the script ALWAYS lands something.
-	$event_id = wp_insert_post( array(
-		'post_type'   => 'en_event',
-		'post_status' => 'publish',
-		'post_title'  => '2025 Spring Classic (seeded by C7.X.9)',
-	) );
-	if ( is_wp_error( $event_id ) || ! $event_id ) {
-		echo "FAIL: could not seed a native en_event fallback.\n";
-		return;
-	}
-	// Minimal date metadata the resolver / date-range label reads.
-	update_post_meta( $event_id, '_en_event_start_date', '2025-03-10' );
-	update_post_meta( $event_id, '_en_event_end_date',   '2025-03-12' );
-	update_post_meta( $event_id, '_en_venue_name',       'Spring Classic Showgrounds' );
-	$source = 'native';
-	echo "\n  · no existing en_event / tribe_events found; seeded native event id={$event_id}\n";
 } else {
 	echo "\n  · picked existing {$source} event id={$event_id}\n";
+}
+
+// Belt-and-braces backfill: if we picked a native event via the
+// `_en_event_start_date` legacy fallback in Step 1, the canonical
+// `_equine_event_manager_event_*_date` keys may be missing. Backfill
+// them now so the resolver returns proper date_range. Idempotent —
+// re-writes the same values if already present.
+if ( 'native' === $source ) {
+	$canon_start = (string) get_post_meta( $event_id, '_equine_event_manager_event_start_date', true );
+	if ( '' === $canon_start ) {
+		$legacy_start = (string) get_post_meta( $event_id, '_en_event_start_date', true );
+		$legacy_end   = (string) get_post_meta( $event_id, '_en_event_end_date',   true );
+		if ( '' !== $legacy_start ) {
+			update_post_meta( $event_id, '_equine_event_manager_event_start_date', $legacy_start );
+			update_post_meta( $event_id, '_equine_event_manager_event_end_date',   '' !== $legacy_end ? $legacy_end : $legacy_start );
+			echo "  · backfilled canonical date keys on event {$event_id} from legacy _en_event_*_date\n";
+		}
+	}
 }
 
 // Wire reservation 44 to the picked event.

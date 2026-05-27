@@ -185,7 +185,13 @@ c7c14_ok( "group renders 2× .eem-toggle-label-row (grounds fee + deposit)",
 	2 === substr_count( $gr, 'eem-toggle-label-row' ),
 	$pass, $fail, $log );
 c7c14_ok( "group grounds-fee toggle carries data-eem-action='reservation-editor-toggle-switch-row' (mockup-canonical)",
-	(bool) preg_match( '/data-eem-action="reservation-editor-toggle-switch-row"[\s\S]{0,200}data-controls="row-grounds-amt"/', $gr )
+	// C7.X.10 — controls is now ID-based (`row-group-grounds-amt`).
+	// The pre-C7.X.10 class-token form (`eem-ctrl--grounds-amt`) is
+	// kept as a backward-compat fallback in this assertion only so
+	// the smoke can land both before and after the rewire; it WILL be
+	// dropped at C16's wholesale legacy strip.
+	(bool) preg_match( '/data-eem-action="reservation-editor-toggle-switch-row"[\s\S]{0,200}data-controls="row-group-grounds-amt"/', $gr )
+		|| (bool) preg_match( '/data-eem-action="reservation-editor-toggle-switch-row"[\s\S]{0,200}data-controls="row-grounds-amt"/', $gr )
 		|| (bool) preg_match( '/data-eem-action="reservation-editor-toggle-switch-row"[\s\S]{0,200}data-controls="eem-ctrl--grounds-amt"/', $gr ),
 	$pass, $fail, $log );
 c7c14_ok( "group grounds-fee toggle hidden mirror reads value='1' (seeded on)",
@@ -195,10 +201,18 @@ c7c14_ok( "group deposit toggle hidden mirror reads value='0' (seeded off)",
 	(bool) preg_match( '/data-eem-subsection-enabled="deposit"\s+value="0"/', $gr ),
 	$pass, $fail, $log );
 c7c14_ok( "group Grounds Fee Amount row VISIBLE (controller on)",
-	(bool) preg_match( '/<div\s+class="eem-field-row\s+eem-ctrl--grounds-amt(?!\s+eem-row--hidden)/', $gr ),
+	// C7.X.10 — row carries id="row-group-grounds-amt" instead of
+	// class="eem-ctrl--grounds-amt". Visibility = absence of
+	// eem-row--hidden. Match either old or new shape to land across
+	// the architecture boundary.
+	( false !== strpos( $gr, 'id="row-group-grounds-amt"' )
+		&& ! (bool) preg_match( '/<div\s+class="[^"]*eem-row--hidden[^"]*"\s+id="row-group-grounds-amt"/', $gr ) )
+	|| (bool) preg_match( '/<div\s+class="eem-field-row\s+eem-ctrl--grounds-amt(?!\s+eem-row--hidden)/', $gr ),
 	$pass, $fail, $log );
 c7c14_ok( "group Deposit Amount row HIDDEN (controller off — eem-row--hidden)",
-	(bool) preg_match( '/<div\s+class="eem-field-row\s+eem-ctrl--deposit-amt\s+eem-row--hidden/', $gr ),
+	// C7.X.10 — same architecture boundary as above.
+	(bool) preg_match( '/<div\s+class="[^"]*eem-row--hidden[^"]*"\s+id="row-group-deposit-amt"/', $gr )
+	|| (bool) preg_match( '/<div\s+class="eem-field-row\s+eem-ctrl--deposit-amt\s+eem-row--hidden/', $gr ),
 	$pass, $fail, $log );
 c7c14_ok( "group amount inputs use .eem-price-wrap (NOT .eem-currency-field)",
 	(bool) preg_match( '/<div class="eem-price-wrap"><span class="eem-price-symbol">\$<\/span><input class="eem-price-input"[^>]*name="en_reservation\[group_rider_grounds_fee_amount\]"/', $gr ),
