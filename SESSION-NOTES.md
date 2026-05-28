@@ -1134,3 +1134,36 @@ Four visual-verify failures from C7.X.17 walkthrough, resolved in a single commi
 - c7x18 smoke: 31/31 assertions — all issues verified via regex on stripped CSS/JS. WP-dependent suites (require `wp eval-file`) skipped offline; those remain green from C7.X.17 session.
 
 **Smoke result: 31/31 green (C7.X.18 suite). WP-dependent prior suites unaffected.**
+
+---
+
+## C7.X.19 — Radius literal eradication + dropdown flip-up fix (2026-05-28)
+
+Three runtime failures discovered during C7.X.18 browser verify (issues not caught by source-presence smokes). Version 2.3.7 → 2.3.8.
+
+**Issue 1 — .eem-zone-name-input / .eem-repeat-input computed border-radius: 12px**
+- Root cause: admin-legacy.css block 6 (~line 11849) is the CASCADE WINNER for all form-control `!important` blocks — the last `!important` in source order always prevails. Block 6 declared `border-radius: 12px !important`. C7.X.18 A2 sweep converted literals in admin.css only; C7.X.17 added token to blocks 1–5 but block 6 was also missed (that sweep targeted blocks 1–5 for the `:not()` exclusion work, not a border-radius sweep).
+- Fix: changed block 6's `12px` → `var(--eem-radius) !important`. Also found that blocks 1–5 still had `8px !important` (not `4px` — the old token value — because admin-legacy.css was never changed during C7.X.17 A2). All 5 were also updated to `var(--eem-radius) !important`. All 6 blocks now clean.
+- Key insight: The C7.X.18 A2 grep command was `grep -rn "border-radius:" assets/css/ | grep -v "var(--eem-radius"` — this DOES cover admin-legacy.css since it searches `assets/css/`. However, the 12px was never at the old token value (4px), so the "grep for old token value" framing of the A2 lesson missed it. The corrected defense (CLAUDE.md) emphasizes checking for ANY px literal in ALL stylesheets, not just the prior token value.
+
+**Issue 2 — .eem-row-menu-wrap--flip-up modifier never applied at runtime**
+- Root cause: `toggleDropdown()` compared `dropRect.bottom > window.innerHeight` to decide whether to flip up. The actual clipping container is `.eem-page-wrap` (overflow:hidden), whose bottom edge sits INSIDE the viewport. So `dropRect.bottom > window.innerHeight` was always false — the dropdown was already clipped before it reached the viewport bottom.
+- Fix: `toggleDropdown()` now calls `host.closest('.eem-page-wrap')` to get the nearest clipping ancestor, then uses `Math.min(clipEl.getBoundingClientRect().bottom, window.innerHeight)` as `bottomBound`. Comparison: `dropRect.bottom > bottomBound`.
+- Key insight: `getBoundingClientRect()` returns layout bounds, not visual bounds. The dropdown's `.bottom` was exceeding `.eem-page-wrap.bottom` while remaining within `window.innerHeight`, so the original check never triggered.
+
+**Issue 3 — Delete Permanently button unclickable**
+- This was a consequence of Issue 2, not a separate bug. The dropdown was clipped at `.eem-page-wrap` boundary, physically hiding the "Delete Permanently" menu item. All JS wiring was confirmed correct (`data-action="row-delete-permanently"` → `openDeletePermanentlyModal()` at admin.js:765 → typed-confirm modal → PHP handler). Fixing Issue 2 makes it reachable.
+
+**New CLAUDE.md defense (runtime/computed assertions)**
+- Source-presence smokes cannot verify cascade winners, dynamically-added classes, or click reachability. Three categories documented. Any fix targeting a runtime/computed symptom requires mandatory browser self-verify; smoke tests for such fixes must carry an explicit note that they are source-shape only.
+
+**CLEANUP.md update**
+- CLEANUP entry #1 updated with canonical 6-block inventory table (selector shape + forced properties post-C7.X.19) and documented intentional 12px exceptions that should NOT be converted.
+
+**Smoke results: c7x19 13/13 green, c7x18 31/31 green (updated from 30/31 — version assertion updated to 2.3.8).**
+
+**MANDATORY BROWSER SELF-VERIFY REQUIRED (non-negotiable per C7.X.19 spec):**
+1. `.eem-zone-name-input` and `.eem-repeat-input` computed border-radius = 3px (was 12px)
+2. Row menu near container bottom — confirm `--flip-up` class applies and full dropdown is visible
+3. Delete Permanently — confirm typed-confirm modal opens
+

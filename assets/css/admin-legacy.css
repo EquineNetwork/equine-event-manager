@@ -240,7 +240,7 @@ body.post-type-en_reservation select:not(.eem-dashboard-range-select):not(.eem-l
 body.post-type-en_reservation textarea:not(.eem-field-input):not(.eem-field-textarea) {
 	min-height: 44px !important;
 	border: 1px solid #d8e1eb !important;
-	border-radius: 8px !important;
+	border-radius: var(--eem-radius) !important; /* C7.X.19 Issue 1: was 8px literal — form-control blocks use token */
 	background: var(--eem-app-field-bg) !important;
 	box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.75) !important;
 	color: var(--eem-app-heading) !important;
@@ -5959,7 +5959,7 @@ body.post-type-en_reservation input[type="number"]:not(.eem-price-input):not(.ee
 body.post-type-en_reservation input[type="password"]:not(.eem-field-input):not(.eem-search-input),
 body.post-type-en_reservation select:not(.eem-dashboard-range-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-field-select),
 body.post-type-en_reservation textarea:not(.eem-field-input):not(.eem-field-textarea) {
-	border-radius: 8px !important;
+	border-radius: var(--eem-radius) !important; /* C7.X.19 Issue 1: was 8px literal */
 	border-color: #d1dbe7 !important;
 	box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04) !important;
 }
@@ -6619,7 +6619,7 @@ body.post-type-en_reservation input[type="number"]:not(.eem-price-input):not(.ee
 body.post-type-en_reservation input[type="password"]:not(.eem-field-input):not(.eem-search-input),
 body.post-type-en_reservation select:not(.eem-dashboard-range-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-field-select),
 body.post-type-en_reservation textarea:not(.eem-field-input):not(.eem-field-textarea) {
-	border-radius: 8px !important;
+	border-radius: var(--eem-radius) !important; /* C7.X.19 Issue 1: was 8px literal */
 	border-color: #d3dde8 !important;
 	box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.02) !important;
 }
@@ -7654,7 +7654,7 @@ body.post-type-en_reservation input[type="datetime-local"]:not(.eem-field-input)
 body.post-type-en_reservation select:not(.eem-dashboard-range-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-field-select),
 body.post-type-en_reservation textarea:not(.eem-field-input):not(.eem-field-textarea) {
 	border: 1px solid #cfd9e6 !important;
-	border-radius: 8px !important;
+	border-radius: var(--eem-radius) !important; /* C7.X.19 Issue 1: was 8px literal */
 	background: #fff !important;
 	color: #1d293d !important;
 	box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.02) !important;
@@ -8319,7 +8319,7 @@ body.post-type-en_reservation textarea:not(.eem-field-input):not(.eem-field-text
 	min-height: 42px !important;
 	padding: 0.65rem 0.85rem !important;
 	border: 1px solid var(--eem-shell-border) !important;
-	border-radius: 8px !important;
+	border-radius: var(--eem-radius) !important; /* C7.X.19 Issue 1: was 8px literal */
 	background: #fff !important;
 	color: var(--eem-shell-ink) !important;
 	box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
@@ -11856,7 +11856,7 @@ body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservat
 body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) input[type="password"]:not(.eem-field-input):not(.eem-search-input),
 body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) select:not(.eem-dashboard-range-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-field-select),
 body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) textarea:not(.eem-field-input):not(.eem-field-textarea) {
-	border-radius: 12px !important;
+	border-radius: var(--eem-radius) !important; /* C7.X.19 Issue 1: was 12px — override wins via cascade-order in this final block */
 	border: 1.5px solid var(--eem-guide-border) !important;
 	box-shadow: none !important;
 	color: var(--eem-guide-text) !important;

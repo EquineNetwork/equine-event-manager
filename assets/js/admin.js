@@ -333,9 +333,12 @@
 	 * nearest .eem-dropdown or .eem-row-menu-wrap; click outside closes.
 	 * ───────────────────────────────────────────────────────────── */
 
-	/* C7.X.18 Issue C — flip-up detection: after opening, measure whether the
-	   dropdown would clip below the viewport. If yes, add --flip-up modifier so
-	   CSS repositions it above the button. Matches WP list-table convention. */
+	/* C7.X.19 Issue 2 — flip-up detection: after opening, measure whether the
+	   dropdown clips below the nearest overflow:hidden container (.eem-page-wrap
+	   or .eem-card). C7.X.18 checked against window.innerHeight only; the actual
+	   clipping boundary is .eem-page-wrap (overflow:hidden), whose bottom edge is
+	   inside the viewport — so spaceBelow was always positive and the class never
+	   fired. Now check the minimum of the container bottom and the viewport bottom. */
 	function toggleDropdown(trigger) {
 		var host = trigger.closest('.eem-dropdown, .eem-row-menu-wrap');
 		if (!host) return;
@@ -343,12 +346,16 @@
 		closeAllDropdowns();
 		if (!isOpen) {
 			host.classList.add('open');
-			// Measure after display:block so getBoundingClientRect() is valid.
+			// getBoundingClientRect() forces a synchronous reflow so the
+			// display:block from .open is already included in the measurement.
 			var drop = host.querySelector('.eem-row-dropdown');
 			if (drop) {
-				var dropRect = drop.getBoundingClientRect();
-				var spaceBelow = window.innerHeight - dropRect.bottom;
-				if (spaceBelow < 0) {
+				var dropRect   = drop.getBoundingClientRect();
+				var clipEl     = host.closest('.eem-page-wrap') || host.closest('.eem-card');
+				var bottomBound = clipEl
+					? Math.min( clipEl.getBoundingClientRect().bottom, window.innerHeight )
+					: window.innerHeight;
+				if (dropRect.bottom > bottomBound) {
 					host.classList.add('eem-row-menu-wrap--flip-up');
 				}
 			}
