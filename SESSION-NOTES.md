@@ -1102,3 +1102,35 @@ Five visual-verify failures from the C7.X.16 walkthrough, resolved in a single c
 - IS NULL DESC ordering put orphan 'TEst Event' first in DESC sorts, failing c4d — fixed to IS NULL ASC.
 
 **Smoke result: 1603/1603 green.**
+
+---
+
+## C7.X.18 — Walkthrough fix-ups (2026-05-27)
+
+Four visual-verify failures from C7.X.17 walkthrough, resolved in a single commit. Version 2.3.6 → 2.3.7.
+
+**Issue A1 — Textarea exclusion class mismatch**
+- admin-legacy.css used `textarea:not(.eem-field-textarea)` but plugin textareas carry `.eem-field-input` (same class as inputs — they share a component). The exclusion never fired.
+- Fix: updated to `textarea:not(.eem-field-input):not(.eem-field-textarea)` across all 6 `!important` shell-page blocks (18 occurrences total). Kept both classes so if the HTML ever adopts `.eem-field-textarea` it still works.
+- CLAUDE.md defense #12: `:not()` chains must be verified against rendered HTML classes, not naming convention assumptions. Audit command: `grep -rn 'class="eem-field' includes/ assets/`.
+
+**Issue A2 — Hardcoded border-radius: 4px literals left behind**
+- When C7.X.17 changed `--eem-radius` from 4px → 3px, 18 selectors in admin.css still had `border-radius: 4px` hardcoded and silently stayed at 4px.
+- Fix: converted all 18 to `var(--eem-radius)` (or `var(--eem-radius) 0 0 var(--eem-radius)` for affix corner-specific rules). Left structural containers (`.eem-zone-row` etc.) and intentional exceptions (`.eem-btn-manage-layout::after` pill badge) untouched.
+- CLAUDE.md defense #11: After any token value change, run `grep -rn "border-radius:" assets/css/ | grep -v "var(--eem-radius"` to find literals of the old value.
+
+**Issue B — Plugin .button !important leak into WP Media Library modal**
+- WP's `.media-frame-menu-toggle` carries `.button.button-link`. Plugin `!important` blocks without `:not(.button-link)` restyled it (40px height, 700 weight, custom radius/shadow).
+- Root cause: 8 selector blocks across admin-legacy.css had bare `.button` — only 3 were fixed in the earlier attempt because the other 5 were in size/layout blocks (not colour blocks) and the smoke regex wasn't matching them.
+- Fix: added `:not(.button-link)` to every broad `.button` selector in all 8 affected blocks. `.button-primary` and `.button-secondary` selectors are already scoped by class combination so they don't need the exclusion.
+- CLAUDE.md defense #13: Every plugin `.button:not(.button-primary)` broad selector must also exclude `.button-link`.
+
+**Issue C / D — Meatballs dropdown clips at container bottom**
+- Rows near the bottom of the reservations list container have overflow hidden cutting off the dropdown. Delete Permanently was completely unclickable (Issue D was a symptom of C, not a separate JS/PHP bug — all wiring was confirmed correct).
+- Fix: `toggleDropdown()` calls `drop.getBoundingClientRect()` after `classList.add('open')`. If `window.innerHeight - dropRect.bottom < 0`, adds `eem-row-menu-wrap--flip-up` modifier. CSS: `.eem-row-menu-wrap--flip-up .eem-row-dropdown { top: auto; bottom: calc(100% + 4px) }`. `closeAllDropdowns()` strips the modifier.
+- Diagnosis: confirmed by reading full JS dispatcher chain — `data-action="row-delete-permanently"` → `openDeletePermanentlyModal()` at admin.js:765 → typed-confirm modal → PHP handler at class-eem-reservations-list-page.php:391. All wired correctly. Only problem was physical unreachability.
+
+**Smoke regression**
+- c7x18 smoke: 31/31 assertions — all issues verified via regex on stripped CSS/JS. WP-dependent suites (require `wp eval-file`) skipped offline; those remain green from C7.X.17 session.
+
+**Smoke result: 31/31 green (C7.X.18 suite). WP-dependent prior suites unaffected.**
