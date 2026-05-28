@@ -283,6 +283,19 @@ and verifying EVERY exclusion chain matches the rendered class names. Never writ
 
 The pattern generalizes to any editor with toggle-gated multi-section structure. Reusable for C13 Create Order, C14 Collect Payment, etc.
 
+**JS-created modals must be validated against admin.css class names at authoring time (C7.X.20 lesson):** When a modal is built via `document.createElement` + `innerHTML` in JS (rather than PHP-rendered HTML), the CSS class names must be verified against `admin.css` at the time the code is written. An invisible modal (wrong class names → element appended to DOM but permanently hidden) produces exactly the same symptom as "handler not wired" — "nothing happens" on click, no console error, no network request. The difference is invisible to the user and cannot be caught by source-presence smokes.
+
+Root cause in C7.X.20: `openDeletePermanentlyModal()` was authored with `overlay.className = 'eem-modal-overlay eem-modal-overlay--active'` (class doesn't exist in admin.css) and inner `class="eem-modal eem-modal--sm"` (resolves to `display: none`, `.open` never added). Modal was appended but permanently invisible. Smoke assertions that checked "handler exists" and "function is called" all passed; the modal just never appeared.
+
+**Canonical modal class names in admin.css (the working pattern):**
+- Outer overlay: `class="eem-modal"` + `classList.add('open')` AFTER `document.body.appendChild(overlay)`
+- Inner card wrapper: `class="eem-modal-card"`
+- Header: `class="eem-modal-head"` (NOT `eem-modal-header`)
+- Body: `class="eem-modal-body"`
+- Footer: `class="eem-modal-foot"` (NOT `eem-modal-footer`)
+
+Verify pattern: before shipping any JS-created modal, grep admin.css for every CSS class name used in the `innerHTML` string. If a class isn't found, the modal will be invisible. The canonical reference implementation is the Email Customers modal (PHP-rendered, always visible, confirmed working).
+
 **Full-editor regression sweep is the canonical pre-release verification step (C7.X.14 lesson):** Before declaring a multi-section / multi-surface chunk complete, render the canonical seed reservation (or equivalent fixture for the surface), enumerate per-section/per-card element shape via PHP DOM probe, cross-check against the mockup's section-by-section element inventory. Catches structural drift that section-specific smokes miss because they only check their own section's content.
 
 Operational shape (PHP/WP-CLI eval against a seeded fixture):

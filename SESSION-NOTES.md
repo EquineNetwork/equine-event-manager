@@ -5,7 +5,7 @@ in-flight context that ISN'T already in CLAUDE.md, commit messages,
 or CLEANUP.md. Read after `git pull` on a new machine to pick up
 momentum across Claude Code sessions.
 
-**Last updated:** 2026-05-27 — **C7.X.16** — Whitney's C7.X.15 walkthrough fix-ups, 9 issues consolidated, Issue I publish-gate validator landed (heaviest piece). Suite 1557/1557. Post-commit operational step: re-run seed-reservation-44-link-event.php.
+**Last updated:** 2026-05-28 — **C7.X.21** — Three fix chunks landed: C7.X.19 (radius literal eradication + flip-up container boundary), C7.X.20 (Delete Permanently modal invisible — wrong CSS class names), C7.X.21 (typed-confirm changed from reservation title to constant "DELETE"). Version 2.3.10. All smokes green: c7x21 15/15, c7x20 19/19, c7x19 13/13, c7x18 31/31. BROWSER VERIFY STILL PENDING for C7.X.21 (DELETE flow end-to-end).
 
 ---
 
@@ -1201,7 +1201,7 @@ The outer `overlay` div had class names `eem-modal-overlay eem-modal-overlay--ac
 - Footer: `<div class="eem-modal-foot">` (not `.eem-modal-footer`)
 - Added `eem-modal-head--danger` and `eem-modal-title--danger` CSS modifiers to admin.css (no `!important`)
 
-**New CLAUDE.md defense needed (pending):** JS modal creation pattern must be validated against CSS class names at the time of authoring — an invisible modal produces exactly "nothing happens" which is the same symptom as "handler not wired." Smoke tests that check handler existence (source-presence) wouldn't catch this.
+**CLAUDE.md defense added (C7.X.21 docs pass):** JS modal creation pattern must be validated against CSS class names at the time of authoring — an invisible modal produces exactly "nothing happens" which is the same symptom as "handler not wired." Smoke tests that check handler existence (source-presence) wouldn't catch this. Canonical modal class names documented in CLAUDE.md.
 
 **Smoke results: c7x20 19/19, c7x18 31/31, c7x19 13/13.**
 
