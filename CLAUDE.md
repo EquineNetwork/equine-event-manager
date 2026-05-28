@@ -249,6 +249,20 @@ Any future action tagged `*-delete-permanently` must follow this pattern verbati
 - ORDER BY: always `postmeta.meta_value IS NULL ASC, postmeta.meta_value ASC/DESC` — the `IS NULL ASC` part is hardcoded so nulls sort LAST regardless of the main sort direction.
 - Smoke: call `counts_by_tab()` + `get_paginated()` for EVERY tab and assert counts match. This is the canonical divergence guard.
 
+**Token value changes require grep audit for hardcoded literals of the old value (C7.X.18 lesson — Issue A2):** When a design token like `--eem-radius` changes value (e.g. 4px → 3px), the change ONLY cascades to selectors that reference the token via `var(--eem-radius)`. Hardcoded literal values (e.g. `border-radius: 4px`) are left behind silently. After ANY token value change, run:
+```bash
+grep -rn "border-radius:" assets/css/ | grep -v "var(--eem-radius" | grep -v "border-radius: 0"
+```
+and convert every appropriate hardcoded match to the token. Intentional exceptions (pill shapes = `999px`, circles = `50%`, card containers = `var(--eem-radius-lg)`) stay but MUST have an inline comment explaining why they're not the standard token. Going forward, all new CSS for form-control / button-family elements MUST use `var(--eem-radius)`, never a hardcoded literal. If a different radius is intentionally needed, define a new semantic token (`--eem-radius-pill`, `--eem-radius-circle`) rather than hardcoding.
+
+**Exclusion class names in `:not()` chains MUST match rendered HTML, not naming-convention assumptions (C7.X.18 lesson — Issue A1):** The admin-legacy.css `!important` blocks used `:not(.eem-field-textarea)` to exclude plugin textareas, but the actual class on plugin textarea elements is `.eem-field-input` (same class as inputs — both are "field inputs"). The exclusion failed because it was written from the assumed naming convention, not from inspecting the rendered HTML. Audit by grepping PHP templates:
+```bash
+grep -rn 'class="eem-field' includes/ assets/ --include="*.php" --include="*.js"
+```
+and verifying EVERY exclusion chain matches the rendered class names. Never write `:not()` exclusions from convention assumptions — write them from rendered HTML. When adding a new exclusion class, always keep the old one too (`textarea:not(.eem-field-input):not(.eem-field-textarea)`) for forward compatibility.
+
+**Plugin button/control selectors MUST explicitly exclude WP chrome containers (C7.X.18 lesson — Issue B):** Plugin `.button:not(.button-primary)` selectors that apply `!important` styles reach inside WP's Media Library modal and restyle WP's native link-style buttons (`.button.button-link.media-frame-menu-toggle`). Fix pattern: add `:not(.button-link)` to every plugin button selector's exclusion chain. The `.button-link` class is WP's semantic marker for "this button looks like a text link" — plugin styles should never restyle these. More broadly: when plugin selectors scope by `body.eem-shell-page`, they cannot distinguish plugin-page content from WP core modal chrome that renders inside the same page. Always exclude WP modal chrome classes (`.button-link`, `.button-link-delete` already excluded) from broad `.button:not(...)` selectors. If a new plugin button class (`.button-link`) is legitimately introduced, add it to the exclusion chain.
+
 **Pre-publish validation as a pattern (C7.X.16 lesson — Issue I architecture):** Multi-section editor pages need a per-section publish-gate validator. Implementation shape from C7.X.16:
 
 1. **PHP source of truth** — `validate_for_publish(array $candidate, int $entity_id): array` method on the editor page class. Each section gets an `if ( ! empty( $c['<section>_enabled'] ) )` block that asserts the section's "valid when ON" criteria. Returns `[section_key => error_message]` map; empty array = valid.

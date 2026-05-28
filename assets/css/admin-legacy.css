@@ -174,10 +174,13 @@ body.post-type-en_reservation #submitdiv > .postbox-header + .inside {
 	padding-top: 0.875rem !important;
 }
 
-body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) .button,
-body.eem-shell-page .wp-core-ui .button,
-body.post-type-en_reservation .button,
-body.post-type-en_reservation .wp-core-ui .button {
+/* C7.X.18 Issue B — exclude .button-link (WP's link-style buttons like .media-frame-menu-toggle)
+   from plugin button sizing. Without this, the 40px min-height and 8px border-radius apply
+   to WP's responsive media-frame menu toggle and other native link-style buttons. */
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) .button:not(.button-link),
+body.eem-shell-page .wp-core-ui .button:not(.button-link),
+body.post-type-en_reservation .button:not(.button-link),
+body.post-type-en_reservation .wp-core-ui .button:not(.button-link) {
 	min-height: 40px !important;
 	padding: 0.625rem 1rem !important;
 	border-radius: 8px !important;
@@ -209,8 +212,10 @@ body.post-type-en_reservation .button.button-primary:focus {
 
 /* C7.X.17 Issue A — cross-input-type exclusion: add :not(.eem-field-input):not(.eem-search-input)
    to every non-number input type in this block (C7.X.13 only added it to number).
-   textarea gets :not(.eem-field-textarea). All plugin-styled form controls escape this
-   !important block and pick up border-radius from admin.css var(--eem-radius) = 3px. */
+   textarea gets :not(.eem-field-input):not(.eem-field-textarea) (C7.X.18 Issue A1: the actual
+   class on plugin textareas is .eem-field-input, not .eem-field-textarea — keep both for safety).
+   All plugin-styled form controls escape this !important block and pick up border-radius from
+   admin.css var(--eem-radius) = 3px. */
 body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) input[type="text"]:not(.eem-field-input):not(.eem-search-input),
 body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) input[type="search"]:not(.eem-field-input):not(.eem-search-input),
 body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) input[type="email"]:not(.eem-field-input):not(.eem-search-input),
@@ -221,7 +226,7 @@ body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservat
 body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) input[type="time"]:not(.eem-field-input):not(.eem-search-input),
 body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) input[type="datetime-local"]:not(.eem-field-input):not(.eem-search-input),
 body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) select:not(.eem-dashboard-range-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-field-select),
-body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) textarea:not(.eem-field-textarea),
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) textarea:not(.eem-field-input):not(.eem-field-textarea),
 body.post-type-en_reservation input[type="text"]:not(.eem-field-input):not(.eem-search-input),
 body.post-type-en_reservation input[type="search"]:not(.eem-field-input):not(.eem-search-input),
 body.post-type-en_reservation input[type="email"]:not(.eem-field-input):not(.eem-search-input),
@@ -232,7 +237,7 @@ body.post-type-en_reservation input[type="date"]:not(.eem-field-input):not(.eem-
 body.post-type-en_reservation input[type="time"]:not(.eem-field-input):not(.eem-search-input),
 body.post-type-en_reservation input[type="datetime-local"]:not(.eem-field-input):not(.eem-search-input),
 body.post-type-en_reservation select:not(.eem-dashboard-range-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-field-select),
-body.post-type-en_reservation textarea:not(.eem-field-textarea) {
+body.post-type-en_reservation textarea:not(.eem-field-input):not(.eem-field-textarea) {
 	min-height: 44px !important;
 	border: 1px solid #d8e1eb !important;
 	border-radius: 8px !important;
@@ -241,8 +246,8 @@ body.post-type-en_reservation textarea:not(.eem-field-textarea) {
 	color: var(--eem-app-heading) !important;
 }
 
-body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) textarea:not(.eem-field-textarea),
-body.post-type-en_reservation textarea:not(.eem-field-textarea) {
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) textarea:not(.eem-field-input):not(.eem-field-textarea),
+body.post-type-en_reservation textarea:not(.eem-field-input):not(.eem-field-textarea) {
 	min-height: 112px !important;
 	padding-top: 0.875rem !important;
 	padding-bottom: 0.875rem !important;
@@ -2701,7 +2706,7 @@ body.eem-shell-page--editor input[type="date"]:not(.eem-field-input):not(.eem-se
 body.eem-shell-page--editor input[type="time"]:not(.eem-field-input):not(.eem-search-input),
 body.eem-shell-page--editor input[type="datetime-local"]:not(.eem-field-input):not(.eem-search-input),
 body.eem-shell-page--editor select:not(.eem-dashboard-range-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-field-select),
-body.eem-shell-page--editor textarea:not(.eem-field-textarea) {
+body.eem-shell-page--editor textarea:not(.eem-field-input):not(.eem-field-textarea) {
 	border: 1px solid #d7dee8;
 	border-radius: 8px;
 	background: #ffffff;
@@ -2718,7 +2723,7 @@ body.post-type-en_reservation.post-php input[type="date"]:not(.eem-field-input):
 body.post-type-en_reservation.post-php input[type="time"]:not(.eem-field-input):not(.eem-search-input),
 body.post-type-en_reservation.post-php input[type="datetime-local"]:not(.eem-field-input):not(.eem-search-input),
 body.post-type-en_reservation.post-php select:not(.eem-dashboard-range-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-field-select),
-body.post-type-en_reservation.post-php textarea:not(.eem-field-textarea),
+body.post-type-en_reservation.post-php textarea:not(.eem-field-input):not(.eem-field-textarea),
 body.post-type-en_reservation.post-new-php input[type="text"]:not(.eem-field-input):not(.eem-search-input),
 body.post-type-en_reservation.post-new-php input[type="email"]:not(.eem-field-input):not(.eem-search-input),
 body.post-type-en_reservation.post-new-php input[type="url"]:not(.eem-field-input):not(.eem-search-input),
@@ -2728,7 +2733,7 @@ body.post-type-en_reservation.post-new-php input[type="date"]:not(.eem-field-inp
 body.post-type-en_reservation.post-new-php input[type="time"]:not(.eem-field-input):not(.eem-search-input),
 body.post-type-en_reservation.post-new-php input[type="datetime-local"]:not(.eem-field-input):not(.eem-search-input),
 body.post-type-en_reservation.post-new-php select:not(.eem-dashboard-range-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-field-select),
-body.post-type-en_reservation.post-new-php textarea:not(.eem-field-textarea) {
+body.post-type-en_reservation.post-new-php textarea:not(.eem-field-input):not(.eem-field-textarea) {
 	border: 1px solid #d7dee8;
 	border-radius: 8px;
 	background: #ffffff;
@@ -5906,10 +5911,10 @@ body.eem-shell-page--orders .postbox > p {
 	line-height: 1.65 !important;
 }
 
-body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) .button,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) .button:not(.button-link),
 body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) .button.button-secondary,
 body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) .button.button-primary,
-body.post-type-en_reservation .button,
+body.post-type-en_reservation .button:not(.button-link),
 body.post-type-en_reservation .button.button-secondary,
 body.post-type-en_reservation .button.button-primary {
 	border-radius: 8px !important;
@@ -5926,10 +5931,13 @@ body.post-type-en_reservation .button.button-primary {
 	color: #ffffff !important;
 }
 
+/* C7.X.18 Issue B — add :not(.button-link) to exclude WP's link-style buttons (e.g.
+   .media-frame-menu-toggle carries .button.button-link) from plugin button chrome.
+   Without this, the gradient + border style leaks into the Media Library modal. */
 body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) .button.button-secondary,
 body.post-type-en_reservation .button.button-secondary,
-body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) .button:not(.button-primary):not(.button-link-delete),
-body.post-type-en_reservation .button:not(.button-primary):not(.button-link-delete) {
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) .button:not(.button-primary):not(.button-link-delete):not(.button-link),
+body.post-type-en_reservation .button:not(.button-primary):not(.button-link-delete):not(.button-link) {
 	border-color: #d7e0ea !important;
 	background: linear-gradient(180deg, #ffffff 0%, #f5f8fc 100%) !important;
 	color: #1d2840 !important;
@@ -5942,7 +5950,7 @@ body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservat
 body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) input[type="number"]:not(.eem-price-input):not(.eem-pct-input):not(.eem-repeat-price-in):not(.eem-zone-price-in):not(.eem-field-input),
 body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) input[type="password"]:not(.eem-field-input):not(.eem-search-input),
 body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) select:not(.eem-dashboard-range-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-field-select),
-body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) textarea:not(.eem-field-textarea),
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) textarea:not(.eem-field-input):not(.eem-field-textarea),
 body.post-type-en_reservation input[type="text"]:not(.eem-field-input):not(.eem-search-input),
 body.post-type-en_reservation input[type="search"]:not(.eem-field-input):not(.eem-search-input),
 body.post-type-en_reservation input[type="email"]:not(.eem-field-input):not(.eem-search-input),
@@ -5950,7 +5958,7 @@ body.post-type-en_reservation input[type="url"]:not(.eem-field-input):not(.eem-s
 body.post-type-en_reservation input[type="number"]:not(.eem-price-input):not(.eem-pct-input):not(.eem-repeat-price-in):not(.eem-zone-price-in):not(.eem-field-input),
 body.post-type-en_reservation input[type="password"]:not(.eem-field-input):not(.eem-search-input),
 body.post-type-en_reservation select:not(.eem-dashboard-range-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-field-select),
-body.post-type-en_reservation textarea:not(.eem-field-textarea) {
+body.post-type-en_reservation textarea:not(.eem-field-input):not(.eem-field-textarea) {
 	border-radius: 8px !important;
 	border-color: #d1dbe7 !important;
 	box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04) !important;
@@ -6564,10 +6572,10 @@ body.post-type-en_reservation .eem-editor-overview-card {
 	padding: 1rem 1.125rem !important;
 }
 
-body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) .button,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) .button:not(.button-link),
 body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) .button-primary,
 body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) .button-secondary,
-body.post-type-en_reservation .button,
+body.post-type-en_reservation .button:not(.button-link),
 body.post-type-en_reservation .button-primary,
 body.post-type-en_reservation .button-secondary {
 	min-height: 40px !important;
@@ -6577,10 +6585,11 @@ body.post-type-en_reservation .button-secondary {
 	box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08) !important;
 }
 
-body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) .button,
+/* C7.X.18 Issue B — bare .button selector must exclude .button-link to prevent media modal leakage. */
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) .button:not(.button-link),
 body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) .button-secondary,
 body.post-type-en_reservation .button-secondary,
-body.post-type-en_reservation .button:not(.button-primary):not(.button-link-delete) {
+body.post-type-en_reservation .button:not(.button-primary):not(.button-link-delete):not(.button-link) {
 	border-color: #d7e0ea !important;
 	background: linear-gradient(180deg, #ffffff 0%, #f5f8fc 100%) !important;
 	color: #202c45 !important;
@@ -6601,7 +6610,7 @@ body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservat
 body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) input[type="number"]:not(.eem-price-input):not(.eem-pct-input):not(.eem-repeat-price-in):not(.eem-zone-price-in):not(.eem-field-input),
 body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) input[type="password"]:not(.eem-field-input):not(.eem-search-input),
 body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) select:not(.eem-dashboard-range-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-field-select),
-body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) textarea:not(.eem-field-textarea),
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) textarea:not(.eem-field-input):not(.eem-field-textarea),
 body.post-type-en_reservation input[type="text"]:not(.eem-field-input):not(.eem-search-input),
 body.post-type-en_reservation input[type="search"]:not(.eem-field-input):not(.eem-search-input),
 body.post-type-en_reservation input[type="email"]:not(.eem-field-input):not(.eem-search-input),
@@ -6609,7 +6618,7 @@ body.post-type-en_reservation input[type="url"]:not(.eem-field-input):not(.eem-s
 body.post-type-en_reservation input[type="number"]:not(.eem-price-input):not(.eem-pct-input):not(.eem-repeat-price-in):not(.eem-zone-price-in):not(.eem-field-input),
 body.post-type-en_reservation input[type="password"]:not(.eem-field-input):not(.eem-search-input),
 body.post-type-en_reservation select:not(.eem-dashboard-range-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-field-select),
-body.post-type-en_reservation textarea:not(.eem-field-textarea) {
+body.post-type-en_reservation textarea:not(.eem-field-input):not(.eem-field-textarea) {
 	border-radius: 8px !important;
 	border-color: #d3dde8 !important;
 	box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.02) !important;
@@ -7594,9 +7603,9 @@ body.post-type-en_reservation #poststuff .inside {
 	padding: 1rem 1.25rem 1.25rem !important;
 }
 
-body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) .button,
-body.post-type-en_reservation .button,
-body.post-type-en_reservation #submitdiv .button {
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) .button:not(.button-link),
+body.post-type-en_reservation .button:not(.button-link),
+body.post-type-en_reservation #submitdiv .button:not(.button-link) {
 	display: inline-flex !important;
 	align-items: center !important;
 	justify-content: center !important;
@@ -7633,7 +7642,7 @@ body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservat
 body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) input[type="date"]:not(.eem-field-input):not(.eem-search-input),
 body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) input[type="time"]:not(.eem-field-input):not(.eem-search-input),
 body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) select:not(.eem-dashboard-range-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-field-select),
-body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) textarea:not(.eem-field-textarea),
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) textarea:not(.eem-field-input):not(.eem-field-textarea),
 body.post-type-en_reservation input[type="text"]:not(.eem-field-input):not(.eem-search-input),
 body.post-type-en_reservation input[type="search"]:not(.eem-field-input):not(.eem-search-input),
 body.post-type-en_reservation input[type="email"]:not(.eem-field-input):not(.eem-search-input),
@@ -7643,7 +7652,7 @@ body.post-type-en_reservation input[type="date"]:not(.eem-field-input):not(.eem-
 body.post-type-en_reservation input[type="time"]:not(.eem-field-input):not(.eem-search-input),
 body.post-type-en_reservation input[type="datetime-local"]:not(.eem-field-input):not(.eem-search-input),
 body.post-type-en_reservation select:not(.eem-dashboard-range-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-field-select),
-body.post-type-en_reservation textarea:not(.eem-field-textarea) {
+body.post-type-en_reservation textarea:not(.eem-field-input):not(.eem-field-textarea) {
 	border: 1px solid #cfd9e6 !important;
 	border-radius: 8px !important;
 	background: #fff !important;
@@ -8231,10 +8240,10 @@ body.post-type-en_reservation .postbox .inside {
 	padding: 1rem !important;
 }
 
-body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) .button,
-body.eem-shell-page .wp-core-ui .button,
-body.post-type-en_reservation .button,
-body.post-type-en_reservation .wp-core-ui .button {
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) .button:not(.button-link),
+body.eem-shell-page .wp-core-ui .button:not(.button-link),
+body.post-type-en_reservation .button:not(.button-link),
+body.post-type-en_reservation .wp-core-ui .button:not(.button-link) {
 	min-height: 40px !important;
 	padding: 0.625rem 0.95rem !important;
 	border: 1px solid var(--eem-shell-border) !important;
@@ -8295,7 +8304,7 @@ body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservat
 body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) input[type="time"]:not(.eem-field-input):not(.eem-search-input),
 body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) input[type="datetime-local"]:not(.eem-field-input):not(.eem-search-input),
 body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) select:not(.eem-dashboard-range-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-field-select),
-body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) textarea:not(.eem-field-textarea),
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) textarea:not(.eem-field-input):not(.eem-field-textarea),
 body.post-type-en_reservation input[type="text"]:not(.eem-field-input):not(.eem-search-input),
 body.post-type-en_reservation input[type="email"]:not(.eem-field-input):not(.eem-search-input),
 body.post-type-en_reservation input[type="url"]:not(.eem-field-input):not(.eem-search-input),
@@ -8306,7 +8315,7 @@ body.post-type-en_reservation input[type="date"]:not(.eem-field-input):not(.eem-
 body.post-type-en_reservation input[type="time"]:not(.eem-field-input):not(.eem-search-input),
 body.post-type-en_reservation input[type="datetime-local"]:not(.eem-field-input):not(.eem-search-input),
 body.post-type-en_reservation select:not(.eem-dashboard-range-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-field-select),
-body.post-type-en_reservation textarea:not(.eem-field-textarea) {
+body.post-type-en_reservation textarea:not(.eem-field-input):not(.eem-field-textarea) {
 	min-height: 42px !important;
 	padding: 0.65rem 0.85rem !important;
 	border: 1px solid var(--eem-shell-border) !important;
@@ -8316,8 +8325,8 @@ body.post-type-en_reservation textarea:not(.eem-field-textarea) {
 	box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
 }
 
-body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) textarea:not(.eem-field-textarea),
-body.post-type-en_reservation textarea:not(.eem-field-textarea) {
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) textarea:not(.eem-field-input):not(.eem-field-textarea),
+body.post-type-en_reservation textarea:not(.eem-field-input):not(.eem-field-textarea) {
 	min-height: 132px !important;
 }
 
@@ -11846,7 +11855,7 @@ body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservat
 body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) input[type="search"]:not(.eem-field-input):not(.eem-search-input),
 body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) input[type="password"]:not(.eem-field-input):not(.eem-search-input),
 body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) select:not(.eem-dashboard-range-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-field-select),
-body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) textarea:not(.eem-field-textarea) {
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) textarea:not(.eem-field-input):not(.eem-field-textarea) {
 	border-radius: 12px !important;
 	border: 1.5px solid var(--eem-guide-border) !important;
 	box-shadow: none !important;
@@ -11854,7 +11863,7 @@ body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservat
 	font-family: "IBM Plex Sans", sans-serif !important;
 }
 
-body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) .button,
+body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) .button:not(.button-link),
 body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) .button-primary,
 body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) .button-secondary {
 	border-radius: 12px !important;

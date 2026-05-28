@@ -333,12 +333,26 @@
 	 * nearest .eem-dropdown or .eem-row-menu-wrap; click outside closes.
 	 * ───────────────────────────────────────────────────────────── */
 
+	/* C7.X.18 Issue C — flip-up detection: after opening, measure whether the
+	   dropdown would clip below the viewport. If yes, add --flip-up modifier so
+	   CSS repositions it above the button. Matches WP list-table convention. */
 	function toggleDropdown(trigger) {
 		var host = trigger.closest('.eem-dropdown, .eem-row-menu-wrap');
 		if (!host) return;
 		var isOpen = host.classList.contains('open');
 		closeAllDropdowns();
-		if (!isOpen) host.classList.add('open');
+		if (!isOpen) {
+			host.classList.add('open');
+			// Measure after display:block so getBoundingClientRect() is valid.
+			var drop = host.querySelector('.eem-row-dropdown');
+			if (drop) {
+				var dropRect = drop.getBoundingClientRect();
+				var spaceBelow = window.innerHeight - dropRect.bottom;
+				if (spaceBelow < 0) {
+					host.classList.add('eem-row-menu-wrap--flip-up');
+				}
+			}
+		}
 	}
 
 	/* ─────────────────────────────────────────────────────────────
@@ -1467,7 +1481,10 @@
 
 	function closeAllDropdowns() {
 		document.querySelectorAll('.eem-dropdown.open, .eem-row-menu-wrap.open')
-			.forEach(function (host) { host.classList.remove('open'); });
+			.forEach(function (host) {
+				host.classList.remove('open');
+				host.classList.remove('eem-row-menu-wrap--flip-up'); /* C7.X.18 Issue C */
+			});
 	}
 
 	function closeAllTagSelects(except) {

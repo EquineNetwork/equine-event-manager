@@ -26,7 +26,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'EQUINE_EVENT_MANAGER_VERSION', '2.3.6' );
+define( 'EQUINE_EVENT_MANAGER_VERSION', '2.3.7' );
 
 define( 'EQUINE_EVENT_MANAGER_FILE', __FILE__ );
 
