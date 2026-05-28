@@ -5,7 +5,53 @@ in-flight context that ISN'T already in CLAUDE.md, commit messages,
 or CLEANUP.md. Read after `git pull` on a new machine to pick up
 momentum across Claude Code sessions.
 
-**Last updated:** 2026-05-28 — **C7.X.21** — Three fix chunks landed: C7.X.19 (radius literal eradication + flip-up container boundary), C7.X.20 (Delete Permanently modal invisible — wrong CSS class names), C7.X.21 (typed-confirm changed from reservation title to constant "DELETE"). Version 2.3.10. All smokes green: c7x21 15/15, c7x20 19/19, c7x19 13/13, c7x18 31/31. BROWSER VERIFY STILL PENDING for C7.X.21 (DELETE flow end-to-end).
+**Last updated:** 2026-05-28 — **C8.A** — Stall row-builder restored into `.mockups/stall_chart_detail.html`. 9 control border-radii tokenized to `var(--eem-radius)`. 6 card radii kept as intentional literals with exception comments. Port-time deferred items documented below. BROWSER VERIFY REQUIRED (see C8.A section).
+
+---
+
+## C8.A — Stall Row-Builder Restore (2026-05-28)
+
+**Status:** committed + pushed. No smoke (mockup-only change).
+
+### What landed
+- Row-builder CSS block (pre.html 130–259 equivalent) added to `stall_chart_detail.html` `<style>`
+- Supporting CSS: field-row layout, toggle, mode-btn, tag-select, file-upload
+- `--eem-radius: 3px` defined in `:root` (standalone mockup has no admin.css)
+- JS: tag multi-select helpers, toggleMode, toggleSwitch/applyControls, full stall + RV row-builder JS (2 DOMContentLoaded listeners; 3rd listener for applyControls/applyFeeTypeVisibility skipped — those functions not needed in chart context)
+- HTML: "Layout Configuration" content card inserted between action bar and tabbed view card — contains Stall Rows builder (3 seeded rows), Blocked Stall Numbers tag-select, Stall Map upload, RV Lot Zones (2 seeded zones), Lot Rows builder (hidden until Exact Map Selection mode), Blocked RV Lots tag-select, RV mode toggle
+- Chart preview modals: `#chart-preview-modal` and `#rv-chart-preview-modal` added before cell action menu
+- Class collision resolved: preview containers renamed from `.stall-row` → `.stall-row-layout` to avoid clash with existing `.stall-table tbody tr.stall-row` in the chart
+
+### C8 PORT-TIME DEFERRED ITEMS
+
+These were observed during the restore and intentionally deferred. Work on these BEFORE or DURING the PHP/CSS port of the row-builder to production code.
+
+| # | Item | Location | Decision |
+|---|------|----------|----------|
+| 1 | 9 control `border-radius:4px` → `var(--eem-radius)` | stall_chart_detail.html `<style>` | DONE in C8.A |
+| 2 | 6 card `border-radius` literals (6px, 8px) | `.row-card`, `.zone-row`, `.zone-add-btn`, `.zone-painter`, `.row-add-btn`, `.chart-modal-card` | Kept with comment. Define `--eem-radius-lg` or `--eem-radius-card` token at port time if desired. |
+| 3 | `chart-modal-*` CSS class family | `stall_chart_detail.html` | Self-contained. At port time, decide whether to collapse into `eem-modal-*` canonical classes or keep separate. If collapsing: verify `chart-modal-card`, `chart-modal-head`, etc. map correctly. |
+| 4 | `.zone-name-input` and `.zone-painter-select` not excluded in admin-legacy.css `:not()` chains | `assets/css/admin-legacy.css` | admin-legacy doesn't apply inside mockup. At port time, add these selectors to the 6 broad form-control `:not()` exclusion chains (same pattern as `eem-field-input`). |
+| 5 | `.row-card-field input/select` not excluded in admin-legacy.css chains | `assets/css/admin-legacy.css` | Same as #4 — needs `:not()` guard at port time. |
+| 6 | `.stall-row-layout` CSS class | `stall_chart_detail.html` | Renamed from `.stall-row` in mockup to avoid clash with table row class. At port time, choose canonical name (`.eem-stall-row-layout` or similar). |
+| 7 | RV lot zone system has no `:not()` exclusion in admin-legacy broad `select` chain | future PHP template | Add `.zone-painter-select` + `.zone-price-in` to exclusion lists at port time. |
+| 8 | `applyControls` / `toggleSwitch` / `setSwitchState` / `flashStayHint` / `toggleStay` | not included in stall_chart_detail.html | These edit-page functions were omitted because the chart page doesn't need section collapse or stay-type toggling. At port time, move all shared JS helpers to a shared admin JS module. |
+
+### Mandatory browser self-verify for C8.A
+1. Open `.mockups/stall_chart_detail.html` in browser
+2. **Layout Configuration card** visible between action bar and By Location/By Customer tabs
+3. **Stall Rows**: 3 pre-seeded rows render (Red Barn Row A 100–111, Red Barn Row B 112–135 back-to-back, Yellow Barn Row A Y1–Y12)
+4. Stalls 100 and 102 appear as `blocked` chips in Blocked Stall Numbers — and in row previews those boxes show strikethrough
+5. Change layout of Row 1 to "Back-to-back" → preview re-renders
+6. **Preview Full Chart** button → modal opens with all 3 rows, blocked stalls shown dashed
+7. Add Row → new empty row-card appears
+8. **RV Lot Zones**: Red Lot + Blue Lot zones visible
+9. **Lot Selection Mode**: switch to "Exact Map Selection" → Lot Rows builder appears
+10. RV Row A + Row B previews render with zone color dots
+11. **Paint Mode**: select Red Lot, click a Blue lot box → dot changes to red
+12. **RV Preview Full Chart** → modal opens with correct zone dots
+13. **By Location / By Customer tabs** still switch (existing chart view unaffected)
+14. Cell action menu (click customer pill) still works
 
 ---
 
