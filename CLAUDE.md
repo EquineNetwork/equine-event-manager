@@ -229,6 +229,26 @@ The pattern generalizes: when introducing a new plugin form-control class, the C
 
 Operational test: `grep -nE '(^|,|\s+)<tag>(\s*,|\s*\{)' admin-legacy.css` for each form-control tag (input, select, textarea). Every result needs `:not(.eem-<NEW-CLASS>)` added if the new class targets that tag.
 
+**Cross-input-type enumeration required for all admin-legacy.css !important shell-page blocks (C7.X.17 lesson — Issue A):** admin-legacy.css contains SIX distinct `!important` blocks targeting `body.eem-shell-page:not(...)` and `body.post-type-en_reservation` input selectors (lines ~214, ~5938, ~6597, ~7628, ~8288, ~11840). Each block applies different cosmetic properties (border-radius, color, box-shadow, font, min-height, etc.) for progressive visual refinement. C7.X.13 added `:not(.eem-field-input)` to the number input selectors across all six blocks. C7.X.17 extended the pattern to ALL input types (text, search, email, url, password, date, time, datetime-local) and textarea — but initially only touched block 1. The remaining 5 blocks were missed, causing the smoke to fail on real-site selectors in those blocks.
+
+**Rule:** whenever adding a new plugin form-control class to any `input[type=X]`, `select`, or `textarea` selector in admin-legacy.css, enumerate ALL SIX of those shell-page blocks (not just the first), add the `:not(.eem-NEW-CLASS)` exclusion to every occurrence. The smoke should assert the pattern positively (the protected shell-page:not(...) selector CARRIES the :not()) rather than negatively (no bare input[type=X] anywhere in the file — that false-negative is too broad since page-variant-scoped selectors legitimately remain bare).
+
+**Typed-confirm modal is the locked pattern for all permanent-delete actions (C7.X.17 lesson — Issue D3):** Any UI action that permanently destroys data must go through a typed-confirm modal — never `window.confirm()` or a simple confirm button. Canonical implementation established C7.X.17:
+1. **Button** — carries `data-eem-action="...-delete-permanently"` AND `data-reservation-title="..."` (or equivalent entity title attribute).
+2. **JS** — `openDeletePermanentlyModal(target)` reads the title from the data attr, renders a modal with a text `<input>`, and enables the Delete button only when `input.value === resTitle`. Submit calls `submitReservationAction(target, action, nonce, { confirmation_title: resTitle })`.
+3. **Server** — handler reads `$_POST['confirmation_title']`, compares to `$post->post_title`, redirects with `'failed'` notice if mismatch.
+4. **Smoke** — assert (a) button carries `data-reservation-title`, (b) JS defines the modal opener function, (c) action calls the opener not `window.confirm`, (d) `confirmBtn.disabled` tied to input match, (e) `confirmation_title` submitted, (f) server validates the typed title.
+
+Any future action tagged `*-delete-permanently` must follow this pattern verbatim. Do NOT introduce a bare `window.confirm()` shortcut for "it's a dev fixture."
+
+**Count query and body query must share JOIN and WHERE shape (C7.X.17 lesson — Issue E):** When a tab header shows a count and the list body shows rows, both must query posts with the SAME JOIN + WHERE shape. If the count query (`counts_by_tab()`) omits `meta_key` while the body query (`get_paginated()` with `orderby=event_dates`) adds `meta_key` + INNER JOIN on postmeta, the INNER JOIN silently drops posts lacking that meta key — producing body < count divergence.
+
+**LEFT JOIN + meta_key pattern for optional sort-cache ordering:**
+- Swap `INNER JOIN wp_postmeta ON (posts.ID = postmeta.post_id)` → `LEFT JOIN wp_postmeta ON (posts.ID = postmeta.post_id AND postmeta.meta_key = 'X')` — moves the meta_key filter into the ON clause so orphan posts (no matching meta row) produce a NULL row rather than being joined against ALL their other postmeta rows (which would then fail the WHERE condition and exclude them entirely).
+- Also widen `WHERE postmeta.meta_key = 'X'` → `WHERE (postmeta.meta_key = 'X' OR postmeta.meta_key IS NULL)` to pass the NULL rows from orphan posts through.
+- ORDER BY: always `postmeta.meta_value IS NULL ASC, postmeta.meta_value ASC/DESC` — the `IS NULL ASC` part is hardcoded so nulls sort LAST regardless of the main sort direction.
+- Smoke: call `counts_by_tab()` + `get_paginated()` for EVERY tab and assert counts match. This is the canonical divergence guard.
+
 **Pre-publish validation as a pattern (C7.X.16 lesson — Issue I architecture):** Multi-section editor pages need a per-section publish-gate validator. Implementation shape from C7.X.16:
 
 1. **PHP source of truth** — `validate_for_publish(array $candidate, int $entity_id): array` method on the editor page class. Each section gets an `if ( ! empty( $c['<section>_enabled'] ) )` block that asserts the section's "valid when ON" criteria. Returns `[section_key => error_message]` map; empty array = valid.

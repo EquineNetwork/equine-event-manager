@@ -177,6 +177,7 @@ class EEM_Reservations_List_Page {
 			'duplicated'            => array( 'type' => 'success', 'text' => __( 'Reservation duplicated as draft.', 'equine-event-manager' ) ),
 			'trashed'               => array( 'type' => 'success', 'text' => __( 'Reservation moved to Trash.', 'equine-event-manager' ) ),
 			'restored'              => array( 'type' => 'success', 'text' => __( 'Reservation restored from Trash.', 'equine-event-manager' ) ),
+			'deleted-permanently'   => array( 'type' => 'success', 'text' => __( 'Reservation permanently deleted.', 'equine-event-manager' ) ),
 			'bulk_trashed'          => array( 'type' => 'success', 'text' => sprintf(
 				/* translators: %d: number of reservations moved to trash */
 				_n( '%d reservation moved to Trash.', '%d reservations moved to Trash.', $bulk_count, 'equine-event-manager' ),
@@ -396,6 +397,16 @@ class EEM_Reservations_List_Page {
 		// published reservation. Reject anything not in trash.
 		$post = get_post( $reservation_id );
 		if ( ! $post || 'trash' !== $post->post_status ) {
+			self::redirect_with_notice( 'failed' );
+		}
+
+		// C7.X.17 Issue D3 — server-side typed-confirmation check. The JS modal
+		// requires typing the reservation title before enabling the delete button,
+		// but we also validate server-side to guard against hand-crafted requests.
+		// WP stores trashed post titles unchanged (trash is via status flip, not
+		// rename), so $post->post_title is the canonical comparison target.
+		$typed = isset( $_POST['confirmation_title'] ) ? wp_unslash( $_POST['confirmation_title'] ) : '';
+		if ( '' === $typed || $typed !== $post->post_title ) {
 			self::redirect_with_notice( 'failed' );
 		}
 
@@ -1070,39 +1081,44 @@ class EEM_Reservations_List_Page {
 			<div class="eem-row-menu-wrap">
 				<button type="button" class="eem-more-btn" data-eem-action="dropdown-toggle" aria-haspopup="menu" aria-expanded="false" aria-controls="<?php echo esc_attr( $menu_id ); ?>" title="<?php esc_attr_e( 'More actions', 'equine-event-manager' ); ?>">···</button>
 				<div class="eem-row-dropdown" id="<?php echo esc_attr( $menu_id ); ?>" role="menu">
-					<?php if ( $front_end_url ) : ?>
-						<a class="eem-row-dd-item" href="<?php echo esc_url( $front_end_url ); ?>" target="_blank" rel="noopener" role="menuitem">
-							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-							<?php esc_html_e( 'View on Front-End', 'equine-event-manager' ); ?>
-						</a>
-					<?php endif; ?>
-					<a class="eem-row-dd-item" href="<?php echo esc_url( $orders_url ); ?>" role="menuitem">
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
-						<?php esc_html_e( 'View Orders', 'equine-event-manager' ); ?>
-					</a>
-					<button type="button" class="eem-row-dd-item" data-eem-action="reservation-duplicate" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" role="menuitem">
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-						<?php esc_html_e( 'Duplicate', 'equine-event-manager' ); ?>
-					</button>
-					<button type="button" class="eem-row-dd-item" data-eem-action="reservation-export-roster" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" role="menuitem">
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-						<?php esc_html_e( 'Export Roster (CSV)', 'equine-event-manager' ); ?>
-					</button>
-					<button type="button" class="eem-row-dd-item" data-eem-action="reservation-email-customers" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" role="menuitem">
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-						<?php esc_html_e( 'Email Customers', 'equine-event-manager' ); ?>
-					</button>
 					<?php if ( $is_trashed ) : ?>
+						<?php /* C7.X.17 Issue D1 — Trash rows show ONLY Restore + Delete Permanently.
+						        Non-trash items (View on Front-End, View Orders, Duplicate, Export,
+						        Email) are hidden for trashed reservations — there's no public page
+						        to view, and acting on a trashed reservation is unexpected. */ ?>
 						<button type="button" class="eem-row-dd-item" data-eem-action="reservation-restore" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" role="menuitem">
 							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
 							<?php esc_html_e( 'Restore', 'equine-event-manager' ); ?>
 						</button>
-						<?php /* C7.X.16 Issue G — Delete Permanently affordance on Trash status only. */ ?>
-						<button type="button" class="eem-row-dd-item eem-row-dd-danger" data-eem-action="reservation-delete-permanently" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" role="menuitem">
+						<?php /* C7.X.17 Issue D3 — data-reservation-title feeds the typed-confirm
+						        modal in JS. Server-side also validates the typed title matches. */ ?>
+						<button type="button" class="eem-row-dd-item eem-row-dd-danger" data-eem-action="reservation-delete-permanently" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" data-reservation-title="<?php echo esc_attr( get_the_title( $reservation_id ) ); ?>" role="menuitem">
 							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
 							<?php esc_html_e( 'Delete Permanently', 'equine-event-manager' ); ?>
 						</button>
 					<?php else : ?>
+						<?php if ( $front_end_url ) : ?>
+							<a class="eem-row-dd-item" href="<?php echo esc_url( $front_end_url ); ?>" target="_blank" rel="noopener" role="menuitem">
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+								<?php esc_html_e( 'View on Front-End', 'equine-event-manager' ); ?>
+							</a>
+						<?php endif; ?>
+						<a class="eem-row-dd-item" href="<?php echo esc_url( $orders_url ); ?>" role="menuitem">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+							<?php esc_html_e( 'View Orders', 'equine-event-manager' ); ?>
+						</a>
+						<button type="button" class="eem-row-dd-item" data-eem-action="reservation-duplicate" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" role="menuitem">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+							<?php esc_html_e( 'Duplicate', 'equine-event-manager' ); ?>
+						</button>
+						<button type="button" class="eem-row-dd-item" data-eem-action="reservation-export-roster" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" role="menuitem">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+							<?php esc_html_e( 'Export Roster (CSV)', 'equine-event-manager' ); ?>
+						</button>
+						<button type="button" class="eem-row-dd-item" data-eem-action="reservation-email-customers" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" role="menuitem">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+							<?php esc_html_e( 'Email Customers', 'equine-event-manager' ); ?>
+						</button>
 						<button type="button" class="eem-row-dd-item eem-row-dd-danger" data-eem-action="reservation-trash" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" role="menuitem">
 							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
 							<?php esc_html_e( 'Move to Trash', 'equine-event-manager' ); ?>

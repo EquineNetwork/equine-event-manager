@@ -470,10 +470,8 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 
 ### 53. Media Library modal z-index — root cause investigation
 - **What:** C7.X.16 Issue E applied a defensive `z-index: 200000` raise to `.media-modal-backdrop, .media-modal` to fix Whitney's bleed-through of WP admin sidebar "Menu ▾" toggle into the Agreement Upload modal. Z-index audit of our admin.css found nothing approaching WP's 100050 default; no transform/filter/fixed-position on body or wrap ancestors that could trap modal stacking context; no direct targets on `.media-modal` / `.media-frame` in our CSS.
-- **Why deferred:** Root cause could not be reproduced from code-side CSS audit alone. Needs browser DevTools probe of the computed stacking context when the modal is open. The defensive raise (no `!important`; cascade order wins) fixes the symptom without introducing technical debt — but the underlying cause stays unidentified.
-- **Added in:** C7.X.16
-- **Unblocks deletion:** C16 polish — investigate via DevTools, identify root cause (likely a stacking context created somewhere unexpected), fix at source, remove the defensive raise.
-- **Status:** awaiting C16
+- **Root cause identified (C7.X.17):** WP's `.media-modal-backdrop` ships with `opacity: 0.7` — any element behind the backdrop but with a higher or equal stacking context bleeds through at 30% visibility. The admin chrome (sidebar, nav) sits at z-index up to 99999 and is visible through the 70%-transparent backdrop. Fix: backdrop uses `background: rgba(0,0,0,0.7) !important` + `opacity: 1 !important` (stops the transparency; the alpha channel in rgba already controls darkness) + `z-index: 199999`; modal stays at `z-index: 200000`.
+- **Status:** RESOLVED in C7.X.17. Both `!important` rules are justified exceptions (overriding WP's own `.media-modal-backdrop` opacity default). C16 no longer needs to investigate this item.
 
 ### 51. Linked Event rail card retired (C7.X.12 Item 7)
 - **What:** `templates/admin/reservation-editor/_rail-linked-event-card.php` — DELETED in C7.X.12. Linked-event editing migrated inline to the meta-line via `(change)` / `(unlink)` action links.

@@ -182,10 +182,82 @@ class EEM_Reservations_List_Repo {
 		}
 
 		if ( 'event_dates' === $orderby ) {
+			$sort_key = EEM_Reservation_Source_Resolver::SORT_CACHE_META_KEY;
+			// C7.X.17 Issue E — root cause: bare meta_key generates an INNER JOIN
+			// which silently drops reservations missing the sort-cache key (orphans
+			// not yet re-saved since the C6.6 RES-ARCH-1 migration). Fix: use a
+			// posts_clauses filter (scoped to this query, removed immediately after)
+			// to swap INNER→LEFT JOIN on the sort-cache postmeta join so orphans
+			// appear in results with NULL ordering (NULL sorts first in ASC by
+			// default in MySQL; the filter also converts to NULL-last via IS NULL).
+			// When a date_filter is active, the BETWEEN condition already implies
+			// the key must exist, so orphans are still excluded — only the main
+			// postmeta join gets LEFT-JOINed; the date-filter mt1 alias is untouched.
+			$left_join_filter = static function ( $clauses ) use ( $sort_key ) {
+				global $wpdb;
+				// Replace INNER JOIN with LEFT JOIN so posts that lack the sort-cache
+				// meta key (orphans) are still returned with NULL meta_value rather
+				// than being silently dropped.
+				//
+				// Three-part fix:
+				//   1. Swap INNER JOIN → LEFT JOIN on wp_postmeta.
+				//   2. Relax the WHERE meta_key condition to also pass rows where the
+				//      LEFT JOIN produced no match (meta_key IS NULL).
+				//   3. Push NULL-sorted rows to end of ORDER BY.
+				//
+				// WP may generate quoted (`table`) or unquoted (table) names depending
+				// on version; the regexes handle both forms.
+				$table = $wpdb->postmeta;
+				$posts = $wpdb->posts;
+				$tq    = '`?' . preg_quote( $table, '/' ) . '`?';
+				$pq    = '`?' . preg_quote( $posts,  '/' ) . '`?';
+
+				// Step 1 — JOIN: INNER → LEFT, and move meta_key condition into ON clause.
+				//
+				// WHY meta_key must go in ON, not WHERE:
+				// With LEFT JOIN wp_postmeta ON (posts.ID = postmeta.post_id) the join
+				// expands every postmeta row for the post (e.g. _edit_lock, _en_event_id …).
+				// The WHERE wp_postmeta.meta_key = 'X' then eliminates rows whose meta_key
+				// is neither 'X' nor NULL — which eliminates ALL rows for an orphan post
+				// because its OTHER postmeta rows have non-NULL, non-X meta_keys.
+				// Putting meta_key in the ON clause restricts the join to only match the
+				// sort-cache row; orphan posts produce a single NULL row and pass through.
+				$clauses['join'] = preg_replace(
+					'/\bINNER\s+JOIN\s+' . $tq . '\s+ON\s*\(\s*' . $pq . '\.ID\s*=\s*' . $tq . '\.post_id/i',
+					'LEFT JOIN ' . $table . ' ON (' . $posts . '.ID = ' . $table . '.post_id'
+						. ' AND ' . $table . '.meta_key = \'' . esc_sql( $sort_key ) . '\'',
+					$clauses['join'],
+					1 // first occurrence only; leaves mt1/mt2 date-filter joins intact
+				);
+
+				// Step 2 — WHERE: allow NULL meta_key rows (orphans whose LEFT JOIN
+				// produced no match, so meta_key IS NULL after the join).
+				$sk_quoted = preg_quote( $sort_key, '/' );
+				$clauses['where'] = preg_replace(
+					'/\(\s*' . $tq . '\.meta_key\s*=\s*[\'"]' . $sk_quoted . '[\'"]\s*\)/i',
+					'( ' . $table . '.meta_key = \'' . esc_sql( $sort_key ) . '\' OR ' . $table . '.meta_key IS NULL )',
+					$clauses['where'],
+					1
+				);
+
+				// Step 3 — ORDER BY: NULL meta_value always sorts LAST (push orphans
+				// to end regardless of main sort direction). IS NULL is always ASC so
+				// that IS NULL=0 (has value) precedes IS NULL=1 (null); the main sort
+				// direction ($1) applies only to the actual meta_value column.
+				$clauses['orderby'] = preg_replace(
+					'/\b`?' . preg_quote( $table, '/' ) . '`?\.meta_value\s+(ASC|DESC)/i',
+					$table . '.meta_value IS NULL ASC, ' . $table . '.meta_value $1',
+					$clauses['orderby']
+				);
+
+				return $clauses;
+			};
+			add_filter( 'posts_clauses', $left_join_filter );
+
 			$query_args['orderby']  = 'meta_value';
 			// C6.6 / RES-ARCH-1: sort cache key replaces the four deprecated
 			// nightly/weekend date keys.
-			$query_args['meta_key'] = EEM_Reservation_Source_Resolver::SORT_CACHE_META_KEY;
+			$query_args['meta_key'] = $sort_key;
 			$query_args['order']    = $order;
 		} elseif ( 'orders' === $orderby ) {
 			// PHP-side sort path: pull all matching posts (capped at 500
@@ -223,6 +295,12 @@ class EEM_Reservations_List_Repo {
 		}
 
 		$query = new WP_Query( $query_args );
+
+		// C7.X.17 Issue E — remove LEFT JOIN filter immediately after query so it
+		// doesn't bleed into any other WP_Query on the same request.
+		if ( isset( $left_join_filter ) ) {
+			remove_filter( 'posts_clauses', $left_join_filter );
+		}
 
 		return array(
 			'items'       => $query->posts,

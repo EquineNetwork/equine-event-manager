@@ -117,11 +117,15 @@ c7x16_ok( 'D3 CSS: .eem-btn-preview:disabled / [aria-disabled="true"] muted styl
 
 // ── [E] Defensive Media Library modal z-index raise ─────────────
 echo "\n[E] .media-modal{,-backdrop} z-index raised defensively (cascade-order wins, no !important)\n";
-c7x16_ok( '.media-modal-backdrop, .media-modal { z-index: 200000 } declared in admin.css',
-	(bool) preg_match( '/\.media-modal-backdrop,\s*\.media-modal\s*\{\s*z-index:\s*200000\s*;\s*\}/', $admin_css ),
+// C7.X.17 superseded the combined .media-modal-backdrop,.media-modal rule with
+// two separate rules (backdrop z-index:199999 + modal z-index:200000) to fix
+// the opacity-bleed root cause. Assert the post-C7.X.17 state: .media-modal
+// still has z-index:200000 and there is no !important on its own rule.
+c7x16_ok( '.media-modal has z-index: 200000 (split from backdrop by C7.X.17)',
+	(bool) preg_match( '/\.media-modal\s*\{\s*z-index\s*:\s*200000\s*;\s*\}/', $admin_css ),
 	$pass, $fail, $log );
-c7x16_ok( 'NO !important on the media-modal z-index rule (cascade-order alone wins)',
-	! (bool) preg_match( '/\.media-modal-backdrop[^}]*z-index:\s*200000[^}]*!important/', $admin_css ),
+c7x16_ok( 'NO !important on .media-modal z-index rule (cascade-order wins)',
+	! (bool) preg_match( '/\.media-modal\s*\{[^}]*z-index\s*:\s*200000[^}]*!important/', $admin_css ),
 	$pass, $fail, $log );
 
 // ── [G] Delete Permanently — UI + handler + admin-post wire ─────

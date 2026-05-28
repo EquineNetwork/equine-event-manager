@@ -1063,3 +1063,42 @@ Mockup canon).
 5. `bash tests/smoke/run-all.sh` to confirm 1334+ green baseline
 6. User will probably want to visual-verify the editor or kick off
    the next chunk (likely C8 Stall Charts).
+
+---
+
+## C7.X.17 — Walkthrough fix-ups (2026-05-27)
+
+Five visual-verify failures from the C7.X.16 walkthrough, resolved in a single commit.
+
+**Issue A — Global border-radius token + cross-input :not() chains**
+- `--eem-radius` token changed from 4px → 3px; `--eem-radius-sm` 3px → 2px.
+- Toolbar controls updated to use `var(--eem-radius)` instead of hardcoded 4px.
+- admin-legacy.css has SIX `!important` shell-page blocks. C7.X.13 only patched number inputs in block 1. C7.X.17 extended `:not(.eem-field-input):not(.eem-search-input)` to ALL text/search/email/url/password/date/time/datetime-local types and `:not(.eem-field-textarea)` to textarea across ALL SIX blocks. Smoke lesson: assert presence of the protection pattern in the specific shell-page selector, not "no bare input[type=X] anywhere in the file" (too broad — page-variant-scoped blocks legitimately stay bare).
+
+**Issue B — Dashboard range-select height normalization**
+- `--eem-select-height: 29px` token introduced; toolbar-select and dashboard-select both use it.
+- Root cause: `padding: 7px` + WP core `line-height: 2.71` computed to 51px. Fix: `padding: 4px` + `line-height: normal` + `min-height: var(--eem-select-height)`.
+
+**Issue C — Media Library modal admin chrome bleed**
+- Root cause: WP ships `.media-modal-backdrop { opacity: 0.7 }`. Admin chrome at z-index ≤ 99999 bleeds through the 30%-transparent backdrop.
+- Fix: backdrop gets `background: rgba(0,0,0,0.7) !important` + `opacity: 1 !important` + `z-index: 199999`; `.media-modal { z-index: 200000 }` unchanged. CLEANUP #53 marked RESOLVED.
+
+**Issue D — Trash row meatballs**
+- D1: `render_row_actions()` now checks `$is_trashed` FIRST; trashed rows show ONLY Restore + Delete Permanently.
+- D3: Typed-confirm modal for Delete Permanently — button carries `data-reservation-title`, JS opens a modal that enables Delete only when typed title matches, server validates `$_POST['confirmation_title']` against `$post->post_title`.
+
+**Issue E — Tab count / body count divergence**
+- Root cause: `WP_Query` with `meta_key` generates `INNER JOIN wp_postmeta ON (posts.ID = postmeta.post_id)` + `WHERE postmeta.meta_key = 'X'`. Posts without the sort-cache key (orphans not yet re-saved post-RES-ARCH-1) are silently dropped.
+- The `LEFT JOIN` fix has THREE required parts (not two as initially coded):
+  1. Swap INNER → LEFT JOIN.
+  2. Move `meta_key = 'X'` into the ON clause — without this, posts with OTHER postmeta rows join against those rows, get non-NULL/non-X meta_key values, and still get excluded by WHERE.
+  3. Widen WHERE to `(meta_key = 'X' OR meta_key IS NULL)` to pass orphan NULL rows.
+  4. ORDER BY: `meta_value IS NULL ASC, meta_value ASC/DESC` — IS NULL direction is hardcoded ASC so nulls always sort LAST regardless of main direction (`IS NULL DESC` would have put nulls FIRST in DESC queries).
+- Smoke: `counts_by_tab()` == `get_paginated()` total for every tab — this is the canonical divergence guard.
+
+**Regression follow-on**
+- c7x16 smoke was checking the old combined `.media-modal-backdrop,.media-modal{z-index:200000}` selector that C7.X.17 split — updated c7x16 to assert the post-C7.X.17 state.
+- c7x17 smoke had wrong RESULT line format (used `C7.X.17 smoke:` instead of `RESULT:`) — fixed.
+- IS NULL DESC ordering put orphan 'TEst Event' first in DESC sorts, failing c4d — fixed to IS NULL ASC.
+
+**Smoke result: 1603/1603 green.**

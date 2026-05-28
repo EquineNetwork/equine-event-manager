@@ -714,7 +714,7 @@
 	 * compose step needs round-tripping data; helpers below cover open,
 	 * close, recipient-count preload, and form submit.
 	 * ───────────────────────────────────────────────────────────── */
-	function submitReservationAction(target, actionName, nonceAction) {
+	function submitReservationAction(target, actionName, nonceAction, extraFields) {
 		var reservationId = target.dataset.reservationId;
 		if (!reservationId) return;
 		var nonce = window.eemRowActions && window.eemRowActions.nonces && window.eemRowActions.nonces[nonceAction];
@@ -729,11 +729,19 @@
 		form.method = 'POST';
 		form.action = adminPostUrl;
 		form.style.display = 'none';
-		[
+		var fields = [
 			['action', actionName],
 			['reservation_id', reservationId],
 			['_eem_action_nonce', nonce]
-		].forEach(function (pair) {
+		];
+		// C7.X.17 Issue D3 — allow callers to inject extra form fields
+		// (e.g. confirmation_title for the typed-confirm delete modal).
+		if (extraFields && typeof extraFields === 'object') {
+			Object.keys(extraFields).forEach(function (k) {
+				fields.push([k, extraFields[k]]);
+			});
+		}
+		fields.forEach(function (pair) {
 			var i = document.createElement('input');
 			i.type = 'hidden';
 			i.name = pair[0];
@@ -742,6 +750,90 @@
 		});
 		document.body.appendChild(form);
 		form.submit();
+	}
+
+	/* C7.X.17 Issue D3 — Typed-confirmation modal for Delete Permanently.
+	   Opens a modal that requires the user to type the reservation title
+	   before the Delete button becomes enabled. Also validates server-side
+	   (confirmation_title posted alongside the nonce). */
+	function openDeletePermanentlyModal(target) {
+		var resId    = target.dataset.reservationId;
+		var resTitle = target.dataset.reservationTitle || '';
+		if (!resId) return;
+
+		// Remove any existing modal first (e.g. if opened twice quickly)
+		var existing = document.getElementById('eem-delete-perm-overlay');
+		if (existing) existing.remove();
+
+		function escHtml(str) {
+			return String(str)
+				.replace(/&/g, '&amp;')
+				.replace(/</g, '&lt;')
+				.replace(/>/g, '&gt;')
+				.replace(/"/g, '&quot;');
+		}
+
+		var overlay = document.createElement('div');
+		overlay.id  = 'eem-delete-perm-overlay';
+		overlay.className = 'eem-modal-overlay eem-modal-overlay--active';
+		overlay.setAttribute('role', 'dialog');
+		overlay.setAttribute('aria-modal', 'true');
+		overlay.setAttribute('aria-labelledby', 'eem-delete-perm-title');
+		overlay.innerHTML =
+			'<div class="eem-modal eem-modal--sm">' +
+				'<div class="eem-modal-header eem-modal-header--danger">' +
+					'<h2 class="eem-modal-title" id="eem-delete-perm-title">Delete reservation permanently?</h2>' +
+				'</div>' +
+				'<div class="eem-modal-body">' +
+					'<p style="margin:0 0 10px;color:var(--eem-error-text);font-weight:600;">' +
+						'This cannot be undone. The reservation, all linked orders, and all audit history will be permanently deleted.' +
+					'</p>' +
+					'<p style="margin:0 0 6px;">To confirm, type the reservation title below:</p>' +
+					'<code style="display:block;background:var(--eem-bg);border:1px solid var(--eem-border);border-radius:var(--eem-radius);padding:6px 10px;margin-bottom:10px;word-break:break-all;">' +
+						escHtml(resTitle) +
+					'</code>' +
+					'<input type="text" id="eem-delete-perm-input" class="eem-field-input" style="width:100%;box-sizing:border-box;" placeholder="Type reservation title to confirm" autocomplete="off">' +
+				'</div>' +
+				'<div class="eem-modal-footer">' +
+					'<button type="button" id="eem-delete-perm-cancel" class="eem-btn eem-btn--secondary">Cancel</button>' +
+					'<button type="button" id="eem-delete-perm-confirm" class="eem-btn eem-btn--danger" disabled>Delete Permanently</button>' +
+				'</div>' +
+			'</div>';
+
+		document.body.appendChild(overlay);
+
+		var input      = overlay.querySelector('#eem-delete-perm-input');
+		var confirmBtn = overlay.querySelector('#eem-delete-perm-confirm');
+		var cancelBtn  = overlay.querySelector('#eem-delete-perm-cancel');
+
+		input.addEventListener('input', function () {
+			confirmBtn.disabled = (input.value !== resTitle);
+		});
+		cancelBtn.addEventListener('click', function () {
+			overlay.remove();
+		});
+		overlay.addEventListener('click', function (e) {
+			// Close on backdrop click (outside the .eem-modal box)
+			if (e.target === overlay) overlay.remove();
+		});
+		confirmBtn.addEventListener('click', function () {
+			if (input.value !== resTitle) return;
+			overlay.remove();
+			submitReservationAction(
+				target,
+				'eem_reservation_delete_permanently',
+				'eem_reservation_delete_permanently',
+				{ confirmation_title: resTitle }
+			);
+		});
+
+		// Keyboard: Escape closes, Enter in input tries confirm
+		overlay.addEventListener('keydown', function (e) {
+			if (e.key === 'Escape') overlay.remove();
+			if (e.key === 'Enter' && !confirmBtn.disabled) confirmBtn.click();
+		});
+
+		input.focus();
 	}
 
 	/* C5.G.2 — Orders row-action helper. Mirror of submitReservationAction
@@ -1463,11 +1555,11 @@
 		'reservation-restore': function (target) {
 			submitReservationAction(target, 'eem_reservation_restore', 'eem_reservation_restore');
 		},
-		/* C7.X.16 Issue G — Delete Permanently. Confirm prompt with
-		   explicit "cannot be undone" warning before dispatching. */
+		/* C7.X.17 Issue D3 — typed-confirm modal replaces the simple window.confirm.
+		   openDeletePermanentlyModal handles the modal, typed-title validation,
+		   and submits with confirmation_title extra field when confirmed. */
 		'reservation-delete-permanently': function (target) {
-			if (!window.confirm('Delete this reservation PERMANENTLY? This cannot be undone — order history, activity log entries, and all reservation data will be removed.')) return;
-			submitReservationAction(target, 'eem_reservation_delete_permanently', 'eem_reservation_delete_permanently');
+			openDeletePermanentlyModal(target);
 		},
 		'bulk-apply': function (target, ev) {
 			// Hook the bulk form's submit — collect selected reservation ids

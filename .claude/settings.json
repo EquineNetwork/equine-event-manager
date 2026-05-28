@@ -25,6 +25,8 @@
       "Bash(sed -n:*)",
       "Bash(awk:*)",
 
+      "Bash(md5:*)",
+
       "Bash(php -l:*)",
       "Bash(/Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.2.29+0/bin/darwin-arm64/bin/php -l:*)",
 

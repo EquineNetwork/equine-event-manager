@@ -108,9 +108,10 @@
 	--eem-space-6: 24px;
 
 	/* Corner radius */
-	--eem-radius-sm: 3px;
-	--eem-radius: 4px;       /* form inputs, buttons, chips */
+	--eem-radius-sm: 2px;
+	--eem-radius: 3px;       /* form inputs, buttons, chips — C7.X.17 Issue A: token-level change from 4px */
 	--eem-radius-lg: 6px;    /* cards, modals */
+	--eem-select-height: 29px; /* C7.X.17 Issue B: shared height for toolbar + dashboard selects */
 
 	/* Borders */
 	--eem-border-input: 1.5px solid var(--eem-border);
@@ -3579,10 +3580,11 @@ a.eem-mob-res-name:focus {
    Scoped to the list toolbar only — keeps blast radius narrow. */
 .eem-list-toolbar .eem-toolbar-select,
 .eem-list-toolbar .eem-search-input {
-	min-height: 0;
+	/* C7.X.17 Issue A+B: token radius + shared select height (was min-height:0 + border-radius:4px) */
+	min-height: var(--eem-select-height);
 	line-height: normal;
 	max-width: none;
-	border-radius: 4px;
+	border-radius: var(--eem-radius);
 	font-size: 13px;
 }
 
@@ -3612,10 +3614,11 @@ a.eem-mob-res-name:focus {
    doesn't use), but explicit anyway for consistency at the same specificity
    tier as the selects/inputs above. */
 .eem-list-toolbar .eem-toolbar-btn {
+	/* C7.X.17 Issue A: token radius (was 4px) */
 	min-height: 0;
 	line-height: normal;
 	font-size: 13px;
-	border-radius: 4px;
+	border-radius: var(--eem-radius);
 	padding: 5px 14px;
 }
 
@@ -3627,9 +3630,10 @@ a.eem-mob-res-name:focus {
    all four corners and the visual attachment to the search input breaks.
    Diagnosed in c4-polish-2 round 3 via DevTools cascade audit. */
 .eem-list-toolbar .eem-search-btn {
+	/* C7.X.17 Issue A: token radius (was 0 4px 4px 0) */
 	border-top-left-radius: 0;
 	border-bottom-left-radius: 0;
-	border-radius: 0 4px 4px 0;
+	border-radius: 0 var(--eem-radius) var(--eem-radius) 0;
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -4964,14 +4968,20 @@ a.eem-btn-collect-banner:focus {
    42px; border-radius: 12px; border-width: 1.5px;` overrides until
    the prefix landed. */
 select.eem-dashboard-range-select {
+	/* C7.X.17 Issue B: old padding-top/bottom (7px) left WP core's
+	   line-height:2.71 bleeding through → computed 51px. Fix: explicit
+	   line-height:normal + reduced padding + min-height token so height
+	   matches .eem-toolbar-select at 29px. */
 	margin: 0;
-	padding: 7px 32px 7px 12px;
+	min-height: var(--eem-select-height);
+	padding: 4px 32px 4px 12px;
 	border: 1px solid var(--eem-text-muted);
 	border-radius: var(--eem-radius);
 	background: var(--eem-surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center;
 	font-size: 13px;
 	font-weight: 500;
 	font-family: var(--eem-font-ui);
+	line-height: normal;
 	color: var(--eem-text);
 	cursor: pointer;
 	outline: none;
@@ -5534,7 +5544,17 @@ a.eem-dashboard-qa-btn:focus {
    target these elements elsewhere. CLEANUP entry queues a DevTools
    investigation for C16. Cascade order alone wins for the raise to
    200000 (plugin admin.css loads after WP core's media views CSS). */
-.media-modal-backdrop,
+/* C7.X.17 Issue C — root cause: WP core sets opacity:0.7 on the backdrop
+   which makes the admin chrome (at lower z-index) bleed through at 30%.
+   Fix: override backdrop to rgba(0,0,0,0.7) + opacity:1 so the dimming
+   effect is achieved via background-color alpha (fully opaque element),
+   not via element opacity (transparent element). Modal keeps z-index
+   200000; backdrop at 199999 so DOM-order tiebreaking is explicit. */
+.media-modal-backdrop {
+	z-index: 199999;
+	background: rgba(0,0,0,0.7) !important;
+	opacity: 1 !important;
+}
 .media-modal { z-index: 200000; }
 
 /* C7.X.16 Issue A — stripped `padding: 18px 18px` declaration here.
