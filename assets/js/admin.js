@@ -776,7 +776,14 @@
 	/* C7.X.17 Issue D3 — Typed-confirmation modal for Delete Permanently.
 	   Opens a modal that requires the user to type the reservation title
 	   before the Delete button becomes enabled. Also validates server-side
-	   (confirmation_title posted alongside the nonce). */
+	   (confirmation_title posted alongside the nonce).
+	   C7.X.20 fix: prior version used className = 'eem-modal-overlay eem-modal-overlay--active'
+	   (class names that don't exist in admin.css) and never added .open to the inner
+	   .eem-modal element — so the modal was appended to the DOM but permanently
+	   display:none. Correct pattern: outer div IS the .eem-modal backdrop element,
+	   classList.add('open') makes it flex-visible per .eem-modal.open { display:flex }.
+	   Also corrected eem-modal-header → eem-modal-head, eem-modal-footer → eem-modal-foot
+	   to match the actual admin.css selectors (Email Customers modal is the canonical ref). */
 	function openDeletePermanentlyModal(target) {
 		var resId    = target.dataset.reservationId;
 		var resTitle = target.dataset.reservationTitle || '';
@@ -794,16 +801,19 @@
 				.replace(/"/g, '&quot;');
 		}
 
+		/* C7.X.20: overlay IS the .eem-modal backdrop (position:fixed, inset:0).
+		   Inner card is .eem-modal-card (not .eem-modal). classList.add('open')
+		   after append makes it visible via .eem-modal.open { display:flex }. */
 		var overlay = document.createElement('div');
 		overlay.id  = 'eem-delete-perm-overlay';
-		overlay.className = 'eem-modal-overlay eem-modal-overlay--active';
+		overlay.className = 'eem-modal';
 		overlay.setAttribute('role', 'dialog');
 		overlay.setAttribute('aria-modal', 'true');
 		overlay.setAttribute('aria-labelledby', 'eem-delete-perm-title');
 		overlay.innerHTML =
-			'<div class="eem-modal eem-modal--sm">' +
-				'<div class="eem-modal-header eem-modal-header--danger">' +
-					'<h2 class="eem-modal-title" id="eem-delete-perm-title">Delete reservation permanently?</h2>' +
+			'<div class="eem-modal-card">' +
+				'<div class="eem-modal-head eem-modal-head--danger">' +
+					'<h2 class="eem-modal-title eem-modal-title--danger" id="eem-delete-perm-title">Delete reservation permanently?</h2>' +
 				'</div>' +
 				'<div class="eem-modal-body">' +
 					'<p style="margin:0 0 10px;color:var(--eem-error-text);font-weight:600;">' +
@@ -815,13 +825,14 @@
 					'</code>' +
 					'<input type="text" id="eem-delete-perm-input" class="eem-field-input" style="width:100%;box-sizing:border-box;" placeholder="Type reservation title to confirm" autocomplete="off">' +
 				'</div>' +
-				'<div class="eem-modal-footer">' +
+				'<div class="eem-modal-foot">' +
 					'<button type="button" id="eem-delete-perm-cancel" class="eem-btn eem-btn--secondary">Cancel</button>' +
 					'<button type="button" id="eem-delete-perm-confirm" class="eem-btn eem-btn--danger" disabled>Delete Permanently</button>' +
 				'</div>' +
 			'</div>';
 
 		document.body.appendChild(overlay);
+		overlay.classList.add('open'); /* C7.X.20: makes .eem-modal visible via .eem-modal.open { display:flex } */
 
 		var input      = overlay.querySelector('#eem-delete-perm-input');
 		var confirmBtn = overlay.querySelector('#eem-delete-perm-confirm');
@@ -834,7 +845,7 @@
 			overlay.remove();
 		});
 		overlay.addEventListener('click', function (e) {
-			// Close on backdrop click (outside the .eem-modal box)
+			// Close on backdrop click (outside the .eem-modal-card box)
 			if (e.target === overlay) overlay.remove();
 		});
 		confirmBtn.addEventListener('click', function () {

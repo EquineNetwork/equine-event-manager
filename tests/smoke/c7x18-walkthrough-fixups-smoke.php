@@ -217,8 +217,8 @@ c7x18_ok( 'admin.js: toggleDropdown uses getBoundingClientRect + window.innerHei
 echo "\n-- Version bump --\n";
 
 $main_php = file_get_contents( $plugin_root . '/equine-event-manager.php' );
-c7x18_ok( 'equine-event-manager.php: version is 2.3.8',
-	(bool) preg_match( "~define\(\s*'EQUINE_EVENT_MANAGER_VERSION',\s*'2\.3\.8'\s*\)~", $main_php ),
+c7x18_ok( 'equine-event-manager.php: version is 2.3.9',
+	(bool) preg_match( "~define\(\s*'EQUINE_EVENT_MANAGER_VERSION',\s*'2\.3\.9'\s*\)~", $main_php ),
 	$pass, $fail, $log );
 
 /* ────────────────────────────────────────────────────────────────

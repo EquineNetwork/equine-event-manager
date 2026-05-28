@@ -1167,3 +1167,46 @@ Three runtime failures discovered during C7.X.18 browser verify (issues not caug
 2. Row menu near container bottom — confirm `--flip-up` class applies and full dropdown is visible
 3. Delete Permanently — confirm typed-confirm modal opens
 
+---
+
+## C7.X.20 — Delete Permanently modal class-name fix (2026-05-28)
+
+Click on Delete Permanently produced "nothing" (no modal, no error, no network request) even though Restore in the same dropdown worked. Root cause found and fixed. Version 2.3.8 → 2.3.9.
+
+**Root cause: wrong CSS class names in `openDeletePermanentlyModal`**
+
+Prior code (C7.X.17):
+```javascript
+overlay.className = 'eem-modal-overlay eem-modal-overlay--active';  // class doesn't exist in admin.css
+overlay.innerHTML = '<div class="eem-modal eem-modal--sm">...';      // inner .eem-modal → display:none, .open never added
+```
+
+The outer `overlay` div had class names `eem-modal-overlay eem-modal-overlay--active` which don't exist in admin.css at all. The inner div had `class="eem-modal"` which admin.css defines as `{ display: none }` and only shows via `.eem-modal.open { display: flex }` — but `.open` was never added. Result: modal was appended to `document.body` but permanently invisible.
+
+**Why Restore worked but Delete Permanently didn't:**
+- Restore calls `submitReservationAction()` → builds a hidden form → submits → page redirects. No modal needed.
+- Delete Permanently calls `openDeletePermanentlyModal()` → needs a visual modal. The modal was silently invisible.
+
+**Additional wrong class names fixed:**
+- `eem-modal-header` → `eem-modal-head` (header sub-element)
+- `eem-modal-footer` → `eem-modal-foot` (footer sub-element)
+
+(All verified against Email Customers modal which is the canonical working implementation — PHP renders `<div class="eem-modal" id="eem-email-customers-modal">` + `<div class="eem-modal-card">` + header = `<header class="eem-modal-head">` + footer = `<div class="eem-modal-foot">`.)
+
+**Fix applied:**
+- `overlay.className = 'eem-modal'` (the outer div IS the backdrop)
+- `overlay.classList.add('open')` after `document.body.appendChild(overlay)`
+- Inner: `<div class="eem-modal-card">` (not `.eem-modal`)
+- Header: `<div class="eem-modal-head eem-modal-head--danger">` (not `.eem-modal-header`)
+- Footer: `<div class="eem-modal-foot">` (not `.eem-modal-footer`)
+- Added `eem-modal-head--danger` and `eem-modal-title--danger` CSS modifiers to admin.css (no `!important`)
+
+**New CLAUDE.md defense needed (pending):** JS modal creation pattern must be validated against CSS class names at the time of authoring — an invisible modal produces exactly "nothing happens" which is the same symptom as "handler not wired." Smoke tests that check handler existence (source-presence) wouldn't catch this.
+
+**Smoke results: c7x20 19/19, c7x18 31/31, c7x19 13/13.**
+
+**MANDATORY BROWSER SELF-VERIFY:**
+1. Clear console, click Delete Permanently on a Trash row → typed-confirm modal must OPEN with dark backdrop and card (not invisible)
+2. Wrong title → Delete button disabled; exact title → enabled → click → AJAX fires → row removed from Trash → toast
+3. Restore still fires without modal (regression)
+

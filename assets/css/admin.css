@@ -1897,6 +1897,18 @@ th.sorted-desc .eem-sort-icon span:first-child {
 	color: var(--eem-navy);
 }
 
+/* C7.X.20 — Danger header modifier for destructive-action modals (Delete Permanently).
+   No !important — specificity (.eem-modal-head--danger) is naturally higher than
+   the base .eem-modal-head rule via the added class. */
+.eem-modal-head--danger {
+	background: var(--eem-error-bg);
+	border-bottom-color: var(--eem-error-border);
+}
+
+.eem-modal-title--danger {
+	color: var(--eem-error-text);
+}
+
 .eem-modal-body {
 	padding: 20px;
 	overflow-y: auto;
