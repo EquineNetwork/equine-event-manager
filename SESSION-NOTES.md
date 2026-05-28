@@ -1210,3 +1210,23 @@ The outer `overlay` div had class names `eem-modal-overlay eem-modal-overlay--ac
 2. Wrong title → Delete button disabled; exact title → enabled → click → AJAX fires → row removed from Trash → toast
 3. Restore still fires without modal (regression)
 
+---
+
+## C7.X.21 — Typed-confirm changed to constant "DELETE" (2026-05-28)
+
+UX change: typed-confirm for permanent delete was "type the exact reservation title" — fragile with special characters, not intuitive for non-technical admins. Changed to the constant word `DELETE` (case-sensitive uppercase) for ALL permanent-delete actions plugin-wide. Version 2.3.9 → 2.3.10.
+
+**Changes:**
+- `admin.js` `openDeletePermanentlyModal()`: added `var CONFIRM_WORD = 'DELETE'`; replaced `resTitle` variable throughout (input comparison, confirmBtn guard, payload); modal copy now says "type **DELETE** below:" with placeholder "Type DELETE to confirm".
+- `admin/class-eem-reservations-list-page.php` `handle_delete_permanently()`: server validation now `'DELETE' !== $typed` (was `$post->post_title !== $typed`).
+- Prior smokes c7x18/c7x19/c7x20 version assertions updated 2.3.9 → 2.3.10.
+
+**Smoke results: c7x21 15/15, c7x20 19/19, c7x19 13/13, c7x18 31/31.**
+
+**MANDATORY BROWSER SELF-VERIFY:**
+1. Click Delete Permanently on a Trash row → modal opens with typed-confirm input.
+2. Type `delete` (lowercase) → Delete Permanently button stays **DISABLED**.
+3. Type `DELETE` (uppercase) → button **ENABLES**.
+4. Click Delete Permanently → AJAX fires → row disappears → toast shown.
+5. Restore still one-click, no modal (regression check).
+

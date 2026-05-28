@@ -774,36 +774,22 @@
 	}
 
 	/* C7.X.17 Issue D3 — Typed-confirmation modal for Delete Permanently.
-	   Opens a modal that requires the user to type the reservation title
-	   before the Delete button becomes enabled. Also validates server-side
-	   (confirmation_title posted alongside the nonce).
-	   C7.X.20 fix: prior version used className = 'eem-modal-overlay eem-modal-overlay--active'
-	   (class names that don't exist in admin.css) and never added .open to the inner
-	   .eem-modal element — so the modal was appended to the DOM but permanently
-	   display:none. Correct pattern: outer div IS the .eem-modal backdrop element,
-	   classList.add('open') makes it flex-visible per .eem-modal.open { display:flex }.
-	   Also corrected eem-modal-header → eem-modal-head, eem-modal-footer → eem-modal-foot
-	   to match the actual admin.css selectors (Email Customers modal is the canonical ref). */
+	   C7.X.20 fix: corrected CSS class names + added classList.add('open').
+	   C7.X.21 UX change: typed confirmation is now the constant string "DELETE"
+	   (case-sensitive uppercase) instead of the reservation title. Simpler and
+	   consistent for all permanent-delete actions plugin-wide. Server-side
+	   also validates the posted confirmation === "DELETE". */
 	function openDeletePermanentlyModal(target) {
-		var resId    = target.dataset.reservationId;
-		var resTitle = target.dataset.reservationTitle || '';
+		var resId = target.dataset.reservationId;
 		if (!resId) return;
 
 		// Remove any existing modal first (e.g. if opened twice quickly)
 		var existing = document.getElementById('eem-delete-perm-overlay');
 		if (existing) existing.remove();
 
-		function escHtml(str) {
-			return String(str)
-				.replace(/&/g, '&amp;')
-				.replace(/</g, '&lt;')
-				.replace(/>/g, '&gt;')
-				.replace(/"/g, '&quot;');
-		}
+		/* C7.X.21: confirmation word is the constant "DELETE" (case-sensitive). */
+		var CONFIRM_WORD = 'DELETE';
 
-		/* C7.X.20: overlay IS the .eem-modal backdrop (position:fixed, inset:0).
-		   Inner card is .eem-modal-card (not .eem-modal). classList.add('open')
-		   after append makes it visible via .eem-modal.open { display:flex }. */
 		var overlay = document.createElement('div');
 		overlay.id  = 'eem-delete-perm-overlay';
 		overlay.className = 'eem-modal';
@@ -819,11 +805,8 @@
 					'<p style="margin:0 0 10px;color:var(--eem-error-text);font-weight:600;">' +
 						'This cannot be undone. The reservation, all linked orders, and all audit history will be permanently deleted.' +
 					'</p>' +
-					'<p style="margin:0 0 6px;">To confirm, type the reservation title below:</p>' +
-					'<code style="display:block;background:var(--eem-bg);border:1px solid var(--eem-border);border-radius:var(--eem-radius);padding:6px 10px;margin-bottom:10px;word-break:break-all;">' +
-						escHtml(resTitle) +
-					'</code>' +
-					'<input type="text" id="eem-delete-perm-input" class="eem-field-input" style="width:100%;box-sizing:border-box;" placeholder="Type reservation title to confirm" autocomplete="off">' +
+					'<p style="margin:0 0 6px;">To confirm, type <strong>DELETE</strong> below:</p>' +
+					'<input type="text" id="eem-delete-perm-input" class="eem-field-input" style="width:100%;box-sizing:border-box;" placeholder="Type DELETE to confirm" autocomplete="off">' +
 				'</div>' +
 				'<div class="eem-modal-foot">' +
 					'<button type="button" id="eem-delete-perm-cancel" class="eem-btn eem-btn--secondary">Cancel</button>' +
@@ -832,14 +815,14 @@
 			'</div>';
 
 		document.body.appendChild(overlay);
-		overlay.classList.add('open'); /* C7.X.20: makes .eem-modal visible via .eem-modal.open { display:flex } */
+		overlay.classList.add('open');
 
 		var input      = overlay.querySelector('#eem-delete-perm-input');
 		var confirmBtn = overlay.querySelector('#eem-delete-perm-confirm');
 		var cancelBtn  = overlay.querySelector('#eem-delete-perm-cancel');
 
 		input.addEventListener('input', function () {
-			confirmBtn.disabled = (input.value !== resTitle);
+			confirmBtn.disabled = (input.value !== CONFIRM_WORD);
 		});
 		cancelBtn.addEventListener('click', function () {
 			overlay.remove();
@@ -849,13 +832,13 @@
 			if (e.target === overlay) overlay.remove();
 		});
 		confirmBtn.addEventListener('click', function () {
-			if (input.value !== resTitle) return;
+			if (input.value !== CONFIRM_WORD) return;
 			overlay.remove();
 			submitReservationAction(
 				target,
 				'eem_reservation_delete_permanently',
 				'eem_reservation_delete_permanently',
-				{ confirmation_title: resTitle }
+				{ confirmation_title: CONFIRM_WORD }
 			);
 		});
 

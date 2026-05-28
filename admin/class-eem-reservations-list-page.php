@@ -400,13 +400,14 @@ class EEM_Reservations_List_Page {
 			self::redirect_with_notice( 'failed' );
 		}
 
-		// C7.X.17 Issue D3 — server-side typed-confirmation check. The JS modal
-		// requires typing the reservation title before enabling the delete button,
-		// but we also validate server-side to guard against hand-crafted requests.
-		// WP stores trashed post titles unchanged (trash is via status flip, not
-		// rename), so $post->post_title is the canonical comparison target.
+		// C7.X.17 Issue D3 — server-side typed-confirmation gate.
+		// C7.X.21 change: confirmation is now the constant string "DELETE"
+		// (case-sensitive uppercase) instead of the reservation title. Simpler,
+		// consistent for all permanent-delete actions plugin-wide.
+		// The JS modal also enforces this client-side, but server validates too
+		// so hand-crafted requests without posting exactly "DELETE" are rejected.
 		$typed = isset( $_POST['confirmation_title'] ) ? wp_unslash( $_POST['confirmation_title'] ) : '';
-		if ( '' === $typed || $typed !== $post->post_title ) {
+		if ( 'DELETE' !== $typed ) {
 			self::redirect_with_notice( 'failed' );
 		}
 
