@@ -8,15 +8,15 @@
  * drift item from the audit is asserted here so future regressions
  * are caught at smoke time, not visual-verify time.
  *
- * Groups (all 54 audit drifts + foundational primitives):
+ * Groups (C8 port update — rail removed, sticky save bar added):
  *   [1]  Page chrome: .eem-plugin-wrap + .eem-plugin-header +
  *        .eem-plugin-title / -subtitle / -meta-line
- *   [2]  Body layout: 2-col .eem-edit-body grid + .eem-edit-main +
- *        .eem-edit-rail (3 rail cards)
- *   [3]  Right rail content: Publish card (rows + buttons), Linked
- *        Event card (search + linked display + unlink), Shortcode
- *        card (code-box). NO fixed-bottom save bar. NO modal.
- *   [4]  Mobile sticky save renders (CSS-controlled visibility).
+ *   [2]  Body layout: single-col .eem-edit-body + .eem-edit-main.
+ *        C8: .eem-edit-rail NOT rendered on Edit Reservation page.
+ *   [3]  Right rail: C8 port — 0 rail cards in editor output. Publish
+ *        card + Shortcode card RETIRED from editor. CSS rules kept.
+ *   [4]  Sticky save bar: always visible (all screen sizes). Status
+ *        badge + 4 action buttons. Replaces mobile-only strip.
  *   [5]  All 10 sections render (description / checkin / eventday /
  *        stall / rv / addons / group / fees / agreement /
  *        cancellation) with proper section-skeleton chrome.
@@ -84,33 +84,73 @@ c7x_ok( 'C8: id="eem-header-action-change" renders', false !== strpos( $html, 'i
 c7x_ok( 'C8: id="eem-event-search-results" renders', false !== strpos( $html, 'id="eem-event-search-results"' ), $pass, $fail, $log );
 
 // ── [2] Body layout ──────────────────────────────────────────────
-echo "\n[2] 2-col grid body — .eem-edit-body + .eem-edit-main + .eem-edit-rail\n";
-c7x_ok( '.eem-edit-body grid renders',  false !== strpos( $html, 'class="eem-edit-body"' ),  $pass, $fail, $log );
-c7x_ok( '.eem-edit-main wraps sections', false !== strpos( $html, 'eem-edit-main' ),         $pass, $fail, $log );
-c7x_ok( '.eem-edit-rail renders',        false !== strpos( $html, 'class="eem-edit-rail"' ), $pass, $fail, $log );
+// C8 port: right rail REMOVED — single column layout, no .eem-edit-rail.
+echo "\n[2] Single-col body — .eem-edit-body + .eem-edit-main (C8: rail removed)\n";
+c7x_ok( '.eem-edit-body renders',         false !== strpos( $html, 'class="eem-edit-body"' ),      $pass, $fail, $log );
+c7x_ok( '.eem-edit-main wraps sections',  false !== strpos( $html, 'eem-edit-main' ),              $pass, $fail, $log );
+c7x_ok( 'C8: NO <aside class="eem-edit-rail"> in rendered HTML', false === strpos( $html, 'class="eem-edit-rail"' ), $pass, $fail, $log );
 
 // ── [3] Right rail content ───────────────────────────────────────
-// C8 update: Linked Event rail card RETIRED. Rail now has 2 cards:
-// Publish + Shortcode. Linked event controls moved to event-anchor header.
-echo "\n[3] Rail cards — Publish + Shortcode (C8: Linked Event retired to header)\n";
-c7x_ok( 'rail card count is exactly 2',  2 === substr_count( $html, 'class="eem-rail-card"' ), $pass, $fail, $log, 'found: ' . substr_count( $html, 'class="eem-rail-card"' ) );
-c7x_ok( 'Publish rail card',     false !== strpos( $html, '<span class="eem-rail-title">Publish</span>' ),       $pass, $fail, $log );
-c7x_ok( 'RETIRED C8: Linked Event rail card not in rail', false === strpos( $html, '<span class="eem-rail-title">Linked Event</span>' ), $pass, $fail, $log );
-c7x_ok( 'Shortcode rail card',   false !== strpos( $html, '<span class="eem-rail-title">Shortcode</span>' ),     $pass, $fail, $log );
-c7x_ok( 'Publish: Status row',           false !== strpos( $html, 'class="eem-publish-row"' ),     $pass, $fail, $log );
-c7x_ok( 'Publish: Preview button',       false !== strpos( $html, 'class="eem-btn-preview"' ),     $pass, $fail, $log );
-c7x_ok( 'Publish: Update button (Electric Blue per VIS-4)', false !== strpos( $html, 'class="eem-btn-update"' ),    $pass, $fail, $log );
-c7x_ok( 'Publish: Move to Trash danger',  false !== strpos( $html, 'class="eem-btn-danger-sm"' ),  $pass, $fail, $log );
-c7x_ok( 'Shortcode: code-box renders',   false !== strpos( $html, 'class="eem-code-box"' ),       $pass, $fail, $log );
-c7x_ok( 'RETIRED: no .eem-save-bar fixed-bottom',  false === strpos( $html, 'class="eem-save-bar"' ),   $pass, $fail, $log );
-c7x_ok( 'RETIRED: no #eem-modal-linked-event',     false === strpos( $html, 'id="eem-modal-linked-event"' ), $pass, $fail, $log );
-c7x_ok( 'RETIRED: no meta-line change-link launcher', false === strpos( $html, 'reservation-editor-launch-linked-event-modal' ), $pass, $fail, $log );
+// C8 port: Right rail RETIRED from Edit Reservation page. 0 rail cards.
+echo "\n[3] Rail cards — C8 port: 0 rail cards in Edit Reservation output\n";
+c7x_ok( 'C8: 0 rail cards (eem-rail-card not rendered)',
+	0 === substr_count( $html, 'class="eem-rail-card"' ),
+	$pass, $fail, $log, 'found: ' . substr_count( $html, 'class="eem-rail-card"' ) );
+c7x_ok( 'C8: Publish rail card NOT in editor HTML',
+	false === strpos( $html, '<span class="eem-rail-title">Publish</span>' ),
+	$pass, $fail, $log );
+c7x_ok( 'C8: Shortcode rail card NOT in editor HTML',
+	false === strpos( $html, '<span class="eem-rail-title">Shortcode</span>' ),
+	$pass, $fail, $log );
+c7x_ok( 'RETIRED C8: Linked Event rail card not in rail',
+	false === strpos( $html, '<span class="eem-rail-title">Linked Event</span>' ),
+	$pass, $fail, $log );
+c7x_ok( 'RETIRED: no .eem-save-bar fixed-bottom',
+	false === strpos( $html, 'class="eem-save-bar"' ),
+	$pass, $fail, $log );
+c7x_ok( 'RETIRED: no #eem-modal-linked-event',
+	false === strpos( $html, 'id="eem-modal-linked-event"' ),
+	$pass, $fail, $log );
+c7x_ok( 'RETIRED: no meta-line change-link launcher',
+	false === strpos( $html, 'reservation-editor-launch-linked-event-modal' ),
+	$pass, $fail, $log );
 
-// ── [4] Mobile sticky-save ───────────────────────────────────────
-echo "\n[4] Mobile sticky-save (display:none on desktop via CSS)\n";
-c7x_ok( '.eem-sticky-save markup renders', false !== strpos( $html, 'class="eem-sticky-save"' ),    $pass, $fail, $log );
-c7x_ok( '.eem-sticky-save CSS default display:none', (bool) preg_match( '/\.eem-sticky-save\s*\{[^}]*display:\s*none/', $css ), $pass, $fail, $log );
-c7x_ok( '.eem-sticky-save CSS mobile @media display:flex', (bool) preg_match( '/@media[^{]*max-width:\s*767px[^{]*\{[^@]*\.eem-sticky-save\s*\{[^}]*display:\s*flex/s', $css ), $pass, $fail, $log );
+// ── [4] Sticky save bar (always visible, all screen sizes) ──────
+// C8 port: replaces mobile-only strip. Full bar with status badge + 4 buttons.
+echo "\n[4] Sticky save bar — always visible, 4 action buttons\n";
+c7x_ok( '.eem-sticky-save renders',
+	false !== strpos( $html, 'class="eem-sticky-save"' ),
+	$pass, $fail, $log );
+c7x_ok( 'sticky bar: Update Reservation button text',
+	false !== strpos( $html, 'Update Reservation' ) || false !== strpos( $html, 'Publish Reservation' ),
+	$pass, $fail, $log );
+c7x_ok( 'sticky bar: Save as Draft button',
+	false !== strpos( $html, 'Save as Draft' ),
+	$pass, $fail, $log );
+c7x_ok( 'sticky bar: Move to Trash button (data-eem-action=reservation-editor-trash)',
+	false !== strpos( $html, 'data-eem-action="reservation-editor-trash"' ),
+	$pass, $fail, $log );
+c7x_ok( 'sticky bar: Preview button renders',
+	false !== strpos( $html, 'class="eem-btn-preview"' ),
+	$pass, $fail, $log );
+c7x_ok( 'sticky bar: status badge (.eem-sticky-save-status)',
+	false !== strpos( $html, 'eem-sticky-save-status' ),
+	$pass, $fail, $log );
+c7x_ok( 'sticky bar: nonce input present',
+	false !== strpos( $html, 'name="_eem_editor_nonce"' ),
+	$pass, $fail, $log );
+c7x_ok( 'C8: breadcrumb NOT in editor HTML (eem_render_breadcrumb removed)',
+	false === strpos( $html, 'class="eem-breadcrumb"' ),
+	$pass, $fail, $log );
+c7x_ok( '.eem-sticky-save CSS: always-visible (display:flex, no display:none for main rule)',
+	(bool) preg_match( '/\.eem-sticky-save\s*\{[^}]*display:\s*flex/', $css ),
+	$pass, $fail, $log );
+c7x_ok( '.eem-sticky-save-status CSS defined',
+	false !== strpos( $css, '.eem-sticky-save-status' ),
+	$pass, $fail, $log );
+c7x_ok( '.eem-sticky-save-dot CSS defined',
+	false !== strpos( $css, '.eem-sticky-save-dot' ),
+	$pass, $fail, $log );
 
 // ── [5] All 10 sections render ───────────────────────────────────
 echo "\n[5] 10 sections — full mockup roster\n";
@@ -216,13 +256,15 @@ $css_classes = array(
 	'.eem-mode-btn',
 	// C8 Computed inventory display
 	'.eem-inventory-computed-wrap', '.eem-inventory-computed-number', '.eem-inventory-computed-label',
-	// Layout
+	// Layout (C8 port: .eem-edit-rail CSS retained but no longer rendered in editor)
 	'.eem-edit-body', '.eem-edit-main', '.eem-edit-rail',
+	// Rail card CSS retained for possible reuse
 	'.eem-rail-card', '.eem-rail-header', '.eem-rail-title', '.eem-rail-body', '.eem-rail-hint',
 	'.eem-publish-row',
 	'.eem-btn-preview', '.eem-btn-save-draft', '.eem-btn-update', '.eem-btn-danger-sm',
 	'.eem-code-box',
-	'.eem-sticky-save',
+	// C8 sticky save bar classes
+	'.eem-sticky-save', '.eem-sticky-save-status', '.eem-sticky-save-dot', '.eem-sticky-save-spacer', '.eem-sticky-save-actions',
 	'.eem-layout-summary', '.eem-layout-summary-left', '.eem-layout-summary-stat', '.eem-layout-summary-stat-num', '.eem-layout-summary-meta',
 	'.eem-btn-manage-layout',
 	'.eem-zone-list', '.eem-zone-row', '.eem-zone-color-swatch', '.eem-zone-name-input', '.eem-zone-add-btn',

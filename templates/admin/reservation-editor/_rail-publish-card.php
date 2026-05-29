@@ -1,4 +1,5 @@
 <?php
+/* No longer rendered on Edit Reservation page as of C8 port. Retained for possible reuse on other pages. */
 /**
  * Reservation Editor — right-rail Publish card (C7.X.3).
  *

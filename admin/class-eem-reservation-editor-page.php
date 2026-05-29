@@ -136,9 +136,7 @@ class EEM_Reservation_Editor_Page {
 		}
 
 		require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_section-skeleton.php';
-		require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_breadcrumb-helper.php';
 
-		$breadcrumb_segments = eem_reservation_editor_breadcrumb( $reservation_id );
 		$source_event_title  = self::resolve_page_title( $post, $reservation_id );
 
 		// C8 — Resolve event dates for the event-anchor header meta line.
@@ -152,7 +150,6 @@ class EEM_Reservation_Editor_Page {
 		}
 		?>
 		<div class="eem-page">
-			<?php eem_render_breadcrumb( $breadcrumb_segments ); ?>
 			<div class="eem-plugin-wrap">
 				<!-- C8 — Event-anchor header replaces .eem-plugin-subtitle + meta-line.
 				     Rail Linked Event card retired; typeahead moves to the plugin header. -->
@@ -191,18 +188,10 @@ class EEM_Reservation_Editor_Page {
 					<main class="eem-edit-main eem-reservation-editor-body" data-eem-reservation-id="<?php echo esc_attr( (string) $reservation_id ); ?>">
 						<?php self::render_section_skeletons( $reservation_id ); ?>
 					</main>
-					<aside class="eem-edit-rail">
-						<?php
-						// C8 — _rail-linked-event-card.php retired; Linked Event
-						// controls moved to the event-anchor header (see above).
-						require EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_rail-publish-card.php';
-						require EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_rail-shortcode-card.php';
-						?>
-					</aside>
 				</div>
 			</div>
 		</div>
-		<?php require EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_sticky-save-mobile.php'; ?>
+		<?php require EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_sticky-save-bar.php'; ?>
 		<?php
 	}
 

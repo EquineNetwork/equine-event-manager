@@ -2001,30 +2001,8 @@ th.sorted-desc .eem-sort-icon span:first-child {
 	}
 }
 
-/* Admin mobile sticky save bar (Edit Reservation) — Publish + Save Draft
-   pinned to bottom on mobile so customers can save without scrolling. */
-.eem-sticky-save {
-	display: none;
-}
-
-@media (max-width: 767px) {
-	.eem-sticky-save {
-		display: flex;
-		position: fixed;
-		bottom: 0;
-		left: 0;
-		right: 0;
-		background: var(--eem-surface);
-		border-top: 1px solid #dcdcde;
-		padding: 12px 16px;
-		z-index: var(--eem-z-sticky);
-		gap: var(--eem-space-2);
-	}
-
-	.eem-sticky-save .eem-btn {
-		flex: 1;
-	}
-}
+/* .eem-sticky-save — C8 port: full definition moved to C7.X section below.
+   This placeholder kept so CSS source-order is preserved (C1.x section). */
 
 /* ─────────────────────────────────────────────────────────────
    Dropdown panel (generic) — More dropdown on Order Detail, etc.
@@ -6150,7 +6128,11 @@ input.eem-pct-input:focus {
 
 /* ── Plugin-wrap chrome (mockup line 43) ── */
 .eem-plugin-wrap { background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; overflow: hidden; }
-.eem-plugin-header { padding: 18px 22px; border-bottom: 1px solid #dcdcde; }
+/* C8 port — flex layout matches mockup line 46 (.plugin-header rule):
+   display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap */
+.eem-plugin-header { padding: 18px 22px; border-bottom: 1px solid #dcdcde; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+/* C8 port — .plugin-header-left rule at mockup line 47 */
+.eem-plugin-header-left { flex: 1; min-width: 0; }
 .eem-plugin-title { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; color: var(--eem-navy); line-height: 1.2; margin-bottom: 4px; }
 .eem-plugin-subtitle { font-size: 13px; color: var(--eem-text-muted); line-height: 1.45; margin-bottom: 8px; }
 .eem-plugin-meta-line { font-size: 13px; color: var(--eem-text-muted); display: flex; gap: 18px; flex-wrap: wrap; margin-top: 6px; }
@@ -6171,16 +6153,14 @@ input.eem-pct-input:focus {
 .eem-plugin-meta-line .eem-meta-action:hover { color: var(--eem-electric); text-decoration: underline; }
 .eem-plugin-meta-line .eem-meta-action--danger:hover { color: #b32d2e; }
 
-/* ── Edit body 2-column grid + right rail (mockup line 360) ── */
-.eem-edit-body { padding: 18px 22px; display: grid; grid-template-columns: 1fr 300px; gap: 18px; align-items: start; background: #fff; }
-/* C7.X.16 Issue A — main column padding stripped. The .eem-edit-body
-   grid container provides the 18px 22px outer breathing room around
-   both columns; .eem-edit-main only needs gap between its child cards.
-   The pre-C7.X.16 inline `padding: 18px 18px 80px` compounded with
-   the grid container's 18px 22px → 36px top / 40px left before any
-   card content. Mockup and admin.css both had the legacy padding;
-   visual verify caught it. Mockup updated in lockstep. */
+/* ── Edit body — single column per C8 port (mockup line 66–68).
+   Rail removed; .edit-body is now a plain block container.
+   padding-bottom: 90px prevents content being obscured by the
+   fixed .eem-sticky-save bar (mockup line 67: padding:18px 22px 90px). */
+.eem-edit-body { padding: 18px 22px 90px; background: #fff; }
 .eem-edit-main { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+/* .eem-edit-rail CSS retained for possible reuse — no longer rendered
+   on Edit Reservation page as of C8 port. */
 .eem-edit-rail { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 44px; }
 
 /* ── Rail cards (mockup line 235) ── */
@@ -6226,9 +6206,79 @@ a.eem-btn-preview:hover { background: #EEF4FF; border-color: var(--eem-electric)
 /* ── Shortcode rail card (mockup line 270) ── */
 .eem-code-box { background: #f3f4f5; border: 1px solid #dcdcde; border-radius: 4px; padding: 9px 12px; font-family: monospace; font-size: 13px; color: var(--eem-text); word-break: break-all; }
 
-/* ── Sticky mobile save (mockup line 275) ── */
-.eem-sticky-save { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #dcdcde; padding: 12px 16px; z-index: 200; gap: 8px; }
-.eem-sticky-save .eem-btn-update, .eem-sticky-save .eem-btn-save-draft { width: auto; flex: 1; }
+/* ── Sticky save bar (C8 port, mockup line 258).
+   Always visible — replaces the old mobile-only strip.
+   Left: status badge. Spacer. Right: action buttons.
+   Mockup CSS: position:fixed;bottom:0;left:0;right:0;background:#fff;
+   border-top:1px solid #dcdcde;box-shadow:0 -2px 8px rgba(0,0,0,.06);
+   padding:10px 22px;z-index:50;gap:10px; ── */
+.eem-sticky-save {
+	display: flex;
+	align-items: center;
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	background: #fff;
+	border-top: 1px solid #dcdcde;
+	box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
+	padding: 10px 22px;
+	z-index: 50;
+	gap: 10px;
+}
+/* Status badge (left side) */
+.eem-sticky-save-status {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 13px;
+	color: var(--eem-text);
+	font-weight: 600;
+	white-space: nowrap;
+}
+.eem-sticky-save-dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: #22c55e;
+	flex-shrink: 0;
+}
+/* Status badge color variants */
+.eem-sticky-save-status--published .eem-sticky-save-dot { background: #22c55e; }
+.eem-sticky-save-status--draft .eem-sticky-save-dot { background: #8c8f94; }
+.eem-sticky-save-status--trash .eem-sticky-save-dot { background: #b91c1c; }
+/* Spacer pushes buttons to the right */
+.eem-sticky-save-spacer { flex: 1; }
+/* Button cluster (right side) */
+.eem-sticky-save-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+/* Override full-width rail-button defaults for save bar context */
+.eem-sticky-save .eem-btn-preview,
+.eem-sticky-save .eem-btn-save-draft,
+.eem-sticky-save .eem-btn-update,
+.eem-sticky-save .eem-btn-danger-sm { width: auto; flex: none; }
+/* Compact bar at ≤640px (mockup line 293) */
+@media (max-width: 640px) {
+	.eem-sticky-save { padding: 8px 14px; gap: 6px; }
+	.eem-sticky-save-actions { gap: 6px; }
+	.eem-sticky-save .eem-btn-preview,
+	.eem-sticky-save .eem-btn-save-draft,
+	.eem-sticky-save .eem-btn-update,
+	.eem-sticky-save .eem-btn-danger-sm { padding: 7px 10px; font-size: 12.5px; }
+}
+/* Abbreviated bar at ≤480px — hide verbose button labels (mockup line 300) */
+@media (max-width: 480px) {
+	.eem-sticky-save { padding: 8px 10px; gap: 4px; }
+	.eem-sticky-save-actions { gap: 4px; }
+	.eem-sticky-save .eem-btn-label-long { display: none; }
+	.eem-sticky-save .eem-btn-preview,
+	.eem-sticky-save .eem-btn-save-draft,
+	.eem-sticky-save .eem-btn-danger-sm { padding: 7px 8px; font-size: 12px; }
+	.eem-sticky-save .eem-btn-update { padding: 7px 12px; font-size: 12.5px; }
+}
 
 /* ── Layout summary (Stall + RV read-only widget, mockup line 170) ── */
 .eem-layout-summary { background: #f3f4f5; border: 1px solid #dcdcde; border-radius: 4px; padding: 16px 18px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
@@ -6332,21 +6382,23 @@ input.eem-repeat-price-in:focus { border-color: var(--eem-electric); box-shadow:
 .eem-stay-hint { color: #b91c1c; margin-top: 6px; display: block; opacity: 0; transition: opacity 0.25s; font-size: 12px; }
 .eem-stay-hint.eem-stay-hint--show { opacity: 1; }
 
-/* ── Mobile responsive breakpoints (mockup lines 279, 287) ── */
+/* ── Mobile responsive breakpoints (mockup lines 264–317) ── */
 @media (max-width: 1024px) {
-	.eem-edit-body { grid-template-columns: 1fr 260px; padding: 14px 16px; }
+	/* C8 port: single-column edit body — only padding changes at tablet */
+	.eem-edit-body { padding: 14px 16px 80px; }
 }
 @media (max-width: 767px) {
 	.eem-plugin-header { padding: 14px; }
 	.eem-plugin-title { font-size: 18px; }
-	.eem-edit-body { grid-template-columns: 1fr; padding: 12px; gap: 14px; }
-	.eem-edit-rail { position: static; order: -1; }
+	/* C8 port: single-column at all breakpoints — no grid-template-columns override needed */
+	.eem-edit-body { padding: 12px 12px 90px; }
 	.eem-section-header { padding: 11px 14px; }
 	.eem-section-body { padding: 12px 14px; }
 	.eem-enable-toggle .eem-enable-toggle__label { display: none; }
 	.eem-layout-summary { flex-direction: column; align-items: stretch; }
 	.eem-btn-manage-layout { align-self: flex-start; }
-	.eem-sticky-save { display: flex; }
+	/* On mobile, hide the status badge in the sticky save bar (mockup line 285) */
+	.eem-sticky-save-status { display: none; }
 }
 
 /* ════════════════════════════════════════════════════════════════════
