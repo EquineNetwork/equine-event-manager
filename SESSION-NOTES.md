@@ -1230,3 +1230,24 @@ UX change: typed-confirm for permanent delete was "type the exact reservation ti
 4. Click Delete Permanently → AJAX fires → row disappears → toast shown.
 5. Restore still one-click, no modal (regression check).
 
+---
+
+## C8 PORT-TIME DEFERRED ITEMS
+
+Items intentionally left for the PHP port of C8.A. Do not carry these into production as-is.
+
+### 1. Zone CSS cascade exclusion
+`.zone-name-input` and `.zone-painter-select` inside `#stall-layout-modal` intentionally receive the row-builder's `1.5px solid #D9E2F2` border (from the scoped `#stall-layout-modal` overrides). No `:not()` exclusion was added to the existing file's `.zone-name-input { border: 1px solid #8c8f94 }` rule — the mockup scope is clean enough. At port time: confirm the admin CSS cascade order and add exclusions if needed.
+
+### 2. chart-modal-* vs eem-modal-* collapse decision
+The mockup has two modal families: `eem-modal-*` (z-index 1000, layout editor) and `chart-modal-*` (z-index 1100, chart previews nested inside the layout editor). At port time: decide whether `chart-modal-*` should be absorbed into the `eem-modal-*` family with a modifier class (e.g. `eem-modal--overlay`, z-index bump via CSS custom property) or kept as a separate component. The z-index relationship (chart floats above layout editor) must be preserved regardless.
+
+### 3. Card-radius token (`--eem-radius-lg`)
+Six card-radius literals were intentionally kept: `row-card` (6px), `row-add-btn` (6px), `zone-painter` (6px), `zone-add-btn` (6px), `chart-modal-card` (8px), `eem-modal-card` (6px). Each carries `/* intentional larger card radius — not --eem-radius; revisit at C8 port if --eem-radius-lg is defined */`. At port time: define `--eem-radius-lg` in admin.css if the design system settles on a value, then swap all six literals.
+
+### 4. `.stall-row-layout` rename at port
+The mockup uses `.stall-row-layout` (not `.stall-row`) to avoid a real runtime CSS collision with `<tr class="stall-row">` in the occupancy chart views. At port time: choose the canonical production name — either keep `.stall-row-layout` or rename to an `.eem-*`-prefixed class (e.g. `.eem-stall-row`). Do **not** carry `.stall-row-layout` into PHP-generated HTML without an intentional naming decision.
+
+### 5. `eem-modal-body` field-row label column width
+The layout editor modal reuses the `.field-row` + `.field-label` + `.field-control` structure from the main edit page (220px label column). At port time: verify on actual admin page widths that 220px still works inside the modal's `max-width:1100px` card. Consider a narrower label column (e.g. 180px) scoped to `#stall-layout-modal .field-label` if the modal body feels cramped.
+
