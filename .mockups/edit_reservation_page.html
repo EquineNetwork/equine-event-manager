@@ -292,38 +292,40 @@ a:hover{text-decoration:none}
   .btn-manage-layout{align-self:flex-start}
 }
 
+/* ════════ COMPACT BOTTOM BAR ≤640px ════════ */
+@media(max-width:640px){
+  .sticky-save{padding:8px 14px;gap:6px}
+  .sticky-save-actions{gap:6px}
+  .btn-preview,.btn-save-draft,.btn-update,.btn-danger-sm{padding:7px 10px;font-size:12.5px}
+}
+
+/* ════════ ABBREVIATED BOTTOM BAR ≤480px ════════ */
+@media(max-width:480px){
+  .sticky-save{padding:8px 10px;gap:4px}
+  .sticky-save-actions{gap:4px}
+  /* Hide verbose text nodes via clip trick on each button */
+  .btn-preview .btn-label-long,.btn-save-draft .btn-label-long{display:none}
+  .btn-preview,.btn-save-draft,.btn-danger-sm{padding:7px 8px;font-size:12px}
+  .btn-update{padding:7px 12px;font-size:12.5px}
+}
+
+/* ════════ ICON-ONLY BAR ≤390px ════════ */
+@media(max-width:390px){
+  .sticky-save{padding:8px}
+  .sticky-save-actions{gap:3px}
+  .btn-preview span,.btn-save-draft span,.btn-danger-sm span{display:none}
+  .btn-preview svg,.btn-danger-sm svg{display:inline-block}
+  .btn-preview,.btn-save-draft,.btn-danger-sm{padding:7px 9px}
+  .btn-update{padding:7px 12px;font-size:12px}
+}
+
 /* ════════════════════════════════════════════════════════════════════
    C8.A — Stall Layout Editor: tokens, row-builder, modal, tag-select
    ════════════════════════════════════════════════════════════════════ */
 
 :root{--eem-radius:3px /* mirrored from admin.css --eem-radius; keep in sync */}
 
-/* ── Stall Charts toggle summary (in Stall Reservations section) ── */
-.stall-charts-summary{display:flex;flex-direction:column;gap:8px}
-.stall-charts-summary .toggle-label-row{max-width:380px}
-.btn-edit-layout{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid #1668F2;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;color:#1668F2;background:#fff;cursor:pointer;align-self:flex-start}
-.btn-edit-layout:hover{background:#EEF4FF}
-.btn-edit-layout svg{width:13px;height:13px}
-
-/* ── Layout Editor Modal (eem-modal canonical class family; z-index 1000) ── */
-.eem-modal{position:fixed;inset:0;background:rgba(3,27,78,.55);z-index:1000;display:none;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto}
-.eem-modal.open{display:flex}
-.eem-modal-card{background:#fff;border-radius:6px;width:100%;max-width:1100px;box-shadow:0 20px 60px rgba(3,27,78,.25);display:flex;flex-direction:column;max-height:85vh;overflow:hidden}
-.eem-modal-card--xl{max-width:1100px}
-.eem-modal-head{padding:16px 20px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0}
-.eem-modal-title{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:#031B4E}
-.eem-modal-close{background:none;border:none;cursor:pointer;color:#8c8f94;font-size:22px;line-height:1;padding:0 4px}
-.eem-modal-close:hover{color:#031B4E}
-.eem-modal-body{padding:20px;overflow-y:auto;flex:1}
-.eem-modal-foot{padding:14px 20px;border-top:1px solid #dcdcde;display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-shrink:0}
-.btn-secondary{padding:9px 18px;border:1px solid #8c8f94;border-radius:4px;font-size:13.5px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;cursor:pointer}
-.btn-secondary:hover{background:#f6f7f7}
-.btn-primary{padding:9px 18px;border:1px solid #1668F2;border-radius:4px;font-size:13.5px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;color:#fff;background:#1668F2;cursor:pointer}
-.btn-primary:hover{background:#1257d1;border-color:#1257d1}
-@media(max-width:390px){
-  .eem-modal{padding:0;align-items:stretch}
-  .eem-modal-card{border-radius:0;max-height:100vh;height:100vh;max-width:100vw}
-}
+/* ── C8.A: eem-modal family removed (modal replaced by inline expand); chart-modal-* retained ── */
 
 /* ── Selection mode buttons (Stall / RV selection mode toggle chips) ── */
 .mode-btns{display:flex;gap:8px;flex-wrap:wrap}
@@ -397,12 +399,13 @@ a:hover{text-decoration:none}
 
 /* Zone row/input overrides scoped to the layout editor modal
    (existing RV Zones outside the modal use 1px #8c8f94 borders) */
-#stall-layout-modal .zone-row{border:1.5px solid #D9E2F2;border-radius:6px/* intentional larger card radius */}
-#stall-layout-modal .zone-name-input{border:1.5px solid #D9E2F2}
-#stall-layout-modal .zone-price-wrap{border:1.5px solid #D9E2F2;border-radius:var(--eem-radius);overflow:hidden}
-#stall-layout-modal .zone-price-sym{background:#FAFBFE;border:none;border-right:1.5px solid #D9E2F2;border-radius:0;line-height:32px}
-#stall-layout-modal .zone-price-in{border:none;width:70px}
-#stall-layout-modal .zone-add-btn{border:1.5px dashed #D9E2F2;border-radius:6px;/* intentional larger card radius */margin-bottom:14px}
+/* Zone overrides scoped to stall-charts-content to prevent bleed into RV Lot Zones (#card-rv) */
+#stall-charts-content .zone-row{border:1.5px solid #D9E2F2;border-radius:6px/* intentional larger card radius */}
+#stall-charts-content .zone-name-input{border:1.5px solid #D9E2F2}
+#stall-charts-content .zone-price-wrap{border:1.5px solid #D9E2F2;border-radius:var(--eem-radius);overflow:hidden}
+#stall-charts-content .zone-price-sym{background:#FAFBFE;border:none;border-right:1.5px solid #D9E2F2;border-radius:0;line-height:32px}
+#stall-charts-content .zone-price-in{border:none;width:70px}
+#stall-charts-content .zone-add-btn{border:1.5px dashed #D9E2F2;border-radius:6px;/* intentional larger card radius */margin-bottom:14px}
 
 /* ── Chart preview modals (z-index 1100 — above layout editor modal at 1000) ── */
 .chart-modal{position:fixed;inset:0;background:rgba(3,27,78,.55);z-index:1100;display:none;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto}
@@ -801,29 +804,15 @@ a:hover{text-decoration:none}
                 <div class="field-control"><div class="price-wrap"><span class="price-symbol">$</span><input class="price-input" type="number" value="22.00"></div></div>
               </div>
 
-              <!-- C8.A — Stall Charts toggle: OFF shows chip, ON shows summary + Edit Layout button -->
+              <!-- C8.A — Stall Charts toggle: RV Add-Ons pattern (toggleSwitchRow + data-controls inline) -->
               <div class="field-row">
-                <div class="field-label">Stall Charts<div class="field-label-sub">Physical rows, stall numbers, blocked stalls</div></div>
+                <div class="field-label">Stall Charts<div class="field-label-sub">Define the physical stall layout customers see at checkout</div></div>
                 <div class="field-control">
-                  <!-- OFF state — visible by default -->
-                  <div class="toggle-label-row" id="stall-charts-toggle-off" onclick="toggleStallCharts()">
-                    <div class="toggle off"></div>
+                  <div class="toggle-label-row" style="margin-bottom:10px" onclick="toggleSwitchRow(this)">
+                    <div class="toggle on" data-controls="stall-charts-content"></div>
                     <span>Enable stall charts</span>
                   </div>
-                  <!-- ON state — summary + Edit Layout button (hidden until enabled) -->
-                  <div class="stall-charts-summary" id="stall-charts-summary" style="display:none">
-                    <div class="toggle-label-row" onclick="toggleStallCharts()">
-                      <div class="toggle on"></div>
-                      <span><strong>Enabled</strong> &nbsp;·&nbsp; <span id="stall-charts-row-count">3</span> rows &nbsp;·&nbsp; <span id="stall-charts-stall-count">36</span> stalls</span>
-                    </div>
-                    <button class="btn-edit-layout" type="button" onclick="openStallLayoutModal()">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                      Edit Layout
-                    </button>
-                  </div>
-                  <span class="field-hint">Customers see and select from these stall layouts at checkout.</span>
-                </div>
-              </div>
+                  <div id="stall-charts-content">
 
             </div>
           </section>
@@ -1351,33 +1340,21 @@ a:hover{text-decoration:none}
   </div>
   <div class="sticky-save-spacer"></div>
   <div class="sticky-save-actions">
-    <a href="#" class="btn-preview">
+    <a href="#" class="btn-preview" aria-label="Preview Frontend Form">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-      Preview
+      <span>Preview</span>
     </a>
-    <button class="btn-save-draft" type="button">Save as Draft</button>
-    <button class="btn-danger-sm" type="button">Move to Trash</button>
+    <button class="btn-save-draft" type="button" aria-label="Save as Draft"><span>Save as Draft</span></button>
+    <button class="btn-danger-sm" type="button" aria-label="Move to Trash">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+      <span>Move to Trash</span>
+    </button>
     <button class="btn-update" type="button">Update Reservation</button>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════
-     C8.A — Stall Layout Editor Modal
-     Contains: Stall Selection Mode, Stall Rows builder, Blocked
-     Stalls tag-select, Stall Map upload, RV Lot Zones, RV Lot Rows
-     builder (Exact Map Selection mode), Blocked RV Lots tag-select,
-     plus nested chart preview modals (z-index 1100 > eem-modal 1000).
-     Opens via openStallLayoutModal() / closes via closeStallLayoutModal().
-     Save updates #stall-charts-row-count + #stall-charts-stall-count.
-     ═══════════════════════════════════════════════════════════════ -->
-<div class="eem-modal" id="stall-layout-modal" onclick="if(event.target===this)closeStallLayoutModal()">
-  <div class="eem-modal-card eem-modal-card--xl">
-    <div class="eem-modal-head">
-      <div class="eem-modal-title">Stall Layout Editor</div>
-      <button class="eem-modal-close" onclick="closeStallLayoutModal()" aria-label="Close">&#xd7;</button>
-    </div>
-    <div class="eem-modal-body">
 
+      <!-- C8.A — Stall Charts inline content (moved from modal; now controlled by toggleSwitchRow) -->
       <!-- Stall Selection Mode -->
       <div class="field-row">
         <div class="field-label">Stall Selection Mode</div>
@@ -1826,13 +1803,9 @@ a:hover{text-decoration:none}
         </div>
       </div>
 
-    </div><!-- /.eem-modal-body -->
-    <div class="eem-modal-foot">
-      <button class="btn-secondary" onclick="closeStallLayoutModal()">Cancel</button>
-      <button class="btn-primary" onclick="saveStallLayoutModal()">Save Layout</button>
-    </div>
-  </div><!-- /.eem-modal-card -->
-</div><!-- /#stall-layout-modal -->
+                  </div><!-- /#stall-charts-content -->
+                </div><!-- /.field-control -->
+              </div><!-- /.field-row (Stall Charts) -->
 
 <script>
 /* ═══════════════════════════════════════════════════════════
@@ -2691,60 +2664,7 @@ document.addEventListener('DOMContentLoaded', () => {
   refreshAllRowPreviews();
 });
 
-/* ── Stall Charts toggle + layout modal ── */
-function getStallChartCounts(){
-  const rows = document.querySelectorAll('#row-builder-list .row-card');
-  let stalls = 0;
-  rows.forEach(card => {
-    const layout = (card.querySelector('[data-role="layout"]') || {}).value;
-    if(layout === 'back-to-back'){
-      const tf = (card.querySelector('[data-role="top-first"]') || {}).value || '';
-      const tl = (card.querySelector('[data-role="top-last"]')  || {}).value || '';
-      const bf = (card.querySelector('[data-role="bot-first"]') || {}).value || '';
-      const bl = (card.querySelector('[data-role="bot-last"]')  || {}).value || '';
-      stalls += stallLabelsBetween(tf, tl).length + stallLabelsBetween(bf, bl).length;
-    } else {
-      const f = (card.querySelector('[data-role="first"]') || {}).value || '';
-      const l = (card.querySelector('[data-role="last"]')  || {}).value || '';
-      stalls += stallLabelsBetween(f, l).length;
-    }
-  });
-  return { rows: rows.length, stalls };
-}
-function toggleStallCharts(){
-  const offToggle = document.getElementById('stall-charts-toggle-off');
-  const summary   = document.getElementById('stall-charts-summary');
-  const isOff = offToggle.style.display !== 'none';
-  if(isOff){
-    const { rows, stalls } = getStallChartCounts();
-    offToggle.style.display = 'none';
-    summary.style.display   = '';
-    document.getElementById('stall-charts-row-count').textContent   = rows;
-    document.getElementById('stall-charts-stall-count').textContent = stalls;
-    if(rows === 0) openStallLayoutModal();
-  } else {
-    offToggle.style.display = '';
-    summary.style.display   = 'none';
-  }
-}
-function openStallLayoutModal(){
-  document.getElementById('stall-layout-modal').classList.add('open');
-}
-function closeStallLayoutModal(){
-  document.getElementById('stall-layout-modal').classList.remove('open');
-}
-function saveStallLayoutModal(){
-  const { rows, stalls } = getStallChartCounts();
-  const rowCountEl   = document.getElementById('stall-charts-row-count');
-  const stallCountEl = document.getElementById('stall-charts-stall-count');
-  if(rowCountEl)   rowCountEl.textContent   = rows;
-  if(stallCountEl) stallCountEl.textContent = stalls;
-  const offToggle = document.getElementById('stall-charts-toggle-off');
-  const summary   = document.getElementById('stall-charts-summary');
-  if(offToggle) offToggle.style.display = 'none';
-  if(summary)   summary.style.display   = '';
-  closeStallLayoutModal();
-}
+/* ── Stall Charts: toggle now handled by standard toggleSwitchRow + data-controls="stall-charts-content" ── */
 </script>
 
 </body>
