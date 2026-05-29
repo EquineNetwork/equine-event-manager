@@ -2060,6 +2060,16 @@ class EEM_Reservations_CPT {
 			// C8 — Event Pre-Entries section. Array empty = no entries yet (template shows seed).
 			'event_pre_entries_enabled'       => 0,
 			'event_pre_entries'               => array(),
+			// C8 — Stall row-builder + blocked stalls + stall map (mapped-layout section).
+			// Empty array = no saved rows yet; template falls through to seeded demo rows.
+			'stall_rows'                      => array(),
+			'blocked_stalls'                  => array(),
+			'stall_map_id'                    => 0,
+			// C8 — RV zone table, lot row-builder, blocked lots, Paint-Mode assignments.
+			'rv_zones'                        => array(),
+			'rv_rows'                         => array(),
+			'blocked_rv_lots'                 => array(),
+			'rv_lot_zone_assignments'         => array(),
 		);
 
 		return $defaults;

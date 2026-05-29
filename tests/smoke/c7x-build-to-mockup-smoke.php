@@ -599,16 +599,40 @@ c7x_ok(
 	$pass, $fail, $log
 );
 
-// 8d. Narrower guard (scoped to pre-entries only for this commit — _section-stall.php and
-//     _section-rv.php have legacy get_post_meta(get_the_ID()) calls too, but those are a
-//     separate fix tracked as a follow-up item): the pre-entries template specifically must
-//     not use that pattern since we just fixed it.
+// 8d. Broadened guard (2.3.19): scan ALL section templates — stall and RV are now also fixed.
+$section_dir2    = EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/';
+$section_files2  = glob( $section_dir2 . '_section-*.php' ) ?: array();
+$get_the_id_hits = array();
+foreach ( $section_files2 as $sf2 ) {
+	$src2 = file_get_contents( $sf2 );
+	// Match both spacing variants. Comments containing the string also fail — templates must
+	// use the $data pattern exclusively; the warning comment itself should not contain the call.
+	if (
+		false !== strpos( $src2, 'get_post_meta( get_the_ID()' ) ||
+		false !== strpos( $src2, 'get_post_meta(get_the_ID()' )
+	) {
+		$get_the_id_hits[] = basename( $sf2 );
+	}
+}
 c7x_ok(
-	'Regression guard: _section-event-pre-entries.php uses $data, not get_post_meta with get_the_ID()',
-	false === strpos( $pe_php_src, 'get_post_meta( get_the_ID()' ) &&
-	false === strpos( $pe_php_src, "get_post_meta(get_the_ID()" ),
-	$pass, $fail, $log
+	'Regression guard: no section template calls get_post_meta(get_the_ID()) — use $data instead',
+	empty( $get_the_id_hits ),
+	$pass, $fail, $log,
+	empty( $get_the_id_hits ) ? '' : 'offending: ' . implode( ', ', $get_the_id_hits )
 );
+
+// 8e. Stall/RV C8 meta keys registered in get_default_meta_values() (2.3.19).
+$keys_9 = array(
+	'stall_rows', 'blocked_stalls', 'stall_map_id',
+	'rv_zones', 'rv_rows', 'blocked_rv_lots', 'rv_lot_zone_assignments',
+);
+foreach ( $keys_9 as $k9 ) {
+	c7x_ok(
+		"Regression guard: '{$k9}' registered in get_default_meta_values()",
+		false !== strpos( $cpt_php, "'{$k9}'" ),
+		$pass, $fail, $log
+	);
+}
 
 wp_delete_post( $rid, true );
 

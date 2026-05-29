@@ -329,8 +329,10 @@ eem_render_editor_field_row( array(
 ) );
 
 // 18. Stall Row Builder — inside mapped-content wrapper (C8)
-// Load meta or fall back to 3 seeded rows.
-$stall_rows_meta = get_post_meta( get_the_ID(), '_en_stall_rows', true );
+// Load meta from $data (pre-populated by get_meta_values()) or fall back to 3 seeded rows.
+// NOTE: use $data, NOT a direct post-meta call with get_the_ID() — on custom admin pages
+// (admin.php?page=...) the global $post is not set by WordPress, so that function returns 0.
+$stall_rows_meta = isset( $data['stall_rows'] ) ? $data['stall_rows'] : array();
 $stall_rows      = ( is_array( $stall_rows_meta ) && ! empty( $stall_rows_meta ) )
 	? $stall_rows_meta
 	: array(
@@ -339,10 +341,10 @@ $stall_rows      = ( is_array( $stall_rows_meta ) && ! empty( $stall_rows_meta )
 		array( 'name' => 'Yellow Barn Row A', 'layout' => 'one-sided',    'first' => 'Y1',  'last' => 'Y12', 'top_first' => '', 'top_last' => '', 'bot_first' => '', 'bot_last' => '' ),
 	);
 
-$blocked_stalls_meta = get_post_meta( get_the_ID(), '_en_blocked_stalls', true );
+$blocked_stalls_meta = isset( $data['blocked_stalls'] ) ? $data['blocked_stalls'] : array();
 $blocked_stalls      = is_array( $blocked_stalls_meta ) ? $blocked_stalls_meta : array();
 
-$stall_map_id = (int) get_post_meta( get_the_ID(), '_en_stall_map_id', true );
+$stall_map_id = (int) ( isset( $data['stall_map_id'] ) ? $data['stall_map_id'] : 0 );
 $stall_map_url  = $stall_map_id ? wp_get_attachment_url( $stall_map_id ) : '';
 $stall_map_name = $stall_map_id ? basename( get_attached_file( $stall_map_id ) ) : '';
 ?>

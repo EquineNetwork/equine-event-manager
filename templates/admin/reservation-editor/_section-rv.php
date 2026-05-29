@@ -279,8 +279,10 @@ eem_render_editor_field_row( array(
 ) );
 
 // ── RV Mapped-content wrapper opens here (C8) ──
-// Load meta or fall back to seeded zones / rows.
-$rv_zones_meta = get_post_meta( get_the_ID(), '_en_rv_zones', true );
+// Load meta from $data (pre-populated by get_meta_values()) or fall back to seeded zones / rows.
+// NOTE: use $data, NOT a direct post-meta call with get_the_ID() — on custom admin pages
+// (admin.php?page=...) the global $post is not set by WordPress, so that function returns 0.
+$rv_zones_meta = isset( $data['rv_zones'] ) ? $data['rv_zones'] : array();
 $rv_zones      = ( is_array( $rv_zones_meta ) && ! empty( $rv_zones_meta ) )
 	? $rv_zones_meta
 	: array(
@@ -288,7 +290,7 @@ $rv_zones      = ( is_array( $rv_zones_meta ) && ! empty( $rv_zones_meta ) )
 		array( 'name' => 'Blue Lot', 'color' => '#1668F2', 'nightly' => '25.00', 'weekend' => '65.00', 'available_qty' => '18' ),
 	);
 
-$rv_rows_meta = get_post_meta( get_the_ID(), '_en_rv_rows', true );
+$rv_rows_meta = isset( $data['rv_rows'] ) ? $data['rv_rows'] : array();
 $rv_rows      = ( is_array( $rv_rows_meta ) && ! empty( $rv_rows_meta ) )
 	? $rv_rows_meta
 	: array(
@@ -296,12 +298,12 @@ $rv_rows      = ( is_array( $rv_rows_meta ) && ! empty( $rv_rows_meta ) )
 		array( 'name' => 'RV Row B', 'layout' => 'back-to-back', 'first' => '',   'last' => '',   'top_first' => '13', 'top_last' => '18', 'bot_first' => '19', 'bot_last' => '24' ),
 	);
 
-$blocked_rv_lots_meta = get_post_meta( get_the_ID(), '_en_blocked_rv_lots', true );
+$blocked_rv_lots_meta = isset( $data['blocked_rv_lots'] ) ? $data['blocked_rv_lots'] : array();
 $blocked_rv_lots      = is_array( $blocked_rv_lots_meta ) ? $blocked_rv_lots_meta : array();
 
-// Bug-fix: load saved RV lot zone assignments; default each lot to zone index 0
+// Load saved RV lot zone assignments from $data; default each lot to zone index 0
 // if no saved assignment exists (JS side reads window._rvLotZoneAssignmentsInit).
-$lot_assignments_meta = get_post_meta( get_the_ID(), '_en_rv_lot_zone_assignments', true );
+$lot_assignments_meta = isset( $data['rv_lot_zone_assignments'] ) ? $data['rv_lot_zone_assignments'] : array();
 $lot_assignments      = ( is_array( $lot_assignments_meta ) && ! empty( $lot_assignments_meta ) )
 	? $lot_assignments_meta
 	: array();
