@@ -813,7 +813,458 @@ a:hover{text-decoration:none}
                     <span>Enable stall charts</span>
                   </div>
                   <div id="stall-charts-content">
+      <!-- C8.A — Stall Charts inline content (moved from modal; now controlled by toggleSwitchRow) -->
+      <!-- Stall Selection Mode -->
+      <div class="field-row">
+        <div class="field-label">Stall Selection Mode</div>
+        <div class="field-control">
+          <div class="mode-btns">
+            <button class="mode-btn active" onclick="toggleMode(this)">Quantity Based</button>
+            <button class="mode-btn" onclick="toggleMode(this)">Exact Map Selection</button>
+          </div>
+          <span class="field-hint">Quantity Based uses the built-in stall quantity selector. Exact Map Selection lets customers choose specific stalls from an interactive map.</span>
+        </div>
+      </div>
 
+      <!-- Stall Rows builder -->
+      <div class="field-row" id="row-stall-blocks" style="align-items:start">
+        <div class="field-label">Stall Rows<div class="field-label-sub">Define the physical layout customers will see</div></div>
+        <div class="field-control">
+          <div class="row-builder-head">
+            <div class="row-builder-summary"><strong style="color:#031B4E">3 rows · 36 stalls total</strong> across this reservation</div>
+            <button class="preview-chart-btn" onclick="openChartPreview()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              Preview Full Chart
+            </button>
+          </div>
+
+          <div class="row-builder" id="row-builder-list">
+
+            <!-- Row 1: Red Barn Row A — one-sided, stalls 100–111 -->
+            <div class="row-card" data-row-id="r1">
+              <div class="row-card-top">
+                <div class="row-card-field">
+                  <span class="row-card-field-label">Row Name</span>
+                  <input type="text" value="Red Barn Row A" data-role="name">
+                </div>
+                <div class="row-card-field row-card-field-layout">
+                  <span class="row-card-field-label">Layout</span>
+                  <select data-role="layout" onchange="updateRowPreview(this)">
+                    <option value="one-sided" selected>One-sided</option>
+                    <option value="back-to-back">Back-to-back</option>
+                  </select>
+                </div>
+                <button class="row-card-delete" title="Delete row">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                </button>
+              </div>
+              <div class="row-card-one-sided">
+                <div class="row-card-field">
+                  <span class="row-card-field-label">First Stall Label</span>
+                  <input type="text" value="100" data-role="first" oninput="updateRowPreview(this)">
+                </div>
+                <div class="row-card-field">
+                  <span class="row-card-field-label">Last Stall Label</span>
+                  <input type="text" value="111" data-role="last" oninput="updateRowPreview(this)">
+                </div>
+              </div>
+              <div class="row-card-sides" style="display:none">
+                <div class="side-block">
+                  <div class="side-block-label">Top Side</div>
+                  <div class="side-block-row">
+                    <div class="row-card-field"><span class="row-card-field-label">First</span><input type="text" data-role="top-first" oninput="updateRowPreview(this)"></div>
+                    <div class="row-card-field"><span class="row-card-field-label">Last</span><input type="text" data-role="top-last" oninput="updateRowPreview(this)"></div>
+                  </div>
+                </div>
+                <div class="side-block">
+                  <div class="side-block-label">Bottom Side</div>
+                  <div class="side-block-row">
+                    <div class="row-card-field"><span class="row-card-field-label">First</span><input type="text" data-role="bot-first" oninput="updateRowPreview(this)"></div>
+                    <div class="row-card-field"><span class="row-card-field-label">Last</span><input type="text" data-role="bot-last" oninput="updateRowPreview(this)"></div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div class="row-card-preview-label">Preview <span class="row-card-count">12 stalls · One-sided</span></div>
+                <div class="stall-row-layout">
+                  <div class="stall-box">100</div><div class="stall-box">101</div><div class="stall-box">102</div><div class="stall-box">103</div><div class="stall-box">104</div><div class="stall-box">105</div><div class="stall-box">106</div><div class="stall-box">107</div><div class="stall-box">108</div><div class="stall-box">109</div><div class="stall-box">110</div><div class="stall-box">111</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Row 2: Red Barn Row B — back-to-back, stalls 112–135 -->
+            <div class="row-card" data-row-id="r2">
+              <div class="row-card-top">
+                <div class="row-card-field">
+                  <span class="row-card-field-label">Row Name</span>
+                  <input type="text" value="Red Barn Row B" data-role="name">
+                </div>
+                <div class="row-card-field row-card-field-layout">
+                  <span class="row-card-field-label">Layout</span>
+                  <select data-role="layout" onchange="updateRowPreview(this)">
+                    <option value="one-sided">One-sided</option>
+                    <option value="back-to-back" selected>Back-to-back</option>
+                  </select>
+                </div>
+                <button class="row-card-delete" title="Delete row">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                </button>
+              </div>
+              <div class="row-card-one-sided" style="display:none">
+                <div class="row-card-field"><span class="row-card-field-label">First Stall Label</span><input type="text" data-role="first" oninput="updateRowPreview(this)"></div>
+                <div class="row-card-field"><span class="row-card-field-label">Last Stall Label</span><input type="text" data-role="last" oninput="updateRowPreview(this)"></div>
+              </div>
+              <div class="row-card-sides">
+                <div class="side-block">
+                  <div class="side-block-label">Top Side</div>
+                  <div class="side-block-row">
+                    <div class="row-card-field"><span class="row-card-field-label">First</span><input type="text" value="112" data-role="top-first" oninput="updateRowPreview(this)"></div>
+                    <div class="row-card-field"><span class="row-card-field-label">Last</span><input type="text" value="123" data-role="top-last" oninput="updateRowPreview(this)"></div>
+                  </div>
+                </div>
+                <div class="side-block">
+                  <div class="side-block-label">Bottom Side</div>
+                  <div class="side-block-row">
+                    <div class="row-card-field"><span class="row-card-field-label">First</span><input type="text" value="124" data-role="bot-first" oninput="updateRowPreview(this)"></div>
+                    <div class="row-card-field"><span class="row-card-field-label">Last</span><input type="text" value="135" data-role="bot-last" oninput="updateRowPreview(this)"></div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div class="row-card-preview-label">Preview <span class="row-card-count">24 stalls · Back-to-back (12 top, 12 bottom)</span></div>
+                <div class="stall-row-layout back-to-back">
+                  <div class="stall-row-side"><div class="stall-box">112</div><div class="stall-box">113</div><div class="stall-box">114</div><div class="stall-box">115</div><div class="stall-box">116</div><div class="stall-box">117</div><div class="stall-box">118</div><div class="stall-box">119</div><div class="stall-box">120</div><div class="stall-box">121</div><div class="stall-box">122</div><div class="stall-box">123</div></div>
+                  <div class="stall-row-aisle" title="Aisle"></div>
+                  <div class="stall-row-side"><div class="stall-box">124</div><div class="stall-box">125</div><div class="stall-box">126</div><div class="stall-box">127</div><div class="stall-box">128</div><div class="stall-box">129</div><div class="stall-box">130</div><div class="stall-box">131</div><div class="stall-box">132</div><div class="stall-box">133</div><div class="stall-box">134</div><div class="stall-box">135</div></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Row 3: Yellow Barn Row A — one-sided, stalls Y1–Y12 -->
+            <div class="row-card" data-row-id="r3">
+              <div class="row-card-top">
+                <div class="row-card-field">
+                  <span class="row-card-field-label">Row Name</span>
+                  <input type="text" value="Yellow Barn Row A" data-role="name">
+                </div>
+                <div class="row-card-field row-card-field-layout">
+                  <span class="row-card-field-label">Layout</span>
+                  <select data-role="layout" onchange="updateRowPreview(this)">
+                    <option value="one-sided" selected>One-sided</option>
+                    <option value="back-to-back">Back-to-back</option>
+                  </select>
+                </div>
+                <button class="row-card-delete" title="Delete row">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                </button>
+              </div>
+              <div class="row-card-one-sided">
+                <div class="row-card-field"><span class="row-card-field-label">First Stall Label</span><input type="text" value="Y1" data-role="first" oninput="updateRowPreview(this)"></div>
+                <div class="row-card-field"><span class="row-card-field-label">Last Stall Label</span><input type="text" value="Y12" data-role="last" oninput="updateRowPreview(this)"></div>
+              </div>
+              <div class="row-card-sides" style="display:none">
+                <div class="side-block">
+                  <div class="side-block-label">Top Side</div>
+                  <div class="side-block-row">
+                    <div class="row-card-field"><span class="row-card-field-label">First</span><input type="text" data-role="top-first" oninput="updateRowPreview(this)"></div>
+                    <div class="row-card-field"><span class="row-card-field-label">Last</span><input type="text" data-role="top-last" oninput="updateRowPreview(this)"></div>
+                  </div>
+                </div>
+                <div class="side-block">
+                  <div class="side-block-label">Bottom Side</div>
+                  <div class="side-block-row">
+                    <div class="row-card-field"><span class="row-card-field-label">First</span><input type="text" data-role="bot-first" oninput="updateRowPreview(this)"></div>
+                    <div class="row-card-field"><span class="row-card-field-label">Last</span><input type="text" data-role="bot-last" oninput="updateRowPreview(this)"></div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div class="row-card-preview-label">Preview <span class="row-card-count">12 stalls · One-sided · Custom labels</span></div>
+                <div class="stall-row-layout">
+                  <div class="stall-box">Y1</div><div class="stall-box">Y2</div><div class="stall-box">Y3</div><div class="stall-box">Y4</div><div class="stall-box">Y5</div><div class="stall-box">Y6</div><div class="stall-box">Y7</div><div class="stall-box">Y8</div><div class="stall-box">Y9</div><div class="stall-box">Y10</div><div class="stall-box">Y11</div><div class="stall-box">Y12</div>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /#row-builder-list -->
+
+          <button class="row-add-btn" onclick="addRow()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Row
+          </button>
+
+          <span class="field-hint">Each row appears as a horizontal strip of stall boxes. <strong>One-sided</strong>: single row of stalls. <strong>Back-to-back</strong>: two rows separated by an aisle. Stall labels can be numbers (100–111) or strings (Y1–Y12).</span>
+        </div>
+      </div>
+
+      <!-- Stall Chart Preview Modal (z-index 1100, above layout editor) -->
+      <div class="chart-modal" id="chart-preview-modal" onclick="if(event.target===this)closeChartPreview()">
+        <div class="chart-modal-card">
+          <div class="chart-modal-head">
+            <div class="chart-modal-title">Stall Chart Preview — Customer View</div>
+            <button class="chart-modal-close" onclick="closeChartPreview()" aria-label="Close">&#x2715;</button>
+          </div>
+          <div class="chart-modal-body">
+            <div class="chart-modal-legend">
+              <span><span class="swatch"></span> Available</span>
+              <span><span class="swatch selected"></span> Selected (customer's pick)</span>
+              <span><span class="swatch reserved"></span> Already reserved</span>
+              <span><span class="swatch blocked"></span> Blocked by admin</span>
+            </div>
+            <!-- Sections populated dynamically by openChartPreview() -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Blocked Stall Numbers -->
+      <div class="field-row" id="row-stall-blocked">
+        <div class="field-label">Blocked Stall Numbers<div class="field-label-sub">Hold back from reservation</div></div>
+        <div class="field-control">
+          <div class="tag-select" id="blocked-stalls-select">
+            <div class="tag-select-input" onclick="tagToggle(this)">
+              <span class="tag-chip" data-value="100">100 <button type="button" class="tag-chip-remove" onclick="event.stopPropagation();tagRemove(this);rebuildBlockedStallsDropdown();refreshAllRowPreviews()" aria-label="Remove">&#xd7;</button></span>
+              <span class="tag-chip" data-value="102">102 <button type="button" class="tag-chip-remove" onclick="event.stopPropagation();tagRemove(this);rebuildBlockedStallsDropdown();refreshAllRowPreviews()" aria-label="Remove">&#xd7;</button></span>
+              <input class="tag-search" type="text" placeholder="Type a stall number…" oninput="tagFilter(this)" onfocus="this.closest('.tag-select').classList.add('open')">
+            </div>
+            <div class="tag-dropdown">
+              <div class="tag-dropdown-empty" style="display:none">No matching stall numbers.</div>
+            </div>
+          </div>
+          <span class="field-hint">Type a stall number to filter, then click to block it. Click &#xd7; on a chip to unblock.</span>
+        </div>
+      </div>
+
+      <!-- Stall Map file upload -->
+      <div class="field-row" id="row-stall-map">
+        <div class="field-label">Stall Map<div class="field-label-sub">PDF or image customers can open</div></div>
+        <div class="field-control">
+          <div class="file-row">
+            <span class="file-name">Screenshot-2026-04-30-at-11.39.57-AM.png</span>
+            <button class="btn-upload" type="button">Upload File</button>
+            <button class="btn-file-del" type="button" aria-label="Remove file">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+            </button>
+            <a class="view-link" href="#">View file</a>
+          </div>
+          <span class="field-hint">Upload a stall map customers can open in a new tab while choosing a stall.</span>
+        </div>
+      </div>
+
+      <!-- ── RV Lot Zones ── -->
+      <div class="field-row" id="row-rv-zones" style="align-items:start">
+        <div class="field-label">RV Lot Zones<div class="field-label-sub">Pricing tiers — every lot belongs to a zone</div></div>
+        <div class="field-control">
+          <div class="zone-list" id="rv-zone-list">
+
+            <div class="zone-row" data-zone-id="z1" data-zone-color="#EF4444">
+              <div class="zone-color-pick" style="background:#EF4444" onclick="cycleZoneColor(this)" title="Click to change color"></div>
+              <input class="zone-name-input" value="Red Lot" data-role="zone-name" oninput="refreshAllRvPreviews();rebuildBlockedRvLotsDropdown()">
+              <div class="zone-price-group">
+                <span class="zone-price-label">Nightly</span>
+                <div class="zone-price-wrap"><span class="zone-price-sym">$</span><input class="zone-price-in" type="number" value="35.00" data-role="zone-nightly"></div>
+              </div>
+              <div class="zone-price-group">
+                <span class="zone-price-label">Weekend</span>
+                <div class="zone-price-wrap"><span class="zone-price-sym">$</span><input class="zone-price-in" type="number" value="90.00" data-role="zone-weekend"></div>
+              </div>
+              <span class="zone-count"><strong>6</strong> lots</span>
+              <button class="row-card-delete" title="Delete zone" onclick="deleteZone(this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+              </button>
+            </div>
+
+            <div class="zone-row" data-zone-id="z2" data-zone-color="#1668F2">
+              <div class="zone-color-pick" style="background:#1668F2" onclick="cycleZoneColor(this)" title="Click to change color"></div>
+              <input class="zone-name-input" value="Blue Lot" data-role="zone-name" oninput="refreshAllRvPreviews();rebuildBlockedRvLotsDropdown()">
+              <div class="zone-price-group">
+                <span class="zone-price-label">Nightly</span>
+                <div class="zone-price-wrap"><span class="zone-price-sym">$</span><input class="zone-price-in" type="number" value="25.00" data-role="zone-nightly"></div>
+              </div>
+              <div class="zone-price-group">
+                <span class="zone-price-label">Weekend</span>
+                <div class="zone-price-wrap"><span class="zone-price-sym">$</span><input class="zone-price-in" type="number" value="65.00" data-role="zone-weekend"></div>
+              </div>
+              <span class="zone-count"><strong>18</strong> lots</span>
+              <button class="row-card-delete" title="Delete zone" onclick="deleteZone(this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+              </button>
+            </div>
+
+          </div>
+          <button class="zone-add-btn" onclick="addZone()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Zone
+          </button>
+        </div>
+      </div>
+
+      <!-- RV Lot Selection Mode + Lot Rows builder -->
+      <div class="field-row" id="row-rv-mode">
+        <div class="field-label">Lot Selection Mode</div>
+        <div class="field-control">
+          <div class="mode-btns">
+            <button class="mode-btn active" onclick="toggleRvMode(this,'quantity')">Quantity Based</button>
+            <button class="mode-btn" data-controls="row-rv-rows-builder" onclick="toggleRvMode(this,'map')">Exact Map Selection</button>
+          </div>
+          <span class="field-hint">Quantity Based: customers pick how many lots they need by zone. Exact Map Selection: customers see the lot layout and click specific lots.</span>
+        </div>
+      </div>
+
+      <!-- Lot Rows — visible in Exact Map Selection mode only -->
+      <div class="field-row" id="row-rv-rows-builder" style="align-items:start;display:none">
+        <div class="field-label">Lot Rows<div class="field-label-sub">Define the physical layout customers will see</div></div>
+        <div class="field-control">
+          <div class="row-builder-head">
+            <div class="row-builder-summary"><strong style="color:#031B4E">2 rows · 24 lots total</strong> across this reservation</div>
+            <button class="preview-chart-btn" onclick="openRvChartPreview()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              Preview Full Chart
+            </button>
+          </div>
+
+          <div class="zone-painter">
+            <span class="zone-painter-label">Paint Mode</span>
+            <select class="zone-painter-select" id="rv-paint-zone" onchange="refreshAllRvPreviews()">
+              <option value="">Off — click to view lot details</option>
+              <option value="z1" style="color:#EF4444">&#x25cf; Red Lot</option>
+              <option value="z2" style="color:#1668F2">&#x25cf; Blue Lot</option>
+            </select>
+            <span class="zone-painter-hint">Select a zone, then click lots in any row preview to assign them.</span>
+          </div>
+
+          <div class="row-builder" id="rv-row-builder-list">
+
+            <!-- RV Row A: one-sided, lots 1–12 -->
+            <div class="row-card" data-row-id="rv-r1">
+              <div class="row-card-top">
+                <div class="row-card-field"><span class="row-card-field-label">Row Name</span><input type="text" value="RV Row A" data-role="name"></div>
+                <div class="row-card-field row-card-field-layout">
+                  <span class="row-card-field-label">Layout</span>
+                  <select data-role="layout" onchange="updateRvRowPreview(this)">
+                    <option value="one-sided" selected>One-sided</option>
+                    <option value="back-to-back">Back-to-back</option>
+                  </select>
+                </div>
+                <button class="row-card-delete" title="Delete row">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                </button>
+              </div>
+              <div class="row-card-one-sided">
+                <div class="row-card-field"><span class="row-card-field-label">First Lot Label</span><input type="text" value="1" data-role="first" oninput="updateRvRowPreview(this)"></div>
+                <div class="row-card-field"><span class="row-card-field-label">Last Lot Label</span><input type="text" value="12" data-role="last" oninput="updateRvRowPreview(this)"></div>
+              </div>
+              <div class="row-card-sides" style="display:none">
+                <div class="side-block">
+                  <div class="side-block-label">Top Side</div>
+                  <div class="side-block-row">
+                    <div class="row-card-field"><span class="row-card-field-label">First</span><input type="text" data-role="top-first" oninput="updateRvRowPreview(this)"></div>
+                    <div class="row-card-field"><span class="row-card-field-label">Last</span><input type="text" data-role="top-last" oninput="updateRvRowPreview(this)"></div>
+                  </div>
+                </div>
+                <div class="side-block">
+                  <div class="side-block-label">Bottom Side</div>
+                  <div class="side-block-row">
+                    <div class="row-card-field"><span class="row-card-field-label">First</span><input type="text" data-role="bot-first" oninput="updateRvRowPreview(this)"></div>
+                    <div class="row-card-field"><span class="row-card-field-label">Last</span><input type="text" data-role="bot-last" oninput="updateRvRowPreview(this)"></div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div class="row-card-preview-label">Preview <span class="row-card-count">12 lots · One-sided</span></div>
+                <div class="stall-row-layout" data-lot-zones='{"1":"z1","2":"z1","3":"z1","4":"z1","5":"z1","6":"z1","7":"z2","8":"z2","9":"z2","10":"z2","11":"z2","12":"z2"}'></div>
+              </div>
+            </div>
+
+            <!-- RV Row B: back-to-back, lots 13–24 -->
+            <div class="row-card" data-row-id="rv-r2">
+              <div class="row-card-top">
+                <div class="row-card-field"><span class="row-card-field-label">Row Name</span><input type="text" value="RV Row B" data-role="name"></div>
+                <div class="row-card-field row-card-field-layout">
+                  <span class="row-card-field-label">Layout</span>
+                  <select data-role="layout" onchange="updateRvRowPreview(this)">
+                    <option value="one-sided">One-sided</option>
+                    <option value="back-to-back" selected>Back-to-back</option>
+                  </select>
+                </div>
+                <button class="row-card-delete" title="Delete row">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                </button>
+              </div>
+              <div class="row-card-one-sided" style="display:none">
+                <div class="row-card-field"><span class="row-card-field-label">First Lot Label</span><input type="text" data-role="first" oninput="updateRvRowPreview(this)"></div>
+                <div class="row-card-field"><span class="row-card-field-label">Last Lot Label</span><input type="text" data-role="last" oninput="updateRvRowPreview(this)"></div>
+              </div>
+              <div class="row-card-sides">
+                <div class="side-block">
+                  <div class="side-block-label">Top Side</div>
+                  <div class="side-block-row">
+                    <div class="row-card-field"><span class="row-card-field-label">First</span><input type="text" value="13" data-role="top-first" oninput="updateRvRowPreview(this)"></div>
+                    <div class="row-card-field"><span class="row-card-field-label">Last</span><input type="text" value="18" data-role="top-last" oninput="updateRvRowPreview(this)"></div>
+                  </div>
+                </div>
+                <div class="side-block">
+                  <div class="side-block-label">Bottom Side</div>
+                  <div class="side-block-row">
+                    <div class="row-card-field"><span class="row-card-field-label">First</span><input type="text" value="19" data-role="bot-first" oninput="updateRvRowPreview(this)"></div>
+                    <div class="row-card-field"><span class="row-card-field-label">Last</span><input type="text" value="24" data-role="bot-last" oninput="updateRvRowPreview(this)"></div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div class="row-card-preview-label">Preview <span class="row-card-count">12 lots · Back-to-back (6 top, 6 bottom)</span></div>
+                <div class="stall-row-layout back-to-back" data-lot-zones='{"13":"z2","14":"z2","15":"z2","16":"z2","17":"z2","18":"z2","19":"z2","20":"z2","21":"z2","22":"z2","23":"z2","24":"z2"}'></div>
+              </div>
+            </div>
+
+          </div><!-- /#rv-row-builder-list -->
+
+          <button class="row-add-btn" onclick="addRvRow()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Row
+          </button>
+
+          <span class="field-hint">Each lot's color dot shows which zone it's assigned to. Pick a zone in Paint Mode above, then click lots to reassign them.</span>
+        </div>
+      </div>
+
+      <!-- RV Chart Preview Modal (z-index 1100, above layout editor) -->
+      <div class="chart-modal" id="rv-chart-preview-modal" onclick="if(event.target===this)closeRvChartPreview()">
+        <div class="chart-modal-card">
+          <div class="chart-modal-head">
+            <div class="chart-modal-title">RV Lot Chart Preview — Customer View</div>
+            <button class="chart-modal-close" onclick="closeRvChartPreview()" aria-label="Close">&#x2715;</button>
+          </div>
+          <div class="chart-modal-body">
+            <div class="chart-modal-legend">
+              <span><span class="swatch"></span> Available</span>
+              <span><span class="swatch selected"></span> Selected (customer's pick)</span>
+              <span><span class="swatch reserved"></span> Already reserved</span>
+              <span><span class="swatch blocked"></span> Blocked by admin</span>
+            </div>
+            <!-- Sections populated dynamically by openRvChartPreview() -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Blocked RV Lots -->
+      <div class="field-row" id="row-rv-blocked-lots">
+        <div class="field-label">Blocked RV Lots<div class="field-label-sub">Hold back from reservation</div></div>
+        <div class="field-control">
+          <div class="tag-select" id="blocked-rv-lots-select">
+            <div class="tag-select-input" onclick="tagToggle(this)">
+              <input class="tag-search" type="text" placeholder="Type a lot label…" oninput="tagFilter(this)" onfocus="this.closest('.tag-select').classList.add('open')">
+            </div>
+            <div class="tag-dropdown">
+              <div class="tag-dropdown-empty" style="display:none">No matching lots.</div>
+            </div>
+          </div>
+          <span class="field-hint">Type a lot label to filter, then click to block it. Click &#xd7; on a chip to unblock.</span>
+        </div>
+      </div>
+
+                  </div><!-- /#stall-charts-content -->
+                </div><!-- /.field-control -->
+              </div><!-- /.field-row (Stall Charts) -->
             </div>
           </section>
 
@@ -1352,460 +1803,6 @@ a:hover{text-decoration:none}
     <button class="btn-update" type="button">Update Reservation</button>
   </div>
 </div>
-
-
-      <!-- C8.A — Stall Charts inline content (moved from modal; now controlled by toggleSwitchRow) -->
-      <!-- Stall Selection Mode -->
-      <div class="field-row">
-        <div class="field-label">Stall Selection Mode</div>
-        <div class="field-control">
-          <div class="mode-btns">
-            <button class="mode-btn active" onclick="toggleMode(this)">Quantity Based</button>
-            <button class="mode-btn" onclick="toggleMode(this)">Exact Map Selection</button>
-          </div>
-          <span class="field-hint">Quantity Based uses the built-in stall quantity selector. Exact Map Selection lets customers choose specific stalls from an interactive map.</span>
-        </div>
-      </div>
-
-      <!-- Stall Rows builder -->
-      <div class="field-row" id="row-stall-blocks" style="align-items:start">
-        <div class="field-label">Stall Rows<div class="field-label-sub">Define the physical layout customers will see</div></div>
-        <div class="field-control">
-          <div class="row-builder-head">
-            <div class="row-builder-summary"><strong style="color:#031B4E">3 rows · 36 stalls total</strong> across this reservation</div>
-            <button class="preview-chart-btn" onclick="openChartPreview()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-              Preview Full Chart
-            </button>
-          </div>
-
-          <div class="row-builder" id="row-builder-list">
-
-            <!-- Row 1: Red Barn Row A — one-sided, stalls 100–111 -->
-            <div class="row-card" data-row-id="r1">
-              <div class="row-card-top">
-                <div class="row-card-field">
-                  <span class="row-card-field-label">Row Name</span>
-                  <input type="text" value="Red Barn Row A" data-role="name">
-                </div>
-                <div class="row-card-field row-card-field-layout">
-                  <span class="row-card-field-label">Layout</span>
-                  <select data-role="layout" onchange="updateRowPreview(this)">
-                    <option value="one-sided" selected>One-sided</option>
-                    <option value="back-to-back">Back-to-back</option>
-                  </select>
-                </div>
-                <button class="row-card-delete" title="Delete row">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-                </button>
-              </div>
-              <div class="row-card-one-sided">
-                <div class="row-card-field">
-                  <span class="row-card-field-label">First Stall Label</span>
-                  <input type="text" value="100" data-role="first" oninput="updateRowPreview(this)">
-                </div>
-                <div class="row-card-field">
-                  <span class="row-card-field-label">Last Stall Label</span>
-                  <input type="text" value="111" data-role="last" oninput="updateRowPreview(this)">
-                </div>
-              </div>
-              <div class="row-card-sides" style="display:none">
-                <div class="side-block">
-                  <div class="side-block-label">Top Side</div>
-                  <div class="side-block-row">
-                    <div class="row-card-field"><span class="row-card-field-label">First</span><input type="text" data-role="top-first" oninput="updateRowPreview(this)"></div>
-                    <div class="row-card-field"><span class="row-card-field-label">Last</span><input type="text" data-role="top-last" oninput="updateRowPreview(this)"></div>
-                  </div>
-                </div>
-                <div class="side-block">
-                  <div class="side-block-label">Bottom Side</div>
-                  <div class="side-block-row">
-                    <div class="row-card-field"><span class="row-card-field-label">First</span><input type="text" data-role="bot-first" oninput="updateRowPreview(this)"></div>
-                    <div class="row-card-field"><span class="row-card-field-label">Last</span><input type="text" data-role="bot-last" oninput="updateRowPreview(this)"></div>
-                  </div>
-                </div>
-              </div>
-              <div>
-                <div class="row-card-preview-label">Preview <span class="row-card-count">12 stalls · One-sided</span></div>
-                <div class="stall-row-layout">
-                  <div class="stall-box">100</div><div class="stall-box">101</div><div class="stall-box">102</div><div class="stall-box">103</div><div class="stall-box">104</div><div class="stall-box">105</div><div class="stall-box">106</div><div class="stall-box">107</div><div class="stall-box">108</div><div class="stall-box">109</div><div class="stall-box">110</div><div class="stall-box">111</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Row 2: Red Barn Row B — back-to-back, stalls 112–135 -->
-            <div class="row-card" data-row-id="r2">
-              <div class="row-card-top">
-                <div class="row-card-field">
-                  <span class="row-card-field-label">Row Name</span>
-                  <input type="text" value="Red Barn Row B" data-role="name">
-                </div>
-                <div class="row-card-field row-card-field-layout">
-                  <span class="row-card-field-label">Layout</span>
-                  <select data-role="layout" onchange="updateRowPreview(this)">
-                    <option value="one-sided">One-sided</option>
-                    <option value="back-to-back" selected>Back-to-back</option>
-                  </select>
-                </div>
-                <button class="row-card-delete" title="Delete row">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-                </button>
-              </div>
-              <div class="row-card-one-sided" style="display:none">
-                <div class="row-card-field"><span class="row-card-field-label">First Stall Label</span><input type="text" data-role="first" oninput="updateRowPreview(this)"></div>
-                <div class="row-card-field"><span class="row-card-field-label">Last Stall Label</span><input type="text" data-role="last" oninput="updateRowPreview(this)"></div>
-              </div>
-              <div class="row-card-sides">
-                <div class="side-block">
-                  <div class="side-block-label">Top Side</div>
-                  <div class="side-block-row">
-                    <div class="row-card-field"><span class="row-card-field-label">First</span><input type="text" value="112" data-role="top-first" oninput="updateRowPreview(this)"></div>
-                    <div class="row-card-field"><span class="row-card-field-label">Last</span><input type="text" value="123" data-role="top-last" oninput="updateRowPreview(this)"></div>
-                  </div>
-                </div>
-                <div class="side-block">
-                  <div class="side-block-label">Bottom Side</div>
-                  <div class="side-block-row">
-                    <div class="row-card-field"><span class="row-card-field-label">First</span><input type="text" value="124" data-role="bot-first" oninput="updateRowPreview(this)"></div>
-                    <div class="row-card-field"><span class="row-card-field-label">Last</span><input type="text" value="135" data-role="bot-last" oninput="updateRowPreview(this)"></div>
-                  </div>
-                </div>
-              </div>
-              <div>
-                <div class="row-card-preview-label">Preview <span class="row-card-count">24 stalls · Back-to-back (12 top, 12 bottom)</span></div>
-                <div class="stall-row-layout back-to-back">
-                  <div class="stall-row-side"><div class="stall-box">112</div><div class="stall-box">113</div><div class="stall-box">114</div><div class="stall-box">115</div><div class="stall-box">116</div><div class="stall-box">117</div><div class="stall-box">118</div><div class="stall-box">119</div><div class="stall-box">120</div><div class="stall-box">121</div><div class="stall-box">122</div><div class="stall-box">123</div></div>
-                  <div class="stall-row-aisle" title="Aisle"></div>
-                  <div class="stall-row-side"><div class="stall-box">124</div><div class="stall-box">125</div><div class="stall-box">126</div><div class="stall-box">127</div><div class="stall-box">128</div><div class="stall-box">129</div><div class="stall-box">130</div><div class="stall-box">131</div><div class="stall-box">132</div><div class="stall-box">133</div><div class="stall-box">134</div><div class="stall-box">135</div></div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Row 3: Yellow Barn Row A — one-sided, stalls Y1–Y12 -->
-            <div class="row-card" data-row-id="r3">
-              <div class="row-card-top">
-                <div class="row-card-field">
-                  <span class="row-card-field-label">Row Name</span>
-                  <input type="text" value="Yellow Barn Row A" data-role="name">
-                </div>
-                <div class="row-card-field row-card-field-layout">
-                  <span class="row-card-field-label">Layout</span>
-                  <select data-role="layout" onchange="updateRowPreview(this)">
-                    <option value="one-sided" selected>One-sided</option>
-                    <option value="back-to-back">Back-to-back</option>
-                  </select>
-                </div>
-                <button class="row-card-delete" title="Delete row">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-                </button>
-              </div>
-              <div class="row-card-one-sided">
-                <div class="row-card-field"><span class="row-card-field-label">First Stall Label</span><input type="text" value="Y1" data-role="first" oninput="updateRowPreview(this)"></div>
-                <div class="row-card-field"><span class="row-card-field-label">Last Stall Label</span><input type="text" value="Y12" data-role="last" oninput="updateRowPreview(this)"></div>
-              </div>
-              <div class="row-card-sides" style="display:none">
-                <div class="side-block">
-                  <div class="side-block-label">Top Side</div>
-                  <div class="side-block-row">
-                    <div class="row-card-field"><span class="row-card-field-label">First</span><input type="text" data-role="top-first" oninput="updateRowPreview(this)"></div>
-                    <div class="row-card-field"><span class="row-card-field-label">Last</span><input type="text" data-role="top-last" oninput="updateRowPreview(this)"></div>
-                  </div>
-                </div>
-                <div class="side-block">
-                  <div class="side-block-label">Bottom Side</div>
-                  <div class="side-block-row">
-                    <div class="row-card-field"><span class="row-card-field-label">First</span><input type="text" data-role="bot-first" oninput="updateRowPreview(this)"></div>
-                    <div class="row-card-field"><span class="row-card-field-label">Last</span><input type="text" data-role="bot-last" oninput="updateRowPreview(this)"></div>
-                  </div>
-                </div>
-              </div>
-              <div>
-                <div class="row-card-preview-label">Preview <span class="row-card-count">12 stalls · One-sided · Custom labels</span></div>
-                <div class="stall-row-layout">
-                  <div class="stall-box">Y1</div><div class="stall-box">Y2</div><div class="stall-box">Y3</div><div class="stall-box">Y4</div><div class="stall-box">Y5</div><div class="stall-box">Y6</div><div class="stall-box">Y7</div><div class="stall-box">Y8</div><div class="stall-box">Y9</div><div class="stall-box">Y10</div><div class="stall-box">Y11</div><div class="stall-box">Y12</div>
-                </div>
-              </div>
-            </div>
-
-          </div><!-- /#row-builder-list -->
-
-          <button class="row-add-btn" onclick="addRow()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Add Row
-          </button>
-
-          <span class="field-hint">Each row appears as a horizontal strip of stall boxes. <strong>One-sided</strong>: single row of stalls. <strong>Back-to-back</strong>: two rows separated by an aisle. Stall labels can be numbers (100–111) or strings (Y1–Y12).</span>
-        </div>
-      </div>
-
-      <!-- Stall Chart Preview Modal (z-index 1100, above layout editor) -->
-      <div class="chart-modal" id="chart-preview-modal" onclick="if(event.target===this)closeChartPreview()">
-        <div class="chart-modal-card">
-          <div class="chart-modal-head">
-            <div class="chart-modal-title">Stall Chart Preview — Customer View</div>
-            <button class="chart-modal-close" onclick="closeChartPreview()" aria-label="Close">&#x2715;</button>
-          </div>
-          <div class="chart-modal-body">
-            <div class="chart-modal-legend">
-              <span><span class="swatch"></span> Available</span>
-              <span><span class="swatch selected"></span> Selected (customer's pick)</span>
-              <span><span class="swatch reserved"></span> Already reserved</span>
-              <span><span class="swatch blocked"></span> Blocked by admin</span>
-            </div>
-            <!-- Sections populated dynamically by openChartPreview() -->
-          </div>
-        </div>
-      </div>
-
-      <!-- Blocked Stall Numbers -->
-      <div class="field-row" id="row-stall-blocked">
-        <div class="field-label">Blocked Stall Numbers<div class="field-label-sub">Hold back from reservation</div></div>
-        <div class="field-control">
-          <div class="tag-select" id="blocked-stalls-select">
-            <div class="tag-select-input" onclick="tagToggle(this)">
-              <span class="tag-chip" data-value="100">100 <button type="button" class="tag-chip-remove" onclick="event.stopPropagation();tagRemove(this);rebuildBlockedStallsDropdown();refreshAllRowPreviews()" aria-label="Remove">&#xd7;</button></span>
-              <span class="tag-chip" data-value="102">102 <button type="button" class="tag-chip-remove" onclick="event.stopPropagation();tagRemove(this);rebuildBlockedStallsDropdown();refreshAllRowPreviews()" aria-label="Remove">&#xd7;</button></span>
-              <input class="tag-search" type="text" placeholder="Type a stall number…" oninput="tagFilter(this)" onfocus="this.closest('.tag-select').classList.add('open')">
-            </div>
-            <div class="tag-dropdown">
-              <div class="tag-dropdown-empty" style="display:none">No matching stall numbers.</div>
-            </div>
-          </div>
-          <span class="field-hint">Type a stall number to filter, then click to block it. Click &#xd7; on a chip to unblock.</span>
-        </div>
-      </div>
-
-      <!-- Stall Map file upload -->
-      <div class="field-row" id="row-stall-map">
-        <div class="field-label">Stall Map<div class="field-label-sub">PDF or image customers can open</div></div>
-        <div class="field-control">
-          <div class="file-row">
-            <span class="file-name">Screenshot-2026-04-30-at-11.39.57-AM.png</span>
-            <button class="btn-upload" type="button">Upload File</button>
-            <button class="btn-file-del" type="button" aria-label="Remove file">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-            </button>
-            <a class="view-link" href="#">View file</a>
-          </div>
-          <span class="field-hint">Upload a stall map customers can open in a new tab while choosing a stall.</span>
-        </div>
-      </div>
-
-      <!-- ── RV Lot Zones ── -->
-      <div class="field-row" id="row-rv-zones" style="align-items:start">
-        <div class="field-label">RV Lot Zones<div class="field-label-sub">Pricing tiers — every lot belongs to a zone</div></div>
-        <div class="field-control">
-          <div class="zone-list" id="rv-zone-list">
-
-            <div class="zone-row" data-zone-id="z1" data-zone-color="#EF4444">
-              <div class="zone-color-pick" style="background:#EF4444" onclick="cycleZoneColor(this)" title="Click to change color"></div>
-              <input class="zone-name-input" value="Red Lot" data-role="zone-name" oninput="refreshAllRvPreviews();rebuildBlockedRvLotsDropdown()">
-              <div class="zone-price-group">
-                <span class="zone-price-label">Nightly</span>
-                <div class="zone-price-wrap"><span class="zone-price-sym">$</span><input class="zone-price-in" type="number" value="35.00" data-role="zone-nightly"></div>
-              </div>
-              <div class="zone-price-group">
-                <span class="zone-price-label">Weekend</span>
-                <div class="zone-price-wrap"><span class="zone-price-sym">$</span><input class="zone-price-in" type="number" value="90.00" data-role="zone-weekend"></div>
-              </div>
-              <span class="zone-count"><strong>6</strong> lots</span>
-              <button class="row-card-delete" title="Delete zone" onclick="deleteZone(this)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-              </button>
-            </div>
-
-            <div class="zone-row" data-zone-id="z2" data-zone-color="#1668F2">
-              <div class="zone-color-pick" style="background:#1668F2" onclick="cycleZoneColor(this)" title="Click to change color"></div>
-              <input class="zone-name-input" value="Blue Lot" data-role="zone-name" oninput="refreshAllRvPreviews();rebuildBlockedRvLotsDropdown()">
-              <div class="zone-price-group">
-                <span class="zone-price-label">Nightly</span>
-                <div class="zone-price-wrap"><span class="zone-price-sym">$</span><input class="zone-price-in" type="number" value="25.00" data-role="zone-nightly"></div>
-              </div>
-              <div class="zone-price-group">
-                <span class="zone-price-label">Weekend</span>
-                <div class="zone-price-wrap"><span class="zone-price-sym">$</span><input class="zone-price-in" type="number" value="65.00" data-role="zone-weekend"></div>
-              </div>
-              <span class="zone-count"><strong>18</strong> lots</span>
-              <button class="row-card-delete" title="Delete zone" onclick="deleteZone(this)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-              </button>
-            </div>
-
-          </div>
-          <button class="zone-add-btn" onclick="addZone()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Add Zone
-          </button>
-        </div>
-      </div>
-
-      <!-- RV Lot Selection Mode + Lot Rows builder -->
-      <div class="field-row" id="row-rv-mode">
-        <div class="field-label">Lot Selection Mode</div>
-        <div class="field-control">
-          <div class="mode-btns">
-            <button class="mode-btn active" onclick="toggleRvMode(this,'quantity')">Quantity Based</button>
-            <button class="mode-btn" data-controls="row-rv-rows-builder" onclick="toggleRvMode(this,'map')">Exact Map Selection</button>
-          </div>
-          <span class="field-hint">Quantity Based: customers pick how many lots they need by zone. Exact Map Selection: customers see the lot layout and click specific lots.</span>
-        </div>
-      </div>
-
-      <!-- Lot Rows — visible in Exact Map Selection mode only -->
-      <div class="field-row" id="row-rv-rows-builder" style="align-items:start;display:none">
-        <div class="field-label">Lot Rows<div class="field-label-sub">Define the physical layout customers will see</div></div>
-        <div class="field-control">
-          <div class="row-builder-head">
-            <div class="row-builder-summary"><strong style="color:#031B4E">2 rows · 24 lots total</strong> across this reservation</div>
-            <button class="preview-chart-btn" onclick="openRvChartPreview()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-              Preview Full Chart
-            </button>
-          </div>
-
-          <div class="zone-painter">
-            <span class="zone-painter-label">Paint Mode</span>
-            <select class="zone-painter-select" id="rv-paint-zone" onchange="refreshAllRvPreviews()">
-              <option value="">Off — click to view lot details</option>
-              <option value="z1" style="color:#EF4444">&#x25cf; Red Lot</option>
-              <option value="z2" style="color:#1668F2">&#x25cf; Blue Lot</option>
-            </select>
-            <span class="zone-painter-hint">Select a zone, then click lots in any row preview to assign them.</span>
-          </div>
-
-          <div class="row-builder" id="rv-row-builder-list">
-
-            <!-- RV Row A: one-sided, lots 1–12 -->
-            <div class="row-card" data-row-id="rv-r1">
-              <div class="row-card-top">
-                <div class="row-card-field"><span class="row-card-field-label">Row Name</span><input type="text" value="RV Row A" data-role="name"></div>
-                <div class="row-card-field row-card-field-layout">
-                  <span class="row-card-field-label">Layout</span>
-                  <select data-role="layout" onchange="updateRvRowPreview(this)">
-                    <option value="one-sided" selected>One-sided</option>
-                    <option value="back-to-back">Back-to-back</option>
-                  </select>
-                </div>
-                <button class="row-card-delete" title="Delete row">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-                </button>
-              </div>
-              <div class="row-card-one-sided">
-                <div class="row-card-field"><span class="row-card-field-label">First Lot Label</span><input type="text" value="1" data-role="first" oninput="updateRvRowPreview(this)"></div>
-                <div class="row-card-field"><span class="row-card-field-label">Last Lot Label</span><input type="text" value="12" data-role="last" oninput="updateRvRowPreview(this)"></div>
-              </div>
-              <div class="row-card-sides" style="display:none">
-                <div class="side-block">
-                  <div class="side-block-label">Top Side</div>
-                  <div class="side-block-row">
-                    <div class="row-card-field"><span class="row-card-field-label">First</span><input type="text" data-role="top-first" oninput="updateRvRowPreview(this)"></div>
-                    <div class="row-card-field"><span class="row-card-field-label">Last</span><input type="text" data-role="top-last" oninput="updateRvRowPreview(this)"></div>
-                  </div>
-                </div>
-                <div class="side-block">
-                  <div class="side-block-label">Bottom Side</div>
-                  <div class="side-block-row">
-                    <div class="row-card-field"><span class="row-card-field-label">First</span><input type="text" data-role="bot-first" oninput="updateRvRowPreview(this)"></div>
-                    <div class="row-card-field"><span class="row-card-field-label">Last</span><input type="text" data-role="bot-last" oninput="updateRvRowPreview(this)"></div>
-                  </div>
-                </div>
-              </div>
-              <div>
-                <div class="row-card-preview-label">Preview <span class="row-card-count">12 lots · One-sided</span></div>
-                <div class="stall-row-layout" data-lot-zones='{"1":"z1","2":"z1","3":"z1","4":"z1","5":"z1","6":"z1","7":"z2","8":"z2","9":"z2","10":"z2","11":"z2","12":"z2"}'></div>
-              </div>
-            </div>
-
-            <!-- RV Row B: back-to-back, lots 13–24 -->
-            <div class="row-card" data-row-id="rv-r2">
-              <div class="row-card-top">
-                <div class="row-card-field"><span class="row-card-field-label">Row Name</span><input type="text" value="RV Row B" data-role="name"></div>
-                <div class="row-card-field row-card-field-layout">
-                  <span class="row-card-field-label">Layout</span>
-                  <select data-role="layout" onchange="updateRvRowPreview(this)">
-                    <option value="one-sided">One-sided</option>
-                    <option value="back-to-back" selected>Back-to-back</option>
-                  </select>
-                </div>
-                <button class="row-card-delete" title="Delete row">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-                </button>
-              </div>
-              <div class="row-card-one-sided" style="display:none">
-                <div class="row-card-field"><span class="row-card-field-label">First Lot Label</span><input type="text" data-role="first" oninput="updateRvRowPreview(this)"></div>
-                <div class="row-card-field"><span class="row-card-field-label">Last Lot Label</span><input type="text" data-role="last" oninput="updateRvRowPreview(this)"></div>
-              </div>
-              <div class="row-card-sides">
-                <div class="side-block">
-                  <div class="side-block-label">Top Side</div>
-                  <div class="side-block-row">
-                    <div class="row-card-field"><span class="row-card-field-label">First</span><input type="text" value="13" data-role="top-first" oninput="updateRvRowPreview(this)"></div>
-                    <div class="row-card-field"><span class="row-card-field-label">Last</span><input type="text" value="18" data-role="top-last" oninput="updateRvRowPreview(this)"></div>
-                  </div>
-                </div>
-                <div class="side-block">
-                  <div class="side-block-label">Bottom Side</div>
-                  <div class="side-block-row">
-                    <div class="row-card-field"><span class="row-card-field-label">First</span><input type="text" value="19" data-role="bot-first" oninput="updateRvRowPreview(this)"></div>
-                    <div class="row-card-field"><span class="row-card-field-label">Last</span><input type="text" value="24" data-role="bot-last" oninput="updateRvRowPreview(this)"></div>
-                  </div>
-                </div>
-              </div>
-              <div>
-                <div class="row-card-preview-label">Preview <span class="row-card-count">12 lots · Back-to-back (6 top, 6 bottom)</span></div>
-                <div class="stall-row-layout back-to-back" data-lot-zones='{"13":"z2","14":"z2","15":"z2","16":"z2","17":"z2","18":"z2","19":"z2","20":"z2","21":"z2","22":"z2","23":"z2","24":"z2"}'></div>
-              </div>
-            </div>
-
-          </div><!-- /#rv-row-builder-list -->
-
-          <button class="row-add-btn" onclick="addRvRow()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Add Row
-          </button>
-
-          <span class="field-hint">Each lot's color dot shows which zone it's assigned to. Pick a zone in Paint Mode above, then click lots to reassign them.</span>
-        </div>
-      </div>
-
-      <!-- RV Chart Preview Modal (z-index 1100, above layout editor) -->
-      <div class="chart-modal" id="rv-chart-preview-modal" onclick="if(event.target===this)closeRvChartPreview()">
-        <div class="chart-modal-card">
-          <div class="chart-modal-head">
-            <div class="chart-modal-title">RV Lot Chart Preview — Customer View</div>
-            <button class="chart-modal-close" onclick="closeRvChartPreview()" aria-label="Close">&#x2715;</button>
-          </div>
-          <div class="chart-modal-body">
-            <div class="chart-modal-legend">
-              <span><span class="swatch"></span> Available</span>
-              <span><span class="swatch selected"></span> Selected (customer's pick)</span>
-              <span><span class="swatch reserved"></span> Already reserved</span>
-              <span><span class="swatch blocked"></span> Blocked by admin</span>
-            </div>
-            <!-- Sections populated dynamically by openRvChartPreview() -->
-          </div>
-        </div>
-      </div>
-
-      <!-- Blocked RV Lots -->
-      <div class="field-row" id="row-rv-blocked-lots">
-        <div class="field-label">Blocked RV Lots<div class="field-label-sub">Hold back from reservation</div></div>
-        <div class="field-control">
-          <div class="tag-select" id="blocked-rv-lots-select">
-            <div class="tag-select-input" onclick="tagToggle(this)">
-              <input class="tag-search" type="text" placeholder="Type a lot label…" oninput="tagFilter(this)" onfocus="this.closest('.tag-select').classList.add('open')">
-            </div>
-            <div class="tag-dropdown">
-              <div class="tag-dropdown-empty" style="display:none">No matching lots.</div>
-            </div>
-          </div>
-          <span class="field-hint">Type a lot label to filter, then click to block it. Click &#xd7; on a chip to unblock.</span>
-        </div>
-      </div>
-
-                  </div><!-- /#stall-charts-content -->
-                </div><!-- /.field-control -->
-              </div><!-- /.field-row (Stall Charts) -->
 
 <script>
 /* ═══════════════════════════════════════════════════════════
