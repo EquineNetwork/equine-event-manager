@@ -6605,14 +6605,18 @@ input.eem-event-search-input:focus {
 .eem-row-card-field input,
 .eem-row-card-field select {
 	padding: 7px 10px;
+	height: 34px;
+	box-sizing: border-box;
 	border: 1.5px solid #D9E2F2;
 	border-radius: var(--eem-radius, 3px);
 	font-size: 13px;
+	line-height: 1.4;
 	font-family: var(--eem-font-ui);
 	color: var(--eem-navy);
 	background: #fff;
 	outline: none;
 	width: 100%;
+	min-height: unset;
 }
 .eem-row-card-field input:focus,
 .eem-row-card-field select:focus { border-color: var(--eem-electric); }
