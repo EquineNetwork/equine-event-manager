@@ -818,13 +818,45 @@ a:hover{text-decoration:none}
         <div class="field-label">Stall Selection Mode</div>
         <div class="field-control">
           <div class="mode-btns">
-            <button class="mode-btn active" onclick="toggleMode(this)">Quantity Based</button>
-            <button class="mode-btn" onclick="toggleMode(this)">Exact Map Selection</button>
+            <button class="mode-btn active" data-mode="quantity" onclick="toggleMode(this)">Quantity Based</button>
+            <button class="mode-btn" data-mode="map" onclick="toggleMode(this)">Exact Map Selection</button>
           </div>
           <span class="field-hint">Quantity Based uses the built-in stall quantity selector. Exact Map Selection lets customers choose specific stalls from an interactive map.</span>
         </div>
       </div>
 
+      <!-- Stall Quantity Table (Quantity Based mode — default) -->
+      <div id="stall-mode-quantity-content">
+      <div class="field-row" style="align-items:start">
+        <div class="field-label">Stall Rows<div class="field-label-sub">Available stall count per row</div></div>
+        <div class="field-control">
+          <table class="repeat-table">
+            <thead><tr><th>Row Name</th><th style="width:160px">Qty Available</th><th style="width:40px"></th></tr></thead>
+            <tbody>
+            <tr>
+              <td><input class="repeat-input" type="text" value="Red Barn Row A"></td>
+              <td><input class="repeat-input" type="number" value="12" style="width:100%;text-align:right" min="0"></td>
+              <td><button class="btn-delete" type="button" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
+            </tr>
+            <tr>
+              <td><input class="repeat-input" type="text" value="Red Barn Row B"></td>
+              <td><input class="repeat-input" type="number" value="24" style="width:100%;text-align:right" min="0"></td>
+              <td><button class="btn-delete" type="button" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
+            </tr>
+            <tr>
+              <td><input class="repeat-input" type="text" value="Yellow Barn Row A"></td>
+              <td><input class="repeat-input" type="number" value="12" style="width:100%;text-align:right" min="0"></td>
+              <td><button class="btn-delete" type="button" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
+            </tr>
+            </tbody>
+          </table>
+          <button class="zone-add-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Stall Row</button>
+        </div>
+      </div>
+      </div><!-- /#stall-mode-quantity-content -->
+
+      <!-- Exact Map content (Exact Map Selection mode) — hidden by default -->
+      <div id="stall-mode-exact-content" style="display:none">
       <!-- Stall Rows builder -->
       <div class="field-row" id="row-stall-blocks" style="align-items:start">
         <div class="field-label">Stall Rows<div class="field-label-sub">Define the physical layout customers will see</div></div>
@@ -1048,6 +1080,7 @@ a:hover{text-decoration:none}
           <span class="field-hint">Upload a stall map customers can open in a new tab while choosing a stall.</span>
         </div>
       </div>
+      </div><!-- /#stall-mode-exact-content -->
 
                   </div><!-- /#stall-charts-content -->
                 </div><!-- /.field-control -->
@@ -1959,6 +1992,13 @@ document.addEventListener('click', e => {
 function toggleMode(btn){
   btn.parentElement.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  const mode = btn.dataset.mode;
+  if(mode){
+    const qBlock = document.getElementById('stall-mode-quantity-content');
+    const eBlock = document.getElementById('stall-mode-exact-content');
+    if(qBlock) qBlock.style.display = mode === 'quantity' ? '' : 'none';
+    if(eBlock) eBlock.style.display = mode === 'map'      ? '' : 'none';
+  }
 }
 
 /* ── Stall Row Builder ── */
