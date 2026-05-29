@@ -568,6 +568,48 @@ c7x_ok(
 	empty( $orphan_fields ) ? '' : 'orphaned: ' . implode( ', ', $orphan_fields )
 );
 
+// ── C8 Pre-Entries meta-registration regression guard (2.3.18) ───────────────
+// Catches the class of bug where a new section template is added but its meta
+// keys are not registered in get_default_meta_values(), causing get_meta_values()
+// to skip them and $data never carrying those keys to the template.
+
+$cpt_php = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-reservations-cpt.php' );
+
+// 8a. event_pre_entries_enabled registered in get_default_meta_values().
+c7x_ok(
+	'Regression guard: event_pre_entries_enabled in get_default_meta_values()',
+	false !== strpos( $cpt_php, "'event_pre_entries_enabled'" ),
+	$pass, $fail, $log
+);
+
+// 8b. event_pre_entries registered in get_default_meta_values().
+c7x_ok(
+	'Regression guard: event_pre_entries in get_default_meta_values()',
+	false !== strpos( $cpt_php, "'event_pre_entries'" ),
+	$pass, $fail, $log
+);
+
+// 8c. Pre-entries template does NOT use get_post_meta(get_the_ID(), ...) pattern.
+//     That call returns 0 on custom admin pages (not inside WP loop).
+$pe_php_src = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_section-event-pre-entries.php' );
+c7x_ok(
+	'Regression guard: _section-event-pre-entries.php does not call get_post_meta(get_the_ID())',
+	false === strpos( $pe_php_src, 'get_post_meta( get_the_ID()' ) &&
+	false === strpos( $pe_php_src, 'get_post_meta(get_the_ID()' ),
+	$pass, $fail, $log
+);
+
+// 8d. Narrower guard (scoped to pre-entries only for this commit — _section-stall.php and
+//     _section-rv.php have legacy get_post_meta(get_the_ID()) calls too, but those are a
+//     separate fix tracked as a follow-up item): the pre-entries template specifically must
+//     not use that pattern since we just fixed it.
+c7x_ok(
+	'Regression guard: _section-event-pre-entries.php uses $data, not get_post_meta with get_the_ID()',
+	false === strpos( $pe_php_src, 'get_post_meta( get_the_ID()' ) &&
+	false === strpos( $pe_php_src, "get_post_meta(get_the_ID()" ),
+	$pass, $fail, $log
+);
+
 wp_delete_post( $rid, true );
 
 echo implode( "\n", $log ) . "\n=== RESULT: {$pass} passed, {$fail} failed ===\n";

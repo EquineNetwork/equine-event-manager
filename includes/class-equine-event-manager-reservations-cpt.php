@@ -2057,6 +2057,9 @@ class EEM_Reservations_CPT {
 			// C7.X — Per-customer purchase limits. Empty = unlimited (enforced at C10 checkout).
 			'stall_max_per_customer'          => '',
 			'rv_max_per_customer'             => '',
+			// C8 — Event Pre-Entries section. Array empty = no entries yet (template shows seed).
+			'event_pre_entries_enabled'       => 0,
+			'event_pre_entries'               => array(),
 		);
 
 		return $defaults;

@@ -25,7 +25,10 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_pa
 $fmt_money = function ( $v ) { return number_format( (float) $v, 2, '.', '' ); };
 
 // Load meta or fall back to 2 seeded rows.
-$pre_entries_meta = get_post_meta( get_the_ID(), '_en_event_pre_entries', true );
+// NOTE: use $data, NOT a direct get_post_meta() call with get_the_ID() — this template
+// runs on a custom admin page where the global $post is not set, so get_the_ID()
+// returns 0. All section templates must read from $data (pre-loaded by get_meta_values()).
+$pre_entries_meta = isset( $data['event_pre_entries'] ) ? $data['event_pre_entries'] : array();
 $pre_entries      = ( is_array( $pre_entries_meta ) && ! empty( $pre_entries_meta ) )
 	? $pre_entries_meta
 	: array(
