@@ -2005,7 +2005,16 @@
 		var body = document.querySelector('.eem-reservation-editor-body');
 		if (!body) return [];
 		var out = [];
-		body.querySelectorAll('input[name^="en_reservation"], select[name^="en_reservation"], textarea[name^="en_reservation"]').forEach(function (el) {
+		// C8-fix: broadened to also capture eem_* C8 fields and the two
+		// bare-named mode inputs. Originally only `en_reservation[*]`
+		// (legacy namespace) was collected, silently dropping every C8
+		// field (stall_rows, rv_zones, selection modes, blocked lots,
+		// pre-entries, max-per-customer, etc.) from every AJAX save.
+		body.querySelectorAll(
+			'input[name^="en_reservation"], select[name^="en_reservation"], textarea[name^="en_reservation"], ' +
+			'input[name^="eem_"], select[name^="eem_"], textarea[name^="eem_"], ' +
+			'input[name="stall_selection_mode"], input[name="rv_selection_mode"]'
+		).forEach(function (el) {
 			if ((el.type === 'checkbox' || el.type === 'radio') && !el.checked) return;
 			// C7.C.1.1 — hidden section-enabled mirrors with value="0"
 			// must be SKIPPED to mirror unchecked-checkbox behavior the
@@ -2045,12 +2054,11 @@
 		body.set('_eem_editor_nonce', eemReservationEditorNonce());
 		body.set('reservation_id', rid);
 		body.set('save_kind', kind);
-		// Bug-fix: serialize RV lot zone assignments into the save payload
+		// Sync RV lot zone state into the hidden input BEFORE the collector
+		// runs — the broadened eemCollectEditorFields() selector now picks up
+		// name="eem_rv_lot_zone_assignments" automatically, so no explicit
+		// body.set() is needed here. The sync must still happen first.
 		_syncRvLotZoneAssignmentsInput();
-		var lotZoneInput = document.getElementById('eem-rv-lot-zone-assignments-input');
-		if (lotZoneInput && lotZoneInput.value) {
-			body.set('eem_rv_lot_zone_assignments', lotZoneInput.value);
-		}
 		eemCollectEditorFields().forEach(function (pair) { body.append(pair[0], pair[1]); });
 		fetch(EEM_EDITOR_AJAX_URL, {
 			method: 'POST',

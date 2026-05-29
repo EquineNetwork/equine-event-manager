@@ -178,7 +178,7 @@ eem_render_editor_field_row( array(
 ob_start();
 ?>
 <input type="number"
-	name="rv_inventory"
+	name="en_reservation[rv_inventory]"
 	id="eem-rv-inventory-input"
 	class="eem-field-input"
 	value="<?php echo esc_attr( (string) ( $data['rv_inventory'] ?? '' ) ); ?>"

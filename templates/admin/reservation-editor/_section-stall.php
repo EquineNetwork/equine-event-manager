@@ -193,7 +193,7 @@ eem_render_editor_field_row( array(
 ob_start();
 ?>
 <input type="number"
-	name="stall_inventory"
+	name="en_reservation[stall_inventory]"
 	id="eem-stall-inventory-input"
 	class="eem-field-input"
 	value="<?php echo esc_attr( (string) ( $data['stall_inventory'] ?? '' ) ); ?>"

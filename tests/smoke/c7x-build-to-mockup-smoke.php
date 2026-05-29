@@ -500,6 +500,74 @@ c7x_ok(
 	$pass, $fail, $log
 );
 
+// ── C8 selector regression guard (2.3.17) ───────────────────────────────────
+// Prevent the class of bug where a new field added to a section template uses
+// a name that eemCollectEditorFields() doesn't capture, causing silent save
+// failure. Two complementary checks:
+
+// 7a. admin.js collector includes eem_* arm — catches future narrowing.
+c7x_ok(
+	'Regression guard: eemCollectEditorFields() selector includes eem_* arm',
+	false !== strpos( $js, 'input[name^="eem_"]' ),
+	$pass, $fail, $log
+);
+
+// 7b. admin.js collector includes bare stall_selection_mode arm.
+c7x_ok(
+	'Regression guard: eemCollectEditorFields() selector includes bare stall_selection_mode',
+	false !== strpos( $js, 'input[name="stall_selection_mode"]' ),
+	$pass, $fail, $log
+);
+
+// 7c. stall_inventory renamed to en_reservation namespace (routes through save_meta).
+c7x_ok(
+	'Regression guard: _section-stall.php stall_inventory uses en_reservation[stall_inventory]',
+	false !== strpos( $stall_php, 'name="en_reservation[stall_inventory]"' ),
+	$pass, $fail, $log
+);
+
+// 7d. rv_inventory renamed to en_reservation namespace.
+c7x_ok(
+	'Regression guard: _section-rv.php rv_inventory uses en_reservation[rv_inventory]',
+	false !== strpos( $rv_php, 'name="en_reservation[rv_inventory]"' ),
+	$pass, $fail, $log
+);
+
+// 7e. No eem_* or bare-named fields exist outside the two known bare names.
+//     Scan all section templates for name="X" where X is not en_reservation[*],
+//     eem_*, stall_selection_mode, or rv_selection_mode — any hit is a missed field.
+$section_dir    = EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/';
+$section_files  = glob( $section_dir . '_section-*.php' ) ?: array();
+$orphan_fields  = array();
+foreach ( $section_files as $sf ) {
+	$src = file_get_contents( $sf );
+	// Find all name="..." attribute values on form elements.
+	if ( preg_match_all( '/<(?:input|select|textarea)[^>]+\bname="([^"]+)"/', $src, $m ) ) {
+		foreach ( $m[1] as $field_name ) {
+			// Allowed: en_reservation[*], eem_*, stall_selection_mode, rv_selection_mode,
+			// eem_stall_rows[*], eem_rv_zones[*], eem_rv_rows[*], eem_event_pre_entries[*]
+			// (those all start with eem_), _eem_* (nonce fields), or template placeholders.
+			if (
+				0 === strpos( $field_name, 'en_reservation' ) ||
+				0 === strpos( $field_name, 'eem_' )           ||
+				0 === strpos( $field_name, '_eem_' )          ||
+				'stall_selection_mode' === $field_name        ||
+				'rv_selection_mode'    === $field_name        ||
+				false !== strpos( $field_name, '__index__' )  // template placeholder rows
+			) {
+				continue;
+			}
+			$orphan_fields[] = basename( $sf ) . ': name="' . $field_name . '"';
+		}
+	}
+}
+c7x_ok(
+	'Regression guard: no orphaned bare-named fields in section templates (would be silently dropped by eemCollectEditorFields)',
+	empty( $orphan_fields ),
+	$pass, $fail, $log,
+	empty( $orphan_fields ) ? '' : 'orphaned: ' . implode( ', ', $orphan_fields )
+);
+
 wp_delete_post( $rid, true );
 
 echo implode( "\n", $log ) . "\n=== RESULT: {$pass} passed, {$fail} failed ===\n";
