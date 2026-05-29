@@ -47,7 +47,22 @@ a:hover{text-decoration:none}
 .plugin-header{padding:18px 22px;border-bottom:1px solid #dcdcde;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .plugin-header-left{flex:1;min-width:0}
 .plugin-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;line-height:1.2;margin-bottom:4px}
-.plugin-subtitle{font-size:13px;color:#6B7A99;line-height:1.45}
+.plugin-header-meta{font-size:13px;color:#6B7A99;margin-top:4px}
+.header-change-btn{background:#fff;border:1px solid #c3c4c7;color:#1d2327;padding:6px 12px;border-radius:4px;font-size:12.5px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.header-change-btn:hover{border-color:#8c8f94;background:#f6f7f7}
+.header-typeahead{margin-top:10px}
+.header-event-search{width:100%;max-width:420px;padding:8px 12px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;outline:none;box-sizing:border-box}
+.header-event-search:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
+.header-event-options{width:100%;max-width:420px;border:1px solid #dcdcde;border-radius:4px;background:#fff;margin-top:4px;overflow:hidden}
+.header-event-option{padding:10px 12px;cursor:pointer;border-bottom:1px solid #f0f0f1}
+.header-event-option:last-child{border-bottom:none}
+.header-event-option:hover,.header-event-option.is-current{background:#f3f4f5}
+.header-event-option-name{font-size:13px;font-weight:600;color:#031B4E;display:block}
+.header-event-option-dates{font-size:11.5px;color:#6B7A99;display:block;margin-top:2px}
+.header-event-option-tag{display:inline-block;font-size:10px;font-weight:700;color:#1668F2;background:#EEF4FF;border-radius:3px;padding:1px 5px;margin-left:5px;vertical-align:middle;text-transform:uppercase;letter-spacing:.3px}
+.header-event-option-empty{padding:10px 12px;font-size:13px;color:#8c8f94}
+.header-cancel-btn{background:none;border:none;color:#6B7A99;font-size:12.5px;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;padding:0;margin-top:6px;display:inline-block}
+.header-cancel-btn:hover{color:#1d2327}
 
 /* ── BODY ── */
 .chart-body{padding:18px 22px;background:#fff}
@@ -246,7 +261,6 @@ body.destination-mode .occ-pill.occ-blocked{opacity:.5}
   .breadcrumb-logo-box{width:120px;height:30px;font-size:10px}
   .plugin-header{padding:14px;flex-direction:column;align-items:stretch;gap:10px}
   .plugin-title{font-size:18px}
-  .plugin-subtitle{font-size:12.5px}
   .chart-body{padding:12px}
   .stats-bar{grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
   .stat-card{padding:10px 12px}
@@ -332,9 +346,16 @@ body.destination-mode .occ-pill.occ-blocked{opacity:.5}
       <!-- PAGE HEADER inside wrap -->
       <header class="plugin-header">
         <div class="plugin-header-left">
-          <h1 class="plugin-title">Stall Chart — 2026 Southeast Region Super Sort</h1>
-          <div class="plugin-subtitle">Manage stall and RV lot assignments for this reservation. Click any customer pill to view their order or move them to a different stall.</div>
+          <h1 class="plugin-title" id="header-event-name">Perry, GA &#8211; 2026 Southeast Region Super Sort</h1>
+          <div class="plugin-header-meta" id="header-meta">Stall Chart for Reservation #44 &nbsp;&middot;&nbsp; May 8 &#8211; 10, 2026</div>
+          <!-- Inline typeahead — shown when Change Event clicked -->
+          <div class="header-typeahead" id="header-typeahead" style="display:none">
+            <input class="header-event-search" type="text" id="header-event-input" placeholder="Search events&#8230;" oninput="filterEventOptions(this.value)" autocomplete="off">
+            <div class="header-event-options" id="header-event-options"></div>
+            <button class="header-cancel-btn" type="button" onclick="cancelChangeEvent()">Cancel</button>
+          </div>
         </div>
+        <button class="header-change-btn" type="button" id="header-change-btn" onclick="changeLinkedEvent()">Change Event</button>
       </header>
 
       <div class="chart-body">
@@ -773,6 +794,57 @@ function confirmMove(){
 /* Stubs for primary actions (mockup only) */
 function autoAssignAll(){ /* C8 implementation */ }
 function autoAssignOrder(id){ /* C8 implementation */ }
+
+/* ── Linked Event header typeahead ── */
+var _linkedEvents = [
+  {id:'perry-2026', name:'Perry, GA – 2026 Southeast Region Super Sort', dates:'May 8–10, 2026', current:true},
+  {id:'patriot-2026', name:'The Patriot Fort Worth – 2026', dates:'March 5–15, 2026', current:false},
+  {id:'aqha-2026', name:'AQHA World Show 2026', dates:'November 7–22, 2026', current:false},
+  {id:'wcss-2026', name:'Western Canadian Super Show 2026', dates:'June 12–15, 2026', current:false},
+  {id:'wyo-2026', name:'Wyoming State Fair 2026', dates:'August 28 – September 7, 2026', current:false}
+];
+
+function changeLinkedEvent(){
+  document.getElementById('header-change-btn').style.display = 'none';
+  document.getElementById('header-typeahead').style.display = '';
+  var input = document.getElementById('header-event-input');
+  input.value = '';
+  filterEventOptions('');
+  input.focus();
+}
+
+function cancelChangeEvent(){
+  document.getElementById('header-typeahead').style.display = 'none';
+  document.getElementById('header-change-btn').style.display = '';
+}
+
+function selectLinkedEvent(eventId){
+  var ev = null;
+  for(var i=0;i<_linkedEvents.length;i++){ if(_linkedEvents[i].id===eventId){ ev=_linkedEvents[i]; break; } }
+  if(!ev) return;
+  _linkedEvents.forEach(function(e){ e.current = false; });
+  ev.current = true;
+  document.getElementById('header-event-name').textContent = ev.name;
+  document.getElementById('header-meta').innerHTML = 'Stall Chart for Reservation #44 &nbsp;&middot;&nbsp; ' + ev.dates;
+  cancelChangeEvent();
+}
+
+function filterEventOptions(query){
+  var container = document.getElementById('header-event-options');
+  if(!container) return;
+  var q = query.toLowerCase();
+  var results = _linkedEvents.filter(function(ev){
+    return !q || ev.name.toLowerCase().indexOf(q) !== -1 || ev.dates.toLowerCase().indexOf(q) !== -1;
+  });
+  if(!results.length){
+    container.innerHTML = '<div class="header-event-option-empty">No matching events.</div>';
+    return;
+  }
+  container.innerHTML = results.map(function(ev){
+    var tag = ev.current ? ' <span class="header-event-option-tag">Current</span>' : '';
+    return '<div class="header-event-option' + (ev.current?' is-current':'') + '" onclick="selectLinkedEvent(\'' + ev.id + '\')"><span class="header-event-option-name">' + ev.name + '</span><span class="header-event-option-dates">' + ev.dates + tag + '</span></div>';
+  }).join('');
+}
 </script>
 
 </body>
