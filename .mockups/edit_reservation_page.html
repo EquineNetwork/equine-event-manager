@@ -386,8 +386,6 @@ a:hover{text-decoration:none}
 /* ── Zone color picker, count, painter (row-builder modal only) ── */
 .zone-color-pick{width:24px;height:24px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1.5px #D9E2F2;cursor:pointer;flex-shrink:0;position:relative}
 .zone-color-pick.active{box-shadow:0 0 0 2px #031B4E}
-.zone-count{font-size:11.5px;color:#6B7A99;white-space:nowrap}
-.zone-count strong{color:#031B4E;font-weight:700}
 .zone-painter{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#FAFBFE;border:1.5px solid #D9E2F2;border-radius:6px;/* intentional larger card radius — not --eem-radius; revisit at C8 port if --eem-radius-lg is defined */margin-bottom:14px;flex-wrap:wrap}
 .zone-painter-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#031B4E}
 .zone-painter-select{flex:1;min-width:160px;padding:7px 10px;border:1.5px solid #D9E2F2;border-radius:var(--eem-radius);font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#031B4E;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236B7A99' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 9px center;appearance:none;padding-right:28px;outline:none}
@@ -1179,46 +1177,6 @@ a:hover{text-decoration:none}
                 <div class="field-control"><div class="price-wrap"><span class="price-symbol">$</span><input class="price-input" type="number" value="140.00"></div></div>
               </div>
 
-              <!-- RV Add-Ons with master enable toggle (Q5/A choice) -->
-              <div class="field-row">
-                <div class="field-label">RV Add-Ons<div class="field-label-sub">Optional hookups customers can add</div></div>
-                <div class="field-control">
-                  <div class="toggle-label-row" style="margin-bottom:10px" onclick="toggleSwitchRow(this)">
-                    <div class="toggle on" data-controls="rv-addons-table-wrap"></div>
-                    <span>Enable RV add-ons</span>
-                  </div>
-                  <div id="rv-addons-table-wrap">
-                    <table class="repeat-table">
-                      <thead>
-                        <tr><th>Add-On</th><th style="width:120px">Price</th><th style="width:40px"></th></tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td><input class="repeat-input" type="text" value="Electric"></td>
-                          <td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" value="15.00"></div></td>
-                          <td><button class="btn-delete" type="button" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
-                        </tr>
-                        <tr>
-                          <td><input class="repeat-input" type="text" value="Water"></td>
-                          <td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" value="30.00"></div></td>
-                          <td><button class="btn-delete" type="button" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
-                        </tr>
-                        <tr>
-                          <td><input class="repeat-input" type="text" value="Sewage"></td>
-                          <td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" value="20.00"></div></td>
-                          <td><button class="btn-delete" type="button" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
-                        </tr>
-                      </tbody>
-                    </table>
-                    <button class="btn-add" type="button">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                      Add RV Add-On
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-
               <!-- RV Lot Charts toggle: mirrors Stall Charts pattern -->
               <div class="field-row">
                 <div class="field-label">RV Lot Charts<div class="field-label-sub">Define the physical RV lot layout customers see at checkout</div></div>
@@ -1228,6 +1186,18 @@ a:hover{text-decoration:none}
                     <span>Enable RV lot charts</span>
                   </div>
                   <div id="rv-lot-charts-content">
+      <!-- RV Lot Selection Mode + Lot Rows builder -->
+      <div class="field-row" id="row-rv-mode">
+        <div class="field-label">Lot Selection Mode</div>
+        <div class="field-control">
+          <div class="mode-btns">
+            <button class="mode-btn active" data-mode="quantity" onclick="toggleLotMode(this)">Quantity Based</button>
+            <button class="mode-btn" data-mode="map" onclick="toggleLotMode(this)">Exact Map Selection</button>
+          </div>
+          <span class="field-hint">Quantity Based: customers pick how many lots they need by zone. Exact Map Selection: customers see the lot layout and click specific lots.</span>
+        </div>
+      </div>
+
       <div id="rv-mode-quantity-content">
       <!-- ── RV Lot Zones ── -->
       <div class="field-row" id="row-rv-zones" style="align-items:start">
@@ -1246,7 +1216,10 @@ a:hover{text-decoration:none}
                 <span class="zone-price-label">Weekend</span>
                 <div class="zone-price-wrap"><span class="zone-price-sym">$</span><input class="zone-price-in" type="number" value="90.00" data-role="zone-weekend"></div>
               </div>
-              <span class="zone-count"><strong>6</strong> lots</span>
+              <div class="zone-price-group">
+                <span class="zone-price-label">Avail Qty</span>
+                <div class="zone-price-wrap"><input class="zone-price-in" type="number" value="6" data-role="zone-qty" min="0" style="width:56px"></div>
+              </div>
               <button class="row-card-delete" title="Delete zone" onclick="deleteZone(this)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
               </button>
@@ -1263,7 +1236,10 @@ a:hover{text-decoration:none}
                 <span class="zone-price-label">Weekend</span>
                 <div class="zone-price-wrap"><span class="zone-price-sym">$</span><input class="zone-price-in" type="number" value="65.00" data-role="zone-weekend"></div>
               </div>
-              <span class="zone-count"><strong>18</strong> lots</span>
+              <div class="zone-price-group">
+                <span class="zone-price-label">Avail Qty</span>
+                <div class="zone-price-wrap"><input class="zone-price-in" type="number" value="18" data-role="zone-qty" min="0" style="width:56px"></div>
+              </div>
               <button class="row-card-delete" title="Delete zone" onclick="deleteZone(this)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
               </button>
@@ -1277,18 +1253,6 @@ a:hover{text-decoration:none}
         </div>
       </div>
       </div><!-- /#rv-mode-quantity-content -->
-
-      <!-- RV Lot Selection Mode + Lot Rows builder -->
-      <div class="field-row" id="row-rv-mode">
-        <div class="field-label">Lot Selection Mode</div>
-        <div class="field-control">
-          <div class="mode-btns">
-            <button class="mode-btn active" data-mode="quantity" onclick="toggleLotMode(this)">Quantity Based</button>
-            <button class="mode-btn" data-mode="map" onclick="toggleLotMode(this)">Exact Map Selection</button>
-          </div>
-          <span class="field-hint">Quantity Based: customers pick how many lots they need by zone. Exact Map Selection: customers see the lot layout and click specific lots.</span>
-        </div>
-      </div>
 
       <div id="rv-mode-exact-content" style="display:none">
       <!-- Lot Rows — visible in Exact Map Selection mode only -->
@@ -1423,6 +1387,45 @@ a:hover{text-decoration:none}
                   </div><!-- /#rv-lot-charts-content -->
                 </div><!-- /.field-control -->
               </div><!-- /.field-row (RV Lot Charts) -->
+
+              <!-- RV Add-Ons with master enable toggle (Q5/A choice) -->
+              <div class="field-row">
+                <div class="field-label">RV Add-Ons<div class="field-label-sub">Optional hookups customers can add</div></div>
+                <div class="field-control">
+                  <div class="toggle-label-row" style="margin-bottom:10px" onclick="toggleSwitchRow(this)">
+                    <div class="toggle on" data-controls="rv-addons-table-wrap"></div>
+                    <span>Enable RV add-ons</span>
+                  </div>
+                  <div id="rv-addons-table-wrap">
+                    <table class="repeat-table">
+                      <thead>
+                        <tr><th>Add-On</th><th style="width:120px">Price</th><th style="width:40px"></th></tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td><input class="repeat-input" type="text" value="Electric"></td>
+                          <td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" value="15.00"></div></td>
+                          <td><button class="btn-delete" type="button" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
+                        </tr>
+                        <tr>
+                          <td><input class="repeat-input" type="text" value="Water"></td>
+                          <td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" value="30.00"></div></td>
+                          <td><button class="btn-delete" type="button" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
+                        </tr>
+                        <tr>
+                          <td><input class="repeat-input" type="text" value="Sewage"></td>
+                          <td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" value="20.00"></div></td>
+                          <td><button class="btn-delete" type="button" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <button class="btn-add" type="button">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                      Add RV Add-On
+                    </button>
+                  </div>
+                </div>
+              </div>
 
             </div>
           </section>
@@ -2184,7 +2187,6 @@ function paintLot(lotEl){
   zonesMap[label] = zone.id;
   setRowLotZones(rowEl, zonesMap);
   updateRvRowPreview(rowEl.querySelector('input,select'));
-  refreshZoneCounts();
 }
 
 function updateRvRowPreview(triggerEl){
@@ -2247,22 +2249,9 @@ function refreshAllRvPreviews(){
     const anyInput = card.querySelector('input');
     if(anyInput) updateRvRowPreview(anyInput);
   });
-  refreshZoneCounts();
   refreshPaintModeSelect();
 }
 
-function refreshZoneCounts(){
-  const counts = {};
-  document.querySelectorAll('#rv-row-builder-list .row-card').forEach(card => {
-    const zonesMap = getRowLotZones(card);
-    Object.values(zonesMap).forEach(zid => { counts[zid] = (counts[zid] || 0) + 1; });
-  });
-  document.querySelectorAll('#rv-zone-list .zone-row').forEach(zoneEl => {
-    const zid = zoneEl.dataset.zoneId;
-    const countEl = zoneEl.querySelector('.zone-count strong');
-    if(countEl) countEl.textContent = counts[zid] || 0;
-  });
-}
 
 function refreshPaintModeSelect(){
   const sel = document.getElementById('rv-paint-zone');
@@ -2325,7 +2314,10 @@ function addZone(){
         <span class="zone-price-label">Weekend</span>
         <div class="zone-price-wrap"><span class="zone-price-sym">$</span><input class="zone-price-in" type="number" value="0.00" data-role="zone-weekend"></div>
       </div>
-      <span class="zone-count"><strong>0</strong> lots</span>
+      <div class="zone-price-group">
+        <span class="zone-price-label">Avail Qty</span>
+        <div class="zone-price-wrap"><input class="zone-price-in" type="number" value="" data-role="zone-qty" min="0" style="width:56px" placeholder="0"></div>
+      </div>
       <button class="row-card-delete" title="Delete zone" onclick="deleteZone(this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
       </button>
@@ -2371,7 +2363,7 @@ function addRvRow(){
             <option value="back-to-back">Back-to-back</option>
           </select>
         </div>
-        <button class="row-card-delete" title="Delete row" onclick="this.closest('.row-card').remove();rebuildBlockedRvLotsDropdown();refreshZoneCounts()">
+        <button class="row-card-delete" title="Delete row" onclick="this.closest('.row-card').remove();rebuildBlockedRvLotsDropdown()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
         </button>
       </div>
@@ -2484,7 +2476,7 @@ function rebuildBlockedRvLotsDropdown(){
 /* RV initial wire-up on load */
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('#rv-row-builder-list .row-card-delete').forEach(btn => {
-    if(!btn.onclick) btn.onclick = () => { btn.closest('.row-card').remove(); rebuildBlockedRvLotsDropdown(); refreshZoneCounts(); };
+    if(!btn.onclick) btn.onclick = () => { btn.closest('.row-card').remove(); rebuildBlockedRvLotsDropdown(); };
   });
   refreshPaintModeSelect();
   rebuildBlockedRvLotsDropdown();
