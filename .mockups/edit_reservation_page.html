@@ -333,6 +333,29 @@ a:hover{text-decoration:none}
 .mode-btn{padding:8px 18px;border:1.5px solid #D9E2F2;border-radius:4px;font-size:13.5px;font-weight:500;color:#031B4E;cursor:pointer;background:#fff}
 .mode-btn.active{border-color:#031B4E;background:#031B4E;color:#fff}
 
+/* ── Stall Quantity Table ── */
+function addStallRow(){
+  var tbody = document.querySelector('#stall-mode-quantity-content .repeat-table tbody');
+  if(!tbody) return;
+  var tr = document.createElement('tr');
+  tr.innerHTML =
+    '<td><input class="repeat-input" type="text" placeholder="Row Name"></td>' +
+    '<td><input class="repeat-input" type="number" value="" style="width:100%;text-align:right" min="0" placeholder="0"></td>' +
+    '<td><button class="btn-delete" type="button" aria-label="Delete" onclick="deleteStallRow(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>';
+  tbody.appendChild(tr);
+  tr.querySelector('input[type="text"]').focus();
+}
+
+function deleteStallRow(btn){
+  var tr = btn.closest('tr');
+  var tbody = tr.closest('tbody');
+  if(tbody.querySelectorAll('tr').length <= 1){
+    alert('Cannot delete the last stall row.');
+    return;
+  }
+  tr.remove();
+}
+
 /* ── Stall Row Builder ── */
 .row-builder{display:flex;flex-direction:column;gap:10px;margin-bottom:10px}
 .row-card{border:1.5px solid #D9E2F2;border-radius:6px;/* intentional larger card radius — not --eem-radius; revisit at C8 port if --eem-radius-lg is defined */background:#FAFBFE;padding:14px 16px;position:relative}
@@ -821,21 +844,21 @@ a:hover{text-decoration:none}
             <tr>
               <td><input class="repeat-input" type="text" value="Red Barn Row A"></td>
               <td><input class="repeat-input" type="number" value="12" style="width:100%;text-align:right" min="0"></td>
-              <td><button class="btn-delete" type="button" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
+              <td><button class="btn-delete" type="button" aria-label="Delete" onclick="deleteStallRow(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
             </tr>
             <tr>
               <td><input class="repeat-input" type="text" value="Red Barn Row B"></td>
               <td><input class="repeat-input" type="number" value="24" style="width:100%;text-align:right" min="0"></td>
-              <td><button class="btn-delete" type="button" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
+              <td><button class="btn-delete" type="button" aria-label="Delete" onclick="deleteStallRow(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
             </tr>
             <tr>
               <td><input class="repeat-input" type="text" value="Yellow Barn Row A"></td>
               <td><input class="repeat-input" type="number" value="12" style="width:100%;text-align:right" min="0"></td>
-              <td><button class="btn-delete" type="button" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
+              <td><button class="btn-delete" type="button" aria-label="Delete" onclick="deleteStallRow(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
             </tr>
             </tbody>
           </table>
-          <button class="zone-add-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Stall Row</button>
+          <button class="zone-add-btn" type="button" onclick="addStallRow()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Stall Row</button>
         </div>
       </div>
       </div><!-- /#stall-mode-quantity-content -->
@@ -1228,6 +1251,7 @@ a:hover{text-decoration:none}
                     <span>Enable RV lot charts</span>
                   </div>
                   <div id="rv-lot-charts-content">
+      <div id="rv-mode-quantity-content">
       <!-- ── RV Lot Zones ── -->
       <div class="field-row" id="row-rv-zones" style="align-items:start">
         <div class="field-label">RV Lot Zones<div class="field-label-sub">Pricing tiers — every lot belongs to a zone</div></div>
@@ -1275,21 +1299,23 @@ a:hover{text-decoration:none}
           </button>
         </div>
       </div>
+      </div><!-- /#rv-mode-quantity-content -->
 
       <!-- RV Lot Selection Mode + Lot Rows builder -->
       <div class="field-row" id="row-rv-mode">
         <div class="field-label">Lot Selection Mode</div>
         <div class="field-control">
           <div class="mode-btns">
-            <button class="mode-btn active" onclick="toggleRvMode(this,'quantity')">Quantity Based</button>
-            <button class="mode-btn" data-controls="row-rv-rows-builder" onclick="toggleRvMode(this,'map')">Exact Map Selection</button>
+            <button class="mode-btn active" data-mode="quantity" onclick="toggleLotMode(this)">Quantity Based</button>
+            <button class="mode-btn" data-mode="map" onclick="toggleLotMode(this)">Exact Map Selection</button>
           </div>
           <span class="field-hint">Quantity Based: customers pick how many lots they need by zone. Exact Map Selection: customers see the lot layout and click specific lots.</span>
         </div>
       </div>
 
+      <div id="rv-mode-exact-content" style="display:none">
       <!-- Lot Rows — visible in Exact Map Selection mode only -->
-      <div class="field-row" id="row-rv-rows-builder" style="align-items:start;display:none">
+      <div class="field-row" id="row-rv-rows-builder" style="align-items:start">
         <div class="field-label">Lot Rows<div class="field-label-sub">Define the physical layout customers will see</div></div>
         <div class="field-control">
             <div class="row-builder-summary" style="margin-bottom:10px"><strong style="color:#031B4E">2 rows · 24 lots total</strong> across this reservation</div>
@@ -1415,6 +1441,7 @@ a:hover{text-decoration:none}
           <span class="field-hint">Type a lot label to filter, then click to block it. Click &#xd7; on a chip to unblock.</span>
         </div>
       </div>
+      </div><!-- /#rv-mode-exact-content -->
 
                   </div><!-- /#rv-lot-charts-content -->
                 </div><!-- /.field-control -->
@@ -2394,11 +2421,16 @@ function addRvRow(){
   list.insertAdjacentHTML('beforeend', html);
 }
 
-function toggleRvMode(btn, mode){
-  btn.parentElement.querySelectorAll('.stay-type-btn').forEach(b => b.classList.remove('active'));
+function toggleLotMode(btn){
+  btn.parentElement.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  const rowsBuilder = document.getElementById('row-rv-rows-builder');
-  if(rowsBuilder) rowsBuilder.style.display = (mode === 'map') ? '' : 'none';
+  const mode = btn.dataset.mode;
+  if(mode){
+    const qBlock = document.getElementById('rv-mode-quantity-content');
+    const eBlock = document.getElementById('rv-mode-exact-content');
+    if(qBlock) qBlock.style.display = mode === 'quantity' ? '' : 'none';
+    if(eBlock) eBlock.style.display = mode === 'map'      ? '' : 'none';
+  }
 }
 
 function getBlockedRvLotsSet(){
