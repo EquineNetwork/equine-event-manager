@@ -6464,23 +6464,10 @@ input.eem-event-search-input:focus {
 	color: #1d2327;
 }
 
-/* ── Inventory Mode buttons ── */
-/* Mirrors .eem-fee-mode-btn pattern (C1.2) with Mapped/Bulk semantics. */
+/* ── Inventory Mode buttons — extends existing .eem-mode-btn (line 1074) ── */
+/* Base + .active already defined at line 1074. Add font-family + hover state only. */
 .eem-mode-btn {
-	padding: 8px 18px;
-	border: 1.5px solid #D9E2F2;
-	border-radius: var(--eem-radius);
-	font-size: 13.5px;
-	font-weight: 500;
-	color: #031B4E;
-	cursor: pointer;
-	background: #fff;
 	font-family: inherit;
-}
-.eem-mode-btn.active {
-	border-color: #031B4E;
-	background: #031B4E;
-	color: #fff;
 }
 .eem-mode-btn:hover:not(.active) {
 	border-color: var(--eem-electric);
