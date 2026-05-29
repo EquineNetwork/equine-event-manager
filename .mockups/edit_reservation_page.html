@@ -1354,6 +1354,62 @@ a:hover{text-decoration:none}
           </section>
 
 
+          <!-- ── Event Pre-Entries ── -->
+          <section class="card section-collapsed" id="card-event-pre-entries">
+            <div class="section-header" onclick="toggleCollapse('event-pre-entries')">
+              <div class="section-header-left">
+                <div class="section-icon icon-teal">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </div>
+                <span class="section-title">Event Pre-Entries</span>
+              </div>
+              <div class="section-header-right">
+                <div class="enable-toggle" onclick="event.stopPropagation();toggleEnabled('event-pre-entries')">
+                  <div class="toggle off" data-section="event-pre-entries"></div>
+                  <span class="enable-label">Disabled</span>
+                </div>
+                <div class="section-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+              </div>
+            </div>
+            <div class="section-body hidden disabled" id="body-event-pre-entries">
+              <div class="section-disabled-note">This section is disabled. Enable it to add class or competition entries customers can purchase.</div>
+              <div class="field-row">
+                <div class="field-label">Pre-Entries<div class="field-label-sub">Class or competition entries customers can purchase</div></div>
+                <div class="field-control">
+                  <table class="repeat-table">
+                    <thead>
+                      <tr>
+                        <th>Event Title</th>
+                        <th style="width:110px">Inventory</th>
+                        <th style="width:140px">Price</th>
+                        <th style="width:40px"></th>
+                      </tr>
+                    </thead>
+                    <tbody id="pre-entries-list">
+                      <tr>
+                        <td><input class="repeat-input" type="text" name="pre_entry_title[]" value="Friday Reining Class"></td>
+                        <td><input class="repeat-input" type="number" name="pre_entry_inventory[]" value="30" min="0" style="width:90px"></td>
+                        <td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" name="pre_entry_price[]" value="75.00" min="0" step="0.01"></div></td>
+                        <td><button class="btn-delete" type="button" onclick="deletePreEntry(this)" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
+                      </tr>
+                      <tr>
+                        <td><input class="repeat-input" type="text" name="pre_entry_title[]" value="Saturday Cutting Class"></td>
+                        <td><input class="repeat-input" type="number" name="pre_entry_inventory[]" value="25" min="0" style="width:90px"></td>
+                        <td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" name="pre_entry_price[]" value="95.00" min="0" step="0.01"></div></td>
+                        <td><button class="btn-delete" type="button" onclick="deletePreEntry(this)" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <button class="btn-add" type="button" onclick="addPreEntry()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Add Pre-Entry
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+
           <!-- ── Group Reservations ── -->
           <section class="card section-collapsed" id="card-group">
             <div class="section-header" onclick="toggleCollapse('group')">
@@ -2438,6 +2494,40 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
+
+/* ── Event Pre-Entries: add / delete rows ── */
+function addPreEntry(){
+  var tbody = document.getElementById('pre-entries-list');
+  if(!tbody) return;
+  var rows = tbody.querySelectorAll('tr');
+  /* Going from 1 row to 2 — show the delete button on the existing sole row */
+  if(rows.length === 1){
+    rows[0].querySelector('.btn-delete').style.display = '';
+  }
+  var tr = document.createElement('tr');
+  tr.innerHTML =
+    '<td><input class="repeat-input" type="text" name="pre_entry_title[]" placeholder="Event title"></td>' +
+    '<td><input class="repeat-input" type="number" name="pre_entry_inventory[]" value="" min="0" style="width:90px" placeholder="0"></td>' +
+    '<td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" name="pre_entry_price[]" value="" min="0" step="0.01" placeholder="0.00"></div></td>' +
+    '<td><button class="btn-delete" type="button" onclick="deletePreEntry(this)" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>';
+  tbody.appendChild(tr);
+}
+
+function deletePreEntry(btn){
+  var tbody = document.getElementById('pre-entries-list');
+  if(!tbody) return;
+  /* Last-row guard — never remove the final row */
+  if(tbody.querySelectorAll('tr').length <= 1) return;
+  btn.closest('tr').remove();
+  /* If back to 1 row, hide its delete button */
+  if(tbody.querySelectorAll('tr').length === 1){
+    var lastBtn = tbody.querySelector('.btn-delete');
+    if(lastBtn) lastBtn.style.display = 'none';
+  }
+}
+
+/* On load: with 2 seeded rows both delete buttons are visible — no init needed.
+   Guard is enforced at runtime by deletePreEntry. */
 
 /* ── Linked Event header typeahead ── */
 var _linkedEvents = [
