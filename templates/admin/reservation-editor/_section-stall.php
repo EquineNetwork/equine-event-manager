@@ -178,15 +178,69 @@ eem_render_editor_field_row( array(
 	),
 ) );
 
-// 8. Inventory
+// Inventory Mode (C8) — inserted before Available Stall Inventory
+$stall_selection_mode = isset( $data['stall_selection_mode'] ) ? (string) $data['stall_selection_mode'] : 'quantity';
+$stall_is_mapped      = ( 'exact_map' === $stall_selection_mode );
+ob_start();
+?>
+<div class="eem-mode-btns">
+	<button type="button"
+		class="eem-mode-btn<?php echo $stall_is_mapped ? '' : ' active'; ?>"
+		data-mode="bulk"
+		data-section="stall"
+		onclick="toggleInventoryMode(this)">
+		<?php esc_html_e( 'Bulk', 'equine-event-manager' ); ?>
+	</button>
+	<button type="button"
+		class="eem-mode-btn<?php echo $stall_is_mapped ? ' active' : ''; ?>"
+		data-mode="mapped"
+		data-section="stall"
+		onclick="toggleInventoryMode(this)">
+		<?php esc_html_e( 'Mapped', 'equine-event-manager' ); ?>
+	</button>
+</div>
+<input type="hidden"
+	name="stall_selection_mode"
+	id="eem-stall-selection-mode-input"
+	value="<?php echo esc_attr( $stall_is_mapped ? 'exact_map' : 'quantity' ); ?>">
+<?php
+$mode_html = (string) ob_get_clean();
+$mode_hint_text = $stall_is_mapped
+	? __( 'Customers select specific stalls from your layout at checkout', 'equine-event-manager' )
+	: __( 'Customers pick how many stalls they need at checkout; admin assigns specific stalls on the Stall & RV Charts page', 'equine-event-manager' );
+$mode_html .= '<span class="eem-field-hint eem-inventory-mode-hint">' . esc_html( $mode_hint_text ) . '</span>';
+eem_render_editor_field_row( array(
+	'label'        => __( 'Inventory Mode', 'equine-event-manager' ),
+	'label_sub'    => __( 'How is stall inventory defined for this reservation?', 'equine-event-manager' ),
+	'row_id'       => 'eem-row-stall-inventory-mode',
+	'control_html' => $mode_html,
+) );
+
+// 8. Inventory (dual-state: editable in Bulk mode, computed in Mapped mode)
+ob_start();
+?>
+<input type="number"
+	name="stall_inventory"
+	id="eem-stall-inventory-input"
+	class="eem-field-input"
+	value="<?php echo esc_attr( (string) ( $data['stall_inventory'] ?? '' ) ); ?>"
+	placeholder="<?php esc_attr_e( 'Unlimited', 'equine-event-manager' ); ?>"
+	min="0"
+	style="<?php echo $stall_is_mapped ? 'display:none;' : ''; echo 'max-width:140px;'; ?>">
+<div class="eem-inventory-computed-wrap"
+	id="eem-stall-inventory-computed"
+	style="<?php echo $stall_is_mapped ? '' : 'display:none;'; ?>">
+	<span class="eem-inventory-computed-number" id="eem-stall-inventory-number">0</span>
+	<span class="eem-inventory-computed-label" id="eem-stall-inventory-label">
+		<?php esc_html_e( '(computed from row quantities)', 'equine-event-manager' ); ?>
+	</span>
+</div>
+<?php
+$inv_html = (string) ob_get_clean();
 eem_render_editor_field_row( array(
 	'label'        => __( 'Available Stall Inventory', 'equine-event-manager' ),
 	'label_sub'    => __( 'Blank = unlimited', 'equine-event-manager' ),
-	'control_html' => sprintf(
-		'<input class="eem-field-input" type="number" name="en_reservation[stall_inventory]" value="%s" placeholder="%s" style="max-width:140px" />',
-		esc_attr( (string) ( $data['stall_inventory'] ?? '' ) ),
-		esc_attr__( 'Unlimited', 'equine-event-manager' )
-	),
+	'control_html' => $inv_html,
 	'hint'         => __( 'Once inventory reaches zero, customers see a sold-out message.', 'equine-event-manager' ),
 ) );
 
@@ -289,8 +343,11 @@ eem_render_editor_field_row( array(
 	),
 ) );
 
-// 18. Stall Layout summary widget (read-only)
-$summary_html = '';
+// 18. Stall Layout summary widget (read-only) — inside mapped-content wrapper (C8)
+?>
+<div id="eem-stall-mapped-content"
+	style="<?php echo $stall_is_mapped ? '' : 'display:none;'; ?>">
+<?php
 ob_start();
 eem_render_editor_layout_summary( array(
 	'kind'          => 'stall',
@@ -308,3 +365,5 @@ eem_render_editor_field_row( array(
 	'label_sub'    => __( 'Physical rows, stall numbers, blocked stalls', 'equine-event-manager' ),
 	'control_html' => $summary_html,
 ) );
+?>
+</div>

@@ -2849,5 +2849,147 @@
 			ct.addEventListener('input', eemUpdateCancellationOverrideState);
 			eemUpdateCancellationOverrideState();
 		}
+		/* C8 — init inventory displays on page load */
+		if (document.querySelector('.eem-mode-btn[data-section="stall"]')) updateStallInventoryDisplay();
+		if (document.querySelector('.eem-mode-btn[data-section="rv"]'))   updateRvInventoryDisplay();
+		/* C8 — delegate zone-qty input events */
+		document.addEventListener('input', function(e) {
+			if (e.target && e.target.matches('[data-role="zone-qty"]')) {
+				var section = e.target.closest('#eem-stall-mapped-content') ? 'stall' : 'rv';
+				if (section === 'stall') updateStallInventoryDisplay();
+				else updateRvInventoryDisplay();
+			}
+		});
 	});
+
+/* ── Linked Events seed — replace with live event-source query at C10 ── */
+var _linkedEvents = [
+	{ id: 'perry-2026',   name: 'Perry, GA – 2026 Southeast Region Super Sort', dates: 'May 8–10, 2026',              current: true  },
+	{ id: 'patriot-2026', name: 'The Patriot Fort Worth – 2026',                dates: 'March 5–15, 2026',            current: false },
+	{ id: 'aqha-2026',    name: 'AQHA World Show 2026',                              dates: 'November 7–22, 2026',         current: false },
+	{ id: 'wcss-2026',    name: 'Western Canadian Super Show 2026',                  dates: 'June 12–15, 2026',            current: false },
+	{ id: 'wyo-2026',     name: 'Wyoming State Fair 2026',                           dates: 'August 28 – September 7, 2026', current: false }
+];
+
+function changeLinkedEvent() {
+	var btn = document.getElementById('eem-header-action-change');
+	if (btn) btn.style.display = 'none';
+	var tah = document.getElementById('eem-header-typeahead');
+	if (tah) tah.style.display = '';
+	var inp = document.getElementById('eem-event-search-input');
+	if (inp) { inp.value = ''; inp.focus(); }
+	filterEventOptions('');
+}
+
+function cancelChangeEvent() {
+	var tah = document.getElementById('eem-header-typeahead');
+	if (tah) tah.style.display = 'none';
+	var btn = document.getElementById('eem-header-action-change');
+	if (btn) btn.style.display = '';
+}
+
+function selectLinkedEvent(eventId) {
+	var ev = null;
+	for (var i = 0; i < _linkedEvents.length; i++) {
+		if (_linkedEvents[i].id === eventId) { ev = _linkedEvents[i]; break; }
+	}
+	if (!ev) return;
+	_linkedEvents.forEach(function(e) { e.current = false; });
+	ev.current = true;
+	var nameEl = document.getElementById('eem-header-event-name');
+	if (nameEl) nameEl.textContent = ev.name;
+	var metaEl = document.getElementById('eem-header-meta');
+	if (metaEl) metaEl.textContent = 'Editing Reservation · ' + ev.dates;
+	cancelChangeEvent();
+}
+
+function filterEventOptions(query) {
+	var container = document.getElementById('eem-event-search-results');
+	if (!container) return;
+	var q = query.toLowerCase();
+	var results = _linkedEvents.filter(function(ev) {
+		return !q || ev.name.toLowerCase().indexOf(q) !== -1 || ev.dates.toLowerCase().indexOf(q) !== -1;
+	});
+	if (!results.length) {
+		container.innerHTML = '<div class="eem-event-option-empty">No matching events found.</div>';
+		return;
+	}
+	container.innerHTML = results.map(function(ev) {
+		var badge = ev.current ? ' <span class="eem-event-option-current-badge">Current</span>' : '';
+		var cls = 'eem-event-option' + (ev.current ? ' is-current' : '');
+		return '<div class="' + cls + '" onclick="selectLinkedEvent(\'' + ev.id + '\')">' +
+		       '<span class="eem-event-option-name">' + ev.name + badge + '</span>' +
+		       '<span class="eem-event-option-date">' + ev.dates + '</span>' +
+		       '</div>';
+	}).join('');
+}
+
+function stallMappedIsActive() {
+	var btn = document.querySelector('.eem-mode-btn.active[data-section="stall"]');
+	return btn && btn.dataset.mode === 'mapped';
+}
+
+function rvMappedIsActive() {
+	var btn = document.querySelector('.eem-mode-btn.active[data-section="rv"]');
+	return btn && btn.dataset.mode === 'mapped';
+}
+
+function toggleInventoryMode(btn) {
+	var section = btn.dataset.section; /* 'stall' or 'rv' */
+	/* Update active button */
+	document.querySelectorAll('.eem-mode-btn[data-section="' + section + '"]').forEach(function(b) {
+		b.classList.remove('active');
+	});
+	btn.classList.add('active');
+	/* Update hidden meta input */
+	var metaInput = document.getElementById('eem-' + section + '-selection-mode-input');
+	if (metaInput) metaInput.value = btn.dataset.mode === 'mapped' ? 'exact_map' : 'quantity';
+	/* Show/hide mapped content panel */
+	var panel = document.getElementById('eem-' + section + '-mapped-content');
+	if (panel) panel.style.display = btn.dataset.mode === 'mapped' ? '' : 'none';
+	/* Swap inventory field */
+	var editable = document.getElementById('eem-' + section + '-inventory-input');
+	var computed  = document.getElementById('eem-' + section + '-inventory-computed');
+	if (editable) editable.style.display = btn.dataset.mode === 'mapped' ? 'none' : '';
+	if (computed)  computed.style.display  = btn.dataset.mode === 'mapped' ? '' : 'none';
+	/* Update hint text */
+	var hintEl = btn.parentElement && btn.parentElement.parentElement
+		? btn.parentElement.parentElement.querySelector('.eem-inventory-mode-hint') : null;
+	if (hintEl) {
+		hintEl.textContent = btn.dataset.mode === 'mapped'
+			? (section === 'stall'
+				? 'Customers select specific stalls from your layout at checkout'
+				: 'Customers select specific lots from your layout at checkout')
+			: (section === 'stall'
+				? 'Customers pick how many stalls they need at checkout; admin assigns specific stalls on the Stall & RV Charts page'
+				: 'Customers pick how many lots they need at checkout; admin assigns specific lots on the Stall & RV Charts page');
+	}
+	/* Refresh computed display */
+	if (section === 'stall') updateStallInventoryDisplay();
+	else updateRvInventoryDisplay();
+}
+
+function updateStallInventoryDisplay() {
+	if (!stallMappedIsActive()) return;
+	var total = 0;
+	document.querySelectorAll('#eem-stall-mapped-content [data-role="zone-qty"]').forEach(function(inp) {
+		total += parseInt(inp.value || 0, 10) || 0;
+	});
+	var blocked = document.querySelectorAll('#eem-stall-mapped-content .eem-tag-chip').length;
+	total = Math.max(0, total - blocked);
+	var numEl = document.getElementById('eem-stall-inventory-number');
+	if (numEl) numEl.textContent = total;
+}
+
+function updateRvInventoryDisplay() {
+	if (!rvMappedIsActive()) return;
+	var total = 0;
+	document.querySelectorAll('#eem-rv-mapped-content [data-role="zone-qty"]').forEach(function(inp) {
+		total += parseInt(inp.value || 0, 10) || 0;
+	});
+	var blocked = document.querySelectorAll('#eem-rv-mapped-content .eem-tag-chip').length;
+	total = Math.max(0, total - blocked);
+	var numEl = document.getElementById('eem-rv-inventory-number');
+	if (numEl) numEl.textContent = total;
+}
 })();

@@ -6221,27 +6221,7 @@ a.eem-btn-preview:hover { background: #EEF4FF; border-color: var(--eem-electric)
 .eem-btn-danger-sm { width: 100%; background: #fff; color: #b91c1c; border: 1px solid #fecaca; padding: 8px; border-radius: var(--eem-radius); font-size: 12.5px; font-weight: 600; font-family: inherit; cursor: pointer; }
 .eem-btn-danger-sm:hover { background: #fef2f2; }
 
-/* ── Event Link rail card (mockup line 260) ── */
-/* C7.X.15 Issue 5 — `input.` prefix ties WP core forms.css (typeahead). */
-input.eem-event-search { margin: 0 0 8px; width: 100%; padding: 8px 12px; border: 1px solid #8c8f94; border-radius: var(--eem-radius); font-size: 13px; font-family: inherit; color: var(--eem-text); background: #fff; outline: none; }
-input.eem-event-search:focus { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
-.eem-event-linked { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: #f3f4f5; border: 1px solid #dcdcde; border-radius: 4px; font-size: 13px; gap: 8px; }
-.eem-event-linked-name { font-weight: 600; color: var(--eem-navy); font-size: 13px; }
-.eem-event-linked-name a { color: var(--eem-navy); }
-.eem-event-linked-name a:hover { color: var(--eem-electric); }
-.eem-event-linked-date { font-size: 11.5px; color: var(--eem-text-muted); margin-top: 2px; }
-.eem-event-unlink { font-size: 12px; color: #b91c1c; cursor: pointer; font-weight: 600; white-space: nowrap; background: none; border: none; padding: 0; font-family: inherit; }
-.eem-event-unlink:hover { color: #991b1b; }
-
-/* C7.X.15 Issue 7 — Linked Event card actionable affordances (rail
-   card restored from C7.X.12 retirement). Change is the regular action
-   (text link); Unlink is the rare action (terse icon-only ✕ button). */
-.eem-event-linked-actions { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
-.eem-event-linked-change { font-size: 12px; font-weight: 600; color: var(--eem-electric); text-decoration: none; }
-.eem-event-linked-change:hover { text-decoration: underline; }
-.eem-event-unlink-icon { width: 22px; height: 22px; padding: 0; display: inline-flex; align-items: center; justify-content: center; background: none; border: 1px solid transparent; border-radius: var(--eem-radius); color: #b91c1c; cursor: pointer; }
-.eem-event-unlink-icon:hover { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
-.eem-event-unlink-icon svg { width: 14px; height: 14px; }
+/* ── Event Link rail card classes retired C8 — replaced by event-anchor header ── */
 
 /* ── Shortcode rail card (mockup line 270) ── */
 .eem-code-box { background: #f3f4f5; border: 1px solid #dcdcde; border-radius: 4px; padding: 9px 12px; font-family: monospace; font-size: 13px; color: var(--eem-text); word-break: break-all; }
@@ -6367,4 +6347,160 @@ input.eem-repeat-price-in:focus { border-color: var(--eem-electric); box-shadow:
 	.eem-layout-summary { flex-direction: column; align-items: stretch; }
 	.eem-btn-manage-layout { align-self: flex-start; }
 	.eem-sticky-save { display: flex; }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   C8 — Event-anchor header, Inventory Mode, Computed inventory display
+   Ported from .mockups/edit_reservation_page.html <style> block.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ── Event-anchor header ── */
+.eem-header-display {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 12px;
+}
+.eem-plugin-header-meta {
+	font-size: 13px;
+	color: #6B7A99;
+	margin-top: 4px;
+}
+.eem-header-action-change {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	color: #1d2327;
+	padding: 6px 12px;
+	border-radius: var(--eem-radius);
+	font-size: 12.5px;
+	font-weight: 600;
+	font-family: inherit;
+	cursor: pointer;
+	white-space: nowrap;
+	flex-shrink: 0;
+}
+.eem-header-action-change:hover {
+	border-color: #8c8f94;
+	background: #f6f7f7;
+}
+.eem-header-typeahead {
+	margin-top: 10px;
+}
+input.eem-event-search-input {
+	width: 100%;
+	max-width: 420px;
+	padding: 8px 12px;
+	border: 1px solid #8c8f94;
+	border-radius: var(--eem-radius);
+	font-size: 13px;
+	font-family: inherit;
+	color: var(--eem-text);
+	background: #fff;
+	outline: none;
+	box-sizing: border-box;
+}
+input.eem-event-search-input:focus {
+	border-color: var(--eem-electric);
+	box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12);
+}
+.eem-event-search-results {
+	border: 1px solid #dcdcde;
+	border-radius: var(--eem-radius);
+	background: #fff;
+	margin-top: 4px;
+	overflow: hidden;
+}
+.eem-event-option {
+	padding: 10px 12px;
+	cursor: pointer;
+	border-bottom: 1px solid #f0f0f1;
+}
+.eem-event-option:last-child {
+	border-bottom: none;
+}
+.eem-event-option:hover,
+.eem-event-option.is-current {
+	background: #f3f4f5;
+}
+.eem-event-option-name {
+	font-size: 13px;
+	font-weight: 600;
+	color: #031B4E;
+	display: block;
+}
+.eem-event-option-date {
+	font-size: 11.5px;
+	color: #6B7A99;
+	display: block;
+	margin-top: 2px;
+}
+.eem-event-option-current-badge {
+	display: inline-block;
+	font-size: 10px;
+	font-weight: 700;
+	color: var(--eem-electric);
+	background: #EEF4FF;
+	border-radius: 3px;
+	padding: 1px 5px;
+	margin-left: 5px;
+	vertical-align: middle;
+	text-transform: uppercase;
+	letter-spacing: 0.3px;
+}
+.eem-header-typeahead-cancel {
+	background: none;
+	border: none;
+	color: #6B7A99;
+	font-size: 12.5px;
+	font-family: inherit;
+	cursor: pointer;
+	padding: 0;
+	margin-top: 6px;
+	display: inline-block;
+}
+.eem-header-typeahead-cancel:hover {
+	color: #1d2327;
+}
+
+/* ── Inventory Mode buttons ── */
+/* Mirrors .eem-fee-mode-btn pattern (C1.2) with Mapped/Bulk semantics. */
+.eem-mode-btn {
+	padding: 8px 18px;
+	border: 1.5px solid #D9E2F2;
+	border-radius: var(--eem-radius);
+	font-size: 13.5px;
+	font-weight: 500;
+	color: #031B4E;
+	cursor: pointer;
+	background: #fff;
+	font-family: inherit;
+}
+.eem-mode-btn.active {
+	border-color: #031B4E;
+	background: #031B4E;
+	color: #fff;
+}
+.eem-mode-btn:hover:not(.active) {
+	border-color: var(--eem-electric);
+	color: var(--eem-electric);
+}
+
+/* ── Computed inventory display (Mapped mode read-only) ── */
+/* Mockup line 428: .inventory-computed-wrap → .eem-inventory-computed-wrap */
+.eem-inventory-computed-wrap {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.eem-inventory-computed-number {
+	font-weight: 700;
+	color: #031B4E;
+	font-size: 28px;
+}
+.eem-inventory-computed-label {
+	font-size: 13px;
+	color: #6B7A99;
+	margin-left: 2px;
 }

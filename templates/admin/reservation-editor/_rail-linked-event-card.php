@@ -1,4 +1,10 @@
 <?php
+/* RETIRED C8 — Linked Event rail card retired; event-anchor header in
+   class-eem-reservation-editor-page.php takes over all linked-event
+   affordances (Change Event button + inline typeahead). This file is
+   no longer required from the editor page controller. Preserved for
+   archaeology / rollback reference. */
+
 /**
  * Reservation Editor — right-rail Linked Event card.
  *

@@ -67,14 +67,21 @@ $css = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/css/admin.css' );
 $js  = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/js/admin.js' );
 
 // ── [1] Page chrome ──────────────────────────────────────────────
-echo "\n[1] Page chrome — .eem-plugin-wrap + .eem-plugin-header\n";
+// C8 update: .eem-plugin-subtitle retired from reservation editor;
+// event-anchor header pattern replaces it.
+echo "\n[1] Page chrome — .eem-plugin-wrap + .eem-plugin-header (C8 event-anchor)\n";
 c7x_ok( '.eem-plugin-wrap renders',           false !== strpos( $html, 'class="eem-plugin-wrap"' ),    $pass, $fail, $log );
 c7x_ok( '.eem-plugin-header renders',         false !== strpos( $html, 'class="eem-plugin-header"' ),  $pass, $fail, $log );
 c7x_ok( '.eem-plugin-title renders',          false !== strpos( $html, 'class="eem-plugin-title"' ),   $pass, $fail, $log );
-c7x_ok( '.eem-plugin-subtitle renders',       false !== strpos( $html, 'class="eem-plugin-subtitle"' ),$pass, $fail, $log );
-c7x_ok( '.eem-plugin-meta-line renders',      false !== strpos( $html, 'class="eem-plugin-meta-line"' ),$pass, $fail, $log );
-c7x_ok( 'meta-line Linked Event label',       false !== strpos( $html, 'Linked Event' ),               $pass, $fail, $log );
-c7x_ok( 'meta-line Event Dates label',        false !== strpos( $html, 'Event Dates' ),                $pass, $fail, $log );
+// C8: .eem-plugin-subtitle REMOVED from reservation editor (retired pattern)
+c7x_ok( 'RETIRED: .eem-plugin-subtitle not in editor HTML', false === strpos( $html, 'class="eem-plugin-subtitle"' ), $pass, $fail, $log );
+// C8: event-anchor header elements
+c7x_ok( 'C8: id="eem-header-event-name" renders', false !== strpos( $html, 'id="eem-header-event-name"' ), $pass, $fail, $log );
+c7x_ok( 'C8: class="eem-plugin-header-meta" renders', false !== strpos( $html, 'class="eem-plugin-header-meta"' ), $pass, $fail, $log );
+c7x_ok( 'C8: id="eem-header-meta" renders',   false !== strpos( $html, 'id="eem-header-meta"' ),       $pass, $fail, $log );
+c7x_ok( 'C8: id="eem-header-typeahead" renders', false !== strpos( $html, 'id="eem-header-typeahead"' ), $pass, $fail, $log );
+c7x_ok( 'C8: id="eem-header-action-change" renders', false !== strpos( $html, 'id="eem-header-action-change"' ), $pass, $fail, $log );
+c7x_ok( 'C8: id="eem-event-search-results" renders', false !== strpos( $html, 'id="eem-event-search-results"' ), $pass, $fail, $log );
 
 // ── [2] Body layout ──────────────────────────────────────────────
 echo "\n[2] 2-col grid body — .eem-edit-body + .eem-edit-main + .eem-edit-rail\n";
@@ -83,20 +90,17 @@ c7x_ok( '.eem-edit-main wraps sections', false !== strpos( $html, 'eem-edit-main
 c7x_ok( '.eem-edit-rail renders',        false !== strpos( $html, 'class="eem-edit-rail"' ), $pass, $fail, $log );
 
 // ── [3] Right rail content ───────────────────────────────────────
-// C7.X.15 Issue 7 — Linked Event rail card RESTORED (partial reversal
-// of C7.X.12 Item 7). Hybrid placement: meta-line is read-only
-// context, rail card carries actionable controls (typeahead + Change
-// + ✕ icon unlink). Rail card count returns to 3.
-echo "\n[3] Rail cards — Publish + Linked Event + Shortcode (C7.X.15 hybrid)\n";
-c7x_ok( 'rail card count is exactly 3',  3 === substr_count( $html, 'class="eem-rail-card"' ), $pass, $fail, $log, 'found: ' . substr_count( $html, 'class="eem-rail-card"' ) );
+// C8 update: Linked Event rail card RETIRED. Rail now has 2 cards:
+// Publish + Shortcode. Linked event controls moved to event-anchor header.
+echo "\n[3] Rail cards — Publish + Shortcode (C8: Linked Event retired to header)\n";
+c7x_ok( 'rail card count is exactly 2',  2 === substr_count( $html, 'class="eem-rail-card"' ), $pass, $fail, $log, 'found: ' . substr_count( $html, 'class="eem-rail-card"' ) );
 c7x_ok( 'Publish rail card',     false !== strpos( $html, '<span class="eem-rail-title">Publish</span>' ),       $pass, $fail, $log );
-c7x_ok( 'Linked Event rail card (C7.X.15 hybrid restoration)', false !== strpos( $html, '<span class="eem-rail-title">Linked Event</span>' ), $pass, $fail, $log );
+c7x_ok( 'RETIRED C8: Linked Event rail card not in rail', false === strpos( $html, '<span class="eem-rail-title">Linked Event</span>' ), $pass, $fail, $log );
 c7x_ok( 'Shortcode rail card',   false !== strpos( $html, '<span class="eem-rail-title">Shortcode</span>' ),     $pass, $fail, $log );
 c7x_ok( 'Publish: Status row',           false !== strpos( $html, 'class="eem-publish-row"' ),     $pass, $fail, $log );
 c7x_ok( 'Publish: Preview button',       false !== strpos( $html, 'class="eem-btn-preview"' ),     $pass, $fail, $log );
 c7x_ok( 'Publish: Update button (Electric Blue per VIS-4)', false !== strpos( $html, 'class="eem-btn-update"' ),    $pass, $fail, $log );
 c7x_ok( 'Publish: Move to Trash danger',  false !== strpos( $html, 'class="eem-btn-danger-sm"' ),  $pass, $fail, $log );
-c7x_ok( 'Linked Event: typeahead search input (inline in rail)', false !== strpos( $html, 'class="eem-event-search"' ), $pass, $fail, $log );
 c7x_ok( 'Shortcode: code-box renders',   false !== strpos( $html, 'class="eem-code-box"' ),       $pass, $fail, $log );
 c7x_ok( 'RETIRED: no .eem-save-bar fixed-bottom',  false === strpos( $html, 'class="eem-save-bar"' ),   $pass, $fail, $log );
 c7x_ok( 'RETIRED: no #eem-modal-linked-event',     false === strpos( $html, 'id="eem-modal-linked-event"' ), $pass, $fail, $log );
@@ -201,12 +205,22 @@ c7x_ok( 'event day intro hint copy', false !== strpos( $html, 'Customer-facing i
 // ── [15] CSS primitives shipped ──────────────────────────────────
 echo "\n[15] CSS primitives — every mockup-canonical class in admin.css\n";
 $css_classes = array(
-	'.eem-plugin-wrap', '.eem-plugin-header', '.eem-plugin-title', '.eem-plugin-subtitle', '.eem-plugin-meta-line',
+	// Page chrome — note: .eem-plugin-subtitle + .eem-plugin-meta-line still in CSS for Settings page; not asserted here because they are retired from reservation editor HTML
+	'.eem-plugin-wrap', '.eem-plugin-header', '.eem-plugin-title',
+	// C8 event-anchor header classes
+	'.eem-plugin-header-meta', '.eem-header-action-change', '.eem-header-typeahead',
+	'input.eem-event-search-input', '.eem-event-search-results', '.eem-event-option',
+	'.eem-event-option-name', '.eem-event-option-date', '.eem-event-option-current-badge',
+	'.eem-header-typeahead-cancel',
+	// C8 Inventory Mode buttons
+	'.eem-mode-btn',
+	// C8 Computed inventory display
+	'.eem-inventory-computed-wrap', '.eem-inventory-computed-number', '.eem-inventory-computed-label',
+	// Layout
 	'.eem-edit-body', '.eem-edit-main', '.eem-edit-rail',
 	'.eem-rail-card', '.eem-rail-header', '.eem-rail-title', '.eem-rail-body', '.eem-rail-hint',
 	'.eem-publish-row',
 	'.eem-btn-preview', '.eem-btn-save-draft', '.eem-btn-update', '.eem-btn-danger-sm',
-	'.eem-event-search', '.eem-event-linked', '.eem-event-linked-name', '.eem-event-linked-date', '.eem-event-unlink',
 	'.eem-code-box',
 	'.eem-sticky-save',
 	'.eem-layout-summary', '.eem-layout-summary-left', '.eem-layout-summary-stat', '.eem-layout-summary-stat-num', '.eem-layout-summary-meta',

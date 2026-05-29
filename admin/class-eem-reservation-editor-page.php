@@ -140,14 +140,52 @@ class EEM_Reservation_Editor_Page {
 
 		$breadcrumb_segments = eem_reservation_editor_breadcrumb( $reservation_id );
 		$source_event_title  = self::resolve_page_title( $post, $reservation_id );
+
+		// C8 — Resolve event dates for the event-anchor header meta line.
+		$event_dates = '';
+		if ( class_exists( 'EEM_Reservation_Source_Resolver' ) && class_exists( 'EEM_Dashboard_Repo' ) ) {
+			$_c8_fields = EEM_Reservation_Source_Resolver::resolve_event_fields( $reservation_id );
+			$event_dates = EEM_Dashboard_Repo::format_date_range(
+				isset( $_c8_fields['start_date'] ) ? (string) $_c8_fields['start_date'] : '',
+				isset( $_c8_fields['end_date'] )   ? (string) $_c8_fields['end_date']   : ''
+			);
+		}
 		?>
 		<div class="eem-page">
 			<?php eem_render_breadcrumb( $breadcrumb_segments ); ?>
 			<div class="eem-plugin-wrap">
+				<!-- C8 — Event-anchor header replaces .eem-plugin-subtitle + meta-line.
+				     Rail Linked Event card retired; typeahead moves to the plugin header. -->
 				<header class="eem-plugin-header">
-					<h1 class="eem-plugin-title"><?php echo esc_html( $source_event_title ); ?></h1>
-					<div class="eem-plugin-subtitle"><?php esc_html_e( 'Configure the reservation setup for this event. Title and dates are mirrored from the linked source event and cannot be edited here.', 'equine-event-manager' ); ?></div>
-					<?php require EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_meta-line.php'; ?>
+					<div class="eem-plugin-header-left">
+						<h1 class="eem-plugin-title" id="eem-header-event-name"><?php echo esc_html( $source_event_title ); ?></h1>
+						<div class="eem-plugin-header-meta" id="eem-header-meta"><?php
+							echo esc_html__( 'Editing Reservation', 'equine-event-manager' );
+							echo ' #' . esc_html( (string) $reservation_id );
+							if ( '' !== $event_dates ) {
+								echo ' &nbsp;&middot;&nbsp; ' . esc_html( $event_dates );
+							}
+						?></div>
+						<!-- Inline typeahead — shown when Change Event clicked -->
+						<div class="eem-header-typeahead" id="eem-header-typeahead" style="display:none;">
+							<input type="text"
+								class="eem-event-search-input"
+								id="eem-event-search-input"
+								placeholder="<?php esc_attr_e( 'Search events\xe2\x80\xa6', 'equine-event-manager' ); ?>"
+								oninput="filterEventOptions(this.value)"
+								autocomplete="off">
+							<div class="eem-event-search-results" id="eem-event-search-results"></div>
+							<button type="button" class="eem-header-typeahead-cancel" onclick="cancelChangeEvent()">
+								<?php esc_html_e( 'Cancel', 'equine-event-manager' ); ?>
+							</button>
+						</div>
+					</div>
+					<button type="button"
+						class="eem-header-action-change"
+						id="eem-header-action-change"
+						onclick="changeLinkedEvent()">
+						<?php esc_html_e( 'Change Event', 'equine-event-manager' ); ?>
+					</button>
 				</header>
 				<div class="eem-edit-body">
 					<main class="eem-edit-main eem-reservation-editor-body" data-eem-reservation-id="<?php echo esc_attr( (string) $reservation_id ); ?>">
@@ -155,14 +193,9 @@ class EEM_Reservation_Editor_Page {
 					</main>
 					<aside class="eem-edit-rail">
 						<?php
-						// C7.X.15 Issue 7 — partial reversal of C7.X.12 Item 7.
-						// Linked Event rail card RESTORED with hybrid placement:
-						// meta-line is read-only context, actionable controls
-						// (typeahead + Change link + ✕ unlink icon) live here.
-						// See _rail-linked-event-card.php docblock for the full
-						// rationale + difference from the pre-C7.X.12 shape.
+						// C8 — _rail-linked-event-card.php retired; Linked Event
+						// controls moved to the event-anchor header (see above).
 						require EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_rail-publish-card.php';
-						require EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_rail-linked-event-card.php';
 						require EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_rail-shortcode-card.php';
 						?>
 					</aside>
