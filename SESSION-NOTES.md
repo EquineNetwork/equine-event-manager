@@ -5,7 +5,9 @@ in-flight context that ISN'T already in CLAUDE.md, commit messages,
 or CLEANUP.md. Read after `git pull` on a new machine to pick up
 momentum across Claude Code sessions.
 
-**Last updated:** 2026-05-28 — **C7.X.21** — Three fix chunks landed: C7.X.19 (radius literal eradication + flip-up container boundary), C7.X.20 (Delete Permanently modal invisible — wrong CSS class names), C7.X.21 (typed-confirm changed from reservation title to constant "DELETE"). Version 2.3.10. All smokes green: c7x21 15/15, c7x20 19/19, c7x19 13/13, c7x18 31/31. BROWSER VERIFY STILL PENDING for C7.X.21 (DELETE flow end-to-end).
+**Last updated:** 2026-05-28 — **C8.B mockup** — RV Lot Charts toggle added to RV Reservations section; duplicate surcharge-based Lot Zones retired (nightly/weekend version from stall-charts-content is the keeper); "Lot Layout / Manage Lot Layout" stub retired from RV Reservations (mirrors prior Stall Layout stub retirement). Mockup only — 2613 lines.
+
+**Last updated (prev):** 2026-05-28 — **C7.X.21** — Three fix chunks landed: C7.X.19 (radius literal eradication + flip-up container boundary), C7.X.20 (Delete Permanently modal invisible — wrong CSS class names), C7.X.21 (typed-confirm changed from reservation title to constant "DELETE"). Version 2.3.10. All smokes green: c7x21 15/15, c7x20 19/19, c7x19 13/13, c7x18 31/31. BROWSER VERIFY STILL PENDING for C7.X.21 (DELETE flow end-to-end).
 
 ---
 
@@ -1249,6 +1251,23 @@ Six card-radius literals were intentionally kept: `row-card` (6px), `row-add-btn
 The mockup uses `.stall-row-layout` (not `.stall-row`) to avoid a real runtime CSS collision with `<tr class="stall-row">` in the occupancy chart views. At port time: choose the canonical production name — either keep `.stall-row-layout` or rename to an `.eem-*`-prefixed class (e.g. `.eem-stall-row`). Do **not** carry `.stall-row-layout` into PHP-generated HTML without an intentional naming decision.
 
 ~~### 5. `eem-modal-body` field-row label column width~~ **OBSOLETE** — C8.A rework (rail-kill commit) removed the layout-editor modal wrapper entirely. The row-builder now lives inline under the Stall Charts toggle. This item is no longer relevant.
+
+### 6. (RESOLVED C8.B mockup) Zone CSS cascade exclusion rescoped
+`#stall-charts-content .zone-*` overrides (6 rules) were rescoped to `#rv-lot-charts-content .zone-*` when RV Lot Zones moved out of `#stall-charts-content`. Old stall-charts-content scope removed entirely (no zone content remains there). At port time: confirm `#rv-lot-charts-content` matches the rendered container ID in PHP.
+
+---
+
+## C8.B Mockup — RV Lot Charts split (2026-05-28)
+
+**What changed:**
+- **RV Reservations section** gets a new `RV Lot Charts` field-row (toggle + `#rv-lot-charts-content` inline-expand), mirroring the `Stall Charts` field-row pattern exactly.
+- **Moved into `#rv-lot-charts-content`:** RV Lot Zones (nightly/weekend rate version), Lot Selection Mode, RV row builder + Preview Full Chart button, Blocked RV Lots tag-select, `#rv-chart-preview-modal`.
+- **Removed from RV Reservations:** surcharge-based "Lot Zones" field-row (Red $0 / Blue $10 / Green $20). Whitney chose nightly/weekend rate model over surcharge model; surcharge version retired.
+- **Removed from RV Reservations:** read-only "Lot Layout" stub (`2 rows · 24 lots total · 0 blocked` + "Manage Lot Layout" button + "Coming in C8" hint). This stub is replaced by the full `#rv-lot-charts-content` inline editor. Mirrors prior retirement of the Stall Layout stub.
+- **CSS:** 6 `#stall-charts-content .zone-*` rules rescoped to `#rv-lot-charts-content .zone-*`. Comment updated.
+- **JS:** All RV functions (`addZone`, `deleteZone`, `cycleZoneColor`, RV row builder helpers, `openRvChartPreview`, `closeRvChartPreview`) target element IDs that are unchanged — they work without modification.
+
+**File:** `.mockups/edit_reservation_page.html` — 2613 lines after this commit.
 
 ---
 

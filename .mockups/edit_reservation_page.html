@@ -397,15 +397,14 @@ a:hover{text-decoration:none}
 .zone-painter-select:focus{border-color:#1668F2}
 .zone-painter-hint{font-size:11.5px;color:#6B7A99;flex:1;min-width:180px}
 
-/* Zone row/input overrides scoped to the layout editor modal
-   (existing RV Zones outside the modal use 1px #8c8f94 borders) */
-/* Zone overrides scoped to stall-charts-content to prevent bleed into RV Lot Zones (#card-rv) */
-#stall-charts-content .zone-row{border:1.5px solid #D9E2F2;border-radius:6px/* intentional larger card radius */}
-#stall-charts-content .zone-name-input{border:1.5px solid #D9E2F2}
-#stall-charts-content .zone-price-wrap{border:1.5px solid #D9E2F2;border-radius:var(--eem-radius);overflow:hidden}
-#stall-charts-content .zone-price-sym{background:#FAFBFE;border:none;border-right:1.5px solid #D9E2F2;border-radius:0;line-height:32px}
-#stall-charts-content .zone-price-in{border:none;width:70px}
-#stall-charts-content .zone-add-btn{border:1.5px dashed #D9E2F2;border-radius:6px;/* intentional larger card radius */margin-bottom:14px}
+/* Zone row/input overrides for #rv-lot-charts-content (zone content lives here after C8.B split;
+   zones outside this context use 1px #8c8f94 borders from the base .zone-row rule) */
+#rv-lot-charts-content .zone-row{border:1.5px solid #D9E2F2;border-radius:6px/* intentional larger card radius */}
+#rv-lot-charts-content .zone-name-input{border:1.5px solid #D9E2F2}
+#rv-lot-charts-content .zone-price-wrap{border:1.5px solid #D9E2F2;border-radius:var(--eem-radius);overflow:hidden}
+#rv-lot-charts-content .zone-price-sym{background:#FAFBFE;border:none;border-right:1.5px solid #D9E2F2;border-radius:0;line-height:32px}
+#rv-lot-charts-content .zone-price-in{border:none;width:70px}
+#rv-lot-charts-content .zone-add-btn{border:1.5px dashed #D9E2F2;border-radius:6px;/* intentional larger card radius */margin-bottom:14px}
 
 /* ── Chart preview modals (z-index 1100 — above layout editor modal at 1000) ── */
 .chart-modal{position:fixed;inset:0;background:rgba(3,27,78,.55);z-index:1100;display:none;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto}
@@ -1050,6 +1049,191 @@ a:hover{text-decoration:none}
         </div>
       </div>
 
+                  </div><!-- /#stall-charts-content -->
+                </div><!-- /.field-control -->
+              </div><!-- /.field-row (Stall Charts) -->
+            </div>
+          </section>
+
+          <!-- ── RV Reservations ── -->
+          <section class="card section-collapsed" id="card-rv">
+            <div class="section-header" onclick="toggleCollapse('rv')">
+              <div class="section-header-left">
+                <div class="section-icon icon-purple">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="6" width="15" height="12" rx="2"/><path d="M16 9h4l3 3v6h-7"/><circle cx="6" cy="20" r="2"/><circle cx="18" cy="20" r="2"/></svg>
+                </div>
+                <span class="section-title">RV Reservations</span>
+              </div>
+              <div class="section-header-right">
+                <div class="enable-toggle" onclick="event.stopPropagation();toggleEnabled('rv')">
+                  <div class="toggle on" data-section="rv"></div>
+                  <span class="enable-label">Enabled</span>
+                </div>
+                <div class="section-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+              </div>
+            </div>
+            <div class="section-body hidden" id="body-rv">
+
+              <div class="field-row">
+                <div class="field-label">RV Description</div>
+                <div class="field-control">
+                  <textarea class="field-textarea">RV lots include water, electric, and sewage hookups by zone. Quiet hours observed 10pm–6am.</textarea>
+                  <span class="field-hint">Shown in the RV Reservations section on the customer form.</span>
+                </div>
+              </div>
+
+              <div class="field-row">
+                <div class="field-label">Available Reservation Dates<div class="field-label-sub">Bookable date window for RV lots</div></div>
+                <div class="field-control">
+                  <div class="date-range">
+                    <input class="field-input" type="date" value="2026-05-08" style="width:170px">
+                    <span class="date-sep">–</span>
+                    <input class="field-input" type="date" value="2026-05-10" style="width:170px">
+                  </div>
+                </div>
+              </div>
+
+              <div class="field-row">
+                <div class="field-label">Stay Types<div class="field-label-sub">Enable one or both</div></div>
+                <div class="field-control">
+                  <div class="stay-types" data-group="rv-stay">
+                    <div class="stay-type-btn active" data-controls="row-rv-rate-nightly row-rv-eb-nightly" onclick="toggleStay(this)"><div class="toggle on" style="pointer-events:none"></div><span>Nightly</span></div>
+                    <div class="stay-type-btn" data-controls="row-rv-weekend-dates row-rv-rate-weekend row-rv-eb-weekend" onclick="toggleStay(this)"><div class="toggle off" style="pointer-events:none"></div><span>Weekend Rate</span></div>
+                  </div>
+                  <span class="field-hint">Weekend Rate uses the RV weekend package dates configured below.</span>
+                </div>
+              </div>
+
+              <div class="field-row" id="row-rv-weekend-dates">
+                <div class="field-label">Weekend Package Dates</div>
+                <div class="field-control">
+                  <div class="date-range">
+                    <span style="font-size:12px;color:#6B7A99;padding-top:9px">Start</span>
+                    <input class="field-input" type="date" value="2026-05-08" style="width:160px">
+                    <span style="font-size:12px;color:#6B7A99;padding-top:9px">End</span>
+                    <input class="field-input" type="date" value="2026-05-10" style="width:160px">
+                  </div>
+                </div>
+              </div>
+
+              <div class="field-row">
+                <div class="field-label">Reservation Schedule</div>
+                <div class="field-control">
+                  <div class="toggle-label-row" onclick="toggleSwitchRow(this)">
+                    <div class="toggle off" data-controls="row-rv-open row-rv-close"></div>
+                    <span>Schedule RV Reservations</span>
+                  </div>
+                  <span class="field-hint">Open and close RV reservations on specific dates and times.</span>
+                </div>
+              </div>
+
+              <div class="field-row" id="row-rv-open">
+                <div class="field-label">RV Open Date/Time</div>
+                <div class="field-control"><input class="field-input" type="datetime-local" style="max-width:260px"></div>
+              </div>
+
+              <div class="field-row" id="row-rv-close">
+                <div class="field-label">RV Close Date/Time</div>
+                <div class="field-control"><input class="field-input" type="datetime-local" style="max-width:260px"></div>
+              </div>
+
+              <div class="field-row">
+                <div class="field-label">Available RV Inventory<div class="field-label-sub">Blank = unlimited</div></div>
+                <div class="field-control">
+                  <input class="field-input" type="number" placeholder="Unlimited" style="max-width:140px">
+                  <span class="field-hint">Once inventory reaches zero, customers see a sold-out message.</span>
+                </div>
+              </div>
+
+              <div class="field-row" id="row-rv-rate-nightly">
+                <div class="field-label">RV Nightly Rate</div>
+                <div class="field-control">
+                  <div class="price-wrap"><span class="price-symbol">$</span><input class="price-input" type="number" value="20.00"></div>
+                  <span class="field-hint">Base nightly rate. Lot zones below may add tier-specific pricing.</span>
+                </div>
+              </div>
+
+              <div class="field-row" id="row-rv-rate-weekend">
+                <div class="field-label">RV Weekend Rate</div>
+                <div class="field-control">
+                  <div class="price-wrap"><span class="price-symbol">$</span><input class="price-input" type="number" value="180.00"></div>
+                </div>
+              </div>
+
+              <div class="field-row">
+                <div class="field-label">RV Early Bird Pricing</div>
+                <div class="field-control">
+                  <div class="toggle-label-row" onclick="toggleSwitchRow(this)">
+                    <div class="toggle off" data-controls="row-rv-eb-cutoff row-rv-eb-nightly row-rv-eb-weekend"></div>
+                    <span>Enable RV early bird pricing</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="field-row" id="row-rv-eb-cutoff">
+                <div class="field-label">Early Bird Cutoff</div>
+                <div class="field-control"><input class="field-input" type="datetime-local" style="max-width:260px"></div>
+              </div>
+
+              <div class="field-row" id="row-rv-eb-nightly">
+                <div class="field-label">Early Bird Nightly Rate</div>
+                <div class="field-control"><div class="price-wrap"><span class="price-symbol">$</span><input class="price-input" type="number" value="16.00"></div></div>
+              </div>
+
+              <div class="field-row" id="row-rv-eb-weekend">
+                <div class="field-label">Early Bird Weekend Rate</div>
+                <div class="field-control"><div class="price-wrap"><span class="price-symbol">$</span><input class="price-input" type="number" value="140.00"></div></div>
+              </div>
+
+              <!-- RV Add-Ons with master enable toggle (Q5/A choice) -->
+              <div class="field-row">
+                <div class="field-label">RV Add-Ons<div class="field-label-sub">Optional hookups customers can add</div></div>
+                <div class="field-control">
+                  <div class="toggle-label-row" style="margin-bottom:10px" onclick="toggleSwitchRow(this)">
+                    <div class="toggle on" data-controls="rv-addons-table-wrap"></div>
+                    <span>Enable RV add-ons</span>
+                  </div>
+                  <div id="rv-addons-table-wrap">
+                    <table class="repeat-table">
+                      <thead>
+                        <tr><th>Add-On</th><th style="width:120px">Price</th><th style="width:40px"></th></tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td><input class="repeat-input" type="text" value="Electric"></td>
+                          <td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" value="15.00"></div></td>
+                          <td><button class="btn-delete" type="button" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
+                        </tr>
+                        <tr>
+                          <td><input class="repeat-input" type="text" value="Water"></td>
+                          <td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" value="30.00"></div></td>
+                          <td><button class="btn-delete" type="button" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
+                        </tr>
+                        <tr>
+                          <td><input class="repeat-input" type="text" value="Sewage"></td>
+                          <td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" value="20.00"></div></td>
+                          <td><button class="btn-delete" type="button" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <button class="btn-add" type="button">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                      Add RV Add-On
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+
+              <!-- RV Lot Charts toggle: mirrors Stall Charts pattern -->
+              <div class="field-row">
+                <div class="field-label">RV Lot Charts<div class="field-label-sub">Define the physical RV lot layout customers see at checkout</div></div>
+                <div class="field-control">
+                  <div class="toggle-label-row" style="margin-bottom:10px" onclick="toggleSwitchRow(this)">
+                    <div class="toggle on" data-controls="rv-lot-charts-content"></div>
+                    <span>Enable RV lot charts</span>
+                  </div>
+                  <div id="rv-lot-charts-content">
       <!-- ── RV Lot Zones ── -->
       <div class="field-row" id="row-rv-zones" style="align-items:start">
         <div class="field-label">RV Lot Zones<div class="field-label-sub">Pricing tiers — every lot belongs to a zone</div></div>
@@ -1262,248 +1446,9 @@ a:hover{text-decoration:none}
         </div>
       </div>
 
-                  </div><!-- /#stall-charts-content -->
+                  </div><!-- /#rv-lot-charts-content -->
                 </div><!-- /.field-control -->
-              </div><!-- /.field-row (Stall Charts) -->
-            </div>
-          </section>
-
-          <!-- ── RV Reservations ── -->
-          <section class="card section-collapsed" id="card-rv">
-            <div class="section-header" onclick="toggleCollapse('rv')">
-              <div class="section-header-left">
-                <div class="section-icon icon-purple">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="6" width="15" height="12" rx="2"/><path d="M16 9h4l3 3v6h-7"/><circle cx="6" cy="20" r="2"/><circle cx="18" cy="20" r="2"/></svg>
-                </div>
-                <span class="section-title">RV Reservations</span>
-              </div>
-              <div class="section-header-right">
-                <div class="enable-toggle" onclick="event.stopPropagation();toggleEnabled('rv')">
-                  <div class="toggle on" data-section="rv"></div>
-                  <span class="enable-label">Enabled</span>
-                </div>
-                <div class="section-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
-              </div>
-            </div>
-            <div class="section-body hidden" id="body-rv">
-
-              <div class="field-row">
-                <div class="field-label">RV Description</div>
-                <div class="field-control">
-                  <textarea class="field-textarea">RV lots include water, electric, and sewage hookups by zone. Quiet hours observed 10pm–6am.</textarea>
-                  <span class="field-hint">Shown in the RV Reservations section on the customer form.</span>
-                </div>
-              </div>
-
-              <div class="field-row">
-                <div class="field-label">Available Reservation Dates<div class="field-label-sub">Bookable date window for RV lots</div></div>
-                <div class="field-control">
-                  <div class="date-range">
-                    <input class="field-input" type="date" value="2026-05-08" style="width:170px">
-                    <span class="date-sep">–</span>
-                    <input class="field-input" type="date" value="2026-05-10" style="width:170px">
-                  </div>
-                </div>
-              </div>
-
-              <div class="field-row">
-                <div class="field-label">Stay Types<div class="field-label-sub">Enable one or both</div></div>
-                <div class="field-control">
-                  <div class="stay-types" data-group="rv-stay">
-                    <div class="stay-type-btn active" data-controls="row-rv-rate-nightly row-rv-eb-nightly" onclick="toggleStay(this)"><div class="toggle on" style="pointer-events:none"></div><span>Nightly</span></div>
-                    <div class="stay-type-btn" data-controls="row-rv-weekend-dates row-rv-rate-weekend row-rv-eb-weekend" onclick="toggleStay(this)"><div class="toggle off" style="pointer-events:none"></div><span>Weekend Rate</span></div>
-                  </div>
-                  <span class="field-hint">Weekend Rate uses the RV weekend package dates configured below.</span>
-                </div>
-              </div>
-
-              <div class="field-row" id="row-rv-weekend-dates">
-                <div class="field-label">Weekend Package Dates</div>
-                <div class="field-control">
-                  <div class="date-range">
-                    <span style="font-size:12px;color:#6B7A99;padding-top:9px">Start</span>
-                    <input class="field-input" type="date" value="2026-05-08" style="width:160px">
-                    <span style="font-size:12px;color:#6B7A99;padding-top:9px">End</span>
-                    <input class="field-input" type="date" value="2026-05-10" style="width:160px">
-                  </div>
-                </div>
-              </div>
-
-              <div class="field-row">
-                <div class="field-label">Reservation Schedule</div>
-                <div class="field-control">
-                  <div class="toggle-label-row" onclick="toggleSwitchRow(this)">
-                    <div class="toggle off" data-controls="row-rv-open row-rv-close"></div>
-                    <span>Schedule RV Reservations</span>
-                  </div>
-                  <span class="field-hint">Open and close RV reservations on specific dates and times.</span>
-                </div>
-              </div>
-
-              <div class="field-row" id="row-rv-open">
-                <div class="field-label">RV Open Date/Time</div>
-                <div class="field-control"><input class="field-input" type="datetime-local" style="max-width:260px"></div>
-              </div>
-
-              <div class="field-row" id="row-rv-close">
-                <div class="field-label">RV Close Date/Time</div>
-                <div class="field-control"><input class="field-input" type="datetime-local" style="max-width:260px"></div>
-              </div>
-
-              <div class="field-row">
-                <div class="field-label">Available RV Inventory<div class="field-label-sub">Blank = unlimited</div></div>
-                <div class="field-control">
-                  <input class="field-input" type="number" placeholder="Unlimited" style="max-width:140px">
-                  <span class="field-hint">Once inventory reaches zero, customers see a sold-out message.</span>
-                </div>
-              </div>
-
-              <div class="field-row" id="row-rv-rate-nightly">
-                <div class="field-label">RV Nightly Rate</div>
-                <div class="field-control">
-                  <div class="price-wrap"><span class="price-symbol">$</span><input class="price-input" type="number" value="20.00"></div>
-                  <span class="field-hint">Base nightly rate. Lot zones below may add tier-specific pricing.</span>
-                </div>
-              </div>
-
-              <div class="field-row" id="row-rv-rate-weekend">
-                <div class="field-label">RV Weekend Rate</div>
-                <div class="field-control">
-                  <div class="price-wrap"><span class="price-symbol">$</span><input class="price-input" type="number" value="180.00"></div>
-                </div>
-              </div>
-
-              <div class="field-row">
-                <div class="field-label">RV Early Bird Pricing</div>
-                <div class="field-control">
-                  <div class="toggle-label-row" onclick="toggleSwitchRow(this)">
-                    <div class="toggle off" data-controls="row-rv-eb-cutoff row-rv-eb-nightly row-rv-eb-weekend"></div>
-                    <span>Enable RV early bird pricing</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="field-row" id="row-rv-eb-cutoff">
-                <div class="field-label">Early Bird Cutoff</div>
-                <div class="field-control"><input class="field-input" type="datetime-local" style="max-width:260px"></div>
-              </div>
-
-              <div class="field-row" id="row-rv-eb-nightly">
-                <div class="field-label">Early Bird Nightly Rate</div>
-                <div class="field-control"><div class="price-wrap"><span class="price-symbol">$</span><input class="price-input" type="number" value="16.00"></div></div>
-              </div>
-
-              <div class="field-row" id="row-rv-eb-weekend">
-                <div class="field-label">Early Bird Weekend Rate</div>
-                <div class="field-control"><div class="price-wrap"><span class="price-symbol">$</span><input class="price-input" type="number" value="140.00"></div></div>
-              </div>
-
-              <!-- RV Lot Zones (pricing tiers — EDITABLE in C7 per Q2B) -->
-              <div class="field-row">
-                <div class="field-label">Lot Zones<div class="field-label-sub">Pricing tiers customers choose between</div></div>
-                <div class="field-control">
-                  <div class="zone-list">
-                    <div class="zone-row">
-                      <div class="zone-color-swatch" style="background:#dc2626"></div>
-                      <input class="zone-name-input" type="text" value="Red Lot">
-                      <div class="zone-price-group">
-                        <span class="zone-price-label">Surcharge</span>
-                        <div class="zone-price-wrap"><span class="zone-price-sym">$</span><input class="zone-price-in" type="number" value="0.00"></div>
-                      </div>
-                      <button class="zone-delete-btn" type="button" aria-label="Delete zone">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-                      </button>
-                    </div>
-                    <div class="zone-row">
-                      <div class="zone-color-swatch" style="background:#1668F2"></div>
-                      <input class="zone-name-input" type="text" value="Blue Lot">
-                      <div class="zone-price-group">
-                        <span class="zone-price-label">Surcharge</span>
-                        <div class="zone-price-wrap"><span class="zone-price-sym">$</span><input class="zone-price-in" type="number" value="10.00"></div>
-                      </div>
-                      <button class="zone-delete-btn" type="button" aria-label="Delete zone">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-                      </button>
-                    </div>
-                    <div class="zone-row">
-                      <div class="zone-color-swatch" style="background:#15803d"></div>
-                      <input class="zone-name-input" type="text" value="Green Lot">
-                      <div class="zone-price-group">
-                        <span class="zone-price-label">Surcharge</span>
-                        <div class="zone-price-wrap"><span class="zone-price-sym">$</span><input class="zone-price-in" type="number" value="20.00"></div>
-                      </div>
-                      <button class="zone-delete-btn" type="button" aria-label="Delete zone">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-                      </button>
-                    </div>
-                  </div>
-                  <button class="zone-add-btn" type="button">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                    Add Lot Zone
-                  </button>
-                </div>
-              </div>
-
-              <!-- RV Add-Ons with master enable toggle (Q5/A choice) -->
-              <div class="field-row">
-                <div class="field-label">RV Add-Ons<div class="field-label-sub">Optional hookups customers can add</div></div>
-                <div class="field-control">
-                  <div class="toggle-label-row" style="margin-bottom:10px" onclick="toggleSwitchRow(this)">
-                    <div class="toggle on" data-controls="rv-addons-table-wrap"></div>
-                    <span>Enable RV add-ons</span>
-                  </div>
-                  <div id="rv-addons-table-wrap">
-                    <table class="repeat-table">
-                      <thead>
-                        <tr><th>Add-On</th><th style="width:120px">Price</th><th style="width:40px"></th></tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td><input class="repeat-input" type="text" value="Electric"></td>
-                          <td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" value="15.00"></div></td>
-                          <td><button class="btn-delete" type="button" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
-                        </tr>
-                        <tr>
-                          <td><input class="repeat-input" type="text" value="Water"></td>
-                          <td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" value="30.00"></div></td>
-                          <td><button class="btn-delete" type="button" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
-                        </tr>
-                        <tr>
-                          <td><input class="repeat-input" type="text" value="Sewage"></td>
-                          <td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" value="20.00"></div></td>
-                          <td><button class="btn-delete" type="button" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
-                        </tr>
-                      </tbody>
-                    </table>
-                    <button class="btn-add" type="button">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                      Add RV Add-On
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- READ-ONLY RV LOT LAYOUT SUMMARY (full editor lives in C8) -->
-              <div class="field-row">
-                <div class="field-label">Lot Layout<div class="field-label-sub">Physical lot rows, lot numbers, zone assignments</div></div>
-                <div class="field-control">
-                  <div class="layout-summary">
-                    <div class="layout-summary-left">
-                      <div class="layout-summary-stat"><span class="layout-summary-stat-num">2 rows</span> &nbsp;·&nbsp; <span class="layout-summary-stat-num">24 lots total</span> &nbsp;·&nbsp; <span class="layout-summary-stat-num">0 blocked</span></div>
-                      <div class="layout-summary-meta">
-                        <span><strong>Red Zone:</strong> 8 lots</span>
-                        <span><strong>Blue Zone:</strong> 10 lots</span>
-                        <span><strong>Green Zone:</strong> 6 lots</span>
-                      </div>
-                    </div>
-                    <button class="btn-manage-layout" type="button">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                      Manage Lot Layout
-                    </button>
-                  </div>
-                  <span class="field-hint">Edit the physical lot chart from the Stall Charts page. Coming in C8.</span>
-                </div>
-              </div>
+              </div><!-- /.field-row (RV Lot Charts) -->
 
             </div>
           </section>
