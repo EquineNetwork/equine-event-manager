@@ -428,6 +428,10 @@ a:hover{text-decoration:none}
 @media(max-width:767px){
   .row-card-top .row-card-field-layout{flex:1 1 140px}
 }
+/* ── Computed inventory display (Charts-ON read-only state) ── */
+.inventory-computed-wrap{display:flex;align-items:baseline;gap:6px;margin-bottom:4px}
+.inventory-computed-number{font-size:28px;font-weight:700;color:#031B4E;line-height:1}
+.inventory-computed-label{font-size:12px;color:#6B7A99;font-style:italic}
 </style>
 </head>
 <body>
@@ -719,11 +723,18 @@ a:hover{text-decoration:none}
                 <div class="field-control"><input class="field-input" type="datetime-local" style="max-width:260px"></div>
               </div>
 
-              <div class="field-row">
+              <div class="field-row" id="row-stall-inventory">
                 <div class="field-label">Available Stall Inventory<div class="field-label-sub">Blank = unlimited</div></div>
                 <div class="field-control">
-                  <input class="field-input" type="number" placeholder="Unlimited" style="max-width:140px">
-                  <span class="field-hint">Once inventory reaches zero, customers see a sold-out message.</span>
+                  <input class="field-input" type="number" id="stall-inventory-input" placeholder="Unlimited" style="max-width:140px">
+                  <div id="stall-inventory-computed" style="display:none">
+                    <div class="inventory-computed-wrap">
+                      <span class="inventory-computed-number" id="stall-inventory-number">0</span>
+                      <span class="inventory-computed-label" id="stall-inventory-label">(computed from row quantities)</span>
+                    </div>
+                  </div>
+                  <span class="field-hint" id="stall-inventory-hint-base">Once inventory reaches zero, customers see a sold-out message.</span>
+                  <span class="field-hint" id="stall-inventory-hint-charts" style="display:none">When Stall Charts is enabled, inventory is calculated from your stall configuration below.</span>
                 </div>
               </div>
 
@@ -1129,11 +1140,18 @@ a:hover{text-decoration:none}
                 <div class="field-control"><input class="field-input" type="datetime-local" style="max-width:260px"></div>
               </div>
 
-              <div class="field-row">
+              <div class="field-row" id="row-rv-inventory">
                 <div class="field-label">Available RV Inventory<div class="field-label-sub">Blank = unlimited</div></div>
                 <div class="field-control">
-                  <input class="field-input" type="number" placeholder="Unlimited" style="max-width:140px">
-                  <span class="field-hint">Once inventory reaches zero, customers see a sold-out message.</span>
+                  <input class="field-input" type="number" id="rv-inventory-input" placeholder="Unlimited" style="max-width:140px">
+                  <div id="rv-inventory-computed" style="display:none">
+                    <div class="inventory-computed-wrap">
+                      <span class="inventory-computed-number" id="rv-inventory-number">0</span>
+                      <span class="inventory-computed-label" id="rv-inventory-label">(computed from zone quantities)</span>
+                    </div>
+                  </div>
+                  <span class="field-hint" id="rv-inventory-hint-base">Once inventory reaches zero, customers see a sold-out message.</span>
+                  <span class="field-hint" id="rv-inventory-hint-charts" style="display:none">When RV Lot Charts is enabled, inventory is calculated from your lot configuration below.</span>
                 </div>
               </div>
 
@@ -1792,6 +1810,8 @@ function toggleSwitchRow(row){
   t.classList.toggle('on', turningOn);
   t.classList.toggle('off', !turningOn);
   applyControls(t);
+  if(t.dataset.controls === 'stall-charts-content') updateStallInventoryDisplay();
+  if(t.dataset.controls === 'rv-lot-charts-content') updateRvInventoryDisplay();
 }
 
 /* ── Stay-type button click with validation ── */
@@ -1943,6 +1963,7 @@ function toggleMode(btn){
     if(qBlock) qBlock.style.display = mode === 'quantity' ? '' : 'none';
     if(eBlock) eBlock.style.display = mode === 'map'      ? '' : 'none';
   }
+  updateStallInventoryDisplay();
 }
 
 /* ── Stall Row Builder ── */
@@ -2285,6 +2306,7 @@ function addStallRow(){
     '<td><button class="btn-delete" type="button" aria-label="Delete" onclick="deleteStallRow(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>';
   tbody.appendChild(tr);
   tr.querySelector('input[type="text"]').focus();
+  updateStallInventoryDisplay();
 }
 
 function deleteStallRow(btn){
@@ -2295,6 +2317,7 @@ function deleteStallRow(btn){
     return;
   }
   tr.remove();
+  updateStallInventoryDisplay();
 }
 
 function addZone(){
@@ -2324,6 +2347,7 @@ function addZone(){
     </div>`;
   list.insertAdjacentHTML('beforeend', html);
   refreshAllRvPreviews();
+  updateRvInventoryDisplay();
 }
 
 function deleteZone(btn){
@@ -2345,6 +2369,7 @@ function deleteZone(btn){
   });
   zoneRow.remove();
   refreshAllRvPreviews();
+  updateRvInventoryDisplay();
 }
 
 function addRvRow(){
@@ -2423,6 +2448,115 @@ function toggleLotMode(btn){
     if(qBlock) qBlock.style.display = mode === 'quantity' ? '' : 'none';
     if(eBlock) eBlock.style.display = mode === 'map'      ? '' : 'none';
   }
+  updateRvInventoryDisplay();
+}
+
+/* ── Computed inventory display (WooCommerce variant-stock pattern) ── */
+function stallChartsIsOn(){
+  var t = document.querySelector('.toggle[data-controls="stall-charts-content"]');
+  return t && t.classList.contains('on');
+}
+function rvChartsIsOn(){
+  var t = document.querySelector('.toggle[data-controls="rv-lot-charts-content"]');
+  return t && t.classList.contains('on');
+}
+
+function updateStallInventoryDisplay(){
+  var input      = document.getElementById('stall-inventory-input');
+  var computed   = document.getElementById('stall-inventory-computed');
+  var numEl      = document.getElementById('stall-inventory-number');
+  var labelEl    = document.getElementById('stall-inventory-label');
+  var hintBase   = document.getElementById('stall-inventory-hint-base');
+  var hintCharts = document.getElementById('stall-inventory-hint-charts');
+  if(!input) return;
+  if(stallChartsIsOn()){
+    input.style.display   = 'none';
+    computed.style.display = '';
+    hintBase.style.display   = 'none';
+    hintCharts.style.display = '';
+    var modeBtn = document.querySelector('#stall-charts-content .mode-btn.active');
+    var mode    = modeBtn ? modeBtn.dataset.mode : 'quantity';
+    var total = 0;
+    if(mode === 'map'){
+      document.querySelectorAll('#row-builder-list .row-card').forEach(function(card){
+        var layout = (card.querySelector('[data-role="layout"]') || {}).value;
+        if(layout === 'back-to-back'){
+          var tf = (card.querySelector('[data-role="top-first"]') || {}).value || '';
+          var tl = (card.querySelector('[data-role="top-last"]')  || {}).value || '';
+          var bf = (card.querySelector('[data-role="bot-first"]') || {}).value || '';
+          var bl = (card.querySelector('[data-role="bot-last"]')  || {}).value || '';
+          total += stallLabelsBetween(tf,tl).length + stallLabelsBetween(bf,bl).length;
+        } else {
+          var first = (card.querySelector('[data-role="first"]') || {}).value || '';
+          var last  = (card.querySelector('[data-role="last"]')  || {}).value || '';
+          total += stallLabelsBetween(first, last).length;
+        }
+      });
+      var blocked = document.querySelectorAll('#blocked-stalls-select .tag-chip').length;
+      total = Math.max(0, total - blocked);
+      labelEl.textContent = '(computed from stall layout)';
+    } else {
+      document.querySelectorAll('#stall-mode-quantity-content .repeat-table tbody tr').forEach(function(tr){
+        total += parseInt((tr.querySelector('input[type="number"]') || {}).value || 0, 10) || 0;
+      });
+      labelEl.textContent = '(computed from row quantities)';
+    }
+    numEl.textContent = total;
+  } else {
+    input.style.display    = '';
+    computed.style.display = 'none';
+    hintBase.style.display   = '';
+    hintCharts.style.display = 'none';
+  }
+}
+
+function updateRvInventoryDisplay(){
+  var input      = document.getElementById('rv-inventory-input');
+  var computed   = document.getElementById('rv-inventory-computed');
+  var numEl      = document.getElementById('rv-inventory-number');
+  var labelEl    = document.getElementById('rv-inventory-label');
+  var hintBase   = document.getElementById('rv-inventory-hint-base');
+  var hintCharts = document.getElementById('rv-inventory-hint-charts');
+  if(!input) return;
+  if(rvChartsIsOn()){
+    input.style.display    = 'none';
+    computed.style.display = '';
+    hintBase.style.display   = 'none';
+    hintCharts.style.display = '';
+    var modeBtn = document.querySelector('#rv-lot-charts-content .mode-btn.active');
+    var mode    = modeBtn ? modeBtn.dataset.mode : 'quantity';
+    var total = 0;
+    if(mode === 'map'){
+      document.querySelectorAll('#rv-row-builder-list .row-card').forEach(function(card){
+        var layout = (card.querySelector('[data-role="layout"]') || {}).value;
+        if(layout === 'back-to-back'){
+          var tf = (card.querySelector('[data-role="top-first"]') || {}).value || '';
+          var tl = (card.querySelector('[data-role="top-last"]')  || {}).value || '';
+          var bf = (card.querySelector('[data-role="bot-first"]') || {}).value || '';
+          var bl = (card.querySelector('[data-role="bot-last"]')  || {}).value || '';
+          total += stallLabelsBetween(tf,tl).length + stallLabelsBetween(bf,bl).length;
+        } else {
+          var first = (card.querySelector('[data-role="first"]') || {}).value || '';
+          var last  = (card.querySelector('[data-role="last"]')  || {}).value || '';
+          total += stallLabelsBetween(first, last).length;
+        }
+      });
+      var blocked = document.querySelectorAll('#blocked-rv-lots-select .tag-chip').length;
+      total = Math.max(0, total - blocked);
+      labelEl.textContent = '(computed from lot layout)';
+    } else {
+      document.querySelectorAll('#rv-mode-quantity-content [data-role="zone-qty"]').forEach(function(inp){
+        total += parseInt(inp.value || 0, 10) || 0;
+      });
+      labelEl.textContent = '(computed from zone quantities)';
+    }
+    numEl.textContent = total;
+  } else {
+    input.style.display    = '';
+    computed.style.display = 'none';
+    hintBase.style.display   = '';
+    hintCharts.style.display = 'none';
+  }
 }
 
 function getBlockedRvLotsSet(){
@@ -2481,6 +2615,22 @@ document.addEventListener('DOMContentLoaded', () => {
   refreshPaintModeSelect();
   rebuildBlockedRvLotsDropdown();
   refreshAllRvPreviews();
+
+  /* Computed inventory: init + live-update delegation */
+  updateStallInventoryDisplay();
+  updateRvInventoryDisplay();
+  var stallQtyTbody = document.querySelector('#stall-mode-quantity-content .repeat-table tbody');
+  if(stallQtyTbody) stallQtyTbody.addEventListener('input', function(e){
+    if(e.target.type === 'number') updateStallInventoryDisplay();
+  });
+  var rvQtyContent = document.getElementById('rv-mode-quantity-content');
+  if(rvQtyContent) rvQtyContent.addEventListener('input', function(e){
+    if(e.target.dataset.role === 'zone-qty') updateRvInventoryDisplay();
+  });
+  var stallBuilder = document.getElementById('row-builder-list');
+  if(stallBuilder) stallBuilder.addEventListener('input', function(){ updateStallInventoryDisplay(); });
+  var rvBuilder = document.getElementById('rv-row-builder-list');
+  if(rvBuilder) rvBuilder.addEventListener('input', function(){ updateRvInventoryDisplay(); });
 });
 
 /* Wire delete buttons on initial stall rows (later ones handled inline) */
