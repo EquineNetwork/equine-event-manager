@@ -392,21 +392,21 @@ a:hover{text-decoration:none}
 .zone-painter-select:focus{border-color:#1668F2}
 .zone-painter-hint{font-size:11.5px;color:#6B7A99;flex:1;min-width:180px}
 
-/* Zone row/input overrides for #rv-lot-charts-content (zone content lives here after C8.B split;
+/* Zone row/input overrides for #rv-mapped-content (zone content lives here after C8.B split;
    zones outside this context use 1px #8c8f94 borders from the base .zone-row rule) */
-#rv-lot-charts-content .zone-row{border:1.5px solid #D9E2F2;border-radius:6px/* intentional larger card radius */}
-#rv-lot-charts-content .zone-name-input{border:1.5px solid #D9E2F2}
-#rv-lot-charts-content .zone-price-wrap{border:1.5px solid #D9E2F2;border-radius:var(--eem-radius);overflow:hidden}
-#rv-lot-charts-content .zone-price-sym{background:#FAFBFE;border:none;border-right:1.5px solid #D9E2F2;border-radius:0;line-height:32px}
-#rv-lot-charts-content .zone-price-in{border:none;width:70px}
-#rv-lot-charts-content .zone-add-btn{border:1.5px dashed #D9E2F2;border-radius:6px;/* intentional larger card radius */margin-bottom:14px}
+#rv-mapped-content .zone-row{border:1.5px solid #D9E2F2;border-radius:6px/* intentional larger card radius */}
+#rv-mapped-content .zone-name-input{border:1.5px solid #D9E2F2}
+#rv-mapped-content .zone-price-wrap{border:1.5px solid #D9E2F2;border-radius:var(--eem-radius);overflow:hidden}
+#rv-mapped-content .zone-price-sym{background:#FAFBFE;border:none;border-right:1.5px solid #D9E2F2;border-radius:0;line-height:32px}
+#rv-mapped-content .zone-price-in{border:none;width:70px}
+#rv-mapped-content .zone-add-btn{border:1.5px dashed #D9E2F2;border-radius:6px;/* intentional larger card radius */margin-bottom:14px}
 
 /* ── Nested field-rows inside Stall Charts / RV Lot Charts: stacked full-width layout
    Option A: display:block override; all nested rows are label-above-control ── */
-#stall-charts-content .field-row,
-#rv-lot-charts-content .field-row{display:block}
-#stall-charts-content .field-label,
-#rv-lot-charts-content .field-label{margin-bottom:6px}
+#stall-mapped-content .field-row,
+#rv-mapped-content .field-row{display:block}
+#stall-mapped-content .field-label,
+#rv-mapped-content .field-label{margin-bottom:6px}
 
 /* ── Tag multi-select (Blocked Stall Numbers, Blocked RV Lots) ── */
 .tag-select{position:relative;width:100%;max-width:520px}
@@ -432,6 +432,7 @@ a:hover{text-decoration:none}
 .inventory-computed-wrap{display:flex;align-items:baseline;gap:6px;margin-bottom:4px}
 .inventory-computed-number{font-size:28px;font-weight:700;color:#031B4E;line-height:1}
 .inventory-computed-label{font-size:12px;color:#6B7A99;font-style:italic}
+.badge-coming-soon{font-size:10px;font-weight:600;color:#6B7A99;background:#F0F2F8;border-radius:3px;padding:1px 5px;margin-left:5px;vertical-align:middle;text-transform:uppercase;letter-spacing:.3px}
 </style>
 </head>
 <body>
@@ -723,21 +724,6 @@ a:hover{text-decoration:none}
                 <div class="field-control"><input class="field-input" type="datetime-local" style="max-width:260px"></div>
               </div>
 
-              <div class="field-row" id="row-stall-inventory">
-                <div class="field-label">Available Stall Inventory<div class="field-label-sub">Blank = unlimited</div></div>
-                <div class="field-control">
-                  <input class="field-input" type="number" id="stall-inventory-input" placeholder="Unlimited" style="max-width:140px">
-                  <div id="stall-inventory-computed" style="display:none">
-                    <div class="inventory-computed-wrap">
-                      <span class="inventory-computed-number" id="stall-inventory-number">0</span>
-                      <span class="inventory-computed-label" id="stall-inventory-label">(computed from row quantities)</span>
-                    </div>
-                  </div>
-                  <span class="field-hint" id="stall-inventory-hint-base">Once inventory reaches zero, customers see a sold-out message.</span>
-                  <span class="field-hint" id="stall-inventory-hint-charts" style="display:none">When Stall Charts is enabled, inventory is calculated from your stall configuration below.</span>
-                </div>
-              </div>
-
               <div class="field-row" id="row-stall-rate-nightly">
                 <div class="field-label">Stall Nightly Rate</div>
                 <div class="field-control">
@@ -797,60 +783,35 @@ a:hover{text-decoration:none}
                 <div class="field-control"><div class="price-wrap"><span class="price-symbol">$</span><input class="price-input" type="number" value="22.00"></div></div>
               </div>
 
-              <!-- C8.A — Stall Charts toggle: RV Add-Ons pattern (toggleSwitchRow + data-controls inline) -->
-              <div class="field-row">
-                <div class="field-label">Stall Charts<div class="field-label-sub">Define the physical stall layout customers see at checkout</div></div>
+              <!-- Inventory Mode -->
+              <div class="field-row" id="row-stall-inventory-mode">
+                <div class="field-label">Inventory Mode<div class="field-label-sub">How is stall inventory defined for this reservation?</div></div>
                 <div class="field-control">
-                  <div class="toggle-label-row" style="margin-bottom:10px" onclick="toggleSwitchRow(this)">
-                    <div class="toggle on" data-controls="stall-charts-content"></div>
-                    <span>Enable stall charts</span>
+                  <div class="mode-btns">
+                    <button class="mode-btn active" data-mode="bulk" data-mapped-target="stall-mapped-content" onclick="toggleInventoryMode(this)">Bulk</button>
+                    <button class="mode-btn" data-mode="mapped" data-mapped-target="stall-mapped-content" onclick="toggleInventoryMode(this)">Mapped</button>
                   </div>
-                  <div id="stall-charts-content">
-      <!-- C8.A — Stall Charts inline content (moved from modal; now controlled by toggleSwitchRow) -->
-      <!-- Stall Selection Mode -->
-      <div class="field-row">
-        <div class="field-label">Stall Selection Mode</div>
-        <div class="field-control">
-          <div class="mode-btns">
-            <button class="mode-btn active" data-mode="quantity" onclick="toggleMode(this)">Quantity Based</button>
-            <button class="mode-btn" data-mode="map" onclick="toggleMode(this)">Exact Map Selection</button>
-          </div>
-          <span class="field-hint">Quantity Based uses the built-in stall quantity selector. Exact Map Selection lets customers choose specific stalls from an interactive map.</span>
-        </div>
-      </div>
+                  <span class="field-hint inventory-mode-hint">One total number — customers pick how many stalls they need at checkout</span>
+                </div>
+              </div>
 
-      <!-- Stall Quantity Table (Quantity Based mode — default) -->
-      <div id="stall-mode-quantity-content">
-      <div class="field-row" style="align-items:start">
-        <div class="field-label">Stall Rows<div class="field-label-sub">Available stall count per row</div></div>
-        <div class="field-control">
-          <table class="repeat-table">
-            <thead><tr><th>Row Name</th><th style="width:160px">Qty Available</th><th style="width:40px"></th></tr></thead>
-            <tbody>
-            <tr>
-              <td><input class="repeat-input" type="text" value="Red Barn Row A"></td>
-              <td><input class="repeat-input" type="number" value="12" style="width:100%;text-align:right" min="0"></td>
-              <td><button class="btn-delete" type="button" aria-label="Delete" onclick="deleteStallRow(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
-            </tr>
-            <tr>
-              <td><input class="repeat-input" type="text" value="Red Barn Row B"></td>
-              <td><input class="repeat-input" type="number" value="24" style="width:100%;text-align:right" min="0"></td>
-              <td><button class="btn-delete" type="button" aria-label="Delete" onclick="deleteStallRow(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
-            </tr>
-            <tr>
-              <td><input class="repeat-input" type="text" value="Yellow Barn Row A"></td>
-              <td><input class="repeat-input" type="number" value="12" style="width:100%;text-align:right" min="0"></td>
-              <td><button class="btn-delete" type="button" aria-label="Delete" onclick="deleteStallRow(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
-            </tr>
-            </tbody>
-          </table>
-          <button class="zone-add-btn" type="button" onclick="addStallRow()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Stall Row</button>
-        </div>
-      </div>
-      </div><!-- /#stall-mode-quantity-content -->
+              <div class="field-row" id="row-stall-inventory">
+                <div class="field-label">Available Stall Inventory<div class="field-label-sub">Blank = unlimited</div></div>
+                <div class="field-control">
+                  <input class="field-input" type="number" id="stall-inventory-input" placeholder="Unlimited" style="max-width:140px">
+                  <div id="stall-inventory-computed" style="display:none">
+                    <div class="inventory-computed-wrap">
+                      <span class="inventory-computed-number" id="stall-inventory-number">0</span>
+                      <span class="inventory-computed-label" id="stall-inventory-label">(computed from stall layout)</span>
+                    </div>
+                  </div>
+                  <span class="field-hint" id="stall-inventory-hint-base">Once inventory reaches zero, customers see a sold-out message.</span>
+                  <span class="field-hint" id="stall-inventory-hint-charts" style="display:none">Inventory is calculated from your stall configuration below.</span>
+                </div>
+              </div>
 
-      <!-- Exact Map content (Exact Map Selection mode) — hidden by default -->
-      <div id="stall-mode-exact-content" style="display:none">
+              <div id="stall-mapped-content" style="display:none">
+
       <!-- Stall Rows builder -->
       <div class="field-row" id="row-stall-blocks" style="align-items:start">
         <div class="field-label">Stall Rows<div class="field-label-sub">Define the physical layout customers will see</div></div>
@@ -1050,13 +1011,23 @@ a:hover{text-decoration:none}
           <span class="field-hint">Upload a stall map customers can open in a new tab while choosing a stall.</span>
         </div>
       </div>
-      </div><!-- /#stall-mode-exact-content -->
+      
+              <!-- Customer Selection -->
+              <div class="field-row" id="row-stall-customer-selection">
+                <div class="field-label">Customer Selection<div class="field-label-sub">How customers select stalls at checkout</div></div>
+                <div class="field-control">
+                  <div class="mode-btns">
+                    <button class="mode-btn active" data-mode="quantity" onclick="toggleCustomerSelection(this)">Quantity Picker</button>
+                    <button class="mode-btn" data-mode="map" onclick="toggleCustomerSelection(this)">Interactive Map <span class="badge-coming-soon">Coming soon</span></button>
+                  </div>
+                  <span class="field-hint customer-selection-hint">Customers pick how many stalls they need; specific stall numbers are assigned by the event organizer</span>
+                </div>
+              </div>
+              </div><!-- /#stall-mapped-content -->
 
-                  </div><!-- /#stall-charts-content -->
-                </div><!-- /.field-control -->
-              </div><!-- /.field-row (Stall Charts) -->
             </div>
           </section>
+
 
           <!-- ── RV Reservations ── -->
           <section class="card section-collapsed" id="card-rv">
@@ -1140,21 +1111,6 @@ a:hover{text-decoration:none}
                 <div class="field-control"><input class="field-input" type="datetime-local" style="max-width:260px"></div>
               </div>
 
-              <div class="field-row" id="row-rv-inventory">
-                <div class="field-label">Available RV Inventory<div class="field-label-sub">Blank = unlimited</div></div>
-                <div class="field-control">
-                  <input class="field-input" type="number" id="rv-inventory-input" placeholder="Unlimited" style="max-width:140px">
-                  <div id="rv-inventory-computed" style="display:none">
-                    <div class="inventory-computed-wrap">
-                      <span class="inventory-computed-number" id="rv-inventory-number">0</span>
-                      <span class="inventory-computed-label" id="rv-inventory-label">(computed from zone quantities)</span>
-                    </div>
-                  </div>
-                  <span class="field-hint" id="rv-inventory-hint-base">Once inventory reaches zero, customers see a sold-out message.</span>
-                  <span class="field-hint" id="rv-inventory-hint-charts" style="display:none">When RV Lot Charts is enabled, inventory is calculated from your lot configuration below.</span>
-                </div>
-              </div>
-
               <div class="field-row" id="row-rv-rate-nightly">
                 <div class="field-label">RV Nightly Rate</div>
                 <div class="field-control">
@@ -1195,28 +1151,35 @@ a:hover{text-decoration:none}
                 <div class="field-control"><div class="price-wrap"><span class="price-symbol">$</span><input class="price-input" type="number" value="140.00"></div></div>
               </div>
 
-              <!-- RV Lot Charts toggle: mirrors Stall Charts pattern -->
-              <div class="field-row">
-                <div class="field-label">RV Lot Charts<div class="field-label-sub">Define the physical RV lot layout customers see at checkout</div></div>
+              <!-- Inventory Mode -->
+              <div class="field-row" id="row-rv-inventory-mode">
+                <div class="field-label">Inventory Mode<div class="field-label-sub">How is RV lot inventory defined for this reservation?</div></div>
                 <div class="field-control">
-                  <div class="toggle-label-row" style="margin-bottom:10px" onclick="toggleSwitchRow(this)">
-                    <div class="toggle on" data-controls="rv-lot-charts-content"></div>
-                    <span>Enable RV lot charts</span>
+                  <div class="mode-btns">
+                    <button class="mode-btn active" data-mode="bulk" data-mapped-target="rv-mapped-content" onclick="toggleInventoryMode(this)">Bulk</button>
+                    <button class="mode-btn" data-mode="mapped" data-mapped-target="rv-mapped-content" onclick="toggleInventoryMode(this)">Mapped</button>
                   </div>
-                  <div id="rv-lot-charts-content">
-      <!-- RV Lot Selection Mode + Lot Rows builder -->
-      <div class="field-row" id="row-rv-mode">
-        <div class="field-label">Lot Selection Mode</div>
-        <div class="field-control">
-          <div class="mode-btns">
-            <button class="mode-btn active" data-mode="quantity" onclick="toggleLotMode(this)">Quantity Based</button>
-            <button class="mode-btn" data-mode="map" onclick="toggleLotMode(this)">Exact Map Selection</button>
-          </div>
-          <span class="field-hint">Quantity Based: customers pick how many lots they need by zone. Exact Map Selection: customers see the lot layout and click specific lots.</span>
-        </div>
-      </div>
+                  <span class="field-hint inventory-mode-hint">One total number — customers pick how many lots they need at checkout</span>
+                </div>
+              </div>
 
-      <div id="rv-mode-quantity-content">
+              <div class="field-row" id="row-rv-inventory">
+                <div class="field-label">Available RV Inventory<div class="field-label-sub">Blank = unlimited</div></div>
+                <div class="field-control">
+                  <input class="field-input" type="number" id="rv-inventory-input" placeholder="Unlimited" style="max-width:140px">
+                  <div id="rv-inventory-computed" style="display:none">
+                    <div class="inventory-computed-wrap">
+                      <span class="inventory-computed-number" id="rv-inventory-number">0</span>
+                      <span class="inventory-computed-label" id="rv-inventory-label">(computed from zone quantities)</span>
+                    </div>
+                  </div>
+                  <span class="field-hint" id="rv-inventory-hint-base">Once inventory reaches zero, customers see a sold-out message.</span>
+                  <span class="field-hint" id="rv-inventory-hint-charts" style="display:none">Inventory is calculated from your lot configuration below.</span>
+                </div>
+              </div>
+
+              <div id="rv-mapped-content" style="display:none">
+
       <!-- ── RV Lot Zones ── -->
       <div class="field-row" id="row-rv-zones" style="align-items:start">
         <div class="field-label">RV Lot Zones<div class="field-label-sub">Pricing tiers — every lot belongs to a zone</div></div>
@@ -1227,11 +1190,11 @@ a:hover{text-decoration:none}
               <div class="zone-color-pick" style="background:#EF4444" onclick="cycleZoneColor(this)" title="Click to change color"></div>
               <input class="zone-name-input" value="Red Lot" data-role="zone-name" oninput="refreshAllRvPreviews();rebuildBlockedRvLotsDropdown()">
               <div class="zone-price-group">
-                <span class="zone-price-label">Nightly</span>
+                <span class="zone-price-label">+ Nightly</span>
                 <div class="zone-price-wrap"><span class="zone-price-sym">$</span><input class="zone-price-in" type="number" value="35.00" data-role="zone-nightly"></div>
               </div>
               <div class="zone-price-group">
-                <span class="zone-price-label">Weekend</span>
+                <span class="zone-price-label">+ Weekend</span>
                 <div class="zone-price-wrap"><span class="zone-price-sym">$</span><input class="zone-price-in" type="number" value="90.00" data-role="zone-weekend"></div>
               </div>
               <div class="zone-price-group">
@@ -1247,11 +1210,11 @@ a:hover{text-decoration:none}
               <div class="zone-color-pick" style="background:#1668F2" onclick="cycleZoneColor(this)" title="Click to change color"></div>
               <input class="zone-name-input" value="Blue Lot" data-role="zone-name" oninput="refreshAllRvPreviews();rebuildBlockedRvLotsDropdown()">
               <div class="zone-price-group">
-                <span class="zone-price-label">Nightly</span>
+                <span class="zone-price-label">+ Nightly</span>
                 <div class="zone-price-wrap"><span class="zone-price-sym">$</span><input class="zone-price-in" type="number" value="25.00" data-role="zone-nightly"></div>
               </div>
               <div class="zone-price-group">
-                <span class="zone-price-label">Weekend</span>
+                <span class="zone-price-label">+ Weekend</span>
                 <div class="zone-price-wrap"><span class="zone-price-sym">$</span><input class="zone-price-in" type="number" value="65.00" data-role="zone-weekend"></div>
               </div>
               <div class="zone-price-group">
@@ -1270,9 +1233,8 @@ a:hover{text-decoration:none}
           </button>
         </div>
       </div>
-      </div><!-- /#rv-mode-quantity-content -->
+                    <span class="field-hint" style="display:block;margin-bottom:12px">Zone prices are added to the base RV rate. Total = base rate + zone surcharge.</span>
 
-      <div id="rv-mode-exact-content" style="display:none">
       <!-- Lot Rows — visible in Exact Map Selection mode only -->
       <div class="field-row" id="row-rv-rows-builder" style="align-items:start">
         <div class="field-label">Lot Rows<div class="field-label-sub">Define the physical layout customers will see</div></div>
@@ -1400,11 +1362,19 @@ a:hover{text-decoration:none}
           <span class="field-hint">Type a lot label to filter, then click to block it. Click &#xd7; on a chip to unblock.</span>
         </div>
       </div>
-      </div><!-- /#rv-mode-exact-content -->
-
-                  </div><!-- /#rv-lot-charts-content -->
-                </div><!-- /.field-control -->
-              </div><!-- /.field-row (RV Lot Charts) -->
+      
+              <!-- Customer Selection -->
+              <div class="field-row" id="row-rv-customer-selection">
+                <div class="field-label">Customer Selection<div class="field-label-sub">How customers select lots at checkout</div></div>
+                <div class="field-control">
+                  <div class="mode-btns">
+                    <button class="mode-btn active" data-mode="quantity" onclick="toggleCustomerSelection(this)">Quantity Picker</button>
+                    <button class="mode-btn" data-mode="map" onclick="toggleCustomerSelection(this)">Interactive Map <span class="badge-coming-soon">Coming soon</span></button>
+                  </div>
+                  <span class="field-hint customer-selection-hint">Customers pick how many lots they need from each zone; specific lot numbers are assigned by the event organizer</span>
+                </div>
+              </div>
+              </div><!-- /#rv-mapped-content -->
 
               <!-- RV Add-Ons with master enable toggle (Q5/A choice) -->
               <div class="field-row">
@@ -1448,54 +1418,6 @@ a:hover{text-decoration:none}
             </div>
           </section>
 
-          <!-- ── General Add-Ons ── -->
-          <section class="card section-collapsed" id="card-addons">
-            <div class="section-header" onclick="toggleCollapse('addons')">
-              <div class="section-header-left">
-                <div class="section-icon icon-orange">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                </div>
-                <span class="section-title">General Add-Ons</span>
-              </div>
-              <div class="section-header-right">
-                <div class="enable-toggle" onclick="event.stopPropagation();toggleEnabled('addons')">
-                  <div class="toggle on" data-section="addons"></div>
-                  <span class="enable-label">Enabled</span>
-                </div>
-                <div class="section-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
-              </div>
-            </div>
-            <div class="section-body hidden" id="body-addons">
-              <div class="field-row">
-                <div class="field-label">Add-Ons<div class="field-label-sub">Optional items customers can purchase</div></div>
-                <div class="field-control">
-                  <table class="repeat-table">
-                    <thead>
-                      <tr><th>Add-On Name</th><th style="width:120px">Price</th><th style="width:120px">Unit</th><th style="width:40px"></th></tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td><input class="repeat-input" type="text" value="Extra Shavings"></td>
-                        <td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" value="12.00"></div></td>
-                        <td><input class="repeat-input" type="text" value="bag"></td>
-                        <td><button class="btn-delete" type="button" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
-                      </tr>
-                      <tr>
-                        <td><input class="repeat-input" type="text" value="Hay Bale"></td>
-                        <td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" value="15.00"></div></td>
-                        <td><input class="repeat-input" type="text" value="bale"></td>
-                        <td><button class="btn-delete" type="button" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
-                      </tr>
-                    </tbody>
-                  </table>
-                  <button class="btn-add" type="button">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                    Add Add-On
-                  </button>
-                </div>
-              </div>
-            </div>
-          </section>
 
           <!-- ── Group Reservations ── -->
           <section class="card section-collapsed" id="card-group">
@@ -1810,8 +1732,6 @@ function toggleSwitchRow(row){
   t.classList.toggle('on', turningOn);
   t.classList.toggle('off', !turningOn);
   applyControls(t);
-  if(t.dataset.controls === 'stall-charts-content') updateStallInventoryDisplay();
-  if(t.dataset.controls === 'rv-lot-charts-content') updateRvInventoryDisplay();
 }
 
 /* ── Stay-type button click with validation ── */
@@ -1952,19 +1872,6 @@ document.addEventListener('click', e => {
   });
 });
 
-/* ── Mode button toggle ── */
-function toggleMode(btn){
-  btn.parentElement.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  const mode = btn.dataset.mode;
-  if(mode){
-    const qBlock = document.getElementById('stall-mode-quantity-content');
-    const eBlock = document.getElementById('stall-mode-exact-content');
-    if(qBlock) qBlock.style.display = mode === 'quantity' ? '' : 'none';
-    if(eBlock) eBlock.style.display = mode === 'map'      ? '' : 'none';
-  }
-  updateStallInventoryDisplay();
-}
 
 /* ── Stall Row Builder ── */
 /* Tries to compute a list of labels between `start` and `end`.
@@ -2295,30 +2202,6 @@ function cycleZoneColor(swatchEl){
   refreshAllRvPreviews();
 }
 
-/* ── Stall Quantity Table ── */
-function addStallRow(){
-  var tbody = document.querySelector('#stall-mode-quantity-content .repeat-table tbody');
-  if(!tbody) return;
-  var tr = document.createElement('tr');
-  tr.innerHTML =
-    '<td><input class="repeat-input" type="text" placeholder="Row Name"></td>' +
-    '<td><input class="repeat-input" type="number" value="" style="width:100%;text-align:right" min="0" placeholder="0"></td>' +
-    '<td><button class="btn-delete" type="button" aria-label="Delete" onclick="deleteStallRow(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>';
-  tbody.appendChild(tr);
-  tr.querySelector('input[type="text"]').focus();
-  updateStallInventoryDisplay();
-}
-
-function deleteStallRow(btn){
-  var tr = btn.closest('tr');
-  var tbody = tr.closest('tbody');
-  if(tbody.querySelectorAll('tr').length <= 1){
-    alert('Cannot delete the last stall row.');
-    return;
-  }
-  tr.remove();
-  updateStallInventoryDisplay();
-}
 
 function addZone(){
   const list     = document.getElementById('rv-zone-list');
@@ -2330,11 +2213,11 @@ function addZone(){
       <div class="zone-color-pick" style="background:${color}" onclick="cycleZoneColor(this)" title="Click to change color"></div>
       <input class="zone-name-input" value="New Zone" data-role="zone-name" oninput="refreshAllRvPreviews();rebuildBlockedRvLotsDropdown()">
       <div class="zone-price-group">
-        <span class="zone-price-label">Nightly</span>
+        <span class="zone-price-label">+ Nightly</span>
         <div class="zone-price-wrap"><span class="zone-price-sym">$</span><input class="zone-price-in" type="number" value="0.00" data-role="zone-nightly"></div>
       </div>
       <div class="zone-price-group">
-        <span class="zone-price-label">Weekend</span>
+        <span class="zone-price-label">+ Weekend</span>
         <div class="zone-price-wrap"><span class="zone-price-sym">$</span><input class="zone-price-in" type="number" value="0.00" data-role="zone-weekend"></div>
       </div>
       <div class="zone-price-group">
@@ -2438,27 +2321,58 @@ function addRvRow(){
   list.insertAdjacentHTML('beforeend', html);
 }
 
-function toggleLotMode(btn){
-  btn.parentElement.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  const mode = btn.dataset.mode;
-  if(mode){
-    const qBlock = document.getElementById('rv-mode-quantity-content');
-    const eBlock = document.getElementById('rv-mode-exact-content');
-    if(qBlock) qBlock.style.display = mode === 'quantity' ? '' : 'none';
-    if(eBlock) eBlock.style.display = mode === 'map'      ? '' : 'none';
-  }
-  updateRvInventoryDisplay();
-}
 
 /* ── Computed inventory display (WooCommerce variant-stock pattern) ── */
-function stallChartsIsOn(){
-  var t = document.querySelector('.toggle[data-controls="stall-charts-content"]');
-  return t && t.classList.contains('on');
+function stallMappedIsActive(){
+  var btn = document.querySelector('#row-stall-inventory-mode .mode-btn.active');
+  return btn && btn.dataset.mode === 'mapped';
 }
-function rvChartsIsOn(){
-  var t = document.querySelector('.toggle[data-controls="rv-lot-charts-content"]');
-  return t && t.classList.contains('on');
+function rvMappedIsActive(){
+  var btn = document.querySelector('#row-rv-inventory-mode .mode-btn.active');
+  return btn && btn.dataset.mode === 'mapped';
+}
+
+function toggleInventoryMode(btn){
+  btn.parentElement.querySelectorAll('.mode-btn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  var mode = btn.dataset.mode;
+  var targetId = btn.dataset.mappedTarget;
+  var mappedEl = targetId ? document.getElementById(targetId) : null;
+  if(mappedEl) mappedEl.style.display = (mode === 'mapped') ? '' : 'none';
+  var hintEl = btn.closest('.field-control').querySelector('.inventory-mode-hint');
+  if(hintEl){
+    if(mode === 'bulk'){
+      hintEl.textContent = targetId === 'stall-mapped-content'
+        ? 'One total number — customers pick how many stalls they need at checkout'
+        : 'One total number — customers pick how many lots they need at checkout';
+    } else {
+      hintEl.textContent = targetId === 'stall-mapped-content'
+        ? 'Define your stall layout — customers can pick a quantity or specific stalls'
+        : 'Define your lot layout — customers can pick a quantity or specific lots';
+    }
+  }
+  if(targetId === 'stall-mapped-content') updateStallInventoryDisplay();
+  if(targetId === 'rv-mapped-content') updateRvInventoryDisplay();
+}
+
+function toggleCustomerSelection(btn){
+  btn.parentElement.querySelectorAll('.mode-btn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  var mode = btn.dataset.mode;
+  var hintEl = btn.closest('.field-control').querySelector('.customer-selection-hint');
+  if(!hintEl) return;
+  var isStall = !!document.querySelector('#stall-mapped-content #row-stall-customer-selection') ||
+                btn.closest('#stall-mapped-content') !== null;
+  if(mode === 'quantity'){
+    hintEl.textContent = isStall
+      ? 'Customers pick how many stalls they need; specific stall numbers are assigned by the event organizer'
+      : 'Customers pick how many lots they need from each zone; specific lot numbers are assigned by the event organizer';
+  } else {
+    hintEl.textContent = isStall
+      ? 'Customers see your stall chart and click specific stalls'
+      : 'Customers see your lot chart and click specific lots';
+  }
+  if(btn.closest('#rv-mapped-content')) updateRvInventoryDisplay();
 }
 
 function updateStallInventoryDisplay(){
@@ -2469,38 +2383,29 @@ function updateStallInventoryDisplay(){
   var hintBase   = document.getElementById('stall-inventory-hint-base');
   var hintCharts = document.getElementById('stall-inventory-hint-charts');
   if(!input) return;
-  if(stallChartsIsOn()){
-    input.style.display   = 'none';
+  if(stallMappedIsActive()){
+    input.style.display    = 'none';
     computed.style.display = '';
     hintBase.style.display   = 'none';
     hintCharts.style.display = '';
-    var modeBtn = document.querySelector('#stall-charts-content .mode-btn.active');
-    var mode    = modeBtn ? modeBtn.dataset.mode : 'quantity';
     var total = 0;
-    if(mode === 'map'){
-      document.querySelectorAll('#row-builder-list .row-card').forEach(function(card){
-        var layout = (card.querySelector('[data-role="layout"]') || {}).value;
-        if(layout === 'back-to-back'){
-          var tf = (card.querySelector('[data-role="top-first"]') || {}).value || '';
-          var tl = (card.querySelector('[data-role="top-last"]')  || {}).value || '';
-          var bf = (card.querySelector('[data-role="bot-first"]') || {}).value || '';
-          var bl = (card.querySelector('[data-role="bot-last"]')  || {}).value || '';
-          total += stallLabelsBetween(tf,tl).length + stallLabelsBetween(bf,bl).length;
-        } else {
-          var first = (card.querySelector('[data-role="first"]') || {}).value || '';
-          var last  = (card.querySelector('[data-role="last"]')  || {}).value || '';
-          total += stallLabelsBetween(first, last).length;
-        }
-      });
-      var blocked = document.querySelectorAll('#blocked-stalls-select .tag-chip').length;
-      total = Math.max(0, total - blocked);
-      labelEl.textContent = '(computed from stall layout)';
-    } else {
-      document.querySelectorAll('#stall-mode-quantity-content .repeat-table tbody tr').forEach(function(tr){
-        total += parseInt((tr.querySelector('input[type="number"]') || {}).value || 0, 10) || 0;
-      });
-      labelEl.textContent = '(computed from row quantities)';
-    }
+    document.querySelectorAll('#row-builder-list .row-card').forEach(function(card){
+      var layout = (card.querySelector('[data-role="layout"]') || {}).value;
+      if(layout === 'back-to-back'){
+        var tf = (card.querySelector('[data-role="top-first"]') || {}).value || '';
+        var tl = (card.querySelector('[data-role="top-last"]')  || {}).value || '';
+        var bf = (card.querySelector('[data-role="bot-first"]') || {}).value || '';
+        var bl = (card.querySelector('[data-role="bot-last"]')  || {}).value || '';
+        total += stallLabelsBetween(tf,tl).length + stallLabelsBetween(bf,bl).length;
+      } else {
+        var first = (card.querySelector('[data-role="first"]') || {}).value || '';
+        var last  = (card.querySelector('[data-role="last"]')  || {}).value || '';
+        total += stallLabelsBetween(first, last).length;
+      }
+    });
+    var blocked = document.querySelectorAll('#blocked-stalls-select .tag-chip').length;
+    total = Math.max(0, total - blocked);
+    labelEl.textContent = '(computed from stall layout)';
     numEl.textContent = total;
   } else {
     input.style.display    = '';
@@ -2518,15 +2423,15 @@ function updateRvInventoryDisplay(){
   var hintBase   = document.getElementById('rv-inventory-hint-base');
   var hintCharts = document.getElementById('rv-inventory-hint-charts');
   if(!input) return;
-  if(rvChartsIsOn()){
+  if(rvMappedIsActive()){
     input.style.display    = 'none';
     computed.style.display = '';
     hintBase.style.display   = 'none';
     hintCharts.style.display = '';
-    var modeBtn = document.querySelector('#rv-lot-charts-content .mode-btn.active');
-    var mode    = modeBtn ? modeBtn.dataset.mode : 'quantity';
+    var selBtn = document.querySelector('#row-rv-customer-selection .mode-btn.active');
+    var selMode = selBtn ? selBtn.dataset.mode : 'quantity';
     var total = 0;
-    if(mode === 'map'){
+    if(selMode === 'map'){
       document.querySelectorAll('#rv-row-builder-list .row-card').forEach(function(card){
         var layout = (card.querySelector('[data-role="layout"]') || {}).value;
         if(layout === 'back-to-back'){
@@ -2545,7 +2450,7 @@ function updateRvInventoryDisplay(){
       total = Math.max(0, total - blocked);
       labelEl.textContent = '(computed from lot layout)';
     } else {
-      document.querySelectorAll('#rv-mode-quantity-content [data-role="zone-qty"]').forEach(function(inp){
+      document.querySelectorAll('#rv-mapped-content [data-role="zone-qty"]').forEach(function(inp){
         total += parseInt(inp.value || 0, 10) || 0;
       });
       labelEl.textContent = '(computed from zone quantities)';
@@ -2619,11 +2524,7 @@ document.addEventListener('DOMContentLoaded', () => {
   /* Computed inventory: init + live-update delegation */
   updateStallInventoryDisplay();
   updateRvInventoryDisplay();
-  var stallQtyTbody = document.querySelector('#stall-mode-quantity-content .repeat-table tbody');
-  if(stallQtyTbody) stallQtyTbody.addEventListener('input', function(e){
-    if(e.target.type === 'number') updateStallInventoryDisplay();
-  });
-  var rvQtyContent = document.getElementById('rv-mode-quantity-content');
+  var rvQtyContent = document.getElementById('rv-mapped-content');
   if(rvQtyContent) rvQtyContent.addEventListener('input', function(e){
     if(e.target.dataset.role === 'zone-qty') updateRvInventoryDisplay();
   });
@@ -2642,7 +2543,7 @@ document.addEventListener('DOMContentLoaded', () => {
   refreshAllRowPreviews();
 });
 
-/* ── Stall Charts: toggle now handled by standard toggleSwitchRow + data-controls="stall-charts-content" ── */
+
 </script>
 
 </body>
