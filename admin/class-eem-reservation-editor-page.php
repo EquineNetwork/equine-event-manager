@@ -702,6 +702,26 @@ class EEM_Reservation_Editor_Page {
 			update_post_meta( $reservation_id, '_en_blocked_rv_lots', array_values( array_filter( $blocked_rv_clean ) ) );
 		}
 
+		// Bug-fix: RV lot zone assignments (Paint Mode persistence)
+		// Stored as _en_rv_lot_zone_assignments: { rowIndex => { lotLabel => zoneIndex } }
+		if ( isset( $_POST['eem_rv_lot_zone_assignments'] ) ) {
+			$raw_assignments = stripslashes( (string) wp_unslash( $_POST['eem_rv_lot_zone_assignments'] ) );
+			$decoded         = json_decode( $raw_assignments, true );
+			if ( is_array( $decoded ) ) {
+				$clean_assignments = array();
+				foreach ( $decoded as $row_idx => $lots ) {
+					if ( ! is_array( $lots ) ) { continue; }
+					$row_key                     = sanitize_key( (string) $row_idx );
+					$clean_assignments[ $row_key ] = array();
+					foreach ( $lots as $lot_label => $zone_idx ) {
+						$clean_assignments[ $row_key ][ sanitize_text_field( (string) $lot_label ) ] =
+							sanitize_text_field( (string) $zone_idx );
+					}
+				}
+				update_post_meta( $reservation_id, '_en_rv_lot_zone_assignments', $clean_assignments );
+			}
+		}
+
 		// Event Pre-Entries enabled flag
 		if ( isset( $_POST['eem_event_pre_entries_enabled'] ) ) {
 			update_post_meta( $reservation_id, '_en_event_pre_entries_enabled', absint( wp_unslash( $_POST['eem_event_pre_entries_enabled'] ) ) ? 1 : 0 );

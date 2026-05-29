@@ -1702,6 +1702,11 @@
 		},
 		'pre-entry-delete': function (target) {
 			preEntryDelete(target);
+		},
+
+		/* Bug-fix: RV Paint Mode — lot cell clicked */
+		'rv-lot-click': function (target) {
+			rvLotClick(target);
 		}
 	};
 
@@ -1765,6 +1770,8 @@
 		if (!ia) return;
 		if (ia === 'stall-row-layout') { stallRowLayoutChange(inp); }
 		if (ia === 'rv-row-layout')    { rvRowLayoutChange(inp); }
+		/* Bug-fix: RV Paint Mode zone select */
+		if (ia === 'rv-paint-zone')    { rvSyncPaintModeState(); }
 	});
 
 	// Escape key closes open overlays.
@@ -1885,6 +1892,20 @@
 			card.classList.toggle('eem-section-collapsed');
 			body.classList.toggle('eem-section-body--hidden');
 			collapse.classList.toggle('is-open');
+			// Bug-fix: persist section collapse state so it survives
+			// save+reload. Key: eem-section-STATE-{rid}-{cardId}
+			try {
+				var stickyBar = document.getElementById('eem-sticky-save');
+				var rid = stickyBar ? (stickyBar.dataset.eemReservationId || '0') : '0';
+				var cardId = card.id || '';
+				if (cardId && window.sessionStorage) {
+					var isNowCollapsed = card.classList.contains('eem-section-collapsed');
+					sessionStorage.setItem(
+						'eem-section-STATE-' + rid + '-' + cardId,
+						isNowCollapsed ? 'collapsed' : 'expanded'
+					);
+				}
+			} catch (e) { /* sessionStorage unavailable — degrade silently */ }
 		}
 	});
 
@@ -1977,6 +1998,12 @@
 		body.set('_eem_editor_nonce', eemReservationEditorNonce());
 		body.set('reservation_id', rid);
 		body.set('save_kind', kind);
+		// Bug-fix: serialize RV lot zone assignments into the save payload
+		_syncRvLotZoneAssignmentsInput();
+		var lotZoneInput = document.getElementById('eem-rv-lot-zone-assignments-input');
+		if (lotZoneInput && lotZoneInput.value) {
+			body.set('eem_rv_lot_zone_assignments', lotZoneInput.value);
+		}
 		eemCollectEditorFields().forEach(function (pair) { body.append(pair[0], pair[1]); });
 		fetch(EEM_EDITOR_AJAX_URL, {
 			method: 'POST',
@@ -2234,6 +2261,41 @@
 
 	/* Initial applyControls() pass on page load */
 	document.addEventListener('DOMContentLoaded', eemApplyControls);
+
+	/* Bug-fix: restore per-section collapse/expand state from sessionStorage
+	   so that section open/closed state survives a save+reload cycle.
+	   Key pattern: eem-section-STATE-{reservationId}-{cardId} */
+	document.addEventListener('DOMContentLoaded', function () {
+		try {
+			if (!window.sessionStorage) { return; }
+			var stickyBar = document.getElementById('eem-sticky-save');
+			var rid = stickyBar ? (stickyBar.dataset.eemReservationId || '0') : '0';
+			document.querySelectorAll('.eem-reservation-editor-section[id]').forEach(function (card) {
+				var key = 'eem-section-STATE-' + rid + '-' + card.id;
+				var saved = sessionStorage.getItem(key);
+				if (!saved) { return; }
+				var body = document.getElementById('body-' + card.id.replace(/^card-/, ''));
+				if (saved === 'collapsed') {
+					card.classList.add('eem-section-collapsed');
+					if (body) { body.classList.add('eem-section-body--hidden'); }
+				} else if (saved === 'expanded') {
+					card.classList.remove('eem-section-collapsed');
+					if (body) { body.classList.remove('eem-section-body--hidden'); }
+				}
+			});
+		} catch (e) { /* sessionStorage unavailable — degrade silently */ }
+	});
+
+	/* Bug-fix: initialise _rvLotZoneAssignments from server-side data
+	   emitted by _section-rv.php as window._rvLotZoneAssignmentsInit.
+	   Also sync the hidden input and read the initial paint-mode state. */
+	document.addEventListener('DOMContentLoaded', function () {
+		if (window._rvLotZoneAssignmentsInit && typeof window._rvLotZoneAssignmentsInit === 'object') {
+			_rvLotZoneAssignments = window._rvLotZoneAssignmentsInit;
+		}
+		_syncRvLotZoneAssignmentsInput();
+		rvSyncPaintModeState();
+	});
 
 	/* Linked Event modal — launcher + source-mode picker + typeahead + Save */
 	function eemModalOpen(id) {
@@ -3167,6 +3229,119 @@ function stallLabelsBetween(first, last) {
 }
 
 /* ─────────────────────────────────────────────────────────────
+ * Bug-fix: RV Paint Mode — lot zone assignment state + helpers
+ *
+ * _rvLotZoneAssignments: { rowIndex: { lotLabel: zoneIndex } }
+ *   Populated from window._rvLotZoneAssignmentsInit (emitted by
+ *   _section-rv.php) on DOMContentLoaded, then mutated in-place
+ *   as the user paints. Serialised to the hidden input before save.
+ *
+ * _rvActivePaintZone: number | null
+ *   null = Paint Mode Off; 0..N = zone index currently selected.
+ * ───────────────────────────────────────────────────────────── */
+var _rvLotZoneAssignments = {};
+var _rvActivePaintZone    = null;
+
+/**
+ * Return a hex color from the canonical zone palette for the given
+ * zero-based zone index. Returns 'transparent' for absent / null.
+ *
+ * @param  {number|string|null} zoneIndex
+ * @return {string}
+ */
+function getZoneColor(zoneIndex) {
+	var palette = ['#DC2626', '#2563EB', '#16A34A', '#CA8A04', '#9333EA', '#EA580C'];
+	if (zoneIndex === null || zoneIndex === undefined || zoneIndex === '' || zoneIndex === '-1') {
+		return 'transparent';
+	}
+	var idx = parseInt(zoneIndex, 10);
+	if (isNaN(idx)) return 'transparent';
+	return palette[idx % palette.length] || '#9CA3AF';
+}
+
+/**
+ * Return the saved zone index for a lot (or the first-zone default).
+ *
+ * @param  {number|string} rowIndex
+ * @param  {string}        lotLabel
+ * @return {string}  Stringified zone index, or '' if no zones defined.
+ */
+function getDefaultZoneForLot(rowIndex, lotLabel) {
+	var ri = String(rowIndex);
+	if (_rvLotZoneAssignments[ri] && _rvLotZoneAssignments[ri][lotLabel] !== undefined) {
+		return String(_rvLotZoneAssignments[ri][lotLabel]);
+	}
+	// Default: zone index 0 (first zone)
+	var zoneRows = document.querySelectorAll('#eem-lot-zones-list .eem-zone-row');
+	if (zoneRows.length > 0) { return '0'; }
+	return '';
+}
+
+/**
+ * Handle a click on an .eem-lot-cell button. If Paint Mode has an
+ * active zone, assign that zone to the lot and update the dot color.
+ *
+ * @param {HTMLButtonElement} cell
+ * @return {void}
+ */
+function rvLotClick(cell) {
+	if (_rvActivePaintZone === null) { return; } // Off — no-op
+	var rowId    = cell.dataset.rowId;
+	var lotLabel = cell.dataset.lotLabel;
+	if (!rowId || !lotLabel) { return; }
+
+	// Persist assignment into state object
+	if (!_rvLotZoneAssignments[rowId]) { _rvLotZoneAssignments[rowId] = {}; }
+	_rvLotZoneAssignments[rowId][lotLabel] = String(_rvActivePaintZone);
+
+	// Update DOM immediately — no full preview re-render needed
+	cell.dataset.zoneId = String(_rvActivePaintZone);
+	var dot = cell.querySelector('.eem-lot-zone-dot');
+	if (dot) { dot.style.backgroundColor = getZoneColor(_rvActivePaintZone); }
+
+	// Sync to hidden input so next save captures the full assignment map
+	_syncRvLotZoneAssignmentsInput();
+}
+
+/**
+ * Write the current _rvLotZoneAssignments state to the hidden form
+ * input `#eem-rv-lot-zone-assignments-input` so eemDispatchSave()
+ * picks it up through the URLSearchParams body.
+ *
+ * @return {void}
+ */
+function _syncRvLotZoneAssignmentsInput() {
+	var input = document.getElementById('eem-rv-lot-zone-assignments-input');
+	if (input) {
+		input.value = JSON.stringify(_rvLotZoneAssignments);
+	}
+}
+
+/**
+ * Update the Paint Mode select visual state and the body class that
+ * switches lot-cell cursors to crosshair. Called whenever the zone
+ * painter select changes.
+ *
+ * @return {void}
+ */
+function rvSyncPaintModeState() {
+	var sel     = document.getElementById('eem-rv-paint-zone');
+	var builder = document.getElementById('eem-rv-row-builder-list');
+	if (!sel) { return; }
+	var val = sel.value; // '' = Off, 'z0', 'z1' ... in legacy; or '' = Off, '0', '1'... new
+	if (val === '') {
+		_rvActivePaintZone = null;
+		if (builder) { builder.classList.remove('eem-paint-mode-active'); }
+	} else {
+		// Strip leading 'z' if present (legacy mockup used 'z0', 'z1')
+		var stripped = val.replace(/^z/, '');
+		_rvActivePaintZone = parseInt(stripped, 10);
+		if (isNaN(_rvActivePaintZone)) { _rvActivePaintZone = null; }
+		if (builder) { builder.classList.toggle('eem-paint-mode-active', _rvActivePaintZone !== null); }
+	}
+}
+
+/* ─────────────────────────────────────────────────────────────
  * C8 — generateStallPreview: fill the .eem-stall-row-layout div
  * ───────────────────────────────────────────────────────────── */
 function generateStallPreview(rowCard) {
@@ -3176,6 +3351,36 @@ function generateStallPreview(rowCard) {
 	var countEl    = rowCard.querySelector('.eem-row-card-count');
 	if (!previewDiv) return;
 
+	// Detect whether this is an RV row card (uses rv-row-layout / rv-row-input)
+	// so we render clickable .eem-lot-cell buttons with zone dots instead of
+	// plain .eem-stall-box divs.
+	var isRvRow = !!rowCard.querySelector('[data-eem-input-action="rv-row-layout"], [data-eem-input-action="rv-row-input"]');
+	var rowIndex = rowCard.dataset.rowIndex !== undefined ? String(rowCard.dataset.rowIndex) : '';
+
+	/**
+	 * Build the HTML string for a single lot cell.
+	 * For stall rows: plain .eem-stall-box div (no change).
+	 * For RV rows: .eem-lot-cell button with zone dot + label.
+	 *
+	 * @param  {string} l  Lot or stall label
+	 * @return {string}
+	 */
+	function cellHtml(l) {
+		if (!isRvRow) {
+			return '<div class="eem-stall-box">' + escapeHtml(l) + '</div>';
+		}
+		var zoneId  = getDefaultZoneForLot(rowIndex, l);
+		var color   = getZoneColor(zoneId !== '' ? zoneId : null);
+		return '<button class="eem-lot-cell" type="button"' +
+			' data-eem-action="rv-lot-click"' +
+			' data-row-id="' + escapeHtml(rowIndex) + '"' +
+			' data-lot-label="' + escapeHtml(l) + '"' +
+			' data-zone-id="' + escapeHtml(zoneId) + '">' +
+			'<span class="eem-lot-zone-dot" style="background-color:' + escapeHtml(color) + '"></span>' +
+			'<span class="eem-lot-label">' + escapeHtml(l) + '</span>' +
+			'</button>';
+	}
+
 	if (layout === 'back-to-back') {
 		previewDiv.classList.add('eem-back-to-back');
 		var topFirst = rowCard.querySelector('[data-role="top-first"]');
@@ -3184,20 +3389,22 @@ function generateStallPreview(rowCard) {
 		var botLast  = rowCard.querySelector('[data-role="bot-last"]');
 		var topLabels = stallLabelsBetween(topFirst ? topFirst.value : '', topLast ? topLast.value : '');
 		var botLabels = stallLabelsBetween(botFirst ? botFirst.value : '', botLast ? botLast.value : '');
-		var topHtml = topLabels.map(function(l) { return '<div class="eem-stall-box">' + escapeHtml(l) + '</div>'; }).join('');
-		var botHtml = botLabels.map(function(l) { return '<div class="eem-stall-box">' + escapeHtml(l) + '</div>'; }).join('');
+		var topHtml = topLabels.map(cellHtml).join('');
+		var botHtml = botLabels.map(cellHtml).join('');
 		previewDiv.innerHTML =
 			'<div class="eem-stall-row-side">' + topHtml + '</div>' +
 			'<div class="eem-stall-row-aisle" title="Aisle"></div>' +
 			'<div class="eem-stall-row-side">' + botHtml + '</div>';
-		if (countEl) countEl.textContent = (topLabels.length + botLabels.length) + ' stalls · Back-to-back (' + topLabels.length + ' top, ' + botLabels.length + ' bottom)';
+		var unitWord = isRvRow ? 'lots' : 'stalls';
+		if (countEl) countEl.textContent = (topLabels.length + botLabels.length) + ' ' + unitWord + ' \xb7 Back-to-back (' + topLabels.length + ' top, ' + botLabels.length + ' bottom)';
 	} else {
 		previewDiv.classList.remove('eem-back-to-back');
 		var first = rowCard.querySelector('[data-role="first"]');
 		var last  = rowCard.querySelector('[data-role="last"]');
 		var labels = stallLabelsBetween(first ? first.value : '', last ? last.value : '');
-		previewDiv.innerHTML = labels.map(function(l) { return '<div class="eem-stall-box">' + escapeHtml(l) + '</div>'; }).join('');
-		if (countEl) countEl.textContent = labels.length + ' stalls · One-sided';
+		previewDiv.innerHTML = labels.map(cellHtml).join('');
+		var unitWord2 = isRvRow ? 'lots' : 'stalls';
+		if (countEl) countEl.textContent = labels.length + ' ' + unitWord2 + ' \xb7 One-sided';
 	}
 }
 

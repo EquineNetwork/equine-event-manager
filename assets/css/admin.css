@@ -6873,6 +6873,54 @@ input.eem-event-search-input:focus {
 	.eem-row-card-top .eem-row-card-field-layout { flex: 1 1 140px; }
 }
 
+/* ── Bug-fix: RV Paint Mode lot cells ── */
+/*
+ * .eem-lot-cell — clickable button inside the RV row preview strip.
+ *   Each cell carries data-eem-action="rv-lot-click", data-row-id,
+ *   data-lot-label, and data-zone-id. Contains a colored zone dot
+ *   (.eem-lot-zone-dot) and a label (.eem-lot-label).
+ */
+.eem-lot-cell {
+	position: relative;
+	display: inline-flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	min-width: 36px;
+	height: 36px;
+	padding: 2px 4px;
+	border: 1.5px solid #D9E2F2;
+	border-radius: var(--eem-radius, 3px);
+	background: #fff;
+	cursor: pointer;
+	font-size: 11px;
+	font-family: var(--eem-font-ui);
+	color: var(--eem-navy);
+	gap: 2px;
+	transition: border-color 0.12s, background 0.12s;
+}
+.eem-lot-cell:hover {
+	border-color: var(--eem-electric);
+	background: #F0F4FF;
+}
+.eem-lot-cell:focus-visible {
+	outline: 2px solid var(--eem-electric);
+	outline-offset: 1px;
+}
+.eem-lot-zone-dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	flex-shrink: 0;
+}
+.eem-lot-label {
+	font-size: 10px;
+	font-weight: 600;
+	line-height: 1;
+}
+/* Paint mode active: crosshair cursor on all lot cells in the builder */
+.eem-paint-mode-active .eem-lot-cell { cursor: crosshair; }
+
 /* ── Inventory Mode buttons — extends existing .eem-mode-btn (line 1074) ── */
 /* Base + .active already defined at line 1074. Add font-family + hover state only. */
 .eem-mode-btn {

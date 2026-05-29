@@ -241,6 +241,69 @@ c7x_ok( '#eem-blocked-stalls-select renders',  false !== strpos( $html, 'id="eem
 c7x_ok( '#eem-blocked-rv-lots-select renders', false !== strpos( $html, 'id="eem-blocked-rv-lots-select"' ), $pass, $fail, $log );
 c7x_ok( 'stall map upload field renders',      false !== strpos( $html, 'id="eem-stall-map-id"' ),          $pass, $fail, $log );
 
+// ── [10.7] RV Paint Mode lot cells (Bug-fix) ─────────────────────
+echo "\n[10.7] RV Paint Mode — lot cells have correct data attributes + zone dot\n";
+c7x_ok( 'paint zone select has data-eem-input-action="rv-paint-zone"',
+	false !== strpos( $html, 'data-eem-input-action="rv-paint-zone"' ),
+	$pass, $fail, $log );
+c7x_ok( '#eem-rv-lot-zone-assignments-input hidden field renders',
+	false !== strpos( $html, 'id="eem-rv-lot-zone-assignments-input"' ),
+	$pass, $fail, $log );
+c7x_ok( 'window._rvLotZoneAssignmentsInit emitted',
+	false !== strpos( $html, 'window._rvLotZoneAssignmentsInit' ),
+	$pass, $fail, $log );
+// Verify lot cells are generated with data-eem-action (JS builds them on DOMContentLoaded,
+// so they will not be in the server-rendered HTML — assert the JS source has the attribute)
+c7x_ok( 'JS: rv-lot-click action in generateStallPreview',
+	false !== strpos( $js, 'data-eem-action="rv-lot-click"' ),
+	$pass, $fail, $log );
+c7x_ok( 'JS: data-lot-label attr in lot cell HTML',
+	false !== strpos( $js, 'data-lot-label=' ),
+	$pass, $fail, $log );
+c7x_ok( 'JS: data-row-id attr in lot cell HTML',
+	false !== strpos( $js, 'data-row-id=' ),
+	$pass, $fail, $log );
+c7x_ok( 'JS: data-zone-id attr in lot cell HTML',
+	false !== strpos( $js, 'data-zone-id=' ),
+	$pass, $fail, $log );
+c7x_ok( 'JS: .eem-lot-zone-dot span in lot cell HTML',
+	false !== strpos( $js, 'eem-lot-zone-dot' ),
+	$pass, $fail, $log );
+c7x_ok( 'JS: getZoneColor function defined',
+	false !== strpos( $js, 'function getZoneColor' ),
+	$pass, $fail, $log );
+c7x_ok( 'JS: rvLotClick function defined',
+	false !== strpos( $js, 'function rvLotClick' ),
+	$pass, $fail, $log );
+c7x_ok( 'JS: rv-lot-click in actions dispatcher',
+	false !== strpos( $js, "'rv-lot-click'" ),
+	$pass, $fail, $log );
+
+// ── [10.8] Section state sessionStorage (Bug-fix) ────────────────
+echo "\n[10.8] Section state — sessionStorage persist + restore\n";
+c7x_ok( 'JS: sessionStorage.setItem call for section state',
+	false !== strpos( $js, "sessionStorage.setItem(\n\t\t\t\t\t'eem-section-STATE-'" ) ||
+	false !== strpos( $js, "sessionStorage.setItem(" ) && false !== strpos( $js, 'eem-section-STATE-' ),
+	$pass, $fail, $log );
+c7x_ok( 'JS: sessionStorage.getItem call for restore',
+	false !== strpos( $js, 'sessionStorage.getItem(' ),
+	$pass, $fail, $log );
+c7x_ok( 'JS: eem-section-collapsed class in restore block',
+	false !== strpos( $js, "classList.add('eem-section-collapsed')" ),
+	$pass, $fail, $log );
+c7x_ok( 'CSS: .eem-lot-cell defined',
+	false !== strpos( $css, '.eem-lot-cell' ),
+	$pass, $fail, $log );
+c7x_ok( 'CSS: .eem-lot-zone-dot defined',
+	false !== strpos( $css, '.eem-lot-zone-dot' ),
+	$pass, $fail, $log );
+c7x_ok( 'CSS: .eem-lot-label defined',
+	false !== strpos( $css, '.eem-lot-label' ),
+	$pass, $fail, $log );
+c7x_ok( 'CSS: .eem-paint-mode-active defined',
+	false !== strpos( $css, '.eem-paint-mode-active' ),
+	$pass, $fail, $log );
+
 // ── [10.6] Event Pre-Entries section (C8) ───────────────────────
 echo "\n[10.6] Event Pre-Entries — card + enable toggle + repeat table\n";
 c7x_ok( '#card-event_pre_entries renders',        false !== strpos( $html, 'id="card-event_pre_entries"' ),          $pass, $fail, $log );
@@ -332,6 +395,8 @@ $css_classes = array(
 	'.eem-toggle-label-row', '.eem-row--hidden', '.eem-section-disabled-note',
 	'.eem-fee-modes', '.eem-fee-mode-btn',
 	'.eem-pct-wrap', '.eem-pct-input', '.eem-pct-symbol',
+	// Bug-fix: RV Paint Mode lot cells
+	'.eem-lot-cell', '.eem-lot-zone-dot', '.eem-lot-label', '.eem-paint-mode-active',
 );
 foreach ( $css_classes as $cls ) {
 	c7x_ok( "CSS primitive: {$cls}", false !== strpos( $css, $cls ), $pass, $fail, $log );

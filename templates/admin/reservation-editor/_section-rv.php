@@ -286,7 +286,22 @@ $rv_rows      = ( is_array( $rv_rows_meta ) && ! empty( $rv_rows_meta ) )
 
 $blocked_rv_lots_meta = get_post_meta( get_the_ID(), '_en_blocked_rv_lots', true );
 $blocked_rv_lots      = is_array( $blocked_rv_lots_meta ) ? $blocked_rv_lots_meta : array();
+
+// Bug-fix: load saved RV lot zone assignments; default each lot to zone index 0
+// if no saved assignment exists (JS side reads window._rvLotZoneAssignmentsInit).
+$lot_assignments_meta = get_post_meta( get_the_ID(), '_en_rv_lot_zone_assignments', true );
+$lot_assignments      = ( is_array( $lot_assignments_meta ) && ! empty( $lot_assignments_meta ) )
+	? $lot_assignments_meta
+	: array();
+$lot_assignments_json = wp_json_encode( $lot_assignments );
 ?>
+<script>
+/* Equine Event Manager — RV lot zone assignments init (server-rendered). */
+if ( typeof window._rvLotZoneAssignmentsInit === 'undefined' ) {
+	window._rvLotZoneAssignmentsInit = <?php echo $lot_assignments_json; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JSON from wp_json_encode is safe ?>;
+}
+</script>
+<input type="hidden" id="eem-rv-lot-zone-assignments-input" name="eem_rv_lot_zone_assignments" value="">
 <div id="eem-rv-mapped-content"
 	style="<?php echo $rv_is_mapped ? '' : 'display:none;'; ?>">
 <?php
@@ -368,10 +383,12 @@ ob_start();
 	<select class="eem-zone-painter-select" id="eem-rv-paint-zone" data-eem-input-action="rv-paint-zone">
 		<option value=""><?php esc_html_e( 'Off — click to view lot details', 'equine-event-manager' ); ?></option>
 		<?php foreach ( $rv_zones as $zi => $zone ) :
-			$z_color = isset( $zone['color'] ) ? (string) $zone['color'] : '#1668F2';
 			$z_name  = isset( $zone['name'] )  ? (string) $zone['name']  : '';
+			// Auto-assign zone color from the JS palette by index (matches getZoneColor() in admin.js)
+			$palette  = array( '#DC2626', '#2563EB', '#16A34A', '#CA8A04', '#9333EA', '#EA580C' );
+			$z_color  = $palette[ $zi % count( $palette ) ];
 			?>
-			<option value="z<?php echo (int) $zi; ?>" style="color:<?php echo esc_attr( $z_color ); ?>">&#x25cf; <?php echo esc_html( $z_name ); ?></option>
+			<option value="<?php echo (int) $zi; ?>" style="color:<?php echo esc_attr( $z_color ); ?>">&#x25cf; <?php echo esc_html( $z_name ); ?></option>
 		<?php endforeach; ?>
 	</select>
 	<span class="eem-zone-painter-hint"><?php esc_html_e( 'Select a zone, then click lots in any row preview to assign them.', 'equine-event-manager' ); ?></span>
