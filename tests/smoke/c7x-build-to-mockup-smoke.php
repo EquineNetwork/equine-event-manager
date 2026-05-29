@@ -82,6 +82,29 @@ c7x_ok( 'C8: id="eem-header-meta" renders',   false !== strpos( $html, 'id="eem-
 c7x_ok( 'C8: id="eem-header-typeahead" renders', false !== strpos( $html, 'id="eem-header-typeahead"' ), $pass, $fail, $log );
 c7x_ok( 'C8: id="eem-header-action-change" renders', false !== strpos( $html, 'id="eem-header-action-change"' ), $pass, $fail, $log );
 c7x_ok( 'C8: id="eem-event-search-results" renders', false !== strpos( $html, 'id="eem-event-search-results"' ), $pass, $fail, $log );
+// C8 delegation fix: inline onclick handlers removed; data-eem-action delegation used instead.
+c7x_ok( 'C8 delegation: NO inline onclick="changeLinkedEvent" in rendered HTML',
+	false === strpos( $html, 'onclick="changeLinkedEvent' ),
+	$pass, $fail, $log );
+c7x_ok( 'C8 delegation: NO inline onclick="cancelChangeEvent" in rendered HTML',
+	false === strpos( $html, 'onclick="cancelChangeEvent' ),
+	$pass, $fail, $log );
+c7x_ok( 'C8 delegation: NO inline onclick="toggleInventoryMode" in rendered HTML',
+	false === strpos( $html, 'onclick="toggleInventoryMode' ),
+	$pass, $fail, $log );
+c7x_ok( 'C8 delegation: data-eem-action="header-change-event" present in rendered HTML',
+	false !== strpos( $html, 'data-eem-action="header-change-event"' ),
+	$pass, $fail, $log );
+c7x_ok( 'C8 delegation: data-eem-action="header-cancel-change" present in rendered HTML',
+	false !== strpos( $html, 'data-eem-action="header-cancel-change"' ),
+	$pass, $fail, $log );
+c7x_ok( 'C8 delegation: data-eem-action="toggle-inventory-mode" present in rendered HTML (stall + rv = 4×)',
+	4 === preg_match_all( '/data-eem-action="toggle-inventory-mode"/', $html ),
+	$pass, $fail, $log,
+	'count: ' . preg_match_all( '/data-eem-action="toggle-inventory-mode"/', $html ) );
+c7x_ok( 'C8 delegation: data-eem-input-action="header-filter-events" present in rendered HTML',
+	false !== strpos( $html, 'data-eem-input-action="header-filter-events"' ),
+	$pass, $fail, $log );
 
 // ── [2] Body layout ──────────────────────────────────────────────
 // C8 port: right rail REMOVED — single column layout, no .eem-edit-rail.
@@ -294,6 +317,18 @@ c7x_ok( 'reservation-editor-zone-color-open handler',    false !== strpos( $js, 
 c7x_ok( 'reservation-editor-zone-add handler',           false !== strpos( $js, 'reservation-editor-zone-add' ), $pass, $fail, $log );
 c7x_ok( 'reservation-editor-trash handler',              false !== strpos( $js, 'reservation-editor-trash' ), $pass, $fail, $log );
 c7x_ok( 'reservation-editor-event-unlink handler',       false !== strpos( $js, 'reservation-editor-event-unlink' ), $pass, $fail, $log );
+// C8 delegation: new actions wired through the central dispatcher
+c7x_ok( 'C8: header-change-event in actions dispatcher', false !== strpos( $js, "'header-change-event'" ), $pass, $fail, $log );
+c7x_ok( 'C8: header-cancel-change in actions dispatcher', false !== strpos( $js, "'header-cancel-change'" ), $pass, $fail, $log );
+c7x_ok( 'C8: header-select-event in actions dispatcher', false !== strpos( $js, "'header-select-event'" ), $pass, $fail, $log );
+c7x_ok( 'C8: toggle-inventory-mode in actions dispatcher', false !== strpos( $js, "'toggle-inventory-mode'" ), $pass, $fail, $log );
+c7x_ok( 'C8: input delegation for header-filter-events present',
+	false !== strpos( $js, "eemInputAction === 'header-filter-events'" ),
+	$pass, $fail, $log );
+c7x_ok( 'C8: filterEventOptions generates data-eem-action="header-select-event" (no inline onclick)',
+	false !== strpos( $js, 'data-eem-action="header-select-event"' ) &&
+	false === strpos( $js, 'onclick="selectLinkedEvent(' ),
+	$pass, $fail, $log );
 
 wp_delete_post( $rid, true );
 

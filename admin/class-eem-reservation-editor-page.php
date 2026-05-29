@@ -169,10 +169,10 @@ class EEM_Reservation_Editor_Page {
 								class="eem-event-search-input"
 								id="eem-event-search-input"
 								placeholder="<?php esc_attr_e( 'Search events\xe2\x80\xa6', 'equine-event-manager' ); ?>"
-								oninput="filterEventOptions(this.value)"
+								data-eem-input-action="header-filter-events"
 								autocomplete="off">
 							<div class="eem-event-search-results" id="eem-event-search-results"></div>
-							<button type="button" class="eem-header-typeahead-cancel" onclick="cancelChangeEvent()">
+							<button type="button" class="eem-header-typeahead-cancel" data-eem-action="header-cancel-change">
 								<?php esc_html_e( 'Cancel', 'equine-event-manager' ); ?>
 							</button>
 						</div>
@@ -180,7 +180,7 @@ class EEM_Reservation_Editor_Page {
 					<button type="button"
 						class="eem-header-action-change"
 						id="eem-header-action-change"
-						onclick="changeLinkedEvent()">
+						data-eem-action="header-change-event">
 						<?php esc_html_e( 'Change Event', 'equine-event-manager' ); ?>
 					</button>
 				</header>

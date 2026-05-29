@@ -188,14 +188,14 @@ ob_start();
 		class="eem-mode-btn<?php echo $stall_is_mapped ? '' : ' active'; ?>"
 		data-mode="bulk"
 		data-section="stall"
-		onclick="toggleInventoryMode(this)">
+		data-eem-action="toggle-inventory-mode">
 		<?php esc_html_e( 'Bulk', 'equine-event-manager' ); ?>
 	</button>
 	<button type="button"
 		class="eem-mode-btn<?php echo $stall_is_mapped ? ' active' : ''; ?>"
 		data-mode="mapped"
 		data-section="stall"
-		onclick="toggleInventoryMode(this)">
+		data-eem-action="toggle-inventory-mode">
 		<?php esc_html_e( 'Mapped', 'equine-event-manager' ); ?>
 	</button>
 </div>

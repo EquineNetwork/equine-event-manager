@@ -1656,6 +1656,22 @@
 		/* C6.E.2 — Add Note form submit (Order Detail activity log). */
 		'add-note-submit': function (target) {
 			submitAddNoteForm(target);
+		},
+
+		/* C8 — header event-anchor delegation. Replaces inline onclick
+		   handlers that silently failed because the functions are defined
+		   inside the IIFE scope, not on window. */
+		'header-change-event': function () {
+			changeLinkedEvent();
+		},
+		'header-cancel-change': function () {
+			cancelChangeEvent();
+		},
+		'header-select-event': function (target) {
+			selectLinkedEvent(target.dataset.eventId);
+		},
+		'toggle-inventory-mode': function (target) {
+			toggleInventoryMode(target);
 		}
 	};
 
@@ -1684,6 +1700,17 @@
 		var input = ev.target;
 		if (input.matches && input.matches('.eem-tag-search')) {
 			EEM.tagFilter(input);
+		}
+	});
+
+	/* C8 — header event search input delegation.
+	   Replaces oninput="filterEventOptions(this.value)" inline handler
+	   which silently failed because filterEventOptions lives inside the
+	   IIFE scope, not on window. Wired at module level (document exists
+	   immediately; no DOMContentLoaded wrapper needed). */
+	document.addEventListener('input', function (ev) {
+		if (ev.target && ev.target.dataset.eemInputAction === 'header-filter-events') {
+			filterEventOptions(ev.target.value);
 		}
 	});
 
@@ -2917,7 +2944,9 @@ function filterEventOptions(query) {
 	container.innerHTML = results.map(function(ev) {
 		var badge = ev.current ? ' <span class="eem-event-option-current-badge">Current</span>' : '';
 		var cls = 'eem-event-option' + (ev.current ? ' is-current' : '');
-		return '<div class="' + cls + '" onclick="selectLinkedEvent(\'' + ev.id + '\')">' +
+		return '<div class="' + cls + '" ' +
+		       'data-eem-action="header-select-event" ' +
+		       'data-event-id="' + escapeHtml(ev.id) + '">' +
 		       '<span class="eem-event-option-name">' + ev.name + badge + '</span>' +
 		       '<span class="eem-event-option-date">' + ev.dates + '</span>' +
 		       '</div>';
