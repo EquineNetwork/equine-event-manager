@@ -5,9 +5,11 @@ in-flight context that ISN'T already in CLAUDE.md, commit messages,
 or CLEANUP.md. Read after `git pull` on a new machine to pick up
 momentum across Claude Code sessions.
 
-**Last updated:** 2026-05-28 — **C8.C mockup** — Nested label indentation fixed (Option A: display:block on .field-row inside stall/rv chart containers); chart-modal-* subsystem removed entirely (Preview Full Chart retired; stall_chart_detail.html is the dedicated chart view). 2474 lines.
+**Last updated:** 2026-05-28 — **C8.D mockup** — Two fixes: (1) Stall Quantity table Add Stall Row + trash icons wired (addStallRow / deleteStallRow); (2) RV Lot Selection Mode mirrored to Stall pattern — Lot Zones wrapped in #rv-mode-quantity-content, row-builder + Blocked RV Lots wrapped in #rv-mode-exact-content, toggleRvMode() replaced with toggleLotMode(). 2507 lines.
 
-**Last updated (prev):** 2026-05-28 — **C8.B mockup** — RV Lot Charts toggle added to RV Reservations section; duplicate surcharge-based Lot Zones retired (nightly/weekend version from stall-charts-content is the keeper); "Lot Layout / Manage Lot Layout" stub retired from RV Reservations (mirrors prior Stall Layout stub retirement). Mockup only — 2613 lines.
+**Last updated (prev):** 2026-05-28 — **C8.C mockup** — Nested label indentation fixed (Option A: display:block on .field-row inside stall/rv chart containers); chart-modal-* subsystem removed entirely (Preview Full Chart retired; stall_chart_detail.html is the dedicated chart view). 2474 lines.
+
+**Last updated (prev prev):** 2026-05-28 — **C8.B mockup** — RV Lot Charts toggle added to RV Reservations section; duplicate surcharge-based Lot Zones retired (nightly/weekend version from stall-charts-content is the keeper); "Lot Layout / Manage Lot Layout" stub retired from RV Reservations (mirrors prior Stall Layout stub retirement). Mockup only — 2613 lines.
 
 **Last updated (prev):** 2026-05-28 — **C7.X.21** — Three fix chunks landed: C7.X.19 (radius literal eradication + flip-up container boundary), C7.X.20 (Delete Permanently modal invisible — wrong CSS class names), C7.X.21 (typed-confirm changed from reservation title to constant "DELETE"). Version 2.3.10. All smokes green: c7x21 15/15, c7x20 19/19, c7x19 13/13, c7x18 31/31. BROWSER VERIFY STILL PENDING for C7.X.21 (DELETE flow end-to-end).
 
