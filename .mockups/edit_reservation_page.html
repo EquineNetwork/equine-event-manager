@@ -325,7 +325,8 @@ a:hover{text-decoration:none}
 
 :root{--eem-radius:3px /* mirrored from admin.css --eem-radius; keep in sync */}
 
-/* ── C8.A: eem-modal family removed (modal replaced by inline expand); chart-modal-* retained ── */
+/* ── C8.A/C8.C: eem-modal family and chart-modal-* family both removed;
+   inline toggles + dedicated stall_chart_detail.html page replace them ── */
 
 /* ── Selection mode buttons (Stall / RV selection mode toggle chips) ── */
 .mode-btns{display:flex;gap:8px;flex-wrap:wrap}
@@ -380,10 +381,6 @@ a:hover{text-decoration:none}
 .row-add-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border:1.5px dashed #D9E2F2;border-radius:6px;/* intentional larger card radius — not --eem-radius; revisit at C8 port if --eem-radius-lg is defined */font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;color:#031B4E;background:#fff;cursor:pointer;align-self:flex-start;margin-bottom:8px}
 .row-add-btn:hover{border-color:#1668F2;color:#1668F2;border-style:solid}
 .row-add-btn svg{width:13px;height:13px;color:#1668F2}
-.preview-chart-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1.5px solid #D9E2F2;border-radius:var(--eem-radius);font-size:12.5px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;color:#1668F2;background:#fff;cursor:pointer;margin-left:auto}
-.preview-chart-btn:hover{background:#EEF4FF;border-color:#1668F2}
-.preview-chart-btn svg{width:13px;height:13px}
-.row-builder-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px;flex-wrap:wrap}
 .row-builder-summary{font-size:12.5px;color:#6B7A99}
 
 /* ── Zone color picker, count, painter (row-builder modal only) ── */
@@ -406,24 +403,12 @@ a:hover{text-decoration:none}
 #rv-lot-charts-content .zone-price-in{border:none;width:70px}
 #rv-lot-charts-content .zone-add-btn{border:1.5px dashed #D9E2F2;border-radius:6px;/* intentional larger card radius */margin-bottom:14px}
 
-/* ── Chart preview modals (z-index 1100 — above layout editor modal at 1000) ── */
-.chart-modal{position:fixed;inset:0;background:rgba(3,27,78,.55);z-index:1100;display:none;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto}
-.chart-modal.open{display:flex}
-.chart-modal-card{background:#fff;border-radius:8px;/* intentional larger card radius — not --eem-radius; revisit at C8 port if --eem-radius-lg is defined */max-width:1000px;width:100%;box-shadow:0 20px 60px rgba(3,27,78,.25);overflow:hidden;display:flex;flex-direction:column}
-.chart-modal-head{padding:16px 20px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;justify-content:space-between;gap:10px}
-.chart-modal-title{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:#031B4E}
-.chart-modal-close{background:none;border:none;cursor:pointer;color:#8c8f94;font-size:22px;line-height:1;padding:0 4px}
-.chart-modal-close:hover{color:#031B4E}
-.chart-modal-body{padding:20px;overflow-y:auto;flex:1}
-.chart-modal-legend{display:flex;gap:14px;font-size:12px;color:#6B7A99;margin-bottom:16px;padding:10px 12px;background:#F7F9FC;border-radius:var(--eem-radius);flex-wrap:wrap}
-.chart-modal-legend span{display:inline-flex;align-items:center;gap:6px}
-.chart-modal-legend .swatch{width:14px;height:14px;border-radius:3px;border:1.5px solid #D9E2F2;background:#fff;display:inline-block}
-.chart-modal-legend .swatch.blocked{background:#F5F5F7;border-style:dashed;border-color:#E5E7EB}
-.chart-modal-legend .swatch.reserved{background:#F5F5F7;border-color:#E5E7EB}
-.chart-modal-legend .swatch.selected{background:#1668F2;border-color:#1668F2}
-.chart-modal-section{margin-bottom:18px}
-.chart-modal-section:last-child{margin-bottom:0}
-.chart-modal-section-name{font-size:13px;font-weight:700;color:#031B4E;margin-bottom:6px;font-family:'Space Grotesk',sans-serif}
+/* ── Nested field-rows inside Stall Charts / RV Lot Charts: stacked full-width layout
+   Option A: display:block override; all nested rows are label-above-control ── */
+#stall-charts-content .field-row,
+#rv-lot-charts-content .field-row{display:block}
+#stall-charts-content .field-label,
+#rv-lot-charts-content .field-label{margin-bottom:6px}
 
 /* ── Tag multi-select (Blocked Stall Numbers, Blocked RV Lots) ── */
 .tag-select{position:relative;width:100%;max-width:520px}
@@ -861,13 +846,7 @@ a:hover{text-decoration:none}
       <div class="field-row" id="row-stall-blocks" style="align-items:start">
         <div class="field-label">Stall Rows<div class="field-label-sub">Define the physical layout customers will see</div></div>
         <div class="field-control">
-          <div class="row-builder-head">
-            <div class="row-builder-summary"><strong style="color:#031B4E">3 rows · 36 stalls total</strong> across this reservation</div>
-            <button class="preview-chart-btn" onclick="openChartPreview()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-              Preview Full Chart
-            </button>
-          </div>
+            <div class="row-builder-summary" style="margin-bottom:10px"><strong style="color:#031B4E">3 rows · 36 stalls total</strong> across this reservation</div>
 
           <div class="row-builder" id="row-builder-list">
 
@@ -1029,24 +1008,6 @@ a:hover{text-decoration:none}
       </div>
 
       <!-- Stall Chart Preview Modal (z-index 1100, above layout editor) -->
-      <div class="chart-modal" id="chart-preview-modal" onclick="if(event.target===this)closeChartPreview()">
-        <div class="chart-modal-card">
-          <div class="chart-modal-head">
-            <div class="chart-modal-title">Stall Chart Preview — Customer View</div>
-            <button class="chart-modal-close" onclick="closeChartPreview()" aria-label="Close">&#x2715;</button>
-          </div>
-          <div class="chart-modal-body">
-            <div class="chart-modal-legend">
-              <span><span class="swatch"></span> Available</span>
-              <span><span class="swatch selected"></span> Selected (customer's pick)</span>
-              <span><span class="swatch reserved"></span> Already reserved</span>
-              <span><span class="swatch blocked"></span> Blocked by admin</span>
-            </div>
-            <!-- Sections populated dynamically by openChartPreview() -->
-          </div>
-        </div>
-      </div>
-
       <!-- Blocked Stall Numbers -->
       <div class="field-row" id="row-stall-blocked">
         <div class="field-label">Blocked Stall Numbers<div class="field-label-sub">Hold back from reservation</div></div>
@@ -1331,13 +1292,7 @@ a:hover{text-decoration:none}
       <div class="field-row" id="row-rv-rows-builder" style="align-items:start;display:none">
         <div class="field-label">Lot Rows<div class="field-label-sub">Define the physical layout customers will see</div></div>
         <div class="field-control">
-          <div class="row-builder-head">
-            <div class="row-builder-summary"><strong style="color:#031B4E">2 rows · 24 lots total</strong> across this reservation</div>
-            <button class="preview-chart-btn" onclick="openRvChartPreview()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-              Preview Full Chart
-            </button>
-          </div>
+            <div class="row-builder-summary" style="margin-bottom:10px"><strong style="color:#031B4E">2 rows · 24 lots total</strong> across this reservation</div>
 
           <div class="zone-painter">
             <span class="zone-painter-label">Paint Mode</span>
@@ -1445,24 +1400,6 @@ a:hover{text-decoration:none}
       </div>
 
       <!-- RV Chart Preview Modal (z-index 1100, above layout editor) -->
-      <div class="chart-modal" id="rv-chart-preview-modal" onclick="if(event.target===this)closeRvChartPreview()">
-        <div class="chart-modal-card">
-          <div class="chart-modal-head">
-            <div class="chart-modal-title">RV Lot Chart Preview — Customer View</div>
-            <button class="chart-modal-close" onclick="closeRvChartPreview()" aria-label="Close">&#x2715;</button>
-          </div>
-          <div class="chart-modal-body">
-            <div class="chart-modal-legend">
-              <span><span class="swatch"></span> Available</span>
-              <span><span class="swatch selected"></span> Selected (customer's pick)</span>
-              <span><span class="swatch reserved"></span> Already reserved</span>
-              <span><span class="swatch blocked"></span> Blocked by admin</span>
-            </div>
-            <!-- Sections populated dynamically by openRvChartPreview() -->
-          </div>
-        </div>
-      </div>
-
       <!-- Blocked RV Lots -->
       <div class="field-row" id="row-rv-blocked-lots">
         <div class="field-label">Blocked RV Lots<div class="field-label-sub">Hold back from reservation</div></div>
@@ -2194,61 +2131,6 @@ function addRow(){
   list.insertAdjacentHTML('beforeend', html);
 }
 
-function openChartPreview(){
-  const modal = document.getElementById('chart-preview-modal');
-  const body  = modal.querySelector('.chart-modal-body');
-  body.querySelectorAll('.chart-modal-section').forEach(s => s.remove());
-
-  const blocked = getBlockedSet();
-  const reservedSimulated = new Set();
-  let cnt = 0;
-  getAllStallLabels().forEach(l => {
-    if(blocked.has(l)) return;
-    cnt++;
-    if(cnt % 7 === 0) reservedSimulated.add(l);
-  });
-
-  const fragments = [];
-  document.querySelectorAll('#row-builder-list .row-card').forEach(card => {
-    const name   = (card.querySelector('[data-role="name"]')   || {}).value || 'Untitled Row';
-    const layout = (card.querySelector('[data-role="layout"]') || {}).value;
-    const classify = l => {
-      if(blocked.has(l)) return 'blocked';
-      if(reservedSimulated.has(l)) return 'reserved';
-      return 'clickable';
-    };
-    const box = l => `<div class="stall-box ${classify(l)}">${l}</div>`;
-    let inner;
-    if(layout === 'back-to-back'){
-      const topFirst = (card.querySelector('[data-role="top-first"]') || {}).value || '';
-      const topLast  = (card.querySelector('[data-role="top-last"]')  || {}).value || '';
-      const botFirst = (card.querySelector('[data-role="bot-first"]') || {}).value || '';
-      const botLast  = (card.querySelector('[data-role="bot-last"]')  || {}).value || '';
-      const topSide = stallLabelsBetween(topFirst, topLast).map(box).join('');
-      const botSide = stallLabelsBetween(botFirst, botLast).map(box).join('');
-      inner =
-        '<div class="stall-row-layout back-to-back">' +
-          '<div class="stall-row-side">' + topSide + '</div>' +
-          '<div class="stall-row-aisle"></div>' +
-          '<div class="stall-row-side">' + botSide + '</div>' +
-        '</div>';
-    } else {
-      const first = (card.querySelector('[data-role="first"]') || {}).value || '';
-      const last  = (card.querySelector('[data-role="last"]')  || {}).value || '';
-      inner = '<div class="stall-row-layout">' + stallLabelsBetween(first, last).map(box).join('') + '</div>';
-    }
-    fragments.push(
-      '<div class="chart-modal-section">' +
-        `<div class="chart-modal-section-name">${name}</div>` +
-        inner +
-      '</div>'
-    );
-  });
-  body.insertAdjacentHTML('beforeend', fragments.join(''));
-  modal.classList.add('open');
-}
-function closeChartPreview(){ document.getElementById('chart-preview-modal').classList.remove('open'); }
-
 /* ── RV Row Builder + Lot Zones ── */
 function getRvZones(){
   return Array.from(document.querySelectorAll('#rv-zone-list .zone-row')).map(el => ({
@@ -2566,66 +2448,6 @@ function rebuildBlockedRvLotsDropdown(){
     dropdown.insertBefore(item, empty);
   });
 }
-
-function openRvChartPreview(){
-  const modal = document.getElementById('rv-chart-preview-modal');
-  const body  = modal.querySelector('.chart-modal-body');
-  body.querySelectorAll('.chart-modal-section').forEach(s => s.remove());
-
-  const blocked = getBlockedRvLotsSet();
-  const reservedSimulated = new Set();
-  let cnt = 0;
-  getAllRvLotLabels().forEach(l => {
-    if(blocked.has(l)) return;
-    cnt++;
-    if(cnt % 7 === 0) reservedSimulated.add(l);
-  });
-
-  const fragments = [];
-  document.querySelectorAll('#rv-row-builder-list .row-card').forEach(card => {
-    const name     = (card.querySelector('[data-role="name"]')   || {}).value || 'Untitled Row';
-    const layout   = (card.querySelector('[data-role="layout"]') || {}).value;
-    const zonesMap = getRowLotZones(card);
-    const classify = l => {
-      if(blocked.has(l)) return 'blocked';
-      if(reservedSimulated.has(l)) return 'reserved';
-      return 'clickable';
-    };
-    const box = l => {
-      const zone = zonesMap[l] ? getZoneById(zonesMap[l]) : null;
-      const dot  = zone ? `<span class="lot-zone-dot" style="background:${zone.color}" title="${zone.name}"></span>` : '';
-      return `<div class="stall-box lot-box ${classify(l)}">${l}${dot}</div>`;
-    };
-    let inner;
-    if(layout === 'back-to-back'){
-      const topFirst = (card.querySelector('[data-role="top-first"]') || {}).value || '';
-      const topLast  = (card.querySelector('[data-role="top-last"]')  || {}).value || '';
-      const botFirst = (card.querySelector('[data-role="bot-first"]') || {}).value || '';
-      const botLast  = (card.querySelector('[data-role="bot-last"]')  || {}).value || '';
-      const topSide = stallLabelsBetween(topFirst, topLast).map(box).join('');
-      const botSide = stallLabelsBetween(botFirst, botLast).map(box).join('');
-      inner =
-        '<div class="stall-row-layout back-to-back">' +
-          '<div class="stall-row-side">' + topSide + '</div>' +
-          '<div class="stall-row-aisle"></div>' +
-          '<div class="stall-row-side">' + botSide + '</div>' +
-        '</div>';
-    } else {
-      const first = (card.querySelector('[data-role="first"]') || {}).value || '';
-      const last  = (card.querySelector('[data-role="last"]')  || {}).value || '';
-      inner = '<div class="stall-row-layout">' + stallLabelsBetween(first, last).map(box).join('') + '</div>';
-    }
-    fragments.push(
-      '<div class="chart-modal-section">' +
-        `<div class="chart-modal-section-name">${name}</div>` +
-        inner +
-      '</div>'
-    );
-  });
-  body.insertAdjacentHTML('beforeend', fragments.join(''));
-  modal.classList.add('open');
-}
-function closeRvChartPreview(){ document.getElementById('rv-chart-preview-modal').classList.remove('open'); }
 
 /* RV initial wire-up on load */
 document.addEventListener('DOMContentLoaded', () => {

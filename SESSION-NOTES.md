@@ -5,7 +5,9 @@ in-flight context that ISN'T already in CLAUDE.md, commit messages,
 or CLEANUP.md. Read after `git pull` on a new machine to pick up
 momentum across Claude Code sessions.
 
-**Last updated:** 2026-05-28 — **C8.B mockup** — RV Lot Charts toggle added to RV Reservations section; duplicate surcharge-based Lot Zones retired (nightly/weekend version from stall-charts-content is the keeper); "Lot Layout / Manage Lot Layout" stub retired from RV Reservations (mirrors prior Stall Layout stub retirement). Mockup only — 2613 lines.
+**Last updated:** 2026-05-28 — **C8.C mockup** — Nested label indentation fixed (Option A: display:block on .field-row inside stall/rv chart containers); chart-modal-* subsystem removed entirely (Preview Full Chart retired; stall_chart_detail.html is the dedicated chart view). 2474 lines.
+
+**Last updated (prev):** 2026-05-28 — **C8.B mockup** — RV Lot Charts toggle added to RV Reservations section; duplicate surcharge-based Lot Zones retired (nightly/weekend version from stall-charts-content is the keeper); "Lot Layout / Manage Lot Layout" stub retired from RV Reservations (mirrors prior Stall Layout stub retirement). Mockup only — 2613 lines.
 
 **Last updated (prev):** 2026-05-28 — **C7.X.21** — Three fix chunks landed: C7.X.19 (radius literal eradication + flip-up container boundary), C7.X.20 (Delete Permanently modal invisible — wrong CSS class names), C7.X.21 (typed-confirm changed from reservation title to constant "DELETE"). Version 2.3.10. All smokes green: c7x21 15/15, c7x20 19/19, c7x19 13/13, c7x18 31/31. BROWSER VERIFY STILL PENDING for C7.X.21 (DELETE flow end-to-end).
 
@@ -1241,11 +1243,10 @@ Items intentionally left for the PHP port of C8.A. Do not carry these into produ
 ### 1. Zone CSS cascade exclusion
 `.zone-name-input` and `.zone-painter-select` inside `#stall-layout-modal` intentionally receive the row-builder's `1.5px solid #D9E2F2` border (from the scoped `#stall-layout-modal` overrides). No `:not()` exclusion was added to the existing file's `.zone-name-input { border: 1px solid #8c8f94 }` rule — the mockup scope is clean enough. At port time: confirm the admin CSS cascade order and add exclusions if needed.
 
-### 2. chart-modal-* vs eem-modal-* collapse decision
-The mockup has two modal families: `eem-modal-*` (z-index 1000, layout editor) and `chart-modal-*` (z-index 1100, chart previews nested inside the layout editor). At port time: decide whether `chart-modal-*` should be absorbed into the `eem-modal-*` family with a modifier class (e.g. `eem-modal--overlay`, z-index bump via CSS custom property) or kept as a separate component. The z-index relationship (chart floats above layout editor) must be preserved regardless.
+~~### 2. chart-modal-* vs eem-modal-* collapse decision~~ **RESOLVED C8.C mockup — ELIMINATED, not collapsed.** The entire `chart-modal-*` CSS family and both preview modals (`#chart-preview-modal`, `#rv-chart-preview-modal`) were removed. "Preview Full Chart" buttons removed from Stall Rows and RV Lot Rows builders. `openChartPreview()`, `closeChartPreview()`, `openRvChartPreview()`, `closeRvChartPreview()` JS functions removed. The dedicated `stall_chart_detail.html` page is the canonical chart view — no in-editor preview needed. Nothing to port.
 
 ### 3. Card-radius token (`--eem-radius-lg`)
-Six card-radius literals were intentionally kept: `row-card` (6px), `row-add-btn` (6px), `zone-painter` (6px), `zone-add-btn` (6px), `chart-modal-card` (8px), `eem-modal-card` (6px). Each carries `/* intentional larger card radius — not --eem-radius; revisit at C8 port if --eem-radius-lg is defined */`. At port time: define `--eem-radius-lg` in admin.css if the design system settles on a value, then swap all six literals.
+Four card-radius literals remain after C8.C (chart-modal-card 8px literal removed with the chart-modal-* family): `row-card` (6px), `row-add-btn` (6px), `zone-painter` (6px), `zone-add-btn` (6px). Each carries `/* intentional larger card radius — not --eem-radius; revisit at C8 port if --eem-radius-lg is defined */`. At port time: define `--eem-radius-lg` in admin.css if the design system settles on a value, then swap all four literals.
 
 ### 4. `.stall-row-layout` rename at port
 The mockup uses `.stall-row-layout` (not `.stall-row`) to avoid a real runtime CSS collision with `<tr class="stall-row">` in the occupancy chart views. At port time: choose the canonical production name — either keep `.stall-row-layout` or rename to an `.eem-*`-prefixed class (e.g. `.eem-stall-row`). Do **not** carry `.stall-row-layout` into PHP-generated HTML without an intentional naming decision.
@@ -1254,6 +1255,22 @@ The mockup uses `.stall-row-layout` (not `.stall-row`) to avoid a real runtime C
 
 ### 6. (RESOLVED C8.B mockup) Zone CSS cascade exclusion rescoped
 `#stall-charts-content .zone-*` overrides (6 rules) were rescoped to `#rv-lot-charts-content .zone-*` when RV Lot Zones moved out of `#stall-charts-content`. Old stall-charts-content scope removed entirely (no zone content remains there). At port time: confirm `#rv-lot-charts-content` matches the rendered container ID in PHP.
+
+---
+
+## C8.C Mockup — Label indentation fix + Preview Full Chart removal (2026-05-28)
+
+**Fix 1 — Nested label indentation (Option A: CSS display:block):**
+- Problem: `.field-row` inside `#stall-charts-content` / `#rv-lot-charts-content` used the outer grid (`220px 1fr`) which squashed the row-builder into the right column.
+- Fix: 4 CSS rules added — `#stall-charts-content .field-row, #rv-lot-charts-content .field-row { display:block }` + `field-label { margin-bottom:6px }` inside these containers. Zero HTML changes.
+- Result: Stall Selection Mode, Stall Rows, Blocked Stall Numbers, Stall Map, RV Lot Zones, Lot Selection Mode, RV row-builder, Blocked RV Lots all render full-width with label stacked above control.
+- Outer "Stall Charts" and "RV Lot Charts" field-rows (the toggle rows) are NOT inside their own containers and are unaffected.
+
+**Fix 2 — Preview Full Chart removed (chart-modal-* subsystem retired):**
+- Removed HTML: `#chart-preview-modal`, `#rv-chart-preview-modal` (both full overlay divs), "Preview Full Chart" buttons, `row-builder-head` wrappers (summary text promoted to plain div with margin-bottom:10px).
+- Removed CSS: `.chart-modal-*` family (11 rules), `.preview-chart-btn` (3 rules), `.row-builder-head` (1 rule). `.row-builder-summary` kept.
+- Removed JS: `openChartPreview()`, `closeChartPreview()`, `openRvChartPreview()`, `closeRvChartPreview()` (4 functions, ~115 lines of JS).
+- Net line count: 2653 → 2474 (−179 lines).
 
 ---
 
