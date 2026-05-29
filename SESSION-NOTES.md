@@ -1248,6 +1248,24 @@ Six card-radius literals were intentionally kept: `row-card` (6px), `row-add-btn
 ### 4. `.stall-row-layout` rename at port
 The mockup uses `.stall-row-layout` (not `.stall-row`) to avoid a real runtime CSS collision with `<tr class="stall-row">` in the occupancy chart views. At port time: choose the canonical production name — either keep `.stall-row-layout` or rename to an `.eem-*`-prefixed class (e.g. `.eem-stall-row`). Do **not** carry `.stall-row-layout` into PHP-generated HTML without an intentional naming decision.
 
-### 5. `eem-modal-body` field-row label column width
-The layout editor modal reuses the `.field-row` + `.field-label` + `.field-control` structure from the main edit page (220px label column). At port time: verify on actual admin page widths that 220px still works inside the modal's `max-width:1100px` card. Consider a narrower label column (e.g. 180px) scoped to `#stall-layout-modal .field-label` if the modal body feels cramped.
+~~### 5. `eem-modal-body` field-row label column width~~ **OBSOLETE** — C8.A rework (rail-kill commit) removed the layout-editor modal wrapper entirely. The row-builder now lives inline under the Stall Charts toggle. This item is no longer relevant.
+
+---
+
+## Editor Layout Rework — Rail Removal (2026-05-28)
+
+**Decision:** Right rail removed from `edit_reservation_page.html`. Drivers: (1) 300px rail was cramping the main form column at ~1242px viewport; (2) row-builder and repeat-tables need full width. (3) Pattern consolidation — single action surface (bottom bar) is less cognitively expensive than rail + mobile bar duplication.
+
+**Changes landed:**
+- `aside.edit-rail` + all rail markup removed. `.edit-body` is now single-column (no grid).
+- `.sticky-save` promoted from mobile-only to always-visible fixed bottom bar. Contains: Published status badge (left) + Preview / Save as Draft / Move to Trash / Update Reservation (right).
+- Linked Event section (C7.X.15 work) moved from rail into `.edit-main` as `#card-linked-event`, placed above `#card-stall`. Typeahead search + Change/Unlink controls preserved verbatim.
+- Shortcode card dropped entirely. `[eem_reservation id="42"]` per-reservation display is obsolete pending a smarter variable-ID shortcode.
+- Visibility and Published-date meta rows from the Publish card dropped (were placeholder Edit links going nowhere). Status badge in bottom bar covers the essential "Published" signal.
+
+**CSS removed:** `.rail-card`, `.rail-header`, `.rail-title`, `.rail-body`, `.rail-hint`, `.publish-row` family, `.code-box`, old `.sticky-save` mobile gating, `.edit-rail` sticky rule, tablet/mobile grid column rules for the rail.
+
+**CSS preserved (moved to Linked Event section):** `.event-search`, `.event-linked`, `.event-linked-name`, `.event-linked-date`, `.event-linked-actions`, `.event-linked-change`, `.event-unlink-icon`. Also preserved: `.btn-preview`, `.btn-save-draft`, `.btn-update`, `.btn-danger-sm` — reworked from `width:100%` stacking to `white-space:nowrap` inline buttons.
+
+**Next step:** C8.A inline rework — the modal wrapper introduced in ac3a653 now needs to be stripped (content inlined under Stall Charts toggle, matching RV Add-Ons pattern). This rail-kill is a prerequisite because the full-width column now has room for the inline row-builder.
 

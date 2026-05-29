@@ -52,10 +52,9 @@ a:hover{text-decoration:none}
 .plugin-meta-line a.meta-value{color:#031B4E}
 .plugin-meta-line a.meta-value:hover{color:#1668F2}
 
-/* ── EDIT BODY (two-column grid) ── */
-.edit-body{padding:18px 22px;display:grid;grid-template-columns:1fr 300px;gap:18px;align-items:start;background:#fff}
-.edit-main{display:flex;flex-direction:column;gap:14px;min-width:0}
-.edit-rail{display:flex;flex-direction:column;gap:14px;position:sticky;top:44px}
+/* ── EDIT BODY (single-column; rail removed) ── */
+.edit-body{padding:18px 22px 90px;background:#fff}
+.edit-main{display:flex;flex-direction:column;gap:14px}
 
 /* ── INNER CARDS (sections) ── */
 .card{background:#fff;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden}
@@ -231,55 +230,45 @@ a:hover{text-decoration:none}
 .view-link{font-size:13px;color:#1668F2;font-weight:600}
 .view-link:hover{color:#1257d1}
 
-/* ── RIGHT RAIL ── */
-.rail-card{background:#fff;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden}
-.rail-header{padding:11px 16px;border-bottom:1px solid #dcdcde;background:#f3f4f5;display:flex;align-items:center;justify-content:space-between}
-.rail-title{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#031B4E}
-.rail-body{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
-
-/* Publish-meta rows (WP Posts/Pages convention) */
-.publish-row{display:flex;align-items:center;gap:8px;font-size:13px;color:#1d2327}
-.publish-row svg{width:14px;height:14px;color:#6B7A99;flex-shrink:0}
-.publish-row strong{color:#031B4E;font-weight:600}
-.publish-row a{color:#1668F2;font-size:12px;font-weight:600;margin-left:auto}
-.publish-row a:hover{color:#1257d1}
-
-/* Rail buttons */
-.btn-preview{width:100%;background:#fff;color:#1668F2;border:1px solid #c0d8ff;padding:9px;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:4px}
-.btn-preview:hover{background:#EEF4FF;border-color:#1668F2}
+/* ── Action buttons (bottom bar) ── */
+.btn-preview{background:#fff;color:#1668F2;border:1px solid #c0d8ff;padding:8px 14px;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;text-decoration:none}
+.btn-preview:hover{background:#EEF4FF;border-color:#1668F2;text-decoration:none}
 .btn-preview svg{width:13px;height:13px}
-.btn-save-draft{width:100%;background:#fff;color:#1d2327;border:1px solid #8c8f94;padding:9px;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
+.btn-save-draft{background:#fff;color:#1d2327;border:1px solid #8c8f94;padding:8px 14px;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap}
 .btn-save-draft:hover{background:#f6f7f7}
 /* Primary CTA (VIS-4 — Electric Blue, NOT navy) */
-.btn-update{width:100%;background:#1668F2;color:#fff;border:1px solid #1668F2;padding:10px;border-radius:4px;font-size:13.5px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
+.btn-update{background:#1668F2;color:#fff;border:1px solid #1668F2;padding:9px 18px;border-radius:4px;font-size:13.5px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap}
 .btn-update:hover{background:#1257d1;border-color:#1257d1}
-.btn-danger-sm{width:100%;background:#fff;color:#b91c1c;border:1px solid #fecaca;padding:8px;border-radius:4px;font-size:12.5px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
+.btn-danger-sm{background:none;border:none;color:#b91c1c;padding:8px 10px;border-radius:4px;font-size:12.5px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap}
 .btn-danger-sm:hover{background:#fef2f2}
 
-/* Event Link rail card */
-.event-search{width:100%;padding:8px 12px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;outline:none;margin-bottom:8px}
+/* ── Linked Event inline section ── */
+.event-search{width:100%;padding:8px 12px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;outline:none}
 .event-search:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
-.event-linked{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#f3f4f5;border:1px solid #dcdcde;border-radius:4px;font-size:13px;gap:8px}
+.event-linked{padding:10px 12px;background:#f3f4f5;border:1px solid #dcdcde;border-radius:4px;font-size:13px;margin-top:8px}
 .event-linked-name{font-weight:600;color:#031B4E;font-size:13px}
 .event-linked-name a{color:#031B4E}
 .event-linked-name a:hover{color:#1668F2}
 .event-linked-date{font-size:11.5px;color:#6B7A99;margin-top:2px}
-.event-unlink{font-size:12px;color:#b91c1c;cursor:pointer;font-weight:600;white-space:nowrap;background:none;border:none;padding:0;font-family:'IBM Plex Sans',sans-serif}
-.event-unlink:hover{color:#991b1b}
+.event-linked-actions{display:flex;align-items:center;gap:10px;margin-top:6px}
+.event-linked-change{font-size:12px;color:#1668F2;font-weight:600}
+.event-linked-change:hover{color:#1257d1}
+.event-unlink-icon{background:none;border:none;cursor:pointer;color:#b91c1c;padding:0;display:flex;align-items:center}
+.event-unlink-icon svg{width:14px;height:14px}
+.event-unlink-icon:hover{color:#991b1b}
 
-/* Shortcode rail card */
-.code-box{background:#f3f4f5;border:1px solid #dcdcde;border-radius:4px;padding:9px 12px;font-family:monospace;font-size:13px;color:#1d2327;word-break:break-all}
-.rail-hint{font-size:12.5px;color:#6B7A99;line-height:1.5;margin-bottom:6px}
-
-/* Sticky mobile save bar */
-.sticky-save{display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #dcdcde;padding:12px 16px;z-index:200;gap:8px}
-.sticky-save .btn-update,.sticky-save .btn-save-draft{width:auto;flex:1}
+/* ── Always-visible bottom action bar ── */
+.sticky-save{display:flex;align-items:center;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #dcdcde;box-shadow:0 -2px 8px rgba(0,0,0,.06);padding:10px 22px;z-index:50;gap:10px}
+.sticky-save-status{display:flex;align-items:center;gap:6px;font-size:13px;color:#1d2327;font-weight:600;white-space:nowrap}
+.sticky-save-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0}
+.sticky-save-spacer{flex:1}
+.sticky-save-actions{display:flex;align-items:center;gap:8px}
 
 /* ════════ TABLET ════════ */
 @media(max-width:1024px){
   .wp-sidebar{display:none}
   .wp-content{padding:10px 14px 80px}
-  .edit-body{grid-template-columns:1fr 260px;padding:14px 16px}
+  .edit-body{padding:14px 16px}
   .field-row{grid-template-columns:180px 1fr}
 }
 
@@ -290,13 +279,13 @@ a:hover{text-decoration:none}
   .breadcrumb-logo-box{width:120px;height:30px;font-size:10px}
   .plugin-header{padding:14px}
   .plugin-title{font-size:18px}
-  .edit-body{grid-template-columns:1fr;padding:12px;gap:14px}
-  .edit-rail{position:static;order:-1}
+  .edit-body{padding:12px 12px 90px}
   .section-header{padding:11px 14px}
   .section-body{padding:12px 14px}
   .field-row{grid-template-columns:1fr;gap:6px;padding:10px 0}
   .field-label{padding-top:0}
-  .sticky-save{display:flex}
+  .sticky-save{padding:8px 12px}
+  .sticky-save-status{display:none}
   .section-header-right{gap:10px}
   .enable-toggle .enable-label{display:none}
   .layout-summary{flex-direction:column;align-items:stretch}
@@ -624,6 +613,40 @@ a:hover{text-decoration:none}
                 <div class="field-control">
                   <input class="field-input" type="text" placeholder="e.g. 555-555-5555" value="555-555-5555">
                   <p class="field-hint">Appears as: <em>Questions on event day: Call the event hotline at [your text]</em></p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ── Linked Event (moved from rail — C7.X.15 work) ── -->
+          <section class="card" id="card-linked-event">
+            <div class="section-header is-open" onclick="toggleCollapse('linked-event')">
+              <div class="section-header-left">
+                <div class="section-icon icon-blue">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                </div>
+                <span class="section-title">Linked Event</span>
+              </div>
+              <div class="section-header-right">
+                <div class="section-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+              </div>
+            </div>
+            <div class="section-body" id="sec-linked-event">
+              <div class="field-row">
+                <div class="field-label">Search Events<div class="field-label-sub">Link to an event from your active event source</div></div>
+                <div class="field-control">
+                  <input class="event-search" type="text" placeholder="Search events…">
+                  <div class="event-linked">
+                    <div class="event-linked-name"><a href="#">Perry, GA – 2026 Southeast Region Super Sort</a></div>
+                    <div class="event-linked-date">May 8 – 10, 2026</div>
+                    <div class="event-linked-actions">
+                      <a href="#" class="event-linked-change">Change</a>
+                      <button type="button" class="event-unlink-icon" aria-label="Unlink event" title="Unlink event">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                  <span class="field-hint">Link this reservation to an event from your active event source. The reservation title and dates mirror the linked event.</span>
                 </div>
               </div>
             </div>
@@ -1313,80 +1336,6 @@ a:hover{text-decoration:none}
 
         </div><!-- /edit-main -->
 
-        <!-- ══════════════════ RIGHT RAIL ══════════════════ -->
-        <aside class="edit-rail">
-
-          <!-- Publish card -->
-          <div class="rail-card">
-            <div class="rail-header">
-              <span class="rail-title">Publish</span>
-            </div>
-            <div class="rail-body">
-              <div class="publish-row">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                Status: <strong>Published</strong>
-                <a href="#">Edit</a>
-              </div>
-              <div class="publish-row">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                Visibility: <strong>Public</strong>
-                <a href="#">Edit</a>
-              </div>
-              <div class="publish-row">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                Published: <strong>Apr 17, 2026</strong>
-                <a href="#">Edit</a>
-              </div>
-              <a href="#" target="_blank" class="btn-preview">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                Preview Frontend Form
-              </a>
-              <button class="btn-save-draft" type="button">Save as Draft</button>
-              <button class="btn-update" type="button">Update Reservation</button>
-              <button class="btn-danger-sm" type="button">Move to Trash</button>
-            </div>
-          </div>
-
-          <!-- Linked Event card (C7.X.15 Issue 7 — restored from
-               C7.X.12 Item 7 retirement, hybrid placement). Meta-line
-               at top is read-only context; this card carries the
-               actionable controls: typeahead search, Change text
-               link, terse ✕ icon-only Unlink button. -->
-          <div class="rail-card">
-            <div class="rail-header">
-              <span class="rail-title">Linked Event</span>
-            </div>
-            <div class="rail-body">
-              <p class="rail-hint">Link this reservation to an event from your active event source. The reservation title and dates mirror the linked event.</p>
-              <input class="event-search" type="text" placeholder="Search events…">
-              <div class="event-linked">
-                <div class="event-linked-meta" style="min-width:0">
-                  <div class="event-linked-name"><a href="#">Perry, GA – 2026 Southeast Region Super Sort</a></div>
-                  <div class="event-linked-date">May 8 – 10, 2026</div>
-                  <div class="event-linked-actions">
-                    <a href="#" class="event-linked-change">Change</a>
-                    <button type="button" class="event-unlink-icon" aria-label="Unlink event" title="Unlink event">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Shortcode card -->
-          <div class="rail-card">
-            <div class="rail-header">
-              <span class="rail-title">Shortcode</span>
-            </div>
-            <div class="rail-body">
-              <p class="rail-hint">Paste this shortcode on any page to display the reservation form.</p>
-              <div class="code-box">[eem_reservation id="42"]</div>
-            </div>
-          </div>
-
-        </aside>
-
       </div><!-- /edit-body -->
 
     </div><!-- /plugin-wrap -->
@@ -1394,10 +1343,22 @@ a:hover{text-decoration:none}
   </main>
 </div>
 
-<!-- Mobile sticky save bar -->
+<!-- Always-visible bottom action bar -->
 <div class="sticky-save">
-  <button class="btn-save-draft" type="button">Save Draft</button>
-  <button class="btn-update" type="button">Update Reservation</button>
+  <div class="sticky-save-status">
+    <span class="sticky-save-dot"></span>
+    <span>Published</span>
+  </div>
+  <div class="sticky-save-spacer"></div>
+  <div class="sticky-save-actions">
+    <a href="#" class="btn-preview">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      Preview
+    </a>
+    <button class="btn-save-draft" type="button">Save as Draft</button>
+    <button class="btn-danger-sm" type="button">Move to Trash</button>
+    <button class="btn-update" type="button">Update Reservation</button>
+  </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════
