@@ -5,7 +5,9 @@ in-flight context that ISN'T already in CLAUDE.md, commit messages,
 or CLEANUP.md. Read after `git pull` on a new machine to pick up
 momentum across Claude Code sessions.
 
-**Last updated:** 2026-05-28 — **C8.E mockup** — RV Lot Zones now IS the Quantity Based content (Lot Selection Mode toggle moved to top of rv-lot-charts-content); Avail Qty input added to each zone row (data-role="zone-qty", Red=6 Blue=18); old "X lots" computed display + refreshZoneCounts() + .zone-count CSS fully removed; RV Add-Ons reordered to bottom of RV section. Note: stall side still has its own separate quantity table since stalls have no zone concept. 2499 lines.
+**Last updated:** 2026-05-28 — **C8.F mockup** — Available Stall/RV Inventory fields become computed read-only when Charts enabled (WooCommerce variant-stock pattern). Charts OFF = editable input. Charts ON = bold computed number + "(computed from row quantities / stall layout / zone quantities / lot layout)" + helper text. Original admin value preserved in DOM (input hidden, not cleared). Functions: updateStallInventoryDisplay(), updateRvInventoryDisplay(). Wired to: toggleSwitchRow (charts toggles only), toggleMode, toggleLotMode, add/delete row/zone, DOMContentLoaded (init + delegated input listeners). 2649 lines.
+
+**Last updated (prev):** 2026-05-28 — **C8.E mockup** — RV Lot Zones now IS the Quantity Based content (Lot Selection Mode toggle moved to top of rv-lot-charts-content); Avail Qty input added to each zone row (data-role="zone-qty", Red=6 Blue=18); old "X lots" computed display + refreshZoneCounts() + .zone-count CSS fully removed; RV Add-Ons reordered to bottom of RV section. Note: stall side still has its own separate quantity table since stalls have no zone concept. 2499 lines.
 
 **Last updated (prev):** 2026-05-28 — **C8.D mockup** — Two fixes: (1) Stall Quantity table Add Stall Row + trash icons wired (addStallRow / deleteStallRow); (2) RV Lot Selection Mode mirrored to Stall pattern — Lot Zones wrapped in #rv-mode-quantity-content, row-builder + Blocked RV Lots wrapped in #rv-mode-exact-content, toggleRvMode() replaced with toggleLotMode(). 2507 lines.
 
