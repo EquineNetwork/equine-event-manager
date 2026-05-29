@@ -217,6 +217,18 @@ eem_render_editor_field_row( array(
 	'hint'         => __( 'Once inventory reaches zero, customers see a sold-out message.', 'equine-event-manager' ),
 ) );
 
+// 8b. Max Stalls Per Customer (per-customer purchase limit)
+eem_render_editor_field_row( array(
+	'label'        => __( 'Max Stalls Per Customer', 'equine-event-manager' ),
+	'label_sub'    => __( 'Blank = unlimited', 'equine-event-manager' ),
+	'control_html' => sprintf(
+		'<input class="eem-field-input" type="number" min="1" step="1" name="eem_stall_max_per_customer" id="eem-stall-max-per-customer" value="%s" placeholder="%s" style="max-width:140px;" />',
+		esc_attr( (string) ( $data['stall_max_per_customer'] ?? '' ) ),
+		esc_attr__( 'Unlimited', 'equine-event-manager' )
+	),
+	'hint'         => __( 'Limits how many stalls a single customer can reserve. Enforced at checkout.', 'equine-event-manager' ),
+) );
+
 // 9 + 10. Nightly + Weekend rates (conditional on stay-type)
 eem_render_editor_field_row( array(
 	'label'        => __( 'Stall Nightly Rate', 'equine-event-manager' ),

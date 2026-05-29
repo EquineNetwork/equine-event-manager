@@ -202,6 +202,18 @@ eem_render_editor_field_row( array(
 	'hint'         => __( 'Once inventory reaches zero, customers see a sold-out message.', 'equine-event-manager' ),
 ) );
 
+// 8b. Max RV Lots Per Customer (per-customer purchase limit)
+eem_render_editor_field_row( array(
+	'label'        => __( 'Max RV Lots Per Customer', 'equine-event-manager' ),
+	'label_sub'    => __( 'Blank = unlimited', 'equine-event-manager' ),
+	'control_html' => sprintf(
+		'<input class="eem-field-input" type="number" min="1" step="1" name="eem_rv_max_per_customer" id="eem-rv-max-per-customer" value="%s" placeholder="%s" style="max-width:140px;" />',
+		esc_attr( (string) ( $data['rv_max_per_customer'] ?? '' ) ),
+		esc_attr__( 'Unlimited', 'equine-event-manager' )
+	),
+	'hint'         => __( 'Limits how many RV lots a single customer can reserve. Enforced at checkout.', 'equine-event-manager' ),
+) );
+
 // 9 + 10. Nightly + Weekend rates
 eem_render_editor_field_row( array(
 	'label'        => __( 'RV Nightly Rate', 'equine-event-manager' ),
@@ -391,7 +403,7 @@ ob_start();
 			<option value="<?php echo (int) $zi; ?>" style="color:<?php echo esc_attr( $z_color ); ?>">&#x25cf; <?php echo esc_html( $z_name ); ?></option>
 		<?php endforeach; ?>
 	</select>
-	<span class="eem-zone-painter-hint"><?php esc_html_e( 'Select a zone, then click lots in any row preview to assign them.', 'equine-event-manager' ); ?></span>
+	<span class="eem-zone-painter-hint"><?php esc_html_e( 'Paint Mode lets you assign individual lots to zones. Useful when rows contain lots from multiple zones (e.g., premium corner spots vs. standard interior). Pick a zone, then click any lot to mark it that zone.', 'equine-event-manager' ); ?></span>
 </div>
 <div class="eem-row-builder" id="eem-rv-row-builder-list">
 <?php foreach ( $rv_rows as $ri => $row ) :
@@ -459,7 +471,7 @@ ob_start();
 	<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
 	<?php esc_html_e( 'Add Row', 'equine-event-manager' ); ?>
 </button>
-<span class="eem-field-hint"><?php esc_html_e( "Each lot's color dot shows which zone it's assigned to. Pick a zone in Paint Mode above, then click lots to reassign them.", 'equine-event-manager' ); ?></span>
+<span class="eem-field-hint"><?php esc_html_e( "Each lot's colored dot shows its current zone. By default, all lots are assigned to the first zone. Use Paint Mode above to reassign individual lots.", 'equine-event-manager' ); ?></span>
 <?php
 $rv_rows_html = (string) ob_get_clean();
 eem_render_editor_field_row( array(

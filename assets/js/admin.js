@@ -205,6 +205,45 @@
 		if (search) search.focus();
 	};
 
+	/**
+	 * Bug D fix: populate (or refresh) a tag dropdown from a list of labels.
+	 * Preserves items already selected (chip exists) so they stay marked.
+	 * Called before EEM.tagFilter() so the filter has items to act on.
+	 *
+	 * @param {HTMLElement} input  The .eem-tag-search input element.
+	 * @param {string[]}    labels Array of label strings from row-builder data.
+	 */
+	function populateTagDropdownFromLabels(input, labels) {
+		var host = input.closest('.eem-tag-select');
+		if (!host) return;
+		var dropdown = host.querySelector('.eem-tag-dropdown');
+		if (!dropdown) return;
+
+		// Build a set of currently-selected chip values so we can mark them.
+		var selectedValues = {};
+		host.querySelectorAll('.eem-tag-chip').forEach(function (chip) {
+			if (chip.dataset.value) { selectedValues[chip.dataset.value] = true; }
+		});
+
+		// Rebuild dropdown items from the live labels list.
+		// Remove all existing items (not the empty-state element).
+		dropdown.querySelectorAll('.eem-tag-dropdown-item').forEach(function (el) { el.remove(); });
+
+		var emptyEl = dropdown.querySelector('.eem-tag-dropdown-empty');
+		labels.forEach(function (label) {
+			var item = document.createElement('div');
+			item.className = 'eem-tag-dropdown-item' + (selectedValues[label] ? ' selected' : '');
+			item.dataset.value = label;
+			item.textContent = label;
+			item.setAttribute('data-eem-action', 'tag-pick');
+			if (emptyEl) {
+				dropdown.insertBefore(item, emptyEl);
+			} else {
+				dropdown.appendChild(item);
+			}
+		});
+	}
+
 	/** Filter dropdown items by data-value substring as user types. */
 	EEM.tagFilter = function (input) {
 		var host = input.closest('.eem-tag-select');
@@ -1731,9 +1770,17 @@
 	});
 
 	// Tag-search uses input event, not click — wire separately.
+	// Bug D fix: before filtering, populate dropdown from live row-builder data
+	// so blocked stalls / blocked RV lots searches work without pre-populated items.
 	document.addEventListener('input', function (ev) {
 		var input = ev.target;
 		if (input.matches && input.matches('.eem-tag-search')) {
+			var target = input.dataset.eemTagTarget;
+			if (target === 'eem-blocked-stalls-select') {
+				populateTagDropdownFromLabels(input, getStallLabels());
+			} else if (target === 'eem-blocked-rv-lots-select') {
+				populateTagDropdownFromLabels(input, getRvLotLabels());
+			}
 			EEM.tagFilter(input);
 		}
 	});
@@ -3226,6 +3273,75 @@ function stallLabelsBetween(first, last) {
 
 	/* Fallback: just return [first, last] if both present */
 	return [first, last];
+}
+
+/* ─────────────────────────────────────────────────────────────
+ * Bug D fix: getStallLabels / getRvLotLabels
+ * Enumerate every stall/lot label defined in the row builder lists
+ * so the tag-search (blocked stalls / blocked RV lots) can populate
+ * its dropdown from live row-builder data instead of requiring items
+ * to already exist as static DOM nodes.
+ * ───────────────────────────────────────────────────────────── */
+function getStallLabels() {
+	var labels = [];
+	var seen   = {};
+	var list   = document.getElementById('eem-stall-row-builder-list');
+	if (!list) return labels;
+	var cards = list.querySelectorAll('.eem-row-card');
+	cards.forEach(function(card) {
+		var isBtB = card.querySelector('.eem-row-card-sides') &&
+		            card.querySelector('.eem-row-card-sides').style.display !== 'none';
+		if (isBtB) {
+			var tf = card.querySelector('[data-role="top-first"]');
+			var tl = card.querySelector('[data-role="top-last"]');
+			var bf = card.querySelector('[data-role="bot-first"]');
+			var bl = card.querySelector('[data-role="bot-last"]');
+			stallLabelsBetween(tf ? tf.value : '', tl ? tl.value : '').forEach(function(l) {
+				if (!seen[l]) { seen[l] = true; labels.push(l); }
+			});
+			stallLabelsBetween(bf ? bf.value : '', bl ? bl.value : '').forEach(function(l) {
+				if (!seen[l]) { seen[l] = true; labels.push(l); }
+			});
+		} else {
+			var fIn = card.querySelector('[data-role="first"]');
+			var lIn = card.querySelector('[data-role="last"]');
+			stallLabelsBetween(fIn ? fIn.value : '', lIn ? lIn.value : '').forEach(function(l) {
+				if (!seen[l]) { seen[l] = true; labels.push(l); }
+			});
+		}
+	});
+	return labels;
+}
+
+function getRvLotLabels() {
+	var labels = [];
+	var seen   = {};
+	var list   = document.getElementById('eem-rv-row-builder-list');
+	if (!list) return labels;
+	var cards = list.querySelectorAll('.eem-row-card');
+	cards.forEach(function(card) {
+		var isBtB = card.querySelector('.eem-row-card-sides') &&
+		            card.querySelector('.eem-row-card-sides').style.display !== 'none';
+		if (isBtB) {
+			var tf = card.querySelector('[data-role="top-first"]');
+			var tl = card.querySelector('[data-role="top-last"]');
+			var bf = card.querySelector('[data-role="bot-first"]');
+			var bl = card.querySelector('[data-role="bot-last"]');
+			stallLabelsBetween(tf ? tf.value : '', tl ? tl.value : '').forEach(function(l) {
+				if (!seen[l]) { seen[l] = true; labels.push(l); }
+			});
+			stallLabelsBetween(bf ? bf.value : '', bl ? bl.value : '').forEach(function(l) {
+				if (!seen[l]) { seen[l] = true; labels.push(l); }
+			});
+		} else {
+			var fIn = card.querySelector('[data-role="first"]');
+			var lIn = card.querySelector('[data-role="last"]');
+			stallLabelsBetween(fIn ? fIn.value : '', lIn ? lIn.value : '').forEach(function(l) {
+				if (!seen[l]) { seen[l] = true; labels.push(l); }
+			});
+		}
+	});
+	return labels;
 }
 
 /* ─────────────────────────────────────────────────────────────

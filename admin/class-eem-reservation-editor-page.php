@@ -653,6 +653,30 @@ class EEM_Reservation_Editor_Page {
 			update_post_meta( $reservation_id, '_en_blocked_stalls', array_values( array_filter( $blocked_stalls_clean ) ) );
 		}
 
+		// Stall selection mode (Bulk = 'quantity', Mapped = 'exact_map')
+		if ( isset( $_POST['stall_selection_mode'] ) ) {
+			$stall_mode_raw = sanitize_key( wp_unslash( $_POST['stall_selection_mode'] ) );
+			update_post_meta( $reservation_id, '_en_stall_selection_mode', in_array( $stall_mode_raw, array( 'quantity', 'exact_map' ), true ) ? $stall_mode_raw : 'quantity' );
+		}
+
+		// RV selection mode (Bulk = 'quantity', Mapped = 'exact_map')
+		if ( isset( $_POST['rv_selection_mode'] ) ) {
+			$rv_mode_raw = sanitize_key( wp_unslash( $_POST['rv_selection_mode'] ) );
+			update_post_meta( $reservation_id, '_en_rv_selection_mode', in_array( $rv_mode_raw, array( 'quantity', 'exact_map' ), true ) ? $rv_mode_raw : 'quantity' );
+		}
+
+		// Max stalls per customer — Enforced at checkout (C10 scope) — zero/empty = unlimited.
+		if ( array_key_exists( 'eem_stall_max_per_customer', $_POST ) ) {
+			$smax = absint( wp_unslash( $_POST['eem_stall_max_per_customer'] ) );
+			update_post_meta( $reservation_id, '_en_stall_max_per_customer', $smax > 0 ? $smax : '' );
+		}
+
+		// Max RV lots per customer — Enforced at checkout (C10 scope) — zero/empty = unlimited.
+		if ( array_key_exists( 'eem_rv_max_per_customer', $_POST ) ) {
+			$rmax = absint( wp_unslash( $_POST['eem_rv_max_per_customer'] ) );
+			update_post_meta( $reservation_id, '_en_rv_max_per_customer', $rmax > 0 ? $rmax : '' );
+		}
+
 		// Stall map attachment ID
 		if ( isset( $_POST['eem_stall_map_id'] ) ) {
 			update_post_meta( $reservation_id, '_en_stall_map_id', absint( wp_unslash( $_POST['eem_stall_map_id'] ) ) );
@@ -733,10 +757,13 @@ class EEM_Reservation_Editor_Page {
 			$pe_clean = array();
 			foreach ( (array) $pe_raw as $entry ) {
 				if ( ! is_array( $entry ) ) continue;
+				$pe_max = absint( $entry['max_per_customer'] ?? 0 );
 				$pe_clean[] = array(
-					'title'     => sanitize_text_field( (string) ( $entry['title']     ?? '' ) ),
-					'inventory' => absint( $entry['inventory'] ?? 0 ),
-					'price'     => number_format( (float) ( $entry['price'] ?? 0 ), 2, '.', '' ),
+					'title'           => sanitize_text_field( (string) ( $entry['title']     ?? '' ) ),
+					'inventory'       => absint( $entry['inventory'] ?? 0 ),
+					'price'           => number_format( (float) ( $entry['price'] ?? 0 ), 2, '.', '' ),
+					// Enforced at checkout (C10 scope) — zero/empty = unlimited.
+					'max_per_customer' => $pe_max > 0 ? $pe_max : '',
 				);
 			}
 			update_post_meta( $reservation_id, '_en_event_pre_entries', $pe_clean );

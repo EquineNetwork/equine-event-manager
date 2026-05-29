@@ -1955,6 +1955,7 @@ class EEM_Reservations_CPT {
 			'external_event_id'               => '',
 			'stalls_enabled'                  => 0,
 			'stall_selection_mode'            => 'quantity',
+			'rv_selection_mode'               => 'quantity',
 			'rv_enabled'                      => 0,
 			'nightly_enabled'                 => 1,
 			'weekend_enabled'                 => 1,
@@ -2053,6 +2054,9 @@ class EEM_Reservations_CPT {
 			'convenience_fee_enabled'         => 0,
 			'convenience_fee_type'            => 'none',
 			'convenience_fee_value'           => '0.00',
+			// C7.X — Per-customer purchase limits. Empty = unlimited (enforced at C10 checkout).
+			'stall_max_per_customer'          => '',
+			'rv_max_per_customer'             => '',
 		);
 
 		return $defaults;

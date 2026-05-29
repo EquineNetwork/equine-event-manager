@@ -450,6 +450,56 @@ c7x_ok( 'C8: no inline onclick in stall row builder (data-eem-action used instea
 	false === strpos( $js, 'onclick="addPreEntry()' ),
 	$pass, $fail, $log );
 
+// ── C7.X Bug + Feature assertions (2.3.16) ──────────────────────────────────────
+
+// 1. Inventory Mode persistence: stall PHP reads _en_stall_selection_mode and applies .active conditionally.
+$stall_php = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_section-stall.php' );
+c7x_ok(
+	'Bug C: _section-stall.php reads stall_selection_mode from $data and applies .active conditionally',
+	false !== strpos( $stall_php, '_en_stall_selection_mode' ) || (
+		false !== strpos( $stall_php, 'stall_selection_mode' ) &&
+		false !== strpos( $stall_php, 'active' )
+	),
+	$pass, $fail, $log
+);
+
+// 2. Blocked RV Lots data source uses getRvLotLabels().
+c7x_ok(
+	'Bug D: getRvLotLabels() function defined in admin.js',
+	false !== strpos( $js, 'function getRvLotLabels' ),
+	$pass, $fail, $log
+);
+
+// 3. Max Stalls Per Customer field: name="eem_stall_max_per_customer" present in _section-stall.php.
+c7x_ok(
+	'Feature: Max Stalls Per Customer input (name=eem_stall_max_per_customer) in _section-stall.php',
+	false !== strpos( $stall_php, 'name="eem_stall_max_per_customer"' ),
+	$pass, $fail, $log
+);
+
+// 4. Max RV Lots Per Customer field: name="eem_rv_max_per_customer" present in _section-rv.php.
+$rv_php = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_section-rv.php' );
+c7x_ok(
+	'Feature: Max RV Lots Per Customer input (name=eem_rv_max_per_customer) in _section-rv.php',
+	false !== strpos( $rv_php, 'name="eem_rv_max_per_customer"' ),
+	$pass, $fail, $log
+);
+
+// 5. Max Per Customer column in pre-entries template (eem_event_pre_entries[__index__][max_per_customer]).
+$pe_php = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_section-event-pre-entries.php' );
+c7x_ok(
+	'Feature: Max Per Customer column in pre-entries template (eem_event_pre_entries[__index__][max_per_customer])',
+	false !== strpos( $pe_php, 'eem_event_pre_entries[__index__][max_per_customer]' ),
+	$pass, $fail, $log
+);
+
+// 6. Paint Mode hint updated in _section-rv.php.
+c7x_ok(
+	'Polish: Paint Mode lets you assign hint text present in _section-rv.php',
+	false !== strpos( $rv_php, 'Paint Mode lets you assign' ),
+	$pass, $fail, $log
+);
+
 wp_delete_post( $rid, true );
 
 echo implode( "\n", $log ) . "\n=== RESULT: {$pass} passed, {$fail} failed ===\n";

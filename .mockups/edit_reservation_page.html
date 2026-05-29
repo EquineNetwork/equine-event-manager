@@ -767,6 +767,14 @@ a:hover{text-decoration:none}
                 </div>
               </div>
 
+              <div class="field-row" id="row-stall-max-per-customer">
+                <div class="field-label">Max Stalls Per Customer<div class="field-label-sub">Blank = unlimited</div></div>
+                <div class="field-control">
+                  <input class="field-input" type="number" min="1" step="1" name="eem_stall_max_per_customer" placeholder="Unlimited" style="max-width:140px">
+                  <span class="field-hint">Limits how many stalls a single customer can reserve. Enforced at checkout.</span>
+                </div>
+              </div>
+
               <div id="stall-mapped-content" style="display:none">
 
       <!-- Stall Rows builder -->
@@ -1124,6 +1132,14 @@ a:hover{text-decoration:none}
                 </div>
               </div>
 
+              <div class="field-row" id="row-rv-max-per-customer">
+                <div class="field-label">Max RV Lots Per Customer<div class="field-label-sub">Blank = unlimited</div></div>
+                <div class="field-control">
+                  <input class="field-input" type="number" min="1" step="1" name="eem_rv_max_per_customer" placeholder="Unlimited" style="max-width:140px">
+                  <span class="field-hint">Limits how many RV lots a single customer can reserve. Enforced at checkout.</span>
+                </div>
+              </div>
+
               <div id="rv-mapped-content" style="display:none">
 
       <!-- ── RV Lot Zones ── -->
@@ -1194,7 +1210,7 @@ a:hover{text-decoration:none}
               <option value="z1" style="color:#EF4444">&#x25cf; Red Lot</option>
               <option value="z2" style="color:#1668F2">&#x25cf; Blue Lot</option>
             </select>
-            <span class="zone-painter-hint">Select a zone, then click lots in any row preview to assign them.</span>
+            <span class="zone-painter-hint">Paint Mode lets you assign individual lots to zones. Useful when rows contain lots from multiple zones (e.g., premium corner spots vs. standard interior). Pick a zone, then click any lot to mark it that zone.</span>
           </div>
 
           <div class="row-builder" id="rv-row-builder-list">
@@ -1288,7 +1304,7 @@ a:hover{text-decoration:none}
             Add Row
           </button>
 
-          <span class="field-hint">Each lot's color dot shows which zone it's assigned to. Pick a zone in Paint Mode above, then click lots to reassign them.</span>
+          <span class="field-hint">Each lot's colored dot shows its current zone. By default, all lots are assigned to the first zone. Use Paint Mode above to reassign individual lots.</span>
         </div>
       </div>
 
@@ -1381,21 +1397,24 @@ a:hover{text-decoration:none}
                       <tr>
                         <th>Event Title</th>
                         <th style="width:110px">Inventory</th>
+                        <th style="width:120px">Max Per Customer</th>
                         <th style="width:140px">Price</th>
                         <th style="width:40px"></th>
                       </tr>
                     </thead>
                     <tbody id="pre-entries-list">
                       <tr>
-                        <td><input class="repeat-input" type="text" name="pre_entry_title[]" value="Friday Reining Class"></td>
-                        <td><input class="repeat-input" type="number" name="pre_entry_inventory[]" value="30" min="0" style="width:90px"></td>
-                        <td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" name="pre_entry_price[]" value="75.00" min="0" step="0.01"></div></td>
+                        <td><input class="repeat-input" type="text" name="eem_event_pre_entries[0][title]" value="Friday Reining Class"></td>
+                        <td><input class="repeat-input" type="number" name="eem_event_pre_entries[0][inventory]" value="30" min="0" style="width:90px"></td>
+                        <td><input class="repeat-input" type="number" min="1" step="1" name="eem_event_pre_entries[0][max_per_customer]" value="" placeholder="Unlimited" style="width:90px"></td>
+                        <td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" name="eem_event_pre_entries[0][price]" value="75.00" min="0" step="0.01"></div></td>
                         <td><button class="btn-delete" type="button" onclick="deletePreEntry(this)" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
                       </tr>
                       <tr>
-                        <td><input class="repeat-input" type="text" name="pre_entry_title[]" value="Saturday Cutting Class"></td>
-                        <td><input class="repeat-input" type="number" name="pre_entry_inventory[]" value="25" min="0" style="width:90px"></td>
-                        <td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" name="pre_entry_price[]" value="95.00" min="0" step="0.01"></div></td>
+                        <td><input class="repeat-input" type="text" name="eem_event_pre_entries[1][title]" value="Saturday Cutting Class"></td>
+                        <td><input class="repeat-input" type="number" name="eem_event_pre_entries[1][inventory]" value="25" min="0" style="width:90px"></td>
+                        <td><input class="repeat-input" type="number" min="1" step="1" name="eem_event_pre_entries[1][max_per_customer]" value="" placeholder="Unlimited" style="width:90px"></td>
+                        <td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" name="eem_event_pre_entries[1][price]" value="95.00" min="0" step="0.01"></div></td>
                         <td><button class="btn-delete" type="button" onclick="deletePreEntry(this)" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
                       </tr>
                     </tbody>
@@ -2504,12 +2523,15 @@ function addPreEntry(){
   if(rows.length === 1){
     rows[0].querySelector('.btn-delete').style.display = '';
   }
+  var idx = tbody.querySelectorAll('tr').length;
   var tr = document.createElement('tr');
   tr.innerHTML =
-    '<td><input class="repeat-input" type="text" name="pre_entry_title[]" placeholder="Event title"></td>' +
-    '<td><input class="repeat-input" type="number" name="pre_entry_inventory[]" value="" min="0" style="width:90px" placeholder="0"></td>' +
-    '<td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" name="pre_entry_price[]" value="" min="0" step="0.01" placeholder="0.00"></div></td>' +
+    '<td><input class="repeat-input" type="text" name="eem_event_pre_entries[__index__][title]" placeholder="Event title"></td>' +
+    '<td><input class="repeat-input" type="number" name="eem_event_pre_entries[__index__][inventory]" value="" min="0" style="width:90px" placeholder="0"></td>' +
+    '<td><input class="repeat-input" type="number" min="1" step="1" name="eem_event_pre_entries[__index__][max_per_customer]" value="" placeholder="Unlimited" style="width:90px"></td>' +
+    '<td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" name="eem_event_pre_entries[__index__][price]" value="" min="0" step="0.01" placeholder="0.00"></div></td>' +
     '<td><button class="btn-delete" type="button" onclick="deletePreEntry(this)" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>';
+  tr.innerHTML = tr.innerHTML.replace(/__index__/g, idx);
   tbody.appendChild(tr);
 }
 
