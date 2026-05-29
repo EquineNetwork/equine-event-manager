@@ -175,15 +175,15 @@ c7x_ok( '.eem-sticky-save-dot CSS defined',
 	false !== strpos( $css, '.eem-sticky-save-dot' ),
 	$pass, $fail, $log );
 
-// ── [5] All 10 sections render ───────────────────────────────────
-echo "\n[5] 10 sections — full mockup roster\n";
-foreach ( array( 'description', 'checkin', 'eventday', 'stall', 'rv', 'addons', 'group', 'fees', 'agreement', 'cancellation' ) as $k ) {
+// ── [5] All 11 sections render ───────────────────────────────────
+echo "\n[5] 11 sections — full mockup roster (includes event_pre_entries)\n";
+foreach ( array( 'description', 'checkin', 'eventday', 'stall', 'rv', 'event_pre_entries', 'addons', 'group', 'fees', 'agreement', 'cancellation' ) as $k ) {
 	c7x_ok( "section card '{$k}' renders",
 		false !== strpos( $html, 'id="card-' . $k . '"' ),
 		$pass, $fail, $log );
 }
-c7x_ok( '10 section chevrons each carry inline <svg>+polyline',
-	10 === preg_match_all( '/<div class="eem-section-chevron"[^>]*>\s*<svg[\s\S]*?<polyline/', $html ),
+c7x_ok( '11 section chevrons each carry inline <svg>+polyline',
+	11 === preg_match_all( '/<div class="eem-section-chevron"[^>]*>\s*<svg[\s\S]*?<polyline/', $html ),
 	$pass, $fail, $log );
 
 // ── [6] Section bodies use .eem-field-row grid ───────────────────
@@ -220,20 +220,42 @@ c7x_ok( '.eem-fee-modes container',  false !== strpos( $html, 'class="eem-fee-mo
 c7x_ok( '3 .eem-fee-mode-btn buttons', 3 === preg_match_all( '/class="eem-fee-mode-btn[^"]*"/', $html ), $pass, $fail, $log );
 c7x_ok( '.eem-pct-symbol present (% on RIGHT)', false !== strpos( $html, 'class="eem-pct-symbol"' ), $pass, $fail, $log );
 
-// ── [10] Lot Zones repeating-row ─────────────────────────────────
-echo "\n[10] Lot Zones — repeating-row + color swatch + template\n";
-c7x_ok( '#eem-lot-zones-list container',     false !== strpos( $html, 'id="eem-lot-zones-list"' ), $pass, $fail, $log );
-c7x_ok( '.eem-zone-add-btn renders',         false !== strpos( $html, 'class="eem-zone-add-btn"' ), $pass, $fail, $log );
-c7x_ok( '#eem-lot-zone-row-template renders', false !== strpos( $html, 'id="eem-lot-zone-row-template"' ), $pass, $fail, $log );
+// ── [10] Lot Zones repeating-row (C8 schema: nightly/weekend/available_qty) ──
+echo "\n[10] Lot Zones — nightly + weekend + available_qty columns + template\n";
+c7x_ok( '#eem-lot-zones-list container',      false !== strpos( $html, 'id="eem-lot-zones-list"' ),         $pass, $fail, $log );
+c7x_ok( '.eem-zone-add-btn renders',          false !== strpos( $html, 'class="eem-zone-add-btn"' ),         $pass, $fail, $log );
+c7x_ok( '#eem-lot-zone-row-template renders', false !== strpos( $html, 'id="eem-lot-zone-row-template"' ),   $pass, $fail, $log );
+c7x_ok( 'zone nightly field present',         false !== strpos( $html, 'data-role="zone-qty"' ),             $pass, $fail, $log );
+c7x_ok( 'rv-add-zone action wired',           false !== strpos( $html, 'data-eem-action="rv-add-zone"' ),    $pass, $fail, $log );
+c7x_ok( 'rv-delete-zone action wired',        false !== strpos( $html, 'data-eem-action="rv-delete-zone"' ), $pass, $fail, $log );
 
-// ── [11] Layout summary widgets ──────────────────────────────────
-echo "\n[11] Layout summary widgets — Stall + Lot read-only\n";
-c7x_ok( '.eem-layout-summary renders 2× (stall + lot)',
-	2 === preg_match_all( '/class="eem-layout-summary"/', $html ),
-	$pass, $fail, $log,
-	'count: ' . preg_match_all( '/class="eem-layout-summary"/', $html ) );
-c7x_ok( '.eem-btn-manage-layout renders 2× with C8-stub',
-	2 === preg_match_all( '/class="eem-btn-manage-layout"/', $html ),
+// ── [10.5] Stall + RV row builder (C8) ──────────────────────────
+echo "\n[10.5] Stall + RV row builder — row cards + add buttons\n";
+c7x_ok( '#eem-stall-row-builder-list renders', false !== strpos( $html, 'id="eem-stall-row-builder-list"' ), $pass, $fail, $log );
+c7x_ok( 'stall-add-row action wired',          false !== strpos( $html, 'data-eem-action="stall-add-row"' ), $pass, $fail, $log );
+c7x_ok( 'stall-delete-row action wired',       false !== strpos( $html, 'data-eem-action="stall-delete-row"' ), $pass, $fail, $log );
+c7x_ok( '#eem-rv-row-builder-list renders',    false !== strpos( $html, 'id="eem-rv-row-builder-list"' ),   $pass, $fail, $log );
+c7x_ok( 'rv-add-row action wired',             false !== strpos( $html, 'data-eem-action="rv-add-row"' ),   $pass, $fail, $log );
+c7x_ok( 'rv-delete-row action wired',          false !== strpos( $html, 'data-eem-action="rv-delete-row"' ), $pass, $fail, $log );
+c7x_ok( '#eem-blocked-stalls-select renders',  false !== strpos( $html, 'id="eem-blocked-stalls-select"' ), $pass, $fail, $log );
+c7x_ok( '#eem-blocked-rv-lots-select renders', false !== strpos( $html, 'id="eem-blocked-rv-lots-select"' ), $pass, $fail, $log );
+c7x_ok( 'stall map upload field renders',      false !== strpos( $html, 'id="eem-stall-map-id"' ),          $pass, $fail, $log );
+
+// ── [10.6] Event Pre-Entries section (C8) ───────────────────────
+echo "\n[10.6] Event Pre-Entries — card + enable toggle + repeat table\n";
+c7x_ok( '#card-event_pre_entries renders',        false !== strpos( $html, 'id="card-event_pre_entries"' ),          $pass, $fail, $log );
+c7x_ok( '#eem-pre-entries-list renders',          false !== strpos( $html, 'id="eem-pre-entries-list"' ),            $pass, $fail, $log );
+c7x_ok( 'pre-entry-add action wired',             false !== strpos( $html, 'data-eem-action="pre-entry-add"' ),      $pass, $fail, $log );
+c7x_ok( 'pre-entry-delete action wired',          false !== strpos( $html, 'data-eem-action="pre-entry-delete"' ),   $pass, $fail, $log );
+c7x_ok( '#eem-pre-entry-row-template renders',    false !== strpos( $html, 'id="eem-pre-entry-row-template"' ),      $pass, $fail, $log );
+c7x_ok( 'seeded Friday Reining Class row',        false !== strpos( $html, 'Friday Reining Class' ),                 $pass, $fail, $log );
+c7x_ok( 'seeded Saturday Cutting Class row',      false !== strpos( $html, 'Saturday Cutting Class' ),               $pass, $fail, $log );
+c7x_ok( 'disabled note references pre-entries',   false !== strpos( $html, 'class or competition entries' ),         $pass, $fail, $log );
+
+// ── [11] Layout summary widgets removed from mapped content ──────
+echo "\n[11] Layout summary stub — removed from mapped-content (C8 row builder replaces it)\n";
+c7x_ok( 'layout not configured yet stub REMOVED from stall section',
+	false === strpos( $html, 'layout not configured yet' ),
 	$pass, $fail, $log );
 
 // ── [12] File-row agreement chrome ───────────────────────────────
@@ -292,6 +314,18 @@ $css_classes = array(
 	'.eem-btn-manage-layout',
 	'.eem-zone-list', '.eem-zone-row', '.eem-zone-color-swatch', '.eem-zone-name-input', '.eem-zone-add-btn',
 	'.eem-repeat-table', '.eem-repeat-input', '.eem-repeat-price-wrap', '.eem-btn-add', '.eem-btn-delete',
+	// C8 — Row builder
+	'.eem-row-builder', '.eem-row-card', '.eem-row-card-top', '.eem-row-card-one-sided', '.eem-row-card-sides',
+	'.eem-side-block', '.eem-side-block-label', '.eem-side-block-row',
+	'.eem-row-card-field', '.eem-row-card-field-label', '.eem-row-card-delete',
+	'.eem-row-card-preview-label', '.eem-row-card-count', '.eem-row-builder-summary',
+	'.eem-stall-row-layout', '.eem-stall-row-side', '.eem-stall-row-aisle', '.eem-stall-box',
+	'.eem-row-add-btn',
+	// C8 — Tag multi-select
+	'.eem-tag-select', '.eem-tag-select-input', '.eem-tag-chip', '.eem-tag-chip-remove',
+	'.eem-tag-search', '.eem-tag-dropdown', '.eem-tag-dropdown-item', '.eem-tag-dropdown-empty',
+	// C8 — Zone painter (RV)
+	'.eem-zone-painter', '.eem-zone-painter-label', '.eem-zone-painter-select', '.eem-zone-painter-hint',
 	'.eem-file-row', '.eem-file-name', '.eem-btn-upload', '.eem-btn-file-del', '.eem-view-link',
 	'.eem-inherited-default-banner', '.eem-cancellation-override-actions', '.eem-btn-link-secondary',
 	'.eem-stay-hint',
@@ -328,6 +362,27 @@ c7x_ok( 'C8: input delegation for header-filter-events present',
 c7x_ok( 'C8: filterEventOptions generates data-eem-action="header-select-event" (no inline onclick)',
 	false !== strpos( $js, 'data-eem-action="header-select-event"' ) &&
 	false === strpos( $js, 'onclick="selectLinkedEvent(' ),
+	$pass, $fail, $log );
+// C8 — Row builder / zone / pre-entry JS
+c7x_ok( 'C8: stallAddRow function defined',       false !== strpos( $js, 'function stallAddRow' ),       $pass, $fail, $log );
+c7x_ok( 'C8: stallDeleteRow function defined',    false !== strpos( $js, 'function stallDeleteRow' ),    $pass, $fail, $log );
+c7x_ok( 'C8: stallRowInputChange function defined', false !== strpos( $js, 'function stallRowInputChange' ), $pass, $fail, $log );
+c7x_ok( 'C8: stallRowLayoutChange function defined', false !== strpos( $js, 'function stallRowLayoutChange' ), $pass, $fail, $log );
+c7x_ok( 'C8: stallLabelsBetween function defined', false !== strpos( $js, 'function stallLabelsBetween' ), $pass, $fail, $log );
+c7x_ok( 'C8: generateStallPreview function defined', false !== strpos( $js, 'function generateStallPreview' ), $pass, $fail, $log );
+c7x_ok( 'C8: rvAddZone function defined',         false !== strpos( $js, 'function rvAddZone' ),         $pass, $fail, $log );
+c7x_ok( 'C8: rvDeleteZone function defined',      false !== strpos( $js, 'function rvDeleteZone' ),      $pass, $fail, $log );
+c7x_ok( 'C8: rvAddRow function defined',          false !== strpos( $js, 'function rvAddRow' ),          $pass, $fail, $log );
+c7x_ok( 'C8: rvDeleteRow function defined',       false !== strpos( $js, 'function rvDeleteRow' ),       $pass, $fail, $log );
+c7x_ok( 'C8: rvRowInputChange function defined',  false !== strpos( $js, 'function rvRowInputChange' ),  $pass, $fail, $log );
+c7x_ok( 'C8: preEntryAdd function defined',       false !== strpos( $js, 'function preEntryAdd' ),       $pass, $fail, $log );
+c7x_ok( 'C8: preEntryDelete function defined',    false !== strpos( $js, 'function preEntryDelete' ),    $pass, $fail, $log );
+c7x_ok( 'C8: stall-add-row in actions dispatcher', false !== strpos( $js, "'stall-add-row'" ),           $pass, $fail, $log );
+c7x_ok( 'C8: rv-add-zone in actions dispatcher',   false !== strpos( $js, "'rv-add-zone'" ),             $pass, $fail, $log );
+c7x_ok( 'C8: pre-entry-add in actions dispatcher', false !== strpos( $js, "'pre-entry-add'" ),           $pass, $fail, $log );
+c7x_ok( 'C8: no inline onclick in stall row builder (data-eem-action used instead)',
+	false === strpos( $js, 'onclick="addRow()' ) &&
+	false === strpos( $js, 'onclick="addPreEntry()' ),
 	$pass, $fail, $log );
 
 wp_delete_post( $rid, true );

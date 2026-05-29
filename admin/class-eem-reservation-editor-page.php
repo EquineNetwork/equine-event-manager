@@ -270,6 +270,8 @@ class EEM_Reservation_Editor_Page {
 				return __( 'This section is disabled. Enable it to offer stall reservations.', 'equine-event-manager' );
 			case 'rv':
 				return __( 'This section is disabled. Enable it to offer RV reservations.', 'equine-event-manager' );
+			case 'event_pre_entries':
+				return __( 'This section is disabled. Enable it to add class or competition entries customers can purchase.', 'equine-event-manager' );
 			case 'eventday':
 				return __( 'This section is disabled. Event-day info will be hidden from customers.', 'equine-event-manager' );
 			default:
@@ -291,9 +293,10 @@ class EEM_Reservation_Editor_Page {
 			'group'        => 'group_reservations_enabled',
 			'fees'         => 'convenience_fee_enabled',
 			'agreement'    => 'venue_agreement_enabled',
-			'stall'        => 'stalls_enabled',
-			'rv'           => 'rv_enabled',
-			'eventday'     => 'event_day_enabled',
+			'stall'              => 'stalls_enabled',
+			'rv'                 => 'rv_enabled',
+			'event_pre_entries'  => 'event_pre_entries_enabled',
+			'eventday'           => 'event_day_enabled',
 			'cancellation' => 'cancellation_enabled',
 		);
 		if ( 'description' === $section_key ) {
@@ -488,9 +491,10 @@ class EEM_Reservation_Editor_Page {
 			'description'  => '_section-description.php',
 			'checkin'      => '_section-checkin.php',
 			'eventday'     => '_section-eventday.php',
-			'stall'        => '_section-stall.php',
-			'rv'           => '_section-rv.php',
-			'addons'       => '_section-addons.php',
+			'stall'             => '_section-stall.php',
+			'rv'                => '_section-rv.php',
+			'event_pre_entries' => '_section-event-pre-entries.php',
+			'addons'            => '_section-addons.php',
 			'group'        => '_section-group.php',
 			'fees'         => '_section-fees.php',
 			'agreement'    => '_section-agreement.php',
@@ -517,8 +521,9 @@ class EEM_Reservation_Editor_Page {
 			array( 'key' => 'checkin',      'title' => __( 'Check-In / Check-Out',    'equine-event-manager' ), 'icon_tone' => 'teal',   'icon_key' => 'clock',     'enable_toggle' => true,  'collapsed' => true  ),
 			array( 'key' => 'eventday',     'title' => __( 'Event Day Info',          'equine-event-manager' ), 'icon_tone' => 'orange', 'icon_key' => 'map-pin',   'enable_toggle' => true,  'collapsed' => false ),
 			array( 'key' => 'stall',        'title' => __( 'Stall Reservations',      'equine-event-manager' ), 'icon_tone' => 'green',  'icon_key' => 'grid',      'enable_toggle' => true,  'collapsed' => false ),
-			array( 'key' => 'rv',           'title' => __( 'RV Reservations',         'equine-event-manager' ), 'icon_tone' => 'purple', 'icon_key' => 'truck',     'enable_toggle' => true,  'collapsed' => true  ), // mockup line 650
-			array( 'key' => 'addons',       'title' => __( 'General Add-Ons',         'equine-event-manager' ), 'icon_tone' => 'orange', 'icon_key' => 'plus',      'enable_toggle' => true,  'collapsed' => true  ),
+			array( 'key' => 'rv',                'title' => __( 'RV Reservations',         'equine-event-manager' ), 'icon_tone' => 'purple', 'icon_key' => 'truck',     'enable_toggle' => true,  'collapsed' => true  ), // mockup line 650
+			array( 'key' => 'event_pre_entries', 'title' => __( 'Event Pre-Entries',       'equine-event-manager' ), 'icon_tone' => 'teal',   'icon_key' => 'plus',      'enable_toggle' => true,  'collapsed' => true  ),
+			array( 'key' => 'addons',            'title' => __( 'General Add-Ons',         'equine-event-manager' ), 'icon_tone' => 'orange', 'icon_key' => 'plus',      'enable_toggle' => true,  'collapsed' => true  ),
 			array( 'key' => 'group',        'title' => __( 'Group Reservations',      'equine-event-manager' ), 'icon_tone' => 'green',  'icon_key' => 'users',     'enable_toggle' => true,  'collapsed' => true  ),
 			array( 'key' => 'fees',         'title' => __( 'Convenience Fee',         'equine-event-manager' ), 'icon_tone' => 'orange', 'icon_key' => 'dollar',    'enable_toggle' => true,  'collapsed' => true  ),
 			array( 'key' => 'agreement',    'title' => __( 'Agreement',               'equine-event-manager' ), 'icon_tone' => 'navy',   'icon_key' => 'file',      'enable_toggle' => true,  'collapsed' => true  ),
@@ -618,6 +623,103 @@ class EEM_Reservation_Editor_Page {
 			$_POST['equine_event_manager_reservation_meta_nonce'] = wp_create_nonce( 'equine_event_manager_save_reservation_meta' );
 			$refreshed = get_post( $reservation_id );
 			$cpt->save_meta( $reservation_id, $refreshed );
+		}
+
+		// ── C8 mapped-layout meta (not routed through en_reservation[]) ──
+		// Stall rows
+		if ( isset( $_POST['eem_stall_rows'] ) && is_array( $_POST['eem_stall_rows'] ) ) {
+			$stall_rows_raw = wp_unslash( $_POST['eem_stall_rows'] );
+			$stall_rows_clean = array();
+			foreach ( (array) $stall_rows_raw as $row ) {
+				if ( ! is_array( $row ) ) continue;
+				$stall_rows_clean[] = array(
+					'name'      => sanitize_text_field( (string) ( $row['name']      ?? '' ) ),
+					'layout'    => in_array( (string) ( $row['layout'] ?? '' ), array( 'one-sided', 'back-to-back' ), true ) ? (string) $row['layout'] : 'one-sided',
+					'first'     => sanitize_text_field( (string) ( $row['first']     ?? '' ) ),
+					'last'      => sanitize_text_field( (string) ( $row['last']      ?? '' ) ),
+					'top_first' => sanitize_text_field( (string) ( $row['top_first'] ?? '' ) ),
+					'top_last'  => sanitize_text_field( (string) ( $row['top_last']  ?? '' ) ),
+					'bot_first' => sanitize_text_field( (string) ( $row['bot_first'] ?? '' ) ),
+					'bot_last'  => sanitize_text_field( (string) ( $row['bot_last']  ?? '' ) ),
+				);
+			}
+			update_post_meta( $reservation_id, '_en_stall_rows', $stall_rows_clean );
+		}
+
+		// Blocked stalls
+		if ( isset( $_POST['eem_blocked_stalls'] ) ) {
+			$bs_raw = wp_unslash( $_POST['eem_blocked_stalls'] );
+			$blocked_stalls_clean = array_map( 'sanitize_text_field', (array) $bs_raw );
+			update_post_meta( $reservation_id, '_en_blocked_stalls', array_values( array_filter( $blocked_stalls_clean ) ) );
+		}
+
+		// Stall map attachment ID
+		if ( isset( $_POST['eem_stall_map_id'] ) ) {
+			update_post_meta( $reservation_id, '_en_stall_map_id', absint( wp_unslash( $_POST['eem_stall_map_id'] ) ) );
+		}
+
+		// RV zones
+		if ( isset( $_POST['eem_rv_zones'] ) && is_array( $_POST['eem_rv_zones'] ) ) {
+			$rv_zones_raw = wp_unslash( $_POST['eem_rv_zones'] );
+			$rv_zones_clean = array();
+			foreach ( (array) $rv_zones_raw as $zone ) {
+				if ( ! is_array( $zone ) ) continue;
+				$rv_zones_clean[] = array(
+					'name'          => sanitize_text_field( (string) ( $zone['name']          ?? '' ) ),
+					'color'         => sanitize_text_field( (string) ( $zone['color']         ?? '#1668F2' ) ),
+					'nightly'       => number_format( (float) ( $zone['nightly']              ?? 0 ), 2, '.', '' ),
+					'weekend'       => number_format( (float) ( $zone['weekend']              ?? 0 ), 2, '.', '' ),
+					'available_qty' => absint( $zone['available_qty'] ?? 0 ),
+				);
+			}
+			update_post_meta( $reservation_id, '_en_rv_zones', $rv_zones_clean );
+		}
+
+		// RV rows
+		if ( isset( $_POST['eem_rv_rows'] ) && is_array( $_POST['eem_rv_rows'] ) ) {
+			$rv_rows_raw = wp_unslash( $_POST['eem_rv_rows'] );
+			$rv_rows_clean = array();
+			foreach ( (array) $rv_rows_raw as $row ) {
+				if ( ! is_array( $row ) ) continue;
+				$rv_rows_clean[] = array(
+					'name'      => sanitize_text_field( (string) ( $row['name']      ?? '' ) ),
+					'layout'    => in_array( (string) ( $row['layout'] ?? '' ), array( 'one-sided', 'back-to-back' ), true ) ? (string) $row['layout'] : 'one-sided',
+					'first'     => sanitize_text_field( (string) ( $row['first']     ?? '' ) ),
+					'last'      => sanitize_text_field( (string) ( $row['last']      ?? '' ) ),
+					'top_first' => sanitize_text_field( (string) ( $row['top_first'] ?? '' ) ),
+					'top_last'  => sanitize_text_field( (string) ( $row['top_last']  ?? '' ) ),
+					'bot_first' => sanitize_text_field( (string) ( $row['bot_first'] ?? '' ) ),
+					'bot_last'  => sanitize_text_field( (string) ( $row['bot_last']  ?? '' ) ),
+				);
+			}
+			update_post_meta( $reservation_id, '_en_rv_rows', $rv_rows_clean );
+		}
+
+		// Blocked RV lots
+		if ( isset( $_POST['eem_blocked_rv_lots'] ) ) {
+			$bl_raw = wp_unslash( $_POST['eem_blocked_rv_lots'] );
+			$blocked_rv_clean = array_map( 'sanitize_text_field', (array) $bl_raw );
+			update_post_meta( $reservation_id, '_en_blocked_rv_lots', array_values( array_filter( $blocked_rv_clean ) ) );
+		}
+
+		// Event Pre-Entries enabled flag
+		if ( isset( $_POST['eem_event_pre_entries_enabled'] ) ) {
+			update_post_meta( $reservation_id, '_en_event_pre_entries_enabled', absint( wp_unslash( $_POST['eem_event_pre_entries_enabled'] ) ) ? 1 : 0 );
+		}
+
+		// Event Pre-Entries rows
+		if ( isset( $_POST['eem_event_pre_entries'] ) && is_array( $_POST['eem_event_pre_entries'] ) ) {
+			$pe_raw = wp_unslash( $_POST['eem_event_pre_entries'] );
+			$pe_clean = array();
+			foreach ( (array) $pe_raw as $entry ) {
+				if ( ! is_array( $entry ) ) continue;
+				$pe_clean[] = array(
+					'title'     => sanitize_text_field( (string) ( $entry['title']     ?? '' ) ),
+					'inventory' => absint( $entry['inventory'] ?? 0 ),
+					'price'     => number_format( (float) ( $entry['price'] ?? 0 ), 2, '.', '' ),
+				);
+			}
+			update_post_meta( $reservation_id, '_en_event_pre_entries', $pe_clean );
 		}
 
 		wp_send_json_success( array(

@@ -60,7 +60,6 @@ if ( ! function_exists( 'eem_render_editor_layout_summary' ) ) {
 						}
 					} else {
 						echo '<span class="eem-layout-summary-stat-num">—</span>';
-						esc_html_e( ' layout not configured yet', 'equine-event-manager' );
 					}
 					?>
 				</div>

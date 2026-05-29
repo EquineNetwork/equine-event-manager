@@ -37,7 +37,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_partial-field-row.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_partial-toggle-label-row.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_partial-stay-type-pair.php';
-require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_partial-layout-summary.php';
 
 // Format helpers
 $fmt_dt = function ( $v ) {
@@ -55,32 +54,6 @@ $schedule_on  = ! empty( $data['stall_schedule_enabled'] );
 $eb_on        = ! empty( $data['stall_early_bird_enabled'] );
 $shavings_on  = ! empty( $data['required_shavings_enabled'] );
 
-// Layout summary computation (read-only from existing chart meta)
-$stall_blocks  = isset( $data['stall_chart_stall_blocks'] ) ? (array) $data['stall_chart_stall_blocks'] : array();
-$row_count     = count( array_filter( $stall_blocks, function ( $b ) { return is_array( $b ) && ! empty( $b['label'] ); } ) );
-$total_stalls  = 0;
-$blocked_units = isset( $data['stall_chart_blocked_stall_units'] ) ? (array) $data['stall_chart_blocked_stall_units'] : array();
-$blocked_total = count( $blocked_units );
-$breakdown     = array();
-foreach ( $stall_blocks as $blk ) {
-	if ( ! is_array( $blk ) || empty( $blk['label'] ) ) continue;
-	$start = isset( $blk['start'] ) ? (int) $blk['start'] : 0;
-	$end   = isset( $blk['end'] ) ? (int) $blk['end'] : 0;
-	$count = $start && $end ? abs( $end - $start ) + 1 : 0;
-	$total_stalls += $count;
-	$row_blocked   = 0;
-	foreach ( $blocked_units as $u ) {
-		// crude membership: blocked units stored as label-prefixed unit codes
-		if ( is_string( $u ) && false !== stripos( $u, (string) $blk['label'] ) ) {
-			$row_blocked++;
-		}
-	}
-	$breakdown[] = array(
-		'label'   => (string) $blk['label'],
-		'count'   => $count,
-		'blocked' => $row_blocked,
-	);
-}
 ?>
 <input type="hidden" name="en_reservation[stalls_enabled]" data-eem-section-enabled="stall" value="<?php echo ! empty( $data['stalls_enabled'] ) ? '1' : '0'; ?>" />
 
@@ -343,27 +316,158 @@ eem_render_editor_field_row( array(
 	),
 ) );
 
-// 18. Stall Layout summary widget (read-only) — inside mapped-content wrapper (C8)
+// 18. Stall Row Builder — inside mapped-content wrapper (C8)
+// Load meta or fall back to 3 seeded rows.
+$stall_rows_meta = get_post_meta( get_the_ID(), '_en_stall_rows', true );
+$stall_rows      = ( is_array( $stall_rows_meta ) && ! empty( $stall_rows_meta ) )
+	? $stall_rows_meta
+	: array(
+		array( 'name' => 'Red Barn Row A',    'layout' => 'one-sided',    'first' => '100', 'last' => '111', 'top_first' => '', 'top_last' => '', 'bot_first' => '', 'bot_last' => '' ),
+		array( 'name' => 'Red Barn Row B',    'layout' => 'back-to-back', 'first' => '',    'last' => '',    'top_first' => '112', 'top_last' => '123', 'bot_first' => '124', 'bot_last' => '135' ),
+		array( 'name' => 'Yellow Barn Row A', 'layout' => 'one-sided',    'first' => 'Y1',  'last' => 'Y12', 'top_first' => '', 'top_last' => '', 'bot_first' => '', 'bot_last' => '' ),
+	);
+
+$blocked_stalls_meta = get_post_meta( get_the_ID(), '_en_blocked_stalls', true );
+$blocked_stalls      = is_array( $blocked_stalls_meta ) ? $blocked_stalls_meta : array();
+
+$stall_map_id = (int) get_post_meta( get_the_ID(), '_en_stall_map_id', true );
+$stall_map_url  = $stall_map_id ? wp_get_attachment_url( $stall_map_id ) : '';
+$stall_map_name = $stall_map_id ? basename( get_attached_file( $stall_map_id ) ) : '';
 ?>
 <div id="eem-stall-mapped-content"
 	style="<?php echo $stall_is_mapped ? '' : 'display:none;'; ?>">
 <?php
+
+// ── Stall Rows field-row ──
 ob_start();
-eem_render_editor_layout_summary( array(
-	'kind'          => 'stall',
-	'row_count'     => $row_count,
-	'total_count'   => $total_stalls,
-	'blocked_count' => $blocked_total,
-	'row_breakdown' => $breakdown,
-	'manage_label'  => __( 'Manage Stall Layout', 'equine-event-manager' ),
-	'manage_url'    => admin_url( 'admin.php?page=equine-event-manager-stall-charts' ),
-	'hint'          => __( 'Edit the physical stall chart from the Stall Charts page. Coming in C8.', 'equine-event-manager' ),
-) );
-$summary_html = (string) ob_get_clean();
+?>
+<div class="eem-row-builder-summary" style="margin-bottom:10px" id="eem-stall-row-summary"></div>
+<div class="eem-row-builder" id="eem-stall-row-builder-list">
+<?php foreach ( $stall_rows as $ri => $row ) :
+	$r_name      = isset( $row['name'] )      ? (string) $row['name']      : '';
+	$r_layout    = isset( $row['layout'] )     ? (string) $row['layout']    : 'one-sided';
+	$r_first     = isset( $row['first'] )      ? (string) $row['first']     : '';
+	$r_last      = isset( $row['last'] )       ? (string) $row['last']      : '';
+	$r_top_first = isset( $row['top_first'] )  ? (string) $row['top_first'] : '';
+	$r_top_last  = isset( $row['top_last'] )   ? (string) $row['top_last']  : '';
+	$r_bot_first = isset( $row['bot_first'] )  ? (string) $row['bot_first'] : '';
+	$r_bot_last  = isset( $row['bot_last'] )   ? (string) $row['bot_last']  : '';
+	$is_b2b      = ( 'back-to-back' === $r_layout );
+	?>
+	<div class="eem-row-card" data-row-index="<?php echo (int) $ri; ?>">
+		<div class="eem-row-card-top">
+			<div class="eem-row-card-field">
+				<span class="eem-row-card-field-label"><?php esc_html_e( 'Row Name', 'equine-event-manager' ); ?></span>
+				<input type="text" name="eem_stall_rows[<?php echo (int) $ri; ?>][name]" value="<?php echo esc_attr( $r_name ); ?>" data-eem-input-action="stall-row-input">
+			</div>
+			<div class="eem-row-card-field eem-row-card-field-layout">
+				<span class="eem-row-card-field-label"><?php esc_html_e( 'Layout', 'equine-event-manager' ); ?></span>
+				<select name="eem_stall_rows[<?php echo (int) $ri; ?>][layout]" data-eem-input-action="stall-row-layout">
+					<option value="one-sided"<?php selected( $r_layout, 'one-sided' ); ?>><?php esc_html_e( 'One-sided', 'equine-event-manager' ); ?></option>
+					<option value="back-to-back"<?php selected( $r_layout, 'back-to-back' ); ?>><?php esc_html_e( 'Back-to-back', 'equine-event-manager' ); ?></option>
+				</select>
+			</div>
+			<button class="eem-row-card-delete" type="button" title="<?php esc_attr_e( 'Delete row', 'equine-event-manager' ); ?>" data-eem-action="stall-delete-row">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+			</button>
+		</div>
+		<div class="eem-row-card-one-sided"<?php echo $is_b2b ? ' style="display:none"' : ''; ?>>
+			<div class="eem-row-card-field">
+				<span class="eem-row-card-field-label"><?php esc_html_e( 'First Stall Label', 'equine-event-manager' ); ?></span>
+				<input type="text" name="eem_stall_rows[<?php echo (int) $ri; ?>][first]" value="<?php echo esc_attr( $r_first ); ?>" data-role="first" data-eem-input-action="stall-row-input">
+			</div>
+			<div class="eem-row-card-field">
+				<span class="eem-row-card-field-label"><?php esc_html_e( 'Last Stall Label', 'equine-event-manager' ); ?></span>
+				<input type="text" name="eem_stall_rows[<?php echo (int) $ri; ?>][last]" value="<?php echo esc_attr( $r_last ); ?>" data-role="last" data-eem-input-action="stall-row-input">
+			</div>
+		</div>
+		<div class="eem-row-card-sides"<?php echo $is_b2b ? '' : ' style="display:none"'; ?>>
+			<div class="eem-side-block">
+				<div class="eem-side-block-label"><?php esc_html_e( 'Top Side', 'equine-event-manager' ); ?></div>
+				<div class="eem-side-block-row">
+					<div class="eem-row-card-field"><span class="eem-row-card-field-label"><?php esc_html_e( 'First', 'equine-event-manager' ); ?></span><input type="text" name="eem_stall_rows[<?php echo (int) $ri; ?>][top_first]" value="<?php echo esc_attr( $r_top_first ); ?>" data-role="top-first" data-eem-input-action="stall-row-input"></div>
+					<div class="eem-row-card-field"><span class="eem-row-card-field-label"><?php esc_html_e( 'Last', 'equine-event-manager' ); ?></span><input type="text" name="eem_stall_rows[<?php echo (int) $ri; ?>][top_last]" value="<?php echo esc_attr( $r_top_last ); ?>" data-role="top-last" data-eem-input-action="stall-row-input"></div>
+				</div>
+			</div>
+			<div class="eem-side-block">
+				<div class="eem-side-block-label"><?php esc_html_e( 'Bottom Side', 'equine-event-manager' ); ?></div>
+				<div class="eem-side-block-row">
+					<div class="eem-row-card-field"><span class="eem-row-card-field-label"><?php esc_html_e( 'First', 'equine-event-manager' ); ?></span><input type="text" name="eem_stall_rows[<?php echo (int) $ri; ?>][bot_first]" value="<?php echo esc_attr( $r_bot_first ); ?>" data-role="bot-first" data-eem-input-action="stall-row-input"></div>
+					<div class="eem-row-card-field"><span class="eem-row-card-field-label"><?php esc_html_e( 'Last', 'equine-event-manager' ); ?></span><input type="text" name="eem_stall_rows[<?php echo (int) $ri; ?>][bot_last]" value="<?php echo esc_attr( $r_bot_last ); ?>" data-role="bot-last" data-eem-input-action="stall-row-input"></div>
+				</div>
+			</div>
+		</div>
+		<div>
+			<div class="eem-row-card-preview-label"><?php esc_html_e( 'Preview', 'equine-event-manager' ); ?> <span class="eem-row-card-count"></span></div>
+			<div class="eem-stall-row-layout<?php echo $is_b2b ? ' eem-back-to-back' : ''; ?>"></div>
+		</div>
+	</div>
+<?php endforeach; ?>
+</div>
+<button class="eem-row-add-btn" type="button" data-eem-action="stall-add-row">
+	<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+	<?php esc_html_e( 'Add Row', 'equine-event-manager' ); ?>
+</button>
+<span class="eem-field-hint"><?php echo wp_kses( __( 'Each row appears as a horizontal strip of stall boxes. <strong>One-sided</strong>: single row of stalls. <strong>Back-to-back</strong>: two rows separated by an aisle. Stall labels can be numbers (100–111) or strings (Y1–Y12).', 'equine-event-manager' ), array( 'strong' => array() ) ); ?></span>
+<?php
+$stall_rows_html = (string) ob_get_clean();
 eem_render_editor_field_row( array(
-	'label'        => __( 'Stall Layout', 'equine-event-manager' ),
-	'label_sub'    => __( 'Physical rows, stall numbers, blocked stalls', 'equine-event-manager' ),
-	'control_html' => $summary_html,
+	'label'        => __( 'Stall Rows', 'equine-event-manager' ),
+	'label_sub'    => __( 'Define the physical layout customers will see', 'equine-event-manager' ),
+	'row_id'       => 'row-stall-blocks',
+	'control_html' => $stall_rows_html,
+) );
+
+// ── Blocked Stall Numbers tag-select ──
+ob_start();
+?>
+<div class="eem-tag-select" id="eem-blocked-stalls-select">
+	<div class="eem-tag-select-input" data-eem-action="tag-open">
+		<?php foreach ( $blocked_stalls as $bs_val ) : ?>
+		<span class="eem-tag-chip" data-value="<?php echo esc_attr( (string) $bs_val ); ?>">
+			<?php echo esc_html( (string) $bs_val ); ?>
+			<button type="button" class="eem-tag-chip-remove" data-eem-action="tag-remove" aria-label="<?php esc_attr_e( 'Remove', 'equine-event-manager' ); ?>">&#xd7;</button>
+			<input type="hidden" name="eem_blocked_stalls[]" value="<?php echo esc_attr( (string) $bs_val ); ?>">
+		</span>
+		<?php endforeach; ?>
+		<input class="eem-tag-search" type="text" placeholder="<?php esc_attr_e( 'Type a stall number…', 'equine-event-manager' ); ?>" data-eem-input-action="tag-search" data-eem-tag-target="eem-blocked-stalls-select">
+	</div>
+	<div class="eem-tag-dropdown" id="eem-blocked-stalls-dropdown">
+		<div class="eem-tag-dropdown-empty" style="display:none"><?php esc_html_e( 'No matching stall numbers.', 'equine-event-manager' ); ?></div>
+	</div>
+</div>
+<span class="eem-field-hint"><?php esc_html_e( 'Type a stall number to filter, then click to block it. Click × on a chip to unblock.', 'equine-event-manager' ); ?></span>
+<?php
+$blocked_html = (string) ob_get_clean();
+eem_render_editor_field_row( array(
+	'label'        => __( 'Blocked Stall Numbers', 'equine-event-manager' ),
+	'label_sub'    => __( 'Hold back from reservation', 'equine-event-manager' ),
+	'row_id'       => 'row-stall-blocked',
+	'control_html' => $blocked_html,
+) );
+
+// ── Stall Map file upload ──
+ob_start();
+?>
+<div class="eem-file-row">
+	<span class="eem-file-name" id="eem-stall-map-name"><?php echo $stall_map_name ? esc_html( $stall_map_name ) : ''; ?></span>
+	<button class="eem-btn-upload" type="button" data-eem-action="stall-map-upload"><?php esc_html_e( 'Upload File', 'equine-event-manager' ); ?></button>
+	<button class="eem-btn-file-del" type="button" aria-label="<?php esc_attr_e( 'Remove file', 'equine-event-manager' ); ?>" data-eem-action="stall-map-remove"<?php echo $stall_map_id ? '' : ' style="display:none"'; ?>>
+		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+	</button>
+	<?php if ( $stall_map_url ) : ?>
+		<a class="eem-view-link" href="<?php echo esc_url( $stall_map_url ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'View file', 'equine-event-manager' ); ?></a>
+	<?php endif; ?>
+	<input type="hidden" name="eem_stall_map_id" id="eem-stall-map-id" value="<?php echo esc_attr( (string) $stall_map_id ); ?>">
+</div>
+<span class="eem-field-hint"><?php esc_html_e( 'Upload a stall map customers can open in a new tab while choosing a stall.', 'equine-event-manager' ); ?></span>
+<?php
+$map_html = (string) ob_get_clean();
+eem_render_editor_field_row( array(
+	'label'        => __( 'Stall Map', 'equine-event-manager' ),
+	'label_sub'    => __( 'PDF or image customers can open', 'equine-event-manager' ),
+	'row_id'       => 'row-stall-map',
+	'control_html' => $map_html,
 ) );
 ?>
 </div>

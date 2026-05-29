@@ -1672,6 +1672,36 @@
 		},
 		'toggle-inventory-mode': function (target) {
 			toggleInventoryMode(target);
+		},
+
+		/* C8 — Stall row builder */
+		'stall-add-row': function () {
+			stallAddRow();
+		},
+		'stall-delete-row': function (target) {
+			stallDeleteRow(target);
+		},
+
+		/* C8 — RV zones + row builder */
+		'rv-add-zone': function () {
+			rvAddZone();
+		},
+		'rv-delete-zone': function (target) {
+			rvDeleteZone(target);
+		},
+		'rv-add-row': function () {
+			rvAddRow();
+		},
+		'rv-delete-row': function (target) {
+			rvDeleteRow(target);
+		},
+
+		/* C8 — Event Pre-Entries */
+		'pre-entry-add': function () {
+			preEntryAdd();
+		},
+		'pre-entry-delete': function (target) {
+			preEntryDelete(target);
 		}
 	};
 
@@ -1712,6 +1742,29 @@
 		if (ev.target && ev.target.dataset.eemInputAction === 'header-filter-events') {
 			filterEventOptions(ev.target.value);
 		}
+	});
+
+	/* C8 — Row builder / zone / pre-entry input delegation. */
+	document.addEventListener('input', function (ev) {
+		var inp = ev.target;
+		if (!inp || !inp.dataset) return;
+		var ia = inp.dataset.eemInputAction;
+		if (!ia) return;
+		if (ia === 'stall-row-input')  { stallRowInputChange(inp); }
+		if (ia === 'stall-row-layout') { stallRowLayoutChange(inp); }
+		if (ia === 'rv-zone-input')    { rvZoneInputChange(inp); }
+		if (ia === 'rv-row-input')     { rvRowInputChange(inp); }
+		if (ia === 'rv-row-layout')    { rvRowLayoutChange(inp); }
+	});
+
+	/* Selects fire 'change', not 'input' — wire a separate listener. */
+	document.addEventListener('change', function (ev) {
+		var inp = ev.target;
+		if (!inp || !inp.dataset) return;
+		var ia = inp.dataset.eemInputAction;
+		if (!ia) return;
+		if (ia === 'stall-row-layout') { stallRowLayoutChange(inp); }
+		if (ia === 'rv-row-layout')    { rvRowLayoutChange(inp); }
 	});
 
 	// Escape key closes open overlays.
@@ -3000,25 +3053,352 @@ function toggleInventoryMode(btn) {
 
 function updateStallInventoryDisplay() {
 	if (!stallMappedIsActive()) return;
+	/* Stall total = sum of stall-label counts across all row cards,
+	   minus the number of blocked-stall chips. */
 	var total = 0;
-	document.querySelectorAll('#eem-stall-mapped-content [data-role="zone-qty"]').forEach(function(inp) {
-		total += parseInt(inp.value || 0, 10) || 0;
+	document.querySelectorAll('#eem-stall-row-builder-list .eem-row-card').forEach(function (card) {
+		var layout = card.querySelector('[data-eem-input-action="stall-row-layout"]');
+		var isB2B  = layout && layout.value === 'back-to-back';
+		if (isB2B) {
+			var tFirst = card.querySelector('[data-role="top-first"]');
+			var tLast  = card.querySelector('[data-role="top-last"]');
+			var bFirst = card.querySelector('[data-role="bot-first"]');
+			var bLast  = card.querySelector('[data-role="bot-last"]');
+			total += stallLabelsBetween(tFirst ? tFirst.value : '', tLast ? tLast.value : '').length;
+			total += stallLabelsBetween(bFirst ? bFirst.value : '', bLast ? bLast.value : '').length;
+		} else {
+			var first = card.querySelector('[data-role="first"]');
+			var last  = card.querySelector('[data-role="last"]');
+			total += stallLabelsBetween(first ? first.value : '', last ? last.value : '').length;
+		}
 	});
-	var blocked = document.querySelectorAll('#eem-stall-mapped-content .eem-tag-chip').length;
+	var blocked = document.querySelectorAll('#eem-blocked-stalls-select .eem-tag-chip').length;
 	total = Math.max(0, total - blocked);
 	var numEl = document.getElementById('eem-stall-inventory-number');
 	if (numEl) numEl.textContent = total;
+	/* Update summary line */
+	var rows   = document.querySelectorAll('#eem-stall-row-builder-list .eem-row-card').length;
+	var sumEl  = document.getElementById('eem-stall-row-summary');
+	if (sumEl) sumEl.innerHTML = '<strong style="color:#031B4E">' + rows + ' ' + (rows === 1 ? 'row' : 'rows') + ' · ' + total + ' stalls total</strong> across this reservation';
 }
 
 function updateRvInventoryDisplay() {
 	if (!rvMappedIsActive()) return;
+	/* RV total = sum of available_qty across all zone rows. */
 	var total = 0;
 	document.querySelectorAll('#eem-rv-mapped-content [data-role="zone-qty"]').forEach(function(inp) {
 		total += parseInt(inp.value || 0, 10) || 0;
 	});
-	var blocked = document.querySelectorAll('#eem-rv-mapped-content .eem-tag-chip').length;
+	var blocked = document.querySelectorAll('#eem-blocked-rv-lots-select .eem-tag-chip').length;
 	total = Math.max(0, total - blocked);
 	var numEl = document.getElementById('eem-rv-inventory-number');
 	if (numEl) numEl.textContent = total;
+	/* Update lot row summary */
+	var rows  = document.querySelectorAll('#eem-rv-row-builder-list .eem-row-card').length;
+	var lots  = 0;
+	document.querySelectorAll('#eem-rv-row-builder-list .eem-row-card').forEach(function (card) {
+		var layout = card.querySelector('[data-eem-input-action="rv-row-layout"]');
+		var isB2B  = layout && layout.value === 'back-to-back';
+		if (isB2B) {
+			var tFirst = card.querySelector('[data-role="top-first"]');
+			var tLast  = card.querySelector('[data-role="top-last"]');
+			var bFirst = card.querySelector('[data-role="bot-first"]');
+			var bLast  = card.querySelector('[data-role="bot-last"]');
+			lots += stallLabelsBetween(tFirst ? tFirst.value : '', tLast ? tLast.value : '').length;
+			lots += stallLabelsBetween(bFirst ? bFirst.value : '', bLast ? bLast.value : '').length;
+		} else {
+			var first = card.querySelector('[data-role="first"]');
+			var last  = card.querySelector('[data-role="last"]');
+			lots += stallLabelsBetween(first ? first.value : '', last ? last.value : '').length;
+		}
+	});
+	var sumEl = document.getElementById('eem-rv-row-summary');
+	if (sumEl) sumEl.innerHTML = '<strong style="color:#031B4E">' + rows + ' ' + (rows === 1 ? 'row' : 'rows') + ' · ' + lots + ' lots total</strong> across this reservation';
 }
+
+/* ─────────────────────────────────────────────────────────────
+ * C8 — stallLabelsBetween: compute stall/lot label sequence
+ * Handles: integer (100–111), prefixed (Y1–Y12), padded (A-01–A-12).
+ * Returns array, capped at 50 labels.
+ * ───────────────────────────────────────────────────────────── */
+function stallLabelsBetween(first, last) {
+	first = String(first || '').trim();
+	last  = String(last  || '').trim();
+	if (!first || !last) return [];
+
+	/* Pure integers */
+	if (/^\d+$/.test(first) && /^\d+$/.test(last)) {
+		var a = parseInt(first, 10), b = parseInt(last, 10);
+		if (isNaN(a) || isNaN(b)) return [];
+		var step = a <= b ? 1 : -1;
+		var out = [];
+		for (var n = a; step > 0 ? n <= b : n >= b; n += step) {
+			out.push(String(n));
+			if (out.length >= 50) break;
+		}
+		return out;
+	}
+
+	/* Prefixed: split into (prefix, numeric-suffix).
+	   Supports: Y1 → prefix="Y", num=1
+	             A-01 → prefix="A-", num=1 (zero-padded preserved) */
+	var prefixRe = /^([A-Za-z][A-Za-z0-9\-]*)(\d+)$/;
+	var mF = first.match(prefixRe);
+	var mL = last.match(prefixRe);
+	if (mF && mL && mF[1] === mL[1]) {
+		var prefix  = mF[1];
+		var padLen  = mF[2].length > 1 && mF[2][0] === '0' ? mF[2].length : 0;
+		var numA    = parseInt(mF[2], 10);
+		var numB    = parseInt(mL[2], 10);
+		if (isNaN(numA) || isNaN(numB)) return [];
+		var stepP = numA <= numB ? 1 : -1;
+		var outP  = [];
+		for (var i = numA; stepP > 0 ? i <= numB : i >= numB; i += stepP) {
+			var s = String(i);
+			if (padLen > 0) { while (s.length < padLen) s = '0' + s; }
+			outP.push(prefix + s);
+			if (outP.length >= 50) break;
+		}
+		return outP;
+	}
+
+	/* Fallback: just return [first, last] if both present */
+	return [first, last];
+}
+
+/* ─────────────────────────────────────────────────────────────
+ * C8 — generateStallPreview: fill the .eem-stall-row-layout div
+ * ───────────────────────────────────────────────────────────── */
+function generateStallPreview(rowCard) {
+	var layoutSel  = rowCard.querySelector('[data-eem-input-action="stall-row-layout"], [data-eem-input-action="rv-row-layout"]');
+	var layout     = layoutSel ? layoutSel.value : 'one-sided';
+	var previewDiv = rowCard.querySelector('.eem-stall-row-layout');
+	var countEl    = rowCard.querySelector('.eem-row-card-count');
+	if (!previewDiv) return;
+
+	if (layout === 'back-to-back') {
+		previewDiv.classList.add('eem-back-to-back');
+		var topFirst = rowCard.querySelector('[data-role="top-first"]');
+		var topLast  = rowCard.querySelector('[data-role="top-last"]');
+		var botFirst = rowCard.querySelector('[data-role="bot-first"]');
+		var botLast  = rowCard.querySelector('[data-role="bot-last"]');
+		var topLabels = stallLabelsBetween(topFirst ? topFirst.value : '', topLast ? topLast.value : '');
+		var botLabels = stallLabelsBetween(botFirst ? botFirst.value : '', botLast ? botLast.value : '');
+		var topHtml = topLabels.map(function(l) { return '<div class="eem-stall-box">' + escapeHtml(l) + '</div>'; }).join('');
+		var botHtml = botLabels.map(function(l) { return '<div class="eem-stall-box">' + escapeHtml(l) + '</div>'; }).join('');
+		previewDiv.innerHTML =
+			'<div class="eem-stall-row-side">' + topHtml + '</div>' +
+			'<div class="eem-stall-row-aisle" title="Aisle"></div>' +
+			'<div class="eem-stall-row-side">' + botHtml + '</div>';
+		if (countEl) countEl.textContent = (topLabels.length + botLabels.length) + ' stalls · Back-to-back (' + topLabels.length + ' top, ' + botLabels.length + ' bottom)';
+	} else {
+		previewDiv.classList.remove('eem-back-to-back');
+		var first = rowCard.querySelector('[data-role="first"]');
+		var last  = rowCard.querySelector('[data-role="last"]');
+		var labels = stallLabelsBetween(first ? first.value : '', last ? last.value : '');
+		previewDiv.innerHTML = labels.map(function(l) { return '<div class="eem-stall-box">' + escapeHtml(l) + '</div>'; }).join('');
+		if (countEl) countEl.textContent = labels.length + ' stalls · One-sided';
+	}
+}
+
+/* ─────────────────────────────────────────────────────────────
+ * C8 — Stall row builder helpers
+ * ───────────────────────────────────────────────────────────── */
+function stallAddRow() {
+	var list = document.getElementById('eem-stall-row-builder-list');
+	if (!list) return;
+	var idx  = list.querySelectorAll('.eem-row-card').length;
+	var card = document.createElement('div');
+	card.className   = 'eem-row-card';
+	card.dataset.rowIndex = idx;
+	card.innerHTML =
+		'<div class="eem-row-card-top">' +
+			'<div class="eem-row-card-field">' +
+				'<span class="eem-row-card-field-label">Row Name</span>' +
+				'<input type="text" name="eem_stall_rows[' + idx + '][name]" value="" data-eem-input-action="stall-row-input">' +
+			'</div>' +
+			'<div class="eem-row-card-field eem-row-card-field-layout">' +
+				'<span class="eem-row-card-field-label">Layout</span>' +
+				'<select name="eem_stall_rows[' + idx + '][layout]" data-eem-input-action="stall-row-layout">' +
+					'<option value="one-sided" selected>One-sided</option>' +
+					'<option value="back-to-back">Back-to-back</option>' +
+				'</select>' +
+			'</div>' +
+			'<button class="eem-row-card-delete" type="button" title="Delete row" data-eem-action="stall-delete-row">' +
+				'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>' +
+			'</button>' +
+		'</div>' +
+		'<div class="eem-row-card-one-sided">' +
+			'<div class="eem-row-card-field"><span class="eem-row-card-field-label">First Stall Label</span><input type="text" name="eem_stall_rows[' + idx + '][first]" value="" data-role="first" data-eem-input-action="stall-row-input"></div>' +
+			'<div class="eem-row-card-field"><span class="eem-row-card-field-label">Last Stall Label</span><input type="text" name="eem_stall_rows[' + idx + '][last]" value="" data-role="last" data-eem-input-action="stall-row-input"></div>' +
+		'</div>' +
+		'<div class="eem-row-card-sides" style="display:none">' +
+			'<div class="eem-side-block"><div class="eem-side-block-label">Top Side</div><div class="eem-side-block-row">' +
+				'<div class="eem-row-card-field"><span class="eem-row-card-field-label">First</span><input type="text" name="eem_stall_rows[' + idx + '][top_first]" value="" data-role="top-first" data-eem-input-action="stall-row-input"></div>' +
+				'<div class="eem-row-card-field"><span class="eem-row-card-field-label">Last</span><input type="text" name="eem_stall_rows[' + idx + '][top_last]" value="" data-role="top-last" data-eem-input-action="stall-row-input"></div>' +
+			'</div></div>' +
+			'<div class="eem-side-block"><div class="eem-side-block-label">Bottom Side</div><div class="eem-side-block-row">' +
+				'<div class="eem-row-card-field"><span class="eem-row-card-field-label">First</span><input type="text" name="eem_stall_rows[' + idx + '][bot_first]" value="" data-role="bot-first" data-eem-input-action="stall-row-input"></div>' +
+				'<div class="eem-row-card-field"><span class="eem-row-card-field-label">Last</span><input type="text" name="eem_stall_rows[' + idx + '][bot_last]" value="" data-role="bot-last" data-eem-input-action="stall-row-input"></div>' +
+			'</div></div>' +
+		'</div>' +
+		'<div>' +
+			'<div class="eem-row-card-preview-label">Preview <span class="eem-row-card-count"></span></div>' +
+			'<div class="eem-stall-row-layout"></div>' +
+		'</div>';
+	list.appendChild(card);
+	updateStallInventoryDisplay();
+}
+
+function stallDeleteRow(btn) {
+	var card = btn.closest('.eem-row-card');
+	if (card) card.remove();
+	updateStallInventoryDisplay();
+}
+
+function stallRowInputChange(input) {
+	var card = input.closest('.eem-row-card');
+	if (card) generateStallPreview(card);
+	updateStallInventoryDisplay();
+}
+
+function stallRowLayoutChange(select) {
+	var card = select.closest('.eem-row-card');
+	if (!card) return;
+	var isB2B    = select.value === 'back-to-back';
+	var oneSided = card.querySelector('.eem-row-card-one-sided');
+	var sides    = card.querySelector('.eem-row-card-sides');
+	if (oneSided) oneSided.style.display = isB2B ? 'none' : '';
+	if (sides)    sides.style.display    = isB2B ? '' : 'none';
+	generateStallPreview(card);
+	updateStallInventoryDisplay();
+}
+
+/* ─────────────────────────────────────────────────────────────
+ * C8 — RV zone + row builder helpers
+ * ───────────────────────────────────────────────────────────── */
+function rvAddZone() {
+	var list = document.getElementById('eem-lot-zones-list');
+	var tmpl = document.getElementById('eem-lot-zone-row-template');
+	if (!list || !tmpl) return;
+	var idx  = list.querySelectorAll('.eem-zone-row').length;
+	var frag = tmpl.content.cloneNode(true);
+	/* Replace __index__ placeholders */
+	frag.querySelectorAll('[name]').forEach(function (el) {
+		el.name = el.name.replace('__index__', idx);
+	});
+	frag.querySelectorAll('[data-zone-index]').forEach(function (el) {
+		el.dataset.zoneIndex = idx;
+	});
+	list.appendChild(frag);
+	updateRvInventoryDisplay();
+}
+
+function rvDeleteZone(btn) {
+	var row = btn.closest('.eem-zone-row');
+	if (row) row.remove();
+	updateRvInventoryDisplay();
+}
+
+function rvZoneInputChange() {
+	updateRvInventoryDisplay();
+}
+
+function rvAddRow() {
+	var list = document.getElementById('eem-rv-row-builder-list');
+	if (!list) return;
+	var idx  = list.querySelectorAll('.eem-row-card').length;
+	var card = document.createElement('div');
+	card.className   = 'eem-row-card';
+	card.dataset.rowIndex = idx;
+	card.innerHTML =
+		'<div class="eem-row-card-top">' +
+			'<div class="eem-row-card-field"><span class="eem-row-card-field-label">Row Name</span><input type="text" name="eem_rv_rows[' + idx + '][name]" value="" data-eem-input-action="rv-row-input"></div>' +
+			'<div class="eem-row-card-field eem-row-card-field-layout"><span class="eem-row-card-field-label">Layout</span><select name="eem_rv_rows[' + idx + '][layout]" data-eem-input-action="rv-row-layout"><option value="one-sided" selected>One-sided</option><option value="back-to-back">Back-to-back</option></select></div>' +
+			'<button class="eem-row-card-delete" type="button" title="Delete row" data-eem-action="rv-delete-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>' +
+		'</div>' +
+		'<div class="eem-row-card-one-sided">' +
+			'<div class="eem-row-card-field"><span class="eem-row-card-field-label">First Lot Label</span><input type="text" name="eem_rv_rows[' + idx + '][first]" value="" data-role="first" data-eem-input-action="rv-row-input"></div>' +
+			'<div class="eem-row-card-field"><span class="eem-row-card-field-label">Last Lot Label</span><input type="text" name="eem_rv_rows[' + idx + '][last]" value="" data-role="last" data-eem-input-action="rv-row-input"></div>' +
+		'</div>' +
+		'<div class="eem-row-card-sides" style="display:none">' +
+			'<div class="eem-side-block"><div class="eem-side-block-label">Top Side</div><div class="eem-side-block-row"><div class="eem-row-card-field"><span class="eem-row-card-field-label">First</span><input type="text" name="eem_rv_rows[' + idx + '][top_first]" value="" data-role="top-first" data-eem-input-action="rv-row-input"></div><div class="eem-row-card-field"><span class="eem-row-card-field-label">Last</span><input type="text" name="eem_rv_rows[' + idx + '][top_last]" value="" data-role="top-last" data-eem-input-action="rv-row-input"></div></div></div>' +
+			'<div class="eem-side-block"><div class="eem-side-block-label">Bottom Side</div><div class="eem-side-block-row"><div class="eem-row-card-field"><span class="eem-row-card-field-label">First</span><input type="text" name="eem_rv_rows[' + idx + '][bot_first]" value="" data-role="bot-first" data-eem-input-action="rv-row-input"></div><div class="eem-row-card-field"><span class="eem-row-card-field-label">Last</span><input type="text" name="eem_rv_rows[' + idx + '][bot_last]" value="" data-role="bot-last" data-eem-input-action="rv-row-input"></div></div></div>' +
+		'</div>' +
+		'<div><div class="eem-row-card-preview-label">Preview <span class="eem-row-card-count"></span></div><div class="eem-stall-row-layout"></div></div>';
+	list.appendChild(card);
+	updateRvInventoryDisplay();
+}
+
+function rvDeleteRow(btn) {
+	var card = btn.closest('.eem-row-card');
+	if (card) card.remove();
+	updateRvInventoryDisplay();
+}
+
+function rvRowInputChange(input) {
+	var card = input.closest('.eem-row-card');
+	if (card) {
+		var layoutSel = card.querySelector('[data-eem-input-action="rv-row-layout"]');
+		if (layoutSel) {
+			/* Temporarily alias so generateStallPreview works for RV cards */
+			var orig = layoutSel.dataset.eemInputAction;
+			layoutSel.dataset.eemInputAction = 'rv-row-layout';
+			generateStallPreview(card);
+			layoutSel.dataset.eemInputAction = orig;
+		} else {
+			generateStallPreview(card);
+		}
+	}
+	updateRvInventoryDisplay();
+}
+
+function rvRowLayoutChange(select) {
+	var card = select.closest('.eem-row-card');
+	if (!card) return;
+	var isB2B    = select.value === 'back-to-back';
+	var oneSided = card.querySelector('.eem-row-card-one-sided');
+	var sides    = card.querySelector('.eem-row-card-sides');
+	if (oneSided) oneSided.style.display = isB2B ? 'none' : '';
+	if (sides)    sides.style.display    = isB2B ? '' : 'none';
+	generateStallPreview(card);
+	updateRvInventoryDisplay();
+}
+
+/* ─────────────────────────────────────────────────────────────
+ * C8 — Event Pre-Entries helpers
+ * ───────────────────────────────────────────────────────────── */
+function preEntryAdd() {
+	var tbody = document.getElementById('eem-pre-entries-list');
+	var tmpl  = document.getElementById('eem-pre-entry-row-template');
+	if (!tbody || !tmpl) return;
+	var idx  = tbody.querySelectorAll('tr').length;
+	var frag = tmpl.content.cloneNode(true);
+	frag.querySelectorAll('[name]').forEach(function (el) {
+		el.name = el.name.replace('__index__', idx);
+	});
+	tbody.appendChild(frag);
+}
+
+function preEntryDelete(btn) {
+	var row = btn.closest('tr');
+	if (row) row.remove();
+}
+
+/* C8 — initialise previews for seeded rows on page load */
+(function () {
+	function initPreviews() {
+		document.querySelectorAll('#eem-stall-row-builder-list .eem-row-card, #eem-rv-row-builder-list .eem-row-card').forEach(function (card) {
+			generateStallPreview(card);
+		});
+		updateStallInventoryDisplay();
+		updateRvInventoryDisplay();
+	}
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', initPreviews);
+	} else {
+		initPreviews();
+	}
+})();
+
 })();
