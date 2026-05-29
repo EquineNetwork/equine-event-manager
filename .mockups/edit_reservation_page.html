@@ -432,7 +432,6 @@ a:hover{text-decoration:none}
 .inventory-computed-wrap{display:flex;align-items:baseline;gap:6px;margin-bottom:4px}
 .inventory-computed-number{font-size:28px;font-weight:700;color:#031B4E;line-height:1}
 .inventory-computed-label{font-size:12px;color:#6B7A99;font-style:italic}
-.badge-coming-soon{font-size:10px;font-weight:600;color:#6B7A99;background:#F0F2F8;border-radius:3px;padding:1px 5px;margin-left:5px;vertical-align:middle;text-transform:uppercase;letter-spacing:.3px}
 </style>
 </head>
 <body>
@@ -791,7 +790,7 @@ a:hover{text-decoration:none}
                     <button class="mode-btn active" data-mode="bulk" data-mapped-target="stall-mapped-content" onclick="toggleInventoryMode(this)">Bulk</button>
                     <button class="mode-btn" data-mode="mapped" data-mapped-target="stall-mapped-content" onclick="toggleInventoryMode(this)">Mapped</button>
                   </div>
-                  <span class="field-hint inventory-mode-hint">One total number — customers pick how many stalls they need at checkout</span>
+                  <span class="field-hint inventory-mode-hint">Customers pick how many stalls they need at checkout; admin assigns specific stalls on the Stall &amp; RV Charts page</span>
                 </div>
               </div>
 
@@ -1012,17 +1011,6 @@ a:hover{text-decoration:none}
         </div>
       </div>
       
-              <!-- Customer Selection -->
-              <div class="field-row" id="row-stall-customer-selection">
-                <div class="field-label">Customer Selection<div class="field-label-sub">How customers select stalls at checkout</div></div>
-                <div class="field-control">
-                  <div class="mode-btns">
-                    <button class="mode-btn active" data-mode="quantity" onclick="toggleCustomerSelection(this)">Quantity Picker</button>
-                    <button class="mode-btn" data-mode="map" onclick="toggleCustomerSelection(this)">Interactive Map <span class="badge-coming-soon">Coming soon</span></button>
-                  </div>
-                  <span class="field-hint customer-selection-hint">Customers pick how many stalls they need; specific stall numbers are assigned by the event organizer</span>
-                </div>
-              </div>
               </div><!-- /#stall-mapped-content -->
 
             </div>
@@ -1159,7 +1147,7 @@ a:hover{text-decoration:none}
                     <button class="mode-btn active" data-mode="bulk" data-mapped-target="rv-mapped-content" onclick="toggleInventoryMode(this)">Bulk</button>
                     <button class="mode-btn" data-mode="mapped" data-mapped-target="rv-mapped-content" onclick="toggleInventoryMode(this)">Mapped</button>
                   </div>
-                  <span class="field-hint inventory-mode-hint">One total number — customers pick how many lots they need at checkout</span>
+                  <span class="field-hint inventory-mode-hint">Customers pick how many lots they need at checkout; admin assigns specific lots on the Stall &amp; RV Charts page</span>
                 </div>
               </div>
 
@@ -1363,17 +1351,6 @@ a:hover{text-decoration:none}
         </div>
       </div>
       
-              <!-- Customer Selection -->
-              <div class="field-row" id="row-rv-customer-selection">
-                <div class="field-label">Customer Selection<div class="field-label-sub">How customers select lots at checkout</div></div>
-                <div class="field-control">
-                  <div class="mode-btns">
-                    <button class="mode-btn active" data-mode="quantity" onclick="toggleCustomerSelection(this)">Quantity Picker</button>
-                    <button class="mode-btn" data-mode="map" onclick="toggleCustomerSelection(this)">Interactive Map <span class="badge-coming-soon">Coming soon</span></button>
-                  </div>
-                  <span class="field-hint customer-selection-hint">Customers pick how many lots they need from each zone; specific lot numbers are assigned by the event organizer</span>
-                </div>
-              </div>
               </div><!-- /#rv-mapped-content -->
 
               <!-- RV Add-Ons with master enable toggle (Q5/A choice) -->
@@ -2343,37 +2320,18 @@ function toggleInventoryMode(btn){
   if(hintEl){
     if(mode === 'bulk'){
       hintEl.textContent = targetId === 'stall-mapped-content'
-        ? 'One total number — customers pick how many stalls they need at checkout'
-        : 'One total number — customers pick how many lots they need at checkout';
+        ? 'Customers pick how many stalls they need at checkout; admin assigns specific stalls on the Stall & RV Charts page'
+        : 'Customers pick how many lots they need at checkout; admin assigns specific lots on the Stall & RV Charts page';
     } else {
       hintEl.textContent = targetId === 'stall-mapped-content'
-        ? 'Define your stall layout — customers can pick a quantity or specific stalls'
-        : 'Define your lot layout — customers can pick a quantity or specific lots';
+        ? 'Customers select specific stalls from your layout at checkout'
+        : 'Customers select specific lots from your layout at checkout';
     }
   }
   if(targetId === 'stall-mapped-content') updateStallInventoryDisplay();
   if(targetId === 'rv-mapped-content') updateRvInventoryDisplay();
 }
 
-function toggleCustomerSelection(btn){
-  btn.parentElement.querySelectorAll('.mode-btn').forEach(function(b){ b.classList.remove('active'); });
-  btn.classList.add('active');
-  var mode = btn.dataset.mode;
-  var hintEl = btn.closest('.field-control').querySelector('.customer-selection-hint');
-  if(!hintEl) return;
-  var isStall = !!document.querySelector('#stall-mapped-content #row-stall-customer-selection') ||
-                btn.closest('#stall-mapped-content') !== null;
-  if(mode === 'quantity'){
-    hintEl.textContent = isStall
-      ? 'Customers pick how many stalls they need; specific stall numbers are assigned by the event organizer'
-      : 'Customers pick how many lots they need from each zone; specific lot numbers are assigned by the event organizer';
-  } else {
-    hintEl.textContent = isStall
-      ? 'Customers see your stall chart and click specific stalls'
-      : 'Customers see your lot chart and click specific lots';
-  }
-  if(btn.closest('#rv-mapped-content')) updateRvInventoryDisplay();
-}
 
 function updateStallInventoryDisplay(){
   var input      = document.getElementById('stall-inventory-input');
@@ -2428,33 +2386,11 @@ function updateRvInventoryDisplay(){
     computed.style.display = '';
     hintBase.style.display   = 'none';
     hintCharts.style.display = '';
-    var selBtn = document.querySelector('#row-rv-customer-selection .mode-btn.active');
-    var selMode = selBtn ? selBtn.dataset.mode : 'quantity';
     var total = 0;
-    if(selMode === 'map'){
-      document.querySelectorAll('#rv-row-builder-list .row-card').forEach(function(card){
-        var layout = (card.querySelector('[data-role="layout"]') || {}).value;
-        if(layout === 'back-to-back'){
-          var tf = (card.querySelector('[data-role="top-first"]') || {}).value || '';
-          var tl = (card.querySelector('[data-role="top-last"]')  || {}).value || '';
-          var bf = (card.querySelector('[data-role="bot-first"]') || {}).value || '';
-          var bl = (card.querySelector('[data-role="bot-last"]')  || {}).value || '';
-          total += stallLabelsBetween(tf,tl).length + stallLabelsBetween(bf,bl).length;
-        } else {
-          var first = (card.querySelector('[data-role="first"]') || {}).value || '';
-          var last  = (card.querySelector('[data-role="last"]')  || {}).value || '';
-          total += stallLabelsBetween(first, last).length;
-        }
-      });
-      var blocked = document.querySelectorAll('#blocked-rv-lots-select .tag-chip').length;
-      total = Math.max(0, total - blocked);
-      labelEl.textContent = '(computed from lot layout)';
-    } else {
-      document.querySelectorAll('#rv-mapped-content [data-role="zone-qty"]').forEach(function(inp){
-        total += parseInt(inp.value || 0, 10) || 0;
-      });
-      labelEl.textContent = '(computed from zone quantities)';
-    }
+    document.querySelectorAll('#rv-mapped-content [data-role="zone-qty"]').forEach(function(inp){
+      total += parseInt(inp.value || 0, 10) || 0;
+    });
+    labelEl.textContent = '(computed from zone quantities)';
     numEl.textContent = total;
   } else {
     input.style.display    = '';
