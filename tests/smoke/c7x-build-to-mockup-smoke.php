@@ -1619,10 +1619,10 @@ echo "\n[19] Search icon padding + breadcrumb link CSS convention guards (2.3.32
 
 $admin_css_232 = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/css/admin.css' );
 
-// 19a. Version bump.
+// 19a. Version bump (now 2.3.33 — updated by 2.3.33 Stall Chart Detail bug bundle).
 c7x_ok(
-	'2.3.32: EQUINE_EVENT_MANAGER_VERSION === 2.3.32',
-	defined( 'EQUINE_EVENT_MANAGER_VERSION' ) && '2.3.32' === EQUINE_EVENT_MANAGER_VERSION,
+	'2.3.33: EQUINE_EVENT_MANAGER_VERSION === 2.3.33',
+	defined( 'EQUINE_EVENT_MANAGER_VERSION' ) && '2.3.33' === EQUINE_EVENT_MANAGER_VERSION,
 	$pass, $fail, $log
 );
 
@@ -1702,6 +1702,70 @@ c7x_ok(
 		preg_replace( '/\/\*.*?\*\//s', '', $admin_css_232 ), // strip comments
 		'.eem-breadcrumb-segment { font-size: 13px; color: #50575e'
 	),
+	$pass, $fail, $log
+);
+
+// ── 20. Stall Chart Detail bug bundle guards (2.3.33) ────────────────────────
+//
+// Guards for five bugs fixed in 2.3.33:
+//   BUG 1/5 — Both stall chart filter search inputs carry eem-search-input class.
+//   BUG 2   — Barn tab data-barn uses sanitize_html_class() to match stall row data-barn.
+//   BUG 3   — Generate Assignments button uses eem-btn--primary (Electric Blue).
+//   BUG 4   — Change Event button on Stall Chart uses canonical eem-header-action-change class.
+//
+echo "\n[20] Stall Chart Detail bug bundle guards (2.3.33)\n";
+
+$admin_php_233 = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-equine-event-manager-admin.php' );
+
+// 20a. By-Location search input carries both classes.
+c7x_ok(
+	'2.3.33: #eem-stall-chart-search carries eem-search-input AND eem-stall-chart-search-input',
+	(bool) preg_match(
+		'/id="eem-stall-chart-search"\s+class="eem-search-input\s+eem-stall-chart-search-input"/',
+		$admin_php_233
+	),
+	$pass, $fail, $log
+);
+
+// 20b. By-Customer search input carries both classes.
+c7x_ok(
+	'2.3.33: #eem-stall-chart-cust-search carries eem-search-input AND eem-stall-chart-search-input',
+	(bool) preg_match(
+		'/id="eem-stall-chart-cust-search"\s+class="eem-search-input\s+eem-stall-chart-search-input"/',
+		$admin_php_233
+	),
+	$pass, $fail, $log
+);
+
+// 20c. Barn tab button data-barn uses sanitize_html_class() — data-barn mismatch fix.
+c7x_ok(
+	'2.3.33: barn tab data-barn uses sanitize_html_class( strtolower( $barn_label ) )',
+	false !== strpos( $admin_php_233, 'sanitize_html_class( strtolower( $barn_label ) )' ),
+	$pass, $fail, $log
+);
+
+// 20d. Generate Assignments button uses eem-btn--primary (Electric Blue background).
+c7x_ok(
+	'2.3.33: Generate Assignments button uses eem-btn eem-btn--primary class',
+	(bool) preg_match(
+		'/class="eem-btn\s+eem-btn--primary"[^>]*>[^<]*(?:<[^>]+>[^<]*)*Generate Assignments/',
+		$admin_php_233
+	),
+	$pass, $fail, $log
+);
+
+// 20e. Change Event button on Stall Chart uses canonical eem-header-action-change class.
+c7x_ok(
+	'2.3.33: Stall Chart Change Event button uses eem-header-action-change (not eem-header-change-btn)',
+	false !== strpos( $admin_php_233, 'class="eem-header-action-change" type="button" id="eem-stall-chart-change-btn"' ) &&
+	false === strpos( $admin_php_233, 'class="eem-header-change-btn"' ),
+	$pass, $fail, $log
+);
+
+// 20f. No bare eem-header-change-btn class anywhere in admin PHP (class retired).
+c7x_ok(
+	'2.3.33: eem-header-change-btn class fully replaced by eem-header-action-change',
+	false === strpos( $admin_php_233, 'eem-header-change-btn' ),
 	$pass, $fail, $log
 );
 

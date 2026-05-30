@@ -1889,7 +1889,7 @@ class EEM_Admin {
 						</button>
 					</div>
 				</div>
-				<button class="eem-header-change-btn" type="button" id="eem-stall-chart-change-btn" data-eem-action="stall-chart-change-event">
+				<button class="eem-header-action-change" type="button" id="eem-stall-chart-change-btn" data-eem-action="stall-chart-change-event">
 					<?php esc_html_e( 'Change Event', 'equine-event-manager' ); ?>
 				</button>
 			</header>
@@ -2008,7 +2008,7 @@ class EEM_Admin {
 											<?php foreach ( $barn_options as $barn_label ) : ?>
 												<button class="eem-stall-chart-barn-tab" type="button"
 													data-eem-action="stall-chart-filter-barn"
-													data-barn="<?php echo esc_attr( strtolower( $barn_label ) ); ?>">
+													data-barn="<?php echo esc_attr( sanitize_html_class( strtolower( $barn_label ) ) ); ?>">
 													<?php echo esc_html( $barn_label ); ?>
 												</button>
 											<?php endforeach; ?>
@@ -2016,7 +2016,7 @@ class EEM_Admin {
 									<?php endif; ?>
 									<div class="eem-stall-chart-filter-search">
 										<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-										<input type="search" id="eem-stall-chart-search" class="eem-stall-chart-search-input" placeholder="<?php esc_attr_e( 'Search', 'equine-event-manager' ); ?>" />
+										<input type="search" id="eem-stall-chart-search" class="eem-search-input eem-stall-chart-search-input" placeholder="<?php esc_attr_e( 'Search', 'equine-event-manager' ); ?>" />
 									</div>
 									<span class="eem-stall-chart-filter-hint"><?php esc_html_e( 'Search by customer name, stall number, RV lot, or block title.', 'equine-event-manager' ); ?></span>
 								</div>
@@ -2043,7 +2043,7 @@ class EEM_Admin {
 							<div class="eem-stall-chart-filter-row">
 								<div class="eem-stall-chart-filter-search">
 									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-									<input type="search" id="eem-stall-chart-cust-search" class="eem-stall-chart-search-input" placeholder="<?php esc_attr_e( 'Search', 'equine-event-manager' ); ?>" />
+									<input type="search" id="eem-stall-chart-cust-search" class="eem-search-input eem-stall-chart-search-input" placeholder="<?php esc_attr_e( 'Search', 'equine-event-manager' ); ?>" />
 								</div>
 								<span class="eem-stall-chart-filter-hint"><?php esc_html_e( 'Search by customer, order, stall, or RV lot.', 'equine-event-manager' ); ?></span>
 							</div>
