@@ -2128,9 +2128,25 @@
 	document.addEventListener('click', function (ev) {
 		var t = ev.target;
 		if (!t || !t.closest) return;
-		if (t.closest('[data-eem-action="reservation-editor-save-draft"]')) { ev.preventDefault(); eemDispatchSave('save_draft'); return; }
-		if (t.closest('[data-eem-action="reservation-editor-publish"]'))    { ev.preventDefault(); eemDispatchSave('publish');    return; }
-		if (t.closest('[data-eem-action="reservation-editor-update"]'))     { ev.preventDefault(); eemDispatchSave('update');     return; }
+		if (t.closest('[data-eem-action="reservation-editor-save-draft"]')) {
+			ev.preventDefault();
+			eemDispatchSave('save_draft'); // No unassigned-lot warning for drafts.
+			return;
+		}
+		/* Publish + Update both commit changes to a customer-visible reservation,
+		   so both gates check for unassigned lots. Save as Draft does not. */
+		if (t.closest('[data-eem-action="reservation-editor-publish"]') ||
+		    t.closest('[data-eem-action="reservation-editor-update"]')) {
+			ev.preventDefault();
+			var saveKind = t.closest('[data-eem-action="reservation-editor-publish"]') ? 'publish' : 'update';
+			var unassigned = rvCountUnassignedLots();
+			if (unassigned > 0) {
+				openUnassignedLotsWarning(unassigned, function () { eemDispatchSave(saveKind); });
+			} else {
+				eemDispatchSave(saveKind);
+			}
+			return;
+		}
 		/* Cancel anchor is a real href — let the browser navigate, no dispatch needed */
 	});
 
@@ -3325,9 +3341,9 @@ function getDefaultZoneForLot(rowIndex, lotLabel) {
 	if (_rvLotZoneAssignments[ri] && _rvLotZoneAssignments[ri][lotLabel] !== undefined) {
 		return String(_rvLotZoneAssignments[ri][lotLabel]);
 	}
-	// Default: zone index 0 (first zone)
-	var zoneRows = document.querySelectorAll('#eem-lot-zones-list .eem-zone-row');
-	if (zoneRows.length > 0) { return '0'; }
+	// No saved assignment → return '' (unassigned). Lots are NOT auto-assigned
+	// to the first zone; unassigned lots show a grey dot and are unavailable to
+	// customers at checkout. (C10 enforcement contract, 2026-05-30.)
 	return '';
 }
 
@@ -3424,7 +3440,9 @@ function generateStallPreview(rowCard) {
 			return '<div class="eem-stall-box">' + escapeHtml(l) + '</div>';
 		}
 		var zoneId  = getDefaultZoneForLot(rowIndex, l);
-		var color   = getZoneColor(zoneId !== '' ? zoneId : null);
+		// Unassigned lots use grey (#9CA3AF) — they are unavailable to customers
+		// (C10 enforcement contract). Only painted lots receive a palette color.
+		var color   = zoneId !== '' ? getZoneColor(zoneId) : '#9CA3AF';
 		return '<button class="eem-lot-cell" type="button"' +
 			' data-eem-action="rv-lot-click"' +
 			' data-row-id="' + escapeHtml(rowIndex) + '"' +
@@ -3574,6 +3592,70 @@ function rvDeleteZone(btn) {
 	});
 	rvRebuildPaintDropdown();
 	updateRvInventoryDisplay();
+}
+
+/**
+ * Count .eem-lot-cell buttons in the RV row builder whose data-zone-id is
+ * empty or absent — i.e. lots that have not been painted to a zone yet.
+ * Unassigned lots are unavailable to customers (C10 enforcement contract).
+ *
+ * @return {number}
+ */
+function rvCountUnassignedLots() {
+	var cells = document.querySelectorAll('#eem-rv-row-builder-list .eem-lot-cell');
+	var count = 0;
+	cells.forEach(function (cell) {
+		var zoneId = cell.getAttribute('data-zone-id');
+		if (zoneId === null || zoneId === '') { count++; }
+	});
+	return count;
+}
+
+/**
+ * Open a modal warning the admin that N lots are unassigned before they
+ * publish / update the reservation. Two actions: Cancel (dismiss) or
+ * Publish Anyway (invoke the provided callback and dismiss).
+ *
+ * Uses the canonical .eem-modal pattern: outer div + classList.add('open'),
+ * .eem-modal-card, .eem-modal-head, .eem-modal-body, .eem-modal-foot.
+ *
+ * @param  {number}   count     Number of unassigned lots.
+ * @param  {Function} onConfirm Called when admin clicks "Publish Anyway".
+ * @return {void}
+ */
+function openUnassignedLotsWarning(count, onConfirm) {
+	var overlay = document.createElement('div');
+	overlay.className = 'eem-modal';
+	var lotWord = count === 1 ? 'lot is' : 'lots are';
+	overlay.innerHTML =
+		'<div class="eem-modal-card">' +
+			'<div class="eem-modal-head">' +
+				'<span class="eem-modal-title">Some lots are unassigned</span>' +
+				'<button class="eem-modal-close" type="button" aria-label="Close">' +
+					'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">' +
+					'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+				'</button>' +
+			'</div>' +
+			'<div class="eem-modal-body">' +
+				'<p>' + count + ' ' + lotWord + ' unassigned to a zone and won’t be available to customers. ' +
+				'Continue publishing anyway, or cancel and paint them first?</p>' +
+			'</div>' +
+			'<div class="eem-modal-foot">' +
+				'<button class="eem-btn eem-btn-secondary" type="button" data-eem-unassigned-action="cancel">Cancel</button>' +
+				'<button class="eem-btn eem-btn-primary"   type="button" data-eem-unassigned-action="confirm">Publish Anyway</button>' +
+			'</div>' +
+		'</div>';
+	document.body.appendChild(overlay);
+	overlay.classList.add('open');
+
+	function dismiss() { overlay.remove(); }
+
+	overlay.querySelector('.eem-modal-close').addEventListener('click', dismiss);
+	overlay.querySelector('[data-eem-unassigned-action="cancel"]').addEventListener('click', dismiss);
+	overlay.querySelector('[data-eem-unassigned-action="confirm"]').addEventListener('click', function () {
+		dismiss();
+		onConfirm();
+	});
 }
 
 /**

@@ -726,8 +726,15 @@ class EEM_Reservation_Editor_Page {
 			update_post_meta( $reservation_id, '_en_blocked_rv_lots', array_values( array_filter( $blocked_rv_clean ) ) );
 		}
 
-		// Bug-fix: RV lot zone assignments (Paint Mode persistence)
+		// RV lot zone assignments (Paint Mode persistence).
 		// Stored as _en_rv_lot_zone_assignments: { rowIndex => { lotLabel => zoneIndex } }
+		//
+		// C10 ENFORCEMENT CONTRACT (2026-05-30):
+		// Lots absent from this map (or with empty/null zoneIndex) are UNAVAILABLE
+		// to customers at checkout. C10's customer-facing renderer must exclude them.
+		// Do NOT auto-fill missing lots with a default zone here or in JS — the grey
+		// dot in the admin UI is the signal that a lot needs to be painted.
+		// See: docs/c10-contracts.md
 		if ( isset( $_POST['eem_rv_lot_zone_assignments'] ) ) {
 			$raw_assignments = stripslashes( (string) wp_unslash( $_POST['eem_rv_lot_zone_assignments'] ) );
 			$decoded         = json_decode( $raw_assignments, true );

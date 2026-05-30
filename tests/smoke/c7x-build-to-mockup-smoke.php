@@ -639,6 +639,120 @@ foreach ( $keys_9 as $k9 ) {
 	);
 }
 
+// ── 9. Grey dot / unassigned lots / publish warning (2.3.21) ──────────────────
+
+// 9a. getDefaultZoneForLot returns '' (not '0') for unassigned lots.
+//     Verify: source contains `return '';` in the fallthrough path and does NOT
+//     contain `return '0'` after the saved-assignment check.
+$default_zone_fn_start = strpos( $js, 'function getDefaultZoneForLot' );
+$default_zone_fn_body  = $default_zone_fn_start !== false
+	? substr( $js, $default_zone_fn_start, 600 )
+	: '';
+c7x_ok(
+	'2.3.21: getDefaultZoneForLot falls through to return \'\' (unassigned, not zone 0)',
+	false !== strpos( $default_zone_fn_body, "return '';" ) &&
+	false === strpos( $default_zone_fn_body, "return '0';" ),
+	$pass, $fail, $log
+);
+
+// 9b. cellHtml color logic: unassigned lots use #9CA3AF, not getZoneColor fallback to first zone.
+c7x_ok(
+	'2.3.21: cellHtml assigns #9CA3AF for unassigned lots (zoneId !== \'\' guard)',
+	false !== strpos( $js, "'#9CA3AF'" ) &&
+	false !== strpos( $js, "zoneId !== '' ? getZoneColor" ),
+	$pass, $fail, $log
+);
+
+// 9c. CSS grey fallback for unassigned lot cells.
+$admin_css = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/css/admin.css' );
+c7x_ok(
+	'2.3.21: CSS grey dot fallback for [data-zone-id=""] .eem-lot-zone-dot',
+	false !== strpos( $admin_css, '[data-zone-id=""] .eem-lot-zone-dot' ) &&
+	false !== strpos( $admin_css, '#9CA3AF' ),
+	$pass, $fail, $log
+);
+
+// 9d. Hint text updated in _section-rv.php.
+$rv_php = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_section-rv.php' );
+c7x_ok(
+	'2.3.21: _section-rv.php hint text mentions grey dot / unassigned',
+	false !== strpos( $rv_php, 'grey dot' ) &&
+	false !== strpos( $rv_php, 'unassigned' ),
+	$pass, $fail, $log
+);
+
+// 9e. rvCountUnassignedLots function defined in admin.js.
+c7x_ok(
+	'2.3.21: rvCountUnassignedLots function defined in admin.js',
+	false !== strpos( $js, 'function rvCountUnassignedLots' ),
+	$pass, $fail, $log
+);
+
+// 9f. openUnassignedLotsWarning function defined in admin.js.
+c7x_ok(
+	'2.3.21: openUnassignedLotsWarning function defined in admin.js',
+	false !== strpos( $js, 'function openUnassignedLotsWarning' ),
+	$pass, $fail, $log
+);
+
+// 9g. Publish/Update handler calls rvCountUnassignedLots (intercepted).
+//     Check that the publish/update arm references rvCountUnassignedLots.
+$publish_arm_pos  = strpos( $js, 'reservation-editor-publish' );
+$publish_arm_body = $publish_arm_pos !== false
+	? substr( $js, $publish_arm_pos, 600 )
+	: '';
+c7x_ok(
+	'2.3.21: publish/update save handler calls rvCountUnassignedLots',
+	false !== strpos( $publish_arm_body, 'rvCountUnassignedLots' ),
+	$pass, $fail, $log
+);
+
+// 9h. Save-draft handler does NOT call rvCountUnassignedLots.
+//     The draft arm should branch to eemDispatchSave directly.
+$draft_arm_pos  = strpos( $js, 'reservation-editor-save-draft' );
+$draft_arm_body = $draft_arm_pos !== false
+	? substr( $js, $draft_arm_pos, 300 )
+	: '';
+c7x_ok(
+	'2.3.21: save-draft arm does NOT call rvCountUnassignedLots (no warning for drafts)',
+	false !== strpos( $draft_arm_body, 'eemDispatchSave' ) &&
+	false === strpos( $draft_arm_body, 'rvCountUnassignedLots' ),
+	$pass, $fail, $log
+);
+
+// 9i. openUnassignedLotsWarning uses canonical eem-modal class names.
+$modal_fn_start = strpos( $js, 'function openUnassignedLotsWarning' );
+$modal_fn_body  = $modal_fn_start !== false
+	? substr( $js, $modal_fn_start, 1200 )
+	: '';
+c7x_ok(
+	'2.3.21: openUnassignedLotsWarning uses canonical eem-modal + eem-modal-card classes',
+	false !== strpos( $modal_fn_body, 'eem-modal' ) &&
+	false !== strpos( $modal_fn_body, 'eem-modal-card' ),
+	$pass, $fail, $log
+);
+
+// 9j. C10 contract comment block present in _section-rv.php.
+c7x_ok(
+	'2.3.21: C10 enforcement contract comment present in _section-rv.php',
+	false !== strpos( $rv_php, 'C10 ENFORCEMENT CONTRACT' ),
+	$pass, $fail, $log
+);
+
+// 9k. docs/c10-contracts.md exists.
+c7x_ok(
+	'2.3.21: docs/c10-contracts.md exists',
+	file_exists( EQUINE_EVENT_MANAGER_PATH . 'docs/c10-contracts.md' ),
+	$pass, $fail, $log
+);
+
+// 9l. Version bumped to 2.3.21.
+c7x_ok(
+	'2.3.21: EQUINE_EVENT_MANAGER_VERSION is 2.3.21',
+	EQUINE_EVENT_MANAGER_VERSION === '2.3.21',
+	$pass, $fail, $log
+);
+
 wp_delete_post( $rid, true );
 
 echo implode( "\n", $log ) . "\n=== RESULT: {$pass} passed, {$fail} failed ===\n";

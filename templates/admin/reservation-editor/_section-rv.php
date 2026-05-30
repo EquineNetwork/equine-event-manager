@@ -301,8 +301,19 @@ $rv_rows      = ( is_array( $rv_rows_meta ) && ! empty( $rv_rows_meta ) )
 $blocked_rv_lots_meta = isset( $data['blocked_rv_lots'] ) ? $data['blocked_rv_lots'] : array();
 $blocked_rv_lots      = is_array( $blocked_rv_lots_meta ) ? $blocked_rv_lots_meta : array();
 
-// Load saved RV lot zone assignments from $data; default each lot to zone index 0
-// if no saved assignment exists (JS side reads window._rvLotZoneAssignmentsInit).
+/**
+ * C10 ENFORCEMENT CONTRACT (2026-05-30):
+ * - Lots with no entry in _en_rv_lot_zone_assignments (or with empty/null value)
+ *   are UNAVAILABLE to customers at checkout. C10 must filter them out.
+ * - This applies regardless of zone pricing ($0 surcharge zones are still valid;
+ *   unpainted lots are not).
+ * - The Edit Reservation page shows a publish warning if any lots are unassigned.
+ * - See: docs/c10-contracts.md
+ *
+ * Lot assignments are loaded from $data here and passed to JS as
+ * window._rvLotZoneAssignmentsInit. Lots not present in that map are
+ * unassigned — do NOT auto-assign them to zone index 0 here or in JS.
+ */
 $lot_assignments_meta = isset( $data['rv_lot_zone_assignments'] ) ? $data['rv_lot_zone_assignments'] : array();
 $lot_assignments      = ( is_array( $lot_assignments_meta ) && ! empty( $lot_assignments_meta ) )
 	? $lot_assignments_meta
@@ -476,7 +487,7 @@ ob_start();
 	<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
 	<?php esc_html_e( 'Add Row', 'equine-event-manager' ); ?>
 </button>
-<span class="eem-field-hint"><?php esc_html_e( "Each lot's colored dot shows its current zone. By default, all lots are assigned to the first zone. Use Paint Mode above to reassign individual lots.", 'equine-event-manager' ); ?></span>
+<span class="eem-field-hint"><?php esc_html_e( "Lots with a grey dot are unassigned and won't be available to customers. Use Paint Mode above to assign each lot to a zone.", 'equine-event-manager' ); ?></span>
 <?php
 $rv_rows_html = (string) ob_get_clean();
 eem_render_editor_field_row( array(

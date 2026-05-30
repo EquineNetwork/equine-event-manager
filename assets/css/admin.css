@@ -6908,6 +6908,14 @@ input.eem-event-search-input:focus {
 	border-radius: 50%;
 	flex-shrink: 0;
 }
+/* C10 enforcement: lots with no zone assignment show a grey dot and are
+   UNAVAILABLE to customers at checkout (contract locked 2026-05-30).
+   JS sets background-color inline for painted lots; this CSS rule provides
+   the grey fallback for any cell where the inline style is absent or empty. */
+.eem-lot-cell[data-zone-id=""] .eem-lot-zone-dot,
+.eem-lot-cell:not([data-zone-id]) .eem-lot-zone-dot {
+	background-color: #9CA3AF;
+}
 .eem-lot-label {
 	font-size: 10px;
 	font-weight: 600;
