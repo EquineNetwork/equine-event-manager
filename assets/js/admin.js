@@ -2870,6 +2870,139 @@
 		}
 	});
 
+	/* ── Stall Map upload + remove (2.3.23 UX polish) ─────────────────────────
+	   `Upload` button opens the WP Media Library (no type restriction — stall
+	   maps can be PDF or image).  Writes the attachment id to the hidden input
+	   `#eem-stall-map-id`, updates the `#eem-stall-map-name` span, shows the
+	   View link and the remove button.  `Remove` clears the hidden input and
+	   collapses the row back to the empty state.
+	   Parallel fix to the agreement handler above — the button rendered but no
+	   JS handler was wired (same latent bug). */
+	document.addEventListener('click', function (ev) {
+		var t = ev.target;
+		if (!t || !t.closest) return;
+
+		var stallMapUploadBtn = t.closest('[data-eem-action="stall-map-upload"]');
+		if (stallMapUploadBtn) {
+			ev.preventDefault();
+			if (!(window.wp && wp.media)) {
+				if (window.EEM && window.EEM.showSaveToast) window.EEM.showSaveToast('Media Library not loaded.', { variant: 'error' });
+				return;
+			}
+			var stallMapFrame = wp.media({
+				title: 'Choose Stall Map',
+				button: { text: 'Use this file' },
+				multiple: false
+			});
+			stallMapFrame.on('select', function () {
+				var att = stallMapFrame.state().get('selection').first().toJSON();
+				if (!att || !att.id) return;
+				var hidden = document.getElementById('eem-stall-map-id');
+				if (hidden) hidden.value = String(att.id);
+				var nameSpan = document.getElementById('eem-stall-map-name');
+				if (nameSpan) nameSpan.textContent = att.filename || att.title || '';
+				var fileRow = stallMapUploadBtn.closest('.eem-file-row');
+				if (!fileRow) return;
+				// Insert/refresh the View link.
+				var viewLink = fileRow.querySelector('.eem-view-link');
+				if (!viewLink) {
+					viewLink = document.createElement('a');
+					viewLink.className = 'eem-view-link';
+					viewLink.target = '_blank';
+					viewLink.rel = 'noopener noreferrer';
+					viewLink.textContent = 'View file';
+					fileRow.insertBefore(viewLink, stallMapUploadBtn);
+				}
+				viewLink.href = att.url || '#';
+				// Show remove button.
+				var rmBtn = fileRow.querySelector('[data-eem-action="stall-map-remove"]');
+				if (rmBtn) rmBtn.style.display = '';
+			});
+			stallMapFrame.open();
+			return;
+		}
+
+		var stallMapRemoveBtn = t.closest('[data-eem-action="stall-map-remove"]');
+		if (stallMapRemoveBtn) {
+			ev.preventDefault();
+			var hidden2 = document.getElementById('eem-stall-map-id');
+			if (hidden2) hidden2.value = '0';
+			var nameSpan2 = document.getElementById('eem-stall-map-name');
+			if (nameSpan2) nameSpan2.textContent = '';
+			var fileRow2 = stallMapRemoveBtn.closest('.eem-file-row');
+			if (fileRow2) {
+				var view2 = fileRow2.querySelector('.eem-view-link');
+				if (view2 && view2.parentNode) view2.parentNode.removeChild(view2);
+			}
+			stallMapRemoveBtn.style.display = 'none';
+			return;
+		}
+	});
+
+	/* ── RV Lot Map upload + remove (2.3.23 UX polish) ─────────────────────────
+	   New field added to the RV section in 2.3.23.  Same pattern as the Stall
+	   Map handler above.  Writes to `#eem-rv-lot-map-id` / `#eem-rv-lot-map-name`. */
+	document.addEventListener('click', function (ev) {
+		var t = ev.target;
+		if (!t || !t.closest) return;
+
+		var rvMapUploadBtn = t.closest('[data-eem-action="rv-lot-map-upload"]');
+		if (rvMapUploadBtn) {
+			ev.preventDefault();
+			if (!(window.wp && wp.media)) {
+				if (window.EEM && window.EEM.showSaveToast) window.EEM.showSaveToast('Media Library not loaded.', { variant: 'error' });
+				return;
+			}
+			var rvMapFrame = wp.media({
+				title: 'Choose RV Lot Map',
+				button: { text: 'Use this file' },
+				multiple: false
+			});
+			rvMapFrame.on('select', function () {
+				var att = rvMapFrame.state().get('selection').first().toJSON();
+				if (!att || !att.id) return;
+				var hidden = document.getElementById('eem-rv-lot-map-id');
+				if (hidden) hidden.value = String(att.id);
+				var nameSpan = document.getElementById('eem-rv-lot-map-name');
+				if (nameSpan) nameSpan.textContent = att.filename || att.title || '';
+				var fileRow = rvMapUploadBtn.closest('.eem-file-row');
+				if (!fileRow) return;
+				// Insert/refresh the View link.
+				var viewLink = fileRow.querySelector('.eem-view-link');
+				if (!viewLink) {
+					viewLink = document.createElement('a');
+					viewLink.className = 'eem-view-link';
+					viewLink.target = '_blank';
+					viewLink.rel = 'noopener noreferrer';
+					viewLink.textContent = 'View file';
+					fileRow.insertBefore(viewLink, rvMapUploadBtn);
+				}
+				viewLink.href = att.url || '#';
+				// Show remove button.
+				var rmBtn = fileRow.querySelector('[data-eem-action="rv-lot-map-remove"]');
+				if (rmBtn) rmBtn.style.display = '';
+			});
+			rvMapFrame.open();
+			return;
+		}
+
+		var rvMapRemoveBtn = t.closest('[data-eem-action="rv-lot-map-remove"]');
+		if (rvMapRemoveBtn) {
+			ev.preventDefault();
+			var hidden2 = document.getElementById('eem-rv-lot-map-id');
+			if (hidden2) hidden2.value = '0';
+			var nameSpan2 = document.getElementById('eem-rv-lot-map-name');
+			if (nameSpan2) nameSpan2.textContent = '';
+			var fileRow2 = rvMapRemoveBtn.closest('.eem-file-row');
+			if (fileRow2) {
+				var view2 = fileRow2.querySelector('.eem-view-link');
+				if (view2 && view2.parentNode) view2.parentNode.removeChild(view2);
+			}
+			rvMapRemoveBtn.style.display = 'none';
+			return;
+		}
+	});
+
 	/* ── Rail-card click handlers (Preview / Move to Trash / Unlink Event) ── */
 	document.addEventListener('click', function (ev) {
 		var t = ev.target;

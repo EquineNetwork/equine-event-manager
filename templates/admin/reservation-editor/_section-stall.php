@@ -151,85 +151,9 @@ eem_render_editor_field_row( array(
 	),
 ) );
 
-// Inventory Mode (C8) — inserted before Available Stall Inventory
-$stall_selection_mode = isset( $data['stall_selection_mode'] ) ? (string) $data['stall_selection_mode'] : 'quantity';
-$stall_is_mapped      = ( 'exact_map' === $stall_selection_mode );
-ob_start();
-?>
-<div class="eem-mode-btns">
-	<button type="button"
-		class="eem-mode-btn<?php echo $stall_is_mapped ? '' : ' active'; ?>"
-		data-mode="bulk"
-		data-section="stall"
-		data-eem-action="toggle-inventory-mode">
-		<?php esc_html_e( 'Bulk', 'equine-event-manager' ); ?>
-	</button>
-	<button type="button"
-		class="eem-mode-btn<?php echo $stall_is_mapped ? ' active' : ''; ?>"
-		data-mode="mapped"
-		data-section="stall"
-		data-eem-action="toggle-inventory-mode">
-		<?php esc_html_e( 'Mapped', 'equine-event-manager' ); ?>
-	</button>
-</div>
-<input type="hidden"
-	name="stall_selection_mode"
-	id="eem-stall-selection-mode-input"
-	value="<?php echo esc_attr( $stall_is_mapped ? 'exact_map' : 'quantity' ); ?>">
-<?php
-$mode_html = (string) ob_get_clean();
-$mode_hint_text = $stall_is_mapped
-	? __( 'Customers select specific stalls from your layout at checkout', 'equine-event-manager' )
-	: __( 'Customers pick how many stalls they need at checkout; admin assigns specific stalls on the Stall & RV Charts page', 'equine-event-manager' );
-$mode_html .= '<span class="eem-field-hint eem-inventory-mode-hint">' . esc_html( $mode_hint_text ) . '</span>';
-eem_render_editor_field_row( array(
-	'label'        => __( 'Inventory Mode', 'equine-event-manager' ),
-	'label_sub'    => __( 'How is stall inventory defined for this reservation?', 'equine-event-manager' ),
-	'row_id'       => 'eem-row-stall-inventory-mode',
-	'control_html' => $mode_html,
-) );
-
-// 8. Inventory (dual-state: editable in Bulk mode, computed in Mapped mode)
-ob_start();
-?>
-<input type="number"
-	name="en_reservation[stall_inventory]"
-	id="eem-stall-inventory-input"
-	class="eem-field-input"
-	value="<?php echo esc_attr( (string) ( $data['stall_inventory'] ?? '' ) ); ?>"
-	placeholder="<?php esc_attr_e( 'Unlimited', 'equine-event-manager' ); ?>"
-	min="0"
-	style="<?php echo $stall_is_mapped ? 'display:none;' : ''; echo 'max-width:140px;'; ?>">
-<div class="eem-inventory-computed-wrap"
-	id="eem-stall-inventory-computed"
-	style="<?php echo $stall_is_mapped ? '' : 'display:none;'; ?>">
-	<span class="eem-inventory-computed-number" id="eem-stall-inventory-number">0</span>
-	<span class="eem-inventory-computed-label" id="eem-stall-inventory-label">
-		<?php esc_html_e( '(computed from row quantities)', 'equine-event-manager' ); ?>
-	</span>
-</div>
-<?php
-$inv_html = (string) ob_get_clean();
-eem_render_editor_field_row( array(
-	'label'        => __( 'Available Stall Inventory', 'equine-event-manager' ),
-	'label_sub'    => __( 'Blank = unlimited', 'equine-event-manager' ),
-	'control_html' => $inv_html,
-	'hint'         => __( 'Once inventory reaches zero, customers see a sold-out message.', 'equine-event-manager' ),
-) );
-
-// 8b. Max Stalls Per Customer (per-customer purchase limit)
-eem_render_editor_field_row( array(
-	'label'        => __( 'Max Stalls Per Customer', 'equine-event-manager' ),
-	'label_sub'    => __( 'Blank = unlimited', 'equine-event-manager' ),
-	'control_html' => sprintf(
-		'<input class="eem-field-input" type="number" min="1" step="1" name="eem_stall_max_per_customer" id="eem-stall-max-per-customer" value="%s" placeholder="%s" style="max-width:140px;" />',
-		esc_attr( (string) ( $data['stall_max_per_customer'] ?? '' ) ),
-		esc_attr__( 'Unlimited', 'equine-event-manager' )
-	),
-	'hint'         => __( 'Limits how many stalls a single customer can reserve. Enforced at checkout.', 'equine-event-manager' ),
-) );
-
 // 9 + 10. Nightly + Weekend rates (conditional on stay-type)
+// UX polish 2.3.23: rates + EB + shavings now appear before inventory controls
+// so the admin's mental flow is: pricing → then "how many / which mode?".
 eem_render_editor_field_row( array(
 	'label'        => __( 'Stall Nightly Rate', 'equine-event-manager' ),
 	'row_id'       => 'row-stall-rate-nightly',
@@ -326,6 +250,86 @@ eem_render_editor_field_row( array(
 		'<div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[required_shavings_price]" value="%s" /></div>',
 		esc_attr( $fmt_money( $data['required_shavings_price'] ) )
 	),
+) );
+
+// Inventory Mode (C8) — UX polish 2.3.23: moved below pricing/shavings so the
+// inventory cluster (Mode → Available qty → Max per customer → Row builder) appears
+// as one tight group at the bottom of the section.
+$stall_selection_mode = isset( $data['stall_selection_mode'] ) ? (string) $data['stall_selection_mode'] : 'quantity';
+$stall_is_mapped      = ( 'exact_map' === $stall_selection_mode );
+ob_start();
+?>
+<div class="eem-mode-btns">
+	<button type="button"
+		class="eem-mode-btn<?php echo $stall_is_mapped ? '' : ' active'; ?>"
+		data-mode="bulk"
+		data-section="stall"
+		data-eem-action="toggle-inventory-mode">
+		<?php esc_html_e( 'Bulk', 'equine-event-manager' ); ?>
+	</button>
+	<button type="button"
+		class="eem-mode-btn<?php echo $stall_is_mapped ? ' active' : ''; ?>"
+		data-mode="mapped"
+		data-section="stall"
+		data-eem-action="toggle-inventory-mode">
+		<?php esc_html_e( 'Mapped', 'equine-event-manager' ); ?>
+	</button>
+</div>
+<input type="hidden"
+	name="stall_selection_mode"
+	id="eem-stall-selection-mode-input"
+	value="<?php echo esc_attr( $stall_is_mapped ? 'exact_map' : 'quantity' ); ?>">
+<?php
+$mode_html = (string) ob_get_clean();
+$mode_hint_text = $stall_is_mapped
+	? __( 'Customers select specific stalls from your layout at checkout', 'equine-event-manager' )
+	: __( 'Customers pick how many stalls they need at checkout; admin assigns specific stalls on the Stall & RV Charts page', 'equine-event-manager' );
+$mode_html .= '<span class="eem-field-hint eem-inventory-mode-hint">' . esc_html( $mode_hint_text ) . '</span>';
+eem_render_editor_field_row( array(
+	'label'        => __( 'Inventory Mode', 'equine-event-manager' ),
+	'label_sub'    => __( 'How is stall inventory defined for this reservation?', 'equine-event-manager' ),
+	'row_id'       => 'eem-row-stall-inventory-mode',
+	'control_html' => $mode_html,
+) );
+
+// Available Stall Inventory (dual-state: editable in Bulk mode, computed in Mapped mode)
+ob_start();
+?>
+<input type="number"
+	name="en_reservation[stall_inventory]"
+	id="eem-stall-inventory-input"
+	class="eem-field-input"
+	value="<?php echo esc_attr( (string) ( $data['stall_inventory'] ?? '' ) ); ?>"
+	placeholder="<?php esc_attr_e( 'Unlimited', 'equine-event-manager' ); ?>"
+	min="0"
+	style="<?php echo $stall_is_mapped ? 'display:none;' : ''; echo 'max-width:140px;'; ?>">
+<div class="eem-inventory-computed-wrap"
+	id="eem-stall-inventory-computed"
+	style="<?php echo $stall_is_mapped ? '' : 'display:none;'; ?>">
+	<span class="eem-inventory-computed-number" id="eem-stall-inventory-number">0</span>
+	<span class="eem-inventory-computed-label" id="eem-stall-inventory-label">
+		<?php esc_html_e( '(computed from row quantities)', 'equine-event-manager' ); ?>
+	</span>
+</div>
+<?php
+$inv_html = (string) ob_get_clean();
+eem_render_editor_field_row( array(
+	'label'        => __( 'Available Stall Inventory', 'equine-event-manager' ),
+	'label_sub'    => __( 'Blank = unlimited', 'equine-event-manager' ),
+	'control_html' => $inv_html,
+	'hint'         => __( 'Once inventory reaches zero, customers see a sold-out message.', 'equine-event-manager' ),
+) );
+
+// Max Stalls Per Customer (per-customer purchase limit)
+eem_render_editor_field_row( array(
+	'label'        => __( 'Max Stalls Per Customer', 'equine-event-manager' ),
+	'label_sub'    => __( 'Blank = unlimited', 'equine-event-manager' ),
+	'control_html' => sprintf(
+		'<input class="eem-field-input" type="number" min="1" step="1" name="eem_stall_max_per_customer" id="eem-stall-max-per-customer" value="%s" placeholder="%s" style="max-width:140px;" />',
+		esc_attr( (string) ( $data['stall_max_per_customer'] ?? '' ) ),
+		esc_attr__( 'Unlimited', 'equine-event-manager' )
+	),
+	'hint'         => __( 'Limits how many stalls a single customer can reserve. Enforced at checkout.', 'equine-event-manager' ),
 ) );
 
 // 18. Stall Row Builder — inside mapped-content wrapper (C8)

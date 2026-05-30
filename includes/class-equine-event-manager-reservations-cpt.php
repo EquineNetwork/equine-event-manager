@@ -2071,6 +2071,7 @@ class EEM_Reservations_CPT {
 			'rv_zones'                        => array(),
 			'rv_rows'                         => array(),
 			'blocked_rv_lots'                 => array(),
+			'rv_lot_map_id'                   => 0,
 		);
 
 		return $defaults;

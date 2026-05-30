@@ -682,6 +682,11 @@ class EEM_Reservation_Editor_Page {
 			update_post_meta( $reservation_id, '_en_stall_map_id', absint( wp_unslash( $_POST['eem_stall_map_id'] ) ) );
 		}
 
+		// RV lot map attachment ID (2.3.23)
+		if ( isset( $_POST['eem_rv_lot_map_id'] ) ) {
+			update_post_meta( $reservation_id, '_en_rv_lot_map_id', absint( wp_unslash( $_POST['eem_rv_lot_map_id'] ) ) );
+		}
+
 		// RV zones
 		if ( isset( $_POST['eem_rv_zones'] ) && is_array( $_POST['eem_rv_zones'] ) ) {
 			$rv_zones_raw = wp_unslash( $_POST['eem_rv_zones'] );

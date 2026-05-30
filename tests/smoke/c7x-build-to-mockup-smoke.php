@@ -626,6 +626,7 @@ c7x_ok(
 $keys_9 = array(
 	'stall_rows', 'blocked_stalls', 'stall_map_id',
 	'rv_zones', 'rv_rows', 'blocked_rv_lots',
+	'rv_lot_map_id',
 );
 foreach ( $keys_9 as $k9 ) {
 	c7x_ok(
@@ -746,10 +747,83 @@ c7x_ok(
 	$pass, $fail, $log
 );
 
-// 9l. Version bumped to 2.3.22.
+// 9l. Version was bumped to 2.3.22 at the V1 simplification commit.
+// Version assertion superseded by 10a (bumped again to 2.3.23 in UX polish commit).
+// Kept as a historical milestone marker; actual version check is in section 10.
+
+// ── 10. UX polish 2.3.23 ────────────────────────────────────────────────────
+echo "\n[10.UX] UX Polish 2.3.23 — field reorders, Stall Map upload fix, RV Lot Map\n";
+
+$stall_php = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_section-stall.php' );
+
+// 10a. Version bumped to 2.3.23.
 c7x_ok(
-	'2.3.22: EQUINE_EVENT_MANAGER_VERSION is 2.3.22',
-	EQUINE_EVENT_MANAGER_VERSION === '2.3.22',
+	'2.3.23: EQUINE_EVENT_MANAGER_VERSION is 2.3.23',
+	EQUINE_EVENT_MANAGER_VERSION === '2.3.23',
+	$pass, $fail, $log
+);
+
+// 10b. Stall section field order: Shavings Price appears before Inventory Mode.
+c7x_ok(
+	'2.3.23: Stall — Inventory Mode row appears after Shavings Price row in rendered HTML',
+	strpos( $html, 'row-stall-shavings-price' ) < strpos( $html, 'eem-row-stall-inventory-mode' ),
+	$pass, $fail, $log
+);
+
+// 10c. RV section field order: Early Bird Weekend Rate appears before RV Inventory Mode.
+c7x_ok(
+	'2.3.23: RV — Inventory Mode row appears after Early Bird Weekend Rate in rendered HTML',
+	strpos( $html, 'rv_early_bird_weekend_rate' ) < strpos( $html, 'eem-row-rv-inventory-mode' ),
+	$pass, $fail, $log
+);
+
+// 10d. Stall Map upload button uses data-eem-action (no inline onclick).
+c7x_ok(
+	'2.3.23: Stall Map upload uses data-eem-action="stall-map-upload" (not inline onclick)',
+	false !== strpos( $html, 'data-eem-action="stall-map-upload"' ) &&
+	false === strpos( $html, 'onclick="stallMapUpload' ),
+	$pass, $fail, $log
+);
+
+// 10e. Stall Map JS handler present in admin.js.
+c7x_ok(
+	'2.3.23: stall-map-upload handler present in admin.js',
+	false !== strpos( $js, 'stall-map-upload' ),
+	$pass, $fail, $log
+);
+
+// 10f. RV Lot Map field renders in HTML.
+c7x_ok(
+	'2.3.23: RV Lot Map field renders (name="eem_rv_lot_map_id")',
+	false !== strpos( $html, 'name="eem_rv_lot_map_id"' ),
+	$pass, $fail, $log
+);
+c7x_ok(
+	'2.3.23: RV Lot Map hidden input renders (id="eem-rv-lot-map-id")',
+	false !== strpos( $html, 'id="eem-rv-lot-map-id"' ),
+	$pass, $fail, $log
+);
+c7x_ok(
+	'2.3.23: RV Lot Map upload button uses data-eem-action="rv-lot-map-upload"',
+	false !== strpos( $html, 'data-eem-action="rv-lot-map-upload"' ),
+	$pass, $fail, $log
+);
+
+// 10g. RV Lot Map JS handler present in admin.js.
+c7x_ok(
+	'2.3.23: rv-lot-map-upload handler present in admin.js',
+	false !== strpos( $js, 'rv-lot-map-upload' ),
+	$pass, $fail, $log
+);
+
+// 10h. rv_lot_map_id registered in get_default_meta_values() (already in $keys_9 above).
+// Positive regression guard: checked above in the $keys_9 loop.
+
+// 10i. RV Lot Map save handler wired in reservation editor page.
+$editor_php = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-reservation-editor-page.php' );
+c7x_ok(
+	'2.3.23: eem_rv_lot_map_id save handler in reservation editor page',
+	false !== strpos( $editor_php, 'eem_rv_lot_map_id' ),
 	$pass, $fail, $log
 );
 

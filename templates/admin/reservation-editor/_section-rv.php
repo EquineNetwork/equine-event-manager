@@ -136,85 +136,9 @@ eem_render_editor_field_row( array(
 	),
 ) );
 
-// Inventory Mode (C8) — inserted before Available RV Inventory
-$rv_selection_mode = isset( $data['rv_selection_mode'] ) ? (string) $data['rv_selection_mode'] : 'quantity';
-$rv_is_mapped      = ( 'exact_map' === $rv_selection_mode );
-ob_start();
-?>
-<div class="eem-mode-btns">
-	<button type="button"
-		class="eem-mode-btn<?php echo $rv_is_mapped ? '' : ' active'; ?>"
-		data-mode="bulk"
-		data-section="rv"
-		data-eem-action="toggle-inventory-mode">
-		<?php esc_html_e( 'Bulk', 'equine-event-manager' ); ?>
-	</button>
-	<button type="button"
-		class="eem-mode-btn<?php echo $rv_is_mapped ? ' active' : ''; ?>"
-		data-mode="mapped"
-		data-section="rv"
-		data-eem-action="toggle-inventory-mode">
-		<?php esc_html_e( 'Mapped', 'equine-event-manager' ); ?>
-	</button>
-</div>
-<input type="hidden"
-	name="rv_selection_mode"
-	id="eem-rv-selection-mode-input"
-	value="<?php echo esc_attr( $rv_is_mapped ? 'exact_map' : 'quantity' ); ?>">
-<?php
-$rv_mode_html = (string) ob_get_clean();
-$rv_mode_hint_text = $rv_is_mapped
-	? __( 'Customers select specific lots from your layout at checkout', 'equine-event-manager' )
-	: __( 'Customers pick how many lots they need at checkout; admin assigns specific lots on the Stall & RV Charts page', 'equine-event-manager' );
-$rv_mode_html .= '<span class="eem-field-hint eem-inventory-mode-hint">' . esc_html( $rv_mode_hint_text ) . '</span>';
-eem_render_editor_field_row( array(
-	'label'        => __( 'Inventory Mode', 'equine-event-manager' ),
-	'label_sub'    => __( 'How is RV inventory defined for this reservation?', 'equine-event-manager' ),
-	'row_id'       => 'eem-row-rv-inventory-mode',
-	'control_html' => $rv_mode_html,
-) );
-
-// 8. Inventory (dual-state: editable in Bulk mode, computed in Mapped mode)
-ob_start();
-?>
-<input type="number"
-	name="en_reservation[rv_inventory]"
-	id="eem-rv-inventory-input"
-	class="eem-field-input"
-	value="<?php echo esc_attr( (string) ( $data['rv_inventory'] ?? '' ) ); ?>"
-	placeholder="<?php esc_attr_e( 'Unlimited', 'equine-event-manager' ); ?>"
-	min="0"
-	style="<?php echo $rv_is_mapped ? 'display:none;' : ''; echo 'max-width:140px;'; ?>">
-<div class="eem-inventory-computed-wrap"
-	id="eem-rv-inventory-computed"
-	style="<?php echo $rv_is_mapped ? '' : 'display:none;'; ?>">
-	<span class="eem-inventory-computed-number" id="eem-rv-inventory-number">0</span>
-	<span class="eem-inventory-computed-label" id="eem-rv-inventory-label">
-		<?php esc_html_e( '(computed from row quantities)', 'equine-event-manager' ); ?>
-	</span>
-</div>
-<?php
-$rv_inv_html = (string) ob_get_clean();
-eem_render_editor_field_row( array(
-	'label'        => __( 'Available RV Inventory', 'equine-event-manager' ),
-	'label_sub'    => __( 'Blank = unlimited', 'equine-event-manager' ),
-	'control_html' => $rv_inv_html,
-	'hint'         => __( 'Once inventory reaches zero, customers see a sold-out message.', 'equine-event-manager' ),
-) );
-
-// 8b. Max RV Lots Per Customer (per-customer purchase limit)
-eem_render_editor_field_row( array(
-	'label'        => __( 'Max RV Lots Per Customer', 'equine-event-manager' ),
-	'label_sub'    => __( 'Blank = unlimited', 'equine-event-manager' ),
-	'control_html' => sprintf(
-		'<input class="eem-field-input" type="number" min="1" step="1" name="eem_rv_max_per_customer" id="eem-rv-max-per-customer" value="%s" placeholder="%s" style="max-width:140px;" />',
-		esc_attr( (string) ( $data['rv_max_per_customer'] ?? '' ) ),
-		esc_attr__( 'Unlimited', 'equine-event-manager' )
-	),
-	'hint'         => __( 'Limits how many RV lots a single customer can reserve. Enforced at checkout.', 'equine-event-manager' ),
-) );
-
 // 9 + 10. Nightly + Weekend rates
+// UX polish 2.3.23: rates + EB now appear before inventory controls so the
+// admin's mental flow is: pricing → then "how many / which mode?".
 eem_render_editor_field_row( array(
 	'label'        => __( 'RV Nightly Rate', 'equine-event-manager' ),
 	'row_id'       => 'row-rv-rate-nightly',
@@ -278,6 +202,86 @@ eem_render_editor_field_row( array(
 	),
 ) );
 
+// Inventory Mode (C8) — UX polish 2.3.23: moved below pricing/EB so the
+// inventory cluster (Mode → Available qty → Max per customer → row builder) appears
+// as one tight group just above the Lot Zones and row builder.
+$rv_selection_mode = isset( $data['rv_selection_mode'] ) ? (string) $data['rv_selection_mode'] : 'quantity';
+$rv_is_mapped      = ( 'exact_map' === $rv_selection_mode );
+ob_start();
+?>
+<div class="eem-mode-btns">
+	<button type="button"
+		class="eem-mode-btn<?php echo $rv_is_mapped ? '' : ' active'; ?>"
+		data-mode="bulk"
+		data-section="rv"
+		data-eem-action="toggle-inventory-mode">
+		<?php esc_html_e( 'Bulk', 'equine-event-manager' ); ?>
+	</button>
+	<button type="button"
+		class="eem-mode-btn<?php echo $rv_is_mapped ? ' active' : ''; ?>"
+		data-mode="mapped"
+		data-section="rv"
+		data-eem-action="toggle-inventory-mode">
+		<?php esc_html_e( 'Mapped', 'equine-event-manager' ); ?>
+	</button>
+</div>
+<input type="hidden"
+	name="rv_selection_mode"
+	id="eem-rv-selection-mode-input"
+	value="<?php echo esc_attr( $rv_is_mapped ? 'exact_map' : 'quantity' ); ?>">
+<?php
+$rv_mode_html = (string) ob_get_clean();
+$rv_mode_hint_text = $rv_is_mapped
+	? __( 'Customers select specific lots from your layout at checkout', 'equine-event-manager' )
+	: __( 'Customers pick how many lots they need at checkout; admin assigns specific lots on the Stall & RV Charts page', 'equine-event-manager' );
+$rv_mode_html .= '<span class="eem-field-hint eem-inventory-mode-hint">' . esc_html( $rv_mode_hint_text ) . '</span>';
+eem_render_editor_field_row( array(
+	'label'        => __( 'Inventory Mode', 'equine-event-manager' ),
+	'label_sub'    => __( 'How is RV inventory defined for this reservation?', 'equine-event-manager' ),
+	'row_id'       => 'eem-row-rv-inventory-mode',
+	'control_html' => $rv_mode_html,
+) );
+
+// Available RV Inventory (dual-state: editable in Bulk mode, computed in Mapped mode)
+ob_start();
+?>
+<input type="number"
+	name="en_reservation[rv_inventory]"
+	id="eem-rv-inventory-input"
+	class="eem-field-input"
+	value="<?php echo esc_attr( (string) ( $data['rv_inventory'] ?? '' ) ); ?>"
+	placeholder="<?php esc_attr_e( 'Unlimited', 'equine-event-manager' ); ?>"
+	min="0"
+	style="<?php echo $rv_is_mapped ? 'display:none;' : ''; echo 'max-width:140px;'; ?>">
+<div class="eem-inventory-computed-wrap"
+	id="eem-rv-inventory-computed"
+	style="<?php echo $rv_is_mapped ? '' : 'display:none;'; ?>">
+	<span class="eem-inventory-computed-number" id="eem-rv-inventory-number">0</span>
+	<span class="eem-inventory-computed-label" id="eem-rv-inventory-label">
+		<?php esc_html_e( '(computed from row quantities)', 'equine-event-manager' ); ?>
+	</span>
+</div>
+<?php
+$rv_inv_html = (string) ob_get_clean();
+eem_render_editor_field_row( array(
+	'label'        => __( 'Available RV Inventory', 'equine-event-manager' ),
+	'label_sub'    => __( 'Blank = unlimited', 'equine-event-manager' ),
+	'control_html' => $rv_inv_html,
+	'hint'         => __( 'Once inventory reaches zero, customers see a sold-out message.', 'equine-event-manager' ),
+) );
+
+// Max RV Lots Per Customer (per-customer purchase limit)
+eem_render_editor_field_row( array(
+	'label'        => __( 'Max RV Lots Per Customer', 'equine-event-manager' ),
+	'label_sub'    => __( 'Blank = unlimited', 'equine-event-manager' ),
+	'control_html' => sprintf(
+		'<input class="eem-field-input" type="number" min="1" step="1" name="eem_rv_max_per_customer" id="eem-rv-max-per-customer" value="%s" placeholder="%s" style="max-width:140px;" />',
+		esc_attr( (string) ( $data['rv_max_per_customer'] ?? '' ) ),
+		esc_attr__( 'Unlimited', 'equine-event-manager' )
+	),
+	'hint'         => __( 'Limits how many RV lots a single customer can reserve. Enforced at checkout.', 'equine-event-manager' ),
+) );
+
 // ── RV Mapped-content wrapper opens here (C8) ──
 // Load meta from $data (pre-populated by get_meta_values()) or fall back to seeded zones / rows.
 // NOTE: use $data, NOT a direct post-meta call with get_the_ID() — on custom admin pages
@@ -300,6 +304,11 @@ $rv_rows      = ( is_array( $rv_rows_meta ) && ! empty( $rv_rows_meta ) )
 
 $blocked_rv_lots_meta = isset( $data['blocked_rv_lots'] ) ? $data['blocked_rv_lots'] : array();
 $blocked_rv_lots      = is_array( $blocked_rv_lots_meta ) ? $blocked_rv_lots_meta : array();
+
+// RV Lot Map (parallel to stall_map_id; new in 2.3.23)
+$rv_lot_map_id   = (int) ( isset( $data['rv_lot_map_id'] ) ? $data['rv_lot_map_id'] : 0 );
+$rv_lot_map_url  = $rv_lot_map_id ? wp_get_attachment_url( $rv_lot_map_id ) : '';
+$rv_lot_map_name = $rv_lot_map_id ? basename( (string) get_attached_file( $rv_lot_map_id ) ) : '';
 
 /**
  * V1 ZONE MODEL (2.3.22, 2026-05-30):
@@ -511,6 +520,30 @@ eem_render_editor_field_row( array(
 	'label_sub'    => __( 'Hold back from reservation', 'equine-event-manager' ),
 	'row_id'       => 'row-rv-blocked-lots',
 	'control_html' => $blocked_rv_html,
+) );
+
+// ── RV Lot Map file upload (parallel to Stall Map; new in 2.3.23) ──
+ob_start();
+?>
+<div class="eem-file-row">
+	<span class="eem-file-name" id="eem-rv-lot-map-name"><?php echo $rv_lot_map_name ? esc_html( $rv_lot_map_name ) : ''; ?></span>
+	<button class="eem-btn-upload" type="button" data-eem-action="rv-lot-map-upload"><?php esc_html_e( 'Upload File', 'equine-event-manager' ); ?></button>
+	<button class="eem-btn-file-del" type="button" aria-label="<?php esc_attr_e( 'Remove file', 'equine-event-manager' ); ?>" data-eem-action="rv-lot-map-remove"<?php echo $rv_lot_map_id ? '' : ' style="display:none"'; ?>>
+		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+	</button>
+	<?php if ( $rv_lot_map_url ) : ?>
+		<a class="eem-view-link" href="<?php echo esc_url( $rv_lot_map_url ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'View file', 'equine-event-manager' ); ?></a>
+	<?php endif; ?>
+	<input type="hidden" name="eem_rv_lot_map_id" id="eem-rv-lot-map-id" value="<?php echo esc_attr( (string) $rv_lot_map_id ); ?>">
+</div>
+<span class="eem-field-hint"><?php esc_html_e( 'Optional: upload a visual map of the RV lot layout for customer reference.', 'equine-event-manager' ); ?></span>
+<?php
+$rv_map_html = (string) ob_get_clean();
+eem_render_editor_field_row( array(
+	'label'        => __( 'RV Lot Map', 'equine-event-manager' ),
+	'label_sub'    => __( 'PDF or image customers can open', 'equine-event-manager' ),
+	'row_id'       => 'row-rv-lot-map',
+	'control_html' => $rv_map_html,
 ) );
 ?>
 </div>
