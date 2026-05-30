@@ -189,7 +189,7 @@ body.eem-shell-page {
 }
 
 .eem-page a:hover {
-	text-decoration: underline;
+	text-decoration: none; /* Decision: no underline on hover plugin-wide — color change is sufficient */
 }
 
 /* Hide the WP screen-reader-only heading "Edit Reservation" etc. left over
@@ -720,7 +720,6 @@ a.eem-btn-tertiary {
 
 .eem-btn-tertiary:hover {
 	color: var(--eem-electric-hover);
-	text-decoration: underline;
 }
 
 /* Teal accent — Print View, attention-getting.
@@ -3410,7 +3409,6 @@ a.eem-mob-res-name {
 a.eem-mob-res-name:hover,
 a.eem-mob-res-name:focus {
 	color: var(--eem-electric);
-	text-decoration: underline;
 }
 
 .eem-mob-res-dates {
@@ -6177,7 +6175,7 @@ input.eem-pct-input:focus {
 	color: var(--eem-text-muted);
 	text-decoration: none;
 }
-.eem-plugin-meta-line .eem-meta-action:hover { color: var(--eem-electric); text-decoration: underline; }
+.eem-plugin-meta-line .eem-meta-action:hover { color: var(--eem-electric); }
 .eem-plugin-meta-line .eem-meta-action--danger:hover { color: #b32d2e; }
 
 /* ── Edit body — single column per C8 port (mockup line 66–68).

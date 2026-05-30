@@ -1881,8 +1881,10 @@ Cards inside the plugin-wrap: `1px solid #e5e7eb`.
 
 ### Universal hover convention
 - `a { text-decoration: none }` everywhere
-- `a:hover { text-decoration: none }` — never underline on hover
+- `a:hover { text-decoration: none }` — **NEVER underline on hover anywhere in the plugin.** Color change is the hover affordance; underline is not used. This is a hard product decision, not a default.
 - Color transitions: navy `#031B4E` → Electric Blue `#1668F2` (or `#1257d1` for primary CTA buttons)
+
+**Implementation rule (enforced 2.3.36):** The root `.eem-page a:hover { text-decoration: none }` rule in admin.css covers all plugin links. Any new component that adds a hover state MUST use only color/background/border changes — never `text-decoration: underline`. Every `text-decoration: underline` on any `:hover` or `:focus` selector in admin.css or admin-legacy.css is a bug and must be removed immediately.
 
 ### Order number format
 `#XXXXX` — 5-digit zero-padded. Phase 3 implementation uses `sprintf('#%05d', $order_id)`.
