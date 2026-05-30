@@ -62,6 +62,13 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-dashboard-repo.php'
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-dashboard-icons.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-dashboard-page.php';
 
+// 2.3.25 — WP-CLI demo data seeder. Loaded only in CLI context; the file
+// self-guards against being loaded outside WP_CLI and registers the
+// `wp eem seed_demo` command via WP_CLI::add_command().
+if ( defined( 'WP_CLI' ) && WP_CLI ) {
+	require_once EQUINE_EVENT_MANAGER_PATH . 'tools/seed-demo-data.php';
+}
+
 // C7.A — Event Defaults repository + Cancellation Policy resolver.
 // Repo backs the new wp_eem_event_defaults table (cancellation_policy
 // + venue_map_*). Resolver is consumed by C7.E editor UI + C10/C11/C12

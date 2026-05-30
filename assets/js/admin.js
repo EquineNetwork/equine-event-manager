@@ -3006,6 +3006,47 @@
 	/* ── Stall Chart Detail — delegated handlers (2.3.24 port) ──────────────
 	   All stall chart UI interactions wire through data-eem-action delegation.
 	   No inline onclick= used on the stall chart page. */
+
+	/* ── Stall Charts LIST PAGE — status tab filter (2.3.25) ── */
+	document.addEventListener('click', function (ev) {
+		var t = ev.target;
+		if (!t || !t.closest) return;
+
+		var filterTab = t.closest('[data-eem-action="sc-filter-tab"]');
+		if (filterTab) {
+			ev.preventDefault();
+			var status = filterTab.getAttribute('data-status') || 'all';
+			// Update active tab
+			document.querySelectorAll('[data-eem-action="sc-filter-tab"]').forEach(function (tab) {
+				tab.classList.toggle('active', tab === filterTab);
+			});
+			// Filter table rows + mobile cards
+			var rows  = document.querySelectorAll('#eem-sc-list-tbody tr[data-sc-status]');
+			var cards = document.querySelectorAll('.eem-sc-mobile-card[data-sc-status]');
+			rows.forEach(function (row) {
+				row.classList.toggle('eem-sc-hidden', status !== 'all' && row.getAttribute('data-sc-status') !== status);
+			});
+			cards.forEach(function (card) {
+				card.classList.toggle('eem-sc-hidden', status !== 'all' && card.getAttribute('data-sc-status') !== status);
+			});
+		}
+	});
+
+	/* ── Stall Charts LIST PAGE — search filtering (2.3.25) ── */
+	document.addEventListener('input', function (ev) {
+		var t = ev.target;
+		if (!t || t.getAttribute('data-eem-input-action') !== 'sc-list-search') return;
+		var q = (t.value || '').toLowerCase().trim();
+		var rows  = document.querySelectorAll('#eem-sc-list-tbody tr[data-sc-title]');
+		var cards = document.querySelectorAll('.eem-sc-mobile-card[data-sc-title]');
+		rows.forEach(function (row) {
+			row.classList.toggle('eem-sc-hidden', q.length > 0 && row.getAttribute('data-sc-title').indexOf(q) === -1);
+		});
+		cards.forEach(function (card) {
+			card.classList.toggle('eem-sc-hidden', q.length > 0 && card.getAttribute('data-sc-title').indexOf(q) === -1);
+		});
+	});
+
 	document.addEventListener('click', function (ev) {
 		var t = ev.target;
 		if (!t || !t.closest) return;

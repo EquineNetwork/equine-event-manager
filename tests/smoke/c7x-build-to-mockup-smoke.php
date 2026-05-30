@@ -832,10 +832,10 @@ echo "\n[11] Stall Chart Detail port 2.3.24 — V1 patterns\n";
 
 $admin_php  = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-equine-event-manager-admin.php' );
 
-// 11a. Version 2.3.24
+// 11a. Version 2.3.25
 c7x_ok(
-	'2.3.24: EQUINE_EVENT_MANAGER_VERSION is 2.3.24',
-	EQUINE_EVENT_MANAGER_VERSION === '2.3.24',
+	'2.3.25: EQUINE_EVENT_MANAGER_VERSION is 2.3.25',
+	EQUINE_EVENT_MANAGER_VERSION === '2.3.25',
 	$pass, $fail, $log
 );
 
@@ -926,6 +926,146 @@ c7x_ok(
 c7x_ok(
 	'2.3.24: stall chart detail uses eem-stall-chart-stats-bar (not eem-shell-metrics-grid)',
 	false !== strpos( $admin_php, 'eem-stall-chart-stats-bar' ),
+	$pass, $fail, $log
+);
+
+// ── 12. Stall & RV Charts LIST page + Enable Stall Chart toggle (2.3.25) ──
+echo "\n[12] Stall & RV Charts list page + stall chart toggle 2.3.25\n";
+
+$stall_section_php = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_section-stall.php' );
+$editor_page_php   = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-reservation-editor-page.php' );
+$admin_php_fresh   = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-equine-event-manager-admin.php' );
+$seeder_php        = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'tools/seed-demo-data.php' );
+
+// 12a. stall_chart_enabled in get_default_meta_values() (reservations CPT class).
+$cpt_php = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-reservations-cpt.php' );
+c7x_ok(
+	'2.3.25: stall_chart_enabled registered in get_default_meta_values()',
+	false !== strpos( $cpt_php, "'stall_chart_enabled'" ) && false !== strpos( $cpt_php, 'get_default_meta_values' ),
+	$pass, $fail, $log
+);
+
+// 12b. Stall section template contains the eem_stall_chart_enabled toggle input name.
+c7x_ok(
+	'2.3.25: _section-stall.php emits eem_stall_chart_enabled toggle',
+	false !== strpos( $stall_section_php, 'eem_stall_chart_enabled' ),
+	$pass, $fail, $log
+);
+
+// 12c. Stall section toggle uses eem_render_editor_toggle_label_row() helper.
+c7x_ok(
+	'2.3.25: stall chart toggle uses eem_render_editor_toggle_label_row helper',
+	false !== strpos( $stall_section_php, 'eem_render_editor_toggle_label_row' ) &&
+	false !== strpos( $stall_section_php, 'stall-chart' ),
+	$pass, $fail, $log
+);
+
+// 12d. ajax_save() in editor page handles eem_stall_chart_enabled checkbox.
+c7x_ok(
+	'2.3.25: ajax_save() handles eem_stall_chart_enabled checkbox',
+	false !== strpos( $editor_page_php, '_en_stall_chart_enabled' ) &&
+	false !== strpos( $editor_page_php, 'eem_stall_chart_enabled' ),
+	$pass, $fail, $log
+);
+
+// 12e. render_stall_charts_list_page() method exists in EEM_Admin.
+c7x_ok(
+	'2.3.25: render_stall_charts_list_page() method defined in EEM_Admin',
+	false !== strpos( $admin_php_fresh, 'render_stall_charts_list_page' ),
+	$pass, $fail, $log
+);
+
+// 12f. get_stall_charts_list_data() method exists in EEM_Admin.
+c7x_ok(
+	'2.3.25: get_stall_charts_list_data() method defined in EEM_Admin',
+	false !== strpos( $admin_php_fresh, 'get_stall_charts_list_data' ),
+	$pass, $fail, $log
+);
+
+// 12g. List page uses .eem-plugin-header (V1 shell pattern, not WP postbox).
+c7x_ok(
+	'2.3.25: render_stall_charts_list_page uses eem-plugin-header',
+	false !== strpos( $admin_php_fresh, 'eem-plugin-header' ) &&
+	false === strpos( $admin_php_fresh, 'class="postbox"' ),
+	$pass, $fail, $log
+);
+
+// 12h. List page table uses .eem-sc-list-table.
+c7x_ok(
+	'2.3.25: render_stall_charts_list_page emits eem-sc-list-table',
+	false !== strpos( $admin_php_fresh, 'eem-sc-list-table' ),
+	$pass, $fail, $log
+);
+
+// 12i. Status tabs use data-eem-action="sc-filter-tab".
+c7x_ok(
+	'2.3.25: render_stall_charts_list_page emits sc-filter-tab actions',
+	false !== strpos( $admin_php_fresh, 'sc-filter-tab' ),
+	$pass, $fail, $log
+);
+
+// 12j. Search input uses data-eem-input-action="sc-list-search".
+c7x_ok(
+	'2.3.25: render_stall_charts_list_page emits sc-list-search input action',
+	false !== strpos( $admin_php_fresh, 'sc-list-search' ),
+	$pass, $fail, $log
+);
+
+// 12k. sc-filter-tab JS handler wired in admin.js.
+c7x_ok(
+	'2.3.25: sc-filter-tab click handler in admin.js',
+	false !== strpos( $js, 'sc-filter-tab' ),
+	$pass, $fail, $log
+);
+
+// 12l. sc-list-search JS handler wired in admin.js.
+c7x_ok(
+	'2.3.25: sc-list-search input handler in admin.js',
+	false !== strpos( $js, 'sc-list-search' ),
+	$pass, $fail, $log
+);
+
+// 12m. .eem-sc-list-table CSS defined in admin.css.
+c7x_ok(
+	'2.3.25: .eem-sc-list-table CSS in admin.css',
+	false !== strpos( $admin_css, 'eem-sc-list-table' ),
+	$pass, $fail, $log
+);
+
+// 12n. .eem-sc-status-tabs CSS defined in admin.css.
+c7x_ok(
+	'2.3.25: .eem-sc-status-tabs CSS in admin.css',
+	false !== strpos( $admin_css, 'eem-sc-status-tabs' ),
+	$pass, $fail, $log
+);
+
+// 12o. Seeder file exists at tools/seed-demo-data.php.
+c7x_ok(
+	'2.3.25: tools/seed-demo-data.php exists',
+	file_exists( EQUINE_EVENT_MANAGER_PATH . 'tools/seed-demo-data.php' ),
+	$pass, $fail, $log
+);
+
+// 12p. WP_CLI::add_command('eem seed_demo', ...) registered in seeder.
+c7x_ok(
+	"2.3.25: WP_CLI::add_command 'eem seed_demo' registered in seeder",
+	false !== strpos( $seeder_php, "add_command( 'eem seed_demo'" ),
+	$pass, $fail, $log
+);
+
+// 12q. Seeder contains EEM_Seed_Demo_Command class.
+c7x_ok(
+	'2.3.25: EEM_Seed_Demo_Command class defined in seeder',
+	false !== strpos( $seeder_php, 'class EEM_Seed_Demo_Command' ),
+	$pass, $fail, $log
+);
+
+// 12r. WP-CLI bootstrap wired in includes/class-equine-event-manager.php.
+$main_class_php = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager.php' );
+c7x_ok(
+	'2.3.25: WP-CLI require of seed-demo-data.php wired in main class',
+	false !== strpos( $main_class_php, 'seed-demo-data.php' ) &&
+	false !== strpos( $main_class_php, 'WP_CLI' ),
 	$pass, $fail, $log
 );
 

@@ -626,6 +626,14 @@ class EEM_Reservation_Editor_Page {
 		}
 
 		// ── C8 mapped-layout meta (not routed through en_reservation[]) ──
+
+		// Stall Chart enabled flag (2.3.25) — checkbox; absent = unchecked = 0.
+		update_post_meta(
+			$reservation_id,
+			'_en_stall_chart_enabled',
+			isset( $_POST['eem_stall_chart_enabled'] ) && '1' === (string) wp_unslash( $_POST['eem_stall_chart_enabled'] ) ? 1 : 0
+		);
+
 		// Stall rows
 		if ( isset( $_POST['eem_stall_rows'] ) && is_array( $_POST['eem_stall_rows'] ) ) {
 			$stall_rows_raw = wp_unslash( $_POST['eem_stall_rows'] );

@@ -7020,3 +7020,198 @@ input.eem-event-search-input:focus {
 	.eem-stall-chart-action-bar { flex-direction: column; align-items: stretch; }
 	.eem-stall-chart-action-bar-btns { flex-wrap: wrap; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Stall & RV Charts — LIST PAGE (2.3.25)
+   Mockup: .mockups/stall_charts_page.html
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Subtitle under the h1 */
+.eem-sc-list-subtitle {
+	font-size: 13px;
+	color: var(--eem-text-secondary);
+	line-height: 1.45;
+	margin-top: 3px;
+}
+
+/* Status tabs override — sits between header and toolbar (no bottom margin) */
+.eem-sc-status-tabs {
+	border-bottom: 1px solid var(--eem-border);
+}
+
+/* Toolbar */
+.eem-sc-list-toolbar {
+	padding: 12px 18px;
+	border-bottom: 1px solid var(--eem-border);
+	background: #f3f4f5;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+.eem-list-toolbar-left  { display: flex; align-items: center; gap: 8px; flex: 1; flex-wrap: wrap; }
+.eem-list-toolbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.eem-list-count         { font-size: 13px; color: var(--eem-text-secondary); white-space: nowrap; }
+
+/* Desktop table wrapper */
+.eem-sc-list-desktop { overflow-x: auto; }
+
+/* Table */
+.eem-sc-list-table { width: 100%; border-collapse: collapse; }
+.eem-sc-list-table thead tr { border-bottom: 1px solid var(--eem-border); background: #f3f4f5; }
+.eem-sc-list-table thead th {
+	padding: 11px 14px;
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--eem-navy);
+	text-align: left;
+	white-space: nowrap;
+}
+.eem-sc-list-table tbody tr { border-bottom: 1px solid #f0f0f1; }
+.eem-sc-list-table tbody tr:last-child { border-bottom: none; }
+.eem-sc-list-table tbody tr:hover { background: #f6f7f7; }
+.eem-sc-list-table td { padding: 14px; font-size: 13.5px; color: var(--eem-navy); vertical-align: middle; }
+
+/* Hidden row (search / tab filtering) */
+.eem-sc-list-table tr.eem-sc-hidden,
+.eem-sc-mobile-card.eem-sc-hidden { display: none; }
+
+/* Reservation name cell */
+a.eem-sc-res-name {
+	font-weight: 700;
+	color: var(--eem-navy);
+	font-size: 14px;
+	display: block;
+	text-decoration: none;
+}
+a.eem-sc-res-name:hover { color: var(--eem-electric); }
+.eem-sc-res-dates { font-size: 12.5px; color: var(--eem-text-secondary); margin-top: 2px; }
+
+/* Stats row inside name cell */
+.eem-sc-chart-stats { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 3px; }
+.eem-sc-chart-stat  { font-size: 12px; color: var(--eem-text-secondary); display: flex; align-items: center; gap: 4px; }
+.eem-sc-stat-dot    { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+/* Empty dash placeholder */
+.eem-sc-empty-dash { color: var(--eem-text-secondary); font-size: 13px; }
+
+/* Barn/RV zone tag chips */
+.eem-sc-barn-tags { display: flex; gap: 5px; flex-wrap: wrap; }
+.eem-sc-barn-tag {
+	padding: 3px 9px;
+	border-radius: var(--eem-radius);
+	font-size: 11.5px;
+	font-weight: 600;
+	background: #F0F4FB;
+	color: var(--eem-navy);
+	border: 1px solid #D9E2F2;
+}
+.eem-sc-rv-lot-tag {
+	padding: 3px 9px;
+	border-radius: var(--eem-radius);
+	font-size: 11.5px;
+	font-weight: 600;
+	background: #F5F3FF;
+	color: #6d28d9;
+	border: 1px solid #ddd6fe;
+	display: inline-block;
+}
+
+/* Chart status badge */
+.eem-sc-chart-status {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: .04em;
+	text-transform: uppercase;
+	padding: 3px 10px;
+	border-radius: 12px;
+	white-space: nowrap;
+	line-height: 1.5;
+}
+.eem-sc-chart-status::before {
+	content: '';
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	flex-shrink: 0;
+}
+.eem-sc-chart-status--configured { background: #F0FDF4; color: #15803d; border: 1px solid #bbf7d0; }
+.eem-sc-chart-status--configured::before { background: #22c55e; }
+.eem-sc-chart-status--partial    { background: #FFFBEB; color: #b45309; border: 1px solid #fde68a; }
+.eem-sc-chart-status--partial::before    { background: #f59e0b; }
+.eem-sc-chart-status--empty      { background: #f3f4f5; color: #52525b; border: 1px solid var(--eem-border); }
+.eem-sc-chart-status--empty::before      { background: #94a3b8; }
+
+/* Action buttons */
+.eem-sc-actions-cell { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.eem-sc-action-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 6px 12px;
+	border-radius: var(--eem-radius);
+	font-size: 12.5px;
+	font-weight: 600;
+	cursor: pointer;
+	white-space: nowrap;
+	border: 1px solid;
+	text-decoration: none;
+}
+.eem-sc-action-btn--primary { background: var(--eem-electric); color: #fff; border-color: var(--eem-electric); }
+.eem-sc-action-btn--primary:hover { background: #1257d1; border-color: #1257d1; color: #fff; }
+.eem-sc-action-btn--ghost   { background: #fff; color: var(--eem-navy); border-color: var(--eem-border); }
+.eem-sc-action-btn--ghost:hover   { background: #f6f7f7; color: var(--eem-navy); }
+
+/* Empty state */
+.eem-sc-list-empty {
+	padding: 40px 24px;
+	text-align: center;
+	color: var(--eem-text-secondary);
+}
+.eem-sc-list-empty p { margin-bottom: 16px; }
+
+/* Mobile cards */
+.eem-sc-list-mobile { display: none; padding: 12px 14px; }
+.eem-sc-mobile-card {
+	background: #fff;
+	border: 1px solid var(--eem-border);
+	border-radius: var(--eem-radius);
+	padding: 14px;
+	margin-bottom: 8px;
+}
+.eem-sc-mob-card-top {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	margin-bottom: 6px;
+	gap: 8px;
+}
+a.eem-sc-mob-res-name {
+	font-size: 14px;
+	font-weight: 700;
+	color: var(--eem-navy);
+	text-decoration: none;
+	display: block;
+}
+a.eem-sc-mob-res-name:hover { color: var(--eem-electric); }
+.eem-sc-mob-card-body   { margin-bottom: 10px; }
+.eem-sc-mob-card-dates  { font-size: 12.5px; color: var(--eem-text-secondary); margin-bottom: 6px; }
+.eem-sc-mob-card-bottom {
+	display: flex;
+	align-items: center;
+	justify-content: flex-start;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+/* ── Responsive ── */
+@media ( max-width: 767px ) {
+	.eem-sc-list-desktop { display: none; }
+	.eem-sc-list-mobile  { display: block; }
+	.eem-sc-list-toolbar { flex-direction: column; align-items: stretch; padding: 10px 12px; }
+	.eem-list-toolbar-left { flex-direction: column; }
+	.eem-search-wrap { max-width: 100%; min-width: unset; }
+}

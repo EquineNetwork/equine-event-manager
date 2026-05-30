@@ -252,6 +252,23 @@ eem_render_editor_field_row( array(
 	),
 ) );
 
+// Stall Chart toggle (2.3.25) — enables this reservation on the Stall & RV Charts
+// admin page. Handled separately in ajax_save() (not inside en_reservation[]).
+ob_start();
+eem_render_editor_toggle_label_row( array(
+	'name'       => 'eem_stall_chart_enabled',
+	'subsection' => 'stall-chart',
+	'label'      => __( 'Enable stall chart for this reservation', 'equine-event-manager' ),
+	'is_enabled' => ! empty( $data['stall_chart_enabled'] ),
+	'controls'   => array(),
+) );
+$sc_html = ob_get_clean();
+eem_render_editor_field_row( array(
+	'label'        => __( 'Stall Chart', 'equine-event-manager' ),
+	'control_html' => $sc_html,
+	'hint'         => __( 'When enabled, this reservation appears in the Stall &amp; RV Charts page where you can view and manage stall assignments.', 'equine-event-manager' ),
+) );
+
 // Inventory Mode (C8) — UX polish 2.3.23: moved below pricing/shavings so the
 // inventory cluster (Mode → Available qty → Max per customer → Row builder) appears
 // as one tight group at the bottom of the section.
