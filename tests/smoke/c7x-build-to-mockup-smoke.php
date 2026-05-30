@@ -1881,6 +1881,70 @@ c7x_ok(
 	$pass, $fail, $log
 );
 
+// ── [23] 2.3.38 Stall Chart Detail — inventory toggle + dual tabs ─────────────
+echo "\n[23] 2.3.38 Stall Chart Detail — inventory toggle + view tabs restructure\n";
+
+$php_admin_238 = isset( $php_admin ) ? $php_admin : file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-equine-event-manager-admin.php' );
+$css_238       = isset( $css_234 ) ? $css_234 : file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/css/admin.css' );
+$js_238        = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/js/admin.js' );
+
+// 23a. Page title uses "Stall & RV Chart"
+c7x_ok(
+	'2.3.38: render_stall_chart_page uses "Stall & RV Chart - %s" title string',
+	false !== strpos( $php_admin_238, 'Stall & RV Chart - %s' ),
+	$pass, $fail, $log
+);
+
+// 23b. Inventory toggle buttons present in PHP
+c7x_ok(
+	'2.3.38: inventory toggle buttons (data-eem-action="sc-inv-switch") present in PHP',
+	false !== strpos( $php_admin_238, 'sc-inv-switch' ),
+	$pass, $fail, $log
+);
+
+// 23c. Location panel id updated
+c7x_ok(
+	'2.3.38: By Location panel uses id="eem-stall-chart-panel-location" (not old -stall)',
+	false !== strpos( $php_admin_238, 'eem-stall-chart-panel-location' ) &&
+	false === strpos( $php_admin_238, 'eem-stall-chart-panel-stall' ),
+	$pass, $fail, $log
+);
+
+// 23d. RV zone filter tabs present
+c7x_ok(
+	'2.3.38: RV zone filter tabs (stall-chart-filter-zone) present in PHP',
+	false !== strpos( $php_admin_238, 'stall-chart-filter-zone' ),
+	$pass, $fail, $log
+);
+
+// 23e. Customer rows have data-has-stalls for inventory filtering
+c7x_ok(
+	'2.3.38: customer table rows have data-has-stalls attribute for inventory filtering',
+	false !== strpos( $php_admin_238, 'data-has-stalls' ),
+	$pass, $fail, $log
+);
+
+// 23f. JS eemScApplyState function present
+c7x_ok(
+	'2.3.38: JS eemScApplyState centralised state function present in admin.js',
+	false !== strpos( $js_238, 'eemScApplyState' ),
+	$pass, $fail, $log
+);
+
+// 23g. CSS inventory toggle class present
+c7x_ok(
+	'2.3.38: .eem-sc-inv-toggle CSS rule present',
+	false !== strpos( $css_238, '.eem-sc-inv-toggle' ),
+	$pass, $fail, $log
+);
+
+// 23h. CSS zone tab class present
+c7x_ok(
+	'2.3.38: .eem-stall-chart-zone-tab CSS rule present',
+	false !== strpos( $css_238, '.eem-stall-chart-zone-tab' ),
+	$pass, $fail, $log
+);
+
 wp_delete_post( $rid, true );
 
 echo implode( "\n", $log ) . "\n=== RESULT: {$pass} passed, {$fail} failed ===\n";

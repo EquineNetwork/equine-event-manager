@@ -1820,11 +1820,14 @@ class EEM_Admin {
 		}
 
 		$config            = $this->get_stall_chart_config( $reservation_id );
-		$view              = isset( $_GET['view'] ) ? sanitize_key( wp_unslash( $_GET['view'] ) ) : 'units';
+		$inv               = isset( $_GET['inv'] ) ? sanitize_key( wp_unslash( $_GET['inv'] ) ) : 'all';
+		$inv               = in_array( $inv, array( 'all', 'stalls', 'rv' ), true ) ? $inv : 'all';
+		$tab               = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'location';
+		$tab               = in_array( $tab, array( 'location', 'customer' ), true ) ? $tab : 'location';
 		$reservation_title = get_the_title( $reservation_id );
 		$screen_title      = sprintf(
 			/* translators: %s: reservation title. */
-			__( 'Stall Chart - %s', 'equine-event-manager' ),
+			__( 'Stall & RV Chart - %s', 'equine-event-manager' ),
 			$reservation_title
 		);
 
@@ -1867,8 +1870,9 @@ class EEM_Admin {
 		$date_cols   = $grid['date_columns'];
 		$stall_count = count( $config['stall_units'] );
 		$rv_count    = count( $config['rv_lot_names'] );
-		$barn_options = $this->get_stall_chart_block_filter_options( isset( $config['stall_blocks'] ) ? $config['stall_blocks'] : array(), isset( $config['barn_names'] ) ? $config['barn_names'] : array() );
-		$is_counts_view = 'counts' === $view;
+		$barn_options     = $this->get_stall_chart_block_filter_options( isset( $config['stall_blocks'] ) ? $config['stall_blocks'] : array(), isset( $config['barn_names'] ) ? $config['barn_names'] : array() );
+		$rv_zone_options  = isset( $config['rv_zone_options'] ) ? $config['rv_zone_options'] : array();
+		$rv_zone_map      = isset( $config['rv_zone_map'] ) ? $config['rv_zone_map'] : array();
 		$reservation_dates = $this->get_reservation_date_range_label( $reservation_id );
 		?>
 		<div class="eem-page">
@@ -1980,77 +1984,144 @@ class EEM_Admin {
 				<?php else : ?>
 
 					<!-- Tabbed View Card -->
-					<div class="eem-stall-chart-view-tabs-card">
+					<div class="eem-stall-chart-view-tabs-card" id="eem-stall-chart-view-tabs-card">
 
-						<!-- Tab header row -->
+						<!-- INVENTORY TOGGLE BAR (top) -->
+						<div class="eem-sc-inv-bar">
+							<div class="eem-sc-inv-toggle" role="group" aria-label="<?php esc_attr_e( 'Inventory type', 'equine-event-manager' ); ?>">
+								<button class="eem-sc-inv-btn<?php echo 'all' === $inv ? ' active' : ''; ?>" type="button"
+									data-eem-action="sc-inv-switch" data-inv="all">
+									<?php esc_html_e( 'All', 'equine-event-manager' ); ?>
+								</button>
+								<button class="eem-sc-inv-btn<?php echo 'stalls' === $inv ? ' active' : ''; ?>" type="button"
+									data-eem-action="sc-inv-switch" data-inv="stalls">
+									<?php esc_html_e( 'Stalls', 'equine-event-manager' ); ?>
+								</button>
+								<button class="eem-sc-inv-btn<?php echo 'rv' === $inv ? ' active' : ''; ?>" type="button"
+									data-eem-action="sc-inv-switch" data-inv="rv">
+									<?php esc_html_e( 'RV', 'equine-event-manager' ); ?>
+								</button>
+							</div>
+						</div>
+
+						<!-- VIEW TABS (By Location / By Customer) -->
 						<div class="eem-stall-chart-view-tabs" id="eem-stall-chart-view-tabs" role="tablist">
-							<button class="eem-stall-chart-view-tab active" type="button"
+							<button class="eem-stall-chart-view-tab<?php echo 'location' === $tab ? ' active' : ''; ?>" type="button"
 								data-eem-action="stall-chart-switch-view"
-								data-view="stall"
+								data-view="location"
 								role="tab"
-								aria-selected="true"
-								aria-controls="eem-stall-chart-panel-stall">
+								aria-selected="<?php echo 'location' === $tab ? 'true' : 'false'; ?>"
+								aria-controls="eem-stall-chart-panel-location">
 								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
 								<?php esc_html_e( 'By Location', 'equine-event-manager' ); ?>
 							</button>
-							<button class="eem-stall-chart-view-tab" type="button"
+							<button class="eem-stall-chart-view-tab<?php echo 'customer' === $tab ? ' active' : ''; ?>" type="button"
 								data-eem-action="stall-chart-switch-view"
 								data-view="customer"
 								role="tab"
-								aria-selected="false"
+								aria-selected="<?php echo 'customer' === $tab ? 'true' : 'false'; ?>"
 								aria-controls="eem-stall-chart-panel-customer">
 								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
 								<?php esc_html_e( 'By Customer', 'equine-event-manager' ); ?>
 							</button>
 						</div>
 
-						<!-- By Location Panel -->
-						<div class="eem-stall-chart-tab-panel active" id="eem-stall-chart-panel-stall" role="tabpanel">
+						<!-- BY LOCATION PANEL -->
+						<div class="eem-stall-chart-tab-panel<?php echo 'location' === $tab ? ' active' : ''; ?>" id="eem-stall-chart-panel-location" role="tabpanel"<?php echo 'customer' === $tab ? ' style="display:none"' : ''; ?>>
 
-							<?php if ( ! empty( $grid['stall_rows'] ) ) : ?>
+							<!-- Tip banner -->
+							<div class="eem-stall-chart-help">
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+								<span><strong><?php esc_html_e( 'Tip:', 'equine-event-manager' ); ?></strong> <?php esc_html_e( 'Click any customer name to view their order or move them to a different stall.', 'equine-event-manager' ); ?></span>
+							</div>
 
-								<!-- Tip banner -->
-								<div class="eem-stall-chart-help">
-									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-									<span><strong><?php esc_html_e( 'Tip:', 'equine-event-manager' ); ?></strong> <?php esc_html_e( 'Click any customer name to view their order or move them to a different stall.', 'equine-event-manager' ); ?></span>
+							<!-- FILTER ROW -->
+							<div class="eem-stall-chart-filter-row">
+
+								<?php
+								// Barn tabs: visible only in stalls mode (and only when barn options exist).
+								$show_barn_tabs = ( 'stalls' === $inv && ! empty( $barn_options ) );
+								?>
+								<div class="eem-stall-chart-barn-tabs" id="eem-sc-barn-tabs"<?php echo $show_barn_tabs ? '' : ' style="display:none"'; ?>>
+									<button class="eem-stall-chart-barn-tab active" type="button"
+										data-eem-action="stall-chart-filter-barn"
+										data-barn="all">
+										<?php esc_html_e( 'All Barns', 'equine-event-manager' ); ?>
+									</button>
+									<?php foreach ( $barn_options as $barn_label ) : ?>
+										<button class="eem-stall-chart-barn-tab" type="button"
+											data-eem-action="stall-chart-filter-barn"
+											data-barn="<?php echo esc_attr( sanitize_html_class( strtolower( $barn_label ) ) ); ?>">
+											<?php echo esc_html( $barn_label ); ?>
+										</button>
+									<?php endforeach; ?>
 								</div>
 
-								<!-- Filter row -->
-								<div class="eem-stall-chart-filter-row">
-									<?php if ( ! empty( $barn_options ) ) : ?>
-										<div class="eem-stall-chart-barn-tabs" id="eem-stall-chart-barn-tabs">
-											<button class="eem-stall-chart-barn-tab active" type="button"
-												data-eem-action="stall-chart-filter-barn"
-												data-barn="all">
-												<?php esc_html_e( 'All Barns', 'equine-event-manager' ); ?>
-											</button>
-											<?php foreach ( $barn_options as $barn_label ) : ?>
-												<button class="eem-stall-chart-barn-tab" type="button"
-													data-eem-action="stall-chart-filter-barn"
-													data-barn="<?php echo esc_attr( sanitize_html_class( strtolower( $barn_label ) ) ); ?>">
-													<?php echo esc_html( $barn_label ); ?>
-												</button>
-											<?php endforeach; ?>
-										</div>
-									<?php endif; ?>
-									<div class="eem-stall-chart-filter-search">
-										<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-										<input type="search" id="eem-stall-chart-search" class="eem-search-input eem-stall-chart-search-input" placeholder="<?php esc_attr_e( 'Search', 'equine-event-manager' ); ?>" />
-									</div>
-									<span class="eem-stall-chart-filter-hint"><?php esc_html_e( 'Search by customer name, stall number, RV lot, or block title.', 'equine-event-manager' ); ?></span>
+								<?php
+								// Zone tabs: visible only in rv mode (and only when zone options exist).
+								$show_zone_tabs = ( 'rv' === $inv && ! empty( $rv_zone_options ) );
+								?>
+								<div class="eem-stall-chart-zone-tabs" id="eem-sc-zone-tabs"<?php echo $show_zone_tabs ? '' : ' style="display:none"'; ?>>
+									<button class="eem-stall-chart-zone-tab active" type="button"
+										data-eem-action="stall-chart-filter-zone"
+										data-zone="all">
+										<?php esc_html_e( 'All Zones', 'equine-event-manager' ); ?>
+									</button>
+									<?php foreach ( $rv_zone_options as $zone_label ) : ?>
+										<button class="eem-stall-chart-zone-tab" type="button"
+											data-eem-action="stall-chart-filter-zone"
+											data-zone="<?php echo esc_attr( sanitize_html_class( strtolower( $zone_label ) ) ); ?>">
+											<?php echo esc_html( $zone_label ); ?>
+										</button>
+									<?php endforeach; ?>
 								</div>
-								<p class="eem-stall-chart-empty-note" hidden><?php esc_html_e( 'No assignment rows match this search.', 'equine-event-manager' ); ?></p>
 
-								<?php $this->render_stall_chart_matrix_table( $grid['stall_rows'], $date_cols, __( 'Stall', 'equine-event-manager' ), __( 'Block', 'equine-event-manager' ) ); ?>
+								<div class="eem-stall-chart-filter-search">
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+									<input type="search" id="eem-stall-chart-search" class="eem-search-input eem-stall-chart-search-input" placeholder="<?php esc_attr_e( 'Search', 'equine-event-manager' ); ?>" />
+								</div>
+								<span class="eem-stall-chart-filter-hint"><?php esc_html_e( 'Search by customer name, stall number, RV lot, or block title.', 'equine-event-manager' ); ?></span>
+							</div>
+							<p class="eem-stall-chart-empty-note" hidden><?php esc_html_e( 'No assignment rows match this search.', 'equine-event-manager' ); ?></p>
 
-							<?php else : ?>
-								<p class="eem-stall-chart-no-data"><?php esc_html_e( 'No stall assignments configured for this reservation.', 'equine-event-manager' ); ?></p>
+							<?php if ( ! empty( $grid['stall_rows'] ) && ! empty( $grid['rv_rows'] ) && 'all' === $inv ) : ?>
+								<!-- Section divider: Stall Units (only in "All" mode when both types present) -->
+								<div class="eem-sc-section-divider">
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+									<?php esc_html_e( 'Stall Units', 'equine-event-manager' ); ?>
+								</div>
 							<?php endif; ?>
 
-						</div><!-- /panel-stall -->
+							<!-- STALL SECTION: hidden when inv=rv -->
+							<div id="eem-sc-loc-stalls" data-inv-section="stalls"<?php echo 'rv' === $inv ? ' style="display:none"' : ''; ?>>
+								<?php if ( ! empty( $grid['stall_rows'] ) ) : ?>
+									<?php $this->render_stall_chart_matrix_table( $grid['stall_rows'], $date_cols, __( 'Stall', 'equine-event-manager' ), __( 'Block', 'equine-event-manager' ) ); ?>
+								<?php else : ?>
+									<p class="eem-stall-chart-no-data"><?php esc_html_e( 'No stall assignments configured for this reservation.', 'equine-event-manager' ); ?></p>
+								<?php endif; ?>
+							</div>
 
-						<!-- By Customer Panel -->
-						<div class="eem-stall-chart-tab-panel" id="eem-stall-chart-panel-customer" role="tabpanel" style="display:none">
+							<?php if ( ! empty( $grid['stall_rows'] ) && ! empty( $grid['rv_rows'] ) && 'all' === $inv ) : ?>
+								<!-- Section divider: RV Lots (only in "All" mode when both types present) -->
+								<div class="eem-sc-section-divider">
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+									<?php esc_html_e( 'RV Lots', 'equine-event-manager' ); ?>
+								</div>
+							<?php endif; ?>
+
+							<!-- RV SECTION: hidden when inv=stalls -->
+							<div id="eem-sc-loc-rv" data-inv-section="rv"<?php echo 'stalls' === $inv ? ' style="display:none"' : ''; ?>>
+								<?php if ( ! empty( $grid['rv_rows'] ) ) : ?>
+									<?php $this->render_stall_chart_matrix_table( $grid['rv_rows'], $date_cols, __( 'RV Lot', 'equine-event-manager' ), '', $rv_zone_map ); ?>
+								<?php else : ?>
+									<p class="eem-stall-chart-no-data"><?php esc_html_e( 'No RV lot assignments configured for this reservation.', 'equine-event-manager' ); ?></p>
+								<?php endif; ?>
+							</div>
+
+						</div><!-- /panel-location -->
+
+						<!-- BY CUSTOMER PANEL -->
+						<div class="eem-stall-chart-tab-panel<?php echo 'customer' === $tab ? ' active' : ''; ?>" id="eem-stall-chart-panel-customer" role="tabpanel"<?php echo 'location' === $tab ? ' style="display:none"' : ''; ?>>
 
 							<!-- Tip banner -->
 							<div class="eem-stall-chart-help">
@@ -2072,18 +2143,8 @@ class EEM_Admin {
 
 						</div><!-- /panel-customer -->
 
-					</div><!-- /view-tabs-card -->
+					</div><!-- /eem-stall-chart-view-tabs-card -->
 
-				<?php endif; ?>
-
-				<?php if ( ! empty( $grid['rv_rows'] ) ) : ?>
-					<!-- RV Lot Occupancy Card -->
-					<div class="eem-stall-chart-content-card">
-						<div class="eem-stall-chart-content-card-header">
-							<div class="eem-stall-chart-content-card-title"><?php esc_html_e( 'RV Lot Occupancy', 'equine-event-manager' ); ?></div>
-						</div>
-						<?php $this->render_stall_chart_matrix_table( $grid['rv_rows'], $date_cols, __( 'RV Lot / Block', 'equine-event-manager' ), '' ); ?>
-					</div>
 				<?php endif; ?>
 
 				<?php if ( ! empty( $grid['issues'] ) ) : ?>
@@ -2259,7 +2320,7 @@ class EEM_Admin {
 		<div class="pv-topbar">
 			<div class="pv-topbar-left">
 				<div>
-					<div class="pv-topbar-title"><?php esc_html_e( 'Print View — Stall Chart', 'equine-event-manager' ); ?></div>
+					<div class="pv-topbar-title"><?php esc_html_e( 'Print View — Stall & RV Chart', 'equine-event-manager' ); ?></div>
 					<div class="pv-topbar-sub">
 						<?php echo esc_html( $reservation_title ); ?>
 						<?php if ( $reservation_dates ) : ?>
@@ -2579,7 +2640,7 @@ class EEM_Admin {
 
 			<!-- Footer -->
 			<div class="pv-footer">
-				<span><?php echo esc_html( $reservation_title ); ?> · <?php esc_html_e( 'Stall Chart', 'equine-event-manager' ); ?></span>
+				<span><?php echo esc_html( $reservation_title ); ?> · <?php esc_html_e( 'Stall & RV Chart', 'equine-event-manager' ); ?></span>
 				<span><?php echo esc_html( sprintf(
 					/* translators: %s: formatted printed date and time */
 					__( 'Printed %s · Equine Event Manager', 'equine-event-manager' ),
@@ -3286,6 +3347,26 @@ class EEM_Admin {
 		$blocked_stall_units = $this->sanitize_chart_unit_list( is_array( $blocked_stall_units ) ? $blocked_stall_units : array(), $stall_units );
 		$blocked_rv_lots     = $this->sanitize_chart_unit_list( is_array( $blocked_rv_lots ) ? $blocked_rv_lots : array(), $rv_lot_names );
 
+		// RV zone map and options (V1 rows only — zone = row 'name' field).
+		$rv_zone_options = array();
+		$rv_zone_map     = array(); // lot_name => zone_name.
+		if ( is_array( $v1_rv_rows ) && ! empty( $v1_rv_rows ) ) {
+			foreach ( $v1_rv_rows as $v1_row ) {
+				$zone_name = isset( $v1_row['name'] ) ? sanitize_text_field( $v1_row['name'] ) : '';
+				$first     = isset( $v1_row['first'] ) ? (string) $v1_row['first'] : '';
+				$last      = isset( $v1_row['last'] )  ? (string) $v1_row['last']  : '';
+				if ( '' === $zone_name || '' === $first || '' === $last ) {
+					continue;
+				}
+				$rv_zone_options[] = $zone_name;
+				foreach ( $this->expand_label_range( $first, $last ) as $num ) {
+					$rv_zone_map[ $zone_name . ' ' . $num ] = $zone_name;
+				}
+			}
+			$rv_zone_options = array_values( array_unique( $rv_zone_options ) );
+			sort( $rv_zone_options, SORT_NATURAL | SORT_FLAG_CASE );
+		}
+
 		return array(
 			'enabled'               => (bool) get_post_meta( $reservation_id, '_en_stall_chart_enabled', true ),
 			'stall_blocks'          => $stall_blocks,
@@ -3303,6 +3384,8 @@ class EEM_Admin {
 			'rv_lots'               => $rv_lots,
 			'barn_map'              => $barn_map,
 			'barn_names'            => $barn_names,
+			'rv_zone_options'       => $rv_zone_options,
+			'rv_zone_map'           => $rv_zone_map,
 		);
 	}
 
@@ -3701,7 +3784,7 @@ class EEM_Admin {
 		) );
 	}
 
-	private function render_stall_chart_matrix_table( $rows, $date_columns, $primary_label = 'Unit', $secondary_label = 'Block' ) {
+	private function render_stall_chart_matrix_table( $rows, $date_columns, $primary_label = 'Unit', $secondary_label = 'Block', $zone_map = array() ) {
 		$show_secondary_column = '' !== (string) $secondary_label;
 		$table_class = ( 'Stall' === $primary_label || 'Unit' === $primary_label ) ? 'eem-stall-chart-table' : 'eem-rv-chart-table';
 		?>
@@ -3740,7 +3823,7 @@ class EEM_Admin {
 							}
 						}
 					?>
-					<tr class="eem-chart-stall-row" data-stall-chart-search="<?php echo esc_attr( strtolower( implode( ' ', array_filter( $search_parts ) ) ) ); ?>" data-stall-chart-block="<?php echo esc_attr( strtolower( (string) $row['block'] ) ); ?>" data-barn="<?php echo esc_attr( sanitize_html_class( strtolower( (string) $row['block'] ) ) ); ?>">
+					<tr class="eem-chart-stall-row" data-stall-chart-search="<?php echo esc_attr( strtolower( implode( ' ', array_filter( $search_parts ) ) ) ); ?>" data-stall-chart-block="<?php echo esc_attr( strtolower( (string) $row['block'] ) ); ?>" data-barn="<?php echo esc_attr( sanitize_html_class( strtolower( (string) $row['block'] ) ) ); ?>" data-zone="<?php echo esc_attr( isset( $zone_map[ $row['unit'] ] ) ? sanitize_html_class( strtolower( $zone_map[ $row['unit'] ] ) ) : '' ); ?>">
 						<td class="eem-chart-unit-num"><?php echo esc_html( $row['unit'] ); ?></td>
 						<?php if ( $show_secondary_column ) : ?>
 							<td class="eem-chart-block-name"><?php echo esc_html( $row['block'] ); ?></td>
@@ -3812,7 +3895,7 @@ class EEM_Admin {
 							implode( ' ', (array) $row['rv_units'] ),
 						);
 						?>
-						<tr data-stall-chart-search="<?php echo esc_attr( strtolower( implode( ' ', array_filter( $search_parts ) ) ) ); ?>" data-stall-chart-block="">
+						<tr data-stall-chart-search="<?php echo esc_attr( strtolower( implode( ' ', array_filter( $search_parts ) ) ) ); ?>" data-stall-chart-block="" data-has-stalls="<?php echo ! empty( $row['stall_units'] ) ? '1' : '0'; ?>" data-has-rv="<?php echo ! empty( $row['rv_units'] ) ? '1' : '0'; ?>">
 							<td>
 								<a class="eem-chart-cust-link" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-order&order_key=' . rawurlencode( $row['order_key'] ) ) ); ?>">
 									<?php echo esc_html( $row['customer_name'] ); ?>

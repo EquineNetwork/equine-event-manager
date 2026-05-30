@@ -3047,25 +3047,112 @@
 		});
 	});
 
+	/* ── Stall Chart DETAIL: centralised inv/tab state ── */
+	function eemScApplyState(inv, tab) {
+		// 1. Inventory toggle buttons active state.
+		document.querySelectorAll('[data-eem-action="sc-inv-switch"]').forEach(function (btn) {
+			btn.classList.toggle('active', btn.getAttribute('data-inv') === inv);
+		});
+
+		// 2. View tab buttons active state.
+		document.querySelectorAll('[data-eem-action="stall-chart-switch-view"]').forEach(function (btn) {
+			var v = btn.getAttribute('data-view');
+			btn.classList.toggle('active', v === tab);
+			btn.setAttribute('aria-selected', v === tab ? 'true' : 'false');
+		});
+
+		// 3. Show / hide main panels.
+		var locPanel  = document.getElementById('eem-stall-chart-panel-location');
+		var custPanel = document.getElementById('eem-stall-chart-panel-customer');
+		if (locPanel)  locPanel.style.display  = tab === 'location' ? '' : 'none';
+		if (custPanel) custPanel.style.display = tab === 'customer'  ? '' : 'none';
+
+		// 4. Show / hide stall section and RV section within the location panel.
+		var stallSection = document.getElementById('eem-sc-loc-stalls');
+		var rvSection    = document.getElementById('eem-sc-loc-rv');
+		if (stallSection) stallSection.style.display = inv === 'rv'     ? 'none' : '';
+		if (rvSection)    rvSection.style.display    = inv === 'stalls' ? 'none' : '';
+
+		// 5. Barn tabs: only in stalls mode. Zone tabs: only in rv mode.
+		var barnTabsWrap = document.getElementById('eem-sc-barn-tabs');
+		var zoneTabsWrap = document.getElementById('eem-sc-zone-tabs');
+		if (barnTabsWrap) {
+			var hasBarnOptions = barnTabsWrap.querySelectorAll('button').length > 1;
+			barnTabsWrap.style.display = (inv === 'stalls' && hasBarnOptions) ? '' : 'none';
+		}
+		if (zoneTabsWrap) {
+			var hasZoneOptions = zoneTabsWrap.querySelectorAll('button').length > 1;
+			zoneTabsWrap.style.display = (inv === 'rv' && hasZoneOptions) ? '' : 'none';
+		}
+
+		// 6. Reset barn + zone filters to "all" when the inventory mode changes.
+		document.querySelectorAll('.eem-stall-chart-barn-tab').forEach(function (b) {
+			b.classList.toggle('active', b.getAttribute('data-barn') === 'all');
+		});
+		document.querySelectorAll('.eem-stall-chart-zone-tab').forEach(function (b) {
+			b.classList.toggle('active', b.getAttribute('data-zone') === 'all');
+		});
+		document.querySelectorAll('#eem-sc-loc-stalls [data-barn]').forEach(function (row) {
+			if (!row.classList.contains('eem-stall-chart-barn-tab') && !row.classList.contains('eem-stall-chart-zone-tab')) {
+				row.style.display = '';
+			}
+		});
+		document.querySelectorAll('#eem-sc-loc-rv [data-zone]').forEach(function (row) {
+			if (!row.classList.contains('eem-stall-chart-barn-tab') && !row.classList.contains('eem-stall-chart-zone-tab')) {
+				row.style.display = '';
+			}
+		});
+
+		// 7. Filter customer rows by inventory type.
+		var custRows = document.querySelectorAll('#eem-stall-chart-panel-customer [data-has-stalls]');
+		custRows.forEach(function (row) {
+			var hasStalls = row.getAttribute('data-has-stalls') === '1';
+			var hasRv     = row.getAttribute('data-has-rv')     === '1';
+			var show = inv === 'all' ||
+				(inv === 'stalls' && hasStalls) ||
+				(inv === 'rv'     && hasRv);
+			row.style.display = show ? '' : 'none';
+		});
+		var custEmptyNote = document.querySelector('#eem-stall-chart-panel-customer .eem-stall-chart-empty-note');
+		if (custEmptyNote && custRows.length > 0) {
+			var anyVisible = Array.prototype.slice.call(custRows).some(function (r) {
+				return r.style.display !== 'none';
+			});
+			custEmptyNote.hidden = anyVisible;
+		}
+
+		// 8. Persist state in URL without page reload.
+		if (window.history && window.history.replaceState) {
+			try {
+				var url = new URL(window.location.href);
+				url.searchParams.set('inv', inv);
+				url.searchParams.set('tab', tab);
+				window.history.replaceState(null, '', url.toString());
+			} catch (e) { /* swallow in ancient browsers */ }
+		}
+
+		// 9. Store current state.
+		window._eemScInv = inv;
+		window._eemScTab = tab;
+	}
+
 	document.addEventListener('click', function (ev) {
 		var t = ev.target;
 		if (!t || !t.closest) return;
+
+		// Inventory toggle (All / Stalls / RV)
+		var invBtn = t.closest('[data-eem-action="sc-inv-switch"]');
+		if (invBtn) {
+			ev.preventDefault();
+			eemScApplyState(invBtn.getAttribute('data-inv') || 'all', window._eemScTab || 'location');
+			return;
+		}
 
 		// View tab switching (By Location / By Customer)
 		var viewTab = t.closest('[data-eem-action="stall-chart-switch-view"]');
 		if (viewTab) {
 			ev.preventDefault();
-			var view = viewTab.getAttribute('data-view');
-			document.querySelectorAll('.eem-stall-chart-view-tab').forEach(function (tab) {
-				tab.classList.remove('active');
-				tab.setAttribute('aria-selected', 'false');
-			});
-			viewTab.classList.add('active');
-			viewTab.setAttribute('aria-selected', 'true');
-			var panelStall = document.getElementById('eem-stall-chart-panel-stall');
-			var panelCust = document.getElementById('eem-stall-chart-panel-customer');
-			if (panelStall) panelStall.style.display = view === 'stall' ? '' : 'none';
-			if (panelCust) panelCust.style.display = view === 'customer' ? '' : 'none';
+			eemScApplyState(window._eemScInv || 'all', viewTab.getAttribute('data-view') || 'location');
 			return;
 		}
 
@@ -3079,6 +3166,20 @@
 			document.querySelectorAll('[data-barn]').forEach(function (row) {
 				if (row.classList.contains('eem-stall-chart-barn-tab')) return; // skip tab buttons
 				row.style.display = (barn === 'all' || row.getAttribute('data-barn') === barn) ? '' : 'none';
+			});
+			return;
+		}
+
+		// Zone filter tabs (RV lots)
+		var zoneTab = t.closest('[data-eem-action="stall-chart-filter-zone"]');
+		if (zoneTab) {
+			ev.preventDefault();
+			var zone = zoneTab.getAttribute('data-zone');
+			document.querySelectorAll('.eem-stall-chart-zone-tab').forEach(function (b) { b.classList.remove('active'); });
+			zoneTab.classList.add('active');
+			document.querySelectorAll('#eem-sc-loc-rv [data-zone]').forEach(function (row) {
+				if (row.classList.contains('eem-stall-chart-barn-tab') || row.classList.contains('eem-stall-chart-zone-tab')) return;
+				row.style.display = (zone === 'all' || row.getAttribute('data-zone') === zone) ? '' : 'none';
 			});
 			return;
 		}
@@ -3333,6 +3434,19 @@
 			var tag = ev2.current ? ' <span class="eem-header-event-option-tag">Current</span>' : '';
 			return '<div class="eem-header-event-option' + (ev2.current ? ' is-current' : '') + '" data-eem-action="stall-chart-select-event" data-event-id="' + ev2.id + '"><span class="eem-header-event-option-name">' + ev2.name + '</span><span class="eem-header-event-option-dates">' + ev2.dates + tag + '</span></div>';
 		}).join('');
+	});
+
+	// Initialise stall chart inv/tab state from URL params on page load.
+	document.addEventListener('DOMContentLoaded', function () {
+		if (!document.querySelector('[data-eem-action="sc-inv-switch"]')) return;
+		try {
+			var params  = new URLSearchParams(window.location.search);
+			var initInv = params.get('inv') || 'all';
+			var initTab = params.get('tab') || 'location';
+			if (['all', 'stalls', 'rv'].indexOf(initInv) === -1) initInv = 'all';
+			if (['location', 'customer'].indexOf(initTab) === -1) initTab = 'location';
+			eemScApplyState(initInv, initTab);
+		} catch (e) { /* ignore */ }
 	});
 
 	/* ── Rail-card click handlers (Preview / Move to Trash / Unlink Event) ── */

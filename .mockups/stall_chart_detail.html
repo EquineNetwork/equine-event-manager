@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Equine Event Manager – Stall Chart – 2026 Southeast Region Super Sort</title>
+<title>Equine Event Manager – Stall &amp; RV Chart – 2026 Southeast Region Super Sort</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -83,6 +83,18 @@ a:hover{text-decoration:none}
 .view-tab svg{width:14px;height:14px}
 .view-tabs-card{background:#fff;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden;margin-bottom:14px}
 .view-tabs-card .view-tabs{border-bottom:1px solid #dcdcde}
+
+/* ── INVENTORY TOGGLE BAR (2.3.38) ── */
+.inv-bar{padding:14px 18px 0;background:#fff;display:flex;align-items:center;gap:12px}
+.inv-toggle{display:inline-flex;border:1px solid #dcdcde;border-radius:4px;overflow:hidden}
+.inv-btn{padding:7px 18px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;border:none;border-right:1px solid #dcdcde;cursor:pointer;transition:background .12s,color .12s;line-height:1}
+.inv-btn:last-child{border-right:none}
+.inv-btn:hover{background:#f6f7f7}
+.inv-btn.active{background:#1668F2;color:#fff}
+
+/* ── SECTION DIVIDER (between stalls and RV in All+Location view) ── */
+.section-divider{display:flex;align-items:center;gap:8px;padding:10px 18px;background:#f3f4f5;border-top:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#031B4E}
+.section-divider svg{width:14px;height:14px;flex-shrink:0}
 
 /* ── ACTION BAR ── */
 .action-bar{background:#fff;border:1px solid #e5e7eb;border-radius:4px;padding:12px 18px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -404,12 +416,21 @@ body.destination-mode .occ-pill.occ-blocked{opacity:.5}
           </div>
         </div>
 
-        <!-- ══════════════════ TABBED VIEW CARD (tabs are the header) ══════════════════ -->
-        <div class="view-tabs-card">
+        <!-- ══════════════════ TABBED VIEW CARD (2.3.38: inv toggle + merged RV panel) ══════════════════ -->
+        <div class="view-tabs-card" id="view-tabs-card">
 
-          <!-- View Tabs (now the card header) -->
+          <!-- INVENTORY TOGGLE BAR (top) -->
+          <div class="inv-bar">
+            <div class="inv-toggle" role="group" aria-label="Inventory type">
+              <button class="inv-btn active" onclick="switchInv('all', this)">All</button>
+              <button class="inv-btn" onclick="switchInv('stalls', this)">Stalls</button>
+              <button class="inv-btn" onclick="switchInv('rv', this)">RV</button>
+            </div>
+          </div>
+
+          <!-- VIEW TABS (By Location / By Customer) -->
           <div class="view-tabs">
-            <button class="view-tab active" onclick="switchView('stall', this)">
+            <button class="view-tab active" onclick="switchView('location', this)">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
               By Location
             </button>
@@ -420,17 +441,17 @@ body.destination-mode .occ-pill.occ-blocked{opacity:.5}
           </div>
 
           <!-- ─── BY LOCATION PANEL ─── -->
-          <div class="tab-panel active" id="panel-stall">
+          <div class="tab-panel active" id="panel-location">
 
-            <!-- Tip banner (flush below tabs) -->
+            <!-- Tip banner -->
             <div class="chart-help">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               <span><strong>Tip:</strong> Click any customer name to view their order or move them to a different stall.</span>
             </div>
 
-            <!-- Filter row -->
+            <!-- Filter row (barn tabs shown in "All" / "Stalls" mode) -->
             <div class="filter-row">
-              <div class="barn-tabs">
+              <div class="barn-tabs" id="barn-tabs">
                 <button class="barn-tab active" onclick="filterBarn('all', this)">All Barns</button>
                 <button class="barn-tab" onclick="filterBarn('red', this)">Red Barn</button>
                 <button class="barn-tab" onclick="filterBarn('blue', this)">Blue Barn</button>
@@ -443,50 +464,75 @@ body.destination-mode .occ-pill.occ-blocked{opacity:.5}
               <span class="filter-hint">Search by customer name, stall number, RV lot, or block title.</span>
             </div>
 
-            <!-- Stall table -->
-            <div class="table-scroll">
-              <table class="stall-table">
-                <thead>
-                  <tr>
-                    <th class="sortable">Stall <span class="sort-icon"><span></span><span></span></span></th>
-                    <th>Block</th>
-                    <th class="date-col">May 7</th>
-                    <th class="date-col">May 8</th>
-                    <th class="date-col">May 9</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <!-- Red Barn -->
-                  <tr class="barn-group-row" data-barn="red"><td colspan="5">Red Barn <span>· Stalls 100–120</span></td></tr>
-                  <tr class="stall-row" data-barn="red"><td class="stall-num">100</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00028" onclick="togglePillActions(event, this, 'Whitney Mitchell', '00028')">Whitney Mitchell<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00028" onclick="togglePillActions(event, this, 'Whitney Mitchell', '00028')">Whitney Mitchell<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
-                  <tr class="stall-row" data-barn="red"><td class="stall-num">101</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00028" onclick="togglePillActions(event, this, 'Whitney Mitchell', '00028')">Whitney Mitchell<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00028" onclick="togglePillActions(event, this, 'Whitney Mitchell', '00028')">Whitney Mitchell<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
-                  <tr class="stall-row" data-barn="red"><td class="stall-num">102</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00028" onclick="togglePillActions(event, this, 'Whitney Mitchell', '00028')">Whitney Mitchell<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00028" onclick="togglePillActions(event, this, 'Whitney Mitchell', '00028')">Whitney Mitchell<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
-                  <tr class="stall-row" data-barn="red"><td class="stall-num">103</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00030" onclick="togglePillActions(event, this, 'Jane Doe', '00030')">Jane Doe<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00030" onclick="togglePillActions(event, this, 'Jane Doe', '00030')">Jane Doe<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
-                  <tr class="stall-row" data-barn="red"><td class="stall-num">104</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00028" onclick="togglePillActions(event, this, 'Whitney Mitchell', '00028')">Whitney Mitchell<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00028" onclick="togglePillActions(event, this, 'Whitney Mitchell', '00028')">Whitney Mitchell<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
-                  <tr class="stall-row" data-barn="red"><td class="stall-num">105</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00024" onclick="togglePillActions(event, this, 'Marcus Trevino', '00024')">Marcus Trevino<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00024" onclick="togglePillActions(event, this, 'Marcus Trevino', '00024')">Marcus Trevino<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
-                  <tr class="stall-row" data-barn="red"><td class="stall-num">106</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
-                  <tr class="stall-row" data-barn="red"><td class="stall-num">107</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
-                  <!-- Blue Barn -->
-                  <tr class="barn-group-row" data-barn="blue"><td colspan="5">Blue Barn <span>· Stalls 121–160</span></td></tr>
-                  <tr class="stall-row" data-barn="blue"><td class="stall-num">121</td><td class="block-name">Blue Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00029" onclick="togglePillActions(event, this, 'Devon Lacroix', '00029')">Devon Lacroix<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00029" onclick="togglePillActions(event, this, 'Devon Lacroix', '00029')">Devon Lacroix<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
-                  <tr class="stall-row" data-barn="blue"><td class="stall-num">122</td><td class="block-name">Blue Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
-                  <tr class="stall-row" data-barn="blue"><td class="stall-num">123</td><td class="block-name">Blue Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-blocked">Blocked</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-blocked">Blocked</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-blocked">Blocked</span></div></td></tr>
-                  <!-- Yellow Barn -->
-                  <tr class="barn-group-row" data-barn="yellow"><td colspan="5">Yellow Barn <span>· Stalls 161–200</span></td></tr>
-                  <tr class="stall-row" data-barn="yellow"><td class="stall-num">197</td><td class="block-name">Yellow Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
-                  <tr class="stall-row" data-barn="yellow"><td class="stall-num">198</td><td class="block-name">Yellow Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
-                  <tr class="stall-row" data-barn="yellow"><td class="stall-num">199</td><td class="block-name">Yellow Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
-                  <tr class="stall-row" data-barn="yellow"><td class="stall-num">200</td><td class="block-name">Yellow Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
-                </tbody>
-              </table>
+            <!-- Section divider: Stall Units (shown in "All" mode when both types present) -->
+            <div class="section-divider" id="divider-stalls">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+              Stall Units
             </div>
 
-          </div><!-- /panel-stall -->
+            <!-- STALL SECTION -->
+            <div id="loc-stalls">
+              <div class="table-scroll">
+                <table class="stall-table">
+                  <thead>
+                    <tr>
+                      <th class="sortable">Stall <span class="sort-icon"><span></span><span></span></span></th>
+                      <th>Block</th>
+                      <th class="date-col">May 7</th>
+                      <th class="date-col">May 8</th>
+                      <th class="date-col">May 9</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <!-- Red Barn -->
+                    <tr class="barn-group-row" data-barn="red"><td colspan="5">Red Barn <span>· Stalls 100–120</span></td></tr>
+                    <tr class="stall-row" data-barn="red"><td class="stall-num">100</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00028" onclick="togglePillActions(event, this, 'Whitney Mitchell', '00028')">Whitney Mitchell<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00028" onclick="togglePillActions(event, this, 'Whitney Mitchell', '00028')">Whitney Mitchell<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
+                    <tr class="stall-row" data-barn="red"><td class="stall-num">101</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
+                    <!-- Blue Barn -->
+                    <tr class="barn-group-row" data-barn="blue"><td colspan="5">Blue Barn <span>· Stalls 121–160</span></td></tr>
+                    <tr class="stall-row" data-barn="blue"><td class="stall-num">121</td><td class="block-name">Blue Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00029" onclick="togglePillActions(event, this, 'Devon Lacroix', '00029')">Devon Lacroix<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
+                    <tr class="stall-row" data-barn="blue"><td class="stall-num">123</td><td class="block-name">Blue Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-blocked">Blocked</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-blocked">Blocked</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-blocked">Blocked</span></div></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div><!-- /loc-stalls -->
+
+            <!-- Section divider: RV Lots (shown in "All" mode when both types present) -->
+            <div class="section-divider" id="divider-rv">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+              RV Lots
+            </div>
+
+            <!-- RV SECTION -->
+            <div id="loc-rv">
+              <div class="table-scroll">
+                <table class="rv-table">
+                  <thead>
+                    <tr>
+                      <th>RV Lot</th>
+                      <th class="date-col">May 7</th>
+                      <th class="date-col">May 8</th>
+                      <th class="date-col">May 9</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="stall-row" data-zone="red-lot">
+                      <td class="rv-lot-name">Red Lot</td>
+                      <td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00020" onclick="togglePillActions(event, this, 'Whitney Mitchell', '00020')">Whitney Mitchell<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td>
+                      <td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00020" onclick="togglePillActions(event, this, 'Whitney Mitchell', '00020')">Whitney Mitchell<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td>
+                      <td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div><!-- /loc-rv -->
+
+          </div><!-- /panel-location -->
 
           <!-- ─── BY CUSTOMER PANEL ─── -->
-          <div class="tab-panel" id="panel-customer">
+          <div class="tab-panel" id="panel-customer" style="display:none">
 
-            <!-- Tip banner (same instruction applies — customer names are also clickable in this view) -->
+            <!-- Tip banner -->
             <div class="chart-help">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               <span><strong>Tip:</strong> Click any customer name to open the customer profile, or click an order number to view the order.</span>
@@ -516,18 +562,9 @@ body.destination-mode .occ-pill.occ-blocked{opacity:.5}
                   </tr>
                 </thead>
                 <tbody>
-                  <tr><td><a class="cust-link" href="admin.php?page=equine-event-manager-customer&amp;customer_email=whitney@example.com">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00028">#00028</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">120</td><td class="dash">—</td></tr>
-                  <tr><td><a class="cust-link" href="admin.php?page=equine-event-manager-customer&amp;customer_email=whitney@example.com">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00027">#00027</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">119</td><td class="dash">—</td></tr>
-                  <tr><td><a class="cust-link" href="admin.php?page=equine-event-manager-customer&amp;customer_email=whitney@example.com">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00026">#00026</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">125</td><td class="dash">—</td></tr>
-                  <tr><td><a class="cust-link" href="admin.php?page=equine-event-manager-customer&amp;customer_email=whitney@example.com">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00025">#00025</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">123</td><td class="dash">—</td></tr>
-                  <tr><td><a class="cust-link" href="admin.php?page=equine-event-manager-customer&amp;customer_email=whitney@example.com">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00024">#00024</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">118</td><td class="dash">—</td></tr>
-                  <tr><td><a class="cust-link" href="admin.php?page=equine-event-manager-customer&amp;customer_email=whitney@example.com">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00023">#00023</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">117</td><td class="dash">—</td></tr>
-                  <tr><td><a class="cust-link" href="admin.php?page=equine-event-manager-customer&amp;customer_email=whitney@example.com">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00022">#00022</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">116</td><td class="dash">—</td></tr>
-                  <tr><td><a class="cust-link" href="admin.php?page=equine-event-manager-customer&amp;customer_email=whitney@example.com">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00021">#00021</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">115</td><td class="dash">—</td></tr>
-                  <tr><td><a class="cust-link" href="admin.php?page=equine-event-manager-customer&amp;customer_email=whitney@example.com">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00020">#00020</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">109</td><td class="rv-assignment">Red Lot</td></tr>
-                  <tr><td><a class="cust-link" href="admin.php?page=equine-event-manager-customer&amp;customer_email=jane@example.com">Jane Doe</a></td><td class="order-num"><a class="order-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00009">#00009</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">103</td><td class="dash">—</td></tr>
-                  <tr><td><a class="cust-link" href="admin.php?page=equine-event-manager-customer&amp;customer_email=marcus@example.com">Marcus Trevino</a></td><td class="order-num"><a class="order-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00015">#00015</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">105</td><td class="dash">—</td></tr>
-                  <tr><td><a class="cust-link" href="admin.php?page=equine-event-manager-customer&amp;customer_email=devon@example.com">Devon Lacroix</a></td><td class="order-num"><a class="order-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00014">#00014</a></td><td class="night-count zero">—</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">121</td><td class="dash">—</td></tr>
+                  <tr data-has-stalls="1" data-has-rv="0"><td><a class="cust-link" href="#">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="#">#00028</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">100, 101</td><td class="dash">—</td></tr>
+                  <tr data-has-stalls="0" data-has-rv="1"><td><a class="cust-link" href="#">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="#">#00020</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="dash">—</td><td class="rv-assignment">Red Lot</td></tr>
+                  <tr data-has-stalls="1" data-has-rv="0"><td><a class="cust-link" href="#">Devon Lacroix</a></td><td class="order-num"><a class="order-link" href="#">#00029</a></td><td class="night-count zero">—</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">121</td><td class="dash">—</td></tr>
                 </tbody>
               </table>
             </div>
@@ -535,33 +572,6 @@ body.destination-mode .occ-pill.occ-blocked{opacity:.5}
           </div><!-- /panel-customer -->
 
         </div><!-- /view-tabs-card -->
-
-        <!-- RV Lot Occupancy (always visible — independent of view tab) -->
-        <div class="content-card">
-          <div class="content-card-header">
-            <div class="content-card-title">RV Lot Occupancy</div>
-          </div>
-          <div class="table-scroll">
-            <table class="rv-table">
-              <thead>
-                <tr>
-                  <th>RV Lot / Block</th>
-                  <th class="date-col">May 7</th>
-                  <th class="date-col">May 8</th>
-                  <th class="date-col">May 9</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td class="rv-lot-name">Red Lot</td>
-                  <td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00020" onclick="togglePillActions(event, this, 'Whitney Mitchell', '00020')">Whitney Mitchell<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td>
-                  <td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00020" onclick="togglePillActions(event, this, 'Whitney Mitchell', '00020')">Whitney Mitchell<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td>
-                  <td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
 
         <!-- Assignment Issues -->
         <div class="issues-card">
