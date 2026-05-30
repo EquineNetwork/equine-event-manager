@@ -6866,3 +6866,157 @@ input.eem-event-search-input:focus {
 	color: #6B7A99;
 	margin-left: 2px;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   STALL CHART DETAIL PAGE (2.3.24 port)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Stats bar ── */
+.eem-stall-chart-body { padding: 18px 22px 40px; background: #fff; }
+.eem-stall-chart-stats-bar { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+.eem-stall-chart-stat-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 4px; padding: 14px 18px; }
+.eem-stall-chart-stat-label { font-size: 10.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: #8c8f94; margin-bottom: 8px; }
+.eem-stall-chart-stat-value { font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700; color: #031B4E; }
+.eem-stall-chart-stat-daily { font-size: 13px; color: #4a5a7a; line-height: 1.8; }
+.eem-stall-chart-stat-daily span { font-weight: 600; color: #031B4E; }
+.eem-stall-chart-stat-card--wide { /* spans extra width naturally in 1.4fr column */ }
+
+/* ── Action bar ── */
+.eem-stall-chart-action-bar { background: #fff; border: 1px solid #e5e7eb; border-radius: 4px; padding: 12px 18px; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.eem-stall-chart-action-bar-btns { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 1; }
+.eem-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 4px; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; white-space: nowrap; border: 1px solid; text-decoration: none; }
+.eem-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
+.eem-btn--primary { background: #1668F2; color: #fff; border-color: #1668F2; }
+.eem-btn--primary:hover { background: #1257d1; border-color: #1257d1; color: #fff; }
+.eem-btn--ghost { background: #fff; color: #1d2327; border-color: #c3c4c7; }
+.eem-btn--ghost:hover { background: #f6f7f7; color: #1d2327; }
+
+/* ── View tabs card ── */
+.eem-stall-chart-view-tabs-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden; margin-bottom: 14px; }
+.eem-stall-chart-view-tabs { display: flex; gap: 0; background: #fff; padding: 0 18px; border-bottom: 1px solid #dcdcde; }
+.eem-stall-chart-view-tab { padding: 14px 22px 12px; font-size: 14px; font-weight: 600; color: #6B7A99; cursor: pointer; border-bottom: 3px solid transparent; font-family: inherit; transition: color .15s, border-color .15s; display: flex; align-items: center; gap: 8px; background: none; border-left: none; border-right: none; border-top: none; }
+.eem-stall-chart-view-tab:hover { color: #031B4E; }
+.eem-stall-chart-view-tab.active { color: #1668F2; border-bottom-color: #1668F2; }
+.eem-stall-chart-view-tab svg { width: 14px; height: 14px; }
+.eem-stall-chart-tab-panel { display: block; }
+
+/* ── Help / tip banner ── */
+.eem-stall-chart-help { display: flex; align-items: center; gap: 10px; padding: 11px 18px; background: #F0F4FB; border-bottom: 1px solid #D9E2F2; font-size: 13px; color: #031B4E; }
+.eem-stall-chart-help svg { width: 14px; height: 14px; color: #1668F2; flex-shrink: 0; }
+
+/* ── Filter row ── */
+.eem-stall-chart-filter-row { padding: 12px 18px; border-bottom: 1px solid #dcdcde; background: #f3f4f5; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.eem-stall-chart-barn-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.eem-stall-chart-barn-tab { padding: 6px 14px; border-radius: 4px; font-size: 12.5px; font-weight: 500; color: #1d2327; cursor: pointer; border: 1px solid #c3c4c7; background: #fff; font-family: inherit; }
+.eem-stall-chart-barn-tab:hover { background: #f6f7f7; border-color: #8c8f94; }
+.eem-stall-chart-barn-tab.active { background: #1668F2; color: #fff; border-color: #1668F2; }
+.eem-stall-chart-filter-search { position: relative; flex: 1; min-width: 200px; max-width: 380px; }
+.eem-stall-chart-filter-search svg { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); width: 13px; height: 13px; color: #8c8f94; }
+.eem-stall-chart-search-input { width: 100%; padding: 6px 10px 6px 28px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 13px; font-family: inherit; color: #1d2327; background: #fff; outline: none; }
+.eem-stall-chart-search-input:focus { border-color: #1668F2; box-shadow: 0 0 0 2px rgba(22,104,242,.12); }
+.eem-stall-chart-filter-hint { font-size: 12px; color: #8c8f94; white-space: nowrap; }
+.eem-stall-chart-empty-note { font-size: 13px; color: #8c8f94; padding: 12px 18px; margin: 0; }
+.eem-stall-chart-no-data { font-size: 13px; color: #6B7A99; padding: 18px; margin: 0; }
+
+/* ── Occupancy table ── */
+.eem-chart-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.eem-stall-chart-table,
+.eem-rv-chart-table,
+.eem-cust-chart-table { width: 100%; border-collapse: collapse; min-width: 500px; }
+.eem-stall-chart-table { min-width: 600px; }
+.eem-cust-chart-table { min-width: 700px; }
+.eem-stall-chart-table thead tr,
+.eem-rv-chart-table thead tr,
+.eem-cust-chart-table thead tr { background: #f3f4f5; border-bottom: 1px solid #dcdcde; }
+.eem-stall-chart-table thead th,
+.eem-rv-chart-table thead th,
+.eem-cust-chart-table thead th { padding: 11px 14px; font-size: 13px; font-weight: 600; color: #1d2327; text-align: left; white-space: nowrap; }
+.eem-chart-date-col { text-align: center; min-width: 130px; }
+.eem-chart-barn-row td { background: #f3f4f5; padding: 9px 14px; font-size: 13px; font-weight: 600; color: #031B4E; border-bottom: 1px solid #dcdcde; border-top: 1px solid #dcdcde; }
+.eem-chart-stall-row { border-bottom: 1px solid #f0f0f1; }
+.eem-chart-stall-row:hover { background: #f6f7f7; }
+.eem-stall-chart-table td,
+.eem-rv-chart-table td,
+.eem-cust-chart-table td { padding: 11px 14px; font-size: 13.5px; color: #1d2327; vertical-align: middle; }
+.eem-chart-unit-num { font-weight: 700; color: #031B4E; font-size: 13.5px; width: 60px; }
+.eem-chart-block-name { color: #50575e; font-size: 13px; white-space: nowrap; }
+.eem-chart-cell-wrap { display: flex; justify-content: center; }
+
+/* ── Occupancy pills ── */
+.eem-occ-pill { display: inline-flex; align-items: center; gap: 4px; padding: 4px 11px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; border: 1px solid; font-family: inherit; }
+.eem-occ-pill--reserved { background: #EEF4FF; color: #1668F2; border-color: #c0d8ff; cursor: pointer; transition: filter .12s, box-shadow .12s; }
+.eem-occ-pill--reserved:hover { filter: brightness(.96); box-shadow: 0 1px 4px rgba(22,104,242,.18); }
+.eem-occ-chevron { width: 11px; height: 11px; color: #1668F2; opacity: .3; transition: opacity .12s; flex-shrink: 0; }
+.eem-occ-pill--reserved:hover .eem-occ-chevron { opacity: 1; }
+.eem-occ-pill--available { background: #F0FDF4; color: #15803d; border-color: #bbf7d0; }
+.eem-occ-pill--blocked { background: #FEF2F2; color: #b91c1c; border-color: #fecaca; }
+
+/* ── Customer night count table ── */
+.eem-cust-chart-table tbody tr { border-bottom: 1px solid #f0f0f1; }
+.eem-cust-chart-table tbody tr:hover { background: #f6f7f7; }
+.eem-chart-cust-link { color: #031B4E; font-weight: 700; font-size: 13.5px; text-decoration: none; }
+.eem-chart-cust-link:hover { color: #1668F2; }
+.eem-chart-order-link { color: #031B4E; font-weight: 600; font-size: 12.5px; text-decoration: none; }
+.eem-chart-order-link:hover { color: #1668F2; }
+.eem-chart-night-count { text-align: center; font-weight: 600; color: #8c8f94; }
+.eem-chart-night-count--has { background: #EEF4FF; border-radius: 4px; color: #1668F2; }
+.eem-chart-stall-assignment { font-size: 13px; color: #031B4E; font-weight: 500; }
+.eem-chart-rv-assignment { font-size: 13px; color: #6d28d9; font-weight: 500; }
+.eem-chart-dash { color: #8c8f94; }
+
+/* ── RV Lot Occupancy card ── */
+.eem-stall-chart-content-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden; margin-bottom: 14px; }
+.eem-stall-chart-content-card-header { padding: 14px 18px; border-bottom: 1px solid #dcdcde; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.eem-stall-chart-content-card-title { font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 700; color: #031B4E; }
+
+/* ── Assignment Issues card ── */
+.eem-stall-chart-issues-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden; margin-bottom: 14px; }
+.eem-stall-chart-issues-header { background: #f3f4f5; padding: 12px 18px; border-bottom: 1px solid #dcdcde; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.eem-stall-chart-issues-header svg { width: 16px; height: 16px; color: #b91c1c; flex-shrink: 0; }
+.eem-stall-chart-issues-title { font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 700; color: #b91c1c; }
+.eem-stall-chart-issues-count { background: #FEF2F2; color: #b91c1c; border: 1px solid #fecaca; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
+.eem-stall-chart-issues-body { padding: 14px 18px; }
+.eem-stall-chart-issue-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 4px; border: 1px solid #f0f0f1; background: #fff; margin-bottom: 6px; gap: 12px; }
+.eem-stall-chart-issue-row:last-child { margin-bottom: 0; }
+.eem-stall-chart-issue-row:hover { background: #f6f7f7; border-color: #dcdcde; }
+.eem-stall-chart-issue-text { font-size: 13px; color: #1d2327; flex: 1; }
+.eem-stall-chart-issue-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.eem-stall-chart-issue-view-link { font-size: 11.5px; color: #1668F2; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; text-decoration: none; }
+.eem-stall-chart-issue-view-link:hover { color: #1257d1; }
+.eem-stall-chart-issue-view-link svg { width: 11px; height: 11px; }
+
+/* ── Cell action popover ── */
+.eem-stall-chart-cell-menu { position: absolute; z-index: 120; background: #fff; border: 1px solid #c3c4c7; border-radius: 6px; box-shadow: 0 8px 24px rgba(3,27,78,.18); padding: 6px; display: none; min-width: 200px; font-family: inherit; }
+.eem-stall-chart-cell-menu.open { display: flex; flex-direction: column; gap: 2px; }
+.eem-stall-chart-menu-title-wrap { padding: 8px 12px 6px; border-bottom: 1px solid #f0f0f1; margin-bottom: 4px; }
+.eem-stall-chart-menu-title { font-size: 13px; font-weight: 600; color: #031B4E; line-height: 1.3; margin-bottom: 2px; }
+.eem-stall-chart-menu-subtitle { font-size: 11.5px; color: #6B7A99; }
+.eem-stall-chart-menu-subtitle a { color: #031B4E; font-weight: 600; text-decoration: none; }
+.eem-stall-chart-menu-subtitle a:hover { color: #1668F2; }
+.eem-stall-chart-cell-menu-btn { display: flex; align-items: center; gap: 8px; padding: 9px 12px; background: #fff; border: none; border-radius: 4px; font-size: 13px; font-weight: 500; color: #1d2327; cursor: pointer; text-align: left; font-family: inherit; width: 100%; }
+.eem-stall-chart-cell-menu-btn:hover { background: #f6f7f7; }
+.eem-stall-chart-cell-menu-btn svg { width: 13px; height: 13px; flex-shrink: 0; color: #6B7A99; }
+.eem-stall-chart-cell-menu-btn:hover svg { color: #1668F2; }
+
+/* ── Empty state ── */
+.eem-stall-chart-empty-card { padding: 18px 22px; background: #fff; border: 1px solid #e5e7eb; border-radius: 4px; margin-bottom: 14px; }
+
+/* ── Responsive ── */
+@media (max-width: 960px) {
+	.eem-stall-chart-stats-bar { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 767px) {
+	.eem-stall-chart-body { padding: 12px; }
+	.eem-stall-chart-stats-bar { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+	.eem-stall-chart-stat-card { padding: 10px 12px; }
+	.eem-stall-chart-stat-value { font-size: 22px; }
+	.eem-stall-chart-view-tabs { overflow-x: auto; flex-wrap: nowrap; }
+	.eem-stall-chart-view-tab { padding: 10px 16px; font-size: 12.5px; }
+	.eem-stall-chart-filter-row { flex-direction: column; align-items: stretch; padding: 10px 12px; gap: 8px; }
+	.eem-stall-chart-barn-tabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
+	.eem-stall-chart-barn-tab { flex-shrink: 0; }
+	.eem-stall-chart-filter-search { max-width: 100%; }
+	.eem-stall-chart-filter-hint { display: none; }
+	.eem-stall-chart-action-bar { flex-direction: column; align-items: stretch; }
+	.eem-stall-chart-action-bar-btns { flex-wrap: wrap; }
+}

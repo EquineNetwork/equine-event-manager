@@ -756,10 +756,10 @@ echo "\n[10.UX] UX Polish 2.3.23 — field reorders, Stall Map upload fix, RV Lo
 
 $stall_php = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_section-stall.php' );
 
-// 10a. Version bumped to 2.3.23.
+// 10a. Version bumped to 2.3.23 (superseded by 2.3.24 — checked in section 11).
 c7x_ok(
-	'2.3.23: EQUINE_EVENT_MANAGER_VERSION is 2.3.23',
-	EQUINE_EVENT_MANAGER_VERSION === '2.3.23',
+	'2.3.23: EQUINE_EVENT_MANAGER_VERSION is at least 2.3.23',
+	version_compare( EQUINE_EVENT_MANAGER_VERSION, '2.3.23', '>=' ),
 	$pass, $fail, $log
 );
 
@@ -824,6 +824,108 @@ $editor_php = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-re
 c7x_ok(
 	'2.3.23: eem_rv_lot_map_id save handler in reservation editor page',
 	false !== strpos( $editor_php, 'eem_rv_lot_map_id' ),
+	$pass, $fail, $log
+);
+
+// ── 11. Stall Chart Detail port 2.3.24 ──────────────────────────────────────
+echo "\n[11] Stall Chart Detail port 2.3.24 — V1 patterns\n";
+
+$admin_php  = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-equine-event-manager-admin.php' );
+
+// 11a. Version 2.3.24
+c7x_ok(
+	'2.3.24: EQUINE_EVENT_MANAGER_VERSION is 2.3.24',
+	EQUINE_EVENT_MANAGER_VERSION === '2.3.24',
+	$pass, $fail, $log
+);
+
+// 11b. render_stall_chart_page uses eem-plugin-wrap (old inline script removed)
+c7x_ok(
+	'2.3.24: render_stall_chart_page uses eem-plugin-wrap + eem-stall-chart-body; old inline script removed',
+	false !== strpos( $admin_php, 'eem-plugin-wrap' ) &&
+	false !== strpos( $admin_php, 'eem-stall-chart-body' ) &&
+	false === strpos( $admin_php, 'eem-stall-chart-table-card' ),
+	$pass, $fail, $log
+);
+
+// 11c. No inline onclick in stall chart page render
+c7x_ok(
+	'2.3.24: render_stall_chart_page has no inline onclick= handlers',
+	false === strpos( $admin_php, 'onclick="window.print()' ) &&
+	false === strpos( $admin_php, 'onclick="this.form.submit()' ) &&
+	false === strpos( $admin_php, 'onchange="this.form.submit()' ),
+	$pass, $fail, $log
+);
+
+// 11d. data-eem-action delegation used for stall chart actions
+c7x_ok(
+	'2.3.24: stall-chart-switch-view data-eem-action in admin_php',
+	false !== strpos( $admin_php, 'stall-chart-switch-view' ),
+	$pass, $fail, $log
+);
+c7x_ok(
+	'2.3.24: stall-chart-filter-barn data-eem-action in admin_php',
+	false !== strpos( $admin_php, 'stall-chart-filter-barn' ),
+	$pass, $fail, $log
+);
+c7x_ok(
+	'2.3.24: stall-chart-change-event data-eem-action in admin_php',
+	false !== strpos( $admin_php, 'stall-chart-change-event' ),
+	$pass, $fail, $log
+);
+c7x_ok(
+	'2.3.24: stall-chart-print data-eem-action in admin_php',
+	false !== strpos( $admin_php, 'stall-chart-print' ),
+	$pass, $fail, $log
+);
+
+// 11e. eem-occ-pill CSS in admin.css
+c7x_ok(
+	'2.3.24: .eem-occ-pill--reserved CSS in admin.css',
+	false !== strpos( $admin_css, 'eem-occ-pill--reserved' ),
+	$pass, $fail, $log
+);
+c7x_ok(
+	'2.3.24: .eem-stall-chart-view-tab CSS in admin.css',
+	false !== strpos( $admin_css, 'eem-stall-chart-view-tab' ),
+	$pass, $fail, $log
+);
+
+// 11f. stall-chart-switch-view JS handler in admin.js
+c7x_ok(
+	'2.3.24: stall-chart-switch-view handler in admin.js',
+	false !== strpos( $js, 'stall-chart-switch-view' ),
+	$pass, $fail, $log
+);
+c7x_ok(
+	'2.3.24: stall-chart-pill-click handler in admin.js',
+	false !== strpos( $js, 'stall-chart-pill-click' ),
+	$pass, $fail, $log
+);
+c7x_ok(
+	'2.3.24: stall-chart-print handler in admin.js',
+	false !== strpos( $js, 'stall-chart-print' ),
+	$pass, $fail, $log
+);
+
+// 11g. Issues data structured (now arrays not strings) in build_stall_chart_grid
+c7x_ok(
+	"2.3.24: build_stall_chart_grid returns structured issues (array with 'text' key)",
+	false !== strpos( $admin_php, "'text'" ) && false !== strpos( $admin_php, "'order_key'" ),
+	$pass, $fail, $log
+);
+
+// 11h. render_stall_chart_matrix_table uses eem-occ-pill classes
+c7x_ok(
+	'2.3.24: render_stall_chart_matrix_table uses eem-occ-pill spans',
+	false !== strpos( $admin_php, 'eem-occ-pill' ),
+	$pass, $fail, $log
+);
+
+// 11i. No postbox/form-table in the stall chart detail (old WP patterns gone)
+c7x_ok(
+	'2.3.24: stall chart detail uses eem-stall-chart-stats-bar (not eem-shell-metrics-grid)',
+	false !== strpos( $admin_php, 'eem-stall-chart-stats-bar' ),
 	$pass, $fail, $log
 );
 

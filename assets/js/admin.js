@@ -3003,6 +3003,172 @@
 		}
 	});
 
+	/* ── Stall Chart Detail — delegated handlers (2.3.24 port) ──────────────
+	   All stall chart UI interactions wire through data-eem-action delegation.
+	   No inline onclick= used on the stall chart page. */
+	document.addEventListener('click', function (ev) {
+		var t = ev.target;
+		if (!t || !t.closest) return;
+
+		// View tab switching (By Location / By Customer)
+		var viewTab = t.closest('[data-eem-action="stall-chart-switch-view"]');
+		if (viewTab) {
+			ev.preventDefault();
+			var view = viewTab.getAttribute('data-view');
+			document.querySelectorAll('.eem-stall-chart-view-tab').forEach(function (tab) {
+				tab.classList.remove('active');
+				tab.setAttribute('aria-selected', 'false');
+			});
+			viewTab.classList.add('active');
+			viewTab.setAttribute('aria-selected', 'true');
+			var panelStall = document.getElementById('eem-stall-chart-panel-stall');
+			var panelCust = document.getElementById('eem-stall-chart-panel-customer');
+			if (panelStall) panelStall.style.display = view === 'stall' ? '' : 'none';
+			if (panelCust) panelCust.style.display = view === 'customer' ? '' : 'none';
+			return;
+		}
+
+		// Barn filter tabs
+		var barnTab = t.closest('[data-eem-action="stall-chart-filter-barn"]');
+		if (barnTab) {
+			ev.preventDefault();
+			var barn = barnTab.getAttribute('data-barn');
+			document.querySelectorAll('.eem-stall-chart-barn-tab').forEach(function (b) { b.classList.remove('active'); });
+			barnTab.classList.add('active');
+			document.querySelectorAll('[data-barn]').forEach(function (row) {
+				if (row.classList.contains('eem-stall-chart-barn-tab')) return; // skip tab buttons
+				row.style.display = (barn === 'all' || row.getAttribute('data-barn') === barn) ? '' : 'none';
+			});
+			return;
+		}
+
+		// Cell pill click — show popover
+		var pill = t.closest('[data-eem-action="stall-chart-pill-click"]');
+		if (pill) {
+			ev.stopPropagation();
+			var menu = document.getElementById('eem-stall-chart-cell-menu');
+			if (!menu) return;
+			if (menu.classList.contains('open') && window._eemActivePill === pill) {
+				menu.classList.remove('open');
+				window._eemActivePill = null;
+				return;
+			}
+			var customer = pill.getAttribute('data-customer') || '—';
+			var orderKey = pill.getAttribute('data-order-key') || '';
+			var titleEl = document.getElementById('eem-stall-chart-menu-title');
+			var subEl = document.getElementById('eem-stall-chart-menu-subtitle');
+			if (titleEl) titleEl.textContent = customer;
+			if (subEl) {
+				var orderUrl = (window.ajaxurl || '/wp-admin/admin-ajax.php').replace('admin-ajax.php', '') + 'admin.php?page=equine-event-manager-order&order_key=' + encodeURIComponent(orderKey);
+				subEl.innerHTML = 'Order: <a href="' + orderUrl + '" onclick="event.stopPropagation()">' + (orderKey || '—') + '</a>';
+			}
+			window._eemActivePill = pill;
+			window._eemActiveOrderKey = orderKey;
+			var rect = pill.getBoundingClientRect();
+			menu.style.left = (rect.left + window.scrollX) + 'px';
+			menu.style.top = (rect.bottom + window.scrollY + 6) + 'px';
+			menu.classList.add('open');
+			return;
+		}
+
+		// Popover: View Order button
+		var viewOrderBtn = t.closest('[data-eem-action="stall-chart-view-order"]');
+		if (viewOrderBtn) {
+			if (window._eemActiveOrderKey) {
+				var url = (window.ajaxurl || '/wp-admin/admin-ajax.php').replace('admin-ajax.php', '') + 'admin.php?page=equine-event-manager-order&order_key=' + encodeURIComponent(window._eemActiveOrderKey);
+				window.open(url, '_blank');
+			}
+			var menuClose = document.getElementById('eem-stall-chart-cell-menu');
+			if (menuClose) { menuClose.classList.remove('open'); }
+			window._eemActivePill = null;
+			return;
+		}
+
+		// Print view
+		var printBtn = t.closest('[data-eem-action="stall-chart-print"]');
+		if (printBtn) {
+			ev.preventDefault();
+			window.print();
+			return;
+		}
+
+		// Change Event — show typeahead
+		var changeBtn = t.closest('[data-eem-action="stall-chart-change-event"]');
+		if (changeBtn) {
+			ev.preventDefault();
+			var changeBtnEl = document.getElementById('eem-stall-chart-change-btn');
+			if (changeBtnEl) changeBtnEl.style.display = 'none';
+			var typeahead = document.getElementById('eem-header-typeahead');
+			if (typeahead) typeahead.style.display = '';
+			var searchInput = document.getElementById('eem-header-event-input');
+			if (searchInput) { searchInput.value = ''; searchInput.focus(); }
+			return;
+		}
+
+		// Cancel change event
+		var cancelBtn = t.closest('[data-eem-action="stall-chart-cancel-change"]');
+		if (cancelBtn) {
+			ev.preventDefault();
+			var typeahead2 = document.getElementById('eem-header-typeahead');
+			if (typeahead2) typeahead2.style.display = 'none';
+			var changeBtn2 = document.getElementById('eem-stall-chart-change-btn');
+			if (changeBtn2) changeBtn2.style.display = '';
+			return;
+		}
+
+		// Close cell menu when clicking outside
+		var menu2 = document.getElementById('eem-stall-chart-cell-menu');
+		if (menu2 && menu2.classList.contains('open') && !menu2.contains(t)) {
+			menu2.classList.remove('open');
+			window._eemActivePill = null;
+		}
+	});
+
+	// Stall chart search filter (By Location + By Customer)
+	document.addEventListener('input', function (ev) {
+		var t = ev.target;
+		if (!t) return;
+		if (!t.classList.contains('eem-stall-chart-search-input')) return;
+		var panel = t.closest('.eem-stall-chart-tab-panel') || document.body;
+		var rows = Array.prototype.slice.call(panel.querySelectorAll('[data-stall-chart-search]'));
+		var barnFilter = document.querySelector('.eem-stall-chart-barn-tab.active');
+		var activeBarn = barnFilter ? barnFilter.getAttribute('data-barn') : 'all';
+		var q = t.value.toLowerCase().trim();
+		var visible = 0;
+		rows.forEach(function (row) {
+			var haystack = (row.getAttribute('data-stall-chart-search') || '').toLowerCase();
+			var barn = (row.getAttribute('data-barn') || '').toLowerCase();
+			var matchesSearch = !q || haystack.indexOf(q) !== -1;
+			var matchesBarn = activeBarn === 'all' || barn === activeBarn;
+			var show = matchesSearch && matchesBarn && !row.classList.contains('eem-chart-barn-row');
+			row.hidden = !show;
+			if (show) visible++;
+		});
+		var emptyNote = panel.querySelector('.eem-stall-chart-empty-note');
+		if (emptyNote) emptyNote.hidden = visible > 0;
+	});
+
+	// Stall chart event typeahead input
+	document.addEventListener('input', function (ev) {
+		var t = ev.target;
+		if (!t || t.getAttribute('data-eem-input-action') !== 'stall-chart-filter-events') return;
+		var q = t.value.toLowerCase().trim();
+		var container = document.getElementById('eem-stall-chart-event-results');
+		if (!container) return;
+		var options = window._eemStallChartEvents || [];
+		var results = options.filter(function (ev2) {
+			return !q || ev2.name.toLowerCase().indexOf(q) !== -1 || (ev2.dates && ev2.dates.toLowerCase().indexOf(q) !== -1);
+		});
+		if (!results.length) {
+			container.innerHTML = '<div class="eem-header-event-option-empty">' + (window.EEM && window.EEM.i18n && window.EEM.i18n.noMatchingEvents ? window.EEM.i18n.noMatchingEvents : 'No matching events.') + '</div>';
+			return;
+		}
+		container.innerHTML = results.map(function (ev2) {
+			var tag = ev2.current ? ' <span class="eem-header-event-option-tag">Current</span>' : '';
+			return '<div class="eem-header-event-option' + (ev2.current ? ' is-current' : '') + '" data-eem-action="stall-chart-select-event" data-event-id="' + ev2.id + '"><span class="eem-header-event-option-name">' + ev2.name + '</span><span class="eem-header-event-option-dates">' + ev2.dates + tag + '</span></div>';
+		}).join('');
+	});
+
 	/* ── Rail-card click handlers (Preview / Move to Trash / Unlink Event) ── */
 	document.addEventListener('click', function (ev) {
 		var t = ev.target;
