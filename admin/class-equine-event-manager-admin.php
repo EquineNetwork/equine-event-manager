@@ -2139,11 +2139,13 @@ class EEM_Admin {
 	/**
 	 * Render the Stall & RV Charts list page (V1 port of stall_charts_page.html).
 	 *
-	 * 2.3.28 — wrapped in the canonical .eem-breadcrumb + .eem-plugin-wrap card.
-	 * Filters to reservations where _en_stall_chart_enabled === '1' (charts are
-	 * configured exclusively from the Edit Reservation editor now). Removed the
-	 * top filter tabs, the legacy stall-configuration column, and the
-	 * setup-chart action — every row is already configured.
+	 * 2.3.29 — uses the canonical eem_render_page_open() / _close() shell
+	 * (same shell as the Reservations list page) so the white card,
+	 * padding, and Space Grotesk header apply correctly. 2.3.28 had
+	 * invented `.eem-plugin-wrap` / `.eem-plugin-header` / `.eem-plugin-title`
+	 * markup which targets the Edit Reservation editor's chrome primitives
+	 * — wrong CSS family for a list page; the list-page shell is `.eem-page`
+	 * + `.eem-page-wrap` + `.eem-page-header` + `.eem-page-title`.
 	 *
 	 * @param int $invalid_reservation_id Non-zero when an invalid reservation_id
 	 *                                    was supplied in the query string.
@@ -2168,31 +2170,24 @@ class EEM_Admin {
 			}
 		}
 		ksort( $date_options );
+
+		eem_render_page_open(
+			array(
+				'title'      => __( 'Stall & RV Charts', 'equine-event-manager' ),
+				'subtitle'   => __( 'View and manage stall assignments for each reservation.', 'equine-event-manager' ),
+				'breadcrumb' => array(
+					array( 'label' => __( 'Stall & RV Charts', 'equine-event-manager' ) ),
+				),
+			)
+		);
 		?>
-		<div class="wrap eem-stall-charts-list">
+		<div class="eem-stall-charts-list">
 
 			<?php if ( $invalid_reservation_id > 0 ) : ?>
 			<div class="notice notice-warning is-dismissible">
 				<p><?php esc_html_e( 'That stall chart could not be loaded — the reservation may not exist. Choose another below.', 'equine-event-manager' ); ?></p>
 			</div>
 			<?php endif; ?>
-
-			<nav class="eem-breadcrumb" aria-label="<?php esc_attr_e( 'Breadcrumb', 'equine-event-manager' ); ?>">
-				<a class="eem-breadcrumb-logo" href="<?php echo esc_url( admin_url( 'admin.php?page=' . EEM_Admin::MENU_SLUG ) ); ?>" aria-label="<?php esc_attr_e( 'Equine Event Manager dashboard', 'equine-event-manager' ); ?>">
-					<img src="<?php echo esc_url( EQUINE_EVENT_MANAGER_URL . 'assets/images/logo.png' ); ?>" alt="<?php esc_attr_e( 'Equine Event Manager', 'equine-event-manager' ); ?>" />
-				</a>
-				<span class="eem-breadcrumb-sep" aria-hidden="true">/</span>
-				<span class="eem-breadcrumb-segment" aria-current="page"><?php esc_html_e( 'Stall &amp; RV Charts', 'equine-event-manager' ); ?></span>
-			</nav>
-
-			<div class="eem-plugin-wrap">
-
-				<header class="eem-plugin-header">
-					<div class="eem-plugin-header-left">
-						<h1 class="eem-plugin-title"><?php esc_html_e( 'Stall &amp; RV Charts', 'equine-event-manager' ); ?></h1>
-						<p class="eem-plugin-subtitle"><?php esc_html_e( 'View and manage stall assignments for each reservation.', 'equine-event-manager' ); ?></p>
-					</div>
-				</header>
 
 			<!-- Toolbar -->
 			<div class="eem-list-toolbar eem-sc-list-toolbar toolbar">
@@ -2205,7 +2200,7 @@ class EEM_Admin {
 					</select>
 					<div class="eem-search-wrap search-wrap">
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-						<input class="eem-search-input" type="search" placeholder="<?php esc_attr_e( 'Search reservations…', 'equine-event-manager' ); ?>" data-eem-input-action="sc-list-search">
+						<input class="eem-search-input" type="search" placeholder="<?php esc_attr_e( 'Search', 'equine-event-manager' ); ?>" data-eem-input-action="sc-list-search">
 					</div>
 				</div>
 				<div class="eem-list-toolbar-right toolbar-right">
@@ -2381,9 +2376,9 @@ class EEM_Admin {
 
 			<?php endif; // end empty check ?>
 
-			</div><!-- /.eem-plugin-wrap -->
-		</div><!-- /.wrap.eem-stall-charts-list -->
+		</div><!-- /.eem-stall-charts-list -->
 		<?php
+		eem_render_page_close();
 	}
 
 	/**

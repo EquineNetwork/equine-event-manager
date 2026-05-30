@@ -7164,6 +7164,18 @@ a.eem-sc-res-name:hover { color: var(--eem-electric); }
 .eem-sc-action-btn--primary:hover { background: #1257d1; border-color: #1257d1; color: #fff; }
 .eem-sc-action-btn--ghost   { background: #fff; color: var(--eem-navy); border-color: var(--eem-border); }
 .eem-sc-action-btn--ghost:hover   { background: #f6f7f7; color: var(--eem-navy); }
+/* Anchor-button specificity fix (DS-1.A.1 pattern): `.eem-page a { color: var(--eem-electric) }`
+   is (0,1,1) and beats `.eem-sc-action-btn--primary { color: #fff }` at (0,1,0).
+   Adding the element prefix `a.` raises both variants to (0,1,1) and cascade
+   order (later in file) makes these win. */
+a.eem-sc-action-btn--primary,
+a.eem-sc-action-btn--primary:link,
+a.eem-sc-action-btn--primary:visited,
+a.eem-sc-action-btn--primary:hover   { color: #fff; }
+a.eem-sc-action-btn--ghost,
+a.eem-sc-action-btn--ghost:link,
+a.eem-sc-action-btn--ghost:visited,
+a.eem-sc-action-btn--ghost:hover     { color: var(--eem-navy); }
 
 /* Empty state */
 .eem-sc-list-empty {
