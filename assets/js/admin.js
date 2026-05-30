@@ -1741,11 +1741,6 @@
 		},
 		'pre-entry-delete': function (target) {
 			preEntryDelete(target);
-		},
-
-		/* Bug-fix: RV Paint Mode — lot cell clicked */
-		'rv-lot-click': function (target) {
-			rvLotClick(target);
 		}
 	};
 
@@ -1817,8 +1812,11 @@
 		if (!ia) return;
 		if (ia === 'stall-row-layout') { stallRowLayoutChange(inp); }
 		if (ia === 'rv-row-layout')    { rvRowLayoutChange(inp); }
-		/* Bug-fix: RV Paint Mode zone select */
-		if (ia === 'rv-paint-zone')    { rvSyncPaintModeState(); }
+		/* V1: Zone dropdown on row card — update row's color indicator immediately. */
+		if (ia === 'rv-row-input' && inp.dataset.field === 'zone_id') {
+			var rowCard = inp.closest('.eem-row-card');
+			if (rowCard) rvUpdateRowZoneIndicator(rowCard);
+		}
 	});
 
 	// Escape key closes open overlays.
@@ -2054,11 +2052,6 @@
 		body.set('_eem_editor_nonce', eemReservationEditorNonce());
 		body.set('reservation_id', rid);
 		body.set('save_kind', kind);
-		// Sync RV lot zone state into the hidden input BEFORE the collector
-		// runs — the broadened eemCollectEditorFields() selector now picks up
-		// name="eem_rv_lot_zone_assignments" automatically, so no explicit
-		// body.set() is needed here. The sync must still happen first.
-		_syncRvLotZoneAssignmentsInput();
 		eemCollectEditorFields().forEach(function (pair) { body.append(pair[0], pair[1]); });
 		fetch(EEM_EDITOR_AJAX_URL, {
 			method: 'POST',
@@ -2130,21 +2123,14 @@
 		if (!t || !t.closest) return;
 		if (t.closest('[data-eem-action="reservation-editor-save-draft"]')) {
 			ev.preventDefault();
-			eemDispatchSave('save_draft'); // No unassigned-lot warning for drafts.
+			eemDispatchSave('save_draft');
 			return;
 		}
-		/* Publish + Update both commit changes to a customer-visible reservation,
-		   so both gates check for unassigned lots. Save as Draft does not. */
 		if (t.closest('[data-eem-action="reservation-editor-publish"]') ||
 		    t.closest('[data-eem-action="reservation-editor-update"]')) {
 			ev.preventDefault();
 			var saveKind = t.closest('[data-eem-action="reservation-editor-publish"]') ? 'publish' : 'update';
-			var unassigned = rvCountUnassignedLots();
-			if (unassigned > 0) {
-				openUnassignedLotsWarning(unassigned, function () { eemDispatchSave(saveKind); });
-			} else {
-				eemDispatchSave(saveKind);
-			}
+			eemDispatchSave(saveKind);
 			return;
 		}
 		/* Cancel anchor is a real href — let the browser navigate, no dispatch needed */
@@ -2357,15 +2343,11 @@
 		} catch (e) { /* sessionStorage unavailable — degrade silently */ }
 	});
 
-	/* Bug-fix: initialise _rvLotZoneAssignments from server-side data
-	   emitted by _section-rv.php as window._rvLotZoneAssignmentsInit.
-	   Also sync the hidden input and read the initial paint-mode state. */
+	/* V1: Apply initial zone color indicators to seeded RV row cards on load. */
 	document.addEventListener('DOMContentLoaded', function () {
-		if (window._rvLotZoneAssignmentsInit && typeof window._rvLotZoneAssignmentsInit === 'object') {
-			_rvLotZoneAssignments = window._rvLotZoneAssignmentsInit;
-		}
-		_syncRvLotZoneAssignmentsInput();
-		rvSyncPaintModeState();
+		document.querySelectorAll('#eem-rv-row-builder-list .eem-row-card').forEach(function (card) {
+			rvUpdateRowZoneIndicator(card);
+		});
 	});
 
 	/* Linked Event modal — launcher + source-mode picker + typeahead + Save */
@@ -2995,14 +2977,8 @@
 		/* C8 — init inventory displays on page load */
 		if (document.querySelector('.eem-mode-btn[data-section="stall"]')) updateStallInventoryDisplay();
 		if (document.querySelector('.eem-mode-btn[data-section="rv"]'))   updateRvInventoryDisplay();
-		/* C8 — delegate zone-qty input events */
-		document.addEventListener('input', function(e) {
-			if (e.target && e.target.matches('[data-role="zone-qty"]')) {
-				var section = e.target.closest('#eem-stall-mapped-content') ? 'stall' : 'rv';
-				if (section === 'stall') updateStallInventoryDisplay();
-				else updateRvInventoryDisplay();
-			}
-		});
+		/* V1 (2.3.22): zone-qty Avail Qty inputs removed from zone rows — listener removed.
+		 * RV inventory is now computed from row lot counts via updateRvInventoryDisplay(). */
 	});
 
 /* ── Linked Events seed — replace with live event-source query at C10 ── */
@@ -3147,10 +3123,24 @@ function updateStallInventoryDisplay() {
 
 function updateRvInventoryDisplay() {
 	if (!rvMappedIsActive()) return;
-	/* RV total = sum of available_qty across all zone rows. */
+	/* V1: RV total = sum of lot-label counts across all row cards, minus blocked.
+	   This matches the stall computation and is the V1 inventory truth. */
 	var total = 0;
-	document.querySelectorAll('#eem-rv-mapped-content [data-role="zone-qty"]').forEach(function(inp) {
-		total += parseInt(inp.value || 0, 10) || 0;
+	document.querySelectorAll('#eem-rv-row-builder-list .eem-row-card').forEach(function (card) {
+		var layout = card.querySelector('[data-eem-input-action="rv-row-layout"]');
+		var isB2B  = layout && layout.value === 'back-to-back';
+		if (isB2B) {
+			var tFirst = card.querySelector('[data-role="top-first"]');
+			var tLast  = card.querySelector('[data-role="top-last"]');
+			var bFirst = card.querySelector('[data-role="bot-first"]');
+			var bLast  = card.querySelector('[data-role="bot-last"]');
+			total += stallLabelsBetween(tFirst ? tFirst.value : '', tLast ? tLast.value : '').length;
+			total += stallLabelsBetween(bFirst ? bFirst.value : '', bLast ? bLast.value : '').length;
+		} else {
+			var first = card.querySelector('[data-role="first"]');
+			var last  = card.querySelector('[data-role="last"]');
+			total += stallLabelsBetween(first ? first.value : '', last ? last.value : '').length;
+		}
 	});
 	var blocked = document.querySelectorAll('#eem-blocked-rv-lots-select .eem-tag-chip').length;
 	total = Math.max(0, total - blocked);
@@ -3299,18 +3289,9 @@ function getRvLotLabels() {
 }
 
 /* ─────────────────────────────────────────────────────────────
- * Bug-fix: RV Paint Mode — lot zone assignment state + helpers
- *
- * _rvLotZoneAssignments: { rowIndex: { lotLabel: zoneIndex } }
- *   Populated from window._rvLotZoneAssignmentsInit (emitted by
- *   _section-rv.php) on DOMContentLoaded, then mutated in-place
- *   as the user paints. Serialised to the hidden input before save.
- *
- * _rvActivePaintZone: number | null
- *   null = Paint Mode Off; 0..N = zone index currently selected.
+ * V1 RV zone model — getZoneColor palette (shared by zone swatches
+ * and row card zone indicators). Per-lot painting is V2 backlog.
  * ───────────────────────────────────────────────────────────── */
-var _rvLotZoneAssignments = {};
-var _rvActivePaintZone    = null;
 
 /**
  * Return a hex color from the canonical zone palette for the given
@@ -3330,85 +3311,20 @@ function getZoneColor(zoneIndex) {
 }
 
 /**
- * Return the saved zone index for a lot (or the first-zone default).
+ * Update the row card's zone color indicator when the zone dropdown changes.
+ * Applies a left-border color to the row card matching the selected zone's
+ * palette color. A visually lightweight indicator — no per-lot dots.
  *
- * @param  {number|string} rowIndex
- * @param  {string}        lotLabel
- * @return {string}  Stringified zone index, or '' if no zones defined.
- */
-function getDefaultZoneForLot(rowIndex, lotLabel) {
-	var ri = String(rowIndex);
-	if (_rvLotZoneAssignments[ri] && _rvLotZoneAssignments[ri][lotLabel] !== undefined) {
-		return String(_rvLotZoneAssignments[ri][lotLabel]);
-	}
-	// No saved assignment → return '' (unassigned). Lots are NOT auto-assigned
-	// to the first zone; unassigned lots show a grey dot and are unavailable to
-	// customers at checkout. (C10 enforcement contract, 2026-05-30.)
-	return '';
-}
-
-/**
- * Handle a click on an .eem-lot-cell button. If Paint Mode has an
- * active zone, assign that zone to the lot and update the dot color.
- *
- * @param {HTMLButtonElement} cell
+ * @param {HTMLElement} rowCard  The .eem-row-card element.
  * @return {void}
  */
-function rvLotClick(cell) {
-	if (_rvActivePaintZone === null) { return; } // Off — no-op
-	var rowId    = cell.dataset.rowId;
-	var lotLabel = cell.dataset.lotLabel;
-	if (!rowId || !lotLabel) { return; }
-
-	// Persist assignment into state object
-	if (!_rvLotZoneAssignments[rowId]) { _rvLotZoneAssignments[rowId] = {}; }
-	_rvLotZoneAssignments[rowId][lotLabel] = String(_rvActivePaintZone);
-
-	// Update DOM immediately — no full preview re-render needed
-	cell.dataset.zoneId = String(_rvActivePaintZone);
-	var dot = cell.querySelector('.eem-lot-zone-dot');
-	if (dot) { dot.style.backgroundColor = getZoneColor(_rvActivePaintZone); }
-
-	// Sync to hidden input so next save captures the full assignment map
-	_syncRvLotZoneAssignmentsInput();
-}
-
-/**
- * Write the current _rvLotZoneAssignments state to the hidden form
- * input `#eem-rv-lot-zone-assignments-input` so eemDispatchSave()
- * picks it up through the URLSearchParams body.
- *
- * @return {void}
- */
-function _syncRvLotZoneAssignmentsInput() {
-	var input = document.getElementById('eem-rv-lot-zone-assignments-input');
-	if (input) {
-		input.value = JSON.stringify(_rvLotZoneAssignments);
-	}
-}
-
-/**
- * Update the Paint Mode select visual state and the body class that
- * switches lot-cell cursors to crosshair. Called whenever the zone
- * painter select changes.
- *
- * @return {void}
- */
-function rvSyncPaintModeState() {
-	var sel     = document.getElementById('eem-rv-paint-zone');
-	var builder = document.getElementById('eem-rv-row-builder-list');
-	if (!sel) { return; }
-	var val = sel.value; // '' = Off, 'z0', 'z1' ... in legacy; or '' = Off, '0', '1'... new
-	if (val === '') {
-		_rvActivePaintZone = null;
-		if (builder) { builder.classList.remove('eem-paint-mode-active'); }
-	} else {
-		// Strip leading 'z' if present (legacy mockup used 'z0', 'z1')
-		var stripped = val.replace(/^z/, '');
-		_rvActivePaintZone = parseInt(stripped, 10);
-		if (isNaN(_rvActivePaintZone)) { _rvActivePaintZone = null; }
-		if (builder) { builder.classList.toggle('eem-paint-mode-active', _rvActivePaintZone !== null); }
-	}
+function rvUpdateRowZoneIndicator(rowCard) {
+	var zoneSel = rowCard.querySelector('[data-field="zone_id"]');
+	if (!zoneSel) return;
+	var zoneId = zoneSel.value;
+	var color  = zoneId !== '' ? getZoneColor(parseInt(zoneId, 10)) : '#D9E2F2';
+	rowCard.style.borderLeftColor = color;
+	rowCard.style.borderLeftWidth = zoneId !== '' ? '4px' : '1px';
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -3422,15 +3338,14 @@ function generateStallPreview(rowCard) {
 	if (!previewDiv) return;
 
 	// Detect whether this is an RV row card (uses rv-row-layout / rv-row-input)
-	// so we render clickable .eem-lot-cell buttons with zone dots instead of
-	// plain .eem-stall-box divs.
+	// so we render .eem-stall-box divs styled with the row's zone color.
+	// V1: no per-lot clicking or zone dots — zone is assigned at row level.
 	var isRvRow = !!rowCard.querySelector('[data-eem-input-action="rv-row-layout"], [data-eem-input-action="rv-row-input"]');
-	var rowIndex = rowCard.dataset.rowIndex !== undefined ? String(rowCard.dataset.rowIndex) : '';
 
 	/**
-	 * Build the HTML string for a single lot cell.
-	 * For stall rows: plain .eem-stall-box div (no change).
-	 * For RV rows: .eem-lot-cell button with zone dot + label.
+	 * Build the HTML string for a single lot or stall cell.
+	 * Both stall and RV rows render plain .eem-stall-box divs.
+	 * RV rows get a subtle background tint from the row's zone color.
 	 *
 	 * @param  {string} l  Lot or stall label
 	 * @return {string}
@@ -3439,18 +3354,12 @@ function generateStallPreview(rowCard) {
 		if (!isRvRow) {
 			return '<div class="eem-stall-box">' + escapeHtml(l) + '</div>';
 		}
-		var zoneId  = getDefaultZoneForLot(rowIndex, l);
-		// Unassigned lots use grey (#9CA3AF) — they are unavailable to customers
-		// (C10 enforcement contract). Only painted lots receive a palette color.
-		var color   = zoneId !== '' ? getZoneColor(zoneId) : '#9CA3AF';
-		return '<button class="eem-lot-cell" type="button"' +
-			' data-eem-action="rv-lot-click"' +
-			' data-row-id="' + escapeHtml(rowIndex) + '"' +
-			' data-lot-label="' + escapeHtml(l) + '"' +
-			' data-zone-id="' + escapeHtml(zoneId) + '">' +
-			'<span class="eem-lot-zone-dot" style="background-color:' + escapeHtml(color) + '"></span>' +
-			'<span class="eem-lot-label">' + escapeHtml(l) + '</span>' +
-			'</button>';
+		// V1: zone color comes from the row's Zone dropdown, not per-lot assignment.
+		var zoneSel = rowCard.querySelector('[data-field="zone_id"]');
+		var zoneId  = zoneSel ? zoneSel.value : '';
+		var color   = zoneId !== '' ? getZoneColor(parseInt(zoneId, 10)) : '';
+		var style   = color ? ' style="border-bottom:2px solid ' + escapeHtml(color) + '"' : '';
+		return '<div class="eem-stall-box"' + style + '>' + escapeHtml(l) + '</div>';
 	}
 
 	if (layout === 'back-to-back') {
@@ -3577,7 +3486,6 @@ function rvAddZone() {
 		var swatch = newRow.querySelector('.eem-zone-color-swatch');
 		if (swatch) { swatch.style.background = getZoneColor(idx); }
 	}
-	rvRebuildPaintDropdown();
 	updateRvInventoryDisplay();
 }
 
@@ -3590,105 +3498,11 @@ function rvDeleteZone(btn) {
 		var swatch = zRow.querySelector('.eem-zone-color-swatch');
 		if (swatch) { swatch.style.background = getZoneColor(zi); }
 	});
-	rvRebuildPaintDropdown();
 	updateRvInventoryDisplay();
 }
 
-/**
- * Count .eem-lot-cell buttons in the RV row builder whose data-zone-id is
- * empty or absent — i.e. lots that have not been painted to a zone yet.
- * Unassigned lots are unavailable to customers (C10 enforcement contract).
- *
- * @return {number}
- */
-function rvCountUnassignedLots() {
-	var cells = document.querySelectorAll('#eem-rv-row-builder-list .eem-lot-cell');
-	var count = 0;
-	cells.forEach(function (cell) {
-		var zoneId = cell.getAttribute('data-zone-id');
-		if (zoneId === null || zoneId === '') { count++; }
-	});
-	return count;
-}
-
-/**
- * Open a modal warning the admin that N lots are unassigned before they
- * publish / update the reservation. Two actions: Cancel (dismiss) or
- * Publish Anyway (invoke the provided callback and dismiss).
- *
- * Uses the canonical .eem-modal pattern: outer div + classList.add('open'),
- * .eem-modal-card, .eem-modal-head, .eem-modal-body, .eem-modal-foot.
- *
- * @param  {number}   count     Number of unassigned lots.
- * @param  {Function} onConfirm Called when admin clicks "Publish Anyway".
- * @return {void}
- */
-function openUnassignedLotsWarning(count, onConfirm) {
-	var overlay = document.createElement('div');
-	overlay.className = 'eem-modal';
-	var lotWord = count === 1 ? 'lot is' : 'lots are';
-	overlay.innerHTML =
-		'<div class="eem-modal-card">' +
-			'<div class="eem-modal-head">' +
-				'<span class="eem-modal-title">Some lots are unassigned</span>' +
-				'<button class="eem-modal-close" type="button" aria-label="Close">' +
-					'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">' +
-					'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
-				'</button>' +
-			'</div>' +
-			'<div class="eem-modal-body">' +
-				'<p>' + count + ' ' + lotWord + ' unassigned to a zone and won’t be available to customers. ' +
-				'Continue publishing anyway, or cancel and paint them first?</p>' +
-			'</div>' +
-			'<div class="eem-modal-foot">' +
-				'<button class="eem-btn eem-btn-secondary" type="button" data-eem-unassigned-action="cancel">Cancel</button>' +
-				'<button class="eem-btn eem-btn-primary"   type="button" data-eem-unassigned-action="confirm">Publish Anyway</button>' +
-			'</div>' +
-		'</div>';
-	document.body.appendChild(overlay);
-	overlay.classList.add('open');
-
-	function dismiss() { overlay.remove(); }
-
-	overlay.querySelector('.eem-modal-close').addEventListener('click', dismiss);
-	overlay.querySelector('[data-eem-unassigned-action="cancel"]').addEventListener('click', dismiss);
-	overlay.querySelector('[data-eem-unassigned-action="confirm"]').addEventListener('click', function () {
-		dismiss();
-		onConfirm();
-	});
-}
-
-/**
- * Rebuild the Paint Mode zone <select> from the current .eem-zone-row list.
- *
- * Called after any zone add or delete so the Paint Mode dropdown stays in
- * sync with the zone builder. Colors are sourced from getZoneColor() —
- * the same auto-palette used by lot dots — so all three surfaces (zone
- * swatch, Paint Mode option, lot dot) are always consistent.
- *
- * @return {void}
- */
-function rvRebuildPaintDropdown() {
-	var sel = document.getElementById('eem-rv-paint-zone');
-	if (!sel) return;
-	var current = sel.value;
-	/* Remove all zone entries; keep the leading "Off" option at index 0. */
-	while (sel.options.length > 1) { sel.remove(1); }
-	/* Re-populate from current zone rows. */
-	document.querySelectorAll('#eem-lot-zones-list .eem-zone-row').forEach(function (zRow, zi) {
-		var nameInput = zRow.querySelector('.eem-zone-name-input');
-		var name = nameInput ? (nameInput.value.trim() || '') : '';
-		var opt = document.createElement('option');
-		opt.value = String(zi);
-		opt.style.color = getZoneColor(zi);
-		opt.textContent = '● ' + name;
-		sel.appendChild(opt);
-	});
-	/* Restore the previous selection if the zone index still exists. */
-	if (current !== '' && sel.querySelector('option[value="' + current + '"]')) {
-		sel.value = current;
-	}
-}
+// V2 BACKLOG: rvCountUnassignedLots, openUnassignedLotsWarning, rvRebuildPaintDropdown
+// were removed in V1 (2.3.22) when per-lot painting was deferred. See docs/c10-contracts.md.
 
 function rvZoneInputChange() {
 	updateRvInventoryDisplay();
@@ -3701,10 +3515,18 @@ function rvAddRow() {
 	var card = document.createElement('div');
 	card.className   = 'eem-row-card';
 	card.dataset.rowIndex = idx;
+	/* Build zone options from current zone list */
+	var zoneOpts = '<option value="">Unassigned</option>';
+	document.querySelectorAll('#eem-lot-zones-list .eem-zone-row').forEach(function (zRow, zi) {
+		var nameEl = zRow.querySelector('.eem-zone-name-input');
+		var name   = nameEl ? (nameEl.value.trim() || 'Zone ' + (zi + 1)) : 'Zone ' + (zi + 1);
+		zoneOpts  += '<option value="' + zi + '">' + name + '</option>';
+	});
 	card.innerHTML =
 		'<div class="eem-row-card-top">' +
 			'<div class="eem-row-card-field"><span class="eem-row-card-field-label">Row Name</span><input type="text" name="eem_rv_rows[' + idx + '][name]" value="" data-eem-input-action="rv-row-input"></div>' +
 			'<div class="eem-row-card-field eem-row-card-field-layout"><span class="eem-row-card-field-label">Layout</span><select name="eem_rv_rows[' + idx + '][layout]" data-eem-input-action="rv-row-layout"><option value="one-sided" selected>One-sided</option><option value="back-to-back">Back-to-back</option></select></div>' +
+			'<div class="eem-row-card-field eem-row-card-field-layout"><span class="eem-row-card-field-label">Zone</span><select name="eem_rv_rows[' + idx + '][zone_id]" data-eem-input-action="rv-row-input" data-field="zone_id">' + zoneOpts + '</select></div>' +
 			'<button class="eem-row-card-delete" type="button" title="Delete row" data-eem-action="rv-delete-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>' +
 		'</div>' +
 		'<div class="eem-row-card-one-sided">' +

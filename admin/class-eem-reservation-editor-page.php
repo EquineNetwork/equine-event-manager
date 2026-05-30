@@ -705,6 +705,9 @@ class EEM_Reservation_Editor_Page {
 			$rv_rows_clean = array();
 			foreach ( (array) $rv_rows_raw as $row ) {
 				if ( ! is_array( $row ) ) continue;
+				// V1 zone model: each row has a single zone_id (the zone the whole row belongs to).
+				// Lots in a row without a zone_id are unavailable to customers at checkout.
+				// See: docs/c10-contracts.md
 				$rv_rows_clean[] = array(
 					'name'      => sanitize_text_field( (string) ( $row['name']      ?? '' ) ),
 					'layout'    => in_array( (string) ( $row['layout'] ?? '' ), array( 'one-sided', 'back-to-back' ), true ) ? (string) $row['layout'] : 'one-sided',
@@ -714,6 +717,7 @@ class EEM_Reservation_Editor_Page {
 					'top_last'  => sanitize_text_field( (string) ( $row['top_last']  ?? '' ) ),
 					'bot_first' => sanitize_text_field( (string) ( $row['bot_first'] ?? '' ) ),
 					'bot_last'  => sanitize_text_field( (string) ( $row['bot_last']  ?? '' ) ),
+					'zone_id'   => sanitize_text_field( (string) ( $row['zone_id']   ?? '' ) ),
 				);
 			}
 			update_post_meta( $reservation_id, '_en_rv_rows', $rv_rows_clean );
@@ -726,32 +730,11 @@ class EEM_Reservation_Editor_Page {
 			update_post_meta( $reservation_id, '_en_blocked_rv_lots', array_values( array_filter( $blocked_rv_clean ) ) );
 		}
 
-		// RV lot zone assignments (Paint Mode persistence).
-		// Stored as _en_rv_lot_zone_assignments: { rowIndex => { lotLabel => zoneIndex } }
-		//
-		// C10 ENFORCEMENT CONTRACT (2026-05-30):
-		// Lots absent from this map (or with empty/null zoneIndex) are UNAVAILABLE
-		// to customers at checkout. C10's customer-facing renderer must exclude them.
-		// Do NOT auto-fill missing lots with a default zone here or in JS — the grey
-		// dot in the admin UI is the signal that a lot needs to be painted.
+		// V2 BACKLOG — RV per-lot zone assignments (Paint Mode) removed in V1 (2.3.22).
+		// In V1, zones are assigned at row level (each rv_row has a zone_id field).
+		// Per-lot painting (_en_rv_lot_zone_assignments) is deferred to V2.
+		// C10 ENFORCEMENT CONTRACT: rows with no zone_id = lots in that row are unavailable.
 		// See: docs/c10-contracts.md
-		if ( isset( $_POST['eem_rv_lot_zone_assignments'] ) ) {
-			$raw_assignments = stripslashes( (string) wp_unslash( $_POST['eem_rv_lot_zone_assignments'] ) );
-			$decoded         = json_decode( $raw_assignments, true );
-			if ( is_array( $decoded ) ) {
-				$clean_assignments = array();
-				foreach ( $decoded as $row_idx => $lots ) {
-					if ( ! is_array( $lots ) ) { continue; }
-					$row_key                     = sanitize_key( (string) $row_idx );
-					$clean_assignments[ $row_key ] = array();
-					foreach ( $lots as $lot_label => $zone_idx ) {
-						$clean_assignments[ $row_key ][ sanitize_text_field( (string) $lot_label ) ] =
-							sanitize_text_field( (string) $zone_idx );
-					}
-				}
-				update_post_meta( $reservation_id, '_en_rv_lot_zone_assignments', $clean_assignments );
-			}
-		}
 
 		// Event Pre-Entries enabled flag
 		if ( isset( $_POST['eem_event_pre_entries_enabled'] ) ) {

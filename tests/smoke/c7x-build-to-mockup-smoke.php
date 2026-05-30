@@ -220,12 +220,13 @@ c7x_ok( '.eem-fee-modes container',  false !== strpos( $html, 'class="eem-fee-mo
 c7x_ok( '3 .eem-fee-mode-btn buttons', 3 === preg_match_all( '/class="eem-fee-mode-btn[^"]*"/', $html ), $pass, $fail, $log );
 c7x_ok( '.eem-pct-symbol present (% on RIGHT)', false !== strpos( $html, 'class="eem-pct-symbol"' ), $pass, $fail, $log );
 
-// ── [10] Lot Zones repeating-row (C8 schema: nightly/weekend/available_qty) ──
-echo "\n[10] Lot Zones — nightly + weekend + available_qty columns + template\n";
+// ── [10] Lot Zones repeating-row (V1: nightly/weekend only; Avail Qty removed 2.3.22) ──
+echo "\n[10] Lot Zones — nightly + weekend columns + template (Avail Qty removed in V1)\n";
 c7x_ok( '#eem-lot-zones-list container',      false !== strpos( $html, 'id="eem-lot-zones-list"' ),         $pass, $fail, $log );
 c7x_ok( '.eem-zone-add-btn renders',          false !== strpos( $html, 'class="eem-zone-add-btn"' ),         $pass, $fail, $log );
 c7x_ok( '#eem-lot-zone-row-template renders', false !== strpos( $html, 'id="eem-lot-zone-row-template"' ),   $pass, $fail, $log );
-c7x_ok( 'zone nightly field present',         false !== strpos( $html, 'data-role="zone-qty"' ),             $pass, $fail, $log );
+c7x_ok( 'V1: zone-qty Avail Qty field NOT in HTML (removed 2.3.22)',
+	false === strpos( $html, 'data-role="zone-qty"' ),             $pass, $fail, $log );
 c7x_ok( 'rv-add-zone action wired',           false !== strpos( $html, 'data-eem-action="rv-add-zone"' ),    $pass, $fail, $log );
 c7x_ok( 'rv-delete-zone action wired',        false !== strpos( $html, 'data-eem-action="rv-delete-zone"' ), $pass, $fail, $log );
 
@@ -241,42 +242,35 @@ c7x_ok( '#eem-blocked-stalls-select renders',  false !== strpos( $html, 'id="eem
 c7x_ok( '#eem-blocked-rv-lots-select renders', false !== strpos( $html, 'id="eem-blocked-rv-lots-select"' ), $pass, $fail, $log );
 c7x_ok( 'stall map upload field renders',      false !== strpos( $html, 'id="eem-stall-map-id"' ),          $pass, $fail, $log );
 
-// ── [10.7] RV Paint Mode lot cells (Bug-fix) ─────────────────────
-echo "\n[10.7] RV Paint Mode — lot cells have correct data attributes + zone dot\n";
-c7x_ok( 'paint zone select has data-eem-input-action="rv-paint-zone"',
-	false !== strpos( $html, 'data-eem-input-action="rv-paint-zone"' ),
+// ── [10.7] V1 Zone model — Paint Mode removed (2.3.22) ──────────
+// Paint Mode was removed in V1 (2.3.22). Zone is assigned at row level
+// via a Zone dropdown on each row card. See docs/c10-contracts.md.
+echo "\n[10.7] V1 Zone model — Paint Mode removed; row-level Zone dropdown present\n";
+// Negative guards: Paint Mode UI must NOT appear.
+c7x_ok( 'V1: rv-paint-zone action NOT in rendered HTML',
+	false === strpos( $html, 'data-eem-input-action="rv-paint-zone"' ),
 	$pass, $fail, $log );
-c7x_ok( '#eem-rv-lot-zone-assignments-input hidden field renders',
-	false !== strpos( $html, 'id="eem-rv-lot-zone-assignments-input"' ),
+c7x_ok( 'V1: #eem-rv-lot-zone-assignments-input NOT in rendered HTML',
+	false === strpos( $html, 'id="eem-rv-lot-zone-assignments-input"' ),
 	$pass, $fail, $log );
-c7x_ok( 'window._rvLotZoneAssignmentsInit emitted',
-	false !== strpos( $html, 'window._rvLotZoneAssignmentsInit' ),
+c7x_ok( 'V1: window._rvLotZoneAssignmentsInit NOT emitted',
+	false === strpos( $html, 'window._rvLotZoneAssignmentsInit' ),
 	$pass, $fail, $log );
-// Verify lot cells are generated with data-eem-action (JS builds them on DOMContentLoaded,
-// so they will not be in the server-rendered HTML — assert the JS source has the attribute)
-c7x_ok( 'JS: rv-lot-click action in generateStallPreview',
-	false !== strpos( $js, 'data-eem-action="rv-lot-click"' ),
+c7x_ok( 'V1: rvLotClick function NOT in JS',
+	false === strpos( $js, 'function rvLotClick' ),
 	$pass, $fail, $log );
-c7x_ok( 'JS: data-lot-label attr in lot cell HTML',
-	false !== strpos( $js, 'data-lot-label=' ),
+c7x_ok( 'V1: eem-lot-zone-dot class NOT in JS',
+	false === strpos( $js, 'eem-lot-zone-dot' ),
 	$pass, $fail, $log );
-c7x_ok( 'JS: data-row-id attr in lot cell HTML',
-	false !== strpos( $js, 'data-row-id=' ),
-	$pass, $fail, $log );
-c7x_ok( 'JS: data-zone-id attr in lot cell HTML',
-	false !== strpos( $js, 'data-zone-id=' ),
-	$pass, $fail, $log );
-c7x_ok( 'JS: .eem-lot-zone-dot span in lot cell HTML',
-	false !== strpos( $js, 'eem-lot-zone-dot' ),
-	$pass, $fail, $log );
-c7x_ok( 'JS: getZoneColor function defined',
+// Positive guards: V1 row-level zone model must be present.
+c7x_ok( 'V1: getZoneColor function defined in JS',
 	false !== strpos( $js, 'function getZoneColor' ),
 	$pass, $fail, $log );
-c7x_ok( 'JS: rvLotClick function defined',
-	false !== strpos( $js, 'function rvLotClick' ),
+c7x_ok( 'V1: rvUpdateRowZoneIndicator function defined in JS',
+	false !== strpos( $js, 'function rvUpdateRowZoneIndicator' ),
 	$pass, $fail, $log );
-c7x_ok( 'JS: rv-lot-click in actions dispatcher',
-	false !== strpos( $js, "'rv-lot-click'" ),
+c7x_ok( 'V1: zone_id Zone dropdown in rendered HTML',
+	false !== strpos( $html, '[zone_id]' ),
 	$pass, $fail, $log );
 
 // ── [10.8] Section state sessionStorage (Bug-fix) ────────────────
@@ -387,16 +381,15 @@ $css_classes = array(
 	// C8 — Tag multi-select
 	'.eem-tag-select', '.eem-tag-select-input', '.eem-tag-chip', '.eem-tag-chip-remove',
 	'.eem-tag-search', '.eem-tag-dropdown', '.eem-tag-dropdown-item', '.eem-tag-dropdown-empty',
-	// C8 — Zone painter (RV)
-	'.eem-zone-painter', '.eem-zone-painter-label', '.eem-zone-painter-select', '.eem-zone-painter-hint',
+	// C8 — Zone painter (RV) removed in V1 (2.3.22) — .eem-zone-painter* and .eem-lot-cell* gone.
 	'.eem-file-row', '.eem-file-name', '.eem-btn-upload', '.eem-btn-file-del', '.eem-view-link',
 	'.eem-inherited-default-banner', '.eem-cancellation-override-actions', '.eem-btn-link-secondary',
 	'.eem-stay-hint',
 	'.eem-toggle-label-row', '.eem-row--hidden', '.eem-section-disabled-note',
 	'.eem-fee-modes', '.eem-fee-mode-btn',
 	'.eem-pct-wrap', '.eem-pct-input', '.eem-pct-symbol',
-	// Bug-fix: RV Paint Mode lot cells
-	'.eem-lot-cell', '.eem-lot-zone-dot', '.eem-lot-label', '.eem-paint-mode-active',
+	// Note: .eem-lot-cell, .eem-lot-zone-dot, .eem-lot-label, .eem-paint-mode-active,
+	// .eem-zone-painter* removed in V1 (2.3.22) — Paint Mode is V2 backlog.
 );
 foreach ( $css_classes as $cls ) {
 	c7x_ok( "CSS primitive: {$cls}", false !== strpos( $css, $cls ), $pass, $fail, $log );
@@ -416,8 +409,9 @@ c7x_ok( 'reservation-editor-fee-mode handler',           false !== strpos( $js, 
 // Negative guard: no color-picker action should appear in rendered HTML or JS.
 c7x_ok( 'zone-color-open action NOT in rendered HTML',   false === strpos( $html, 'reservation-editor-zone-color-open' ), $pass, $fail, $log );
 c7x_ok( 'data-eem-zone-color-mirror NOT in rendered HTML', false === strpos( $html, 'data-eem-zone-color-mirror' ),       $pass, $fail, $log );
-c7x_ok( 'rvRebuildPaintDropdown function defined',       false !== strpos( $js, 'function rvRebuildPaintDropdown' ),      $pass, $fail, $log );
-c7x_ok( 'rvRebuildPaintDropdown called from rvAddZone',  false !== strpos( $js, 'rvRebuildPaintDropdown' ),               $pass, $fail, $log );
+// V1 (2.3.22): rvRebuildPaintDropdown removed — Paint Mode is V2 backlog.
+c7x_ok( 'V1: rvRebuildPaintDropdown NOT in JS',          false === strpos( $js, 'function rvRebuildPaintDropdown' ),      $pass, $fail, $log );
+c7x_ok( 'V1: rvUpdateRowZoneIndicator called in JS',     false !== strpos( $js, 'rvUpdateRowZoneIndicator' ),             $pass, $fail, $log );
 c7x_ok( 'reservation-editor-zone-add handler',           false !== strpos( $js, 'reservation-editor-zone-add' ), $pass, $fail, $log );
 c7x_ok( 'reservation-editor-trash handler',              false !== strpos( $js, 'reservation-editor-trash' ), $pass, $fail, $log );
 c7x_ok( 'reservation-editor-event-unlink handler',       false !== strpos( $js, 'reservation-editor-event-unlink' ), $pass, $fail, $log );
@@ -498,10 +492,10 @@ c7x_ok(
 	$pass, $fail, $log
 );
 
-// 6. Paint Mode hint updated in _section-rv.php.
+// 6. V1 hint text: rows without zone assignment are unavailable (Paint Mode hint removed).
 c7x_ok(
-	'Polish: Paint Mode lets you assign hint text present in _section-rv.php',
-	false !== strpos( $rv_php, 'Paint Mode lets you assign' ),
+	'Polish: V1 zone hint — rows without zone assignment unavailable — present in _section-rv.php',
+	false !== strpos( $rv_php, 'unavailable to customers at checkout' ),
 	$pass, $fail, $log
 );
 
@@ -627,9 +621,11 @@ c7x_ok(
 );
 
 // 8e. Stall/RV C8 meta keys registered in get_default_meta_values() (2.3.19).
+// Note: 'rv_lot_zone_assignments' removed in V1 (2.3.22) — see section 9h for
+// the negative guard asserting it is NOT present.
 $keys_9 = array(
 	'stall_rows', 'blocked_stalls', 'stall_map_id',
-	'rv_zones', 'rv_rows', 'blocked_rv_lots', 'rv_lot_zone_assignments',
+	'rv_zones', 'rv_rows', 'blocked_rv_lots',
 );
 foreach ( $keys_9 as $k9 ) {
 	c7x_ok(
@@ -639,117 +635,121 @@ foreach ( $keys_9 as $k9 ) {
 	);
 }
 
-// ── 9. Grey dot / unassigned lots / publish warning (2.3.21) ──────────────────
+// ── 9. V1 simplification: Paint Mode removed, row-level Zone dropdown (2.3.22) ─
 
-// 9a. getDefaultZoneForLot returns '' (not '0') for unassigned lots.
-//     Verify: source contains `return '';` in the fallthrough path and does NOT
-//     contain `return '0'` after the saved-assignment check.
-$default_zone_fn_start = strpos( $js, 'function getDefaultZoneForLot' );
-$default_zone_fn_body  = $default_zone_fn_start !== false
-	? substr( $js, $default_zone_fn_start, 600 )
-	: '';
-c7x_ok(
-	'2.3.21: getDefaultZoneForLot falls through to return \'\' (unassigned, not zone 0)',
-	false !== strpos( $default_zone_fn_body, "return '';" ) &&
-	false === strpos( $default_zone_fn_body, "return '0';" ),
-	$pass, $fail, $log
-);
-
-// 9b. cellHtml color logic: unassigned lots use #9CA3AF, not getZoneColor fallback to first zone.
-c7x_ok(
-	'2.3.21: cellHtml assigns #9CA3AF for unassigned lots (zoneId !== \'\' guard)',
-	false !== strpos( $js, "'#9CA3AF'" ) &&
-	false !== strpos( $js, "zoneId !== '' ? getZoneColor" ),
-	$pass, $fail, $log
-);
-
-// 9c. CSS grey fallback for unassigned lot cells.
+$rv_php    = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_section-rv.php' );
 $admin_css = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/css/admin.css' );
+$cpt_php2  = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-reservations-cpt.php' );
+
+// 9a. Paint Mode UI not present in rendered RV section output.
 c7x_ok(
-	'2.3.21: CSS grey dot fallback for [data-zone-id=""] .eem-lot-zone-dot',
-	false !== strpos( $admin_css, '[data-zone-id=""] .eem-lot-zone-dot' ) &&
-	false !== strpos( $admin_css, '#9CA3AF' ),
+	'2.3.22: No Paint Mode UI in rendered HTML (eem-zone-painter absent)',
+	false === strpos( $html, 'eem-zone-painter' ) &&
+	false === strpos( $html, 'rv-paint-zone' ),
 	$pass, $fail, $log
 );
 
-// 9d. Hint text updated in _section-rv.php.
-$rv_php = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_section-rv.php' );
+// 9b. No rv-lot-click data-eem-action in rendered HTML.
 c7x_ok(
-	'2.3.21: _section-rv.php hint text mentions grey dot / unassigned',
-	false !== strpos( $rv_php, 'grey dot' ) &&
-	false !== strpos( $rv_php, 'unassigned' ),
+	'2.3.22: No rv-lot-click action in rendered HTML',
+	false === strpos( $html, 'rv-lot-click' ),
 	$pass, $fail, $log
 );
 
-// 9e. rvCountUnassignedLots function defined in admin.js.
+// 9c. RV row cards contain Zone dropdown (name pattern eem_rv_rows[N][zone_id]).
 c7x_ok(
-	'2.3.21: rvCountUnassignedLots function defined in admin.js',
-	false !== strpos( $js, 'function rvCountUnassignedLots' ),
+	'2.3.22: RV row card Zone dropdown present in rendered HTML (eem_rv_rows[0][zone_id])',
+	false !== strpos( $html, 'eem_rv_rows[0][zone_id]' ) ||
+	false !== strpos( $html, 'eem_rv_rows[1][zone_id]' ),
 	$pass, $fail, $log
 );
 
-// 9f. openUnassignedLotsWarning function defined in admin.js.
+// 9d. Zone dropdown has Unassigned option.
 c7x_ok(
-	'2.3.21: openUnassignedLotsWarning function defined in admin.js',
-	false !== strpos( $js, 'function openUnassignedLotsWarning' ),
+	'2.3.22: Zone dropdown has Unassigned option',
+	false !== strpos( $html, 'Unassigned' ),
 	$pass, $fail, $log
 );
 
-// 9g. Publish/Update handler calls rvCountUnassignedLots (intercepted).
-//     Check that the publish/update arm references rvCountUnassignedLots.
-$publish_arm_pos  = strpos( $js, 'reservation-editor-publish' );
-$publish_arm_body = $publish_arm_pos !== false
-	? substr( $js, $publish_arm_pos, 600 )
-	: '';
+// 9e. Paint Mode functions NOT in admin.js.
 c7x_ok(
-	'2.3.21: publish/update save handler calls rvCountUnassignedLots',
-	false !== strpos( $publish_arm_body, 'rvCountUnassignedLots' ),
+	'2.3.22: rvCountUnassignedLots NOT in admin.js (removed)',
+	false === strpos( $js, 'function rvCountUnassignedLots' ),
+	$pass, $fail, $log
+);
+c7x_ok(
+	'2.3.22: openUnassignedLotsWarning NOT in admin.js (removed)',
+	false === strpos( $js, 'function openUnassignedLotsWarning' ),
+	$pass, $fail, $log
+);
+c7x_ok(
+	'2.3.22: rvRebuildPaintDropdown NOT in admin.js (removed)',
+	false === strpos( $js, 'function rvRebuildPaintDropdown' ),
+	$pass, $fail, $log
+);
+c7x_ok(
+	'2.3.22: getDefaultZoneForLot NOT in admin.js (removed)',
+	false === strpos( $js, 'function getDefaultZoneForLot' ),
+	$pass, $fail, $log
+);
+c7x_ok(
+	'2.3.22: rvSyncPaintModeState NOT in admin.js (removed)',
+	false === strpos( $js, 'function rvSyncPaintModeState' ),
 	$pass, $fail, $log
 );
 
-// 9h. Save-draft handler does NOT call rvCountUnassignedLots.
-//     The draft arm should branch to eemDispatchSave directly.
-$draft_arm_pos  = strpos( $js, 'reservation-editor-save-draft' );
-$draft_arm_body = $draft_arm_pos !== false
-	? substr( $js, $draft_arm_pos, 300 )
-	: '';
+// 9f. rvUpdateRowZoneIndicator function defined in admin.js.
 c7x_ok(
-	'2.3.21: save-draft arm does NOT call rvCountUnassignedLots (no warning for drafts)',
-	false !== strpos( $draft_arm_body, 'eemDispatchSave' ) &&
-	false === strpos( $draft_arm_body, 'rvCountUnassignedLots' ),
+	'2.3.22: rvUpdateRowZoneIndicator function defined in admin.js',
+	false !== strpos( $js, 'function rvUpdateRowZoneIndicator' ),
 	$pass, $fail, $log
 );
 
-// 9i. openUnassignedLotsWarning uses canonical eem-modal class names.
-$modal_fn_start = strpos( $js, 'function openUnassignedLotsWarning' );
-$modal_fn_body  = $modal_fn_start !== false
-	? substr( $js, $modal_fn_start, 1200 )
-	: '';
+// 9g. updateRvInventoryDisplay uses row lot counts (not zone-qty inputs).
 c7x_ok(
-	'2.3.21: openUnassignedLotsWarning uses canonical eem-modal + eem-modal-card classes',
-	false !== strpos( $modal_fn_body, 'eem-modal' ) &&
-	false !== strpos( $modal_fn_body, 'eem-modal-card' ),
+	'2.3.22: updateRvInventoryDisplay sums row lot counts (not zone-qty)',
+	false !== strpos( $js, 'eem-rv-row-builder-list' ) &&
+	false === strpos( $js, 'data-role="zone-qty"' ),
 	$pass, $fail, $log
 );
 
-// 9j. C10 contract comment block present in _section-rv.php.
+// 9h. _en_rv_lot_zone_assignments NOT in get_default_meta_values().
 c7x_ok(
-	'2.3.21: C10 enforcement contract comment present in _section-rv.php',
-	false !== strpos( $rv_php, 'C10 ENFORCEMENT CONTRACT' ),
+	'2.3.22: rv_lot_zone_assignments NOT registered in get_default_meta_values()',
+	false === strpos( $cpt_php2, "'rv_lot_zone_assignments' => array()" ),
 	$pass, $fail, $log
 );
 
-// 9k. docs/c10-contracts.md exists.
+// 9i. Paint Mode CSS not in admin.css.
 c7x_ok(
-	'2.3.21: docs/c10-contracts.md exists',
+	'2.3.22: .eem-zone-painter CSS removed from admin.css',
+	false === strpos( $admin_css, '.eem-zone-painter {' ),
+	$pass, $fail, $log
+);
+c7x_ok(
+	'2.3.22: .eem-lot-cell CSS removed from admin.css',
+	false === strpos( $admin_css, '.eem-lot-cell {' ),
+	$pass, $fail, $log
+);
+
+// 9j. _section-rv.php has V2 backlog comment.
+c7x_ok(
+	'2.3.22: _section-rv.php has V2 BACKLOG comment block',
+	false !== strpos( $rv_php, 'V2 BACKLOG' ),
+	$pass, $fail, $log
+);
+
+// 9k. docs/c10-contracts.md exists and references V1 model.
+c7x_ok(
+	'2.3.22: docs/c10-contracts.md exists',
 	file_exists( EQUINE_EVENT_MANAGER_PATH . 'docs/c10-contracts.md' ),
 	$pass, $fail, $log
 );
 
-// 9l. Version bumped to 2.3.21.
+// 9l. Version bumped to 2.3.22.
 c7x_ok(
-	'2.3.21: EQUINE_EVENT_MANAGER_VERSION is 2.3.21',
-	EQUINE_EVENT_MANAGER_VERSION === '2.3.21',
+	'2.3.22: EQUINE_EVENT_MANAGER_VERSION is 2.3.22',
+	EQUINE_EVENT_MANAGER_VERSION === '2.3.22',
 	$pass, $fail, $log
 );
 

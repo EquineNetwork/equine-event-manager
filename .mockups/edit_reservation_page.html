@@ -1159,10 +1159,6 @@ a:hover{text-decoration:none}
                 <span class="zone-price-label">+ Weekend</span>
                 <div class="zone-price-wrap"><span class="zone-price-sym">$</span><input class="zone-price-in" type="number" value="90.00" data-role="zone-weekend"></div>
               </div>
-              <div class="zone-price-group">
-                <span class="zone-price-label">Avail Qty</span>
-                <div class="zone-price-wrap"><input class="zone-price-in" type="number" value="6" data-role="zone-qty" min="0" style="width:56px"></div>
-              </div>
               <button class="row-card-delete" title="Delete zone" onclick="deleteZone(this)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
               </button>
@@ -1178,10 +1174,6 @@ a:hover{text-decoration:none}
               <div class="zone-price-group">
                 <span class="zone-price-label">+ Weekend</span>
                 <div class="zone-price-wrap"><span class="zone-price-sym">$</span><input class="zone-price-in" type="number" value="65.00" data-role="zone-weekend"></div>
-              </div>
-              <div class="zone-price-group">
-                <span class="zone-price-label">Avail Qty</span>
-                <div class="zone-price-wrap"><input class="zone-price-in" type="number" value="18" data-role="zone-qty" min="0" style="width:56px"></div>
               </div>
               <button class="row-card-delete" title="Delete zone" onclick="deleteZone(this)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
@@ -1203,20 +1195,10 @@ a:hover{text-decoration:none}
         <div class="field-control">
             <div class="row-builder-summary" style="margin-bottom:10px"><strong style="color:#031B4E">2 rows · 24 lots total</strong> across this reservation</div>
 
-          <div class="zone-painter">
-            <span class="zone-painter-label">Paint Mode</span>
-            <select class="zone-painter-select" id="rv-paint-zone" onchange="refreshAllRvPreviews()">
-              <option value="">Off — click to view lot details</option>
-              <option value="z1" style="color:#EF4444">&#x25cf; Red Lot</option>
-              <option value="z2" style="color:#1668F2">&#x25cf; Blue Lot</option>
-            </select>
-            <span class="zone-painter-hint">Paint Mode lets you assign individual lots to zones. Useful when rows contain lots from multiple zones (e.g., premium corner spots vs. standard interior). Pick a zone, then click any lot to mark it that zone.</span>
-          </div>
-
           <div class="row-builder" id="rv-row-builder-list">
 
             <!-- RV Row A: one-sided, lots 1–12 -->
-            <div class="row-card" data-row-id="rv-r1">
+            <div class="row-card" data-row-id="rv-r1" data-zone-id="">
               <div class="row-card-top">
                 <div class="row-card-field"><span class="row-card-field-label">Row Name</span><input type="text" value="RV Row A" data-role="name"></div>
                 <div class="row-card-field row-card-field-layout">
@@ -1224,6 +1206,14 @@ a:hover{text-decoration:none}
                   <select data-role="layout" onchange="updateRvRowPreview(this)">
                     <option value="one-sided" selected>One-sided</option>
                     <option value="back-to-back">Back-to-back</option>
+                  </select>
+                </div>
+                <div class="row-card-field row-card-field-layout">
+                  <span class="row-card-field-label">Zone</span>
+                  <select data-role="zone_id" onchange="updateRvRowPreview(this)">
+                    <option value="">Unassigned</option>
+                    <option value="z1">Red Lot</option>
+                    <option value="z2">Blue Lot</option>
                   </select>
                 </div>
                 <button class="row-card-delete" title="Delete row">
@@ -1252,12 +1242,12 @@ a:hover{text-decoration:none}
               </div>
               <div>
                 <div class="row-card-preview-label">Preview <span class="row-card-count">12 lots · One-sided</span></div>
-                <div class="stall-row-layout" data-lot-zones='{}'></div>
+                <div class="stall-row-layout"></div>
               </div>
             </div>
 
             <!-- RV Row B: back-to-back, lots 13–24 -->
-            <div class="row-card" data-row-id="rv-r2">
+            <div class="row-card" data-row-id="rv-r2" data-zone-id="">
               <div class="row-card-top">
                 <div class="row-card-field"><span class="row-card-field-label">Row Name</span><input type="text" value="RV Row B" data-role="name"></div>
                 <div class="row-card-field row-card-field-layout">
@@ -1265,6 +1255,14 @@ a:hover{text-decoration:none}
                   <select data-role="layout" onchange="updateRvRowPreview(this)">
                     <option value="one-sided">One-sided</option>
                     <option value="back-to-back" selected>Back-to-back</option>
+                  </select>
+                </div>
+                <div class="row-card-field row-card-field-layout">
+                  <span class="row-card-field-label">Zone</span>
+                  <select data-role="zone_id" onchange="updateRvRowPreview(this)">
+                    <option value="">Unassigned</option>
+                    <option value="z1">Red Lot</option>
+                    <option value="z2">Blue Lot</option>
                   </select>
                 </div>
                 <button class="row-card-delete" title="Delete row">
@@ -1293,7 +1291,7 @@ a:hover{text-decoration:none}
               </div>
               <div>
                 <div class="row-card-preview-label">Preview <span class="row-card-count">12 lots · Back-to-back (6 top, 6 bottom)</span></div>
-                <div class="stall-row-layout back-to-back" data-lot-zones='{}'></div>
+                <div class="stall-row-layout back-to-back"></div>
               </div>
             </div>
 
@@ -1304,7 +1302,9 @@ a:hover{text-decoration:none}
             Add Row
           </button>
 
-          <span class="field-hint">Lots with a grey dot are unassigned and won't be available to customers. Use Paint Mode above to assign each lot to a zone.</span>
+<!-- V2 BACKLOG — RV Painting and Advanced Inventory (deferred from V1, 2026-05-30):
+  Per-lot painting, per-lot color dots, per-zone Avail Qty cap, Bulk-with-zones mode.
+  See docs/c10-contracts.md for full history. -->
         </div>
       </div>
 
@@ -1672,7 +1672,7 @@ a:hover{text-decoration:none}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
       <span>Move to Trash</span>
     </button>
-    <button class="btn-update" type="button" onclick="checkBeforePublish()">Update Reservation</button>
+    <button class="btn-update" type="button">Update Reservation</button>
   </div>
 </div>
 
@@ -2091,42 +2091,11 @@ function getZoneById(zoneId){
   return getRvZones().find(z => z.id === zoneId) || null;
 }
 
-function getActivePaintZone(){
-  const sel = document.getElementById('rv-paint-zone');
-  if(!sel || !sel.value) return null;
-  return getZoneById(sel.value);
-}
-
-function getRowLotZones(rowEl){
-  const previewWrap = rowEl.querySelector('.row-card-preview-label').nextElementSibling;
-  if(!previewWrap) return {};
-  try { return JSON.parse(previewWrap.getAttribute('data-lot-zones') || '{}'); }
-  catch(e){ return {}; }
-}
-
-function setRowLotZones(rowEl, zonesMap){
-  const previewWrap = rowEl.querySelector('.row-card-preview-label').nextElementSibling;
-  if(previewWrap) previewWrap.setAttribute('data-lot-zones', JSON.stringify(zonesMap));
-}
-
-function renderLotBox(label, zoneId, blocked){
-  const zone = zoneId ? getZoneById(zoneId) : null;
-  const cls  = 'stall-box lot-box paintable' + (blocked ? ' blocked' : '');
-  // Unassigned lots show a grey dot — they won't be available to customers at checkout (C10 contract).
-  const dot  = zone ? `<span class="lot-zone-dot" style="background:${zone.color}" title="${zone.name}"></span>`
-                    : `<span class="lot-zone-dot" style="background:#9CA3AF" title="Unassigned — paint to make available"></span>`;
-  return `<div class="${cls}" data-lot-label="${label}" data-zone-id="${zoneId||''}" onclick="paintLot(this)">${label}${dot}</div>`;
-}
-
-function paintLot(lotEl){
-  const zone = getActivePaintZone();
-  if(!zone) return;
-  const rowEl = lotEl.closest('.row-card');
-  const label = lotEl.dataset.lotLabel;
-  const zonesMap = getRowLotZones(rowEl);
-  zonesMap[label] = zone.id;
-  setRowLotZones(rowEl, zonesMap);
-  updateRvRowPreview(rowEl.querySelector('input,select'));
+function renderLotBox(label, rowZoneColor, blocked){
+  // V1: lots are simple display boxes; zone color comes from the row's zone_id dropdown.
+  const cls = 'stall-box lot-box' + (blocked ? ' blocked' : '');
+  const style = rowZoneColor ? ` style="border-color:${rowZoneColor};border-width:2px"` : '';
+  return `<div class="${cls}"${style}>${label}</div>`;
 }
 
 function updateRvRowPreview(triggerEl){
@@ -2138,7 +2107,12 @@ function updateRvRowPreview(triggerEl){
   if(oneSidedBlock) oneSidedBlock.style.display = (layout === 'one-sided')    ? '' : 'none';
   if(sidesBlock)    sidesBlock.style.display    = (layout === 'back-to-back') ? '' : 'none';
 
-  const zonesMap   = getRowLotZones(card);
+  // V1: zone color comes from the row's Zone dropdown, applied uniformly to all lots in the row.
+  const zoneSelect = card.querySelector('[data-role="zone_id"]');
+  const zoneId = zoneSelect ? zoneSelect.value : '';
+  const zoneObj = zoneId ? getZoneById(zoneId) : null;
+  const rowZoneColor = zoneObj ? zoneObj.color : null;
+
   const blocked    = getBlockedRvLotsSet();
   const previewWrap = card.querySelector('.row-card-preview-label').nextElementSibling;
   const countLabel  = card.querySelector('.row-card-count');
@@ -2150,31 +2124,23 @@ function updateRvRowPreview(triggerEl){
     const botLast  = (card.querySelector('[data-role="bot-last"]')  || {}).value || '';
     const topLabels = stallLabelsBetween(topFirst, topLast);
     const botLabels = stallLabelsBetween(botFirst, botLast);
-    // Lots are NOT auto-assigned to a zone. Unassigned lots show a grey dot
-    // and are unavailable to customers (C10 enforcement contract, 2026-05-30).
-    setRowLotZones(card, zonesMap);
     const total = topLabels.length + botLabels.length;
     countLabel.textContent = `${total} lots \xb7 Back-to-back (${topLabels.length} top, ${botLabels.length} bottom)`;
     const newPreview = document.createElement('div');
     newPreview.className = 'stall-row-layout back-to-back';
-    newPreview.setAttribute('data-lot-zones', JSON.stringify(zonesMap));
     newPreview.innerHTML =
-      '<div class="stall-row-side">' + topLabels.map(l => renderLotBox(l, zonesMap[l], blocked.has(l))).join('') + '</div>' +
+      '<div class="stall-row-side">' + topLabels.map(l => renderLotBox(l, rowZoneColor, blocked.has(l))).join('') + '</div>' +
       '<div class="stall-row-aisle" title="Aisle"></div>' +
-      '<div class="stall-row-side">' + botLabels.map(l => renderLotBox(l, zonesMap[l], blocked.has(l))).join('') + '</div>';
+      '<div class="stall-row-side">' + botLabels.map(l => renderLotBox(l, rowZoneColor, blocked.has(l))).join('') + '</div>';
     previewWrap.replaceWith(newPreview);
   } else {
     const start = (card.querySelector('[data-role="first"]') || {}).value || '';
     const end   = (card.querySelector('[data-role="last"]')  || {}).value || '';
     const labels = stallLabelsBetween(start, end);
-    // Lots are NOT auto-assigned to a zone. Unassigned lots show a grey dot
-    // and are unavailable to customers (C10 enforcement contract, 2026-05-30).
-    setRowLotZones(card, zonesMap);
     countLabel.textContent = `${labels.length} lots \xb7 One-sided`;
     const newPreview = document.createElement('div');
     newPreview.className = 'stall-row-layout';
-    newPreview.setAttribute('data-lot-zones', JSON.stringify(zonesMap));
-    newPreview.innerHTML = labels.map(l => renderLotBox(l, zonesMap[l], blocked.has(l))).join('');
+    newPreview.innerHTML = labels.map(l => renderLotBox(l, rowZoneColor, blocked.has(l))).join('');
     previewWrap.replaceWith(newPreview);
   }
   rebuildBlockedRvLotsDropdown();
@@ -2182,21 +2148,22 @@ function updateRvRowPreview(triggerEl){
 
 function refreshAllRvPreviews(){
   document.querySelectorAll('#rv-row-builder-list .row-card').forEach(card => {
-    const anyInput = card.querySelector('input');
+    const anyInput = card.querySelector('input,select');
     if(anyInput) updateRvRowPreview(anyInput);
   });
-  refreshPaintModeSelect();
+  refreshRvRowZoneDropdowns();
 }
 
-
-function refreshPaintModeSelect(){
-  const sel = document.getElementById('rv-paint-zone');
-  if(!sel) return;
-  const currentValue = sel.value;
+function refreshRvRowZoneDropdowns(){
+  // Keep each row's Zone dropdown in sync with the current zone list.
   const zones = getRvZones();
-  sel.innerHTML = '<option value="">Off — click to view lot details</option>' +
-    zones.map(z => `<option value="${z.id}" style="color:${z.color}">● ${z.name}</option>`).join('');
-  if(zones.find(z => z.id === currentValue)) sel.value = currentValue;
+  document.querySelectorAll('#rv-row-builder-list .row-card').forEach(card => {
+    const sel = card.querySelector('[data-role="zone_id"]');
+    if(!sel) return;
+    const currentValue = sel.value;
+    sel.innerHTML = '<option value="">Unassigned</option>' +
+      zones.map(z => `<option value="${z.id}"${z.id === currentValue ? ' selected' : ''}>${z.name}</option>`).join('');
+  });
 }
 
 const ZONE_PALETTE = ['#EF4444','#F59E0B','#26D0B5','#1668F2','#8B5CF6','#EC4899','#031B4E','#84CC16'];
@@ -2228,10 +2195,6 @@ function addZone(){
         <span class="zone-price-label">+ Weekend</span>
         <div class="zone-price-wrap"><span class="zone-price-sym">$</span><input class="zone-price-in" type="number" value="0.00" data-role="zone-weekend"></div>
       </div>
-      <div class="zone-price-group">
-        <span class="zone-price-label">Avail Qty</span>
-        <div class="zone-price-wrap"><input class="zone-price-in" type="number" value="" data-role="zone-qty" min="0" style="width:56px" placeholder="0"></div>
-      </div>
       <button class="row-card-delete" title="Delete zone" onclick="deleteZone(this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
       </button>
@@ -2244,19 +2207,10 @@ function addZone(){
 function deleteZone(btn){
   const zoneRow   = btn.closest('.zone-row');
   const deletedId = zoneRow.dataset.zoneId;
-  const remaining = getRvZones().filter(z => z.id !== deletedId);
-  if(remaining.length === 0){
-    alert('Cannot delete the last zone — every lot must belong to a zone.');
-    return;
-  }
-  const fallbackId = remaining[0].id;
+  // If a row card has this zone selected, reset it to Unassigned.
   document.querySelectorAll('#rv-row-builder-list .row-card').forEach(card => {
-    const zonesMap = getRowLotZones(card);
-    let changed = false;
-    Object.keys(zonesMap).forEach(label => {
-      if(zonesMap[label] === deletedId){ zonesMap[label] = fallbackId; changed = true; }
-    });
-    if(changed) setRowLotZones(card, zonesMap);
+    const sel = card.querySelector('[data-role="zone_id"]');
+    if(sel && sel.value === deletedId) sel.value = '';
   });
   zoneRow.remove();
   refreshAllRvPreviews();
@@ -2265,8 +2219,11 @@ function deleteZone(btn){
 
 function addRvRow(){
   const list = document.getElementById('rv-row-builder-list');
+  const zones = getRvZones();
+  const zoneOptions = '<option value="">Unassigned</option>' +
+    zones.map(z => `<option value="${z.id}">${z.name}</option>`).join('');
   const html = `
-    <div class="row-card" data-row-id="rv-${Date.now()}">
+    <div class="row-card" data-row-id="rv-${Date.now()}" data-zone-id="">
       <div class="row-card-top">
         <div class="row-card-field">
           <span class="row-card-field-label">Row Name</span>
@@ -2277,6 +2234,12 @@ function addRvRow(){
           <select data-role="layout" onchange="updateRvRowPreview(this)">
             <option value="one-sided" selected>One-sided</option>
             <option value="back-to-back">Back-to-back</option>
+          </select>
+        </div>
+        <div class="row-card-field row-card-field-layout">
+          <span class="row-card-field-label">Zone</span>
+          <select data-role="zone_id" onchange="updateRvRowPreview(this)">
+            ${zoneOptions}
           </select>
         </div>
         <button class="row-card-delete" title="Delete row" onclick="this.closest('.row-card').remove();rebuildBlockedRvLotsDropdown()">
@@ -2323,72 +2286,12 @@ function addRvRow(){
       </div>
       <div>
         <div class="row-card-preview-label">Preview <span class="row-card-count">No lots yet — fill in labels above</span></div>
-        <div class="stall-row-layout" data-lot-zones="{}"></div>
+        <div class="stall-row-layout"></div>
       </div>
     </div>`;
   list.insertAdjacentHTML('beforeend', html);
 }
 
-
-/* ── Publish warning: unassigned lots (2026-05-30 design decision) ── */
-/**
- * Count lot cells in the RV row builder that have no zone assignment.
- * Unassigned lots won't be available to customers at checkout (C10 contract).
- */
-function countUnassignedLots(){
-  var count = 0;
-  document.querySelectorAll('#rv-row-builder-list .stall-box.lot-box').forEach(function(el){
-    var zoneId = el.getAttribute('data-zone-id');
-    if(!zoneId || zoneId === '') count++;
-  });
-  return count;
-}
-
-/**
- * Intercept the Publish/Update button. If the RV mapped mode is active and
- * any lots are unassigned, show a confirmation modal before proceeding.
- * Save as Draft is NOT intercepted — drafts may freely have unassigned lots.
- */
-function checkBeforePublish(){
-  if(!rvMappedIsActive()){ return; } // No lots rendered — nothing to check
-  var unassigned = countUnassignedLots();
-  if(unassigned > 0){
-    showUnassignedWarning(unassigned);
-  }
-  // If 0 unassigned, the real plugin would dispatch save — mockup no-ops here.
-}
-
-/**
- * Render a confirmation dialog for unassigned lots.
- * Uses an inline modal div injected into the page, matching the plugin's
- * .eem-modal pattern. Cancel removes the modal; "Publish Anyway" would
- * proceed with save (mockup no-ops the actual save dispatch).
- */
-function showUnassignedWarning(count){
-  // Remove any existing warning modal first
-  var existing = document.getElementById('unassigned-warning-modal');
-  if(existing) existing.remove();
-
-  var lotWord = count === 1 ? 'lot is' : 'lots are';
-  var overlay = document.createElement('div');
-  overlay.id = 'unassigned-warning-modal';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;display:flex;align-items:center;justify-content:center';
-  overlay.innerHTML =
-    '<div style="background:#fff;border-radius:8px;padding:28px 32px;max-width:440px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.18)">' +
-      '<p style="font-size:15px;font-weight:700;margin:0 0 10px;color:#031B4E">Some lots are unassigned</p>' +
-      '<p style="font-size:13px;color:#3c434a;margin:0 0 24px;line-height:1.6">' +
-        count + ' ' + lotWord + ' unassigned to a zone and won’t be available to customers. ' +
-        'Continue publishing anyway, or cancel and paint them first?' +
-      '</p>' +
-      '<div style="display:flex;gap:10px;justify-content:flex-end">' +
-        '<button type="button" onclick="document.getElementById(\'unassigned-warning-modal\').remove()" ' +
-          'style="padding:8px 18px;border:1px solid #c3c4c7;border-radius:4px;background:#fff;font-size:13px;font-weight:600;cursor:pointer">Cancel</button>' +
-        '<button type="button" onclick="document.getElementById(\'unassigned-warning-modal\').remove()" ' +
-          'style="padding:8px 18px;border:none;border-radius:4px;background:#1668F2;color:#fff;font-size:13px;font-weight:600;cursor:pointer">Publish Anyway</button>' +
-      '</div>' +
-    '</div>';
-  document.body.appendChild(overlay);
-}
 
 /* ── Computed inventory display (WooCommerce variant-stock pattern) ── */
 function stallMappedIsActive(){
@@ -2477,11 +2380,25 @@ function updateRvInventoryDisplay(){
     computed.style.display = '';
     hintBase.style.display   = 'none';
     hintCharts.style.display = '';
+    // V1: inventory computed from total lot count across all rows (Avail Qty removed).
     var total = 0;
-    document.querySelectorAll('#rv-mapped-content [data-role="zone-qty"]').forEach(function(inp){
-      total += parseInt(inp.value || 0, 10) || 0;
+    document.querySelectorAll('#rv-row-builder-list .row-card').forEach(function(card){
+      var layout = (card.querySelector('[data-role="layout"]') || {}).value;
+      if(layout === 'back-to-back'){
+        var tf = (card.querySelector('[data-role="top-first"]') || {}).value || '';
+        var tl = (card.querySelector('[data-role="top-last"]')  || {}).value || '';
+        var bf = (card.querySelector('[data-role="bot-first"]') || {}).value || '';
+        var bl = (card.querySelector('[data-role="bot-last"]')  || {}).value || '';
+        total += stallLabelsBetween(tf,tl).length + stallLabelsBetween(bf,bl).length;
+      } else {
+        var first = (card.querySelector('[data-role="first"]') || {}).value || '';
+        var last  = (card.querySelector('[data-role="last"]')  || {}).value || '';
+        total += stallLabelsBetween(first, last).length;
+      }
     });
-    labelEl.textContent = '(computed from zone quantities)';
+    var blockedRv = document.querySelectorAll('#blocked-rv-lots-select .tag-chip').length;
+    total = Math.max(0, total - blockedRv);
+    labelEl.textContent = '(computed from lot layout)';
     numEl.textContent = total;
   } else {
     input.style.display    = '';
@@ -2544,17 +2461,12 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('#rv-row-builder-list .row-card-delete').forEach(btn => {
     if(!btn.onclick) btn.onclick = () => { btn.closest('.row-card').remove(); rebuildBlockedRvLotsDropdown(); };
   });
-  refreshPaintModeSelect();
   rebuildBlockedRvLotsDropdown();
   refreshAllRvPreviews();
 
   /* Computed inventory: init + live-update delegation */
   updateStallInventoryDisplay();
   updateRvInventoryDisplay();
-  var rvQtyContent = document.getElementById('rv-mapped-content');
-  if(rvQtyContent) rvQtyContent.addEventListener('input', function(e){
-    if(e.target.dataset.role === 'zone-qty') updateRvInventoryDisplay();
-  });
   var stallBuilder = document.getElementById('row-builder-list');
   if(stallBuilder) stallBuilder.addEventListener('input', function(){ updateStallInventoryDisplay(); });
   var rvBuilder = document.getElementById('rv-row-builder-list');

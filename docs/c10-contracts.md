@@ -1,111 +1,133 @@
 # C10 Enforcement Contract — RV Lot Zone Assignments
 
-**Locked: 2026-05-30**
+**Locked: 2026-05-30 · Updated to V1 model: 2026-05-30**
 
 ---
 
 ## Overview
 
-This document defines the canonical contract between the admin-side RV lot Paint Mode
-(C7/C8 — reservation editor) and the customer-facing RV checkout page (C10).
+This document defines the canonical contract between the admin-side RV lot Row Builder
+(reservation editor, Mapped mode) and the customer-facing RV checkout page (C10).
 
 ---
 
-## The Rule
+## V1 Zone Model (2.3.22+)
 
-A lot is **available to customers** if and only if it has an explicit zone assignment in
-`_en_rv_lot_zone_assignments`.
+### The Rule
+
+A lot is **available to customers** if and only if:
+1. The lot belongs to a row that has a non-empty `zone_id` field, AND
+2. The zone referenced by `zone_id` exists in `_en_rv_zones`
 
 A lot is **unavailable to customers** if:
-- It has no entry in `_en_rv_lot_zone_assignments`, OR
-- Its entry is `null`, OR
-- Its entry is an empty string `""`
+- Its row has no `zone_id` (empty string `""` or absent), OR
+- Its row's `zone_id` references a zone that no longer exists
 
-This rule applies **regardless of zone pricing**, reservation status, or any other
-condition. The zone assignment is the single canonical availability signal.
+This rule applies **regardless of zone pricing**. Zone assignment at row level is the
+single canonical availability signal in V1.
 
----
+### Admin UI Signal
 
-## Admin UI Signal
+RV row cards in Mapped mode have a Zone dropdown. Rows without a zone selection show
+no left-border color indicator (grey border). Rows with a zone get a colored left
+border matching the zone's auto-palette color.
 
-Lots without a zone assignment display a **grey dot (`#9CA3AF`)** in the reservation
-editor's RV Row Builder. The hint text reads:
+The hint text on the Lot Rows field reads:
+> "Each row must be assigned to a zone. Rows without a zone assignment are unavailable
+> to customers at checkout."
 
-> "Lots with a grey dot are unassigned and won't be available to customers. Use Paint
-> Mode above to assign each lot to a zone."
+### Data Shape
 
-When an admin clicks Publish or Update Reservation with one or more unassigned lots,
-a confirmation modal appears:
-
-> "N lot(s) are unassigned and won't be available to customers. Publish anyway?"
-
-Admins can dismiss (Cancel) or proceed (Publish Anyway). This is a warning, not a
-hard block — drafts with unassigned lots are permitted.
-
----
-
-## Data Shape
-
-`_en_rv_lot_zone_assignments` is stored as a JSON-encoded associative array:
+`_en_rv_rows` is stored as a JSON-encoded array of row objects:
 
 ```json
-{
-  "0": { "A1": "0", "A2": "1", "A3": "0" },
-  "1": { "B1": "2" }
-}
+[
+  { "name": "RV Row A", "layout": "one-sided", "first": "1", "last": "12", "zone_id": "0" },
+  { "name": "RV Row B", "layout": "back-to-back", "top_first": "13", "top_last": "18",
+    "bot_first": "19", "bot_last": "24", "zone_id": "1" }
+]
 ```
 
-Keys at the outer level are row indices (string-cast integers, matching the row order
-in `_en_rv_rows`). Keys at the inner level are lot labels (strings). Values are zone
-indices (string-cast integers, matching the order in `_en_rv_zones`).
+`zone_id` is the string-cast index into `_en_rv_zones` (0-based). Empty string = unassigned.
 
-**Absent key = unassigned = unavailable.** No default zone is auto-assigned.
+`_en_rv_zones` is stored as a JSON-encoded array:
 
----
+```json
+[
+  { "name": "Red Lot",  "nightly": "35.00", "weekend": "90.00" },
+  { "name": "Blue Lot", "nightly": "25.00", "weekend": "65.00" }
+]
+```
 
-## C10 Implementation Requirement
+### C10 Implementation Requirement
 
-When the customer-facing checkout renderer (C10) builds the lot selection UI for an
-RV row, it MUST:
+When the customer-facing checkout renderer (C10) builds the lot selection UI:
 
-1. Load `_en_rv_lot_zone_assignments` for the reservation.
-2. For each lot in each row, check whether an explicit zone assignment exists.
-3. **Exclude lots with no assignment** from the selectable / bookable pool.
-4. Do NOT fall back to a default zone. Do NOT treat "no entry" as "zone 0".
+1. Load `_en_rv_rows` and `_en_rv_zones` for the reservation.
+2. For each row, check whether `zone_id` is non-empty and references a valid zone.
+3. **Exclude all lots in rows with no zone assignment** from the selectable/bookable pool.
+4. Do NOT fall back to a default zone. An empty `zone_id` means the row is explicitly
+   unconfirmed/not-for-sale.
 
 Code comment required at the C10 filter point:
 
 ```php
-// C10 ENFORCEMENT CONTRACT (2026-05-30):
-// Lots absent from _en_rv_lot_zone_assignments (or with null/empty zoneIndex)
-// are UNAVAILABLE to customers. Do NOT auto-fill with a default zone.
+// C10 ENFORCEMENT CONTRACT (2026-05-30, V1 model):
+// RV rows with empty/absent zone_id are UNAVAILABLE to customers.
+// Availability is set at ROW level in V1 — all lots in an unassigned row
+// are withheld from the customer's lot selection UI.
 // See: docs/c10-contracts.md
 ```
 
 ---
 
-## Why Not Auto-Assign in the Admin?
+## V2 BACKLOG — Per-Lot Painting (deferred from V1)
 
-Previous versions of the plugin defaulted unassigned lots to the first zone index
-(`'0'`), making them appear identical to intentionally-painted lots. This caused:
+The following features were considered for V1 but deferred to unblock the
+June 12, 2026 test-ready milestone:
 
-- Lots the admin hadn't yet painted to be silently available at checkout
-- The admin having no visual signal that unpainted lots were live
+### Per-lot zone assignment
 
-The fix (2.3.21, 2026-05-30):
-- Admin JS `getDefaultZoneForLot()` returns `''` (unassigned) for lots with no saved
-  assignment — never `'0'`
-- The grey dot gives admins a clear signal before publishing
-- The publish warning gives a final checkpoint
+- Admin clicks individual lots to assign them to zones
+- Useful when a row contains lots from multiple zones (e.g., premium corner
+  spots vs. standard interior lots in the same physical row)
+- V1 assigns zones at row level only — all lots in a row share one zone
+
+### Per-lot color dots
+
+- Visual indicator of zone membership at lot granularity
+- V1 uses row card left-border color as the zone indicator (lightweight,
+  row-level signal)
+
+### Per-zone Avail Qty (admin-entered cap)
+
+- Separate inventory cap independent of configured lots
+- E.g., "Red Lot has 24 physical lots but cap sales at 20 to keep 4 reserved"
+- V1 uses row lot count as inventory truth (computed from First/Last label ranges)
+
+### Bulk-with-zones mode
+
+- Quantity per zone without the row builder
+- E.g., "I have 40 RV lots in 2 zones: 20 Red, 20 Blue" without naming each lot
+- V1 has only: Bulk (no zones) and Mapped (rows with zone dropdowns)
+
+### Sub-row zone assignment
+
+- Within a back-to-back row, Top Side and Bottom Side could belong to different zones
+- V1: the entire row (both sides) shares one zone
 
 ---
 
-## Migration Note
+## Historical Note — V1 Transition (2.3.21 → 2.3.22)
 
-Reservations saved before 2.3.21 may have lots in `_en_rv_lot_zone_assignments` with
-zone index `"0"` that were auto-assigned by the old default behavior. Those entries
-are explicit zone assignments (zone 0 IS a valid zone) and are treated as available
-by C10. Only absent/null/empty entries are treated as unavailable.
+In version 2.3.21, a per-lot painting model was briefly shipped:
+- `_en_rv_lot_zone_assignments` post-meta tracked individual lot→zone mappings
+- Lots without a saved assignment showed a grey dot (#9CA3AF) and were unavailable
+- A publish warning appeared when unassigned lots existed
+
+In version 2.3.22 this was removed in favor of the simpler row-level zone model.
+The `_en_rv_lot_zone_assignments` meta key is no longer written or read by the plugin.
+Existing reservations with that key stored are unaffected — it will simply be ignored.
 
 ---
 
@@ -113,8 +135,8 @@ by C10. Only absent/null/empty entries are treated as unavailable.
 
 | File | Role |
 |---|---|
-| `assets/js/admin.js` | `getDefaultZoneForLot()`, `rvCountUnassignedLots()`, `openUnassignedLotsWarning()` |
-| `templates/admin/reservation-editor/_section-rv.php` | Lot zone assignment init, hint text |
-| `admin/class-eem-reservation-editor-page.php` | `_en_rv_lot_zone_assignments` save handler |
-| `assets/css/admin.css` | Grey dot CSS fallback for `[data-zone-id=""]` |
-| `.mockups/edit_reservation_page.html` | Visual reference: grey dot, publish warning |
+| `assets/js/admin.js` | `rvUpdateRowZoneIndicator()`, `rvAddRow()`, `updateRvInventoryDisplay()` |
+| `templates/admin/reservation-editor/_section-rv.php` | Row Zone dropdown, row builder init |
+| `admin/class-eem-reservation-editor-page.php` | `zone_id` field in `_en_rv_rows` save |
+| `assets/css/admin.css` | `.eem-zone-color-swatch` (still used in zones table) |
+| `.mockups/edit_reservation_page.html` | Visual reference: zone dropdown on row cards |

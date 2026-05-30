@@ -2065,11 +2065,12 @@ class EEM_Reservations_CPT {
 			'stall_rows'                      => array(),
 			'blocked_stalls'                  => array(),
 			'stall_map_id'                    => 0,
-			// C8 — RV zone table, lot row-builder, blocked lots, Paint-Mode assignments.
+			// C8 — RV zone table, lot row-builder, blocked lots.
+			// rv_lot_zone_assignments removed in V1 (2.3.22) — per-lot painting is V2 backlog.
+			// See docs/c10-contracts.md for the V1 contract (zone assigned at row level).
 			'rv_zones'                        => array(),
 			'rv_rows'                         => array(),
 			'blocked_rv_lots'                 => array(),
-			'rv_lot_zone_assignments'         => array(),
 		);
 
 		return $defaults;

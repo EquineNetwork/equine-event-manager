@@ -6713,40 +6713,7 @@ input.eem-event-search-input:focus {
 .eem-row-add-btn:hover { border-color: var(--eem-electric); color: var(--eem-electric); border-style: solid; }
 .eem-row-add-btn svg { width: 13px; height: 13px; color: var(--eem-electric); }
 
-/* ── Zone painter (RV) ── */
-.eem-zone-painter {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	padding: 10px 14px;
-	background: #FAFBFE;
-	border: 1.5px solid #D9E2F2;
-	border-radius: 6px;
-	margin-bottom: 14px;
-	flex-wrap: wrap;
-}
-.eem-zone-painter-label {
-	font-size: 11px;
-	font-weight: 700;
-	letter-spacing: .08em;
-	text-transform: uppercase;
-	color: var(--eem-navy);
-}
-.eem-zone-painter-select {
-	flex: 1;
-	min-width: 160px;
-	padding: 7px 28px 7px 10px;
-	border: 1.5px solid #D9E2F2;
-	border-radius: var(--eem-radius, 3px);
-	font-size: 13px;
-	font-family: var(--eem-font-ui);
-	color: var(--eem-navy);
-	background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236B7A99' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 9px center;
-	appearance: none;
-	outline: none;
-}
-.eem-zone-painter-select:focus { border-color: var(--eem-electric); }
-.eem-zone-painter-hint { font-size: 11.5px; color: var(--eem-text-secondary); flex: 1; min-width: 180px; }
+/* Zone painter (Paint Mode) CSS removed in V1 (2.3.22) — per-lot painting is V2 backlog. */
 
 /* ── Upgraded RV zone row (nightly / weekend / available_qty columns) ── */
 #eem-rv-mapped-content .eem-zone-row {
@@ -6868,61 +6835,9 @@ input.eem-event-search-input:focus {
 	.eem-row-card-top .eem-row-card-field-layout { flex: 1 1 140px; }
 }
 
-/* ── Bug-fix: RV Paint Mode lot cells ── */
-/*
- * .eem-lot-cell — clickable button inside the RV row preview strip.
- *   Each cell carries data-eem-action="rv-lot-click", data-row-id,
- *   data-lot-label, and data-zone-id. Contains a colored zone dot
- *   (.eem-lot-zone-dot) and a label (.eem-lot-label).
- */
-.eem-lot-cell {
-	position: relative;
-	display: inline-flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	min-width: 36px;
-	height: 36px;
-	padding: 2px 4px;
-	border: 1.5px solid #D9E2F2;
-	border-radius: var(--eem-radius, 3px);
-	background: #fff;
-	cursor: pointer;
-	font-size: 11px;
-	font-family: var(--eem-font-ui);
-	color: var(--eem-navy);
-	gap: 2px;
-	transition: border-color 0.12s, background 0.12s;
-}
-.eem-lot-cell:hover {
-	border-color: var(--eem-electric);
-	background: #F0F4FF;
-}
-.eem-lot-cell:focus-visible {
-	outline: 2px solid var(--eem-electric);
-	outline-offset: 1px;
-}
-.eem-lot-zone-dot {
-	width: 8px;
-	height: 8px;
-	border-radius: 50%;
-	flex-shrink: 0;
-}
-/* C10 enforcement: lots with no zone assignment show a grey dot and are
-   UNAVAILABLE to customers at checkout (contract locked 2026-05-30).
-   JS sets background-color inline for painted lots; this CSS rule provides
-   the grey fallback for any cell where the inline style is absent or empty. */
-.eem-lot-cell[data-zone-id=""] .eem-lot-zone-dot,
-.eem-lot-cell:not([data-zone-id]) .eem-lot-zone-dot {
-	background-color: #9CA3AF;
-}
-.eem-lot-label {
-	font-size: 10px;
-	font-weight: 600;
-	line-height: 1;
-}
-/* Paint mode active: crosshair cursor on all lot cells in the builder */
-.eem-paint-mode-active .eem-lot-cell { cursor: crosshair; }
+/* Paint Mode lot cell CSS (.eem-lot-cell, .eem-lot-zone-dot, .eem-lot-label,
+   .eem-paint-mode-active) removed in V1 (2.3.22) — per-lot painting is V2 backlog.
+   Zone color is now shown via row card left-border (set inline by rvUpdateRowZoneIndicator). */
 
 /* ── Inventory Mode buttons — extends existing .eem-mode-btn (line 1074) ── */
 /* Base + .active already defined at line 1074. Add font-family + hover state only. */

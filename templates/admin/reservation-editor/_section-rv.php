@@ -286,8 +286,8 @@ $rv_zones_meta = isset( $data['rv_zones'] ) ? $data['rv_zones'] : array();
 $rv_zones      = ( is_array( $rv_zones_meta ) && ! empty( $rv_zones_meta ) )
 	? $rv_zones_meta
 	: array(
-		array( 'name' => 'Red Lot',  'nightly' => '35.00', 'weekend' => '90.00', 'available_qty' => '6' ),
-		array( 'name' => 'Blue Lot', 'nightly' => '25.00', 'weekend' => '65.00', 'available_qty' => '18' ),
+		array( 'name' => 'Red Lot',  'nightly' => '35.00', 'weekend' => '90.00' ),
+		array( 'name' => 'Blue Lot', 'nightly' => '25.00', 'weekend' => '65.00' ),
 	);
 
 $rv_rows_meta = isset( $data['rv_rows'] ) ? $data['rv_rows'] : array();
@@ -302,31 +302,31 @@ $blocked_rv_lots_meta = isset( $data['blocked_rv_lots'] ) ? $data['blocked_rv_lo
 $blocked_rv_lots      = is_array( $blocked_rv_lots_meta ) ? $blocked_rv_lots_meta : array();
 
 /**
- * C10 ENFORCEMENT CONTRACT (2026-05-30):
- * - Lots with no entry in _en_rv_lot_zone_assignments (or with empty/null value)
- *   are UNAVAILABLE to customers at checkout. C10 must filter them out.
- * - This applies regardless of zone pricing ($0 surcharge zones are still valid;
- *   unpainted lots are not).
- * - The Edit Reservation page shows a publish warning if any lots are unassigned.
- * - See: docs/c10-contracts.md
+ * V1 ZONE MODEL (2.3.22, 2026-05-30):
+ * Each rv_row has a single zone_id field. All lots in a row belong to that zone.
+ * C10 ENFORCEMENT CONTRACT: rows with no zone_id = lots in that row are UNAVAILABLE.
+ * See: docs/c10-contracts.md
  *
- * Lot assignments are loaded from $data here and passed to JS as
- * window._rvLotZoneAssignmentsInit. Lots not present in that map are
- * unassigned — do NOT auto-assign them to zone index 0 here or in JS.
+ * V2 BACKLOG — RV Painting and Advanced Inventory (deferred from V1, 2026-05-30):
+ *
+ * The following features were considered for V1 but deferred to V2 to ship a
+ * coherent, simple inventory model for the June 12, 2026 test-ready milestone:
+ *
+ * - Per-lot painting: admin clicks individual lots to assign them to zones,
+ *   useful when a row contains lots from multiple zones (e.g., premium corner
+ *   spots vs. standard interior). V1 assigns zones at row level only.
+ *
+ * - Per-lot color dots: visual indicator of zone membership at lot granularity.
+ *
+ * - Per-zone Avail Qty (admin-entered): separate inventory cap independent of
+ *   configured lots. V1 uses row count as inventory truth (computed from rows).
+ *
+ * - Bulk-with-zones mode: quantity per zone without row builder. V1 has only
+ *   Bulk (no zones) and Mapped (rows with zone dropdowns).
+ *
+ * See docs/c10-contracts.md V2 BACKLOG section for full design conversation history.
  */
-$lot_assignments_meta = isset( $data['rv_lot_zone_assignments'] ) ? $data['rv_lot_zone_assignments'] : array();
-$lot_assignments      = ( is_array( $lot_assignments_meta ) && ! empty( $lot_assignments_meta ) )
-	? $lot_assignments_meta
-	: array();
-$lot_assignments_json = wp_json_encode( $lot_assignments );
 ?>
-<script>
-/* Equine Event Manager — RV lot zone assignments init (server-rendered). */
-if ( typeof window._rvLotZoneAssignmentsInit === 'undefined' ) {
-	window._rvLotZoneAssignmentsInit = <?php echo $lot_assignments_json; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JSON from wp_json_encode is safe ?>;
-}
-</script>
-<input type="hidden" id="eem-rv-lot-zone-assignments-input" name="eem_rv_lot_zone_assignments" value="">
 <div id="eem-rv-mapped-content"
 	style="<?php echo $rv_is_mapped ? '' : 'display:none;'; ?>">
 <?php
@@ -344,7 +344,6 @@ ob_start();
 		$z_color   = $_palette[ $zi % count( $_palette ) ];
 		$z_night   = isset( $zone['nightly'] )        ? $fmt_money( $zone['nightly'] )                : '0.00';
 		$z_weekend = isset( $zone['weekend'] )        ? $fmt_money( $zone['weekend'] )                : '0.00';
-		$z_qty     = isset( $zone['available_qty'] )  ? (int) $zone['available_qty']                  : 0;
 		?>
 		<div class="eem-zone-row" data-zone-index="<?php echo (int) $zi; ?>">
 			<div class="eem-zone-color-swatch" style="background:<?php echo esc_attr( $z_color ); ?>"></div>
@@ -356,10 +355,6 @@ ob_start();
 			<div class="eem-zone-price-group">
 				<span class="eem-zone-price-label"><?php esc_html_e( '+ Weekend', 'equine-event-manager' ); ?></span>
 				<div class="eem-zone-price-wrap"><span class="eem-zone-price-sym">$</span><input class="eem-zone-price-in" type="number" step="0.01" min="0" name="eem_rv_zones[<?php echo (int) $zi; ?>][weekend]" value="<?php echo esc_attr( $z_weekend ); ?>" data-eem-input-action="rv-zone-input"></div>
-			</div>
-			<div class="eem-zone-price-group">
-				<span class="eem-zone-price-label"><?php esc_html_e( 'Avail Qty', 'equine-event-manager' ); ?></span>
-				<div class="eem-zone-price-wrap"><input class="eem-zone-price-in" type="number" min="0" style="width:56px" name="eem_rv_zones[<?php echo (int) $zi; ?>][available_qty]" value="<?php echo esc_attr( (string) $z_qty ); ?>" data-role="zone-qty" data-eem-input-action="rv-zone-input"></div>
 			</div>
 			<button class="eem-row-card-delete" type="button" title="<?php esc_attr_e( 'Delete zone', 'equine-event-manager' ); ?>" data-eem-action="rv-delete-zone">
 				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
@@ -384,10 +379,6 @@ ob_start();
 		<span class="eem-zone-price-label"><?php esc_html_e( '+ Weekend', 'equine-event-manager' ); ?></span>
 		<div class="eem-zone-price-wrap"><span class="eem-zone-price-sym">$</span><input class="eem-zone-price-in" type="number" step="0.01" min="0" name="eem_rv_zones[__index__][weekend]" value="0.00" data-eem-input-action="rv-zone-input"></div>
 	</div>
-	<div class="eem-zone-price-group">
-		<span class="eem-zone-price-label"><?php esc_html_e( 'Avail Qty', 'equine-event-manager' ); ?></span>
-		<div class="eem-zone-price-wrap"><input class="eem-zone-price-in" type="number" min="0" style="width:56px" name="eem_rv_zones[__index__][available_qty]" value="0" data-role="zone-qty" data-eem-input-action="rv-zone-input"></div>
-	</div>
 	<button class="eem-row-card-delete" type="button" title="<?php esc_attr_e( 'Delete zone', 'equine-event-manager' ); ?>" data-eem-action="rv-delete-zone">
 		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
 	</button>
@@ -406,21 +397,6 @@ eem_render_editor_field_row( array(
 ob_start();
 ?>
 <div class="eem-row-builder-summary" style="margin-bottom:10px" id="eem-rv-row-summary"></div>
-<div class="eem-zone-painter">
-	<span class="eem-zone-painter-label"><?php esc_html_e( 'Paint Mode', 'equine-event-manager' ); ?></span>
-	<select class="eem-zone-painter-select" id="eem-rv-paint-zone" data-eem-input-action="rv-paint-zone">
-		<option value=""><?php esc_html_e( 'Off — click to view lot details', 'equine-event-manager' ); ?></option>
-		<?php foreach ( $rv_zones as $zi => $zone ) :
-			$z_name  = isset( $zone['name'] )  ? (string) $zone['name']  : '';
-			// Auto-assign zone color from the JS palette by index (matches getZoneColor() in admin.js)
-			$palette  = array( '#DC2626', '#2563EB', '#16A34A', '#CA8A04', '#9333EA', '#EA580C' );
-			$z_color  = $palette[ $zi % count( $palette ) ];
-			?>
-			<option value="<?php echo (int) $zi; ?>" style="color:<?php echo esc_attr( $z_color ); ?>">&#x25cf; <?php echo esc_html( $z_name ); ?></option>
-		<?php endforeach; ?>
-	</select>
-	<span class="eem-zone-painter-hint"><?php esc_html_e( 'Paint Mode lets you assign individual lots to zones. Useful when rows contain lots from multiple zones (e.g., premium corner spots vs. standard interior). Pick a zone, then click any lot to mark it that zone.', 'equine-event-manager' ); ?></span>
-</div>
 <div class="eem-row-builder" id="eem-rv-row-builder-list">
 <?php foreach ( $rv_rows as $ri => $row ) :
 	$r_name      = isset( $row['name'] )      ? (string) $row['name']      : '';
@@ -431,6 +407,7 @@ ob_start();
 	$r_top_last  = isset( $row['top_last'] )   ? (string) $row['top_last']  : '';
 	$r_bot_first = isset( $row['bot_first'] )  ? (string) $row['bot_first'] : '';
 	$r_bot_last  = isset( $row['bot_last'] )   ? (string) $row['bot_last']  : '';
+	$r_zone_id   = isset( $row['zone_id'] )    ? (string) $row['zone_id']   : '';
 	$is_b2b      = ( 'back-to-back' === $r_layout );
 	?>
 	<div class="eem-row-card" data-row-index="<?php echo (int) $ri; ?>">
@@ -444,6 +421,17 @@ ob_start();
 				<select name="eem_rv_rows[<?php echo (int) $ri; ?>][layout]" data-eem-input-action="rv-row-layout">
 					<option value="one-sided"<?php selected( $r_layout, 'one-sided' ); ?>><?php esc_html_e( 'One-sided', 'equine-event-manager' ); ?></option>
 					<option value="back-to-back"<?php selected( $r_layout, 'back-to-back' ); ?>><?php esc_html_e( 'Back-to-back', 'equine-event-manager' ); ?></option>
+				</select>
+			</div>
+			<div class="eem-row-card-field eem-row-card-field-layout">
+				<span class="eem-row-card-field-label"><?php esc_html_e( 'Zone', 'equine-event-manager' ); ?></span>
+				<select name="eem_rv_rows[<?php echo (int) $ri; ?>][zone_id]" data-eem-input-action="rv-row-input" data-field="zone_id">
+					<option value=""><?php esc_html_e( 'Unassigned', 'equine-event-manager' ); ?></option>
+					<?php foreach ( $rv_zones as $zi => $zone ) :
+						$z_name_opt = isset( $zone['name'] ) ? (string) $zone['name'] : '';
+						?>
+						<option value="<?php echo esc_attr( (string) $zi ); ?>"<?php selected( $r_zone_id, (string) $zi ); ?>><?php echo esc_html( $z_name_opt ); ?></option>
+					<?php endforeach; ?>
 				</select>
 			</div>
 			<button class="eem-row-card-delete" type="button" title="<?php esc_attr_e( 'Delete row', 'equine-event-manager' ); ?>" data-eem-action="rv-delete-row">
@@ -487,7 +475,7 @@ ob_start();
 	<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
 	<?php esc_html_e( 'Add Row', 'equine-event-manager' ); ?>
 </button>
-<span class="eem-field-hint"><?php esc_html_e( "Lots with a grey dot are unassigned and won't be available to customers. Use Paint Mode above to assign each lot to a zone.", 'equine-event-manager' ); ?></span>
+<span class="eem-field-hint"><?php esc_html_e( 'Each row must be assigned to a zone. Rows without a zone assignment are unavailable to customers at checkout.', 'equine-event-manager' ); ?></span>
 <?php
 $rv_rows_html = (string) ob_get_clean();
 eem_render_editor_field_row( array(
