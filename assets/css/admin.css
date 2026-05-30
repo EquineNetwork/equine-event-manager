@@ -7330,3 +7330,150 @@ body.destination-mode .eem-occ-pill--blocked { opacity: 0.5; pointer-events: non
 .scope-radio:hover { border-color: #1668F2; }
 .scope-modal-footer { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 20px; border-top: 1px solid #dcdcde; padding-top: 16px; }
 .scope-modal__error { color: #b91c1c; font-size: 13px; flex: 1; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   STALL CHART PRINT VIEW  (page=equine-event-manager-stall-chart-print)
+   Mockup: .mockups/stall_chart_print_view.html
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Two layers:
+   1. WP admin chrome suppression — hides sidebar, topbar, footer, notices
+      so only the print content fills the viewport. Scoped to
+      body.eem-shell-page--print (set by filter_backend_shell_body_class).
+   2. Print-view component styles — .pv-* classes ported from the mockup.
+      All specificity achieved by selector depth; no !important.            */
+
+/* ── 1. WP chrome suppression ── */
+body.eem-shell-page--print #wpadminbar,
+body.eem-shell-page--print #adminmenu,
+body.eem-shell-page--print #adminmenumain,
+body.eem-shell-page--print #wpfooter,
+body.eem-shell-page--print .update-nag,
+body.eem-shell-page--print .notice,
+body.eem-shell-page--print .updated,
+body.eem-shell-page--print #screen-meta,
+body.eem-shell-page--print #screen-meta-links { display: none; }
+body.eem-shell-page--print #wpcontent { margin-left: 0; }
+body.eem-shell-page--print #wpbody { margin-top: 0; }
+body.eem-shell-page--print #wpbody-content { padding: 0; float: none; }
+body.eem-shell-page--print #wpwrap { background: #fff; }
+body.eem-shell-page--print .wrap { margin: 0; }
+
+/* ── 2. Print-view component styles ── */
+
+/* Root wrapper */
+.eem-pv-page { display: block; background: #fff; font-family: 'IBM Plex Sans', sans-serif; color: #1d2327; font-size: 14px; line-height: 1.5; }
+
+/* On-screen preview toolbar (hidden on print) */
+.pv-topbar { background: #f3f4f5; border-bottom: 1px solid #dcdcde; padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; position: sticky; top: 0; z-index: 10; }
+.pv-topbar-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.pv-topbar-title { font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 700; color: #031B4E; }
+.pv-topbar-sub { font-size: 12px; color: #6B7A99; margin-top: 1px; }
+.pv-topbar-btns { display: flex; gap: 8px; flex-shrink: 0; }
+.btn-pv-print { background: #1668F2; color: #fff; border: 1px solid #1668F2; padding: 8px 16px; border-radius: 4px; font-size: 13px; font-weight: 600; font-family: 'IBM Plex Sans', sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.btn-pv-print:hover { background: #1257d1; border-color: #1257d1; }
+.btn-pv-print svg { width: 13px; height: 13px; }
+.btn-pv-exit { background: #fff; color: #1d2327; border: 1px solid #c3c4c7; padding: 8px 14px; border-radius: 4px; font-size: 13px; font-weight: 600; font-family: 'IBM Plex Sans', sans-serif; cursor: pointer; }
+.btn-pv-exit:hover { background: #f6f7f7; }
+
+/* Page body */
+.pv-body { padding: 22px 28px; max-width: 1000px; margin: 0 auto; }
+
+/* Event header */
+.pv-header { margin-bottom: 18px; padding-bottom: 14px; border-bottom: 2px solid #031B4E; }
+.pv-event { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; color: #031B4E; margin-bottom: 6px; }
+.pv-meta { font-size: 13px; color: #4a5a7a; display: flex; gap: 24px; flex-wrap: wrap; }
+.pv-meta strong { color: #031B4E; font-weight: 600; }
+
+/* Daily Movement card — soft-blue info accent (DEC-D) */
+.pv-movement { background: #F0F4FB; border: 1px solid #D9E2F2; border-radius: 4px; padding: 12px 16px; margin-bottom: 18px; }
+.pv-movement-title { font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 700; color: #031B4E; margin-bottom: 10px; }
+.pv-movement-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.pv-movement-date { font-size: 12.5px; font-weight: 700; color: #031B4E; margin-bottom: 4px; }
+.pv-movement-vals { font-size: 12.5px; color: #1d2327; }
+.pv-movement-vals span { display: block; font-weight: 500; }
+
+/* Section band — thick navy top border (DEC-B) */
+.pv-section-band { background: #fff; border-top: 3px solid #031B4E; padding: 14px 0 10px; font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 700; color: #031B4E; margin: 18px 0 0; }
+
+/* Tables */
+.pv-table-wrap { border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden; margin-bottom: 18px; }
+.pv-table { width: 100%; border-collapse: collapse; background: #fff; }
+.pv-table thead tr { background: #f3f4f5; border-bottom: 1px solid #dcdcde; }
+.pv-table thead th { padding: 10px 12px; font-size: 13px; font-weight: 600; color: #1d2327; text-align: left; }
+.pv-table thead th.c { text-align: center; }
+.pv-table tbody tr { border-bottom: 1px solid #f0f0f1; }
+.pv-table tbody tr:last-child { border-bottom: none; }
+.pv-table tbody tr:nth-child(even) { background: #f3f4f5; }
+.pv-table td { padding: 9px 12px; font-size: 13px; vertical-align: middle; color: #1d2327; }
+
+/* Cell type classes */
+.pv-stall-num { font-weight: 700; color: #031B4E; font-size: 13.5px; font-family: 'Space Grotesk', sans-serif; }
+.pv-customer { font-weight: 600; color: #031B4E; }
+.pv-customer-empty { color: #8c8f94; font-style: italic; font-weight: 400; }
+.pv-order { color: #1d2327; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.pv-checkin { text-align: center; }
+.pv-night-cell { text-align: center; font-variant-numeric: tabular-nums; }
+
+/* Arrival checkbox (print-and-check field) */
+.pv-checkbox { display: inline-block; width: 16px; height: 16px; border: 1.5px solid #6B7A99; border-radius: 2px; background: #fff; }
+
+/* Occupancy pills — light-fill variants (DEC-J) */
+.pv-occ { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11.5px; font-weight: 600; border: 1px solid; }
+.pv-occ-res { background: #EEF4FF; color: #1668F2; border-color: #c0d8ff; }
+.pv-occ-avail { background: #F0FDF4; color: #15803d; border-color: #bbf7d0; }
+.pv-occ-block { background: #FEF2F2; color: #b91c1c; border-color: #fecaca; }
+
+/* Barn header rows (DEC-H) */
+.pv-barn-header td { background: #f3f4f5; padding: 9px 12px; font-size: 13px; font-weight: 600; color: #031B4E; border-top: 1px solid #dcdcde; border-bottom: 1px solid #dcdcde; }
+.pv-barn-header td .pv-occ-count { float: right; background: #fff; color: #031B4E; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; border: 1px solid #c3c4c7; }
+.pv-barn-sub { font-weight: 400; color: #6B7A99; font-size: 12.5px; margin-left: 8px; }
+
+/* Footer */
+.pv-footer { margin-top: 18px; padding-top: 12px; border-top: 1px solid #e8eaf0; display: flex; justify-content: space-between; font-size: 12px; color: #6B7A99; flex-wrap: wrap; gap: 8px; }
+
+/* Mobile adjustments */
+@media (max-width: 767px) {
+	.pv-topbar { flex-direction: column; align-items: flex-start; gap: 10px; padding: 12px 14px; }
+	.pv-topbar-btns { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+	.btn-pv-print, .btn-pv-exit { width: 100%; justify-content: center; font-size: 12.5px; padding: 9px 10px; }
+	.pv-body { padding: 14px; }
+	.pv-event { font-size: 18px; }
+	.pv-meta { gap: 10px; font-size: 12px; }
+	.pv-movement-grid { grid-template-columns: 1fr; gap: 10px; }
+	.pv-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+	.pv-table { min-width: 640px; font-size: 12px; }
+	.pv-occ { font-size: 10.5px; padding: 2px 8px; }
+	.pv-footer { flex-direction: column; gap: 4px; font-size: 11px; }
+}
+@media (max-width: 390px) {
+	.pv-topbar-btns { grid-template-columns: 1fr; }
+}
+
+/* ── Print media — force colors, hide toolbar, optimize for letter paper ── */
+@media print {
+	*,*::before,*::after { -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact; }
+	body.eem-shell-page--print { font-size: 11px; }
+	.pv-topbar { display: none; }
+	.pv-body { padding: 8mm 10mm; max-width: none; }
+	.pv-event { font-size: 16px; }
+	.pv-meta { font-size: 10.5px; gap: 14px; }
+	.pv-movement { padding: 9px 12px; margin-bottom: 10px; }
+	.pv-movement-title { font-size: 11px; margin-bottom: 6px; }
+	.pv-movement-date { font-size: 10.5px; }
+	.pv-movement-vals { font-size: 10.5px; }
+	.pv-section-band { font-size: 13px; padding: 10px 0 7px; margin-top: 10px; border-top-width: 2.5px; }
+	.pv-table-wrap { margin-bottom: 10px; break-inside: avoid; }
+	.pv-table td, .pv-table th { padding: 5px 8px; font-size: 10px; }
+	.pv-table thead th { font-size: 10px; }
+	.pv-table tbody tr { break-inside: avoid; }
+	.pv-stall-num { font-size: 10.5px; }
+	.pv-customer { font-size: 10.5px; }
+	.pv-order { font-size: 9.5px; }
+	.pv-occ { font-size: 9px; padding: 1.5px 7px; }
+	.pv-barn-header td { padding: 5px 8px; font-size: 10px; }
+	.pv-checkbox { width: 11px; height: 11px; }
+	.pv-section-by-customer { break-before: auto; }
+	.pv-footer { margin-top: 10px; font-size: 9.5px; }
+	@page { margin: 10mm 8mm; size: letter portrait; }
+}

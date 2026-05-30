@@ -128,6 +128,11 @@ class EEM_Admin {
 			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--stall-charts' );
 		}
 
+		if ( 'equine-event-manager-stall-chart-print' === $page ) {
+			// Print view — no header variant; WP chrome hidden via CSS.
+			return trim( $classes . ' eem-shell-page eem-shell-page--print' );
+		}
+
 		if ( 'equine-event-manager-reports' === $page ) {
 			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--reports' );
 		}
@@ -211,7 +216,7 @@ class EEM_Admin {
 			$should_load = true;
 		}
 
-		if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-order', 'equine-event-manager-order-refund', 'equine-event-manager-settings', 'equine-event-manager-stall-charts', 'equine-event-manager-reports', 'equine-event-manager-reservation-overview', 'equine-event-manager-create-order', 'equine-event-manager-collect-payment', 'equine-event-manager-dashboard', 'equine-event-manager-reservation-editor', EEM_Reservations_List_Page::MENU_SLUG ), true ) ) {
+		if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-order', 'equine-event-manager-order-refund', 'equine-event-manager-settings', 'equine-event-manager-stall-charts', 'equine-event-manager-stall-chart-print', 'equine-event-manager-reports', 'equine-event-manager-reservation-overview', 'equine-event-manager-create-order', 'equine-event-manager-collect-payment', 'equine-event-manager-dashboard', 'equine-event-manager-reservation-editor', EEM_Reservations_List_Page::MENU_SLUG ), true ) ) {
 			$should_load = true;
 		}
 
@@ -620,6 +625,18 @@ class EEM_Admin {
 			'manage_options',
 			'equine-event-manager-stall-charts',
 			array( $this, 'render_stall_chart_page' )
+		);
+
+		// Stall Chart Print View — hidden from sidebar (reached via the
+		// "Print View" button on the Stall Chart Detail page, which opens
+		// this URL in a new tab). No sidebar entry; WP chrome hidden via CSS.
+		add_submenu_page(
+			'',
+			__( 'Stall Chart Print View', 'equine-event-manager' ),
+			'',
+			'manage_options',
+			'equine-event-manager-stall-chart-print',
+			array( $this, 'render_stall_chart_print_page' )
 		);
 
 		// DS-1.A: Create Order admin page stub (functional implementation
@@ -1943,7 +1960,9 @@ class EEM_Admin {
 							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
 							<?php esc_html_e( 'Generate Assignments', 'equine-event-manager' ); ?>
 						</a>
-						<button class="eem-btn eem-btn--ghost" type="button" data-eem-action="stall-chart-print">
+						<button class="eem-btn eem-btn--ghost" type="button"
+							data-eem-action="stall-chart-print"
+							data-print-url="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-stall-chart-print&reservation_id=' . $reservation_id ) ); ?>">
 							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
 							<?php esc_html_e( 'Print View', 'equine-event-manager' ); ?>
 						</button>
@@ -2159,6 +2178,417 @@ class EEM_Admin {
 			window.eemStallChart.reservationId = <?php echo (int) $reservation_id; ?>;
 		</script>
 		</div><!-- /.eem-page -->
+		<?php
+	}
+
+	/**
+	 * Render the Stall Chart Print View page.
+	 *
+	 * Standalone print-optimised view of a reservation's stall chart.
+	 * URL: admin.php?page=equine-event-manager-stall-chart-print&reservation_id=N
+	 *
+	 * Opened in a new tab by the "Print View" button on the Stall Chart
+	 * Detail page. WP admin chrome (sidebar, topbar, footer) is suppressed
+	 * via CSS scoped to the `eem-shell-page--print` body class applied by
+	 * filter_backend_shell_body_class(). The page's own sticky toolbar
+	 * (`.pv-topbar`) carries Print and Close buttons; the toolbar is
+	 * automatically hidden when the user prints via @media print.
+	 *
+	 * Mockup: .mockups/stall_chart_print_view.html
+	 *
+	 * @return void
+	 */
+	public function render_stall_chart_print_page(): void {
+		$this->guard_admin_page();
+
+		$reservation_id = isset( $_GET['reservation_id'] ) ? absint( wp_unslash( $_GET['reservation_id'] ) ) : 0;
+		$reservation    = $reservation_id ? get_post( $reservation_id ) : null;
+
+		if ( ! $reservation instanceof WP_Post || 'en_reservation' !== $reservation->post_type ) {
+			wp_die(
+				esc_html__( 'Reservation not found.', 'equine-event-manager' ),
+				esc_html__( 'Stall Chart Print View', 'equine-event-manager' ),
+				array( 'back_link' => true )
+			);
+		}
+
+		$config = $this->get_stall_chart_config( $reservation_id );
+
+		if ( empty( $config['enabled'] ) ) {
+			wp_die(
+				esc_html__( 'Stall assignments are not enabled for this reservation.', 'equine-event-manager' ),
+				esc_html__( 'Stall Chart Print View', 'equine-event-manager' ),
+				array( 'back_link' => true )
+			);
+		}
+
+		$grid              = $this->build_stall_chart_grid( $reservation_id, $config );
+		$order_rows        = $this->build_stall_chart_rows( $reservation_id, $config );
+		$date_cols         = $grid['date_columns'];
+		$reservation_title = get_the_title( $reservation_id );
+		$reservation_dates = $this->get_reservation_date_range_label( $reservation_id );
+		$printed_at        = wp_date( 'F j, Y g:i A' );
+
+		// Build order_key → formatted order number map for cell lookups.
+		$order_num_map = array();
+		foreach ( $order_rows as $or ) {
+			if ( ! empty( $or['order_key'] ) ) {
+				$order_num_map[ $or['order_key'] ] = isset( $or['order_number'] ) ? (int) $or['order_number'] : 0;
+			}
+		}
+
+		// Build stall unit → block (barn) map for the By Customer stall grouping.
+		$unit_block_map = array();
+		foreach ( $grid['stall_rows'] as $row ) {
+			$unit_block_map[ $row['unit'] ] = $row['block'] ?? '';
+		}
+
+		// Group stall rows by block (barn) for the By Location section.
+		$by_barn = array();
+		foreach ( $grid['stall_rows'] as $row ) {
+			$barn             = $row['block'] ?? '';
+			$by_barn[ $barn ][] = $row;
+		}
+
+		// By Location table colspan = Stall + Customer + Order + ✓Arr. + date columns.
+		$by_loc_colspan = 4 + count( $date_cols );
+		?>
+		<div class="eem-pv-page">
+
+		<!-- ── ON-SCREEN TOOLBAR (hidden on print) ── -->
+		<div class="pv-topbar">
+			<div class="pv-topbar-left">
+				<div>
+					<div class="pv-topbar-title"><?php esc_html_e( 'Print View — Stall Chart', 'equine-event-manager' ); ?></div>
+					<div class="pv-topbar-sub">
+						<?php echo esc_html( $reservation_title ); ?>
+						<?php if ( $reservation_dates ) : ?>
+							&middot; <?php echo esc_html( $reservation_dates ); ?>
+						<?php endif; ?>
+					</div>
+				</div>
+			</div>
+			<div class="pv-topbar-btns">
+				<button class="btn-pv-print" type="button" onclick="window.print()">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+					<?php esc_html_e( 'Print / Save PDF', 'equine-event-manager' ); ?>
+				</button>
+				<button class="btn-pv-exit" type="button" onclick="window.close()">
+					<?php esc_html_e( '✕ Close', 'equine-event-manager' ); ?>
+				</button>
+			</div>
+		</div>
+
+		<div class="pv-body">
+
+			<!-- ── Event header ── -->
+			<div class="pv-header">
+				<div class="pv-event"><?php echo esc_html( $reservation_title ); ?></div>
+				<div class="pv-meta">
+					<?php if ( $reservation_dates ) : ?>
+						<span><strong><?php esc_html_e( 'Dates:', 'equine-event-manager' ); ?></strong> <?php echo esc_html( $reservation_dates ); ?></span>
+					<?php endif; ?>
+					<span><strong><?php esc_html_e( 'Printed:', 'equine-event-manager' ); ?></strong> <?php echo esc_html( $printed_at ); ?></span>
+				</div>
+			</div>
+
+			<!-- ── Daily Movement ── -->
+			<?php if ( ! empty( $grid['movement_summary'] ) ) : ?>
+			<div class="pv-movement">
+				<div class="pv-movement-title"><?php esc_html_e( 'Daily Movement', 'equine-event-manager' ); ?></div>
+				<div class="pv-movement-grid">
+					<?php foreach ( $grid['movement_summary'] as $date_key => $movement ) : ?>
+						<div class="pv-movement-day">
+							<div class="pv-movement-date">
+								<?php echo esc_html( isset( $date_cols[ $date_key ] ) ? $date_cols[ $date_key ] : $date_key ); ?>
+							</div>
+							<div class="pv-movement-vals">
+								<span><?php echo esc_html( sprintf(
+									/* translators: %d: count of arriving customers */
+									__( '↓ %d Arriving', 'equine-event-manager' ),
+									(int) $movement['arriving']
+								) ); ?></span>
+								<span><?php echo esc_html( sprintf(
+									/* translators: %d: count of departing customers */
+									__( '↑ %d Departing', 'equine-event-manager' ),
+									(int) $movement['departing']
+								) ); ?></span>
+							</div>
+						</div>
+					<?php endforeach; ?>
+				</div>
+			</div>
+			<?php endif; ?>
+
+			<!-- ══════════════════════════════════════════════════════ -->
+			<!-- BY LOCATION                                           -->
+			<!-- ══════════════════════════════════════════════════════ -->
+
+			<?php if ( ! empty( $grid['stall_rows'] ) ) : ?>
+			<div class="pv-section-band"><?php esc_html_e( 'By Location', 'equine-event-manager' ); ?></div>
+			<div class="pv-table-wrap">
+				<table class="pv-table">
+					<thead>
+						<tr>
+							<th style="width:60px"><?php esc_html_e( 'Stall', 'equine-event-manager' ); ?></th>
+							<th><?php esc_html_e( 'Customer', 'equine-event-manager' ); ?></th>
+							<th style="width:85px"><?php esc_html_e( 'Order #', 'equine-event-manager' ); ?></th>
+							<th class="c" style="width:60px">✓ <?php esc_html_e( 'Arr.', 'equine-event-manager' ); ?></th>
+							<?php foreach ( $date_cols as $date_label ) : ?>
+								<th class="c" style="width:90px"><?php echo esc_html( $date_label ); ?></th>
+							<?php endforeach; ?>
+						</tr>
+					</thead>
+					<tbody>
+						<?php foreach ( $by_barn as $barn_name => $barn_rows ) : ?>
+							<?php
+							// Compute stall range subtitle from numeric unit labels.
+							$b_units     = array_column( $barn_rows, 'unit' );
+							$b_numeric   = array_filter( $b_units, 'is_numeric' );
+							$barn_sub    = '';
+							if ( ! empty( $b_numeric ) ) {
+								$barn_sub = sprintf(
+									/* translators: 1: first stall number, 2: last stall number */
+									__( '· Stalls %1$s–%2$s', 'equine-event-manager' ),
+									min( $b_numeric ),
+									max( $b_numeric )
+								);
+							}
+							// Count stalls with at least one occupied cell.
+							$occ_count   = 0;
+							$total_count = count( $barn_rows );
+							foreach ( $barn_rows as $br ) {
+								foreach ( (array) ( $br['cells'] ?? array() ) as $cell ) {
+									if ( 'occupied' === ( $cell['type'] ?? '' ) ) {
+										$occ_count++;
+										break;
+									}
+								}
+							}
+							?>
+							<tr class="pv-barn-header">
+								<td colspan="<?php echo esc_attr( $by_loc_colspan ); ?>">
+									<?php echo esc_html( $barn_name ); ?>
+									<?php if ( $barn_sub ) : ?>
+										<span class="pv-barn-sub"><?php echo esc_html( $barn_sub ); ?></span>
+									<?php endif; ?>
+									<span class="pv-occ-count">
+										<?php echo esc_html( sprintf(
+											/* translators: 1: occupied count, 2: total stall count */
+											__( '%1$d of %2$d occupied', 'equine-event-manager' ),
+											$occ_count,
+											$total_count
+										) ); ?>
+									</span>
+								</td>
+							</tr>
+							<?php foreach ( $barn_rows as $stall_row ) : ?>
+								<?php
+								// Resolve primary customer from first occupied cell.
+								$prim_customer  = '';
+								$prim_order_key = '';
+								foreach ( (array) ( $stall_row['cells'] ?? array() ) as $cell ) {
+									if ( 'occupied' === ( $cell['type'] ?? '' ) && ! empty( $cell['label'] ) ) {
+										$prim_customer  = $cell['label'];
+										$prim_order_key = $cell['order_key'] ?? '';
+										break;
+									}
+								}
+								$prim_order_num = ( ! empty( $prim_order_key ) && isset( $order_num_map[ $prim_order_key ] ) && $order_num_map[ $prim_order_key ] > 0 )
+									? sprintf( '#%05d', $order_num_map[ $prim_order_key ] )
+									: '';
+								$is_empty = '' === $prim_customer;
+								?>
+								<tr>
+									<td class="pv-stall-num"><?php echo esc_html( $stall_row['unit'] ); ?></td>
+									<td class="pv-customer<?php echo $is_empty ? ' pv-customer-empty' : ''; ?>">
+										<?php echo $is_empty ? '—' : esc_html( $prim_customer ); ?>
+									</td>
+									<td class="pv-order"><?php echo esc_html( $is_empty ? '—' : ( $prim_order_num ?: '—' ) ); ?></td>
+									<td class="pv-checkin">
+										<?php if ( $is_empty ) : ?>—<?php else : ?><span class="pv-checkbox"></span><?php endif; ?>
+									</td>
+									<?php foreach ( $date_cols as $date_key => $date_label ) : ?>
+										<?php
+										$cell      = ( $stall_row['cells'] ?? array() )[ $date_key ] ?? array( 'type' => 'available' );
+										$cell_type = $cell['type'] ?? 'available';
+										if ( 'occupied' === $cell_type ) {
+											$pill_cls  = 'pv-occ-res';
+											$pill_text = __( 'Reserved', 'equine-event-manager' );
+										} elseif ( 'blocked' === $cell_type ) {
+											$pill_cls  = 'pv-occ-block';
+											$pill_text = __( 'Blocked', 'equine-event-manager' );
+										} else {
+											$pill_cls  = 'pv-occ-avail';
+											$pill_text = __( 'Available', 'equine-event-manager' );
+										}
+										?>
+										<td class="pv-night-cell">
+											<span class="pv-occ <?php echo esc_attr( $pill_cls ); ?>"><?php echo esc_html( $pill_text ); ?></span>
+										</td>
+									<?php endforeach; ?>
+								</tr>
+							<?php endforeach; ?>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+			</div>
+			<?php endif; ?>
+
+			<!-- ══════════════════════════════════════════════════════ -->
+			<!-- RV LOTS                                               -->
+			<!-- ══════════════════════════════════════════════════════ -->
+
+			<?php if ( ! empty( $grid['rv_rows'] ) ) : ?>
+			<div class="pv-section-band"><?php esc_html_e( 'RV Lots', 'equine-event-manager' ); ?></div>
+			<div class="pv-table-wrap">
+				<table class="pv-table">
+					<thead>
+						<tr>
+							<th style="width:100px"><?php esc_html_e( 'RV Lot', 'equine-event-manager' ); ?></th>
+							<th><?php esc_html_e( 'Customer', 'equine-event-manager' ); ?></th>
+							<th style="width:85px"><?php esc_html_e( 'Order #', 'equine-event-manager' ); ?></th>
+							<th class="c" style="width:60px">✓ <?php esc_html_e( 'Arr.', 'equine-event-manager' ); ?></th>
+							<?php foreach ( $date_cols as $date_label ) : ?>
+								<th class="c" style="width:90px"><?php echo esc_html( $date_label ); ?></th>
+							<?php endforeach; ?>
+						</tr>
+					</thead>
+					<tbody>
+						<?php foreach ( $grid['rv_rows'] as $rv_row ) : ?>
+							<?php
+							$prim_customer  = '';
+							$prim_order_key = '';
+							foreach ( (array) ( $rv_row['cells'] ?? array() ) as $cell ) {
+								if ( 'occupied' === ( $cell['type'] ?? '' ) && ! empty( $cell['label'] ) ) {
+									$prim_customer  = $cell['label'];
+									$prim_order_key = $cell['order_key'] ?? '';
+									break;
+								}
+							}
+							$prim_order_num = ( ! empty( $prim_order_key ) && isset( $order_num_map[ $prim_order_key ] ) && $order_num_map[ $prim_order_key ] > 0 )
+								? sprintf( '#%05d', $order_num_map[ $prim_order_key ] )
+								: '';
+							$is_empty = '' === $prim_customer;
+							?>
+							<tr>
+								<td class="pv-stall-num"><?php echo esc_html( $rv_row['unit'] ); ?></td>
+								<td class="pv-customer<?php echo $is_empty ? ' pv-customer-empty' : ''; ?>">
+									<?php echo $is_empty ? '—' : esc_html( $prim_customer ); ?>
+								</td>
+								<td class="pv-order"><?php echo esc_html( $is_empty ? '—' : ( $prim_order_num ?: '—' ) ); ?></td>
+								<td class="pv-checkin">
+									<?php if ( $is_empty ) : ?>—<?php else : ?><span class="pv-checkbox"></span><?php endif; ?>
+								</td>
+								<?php foreach ( $date_cols as $date_key => $date_label ) : ?>
+									<?php
+									$cell      = ( $rv_row['cells'] ?? array() )[ $date_key ] ?? array( 'type' => 'available' );
+									$cell_type = $cell['type'] ?? 'available';
+									if ( 'occupied' === $cell_type ) {
+										$pill_cls  = 'pv-occ-res';
+										$pill_text = __( 'Reserved', 'equine-event-manager' );
+									} elseif ( 'blocked' === $cell_type ) {
+										$pill_cls  = 'pv-occ-block';
+										$pill_text = __( 'Blocked', 'equine-event-manager' );
+									} else {
+										$pill_cls  = 'pv-occ-avail';
+										$pill_text = __( 'Available', 'equine-event-manager' );
+									}
+									?>
+									<td class="pv-night-cell">
+										<span class="pv-occ <?php echo esc_attr( $pill_cls ); ?>"><?php echo esc_html( $pill_text ); ?></span>
+									</td>
+								<?php endforeach; ?>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+			</div>
+			<?php endif; ?>
+
+			<!-- ══════════════════════════════════════════════════════ -->
+			<!-- BY CUSTOMER                                           -->
+			<!-- ══════════════════════════════════════════════════════ -->
+
+			<?php if ( ! empty( $order_rows ) ) : ?>
+			<div class="pv-section-band pv-section-by-customer"><?php esc_html_e( 'By Customer', 'equine-event-manager' ); ?></div>
+			<div class="pv-table-wrap">
+				<table class="pv-table">
+					<thead>
+						<tr>
+							<th><?php esc_html_e( 'Customer', 'equine-event-manager' ); ?></th>
+							<th style="width:85px"><?php esc_html_e( 'Order #', 'equine-event-manager' ); ?></th>
+							<th class="c" style="width:60px">✓ <?php esc_html_e( 'Arr.', 'equine-event-manager' ); ?></th>
+							<th class="c" style="width:65px"><?php esc_html_e( 'Nights', 'equine-event-manager' ); ?></th>
+							<th><?php esc_html_e( 'Stall(s)', 'equine-event-manager' ); ?></th>
+							<th><?php esc_html_e( 'RV Lot(s)', 'equine-event-manager' ); ?></th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php foreach ( $order_rows as $or ) : ?>
+							<?php
+							// Count occupied nights (date columns where customer has assignments).
+							$nights = 0;
+							foreach ( (array) ( $or['daily_counts'] ?? array() ) as $cnt ) {
+								if ( (int) $cnt > 0 ) {
+									$nights++;
+								}
+							}
+							// Formatted order number.
+							$or_display = ! empty( $or['order_number'] )
+								? sprintf( '#%05d', (int) $or['order_number'] )
+								: '—';
+							// Group stall units by block/barn for display.
+							$stall_by_block = array();
+							foreach ( (array) ( $or['stall_units'] ?? array() ) as $unit ) {
+								$block                     = $unit_block_map[ $unit ] ?? '';
+								$stall_by_block[ $block ][] = $unit;
+							}
+							$stall_parts = array();
+							foreach ( $stall_by_block as $block => $s_units ) {
+								$stall_parts[] = ( '' !== $block ? $block . ' ' : '' ) . implode( ', ', $s_units );
+							}
+							$stall_disp = implode( '; ', $stall_parts );
+							$rv_disp    = implode( ', ', (array) ( $or['rv_units'] ?? array() ) );
+							?>
+							<tr>
+								<td class="pv-customer"><?php echo esc_html( $or['customer_name'] ?? '' ); ?></td>
+								<td class="pv-order"><?php echo esc_html( $or_display ); ?></td>
+								<td class="pv-checkin"><span class="pv-checkbox"></span></td>
+								<td class="pv-night-cell"><?php echo esc_html( (string) $nights ); ?></td>
+								<td><?php
+									if ( '' !== $stall_disp ) {
+										echo esc_html( $stall_disp );
+									} else {
+										echo '<span class="pv-customer-empty">—</span>';
+									}
+								?></td>
+								<td><?php
+									if ( '' !== $rv_disp ) {
+										echo esc_html( $rv_disp );
+									} else {
+										echo '<span class="pv-customer-empty">—</span>';
+									}
+								?></td>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+			</div>
+			<?php endif; ?>
+
+			<!-- Footer -->
+			<div class="pv-footer">
+				<span><?php echo esc_html( $reservation_title ); ?> · <?php esc_html_e( 'Stall Chart', 'equine-event-manager' ); ?></span>
+				<span><?php echo esc_html( sprintf(
+					/* translators: %s: formatted printed date and time */
+					__( 'Printed %s · Equine Event Manager', 'equine-event-manager' ),
+					$printed_at
+				) ); ?></span>
+			</div>
+
+		</div><!-- /pv-body -->
+		</div><!-- /eem-pv-page -->
 		<?php
 	}
 

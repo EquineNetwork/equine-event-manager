@@ -1815,6 +1815,72 @@ c7x_ok(
 	$pass, $fail, $log
 );
 
+// ── [22] 2.3.37 Stall Chart Print View guards ─────────────────────────────────
+echo "\n[22] 2.3.37 Stall Chart Print View guards\n";
+
+$css_237 = isset( $css_234 ) ? $css_234 : file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/css/admin.css' );
+$php_admin = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-equine-event-manager-admin.php' );
+
+// 22a. Print-view WP chrome suppression block: body.eem-shell-page--print selector present.
+c7x_ok(
+	'2.3.37: body.eem-shell-page--print WP chrome suppression CSS present',
+	false !== strpos( $css_237, 'body.eem-shell-page--print' ),
+	$pass, $fail, $log
+);
+
+// 22b. .pv-topbar CSS rule present (on-screen toolbar for print view).
+c7x_ok(
+	'2.3.37: .pv-topbar CSS rule present',
+	false !== strpos( $css_237, '.pv-topbar' ),
+	$pass, $fail, $log
+);
+
+// 22c. @media print block hides .pv-topbar and forces colour printing.
+c7x_ok(
+	'2.3.37: @media print block hides .pv-topbar and forces -webkit-print-color-adjust: exact',
+	(bool) preg_match(
+		'/@media\s+print[^{]*\{[^}]*\.pv-topbar/',
+		$css_237
+	) && false !== strpos( $css_237, '-webkit-print-color-adjust: exact' ),
+	$pass, $fail, $log
+);
+
+// 22d. render_stall_chart_print_page method registered in admin class.
+c7x_ok(
+	'2.3.37: render_stall_chart_print_page() method present in admin class',
+	false !== strpos( $php_admin, 'render_stall_chart_print_page' ),
+	$pass, $fail, $log
+);
+
+// 22e. Hidden submenu for print view is registered (parent slug is empty string '').
+c7x_ok(
+	"2.3.37: hidden submenu registration for equine-event-manager-stall-chart-print present",
+	(bool) preg_match(
+		"/add_submenu_page\s*\(\s*''\s*,.*?equine-event-manager-stall-chart-print/s",
+		$php_admin
+	),
+	$pass, $fail, $log
+);
+
+// 22f. Print View button carries data-print-url attribute (opens page in new tab).
+c7x_ok(
+	'2.3.37: Print View button has data-print-url attribute',
+	false !== strpos( $php_admin, 'data-print-url' ),
+	$pass, $fail, $log
+);
+
+// 22g. RV lots date pill span is properly closed with pill text (not malformed).
+// Checks the correct form: pv-occ ..."><php ...pill_text... /> — not the broken form
+// that was missing the closing > and the pill_text echo.
+c7x_ok(
+	'2.3.37: RV lots date cell pill span is properly formed (pill text present, tag closed)',
+	(bool) preg_match(
+		'/pv-night-cell.*?pv-occ.*?esc_attr.*?pill_cls.*?"\s*>\s*<\?php\s+echo\s+esc_html\s*\(\s*\$pill_text\s*\)/s',
+		$php_admin
+	),
+	$pass, $fail, $log
+);
+
 wp_delete_post( $rid, true );
 
 echo implode( "\n", $log ) . "\n=== RESULT: {$pass} passed, {$fail} failed ===\n";

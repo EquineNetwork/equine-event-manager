@@ -3131,11 +3131,15 @@
 			return;
 		}
 
-		// Print view
+		// Print view — open standalone print page in a new tab.
+		// data-print-url is injected server-side with the correct reservation_id.
 		var printBtn = t.closest('[data-eem-action="stall-chart-print"]');
 		if (printBtn) {
 			ev.preventDefault();
-			window.print();
+			var printUrl = printBtn.getAttribute('data-print-url');
+			if (printUrl) {
+				window.open(printUrl, '_blank', 'noopener');
+			}
 			return;
 		}
 
