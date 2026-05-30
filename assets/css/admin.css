@@ -1297,7 +1297,7 @@ input.eem-price-input:focus {
 
 .eem-search-input {
 	width: 100%;
-	padding: 6px 10px 6px 28px;
+	padding: 6px 10px 6px 25px;
 	border: 1px solid var(--eem-text-muted);
 	border-radius: var(--eem-radius);
 	font-size: 13px;
@@ -3542,10 +3542,9 @@ a.eem-mob-res-name:focus {
    The toolbar's three forms (bulk / date filter / search) sit inside
    the toolbar's flex layout; display:contents makes them transparent
    so flex gap + alignment still works on the underlying controls.
-   Search padding-left bumped from 28px → 36px because the legacy
-   `min-height: 44px !important` on input[type="search"] makes the
-   input taller than C1.3 sized for; the icon stays centered but the
-   placeholder text rides closer to it without the extra clearance. */
+   Search padding-left standardized to 25px across all search inputs
+   (2.3.35 — Whitney visual preference; previous values 28px/36px/44px
+   were all too wide for the icon size). */
 /* Bulk-action + date-filter forms stay transparent to flex layout —
    their dropdown and Apply/Filter button are SUPPOSED to have the
    toolbar's 8px gap between them per mockup. */
@@ -3566,7 +3565,7 @@ a.eem-mob-res-name:focus {
 }
 
 .eem-search-wrap .eem-search-input {
-	padding-left: 36px;
+	padding-left: 25px;
 }
 
 /* Attached search input + Search Reservations button.
@@ -3617,7 +3616,7 @@ a.eem-mob-res-name:focus {
    tier — (0,3,0) beats the parent-chain rule above and the original
    .eem-search-wrap .eem-search-input override. */
 .eem-list-toolbar .eem-search-wrap--attached .eem-search-input {
-	padding-left: 36px;
+	padding-left: 25px;
 }
 
 /* Re-square the corners on the attached pair at the bumped specificity. */
@@ -3633,7 +3632,7 @@ a.eem-mob-res-name:focus {
    Stall & RV Charts list page (uses plain .eem-search-wrap, not --attached).
    (0,3,0) specificity beats the reset; position after it wins the cascade tie. */
 .eem-list-toolbar .eem-search-wrap .eem-search-input {
-	padding-left: 36px;
+	padding-left: 25px;
 }
 
 /* Toolbar buttons — WP-core doesn't have a `.wp-core-ui button` rule
@@ -6954,11 +6953,11 @@ a.eem-btn--ghost:focus    { color: #1d2327; }
 .eem-stall-chart-barn-tab.active { background: #1668F2; color: #fff; border-color: #1668F2; }
 .eem-stall-chart-filter-search { position: relative; flex: 1; min-width: 200px; max-width: 380px; }
 .eem-stall-chart-filter-search svg { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); width: 13px; height: 13px; color: #8c8f94; }
-.eem-stall-chart-search-input { width: 100%; padding: 6px 10px 6px 44px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 13px; font-family: inherit; color: #1d2327; background: #fff; outline: none; }
+.eem-stall-chart-search-input { width: 100%; padding: 6px 10px 6px 25px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 13px; font-family: inherit; color: #1d2327; background: #fff; outline: none; }
 .eem-stall-chart-search-input:focus { border-color: #1668F2; box-shadow: 0 0 0 2px rgba(22,104,242,.12); }
 /* Scoped (0,2,0) guard — prevents any higher-context rule from collapsing the
    icon-to-text gap. Icon right edge lands at ~22px; 44px gives a 22px clearance. */
-.eem-stall-chart-filter-search .eem-stall-chart-search-input { padding-left: 44px; }
+.eem-stall-chart-filter-search .eem-stall-chart-search-input { padding-left: 25px; }
 .eem-stall-chart-filter-hint { font-size: 12px; color: #8c8f94; white-space: nowrap; }
 .eem-stall-chart-empty-note { font-size: 13px; color: #8c8f94; padding: 12px 18px; margin: 0; }
 .eem-stall-chart-no-data { font-size: 13px; color: #6B7A99; padding: 18px; margin: 0; }

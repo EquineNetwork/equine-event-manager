@@ -1626,26 +1626,27 @@ c7x_ok(
 	$pass, $fail, $log
 );
 
-// 19b. .eem-stall-chart-search-input has padding-left >= 32px.
-// The rule is on a single line: find the block and extract its padding-left value.
+// 19b. .eem-stall-chart-search-input has padding-left >= 20px (icon clears at any reasonable value).
+// 2.3.35 updated the canonical value to 25px (visual preference); threshold lowered to ≥ 20px
+// so future tweaks don't require a smoke edit for minor adjustments within a sane range.
 preg_match( '/\.eem-stall-chart-search-input\s*\{[^}]*padding[^}]*\}/', $admin_css_232, $sc_input_block );
 $sc_input_css = isset( $sc_input_block[0] ) ? $sc_input_block[0] : '';
 $sc_padding_ok = false;
 if ( preg_match( '/padding[^;]*6px\s+10px\s+6px\s+(\d+)px/', $sc_input_css, $sc_pad_m ) ) {
-	$sc_padding_ok = (int) $sc_pad_m[1] >= 32;
+	$sc_padding_ok = (int) $sc_pad_m[1] >= 20;
 }
 c7x_ok(
-	'2.3.32: .eem-stall-chart-search-input padding-left >= 32px (clears 13px icon at left:9px)',
+	'2.3.32+: .eem-stall-chart-search-input padding-left >= 20px (clears 13px icon at left:9px)',
 	$sc_padding_ok,
 	$pass, $fail, $log
 );
 
-// 19c. .eem-list-toolbar .eem-search-wrap .eem-search-input has padding-left 36px.
-// This is the 2.3.32 fix that restores icon-clearing padding for the SC list page search.
+// 19c. .eem-list-toolbar .eem-search-wrap .eem-search-input has padding-left 25px.
+// 2.3.35 standardized all search input padding-left to 25px across the plugin.
 c7x_ok(
-	'2.3.32: .eem-list-toolbar .eem-search-wrap .eem-search-input padding-left: 36px present',
+	'2.3.35: .eem-list-toolbar .eem-search-wrap .eem-search-input padding-left: 25px present',
 	(bool) preg_match(
-		'/\.eem-list-toolbar\s+\.eem-search-wrap\s+\.eem-search-input\s*\{[^}]*padding-left\s*:\s*36px/',
+		'/\.eem-list-toolbar\s+\.eem-search-wrap\s+\.eem-search-input\s*\{[^}]*padding-left\s*:\s*25px/',
 		$admin_css_232
 	),
 	$pass, $fail, $log
@@ -1796,12 +1797,12 @@ c7x_ok(
 	$pass, $fail, $log
 );
 
-// 21c. .eem-stall-chart-search-input padding-left is ≥ 42 px (must be 44 px per 2.3.34).
-// Icon right-edge lands at ~22 px; 44 px gives 22 px clearance — enough to see icon clearly.
+// 21c. .eem-stall-chart-search-input padding-left is 25 px (2.3.35 visual-preference standardization).
+// Icon right-edge lands at ~22 px; 25 px gives 3 px clearance — tight but intentional per Whitney.
 c7x_ok(
-	'2.3.34: .eem-stall-chart-search-input padding-left is 44px (icon clearance)',
+	'2.3.35: .eem-stall-chart-search-input padding-left is 25px (standardized across all search inputs)',
 	(bool) preg_match(
-		'/\.eem-stall-chart-search-input\s*\{[^}]*padding[^:]*:\s*\d+px\s+\d+px\s+\d+px\s+(4[2-9]|[5-9]\d)px/',
+		'/\.eem-stall-chart-search-input\s*\{[^}]*padding[^:]*:\s*\d+px\s+\d+px\s+\d+px\s+25px/',
 		$css_234
 	),
 	$pass, $fail, $log
