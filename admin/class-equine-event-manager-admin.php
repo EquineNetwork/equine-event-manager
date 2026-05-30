@@ -2139,10 +2139,11 @@ class EEM_Admin {
 	/**
 	 * Render the Stall & RV Charts list page (V1 port of stall_charts_page.html).
 	 *
-	 * Replaces the old postbox + selection-list chrome. Shows ALL en_reservation
-	 * posts in a mockup-faithful table with status tabs, search toolbar, desktop
-	 * table, and mobile cards. Status is derived from _en_stall_chart_enabled +
-	 * whether stall rows are configured.
+	 * 2.3.28 — wrapped in the canonical .eem-breadcrumb + .eem-plugin-wrap card.
+	 * Filters to reservations where _en_stall_chart_enabled === '1' (charts are
+	 * configured exclusively from the Edit Reservation editor now). Removed the
+	 * top filter tabs, the legacy stall-configuration column, and the
+	 * setup-chart action — every row is already configured.
 	 *
 	 * @param int $invalid_reservation_id Non-zero when an invalid reservation_id
 	 *                                    was supplied in the query string.
@@ -2151,58 +2152,56 @@ class EEM_Admin {
 	private function render_stall_charts_list_page( int $invalid_reservation_id ): void {
 		$rows = $this->get_stall_charts_list_data();
 
-		// ── Status tab counts ────────────────────────────────────────── //
-		$counts = array( 'all' => count( $rows ), 'configured' => 0, 'partial' => 0, 'empty' => 0 );
-		foreach ( $rows as $row ) {
-			$counts[ $row['chart_status'] ] = ( $counts[ $row['chart_status'] ] ?? 0 ) + 1;
-		}
-
 		$view_chart_svg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>';
 		$edit_res_svg   = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
+
+		// Derive a "Month YYYY" option list from the rendered reservations for
+		// the toolbar date filter (mockup A2 — All dates + monthly stubs).
+		$date_options = array();
+		foreach ( $rows as $row ) {
+			$start = isset( $row['start_ts'] ) ? (int) $row['start_ts'] : 0;
+			if ( $start > 0 ) {
+				$key = gmdate( 'Y-m', $start );
+				if ( ! isset( $date_options[ $key ] ) ) {
+					$date_options[ $key ] = gmdate( 'F Y', $start );
+				}
+			}
+		}
+		ksort( $date_options );
 		?>
-		<?php if ( $invalid_reservation_id > 0 ) : ?>
-		<div class="notice notice-warning is-dismissible">
-			<p><?php esc_html_e( 'That stall chart could not be loaded — the reservation may not exist. Choose another below.', 'equine-event-manager' ); ?></p>
-		</div>
-		<?php endif; ?>
+		<div class="wrap eem-stall-charts-list">
 
-		<div class="eem-plugin-wrap">
-
-			<header class="eem-plugin-header">
-				<div class="eem-plugin-header-left">
-					<h1 class="eem-plugin-title"><?php esc_html_e( 'Stall &amp; RV Charts', 'equine-event-manager' ); ?></h1>
-					<div class="eem-sc-list-subtitle"><?php esc_html_e( 'View and manage stall assignments for each reservation. Click a reservation name to open its chart.', 'equine-event-manager' ); ?></div>
-				</div>
-			</header>
-
-			<!-- Status tabs -->
-			<div class="eem-filter-tabs eem-sc-status-tabs">
-				<a class="eem-filter-tab active" href="#" data-eem-action="sc-filter-tab" data-status="all">
-					<?php esc_html_e( 'All', 'equine-event-manager' ); ?>
-					<span class="eem-filter-tab-count">(<?php echo absint( $counts['all'] ); ?>)</span>
-				</a>
-				<span class="eem-filter-tab-sep">|</span>
-				<a class="eem-filter-tab" href="#" data-eem-action="sc-filter-tab" data-status="configured">
-					<?php esc_html_e( 'Configured', 'equine-event-manager' ); ?>
-					<span class="eem-filter-tab-count">(<?php echo absint( $counts['configured'] ); ?>)</span>
-				</a>
-				<span class="eem-filter-tab-sep">|</span>
-				<a class="eem-filter-tab" href="#" data-eem-action="sc-filter-tab" data-status="partial">
-					<?php esc_html_e( 'Partial', 'equine-event-manager' ); ?>
-					<span class="eem-filter-tab-count">(<?php echo absint( $counts['partial'] ); ?>)</span>
-				</a>
-				<span class="eem-filter-tab-sep">|</span>
-				<a class="eem-filter-tab" href="#" data-eem-action="sc-filter-tab" data-status="empty">
-					<?php esc_html_e( 'Not Configured', 'equine-event-manager' ); ?>
-					<span class="eem-filter-tab-count">(<?php echo absint( $counts['empty'] ); ?>)</span>
-				</a>
+			<?php if ( $invalid_reservation_id > 0 ) : ?>
+			<div class="notice notice-warning is-dismissible">
+				<p><?php esc_html_e( 'That stall chart could not be loaded — the reservation may not exist. Choose another below.', 'equine-event-manager' ); ?></p>
 			</div>
+			<?php endif; ?>
+
+			<nav class="eem-breadcrumb" aria-label="<?php esc_attr_e( 'Breadcrumb', 'equine-event-manager' ); ?>">
+				<a class="eem-breadcrumb-logo" href="<?php echo esc_url( admin_url( 'admin.php?page=' . EEM_Admin::MENU_SLUG ) ); ?>" aria-label="<?php esc_attr_e( 'Equine Event Manager dashboard', 'equine-event-manager' ); ?>">
+					<img src="<?php echo esc_url( EQUINE_EVENT_MANAGER_URL . 'assets/images/logo.png' ); ?>" alt="<?php esc_attr_e( 'Equine Event Manager', 'equine-event-manager' ); ?>" />
+				</a>
+				<span class="eem-breadcrumb-sep" aria-hidden="true">/</span>
+				<span class="eem-breadcrumb-segment" aria-current="page"><?php esc_html_e( 'Stall &amp; RV Charts', 'equine-event-manager' ); ?></span>
+			</nav>
+
+			<div class="eem-plugin-wrap">
+
+				<header class="eem-plugin-header">
+					<div class="eem-plugin-header-left">
+						<h1 class="eem-plugin-title"><?php esc_html_e( 'Stall &amp; RV Charts', 'equine-event-manager' ); ?></h1>
+						<p class="eem-plugin-subtitle"><?php esc_html_e( 'View and manage stall assignments for each reservation.', 'equine-event-manager' ); ?></p>
+					</div>
+				</header>
 
 			<!-- Toolbar -->
 			<div class="eem-list-toolbar eem-sc-list-toolbar toolbar">
 				<div class="eem-list-toolbar-left toolbar-left">
-					<select class="toolbar-select eem-sc-date-filter" data-eem-input-action="sc-list-date-filter">
+					<select class="toolbar-select eem-toolbar-select eem-sc-date-filter" id="eem-sc-date-filter" data-eem-input-action="sc-list-date-filter">
 						<option value="all"><?php esc_html_e( 'All dates', 'equine-event-manager' ); ?></option>
+						<?php foreach ( $date_options as $date_key => $date_label ) : ?>
+							<option value="<?php echo esc_attr( $date_key ); ?>"><?php echo esc_html( $date_label ); ?></option>
+						<?php endforeach; ?>
 					</select>
 					<div class="eem-search-wrap search-wrap">
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -2226,11 +2225,14 @@ class EEM_Admin {
 
 			<?php if ( empty( $rows ) ) : ?>
 			<!-- Empty state -->
-			<div class="eem-sc-list-empty">
-				<p><?php esc_html_e( 'No reservations found. Create a reservation, then enable "Stall Chart" in its Stall Reservations section to see it here.', 'equine-event-manager' ); ?></p>
-				<a class="eem-btn eem-btn--primary" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-reservations&action=new' ) ); ?>">
-					<?php esc_html_e( 'Create Reservation', 'equine-event-manager' ); ?>
-				</a>
+			<div class="eem-empty-state" style="padding:48px 24px;text-align:center;">
+				<p style="font-weight:600;font-size:15px;color:#031B4E;margin:0 0 8px;"><?php esc_html_e( 'No stall charts yet', 'equine-event-manager' ); ?></p>
+				<p style="font-size:13px;color:#6B7A99;margin:0;line-height:1.6;"><?php
+					echo wp_kses(
+						__( 'Open a reservation and enable <strong>Stall Chart</strong> in the Stall section to get started.', 'equine-event-manager' ),
+						array( 'strong' => array() )
+					);
+				?></p>
 			</div>
 			<?php else : ?>
 
@@ -2242,7 +2244,6 @@ class EEM_Admin {
 							<th class="sortable" data-eem-action="sc-sort" data-sort-key="title"><?php esc_html_e( 'Reservation', 'equine-event-manager' ); ?> <span class="sort-icon">&#8597;</span></th>
 							<th><?php esc_html_e( 'Barns', 'equine-event-manager' ); ?></th>
 							<th><?php esc_html_e( 'RV Lots', 'equine-event-manager' ); ?></th>
-							<th class="sortable" data-eem-action="sc-sort" data-sort-key="status"><?php esc_html_e( 'Stall Status', 'equine-event-manager' ); ?> <span class="sort-icon">&#8597;</span></th>
 							<th><?php esc_html_e( 'Actions', 'equine-event-manager' ); ?></th>
 						</tr>
 					</thead>
@@ -2250,11 +2251,9 @@ class EEM_Admin {
 					<?php foreach ( $rows as $row ) :
 						$chart_url = admin_url( 'admin.php?page=equine-event-manager-stall-charts&reservation_id=' . absint( $row['id'] ) );
 						$edit_url  = admin_url( 'admin.php?page=equine-event-manager-reservation-editor&reservation_id=' . absint( $row['id'] ) );
-						$can_view  = ( 'configured' === $row['chart_status'] || 'partial' === $row['chart_status'] );
-						$btn_label = $can_view ? __( 'View Chart', 'equine-event-manager' ) : __( 'Set Up Chart', 'equine-event-manager' );
+						$btn_label = __( 'View Chart', 'equine-event-manager' );
 						?>
-						<tr data-sc-status="<?php echo esc_attr( $row['chart_status'] ); ?>"
-							data-sc-title="<?php echo esc_attr( strtolower( $row['title'] ) ); ?>">
+						<tr data-sc-title="<?php echo esc_attr( strtolower( $row['title'] ) ); ?>">
 							<td>
 								<a class="eem-sc-res-name" href="<?php echo esc_url( $chart_url ); ?>">
 									<?php echo esc_html( $row['title'] ); ?>
@@ -2296,19 +2295,6 @@ class EEM_Admin {
 								<?php endif; ?>
 							</td>
 							<td>
-								<?php
-								$status_class = 'eem-sc-chart-status--' . esc_attr( $row['chart_status'] );
-								$status_label = 'configured' === $row['chart_status']
-									? __( 'Configured', 'equine-event-manager' )
-									: ( 'partial' === $row['chart_status']
-										? __( 'Partial', 'equine-event-manager' )
-										: __( 'Not Configured', 'equine-event-manager' ) );
-								?>
-								<span class="eem-sc-chart-status <?php echo esc_attr( $status_class ); ?>">
-									<?php echo esc_html( $status_label ); ?>
-								</span>
-							</td>
-							<td>
 								<div class="eem-sc-actions-cell">
 									<a class="eem-sc-action-btn eem-sc-action-btn--primary"
 									   href="<?php echo esc_url( $chart_url ); ?>">
@@ -2333,25 +2319,14 @@ class EEM_Admin {
 				<?php foreach ( $rows as $row ) :
 					$chart_url = admin_url( 'admin.php?page=equine-event-manager-stall-charts&reservation_id=' . absint( $row['id'] ) );
 					$edit_url  = admin_url( 'admin.php?page=equine-event-manager-reservation-editor&reservation_id=' . absint( $row['id'] ) );
-					$can_view  = ( 'configured' === $row['chart_status'] || 'partial' === $row['chart_status'] );
-					$btn_label = $can_view ? __( 'View Chart', 'equine-event-manager' ) : __( 'Set Up Chart', 'equine-event-manager' );
-					$status_class = 'eem-sc-chart-status--' . $row['chart_status'];
-					$status_label = 'configured' === $row['chart_status']
-						? __( 'Configured', 'equine-event-manager' )
-						: ( 'partial' === $row['chart_status']
-							? __( 'Partial', 'equine-event-manager' )
-							: __( 'Not Configured', 'equine-event-manager' ) );
+					$btn_label = __( 'View Chart', 'equine-event-manager' );
 					?>
 					<div class="eem-sc-mobile-card"
-						 data-sc-status="<?php echo esc_attr( $row['chart_status'] ); ?>"
 						 data-sc-title="<?php echo esc_attr( strtolower( $row['title'] ) ); ?>">
 						<div class="eem-sc-mob-card-top">
 							<a class="eem-sc-mob-res-name" href="<?php echo esc_url( $chart_url ); ?>">
 								<?php echo esc_html( $row['title'] ); ?>
 							</a>
-							<span class="eem-sc-chart-status <?php echo esc_attr( $status_class ); ?>">
-								<?php echo esc_html( $status_label ); ?>
-							</span>
 						</div>
 						<div class="eem-sc-mob-card-body">
 							<?php if ( ! empty( $row['dates'] ) ) : ?>
@@ -2406,7 +2381,8 @@ class EEM_Admin {
 
 			<?php endif; // end empty check ?>
 
-		</div><!-- /.eem-plugin-wrap -->
+			</div><!-- /.eem-plugin-wrap -->
+		</div><!-- /.wrap.eem-stall-charts-list -->
 		<?php
 	}
 
@@ -2430,6 +2406,15 @@ class EEM_Admin {
 				'orderby'        => 'title',
 				'order'          => 'ASC',
 				'fields'         => 'ids',
+				// 2.3.28 — only show reservations that have explicitly opted in to
+				// a stall chart from their Edit Reservation page.
+				'meta_query'     => array(
+					array(
+						'key'     => '_en_stall_chart_enabled',
+						'value'   => '1',
+						'compare' => '=',
+					),
+				),
 			)
 		);
 
@@ -2528,6 +2513,12 @@ class EEM_Admin {
 				);
 			}
 
+			$start_raw = get_post_meta( $rid, '_en_event_start_date', true );
+			if ( ! $start_raw ) {
+				$start_raw = get_post_meta( $rid, '_en_start_date', true );
+			}
+			$start_ts = $start_raw ? strtotime( (string) $start_raw ) : 0;
+
 			$rows[] = array(
 				'id'            => $rid,
 				'title'         => get_the_title( $rid ),
@@ -2537,6 +2528,7 @@ class EEM_Admin {
 				'chart_status'  => $chart_status,
 				'stats'         => $stats,
 				'stat_text'     => 1,
+				'start_ts'      => $start_ts ?: 0,
 			);
 		}
 

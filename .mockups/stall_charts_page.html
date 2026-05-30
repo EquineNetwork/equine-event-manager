@@ -201,17 +201,6 @@ td{padding:14px 14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
         </div>
       </header>
 
-      <!-- STATUS TABS (DEC-4) -->
-      <div class="status-tabs">
-        <a class="status-tab active" href="#">All <span class="status-tab-count">(5)</span></a>
-        <span class="status-tab-sep">|</span>
-        <a class="status-tab" href="#">Configured <span class="status-tab-count">(2)</span></a>
-        <span class="status-tab-sep">|</span>
-        <a class="status-tab" href="#">Partial <span class="status-tab-count">(1)</span></a>
-        <span class="status-tab-sep">|</span>
-        <a class="status-tab" href="#">Not Configured <span class="status-tab-count">(2)</span></a>
-      </div>
-
       <div class="toolbar">
         <div class="toolbar-left">
           <select class="toolbar-select">
@@ -225,7 +214,7 @@ td{padding:14px 14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
           </div>
         </div>
         <div class="toolbar-right">
-          <span class="item-count">5 reservations</span>
+          <span class="item-count">3 reservations</span>
         </div>
       </div>
 
@@ -237,7 +226,6 @@ td{padding:14px 14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
               <th class="sortable">Reservation <span class="sort-icon"><span></span><span></span></span></th>
               <th>Barns</th>
               <th>RV Lots</th>
-              <th class="sortable">Stall Status <span class="sort-icon"><span></span><span></span></span></th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -266,62 +254,11 @@ td{padding:14px 14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
                   <span class="rv-lot-tag">Green Lot</span>
                 </div>
               </td>
-              <td><span class="chart-status status-configured">Configured</span></td>
               <td>
                 <div class="actions-cell">
                   <button class="action-btn btn-view-chart">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
                     View Chart
-                  </button>
-                  <button class="action-btn btn-edit-res">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                    Edit Reservation
-                  </button>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <a class="res-name" href="admin.php?page=equine-event-manager-stall-chart&amp;reservation_id=43">2026 Bluegrass Show</a>
-                <div class="res-dates">May 17, 2026 – May 19, 2026</div>
-                <div class="chart-stats">
-                  <div class="chart-stat"><div class="stat-dot" style="background:#22c55e"></div>60 Available</div>
-                  <div class="chart-stat"><div class="stat-dot" style="background:#dc2626"></div>5 Reserved</div>
-                  <div class="chart-stat"><div class="stat-dot" style="background:#94a3b8"></div>0 Blocked</div>
-                </div>
-              </td>
-              <td><div class="barn-tags"><span class="barn-tag">Main Barn</span><span class="barn-tag">Overflow Barn</span></div></td>
-              <td><span class="event-dates-empty">—</span></td>
-              <td><span class="chart-status status-partial">Partial</span></td>
-              <td>
-                <div class="actions-cell">
-                  <button class="action-btn btn-view-chart">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-                    View Chart
-                  </button>
-                  <button class="action-btn btn-edit-res">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                    Edit Reservation
-                  </button>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <a class="res-name" href="admin.php?page=equine-event-manager-stall-chart&amp;reservation_id=44">2026 Sunshine Dressage</a>
-                <div class="res-dates">May 20, 2026 – May 22, 2026</div>
-                <div class="chart-stats">
-                  <div class="chart-stat"><div class="stat-dot" style="background:#94a3b8"></div>Not yet configured</div>
-                </div>
-              </td>
-              <td><span class="event-dates-empty">—</span></td>
-              <td><span class="event-dates-empty">—</span></td>
-              <td><span class="chart-status status-empty">Not Configured</span></td>
-              <td>
-                <div class="actions-cell">
-                  <button class="action-btn btn-view-chart">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-                    Set Up Chart
                   </button>
                   <button class="action-btn btn-edit-res">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -341,7 +278,6 @@ td{padding:14px 14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
               </td>
               <td><div class="barn-tags"><span class="barn-tag">North Barn</span><span class="barn-tag">South Barn</span></div></td>
               <td><span class="event-dates-empty">—</span></td>
-              <td><span class="chart-status status-configured">Configured</span></td>
               <td>
                 <div class="actions-cell">
                   <button class="action-btn btn-view-chart">
@@ -357,20 +293,30 @@ td{padding:14px 14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
             </tr>
             <tr>
               <td>
-                <a class="res-name" href="admin.php?page=equine-event-manager-stall-chart&amp;reservation_id=46">2026 Lone Star Invitational</a>
-                <div class="res-dates">Jun 12, 2026 – Jun 14, 2026</div>
+                <a class="res-name" href="admin.php?page=equine-event-manager-stall-chart&amp;reservation_id=47">2026 Pacific Northwest Classic</a>
+                <div class="res-dates">Jul 10, 2026 – Jul 12, 2026</div>
                 <div class="chart-stats">
-                  <div class="chart-stat"><div class="stat-dot" style="background:#94a3b8"></div>Not yet configured</div>
+                  <div class="chart-stat"><div class="stat-dot" style="background:#22c55e"></div>55 Available</div>
+                  <div class="chart-stat"><div class="stat-dot" style="background:#dc2626"></div>20 Reserved</div>
+                  <div class="chart-stat"><div class="stat-dot" style="background:#94a3b8"></div>5 Blocked</div>
                 </div>
               </td>
-              <td><span class="event-dates-empty">—</span></td>
-              <td><span class="event-dates-empty">—</span></td>
-              <td><span class="chart-status status-empty">Not Configured</span></td>
+              <td>
+                <div class="barn-tags">
+                  <span class="barn-tag">East Barn</span>
+                  <span class="barn-tag">West Barn</span>
+                </div>
+              </td>
+              <td>
+                <div class="barn-tags">
+                  <span class="rv-lot-tag">North Lot</span>
+                </div>
+              </td>
               <td>
                 <div class="actions-cell">
                   <button class="action-btn btn-view-chart">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-                    Set Up Chart
+                    View Chart
                   </button>
                   <button class="action-btn btn-edit-res">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -388,7 +334,6 @@ td{padding:14px 14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
         <div class="mobile-card">
           <div class="mob-card-top">
             <a class="mob-res-name" href="admin.php?page=equine-event-manager-stall-chart&amp;reservation_id=42">2026 Southeast Region Super Sort</a>
-            <span class="chart-status status-configured">Configured</span>
           </div>
           <div class="mob-card-body">
             <div class="mob-card-dates">May 8, 2026 – May 10, 2026</div>
@@ -406,12 +351,15 @@ td{padding:14px 14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
         </div>
         <div class="mobile-card">
           <div class="mob-card-top">
-            <a class="mob-res-name" href="admin.php?page=equine-event-manager-stall-chart&amp;reservation_id=43">2026 Bluegrass Show</a>
-            <span class="chart-status status-partial">Partial</span>
+            <a class="mob-res-name" href="admin.php?page=equine-event-manager-stall-chart&amp;reservation_id=45">2026 Gulf Coast Classic</a>
           </div>
           <div class="mob-card-body">
-            <div class="mob-card-dates">May 17, 2026 – May 19, 2026</div>
-            <div class="barn-tags" style="margin-bottom:6px"><span class="barn-tag">Main Barn</span><span class="barn-tag">Overflow Barn</span></div>
+            <div class="mob-card-dates">Jun 5, 2026 – Jun 7, 2026</div>
+            <div class="barn-tags" style="margin-bottom:6px"><span class="barn-tag">North Barn</span><span class="barn-tag">South Barn</span></div>
+            <div class="chart-stats">
+              <div class="chart-stat"><div class="stat-dot" style="background:#22c55e"></div>44 Available</div>
+              <div class="chart-stat"><div class="stat-dot" style="background:#dc2626"></div>12 Reserved</div>
+            </div>
           </div>
           <div class="mob-card-bottom">
             <button class="action-btn btn-view-chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>View Chart</button>
@@ -420,21 +368,26 @@ td{padding:14px 14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
         </div>
         <div class="mobile-card">
           <div class="mob-card-top">
-            <a class="mob-res-name" href="admin.php?page=equine-event-manager-stall-chart&amp;reservation_id=44">2026 Sunshine Dressage</a>
-            <span class="chart-status status-empty">Not Configured</span>
+            <a class="mob-res-name" href="admin.php?page=equine-event-manager-stall-chart&amp;reservation_id=47">2026 Pacific Northwest Classic</a>
           </div>
           <div class="mob-card-body">
-            <div class="mob-card-dates">May 20, 2026 – May 22, 2026</div>
+            <div class="mob-card-dates">Jul 10, 2026 – Jul 12, 2026</div>
+            <div class="barn-tags" style="margin-bottom:6px"><span class="barn-tag">East Barn</span><span class="barn-tag">West Barn</span></div>
+            <div class="barn-tags" style="margin-bottom:6px"><span class="rv-lot-tag">North Lot</span></div>
+            <div class="chart-stats">
+              <div class="chart-stat"><div class="stat-dot" style="background:#22c55e"></div>55 Available</div>
+              <div class="chart-stat"><div class="stat-dot" style="background:#dc2626"></div>20 Reserved</div>
+            </div>
           </div>
           <div class="mob-card-bottom">
-            <button class="action-btn btn-view-chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Set Up Chart</button>
+            <button class="action-btn btn-view-chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>View Chart</button>
             <button class="action-btn btn-edit-res"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Reservation</button>
           </div>
         </div>
       </div>
 
       <div class="pagination-row">
-        <span class="pagination-info">Showing 1–5 of 5 reservations</span>
+        <span class="pagination-info">Showing 1–3 of 3 reservations</span>
         <div class="pagination">
           <button class="page-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
           <button class="page-btn active">1</button>

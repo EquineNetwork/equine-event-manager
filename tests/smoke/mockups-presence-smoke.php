@@ -40,7 +40,7 @@ $canonical = array(
 	// 10 new/updated from handoff Step 1 (post-C6)
 	'dashboard_page.html'               => 'd373c7ca90da3e3f744e1b0a8950d9ef',
 	'edit_reservation_page.html'        => '163999125e9f1d8db781fda0b731440c', // 2.3.25 — add Enable Stall Chart toggle field row before Inventory Mode
-	'stall_charts_page.html'            => 'f999373626398cac60b99930989bf2e9',
+	'stall_charts_page.html'            => '1ca8591542403bf797cce082b19a3fa3', // 2.3.28 — plugin-wrap card + breadcrumb + configured-only filter (no status tabs / no Stall Status col / no Set Up Chart)
 	'stall_chart_detail.html'           => '91c79b2ce1f7583ad70c6d41ab12f90b',
 	'stall_chart_print_view.html'       => '8c76b6d1396dc757cb798b6734a6a83b',
 	'create_order_page.html'            => 'ea83953366dbf0b3a6364007ac971f80',

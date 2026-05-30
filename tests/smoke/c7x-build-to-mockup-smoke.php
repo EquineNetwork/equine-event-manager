@@ -997,10 +997,10 @@ c7x_ok(
 	$pass, $fail, $log
 );
 
-// 12i. Status tabs use data-eem-action="sc-filter-tab".
+// 12i. Status tabs removed in 2.3.28 — list now shows configured-only.
 c7x_ok(
-	'2.3.25: render_stall_charts_list_page emits sc-filter-tab actions',
-	false !== strpos( $admin_php_fresh, 'sc-filter-tab' ),
+	'2.3.28: render_stall_charts_list_page no longer emits sc-filter-tab actions',
+	false === strpos( $admin_php_fresh, 'sc-filter-tab' ),
 	$pass, $fail, $log
 );
 
@@ -1177,10 +1177,10 @@ c7x_ok(
 // ── 14. Stall & RV Charts list polish + detail switching (2.3.27) ──────────────
 echo "\n[14] Stall & RV Charts list polish + detail switching 2.3.27\n";
 
-// 14a. Plugin version bumped to 2.3.27.
+// 14a. Plugin version is at least 2.3.27 (canonical version asserted in [15] for 2.3.28).
 c7x_ok(
-	'2.3.27: EQUINE_EVENT_MANAGER_VERSION === 2.3.27',
-	defined( 'EQUINE_EVENT_MANAGER_VERSION' ) && '2.3.27' === EQUINE_EVENT_MANAGER_VERSION,
+	'2.3.27: EQUINE_EVENT_MANAGER_VERSION >= 2.3.27',
+	defined( 'EQUINE_EVENT_MANAGER_VERSION' ) && version_compare( EQUINE_EVENT_MANAGER_VERSION, '2.3.27', '>=' ),
 	$pass, $fail, $log
 );
 
@@ -1212,10 +1212,10 @@ c7x_ok(
 	$pass, $fail, $log
 );
 
-// 14f. Status tab separators .status-tab-sep or eem-filter-tab-sep present.
+// 14f. Status tab separators removed in 2.3.28 (status tabs no longer rendered).
 c7x_ok(
-	'2.3.27: list page renders status tab separators',
-	false !== strpos( $admin_php_fresh, 'eem-filter-tab-sep' ),
+	'2.3.28: list page no longer renders status tab separators (tabs removed)',
+	false === strpos( $admin_php_fresh, 'eem-filter-tab-sep' ),
 	$pass, $fail, $log
 );
 
@@ -1287,6 +1287,85 @@ $admin_js = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/js/admin.js' 
 c7x_ok(
 	'2.3.27: admin.js wires data-eem-action="confirm-move" handler',
 	false !== strpos( $admin_js, 'data-eem-action="confirm-move"' ) && false !== strpos( $admin_js, 'eem_move_stall_assignment' ),
+	$pass, $fail, $log
+);
+
+// ── 15. List page structural polish + configured-only filter (2.3.28) ───────
+echo "\n[15] Stall Charts list page: plugin-wrap + breadcrumb + no status tabs (2.3.28)\n";
+
+$admin_php_228 = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-equine-event-manager-admin.php' );
+
+// 15a. Version === 2.3.28
+c7x_ok(
+	'2.3.28: EQUINE_EVENT_MANAGER_VERSION === 2.3.28',
+	defined( 'EQUINE_EVENT_MANAGER_VERSION' ) && '2.3.28' === EQUINE_EVENT_MANAGER_VERSION,
+	$pass, $fail, $log
+);
+
+// 15b. render_stall_charts_list_page outputs eem-plugin-wrap class
+c7x_ok(
+	'2.3.28: render_stall_charts_list_page contains eem-plugin-wrap',
+	false !== strpos( $admin_php_228, 'eem-plugin-wrap' ) &&
+	false !== strpos( $admin_php_228, 'render_stall_charts_list_page' ),
+	$pass, $fail, $log
+);
+
+// 15c. render output contains breadcrumb element
+c7x_ok(
+	'2.3.28: render_stall_charts_list_page contains eem-breadcrumb',
+	false !== strpos( $admin_php_228, 'eem-breadcrumb' ),
+	$pass, $fail, $log
+);
+
+// 15d. render output contains plugin-header
+c7x_ok(
+	'2.3.28: render_stall_charts_list_page contains eem-plugin-header',
+	false !== strpos( $admin_php_228, 'eem-plugin-header' ),
+	$pass, $fail, $log
+);
+
+// 15e. status-tabs block removed
+c7x_ok(
+	'2.3.28: status-tabs / eem-sc-status-tabs NOT in render_stall_charts_list_page',
+	false === strpos( $admin_php_228, 'eem-sc-status-tabs' ),
+	$pass, $fail, $log
+);
+
+// 15f. "Set Up Chart" string not present anywhere in the list renderer section
+c7x_ok(
+	'2.3.28: "Set Up Chart" button removed from render_stall_charts_list_page',
+	false === strpos( $admin_php_228, 'Set Up Chart' ),
+	$pass, $fail, $log
+);
+
+// 15g. "Stall Status" column header removed
+c7x_ok(
+	'2.3.28: "Stall Status" column removed from render_stall_charts_list_page',
+	false === strpos( $admin_php_228, 'Stall Status' ),
+	$pass, $fail, $log
+);
+
+// 15h. query filters to _en_stall_chart_enabled
+c7x_ok(
+	'2.3.28: get_stall_charts_list_data filters by _en_stall_chart_enabled',
+	false !== strpos( $admin_php_228, '_en_stall_chart_enabled' ) &&
+	false !== strpos( $admin_php_228, 'get_stall_charts_list_data' ),
+	$pass, $fail, $log
+);
+
+// 15i. date filter renders as <select> not <button>
+c7x_ok(
+	'2.3.28: date filter uses toolbar-select <select> element (not <button>)',
+	false !== strpos( $admin_php_228, 'toolbar-select' ) &&
+	false === strpos( $admin_php_228, '<button class="toolbar-select' ),
+	$pass, $fail, $log
+);
+
+// 15j. empty state present for zero-results case
+c7x_ok(
+	'2.3.28: empty state rendered when no stall charts configured',
+	false !== strpos( $admin_php_228, 'No stall charts yet' ) ||
+	false !== strpos( $admin_php_228, 'eem-empty-state' ),
 	$pass, $fail, $log
 );
 
