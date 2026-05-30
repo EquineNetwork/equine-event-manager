@@ -1069,6 +1069,111 @@ c7x_ok(
 	$pass, $fail, $log
 );
 
+// ── 13. V1 meta-key config reader + seeder linkage fix (2.3.26) ──────────────
+echo "\n[13] V1 stall/RV config reader + seeder notes linkage 2.3.26\n";
+
+$repo_php    = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-orders-repository.php' );
+$seeder_php2 = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'tools/seed-demo-data.php' );
+
+// 13a. Plugin version is 2.3.26.
+c7x_ok(
+	'2.3.26: EQUINE_EVENT_MANAGER_VERSION === 2.3.26',
+	defined( 'EQUINE_EVENT_MANAGER_VERSION' ) && '2.3.26' === EQUINE_EVENT_MANAGER_VERSION,
+	$pass, $fail, $log
+);
+
+// 13b. Admin class get_stall_chart_config reads _en_stall_rows (V1 key).
+c7x_ok(
+	'2.3.26: admin get_stall_chart_config reads _en_stall_rows V1 meta key',
+	false !== strpos( $admin_php_fresh, "'_en_stall_rows'" ),
+	$pass, $fail, $log
+);
+
+// 13c. Admin class get_stall_chart_config reads _en_rv_rows (V1 key).
+c7x_ok(
+	'2.3.26: admin get_stall_chart_config reads _en_rv_rows V1 meta key',
+	false !== strpos( $admin_php_fresh, "'_en_rv_rows'" ),
+	$pass, $fail, $log
+);
+
+// 13d. expand_label_range helper defined in admin class.
+c7x_ok(
+	'2.3.26: expand_label_range helper defined in admin class',
+	false !== strpos( $admin_php_fresh, 'function expand_label_range' ),
+	$pass, $fail, $log
+);
+
+// 13e. expand_v1_stall_rows helper defined in admin class.
+c7x_ok(
+	'2.3.26: expand_v1_stall_rows helper defined in admin class',
+	false !== strpos( $admin_php_fresh, 'function expand_v1_stall_rows' ),
+	$pass, $fail, $log
+);
+
+// 13f. build_barn_map_from_v1_rows helper defined in admin class.
+c7x_ok(
+	'2.3.26: build_barn_map_from_v1_rows helper defined in admin class',
+	false !== strpos( $admin_php_fresh, 'function build_barn_map_from_v1_rows' ),
+	$pass, $fail, $log
+);
+
+// 13g. expand_rv_lot_names_from_v1_rows helper defined in admin class.
+c7x_ok(
+	'2.3.26: expand_rv_lot_names_from_v1_rows helper defined in admin class',
+	false !== strpos( $admin_php_fresh, 'function expand_rv_lot_names_from_v1_rows' ),
+	$pass, $fail, $log
+);
+
+// 13h. expand_label_range helper defined in orders repository.
+c7x_ok(
+	'2.3.26: expand_label_range helper defined in orders repository',
+	false !== strpos( $repo_php, 'function expand_label_range' ),
+	$pass, $fail, $log
+);
+
+// 13i. expand_v1_stall_rows helper defined in orders repository.
+c7x_ok(
+	'2.3.26: expand_v1_stall_rows helper defined in orders repository',
+	false !== strpos( $repo_php, 'function expand_v1_stall_rows' ),
+	$pass, $fail, $log
+);
+
+// 13j. expand_rv_lot_names_from_v1_rows helper defined in orders repository.
+c7x_ok(
+	'2.3.26: expand_rv_lot_names_from_v1_rows helper defined in orders repository',
+	false !== strpos( $repo_php, 'function expand_rv_lot_names_from_v1_rows' ),
+	$pass, $fail, $log
+);
+
+// 13k. Seeder notes include "Reservation setup ID:" pattern for order linkage.
+c7x_ok(
+	'2.3.26: seeder notes include Reservation setup ID: pattern',
+	false !== strpos( $seeder_php2, "'Reservation setup ID: '" ),
+	$pass, $fail, $log
+);
+
+// 13l. Seeder teardown deletes orphan non-demo rows (C4F/SEED-* cleanup).
+c7x_ok(
+	'2.3.26: seeder teardown deletes orphan non-demo rows by notes+email filter',
+	false !== strpos( $seeder_php2, 'Reservation setup ID:' ) &&
+	false !== strpos( $seeder_php2, 'email NOT LIKE' ),
+	$pass, $fail, $log
+);
+
+// 13m. Orders repository get_stall_chart_config reads _en_stall_rows (V1 key).
+c7x_ok(
+	'2.3.26: orders repo get_stall_chart_config reads _en_stall_rows V1 meta key',
+	false !== strpos( $repo_php, "'_en_stall_rows'" ),
+	$pass, $fail, $log
+);
+
+// 13n. Orders repository get_stall_chart_config reads _en_rv_rows (V1 key).
+c7x_ok(
+	'2.3.26: orders repo get_stall_chart_config reads _en_rv_rows V1 meta key',
+	false !== strpos( $repo_php, "'_en_rv_rows'" ),
+	$pass, $fail, $log
+);
+
 wp_delete_post( $rid, true );
 
 echo implode( "\n", $log ) . "\n=== RESULT: {$pass} passed, {$fail} failed ===\n";
