@@ -1369,6 +1369,114 @@ c7x_ok(
 	$pass, $fail, $log
 );
 
+// ── 16. Stall Charts list page uses correct wrapper class (2.3.29) ──────────
+echo "\n[16] Stall Charts list uses correct wrapper class matching Reservations page (2.3.29)\n";
+
+$admin_php_229 = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-equine-event-manager-admin.php' );
+
+// 16a. Version === 2.3.29
+c7x_ok(
+	'2.3.29: EQUINE_EVENT_MANAGER_VERSION === 2.3.29',
+	defined( 'EQUINE_EVENT_MANAGER_VERSION' ) && '2.3.29' === EQUINE_EVENT_MANAGER_VERSION,
+	$pass, $fail, $log
+);
+
+// 16b. render_stall_charts_list_page now calls the canonical eem_render_page_open()
+// shell (same shell as the Reservations list page) — produces .eem-page +
+// .eem-page-wrap + .eem-page-header chrome that admin.css actually targets.
+$render_method_pos = strpos( $admin_php_229, 'private function render_stall_charts_list_page' );
+$render_method_end = false !== $render_method_pos ? strpos( $admin_php_229, "\n\t}\n", $render_method_pos ) : false;
+$render_method_src = ( false !== $render_method_pos && false !== $render_method_end )
+	? substr( $admin_php_229, $render_method_pos, $render_method_end - $render_method_pos )
+	: '';
+c7x_ok(
+	'2.3.29: render_stall_charts_list_page uses canonical eem_render_page_open() shell',
+	false !== strpos( $render_method_src, 'eem_render_page_open(' ) &&
+	false !== strpos( $render_method_src, 'eem_render_page_close(' ),
+	$pass, $fail, $log
+);
+
+// 16c. No more invented .eem-plugin-wrap / .eem-plugin-header / .eem-plugin-title
+// inside the list render — those primitives are editor-page chrome, not list chrome.
+c7x_ok(
+	'2.3.29: render_stall_charts_list_page no longer uses .eem-plugin-* editor chrome',
+	false === strpos( $render_method_src, 'eem-plugin-wrap' ) &&
+	false === strpos( $render_method_src, 'eem-plugin-header' ) &&
+	false === strpos( $render_method_src, 'eem-plugin-title' ),
+	$pass, $fail, $log
+);
+
+// 16d. Stall Charts list toolbar uses <select> not <button> for date filter
+c7x_ok(
+	'2.3.29: Stall Charts list date filter is a <select> element',
+	false !== strpos( $admin_php_229, '<select' ) &&
+	false === strpos( $admin_php_229, '<button class="toolbar-select' ),
+	$pass, $fail, $log
+);
+
+// ── 17. Breadcrumb consistency polish (2.3.30) ──────────────────────────────
+echo "\n[17] Breadcrumb consistency: logo+breadcrumb on Stall Chart Detail + Edit Reservation (2.3.30)\n";
+
+$admin_php_230    = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-equine-event-manager-admin.php' );
+$editor_php_230   = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-reservation-editor-page.php' );
+
+// Extract render_stall_chart_page method body for scoped assertions.
+$sc_detail_pos = strpos( $admin_php_230, 'public function render_stall_chart_page()' );
+$sc_detail_end = false !== $sc_detail_pos ? strpos( $admin_php_230, "\n\t}\n", $sc_detail_pos ) : false;
+$sc_detail_src = ( false !== $sc_detail_pos && false !== $sc_detail_end )
+	? substr( $admin_php_230, $sc_detail_pos, $sc_detail_end - $sc_detail_pos )
+	: '';
+
+// 17a. Version bump.
+c7x_ok(
+	'2.3.30: EQUINE_EVENT_MANAGER_VERSION === 2.3.30',
+	defined( 'EQUINE_EVENT_MANAGER_VERSION' ) && '2.3.30' === EQUINE_EVENT_MANAGER_VERSION,
+	$pass, $fail, $log
+);
+
+// 17b. render_stall_chart_page now wraps output in .eem-page.
+c7x_ok(
+	'2.3.30: render_stall_chart_page wraps in <div class="eem-page">',
+	false !== strpos( $sc_detail_src, 'class="eem-page"' ),
+	$pass, $fail, $log
+);
+
+// 17c. render_stall_chart_page calls eem_render_breadcrumb().
+c7x_ok(
+	'2.3.30: render_stall_chart_page calls eem_render_breadcrumb()',
+	false !== strpos( $sc_detail_src, 'eem_render_breadcrumb(' ),
+	$pass, $fail, $log
+);
+
+// 17d. Stall Chart Detail breadcrumb includes back-link to stall-charts list page.
+c7x_ok(
+	'2.3.30: render_stall_chart_page breadcrumb links to equine-event-manager-stall-charts',
+	false !== strpos( $sc_detail_src, 'equine-event-manager-stall-charts' ),
+	$pass, $fail, $log
+);
+
+// 17e. "Not enabled" early-return path also emits breadcrumb (both branches covered).
+// The breadcrumb call appears twice — once before each render path.
+c7x_ok(
+	'2.3.30: render_stall_chart_page not-enabled path also calls eem_render_breadcrumb()',
+	substr_count( $sc_detail_src, 'eem_render_breadcrumb(' ) >= 2,
+	$pass, $fail, $log
+);
+
+// 17f. Edit Reservation page calls eem_render_breadcrumb().
+c7x_ok(
+	'2.3.30: class-eem-reservation-editor-page.php calls eem_render_breadcrumb()',
+	false !== strpos( $editor_php_230, 'eem_render_breadcrumb(' ),
+	$pass, $fail, $log
+);
+
+// 17g. Edit Reservation breadcrumb links back to Reservations list page.
+c7x_ok(
+	'2.3.30: Edit Reservation breadcrumb includes EEM_Reservations_List_Page::MENU_SLUG link',
+	false !== strpos( $editor_php_230, 'EEM_Reservations_List_Page::MENU_SLUG' ),
+	$pass, $fail, $log
+);
+
 wp_delete_post( $rid, true );
 
 echo implode( "\n", $log ) . "\n=== RESULT: {$pass} passed, {$fail} failed ===\n";

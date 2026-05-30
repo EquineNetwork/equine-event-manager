@@ -150,6 +150,17 @@ class EEM_Reservation_Editor_Page {
 		}
 		?>
 		<div class="eem-page">
+			<?php
+			eem_render_breadcrumb( array(
+				array(
+					'label' => __( 'Reservations', 'equine-event-manager' ),
+					'url'   => admin_url( 'admin.php?page=' . EEM_Reservations_List_Page::MENU_SLUG ),
+				),
+				array(
+					'label' => $source_event_title,
+				),
+			) );
+			?>
 			<div class="eem-plugin-wrap">
 				<!-- C8 — Event-anchor header replaces .eem-plugin-subtitle + meta-line.
 				     Rail Linked Event card retired; typeahead moves to the plugin header. -->

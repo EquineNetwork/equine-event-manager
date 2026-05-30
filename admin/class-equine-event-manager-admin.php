@@ -1813,6 +1813,18 @@ class EEM_Admin {
 
 		if ( empty( $config['enabled'] ) ) {
 			?>
+			<div class="eem-page">
+			<?php
+			eem_render_breadcrumb( array(
+				array(
+					'label' => __( 'Stall & RV Charts', 'equine-event-manager' ),
+					'url'   => admin_url( 'admin.php?page=equine-event-manager-stall-charts' ),
+				),
+				array(
+					'label' => $reservation_title,
+				),
+			) );
+			?>
 			<div class="eem-plugin-wrap">
 				<header class="eem-plugin-header">
 					<div class="eem-plugin-header-left">
@@ -1828,6 +1840,7 @@ class EEM_Admin {
 					</div>
 				</div>
 			</div>
+			</div><!-- /.eem-page -->
 			<?php
 			return;
 		}
@@ -1840,6 +1853,18 @@ class EEM_Admin {
 		$barn_options = $this->get_stall_chart_block_filter_options( isset( $config['stall_blocks'] ) ? $config['stall_blocks'] : array(), isset( $config['barn_names'] ) ? $config['barn_names'] : array() );
 		$is_counts_view = 'counts' === $view;
 		$reservation_dates = $this->get_reservation_date_range_label( $reservation_id );
+		?>
+		<div class="eem-page">
+		<?php
+		eem_render_breadcrumb( array(
+			array(
+				'label' => __( 'Stall & RV Charts', 'equine-event-manager' ),
+				'url'   => admin_url( 'admin.php?page=equine-event-manager-stall-charts' ),
+			),
+			array(
+				'label' => $reservation_title,
+			),
+		) );
 		?>
 		<div class="eem-plugin-wrap">
 
@@ -2133,6 +2158,7 @@ class EEM_Admin {
 			window.eemStallChart.moveNonce = <?php echo wp_json_encode( $nonce ); ?>;
 			window.eemStallChart.reservationId = <?php echo (int) $reservation_id; ?>;
 		</script>
+		</div><!-- /.eem-page -->
 		<?php
 	}
 
