@@ -3083,8 +3083,8 @@
 			return;
 		}
 
-		// Cell pill click — show popover
-		var pill = t.closest('[data-eem-action="stall-chart-pill-click"]');
+		// Cell pill click — show popover (canonical action: stall-pill-click; legacy alias: stall-chart-pill-click)
+		var pill = t.closest('[data-eem-action="stall-pill-click"]') || t.closest('[data-eem-action="stall-chart-pill-click"]');
 		if (pill) {
 			ev.stopPropagation();
 			var menu = document.getElementById('eem-stall-chart-cell-menu');
@@ -3094,8 +3094,14 @@
 				window._eemActivePill = null;
 				return;
 			}
-			var customer = pill.getAttribute('data-customer') || '—';
-			var orderKey = pill.getAttribute('data-order-key') || '';
+			var customer = pill.getAttribute('data-customer-name') || pill.getAttribute('data-customer') || '—';
+			var orderKey = pill.getAttribute('data-order-id') || pill.getAttribute('data-order-key') || '';
+			var srcStall = pill.getAttribute('data-stall') || '';
+			var srcDate  = pill.getAttribute('data-date') || '';
+			window._scActiveOrderId   = orderKey;
+			window._scActiveStall     = srcStall;
+			window._scActiveDate      = srcDate;
+			window._scCustomerName    = customer;
 			var titleEl = document.getElementById('eem-stall-chart-menu-title');
 			var subEl = document.getElementById('eem-stall-chart-menu-subtitle');
 			if (titleEl) titleEl.textContent = customer;
@@ -3130,6 +3136,121 @@
 		if (printBtn) {
 			ev.preventDefault();
 			window.print();
+			return;
+		}
+
+		// View Active Order (canonical alias of stall-chart-view-order)
+		var viewActive = t.closest('[data-eem-action="view-active-order"]');
+		if (viewActive) {
+			ev.preventDefault();
+			if (window._scActiveOrderId) {
+				var u = (window.ajaxurl || '/wp-admin/admin-ajax.php').replace('admin-ajax.php', '') + 'admin.php?page=equine-event-manager-order&order_key=' + encodeURIComponent(window._scActiveOrderId);
+				window.open(u, '_blank');
+			}
+			var m3 = document.getElementById('eem-stall-chart-cell-menu');
+			if (m3) m3.classList.remove('open');
+			return;
+		}
+
+		// Enter destination mode
+		var moveBtn = t.closest('[data-eem-action="move-to-different-stall"]');
+		if (moveBtn) {
+			ev.preventDefault();
+			document.body.classList.add('destination-mode');
+			document.body.classList.add('eem-has-destination-banner');
+			var banner = document.getElementById('eem-destination-banner');
+			if (banner) banner.style.display = '';
+			var nameEl = document.getElementById('eem-destination-customer-name');
+			if (nameEl) nameEl.textContent = window._scCustomerName || '—';
+			var m4 = document.getElementById('eem-stall-chart-cell-menu');
+			if (m4) m4.classList.remove('open');
+			return;
+		}
+
+		// Cancel destination mode
+		var cancelDest = t.closest('[data-eem-action="cancel-destination-mode"]');
+		if (cancelDest) {
+			ev.preventDefault();
+			document.body.classList.remove('destination-mode');
+			document.body.classList.remove('eem-has-destination-banner');
+			var banner2 = document.getElementById('eem-destination-banner');
+			if (banner2) banner2.style.display = 'none';
+			window._scDestStall = null;
+			window._scDestDate  = null;
+			return;
+		}
+
+		// Click an Available pill while in destination mode → open scope modal
+		var availPill = t.closest('[data-eem-action="stall-available-click"]');
+		if (availPill && document.body.classList.contains('destination-mode')) {
+			ev.preventDefault();
+			window._scDestStall = availPill.getAttribute('data-stall') || '';
+			window._scDestDate  = availPill.getAttribute('data-date') || '';
+			var overlay = document.getElementById('eem-scope-modal-overlay');
+			var info    = document.getElementById('eem-scope-modal-current');
+			if (info) {
+				info.innerHTML = '<strong>' + (window._scCustomerName || '—') + '</strong> &mdash; ' +
+					'Stall ' + (window._scActiveStall || '—') + ' on ' + (window._scActiveDate || '—') +
+					' &rarr; Stall ' + (window._scDestStall || '—');
+			}
+			var errEl = document.getElementById('eem-scope-modal-error');
+			if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+			if (overlay) overlay.style.display = 'flex';
+			return;
+		}
+
+		// Close scope modal
+		var closeScope = t.closest('[data-eem-action="close-scope-modal"]');
+		if (closeScope) {
+			ev.preventDefault();
+			var ov2 = document.getElementById('eem-scope-modal-overlay');
+			if (ov2) ov2.style.display = 'none';
+			return;
+		}
+
+		// Confirm move (POST AJAX)
+		var confirmBtn = t.closest('[data-eem-action="confirm-move"]');
+		if (confirmBtn) {
+			ev.preventDefault();
+			var cfg = window.eemStallChart || {};
+			var scopeEl = document.querySelector('input[name="eem_move_scope"]:checked');
+			var scope = scopeEl ? scopeEl.value : 'this-night';
+			var body = new URLSearchParams();
+			body.set('action', 'eem_move_stall_assignment');
+			body.set('_wpnonce', cfg.moveNonce || '');
+			body.set('order_id', window._scActiveOrderId || '');
+			body.set('source_stall', window._scActiveStall || '');
+			body.set('source_date', window._scActiveDate || '');
+			body.set('destination_stall', window._scDestStall || '');
+			body.set('scope', scope);
+			confirmBtn.disabled = true;
+			fetch((cfg.ajaxUrl || window.ajaxurl || '/wp-admin/admin-ajax.php'), {
+				method: 'POST', credentials: 'same-origin',
+				headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+				body: body.toString()
+			}).then(function (r) { return r.json(); }).then(function (resp) {
+				confirmBtn.disabled = false;
+				if (resp && resp.success) {
+					var ov3 = document.getElementById('eem-scope-modal-overlay');
+					if (ov3) ov3.style.display = 'none';
+					document.body.classList.remove('destination-mode');
+					document.body.classList.remove('eem-has-destination-banner');
+					var bn = document.getElementById('eem-destination-banner');
+					if (bn) bn.style.display = 'none';
+					if (window.EEM && window.EEM.showSaveToast) {
+						window.EEM.showSaveToast((resp.data && resp.data.message) || 'Moved.', { variant: 'success' });
+					}
+					window.location.reload();
+				} else {
+					var errEl2 = document.getElementById('eem-scope-modal-error');
+					var msg = (resp && resp.data && resp.data.message) || 'Move failed.';
+					if (errEl2) { errEl2.textContent = msg; errEl2.style.display = ''; }
+				}
+			}).catch(function () {
+				confirmBtn.disabled = false;
+				var errEl3 = document.getElementById('eem-scope-modal-error');
+				if (errEl3) { errEl3.textContent = 'Could not reach the server.'; errEl3.style.display = ''; }
+			});
 			return;
 		}
 

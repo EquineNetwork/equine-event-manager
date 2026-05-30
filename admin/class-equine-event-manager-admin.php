@@ -83,6 +83,7 @@ class EEM_Admin {
 		add_action( 'admin_footer', array( $this, 'print_reservations_list_toolbar_normalizer' ) );
 		add_action( 'all_admin_notices', array( $this, 'render_reservations_list_banner' ) );
 		add_action( 'all_admin_notices', array( $this, 'render_native_content_list_banner' ) );
+		add_action( 'wp_ajax_eem_move_stall_assignment', array( $this, 'ajax_move_stall_assignment' ) );
 	}
 
 	/**
@@ -2080,16 +2081,58 @@ class EEM_Admin {
 		</div><!-- /eem-plugin-wrap -->
 
 		<!-- Cell action popover (positioned via JS) -->
-		<div class="eem-stall-chart-cell-menu" id="eem-stall-chart-cell-menu">
+		<div class="eem-stall-chart-cell-menu cell-action-menu" id="eem-stall-chart-cell-menu">
 			<div class="eem-stall-chart-menu-title-wrap">
-				<div class="eem-stall-chart-menu-title" id="eem-stall-chart-menu-title">—</div>
-				<div class="eem-stall-chart-menu-subtitle" id="eem-stall-chart-menu-subtitle">—</div>
+				<div class="eem-stall-chart-menu-title cell-action-menu__title" id="eem-stall-chart-menu-title">—</div>
+				<div class="eem-stall-chart-menu-subtitle cell-action-menu__subtitle" id="eem-stall-chart-menu-subtitle">—</div>
 			</div>
-			<button class="eem-stall-chart-cell-menu-btn" type="button" data-eem-action="stall-chart-view-order">
+			<button class="eem-stall-chart-cell-menu-btn cell-action-menu__btn" type="button" data-eem-action="move-to-different-stall">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
+				<?php esc_html_e( 'Move to different stall', 'equine-event-manager' ); ?>
+			</button>
+			<button class="eem-stall-chart-cell-menu-btn cell-action-menu__btn" type="button" data-eem-action="view-active-order">
 				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
 				<?php esc_html_e( 'View order', 'equine-event-manager' ); ?>
 			</button>
 		</div>
+
+		<!-- Destination-select banner -->
+		<div class="destination-banner eem-destination-banner" id="eem-destination-banner" style="display:none;">
+			<span class="destination-banner__msg"><?php esc_html_e( 'Click any available cell to move the customer there.', 'equine-event-manager' ); ?> <strong id="eem-destination-customer-name">—</strong></span>
+			<button type="button" class="destination-banner__cancel" data-eem-action="cancel-destination-mode"><?php esc_html_e( 'Cancel', 'equine-event-manager' ); ?></button>
+		</div>
+
+		<!-- Move scope modal -->
+		<div class="scope-modal-overlay" id="eem-scope-modal-overlay" style="display:none;">
+			<div class="scope-modal">
+				<h3 class="scope-modal__title"><?php esc_html_e( 'Move customer', 'equine-event-manager' ); ?></h3>
+				<div class="scope-modal__section">
+					<div class="scope-modal__label"><?php esc_html_e( 'Currently assigned', 'equine-event-manager' ); ?></div>
+					<div class="scope-modal__current-info" id="eem-scope-modal-current">—</div>
+				</div>
+				<div class="scope-modal__section">
+					<div class="scope-modal__label"><?php esc_html_e( 'Move:', 'equine-event-manager' ); ?></div>
+					<label class="scope-radio"><input type="radio" name="eem_move_scope" value="this-night" checked> <?php esc_html_e( 'Just this night', 'equine-event-manager' ); ?></label>
+					<label class="scope-radio"><input type="radio" name="eem_move_scope" value="all-nights"> <?php esc_html_e( 'All nights', 'equine-event-manager' ); ?></label>
+				</div>
+				<div class="scope-modal-footer">
+					<span class="scope-modal__error" id="eem-scope-modal-error" style="display:none;"></span>
+					<button type="button" class="eem-btn eem-btn--ghost" data-eem-action="close-scope-modal"><?php esc_html_e( 'Cancel', 'equine-event-manager' ); ?></button>
+					<button type="button" class="eem-btn eem-btn--primary" data-eem-action="confirm-move"><?php esc_html_e( 'Move', 'equine-event-manager' ); ?></button>
+				</div>
+			</div>
+		</div>
+
+		<?php
+		// Localize AJAX endpoint + nonce for switching functionality.
+		$nonce = wp_create_nonce( 'eem_stall_chart_move' );
+		?>
+		<script>
+			window.eemStallChart = window.eemStallChart || {};
+			window.eemStallChart.ajaxUrl   = <?php echo wp_json_encode( admin_url( 'admin-ajax.php' ) ); ?>;
+			window.eemStallChart.moveNonce = <?php echo wp_json_encode( $nonce ); ?>;
+			window.eemStallChart.reservationId = <?php echo (int) $reservation_id; ?>;
+		</script>
 		<?php
 	}
 
@@ -2156,15 +2199,18 @@ class EEM_Admin {
 			</div>
 
 			<!-- Toolbar -->
-			<div class="eem-list-toolbar eem-sc-list-toolbar">
-				<div class="eem-list-toolbar-left">
-					<div class="eem-search-wrap">
+			<div class="eem-list-toolbar eem-sc-list-toolbar toolbar">
+				<div class="eem-list-toolbar-left toolbar-left">
+					<select class="toolbar-select eem-sc-date-filter" data-eem-input-action="sc-list-date-filter">
+						<option value="all"><?php esc_html_e( 'All dates', 'equine-event-manager' ); ?></option>
+					</select>
+					<div class="eem-search-wrap search-wrap">
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-						<input class="eem-search-input" type="text" placeholder="<?php esc_attr_e( 'Search reservations…', 'equine-event-manager' ); ?>" data-eem-input-action="sc-list-search">
+						<input class="eem-search-input" type="search" placeholder="<?php esc_attr_e( 'Search reservations…', 'equine-event-manager' ); ?>" data-eem-input-action="sc-list-search">
 					</div>
 				</div>
-				<div class="eem-list-toolbar-right">
-					<span class="eem-list-count" id="eem-sc-list-count">
+				<div class="eem-list-toolbar-right toolbar-right">
+					<span class="eem-list-count item-count" id="eem-sc-list-count">
 						<?php
 						echo esc_html(
 							sprintf(
@@ -2193,10 +2239,10 @@ class EEM_Admin {
 				<table class="eem-sc-list-table">
 					<thead>
 						<tr>
-							<th><?php esc_html_e( 'Reservation', 'equine-event-manager' ); ?></th>
+							<th class="sortable" data-eem-action="sc-sort" data-sort-key="title"><?php esc_html_e( 'Reservation', 'equine-event-manager' ); ?> <span class="sort-icon">&#8597;</span></th>
 							<th><?php esc_html_e( 'Barns', 'equine-event-manager' ); ?></th>
 							<th><?php esc_html_e( 'RV Lots', 'equine-event-manager' ); ?></th>
-							<th><?php esc_html_e( 'Stall Status', 'equine-event-manager' ); ?></th>
+							<th class="sortable" data-eem-action="sc-sort" data-sort-key="status"><?php esc_html_e( 'Stall Status', 'equine-event-manager' ); ?> <span class="sort-icon">&#8597;</span></th>
 							<th><?php esc_html_e( 'Actions', 'equine-event-manager' ); ?></th>
 						</tr>
 					</thead>
@@ -2214,15 +2260,15 @@ class EEM_Admin {
 									<?php echo esc_html( $row['title'] ); ?>
 								</a>
 								<?php if ( ! empty( $row['dates'] ) ) : ?>
-									<div class="eem-sc-res-dates"><?php echo esc_html( $row['dates'] ); ?></div>
+									<div class="eem-sc-res-dates res-dates"><?php echo wp_kses_post( $row['dates'] ); ?></div>
 								<?php endif; ?>
 								<?php if ( ! empty( $row['stat_text'] ) ) : ?>
-									<div class="eem-sc-chart-stats">
+									<div class="eem-sc-chart-stats chart-stats">
 										<?php foreach ( $row['stats'] as $stat ) : ?>
-											<div class="eem-sc-chart-stat">
-												<div class="eem-sc-stat-dot" style="background:<?php echo esc_attr( $stat['color'] ); ?>"></div>
+											<span class="eem-sc-chart-stat chart-stat">
+												<span class="eem-sc-stat-dot stat-dot" style="background:<?php echo esc_attr( $stat['color'] ); ?>"></span>
 												<?php echo esc_html( $stat['label'] ); ?>
-											</div>
+											</span>
 										<?php endforeach; ?>
 									</div>
 								<?php endif; ?>
@@ -2340,6 +2386,24 @@ class EEM_Admin {
 				<?php endforeach; ?>
 			</div>
 
+			<!-- Pagination row -->
+			<div class="pagination-row eem-sc-pagination-row">
+				<span class="pagination-info"><?php
+					echo esc_html( sprintf(
+						/* translators: 1: first item, 2: last item, 3: total */
+						__( 'Showing %1$d&ndash;%2$d of %3$d reservations', 'equine-event-manager' ),
+						count( $rows ) > 0 ? 1 : 0,
+						count( $rows ),
+						count( $rows )
+					) );
+				?></span>
+				<div class="pagination">
+					<button type="button" class="page-btn" disabled aria-label="<?php esc_attr_e( 'Previous page', 'equine-event-manager' ); ?>">&lsaquo;</button>
+					<button type="button" class="page-btn page-btn--active active" aria-current="page">1</button>
+					<button type="button" class="page-btn" disabled aria-label="<?php esc_attr_e( 'Next page', 'equine-event-manager' ); ?>">&rsaquo;</button>
+				</div>
+			</div>
+
 			<?php endif; // end empty check ?>
 
 		</div><!-- /.eem-plugin-wrap -->
@@ -2415,9 +2479,50 @@ class EEM_Admin {
 				}
 			}
 
-			// Stats blurb (simple counts for configured reservations)
+			// Stats blurb. Available/Reserved/Blocked for configured charts;
+			// "Not yet configured" placeholder for empty/partial charts.
 			$stats = array();
-			if ( 'empty' === $chart_status ) {
+			if ( 'configured' === $chart_status ) {
+				$cfg                 = $this->get_stall_chart_config( $rid );
+				$stall_units_arr     = isset( $cfg['stall_units'] ) ? (array) $cfg['stall_units'] : array();
+				$blocked_arr         = isset( $cfg['blocked_stall_units'] ) ? (array) $cfg['blocked_stall_units'] : array();
+				$available_arr       = array_diff( $stall_units_arr, $blocked_arr );
+				$reserved_unit_count = 0;
+				$reserved_seen       = array();
+				$orders              = array_filter(
+					$this->orders_repository->get_orders( '', 'date', 'asc' ),
+					function ( $o ) use ( $rid ) {
+						return absint( isset( $o['reservation_id'] ) ? $o['reservation_id'] : 0 ) === absint( $rid );
+					}
+				);
+				foreach ( $orders as $ord ) {
+					$assigned = $this->parse_assigned_units_string(
+						$this->get_order_component_note_value( $ord, 'stall', 'Assigned Stall Units' )
+					);
+					foreach ( (array) $assigned as $u ) {
+						$u = (string) $u;
+						if ( '' === $u || isset( $reserved_seen[ $u ] ) ) {
+							continue;
+						}
+						$reserved_seen[ $u ] = true;
+						$reserved_unit_count++;
+					}
+				}
+				$stats = array(
+					array(
+						'color' => '#22c55e',
+						'label' => sprintf( '%d Available', count( $available_arr ) - $reserved_unit_count > 0 ? count( $available_arr ) - $reserved_unit_count : 0 ),
+					),
+					array(
+						'color' => '#dc2626',
+						'label' => sprintf( '%d Reserved', $reserved_unit_count ),
+					),
+					array(
+						'color' => '#94a3b8',
+						'label' => sprintf( '%d Blocked', count( $blocked_arr ) ),
+					),
+				);
+			} else {
 				$stats = array(
 					array( 'color' => '#94a3b8', 'label' => __( 'Not yet configured', 'equine-event-manager' ) ),
 				);
@@ -2431,6 +2536,7 @@ class EEM_Admin {
 				'rv_zone_names' => $rv_zone_names,
 				'chart_status'  => $chart_status,
 				'stats'         => $stats,
+				'stat_text'     => 1,
 			);
 		}
 
@@ -2503,9 +2609,9 @@ class EEM_Admin {
 		if ( '' !== $start_date && '' !== $end_date ) {
 			return sprintf(
 				/* translators: 1: start date, 2: end date */
-				__( '%1$s to %2$s', 'equine-event-manager' ),
-				wp_date( 'F j, Y', strtotime( $start_date ) ),
-				wp_date( 'F j, Y', strtotime( $end_date ) )
+				__( '%1$s &ndash; %2$s', 'equine-event-manager' ),
+				wp_date( 'M j, Y', strtotime( $start_date ) ),
+				wp_date( 'M j, Y', strtotime( $end_date ) )
 			);
 		}
 
@@ -3042,6 +3148,116 @@ class EEM_Admin {
 	 * @param array $date_columns Date columns.
 	 * @return void
 	 */
+	/**
+	 * AJAX: move a customer's stall assignment from source stall to destination stall.
+	 *
+	 * Accepts: order_id (order_key), source_stall, source_date, destination_stall,
+	 * scope (this-night | all-nights). Updates the stored "Assigned Stall Units"
+	 * note line on the matching stall component, swapping the source unit token
+	 * for the destination unit. "all-nights" scope rewrites the assignment for
+	 * every night the order is configured for; "this-night" scope only affects
+	 * the matrix cell for source_date (in practice the assignment list is the
+	 * same across nights for a given order/component, so both paths end up
+	 * performing the same swap — this preserves the API surface for future
+	 * per-night persistence).
+	 *
+	 * @return void
+	 */
+	public function ajax_move_stall_assignment() {
+		check_ajax_referer( 'eem_stall_chart_move', '_wpnonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+
+		$order_key   = isset( $_POST['order_id'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['order_id'] ) ) : '';
+		$src_stall   = isset( $_POST['source_stall'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['source_stall'] ) ) : '';
+		$src_date    = isset( $_POST['source_date'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['source_date'] ) ) : '';
+		$dest_stall  = isset( $_POST['destination_stall'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['destination_stall'] ) ) : '';
+		$scope       = isset( $_POST['scope'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['scope'] ) ) : 'this-night';
+
+		if ( '' === $order_key || '' === $src_stall || '' === $dest_stall ) {
+			wp_send_json_error( array( 'message' => __( 'Missing required parameters.', 'equine-event-manager' ) ), 400 );
+		}
+
+		$order = $this->orders_repository->get_order( $order_key );
+		if ( ! $order ) {
+			wp_send_json_error( array( 'message' => __( 'Order not found.', 'equine-event-manager' ) ), 404 );
+		}
+
+		// Validate destination stall is not already reserved for this order's dates.
+		$reservation_id = isset( $order['reservation_id'] ) ? absint( $order['reservation_id'] ) : 0;
+		if ( $reservation_id > 0 ) {
+			$config = $this->get_stall_chart_config( $reservation_id );
+			if ( in_array( $dest_stall, (array) $config['blocked_stall_units'], true ) ) {
+				wp_send_json_error( array( 'message' => __( 'Destination stall is blocked.', 'equine-event-manager' ) ), 409 );
+			}
+			if ( ! in_array( $dest_stall, (array) $config['stall_units'], true ) ) {
+				wp_send_json_error( array( 'message' => __( 'Destination stall is not part of this chart.', 'equine-event-manager' ) ), 409 );
+			}
+
+			// Conflict check: is destination_stall already assigned to any other order for overlapping dates?
+			$orders = array_filter(
+				$this->orders_repository->get_orders( '', 'date', 'asc' ),
+				function ( $o ) use ( $reservation_id, $order_key ) {
+					return absint( isset( $o['reservation_id'] ) ? $o['reservation_id'] : 0 ) === absint( $reservation_id )
+						&& ( ! isset( $o['order_key'] ) || (string) $o['order_key'] !== (string) $order_key );
+				}
+			);
+			foreach ( $orders as $other ) {
+				$other_units = $this->parse_assigned_units_string(
+					$this->get_order_component_note_value( $other, 'stall', 'Assigned Stall Units' )
+				);
+				if ( in_array( $dest_stall, (array) $other_units, true ) ) {
+					wp_send_json_error( array( 'message' => __( 'Destination stall is already reserved.', 'equine-event-manager' ) ), 409 );
+				}
+			}
+		}
+
+		// Read current assignments, swap source → destination, persist.
+		$current = $this->parse_assigned_units_string(
+			$this->get_order_component_note_value( $order, 'stall', 'Assigned Stall Units' )
+		);
+		$current = (array) $current;
+		$new_assignments = array();
+		$found           = false;
+		foreach ( $current as $u ) {
+			if ( ! $found && (string) $u === (string) $src_stall ) {
+				$new_assignments[] = $dest_stall;
+				$found             = true;
+			} else {
+				$new_assignments[] = $u;
+			}
+		}
+		if ( ! $found ) {
+			// Source not in current list; append destination.
+			$new_assignments[] = $dest_stall;
+		}
+
+		$existing_rv = $this->parse_assigned_units_string(
+			$this->get_order_component_note_value( $order, 'rv', 'Assigned RV Lots' )
+		);
+
+		$ok = $this->orders_repository->update_order_unit_assignments(
+			$order_key,
+			implode( ', ', array_filter( array_map( 'strval', $new_assignments ) ) ),
+			implode( ', ', array_filter( array_map( 'strval', (array) $existing_rv ) ) )
+		);
+
+		if ( ! $ok ) {
+			wp_send_json_error( array( 'message' => __( 'Could not update assignment.', 'equine-event-manager' ) ), 500 );
+		}
+
+		wp_send_json_success( array(
+			'message'           => __( 'Stall assignment moved.', 'equine-event-manager' ),
+			'order_id'          => $order_key,
+			'source_stall'      => $src_stall,
+			'destination_stall' => $dest_stall,
+			'scope'             => $scope,
+			'source_date'       => $src_date,
+		) );
+	}
+
 	private function render_stall_chart_matrix_table( $rows, $date_columns, $primary_label = 'Unit', $secondary_label = 'Block' ) {
 		$show_secondary_column = '' !== (string) $secondary_label;
 		$table_class = ( 'Stall' === $primary_label || 'Unit' === $primary_label ) ? 'eem-stall-chart-table' : 'eem-rv-chart-table';
@@ -3093,15 +3309,22 @@ class EEM_Admin {
 									<?php if ( 'occupied' === $cell['type'] && ! empty( $cell['order_key'] ) ) : ?>
 										<span class="eem-occ-pill eem-occ-pill--reserved"
 											data-order-key="<?php echo esc_attr( $cell['order_key'] ); ?>"
-											data-eem-action="stall-chart-pill-click"
-											data-customer="<?php echo esc_attr( $cell['label'] ); ?>">
+											data-order-id="<?php echo esc_attr( $cell['order_key'] ); ?>"
+											data-eem-action="stall-pill-click"
+											data-customer-name="<?php echo esc_attr( $cell['label'] ); ?>"
+											data-customer="<?php echo esc_attr( $cell['label'] ); ?>"
+											data-stall="<?php echo esc_attr( (string) $row['unit'] ); ?>"
+											data-date="<?php echo esc_attr( (string) $date_key ); ?>">
 											<?php echo esc_html( $cell['label'] ); ?>
 											<svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
 										</span>
 									<?php elseif ( 'blocked' === $cell['type'] ) : ?>
 										<span class="eem-occ-pill eem-occ-pill--blocked"><?php esc_html_e( 'Blocked', 'equine-event-manager' ); ?></span>
 									<?php else : ?>
-										<span class="eem-occ-pill eem-occ-pill--available"><?php esc_html_e( 'Available', 'equine-event-manager' ); ?></span>
+										<span class="eem-occ-pill eem-occ-pill--available"
+											data-eem-action="stall-available-click"
+											data-stall="<?php echo esc_attr( (string) $row['unit'] ); ?>"
+											data-date="<?php echo esc_attr( (string) $date_key ); ?>"><?php esc_html_e( 'Available', 'equine-event-manager' ); ?></span>
 									<?php endif; ?>
 								</div>
 							</td>

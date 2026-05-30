@@ -834,8 +834,8 @@ $admin_php  = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-equine
 
 // 11a. Version 2.3.25
 c7x_ok(
-	'2.3.25: EQUINE_EVENT_MANAGER_VERSION is 2.3.25',
-	EQUINE_EVENT_MANAGER_VERSION === '2.3.25',
+	'2.3.25: EQUINE_EVENT_MANAGER_VERSION is at least 2.3.25',
+	version_compare( EQUINE_EVENT_MANAGER_VERSION, '2.3.25', '>=' ),
 	$pass, $fail, $log
 );
 
@@ -1075,10 +1075,10 @@ echo "\n[13] V1 stall/RV config reader + seeder notes linkage 2.3.26\n";
 $repo_php    = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-orders-repository.php' );
 $seeder_php2 = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'tools/seed-demo-data.php' );
 
-// 13a. Plugin version is 2.3.26.
+// 13a. Plugin version is at least 2.3.26 (canonical version asserted in [14] for 2.3.27).
 c7x_ok(
-	'2.3.26: EQUINE_EVENT_MANAGER_VERSION === 2.3.26',
-	defined( 'EQUINE_EVENT_MANAGER_VERSION' ) && '2.3.26' === EQUINE_EVENT_MANAGER_VERSION,
+	'2.3.26: EQUINE_EVENT_MANAGER_VERSION >= 2.3.26',
+	defined( 'EQUINE_EVENT_MANAGER_VERSION' ) && version_compare( EQUINE_EVENT_MANAGER_VERSION, '2.3.26', '>=' ),
 	$pass, $fail, $log
 );
 
@@ -1171,6 +1171,122 @@ c7x_ok(
 c7x_ok(
 	'2.3.26: orders repo get_stall_chart_config reads _en_rv_rows V1 meta key',
 	false !== strpos( $repo_php, "'_en_rv_rows'" ),
+	$pass, $fail, $log
+);
+
+// ── 14. Stall & RV Charts list polish + detail switching (2.3.27) ──────────────
+echo "\n[14] Stall & RV Charts list polish + detail switching 2.3.27\n";
+
+// 14a. Plugin version bumped to 2.3.27.
+c7x_ok(
+	'2.3.27: EQUINE_EVENT_MANAGER_VERSION === 2.3.27',
+	defined( 'EQUINE_EVENT_MANAGER_VERSION' ) && '2.3.27' === EQUINE_EVENT_MANAGER_VERSION,
+	$pass, $fail, $log
+);
+
+// 14b. List page render emits .chart-stats.
+c7x_ok(
+	'2.3.27: list page renders .chart-stats class',
+	false !== strpos( $admin_php_fresh, 'chart-stats' ),
+	$pass, $fail, $log
+);
+
+// 14c. List page render emits .res-dates.
+c7x_ok(
+	'2.3.27: list page renders .res-dates class',
+	false !== strpos( $admin_php_fresh, 'res-dates' ),
+	$pass, $fail, $log
+);
+
+// 14d. Sortable headers carry .sort-icon.
+c7x_ok(
+	'2.3.27: list page renders .sort-icon on sortable headers',
+	false !== strpos( $admin_php_fresh, 'sort-icon' ),
+	$pass, $fail, $log
+);
+
+// 14e. Toolbar wrapper class .toolbar present.
+c7x_ok(
+	'2.3.27: list page renders .toolbar wrapper',
+	false !== strpos( $admin_php_fresh, 'toolbar-left' ) && false !== strpos( $admin_php_fresh, 'toolbar-select' ),
+	$pass, $fail, $log
+);
+
+// 14f. Status tab separators .status-tab-sep or eem-filter-tab-sep present.
+c7x_ok(
+	'2.3.27: list page renders status tab separators',
+	false !== strpos( $admin_php_fresh, 'eem-filter-tab-sep' ),
+	$pass, $fail, $log
+);
+
+// 14g. Pagination row rendered.
+c7x_ok(
+	'2.3.27: list page renders .pagination-row',
+	false !== strpos( $admin_php_fresh, 'pagination-row' ) && false !== strpos( $admin_php_fresh, 'page-btn' ),
+	$pass, $fail, $log
+);
+
+// 14h. Detail page renders .cell-action-menu BEM alias.
+c7x_ok(
+	'2.3.27: detail page renders .cell-action-menu',
+	false !== strpos( $admin_php_fresh, 'cell-action-menu' ),
+	$pass, $fail, $log
+);
+
+// 14i. Detail page renders .destination-banner.
+c7x_ok(
+	'2.3.27: detail page renders .destination-banner',
+	false !== strpos( $admin_php_fresh, 'destination-banner' ),
+	$pass, $fail, $log
+);
+
+// 14j. Detail page renders .scope-modal-overlay.
+c7x_ok(
+	'2.3.27: detail page renders .scope-modal-overlay',
+	false !== strpos( $admin_php_fresh, 'scope-modal-overlay' ),
+	$pass, $fail, $log
+);
+
+// 14k. Pill carries data-eem-action="stall-pill-click".
+c7x_ok(
+	'2.3.27: occupancy pill emits data-eem-action="stall-pill-click"',
+	false !== strpos( $admin_php_fresh, 'data-eem-action="stall-pill-click"' ),
+	$pass, $fail, $log
+);
+
+// 14l. Move action emitted on cell menu button.
+c7x_ok(
+	'2.3.27: cell menu emits data-eem-action="move-to-different-stall"',
+	false !== strpos( $admin_php_fresh, 'data-eem-action="move-to-different-stall"' ),
+	$pass, $fail, $log
+);
+
+// 14m. AJAX action eem_move_stall_assignment registered.
+c7x_ok(
+	'2.3.27: wp_ajax_eem_move_stall_assignment action registered',
+	false !== strpos( $admin_php_fresh, 'wp_ajax_eem_move_stall_assignment' ),
+	$pass, $fail, $log
+);
+
+// 14n. AJAX handler method defined.
+c7x_ok(
+	'2.3.27: ajax_move_stall_assignment handler defined',
+	false !== strpos( $admin_php_fresh, 'function ajax_move_stall_assignment' ),
+	$pass, $fail, $log
+);
+
+// 14o. CSS adds 2.3.27 polish block.
+c7x_ok(
+	'2.3.27: admin.css contains chart-stats + scope-modal CSS',
+	false !== strpos( $admin_css, 'scope-modal__title' ) && false !== strpos( $admin_css, 'destination-banner__cancel' ),
+	$pass, $fail, $log
+);
+
+// 14p. JS handler for confirm-move present.
+$admin_js = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/js/admin.js' );
+c7x_ok(
+	'2.3.27: admin.js wires data-eem-action="confirm-move" handler',
+	false !== strpos( $admin_js, 'data-eem-action="confirm-move"' ) && false !== strpos( $admin_js, 'eem_move_stall_assignment' ),
 	$pass, $fail, $log
 );
 
