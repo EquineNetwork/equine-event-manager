@@ -2736,78 +2736,8 @@
 		textarea.focus();
 	};
 
-	/* ── Zone color preset picker ── */
-	document.addEventListener('click', function (ev) {
-		var t = ev.target;
-		if (!t || !t.closest) return;
-
-		/* Click swatch to open picker */
-		var swatch = t.closest('[data-eem-action="reservation-editor-zone-color-open"]');
-		if (swatch) {
-			ev.preventDefault();
-			ev.stopPropagation();
-			// Close any existing pickers
-			document.querySelectorAll('.eem-zone-color-picker').forEach(function (p) { p.remove(); });
-			var picker = document.createElement('div');
-			picker.className = 'eem-zone-color-picker';
-			var palette = (window.EEM && window.EEM.lotZonePalette) || [
-				{ slug: 'red',    hex: '#dc2626' },
-				{ slug: 'blue',   hex: '#1668F2' },
-				{ slug: 'green',  hex: '#15803d' },
-				{ slug: 'orange', hex: '#ea580c' },
-				{ slug: 'purple', hex: '#7c3aed' },
-				{ slug: 'navy',   hex: '#031B4E' },
-				{ slug: 'teal',   hex: '#0d9488' },
-				{ slug: 'pink',   hex: '#db2777' },
-			];
-			var currentSlug = swatch.getAttribute('data-eem-current-slug') || '';
-			palette.forEach(function (p) {
-				var b = document.createElement('button');
-				b.type = 'button';
-				b.className = 'eem-zone-color-preset' + (p.slug === currentSlug ? ' eem-zone-color-preset--active' : '');
-				b.style.background = p.hex;
-				b.setAttribute('data-eem-action', 'reservation-editor-zone-color-pick');
-				b.setAttribute('data-eem-color-slug', p.slug);
-				b.setAttribute('data-eem-color-hex', p.hex);
-				picker.appendChild(b);
-			});
-			var rect = swatch.getBoundingClientRect();
-			picker.style.left = (rect.left + window.scrollX) + 'px';
-			picker.style.top = (rect.bottom + window.scrollY + 4) + 'px';
-			picker._eemSwatch = swatch;
-			document.body.appendChild(picker);
-			return;
-		}
-
-		/* Pick a color from the open picker */
-		var preset = t.closest('[data-eem-action="reservation-editor-zone-color-pick"]');
-		if (preset) {
-			ev.preventDefault();
-			var slug = preset.getAttribute('data-eem-color-slug');
-			var hex  = preset.getAttribute('data-eem-color-hex');
-			var picker2 = preset.closest('.eem-zone-color-picker');
-			if (picker2 && picker2._eemSwatch) {
-				picker2._eemSwatch.style.background = hex;
-				picker2._eemSwatch.setAttribute('data-eem-current-slug', slug);
-				var sib = picker2._eemSwatch.nextElementSibling;
-				// Find sibling hidden input that stores the slug
-				while (sib) {
-					if (sib.tagName === 'INPUT' && sib.getAttribute('data-eem-zone-color-mirror')) {
-						sib.value = slug;
-						break;
-					}
-					sib = sib.nextElementSibling;
-				}
-			}
-			picker2.remove();
-			return;
-		}
-
-		/* Click outside to close any open picker */
-		if (!t.closest('.eem-zone-color-picker')) {
-			document.querySelectorAll('.eem-zone-color-picker').forEach(function (p) { p.remove(); });
-		}
-	});
+	/* Zone color picker removed — colors are derived from the auto-palette
+	   (getZoneColor()) by zone index. Swatches are display-only. */
 
 	/* ── Zone row add/remove ── */
 	document.addEventListener('click', function (ev) {
@@ -3622,13 +3552,60 @@ function rvAddZone() {
 		el.dataset.zoneIndex = idx;
 	});
 	list.appendChild(frag);
+	/* Apply auto-palette color to the new zone's swatch — must happen AFTER
+	   appendChild (fragment is consumed), so we query the live DOM. */
+	var newRow = list.querySelectorAll('.eem-zone-row')[idx];
+	if (newRow) {
+		var swatch = newRow.querySelector('.eem-zone-color-swatch');
+		if (swatch) { swatch.style.background = getZoneColor(idx); }
+	}
+	rvRebuildPaintDropdown();
 	updateRvInventoryDisplay();
 }
 
 function rvDeleteZone(btn) {
 	var row = btn.closest('.eem-zone-row');
 	if (row) row.remove();
+	/* Re-apply auto-palette colors to remaining zones — their visual indices
+	   shift after a deletion so each swatch needs to reflect its new position. */
+	document.querySelectorAll('#eem-lot-zones-list .eem-zone-row').forEach(function (zRow, zi) {
+		var swatch = zRow.querySelector('.eem-zone-color-swatch');
+		if (swatch) { swatch.style.background = getZoneColor(zi); }
+	});
+	rvRebuildPaintDropdown();
 	updateRvInventoryDisplay();
+}
+
+/**
+ * Rebuild the Paint Mode zone <select> from the current .eem-zone-row list.
+ *
+ * Called after any zone add or delete so the Paint Mode dropdown stays in
+ * sync with the zone builder. Colors are sourced from getZoneColor() —
+ * the same auto-palette used by lot dots — so all three surfaces (zone
+ * swatch, Paint Mode option, lot dot) are always consistent.
+ *
+ * @return {void}
+ */
+function rvRebuildPaintDropdown() {
+	var sel = document.getElementById('eem-rv-paint-zone');
+	if (!sel) return;
+	var current = sel.value;
+	/* Remove all zone entries; keep the leading "Off" option at index 0. */
+	while (sel.options.length > 1) { sel.remove(1); }
+	/* Re-populate from current zone rows. */
+	document.querySelectorAll('#eem-lot-zones-list .eem-zone-row').forEach(function (zRow, zi) {
+		var nameInput = zRow.querySelector('.eem-zone-name-input');
+		var name = nameInput ? (nameInput.value.trim() || '') : '';
+		var opt = document.createElement('option');
+		opt.value = String(zi);
+		opt.style.color = getZoneColor(zi);
+		opt.textContent = '● ' + name;
+		sel.appendChild(opt);
+	});
+	/* Restore the previous selection if the zone index still exists. */
+	if (current !== '' && sel.querySelector('option[value="' + current + '"]')) {
+		sel.value = current;
+	}
 }
 
 function rvZoneInputChange() {

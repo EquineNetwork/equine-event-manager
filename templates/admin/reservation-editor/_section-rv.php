@@ -286,8 +286,8 @@ $rv_zones_meta = isset( $data['rv_zones'] ) ? $data['rv_zones'] : array();
 $rv_zones      = ( is_array( $rv_zones_meta ) && ! empty( $rv_zones_meta ) )
 	? $rv_zones_meta
 	: array(
-		array( 'name' => 'Red Lot',  'color' => '#EF4444', 'nightly' => '35.00', 'weekend' => '90.00', 'available_qty' => '6' ),
-		array( 'name' => 'Blue Lot', 'color' => '#1668F2', 'nightly' => '25.00', 'weekend' => '65.00', 'available_qty' => '18' ),
+		array( 'name' => 'Red Lot',  'nightly' => '35.00', 'weekend' => '90.00', 'available_qty' => '6' ),
+		array( 'name' => 'Blue Lot', 'nightly' => '25.00', 'weekend' => '65.00', 'available_qty' => '18' ),
 	);
 
 $rv_rows_meta = isset( $data['rv_rows'] ) ? $data['rv_rows'] : array();
@@ -326,14 +326,17 @@ ob_start();
 <div class="eem-zone-list" id="eem-lot-zones-list">
 	<?php foreach ( $rv_zones as $zi => $zone ) :
 		$z_name    = isset( $zone['name'] )          ? (string) $zone['name']                        : '';
-		$z_color   = isset( $zone['color'] )          ? (string) $zone['color']                       : '#1668F2';
+		// Zone swatch color is computed from position index using the canonical auto-palette
+		// (matches getZoneColor() in admin.js). Stored 'color' field is no longer used — color
+		// is never saved to meta. Do NOT use $data['rv_zones'][N]['color'] here.
+		$_palette  = array( '#DC2626', '#2563EB', '#16A34A', '#CA8A04', '#9333EA', '#EA580C' );
+		$z_color   = $_palette[ $zi % count( $_palette ) ];
 		$z_night   = isset( $zone['nightly'] )        ? $fmt_money( $zone['nightly'] )                : '0.00';
 		$z_weekend = isset( $zone['weekend'] )        ? $fmt_money( $zone['weekend'] )                : '0.00';
 		$z_qty     = isset( $zone['available_qty'] )  ? (int) $zone['available_qty']                  : 0;
 		?>
 		<div class="eem-zone-row" data-zone-index="<?php echo (int) $zi; ?>">
-			<div class="eem-zone-color-swatch" style="background:<?php echo esc_attr( $z_color ); ?>" data-eem-action="reservation-editor-zone-color-open" data-eem-current-color="<?php echo esc_attr( $z_color ); ?>"></div>
-			<input type="hidden" name="eem_rv_zones[<?php echo (int) $zi; ?>][color]" data-eem-zone-color-mirror value="<?php echo esc_attr( $z_color ); ?>">
+			<div class="eem-zone-color-swatch" style="background:<?php echo esc_attr( $z_color ); ?>"></div>
 			<input class="eem-zone-name-input" type="text" name="eem_rv_zones[<?php echo (int) $zi; ?>][name]" value="<?php echo esc_attr( $z_name ); ?>" placeholder="<?php esc_attr_e( 'Zone name', 'equine-event-manager' ); ?>" data-eem-input-action="rv-zone-input">
 			<div class="eem-zone-price-group">
 				<span class="eem-zone-price-label"><?php esc_html_e( '+ Nightly', 'equine-event-manager' ); ?></span>
@@ -359,8 +362,8 @@ ob_start();
 </button>
 <template id="eem-lot-zone-row-template">
 <div class="eem-zone-row" data-zone-index="__index__">
-	<div class="eem-zone-color-swatch" style="background:#1668F2" data-eem-action="reservation-editor-zone-color-open" data-eem-current-color="#1668F2"></div>
-	<input type="hidden" name="eem_rv_zones[__index__][color]" data-eem-zone-color-mirror value="#1668F2">
+	<!-- Swatch color is set by rvAddZone() in admin.js using getZoneColor(newIndex). -->
+	<div class="eem-zone-color-swatch" style="background:#9CA3AF"></div>
 	<input class="eem-zone-name-input" type="text" name="eem_rv_zones[__index__][name]" value="" placeholder="<?php esc_attr_e( 'Zone name', 'equine-event-manager' ); ?>" data-eem-input-action="rv-zone-input">
 	<div class="eem-zone-price-group">
 		<span class="eem-zone-price-label"><?php esc_html_e( '+ Nightly', 'equine-event-manager' ); ?></span>

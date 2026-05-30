@@ -6296,7 +6296,7 @@ a.eem-btn-preview:hover { background: #EEF4FF; border-color: var(--eem-electric)
 /* ── RV Lot Zones (mockup line 183) ── */
 .eem-zone-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
 .eem-zone-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #8c8f94; border-radius: 4px; background: #fff; flex-wrap: wrap; }
-.eem-zone-color-swatch { width: 18px; height: 18px; border-radius: var(--eem-radius); flex-shrink: 0; border: 1px solid rgba(3, 27, 78, 0.15); cursor: pointer; }
+.eem-zone-color-swatch { width: 18px; height: 18px; border-radius: var(--eem-radius); flex-shrink: 0; border: 1px solid rgba(3, 27, 78, 0.15); cursor: default; }
 /* C7.X.14 — `input.` prefix ties WP core forms.css; same fix as
    .eem-price-input. See audit-trail comment at .eem-price-input. */
 /* C7.X.15 Issue 3 + 4 — margin: 0 resets WP core forms.css margin; border-radius uses --eem-radius-sm (3px) for tighter repeating-table chrome. */
@@ -6318,11 +6318,6 @@ input.eem-zone-price-in:focus { border-color: var(--eem-electric); box-shadow: 0
 .eem-zone-add-btn:hover { border-color: var(--eem-electric); color: var(--eem-electric); border-style: solid; }
 .eem-zone-add-btn svg { width: 13px; height: 13px; color: var(--eem-electric); }
 
-/* Zone-color preset picker popover (UX for 8-preset palette per Decision C-1) */
-.eem-zone-color-picker { position: absolute; background: #fff; border: 1px solid #dcdcde; border-radius: 4px; padding: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); display: flex; gap: 6px; z-index: 100; }
-.eem-zone-color-preset { width: 24px; height: 24px; border-radius: var(--eem-radius); cursor: pointer; border: 2px solid transparent; }
-.eem-zone-color-preset:hover { border-color: rgba(0, 0, 0, 0.2); }
-.eem-zone-color-preset--active { border-color: var(--eem-navy); }
 
 /* ── Repeating rows (add-ons table, mockup line 202) ── */
 .eem-repeat-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }

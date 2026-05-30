@@ -412,7 +412,12 @@ c7x_ok( 'window.eemRestoreCancellationDefault',          false !== strpos( $js, 
 c7x_ok( 'reservation-editor-toggle-stay-type handler',   false !== strpos( $js, 'reservation-editor-toggle-stay-type' ), $pass, $fail, $log );
 c7x_ok( 'reservation-editor-toggle-switch-row handler',  false !== strpos( $js, 'reservation-editor-toggle-switch-row' ), $pass, $fail, $log );
 c7x_ok( 'reservation-editor-fee-mode handler',           false !== strpos( $js, 'reservation-editor-fee-mode' ), $pass, $fail, $log );
-c7x_ok( 'reservation-editor-zone-color-open handler',    false !== strpos( $js, 'reservation-editor-zone-color-open' ), $pass, $fail, $log );
+// Zone color picker removed (2.3.20) — colors are auto-palette-only via getZoneColor().
+// Negative guard: no color-picker action should appear in rendered HTML or JS.
+c7x_ok( 'zone-color-open action NOT in rendered HTML',   false === strpos( $html, 'reservation-editor-zone-color-open' ), $pass, $fail, $log );
+c7x_ok( 'data-eem-zone-color-mirror NOT in rendered HTML', false === strpos( $html, 'data-eem-zone-color-mirror' ),       $pass, $fail, $log );
+c7x_ok( 'rvRebuildPaintDropdown function defined',       false !== strpos( $js, 'function rvRebuildPaintDropdown' ),      $pass, $fail, $log );
+c7x_ok( 'rvRebuildPaintDropdown called from rvAddZone',  false !== strpos( $js, 'rvRebuildPaintDropdown' ),               $pass, $fail, $log );
 c7x_ok( 'reservation-editor-zone-add handler',           false !== strpos( $js, 'reservation-editor-zone-add' ), $pass, $fail, $log );
 c7x_ok( 'reservation-editor-trash handler',              false !== strpos( $js, 'reservation-editor-trash' ), $pass, $fail, $log );
 c7x_ok( 'reservation-editor-event-unlink handler',       false !== strpos( $js, 'reservation-editor-event-unlink' ), $pass, $fail, $log );
