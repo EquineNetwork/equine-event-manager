@@ -40,8 +40,8 @@ $canonical = array(
 	// 10 new/updated from handoff Step 1 (post-C6)
 	'dashboard_page.html'               => 'd373c7ca90da3e3f744e1b0a8950d9ef',
 	'edit_reservation_page.html'        => 'd03a0f710c83f0daea2e16e09d664dff', // 2.3.30 — breadcrumb 3-segment format (logo / Reservations link / reservation name)
-	'stall_charts_page.html'            => '1ca8591542403bf797cce082b19a3fa3', // 2.3.28 — plugin-wrap card + breadcrumb + configured-only filter (no status tabs / no Stall Status col / no Set Up Chart)
-	'stall_chart_detail.html'           => '547aecb5abd189b747828f59372637ad', // 2.3.30 — breadcrumb already present; MD5 reflects prior stall-chart update
+	'stall_charts_page.html'            => '6dc053dc24affbe5e23199685a510156', // 2.3.31 — search placeholder standardized to "Search"
+	'stall_chart_detail.html'           => '91288705887a55869abd4ccfab8f8d9e', // 2.3.31 — both filter search inputs placeholder → "Search"
 	'stall_chart_print_view.html'       => '8c76b6d1396dc757cb798b6734a6a83b',
 	'create_order_page.html'            => 'ea83953366dbf0b3a6364007ac971f80',
 	'collect_payment_page.html'         => '67ca3972922e3370532b45e571ce16c7',
@@ -54,8 +54,8 @@ $canonical = array(
 	// "Stall & RV Charts"; Invoicing entry removed). The other 2
 	// (customer_profile_page.html, event_page.html) are off-canvas to
 	// DS-1.A's mechanical-edit scope.
-	'reservations_page.html'            => 'a86e33d416d19e81f7413e36b40aa78e', // DS-1.A sidebar update
-	'orders_page.html'                  => '7e783509d97de354b43f90f90389294e', // DS-1.A sidebar update
+	'reservations_page.html'            => 'c504cbe03c6cbf87eb369928fed5cdcb', // 2.3.31 — search placeholder standardized to "Search"
+	'orders_page.html'                  => 'a1fa462f4644585e0ec6054f1d3dab99', // 2.3.31 — search placeholder standardized to "Search"
 	'settings_page.html'                => '6efd31e96700c2d4d7eb4902c7306248', // DS-1.A sidebar update
 	'order_detail_page.html'            => '2b47181000c2eac9d03aea4f06776085', // DS-1.A sidebar update
 	'customer_profile_page.html'        => 'd7bd2f3b28d59be697ccd97e03f86e46',

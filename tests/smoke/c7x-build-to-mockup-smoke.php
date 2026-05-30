@@ -1477,6 +1477,138 @@ c7x_ok(
 	$pass, $fail, $log
 );
 
+// ── 18. Search input placeholder convention guard (2.3.31) ──────────────────
+//
+// LOCKED DESIGN RULE (2026-05-30): Every search input whose surrounding markup
+// includes a magnifying-glass SVG MUST use placeholder="Search" exactly —
+// no ellipsis, no descriptive text, no multi-word variants.
+//
+// This section scans all admin PHP files for search inputs and asserts the
+// convention. It skips:
+//   - Typeahead inputs (class contains "typeahead" or "event-search")
+//   - Tag-input search fields (class contains "tag-search")
+//   - data-placeholder attributes (Select2/Chosen dropdowns, not real inputs)
+//
+echo "\n[18] Search input placeholder convention — all inputs must use 'Search' exactly (2.3.31)\n";
+
+// 18a. Version bump.
+c7x_ok(
+	'2.3.31: EQUINE_EVENT_MANAGER_VERSION === 2.3.31',
+	defined( 'EQUINE_EVENT_MANAGER_VERSION' ) && '2.3.31' === EQUINE_EVENT_MANAGER_VERSION,
+	$pass, $fail, $log
+);
+
+// 18b. Scan admin PHP files for search inputs with non-"Search" placeholders.
+// Strategy: find every `placeholder=` on lines that also contain type="search"
+// or class="eem-search-input" or class="eem-stall-chart-search-input".
+// Exclude known out-of-scope patterns (typeahead, tag-search, data-placeholder,
+// settings fields, textarea, non-admin files).
+$search_input_violations = array();
+$admin_scan_files = array(
+	EQUINE_EVENT_MANAGER_PATH . 'admin/class-equine-event-manager-admin.php',
+	EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-orders-list-page.php',
+	EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-reservations-list-page.php',
+	EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-reservation-editor-page.php',
+);
+foreach ( $admin_scan_files as $scan_file ) {
+	if ( ! file_exists( $scan_file ) ) {
+		continue;
+	}
+	$lines = file( $scan_file, FILE_IGNORE_NEW_LINES );
+	foreach ( $lines as $ln => $line ) {
+		// Must contain type="search" or eem-search-input or eem-stall-chart-search-input.
+		if ( ! preg_match( '/type=["\']search["\']|eem-search-input|eem-stall-chart-search-input/', $line ) ) {
+			continue;
+		}
+		// Skip known out-of-scope: typeahead / event-search / tag-search inputs.
+		if ( preg_match( '/typeahead|event-search|tag-search|eem-header-event-search|eem-event-search/', $line ) ) {
+			continue;
+		}
+		// Extract placeholder value.
+		if ( preg_match( '/placeholder=["\']([^"\']*)["\']/', $line, $m ) ) {
+			// Strip esc_attr_e wrapper noise — look at the string argument.
+			// In PHP source the pattern is: esc_attr_e( 'TEXT', 'equine-event-manager' )
+			// We match the inner string instead.
+			if ( preg_match( "/esc_attr_e\(\s*'([^']*)'/", $line, $inner ) ) {
+				$placeholder_text = $inner[1];
+			} else {
+				$placeholder_text = $m[1];
+			}
+			// Allow only exact "Search" (case-sensitive).
+			if ( 'Search' !== $placeholder_text ) {
+				$search_input_violations[] = basename( $scan_file ) . ':' . ( $ln + 1 ) . ' placeholder="' . $placeholder_text . '"';
+			}
+		}
+	}
+}
+c7x_ok(
+	'2.3.31: no search input has a placeholder other than "Search" (admin PHP files)',
+	0 === count( $search_input_violations ),
+	$pass, $fail, $log
+);
+if ( count( $search_input_violations ) > 0 ) {
+	foreach ( $search_input_violations as $v ) {
+		$log[] = '  VIOLATION: ' . $v;
+	}
+}
+
+// 18c. Stall Chart Detail "By Location" filter input uses placeholder="Search".
+c7x_ok(
+	'2.3.31: Stall Chart "By Location" filter has placeholder="Search"',
+	false !== strpos( $admin_php_230, "eem-stall-chart-search-input\" placeholder=\"<?php esc_attr_e( 'Search'" ) ||
+	preg_match( "/eem-stall-chart-search-input[^>]+placeholder=\"<\?php esc_attr_e\( 'Search'/", $admin_php_230 ),
+	$pass, $fail, $log
+);
+
+// 18d. Stall Chart Detail "By Customer" filter input uses placeholder="Search".
+$cust_search_pos = strpos( $admin_php_230, 'eem-stall-chart-cust-search' );
+$cust_search_line = false !== $cust_search_pos
+	? substr( $admin_php_230, $cust_search_pos, 200 )
+	: '';
+c7x_ok(
+	'2.3.31: Stall Chart "By Customer" filter has placeholder="Search"',
+	false !== strpos( $cust_search_line, "'Search'" ),
+	$pass, $fail, $log
+);
+
+// 18e. Orders list search input uses placeholder="Search".
+$orders_php_231 = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-orders-list-page.php' );
+$orders_search_pos = strpos( $orders_php_231, 'eem-search-input' );
+$orders_search_line = false !== $orders_search_pos
+	? substr( $orders_php_231, $orders_search_pos, 200 )
+	: '';
+c7x_ok(
+	'2.3.31: Orders list search input has placeholder="Search"',
+	false !== strpos( $orders_search_line, "'Search'" ) &&
+	false === strpos( $orders_search_line, 'Search\xe2\x80\xa6' ) &&  // no ellipsis
+	false === strpos( $orders_search_line, "Search\u{2026}" ),
+	$pass, $fail, $log
+);
+
+// 18f. Reservations list search input uses placeholder="Search".
+$res_php_231 = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-reservations-list-page.php' );
+$res_search_pos = strpos( $res_php_231, 'eem-search-input' );
+$res_search_line = false !== $res_search_pos
+	? substr( $res_php_231, $res_search_pos, 200 )
+	: '';
+c7x_ok(
+	'2.3.31: Reservations list search input has placeholder="Search"',
+	false !== strpos( $res_search_line, "'Search'" ) &&
+	false === strpos( $res_search_line, 'Search\xe2\x80\xa6' ),
+	$pass, $fail, $log
+);
+
+// 18g. Stall & RV Charts list search input uses placeholder="Search" (regression guard).
+$sc_list_search_pos = strpos( $admin_php_230, 'sc-list-search' );
+$sc_list_search_line = false !== $sc_list_search_pos
+	? substr( $admin_php_230, max( 0, $sc_list_search_pos - 300 ), 400 )
+	: '';
+c7x_ok(
+	'2.3.31: Stall & RV Charts list page search input has placeholder="Search" (regression guard)',
+	false !== strpos( $sc_list_search_line, "'Search'" ),
+	$pass, $fail, $log
+);
+
 wp_delete_post( $rid, true );
 
 echo implode( "\n", $log ) . "\n=== RESULT: {$pass} passed, {$fail} failed ===\n";
