@@ -246,21 +246,39 @@ body.eem-shell-page {
 	color: var(--eem-text-muted);
 }
 
+/* Base: all segments share font-size + navy; <a> and <span> both render dark. */
 .eem-breadcrumb-segment {
 	font-size: 13px;
-	color: #50575e;
+	color: var(--eem-navy);
+	font-weight: 600;
 	text-decoration: none;
 }
 
-.eem-breadcrumb-segment:hover {
-	color: var(--eem-text);
+/* Locked convention 2026-05-30: breadcrumb <a> links — dark navy resting,
+   electric blue hover, NO underline at any state.
+   Chain a.class (specificity 0,2,0) + :link/:visited to beat WP admin's
+   .wp-core-ui a { color } at (0,2,0). Later in file wins the cascade tie.
+   Chain also covers the .eem-page a { color: var(--eem-electric) } rule
+   defined at line ~186 — that rule is (0,1,1); a.class is (0,2,0), wins. */
+.eem-breadcrumb a.eem-breadcrumb-segment,
+.eem-breadcrumb a.eem-breadcrumb-segment:link,
+.eem-breadcrumb a.eem-breadcrumb-segment:visited {
+	color: var(--eem-navy);
+	text-decoration: none;
+}
+.eem-breadcrumb a.eem-breadcrumb-segment:hover,
+.eem-breadcrumb a.eem-breadcrumb-segment:focus,
+.eem-breadcrumb a.eem-breadcrumb-segment:active {
+	color: var(--eem-electric);
 	text-decoration: none;
 }
 
+/* Current page segment — rendered as <span aria-current="page">, not a link. */
 .eem-breadcrumb-segment[aria-current="page"] {
-	color: var(--eem-text);
+	color: var(--eem-navy);
 	font-weight: 600;
 	pointer-events: none;
+	cursor: default;
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -3608,6 +3626,16 @@ a.eem-mob-res-name:focus {
 	border-bottom-right-radius: 0;
 }
 
+/* 2.3.32 — Restore icon-clearing padding-left for ALL .eem-search-wrap inputs
+   inside the list toolbar (not just --attached). The .eem-list-toolbar .eem-search-input
+   rule above resets padding to "5px 10px" (cascade order wins at 0,2,0), which
+   drops left-padding and causes the icon to overlap placeholder text on the
+   Stall & RV Charts list page (uses plain .eem-search-wrap, not --attached).
+   (0,3,0) specificity beats the reset; position after it wins the cascade tie. */
+.eem-list-toolbar .eem-search-wrap .eem-search-input {
+	padding-left: 36px;
+}
+
 /* Toolbar buttons — WP-core doesn't have a `.wp-core-ui button` rule
    matching bare <button> elements (only `.button` class which our toolbar
    doesn't use), but explicit anyway for consistency at the same specificity
@@ -6912,7 +6940,7 @@ input.eem-event-search-input:focus {
 .eem-stall-chart-barn-tab.active { background: #1668F2; color: #fff; border-color: #1668F2; }
 .eem-stall-chart-filter-search { position: relative; flex: 1; min-width: 200px; max-width: 380px; }
 .eem-stall-chart-filter-search svg { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); width: 13px; height: 13px; color: #8c8f94; }
-.eem-stall-chart-search-input { width: 100%; padding: 6px 10px 6px 28px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 13px; font-family: inherit; color: #1d2327; background: #fff; outline: none; }
+.eem-stall-chart-search-input { width: 100%; padding: 6px 10px 6px 36px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 13px; font-family: inherit; color: #1d2327; background: #fff; outline: none; }
 .eem-stall-chart-search-input:focus { border-color: #1668F2; box-shadow: 0 0 0 2px rgba(22,104,242,.12); }
 .eem-stall-chart-filter-hint { font-size: 12px; color: #8c8f94; white-space: nowrap; }
 .eem-stall-chart-empty-note { font-size: 13px; color: #8c8f94; padding: 12px 18px; margin: 0; }

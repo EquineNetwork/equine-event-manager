@@ -39,12 +39,12 @@ ok( '.mockups/ directory exists', is_dir( $mockups_dir ), $pass, $fail, $log );
 $canonical = array(
 	// 10 new/updated from handoff Step 1 (post-C6)
 	'dashboard_page.html'               => 'd373c7ca90da3e3f744e1b0a8950d9ef',
-	'edit_reservation_page.html'        => 'd03a0f710c83f0daea2e16e09d664dff', // 2.3.30 — breadcrumb 3-segment format (logo / Reservations link / reservation name)
+	'edit_reservation_page.html'        => 'cc0dc9ff532de4809789a55215af5e59', // 2.3.32 — breadcrumb link resting #031B4E navy, font-weight:600, text-decoration:none
 	'stall_charts_page.html'            => '6dc053dc24affbe5e23199685a510156', // 2.3.31 — search placeholder standardized to "Search"
-	'stall_chart_detail.html'           => '91288705887a55869abd4ccfab8f8d9e', // 2.3.31 — both filter search inputs placeholder → "Search"
+	'stall_chart_detail.html'           => '5ea62ad121712dec91ca0ff043c51569', // 2.3.32 — breadcrumb link resting #031B4E navy
 	'stall_chart_print_view.html'       => '8c76b6d1396dc757cb798b6734a6a83b',
-	'create_order_page.html'            => 'ea83953366dbf0b3a6364007ac971f80',
-	'collect_payment_page.html'         => '67ca3972922e3370532b45e571ce16c7',
+	'create_order_page.html'            => '2d4338f0678b7770f46286d7b672bc1f', // 2.3.32 — breadcrumb link resting #031B4E navy
+	'collect_payment_page.html'         => '0b0cd67265ad6393db458e1e73f41925', // 2.3.32 — breadcrumb link resting #031B4E navy
 	'reports_page.html'                 => 'ee88a2ceab0be5a3ff8d1a30a038d354',
 	'customer_confirmation_email.html'  => '1705857179c8ee90053fae1304810cdc', // Step 1.7 cancellation-arch update
 	'order_receipt.html'                => 'f26a56fd6d5f8a4fb56059f7c340eb34', // Step 1.7 cancellation-arch update
@@ -57,7 +57,7 @@ $canonical = array(
 	'reservations_page.html'            => 'c504cbe03c6cbf87eb369928fed5cdcb', // 2.3.31 — search placeholder standardized to "Search"
 	'orders_page.html'                  => 'a1fa462f4644585e0ec6054f1d3dab99', // 2.3.31 — search placeholder standardized to "Search"
 	'settings_page.html'                => '6efd31e96700c2d4d7eb4902c7306248', // DS-1.A sidebar update
-	'order_detail_page.html'            => '2b47181000c2eac9d03aea4f06776085', // DS-1.A sidebar update
+	'order_detail_page.html'            => '87d8cb86f3d597a9e66ad4e7039359b8', // 2.3.32 — breadcrumb link resting #031B4E navy
 	'customer_profile_page.html'        => 'd7bd2f3b28d59be697ccd97e03f86e46',
 	'event_page.html'                   => '341de9b586d4484e16dee45560d549f3',
 

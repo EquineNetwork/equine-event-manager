@@ -1609,6 +1609,102 @@ c7x_ok(
 	$pass, $fail, $log
 );
 
+// ── 19. Search icon padding + breadcrumb link CSS guards (2.3.32) ───────────
+//
+// Two locked design conventions enforced here:
+//   A. Search inputs must have padding-left >= 32px to clear the 13px icon at left:9px.
+//   B. Breadcrumb <a> links: dark navy resting, electric blue hover, no underline.
+//
+echo "\n[19] Search icon padding + breadcrumb link CSS convention guards (2.3.32)\n";
+
+$admin_css_232 = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/css/admin.css' );
+
+// 19a. Version bump.
+c7x_ok(
+	'2.3.32: EQUINE_EVENT_MANAGER_VERSION === 2.3.32',
+	defined( 'EQUINE_EVENT_MANAGER_VERSION' ) && '2.3.32' === EQUINE_EVENT_MANAGER_VERSION,
+	$pass, $fail, $log
+);
+
+// 19b. .eem-stall-chart-search-input has padding-left >= 32px.
+// The rule is on a single line: find the block and extract its padding-left value.
+preg_match( '/\.eem-stall-chart-search-input\s*\{[^}]*padding[^}]*\}/', $admin_css_232, $sc_input_block );
+$sc_input_css = isset( $sc_input_block[0] ) ? $sc_input_block[0] : '';
+$sc_padding_ok = false;
+if ( preg_match( '/padding[^;]*6px\s+10px\s+6px\s+(\d+)px/', $sc_input_css, $sc_pad_m ) ) {
+	$sc_padding_ok = (int) $sc_pad_m[1] >= 32;
+}
+c7x_ok(
+	'2.3.32: .eem-stall-chart-search-input padding-left >= 32px (clears 13px icon at left:9px)',
+	$sc_padding_ok,
+	$pass, $fail, $log
+);
+
+// 19c. .eem-list-toolbar .eem-search-wrap .eem-search-input has padding-left 36px.
+// This is the 2.3.32 fix that restores icon-clearing padding for the SC list page search.
+c7x_ok(
+	'2.3.32: .eem-list-toolbar .eem-search-wrap .eem-search-input padding-left: 36px present',
+	(bool) preg_match(
+		'/\.eem-list-toolbar\s+\.eem-search-wrap\s+\.eem-search-input\s*\{[^}]*padding-left\s*:\s*36px/',
+		$admin_css_232
+	),
+	$pass, $fail, $log
+);
+
+// 19d. Breadcrumb resting link color uses --eem-navy (dark navy, not a bright color).
+// Rule must be: .eem-breadcrumb a.eem-breadcrumb-segment { color: var(--eem-navy) }
+c7x_ok(
+	'2.3.32: .eem-breadcrumb a.eem-breadcrumb-segment resting color is --eem-navy',
+	false !== strpos( $admin_css_232, '.eem-breadcrumb a.eem-breadcrumb-segment' ) &&
+	(bool) preg_match(
+		'/\.eem-breadcrumb a\.eem-breadcrumb-segment[^{]*\{[^}]*color\s*:\s*var\(--eem-navy\)/',
+		$admin_css_232
+	),
+	$pass, $fail, $log
+);
+
+// 19e. Breadcrumb hover color uses --eem-electric (bright blue).
+c7x_ok(
+	'2.3.32: .eem-breadcrumb a.eem-breadcrumb-segment:hover color is --eem-electric',
+	(bool) preg_match(
+		'/\.eem-breadcrumb a\.eem-breadcrumb-segment:hover[^{]*\{[^}]*color\s*:\s*var\(--eem-electric\)/',
+		$admin_css_232
+	),
+	$pass, $fail, $log
+);
+
+// 19f. Breadcrumb hover has text-decoration: none (no underline).
+c7x_ok(
+	'2.3.32: .eem-breadcrumb a.eem-breadcrumb-segment:hover has text-decoration: none',
+	(bool) preg_match(
+		'/\.eem-breadcrumb a\.eem-breadcrumb-segment:hover[^{]*\{[^}]*text-decoration\s*:\s*none/',
+		$admin_css_232
+	),
+	$pass, $fail, $log
+);
+
+// 19g. Breadcrumb :link and :visited pseudo-classes present (WP admin cascade defense).
+c7x_ok(
+	'2.3.32: .eem-breadcrumb a.eem-breadcrumb-segment:link and :visited rules present',
+	false !== strpos( $admin_css_232, 'a.eem-breadcrumb-segment:link' ) &&
+	false !== strpos( $admin_css_232, 'a.eem-breadcrumb-segment:visited' ),
+	$pass, $fail, $log
+);
+
+// 19h. Base .eem-breadcrumb-segment uses var(--eem-navy) not a hard-coded grey.
+c7x_ok(
+	'2.3.32: .eem-breadcrumb-segment base color is var(--eem-navy) not hard-coded grey',
+	(bool) preg_match(
+		'/\.eem-breadcrumb-segment\s*\{[^}]*color\s*:\s*var\(--eem-navy\)/',
+		$admin_css_232
+	) &&
+	false === strpos(
+		preg_replace( '/\/\*.*?\*\//s', '', $admin_css_232 ), // strip comments
+		'.eem-breadcrumb-segment { font-size: 13px; color: #50575e'
+	),
+	$pass, $fail, $log
+);
+
 wp_delete_post( $rid, true );
 
 echo implode( "\n", $log ) . "\n=== RESULT: {$pass} passed, {$fail} failed ===\n";
