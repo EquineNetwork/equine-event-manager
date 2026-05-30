@@ -659,18 +659,58 @@ class EEM_Orders_Repository {
 	/**
 	 * Get the reservation stall chart configuration.
 	 *
+	 * Supports both the legacy `_en_stall_chart_stall_blocks` / `_en_rv_lots`
+	 * format and the V1 row-builder format stored in `_en_stall_rows` /
+	 * `_en_rv_rows`. V1 row meta takes priority when present.
+	 *
 	 * @param int $reservation_id Reservation ID.
 	 * @return array
 	 */
 	private function get_stall_chart_config( $reservation_id ) {
-		$stall_blocks         = get_post_meta( $reservation_id, '_en_stall_chart_stall_blocks', true );
-		$rv_lots              = get_post_meta( $reservation_id, '_en_rv_lots', true );
-		$blocked_stall_units  = get_post_meta( $reservation_id, '_en_stall_chart_blocked_stall_units', true );
-		$blocked_rv_lots      = get_post_meta( $reservation_id, '_en_stall_chart_blocked_rv_units', true );
-		$stall_units          = $this->expand_chart_units( is_array( $stall_blocks ) ? $stall_blocks : array() );
-		$rv_units             = $this->get_chart_rv_lot_names( $rv_lots );
-		$blocked_stall_units  = $this->sanitize_chart_unit_list( is_array( $blocked_stall_units ) ? $blocked_stall_units : array(), $stall_units );
-		$blocked_rv_lots      = $this->sanitize_chart_unit_list( is_array( $blocked_rv_lots ) ? $blocked_rv_lots : array(), $rv_units );
+		$stall_units = array();
+		$rv_units    = array();
+
+		// ── Stall units: V1 _en_stall_rows wins; legacy blocks are fallback ── //
+		$v1_stall_rows = get_post_meta( $reservation_id, '_en_stall_rows', true );
+		if ( is_array( $v1_stall_rows ) && ! empty( $v1_stall_rows ) ) {
+			$stall_units = $this->expand_v1_stall_rows( $v1_stall_rows );
+		} else {
+			$stall_blocks = get_post_meta( $reservation_id, '_en_stall_chart_stall_blocks', true );
+			if ( is_array( $stall_blocks ) && ! empty( $stall_blocks ) ) {
+				$stall_units = $this->expand_chart_units( $stall_blocks );
+			}
+		}
+
+		// ── Blocked stalls: try legacy key first, fall back to V1 key ─────── //
+		$blocked_stall_units = get_post_meta( $reservation_id, '_en_stall_chart_blocked_stall_units', true );
+		if ( ! is_array( $blocked_stall_units ) || empty( $blocked_stall_units ) ) {
+			$v1_blocked = get_post_meta( $reservation_id, '_en_blocked_stalls', true );
+			if ( is_array( $v1_blocked ) ) {
+				$blocked_stall_units = $v1_blocked;
+			}
+		}
+
+		// ── RV units: V1 _en_rv_rows wins; legacy _en_rv_lots is fallback ─── //
+		$rv_lots = array();
+		$v1_rv_rows = get_post_meta( $reservation_id, '_en_rv_rows', true );
+		if ( is_array( $v1_rv_rows ) && ! empty( $v1_rv_rows ) ) {
+			$rv_units = $this->expand_rv_lot_names_from_v1_rows( $v1_rv_rows );
+		} else {
+			$rv_lots  = get_post_meta( $reservation_id, '_en_rv_lots', true );
+			$rv_units = $this->get_chart_rv_lot_names( $rv_lots );
+		}
+
+		// ── Blocked RV: try legacy key first, fall back to V1 key ─────────── //
+		$blocked_rv_lots = get_post_meta( $reservation_id, '_en_stall_chart_blocked_rv_units', true );
+		if ( ! is_array( $blocked_rv_lots ) || empty( $blocked_rv_lots ) ) {
+			$v1_blocked_rv = get_post_meta( $reservation_id, '_en_blocked_rv_lots', true );
+			if ( is_array( $v1_blocked_rv ) ) {
+				$blocked_rv_lots = $v1_blocked_rv;
+			}
+		}
+
+		$blocked_stall_units = $this->sanitize_chart_unit_list( is_array( $blocked_stall_units ) ? $blocked_stall_units : array(), $stall_units );
+		$blocked_rv_lots     = $this->sanitize_chart_unit_list( is_array( $blocked_rv_lots ) ? $blocked_rv_lots : array(), $rv_units );
 
 		return array(
 			'enabled'              => (bool) get_post_meta( $reservation_id, '_en_stall_chart_enabled', true ),
@@ -680,7 +720,11 @@ class EEM_Orders_Repository {
 			'blocked_rv_units'     => $blocked_rv_lots,
 			'available_stall_units'=> array_values( array_diff( $stall_units, $blocked_stall_units ) ),
 			'available_rv_units'   => array_values( array_diff( $rv_units, $blocked_rv_lots ) ),
-			'auto_assignable_rv_units' => $this->get_auto_assignable_rv_lot_names( is_array( $rv_lots ) ? $rv_lots : array(), $blocked_rv_lots ),
+			// For V1 rows all non-blocked lots are auto-assignable; legacy path
+			// filters by zone rate presence via get_auto_assignable_rv_lot_names().
+			'auto_assignable_rv_units' => ! empty( $rv_lots )
+				? $this->get_auto_assignable_rv_lot_names( $rv_lots, $blocked_rv_lots )
+				: array_values( array_diff( $rv_units, $blocked_rv_lots ) ),
 		);
 	}
 
@@ -763,6 +807,95 @@ class EEM_Orders_Repository {
 		}
 
 		return array_values( array_unique( $units ) );
+	}
+
+	/**
+	 * Expand a label range into individual unit strings (V1 row format).
+	 *
+	 * @param string $first First label.
+	 * @param string $last  Last label.
+	 * @return array<int, string>
+	 */
+	private function expand_label_range( string $first, string $last ): array {
+		if ( is_numeric( $first ) && is_numeric( $last ) ) {
+			$start = (int) $first;
+			$end   = (int) $last;
+			$units = array();
+			for ( $i = min( $start, $end ); $i <= max( $start, $end ); $i++ ) {
+				$units[] = (string) $i;
+			}
+			return $units;
+		}
+		if ( preg_match( '/^([A-Za-z][A-Za-z\-]*)(\d+)$/', $first, $fm )
+			&& preg_match( '/^([A-Za-z][A-Za-z\-]*)(\d+)$/', $last, $lm )
+			&& $fm[1] === $lm[1] ) {
+			$prefix = $fm[1];
+			$start  = (int) $fm[2];
+			$end    = (int) $lm[2];
+			$units  = array();
+			for ( $i = min( $start, $end ); $i <= max( $start, $end ); $i++ ) {
+				$units[] = $prefix . $i;
+			}
+			return $units;
+		}
+		return array_values( array_unique( array( $first, $last ) ) );
+	}
+
+	/**
+	 * Expand V1 _en_stall_rows into a flat unit list.
+	 *
+	 * Handles one-sided rows (first/last) and back-to-back rows
+	 * (top_first/top_last/bot_first/bot_last).
+	 *
+	 * @param array $v1_rows V1 stall rows.
+	 * @return array<int, string>
+	 */
+	private function expand_v1_stall_rows( array $v1_rows ): array {
+		$units = array();
+		foreach ( $v1_rows as $row ) {
+			$layout = isset( $row['layout'] ) ? $row['layout'] : 'one-sided';
+			if ( 'back-to-back' === $layout ) {
+				$top_first = isset( $row['top_first'] ) ? (string) $row['top_first'] : '';
+				$top_last  = isset( $row['top_last'] )  ? (string) $row['top_last']  : '';
+				$bot_first = isset( $row['bot_first'] ) ? (string) $row['bot_first'] : '';
+				$bot_last  = isset( $row['bot_last'] )  ? (string) $row['bot_last']  : '';
+				if ( '' !== $top_first && '' !== $top_last ) {
+					$units = array_merge( $units, $this->expand_label_range( $top_first, $top_last ) );
+				}
+				if ( '' !== $bot_first && '' !== $bot_last ) {
+					$units = array_merge( $units, $this->expand_label_range( $bot_first, $bot_last ) );
+				}
+			} else {
+				$first = isset( $row['first'] ) ? (string) $row['first'] : '';
+				$last  = isset( $row['last'] )  ? (string) $row['last']  : '';
+				if ( '' !== $first && '' !== $last ) {
+					$units = array_merge( $units, $this->expand_label_range( $first, $last ) );
+				}
+			}
+		}
+		return array_values( array_unique( $units ) );
+	}
+
+	/**
+	 * Expand V1 _en_rv_rows into a flat list of lot name strings.
+	 *
+	 * @param array $v1_rv_rows V1 RV rows.
+	 * @return array<int, string>
+	 */
+	private function expand_rv_lot_names_from_v1_rows( array $v1_rv_rows ): array {
+		$names = array();
+		foreach ( $v1_rv_rows as $row ) {
+			$name  = isset( $row['name'] )  ? sanitize_text_field( $row['name'] ) : '';
+			$first = isset( $row['first'] ) ? (string) $row['first'] : '';
+			$last  = isset( $row['last'] )  ? (string) $row['last']  : '';
+			if ( '' === $name || '' === $first || '' === $last ) {
+				continue;
+			}
+			foreach ( $this->expand_label_range( $first, $last ) as $num ) {
+				$names[] = $name . ' ' . $num;
+			}
+		}
+		return array_values( array_unique( $names ) );
 	}
 
 	/**

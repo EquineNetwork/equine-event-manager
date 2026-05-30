@@ -161,6 +161,22 @@ class EEM_Seed_Demo_Command extends WP_CLI_Command {
 			$like
 		) );
 
+		// Remove legacy C4F-*/SEED-* fixture rows that reference reservation 43.
+		$wpdb->query(
+			$wpdb->prepare(
+				"DELETE FROM {$wpdb->prefix}en_stall_reservations WHERE notes LIKE %s AND email NOT LIKE %s",
+				'%Reservation setup ID: ' . self::RESERVATION_ID . '%',
+				'%' . self::DEMO_EMAIL_DOMAIN . '%'
+			)
+		);
+		$wpdb->query(
+			$wpdb->prepare(
+				"DELETE FROM {$wpdb->prefix}en_rv_reservations WHERE notes LIKE %s AND email NOT LIKE %s",
+				'%Reservation setup ID: ' . self::RESERVATION_ID . '%',
+				'%' . self::DEMO_EMAIL_DOMAIN . '%'
+			)
+		);
+
 		delete_option( self::SEEDED_OPTION );
 	}
 
@@ -437,7 +453,7 @@ class EEM_Seed_Demo_Command extends WP_CLI_Command {
 			$sub   = $stall_subtotal( $qty );
 			$cfee  = $fee( $sub );
 			$total = $sub + $cfee;
-			$notes = $assigned ? 'Assigned Stall Units: ' . $assigned : '';
+			$notes = 'Reservation setup ID: ' . $event . "\n" . ( $assigned ? 'Assigned Stall Units: ' . $assigned : '' );
 			$wpdb->insert( $stall, array(
 				'event_source'    => 'native',
 				'event_id'        => $event,
@@ -474,7 +490,7 @@ class EEM_Seed_Demo_Command extends WP_CLI_Command {
 			$sub   = $rv_subtotal( $qty );
 			$cfee  = $fee( $sub );
 			$total = $sub + $cfee;
-			$notes = $assigned ? 'Assigned RV Lots: ' . $assigned : '';
+			$notes = 'Reservation setup ID: ' . $event . "\n" . ( $assigned ? 'Assigned RV Lots: ' . $assigned : '' );
 			$wpdb->insert( $rv, array(
 				'event_source'    => 'native',
 				'event_id'        => $event,
