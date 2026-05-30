@@ -6918,6 +6918,20 @@ input.eem-event-search-input:focus {
 .eem-btn--primary:hover { background: #1257d1; border-color: #1257d1; color: #fff; }
 .eem-btn--ghost { background: #fff; color: #1d2327; border-color: #c3c4c7; }
 .eem-btn--ghost:hover { background: #f6f7f7; color: #1d2327; }
+/* DS-1.A.1 — anchor-button specificity discipline.
+   .eem-page a { color: var(--eem-electric) } at (0,1,1) beats .eem-btn--primary
+   at (0,1,0), making white text Electric Blue on Electric Blue = invisible.
+   a.class chain at (0,2,0) comes later in file and wins the cascade. */
+a.eem-btn--primary,
+a.eem-btn--primary:link,
+a.eem-btn--primary:visited,
+a.eem-btn--primary:hover,
+a.eem-btn--primary:focus  { color: #fff; }
+a.eem-btn--ghost,
+a.eem-btn--ghost:link,
+a.eem-btn--ghost:visited,
+a.eem-btn--ghost:hover,
+a.eem-btn--ghost:focus    { color: #1d2327; }
 
 /* ── View tabs card ── */
 .eem-stall-chart-view-tabs-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden; margin-bottom: 14px; }
@@ -6940,8 +6954,11 @@ input.eem-event-search-input:focus {
 .eem-stall-chart-barn-tab.active { background: #1668F2; color: #fff; border-color: #1668F2; }
 .eem-stall-chart-filter-search { position: relative; flex: 1; min-width: 200px; max-width: 380px; }
 .eem-stall-chart-filter-search svg { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); width: 13px; height: 13px; color: #8c8f94; }
-.eem-stall-chart-search-input { width: 100%; padding: 6px 10px 6px 36px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 13px; font-family: inherit; color: #1d2327; background: #fff; outline: none; }
+.eem-stall-chart-search-input { width: 100%; padding: 6px 10px 6px 44px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 13px; font-family: inherit; color: #1d2327; background: #fff; outline: none; }
 .eem-stall-chart-search-input:focus { border-color: #1668F2; box-shadow: 0 0 0 2px rgba(22,104,242,.12); }
+/* Scoped (0,2,0) guard — prevents any higher-context rule from collapsing the
+   icon-to-text gap. Icon right edge lands at ~22px; 44px gives a 22px clearance. */
+.eem-stall-chart-filter-search .eem-stall-chart-search-input { padding-left: 44px; }
 .eem-stall-chart-filter-hint { font-size: 12px; color: #8c8f94; white-space: nowrap; }
 .eem-stall-chart-empty-note { font-size: 13px; color: #8c8f94; padding: 12px 18px; margin: 0; }
 .eem-stall-chart-no-data { font-size: 13px; color: #6B7A99; padding: 18px; margin: 0; }

@@ -1769,6 +1769,51 @@ c7x_ok(
 	$pass, $fail, $log
 );
 
+// ── [21] 2.3.34 fix guards ────────────────────────────────────────────────────
+echo "\n[21] 2.3.34 fix guards (Generate Assignments anchor-button + search padding)\n";
+
+$css_234 = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/css/admin.css' );
+
+// 21a. a.eem-btn--primary chain is present with color: #fff — DS-1.A.1 anchor-button fix.
+// Root cause: .eem-page a { color: var(--eem-electric) } at (0,1,1) beat .eem-btn--primary
+// { color: #fff } at (0,1,0), rendering white text Electric Blue on Electric Blue = invisible.
+c7x_ok(
+	'2.3.34: a.eem-btn--primary rule present with color: #fff (DS-1.A.1 anchor-button fix)',
+	(bool) preg_match(
+		'/a\.eem-btn--primary[^{]*\{[^}]*color\s*:\s*#fff\s*;/',
+		$css_234
+	),
+	$pass, $fail, $log
+);
+
+// 21b. a.eem-btn--ghost chain is present with color: #1d2327.
+c7x_ok(
+	'2.3.34: a.eem-btn--ghost rule present with color: #1d2327',
+	(bool) preg_match(
+		'/a\.eem-btn--ghost[^{]*\{[^}]*color\s*:\s*#1d2327\s*;/',
+		$css_234
+	),
+	$pass, $fail, $log
+);
+
+// 21c. .eem-stall-chart-search-input padding-left is ≥ 42 px (must be 44 px per 2.3.34).
+// Icon right-edge lands at ~22 px; 44 px gives 22 px clearance — enough to see icon clearly.
+c7x_ok(
+	'2.3.34: .eem-stall-chart-search-input padding-left is 44px (icon clearance)',
+	(bool) preg_match(
+		'/\.eem-stall-chart-search-input\s*\{[^}]*padding[^:]*:\s*\d+px\s+\d+px\s+\d+px\s+(4[2-9]|[5-9]\d)px/',
+		$css_234
+	),
+	$pass, $fail, $log
+);
+
+// 21d. Scoped (0,2,0) guard rule exists — .eem-stall-chart-filter-search .eem-stall-chart-search-input.
+c7x_ok(
+	'2.3.34: scoped .eem-stall-chart-filter-search .eem-stall-chart-search-input guard rule present',
+	false !== strpos( $css_234, '.eem-stall-chart-filter-search .eem-stall-chart-search-input' ),
+	$pass, $fail, $log
+);
+
 wp_delete_post( $rid, true );
 
 echo implode( "\n", $log ) . "\n=== RESULT: {$pass} passed, {$fail} failed ===\n";
