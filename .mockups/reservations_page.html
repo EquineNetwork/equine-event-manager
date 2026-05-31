@@ -124,7 +124,7 @@ td.col-cb{padding:14px 8px 14px 18px;width:36px}
 .orders-count{font-size:14px;font-weight:700;color:#031B4E;font-family:'IBM Plex Sans',sans-serif}
 .orders-count-zero{color:#8c8f94;font-weight:400}
 
-/* Actions cell (meatballs only per shipped state) */
+/* Actions cell (meatballs + row action links — 2.3.43) */
 .actions-cell{display:flex;align-items:center;gap:5px;justify-content:flex-end}
 .more-btn{width:30px;height:30px;border-radius:4px;border:1px solid #c3c4c7;background:#fff;color:#50575e;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;letter-spacing:.05em;line-height:1}
 .more-btn:hover{background:#f0f0f1;color:#1d2327;border-color:#8c8f94}
@@ -140,6 +140,16 @@ td.col-cb{padding:14px 8px 14px 18px;width:36px}
 .row-dd-danger{color:#b91c1c}
 .row-dd-danger svg{color:#fca5a5}
 .row-dd-danger:hover{background:#fef2f2;color:#b91c1c}
+/* Disabled meatball item (FIX 4 — 2.3.43) */
+.row-dd-item--disabled{opacity:.45;cursor:not-allowed;pointer-events:none}
+
+/* ── ROW ACTION TEXT LINKS (FIX 3 — 2.3.43, WP-native pattern) ── */
+.row-actions{visibility:hidden;font-size:12px;color:#6b7a99;margin-top:4px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;white-space:nowrap}
+tr:hover .row-actions{visibility:visible}
+.row-actions a{color:#1668F2;font-size:12px;text-decoration:none}
+.row-actions a:hover{color:#1257d1}
+.row-action-sep{color:#c3c4c7;user-select:none}
+.row-action-danger a{color:#b91c1c}
 
 /* ── TABLE FOOTER ── */
 .table-footer{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-top:1px solid #dcdcde;background:#f3f4f5;flex-wrap:wrap;gap:8px}
@@ -311,10 +321,24 @@ td.col-cb{padding:14px 8px 14px 18px;width:36px}
             </tr>
           </thead>
           <tbody>
-            <!-- Row 1 — resting state (dropdown includes Quick Edit) -->
+            <!-- Row 1 — resting state; row actions visible on hover; meatball = secondary actions only (FIX 3 + FIX 4 — 2.3.43) -->
             <tr>
               <td class="col-cb"><input type="checkbox"></td>
-              <td><a class="res-name" href="#">2025 Spring Classic</a></td>
+              <td>
+                <a class="res-name" href="#">2025 Spring Classic</a>
+                <!-- Row action text links (WP-native hover pattern) -->
+                <div class="row-actions">
+                  <span><a href="#">Edit</a></span>
+                  <span class="row-action-sep">|</span>
+                  <span><a href="#" onclick="openMockupQE(1,event)">Quick Edit</a></span>
+                  <span class="row-action-sep">|</span>
+                  <span><a href="#">Duplicate</a></span>
+                  <span class="row-action-sep">|</span>
+                  <span class="row-action-danger"><a href="#">Trash</a></span>
+                  <span class="row-action-sep">|</span>
+                  <span><a href="#" target="_blank">View</a></span>
+                </div>
+              </td>
               <td><span class="event-dates-empty">—</span></td>
               <td><div class="type-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-addon">Add-On</span></div></td>
               <td><span class="res-status status-active">Active</span></td>
@@ -323,13 +347,11 @@ td.col-cb{padding:14px 8px 14px 18px;width:36px}
                 <div class="actions-cell">
                   <div class="row-menu-wrap">
                     <button class="more-btn" onclick="toggleRowMenu('res-menu-1',event)" title="More actions">···</button>
+                    <!-- Meatball = secondary actions only: View on Frontend, View Orders, Email Customers -->
                     <div class="row-dropdown" id="res-menu-1">
-                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Reservation</a>
-                      <a class="row-dd-item" href="#" onclick="openMockupQE(1,event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Quick Edit</a>
+                      <a class="row-dd-item" href="#" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>View on Frontend</a>
                       <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>View Orders</a>
-                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Duplicate</a>
-                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export Roster (CSV)</a>
-                      <a class="row-dd-item row-dd-danger" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Move to Trash</a>
+                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Email Customers</a>
                     </div>
                   </div>
                 </div>
@@ -361,10 +383,23 @@ td.col-cb{padding:14px 8px 14px 18px;width:36px}
                 </div>
               </td>
             </tr>
-            <!-- Row 2 — resting state -->
+            <!-- Row 2 — has orders + linked event URL; both meatball items enabled -->
             <tr>
               <td class="col-cb"><input type="checkbox"></td>
-              <td><a class="res-name" href="#">2026 Southeast Region Super Sort</a></td>
+              <td>
+                <a class="res-name" href="#">2026 Southeast Region Super Sort</a>
+                <div class="row-actions">
+                  <span><a href="#">Edit</a></span>
+                  <span class="row-action-sep">|</span>
+                  <span><a href="#">Quick Edit</a></span>
+                  <span class="row-action-sep">|</span>
+                  <span><a href="#">Duplicate</a></span>
+                  <span class="row-action-sep">|</span>
+                  <span class="row-action-danger"><a href="#">Trash</a></span>
+                  <span class="row-action-sep">|</span>
+                  <span><a href="#" target="_blank">View</a></span>
+                </div>
+              </td>
               <td><span class="event-dates-empty">—</span></td>
               <td><div class="type-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-rv">RV</span><span class="type-badge type-addon">Add-On</span></div></td>
               <td><span class="res-status status-active">Active</span></td>
@@ -374,52 +409,136 @@ td.col-cb{padding:14px 8px 14px 18px;width:36px}
                   <div class="row-menu-wrap">
                     <button class="more-btn" onclick="toggleRowMenu('res-menu-2',event)">···</button>
                     <div class="row-dropdown" id="res-menu-2">
-                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Reservation</a>
+                      <a class="row-dd-item" href="#" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>View on Frontend</a>
                       <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>View Orders</a>
-                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Duplicate</a>
-                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export Roster (CSV)</a>
-                      <a class="row-dd-item row-dd-danger" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Move to Trash</a>
+                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Email Customers</a>
                     </div>
                   </div>
                 </div>
               </td>
             </tr>
+            <!-- Row 3 — has orders; no linked frontend URL → "View on Frontend" disabled in meatball -->
             <tr>
               <td class="col-cb"><input type="checkbox"></td>
-              <td><a class="res-name" href="#">2026 Gulf Coast Classic</a></td>
+              <td>
+                <a class="res-name" href="#">2026 Gulf Coast Classic</a>
+                <div class="row-actions">
+                  <span><a href="#">Edit</a></span>
+                  <span class="row-action-sep">|</span>
+                  <span><a href="#">Quick Edit</a></span>
+                  <span class="row-action-sep">|</span>
+                  <span><a href="#">Duplicate</a></span>
+                  <span class="row-action-sep">|</span>
+                  <span class="row-action-danger"><a href="#">Trash</a></span>
+                </div>
+              </td>
               <td><span class="event-dates-empty">—</span></td>
               <td><div class="type-badges"><span class="type-badge type-stall">Stall</span></div></td>
               <td><span class="res-status status-active">Active</span></td>
               <td><span class="orders-count">12</span></td>
               <td>
                 <div class="actions-cell">
-                  <div class="row-menu-wrap"><button class="more-btn">···</button></div>
+                  <div class="row-menu-wrap">
+                    <button class="more-btn" onclick="toggleRowMenu('res-menu-3',event)">···</button>
+                    <!-- "View on Frontend" disabled — no frontend URL found for this reservation -->
+                    <div class="row-dropdown" id="res-menu-3">
+                      <span class="row-dd-item row-dd-item--disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>View on Frontend</span>
+                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>View Orders</a>
+                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Email Customers</a>
+                    </div>
+                  </div>
                 </div>
               </td>
             </tr>
+            <!-- Row 4 — draft; 0 orders → "Email Customers" disabled; no frontend URL → "View on Frontend" disabled -->
             <tr>
               <td class="col-cb"><input type="checkbox"></td>
-              <td><a class="res-name" href="#">2026 Sunshine Dressage</a></td>
+              <td>
+                <a class="res-name" href="#">2026 Sunshine Dressage</a>
+                <div class="row-actions">
+                  <span><a href="#">Edit</a></span>
+                  <span class="row-action-sep">|</span>
+                  <span><a href="#">Quick Edit</a></span>
+                  <span class="row-action-sep">|</span>
+                  <span><a href="#">Duplicate</a></span>
+                  <span class="row-action-sep">|</span>
+                  <span class="row-action-danger"><a href="#">Trash</a></span>
+                </div>
+              </td>
               <td><span class="event-dates-empty">—</span></td>
               <td><div class="type-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-rv">RV</span><span class="type-badge type-group">Group</span></div></td>
               <td><span class="res-status status-draft">Draft</span></td>
               <td><span class="orders-count orders-count-zero">0</span></td>
               <td>
                 <div class="actions-cell">
-                  <div class="row-menu-wrap"><button class="more-btn">···</button></div>
+                  <div class="row-menu-wrap">
+                    <button class="more-btn" onclick="toggleRowMenu('res-menu-4',event)">···</button>
+                    <!-- Both disabled: no frontend URL, 0 orders -->
+                    <div class="row-dropdown" id="res-menu-4">
+                      <span class="row-dd-item row-dd-item--disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>View on Frontend</span>
+                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>View Orders</a>
+                      <span class="row-dd-item row-dd-item--disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Email Customers</span>
+                    </div>
+                  </div>
                 </div>
               </td>
             </tr>
+            <!-- Row 5 — draft; has orders; has frontend URL → all meatball items enabled -->
             <tr>
               <td class="col-cb"><input type="checkbox"></td>
-              <td><a class="res-name" href="#">2026 Lone Star Invitational</a></td>
+              <td>
+                <a class="res-name" href="#">2026 Lone Star Invitational</a>
+                <div class="row-actions">
+                  <span><a href="#">Edit</a></span>
+                  <span class="row-action-sep">|</span>
+                  <span><a href="#">Quick Edit</a></span>
+                  <span class="row-action-sep">|</span>
+                  <span><a href="#">Duplicate</a></span>
+                  <span class="row-action-sep">|</span>
+                  <span class="row-action-danger"><a href="#">Trash</a></span>
+                </div>
+              </td>
               <td><span class="event-dates-empty">—</span></td>
               <td><div class="type-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-rv">RV</span><span class="type-badge type-addon">Add-On</span><span class="type-badge type-group">Group</span></div></td>
               <td><span class="res-status status-draft">Draft</span></td>
               <td><span class="orders-count">5</span></td>
               <td>
                 <div class="actions-cell">
-                  <div class="row-menu-wrap"><button class="more-btn">···</button></div>
+                  <div class="row-menu-wrap">
+                    <button class="more-btn" onclick="toggleRowMenu('res-menu-5',event)">···</button>
+                    <div class="row-dropdown" id="res-menu-5">
+                      <a class="row-dd-item" href="#" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>View on Frontend</a>
+                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>View Orders</a>
+                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Email Customers</a>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            <!-- Row 6 — trashed; row actions = Restore | Delete Permanently; meatball mirrors same (FIX 3 + FIX 4 — 2.3.43) -->
+            <tr style="background:#fff8f8">
+              <td class="col-cb"><input type="checkbox"></td>
+              <td>
+                <a class="res-name" href="#" style="color:#8c8f94">2024 Fall Harvest Classic</a>
+                <div class="row-actions">
+                  <span><a href="#">Restore</a></span>
+                  <span class="row-action-sep">|</span>
+                  <span class="row-action-danger"><a href="#">Delete Permanently</a></span>
+                </div>
+              </td>
+              <td><span class="event-dates-empty">—</span></td>
+              <td><div class="type-badges"><span class="type-badge type-stall">Stall</span></div></td>
+              <td><span class="res-status status-trashed">Trashed</span></td>
+              <td><span class="orders-count orders-count-zero">0</span></td>
+              <td>
+                <div class="actions-cell">
+                  <div class="row-menu-wrap">
+                    <button class="more-btn" onclick="toggleRowMenu('res-menu-6',event)">···</button>
+                    <div class="row-dropdown" id="res-menu-6">
+                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>Restore</a>
+                      <a class="row-dd-item row-dd-danger" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Delete Permanently</a>
+                    </div>
+                  </div>
                 </div>
               </td>
             </tr>

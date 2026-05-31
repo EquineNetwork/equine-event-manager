@@ -7687,3 +7687,135 @@ input.eem-slug-input:focus {
 		padding-top: 0;
 	}
 }
+
+/* ─────────────────────────────────────────────────────────────
+   2.3.43 — FIX 1: Pencil inline-edit (editor header)
+   ─────────────────────────────────────────────────────────── */
+
+/* Wrap keeps the h1 + pencil in the same row, and the inline
+   edit form hidden below it until activated. */
+.eem-res-name-edit-wrap {
+	display: flex;
+	flex-direction: column;
+	gap: var(--eem-space-2);
+}
+
+.eem-res-name-view {
+	display: flex;
+	align-items: center;
+	gap: var(--eem-space-3);
+}
+
+/* Pencil icon button — borderless, icon-only, sits flush next to h1. */
+.eem-pencil-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background: none;
+	border: none;
+	padding: 4px;
+	cursor: pointer;
+	color: var(--eem-muted);
+	opacity: 0;
+	transition: opacity 0.15s ease, color 0.15s ease;
+	flex-shrink: 0;
+	line-height: 1;
+}
+
+.eem-res-name-view:hover .eem-pencil-btn,
+.eem-pencil-btn:focus {
+	opacity: 1;
+}
+
+.eem-pencil-btn:hover {
+	color: var(--eem-electric);
+	opacity: 1;
+}
+
+.eem-pencil-btn svg {
+	width: 16px;
+	height: 16px;
+}
+
+/* Inline edit form — revealed by JS when pencil is clicked. */
+.eem-res-name-inline-edit {
+	display: flex;
+	align-items: center;
+	gap: var(--eem-space-3);
+	flex-wrap: wrap;
+}
+
+input.eem-res-name-inline-input {
+	font-size: 22px;
+	font-weight: 600;
+	font-family: var(--eem-font-ui);
+	color: var(--eem-navy);
+	border: 1px solid var(--eem-border);
+	border-radius: var(--eem-radius);
+	padding: 4px 10px;
+	min-width: 280px;
+	line-height: 1.3;
+	background: #fff;
+	box-shadow: none;
+	margin: 0;
+}
+
+input.eem-res-name-inline-input:focus {
+	border-color: var(--eem-electric);
+	outline: none;
+	box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.15);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   2.3.43 — FIX 3: WP-native hover row-action text links
+   ─────────────────────────────────────────────────────────── */
+
+/* Row actions — hidden by default, revealed on tr:hover. */
+.eem-row-actions {
+	visibility: hidden;
+	font-size: 12px;
+	color: var(--eem-muted);
+	margin-top: 4px;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	flex-wrap: wrap;
+	white-space: nowrap;
+}
+
+tr:hover .eem-row-actions,
+.eem-table tr:focus-within .eem-row-actions {
+	visibility: visible;
+}
+
+.eem-row-actions a {
+	color: var(--eem-electric);
+	font-size: 12px;
+}
+
+.eem-row-actions a:hover {
+	color: var(--eem-electric-dark, var(--eem-electric));
+}
+
+.eem-row-action-sep {
+	color: var(--eem-border);
+	user-select: none;
+}
+
+.eem-row-action-danger a {
+	color: var(--eem-danger);
+}
+
+.eem-row-action-danger a:hover {
+	color: var(--eem-danger);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   2.3.43 — FIX 4: Meatball disabled state
+   ─────────────────────────────────────────────────────────── */
+
+.eem-row-dd-item--disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+	pointer-events: none;
+}

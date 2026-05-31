@@ -750,6 +750,156 @@ class EEM_Reservations_List_Page {
 	}
 
 	/**
+	 * FIX 4 (2.3.43) — Lazy front-end URL resolver with cache.  Attempts to
+	 * find a public page that contains an `[en_reservation` shortcode referencing
+	 * this reservation ID by scanning published post content via a single LIKE
+	 * query.  Falls back to the linked TEC event permalink if no shortcode page
+	 * is found.  Caches the result in `_eem_frontend_url_cache` post-meta so
+	 * subsequent renders are O(1).
+	 *
+	 * Returns '' when no linked event is set (no useful URL possible) or when
+	 * neither the content scan nor the TEC fallback yields a URL.
+	 *
+	 * @param int $reservation_id
+	 * @return string  Absolute URL or '' if none found.
+	 */
+	private static function resolve_frontend_url( int $reservation_id ): string {
+		// 1. Cached?
+		$cached = (string) get_post_meta( $reservation_id, '_eem_frontend_url_cache', true );
+		if ( '' !== $cached ) {
+			return $cached;
+		}
+
+		// 2. Require a linked event; without one there is no meaningful front-end URL.
+		$event_id = (int) get_post_meta( $reservation_id, '_en_event_id', true );
+		if ( $event_id <= 0 ) {
+			return '';
+		}
+
+		// 3. Scan published posts/pages for an [en_reservation shortcode containing
+		//    the reservation ID in the content string.  The LIKE covers common forms:
+		//    [en_reservation id="N"], [en_reservation reservation_id="N"], etc.
+		global $wpdb;
+		$url = '';
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery
+		$page_id = $wpdb->get_var( $wpdb->prepare(
+			"SELECT ID FROM {$wpdb->posts}
+			 WHERE post_status = 'publish'
+			   AND post_content LIKE %s
+			   AND post_content LIKE %s
+			 LIMIT 1",
+			'%' . $wpdb->esc_like( '[en_reservation' ) . '%',
+			'%' . $wpdb->esc_like( (string) $reservation_id ) . '%'
+		) );
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery
+		if ( $page_id ) {
+			$found = get_permalink( (int) $page_id );
+			if ( $found ) {
+				$url = $found;
+			}
+		}
+
+		// 4. Fallback: TEC event permalink (public events page).
+		if ( '' === $url && $event_id > 0 ) {
+			$tec_url = get_permalink( $event_id );
+			// Reject admin URLs (WP returns admin URL if the post is not public).
+			if ( $tec_url && false === strpos( $tec_url, 'admin.php' ) ) {
+				$url = $tec_url;
+			}
+		}
+
+		// 5. Cache non-empty results only; empty means "not yet configured".
+		if ( '' !== $url ) {
+			update_post_meta( $reservation_id, '_eem_frontend_url_cache', $url );
+		}
+
+		return $url;
+	}
+
+	/**
+	 * FIX 5 (2.3.43) — AJAX handler for the Duplicate row action.  Creates a
+	 * new `en_reservation` draft with title `{source} (Copy)`, no linked event,
+	 * and copies all post meta EXCEPT the event-link keys, the frontend URL cache,
+	 * and the source-event sort-cache.  Override flags are inherited.  Returns
+	 * `redirect_url` pointing at the new reservation's Edit page so the JS can
+	 * navigate immediately.
+	 *
+	 * Nonce: `eem_reservation_duplicate` (same action as the existing admin-post
+	 * handler, posted as `_eem_action_nonce`).
+	 *
+	 * @return void  wp_send_json_*; never returns.
+	 */
+	public static function handle_duplicate_ajax(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+		check_ajax_referer( 'eem_reservation_duplicate', '_eem_action_nonce' );
+
+		$reservation_id = isset( $_POST['reservation_id'] ) ? absint( wp_unslash( $_POST['reservation_id'] ) ) : 0;
+		$source         = $reservation_id > 0 ? get_post( $reservation_id ) : null;
+		if ( ! $source || EEM_Reservations_List_Repo::POST_TYPE !== $source->post_type ) {
+			wp_send_json_error( array( 'message' => __( 'Reservation not found.', 'equine-event-manager' ) ), 404 );
+		}
+
+		$new_id = wp_insert_post( array(
+			'post_type'   => EEM_Reservations_List_Repo::POST_TYPE,
+			'post_status' => 'draft',
+			'post_title'  => $source->post_title . ' ' . __( '(Copy)', 'equine-event-manager' ),
+		), true );
+
+		if ( is_wp_error( $new_id ) || ! $new_id ) {
+			wp_send_json_error( array( 'message' => __( 'Failed to create duplicate.', 'equine-event-manager' ) ), 500 );
+		}
+
+		// Keys excluded from the copy: event-link references (the duplicate has no
+		// linked event yet), the lazy frontend URL cache, and the sort-cache key
+		// used by the date-ordered list query.  Override flags ARE inherited so the
+		// copied name/slug respect the source reservation's override state.
+		$excluded_keys = array(
+			'_en_event_id',
+			'_en_native_event_id',
+			'_en_external_event_id',
+			'_en_external_event_key',
+			'_en_source_event_start_date',
+			'_eem_frontend_url_cache',
+		);
+
+		$all_meta = get_post_meta( (int) $reservation_id );
+		foreach ( (array) $all_meta as $key => $values ) {
+			// Skip WP-internal underscore-prefixed keys not owned by this plugin.
+			if ( 0 === strpos( $key, '_edit_' ) || 0 === strpos( $key, '_wp_' ) ) {
+				continue;
+			}
+			if ( in_array( $key, $excluded_keys, true ) ) {
+				continue;
+			}
+			foreach ( (array) $values as $value ) {
+				add_post_meta( $new_id, $key, maybe_unserialize( $value ) );
+			}
+		}
+
+		EEM_Activity_Log::write(
+			'reservation_duplicated',
+			array(
+				'source_reservation_id' => $reservation_id,
+				'new_reservation_id'    => $new_id,
+				'via'                   => 'ajax',
+			),
+			array(
+				'reservation_id' => $new_id,
+				'actor_type'     => 'admin',
+				'actor_id'       => get_current_user_id(),
+			)
+		);
+
+		wp_send_json_success( array(
+			'new_reservation_id' => $new_id,
+			'redirect_url'       => EEM_Reservation_Editor_Page::url( $new_id ),
+			'message'            => __( 'Reservation duplicated. Redirecting to editor…', 'equine-event-manager' ),
+		) );
+	}
+
+	/**
 	 * Shared front-door for the admin_post handlers — verifies nonce
 	 * + cap + reservation_id presence, exits/redirects on failure,
 	 * returns the validated reservation id on success.
@@ -1012,9 +1162,11 @@ class EEM_Reservations_List_Page {
 
 	/**
 	 * One desktop table row. Renders all 7 columns including the
-	 * conditional Stall Chart icon and the meatballs dropdown.
+	 * WP-native hover-revealed row action text links (FIX 3, 2.3.43)
+	 * and the meatballs dropdown for secondary actions.
 	 *
 	 * @param WP_Post $post
+	 * @param string  $active_tab
 	 * @return void
 	 */
 	private function render_table_row( $post, $active_tab = 'all' ) {
@@ -1040,10 +1192,16 @@ class EEM_Reservations_List_Page {
 		$status_id    = $this->derive_status_id( $post );
 		$status_label = $this->status_label_for( $status_id );
 		$is_trashed   = ( 'trashed' === $status_id );
+		// FIX 3 (2.3.43) — Row action text links; FIX 4 — meatball "View on frontend"
+		// also uses this. Cached after first resolve so re-passing is cheap.
+		$frontend_url = self::resolve_frontend_url( $id );
 		?>
 		<tr data-reservation-id="<?php echo esc_attr( $id ); ?>">
 			<td class="eem-col-cb"><input type="checkbox" name="reservation_ids[]" value="<?php echo esc_attr( $id ); ?>" aria-label="<?php echo esc_attr( sprintf( __( 'Select %s', 'equine-event-manager' ), $event_title ) ); ?>" /></td>
-			<td><a class="eem-res-name" href="<?php echo esc_url( $edit_url ); ?>"><?php echo esc_html( $event_title ); ?></a></td>
+			<td>
+				<a class="eem-res-name" href="<?php echo esc_url( $edit_url ); ?>"><?php echo esc_html( $event_title ); ?></a>
+				<?php $this->render_row_action_links( $id, $edit_url, $frontend_url, $is_trashed, get_the_title( $id ) ); ?>
+			</td>
 			<td><span class="eem-event-dates"><?php echo esc_html( $dates !== '' ? $dates : '—' ); ?></span></td>
 			<td><?php $this->render_type_badges( $badges ); ?></td>
 			<td><span class="eem-res-status eem-res-status--<?php echo esc_attr( $status_id ); ?>"><?php echo esc_html( $status_label ); ?></span></td>
@@ -1074,7 +1232,7 @@ class EEM_Reservations_List_Page {
 					?><span class="eem-orders-count is-zero"><?php echo esc_html( number_format_i18n( $orders_count ) ); ?></span><?php
 				endif;
 			?></td>
-			<td><?php $this->render_row_actions( $id, $has_stall_chart, $is_trashed ); ?></td>
+			<td><?php $this->render_row_actions( $id, $has_stall_chart, $is_trashed, $frontend_url, (int) $orders_count ); ?></td>
 		</tr>
 		<?php
 	}
@@ -1111,22 +1269,60 @@ class EEM_Reservations_List_Page {
 	}
 
 	/**
-	 * Row actions cell — conditional Stall Chart icon + meatballs menu.
-	 * Meatballs items render as buttons whose data-eem-action handlers
-	 * land in C4.C; the dropdown toggle reuses the C1.5 generic
-	 * dropdown-toggle delegated handler.
+	 * FIX 3 (2.3.43) — WP-native hover-revealed row action text links rendered
+	 * under the reservation title in the Reservation column.  Published/draft rows
+	 * show Edit | Quick Edit | Duplicate | Trash | View; trashed rows show
+	 * Restore | Delete Permanently.  Visibility is CSS-controlled via
+	 * `tr:hover .eem-row-actions { visibility: visible }`.
 	 *
-	 * @param int  $reservation_id
-	 * @param bool $has_stall_chart  True when _en_stall_chart_enabled
-	 *                               meta is truthy. C5.G.4 replaced the
-	 *                               older $has_stalls argument (which
-	 *                               proxied "stall capacity > 0") with
-	 *                               this precise signal so the icon
-	 *                               only renders when a chart is
-	 *                               actually configured.
+	 * @param int    $reservation_id
+	 * @param string $edit_url
+	 * @param string $frontend_url    Resolved front-end URL (may be '' if none).
+	 * @param bool   $is_trashed
+	 * @param string $res_title       Raw post_title for the typed-confirm data attr.
 	 * @return void
 	 */
-	private function render_row_actions( $reservation_id, $has_stall_chart, $is_trashed = false ) {
+	private function render_row_action_links( int $reservation_id, string $edit_url, string $frontend_url, bool $is_trashed, string $res_title ): void {
+		?>
+		<div class="eem-row-actions">
+		<?php if ( $is_trashed ) : ?>
+			<span><a href="#" data-eem-action="reservation-restore" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>"><?php esc_html_e( 'Restore', 'equine-event-manager' ); ?></a></span>
+			<span class="eem-row-action-sep" aria-hidden="true">|</span>
+			<span class="eem-row-action-danger"><a href="#" data-eem-action="reservation-delete-permanently" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" data-reservation-title="<?php echo esc_attr( $res_title ); ?>"><?php esc_html_e( 'Delete Permanently', 'equine-event-manager' ); ?></a></span>
+		<?php else : ?>
+			<span><a href="<?php echo esc_url( $edit_url ); ?>"><?php esc_html_e( 'Edit', 'equine-event-manager' ); ?></a></span>
+			<span class="eem-row-action-sep" aria-hidden="true">|</span>
+			<span><a href="#" data-eem-action="reservation-quick-edit" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>"><?php esc_html_e( 'Quick Edit', 'equine-event-manager' ); ?></a></span>
+			<span class="eem-row-action-sep" aria-hidden="true">|</span>
+			<span><a href="#" data-eem-action="reservation-duplicate-ajax" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>"><?php esc_html_e( 'Duplicate', 'equine-event-manager' ); ?></a></span>
+			<span class="eem-row-action-sep" aria-hidden="true">|</span>
+			<span class="eem-row-action-danger"><a href="#" data-eem-action="reservation-trash" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>"><?php esc_html_e( 'Trash', 'equine-event-manager' ); ?></a></span>
+			<?php if ( '' !== $frontend_url ) : ?>
+				<span class="eem-row-action-sep" aria-hidden="true">|</span>
+				<span><a href="<?php echo esc_url( $frontend_url ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'View', 'equine-event-manager' ); ?></a></span>
+			<?php endif; ?>
+		<?php endif; ?>
+		</div>
+		<?php
+	}
+
+	/**
+	 * FIX 4 (2.3.43) — Secondary actions meatballs: View on frontend (lazy URL
+	 * cache), View orders, Email customers (disabled when 0 orders).  Primary
+	 * CRUD (Edit/Quick Edit/Duplicate/Trash) has moved to WP-native row-action
+	 * text links (`render_row_action_links()`).
+	 *
+	 * For trashed rows: Restore + Delete Permanently remain in the meatballs so
+	 * the dropdown is still functional when the row actions are not visible.
+	 *
+	 * @param int    $reservation_id
+	 * @param bool   $has_stall_chart  True when _en_stall_chart_enabled meta is set.
+	 * @param bool   $is_trashed
+	 * @param string $frontend_url     Pre-resolved front-end URL (may be '').
+	 * @param int    $orders_count     Order count for the Email disabled-state check.
+	 * @return void
+	 */
+	private function render_row_actions( $reservation_id, $has_stall_chart, $is_trashed = false, $frontend_url = '', $orders_count = 0 ) {
 		$stall_chart_url = add_query_arg(
 			array(
 				'page'           => 'equine-event-manager-stall-charts',
@@ -1134,8 +1330,8 @@ class EEM_Reservations_List_Page {
 			),
 			admin_url( 'admin.php' )
 		);
-		$front_end_url   = get_permalink( $reservation_id );
-		$orders_url      = add_query_arg(
+		// FIX 4 (2.3.43) — Use pre-resolved $frontend_url (lazy-cached) instead of raw get_permalink().
+		$orders_url = add_query_arg(
 			array(
 				'page'           => 'equine-event-manager-orders',
 				'reservation_id' => $reservation_id,
@@ -1154,51 +1350,46 @@ class EEM_Reservations_List_Page {
 				<button type="button" class="eem-more-btn" data-eem-action="dropdown-toggle" aria-haspopup="menu" aria-expanded="false" aria-controls="<?php echo esc_attr( $menu_id ); ?>" title="<?php esc_attr_e( 'More actions', 'equine-event-manager' ); ?>">···</button>
 				<div class="eem-row-dropdown" id="<?php echo esc_attr( $menu_id ); ?>" role="menu">
 					<?php if ( $is_trashed ) : ?>
-						<?php /* C7.X.17 Issue D1 — Trash rows show ONLY Restore + Delete Permanently.
-						        Non-trash items (View on Front-End, View Orders, Duplicate, Export,
-						        Email) are hidden for trashed reservations — there's no public page
-						        to view, and acting on a trashed reservation is unexpected. */ ?>
+						<?php /* Trashed rows: secondary meatball mirrors the row-action links — Restore +
+						        Delete Permanently.  Both also appear in the hover row actions; the meatball
+						        provides access on touch devices where hover is unreliable. */ ?>
 						<button type="button" class="eem-row-dd-item" data-eem-action="reservation-restore" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" role="menuitem">
 							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
 							<?php esc_html_e( 'Restore', 'equine-event-manager' ); ?>
 						</button>
-						<?php /* C7.X.17 Issue D3 — data-reservation-title feeds the typed-confirm
-						        modal in JS. Server-side also validates the typed title matches. */ ?>
 						<button type="button" class="eem-row-dd-item eem-row-dd-danger" data-eem-action="reservation-delete-permanently" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" data-reservation-title="<?php echo esc_attr( get_the_title( $reservation_id ) ); ?>" role="menuitem">
 							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
 							<?php esc_html_e( 'Delete Permanently', 'equine-event-manager' ); ?>
 						</button>
 					<?php else : ?>
-						<?php if ( $front_end_url ) : ?>
-							<a class="eem-row-dd-item" href="<?php echo esc_url( $front_end_url ); ?>" target="_blank" rel="noopener" role="menuitem">
+						<?php /* FIX 4 (2.3.43) — Secondary actions only.  Primary CRUD (Edit / Quick Edit /
+						        Duplicate / Trash) has moved to hover row-action text links. */ ?>
+						<?php if ( '' !== $frontend_url ) : ?>
+							<a class="eem-row-dd-item" href="<?php echo esc_url( $frontend_url ); ?>" target="_blank" rel="noopener" role="menuitem">
 								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-								<?php esc_html_e( 'View on Front-End', 'equine-event-manager' ); ?>
+								<?php esc_html_e( 'View on Frontend', 'equine-event-manager' ); ?>
 							</a>
+						<?php else : ?>
+							<span class="eem-row-dd-item eem-row-dd-item--disabled" aria-disabled="true" title="<?php esc_attr_e( 'No public page found for this reservation', 'equine-event-manager' ); ?>" role="menuitem">
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+								<?php esc_html_e( 'View on Frontend', 'equine-event-manager' ); ?>
+							</span>
 						<?php endif; ?>
 						<a class="eem-row-dd-item" href="<?php echo esc_url( $orders_url ); ?>" role="menuitem">
 							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
 							<?php esc_html_e( 'View Orders', 'equine-event-manager' ); ?>
 						</a>
-						<button type="button" class="eem-row-dd-item" data-eem-action="reservation-quick-edit" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" role="menuitem">
-							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-							<?php esc_html_e( 'Quick Edit', 'equine-event-manager' ); ?>
-						</button>
-						<button type="button" class="eem-row-dd-item" data-eem-action="reservation-duplicate" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" role="menuitem">
-							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-							<?php esc_html_e( 'Duplicate', 'equine-event-manager' ); ?>
-						</button>
-						<button type="button" class="eem-row-dd-item" data-eem-action="reservation-export-roster" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" role="menuitem">
-							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-							<?php esc_html_e( 'Export Roster (CSV)', 'equine-event-manager' ); ?>
-						</button>
-						<button type="button" class="eem-row-dd-item" data-eem-action="reservation-email-customers" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" role="menuitem">
-							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-							<?php esc_html_e( 'Email Customers', 'equine-event-manager' ); ?>
-						</button>
-						<button type="button" class="eem-row-dd-item eem-row-dd-danger" data-eem-action="reservation-trash" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" role="menuitem">
-							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-							<?php esc_html_e( 'Move to Trash', 'equine-event-manager' ); ?>
-						</button>
+						<?php if ( $orders_count > 0 ) : ?>
+							<button type="button" class="eem-row-dd-item" data-eem-action="reservation-email-customers" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" role="menuitem">
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+								<?php esc_html_e( 'Email Customers', 'equine-event-manager' ); ?>
+							</button>
+						<?php else : ?>
+							<span class="eem-row-dd-item eem-row-dd-item--disabled" aria-disabled="true" title="<?php esc_attr_e( 'No orders for this reservation', 'equine-event-manager' ); ?>" role="menuitem">
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+								<?php esc_html_e( 'Email Customers', 'equine-event-manager' ); ?>
+							</span>
+						<?php endif; ?>
 					<?php endif; ?>
 				</div>
 			</div>
@@ -1231,6 +1422,8 @@ class EEM_Reservations_List_Page {
 				$status_id    = $this->derive_status_id( $post );
 				$status_label = $this->status_label_for( $status_id );
 				$is_trashed   = ( 'trashed' === $status_id );
+				// FIX 4 (2.3.43) — resolve frontend URL for meatball "View on Frontend".
+				$mob_frontend_url = self::resolve_frontend_url( $id );
 				?>
 				<div class="eem-mobile-res-card">
 					<a class="eem-mob-res-name" href="<?php echo esc_url( $edit_url ); ?>"><?php echo esc_html( $event_title ); ?></a>
@@ -1264,7 +1457,7 @@ class EEM_Reservations_List_Page {
 							?>
 						</div>
 						<div class="eem-mob-res-actions">
-							<?php $this->render_row_actions( $id, $has_stall_chart, $is_trashed ); ?>
+							<?php $this->render_row_actions( $id, $has_stall_chart, $is_trashed, $mob_frontend_url, (int) $orders_count ); ?>
 						</div>
 					</div>
 				</div>

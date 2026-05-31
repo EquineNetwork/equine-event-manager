@@ -2123,6 +2123,8 @@ c7x_ok(
 );
 
 echo "\n[27] FIX 4/5/6 — Reservation Details card, Quick Edit, mockup update (2.3.42)\n";
+// NOTE: 27a-27d were rewritten for 2.3.43 — Reservation Details card REMOVED;
+// pencil inline-edit replaces it.  27e-27j test Quick Edit wiring which persists.
 
 $js_admin_27   = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/js/admin.js' );
 $php_editor_27 = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-reservation-editor-page.php' );
@@ -2130,76 +2132,196 @@ $php_list_27   = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem
 $php_loader_27 = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager.php' );
 $mockup_27     = file_get_contents( EQUINE_EVENT_MANAGER_PATH . '.mockups/reservations_page.html' );
 
-// 27a. render_reservation_details_card() method defined in editor page (FIX 4).
+// 27a. [2.3.43 rewrite] render_reservation_details_card() REMOVED; pencil edit
+//      replaces it.  Assert the OLD method is gone (not a regression — intentional).
 c7x_ok(
-	'[27a] render_reservation_details_card() defined in editor page (FIX 4)',
-	false !== strpos( $php_editor_27, 'function render_reservation_details_card(' ),
+	'[27a] render_reservation_details_card() removed from editor page (2.3.43 FIX 1)',
+	false === strpos( $php_editor_27, 'function render_reservation_details_card(' ),
 	$pass, $fail, $log
 );
 
-// 27b. eem_res_name input emitted in editor page (FIX 4).
+// 27b. [2.3.43 rewrite] Pencil button (.eem-pencil-btn + data-eem-action="res-name-edit")
+//      emitted in editor page render().
 c7x_ok(
-	'[27b] eem_res_name input emitted in editor page (FIX 4)',
-	false !== strpos( $php_editor_27, 'name="eem_res_name"' ),
+	'[27b] eem-pencil-btn + res-name-edit action emitted in editor page (2.3.43 FIX 1)',
+	false !== strpos( $php_editor_27, 'eem-pencil-btn' ) &&
+	false !== strpos( $php_editor_27, 'res-name-edit' ),
 	$pass, $fail, $log
 );
 
-// 27c. eem_res_slug input emitted in editor page (FIX 4).
+// 27c. [2.3.43 rewrite] eem-res-name-inline-edit wrapper emitted with rename nonce attr.
 c7x_ok(
-	'[27c] eem_res_slug input emitted in editor page (FIX 4)',
-	false !== strpos( $php_editor_27, 'name="eem_res_slug"' ),
+	'[27c] eem-res-name-inline-edit + rename-nonce attr emitted in editor page (2.3.43 FIX 1)',
+	false !== strpos( $php_editor_27, 'eem-res-name-inline-edit' ) &&
+	false !== strpos( $php_editor_27, 'data-rename-nonce' ),
 	$pass, $fail, $log
 );
 
-// 27d. ajax_save() handles eem_res_name mirror logic (FIX 4).
+// 27d. [2.3.43 rewrite] FIX 2 — unconditional mirror in ajax_save() based on stored
+//      override flags, NOT conditional on eem_res_name POST field.
 c7x_ok(
-	'[27d] ajax_save() handles FIX 4 eem_res_name mirror + override meta',
-	false !== strpos( $php_editor_27, "array_key_exists( 'eem_res_name'" ) &&
-	false !== strpos( $php_editor_27, '_eem_reservation_name_overridden' ),
+	'[27d] ajax_save() FIX 2 unconditional mirror uses stored _eem_reservation_name_overridden (2.3.43)',
+	false !== strpos( $php_editor_27, '_eem_reservation_name_overridden' ) &&
+	false === strpos( $php_editor_27, "array_key_exists( 'eem_res_name'" ),
 	$pass, $fail, $log
 );
 
-// 27e. resNameInput() and resSlugInput() functions defined in admin.js (FIX 4).
+// 27e. openResNameEdit() + saveResNameEdit() + cancelResNameEdit() defined in admin.js.
 c7x_ok(
-	'[27e] resNameInput() + resSlugInput() defined in admin.js (FIX 4)',
-	false !== strpos( $js_admin_27, 'function resNameInput(' ) &&
-	false !== strpos( $js_admin_27, 'function resSlugInput(' ),
+	'[27e] openResNameEdit() + saveResNameEdit() + cancelResNameEdit() defined in admin.js (2.3.43 FIX 1)',
+	false !== strpos( $js_admin_27, 'function openResNameEdit(' ) &&
+	false !== strpos( $js_admin_27, 'function saveResNameEdit(' ) &&
+	false !== strpos( $js_admin_27, 'function cancelResNameEdit(' ),
 	$pass, $fail, $log
 );
 
-// 27f. reservation-quick-edit action handler wired in admin.js (FIX 5).
+// 27f. reservation-quick-edit action handler wired in admin.js (FIX 5 — 2.3.42, persists).
 c7x_ok(
-	'[27f] reservation-quick-edit action wired in admin.js dispatcher (FIX 5)',
+	'[27f] reservation-quick-edit action wired in admin.js dispatcher (2.3.42 FIX 5)',
 	false !== strpos( $js_admin_27, "'reservation-quick-edit'" ) &&
 	false !== strpos( $js_admin_27, 'function openQuickEdit(' ),
 	$pass, $fail, $log
 );
 
-// 27g. handle_quick_edit_ajax() method defined in list page (FIX 5).
+// 27g. handle_quick_edit_ajax() method defined in list page (FIX 5 — 2.3.42).
 c7x_ok(
-	'[27g] handle_quick_edit_ajax() defined in list page (FIX 5)',
+	'[27g] handle_quick_edit_ajax() defined in list page (2.3.42 FIX 5)',
 	false !== strpos( $php_list_27, 'function handle_quick_edit_ajax()' ),
 	$pass, $fail, $log
 );
 
-// 27h. wp_ajax_eem_reservation_quick_edit hook wired in loader (FIX 5).
+// 27h. wp_ajax_eem_reservation_quick_edit hook wired in loader (2.3.42).
 c7x_ok(
-	'[27h] wp_ajax_eem_reservation_quick_edit wired in plugin loader (FIX 5)',
+	'[27h] wp_ajax_eem_reservation_quick_edit wired in plugin loader (2.3.42)',
 	false !== strpos( $php_loader_27, 'wp_ajax_eem_reservation_quick_edit' ),
 	$pass, $fail, $log
 );
 
-// 27i. Quick Edit nonce created in localize_row_action_nonces() (FIX 5).
+// 27i. Quick Edit nonce created in localize_row_action_nonces() (2.3.42).
 c7x_ok(
-	'[27i] eem_reservation_quick_edit nonce in localize_row_action_nonces() (FIX 5)',
+	'[27i] eem_reservation_quick_edit nonce in localize_row_action_nonces() (2.3.42)',
 	false !== strpos( $php_list_27, "'eem_reservation_quick_edit'" ),
 	$pass, $fail, $log
 );
 
-// 27j. reservations_page.html mockup contains quick-edit-row class (FIX 6).
+// 27j. reservations_page.html mockup contains quick-edit-row class (2.3.42 FIX 6).
 c7x_ok(
-	'[27j] reservations_page.html mockup contains quick-edit-row (FIX 6)',
+	'[27j] reservations_page.html mockup contains quick-edit-row (2.3.42 FIX 6)',
 	false !== strpos( $mockup_27, 'quick-edit-row' ),
+	$pass, $fail, $log
+);
+
+echo "\n[28] 2.3.43 — FIX 1-5: Pencil edit, FIX 2 mirror, row actions, meatballs, duplicate AJAX\n";
+
+$js_admin_28   = $js_admin_27;
+$php_editor_28 = $php_editor_27;
+$php_list_28   = $php_list_27;
+$php_loader_28 = $php_loader_27;
+$css_28        = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/css/admin.css' );
+
+// 28a. ajax_rename() method defined in editor page (FIX 1).
+c7x_ok(
+	'[28a] ajax_rename() defined in editor page (FIX 1)',
+	false !== strpos( $php_editor_28, 'function ajax_rename()' ),
+	$pass, $fail, $log
+);
+
+// 28b. wp_ajax_eem_rename_reservation hooked in loader (FIX 1).
+c7x_ok(
+	'[28b] wp_ajax_eem_rename_reservation wired in loader (FIX 1)',
+	false !== strpos( $php_loader_28, 'wp_ajax_eem_rename_reservation' ),
+	$pass, $fail, $log
+);
+
+// 28c. res-name-edit / res-name-save / res-name-cancel dispatcher entries present (FIX 1).
+c7x_ok(
+	'[28c] res-name-edit/save/cancel dispatcher entries in admin.js (FIX 1)',
+	false !== strpos( $js_admin_28, "'res-name-edit'" ) &&
+	false !== strpos( $js_admin_28, "'res-name-save'" ) &&
+	false !== strpos( $js_admin_28, "'res-name-cancel'" ),
+	$pass, $fail, $log
+);
+
+// 28d. CSS .eem-pencil-btn + .eem-row-actions defined (FIX 1 + FIX 3).
+c7x_ok(
+	'[28d] .eem-pencil-btn + .eem-row-actions defined in admin.css (FIX 1 + FIX 3)',
+	false !== strpos( $css_28, '.eem-pencil-btn' ) &&
+	false !== strpos( $css_28, '.eem-row-actions' ),
+	$pass, $fail, $log
+);
+
+// 28e. render_row_action_links() defined in list page (FIX 3).
+c7x_ok(
+	'[28e] render_row_action_links() defined in list page (FIX 3)',
+	false !== strpos( $php_list_28, 'function render_row_action_links(' ),
+	$pass, $fail, $log
+);
+
+// 28f. Row action links include reservation-duplicate-ajax + reservation-quick-edit + reservation-trash (FIX 3).
+c7x_ok(
+	'[28f] Row actions emit reservation-duplicate-ajax + quick-edit + trash data-eem-action attrs (FIX 3)',
+	false !== strpos( $php_list_28, 'reservation-duplicate-ajax' ) &&
+	false !== strpos( $php_list_28, 'reservation-quick-edit' ) &&
+	false !== strpos( $php_list_28, 'reservation-trash' ),
+	$pass, $fail, $log
+);
+
+// 28g. render_row_actions() no longer contains Quick Edit or Duplicate meatball items (FIX 3+4).
+//     Check that Quick Edit button is gone from the meatballs (moved to row action text links).
+//     We look for the old Quick Edit meatball button pattern that included "reservation-quick-edit"
+//     inside render_row_actions — after FIX 3, it appears only in render_row_action_links().
+c7x_ok(
+	'[28g] render_row_actions() no longer emits Quick Edit meatball (FIX 3 — moved to row links)',
+	// Quick Edit meatball was a <button data-eem-action="reservation-quick-edit"> inside render_row_actions.
+	// After FIX 3, that action only appears in render_row_action_links(). We verify by checking that
+	// "reservation-quick-edit" does NOT appear in a context where eem-row-dd-item is also in the line.
+	false === strpos( $php_list_28, "eem-row-dd-item\" data-eem-action=\"reservation-quick-edit\"" ),
+	$pass, $fail, $log
+);
+
+// 28h. resolve_frontend_url() private static method defined in list page (FIX 4).
+c7x_ok(
+	'[28h] resolve_frontend_url() defined in list page (FIX 4)',
+	false !== strpos( $php_list_28, 'function resolve_frontend_url(' ),
+	$pass, $fail, $log
+);
+
+// 28i. handle_duplicate_ajax() method defined in list page (FIX 5).
+c7x_ok(
+	'[28i] handle_duplicate_ajax() defined in list page (FIX 5)',
+	false !== strpos( $php_list_28, 'function handle_duplicate_ajax()' ),
+	$pass, $fail, $log
+);
+
+// 28j. wp_ajax_eem_reservation_duplicate_ajax hooked in loader (FIX 5).
+c7x_ok(
+	'[28j] wp_ajax_eem_reservation_duplicate_ajax wired in loader (FIX 5)',
+	false !== strpos( $php_loader_28, 'wp_ajax_eem_reservation_duplicate_ajax' ),
+	$pass, $fail, $log
+);
+
+// 28k. duplicateReservationAjax() + reservation-duplicate-ajax action defined in admin.js (FIX 5).
+c7x_ok(
+	'[28k] duplicateReservationAjax() + reservation-duplicate-ajax wired in admin.js (FIX 5)',
+	false !== strpos( $js_admin_28, 'function duplicateReservationAjax(' ) &&
+	false !== strpos( $js_admin_28, "'reservation-duplicate-ajax'" ),
+	$pass, $fail, $log
+);
+
+// 28l. Duplicate meta exclusion list includes _eem_frontend_url_cache + _en_event_id (FIX 5).
+c7x_ok(
+	'[28l] handle_duplicate_ajax() excludes _eem_frontend_url_cache + _en_event_id from meta copy (FIX 5)',
+	false !== strpos( $php_list_28, "'_eem_frontend_url_cache'" ) &&
+	false !== strpos( $php_list_28, "'_en_event_id'" ),
+	$pass, $fail, $log
+);
+
+// 28m. Version bumped to 2.3.43 in both the plugin header and EQUINE_EVENT_MANAGER_VERSION.
+$main_file_28 = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'equine-event-manager.php' );
+c7x_ok(
+	'[28m] Plugin version 2.3.43 in header + EQUINE_EVENT_MANAGER_VERSION constant',
+	false !== strpos( $main_file_28, "Version:           2.3.43" ) &&
+	false !== strpos( $main_file_28, "'2.3.43'" ),
 	$pass, $fail, $log
 );
 

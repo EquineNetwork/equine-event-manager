@@ -1602,6 +1602,14 @@
 		   so we redirect-with-message rather than maintaining AJAX
 		   state in the dropdown). Email Customers is AJAX because
 		   it has a compose modal. */
+		/* FIX 3/5 (2.3.43) — Duplicate now in row actions; uses AJAX + redirect
+		   so the admin lands on the new reservation's Edit page. */
+		'reservation-duplicate-ajax': function (target) {
+			duplicateReservationAjax(target);
+		},
+		/* Kept for backward-compat (old meatball button form path).
+		   FIX 4 removes the meatball entry; this handler stays so any
+		   existing admin-post form submits still work. */
 		'reservation-duplicate': function (target) {
 			submitReservationAction(target, 'eem_reservation_duplicate', 'eem_reservation_duplicate');
 		},
@@ -1630,6 +1638,16 @@
 		},
 		'reservation-email-customers': function (target) {
 			openEmailCustomersModal(target);
+		},
+		/* FIX 1 (2.3.43) — Pencil inline-edit in the editor header. */
+		'res-name-edit': function (target) {
+			openResNameEdit(target);
+		},
+		'res-name-save': function (target) {
+			saveResNameEdit(target);
+		},
+		'res-name-cancel': function () {
+			cancelResNameEdit();
 		},
 		/* FIX 5 (2.3.42) — Quick Edit inline row. */
 		'reservation-quick-edit': function (target) {
@@ -4429,6 +4447,135 @@ function eemEscHtml(str) {
 		.replace(/&/g, '&amp;')
 		.replace(/</g, '&lt;')
 		.replace(/>/g, '&gt;');
+}
+
+/* ─────────────────────────────────────────────────────────────
+ * FIX 1 (2.3.43) — Pencil inline-edit for reservation name
+ *   in the editor page header.
+ *
+ * Flow:
+ *   1. Click pencil icon → `openResNameEdit()` hides the h1 view
+ *      and reveals the inline input + Save / Cancel buttons.
+ *   2. "Save" → `saveResNameEdit()` POSTs to wp_ajax_eem_rename_reservation.
+ *      On success, updates the h1 text and restores the view state.
+ *   3. "Cancel" → `cancelResNameEdit()` restores the view without saving.
+ * ───────────────────────────────────────────────────────────── */
+
+function openResNameEdit() {
+	var view   = document.getElementById('eem-res-name-view');
+	var editor = document.getElementById('eem-res-name-inline-edit');
+	if (!view || !editor) return;
+	view.style.display   = 'none';
+	editor.style.display = 'flex';
+	var input = document.getElementById('eem-res-name-inline-input');
+	if (input) { input.focus(); input.select(); }
+}
+
+function saveResNameEdit(target) {
+	var editor = document.getElementById('eem-res-name-inline-edit');
+	if (!editor) return;
+	var input  = document.getElementById('eem-res-name-inline-input');
+	var name   = input ? input.value.trim() : '';
+	var resId  = editor.dataset.reservationId;
+	var nonce  = editor.dataset.renameNonce;
+
+	/* Disable save while in flight. */
+	var saveBtn = target;
+	if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving…'; }
+
+	var fd = new FormData();
+	fd.append('action',           'eem_rename_reservation');
+	fd.append('reservation_id',   resId);
+	fd.append('eem_res_name',     name);
+	fd.append('_eem_rename_nonce', nonce);
+
+	var ajaxUrl = typeof window.ajaxurl !== 'undefined' ? window.ajaxurl : '';
+
+	fetch(ajaxUrl, { method: 'POST', credentials: 'same-origin', body: fd })
+		.then(function (r) { return r.json(); })
+		.then(function (json) {
+			if (json.success) {
+				/* Update the h1 display text to the resolved name. */
+				var h1 = document.getElementById('eem-header-event-name');
+				if (h1 && json.data && json.data.name) {
+					/* Replace all text nodes in the h1 (avoid overwriting the button). */
+					h1.childNodes.forEach(function (node) {
+						if (node.nodeType === Node.TEXT_NODE) {
+							node.textContent = json.data.name + ' ';
+						}
+					});
+				}
+				/* Also sync the input's own value so Cancel → re-edit shows current name. */
+				if (input) input.value = json.data && json.data.name ? json.data.name : name;
+				cancelResNameEdit();
+				EEM.showSaveToast(json.data && json.data.message ? json.data.message : 'Name saved.');
+			} else {
+				if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
+				EEM.showSaveToast(
+					(json.data && json.data.message) ? json.data.message : 'Save failed.',
+					{ type: 'error' }
+				);
+			}
+		})
+		.catch(function () {
+			if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
+			EEM.showSaveToast('Save failed — please try again.', { type: 'error' });
+		});
+}
+
+function cancelResNameEdit() {
+	var view   = document.getElementById('eem-res-name-view');
+	var editor = document.getElementById('eem-res-name-inline-edit');
+	if (!view || !editor) return;
+	editor.style.display = 'none';
+	view.style.display   = 'flex';
+}
+
+/* ─────────────────────────────────────────────────────────────
+ * FIX 5 (2.3.43) — Duplicate row action via AJAX.  Returns a
+ * redirect URL pointing at the new reservation's Edit page.
+ * ───────────────────────────────────────────────────────────── */
+
+function duplicateReservationAjax(target) {
+	var id    = target.dataset.reservationId;
+	if (!id) return;
+	var nonce = window.eemRowActions && window.eemRowActions.nonces
+		? (window.eemRowActions.nonces.eem_reservation_duplicate || '')
+		: '';
+
+	/* Disable the clicked link while in-flight to prevent double-click. */
+	target.style.pointerEvents = 'none';
+	target.style.opacity       = '0.5';
+
+	var ajaxUrl = typeof window.ajaxurl !== 'undefined'
+		? window.ajaxurl
+		: (window.eemRowActions ? window.eemRowActions.adminPostUrl.replace('admin-post.php', 'admin-ajax.php') : '');
+
+	var fd = new FormData();
+	fd.append('action',           'eem_reservation_duplicate_ajax');
+	fd.append('reservation_id',   id);
+	fd.append('_eem_action_nonce', nonce);
+
+	fetch(ajaxUrl, { method: 'POST', credentials: 'same-origin', body: fd })
+		.then(function (r) { return r.json(); })
+		.then(function (json) {
+			if (json.success && json.data && json.data.redirect_url) {
+				EEM.showSaveToast(json.data.message || 'Duplicated. Redirecting…');
+				window.location.href = json.data.redirect_url;
+			} else {
+				target.style.pointerEvents = '';
+				target.style.opacity       = '';
+				EEM.showSaveToast(
+					(json.data && json.data.message) ? json.data.message : 'Duplicate failed.',
+					{ type: 'error' }
+				);
+			}
+		})
+		.catch(function () {
+			target.style.pointerEvents = '';
+			target.style.opacity       = '';
+			EEM.showSaveToast('Duplicate failed — please try again.', { type: 'error' });
+		});
 }
 
 })();
