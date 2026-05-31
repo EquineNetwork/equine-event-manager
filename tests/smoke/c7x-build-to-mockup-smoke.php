@@ -1961,31 +1961,75 @@ c7x_ok(
 	$pass, $fail, $log
 );
 
-// 24b. .form-section CSS rule present in public.css.
+// 24b. (2.3.46 fix) PHP shortcode emits eem-reservation-section class.
+//      Previous assertion checked dead class .form-section — corrected.
 c7x_ok(
-	'C10.A: .form-section CSS rule present in public.css',
-	false !== strpos( $css_public_24, '.form-section' ),
+	'C10.A: PHP shortcode source emits eem-reservation-section class',
+	false !== strpos( $php_shortcodes_24, 'eem-reservation-section' ),
 	$pass, $fail, $log
 );
 
-// 24c. .toggle CSS rule present in public.css.
+// 24c. (2.3.46 fix) PHP shortcode emits eem-reservation-section-toggle class.
+//      Previous assertion checked dead class .toggle — corrected.
 c7x_ok(
-	'C10.A: .toggle CSS rule present in public.css',
-	false !== strpos( $css_public_24, '.toggle{' ) || false !== strpos( $css_public_24, '.toggle {' ),
+	'C10.A: PHP shortcode source emits eem-reservation-section-toggle class',
+	false !== strpos( $php_shortcodes_24, 'eem-reservation-section-toggle' ),
 	$pass, $fail, $log
 );
 
-// 24d. .agreement-notice CSS rule present in public.css.
+// 24d. (2.3.46 fix) render_frontend_form_assets_in_footer() calls
+//      EEM_Events::render_frontend_styles() to enqueue public.css.
+//      Previous assertion checked dead class .agreement-notice — corrected.
 c7x_ok(
-	'C10.A: .agreement-notice CSS rule present in public.css',
-	false !== strpos( $css_public_24, '.agreement-notice{' ) || false !== strpos( $css_public_24, '.agreement-notice ' ),
+	'C10.A: render_frontend_form_assets_in_footer() calls EEM_Events::render_frontend_styles()',
+	false !== strpos( $php_shortcodes_24, 'EEM_Events::render_frontend_styles()' ),
 	$pass, $fail, $log
 );
 
-// 24e. .mobile-order-drawer CSS rule present in public.css.
+// 24e. (2.3.46 fix) render_frontend_styles() registers eem-public handle with public.css.
+//      Previous assertion checked dead class .mobile-order-drawer — corrected.
 c7x_ok(
-	'C10.A: .mobile-order-drawer CSS rule present in public.css',
-	false !== strpos( $css_public_24, '.mobile-order-drawer{' ) || false !== strpos( $css_public_24, '.mobile-order-drawer ' ),
+	'C10.A: render_frontend_styles() registers eem-public handle pointing at public.css',
+	false !== strpos( $php_events_24, "'eem-public'" ) &&
+	false !== strpos( $php_events_24, 'public.css' ),
+	$pass, $fail, $log
+);
+
+// 24g. Dead mockup CSS classes are NOT present in public.css (stripped in 2.3.46).
+c7x_ok(
+	'C10.A (2.3.46): Dead mockup CSS class .form-section absent from public.css',
+	false === strpos( $css_public_24, '.form-section{' ) && false === strpos( $css_public_24, '.form-section ' ),
+	$pass, $fail, $log
+);
+c7x_ok(
+	'C10.A (2.3.46): Dead mockup CSS class .mobile-order-drawer absent from public.css',
+	false === strpos( $css_public_24, '.mobile-order-drawer{' ) &&
+	false === strpos( $css_public_24, '.mobile-order-drawer ' ),
+	$pass, $fail, $log
+);
+c7x_ok(
+	'C10.A (2.3.46): Dead mockup CSS class .agreement-notice absent from public.css',
+	false === strpos( $css_public_24, '.agreement-notice{' ) && false === strpos( $css_public_24, '.agreement-notice ' ),
+	$pass, $fail, $log
+);
+
+// 24h. show_event_header defaults to 0 (V1 Rendering Decision: form only, no hero).
+c7x_ok(
+	'C10.A (2.3.46): show_event_header defaults to 0 in render_reservation() shortcode_atts',
+	(bool) preg_match( "/'show_event_header'\s*=>\s*0/", $php_shortcodes_24 ),
+	$pass, $fail, $log
+);
+
+// 24i. filter_single_event_content guards against Elementor double-render.
+$php_events_246 = $php_events_24; // already loaded above.
+c7x_ok(
+	'C10.A (2.3.46): filter_single_event_content checks has_shortcode(en_reservation) before rendering',
+	false !== strpos( $php_events_246, "has_shortcode( \$content, 'en_reservation' )" ),
+	$pass, $fail, $log
+);
+c7x_ok(
+	'C10.A (2.3.46): filter_single_event_content skips when Elementor owns template',
+	false !== strpos( $php_events_246, '_elementor_edit_mode' ),
 	$pass, $fail, $log
 );
 
@@ -2405,6 +2449,121 @@ c7x_ok(
 	'[29i] Plugin version 2.3.44 in header + EQUINE_EVENT_MANAGER_VERSION constant',
 	false !== strpos( $main_29, "Version:           2.3.44" ) &&
 	false !== strpos( $main_29, "'2.3.44'" ),
+	$pass, $fail, $log
+);
+
+echo "\n[30] 2.3.46 — C10.A enqueue fix + hero default + content filter guard + dead CSS strip\n";
+
+$main_30        = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'equine-event-manager.php' );
+$php_short_30   = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'public/class-equine-event-manager-shortcodes.php' );
+$php_events_30  = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-events.php' );
+$css_public_30  = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/css/public.css' );
+
+// 30a. FIX 1 — render_frontend_form_assets_in_footer() calls EEM_Events::render_frontend_styles().
+c7x_ok(
+	'[30a] FIX 1: render_frontend_form_assets_in_footer() calls EEM_Events::render_frontend_styles() to enqueue public.css',
+	false !== strpos( $php_short_30, 'EEM_Events::render_frontend_styles()' ),
+	$pass, $fail, $log
+);
+
+// 30b. FIX 1 — eem-public handle registered in render_frontend_styles() with public.css path.
+c7x_ok(
+	'[30b] FIX 1: render_frontend_styles() registers eem-public handle with public.css',
+	false !== strpos( $php_events_30, "'eem-public'" ) &&
+	false !== strpos( $php_events_30, 'public.css' ),
+	$pass, $fail, $log
+);
+
+// 30c. FIX 2 — show_event_header defaults to 0 (V1 form-only spec).
+c7x_ok(
+	'[30c] FIX 2: show_event_header defaults to 0 in render_reservation() shortcode_atts',
+	(bool) preg_match( "/'show_event_header'\s*=>\s*0/", $php_short_30 ),
+	$pass, $fail, $log
+);
+
+// 30d. FIX 3 — filter_single_event_content has_shortcode guard.
+c7x_ok(
+	'[30d] FIX 3: filter_single_event_content skips when has_shortcode(content, en_reservation)',
+	false !== strpos( $php_events_30, "has_shortcode( \$content, 'en_reservation' )" ),
+	$pass, $fail, $log
+);
+
+// 30e. FIX 3 — filter_single_event_content Elementor guard.
+c7x_ok(
+	'[30e] FIX 3: filter_single_event_content skips when _elementor_edit_mode = builder',
+	false !== strpos( $php_events_30, '_elementor_edit_mode' ) &&
+	false !== strpos( $php_events_30, "'builder'" ),
+	$pass, $fail, $log
+);
+
+// 30f. FIX 5 — dead CSS classes stripped from public.css.
+$dead_classes_30 = array(
+	'.form-section{',
+	'.toggle{',
+	'.toggle.on{',
+	'.stall-picker{',
+	'.order-sidebar{',
+	'.mobile-order-drawer{',
+	'.agreement-notice{',
+	'.mobile-order-banner{',
+	'.page-body{',
+);
+$dead_found_30 = array();
+foreach ( $dead_classes_30 as $cls ) {
+	if ( false !== strpos( $css_public_30, $cls ) ) {
+		$dead_found_30[] = $cls;
+	}
+}
+c7x_ok(
+	'[30f] FIX 5: Dead mockup CSS classes absent from public.css (' . implode( ', ', $dead_classes_30 ) . ')',
+	empty( $dead_found_30 ),
+	$pass, $fail, $log
+);
+if ( ! empty( $dead_found_30 ) ) {
+	$log[] = '  DETAIL: still present — ' . implode( ', ', $dead_found_30 );
+}
+
+// 30g. [META-CHECK] Standing Rule 20 variant: every CSS class targeted by a PRESENCE
+//      smoke assertion must exist in PHP render output, public.css, or admin.css.
+//      Restrict to "false !== strpos($css_*, '.CLASS')" patterns only — absence checks
+//      ("false === strpos") are intentionally asserting a class is NOT there and are
+//      excluded. Admin-only classes (e.g. .eem-stall-chart-filter-search) live in
+//      admin.css, not public.css, so admin.css is a valid codebase source here.
+$smoke_src_30      = file_get_contents( __FILE__ );
+$css_admin_30      = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/css/admin.css' );
+// Extract class-name targets from PRESENCE-only patterns: false !== strpos($css_*, '.CLASSNAME').
+preg_match_all(
+	'/false\s*!==\s*strpos\s*\(\s*\$css_[a-z_0-9]+\s*,\s*[\'"](\.[a-z][a-z0-9_-]+)/i',
+	$smoke_src_30,
+	$meta_matches_30
+);
+$meta_class_names_30 = array_unique( $meta_matches_30[1] );
+$orphaned_30 = array();
+foreach ( $meta_class_names_30 as $meta_cls ) {
+	$bare = ltrim( $meta_cls, '.' );
+	// Check PHP files for emission and CSS files for definition.
+	$in_codebase = false !== strpos( $php_short_30,   $bare )    ||
+	               false !== strpos( $php_events_30,   $bare )    ||
+	               false !== strpos( $css_public_30,   $meta_cls ) ||
+	               false !== strpos( $css_admin_30,    $meta_cls );
+	if ( ! $in_codebase ) {
+		$orphaned_30[] = $meta_cls;
+	}
+}
+c7x_ok(
+	'[30g] META-CHECK: every CSS class targeted by a presence smoke assertion is emitted by PHP or defined in public.css / admin.css',
+	empty( $orphaned_30 ),
+	$pass, $fail, $log
+);
+if ( ! empty( $orphaned_30 ) ) {
+	$log[] = '  DETAIL: orphaned targets — ' . implode( ', ', $orphaned_30 );
+}
+
+// 30h. Version bumped to 2.3.46.
+c7x_ok(
+	'[30h] Plugin version 2.3.46 in header + EQUINE_EVENT_MANAGER_VERSION constant',
+	false !== strpos( $main_30, "Version:           2.3.46" ) &&
+	false !== strpos( $main_30, "'2.3.46'" ),
 	$pass, $fail, $log
 );
 

@@ -1146,6 +1146,30 @@ class EEM_Events {
 			return $content;
 		}
 
+		// FIX 3 (2.3.46) — Prevent double-render / "not available" collision.
+		//
+		// Two cases where this filter must stand down:
+		//
+		// 1. The raw post content already contains [en_reservation] — a non-Elementor
+		//    page has the shortcode directly in the editor, so the reservation form is
+		//    already rendering through the standard shortcode path. Injecting a second
+		//    render via this filter produces a duplicate form OR a "Reservations are
+		//    not available" notice (if the event-lookup path inside render_event_shortcode
+		//    can't resolve the same reservation the shortcode did).
+		//
+		// 2. Elementor owns the template (_elementor_edit_mode = 'builder') — Elementor
+		//    manages its own shortcode pipeline outside the_content. The [en_reservation]
+		//    shortcode lives in Elementor's JSON data, not in $content, so has_shortcode()
+		//    above returns false even though the form IS being rendered. This check covers
+		//    Whitney's TEC + Elementor Single Event template setup specifically.
+		if ( has_shortcode( $content, 'en_reservation' ) ) {
+			return $content;
+		}
+
+		if ( $post_id && 'builder' === (string) get_post_meta( $post_id, '_elementor_edit_mode', true ) ) {
+			return $content;
+		}
+
 		self::$is_rendering_event_template = true;
 		$markup = $this->render_event_shortcode(
 			array(

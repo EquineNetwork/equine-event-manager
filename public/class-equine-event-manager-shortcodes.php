@@ -117,7 +117,10 @@ class EEM_Shortcodes {
 			array(
 				'id'            => 0,
 				'admin_invoice' => 0,
-				'show_event_header' => 1,
+				// FIX 2 (2.3.46) — V1 Rendering Decision: plugin renders FORM ONLY.
+				// Hero / event info / page wrapper comes from host theme or page builder.
+				// Admins who want the EEM hero can explicitly pass show_event_header="1".
+				'show_event_header' => 0,
 			),
 			$atts,
 			'en_reservation'
@@ -7019,6 +7022,15 @@ RV Lot: " . $rv_lot['name'] );
 	public function render_frontend_form_assets_in_footer() {
 		if ( is_admin() || ! self::$reservation_form_assets_needed ) {
 			return;
+		}
+
+		// FIX 1 (2.3.46) — Enqueue public.css for the [en_reservation] shortcode path.
+		// render_form_styles() below outputs only JavaScript; the CSS must be enqueued
+		// separately. EEM_Events::render_frontend_styles() is idempotent via wp_enqueue_style
+		// handle dedup ('eem-public'), so calling it here is safe even when the event-list
+		// or spotlight shortcodes have already enqueued it on the same page.
+		if ( class_exists( 'EEM_Events' ) ) {
+			EEM_Events::render_frontend_styles();
 		}
 
 		$this->render_form_styles();
