@@ -1,6 +1,11 @@
 {
-  "defaultMode": "bypassPermissions",
   "permissions": {
+    "defaultMode": "bypassPermissions",
+    "additionalDirectories": [
+      "/tmp",
+      "/Users/whitneymitchell/Local Sites/en-event-manager",
+      "/Applications/Local.app/Contents/Resources/extraResources"
+    ],
     "deny": [
       "Bash(rm -rf:*)",
       "Bash(rm -fr:*)",
