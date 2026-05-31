@@ -3605,6 +3605,29 @@ class EEM_Reservations_CPT {
 	}
 
 	/**
+	 * Resolve the reservation linked to a TEC event (inverse of
+	 * get_tec_event_id_for_reservation()).
+	 *
+	 * The TEC event is the single source of truth: it stores the linked
+	 * reservation id in its _equine_event_manager_reservation_id meta. We read
+	 * that directly and confirm the target is a real en_reservation post.
+	 *
+	 * @param int $event_id TEC event post ID.
+	 * @return int Reservation post ID, or 0 if none linked / link is stale.
+	 */
+	public function get_reservation_id_for_tec_event( $event_id ) {
+		$event_id = absint( $event_id );
+		if ( ! $event_id ) {
+			return 0;
+		}
+		$reservation_id = absint( get_post_meta( $event_id, '_equine_event_manager_reservation_id', true ) );
+		if ( ! $reservation_id ) {
+			return 0;
+		}
+		return self::POST_TYPE === get_post_type( $reservation_id ) ? $reservation_id : 0;
+	}
+
+	/**
 	 * Get the TEC event category slug filter from integration settings.
 	 *
 	 * @return string Slug string, or '' if no filter configured.

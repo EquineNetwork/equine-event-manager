@@ -126,13 +126,41 @@ class EEM_Shortcodes {
 			'en_reservation'
 		);
 
-		$reservation_id   = absint( $atts['id'] );
-		$is_admin_invoice = ! empty( $atts['admin_invoice'] );
+		$explicit_id       = absint( $atts['id'] );
+		$is_admin_invoice  = ! empty( $atts['admin_invoice'] );
 		$show_event_header = '0' !== (string) $atts['show_event_header'];
-		$reservation      = $reservation_id ? get_post( $reservation_id ) : null;
+
+		$reservation_id = $explicit_id;
+
+		// FIX 1 (2.3.47) — Auto-resolve the reservation from the current TEC
+		// event context when no explicit id="" is supplied, so a bare
+		// [en_reservation] can live in a global single-event template. An
+		// explicit id always wins. A bare shortcode with no resolvable event
+		// context, or on an event with no linked (published) reservation,
+		// renders nothing visible — only an HTML comment — so the tag is safe
+		// to drop site-wide without leaking "not available" notices.
+		if ( ! $reservation_id ) {
+			if ( ! is_singular( 'tribe_events' ) ) {
+				return '<!-- eem: no reservation context -->';
+			}
+			if ( class_exists( 'EEM_Reservations_CPT' ) ) {
+				$cpt            = new EEM_Reservations_CPT();
+				$reservation_id = $cpt->get_reservation_id_for_tec_event( get_the_ID() );
+			}
+			if ( ! $reservation_id ) {
+				return '<!-- eem: no reservation linked to this event -->';
+			}
+		}
+
+		$reservation = $reservation_id ? get_post( $reservation_id ) : null;
 
 		if ( ! $reservation || 'en_reservation' !== $reservation->post_type || 'publish' !== $reservation->post_status ) {
-			return $this->render_notice( __( 'Reservations are not available for this event yet.', 'equine-event-manager' ) );
+			// Explicit id="" pointing at a missing/unpublished reservation keeps
+			// the visible admin notice; an auto-resolved bare tag stays silent.
+			if ( $explicit_id ) {
+				return $this->render_notice( __( 'Reservations are not available for this event yet.', 'equine-event-manager' ) );
+			}
+			return '<!-- eem: no reservation linked to this event -->';
 		}
 
 		$data    = $this->get_reservation_meta( $reservation_id );

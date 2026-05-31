@@ -554,21 +554,19 @@ class EEM_Reservation_Editor_Page {
 		// event default OR global). Resolver is the source of truth so
 		// admins don't need to retype if event default is configured.
 		if ( ! empty( $c['cancellation_enabled'] ) ) {
-			$resolved = '';
-			if ( class_exists( 'EEM_Cancellation_Policy' )
+			// FIX 3 (2.3.47) — the typed override is authoritative and must be
+			// honored unconditionally. The previous code only read the override
+			// *inside* a `class_exists( 'EEM_Cancellation_Policy' )` guard, but
+			// that class is not defined anywhere in the plugin, so the guard was
+			// always false: the override text was never read and this gate
+			// errored on every publish even when the admin had filled it in.
+			// Read the candidate override first; only consult the (optional)
+			// event-default resolver as a fallback when it actually exists.
+			$resolved = isset( $c['cancellation_policy_override'] ) ? trim( (string) $c['cancellation_policy_override'] ) : '';
+			if ( '' === $resolved
+				&& class_exists( 'EEM_Cancellation_Policy' )
 				&& method_exists( 'EEM_Cancellation_Policy', 'resolve_for_reservation' ) ) {
-				// Inject the candidate override into the resolver call by
-				// temporarily updating + reading. Cleaner: pass the
-				// candidate directly. Resolver currently takes the
-				// reservation_id and reads from post_meta — for the
-				// candidate-aware check, read the override directly from
-				// $c first, then fall back to resolver-without-override.
-				$override = isset( $c['cancellation_policy_override'] ) ? trim( (string) $c['cancellation_policy_override'] ) : '';
-				if ( '' !== $override ) {
-					$resolved = $override;
-				} else {
-					$resolved = (string) EEM_Cancellation_Policy::resolve_for_reservation( $reservation_id );
-				}
+				$resolved = (string) EEM_Cancellation_Policy::resolve_for_reservation( $reservation_id );
 			}
 			if ( '' === trim( $resolved ) ) {
 				$err['cancellation'] = __( 'Cancellation Policy is enabled but no policy text is set — either fill the override here or configure an event default on the linked event.', 'equine-event-manager' );
@@ -850,10 +848,19 @@ class EEM_Reservation_Editor_Page {
 		// C10 ENFORCEMENT CONTRACT: rows with no zone_id = lots in that row are unavailable.
 		// See: docs/c10-contracts.md
 
-		// Event Pre-Entries enabled flag
-		if ( isset( $_POST['eem_event_pre_entries_enabled'] ) ) {
-			update_post_meta( $reservation_id, '_en_event_pre_entries_enabled', absint( wp_unslash( $_POST['eem_event_pre_entries_enabled'] ) ) ? 1 : 0 );
-		}
+		// Event Pre-Entries enabled flag.
+		// FIX 2 (2.3.47) — write unconditionally. The header toggle's only form
+		// field is a hidden `data-eem-section-enabled` mirror that the editor JS
+		// collector SKIPS when off (it submits nothing for an off toggle, to
+		// match the legacy `isset() ? 1 : 0` convention). The previous
+		// `isset()` guard therefore never ran on toggle-OFF, so the prior ON
+		// value lingered and the section "came back" enabled after saving it
+		// off. Mirror the stall-chart handling above: absent / not "1" = 0.
+		update_post_meta(
+			$reservation_id,
+			'_en_event_pre_entries_enabled',
+			isset( $_POST['eem_event_pre_entries_enabled'] ) && '1' === (string) wp_unslash( $_POST['eem_event_pre_entries_enabled'] ) ? 1 : 0
+		);
 
 		// Event Pre-Entries rows
 		if ( isset( $_POST['eem_event_pre_entries'] ) && is_array( $_POST['eem_event_pre_entries'] ) ) {

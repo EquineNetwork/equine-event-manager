@@ -2559,11 +2559,12 @@ if ( ! empty( $orphaned_30 ) ) {
 	$log[] = '  DETAIL: orphaned targets — ' . implode( ', ', $orphaned_30 );
 }
 
-// 30h. Version bumped to 2.3.46.
+// 30h. Version bumped to 2.3.47 (2.3.47 — shortcode TEC auto-resolve +
+// toggle-OFF persistence + cancellation-override validation fix).
 c7x_ok(
-	'[30h] Plugin version 2.3.46 in header + EQUINE_EVENT_MANAGER_VERSION constant',
-	false !== strpos( $main_30, "Version:           2.3.46" ) &&
-	false !== strpos( $main_30, "'2.3.46'" ),
+	'[30h] Plugin version 2.3.47 in header + EQUINE_EVENT_MANAGER_VERSION constant',
+	false !== strpos( $main_30, "Version:           2.3.47" ) &&
+	false !== strpos( $main_30, "'2.3.47'" ),
 	$pass, $fail, $log
 );
 
