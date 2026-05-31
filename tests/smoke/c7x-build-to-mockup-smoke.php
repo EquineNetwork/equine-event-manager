@@ -2009,5 +2009,53 @@ c7x_ok(
 	$pass, $fail, $log
 );
 
+echo "\n[25] TEC event link fix — bidirectional link + reverse lookup + category filter + one-to-one enforcement\n";
+
+$php_res_cpt_25 = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-reservations-cpt.php' );
+
+// 25a. Reverse-lookup method: get_tec_event_id_for_reservation() present.
+c7x_ok(
+	'[25a] get_tec_event_id_for_reservation() method defined in reservations CPT',
+	false !== strpos( $php_res_cpt_25, 'private function get_tec_event_id_for_reservation(' ),
+	$pass, $fail, $log
+);
+
+// 25b. Dropdown query targets tribe_events post type (not fake data).
+c7x_ok(
+	'[25b] query_tec_events_by_start_date() queries tribe_events post type',
+	false !== strpos( $php_res_cpt_25, "'post_type'      => 'tribe_events'" ) ||
+	false !== strpos( $php_res_cpt_25, '"post_type" => "tribe_events"' ),
+	$pass, $fail, $log
+);
+
+// 25c. Category filter applied: get_tec_event_category_filter() used inside query.
+c7x_ok(
+	'[25c] get_tec_event_category_filter() method defined and used in query methods',
+	false !== strpos( $php_res_cpt_25, 'private function get_tec_event_category_filter()' ) &&
+	false !== strpos( $php_res_cpt_25, '$this->get_tec_event_category_filter()' ),
+	$pass, $fail, $log
+);
+
+// 25d. One-to-one enforcement method: enforce_tec_event_link_one_to_one() present.
+c7x_ok(
+	'[25d] enforce_tec_event_link_one_to_one() method defined in reservations CPT',
+	false !== strpos( $php_res_cpt_25, 'private function enforce_tec_event_link_one_to_one(' ),
+	$pass, $fail, $log
+);
+
+// 25e. Save path calls enforce_tec_event_link_one_to_one().
+c7x_ok(
+	'[25e] save_meta() calls enforce_tec_event_link_one_to_one()',
+	false !== strpos( $php_res_cpt_25, '$this->enforce_tec_event_link_one_to_one(' ),
+	$pass, $fail, $log
+);
+
+// 25f. _equine_event_manager_reservation_id is used as the reverse-lookup meta key.
+c7x_ok(
+	'[25f] _equine_event_manager_reservation_id is the reverse-lookup meta key in get_tec_event_id_for_reservation()',
+	false !== strpos( $php_res_cpt_25, "'_equine_event_manager_reservation_id'" ),
+	$pass, $fail, $log
+);
+
 echo implode( "\n", $log ) . "\n=== RESULT: {$pass} passed, {$fail} failed ===\n";
 exit( $fail > 0 ? 1 : 0 );

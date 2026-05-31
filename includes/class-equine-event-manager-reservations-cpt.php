@@ -947,9 +947,16 @@ class EEM_Reservations_CPT {
 			return;
 		}
 
+		// One-to-one enforcement: capture old TEC event link before overwriting meta.
+		$old_tec_event_id = $this->get_tec_event_id_for_reservation( $post_id );
+		$new_tec_event_id = isset( $data['event_id'] ) ? absint( $data['event_id'] ) : 0;
+
 		foreach ( $data as $key => $value ) {
 			update_post_meta( $post_id, '_en_' . $key, $value );
 		}
+
+		// Bidirectional one-to-one enforcement for TEC event links.
+		$this->enforce_tec_event_link_one_to_one( $post_id, $old_tec_event_id, $new_tec_event_id );
 
 		if ( 'publish' === get_post_status( $post_id ) ) {
 			$shortcode = $this->get_reservation_shortcode( $post_id );
@@ -1076,23 +1083,34 @@ class EEM_Reservations_CPT {
 		$data                  = $this->get_meta_values( $post_id );
 		$default_event_source  = $this->sanitize_reservation_event_source( EEM_Events::get_default_event_source() );
 		$default_feed_url      = EEM_Events::get_default_feed_url();
-		$selected_event_title  = ( 'tec' === $default_event_source && $data['event_id'] ) ? get_the_title( absint( $data['event_id'] ) ) : '';
-		$selected_event_dates  = ( 'tec' === $default_event_source && $data['event_id'] ) ? $this->get_tec_event_date_values( absint( $data['event_id'] ) ) : array(
-			'start_date' => '',
-			'end_date'   => '',
-		);
 		$tec_events_enabled    = $this->is_tec_event_source_available();
 		$initial_events        = array();
 		$native_events_enabled = EEM_Events::is_native_events_enabled();
 		$native_events         = array();
 		$selected_feed_event   = array();
 
+		// Reverse lookup: the TEC event is the source of truth. Find whichever
+		// tribe_events post has _equine_event_manager_reservation_id = this reservation.
+		$linked_tec_event_id = $tec_events_enabled ? $this->get_tec_event_id_for_reservation( $post_id ) : 0;
+
+		$selected_event_title = '';
+		$selected_event_dates = array( 'start_date' => '', 'end_date' => '' );
+
+		if ( 'tec' === $default_event_source && $linked_tec_event_id ) {
+			$raw_title            = get_the_title( $linked_tec_event_id );
+			$selected_event_dates = $this->get_tec_event_date_values( $linked_tec_event_id );
+			$date_label           = $selected_event_dates['start_date'] ? wp_date( 'M j, Y', strtotime( $selected_event_dates['start_date'] ) ) : '';
+			$selected_event_title = $date_label ? $raw_title . ' \xe2\x80\x94 ' . $date_label : $raw_title;
+		}
+
 		if ( $tec_events_enabled ) {
 			foreach ( $this->query_tec_events_by_start_date( '', 50 ) as $event ) {
-				$event_dates      = $this->get_tec_event_date_values( absint( $event->ID ) );
+				$event_dates = $this->get_tec_event_date_values( absint( $event->ID ) );
+				$raw_title   = get_the_title( $event );
+				$date_label  = $event_dates['start_date'] ? wp_date( 'M j, Y', strtotime( $event_dates['start_date'] ) ) : '';
 				$initial_events[] = array(
 					'id'         => absint( $event->ID ),
-					'title'      => get_the_title( $event ),
+					'title'      => $date_label ? $raw_title . ' \xe2\x80\x94 ' . $date_label : $raw_title,
 					'start_date' => $event_dates['start_date'],
 					'end_date'   => $event_dates['end_date'],
 				);
@@ -1118,6 +1136,11 @@ class EEM_Reservations_CPT {
 
 		if ( 'feed' === $default_event_source && ! empty( $data['external_event_id'] ) ) {
 			$selected_feed_event = EEM_Events::get_feed_event_by_external_id( $data['external_event_id'], $default_feed_url );
+		}
+
+		// Sync event_id in $data to the authoritative reverse-lookup value for TEC source.
+		if ( 'tec' === $default_event_source && $linked_tec_event_id ) {
+			$data['event_id'] = $linked_tec_event_id;
 		}
 
 		return array(
@@ -2645,18 +2668,28 @@ class EEM_Reservations_CPT {
 		$events = $this->query_tec_events_by_start_date( $term, 20 );
 
 		if ( empty( $events ) ) {
-			$fallback_query = new WP_Query(
-				array(
-					'post_type'      => 'tribe_events',
-					'post_status'    => array( 'publish', 'future', 'draft' ),
-					'posts_per_page' => 20,
-					's'              => $term,
-					'orderby'        => 'date',
-					'order'          => 'DESC',
-					'no_found_rows'  => true,
-				)
+			$fallback_args = array(
+				'post_type'      => 'tribe_events',
+				'post_status'    => array( 'publish', 'future', 'draft' ),
+				'posts_per_page' => 20,
+				's'              => $term,
+				'orderby'        => 'date',
+				'order'          => 'DESC',
+				'no_found_rows'  => true,
 			);
-			$events = $fallback_query->posts;
+
+			$category_slug = $this->get_tec_event_category_filter();
+			if ( $category_slug ) {
+				$fallback_args['tax_query'] = array(
+					array(
+						'taxonomy' => 'tribe_events_cat',
+						'field'    => 'slug',
+						'terms'    => $category_slug,
+					),
+				);
+			}
+
+			$events = ( new WP_Query( $fallback_args ) )->posts;
 		}
 
 		$results = array();
@@ -2683,29 +2716,38 @@ class EEM_Reservations_CPT {
 	 * @return array
 	 */
 	private function query_tec_events_by_start_date( $term, $limit ) {
-		$query = new WP_Query(
-			array(
-				'post_type'      => 'tribe_events',
-				'post_status'    => array( 'publish', 'future', 'draft' ),
-				'posts_per_page' => absint( $limit ),
-				's'              => $term,
-				'meta_key'       => '_EventStartDate',
-				'orderby'        => 'meta_value',
-				'meta_type'      => 'DATETIME',
-				'order'          => 'ASC',
-				'no_found_rows'  => true,
-				'meta_query'     => array(
-					array(
-						'key'     => '_EventStartDate',
-						'value'   => current_time( 'mysql' ),
-						'compare' => '>=',
-						'type'    => 'DATETIME',
-					),
+		$args = array(
+			'post_type'      => 'tribe_events',
+			'post_status'    => array( 'publish', 'future', 'draft' ),
+			'posts_per_page' => absint( $limit ),
+			's'              => $term,
+			'meta_key'       => '_EventStartDate',
+			'orderby'        => 'meta_value',
+			'meta_type'      => 'DATETIME',
+			'order'          => 'ASC',
+			'no_found_rows'  => true,
+			'meta_query'     => array(
+				array(
+					'key'     => '_EventStartDate',
+					'value'   => current_time( 'mysql' ),
+					'compare' => '>=',
+					'type'    => 'DATETIME',
 				),
-			)
+			),
 		);
 
-		return $query->posts;
+		$category_slug = $this->get_tec_event_category_filter();
+		if ( $category_slug ) {
+			$args['tax_query'] = array(
+				array(
+					'taxonomy' => 'tribe_events_cat',
+					'field'    => 'slug',
+					'terms'    => $category_slug,
+				),
+			);
+		}
+
+		return ( new WP_Query( $args ) )->posts;
 	}
 
 	/**
@@ -3535,6 +3577,77 @@ class EEM_Reservations_CPT {
 	 */
 	private function event_reservations_field_matches_shortcode( $event_id, $shortcode ) {
 		return $shortcode === get_post_meta( $event_id, 'reservations', true );
+	}
+
+	/**
+	 * Reverse lookup: find the TEC event post linked to a given reservation.
+	 *
+	 * The TEC event is the single source of truth. This queries tribe_events
+	 * posts whose _equine_event_manager_reservation_id meta equals $reservation_id.
+	 *
+	 * @param int $reservation_id Reservation post ID.
+	 * @return int TEC event post ID, or 0 if none found.
+	 */
+	private function get_tec_event_id_for_reservation( $reservation_id ) {
+		$events = get_posts(
+			array(
+				'post_type'      => 'tribe_events',
+				'post_status'    => array( 'publish', 'future', 'draft', 'private' ),
+				'posts_per_page' => 1,
+				'meta_key'       => '_equine_event_manager_reservation_id',
+				'meta_value'     => absint( $reservation_id ),
+				'fields'         => 'ids',
+				'no_found_rows'  => true,
+			)
+		);
+		return ! empty( $events ) ? absint( $events[0] ) : 0;
+	}
+
+	/**
+	 * Get the TEC event category slug filter from integration settings.
+	 *
+	 * @return string Slug string, or '' if no filter configured.
+	 */
+	private function get_tec_event_category_filter() {
+		$settings = EEM_Events::get_integration_settings();
+		return isset( $settings['tec_event_category'] ) ? sanitize_key( $settings['tec_event_category'] ) : '';
+	}
+
+	/**
+	 * Enforce one-to-one bidirectional TEC event link after reservation save.
+	 *
+	 * When a reservation is linked to a new TEC event:
+	 *   1. The previously linked event loses its reservation link.
+	 *   2. Any reservation previously linked to the new event loses its event link.
+	 *
+	 * The actual write to the new event's meta is handled by
+	 * sync_shortcode_to_linked_event_after_save() (priority 20).
+	 *
+	 * @param int $reservation_id     Reservation post ID being saved.
+	 * @param int $old_tec_event_id   TEC event ID that was linked before save (0 if none).
+	 * @param int $new_tec_event_id   TEC event ID chosen in the editor (0 to unlink).
+	 */
+	private function enforce_tec_event_link_one_to_one( $reservation_id, $old_tec_event_id, $new_tec_event_id ) {
+		if ( ! $this->is_tec_event_source_available() ) {
+			return;
+		}
+
+		// Clear old event's link if the event changed.
+		if ( $old_tec_event_id && $old_tec_event_id !== $new_tec_event_id ) {
+			$old_linked = absint( get_post_meta( $old_tec_event_id, '_equine_event_manager_reservation_id', true ) );
+			if ( $old_linked === absint( $reservation_id ) ) {
+				delete_post_meta( $old_tec_event_id, '_equine_event_manager_reservation_id' );
+				$this->update_event_reservations_field( $old_tec_event_id, '' );
+			}
+		}
+
+		// If new event was previously linked to a different reservation, clear that reservation's event_id.
+		if ( $new_tec_event_id ) {
+			$displaced_reservation_id = absint( get_post_meta( $new_tec_event_id, '_equine_event_manager_reservation_id', true ) );
+			if ( $displaced_reservation_id && $displaced_reservation_id !== absint( $reservation_id ) ) {
+				update_post_meta( $displaced_reservation_id, '_en_event_id', 0 );
+			}
+		}
 	}
 
 	/**
