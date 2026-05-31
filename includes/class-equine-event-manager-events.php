@@ -38,6 +38,15 @@ class EEM_Events {
 	private static $is_rendering_event_template = false;
 
 	/**
+	 * True once filter_single_event_template has handed WordPress the EEM
+	 * single-event template for the current request. The the_content takeover
+	 * (2.3.49) stands down when this is set so the page renders once.
+	 *
+	 * @var bool
+	 */
+	private static $is_template_takeover = false;
+
+	/**
 	 * Get feature settings with defaults.
 	 *
 	 * @return array<string, int>
@@ -1131,6 +1140,13 @@ class EEM_Events {
 			return $content;
 		}
 
+		// 2.3.50 — when the template_include takeover owns this request, the EEM
+		// single-event template renders the page directly via the event
+		// shortcode. The_content must stay inert so the body isn't injected twice.
+		if ( self::$is_template_takeover ) {
+			return $content;
+		}
+
 		// Let TEC render its own draft/scheduled preview unmolested. Without this,
 		// a logged-in editor previewing an unpublished event would see the EEM
 		// takeover instead of TEC's native preview.
@@ -1188,6 +1204,95 @@ class EEM_Events {
 		self::$is_rendering_event_template = false;
 
 		return $markup ? $markup : $content;
+	}
+
+	/**
+	 * Hand WordPress the EEM single-event template for supported event singles.
+	 *
+	 * Fires on `template_include`. When the current request is a supported
+	 * single event that EEM should own, returns the path to
+	 * templates/single-event.php instead of the theme's template. Cedes to the
+	 * theme / TEC / Elementor for every case the takeover must not handle
+	 * (admin, non-main query, preview, password-protected, REST, feed,
+	 * Elementor-built, or content that already mounts the shortcode itself).
+	 *
+	 * @param string $template Template path the theme resolved.
+	 * @return string EEM template path when taking over, else the original.
+	 */
+	public function filter_single_event_template( $template ) {
+		if ( ! $this->should_take_over_event_template() ) {
+			return $template;
+		}
+
+		$eem_template = EQUINE_EVENT_MANAGER_PATH . 'templates/single-event.php';
+
+		if ( ! file_exists( $eem_template ) ) {
+			return $template;
+		}
+
+		self::$is_template_takeover = true;
+
+		return $eem_template;
+	}
+
+	/**
+	 * Decide whether the template_include takeover should own this request.
+	 *
+	 * @return bool
+	 */
+	private function should_take_over_event_template() {
+		if ( is_admin() || ! is_main_query() ) {
+			return false;
+		}
+
+		// Cede REST and feed requests — these are not browser page views.
+		if ( ( defined( 'REST_REQUEST' ) && REST_REQUEST ) || is_feed() ) {
+			return false;
+		}
+
+		$queried = get_queried_object();
+
+		if ( ! $queried instanceof WP_Post ) {
+			return false;
+		}
+
+		$post_id   = (int) $queried->ID;
+		$post_type = (string) $queried->post_type;
+
+		if ( self::EVENT_POST_TYPE !== $post_type && 'tribe_events' !== $post_type ) {
+			return false;
+		}
+
+		if ( ! is_singular( $post_type ) ) {
+			return false;
+		}
+
+		if ( 'tribe_events' === $post_type && ! self::is_tec_integration_enabled() ) {
+			return false;
+		}
+
+		// Cede TEC's native draft/scheduled preview to TEC.
+		if ( is_preview() ) {
+			return false;
+		}
+
+		// Cede password-protected posts to the theme's password form.
+		if ( post_password_required( $queried ) ) {
+			return false;
+		}
+
+		// Cede when Elementor owns the template — it runs its own pipeline.
+		if ( 'builder' === (string) get_post_meta( $post_id, '_elementor_edit_mode', true ) ) {
+			return false;
+		}
+
+		// Cede when the content already mounts [en_reservation] itself, so the
+		// shortcode path renders the form once without a duplicate.
+		if ( has_shortcode( (string) $queried->post_content, 'en_reservation' ) ) {
+			return false;
+		}
+
+		return true;
 	}
 
 	/**

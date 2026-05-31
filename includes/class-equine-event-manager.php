@@ -292,6 +292,7 @@ class EEM_Plugin {
 		add_filter( 'query_vars', array( $this->events, 'filter_query_vars' ) );
 		add_action( 'template_redirect', array( $this->events, 'maybe_render_virtual_event_page' ) );
 		add_action( 'init', array( $this->events, 'register_shortcodes' ) );
+		add_filter( 'template_include', array( $this->events, 'filter_single_event_template' ), 99 );
 		add_filter( 'the_content', array( $this->events, 'filter_single_event_content' ), 20 );
 		add_action( 'wp_ajax_equine_event_manager_test_feed_url', array( $this->events, 'ajax_test_feed_url' ) );
 		add_action( 'wp_ajax_equine_event_manager_search_feed_events', array( $this->events, 'ajax_search_feed_events' ) );

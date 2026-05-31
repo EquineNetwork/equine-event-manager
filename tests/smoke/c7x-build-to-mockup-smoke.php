@@ -937,34 +937,36 @@ $editor_page_php   = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class
 $admin_php_fresh   = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-equine-event-manager-admin.php' );
 $seeder_php        = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'tools/seed-demo-data.php' );
 
-// 12a. stall_chart_enabled in get_default_meta_values() (reservations CPT class).
+// 12a. stall_chart_enabled REMOVED from get_default_meta_values() (2.3.50).
 $cpt_php = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-reservations-cpt.php' );
+// The key/value registration form ('stall_chart_enabled' => …) is gone from
+// both get_default_meta_values() and the sanitizer. Dead-code reads of
+// $data['stall_chart_enabled'] (legacy meta box, list-row icon) are
+// out-of-scope peripheral consumers per the 2.3.50 decision and may remain.
 c7x_ok(
-	'2.3.25: stall_chart_enabled registered in get_default_meta_values()',
-	false !== strpos( $cpt_php, "'stall_chart_enabled'" ) && false !== strpos( $cpt_php, 'get_default_meta_values' ),
+	'2.3.50: stall_chart_enabled removed from default/sanitize registration',
+	false === strpos( $cpt_php, "'stall_chart_enabled' =>" ),
 	$pass, $fail, $log
 );
 
-// 12b. Stall section template contains the eem_stall_chart_enabled toggle input name.
+// 12b. Stall section template no longer emits the eem_stall_chart_enabled toggle (2.3.50).
 c7x_ok(
-	'2.3.25: _section-stall.php emits eem_stall_chart_enabled toggle',
-	false !== strpos( $stall_section_php, 'eem_stall_chart_enabled' ),
+	'2.3.50: _section-stall.php no longer emits eem_stall_chart_enabled toggle',
+	false === strpos( $stall_section_php, 'eem_stall_chart_enabled' ),
 	$pass, $fail, $log
 );
 
-// 12c. Stall section toggle uses eem_render_editor_toggle_label_row() helper.
+// 12c. Stall section no longer renders a stall-chart toggle row (2.3.50).
 c7x_ok(
-	'2.3.25: stall chart toggle uses eem_render_editor_toggle_label_row helper',
-	false !== strpos( $stall_section_php, 'eem_render_editor_toggle_label_row' ) &&
-	false !== strpos( $stall_section_php, 'stall-chart' ),
+	'2.3.50: stall chart toggle row removed from _section-stall.php',
+	false === strpos( $stall_section_php, 'stall-chart' ),
 	$pass, $fail, $log
 );
 
-// 12d. ajax_save() in editor page handles eem_stall_chart_enabled checkbox.
+// 12d. ajax_save() in editor page no longer writes _en_stall_chart_enabled (2.3.50).
 c7x_ok(
-	'2.3.25: ajax_save() handles eem_stall_chart_enabled checkbox',
-	false !== strpos( $editor_page_php, '_en_stall_chart_enabled' ) &&
-	false !== strpos( $editor_page_php, 'eem_stall_chart_enabled' ),
+	'2.3.50: ajax_save() no longer handles eem_stall_chart_enabled checkbox',
+	false === strpos( $editor_page_php, 'eem_stall_chart_enabled' ),
 	$pass, $fail, $log
 );
 
@@ -1345,10 +1347,11 @@ c7x_ok(
 	$pass, $fail, $log
 );
 
-// 15h. query filters to _en_stall_chart_enabled
+// 15h. query filters to reservations with stalls OR RV enabled (2.3.50)
 c7x_ok(
-	'2.3.28: get_stall_charts_list_data filters by _en_stall_chart_enabled',
-	false !== strpos( $admin_php_228, '_en_stall_chart_enabled' ) &&
+	'2.3.50: get_stall_charts_list_data filters by _en_stalls_enabled OR _en_rv_enabled',
+	false !== strpos( $admin_php_228, '_en_stalls_enabled' ) &&
+	false !== strpos( $admin_php_228, '_en_rv_enabled' ) &&
 	false !== strpos( $admin_php_228, 'get_stall_charts_list_data' ),
 	$pass, $fail, $log
 );

@@ -509,7 +509,7 @@ class EEM_Reservations_CPT {
 			<th scope="row"><?php esc_html_e( 'Stall Assignments', 'equine-event-manager' ); ?></th>
 			<td>
 				<label class="eem-inline-toggle-control">
-					<input name="en_reservation[stall_chart_enabled]" id="en_stall_chart_enabled" type="checkbox" value="1" <?php checked( $data['stall_chart_enabled'], 1 ); ?> />
+					<input name="en_reservation[stall_chart_enabled]" id="en_stall_chart_enabled" type="checkbox" value="1" <?php checked( ! empty( $data['stall_chart_enabled'] ), true ); ?> />
 					<span class="eem-inline-toggle-control__track" aria-hidden="true"></span>
 					<span class="eem-inline-toggle-control__label"><?php esc_html_e( 'Enable Stall Assignments', 'equine-event-manager' ); ?></span>
 				</label>
@@ -1606,7 +1606,6 @@ class EEM_Reservations_CPT {
 			'rv_open_at'                      => $this->sanitize_datetime_value( isset( $source['rv_open_at'] ) ? $source['rv_open_at'] : '' ),
 			'rv_close_at'                     => $this->sanitize_datetime_value( isset( $source['rv_close_at'] ) ? $source['rv_close_at'] : '' ),
 			'rv_inventory'                    => $this->sanitize_optional_inventory_value( isset( $source['rv_inventory'] ) ? $source['rv_inventory'] : '' ),
-			'stall_chart_enabled'            => isset( $source['stall_chart_enabled'] ) ? 1 : 0,
 			'stall_chart_stall_blocks'       => $stall_chart_stall_blocks,
 			'stall_chart_blocked_stall_units'=> isset( $source['stall_chart_blocked_stall_units'] ) ? $this->sanitize_chart_unit_list( $source['stall_chart_blocked_stall_units'], $stall_chart_stall_units ) : $existing['stall_chart_blocked_stall_units'],
 			'stall_chart_rv_blocks'          => array(),
@@ -1763,10 +1762,6 @@ class EEM_Reservations_CPT {
 
 		if ( ! empty( $data['rv_schedule_enabled'] ) && ( empty( $data['rv_open_at'] ) || empty( $data['rv_close_at'] ) ) ) {
 			$errors[] = __( 'Schedule RV Reservations is turned on, so both RV open and RV close date/time are required before saving.', 'equine-event-manager' );
-		}
-
-		if ( ! empty( $data['stall_chart_enabled'] ) ) {
-			$errors = array_merge( $errors, $this->validate_chart_block_ranges( isset( $data['stall_chart_stall_blocks'] ) ? $data['stall_chart_stall_blocks'] : array(), __( 'stall', 'equine-event-manager' ) ) );
 		}
 
 		return $errors;
@@ -2023,7 +2018,6 @@ class EEM_Reservations_CPT {
 			'rv_open_at'                      => '',
 			'rv_close_at'                     => '',
 			'rv_inventory'                    => '',
-			'stall_chart_enabled'            => 0,
 			'stall_chart_stall_blocks'       => array(),
 			'stall_chart_rv_blocks'          => array(),
 			'stall_chart_blocked_stall_units'=> array(),

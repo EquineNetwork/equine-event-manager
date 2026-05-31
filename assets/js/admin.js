@@ -3076,6 +3076,15 @@
 		cards.forEach(function (card) {
 			card.classList.toggle('eem-sc-hidden', q.length > 0 && card.getAttribute('data-sc-title').indexOf(q) === -1);
 		});
+
+		// Show the "No reservations match your filters" state when the search
+		// hides every row (2.3.50).
+		var anyVisible = false;
+		rows.forEach(function (row) {
+			if (!row.classList.contains('eem-sc-hidden')) anyVisible = true;
+		});
+		var noMatch = document.getElementById('eem-sc-no-match');
+		if (noMatch) noMatch.style.display = (q.length > 0 && !anyVisible) ? '' : 'none';
 	});
 
 	/* ── Stall Chart DETAIL: centralised inv/tab state ── */

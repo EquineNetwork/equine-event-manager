@@ -2739,12 +2739,7 @@ class EEM_Admin {
 			<!-- Empty state -->
 			<div class="eem-empty-state" style="padding:48px 24px;text-align:center;">
 				<p style="font-weight:600;font-size:15px;color:#031B4E;margin:0 0 8px;"><?php esc_html_e( 'No stall charts yet', 'equine-event-manager' ); ?></p>
-				<p style="font-size:13px;color:#6B7A99;margin:0;line-height:1.6;"><?php
-					echo wp_kses(
-						__( 'Open a reservation and enable <strong>Stall Chart</strong> in the Stall section to get started.', 'equine-event-manager' ),
-						array( 'strong' => array() )
-					);
-				?></p>
+				<p style="font-size:13px;color:#6B7A99;margin:0;line-height:1.6;"><?php esc_html_e( 'No reservations with stalls or RV inventory yet — enable stall or RV reservations on a reservation to see them here.', 'equine-event-manager' ); ?></p>
 			</div>
 			<?php else : ?>
 
@@ -2873,6 +2868,11 @@ class EEM_Admin {
 				<?php endforeach; ?>
 			</div>
 
+			<!-- No-match state (shown by JS when the search filter hides every row) -->
+			<div class="eem-empty-state eem-sc-no-match" id="eem-sc-no-match" style="display:none;padding:48px 24px;text-align:center;">
+				<p style="font-size:13px;color:#6B7A99;margin:0;line-height:1.6;"><?php esc_html_e( 'No reservations match your filters.', 'equine-event-manager' ); ?></p>
+			</div>
+
 			<!-- Pagination row -->
 			<div class="pagination-row eem-sc-pagination-row">
 				<span class="pagination-info"><?php
@@ -2903,9 +2903,8 @@ class EEM_Admin {
 	 *
 	 * Returns all en_reservation posts with chart status, barn names,
 	 * RV zone names, and date label. Chart status is determined by:
-	 *   - 'configured' — stall chart enabled AND stall rows present
-	 *   - 'partial'    — stall chart enabled BUT no stall rows yet
-	 *   - 'empty'      — stall chart NOT enabled
+	 *   - 'configured' — stall rows (or RV zones) present
+	 *   - 'partial'    — stall or RV reservations enabled but no layout yet
 	 *
 	 * @return array<int, array<string, mixed>>
 	 */
@@ -2918,11 +2917,18 @@ class EEM_Admin {
 				'orderby'        => 'title',
 				'order'          => 'ASC',
 				'fields'         => 'ids',
-				// 2.3.28 — only show reservations that have explicitly opted in to
-				// a stall chart from their Edit Reservation page.
+				// 2.3.50 — any reservation selling stalls OR RV lots needs a chart
+				// view (to verify customer-picked assignments in Mapped mode, or to
+				// manually assign in Bulk mode), regardless of inventory mode.
 				'meta_query'     => array(
+					'relation' => 'OR',
 					array(
-						'key'     => '_en_stall_chart_enabled',
+						'key'     => '_en_stalls_enabled',
+						'value'   => '1',
+						'compare' => '=',
+					),
+					array(
+						'key'     => '_en_rv_enabled',
 						'value'   => '1',
 						'compare' => '=',
 					),
@@ -2942,18 +2948,8 @@ class EEM_Admin {
 				continue;
 			}
 
-			$enabled    = (bool) get_post_meta( $rid, '_en_stall_chart_enabled', true );
 			$stall_rows = get_post_meta( $rid, '_en_stall_rows', true );
 			$has_rows   = is_array( $stall_rows ) && ! empty( $stall_rows );
-
-			// Chart status
-			if ( ! $enabled ) {
-				$chart_status = 'empty';
-			} elseif ( $has_rows ) {
-				$chart_status = 'configured';
-			} else {
-				$chart_status = 'partial';
-			}
 
 			// Barn names from stall rows
 			$barn_names = array();
@@ -2975,6 +2971,11 @@ class EEM_Admin {
 					}
 				}
 			}
+
+			// Chart status — 2.3.50: the reservation is in this list because it
+			// sells stalls and/or RV lots. "configured" once any layout exists
+			// (stall rows or RV zones); "partial" until then.
+			$chart_status = ( $has_rows || ! empty( $rv_zone_names ) ) ? 'configured' : 'partial';
 
 			// Stats blurb. Available/Reserved/Blocked for configured charts;
 			// "Not yet configured" placeholder for empty/partial charts.
