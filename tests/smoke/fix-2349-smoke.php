@@ -148,15 +148,19 @@ $form_pos = strpos( $linked_html, 'id="reservation-form"' );
 fix2349_ok( 'form renders below the hero',
 	$hero_pos !== false && $form_pos !== false && $form_pos > $hero_pos, $pass, $fail, $log );
 
-// ── Assertion 6 — no linked reservation: hero + content, no form ──
-echo "\n[6] No reservation: hero + body, no form, no error notice\n";
+// ── Assertion 6 — no linked reservation: hero only, no form ──
+// 2.3.54 — Behavior change: with no linked reservation the page renders the
+// event info (hero) ONLY; the .eem-event-body fallback was removed because it
+// re-printed the event description and duplicated the hero copy. Most events
+// have no reservation tied to them and should just show the hero.
+echo "\n[6] No reservation: hero only, no body, no form, no error notice\n";
 $no_link            = $base_event;
 $no_link['reservation_id'] = 0;
 $no_link_html       = $render->invoke( $events, $no_link, true, true );
 fix2349_ok( 'hero still renders without a reservation',
 	false !== strpos( $no_link_html, '<div class="hero">' ), $pass, $fail, $log );
-fix2349_ok( 'event body renders (content present)',
-	false !== strpos( $no_link_html, 'eem-event-body' ), $pass, $fail, $log );
+fix2349_ok( 'event body fallback NOT rendered (2.3.54)',
+	false === strpos( $no_link_html, 'eem-event-body' ), $pass, $fail, $log );
 fix2349_ok( 'no reservation-form mount',
 	false === strpos( $no_link_html, 'id="reservation-form"' ), $pass, $fail, $log );
 fix2349_ok( 'no page-body (workspace) emitted',

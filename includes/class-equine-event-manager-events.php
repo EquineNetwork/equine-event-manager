@@ -3194,14 +3194,16 @@ class EEM_Events {
 				<div id="reservation-form" class="eem-event-reservation-mount">
 					<?php echo do_shortcode( sprintf( '[en_reservation id="%d" show_event_header="0"]', absint( $event_data['reservation_id'] ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 				</div>
-			<?php elseif ( $show_content && ! empty( $event_data['content_raw'] ) ) : ?>
-				<?php $body_html = $this->format_event_body_content( $event_data['content_raw'] ); ?>
-				<?php if ( '' !== $body_html ) : ?>
-					<div class="eem-event-body">
-						<?php echo wp_kses_post( $body_html ); ?>
-					</div>
-				<?php endif; ?>
 			<?php endif; ?>
+			<?php
+			// 2.3.54 - When no reservation is linked, render the event info (hero)
+			// only; the area below the hero stays blank. Many events have no
+			// reservation tied to them, and the previous elseif branch re-printed
+			// the event description here (.eem-event-body via
+			// format_event_body_content), duplicating the hero copy. $show_content
+			// is retained on the method signature for caller compatibility but no
+			// longer drives a body render.
+			?>
 		</div>
 		<?php
 
