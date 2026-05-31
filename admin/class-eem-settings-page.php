@@ -647,7 +647,10 @@ class EEM_Settings_Page {
 		$integration = wp_parse_args(
 			get_option( 'equine_event_manager_integration_settings', array() ),
 			array(
-				'default_event_source' => 'feed',
+				// 2.3.53 (C10.C) — TEC is the only V1-functional source, so it is
+				// the fresh-install default. Native Events + External Feed are
+				// "Coming Soon" (V2) and disabled in the picker below.
+				'default_event_source' => 'tec',
 				'feed_url'             => '',
 				'tec_event_category'   => '',
 				'sendgrid_api_key'     => '',
@@ -656,8 +659,17 @@ class EEM_Settings_Page {
 
 		$source       = sanitize_key( $integration['default_event_source'] );
 		if ( ! in_array( $source, array( 'native', 'tec', 'feed' ), true ) ) {
-			$source = 'feed';
+			$source = 'tec';
 		}
+
+		// 2.3.53 (C10.C) — Native Events + External Feed are deferred to V2.
+		// Their radios are disabled in the UI. If a pre-V1 site has one of them
+		// saved, display TEC as the active selection (and show only the TEC
+		// detail panel) so a disabled option is never rendered as checked. This
+		// is a DISPLAY-only coercion — the saved option value and the server-side
+		// resolution logic are untouched (no silent migration).
+		$coming_soon_sources = array( 'native', 'feed' );
+		$display_source      = in_array( $source, $coming_soon_sources, true ) ? 'tec' : $source;
 		$tec_active   = class_exists( 'Tribe__Events__Main' );
 		$tec_status   = $tec_active
 			? array( 'class' => 'is-active',    'label' => __( 'Available', 'equine-event-manager' ) )
@@ -679,33 +691,43 @@ class EEM_Settings_Page {
 
 					<div class="eem-source-group" data-eem-source-group>
 						<?php
+						// 2.3.53 (C10.C) — order: TEC (functional) first, then the two
+						// V2 "Coming Soon" sources. 'coming_soon' rows render a muted
+						// pill and a disabled radio.
 						$sources = array(
-							'native' => array(
-								'title'  => __( 'Native Events', 'equine-event-manager' ),
-								'desc'   => __( 'Use Equine Event Manager as the main event system with native events, categories, venues, producers, widgets, and the shared frontend event template.', 'equine-event-manager' ),
-								'status' => array( 'class' => 'is-info', 'label' => __( 'Built-in', 'equine-event-manager' ) ),
-							),
 							'tec' => array(
 								'title'  => __( 'The Events Calendar (TEC)', 'equine-event-manager' ),
 								'desc'   => __( 'When the TEC plugin is active, reservations can search and link to live TEC events directly.', 'equine-event-manager' ),
 								'status' => $tec_status,
 							),
+							'native' => array(
+								'title'       => __( 'Native Events', 'equine-event-manager' ),
+								'desc'        => __( 'Use Equine Event Manager as the main event system with native events, categories, venues, producers, widgets, and the shared frontend event template.', 'equine-event-manager' ),
+								'status'      => array( 'class' => 'is-info', 'label' => __( 'Built-in', 'equine-event-manager' ) ),
+								'coming_soon' => true,
+							),
 							'feed' => array(
-								'title'  => __( 'External Feed URL', 'equine-event-manager' ),
-								'desc'   => __( 'Pull events from an external JSON or XML endpoint. Reservations inherit the feed URL automatically when this source is active.', 'equine-event-manager' ),
-								'status' => array( 'class' => 'is-info', 'label' => __( 'Available', 'equine-event-manager' ) ),
+								'title'       => __( 'External Feed URL', 'equine-event-manager' ),
+								'desc'        => __( 'Pull events from an external JSON or XML endpoint. Reservations inherit the feed URL automatically when this source is active.', 'equine-event-manager' ),
+								'status'      => array( 'class' => 'is-info', 'label' => __( 'Available', 'equine-event-manager' ) ),
+								'coming_soon' => true,
 							),
 						);
 						foreach ( $sources as $value => $row ) :
-							$checked = ( $value === $source );
+							$is_soon = ! empty( $row['coming_soon'] );
+							$checked = ( ! $is_soon && $value === $display_source );
 							?>
-							<label class="eem-source-row<?php echo $checked ? ' is-selected' : ''; ?>" data-eem-source-value="<?php echo esc_attr( $value ); ?>">
-								<input type="radio" name="payload[source]" value="<?php echo esc_attr( $value ); ?>" <?php checked( $checked ); ?> />
+							<label class="eem-source-row<?php echo $checked ? ' is-selected' : ''; ?><?php echo $is_soon ? ' is-disabled' : ''; ?>" data-eem-source-value="<?php echo esc_attr( $value ); ?>">
+								<input type="radio" name="payload[source]" value="<?php echo esc_attr( $value ); ?>" <?php checked( $checked ); ?> <?php disabled( $is_soon ); ?> />
 								<span class="eem-source-radio" aria-hidden="true"></span>
 								<span class="eem-source-row-body">
 									<span class="eem-source-row-head">
 										<span class="eem-source-row-title"><?php echo esc_html( $row['title'] ); ?></span>
-										<span class="eem-source-status <?php echo esc_attr( $row['status']['class'] ); ?>"><?php echo esc_html( $row['status']['label'] ); ?></span>
+										<?php if ( $is_soon ) : ?>
+											<span class="eem-source-status is-soon"><?php esc_html_e( 'Coming Soon', 'equine-event-manager' ); ?></span>
+										<?php else : ?>
+											<span class="eem-source-status <?php echo esc_attr( $row['status']['class'] ); ?>"><?php echo esc_html( $row['status']['label'] ); ?></span>
+										<?php endif; ?>
 									</span>
 									<span class="eem-source-row-desc"><?php echo esc_html( $row['desc'] ); ?></span>
 								</span>
@@ -713,7 +735,7 @@ class EEM_Settings_Page {
 						<?php endforeach; ?>
 					</div>
 
-					<div class="eem-source-detail" data-eem-source-detail="native" <?php if ( 'native' !== $source ) { echo 'hidden'; } ?>>
+					<div class="eem-source-detail" data-eem-source-detail="native" <?php if ( 'native' !== $display_source ) { echo 'hidden'; } ?>>
 						<div class="eem-source-detail-title"><?php esc_html_e( 'Native Events Settings', 'equine-event-manager' ); ?></div>
 						<p class="eem-field-hint">
 							<?php
@@ -726,7 +748,7 @@ class EEM_Settings_Page {
 						</p>
 					</div>
 
-					<div class="eem-source-detail" data-eem-source-detail="tec" <?php if ( 'tec' !== $source ) { echo 'hidden'; } ?>>
+					<div class="eem-source-detail" data-eem-source-detail="tec" <?php if ( 'tec' !== $display_source ) { echo 'hidden'; } ?>>
 						<div class="eem-source-detail-title"><?php esc_html_e( 'The Events Calendar Connection', 'equine-event-manager' ); ?></div>
 						<div class="eem-field-row">
 							<label class="eem-field-label" for="eem-tec-category"><?php esc_html_e( 'Event Category Filter', 'equine-event-manager' ); ?></label>
@@ -751,7 +773,7 @@ class EEM_Settings_Page {
 						</div>
 					</div>
 
-					<div class="eem-source-detail" data-eem-source-detail="feed" <?php if ( 'feed' !== $source ) { echo 'hidden'; } ?>>
+					<div class="eem-source-detail" data-eem-source-detail="feed" <?php if ( 'feed' !== $display_source ) { echo 'hidden'; } ?>>
 						<div class="eem-source-detail-title"><?php esc_html_e( 'External Feed URL', 'equine-event-manager' ); ?></div>
 						<div class="eem-field-row">
 							<label class="eem-field-label" for="eem-feed-url"><?php esc_html_e( 'Feed URL', 'equine-event-manager' ); ?></label>
@@ -1218,7 +1240,7 @@ class EEM_Settings_Page {
 
 		$current = wp_parse_args(
 			get_option( 'equine_event_manager_integration_settings', array() ),
-			array( 'default_event_source' => 'feed', 'feed_url' => '', 'tec_event_category' => '', 'sendgrid_api_key' => '', 'tec_integration_enabled' => 1 )
+			array( 'default_event_source' => 'tec', 'feed_url' => '', 'tec_event_category' => '', 'sendgrid_api_key' => '', 'tec_integration_enabled' => 1 )
 		);
 
 		$source = isset( $payload['source'] ) ? sanitize_key( $payload['source'] ) : '';

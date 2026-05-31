@@ -2860,6 +2860,28 @@ a.eem-settings-nav-item:focus {
 .eem-source-status.is-info    { background: var(--eem-info-bg);    color: var(--eem-electric);    border: 1px solid var(--eem-info-border); }
 .eem-source-status.is-warning { background: var(--eem-warn-bg);    color: var(--eem-warn-text);   border: 1px solid var(--eem-warn-border); }
 
+/* 2.3.53 (C10.C) — "Coming Soon" muted pill for V2-deferred event sources
+   (Native Events, External Feed). Letter-spaced caps to read as a status
+   marker, not an actionable label. */
+.eem-source-status.is-soon {
+	background: var(--eem-surface-2, #f1f3f7);
+	color: var(--eem-text-muted, #6b7a99);
+	border: 1px solid var(--eem-border, #d9e2f2);
+	letter-spacing: .04em;
+	text-transform: uppercase;
+}
+
+/* Disabled (Coming Soon) source rows: muted, non-interactive. The radio is
+   also `disabled` server-side so it can't be selected or keyboard-focused. */
+.eem-source-row.is-disabled {
+	opacity: .6;
+	cursor: not-allowed;
+}
+
+.eem-source-row.is-disabled .eem-source-radio {
+	cursor: not-allowed;
+}
+
 /* ─────────────────────────────────────────────────────────────
    Branding — logo upload UI
    ───────────────────────────────────────────────────────────── */
