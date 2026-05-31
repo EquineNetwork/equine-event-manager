@@ -3340,3 +3340,199 @@
 	border: 1px solid #fbbf24;
 	border-radius: 8px;
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   C10.C (2.3.53) — CUSTOMER FORM SECTION SHELLS → mockup parity
+   --------------------------------------------------------------------
+   Scoped override block. Restyles the existing .eem-reservation-* form
+   markup to match .mockups/event_page.html (white section cards with an
+   uppercase header band + padded body, mockup field/input chrome, blue
+   toggle, mockup product/subtotal/rider styling).
+
+   Why a scoped override and not in-place edits: the .eem-reservation-*
+   rules above are also consumed by the admin-invoice render path
+   (is_admin()). Scoping to .eem-event-page applies the customer-facing
+   redesign ONLY on the public event page (the C10 launch path, which is
+   always wrapped in .eem-event-page by the 2.3.50 template takeover) and
+   leaves the admin-invoice presentation untouched. ZERO markup changes —
+   the 30-field submission payload + every JS hook are byte-identical.
+   Per C10.A precedent (public.css ~3235): ".eem-reservation-* owns the
+   layout; mockup classes are co-applied aliases." This continues that.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* Section card chrome (mockup .form-section) */
+.eem-event-page .eem-reservation-section {
+	display: block;
+	background: #fff;
+	border: 1px solid #D9E2F2;
+	border-radius: 8px;
+	margin-bottom: 16px;
+	padding: 0;
+	overflow: hidden;
+}
+/* Stay Details previously rendered as a tinted inset box; mockup shows it
+   as a normal white card like every other section. */
+.eem-event-page .eem-reservation-section--instructions {
+	background: #fff;
+	box-shadow: none;
+}
+
+/* Header band — bare title (non-collapsible) OR heading wrapper
+   (collapsible Stall/RV, keeps the toggle on the right). */
+.eem-event-page .eem-reservation-section > .eem-reservation-section__title,
+.eem-event-page .eem-reservation-section > .eem-reservation-section-heading {
+	margin: 0;
+	padding: 16px 22px;
+	border-bottom: 1px solid #EEF2F9;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	cursor: default;
+}
+.eem-event-page .eem-reservation-section__title {
+	font-family: 'Space Grotesk', sans-serif;
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: .1em;
+	text-transform: uppercase;
+	color: #031B4E;
+}
+
+/* Body — collapsible sections wrap content in __body; non-collapsible
+   sections inset their direct children with horizontal margin so the
+   header border stays full-bleed. */
+.eem-event-page .eem-reservation-section__body {
+	padding: 16px 22px 20px;
+}
+.eem-event-page .eem-reservation-section > :not(.eem-reservation-section__title):not(.eem-reservation-section-heading):not(.eem-reservation-section__body) {
+	margin-left: 22px;
+	margin-right: 22px;
+}
+.eem-event-page .eem-reservation-section > .eem-reservation-section__title + * {
+	margin-top: 16px;
+}
+.eem-event-page .eem-reservation-section > * + *:not(.eem-reservation-section__body) {
+	margin-top: 14px;
+}
+.eem-event-page .eem-reservation-section > :last-child:not(.eem-reservation-section__body) {
+	margin-bottom: 20px;
+}
+
+/* Fields (mockup .field-group / .field-label / .field-input) */
+.eem-event-page .eem-reservation-form label {
+	gap: 5px;
+}
+.eem-event-page .eem-reservation-form label > span {
+	font-size: 12px;
+	font-weight: 600;
+	color: #4a5a7a;
+	letter-spacing: .02em;
+}
+.eem-event-page .eem-reservation-form label strong {
+	color: #E24B4A;
+	font-weight: 600;
+}
+.eem-event-page .eem-reservation-form input,
+.eem-event-page .eem-reservation-form select,
+.eem-event-page .eem-reservation-form textarea {
+	min-height: auto;
+	padding: 10px 13px;
+	border: 1.5px solid #D9E2F2;
+	border-radius: 8px;
+	font-size: 14px;
+	color: #031B4E;
+}
+.eem-event-page .eem-reservation-form input::placeholder,
+.eem-event-page .eem-reservation-form textarea::placeholder {
+	color: #B0BDD4;
+}
+.eem-event-page .eem-reservation-form textarea {
+	min-height: 90px;
+}
+
+/* Products header + line items (mockup .products-header / .product-row) */
+.eem-event-page .eem-product-list__head {
+	padding: 0 0 8px;
+	border-bottom: 1px solid #EEF2F9;
+	color: #8a9ab8;
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: .1em;
+}
+.eem-event-page .eem-product-line-item {
+	padding: 12px 0;
+	border-bottom: 1px solid #F0F4FB;
+}
+.eem-event-page .eem-product-line-item__title {
+	font-size: 14px;
+	font-weight: 600;
+	color: #031B4E;
+}
+.eem-event-page .eem-product-line-item__description {
+	font-size: 12px;
+	color: #6B7A99;
+}
+
+/* Subtotal row (mockup .subtotal-row — no top border, blue amount) */
+.eem-event-page .eem-section-subtotal {
+	border-top: 0;
+	padding-top: 12px;
+	font-size: 14px;
+	font-weight: 700;
+	color: #031B4E;
+}
+.eem-event-page .eem-section-subtotal strong {
+	font-size: 14px;
+	color: #1668F2;
+}
+
+/* Section toggle → mockup blue 44×24 pill (was green 58×34) */
+.eem-event-page .eem-reservation-section-toggle__track {
+	width: 44px;
+	height: 24px;
+	border-radius: 8px;
+	background: #D9E2F2;
+}
+.eem-event-page .eem-reservation-section-toggle__track::after {
+	width: 18px;
+	height: 18px;
+	top: 3px;
+	left: 3px;
+}
+.eem-event-page .eem-reservation-section-toggle input:checked + .eem-reservation-section-toggle__track {
+	background: #1668F2;
+}
+.eem-event-page .eem-reservation-section-toggle input:checked + .eem-reservation-section-toggle__track::after {
+	transform: translateX(20px);
+}
+
+/* Group rider cards (mockup .rider-card) */
+.eem-event-page .eem-group-rider-card {
+	background: #FAFBFE;
+	border: 1px solid #D9E2F2;
+	border-radius: 8px;
+	padding: 14px 16px;
+}
+.eem-event-page .eem-group-rider-card h4 {
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: .1em;
+	text-transform: uppercase;
+	color: #031B4E;
+}
+
+/* Mobile — match mockup section padding at ≤767px */
+@media (max-width: 767px) {
+	.eem-event-page .eem-reservation-section > .eem-reservation-section__title,
+	.eem-event-page .eem-reservation-section > .eem-reservation-section-heading {
+		padding: 14px 16px;
+	}
+	.eem-event-page .eem-reservation-section__body {
+		padding: 12px 16px 16px;
+	}
+	.eem-event-page .eem-reservation-section > :not(.eem-reservation-section__title):not(.eem-reservation-section-heading):not(.eem-reservation-section__body) {
+		margin-left: 16px;
+		margin-right: 16px;
+	}
+}
