@@ -12,6 +12,9 @@
       "Bash(git fetch:*)",
 
       "Bash(git add:*)",
+      "Bash(git commit -m *)",
+      "Bash(git push origin main)",
+      "Bash(git push origin main *)",
 
       "Bash(ls:*)",
       "Bash(cat:*)",
@@ -39,7 +42,6 @@
       "Read(/Users/whitneymitchell/Projects/equine-event-manager/**)"
     ],
     "ask": [
-      "Bash(git commit:*)",
       "Bash(git tag:*)",
       "Bash(git merge:*)",
       "Bash(git checkout:*)",
@@ -47,7 +49,6 @@
       "Bash(git cherry-pick:*)",
 
       "Bash(git reset:*)",
-      "Bash(git push:*)",
       "Bash(git restore:*)",
       "Bash(git clean:*)",
 
