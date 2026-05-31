@@ -8,7 +8,14 @@
 # smoke passes; any failure flips the exit to 1.
 #
 # Usage:
-#   bash tests/smoke/run-all.sh
+#   bash tests/smoke/run-all.sh              # run every *-smoke.php
+#   bash tests/smoke/run-all.sh c7x-build    # run only smokes whose filename contains "c7x-build"
+#
+# The optional first argument is a filename substring filter — run a single
+# smoke (or a related family) while iterating, instead of the full suite.
+# This keeps every smoke run going through ONE pre-approved command so it
+# never triggers a fresh permission prompt. Do NOT hand-roll inline `php -r`
+# or `wp eval-file` invocations to run a smoke — route them through here.
 #
 # Environment overrides:
 #   EEM_PHP    Full path to a PHP CLI binary.   (default: Local php 8.2.29)
@@ -51,13 +58,30 @@ TOTAL_PASS=0
 TOTAL_FAIL=0
 FAILED_FILES=()
 
+FILTER="${1:-}"
+
 shopt -s nullglob
-SMOKES=( "$SMOKE_DIR"/*-smoke.php )
+ALL_SMOKES=( "$SMOKE_DIR"/*-smoke.php )
 shopt -u nullglob
 
-if [[ ${#SMOKES[@]} -eq 0 ]]; then
+if [[ ${#ALL_SMOKES[@]} -eq 0 ]]; then
     echo "FATAL: no *-smoke.php files found in $SMOKE_DIR" >&2
     exit 2
+fi
+
+if [[ -n "$FILTER" ]]; then
+    SMOKES=()
+    for smoke in "${ALL_SMOKES[@]}"; do
+        if [[ "$(basename "$smoke")" == *"$FILTER"* ]]; then
+            SMOKES+=( "$smoke" )
+        fi
+    done
+    if [[ ${#SMOKES[@]} -eq 0 ]]; then
+        echo "FATAL: no *-smoke.php files matching \"$FILTER\" in $SMOKE_DIR" >&2
+        exit 2
+    fi
+else
+    SMOKES=( "${ALL_SMOKES[@]}" )
 fi
 
 echo "Running ${#SMOKES[@]} smoke files against $EEM_SITE"
