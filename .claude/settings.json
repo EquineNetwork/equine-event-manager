@@ -16,9 +16,22 @@
       "Bash(git push origin main)",
       "Bash(git push origin main *)",
 
+      "Bash(git -C /Users/whitneymitchell/Projects/equine-event-manager status:*)",
+      "Bash(git -C /Users/whitneymitchell/Projects/equine-event-manager log:*)",
+      "Bash(git -C /Users/whitneymitchell/Projects/equine-event-manager diff:*)",
+      "Bash(git -C /Users/whitneymitchell/Projects/equine-event-manager show:*)",
+      "Bash(git -C /Users/whitneymitchell/Projects/equine-event-manager branch:*)",
+      "Bash(git -C /Users/whitneymitchell/Projects/equine-event-manager rev-parse:*)",
+      "Bash(git -C /Users/whitneymitchell/Projects/equine-event-manager stash list:*)",
+      "Bash(git -C /Users/whitneymitchell/Projects/equine-event-manager add:*)",
+      "Bash(git -C /Users/whitneymitchell/Projects/equine-event-manager commit -m *)",
+      "Bash(git -C /Users/whitneymitchell/Projects/equine-event-manager push origin main)",
+      "Bash(git -C /Users/whitneymitchell/Projects/equine-event-manager push origin main *)",
+
       "Bash(ls:*)",
       "Bash(cat:*)",
       "Bash(grep:*)",
+      "Bash(rg:*)",
       "Bash(find:*)",
       "Bash(head:*)",
       "Bash(tail:*)",
@@ -35,6 +48,8 @@
 
       "Bash(bash tests/smoke/run-all.sh)",
       "Bash(bash tests/smoke/:*)",
+      "Bash(bash /Users/whitneymitchell/Projects/equine-event-manager/tests/smoke/run-all.sh)",
+      "Bash(bash /Users/whitneymitchell/Projects/equine-event-manager/tests/smoke/run-all.sh *)",
 
       "Edit(/Users/whitneymitchell/Projects/equine-event-manager/**)",
       "Write(/Users/whitneymitchell/Projects/equine-event-manager/**)",
