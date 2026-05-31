@@ -2882,6 +2882,12 @@ a.eem-settings-nav-item:focus {
 	cursor: not-allowed;
 }
 
+/* Coming Soon card (e.g. Email Delivery / SendGrid): mute the body so the
+   disabled field reads as inactive, but keep the header + pill crisp. */
+.eem-card--coming-soon .eem-card-body {
+	opacity: .6;
+}
+
 /* ─────────────────────────────────────────────────────────────
    Branding — logo upload UI
    ───────────────────────────────────────────────────────────── */

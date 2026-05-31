@@ -47,8 +47,21 @@ ob_start(); $m->invoke( $sp ); $shtml = ob_get_clean();
 
 preg_match_all( '/data-eem-source-value="([a-z]+)"/', $shtml, $order );
 ok( 'event source order is TEC, Native, Feed', array( 'tec', 'native', 'feed' ) === $order[1], $pass, $fail, $log, implode( ',', $order[1] ) );
-ok( 'two Coming Soon pills rendered', 2 === substr_count( $shtml, 'is-soon">Coming Soon' ), $pass, $fail, $log );
+ok( 'three Coming Soon pills (Native, Feed, SendGrid)', 3 === substr_count( $shtml, 'is-soon">Coming Soon' ), $pass, $fail, $log, substr_count( $shtml, 'is-soon">Coming Soon' ) );
 ok( 'two disabled source radios', 2 === preg_match_all( '/<input type="radio"[^>]*disabled/', $shtml, $d ), $pass, $fail, $log );
+ok( 'SendGrid field is disabled', (bool) preg_match( '/id="eem-sendgrid"[^>]*disabled/', $shtml ), $pass, $fail, $log );
+ok( 'SendGrid field no longer POSTs (no name attr)', ! str_contains( $shtml, 'name="payload[sendgrid_api_key]"' ), $pass, $fail, $log );
+ok( 'Email Delivery card flagged coming-soon', str_contains( $shtml, 'eem-card eem-card--coming-soon' ), $pass, $fail, $log );
+
+/* Save-preserve: a save that omits sendgrid_api_key must NOT wipe an existing key. */
+$prev = get_option( 'equine_event_manager_integration_settings' );
+update_option( 'equine_event_manager_integration_settings', array( 'default_event_source' => 'tec', 'sendgrid_api_key' => 'SG.SMOKE_PRESERVE' ) );
+$sv = new ReflectionMethod( 'EEM_Settings_Page', 'save_integrations_panel' );
+$sv->setAccessible( true );
+$sv->invoke( $sp, array( 'source' => 'tec' ) );
+$saved = get_option( 'equine_event_manager_integration_settings' );
+ok( 'disabled SendGrid key preserved across save', 'SG.SMOKE_PRESERVE' === $saved['sendgrid_api_key'], $pass, $fail, $log, $saved['sendgrid_api_key'] );
+update_option( 'equine_event_manager_integration_settings', $prev ); // restore
 ok( 'native detail panel hidden', (bool) preg_match( '/data-eem-source-detail="native"[^>]*hidden/', $shtml ), $pass, $fail, $log );
 ok( 'feed detail panel hidden', (bool) preg_match( '/data-eem-source-detail="feed"[^>]*hidden/', $shtml ), $pass, $fail, $log );
 ok( 'tec detail panel visible', ! preg_match( '/data-eem-source-detail="tec"[^>]*hidden/', $shtml ), $pass, $fail, $log );

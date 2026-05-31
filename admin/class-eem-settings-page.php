@@ -793,19 +793,26 @@ class EEM_Settings_Page {
 				</div>
 			</section>
 
-			<section class="eem-card">
+			<section class="eem-card eem-card--coming-soon">
 				<header class="eem-card-header">
 					<h2 class="eem-card-title"><?php esc_html_e( 'Email Delivery', 'equine-event-manager' ); ?></h2>
+					<span class="eem-source-status is-soon"><?php esc_html_e( 'Coming Soon', 'equine-event-manager' ); ?></span>
 				</header>
 				<div class="eem-card-body">
 					<p class="eem-field-hint" style="margin-bottom:14px;">
-						<?php esc_html_e( 'Optionally route customer receipts and payment-link emails through SendGrid instead of the default WordPress mailer.', 'equine-event-manager' ); ?>
+						<?php esc_html_e( 'SendGrid delivery is coming in a future release. For now, EEM sends customer receipts and payment-link emails through the site\'s default WordPress mailer.', 'equine-event-manager' ); ?>
 					</p>
 					<div class="eem-field-row">
 						<label class="eem-field-label" for="eem-sendgrid"><?php esc_html_e( 'SendGrid API Key', 'equine-event-manager' ); ?></label>
 						<div class="eem-field-control">
-							<input class="eem-field-input" id="eem-sendgrid" type="password" name="payload[sendgrid_api_key]" value="<?php echo esc_attr( $integration['sendgrid_api_key'] ); ?>" placeholder="SG.xxxxxxxxxxxxxxxxxxxx" autocomplete="off" />
-							<p class="eem-field-hint"><?php esc_html_e( 'When set, EEM will use SendGrid for customer receipt + payment-link invoice emails. Leave blank to keep using the site\'s default WordPress mail configuration.', 'equine-event-manager' ); ?></p>
+							<?php
+							// 2.3.53 (C10.C) — SendGrid is V2-deferred ("Coming Soon"), so the
+							// field is disabled. A disabled input does not POST, so the saved
+							// key is preserved by save_integrations_panel (which only overwrites
+							// sendgrid_api_key when the payload key is present). No data loss.
+							?>
+							<input class="eem-field-input" id="eem-sendgrid" type="password" value="<?php echo esc_attr( $integration['sendgrid_api_key'] ); ?>" placeholder="SG.xxxxxxxxxxxxxxxxxxxx" autocomplete="off" disabled />
+							<p class="eem-field-hint"><?php esc_html_e( 'Routing email through SendGrid will be available in a future release. Until then, the default WordPress mail configuration is used for all plugin email.', 'equine-event-manager' ); ?></p>
 						</div>
 					</div>
 				</div>
@@ -1251,7 +1258,12 @@ class EEM_Settings_Page {
 		$current['tec_integration_enabled'] = ( 'tec' === $source ) ? 1 : 0;
 		$current['feed_url']                = isset( $payload['feed_url'] ) ? esc_url_raw( (string) $payload['feed_url'] ) : '';
 		$current['tec_event_category']      = isset( $payload['tec_event_category'] ) ? sanitize_text_field( (string) $payload['tec_event_category'] ) : '';
-		$current['sendgrid_api_key']        = isset( $payload['sendgrid_api_key'] ) ? sanitize_text_field( (string) $payload['sendgrid_api_key'] ) : '';
+		// 2.3.53 (C10.C) — SendGrid field is disabled ("Coming Soon") and no longer
+		// POSTs. Only overwrite when the key is actually present in the payload so a
+		// previously-saved key (or a future re-enabled field) is never silently wiped.
+		if ( isset( $payload['sendgrid_api_key'] ) ) {
+			$current['sendgrid_api_key'] = sanitize_text_field( (string) $payload['sendgrid_api_key'] );
+		}
 
 		if ( false === update_option( 'equine_event_manager_integration_settings', $current, false ) && get_option( 'equine_event_manager_integration_settings' ) !== $current ) {
 			$errors[] = 'integration_settings';
