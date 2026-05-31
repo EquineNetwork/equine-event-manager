@@ -433,8 +433,8 @@ class EEM_Shortcodes {
 					<input type="hidden" name="stripe_payment_intent_id" value="" />
 					<input type="hidden" name="stripe_payment_gateway" value="<?php echo esc_attr( $payment_settings['selected_gateway'] ); ?>" />
 
-					<div class="eem-reservation-workspace">
-						<div class="eem-reservation-workspace__main">
+					<div class="eem-reservation-workspace page-body">
+						<div class="eem-reservation-workspace__main form-col">
 					<div class="eem-reservation-section">
 						<h4 class="eem-reservation-section__title"><?php esc_html_e( 'Contact Information', 'equine-event-manager' ); ?></h4>
 						<div class="eem-reservation-grid eem-reservation-grid--two">
@@ -1030,7 +1030,7 @@ class EEM_Shortcodes {
 	private function render_order_summary_sidebar( $data, $general_addon_options, $rv_addon_options, $group_grounds_fee_enabled, $group_deposit_enabled, $venue_agreement_url, $is_admin_invoice ) {
 		ob_start();
 		?>
-		<aside class="eem-reservation-workspace__rail">
+		<aside class="eem-reservation-workspace__rail order-sidebar">
 			<div class="eem-reservation-summary-card">
 				<div class="eem-reservation-summary-card__sticky">
 					<h4 class="eem-checkout-subsection-title"><?php esc_html_e( 'Order Summary', 'equine-event-manager' ); ?></h4>
@@ -1090,7 +1090,7 @@ class EEM_Shortcodes {
 						</div>
 					</div>
 					<?php if ( ! $is_admin_invoice && ! empty( $data['venue_agreement_enabled'] ) && $venue_agreement_url ) : ?>
-						<div class="eem-venue-agreement-card">
+						<div class="eem-venue-agreement-card agreement-notice">
 							<p>
 								<?php esc_html_e( 'All transaction fees are non-refundable. Please be sure you have read the', 'equine-event-manager' ); ?>
 								<a href="<?php echo esc_url( $venue_agreement_url ); ?>" target="_blank" rel="noopener noreferrer"><?php

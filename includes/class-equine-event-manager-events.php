@@ -1131,6 +1131,13 @@ class EEM_Events {
 			return $content;
 		}
 
+		// Let TEC render its own draft/scheduled preview unmolested. Without this,
+		// a logged-in editor previewing an unpublished event would see the EEM
+		// takeover instead of TEC's native preview.
+		if ( is_preview() ) {
+			return $content;
+		}
+
 		$post_id   = get_the_ID();
 		$post_type = $post_id ? get_post_type( $post_id ) : '';
 
@@ -2959,129 +2966,138 @@ class EEM_Events {
 		}
 
 		$date_label     = self::format_date_range_label( $event_data['start_date'], $event_data['end_date'] );
-		$directions_url = ! empty( $event_data['venue']['map_query'] ) ? 'https://www.google.com/maps/search/?api=1&query=' . rawurlencode( $event_data['venue']['map_query'] ) : '';
+		$directions_url = ! empty( $event_data['venue']['map_query'] ) ? 'https://maps.google.com/?q=' . rawurlencode( $event_data['venue']['map_query'] ) : '';
+		$bullets        = self::extract_hero_bullets( $event_data['content_raw'] );
+		$hero_image     = ! empty( $event_data['hero_image'] ) ? $event_data['hero_image'] : '';
+		$has_reservation = $show_reservation && ! empty( $event_data['reservation_id'] );
+		$cta_label      = ! empty( $event_data['cta_label'] ) ? $event_data['cta_label'] : __( 'Reserve Now', 'equine-event-manager' );
+
+		$producer_tag   = '';
+		if ( ! empty( $event_data['categories'][0] ) ) {
+			$producer_tag = (string) $event_data['categories'][0];
+		} elseif ( ! empty( $event_data['producer']['name'] ) ) {
+			$producer_tag = (string) $event_data['producer']['name'];
+		}
+
+		$location_val = '';
+		$location_sub = '';
+		if ( ! empty( $event_data['venue_name'] ) ) {
+			$location_val = (string) $event_data['venue_name'];
+			if ( ! empty( $event_data['venue']['address_display'] ) ) {
+				$location_sub = trim( preg_replace( '/\s*\n\s*/', ', ', (string) $event_data['venue']['address_display'] ) );
+			} elseif ( ! empty( $event_data['location'] ) ) {
+				$location_sub = (string) $event_data['location'];
+			}
+		} elseif ( ! empty( $event_data['location'] ) ) {
+			$location_val = (string) $event_data['location'];
+		}
+
+		$producer_val = ! empty( $event_data['producer']['name'] ) ? (string) $event_data['producer']['name'] : '';
+		$producer_sub = trim(
+			implode(
+				' · ',
+				array_filter(
+					array(
+						! empty( $event_data['producer']['phone'] ) ? (string) $event_data['producer']['phone'] : '',
+						! empty( $event_data['producer']['email'] ) ? (string) $event_data['producer']['email'] : '',
+					)
+				)
+			)
+		);
 
 		ob_start();
 		self::render_frontend_styles();
 		?>
-		<article class="eem-event-spotlight">
-			<div class="eem-event-hero">
-				<section class="eem-event-hero__panel eem-event-hero__panel--media">
-					<div class="eem-event-media-card">
-						<div class="eem-event-media-card__visual<?php echo ! empty( $event_data['featured_image'] ) ? ' has-image' : ''; ?>">
-							<?php if ( ! empty( $event_data['featured_image'] ) ) : ?>
-								<img src="<?php echo esc_url( $event_data['featured_image'] ); ?>" alt="<?php echo esc_attr( $event_data['title'] ); ?>" />
-							<?php else : ?>
-								<div class="eem-event-media-card__placeholder">
-									<span class="eem-event-media-card__placeholder-icon" aria-hidden="true">PDF</span>
-									<strong><?php esc_html_e( 'Event Flyer', 'equine-event-manager' ); ?></strong>
-								</div>
-							<?php endif; ?>
-						</div>
-						<?php if ( ! empty( $event_data['flyer_url'] ) ) : ?>
-							<div class="eem-event-media-card__actions">
-								<a class="eem-event-button eem-event-button--dark" href="<?php echo esc_url( $event_data['flyer_url'] ); ?>" target="_blank" rel="noopener noreferrer" onclick="window.open(this.href,'_blank','noopener'); return false;"><?php esc_html_e( 'View Event Flyer PDF', 'equine-event-manager' ); ?></a>
+		<div class="eem-event-page">
+			<div class="hero">
+				<div class="hero-inner">
+					<div class="hero-img-col">
+						<?php if ( $hero_image ) : ?>
+							<img src="<?php echo esc_url( $hero_image ); ?>" alt="<?php echo esc_attr( $event_data['title'] ); ?>" />
+						<?php else : ?>
+							<div class="hero-img-placeholder" aria-hidden="true">
+								<span><?php esc_html_e( 'Event Featured Image', 'equine-event-manager' ); ?></span>
 							</div>
 						<?php endif; ?>
 					</div>
-				</section>
-
-				<section class="eem-event-hero__panel eem-event-hero__panel--details">
-					<div class="eem-event-app-card">
-						<?php if ( ! empty( $event_data['categories'] ) ) : ?>
-							<div class="eem-event-chip-row">
-								<?php foreach ( $event_data['categories'] as $category_name ) : ?>
-									<span class="eem-event-chip"><?php echo esc_html( $category_name ); ?></span>
-								<?php endforeach; ?>
-							</div>
-						<?php endif; ?>
-
-						<h3 class="eem-event-app-card__title"><?php echo esc_html( $event_data['title'] ); ?></h3>
-						<?php if ( $date_label ) : ?>
-							<h5 class="eem-event-app-card__date"><?php echo esc_html( $date_label ); ?></h5>
-						<?php endif; ?>
-
-						<?php if ( $show_content && ! empty( $event_data['content_raw'] ) ) : ?>
-							<div class="eem-event-app-card__content">
-								<?php echo wp_kses_post( $this->format_event_body_content( $event_data['content_raw'] ) ); ?>
-							</div>
-						<?php endif; ?>
-
-						<div class="eem-event-info-list">
-							<?php if ( ! empty( $event_data['venue_name'] ) || ! empty( $event_data['venue']['address_display'] ) || ! empty( $event_data['location'] ) ) : ?>
-								<div class="eem-event-info-list__row">
-									<span class="eem-event-info-list__label"><?php esc_html_e( 'Location', 'equine-event-manager' ); ?></span>
-									<div class="eem-event-info-list__value">
-										<?php if ( ! empty( $event_data['venue_name'] ) ) : ?>
-											<?php if ( ! empty( $event_data['venue']['filter_url'] ) ) : ?>
-												<h6 class="eem-event-info-list__heading"><a href="<?php echo esc_url( $event_data['venue']['filter_url'] ); ?>"><?php echo esc_html( $event_data['venue_name'] ); ?></a></h6>
-											<?php else : ?>
-												<h6 class="eem-event-info-list__heading"><?php echo esc_html( $event_data['venue_name'] ); ?></h6>
-											<?php endif; ?>
-										<?php endif; ?>
-										<?php if ( ! empty( $event_data['venue']['address_display'] ) ) : ?>
-											<span><?php echo wp_kses_post( nl2br( esc_html( $event_data['venue']['address_display'] ) ) ); ?></span>
-										<?php elseif ( ! empty( $event_data['location'] ) ) : ?>
-											<span><?php echo esc_html( $event_data['location'] ); ?></span>
-										<?php endif; ?>
-									</div>
-								</div>
+					<div class="hero-info-col">
+						<div class="hero-tags">
+							<?php if ( ! empty( $event_data['featured'] ) ) : ?>
+								<span class="tag tag-featured"><?php esc_html_e( 'Featured Event', 'equine-event-manager' ); ?></span>
 							<?php endif; ?>
-
-							<?php if ( ! empty( $event_data['producer']['name'] ) || ! empty( $event_data['producer']['phone'] ) || ! empty( $event_data['producer']['email'] ) || ! empty( $event_data['producer']['website'] ) ) : ?>
-								<div class="eem-event-info-list__row">
-									<span class="eem-event-info-list__label"><?php esc_html_e( 'Producer', 'equine-event-manager' ); ?></span>
-									<div class="eem-event-info-list__value">
-										<?php if ( ! empty( $event_data['producer']['name'] ) ) : ?>
-											<?php if ( ! empty( $event_data['producer']['filter_url'] ) ) : ?>
-												<h6 class="eem-event-info-list__heading"><a href="<?php echo esc_url( $event_data['producer']['filter_url'] ); ?>"><?php echo esc_html( $event_data['producer']['name'] ); ?></a></h6>
-											<?php else : ?>
-												<h6 class="eem-event-info-list__heading"><?php echo esc_html( $event_data['producer']['name'] ); ?></h6>
-											<?php endif; ?>
-										<?php endif; ?>
-										<?php if ( ! empty( $event_data['producer']['phone'] ) ) : ?>
-											<span><?php echo esc_html( $event_data['producer']['phone'] ); ?></span>
-										<?php endif; ?>
-										<?php if ( ! empty( $event_data['producer']['email'] ) ) : ?>
-											<a href="mailto:<?php echo esc_attr( $event_data['producer']['email'] ); ?>"><?php echo esc_html( $event_data['producer']['email'] ); ?></a>
-										<?php endif; ?>
-										<?php if ( ! empty( $event_data['producer']['website'] ) ) : ?>
-											<a href="<?php echo esc_url( $event_data['producer']['website'] ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $event_data['producer']['website'] ); ?></a>
-										<?php endif; ?>
-									</div>
-								</div>
+							<?php if ( '' !== $producer_tag ) : ?>
+								<span class="tag tag-prod"><?php echo esc_html( $producer_tag ); ?></span>
 							<?php endif; ?>
 						</div>
 
-						<div class="eem-event-app-card__actions">
-							<?php if ( ! empty( $event_data['reservation_id'] ) ) : ?>
-								<a class="eem-event-button" href="#reservation"><?php echo esc_html( ! empty( $event_data['cta_label'] ) ? $event_data['cta_label'] : __( 'Reserve Now', 'equine-event-manager' ) ); ?></a>
+						<h1 class="hero-title"><?php echo esc_html( $event_data['title'] ); ?></h1>
+						<?php if ( $date_label ) : ?>
+							<div class="hero-dates"><?php echo esc_html( $date_label ); ?></div>
+						<?php endif; ?>
+
+						<?php if ( ! empty( $bullets ) ) : ?>
+							<ul class="hero-bullets">
+								<?php foreach ( $bullets as $bullet ) : ?>
+									<li><?php echo esc_html( $bullet ); ?></li>
+								<?php endforeach; ?>
+							</ul>
+						<?php endif; ?>
+
+						<?php if ( '' !== $location_val || '' !== $producer_val ) : ?>
+							<div class="hero-meta-grid">
+								<?php if ( '' !== $location_val ) : ?>
+									<div class="hero-meta-item">
+										<div class="hero-meta-label"><?php esc_html_e( 'Location', 'equine-event-manager' ); ?></div>
+										<div class="hero-meta-val"><?php echo esc_html( $location_val ); ?></div>
+										<?php if ( '' !== $location_sub ) : ?>
+											<div class="hero-meta-sub"><?php echo esc_html( $location_sub ); ?></div>
+										<?php endif; ?>
+									</div>
+								<?php endif; ?>
+								<?php if ( '' !== $producer_val ) : ?>
+									<div class="hero-meta-item">
+										<div class="hero-meta-label"><?php esc_html_e( 'Producer', 'equine-event-manager' ); ?></div>
+										<div class="hero-meta-val"><?php echo esc_html( $producer_val ); ?></div>
+										<?php if ( '' !== $producer_sub ) : ?>
+											<div class="hero-meta-sub"><?php echo esc_html( $producer_sub ); ?></div>
+										<?php endif; ?>
+									</div>
+								<?php endif; ?>
+							</div>
+						<?php endif; ?>
+
+						<div class="hero-ctas">
+							<?php if ( $has_reservation ) : ?>
+								<a class="btn-reserve" href="#reservation-form"><?php echo esc_html( $cta_label ); ?></a>
 							<?php endif; ?>
 							<?php if ( $directions_url ) : ?>
-								<a class="eem-event-button eem-event-button--ghost" href="<?php echo esc_url( $directions_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Directions', 'equine-event-manager' ); ?></a>
+								<a class="btn-directions" href="<?php echo esc_url( $directions_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Directions', 'equine-event-manager' ); ?></a>
 							<?php endif; ?>
 						</div>
-
-						<?php if ( ! empty( $event_data['tags'] ) ) : ?>
-							<div class="eem-event-app-card__footer">
-								<span><?php esc_html_e( 'Tags', 'equine-event-manager' ); ?></span>
-								<div class="eem-event-chip-row">
-									<?php foreach ( $event_data['tags'] as $tag_name ) : ?>
-										<span class="eem-event-chip eem-event-chip--muted"><?php echo esc_html( $tag_name ); ?></span>
-									<?php endforeach; ?>
-								</div>
-							</div>
-						<?php endif; ?>
 					</div>
-				</section>
+				</div>
 			</div>
 
-			<?php if ( $show_reservation && ! empty( $event_data['reservation_id'] ) ) : ?>
-				<div id="reservation" class="eem-event-spotlight__reservation">
+			<?php if ( $has_reservation ) : ?>
+				<div class="mobile-order-drawer">
+					<div class="mob-drawer-row">
+						<div class="mob-drawer-label"><?php echo esc_html( $event_data['title'] ); ?></div>
+						<a class="mob-drawer-btn" href="#reservation-form"><?php echo esc_html( $cta_label ); ?></a>
+					</div>
+				</div>
+
+				<div id="reservation-form" class="eem-event-reservation-mount">
 					<?php echo do_shortcode( sprintf( '[en_reservation id="%d" show_event_header="0"]', absint( $event_data['reservation_id'] ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 				</div>
+			<?php elseif ( $show_content && ! empty( $event_data['content_raw'] ) ) : ?>
+				<?php $body_html = $this->format_event_body_content( $event_data['content_raw'] ); ?>
+				<?php if ( '' !== $body_html ) : ?>
+					<div class="eem-event-body">
+						<?php echo wp_kses_post( $body_html ); ?>
+					</div>
+				<?php endif; ?>
 			<?php endif; ?>
-		</article>
+		</div>
 		<?php
 
 		return (string) ob_get_clean();
@@ -3117,7 +3133,9 @@ class EEM_Events {
 			'location'       => $event_details['location'],
 			'venue'          => self::get_venue_details( $venue_id ),
 			'producer'       => self::get_producer_details( $producer_id ),
+			'featured'       => (bool) get_post_meta( $event_id, '_equine_event_manager_event_featured', true ),
 			'featured_image' => get_the_post_thumbnail_url( $event_id, 'large' ),
+			'hero_image'     => self::resolve_hero_image_url( $flyer_file_id, (string) get_the_post_thumbnail_url( $event_id, 'large' ) ),
 			'flyer_url'      => $flyer_file_url ? $flyer_file_url : ( $flyer_file_id ? wp_get_attachment_url( $flyer_file_id ) : '' ),
 			'reservation_id' => $reservation_id,
 			'cta_label'      => (string) get_post_meta( $event_id, '_equine_event_manager_event_cta_label', true ),
@@ -3155,13 +3173,76 @@ class EEM_Events {
 			'location'       => $event_details['location'],
 			'venue'          => $venue_details,
 			'producer'       => $producer_details,
+			'featured'       => (bool) get_post_meta( $event_id, '_equine_event_manager_event_featured', true ),
 			'featured_image' => get_the_post_thumbnail_url( $event_id, 'large' ),
+			'hero_image'     => self::resolve_hero_image_url( $flyer_file_id, (string) get_the_post_thumbnail_url( $event_id, 'large' ) ),
 			'flyer_url'      => $flyer_file_url ? $flyer_file_url : ( $flyer_file_id ? wp_get_attachment_url( $flyer_file_id ) : '' ),
 			'reservation_id' => self::get_linked_reservation_id_for_event( $event_id ),
 			'cta_label'      => '',
 			'categories'     => is_wp_error( $categories ) ? array() : array_values( array_filter( array_map( 'strval', $categories ) ) ),
 			'tags'           => is_wp_error( $tags ) ? array() : array_values( array_filter( array_map( 'strval', $tags ) ) ),
 		);
+	}
+
+	/**
+	 * Resolve the hero image URL: prefer an image-type flyer attachment, then the
+	 * post thumbnail. Returns '' when neither resolves (caller shows a placeholder).
+	 *
+	 * @param int    $flyer_file_id Flyer attachment ID.
+	 * @param string $thumbnail_url Post thumbnail URL.
+	 * @return string
+	 */
+	private static function resolve_hero_image_url( $flyer_file_id, $thumbnail_url ) {
+		$flyer_file_id = absint( $flyer_file_id );
+		if ( $flyer_file_id ) {
+			$mime = get_post_mime_type( $flyer_file_id );
+			if ( is_string( $mime ) && 0 === strpos( $mime, 'image/' ) ) {
+				$url = wp_get_attachment_image_url( $flyer_file_id, 'large' );
+				if ( $url ) {
+					return (string) $url;
+				}
+			}
+		}
+
+		return $thumbnail_url ? (string) $thumbnail_url : '';
+	}
+
+	/**
+	 * Derive hero bullet points from raw event content. Prefers explicit list
+	 * items; falls back to paragraphs/lines. Returns plain-text bullets.
+	 *
+	 * @param string $content_raw Raw post content.
+	 * @return array<int, string>
+	 */
+	private static function extract_hero_bullets( $content_raw ) {
+		$content_raw = preg_replace( '/\[[^\]]*\]/', '', (string) $content_raw );
+		$content_raw = preg_replace( '#<(style|script)\b[^>]*>.*?</\1>#is', '', (string) $content_raw );
+		$content_raw = trim( (string) $content_raw );
+
+		if ( '' === $content_raw ) {
+			return array();
+		}
+
+		$bullets = array();
+
+		if ( preg_match_all( '#<li\b[^>]*>(.*?)</li>#is', $content_raw, $matches ) && ! empty( $matches[1] ) ) {
+			foreach ( $matches[1] as $item ) {
+				$text = trim( wp_strip_all_tags( $item ) );
+				if ( '' !== $text ) {
+					$bullets[] = $text;
+				}
+			}
+		} else {
+			$blocks = preg_split( '#</p>|<br\s*/?>|\R#i', $content_raw );
+			foreach ( (array) $blocks as $block ) {
+				$text = trim( wp_strip_all_tags( $block ) );
+				if ( '' !== $text ) {
+					$bullets[] = $text;
+				}
+			}
+		}
+
+		return array_slice( $bullets, 0, 6 );
 	}
 
 	/**
