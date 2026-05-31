@@ -84,6 +84,7 @@ class EEM_Admin {
 		add_action( 'all_admin_notices', array( $this, 'render_reservations_list_banner' ) );
 		add_action( 'all_admin_notices', array( $this, 'render_native_content_list_banner' ) );
 		add_action( 'wp_ajax_eem_move_stall_assignment', array( $this, 'ajax_move_stall_assignment' ) );
+		add_action( 'wp_ajax_eem_auto_assign', array( $this, 'ajax_auto_assign' ) );
 	}
 
 	/**
@@ -1865,14 +1866,6 @@ class EEM_Admin {
 			return;
 		}
 
-		$grid        = $this->build_stall_chart_grid( $reservation_id, $config );
-		$order_rows  = $this->build_stall_chart_rows( $reservation_id, $config );
-		$date_cols   = $grid['date_columns'];
-		$stall_count = count( $config['stall_units'] );
-		$rv_count    = count( $config['rv_lot_names'] );
-		$barn_options     = $this->get_stall_chart_block_filter_options( isset( $config['stall_blocks'] ) ? $config['stall_blocks'] : array(), isset( $config['barn_names'] ) ? $config['barn_names'] : array() );
-		$rv_zone_options  = isset( $config['rv_zone_options'] ) ? $config['rv_zone_options'] : array();
-		$rv_zone_map      = isset( $config['rv_zone_map'] ) ? $config['rv_zone_map'] : array();
 		$reservation_dates = $this->get_reservation_date_range_label( $reservation_id );
 		?>
 		<div class="eem-page">
@@ -1919,6 +1912,46 @@ class EEM_Admin {
 
 				<?php $this->render_admin_notice(); ?>
 
+				<div id="eem-stall-chart-dynamic">
+				<?php $this->render_stall_chart_dynamic_region( $reservation_id, $config, $inv, $tab ); ?>
+				</div><!-- /#eem-stall-chart-dynamic -->
+
+			</div><!-- /eem-stall-chart-body -->
+
+		</div><!-- /eem-plugin-wrap -->
+
+		<?php $this->render_stall_chart_overlays( $reservation_id ); ?>
+		</div><!-- /.eem-page -->
+		<?php
+	}
+
+	/**
+	 * Render the data-driven region of the stall chart detail page.
+	 *
+	 * Contains the stats bar, action bar, tabbed occupancy chart, and the
+	 * Assignment Issues card — everything that changes when assignments are
+	 * generated. Extracted so the auto-assign AJAX handler can re-render just
+	 * this region (returned as HTML and swapped into #eem-stall-chart-dynamic)
+	 * without a full page reload.
+	 *
+	 * @param int    $reservation_id Reservation post ID.
+	 * @param array  $config         Chart config from get_stall_chart_config().
+	 * @param string $inv            Active inventory filter (all|stalls|rv).
+	 * @param string $tab            Active view tab (location|customer).
+	 * @return void
+	 */
+	private function render_stall_chart_dynamic_region( int $reservation_id, array $config, string $inv = 'all', string $tab = 'location' ): void {
+		$grid              = $this->build_stall_chart_grid( $reservation_id, $config );
+		$order_rows        = $this->build_stall_chart_rows( $reservation_id, $config );
+		$date_cols         = $grid['date_columns'];
+		$stall_count       = count( $config['stall_units'] );
+		$rv_count          = count( $config['rv_lot_names'] );
+		$barn_options      = $this->get_stall_chart_block_filter_options( isset( $config['stall_blocks'] ) ? $config['stall_blocks'] : array(), isset( $config['barn_names'] ) ? $config['barn_names'] : array() );
+		$rv_zone_options   = isset( $config['rv_zone_options'] ) ? $config['rv_zone_options'] : array();
+		$rv_zone_map       = isset( $config['rv_zone_map'] ) ? $config['rv_zone_map'] : array();
+		$reservation_dates = $this->get_reservation_date_range_label( $reservation_id );
+		$reservation_title = get_the_title( $reservation_id );
+		?>
 				<!-- Stats Bar -->
 				<div class="eem-stall-chart-stats-bar">
 					<div class="eem-stall-chart-stat-card eem-stall-chart-stat-card--wide">
@@ -1960,10 +1993,10 @@ class EEM_Admin {
 				<!-- Action Bar -->
 				<div class="eem-stall-chart-action-bar">
 					<div class="eem-stall-chart-action-bar-btns">
-						<a class="eem-btn eem-btn--primary" href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( 'action' => 'equine_event_manager_generate_stall_assignments', 'reservation_id' => $reservation_id, 'return_page' => 'stall_chart' ), admin_url( 'admin-post.php' ) ), 'equine_event_manager_generate_stall_assignments_' . $reservation_id ) ); ?>">
+						<button class="eem-btn eem-btn--primary" type="button" data-eem-action="stall-chart-auto-assign-all">
 							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
 							<?php esc_html_e( 'Generate Assignments', 'equine-event-manager' ); ?>
-						</a>
+						</button>
 						<button class="eem-btn eem-btn--ghost" type="button"
 							data-eem-action="stall-chart-print"
 							data-print-url="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-stall-chart-print&reservation_id=' . $reservation_id ) ); ?>">
@@ -2162,6 +2195,9 @@ class EEM_Admin {
 								) );
 								?>
 							</span>
+							<button class="eem-btn eem-btn--primary eem-stall-chart-issues-auto-all" type="button" data-eem-action="stall-chart-auto-assign-all">
+								<?php esc_html_e( 'Auto-Assign All', 'equine-event-manager' ); ?>
+							</button>
 						</div>
 						<div class="eem-stall-chart-issues-body">
 							<?php foreach ( $grid['issues'] as $issue ) : ?>
@@ -2169,6 +2205,10 @@ class EEM_Admin {
 									<span class="eem-stall-chart-issue-text"><?php echo esc_html( is_array( $issue ) ? $issue['text'] : $issue ); ?></span>
 									<?php if ( is_array( $issue ) && ! empty( $issue['order_key'] ) ) : ?>
 										<div class="eem-stall-chart-issue-actions">
+											<button class="eem-btn eem-btn--ghost eem-stall-chart-issue-auto-btn" type="button" data-eem-action="stall-chart-auto-assign-order" data-order-key="<?php echo esc_attr( $issue['order_key'] ); ?>">
+												<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+												<?php esc_html_e( 'Auto-Assign', 'equine-event-manager' ); ?>
+											</button>
 											<a class="eem-stall-chart-issue-view-link" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-order&order_key=' . rawurlencode( $issue['order_key'] ) ) ); ?>">
 												<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
 												<?php esc_html_e( 'View Order', 'equine-event-manager' ); ?>
@@ -2180,11 +2220,22 @@ class EEM_Admin {
 						</div>
 					</div>
 				<?php endif; ?>
+		<?php
+	}
 
-			</div><!-- /eem-stall-chart-body -->
-
-		</div><!-- /eem-plugin-wrap -->
-
+	/**
+	 * Render the static overlay chrome for the stall chart detail page.
+	 *
+	 * The cell-action popover, destination-select banner, move-scope modal,
+	 * and the localized `window.eemStallChart` script live outside the
+	 * `#eem-stall-chart-dynamic` region so they persist across auto-assign
+	 * AJAX swaps. Emitted once per page load.
+	 *
+	 * @param int $reservation_id Reservation post ID.
+	 * @return void
+	 */
+	private function render_stall_chart_overlays( int $reservation_id ): void {
+		?>
 		<!-- Cell action popover (positioned via JS) -->
 		<div class="eem-stall-chart-cell-menu cell-action-menu" id="eem-stall-chart-cell-menu">
 			<div class="eem-stall-chart-menu-title-wrap">
@@ -2229,16 +2280,17 @@ class EEM_Admin {
 		</div>
 
 		<?php
-		// Localize AJAX endpoint + nonce for switching functionality.
-		$nonce = wp_create_nonce( 'eem_stall_chart_move' );
+		// Localize AJAX endpoints + nonces for move and auto-assign functionality.
+		$nonce             = wp_create_nonce( 'eem_stall_chart_move' );
+		$auto_assign_nonce = wp_create_nonce( 'eem_auto_assign' );
 		?>
 		<script>
 			window.eemStallChart = window.eemStallChart || {};
 			window.eemStallChart.ajaxUrl   = <?php echo wp_json_encode( admin_url( 'admin-ajax.php' ) ); ?>;
 			window.eemStallChart.moveNonce = <?php echo wp_json_encode( $nonce ); ?>;
+			window.eemStallChart.autoAssignNonce = <?php echo wp_json_encode( $auto_assign_nonce ); ?>;
 			window.eemStallChart.reservationId = <?php echo (int) $reservation_id; ?>;
 		</script>
-		</div><!-- /.eem-page -->
 		<?php
 	}
 
@@ -3782,6 +3834,85 @@ class EEM_Admin {
 			'destination_stall' => $dest_stall,
 			'scope'             => $scope,
 			'source_date'       => $src_date,
+		) );
+	}
+
+	/**
+	 * AJAX: auto-assign unassigned bulk stalls/RV lots to available inventory.
+	 *
+	 * Drives both the action-bar "Generate Assignments" / issues-card
+	 * "Auto-Assign All" buttons (reservation-wide) and the per-row
+	 * "Auto-Assign" button (single order via the optional order_key param).
+	 * Delegates the conflict-aware fill to
+	 * EEM_Orders_Repository::auto_assign_units_for_reservation(), then returns
+	 * the freshly-rendered dynamic chart region so the client can swap
+	 * #eem-stall-chart-dynamic without a full page reload.
+	 *
+	 * Accepts: reservation_id (int, required), order_key (string, optional),
+	 * inv (all|stalls|rv), tab (location|customer).
+	 *
+	 * @return void
+	 */
+	public function ajax_auto_assign() {
+		check_ajax_referer( 'eem_auto_assign', '_wpnonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+
+		$reservation_id = isset( $_POST['reservation_id'] ) ? absint( wp_unslash( $_POST['reservation_id'] ) ) : 0;
+		$order_key      = isset( $_POST['order_key'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['order_key'] ) ) : '';
+		$inv            = isset( $_POST['inv'] ) ? sanitize_key( wp_unslash( $_POST['inv'] ) ) : 'all';
+		$inv            = in_array( $inv, array( 'all', 'stalls', 'rv' ), true ) ? $inv : 'all';
+		$tab            = isset( $_POST['tab'] ) ? sanitize_key( wp_unslash( $_POST['tab'] ) ) : 'location';
+		$tab            = in_array( $tab, array( 'location', 'customer' ), true ) ? $tab : 'location';
+
+		if ( $reservation_id < 1 || 'en_reservation' !== get_post_type( $reservation_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'Reservation not found.', 'equine-event-manager' ) ), 404 );
+		}
+
+		$result = $this->orders_repository->auto_assign_units_for_reservation( $reservation_id, $order_key );
+
+		// Re-render the dynamic region against fresh assignment state.
+		$config = $this->get_stall_chart_config( $reservation_id );
+		ob_start();
+		$this->render_stall_chart_dynamic_region( $reservation_id, $config, $inv, $tab );
+		$html = ob_get_clean();
+
+		$updated     = isset( $result['updated'] ) ? (int) $result['updated'] : 0;
+		$shortages   = isset( $result['shortages'] ) ? (array) $result['shortages'] : array();
+		$has_shortfall = false;
+		foreach ( $shortages as $shortage ) {
+			if ( '' !== $order_key && (string) $shortage['order_key'] !== $order_key ) {
+				continue;
+			}
+			if ( ! empty( $shortage['stall_unassigned'] ) || ! empty( $shortage['rv_unassigned'] ) ) {
+				$has_shortfall = true;
+				break;
+			}
+		}
+
+		// Nothing could be assigned and a need remains → no available inventory.
+		if ( 0 === $updated && $has_shortfall ) {
+			wp_send_json_error( array(
+				'message' => __( 'No available inventory to assign. All matching stalls or RV lots are occupied or blocked.', 'equine-event-manager' ),
+				'html'    => $html,
+			), 409 );
+		}
+
+		if ( 0 === $updated ) {
+			$message = __( 'Assignments are already up to date.', 'equine-event-manager' );
+		} elseif ( $has_shortfall ) {
+			$message = __( 'Assignments updated, but some units could not be placed — see remaining issues.', 'equine-event-manager' );
+		} else {
+			$message = __( 'Assignments generated.', 'equine-event-manager' );
+		}
+
+		wp_send_json_success( array(
+			'message'       => $message,
+			'updated'       => $updated,
+			'has_shortfall' => $has_shortfall,
+			'html'          => $html,
 		) );
 	}
 

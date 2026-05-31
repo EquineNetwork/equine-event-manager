@@ -426,10 +426,14 @@ class EEM_Orders_Repository {
 	}
 
 	/**
-	 * Auto-assign stall and RV units for an order from the reservation chart config.
+	 * Auto-assign stall and RV units for a single order.
+	 *
+	 * Thin wrapper over {@see auto_assign_units_for_reservation()} scoped to one
+	 * order so the conflict-aware reservation-wide allocation pass is the single
+	 * source of truth for assignment logic.
 	 *
 	 * @param string $order_key Order key.
-	 * @return bool
+	 * @return bool True when the order's assignments changed.
 	 */
 	public function auto_assign_units_for_order( $order_key ) {
 		$order = $this->get_order( $order_key );
@@ -438,21 +442,65 @@ class EEM_Orders_Repository {
 			return false;
 		}
 
-		$config = $this->get_stall_chart_config( absint( $order['reservation_id'] ) );
+		$result = $this->auto_assign_units_for_reservation( absint( $order['reservation_id'] ), (string) $order_key );
 
-		if ( empty( $config['enabled'] ) ) {
-			return false;
+		return $result['updated'] > 0;
+	}
+
+	/**
+	 * Auto-assign stall and RV units across every order on a reservation.
+	 *
+	 * Runs a single conflict-aware allocation pass for the reservation:
+	 *
+	 *  1. Every order's existing saved assignments are seeded into the shared
+	 *     occupancy maps first, so a later order's auto-fill can never steal a
+	 *     unit another order already holds — regardless of iteration order.
+	 *  2. Each order is then filled from the FULL available inventory pool
+	 *     (including paid RV lots, which the chart's ephemeral auto-placement
+	 *     intentionally skips) and the result is persisted.
+	 *
+	 * Orders are processed in creation order so fills are predictable
+	 * (lowest-numbered available unit first) rather than random. The order type
+	 * is never converted — assignments are written to the same `Assigned Stall
+	 * Units` / `Assigned RV Lots` note lines used by customer-picked orders.
+	 *
+	 * @param int    $reservation_id Reservation post ID.
+	 * @param string $only_order_key When non-empty, only this order is persisted
+	 *                               (other orders still seed occupancy). Empty
+	 *                               persists every order on the reservation.
+	 * @return array{updated:int,total:int,assigned:array<string,array<string,int>>,shortages:array<int,array<string,mixed>>}
+	 */
+	public function auto_assign_units_for_reservation( $reservation_id, $only_order_key = '' ) {
+		$reservation_id = absint( $reservation_id );
+		$only_order_key = (string) $only_order_key;
+		$result         = array(
+			'updated'   => 0,
+			'total'     => 0,
+			'assigned'  => array(),
+			'shortages' => array(),
+		);
+
+		if ( $reservation_id < 1 ) {
+			return $result;
 		}
 
-		$reservation_orders = array_filter(
-			$this->get_grouped_orders(),
-			function ( $candidate ) use ( $order ) {
-				return absint( isset( $candidate['reservation_id'] ) ? $candidate['reservation_id'] : 0 ) === absint( $order['reservation_id'] );
-			}
+		$config = $this->get_stall_chart_config( $reservation_id );
+
+		if ( empty( $config['available_stall_units'] ) && empty( $config['available_rv_units'] ) ) {
+			return $result;
+		}
+
+		$orders = array_values(
+			array_filter(
+				$this->get_grouped_orders(),
+				function ( $candidate ) use ( $reservation_id ) {
+					return absint( isset( $candidate['reservation_id'] ) ? $candidate['reservation_id'] : 0 ) === $reservation_id;
+				}
+			)
 		);
 
 		usort(
-			$reservation_orders,
+			$orders,
 			function ( $left, $right ) {
 				$left_created  = ! empty( $left['created_at'] ) ? strtotime( (string) $left['created_at'] ) : 0;
 				$right_created = ! empty( $right['created_at'] ) ? strtotime( (string) $right['created_at'] ) : 0;
@@ -465,40 +513,128 @@ class EEM_Orders_Repository {
 			}
 		);
 
-		$stall_map = array();
-		$rv_map    = array();
+		$result['total']    = count( $orders );
+		$stall_pool         = (array) $config['available_stall_units'];
+		$rv_pool            = (array) $config['available_rv_units'];
+		$stall_map          = array();
+		$rv_map             = array();
+		$state              = array();
 
-		foreach ( $reservation_orders as $candidate ) {
-			$stall_dates  = $this->get_chart_occupied_dates( isset( $candidate['stall_arrival_date'] ) ? $candidate['stall_arrival_date'] : '', isset( $candidate['stall_departure_date'] ) ? $candidate['stall_departure_date'] : '' );
-			$rv_dates     = $this->get_chart_occupied_dates( isset( $candidate['rv_arrival_date'] ) ? $candidate['rv_arrival_date'] : '', isset( $candidate['rv_departure_date'] ) ? $candidate['rv_departure_date'] : '' );
-			$stall_needed = absint( isset( $candidate['stall_quantity'] ) ? $candidate['stall_quantity'] : 0 );
-			$rv_needed    = absint( isset( $candidate['rv_quantity'] ) ? $candidate['rv_quantity'] : 0 );
-			$stall_saved  = $this->parse_assigned_units_string( $this->get_order_component_note_value( $candidate, 'stall', 'Assigned Stall Units' ) );
-			$rv_saved     = $this->parse_assigned_units_string( $this->get_order_component_note_value( $candidate, 'rv', 'Assigned RV Lots' ) );
-			$rv_preferred = $this->get_order_component_note_value( $candidate, 'rv', 'RV Lot' );
-			$rv_pool      = array_values(
+		// Pass 1 — seed occupancy from every order's existing saved assignments.
+		foreach ( $orders as $index => $candidate ) {
+			$stall_dates = $this->get_chart_occupied_dates( isset( $candidate['stall_arrival_date'] ) ? $candidate['stall_arrival_date'] : '', isset( $candidate['stall_departure_date'] ) ? $candidate['stall_departure_date'] : '' );
+			$rv_dates    = $this->get_chart_occupied_dates( isset( $candidate['rv_arrival_date'] ) ? $candidate['rv_arrival_date'] : '', isset( $candidate['rv_departure_date'] ) ? $candidate['rv_departure_date'] : '' );
+			$stall_saved = $this->parse_assigned_units_string( $this->get_order_component_note_value( $candidate, 'stall', 'Assigned Stall Units' ) );
+			$rv_saved    = $this->parse_assigned_units_string( $this->get_order_component_note_value( $candidate, 'rv', 'Assigned RV Lots' ) );
+			$rv_pref     = trim( (string) $this->get_order_component_note_value( $candidate, 'rv', 'RV Lot' ) );
+
+			// Base = saved units that still belong to the available pool; the
+			// preferred-lot note is honored ahead of an arbitrary pool fill.
+			$stall_base = array_values( array_filter( $stall_saved, function ( $unit ) use ( $stall_pool ) {
+				return in_array( $unit, $stall_pool, true );
+			} ) );
+			$rv_base = array_values(
 				array_unique(
 					array_filter(
-						array_merge(
-							array( $rv_preferred ),
-							$rv_saved,
-							$config['auto_assignable_rv_units']
-						)
+						array_merge( array( $rv_pref ), $rv_saved ),
+						function ( $unit ) use ( $rv_pool ) {
+							return '' !== $unit && in_array( $unit, $rv_pool, true );
+						}
 					)
 				)
 			);
 
-			$stall_units = $this->allocate_chart_units( $config['available_stall_units'], $stall_map, $stall_dates, $stall_needed, $stall_saved, $candidate['order_key'] );
-			$rv_units    = $this->allocate_chart_units( $rv_pool, $rv_map, $rv_dates, $rv_needed, array_values( array_unique( array_filter( array_merge( array( $rv_preferred ), $rv_saved ) ) ) ), $candidate['order_key'] );
+			foreach ( $stall_base as $unit ) {
+				$this->mark_chart_unit_occupied( $stall_map, $unit, $stall_dates, $candidate['order_key'] );
+			}
+			foreach ( $rv_base as $unit ) {
+				$this->mark_chart_unit_occupied( $rv_map, $unit, $rv_dates, $candidate['order_key'] );
+			}
 
-			if ( $candidate['order_key'] !== $order_key ) {
+			$state[ $index ] = array(
+				'stall_dates'  => $stall_dates,
+				'rv_dates'     => $rv_dates,
+				'stall_saved'  => $stall_saved,
+				'rv_saved'     => $rv_saved,
+				'stall_base'   => $stall_base,
+				'rv_base'      => $rv_base,
+				'stall_needed' => absint( isset( $candidate['stall_quantity'] ) ? $candidate['stall_quantity'] : 0 ),
+				'rv_needed'    => absint( isset( $candidate['rv_quantity'] ) ? $candidate['rv_quantity'] : 0 ),
+			);
+		}
+
+		// Pass 2 — fill each order's remaining need and persist.
+		foreach ( $orders as $index => $candidate ) {
+			$s = $state[ $index ];
+
+			$stall_units = $this->fill_remaining_chart_units( $stall_pool, $stall_map, $s['stall_dates'], $s['stall_needed'], $s['stall_base'], $candidate['order_key'] );
+			$rv_units    = $this->fill_remaining_chart_units( $rv_pool, $rv_map, $s['rv_dates'], $s['rv_needed'], $s['rv_base'], $candidate['order_key'] );
+
+			if ( $stall_units['unassigned'] > 0 || $rv_units['unassigned'] > 0 ) {
+				$result['shortages'][] = array(
+					'order_key'         => $candidate['order_key'],
+					'order_number'      => isset( $candidate['order_number'] ) ? $candidate['order_number'] : '',
+					'customer_name'     => isset( $candidate['customer_name'] ) ? $candidate['customer_name'] : '',
+					'stall_unassigned'  => $stall_units['unassigned'],
+					'rv_unassigned'     => $rv_units['unassigned'],
+				);
+			}
+
+			if ( '' !== $only_order_key && (string) $candidate['order_key'] !== $only_order_key ) {
 				continue;
 			}
 
-			return $this->persist_auto_assigned_units( $candidate, $stall_saved, $rv_saved, $stall_units['assigned'], $rv_units['assigned'] );
+			$changed = $this->persist_auto_assigned_units( $candidate, $s['stall_saved'], $s['rv_saved'], $stall_units['assigned'], $rv_units['assigned'] );
+
+			if ( $changed ) {
+				$result['updated']++;
+				$result['assigned'][ (string) $candidate['order_key'] ] = array(
+					'stalls' => count( $stall_units['assigned'] ),
+					'rv'     => count( $rv_units['assigned'] ),
+				);
+			}
 		}
 
-		return false;
+		return $result;
+	}
+
+	/**
+	 * Fill an order's remaining unit need from a pool, skipping occupied units.
+	 *
+	 * The supplied base units are treated as already-assigned (and already
+	 * marked occupied by the caller); only the shortfall up to `$needed` is
+	 * filled, in pool order, so assignment is predictable lowest-first.
+	 *
+	 * @param array  $pool      Ordered pool of candidate unit identifiers.
+	 * @param array  $map       Shared occupancy map, mutated by reference.
+	 * @param array  $dates     Occupied nightly date keys for this order.
+	 * @param int    $needed    Total units the order requires.
+	 * @param array  $base      Units already committed to this order.
+	 * @param string $order_key Order key marking occupancy.
+	 * @return array{assigned:array<int,string>,unassigned:int}
+	 */
+	private function fill_remaining_chart_units( $pool, &$map, $dates, $needed, $base, $order_key ) {
+		$assigned = array_values( (array) $base );
+
+		foreach ( (array) $pool as $unit ) {
+			if ( count( $assigned ) >= $needed ) {
+				break;
+			}
+
+			if ( in_array( $unit, $assigned, true ) ) {
+				continue;
+			}
+
+			if ( $this->chart_unit_is_available( $map, $unit, $dates ) ) {
+				$assigned[] = $unit;
+				$this->mark_chart_unit_occupied( $map, $unit, $dates, $order_key );
+			}
+		}
+
+		return array(
+			'assigned'   => $assigned,
+			'unassigned' => max( 0, $needed - count( $assigned ) ),
+		);
 	}
 
 	/**

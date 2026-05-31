@@ -3176,9 +3176,69 @@
 		window._eemScTab = tab;
 	}
 
+	/**
+	 * POST the auto-assign request and swap the dynamic chart region in place.
+	 *
+	 * @param {string} orderKey   Empty = reservation-wide; otherwise scope to one order.
+	 * @param {Element} triggerBtn Button that initiated the request (disabled during flight).
+	 */
+	function eemRunAutoAssign(orderKey, triggerBtn) {
+		var cfg = window.eemStallChart || {};
+		var body = new URLSearchParams();
+		body.set('action', 'eem_auto_assign');
+		body.set('_wpnonce', cfg.autoAssignNonce || '');
+		body.set('reservation_id', String(cfg.reservationId || ''));
+		if (orderKey) body.set('order_key', orderKey);
+		body.set('inv', window._eemScInv || 'all');
+		body.set('tab', window._eemScTab || 'location');
+		if (triggerBtn) triggerBtn.disabled = true;
+		fetch((cfg.ajaxUrl || window.ajaxurl || '/wp-admin/admin-ajax.php'), {
+			method: 'POST', credentials: 'same-origin',
+			headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+			body: body.toString()
+		}).then(function (r) { return r.json(); }).then(function (resp) {
+			if (triggerBtn) triggerBtn.disabled = false;
+			var data = (resp && resp.data) || {};
+			// Swap the chart region whenever the server returned fresh markup
+			// (both success and the "no inventory" 409 path carry html).
+			if (data.html) {
+				var region = document.getElementById('eem-stall-chart-dynamic');
+				if (region) {
+					region.innerHTML = data.html;
+					eemScApplyState(window._eemScInv || 'all', window._eemScTab || 'location');
+				}
+			}
+			if (window.EEM && window.EEM.showSaveToast) {
+				var variant = (resp && resp.success && !data.has_shortfall) ? 'success' : 'error';
+				window.EEM.showSaveToast(data.message || (resp && resp.success ? 'Assignments generated.' : 'Auto-assign failed.'), { variant: variant, sub: '' });
+			}
+		}).catch(function () {
+			if (triggerBtn) triggerBtn.disabled = false;
+			if (window.EEM && window.EEM.showSaveToast) {
+				window.EEM.showSaveToast('Could not reach the server.', { variant: 'error', sub: '' });
+			}
+		});
+	}
+
 	document.addEventListener('click', function (ev) {
 		var t = ev.target;
 		if (!t || !t.closest) return;
+
+		// Auto-Assign All (action-bar "Generate Assignments" + issues "Auto-Assign All")
+		var autoAll = t.closest('[data-eem-action="stall-chart-auto-assign-all"]');
+		if (autoAll) {
+			ev.preventDefault();
+			eemRunAutoAssign('', autoAll);
+			return;
+		}
+
+		// Auto-Assign a single order (issues-row button)
+		var autoOrder = t.closest('[data-eem-action="stall-chart-auto-assign-order"]');
+		if (autoOrder) {
+			ev.preventDefault();
+			eemRunAutoAssign(autoOrder.getAttribute('data-order-key') || '', autoOrder);
+			return;
+		}
 
 		// Inventory toggle (All / Stalls / RV)
 		var invBtn = t.closest('[data-eem-action="sc-inv-switch"]');
