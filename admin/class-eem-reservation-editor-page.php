@@ -249,6 +249,7 @@ class EEM_Reservation_Editor_Page {
 				</header>
 				<div class="eem-edit-body">
 					<main class="eem-edit-main eem-reservation-editor-body" data-eem-reservation-id="<?php echo esc_attr( (string) $reservation_id ); ?>">
+						<?php self::render_reservation_details_card( $reservation_id, $post ); ?>
 						<?php self::render_section_skeletons( $reservation_id ); ?>
 					</main>
 				</div>
@@ -276,6 +277,70 @@ class EEM_Reservation_Editor_Page {
 			}
 		}
 		return get_the_title( $post );
+	}
+
+	/**
+	 * FIX 4 (2.3.42) — Reservation Details card: editable Name + Slug
+	 * with auto-mirror. Appears above the section card stack so it is
+	 * always visible regardless of section collapse states.
+	 *
+	 * Override flags (`_eem_reservation_name_overridden`,
+	 * `_eem_reservation_slug_overridden`) are stored as post meta and
+	 * re-read here to pre-populate the hidden state inputs.  When a
+	 * field is cleared the corresponding override flag is written as 0
+	 * on save, and `ajax_save()` mirrors from the linked event title /
+	 * sanitized title respectively.
+	 *
+	 * @param int     $reservation_id
+	 * @param WP_Post $post
+	 * @return void
+	 */
+	private static function render_reservation_details_card( int $reservation_id, WP_Post $post ): void {
+		$name_overridden = (bool) get_post_meta( $reservation_id, '_eem_reservation_name_overridden', true );
+		$slug_overridden = (bool) get_post_meta( $reservation_id, '_eem_reservation_slug_overridden', true );
+		$name_value      = $post->post_title;
+		$slug_value      = $post->post_name;
+		?>
+		<div class="eem-card eem-reservation-details-card">
+			<div class="eem-card-header">
+				<span class="eem-card-title">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+					<?php esc_html_e( 'Reservation Details', 'equine-event-manager' ); ?>
+				</span>
+			</div>
+			<div class="eem-card-body">
+				<div class="eem-field-row">
+					<label class="eem-field-label" for="eem-res-name">
+						<?php esc_html_e( 'Reservation Name', 'equine-event-manager' ); ?>
+					</label>
+					<input type="text"
+						class="eem-field-input"
+						id="eem-res-name"
+						name="eem_res_name"
+						value="<?php echo esc_attr( $name_value ); ?>"
+						data-eem-input-action="res-name-input">
+					<p class="eem-field-hint"><?php esc_html_e( 'Defaults to linked event name. Clear to reset.', 'equine-event-manager' ); ?></p>
+					<input type="hidden" name="eem_res_name_overridden" id="eem-res-name-overridden" value="<?php echo esc_attr( $name_overridden ? '1' : '0' ); ?>">
+				</div>
+				<div class="eem-field-row">
+					<label class="eem-field-label" for="eem-res-slug">
+						<?php esc_html_e( 'Slug', 'equine-event-manager' ); ?>
+					</label>
+					<div class="eem-slug-wrap">
+						<span class="eem-slug-prefix">/reservation/</span>
+						<input type="text"
+							class="eem-field-input eem-slug-input"
+							id="eem-res-slug"
+							name="eem_res_slug"
+							value="<?php echo esc_attr( $slug_value ); ?>"
+							data-eem-input-action="res-slug-input">
+					</div>
+					<p class="eem-field-hint"><?php esc_html_e( 'URL-friendly identifier. Clear to auto-generate from the Reservation Name.', 'equine-event-manager' ); ?></p>
+					<input type="hidden" name="eem_res_slug_overridden" id="eem-res-slug-overridden" value="<?php echo esc_attr( $slug_overridden ? '1' : '0' ); ?>">
+				</div>
+			</div>
+		</div>
+		<?php
 	}
 
 	/**
@@ -833,6 +898,41 @@ class EEM_Reservation_Editor_Page {
 				);
 			}
 			update_post_meta( $reservation_id, '_en_event_pre_entries', $pe_clean );
+		}
+
+		// FIX 4 (2.3.42) — Reservation Name + Slug with auto-mirror.
+		// Both fields are submitted outside the en_reservation[] array to avoid
+		// routing them through save_meta() (which handles post meta only, not
+		// core post fields).  Mirror logic: empty submitted value → clear override
+		// flag and derive from the linked event title / sanitized title on save.
+		if ( array_key_exists( 'eem_res_name', $_POST ) ) {
+			$res_name_raw    = sanitize_text_field( wp_unslash( (string) $_POST['eem_res_name'] ) );
+			$name_overridden = '' !== trim( $res_name_raw );
+			if ( ! $name_overridden ) {
+				// Mirror: derive from linked source event title.
+				if ( class_exists( 'EEM_Reservation_Source_Resolver' ) ) {
+					$_src_fields = EEM_Reservation_Source_Resolver::resolve_event_fields( $reservation_id );
+					$res_name_raw = '' !== $_src_fields['title']
+						? (string) $_src_fields['title']
+						: get_the_title( $reservation_id );
+				} else {
+					$res_name_raw = get_the_title( $reservation_id );
+				}
+			}
+			$update_post_args = array( 'ID' => $reservation_id, 'post_title' => $res_name_raw );
+
+			if ( array_key_exists( 'eem_res_slug', $_POST ) ) {
+				$res_slug_raw    = sanitize_title( wp_unslash( (string) $_POST['eem_res_slug'] ) );
+				$slug_overridden = '' !== $res_slug_raw;
+				if ( ! $slug_overridden ) {
+					$res_slug_raw = sanitize_title( $res_name_raw );
+				}
+				$update_post_args['post_name'] = $res_slug_raw;
+				update_post_meta( $reservation_id, '_eem_reservation_slug_overridden', $slug_overridden ? 1 : 0 );
+			}
+
+			wp_update_post( $update_post_args );
+			update_post_meta( $reservation_id, '_eem_reservation_name_overridden', $name_overridden ? 1 : 0 );
 		}
 
 		wp_send_json_success( array(

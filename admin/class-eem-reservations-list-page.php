@@ -76,6 +76,7 @@ class EEM_Reservations_List_Page {
 				'eem_reservation_restore'       => wp_create_nonce( 'eem_reservation_restore' ),
 				'eem_reservation_delete_permanently' => wp_create_nonce( 'eem_reservation_delete_permanently' ), // C7.X.16 Issue G
 				'eem_reservation_export_roster' => wp_create_nonce( 'eem_reservation_export_roster' ),
+				'eem_reservation_quick_edit'    => wp_create_nonce( 'eem_reservation_quick_edit' ),         // FIX 5 (2.3.42)
 			),
 		) );
 	}
@@ -655,6 +656,73 @@ class EEM_Reservations_List_Page {
 	}
 
 	/**
+	 * FIX 5 (2.3.42) — AJAX handler for the inline Quick Edit row.
+	 * Accepts Name + Slug fields, applies the same auto-mirror logic
+	 * as the full editor's ajax_save() FIX 4 path, and returns the
+	 * resolved name so the JS can update the row cell without a reload.
+	 *
+	 * Nonce: `eem_reservation_quick_edit` (created in
+	 * localize_row_action_nonces and consumed as `_eem_quick_edit_nonce`).
+	 *
+	 * @return void
+	 */
+	public static function handle_quick_edit_ajax() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+		check_ajax_referer( 'eem_reservation_quick_edit', '_eem_quick_edit_nonce' );
+
+		$reservation_id = isset( $_POST['reservation_id'] ) ? absint( wp_unslash( $_POST['reservation_id'] ) ) : 0;
+		if ( $reservation_id <= 0 ) {
+			wp_send_json_error( array( 'message' => __( 'Reservation ID required.', 'equine-event-manager' ) ), 400 );
+		}
+
+		$post = get_post( $reservation_id );
+		if ( ! $post || EEM_Reservations_List_Repo::POST_TYPE !== $post->post_type ) {
+			wp_send_json_error( array( 'message' => __( 'Reservation not found.', 'equine-event-manager' ) ), 404 );
+		}
+
+		// Mirror logic — identical to FIX 4 in EEM_Reservation_Editor_Page::ajax_save().
+		$res_name_raw    = isset( $_POST['eem_res_name'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['eem_res_name'] ) ) : '';
+		$name_overridden = '' !== trim( $res_name_raw );
+		if ( ! $name_overridden ) {
+			if ( class_exists( 'EEM_Reservation_Source_Resolver' ) ) {
+				$_src_fields = EEM_Reservation_Source_Resolver::resolve_event_fields( $reservation_id );
+				$res_name_raw = '' !== $_src_fields['title']
+					? (string) $_src_fields['title']
+					: get_the_title( $reservation_id );
+			} else {
+				$res_name_raw = get_the_title( $reservation_id );
+			}
+		}
+
+		$res_slug_raw    = isset( $_POST['eem_res_slug'] ) ? sanitize_title( wp_unslash( (string) $_POST['eem_res_slug'] ) ) : '';
+		$slug_overridden = '' !== $res_slug_raw;
+		if ( ! $slug_overridden ) {
+			$res_slug_raw = sanitize_title( $res_name_raw );
+		}
+
+		$result = wp_update_post( array(
+			'ID'         => $reservation_id,
+			'post_title' => $res_name_raw,
+			'post_name'  => $res_slug_raw,
+		), true );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ), 500 );
+		}
+
+		update_post_meta( $reservation_id, '_eem_reservation_name_overridden', $name_overridden ? 1 : 0 );
+		update_post_meta( $reservation_id, '_eem_reservation_slug_overridden', $slug_overridden ? 1 : 0 );
+
+		wp_send_json_success( array(
+			'name'    => $res_name_raw,
+			'slug'    => $res_slug_raw,
+			'message' => __( 'Reservation updated.', 'equine-event-manager' ),
+		) );
+	}
+
+	/**
 	 * Distinct customer emails for a reservation across both stall + RV
 	 * orders. De-duplicated by lowercase email.
 	 *
@@ -1111,6 +1179,10 @@ class EEM_Reservations_List_Page {
 							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
 							<?php esc_html_e( 'View Orders', 'equine-event-manager' ); ?>
 						</a>
+						<button type="button" class="eem-row-dd-item" data-eem-action="reservation-quick-edit" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" role="menuitem">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+							<?php esc_html_e( 'Quick Edit', 'equine-event-manager' ); ?>
+						</button>
 						<button type="button" class="eem-row-dd-item" data-eem-action="reservation-duplicate" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" role="menuitem">
 							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
 							<?php esc_html_e( 'Duplicate', 'equine-event-manager' ); ?>

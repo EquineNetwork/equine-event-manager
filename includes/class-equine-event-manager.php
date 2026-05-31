@@ -87,6 +87,8 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-reservation-editor-pag
 // endpoints. Per Decision D: save dispatcher is SHELL only — per-
 // section meta saves wire in C7.C.
 add_action( 'wp_ajax_eem_reservation_editor_save', array( 'EEM_Reservation_Editor_Page', 'ajax_save' ) );
+// FIX 5 (2.3.42) — Quick Edit inline row save from the Reservations list.
+add_action( 'wp_ajax_eem_reservation_quick_edit', array( 'EEM_Reservations_List_Page', 'handle_quick_edit_ajax' ) );
 // C7.X.3 — change_linked_event handler retired; replaced by ajax_unlink_event
 // (rail-card Unlink button) + event-search typeahead handler in a later commit.
 add_action( 'wp_ajax_eem_reservation_editor_unlink_event', array( 'EEM_Reservation_Editor_Page', 'ajax_unlink_event' ) );

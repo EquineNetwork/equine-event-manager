@@ -7566,3 +7566,124 @@ body.eem-shell-page--print .wrap { margin: 0; }
 	.pv-footer { margin-top: 10px; font-size: 9.5px; }
 	@page { margin: 10mm 8mm; size: letter portrait; }
 }
+
+/* ─────────────────────────────────────────────────────────────
+   FIX 4 (2.3.42) — Reservation Details card: Name + Slug fields
+   Slug field uses an affix pattern (prefix chip + bare input)
+   consistent with .eem-price-wrap / .eem-pct-wrap.
+   ───────────────────────────────────────────────────────────── */
+
+/* Slug prefix-affix container.  Uses align-items:stretch so the
+   prefix chip and the input share the same computed height.  border
+   wraps the whole group; inner border-right separates chip from input.
+   No individual borders on child elements (they would double-up). */
+.eem-slug-wrap {
+	display: flex;
+	align-items: stretch;
+	border: 1.5px solid var(--eem-border);
+	border-radius: var(--eem-radius);
+	overflow: hidden;
+}
+
+.eem-slug-prefix {
+	display: flex;
+	align-items: center;
+	padding: 0 10px;
+	background: var(--eem-bg-alt);
+	border-right: 1px solid var(--eem-border);
+	font-size: 13px;
+	color: var(--eem-text-muted);
+	white-space: nowrap;
+	flex-shrink: 0;
+	line-height: 1;
+}
+
+/* Strip the input's own border + radius so the outer .eem-slug-wrap
+   is the sole visual boundary.  Tag-prefix (input.) needed to beat
+   WP core forms.css specificity at (0,1,1). */
+input.eem-slug-input {
+	border: none;
+	border-radius: 0;
+	flex: 1;
+	min-width: 0;
+	/* Reset WP core box-shadow rule so focus ring comes from the
+	   outer wrap if desired (bare input focus is fine too). */
+	box-shadow: none;
+}
+
+input.eem-slug-input:focus {
+	outline: 2px solid var(--eem-electric);
+	outline-offset: -2px;
+	box-shadow: none;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   FIX 5 (2.3.42) — Quick Edit inline row on Reservations list
+   The <tr class="eem-quick-edit-row"> is injected by JS immediately
+   below the target data row; it spans all 7 columns.
+   ───────────────────────────────────────────────────────────── */
+
+.eem-quick-edit-row > td {
+	padding: 0;
+	background: var(--eem-bg);
+	border-bottom: 2px solid var(--eem-electric);
+}
+
+/* Suppress the table-row hover background so the QE row stays
+   visually distinct even when the cursor moves over it. */
+.eem-quick-edit-row:hover {
+	background: transparent;
+}
+
+.eem-qe-inner {
+	padding: 14px 18px;
+	display: flex;
+	align-items: flex-start;
+	gap: var(--eem-space-6);
+	flex-wrap: wrap;
+}
+
+.eem-qe-fields {
+	display: flex;
+	flex: 1;
+	gap: var(--eem-space-6);
+	flex-wrap: wrap;
+}
+
+.eem-qe-field {
+	flex: 1;
+	min-width: 200px;
+}
+
+.eem-qe-label {
+	display: block;
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--eem-navy);
+	margin-bottom: 5px;
+	font-family: var(--eem-font-ui);
+}
+
+/* Action column — Save + Cancel stacked vertically, top-aligned with
+   the inputs via padding-top matching label height + margin. */
+.eem-qe-actions {
+	display: flex;
+	flex-direction: column;
+	gap: var(--eem-space-2);
+	padding-top: 22px; /* label (~17px) + label margin-bottom (5px) */
+	flex-shrink: 0;
+}
+
+@media (max-width: 767px) {
+	.eem-qe-inner {
+		flex-direction: column;
+		gap: var(--eem-space-4);
+	}
+	.eem-qe-fields {
+		flex-direction: column;
+	}
+	.eem-qe-actions {
+		flex-direction: row;
+		padding-top: 0;
+	}
+}

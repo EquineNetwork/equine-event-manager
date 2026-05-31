@@ -1631,6 +1631,16 @@
 		'reservation-email-customers': function (target) {
 			openEmailCustomersModal(target);
 		},
+		/* FIX 5 (2.3.42) — Quick Edit inline row. */
+		'reservation-quick-edit': function (target) {
+			openQuickEdit(target);
+		},
+		'reservation-quick-edit-save': function (target) {
+			saveQuickEdit(target);
+		},
+		'reservation-quick-edit-cancel': function (target) {
+			closeQuickEdit(target.dataset.reservationId);
+		},
 		'email-customers-close': function () {
 			closeEmailCustomersModal();
 		},
@@ -1802,6 +1812,9 @@
 		if (ia === 'rv-zone-input')    { rvZoneInputChange(inp); }
 		if (ia === 'rv-row-input')     { rvRowInputChange(inp); }
 		if (ia === 'rv-row-layout')    { rvRowLayoutChange(inp); }
+		/* FIX 4 (2.3.42) — Reservation Details card auto-mirror. */
+		if (ia === 'res-name-input')   { resNameInput(inp); }
+		if (ia === 'res-slug-input')   { resSlugInput(inp); }
 	});
 
 	/* Selects fire 'change', not 'input' — wire a separate listener. */
@@ -4242,5 +4255,180 @@ function preEntryDelete(btn) {
 		initPreviews();
 	}
 })();
+
+/* ─────────────────────────────────────────────────────────────
+ * FIX 4 (2.3.42) — Reservation Details card: Name + Slug inputs
+ *
+ * When the user types in #eem-res-name:
+ *   - If non-empty → set #eem-res-name-overridden to '1'
+ *   - If empty     → set to '0' (auto-mirror re-enabled on save)
+ *   - If slug is not overridden → auto-slugify the typed name
+ *     into #eem-res-slug so the user sees a live preview.
+ *
+ * When the user types in #eem-res-slug:
+ *   - Non-empty → set #eem-res-slug-overridden to '1'
+ *   - Empty     → set to '0'
+ * ───────────────────────────────────────────────────────────── */
+
+function resNameInput(input) {
+	var nameOverridden = document.getElementById('eem-res-name-overridden');
+	var slugInput      = document.getElementById('eem-res-slug');
+	var slugOverridden = document.getElementById('eem-res-slug-overridden');
+	if (!nameOverridden) return;
+	var hasValue = '' !== input.value.trim();
+	nameOverridden.value = hasValue ? '1' : '0';
+	// Auto-mirror slug only when slug is not manually overridden.
+	if (slugInput && slugOverridden && '1' !== slugOverridden.value) {
+		slugInput.value = eemToSlug(input.value);
+	}
+}
+
+function resSlugInput(input) {
+	var slugOverridden = document.getElementById('eem-res-slug-overridden');
+	if (!slugOverridden) return;
+	slugOverridden.value = '' !== input.value.trim() ? '1' : '0';
+}
+
+/** Minimal client-side slug preview — mirrors sanitize_title()'s output
+    for common ASCII strings.  Server is the authoritative sanitize_title()
+    call; this is display-only. */
+function eemToSlug(str) {
+	return str
+		.toLowerCase()
+		.replace(/[^a-z0-9\s-]/g, '')
+		.trim()
+		.replace(/[\s]+/g, '-');
+}
+
+/* ─────────────────────────────────────────────────────────────
+ * FIX 5 (2.3.42) — Quick Edit inline row on Reservations list
+ *
+ * Flow:
+ *   1. Click "Quick Edit" in the meatballs dropdown.
+ *   2. JS closes the dropdown, dismisses any open QE row, inserts a
+ *      new .eem-quick-edit-row <tr> below the clicked row.
+ *   3. "Save" fires AJAX to wp_ajax_eem_reservation_quick_edit.
+ *      On success, updates the row's .eem-res-name cell and closes the
+ *      QE row.  Shows a toast on success or error.
+ *   4. "Cancel" closes the QE row without saving.
+ * ───────────────────────────────────────────────────────────── */
+
+function openQuickEdit(target) {
+	var id  = target.dataset.reservationId;
+	var row = document.querySelector('tr[data-reservation-id="' + id + '"]');
+	if (!row) return;
+	// Close any open quick-edit rows first.
+	closeAnyOpenQuickEdit();
+	var qr = buildQuickEditRow(id, row);
+	row.insertAdjacentElement('afterend', qr);
+	var nameInput = qr.querySelector('.eem-qe-name');
+	if (nameInput) nameInput.focus();
+}
+
+function buildQuickEditRow(id, sourceRow) {
+	var nameAnchor  = sourceRow.querySelector('.eem-res-name');
+	var currentName = nameAnchor ? nameAnchor.textContent.trim() : '';
+	var tr = document.createElement('tr');
+	tr.className = 'eem-quick-edit-row';
+	tr.dataset.quickEditId = id;
+	tr.innerHTML =
+		'<td colspan="7"><div class="eem-qe-inner">' +
+			'<div class="eem-qe-fields">' +
+				'<div class="eem-qe-field">' +
+					'<label class="eem-qe-label" for="eem-qe-name-' + id + '">' + eemEscHtml('Reservation Name') + '</label>' +
+					'<input type="text" class="eem-field-input eem-qe-name" id="eem-qe-name-' + id + '" value="' + eemEscAttr(currentName) + '" autocomplete="off">' +
+					'<p class="eem-field-hint">' + eemEscHtml('Clear to mirror linked event name.') + '</p>' +
+				'</div>' +
+				'<div class="eem-qe-field">' +
+					'<label class="eem-qe-label" for="eem-qe-slug-' + id + '">' + eemEscHtml('Slug') + '</label>' +
+					'<div class="eem-slug-wrap">' +
+						'<span class="eem-slug-prefix">/reservation/</span>' +
+						'<input type="text" class="eem-field-input eem-slug-input eem-qe-slug" id="eem-qe-slug-' + id + '" value="" autocomplete="off">' +
+					'</div>' +
+					'<p class="eem-field-hint">' + eemEscHtml('Clear to auto-generate from name.') + '</p>' +
+				'</div>' +
+			'</div>' +
+			'<div class="eem-qe-actions">' +
+				'<button type="button" class="eem-btn eem-btn-electric eem-qe-save" data-eem-action="reservation-quick-edit-save" data-reservation-id="' + eemEscAttr(id) + '">' + eemEscHtml('Save') + '</button>' +
+				'<button type="button" class="eem-btn eem-qe-cancel" data-eem-action="reservation-quick-edit-cancel" data-reservation-id="' + eemEscAttr(id) + '">' + eemEscHtml('Cancel') + '</button>' +
+			'</div>' +
+		'</div></td>';
+	return tr;
+}
+
+function saveQuickEdit(target) {
+	var id  = target.dataset.reservationId;
+	var qr  = document.querySelector('.eem-quick-edit-row[data-quick-edit-id="' + id + '"]');
+	if (!qr) return;
+	var name    = qr.querySelector('.eem-qe-name').value.trim();
+	var slug    = qr.querySelector('.eem-qe-slug').value.trim();
+	var nonce   = window.eemRowActions && window.eemRowActions.nonces
+		? (window.eemRowActions.nonces.eem_reservation_quick_edit || '')
+		: '';
+	var saveBtn = qr.querySelector('[data-eem-action="reservation-quick-edit-save"]');
+	if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving…'; }
+
+	var fd = new FormData();
+	fd.append('action',              'eem_reservation_quick_edit');
+	fd.append('reservation_id',      id);
+	fd.append('eem_res_name',        name);
+	fd.append('eem_res_slug',        slug);
+	fd.append('_eem_quick_edit_nonce', nonce);
+
+	var ajaxUrl = typeof window.ajaxurl !== 'undefined'
+		? window.ajaxurl
+		: (window.eemRowActions ? window.eemRowActions.adminPostUrl.replace('admin-post.php', 'admin-ajax.php') : '');
+
+	fetch(ajaxUrl, { method: 'POST', credentials: 'same-origin', body: fd })
+		.then(function (r) { return r.json(); })
+		.then(function (json) {
+			if (json.success) {
+				var row = document.querySelector('tr[data-reservation-id="' + id + '"]');
+				if (row && json.data && json.data.name) {
+					var nameEl = row.querySelector('.eem-res-name');
+					if (nameEl) nameEl.textContent = json.data.name;
+				}
+				closeQuickEdit(id);
+				EEM.showSaveToast(json.data && json.data.message ? json.data.message : 'Reservation updated.');
+			} else {
+				if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
+				EEM.showSaveToast(
+					(json.data && json.data.message) ? json.data.message : 'Save failed.',
+					{ type: 'error' }
+				);
+			}
+		})
+		.catch(function () {
+			if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
+			EEM.showSaveToast('Save failed — please try again.', { type: 'error' });
+		});
+}
+
+function closeQuickEdit(id) {
+	var qr = document.querySelector('.eem-quick-edit-row[data-quick-edit-id="' + id + '"]');
+	if (qr) qr.remove();
+}
+
+function closeAnyOpenQuickEdit() {
+	document.querySelectorAll('.eem-quick-edit-row').forEach(function (qr) { qr.remove(); });
+}
+
+/** Minimal HTML-attribute escaping for JS-generated markup. */
+function eemEscAttr(str) {
+	return String(str)
+		.replace(/&/g, '&amp;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#x27;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;');
+}
+
+/** Minimal HTML entity escaping for JS-generated text nodes. */
+function eemEscHtml(str) {
+	return String(str)
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;');
+}
 
 })();

@@ -2122,5 +2122,86 @@ c7x_ok(
 	$pass, $fail, $log
 );
 
+echo "\n[27] FIX 4/5/6 — Reservation Details card, Quick Edit, mockup update (2.3.42)\n";
+
+$js_admin_27   = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/js/admin.js' );
+$php_editor_27 = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-reservation-editor-page.php' );
+$php_list_27   = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-reservations-list-page.php' );
+$php_loader_27 = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager.php' );
+$mockup_27     = file_get_contents( EQUINE_EVENT_MANAGER_PATH . '.mockups/reservations_page.html' );
+
+// 27a. render_reservation_details_card() method defined in editor page (FIX 4).
+c7x_ok(
+	'[27a] render_reservation_details_card() defined in editor page (FIX 4)',
+	false !== strpos( $php_editor_27, 'function render_reservation_details_card(' ),
+	$pass, $fail, $log
+);
+
+// 27b. eem_res_name input emitted in editor page (FIX 4).
+c7x_ok(
+	'[27b] eem_res_name input emitted in editor page (FIX 4)',
+	false !== strpos( $php_editor_27, 'name="eem_res_name"' ),
+	$pass, $fail, $log
+);
+
+// 27c. eem_res_slug input emitted in editor page (FIX 4).
+c7x_ok(
+	'[27c] eem_res_slug input emitted in editor page (FIX 4)',
+	false !== strpos( $php_editor_27, 'name="eem_res_slug"' ),
+	$pass, $fail, $log
+);
+
+// 27d. ajax_save() handles eem_res_name mirror logic (FIX 4).
+c7x_ok(
+	'[27d] ajax_save() handles FIX 4 eem_res_name mirror + override meta',
+	false !== strpos( $php_editor_27, "array_key_exists( 'eem_res_name'" ) &&
+	false !== strpos( $php_editor_27, '_eem_reservation_name_overridden' ),
+	$pass, $fail, $log
+);
+
+// 27e. resNameInput() and resSlugInput() functions defined in admin.js (FIX 4).
+c7x_ok(
+	'[27e] resNameInput() + resSlugInput() defined in admin.js (FIX 4)',
+	false !== strpos( $js_admin_27, 'function resNameInput(' ) &&
+	false !== strpos( $js_admin_27, 'function resSlugInput(' ),
+	$pass, $fail, $log
+);
+
+// 27f. reservation-quick-edit action handler wired in admin.js (FIX 5).
+c7x_ok(
+	'[27f] reservation-quick-edit action wired in admin.js dispatcher (FIX 5)',
+	false !== strpos( $js_admin_27, "'reservation-quick-edit'" ) &&
+	false !== strpos( $js_admin_27, 'function openQuickEdit(' ),
+	$pass, $fail, $log
+);
+
+// 27g. handle_quick_edit_ajax() method defined in list page (FIX 5).
+c7x_ok(
+	'[27g] handle_quick_edit_ajax() defined in list page (FIX 5)',
+	false !== strpos( $php_list_27, 'function handle_quick_edit_ajax()' ),
+	$pass, $fail, $log
+);
+
+// 27h. wp_ajax_eem_reservation_quick_edit hook wired in loader (FIX 5).
+c7x_ok(
+	'[27h] wp_ajax_eem_reservation_quick_edit wired in plugin loader (FIX 5)',
+	false !== strpos( $php_loader_27, 'wp_ajax_eem_reservation_quick_edit' ),
+	$pass, $fail, $log
+);
+
+// 27i. Quick Edit nonce created in localize_row_action_nonces() (FIX 5).
+c7x_ok(
+	'[27i] eem_reservation_quick_edit nonce in localize_row_action_nonces() (FIX 5)',
+	false !== strpos( $php_list_27, "'eem_reservation_quick_edit'" ),
+	$pass, $fail, $log
+);
+
+// 27j. reservations_page.html mockup contains quick-edit-row class (FIX 6).
+c7x_ok(
+	'[27j] reservations_page.html mockup contains quick-edit-row (FIX 6)',
+	false !== strpos( $mockup_27, 'quick-edit-row' ),
+	$pass, $fail, $log
+);
+
 echo implode( "\n", $log ) . "\n=== RESULT: {$pass} passed, {$fail} failed ===\n";
 exit( $fail > 0 ? 1 : 0 );

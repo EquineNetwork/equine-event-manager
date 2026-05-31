@@ -161,6 +161,26 @@ td.col-cb{padding:14px 8px 14px 18px;width:36px}
 .mob-res-badges{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
 .mob-res-actions{display:flex;gap:5px}
 
+/* ── QUICK EDIT ROW (FIX 5 — 2.3.42) ── */
+.quick-edit-row > td{padding:0;background:#f7f9fc;border-bottom:2px solid #1668F2}
+.quick-edit-row:hover{background:transparent}
+.qe-inner{padding:14px 18px;display:flex;align-items:flex-start;gap:24px;flex-wrap:wrap}
+.qe-fields{display:flex;flex:1;gap:24px;flex-wrap:wrap}
+.qe-field{flex:1;min-width:200px}
+.qe-label{display:block;font-size:12px;font-weight:600;color:#031B4E;margin-bottom:5px;font-family:'IBM Plex Sans',sans-serif}
+.qe-input{width:100%;padding:7px 10px;border:1.5px solid #D9E2F2;border-radius:3px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;outline:none}
+.qe-input:focus{border-color:#1668F2;box-shadow:0 0 0 1px #1668F2}
+.qe-hint{font-size:11.5px;color:#8c8f94;margin-top:4px}
+.slug-wrap{display:flex;align-items:stretch;border:1.5px solid #D9E2F2;border-radius:3px;overflow:hidden}
+.slug-prefix{display:flex;align-items:center;padding:0 10px;background:#f3f4f5;border-right:1px solid #D9E2F2;font-size:13px;color:#8c8f94;white-space:nowrap;flex-shrink:0}
+.slug-wrap .qe-input{border:none;border-radius:0;flex:1;min-width:0}
+.slug-wrap .qe-input:focus{box-shadow:none;border:none;outline:2px solid #1668F2;outline-offset:-2px}
+.qe-actions{display:flex;flex-direction:column;gap:8px;padding-top:22px;flex-shrink:0}
+.qe-save{background:#1668F2;color:#fff;border:1px solid #1668F2;padding:8px 18px;border-radius:3px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap}
+.qe-save:hover{background:#1355cc}
+.qe-cancel{background:#fff;color:#50575e;border:1px solid #c3c4c7;padding:8px 18px;border-radius:3px;font-size:13px;font-weight:500;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap}
+.qe-cancel:hover{background:#f6f7f7}
+
 /* ── TABLET ── */
 @media(max-width:960px){
   .wp-sidebar{display:none}
@@ -291,6 +311,7 @@ td.col-cb{padding:14px 8px 14px 18px;width:36px}
             </tr>
           </thead>
           <tbody>
+            <!-- Row 1 — resting state (dropdown includes Quick Edit) -->
             <tr>
               <td class="col-cb"><input type="checkbox"></td>
               <td><a class="res-name" href="#">2025 Spring Classic</a></td>
@@ -304,6 +325,7 @@ td.col-cb{padding:14px 8px 14px 18px;width:36px}
                     <button class="more-btn" onclick="toggleRowMenu('res-menu-1',event)" title="More actions">···</button>
                     <div class="row-dropdown" id="res-menu-1">
                       <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Reservation</a>
+                      <a class="row-dd-item" href="#" onclick="openMockupQE(1,event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Quick Edit</a>
                       <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>View Orders</a>
                       <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Duplicate</a>
                       <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export Roster (CSV)</a>
@@ -313,6 +335,33 @@ td.col-cb{padding:14px 8px 14px 18px;width:36px}
                 </div>
               </td>
             </tr>
+            <!-- Quick Edit expanded state — shows inline below the row it was opened from -->
+            <tr class="quick-edit-row" id="mockup-qe-1" style="display:none">
+              <td colspan="7">
+                <div class="qe-inner">
+                  <div class="qe-fields">
+                    <div class="qe-field">
+                      <label class="qe-label" for="qe-name-1">Reservation Name</label>
+                      <input class="qe-input" id="qe-name-1" type="text" value="2025 Spring Classic" autocomplete="off">
+                      <p class="qe-hint">Clear to mirror linked event name.</p>
+                    </div>
+                    <div class="qe-field">
+                      <label class="qe-label" for="qe-slug-1">Slug</label>
+                      <div class="slug-wrap">
+                        <span class="slug-prefix">/reservation/</span>
+                        <input class="qe-input" id="qe-slug-1" type="text" value="" placeholder="auto-generated" autocomplete="off">
+                      </div>
+                      <p class="qe-hint">Clear to auto-generate from name.</p>
+                    </div>
+                  </div>
+                  <div class="qe-actions">
+                    <button class="qe-save">Save</button>
+                    <button class="qe-cancel" onclick="closeMockupQE(1)">Cancel</button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            <!-- Row 2 — resting state -->
             <tr>
               <td class="col-cb"><input type="checkbox"></td>
               <td><a class="res-name" href="#">2026 Southeast Region Super Sort</a></td>
@@ -427,6 +476,18 @@ function toggleRowMenu(id,e){
 document.addEventListener('click',function(){
   document.querySelectorAll('.row-dropdown').forEach(function(d){d.classList.remove('open');});
 });
+/* FIX 5 mockup helpers — open/close Quick Edit expanded row */
+function openMockupQE(n,e){
+  e.preventDefault();
+  document.querySelectorAll('.quick-edit-row').forEach(function(r){r.style.display='none';});
+  document.querySelectorAll('.row-dropdown').forEach(function(d){d.classList.remove('open');});
+  var qr=document.getElementById('mockup-qe-'+n);
+  if(qr){qr.style.display='';qr.querySelector('.qe-input').focus();}
+}
+function closeMockupQE(n){
+  var qr=document.getElementById('mockup-qe-'+n);
+  if(qr)qr.style.display='none';
+}
 </script>
 
 </body>
