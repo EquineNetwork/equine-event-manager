@@ -1,5 +1,15 @@
 {
+  "defaultMode": "bypassPermissions",
   "permissions": {
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Bash(rm -fr:*)",
+      "Bash(rm -r:*)",
+      "Bash(sudo:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git push --force-with-lease:*)"
+    ],
     "allow": [
       "Bash(git status:*)",
       "Bash(git log:*)",
@@ -43,8 +53,28 @@
 
       "Bash(md5:*)",
 
+      "Bash(php:*)",
       "Bash(php -l:*)",
-      "Bash(/Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.2.29+0/bin/darwin-arm64/bin/php -l:*)",
+      "Bash(/Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.2.29+0/bin/darwin-arm64/bin/php:*)",
+      "Bash(/Applications/Local.app/Contents/Resources/extraResources/bin/wp-cli/wp-cli.phar:*)",
+
+      "Bash(node:*)",
+      "Bash(node --check:*)",
+      "Bash(unzip:*)",
+      "Bash(bash --version:*)",
+      "Bash(echo:*)",
+      "Bash(printf:*)",
+      "Bash(sort:*)",
+      "Bash(uniq:*)",
+      "Bash(cut:*)",
+      "Bash(column:*)",
+      "Bash(xargs:*)",
+      "Bash(basename:*)",
+      "Bash(dirname:*)",
+      "Bash(readlink:*)",
+      "Bash(realpath:*)",
+      "Bash(stat:*)",
+      "Bash(mkdir -p:*)",
 
       "Bash(bash tests/smoke/run-all.sh)",
       "Bash(bash tests/smoke/:*)",
@@ -55,36 +85,6 @@
       "Write(/Users/whitneymitchell/Projects/equine-event-manager/**)",
       "MultiEdit(/Users/whitneymitchell/Projects/equine-event-manager/**)",
       "Read(/Users/whitneymitchell/Projects/equine-event-manager/**)"
-    ],
-    "ask": [
-      "Bash(git tag:*)",
-      "Bash(git merge:*)",
-      "Bash(git checkout:*)",
-      "Bash(git rebase:*)",
-      "Bash(git cherry-pick:*)",
-
-      "Bash(git reset:*)",
-      "Bash(git restore:*)",
-      "Bash(git clean:*)",
-
-      "Bash(rm:*)",
-      "Bash(mv:*)",
-      "Bash(chmod:*)",
-      "Bash(chown:*)",
-      "Bash(cp -R:*)",
-
-      "Bash(sudo:*)",
-
-      "Bash(wp eval:*)",
-      "Bash(wp db:*)",
-      "Bash(wp plugin activate:*)",
-      "Bash(wp plugin deactivate:*)",
-      "Bash(wp plugin delete:*)",
-
-      "Edit(/Users/whitneymitchell/.claude/**)",
-      "Edit(/Users/whitneymitchell/Library/**)",
-      "Write(/Users/whitneymitchell/.claude/**)",
-      "Write(/Users/whitneymitchell/Library/**)"
     ]
   }
 }
