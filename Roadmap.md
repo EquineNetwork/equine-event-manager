@@ -37,8 +37,9 @@ TBD — set after C10 verifies and customer flow proven on staging.
 - 2.3.50 — removed Stall/RV chart enable toggle from the editor; chart presence derived from `_en_stalls_enabled` / `_en_rv_enabled` (write-path + list query only)
 - 2.3.51 — Bulk-mode admin auto-assignment UI (conflict-safe, no full reload)
 - 2.3.52 — **completed the 2.3.50 gate retirement**: 5 read-path gates still consulted the dead `_en_stall_chart_enabled` meta, leaving the Stall Chart Detail page (and the 2.3.51 auto-assign UI it hosts) showing "disabled". All consumers now derive presence from `_en_stalls_enabled OR _en_rv_enabled` (commit `8302e7c`)
+- 2.3.53 — **C10.C landed.** Part 2: Settings → Integrations event source reordered TEC-first (fresh-install default); Native Events + External Feed marked "Coming Soon" with disabled radios + hidden panels (`db937b5`). Part 1: customer `[en_reservation]` form restyled to the `event_page.html` mockup — white section cards, uppercase header bands, mockup field/input chrome, blue toggle, rider cards — via a CSS-only scoped override under `.eem-event-page` (zero markup change → 30-field Stripe payload + every JS hook provably intact; `48d6ccc`). **Remaining for C10.C sign-off: human visual pass on the live event page** (pixel fidelity is the only thing smoke can't assert). Stall/RV pickers = C10.D; order sidebar = C10.E; billing card fields = C10.F (all still pending).
 
-**Next up:** C10 customer-facing reservation page visual rebuild (June 12 critical path).
+**Next up:** C10.D (row-aware stall picker) + the remaining C10 sub-chunks; June 12 critical path.
 - All search input + breadcrumb + hover conventions locked plugin-wide.
 - **Note:** the C10 commit-sequence cache-bust numbers below (e.g. "2.3.38 → 2.3.39") were
   written when current was 2.3.38; bump from the then-current version (2.3.52+) when executing.
