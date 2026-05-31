@@ -762,7 +762,9 @@ class EEM_Reservations_CPT {
 	 */
 	public function get_assignment_status_summary( $post_id, $type = 'stall' ) {
 		$post_id             = absint( $post_id );
-		$stall_chart_enabled = (bool) get_post_meta( $post_id, '_en_stall_chart_enabled', true );
+		// 2.3.52 — type-aware chart signal; replaces removed _en_stall_chart_enabled.
+		$stalls_enabled      = (bool) get_post_meta( $post_id, '_en_stalls_enabled', true );
+		$rv_enabled          = (bool) get_post_meta( $post_id, '_en_rv_enabled', true );
 		$stall_blocks        = get_post_meta( $post_id, '_en_stall_chart_stall_blocks', true );
 		$stall_units         = $this->expand_chart_units( is_array( $stall_blocks ) ? $stall_blocks : array() );
 		$rv_lots             = get_post_meta( $post_id, '_en_rv_lots', true );
@@ -778,7 +780,7 @@ class EEM_Reservations_CPT {
 		$total_needed     = 0;
 		$total_assigned   = 0;
 		$is_rv            = 'rv' === $type;
-		$assignment_ready = $is_rv ? ( $stall_chart_enabled || ! empty( $rv_lot_names ) ) : ( $stall_chart_enabled || ! empty( $stall_units ) );
+		$assignment_ready = $is_rv ? ( $rv_enabled || ! empty( $rv_lot_names ) ) : ( $stalls_enabled || ! empty( $stall_units ) );
 		$view_label       = $is_rv ? __( 'View RV Chart', 'equine-event-manager' ) : __( 'View Stall Chart', 'equine-event-manager' );
 		$empty_message    = $is_rv ? __( 'No RV reservations have been placed on this reservation yet.', 'equine-event-manager' ) : __( 'No stall reservations have been placed on this reservation yet.', 'equine-event-manager' );
 		$disabled_message = $is_rv ? __( 'Turn on RV Lot Selection to open the chart and track assigned RV lots.', 'equine-event-manager' ) : __( 'Turn on Stall Assignments to open the chart and track assigned stalls.', 'equine-event-manager' );

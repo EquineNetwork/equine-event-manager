@@ -849,7 +849,10 @@ class EEM_Orders_Repository {
 		$blocked_rv_lots     = $this->sanitize_chart_unit_list( is_array( $blocked_rv_lots ) ? $blocked_rv_lots : array(), $rv_units );
 
 		return array(
-			'enabled'              => (bool) get_post_meta( $reservation_id, '_en_stall_chart_enabled', true ),
+			// 2.3.52 — a reservation has a chart when Stall OR RV reservations
+			// are enabled. The legacy _en_stall_chart_enabled toggle was removed
+			// from the editor in 2.3.50; the read-path gate moved here.
+			'enabled'              => (bool) get_post_meta( $reservation_id, '_en_stalls_enabled', true ) || (bool) get_post_meta( $reservation_id, '_en_rv_enabled', true ),
 			'stall_units'          => $stall_units,
 			'rv_units'             => $rv_units,
 			'blocked_stall_units'  => $blocked_stall_units,

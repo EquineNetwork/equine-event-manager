@@ -10,6 +10,8 @@ set -uo pipefail
 
 WP_CLI="/Applications/Local.app/Contents/Resources/extraResources/bin/wp-cli/wp-cli.phar"
 PHP_BIN="/Applications/Local.app/Contents/Resources/extraResources/lightning-services/php-8.2.29+0/bin/darwin-arm64/bin/php"
+# The plugin repo is symlinked into this Local site; WP-CLI needs the WP root.
+WP_PATH="/Users/whitneymitchell/Local Sites/en-event-manager/app/public"
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
@@ -23,8 +25,12 @@ for ARG in "$@"; do
 	esac
 done
 
-# Collect smoke files: any *-smoke.php in this dir, plus known fix-*.php
-mapfile -t SMOKE_FILES < <( find "$SCRIPT_DIR" -maxdepth 1 -type f \( -name '*-smoke.php' -o -name 'fix-*.php' \) | sort )
+# Collect smoke files: any *-smoke.php in this dir, plus known fix-*.php.
+# Portable (no mapfile — macOS ships bash 3.2): read NUL-safe via while loop.
+SMOKE_FILES=()
+while IFS= read -r SMOKE_FILE; do
+	SMOKE_FILES+=( "$SMOKE_FILE" )
+done < <( find "$SCRIPT_DIR" -maxdepth 1 -type f \( -name '*-smoke.php' -o -name 'fix-*.php' \) | sort )
 
 PASS=0
 FAIL=0
@@ -36,14 +42,14 @@ for FILE in "${SMOKE_FILES[@]}"; do
 	fi
 	BASENAME="$( basename "$FILE" )"
 	# Run each smoke file through wp-cli eval-file so $wpdb etc. are bootstrapped.
-	OUTPUT="$( "$PHP_BIN" "$WP_CLI" eval-file "$FILE" 2>&1 )"
+	OUTPUT="$( "$PHP_BIN" "$WP_CLI" --path="$WP_PATH" eval-file "$FILE" 2>&1 )"
 	if [[ "$VERBOSE" -eq 1 ]]; then
 		echo "===== $BASENAME ====="
 		echo "$OUTPUT"
 		echo
 	fi
 	SUMMARY="$( echo "$OUTPUT" | tail -n 1 )"
-	if echo "$SUMMARY" | grep -qE '0 failed'; then
+	if echo "$SUMMARY" | grep -qE ', 0 failed ='; then
 		PASS=$(( PASS + 1 ))
 		[[ "$VERBOSE" -eq 0 ]] && echo "PASS  $BASENAME — $SUMMARY"
 	else

@@ -222,9 +222,10 @@ class EEM_Seed_Demo_Command extends WP_CLI_Command {
 		update_post_meta( $id, '_eem_event_day_parking',   'Horse trailers park in designated overflow lots; passenger vehicles in Lot C' );
 		update_post_meta( $id, '_eem_event_day_contact',   'Show Office: (555) 867-5309 · show@supersortevent.com' );
 
-		// ── Stall section enabled + chart enabled ─────────────────────── //
+		// ── Stall section enabled ─────────────────────────────────────── //
+		// 2.3.52 — _en_stall_chart_enabled retired; chart presence is now
+		// derived from _en_stalls_enabled / _en_rv_enabled.
 		update_post_meta( $id, '_en_stalls_enabled',       1 );
-		update_post_meta( $id, '_en_stall_chart_enabled',  1 );
 		update_post_meta( $id, '_en_stall_selection_mode', 'exact_map' );
 
 		// ── Stall rates ──────────────────────────────────────────────── //

@@ -114,14 +114,14 @@ try {
 }
 
 // C5.G.4 — conditional stall-chart icon. Verify both paths render correctly:
-// (a) reservation WITH _en_stall_chart_enabled meta → icon present
+// (a) reservation WITH _en_stalls_enabled meta → icon present
 // (b) reservation WITHOUT the meta → icon absent (meatballs still present)
 // C6.6 — sort-cache seed: orderby=event_dates targets the new
 // _en_source_event_start_date cache key. Seed it directly here since the
 // sort behavior under test doesn't depend on which source produced the
 // value (covered by the resolver assertions above).
 $with_chart = wp_insert_post( array( 'post_type' => 'en_reservation', 'post_status' => 'publish', 'post_title' => 'C5G4 WITH chart' ) );
-update_post_meta( $with_chart, '_en_stall_chart_enabled', 1 );
+update_post_meta( $with_chart, '_en_stalls_enabled', 1 );
 update_post_meta( $with_chart, EEM_Reservation_Source_Resolver::SORT_CACHE_META_KEY, '2030-01-01' );
 $no_chart   = wp_insert_post( array( 'post_type' => 'en_reservation', 'post_status' => 'publish', 'post_title' => 'C5G4 NO chart' ) );
 update_post_meta( $no_chart, EEM_Reservation_Source_Resolver::SORT_CACHE_META_KEY, '2030-01-02' );

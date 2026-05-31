@@ -385,16 +385,14 @@ class EEM_Reservations_List_Repo {
 	}
 
 	/**
-	 * Whether this reservation has a stall chart layout enabled.
+	 * Whether this reservation has a stall/RV chart.
 	 *
 	 * Drives the conditional Stall Chart icon on Reservations row
-	 * actions (C5.G.4). Distinct from get_type_badges() including
-	 * 'stall' — that signal just says "stall capacity > 0" which
-	 * doesn't guarantee a chart layout has been drawn. The canonical
-	 * "is the chart actually configured" signal is the
-	 * `_en_stall_chart_enabled` post meta (same field consumed by 6+
-	 * other call sites: orders repo, reservation editor, admin
-	 * dashboard, CPT meta-box).
+	 * actions (C5.G.4). 2.3.52 — the canonical "has a chart" signal is
+	 * Stall OR RV reservations enabled (`_en_stalls_enabled` /
+	 * `_en_rv_enabled`). The legacy `_en_stall_chart_enabled` toggle was
+	 * removed from the editor in 2.3.50; this read-path was the last
+	 * consumer still gating on the dead field.
 	 *
 	 * @param int $reservation_id
 	 * @return bool
@@ -404,7 +402,8 @@ class EEM_Reservations_List_Repo {
 		if ( $id <= 0 ) {
 			return false;
 		}
-		return (bool) get_post_meta( $id, '_en_stall_chart_enabled', true );
+		return (bool) get_post_meta( $id, '_en_stalls_enabled', true )
+			|| (bool) get_post_meta( $id, '_en_rv_enabled', true );
 	}
 
 	/**

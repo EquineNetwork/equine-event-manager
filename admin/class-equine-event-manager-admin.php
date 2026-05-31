@@ -1038,8 +1038,8 @@ class EEM_Admin {
 		foreach ( $reservation_ids as $reservation_id ) {
 			$event_id         = absint( get_post_meta( $reservation_id, '_en_event_id', true ) );
 			$native_event_id  = absint( get_post_meta( $reservation_id, '_en_native_event_id', true ) );
-			$stall_chart      = ! empty( get_post_meta( $reservation_id, '_en_stall_chart_enabled', true ) );
-			$rv_lot_selection = ! empty( get_post_meta( $reservation_id, '_en_rv_lot_selection_enabled', true ) );
+			$stall_chart      = ! empty( get_post_meta( $reservation_id, '_en_stalls_enabled', true ) );
+			$rv_lot_selection = ! empty( get_post_meta( $reservation_id, '_en_rv_enabled', true ) );
 
 			if ( $event_id || $native_event_id ) {
 				$metrics['linked']++;
@@ -3421,7 +3421,10 @@ class EEM_Admin {
 		}
 
 		return array(
-			'enabled'               => (bool) get_post_meta( $reservation_id, '_en_stall_chart_enabled', true ),
+			// 2.3.52 — chart is active when Stall OR RV reservations are enabled.
+			// Replaces the removed _en_stall_chart_enabled gate (the field that
+			// left the Stall Chart Detail page showing "disabled" after 2.3.50).
+			'enabled'               => (bool) get_post_meta( $reservation_id, '_en_stalls_enabled', true ) || (bool) get_post_meta( $reservation_id, '_en_rv_enabled', true ),
 			'stall_blocks'          => $stall_blocks,
 			'stall_units'           => $stall_units,
 			'rv_lot_names'          => $rv_lot_names,
@@ -5475,7 +5478,7 @@ class EEM_Admin {
 			$group_rider_count       = self::parse_group_rider_count_from_notes( $order['notes'] );
 			$group_rider_names       = self::parse_group_rider_names_from_notes( $order['notes'] );
 			$general_addons          = $this->parse_general_addon_breakdown_from_notes( $order['notes'] );
-			$stall_chart_enabled     = $reservation_id ? (bool) get_post_meta( $reservation_id, '_en_stall_chart_enabled', true ) : false;
+			$stall_chart_enabled     = $reservation_id ? ( (bool) get_post_meta( $reservation_id, '_en_stalls_enabled', true ) || (bool) get_post_meta( $reservation_id, '_en_rv_enabled', true ) ) : false;
 			$stall_chart_config      = $reservation_id ? $this->get_stall_chart_config( $reservation_id ) : array();
 			$stall_assignment_ready  = $stall_chart_enabled || ! empty( $stall_chart_config['stall_units'] );
 			$rv_assignment_ready     = $stall_chart_enabled || ! empty( $stall_chart_config['rv_lot_names'] );
