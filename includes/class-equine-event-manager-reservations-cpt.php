@@ -1632,7 +1632,10 @@ class EEM_Reservations_CPT {
 			'venue_name'                      => isset( $source['venue_name'] ) ? sanitize_text_field( $source['venue_name'] ) : '',
 			'event_location'                  => isset( $source['event_location'] ) ? sanitize_text_field( $source['event_location'] ) : '',
 			'venue_address'                   => isset( $source['venue_address'] ) ? sanitize_textarea_field( $source['venue_address'] ) : '',
-			'checkin_checkout_enabled'        => isset( $source['checkin_checkout_enabled'] ) ? 1 : 0,
+			// 2.3.48 — value-aware so a submitted "0" persists as OFF instead
+			// of being read as "present therefore on". Defense in depth: no
+			// longer depends on the JS collector omitting the off-mirror.
+			'checkin_checkout_enabled'        => ( isset( $source['checkin_checkout_enabled'] ) && '1' === (string) $source['checkin_checkout_enabled'] ) ? 1 : 0,
 			'checkin_time_enabled'            => isset( $source['checkin_time_enabled'] ) ? 1 : 0,
 			'checkout_time_enabled'           => isset( $source['checkout_time_enabled'] ) ? 1 : 0,
 			'checkin_time'                    => $this->sanitize_datetime_value( isset( $source['checkin_time'] ) ? $source['checkin_time'] : '' ),
@@ -1641,7 +1644,7 @@ class EEM_Reservations_CPT {
 			'venue_map_download_url'          => isset( $source['venue_map_download_url'] ) ? esc_url_raw( wp_unslash( $source['venue_map_download_url'] ) ) : '',
 			'venue_map_image_id'              => isset( $source['venue_map_image_id'] ) ? absint( $source['venue_map_image_id'] ) : 0,
 			'venue_map_caption'               => isset( $source['venue_map_caption'] ) ? sanitize_text_field( $source['venue_map_caption'] ) : '',
-			'venue_agreement_enabled'         => isset( $source['venue_agreement_enabled'] ) ? 1 : 0,
+			'venue_agreement_enabled'         => ( isset( $source['venue_agreement_enabled'] ) && '1' === (string) $source['venue_agreement_enabled'] ) ? 1 : 0,
 			'venue_agreement_file_id'         => isset( $source['venue_agreement_file_id'] ) ? absint( $source['venue_agreement_file_id'] ) : 0,
 			'venue_agreement_file_label'      => isset( $source['venue_agreement_file_label'] ) ? sanitize_text_field( $source['venue_agreement_file_label'] ) : __( 'Agreement', 'equine-event-manager' ),
 			'venue_agreement_label'           => isset( $source['venue_agreement_label'] ) ? sanitize_text_field( $source['venue_agreement_label'] ) : __( 'I agree to the venue terms and conditions.', 'equine-event-manager' ),
@@ -1653,7 +1656,7 @@ class EEM_Reservations_CPT {
 			// Agreement" when blank.
 			'venue_agreement_link_label'      => isset( $source['venue_agreement_link_label'] ) ? sanitize_text_field( $source['venue_agreement_link_label'] ) : '',
 			'venue_agreement_text'            => isset( $source['venue_agreement_text'] ) ? sanitize_textarea_field( $source['venue_agreement_text'] ) : '',
-			'general_addons_enabled'          => isset( $source['general_addons_enabled'] ) ? 1 : 0,
+			'general_addons_enabled'          => ( isset( $source['general_addons_enabled'] ) && '1' === (string) $source['general_addons_enabled'] ) ? 1 : 0,
 			'group_reservations_enabled'      => isset( $source['group_reservations_enabled'] ) ? 1 : 0,
 			// C7.C.1.4.A Decision N1 — NEW meta keys for mockup-canonical
 			// group section (line 958-970). Non-destructive additive
@@ -1901,7 +1904,14 @@ class EEM_Reservations_CPT {
 			$values['rv_weekend_enabled'] = $values['weekend_enabled'] ? 1 : 0;
 		}
 
-		if ( empty( $values['general_addons_enabled'] ) && ! empty( $values['general_addons'] ) && is_array( $values['general_addons'] ) ) {
+		// Legacy auto-enable inference: only fire when the flag was NEVER
+		// explicitly stored (pre-toggle-era reservations). Once a save has
+		// written the flag — including an explicit 0 from turning the toggle
+		// OFF — respect the stored value. Without the metadata_exists() guard
+		// the section flips back ON on every reload because its add-on rows
+		// persist. (2.3.48 — matches the use_global_event_source guard above.)
+		if ( ! metadata_exists( 'post', $post_id, '_en_general_addons_enabled' )
+			&& empty( $values['general_addons_enabled'] ) && ! empty( $values['general_addons'] ) && is_array( $values['general_addons'] ) ) {
 			$values['general_addons_enabled'] = 1;
 		}
 
@@ -1940,7 +1950,10 @@ class EEM_Reservations_CPT {
 			$values['venue_map_enabled'] = 1;
 		}
 
-		if ( empty( $values['checkin_checkout_enabled'] ) && ( ! empty( $values['checkin_time_enabled'] ) || ! empty( $values['checkout_time_enabled'] ) || ! empty( $values['checkin_time'] ) || ! empty( $values['checkout_time'] ) ) ) {
+		// 2.3.48 — legacy inference only; an explicitly-stored 0 (toggle turned
+		// OFF) must survive reload even though check-in/out times persist.
+		if ( ! metadata_exists( 'post', $post_id, '_en_checkin_checkout_enabled' )
+			&& empty( $values['checkin_checkout_enabled'] ) && ( ! empty( $values['checkin_time_enabled'] ) || ! empty( $values['checkout_time_enabled'] ) || ! empty( $values['checkin_time'] ) || ! empty( $values['checkout_time'] ) ) ) {
 			$values['checkin_checkout_enabled'] = 1;
 		}
 
@@ -1952,7 +1965,11 @@ class EEM_Reservations_CPT {
 			$values['rv_schedule_enabled'] = 1;
 		}
 
-		if ( empty( $values['venue_agreement_enabled'] ) && ! empty( $values['venue_agreement_file_id'] ) ) {
+		// 2.3.48 — legacy inference only; an explicitly-stored 0 (toggle turned
+		// OFF) must survive reload even though the uploaded agreement file_id
+		// persists.
+		if ( ! metadata_exists( 'post', $post_id, '_en_venue_agreement_enabled' )
+			&& empty( $values['venue_agreement_enabled'] ) && ! empty( $values['venue_agreement_file_id'] ) ) {
 			$values['venue_agreement_enabled'] = 1;
 		}
 
