@@ -1947,5 +1947,67 @@ c7x_ok(
 
 wp_delete_post( $rid, true );
 
+echo "\n[24] C10.A — CSS migration (render_form_styles → public.css + mockup form CSS + Google Fonts)\n";
+
+$css_public_24    = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/css/public.css' );
+$php_events_24    = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-events.php' );
+$php_shortcodes_24 = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'public/class-equine-event-manager-shortcodes.php' );
+
+// 24a. Google Fonts URL present in render_frontend_styles() source.
+c7x_ok(
+	'C10.A: Google Fonts URL (Space Grotesk + IBM Plex Sans) present in render_frontend_styles()',
+	false !== strpos( $php_events_24, 'fonts.googleapis.com/css2?family=Space+Grotesk' ) &&
+	false !== strpos( $php_events_24, 'IBM+Plex+Sans' ),
+	$pass, $fail, $log
+);
+
+// 24b. .form-section CSS rule present in public.css.
+c7x_ok(
+	'C10.A: .form-section CSS rule present in public.css',
+	false !== strpos( $css_public_24, '.form-section' ),
+	$pass, $fail, $log
+);
+
+// 24c. .toggle CSS rule present in public.css.
+c7x_ok(
+	'C10.A: .toggle CSS rule present in public.css',
+	false !== strpos( $css_public_24, '.toggle{' ) || false !== strpos( $css_public_24, '.toggle {' ),
+	$pass, $fail, $log
+);
+
+// 24d. .agreement-notice CSS rule present in public.css.
+c7x_ok(
+	'C10.A: .agreement-notice CSS rule present in public.css',
+	false !== strpos( $css_public_24, '.agreement-notice{' ) || false !== strpos( $css_public_24, '.agreement-notice ' ),
+	$pass, $fail, $log
+);
+
+// 24e. .mobile-order-drawer CSS rule present in public.css.
+c7x_ok(
+	'C10.A: .mobile-order-drawer CSS rule present in public.css',
+	false !== strpos( $css_public_24, '.mobile-order-drawer{' ) || false !== strpos( $css_public_24, '.mobile-order-drawer ' ),
+	$pass, $fail, $log
+);
+
+// 24f. render_form_styles() method body does NOT contain <style> output (stripped).
+//      Assert the method is still present (private function render_form_styles) but
+//      the actual <style> tag was removed from its body.
+$rfs_method_present = false !== strpos( $php_shortcodes_24, 'private function render_form_styles()' );
+$rfs_no_style_tag   = false === strpos(
+	// Extract just the real render_form_styles() method body (not the __removed_css_block copy).
+	// We check the first 200 chars after the method signature for <style>.
+	substr(
+		$php_shortcodes_24,
+		strpos( $php_shortcodes_24, 'private function render_form_styles()' ),
+		300
+	),
+	'<style>'
+);
+c7x_ok(
+	'C10.A: render_form_styles() method present but body stripped (no <style> output within first 300 chars of method)',
+	$rfs_method_present && $rfs_no_style_tag,
+	$pass, $fail, $log
+);
+
 echo implode( "\n", $log ) . "\n=== RESULT: {$pass} passed, {$fail} failed ===\n";
 exit( $fail > 0 ? 1 : 0 );

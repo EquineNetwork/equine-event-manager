@@ -2118,6 +2118,12 @@ class EEM_Events {
 	 */
 	public static function render_frontend_styles() {
 		wp_enqueue_style(
+			'eem-google-fonts',
+			'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap',
+			array(),
+			null
+		);
+		wp_enqueue_style(
 			'eem-public',
 			EQUINE_EVENT_MANAGER_URL . 'assets/css/public.css',
 			array(),
