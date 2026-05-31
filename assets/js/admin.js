@@ -4559,9 +4559,10 @@ function duplicateReservationAjax(target) {
 	fetch(ajaxUrl, { method: 'POST', credentials: 'same-origin', body: fd })
 		.then(function (r) { return r.json(); })
 		.then(function (json) {
-			if (json.success && json.data && json.data.redirect_url) {
-				EEM.showSaveToast(json.data.message || 'Duplicated. Redirecting…');
-				window.location.href = json.data.redirect_url;
+			// FIX 1 (2.3.44) — stay on list page; reload so new draft row appears.
+			if (json.success && json.data && json.data.new_reservation_id) {
+				EEM.showSaveToast(json.data.message || 'Reservation duplicated as draft.');
+				setTimeout(function () { window.location.reload(); }, 1200);
 			} else {
 				target.style.pointerEvents = '';
 				target.style.opacity       = '';

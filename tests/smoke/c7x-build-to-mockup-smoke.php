@@ -2325,5 +2325,88 @@ c7x_ok(
 	$pass, $fail, $log
 );
 
+// ────────────────────────────────────────────────────────────────────────────
+echo "\n[29] 2.3.44 — FIX 1 (duplicate stays on list) + FIX 2 (live mirror on TEC event save)\n";
+// ────────────────────────────────────────────────────────────────────────────
+
+$php_editor_29 = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-reservation-editor-page.php' );
+$php_list_29   = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-reservations-list-page.php' );
+$js_29         = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/js/admin.js' );
+$loader_29     = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager.php' );
+$main_29       = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'equine-event-manager.php' );
+
+// 29a. handle_duplicate_ajax() no longer returns redirect_url (FIX 1).
+c7x_ok(
+	'[29a] handle_duplicate_ajax() response: redirect_url removed; new_reservation_id + title returned (FIX 1, 2.3.44)',
+	false === strpos( $php_list_29, "'redirect_url'       => EEM_Reservation_Editor_Page::url" ) &&
+	false !== strpos( $php_list_29, "'new_reservation_id' => \$new_id" ) &&
+	false !== strpos( $php_list_29, "'title'" ),
+	$pass, $fail, $log
+);
+
+// 29b. JS duplicateReservationAjax() uses window.location.reload() not redirect_url (FIX 1).
+c7x_ok(
+	'[29b] duplicateReservationAjax() reloads page after toast instead of redirecting to redirect_url (FIX 1, 2.3.44)',
+	false !== strpos( $js_29, 'window.location.reload()' ) &&
+	false !== strpos( $js_29, 'Reservation duplicated as draft' ) &&
+	false === strpos( $js_29, "json.data.redirect_url" ),
+	$pass, $fail, $log
+);
+
+// 29c. apply_mirror() private static method defined in editor page (FIX 2).
+c7x_ok(
+	'[29c] apply_mirror() private static method defined in editor page (FIX 2, 2.3.44)',
+	false !== strpos( $php_editor_29, 'private static function apply_mirror(' ),
+	$pass, $fail, $log
+);
+
+// 29d. apply_mirror() called from ajax_save() (replaces inline 2.3.43 block) (FIX 2).
+c7x_ok(
+	'[29d] ajax_save() calls self::apply_mirror() (inline block replaced, FIX 2, 2.3.44)',
+	false !== strpos( $php_editor_29, 'self::apply_mirror( $reservation_id )' ) &&
+	false === strpos( $php_editor_29, '$_name_overridden = (bool) get_post_meta( $reservation_id' ),
+	$pass, $fail, $log
+);
+
+// 29e. apply_mirror() called from render() on page load (FIX 2).
+c7x_ok(
+	'[29e] render() calls self::apply_mirror() before resolving $source_event_title (FIX 2, 2.3.44)',
+	false !== strpos( $php_editor_29, "// FIX 2 (2.3.44) — Mirror on page load" ) &&
+	false !== strpos( $php_editor_29, 'self::apply_mirror( $reservation_id );' ),
+	$pass, $fail, $log
+);
+
+// 29f. on_tec_event_save() public static method defined (FIX 2).
+c7x_ok(
+	'[29f] on_tec_event_save() public static method defined in editor page (FIX 2, 2.3.44)',
+	false !== strpos( $php_editor_29, 'public static function on_tec_event_save(' ),
+	$pass, $fail, $log
+);
+
+// 29g. save_post_tribe_events hook registered in loader → on_tec_event_save (FIX 2).
+c7x_ok(
+	'[29g] save_post_tribe_events hooks to EEM_Reservation_Editor_Page::on_tec_event_save in loader (FIX 2, 2.3.44)',
+	false !== strpos( $loader_29, "save_post_tribe_events" ) &&
+	false !== strpos( $loader_29, "'EEM_Reservation_Editor_Page', 'on_tec_event_save'" ),
+	$pass, $fail, $log
+);
+
+// 29h. apply_mirror() reads override flags and conditionally updates post_title/post_name (FIX 2).
+c7x_ok(
+	'[29h] apply_mirror() guards on name_overridden + slug_overridden flags; calls wp_update_post (FIX 2, 2.3.44)',
+	false !== strpos( $php_editor_29, '_eem_reservation_name_overridden' ) &&
+	false !== strpos( $php_editor_29, '_eem_reservation_slug_overridden' ) &&
+	false !== strpos( $php_editor_29, 'wp_update_post( $args )' ),
+	$pass, $fail, $log
+);
+
+// 29i. Version bumped to 2.3.44.
+c7x_ok(
+	'[29i] Plugin version 2.3.44 in header + EQUINE_EVENT_MANAGER_VERSION constant',
+	false !== strpos( $main_29, "Version:           2.3.44" ) &&
+	false !== strpos( $main_29, "'2.3.44'" ),
+	$pass, $fail, $log
+);
+
 echo implode( "\n", $log ) . "\n=== RESULT: {$pass} passed, {$fail} failed ===\n";
 exit( $fail > 0 ? 1 : 0 );

@@ -175,6 +175,12 @@ class EEM_Reservation_Editor_Page {
 
 		require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_section-skeleton.php';
 
+		// FIX 2 (2.3.44) — Mirror on page load: if the linked TEC event was renamed
+		// since the last save, sync the reservation post_title/post_name now so the
+		// header and breadcrumb always show the current event title without requiring
+		// the admin to manually save first.
+		self::apply_mirror( $reservation_id );
+
 		$source_event_title  = self::resolve_page_title( $post, $reservation_id );
 
 		// C8 — Resolve event dates for the event-anchor header meta line.
@@ -867,34 +873,10 @@ class EEM_Reservation_Editor_Page {
 			update_post_meta( $reservation_id, '_en_event_pre_entries', $pe_clean );
 		}
 
-		// FIX 2 (2.3.43) — Unconditional name/slug auto-mirror on every ajax_save().
-		// Reads stored override flags; when a flag is 0, derives the value from the
-		// linked event title and updates the post field.  The rename AJAX endpoint
-		// (ajax_rename) sets flags to 1 on manual edit and 0 when the field is
-		// cleared (revert-to-mirror).  This block intentionally runs regardless of
-		// which POST fields are present so the mirror fires on every regular save.
-		$_name_overridden = (bool) get_post_meta( $reservation_id, '_eem_reservation_name_overridden', true );
-		$_slug_overridden = (bool) get_post_meta( $reservation_id, '_eem_reservation_slug_overridden', true );
-		if ( ! $_name_overridden || ! $_slug_overridden ) {
-			// Resolve the source-event title once; used for both name + slug mirrors.
-			$_mirrored_name = '';
-			if ( class_exists( 'EEM_Reservation_Source_Resolver' ) ) {
-				$_src = EEM_Reservation_Source_Resolver::resolve_event_fields( $reservation_id );
-				$_mirrored_name = '' !== $_src['title']
-					? (string) $_src['title']
-					: get_the_title( $reservation_id );
-			} else {
-				$_mirrored_name = get_the_title( $reservation_id );
-			}
-			$_mirror_args = array( 'ID' => $reservation_id );
-			if ( ! $_name_overridden ) {
-				$_mirror_args['post_title'] = $_mirrored_name;
-			}
-			if ( ! $_slug_overridden ) {
-				$_mirror_args['post_name'] = sanitize_title( $_mirrored_name );
-			}
-			wp_update_post( $_mirror_args );
-		}
+		// FIX 2 (2.3.43/2.3.44) — Unconditional name/slug auto-mirror on every save.
+		// Logic extracted into apply_mirror() so the same path fires on ajax_save(),
+		// render() page-load, and on_tec_event_save() (FIX 2 expansion, 2.3.44).
+		self::apply_mirror( $reservation_id );
 
 		wp_send_json_success( array(
 			'reservation_id' => $reservation_id,
@@ -1012,6 +994,93 @@ class EEM_Reservation_Editor_Page {
 			'message' => __( 'Reservation renamed.', 'equine-event-manager' ),
 		) );
 	}
+
+	// ── FIX 2 (2.3.44) ─────────────────────────────────────────────────────────
+
+	/**
+	 * Sync the reservation's post_title and post_name to the current linked-event
+	 * title when the corresponding override flag is 0.  Called from:
+	 *
+	 *  - `render()`              — page-load sync so header is always current.
+	 *  - `ajax_save()`           — on every AJAX save (replaces inline 2.3.43 block).
+	 *  - `on_tec_event_save()`   — pushed to all linked reservations when TEC event saved.
+	 *
+	 * No-ops when both override flags are 1, or when no linked event title can be
+	 * resolved.  Safe to call multiple times in the same request.
+	 *
+	 * @param int $reservation_id `en_reservation` post ID.
+	 * @return void
+	 */
+	private static function apply_mirror( int $reservation_id ): void {
+		$name_overridden = (bool) get_post_meta( $reservation_id, '_eem_reservation_name_overridden', true );
+		$slug_overridden = (bool) get_post_meta( $reservation_id, '_eem_reservation_slug_overridden', true );
+
+		if ( $name_overridden && $slug_overridden ) {
+			// Both overridden — nothing to mirror.
+			return;
+		}
+
+		// Resolve the source-event title; fall back to current post_title.
+		$mirrored_name = '';
+		if ( class_exists( 'EEM_Reservation_Source_Resolver' ) ) {
+			$src           = EEM_Reservation_Source_Resolver::resolve_event_fields( $reservation_id );
+			$mirrored_name = '' !== $src['title'] ? (string) $src['title'] : get_the_title( $reservation_id );
+		} else {
+			$mirrored_name = get_the_title( $reservation_id );
+		}
+
+		if ( '' === $mirrored_name ) {
+			return;
+		}
+
+		$args = array( 'ID' => $reservation_id );
+		if ( ! $name_overridden ) {
+			$args['post_title'] = $mirrored_name;
+		}
+		if ( ! $slug_overridden ) {
+			$args['post_name'] = sanitize_title( $mirrored_name );
+		}
+
+		wp_update_post( $args );
+	}
+
+	/**
+	 * Hook: `save_post_tribe_events` — when admin saves a TEC event, propagate the
+	 * event's new title to every `en_reservation` linked to it (via `_en_event_id`
+	 * meta) that has NOT set a manual name or slug override.
+	 *
+	 * Skips revisions and autosaves.  Fires at priority 20 (after TEC's own hooks
+	 * so the event title is fully committed before we read it).
+	 *
+	 * @param int      $event_id  TEC event post ID.
+	 * @param \WP_Post $post      The saved post object.
+	 * @return void
+	 */
+	public static function on_tec_event_save( int $event_id, \WP_Post $post ): void {
+		if ( wp_is_post_revision( $event_id ) || wp_is_post_autosave( $event_id ) ) {
+			return;
+		}
+
+		// Find all reservations whose _en_event_id points at this event.
+		$linked = get_posts( array(
+			'post_type'      => EEM_Reservations_CPT::POST_TYPE,
+			'post_status'    => array( 'publish', 'draft', 'pending', 'private' ),
+			'posts_per_page' => -1,
+			'fields'         => 'ids',
+			'meta_query'     => array(
+				array(
+					'key'   => '_en_event_id',
+					'value' => (string) $event_id,
+				),
+			),
+		) );
+
+		foreach ( (array) $linked as $reservation_id ) {
+			self::apply_mirror( (int) $reservation_id );
+		}
+	}
+
+	// ── End FIX 2 (2.3.44) ──────────────────────────────────────────────────────
 
 	/**
 	 * Graceful "reservation not found" render.

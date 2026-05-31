@@ -91,9 +91,12 @@ add_action( 'wp_ajax_eem_reservation_editor_save', array( 'EEM_Reservation_Edito
 add_action( 'wp_ajax_eem_rename_reservation',      array( 'EEM_Reservation_Editor_Page', 'ajax_rename' ) );
 // FIX 5 (2.3.42) — Quick Edit inline row save from the Reservations list.
 add_action( 'wp_ajax_eem_reservation_quick_edit', array( 'EEM_Reservations_List_Page', 'handle_quick_edit_ajax' ) );
-// FIX 5 (2.3.43) — Duplicate row action via AJAX (excludes event-link meta,
-// redirects to new reservation's Edit page rather than back to the list).
+// FIX 5 (2.3.43) / FIX 1 (2.3.44) — Duplicate row action via AJAX.
+// 2.3.44: returns list-stay payload (no redirect_url); JS reloads list page.
 add_action( 'wp_ajax_eem_reservation_duplicate_ajax', array( 'EEM_Reservations_List_Page', 'handle_duplicate_ajax' ) );
+// FIX 2 (2.3.44) — Push name/slug mirror to linked reservations when a TEC
+// event is saved (admin edits TEC event title → all reservations auto-sync).
+add_action( 'save_post_tribe_events', array( 'EEM_Reservation_Editor_Page', 'on_tec_event_save' ), 20, 2 );
 // C7.X.3 — change_linked_event handler retired; replaced by ajax_unlink_event
 // (rail-card Unlink button) + event-search typeahead handler in a later commit.
 add_action( 'wp_ajax_eem_reservation_editor_unlink_event', array( 'EEM_Reservation_Editor_Page', 'ajax_unlink_event' ) );

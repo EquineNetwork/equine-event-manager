@@ -820,9 +820,11 @@ class EEM_Reservations_List_Page {
 	 * FIX 5 (2.3.43) — AJAX handler for the Duplicate row action.  Creates a
 	 * new `en_reservation` draft with title `{source} (Copy)`, no linked event,
 	 * and copies all post meta EXCEPT the event-link keys, the frontend URL cache,
-	 * and the source-event sort-cache.  Override flags are inherited.  Returns
-	 * `redirect_url` pointing at the new reservation's Edit page so the JS can
-	 * navigate immediately.
+	 * and the source-event sort-cache.  Override flags are inherited.
+	 *
+	 * FIX 1 (2.3.44) — Returns list-stay payload (`new_reservation_id` + `title`)
+	 * instead of a redirect URL.  The JS handler shows a toast and reloads the
+	 * Reservations list so the new draft row appears in-place.
 	 *
 	 * Nonce: `eem_reservation_duplicate` (same action as the existing admin-post
 	 * handler, posted as `_eem_action_nonce`).
@@ -892,10 +894,11 @@ class EEM_Reservations_List_Page {
 			)
 		);
 
+		// FIX 1 (2.3.44) — return list-stay payload; JS reloads the list page.
 		wp_send_json_success( array(
 			'new_reservation_id' => $new_id,
-			'redirect_url'       => EEM_Reservation_Editor_Page::url( $new_id ),
-			'message'            => __( 'Reservation duplicated. Redirecting to editor…', 'equine-event-manager' ),
+			'title'              => get_the_title( $new_id ),
+			'message'            => __( 'Reservation duplicated as draft.', 'equine-event-manager' ),
 		) );
 	}
 
