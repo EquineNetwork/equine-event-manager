@@ -3584,11 +3584,12 @@ class EEM_Reservations_CPT {
 	 *
 	 * The TEC event is the single source of truth. This queries tribe_events
 	 * posts whose _equine_event_manager_reservation_id meta equals $reservation_id.
+	 * Public so the editor page can read it without instantiating internal state.
 	 *
 	 * @param int $reservation_id Reservation post ID.
 	 * @return int TEC event post ID, or 0 if none found.
 	 */
-	private function get_tec_event_id_for_reservation( $reservation_id ) {
+	public function get_tec_event_id_for_reservation( $reservation_id ) {
 		$events = get_posts(
 			array(
 				'post_type'      => 'tribe_events',

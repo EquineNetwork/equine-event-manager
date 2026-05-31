@@ -316,7 +316,9 @@ class EEM_Reservations_List_Page {
 		if ( ! self::trash_one( $reservation_id ) ) {
 			self::redirect_with_notice( 'failed' );
 		}
-		self::redirect_with_notice( 'trashed', array( 'status' => 'trash' ) );
+		// FIX 2: redirect back to current status view, not hard-coded Trash tab.
+		$status = isset( $_REQUEST['status'] ) ? sanitize_key( wp_unslash( $_REQUEST['status'] ) ) : '';
+		self::redirect_with_notice( 'trashed', $status ? array( 'status' => $status ) : array() );
 	}
 
 	/**
@@ -524,9 +526,10 @@ class EEM_Reservations_List_Page {
 						$count++;
 					}
 				}
+				// FIX 2: stay on the current status view after bulk trash.
 				self::redirect_with_notice(
 					$count > 0 ? 'bulk_trashed' : 'failed',
-					array( 'status' => 'trash', 'eem_bulk_count' => $count )
+					array( 'status' => $status, 'eem_bulk_count' => $count )
 				);
 				break;
 

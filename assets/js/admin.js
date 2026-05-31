@@ -3560,14 +3560,9 @@
 		 * RV inventory is now computed from row lot counts via updateRvInventoryDisplay(). */
 	});
 
-/* ── Linked Events seed — replace with live event-source query at C10 ── */
-var _linkedEvents = [
-	{ id: 'perry-2026',   name: 'Perry, GA – 2026 Southeast Region Super Sort', dates: 'May 8–10, 2026',              current: true  },
-	{ id: 'patriot-2026', name: 'The Patriot Fort Worth – 2026',                dates: 'March 5–15, 2026',            current: false },
-	{ id: 'aqha-2026',    name: 'AQHA World Show 2026',                              dates: 'November 7–22, 2026',         current: false },
-	{ id: 'wcss-2026',    name: 'Western Canadian Super Show 2026',                  dates: 'June 12–15, 2026',            current: false },
-	{ id: 'wyo-2026',     name: 'Wyoming State Fair 2026',                           dates: 'August 28 – September 7, 2026', current: false }
-];
+/* ── Linked Events — live AJAX typeahead wired to TEC events (FIX 1, 2.3.41) ── */
+var _eventSearchTimer = null;
+var _eventSearchXhr   = null;
 
 function changeLinkedEvent() {
 	var btn = document.getElementById('eem-header-action-change');
@@ -3576,7 +3571,7 @@ function changeLinkedEvent() {
 	if (tah) tah.style.display = '';
 	var inp = document.getElementById('eem-event-search-input');
 	if (inp) { inp.value = ''; inp.focus(); }
-	filterEventOptions('');
+	fetchEventOptions('');
 }
 
 function cancelChangeEvent() {
@@ -3587,41 +3582,97 @@ function cancelChangeEvent() {
 }
 
 function selectLinkedEvent(eventId) {
-	var ev = null;
-	for (var i = 0; i < _linkedEvents.length; i++) {
-		if (_linkedEvents[i].id === eventId) { ev = _linkedEvents[i]; break; }
+	var container = document.getElementById('eem-event-search-results');
+	var chosen    = container ? container.querySelector('[data-event-id="' + eventId + '"]') : null;
+
+	if (chosen) {
+		// Pull display text from the rendered result row.
+		var nameSpan = chosen.querySelector('.eem-event-option-name');
+		var dateSpan = chosen.querySelector('.eem-event-option-date');
+		var rawName  = nameSpan ? nameSpan.textContent.replace(/\s*CURRENT\s*$/i, '').trim() : '';
+		var dateStr  = dateSpan ? dateSpan.textContent.trim() : '';
+
+		var nameEl = document.getElementById('eem-header-event-name');
+		if (nameEl && rawName) nameEl.textContent = rawName;
+
+		var metaEl = document.getElementById('eem-header-meta');
+		if (metaEl && dateStr) {
+			// Replace everything after "·" (or append date if no "·" yet).
+			metaEl.textContent = metaEl.textContent.replace(/\s*[·•].*$/, '').trim() + ' · ' + dateStr;
+		}
 	}
-	if (!ev) return;
-	_linkedEvents.forEach(function(e) { e.current = false; });
-	ev.current = true;
-	var nameEl = document.getElementById('eem-header-event-name');
-	if (nameEl) nameEl.textContent = ev.name;
-	var metaEl = document.getElementById('eem-header-meta');
-	if (metaEl) metaEl.textContent = 'Editing Reservation · ' + ev.dates;
+
+	// Update hidden form field and typeahead data attribute.
+	var hiddenInput = document.getElementById('eem-linked-event-id-input');
+	if (hiddenInput) hiddenInput.value = eventId;
+	var tah = document.getElementById('eem-header-typeahead');
+	if (tah) tah.dataset.currentEventId = eventId;
+
 	cancelChangeEvent();
 }
 
-function filterEventOptions(query) {
+function fetchEventOptions(query) {
+	var tah = document.getElementById('eem-header-typeahead');
+	if (!tah) return;
+	var ajaxUrl   = tah.dataset.ajaxUrl   || '';
+	var nonce     = tah.dataset.searchNonce || '';
+	var currentId = String(tah.dataset.currentEventId || '0');
+
 	var container = document.getElementById('eem-event-search-results');
 	if (!container) return;
-	var q = query.toLowerCase();
-	var results = _linkedEvents.filter(function(ev) {
-		return !q || ev.name.toLowerCase().indexOf(q) !== -1 || ev.dates.toLowerCase().indexOf(q) !== -1;
-	});
-	if (!results.length) {
-		container.innerHTML = '<div class="eem-event-option-empty">No matching events found.</div>';
-		return;
-	}
-	container.innerHTML = results.map(function(ev) {
-		var badge = ev.current ? ' <span class="eem-event-option-current-badge">Current</span>' : '';
-		var cls = 'eem-event-option' + (ev.current ? ' is-current' : '');
-		return '<div class="' + cls + '" ' +
-		       'data-eem-action="header-select-event" ' +
-		       'data-event-id="' + escapeHtml(ev.id) + '">' +
-		       '<span class="eem-event-option-name">' + ev.name + badge + '</span>' +
-		       '<span class="eem-event-option-date">' + ev.dates + '</span>' +
-		       '</div>';
-	}).join('');
+
+	container.innerHTML = '<div class="eem-event-option-loading">Loading…</div>';
+
+	// Cancel any in-flight request.
+	if (_eventSearchXhr) { try { _eventSearchXhr.abort(); } catch (e) {} _eventSearchXhr = null; }
+
+	var params = 'action=equine_event_manager_search_tec_events&nonce=' + encodeURIComponent(nonce) + '&term=' + encodeURIComponent(query);
+	var xhr = new XMLHttpRequest();
+	_eventSearchXhr = xhr;
+	xhr.open('GET', ajaxUrl + '?' + params, true);
+	xhr.onreadystatechange = function () {
+		if (xhr.readyState !== 4) return;
+		_eventSearchXhr = null;
+		if (xhr.status !== 200) {
+			container.innerHTML = '<div class="eem-event-option-empty">Could not load events.</div>';
+			return;
+		}
+		var resp;
+		try { resp = JSON.parse(xhr.responseText); } catch (e) {
+			container.innerHTML = '<div class="eem-event-option-empty">Could not load events.</div>';
+			return;
+		}
+		if (!resp.success || !resp.data || !resp.data.results || !resp.data.results.length) {
+			container.innerHTML = '<div class="eem-event-option-empty">No matching events.</div>';
+			return;
+		}
+		container.innerHTML = resp.data.results.map(function (ev) {
+			var isCurrent = String(ev.id) === currentId;
+			var badge     = isCurrent ? ' <span class="eem-event-option-current-badge">CURRENT</span>' : '';
+			var cls       = 'eem-event-option' + (isCurrent ? ' is-current' : '');
+			var dateStr   = ev.start_date ? _eemFormatEventDate(ev.start_date) : '';
+			return '<div class="' + cls + '" data-eem-action="header-select-event" data-event-id="' + escapeHtml(String(ev.id)) + '">' +
+			       '<span class="eem-event-option-name">' + escapeHtml(ev.text) + badge + '</span>' +
+			       (dateStr ? '<span class="eem-event-option-date">' + escapeHtml(dateStr) + '</span>' : '') +
+			       '</div>';
+		}).join('');
+	};
+	xhr.send();
+}
+
+function _eemFormatEventDate(mysqlDate) {
+	if (!mysqlDate) return '';
+	// MySQL format: "YYYY-MM-DD HH:MM:SS" — replace space with T for ISO 8601.
+	var d = new Date(mysqlDate.replace(' ', 'T'));
+	if (isNaN(d.getTime())) return mysqlDate;
+	return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function filterEventOptions(query) {
+	// Debounced entry-point for the input listener; empty queries fire immediately.
+	if (_eventSearchTimer) clearTimeout(_eventSearchTimer);
+	if (!query) { fetchEventOptions(''); return; }
+	_eventSearchTimer = setTimeout(function () { fetchEventOptions(query); }, 250);
 }
 
 function stallMappedIsActive() {

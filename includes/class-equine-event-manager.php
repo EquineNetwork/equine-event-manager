@@ -97,7 +97,8 @@ add_action( 'wp_ajax_eem_reservation_editor_trash',        array( 'EEM_Reservati
 // third-party links + any `get_edit_post_link()` callers we missed in
 // the C7.X.7+ rewire. Mirrors the list-view redirect on
 // `EEM_Reservations_List_Page::maybe_redirect_old_list`.
-add_action( 'load-post.php', array( 'EEM_Reservation_Editor_Page', 'maybe_redirect_legacy_edit' ) );
+add_action( 'load-post.php',     array( 'EEM_Reservation_Editor_Page', 'maybe_redirect_legacy_edit' ) );
+add_action( 'load-post-new.php', array( 'EEM_Reservation_Editor_Page', 'maybe_redirect_new_reservation' ) );
 
 // Phase 3 admin template partials.
 require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_breadcrumb.php';

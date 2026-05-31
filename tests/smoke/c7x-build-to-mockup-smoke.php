@@ -2009,14 +2009,14 @@ c7x_ok(
 	$pass, $fail, $log
 );
 
-echo "\n[25] TEC event link fix — bidirectional link + reverse lookup + category filter + one-to-one enforcement\n";
+echo "\n[25] TEC event link — reverse lookup, category filter, one-to-one enforcement, live AJAX typeahead (2.3.40–41)\n";
 
 $php_res_cpt_25 = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-reservations-cpt.php' );
 
-// 25a. Reverse-lookup method: get_tec_event_id_for_reservation() present.
+// 25a. Reverse-lookup method: get_tec_event_id_for_reservation() present (public since 2.3.41).
 c7x_ok(
 	'[25a] get_tec_event_id_for_reservation() method defined in reservations CPT',
-	false !== strpos( $php_res_cpt_25, 'private function get_tec_event_id_for_reservation(' ),
+	false !== strpos( $php_res_cpt_25, 'function get_tec_event_id_for_reservation(' ),
 	$pass, $fail, $log
 );
 
@@ -2054,6 +2054,71 @@ c7x_ok(
 c7x_ok(
 	'[25f] _equine_event_manager_reservation_id is the reverse-lookup meta key in get_tec_event_id_for_reservation()',
 	false !== strpos( $php_res_cpt_25, "'_equine_event_manager_reservation_id'" ),
+	$pass, $fail, $log
+);
+
+echo "\n[26] FIX 1/2/3 — live typeahead, trash redirect, new-reservation routing (2.3.41)\n";
+
+$js_admin_26      = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/js/admin.js' );
+$php_editor_26    = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-reservation-editor-page.php' );
+$php_list_26      = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-reservations-list-page.php' );
+$php_loader_26    = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager.php' );
+
+// 26a. _linkedEvents fixture array is GONE from admin.js.
+c7x_ok(
+	'[26a] _linkedEvents fixture array removed from admin.js (FIX 1)',
+	false === strpos( $js_admin_26, '_linkedEvents' ),
+	$pass, $fail, $log
+);
+
+// 26b. AJAX call to equine_event_manager_search_tec_events is in admin.js.
+c7x_ok(
+	'[26b] admin.js calls equine_event_manager_search_tec_events via AJAX (FIX 1)',
+	false !== strpos( $js_admin_26, 'equine_event_manager_search_tec_events' ),
+	$pass, $fail, $log
+);
+
+// 26c. fetchEventOptions() function defined in admin.js.
+c7x_ok(
+	'[26c] fetchEventOptions() function defined in admin.js (FIX 1)',
+	false !== strpos( $js_admin_26, 'function fetchEventOptions(' ),
+	$pass, $fail, $log
+);
+
+// 26d. data-search-nonce attribute emitted in editor page PHP.
+c7x_ok(
+	'[26d] data-search-nonce emitted on typeahead div in editor page (FIX 1)',
+	false !== strpos( $php_editor_26, 'data-search-nonce' ),
+	$pass, $fail, $log
+);
+
+// 26e. Hidden en_reservation[event_id] input emitted in editor page PHP.
+c7x_ok(
+	'[26e] Hidden en_reservation[event_id] input emitted in editor page (FIX 1)',
+	false !== strpos( $php_editor_26, 'name="en_reservation[event_id]"' ),
+	$pass, $fail, $log
+);
+
+// 26f. handle_trash() no longer hard-codes status=trash redirect (FIX 2).
+c7x_ok(
+	'[26f] handle_trash() uses dynamic status redirect, not hard-coded trash (FIX 2)',
+	false !== strpos( $php_list_26, 'FIX 2' ) &&
+	// The old "array( 'status' => 'trash' )" hard-coded literal is gone.
+	false === strpos( $php_list_26, "redirect_with_notice( 'trashed', array( 'status' => 'trash' ) )" ),
+	$pass, $fail, $log
+);
+
+// 26g. maybe_redirect_new_reservation() method is defined in editor page (FIX 3).
+c7x_ok(
+	'[26g] maybe_redirect_new_reservation() method defined in editor page (FIX 3)',
+	false !== strpos( $php_editor_26, 'function maybe_redirect_new_reservation()' ),
+	$pass, $fail, $log
+);
+
+// 26h. load-post-new.php hook is wired in the loader (FIX 3).
+c7x_ok(
+	'[26h] load-post-new.php hook wired in plugin loader (FIX 3)',
+	false !== strpos( $php_loader_26, 'load-post-new.php' ),
 	$pass, $fail, $log
 );
 

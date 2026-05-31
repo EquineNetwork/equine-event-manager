@@ -66,6 +66,44 @@ class EEM_Reservation_Editor_Page {
 	}
 
 	/**
+	 * Intercept `post-new.php?post_type=en_reservation` and redirect to the
+	 * custom editor with a freshly-created draft reservation. Wired to
+	 * `load-post-new.php` so the WP default new-post screen never renders.
+	 *
+	 * @return void
+	 */
+	public static function maybe_redirect_new_reservation() {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended
+		if ( ! isset( $_GET['post_type'] ) ) {
+			return;
+		}
+		if ( EEM_Reservations_CPT::POST_TYPE !== sanitize_key( wp_unslash( $_GET['post_type'] ) ) ) {
+			return;
+		}
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			return;
+		}
+
+		$new_id = wp_insert_post(
+			array(
+				'post_type'   => EEM_Reservations_CPT::POST_TYPE,
+				'post_status' => 'draft',
+				'post_title'  => __( 'New Reservation', 'equine-event-manager' ),
+			)
+		);
+
+		if ( is_wp_error( $new_id ) || ! $new_id ) {
+			// Fall through to WP default editor on failure (graceful degradation).
+			return;
+		}
+
+		wp_safe_redirect( self::url( $new_id ), 302 );
+		exit;
+	}
+
+	/**
 	 * Redirect legacy WP CPT edit URL (`post.php?post=N&action=edit`)
 	 * to the new editor when the post type is `en_reservation`. Mirrors
 	 * the shape of `EEM_Reservations_List_Page::maybe_redirect_old_list()`
@@ -148,6 +186,12 @@ class EEM_Reservation_Editor_Page {
 				isset( $_c8_fields['end_date'] )   ? (string) $_c8_fields['end_date']   : ''
 			);
 		}
+
+		// FIX 1 — wire typeahead to real TEC events. Reverse-lookup gives the
+		// authoritative currently-linked event ID; nonce authorises the search AJAX.
+		$_cpt_obj             = new EEM_Reservations_CPT();
+		$current_tec_event_id = $_cpt_obj->get_tec_event_id_for_reservation( $reservation_id );
+		$_search_nonce        = wp_create_nonce( 'equine_event_manager_search_tec_events' );
 		?>
 		<div class="eem-page">
 			<?php
@@ -174,12 +218,20 @@ class EEM_Reservation_Editor_Page {
 								echo ' &nbsp;&middot;&nbsp; ' . esc_html( $event_dates );
 							}
 						?></div>
-						<!-- Inline typeahead — shown when Change Event clicked -->
-						<div class="eem-header-typeahead" id="eem-header-typeahead" style="display:none;">
+						<!-- Inline typeahead — shown when Change Event clicked. FIX 1: live AJAX. -->
+						<input type="hidden"
+							id="eem-linked-event-id-input"
+							name="en_reservation[event_id]"
+							value="<?php echo esc_attr( (string) $current_tec_event_id ); ?>">
+						<div class="eem-header-typeahead" id="eem-header-typeahead"
+							style="display:none;"
+							data-current-event-id="<?php echo esc_attr( (string) $current_tec_event_id ); ?>"
+							data-ajax-url="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>"
+							data-search-nonce="<?php echo esc_attr( $_search_nonce ); ?>">
 							<input type="text"
 								class="eem-event-search-input"
 								id="eem-event-search-input"
-								placeholder="<?php esc_attr_e( 'Search events\xe2\x80\xa6', 'equine-event-manager' ); ?>"
+								placeholder="<?php esc_attr_e( "Search events\xe2\x80\xa6", 'equine-event-manager' ); ?>"
 								data-eem-input-action="header-filter-events"
 								autocomplete="off">
 							<div class="eem-event-search-results" id="eem-event-search-results"></div>
