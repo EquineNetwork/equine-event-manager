@@ -1,7 +1,21 @@
 # Equine Event Manager — Roadmap
 
-**Last updated:** 2026-05-31
+**Last updated:** 2026-05-31 (reconciled against code at cache-bust 2.3.52)
 **Authoritative source for forward-looking plans.** decisions.md is the source for locked decisions; CLAUDE.md is the source for conventions/rules; this file is the source for what's planned but not yet built.
+
+> **2026-05-31 reconciliation pass (Claude Code).** Whitney asked for a verification
+> that this roadmap matches the actual code. Every C10-recon technical claim below was
+> re-checked against the repo and **confirmed accurate**:
+> - `[en_reservation id="N"]` shortcode is registered and renders the working customer
+>   form from `public/class-equine-event-manager-shortcodes.php` (8,639 lines).
+> - Stripe is fully operational — `ajax_create_stripe_payment_intent` →
+>   `wp_remote_request('https://api.stripe.com/v1/...')`, no SDK.
+> - Custom tables `wp_en_stall_reservations` + `wp_en_rv_reservations` exist (activator).
+> - C14 invoice page is partially wired (`maybe_render_invoice_payment_page` on
+>   `template_redirect`).
+>
+> The only stale part was the "Current Status" snapshot below, which predated the
+> C8 / DS-1.B / 2.3.50–2.3.52 work. Updated to match reality.
 
 ## Test-Ready Target
 **June 12, 2026** — defined as: C10 customer flow works end-to-end. Admin pages can have rough edges. Real customers can pay through real Stripe (test mode).
@@ -9,12 +23,25 @@
 ## Launch Target
 TBD — set after C10 verifies and customer flow proven on staging.
 
-## Current Status (as of file creation)
-- C7 (Edit Reservation) — DONE
+## Current Status (updated 2026-05-31, cache-bust 2.3.52)
+
+**Built & verified (admin-side authoring surfaces):**
+- C1–C6 foundation (admin.css/js, activity log, Settings, Reservations list, Orders list, Order Detail) — DONE
+- C7 (Edit Reservation editor — all sections, stall row builder, Event Day Info, per-reservation cancellation policy, publish validation, typed-confirm delete) — DONE
 - C8 (Stall & RV Charts: list + detail with All/Stalls/RV toggle + Print View) — DONE
-- Current cache-bust: 2.3.38
-- Next up: C10 customer-facing reservation page (BIG ONE — June 12 critical path)
-- All search input + breadcrumb + hover conventions locked plugin-wide
+- DS-1.A (cross-page design-system fidelity) + DS-1.B (Admin Dashboard) — DONE
+- Customer reservation form via `[en_reservation]` shortcode — FUNCTIONAL (C10 is a visual rebuild, not a feature build); Stripe checkout operational
+
+**Recent maintenance (post-C8):**
+- 2.3.47–2.3.49 — editor + single-event rebuilds, toggle OFF-state persistence
+- 2.3.50 — removed Stall/RV chart enable toggle from the editor; chart presence derived from `_en_stalls_enabled` / `_en_rv_enabled` (write-path + list query only)
+- 2.3.51 — Bulk-mode admin auto-assignment UI (conflict-safe, no full reload)
+- 2.3.52 — **completed the 2.3.50 gate retirement**: 5 read-path gates still consulted the dead `_en_stall_chart_enabled` meta, leaving the Stall Chart Detail page (and the 2.3.51 auto-assign UI it hosts) showing "disabled". All consumers now derive presence from `_en_stalls_enabled OR _en_rv_enabled` (commit `8302e7c`)
+
+**Next up:** C10 customer-facing reservation page visual rebuild (June 12 critical path).
+- All search input + breadcrumb + hover conventions locked plugin-wide.
+- **Note:** the C10 commit-sequence cache-bust numbers below (e.g. "2.3.38 → 2.3.39") were
+  written when current was 2.3.38; bump from the then-current version (2.3.52+) when executing.
 
 ---
 
