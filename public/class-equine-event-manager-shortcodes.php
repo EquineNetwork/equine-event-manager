@@ -176,6 +176,7 @@ class EEM_Shortcodes {
 		$rv_stay_type_options       = $this->get_enabled_stay_type_options( $data, 'rv' );
 		$rv_addon_options           = $this->get_enabled_rv_addon_options( $data );
 		$general_addon_options      = $this->get_enabled_general_addon_options( $data );
+		$pre_entry_options          = $this->get_enabled_pre_entry_options( $data );
 		$rv_lot_options             = $this->get_enabled_rv_lots( $data );
 		$stall_assignment_enabled   = ! empty( $data['stall_chart_enabled'] );
 		$stall_map_url              = ! empty( $data['stall_map_file_id'] ) ? wp_get_attachment_url( absint( $data['stall_map_file_id'] ) ) : '';
@@ -401,6 +402,7 @@ class EEM_Shortcodes {
 					data-rv-weekend-rate="<?php echo esc_attr( $this->get_current_rate( $data, 'rv', 'weekend' ) ); ?>"
 					data-rv-addon-pricing="<?php echo esc_attr( wp_json_encode( $this->get_enabled_rv_addon_pricing_matrix( $data ) ) ); ?>"
 					data-general-addon-pricing="<?php echo esc_attr( wp_json_encode( $this->get_enabled_general_addon_pricing_matrix( $data ) ) ); ?>"
+					data-pre-entry-pricing="<?php echo esc_attr( wp_json_encode( $this->get_pre_entry_pricing_matrix( $data ) ) ); ?>"
 					data-rv-lot-pricing="<?php echo esc_attr( wp_json_encode( $this->get_enabled_rv_lot_pricing_matrix( $data, $status ) ) ); ?>"
 					data-nightly-start-date="<?php echo esc_attr( $min_date ); ?>"
 					data-nightly-end-date="<?php echo esc_attr( $max_date ); ?>"
@@ -761,6 +763,43 @@ class EEM_Shortcodes {
 						</div>
 					<?php endif; ?>
 
+					<?php // 2.3.68 — Event Pre-Entries: stand-alone purchasable items. Mirrors
+					// the Add-Ons card (static price + quantity stepper per item). ?>
+					<?php if ( ! empty( $pre_entry_options ) ) : ?>
+						<div class="eem-reservation-section" data-eem-section="pre-entries">
+							<div class="eem-reservation-section-heading eem-reservation-section-heading--collapsible">
+								<h4 class="eem-reservation-section__title"><?php esc_html_e( 'Event Pre-Entries', 'equine-event-manager' ); ?></h4>
+								<label class="eem-reservation-section-toggle" aria-label="<?php esc_attr_e( 'Toggle Event Pre-Entries section', 'equine-event-manager' ); ?>">
+									<input type="checkbox" data-eem-section-collapse-toggle />
+									<span class="eem-reservation-section-toggle__track" aria-hidden="true"></span>
+								</label>
+							</div>
+							<div class="eem-reservation-section__body" data-eem-section-collapse-body>
+								<div class="eem-product-list">
+									<?php $this->render_product_list_header(); ?>
+									<?php foreach ( $pre_entry_options as $pre_entry_key => $pre_entry ) : ?>
+										<?php
+										$this->render_product_line_item(
+											$pre_entry['title'],
+											'',
+											'pre_entry_' . $pre_entry_key . '_qty',
+											'eem-product-line-item--pre-entry',
+											array(
+												'static_price' => (float) $pre_entry['price'],
+												'max_quantity' => $pre_entry['max_per_customer'] > 0 ? $pre_entry['max_per_customer'] : null,
+											)
+										);
+										?>
+									<?php endforeach; ?>
+								</div>
+								<div class="eem-section-subtotal" aria-live="polite">
+									<span><?php esc_html_e( 'Pre-Entries Subtotal', 'equine-event-manager' ); ?></span>
+									<strong data-eem-total="pre_entries_subtotal">$0.00</strong>
+								</div>
+							</div>
+						</div>
+					<?php endif; ?>
+
 					<?php if ( $group_reservations_enabled ) : ?>
 						<div class="eem-reservation-section eem-reservation-section--group-reservation" data-eem-section="group">
 							<div class="eem-reservation-section-heading eem-reservation-section-heading--collapsible">
@@ -1084,6 +1123,13 @@ class EEM_Shortcodes {
 							<div class="eem-payment-summary-row" data-eem-summary-row="general_addon_<?php echo esc_attr( $addon_key ); ?>_subtotal" hidden>
 								<span><?php echo esc_html( $addon['name'] ); ?></span>
 								<strong data-eem-total="general_addon_<?php echo esc_attr( $addon_key ); ?>_subtotal">$0.00</strong>
+							</div>
+						<?php endforeach; ?>
+						<?php // 2.3.68 — Event Pre-Entry summary rows (derived from $data). ?>
+						<?php foreach ( $this->get_enabled_pre_entry_options( $data ) as $pre_entry_key => $pre_entry ) : ?>
+							<div class="eem-payment-summary-row" data-eem-summary-row="pre_entry_<?php echo esc_attr( $pre_entry_key ); ?>_subtotal" hidden>
+								<span><?php echo esc_html( $pre_entry['title'] ); ?></span>
+								<strong data-eem-total="pre_entry_<?php echo esc_attr( $pre_entry_key ); ?>_subtotal">$0.00</strong>
 							</div>
 						<?php endforeach; ?>
 						<?php foreach ( $rv_addon_options as $addon_key => $addon ) : ?>
@@ -1541,6 +1587,11 @@ class EEM_Shortcodes {
 			$submission[ 'general_addon_' . $addon_key . '_qty' ] = isset( $_POST[ 'general_addon_' . $addon_key . '_qty' ] ) ? absint( $_POST[ 'general_addon_' . $addon_key . '_qty' ] ) : 0;
 		}
 
+		// 2.3.68 — Event Pre-Entry quantities.
+		foreach ( $this->get_enabled_pre_entry_options( $data ) as $pre_entry_key => $pre_entry ) {
+			$submission[ 'pre_entry_' . $pre_entry_key . '_qty' ] = isset( $_POST[ 'pre_entry_' . $pre_entry_key . '_qty' ] ) ? absint( $_POST[ 'pre_entry_' . $pre_entry_key . '_qty' ] ) : 0;
+		}
+
 		$submission['group_riders'] = array();
 
 		if ( ! empty( $_POST['group_riders'] ) && is_array( $_POST['group_riders'] ) ) {
@@ -1726,6 +1777,26 @@ class EEM_Shortcodes {
 			// 2.3.66 — Add-ons (shavings, hay, etc.) are stand-alone products and
 			// may be purchased without a stall or RV reservation. The prior
 			// "select stalls/RV first" gate was removed per product decision.
+		}
+
+		// 2.3.68 — Event Pre-Entry per-customer cap validation. Total inventory
+		// (stock across all orders) is tracked separately and enforced when order
+		// persistence lands; the per-customer cap is enforced here at submit time.
+		foreach ( $this->get_enabled_pre_entry_options( $data ) as $pre_entry_key => $pre_entry ) {
+			$qty = isset( $submission[ 'pre_entry_' . $pre_entry_key . '_qty' ] ) ? absint( $submission[ 'pre_entry_' . $pre_entry_key . '_qty' ] ) : 0;
+
+			if ( $qty <= 0 ) {
+				continue;
+			}
+
+			if ( $pre_entry['max_per_customer'] > 0 && $qty > $pre_entry['max_per_customer'] ) {
+				$errors[] = sprintf(
+					/* translators: 1: max per customer, 2: pre-entry title. */
+					__( 'You may purchase at most %1$d of %2$s.', 'equine-event-manager' ),
+					$pre_entry['max_per_customer'],
+					$pre_entry['title']
+				);
+			}
 		}
 
 		if ( $has_stall_selection && ! $status['stalls_open'] ) {
@@ -2507,7 +2578,21 @@ class EEM_Shortcodes {
 			$general_addons_subtotal              += $general_addon_subtotals[ $addon_key ];
 		}
 
-		$subtotal = $stall_subtotal + $rv_subtotal + $general_addons_subtotal + $group_subtotal;
+		// 2.3.68 — Event Pre-Entry subtotals.
+		$pre_entry_subtotals = array();
+		$pre_entries_subtotal = 0.0;
+		foreach ( $this->get_enabled_pre_entry_options( $data ) as $pre_entry_key => $pre_entry ) {
+			$quantity = isset( $submission[ 'pre_entry_' . $pre_entry_key . '_qty' ] ) ? absint( $submission[ 'pre_entry_' . $pre_entry_key . '_qty' ] ) : 0;
+
+			if ( $quantity <= 0 ) {
+				continue;
+			}
+
+			$pre_entry_subtotals[ $pre_entry_key ] = $quantity * (float) $pre_entry['price'];
+			$pre_entries_subtotal                 += $pre_entry_subtotals[ $pre_entry_key ];
+		}
+
+		$subtotal = $stall_subtotal + $rv_subtotal + $general_addons_subtotal + $pre_entries_subtotal + $group_subtotal;
 		$fees     = $this->calculate_convenience_fee( $subtotal, $data );
 
 		// Tax (SET-6 / C3.D.1). Resolves per-reservation override via post meta when present;
@@ -2525,6 +2610,8 @@ class EEM_Shortcodes {
 			'rv_addon_subtotals'           => $rv_addon_subtotals,
 			'general_addon_subtotals'      => $general_addon_subtotals,
 			'general_addons_subtotal'      => $general_addons_subtotal,
+			'pre_entry_subtotals'          => $pre_entry_subtotals,
+			'pre_entries_subtotal'         => $pre_entries_subtotal,
 			'group_rider_count'            => $group_rider_count,
 			'group_rider_grounds_fee_subtotal' => $group_rider_grounds_fee_subtotal,
 			'group_rider_deposit_subtotal' => $group_rider_deposit_subtotal,
@@ -2710,6 +2797,7 @@ class EEM_Shortcodes {
 		);
 		$agreement_notes = ! empty( $data['venue_agreement_enabled'] ) && ! empty( $data['venue_agreement_file_id'] ) ? __( 'Venue Agreement Provided: Yes', 'equine-event-manager' ) . "\n" : '';
 		$general_addon_notes = '';
+		$pre_entry_notes = '';
 		$group_reservation_notes = '';
 
 		foreach ( $this->get_enabled_general_addon_options( $data ) as $addon_key => $addon ) {
@@ -2725,6 +2813,23 @@ class EEM_Shortcodes {
 				$addon['name'],
 				$quantity,
 				! empty( $addon['per_label'] ) ? $addon['per_label'] : __( 'qty', 'equine-event-manager' ),
+				$this->format_money( $subtotal )
+			);
+		}
+
+		// 2.3.68 — Event Pre-Entry order notes (itemized on the order / receipt).
+		foreach ( $this->get_enabled_pre_entry_options( $data ) as $pre_entry_key => $pre_entry ) {
+			$quantity = isset( $submission[ 'pre_entry_' . $pre_entry_key . '_qty' ] ) ? absint( $submission[ 'pre_entry_' . $pre_entry_key . '_qty' ] ) : 0;
+
+			if ( $quantity <= 0 ) {
+				continue;
+			}
+
+			$subtotal = isset( $totals['pre_entry_subtotals'][ $pre_entry_key ] ) ? (float) $totals['pre_entry_subtotals'][ $pre_entry_key ] : 0.0;
+			$pre_entry_notes .= sprintf(
+				"Pre-Entry: %1\$s | Qty: %2\$d | Subtotal: %3\$s\n",
+				$pre_entry['title'],
+				$quantity,
 				$this->format_money( $subtotal )
 			);
 		}
@@ -2771,7 +2876,7 @@ class EEM_Shortcodes {
 
 		$invoice_type_note   = 'manual' === $submission['invoice_type'] ? __( 'Admin', 'equine-event-manager' ) : __( 'Customer', 'equine-event-manager' );
 		$show_bill_note_line = ( 'manual' === $submission['invoice_type'] && 'add_to_show_bill' === $submission['invoice_action_mode'] ) ? "\nShow Bill Status: Outstanding" : '';
-		$notes = trim( $submission['notes'] . "\n\n" . $billing_notes . "\n" . $agreement_notes . $general_addon_notes . $group_reservation_notes . "\nInvoice Type: " . $invoice_type_note . $show_bill_note_line . "\nReservation setup ID: " . absint( $reservation_id ) . "\nSubmission token: " . $submission_token );
+		$notes = trim( $submission['notes'] . "\n\n" . $billing_notes . "\n" . $agreement_notes . $general_addon_notes . $pre_entry_notes . $group_reservation_notes . "\nInvoice Type: " . $invoice_type_note . $show_bill_note_line . "\nReservation setup ID: " . absint( $reservation_id ) . "\nSubmission token: " . $submission_token );
 		$created       = current_time( 'mysql' );
 
 		if ( $has_stall_order ) {
@@ -5293,6 +5398,10 @@ RV Lot: " . $rv_lot['name'] );
 			// default at link time; snapshot migration 001 seeds it). Displayed
 			// on the customer checkout below the agreement notice.
 			'cancellation_policy_override'    => '',
+			// 2.3.68 — Event Pre-Entries: stand-alone purchasable items (class /
+			// division pre-entries) with their own inventory + per-customer cap.
+			'event_pre_entries_enabled'       => 0,
+			'event_pre_entries'               => array(),
 		);
 
 		$defaults['rv_addons'] = array();
@@ -6433,6 +6542,60 @@ RV Lot: " . $rv_lot['name'] );
 			__( ' per %s', 'equine-event-manager' ),
 			$per_label
 		);
+	}
+
+	/**
+	 * Get the enabled Event Pre-Entry options keyed by their stored index.
+	 *
+	 * Pre-entries are stand-alone purchasable items (class / division
+	 * pre-entries) configured per reservation. Each carries a title, price,
+	 * total inventory, and a per-customer cap (0 = unlimited). Entries without
+	 * a title are skipped. Free pre-entries (price 0) are allowed.
+	 *
+	 * @param array $data Reservation setup data.
+	 * @return array<string, array<string, mixed>>
+	 */
+	private function get_enabled_pre_entry_options( array $data ): array {
+		if ( empty( $data['event_pre_entries_enabled'] ) ) {
+			return array();
+		}
+
+		$entries = isset( $data['event_pre_entries'] ) && is_array( $data['event_pre_entries'] ) ? $data['event_pre_entries'] : array();
+		$options = array();
+
+		foreach ( $entries as $index => $entry ) {
+			if ( ! is_array( $entry ) || empty( $entry['title'] ) ) {
+				continue;
+			}
+
+			$options[ (string) $index ] = array(
+				'title'            => sanitize_text_field( (string) $entry['title'] ),
+				'price'            => isset( $entry['price'] ) ? (string) $entry['price'] : '0.00',
+				'inventory'        => isset( $entry['inventory'] ) ? absint( $entry['inventory'] ) : 0,
+				'max_per_customer' => isset( $entry['max_per_customer'] ) && '' !== $entry['max_per_customer'] ? absint( $entry['max_per_customer'] ) : 0,
+			);
+		}
+
+		return $options;
+	}
+
+	/**
+	 * Get the Event Pre-Entry pricing matrix for the frontend totals JS.
+	 *
+	 * @param array $data Reservation setup data.
+	 * @return array<string, array<string, mixed>>
+	 */
+	private function get_pre_entry_pricing_matrix( array $data ): array {
+		$matrix = array();
+
+		foreach ( $this->get_enabled_pre_entry_options( $data ) as $key => $entry ) {
+			$matrix[ $key ] = array(
+				'title' => $entry['title'],
+				'price' => (float) $entry['price'],
+			);
+		}
+
+		return $matrix;
 	}
 
 	/**
@@ -8059,6 +8222,7 @@ RV Lot: " . $rv_lot['name'] );
 				var rvStayType = getFieldValue(form, 'rv_stay_type') === 'weekend' ? 'weekend' : 'nightly';
 				var rvAddonPricingMatrix = parseJsonAttribute(form.dataset.rvAddonPricing);
 				var generalAddonPricingMatrix = parseJsonAttribute(form.dataset.generalAddonPricing);
+				var preEntryPricingMatrix = parseJsonAttribute(form.dataset.preEntryPricing);
 				var rvLotPricingMatrix = parseJsonAttribute(form.dataset.rvLotPricing);
 				var stallRate = parseCurrency(form.dataset[stallStayType === 'weekend' ? 'stallWeekendRate' : 'stallNightlyRate']);
 				var selectedRvLot = getFieldValue(form, 'rv_lot');
@@ -8079,6 +8243,8 @@ RV Lot: " . $rv_lot['name'] );
 				var rvQty = getNumberFieldValue(form, 'rv_qty');
 				var rvAddonSubtotals = {};
 				var generalAddonSubtotals = {};
+				var preEntrySubtotals = {};
+				var preEntriesSubtotal = 0;
 				var groupGroundsFeeSubtotal = groupEnabled && groupGroundsFeeEnabled ? groupRiderCount * groupGroundsFeeAmount : 0;
 				var groupDepositSubtotal = groupEnabled && groupDepositEnabled ? groupRiderCount * groupDepositAmount : 0;
 				var groupSubtotal = groupGroundsFeeSubtotal + groupDepositSubtotal;
@@ -8109,7 +8275,15 @@ RV Lot: " . $rv_lot['name'] );
 					generalAddonsSubtotal += addonSubtotal;
 				});
 
-				subtotal = stallSubtotal + requiredShavingsSubtotal + rvSubtotal + generalAddonsSubtotal + groupSubtotal;
+				Object.keys(preEntryPricingMatrix || {}).forEach(function(entryKey) {
+					var entryQty = getNumberFieldValue(form, 'pre_entry_' + entryKey + '_qty');
+					var entrySubtotal = entryQty * parseCurrency(preEntryPricingMatrix[entryKey] ? preEntryPricingMatrix[entryKey].price : 0);
+
+					preEntrySubtotals[entryKey] = entrySubtotal;
+					preEntriesSubtotal += entrySubtotal;
+				});
+
+				subtotal = stallSubtotal + requiredShavingsSubtotal + rvSubtotal + generalAddonsSubtotal + preEntriesSubtotal + groupSubtotal;
 				fees = calculateReservationFee(subtotal, feeType, feeValue);
 				// Tax (SET-6 / C3.D.1). Rate is the effective rate (post-override) from PHP.
 				var taxRate = parseFloat(form.dataset.taxRate || '0') || 0;
@@ -8122,11 +8296,15 @@ RV Lot: " . $rv_lot['name'] );
 				setTotal(form, 'rv_subtotal', rvSubtotal);
 				setTotal(form, 'rv_section_subtotal', rvSubtotal);
 				setTotal(form, 'general_addons_subtotal', generalAddonsSubtotal);
+				setTotal(form, 'pre_entries_subtotal', preEntriesSubtotal);
 				setTotal(form, 'group_rider_grounds_fee_subtotal', groupGroundsFeeSubtotal);
 				setTotal(form, 'group_rider_deposit_subtotal', groupDepositSubtotal);
 				setTotal(form, 'group_subtotal', groupSubtotal);
 				Object.keys(generalAddonPricingMatrix || {}).forEach(function(addonKey) {
 					setTotal(form, 'general_addon_' + addonKey + '_subtotal', generalAddonSubtotals[addonKey] || 0);
+				});
+				Object.keys(preEntryPricingMatrix || {}).forEach(function(entryKey) {
+					setTotal(form, 'pre_entry_' + entryKey + '_subtotal', preEntrySubtotals[entryKey] || 0);
 				});
 				Object.keys(rvAddonPricingMatrix || {}).forEach(function(addonKey) {
 					setTotal(form, 'rv_addon_' + addonKey + '_subtotal', rvAddonSubtotals[addonKey] || 0);
@@ -8144,6 +8322,9 @@ RV Lot: " . $rv_lot['name'] );
 				toggleSummaryRow(form, 'group_rider_deposit_subtotal', groupDepositSubtotal > 0);
 				Object.keys(generalAddonPricingMatrix || {}).forEach(function(addonKey) {
 					toggleSummaryRow(form, 'general_addon_' + addonKey + '_subtotal', (generalAddonSubtotals[addonKey] || 0) > 0);
+				});
+				Object.keys(preEntryPricingMatrix || {}).forEach(function(entryKey) {
+					toggleSummaryRow(form, 'pre_entry_' + entryKey + '_subtotal', (preEntrySubtotals[entryKey] || 0) > 0);
 				});
 				Object.keys(rvAddonPricingMatrix || {}).forEach(function(addonKey) {
 					toggleSummaryRow(form, 'rv_addon_' + addonKey + '_subtotal', (rvAddonSubtotals[addonKey] || 0) > 0);
