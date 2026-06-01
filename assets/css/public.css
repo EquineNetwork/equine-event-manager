@@ -2903,17 +2903,19 @@
 	background: #ffffff;
 	box-shadow: var(--eem-app-shadow);
 }
-/* 2.3.67 — Complete Reservation button clipping fix. On the event page,
-   `.eem-event-page .eem-reservation-section` sets `padding:0` + `overflow:hidden`
-   (header-band model), which overrides the payment card's own padding — so the
-   button, a direct child, had no bottom card padding and was clipped flush at the
-   card's rounded edge. Spacing on the event page comes from margins, not card
-   padding: give the button a real bottom margin (matches the 20px bottom padding
-   the other sections' __body wrappers carry). Horizontal inset already comes from
-   the generic direct-child `margin: 0 22px` rule. */
+/* 2.3.69 — Complete Reservation button clipping fix (bulletproof). The event page
+   zeroes the section padding (`.eem-event-page .eem-reservation-section{padding:0}`)
+   and sets `overflow:hidden`, so the button (a direct child) sat at the content-box
+   bottom and was clipped at the card's rounded edge. A `margin-bottom` on the button
+   does NOT reliably create space here (margin behavior against the padding-0 +
+   overflow:hidden card), so restore an explicit bottom *padding* on the payment card
+   itself — padding never collapses. The doubled-class selector (0,3,0) cleanly beats
+   the `.eem-event-page .eem-reservation-section{padding:0}` rule (0,2,0). */
+.eem-event-page .eem-reservation-section.eem-reservation-section--payment {
+	padding-bottom: 22px;
+}
 .eem-event-page .eem-reservation-section--payment > .eem-reservation-submit {
 	margin-top: 18px;
-	margin-bottom: 20px;
 }
 /* 2.3.65 — billing/credit-card sub-cards ported to the mockup's .billing-sub-box
    spec exactly (#FAFBFE fill, #D9E2F2 hairline border, 8px radius, 16px pad). The
