@@ -3098,6 +3098,9 @@ class EEM_Events {
 		}
 
 		$producer_val = ! empty( $event_data['producer']['name'] ) ? (string) $event_data['producer']['name'] : '';
+		// 2.3.61 — Link the Location + Producer titles to their TEC archive pages.
+		$location_link = ! empty( $event_data['venue']['link'] ) ? (string) $event_data['venue']['link'] : '';
+		$producer_link = ! empty( $event_data['producer']['link'] ) ? (string) $event_data['producer']['link'] : '';
 		$producer_sub = trim(
 			implode(
 				' · ',
@@ -3151,7 +3154,13 @@ class EEM_Events {
 								<?php if ( '' !== $location_val ) : ?>
 									<div class="hero-meta-item">
 										<div class="hero-meta-label"><?php esc_html_e( 'Location', 'equine-event-manager' ); ?></div>
-										<div class="hero-meta-val"><?php echo esc_html( $location_val ); ?></div>
+										<div class="hero-meta-val"><?php
+											if ( '' !== $location_link ) {
+												printf( '<a class="hero-meta-link" href="%s">%s</a>', esc_url( $location_link ), esc_html( $location_val ) );
+											} else {
+												echo esc_html( $location_val );
+											}
+											?></div>
 										<?php if ( '' !== $location_sub ) : ?>
 											<div class="hero-meta-sub"><?php echo esc_html( $location_sub ); ?></div>
 										<?php endif; ?>
@@ -3160,7 +3169,13 @@ class EEM_Events {
 								<?php if ( '' !== $producer_val ) : ?>
 									<div class="hero-meta-item">
 										<div class="hero-meta-label"><?php esc_html_e( 'Producer', 'equine-event-manager' ); ?></div>
-										<div class="hero-meta-val"><?php echo esc_html( $producer_val ); ?></div>
+										<div class="hero-meta-val"><?php
+											if ( '' !== $producer_link ) {
+												printf( '<a class="hero-meta-link" href="%s">%s</a>', esc_url( $producer_link ), esc_html( $producer_val ) );
+											} else {
+												echo esc_html( $producer_val );
+											}
+											?></div>
 										<?php if ( '' !== $producer_sub ) : ?>
 											<div class="hero-meta-sub"><?php echo esc_html( $producer_sub ); ?></div>
 										<?php endif; ?>
@@ -3686,6 +3701,7 @@ class EEM_Events {
 				'address_display' => '',
 				'map_query'       => '',
 				'filter_url'      => '',
+				'link'            => '',
 			);
 		}
 
@@ -3714,6 +3730,8 @@ class EEM_Events {
 			'address_display' => implode( "\n", $lines ),
 			'map_query'       => implode( ', ', $lines ),
 			'filter_url'      => self::get_directory_url( self::DIRECTORY_LOCATION_ROUTE_BASE, $name ),
+			// 2.3.61 — TEC venue single page (its own archive of events at this venue).
+			'link'            => (string) get_permalink( $venue_id ),
 		);
 	}
 
@@ -3733,6 +3751,7 @@ class EEM_Events {
 				'phone'      => '',
 				'website'    => '',
 				'filter_url' => '',
+				'link'       => '',
 			);
 		}
 
@@ -3744,6 +3763,8 @@ class EEM_Events {
 			'phone'      => (string) get_post_meta( $organizer_id, '_OrganizerPhone', true ),
 			'website'    => (string) get_post_meta( $organizer_id, '_OrganizerWebsite', true ),
 			'filter_url' => self::get_directory_url( self::DIRECTORY_PRODUCER_ROUTE_BASE, $name ),
+			// 2.3.61 — TEC organizer single page (its own archive of events).
+			'link'       => (string) get_permalink( $organizer_id ),
 		);
 	}
 
