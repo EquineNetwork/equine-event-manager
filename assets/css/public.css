@@ -3550,6 +3550,128 @@
 	color: #1668F2;
 }
 
+/* 2.3.59 (C10.E) — Order Summary card → event_page.html parity: navy header
+   band, event name/dates, dashed divider, blue total, green info box, gradient
+   Reserve Now button, secured-checkout footer. The card chrome moves from
+   __sticky to .order-card so the navy header band sits flush to the edges. */
+.eem-event-page .eem-reservation-summary-card.order-card {
+	border: 1px solid #D9E2F2;
+	border-radius: 8px;
+	overflow: hidden;
+	background: #fff;
+}
+.eem-event-page .order-card .eem-reservation-summary-card__sticky {
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	box-shadow: none;
+	background: transparent;
+	display: block;
+}
+.eem-event-page .order-card-head {
+	background: #031B4E;
+	padding: 14px 18px;
+}
+.eem-event-page .order-card-head .eem-checkout-subsection-title {
+	color: #fff;
+	font-size: 14px;
+	margin: 0;
+}
+.eem-event-page .order-card-body {
+	padding: 16px 18px;
+}
+.eem-event-page .order-event-name {
+	font-size: 13px;
+	font-weight: 600;
+	color: #031B4E;
+	margin-bottom: 2px;
+}
+.eem-event-page .order-event-dates {
+	font-size: 12px;
+	color: #6B7A99;
+	margin-bottom: 12px;
+}
+.eem-event-page .order-card .eem-payment-summary {
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	overflow: visible;
+}
+.eem-event-page .order-card .eem-payment-summary-row {
+	padding: 8px 0;
+	border: 0;
+}
+.eem-event-page .order-divider {
+	border: none;
+	border-top: 1px dashed #D9E2F2;
+	margin: 10px 0;
+}
+.eem-event-page .order-total-row {
+	border-top: 2px solid #D9E2F2;
+	padding-top: 12px;
+	margin-top: 8px;
+	margin-bottom: 14px;
+	font-family: 'Space Grotesk', sans-serif;
+	font-size: 15px;
+	font-weight: 800;
+	color: #031B4E;
+}
+.eem-event-page .order-total-row strong {
+	color: #1668F2;
+	font-size: 15px;
+}
+.eem-event-page .order-info-box {
+	display: flex;
+	gap: 7px;
+	background: #EEF7F5;
+	border: 1px solid #b3e4da;
+	border-radius: 8px;
+	padding: 9px 12px;
+	font-size: 12px;
+	color: #0a5c4a;
+	line-height: 1.6;
+	margin-bottom: 12px;
+}
+.eem-event-page .order-info-box__icon {
+	flex-shrink: 0;
+	font-weight: 700;
+}
+.eem-event-page .order-reserve-btn {
+	display: block;
+	width: 100%;
+	box-sizing: border-box;
+	text-align: center;
+	background: linear-gradient(90deg, #1668F2, #26D0B5);
+	color: #fff;
+	border: 0;
+	padding: 12px;
+	border-radius: 8px;
+	font-size: 14px;
+	font-weight: 700;
+	cursor: pointer;
+	text-decoration: none;
+}
+.eem-event-page .order-reserve-btn:link,
+.eem-event-page .order-reserve-btn:visited,
+.eem-event-page .order-reserve-btn:hover,
+.eem-event-page .order-reserve-btn:focus {
+	color: #fff;
+	text-decoration: none;
+}
+.eem-event-page .order-reserve-btn:hover {
+	opacity: .95;
+}
+.eem-event-page .order-secure {
+	text-align: center;
+	font-size: 11px;
+	color: #8a9ab8;
+	margin-top: 9px;
+}
+/* Agreement notice now sits OUTSIDE the order card as its own box. */
+.eem-event-page .order-sidebar .agreement-notice {
+	margin-top: 14px;
+}
+
 /* Section toggle → mockup blue 44×24 pill (was green 58×34) */
 .eem-event-page .eem-reservation-section-toggle__track {
 	width: 44px;

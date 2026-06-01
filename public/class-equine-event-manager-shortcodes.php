@@ -829,7 +829,7 @@ class EEM_Shortcodes {
 
 					<div class="eem-reservation-section eem-reservation-section--special-requests">
 						<label>
-							<h4 class="eem-checkout-subsection-title eem-checkout-subsection-title--field"><?php esc_html_e( 'Special Requests', 'equine-event-manager' ); ?></h4>
+							<h4 class="eem-reservation-section__title"><?php esc_html_e( 'Special Requests', 'equine-event-manager' ); ?></h4>
 							<?php if ( $special_requests_description ) : ?>
 								<small class="eem-reservation-help"><?php echo esc_html( $special_requests_description ); ?></small>
 							<?php endif; ?>
@@ -837,7 +837,7 @@ class EEM_Shortcodes {
 						</label>
 					</div>
 
-					<div class="eem-reservation-section eem-reservation-section--payment">
+					<div class="eem-reservation-section eem-reservation-section--payment" id="eem-billing-payment">
 						<?php if ( $is_admin_invoice ) : ?>
 							<div class="eem-invoice-mode-card">
 								<div class="eem-invoice-mode-card__copy">
@@ -996,6 +996,13 @@ class EEM_Shortcodes {
 							</div>
 						</div>
 						<?php
+						// 2.3.59 — Order Summary header line: event dates + location
+						// (e.g. "May 7-9, 2026 · Perry, GA") per event_page.html.
+						$eem_os_location = isset( $event_card_details['location'] ) ? trim( (string) $event_card_details['location'] ) : '';
+						$eem_os_sub = trim( (string) $event_date_summary );
+						if ( '' !== $eem_os_location ) {
+							$eem_os_sub = '' !== $eem_os_sub ? $eem_os_sub . ' · ' . $eem_os_location : $eem_os_location;
+						}
 						echo $this->render_order_summary_sidebar(
 							$data,
 							$general_addon_options,
@@ -1003,7 +1010,9 @@ class EEM_Shortcodes {
 							$group_grounds_fee_enabled,
 							$group_deposit_enabled,
 							$venue_agreement_url,
-							$is_admin_invoice
+							$is_admin_invoice,
+							$event_label,
+							$eem_os_sub
 						);
 						?>
 					</div>
@@ -1027,14 +1036,23 @@ class EEM_Shortcodes {
 	 * @param bool   $is_admin_invoice           Whether this is the admin invoice experience.
 	 * @return string
 	 */
-	private function render_order_summary_sidebar( $data, $general_addon_options, $rv_addon_options, $group_grounds_fee_enabled, $group_deposit_enabled, $venue_agreement_url, $is_admin_invoice ) {
+	private function render_order_summary_sidebar( $data, $general_addon_options, $rv_addon_options, $group_grounds_fee_enabled, $group_deposit_enabled, $venue_agreement_url, $is_admin_invoice, $event_label = '', $event_summary_sub = '' ) {
 		ob_start();
 		?>
 		<aside class="eem-reservation-workspace__rail order-sidebar">
-			<div class="eem-reservation-summary-card">
+			<div class="eem-reservation-summary-card order-card">
 				<div class="eem-reservation-summary-card__sticky">
-					<h4 class="eem-checkout-subsection-title"><?php esc_html_e( 'Order Summary', 'equine-event-manager' ); ?></h4>
-					<div class="eem-payment-summary" aria-live="polite">
+					<div class="order-card-head">
+						<h4 class="eem-checkout-subsection-title"><?php esc_html_e( 'Order Summary', 'equine-event-manager' ); ?></h4>
+					</div>
+					<div class="order-card-body">
+						<?php if ( '' !== (string) $event_label ) : ?>
+							<div class="order-event-name"><?php echo esc_html( $event_label ); ?></div>
+							<?php if ( '' !== (string) $event_summary_sub ) : ?>
+								<div class="order-event-dates"><?php echo esc_html( $event_summary_sub ); ?></div>
+							<?php endif; ?>
+						<?php endif; ?>
+						<div class="eem-payment-summary" aria-live="polite">
 						<div class="eem-payment-summary-row" data-eem-summary-row="stall_subtotal" hidden>
 							<span><?php esc_html_e( 'Stall Subtotal', 'equine-event-manager' ); ?></span>
 							<strong data-eem-total="stall_subtotal">$0.00</strong>
@@ -1084,12 +1102,22 @@ class EEM_Shortcodes {
 							<span><?php echo esc_html( $eem_tax_settings['label'] ); ?></span>
 							<strong data-eem-total="tax">$0.00</strong>
 						</div>
-						<div class="eem-payment-summary-row eem-payment-summary-row--total">
+						<div class="order-divider" aria-hidden="true"></div>
+						<div class="eem-payment-summary-row eem-payment-summary-row--total order-total-row">
 							<span><?php esc_html_e( 'Total Amount Due', 'equine-event-manager' ); ?></span>
 							<strong data-eem-total="total">$0.00</strong>
 						</div>
-					</div>
-					<?php if ( ! $is_admin_invoice && ! empty( $data['venue_agreement_enabled'] ) && $venue_agreement_url ) : ?>
+					</div><!-- /.eem-payment-summary -->
+						<div class="order-info-box">
+							<span class="order-info-box__icon" aria-hidden="true">&#8505;</span>
+							<span><?php esc_html_e( 'Your reservation will be confirmed by email after checkout. Changes can be requested through your account.', 'equine-event-manager' ); ?></span>
+						</div>
+						<a class="order-reserve-btn" href="#eem-billing-payment"><?php esc_html_e( 'Reserve Now', 'equine-event-manager' ); ?></a>
+						<div class="order-secure">&#128274; <?php esc_html_e( 'Secured Checkout &middot; SSL Encrypted', 'equine-event-manager' ); ?></div>
+					</div><!-- /.order-card-body -->
+				</div><!-- /.__sticky -->
+			</div><!-- /.order-card -->
+			<?php if ( ! $is_admin_invoice && ! empty( $data['venue_agreement_enabled'] ) && $venue_agreement_url ) : ?>
 						<div class="eem-venue-agreement-card agreement-notice">
 							<p>
 								<?php esc_html_e( 'All transaction fees are non-refundable. Please be sure you have read the', 'equine-event-manager' ); ?>
@@ -1115,8 +1143,6 @@ class EEM_Shortcodes {
 							</p>
 						</div>
 					<?php endif; ?>
-				</div>
-			</div>
 		</aside>
 		<?php
 
