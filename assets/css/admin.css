@@ -7879,3 +7879,13 @@ tr:hover .eem-row-actions,
 	cursor: not-allowed;
 	pointer-events: none;
 }
+
+/* 2.3.65 — WP injects the dismiss "×" on .is-dismissible notices pinned to
+   top:0, which floats it above the vertical center on our single-line action
+   notices (e.g. "N reservations moved to Trash"). Center it within the notice
+   height. Scoped to .eem-action-notice so only EEM-rendered notices are
+   affected; specificity (0,3,1) cleanly beats WP core's .notice-dismiss (0,1,0). */
+.eem-action-notice.is-dismissible .notice-dismiss {
+	top: 50%;
+	transform: translateY(-50%);
+}

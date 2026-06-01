@@ -3058,6 +3058,32 @@ class EEM_Events {
 	}
 
 	/**
+	 * Format a US phone number for customer-facing display.
+	 *
+	 * Normalizes a 10-digit number to `XXX-XXX-XXXX` (and an 11-digit
+	 * `1`-prefixed number the same way, dropping the country code). Numbers that
+	 * don't match a recognized length are returned trimmed but otherwise
+	 * untouched, so international or extension-bearing values are never mangled.
+	 *
+	 * @param string $phone Raw phone string.
+	 * @return string Display-formatted phone.
+	 */
+	private static function format_us_phone_display( $phone ) {
+		$raw    = (string) $phone;
+		$digits = preg_replace( '/\D+/', '', $raw );
+
+		if ( 11 === strlen( $digits ) && '1' === $digits[0] ) {
+			$digits = substr( $digits, 1 );
+		}
+
+		if ( 10 === strlen( $digits ) ) {
+			return substr( $digits, 0, 3 ) . '-' . substr( $digits, 3, 3 ) . '-' . substr( $digits, 6 );
+		}
+
+		return trim( $raw );
+	}
+
+	/**
 	 * Render the shared spotlight markup for any normalized event source.
 	 *
 	 * @param array<string, mixed> $event_data Normalized event data.
@@ -3103,7 +3129,7 @@ class EEM_Events {
 				' · ',
 				array_filter(
 					array(
-						! empty( $event_data['producer']['phone'] ) ? (string) $event_data['producer']['phone'] : '',
+						! empty( $event_data['producer']['phone'] ) ? self::format_us_phone_display( $event_data['producer']['phone'] ) : '',
 						! empty( $event_data['producer']['email'] ) ? (string) $event_data['producer']['email'] : '',
 					)
 				)

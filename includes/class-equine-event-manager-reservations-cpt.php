@@ -953,6 +953,23 @@ class EEM_Reservations_CPT {
 		$old_tec_event_id = $this->get_tec_event_id_for_reservation( $post_id );
 		$new_tec_event_id = isset( $data['event_id'] ) ? absint( $data['event_id'] ) : 0;
 
+		// 2.3.65 — Gate-robustness guard. The editor's hidden `event_id` field is 0
+		// whenever the link gate is showing (including a transient reverse-lookup
+		// miss). Writing that 0 through would set `_en_event_id = 0` AND clear the
+		// event's reverse link, orphaning the reservation and locking the admin out
+		// of the editor with no way back in. Unlinking is an explicit action
+		// (ajax_unlink_event) — it must NEVER be a side effect of a normal save. So
+		// when the save submits no event but a link already exists, preserve it.
+		if ( 0 === $new_tec_event_id ) {
+			$existing_en_event_id = absint( get_post_meta( $post_id, '_en_event_id', true ) );
+			if ( $old_tec_event_id > 0 ) {
+				$new_tec_event_id  = $old_tec_event_id;
+				$data['event_id']  = $old_tec_event_id;
+			} elseif ( $existing_en_event_id > 0 ) {
+				$data['event_id']  = $existing_en_event_id;
+			}
+		}
+
 		foreach ( $data as $key => $value ) {
 			update_post_meta( $post_id, '_en_' . $key, $value );
 		}

@@ -1588,6 +1588,61 @@
 .eem-product-line-item--disabled .eem-checkbox-control input[type="checkbox"] {
 	cursor: not-allowed;
 }
+/* 2.3.65 — gated add-on +/- buttons stay clickable (to trigger the explainer
+   popup) but read as not-allowed. */
+.eem-product-line-item--general-addon.eem-product-line-item--disabled .eem-quantity-button {
+	cursor: not-allowed;
+}
+/* 2.3.65 — Add-on gate explainer popup (shown when a customer taps a locked
+   add-on's +/- before selecting a stall or RV spot). */
+.eem-addon-gate-popup {
+	position: fixed;
+	inset: 0;
+	z-index: 9999;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 20px;
+	background: rgba(3, 27, 78, .45);
+}
+.eem-addon-gate-popup__card {
+	width: 100%;
+	max-width: 380px;
+	background: #fff;
+	border-radius: 12px;
+	padding: 24px 24px 20px;
+	box-shadow: 0 18px 50px rgba(3, 27, 78, .28);
+	text-align: center;
+}
+.eem-addon-gate-popup__title {
+	font-family: 'Space Grotesk', sans-serif;
+	font-size: 17px;
+	font-weight: 700;
+	color: #031B4E;
+	margin-bottom: 8px;
+}
+.eem-addon-gate-popup__body {
+	font-size: 14px;
+	line-height: 1.6;
+	color: #4a5a7a;
+	margin: 0 0 18px;
+}
+.eem-addon-gate-popup__btn {
+	display: inline-block;
+	border: none;
+	cursor: pointer;
+	background: #1668F2;
+	color: #fff;
+	font-size: 14px;
+	font-weight: 700;
+	padding: 11px 26px;
+	border-radius: 8px;
+}
+.eem-addon-gate-popup__btn:hover,
+.eem-addon-gate-popup__btn:focus {
+	background: #0d52cc;
+	color: #fff;
+}
 .eem-reservation-grid--stay-controls {
 	grid-template-columns: 0.72fr 1fr 1fr 0.72fr;
 	align-items: end;
@@ -2806,8 +2861,9 @@
 	.eem-reservation-form-wrap {
 		/* 2.3.55 (C10.C) — center the checkout column and keep it off the
 		   viewport edges. Previously `padding: 0` with no auto margins, which
-		   left the form edge-to-edge and pinned to the left on wide screens. */
-		max-width: 1440px;
+		   left the form edge-to-edge and pinned to the left on wide screens.
+		   2.3.65 — max-width tightened 1440 → 1300 per product (hero + form). */
+		max-width: 1300px;
 		margin-left: auto;
 		margin-right: auto;
 		padding-left: 40px;
@@ -2900,15 +2956,31 @@
 	background: #ffffff;
 	box-shadow: var(--eem-app-shadow);
 }
+/* 2.3.65 — billing/credit-card sub-cards ported to the mockup's .billing-sub-box
+   spec exactly (#FAFBFE fill, #D9E2F2 hairline border, 8px radius, 16px pad). The
+   competing !important override lists below (final-polish layers) had this class
+   pair removed in the same change so this single rule is the source of truth. */
 .eem-reservation-section--payment .eem-payment-checkout-block,
 .eem-reservation-section--payment .eem-payment-card-field-wrap {
-	padding: 18px;
-	border: 1px solid #dbe4f0;
-	border-radius: var(--eem-app-card-radius);
-	background: #f8fbff;
+	padding: 16px;
+	border: 1px solid #D9E2F2;
+	border-radius: 8px;
+	background: #FAFBFE;
 }
 .eem-reservation-section--payment .eem-payment-card-field-wrap {
 	margin-top: 16px;
+}
+/* 2.3.65 — "Billing Details" / "Credit Card" sub-titles use the mockup's
+   .billing-sub-title eyebrow (11px uppercase, .1em tracking) instead of the
+   16px heading the general subsection-title rule applies. Scoped to the payment
+   section so Order Summary and other subsection titles keep their heading size. */
+.eem-event-page .eem-reservation-section--payment .eem-checkout-subsection-title {
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: .1em;
+	text-transform: uppercase;
+	color: #031B4E;
+	margin-bottom: 12px;
 }
 .eem-reservation-section--payment .eem-reservation-submit {
 	margin-top: 16px;
@@ -2955,8 +3027,7 @@
 .eem-payment-sidebar__inner,
 .eem-reservation-summary-card__sticky,
 .eem-reservation-summary-card .eem-payment-summary,
-.eem-reservation-section--payment .eem-payment-checkout-block,
-.eem-reservation-section--payment .eem-payment-card-field-wrap,
+/* 2.3.65 — payment sub-cards excluded; radius owned by the mockup-parity rule. */
 .eem-event-details-card__time-card,
 .eem-rv-lot-selector-row__details,
 .eem-stall-assignment-selector,
@@ -2971,9 +3042,9 @@
 .eem-group-rider-card,
 .eem-invoice-mode-card,
 .eem-payment-sidebar__inner,
-.eem-reservation-summary-card__sticky,
-.eem-reservation-section--payment .eem-payment-checkout-block,
-.eem-reservation-section--payment .eem-payment-card-field-wrap {
+.eem-reservation-summary-card__sticky {
+	/* 2.3.65 — payment sub-cards excluded here too; their border/fill is the
+	   mockup .billing-sub-box spec (#D9E2F2 / #FAFBFE), not the app surface tokens. */
 	border-color: var(--eem-app-border);
 	background: var(--eem-app-surface);
 	box-shadow: var(--eem-app-shadow-soft);
@@ -3024,8 +3095,7 @@
 .eem-group-rider-card,
 .eem-invoice-mode-card,
 .eem-payment-sidebar__inner,
-.eem-reservation-section--payment .eem-payment-checkout-block,
-.eem-reservation-section--payment .eem-payment-card-field-wrap,
+/* 2.3.65 — payment sub-cards excluded; radius owned by the mockup-parity rule. */
 .eem-event-details-card__time-card,
 .eem-rv-lot-selector-row__details,
 .eem-stall-assignment-selector,
@@ -3082,6 +3152,20 @@
 .eem-event-page *::before {
 	box-sizing: border-box;
 }
+/* 2.3.65 — brand font baseline. The Google Fonts (IBM Plex Sans + Space Grotesk)
+   are enqueued in render_frontend_styles(), but without a base family the page
+   inherited the theme's -apple-system stack. Body copy → IBM Plex Sans; form
+   controls need it set explicitly (they don't inherit font-family). Headings
+   keep their per-element Space Grotesk rules. */
+.eem-event-page {
+	font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+.eem-event-page input,
+.eem-event-page select,
+.eem-event-page textarea,
+.eem-event-page button {
+	font-family: inherit;
+}
 .eem-event-page .hero {
 	background: #fff;
 	overflow: hidden;
@@ -3091,9 +3175,10 @@
 	grid-template-columns: 420px 1fr;
 	min-height: 420px;
 	/* 2.3.58 — align the hero content with the checkout column below it so the
-	   hero never exceeds the form width (same 1440px max + 40px gutters). The
-	   .hero background stays full-bleed white; only the content is constrained. */
-	max-width: 1440px;
+	   hero never exceeds the form width (same max + 40px gutters). The .hero
+	   background stays full-bleed white; only the content is constrained.
+	   2.3.65 — max-width tightened 1440 → 1300 to match the form area. */
+	max-width: 1300px;
 	margin-left: auto;
 	margin-right: auto;
 	padding-left: 40px;
@@ -3104,7 +3189,11 @@
 	flex-shrink: 0;
 	display: flex;
 	align-items: flex-start;
-	padding: 28px 0 28px 28px;
+	/* 2.3.65 — zero padding (mockup parity) so the flyer's left edge aligns with
+	   the form column's left edge (both sit at the 40px hero-inner inset) and the
+	   image connects flush to the top of the hero, letting the vertical divider
+	   run straight up to the site header. */
+	padding: 0;
 }
 .eem-event-page .hero-img-col img {
 	width: 100%;
@@ -3255,7 +3344,7 @@
 	display: inline-block;
 }
 .eem-event-page .eem-event-body {
-	max-width: 1440px;
+	max-width: 1300px;
 	margin: 0 auto;
 	padding: 28px 40px 60px;
 }
@@ -3618,6 +3707,11 @@
 	margin: 10px 0;
 }
 .eem-event-page .order-total-row {
+	/* 2.3.65 — the total row also carries the legacy .eem-payment-summary-row--total
+	   class, which fills a gray (#f8fafc / --eem-app-surface-muted) box. The mockup
+	   total has no fill — just a divider + blue amount — so override to transparent.
+	   This (0,2,0) selector outranks the legacy (0,1,0) --total rules. */
+	background: transparent;
 	border-top: 2px solid #D9E2F2;
 	padding-top: 12px;
 	margin-top: 8px;
@@ -3771,7 +3865,10 @@
 .eem-event-page .eem-reservation-section--special-requests > label {
 	display: block;
 	margin: 0;
-	padding: 16px 22px 20px;
+	/* 2.3.65 — top padding 16 → 22 per Whitney's DevTools-confirmed value.
+	   Scoped to the --special-requests direct-child label so Contact Information
+	   field labels are unaffected. */
+	padding: 22px 22px 20px;
 }
 .eem-event-page .eem-reservation-section--special-requests .eem-reservation-section__title {
 	display: block;

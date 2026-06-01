@@ -550,7 +550,7 @@ img{display:block;max-width:100%}
           <div class="stall-selection-summary">
             <div class="stall-selection-summary-top">
               <div class="stall-selection-count"><strong>2</strong> of 2 stalls selected</div>
-              <div class="stall-selection-list">Your stalls: <strong>124, 125</strong></div>
+              <div class="stall-selection-list">Your stalls: <strong>#124, #125</strong></div>
             </div>
             <div class="stall-selection-warn">You've selected the maximum. Tap a selected stall to deselect, or use the +/− buttons above to reserve more.</div>
           </div>
@@ -811,7 +811,7 @@ img{display:block;max-width:100%}
     const warnEl  = document.querySelector('.stall-selection-warn');
     if(countEl) countEl.innerHTML = `<strong>${selected.length}</strong> of ${max} stalls selected`;
     if(listEl)  listEl.innerHTML = selected.length
-      ? `Your stalls: <strong>${selected.map(el => el.textContent).join(', ')}</strong>`
+      ? `Your stalls: <strong>${selected.map(el => '#' + el.textContent).join(', ')}</strong>`
       : `<em style="color:#8c8f94">Tap stalls below to pick them, or leave blank for auto-assignment.</em>`;
     if(warnEl) warnEl.classList.toggle('show', selected.length >= max && max > 0);
   }

@@ -196,7 +196,7 @@ class EEM_Reservations_List_Page {
 		}
 		$m = $messages[ $code ];
 		printf(
-			'<div class="notice notice-%1$s is-dismissible" style="margin-bottom:12px;"><p>%2$s</p></div>',
+			'<div class="notice notice-%1$s is-dismissible eem-action-notice" style="margin-bottom:12px;"><p>%2$s</p></div>',
 			esc_attr( $m['type'] ),
 			esc_html( $m['text'] )
 		);
@@ -1285,8 +1285,9 @@ class EEM_Reservations_List_Page {
 		<?php else : ?>
 			<span><a href="<?php echo esc_url( $edit_url ); ?>"><?php esc_html_e( 'Edit', 'equine-event-manager' ); ?></a></span>
 			<span class="eem-row-action-sep" aria-hidden="true">|</span>
-			<span><a href="#" data-eem-action="reservation-quick-edit" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>"><?php esc_html_e( 'Quick Edit', 'equine-event-manager' ); ?></a></span>
-			<span class="eem-row-action-sep" aria-hidden="true">|</span>
+			<?php // 2.3.65 — Quick Edit removed: reservation Name + Slug now always inherit
+			// the linked event name (no admin override), so the inline name/slug editor
+			// has nothing left to edit. Editing the name is no longer possible by design. ?>
 			<span><a href="#" data-eem-action="reservation-duplicate-ajax" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>"><?php esc_html_e( 'Duplicate', 'equine-event-manager' ); ?></a></span>
 			<span class="eem-row-action-sep" aria-hidden="true">|</span>
 			<span class="eem-row-action-danger"><a href="#" data-eem-action="reservation-trash" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>"><?php esc_html_e( 'Trash', 'equine-event-manager' ); ?></a></span>

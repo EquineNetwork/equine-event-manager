@@ -7136,6 +7136,14 @@ RV Lot: " . $rv_lot['name'] );
 					return;
 				}
 
+				// 2.3.65 — a gated general add-on keeps its +/- buttons clickable so
+				// this click lands; instead of changing the quantity, explain why the
+				// add-on is locked and bail.
+				if (button.closest('.eem-product-line-item--general-addon.eem-product-line-item--disabled')) {
+					showAddonGateNotice();
+					return;
+				}
+
 				nextValue = parseInt(input.value || '0', 10) + parseInt(button.getAttribute('data-eem-quantity-step') || '0', 10);
 				nextValue = Math.max(0, nextValue);
 
@@ -7913,9 +7921,40 @@ RV Lot: " . $rv_lot['name'] );
 						}
 					}
 
+					// 2.3.65 — keep the +/- buttons clickable even when gated so a
+					// click can surface the "pick a stall/RV first" popup; a disabled
+					// <button> fires no click event at all. The greyed/disabled look
+					// comes from the line-item opacity (.eem-product-line-item--disabled).
 					buttons.forEach(function(button) {
-						button.disabled = !isEnabled;
+						button.disabled = false;
+						button.setAttribute('aria-disabled', isEnabled ? 'false' : 'true');
 					});
+				});
+			}
+
+			// 2.3.65 — popup shown when a customer tries to change a gated add-on.
+			// Add-ons unlock only after a stall or RV spot is selected (a base
+			// reservation to attach extras to); this explains why they're disabled.
+			function showAddonGateNotice() {
+				var existing = document.querySelector('.eem-addon-gate-popup');
+				if (existing) { existing.parentNode.removeChild(existing); }
+				var overlay = document.createElement('div');
+				overlay.className = 'eem-addon-gate-popup';
+				overlay.innerHTML =
+					'<div class="eem-addon-gate-popup__card" role="alertdialog" aria-modal="true" aria-labelledby="eem-addon-gate-title">' +
+						'<div class="eem-addon-gate-popup__title" id="eem-addon-gate-title"><?php echo esc_js( __( 'Add-ons are locked', 'equine-event-manager' ) ); ?></div>' +
+						'<p class="eem-addon-gate-popup__body"><?php echo esc_js( __( 'Select at least one stall or RV spot first. Add-ons become available once your reservation has a stall or RV spot to attach them to.', 'equine-event-manager' ) ); ?></p>' +
+						'<button type="button" class="eem-addon-gate-popup__btn"><?php echo esc_js( __( 'Got it', 'equine-event-manager' ) ); ?></button>' +
+					'</div>';
+				document.body.appendChild(overlay);
+				var close = function() {
+					if (overlay.parentNode) { overlay.parentNode.removeChild(overlay); }
+				};
+				overlay.addEventListener('click', function(e) { if (e.target === overlay) { close(); } });
+				var btn = overlay.querySelector('.eem-addon-gate-popup__btn');
+				if (btn) { btn.addEventListener('click', close); btn.focus(); }
+				document.addEventListener('keydown', function onEsc(e) {
+					if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onEsc); }
 				});
 			}
 
