@@ -3,9 +3,9 @@
 en-event-manager-*.zip
 equine-event-manager-*.zip
 
-# Composer (C6.5.B) — manifest + lock committed, deps not.
-# Run `composer install` to populate vendor/ from composer.lock.
-vendor/
+# Composer — runtime deps ARE committed (C11) so the plugin is self-contained
+# and deployable without a build step. `composer install --no-dev` regenerates
+# vendor/ from composer.lock. Dev tooling (phpcs) is excluded via --no-dev.
 composer.phar
 
 # phpcs cache (C6.5.B) — populated by `composer run lint`.

@@ -38,6 +38,14 @@ if ( class_exists( 'EEM_Plugin' ) || class_exists( 'EEM_Activator' ) ) {
 	return;
 }
 
+// Composer autoloader — provides Pelago\Emogrifier (CSS inlining for the
+// transactional email templates, per CLAUDE.md "Email CSS inlining at
+// send-time"). Guarded so the plugin still boots if vendor/ is absent; the
+// mailer degrades to sending un-inlined HTML in that case.
+if ( is_readable( EQUINE_EVENT_MANAGER_PATH . 'vendor/autoload.php' ) ) {
+	require_once EQUINE_EVENT_MANAGER_PATH . 'vendor/autoload.php';
+}
+
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-activator.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager.php';
 
