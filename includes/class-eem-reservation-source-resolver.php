@@ -84,6 +84,25 @@ class EEM_Reservation_Source_Resolver {
 
 		$payload = EEM_Events::get_normalized_reservation_event_data( $id );
 
+		// 2.3.80 — Draft fallback. get_normalized_reservation_event_data() is
+		// publish-gated (returns [] for any non-published reservation), but the
+		// editor needs the linked-event title/dates for DRAFT reservations too —
+		// otherwise a freshly-created draft never inherits its event name. Resolve
+		// directly from the linked event (event-level data, no reservation-status
+		// gate) when the reservation-level lookup comes back empty. This reads the
+		// EVENT's public data, not draft reservation data, so it leaks nothing.
+		if ( ( ! is_array( $payload ) || empty( $payload ) ) && function_exists( 'get_post_meta' ) ) {
+			$source   = (string) get_post_meta( $id, '_en_event_source', true );
+			$event_id = absint( get_post_meta( $id, '_en_event_id', true ) );
+
+			if ( $event_id > 0 && in_array( $source, array( 'native', 'tec', '' ), true ) ) {
+				$fallback = EEM_Events::get_normalized_event_data( $event_id );
+				if ( is_array( $fallback ) && ! empty( $fallback ) ) {
+					$payload = $fallback;
+				}
+			}
+		}
+
 		if ( ! is_array( $payload ) || empty( $payload ) ) {
 			return self::empty_fields();
 		}
