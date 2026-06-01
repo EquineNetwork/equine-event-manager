@@ -2208,3 +2208,19 @@ C11 bootstrap autoloader; verified rendering a valid `%PDF` stream in the WP run
 PDF generation → attach to confirmation email (re-enables C11's PDF note) + Order Detail
 download; (4) hosted order page (`template_redirect` + `order_key` query var, re-enables
 C11's hosted link); (5) smokes.
+
+**Increment 1 — DONE (2.3.87):** Added `tax` + `tax_rate` columns to both
+`en_stall_reservations` + `en_rv_reservations` (dbDelta via version-bump upgrade;
+verified columns present on the live DB). Checkout writes the order-level tax ONCE
+(on the stall row if present, else the RV row — no double-count) plus `tax_rate` on
+every row; per-row `total` stays `subtotal + fee` (untouched, so refund/component
+logic is unaffected). The grouping (`get_orders` / `get_order_by_submission_token`)
+sums `tax`, takes the max `tax_rate`, and adds tax into the grouped `total` so the
+order reflects the charged amount (this also corrects the C11 email "Total Paid").
+Verified: `tests/smoke/c12-tax-persistence-smoke.php` (7/7) — grouped total =
+$208.66 incl. $14.10 tax @ 7.5%, matching the receipt mockup grand total.
+**Known follow-up (NOT this chunk, payment-adjacent):** refunds operate on per-row
+`total` (subtotal+fee) and therefore do not refund the tax portion — a pre-existing
+gap unchanged by this work; revisit when refund-of-tax behavior is specified.
+**Live-checkout verification still pending** for the WRITE path (the read/grouping
+path is smoke-covered).

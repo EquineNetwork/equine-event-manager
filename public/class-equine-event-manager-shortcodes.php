@@ -3211,6 +3211,14 @@ class EEM_Shortcodes {
 					'unit_price'                => $stall_unit_price,
 					'subtotal'                  => $stall_subtotal,
 					'convenience_fee'           => $stall_fee,
+					// C12: persist the order-level tax once (on the stall row when a
+					// stall order exists; otherwise on the RV row below) so the
+					// receipt/hosted page can render the Sales Tax line and the
+					// grouped order total reflects what was actually charged. Tax
+					// lives in its own column — row `total` stays subtotal+fee so the
+					// existing refund/component logic is untouched.
+					'tax'                       => (float) $totals['tax'],
+					'tax_rate'                  => (float) $totals['tax_rate'],
 					'total'                     => $stall_subtotal + $stall_fee,
 					'payment_status'            => $payment_status,
 					'payment_gateway'           => $payment_gateway,
@@ -3266,6 +3274,10 @@ RV Lot: " . $rv_lot['name'] );
 					'unit_price'        => $rv_unit_price,
 					'subtotal'          => $rv_subtotal,
 					'convenience_fee'   => $rv_fee,
+					// C12: carry the full order tax here only when there is no stall
+					// row to hold it (avoids double-counting); rate stored on both.
+					'tax'               => $has_stall_order ? 0.0 : (float) $totals['tax'],
+					'tax_rate'          => (float) $totals['tax_rate'],
 					'total'             => $rv_subtotal + $rv_fee,
 					'payment_status'    => $payment_status,
 					'payment_gateway'   => $payment_gateway,

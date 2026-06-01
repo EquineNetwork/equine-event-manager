@@ -680,7 +680,12 @@ class EEM_Orders_Repository {
 			$order_map[ $group_key ]['additional_shavings_qty'] += absint( $row['additional_shavings_qty'] );
 			$order_map[ $group_key ]['stall_subtotal']          += (float) $row['subtotal'];
 			$order_map[ $group_key ]['fees']                    += (float) $row['convenience_fee'];
-			$order_map[ $group_key ]['total']                   += (float) $row['total'];
+			// C12: tax is persisted in its own column (full order tax on one row).
+			// Add it to the grouped total so the order reflects the charged amount,
+			// and expose tax/tax_rate for the receipt's Sales Tax line.
+			$order_map[ $group_key ]['tax']                     += isset( $row['tax'] ) ? (float) $row['tax'] : 0.0;
+			$order_map[ $group_key ]['tax_rate']                = max( (float) $order_map[ $group_key ]['tax_rate'], isset( $row['tax_rate'] ) ? (float) $row['tax_rate'] : 0.0 );
+			$order_map[ $group_key ]['total']                   += (float) $row['total'] + ( isset( $row['tax'] ) ? (float) $row['tax'] : 0.0 );
 			$order_map[ $group_key ]['arrival_date']            = $row['arrival_date'];
 			$order_map[ $group_key ]['departure_date']          = $row['departure_date'];
 			$order_map[ $group_key ]['stay_type']               = $row['stay_type'];
@@ -711,7 +716,10 @@ class EEM_Orders_Repository {
 			$order_map[ $group_key ]['rv_quantity']       += absint( $row['rv_qty'] );
 			$order_map[ $group_key ]['rv_subtotal']       += (float) $row['subtotal'];
 			$order_map[ $group_key ]['fees']              += (float) $row['convenience_fee'];
-			$order_map[ $group_key ]['total']             += (float) $row['total'];
+			// C12: see stall loop — same tax aggregation (one row carries the tax).
+			$order_map[ $group_key ]['tax']               += isset( $row['tax'] ) ? (float) $row['tax'] : 0.0;
+			$order_map[ $group_key ]['tax_rate']          = max( (float) $order_map[ $group_key ]['tax_rate'], isset( $row['tax_rate'] ) ? (float) $row['tax_rate'] : 0.0 );
+			$order_map[ $group_key ]['total']             += (float) $row['total'] + ( isset( $row['tax'] ) ? (float) $row['tax'] : 0.0 );
 			$order_map[ $group_key ]['arrival_date']       = $row['arrival_date'];
 			$order_map[ $group_key ]['departure_date']     = $row['departure_date'];
 			$order_map[ $group_key ]['stay_type']          = $row['stay_type'];
@@ -1237,6 +1245,8 @@ class EEM_Orders_Repository {
 			'stall_subtotal'          => 0.0,
 			'rv_subtotal'             => 0.0,
 			'fees'                    => 0.0,
+			'tax'                     => 0.0,
+			'tax_rate'                => 0.0,
 			'total'                   => 0.0,
 			'payment_status'          => isset( $row['payment_status'] ) ? $row['payment_status'] : 'pending',
 			'created_at'              => isset( $row['created_at'] ) ? $row['created_at'] : '',
