@@ -198,7 +198,16 @@ class EEM_Reservation_Editor_Page {
 		$_cpt_obj             = new EEM_Reservations_CPT();
 		$current_tec_event_id = $_cpt_obj->get_tec_event_id_for_reservation( $reservation_id );
 		$_search_nonce        = wp_create_nonce( 'equine_event_manager_search_tec_events' );
-		$_rename_nonce        = wp_create_nonce( 'eem_rename_reservation' );
+
+		// 2.3.56 — Hard gate: a reservation must be linked to an event before its
+		// configuration form can be filled out. "Linked" is the presence of an
+		// event reference, which is exactly what the editor writes on save:
+		//   - native / TEC sources  -> `_en_event_id`
+		//   - feed / external source -> `_en_external_event_id`
+		//   - belt-and-braces: a TEC event reverse-lookup hit.
+		$has_linked_event = ( absint( get_post_meta( $reservation_id, '_en_event_id', true ) ) > 0 )
+			|| ( '' !== trim( (string) get_post_meta( $reservation_id, '_en_external_event_id', true ) ) )
+			|| ( $current_tec_event_id > 0 );
 		?>
 		<div class="eem-page">
 			<?php
@@ -217,36 +226,12 @@ class EEM_Reservation_Editor_Page {
 				     Rail Linked Event card retired; typeahead moves to the plugin header. -->
 				<header class="eem-plugin-header">
 					<div class="eem-plugin-header-left">
-						<!-- FIX 1 (2.3.43) — Pencil-inline-edit replaces the Reservation Details card.
-						     Pencil click → h1 view hides, inline edit reveals.
-						     Save → AJAX ajax_rename(); Cancel → restore view. -->
+						<!-- 2.3.56 — Reservation name is read-only; it ALWAYS inherits the
+						     linked event title. The pencil inline-edit was removed — admins
+						     can no longer rename a reservation. -->
 						<div class="eem-res-name-edit-wrap">
 							<div class="eem-res-name-view" id="eem-res-name-view">
 								<h1 class="eem-plugin-title" id="eem-header-event-name"><?php echo esc_html( $source_event_title ); ?></h1>
-								<button type="button"
-									class="eem-pencil-btn"
-									data-eem-action="res-name-edit"
-									data-reservation-id="<?php echo esc_attr( (string) $reservation_id ); ?>"
-									aria-label="<?php esc_attr_e( 'Edit reservation name', 'equine-event-manager' ); ?>">
-									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-								</button>
-							</div>
-							<div class="eem-res-name-inline-edit" id="eem-res-name-inline-edit" style="display:none;"
-								data-reservation-id="<?php echo esc_attr( (string) $reservation_id ); ?>"
-								data-rename-nonce="<?php echo esc_attr( $_rename_nonce ); ?>">
-								<input type="text"
-									class="eem-res-name-inline-input"
-									id="eem-res-name-inline-input"
-									value="<?php echo esc_attr( $source_event_title ); ?>"
-									aria-label="<?php esc_attr_e( 'Reservation name', 'equine-event-manager' ); ?>">
-								<button type="button" class="eem-btn eem-btn-primary eem-btn-sm"
-									data-eem-action="res-name-save">
-									<?php esc_html_e( 'Save', 'equine-event-manager' ); ?>
-								</button>
-								<button type="button" class="eem-btn eem-btn-ghost eem-btn-sm"
-									data-eem-action="res-name-cancel">
-									<?php esc_html_e( 'Cancel', 'equine-event-manager' ); ?>
-								</button>
 							</div>
 						</div>
 						<div class="eem-plugin-header-meta" id="eem-header-meta"><?php
@@ -256,13 +241,14 @@ class EEM_Reservation_Editor_Page {
 								echo ' &nbsp;&middot;&nbsp; ' . esc_html( $event_dates );
 							}
 						?></div>
-						<!-- Inline typeahead — shown when Change Event clicked. FIX 1: live AJAX. -->
+						<!-- Inline typeahead — shown when Change Event clicked, OR always
+						     open when no event is linked yet (the hard-gate picker). -->
 						<input type="hidden"
 							id="eem-linked-event-id-input"
 							name="en_reservation[event_id]"
 							value="<?php echo esc_attr( (string) $current_tec_event_id ); ?>">
 						<div class="eem-header-typeahead" id="eem-header-typeahead"
-							style="display:none;"
+							style="<?php echo $has_linked_event ? 'display:none;' : ''; ?>"
 							data-current-event-id="<?php echo esc_attr( (string) $current_tec_event_id ); ?>"
 							data-ajax-url="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>"
 							data-search-nonce="<?php echo esc_attr( $_search_nonce ); ?>">
@@ -278,17 +264,38 @@ class EEM_Reservation_Editor_Page {
 							</button>
 						</div>
 					</div>
-					<button type="button"
-						class="eem-header-action-change"
-						id="eem-header-action-change"
-						data-eem-action="header-change-event">
-						<?php esc_html_e( 'Change Event', 'equine-event-manager' ); ?>
-					</button>
+					<?php if ( $has_linked_event ) : ?>
+						<button type="button"
+							class="eem-header-action-change"
+							id="eem-header-action-change"
+							data-eem-action="header-change-event">
+							<?php esc_html_e( 'Change Event', 'equine-event-manager' ); ?>
+						</button>
+					<?php endif; ?>
 				</header>
 				<div class="eem-edit-body">
-					<main class="eem-edit-main eem-reservation-editor-body" data-eem-reservation-id="<?php echo esc_attr( (string) $reservation_id ); ?>">
-						<?php self::render_section_skeletons( $reservation_id ); ?>
-					</main>
+					<?php if ( $has_linked_event ) : ?>
+						<main class="eem-edit-main eem-reservation-editor-body" data-eem-reservation-id="<?php echo esc_attr( (string) $reservation_id ); ?>">
+							<?php self::render_section_skeletons( $reservation_id ); ?>
+						</main>
+					<?php else : ?>
+						<?php
+						// 2.3.56 — Hard gate. No linked event yet: show only the link
+						// prompt. The event picker is already open in the header above;
+						// once an event is chosen and saved, the page reloads with the
+						// full configuration form. The reservation name + dates are then
+						// inherited from the linked event.
+						?>
+						<div class="eem-reservation-link-gate" role="status">
+							<div class="eem-reservation-link-gate__icon" aria-hidden="true">
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+							</div>
+							<h2 class="eem-reservation-link-gate__title"><?php esc_html_e( 'Link an event to get started', 'equine-event-manager' ); ?></h2>
+							<p class="eem-reservation-link-gate__text">
+								<?php esc_html_e( 'Search for the event in the box above, choose it, then click Save. The reservation takes its name and dates from the linked event, so it must be linked before you can configure stalls, RV spaces, add-ons, and pricing.', 'equine-event-manager' ); ?>
+							</p>
+						</div>
+					<?php endif; ?>
 				</div>
 			</div>
 		</div>

@@ -78,9 +78,16 @@ update_post_meta( $rid, '_en_stalls_enabled',            0 );
 update_post_meta( $rid, '_en_checkin_checkout_enabled', 1 );
 update_post_meta( $rid, '_en_event_day_enabled',        1 );
 
+// 2.3.56 — link a throwaway TEC event so the editor renders the configuration
+// form. The hard gate shows only the event picker until a reservation is linked.
+$eid = wp_insert_post( array( 'post_type' => 'tribe_events', 'post_status' => 'publish', 'post_title' => 'C7.X.9 Toggle Event' ) );
+update_post_meta( $eid, '_equine_event_manager_reservation_id', $rid );
+update_post_meta( $rid, '_en_event_id', $eid );
+
 $_GET['reservation_id'] = $rid;
 ob_start(); EEM_Reservation_Editor_Page::render(); $html = (string) ob_get_clean();
 $_GET = array();
+wp_delete_post( $eid, true );
 
 c7x9_ok( 'stall section renders eem-section-disabled-note (skeleton emits unconditionally)', false !== strpos( $html, 'data-eem-section-disabled-note="stall"' ), $pass, $fail, $log );
 // Verify the body containing the note has --disabled when section is off.

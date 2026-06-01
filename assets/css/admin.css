@@ -6212,6 +6212,38 @@ input.eem-pct-input:focus {
    fixed .eem-sticky-save bar (mockup line 67: padding:18px 22px 90px). */
 .eem-edit-body { padding: 18px 22px 90px; background: #fff; }
 .eem-edit-main { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+
+/* 2.3.56 — Hard-gate panel shown when a reservation has no linked event yet.
+   The event picker lives in the header above; this panel is the body prompt. */
+.eem-reservation-link-gate {
+	max-width: 520px;
+	margin: 40px auto;
+	padding: 32px 28px;
+	text-align: center;
+	border: 1px dashed var(--eem-border, #d9e2f2);
+	border-radius: var(--eem-radius-lg, 12px);
+	background: var(--eem-surface-2, #f7f9fc);
+}
+.eem-reservation-link-gate__icon {
+	width: 40px;
+	height: 40px;
+	margin: 0 auto 14px;
+	color: var(--eem-electric, #1668f2);
+}
+.eem-reservation-link-gate__icon svg { width: 100%; height: 100%; }
+.eem-reservation-link-gate__title {
+	margin: 0 0 8px;
+	font-family: 'Space Grotesk', sans-serif;
+	font-size: 18px;
+	font-weight: 700;
+	color: var(--eem-navy, #031b4e);
+}
+.eem-reservation-link-gate__text {
+	margin: 0;
+	font-size: 14px;
+	line-height: 1.6;
+	color: var(--eem-text-muted, #6b7a99);
+}
 /* .eem-edit-rail CSS retained for possible reuse — no longer rendered
    on Edit Reservation page as of C8 port. */
 .eem-edit-rail { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 44px; }

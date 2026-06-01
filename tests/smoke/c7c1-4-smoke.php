@@ -98,6 +98,13 @@ update_post_meta( $reservation_id, '_en_convenience_fee_value',    3.5 );
 update_post_meta( $reservation_id, '_en_stall_schedule_enabled',   0 );
 update_post_meta( $reservation_id, '_en_rv_schedule_enabled',      0 );
 
+// 2.3.56 — link a TEC event so the editor renders the configuration form. The
+// hard gate (get_tec_event_id_for_reservation reverse-lookup) is source-agnostic,
+// so this satisfies it even though the fixture's source meta is 'native'.
+$eem_c7c14_event = wp_insert_post( array( 'post_type' => 'tribe_events', 'post_status' => 'publish', 'post_title' => 'C7.C.1.4 Smoke Event' ) );
+update_post_meta( $eem_c7c14_event, '_equine_event_manager_reservation_id', $reservation_id );
+update_post_meta( $reservation_id, '_en_event_id', $eem_c7c14_event );
+
 $_GET = array( 'page' => 'equine-event-manager-reservation-editor', 'reservation_id' => $reservation_id );
 ob_start();
 EEM_Reservation_Editor_Page::render();
@@ -415,6 +422,7 @@ foreach ( array(
 
 // Cleanup
 wp_delete_post( $reservation_id, true );
+wp_delete_post( $eem_c7c14_event, true );
 
 echo implode( "\n", $log ) . "\n=== RESULT: {$pass} passed, {$fail} failed ===\n";
 exit( $fail > 0 ? 1 : 0 );

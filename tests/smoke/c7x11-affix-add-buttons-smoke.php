@@ -67,9 +67,16 @@ update_post_meta( $rid, '_en_general_addons', array(
 	array( 'name' => 'Feed Bag', 'price' => 25.00, 'per_label' => 'bag', 'applies_to' => 'any' ),
 ) );
 
+// 2.3.56 — link a throwaway TEC event so the editor renders the configuration
+// form. The hard gate shows only the event picker until a reservation is linked.
+$eid = wp_insert_post( array( 'post_type' => 'tribe_events', 'post_status' => 'publish', 'post_title' => 'C7.X.11 AddBtn Event' ) );
+update_post_meta( $eid, '_equine_event_manager_reservation_id', $rid );
+update_post_meta( $rid, '_en_event_id', $eid );
+
 $_GET['reservation_id'] = $rid;
 ob_start(); EEM_Reservation_Editor_Page::render(); $html = (string) ob_get_clean();
 $_GET = array();
+wp_delete_post( $eid, true );
 
 // ── [1] Five-class exclusion count assertion ────────────────────
 // C7.X.11 update: the structural enumeration smoke at [2] surfaced
