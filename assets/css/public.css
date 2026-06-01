@@ -3768,6 +3768,35 @@
 	text-decoration: none;
 }
 
+/* 2.3.62 — Cancellation policy box in the checkout sidebar (below agreement). */
+.eem-event-page .eem-cancellation-policy {
+	margin-top: 14px;
+	padding: 14px 16px;
+	border: 1px solid #D9E2F2;
+	border-radius: 8px;
+	background: #fff;
+}
+.eem-event-page .eem-cancellation-policy__title {
+	font-family: 'Space Grotesk', sans-serif;
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: .08em;
+	text-transform: uppercase;
+	color: #031B4E;
+	margin-bottom: 6px;
+}
+.eem-event-page .eem-cancellation-policy__body {
+	font-size: 12.5px;
+	line-height: 1.6;
+	color: #6B7A99;
+}
+.eem-event-page .eem-cancellation-policy__body p {
+	margin: 0 0 8px;
+}
+.eem-event-page .eem-cancellation-policy__body p:last-child {
+	margin-bottom: 0;
+}
+
 /* Section toggle → mockup blue 44×24 pill (was green 58×34) */
 .eem-event-page .eem-reservation-section-toggle__track {
 	width: 44px;

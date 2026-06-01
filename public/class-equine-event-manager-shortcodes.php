@@ -1143,6 +1143,17 @@ class EEM_Shortcodes {
 							</p>
 						</div>
 					<?php endif; ?>
+					<?php
+					// 2.3.62 — Cancellation policy (per-reservation, inherits the event
+					// default). Shown on the customer checkout beneath the agreement.
+					$eem_cancellation = isset( $data['cancellation_policy_override'] ) ? trim( (string) $data['cancellation_policy_override'] ) : '';
+					if ( ! $is_admin_invoice && '' !== $eem_cancellation ) :
+						?>
+						<div class="eem-cancellation-policy">
+							<div class="eem-cancellation-policy__title"><?php esc_html_e( 'Cancellation Policy', 'equine-event-manager' ); ?></div>
+							<div class="eem-cancellation-policy__body"><?php echo wp_kses_post( wpautop( esc_html( $eem_cancellation ) ) ); ?></div>
+						</div>
+					<?php endif; ?>
 		</aside>
 		<?php
 
@@ -5283,6 +5294,10 @@ RV Lot: " . $rv_lot['name'] );
 			'convenience_fee_enabled'         => 0,
 			'convenience_fee_type'            => 'none',
 			'convenience_fee_value'           => '0.00',
+			// 2.3.62 — per-reservation cancellation policy (inherits the event
+			// default at link time; snapshot migration 001 seeds it). Displayed
+			// on the customer checkout below the agreement notice.
+			'cancellation_policy_override'    => '',
 		);
 
 		$defaults['rv_addons'] = array();
