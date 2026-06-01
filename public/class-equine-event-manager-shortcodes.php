@@ -348,22 +348,7 @@ class EEM_Shortcodes {
 								<?php endif; ?>
 							</div>
 						<?php endif; ?>
-						<?php if ( $checkin_time || $checkout_time ) : ?>
-							<div class="eem-event-details-card__times">
-								<?php if ( $checkin_time ) : ?>
-									<div class="eem-event-details-card__time-card">
-										<span class="eem-event-details-card__time-label"><?php esc_html_e( 'Check-In', 'equine-event-manager' ); ?></span>
-										<strong class="eem-event-details-card__time-value"><?php echo esc_html( $checkin_time ); ?></strong>
-									</div>
-								<?php endif; ?>
-								<?php if ( $checkout_time ) : ?>
-									<div class="eem-event-details-card__time-card">
-										<span class="eem-event-details-card__time-label"><?php esc_html_e( 'Check-Out', 'equine-event-manager' ); ?></span>
-										<strong class="eem-event-details-card__time-value"><?php echo esc_html( $checkout_time ); ?></strong>
-									</div>
-								<?php endif; ?>
-							</div>
-						<?php endif; ?>
+						<?php // 2.3.70 — check-in/check-out pills moved to the Stay Details section. ?>
 						<?php if ( $show_venue_map ) : ?>
 							<div class="eem-event-details-card__map-link">
 								<a href="<?php echo esc_url( $venue_map_download_url ); ?>" target="_blank" rel="noopener noreferrer">
@@ -472,6 +457,49 @@ class EEM_Shortcodes {
 							<?php endif; ?>
 						<?php if ( $nightly_date_summary ) : ?>
 							<p class="eem-reservation-help"><?php echo esc_html( $nightly_date_summary ); ?></p>
+						<?php endif; ?>
+						<?php
+						// 2.3.70 — Check-in / check-out time pills (mockup screenshot): icon +
+						// uppercase label + "after 10:00am" / "by 4:00pm". Lives in Stay Details.
+						$eem_time_lc = static function ( $t ) {
+							return str_replace( array( ' AM', ' PM' ), array( 'am', 'pm' ), (string) $t );
+						};
+						?>
+						<?php if ( $checkin_time || $checkout_time ) : ?>
+							<div class="eem-event-details-card__times">
+								<?php if ( $checkin_time ) : ?>
+									<div class="eem-event-details-card__time-card eem-event-details-card__time-card--checkin">
+										<span class="eem-event-details-card__time-icon" aria-hidden="true">
+											<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
+										</span>
+										<span class="eem-event-details-card__time-meta">
+											<span class="eem-event-details-card__time-label"><?php esc_html_e( 'Check-In', 'equine-event-manager' ); ?></span>
+											<strong class="eem-event-details-card__time-value">
+												<?php
+												/* translators: %s: check-in time, e.g. 10:00am */
+												printf( esc_html__( 'after %s', 'equine-event-manager' ), esc_html( $eem_time_lc( $checkin_time ) ) );
+												?>
+											</strong>
+										</span>
+									</div>
+								<?php endif; ?>
+								<?php if ( $checkout_time ) : ?>
+									<div class="eem-event-details-card__time-card eem-event-details-card__time-card--checkout">
+										<span class="eem-event-details-card__time-icon" aria-hidden="true">
+											<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+										</span>
+										<span class="eem-event-details-card__time-meta">
+											<span class="eem-event-details-card__time-label"><?php esc_html_e( 'Check-Out', 'equine-event-manager' ); ?></span>
+											<strong class="eem-event-details-card__time-value">
+												<?php
+												/* translators: %s: check-out time, e.g. 4:00pm */
+												printf( esc_html__( 'by %s', 'equine-event-manager' ), esc_html( $eem_time_lc( $checkout_time ) ) );
+												?>
+											</strong>
+										</span>
+									</div>
+								<?php endif; ?>
+							</div>
 						<?php endif; ?>
 					</div>
 				<?php endif; ?>

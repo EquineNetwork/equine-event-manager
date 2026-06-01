@@ -35,16 +35,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_partial-field-row.php';
 
-// Format datetime values for the datetime-local input (YYYY-MM-DDTHH:MM)
-$fmt_dt = function ( $value ) {
-	if ( '' === (string) $value ) return '';
-	// If already in datetime-local format, pass through
-	if ( preg_match( '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/', (string) $value ) ) {
-		return substr( (string) $value, 0, 16 );
+// 2.3.70 — Check-in / check-out are time-of-day only. Format any stored value
+// (bare HH:MM, or a legacy datetime) to the 24-hour H:i an <input type="time">
+// expects.
+$fmt_time = function ( $value ) {
+	$value = (string) $value;
+	if ( '' === $value ) {
+		return '';
 	}
-	// Try parsing common formats
-	$ts = strtotime( (string) $value );
-	return false === $ts ? '' : gmdate( 'Y-m-d\TH:i', $ts );
+	if ( preg_match( '/^([01]?\d|2[0-3]):([0-5]\d)$/', $value, $m ) ) {
+		return sprintf( '%02d:%02d', (int) $m[1], (int) $m[2] );
+	}
+	$ts = strtotime( $value );
+	return false === $ts ? '' : gmdate( 'H:i', $ts );
 };
 ?>
 <input type="hidden" name="en_reservation[checkin_checkout_enabled]" data-eem-section-enabled="checkin" value="<?php echo ! empty( $data['checkin_checkout_enabled'] ) ? '1' : '0'; ?>" />
@@ -52,14 +55,14 @@ $fmt_dt = function ( $value ) {
 eem_render_editor_field_row( array(
 	'label'        => __( 'Check-In Time', 'equine-event-manager' ),
 	'control_html' => sprintf(
-		'<input class="eem-field-input" name="en_reservation[checkin_time]" id="en_checkin_time" type="datetime-local" style="max-width:260px" value="%s" />',
-		esc_attr( $fmt_dt( $data['checkin_time'] ) )
+		'<input class="eem-field-input" name="en_reservation[checkin_time]" id="en_checkin_time" type="time" style="max-width:180px" value="%s" />',
+		esc_attr( $fmt_time( $data['checkin_time'] ) )
 	),
 ) );
 eem_render_editor_field_row( array(
 	'label'        => __( 'Check-Out Time', 'equine-event-manager' ),
 	'control_html' => sprintf(
-		'<input class="eem-field-input" name="en_reservation[checkout_time]" id="en_checkout_time" type="datetime-local" style="max-width:260px" value="%s" />',
-		esc_attr( $fmt_dt( $data['checkout_time'] ) )
+		'<input class="eem-field-input" name="en_reservation[checkout_time]" id="en_checkout_time" type="time" style="max-width:180px" value="%s" />',
+		esc_attr( $fmt_time( $data['checkout_time'] ) )
 	),
 ) );

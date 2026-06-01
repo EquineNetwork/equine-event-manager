@@ -1656,8 +1656,9 @@ class EEM_Reservations_CPT {
 			'checkin_checkout_enabled'        => ( isset( $source['checkin_checkout_enabled'] ) && '1' === (string) $source['checkin_checkout_enabled'] ) ? 1 : 0,
 			'checkin_time_enabled'            => isset( $source['checkin_time_enabled'] ) ? 1 : 0,
 			'checkout_time_enabled'           => isset( $source['checkout_time_enabled'] ) ? 1 : 0,
-			'checkin_time'                    => $this->sanitize_datetime_value( isset( $source['checkin_time'] ) ? $source['checkin_time'] : '' ),
-			'checkout_time'                   => $this->sanitize_datetime_value( isset( $source['checkout_time'] ) ? $source['checkout_time'] : '' ),
+			// 2.3.70 — check-in / check-out are time-of-day only (no date).
+			'checkin_time'                    => $this->sanitize_time_value( isset( $source['checkin_time'] ) ? $source['checkin_time'] : '' ),
+			'checkout_time'                   => $this->sanitize_time_value( isset( $source['checkout_time'] ) ? $source['checkout_time'] : '' ),
 			'venue_map_enabled'              => isset( $source['venue_map_enabled'] ) ? 1 : 0,
 			'venue_map_download_url'          => isset( $source['venue_map_download_url'] ) ? esc_url_raw( wp_unslash( $source['venue_map_download_url'] ) ) : '',
 			'venue_map_image_id'              => isset( $source['venue_map_image_id'] ) ? absint( $source['venue_map_image_id'] ) : 0,
@@ -3407,6 +3408,34 @@ class EEM_Reservations_CPT {
 		}
 
 		return date( 'Y-m-d H:i:s', $timestamp );
+	}
+
+	/**
+	 * Sanitize a time-of-day value to a clean 24-hour `H:i` string.
+	 *
+	 * Accepts a bare `HH:MM` (the value an `<input type="time">` submits) or any
+	 * parseable time/datetime string, and stores only the time component — the
+	 * date is irrelevant for check-in / check-out times. Empty / unparseable
+	 * input returns an empty string.
+	 *
+	 * @param string $value Raw value.
+	 * @return string `H:i` (e.g. "11:00") or ''.
+	 */
+	private function sanitize_time_value( $value ): string {
+		$value = sanitize_text_field( (string) $value );
+
+		if ( '' === $value ) {
+			return '';
+		}
+
+		// Bare HH:MM (24-hour) from <input type="time">.
+		if ( preg_match( '/^([01]?\d|2[0-3]):([0-5]\d)$/', $value, $m ) ) {
+			return sprintf( '%02d:%02d', (int) $m[1], (int) $m[2] );
+		}
+
+		$timestamp = strtotime( $value );
+
+		return false === $timestamp ? '' : date( 'H:i', $timestamp );
 	}
 
 	/**
