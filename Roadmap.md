@@ -179,8 +179,12 @@ These are admin-side mockup ports that can be done AFTER C10 customer flow works
 - **Key finding:** tax is computed at checkout but never persisted — row totals exclude
   it, so the stored order total understates the charged amount when tax is on.
   Persisting tax fixes that AND corrects the C11 email total.
-- **Remaining increments:** (1) tax persistence (schema + checkout write + grouping
-  aggregation — payment-adjacent, verify with a live checkout); (2) receipt template +
+- **Increment 1 ✅ (2.3.87):** tax persistence — `tax` + `tax_rate` columns on both
+  order tables (verified on live DB); checkout writes order tax once (no double-count);
+  grouping sums tax + adds it to the order total (also fixes the C11 email total).
+  Smoke 7/7. Refund-of-tax flagged as a separate follow-up (payment-adjacent). Live
+  checkout write-path verification still pending.
+- **Remaining increments:** (1 — done above) ~~tax persistence~~; (2) receipt template +
   builder (reuses C11 data map + Customer/Billing + Reservation Summary cards + tax
   line); (3) PDF generation → attach to confirmation email (re-enables C11's PDF note)
   + downloadable from Order Detail; (4) hosted order page via `template_redirect` +
