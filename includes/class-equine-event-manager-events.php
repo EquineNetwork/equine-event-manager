@@ -3098,9 +3098,6 @@ class EEM_Events {
 		}
 
 		$producer_val = ! empty( $event_data['producer']['name'] ) ? (string) $event_data['producer']['name'] : '';
-		// 2.3.61 — Link the Location + Producer titles to their TEC archive pages.
-		$location_link = ! empty( $event_data['venue']['link'] ) ? (string) $event_data['venue']['link'] : '';
-		$producer_link = ! empty( $event_data['producer']['link'] ) ? (string) $event_data['producer']['link'] : '';
 		$producer_sub = trim(
 			implode(
 				' · ',
@@ -3154,13 +3151,7 @@ class EEM_Events {
 								<?php if ( '' !== $location_val ) : ?>
 									<div class="hero-meta-item">
 										<div class="hero-meta-label"><?php esc_html_e( 'Location', 'equine-event-manager' ); ?></div>
-										<div class="hero-meta-val"><?php
-											if ( '' !== $location_link ) {
-												printf( '<a class="hero-meta-link" href="%s">%s</a>', esc_url( $location_link ), esc_html( $location_val ) );
-											} else {
-												echo esc_html( $location_val );
-											}
-											?></div>
+										<div class="hero-meta-val"><?php echo esc_html( $location_val ); ?></div>
 										<?php if ( '' !== $location_sub ) : ?>
 											<div class="hero-meta-sub"><?php echo esc_html( $location_sub ); ?></div>
 										<?php endif; ?>
@@ -3169,13 +3160,7 @@ class EEM_Events {
 								<?php if ( '' !== $producer_val ) : ?>
 									<div class="hero-meta-item">
 										<div class="hero-meta-label"><?php esc_html_e( 'Producer', 'equine-event-manager' ); ?></div>
-										<div class="hero-meta-val"><?php
-											if ( '' !== $producer_link ) {
-												printf( '<a class="hero-meta-link" href="%s">%s</a>', esc_url( $producer_link ), esc_html( $producer_val ) );
-											} else {
-												echo esc_html( $producer_val );
-											}
-											?></div>
+										<div class="hero-meta-val"><?php echo esc_html( $producer_val ); ?></div>
 										<?php if ( '' !== $producer_sub ) : ?>
 											<div class="hero-meta-sub"><?php echo esc_html( $producer_sub ); ?></div>
 										<?php endif; ?>

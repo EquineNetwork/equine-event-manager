@@ -3754,18 +3754,17 @@
 	color: #4a5a7a;
 }
 
-/* 2.3.61 — Hero Location + Producer titles link to their TEC archive pages.
-   Electric Blue, no underline (plugin hover convention is color-only). */
-.eem-event-page .hero-meta-link,
-.eem-event-page .hero-meta-link:link,
-.eem-event-page .hero-meta-link:visited {
-	color: #1668F2;
-	text-decoration: none;
+/* 2.3.63 — Special Requests title sits inside a <label> wrapper, so it misses
+   the header-band padding that direct-child titles get. Pad the label itself
+   so the title isn't flush to the card's top/left border. */
+.eem-event-page .eem-reservation-section--special-requests > label {
+	display: block;
+	margin: 0;
+	padding: 16px 22px 20px;
 }
-.eem-event-page .hero-meta-link:hover,
-.eem-event-page .hero-meta-link:focus {
-	color: #0d52cc;
-	text-decoration: none;
+.eem-event-page .eem-reservation-section--special-requests .eem-reservation-section__title {
+	display: block;
+	margin-bottom: 10px;
 }
 
 /* 2.3.62 — Cancellation policy box in the checkout sidebar (below agreement). */
