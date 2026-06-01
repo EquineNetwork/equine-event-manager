@@ -89,7 +89,6 @@ echo "\n[2] Hero contents: tags / title / dates / bullets / meta-grid / CTAs\n";
 $bits = array(
 	'hero-tags'      => 'hero-tags',
 	'tag-featured'   => 'tag-featured',
-	'tag-prod'       => 'tag-prod',
 	'hero-title'     => 'hero-title',
 	'hero-dates'     => 'hero-dates',
 	'hero-bullets'   => 'hero-bullets',
@@ -109,8 +108,9 @@ fix2349_ok( 'date range formatted (May 7, 2026 – May 9, 2026)',
 	$pass, $fail, $log );
 fix2349_ok( 'bullets derived from content list items',
 	false !== strpos( $linked_html, 'Early Bird Stall Pricing' ), $pass, $fail, $log );
-fix2349_ok( 'producer category surfaced as .tag-prod text',
-	false !== strpos( $linked_html, 'RSNC Production Events' ), $pass, $fail, $log );
+// 2.3.58 — producer/category badge removed from the hero per product decision.
+fix2349_ok( 'producer/category .tag-prod badge NOT rendered (2.3.58)',
+	false === strpos( $linked_html, 'tag-prod' ), $pass, $fail, $log );
 fix2349_ok( 'directions URL uses maps.google.com/?q=',
 	false !== strpos( $linked_html, 'https://maps.google.com/?q=' ), $pass, $fail, $log );
 fix2349_ok( 'reserve CTA anchors #reservation-form',

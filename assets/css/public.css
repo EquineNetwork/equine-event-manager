@@ -3090,6 +3090,14 @@
 	display: grid;
 	grid-template-columns: 420px 1fr;
 	min-height: 420px;
+	/* 2.3.58 — align the hero content with the checkout column below it so the
+	   hero never exceeds the form width (same 1440px max + 40px gutters). The
+	   .hero background stays full-bleed white; only the content is constrained. */
+	max-width: 1440px;
+	margin-left: auto;
+	margin-right: auto;
+	padding-left: 40px;
+	padding-right: 40px;
 }
 .eem-event-page .hero-img-col {
 	overflow: hidden;
@@ -3359,6 +3367,41 @@
 	background: #FFFBEB;
 	border: 1px solid #fbbf24;
 	border-radius: 8px;
+}
+/* 2.3.58 — the Venue Agreement link must be Electric Blue (mockup line 273),
+   not the host theme's default link color. Scoped to win over theme <a> rules. */
+.eem-event-page .agreement-notice a,
+.eem-event-page .agreement-notice a:link,
+.eem-event-page .agreement-notice a:visited {
+	color: #1668F2;
+	font-weight: 600;
+	text-decoration: underline;
+}
+.eem-event-page .agreement-notice a:hover,
+.eem-event-page .agreement-notice a:focus {
+	color: #0d52cc;
+}
+
+/* 2.3.58 — Phone field double-border fix. The flag+input affix wraps the input
+   in .eem-phone-field (which carries the single mockup border); the inner input
+   must be borderless. The unscoped `border:0` was being overridden by the host
+   theme's input rules, producing a second inner border. Scope + element-type
+   target so it wins. */
+.eem-event-page .eem-phone-field {
+	border: 1.5px solid #D9E2F2;
+	border-radius: 8px;
+	padding: 0 13px;
+	min-height: 44px;
+	background: #fff;
+}
+.eem-event-page .eem-phone-field input,
+.eem-event-page .eem-phone-field input[type="tel"] {
+	border: 0;
+	box-shadow: none;
+	background: transparent;
+	min-height: auto;
+	padding-left: 0;
+	padding-right: 0;
 }
 
 /* ════════════════════════════════════════════════════════════════════

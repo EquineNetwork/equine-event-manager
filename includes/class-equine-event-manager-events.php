@@ -3126,14 +3126,12 @@ class EEM_Events {
 						<?php endif; ?>
 					</div>
 					<div class="hero-info-col">
-						<div class="hero-tags">
-							<?php if ( ! empty( $event_data['featured'] ) ) : ?>
+						<?php // 2.3.58 — Producer/category badge removed per product decision. ?>
+						<?php if ( ! empty( $event_data['featured'] ) ) : ?>
+							<div class="hero-tags">
 								<span class="tag tag-featured"><?php esc_html_e( 'Featured Event', 'equine-event-manager' ); ?></span>
-							<?php endif; ?>
-							<?php if ( '' !== $producer_tag ) : ?>
-								<span class="tag tag-prod"><?php echo esc_html( $producer_tag ); ?></span>
-							<?php endif; ?>
-						</div>
+							</div>
+						<?php endif; ?>
 
 						<h1 class="hero-title"><?php echo esc_html( $event_data['title'] ); ?></h1>
 						<?php if ( $date_label ) : ?>
