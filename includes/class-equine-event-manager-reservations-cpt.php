@@ -1683,7 +1683,11 @@ class EEM_Reservations_CPT {
 			// schema (Option L1 pattern); customer-facing consumers wire
 			// in C16 cascade per CLEANUP entry.
 			'group_description'               => isset( $source['group_description'] ) ? sanitize_textarea_field( $source['group_description'] ) : '',
-			'group_riders_per_group'          => isset( $source['group_riders_per_group'] ) ? max( 1, absint( $source['group_riders_per_group'] ) ) : 6,
+			// 2.3.82: blank = unlimited. An empty (or zero) submission stores ''
+			// so downstream consumers treat the group size as uncapped.
+			'group_riders_per_group'          => ( isset( $source['group_riders_per_group'] ) && '' !== trim( (string) $source['group_riders_per_group'] ) && absint( $source['group_riders_per_group'] ) > 0 )
+				? absint( $source['group_riders_per_group'] )
+				: '',
 			'group_rider_grounds_fee_enabled' => isset( $source['group_rider_grounds_fee_enabled'] ) ? 1 : 0,
 			'group_rider_grounds_fee_amount'  => isset( $source['group_rider_grounds_fee_amount'] ) ? $this->sanitize_money_value( $source['group_rider_grounds_fee_amount'] ) : '0.00',
 			'group_rider_deposit_enabled'     => isset( $source['group_rider_deposit_enabled'] ) ? 1 : 0,
@@ -2083,7 +2087,7 @@ class EEM_Reservations_CPT {
 			'group_reservations_enabled'      => 0,
 			// C7.C.1.4.A Decision N1 — NEW meta key defaults.
 			'group_description'               => '',
-			'group_riders_per_group'          => 6,
+			'group_riders_per_group'          => '', // 2.3.82: blank = unlimited.
 			'group_rider_grounds_fee_enabled' => 0,
 			'group_rider_grounds_fee_amount'  => '0.00',
 			'group_rider_deposit_enabled'     => 0,

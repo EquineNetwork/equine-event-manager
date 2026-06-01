@@ -61,13 +61,14 @@ eem_render_editor_field_row( array(
 	),
 ) );
 
-// 3.5 Riders Per Group (NEW meta key)
+// 3.5 Riders Per Group (NEW meta key). 2.3.82: defaults to blank = unlimited.
 eem_render_editor_field_row( array(
 	'label'        => __( 'Riders Per Group', 'equine-event-manager' ),
-	'label_sub'    => __( 'Maximum riders one customer can register', 'equine-event-manager' ),
+	'label_sub'    => __( 'Maximum riders one customer can register. Blank = unlimited.', 'equine-event-manager' ),
 	'control_html' => sprintf(
-		'<input class="eem-field-input" name="en_reservation[group_riders_per_group]" id="en_group_riders_per_group" type="number" min="1" step="1" style="max-width:120px" value="%s" />',
-		esc_attr( (string) ( $data['group_riders_per_group'] ?? '6' ) )
+		'<input class="eem-field-input" name="en_reservation[group_riders_per_group]" id="en_group_riders_per_group" type="number" min="1" step="1" style="max-width:120px" value="%s" placeholder="%s" />',
+		esc_attr( (string) ( $data['group_riders_per_group'] ?? '' ) ),
+		esc_attr__( 'Unlimited', 'equine-event-manager' )
 	),
 ) );
 

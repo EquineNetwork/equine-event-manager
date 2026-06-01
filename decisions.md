@@ -2061,3 +2061,23 @@ New shared helper: `EEM_Reservations_CPT::get_active_linked_reservation_id_for_e
 $event_id, $exclude_reservation_id )` — single source of truth for "is this event
 taken?", used by both guards. "Active" = reverse-linked reservation exists and is
 not trashed/deleted. (2.3.81)
+
+### C10-13. New reservations start completely blank — no seeded sample rows
+**Decided:** 2026-06-01
+
+The section partials rendered demo/sample rows when their meta was empty (Pre-Entries:
+Friday Reining / Saturday Cutting; Stall Row Builder: Red Barn Row A/B + Yellow Barn;
+RV: Red/Blue Lot + RV Row A/B). On first save those seeds persisted, so every new
+reservation arrived pre-filled with content the admin never entered. All four
+fallbacks now resolve to empty arrays — a new reservation form is blank and admins
+add their own rows. (2.3.82, partials: `_section-event-pre-entries.php`,
+`_section-stall.php`, `_section-rv.php`.)
+
+### C10-14. Riders Per Group defaults to blank = unlimited
+**Decided:** 2026-06-01
+
+`group_riders_per_group` previously defaulted to 6. It now defaults to blank, meaning
+unlimited riders per group. Field shows an "Unlimited" placeholder; an empty/zero
+submission stores `''`. The publish-gate that required Riders Per Group ≥ 1 when Group
+Reservations is enabled was removed (the field's own `min="1"` still prevents a
+nonsensical 0 when a value IS entered). (2.3.82)

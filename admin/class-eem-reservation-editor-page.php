@@ -535,13 +535,9 @@ class EEM_Reservation_Editor_Page {
 			}
 		}
 
-		// Group Reservations
-		if ( ! empty( $c['group_reservations_enabled'] ) ) {
-			$riders = isset( $c['group_riders_per_group'] ) ? (int) $c['group_riders_per_group'] : 0;
-			if ( $riders < 1 ) {
-				$err['group'] = __( 'Group Reservations is enabled but Riders Per Group must be at least 1.', 'equine-event-manager' );
-			}
-		}
+		// Group Reservations — Riders Per Group is optional (blank = unlimited,
+		// 2.3.82). No minimum-count gate; the field's own min="1" stops a
+		// nonsensical 0 when a value IS entered.
 
 		// Convenience Fee
 		if ( ! empty( $c['convenience_fee_enabled'] ) ) {

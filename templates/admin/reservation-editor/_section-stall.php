@@ -336,14 +336,12 @@ eem_render_editor_field_row( array(
 // Load meta from $data (pre-populated by get_meta_values()) or fall back to 3 seeded rows.
 // NOTE: use $data, NOT a direct post-meta call with get_the_ID() — on custom admin pages
 // (admin.php?page=...) the global $post is not set by WordPress, so that function returns 0.
+// 2.3.82: seed rows removed — a new reservation starts with an empty Stall Row
+// Builder. Admins add their own rows.
 $stall_rows_meta = isset( $data['stall_rows'] ) ? $data['stall_rows'] : array();
 $stall_rows      = ( is_array( $stall_rows_meta ) && ! empty( $stall_rows_meta ) )
 	? $stall_rows_meta
-	: array(
-		array( 'name' => 'Red Barn Row A',    'layout' => 'one-sided',    'first' => '100', 'last' => '111', 'top_first' => '', 'top_last' => '', 'bot_first' => '', 'bot_last' => '' ),
-		array( 'name' => 'Red Barn Row B',    'layout' => 'back-to-back', 'first' => '',    'last' => '',    'top_first' => '112', 'top_last' => '123', 'bot_first' => '124', 'bot_last' => '135' ),
-		array( 'name' => 'Yellow Barn Row A', 'layout' => 'one-sided',    'first' => 'Y1',  'last' => 'Y12', 'top_first' => '', 'top_last' => '', 'bot_first' => '', 'bot_last' => '' ),
-	);
+	: array();
 
 $blocked_stalls_meta = isset( $data['blocked_stalls'] ) ? $data['blocked_stalls'] : array();
 $blocked_stalls      = is_array( $blocked_stalls_meta ) ? $blocked_stalls_meta : array();

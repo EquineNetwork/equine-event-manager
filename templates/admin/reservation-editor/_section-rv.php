@@ -286,21 +286,17 @@ eem_render_editor_field_row( array(
 // Load meta from $data (pre-populated by get_meta_values()) or fall back to seeded zones / rows.
 // NOTE: use $data, NOT a direct post-meta call with get_the_ID() — on custom admin pages
 // (admin.php?page=...) the global $post is not set by WordPress, so that function returns 0.
+// 2.3.82: seed zones/rows removed — a new reservation starts with empty RV lot
+// pricing + an empty RV Row Builder. Admins add their own.
 $rv_zones_meta = isset( $data['rv_zones'] ) ? $data['rv_zones'] : array();
 $rv_zones      = ( is_array( $rv_zones_meta ) && ! empty( $rv_zones_meta ) )
 	? $rv_zones_meta
-	: array(
-		array( 'name' => 'Red Lot',  'nightly' => '35.00', 'weekend' => '90.00' ),
-		array( 'name' => 'Blue Lot', 'nightly' => '25.00', 'weekend' => '65.00' ),
-	);
+	: array();
 
 $rv_rows_meta = isset( $data['rv_rows'] ) ? $data['rv_rows'] : array();
 $rv_rows      = ( is_array( $rv_rows_meta ) && ! empty( $rv_rows_meta ) )
 	? $rv_rows_meta
-	: array(
-		array( 'name' => 'RV Row A', 'layout' => 'one-sided',    'first' => '1',  'last' => '12', 'top_first' => '', 'top_last' => '', 'bot_first' => '', 'bot_last' => '' ),
-		array( 'name' => 'RV Row B', 'layout' => 'back-to-back', 'first' => '',   'last' => '',   'top_first' => '13', 'top_last' => '18', 'bot_first' => '19', 'bot_last' => '24' ),
-	);
+	: array();
 
 $blocked_rv_lots_meta = isset( $data['blocked_rv_lots'] ) ? $data['blocked_rv_lots'] : array();
 $blocked_rv_lots      = is_array( $blocked_rv_lots_meta ) ? $blocked_rv_lots_meta : array();

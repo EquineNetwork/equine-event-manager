@@ -24,17 +24,16 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_pa
 
 $fmt_money = function ( $v ) { return number_format( (float) $v, 2, '.', '' ); };
 
-// Load meta or fall back to 2 seeded rows.
+// Read saved meta only. New reservations render a blank table (no seeded sample
+// rows) — admins add their own pre-entries. (2.3.82: seed rows removed so a new
+// reservation form starts completely empty.)
 // NOTE: use $data, NOT a direct get_post_meta() call with get_the_ID() — this template
 // runs on a custom admin page where the global $post is not set, so get_the_ID()
 // returns 0. All section templates must read from $data (pre-loaded by get_meta_values()).
 $pre_entries_meta = isset( $data['event_pre_entries'] ) ? $data['event_pre_entries'] : array();
 $pre_entries      = ( is_array( $pre_entries_meta ) && ! empty( $pre_entries_meta ) )
 	? $pre_entries_meta
-	: array(
-		array( 'title' => 'Friday Reining Class',   'inventory' => '30', 'price' => '75.00', 'max_per_customer' => '' ),
-		array( 'title' => 'Saturday Cutting Class',  'inventory' => '25', 'price' => '95.00', 'max_per_customer' => '' ),
-	);
+	: array();
 ?>
 <input type="hidden" name="eem_event_pre_entries_enabled" data-eem-section-enabled="event_pre_entries" value="<?php echo ! empty( $data['event_pre_entries_enabled'] ) ? '1' : '0'; ?>" />
 
