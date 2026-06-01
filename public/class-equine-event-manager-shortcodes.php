@@ -456,7 +456,7 @@ class EEM_Shortcodes {
 								<p class="eem-reservation-help"><?php echo esc_html( $reservation_description ); ?></p>
 							<?php endif; ?>
 						<?php if ( $nightly_date_summary ) : ?>
-							<p class="eem-reservation-help"><?php echo esc_html( $nightly_date_summary ); ?></p>
+							<p class="eem-reservation-help eem-stay-dates-note"><?php echo esc_html( $nightly_date_summary ); ?></p>
 						<?php endif; ?>
 						<?php
 						// 2.3.70 — Check-in / check-out time pills (mockup screenshot): icon +
@@ -498,6 +498,34 @@ class EEM_Shortcodes {
 											</strong>
 										</span>
 									</div>
+								<?php endif; ?>
+							</div>
+						<?php endif; ?>
+						<?php
+						// 2.3.71 — Event Day Info (customer-facing). Each line omitted when
+						// blank; whole block hidden when the section is disabled. Display copy
+						// matches the editor "Appears as:" hints.
+						$eem_ed_checkin = ! empty( $data['event_day_enabled'] ) ? trim( (string) $data['event_day_checkin'] ) : '';
+						$eem_ed_bring   = ! empty( $data['event_day_enabled'] ) ? trim( (string) $data['event_day_bring'] ) : '';
+						$eem_ed_parking = ! empty( $data['event_day_enabled'] ) ? trim( (string) $data['event_day_parking'] ) : '';
+						$eem_ed_contact = ! empty( $data['event_day_enabled'] ) ? trim( (string) $data['event_day_contact'] ) : '';
+						?>
+						<?php if ( '' !== $eem_ed_checkin || '' !== $eem_ed_bring || '' !== $eem_ed_parking || '' !== $eem_ed_contact ) : ?>
+							<div class="eem-event-day-info">
+								<?php if ( '' !== $eem_ed_checkin ) : ?>
+									<p class="eem-event-day-info__line"><strong><?php esc_html_e( 'Check-in opens:', 'equine-event-manager' ); ?></strong> <?php echo esc_html( $eem_ed_checkin ); ?></p>
+								<?php endif; ?>
+								<?php if ( '' !== $eem_ed_bring ) : ?>
+									<p class="eem-event-day-info__line"><strong><?php esc_html_e( 'What to bring:', 'equine-event-manager' ); ?></strong> <?php echo nl2br( esc_html( $eem_ed_bring ) ); ?></p>
+								<?php endif; ?>
+								<?php if ( '' !== $eem_ed_parking ) : ?>
+									<p class="eem-event-day-info__line"><strong><?php esc_html_e( 'Parking:', 'equine-event-manager' ); ?></strong> <?php echo nl2br( esc_html( $eem_ed_parking ) ); ?></p>
+								<?php endif; ?>
+								<?php if ( '' !== $eem_ed_contact ) : ?>
+									<p class="eem-event-day-info__line"><strong><?php esc_html_e( 'Questions on event day:', 'equine-event-manager' ); ?></strong> <?php
+										/* translators: %s: event-day contact, e.g. a phone number. */
+										printf( esc_html__( 'Call the event hotline at %s', 'equine-event-manager' ), esc_html( $eem_ed_contact ) );
+									?></p>
 								<?php endif; ?>
 							</div>
 						<?php endif; ?>
@@ -5430,6 +5458,13 @@ RV Lot: " . $rv_lot['name'] );
 			// division pre-entries) with their own inventory + per-customer cap.
 			'event_pre_entries_enabled'       => 0,
 			'event_pre_entries'               => array(),
+			// 2.3.71 — Event Day Info (customer-facing). Shown in Stay Details on
+			// the form (and the confirmation email / receipt / hosted page).
+			'event_day_enabled'               => 0,
+			'event_day_checkin'               => '',
+			'event_day_bring'                 => '',
+			'event_day_parking'               => '',
+			'event_day_contact'               => '',
 		);
 
 		$defaults['rv_addons'] = array();
