@@ -184,10 +184,13 @@ These are admin-side mockup ports that can be done AFTER C10 customer flow works
   grouping sums tax + adds it to the order total (also fixes the C11 email total).
   Smoke 7/7. Refund-of-tax flagged as a separate follow-up (payment-adjacent). Live
   checkout write-path verification still pending.
-- **Remaining increments:** (1 — done above) ~~tax persistence~~; (2) receipt template +
-  builder (reuses C11 data map + Customer/Billing + Reservation Summary cards + tax
-  line); (3) PDF generation → attach to confirmation email (re-enables C11's PDF note)
-  + downloadable from Order Detail; (4) hosted order page via `template_redirect` +
+- **Increment 2 ✅ (2.3.88):** receipt template + builder — `templates/receipt/receipt.php`
+  (table-based for Dompdf compat) + `build_receipt_html()` (Customer/Billing, Reservation
+  Summary cards, itemized totals + Sales Tax line). Extracted shared
+  `build_order_line_items()` (C11 email + C12 receipt). Smoke 25/25; C11 still 29/29;
+  Dompdf renders a valid PDF. HTML+PDF previews on Desktop.
+- **Remaining increments:** (3) PDF generation → attach to confirmation email
+  (re-enables C11's PDF note) + downloadable from Order Detail; (4) hosted order page via `template_redirect` +
   `order_key` query var (re-enables C11's hosted link); (5) smokes.
 
 ### C13 — Create Order Page (admin-side manual order creation)
