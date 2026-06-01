@@ -36,7 +36,9 @@ $c   = function ( $key, $default = '' ) use ( $ctx ) {
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'IBM Plex Sans','Helvetica Neue',Helvetica,Arial,sans-serif; color: #1d2327; background: #fff; font-size: 12.5px; line-height: 1.5; }
-.sheet { width: 100%; max-width: 800px; margin: 0 auto; padding: 28px 36px; }
+/* max-width fits a Letter page's printable area (~554pt) so Dompdf doesn't clip
+   the right edge; @page margin handles the PDF insets. Web view is centered. */
+.sheet { width: 100%; max-width: 700px; margin: 0 auto; padding: 22px 24px; }
 a { color: #1668F2; text-decoration: none; }
 .navy { color: #031B4E; }
 .muted { color: #50575e; }
@@ -131,7 +133,7 @@ h1,h2,h3 { font-family: 'Space Grotesk','Helvetica Neue',Arial,sans-serif; }
 .footer { border-top: 1px solid #e5e7eb; padding-top: 12px; color: #50575e; font-size: 11.5px; }
 .footer td { vertical-align: middle; }
 .footer .right { text-align: right; }
-@page { size: letter; margin: 0.4in; }
+@page { size: letter; margin: 0.5in; }
 </style>
 </head>
 <body>
