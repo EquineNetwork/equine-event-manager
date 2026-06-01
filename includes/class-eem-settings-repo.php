@@ -180,9 +180,13 @@ class EEM_Settings_Repo {
 	 * @return bool
 	 */
 	public static function update_policies( array $policies ) {
+		// 2.3.66 — Cancellation Policy is per-reservation now and its Settings field
+		// was removed, so the global option becomes read-only: when a key is absent
+		// from the submission, preserve the stored value rather than wiping it.
+		$existing = self::get_policies();
 		$next = array(
-			'cancellation' => isset( $policies['cancellation'] ) ? wp_kses_post( (string) $policies['cancellation'] ) : '',
-			'terms'        => isset( $policies['terms'] )        ? wp_kses_post( (string) $policies['terms'] )        : '',
+			'cancellation' => isset( $policies['cancellation'] ) ? wp_kses_post( (string) $policies['cancellation'] ) : $existing['cancellation'],
+			'terms'        => isset( $policies['terms'] )        ? wp_kses_post( (string) $policies['terms'] )        : $existing['terms'],
 		);
 
 		return (bool) update_option( self::OPTION_POLICIES, $next, false );

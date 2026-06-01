@@ -1047,14 +1047,10 @@ class EEM_Settings_Page {
 				<h2 class="eem-card-title"><?php esc_html_e( 'Policies', 'equine-event-manager' ); ?></h2>
 			</header>
 			<div class="eem-card-body">
-				<div class="eem-field-row">
-					<label class="eem-field-label" for="eem-policy-cancel"><?php esc_html_e( 'Cancellation Policy', 'equine-event-manager' ); ?></label>
-					<div class="eem-field-control">
-						<textarea class="eem-field-textarea" id="eem-policy-cancel" name="payload[policies][cancellation]" rows="6" data-eem-tinymce-target><?php echo esc_textarea( $policies['cancellation'] ); ?></textarea>
-						<p class="eem-field-hint"><?php esc_html_e( 'Shown at checkout and inserted into the Cancellation email template via the {{cancellation_policy}} placeholder.', 'equine-event-manager' ); ?></p>
-					</div>
-				</div>
-
+				<?php // 2.3.66 — Cancellation Policy is set per-reservation (Edit Reservation
+				// → Cancellation Policy), not globally. The global field was removed from
+				// Settings per product decision; the stored option remains read-only for
+				// any legacy Cancellation email rendering until that path is retired. ?>
 				<div class="eem-field-row">
 					<label class="eem-field-label" for="eem-policy-terms"><?php esc_html_e( 'Terms &amp; Conditions', 'equine-event-manager' ); ?></label>
 					<div class="eem-field-control">

@@ -1588,61 +1588,8 @@
 .eem-product-line-item--disabled .eem-checkbox-control input[type="checkbox"] {
 	cursor: not-allowed;
 }
-/* 2.3.65 — gated add-on +/- buttons stay clickable (to trigger the explainer
-   popup) but read as not-allowed. */
-.eem-product-line-item--general-addon.eem-product-line-item--disabled .eem-quantity-button {
-	cursor: not-allowed;
-}
-/* 2.3.65 — Add-on gate explainer popup (shown when a customer taps a locked
-   add-on's +/- before selecting a stall or RV spot). */
-.eem-addon-gate-popup {
-	position: fixed;
-	inset: 0;
-	z-index: 9999;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	padding: 20px;
-	background: rgba(3, 27, 78, .45);
-}
-.eem-addon-gate-popup__card {
-	width: 100%;
-	max-width: 380px;
-	background: #fff;
-	border-radius: 12px;
-	padding: 24px 24px 20px;
-	box-shadow: 0 18px 50px rgba(3, 27, 78, .28);
-	text-align: center;
-}
-.eem-addon-gate-popup__title {
-	font-family: 'Space Grotesk', sans-serif;
-	font-size: 17px;
-	font-weight: 700;
-	color: #031B4E;
-	margin-bottom: 8px;
-}
-.eem-addon-gate-popup__body {
-	font-size: 14px;
-	line-height: 1.6;
-	color: #4a5a7a;
-	margin: 0 0 18px;
-}
-.eem-addon-gate-popup__btn {
-	display: inline-block;
-	border: none;
-	cursor: pointer;
-	background: #1668F2;
-	color: #fff;
-	font-size: 14px;
-	font-weight: 700;
-	padding: 11px 26px;
-	border-radius: 8px;
-}
-.eem-addon-gate-popup__btn:hover,
-.eem-addon-gate-popup__btn:focus {
-	background: #0d52cc;
-	color: #fff;
-}
+/* 2.3.66 — Add-on stall/RV gate removed; add-ons are stand-alone products.
+   The explainer-popup + gated-button styles that lived here were removed. */
 .eem-reservation-grid--stay-controls {
 	grid-template-columns: 0.72fr 1fr 1fr 0.72fr;
 	align-items: end;
@@ -2955,6 +2902,16 @@
 	border-radius: var(--eem-app-card-radius);
 	background: #ffffff;
 	box-shadow: var(--eem-app-shadow);
+	/* 2.3.66 — never clip the Complete Reservation button (last child) against the
+	   card's rounded bottom edge. The base .eem-reservation-section can carry
+	   overflow constraints; force it visible here. */
+	overflow: visible;
+}
+/* 2.3.66 — guarantee the Complete Reservation button clears the payment card's
+   bottom border with a comfortable gap (was rendering flush / clipped). */
+.eem-event-page .eem-reservation-section--payment > .eem-reservation-submit {
+	margin-top: 18px;
+	margin-bottom: 6px;
 }
 /* 2.3.65 — billing/credit-card sub-cards ported to the mockup's .billing-sub-box
    spec exactly (#FAFBFE fill, #D9E2F2 hairline border, 8px radius, 16px pad). The
@@ -3189,11 +3146,11 @@
 	flex-shrink: 0;
 	display: flex;
 	align-items: flex-start;
-	/* 2.3.65 — zero padding (mockup parity) so the flyer's left edge aligns with
-	   the form column's left edge (both sit at the 40px hero-inner inset) and the
-	   image connects flush to the top of the hero, letting the vertical divider
-	   run straight up to the site header. */
-	padding: 0;
+	/* 2.3.66 — left padding stays 0 so the flyer's left edge aligns with the form
+	   column (both at the 40px hero-inner inset), but restore symmetric vertical
+	   padding so the image isn't jammed flush against the header above and the
+	   form card below. The vertical divider still runs full-height to the header. */
+	padding: 32px 0 32px 0;
 }
 .eem-event-page .hero-img-col img {
 	width: 100%;
@@ -3353,6 +3310,12 @@
    Kept layout-neutral; the .eem-reservation-* grid owns the two-column layout. */
 .eem-event-page .page-body {
 	width: 100%;
+}
+/* 2.3.66 — separate the form/order area from the hero above it so the first card
+   (Contact Information) and the Order Summary never butt against the hero / the
+   tall featured image. Mirrors the mockup page-body's 28px top padding. */
+.eem-event-page .eem-reservation-form-wrap {
+	padding-top: 28px;
 }
 .eem-event-page .form-col,
 .eem-event-page .order-sidebar {
@@ -3845,9 +3808,13 @@
 	color: #fff;
 }
 
-/* 2.3.60 — Special Requests description: lighter regular gray (mockup
-   .stay-info-text), not the bold/dark it inherited from the <label> wrapper. */
-.eem-event-page .eem-reservation-section--special-requests label {
+/* 2.3.66 — Special Requests now mirrors every other card: the title is a direct
+   child of the section and picks up the standard header band (uppercase + bottom
+   border) automatically. The description + textarea live in the body label, which
+   gets the section's standard 22px horizontal inset from the generic direct-child
+   rule. Only the body-specific look needs styling here. */
+.eem-event-page .eem-reservation-section--special-requests .eem-special-requests-field {
+	display: block;
 	font-weight: 400;
 }
 .eem-event-page .eem-reservation-section--special-requests .eem-reservation-help {
@@ -3858,21 +3825,9 @@
 	line-height: 1.7;
 	color: #4a5a7a;
 }
-
-/* 2.3.63 — Special Requests title sits inside a <label> wrapper, so it misses
-   the header-band padding that direct-child titles get. Pad the label itself
-   so the title isn't flush to the card's top/left border. */
-.eem-event-page .eem-reservation-section--special-requests > label {
+.eem-event-page .eem-reservation-section--special-requests textarea {
+	width: 100%;
 	display: block;
-	margin: 0;
-	/* 2.3.65 — top padding 16 → 22 per Whitney's DevTools-confirmed value.
-	   Scoped to the --special-requests direct-child label so Contact Information
-	   field labels are unaffected. */
-	padding: 22px 22px 20px;
-}
-.eem-event-page .eem-reservation-section--special-requests .eem-reservation-section__title {
-	display: block;
-	margin-bottom: 10px;
 }
 
 /* 2.3.62 — Cancellation policy box in the checkout sidebar (below agreement). */

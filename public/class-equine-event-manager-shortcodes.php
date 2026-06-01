@@ -828,8 +828,11 @@ class EEM_Shortcodes {
 					<?php endif; ?>
 
 					<div class="eem-reservation-section eem-reservation-section--special-requests">
-						<label>
-							<h4 class="eem-reservation-section__title"><?php esc_html_e( 'Special Requests', 'equine-event-manager' ); ?></h4>
+						<?php // 2.3.66 — title is a direct child of the section so it gets the
+						// standard header band (uppercase + bottom border) like every other
+						// card; the description + textarea live in the body label below. ?>
+						<h4 class="eem-reservation-section__title"><?php esc_html_e( 'Special Requests', 'equine-event-manager' ); ?></h4>
+						<label class="eem-special-requests-field">
 							<?php if ( $special_requests_description ) : ?>
 								<small class="eem-reservation-help"><?php echo esc_html( $special_requests_description ); ?></small>
 							<?php endif; ?>
@@ -1720,17 +1723,9 @@ class EEM_Shortcodes {
 
 			$has_general_addon_selection = true;
 
-			if ( 'any' === $addon['applies_to'] && ! $has_stall_selection && ! $has_rv_selection ) {
-				$errors[] = sprintf( __( 'Please select stalls or RV spots before adding %s.', 'equine-event-manager' ), $addon['name'] );
-			}
-
-			if ( 'stall' === $addon['applies_to'] && ! $has_stall_selection ) {
-				$errors[] = sprintf( __( 'Please select stalls before adding %s.', 'equine-event-manager' ), $addon['name'] );
-			}
-
-			if ( 'rv' === $addon['applies_to'] && ! $has_rv_selection ) {
-				$errors[] = sprintf( __( 'Please select RV spots before adding %s.', 'equine-event-manager' ), $addon['name'] );
-			}
+			// 2.3.66 — Add-ons (shavings, hay, etc.) are stand-alone products and
+			// may be purchased without a stall or RV reservation. The prior
+			// "select stalls/RV first" gate was removed per product decision.
 		}
 
 		if ( $has_stall_selection && ! $status['stalls_open'] ) {
@@ -7136,14 +7131,6 @@ RV Lot: " . $rv_lot['name'] );
 					return;
 				}
 
-				// 2.3.65 — a gated general add-on keeps its +/- buttons clickable so
-				// this click lands; instead of changing the quantity, explain why the
-				// add-on is locked and bail.
-				if (button.closest('.eem-product-line-item--general-addon.eem-product-line-item--disabled')) {
-					showAddonGateNotice();
-					return;
-				}
-
 				nextValue = parseInt(input.value || '0', 10) + parseInt(button.getAttribute('data-eem-quantity-step') || '0', 10);
 				nextValue = Math.max(0, nextValue);
 
@@ -7893,68 +7880,25 @@ RV Lot: " . $rv_lot['name'] );
 			}
 
 			function syncGeneralAddonAvailability(form) {
-				var stallQty = getNumberFieldValue(form, 'stall_qty');
-				var rvQty = getNumberFieldValue(form, 'rv_qty');
-
+				// 2.3.66 — Add-ons are stand-alone products (shavings, hay, etc.) and
+				// are always purchasable, with or without a stall/RV reservation. The
+				// prior stall/RV gate (and its explainer popup) was removed per product
+				// decision; this just guarantees the controls are never left disabled.
 				form.querySelectorAll('.eem-product-line-item--general-addon').forEach(function(lineItem) {
-					var appliesTo = lineItem.getAttribute('data-addon-applies-to') || 'any';
 					var control = lineItem.querySelector('.eem-quantity-control');
 					var input = control ? control.querySelector('input[type="number"]') : null;
 					var buttons = control ? control.querySelectorAll('.eem-quantity-button') : [];
-					var isEnabled = true;
 
-					if (appliesTo === 'stall') {
-						isEnabled = stallQty > 0;
-					} else if (appliesTo === 'rv') {
-						isEnabled = rvQty > 0;
-					} else {
-						isEnabled = stallQty > 0 || rvQty > 0;
-					}
-
-					lineItem.classList.toggle('eem-product-line-item--disabled', !isEnabled);
+					lineItem.classList.remove('eem-product-line-item--disabled');
 
 					if (input) {
-						input.disabled = !isEnabled;
-
-						if (!isEnabled) {
-							input.value = '0';
-						}
+						input.disabled = false;
 					}
 
-					// 2.3.65 — keep the +/- buttons clickable even when gated so a
-					// click can surface the "pick a stall/RV first" popup; a disabled
-					// <button> fires no click event at all. The greyed/disabled look
-					// comes from the line-item opacity (.eem-product-line-item--disabled).
 					buttons.forEach(function(button) {
 						button.disabled = false;
-						button.setAttribute('aria-disabled', isEnabled ? 'false' : 'true');
+						button.removeAttribute('aria-disabled');
 					});
-				});
-			}
-
-			// 2.3.65 — popup shown when a customer tries to change a gated add-on.
-			// Add-ons unlock only after a stall or RV spot is selected (a base
-			// reservation to attach extras to); this explains why they're disabled.
-			function showAddonGateNotice() {
-				var existing = document.querySelector('.eem-addon-gate-popup');
-				if (existing) { existing.parentNode.removeChild(existing); }
-				var overlay = document.createElement('div');
-				overlay.className = 'eem-addon-gate-popup';
-				overlay.innerHTML =
-					'<div class="eem-addon-gate-popup__card" role="alertdialog" aria-modal="true" aria-labelledby="eem-addon-gate-title">' +
-						'<div class="eem-addon-gate-popup__title" id="eem-addon-gate-title"><?php echo esc_js( __( 'Add-ons are locked', 'equine-event-manager' ) ); ?></div>' +
-						'<p class="eem-addon-gate-popup__body"><?php echo esc_js( __( 'Select at least one stall or RV spot first. Add-ons become available once your reservation has a stall or RV spot to attach them to.', 'equine-event-manager' ) ); ?></p>' +
-						'<button type="button" class="eem-addon-gate-popup__btn"><?php echo esc_js( __( 'Got it', 'equine-event-manager' ) ); ?></button>' +
-					'</div>';
-				document.body.appendChild(overlay);
-				var close = function() {
-					if (overlay.parentNode) { overlay.parentNode.removeChild(overlay); }
-				};
-				overlay.addEventListener('click', function(e) { if (e.target === overlay) { close(); } });
-				var btn = overlay.querySelector('.eem-addon-gate-popup__btn');
-				if (btn) { btn.addEventListener('click', close); btn.focus(); }
-				document.addEventListener('keydown', function onEsc(e) {
-					if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onEsc); }
 				});
 			}
 
