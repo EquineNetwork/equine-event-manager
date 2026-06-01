@@ -2100,6 +2100,17 @@
 		body.set('reservation_id', rid);
 		body.set('save_kind', kind);
 		eemCollectEditorFields().forEach(function (pair) { body.append(pair[0], pair[1]); });
+		// 2.3.78 — the linked-event id input lives in the header typeahead, OUTSIDE
+		// .eem-reservation-editor-body, so eemCollectEditorFields() never collected
+		// it. That meant a New Reservation could never persist its event link
+		// (save saw event_id absent → the gate-robustness guard kept the existing 0),
+		// so the gate never lifted and the title never mirrored the event. Submit it
+		// explicitly. Only when non-zero, so an empty picker can't clear an existing
+		// link (the guard preserves it).
+		var linkedEventInput = document.getElementById('eem-linked-event-id-input');
+		if (linkedEventInput && linkedEventInput.value && '0' !== String(linkedEventInput.value)) {
+			body.set('en_reservation[event_id]', linkedEventInput.value);
+		}
 		fetch(EEM_EDITOR_AJAX_URL, {
 			method: 'POST',
 			credentials: 'same-origin',
