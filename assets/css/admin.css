@@ -6507,28 +6507,28 @@ input.eem-repeat-price-in:focus { border-color: var(--eem-electric); box-shadow:
 	gap: 8px;
 	flex-shrink: 0;
 }
-/* 2.3.83 — "View Event" blue primary anchor in the editor header. Sizing matches
-   .eem-header-action-change; color/background inherit from .eem-btn-primary. */
-a.eem-header-action-view {
+/* 2.3.83 — "View Event" blue primary anchor + "Change Event" button. Both share
+   identical box metrics (padding, border width, radius, font) so they render the
+   same size and shape; only color/background differ. The transparent 1px border
+   on View Event matches Change Event's 1px border so heights line up exactly. */
+a.eem-header-action-view,
+.eem-header-action-change {
 	padding: 6px 14px;
+	border: 1px solid transparent;
+	border-radius: var(--eem-radius);
 	font-size: 12.5px;
 	font-weight: 600;
+	font-family: inherit;
+	line-height: 1.5;
+	cursor: pointer;
 	white-space: nowrap;
 	flex-shrink: 0;
 	text-decoration: none;
 }
 .eem-header-action-change {
 	background: #fff;
-	border: 1px solid #c3c4c7;
+	border-color: #c3c4c7;
 	color: #1d2327;
-	padding: 6px 12px;
-	border-radius: var(--eem-radius);
-	font-size: 12.5px;
-	font-weight: 600;
-	font-family: inherit;
-	cursor: pointer;
-	white-space: nowrap;
-	flex-shrink: 0;
 }
 .eem-header-action-change:hover {
 	border-color: #8c8f94;

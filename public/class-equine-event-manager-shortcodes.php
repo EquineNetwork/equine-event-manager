@@ -863,14 +863,35 @@ class EEM_Shortcodes {
 									<?php $this->render_product_list_header(); ?>
 									<?php foreach ( $pre_entry_options as $pre_entry_key => $pre_entry ) : ?>
 										<?php
+										// 2.3.84 — surface each pre-entry's limit like RV/stalls do.
+										// The bookable cap is the smaller of total inventory and the
+										// per-customer max (whichever are set); the inventory count
+										// renders under the title as an "X left." notice.
+										$pe_inventory = (int) $pre_entry['inventory'];
+										$pe_max       = (int) $pre_entry['max_per_customer'];
+										$pe_limit     = null;
+										if ( $pe_inventory > 0 && $pe_max > 0 ) {
+											$pe_limit = min( $pe_inventory, $pe_max );
+										} elseif ( $pe_inventory > 0 ) {
+											$pe_limit = $pe_inventory;
+										} elseif ( $pe_max > 0 ) {
+											$pe_limit = $pe_max;
+										}
+										$pe_notice = $pe_inventory > 0
+											? sprintf(
+												/* translators: %d: remaining pre-entry inventory count. */
+												_n( '%d spot left.', '%d spots left.', $pe_inventory, 'equine-event-manager' ),
+												$pe_inventory
+											)
+											: '';
 										$this->render_product_line_item(
 											$pre_entry['title'],
-											'',
+											$pe_notice,
 											'pre_entry_' . $pre_entry_key . '_qty',
 											'eem-product-line-item--pre-entry',
 											array(
 												'static_price' => (float) $pre_entry['price'],
-												'max_quantity' => $pre_entry['max_per_customer'] > 0 ? $pre_entry['max_per_customer'] : null,
+												'max_quantity' => $pe_limit,
 											)
 										);
 										?>
