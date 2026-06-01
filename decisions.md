@@ -2135,3 +2135,37 @@ white SVG lives at `assets/images/menu-icon.svg` and is passed to
 `EEM_Admin::get_menu_icon()` (falls back to the dashicon if the asset is
 unreadable). WordPress renders menu icons as a background image and does NOT
 recolor them, so the asset is authored white to read on the dark admin menu.
+
+### C11. Customer Confirmation Email — mockup-faithful template + Emogrifier
+**Decided / shipped:** 2026-06-01 (2.3.86)
+
+Replaced the legacy settings-textarea-body + token confirmation email with a
+mockup-faithful template (`templates/emails/confirmation.php`, from
+`.mockups/customer_confirmation_email.html`).
+
+- **CSS inlining:** `pelago/emogrifier ^7.0` installed; runtime `vendor/`
+  committed (self-contained, `composer install --no-dev`); autoloader wired into
+  bootstrap (guarded). `EEM_Mailer::inline_css()` inlines the `<style>` block at
+  send-time and degrades to raw HTML if Emogrifier is unavailable.
+- **Renderer:** `EEM_Shortcodes::build_confirmation_email_html($order)` maps the
+  grouped order payload → template context, reusing existing breakdown helpers.
+  `send_customer_notification_email_for_order()` now calls it; the
+  `customer_body` setting is unused for confirmation.
+- **Decision-locks honored:** "Your Assignments" omitted while nothing is
+  assigned (Bulk-mode stalls are admin-assigned later); PDF attachment note
+  withheld until C12 attaches a real PDF; hosted-order link withheld until C12.
+- **Conditional sections:** type badges per present section; What's Next (Event
+  Day Info) gated on `_en_event_day_enabled`; Cancellation Policy from
+  `_en_cancellation_policy_override` (graceful blank); Special Requests from
+  order notes.
+- **Bug fixed in passing:** `get_order_stall_breakdown()` read
+  `required_shavings_price` / `additional_shavings_price` UNPREFIXED, but
+  reservation meta is `_en_`-prefixed — so the shavings subtotal was always 0 and
+  never split into its own receipt line (it folded into the stall base). Fixed to
+  `_en_`-prefixed reads. Order TOTAL is unchanged (stall_subtotal already
+  includes shavings); only the per-line split is restored. Affects the admin
+  receipt (`build_receipt_email_html`) too, correctly.
+- **Verified:** `tests/smoke/c11-confirmation-email-smoke.php` — 29 assertions
+  (content-density per card, 5-digit order #, line-item rows, CSS-inline
+  round-trip, positive event-day/cancellation, omit cases). Visual preview
+  rendered for eyeball comparison against the mockup.

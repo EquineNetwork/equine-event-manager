@@ -44,7 +44,7 @@ class EEM_Mailer {
 	public static function send_html_email( $to, $subject, $html, $headers = array(), $context = array() ) {
 		$to      = sanitize_email( (string) $to );
 		$subject = wp_strip_all_tags( (string) $subject );
-		$html    = (string) $html;
+		$html    = self::inline_css( (string) $html );
 		$headers = is_array( $headers ) ? $headers : array();
 		$context = is_array( $context ) ? $context : array();
 
@@ -76,6 +76,38 @@ class EEM_Mailer {
 		}
 
 		return $result;
+	}
+
+	/**
+	 * Inline a message's <style> block into element style attributes.
+	 *
+	 * Email clients (Outlook desktop, Gmail mobile, some Yahoo configs) strip or
+	 * ignore <style> tags, so transactional templates author their CSS in a
+	 * <style> block for readability and rely on this send-time pass (Pelago's
+	 * Emogrifier) to inline it. Degrades gracefully: if Emogrifier is unavailable
+	 * (vendor/ absent) or the HTML carries no <style>/<html> wrapper, the original
+	 * HTML is returned unchanged.
+	 *
+	 * @param string $html Message HTML, possibly containing a <style> block.
+	 * @return string HTML with CSS inlined, or the input unchanged on failure.
+	 */
+	public static function inline_css( $html ) {
+		$html = (string) $html;
+
+		if ( '' === $html
+			|| false === stripos( $html, '<style' )
+			|| ! class_exists( '\\Pelago\\Emogrifier\\CssInliner' ) ) {
+			return $html;
+		}
+
+		try {
+			return \Pelago\Emogrifier\CssInliner::fromHtml( $html )
+				->inlineCss()
+				->render();
+		} catch ( \Throwable $e ) {
+			// Never let an inlining failure block the send — fall back to raw HTML.
+			return $html;
+		}
 	}
 
 	/**

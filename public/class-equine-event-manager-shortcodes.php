@@ -3401,7 +3401,11 @@ RV Lot: " . $rv_lot['name'] );
 		return EEM_Mailer::send_html_email(
 			$customer_email,
 			$this->replace_receipt_tokens( $receipt_settings['customer_subject'], $order ),
-			$this->build_receipt_email_html( $order, $receipt_settings['customer_body'] ),
+			// C11 — mockup-faithful confirmation template (replaces the legacy
+			// settings-body + token render). CSS is inlined at send-time by
+			// EEM_Mailer::inline_css(). The customer_body setting is now unused for
+			// the confirmation email.
+			$this->build_confirmation_email_html( $order ),
 			$headers,
 			// C6.D telemetry — customer-facing checkout/reservation confirmation email.
 			array(
@@ -3754,6 +3758,217 @@ RV Lot: " . $rv_lot['name'] );
 	}
 
 	/**
+	 * Build the C11 mockup-faithful customer confirmation email HTML.
+	 *
+	 * Maps a grouped order payload onto the confirmation template context and
+	 * renders templates/emails/confirmation.php. The returned HTML still carries
+	 * its <style> block; EEM_Mailer::inline_css() inlines it at send-time.
+	 *
+	 * Per the C11 decision-locks: the "Your Assignments" section is omitted while
+	 * nothing is assigned (stalls are admin-assigned later, in Bulk mode), and the
+	 * PDF attachment note is withheld until C12 actually attaches a PDF.
+	 *
+	 * @param array $order Grouped order payload (EEM_Orders_Repository shape).
+	 * @return string Rendered (un-inlined) HTML.
+	 */
+	private function build_confirmation_email_html( array $order ): string {
+		$company_settings = $this->get_company_settings();
+		$event_label      = ! empty( $order['reservation_title'] ) ? $order['reservation_title'] : $order['event_name'];
+		$reservation_data = ! empty( $order['reservation_id'] ) ? $this->get_reservation_data( absint( $order['reservation_id'] ) ) : array();
+
+		// Stay-unit counts (1 for a weekend package, night-count otherwise).
+		$stall_units = $this->get_billable_stay_units( $order['stall_arrival_date'], $order['stall_departure_date'], $order['stall_stay_type'] );
+		$rv_units    = $this->get_billable_stay_units( $order['rv_arrival_date'], $order['rv_departure_date'], $order['rv_stay_type'] );
+
+		$stall_breakdown    = $this->get_order_stall_breakdown( $order );
+		$rv_addon_breakdown = $this->get_order_rv_addon_breakdown( $order );
+		$general_addons     = $this->extract_general_addon_breakdown_from_notes( $order['notes'] );
+		$group_charges      = $this->extract_group_charge_breakdown_from_notes( $order['notes'] );
+		$group_rider_count  = $this->extract_group_rider_count_from_notes( $order['notes'] );
+		$group_rider_names  = $this->extract_group_rider_names_from_notes( $order['notes'] );
+		$special_requests   = $this->get_special_requests_from_order_notes( $order['notes'] );
+		$rv_addon_total     = array_sum( wp_list_pluck( $rv_addon_breakdown, 'subtotal' ) );
+		$rv_base_subtotal   = max( 0, (float) $order['rv_subtotal'] - $rv_addon_total );
+
+		$stall_qty = absint( $order['stall_quantity'] );
+		$rv_qty    = absint( $order['rv_quantity'] );
+
+		// Per-unit rate, derived from the line total (handles weekend = flat too).
+		$rate = static function ( float $total, int $divisor ): string {
+			return $divisor > 0 ? '$' . number_format_i18n( $total / $divisor, 2 ) : '—';
+		};
+		$units_label = function ( $stay_type, int $count ): string {
+			return 'weekend' === $stay_type ? __( 'Weekend', 'equine-event-manager' ) : $this->get_night_count_label( $count );
+		};
+		$stay_desc = function ( $stay_type, $arrival, $departure ): string {
+			$range = $this->format_reservation_date_label( $arrival );
+			$dep   = $this->format_reservation_date_label( $departure );
+			if ( $range && $dep ) {
+				$range .= ' – ' . $dep;
+			}
+			return trim( sprintf( '%1$s stay%2$s', $this->format_stay_type_label( $stay_type ), $range ? ', ' . $range : '' ) );
+		};
+
+		$line_items = array();
+
+		if ( (float) $stall_breakdown['base_subtotal'] > 0 && $stall_qty > 0 ) {
+			$line_items[] = array(
+				'section' => __( 'Stall Res.', 'equine-event-manager' ),
+				'desc'    => $stay_desc( $order['stall_stay_type'], $order['stall_arrival_date'], $order['stall_departure_date'] ),
+				'qty'     => (string) $stall_qty,
+				'units'   => $units_label( $order['stall_stay_type'], $stall_units ),
+				'rate'    => $rate( (float) $stall_breakdown['base_subtotal'], $stall_qty * max( 1, $stall_units ) ),
+				'total'   => '$' . number_format_i18n( (float) $stall_breakdown['base_subtotal'], 2 ),
+			);
+		}
+
+		if ( (float) $stall_breakdown['required_shavings_subtotal'] > 0 ) {
+			$shav_qty = absint( $order['required_shavings_qty'] );
+			$line_items[] = array(
+				'section' => __( 'Stall Product', 'equine-event-manager' ),
+				'desc'    => __( 'Required Shavings', 'equine-event-manager' ),
+				'qty'     => (string) $shav_qty,
+				'units'   => __( 'bags', 'equine-event-manager' ),
+				'rate'    => $rate( (float) $stall_breakdown['required_shavings_subtotal'], $shav_qty ),
+				'total'   => '$' . number_format_i18n( (float) $stall_breakdown['required_shavings_subtotal'], 2 ),
+			);
+		}
+
+		if ( (float) $rv_base_subtotal > 0 && $rv_qty > 0 ) {
+			$line_items[] = array(
+				'section' => __( 'RV Res.', 'equine-event-manager' ),
+				'desc'    => $stay_desc( $order['rv_stay_type'], $order['rv_arrival_date'], $order['rv_departure_date'] ),
+				'qty'     => (string) $rv_qty,
+				'units'   => $units_label( $order['rv_stay_type'], $rv_units ),
+				'rate'    => $rate( (float) $rv_base_subtotal, $rv_qty * max( 1, $rv_units ) ),
+				'total'   => '$' . number_format_i18n( (float) $rv_base_subtotal, 2 ),
+			);
+		}
+
+		foreach ( $rv_addon_breakdown as $addon_row ) {
+			if ( (float) $addon_row['subtotal'] <= 0 ) {
+				continue;
+			}
+			$line_items[] = array(
+				'section' => __( 'RV Add-On', 'equine-event-manager' ),
+				'desc'    => (string) $addon_row['label'],
+				'qty'     => (string) max( 1, $rv_qty ),
+				'units'   => $units_label( $order['rv_stay_type'], $rv_units ),
+				'rate'    => $rate( (float) $addon_row['subtotal'], max( 1, $rv_qty ) * max( 1, $rv_units ) ),
+				'total'   => '$' . number_format_i18n( (float) $addon_row['subtotal'], 2 ),
+			);
+		}
+
+		foreach ( $general_addons as $addon_row ) {
+			if ( (float) $addon_row['subtotal'] <= 0 ) {
+				continue;
+			}
+			$gq = absint( $addon_row['quantity'] );
+			$line_items[] = array(
+				'section' => __( 'General Add-On', 'equine-event-manager' ),
+				'desc'    => (string) $addon_row['label'],
+				'qty'     => (string) $gq,
+				'units'   => ! empty( $addon_row['per_label'] ) ? (string) $addon_row['per_label'] : __( 'qty', 'equine-event-manager' ),
+				'rate'    => $rate( (float) $addon_row['subtotal'], $gq ),
+				'total'   => '$' . number_format_i18n( (float) $addon_row['subtotal'], 2 ),
+			);
+		}
+
+		foreach ( $group_rider_names as $rider_name ) {
+			$line_items[] = array(
+				'section' => __( 'Group Res.', 'equine-event-manager' ),
+				'desc'    => (string) $rider_name,
+				'qty'     => '1',
+				'units'   => __( 'rider', 'equine-event-manager' ),
+				'rate'    => '—',
+				'total'   => __( 'Included', 'equine-event-manager' ),
+			);
+		}
+		foreach ( $group_charges as $group_charge ) {
+			if ( (float) $group_charge['subtotal'] <= 0 ) {
+				continue;
+			}
+			$gc_qty = max( 1, absint( $group_charge['quantity'] ) );
+			$line_items[] = array(
+				'section' => __( 'Group Res.', 'equine-event-manager' ),
+				'desc'    => (string) $group_charge['label'],
+				'qty'     => (string) $gc_qty,
+				'units'   => _n( 'rider', 'riders', $gc_qty, 'equine-event-manager' ),
+				'rate'    => $rate( (float) $group_charge['subtotal'], $gc_qty ),
+				'total'   => '$' . number_format_i18n( (float) $group_charge['subtotal'], 2 ),
+			);
+		}
+
+		if ( (float) $order['fees'] > 0 ) {
+			$line_items[] = array(
+				'section' => __( 'Fee', 'equine-event-manager' ),
+				'desc'    => __( 'Non-Refundable Convenience Fee', 'equine-event-manager' ),
+				'qty'     => '1',
+				'units'   => '—',
+				'rate'    => '$' . number_format_i18n( (float) $order['fees'], 2 ),
+				'total'   => '$' . number_format_i18n( (float) $order['fees'], 2 ),
+			);
+		}
+
+		// Event Day Info ("What's Next") — only when the section is enabled.
+		$event_day = array();
+		if ( ! empty( $reservation_data['event_day_enabled'] ) ) {
+			$event_day = array(
+				'checkin' => trim( (string) ( $reservation_data['event_day_checkin'] ?? '' ) ),
+				'bring'   => trim( (string) ( $reservation_data['event_day_bring'] ?? '' ) ),
+				'parking' => trim( (string) ( $reservation_data['event_day_parking'] ?? '' ) ),
+				'contact' => trim( (string) ( $reservation_data['event_day_contact'] ?? '' ) ),
+			);
+		}
+
+		// First name for the greeting (first token of the stored full name).
+		$customer_name  = isset( $order['customer_name'] ) ? trim( (string) $order['customer_name'] ) : '';
+		$customer_first = '' !== $customer_name ? strtok( $customer_name, ' ' ) : '';
+
+		$paid_ts       = ! empty( $order['created_at'] ) ? strtotime( (string) $order['created_at'] ) : false;
+		$customer_email = $this->get_order_customer_email( $order );
+
+		$ctx = array(
+			'logo_url'            => $this->get_company_logo_url( 'medium' ),
+			'event_title'         => $event_label,
+			'event_dates'         => isset( $order['event_dates'] ) ? (string) $order['event_dates'] : '',
+			'order_number'        => sprintf( '#%05d', absint( $order['order_number'] ) ),
+			'payment_date'        => $paid_ts ? date_i18n( 'F j, Y', $paid_ts ) : '',
+			'amount_paid'         => '$' . number_format_i18n( (float) $order['total'], 2 ),
+			'customer_first'      => $customer_first,
+			// Hosted order page lands in C12; link withheld until then.
+			'hosted_url'          => '',
+			'badges'              => array(
+				'stall' => $stall_qty > 0,
+				'rv'    => $rv_qty > 0,
+				'addon' => ! empty( $general_addons ) || ! empty( $rv_addon_breakdown ),
+				'group' => $group_rider_count > 0,
+			),
+			// Assignments are admin-assigned post-checkout (Bulk mode); omit until set.
+			'assignments'         => array(),
+			'line_items'          => $line_items,
+			'total_paid'          => '$' . number_format_i18n( (float) $order['total'], 2 ),
+			'special_requests'    => trim( (string) $special_requests ),
+			'event_day'           => $event_day,
+			'support_phone'       => trim( (string) $company_settings['support_phone'] ),
+			'support_email'       => trim( (string) $company_settings['support_email'] ),
+			'cancellation_policy' => trim( (string) ( $reservation_data['cancellation_policy_override'] ?? '' ) ),
+			'footer_legal'        => $customer_email
+				? sprintf(
+					/* translators: 1: recipient email, 2: order number. */
+					__( 'This email was sent to %1$s · Order %2$s', 'equine-event-manager' ),
+					$customer_email,
+					sprintf( '#%05d', absint( $order['order_number'] ) )
+				)
+				: '',
+		);
+
+		ob_start();
+		include EQUINE_EVENT_MANAGER_PATH . 'templates/emails/confirmation.php';
+		return (string) ob_get_clean();
+	}
+
+	/**
 	 * Replace configured receipt placeholders.
 	 *
 	 * @param string $text Text template.
@@ -3876,8 +4091,14 @@ RV Lot: " . $rv_lot['name'] );
 	 */
 	private function get_order_stall_breakdown( $order ) {
 		$reservation_id                = ! empty( $order['reservation_id'] ) ? absint( $order['reservation_id'] ) : 0;
-		$required_price                = $reservation_id ? (float) get_post_meta( $reservation_id, 'required_shavings_price', true ) : 0.0;
-		$additional_price              = $reservation_id ? (float) get_post_meta( $reservation_id, 'additional_shavings_price', true ) : 0.0;
+		// 2.3.86 (C11) — reservation meta is stored with the `_en_` prefix; the
+		// prior unprefixed reads always returned 0, so the required/additional
+		// shavings subtotal folded into the stall base and never split into its
+		// own receipt line. The order total is unchanged (stall_subtotal already
+		// includes shavings); this only restores the correct per-line split the
+		// confirmation/receipt templates render.
+		$required_price                = $reservation_id ? (float) get_post_meta( $reservation_id, '_en_required_shavings_price', true ) : 0.0;
+		$additional_price              = $reservation_id ? (float) get_post_meta( $reservation_id, '_en_additional_shavings_price', true ) : 0.0;
 		$required_shavings_qty         = 0;
 		$additional_shavings_qty       = 0;
 		$required_shavings_subtotal    = 0.0;
