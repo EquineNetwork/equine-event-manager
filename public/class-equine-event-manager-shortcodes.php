@@ -776,6 +776,11 @@ class EEM_Shortcodes {
 											)
 										);
 										?>
+									<?php if ( ! empty( $rv_addon_options ) ) : ?>
+										<p class="eem-reservation-help eem-rv-addon-help">
+											<?php esc_html_e( 'Add-on prices are charged in addition to your RV rate — per night for a Nightly stay, or once for a Weekend Rate stay.', 'equine-event-manager' ); ?>
+										</p>
+									<?php endif; ?>
 									<?php foreach ( $rv_addon_options as $addon_key => $addon ) : ?>
 											<?php
 											$this->render_checkbox_product_line_item(
@@ -1444,12 +1449,22 @@ class EEM_Shortcodes {
 				?>
 			<?php endif; ?>
 		</div>
-		<?php // C10.D — prefer the canonical "Pick Your Stalls" row picker; fall back
-		// to the legacy block-range selector only when no _en_stall_rows exist. ?>
-		<?php if ( ! empty( $stall_picker_rows ) ) : ?>
-			<?php $this->render_stall_picker_grid( $stall_picker_rows, $stall_picker_blocked, $stall_picker_reserved, array(), (string) $stall_map_url ); ?>
-		<?php elseif ( $stall_assignment_enabled && ! empty( $stall_assignment_blocks ) ) : ?>
-			<?php $this->render_quantity_stall_assignment_selector( $stall_assignment_blocks, $stall_map_url ); ?>
+		<?php
+		// 2.3.83 — the exact-stall map (C10.D "Pick Your Stalls" picker AND the
+		// legacy block-range selector) renders ONLY in Mapped inventory mode
+		// (stall_selection_mode === 'exact_map'). In Bulk mode customers just pick
+		// a quantity; the admin assigns specific stalls later on the Stall & RV
+		// Charts page, so no map should appear on the customer form.
+		$eem_stall_mode = $this->get_resolved_stall_selection_mode( $reservation_id, $data );
+		?>
+		<?php if ( 'exact_map' === $eem_stall_mode ) : ?>
+			<?php // C10.D — prefer the canonical "Pick Your Stalls" row picker; fall back
+			// to the legacy block-range selector only when no _en_stall_rows exist. ?>
+			<?php if ( ! empty( $stall_picker_rows ) ) : ?>
+				<?php $this->render_stall_picker_grid( $stall_picker_rows, $stall_picker_blocked, $stall_picker_reserved, array(), (string) $stall_map_url ); ?>
+			<?php elseif ( $stall_assignment_enabled && ! empty( $stall_assignment_blocks ) ) : ?>
+				<?php $this->render_quantity_stall_assignment_selector( $stall_assignment_blocks, $stall_map_url ); ?>
+			<?php endif; ?>
 		<?php endif; ?>
 		<div class="eem-section-subtotal" aria-live="polite">
 			<span><?php esc_html_e( 'Stall Subtotal', 'equine-event-manager' ); ?></span>
@@ -6447,7 +6462,17 @@ RV Lot: " . $rv_lot['name'] );
 			return 0.0;
 		}
 
-		return isset( $addons[ (string) $addon_key ]['price'] ) ? (float) $addons[ (string) $addon_key ]['price'] : 0.0;
+		$addon = $addons[ (string) $addon_key ];
+
+		// 2.3.83 — Weekend Rate stays use the flat weekend add-on price; all other
+		// stay types use the per-night price. The caller multiplies by billable
+		// units (1 for weekend, night-count for nightly), so a weekend add-on is
+		// charged once and a nightly add-on is charged per night.
+		if ( 'weekend' === $stay_type ) {
+			return isset( $addon['weekend_price'] ) ? (float) $addon['weekend_price'] : 0.0;
+		}
+
+		return isset( $addon['price'] ) ? (float) $addon['price'] : 0.0;
 	}
 
 	/**
@@ -6684,12 +6709,15 @@ RV Lot: " . $rv_lot['name'] );
 
 			$name        = isset( $addon['name'] ) ? sanitize_text_field( $addon['name'] ) : '';
 			$description = isset( $addon['description'] ) ? sanitize_text_field( $addon['description'] ) : '';
-			$price       = isset( $addon['price'] ) ? $this->sanitize_money_value( $addon['price'] ) : '';
-
+			// 2.3.83 — `price` = per-night rate; `weekend_price` = flat Weekend Rate
+			// charge. Legacy single-rate rows map onto the new keys.
+			$price = isset( $addon['price'] ) ? $this->sanitize_money_value( $addon['price'] ) : '';
 			if ( '' === $price ) {
-				$nightly_rate = isset( $addon['nightly_rate'] ) ? $this->sanitize_money_value( $addon['nightly_rate'] ) : '0.00';
-				$weekend_rate = isset( $addon['weekend_rate'] ) ? $this->sanitize_money_value( $addon['weekend_rate'] ) : '0.00';
-				$price        = '0.00' !== $nightly_rate ? $nightly_rate : $weekend_rate;
+				$price = isset( $addon['nightly_rate'] ) ? $this->sanitize_money_value( $addon['nightly_rate'] ) : '0.00';
+			}
+			$weekend_price = isset( $addon['weekend_price'] ) ? $this->sanitize_money_value( $addon['weekend_price'] ) : '';
+			if ( '' === $weekend_price ) {
+				$weekend_price = isset( $addon['weekend_rate'] ) ? $this->sanitize_money_value( $addon['weekend_rate'] ) : '0.00';
 			}
 
 			if ( '' === $name ) {
@@ -6697,9 +6725,10 @@ RV Lot: " . $rv_lot['name'] );
 			}
 
 			$options[ (string) $addon_key ] = array(
-				'name'        => $name,
-				'description' => $description,
-				'price'       => '' !== $price ? $price : '0.00',
+				'name'          => $name,
+				'description'   => $description,
+				'price'         => '' !== $price ? $price : '0.00',
+				'weekend_price' => '' !== $weekend_price ? $weekend_price : '0.00',
 			);
 		}
 

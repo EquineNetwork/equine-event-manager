@@ -2081,3 +2081,33 @@ unlimited riders per group. Field shows an "Unlimited" placeholder; an empty/zer
 submission stores `''`. The publish-gate that required Riders Per Group ≥ 1 when Group
 Reservations is enabled was removed (the field's own `min="1"` still prevents a
 nonsensical 0 when a value IS entered). (2.3.82)
+
+### C10-15. "View Event" button in the reservation editor header
+**Decided:** 2026-06-01
+
+Added a blue `.eem-btn-primary` "View Event" anchor in the editor header (beside
+Change Event), opening the linked event's public permalink in a new tab so admins
+can preview the customer view. Shown only when an event is linked. (2.3.83)
+
+### C10-16. Bulk inventory mode hides the stall map on the customer form
+**Decided:** 2026-06-01
+
+The C10.D "Pick Your Stalls" map (and the legacy block-range selector) rendered
+whenever stall rows existed, regardless of the reservation's Inventory Mode. It
+now renders ONLY in Mapped mode (`stall_selection_mode === 'exact_map'`). In Bulk
+mode customers just choose a quantity and the admin assigns specific stalls later
+on the Stall & RV Charts page. (2.3.83, gate in
+`render_quantity_stall_selection_ui`.)
+
+### C10-17. RV add-ons carry separate per-night + weekend pricing
+**Decided:** 2026-06-01
+
+RV add-ons now store two rates: `price` (per-night, charged × nights for a Nightly
+stay) and `weekend_price` (flat, charged once for a Weekend Rate stay) — e.g.
+"water is $10 more per night or $50 for the weekend." The editor RV Add-Ons table
+gained a "Weekend" column; `get_current_rv_addon_rate()` returns the weekend rate
+for weekend stays and the per-night rate otherwise. The existing billable-units
+math (1 for weekend, night-count for nightly) makes the totals correct with no JS
+change. Help text added for admins (editor) and customers (form) clarifying the
+add-on price is in addition to the selected RV rate. Legacy single-rate rows map
+onto the new keys. (2.3.83)

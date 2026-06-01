@@ -269,12 +269,27 @@ class EEM_Reservation_Editor_Page {
 						</div>
 					</div>
 					<?php if ( $has_linked_event ) : ?>
-						<button type="button"
-							class="eem-header-action-change"
-							id="eem-header-action-change"
-							data-eem-action="header-change-event">
-							<?php esc_html_e( 'Change Event', 'equine-event-manager' ); ?>
-						</button>
+						<div class="eem-header-actions">
+							<?php
+							// 2.3.83 — "View Event" opens the linked event's public page in
+							// a new tab so admins can preview what customers see.
+							$eem_event_permalink = $current_tec_event_id ? get_permalink( $current_tec_event_id ) : '';
+							if ( $eem_event_permalink ) :
+								?>
+								<a class="eem-btn-primary eem-header-action-view"
+									href="<?php echo esc_url( $eem_event_permalink ); ?>"
+									target="_blank"
+									rel="noopener noreferrer">
+									<?php esc_html_e( 'View Event', 'equine-event-manager' ); ?>
+								</a>
+							<?php endif; ?>
+							<button type="button"
+								class="eem-header-action-change"
+								id="eem-header-action-change"
+								data-eem-action="header-change-event">
+								<?php esc_html_e( 'Change Event', 'equine-event-manager' ); ?>
+							</button>
+						</div>
 					<?php endif; ?>
 				</header>
 				<div class="eem-edit-body">

@@ -6500,6 +6500,23 @@ input.eem-repeat-price-in:focus { border-color: var(--eem-electric); box-shadow:
 	color: #6B7A99;
 	margin-top: 4px;
 }
+/* 2.3.83 — header action button group (View Event + Change Event). */
+.eem-header-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-shrink: 0;
+}
+/* 2.3.83 — "View Event" blue primary anchor in the editor header. Sizing matches
+   .eem-header-action-change; color/background inherit from .eem-btn-primary. */
+a.eem-header-action-view {
+	padding: 6px 14px;
+	font-size: 12.5px;
+	font-weight: 600;
+	white-space: nowrap;
+	flex-shrink: 0;
+	text-decoration: none;
+}
 .eem-header-action-change {
 	background: #fff;
 	border: 1px solid #c3c4c7;

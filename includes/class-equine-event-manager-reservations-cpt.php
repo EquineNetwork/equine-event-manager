@@ -2336,12 +2336,16 @@ class EEM_Reservations_CPT {
 
 			$name        = isset( $addon['name'] ) ? sanitize_text_field( $addon['name'] ) : '';
 			$description = isset( $addon['description'] ) ? sanitize_text_field( $addon['description'] ) : '';
-			$price       = isset( $addon['price'] ) ? $this->sanitize_money_value( $addon['price'] ) : '';
-
+			// 2.3.83 — `price` is the per-NIGHT add-on rate; `weekend_price` is the
+			// flat add-on rate charged with a Weekend Rate stay. Legacy rows that
+			// only carried `nightly_rate`/`weekend_rate` map onto the new keys.
+			$price = isset( $addon['price'] ) ? $this->sanitize_money_value( $addon['price'] ) : '';
 			if ( '' === $price ) {
-				$nightly_rate = isset( $addon['nightly_rate'] ) ? $this->sanitize_money_value( $addon['nightly_rate'] ) : '0.00';
-				$weekend_rate = isset( $addon['weekend_rate'] ) ? $this->sanitize_money_value( $addon['weekend_rate'] ) : '0.00';
-				$price        = '0.00' !== $nightly_rate ? $nightly_rate : $weekend_rate;
+				$price = isset( $addon['nightly_rate'] ) ? $this->sanitize_money_value( $addon['nightly_rate'] ) : '0.00';
+			}
+			$weekend_price = isset( $addon['weekend_price'] ) ? $this->sanitize_money_value( $addon['weekend_price'] ) : '';
+			if ( '' === $weekend_price ) {
+				$weekend_price = isset( $addon['weekend_rate'] ) ? $this->sanitize_money_value( $addon['weekend_rate'] ) : '0.00';
 			}
 
 			if ( '' === $name ) {
@@ -2349,9 +2353,10 @@ class EEM_Reservations_CPT {
 			}
 
 			$sanitized[] = array(
-				'name'        => $name,
-				'description' => $description,
-				'price'       => '' !== $price ? $price : '0.00',
+				'name'          => $name,
+				'description'   => $description,
+				'price'         => '' !== $price ? $price : '0.00',
+				'weekend_price' => '' !== $weekend_price ? $weekend_price : '0.00',
 			);
 		}
 
@@ -2413,12 +2418,15 @@ class EEM_Reservations_CPT {
 
 			$name        = isset( $addon['name'] ) ? sanitize_text_field( $addon['name'] ) : '';
 			$description = isset( $addon['description'] ) ? sanitize_text_field( $addon['description'] ) : '';
-			$price       = isset( $addon['price'] ) ? $this->sanitize_money_value( $addon['price'] ) : '';
-
+			// 2.3.83 — `price` is the per-night add-on rate; `weekend_price` the flat
+			// add-on rate for a Weekend Rate stay. Legacy single-rate rows map across.
+			$price = isset( $addon['price'] ) ? $this->sanitize_money_value( $addon['price'] ) : '';
 			if ( '' === $price ) {
-				$nightly_rate = isset( $addon['nightly_rate'] ) ? $this->sanitize_money_value( $addon['nightly_rate'] ) : '0.00';
-				$weekend_rate = isset( $addon['weekend_rate'] ) ? $this->sanitize_money_value( $addon['weekend_rate'] ) : '0.00';
-				$price        = '0.00' !== $nightly_rate ? $nightly_rate : $weekend_rate;
+				$price = isset( $addon['nightly_rate'] ) ? $this->sanitize_money_value( $addon['nightly_rate'] ) : '0.00';
+			}
+			$weekend_price = isset( $addon['weekend_price'] ) ? $this->sanitize_money_value( $addon['weekend_price'] ) : '';
+			if ( '' === $weekend_price ) {
+				$weekend_price = isset( $addon['weekend_rate'] ) ? $this->sanitize_money_value( $addon['weekend_rate'] ) : '0.00';
 			}
 
 			if ( '' === $name ) {
@@ -2426,9 +2434,10 @@ class EEM_Reservations_CPT {
 			}
 
 			$results[ (string) $index ] = array(
-				'name'        => $name,
-				'description' => $description,
-				'price'       => '' !== $price ? $price : '0.00',
+				'name'          => $name,
+				'description'   => $description,
+				'price'         => '' !== $price ? $price : '0.00',
+				'weekend_price' => '' !== $weekend_price ? $weekend_price : '0.00',
 			);
 		}
 
