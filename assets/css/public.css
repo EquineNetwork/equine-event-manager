@@ -3499,7 +3499,8 @@
 .eem-event-page .eem-reservation-form input,
 .eem-event-page .eem-reservation-form select,
 .eem-event-page .eem-reservation-form textarea {
-	min-height: auto;
+	box-sizing: border-box;
+	min-height: 44px;
 	padding: 10px 13px;
 	border: 1.5px solid #D9E2F2;
 	border-radius: 8px;
@@ -3512,6 +3513,16 @@
 }
 .eem-event-page .eem-reservation-form textarea {
 	min-height: 90px;
+}
+/* 2.3.63 — "Nights" readonly box must match the height + chrome of the Rate
+   Type / Arrival / Departure selects beside it (mockup field-input). */
+.eem-event-page .eem-stay-night-field__value {
+	min-height: 44px;
+	box-sizing: border-box;
+	padding: 10px 13px;
+	border: 1.5px solid #D9E2F2;
+	border-radius: 8px;
+	background: #FAFBFE;
 }
 
 /* Products header + line items (mockup .products-header / .product-row) */
