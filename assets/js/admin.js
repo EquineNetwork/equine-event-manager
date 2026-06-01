@@ -3787,6 +3787,16 @@ function selectLinkedEvent(eventId) {
 	if (tah) tah.dataset.currentEventId = eventId;
 
 	cancelChangeEvent();
+
+	// 2.3.77 — when the link GATE is showing (new / unlinked reservation), the
+	// configuration form isn't rendered yet; setting the hidden event id only
+	// updated the header, so the gate persisted and "the form never loads."
+	// Persist the chosen event as a draft and reload so the server re-renders
+	// the full editor. Scoped to the gate so the "Change Event" flow on an
+	// already-configured reservation keeps its manual-save behavior.
+	if (document.querySelector('.eem-reservation-link-gate') && typeof eemDispatchSave === 'function') {
+		eemDispatchSave('save_draft');
+	}
 }
 
 function fetchEventOptions(query) {

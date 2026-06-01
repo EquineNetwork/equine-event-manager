@@ -184,6 +184,16 @@ class EEM_Reservations_List_Page {
 				_n( '%d reservation moved to Trash.', '%d reservations moved to Trash.', $bulk_count, 'equine-event-manager' ),
 				$bulk_count
 			) ),
+			'bulk_restored'         => array( 'type' => 'success', 'text' => sprintf(
+				/* translators: %d: number of reservations restored */
+				_n( '%d reservation restored from Trash.', '%d reservations restored from Trash.', $bulk_count, 'equine-event-manager' ),
+				$bulk_count
+			) ),
+			'bulk_deleted_permanently' => array( 'type' => 'success', 'text' => sprintf(
+				/* translators: %d: number of reservations permanently deleted */
+				_n( '%d reservation permanently deleted.', '%d reservations permanently deleted.', $bulk_count, 'equine-event-manager' ),
+				$bulk_count
+			) ),
 			'bulk_edit_unsupported' => array( 'type' => 'warning', 'text' => __( 'Bulk Edit is not available yet — it will land in a future release. Use the per-row Edit link for now.', 'equine-event-manager' ) ),
 			'bulk_no_selection'     => array( 'type' => 'warning', 'text' => __( 'Pick at least one reservation before clicking Apply.', 'equine-event-manager' ) ),
 			'bulk_no_action'        => array( 'type' => 'warning', 'text' => __( 'Pick a bulk action before clicking Apply.', 'equine-event-manager' ) ),
@@ -512,6 +522,28 @@ class EEM_Reservations_List_Page {
 
 		$action = isset( $_POST['bulk_action'] ) ? sanitize_key( wp_unslash( $_POST['bulk_action'] ) ) : '';
 		$status = isset( $_POST['status'] )      ? sanitize_key( wp_unslash( $_POST['status'] ) )      : 'all';
+
+		// 2.3.77 — Empty Trash: permanently deletes EVERY trashed reservation.
+		// Runs before the selection check because it operates on the whole bin.
+		if ( 'empty_trash' === $action ) {
+			$trashed = get_posts( array(
+				'post_type'      => EEM_Reservations_CPT::POST_TYPE,
+				'post_status'    => 'trash',
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+			) );
+			$count = 0;
+			foreach ( $trashed as $id ) {
+				if ( wp_delete_post( absint( $id ), true ) ) {
+					$count++;
+				}
+			}
+			self::redirect_with_notice(
+				$count > 0 ? 'bulk_deleted_permanently' : 'bulk_no_selection',
+				array( 'status' => 'trash', 'eem_bulk_count' => $count )
+			);
+		}
+
 		$raw    = isset( $_POST['_eem_selected_ids'] ) ? sanitize_text_field( wp_unslash( $_POST['_eem_selected_ids'] ) ) : '';
 		$ids    = array_filter( array_map( 'absint', explode( ',', $raw ) ) );
 
@@ -530,6 +562,35 @@ class EEM_Reservations_List_Page {
 				// FIX 2: stay on the current status view after bulk trash.
 				self::redirect_with_notice(
 					$count > 0 ? 'bulk_trashed' : 'failed',
+					array( 'status' => $status, 'eem_bulk_count' => $count )
+				);
+				break;
+
+			case 'restore':
+				$count = 0;
+				foreach ( $ids as $id ) {
+					$post = get_post( $id );
+					if ( $post && 'trash' === $post->post_status && wp_untrash_post( $id ) ) {
+						$count++;
+					}
+				}
+				self::redirect_with_notice(
+					$count > 0 ? 'bulk_restored' : 'failed',
+					array( 'status' => $status, 'eem_bulk_count' => $count )
+				);
+				break;
+
+			case 'delete_permanently':
+				// Only permanently delete already-trashed reservations (defense in depth).
+				$count = 0;
+				foreach ( $ids as $id ) {
+					$post = get_post( $id );
+					if ( $post && 'trash' === $post->post_status && wp_delete_post( $id, true ) ) {
+						$count++;
+					}
+				}
+				self::redirect_with_notice(
+					$count > 0 ? 'bulk_deleted_permanently' : 'failed',
 					array( 'status' => $status, 'eem_bulk_count' => $count )
 				);
 				break;
@@ -994,18 +1055,32 @@ class EEM_Reservations_List_Page {
 		?>
 		<div class="eem-list-toolbar">
 			<div class="eem-list-toolbar-left">
-				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="eem-bulk-form">
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="eem-bulk-form" onsubmit="return this.bulk_action.value !== 'delete_permanently' || confirm('<?php echo esc_js( __( 'Permanently delete the selected reservations? This cannot be undone.', 'equine-event-manager' ) ); ?>');">
 					<input type="hidden" name="action" value="eem_reservations_bulk" />
 					<input type="hidden" name="status" value="<?php echo esc_attr( $active_tab ); ?>" />
 					<?php wp_nonce_field( 'eem_reservations_bulk', '_eem_bulk_nonce' ); ?>
 					<input type="hidden" name="_eem_selected_ids" data-eem-bulk-selected-ids value="" />
 					<select class="eem-toolbar-select" name="bulk_action" data-eem-bulk-action>
 						<option value=""><?php esc_html_e( 'Bulk actions', 'equine-event-manager' ); ?></option>
-						<option value="edit"><?php esc_html_e( 'Edit', 'equine-event-manager' ); ?></option>
-						<option value="trash"><?php esc_html_e( 'Move to Trash', 'equine-event-manager' ); ?></option>
+						<?php if ( 'trash' === $active_tab ) : ?>
+							<option value="restore"><?php esc_html_e( 'Restore', 'equine-event-manager' ); ?></option>
+							<option value="delete_permanently"><?php esc_html_e( 'Delete Permanently', 'equine-event-manager' ); ?></option>
+						<?php else : ?>
+							<option value="trash"><?php esc_html_e( 'Move to Trash', 'equine-event-manager' ); ?></option>
+						<?php endif; ?>
 					</select>
 					<button type="submit" class="eem-toolbar-btn" data-eem-action="bulk-apply"><?php esc_html_e( 'Apply', 'equine-event-manager' ); ?></button>
 				</form>
+				<?php // 2.3.77 — Empty Trash (deletes every trashed reservation). Shown only on the Trash tab. ?>
+				<?php if ( 'trash' === $active_tab ) : ?>
+					<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="eem-empty-trash-form" onsubmit="return confirm('<?php echo esc_js( __( 'Permanently delete ALL trashed reservations? This cannot be undone.', 'equine-event-manager' ) ); ?>');">
+						<input type="hidden" name="action" value="eem_reservations_bulk" />
+						<input type="hidden" name="status" value="trash" />
+						<?php wp_nonce_field( 'eem_reservations_bulk', '_eem_bulk_nonce' ); ?>
+						<input type="hidden" name="bulk_action" value="empty_trash" />
+						<button type="submit" class="eem-toolbar-btn eem-toolbar-btn--danger"><?php esc_html_e( 'Empty Trash', 'equine-event-manager' ); ?></button>
+					</form>
+				<?php endif; ?>
 				<form method="get" class="eem-date-filter-form">
 					<input type="hidden" name="page" value="<?php echo esc_attr( self::MENU_SLUG ); ?>" />
 					<input type="hidden" name="status" value="<?php echo esc_attr( $active_tab ); ?>" />
