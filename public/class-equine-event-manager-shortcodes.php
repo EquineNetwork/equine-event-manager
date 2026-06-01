@@ -181,6 +181,19 @@ class EEM_Shortcodes {
 		$stall_assignment_enabled   = ! empty( $data['stall_chart_enabled'] );
 		$stall_map_url              = ! empty( $data['stall_map_file_id'] ) ? wp_get_attachment_url( absint( $data['stall_map_file_id'] ) ) : '';
 		$stall_assignment_blocks    = $stall_assignment_enabled ? $this->get_stall_assignment_option_groups( $data ) : array();
+		// C10.D — "Pick Your Stalls" picker data, from the canonical _en_stall_rows
+		// row builder (replaces the legacy block-range selector). Blocked = admin;
+		// reserved = units occupied by existing orders for this reservation.
+		$stall_rows_raw             = get_post_meta( $reservation_id, '_en_stall_rows', true );
+		$stall_picker_rows          = is_array( $stall_rows_raw ) ? $stall_rows_raw : array();
+		$stall_picker_blocked       = array();
+		foreach ( (array) get_post_meta( $reservation_id, '_en_blocked_stalls', true ) as $eem_blk ) {
+			$stall_picker_blocked[ (string) $eem_blk ] = true;
+		}
+		$stall_picker_reserved      = array();
+		foreach ( array_keys( $this->get_stall_assignment_occupancy_map( $reservation_id, $data ) ) as $eem_occ ) {
+			$stall_picker_reserved[ (string) $eem_occ ] = true;
+		}
 		$stall_selection_context    = array();
 		$rv_default_lot             = '';
 		$stall_default_stay_type    = array_key_first( $stall_stay_type_options );
@@ -268,6 +281,9 @@ class EEM_Shortcodes {
 			'stall_assignment_enabled' => $stall_assignment_enabled,
 			'stall_assignment_blocks' => $stall_assignment_blocks,
 			'stall_map_url' => $stall_map_url,
+			'stall_picker_rows' => $stall_picker_rows,
+			'stall_picker_blocked' => $stall_picker_blocked,
+			'stall_picker_reserved' => $stall_picker_reserved,
 		);
 
 		if ( $is_admin_invoice || is_admin() ) {
@@ -1382,6 +1398,9 @@ class EEM_Shortcodes {
 		$stall_assignment_enabled  = ! empty( $context['stall_assignment_enabled'] );
 		$stall_assignment_blocks   = isset( $context['stall_assignment_blocks'] ) && is_array( $context['stall_assignment_blocks'] ) ? $context['stall_assignment_blocks'] : array();
 		$stall_map_url             = isset( $context['stall_map_url'] ) ? $context['stall_map_url'] : '';
+		$stall_picker_rows         = isset( $context['stall_picker_rows'] ) && is_array( $context['stall_picker_rows'] ) ? $context['stall_picker_rows'] : array();
+		$stall_picker_blocked      = isset( $context['stall_picker_blocked'] ) && is_array( $context['stall_picker_blocked'] ) ? $context['stall_picker_blocked'] : array();
+		$stall_picker_reserved     = isset( $context['stall_picker_reserved'] ) && is_array( $context['stall_picker_reserved'] ) ? $context['stall_picker_reserved'] : array();
 
 		if ( ! empty( $data['required_shavings_enabled'] ) ) {
 			if ( absint( $data['required_shavings_per_stall'] ) > 0 ) {
@@ -1425,12 +1444,194 @@ class EEM_Shortcodes {
 				?>
 			<?php endif; ?>
 		</div>
-		<?php if ( $stall_assignment_enabled && ! empty( $stall_assignment_blocks ) ) : ?>
+		<?php // C10.D — prefer the canonical "Pick Your Stalls" row picker; fall back
+		// to the legacy block-range selector only when no _en_stall_rows exist. ?>
+		<?php if ( ! empty( $stall_picker_rows ) ) : ?>
+			<?php $this->render_stall_picker_grid( $stall_picker_rows, $stall_picker_blocked, $stall_picker_reserved, array(), (string) $stall_map_url ); ?>
+		<?php elseif ( $stall_assignment_enabled && ! empty( $stall_assignment_blocks ) ) : ?>
 			<?php $this->render_quantity_stall_assignment_selector( $stall_assignment_blocks, $stall_map_url ); ?>
 		<?php endif; ?>
 		<div class="eem-section-subtotal" aria-live="polite">
 			<span><?php esc_html_e( 'Stall Subtotal', 'equine-event-manager' ); ?></span>
 			<strong data-eem-total="stall_section_subtotal">$0.00</strong>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Expand a stall-label range into individual label strings.
+	 *
+	 * Mirrors EEM_Orders_Repository::expand_label_range — handles pure-integer
+	 * ranges ("100".."111"), prefixed ranges ("Y1".."Y12", "A-01".."A-12" share
+	 * the same alpha prefix), and falls back to the two endpoints for anything
+	 * else. The numeric component is padded back to the original first-label
+	 * width so "A-01".."A-12" stays zero-padded.
+	 *
+	 * @param string $first First label.
+	 * @param string $last  Last label.
+	 * @return array<int, string>
+	 */
+	private function expand_stall_label_range( $first, $last ): array {
+		$first = (string) $first;
+		$last  = (string) $last;
+
+		if ( is_numeric( $first ) && is_numeric( $last ) ) {
+			$units = array();
+			for ( $i = min( (int) $first, (int) $last ); $i <= max( (int) $first, (int) $last ); $i++ ) {
+				$units[] = (string) $i;
+			}
+			return $units;
+		}
+
+		if ( preg_match( '/^([A-Za-z][A-Za-z\-]*)(\d+)$/', $first, $fm )
+			&& preg_match( '/^([A-Za-z][A-Za-z\-]*)(\d+)$/', $last, $lm )
+			&& $fm[1] === $lm[1] ) {
+			$prefix = $fm[1];
+			$pad    = strlen( $fm[2] );
+			$units  = array();
+			for ( $i = min( (int) $fm[2], (int) $lm[2] ); $i <= max( (int) $fm[2], (int) $lm[2] ); $i++ ) {
+				$units[] = $prefix . str_pad( (string) $i, $pad, '0', STR_PAD_LEFT );
+			}
+			return $units;
+		}
+
+		return array_values( array_unique( array( $first, $last ) ) );
+	}
+
+	/**
+	 * Render a single "Pick Your Stalls" cell (C10.D).
+	 *
+	 * Available cells are <label>-wrapped checkboxes posting to
+	 * preferred_stall_units[] (the same field the legacy selector + server
+	 * validation already use). Reserved/blocked cells are inert <div>s.
+	 *
+	 * @param string               $label    Stall label.
+	 * @param array<string, bool>  $blocked  Blocked label lookup.
+	 * @param array<string, bool>  $reserved Reserved (taken) label lookup.
+	 * @param array<string, bool>  $selected Pre-selected label lookup.
+	 * @return void
+	 */
+	private function render_stall_picker_cell( string $label, array $blocked, array $reserved, array $selected ): void {
+		if ( isset( $blocked[ $label ] ) ) {
+			printf( '<div class="picker-stall blocked" aria-disabled="true">%s</div>', esc_html( $label ) );
+			return;
+		}
+		if ( isset( $reserved[ $label ] ) ) {
+			printf( '<div class="picker-stall reserved" aria-disabled="true">%s</div>', esc_html( $label ) );
+			return;
+		}
+		$is_selected = isset( $selected[ $label ] );
+		?>
+		<label class="picker-stall<?php echo $is_selected ? ' selected' : ''; ?>" data-stall-label="<?php echo esc_attr( $label ); ?>">
+			<input type="checkbox" class="eem-stall-picker-input" name="preferred_stall_units[]" value="<?php echo esc_attr( $label ); ?>"<?php checked( $is_selected ); ?> />
+			<span><?php echo esc_html( $label ); ?></span>
+		</label>
+		<?php
+	}
+
+	/**
+	 * Render the "Pick Your Stalls" interactive grid (C10.D, mockup event_page.html).
+	 *
+	 * Builds the customer-facing tap-to-select stall picker from the canonical
+	 * _en_stall_rows row builder data. One-sided rows render a single strip;
+	 * back-to-back rows render two sides split by an aisle. Cells are tagged
+	 * available / reserved (taken by another order) / blocked (admin) / selected.
+	 *
+	 * @param array  $stall_rows    Canonical _en_stall_rows array.
+	 * @param array  $blocked       Blocked label lookup (label => true).
+	 * @param array  $reserved      Reserved label lookup (label => true).
+	 * @param array  $selected      Pre-selected label lookup (label => true).
+	 * @param string $stall_map_url Optional stall-map download URL.
+	 * @return void
+	 */
+	private function render_stall_picker_grid( array $stall_rows, array $blocked, array $reserved, array $selected, string $stall_map_url ): void {
+		$rendered_rows = array();
+		foreach ( $stall_rows as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			$layout = isset( $row['layout'] ) && 'back-to-back' === $row['layout'] ? 'back-to-back' : 'one-sided';
+			$name   = isset( $row['name'] ) ? (string) $row['name'] : '';
+
+			if ( 'back-to-back' === $layout ) {
+				$top = ( '' !== (string) ( $row['top_first'] ?? '' ) && '' !== (string) ( $row['top_last'] ?? '' ) ) ? $this->expand_stall_label_range( $row['top_first'], $row['top_last'] ) : array();
+				$bot = ( '' !== (string) ( $row['bot_first'] ?? '' ) && '' !== (string) ( $row['bot_last'] ?? '' ) ) ? $this->expand_stall_label_range( $row['bot_first'], $row['bot_last'] ) : array();
+				if ( empty( $top ) && empty( $bot ) ) {
+					continue;
+				}
+				$rendered_rows[] = array( 'name' => $name, 'layout' => 'back-to-back', 'top' => $top, 'bot' => $bot, 'count' => count( $top ) + count( $bot ) );
+			} else {
+				$units = ( '' !== (string) ( $row['first'] ?? '' ) && '' !== (string) ( $row['last'] ?? '' ) ) ? $this->expand_stall_label_range( $row['first'], $row['last'] ) : array();
+				if ( empty( $units ) ) {
+					continue;
+				}
+				$rendered_rows[] = array( 'name' => $name, 'layout' => 'one-sided', 'units' => $units, 'count' => count( $units ) );
+			}
+		}
+
+		if ( empty( $rendered_rows ) ) {
+			return;
+		}
+		?>
+		<div class="stall-assign-box" data-eem-stall-picker>
+			<div class="stall-assign-header">
+				<div class="stall-assign-title"><?php esc_html_e( 'Pick Your Stalls', 'equine-event-manager' ); ?></div>
+				<?php if ( '' !== $stall_map_url ) : ?>
+					<a class="view-map-btn" href="<?php echo esc_url( $stall_map_url ); ?>" target="_blank" rel="noopener noreferrer">
+						<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+						<span><?php esc_html_e( 'View Stall Map', 'equine-event-manager' ); ?></span>
+					</a>
+				<?php endif; ?>
+			</div>
+			<p class="stall-assign-desc"><?php esc_html_e( "Tap stalls below to pick the exact ones you want. The layout matches the venue — back-to-back rows share an aisle in the middle. If you'd rather have stalls auto-assigned, leave selections blank and we'll assign them after checkout.", 'equine-event-manager' ); ?></p>
+			<div class="stall-legend" aria-hidden="true">
+				<div class="legend-item"><div class="legend-dot"></div> <?php esc_html_e( 'Available', 'equine-event-manager' ); ?></div>
+				<div class="legend-item"><div class="legend-dot selected"></div> <?php esc_html_e( 'Your pick', 'equine-event-manager' ); ?></div>
+				<div class="legend-item"><div class="legend-dot reserved"></div> <?php esc_html_e( 'Taken', 'equine-event-manager' ); ?></div>
+				<div class="legend-item"><div class="legend-dot blocked"></div> <?php esc_html_e( 'Unavailable', 'equine-event-manager' ); ?></div>
+			</div>
+			<div class="stall-picker">
+				<?php foreach ( $rendered_rows as $r ) : ?>
+					<div class="stall-row-section">
+						<div class="stall-row-section-head">
+							<div class="stall-row-section-name"><?php echo esc_html( $r['name'] ); ?></div>
+							<div class="stall-row-section-meta">
+								<?php
+								printf(
+									/* translators: 1: stall count, 2: layout label */
+									esc_html__( '%1$d stalls · %2$s', 'equine-event-manager' ),
+									(int) $r['count'],
+									'back-to-back' === $r['layout'] ? esc_html__( 'Back-to-back', 'equine-event-manager' ) : esc_html__( 'One-sided', 'equine-event-manager' )
+								);
+								?>
+							</div>
+						</div>
+						<?php if ( 'back-to-back' === $r['layout'] ) : ?>
+							<div class="picker-stall-row back-to-back">
+								<div class="picker-stall-row-side">
+									<?php foreach ( $r['top'] as $label ) { $this->render_stall_picker_cell( (string) $label, $blocked, $reserved, $selected ); } ?>
+								</div>
+								<div class="picker-stall-row-aisle"></div>
+								<div class="picker-stall-row-side">
+									<?php foreach ( $r['bot'] as $label ) { $this->render_stall_picker_cell( (string) $label, $blocked, $reserved, $selected ); } ?>
+								</div>
+							</div>
+						<?php else : ?>
+							<div class="picker-stall-row">
+								<?php foreach ( $r['units'] as $label ) { $this->render_stall_picker_cell( (string) $label, $blocked, $reserved, $selected ); } ?>
+							</div>
+						<?php endif; ?>
+					</div>
+				<?php endforeach; ?>
+			</div>
+			<div class="stall-selection-summary">
+				<div class="stall-selection-summary-top">
+					<div class="stall-selection-count" data-eem-stall-count><strong>0</strong> <?php esc_html_e( 'of 0 stalls selected', 'equine-event-manager' ); ?></div>
+					<div class="stall-selection-list" data-eem-stall-list></div>
+				</div>
+				<div class="stall-selection-warn" data-eem-stall-warn><?php esc_html_e( "You've selected the maximum. Tap a selected stall to deselect, or use the +/− buttons above to reserve more.", 'equine-event-manager' ); ?></div>
+			</div>
+			<p class="stall-hint"><?php esc_html_e( 'Want different stalls? Tap a selected stall to deselect it, then pick another. To add or remove total stalls, use the +/− buttons in the product list above.', 'equine-event-manager' ); ?></p>
 		</div>
 		<?php
 	}
@@ -8445,7 +8646,54 @@ RV Lot: " . $rv_lot['name'] );
 				toggleSummaryRow(form, 'fees', fees > 0);
 				toggleSummaryRow(form, 'tax', tax > 0);
 				syncStallAssignmentAvailability(form);
+				syncStallPicker(form);
 			}
+
+			/* C10.D — "Pick Your Stalls" picker. Reflects checkbox state onto the
+			   cells, updates the count / list / max-warning, and caps selections at
+			   the stall quantity (the +/- stepper above). */
+			function syncStallPicker(form) {
+				var picker = form.querySelector('[data-eem-stall-picker]');
+				if (!picker) { return; }
+				var max = Math.max(0, getNumberFieldValue(form, 'stall_qty'));
+				var inputs = picker.querySelectorAll('.eem-stall-picker-input');
+				var selected = [];
+				inputs.forEach(function(inp) {
+					var cell = inp.closest('.picker-stall');
+					if (cell) { cell.classList.toggle('selected', inp.checked); }
+					if (inp.checked) { selected.push(inp.value); }
+				});
+				var countEl = picker.querySelector('[data-eem-stall-count]');
+				if (countEl) {
+					countEl.innerHTML = '<strong>' + selected.length + '</strong> ' +
+						<?php echo wp_json_encode( esc_html__( 'of', 'equine-event-manager' ) ); ?> + ' ' + max + ' ' +
+						<?php echo wp_json_encode( esc_html__( 'stalls selected', 'equine-event-manager' ) ); ?>;
+				}
+				var listEl = picker.querySelector('[data-eem-stall-list]');
+				if (listEl) {
+					listEl.innerHTML = selected.length
+						? <?php echo wp_json_encode( esc_html__( 'Your stalls:', 'equine-event-manager' ) ); ?> + ' <strong>' + selected.map(function(v){ return '#' + v; }).join(', ') + '</strong>'
+						: '';
+				}
+				var warnEl = picker.querySelector('[data-eem-stall-warn]');
+				if (warnEl) { warnEl.classList.toggle('show', max > 0 && selected.length >= max); }
+			}
+			document.addEventListener('change', function(ev) {
+				var inp = ev.target;
+				if (!inp || !inp.classList || !inp.classList.contains('eem-stall-picker-input')) { return; }
+				var form = inp.closest('.eem-reservation-form');
+				if (!form) { return; }
+				if (inp.checked) {
+					var picker = form.querySelector('[data-eem-stall-picker]');
+					var max = Math.max(0, getNumberFieldValue(form, 'stall_qty'));
+					var count = picker ? picker.querySelectorAll('.eem-stall-picker-input:checked').length : 0;
+					if (max > 0 && count > max) {
+						// Over the limit — revert this pick.
+						inp.checked = false;
+					}
+				}
+				syncStallPicker(form);
+			});
 
 			function parseJsonAttribute(value) {
 				if (!value) {
