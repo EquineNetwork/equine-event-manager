@@ -3825,7 +3825,10 @@ function fetchEventOptions(query) {
 	// Cancel any in-flight request.
 	if (_eventSearchXhr) { try { _eventSearchXhr.abort(); } catch (e) {} _eventSearchXhr = null; }
 
-	var params = 'action=equine_event_manager_search_tec_events&nonce=' + encodeURIComponent(nonce) + '&term=' + encodeURIComponent(query);
+	// Exclude the reservation being edited so its own linked event still shows
+	// (and so taken-by-others events are filtered server-side — one-to-one guard).
+	var excludeRid = String(tah.dataset.reservationId || '0');
+	var params = 'action=equine_event_manager_search_tec_events&nonce=' + encodeURIComponent(nonce) + '&term=' + encodeURIComponent(query) + '&reservation_id=' + encodeURIComponent(excludeRid);
 	var xhr = new XMLHttpRequest();
 	_eventSearchXhr = xhr;
 	xhr.open('GET', ajaxUrl + '?' + params, true);

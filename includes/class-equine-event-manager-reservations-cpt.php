@@ -289,8 +289,9 @@ class EEM_Reservations_CPT {
 			wp_send_json_success( array( 'results' => array() ) );
 		}
 
-		$term    = isset( $_GET['term'] ) ? sanitize_text_field( wp_unslash( $_GET['term'] ) ) : '';
-		$results = $this->search_the_events_calendar_events( $term );
+		$term        = isset( $_GET['term'] ) ? sanitize_text_field( wp_unslash( $_GET['term'] ) ) : '';
+		$exclude_res = isset( $_GET['reservation_id'] ) ? absint( wp_unslash( $_GET['reservation_id'] ) ) : 0;
+		$results     = $this->search_the_events_calendar_events( $term, $exclude_res );
 
 		wp_send_json_success( array( 'results' => $results ) );
 	}
@@ -2691,7 +2692,7 @@ class EEM_Reservations_CPT {
 	 * @param string $term Search term.
 	 * @return array
 	 */
-	private function search_the_events_calendar_events( $term = '' ) {
+	private function search_the_events_calendar_events( $term = '', $exclude_reservation_id = 0 ) {
 		if ( ! $this->is_tec_event_source_available() ) {
 			return array();
 		}
@@ -2726,10 +2727,19 @@ class EEM_Reservations_CPT {
 		$results = array();
 
 		foreach ( $events as $event ) {
-			$event_dates = $this->get_tec_event_date_values( absint( $event->ID ) );
+			$event_id = absint( $event->ID );
+
+			// One-to-one guard: hide events that already have an active
+			// (non-trashed) reservation, except the one being edited. Keeps a
+			// second reservation from being created against a taken event.
+			if ( $this->get_active_linked_reservation_id_for_event( $event_id, absint( $exclude_reservation_id ) ) > 0 ) {
+				continue;
+			}
+
+			$event_dates = $this->get_tec_event_date_values( $event_id );
 
 			$results[] = array(
-				'id'         => absint( $event->ID ),
+				'id'         => $event_id,
 				'text'       => get_the_title( $event ),
 				'start_date' => $event_dates['start_date'],
 				'end_date'   => $event_dates['end_date'],
@@ -3764,6 +3774,36 @@ class EEM_Reservations_CPT {
 		}
 
 		return 0;
+	}
+
+	/**
+	 * Get the ACTIVE (non-trashed, still-existing) reservation linked to a TEC
+	 * event, ignoring a reservation we want to exclude (the one being edited).
+	 *
+	 * One event maps to at most one reservation. A stale reverse pointer to a
+	 * trashed or deleted reservation does NOT count — that event is free to
+	 * reuse. Used by both the event-picker filter (hide taken events) and the
+	 * save-time duplicate guard (block double-booking).
+	 *
+	 * @param int $event_id               TEC event post ID.
+	 * @param int $exclude_reservation_id Reservation to ignore (0 = none).
+	 * @return int Active linked reservation ID, or 0 when the event is free.
+	 */
+	public function get_active_linked_reservation_id_for_event( int $event_id, int $exclude_reservation_id = 0 ): int {
+		$reservation_id = $this->get_linked_reservation_id_for_event( $event_id );
+
+		if ( ! $reservation_id || $reservation_id === absint( $exclude_reservation_id ) ) {
+			return 0;
+		}
+
+		$status = get_post_status( $reservation_id );
+
+		// false = post no longer exists; 'trash' = soft-deleted. Both free the event.
+		if ( false === $status || 'trash' === $status ) {
+			return 0;
+		}
+
+		return $reservation_id;
 	}
 
 	/**

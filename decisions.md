@@ -2039,3 +2039,25 @@ The customer stall picker is built from the canonical `_en_stall_rows` row build
 **Decided:** 2026-06-01
 
 A proposed reorder (Contact Information inside Billing & Payment; Stay Details first) was **declined** — card order stays as built.
+
+### C10-12. One event ↔ one reservation is enforced by BLOCK, not displace
+**Decided:** 2026-06-01
+
+Each TEC event may have at most one reservation. The prior one-to-one logic
+*displaced* an existing reservation (silently cleared its `_en_event_id`) when a
+second reservation linked the same event — which let two drafts exist for one
+event and orphaned the first. New behavior:
+
+1. **Event picker hides taken events.** `ajax_search_tec_events` passes the
+   current `reservation_id`; `search_the_events_calendar_events` filters out any
+   event that already has an ACTIVE (non-trashed) reservation other than the one
+   being edited. A stale reverse pointer to a *trashed* reservation does NOT
+   count — that event is free to reuse.
+2. **Save-time backstop blocks double-booking.** `ajax_save` rejects (HTTP 409,
+   `code: event_already_linked`) any attempt to link an event that already has a
+   different active reservation. Surfaced to the editor as an error toast.
+
+New shared helper: `EEM_Reservations_CPT::get_active_linked_reservation_id_for_event(
+$event_id, $exclude_reservation_id )` — single source of truth for "is this event
+taken?", used by both guards. "Active" = reverse-linked reservation exists and is
+not trashed/deleted. (2.3.81)

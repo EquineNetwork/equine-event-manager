@@ -253,6 +253,7 @@ class EEM_Reservation_Editor_Page {
 						<div class="eem-header-typeahead" id="eem-header-typeahead"
 							style="<?php echo $has_linked_event ? 'display:none;' : ''; ?>"
 							data-current-event-id="<?php echo esc_attr( (string) $current_tec_event_id ); ?>"
+							data-reservation-id="<?php echo esc_attr( (string) $reservation_id ); ?>"
 							data-ajax-url="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>"
 							data-search-nonce="<?php echo esc_attr( $_search_nonce ); ?>">
 							<input type="text"
@@ -663,6 +664,24 @@ class EEM_Reservation_Editor_Page {
 		$post = $reservation_id > 0 ? get_post( $reservation_id ) : null;
 		if ( ! $post || EEM_Reservations_CPT::POST_TYPE !== $post->post_type ) {
 			wp_send_json_error( array( 'message' => __( 'Reservation not found.', 'equine-event-manager' ) ), 404 );
+		}
+
+		// One-to-one guard: refuse to link an event that already has another
+		// active (non-trashed) reservation. The event picker hides taken events
+		// client-side; this is the server-side backstop against double-booking
+		// (stale dropdown, race, or a direct request).
+		if ( isset( $_POST['en_reservation']['event_id'] ) ) {
+			$requested_event_id = absint( wp_unslash( $_POST['en_reservation']['event_id'] ) );
+			if ( $requested_event_id > 0 ) {
+				$guard_cpt = new EEM_Reservations_CPT();
+				$conflict  = $guard_cpt->get_active_linked_reservation_id_for_event( $requested_event_id, $reservation_id );
+				if ( $conflict > 0 ) {
+					wp_send_json_error( array(
+						'message' => __( 'That event already has a reservation. Each event can have only one reservation.', 'equine-event-manager' ),
+						'code'    => 'event_already_linked',
+					), 409 );
+				}
+			}
 		}
 
 		$new_status = null;
