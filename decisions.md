@@ -2224,3 +2224,20 @@ $208.66 incl. $14.10 tax @ 7.5%, matching the receipt mockup grand total.
 gap unchanged by this work; revisit when refund-of-tax behavior is specified.
 **Live-checkout verification still pending** for the WRITE path (the read/grouping
 path is smoke-covered).
+
+**Increment 2 — DONE (2.3.88):** Receipt template + builder.
+- `templates/receipt/receipt.php` — mockup port of `order_receipt.html`, authored
+  **TABLE-BASED** (not grid/flex) because Dompdf supports neither; renders identically
+  in the PDF and the hosted web view, `<style>` read directly by Dompdf (no Emogrifier).
+- `EEM_Shortcodes::build_receipt_html($order)` — maps the order to the receipt context
+  (Customer/Billing header, Reservation Summary cards for Stall/RV/Group, itemized
+  totals → Subtotal → Convenience Fee → Sales Tax (rate%) → Grand Total). Tax line reads
+  the persisted `tax`/`tax_rate` from increment 1.
+- DRY: extracted the shared `build_order_line_items($order, $include_fee)` helper used by
+  BOTH the C11 confirmation email (`include_fee=true`, fee itemized inline) and the C12
+  receipt (`include_fee=false`, fee shown in the totals block). C11 smoke re-run 29/29 —
+  no regression.
+- Verified: `tests/smoke/c12-receipt-render-smoke.php` (25/25) — content density per
+  section + Sales Tax (7.5%) $14.10 line + fee-in-totals-not-items + assignments-omitted.
+  **Dompdf compatibility confirmed:** the table-based template renders a valid `%PDF`
+  (18 KB), de-risking increment 3. HTML + PDF previews written to Desktop for eyeball.
