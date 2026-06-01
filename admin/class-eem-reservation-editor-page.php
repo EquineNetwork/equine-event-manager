@@ -374,6 +374,8 @@ class EEM_Reservation_Editor_Page {
 				return __( 'This section is disabled. Enable it to offer optional add-ons to customers.', 'equine-event-manager' );
 			case 'agreement':
 				return __( 'This section is disabled. Enable it to require customers to acknowledge an agreement before booking.', 'equine-event-manager' );
+			case 'venuemap':
+				return __( 'This section is disabled. Enable it to upload a venue map customers can download.', 'equine-event-manager' );
 			case 'stall':
 				return __( 'This section is disabled. Enable it to offer stall reservations.', 'equine-event-manager' );
 			case 'rv':
@@ -401,6 +403,7 @@ class EEM_Reservation_Editor_Page {
 			'group'        => 'group_reservations_enabled',
 			'fees'         => 'convenience_fee_enabled',
 			'agreement'    => 'venue_agreement_enabled',
+			'venuemap'           => 'venue_map_enabled',
 			'stall'              => 'stalls_enabled',
 			'rv'                 => 'rv_enabled',
 			'event_pre_entries'  => 'event_pre_entries_enabled',
@@ -603,6 +606,7 @@ class EEM_Reservation_Editor_Page {
 			'addons'            => '_section-addons.php',
 			'group'        => '_section-group.php',
 			'fees'         => '_section-fees.php',
+			'venuemap'     => '_section-venuemap.php',
 			'agreement'    => '_section-agreement.php',
 			'cancellation' => '_section-cancellation.php',
 		);
@@ -632,6 +636,7 @@ class EEM_Reservation_Editor_Page {
 			array( 'key' => 'addons',            'title' => __( 'General Add-Ons',         'equine-event-manager' ), 'icon_tone' => 'orange', 'icon_key' => 'plus',      'enable_toggle' => true,  'collapsed' => true  ),
 			array( 'key' => 'group',        'title' => __( 'Group Reservations',      'equine-event-manager' ), 'icon_tone' => 'green',  'icon_key' => 'users',     'enable_toggle' => true,  'collapsed' => true  ),
 			array( 'key' => 'fees',         'title' => __( 'Convenience Fee',         'equine-event-manager' ), 'icon_tone' => 'orange', 'icon_key' => 'dollar',    'enable_toggle' => true,  'collapsed' => true  ),
+			array( 'key' => 'venuemap',     'title' => __( 'Venue Map',               'equine-event-manager' ), 'icon_tone' => 'teal',   'icon_key' => 'map-pin',   'enable_toggle' => true,  'collapsed' => true  ),
 			array( 'key' => 'agreement',    'title' => __( 'Agreement',               'equine-event-manager' ), 'icon_tone' => 'navy',   'icon_key' => 'file',      'enable_toggle' => true,  'collapsed' => true  ),
 			array( 'key' => 'cancellation', 'title' => __( 'Cancellation Policy',     'equine-event-manager' ), 'icon_tone' => 'red',    'icon_key' => 'shield-x',  'enable_toggle' => true,  'collapsed' => true  ),
 		);

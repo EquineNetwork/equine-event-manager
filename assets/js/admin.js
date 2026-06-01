@@ -2915,6 +2915,68 @@
 			if (removeBtn.parentNode) removeBtn.parentNode.removeChild(removeBtn);
 			return;
 		}
+
+		/* ── Venue Map upload + remove (2.3.74) ───────────────────────
+		   Same flow as the Agreement uploader, but the venue map may be a
+		   PDF OR an image (no MIME restriction). Persists to the
+		   en_venue_map_image_id hidden input. */
+		var vmUploadBtn = t.closest('[data-eem-action="reservation-editor-venuemap-upload"]');
+		if (vmUploadBtn) {
+			ev.preventDefault();
+			if (!(window.wp && wp.media)) {
+				if (window.EEM && window.EEM.showSaveToast) window.EEM.showSaveToast('Media Library not loaded.', { variant: 'error' });
+				return;
+			}
+			var vmFrame = wp.media({ title: 'Choose Venue Map (PDF or image)', button: { text: 'Use this file' }, multiple: false });
+			vmFrame.on('select', function () {
+				var att = vmFrame.state().get('selection').first().toJSON();
+				if (!att || !att.id) return;
+				var vmHidden = document.getElementById('en_venue_map_image_id');
+				if (vmHidden) vmHidden.value = String(att.id);
+				var vmRow = vmUploadBtn.closest('.eem-file-row');
+				if (!vmRow) return;
+				var vmName = vmRow.querySelector('[data-eem-file-name]');
+				if (vmName) { vmName.textContent = att.filename || att.title || 'venue-map'; vmName.classList.remove('eem-file-name-empty'); }
+				var vmView = vmRow.querySelector('.eem-view-link');
+				if (!vmView) {
+					vmView = document.createElement('a');
+					vmView.className = 'eem-view-link';
+					vmView.target = '_blank';
+					vmView.rel = 'noopener noreferrer';
+					vmView.textContent = 'View';
+					vmRow.insertBefore(vmView, vmUploadBtn);
+				}
+				vmView.href = att.url || '#';
+				vmUploadBtn.textContent = 'Replace';
+				if (!vmRow.querySelector('[data-eem-action="reservation-editor-venuemap-remove"]')) {
+					var vmRm = document.createElement('button');
+					vmRm.type = 'button';
+					vmRm.className = 'eem-btn-file-del';
+					vmRm.setAttribute('aria-label', 'Remove file');
+					vmRm.setAttribute('data-eem-action', 'reservation-editor-venuemap-remove');
+					vmRm.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>';
+					vmUploadBtn.insertAdjacentElement('afterend', vmRm);
+				}
+			});
+			vmFrame.open();
+			return;
+		}
+		var vmRemoveBtn = t.closest('[data-eem-action="reservation-editor-venuemap-remove"]');
+		if (vmRemoveBtn) {
+			ev.preventDefault();
+			var vmHidden2 = document.getElementById('en_venue_map_image_id');
+			if (vmHidden2) vmHidden2.value = '0';
+			var vmRow2 = vmRemoveBtn.closest('.eem-file-row');
+			if (!vmRow2) return;
+			var vmName2 = vmRow2.querySelector('[data-eem-file-name]');
+			if (vmName2) { vmName2.textContent = 'No venue map uploaded yet'; vmName2.classList.add('eem-file-name-empty'); }
+			var vmView2 = vmRow2.querySelector('.eem-view-link');
+			if (vmView2 && vmView2.parentNode) vmView2.parentNode.removeChild(vmView2);
+			var vmUp = vmRow2.querySelector('[data-eem-action="reservation-editor-venuemap-upload"]');
+			if (vmUp) vmUp.textContent = 'Upload';
+			if (vmRemoveBtn.parentNode) vmRemoveBtn.parentNode.removeChild(vmRemoveBtn);
+			return;
+		}
 	});
 
 	/* ── Stall Map upload + remove (2.3.23 UX polish) ─────────────────────────

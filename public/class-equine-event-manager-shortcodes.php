@@ -212,7 +212,9 @@ class EEM_Shortcodes {
 		$support_phone                = ! empty( $company_settings['support_phone'] ) ? $this->format_phone_label( $company_settings['support_phone'] ) : '';
 		$event_card_details           = $this->get_reservation_event_card_details( $data );
 		$normalized_event_data        = class_exists( 'EEM_Events' ) ? EEM_Events::get_normalized_reservation_event_data( $reservation_id ) : array();
-		$venue_map_url                = ! empty( $data['venue_map_image_id'] ) ? wp_get_attachment_image_url( absint( $data['venue_map_image_id'] ), 'large' ) : '';
+		// 2.3.74 — use the raw attachment URL (works for PDF and image; the old
+		// image-only getter returned '' for PDF venue maps).
+		$venue_map_url                = ! empty( $data['venue_map_image_id'] ) ? wp_get_attachment_url( absint( $data['venue_map_image_id'] ) ) : '';
 		$venue_map_download_url       = ! empty( $data['venue_map_download_url'] ) ? esc_url( $data['venue_map_download_url'] ) : ( $venue_map_url ? esc_url( $venue_map_url ) : '' );
 		$show_venue_map               = ! empty( $data['venue_map_enabled'] ) && ! empty( $venue_map_download_url );
 		$venue_agreement_url          = ! empty( $data['venue_agreement_file_id'] ) ? wp_get_attachment_url( absint( $data['venue_agreement_file_id'] ) ) : '';
@@ -513,7 +515,7 @@ class EEM_Shortcodes {
 						<?php if ( '' !== $eem_ed_checkin || '' !== $eem_ed_bring || '' !== $eem_ed_parking || '' !== $eem_ed_contact ) : ?>
 							<div class="eem-event-day-info">
 								<?php if ( '' !== $eem_ed_checkin ) : ?>
-									<p class="eem-event-day-info__line"><strong><?php esc_html_e( 'Check-in opens:', 'equine-event-manager' ); ?></strong> <?php echo esc_html( $eem_ed_checkin ); ?></p>
+									<p class="eem-event-day-info__line"><strong><?php esc_html_e( 'Check-In/Check-Out Instructions:', 'equine-event-manager' ); ?></strong> <?php echo esc_html( $eem_ed_checkin ); ?></p>
 								<?php endif; ?>
 								<?php if ( '' !== $eem_ed_bring ) : ?>
 									<p class="eem-event-day-info__line"><strong><?php esc_html_e( 'What to bring:', 'equine-event-manager' ); ?></strong> <?php echo nl2br( esc_html( $eem_ed_bring ) ); ?></p>
@@ -522,12 +524,17 @@ class EEM_Shortcodes {
 									<p class="eem-event-day-info__line"><strong><?php esc_html_e( 'Parking:', 'equine-event-manager' ); ?></strong> <?php echo nl2br( esc_html( $eem_ed_parking ) ); ?></p>
 								<?php endif; ?>
 								<?php if ( '' !== $eem_ed_contact ) : ?>
-									<p class="eem-event-day-info__line"><strong><?php esc_html_e( 'Questions on event day:', 'equine-event-manager' ); ?></strong> <?php
-										/* translators: %s: event-day contact, e.g. a phone number. */
-										printf( esc_html__( 'Call the event hotline at %s', 'equine-event-manager' ), esc_html( $eem_ed_contact ) );
-									?></p>
+									<p class="eem-event-day-info__line"><strong><?php esc_html_e( 'Event Contact:', 'equine-event-manager' ); ?></strong> <?php echo $this->linkify_contact_text( $eem_ed_contact ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper returns escaped HTML. ?></p>
 								<?php endif; ?>
 							</div>
+						<?php endif; ?>
+						<?php // 2.3.74 — Download Venue Map link at the bottom of Stay Details
+						// (shown when the admin uploaded a full venue map, PDF or image). ?>
+						<?php if ( $show_venue_map ) : ?>
+							<a class="eem-stay-venue-map-link" href="<?php echo esc_url( $venue_map_download_url ); ?>" target="_blank" rel="noopener noreferrer" download>
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+								<span><?php esc_html_e( 'Download Venue Map', 'equine-event-manager' ); ?></span>
+							</a>
 						<?php endif; ?>
 					</div>
 				<?php endif; ?>
@@ -7015,6 +7022,49 @@ RV Lot: " . $rv_lot['name'] );
 		}
 
 		return date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $timestamp );
+	}
+
+	/**
+	 * Escape a free-text contact string and turn any email addresses and phone
+	 * numbers inside it into clickable mailto:/tel: links.
+	 *
+	 * The whole string is HTML-escaped first, then emails and phone-like digit
+	 * runs are wrapped in anchors. Returns safe HTML (callers must echo it
+	 * unescaped). Empty input returns ''.
+	 *
+	 * @param string $text Raw contact string (may contain a phone, an email, or both).
+	 * @return string Safe HTML with clickable contacts.
+	 */
+	private function linkify_contact_text( $text ): string {
+		$text = (string) $text;
+		if ( '' === trim( $text ) ) {
+			return '';
+		}
+
+		$html = esc_html( $text );
+
+		// Emails → mailto:.
+		$html = preg_replace_callback(
+			'/[\w.+-]+@[\w-]+\.[\w.-]+/',
+			static function ( $m ) {
+				return '<a href="mailto:' . esc_attr( $m[0] ) . '">' . $m[0] . '</a>';
+			},
+			$html
+		);
+
+		// Phone-like runs (7+ digits with optional separators), avoiding anything
+		// directly following a word char, '@', or a tag close so emails/hrefs are
+		// not re-matched.
+		$html = preg_replace_callback(
+			'/(?<![\w@>])(\+?\d[\d().\s-]{5,}\d)/',
+			static function ( $m ) {
+				$digits = preg_replace( '/[^\d+]/', '', $m[0] );
+				return '<a href="tel:' . esc_attr( $digits ) . '">' . $m[0] . '</a>';
+			},
+			$html
+		);
+
+		return $html;
 	}
 
 	/**

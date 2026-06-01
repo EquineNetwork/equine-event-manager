@@ -3124,17 +3124,18 @@ class EEM_Events {
 		}
 
 		$producer_val = ! empty( $event_data['producer']['name'] ) ? (string) $event_data['producer']['name'] : '';
-		$producer_sub = trim(
-			implode(
-				' · ',
-				array_filter(
-					array(
-						! empty( $event_data['producer']['phone'] ) ? self::format_us_phone_display( $event_data['producer']['phone'] ) : '',
-						! empty( $event_data['producer']['email'] ) ? (string) $event_data['producer']['email'] : '',
-					)
-				)
-			)
-		);
+		// 2.3.74 — producer phone + email render as clickable tel:/mailto: links.
+		$producer_contacts = array();
+		if ( ! empty( $event_data['producer']['phone'] ) ) {
+			$producer_phone_display = self::format_us_phone_display( $event_data['producer']['phone'] );
+			$producer_phone_digits  = preg_replace( '/[^\d+]/', '', $producer_phone_display );
+			$producer_contacts[]    = '<a href="tel:' . esc_attr( $producer_phone_digits ) . '">' . esc_html( $producer_phone_display ) . '</a>';
+		}
+		if ( ! empty( $event_data['producer']['email'] ) ) {
+			$producer_email      = (string) $event_data['producer']['email'];
+			$producer_contacts[] = '<a href="mailto:' . esc_attr( $producer_email ) . '">' . esc_html( $producer_email ) . '</a>';
+		}
+		$producer_sub = implode( ' · ', $producer_contacts );
 
 		ob_start();
 		self::render_frontend_styles();
@@ -3188,7 +3189,7 @@ class EEM_Events {
 										<div class="hero-meta-label"><?php esc_html_e( 'Producer', 'equine-event-manager' ); ?></div>
 										<div class="hero-meta-val"><?php echo esc_html( $producer_val ); ?></div>
 										<?php if ( '' !== $producer_sub ) : ?>
-											<div class="hero-meta-sub"><?php echo esc_html( $producer_sub ); ?></div>
+											<div class="hero-meta-sub"><?php echo $producer_sub; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built from esc_html/esc_attr parts above. ?></div>
 										<?php endif; ?>
 									</div>
 								<?php endif; ?>

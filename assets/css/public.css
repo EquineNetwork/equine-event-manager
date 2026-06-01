@@ -915,6 +915,26 @@
 .eem-event-page .eem-event-day-info__line strong {
 	color: #031B4E;
 }
+/* 2.3.74 — Download Venue Map link at the bottom of the Stay Details card. */
+.eem-event-page .eem-stay-venue-map-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	margin-top: 16px;
+	font-size: 14px;
+	font-weight: 600;
+	color: #1668F2;
+	text-decoration: none;
+}
+.eem-event-page .eem-stay-venue-map-link svg {
+	width: 18px;
+	height: 18px;
+	flex-shrink: 0;
+}
+.eem-event-page .eem-stay-venue-map-link:hover,
+.eem-event-page .eem-stay-venue-map-link:focus {
+	color: #0d52cc;
+}
 /* 2.3.70 — check-in / check-out time pills: icon + (uppercase label / value)
    row, matching the mockup screenshot ("after 10:00am" / "by 4:00pm"). */
 .eem-event-details-card__time-card {
@@ -3288,13 +3308,8 @@
 	color: #4a5a7a;
 	line-height: 1.55;
 }
-.eem-event-page .hero-bullets li::before {
-	content: '•';
-	color: #1668F2;
-	font-size: 15px;
-	flex-shrink: 0;
-	margin-top: 0;
-}
+/* 2.3.74 — blue bullet removed from hero body copy per product decision; the
+   event description renders as plain lines, no marker. */
 .eem-event-page .hero-meta-grid {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
