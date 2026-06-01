@@ -682,25 +682,18 @@ class EEM_Reservations_List_Page {
 			wp_send_json_error( array( 'message' => __( 'Reservation not found.', 'equine-event-manager' ) ), 404 );
 		}
 
-		// Mirror logic — identical to FIX 4 in EEM_Reservation_Editor_Page::ajax_save().
-		$res_name_raw    = isset( $_POST['eem_res_name'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['eem_res_name'] ) ) : '';
-		$name_overridden = '' !== trim( $res_name_raw );
-		if ( ! $name_overridden ) {
-			if ( class_exists( 'EEM_Reservation_Source_Resolver' ) ) {
-				$_src_fields = EEM_Reservation_Source_Resolver::resolve_event_fields( $reservation_id );
-				$res_name_raw = '' !== $_src_fields['title']
-					? (string) $_src_fields['title']
-					: get_the_title( $reservation_id );
-			} else {
-				$res_name_raw = get_the_title( $reservation_id );
-			}
+		// 2.3.56 — Reservation name + slug always inherit the linked event name;
+		// admins can no longer override them. Any submitted name/slug is ignored —
+		// the title is resolved from the linked event every time.
+		$res_name_raw = '';
+		if ( class_exists( 'EEM_Reservation_Source_Resolver' ) ) {
+			$_src_fields  = EEM_Reservation_Source_Resolver::resolve_event_fields( $reservation_id );
+			$res_name_raw = isset( $_src_fields['title'] ) ? (string) $_src_fields['title'] : '';
 		}
-
-		$res_slug_raw    = isset( $_POST['eem_res_slug'] ) ? sanitize_title( wp_unslash( (string) $_POST['eem_res_slug'] ) ) : '';
-		$slug_overridden = '' !== $res_slug_raw;
-		if ( ! $slug_overridden ) {
-			$res_slug_raw = sanitize_title( $res_name_raw );
+		if ( '' === $res_name_raw ) {
+			$res_name_raw = (string) get_the_title( $reservation_id );
 		}
+		$res_slug_raw = sanitize_title( $res_name_raw );
 
 		$result = wp_update_post( array(
 			'ID'         => $reservation_id,
@@ -712,13 +705,10 @@ class EEM_Reservations_List_Page {
 			wp_send_json_error( array( 'message' => $result->get_error_message() ), 500 );
 		}
 
-		update_post_meta( $reservation_id, '_eem_reservation_name_overridden', $name_overridden ? 1 : 0 );
-		update_post_meta( $reservation_id, '_eem_reservation_slug_overridden', $slug_overridden ? 1 : 0 );
-
 		wp_send_json_success( array(
 			'name'    => $res_name_raw,
 			'slug'    => $res_slug_raw,
-			'message' => __( 'Reservation updated.', 'equine-event-manager' ),
+			'message' => __( 'Reservation name is inherited from the linked event.', 'equine-event-manager' ),
 		) );
 	}
 

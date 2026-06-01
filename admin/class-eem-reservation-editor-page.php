@@ -971,27 +971,28 @@ class EEM_Reservation_Editor_Page {
 			wp_send_json_error( array( 'message' => __( 'Reservation not found.', 'equine-event-manager' ) ), 404 );
 		}
 
-		$new_name        = sanitize_text_field( wp_unslash( (string) ( $_POST['eem_res_name'] ?? '' ) ) );
-		$name_overridden = '' !== trim( $new_name );
-
-		if ( ! $name_overridden ) {
-			// Empty → clear override; mirror immediately from linked event title.
-			if ( class_exists( 'EEM_Reservation_Source_Resolver' ) ) {
-				$_src    = EEM_Reservation_Source_Resolver::resolve_event_fields( $reservation_id );
-				$new_name = '' !== $_src['title']
-					? (string) $_src['title']
-					: get_the_title( $reservation_id );
-			} else {
-				$new_name = get_the_title( $reservation_id );
-			}
+		// 2.3.56 — Reservation names are no longer editable; they always inherit
+		// the linked event name. Any submitted name is ignored: this endpoint now
+		// only ever resets the title to the current linked-event title (defensive
+		// — the pencil UI that called it has been removed).
+		$new_name = '';
+		if ( class_exists( 'EEM_Reservation_Source_Resolver' ) ) {
+			$_src     = EEM_Reservation_Source_Resolver::resolve_event_fields( $reservation_id );
+			$new_name = isset( $_src['title'] ) ? (string) $_src['title'] : '';
+		}
+		if ( '' === $new_name ) {
+			$new_name = (string) get_the_title( $reservation_id );
 		}
 
-		wp_update_post( array( 'ID' => $reservation_id, 'post_title' => $new_name ) );
-		update_post_meta( $reservation_id, '_eem_reservation_name_overridden', $name_overridden ? 1 : 0 );
+		wp_update_post( array(
+			'ID'         => $reservation_id,
+			'post_title' => $new_name,
+			'post_name'  => sanitize_title( $new_name ),
+		) );
 
 		wp_send_json_success( array(
 			'name'    => $new_name,
-			'message' => __( 'Reservation renamed.', 'equine-event-manager' ),
+			'message' => __( 'Reservation name is inherited from the linked event.', 'equine-event-manager' ),
 		) );
 	}
 
@@ -1012,36 +1013,33 @@ class EEM_Reservation_Editor_Page {
 	 * @return void
 	 */
 	private static function apply_mirror( int $reservation_id ): void {
-		$name_overridden = (bool) get_post_meta( $reservation_id, '_eem_reservation_name_overridden', true );
-		$slug_overridden = (bool) get_post_meta( $reservation_id, '_eem_reservation_slug_overridden', true );
-
-		if ( $name_overridden && $slug_overridden ) {
-			// Both overridden — nothing to mirror.
+		// 2.3.56 — Reservations ALWAYS inherit the linked event name. The admin
+		// can no longer override the name or slug (override flags retired), so
+		// this mirrors unconditionally. When no event is linked yet, the existing
+		// placeholder title is left untouched.
+		if ( ! class_exists( 'EEM_Reservation_Source_Resolver' ) ) {
 			return;
 		}
 
-		// Resolve the source-event title; fall back to current post_title.
-		$mirrored_name = '';
-		if ( class_exists( 'EEM_Reservation_Source_Resolver' ) ) {
-			$src           = EEM_Reservation_Source_Resolver::resolve_event_fields( $reservation_id );
-			$mirrored_name = '' !== $src['title'] ? (string) $src['title'] : get_the_title( $reservation_id );
-		} else {
-			$mirrored_name = get_the_title( $reservation_id );
-		}
-
+		$src           = EEM_Reservation_Source_Resolver::resolve_event_fields( $reservation_id );
+		$mirrored_name = isset( $src['title'] ) ? (string) $src['title'] : '';
 		if ( '' === $mirrored_name ) {
+			// No linked event — keep whatever placeholder title the post has.
 			return;
 		}
 
-		$args = array( 'ID' => $reservation_id );
-		if ( ! $name_overridden ) {
-			$args['post_title'] = $mirrored_name;
-		}
-		if ( ! $slug_overridden ) {
-			$args['post_name'] = sanitize_title( $mirrored_name );
+		// Only write when something actually changed (avoids a needless
+		// wp_update_post + slug churn on every page load).
+		$current = (string) get_post_field( 'post_title', $reservation_id );
+		if ( $current === $mirrored_name ) {
+			return;
 		}
 
-		wp_update_post( $args );
+		wp_update_post( array(
+			'ID'         => $reservation_id,
+			'post_title' => $mirrored_name,
+			'post_name'  => sanitize_title( $mirrored_name ),
+		) );
 	}
 
 	/**

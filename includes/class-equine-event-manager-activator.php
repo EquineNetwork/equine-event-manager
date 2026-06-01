@@ -102,6 +102,10 @@ class EEM_Activator {
 			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-002-feed-source-canon.php';
 			eem_mig_002_feed_source_canon();
 		}
+		if ( ! get_option( 'eem_mig_003_reservation_name_inherit_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-003-reservation-name-inherit.php';
+			eem_mig_003_reservation_name_inherit();
+		}
 	}
 
 	/**
