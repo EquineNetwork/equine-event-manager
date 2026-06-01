@@ -2966,24 +2966,19 @@
 	background: #ffffff;
 	box-shadow: var(--eem-app-shadow);
 }
-/* 2.3.69 — Complete Reservation button clipping fix (bulletproof). The event page
-   zeroes the section padding (`.eem-event-page .eem-reservation-section{padding:0}`)
-   and sets `overflow:hidden`, so the button (a direct child) sat at the content-box
-   bottom and was clipped at the card's rounded edge. A `margin-bottom` on the button
-   does NOT reliably create space here (margin behavior against the padding-0 +
-   overflow:hidden card), so restore an explicit bottom *padding* on the payment card
-   itself — padding never collapses. The doubled-class selector (0,3,0) cleanly beats
-   the `.eem-event-page .eem-reservation-section{padding:0}` rule (0,2,0). */
-.eem-event-page .eem-reservation-section.eem-reservation-section--payment {
-	padding-bottom: 22px;
-	/* 2.3.71 — belt-and-suspenders: the section's `overflow:hidden` (0,2,0) was
-	   clipping the Complete Reservation button's rounded bottom against the card
-	   edge. Force overflow visible at (0,3,0) so the button can never be clipped,
-	   regardless of how the padding/margin resolves. The header band has no
-	   background that could poke past the rounded top corners, so this is safe. */
-	overflow: visible;
-}
+/* 2.3.75 — THE actual Complete Reservation button fix (root cause found via
+   DevTools). The button has `width: 100%` (from .eem-event-page .eem-reservation-submit)
+   AND inherits `margin: 0 22px` from the generic direct-child inset rule. With
+   border-box that makes the button 44px WIDER than the card, so it overflowed and
+   the card's `overflow:hidden` clipped its edges — which read as "the button is cut
+   off." Earlier padding/overflow attempts treated the wrong axis. Fix: make the
+   payment button a block with `width: auto` so the 22px side margins define the
+   inset and the button fits inside the card. The generic `:last-child { margin-bottom:
+   20px }` rule already gives the bottom gap, so no padding/overflow override is
+   needed and the card keeps its normal `overflow:hidden`. */
 .eem-event-page .eem-reservation-section--payment > .eem-reservation-submit {
+	display: block;
+	width: auto;
 	margin-top: 18px;
 }
 /* 2.3.65 — billing/credit-card sub-cards ported to the mockup's .billing-sub-box
