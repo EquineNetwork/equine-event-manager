@@ -21,7 +21,14 @@ ok( 'public.css carries the C10.C scoped restyle block', str_contains( $css, 'C1
 ok( 'section card chrome scoped under .eem-event-page', str_contains( $css, '.eem-event-page .eem-reservation-section {' ), $pass, $fail, $log );
 ok( 'header band uppercases the section title', (bool) preg_match( '/\.eem-event-page \.eem-reservation-section__title \{[^}]*text-transform: uppercase/s', $css ), $pass, $fail, $log );
 ok( 'toggle restyled to mockup blue', (bool) preg_match( '/checked \+ \.eem-reservation-section-toggle__track \{\s*background: #1668F2/s', $css ), $pass, $fail, $log );
-ok( 'no !important added in the restyle block', ! preg_match( '/C10\.C.*?!important/s', substr( $css, strpos( $css, 'C10.C (2.3.53)' ) ) ), $pass, $fail, $log );
+// Bound the no-!important check to the ORIGINAL C10.C restyle block (from its
+// marker to the first later-version addition). The 2.3.60 quantity-stepper
+// restyle legitimately uses !important to beat the legacy .eem-quantity-*
+// !important rules + the host theme (documented inline in public.css).
+$rb_start = strpos( $css, 'C10.C (2.3.53)' );
+$rb_end   = strpos( $css, '2.3.60', $rb_start );
+$rb_block = false !== $rb_end ? substr( $css, $rb_start, $rb_end - $rb_start ) : substr( $css, $rb_start );
+ok( 'no !important in the C10.C restyle block', ! str_contains( $rb_block, '!important' ), $pass, $fail, $log );
 
 /* Field inventory: render res 43 and assert the canonical payload set. */
 $rid = 43;
