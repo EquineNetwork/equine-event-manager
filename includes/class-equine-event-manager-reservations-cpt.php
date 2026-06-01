@@ -3730,6 +3730,17 @@ class EEM_Reservations_CPT {
 			if ( $displaced_reservation_id && $displaced_reservation_id !== absint( $reservation_id ) ) {
 				update_post_meta( $displaced_reservation_id, '_en_event_id', 0 );
 			}
+
+			// 2.3.79 — Write the event's reverse link to THIS reservation immediately.
+			// The event-source resolver (EEM_Events::get_normalized_reservation_event_data)
+			// resolves the linked event through this reverse meta key, not the forward
+			// _en_event_id. The save_post-hook writer (sync_shortcode_to_linked_event_after_save,
+			// priority 20) only fires when wp_update_post runs — which it does NOT on a
+			// no-status-change draft save (e.g. linking an event from the editor gate).
+			// Writing it here keeps the reverse link in sync so apply_mirror() can resolve
+			// the event title on the very first link, even when the prior linked reservation
+			// was trashed and left a stale reverse pointer.
+			$this->set_linked_reservation_for_event( $new_tec_event_id, $reservation_id );
 		}
 	}
 

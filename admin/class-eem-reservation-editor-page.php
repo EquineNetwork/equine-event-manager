@@ -231,6 +231,9 @@ class EEM_Reservation_Editor_Page {
 						     can no longer rename a reservation. -->
 						<div class="eem-res-name-edit-wrap">
 							<div class="eem-res-name-view" id="eem-res-name-view">
+								<?php if ( $has_linked_event ) : ?>
+									<span class="eem-res-name-eyebrow"><?php esc_html_e( 'Reservation Details for', 'equine-event-manager' ); ?></span>
+								<?php endif; ?>
 								<h1 class="eem-plugin-title" id="eem-header-event-name"><?php echo esc_html( $source_event_title ); ?></h1>
 							</div>
 						</div>

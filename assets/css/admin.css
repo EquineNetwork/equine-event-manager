@@ -7762,8 +7762,19 @@ input.eem-slug-input:focus {
 
 .eem-res-name-view {
 	display: flex;
-	align-items: center;
-	gap: var(--eem-space-3);
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 2px;
+}
+
+/* 2.3.79 — Eyebrow label above the linked-event title in the editor header. */
+.eem-res-name-eyebrow {
+	font-family: 'IBM Plex Sans', sans-serif;
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--eem-slate, #64748b);
 }
 
 /* Pencil icon button — borderless, icon-only, sits flush next to h1. */
