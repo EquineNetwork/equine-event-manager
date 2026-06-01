@@ -1,4 +1,17 @@
 <!DOCTYPE html>
+<!--
+  IMPLEMENTATION DELTAS — shipped Edit Reservation editor differs from this
+  static mockup in these owner-approved ways (2026-06-01, plugin 2.3.54–2.3.76).
+  See decisions.md "2026-06-01 — Customer Event Page (C10) build decisions".
+  - Reservation Name + Slug are NOT editable; they always inherit the linked event (Quick Edit removed).
+    The form is gated until an event is linked.
+  - Check-In / Check-Out are time-only inputs (type="time"), no date.
+  - Event Day Info: field hints removed; customer copy is "Check-In/Check-Out Instructions" + "Event Contact".
+  - NEW "Venue Map" section (single PDF/image upload) sits just ABOVE the Agreement section.
+  - Cancellation Policy is per-reservation here; the global Settings field was removed.
+  - "Available Reservation Dates" defaults to the linked event's dates (admin can override); the Stall + RV
+    instances share one window (synced).
+-->
 <html lang="en">
 <head>
 <meta charset="UTF-8">

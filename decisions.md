@@ -1978,3 +1978,64 @@ Three options considered:
 ### CANCELLATION-ARCH — Handoff to Claude Code
 
 See HANDOFF.md "Backend 9: Per-reservation cancellation policy (architecture shift)" for the complete Phase 3 implementation plan: data model (9.1), resolution logic (9.2), one-time migration (9.3), edit-reservation UI (9.4), customer-facing surface treatments (9.5), enable-toggle behavior (9.6), and recommended order of implementation (9.7).
+
+---
+
+## 2026-06-01 — Customer Event Page (C10) build decisions
+
+Locked during the C10.C/E sign-off + C10.D build session (cache-bust 2.3.54 → 2.3.76).
+
+### C10-1. Add-ons are stand-alone products (ungated)
+**Decided:** 2026-06-01 — *overrides the earlier "keep the gate + popup" choice from the same session.*
+
+General Add-Ons (shavings, hay, etc.) are purchasable **with or without** a stall/RV reservation. The prior "select a stall or RV first" gate (client + server) and its explainer popup were removed. Add-ons like shavings/hay are real products a customer may want independently. Per-item `max_per_customer` still applies.
+
+### C10-2. Cancellation Policy is per-reservation only — Settings field removed
+**Decided:** 2026-06-01
+
+The global Cancellation Policy textarea was **removed from Settings → Communications → Policies** (Terms & Conditions stays). Policy is per-reservation (`_eem_cancellation_policy_override`, inheriting the event default). The stored global option is preserved read-only (`update_policies` keeps the value when the key is absent) for legacy Cancellation-email rendering until that path is retired. Advances the "Cancellation policy architecture" shift in CLAUDE.md.
+
+### C10-3. Check-In / Check-Out are time-of-day only
+**Decided:** 2026-06-01
+
+Editor Check-In/Check-Out are `type="time"` (no date). Stored as clean 24-hour `H:i`; legacy datetime values convert gracefully on next save. Customer display: icon pills in Stay Details — "after 10:00am" / "by 4:00pm".
+
+### C10-4. Event Day Info renders on the customer form
+**Decided:** 2026-06-01
+
+Event Day Info (Check-In/Check-Out Instructions, What to bring, Parking, Event Contact) now renders on the customer form in the **Stay Details** card (previously email/receipt only). Labels finalized: "Check-In/Check-Out Instructions:", "Event Contact:". Editor "Appears as:" field hints removed (inaccurate). Mockup `event_page.html` did not depict this — owner-directed addition.
+
+### C10-5. Event Pre-Entries are purchasable line items
+**Decided:** 2026-06-01
+
+Pre-Entries (`{title, inventory, price, max_per_customer}`) render on the customer form as a purchasable section modeled on Add-Ons: quantity steppers, live totals, Order Summary lines, charged at checkout, itemized in order notes. Per-customer cap enforced at submit; total-inventory enforcement deferred. No mockup existed; purchasable model chosen from the data shape.
+
+### C10-6. Venue Map is a per-reservation upload with a Stay Details download link
+**Decided:** 2026-06-01
+
+A "Venue Map" card (single PDF/image upload) sits in the Edit Reservation editor just above Agreement. When a file is present, a "Download Venue Map" link shows at the bottom of the customer Stay Details card. For a full venue map, distinct from stall/RV charts. Reuses the `venue_map_*` meta family.
+
+### C10-7. Reservation Name/Slug are not editable; gate robustness
+**Decided:** 2026-06-01
+
+Reservation Name + Slug always inherit the linked event (Quick Edit removed). A save can no longer orphan the `_en_event_id` link (the gated-save guard preserves an existing link), so the editor can't lock the admin out.
+
+### C10-8. Phone numbers and emails are always clickable
+**Decided:** 2026-06-01
+
+Across the customer event page (hero producer contact + Stay Details Event Contact), phone numbers render as `tel:` links and emails as `mailto:` links.
+
+### C10-9. "Pick Your Stalls" picker — data source + reserved semantics (C10.D)
+**Decided:** 2026-06-01
+
+The customer stall picker is built from the canonical `_en_stall_rows` row builder (one-sided / back-to-back), **not** the legacy block-range model. Selected stalls post `preferred_stall_units[]` (existing server field). Customer display shows `#`-prefixed labels (e.g. "#124, #125"). **Reserved ("Taken") is date-agnostic in V1** — any unit occupied by any existing order is marked Taken; per-selected-date availability is a deferred refinement. Blocked = `_en_blocked_stalls` (admin).
+
+### C10-10. Stall + RV share one bookable date window (for now)
+**Decided:** 2026-06-01
+
+"Available Reservation Dates" is a single window rendered in both the Stall and RV editor sections (the duplicate-field-name save bug was fixed by JS-syncing the two instances). Auto-defaults to the linked event's dates; admin can override. Independent per-section windows would be a follow-up data-model change.
+
+### C10-11. Card order on the customer form unchanged
+**Decided:** 2026-06-01
+
+A proposed reorder (Contact Information inside Billing & Payment; Stay Details first) was **declined** — card order stays as built.

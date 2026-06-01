@@ -1,6 +1,6 @@
 # Equine Event Manager — Roadmap
 
-**Last updated:** 2026-05-31 (reconciled against code at cache-bust 2.3.52)
+**Last updated:** 2026-06-01 (cache-bust 2.3.76 — C10.D landed; see the 2026-06-01 session block below)
 **Authoritative source for forward-looking plans.** decisions.md is the source for locked decisions; CLAUDE.md is the source for conventions/rules; this file is the source for what's planned but not yet built.
 
 > **2026-05-31 reconciliation pass (Claude Code).** Whitney asked for a verification
@@ -37,9 +37,21 @@ TBD — set after C10 verifies and customer flow proven on staging.
 - 2.3.50 — removed Stall/RV chart enable toggle from the editor; chart presence derived from `_en_stalls_enabled` / `_en_rv_enabled` (write-path + list query only)
 - 2.3.51 — Bulk-mode admin auto-assignment UI (conflict-safe, no full reload)
 - 2.3.52 — **completed the 2.3.50 gate retirement**: 5 read-path gates still consulted the dead `_en_stall_chart_enabled` meta, leaving the Stall Chart Detail page (and the 2.3.51 auto-assign UI it hosts) showing "disabled". All consumers now derive presence from `_en_stalls_enabled OR _en_rv_enabled` (commit `8302e7c`)
-- 2.3.53 — **C10.C landed.** Part 2: Settings → Integrations event source reordered TEC-first (fresh-install default); Native Events + External Feed marked "Coming Soon" with disabled radios + hidden panels (`db937b5`). Part 1: customer `[en_reservation]` form restyled to the `event_page.html` mockup — white section cards, uppercase header bands, mockup field/input chrome, blue toggle, rider cards — via a CSS-only scoped override under `.eem-event-page` (zero markup change → 30-field Stripe payload + every JS hook provably intact; `48d6ccc`). **Remaining for C10.C sign-off: human visual pass on the live event page** (pixel fidelity is the only thing smoke can't assert). Stall/RV pickers = C10.D; order sidebar = C10.E; billing card fields = C10.F (all still pending).
+- 2.3.53 — **C10.C landed.** Part 2: Settings → Integrations event source reordered TEC-first (fresh-install default); Native Events + External Feed marked "Coming Soon" with disabled radios + hidden panels (`db937b5`). Part 1: customer `[en_reservation]` form restyled to the `event_page.html` mockup — white section cards, uppercase header bands, mockup field/input chrome, blue toggle, rider cards — via a CSS-only scoped override under `.eem-event-page` (zero markup change → 30-field Stripe payload + every JS hook provably intact; `48d6ccc`).
 
-**Next up:** C10.D (row-aware stall picker) + the remaining C10 sub-chunks; June 12 critical path.
+#### 2026-06-01 session (2.3.54 → 2.3.76) — C10.C/E sign-off batch, two new customer features, name-inheritance, C10.D
+- **2.3.54–2.3.64** — event-page polish: hero-only when no reservation, order-summary rebuild (navy header, blue total, green info box, gradient Reserve Now), circular qty steppers, full-width Complete Reservation button, cancellation-policy display, Nights-field height, venue/organizer plain text (TEC has no archive pages), Special Requests header.
+- **2.3.65** — **C10.E polish + gate robustness:** hero width 1300 + image/form alignment, brand fonts (IBM Plex Sans + Space Grotesk) page-wide, billing/credit-card sub-cards → mockup `.billing-sub-box`, Total Amount Due gray box removed, producer phone dash-format, **gate robustness** (a gated save can no longer orphan the `_en_event_id` link / lock the admin out), admin notice ×-centering, **Reservation Name/Slug editing removed** (Quick Edit deleted; names inherit the linked event).
+- **2.3.66** — **Add-ons ungated** (shavings/hay etc. purchasable without a stall/RV); **Cancellation Policy field removed from Settings** (per-reservation now; stored value preserved); Special Requests card restructured.
+- **2.3.68** — **NEW FEATURE: Event Pre-Entries** on the customer form (purchasable class/division pre-entries; card + live totals + Order Summary lines + server charge + order itemization; per-customer cap validated; total-inventory enforcement deferred).
+- **2.3.70** — **Check-In/Check-Out → time-only** (editor `type="time"`, `H:i` storage, legacy datetime graceful-convert); rendered as **icon time pills in Stay Details** ("after 10:00am" / "by 4:00pm").
+- **2.3.71** — **Event Day Info now renders on the customer form** in Stay Details (Check-In/Check-Out Instructions / What to bring / Parking / Event Contact); bold "Available reservation dates" line.
+- **2.3.72** — **Available Reservation Dates save bug fixed** (Stall + RV editor sections shared one field name; the empty one wiped the value on submit — now JS-synced; auto-defaults to event dates via the existing `populate_available_dates_from_event` + manual-edit flag).
+- **2.3.74** — hero blue bullet removed; Event Day labels finalized; **phone/email clickable** (`tel:`/`mailto:`) in Stay Details + hero; **NEW: Venue Map card** (editor section above Agreement, PDF/image upload) + "Download Venue Map" link in Stay Details.
+- **2.3.75** — **Complete Reservation button clip fixed for real** (root cause: `width:100%` + inherited `margin:0 22px` overflowed the card by 44px; fix = `display:block;width:auto`); Event Day "Appears as:" editor hints removed.
+- **2.3.76** — **C10.D LANDED: "Pick Your Stalls" interactive stall picker.** Tap-to-select grid from canonical `_en_stall_rows` (one-sided strips + back-to-back rows with aisle); states available/reserved/blocked/selected; label expander handles `100`/`Y1`/`A-01`; live "N of M selected" + "Your stalls: #X" + max cap; posts `preferred_stall_units[]` (existing server field → zero server changes). Smoke `c10d-stall-picker-smoke` 19/19.
+
+**Next up:** human visual sign-off on the live event page (button, Venue Map upload→download, stall picker, Event Pre-Entries). Then **C11 (Confirmation Email)**. Remaining C10 verification: checkout dispatch (Stripe/Auth.net) deferred to end-of-build testing per Whitney; reserved-stall inventory refinement (date-aware) is a follow-up.
 - All search input + breadcrumb + hover conventions locked plugin-wide.
 - **Note:** the C10 commit-sequence cache-bust numbers below (e.g. "2.3.38 → 2.3.39") were
   written when current was 2.3.38; bump from the then-current version (2.3.52+) when executing.
@@ -67,7 +79,7 @@ Target mockup: `.mockups/event_page.html` (form sections only — skip hero per 
 - **Checkout:** Anonymous (no login required).
 - **Email:** EEM_Mailer with SendGrid → wp_mail fallback. Customer receipt + admin notification both wired.
 - **Add-ons:** Wired both admin + customer side (general add-ons + RV add-ons like water hookups).
-- **Pre-Entries:** NOT a feature in the codebase yet (post-C10 backlog).
+- **Pre-Entries:** ~~NOT a feature yet~~ → **SHIPPED 2.3.68** as a purchasable customer-form section (Event Pre-Entries), driven by the editor's pre-entries config. Total-inventory enforcement (stock across all orders) still deferred.
 - **Cart/holds:** DO NOT exist yet. Submission-token idempotency only (transient, 24-hour, prevents double-submit). C10.H adds DB-level locking + 15-min hold timers per Whitney's directive.
 
 ### C10 Commit Sequence — DO NOT RESEQUENCE without Whitney's approval
@@ -94,25 +106,25 @@ Port Contact, Stay Details, Stall, RV, Add-Ons, Group, Special Requests, Billing
 - External Feed URL third, marked "Coming Soon" with disabled radio
 - Hide or disable the Native Events and Feed URL connection panels for V1
 
-#### C10.D — Stall picker (row-aware)
-- Rebuild stall picker UI to match mockup
-- Back-to-back rows with aisle visual divider
-- Larger touch targets (44px min desktop, 38-40px mobile)
-- Selection summary card below picker
-- States: default / hover / selected / reserved / blocked
-- Selection counter ("2 of 2 stalls selected")
-- Existing JS picker logic mostly wired — primarily a visual rebuild
+#### C10.D — Stall picker (row-aware) — ✅ DONE (2.3.76)
+- ✅ "Pick Your Stalls" grid rebuilt to the mockup, driven by canonical `_en_stall_rows` (replaces the legacy block-range selector)
+- ✅ Back-to-back rows render two sides + aisle divider; one-sided rows render a single strip
+- ✅ Touch targets 44px desktop / 36px mobile (responsive)
+- ✅ Selection summary card (count + "Your stalls: #X, #Y" + max warning)
+- ✅ States: available / hover / selected / reserved (occupied by existing orders) / blocked (`_en_blocked_stalls`)
+- ✅ Label expander handles `100`/`Y1`/`A-01`; selected stalls post `preferred_stall_units[]` (existing server field → no server changes)
+- ✅ Smoke `tests/smoke/c10d-stall-picker-smoke.php` 19/19
+- ⏳ **Follow-up:** "reserved" is currently date-agnostic (any unit occupied by any order is marked Taken). Refine to per-selected-date availability later.
 
-#### C10.E — Order sidebar + mobile drawer
-- Desktop: sticky right-column sidebar with live line items + total + Reserve Now button + agreement notice
-- Mobile: fixed bottom drawer with total + Review & Pay button
-- Both update in real-time as customer adjusts quantities or stall selections
+#### C10.E — Order sidebar + mobile drawer — ✅ largely DONE (2.3.59 / 2.3.65)
+- ✅ Desktop sticky right-column Order Summary (navy header, event name/dates, line items, blue total, green info box, gradient Reserve Now, secured footer, agreement notice + cancellation policy)
+- ✅ Live updates as quantities / stall selections change (incl. Pre-Entries 2.3.68)
+- Mobile fixed bottom drawer markup exists; verify on visual pass
 
-#### C10.F — Billing & payment section
-- Port billing address block (first/last name, address, apt, city/state/zip, country)
-- Port credit card block visual shell (Stripe Elements already wired)
-- Maintain existing Stripe PaymentIntent flow
-- Keep `stripe.confirmCardPayment()` on submit
+#### C10.F — Billing & payment section — ✅ largely DONE (2.3.65 / 2.3.75)
+- ✅ Billing address block + Credit Card sub-cards ported to mockup `.billing-sub-box` (eyebrow titles, #FAFBFE fill)
+- ✅ Stripe Elements shell + PaymentIntent flow intact; Complete Reservation button fixed (2.3.75)
+- ⏳ End-to-end Stripe/Auth.net charge test deferred to end-of-build per Whitney
 
 #### C10.G — Smoke + wire-up + real-world test
 - Wire new public.css + public.js to enqueue

@@ -1,4 +1,16 @@
 <!DOCTYPE html>
+<!--
+  IMPLEMENTATION DELTAS — shipped customer event page differs from this static
+  mockup in these owner-approved ways (2026-06-01, plugin 2.3.54–2.3.76). See
+  decisions.md "2026-06-01 — Customer Event Page (C10) build decisions".
+  - Hero body copy: no blue bullet (plain lines). Producer phone/email are tel:/mailto: links.
+  - Stay Details card ALSO renders: Check-In/Check-Out time pills ("after 10:00am" / "by 4:00pm"),
+    Event Day Info lines (Check-In/Check-Out Instructions / What to bring / Parking / Event Contact),
+    a bold "Available reservation dates" line, and a "Download Venue Map" link when a venue map is uploaded.
+  - General Add-Ons are ungated (purchasable without a stall/RV).
+  - Event Pre-Entries: an additional purchasable section (class/division pre-entries) when configured.
+  - "Pick Your Stalls" picker shown below renders from _en_stall_rows; labels display #-prefixed.
+-->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -25,7 +37,7 @@ img{display:block;max-width:100%}
 .hero-dates{font-size:14px;color:#6B7A99;font-weight:500;margin-bottom:18px}
 .hero-bullets{list-style:none;margin-bottom:20px;display:flex;flex-direction:column;gap:8px}
 .hero-bullets li{display:flex;align-items:flex-start;gap:8px;font-size:13px;color:#4a5a7a;line-height:1.55}
-.hero-bullets li::before{content:'•';color:#1668F2;font-size:15px;flex-shrink:0;margin-top:0px}
+/* 2026-06-01: blue body-copy bullet removed (shipped 2.3.74) — hero description renders as plain lines, no marker. */
 .hero-bullets li strong{color:#031B4E}
 .hero-meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid #D9E2F2;padding-top:16px;margin-bottom:18px}
 .hero-meta-item{padding:8px 16px 8px 0}
