@@ -669,6 +669,41 @@ When I tell you "fix Edit Reservation," I mean the page that matches `.mockups/e
 
 ---
 
+## Command hygiene — run prompt-free Bash (BINDING)
+
+Whitney does not want permission prompts. The harness force-prompts on any Bash
+command it cannot statically analyze, and **no allowlist overrides those hard
+gates**. Every prompt observed in this project traced to command *style*, not the
+tool. So every Bash call MUST be a single, statically-analyzable command:
+
+1. **One command per call.** No `;`, `&&`, or `||` chaining. Need N steps → N
+   separate Bash calls (run independent ones in parallel in one message).
+2. **Never `cd`.** Use absolute paths, or rely on the persistent cwd (project
+   root). `cd` + redirection trips the "path resolution bypass" hard gate.
+3. **No inline `VAR=value` assignments.** Write the full absolute path inline
+   every time (e.g. the Local PHP binary + wp-cli.phar paths), even when verbose.
+4. **No heredocs (`<<'EOF'`) and no `cat >> file`.** Author file content with the
+   **Write** tool; append/modify with **Read + Edit**. This includes commit
+   messages — pass them with `git commit -m "..."` (single line, or `-m a -m b`),
+   not a heredoc.
+5. **No redirection-into-file via shell.** Use Write/Edit instead. A bare read
+   redirect for a throwaway (`... > /tmp/x`) is tolerable but prefer the tools.
+6. **Throwaway/diagnostic scripts go in `/tmp`** (an allowed dir) so no `rm`
+   cleanup is needed — `rm` is intentionally NOT broadly allowlisted (the deny
+   list can't safely cover every recursive form like `rm -f -r`).
+7. **Version bumps:** prefer the **Edit** tool on `equine-event-manager.php`
+   (two occurrences). `sed -i` is allowlisted as a fallback but Edit is cleaner.
+8. **OPcache reset:** Write the self-deleting `_eem_oc.php` with the **Write**
+   tool, then a single `curl http://en-event-manager.local/_eem_oc.php` (curl is
+   allowlisted; the script `@unlink`s itself — no `rm`).
+
+The allowlist (`.claude/settings.json`) auto-approves simple invocations of git,
+ls/cat/grep/find/head/tail/wc, the Local PHP binary + wp-cli.phar, node, md5,
+curl, sed -i, cp/mv/touch, composer, and the smoke runner. Keep commands in that
+simple shape and they pass with zero prompts.
+
+---
+
 ## Verification commands
 
 Use these to verify your work as you go:

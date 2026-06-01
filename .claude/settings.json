@@ -57,6 +57,14 @@
       "Bash(awk:*)",
 
       "Bash(md5:*)",
+      "Bash(md5sum:*)",
+
+      "Bash(curl:*)",
+      "Bash(sed -i:*)",
+      "Bash(cp:*)",
+      "Bash(mv:*)",
+      "Bash(touch:*)",
+      "Bash(composer:*)",
 
       "Bash(php:*)",
       "Bash(php -l:*)",
