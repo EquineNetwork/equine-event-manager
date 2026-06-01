@@ -2111,3 +2111,27 @@ math (1 for weekend, night-count for nightly) makes the totals correct with no J
 change. Help text added for admins (editor) and customers (form) clarifying the
 add-on price is in addition to the selected RV rate. Legacy single-rate rows map
 onto the new keys. (2.3.83)
+
+### C10-18. Header button parity + RV add-on help spacing + pre-entry limits
+**Decided:** 2026-06-01 (2.3.84)
+
+- View Event / Change Event editor-header buttons share identical box metrics
+  (padding, 1px border, radius, font) so they render the same size/shape.
+- RV add-on customer help note got top padding so it doesn't touch the product
+  divider above it.
+- Event Pre-Entries surface their limit on the customer form like RV/stalls: each
+  entry shows "X spots left." (its inventory) and the qty stepper caps at the
+  smaller of inventory and per-customer max. (Full sold-across-orders inventory
+  decrementing still lands with order persistence; the cap shown is the configured
+  inventory.)
+
+### C10-19. Admin menu icon = brand mark
+**Decided:** 2026-06-01 (2.3.85)
+
+The "Event Manager" top-level admin menu icon was changed from the
+`dashicons-tickets-alt` placeholder to the Equine Event Manager brand mark. The
+white SVG lives at `assets/images/menu-icon.svg` and is passed to
+`add_menu_page()` as a base64 `data:image/svg+xml` URI via
+`EEM_Admin::get_menu_icon()` (falls back to the dashicon if the asset is
+unreadable). WordPress renders menu icons as a background image and does NOT
+recolor them, so the asset is authored white to read on the dark admin menu.

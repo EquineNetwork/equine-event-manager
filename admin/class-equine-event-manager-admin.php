@@ -568,7 +568,7 @@ class EEM_Admin {
 			'manage_options',
 			self::MENU_SLUG,
 			array( $orders_list_page, 'render' ),
-			'dashicons-tickets-alt',
+			$this->get_menu_icon(),
 			20
 		);
 
@@ -812,6 +812,29 @@ class EEM_Admin {
 		if ( $this->orders_hook ) {
 			add_action( 'load-' . $this->orders_hook, array( $this, 'add_orders_screen_options' ) );
 		}
+	}
+
+	/**
+	 * Resolve the top-level admin-menu icon.
+	 *
+	 * Returns the brand mark (white) as a base64-encoded SVG data URI so it
+	 * renders inline as the menu's background image. WordPress does not recolor
+	 * background-image menu icons, so the asset is authored white to read on the
+	 * dark admin menu. Falls back to a Dashicon when the asset is unreadable.
+	 *
+	 * @return string Data-URI for the SVG, or a dashicons-* slug fallback.
+	 */
+	private function get_menu_icon(): string {
+		$icon_path = EQUINE_EVENT_MANAGER_PATH . 'assets/images/menu-icon.svg';
+
+		if ( is_readable( $icon_path ) ) {
+			$svg = file_get_contents( $icon_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+			if ( false !== $svg && '' !== $svg ) {
+				return 'data:image/svg+xml;base64,' . base64_encode( $svg ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
+			}
+		}
+
+		return 'dashicons-tickets-alt';
 	}
 
 	/**
