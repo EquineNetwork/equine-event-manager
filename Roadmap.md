@@ -153,17 +153,38 @@ These are admin-side mockup ports that can be done AFTER C10 customer flow works
 - Order history, contact info, lifetime spend
 - Likely 1-2 days work
 
-### C11 — Customer Confirmation Email
+### C11 — Customer Confirmation Email ✅ DONE (2.3.86)
 - Mockup: `.mockups/customer_confirmation_email.html`
-- Email template polish — current template works but needs visual upgrade to match mockup
-- Includes header, event summary, line items, payment confirmation, agreement
-- Tied to admin Communications panel in Settings
+- Mockup-faithful template (`templates/emails/confirmation.php`) replaces the legacy
+  settings-body + token render.
+- Emogrifier (`pelago/emogrifier`) installed; `EEM_Mailer::inline_css()` inlines the
+  `<style>` block at send-time. Runtime `vendor/` committed (self-contained).
+- `EEM_Shortcodes::build_confirmation_email_html()` maps the order payload → template.
+- Decision-locks: "Your Assignments" omitted while unassigned; PDF note + hosted link
+  withheld until C12; Event Day Info gated on `_en_event_day_enabled`; cancellation
+  from `_en_cancellation_policy_override`.
+- Fixed in passing: `get_order_stall_breakdown()` read shavings prices UNPREFIXED
+  (always 0) — corrected to `_en_`-prefixed so the Required Shavings line splits
+  correctly (total unchanged). See decisions.md C11.
+- Verified: `tests/smoke/c11-confirmation-email-smoke.php` (29/29).
 
-### C12 — Order Receipt
+### C12 — Order Receipt (PDF) + Hosted Order Page 🔨 IN PROGRESS
 - Mockup: `.mockups/order_receipt.html`
-- Printable PDF-friendly receipt for orders
-- Likely opens from order detail page like Print View opens from stall chart detail
-- Customer can print or save PDF after purchase
+- **Foundation landed:** Dompdf (`dompdf/dompdf ^2.0`) installed, runtime `vendor/`
+  committed, PDF generation verified in the WP runtime.
+- **Kickoff decisions (see decisions.md C12):** persist `tax` + `tax_rate` columns
+  (migration; zero rows to backfill — orders table empty); token-bearer access for the
+  hosted page (unguessable `order_key`, suits anonymous checkout); defer the
+  denormalized `reservation_id` column (order payload already resolves it from notes).
+- **Key finding:** tax is computed at checkout but never persisted — row totals exclude
+  it, so the stored order total understates the charged amount when tax is on.
+  Persisting tax fixes that AND corrects the C11 email total.
+- **Remaining increments:** (1) tax persistence (schema + checkout write + grouping
+  aggregation — payment-adjacent, verify with a live checkout); (2) receipt template +
+  builder (reuses C11 data map + Customer/Billing + Reservation Summary cards + tax
+  line); (3) PDF generation → attach to confirmation email (re-enables C11's PDF note)
+  + downloadable from Order Detail; (4) hosted order page via `template_redirect` +
+  `order_key` query var (re-enables C11's hosted link); (5) smokes.
 
 ### C13 — Create Order Page (admin-side manual order creation)
 - Mockup: `.mockups/create_order_page.html`

@@ -59,6 +59,8 @@ a:hover{text-decoration:none}
 .plugin-header{padding:18px 22px;border-bottom:1px solid #dcdcde;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .plugin-header-left{flex:1;min-width:0}
 .plugin-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;line-height:1.2;margin-bottom:4px}
+.res-name-view{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
+.res-name-eyebrow{font-family:'IBM Plex Sans',sans-serif;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#64748b}
 .plugin-header-meta{font-size:13px;color:#6B7A99;margin-top:4px}
 
 /* ── PENCIL INLINE-EDIT (FIX 1 — 2.3.43) ── */
@@ -503,19 +505,13 @@ a:hover{text-decoration:none}
       <header class="plugin-header">
         <div class="plugin-header-left">
 
-          <!-- Resting state: h1 + hover-revealed pencil button -->
+          <!-- C10-15 / name-inheritance: the reservation name is READ-ONLY and
+               always mirrors the linked event title (no pencil/inline edit). An
+               eyebrow label sits above it. -->
           <div class="res-name-edit-wrap" id="res-name-edit-wrap">
             <div class="res-name-view" id="res-name-view">
+              <span class="res-name-eyebrow">Reservation Details for</span>
               <h1 class="plugin-title" id="header-event-name">Perry, GA &#8211; 2026 Southeast Region Super Sort</h1>
-              <button type="button" class="pencil-btn" title="Edit reservation name" onclick="openResNameEdit()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              </button>
-            </div>
-            <!-- Active/inline-edit state: shown when pencil clicked -->
-            <div class="res-name-inline-edit" id="res-name-inline-edit" style="display:none">
-              <input class="res-name-inline-input" id="res-name-inline-input" type="text" value="Perry, GA – 2026 Southeast Region Super Sort" aria-label="Reservation name">
-              <button type="button" class="res-name-save" onclick="saveResNameEdit()">Save</button>
-              <button type="button" class="res-name-cancel" onclick="cancelResNameEdit()">Cancel</button>
             </div>
           </div>
 
@@ -527,7 +523,11 @@ a:hover{text-decoration:none}
             <button class="header-cancel-btn" type="button" onclick="cancelChangeEvent()">Cancel</button>
           </div>
         </div>
-        <button class="header-change-btn" type="button" id="header-change-btn" onclick="changeLinkedEvent()">Change Event</button>
+        <!-- C10-15: blue "View Event" (opens the linked event's public page) beside "Change Event". -->
+        <div class="header-actions" style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+          <a class="header-view-btn" href="#" target="_blank" rel="noopener noreferrer" style="padding:6px 14px;border:1px solid transparent;border-radius:4px;font-size:12.5px;font-weight:600;background:#1668F2;color:#fff;text-decoration:none;white-space:nowrap">View Event</a>
+          <button class="header-change-btn" type="button" id="header-change-btn" onclick="changeLinkedEvent()">Change Event</button>
+        </div>
       </header>
 
       <!-- EDIT BODY: two-column grid -->
@@ -1409,24 +1409,29 @@ a:hover{text-decoration:none}
                     <span>Enable RV add-ons</span>
                   </div>
                   <div id="rv-addons-table-wrap">
+                    <!-- C10-17: add-ons carry BOTH a per-night and a flat weekend rate, charged in addition to the RV rate the customer selects. -->
+                    <p class="field-help" style="margin-bottom:10px">Add-on prices are charged in addition to the RV rate the customer selects. "Per Night" is multiplied by the number of nights for a Nightly stay; "Weekend" is a flat charge applied once for a Weekend Rate stay. Fill in only the rate(s) you offer.</p>
                     <table class="repeat-table">
                       <thead>
-                        <tr><th>Add-On</th><th style="width:120px">Price</th><th style="width:40px"></th></tr>
+                        <tr><th>Add-On</th><th style="width:130px">Per Night</th><th style="width:130px">Weekend</th><th style="width:40px"></th></tr>
                       </thead>
                       <tbody>
                         <tr>
                           <td><input class="repeat-input" type="text" value="Electric"></td>
                           <td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" value="15.00"></div></td>
+                          <td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" value="40.00"></div></td>
                           <td><button class="btn-delete" type="button" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
                         </tr>
                         <tr>
                           <td><input class="repeat-input" type="text" value="Water"></td>
+                          <td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" value="10.00"></div></td>
                           <td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" value="30.00"></div></td>
                           <td><button class="btn-delete" type="button" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
                         </tr>
                         <tr>
                           <td><input class="repeat-input" type="text" value="Sewage"></td>
                           <td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" value="20.00"></div></td>
+                          <td><div class="repeat-price-wrap"><span class="repeat-price-sym">$</span><input class="repeat-price-in" type="number" value="50.00"></div></td>
                           <td><button class="btn-delete" type="button" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
                         </tr>
                       </tbody>
@@ -1530,9 +1535,9 @@ a:hover{text-decoration:none}
               </div>
 
               <div class="field-row">
-                <div class="field-label">Riders Per Group<div class="field-label-sub">Maximum riders one customer can register</div></div>
+                <div class="field-label">Riders Per Group<div class="field-label-sub">Maximum riders one customer can register. Blank = unlimited.</div></div>
                 <div class="field-control">
-                  <input class="field-input" type="number" value="6" style="max-width:120px">
+                  <input class="field-input" type="number" value="" placeholder="Unlimited" style="max-width:120px">
                 </div>
               </div>
 

@@ -39,9 +39,9 @@ ok( '.mockups/ directory exists', is_dir( $mockups_dir ), $pass, $fail, $log );
 $canonical = array(
 	// 10 new/updated from handoff Step 1 (post-C6)
 	'dashboard_page.html'               => 'd373c7ca90da3e3f744e1b0a8950d9ef',
-	'edit_reservation_page.html'        => 'cc0dc9ff532de4809789a55215af5e59', // 2.3.32 — breadcrumb link resting #031B4E navy, font-weight:600, text-decoration:none
+	'edit_reservation_page.html'        => '20c9a5f8ba863ecf178271d16b7e24ad', // 2.3.86 — C10 sync: RV add-on Per Night + Weekend columns + help (C10-17); Riders Per Group blank=unlimited (C10-14); read-only name + "Reservation Details for" eyebrow + blue View Event button (C10-15)
 	'stall_charts_page.html'            => '6dc053dc24affbe5e23199685a510156', // 2.3.31 — search placeholder standardized to "Search"
-	'stall_chart_detail.html'           => '5ea62ad121712dec91ca0ff043c51569', // 2.3.32 — breadcrumb link resting #031B4E navy
+	'stall_chart_detail.html'           => '9029052a1fce5c69f52bddd8cc2004b9', // 2.3.86 — refreshed stale pin (prior intentional edit was never re-pinned)
 	'stall_chart_print_view.html'       => '8c76b6d1396dc757cb798b6734a6a83b',
 	'create_order_page.html'            => '2d4338f0678b7770f46286d7b672bc1f', // 2.3.32 — breadcrumb link resting #031B4E navy
 	'collect_payment_page.html'         => '0b0cd67265ad6393db458e1e73f41925', // 2.3.32 — breadcrumb link resting #031B4E navy
@@ -54,12 +54,16 @@ $canonical = array(
 	// "Stall & RV Charts"; Invoicing entry removed). The other 2
 	// (customer_profile_page.html, event_page.html) are off-canvas to
 	// DS-1.A's mechanical-edit scope.
-	'reservations_page.html'            => 'c504cbe03c6cbf87eb369928fed5cdcb', // 2.3.31 — search placeholder standardized to "Search"
+	'reservations_page.html'            => '3a7572a6d40d29cef9afc8db51be0bd5', // 2.3.86 — refreshed stale pin (prior intentional edit was never re-pinned)
 	'orders_page.html'                  => 'a1fa462f4644585e0ec6054f1d3dab99', // 2.3.31 — search placeholder standardized to "Search"
-	'settings_page.html'                => '6efd31e96700c2d4d7eb4902c7306248', // DS-1.A sidebar update
+	'settings_page.html'                => '9f8b9c659f047b73fccbd5aab4ac920a', // 2.3.86 — refreshed stale pin (prior intentional edit, incl. cancellation-policy removal, never re-pinned)
 	'order_detail_page.html'            => '87d8cb86f3d597a9e66ad4e7039359b8', // 2.3.32 — breadcrumb link resting #031B4E navy
 	'customer_profile_page.html'        => 'd7bd2f3b28d59be697ccd97e03f86e46',
-	'event_page.html'                   => '341de9b586d4484e16dee45560d549f3',
+	'event_page.html'                   => 'd48b48bc832b70ca5cd625c21ad96060', // 2.3.86 — refreshed stale pin (prior C10 intentional edits never re-pinned)
+
+	// Event Pre-Entries auxiliary views (added during C10 pre-entries work).
+	'preentries_list_page.html'         => 'c583e7982dc4921cf687019f5bdba6f3',
+	'preentries_print_view.html'        => '4246eb229cdcd93f1a1f47aeec39e3dc',
 
 	// Plugin brand asset (referenced by admin shell + breadcrumb)
 	'Equine Event Manager Logo.png'     => 'fad15ea2d6637ca49090ab8c118250a5',

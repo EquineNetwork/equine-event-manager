@@ -2169,3 +2169,42 @@ mockup-faithful template (`templates/emails/confirmation.php`, from
   (content-density per card, 5-digit order #, line-item rows, CSS-inline
   round-trip, positive event-day/cancellation, omit cases). Visual preview
   rendered for eyeball comparison against the mockup.
+
+### C12. Order Receipt (PDF) + Hosted Order Page — kickoff + foundation
+**Decided:** 2026-06-01 (in progress; Dompdf foundation committed)
+
+Mockup: `.mockups/order_receipt.html`. Reuses the C11 line-items / badges / totals /
+cancellation data mapping; net-new is the two-col Customer/Billing header, the
+Reservation Summary card grid, a Sales Tax line, PDF generation, and the hosted web
+view.
+
+**Kickoff decision-locks (Whitney):**
+- **Tax persistence (CLEANUP #9):** ADD `tax` + `tax_rate` columns to the order tables
+  (migration) rather than deriving at render. The orders table is currently empty, so
+  there is NOTHING to backfill — the migration is risk-free for this install. A
+  defensive backfill (derive `tax = total − subtotal − fees`, read rate from the
+  reservation; leave historical `total` untouched) is included for other installs.
+- **Hosted page access:** TOKEN-BEARER — anyone with the unguessable `order_key` URL can
+  view it (like Stripe/Shopify receipts). Required because checkout is anonymous; a
+  login/ownership gate would lock customers out of their own receipt.
+- **reservation_id column (CLEANUP #11):** DEFER. The grouped order payload already
+  resolves `reservation_id` from notes (`extract_reservation_id_from_notes`), so the
+  receipt/hosted page don't need a denormalized column. Add it in C15 Reports when a
+  SQL JOIN actually needs it.
+
+**Key architectural finding (drives increment 1):** tax is computed at checkout
+(`calculate_submission_totals`) but NEVER written to the DB. Per-row `total = subtotal +
+fee` excludes tax, so the stored/grouped order total understates the amount actually
+charged whenever tax is enabled. Persisting tax (write per-row at checkout, aggregate in
+grouping) fixes this AND corrects the C11 email "Total Paid". The convenience fee is the
+template to mirror — it's split per-row via `calculate_convenience_fee(row_subtotal)`.
+
+**Foundation landed (committed):** `dompdf/dompdf ^2.0` (v2.0.8) installed alongside
+Emogrifier; runtime `vendor/` committed (`composer install --no-dev`); loaded via the
+C11 bootstrap autoloader; verified rendering a valid `%PDF` stream in the WP runtime.
+
+**Remaining increments:** (1) tax schema + checkout write + grouping aggregation
+[payment-adjacent — verify with a live checkout]; (2) receipt template + builder; (3)
+PDF generation → attach to confirmation email (re-enables C11's PDF note) + Order Detail
+download; (4) hosted order page (`template_redirect` + `order_key` query var, re-enables
+C11's hosted link); (5) smokes.
