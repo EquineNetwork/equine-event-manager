@@ -1519,6 +1519,22 @@
 		btn.disabled = ('' === (t.value || '').trim());
 	});
 
+	/* 2.3.72 — "Available Reservation Dates" renders in BOTH the Stall and RV
+	   editor sections under the SAME field name (en_reservation[available_*_date]).
+	   On submit PHP keeps only the last same-named input, so editing one section's
+	   date while the other stays empty silently wiped the value. Mirror any edit to
+	   every same-named input so the two instances never diverge. Fires on both
+	   `input` (typing) and `change` (date-picker selection). */
+	function eemSyncSharedDateInputs(t) {
+		if (!t || !t.name) return;
+		if (t.name !== 'en_reservation[available_start_date]' && t.name !== 'en_reservation[available_end_date]') return;
+		document.querySelectorAll('input[name="' + t.name + '"]').forEach(function (el) {
+			if (el !== t) { el.value = t.value; }
+		});
+	}
+	document.addEventListener('input', function (ev) { eemSyncSharedDateInputs(ev.target); });
+	document.addEventListener('change', function (ev) { eemSyncSharedDateInputs(ev.target); });
+
 	function closeAllDropdowns() {
 		document.querySelectorAll('.eem-dropdown.open, .eem-row-menu-wrap.open')
 			.forEach(function (host) {
