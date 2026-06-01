@@ -935,7 +935,12 @@ class EEM_Shortcodes {
 						</label>
 					</div>
 
-					<div class="eem-reservation-section eem-reservation-section--payment" id="eem-billing-payment">
+					<?php // 2.3.73 — inline padding-bottom + overflow guarantees the Complete
+					// Reservation button clears the card's bottom edge even if a cached
+					// public.css is being served (inline styles ship with fresh page HTML
+					// and override any stylesheet without !important). See the matching
+					// .eem-reservation-section--payment rule in public.css. ?>
+					<div class="eem-reservation-section eem-reservation-section--payment" id="eem-billing-payment" style="padding-bottom:22px;overflow:visible;">
 						<?php if ( $is_admin_invoice ) : ?>
 							<div class="eem-invoice-mode-card">
 								<div class="eem-invoice-mode-card__copy">
