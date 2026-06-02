@@ -3686,13 +3686,18 @@ class EEM_Admin {
 			$stall_units  = $this->allocate_stall_chart_units( $config['available_stall_units'], $stall_map, $stall_dates, $stall_needed, $stall_manual, $order['order_key'] );
 			$rv_units     = $this->allocate_rv_lot_rows( isset( $config['rv_lot_names'] ) ? $config['rv_lot_names'] : array(), isset( $config['auto_assign_rv_lot_names'] ) ? $config['auto_assign_rv_lot_names'] : ( isset( $config['available_rv_lot_names'] ) ? $config['available_rv_lot_names'] : array() ), $rv_map, $rv_dates, $rv_needed, $rv_lot_name, $rv_manual, $order['order_key'] );
 
+			// V1 Scenario F: surface the customer's Special Requests on the chart
+			// (pill tooltip + by-customer note) so admins see them while assigning.
+			$special_requests = trim( (string) $this->get_special_requests_from_order_notes( $order['notes'] ) );
+
 			foreach ( $stall_units['assigned'] as $unit ) {
 				foreach ( $stall_dates as $date_key ) {
 					if ( isset( $stall_rows[ $unit ]['cells'][ $date_key ] ) ) {
 						$stall_rows[ $unit ]['cells'][ $date_key ] = array(
-							'type'      => 'occupied',
-							'label'     => $order['customer_name'],
-							'order_key' => $order['order_key'],
+							'type'             => 'occupied',
+							'label'            => $order['customer_name'],
+							'order_key'        => $order['order_key'],
+							'special_requests' => $special_requests,
 						);
 					}
 				}
@@ -3702,9 +3707,10 @@ class EEM_Admin {
 				foreach ( $rv_dates as $date_key ) {
 					if ( isset( $rv_rows[ $unit ]['cells'][ $date_key ] ) ) {
 						$rv_rows[ $unit ]['cells'][ $date_key ] = array(
-							'type'      => 'occupied',
-							'label'     => $order['customer_name'],
-							'order_key' => $order['order_key'],
+							'type'             => 'occupied',
+							'label'            => $order['customer_name'],
+							'order_key'        => $order['order_key'],
+							'special_requests' => $special_requests,
 						);
 					}
 				}
@@ -4172,15 +4178,18 @@ class EEM_Admin {
 							<td>
 								<div class="eem-chart-cell-wrap">
 									<?php if ( 'occupied' === $cell['type'] && ! empty( $cell['order_key'] ) ) : ?>
-										<span class="eem-occ-pill eem-occ-pill--reserved"
+										<?php $eem_cell_note = isset( $cell['special_requests'] ) ? trim( (string) $cell['special_requests'] ) : ''; ?>
+										<span class="eem-occ-pill eem-occ-pill--reserved<?php echo '' !== $eem_cell_note ? ' eem-occ-pill--has-note' : ''; ?>"
 											data-order-key="<?php echo esc_attr( $cell['order_key'] ); ?>"
 											data-order-id="<?php echo esc_attr( $cell['order_key'] ); ?>"
 											data-eem-action="stall-pill-click"
 											data-customer-name="<?php echo esc_attr( $cell['label'] ); ?>"
 											data-customer="<?php echo esc_attr( $cell['label'] ); ?>"
 											data-stall="<?php echo esc_attr( (string) $row['unit'] ); ?>"
-											data-date="<?php echo esc_attr( (string) $date_key ); ?>">
+											data-date="<?php echo esc_attr( (string) $date_key ); ?>"
+											<?php if ( '' !== $eem_cell_note ) : ?>data-special-requests="<?php echo esc_attr( $eem_cell_note ); ?>" title="<?php echo esc_attr( sprintf( /* translators: %s: customer special requests text */ __( 'Special requests: %s', 'equine-event-manager' ), $eem_cell_note ) ); ?>"<?php endif; ?>>
 											<?php echo esc_html( $cell['label'] ); ?>
+											<?php if ( '' !== $eem_cell_note ) : ?><span class="eem-occ-pill__note-dot" aria-hidden="true"></span><span class="screen-reader-text"><?php esc_html_e( '(has special requests)', 'equine-event-manager' ); ?></span><?php endif; ?>
 											<svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
 										</span>
 									<?php elseif ( 'blocked' === $cell['type'] ) : ?>
@@ -4227,11 +4236,13 @@ class EEM_Admin {
 				<tbody>
 					<?php foreach ( (array) $rows as $row ) : ?>
 						<?php
+						$eem_row_note = isset( $row['special_requests'] ) ? trim( (string) $row['special_requests'] ) : '';
 						$search_parts = array(
 							(string) $row['customer_name'],
 							(string) $row['order_number'],
 							implode( ' ', (array) $row['stall_units'] ),
 							implode( ' ', (array) $row['rv_units'] ),
+							$eem_row_note,
 						);
 						?>
 						<tr data-stall-chart-search="<?php echo esc_attr( strtolower( implode( ' ', array_filter( $search_parts ) ) ) ); ?>" data-stall-chart-block="" data-has-stalls="<?php echo ! empty( $row['stall_units'] ) ? '1' : '0'; ?>" data-has-rv="<?php echo ! empty( $row['rv_units'] ) ? '1' : '0'; ?>">
@@ -4239,6 +4250,12 @@ class EEM_Admin {
 								<a class="eem-chart-cust-link" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-order&order_key=' . rawurlencode( $row['order_key'] ) ) ); ?>">
 									<?php echo esc_html( $row['customer_name'] ); ?>
 								</a>
+								<?php if ( '' !== $eem_row_note ) : ?>
+									<div class="eem-chart-cust-note" title="<?php echo esc_attr( $eem_row_note ); ?>">
+										<span class="eem-chart-cust-note__label"><?php esc_html_e( 'Special requests:', 'equine-event-manager' ); ?></span>
+										<?php echo esc_html( $eem_row_note ); ?>
+									</div>
+								<?php endif; ?>
 							</td>
 							<td class="eem-chart-order-num">
 								<a class="eem-chart-order-link" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-order&order_key=' . rawurlencode( $row['order_key'] ) ) ); ?>">
@@ -4594,13 +4611,15 @@ class EEM_Admin {
 			}
 
 			$rows[] = array(
-				'order_key'    => $order['order_key'],
-				'order_number' => $order['order_number'],
-				'customer_name'=> $order['customer_name'],
-				'daily_counts' => $daily_counts,
-				'stall_units'  => $stall_units['assigned'],
-				'rv_units'     => $rv_units['assigned'],
-				'unassigned'   => implode( ' | ', $unassigned ),
+				'order_key'        => $order['order_key'],
+				'order_number'     => $order['order_number'],
+				'customer_name'    => $order['customer_name'],
+				'daily_counts'     => $daily_counts,
+				'stall_units'      => $stall_units['assigned'],
+				'rv_units'         => $rv_units['assigned'],
+				'unassigned'       => implode( ' | ', $unassigned ),
+				// V1 Scenario F: special requests shown under the customer name.
+				'special_requests' => trim( (string) $this->get_special_requests_from_order_notes( $order['notes'] ) ),
 			);
 		}
 
