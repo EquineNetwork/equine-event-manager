@@ -2265,3 +2265,29 @@ path is smoke-covered).
   the Support line + 5-digit order number; web view keeps a normal in-flow footer
   (toggled via `@media`).
 - Verified: `c12-receipt-render-smoke.php` 30/30 (adds no-billing-leak + footer order#).
+
+**Increment 3 — DONE (2.3.91–2.3.92): PDF generation + email attach.**
+- `EEM_PDF` (includes/class-eem-pdf.php) wraps Dompdf with `isRemoteEnabled=false`
+  (SSRF-safe; logo is a data URI, fonts pre-registered) and returns '' on failure.
+- `generate_receipt_pdf($order)` → `build_receipt_html($order, for_pdf=true)` (data-URI
+  logo via `get_company_logo_data_uri`). Fixed: `esc_url()` strips `data:` URIs by
+  default — the template now allows `http/https/data` for the logo src.
+- `EEM_Mailer::send_html_email` gained an `$attachments` param (wp_mail path passes file
+  paths; SendGrid path base64-encodes as application/pdf).
+  `send_customer_notification_email_for_order` generates the PDF, writes a temp file,
+  attaches it, sends, deletes the temp file; the "PDF Receipt Attached" note shows only
+  when attached. Smokes: PDF 6/6, C11 31/31.
+
+**Increment 4 — DONE (2.3.93): hosted order page + Order Detail download.**
+- Token-bearer (unguessable `order_key`). One front-end route
+  (`EEM_Shortcodes::maybe_render_hosted_receipt` on `template_redirect`):
+  `?eem_receipt=KEY` → receipt web view; `&download=pdf` → streamed PDF
+  (Content-Disposition attachment); 404 on unknown key.
+- `EEM_Orders_Repository::get_order_by_order_key()` (hash_equals);
+  `EEM_Shortcodes::get_hosted_receipt_url($key, $pdf)`. Wired into the C11 email (hosted
+  "view your order online" link) and the Order Detail action bar (Download Receipt +
+  View/Download dropdown, replacing the C11 stubs). Smoke 10/10.
+- Note: real submission tokens are hex (`[a-f0-9-]`); `order_key = md5(token)`.
+
+**C12 COMPLETE (2.3.93).** Pending live verification: checkout tax write-path (one real
+test checkout) + browser eyeball of the hosted page + live PDF.

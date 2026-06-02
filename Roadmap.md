@@ -168,7 +168,7 @@ These are admin-side mockup ports that can be done AFTER C10 customer flow works
   correctly (total unchanged). See decisions.md C11.
 - Verified: `tests/smoke/c11-confirmation-email-smoke.php` (29/29).
 
-### C12 — Order Receipt (PDF) + Hosted Order Page 🔨 IN PROGRESS
+### C12 — Order Receipt (PDF) + Hosted Order Page ✅ DONE (2.3.93)
 - Mockup: `.mockups/order_receipt.html`
 - **Foundation landed:** Dompdf (`dompdf/dompdf ^2.0`) installed, runtime `vendor/`
   committed, PDF generation verified in the WP runtime.
@@ -189,9 +189,21 @@ These are admin-side mockup ports that can be done AFTER C10 customer flow works
   Summary cards, itemized totals + Sales Tax line). Extracted shared
   `build_order_line_items()` (C11 email + C12 receipt). Smoke 25/25; C11 still 29/29;
   Dompdf renders a valid PDF. HTML+PDF previews on Desktop.
-- **Remaining increments:** (3) PDF generation → attach to confirmation email
-  (re-enables C11's PDF note) + downloadable from Order Detail; (4) hosted order page via `template_redirect` +
-  `order_key` query var (re-enables C11's hosted link); (5) smokes.
+- **Increment 3 ✅ (2.3.91–2.3.92):** PDF generation. `EEM_PDF` (Dompdf wrapper, remote
+  disabled, graceful degrade); `generate_receipt_pdf()` (data-URI logo). PDF attached to
+  the confirmation email (mailer gained an `$attachments` param; wp_mail + SendGrid
+  paths); C11 "PDF Receipt Attached" note re-enabled. Smokes 6/6 + C11 31/31.
+- **Increment 4 ✅ (2.3.93):** hosted order page. `?eem_receipt=KEY` renders the web
+  view; `&download=pdf` streams the PDF (token-bearer, 404 on unknown key).
+  `get_order_by_order_key()` + `get_hosted_receipt_url()`. Re-enabled C11's hosted link;
+  Order Detail gained Download Receipt + View/Download dropdown (replaced C11 stubs).
+  Smoke 10/10.
+- **Increment 5 ✅:** all C12 smokes green (tax 7, receipt 30, pdf 6, hosted 10) + C11 31.
+- **Still pending live verification:** the checkout WRITE path for tax (needs one real
+  test checkout) and visual eyeball of the hosted page / live PDF in the browser.
+- **Increment-3 follow-ups (logged in decisions.md):** move the Dompdf brand-font cache
+  out of `vendor/dompdf/` to a plugin-owned dir (composer-reinstall fragility); refund-
+  of-tax behavior (payment-adjacent — spawned task).
 
 ### C13 — Create Order Page (admin-side manual order creation)
 - Mockup: `.mockups/create_order_page.html`
