@@ -266,6 +266,12 @@ $stall_is_numbered        = ( 'numbered' === $stall_inventory_type );
 $stall_is_pick            = ( 'pick_layout' === $stall_customer_selection );
 $stall_is_mapped          = $stall_is_numbered; // alias used by the inventory-input + row-builder blocks below.
 $stall_legacy_mode        = ( $stall_is_numbered && $stall_is_pick ) ? 'exact_map' : 'quantity';
+// "Simple range" mode (Numbered + Quantity): customers never see the physical
+// map, so the row builder collapses to plain First/Last ranges — no Layout
+// dropdown, no back-to-back sides, no live preview. The full Stall Row Builder
+// (layout + back-to-back + preview) only earns its complexity in pick-from-
+// layout mode, where customers tap the actual map.
+$stall_is_simple_range    = ( $stall_is_numbered && ! $stall_is_pick );
 
 // ── Control 1: Stall Inventory Type ──
 ob_start();
@@ -399,7 +405,7 @@ $stall_map_name = $stall_map_id ? basename( get_attached_file( $stall_map_id ) )
 ob_start();
 ?>
 <div class="eem-row-builder-summary" style="margin-bottom:10px" id="eem-stall-row-summary"></div>
-<div class="eem-row-builder" id="eem-stall-row-builder-list">
+<div class="eem-row-builder<?php echo $stall_is_simple_range ? ' eem-stall-rows--simple' : ''; ?>" id="eem-stall-row-builder-list">
 <?php foreach ( $stall_rows as $ri => $row ) :
 	$r_name      = isset( $row['name'] )      ? (string) $row['name']      : '';
 	$r_layout    = isset( $row['layout'] )     ? (string) $row['layout']    : 'one-sided';
@@ -454,7 +460,7 @@ ob_start();
 				</div>
 			</div>
 		</div>
-		<div>
+		<div class="eem-row-card-preview">
 			<div class="eem-row-card-preview-label"><?php esc_html_e( 'Preview', 'equine-event-manager' ); ?> <span class="eem-row-card-count"></span></div>
 			<div class="eem-stall-row-layout<?php echo $is_b2b ? ' eem-back-to-back' : ''; ?>"></div>
 		</div>
@@ -463,14 +469,22 @@ ob_start();
 </div>
 <button class="eem-row-add-btn" type="button" data-eem-action="stall-add-row">
 	<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-	<?php esc_html_e( 'Add Row', 'equine-event-manager' ); ?>
+	<?php echo esc_html( $stall_is_simple_range ? __( 'Add Range', 'equine-event-manager' ) : __( 'Add Row', 'equine-event-manager' ) ); ?>
 </button>
-<span class="eem-field-hint"><?php echo wp_kses( __( 'Each row appears as a horizontal strip of stall boxes. <strong>One-sided</strong>: single row of stalls. <strong>Back-to-back</strong>: two rows separated by an aisle. Stall labels can be numbers (100–111) or strings (Y1–Y12).', 'equine-event-manager' ), array( 'strong' => array() ) ); ?></span>
+<span class="eem-field-hint" id="eem-stall-rows-hint"
+	data-hint-simple="<?php echo esc_attr__( 'Each range is a block of consecutive stall numbers (e.g. 100–111 or Y1–Y12). Add one range per barn or block. You assign specific stalls to customers on the Stall & RV Charts page.', 'equine-event-manager' ); ?>"
+	data-hint-full="<?php echo esc_attr( wp_strip_all_tags( __( 'Each row appears as a horizontal strip of stall boxes. One-sided: single row of stalls. Back-to-back: two rows separated by an aisle. Stall labels can be numbers (100–111) or strings (Y1–Y12).', 'equine-event-manager' ) ) ); ?>"><?php
+	if ( $stall_is_simple_range ) {
+		echo esc_html__( 'Each range is a block of consecutive stall numbers (e.g. 100–111 or Y1–Y12). Add one range per barn or block. You assign specific stalls to customers on the Stall & RV Charts page.', 'equine-event-manager' );
+	} else {
+		echo wp_kses( __( 'Each row appears as a horizontal strip of stall boxes. <strong>One-sided</strong>: single row of stalls. <strong>Back-to-back</strong>: two rows separated by an aisle. Stall labels can be numbers (100–111) or strings (Y1–Y12).', 'equine-event-manager' ), array( 'strong' => array() ) );
+	}
+?></span>
 <?php
 $stall_rows_html = (string) ob_get_clean();
 eem_render_editor_field_row( array(
-	'label'        => __( 'Stall Rows', 'equine-event-manager' ),
-	'label_sub'    => __( 'Define the physical layout customers will see', 'equine-event-manager' ),
+	'label'        => $stall_is_simple_range ? __( 'Stall Number Ranges', 'equine-event-manager' ) : __( 'Stall Rows', 'equine-event-manager' ),
+	'label_sub'    => $stall_is_simple_range ? __( 'Which stall numbers exist', 'equine-event-manager' ) : __( 'Define the physical layout customers will see', 'equine-event-manager' ),
 	'row_id'       => 'row-stall-blocks',
 	'control_html' => $stall_rows_html,
 ) );

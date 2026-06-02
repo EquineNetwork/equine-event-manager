@@ -31,8 +31,16 @@ $check( 'editor has stall_inventory_type hidden input', false !== strpos( $edito
 $check( 'editor has stall_customer_selection hidden input', false !== strpos( $editor, 'name="stall_customer_selection"' ) );
 $check( 'editor keeps legacy stall_selection_mode hidden input', false !== strpos( $editor, 'name="stall_selection_mode"' ) );
 $check( 'old Bulk/Mapped stall toggle (data-section=stall) is gone', false === strpos( $editor, 'data-mode="mapped"' . '" data-section="stall"' ) || true );
-// #3499 is quantity_only after migration → pick-from-layout disabled.
-$check( 'pick-from-layout disabled for quantity_only reservation', (bool) preg_match( '/data-selection="pick_layout"[^>]*disabled/', $editor ) );
+// pick-from-layout must be disabled whenever inventory is quantity_only. Render
+// the section with controlled data so this doesn't depend on #3499's persisted
+// mode (which is mutable — e.g. flipped to pick mode for a review fixture).
+$cpt_probe        = new EEM_Reservations_CPT();
+$data             = array_merge( $cpt_probe->get_meta_values( 3499 ), array( 'stall_inventory_type' => 'quantity_only', 'stall_customer_selection' => 'quantity' ) );
+$reservations_cpt = $cpt_probe;
+ob_start();
+include EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_section-stall.php';
+$qo_section = (string) ob_get_clean();
+$check( 'pick-from-layout disabled for quantity_only reservation', (bool) preg_match( '/data-selection="pick_layout"[^>]*disabled/', $qo_section ) );
 
 // ── CPT save normalize round-trip (sanitize_meta_submission writes the triple) ──
 $cpt      = new EEM_Reservations_CPT();

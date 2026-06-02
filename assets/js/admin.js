@@ -3897,7 +3897,7 @@
 		}
 		/* C8 — init inventory displays on page load. Stall uses the V1 #4
 		   inventory-type input; RV still uses the legacy mode button. */
-		if (document.getElementById('eem-stall-inventory-type-input')) updateStallInventoryDisplay();
+		if (document.getElementById('eem-stall-inventory-type-input')) { applyStallRowsSimpleMode(); updateStallInventoryDisplay(); }
 		if (document.querySelector('.eem-mode-btn[data-section="rv"]'))   updateRvInventoryDisplay();
 		/* V1 (2.3.22): zone-qty Avail Qty inputs removed from zone rows — listener removed.
 		 * RV inventory is now computed from row lot counts via updateRvInventoryDisplay(). */
@@ -4086,6 +4086,7 @@ function toggleStallInventoryType(btn) {
 	}
 
 	syncStallLegacyMode();
+	applyStallRowsSimpleMode();
 	updateStallInventoryDisplay();
 }
 
@@ -4105,6 +4106,59 @@ function toggleStallCustomerSelection(btn) {
 			: 'Customers pick how many stalls they need; you assign specific stalls on the Stall & RV Charts page.';
 	}
 	syncStallLegacyMode();
+	applyStallRowsSimpleMode();
+}
+
+/* Scenario B refinement (post-review): when Numbered + Quantity (customers pick a
+   count; admin assigns specific stalls afterward), the row builder collapses to
+   plain First/Last ranges — no Layout dropdown, no back-to-back sides, no live
+   preview. The full builder only earns its complexity in pick-from-layout mode,
+   where customers tap the real map. Driven by one container class so it applies to
+   both server-rendered and JS-added rows. */
+function applyStallRowsSimpleMode() {
+	var inv = document.getElementById('eem-stall-inventory-type-input');
+	var sel = document.getElementById('eem-stall-customer-selection-input');
+	if (!inv || !sel) return;
+	var isSimple = inv.value === 'numbered' && sel.value !== 'pick_layout';
+
+	var list = document.getElementById('eem-stall-row-builder-list');
+	if (list) list.classList.toggle('eem-stall-rows--simple', isSimple);
+
+	if (isSimple) {
+		// Force every row to one-sided so what the admin types in First/Last is
+		// exactly what persists (a range) — no stale back-to-back split leaks into
+		// _en_stall_rows.
+		document.querySelectorAll('#eem-stall-row-builder-list .eem-row-card').forEach(function (card) {
+			var layoutSel = card.querySelector('[data-eem-input-action="stall-row-layout"]');
+			if (layoutSel && layoutSel.value !== 'one-sided') {
+				layoutSel.value = 'one-sided';
+				stallRowLayoutChange(layoutSel);
+			}
+		});
+	}
+
+	// Swap the field label, sub-label, Add button, and hint copy.
+	var label = document.querySelector('#row-stall-blocks .eem-field-label');
+	if (label) {
+		label.childNodes.forEach(function (n) {
+			if (n.nodeType === 3 && n.nodeValue.trim()) {
+				n.nodeValue = isSimple ? 'Stall Number Ranges' : 'Stall Rows';
+			}
+		});
+		var subEl = label.querySelector('.eem-field-label-sub');
+		if (subEl) subEl.textContent = isSimple ? 'Which stall numbers exist' : 'Define the physical layout customers will see';
+	}
+	var addBtn = document.querySelector('[data-eem-action="stall-add-row"]');
+	if (addBtn) {
+		addBtn.childNodes.forEach(function (n) {
+			if (n.nodeType === 3 && n.nodeValue.trim()) { n.nodeValue = isSimple ? ' Add Range' : ' Add Row'; }
+		});
+	}
+	var hint = document.getElementById('eem-stall-rows-hint');
+	if (hint) {
+		var h = isSimple ? hint.getAttribute('data-hint-simple') : hint.getAttribute('data-hint-full');
+		if (h) hint.textContent = h;
+	}
 }
 
 function rvMappedIsActive() {
@@ -4487,7 +4541,7 @@ function stallAddRow() {
 				'<div class="eem-row-card-field"><span class="eem-row-card-field-label">Last</span><input type="text" name="eem_stall_rows[' + idx + '][bot_last]" value="" data-role="bot-last" data-eem-input-action="stall-row-input"></div>' +
 			'</div></div>' +
 		'</div>' +
-		'<div>' +
+		'<div class="eem-row-card-preview">' +
 			'<div class="eem-row-card-preview-label">Preview <span class="eem-row-card-count"></span></div>' +
 			'<div class="eem-stall-row-layout"></div>' +
 		'</div>';
