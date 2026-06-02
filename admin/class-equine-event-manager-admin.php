@@ -3679,13 +3679,15 @@ class EEM_Admin {
 	 * @return array
 	 */
 	/**
-	 * Format an order number for chart display as the canonical 5-digit
-	 * zero-padded `#NNNNN` (matches Orders list / Order Detail / Dashboard).
+	 * Format an order number as the canonical 5-digit zero-padded `#NNNNN`
+	 * (matches Orders list / Order Detail / Dashboard). Used across the stall
+	 * charts, order-detail side card, refund-meta labels, and invoice render.
+	 * Returns an em dash for an empty number.
 	 *
 	 * @param string $order_number Raw order number.
 	 * @return string
 	 */
-	private function format_chart_order_number( string $order_number ): string {
+	private function format_order_number_display( string $order_number ): string {
 		$order_number = trim( $order_number );
 		if ( '' === $order_number ) {
 			return '—';
@@ -4244,7 +4246,7 @@ class EEM_Admin {
 											data-eem-action="stall-pill-click"
 											data-customer-name="<?php echo esc_attr( $cell['label'] ); ?>"
 											data-customer="<?php echo esc_attr( $cell['label'] ); ?>"
-											data-order-number="<?php echo esc_attr( $this->format_chart_order_number( (string) ( $cell['order_number'] ?? '' ) ) ); ?>"
+											data-order-number="<?php echo esc_attr( $this->format_order_number_display( (string) ( $cell['order_number'] ?? '' ) ) ); ?>"
 											<?php if ( '' !== $eem_cell_group ) : ?>data-group-name="<?php echo esc_attr( $eem_cell_group ); ?>"<?php endif; ?>
 											data-stall="<?php echo esc_attr( (string) $row['unit'] ); ?>"
 											data-date="<?php echo esc_attr( (string) $date_key ); ?>"
@@ -4327,7 +4329,7 @@ class EEM_Admin {
 							</td>
 							<td class="eem-chart-order-num">
 								<a class="eem-chart-order-link" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-order&order_key=' . rawurlencode( $row['order_key'] ) ) ); ?>">
-									<?php echo esc_html( $this->format_chart_order_number( (string) $row['order_number'] ) ); ?>
+									<?php echo esc_html( $this->format_order_number_display( (string) $row['order_number'] ) ); ?>
 								</a>
 							</td>
 							<?php foreach ( array_keys( $date_columns ) as $date_key ) : ?>
@@ -6100,7 +6102,7 @@ class EEM_Admin {
 									<div class="eem-order-side-card__meta-label"><?php esc_html_e( 'Billing address', 'equine-event-manager' ); ?></div>
 									<div class="eem-order-side-card__text"><?php echo nl2br( esc_html( $billing_address ) ); ?></div>
 									<div class="eem-order-side-card__meta-grid">
-										<div><span><?php esc_html_e( 'Order Number', 'equine-event-manager' ); ?></span><strong><?php echo esc_html( '#' . $order['order_number'] ); ?></strong></div>
+										<div><span><?php esc_html_e( 'Order Number', 'equine-event-manager' ); ?></span><strong><?php echo esc_html( $this->format_order_number_display( (string) $order['order_number'] ) ); ?></strong></div>
 										<div><span><?php esc_html_e( 'Created', 'equine-event-manager' ); ?></span><strong><?php echo esc_html( $order['created_at'] ); ?></strong></div>
 										<div><span><?php esc_html_e( 'Agreement', 'equine-event-manager' ); ?></span><strong><?php echo esc_html( $has_agreement ? __( 'Yes', 'equine-event-manager' ) : __( 'No', 'equine-event-manager' ) ); ?></strong></div>
 									</div>
@@ -6747,7 +6749,7 @@ class EEM_Admin {
 		$parts = array();
 
 		if ( ! empty( $component['order_number'] ) ) {
-			$parts[] = '#' . $component['order_number'];
+			$parts[] = $this->format_order_number_display( (string) $component['order_number'] );
 		}
 
 		if ( ! empty( $component['transaction_id'] ) ) {
@@ -10925,7 +10927,7 @@ class EEM_Admin {
 			)
 		);
 		$invoice_rows = array(
-			__( 'Order Number', 'equine-event-manager' )    => '#' . $order['order_number'],
+			__( 'Order Number', 'equine-event-manager' )    => $this->format_order_number_display( (string) $order['order_number'] ),
 			__( 'Event', 'equine-event-manager' )           => $event_label,
 			__( 'Event Dates', 'equine-event-manager' )     => ! empty( $order['event_dates'] ) ? $order['event_dates'] : __( 'Dates unavailable', 'equine-event-manager' ),
 			__( 'Reservation Type', 'equine-event-manager' ) => $order['type'],

@@ -4252,7 +4252,7 @@ RV Lot: " . $rv_lot['name'] );
 		$tokens           = array(
 			'[event_name]'    => $event_label,
 			'[event_dates]'   => isset( $order['event_dates'] ) ? $order['event_dates'] : '',
-			'[order_number]'  => ! empty( $order['order_number'] ) ? '#' . $order['order_number'] : '',
+			'[order_number]'  => ! empty( $order['order_number'] ) ? ( is_numeric( $order['order_number'] ) ? sprintf( '#%05d', (int) $order['order_number'] ) : '#' . $order['order_number'] ) : '',
 			'[customer_name]' => isset( $order['customer_name'] ) ? $order['customer_name'] : '',
 			'[total]'         => '$' . number_format_i18n( (float) $order['total'], 2 ),
 			'[support_phone]' => isset( $company_settings['support_phone'] ) ? $company_settings['support_phone'] : '',
