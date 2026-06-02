@@ -2135,6 +2135,11 @@
 		body.querySelectorAll(
 			'input[name^="en_reservation"], select[name^="en_reservation"], textarea[name^="en_reservation"], ' +
 			'input[name^="eem_"], select[name^="eem_"], textarea[name^="eem_"], ' +
+			// Scenario B (V1 #4): the two bare-named mode inputs MUST be collected —
+			// the server persists these directly. The legacy stall_selection_mode is
+			// lossy (both quantity-only and numbered+quantity map to 'quantity'), so
+			// omitting these silently collapses Numbered+Quantity to Quantity-only.
+			'input[name="stall_inventory_type"], input[name="stall_customer_selection"], ' +
 			'input[name="stall_selection_mode"], input[name="rv_selection_mode"]'
 		).forEach(function (el) {
 			if ((el.type === 'checkbox' || el.type === 'radio') && !el.checked) return;
