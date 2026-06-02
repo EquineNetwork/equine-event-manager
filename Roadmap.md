@@ -341,24 +341,30 @@ These are admin-side mockup ports that can be done AFTER C10 customer flow works
 Added from `BUNDLE_COMBINED_V1_NEW_SCOPE.txt`. **Recon →
 `docs/V1_NEW_SCOPE_RECON.md`**; all 7 questions locked in `decisions.md`.
 
-**Progress (4 of 5 features done; #5 started — current build 2.5.2):**
+**Progress (5 of 5 features done — current build 2.5.6):**
 - ✅ Part 4 venue/organizer unlink — was already done (verified).
 - ✅ **F — Special Requests on charts** (2.4.3; + popup order#/special-requests at 2.4.6).
 - ✅ **D2 — Group Name** (2.4.7; moved into Contact Information card 2.4.8).
 - ✅ **Customers menu + paginated list** (2.4.9).
 - ✅ **Scenario B — inventory split + one-time migration `eem-mig-004`** (2.5.0).
-- 🔨 **#5 — Tack stalls** (IN PROGRESS). **Model LOCKED (Whitney, 2026-06-02): purely
+- ✅ **#5 — Tack stalls** (DONE 2.5.6). **Model LOCKED (Whitney, 2026-06-02): purely
   operational — ALWAYS same price.** Designation records *which* stall is for equipment; never
   changes the charge. (Full decision in `decisions.md` → SCOPE-H.)
   - ↩️ **#5a tack pricing setting REMOVED** (was 2.5.2): superseded — tack is always same price,
     so the same/discounted/free selector offered options that never applied.
-  - 🔨 **#5b — admin chart designation** (building): admin marks/unmarks a stall as tack on the
+  - ✅ **#5b — admin chart designation** (2.5.4): admin marks/unmarks a stall as tack on the
     Stall & RV Charts page → writes a `Tack Stalls:` notes line (subset of assigned units).
-    Tack pill = **amber + amber dot** (Whitney). + **"Tack Stalls" filter** chip.
-  - ⬜ **#5d — customer pick-mode designation** (after #5b): in pick-from-layout, the customer
-    marks which of their chosen stalls is the tack stall at checkout. Same `Tack Stalls:` line,
-    same price.
+    Tack pill = **amber + amber dot** (by-location). Smoke `tack-5b-designation-smoke` 22/22.
+  - ✅ **#5b.2 — by-customer view + filter** (2.5.5): by-customer rows carry `data-has-tack` +
+    an amber `Tack: NN` note (tack note is the source of truth, not re-derived from the
+    by-customer allocation pass). + **"Tack Stalls" filter** chip.
+  - ✅ **#5d — customer pick-mode designation** (2.5.6): in pick-from-layout, the customer
+    optionally marks one of their chosen stalls as the tack stall at checkout (amber select,
+    JS-revealed once stalls are picked). Server validates it's one of the picks, writes the same
+    `Tack Stalls:` line, same price. Smoke `tack-5d-customer-pick-smoke` 14/14.
   - ❌ **#5c split line items — DROPPED.** Not needed (always same price).
+  - ⚠️ **Pending Whitney FULL review** — incl. the amber treatment (by-location + by-customer)
+    and one live pick-mode checkout to confirm the JS reveal + Tack-Stalls round-trip to chart.
 
 Also shipped alongside: reusable `tools/seed-test-data.php` (2.4.4–2.4.5) + C16 cleanup
 (`.DS_Store` untrack + 5-digit order-ID audit, 2.5.1; roadmap-status doc commit).

@@ -2350,8 +2350,15 @@ it never changes what the customer is charged. Therefore:
   billable quantity; per-STALL `is_tack` (which specific stalls) is the net-new layer the
   `Tack Stalls:` notes line adds on top — at the same price.
 
-**Build status:** ⬜ #5b (admin chart designation + amber + filter) + #5d (customer pick-mode
-designation) remaining; #5a pricing setting removed; #5c not needed.
+**Build status:** ✅ DONE (2.5.6). #5b admin chart designation + amber by-location (2.5.4);
+#5b.2 by-customer amber `Tack: NN` note + "Tack Stalls" filter chip (2.5.5) — tack note is the
+source of truth, NOT re-derived from the by-customer allocation pass (which can diverge from the
+by-location grid); #5d customer pick-mode designation at checkout (2.5.6) — amber select revealed
+by JS once stalls are picked, server-validated to be one of the picks, writes the same
+`Tack Stalls:` line. #5a pricing setting removed; #5c not needed. Smokes:
+`tack-5b-designation-smoke` 22/22, `tack-5d-customer-pick-smoke` 14/14. ⚠️ Pending Whitney FULL
+review + one live pick-mode checkout (the JS reveal + chart round-trip are runtime claims the
+smokes assert at source level only).
 
 ### SCOPE-F. Special Requests visibility (V1 polish)
 Surface the existing customer `notes` "Special Requests" text on the Stall Charts page
