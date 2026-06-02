@@ -1667,6 +1667,14 @@
 				eemApplyStallChartFilter(target.closest('.eem-stall-chart-tab-panel') || document.body);
 			}
 		},
+		'stall-chart-toggle-tack': function (target) {
+			var pressed = target.getAttribute('aria-pressed') === 'true';
+			target.setAttribute('aria-pressed', pressed ? 'false' : 'true');
+			target.classList.toggle('is-active', !pressed);
+			if (typeof eemApplyStallChartFilter === 'function') {
+				eemApplyStallChartFilter(target.closest('.eem-stall-chart-tab-panel') || document.body);
+			}
+		},
 		'logo-pick': function (target) {
 			pickLogo(target);
 		},
@@ -3721,17 +3729,21 @@
 		var activeBarn = barnFilter ? barnFilter.getAttribute('data-barn') : 'all';
 		var groupToggle = panel.querySelector('[data-eem-action="stall-chart-toggle-groups"]');
 		var groupsOnly = !!groupToggle && groupToggle.getAttribute('aria-pressed') === 'true';
+		var tackToggle = panel.querySelector('[data-eem-action="stall-chart-toggle-tack"]');
+		var tackOnly = !!tackToggle && tackToggle.getAttribute('aria-pressed') === 'true';
 		var rows = Array.prototype.slice.call(panel.querySelectorAll('[data-stall-chart-search]'));
 		var visible = 0;
 		rows.forEach(function (row) {
 			var haystack = (row.getAttribute('data-stall-chart-search') || '').toLowerCase();
 			var barn = (row.getAttribute('data-barn') || '').toLowerCase();
 			var hasGroup = (row.getAttribute('data-group') || '').trim() !== '';
+			var hasTack = (row.getAttribute('data-has-tack') || '0') === '1';
 			var matchesSearch = !q || haystack.indexOf(q) !== -1;
 			// Empty barn = By-Customer rows; they ignore the By-Location barn tabs.
 			var matchesBarn = activeBarn === 'all' || barn === '' || barn === activeBarn;
 			var matchesGroup = !groupsOnly || hasGroup;
-			var show = matchesSearch && matchesBarn && matchesGroup && !row.classList.contains('eem-chart-barn-row');
+			var matchesTack = !tackOnly || hasTack;
+			var show = matchesSearch && matchesBarn && matchesGroup && matchesTack && !row.classList.contains('eem-chart-barn-row');
 			row.hidden = !show;
 			if (show) visible++;
 		});

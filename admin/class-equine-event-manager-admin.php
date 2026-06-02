@@ -2255,6 +2255,11 @@ class EEM_Admin {
 									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
 									<?php esc_html_e( 'Show by group', 'equine-event-manager' ); ?>
 								</button>
+								<?php // V1 #5 — filters the list to orders that have a tack stall. ?>
+								<button type="button" class="eem-stall-chart-group-toggle eem-stall-chart-tack-toggle" data-eem-action="stall-chart-toggle-tack" aria-pressed="false">
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+									<?php esc_html_e( 'Tack Stalls', 'equine-event-manager' ); ?>
+								</button>
 								<span class="eem-stall-chart-filter-hint"><?php esc_html_e( 'Search by customer, order, stall, or RV lot.', 'equine-event-manager' ); ?></span>
 							</div>
 							<p class="eem-stall-chart-empty-note" hidden><?php esc_html_e( 'No assignment rows match this search.', 'equine-event-manager' ); ?></p>
@@ -4389,7 +4394,7 @@ class EEM_Admin {
 							$eem_row_group,
 						);
 						?>
-						<tr data-stall-chart-search="<?php echo esc_attr( strtolower( implode( ' ', array_filter( $search_parts ) ) ) ); ?>" data-stall-chart-block="" data-has-stalls="<?php echo ! empty( $row['stall_units'] ) ? '1' : '0'; ?>" data-has-rv="<?php echo ! empty( $row['rv_units'] ) ? '1' : '0'; ?>" data-group="<?php echo esc_attr( $eem_row_group ); ?>">
+						<tr data-stall-chart-search="<?php echo esc_attr( strtolower( implode( ' ', array_filter( $search_parts ) ) ) ); ?>" data-stall-chart-block="" data-has-stalls="<?php echo ! empty( $row['stall_units'] ) ? '1' : '0'; ?>" data-has-rv="<?php echo ! empty( $row['rv_units'] ) ? '1' : '0'; ?>" data-group="<?php echo esc_attr( $eem_row_group ); ?>" data-has-tack="<?php echo ! empty( $row['tack_units'] ) ? '1' : '0'; ?>">
 							<td>
 								<a class="eem-chart-cust-link" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-order&order_key=' . rawurlencode( $row['order_key'] ) ) ); ?>">
 									<?php echo esc_html( $row['customer_name'] ); ?>
@@ -4417,7 +4422,7 @@ class EEM_Admin {
 									<?php echo esc_html( $count > 0 ? number_format_i18n( $count ) : '—' ); ?>
 								</td>
 							<?php endforeach; ?>
-							<td class="eem-chart-stall-assignment"><?php echo ! empty( $row['stall_units'] ) ? wp_kses_post( $this->render_assignment_summary_chips( $row['stall_units'], 'stall' ) ) : '<span class="eem-chart-dash">—</span>'; ?></td>
+							<td class="eem-chart-stall-assignment"><?php echo ! empty( $row['stall_units'] ) ? wp_kses_post( $this->render_assignment_summary_chips( $row['stall_units'], 'stall' ) ) : '<span class="eem-chart-dash">—</span>'; ?><?php if ( ! empty( $row['tack_units'] ) ) : ?><div class="eem-chart-tack-note" title="<?php esc_attr_e( 'Tack stall(s)', 'equine-event-manager' ); ?>"><span class="eem-chart-tack-note__dot" aria-hidden="true"></span><?php echo esc_html( sprintf( /* translators: %s: comma-separated tack stall numbers */ __( 'Tack: %s', 'equine-event-manager' ), implode( ', ', array_map( 'strval', (array) $row['tack_units'] ) ) ) ); ?></div><?php endif; ?></td>
 							<td class="eem-chart-rv-assignment"><?php echo ! empty( $row['rv_units'] ) ? wp_kses_post( $this->render_assignment_summary_chips( $row['rv_units'], 'rv' ) ) : '<span class="eem-chart-dash">—</span>'; ?></td>
 						</tr>
 					<?php endforeach; ?>
@@ -4771,6 +4776,12 @@ class EEM_Admin {
 				'special_requests' => trim( (string) $this->get_special_requests_from_order_notes( $order['notes'] ) ),
 				// V1 D2: group name tag.
 				'group_name'       => $this->get_group_name_from_order_notes( (string) $order['notes'] ),
+				// V1 #5: tack stalls (the admin's explicit `Tack Stalls:` note is the
+				// source of truth for which stalls are tack — not re-derived from
+				// this view's allocation, which can differ from the by-location grid).
+				'tack_units'       => array_values( array_map( 'strval', (array) $this->parse_assigned_units_string(
+					$this->get_order_component_note_value( $order, 'stall', 'Tack Stalls' )
+				) ) ),
 			);
 		}
 

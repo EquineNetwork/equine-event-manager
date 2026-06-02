@@ -84,6 +84,23 @@ $check( 'render outputs a tack pill (eem-occ-pill--tack)', false !== strpos( $ht
 $check( 'render outputs the tack dot', false !== strpos( $html, 'eem-occ-pill__tack-dot' ) );
 $check( 'render outputs data-is-tack="1" somewhere', false !== strpos( $html, 'data-is-tack="1"' ) );
 
+// ── #5b.2: by-customer view shows the amber Tack note + data-has-tack + filter ──
+$brows = $priv( 'build_stall_chart_rows' )->invoke( $admin, 3499, $cfg );
+$row_tack_ok = false;
+foreach ( (array) $brows as $r ) {
+	if ( (string) $r['order_key'] === $order_key ) {
+		$row_tack_ok = isset( $r['tack_units'] ) && in_array( $tack_unit, array_map( 'strval', (array) $r['tack_units'] ), true );
+	}
+}
+$check( 'build_stall_chart_rows carries tack_units for the order', $row_tack_ok );
+
+ob_start();
+$priv( 'render_stall_chart_order_count_table' )->invoke( $admin, $brows, $grid['date_columns'] );
+$cust_html = ob_get_clean();
+$check( 'by-customer renders the amber Tack note', false !== strpos( $cust_html, 'eem-chart-tack-note' ) );
+$check( 'by-customer Tack note shows the unit', false !== strpos( $cust_html, 'Tack: ' . $tack_unit ) || false !== strpos( $cust_html, 'Tack: ' ) );
+$check( 'tack row carries data-has-tack="1"', false !== strpos( $cust_html, 'data-has-tack="1"' ) );
+
 // ── Toggle off ──
 $check( 'unmark (empty) succeeds', (bool) $repo->update_order_tack_stalls( $order_key, '' ) );
 $cleared = (array) $priv( 'parse_assigned_units_string' )->invoke(
@@ -101,6 +118,9 @@ $check( 'ajax_toggle_tack_stall hook registered', has_action( 'wp_ajax_eem_toggl
 $check( 'popup has the Mark/Unmark Tack button', false !== strpos( $adm_src, 'data-eem-action="toggle-tack-stall"' ) );
 $check( 'JS handles the tack toggle action', false !== strpos( $js_src, "'[data-eem-action=\"toggle-tack-stall\"]'" ) );
 $check( 'JS posts to eem_toggle_tack_stall', false !== strpos( $js_src, 'eem_toggle_tack_stall' ) );
+$check( 'by-customer has the Tack Stalls filter chip', false !== strpos( $adm_src, 'stall-chart-toggle-tack' ) );
+$check( 'JS has the tack filter toggle handler', false !== strpos( $js_src, "'stall-chart-toggle-tack'" ) );
+$check( 'filter accounts for data-has-tack', false !== strpos( $js_src, "getAttribute('data-has-tack')" ) );
 
 WP_CLI::log( "\n=== Tack #5b designation smoke: {$pass} passed, {$fail} failed ===" );
 if ( $fail > 0 ) { WP_CLI::error( "{$fail} assertion(s) failed." ); }
