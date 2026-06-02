@@ -5293,7 +5293,7 @@ RV Lot: " . $rv_lot['name'] );
 				continue;
 			}
 
-			if ( preg_match( '/^(Billing Name|Billing Address|Reservation setup ID|Submission token|RV Add-Ons|RV Lot|Assigned Stall Units|Assigned RV Lots|Assigned RV Units|Add-On|Group Name|Group Charge|Group Reservation|Group Riders Count|Group Riders|Venue Agreement (Accepted|Provided)|Invoice Type|Invoice Token|Invoice Status|Invoice Sent At|Invoice Paid At):/i', $line ) ) {
+			if ( preg_match( '/^(Billing Name|Billing Address|Reservation setup ID|Submission token|RV Add-Ons|RV Lot|Assigned Stall Units|Assigned RV Lots|Assigned RV Units|Tack Stalls|Add-On|Group Name|Group Charge|Group Reservation|Group Riders Count|Group Riders|Venue Agreement (Accepted|Provided)|Invoice Type|Invoice Token|Invoice Status|Invoice Sent At|Invoice Paid At):/i', $line ) ) {
 				continue;
 			}
 

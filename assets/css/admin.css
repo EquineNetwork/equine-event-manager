@@ -7083,6 +7083,10 @@ a.eem-btn--ghost:focus    { color: #1d2327; }
    for the native tooltip; the amber dot is the at-a-glance cue). */
 .eem-occ-pill__note-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--eem-warn-accent); flex-shrink: 0; }
 .eem-occ-pill--has-note { border-color: var(--eem-warn-border); }
+/* V1 #5: tack stall — amber pill + amber dot (operational, no price change). */
+.eem-occ-pill--tack { background: var(--eem-warn-bg); color: var(--eem-warn-text); border-color: var(--eem-warn-border); }
+.eem-occ-pill--tack .eem-occ-chevron { color: var(--eem-warn-text); }
+.eem-occ-pill__tack-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--eem-warn-accent); flex-shrink: 0; }
 
 /* ── Customer night count table ── */
 .eem-cust-chart-table tbody tr { border-bottom: 1px solid #f0f0f1; }

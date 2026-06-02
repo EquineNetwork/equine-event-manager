@@ -451,6 +451,47 @@ class EEM_Orders_Repository {
 	}
 
 	/**
+	 * Update the operational "Tack Stalls" designation for an order (V1 #5).
+	 *
+	 * Tack stalls are a subset of the order's assigned stall units flagged as
+	 * equipment storage rather than horse housing. Purely operational — the price
+	 * is unchanged. Written as a `Tack Stalls:` note line on the stall components
+	 * (mirrors `Assigned Stall Units`); an empty value removes the line.
+	 *
+	 * @param string $order_key  Order key.
+	 * @param string $tack_units Comma-separated tack stall unit labels ('' clears).
+	 * @return bool
+	 */
+	public function update_order_tack_stalls( $order_key, $tack_units = '' ) {
+		$order = $this->get_order( $order_key );
+		if ( ! $order ) {
+			return false;
+		}
+
+		$tack_units  = trim( sanitize_text_field( $tack_units ) );
+		$updated_any = false;
+
+		foreach ( $order['components'] as $component ) {
+			if ( 'stall' !== $component['table'] ) {
+				continue;
+			}
+			$notes = isset( $component['notes'] ) ? (string) $component['notes'] : '';
+			$notes = ( '' === $tack_units )
+				? $this->remove_note_line( $notes, 'Tack Stalls' )
+				: $this->upsert_note_line( $notes, 'Tack Stalls', $tack_units );
+
+			$updated_any = $this->update_component_fields(
+				$component['table'],
+				$component['row_id'],
+				array( 'notes' => $notes ),
+				array( '%s' )
+			) || $updated_any;
+		}
+
+		return $updated_any;
+	}
+
+	/**
 	 * Auto-assign stall and RV units for a single order.
 	 *
 	 * Thin wrapper over {@see auto_assign_units_for_reservation()} scoped to one

@@ -102,6 +102,7 @@ class EEM_Admin {
 		add_action( 'all_admin_notices', array( $this, 'render_reservations_list_banner' ) );
 		add_action( 'all_admin_notices', array( $this, 'render_native_content_list_banner' ) );
 		add_action( 'wp_ajax_eem_move_stall_assignment', array( $this, 'ajax_move_stall_assignment' ) );
+		add_action( 'wp_ajax_eem_toggle_tack_stall', array( $this, 'ajax_toggle_tack_stall' ) );
 		add_action( 'wp_ajax_eem_auto_assign', array( $this, 'ajax_auto_assign' ) );
 	}
 
@@ -2336,6 +2337,11 @@ class EEM_Admin {
 				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
 				<?php esc_html_e( 'View order', 'equine-event-manager' ); ?>
 			</button>
+			<?php // V1 #5: toggle the active stall's tack designation (operational, no price change). ?>
+			<button class="eem-stall-chart-cell-menu-btn cell-action-menu__btn" type="button" data-eem-action="toggle-tack-stall" id="eem-stall-chart-tack-btn">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+				<span data-eem-tack-btn-label><?php esc_html_e( 'Mark as Tack Stall', 'equine-event-manager' ); ?></span>
+			</button>
 		</div>
 
 		<!-- Destination-select banner -->
@@ -3743,6 +3749,13 @@ class EEM_Admin {
 			$special_requests = trim( (string) $this->get_special_requests_from_order_notes( $order['notes'] ) );
 			// V1 D2: group name tag (for manual clustering + Show-by-group filter).
 			$group_name = $this->get_group_name_from_order_notes( (string) $order['notes'] );
+			// V1 #5: tack stall designations (subset of assigned units; operational).
+			$tack_lookup = array_fill_keys(
+				array_map( 'strval', (array) $this->parse_assigned_units_string(
+					$this->get_order_component_note_value( $order, 'stall', 'Tack Stalls' )
+				) ),
+				true
+			);
 
 			foreach ( $stall_units['assigned'] as $unit ) {
 				foreach ( $stall_dates as $date_key ) {
@@ -3754,6 +3767,7 @@ class EEM_Admin {
 							'order_number'     => (string) $order['order_number'],
 							'special_requests' => $special_requests,
 							'group_name'       => $group_name,
+							'is_tack'          => isset( $tack_lookup[ (string) $unit ] ),
 						);
 					}
 				}
@@ -4013,6 +4027,71 @@ class EEM_Admin {
 	 *
 	 * @return void
 	 */
+	/**
+	 * AJAX: toggle a stall's "tack" designation for an order (V1 #5).
+	 *
+	 * Operational only — does NOT change pricing. Adds/removes the stall from the
+	 * order's `Tack Stalls:` note line. The stall must already be assigned to the
+	 * order. Reuses the chart-move nonce.
+	 *
+	 * @return void
+	 */
+	public function ajax_toggle_tack_stall() {
+		check_ajax_referer( 'eem_stall_chart_move', '_wpnonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+
+		$order_key = isset( $_POST['order_id'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['order_id'] ) ) : '';
+		$stall     = isset( $_POST['stall'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['stall'] ) ) : '';
+
+		if ( '' === $order_key || '' === $stall ) {
+			wp_send_json_error( array( 'message' => __( 'Missing required parameters.', 'equine-event-manager' ) ), 400 );
+		}
+
+		$order = $this->orders_repository->get_order( $order_key );
+		if ( ! $order ) {
+			wp_send_json_error( array( 'message' => __( 'Order not found.', 'equine-event-manager' ) ), 404 );
+		}
+
+		// The stall must actually belong to this order.
+		$assigned = (array) $this->parse_assigned_units_string(
+			$this->get_order_component_note_value( $order, 'stall', 'Assigned Stall Units' )
+		);
+		if ( ! in_array( $stall, $assigned, true ) ) {
+			wp_send_json_error( array( 'message' => __( 'That stall is not assigned to this order.', 'equine-event-manager' ) ), 409 );
+		}
+
+		// Toggle the stall in/out of the tack list.
+		$tack = (array) $this->parse_assigned_units_string(
+			$this->get_order_component_note_value( $order, 'stall', 'Tack Stalls' )
+		);
+		if ( in_array( $stall, $tack, true ) ) {
+			$tack    = array_values( array_diff( $tack, array( $stall ) ) );
+			$is_tack = false;
+		} else {
+			$tack[]  = $stall;
+			$is_tack = true;
+		}
+
+		$ok = $this->orders_repository->update_order_tack_stalls(
+			$order_key,
+			implode( ', ', array_filter( array_map( 'strval', $tack ) ) )
+		);
+		if ( ! $ok ) {
+			wp_send_json_error( array( 'message' => __( 'Could not update tack designation.', 'equine-event-manager' ) ), 500 );
+		}
+
+		wp_send_json_success( array(
+			'is_tack' => $is_tack,
+			'stall'   => $stall,
+			'message' => $is_tack
+				? __( 'Marked as tack stall.', 'equine-event-manager' )
+				: __( 'Tack designation removed.', 'equine-event-manager' ),
+		) );
+	}
+
 	public function ajax_move_stall_assignment() {
 		check_ajax_referer( 'eem_stall_chart_move', '_wpnonce' );
 
@@ -4240,7 +4319,7 @@ class EEM_Admin {
 										$eem_cell_note  = isset( $cell['special_requests'] ) ? trim( (string) $cell['special_requests'] ) : '';
 										$eem_cell_group = isset( $cell['group_name'] ) ? trim( (string) $cell['group_name'] ) : '';
 										?>
-										<span class="eem-occ-pill eem-occ-pill--reserved<?php echo '' !== $eem_cell_note ? ' eem-occ-pill--has-note' : ''; ?>"
+										<span class="eem-occ-pill eem-occ-pill--reserved<?php echo '' !== $eem_cell_note ? ' eem-occ-pill--has-note' : ''; ?><?php echo ! empty( $cell['is_tack'] ) ? ' eem-occ-pill--tack' : ''; ?>" data-is-tack="<?php echo ! empty( $cell['is_tack'] ) ? '1' : '0'; ?>"
 											data-order-key="<?php echo esc_attr( $cell['order_key'] ); ?>"
 											data-order-id="<?php echo esc_attr( $cell['order_key'] ); ?>"
 											data-eem-action="stall-pill-click"
@@ -4253,7 +4332,7 @@ class EEM_Admin {
 											<?php if ( '' !== $eem_cell_note ) : ?>data-special-requests="<?php echo esc_attr( $eem_cell_note ); ?>" title="<?php echo esc_attr( sprintf( /* translators: %s: customer special requests text */ __( 'Special requests: %s', 'equine-event-manager' ), $eem_cell_note ) ); ?>"<?php endif; ?>>
 											<?php echo esc_html( $cell['label'] ); ?>
 											<?php if ( '' !== $eem_cell_note ) : ?><span class="eem-occ-pill__note-dot" aria-hidden="true"></span><span class="screen-reader-text"><?php esc_html_e( '(has special requests)', 'equine-event-manager' ); ?></span><?php endif; ?>
-											<svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+											<?php if ( ! empty( $cell['is_tack'] ) ) : ?><span class="eem-occ-pill__tack-dot" aria-hidden="true"></span><span class="screen-reader-text"><?php esc_html_e( '(tack stall)', 'equine-event-manager' ); ?></span><?php endif; ?><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
 										</span>
 									<?php elseif ( 'blocked' === $cell['type'] ) : ?>
 										<span class="eem-occ-pill eem-occ-pill--blocked"><?php esc_html_e( 'Blocked', 'equine-event-manager' ); ?></span>
@@ -9684,7 +9763,7 @@ class EEM_Admin {
 
 		$filtered            = array();
 		$skipping_billing    = false;
-		$metadata_line_regex = '/^(Reservation setup ID:|Submission token:|RV Add-Ons:|Group Name:|Group Charge:|Group Reservation:|Group Riders Count:|Group Riders:|RV Lot:|Assigned Stall Units:|Assigned RV Lots:|Assigned RV Units:|Add-On:|Venue Agreement (Accepted|Provided):|Invoice Type:|Invoice Token:|Invoice Status:|Invoice Sent At:|Invoice Paid At:|Refunded Amount:|Refunded Items:|Last Refund Transaction:|Last Refunded At:)/i';
+		$metadata_line_regex = '/^(Reservation setup ID:|Submission token:|RV Add-Ons:|Tack Stalls:|Group Name:|Group Charge:|Group Reservation:|Group Riders Count:|Group Riders:|RV Lot:|Assigned Stall Units:|Assigned RV Lots:|Assigned RV Units:|Add-On:|Venue Agreement (Accepted|Provided):|Invoice Type:|Invoice Token:|Invoice Status:|Invoice Sent At:|Invoice Paid At:|Refunded Amount:|Refunded Items:|Last Refund Transaction:|Last Refunded At:)/i';
 
 		foreach ( $lines as $line ) {
 			$line = trim( (string) $line );

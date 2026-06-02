@@ -3464,6 +3464,11 @@
 			window._scActiveStall     = srcStall;
 			window._scActiveDate      = srcDate;
 			window._scCustomerName    = customer;
+			window._scActivePillEl    = pill;
+			// V1 #5: set the tack toggle button's label from the pill's state.
+			window._scActiveIsTack = pill.getAttribute('data-is-tack') === '1';
+			var tackLabel = document.querySelector('#eem-stall-chart-tack-btn [data-eem-tack-btn-label]');
+			if (tackLabel) tackLabel.textContent = window._scActiveIsTack ? 'Unmark Tack Stall' : 'Mark as Tack Stall';
 			var titleEl = document.getElementById('eem-stall-chart-menu-title');
 			var subEl = document.getElementById('eem-stall-chart-menu-subtitle');
 			if (titleEl) titleEl.textContent = customer;
@@ -3530,7 +3535,50 @@
 		}
 
 		// Enter destination mode
-		var moveBtn = t.closest('[data-eem-action="move-to-different-stall"]');
+		var tackBtn = t.closest('[data-eem-action="toggle-tack-stall"]');
+			if (tackBtn) {
+				ev.preventDefault();
+				var tCfg = window.eemStallChart || {};
+				var tBody = new URLSearchParams();
+				tBody.set('action', 'eem_toggle_tack_stall');
+				tBody.set('_wpnonce', tCfg.moveNonce || '');
+				tBody.set('order_id', window._scActiveOrderId || '');
+				tBody.set('stall', window._scActiveStall || '');
+				var tMenu = document.getElementById('eem-stall-chart-cell-menu');
+				if (tMenu) tMenu.classList.remove('open');
+				var pillEl = window._scActivePillEl;
+				fetch((window.ajaxurl || '/wp-admin/admin-ajax.php'), { method: 'POST', credentials: 'same-origin', body: tBody })
+					.then(function (r) { return r.json(); })
+					.then(function (json) {
+						if (json && json.success) {
+							var isTack = !!(json.data && json.data.is_tack);
+							if (pillEl) {
+								var key = pillEl.getAttribute('data-order-key');
+								var stall = pillEl.getAttribute('data-stall');
+								document.querySelectorAll('.eem-occ-pill--reserved[data-order-key="' + key + '"][data-stall="' + stall + '"]').forEach(function (p) {
+									p.classList.toggle('eem-occ-pill--tack', isTack);
+									p.setAttribute('data-is-tack', isTack ? '1' : '0');
+									var existing = p.querySelector('.eem-occ-pill__tack-dot');
+									if (isTack && !existing) {
+										var dot = document.createElement('span');
+										dot.className = 'eem-occ-pill__tack-dot';
+										dot.setAttribute('aria-hidden', 'true');
+										p.insertBefore(dot, p.querySelector('.eem-occ-chevron'));
+									} else if (!isTack && existing) {
+										existing.remove();
+									}
+								});
+							}
+							EEM.showSaveToast((json.data && json.data.message) || 'Updated.');
+						} else {
+							EEM.showSaveToast((json.data && json.data.message) || 'Could not update tack designation.', { variant: 'error', sub: '' });
+						}
+					})
+					.catch(function () { EEM.showSaveToast('Could not reach the server.', { variant: 'error', sub: '' }); });
+				return;
+			}
+
+			var moveBtn = t.closest('[data-eem-action="move-to-different-stall"]');
 		if (moveBtn) {
 			ev.preventDefault();
 			document.body.classList.add('destination-mode');
