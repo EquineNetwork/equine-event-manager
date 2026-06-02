@@ -174,7 +174,8 @@ $eem_footer_right = trim( $c( 'order_number' ) . ( $c( 'event_title' ) ? '  ·  
         <?php // Empty alt: if the image fails to load in the PDF, it renders nothing
         // rather than dumping the event title into the header. Brand logo is embedded
         // as a data URI for the PDF in C12 increment 3. ?>
-        <img class="logo-img" src="<?php echo esc_url( $c( 'logo_url' ) ); ?>" alt="">
+<?php // esc_url with the data protocol allowed — the PDF embeds the logo as a data: URI (we generate it from a local file), which esc_url() strips by default. ?>
+        <img class="logo-img" src="<?php echo esc_url( $c( 'logo_url' ), array( 'http', 'https', 'data' ) ); ?>" alt="">
       <?php endif; ?>
       <div class="receipt-tag"><?php echo esc_html( sprintf( /* translators: %s: order number. */ __( 'Order Receipt %s', 'equine-event-manager' ), $c( 'order_number' ) ) ); ?></div>
       <div class="event-name"><?php echo esc_html( $c( 'event_title' ) ); ?></div>

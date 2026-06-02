@@ -4015,10 +4015,12 @@ RV Lot: " . $rv_lot['name'] );
 	 * block (per-section subtotals → Subtotal → Convenience Fee → Sales Tax →
 	 * Grand Total). Renders templates/receipt/receipt.php.
 	 *
-	 * @param array $order Grouped order payload (EEM_Orders_Repository shape).
+	 * @param array $order   Grouped order payload (EEM_Orders_Repository shape).
+	 * @param bool  $for_pdf When true, embed the logo as a data URI (Dompdf has no
+	 *                       remote loading) instead of a URL.
 	 * @return string Rendered receipt HTML (self-contained <style>; no inlining).
 	 */
-	private function build_receipt_html( array $order ): string {
+	private function build_receipt_html( array $order, bool $for_pdf = false ): string {
 		$company_settings = $this->get_company_settings();
 		$support_phone    = trim( (string) $company_settings['support_phone'] );
 		$support_email    = trim( (string) $company_settings['support_email'] );
@@ -4149,7 +4151,7 @@ RV Lot: " . $rv_lot['name'] );
 		$tax_rate_value = (float) $order['tax_rate'];
 
 		$ctx = array(
-			'logo_url'            => $this->get_company_logo_url( 'medium' ),
+			'logo_url'            => $for_pdf ? $this->get_company_logo_data_uri() : $this->get_company_logo_url( 'medium' ),
 			'order_number'        => sprintf( '#%05d', absint( $order['order_number'] ) ),
 			'event_title'         => $event_label,
 			'event_sub'           => implode( '  ·  ', $sub_parts ),
@@ -4179,6 +4181,20 @@ RV Lot: " . $rv_lot['name'] );
 		ob_start();
 		include EQUINE_EVENT_MANAGER_PATH . 'templates/receipt/receipt.php';
 		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Generate the order receipt as PDF bytes (C12).
+	 *
+	 * Renders the receipt template in PDF mode (data-URI logo) and runs it through
+	 * Dompdf. Returns '' when Dompdf is unavailable or render fails, so callers can
+	 * skip the attachment rather than fatal.
+	 *
+	 * @param array $order Grouped order payload.
+	 * @return string PDF bytes, or '' on failure.
+	 */
+	public function generate_receipt_pdf( array $order ): string {
+		return EEM_PDF::render( $this->build_receipt_html( $order, true ) );
 	}
 
 	/**
@@ -5113,6 +5129,49 @@ RV Lot: " . $rv_lot['name'] );
 		}
 
 		return $logo_url;
+	}
+
+	/**
+	 * Get the company logo as a base64 data URI for embedding in PDFs.
+	 *
+	 * Dompdf renders with remote loading disabled, so the logo must be inlined.
+	 * Resolves the local file path (attachment file, else the bundled fallback
+	 * asset), reads it, and returns a `data:` URI. Returns '' when no readable
+	 * image is found (the receipt template then renders no logo).
+	 *
+	 * @return string Data URI, or '' on failure.
+	 */
+	private function get_company_logo_data_uri(): string {
+		$company_settings = $this->get_company_settings();
+		$path             = '';
+
+		if ( ! empty( $company_settings['logo_id'] ) ) {
+			$attached = get_attached_file( absint( $company_settings['logo_id'] ) );
+			if ( $attached && is_readable( $attached ) ) {
+				$path = $attached;
+			}
+		}
+
+		if ( '' === $path ) {
+			$fallback = EQUINE_EVENT_MANAGER_PATH . 'admin/images/equine-event-manager-logo.png';
+			if ( is_readable( $fallback ) ) {
+				$path = $fallback;
+			}
+		}
+
+		if ( '' === $path ) {
+			return '';
+		}
+
+		$ext  = strtolower( pathinfo( $path, PATHINFO_EXTENSION ) );
+		$mime = 'jpg' === $ext || 'jpeg' === $ext ? 'image/jpeg' : ( 'svg' === $ext ? 'image/svg+xml' : 'image/png' );
+		$data = file_get_contents( $path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+
+		if ( false === $data || '' === $data ) {
+			return '';
+		}
+
+		return 'data:' . $mime . ';base64,' . base64_encode( $data ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
 	}
 
 	/**
