@@ -7097,8 +7097,8 @@ a.eem-btn--ghost:focus    { color: #1d2327; }
    stacked color signals (amber-fill + dots). "Tack" is amber; "Group" uses the
    per-group color set inline via --eem-group-color, so the same group reads as
    the same color and the label removes the guesswork. */
-.eem-occ-pill__badges { position: absolute; top: -8px; left: 8px; display: inline-flex; gap: 3px; z-index: 2; pointer-events: none; }
-.eem-occ-badge { font-size: 8.5px; font-weight: 800; line-height: 1; letter-spacing: .04em; text-transform: uppercase; padding: 2px 5px; border-radius: 4px; color: #fff; border: 1px solid #fff; box-shadow: 0 1px 2px rgba(15, 23, 42, .18); }
+.eem-occ-pill__badges { position: absolute; top: -10px; left: 8px; display: inline-flex; gap: 3px; z-index: 2; pointer-events: none; }
+.eem-occ-badge { font-size: 8.5px; font-weight: 800; line-height: 1; letter-spacing: .04em; text-transform: uppercase; padding: 2px 5px; border-radius: 4px; color: #fff; box-shadow: 0 1px 2px rgba(15, 23, 42, .18); }
 .eem-occ-badge--tack { background: var(--eem-warn-text, #b45309); }
 .eem-occ-badge--group { background: var(--eem-group-color, #475569); }
 
