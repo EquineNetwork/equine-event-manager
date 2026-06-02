@@ -607,7 +607,7 @@ body.eem-shell-page {
 	box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
 }
 
-.eem-toggle.on::after  { transform: translateX(24px); }
+.eem-toggle.on::after  { transform: translateX(20px); }
 .eem-toggle.off::after { transform: translateX(0); }
 
 /* "Enabled" toggle composite — label + toggle inline in a section header */
@@ -5789,7 +5789,7 @@ a.eem-dashboard-qa-btn:focus {
    consistent. The base .eem-toggle CSS handles size + thumb. */
 .eem-toggle--on  { background: var(--eem-electric); }
 .eem-toggle--off { background: #cbd5e1; }
-.eem-toggle--on::after  { transform: translateX(24px); }
+.eem-toggle--on::after  { transform: translateX(20px); }
 .eem-toggle--off::after { transform: translateX(0); }
 
 /* C7.B.1 placeholder strip for the eventual save bar (C7.B.2). */
