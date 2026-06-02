@@ -43,19 +43,27 @@ for FILE in "${SMOKE_FILES[@]}"; do
 	BASENAME="$( basename "$FILE" )"
 	# Run each smoke file through wp-cli eval-file so $wpdb etc. are bootstrapped.
 	OUTPUT="$( "$PHP_BIN" "$WP_CLI" --path="$WP_PATH" eval-file "$FILE" 2>&1 )"
+	STATUS=$?
 	if [[ "$VERBOSE" -eq 1 ]]; then
 		echo "===== $BASENAME ====="
 		echo "$OUTPUT"
 		echo
 	fi
-	SUMMARY="$( echo "$OUTPUT" | tail -n 1 )"
-	if echo "$SUMMARY" | grep -qE ', 0 failed ='; then
-		PASS=$(( PASS + 1 ))
-		[[ "$VERBOSE" -eq 0 ]] && echo "PASS  $BASENAME — $SUMMARY"
-	else
+	# Find the "... N passed, M failed ..." summary wherever it appears — some
+	# smokes print a trailing WP_CLI::success line after it, so tail -n 1 alone
+	# misses it. A smoke FAILS if it exited non-zero (WP_CLI::error), any summary
+	# reports a non-zero failed count, or the output has a PHP fatal/parse error.
+	SUMMARY="$( echo "$OUTPUT" | grep -E 'passed, [0-9]+ failed' | tail -n 1 )"
+	[[ -z "$SUMMARY" ]] && SUMMARY="$( echo "$OUTPUT" | tail -n 1 )"
+	if [[ "$STATUS" -ne 0 ]] \
+		|| echo "$OUTPUT" | grep -qiE 'passed, [1-9][0-9]* failed' \
+		|| echo "$OUTPUT" | grep -qiE 'Fatal error|Parse error|Uncaught'; then
 		FAIL=$(( FAIL + 1 ))
 		FAILED_FILES+=( "$BASENAME" )
 		echo "FAIL  $BASENAME — $SUMMARY"
+	else
+		PASS=$(( PASS + 1 ))
+		[[ "$VERBOSE" -eq 0 ]] && echo "PASS  $BASENAME — $SUMMARY"
 	fi
 done
 
