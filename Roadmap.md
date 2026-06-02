@@ -253,6 +253,18 @@ These are admin-side mockup ports that can be done AFTER C10 customer flow works
 - Performance pass (CSS strip, lazy load, query optimization)
 - Native `alert()`/`confirm()`/`prompt()` audit — replace with consistent UI pattern
 - Final cross-mockup audit
+- **Repo cleanup (from BUNDLE_COMBINED_V1_NEW_SCOPE Part 3, 2026-06-01):**
+  1. **Top-level doc consolidation** — root has `AUDIT.md`, `AUDIT-C10C.md`,
+     `AUDIT-C15.md`, `CLEANUP.md`, `HANDOFF.md`, `SESSION-NOTES.md`, `decisions.md`,
+     `Roadmap.md`, `CLAUDE.md`, `BRAND_GUIDE.md`. Decide which to consolidate, move to
+     `docs/`, or archive.
+  2. **`.DS_Store` removal + `.gitignore`** — delete committed Finder garbage from git,
+     add to `.gitignore`.
+  3. **`BRAND_GUIDE.png`** — move from repo root to `assets/` or `docs/assets/`.
+  4. **Stale phase audit files** — `AUDIT-C10C.md`, `AUDIT-C15.md` are phase-specific;
+     consolidate/archive after those phases ship.
+  5. **`HANDOFF.md` / `SESSION-NOTES.md`** — confirm root vs `docs/` placement for
+     post-launch use.
 - 1-2 days work
 
 ### C15 — Reports ✅ COMPLETE (2.3.99)
@@ -316,6 +328,71 @@ These are admin-side mockup ports that can be done AFTER C10 customer flow works
 >   agreement-signature capture at checkout (C10) so this row can light up?
 > - Remaining DS-1.A mechanical edits (sidebar renames, Create-Order/Collect-Payment
 >   href injection, BEM status-badge normalization) are independent and still open.
+
+---
+
+## V1 NEW SCOPE (strategic chat, 2026-06-01)
+
+Added from `BUNDLE_COMBINED_V1_NEW_SCOPE.txt`. **Recon complete →
+`docs/V1_NEW_SCOPE_RECON.md`** (file:line audit, migration plan, tack data model,
+sequencing, open questions). **No implementation until Whitney confirms the sequence.**
+
+**Recommended V1 commit order** (low-risk isolated wins → migration alone → biggest
+feature last):
+
+1. **Part 4 — venue/organizer unlink → ALREADY DONE.** Hero already renders venue
+   (`events.php:3181`) + organizer (`:3190`) as plain text; phone/email/Directions stay
+   linked. Verify-and-close, 0 code commits.
+2. **F — Special Requests visibility on Stall Charts** (surface existing `notes` data on
+   customer pills/tooltip + Assignment Issues). Complexity 2, ~1 commit.
+3. **D2 — Group Name (informational only)** — new optional free-text field on checkout →
+   notes line → Stall Charts pill display + "Show by group" filter chip. Independent of the
+   existing multi-rider "Group Reservation" feature. Group-aware *auto-assign* clustering is
+   **V1.1**. Complexity 3, ~1-2 commits.
+4. **Customers menu + Customers list page** — new top-level "Customers" menu + list (Name
+   Last,First | Email | Total Orders | Total Spent | Last Activity; sortable; search;
+   filter). Reuses `EEM_Customer_Profile_Repo` aggregation. **Profile page already shipped
+   (C9, v2.4.2) — exceeds the planned "stub"; only the menu + list are net-new.** Links use
+   the existing `?customer_email=` route (no `customer_id` — read-only aggregate model).
+   Complexity 3, ~2-3 commits.
+5. **Scenario B — Stall inventory model split + migration.** ⚠️ Migration-bearing; lands
+   **alone**. Split the single `_en_stall_selection_mode` (real key — NOT
+   `_en_inventory_mode`) into two independent settings: `_en_stall_inventory_type`
+   (quantity_only/numbered) + `_en_stall_customer_selection` (quantity/pick_layout). Adds
+   the new **Numbered + Quantity** combination (admin assigns post-purchase). One-time
+   version-gated migration + backward-compat resolver; editor two-control UI; customer-gate
+   rewrite. **D1 contiguity verify folds in here** (current behavior = first-N-available in
+   pool order; accept for V1). Complexity 4-5, ~3-4 commits.
+6. **H — Tack stall designation.** After B is stable (tack flow branches on Customer
+   Selection mode). Per-stall `is_tack` metadata (notes-line `Tack Stalls: …`), per-reservation
+   tack pricing (`same`/`discounted`/`free`), checkout designation + live summary recalc,
+   admin chart mark/unmark, split line items, visual indicator, "Tack Stalls" filter chip.
+   Complexity 5, ~4-6 commits.
+
+**Total V1 new-scope ≈ 11-16 commits**, slotting alongside the existing remaining roadmap
+(C13/C14 payment-gated; C16 polish; pending C9+C15 visual-verify).
+
+**Open questions awaiting Whitney** (full list in the recon doc §7): C9-as-stub
+reconciliation, B migration timing, tack storage shape, tack line-item display, Group-Name
+independence, customers-list scale/pagination, D1 contiguity acceptance.
+
+## V1.1 NEW SCOPE (post-launch, strategic chat 2026-06-01)
+
+- **D2 group-aware auto-assign** — extend the V1 Group Name field with an allocator that
+  clusters group members into contiguous stalls before placing singles (requires solving the
+  buy-at-different-times timing problem).
+- **G1 — Priority sale windows by customer tier** — customer-level tier tag (Sponsor / VIP /
+  Returning / General), per-reservation per-tier sale-open dates, frontend time-gate on the
+  reservation form, anonymous → General. Depends on maturing customer-account infrastructure.
+
+## V2 (from strategic chat 2026-06-01)
+
+- **Customer Profile — full feature** per mockup (payment methods, communication log, tier
+  tag once G1 lands, group memberships, richer history). The C9 read-only aggregate profile
+  is the V1 floor; V2 layers these on.
+- **E — Discipline/barn zoning:** SKIPPED entirely (not needed by launch customer).
+- **G2 — Priority placement at assignment time:** SKIPPED (covered by existing manual
+  reassignment).
 
 ---
 

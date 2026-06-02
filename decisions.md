@@ -2291,3 +2291,68 @@ path is smoke-covered).
 
 **C12 COMPLETE (2.3.93).** Pending live verification: checkout tax write-path (one real
 test checkout) + browser eyeball of the hosted page + live PDF.
+
+---
+
+## New V1 / V1.1 / V2 scope — strategic chat
+**Decided:** 2026-06-01 (source: `BUNDLE_COMBINED_V1_NEW_SCOPE.txt`)
+
+Recon + sequencing: `docs/V1_NEW_SCOPE_RECON.md`. These are locked product decisions; the
+implementation sequence still needs Whitney's go-ahead before code starts.
+
+### SCOPE-B. Stall inventory model split into two independent settings (V1)
+Replace the single stall "Inventory Mode" with two settings:
+- **Stall Inventory Type:** Quantity-only / Numbered
+- **Customer Selection:** Quantity / Pick from layout
+
+Three valid combinations (Quantity-only+Quantity, Numbered+Quantity, Numbered+Pick). The
+**Numbered+Quantity** combo (admin assigns post-purchase) is new and currently
+unrepresentable. **Correction to the bundle:** the existing key is
+`_en_stall_selection_mode ∈ {quantity, exact_map}`, **not** `_en_inventory_mode`. Migration
+maps `quantity → (quantity_only, quantity)` and `exact_map → (numbered, pick_layout)` via a
+one-time version-gated migration into new keys `_en_stall_inventory_type` +
+`_en_stall_customer_selection`; the legacy key is preserved as a read fallback.
+
+### SCOPE-D1. Single-buyer contiguous assignment (V1)
+Accept current auto-assign behavior (first-N-available in pool order) for V1 — a single
+early buyer already receives adjacent stalls. No explicit adjacency allocator in V1.
+
+### SCOPE-D2. Group Name — informational/display only in V1
+New **optional free-text "Group Name"** field at checkout, persisted on the order, shown on
+Stall Charts pills + a "Show by group" filter chip. **Independent** of the existing
+multi-rider "Group Reservation" feature. Group-aware **auto-assign clustering is deferred to
+V1.1** (the buy-at-different-times timing problem isn't worth solving for launch).
+
+### SCOPE-H. Tack stall designation (V1)
+Included in V1 with: per-stall `is_tack` metadata (recommended storage = a `Tack Stalls: …`
+order-notes line mirroring `Assigned Stall Units`, reusing the existing parse helper);
+per-reservation tack pricing (`same` default / `discounted $` / `free`); checkout
+designation in pick-from-layout mode with live summary recalc; admin chart mark/unmark;
+split line items when tack price ≠ regular; visual indicator (design pass) + "Tack Stalls"
+filter chip. Per-stall metadata is captured **regardless of pricing** for future
+flexibility.
+
+### SCOPE-F. Special Requests visibility (V1 polish)
+Surface the existing customer `notes` "Special Requests" text on the Stall Charts page
+(pill tooltip and/or Assignment Issues card) — data exists, just isn't shown there today.
+
+### SCOPE-Customers. New top-level Customers menu (V1) + profile reconciliation
+Add a top-level **Customers** menu + a **Customers list** page (WooCommerce-style: Name
+Last,First | Email | Total Orders | Total Spent | Last Activity; sortable; search; filter).
+**The Customer Profile page already shipped (C9, v2.4.2) as a read-only aggregate keyed by
+`customer_email`** — it exceeds the originally-planned V1 "stub," so V1's only net-new
+Customers work is the menu + list. Links use the existing `?customer_email=` route (no
+`customer_id` — there is no customer entity, per the read-only-aggregate decision locked
+earlier 2026-06-01). The "customer name = link" standing rule now has a real destination.
+Full profile feature (payment methods, comm log, tier, group memberships) = V2.
+
+### SCOPE-Part4. Venue/organizer unlink — ALREADY DONE
+Customer event hero already renders venue + organizer as plain text (not TEC archive
+links); phone/email/Directions remain linked. No work needed.
+
+### Deferred
+- **V1.1:** D2 group-aware auto-assign; **G1** priority sale windows by customer tier.
+- **V2:** full Customer Profile feature.
+- **Skipped:** **E** discipline/barn zoning; **G2** priority placement at assignment time
+  (covered by manual reassignment); **J** multi-day partial reservations (already covered by
+  nightly/weekend pricing).
