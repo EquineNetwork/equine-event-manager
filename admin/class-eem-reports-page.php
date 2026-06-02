@@ -38,6 +38,308 @@ class EEM_Reports_Page {
 	}
 
 	/**
+	 * Render the mockup-faithful Reports page.
+	 *
+	 * Filters round-trip through GET (Apply reloads with the filter query args);
+	 * each report's CSV/PDF export is a POST form to admin-post carrying the
+	 * current filters + report slug + format. C15.D layers on the live date-preset
+	 * + localStorage JS.
+	 *
+	 * @return void
+	 */
+	public function render(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'equine-event-manager' ) );
+		}
+
+		$filters = self::read_filters( $_GET ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only filter state.
+		$reservations = get_posts( array(
+			'post_type'      => 'en_reservation',
+			'post_status'    => array( 'publish', 'draft' ),
+			'posts_per_page' => -1,
+			'orderby'        => 'title',
+			'order'          => 'ASC',
+		) );
+
+		eem_render_page_open( array(
+			'title'      => __( 'Reports', 'equine-event-manager' ),
+			'subtitle'   => __( 'View, export, and re-download reports for one or all reservations. Use filters to narrow results, then export individual reports as CSV or PDF — or grab everything at once as a ZIP.', 'equine-event-manager' ),
+			'breadcrumb' => array( array( 'label' => __( 'Reports', 'equine-event-manager' ) ) ),
+			'wrap'       => true,
+		) );
+
+		$this->render_action_notice();
+		?>
+		<div class="eem-reports-body">
+			<?php
+			$this->render_zip_card( $reservations, $filters );
+			$this->render_filters_card( $reservations, $filters );
+			$this->render_report_catalog( $filters );
+			$this->render_export_history();
+			?>
+		</div>
+		<?php
+
+		eem_render_page_close( array( 'wrap' => true ) );
+	}
+
+	/**
+	 * Inline notice after an export redirect (e.g. ?eem_notice=...).
+	 *
+	 * @return void
+	 */
+	private function render_action_notice(): void {
+		$notice = isset( $_GET['eem_notice'] ) ? sanitize_key( wp_unslash( $_GET['eem_notice'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( 'export_failed' === $notice ) {
+			echo '<div class="eem-admin-notice eem-admin-notice--error">' . esc_html__( 'That report could not be exported. Please try again.', 'equine-event-manager' ) . '</div>';
+		}
+	}
+
+	/**
+	 * The 6 report definitions (slug, title, description, icon-tone).
+	 *
+	 * @return array<int,array<string,string>>
+	 */
+	private function report_catalog(): array {
+		return array(
+			array( 'slug' => 'orders', 'tone' => 'orders', 'title' => __( 'Orders', 'equine-event-manager' ), 'desc' => __( 'Every order with customer, items, payment status, totals. Best for transactional bookkeeping.', 'equine-event-manager' ) ),
+			array( 'slug' => 'reservations', 'tone' => 'reservations', 'title' => __( 'Reservations', 'equine-event-manager' ), 'desc' => __( 'Event-level summary: dates, total orders, total revenue, occupancy %, capacity used.', 'equine-event-manager' ) ),
+			array( 'slug' => 'revenue', 'tone' => 'revenue', 'title' => __( 'Revenue', 'equine-event-manager' ), 'desc' => __( 'Revenue breakdown by date, reservation, payment method. Includes refunds + convenience fees + tax.', 'equine-event-manager' ) ),
+			array( 'slug' => 'stall_occupancy', 'tone' => 'occupancy', 'title' => __( 'Stall Occupancy', 'equine-event-manager' ), 'desc' => __( 'Stall + RV lot utilization per event. Capacity, fill rate, booked counts.', 'equine-event-manager' ) ),
+			array( 'slug' => 'customer_list', 'tone' => 'customers', 'title' => __( 'Customer List', 'equine-event-manager' ), 'desc' => __( 'All customers with contact info + order count + lifetime value. Good for marketing.', 'equine-event-manager' ) ),
+			array( 'slug' => 'refund_log', 'tone' => 'refunds', 'title' => __( 'Refund Log', 'equine-event-manager' ), 'desc' => __( 'Refunds with amount, date, reason, and section. For reconciliation.', 'equine-event-manager' ) ),
+		);
+	}
+
+	/**
+	 * Hidden filter inputs shared by every export form (current filter state).
+	 *
+	 * @param array $filters Current filters.
+	 * @return void
+	 */
+	private function filter_hidden_inputs( array $filters ): void {
+		printf( '<input type="hidden" name="reservation_id" value="%d" data-eem-export-filter="reservation_id">', absint( $filters['reservation_id'] ) );
+		printf( '<input type="hidden" name="date_from" value="%s" data-eem-export-filter="date_from">', esc_attr( $filters['date_from'] ) );
+		printf( '<input type="hidden" name="date_to" value="%s" data-eem-export-filter="date_to">', esc_attr( $filters['date_to'] ) );
+		printf( '<input type="hidden" name="status" value="%s" data-eem-export-filter="status">', esc_attr( $filters['status'] ) );
+	}
+
+	/**
+	 * Render one export form (a single button posting to admin-post).
+	 *
+	 * @param string $slug    Report slug (or '__zip__' for the all-reports ZIP).
+	 * @param string $format  'csv' | 'pdf' | 'zip'.
+	 * @param string $label   Button label.
+	 * @param array  $filters Current filters.
+	 * @param string $class   Button class.
+	 * @return void
+	 */
+	private function export_form( string $slug, string $format, string $label, array $filters, string $class = 'btn-export' ): void {
+		?>
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="eem-export-form">
+			<input type="hidden" name="action" value="eem_reports_export">
+			<?php wp_nonce_field( self::NONCE_ACTION ); ?>
+			<input type="hidden" name="report" value="<?php echo esc_attr( $slug ); ?>">
+			<input type="hidden" name="format" value="<?php echo esc_attr( $format ); ?>">
+			<?php $this->filter_hidden_inputs( $filters ); ?>
+			<button class="<?php echo esc_attr( $class ); ?>" type="submit">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+				<span class="format-label"><?php echo esc_html( $label ); ?></span>
+			</button>
+		</form>
+		<?php
+	}
+
+	/**
+	 * ZIP "export all reports for one reservation" card.
+	 *
+	 * @param array $reservations Reservation posts.
+	 * @param array $filters      Current filters.
+	 * @return void
+	 */
+	private function render_zip_card( array $reservations, array $filters ): void {
+		?>
+		<div class="eem-card eem-card-zip">
+			<div class="eem-card-header">
+				<div class="eem-card-title"><?php esc_html_e( 'Export all reports for one reservation', 'equine-event-manager' ); ?></div>
+				<div class="eem-card-subtitle"><?php esc_html_e( 'One ZIP file with all 6 reports (Orders, Reservations, Revenue, Stall Occupancy, Customer List, Refund Log) in both CSV and PDF format.', 'equine-event-manager' ); ?></div>
+			</div>
+			<div class="eem-card-body">
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="eem-zip-controls">
+					<input type="hidden" name="action" value="eem_reports_export">
+					<?php wp_nonce_field( self::NONCE_ACTION ); ?>
+					<input type="hidden" name="report" value="orders">
+					<input type="hidden" name="format" value="zip">
+					<input type="hidden" name="date_from" value="<?php echo esc_attr( $filters['date_from'] ); ?>">
+					<input type="hidden" name="date_to" value="<?php echo esc_attr( $filters['date_to'] ); ?>">
+					<input type="hidden" name="status" value="<?php echo esc_attr( $filters['status'] ); ?>">
+					<select class="eem-zip-select" name="reservation_id">
+						<?php foreach ( $reservations as $r ) : ?>
+							<option value="<?php echo esc_attr( $r->ID ); ?>" <?php selected( $filters['reservation_id'], $r->ID ); ?>><?php echo esc_html( get_the_title( $r ) ); ?></option>
+						<?php endforeach; ?>
+					</select>
+					<button class="eem-btn-zip" type="submit">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+						<?php esc_html_e( 'Export ZIP (6 reports × CSV + PDF)', 'equine-event-manager' ); ?>
+					</button>
+				</form>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Global Filters card (GET form — Apply reloads with the filter query args).
+	 *
+	 * @param array $reservations Reservation posts.
+	 * @param array $filters      Current filters.
+	 * @return void
+	 */
+	private function render_filters_card( array $reservations, array $filters ): void {
+		$statuses = array(
+			''             => __( 'All statuses', 'equine-event-manager' ),
+			'paid'         => __( 'Paid', 'equine-event-manager' ),
+			'unpaid'       => __( 'Unpaid', 'equine-event-manager' ),
+			'invoice_sent' => __( 'Invoice Sent', 'equine-event-manager' ),
+			'partial'      => __( 'Partial', 'equine-event-manager' ),
+			'refunded'     => __( 'Refunded', 'equine-event-manager' ),
+			'cancelled'    => __( 'Cancelled', 'equine-event-manager' ),
+		);
+		?>
+		<div class="eem-card">
+			<div class="eem-card-header">
+				<div class="eem-card-title"><?php esc_html_e( 'Filters', 'equine-event-manager' ); ?> <span class="eem-filters-applied-pill"><?php esc_html_e( 'Applies to all reports below', 'equine-event-manager' ); ?></span></div>
+			</div>
+			<div class="eem-card-body">
+				<form method="get" class="eem-reports-filter-form" id="eem-reports-filters">
+					<input type="hidden" name="page" value="<?php echo esc_attr( self::MENU_SLUG ); ?>">
+					<div class="eem-filter-grid">
+						<div class="eem-filter-group">
+							<label class="eem-filter-label" for="eem-filter-reservation"><?php esc_html_e( 'Reservation', 'equine-event-manager' ); ?></label>
+							<select class="eem-filter-select" id="eem-filter-reservation" name="reservation_id">
+								<option value="0"><?php esc_html_e( 'All reservations', 'equine-event-manager' ); ?></option>
+								<?php foreach ( $reservations as $r ) : ?>
+									<option value="<?php echo esc_attr( $r->ID ); ?>" <?php selected( $filters['reservation_id'], $r->ID ); ?>><?php echo esc_html( get_the_title( $r ) ); ?></option>
+								<?php endforeach; ?>
+							</select>
+						</div>
+						<div class="eem-filter-group">
+							<label class="eem-filter-label" for="eem-filter-preset"><?php esc_html_e( 'Date range', 'equine-event-manager' ); ?></label>
+							<select class="eem-filter-select" id="eem-filter-preset" name="date_preset" data-eem-date-preset>
+								<option value="last-30"><?php esc_html_e( 'Last 30 days', 'equine-event-manager' ); ?></option>
+								<option value="last-7"><?php esc_html_e( 'Last 7 days', 'equine-event-manager' ); ?></option>
+								<option value="last-90"><?php esc_html_e( 'Last 90 days', 'equine-event-manager' ); ?></option>
+								<option value="this-year"><?php esc_html_e( 'This year', 'equine-event-manager' ); ?></option>
+								<option value="all"><?php esc_html_e( 'All time', 'equine-event-manager' ); ?></option>
+								<option value="custom" selected><?php esc_html_e( 'Custom range', 'equine-event-manager' ); ?></option>
+							</select>
+							<div class="eem-daterange-inputs">
+								<input class="eem-filter-input" type="date" name="date_from" value="<?php echo esc_attr( $filters['date_from'] ); ?>" data-eem-date-input>
+								<span class="eem-daterange-sep"><?php esc_html_e( 'to', 'equine-event-manager' ); ?></span>
+								<input class="eem-filter-input" type="date" name="date_to" value="<?php echo esc_attr( $filters['date_to'] ); ?>" data-eem-date-input>
+							</div>
+						</div>
+						<div class="eem-filter-group">
+							<label class="eem-filter-label" for="eem-filter-status"><?php esc_html_e( 'Order status', 'equine-event-manager' ); ?></label>
+							<select class="eem-filter-select" id="eem-filter-status" name="status">
+								<?php foreach ( $statuses as $val => $label ) : ?>
+									<option value="<?php echo esc_attr( $val ); ?>" <?php selected( $filters['status'], $val ); ?>><?php echo esc_html( $label ); ?></option>
+								<?php endforeach; ?>
+							</select>
+						</div>
+					</div>
+					<div class="eem-filter-footer">
+						<a class="eem-filter-reset" href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::MENU_SLUG ) ); ?>"><?php esc_html_e( 'Reset filters', 'equine-event-manager' ); ?></a>
+						<button class="eem-btn eem-btn-electric" type="submit"><?php esc_html_e( 'Apply', 'equine-event-manager' ); ?></button>
+					</div>
+				</form>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * The "Individual reports" grid (6 cards, each with CSV + PDF export).
+	 *
+	 * @param array $filters Current filters.
+	 * @return void
+	 */
+	private function render_report_catalog( array $filters ): void {
+		?>
+		<div class="eem-section-title"><?php esc_html_e( 'Individual reports', 'equine-event-manager' ); ?></div>
+		<div class="eem-report-grid">
+			<?php foreach ( $this->report_catalog() as $report ) : ?>
+				<div class="eem-report-card">
+					<div class="eem-report-card-head">
+						<div class="eem-report-icon eem-report-icon-<?php echo esc_attr( $report['tone'] ); ?>">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+						</div>
+						<div>
+							<div class="eem-report-card-title"><?php echo esc_html( $report['title'] ); ?></div>
+							<div class="eem-report-card-desc"><?php echo esc_html( $report['desc'] ); ?></div>
+						</div>
+					</div>
+					<div class="eem-report-card-actions">
+						<?php $this->export_form( $report['slug'], 'csv', __( 'CSV', 'equine-event-manager' ), $filters ); ?>
+						<?php $this->export_form( $report['slug'], 'pdf', __( 'PDF', 'equine-event-manager' ), $filters ); ?>
+					</div>
+				</div>
+			<?php endforeach; ?>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Export History — recent exports with re-download or expired-link re-export.
+	 *
+	 * @return void
+	 */
+	private function render_export_history(): void {
+		global $wpdb;
+		$rows = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}en_report_exports ORDER BY created_at DESC LIMIT 25" ); // phpcs:ignore WordPress.DB
+		if ( empty( $rows ) ) {
+			return;
+		}
+		$exporter = new EEM_Report_Exporter();
+		?>
+		<div class="eem-section-title"><?php esc_html_e( 'Export history', 'equine-event-manager' ); ?></div>
+		<div class="eem-card">
+			<div class="eem-card-body">
+				<table class="eem-export-history">
+					<thead><tr>
+						<th><?php esc_html_e( 'Report', 'equine-event-manager' ); ?></th>
+						<th><?php esc_html_e( 'Scope', 'equine-event-manager' ); ?></th>
+						<th><?php esc_html_e( 'Exported', 'equine-event-manager' ); ?></th>
+						<th></th>
+					</tr></thead>
+					<tbody>
+						<?php foreach ( $rows as $row ) : ?>
+							<?php
+							$file      = (string) $row->file_name;
+							$available = '' !== $file && $exporter->cached_exists( $file );
+							$dl_url    = wp_nonce_url( admin_url( 'admin-post.php?action=eem_reports_download&file=' . rawurlencode( $file ) ), self::NONCE_ACTION );
+							?>
+							<tr>
+								<td><?php echo esc_html( $file ); ?></td>
+								<td><?php echo esc_html( (string) $row->reservation_name ); ?></td>
+								<td><?php echo esc_html( mysql2date( get_option( 'date_format' ) . ' g:i a', (string) $row->created_at ) ); ?></td>
+								<td>
+									<?php if ( $available ) : ?>
+										<a class="eem-btn-download" href="<?php echo esc_url( $dl_url ); ?>"><?php esc_html_e( 'Download', 'equine-event-manager' ); ?></a>
+									<?php else : ?>
+										<span class="eem-expired-link"><?php esc_html_e( 'Expired — re-run the report above', 'equine-event-manager' ); ?></span>
+									<?php endif; ?>
+								</td>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
 	 * Read + sanitize report filters from a request array.
 	 *
 	 * @param array $src Request source ($_POST / $_GET).

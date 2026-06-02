@@ -777,7 +777,9 @@ class EEM_Admin {
 			__( 'Reports', 'equine-event-manager' ),
 			'manage_options',
 			'equine-event-manager-reports',
-			array( $this, 'render_reports_page' )
+			// C15.C — mockup-faithful Reports page replaces the legacy
+			// render_reports_page (kept for now but no longer the menu callback).
+			array( new EEM_Reports_Page(), 'render' )
 		);
 
 		// Settings page is rendered by the Phase 3 EEM_Settings_Page controller
