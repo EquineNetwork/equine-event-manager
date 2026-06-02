@@ -31,7 +31,8 @@ $order = array(
 	'customer_name' => 'Whitney Mitchell', 'email' => 'info@wmpromotions.com', 'phone' => '5593935352',
 	'type_labels' => array( 'stall' => 'Stall', 'rv' => 'RV' ),
 	'total' => 208.66, 'fees' => 6.56, 'tax' => 14.10, 'tax_rate' => 7.500, 'transaction_id' => 'ch_1',
-	'notes' => "Billing Details:\n12253 Avenue 472\nOrange Cove, California 93646\nSpecial Requests:\nEarly arrival please\nReservation setup ID: {$rid}",
+	// Real notes format: freeform special-request text first, then Billing Name/Address.
+	'notes' => "Early arrival please\n\nBilling Name: Whitney Mitchell\nBilling Address: 12253 Avenue 472\nOrange Cove, California 93646\nReservation setup ID: {$rid}",
 	'components' => array(),
 	'stall_quantity' => 1, 'stall_subtotal' => 64.00, 'stall_arrival_date' => '2026-05-08', 'stall_departure_date' => '2026-05-10',
 	'stall_stay_type' => 'nightly', 'required_shavings_qty' => 2, 'additional_shavings_qty' => 0,
@@ -71,6 +72,13 @@ $check( 'items: RV Res. row', false !== strpos( $html, 'RV Res.' ) );
 
 // Special requests
 $check( 'Special Requests block', false !== strpos( $html, 'Special Requests' ) && false !== strpos( $html, 'Early arrival please' ) );
+$check( 'billing populated in Billing card (not the empty fallback)', false === strpos( $html, 'No billing address on file' ) );
+$check( 'no billing leak into special requests (Billing Name/Address stripped)', false === strpos( $html, 'Billing Name' ) && false === strpos( $html, 'Billing Address' ) );
+
+// Footer (running PDF footer + web in-flow footer carry support line + order #)
+$check( 'footer carries Support line', false !== strpos( $html, 'Support:' ) );
+$check( 'footer carries order number', 1 < substr_count( $html, '#00042' ) ); // header + footer(s)
+$check( 'fixed page-footer present (PDF running footer)', false !== strpos( $html, 'class="page-footer"' ) );
 
 // Totals (itemized + subtotal + fee + TAX + grand)
 $check( 'totals: Subtotal line', false !== strpos( $html, 'Subtotal' ) );

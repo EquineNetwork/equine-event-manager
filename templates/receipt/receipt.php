@@ -33,16 +33,21 @@ $c   = function ( $key, $default = '' ) use ( $ctx ) {
 <head>
 <meta charset="UTF-8">
 <title><?php echo esc_html( sprintf( /* translators: %s: order number, e.g. #00020. */ __( 'Order Receipt %s', 'equine-event-manager' ), $c( 'order_number' ) ) ); ?></title>
+<!-- Web (hosted) view loads the brand fonts; Dompdf ignores this and falls back
+     to DejaVu Sans (bundled). Brand-exact PDF fonts are bundled in C12 increment 3. -->
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'IBM Plex Sans','Helvetica Neue',Helvetica,Arial,sans-serif; color: #1d2327; background: #fff; font-size: 12.5px; line-height: 1.5; }
+body { font-family: 'IBM Plex Sans','DejaVu Sans','Helvetica Neue',Helvetica,Arial,sans-serif; color: #1d2327; background: #fff; font-size: 12.5px; line-height: 1.5; }
 /* max-width fits a Letter page's printable area (~554pt) so Dompdf doesn't clip
    the right edge; @page margin handles the PDF insets. Web view is centered. */
 .sheet { width: 100%; max-width: 700px; margin: 0 auto; padding: 22px 24px; }
 a { color: #1668F2; text-decoration: none; }
 .navy { color: #031B4E; }
 .muted { color: #50575e; }
-h1,h2,h3 { font-family: 'Space Grotesk','Helvetica Neue',Arial,sans-serif; }
+h1,h2,h3 { font-family: 'Space Grotesk','DejaVu Sans','Helvetica Neue',Arial,sans-serif; }
+/* Section/title classes also use the display face. */
+.event-name,.receipt-tag,.dblock-title,.section-label,.assignments-title,.rct,.tbl-label,.special-note-label,.cancellation-policy-title,.totals-inner tr.grand td { font-family: 'Space Grotesk','DejaVu Sans','Helvetica Neue',Arial,sans-serif; }
 
 /* Header */
 .header-table { width: 100%; border-bottom: 2px solid #031B4E; padding-bottom: 16px; margin-bottom: 16px; }
@@ -57,8 +62,10 @@ h1,h2,h3 { font-family: 'Space Grotesk','Helvetica Neue',Arial,sans-serif; }
 .order-box .obv.paid { font-size: 17px; color: #1668F2; margin-bottom: 0; }
 
 /* Customer + Billing */
-.details-table { width: 100%; margin-bottom: 16px; border-spacing: 0; }
+.details-table { width: 100%; margin-bottom: 16px; border-spacing: 0; table-layout: fixed; }
 .details-table > tbody > tr > td { width: 50%; vertical-align: top; }
+.details-table td.dleft { padding-right: 6px; }
+.details-table td.dright { padding-left: 6px; }
 .dblock { background: #f3f4f5; border: 1px solid #e5e7eb; border-radius: 4px; padding: 12px 14px; }
 .dblock-title { font-size: 13px; font-weight: 700; color: #031B4E; margin-bottom: 9px; }
 .dl { font-size: 11.5px; font-weight: 600; color: #50575e; }
@@ -129,21 +136,45 @@ h1,h2,h3 { font-family: 'Space Grotesk','Helvetica Neue',Arial,sans-serif; }
 .cancellation-policy-title { font-size: 13px; font-weight: 700; color: #031B4E; margin-bottom: 5px; }
 .cancellation-policy-body { font-size: 11.5px; line-height: 1.55; color: #50575e; }
 
-/* Footer */
-.footer { border-top: 1px solid #e5e7eb; padding-top: 12px; color: #50575e; font-size: 11.5px; }
-.footer td { vertical-align: middle; }
-.footer .right { text-align: right; }
-@page { size: letter; margin: 0.5in; }
+/* Footer — fixed/running footer repeats on every PDF page (Dompdf); the web view
+   shows a normal in-flow footer instead (toggled by media type). */
+.page-footer { position: fixed; bottom: 0.22in; left: 0.5in; right: 0.5in; border-top: 1px solid #e5e7eb; padding-top: 7px; color: #50575e; font-size: 10px; }
+.page-footer table { width: 100%; border-collapse: collapse; }
+.page-footer td { vertical-align: middle; }
+.page-footer td.right { text-align: right; }
+.footer-inflow { border-top: 1px solid #e5e7eb; padding-top: 12px; margin-top: 8px; color: #50575e; font-size: 11.5px; }
+.footer-inflow table { width: 100%; }
+.footer-inflow td { vertical-align: middle; }
+.footer-inflow td.right { text-align: right; }
+@media screen { .page-footer { display: none; } }
+@media print { .footer-inflow { display: none; } }
+/* Bottom margin reserves room for the fixed footer. */
+@page { size: letter; margin: 0.5in 0.5in 0.7in 0.5in; }
 </style>
 </head>
 <body>
+<?php
+// Footer content (shared by the fixed PDF page-footer and the web in-flow footer).
+$eem_support_parts = array();
+if ( $c( 'support_phone' ) ) { $eem_support_parts[] = $c( 'support_phone' ); }
+if ( $c( 'support_email' ) ) { $eem_support_parts[] = $c( 'support_email' ); }
+$eem_support_line = $eem_support_parts ? __( 'Support:', 'equine-event-manager' ) . ' ' . implode( '  |  ', $eem_support_parts ) : '';
+$eem_footer_right = trim( $c( 'order_number' ) . ( $c( 'event_title' ) ? '  ·  ' . $c( 'event_title' ) : '' ) );
+?>
+<div class="page-footer"><table><tbody><tr>
+  <td><?php echo esc_html( $eem_support_line ); ?></td>
+  <td class="right"><?php echo esc_html( $eem_footer_right ); ?></td>
+</tr></tbody></table></div>
 <div class="sheet">
 
   <!-- HEADER -->
   <table class="header-table"><tbody><tr>
     <td>
       <?php if ( $c( 'logo_url' ) ) : ?>
-        <img class="logo-img" src="<?php echo esc_url( $c( 'logo_url' ) ); ?>" alt="<?php echo esc_attr( $c( 'event_title' ) ); ?>">
+        <?php // Empty alt: if the image fails to load in the PDF, it renders nothing
+        // rather than dumping the event title into the header. Brand logo is embedded
+        // as a data URI for the PDF in C12 increment 3. ?>
+        <img class="logo-img" src="<?php echo esc_url( $c( 'logo_url' ) ); ?>" alt="">
       <?php endif; ?>
       <div class="receipt-tag"><?php echo esc_html( sprintf( /* translators: %s: order number. */ __( 'Order Receipt %s', 'equine-event-manager' ), $c( 'order_number' ) ) ); ?></div>
       <div class="event-name"><?php echo esc_html( $c( 'event_title' ) ); ?></div>
@@ -165,7 +196,7 @@ h1,h2,h3 { font-family: 'Space Grotesk','Helvetica Neue',Arial,sans-serif; }
 
   <!-- CUSTOMER + BILLING -->
   <table class="details-table"><tbody><tr>
-    <td>
+    <td class="dleft">
       <div class="dblock">
         <div class="dblock-title"><?php esc_html_e( 'Customer Details', 'equine-event-manager' ); ?></div>
         <div class="dl"><?php esc_html_e( 'Customer', 'equine-event-manager' ); ?></div>
@@ -184,8 +215,7 @@ h1,h2,h3 { font-family: 'Space Grotesk','Helvetica Neue',Arial,sans-serif; }
         <?php endif; ?>
       </div>
     </td>
-    <td class="gap"></td>
-    <td>
+    <td class="dright">
       <div class="dblock">
         <div class="dblock-title"><?php esc_html_e( 'Billing Details', 'equine-event-manager' ); ?></div>
         <?php if ( $c( 'billing_address' ) ) : ?>
@@ -343,20 +373,11 @@ h1,h2,h3 { font-family: 'Space Grotesk','Helvetica Neue',Arial,sans-serif; }
     </div>
   <?php endif; ?>
 
-  <!-- FOOTER -->
-  <table class="footer"><tbody><tr>
-    <td>
-      <?php if ( $c( 'support_phone' ) || $c( 'support_email' ) ) : ?>
-        <?php
-        $support = array();
-        if ( $c( 'support_phone' ) ) { $support[] = $c( 'support_phone' ); }
-        if ( $c( 'support_email' ) ) { $support[] = $c( 'support_email' ); }
-        echo esc_html( __( 'Support:', 'equine-event-manager' ) . ' ' . implode( '  |  ', $support ) );
-        ?>
-      <?php endif; ?>
-    </td>
-    <td class="right"><?php echo esc_html( $c( 'event_title' ) ); ?></td>
-  </tr></tbody></table>
+  <!-- FOOTER (web in-flow; the PDF uses the fixed running footer above) -->
+  <div class="footer-inflow"><table><tbody><tr>
+    <td><?php echo esc_html( $eem_support_line ); ?></td>
+    <td class="right"><?php echo esc_html( $eem_footer_right ); ?></td>
+  </tr></tbody></table></div>
 
 </div>
 </body>

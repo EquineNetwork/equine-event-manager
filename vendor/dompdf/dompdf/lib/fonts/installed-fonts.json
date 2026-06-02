@@ -1,0 +1,14 @@
+{
+    "ibm plex sans": {
+        "300": "\/Users\/whitneymitchell\/Projects\/equine-event-manager\/vendor\/dompdf\/dompdf\/lib\/fonts\/ibm_plex_sans_300_f37c85cceb1f4dca4e74d06634e8aff6",
+        "normal": "\/Users\/whitneymitchell\/Projects\/equine-event-manager\/vendor\/dompdf\/dompdf\/lib\/fonts\/ibm_plex_sans_normal_7ca580cfde6bccbbff48c1466402a4bd",
+        "500": "\/Users\/whitneymitchell\/Projects\/equine-event-manager\/vendor\/dompdf\/dompdf\/lib\/fonts\/ibm_plex_sans_500_8697ad5eccf922d090c480b3dcd10556",
+        "600": "ibm_plex_sans_600_5da1d644d0a96ec201074b031a6bd921"
+    },
+    "space grotesk": {
+        "normal": "\/Users\/whitneymitchell\/Projects\/equine-event-manager\/vendor\/dompdf\/dompdf\/lib\/fonts\/space_grotesk_normal_87d843d322b2f204ffc438af39c97a4b",
+        "500": "\/Users\/whitneymitchell\/Projects\/equine-event-manager\/vendor\/dompdf\/dompdf\/lib\/fonts\/space_grotesk_500_819ad789e6fa725cbd88a637fb94917a",
+        "600": "\/Users\/whitneymitchell\/Projects\/equine-event-manager\/vendor\/dompdf\/dompdf\/lib\/fonts\/space_grotesk_600_97f56d35b298cd1298cfa0cd606a8e55",
+        "bold": "space_grotesk_bold_26ee7bbe33c09e62b1a6a46d310020f1"
+    }
+}
