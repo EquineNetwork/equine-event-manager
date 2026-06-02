@@ -53,6 +53,11 @@ $cap_err_unlim = false;
 foreach ( $errs_unlim as $e ) { if ( false !== stripos( (string) $e, 'at most' ) ) { $cap_err_unlim = true; } }
 $check( 'blank max = unlimited (no cap error at qty 10)', ! $cap_err_unlim );
 
+// ── Root-cause guard: get_reservation_meta must surface the key to the front-end ──
+$gm = $ref->getMethod( 'get_reservation_meta' ); $gm->setAccessible( true );
+$meta = (array) $gm->invoke( $sc, 3499 );
+$check( 'get_reservation_meta includes stall_max_per_customer key', array_key_exists( 'stall_max_per_customer', $meta ), 'keys missing the field default leave the cap at 0' );
+
 // ── Stepper render: max attribute = min(inventory, per-customer) ──
 $src = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'public/class-equine-event-manager-shortcodes.php' );
 $check( 'stepper cap computed from per-customer max', false !== strpos( $src, '$stall_stepper_max' ) && false !== strpos( $src, "min( (int) \$stall_stepper_max, \$stall_per_customer_max )" ) );

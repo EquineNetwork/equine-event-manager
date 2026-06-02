@@ -6285,6 +6285,7 @@ RV Lot: " . $rv_lot['name'] );
 			'stalls_open_at'                  => '',
 			'stalls_close_at'                 => '',
 			'stall_inventory'                 => '',
+			'stall_max_per_customer'          => '',
 			'rv_schedule_enabled'             => 0,
 			'rv_open_at'                      => '',
 			'rv_close_at'                     => '',
