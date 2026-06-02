@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Order Receipt #00020</title>
+<!-- Web (hosted) view loads the brand fonts; Dompdf ignores this and falls back
+     to DejaVu Sans (bundled). Brand-exact PDF fonts are bundled in C12 increment 3. -->
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'IBM Plex Sans','DejaVu Sans','Helvetica Neue',Helvetica,Arial,sans-serif; color: #1d2327; background: #fff; font-size: 12.5px; line-height: 1.5; }
+/* max-width fits a Letter page's printable area (~554pt) so Dompdf doesn't clip
+   the right edge; @page margin handles the PDF insets. Web view is centered. */
+.sheet { width: 100%; max-width: 700px; margin: 0 auto; padding: 22px 24px; }
+a { color: #1668F2; text-decoration: none; }
+.navy { color: #031B4E; }
+.muted { color: #50575e; }
+h1,h2,h3 { font-family: 'Space Grotesk','DejaVu Sans','Helvetica Neue',Arial,sans-serif; }
+/* Section/title classes also use the display face. */
+.event-name,.receipt-tag,.dblock-title,.section-label,.assignments-title,.rct,.tbl-label,.special-note-label,.cancellation-policy-title,.totals-inner tr.grand td { font-family: 'Space Grotesk','DejaVu Sans','Helvetica Neue',Arial,sans-serif; }
+
+/* Header */
+.header-table { width: 100%; border-bottom: 2px solid #031B4E; padding-bottom: 16px; margin-bottom: 16px; }
+.header-table td { vertical-align: top; }
+.logo-img { max-width: 160px; max-height: 36px; display: block; margin-bottom: 10px; }
+.receipt-tag { font-size: 12px; font-weight: 600; color: #1668F2; margin-bottom: 4px; }
+.event-name { font-size: 20px; font-weight: 700; color: #031B4E; margin-bottom: 3px; line-height: 1.2; }
+.event-sub { font-size: 12px; color: #50575e; }
+.order-box { background: #F0F4FB; border: 1px solid #D9E2F2; border-radius: 4px; padding: 12px 16px; }
+.order-box .obl { font-size: 11.5px; font-weight: 600; color: #50575e; }
+.order-box .obv { font-size: 13.5px; font-weight: 700; color: #031B4E; margin-bottom: 8px; }
+.order-box .obv.paid { font-size: 17px; color: #1668F2; margin-bottom: 0; }
+
+/* Customer + Billing */
+.details-table { width: 100%; margin-bottom: 16px; border-spacing: 0; table-layout: fixed; }
+.details-table > tbody > tr > td { width: 50%; vertical-align: top; }
+.details-table td.dleft { padding-right: 6px; }
+.details-table td.dright { padding-left: 6px; }
+.dblock { background: #f3f4f5; border: 1px solid #e5e7eb; border-radius: 4px; padding: 12px 14px; }
+.dblock-title { font-size: 13px; font-weight: 700; color: #031B4E; margin-bottom: 9px; }
+.dl { font-size: 11.5px; font-weight: 600; color: #50575e; }
+.dv { font-size: 13px; font-weight: 500; color: #1d2327; margin-bottom: 6px; }
+.gap { width: 12px; }
+
+/* Section label */
+.section-label { font-size: 13px; font-weight: 700; color: #031B4E; margin-bottom: 8px; }
+
+/* Assignments */
+.assignments { background: #F0F4FB; border: 1px solid #D9E2F2; border-radius: 4px; padding: 12px 14px; margin-bottom: 16px; }
+.assignments-title { font-size: 13px; font-weight: 700; color: #031B4E; margin-bottom: 8px; }
+.assignments table { width: 100%; border-collapse: collapse; }
+.assignments td { vertical-align: top; padding: 5px 0; border-bottom: 1px solid #E5EAF2; font-size: 12.5px; }
+.assignments tr:last-child td { border-bottom: none; }
+.assign-label { font-weight: 700; color: #031B4E; width: 90px; }
+.assign-nights { color: #50575e; font-size: 12px; text-align: right; }
+
+/* Reservation summary cards */
+.cards-table { width: 100%; margin-bottom: 16px; border-spacing: 0; }
+.cards-table > tbody > tr > td { vertical-align: top; padding-bottom: 10px; }
+.res-card { border: 1px solid #e5e7eb; border-radius: 4px; }
+.rch { background: #f3f4f5; border-bottom: 1px solid #dcdcde; padding: 8px 12px; }
+.rct { font-size: 13px; font-weight: 700; color: #031B4E; }
+.rcb { font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 3px; background: #EEF4FF; color: #1668F2; border: 1px solid #c0d8ff; float: right; }
+.rcb.rv { background: #F5F3FF; color: #6d28d9; border-color: #ddd6fe; }
+.rcb.group { background: #F0FDF4; color: #15803d; border-color: #bbf7d0; }
+.rcbody { padding: 10px 12px; }
+.rcbody table { width: 100%; border-collapse: collapse; }
+.rcbody td { width: 50%; vertical-align: top; padding: 3px 0; }
+.rfl { font-size: 11.5px; font-weight: 600; color: #50575e; }
+.rfv { font-size: 12.5px; font-weight: 500; color: #1d2327; }
+
+/* Line items */
+.tbl-label { font-size: 13px; font-weight: 700; color: #031B4E; margin-bottom: 8px; }
+.items-table { width: 100%; border-collapse: collapse; border: 1px solid #e5e7eb; margin-bottom: 16px; }
+.items-table thead tr { background: #f3f4f5; }
+.items-table thead th { padding: 8px 10px; font-size: 11.5px; font-weight: 600; color: #1d2327; text-align: left; border-bottom: 1px solid #dcdcde; }
+.items-table thead th.c { text-align: center; }
+.items-table thead th.r { text-align: right; }
+.items-table tbody td { padding: 7px 10px; font-size: 12px; border-bottom: 1px solid #f0f0f1; }
+.items-table tbody tr:last-child td { border-bottom: none; }
+.items-table tbody tr:nth-child(even) td { background: #f9f9f9; }
+.ts { font-size: 11.5px; font-weight: 600; color: #50575e; }
+.tc { text-align: center; color: #50575e; }
+.tr-cell { text-align: right; font-weight: 700; color: #031B4E; }
+
+/* Special requests */
+.special-note { background: #F0F4FB; border: 1px solid #D9E2F2; border-radius: 4px; padding: 10px 14px; margin-bottom: 14px; }
+.special-note-label { font-size: 12.5px; font-weight: 700; color: #031B4E; margin-bottom: 3px; }
+.special-note-text { font-size: 12.5px; color: #1d2327; }
+
+/* Totals */
+.totals-table { width: 100%; margin-bottom: 16px; border-spacing: 0; }
+.totals-inner { width: 280px; float: right; }
+.totals-inner table { width: 100%; border-collapse: collapse; }
+.totals-inner td { padding: 5px 0; font-size: 12.5px; border-bottom: 1px solid #f0f0f1; }
+.totals-inner td.tl { color: #50575e; }
+.totals-inner td.tv { text-align: right; font-weight: 600; color: #1d2327; }
+.totals-inner tr.subtotal td { font-weight: 700; color: #031B4E; }
+.totals-inner tr.grand td { border-top: 2px solid #031B4E; border-bottom: none; padding-top: 8px; font-family: 'Space Grotesk',Arial,sans-serif; }
+.totals-inner tr.grand td.tl { font-weight: 800; color: #031B4E; font-size: 14px; }
+.totals-inner tr.grand td.tv { font-weight: 800; color: #1668F2; font-size: 15px; }
+.clear { clear: both; }
+
+/* Cancellation */
+.cancellation-policy { background: #f3f4f5; border: 1px solid #e5e7eb; border-radius: 4px; padding: 12px 14px; margin-bottom: 16px; }
+.cancellation-policy-title { font-size: 13px; font-weight: 700; color: #031B4E; margin-bottom: 5px; }
+.cancellation-policy-body { font-size: 11.5px; line-height: 1.55; color: #50575e; }
+
+/* Footer — fixed/running footer repeats on every PDF page (Dompdf); the web view
+   shows a normal in-flow footer instead (toggled by media type). */
+.page-footer { position: fixed; bottom: 0.22in; left: 0.5in; right: 0.5in; border-top: 1px solid #e5e7eb; padding-top: 7px; color: #50575e; font-size: 10px; }
+.page-footer table { width: 100%; border-collapse: collapse; }
+.page-footer td { vertical-align: middle; }
+.page-footer td.right { text-align: right; }
+.footer-inflow { border-top: 1px solid #e5e7eb; padding-top: 12px; margin-top: 8px; color: #50575e; font-size: 11.5px; }
+.footer-inflow table { width: 100%; }
+.footer-inflow td { vertical-align: middle; }
+.footer-inflow td.right { text-align: right; }
+@media screen { .page-footer { display: none; } }
+@media print { .footer-inflow { display: none; } }
+/* Bottom margin reserves room for the fixed footer. */
+@page { size: letter; margin: 0.5in 0.5in 0.7in 0.5in; }
+</style>
+</head>
+<body>
+<div class="page-footer"><table><tbody><tr>
+  <td>Support: (559) 393-5352  |  wmitchell@equinenetwork.com</td>
+  <td class="right">#00020  ·  2026 Southeast Region Super Sort</td>
+</tr></tbody></table></div>
+<div class="sheet">
+
+  <!-- HEADER -->
+  <table class="header-table"><tbody><tr>
+    <td>
+                      <img class="logo-img" src="http://en-event-manager.local/wp-content/uploads/2026/05/RSNC-2025-Updated-300x110.webp" alt="">
+            <div class="receipt-tag">Order Receipt #00020</div>
+      <div class="event-name">2026 Southeast Region Super Sort</div>
+      <div class="event-sub">May 8, 2026 – May 10, 2026  ·  (559) 393-5352  ·  wmitchell@equinenetwork.com</div>    </td>
+    <td style="text-align:right;width:190px;">
+      <div class="order-box" style="text-align:right;">
+        <div class="obl">Order Number</div>
+        <div class="obv">#00020</div>
+                  <div class="obl">Payment Date</div>
+          <div class="obv">04-24-2026</div>
+                <div class="obl">Amount Paid</div>
+        <div class="obv paid">$208.66</div>
+      </div>
+    </td>
+  </tr></tbody></table>
+
+  <!-- CUSTOMER + BILLING -->
+  <table class="details-table"><tbody><tr>
+    <td class="dleft">
+      <div class="dblock">
+        <div class="dblock-title">Customer Details</div>
+        <div class="dl">Customer</div>
+        <div class="dv">Whitney Mitchell</div>
+                  <div class="dl">Reservation Type</div>
+          <div class="dv">Stall, Add-On, Group, RV</div>
+                          <div class="dl">Email</div>
+          <div class="dv">info@wmpromotions.com</div>
+                          <div class="dl">Phone</div>
+          <div class="dv">(559) 393-5352</div>
+              </div>
+    </td>
+    <td class="dright">
+      <div class="dblock">
+        <div class="dblock-title">Billing Details</div>
+                  <div class="dv">Whitney Mitchell<br />
+12253 Avenue 472<br />
+Orange Cove, California 93646<br />
+United States</div>
+              </div>
+    </td>
+  </tr></tbody></table>
+
+  <!-- ASSIGNMENTS (omitted when nothing assigned) -->
+    
+  <!-- RESERVATION SUMMARY CARDS -->
+        <div class="section-label">Reservation Summary</div>
+    <table class="cards-table"><tbody>
+      <tr>        <td>
+          <div class="res-card">
+            <div class="rch">
+              <span class="rct">Stall Reservation</span>
+                              <span class="rcb ">1 Reserved</span>
+                          </div>
+            <div class="rcbody">
+              <table><tbody>
+                                  <tr>
+                    <td>
+                      <div class="rfl">Stay Type</div>
+                      <div class="rfv">Nightly</div>
+                    </td>
+                    <td>
+                                              <div class="rfl">Nights</div>
+                        <div class="rfv">2 Nights</div>
+                                          </td>
+                  </tr>
+                                  <tr>
+                    <td>
+                      <div class="rfl">Arrival</div>
+                      <div class="rfv">Friday, May 8, 2026</div>
+                    </td>
+                    <td>
+                                              <div class="rfl">Departure</div>
+                        <div class="rfv">Sunday, May 10, 2026</div>
+                                          </td>
+                  </tr>
+                                  <tr>
+                    <td>
+                      <div class="rfl">Stalls</div>
+                      <div class="rfv">1</div>
+                    </td>
+                    <td>
+                                              <div class="rfl">Req. Shavings</div>
+                        <div class="rfv">2</div>
+                                          </td>
+                  </tr>
+                              </tbody></table>
+            </div>
+          </div>
+        </td>
+        <td class="gap"></td>        <td>
+          <div class="res-card">
+            <div class="rch">
+              <span class="rct">RV Reservation</span>
+                              <span class="rcb rv">1 Reserved</span>
+                          </div>
+            <div class="rcbody">
+              <table><tbody>
+                                  <tr>
+                    <td>
+                      <div class="rfl">Stay Type</div>
+                      <div class="rfv">Nightly</div>
+                    </td>
+                    <td>
+                                              <div class="rfl">Nights</div>
+                        <div class="rfv">2 Nights</div>
+                                          </td>
+                  </tr>
+                                  <tr>
+                    <td>
+                      <div class="rfl">Arrival</div>
+                      <div class="rfv">Friday, May 8, 2026</div>
+                    </td>
+                    <td>
+                                              <div class="rfl">Departure</div>
+                        <div class="rfv">Sunday, May 10, 2026</div>
+                                          </td>
+                  </tr>
+                                  <tr>
+                    <td>
+                      <div class="rfl">RV Spots</div>
+                      <div class="rfv">1</div>
+                    </td>
+                    <td>
+                                              <div class="rfl">RV Add-Ons</div>
+                        <div class="rfv">Water, Sewage</div>
+                                          </td>
+                  </tr>
+                              </tbody></table>
+            </div>
+          </div>
+        </td>
+        </tr>    </tbody></table>
+  
+  <!-- LINE ITEMS -->
+        <div class="tbl-label">Purchased Items</div>
+    <table class="items-table">
+      <thead><tr>
+        <th>Section</th>
+        <th>Description</th>
+        <th class="c">Qty</th>
+        <th class="c">Units</th>
+        <th class="c">Rate</th>
+        <th class="r">Total</th>
+      </tr></thead>
+      <tbody>
+                  <tr>
+            <td class="ts">Stall Res.</td>
+            <td>Nightly stay, Friday, May 8, 2026 – Sunday, May 10, 2026</td>
+            <td class="tc">1</td>
+            <td class="tc">2 Nights</td>
+            <td class="tc">$10.00</td>
+            <td class="tr-cell">$20.00</td>
+          </tr>
+                  <tr>
+            <td class="ts">Stall Product</td>
+            <td>Required Shavings</td>
+            <td class="tc">2</td>
+            <td class="tc">bags</td>
+            <td class="tc">$22.00</td>
+            <td class="tr-cell">$44.00</td>
+          </tr>
+                  <tr>
+            <td class="ts">RV Res.</td>
+            <td>Nightly stay, Friday, May 8, 2026 – Sunday, May 10, 2026</td>
+            <td class="tc">1</td>
+            <td class="tc">2 Nights</td>
+            <td class="tc">$50.00</td>
+            <td class="tr-cell">$100.00</td>
+          </tr>
+              </tbody>
+    </table>
+  
+  <!-- SPECIAL REQUESTS -->
+      <div class="special-note">
+      <div class="special-note-label">Special Requests</div>
+      <div class="special-note-text">Stallion accommodations preferred</div>
+    </div>
+  
+  <!-- TOTALS -->
+  <table class="totals-table"><tbody><tr><td>
+    <div class="totals-inner">
+      <table><tbody>
+                  <tr><td class="tl">Stall Reservation</td><td class="tv">$20.00</td></tr>
+                  <tr><td class="tl">Required Shavings</td><td class="tv">$44.00</td></tr>
+                  <tr><td class="tl">RV Reservation</td><td class="tv">$100.00</td></tr>
+                <tr class="subtotal"><td class="tl">Subtotal</td><td class="tv">$188.00</td></tr>
+                  <tr><td class="tl">Non-Refundable Convenience Fee</td><td class="tv">$6.56</td></tr>
+                          <tr><td class="tl">Sales Tax (7.5%)</td><td class="tv">$14.10</td></tr>
+                <tr class="grand"><td class="tl">Total Amount Paid</td><td class="tv">$208.66</td></tr>
+      </tbody></table>
+    </div>
+    <div class="clear"></div>
+  </td></tr></tbody></table>
+
+  <!-- CANCELLATION POLICY -->
+      <div class="cancellation-policy">
+      <div class="cancellation-policy-title">Cancellation Policy</div>
+      <div class="cancellation-policy-body">Cancellations made more than 14 days before the event will receive a full refund. Cancellations within 14 days are non-refundable.</div>
+    </div>
+  
+  <!-- FOOTER (web in-flow; the PDF uses the fixed running footer above) -->
+  <div class="footer-inflow"><table><tbody><tr>
+    <td>Support: (559) 393-5352  |  wmitchell@equinenetwork.com</td>
+    <td class="right">#00020  ·  2026 Southeast Region Super Sort</td>
+  </tr></tbody></table></div>
+
+</div>
+</body>
+</html>

@@ -103,7 +103,11 @@ $expected_set = array_keys( $canonical );
 // active canonical set; promotions back into the active set go through
 // a fresh canonical-mockup import, not a scandir surprise.
 $actual_files = array_filter( scandir( $mockups_dir ), function ( $f ) {
-	return '.' !== $f && '..' !== $f && '.DS_Store' !== $f && '.archive' !== $f;
+	// `generated-reference/` holds version-controlled plugin OUTPUT snapshots
+	// (e.g. C12 receipt previews) — NOT canonical mockups. Excluded from the
+	// stray-file inventory for the same reason as `.archive/`: it's an
+	// intentionally separate subfolder, not part of the active canonical set.
+	return '.' !== $f && '..' !== $f && '.DS_Store' !== $f && '.archive' !== $f && 'generated-reference' !== $f;
 } );
 $stray = array_diff( $actual_files, $expected_set );
 ok(
