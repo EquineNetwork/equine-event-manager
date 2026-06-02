@@ -234,6 +234,17 @@ These are admin-side mockup ports that can be done AFTER C10 customer flow works
 - Final cross-mockup audit
 - 1-2 days work
 
+### C15 — Reports 🔨 KICKED OFF (audit landed)
+- Mockup: `.mockups/reports_page.html`. **Kickoff pre-audit: `AUDIT-C15.md`** (section
+  enumeration, 6-report data sources, files-touched table, decision-locks, build
+  sequence C15.A–F). Legacy `render_reports_page` to be replaced.
+- Non-payment → autonomous. Next: C15.A (reports repo: 6 filter-aware query builders).
+
+### C13 / C14 — Create Order + Collect Payment ⏸️ AWAITING PAYMENT APPROVAL
+- Both dispatch Stripe / Authorize.net charges (and C14 the webhook handler) — CLAUDE.md
+  requires Whitney's sign-off for payment-behavior changes, so they were SKIPPED during
+  the autonomous run. Non-charge UI portions can be pre-built once approved.
+
 ### DS-1 — Design System Page (Dashboard)
 - Mockup: `.mockups/dashboard_page.html` (DS-1.B mockup exists, stable)
 - Plugin dashboard with KPIs, recent orders, upcoming events, quick links
