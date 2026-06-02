@@ -208,7 +208,9 @@ class EEM_Test_Data_Seeder {
 			if ( $rv_qty > 0 ) {
 				$sub   = round( $rv_qty * $target['rv_rate'] * $nights, 2 );
 				$cfee  = round( $sub * self::FEE_PCT, 2 );
-				$notes = self::build_notes( $target['id'], $token, 'rv', $rv_units, 0, $stall_qty > 0 ? '' : $special );
+				// Put the special request on BOTH rows of a combo order so it
+				// survives whichever row seeds the grouped order's notes.
+				$notes = self::build_notes( $target['id'], $token, 'rv', $rv_units, 0, $special );
 				$wpdb->insert( $rv_tbl, array( // phpcs:ignore WordPress.DB
 					'event_source'    => 'native',
 					'event_id'        => $target['id'],
@@ -345,9 +347,11 @@ class EEM_Test_Data_Seeder {
 		if ( ! empty( $units ) ) {
 			$lines[] = ( 'stall' === $kind ? 'Assigned Stall Units: ' : 'Assigned RV Lots: ' ) . implode( ', ', $units );
 		}
-		if ( 'stall' === $kind && $shav > 0 ) {
-			$lines[] = 'Required Shavings: ' . $shav;
-		}
+		// NB: shavings live in the `required_shavings_qty` COLUMN (which drives the
+		// "Add-On" type badge). Do NOT write a "Required Shavings:" notes line —
+		// the special-requests parser doesn't recognize that label and would leak
+		// it into the displayed special requests. $shav is intentionally unused here.
+		unset( $shav );
 		if ( '' !== $special ) {
 			$lines[] = $special;
 		}
