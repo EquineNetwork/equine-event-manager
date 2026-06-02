@@ -798,10 +798,26 @@ class EEM_Reservation_Editor_Page {
 			update_post_meta( $reservation_id, '_en_blocked_stalls', array_values( array_filter( $blocked_stalls_clean ) ) );
 		}
 
-		// Stall selection mode (Bulk = 'quantity', Mapped = 'exact_map')
-		if ( isset( $_POST['stall_selection_mode'] ) ) {
-			$stall_mode_raw = sanitize_key( wp_unslash( $_POST['stall_selection_mode'] ) );
-			update_post_meta( $reservation_id, '_en_stall_selection_mode', in_array( $stall_mode_raw, array( 'quantity', 'exact_map' ), true ) ? $stall_mode_raw : 'quantity' );
+		// Scenario B (V1 #4): two independent settings — Stall Inventory Type +
+		// Customer Selection. Write both new keys plus the DERIVED legacy
+		// `_en_stall_selection_mode` so every existing reader stays consistent.
+		// Falls back to the legacy single field if (for any reason) only it posts.
+		if ( isset( $_POST['stall_inventory_type'] ) || isset( $_POST['stall_customer_selection'] ) || isset( $_POST['stall_selection_mode'] ) ) {
+			if ( isset( $_POST['stall_inventory_type'] ) || isset( $_POST['stall_customer_selection'] ) ) {
+				$inv_type = EEM_Reservations_CPT::sanitize_stall_inventory_type( isset( $_POST['stall_inventory_type'] ) ? wp_unslash( $_POST['stall_inventory_type'] ) : 'quantity_only' );
+				$cust_sel = EEM_Reservations_CPT::sanitize_stall_customer_selection( isset( $_POST['stall_customer_selection'] ) ? wp_unslash( $_POST['stall_customer_selection'] ) : 'quantity' );
+			} else {
+				$legacy_submit = sanitize_key( wp_unslash( $_POST['stall_selection_mode'] ) );
+				$legacy_submit = in_array( $legacy_submit, array( 'quantity', 'exact_map' ), true ) ? $legacy_submit : 'quantity';
+				$inv_type      = ( 'exact_map' === $legacy_submit ) ? 'numbered' : 'quantity_only';
+				$cust_sel      = ( 'exact_map' === $legacy_submit ) ? 'pick_layout' : 'quantity';
+			}
+			if ( 'quantity_only' === $inv_type ) {
+				$cust_sel = 'quantity'; // pick-from-layout requires numbered stalls.
+			}
+			update_post_meta( $reservation_id, '_en_stall_inventory_type', $inv_type );
+			update_post_meta( $reservation_id, '_en_stall_customer_selection', $cust_sel );
+			update_post_meta( $reservation_id, '_en_stall_selection_mode', EEM_Reservations_CPT::derive_stall_selection_mode( $inv_type, $cust_sel ) );
 		}
 
 		// RV selection mode (Bulk = 'quantity', Mapped = 'exact_map')

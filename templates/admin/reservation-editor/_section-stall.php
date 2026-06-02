@@ -255,41 +255,82 @@ eem_render_editor_field_row( array(
 // Inventory Mode (C8) — UX polish 2.3.23: moved below pricing/shavings so the
 // inventory cluster (Mode → Available qty → Max per customer → Row builder) appears
 // as one tight group at the bottom of the section.
-$stall_selection_mode = isset( $data['stall_selection_mode'] ) ? (string) $data['stall_selection_mode'] : 'quantity';
-$stall_is_mapped      = ( 'exact_map' === $stall_selection_mode );
+// Scenario B (V1 #4): two independent controls replace the single Bulk/Mapped
+// toggle — Stall Inventory Type (quantity-only / numbered) + Customer Selection
+// (quantity / pick-from-layout). The legacy hidden input is kept (JS-synced) as
+// a backstop. $stall_is_numbered drives the inventory-input + Stall Row Builder
+// visibility below (it replaces the old $stall_is_mapped).
+$stall_inventory_type     = isset( $data['stall_inventory_type'] ) ? (string) $data['stall_inventory_type'] : 'quantity_only';
+$stall_customer_selection = isset( $data['stall_customer_selection'] ) ? (string) $data['stall_customer_selection'] : 'quantity';
+$stall_is_numbered        = ( 'numbered' === $stall_inventory_type );
+$stall_is_pick            = ( 'pick_layout' === $stall_customer_selection );
+$stall_is_mapped          = $stall_is_numbered; // alias used by the inventory-input + row-builder blocks below.
+$stall_legacy_mode        = ( $stall_is_numbered && $stall_is_pick ) ? 'exact_map' : 'quantity';
+
+// ── Control 1: Stall Inventory Type ──
 ob_start();
 ?>
 <div class="eem-mode-btns">
 	<button type="button"
-		class="eem-mode-btn<?php echo $stall_is_mapped ? '' : ' active'; ?>"
-		data-mode="bulk"
-		data-section="stall"
-		data-eem-action="toggle-inventory-mode">
-		<?php esc_html_e( 'Bulk', 'equine-event-manager' ); ?>
+		class="eem-mode-btn<?php echo $stall_is_numbered ? '' : ' active'; ?>"
+		data-type="quantity_only"
+		data-eem-action="toggle-stall-inventory-type">
+		<?php esc_html_e( 'Quantity-only', 'equine-event-manager' ); ?>
 	</button>
 	<button type="button"
-		class="eem-mode-btn<?php echo $stall_is_mapped ? ' active' : ''; ?>"
-		data-mode="mapped"
-		data-section="stall"
-		data-eem-action="toggle-inventory-mode">
-		<?php esc_html_e( 'Mapped', 'equine-event-manager' ); ?>
+		class="eem-mode-btn<?php echo $stall_is_numbered ? ' active' : ''; ?>"
+		data-type="numbered"
+		data-eem-action="toggle-stall-inventory-type">
+		<?php esc_html_e( 'Numbered', 'equine-event-manager' ); ?>
 	</button>
 </div>
-<input type="hidden"
-	name="stall_selection_mode"
-	id="eem-stall-selection-mode-input"
-	value="<?php echo esc_attr( $stall_is_mapped ? 'exact_map' : 'quantity' ); ?>">
+<input type="hidden" name="stall_inventory_type" id="eem-stall-inventory-type-input" value="<?php echo esc_attr( $stall_inventory_type ); ?>">
+<span class="eem-field-hint eem-stall-inventory-type-hint"><?php
+	echo esc_html( $stall_is_numbered
+		? __( 'Specific stall numbers exist — define them in the Stall Row Builder below.', 'equine-event-manager' )
+		: __( 'Sell a total count with no specific stall identities.', 'equine-event-manager' ) );
+?></span>
 <?php
-$mode_html = (string) ob_get_clean();
-$mode_hint_text = $stall_is_mapped
-	? __( 'Customers select specific stalls from your layout at checkout', 'equine-event-manager' )
-	: __( 'Customers pick how many stalls they need at checkout; admin assigns specific stalls on the Stall & RV Charts page', 'equine-event-manager' );
-$mode_html .= '<span class="eem-field-hint eem-inventory-mode-hint">' . esc_html( $mode_hint_text ) . '</span>';
+$type_html = (string) ob_get_clean();
 eem_render_editor_field_row( array(
-	'label'        => __( 'Inventory Mode', 'equine-event-manager' ),
-	'label_sub'    => __( 'How is stall inventory defined for this reservation?', 'equine-event-manager' ),
-	'row_id'       => 'eem-row-stall-inventory-mode',
-	'control_html' => $mode_html,
+	'label'        => __( 'Stall Inventory Type', 'equine-event-manager' ),
+	'label_sub'    => __( 'Do specific numbered stalls exist, or just a count?', 'equine-event-manager' ),
+	'row_id'       => 'eem-row-stall-inventory-type',
+	'control_html' => $type_html,
+) );
+
+// ── Control 2: Customer Selection ──
+ob_start();
+?>
+<div class="eem-mode-btns">
+	<button type="button"
+		class="eem-mode-btn<?php echo $stall_is_pick ? '' : ' active'; ?>"
+		data-selection="quantity"
+		data-eem-action="toggle-stall-customer-selection">
+		<?php esc_html_e( 'Quantity', 'equine-event-manager' ); ?>
+	</button>
+	<button type="button"
+		class="eem-mode-btn<?php echo $stall_is_pick ? ' active' : ''; ?><?php echo $stall_is_numbered ? '' : ' is-disabled'; ?>"
+		data-selection="pick_layout"
+		data-eem-action="toggle-stall-customer-selection"
+		<?php disabled( ! $stall_is_numbered ); ?>>
+		<?php esc_html_e( 'Pick from layout', 'equine-event-manager' ); ?>
+	</button>
+</div>
+<input type="hidden" name="stall_customer_selection" id="eem-stall-customer-selection-input" value="<?php echo esc_attr( $stall_customer_selection ); ?>">
+<input type="hidden" name="stall_selection_mode" id="eem-stall-selection-mode-input" value="<?php echo esc_attr( $stall_legacy_mode ); ?>">
+<span class="eem-field-hint eem-stall-customer-selection-hint"><?php
+	echo esc_html( $stall_is_pick
+		? __( 'Customers select specific stalls from your layout at checkout.', 'equine-event-manager' )
+		: __( 'Customers pick how many stalls they need; you assign specific stalls on the Stall & RV Charts page.', 'equine-event-manager' ) );
+?></span>
+<?php
+$sel_html = (string) ob_get_clean();
+eem_render_editor_field_row( array(
+	'label'        => __( 'Customer Selection', 'equine-event-manager' ),
+	'label_sub'    => __( 'How do customers choose stalls at checkout?', 'equine-event-manager' ),
+	'row_id'       => 'eem-row-stall-customer-selection',
+	'control_html' => $sel_html,
 ) );
 
 // Available Stall Inventory (dual-state: editable in Bulk mode, computed in Mapped mode)

@@ -1590,6 +1590,28 @@ class EEM_Reservations_CPT {
 		$rv_lots                  = isset( $source['rv_lots'] ) && is_array( $source['rv_lots'] ) ? $this->sanitize_rv_lots( $source['rv_lots'] ) : $existing['rv_lots'];
 		$rv_lot_names             = $this->get_chart_rv_lot_names( $rv_lots );
 
+		// Scenario B (V1 #4): resolve the stall mode pair on save. The new
+		// two-control editor submits stall_inventory_type + stall_customer_selection;
+		// the legacy single select submits stall_selection_mode. Prefer the new
+		// controls, else derive the pair from a legacy submit, else keep existing.
+		// Then enforce validity + derive the legacy mode so all three persist
+		// consistently (save_meta writes every key in this array as _en_{key}).
+		if ( isset( $source['stall_inventory_type'] ) || isset( $source['stall_customer_selection'] ) ) {
+			$stall_inventory_type     = self::sanitize_stall_inventory_type( isset( $source['stall_inventory_type'] ) ? $source['stall_inventory_type'] : $existing['stall_inventory_type'] );
+			$stall_customer_selection = self::sanitize_stall_customer_selection( isset( $source['stall_customer_selection'] ) ? $source['stall_customer_selection'] : $existing['stall_customer_selection'] );
+		} elseif ( isset( $source['stall_selection_mode'] ) ) {
+			$legacy_submit            = $this->sanitize_stall_selection_mode( $source['stall_selection_mode'] );
+			$stall_inventory_type     = ( 'exact_map' === $legacy_submit ) ? 'numbered' : 'quantity_only';
+			$stall_customer_selection = ( 'exact_map' === $legacy_submit ) ? 'pick_layout' : 'quantity';
+		} else {
+			$stall_inventory_type     = self::sanitize_stall_inventory_type( $existing['stall_inventory_type'] );
+			$stall_customer_selection = self::sanitize_stall_customer_selection( $existing['stall_customer_selection'] );
+		}
+		if ( 'quantity_only' === $stall_inventory_type ) {
+			$stall_customer_selection = 'quantity';
+		}
+		$stall_selection_mode = self::derive_stall_selection_mode( $stall_inventory_type, $stall_customer_selection );
+
 		$data = array(
 			'use_global_event_source'        => $use_global_event_source,
 			'event_source'                    => $event_source,
@@ -1598,7 +1620,9 @@ class EEM_Reservations_CPT {
 			'external_event_name'             => isset( $source['external_event_name'] ) ? sanitize_text_field( $source['external_event_name'] ) : '',
 			'external_event_id'               => isset( $source['external_event_id'] ) ? sanitize_text_field( $source['external_event_id'] ) : '',
 			'stalls_enabled'                  => isset( $source['stalls_enabled'] ) ? 1 : 0,
-			'stall_selection_mode'            => $this->sanitize_stall_selection_mode( isset( $source['stall_selection_mode'] ) ? $source['stall_selection_mode'] : $existing['stall_selection_mode'] ),
+			'stall_selection_mode'            => $stall_selection_mode,
+			'stall_inventory_type'            => $stall_inventory_type,
+			'stall_customer_selection'        => $stall_customer_selection,
 			'rv_enabled'                      => isset( $source['rv_enabled'] ) ? 1 : 0,
 			'nightly_enabled'                 => isset( $source['nightly_enabled'] ) ? 1 : 0,
 			'weekend_enabled'                 => isset( $source['weekend_enabled'] ) ? 1 : 0,
@@ -1885,6 +1909,15 @@ class EEM_Reservations_CPT {
 
 		$values['event_source'] = $this->get_effective_event_source( $values );
 
+		// Scenario B (V1 #4): resolve the inventory-type / customer-selection pair
+		// (new keys win; else derived from the legacy mode for pre-migration
+		// reservations) and re-derive the legacy selection_mode from the pair so
+		// every downstream reader stays consistent.
+		$stall_pair = self::resolve_stall_pair( (int) $post_id );
+		$values['stall_inventory_type']     = $stall_pair['inventory_type'];
+		$values['stall_customer_selection'] = $stall_pair['customer_selection'];
+		$values['stall_selection_mode']     = $stall_pair['selection_mode'];
+
 		$stall_start_date = get_post_meta( $post_id, '_en_stall_available_start_date', true );
 		$stall_end_date   = get_post_meta( $post_id, '_en_stall_available_end_date', true );
 		$rv_start_date    = get_post_meta( $post_id, '_en_rv_available_start_date', true );
@@ -2015,6 +2048,8 @@ class EEM_Reservations_CPT {
 			'external_event_id'               => '',
 			'stalls_enabled'                  => 0,
 			'stall_selection_mode'            => 'quantity',
+			'stall_inventory_type'            => 'quantity_only',
+			'stall_customer_selection'        => 'quantity',
 			'rv_selection_mode'               => 'quantity',
 			'rv_enabled'                      => 0,
 			'nightly_enabled'                 => 1,
@@ -2172,6 +2207,86 @@ class EEM_Reservations_CPT {
 		}
 
 		return $mode;
+	}
+
+	/**
+	 * Scenario B (V1 #4): sanitize the Stall Inventory Type setting.
+	 *
+	 * @param mixed $value
+	 * @return string 'quantity_only' | 'numbered'
+	 */
+	public static function sanitize_stall_inventory_type( $value ): string {
+		$v = sanitize_key( $value );
+		return in_array( $v, array( 'quantity_only', 'numbered' ), true ) ? $v : 'quantity_only';
+	}
+
+	/**
+	 * Scenario B (V1 #4): sanitize the Customer Selection setting.
+	 *
+	 * @param mixed $value
+	 * @return string 'quantity' | 'pick_layout'
+	 */
+	public static function sanitize_stall_customer_selection( $value ): string {
+		$v = sanitize_key( $value );
+		return in_array( $v, array( 'quantity', 'pick_layout' ), true ) ? $v : 'quantity';
+	}
+
+	/**
+	 * Scenario B (V1 #4): derive the legacy single-mode value from the new
+	 * (inventory_type, customer_selection) pair. The legacy `exact_map` (the
+	 * customer picks specific stalls) is true ONLY for numbered + pick_layout;
+	 * every other combo behaves as `quantity` for the customer form. This keeps
+	 * every existing reader of `_en_stall_selection_mode` working unchanged.
+	 *
+	 * @param string $inventory_type
+	 * @param string $customer_selection
+	 * @return string 'quantity' | 'exact_map'
+	 */
+	public static function derive_stall_selection_mode( string $inventory_type, string $customer_selection ): string {
+		$inventory_type     = self::sanitize_stall_inventory_type( $inventory_type );
+		$customer_selection = self::sanitize_stall_customer_selection( $customer_selection );
+		return ( 'numbered' === $inventory_type && 'pick_layout' === $customer_selection ) ? 'exact_map' : 'quantity';
+	}
+
+	/**
+	 * Scenario B (V1 #4): resolve a reservation's stall mode triple from post
+	 * meta — the single source of truth shared by both meta readers (CPT
+	 * get_meta_values + shortcodes get_reservation_meta).
+	 *
+	 * Precedence: the new keys win when present; otherwise the pair is derived
+	 * from the legacy `_en_stall_selection_mode` (pre-migration reservations).
+	 * Then `selection_mode` is re-derived from the (possibly enforced) pair so
+	 * it's always internally consistent (quantity_only forces customer_selection
+	 * to quantity).
+	 *
+	 * @param int $post_id
+	 * @return array{inventory_type:string, customer_selection:string, selection_mode:string}
+	 */
+	public static function resolve_stall_pair( int $post_id ): array {
+		$legacy = get_post_meta( $post_id, '_en_stall_selection_mode', true );
+		$legacy = in_array( $legacy, array( 'quantity', 'exact_map' ), true ) ? $legacy : 'quantity';
+
+		if ( metadata_exists( 'post', $post_id, '_en_stall_inventory_type' ) ) {
+			$type = self::sanitize_stall_inventory_type( get_post_meta( $post_id, '_en_stall_inventory_type', true ) );
+		} else {
+			$type = ( 'exact_map' === $legacy ) ? 'numbered' : 'quantity_only';
+		}
+
+		if ( metadata_exists( 'post', $post_id, '_en_stall_customer_selection' ) ) {
+			$sel = self::sanitize_stall_customer_selection( get_post_meta( $post_id, '_en_stall_customer_selection', true ) );
+		} else {
+			$sel = ( 'exact_map' === $legacy ) ? 'pick_layout' : 'quantity';
+		}
+
+		if ( 'quantity_only' === $type ) {
+			$sel = 'quantity'; // Pick-from-layout is invalid without numbered stalls.
+		}
+
+		return array(
+			'inventory_type'     => $type,
+			'customer_selection' => $sel,
+			'selection_mode'     => self::derive_stall_selection_mode( $type, $sel ),
+		);
 	}
 
 	/**

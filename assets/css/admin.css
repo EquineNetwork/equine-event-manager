@@ -1105,6 +1105,15 @@ input.eem-price-input:focus {
 	color: var(--eem-text-on-navy);
 }
 
+/* V1 #4 (Scenario B): disabled mode button — e.g. "Pick from layout" when the
+   Stall Inventory Type is Quantity-only. */
+.eem-mode-btn:disabled,
+.eem-mode-btn.is-disabled {
+	opacity: .45;
+	cursor: not-allowed;
+	background: var(--eem-bg-alt);
+}
+
 /* ─────────────────────────────────────────────────────────────
    Badges (CONV-2)
    State badges have ::before dot. Type badges have no dot.

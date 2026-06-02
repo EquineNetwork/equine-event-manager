@@ -106,6 +106,10 @@ class EEM_Activator {
 			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-003-reservation-name-inherit.php';
 			eem_mig_003_reservation_name_inherit();
 		}
+		if ( ! get_option( 'eem_mig_004_stall_inventory_split_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-004-stall-inventory-split.php';
+			eem_mig_004_stall_inventory_split();
+		}
 	}
 
 	/**

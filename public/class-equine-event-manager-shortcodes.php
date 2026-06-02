@@ -6212,6 +6212,8 @@ RV Lot: " . $rv_lot['name'] );
 			'external_event_id'               => '',
 			'stalls_enabled'                  => 0,
 			'stall_selection_mode'            => 'quantity',
+			'stall_inventory_type'            => 'quantity_only',
+			'stall_customer_selection'        => 'quantity',
 			'stall_description'               => '',
 			'rv_enabled'                      => 0,
 			'rv_description'                  => '',
@@ -6317,6 +6319,17 @@ RV Lot: " . $rv_lot['name'] );
 		foreach ( $defaults as $key => $default ) {
 			$value        = get_post_meta( $reservation_id, '_en_' . $key, true );
 			$data[ $key ] = '' === $value ? $default : $value;
+		}
+
+		// Scenario B (V1 #4): resolve the stall mode triple via the shared CPT
+		// resolver (new keys win; else derived from the legacy mode). Keeps the
+		// customer-form picker gate (stall_selection_mode === 'exact_map') correct
+		// for all three combos, including the new Numbered + Quantity.
+		if ( class_exists( 'EEM_Reservations_CPT' ) && method_exists( 'EEM_Reservations_CPT', 'resolve_stall_pair' ) ) {
+			$stall_pair = EEM_Reservations_CPT::resolve_stall_pair( (int) $reservation_id );
+			$data['stall_inventory_type']     = $stall_pair['inventory_type'];
+			$data['stall_customer_selection'] = $stall_pair['customer_selection'];
+			$data['stall_selection_mode']     = $stall_pair['selection_mode'];
 		}
 
 		if ( ! metadata_exists( 'post', $reservation_id, '_en_use_global_event_source' ) ) {

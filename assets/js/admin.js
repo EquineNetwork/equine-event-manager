@@ -1819,6 +1819,12 @@
 		'toggle-inventory-mode': function (target) {
 			toggleInventoryMode(target);
 		},
+		'toggle-stall-inventory-type': function (target) {
+			toggleStallInventoryType(target);
+		},
+		'toggle-stall-customer-selection': function (target) {
+			toggleStallCustomerSelection(target);
+		},
 
 		/* C8 — Stall row builder */
 		'stall-add-row': function () {
@@ -3829,8 +3835,9 @@
 			ct.addEventListener('input', eemUpdateCancellationOverrideState);
 			eemUpdateCancellationOverrideState();
 		}
-		/* C8 — init inventory displays on page load */
-		if (document.querySelector('.eem-mode-btn[data-section="stall"]')) updateStallInventoryDisplay();
+		/* C8 — init inventory displays on page load. Stall uses the V1 #4
+		   inventory-type input; RV still uses the legacy mode button. */
+		if (document.getElementById('eem-stall-inventory-type-input')) updateStallInventoryDisplay();
 		if (document.querySelector('.eem-mode-btn[data-section="rv"]'))   updateRvInventoryDisplay();
 		/* V1 (2.3.22): zone-qty Avail Qty inputs removed from zone rows — listener removed.
 		 * RV inventory is now computed from row lot counts via updateRvInventoryDisplay(). */
@@ -3965,8 +3972,79 @@ function filterEventOptions(query) {
 }
 
 function stallMappedIsActive() {
-	var btn = document.querySelector('.eem-mode-btn.active[data-section="stall"]');
-	return btn && btn.dataset.mode === 'mapped';
+	// Scenario B (V1 #4): "mapped" computed-inventory behaviour now follows the
+	// Stall Inventory Type = numbered control (both numbered combos show the row
+	// builder + computed inventory).
+	var inv = document.getElementById('eem-stall-inventory-type-input');
+	return !!inv && inv.value === 'numbered';
+}
+
+/* Scenario B (V1 #4): keep the legacy hidden stall mode input in sync with the
+   two new controls (exact_map iff numbered + pick_layout). */
+function syncStallLegacyMode() {
+	var inv = document.getElementById('eem-stall-inventory-type-input');
+	var sel = document.getElementById('eem-stall-customer-selection-input');
+	var legacy = document.getElementById('eem-stall-selection-mode-input');
+	if (inv && sel && legacy) {
+		legacy.value = (inv.value === 'numbered' && sel.value === 'pick_layout') ? 'exact_map' : 'quantity';
+	}
+}
+
+/* Stall Inventory Type toggle (quantity_only / numbered). Drives the Stall Row
+   Builder + inventory-input visibility and enables/disables Pick-from-layout. */
+function toggleStallInventoryType(btn) {
+	var isNumbered = btn.dataset.type === 'numbered';
+	document.querySelectorAll('[data-eem-action="toggle-stall-inventory-type"]').forEach(function (b) {
+		b.classList.toggle('active', b === btn);
+	});
+	var inv = document.getElementById('eem-stall-inventory-type-input');
+	if (inv) inv.value = btn.dataset.type;
+
+	var panel    = document.getElementById('eem-stall-mapped-content');
+	var editable = document.getElementById('eem-stall-inventory-input');
+	var computed = document.getElementById('eem-stall-inventory-computed');
+	if (panel)    panel.style.display    = isNumbered ? '' : 'none';
+	if (editable) editable.style.display = isNumbered ? 'none' : '';
+	if (computed) computed.style.display = isNumbered ? '' : 'none';
+
+	var typeHint = document.querySelector('.eem-stall-inventory-type-hint');
+	if (typeHint) {
+		typeHint.textContent = isNumbered
+			? 'Specific stall numbers exist — define them in the Stall Row Builder below.'
+			: 'Sell a total count with no specific stall identities.';
+	}
+
+	// Pick-from-layout requires numbered stalls.
+	var pickBtn = document.querySelector('[data-eem-action="toggle-stall-customer-selection"][data-selection="pick_layout"]');
+	if (pickBtn) {
+		pickBtn.disabled = !isNumbered;
+		pickBtn.classList.toggle('is-disabled', !isNumbered);
+		if (!isNumbered && pickBtn.classList.contains('active')) {
+			var qtyBtn = document.querySelector('[data-eem-action="toggle-stall-customer-selection"][data-selection="quantity"]');
+			if (qtyBtn) toggleStallCustomerSelection(qtyBtn);
+		}
+	}
+
+	syncStallLegacyMode();
+	updateStallInventoryDisplay();
+}
+
+/* Customer Selection toggle (quantity / pick_layout). */
+function toggleStallCustomerSelection(btn) {
+	if (btn.disabled) return;
+	document.querySelectorAll('[data-eem-action="toggle-stall-customer-selection"]').forEach(function (b) {
+		b.classList.toggle('active', b === btn);
+	});
+	var sel = document.getElementById('eem-stall-customer-selection-input');
+	if (sel) sel.value = btn.dataset.selection;
+
+	var selHint = document.querySelector('.eem-stall-customer-selection-hint');
+	if (selHint) {
+		selHint.textContent = btn.dataset.selection === 'pick_layout'
+			? 'Customers select specific stalls from your layout at checkout.'
+			: 'Customers pick how many stalls they need; you assign specific stalls on the Stall & RV Charts page.';
+	}
+	syncStallLegacyMode();
 }
 
 function rvMappedIsActive() {
