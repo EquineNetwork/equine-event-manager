@@ -2241,3 +2241,27 @@ path is smoke-covered).
   section + Sales Tax (7.5%) $14.10 line + fee-in-totals-not-items + assignments-omitted.
   **Dompdf compatibility confirmed:** the table-based template renders a valid `%PDF`
   (18 KB), de-risking increment 3. HTML + PDF previews written to Desktop for eyeball.
+
+**Increment 2 visual-review fix-ups (2.3.89–2.3.90):**
+- Right-edge clipping (2.3.89): `.sheet` was 800px (~600pt) > Letter printable (~554pt);
+  narrowed to 700px + `@page` margin 0.5in.
+- Fonts (2.3.90): added the Google Fonts `<link>` + a `DejaVu Sans` fallback. With
+  `isRemoteEnabled`, Dompdf fetches IBM Plex Sans + Space Grotesk from the link's
+  `@font-face` and caches them, so the PDF renders brand-exact (not serif). ⚠️ The
+  cache currently lands in `vendor/dompdf/dompdf/lib/fonts/` (committed) — fragile vs a
+  `composer install` that could wipe the vendored package's font dir. **Increment 3 TODO:**
+  point Dompdf's `fontDir`/`fontCache` at a plugin-owned dir (e.g. `assets/fonts/` or an
+  uploads subdir) and register the brand fonts there so they survive reinstalls + work
+  without network at render time.
+- Logo header artifact (2.3.90): the `<img>` `alt` was the event title, so a failed image
+  dumped the title into the header. `alt` now empty; **increment 3 TODO:** embed the logo
+  as a data URI so it actually appears in the PDF.
+- Customer/Billing gap (2.3.90): the details table set `width:50%` on all 3 cells incl.
+  the spacer (150%); switched to a 2-col `table-layout:fixed` with internal padding.
+- Billing-in-special-requests + empty billing card: was a TEST-FIXTURE bug (preview/smoke
+  used `Billing Details:`/`Special Requests:` labels; real notes use
+  `Billing Name:`/`Billing Address:` + freeform). Fixtures corrected; template was right.
+- Footer (2.3.90): now a `position:fixed` running footer repeating on every PDF page with
+  the Support line + 5-digit order number; web view keeps a normal in-flow footer
+  (toggled via `@media`).
+- Verified: `c12-receipt-render-smoke.php` 30/30 (adds no-billing-leak + footer order#).
