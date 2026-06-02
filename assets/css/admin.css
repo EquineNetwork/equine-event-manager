@@ -571,33 +571,37 @@ body.eem-shell-page {
    Toggle switch — pill control used in section headers and field rows
    States are .eem-toggle.on / .eem-toggle.off (JS sets both).
    ───────────────────────────────────────────────────────────── */
+/* Canonical toggle — matches the customer reservation-form section toggle
+   (.eem-reservation-section-toggle in public.css): 58×34, electric-blue on,
+   grey off, 26px white knob. Used plugin-wide for a single toggle language. */
 .eem-toggle {
-	width: 36px;
-	height: 20px;
-	border-radius: 10px;
+	width: 58px;
+	height: 34px;
+	border-radius: 999px;
 	position: relative;
 	cursor: pointer;
 	flex-shrink: 0;
-	transition: background 0.15s;
+	transition: background 0.2s ease;
 }
 
 .eem-toggle.on  { background: var(--eem-electric); }
-.eem-toggle.off { background: var(--eem-border-card); }
+.eem-toggle.off { background: #cbd5e1; }
 
 .eem-toggle::after {
 	content: '';
 	position: absolute;
-	width: 14px;
-	height: 14px;
-	background: var(--eem-surface);
+	width: 26px;
+	height: 26px;
+	background: #fff;
 	border-radius: 50%;
-	top: 3px;
-	transition: left 0.15s;
-	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+	top: 4px;
+	left: 4px;
+	transition: transform 0.2s ease;
+	box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
 }
 
-.eem-toggle.on::after  { left: 19px; }
-.eem-toggle.off::after { left: 3px; }
+.eem-toggle.on::after  { transform: translateX(24px); }
+.eem-toggle.off::after { transform: translateX(0); }
 
 /* "Enabled" toggle composite — label + toggle inline in a section header */
 .eem-enable-toggle {
@@ -5777,9 +5781,9 @@ a.eem-dashboard-qa-btn:focus {
    .eem-toggle--on / .eem-toggle--off so future variants stay
    consistent. The base .eem-toggle CSS handles size + thumb. */
 .eem-toggle--on  { background: var(--eem-electric); }
-.eem-toggle--off { background: var(--eem-border-card); }
-.eem-toggle--on::after  { left: 19px; }
-.eem-toggle--off::after { left: 3px; }
+.eem-toggle--off { background: #cbd5e1; }
+.eem-toggle--on::after  { transform: translateX(24px); }
+.eem-toggle--off::after { transform: translateX(0); }
 
 /* C7.B.1 placeholder strip for the eventual save bar (C7.B.2). */
 .eem-reservation-editor-savebar-placeholder {
@@ -8149,14 +8153,6 @@ table.eem-export-history td { padding:11px 14px; font-size:13px; color:#1d2327; 
 
 /* Section stubs */
 .eem-co-section-placeholder { margin: 0; }
-/* Section enable toggles match the customer reservation-form toggles
-   (.eem-reservation-section-toggle in public.css): larger, green when on. */
-.eem-co-section-card .eem-toggle { width: 58px; height: 34px; border-radius: 999px; }
-.eem-co-section-card .eem-toggle::after { width: 26px; height: 26px; top: 4px; }
-.eem-co-section-card .eem-toggle.off::after { left: 4px; }
-.eem-co-section-card .eem-toggle.on::after  { left: 28px; }
-.eem-co-section-card .eem-toggle.on  { background: #52b788; }
-.eem-co-section-card .eem-toggle.off { background: #cbd5e1; }
 
 /* Custom line items */
 .eem-co-custom-list { display: flex; flex-direction: column; gap: 8px; }
