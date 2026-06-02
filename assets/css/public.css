@@ -1127,6 +1127,11 @@
 	border-color: #1668F2;
 	box-shadow: 0 2px 6px rgba(22, 104, 242, .2);
 }
+/* The number lives in a child <span>; set its color explicitly so a theme's
+   direct span color rule can't override the inherited white on the blue chip. */
+.eem-event-page .picker-stall.selected span {
+	color: #fff;
+}
 .eem-event-page .picker-stall.selected:hover {
 	background: #0d52cc;
 	border-color: #0d52cc;

@@ -7895,7 +7895,7 @@ RV Lot: " . $rv_lot['name'] );
 		?>
 		<div class="eem-quantity-control">
 			<button type="button" class="eem-quantity-button" data-eem-quantity-step="-1" aria-label="<?php esc_attr_e( 'Decrease quantity', 'equine-event-manager' ); ?>">-</button>
-			<input type="number" name="<?php echo esc_attr( $name ); ?>" min="0" step="1" value="0" inputmode="numeric" <?php echo null !== $max ? 'max="' . esc_attr( $max ) . '"' : ''; ?> />
+			<input type="number" name="<?php echo esc_attr( $name ); ?>" min="0" step="1" value="0" inputmode="numeric" autocomplete="off" <?php echo null !== $max ? 'max="' . esc_attr( $max ) . '"' : ''; ?> />
 			<button type="button" class="eem-quantity-button" data-eem-quantity-step="1" aria-label="<?php esc_attr_e( 'Increase quantity', 'equine-event-manager' ); ?>">+</button>
 		</div>
 		<?php
@@ -8414,8 +8414,23 @@ RV Lot: " . $rv_lot['name'] );
 				return enStripeLoaderPromise;
 			}
 
+			function clampQuantityInputsToMax(form) {
+				// Browsers restore previously-typed number-input values on reload, even
+				// past the max attribute (which only caps on +/- click). Clamp any
+				// restored value down to its max so per-customer / inventory limits hold.
+				form.querySelectorAll('.eem-quantity-control input[type="number"][max]').forEach(function(input) {
+					var max = parseInt(input.getAttribute('max') || '', 10);
+					var val = parseInt(input.value || '0', 10);
+					if (!isNaN(max) && val > max) {
+						input.value = max;
+						input.dispatchEvent(new Event('change', { bubbles: true }));
+					}
+				});
+			}
+
 			function initializeReservationForms(root) {
 				(root || document).querySelectorAll('.eem-reservation-form').forEach(function(form) {
+					clampQuantityInputsToMax(form);
 					initializeInvoiceActionButtons(form);
 					initializeInvoiceBillingToggle(form);
 					initializeStripeCardField(form);
