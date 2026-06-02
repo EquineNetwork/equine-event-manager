@@ -60,6 +60,9 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-collect-payment-page.p
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-order-detail-page.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-reports-page.php';
 
+// C9 — Customer Profile page (read-only aggregate by email) + its data repo.
+require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-customer-profile-page.php';
+
 // DS-1.B — Admin Dashboard page + data repository (renders against
 // .mockups/dashboard_page.html; em-dash placeholders for C8/C11-blocked
 // data per CLEANUP #37-#40).
@@ -237,6 +240,8 @@ class EEM_Plugin {
 		// replaces this stub when the planned-roadmap chunk ships
 		// (see CLEANUP.md "Customer Profile chunk sequencing").
 		add_action( 'admin_menu',                                 array( 'EEM_Orders_List_Page', 'register_customer_profile_stub' ), 25 );
+		// C9 — Customer Profile AJAX (notes save) + CSV export handlers.
+		EEM_Customer_Profile_Page::register();
 
 		// C6.A — hidden Order Detail page. Reachable via direct URL only
 		// (admin.php?page=equine-event-manager-order&order_key=...).

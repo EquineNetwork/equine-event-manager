@@ -1189,7 +1189,12 @@ class EEM_Orders_List_Page {
 			__( 'Customer Profile', 'equine-event-manager' ),
 			'manage_options',
 			self::CUSTOMER_PROFILE_MENU_SLUG,
-			array( __CLASS__, 'render_customer_profile_stub' )
+			// C9 (2.4.x): the read-only Customer Profile page replaced the
+			// placeholder stub. EEM_Customer_Profile_Page::render() falls back to
+			// a graceful "no orders found" card for unknown emails.
+			class_exists( 'EEM_Customer_Profile_Page' )
+				? array( 'EEM_Customer_Profile_Page', 'render' )
+				: array( __CLASS__, 'render_customer_profile_stub' )
 		);
 	}
 

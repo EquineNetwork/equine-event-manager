@@ -570,6 +570,58 @@
 	}
 
 	/* ─────────────────────────────────────────────────────────────
+	 * C9 — Customer Profile internal notes save.
+	 * Posts to admin-ajax.php action=eem_save_customer_note with the
+	 * customer email + nonce from the [data-eem-customer-note] host and
+	 * the textarea contents. Toast on success/failure.
+	 * ───────────────────────────────────────────────────────────── */
+	function saveCustomerNote(btn) {
+		var host = btn.closest('[data-eem-customer-note]');
+		if (!host) return;
+		var input = host.querySelector('[data-eem-note-input]');
+		var email = host.getAttribute('data-eem-email') || '';
+		var nonce = host.getAttribute('data-eem-nonce') || '';
+		if (!email || !nonce) {
+			EEM.showSaveToast('Missing customer or nonce — refresh the page.', { variant: 'error', sub: '' });
+			return;
+		}
+
+		btn.disabled = true;
+		var originalLabel = btn.textContent;
+		btn.textContent = 'Saving…';
+
+		var data = new FormData();
+		data.append('action', 'eem_save_customer_note');
+		data.append('email', email);
+		data.append('note', input ? input.value : '');
+		data.append('nonce', nonce);
+
+		var ajaxUrl = (window.ajaxurl || '/wp-admin/admin-ajax.php');
+
+		fetch(ajaxUrl, {
+			method: 'POST',
+			credentials: 'same-origin',
+			body: data
+		})
+			.then(function (res) { return res.json(); })
+			.then(function (json) {
+				if (json && json.success) {
+					EEM.showSaveToast((json.data && json.data.message) || 'Notes saved.');
+				} else {
+					var msg = (json && json.data && json.data.message) || 'Save failed.';
+					EEM.showSaveToast(msg, { variant: 'error', sub: '' });
+				}
+			})
+			.catch(function () {
+				EEM.showSaveToast('Could not reach the server.', { variant: 'error', sub: '' });
+			})
+			.then(function () {
+				btn.disabled = false;
+				btn.textContent = originalLabel;
+			});
+	}
+
+	/* ─────────────────────────────────────────────────────────────
 	 * Source picker (Integrations event source + Payments processor).
 	 * Radio change → host gets .is-selected, siblings lose it, the
 	 * matching .eem-source-detail block becomes visible (others hide).
@@ -1603,6 +1655,9 @@
 		},
 		'send-test-email': function (target) {
 			sendTestEmail(target);
+		},
+		'save-customer-note': function (target) {
+			saveCustomerNote(target);
 		},
 		'logo-pick': function (target) {
 			pickLogo(target);

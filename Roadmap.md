@@ -147,11 +147,32 @@ Port Contact, Stay Details, Stall, RV, Add-Ons, Group, Special Requests, Billing
 
 These are admin-side mockup ports that can be done AFTER C10 customer flow works end-to-end. They don't affect the June 12 test-ready milestone.
 
-### C9 — Customer Profile Page
-- Mockup: `.mockups/customer_profile_page.html`
-- Admin page showing individual customer history across all reservations
-- Order history, contact info, lifetime spend
-- Likely 1-2 days work
+### C9 — Customer Profile Page ✅ DONE (2.4.2)
+- Mockup: `.mockups/customer_profile_page.html`. Replaces the hidden
+  `register_customer_profile_stub` placeholder (slug `equine-event-manager-customer`,
+  reached by the email-keyed customer links already emitted from Orders list +
+  Order Detail).
+- **Decisions locked with Whitney (2026-06-01):** read-only **aggregate** model
+  (no `wp_eem_customers` table — a "customer" is the set of orders sharing an
+  email); internal notes stored in an `eem_customer_notes` option map keyed by
+  email hash; header actions = **Send Email** (`mailto:`) + **Export CSV** (reuses
+  the C15 exporter); **Edit / Merge / Delete hidden** (need a customer entity the
+  read-only model omits).
+- **C9.A ✅ (2.4.1):** `EEM_Customer_Profile_Repo` — aggregates orders by email
+  into identity/contact, KPI stats (lifetime spend, order counts, avg value, last
+  order, customer-since), order-history rows, reservation-history rows (orders
+  grouped by reservation), merged activity timeline, + note get/save. Smoke 41/41.
+- **C9.B ✅ (2.4.2):** `EEM_Customer_Profile_Page` render — header (rich meta +
+  actions), stats grid, customer details, internal notes (AJAX save via
+  `eem_save_customer_note`), order history table+mobile, reservation history
+  table+mobile, activity log (shared C2 partial). Net-new CSS only (stats/details/
+  notes; badges, `.eem-table`, mobile cards, activity reused). Enqueue allowlist +
+  body-class branch (`eem-shell-page--customer`) added; stub callback repointed.
+  CSV export via `admin_post_eem_export_customer_csv`. Smoke 27/27.
+- ⚠️ **Pending Whitney browser visual-verify:** CSS fidelity vs. the mockup +
+  admin-legacy.css cascade check (per the standing form-control/cascade discipline).
+  The page renders structurally correct (247-assertion sweep green); only the
+  pixel-level eyeball remains.
 
 ### C11 — Customer Confirmation Email ✅ DONE (2.3.86)
 - Mockup: `.mockups/customer_confirmation_email.html`
