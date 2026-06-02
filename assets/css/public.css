@@ -4171,22 +4171,28 @@
 	display: block;
 }
 
-/* V1 D2 — optional Group Name field (mirrors the Special Requests field). */
-.eem-event-page .eem-reservation-section--group-name .eem-group-name-field {
+/* V1 D2 — optional Group Name field inside the Contact Information card,
+   below email/phone. Full-width row with the help text beneath the input. */
+.eem-event-page .eem-group-name-field {
 	display: block;
+	margin-top: 14px;
 	font-weight: 400;
 }
-.eem-event-page .eem-reservation-section--group-name .eem-reservation-help {
+.eem-event-page .eem-group-name-field > span {
 	display: block;
-	margin-bottom: 10px;
-	font-size: 13.5px;
-	font-weight: 400;
-	line-height: 1.7;
-	color: #4a5a7a;
 }
-.eem-event-page .eem-reservation-section--group-name input[type="text"] {
+.eem-event-page .eem-group-name-field input[type="text"] {
 	width: 100%;
 	display: block;
+}
+.eem-event-page .eem-group-name-field .eem-reservation-help {
+	display: block;
+	margin-top: 6px;
+	margin-bottom: 0;
+	font-size: 13px;
+	font-weight: 400;
+	line-height: 1.6;
+	color: #4a5a7a;
 }
 
 /* 2.3.62 — Cancellation policy box in the checkout sidebar (below agreement). */

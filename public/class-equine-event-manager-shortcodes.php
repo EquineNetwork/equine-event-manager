@@ -465,6 +465,14 @@ class EEM_Shortcodes {
 								</div>
 							</label>
 						</div>
+						<?php // V1 D2 — optional Group Name tag (clustering hint for stabling a
+						// travelling group together). Independent of the multi-rider "Group
+						// Reservation" feature. Lives in Contact Information, below email/phone. ?>
+						<label class="eem-group-name-field">
+							<span><?php esc_html_e( 'Group Name', 'equine-event-manager' ); ?></span>
+							<input type="text" name="group_name" maxlength="100" autocomplete="off" />
+							<small class="eem-reservation-help"><?php esc_html_e( 'Optional — if you\'re travelling with a group, enter the group name so we can try to place you together.', 'equine-event-manager' ); ?></small>
+						</label>
 					</div>
 
 					<?php if ( $data['stalls_enabled'] || $data['rv_enabled'] ) : ?>
@@ -970,17 +978,6 @@ class EEM_Shortcodes {
 							</div>
 						</div>
 					<?php endif; ?>
-
-					<div class="eem-reservation-section eem-reservation-section--group-name">
-						<?php // V1 D2 — optional free-text Group Name. Independent of the
-						// multi-rider "Group Reservation" feature above; it's a tag the
-						// venue uses to try to stable a travelling group together. ?>
-						<h4 class="eem-reservation-section__title"><?php esc_html_e( 'Group Name', 'equine-event-manager' ); ?></h4>
-						<label class="eem-group-name-field">
-							<small class="eem-reservation-help"><?php esc_html_e( 'Optional — if you\'re travelling with a group, enter the group name so we can try to place you together.', 'equine-event-manager' ); ?></small>
-							<input type="text" name="group_name" maxlength="100" autocomplete="off" />
-						</label>
-					</div>
 
 					<div class="eem-reservation-section eem-reservation-section--special-requests">
 						<?php // 2.3.66 — title is a direct child of the section so it gets the
