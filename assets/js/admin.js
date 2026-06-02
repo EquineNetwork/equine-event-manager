@@ -1659,6 +1659,14 @@
 		'save-customer-note': function (target) {
 			saveCustomerNote(target);
 		},
+		'stall-chart-toggle-groups': function (target) {
+			var pressed = target.getAttribute('aria-pressed') === 'true';
+			target.setAttribute('aria-pressed', pressed ? 'false' : 'true');
+			target.classList.toggle('is-active', !pressed);
+			if (typeof eemApplyStallChartFilter === 'function') {
+				eemApplyStallChartFilter(target.closest('.eem-stall-chart-tab-panel') || document.body);
+			}
+		},
 		'logo-pick': function (target) {
 			pickLogo(target);
 		},
@@ -3443,6 +3451,7 @@
 			var orderKey = pill.getAttribute('data-order-id') || pill.getAttribute('data-order-key') || '';
 			var orderNum = pill.getAttribute('data-order-number') || '';
 			var special  = pill.getAttribute('data-special-requests') || '';
+			var groupNm  = pill.getAttribute('data-group-name') || '';
 			var srcStall = pill.getAttribute('data-stall') || '';
 			var srcDate  = pill.getAttribute('data-date') || '';
 			window._scActiveOrderId   = orderKey;
@@ -3459,6 +3468,9 @@
 				var orderUrl = (window.ajaxurl || '/wp-admin/admin-ajax.php').replace('admin-ajax.php', '') + 'admin.php?page=equine-event-manager-order&order_key=' + encodeURIComponent(orderKey);
 				// Show the human-readable order NUMBER (#NNNNN), not the internal key.
 				var html = 'Order: <a href="' + orderUrl + '" onclick="event.stopPropagation()">' + esc(orderNum || '—') + '</a>';
+				if (groupNm) {
+					html += '<span class="eem-stall-chart-menu-group"><strong>Group:</strong> ' + esc(groupNm) + '</span>';
+				}
 				if (special) {
 					html += '<span class="eem-stall-chart-menu-special"><strong>Special requests:</strong> ' + esc(special) + '</span>';
 				}
@@ -3645,28 +3657,38 @@
 		}
 	});
 
-	// Stall chart search filter (By Location + By Customer)
-	document.addEventListener('input', function (ev) {
-		var t = ev.target;
-		if (!t) return;
-		if (!t.classList.contains('eem-stall-chart-search-input')) return;
-		var panel = t.closest('.eem-stall-chart-tab-panel') || document.body;
-		var rows = Array.prototype.slice.call(panel.querySelectorAll('[data-stall-chart-search]'));
+	// Stall chart filter — search box + barn tabs + "Show by group" (V1 D2).
+	// Shared so the search input and the group toggle apply the same logic.
+	function eemApplyStallChartFilter(panel) {
+		if (!panel) return;
+		var input = panel.querySelector('.eem-stall-chart-search-input');
+		var q = input ? input.value.toLowerCase().trim() : '';
 		var barnFilter = document.querySelector('.eem-stall-chart-barn-tab.active');
 		var activeBarn = barnFilter ? barnFilter.getAttribute('data-barn') : 'all';
-		var q = t.value.toLowerCase().trim();
+		var groupToggle = panel.querySelector('[data-eem-action="stall-chart-toggle-groups"]');
+		var groupsOnly = !!groupToggle && groupToggle.getAttribute('aria-pressed') === 'true';
+		var rows = Array.prototype.slice.call(panel.querySelectorAll('[data-stall-chart-search]'));
 		var visible = 0;
 		rows.forEach(function (row) {
 			var haystack = (row.getAttribute('data-stall-chart-search') || '').toLowerCase();
 			var barn = (row.getAttribute('data-barn') || '').toLowerCase();
+			var hasGroup = (row.getAttribute('data-group') || '').trim() !== '';
 			var matchesSearch = !q || haystack.indexOf(q) !== -1;
-			var matchesBarn = activeBarn === 'all' || barn === activeBarn;
-			var show = matchesSearch && matchesBarn && !row.classList.contains('eem-chart-barn-row');
+			// Empty barn = By-Customer rows; they ignore the By-Location barn tabs.
+			var matchesBarn = activeBarn === 'all' || barn === '' || barn === activeBarn;
+			var matchesGroup = !groupsOnly || hasGroup;
+			var show = matchesSearch && matchesBarn && matchesGroup && !row.classList.contains('eem-chart-barn-row');
 			row.hidden = !show;
 			if (show) visible++;
 		});
 		var emptyNote = panel.querySelector('.eem-stall-chart-empty-note');
 		if (emptyNote) emptyNote.hidden = visible > 0;
+	}
+
+	document.addEventListener('input', function (ev) {
+		var t = ev.target;
+		if (!t || !t.classList.contains('eem-stall-chart-search-input')) return;
+		eemApplyStallChartFilter(t.closest('.eem-stall-chart-tab-panel') || document.body);
 	});
 
 	// Stall chart event typeahead input

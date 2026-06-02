@@ -4171,6 +4171,24 @@
 	display: block;
 }
 
+/* V1 D2 — optional Group Name field (mirrors the Special Requests field). */
+.eem-event-page .eem-reservation-section--group-name .eem-group-name-field {
+	display: block;
+	font-weight: 400;
+}
+.eem-event-page .eem-reservation-section--group-name .eem-reservation-help {
+	display: block;
+	margin-bottom: 10px;
+	font-size: 13.5px;
+	font-weight: 400;
+	line-height: 1.7;
+	color: #4a5a7a;
+}
+.eem-event-page .eem-reservation-section--group-name input[type="text"] {
+	width: 100%;
+	display: block;
+}
+
 /* 2.3.62 — Cancellation policy box in the checkout sidebar (below agreement). */
 .eem-event-page .eem-cancellation-policy {
 	margin-top: 14px;

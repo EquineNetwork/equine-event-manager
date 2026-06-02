@@ -971,6 +971,17 @@ class EEM_Shortcodes {
 						</div>
 					<?php endif; ?>
 
+					<div class="eem-reservation-section eem-reservation-section--group-name">
+						<?php // V1 D2 — optional free-text Group Name. Independent of the
+						// multi-rider "Group Reservation" feature above; it's a tag the
+						// venue uses to try to stable a travelling group together. ?>
+						<h4 class="eem-reservation-section__title"><?php esc_html_e( 'Group Name', 'equine-event-manager' ); ?></h4>
+						<label class="eem-group-name-field">
+							<small class="eem-reservation-help"><?php esc_html_e( 'Optional — if you\'re travelling with a group, enter the group name so we can try to place you together.', 'equine-event-manager' ); ?></small>
+							<input type="text" name="group_name" maxlength="100" autocomplete="off" />
+						</label>
+					</div>
+
 					<div class="eem-reservation-section eem-reservation-section--special-requests">
 						<?php // 2.3.66 — title is a direct child of the section so it gets the
 						// standard header band (uppercase + bottom border) like every other
@@ -1865,6 +1876,7 @@ class EEM_Shortcodes {
 			'billing_postal_code'     => isset( $_POST['billing_postal_code'] ) ? sanitize_text_field( wp_unslash( $_POST['billing_postal_code'] ) ) : '',
 			'billing_country'         => isset( $_POST['billing_country'] ) ? sanitize_text_field( wp_unslash( $_POST['billing_country'] ) ) : '',
 			'notes'                   => isset( $_POST['notes'] ) ? sanitize_textarea_field( wp_unslash( $_POST['notes'] ) ) : '',
+			'group_name'              => isset( $_POST['group_name'] ) ? sanitize_text_field( wp_unslash( $_POST['group_name'] ) ) : '',
 			'group_reservation_enabled' => isset( $_POST['group_reservation_enabled'] ) ? 1 : 0,
 			'group_rider_count'         => isset( $_POST['group_rider_count'] ) ? absint( $_POST['group_rider_count'] ) : 0,
 			'invoice_type'            => $this->sanitize_invoice_type( isset( $_POST['en_invoice_type'] ) ? wp_unslash( $_POST['en_invoice_type'] ) : 'customer' ),
@@ -3176,7 +3188,12 @@ class EEM_Shortcodes {
 
 		$invoice_type_note   = 'manual' === $submission['invoice_type'] ? __( 'Admin', 'equine-event-manager' ) : __( 'Customer', 'equine-event-manager' );
 		$show_bill_note_line = ( 'manual' === $submission['invoice_type'] && 'add_to_show_bill' === $submission['invoice_action_mode'] ) ? "\nShow Bill Status: Outstanding" : '';
-		$notes = trim( $submission['notes'] . "\n\n" . $billing_notes . "\n" . $agreement_notes . $general_addon_notes . $pre_entry_notes . $group_reservation_notes . "\nInvoice Type: " . $invoice_type_note . $show_bill_note_line . "\nReservation setup ID: " . absint( $reservation_id ) . "\nSubmission token: " . $submission_token );
+		// V1 D2 — optional Group Name tag (independent of Group Reservation).
+		$group_name_note_line = ( '' !== trim( (string) $submission['group_name'] ) )
+			? "\nGroup Name: " . trim( (string) $submission['group_name'] )
+			: '';
+
+		$notes = trim( $submission['notes'] . "\n\n" . $billing_notes . "\n" . $agreement_notes . $general_addon_notes . $pre_entry_notes . $group_reservation_notes . $group_name_note_line . "\nInvoice Type: " . $invoice_type_note . $show_bill_note_line . "\nReservation setup ID: " . absint( $reservation_id ) . "\nSubmission token: " . $submission_token );
 		$created       = current_time( 'mysql' );
 
 		if ( $has_stall_order ) {
@@ -5279,7 +5296,7 @@ RV Lot: " . $rv_lot['name'] );
 				continue;
 			}
 
-			if ( preg_match( '/^(Billing Name|Billing Address|Reservation setup ID|Submission token|RV Add-Ons|RV Lot|Assigned Stall Units|Assigned RV Lots|Assigned RV Units|Add-On|Group Charge|Group Reservation|Group Riders Count|Group Riders|Venue Agreement (Accepted|Provided)|Invoice Type|Invoice Token|Invoice Status|Invoice Sent At|Invoice Paid At):/i', $line ) ) {
+			if ( preg_match( '/^(Billing Name|Billing Address|Reservation setup ID|Submission token|RV Add-Ons|RV Lot|Assigned Stall Units|Assigned RV Lots|Assigned RV Units|Add-On|Group Name|Group Charge|Group Reservation|Group Riders Count|Group Riders|Venue Agreement (Accepted|Provided)|Invoice Type|Invoice Token|Invoice Status|Invoice Sent At|Invoice Paid At):/i', $line ) ) {
 				continue;
 			}
 

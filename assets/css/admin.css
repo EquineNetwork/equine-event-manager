@@ -7083,6 +7083,16 @@ a.eem-btn--ghost:focus    { color: #1d2327; }
 /* V1 Scenario F: special-requests note under the customer name (by-customer view). */
 .eem-chart-cust-note { margin-top: 3px; font-size: 11.5px; line-height: 1.4; color: var(--eem-warn-text); background: var(--eem-warn-bg); border-left: 2px solid var(--eem-warn-border); border-radius: 0 var(--eem-radius) var(--eem-radius) 0; padding: 3px 8px; max-width: 280px; }
 .eem-chart-cust-note__label { font-weight: 700; }
+/* V1 D2: Group Name — chip under the customer name + the "Show by group" toggle. */
+.eem-chart-cust-group { margin-top: 3px; }
+.eem-chart-cust-group__chip { display: inline-block; max-width: 220px; padding: 1px 9px; font-size: 11px; font-weight: 700; color: var(--eem-electric); background: var(--eem-info-bg); border: 1px solid var(--eem-info-border); border-radius: 999px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: top; }
+.eem-stall-chart-group-toggle { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid var(--eem-border-card); border-radius: var(--eem-radius); background: #fff; color: var(--eem-text); font-size: 12.5px; font-weight: 600; font-family: inherit; cursor: pointer; white-space: nowrap; }
+.eem-stall-chart-group-toggle svg { width: 14px; height: 14px; }
+.eem-stall-chart-group-toggle:hover { background: var(--eem-bg-hover); border-color: var(--eem-electric); color: var(--eem-electric); }
+.eem-stall-chart-group-toggle.is-active { background: var(--eem-info-bg); border-color: var(--eem-info-border); color: var(--eem-electric); }
+/* V1 D2: group line in the stall-pill action popover. */
+.eem-stall-chart-menu-group { display: block; margin-top: 6px; font-size: 11.5px; color: var(--eem-text); }
+.eem-stall-chart-menu-group strong { font-weight: 700; color: var(--eem-navy); }
 .eem-chart-order-link { color: #031B4E; font-weight: 600; font-size: 12.5px; text-decoration: none; }
 .eem-chart-order-link:hover { color: #1668F2; }
 .eem-chart-night-count { text-align: center; font-weight: 600; color: #8c8f94; }

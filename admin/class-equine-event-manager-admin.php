@@ -2232,6 +2232,11 @@ class EEM_Admin {
 									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
 									<input type="search" id="eem-stall-chart-cust-search" class="eem-search-input eem-stall-chart-search-input" placeholder="<?php esc_attr_e( 'Search', 'equine-event-manager' ); ?>" />
 								</div>
+								<?php // V1 D2 — filters the list to orders that carry a Group Name. ?>
+								<button type="button" class="eem-stall-chart-group-toggle" data-eem-action="stall-chart-toggle-groups" aria-pressed="false">
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+									<?php esc_html_e( 'Show by group', 'equine-event-manager' ); ?>
+								</button>
 								<span class="eem-stall-chart-filter-hint"><?php esc_html_e( 'Search by customer, order, stall, or RV lot.', 'equine-event-manager' ); ?></span>
 							</div>
 							<p class="eem-stall-chart-empty-note" hidden><?php esc_html_e( 'No assignment rows match this search.', 'equine-event-manager' ); ?></p>
@@ -3671,6 +3676,19 @@ class EEM_Admin {
 		return is_numeric( $order_number ) ? sprintf( '#%05d', (int) $order_number ) : '#' . $order_number;
 	}
 
+	/**
+	 * Extract the V1 D2 "Group Name" tag from an order's notes (empty if none).
+	 *
+	 * @param string $notes Raw order notes.
+	 * @return string
+	 */
+	private function get_group_name_from_order_notes( string $notes ): string {
+		if ( preg_match( '/(?:^|\n)Group Name:\s*(.+)$/im', $notes, $m ) ) {
+			return trim( $m[1] );
+		}
+		return '';
+	}
+
 	private function build_stall_chart_grid( $reservation_id, $config ) {
 		$orders = array_filter(
 			$this->orders_repository->get_orders( '', 'date', 'asc' ),
@@ -3704,6 +3722,8 @@ class EEM_Admin {
 			// V1 Scenario F: surface the customer's Special Requests on the chart
 			// (pill tooltip + by-customer note) so admins see them while assigning.
 			$special_requests = trim( (string) $this->get_special_requests_from_order_notes( $order['notes'] ) );
+			// V1 D2: group name tag (for manual clustering + Show-by-group filter).
+			$group_name = $this->get_group_name_from_order_notes( (string) $order['notes'] );
 
 			foreach ( $stall_units['assigned'] as $unit ) {
 				foreach ( $stall_dates as $date_key ) {
@@ -3714,6 +3734,7 @@ class EEM_Admin {
 							'order_key'        => $order['order_key'],
 							'order_number'     => (string) $order['order_number'],
 							'special_requests' => $special_requests,
+							'group_name'       => $group_name,
 						);
 					}
 				}
@@ -3728,6 +3749,7 @@ class EEM_Admin {
 							'order_key'        => $order['order_key'],
 							'order_number'     => (string) $order['order_number'],
 							'special_requests' => $special_requests,
+							'group_name'       => $group_name,
 						);
 					}
 				}
@@ -4195,7 +4217,10 @@ class EEM_Admin {
 							<td>
 								<div class="eem-chart-cell-wrap">
 									<?php if ( 'occupied' === $cell['type'] && ! empty( $cell['order_key'] ) ) : ?>
-										<?php $eem_cell_note = isset( $cell['special_requests'] ) ? trim( (string) $cell['special_requests'] ) : ''; ?>
+										<?php
+										$eem_cell_note  = isset( $cell['special_requests'] ) ? trim( (string) $cell['special_requests'] ) : '';
+										$eem_cell_group = isset( $cell['group_name'] ) ? trim( (string) $cell['group_name'] ) : '';
+										?>
 										<span class="eem-occ-pill eem-occ-pill--reserved<?php echo '' !== $eem_cell_note ? ' eem-occ-pill--has-note' : ''; ?>"
 											data-order-key="<?php echo esc_attr( $cell['order_key'] ); ?>"
 											data-order-id="<?php echo esc_attr( $cell['order_key'] ); ?>"
@@ -4203,6 +4228,7 @@ class EEM_Admin {
 											data-customer-name="<?php echo esc_attr( $cell['label'] ); ?>"
 											data-customer="<?php echo esc_attr( $cell['label'] ); ?>"
 											data-order-number="<?php echo esc_attr( $this->format_chart_order_number( (string) ( $cell['order_number'] ?? '' ) ) ); ?>"
+											<?php if ( '' !== $eem_cell_group ) : ?>data-group-name="<?php echo esc_attr( $eem_cell_group ); ?>"<?php endif; ?>
 											data-stall="<?php echo esc_attr( (string) $row['unit'] ); ?>"
 											data-date="<?php echo esc_attr( (string) $date_key ); ?>"
 											<?php if ( '' !== $eem_cell_note ) : ?>data-special-requests="<?php echo esc_attr( $eem_cell_note ); ?>" title="<?php echo esc_attr( sprintf( /* translators: %s: customer special requests text */ __( 'Special requests: %s', 'equine-event-manager' ), $eem_cell_note ) ); ?>"<?php endif; ?>>
@@ -4254,20 +4280,27 @@ class EEM_Admin {
 				<tbody>
 					<?php foreach ( (array) $rows as $row ) : ?>
 						<?php
-						$eem_row_note = isset( $row['special_requests'] ) ? trim( (string) $row['special_requests'] ) : '';
-						$search_parts = array(
+						$eem_row_note  = isset( $row['special_requests'] ) ? trim( (string) $row['special_requests'] ) : '';
+						$eem_row_group = isset( $row['group_name'] ) ? trim( (string) $row['group_name'] ) : '';
+						$search_parts  = array(
 							(string) $row['customer_name'],
 							(string) $row['order_number'],
 							implode( ' ', (array) $row['stall_units'] ),
 							implode( ' ', (array) $row['rv_units'] ),
 							$eem_row_note,
+							$eem_row_group,
 						);
 						?>
-						<tr data-stall-chart-search="<?php echo esc_attr( strtolower( implode( ' ', array_filter( $search_parts ) ) ) ); ?>" data-stall-chart-block="" data-has-stalls="<?php echo ! empty( $row['stall_units'] ) ? '1' : '0'; ?>" data-has-rv="<?php echo ! empty( $row['rv_units'] ) ? '1' : '0'; ?>">
+						<tr data-stall-chart-search="<?php echo esc_attr( strtolower( implode( ' ', array_filter( $search_parts ) ) ) ); ?>" data-stall-chart-block="" data-has-stalls="<?php echo ! empty( $row['stall_units'] ) ? '1' : '0'; ?>" data-has-rv="<?php echo ! empty( $row['rv_units'] ) ? '1' : '0'; ?>" data-group="<?php echo esc_attr( $eem_row_group ); ?>">
 							<td>
 								<a class="eem-chart-cust-link" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-order&order_key=' . rawurlencode( $row['order_key'] ) ) ); ?>">
 									<?php echo esc_html( $row['customer_name'] ); ?>
 								</a>
+								<?php if ( '' !== $eem_row_group ) : ?>
+									<div class="eem-chart-cust-group">
+										<span class="eem-chart-cust-group__chip" title="<?php echo esc_attr( $eem_row_group ); ?>"><?php echo esc_html( $eem_row_group ); ?></span>
+									</div>
+								<?php endif; ?>
 								<?php if ( '' !== $eem_row_note ) : ?>
 									<div class="eem-chart-cust-note" title="<?php echo esc_attr( $eem_row_note ); ?>">
 										<span class="eem-chart-cust-note__label"><?php esc_html_e( 'Special requests:', 'equine-event-manager' ); ?></span>
@@ -4638,6 +4671,8 @@ class EEM_Admin {
 				'unassigned'       => implode( ' | ', $unassigned ),
 				// V1 Scenario F: special requests shown under the customer name.
 				'special_requests' => trim( (string) $this->get_special_requests_from_order_notes( $order['notes'] ) ),
+				// V1 D2: group name tag.
+				'group_name'       => $this->get_group_name_from_order_notes( (string) $order['notes'] ),
 			);
 		}
 
@@ -9630,7 +9665,7 @@ class EEM_Admin {
 
 		$filtered            = array();
 		$skipping_billing    = false;
-		$metadata_line_regex = '/^(Reservation setup ID:|Submission token:|RV Add-Ons:|Group Charge:|Group Reservation:|Group Riders Count:|Group Riders:|RV Lot:|Assigned Stall Units:|Assigned RV Lots:|Assigned RV Units:|Add-On:|Venue Agreement (Accepted|Provided):|Invoice Type:|Invoice Token:|Invoice Status:|Invoice Sent At:|Invoice Paid At:|Refunded Amount:|Refunded Items:|Last Refund Transaction:|Last Refunded At:)/i';
+		$metadata_line_regex = '/^(Reservation setup ID:|Submission token:|RV Add-Ons:|Group Name:|Group Charge:|Group Reservation:|Group Riders Count:|Group Riders:|RV Lot:|Assigned Stall Units:|Assigned RV Lots:|Assigned RV Units:|Add-On:|Venue Agreement (Accepted|Provided):|Invoice Type:|Invoice Token:|Invoice Status:|Invoice Sent At:|Invoice Paid At:|Refunded Amount:|Refunded Items:|Last Refund Transaction:|Last Refunded At:)/i';
 
 		foreach ( $lines as $line ) {
 			$line = trim( (string) $line );

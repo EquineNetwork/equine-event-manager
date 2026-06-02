@@ -89,33 +89,35 @@ class EEM_Test_Data_Seeder {
 
 	/**
 	 * Order plan — each row:
-	 *   [cust_idx, stall_qty, rv_qty, shavings_qty, status, assign(bool), special_requests]
+	 *   [cust_idx, stall_qty, rv_qty, shavings_qty, status, assign(bool), special_requests, group_name]
 	 * status ∈ completed | pending | partially_refunded | invoice_sent.
+	 * group_name (V1 D2) is an optional clustering tag; '' = no group. Several
+	 * orders share "Bluegrass Trailer Crew" to demo the Show-by-group filter.
 	 *
-	 * @return array<int, array{0:int,1:int,2:int,3:int,4:string,5:bool,6:string}>
+	 * @return array<int, array{0:int,1:int,2:int,3:int,4:string,5:bool,6:string,7:string}>
 	 */
 	private static function order_plan(): array {
 		return array(
-			array( 0,  3, 0, 0, 'completed',          true,  'Near the wash rack please' ),
-			array( 0,  0, 1, 0, 'completed',          true,  '' ),
-			array( 1,  1, 0, 2, 'completed',          true,  '' ),
-			array( 2,  5, 0, 0, 'pending',            true,  'Stalls together if possible — traveling with three horses' ),
-			array( 3,  0, 2, 0, 'completed',          true,  '' ),
-			array( 4,  8, 0, 0, 'completed',          true,  'End of row preferred' ),
-			array( 5,  2, 1, 0, 'completed',          true,  '' ),
-			array( 6,  1, 0, 0, 'partially_refunded', true,  '' ),
-			array( 7,  3, 0, 4, 'completed',          true,  'Quiet area for a nervous mare' ),
-			array( 8,  2, 0, 0, 'invoice_sent',       false, '' ),
-			array( 9,  0, 1, 0, 'pending',            false, '' ),
-			array( 10, 4, 0, 0, 'completed',          true,  '' ),
-			array( 11, 1, 1, 0, 'completed',          true,  'Shaded side if available' ),
-			array( 12, 2, 0, 0, 'completed',          true,  '' ),
-			array( 13, 6, 0, 0, 'completed',          true,  '' ),
-			array( 1,  0, 1, 0, 'completed',          true,  '' ),
-			array( 2,  1, 0, 0, 'completed',          true,  '' ),
-			array( 5,  3, 0, 0, 'pending',            false, '' ),
-			array( 10, 0, 2, 0, 'completed',          true,  '' ),
-			array( 12, 1, 0, 0, 'partially_refunded', true,  'Close to parking — limited mobility' ),
+			array( 0,  3, 0, 0, 'completed',          true,  'Near the wash rack please', '' ),
+			array( 0,  0, 1, 0, 'completed',          true,  '', '' ),
+			array( 1,  1, 0, 2, 'completed',          true,  '', '' ),
+			array( 2,  5, 0, 0, 'pending',            true,  'Stalls together if possible — traveling with three horses', 'Delgado Performance Horses' ),
+			array( 3,  0, 2, 0, 'completed',          true,  '', '' ),
+			array( 4,  8, 0, 0, 'completed',          true,  'End of row preferred', 'Bluegrass Trailer Crew' ),
+			array( 5,  2, 1, 0, 'completed',          true,  '', '' ),
+			array( 6,  1, 0, 0, 'partially_refunded', true,  '', '' ),
+			array( 7,  3, 0, 4, 'completed',          true,  'Quiet area for a nervous mare', '' ),
+			array( 8,  2, 0, 0, 'invoice_sent',       false, '', '' ),
+			array( 9,  0, 1, 0, 'pending',            false, '', '' ),
+			array( 10, 4, 0, 0, 'completed',          true,  '', '' ),
+			array( 11, 1, 1, 0, 'completed',          true,  'Shaded side if available', 'Bluegrass Trailer Crew' ),
+			array( 12, 2, 0, 0, 'completed',          true,  '', '' ),
+			array( 13, 6, 0, 0, 'completed',          true,  '', 'Bluegrass Trailer Crew' ),
+			array( 1,  0, 1, 0, 'completed',          true,  '', '' ),
+			array( 2,  1, 0, 0, 'completed',          true,  '', 'Delgado Performance Horses' ),
+			array( 5,  3, 0, 0, 'pending',            false, '', '' ),
+			array( 10, 0, 2, 0, 'completed',          true,  '', '' ),
+			array( 12, 1, 0, 0, 'partially_refunded', true,  'Close to parking — limited mobility', '' ),
 		);
 	}
 
@@ -152,7 +154,7 @@ class EEM_Test_Data_Seeder {
 		$t_count = count( $targets );
 
 		foreach ( $plan as $i => $row ) {
-			list( $cust_idx, $stall_qty, $rv_qty, $shavings, $status, $assign, $special ) = $row;
+			list( $cust_idx, $stall_qty, $rv_qty, $shavings, $status, $assign, $special, $group ) = $row;
 
 			// Round-robin across discovered reservations (1 today → all on #3499).
 			$tk     = array_keys( $targets )[ $i % $t_count ];
@@ -180,7 +182,7 @@ class EEM_Test_Data_Seeder {
 			if ( $stall_qty > 0 ) {
 				$sub   = round( $stall_qty * $target['stall_rate'] * $nights, 2 );
 				$cfee  = round( $sub * self::FEE_PCT, 2 );
-				$notes = self::build_notes( $target['id'], $token, 'stall', $stall_units, $shavings, $special );
+				$notes = self::build_notes( $target['id'], $token, 'stall', $stall_units, $shavings, $special, $group );
 				$wpdb->insert( $stall_tbl, array( // phpcs:ignore WordPress.DB
 					'event_source'          => 'native',
 					'event_id'              => $target['id'],
@@ -208,9 +210,9 @@ class EEM_Test_Data_Seeder {
 			if ( $rv_qty > 0 ) {
 				$sub   = round( $rv_qty * $target['rv_rate'] * $nights, 2 );
 				$cfee  = round( $sub * self::FEE_PCT, 2 );
-				// Put the special request on BOTH rows of a combo order so it
-				// survives whichever row seeds the grouped order's notes.
-				$notes = self::build_notes( $target['id'], $token, 'rv', $rv_units, 0, $special );
+				// Put the special request + group on BOTH rows of a combo order so
+				// they survive whichever row seeds the grouped order's notes.
+				$notes = self::build_notes( $target['id'], $token, 'rv', $rv_units, 0, $special, $group );
 				$wpdb->insert( $rv_tbl, array( // phpcs:ignore WordPress.DB
 					'event_source'    => 'native',
 					'event_id'        => $target['id'],
@@ -245,7 +247,7 @@ class EEM_Test_Data_Seeder {
 				$rv_qty,
 				$rv_units ? '(' . implode( ',', $rv_units ) . ')' : ( $rv_qty ? '(UNASSIGNED)' : '' ),
 				$target['id'] ? 'res#' . $target['id'] : '',
-				'' !== $special ? '  ✦ "' . $special . '"' : ''
+				( '' !== $group ? '  ‹' . $group . '›' : '' ) . ( '' !== $special ? '  ✦ "' . $special . '"' : '' )
 			);
 			$order_n++;
 			unset( $target );
@@ -338,14 +340,20 @@ class EEM_Test_Data_Seeder {
 	 * @param array<int, string> $units   Assigned units (may be empty).
 	 * @param int                $shav    Required shavings qty (stall add-on).
 	 * @param string             $special Special requests freeform text.
+	 * @param string             $group   Group Name tag (V1 D2); '' = none.
 	 * @return string
 	 */
-	private static function build_notes( int $rid, string $token, string $kind, array $units, int $shav, string $special ): string {
+	private static function build_notes( int $rid, string $token, string $kind, array $units, int $shav, string $special, string $group = '' ): string {
 		$lines   = array();
 		$lines[] = 'Reservation setup ID: ' . $rid;
 		$lines[] = 'Submission token: ' . $token;
 		if ( ! empty( $units ) ) {
 			$lines[] = ( 'stall' === $kind ? 'Assigned Stall Units: ' : 'Assigned RV Lots: ' ) . implode( ', ', $units );
+		}
+		// V1 D2: Group Name is a labelled metadata line (the parser strips it, so
+		// it won't leak into the displayed special requests).
+		if ( '' !== $group ) {
+			$lines[] = 'Group Name: ' . $group;
 		}
 		// NB: shavings live in the `required_shavings_qty` COLUMN (which drives the
 		// "Add-On" type badge). Do NOT write a "Required Shavings:" notes line —
