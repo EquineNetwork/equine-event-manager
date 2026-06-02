@@ -5,10 +5,13 @@
  * Builds the data payload consumed by `EEM_Dashboard_Page::render()` against
  * `.mockups/dashboard_page.html`. All KPI / Recent Orders / This-Week / Revenue
  * Chart numbers derive from canonical sources (`EEM_Orders_Repository::get_grouped_orders`
- * for orders, `en_reservation` CPT posts for Upcoming Reservations). Sections
- * whose source data is still owed by C8 (Stall Charts) or C11 (Customer
- * Confirmation Email / agreement tracking) ship as graceful-degrade em-dash
- * placeholders per CLEANUP #37-#40.
+ * for orders, `en_reservation` CPT posts for Upcoming Reservations). Stall/RV
+ * assignment numbers (Unassigned Stalls KPI, Upcoming Reservations progress bars,
+ * Needs Attention rows, This Week "Stalls assigned") are wired live via
+ * `EEM_Admin::get_dashboard_stall_metrics()` (DS-1.B live-data pass, 2.4.0).
+ * The only intentionally-unwired item is the "customers haven't signed the
+ * agreement" Needs Attention row — V1 has no per-order signature data source, so
+ * that row is omitted rather than faked.
  *
  * Range filter semantics: `last-7` / `last-30` / `last-90` / `this-year` /
  * `all-time` collapse to a `[from, to]` MySQL-datetime window applied to
@@ -103,6 +106,33 @@ class EEM_Dashboard_Repo {
 	}
 
 	/**
+	 * Stall / RV assignment metrics from the canonical stall-chart computation
+	 * (EEM_Admin::get_dashboard_stall_metrics), memoised per request. Returns an
+	 * empty-shaped array if the admin class is unavailable (front-end context).
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function stall_metrics() {
+		static $cache = null;
+		if ( null !== $cache ) {
+			return $cache;
+		}
+		if ( class_exists( 'EEM_Admin' ) && method_exists( 'EEM_Admin', 'for_compute' ) ) {
+			$cache = EEM_Admin::for_compute()->get_dashboard_stall_metrics();
+		} else {
+			$cache = array(
+				'stalls_unassigned_total' => 0,
+				'stalls_assigned_total'   => 0,
+				'rv_unassigned_total'     => 0,
+				'per_reservation'         => array(),
+				'unconfigured'            => array(),
+				'assigned_by_order_key'   => array(),
+			);
+		}
+		return $cache;
+	}
+
+	/**
 	 * Filter orders by created_at window.
 	 *
 	 * @param array<int, array<string, mixed>> $orders
@@ -175,15 +205,44 @@ class EEM_Dashboard_Repo {
 				'sub_post' => $orders_trend['suffix'],
 				'sub_tone' => $orders_trend['tone'],
 			),
-			array(
-				'border'    => 'red',
-				'icon'      => 'grid',
-				'label'     => __( 'Unassigned Stalls', 'equine-event-manager' ),
-				'value'     => '—', // CLEANUP #37: wire to real query at C8 close.
-				'sub'       => __( 'pending C8 stall-chart data', 'equine-event-manager' ),
-				'sub_tone'  => 'down',
-				'em_dash'   => true,
-			),
+			$this->unassigned_stalls_kpi(),
+		);
+	}
+
+	/**
+	 * KPI card 4 — Unassigned Stalls. Total stalls purchased-but-not-yet-assigned
+	 * across all stall-selling reservations (live via EEM_Admin metrics).
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function unassigned_stalls_kpi() {
+		$m          = $this->stall_metrics();
+		$unassigned = (int) ( $m['stalls_unassigned_total'] ?? 0 );
+		$assigned   = (int) ( $m['stalls_assigned_total'] ?? 0 );
+		$total      = $assigned + $unassigned;
+
+		if ( $unassigned > 0 ) {
+			$sub  = sprintf(
+				/* translators: %1$d: assigned stalls, %2$d: total purchased stalls */
+				__( '%1$d of %2$d stalls assigned', 'equine-event-manager' ),
+				$assigned,
+				$total
+			);
+			$tone = 'down';
+		} else {
+			$sub  = $total > 0
+				? __( 'all stalls assigned', 'equine-event-manager' )
+				: __( 'no stalls to assign yet', 'equine-event-manager' );
+			$tone = $total > 0 ? 'up' : 'flat';
+		}
+
+		return array(
+			'border'   => 'red',
+			'icon'     => 'grid',
+			'label'    => __( 'Unassigned Stalls', 'equine-event-manager' ),
+			'value'    => number_format_i18n( $unassigned ),
+			'sub'      => $sub,
+			'sub_tone' => $tone,
 		);
 	}
 
@@ -342,14 +401,7 @@ class EEM_Dashboard_Repo {
 				'tags'       => array_keys( $tags ),
 				'orders'     => $count,
 				'revenue'    => self::format_currency( $revenue ),
-				// CLEANUP #38: wire to real query at C8 close.
-				'stall_progress' => array(
-					'assigned' => '—',
-					'total'    => '—',
-					'pct'      => 0,
-					'tone'     => 'red',
-					'em_dash'  => true,
-				),
+				'stall_progress' => $this->stall_progress_for( $res_id ),
 			);
 		}
 		wp_reset_postdata();
@@ -357,91 +409,217 @@ class EEM_Dashboard_Repo {
 	}
 
 	/**
-	 * Build the 6-row Needs Attention payload. Mixes real-data rows (orders
-	 * awaiting payment is fully queryable) with C8/C11-blocked rows that
-	 * render as em-dash placeholders per CLEANUP #39/#40.
+	 * Per-reservation stall-assignment progress bar payload (assigned / total +
+	 * width % + tone), live via EEM_Admin metrics.
+	 *
+	 * Tone: green when nothing is outstanding, amber when partially assigned,
+	 * red when stalls are purchased but none assigned yet.
+	 *
+	 * @param int $res_id Reservation post ID.
+	 * @return array{assigned:string, total:string, pct:int, tone:string}
+	 */
+	private function stall_progress_for( $res_id ) {
+		$m        = $this->stall_metrics();
+		$pr       = isset( $m['per_reservation'][ (int) $res_id ] ) ? $m['per_reservation'][ (int) $res_id ] : null;
+		$assigned = $pr ? (int) $pr['assigned'] : 0;
+		$unassign = $pr ? (int) $pr['unassigned'] : 0;
+		$total    = $pr ? (int) $pr['total'] : 0;
+
+		$pct = $total > 0 ? (int) round( ( $assigned / $total ) * 100 ) : 100;
+		if ( $unassign <= 0 ) {
+			$tone = 'green';
+		} elseif ( $assigned > 0 ) {
+			$tone = 'amber';
+		} else {
+			$tone = 'red';
+		}
+
+		return array(
+			'assigned' => number_format_i18n( $assigned ),
+			'total'    => number_format_i18n( $total ),
+			'pct'      => max( 0, min( 100, $pct ) ),
+			'tone'     => $tone,
+		);
+	}
+
+	/**
+	 * Build the Needs Attention payload — live data. Each row represents an
+	 * outstanding issue and is only emitted when it has something to flag:
+	 * stalls unassigned, RV lots unassigned, orders awaiting payment, a
+	 * stall/RV reservation with no chart configured, or a missing Stripe
+	 * webhook secret. Resolved categories (0 count) drop off the card.
+	 *
+	 * The "customers haven't signed the agreement" row is intentionally NOT
+	 * emitted: V1 records only "Venue Agreement Provided" (event-side), not a
+	 * per-order customer signature, so there's no live data to drive it. It
+	 * returns once signature tracking is recorded per order.
 	 *
 	 * @return array<int, array<string, mixed>>
 	 */
 	public function attention_items() {
-		$orders               = $this->all_orders();
+		$items   = array();
+		$metrics = $this->stall_metrics();
+		$charts_url = admin_url( 'admin.php?page=equine-event-manager-stall-charts' );
+
+		// ── Stalls unassigned — surfaces the single most-affected reservation ──
+		$worst = $this->worst_unassigned_reservation( $metrics );
+		if ( null !== $worst ) {
+			$desc_parts = array(
+				sprintf(
+					/* translators: %1$d: assigned stalls, %2$d: total stalls */
+					__( 'Stall chart has %1$d of %2$d stalls assigned', 'equine-event-manager' ),
+					$worst['assigned'],
+					$worst['total']
+				),
+			);
+			if ( $worst['start_ts'] > 0 ) {
+				$days = (int) floor( ( $worst['start_ts'] - strtotime( 'today' ) ) / DAY_IN_SECONDS );
+				$opens = self::format_opens_in( $days );
+				$desc_parts[] = $opens['label'];
+			}
+			$items[] = array(
+				'icon'     => 'red',
+				'icon_key' => 'grid',
+				'title'    => sprintf(
+					/* translators: %1$d: unassigned stall count, %2$s: reservation name */
+					_n( '%1$d stall unassigned — %2$s', '%1$d stalls unassigned — %2$s', $worst['unassigned'], 'equine-event-manager' ),
+					$worst['unassigned'],
+					$worst['title']
+				),
+				'desc'     => implode( ' · ', $desc_parts ),
+				'href'     => $charts_url,
+				'action'   => __( 'Assign →', 'equine-event-manager' ),
+			);
+		}
+
+		// ── Orders awaiting payment ──
 		$outstanding_statuses = array( 'unpaid', 'invoice-sent', 'partially-paid' );
 		$out_count            = 0;
 		$out_total            = 0.0;
-		foreach ( $orders as $o ) {
+		foreach ( $this->all_orders() as $o ) {
 			if ( in_array( (string) ( $o['status_slug'] ?? '' ), $outstanding_statuses, true ) ) {
 				$out_count++;
 				$out_total += (float) ( $o['total'] ?? 0 );
 			}
 		}
-
-		return array(
-			array(
-				// CLEANUP #39: wire to C8 stall-chart unassigned query.
-				'icon'  => 'red',
-				'icon_key' => 'grid',
-				'title' => __( '— stalls unassigned', 'equine-event-manager' ),
-				'desc'  => __( 'Pending C8 stall-chart data', 'equine-event-manager' ),
-				'href'  => admin_url( 'admin.php?page=equine-event-manager-stall-charts' ),
-				'action'=> __( 'Assign →', 'equine-event-manager' ),
-				'em_dash' => true,
-			),
-			array(
-				'icon'  => 'orange',
+		if ( $out_count > 0 ) {
+			$items[] = array(
+				'icon'     => 'orange',
 				'icon_key' => 'card',
-				'title' => sprintf(
+				'title'    => sprintf(
 					/* translators: %d: count of unpaid orders */
 					_n( '%d order awaiting payment', '%d orders awaiting payment', $out_count, 'equine-event-manager' ),
 					$out_count
 				),
-				'desc'  => sprintf(
+				'desc'     => sprintf(
 					/* translators: %s: outstanding currency total */
 					__( '%s outstanding', 'equine-event-manager' ),
 					self::format_currency( $out_total )
 				),
 				// DS-1.B.5: param is `billing` not `status` (see Orders list render).
-				'href'  => EEM_Orders_List_Page::url( array( 'billing' => 'unpaid' ) ),
-				'action'=> __( 'View →', 'equine-event-manager' ),
-			),
-			array(
-				// CLEANUP #39: wire to C8 RV-lot assignment query.
-				'icon'  => 'red',
+				'href'     => EEM_Orders_List_Page::url( array( 'billing' => 'unpaid' ) ),
+				'action'   => __( 'View →', 'equine-event-manager' ),
+			);
+		}
+
+		// ── RV lots unassigned ──
+		$rv_un = (int) ( $metrics['rv_unassigned_total'] ?? 0 );
+		if ( $rv_un > 0 ) {
+			$items[] = array(
+				'icon'     => 'red',
 				'icon_key' => 'alert-triangle',
-				'title' => __( '— RV lot assignment issues', 'equine-event-manager' ),
-				'desc'  => __( 'Pending C8 stall-chart data', 'equine-event-manager' ),
-				'href'  => admin_url( 'admin.php?page=equine-event-manager-stall-charts' ),
-				'action'=> __( 'Fix →', 'equine-event-manager' ),
-				'em_dash' => true,
-			),
-			array(
-				// CLEANUP #40: wire to C11 agreement-signature tracking.
-				'icon'  => 'blue',
-				'icon_key' => 'mail',
-				'title' => __( '— customers haven\'t signed the agreement', 'equine-event-manager' ),
-				'desc'  => __( 'Pending C11 agreement tracking', 'equine-event-manager' ),
-				'href'  => EEM_Orders_List_Page::url(),
-				'action'=> __( 'View →', 'equine-event-manager' ),
-				'em_dash' => true,
-			),
-			array(
-				// CLEANUP #39: wire to C8 stall-chart-not-configured query.
-				'icon'  => 'orange',
+				'title'    => sprintf(
+					/* translators: %d: count of unassigned RV lots */
+					_n( '%d RV lot assignment issue', '%d RV lot assignment issues', $rv_un, 'equine-event-manager' ),
+					$rv_un
+				),
+				'desc'     => __( 'RV lots purchased without an assigned lot', 'equine-event-manager' ),
+				'href'     => $charts_url,
+				'action'   => __( 'Fix →', 'equine-event-manager' ),
+			);
+		}
+
+		// ── Stall/RV reservations with no chart configured ──
+		$unconfigured = isset( $metrics['unconfigured'] ) ? (array) $metrics['unconfigured'] : array();
+		if ( ! empty( $unconfigured ) ) {
+			$first = $unconfigured[0];
+			$more  = count( $unconfigured ) - 1;
+			$desc  = $more > 0
+				? sprintf(
+					/* translators: %d: count of additional reservations needing a chart */
+					_n( '%d more reservation also needs a chart', '%d more reservations also need a chart', $more, 'equine-event-manager' ),
+					$more
+				)
+				: __( 'Sells stalls or RV but has no chart layout yet', 'equine-event-manager' );
+			$items[] = array(
+				'icon'     => 'orange',
 				'icon_key' => 'users',
-				'title' => __( '— stall chart not configured', 'equine-event-manager' ),
-				'desc'  => __( 'Pending C8 stall-chart data', 'equine-event-manager' ),
-				'href'  => admin_url( 'admin.php?page=equine-event-manager-stall-charts' ),
-				'action'=> __( 'Set up →', 'equine-event-manager' ),
-				'em_dash' => true,
-			),
-			array(
-				'icon'  => 'blue',
+				'title'    => sprintf(
+					/* translators: %s: reservation name */
+					__( '%s stall chart not configured', 'equine-event-manager' ),
+					(string) $first['title']
+				),
+				'desc'     => $desc,
+				'href'     => $charts_url,
+				'action'   => __( 'Set up →', 'equine-event-manager' ),
+			);
+		}
+
+		// ── Stripe webhook secret missing (config check, not a data count) ──
+		if ( '' === $this->stripe_webhook_secret() ) {
+			$items[] = array(
+				'icon'     => 'blue',
 				'icon_key' => 'alert-circle',
-				'title' => __( 'Stripe webhook not configured', 'equine-event-manager' ),
-				'desc'  => __( 'Payment confirmations may be delayed without a webhook secret', 'equine-event-manager' ),
-				'href'  => admin_url( 'admin.php?page=equine-event-manager-settings' ),
-				'action'=> __( 'Fix →', 'equine-event-manager' ),
-			),
-		);
+				'title'    => __( 'Stripe webhook not configured', 'equine-event-manager' ),
+				'desc'     => __( 'Payment confirmations may be delayed without a webhook secret', 'equine-event-manager' ),
+				'href'     => admin_url( 'admin.php?page=equine-event-manager-settings' ),
+				'action'   => __( 'Fix →', 'equine-event-manager' ),
+			);
+		}
+
+		return $items;
+	}
+
+	/**
+	 * Pick the reservation with the most unassigned stalls (tie-break: soonest
+	 * upcoming start), for the Needs Attention "stalls unassigned" row.
+	 *
+	 * @param array<string, mixed> $metrics Output of stall_metrics().
+	 * @return array{assigned:int,total:int,unassigned:int,title:string,start_ts:int}|null
+	 */
+	private function worst_unassigned_reservation( array $metrics ) {
+		$worst = null;
+		foreach ( (array) ( $metrics['per_reservation'] ?? array() ) as $pr ) {
+			if ( (int) $pr['unassigned'] <= 0 ) {
+				continue;
+			}
+			if ( null === $worst ) {
+				$worst = $pr;
+				continue;
+			}
+			$more_unassigned = (int) $pr['unassigned'] > (int) $worst['unassigned'];
+			$tie_sooner      = (int) $pr['unassigned'] === (int) $worst['unassigned']
+				&& $pr['start_ts'] > 0
+				&& ( $worst['start_ts'] <= 0 || $pr['start_ts'] < $worst['start_ts'] );
+			if ( $more_unassigned || $tie_sooner ) {
+				$worst = $pr;
+			}
+		}
+		return $worst;
+	}
+
+	/**
+	 * Read the configured Stripe webhook signing secret (empty string if unset).
+	 *
+	 * @return string
+	 */
+	private function stripe_webhook_secret() {
+		$settings = get_option( 'equine_event_manager_payment_settings', array() );
+		$secret   = '';
+		if ( is_array( $settings ) && isset( $settings['stripe']['webhook_signing_secret'] ) ) {
+			$secret = (string) $settings['stripe']['webhook_signing_secret'];
+		}
+		return trim( $secret );
 	}
 
 	/**
@@ -526,12 +704,18 @@ class EEM_Dashboard_Repo {
 		$revenue        = 0.0;
 		$invoices_sent  = 0;
 		$refunds_amount = 0.0;
+		$assigned_map   = (array) ( $this->stall_metrics()['assigned_by_order_key'] ?? array() );
+		$stalls_assigned = 0;
 		foreach ( $orders as $o ) {
 			$slug = (string) ( $o['status_slug'] ?? '' );
 			$amt  = (float) ( $o['total'] ?? 0 );
 			if ( 'paid' === $slug || 'partially-paid' === $slug ) { $revenue += $amt; }
 			if ( 'invoice-sent' === $slug )                       { $invoices_sent++; }
 			if ( 'refunded' === $slug )                           { $refunds_amount += $amt; }
+			$ok = (string) ( $o['order_key'] ?? '' );
+			if ( '' !== $ok && isset( $assigned_map[ $ok ] ) ) {
+				$stalls_assigned += (int) $assigned_map[ $ok ];
+			}
 		}
 
 		return array(
@@ -539,8 +723,9 @@ class EEM_Dashboard_Repo {
 			array( 'label' => __( 'Revenue collected', 'equine-event-manager' ),'value' => self::format_currency( $revenue ), 'tone' => 'positive' ),
 			array( 'label' => __( 'Invoices sent', 'equine-event-manager' ),    'value' => number_format_i18n( $invoices_sent ), 'tone' => '' ),
 			array( 'label' => __( 'Refunds processed', 'equine-event-manager' ),'value' => self::format_currency( $refunds_amount ), 'tone' => 'negative' ),
-			// CLEANUP #39: wire to C8 stall-assignment activity once chart data ships.
-			array( 'label' => __( 'Stalls assigned', 'equine-event-manager' ),  'value' => '—', 'tone' => '', 'em_dash' => true ),
+			// Stalls assigned on orders placed this week (no per-assignment
+			// timestamp exists, so order-creation week is the honest proxy).
+			array( 'label' => __( 'Stalls assigned', 'equine-event-manager' ),  'value' => number_format_i18n( $stalls_assigned ), 'tone' => '' ),
 		);
 	}
 

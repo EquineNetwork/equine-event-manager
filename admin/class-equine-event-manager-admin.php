@@ -69,8 +69,26 @@ class EEM_Admin {
 	/**
 	 * Set up admin dependencies.
 	 */
-	public function __construct() {
+	/**
+	 * Cached hook-free instance for read-only computation (see for_compute()).
+	 *
+	 * @var EEM_Admin|null
+	 */
+	private static ?EEM_Admin $compute_instance = null;
+
+	/**
+	 * @param bool $skip_hooks When true, the orders repository is still wired but
+	 *                         NO WordPress hooks (filters/actions/AJAX) are
+	 *                         registered. Used by for_compute() so off-request
+	 *                         consumers (e.g. the Dashboard repo) can reuse this
+	 *                         class's stall-chart computation helpers without
+	 *                         double-registering the live instance's hooks.
+	 */
+	public function __construct( bool $skip_hooks = false ) {
 		$this->orders_repository = new EEM_Orders_Repository();
+		if ( $skip_hooks ) {
+			return;
+		}
 		add_filter( 'set-screen-option', array( $this, 'save_screen_option' ), 10, 3 );
 		add_filter( 'screen_options_show_screen', array( $this, 'filter_screen_options_visibility' ), 10, 2 );
 		add_filter( 'admin_body_class', array( $this, 'filter_backend_shell_body_class' ) );
@@ -85,6 +103,21 @@ class EEM_Admin {
 		add_action( 'all_admin_notices', array( $this, 'render_native_content_list_banner' ) );
 		add_action( 'wp_ajax_eem_move_stall_assignment', array( $this, 'ajax_move_stall_assignment' ) );
 		add_action( 'wp_ajax_eem_auto_assign', array( $this, 'ajax_auto_assign' ) );
+	}
+
+	/**
+	 * Lazily build (and cache) a hook-free EEM_Admin instance for read-only
+	 * computation. The Dashboard data repository uses this to reuse the
+	 * stall-chart assignment logic (get_stall_chart_config + allocate_*) without
+	 * spinning up a second hook-registering admin instance.
+	 *
+	 * @return EEM_Admin
+	 */
+	public static function for_compute(): EEM_Admin {
+		if ( null === self::$compute_instance ) {
+			self::$compute_instance = new self( true );
+		}
+		return self::$compute_instance;
 	}
 
 	/**
@@ -3123,6 +3156,146 @@ class EEM_Admin {
 		}
 
 		return $rows;
+	}
+
+	/**
+	 * Aggregate stall / RV assignment metrics for the Admin Dashboard.
+	 *
+	 * Reuses the exact production assignment path the Stall Chart Detail page
+	 * uses (get_stall_chart_config + allocate_stall_chart_units /
+	 * allocate_rv_lot_rows) so dashboard numbers always match the chart page.
+	 * "Unassigned" therefore means the same thing here as it does there: a
+	 * reservation's purchased stall/RV quantity that has no specific unit/lot
+	 * allocated yet.
+	 *
+	 * Considers reservations selling stalls and/or RV lots (publish + private).
+	 * A reservation with no layout configured (no stall rows, no RV zones) is
+	 * reported under `unconfigured` rather than counted as unassigned.
+	 *
+	 * @return array{
+	 *   stalls_unassigned_total:int,
+	 *   stalls_assigned_total:int,
+	 *   rv_unassigned_total:int,
+	 *   per_reservation:array<int,array{assigned:int,total:int,unassigned:int,rv_unassigned:int,title:string,start_ts:int}>,
+	 *   unconfigured:array<int,array{id:int,title:string}>,
+	 *   assigned_by_order_key:array<string,int>
+	 * }
+	 */
+	public function get_dashboard_stall_metrics(): array {
+		$out = array(
+			'stalls_unassigned_total' => 0,
+			'stalls_assigned_total'   => 0,
+			'rv_unassigned_total'     => 0,
+			'per_reservation'         => array(),
+			'unconfigured'            => array(),
+			'assigned_by_order_key'   => array(),
+		);
+
+		$query = new WP_Query(
+			array(
+				'post_type'      => 'en_reservation',
+				'post_status'    => array( 'publish', 'private' ),
+				'posts_per_page' => 200,
+				'fields'         => 'ids',
+				'no_found_rows'  => true,
+				'meta_query'     => array(
+					'relation' => 'OR',
+					array( 'key' => '_en_stalls_enabled', 'value' => '1', 'compare' => '=' ),
+					array( 'key' => '_en_rv_enabled', 'value' => '1', 'compare' => '=' ),
+				),
+			)
+		);
+
+		if ( empty( $query->posts ) || ! is_array( $query->posts ) ) {
+			return $out;
+		}
+
+		$all_orders = $this->orders_repository->get_orders( '', 'date', 'asc' );
+
+		foreach ( $query->posts as $rid ) {
+			$rid = absint( $rid );
+			if ( $rid <= 0 ) {
+				continue;
+			}
+
+			// Configured = has a stall-row layout OR named RV zones (matches
+			// get_stall_charts_list_data()).
+			$stall_rows = get_post_meta( $rid, '_en_stall_rows', true );
+			$has_rows   = is_array( $stall_rows ) && ! empty( $stall_rows );
+			$rv_zones   = get_post_meta( $rid, '_en_rv_zones', true );
+			$has_zones  = is_array( $rv_zones ) && ! empty( array_filter( array_column( $rv_zones, 'name' ) ) );
+
+			if ( ! $has_rows && ! $has_zones ) {
+				$out['unconfigured'][] = array( 'id' => $rid, 'title' => get_the_title( $rid ) );
+				continue;
+			}
+
+			$config = $this->get_stall_chart_config( $rid );
+			$orders = array_filter(
+				$all_orders,
+				static function ( $o ) use ( $rid ) {
+					return absint( isset( $o['reservation_id'] ) ? $o['reservation_id'] : 0 ) === $rid;
+				}
+			);
+
+			$stall_map = array();
+			$rv_map    = array();
+			$assigned  = 0;
+			$unassigned = 0;
+			$rv_unassigned = 0;
+
+			foreach ( $orders as $order ) {
+				$stall_dates  = $this->get_stall_chart_occupied_dates( $order['stall_arrival_date'], $order['stall_departure_date'] );
+				$rv_dates     = $this->get_stall_chart_occupied_dates( $order['rv_arrival_date'], $order['rv_departure_date'] );
+				$stall_needed = absint( $order['stall_quantity'] );
+				$rv_needed    = $this->order_requires_rv_assignment( $order ) ? absint( $order['rv_quantity'] ) : 0;
+				$stall_manual = $this->parse_assigned_units_string( $this->get_order_component_note_value( $order, 'stall', 'Assigned Stall Units' ) );
+				$rv_manual    = $this->parse_assigned_units_string( $this->get_order_component_note_value( $order, 'rv', 'Assigned RV Lots' ) );
+				if ( empty( $rv_manual ) ) {
+					$rv_manual = $this->parse_assigned_units_string( $this->get_order_component_note_value( $order, 'rv', 'Assigned RV Units' ) );
+				}
+				$rv_lot_name = $this->parse_rv_lot_name_from_notes( $order['notes'] );
+
+				$stall_units = $this->allocate_stall_chart_units( $config['available_stall_units'], $stall_map, $stall_dates, $stall_needed, $stall_manual, $order['order_key'] );
+				$rv_units    = $this->allocate_rv_lot_rows(
+					isset( $config['rv_lot_names'] ) ? $config['rv_lot_names'] : array(),
+					isset( $config['auto_assign_rv_lot_names'] ) ? $config['auto_assign_rv_lot_names'] : ( isset( $config['available_rv_lot_names'] ) ? $config['available_rv_lot_names'] : array() ),
+					$rv_map,
+					$rv_dates,
+					$rv_needed,
+					$rv_lot_name,
+					$rv_manual,
+					$order['order_key']
+				);
+
+				$order_assigned = count( $stall_units['assigned'] );
+				$assigned       += $order_assigned;
+				$unassigned     += (int) $stall_units['unassigned'];
+				$rv_unassigned  += (int) $rv_units['unassigned'];
+
+				$ok = (string) $order['order_key'];
+				if ( '' !== $ok ) {
+					$out['assigned_by_order_key'][ $ok ] = ( $out['assigned_by_order_key'][ $ok ] ?? 0 ) + $order_assigned;
+				}
+			}
+
+			$start_raw = get_post_meta( $rid, '_en_source_event_start_date', true );
+			$start_ts  = $start_raw ? (int) strtotime( (string) $start_raw ) : 0;
+
+			$out['per_reservation'][ $rid ] = array(
+				'assigned'      => $assigned,
+				'total'         => $assigned + $unassigned,
+				'unassigned'    => $unassigned,
+				'rv_unassigned' => $rv_unassigned,
+				'title'         => get_the_title( $rid ),
+				'start_ts'      => $start_ts,
+			);
+			$out['stalls_assigned_total']   += $assigned;
+			$out['stalls_unassigned_total'] += $unassigned;
+			$out['rv_unassigned_total']     += $rv_unassigned;
+		}
+
+		return $out;
 	}
 
 	/**

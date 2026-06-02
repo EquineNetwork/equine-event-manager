@@ -269,22 +269,32 @@ These are admin-side mockup ports that can be done AFTER C10 customer flow works
 ### DS-1 — Design System Page (Dashboard)
 - Mockup: `.mockups/dashboard_page.html` (DS-1.B mockup exists, stable)
 - Plugin dashboard with KPIs, recent orders, upcoming events, quick links
-- Lower priority than C-series work — can ship without it
 
-> ⚠️ **TODO (Whitney flagged 2026-06-01): wire up the Dashboard "Needs Attention"
-> + KPI placeholders to live data before launch.** The page is rendered but several
-> tiles/rows still show stub text pending other chunks:
-> - **"Pending C8 stall-chart data"** — Unassigned Stalls KPI, "— stalls unassigned"
->   (Assign), "— RV lot assignment issues" (Fix), "— stall chart not configured"
->   (Set up). Wire once C8 (Stall Charts) assignment data is queryable.
-> - **"Pending C11 agreement tracking"** — "— customers haven't signed the agreement"
->   (View). C11 (email) shipped, but per-order agreement-signed tracking is a separate
->   data source still to wire.
-> - **Stripe webhook not configured** row — resolves when C14 wires the webhook secret
->   check; until then it correctly nags.
-> - Upcoming Reservations "Stall assignments — / —" progress bar also depends on C8.
-> Do a full Dashboard live-data pass at DS-1 finalization (or once C8/C11-tracking/C14
-> land), replacing every "Pending C#" stub with a real query.
+> ✅ **DS-1.B live-data wiring COMPLETE (2.4.0, 2026-06-01).** Every "Pending C#"
+> em-dash placeholder is now backed by a real query. Implementation:
+> - **`EEM_Admin::get_dashboard_stall_metrics()`** — aggregates stall/RV assignment
+>   numbers by reusing the *exact* production path the Stall Chart Detail page uses
+>   (`get_stall_chart_config` + `allocate_stall_chart_units` / `allocate_rv_lot_rows`),
+>   so dashboard counts always match the chart page. Reached via a new hook-free
+>   `EEM_Admin::for_compute()` instance (the constructor gained a `$skip_hooks` flag
+>   so the Dashboard repo can borrow the C8 helpers without double-registering hooks).
+> - **Wired:** Unassigned Stalls KPI (count + "X of Y assigned"); Upcoming Reservations
+>   stall-progress bars (assigned/total, green/amber/red tone); Needs Attention rows
+>   for stalls-unassigned (surfaces the worst reservation + "opens in N days"),
+>   RV-lot issues, and unconfigured charts; This Week "Stalls assigned" (orders placed
+>   this week — honest proxy, no per-assignment timestamp exists). Smoke 33/33
+>   (`tests/smoke/ds1b-dashboard-livewire-smoke.php`).
+> - **Decisions:** Needs Attention rows are now *conditional* — a 0-count category
+>   (no unassigned stalls, no unpaid orders, etc.) drops off the card rather than
+>   showing "0". The **Stripe webhook** row gates on the real
+>   `equine_event_manager_payment_settings → stripe → webhook_signing_secret` value.
+> - **Intentionally NOT wired:** the "customers haven't signed the agreement" row —
+>   V1 records only "Venue Agreement *Provided*" (event-side), not a per-order customer
+>   *signature*. The row is omitted (not faked) and returns when signature tracking is
+>   recorded per order. ⚠️ **Open question for Whitney:** do you want per-order
+>   agreement-signature capture at checkout (C10) so this row can light up?
+> - Remaining DS-1.A mechanical edits (sidebar renames, Create-Order/Collect-Payment
+>   href injection, BEM status-badge normalization) are independent and still open.
 
 ---
 
