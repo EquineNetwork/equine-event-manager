@@ -405,6 +405,10 @@ $stall_map_name = $stall_map_id ? basename( get_attached_file( $stall_map_id ) )
 ob_start();
 ?>
 <div class="eem-row-builder-summary" style="margin-bottom:10px" id="eem-stall-row-summary"></div>
+<?php // Sentinel: always posted when the row builder is on the page, so the save
+// handler can tell "all rows deleted" (clear to empty) apart from "section not
+// rendered" (leave rows untouched). Without it, deleting every row no-ops. ?>
+<input type="hidden" name="eem_stall_rows_present" value="1">
 <div class="eem-row-builder<?php echo $stall_is_simple_range ? ' eem-stall-rows--simple' : ''; ?>" id="eem-stall-row-builder-list">
 <?php foreach ( $stall_rows as $ri => $row ) :
 	$r_name      = isset( $row['name'] )      ? (string) $row['name']      : '';

@@ -771,9 +771,12 @@ class EEM_Reservation_Editor_Page {
 
 		// ── C8 mapped-layout meta (not routed through en_reservation[]) ──
 
-		// Stall rows
-		if ( isset( $_POST['eem_stall_rows'] ) && is_array( $_POST['eem_stall_rows'] ) ) {
-			$stall_rows_raw = wp_unslash( $_POST['eem_stall_rows'] );
+		// Stall rows — update whenever the row builder was on the page (sentinel
+		// present), even if zero rows were posted: that's the "deleted them all"
+		// case and must clear the meta. Only skip when the builder wasn't rendered
+		// at all (gated section), so we never wipe rows the form never showed.
+		if ( isset( $_POST['eem_stall_rows_present'] ) || ( isset( $_POST['eem_stall_rows'] ) && is_array( $_POST['eem_stall_rows'] ) ) ) {
+			$stall_rows_raw = ( isset( $_POST['eem_stall_rows'] ) && is_array( $_POST['eem_stall_rows'] ) ) ? wp_unslash( $_POST['eem_stall_rows'] ) : array();
 			$stall_rows_clean = array();
 			foreach ( (array) $stall_rows_raw as $row ) {
 				if ( ! is_array( $row ) ) continue;
@@ -849,8 +852,9 @@ class EEM_Reservation_Editor_Page {
 		}
 
 		// RV zones
-		if ( isset( $_POST['eem_rv_zones'] ) && is_array( $_POST['eem_rv_zones'] ) ) {
-			$rv_zones_raw = wp_unslash( $_POST['eem_rv_zones'] );
+		// RV zones — same "delete them all must clear" sentinel logic as stall rows.
+		if ( isset( $_POST['eem_rv_zones_present'] ) || ( isset( $_POST['eem_rv_zones'] ) && is_array( $_POST['eem_rv_zones'] ) ) ) {
+			$rv_zones_raw = ( isset( $_POST['eem_rv_zones'] ) && is_array( $_POST['eem_rv_zones'] ) ) ? wp_unslash( $_POST['eem_rv_zones'] ) : array();
 			$rv_zones_clean = array();
 			foreach ( (array) $rv_zones_raw as $zone ) {
 				if ( ! is_array( $zone ) ) continue;

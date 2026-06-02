@@ -402,6 +402,9 @@ eem_render_editor_field_row( array(
 ob_start();
 ?>
 <div class="eem-row-builder-summary" style="margin-bottom:10px" id="eem-rv-row-summary"></div>
+<?php // Sentinel: lets the save handler clear zones when all are deleted (same
+// "delete-all no-ops" fix as stall rows). ?>
+<input type="hidden" name="eem_rv_zones_present" value="1">
 <div class="eem-row-builder" id="eem-rv-row-builder-list">
 <?php foreach ( $rv_rows as $ri => $row ) :
 	$r_name      = isset( $row['name'] )      ? (string) $row['name']      : '';
