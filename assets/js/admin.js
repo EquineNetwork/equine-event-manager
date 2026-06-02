@@ -4140,18 +4140,12 @@ function applyStallRowsSimpleMode() {
 	var list = document.getElementById('eem-stall-row-builder-list');
 	if (list) list.classList.toggle('eem-stall-rows--simple', isSimple);
 
-	if (isSimple) {
-		// Force every row to one-sided so what the admin types in First/Last is
-		// exactly what persists (a range) — no stale back-to-back split leaks into
-		// _en_stall_rows.
-		document.querySelectorAll('#eem-stall-row-builder-list .eem-row-card').forEach(function (card) {
-			var layoutSel = card.querySelector('[data-eem-input-action="stall-row-layout"]');
-			if (layoutSel && layoutSel.value !== 'one-sided') {
-				layoutSel.value = 'one-sided';
-				stallRowLayoutChange(layoutSel);
-			}
-		});
-	}
+	// NOTE: we deliberately do NOT force rows to one-sided here. A back-to-back
+	// row stores its stall numbers in top_*/bot_*, which the one-sided layout
+	// ignores — force-converting would blank that row's range on the next save
+	// (data loss). Simple mode only hides the layout dropdown + preview (CSS); a
+	// pre-existing back-to-back row keeps showing its two sub-ranges and persists
+	// intact. New rows default to one-sided, which is the common Quantity-mode case.
 
 	// Swap the field label, sub-label, Add button, and hint copy.
 	var label = document.querySelector('#row-stall-blocks .eem-field-label');
