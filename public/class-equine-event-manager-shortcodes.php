@@ -1451,6 +1451,13 @@ class EEM_Shortcodes {
 		<div class="eem-product-list">
 			<?php $this->render_product_list_header(); ?>
 			<?php
+			// Stepper cap = the smaller of remaining inventory and the per-customer
+			// limit (Max Stalls Per Customer). Either can be unlimited (null / 0).
+			$stall_per_customer_max = ( isset( $data['stall_max_per_customer'] ) && '' !== (string) $data['stall_max_per_customer'] ) ? absint( $data['stall_max_per_customer'] ) : 0;
+			$stall_stepper_max      = $status['stall_inventory_remaining']; // int|null
+			if ( $stall_per_customer_max > 0 ) {
+				$stall_stepper_max = ( null === $stall_stepper_max ) ? $stall_per_customer_max : min( (int) $stall_stepper_max, $stall_per_customer_max );
+			}
 			$this->render_product_line_item(
 				__( 'Stalls', 'equine-event-manager' ),
 				$stall_product_description,
@@ -1459,7 +1466,7 @@ class EEM_Shortcodes {
 				array(
 					'dynamic_price_type' => 'stall',
 					'early_bird_active'  => $stall_early_bird_active,
-					'max_quantity'       => $status['stall_inventory_remaining'],
+					'max_quantity'       => $stall_stepper_max,
 				)
 			);
 			?>
@@ -2157,6 +2164,17 @@ class EEM_Shortcodes {
 				/* translators: %d: remaining stall inventory. */
 				_n( 'Only %d stall space remains available.', 'Only %d stall spaces remain available.', $status['stall_inventory_remaining'], 'equine-event-manager' ),
 				$status['stall_inventory_remaining']
+			);
+		}
+
+		// Per-customer cap (Max Stalls Per Customer). Enforced server-side as the
+		// authoritative check; the stepper's max attribute is the client-side hint.
+		$stall_per_customer_max = ( isset( $data['stall_max_per_customer'] ) && '' !== (string) $data['stall_max_per_customer'] ) ? absint( $data['stall_max_per_customer'] ) : 0;
+		if ( $has_stall_selection && $stall_per_customer_max > 0 && ( absint( $submission['stall_qty'] ) + absint( $submission['tack_stall_qty'] ) ) > $stall_per_customer_max ) {
+			$errors[] = sprintf(
+				/* translators: %d: maximum stalls a single customer may reserve. */
+				_n( 'You can reserve at most %d stall per order.', 'You can reserve at most %d stalls per order.', $stall_per_customer_max, 'equine-event-manager' ),
+				$stall_per_customer_max
 			);
 		}
 
