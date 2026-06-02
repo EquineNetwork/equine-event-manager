@@ -361,6 +361,154 @@ class EEM_Customer_Profile_Repo {
 		return '$' . number_format_i18n( $amount, 2 );
 	}
 
+	/**
+	 * Aggregate every distinct customer (by email) for the Customers list page,
+	 * with search, sort, and pagination. Each customer = the set of orders sharing
+	 * an email (read-only aggregate model — no customer entity).
+	 *
+	 * @param array $args {
+	 *     @type string $search   Case-insensitive name/email substring filter.
+	 *     @type string $orderby  last_name (default) | name | orders | spent | activity.
+	 *     @type string $order    asc | desc.
+	 *     @type int    $paged    1-based page number.
+	 *     @type int    $per_page Rows per page (default 20).
+	 * }
+	 * @return array{rows:array<int,array<string,mixed>>, total:int, paged:int, per_page:int, pages:int}
+	 */
+	public function get_customer_list( array $args = array() ): array {
+		$args = wp_parse_args(
+			$args,
+			array(
+				'search'   => '',
+				'orderby'  => 'last_name',
+				'order'    => 'asc',
+				'paged'    => 1,
+				'per_page' => 20,
+			)
+		);
+
+		// Group all orders by lowercased email (orders are newest-first, so the
+		// first time we see an email gives us the most-recent name).
+		$by_email = array();
+		foreach ( $this->orders->get_orders( '', 'date', 'desc' ) as $o ) {
+			$email = strtolower( trim( (string) ( $o['email'] ?? '' ) ) );
+			if ( '' === $email ) {
+				continue;
+			}
+			if ( ! isset( $by_email[ $email ] ) ) {
+				$by_email[ $email ] = array(
+					'email'     => trim( (string) ( $o['email'] ?? '' ) ),
+					'name'      => trim( (string) ( $o['customer_name'] ?? '' ) ),
+					'orders'    => 0,
+					'spent_raw' => 0.0,
+					'last_ts'   => 0,
+				);
+			}
+			$by_email[ $email ]['orders']++;
+			if ( in_array( (string) ( $o['status_slug'] ?? '' ), $this->paid_statuses, true ) ) {
+				$by_email[ $email ]['spent_raw'] += (float) ( $o['total'] ?? 0 );
+			}
+			$ts = ! empty( $o['created_at'] ) ? (int) strtotime( (string) $o['created_at'] ) : 0;
+			if ( $ts > $by_email[ $email ]['last_ts'] ) {
+				$by_email[ $email ]['last_ts'] = $ts;
+			}
+		}
+
+		$rows = array();
+		foreach ( $by_email as $c ) {
+			$name   = '' !== $c['name'] ? $c['name'] : $c['email'];
+			$rows[] = array(
+				'email'         => $c['email'],
+				'name'          => $name,
+				'name_sort'     => self::last_first_key( $name ),
+				'orders'        => (int) $c['orders'],
+				'spent_raw'     => (float) $c['spent_raw'],
+				'spent'         => $this->money( (float) $c['spent_raw'] ),
+				'last_ts'       => (int) $c['last_ts'],
+				'last_activity' => $c['last_ts'] ? date_i18n( 'M j, Y', $c['last_ts'] ) : '—',
+			);
+		}
+
+		// Search.
+		$search = strtolower( trim( (string) $args['search'] ) );
+		if ( '' !== $search ) {
+			$rows = array_values(
+				array_filter(
+					$rows,
+					static function ( $r ) use ( $search ) {
+						return false !== strpos( strtolower( $r['name'] ), $search )
+							|| false !== strpos( strtolower( $r['email'] ), $search );
+					}
+				)
+			);
+		}
+
+		// Sort.
+		$dir = 'desc' === strtolower( (string) $args['order'] ) ? -1 : 1;
+		usort(
+			$rows,
+			static function ( $a, $b ) use ( $args, $dir ) {
+				switch ( $args['orderby'] ) {
+					case 'name':
+						$cmp = strcasecmp( $a['name'], $b['name'] );
+						break;
+					case 'orders':
+						$cmp = $a['orders'] <=> $b['orders'];
+						break;
+					case 'spent':
+						$cmp = $a['spent_raw'] <=> $b['spent_raw'];
+						break;
+					case 'activity':
+						$cmp = $a['last_ts'] <=> $b['last_ts'];
+						break;
+					case 'last_name':
+					default:
+						$cmp = strcasecmp( $a['name_sort'], $b['name_sort'] );
+						break;
+				}
+				// Stable tiebreak on name so equal keys don't shuffle between pages.
+				if ( 0 === $cmp ) {
+					$cmp = strcasecmp( $a['name_sort'], $b['name_sort'] );
+				}
+				return $cmp * $dir;
+			}
+		);
+
+		$total    = count( $rows );
+		$per_page = max( 1, (int) $args['per_page'] );
+		$pages    = max( 1, (int) ceil( $total / $per_page ) );
+		$paged    = min( $pages, max( 1, (int) $args['paged'] ) );
+		$rows     = array_slice( $rows, ( $paged - 1 ) * $per_page, $per_page );
+
+		return array(
+			'rows'     => $rows,
+			'total'    => $total,
+			'paged'    => $paged,
+			'per_page' => $per_page,
+			'pages'    => $pages,
+		);
+	}
+
+	/**
+	 * Build a "lastname firstname" lowercased sort key from a display name
+	 * (last token = surname). Used for the default Last-Name A→Z sort.
+	 *
+	 * @param string $name
+	 * @return string
+	 */
+	public static function last_first_key( string $name ): string {
+		$name  = trim( preg_replace( '/\s+/', ' ', $name ) );
+		if ( '' === $name ) {
+			return '';
+		}
+		$parts = explode( ' ', $name );
+		if ( count( $parts ) < 2 ) {
+			return strtolower( $name );
+		}
+		$last = array_pop( $parts );
+		return strtolower( $last . ' ' . implode( ' ', $parts ) );
+	}
+
 	// ── Internal notes (option-map storage) ─────────────────────────────────
 
 	/**

@@ -63,6 +63,9 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-reports-page.php';
 // C9 — Customer Profile page (read-only aggregate by email) + its data repo.
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-customer-profile-page.php';
 
+// V1 #3 — Customers list page (top-level menu; paginated index into profiles).
+require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-customers-list-page.php';
+
 // DS-1.B — Admin Dashboard page + data repository (renders against
 // .mockups/dashboard_page.html; em-dash placeholders for C8/C11-blocked
 // data per CLEANUP #37-#40).

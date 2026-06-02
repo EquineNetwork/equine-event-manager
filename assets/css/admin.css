@@ -8054,3 +8054,24 @@ table.eem-export-history td { padding:11px 14px; font-size:13px; color:#1d2327; 
   .eem-cp-details-grid { grid-template-columns: 1fr; gap: 14px; }
 }
 @media(max-width:782px){ .eem-filter-grid { grid-template-columns:1fr; } .eem-report-grid { grid-template-columns:1fr; } }
+
+/* ============================================================================
+   V1 #3 — Customers list page. Reuses .eem-table, .eem-search-wrap,
+   .eem-pagination, .eem-mobile-card*; net-new is the toolbar + cell links +
+   the disabled page button + ellipsis.
+   ============================================================================ */
+.eem-customers-toolbar { padding: 14px 18px; border-bottom: 1px solid var(--eem-border-card); background: var(--eem-surface); }
+.eem-customers-toolbar .eem-search-wrap { max-width: 360px; }
+.eem-customers-table-wrap { overflow-x: auto; }
+.eem-customers-name { color: var(--eem-navy); font-weight: 700; text-decoration: none; }
+.eem-customers-name:hover { color: var(--eem-electric); }
+.eem-customers-email { color: var(--eem-text-secondary); text-decoration: none; }
+.eem-customers-email:hover { color: var(--eem-electric); }
+.eem-customers-empty { padding: 32px 14px; text-align: center; color: var(--eem-text-muted); }
+.eem-page-btn--disabled { opacity: .45; cursor: not-allowed; pointer-events: none; }
+.eem-page-ellipsis { padding: 0 4px; color: var(--eem-text-muted); font-size: 13px; align-self: center; }
+@media (max-width: 767px) {
+	.eem-customers-table-wrap { display: none; }
+	.eem-customers-mobile { display: block; }
+}
+@media (min-width: 768px) { .eem-customers-mobile { display: none; } }
