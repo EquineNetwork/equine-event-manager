@@ -37,8 +37,8 @@ $grid = $priv( 'build_stall_chart_grid' )->invoke( $admin, 3499, $cfg );
 ob_start();
 $priv( 'render_stall_chart_matrix_table' )->invoke( $admin, $grid['stall_rows'], $grid['date_columns'], 'Stall', 'Block' );
 $loc_html = ob_get_clean();
-$check( 'By Location renders a group dot', false !== strpos( $loc_html, 'eem-occ-pill__group-dot' ) );
-$check( 'By Location marks grouped pills', false !== strpos( $loc_html, 'eem-occ-pill--grouped' ) );
+$check( 'By Location renders a Group badge', false !== strpos( $loc_html, 'eem-occ-badge--group' ) );
+$check( 'Group badge carries the "Group" label', (bool) preg_match( '/eem-occ-badge--group[^>]*>Group</', $loc_html ) );
 $check( 'By Location sets the --eem-group-color var', false !== strpos( $loc_html, '--eem-group-color:#' ) );
 $check( 'By Location pill title carries the group label', false !== strpos( $loc_html, 'Group: ' ) );
 
@@ -61,8 +61,8 @@ if ( preg_match( '/data-group-name="([^"]+)"\s+style="--eem-group-color:(#[0-9a-
 
 // ── CSS hooks present ──
 $css = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/css/admin.css' );
-$check( 'CSS styles the group dot', false !== strpos( $css, '.eem-occ-pill__group-dot' ) );
-$check( 'CSS styles the grouped border accent', false !== strpos( $css, '.eem-occ-pill--grouped' ) );
+$check( 'CSS styles the group badge', false !== strpos( $css, '.eem-occ-badge--group' ) );
+$check( 'CSS styles the badge container', false !== strpos( $css, '.eem-occ-pill__badges' ) );
 
 WP_CLI::log( "\n=== D2 group-location indicator smoke: {$pass} passed, {$fail} failed ===" );
 if ( $fail > 0 ) { WP_CLI::error( "{$fail} assertion(s) failed." ); }

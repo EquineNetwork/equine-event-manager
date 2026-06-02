@@ -76,12 +76,12 @@ foreach ( $grid['stall_rows'] as $row ) {
 $check( 'grid marks the tack stall cell is_tack=true', $tack_cell_ok );
 $check( 'grid leaves the other stall is_tack=false', $other_cell_not_tack );
 
-// ── Pill render: amber class + tack dot + data-is-tack ──
+// ── Pill render: Tack badge (top-border) + data-is-tack ──
 ob_start();
 $priv( 'render_stall_chart_matrix_table' )->invoke( $admin, $grid['stall_rows'], $grid['date_columns'] );
 $html = ob_get_clean();
-$check( 'render outputs a tack pill (eem-occ-pill--tack)', false !== strpos( $html, 'eem-occ-pill--tack' ) );
-$check( 'render outputs the tack dot', false !== strpos( $html, 'eem-occ-pill__tack-dot' ) );
+$check( 'render outputs a Tack badge (eem-occ-badge--tack)', false !== strpos( $html, 'eem-occ-badge--tack' ) );
+$check( 'Tack badge carries the "Tack" label', (bool) preg_match( '/eem-occ-badge--tack[^>]*>Tack</', $html ) );
 $check( 'render outputs data-is-tack="1" somewhere', false !== strpos( $html, 'data-is-tack="1"' ) );
 
 // ── #5b.2: by-customer view shows the amber Tack note + data-has-tack + filter ──

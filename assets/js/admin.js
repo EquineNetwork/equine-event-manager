@@ -3569,16 +3569,27 @@
 								var key = pillEl.getAttribute('data-order-key');
 								var stall = pillEl.getAttribute('data-stall');
 								document.querySelectorAll('.eem-occ-pill--reserved[data-order-key="' + key + '"][data-stall="' + stall + '"]').forEach(function (p) {
-									p.classList.toggle('eem-occ-pill--tack', isTack);
 									p.setAttribute('data-is-tack', isTack ? '1' : '0');
-									var existing = p.querySelector('.eem-occ-pill__tack-dot');
-									if (isTack && !existing) {
-										var dot = document.createElement('span');
-										dot.className = 'eem-occ-pill__tack-dot';
-										dot.setAttribute('aria-hidden', 'true');
-										p.insertBefore(dot, p.querySelector('.eem-occ-chevron'));
-									} else if (!isTack && existing) {
-										existing.remove();
+									// Add/remove the "Tack" badge in the pill's top-border badge row,
+									// creating the badge row on demand if the pill had no badges yet.
+									var badges = p.querySelector('.eem-occ-pill__badges');
+									var tackBadge = badges ? badges.querySelector('.eem-occ-badge--tack') : null;
+									if (isTack) {
+										if (!badges) {
+											badges = document.createElement('span');
+											badges.className = 'eem-occ-pill__badges';
+											p.insertBefore(badges, p.firstChild);
+										}
+										if (!tackBadge) {
+											tackBadge = document.createElement('span');
+											tackBadge.className = 'eem-occ-badge eem-occ-badge--tack';
+											tackBadge.setAttribute('data-eem-tack-badge', '');
+											tackBadge.textContent = 'Tack';
+											badges.insertBefore(tackBadge, badges.firstChild); // Tack before Group
+										}
+									} else {
+										if (tackBadge) { tackBadge.remove(); }
+										if (badges && !badges.children.length) { badges.remove(); }
 									}
 								});
 							}

@@ -4358,7 +4358,7 @@ class EEM_Admin {
 										}
 										$eem_pill_title = implode( ' · ', $eem_title_parts );
 										?>
-										<span class="eem-occ-pill eem-occ-pill--reserved<?php echo '' !== $eem_cell_note ? ' eem-occ-pill--has-note' : ''; ?><?php echo ! empty( $cell['is_tack'] ) ? ' eem-occ-pill--tack' : ''; ?><?php echo '' !== $eem_cell_group ? ' eem-occ-pill--grouped' : ''; ?>" data-is-tack="<?php echo ! empty( $cell['is_tack'] ) ? '1' : '0'; ?>"
+										<span class="eem-occ-pill eem-occ-pill--reserved<?php echo '' !== $eem_cell_note ? ' eem-occ-pill--has-note' : ''; ?>" data-is-tack="<?php echo ! empty( $cell['is_tack'] ) ? '1' : '0'; ?>"
 											data-order-key="<?php echo esc_attr( $cell['order_key'] ); ?>"
 											data-order-id="<?php echo esc_attr( $cell['order_key'] ); ?>"
 											data-eem-action="stall-pill-click"
@@ -4370,10 +4370,11 @@ class EEM_Admin {
 											data-date="<?php echo esc_attr( (string) $date_key ); ?>"
 											<?php if ( '' !== $eem_cell_note ) : ?>data-special-requests="<?php echo esc_attr( $eem_cell_note ); ?>"<?php endif; ?>
 											<?php if ( '' !== $eem_pill_title ) : ?>title="<?php echo esc_attr( $eem_pill_title ); ?>"<?php endif; ?>>
-											<?php if ( '' !== $eem_cell_group ) : ?><span class="eem-occ-pill__group-dot" aria-hidden="true"></span><span class="screen-reader-text"><?php echo esc_html( sprintf( /* translators: %s: group name */ __( '(group: %s)', 'equine-event-manager' ), $eem_cell_group ) ); ?></span><?php endif; ?>
+											<?php if ( '' !== $eem_cell_group || ! empty( $cell['is_tack'] ) ) : ?><span class="eem-occ-pill__badges"><?php if ( ! empty( $cell['is_tack'] ) ) : ?><span class="eem-occ-badge eem-occ-badge--tack" data-eem-tack-badge><?php esc_html_e( 'Tack', 'equine-event-manager' ); ?></span><?php endif; ?><?php if ( '' !== $eem_cell_group ) : ?><span class="eem-occ-badge eem-occ-badge--group"><?php esc_html_e( 'Group', 'equine-event-manager' ); ?></span><?php endif; ?></span><?php endif; ?>
+											<?php if ( '' !== $eem_cell_group ) : ?><span class="screen-reader-text"><?php echo esc_html( sprintf( /* translators: %s: group name */ __( '(group: %s)', 'equine-event-manager' ), $eem_cell_group ) ); ?></span><?php endif; ?>
 											<?php echo esc_html( $cell['label'] ); ?>
 											<?php if ( '' !== $eem_cell_note ) : ?><span class="eem-occ-pill__note-dot" aria-hidden="true"></span><span class="screen-reader-text"><?php esc_html_e( '(has special requests)', 'equine-event-manager' ); ?></span><?php endif; ?>
-											<?php if ( ! empty( $cell['is_tack'] ) ) : ?><span class="eem-occ-pill__tack-dot" aria-hidden="true"></span><span class="screen-reader-text"><?php esc_html_e( '(tack stall)', 'equine-event-manager' ); ?></span><?php endif; ?><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+											<svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
 										</span>
 									<?php elseif ( 'blocked' === $cell['type'] ) : ?>
 										<span class="eem-occ-pill eem-occ-pill--blocked"><?php esc_html_e( 'Blocked', 'equine-event-manager' ); ?></span>

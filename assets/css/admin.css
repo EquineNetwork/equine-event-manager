@@ -7082,7 +7082,7 @@ a.eem-btn--ghost:focus    { color: #1d2327; }
 
 /* ── Occupancy pills ── */
 .eem-occ-pill { display: inline-flex; align-items: center; gap: 4px; padding: 4px 11px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; border: 1px solid; font-family: inherit; }
-.eem-occ-pill--reserved { background: #EEF4FF; color: #1668F2; border-color: #c0d8ff; cursor: pointer; transition: filter .12s, box-shadow .12s; }
+.eem-occ-pill--reserved { position: relative; background: #EEF4FF; color: #1668F2; border-color: #c0d8ff; cursor: pointer; transition: filter .12s, box-shadow .12s; }
 .eem-occ-pill--reserved:hover { filter: brightness(.96); box-shadow: 0 1px 4px rgba(22,104,242,.18); }
 .eem-occ-chevron { width: 11px; height: 11px; color: #1668F2; opacity: .3; transition: opacity .12s; flex-shrink: 0; }
 .eem-occ-pill--reserved:hover .eem-occ-chevron { opacity: 1; }
@@ -7093,16 +7093,14 @@ a.eem-btn--ghost:focus    { color: #1d2327; }
    for the native tooltip; the amber dot is the at-a-glance cue). */
 .eem-occ-pill__note-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--eem-warn-accent); flex-shrink: 0; }
 .eem-occ-pill--has-note { border-color: var(--eem-warn-border); }
-/* V1 #5: tack stall — amber pill + amber dot (operational, no price change). */
-.eem-occ-pill--tack { background: var(--eem-warn-bg); color: var(--eem-warn-text); border-color: var(--eem-warn-border); }
-.eem-occ-pill--tack .eem-occ-chevron { color: var(--eem-warn-text); }
-.eem-occ-pill__tack-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--eem-warn-accent); flex-shrink: 0; }
-/* V1 D2: group indicator on the By Location grid — a leading dot colored per
-   group (same group = same color, set inline via --eem-group-color) plus a
-   matching left-border accent, so groups are scannable without leaving the
-   stall map. */
-.eem-occ-pill--grouped { border-left: 3px solid var(--eem-group-color, var(--eem-border-card)); }
-.eem-occ-pill__group-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--eem-group-color, var(--eem-text-muted)); flex-shrink: 0; }
+/* V1 #5 + D2: labeled badges straddling the pill's top border — clearer than
+   stacked color signals (amber-fill + dots). "Tack" is amber; "Group" uses the
+   per-group color set inline via --eem-group-color, so the same group reads as
+   the same color and the label removes the guesswork. */
+.eem-occ-pill__badges { position: absolute; top: -8px; left: 8px; display: inline-flex; gap: 3px; z-index: 2; pointer-events: none; }
+.eem-occ-badge { font-size: 8.5px; font-weight: 800; line-height: 1; letter-spacing: .04em; text-transform: uppercase; padding: 2px 5px; border-radius: 4px; color: #fff; border: 1px solid #fff; box-shadow: 0 1px 2px rgba(15, 23, 42, .18); }
+.eem-occ-badge--tack { background: var(--eem-warn-text, #b45309); }
+.eem-occ-badge--group { background: var(--eem-group-color, #475569); }
 
 /* ── Customer night count table ── */
 .eem-cust-chart-table tbody tr { border-bottom: 1px solid #f0f0f1; }
