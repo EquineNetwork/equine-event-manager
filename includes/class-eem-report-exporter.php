@@ -66,6 +66,74 @@ class EEM_Report_Exporter {
 	}
 
 	/**
+	 * Render a report dataset to a landscape tabular PDF (C15.E).
+	 *
+	 * @param array $report Report dataset { title, headers, rows }.
+	 * @param array $meta   Optional { subtitle, generated }.
+	 * @return string PDF bytes, or '' when Dompdf is unavailable / render fails.
+	 */
+	public function build_pdf( array $report, array $meta = array() ): string {
+		if ( ! class_exists( 'EEM_PDF' ) || ! EEM_PDF::is_available() ) {
+			return '';
+		}
+
+		$ctx = array(
+			'title'     => isset( $report['title'] ) ? (string) $report['title'] : '',
+			'subtitle'  => isset( $meta['subtitle'] ) ? (string) $meta['subtitle'] : '',
+			'generated' => isset( $meta['generated'] ) ? (string) $meta['generated'] : '',
+			'headers'   => isset( $report['headers'] ) && is_array( $report['headers'] ) ? $report['headers'] : array(),
+			'rows'      => isset( $report['rows'] ) && is_array( $report['rows'] ) ? $report['rows'] : array(),
+		);
+
+		ob_start();
+		include EQUINE_EVENT_MANAGER_PATH . 'templates/reports/report-pdf.php';
+		$html = (string) ob_get_clean();
+
+		return EEM_PDF::render( $html, 'letter', 'landscape' );
+	}
+
+	/**
+	 * Whether the PHP ZipArchive extension is available.
+	 *
+	 * @return bool
+	 */
+	public function zip_available(): bool {
+		return class_exists( 'ZipArchive' );
+	}
+
+	/**
+	 * Bundle named in-memory files into a ZIP and return its bytes.
+	 *
+	 * @param array<string,string> $files filename => contents.
+	 * @return string ZIP bytes, or '' on failure / no ZipArchive.
+	 */
+	public function build_zip( array $files ): string {
+		if ( empty( $files ) || ! $this->zip_available() ) {
+			return '';
+		}
+
+		$tmp = wp_tempnam( 'eem-report-zip' );
+		if ( ! $tmp ) {
+			return '';
+		}
+
+		$zip = new ZipArchive();
+		if ( true !== $zip->open( $tmp, ZipArchive::CREATE | ZipArchive::OVERWRITE ) ) {
+			wp_delete_file( $tmp );
+			return '';
+		}
+		foreach ( $files as $name => $contents ) {
+			$zip->addFromString( sanitize_file_name( (string) $name ), (string) $contents );
+		}
+		$zip->close();
+
+		$bytes = file_get_contents( $tmp ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+		wp_delete_file( $tmp );
+
+		return is_string( $bytes ) ? $bytes : '';
+	}
+
+	/**
 	 * Absolute path to the export cache directory, creating + protecting it on
 	 * first use.
 	 *

@@ -363,28 +363,41 @@ class EEM_Reports_Page {
 	 * @return array{path:string,filename:string}|WP_Error
 	 */
 	public static function generate_export( string $slug, array $filters, string $format = 'csv' ) {
-		$slug   = sanitize_key( $slug );
-		$format = sanitize_key( $format );
+		$slug     = sanitize_key( $slug );
+		$format   = sanitize_key( $format );
+		$repo     = new EEM_Reports_Repo();
+		$exporter = new EEM_Report_Exporter();
+		$norm     = $repo->normalize_filters( $filters );
+
+		// ZIP = all 6 reports × CSV + PDF in one archive (slug ignored).
+		if ( 'zip' === $format ) {
+			return self::generate_zip( $repo, $exporter, $norm );
+		}
 
 		if ( ! in_array( $slug, EEM_Reports_Repo::REPORTS, true ) ) {
 			return new WP_Error( 'eem_reports_bad_slug', __( 'Unknown report.', 'equine-event-manager' ) );
 		}
-		if ( 'csv' !== $format ) {
-			// PDF + ZIP land in C15.E.
-			return new WP_Error( 'eem_reports_format_pending', __( 'That export format is not available yet.', 'equine-event-manager' ) );
+		if ( ! in_array( $format, array( 'csv', 'pdf' ), true ) ) {
+			return new WP_Error( 'eem_reports_bad_format', __( 'Unknown export format.', 'equine-event-manager' ) );
 		}
 
-		$repo     = new EEM_Reports_Repo();
-		$exporter = new EEM_Report_Exporter();
-		$norm     = $repo->normalize_filters( $filters );
-		$report   = $repo->get_report( $slug, $norm );
+		$report = $repo->get_report( $slug, $norm );
 
-		$contents = $exporter->build_csv( $report );
-		if ( '' === $contents ) {
-			return new WP_Error( 'eem_reports_empty', __( 'The report could not be generated.', 'equine-event-manager' ) );
+		if ( 'pdf' === $format ) {
+			$contents = $exporter->build_pdf( $report, self::pdf_meta( $norm ) );
+			$ext      = 'pdf';
+			if ( '' === $contents ) {
+				return new WP_Error( 'eem_reports_pdf_unavailable', __( 'PDF export is unavailable (the PDF engine could not run).', 'equine-event-manager' ) );
+			}
+		} else {
+			$contents = $exporter->build_csv( $report );
+			$ext      = 'csv';
+			if ( '' === $contents ) {
+				return new WP_Error( 'eem_reports_empty', __( 'The report could not be generated.', 'equine-event-manager' ) );
+			}
 		}
 
-		$filename = $exporter->export_filename( $slug, $norm['reservation_id'], 'csv' );
+		$filename = $exporter->export_filename( $slug, $norm['reservation_id'], $ext );
 		$path     = $exporter->write_to_cache( $filename, $contents );
 		if ( '' === $path ) {
 			return new WP_Error( 'eem_reports_cache_failed', __( 'The export could not be written to disk.', 'equine-event-manager' ) );
@@ -394,6 +407,67 @@ class EEM_Reports_Page {
 		$exporter->purge_old();
 
 		return array( 'path' => $path, 'filename' => $filename );
+	}
+
+	/**
+	 * Generate the all-reports ZIP (6 reports × CSV + PDF).
+	 *
+	 * @param EEM_Reports_Repo     $repo     Repo.
+	 * @param EEM_Report_Exporter  $exporter Exporter.
+	 * @param array                $norm     Normalized filters.
+	 * @return array{path:string,filename:string}|WP_Error
+	 */
+	private static function generate_zip( EEM_Reports_Repo $repo, EEM_Report_Exporter $exporter, array $norm ) {
+		if ( ! $exporter->zip_available() ) {
+			return new WP_Error( 'eem_reports_no_zip', __( 'ZIP export is unavailable on this server (the PHP zip extension is not installed).', 'equine-event-manager' ) );
+		}
+
+		$meta  = self::pdf_meta( $norm );
+		$files = array();
+		foreach ( EEM_Reports_Repo::REPORTS as $slug ) {
+			$report                  = $repo->get_report( $slug, $norm );
+			$files[ $slug . '.csv' ] = $exporter->build_csv( $report );
+			$pdf                     = $exporter->build_pdf( $report, $meta );
+			if ( '' !== $pdf ) {
+				$files[ $slug . '.pdf' ] = $pdf;
+			}
+		}
+
+		$zip = $exporter->build_zip( $files );
+		if ( '' === $zip ) {
+			return new WP_Error( 'eem_reports_zip_failed', __( 'The ZIP archive could not be built.', 'equine-event-manager' ) );
+		}
+
+		$filename = $exporter->export_filename( 'all-reports', $norm['reservation_id'], 'zip' );
+		$path     = $exporter->write_to_cache( $filename, $zip );
+		if ( '' === $path ) {
+			return new WP_Error( 'eem_reports_cache_failed', __( 'The export could not be written to disk.', 'equine-event-manager' ) );
+		}
+
+		self::log_export( $norm['reservation_id'], $filename );
+		$exporter->purge_old();
+
+		return array( 'path' => $path, 'filename' => $filename );
+	}
+
+	/**
+	 * Build the PDF header meta (subtitle + generated stamp) from filters.
+	 *
+	 * @param array $norm Normalized filters.
+	 * @return array{subtitle:string,generated:string}
+	 */
+	private static function pdf_meta( array $norm ): array {
+		$scope  = $norm['reservation_id'] > 0 ? get_the_title( $norm['reservation_id'] ) : __( 'All reservations', 'equine-event-manager' );
+		$range  = ( '' !== $norm['date_from'] || '' !== $norm['date_to'] )
+			? trim( ( '' !== $norm['date_from'] ? $norm['date_from'] : '…' ) . ' – ' . ( '' !== $norm['date_to'] ? $norm['date_to'] : '…' ) )
+			: __( 'All time', 'equine-event-manager' );
+		$status = '' !== $norm['status'] ? ucwords( str_replace( '_', ' ', $norm['status'] ) ) : __( 'All statuses', 'equine-event-manager' );
+
+		return array(
+			'subtitle'  => $scope . '  ·  ' . $range . '  ·  ' . $status,
+			/* translators: %s: date/time. */
+			'generated' => sprintf( __( 'Generated %s', 'equine-event-manager' ), date_i18n( get_option( 'date_format' ) . ' g:i a' ) ),
+		);
 	}
 
 	/**

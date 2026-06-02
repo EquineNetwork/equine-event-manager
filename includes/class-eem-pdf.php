@@ -38,11 +38,12 @@ class EEM_PDF {
 	/**
 	 * Render self-contained HTML to PDF bytes.
 	 *
-	 * @param string $html  Full HTML document (with its own <style>).
-	 * @param string $paper Paper size slug (default 'letter').
+	 * @param string $html        Full HTML document (with its own <style>).
+	 * @param string $paper       Paper size slug (default 'letter').
+	 * @param string $orientation 'portrait' | 'landscape'.
 	 * @return string PDF bytes, or '' when Dompdf is unavailable or render fails.
 	 */
-	public static function render( string $html, string $paper = 'letter' ): string {
+	public static function render( string $html, string $paper = 'letter', string $orientation = 'portrait' ): string {
 		if ( '' === trim( $html ) || ! self::is_available() ) {
 			return '';
 		}
@@ -55,7 +56,7 @@ class EEM_PDF {
 
 			$dompdf = new \Dompdf\Dompdf( $options );
 			$dompdf->loadHtml( $html );
-			$dompdf->setPaper( $paper );
+			$dompdf->setPaper( $paper, 'landscape' === $orientation ? 'landscape' : 'portrait' );
 			$dompdf->render();
 
 			$output = $dompdf->output();
