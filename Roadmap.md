@@ -254,17 +254,22 @@ These are admin-side mockup ports that can be done AFTER C10 customer flow works
 - Native `alert()`/`confirm()`/`prompt()` audit — replace with consistent UI pattern
 - Final cross-mockup audit
 - **Repo cleanup (from BUNDLE_COMBINED_V1_NEW_SCOPE Part 3, 2026-06-01):**
-  1. **Top-level doc consolidation** — root has `AUDIT.md`, `AUDIT-C10C.md`,
-     `AUDIT-C15.md`, `CLEANUP.md`, `HANDOFF.md`, `SESSION-NOTES.md`, `decisions.md`,
-     `Roadmap.md`, `CLAUDE.md`, `BRAND_GUIDE.md`. Decide which to consolidate, move to
-     `docs/`, or archive.
+  1. 🔶 **Top-level doc consolidation — MOSTLY DONE (2.5.2).** Moved the 5 historical/working
+     docs into `docs/` (`AUDIT.md`, `AUDIT-C10C.md`, `AUDIT-C15.md`, `HANDOFF.md`,
+     `SESSION-NOTES.md`). **Stay at root (intentionally):** `CLAUDE.md` + `README.md` (tooling
+     reads them at root), `Roadmap.md` + `decisions.md` + `BRAND_GUIDE.md` (CLAUDE.md
+     ground-truth spec), and **`CLEANUP.md`** — it's read at runtime by ~7 smoke tests via
+     `file_get_contents(EQUINE_EVENT_MANAGER_PATH . 'CLEANUP.md')`, so moving it needs those
+     paths updated first (deferred). CLAUDE.md still has a couple of historical prose
+     references ("AUDIT.md in the project root") — harmless, not paths.
   2. ✅ **`.DS_Store` removal + `.gitignore` — DONE (2.5.1).** Untracked the two committed
      `.DS_Store` files; `.gitignore` already covers `.DS_Store` at all depths.
-  3. **`BRAND_GUIDE.png`** — move from repo root to `assets/` or `docs/assets/`.
-  4. **Stale phase audit files** — `AUDIT-C10C.md`, `AUDIT-C15.md` are phase-specific;
-     consolidate/archive after those phases ship.
-  5. **`HANDOFF.md` / `SESSION-NOTES.md`** — confirm root vs `docs/` placement for
-     post-launch use.
+  3. **`BRAND_GUIDE.png`** — move from repo root to `assets/` or `docs/assets/`. ⚠️ Kept at
+     root for now: it's listed as a CLAUDE.md ground-truth visual reference (#3), so moving it
+     means updating that reference. Deferred with the CLAUDE.md pass.
+  4. ✅ **Stale phase audit files — DONE (2.5.2).** `AUDIT-C10C.md` + `AUDIT-C15.md` moved to
+     `docs/` (with `AUDIT.md`).
+  5. ✅ **`HANDOFF.md` / `SESSION-NOTES.md` — DONE (2.5.2).** Both moved to `docs/`.
 - 1-2 days work
 
 ### C15 — Reports ✅ COMPLETE (2.3.99)
