@@ -2332,21 +2332,26 @@ split line items when tack price ≠ regular; visual indicator (design pass) + "
 filter chip. Per-stall metadata is captured **regardless of pricing** for future
 flexibility.
 
-**Build status (2026-06-01, current build 2.5.2):**
-- ✅ **#5a — per-reservation tack pricing settings DONE (2.5.2).** Editor "Tack Stall Pricing"
-  (same / discounted / free) + "Tack Stall Price" fields; keys `_en_stall_tack_pricing_mode` +
-  `_en_stall_tack_price`. Smoke 16/16.
-- ⬜ **#5b/#5c/#5d remaining**, blocked on **two decisions Whitney owns** (the rest flows once
-  these land):
-  1. **Tack chart indicator style** — a "Tack" text badge, a small icon, or a colour treatment
-     on the assigned-stall pill. (The bundle explicitly defers this to a design pass, so it is
-     NOT being built blind.)
-  2. **Checkout per-stall designation** — build now, or defer to v1.1? Admin can already
-     designate via the chart (#5b) without it; it only applies in pick-from-layout mode and is
-     the most visual/JS-heavy piece.
+**REVISED + LOCKED model (Whitney, 2026-06-02): tack is PURELY OPERATIONAL — ALWAYS the same
+price.** Designating a tack stall just records *which* stall is for equipment vs horse housing;
+it never changes what the customer is charged. Therefore:
+- **No tack pricing.** The #5a per-reservation pricing setting (same/discounted/free) was
+  REMOVED (it was built before this clarification and offered options that never applied).
+- **No split line items (#5c) — dropped.** All stalls always cost the same.
+- **Two designation paths, both write the same `Tack Stalls:` order-notes line (subset of the
+  order's assigned stall units), rendered the same on the chart:**
+  1. **Quantity mode** (customer entered a count) → **admin** marks the tack stall on the Stall
+     & RV Charts page after purchase. **(#5b)**
+  2. **Pick-from-layout mode** (customer picked specific stalls) → the **customer** marks which
+     of their chosen stalls is the tack stall at checkout. **(#5d)**
+- **Visual treatment (Whitney):** the tack stall's chart pill renders **amber with an amber
+  dot**. Plus a **"Tack Stalls" filter** chip on the chart.
 - **NB existing groundwork:** a `tack_stall_qty` *count* already flows submission → DB column →
-  billable quantity. Per-STALL `is_tack` (which specific stalls) is the net-new layer the
-  `Tack Stalls:` notes line adds on top.
+  billable quantity; per-STALL `is_tack` (which specific stalls) is the net-new layer the
+  `Tack Stalls:` notes line adds on top — at the same price.
+
+**Build status:** ⬜ #5b (admin chart designation + amber + filter) + #5d (customer pick-mode
+designation) remaining; #5a pricing setting removed; #5c not needed.
 
 ### SCOPE-F. Special Requests visibility (V1 polish)
 Surface the existing customer `notes` "Special Requests" text on the Stall Charts page

@@ -3697,14 +3697,6 @@
 		eemApplyStallChartFilter(t.closest('.eem-stall-chart-tab-panel') || document.body);
 	});
 
-	/* V1 #5 — Tack stall pricing: show the price row only when "Discounted". */
-	document.addEventListener('change', function (ev) {
-		var t = ev.target;
-		if (!t || !t.hasAttribute || !t.hasAttribute('data-eem-tack-pricing-mode')) return;
-		var priceRow = document.getElementById('row-stall-tack-price');
-		if (priceRow) priceRow.classList.toggle('eem-row--hidden', t.value !== 'discounted');
-	});
-
 	// Stall chart event typeahead input
 	document.addEventListener('input', function (ev) {
 		var t = ev.target;

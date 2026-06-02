@@ -347,23 +347,18 @@ Added from `BUNDLE_COMBINED_V1_NEW_SCOPE.txt`. **Recon →
 - ✅ **D2 — Group Name** (2.4.7; moved into Contact Information card 2.4.8).
 - ✅ **Customers menu + paginated list** (2.4.9).
 - ✅ **Scenario B — inventory split + one-time migration `eem-mig-004`** (2.5.0).
-- 🔨 **#5 — Tack stalls** (IN PROGRESS):
-  - ✅ **#5a — per-reservation tack pricing settings** (2.5.2): editor "Tack Stall Pricing"
-    (same / discounted / free) + "Tack Stall Price" fields; keys `_en_stall_tack_pricing_mode`
-    + `_en_stall_tack_price` in CPT defaults/normalize + shortcodes meta; JS show/hide of the
-    price row. Smoke `tack-5a-pricing` 16/16.
-  - ⬜ **#5b — admin chart mark/unmark + indicator + "Tack Stalls" filter.** Backend (toggle a
-    stall in/out of a `Tack Stalls:` notes line) is buildable; the **visual indicator is
-    blocked on Whitney's design call** ("defer to design pass" per the bundle: a "Tack" badge
-    vs icon vs color).
-  - ⬜ **#5c — split line items** (`2 regular @ $50 + 1 tack @ $25`) on receipt / email /
-    order detail — depends on #5b/#5d producing tack designations.
-  - ⬜ **#5d — checkout per-stall designation** (pick-from-layout mode) + live recalc — most
-    visual/JS-heavy; **open decision: build now vs defer to v1.1** (admin can designate via the
-    chart once #5b lands). NB pre-existing `tack_stall_qty` *count* groundwork exists (submission
-    → DB column → billable qty); per-STALL `is_tack` is the net-new layer.
-  - **Two decisions unblock the rest:** (1) tack chart indicator style; (2) checkout per-stall
-    designation now or v1.1.
+- 🔨 **#5 — Tack stalls** (IN PROGRESS). **Model LOCKED (Whitney, 2026-06-02): purely
+  operational — ALWAYS same price.** Designation records *which* stall is for equipment; never
+  changes the charge. (Full decision in `decisions.md` → SCOPE-H.)
+  - ↩️ **#5a tack pricing setting REMOVED** (was 2.5.2): superseded — tack is always same price,
+    so the same/discounted/free selector offered options that never applied.
+  - 🔨 **#5b — admin chart designation** (building): admin marks/unmarks a stall as tack on the
+    Stall & RV Charts page → writes a `Tack Stalls:` notes line (subset of assigned units).
+    Tack pill = **amber + amber dot** (Whitney). + **"Tack Stalls" filter** chip.
+  - ⬜ **#5d — customer pick-mode designation** (after #5b): in pick-from-layout, the customer
+    marks which of their chosen stalls is the tack stall at checkout. Same `Tack Stalls:` line,
+    same price.
+  - ❌ **#5c split line items — DROPPED.** Not needed (always same price).
 
 Also shipped alongside: reusable `tools/seed-test-data.php` (2.4.4–2.4.5) + C16 cleanup
 (`.DS_Store` untrack + 5-digit order-ID audit, 2.5.1; roadmap-status doc commit).
