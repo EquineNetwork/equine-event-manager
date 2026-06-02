@@ -252,6 +252,35 @@ eem_render_editor_field_row( array(
 	),
 ) );
 
+// Tack stall pricing (V1 #5). How tack stalls (equipment storage, not horse
+// housing) are priced relative to regular stalls.
+$tack_pricing_mode = isset( $data['stall_tack_pricing_mode'] ) ? (string) $data['stall_tack_pricing_mode'] : 'same';
+$tack_price        = isset( $data['stall_tack_price'] ) ? $data['stall_tack_price'] : '0.00';
+ob_start();
+?>
+<select class="eem-field-select" name="en_reservation[stall_tack_pricing_mode]" data-eem-tack-pricing-mode>
+	<option value="same" <?php selected( $tack_pricing_mode, 'same' ); ?>><?php esc_html_e( 'Same as regular stalls', 'equine-event-manager' ); ?></option>
+	<option value="discounted" <?php selected( $tack_pricing_mode, 'discounted' ); ?>><?php esc_html_e( 'Discounted', 'equine-event-manager' ); ?></option>
+	<option value="free" <?php selected( $tack_pricing_mode, 'free' ); ?>><?php esc_html_e( 'Free ($0)', 'equine-event-manager' ); ?></option>
+</select>
+<?php
+eem_render_editor_field_row( array(
+	'label'        => __( 'Tack Stall Pricing', 'equine-event-manager' ),
+	'label_sub'    => __( 'How are tack stalls (equipment storage) priced?', 'equine-event-manager' ),
+	'row_id'       => 'row-stall-tack-pricing-mode',
+	'control_html' => (string) ob_get_clean(),
+) );
+eem_render_editor_field_row( array(
+	'label'        => __( 'Tack Stall Price', 'equine-event-manager' ),
+	'label_sub'    => __( 'Per-stall price for tack stalls', 'equine-event-manager' ),
+	'row_id'       => 'row-stall-tack-price',
+	'is_hidden'    => ( 'discounted' !== $tack_pricing_mode ),
+	'control_html' => sprintf(
+		'<div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[stall_tack_price]" value="%s" /></div>',
+		esc_attr( $fmt_money( $tack_price ) )
+	),
+) );
+
 // Inventory Mode (C8) — UX polish 2.3.23: moved below pricing/shavings so the
 // inventory cluster (Mode → Available qty → Max per customer → Row builder) appears
 // as one tight group at the bottom of the section.

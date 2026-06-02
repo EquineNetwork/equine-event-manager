@@ -6214,6 +6214,8 @@ RV Lot: " . $rv_lot['name'] );
 			'stall_selection_mode'            => 'quantity',
 			'stall_inventory_type'            => 'quantity_only',
 			'stall_customer_selection'        => 'quantity',
+			'stall_tack_pricing_mode'         => 'same',
+			'stall_tack_price'                => '0.00',
 			'stall_description'               => '',
 			'rv_enabled'                      => 0,
 			'rv_description'                  => '',
