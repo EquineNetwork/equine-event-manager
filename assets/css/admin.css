@@ -7120,6 +7120,9 @@ a.eem-btn--ghost:focus    { color: #1d2327; }
 .eem-stall-chart-menu-subtitle { font-size: 11.5px; color: #6B7A99; }
 .eem-stall-chart-menu-subtitle a { color: #031B4E; font-weight: 600; text-decoration: none; }
 .eem-stall-chart-menu-subtitle a:hover { color: #1668F2; }
+/* V1 Scenario F: special-requests line in the stall-pill action popover. */
+.eem-stall-chart-menu-special { display: block; margin-top: 6px; padding: 5px 8px; font-size: 11.5px; line-height: 1.4; color: var(--eem-warn-text); background: var(--eem-warn-bg); border-left: 2px solid var(--eem-warn-border); border-radius: 0 var(--eem-radius) var(--eem-radius) 0; }
+.eem-stall-chart-menu-special strong { font-weight: 700; }
 .eem-stall-chart-cell-menu-btn { display: flex; align-items: center; gap: 8px; padding: 9px 12px; background: #fff; border: none; border-radius: 4px; font-size: 13px; font-weight: 500; color: #1d2327; cursor: pointer; text-align: left; font-family: inherit; width: 100%; }
 .eem-stall-chart-cell-menu-btn:hover { background: #f6f7f7; }
 .eem-stall-chart-cell-menu-btn svg { width: 13px; height: 13px; flex-shrink: 0; color: #6B7A99; }

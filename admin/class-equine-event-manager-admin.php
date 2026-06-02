@@ -3656,6 +3656,21 @@ class EEM_Admin {
 	 * @param array $config Chart config.
 	 * @return array
 	 */
+	/**
+	 * Format an order number for chart display as the canonical 5-digit
+	 * zero-padded `#NNNNN` (matches Orders list / Order Detail / Dashboard).
+	 *
+	 * @param string $order_number Raw order number.
+	 * @return string
+	 */
+	private function format_chart_order_number( string $order_number ): string {
+		$order_number = trim( $order_number );
+		if ( '' === $order_number ) {
+			return '—';
+		}
+		return is_numeric( $order_number ) ? sprintf( '#%05d', (int) $order_number ) : '#' . $order_number;
+	}
+
 	private function build_stall_chart_grid( $reservation_id, $config ) {
 		$orders = array_filter(
 			$this->orders_repository->get_orders( '', 'date', 'asc' ),
@@ -3697,6 +3712,7 @@ class EEM_Admin {
 							'type'             => 'occupied',
 							'label'            => $order['customer_name'],
 							'order_key'        => $order['order_key'],
+							'order_number'     => (string) $order['order_number'],
 							'special_requests' => $special_requests,
 						);
 					}
@@ -3710,6 +3726,7 @@ class EEM_Admin {
 							'type'             => 'occupied',
 							'label'            => $order['customer_name'],
 							'order_key'        => $order['order_key'],
+							'order_number'     => (string) $order['order_number'],
 							'special_requests' => $special_requests,
 						);
 					}
@@ -4185,6 +4202,7 @@ class EEM_Admin {
 											data-eem-action="stall-pill-click"
 											data-customer-name="<?php echo esc_attr( $cell['label'] ); ?>"
 											data-customer="<?php echo esc_attr( $cell['label'] ); ?>"
+											data-order-number="<?php echo esc_attr( $this->format_chart_order_number( (string) ( $cell['order_number'] ?? '' ) ) ); ?>"
 											data-stall="<?php echo esc_attr( (string) $row['unit'] ); ?>"
 											data-date="<?php echo esc_attr( (string) $date_key ); ?>"
 											<?php if ( '' !== $eem_cell_note ) : ?>data-special-requests="<?php echo esc_attr( $eem_cell_note ); ?>" title="<?php echo esc_attr( sprintf( /* translators: %s: customer special requests text */ __( 'Special requests: %s', 'equine-event-manager' ), $eem_cell_note ) ); ?>"<?php endif; ?>>
@@ -4259,7 +4277,7 @@ class EEM_Admin {
 							</td>
 							<td class="eem-chart-order-num">
 								<a class="eem-chart-order-link" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-order&order_key=' . rawurlencode( $row['order_key'] ) ) ); ?>">
-									#<?php echo esc_html( $row['order_number'] ); ?>
+									<?php echo esc_html( $this->format_chart_order_number( (string) $row['order_number'] ) ); ?>
 								</a>
 							</td>
 							<?php foreach ( array_keys( $date_columns ) as $date_key ) : ?>

@@ -3441,6 +3441,8 @@
 			}
 			var customer = pill.getAttribute('data-customer-name') || pill.getAttribute('data-customer') || '—';
 			var orderKey = pill.getAttribute('data-order-id') || pill.getAttribute('data-order-key') || '';
+			var orderNum = pill.getAttribute('data-order-number') || '';
+			var special  = pill.getAttribute('data-special-requests') || '';
 			var srcStall = pill.getAttribute('data-stall') || '';
 			var srcDate  = pill.getAttribute('data-date') || '';
 			window._scActiveOrderId   = orderKey;
@@ -3451,8 +3453,16 @@
 			var subEl = document.getElementById('eem-stall-chart-menu-subtitle');
 			if (titleEl) titleEl.textContent = customer;
 			if (subEl) {
+				var esc = function (s) {
+					return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+				};
 				var orderUrl = (window.ajaxurl || '/wp-admin/admin-ajax.php').replace('admin-ajax.php', '') + 'admin.php?page=equine-event-manager-order&order_key=' + encodeURIComponent(orderKey);
-				subEl.innerHTML = 'Order: <a href="' + orderUrl + '" onclick="event.stopPropagation()">' + (orderKey || '—') + '</a>';
+				// Show the human-readable order NUMBER (#NNNNN), not the internal key.
+				var html = 'Order: <a href="' + orderUrl + '" onclick="event.stopPropagation()">' + esc(orderNum || '—') + '</a>';
+				if (special) {
+					html += '<span class="eem-stall-chart-menu-special"><strong>Special requests:</strong> ' + esc(special) + '</span>';
+				}
+				subEl.innerHTML = html;
 			}
 			window._eemActivePill = pill;
 			window._eemActiveOrderKey = orderKey;

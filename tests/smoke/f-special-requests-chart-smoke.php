@@ -43,7 +43,8 @@ $rows_with = array(
 			'2026-05-08' => array(
 				'type'             => 'occupied',
 				'label'            => 'Whitney Mitchell',
-				'order_key'        => 'abc123',
+				'order_key'        => 'abc123def456abc123def456abc12345', // md5-shaped
+				'order_number'     => '9003',
 				'special_requests' => $NOTE,
 			),
 		),
@@ -54,6 +55,9 @@ $check( 'pill renders the note indicator dot', false !== strpos( $html_with, 'ee
 $check( 'pill gets the --has-note modifier', false !== strpos( $html_with, 'eem-occ-pill--has-note' ) );
 $check( 'pill carries data-special-requests', false !== strpos( $html_with, 'data-special-requests="' . esc_attr( $NOTE ) . '"' ) );
 $check( 'pill carries a native title tooltip with the note', false !== strpos( $html_with, 'Special requests: ' . $NOTE ) );
+// Order number (#NNNNN), NOT the raw md5 key, is what the popup will show.
+$check( 'pill carries 5-digit data-order-number', false !== strpos( $html_with, 'data-order-number="#09003"' ) );
+$check( 'pill does NOT expose the raw md5 key as visible text', false === strpos( $html_with, '>abc123def456abc123def456abc12345<' ) );
 
 // ── A2) Matrix pill WITHOUT special requests → no note markup ──
 $rows_without = array(
