@@ -41,12 +41,16 @@ class EEM_Mailer {
 	 *                          but their activity-log telemetry payload will be empty.
 	 * @return true|WP_Error
 	 */
-	public static function send_html_email( $to, $subject, $html, $headers = array(), $context = array() ) {
+	public static function send_html_email( $to, $subject, $html, $headers = array(), $context = array(), $attachments = array() ) {
 		$to      = sanitize_email( (string) $to );
 		$subject = wp_strip_all_tags( (string) $subject );
 		$html    = self::inline_css( (string) $html );
 		$headers = is_array( $headers ) ? $headers : array();
 		$context = is_array( $context ) ? $context : array();
+		// Attachments are absolute file paths; drop anything unreadable.
+		$attachments = array_values( array_filter( (array) $attachments, static function ( $path ) {
+			return is_string( $path ) && '' !== $path && is_readable( $path );
+		} ) );
 
 		if ( '' === $to || ! is_email( $to ) ) {
 			return new WP_Error( 'equine_event_manager_mail_invalid_to', __( 'A valid recipient email address is required before sending this message.', 'equine-event-manager' ) );
@@ -55,8 +59,8 @@ class EEM_Mailer {
 		$api_key = self::get_sendgrid_api_key();
 
 		$result = '' !== $api_key
-			? self::send_via_sendgrid( $api_key, $to, $subject, $html, $headers )
-			: self::send_via_wp_mail( $to, $subject, $html, $headers );
+			? self::send_via_sendgrid( $api_key, $to, $subject, $html, $headers, $attachments )
+			: self::send_via_wp_mail( $to, $subject, $html, $headers, $attachments );
 
 		// C6.D — emit eem_email_sent telemetry on a successful send.
 		// EEM_Order_Telemetry::on_email_sent listens; writes order.email_sent
@@ -117,10 +121,11 @@ class EEM_Mailer {
 	 * @param string $subject Subject line.
 	 * @param string $html HTML message body.
 	 * @param array  $headers Optional mail headers.
+	 * @param array  $attachments Optional absolute file paths to attach.
 	 * @return true|WP_Error
 	 */
-	private static function send_via_wp_mail( $to, $subject, $html, $headers ) {
-		$sent = wp_mail( $to, $subject, $html, $headers );
+	private static function send_via_wp_mail( $to, $subject, $html, $headers, $attachments = array() ) {
+		$sent = wp_mail( $to, $subject, $html, $headers, (array) $attachments );
 
 		if ( ! $sent ) {
 			return new WP_Error( 'equine_event_manager_mail_wp_mail_failed', __( 'WordPress could not send the email. Please verify your site mailer configuration and try again.', 'equine-event-manager' ) );
@@ -137,9 +142,10 @@ class EEM_Mailer {
 	 * @param string $subject Subject line.
 	 * @param string $html HTML body.
 	 * @param array  $headers Optional headers.
+	 * @param array  $attachments Optional absolute file paths to attach.
 	 * @return true|WP_Error
 	 */
-	private static function send_via_sendgrid( $api_key, $to, $subject, $html, $headers ) {
+	private static function send_via_sendgrid( $api_key, $to, $subject, $html, $headers, $attachments = array() ) {
 		$parsed_headers = self::parse_headers( $headers );
 		$from_name      = ! empty( $parsed_headers['from_name'] ) ? $parsed_headers['from_name'] : get_bloginfo( 'name' );
 		$from_email     = ! empty( $parsed_headers['from_email'] ) && is_email( $parsed_headers['from_email'] ) ? $parsed_headers['from_email'] : get_option( 'admin_email', '' );
@@ -180,6 +186,28 @@ class EEM_Mailer {
 			$payload['reply_to'] = array(
 				'email' => $reply_to_email,
 			);
+		}
+
+		$sg_attachments = array();
+		foreach ( (array) $attachments as $path ) {
+			if ( ! is_string( $path ) || '' === $path || ! is_readable( $path ) ) {
+				continue;
+			}
+			$bytes = file_get_contents( $path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+			if ( false === $bytes || '' === $bytes ) {
+				continue;
+			}
+			$ext  = strtolower( pathinfo( $path, PATHINFO_EXTENSION ) );
+			$type = 'pdf' === $ext ? 'application/pdf' : 'application/octet-stream';
+			$sg_attachments[] = array(
+				'content'     => base64_encode( $bytes ), // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
+				'filename'    => basename( $path ),
+				'type'        => $type,
+				'disposition' => 'attachment',
+			);
+		}
+		if ( ! empty( $sg_attachments ) ) {
+			$payload['attachments'] = $sg_attachments;
 		}
 
 		$response = wp_remote_post(

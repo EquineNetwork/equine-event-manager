@@ -102,6 +102,11 @@ a:hover{text-decoration:none}
 .whats-next-body p{font-size:13px;line-height:1.6;color:#1d2327;margin:0 0 7px}
 .whats-next-body p:last-child{margin-bottom:0}
 .whats-next-body strong{color:#031B4E;font-weight:600}
+.attachment-note{background:#F0F4FB;border:1px solid #D9E2F2;border-radius:4px;padding:12px 16px;display:flex;align-items:center;gap:12px;margin-bottom:22px}
+.attach-icon{width:36px;height:36px;background:#1668F2;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff}
+.attach-icon svg{width:18px;height:18px}
+.attach-text-title{display:block;font-size:13.5px;font-weight:700;color:#031B4E;margin-bottom:2px}
+.attach-text-body{font-size:12.5px;color:#50575e;line-height:1.45}
 .support-block{background:#f3f4f5;border:1px solid #e5e7eb;border-radius:4px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:22px}
 .support-left-title{display:block;font-size:13.5px;font-weight:700;color:#031B4E;margin-bottom:2px}
 .support-left-sub{font-size:12.5px;color:#50575e}
@@ -301,6 +306,19 @@ a:hover{text-decoration:none}
           <?php if ( ! empty( $event_day['contact'] ) ) : ?>
             <p><strong><?php esc_html_e( 'Event Contact:', 'equine-event-manager' ); ?></strong> <?php echo esc_html( $event_day['contact'] ); ?></p>
           <?php endif; ?>
+        </div>
+      </div>
+    <?php endif; ?>
+
+    <?php // C12: shown only when a PDF receipt is actually attached to this email. ?>
+    <?php if ( $c( 'show_pdf_note' ) ) : ?>
+      <div class="attachment-note">
+        <div class="attach-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+        </div>
+        <div>
+          <span class="attach-text-title"><?php esc_html_e( 'PDF Receipt Attached', 'equine-event-manager' ); ?></span>
+          <span class="attach-text-body"><?php esc_html_e( 'A full copy of this receipt is attached to this email as a PDF for your records.', 'equine-event-manager' ); ?></span>
         </div>
       </div>
     <?php endif; ?>

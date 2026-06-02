@@ -3410,21 +3410,45 @@ RV Lot: " . $rv_lot['name'] );
 			return new WP_Error( 'customer_notification_missing_email', __( 'A customer email address is required before sending this notification.', 'equine-event-manager' ) );
 		}
 
-		return EEM_Mailer::send_html_email(
+		// C12 — generate the PDF receipt and attach it. Written to a temp file
+		// (wp_mail attachments are file paths) and removed after the send. If PDF
+		// generation is unavailable/fails, the email still sends without it and the
+		// "PDF Receipt Attached" note is suppressed.
+		$attachments   = array();
+		$pdf_temp_path  = '';
+		$pdf_bytes      = $this->generate_receipt_pdf( $order );
+		if ( '' !== $pdf_bytes ) {
+			$pdf_filename  = 'receipt-' . sprintf( '%05d', absint( $order['order_number'] ) ) . '.pdf';
+			$pdf_temp_path = trailingslashit( get_temp_dir() ) . wp_unique_filename( get_temp_dir(), $pdf_filename );
+			if ( false !== file_put_contents( $pdf_temp_path, $pdf_bytes ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_put_contents
+				$attachments[] = $pdf_temp_path;
+			} else {
+				$pdf_temp_path = '';
+			}
+		}
+
+		$result = EEM_Mailer::send_html_email(
 			$customer_email,
 			$this->replace_receipt_tokens( $receipt_settings['customer_subject'], $order ),
 			// C11 — mockup-faithful confirmation template (replaces the legacy
 			// settings-body + token render). CSS is inlined at send-time by
 			// EEM_Mailer::inline_css(). The customer_body setting is now unused for
-			// the confirmation email.
-			$this->build_confirmation_email_html( $order ),
+			// the confirmation email. C12 — the PDF note shows only when attached.
+			$this->build_confirmation_email_html( $order, ! empty( $attachments ) ),
 			$headers,
 			// C6.D telemetry — customer-facing checkout/reservation confirmation email.
 			array(
 				'type'      => 'checkout_confirmation',
 				'order_key' => isset( $order['order_key'] ) ? (string) $order['order_key'] : '',
-			)
+			),
+			$attachments
 		);
+
+		if ( '' !== $pdf_temp_path && file_exists( $pdf_temp_path ) ) {
+			wp_delete_file( $pdf_temp_path );
+		}
+
+		return $result;
 	}
 
 	/**
@@ -3928,10 +3952,12 @@ RV Lot: " . $rv_lot['name'] );
 	 * nothing is assigned (stalls are admin-assigned later, in Bulk mode), and the
 	 * PDF attachment note is withheld until C12 actually attaches a PDF.
 	 *
-	 * @param array $order Grouped order payload (EEM_Orders_Repository shape).
+	 * @param array $order        Grouped order payload (EEM_Orders_Repository shape).
+	 * @param bool  $pdf_attached When true, render the "PDF Receipt Attached" note
+	 *                            (C12 re-enables it once a PDF is actually attached).
 	 * @return string Rendered (un-inlined) HTML.
 	 */
-	private function build_confirmation_email_html( array $order ): string {
+	private function build_confirmation_email_html( array $order, bool $pdf_attached = false ): string {
 		$company_settings = $this->get_company_settings();
 		$event_label      = ! empty( $order['reservation_title'] ) ? $order['reservation_title'] : $order['event_name'];
 		$reservation_data = ! empty( $order['reservation_id'] ) ? $this->get_reservation_data( absint( $order['reservation_id'] ) ) : array();
@@ -3976,6 +4002,7 @@ RV Lot: " . $rv_lot['name'] );
 			'customer_first'      => $customer_first,
 			// Hosted order page lands in C12; link withheld until then.
 			'hosted_url'          => '',
+			'show_pdf_note'       => $pdf_attached,
 			'badges'              => array(
 				'stall' => $stall_qty > 0,
 				'rv'    => $rv_qty > 0,

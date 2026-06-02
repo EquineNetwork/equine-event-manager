@@ -137,6 +137,12 @@ $html_ed = (string) $ref->invoke( $shortcodes, $order_ed );
 $check( "OMIT: What's Next hidden when event_day unavailable", false === strpos( $html_ed, 'Event Day Info' ) );
 $check( 'OMIT: Cancellation Policy hidden when override empty', false === strpos( $html_ed, 'Cancellation Policy' ) );
 
+// ── C12: PDF attachment note toggles with the pdf_attached flag ──
+$html_pdf    = (string) $ref->invoke( $shortcodes, $order, true );
+$html_no_pdf = (string) $ref->invoke( $shortcodes, $order, false );
+$check( 'PDF note shown when a PDF is attached', false !== strpos( $html_pdf, 'PDF Receipt Attached' ) );
+$check( 'PDF note hidden when no PDF attached', false === strpos( $html_no_pdf, 'PDF Receipt Attached' ) );
+
 // ── Cleanup ──
 wp_delete_post( $rid, true );
 
