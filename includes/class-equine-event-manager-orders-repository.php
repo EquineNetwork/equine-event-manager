@@ -172,6 +172,31 @@ class EEM_Orders_Repository {
 	}
 
 	/**
+	 * Get a single grouped order by its order_key (the md5 group hash).
+	 *
+	 * Used by the C12 hosted receipt page / PDF download, which addresses an order
+	 * by its unguessable order_key (token-bearer access).
+	 *
+	 * @param string $order_key Order key.
+	 * @return array|null
+	 */
+	public function get_order_by_order_key( $order_key ) {
+		$order_key = sanitize_text_field( $order_key );
+
+		if ( '' === $order_key ) {
+			return null;
+		}
+
+		foreach ( $this->get_grouped_orders() as $order ) {
+			if ( isset( $order['order_key'] ) && hash_equals( (string) $order['order_key'], $order_key ) ) {
+				return $order;
+			}
+		}
+
+		return null;
+	}
+
+	/**
 	 * Delete all table rows for an order.
 	 *
 	 * @param string $order_key Order key.

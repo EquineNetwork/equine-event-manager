@@ -4001,7 +4001,8 @@ RV Lot: " . $rv_lot['name'] );
 			'amount_paid'         => '$' . number_format_i18n( (float) $order['total'], 2 ),
 			'customer_first'      => $customer_first,
 			// Hosted order page lands in C12; link withheld until then.
-			'hosted_url'          => '',
+			// C12 — hosted order page (web view of this receipt), token-bearer URL.
+			'hosted_url'          => ! empty( $order['order_key'] ) ? $this->get_hosted_receipt_url( $order['order_key'] ) : '',
 			'show_pdf_note'       => $pdf_attached,
 			'badges'              => array(
 				'stall' => $stall_qty > 0,
@@ -5481,6 +5482,70 @@ RV Lot: " . $rv_lot['name'] );
 				'intent_id'     => isset( $intent['id'] ) ? $intent['id'] : '',
 			)
 		);
+	}
+
+	/**
+	 * Build the public hosted-receipt URL for an order (C12).
+	 *
+	 * Token-bearer access: the unguessable order_key is the bearer token, so the
+	 * link works from the confirmation email without a login.
+	 *
+	 * @param string $order_key Order key.
+	 * @param bool   $pdf       When true, link straight to the PDF download.
+	 * @return string Absolute URL, or '' when no key.
+	 */
+	public function get_hosted_receipt_url( $order_key, $pdf = false ) {
+		$order_key = (string) $order_key;
+		if ( '' === $order_key ) {
+			return '';
+		}
+		$args = array( 'eem_receipt' => $order_key );
+		if ( $pdf ) {
+			$args['download'] = 'pdf';
+		}
+		return add_query_arg( $args, home_url( '/' ) );
+	}
+
+	/**
+	 * Render the hosted order receipt (web view) or stream the PDF when the
+	 * `eem_receipt` token is present (C12). Public, token-bearer access keyed on
+	 * the unguessable order_key.
+	 *
+	 * @return void
+	 */
+	public function maybe_render_hosted_receipt() {
+		$order_key = isset( $_REQUEST['eem_receipt'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['eem_receipt'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- token-bearer read, no state change.
+
+		if ( '' === $order_key ) {
+			return;
+		}
+
+		$repo  = new EEM_Orders_Repository();
+		$order = $repo->get_order_by_order_key( $order_key );
+
+		if ( ! $order ) {
+			wp_die( esc_html__( 'That receipt link is no longer available.', 'equine-event-manager' ), esc_html__( 'Receipt Unavailable', 'equine-event-manager' ), array( 'response' => 404 ) );
+		}
+
+		$want_pdf = isset( $_REQUEST['download'] ) && 'pdf' === sanitize_key( wp_unslash( $_REQUEST['download'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		if ( $want_pdf ) {
+			$pdf = $this->generate_receipt_pdf( $order );
+			if ( '' === $pdf ) {
+				wp_die( esc_html__( 'The PDF receipt could not be generated.', 'equine-event-manager' ), esc_html__( 'Receipt Unavailable', 'equine-event-manager' ), array( 'response' => 500 ) );
+			}
+			nocache_headers();
+			header( 'Content-Type: application/pdf' );
+			header( 'Content-Disposition: attachment; filename="receipt-' . sprintf( '%05d', absint( $order['order_number'] ) ) . '.pdf"' );
+			header( 'Content-Length: ' . strlen( $pdf ) );
+			echo $pdf; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- binary PDF stream.
+			exit;
+		}
+
+		nocache_headers();
+		// build_receipt_html returns a fully-escaped, self-contained HTML document.
+		echo $this->build_receipt_html( $order, false ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		exit;
 	}
 
 	/**

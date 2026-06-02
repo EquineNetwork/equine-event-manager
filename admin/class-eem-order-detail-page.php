@@ -301,17 +301,29 @@ class EEM_Order_Detail_Page {
 		$back_url        = EEM_Orders_List_Page::url();
 		$reservation_url = $reservation_id > 0 ? EEM_Reservation_Editor_Page::url( (int) $reservation_id ) : '';
 
+		// C12 — hosted receipt links (token-bearer order_key).
+		$order_key        = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
+		$receipt_view_url = '' !== $order_key ? add_query_arg( array( 'eem_receipt' => $order_key ), home_url( '/' ) ) : '';
+		$receipt_pdf_url  = '' !== $order_key ? add_query_arg( array( 'eem_receipt' => $order_key, 'download' => 'pdf' ), home_url( '/' ) ) : '';
+
 		ob_start();
 		?>
 		<a class="eem-btn eem-btn-ghost" href="<?php echo esc_url( $back_url ); ?>"><?php esc_html_e( 'Back to Orders', 'equine-event-manager' ); ?></a>
 		<?php if ( '' !== $reservation_url ) : ?>
 			<a class="eem-btn eem-btn-ghost" href="<?php echo esc_url( $reservation_url ); ?>"><?php esc_html_e( 'Edit Reservation', 'equine-event-manager' ); ?></a>
 		<?php endif; ?>
+		<?php if ( '' !== $receipt_pdf_url ) : ?>
+			<a class="eem-btn eem-btn-ghost" href="<?php echo esc_url( $receipt_pdf_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Download Receipt', 'equine-event-manager' ); ?></a>
+		<?php endif; ?>
 		<div class="eem-row-menu-wrap eem-order-detail-more">
 			<button type="button" class="eem-btn eem-btn-ghost" data-eem-action="dropdown-toggle" aria-haspopup="true" aria-expanded="false"><?php esc_html_e( 'More', 'equine-event-manager' ); ?> &#9662;</button>
 			<div class="eem-row-dropdown">
-				<a class="eem-row-dd-item eem-btn-stub" href="#" title="<?php esc_attr_e( 'Coming in C11', 'equine-event-manager' ); ?>" aria-disabled="true"><?php esc_html_e( 'Send Receipt', 'equine-event-manager' ); ?> <span class="eem-row-dd-tag">C11</span></a>
-				<a class="eem-row-dd-item eem-btn-stub" href="#" title="<?php esc_attr_e( 'Coming in C11', 'equine-event-manager' ); ?>" aria-disabled="true"><?php esc_html_e( 'Print Receipt', 'equine-event-manager' ); ?> <span class="eem-row-dd-tag">C11</span></a>
+				<?php if ( '' !== $receipt_view_url ) : ?>
+					<a class="eem-row-dd-item" href="<?php echo esc_url( $receipt_view_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View Receipt', 'equine-event-manager' ); ?></a>
+				<?php endif; ?>
+				<?php if ( '' !== $receipt_pdf_url ) : ?>
+					<a class="eem-row-dd-item" href="<?php echo esc_url( $receipt_pdf_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Download PDF Receipt', 'equine-event-manager' ); ?></a>
+				<?php endif; ?>
 				<a class="eem-row-dd-item" href="#" data-eem-action="order-export-csv-single"><?php esc_html_e( 'Export CSV', 'equine-event-manager' ); ?></a>
 				<a class="eem-row-dd-item" href="#" data-eem-action="order-refund-single"><?php esc_html_e( 'Refund Order', 'equine-event-manager' ); ?></a>
 				<a class="eem-row-dd-item eem-row-dd-item--danger" href="#" data-eem-action="order-trash"><?php esc_html_e( 'Move to Trash', 'equine-event-manager' ); ?></a>
