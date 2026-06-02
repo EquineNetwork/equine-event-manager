@@ -57,7 +57,47 @@ submit through a **create-order-specific** handler (Option B's clean save):
 This avoids the big refactor now, avoids the duplicate-chrome problem (we drive our own
 rail), and reuses the real pricing + the real order-creation code.
 
-## Decisions to lock at B.2 kickoff (need Whitney)
+## LOCKED at kickoff (2026-06-02)
+
+- **Architecture: Hybrid.** Render the reservation's section markup + bind the real
+  pricing engine; keep Create Order's own contact card, rail summary, and a
+  create-order-specific save.
+- **Order creation: unpaid via the existing pipeline.** "Create Order" writes the
+  order through the same order-creation code a customer checkout uses (same rows,
+  validation, pricing) but in an **unpaid/pending** state with an `admin_created`
+  flag and **NO charge**. Payment is collected later via Send-Link or C14.
+
+### Implementation finding that shapes the build (de-risked before coding)
+
+The customer form's **pricing JS is an inline `<script>` printed on `wp_footer`**
+(`EEM_Shortcodes::render_frontend_form_assets_in_footer`, ~line 8305), and public.css
+is enqueued from that same footer hook. Consequences:
+
+1. **No AJAX/innerHTML injection of the sections** — inline `<script>` injected via
+   `innerHTML` does NOT execute, so the steppers/picker/totals would be dead.
+2. Therefore B.2 is **server-side, reload-based**: the reservation picker navigates to
+   `?page=…-create-order&reservation_id=N`; on that load the page renders the embedded
+   `[en_reservation id=N]` form (its inline pricing JS is then in the document and runs)
+   and must **manually emit the footer assets on `admin_footer`** (call
+   `render_frontend_form_assets_in_footer()` for this page) so public.css + the inline
+   pricing engine print on the admin page.
+3. public.css is scoped to `.eem-event-page` (the shortcode wrapper), so enqueuing it on
+   this one admin page is low-bleed.
+
+### Refined sub-chunks (hybrid, reload-based)
+
+- **B.2.a** — server-side embed: on `?reservation_id=N`, render the `[en_reservation]`
+  form into the main column (replacing the 4 stub section cards), pre-select the picker,
+  and emit the footer assets on `admin_footer`. CSS scope-hides the embedded form's own
+  contact / summary / payment / submit (keep only the live sections). *(Supersedes B.1's
+  AJAX section-config for the embedded case; B.1 stays as the no-reservation default.)*
+- **B.2.b** — mirror the embedded form's computed total into the Create Order rail
+  summary (read the form's running total; render our own summary lines + Total).
+- **B.2.c** — render-collect-post the embedded form's fields through the existing
+  order-creation pipeline with the `admin_created` flag, unpaid, + the create-order
+  contact. *(C13.C custom items + discount layer on; C13.D Send-Link email.)*
+
+## (Original) Decisions considered at kickoff
 
 1. **Architecture:** A (embed) / B (extract) / **C (hybrid, recommended)**.
 2. **Order creation path:** does the admin order go through the **same** submission
