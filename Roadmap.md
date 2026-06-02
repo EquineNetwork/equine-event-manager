@@ -23,6 +23,18 @@
 ## Launch Target
 TBD — set after C10 verifies and customer flow proven on staging.
 
+## Latest (2026-06-02 — build 2.7.2)
+
+- **All 5 V1 new-scope features DONE + Whitney-reviewed** (Special Requests on charts, Group Name + By-Location group indicator, Customers menu/list, Scenario B inventory split, Tack stalls). Plus review-driven fixes: Numbered+Quantity save, simple-range editor, back-to-back row corruption, delete-all-rows, Max-Stalls-Per-Customer enforcement, selected-stall white text. (2.5.x)
+- **DS-TOGGLE locked** — one official toggle style plugin-wide (44×24, radius 8, `#D9E2F2`/`#1668F2`, 18px knob). admin `.eem-toggle` + front-end `.eem-reservation-section-toggle` consolidated to identical values; misleading dead override removed; `toggle-style-smoke` guards both stylesheets. See decisions.md DS-TOGGLE. (2.6.x)
+- **C13 Create Order — in progress:**
+  - ✅ A.1 page render port (logo, shared shell, official toggle, canonical search field)
+  - ✅ A.2 interactivity (customer-search AJAX typeahead → autofill, section toggles, payment tabs, custom items)
+  - ✅ B.1 reservation select → loads section enable/rate/date config + rail name
+  - ⬜ **B.2** — live steppers/picker/pricing via the customer-form engine. Pre-audit in `docs/AUDIT-C13B2.md` (hybrid architecture recommended; decisions to lock at kickoff). **Payment dispatch stays in C14 (gated).**
+  - ⬜ C — custom line items + discount persistence/math · ⬜ D — order assembly + save + Send-Link email
+- **Test health:** smoke runner detection fixed (was false-failing newer smokes). Suite is now an honest **52 pass / 23 fail**. The 23 are **pre-existing** C7-era markup drift + fixture drift from 3499 being rebuilt during the item-9 review — **today's work caused 0 regressions** (no smoke asserts old toggle dims; `toggle-style` + `c7x-toggle-behaviors` pass). Re-seeding 3499 (`tools/seed-test-data.php`) would clear the fixture-drift subset; the C7 markup-drift smokes are C16 cleanup.
+
 ## Current Status (updated 2026-05-31, cache-bust 2.3.52)
 
 **Built & verified (admin-side authoring surfaces):**
