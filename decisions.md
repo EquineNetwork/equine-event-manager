@@ -2332,6 +2332,22 @@ split line items when tack price ≠ regular; visual indicator (design pass) + "
 filter chip. Per-stall metadata is captured **regardless of pricing** for future
 flexibility.
 
+**Build status (2026-06-01, current build 2.5.2):**
+- ✅ **#5a — per-reservation tack pricing settings DONE (2.5.2).** Editor "Tack Stall Pricing"
+  (same / discounted / free) + "Tack Stall Price" fields; keys `_en_stall_tack_pricing_mode` +
+  `_en_stall_tack_price`. Smoke 16/16.
+- ⬜ **#5b/#5c/#5d remaining**, blocked on **two decisions Whitney owns** (the rest flows once
+  these land):
+  1. **Tack chart indicator style** — a "Tack" text badge, a small icon, or a colour treatment
+     on the assigned-stall pill. (The bundle explicitly defers this to a design pass, so it is
+     NOT being built blind.)
+  2. **Checkout per-stall designation** — build now, or defer to v1.1? Admin can already
+     designate via the chart (#5b) without it; it only applies in pick-from-layout mode and is
+     the most visual/JS-heavy piece.
+- **NB existing groundwork:** a `tack_stall_qty` *count* already flows submission → DB column →
+  billable quantity. Per-STALL `is_tack` (which specific stalls) is the net-new layer the
+  `Tack Stalls:` notes line adds on top.
+
 ### SCOPE-F. Special Requests visibility (V1 polish)
 Surface the existing customer `notes` "Special Requests" text on the Stall Charts page
 (pill tooltip and/or Assignment Issues card) — data exists, just isn't shown there today.

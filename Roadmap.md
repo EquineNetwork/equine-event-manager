@@ -258,8 +258,8 @@ These are admin-side mockup ports that can be done AFTER C10 customer flow works
      `AUDIT-C15.md`, `CLEANUP.md`, `HANDOFF.md`, `SESSION-NOTES.md`, `decisions.md`,
      `Roadmap.md`, `CLAUDE.md`, `BRAND_GUIDE.md`. Decide which to consolidate, move to
      `docs/`, or archive.
-  2. **`.DS_Store` removal + `.gitignore`** — delete committed Finder garbage from git,
-     add to `.gitignore`.
+  2. ✅ **`.DS_Store` removal + `.gitignore` — DONE (2.5.1).** Untracked the two committed
+     `.DS_Store` files; `.gitignore` already covers `.DS_Store` at all depths.
   3. **`BRAND_GUIDE.png`** — move from repo root to `assets/` or `docs/assets/`.
   4. **Stale phase audit files** — `AUDIT-C10C.md`, `AUDIT-C15.md` are phase-specific;
      consolidate/archive after those phases ship.
@@ -336,22 +336,32 @@ These are admin-side mockup ports that can be done AFTER C10 customer flow works
 Added from `BUNDLE_COMBINED_V1_NEW_SCOPE.txt`. **Recon →
 `docs/V1_NEW_SCOPE_RECON.md`**; all 7 questions locked in `decisions.md`.
 
-**Progress (4 of 5 feature commits done):**
+**Progress (4 of 5 features done; #5 started — current build 2.5.2):**
 - ✅ Part 4 venue/organizer unlink — was already done (verified).
 - ✅ **F — Special Requests on charts** (2.4.3; + popup order#/special-requests at 2.4.6).
 - ✅ **D2 — Group Name** (2.4.7; moved into Contact Information card 2.4.8).
 - ✅ **Customers menu + paginated list** (2.4.9).
 - ✅ **Scenario B — inventory split + one-time migration `eem-mig-004`** (2.5.0).
-- ⬜ **#5 — Tack stalls** (remaining). ⚠️ Pre-existing `tack_stall_qty` count groundwork
-  exists (submission → DB column → billable qty); the bundle extends to per-STALL `is_tack`
-  (`Tack Stalls:` notes line), per-reservation tack pricing (same/discounted/free), split
-  line items, admin chart mark/unmark, "Tack Stalls" filter. **Needs Whitney design input:
-  the visual indicator ("defer to design pass" per the bundle) + the checkout per-stall
-  designation UI.** Backend (pricing settings + notes storage + split line items) is
-  autonomous-buildable; the visual parts are not.
+- 🔨 **#5 — Tack stalls** (IN PROGRESS):
+  - ✅ **#5a — per-reservation tack pricing settings** (2.5.2): editor "Tack Stall Pricing"
+    (same / discounted / free) + "Tack Stall Price" fields; keys `_en_stall_tack_pricing_mode`
+    + `_en_stall_tack_price` in CPT defaults/normalize + shortcodes meta; JS show/hide of the
+    price row. Smoke `tack-5a-pricing` 16/16.
+  - ⬜ **#5b — admin chart mark/unmark + indicator + "Tack Stalls" filter.** Backend (toggle a
+    stall in/out of a `Tack Stalls:` notes line) is buildable; the **visual indicator is
+    blocked on Whitney's design call** ("defer to design pass" per the bundle: a "Tack" badge
+    vs icon vs color).
+  - ⬜ **#5c — split line items** (`2 regular @ $50 + 1 tack @ $25`) on receipt / email /
+    order detail — depends on #5b/#5d producing tack designations.
+  - ⬜ **#5d — checkout per-stall designation** (pick-from-layout mode) + live recalc — most
+    visual/JS-heavy; **open decision: build now vs defer to v1.1** (admin can designate via the
+    chart once #5b lands). NB pre-existing `tack_stall_qty` *count* groundwork exists (submission
+    → DB column → billable qty); per-STALL `is_tack` is the net-new layer.
+  - **Two decisions unblock the rest:** (1) tack chart indicator style; (2) checkout per-stall
+    designation now or v1.1.
 
 Also shipped alongside: reusable `tools/seed-test-data.php` (2.4.4–2.4.5) + C16 cleanup
-(`.DS_Store` untrack + 5-digit order-ID audit, 2.5.1).
+(`.DS_Store` untrack + 5-digit order-ID audit, 2.5.1; roadmap-status doc commit).
 
 **Recommended V1 commit order** (low-risk isolated wins → migration alone → biggest
 feature last):
