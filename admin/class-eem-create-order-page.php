@@ -116,9 +116,9 @@ class EEM_Create_Order_Page {
 					<p class="eem-field-hint"><?php esc_html_e( 'Search by name or email to autofill contact info. Skip to enter a new customer manually.', 'equine-event-manager' ); ?></p>
 					<button type="button" class="eem-btn eem-btn-secondary eem-co-cs-skip" data-eem-action="create-order-skip-customer"><?php esc_html_e( 'Skip — new customer', 'equine-event-manager' ); ?></button>
 				</div>
-				<div class="eem-co-cs-input-wrap" data-eem-co-cs-wrap>
-					<?php echo self::icon( 'search' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static inline SVG. ?>
-					<input type="text" class="eem-field-input eem-co-cs-input" placeholder="<?php esc_attr_e( 'Start typing a name or email…', 'equine-event-manager' ); ?>" data-eem-input-action="create-order-customer-search" aria-label="<?php esc_attr_e( 'Customer search', 'equine-event-manager' ); ?>" />
+				<div class="eem-search-wrap eem-co-cs-input-wrap" data-eem-co-cs-wrap>
+					<svg class="eem-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+					<input type="search" class="eem-search-input eem-co-cs-input" placeholder="<?php esc_attr_e( 'Start typing a name or email…', 'equine-event-manager' ); ?>" data-eem-input-action="create-order-customer-search" aria-label="<?php esc_attr_e( 'Customer search', 'equine-event-manager' ); ?>" />
 					<div class="eem-co-cs-dropdown" data-eem-co-cs-dropdown hidden></div>
 				</div>
 				<div class="eem-co-cs-picked" data-eem-co-cs-picked hidden>
