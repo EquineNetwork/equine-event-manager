@@ -57,6 +57,7 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-collect-payment-page.p
 // Phase 3 — Order Detail page (C6.A — single-order view; refund + activity-log
 // telemetry land in C6.B/C/D/E).
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-order-detail-page.php';
+require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-reports-page.php';
 
 // DS-1.B — Admin Dashboard page + data repository (renders against
 // .mockups/dashboard_page.html; em-dash placeholders for C8/C11-blocked
@@ -225,6 +226,9 @@ class EEM_Plugin {
 		// C5.C — Orders list row-action handlers.
 		add_action( 'admin_post_eem_order_resend_notification',   array( 'EEM_Orders_List_Page', 'handle_resend_notification' ) );
 		add_action( 'admin_post_eem_order_export_csv',            array( 'EEM_Orders_List_Page', 'handle_export_csv' ) );
+
+		// C15 — Reports export + cached-file download endpoints.
+		EEM_Reports_Page::register();
 		add_action( 'admin_post_eem_order_trash',                 array( 'EEM_Orders_List_Page', 'handle_trash' ) );
 		add_action( 'admin_post_eem_order_print_receipt',         array( 'EEM_Orders_List_Page', 'handle_print_receipt' ) );
 		add_action( 'admin_post_eem_orders_bulk_refund',          array( 'EEM_Orders_List_Page', 'handle_bulk_refund' ) );
