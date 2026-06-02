@@ -383,6 +383,58 @@ class EEM_Create_Order_Page {
 	}
 
 	/**
+	 * AJAX — section config for a chosen reservation. Drives which section cards
+	 * are enabled, their rate labels, the available dates, and the rail event name.
+	 * (Full interactive pricing/steppers reuse the customer-form engine in C13.B.2.)
+	 *
+	 * @return void
+	 */
+	public static function ajax_reservation_meta(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+		check_ajax_referer( 'eem_create_order_customer_search', '_wpnonce' );
+
+		$rid  = isset( $_POST['reservation_id'] ) ? absint( wp_unslash( $_POST['reservation_id'] ) ) : 0;
+		$post = $rid ? get_post( $rid ) : null;
+		if ( ! $post || EEM_Reservations_CPT::POST_TYPE !== $post->post_type ) {
+			wp_send_json_error( array( 'message' => __( 'Reservation not found.', 'equine-event-manager' ) ), 404 );
+		}
+
+		$cpt = new EEM_Reservations_CPT();
+		$d   = $cpt->get_meta_values( $rid );
+
+		$start = (string) ( $d['available_start_date'] ?? '' );
+		$end   = (string) ( $d['available_end_date'] ?? '' );
+
+		$stall_rate = (float) ( $d['stall_nightly_rate'] ?? 0 );
+		$rv_rate    = (float) ( $d['rv_nightly_rate'] ?? 0 );
+
+		wp_send_json_success( array(
+			'title'    => $post->post_title,
+			'dates'    => ( '' !== $start && '' !== $end ) ? ( $start . ' – ' . $end ) : '',
+			'sections' => array(
+				'stall'  => array(
+					'enabled' => ! empty( $d['stalls_enabled'] ),
+					'label'   => sprintf( /* translators: %s: nightly rate */ __( 'Stalls — %s/night', 'equine-event-manager' ), self::money( $stall_rate ) ),
+				),
+				'rv'     => array(
+					'enabled' => ! empty( $d['rv_enabled'] ),
+					'label'   => sprintf( /* translators: %s: nightly rate */ __( 'RV Spots — %s/night', 'equine-event-manager' ), self::money( $rv_rate ) ),
+				),
+				'addons' => array(
+					'enabled' => ! empty( $d['general_addons_enabled'] ),
+					'label'   => __( 'Add-ons configured on this reservation.', 'equine-event-manager' ),
+				),
+				'group'  => array(
+					'enabled' => ! empty( $d['group_reservations_enabled'] ),
+					'label'   => __( 'Group reservation available on this reservation.', 'equine-event-manager' ),
+				),
+			),
+		) );
+	}
+
+	/**
 	 * Format a money value for display.
 	 *
 	 * @param float $amount Amount.

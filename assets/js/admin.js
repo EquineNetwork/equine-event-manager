@@ -5236,9 +5236,51 @@ function duplicateReservationAjax(target) {
 		list.appendChild(row);
 	}
 
+	function coUpdateSection(key, sec) {
+		var card = document.querySelector('[data-eem-co-section="' + key + '"]');
+		if (!card) { return; }
+		var toggle = card.querySelector('[data-eem-action="create-order-toggle-section"]');
+		var bodyEl = card.querySelector('.eem-co-section-body');
+		var on = !!(sec && sec.enabled);
+		if (toggle) { toggle.classList.toggle('on', on); toggle.classList.toggle('off', !on); toggle.setAttribute('aria-checked', on ? 'true' : 'false'); }
+		if (bodyEl) {
+			bodyEl.hidden = !on;
+			var ph = bodyEl.querySelector('.eem-co-section-placeholder');
+			if (ph && sec && sec.label) { ph.textContent = sec.label; }
+		}
+	}
+
+	function coLoadReservation(rid) {
+		var cfg = coCfg();
+		if (!cfg.ajaxUrl || !rid) { return; }
+		var body = new URLSearchParams();
+		body.set('action', 'eem_create_order_reservation_meta');
+		body.set('_wpnonce', cfg.searchNonce || '');
+		body.set('reservation_id', rid);
+		fetch(cfg.ajaxUrl, { method: 'POST', credentials: 'same-origin', body: body })
+			.then(function (r) { return r.json(); })
+			.then(function (j) {
+				if (!j || !j.success || !j.data) { return; }
+				var d = j.data;
+				var empty = document.querySelector('[data-eem-co-summary-empty]');
+				if (empty) { empty.textContent = d.title + (d.dates ? ' · ' + d.dates : ''); }
+				var secs = d.sections || {};
+				coUpdateSection('stall', secs.stall);
+				coUpdateSection('rv', secs.rv);
+				coUpdateSection('addons', secs.addons);
+				coUpdateSection('group', secs.group);
+			})
+			.catch(function () {});
+	}
+
 	document.addEventListener('input', function (ev) {
 		var t = ev.target;
 		if (t && t.getAttribute && t.getAttribute('data-eem-input-action') === 'create-order-customer-search') { coSearch(t); }
+	});
+
+	document.addEventListener('change', function (ev) {
+		var t = ev.target;
+		if (t && t.getAttribute && t.getAttribute('data-eem-input-action') === 'create-order-reservation') { coLoadReservation(t.value); }
 	});
 
 	document.addEventListener('click', function (ev) {
