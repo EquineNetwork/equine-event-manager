@@ -8149,6 +8149,14 @@ table.eem-export-history td { padding:11px 14px; font-size:13px; color:#1d2327; 
 
 /* Section stubs */
 .eem-co-section-placeholder { margin: 0; }
+/* Section enable toggles match the customer reservation-form toggles
+   (.eem-reservation-section-toggle in public.css): larger, green when on. */
+.eem-co-section-card .eem-toggle { width: 58px; height: 34px; border-radius: 999px; }
+.eem-co-section-card .eem-toggle::after { width: 26px; height: 26px; top: 4px; }
+.eem-co-section-card .eem-toggle.off::after { left: 4px; }
+.eem-co-section-card .eem-toggle.on::after  { left: 28px; }
+.eem-co-section-card .eem-toggle.on  { background: #52b788; }
+.eem-co-section-card .eem-toggle.off { background: #cbd5e1; }
 
 /* Custom line items */
 .eem-co-custom-list { display: flex; flex-direction: column; gap: 8px; }
