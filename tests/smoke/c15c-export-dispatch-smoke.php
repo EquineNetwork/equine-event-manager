@@ -38,9 +38,12 @@ foreach ( EEM_Reports_Repo::REPORTS as $slug ) {
 	}
 }
 
-// Bad slug + pending format degrade to WP_Error, not fatal.
+// Bad slug degrades to WP_Error, not fatal.
 $check( 'unknown slug returns WP_Error', is_wp_error( EEM_Reports_Page::generate_export( 'nope', array(), 'csv' ) ) );
-$check( 'pdf format returns WP_Error (pending C15.E)', is_wp_error( EEM_Reports_Page::generate_export( 'orders', array(), 'pdf' ) ) );
+// PDF format now produces a real export (C15.E landed).
+$pdf_dispatch = EEM_Reports_Page::generate_export( 'orders', array(), 'pdf' );
+$check( 'pdf format returns an export array (C15.E)', is_array( $pdf_dispatch ) && isset( $pdf_dispatch['path'] ) );
+if ( is_array( $pdf_dispatch ) && isset( $pdf_dispatch['path'] ) ) { @unlink( $pdf_dispatch['path'] ); }
 
 // Export was logged to the history table.
 global $wpdb;

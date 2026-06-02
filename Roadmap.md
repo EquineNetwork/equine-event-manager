@@ -234,9 +234,9 @@ These are admin-side mockup ports that can be done AFTER C10 customer flow works
 - Final cross-mockup audit
 - 1-2 days work
 
-### C15 — Reports 🔨 IN PROGRESS (foundation done)
+### C15 — Reports ✅ COMPLETE (2.3.99)
 - Mockup: `.mockups/reports_page.html`. Kickoff pre-audit: `AUDIT-C15.md` (build
-  sequence C15.A–F). Legacy `render_reports_page` to be replaced by C15.C.
+  sequence C15.A–F). Legacy `render_reports_page` replaced by `EEM_Reports_Page`.
 - **C15.A ✅ (2.3.94):** `EEM_Reports_Repo` — 6 filter-aware query builders (Orders,
   Reservations, Revenue, Stall Occupancy, Customer List, Refund Log), each → {title,
   slug, headers, rows}. Reservation/date/status filters. Revenue uses C12 tax col;
@@ -244,11 +244,22 @@ These are admin-side mockup ports that can be done AFTER C10 customer flow works
 - **C15.B ✅ (2.3.95):** `EEM_Report_Exporter` — CSV (fputcsv + BOM), cache under
   `uploads/eem-reports/` (deny-all .htaccess; PII not URL-served), canonical filenames,
   30-day purge. Smoke 14/14.
-- **Remaining (UI layer — next session):** C15.C page port (filter bar + ZIP card + 6
-  report cards + export history + ~700 CSS LOC) **and the capability-checked download
-  handler** (streams cached files via `cached_path()`); C15.D filter JS (date presets,
-  custom-flip, localStorage `eem_reports_filter_state`, export dispatch); C15.E per-report
-  PDF (`EEM_PDF` + tabular template) + ZIP bundling (`ZipArchive`); C15.F finalize.
+- **C15.C ✅:** `EEM_Reports_Page` port — filter bar + ZIP card + 6 report cards +
+  export-history table + ~700 CSS LOC; capability-checked download handler streams cached
+  files via `cached_path()`; export dispatch (`generate_export`) + history logging to
+  `{prefix}en_report_exports`. Smoke 19/19.
+- **C15.D ✅ (2.3.99):** Reports filter JS (self-contained IIFE in admin.js, guarded on
+  `#eem-reports-filters`): date-preset auto-fill (last-7 / last-30 default / last-90 /
+  this-year / all / custom), custom-flip on manual date edit, localStorage persistence
+  (`eem_reports_filter_state`), live sync of filter values into every export form's
+  `[data-eem-export-filter]` hidden inputs. URL filter params win over saved state.
+- **C15.E ✅ (2.3.98):** per-report PDF (`EEM_PDF` + `templates/reports/report-pdf.php`
+  landscape tabular) + ZIP bundling (`ZipArchive`, 6 CSV + 6 PDF). Graceful degrade when
+  Dompdf/ZipArchive absent. Smoke 10/10.
+- **C15.F ✅:** finalize — all C15 smokes green (A 19 / B 14 / C 19 / E 10); stale C15.C
+  "pdf returns WP_Error (pending C15.E)" assertion updated to expect the real export.
+  **Recommended:** browser visual-verify of the Reports page vs. mockup + admin-legacy.css
+  cascade check (form-control prefixes already applied to the C15 CSS block).
 
 ### C13 / C14 — Create Order + Collect Payment ⏸️ AWAITING PAYMENT APPROVAL
 - Both dispatch Stripe / Authorize.net charges (and C14 the webhook handler) — CLAUDE.md
