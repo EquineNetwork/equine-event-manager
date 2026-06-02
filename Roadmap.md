@@ -227,6 +227,21 @@ These are admin-side mockup ports that can be done AFTER C10 customer flow works
 - Plugin dashboard with KPIs, recent orders, upcoming events, quick links
 - Lower priority than C-series work — can ship without it
 
+> ⚠️ **TODO (Whitney flagged 2026-06-01): wire up the Dashboard "Needs Attention"
+> + KPI placeholders to live data before launch.** The page is rendered but several
+> tiles/rows still show stub text pending other chunks:
+> - **"Pending C8 stall-chart data"** — Unassigned Stalls KPI, "— stalls unassigned"
+>   (Assign), "— RV lot assignment issues" (Fix), "— stall chart not configured"
+>   (Set up). Wire once C8 (Stall Charts) assignment data is queryable.
+> - **"Pending C11 agreement tracking"** — "— customers haven't signed the agreement"
+>   (View). C11 (email) shipped, but per-order agreement-signed tracking is a separate
+>   data source still to wire.
+> - **Stripe webhook not configured** row — resolves when C14 wires the webhook secret
+>   check; until then it correctly nags.
+> - Upcoming Reservations "Stall assignments — / —" progress bar also depends on C8.
+> Do a full Dashboard live-data pass at DS-1 finalization (or once C8/C11-tracking/C14
+> land), replacing every "Pending C#" stub with a real query.
+
 ---
 
 ## V2 BACKLOG (parked — DO NOT BUILD IN V1)
