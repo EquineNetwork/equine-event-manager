@@ -1196,6 +1196,47 @@
 	margin-top: 10px;
 	line-height: 1.5;
 }
+/* V1 #5d — optional customer tack-stall designation (amber, parity with the
+   admin chart's tack treatment). No price effect; operational only. */
+.eem-event-page .stall-tack-designate {
+	margin-top: 12px;
+	padding: 12px;
+	background: #FFFBEB;
+	border: 1px solid #fde68a;
+	border-radius: 4px;
+}
+.eem-event-page .stall-tack-designate__label {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 13px;
+	font-weight: 600;
+	color: #92400e;
+}
+.eem-event-page .stall-tack-designate__dot {
+	width: 9px;
+	height: 9px;
+	border-radius: 50%;
+	background: #f59e0b;
+	flex: 0 0 auto;
+}
+.eem-event-page .stall-tack-designate__select {
+	display: block;
+	width: 100%;
+	margin-top: 8px;
+	padding: 8px 10px;
+	font-size: 13px;
+	color: #1F2A44;
+	background: #fff;
+	border: 1px solid #fcd34d;
+	border-radius: 4px;
+}
+.eem-event-page .stall-tack-designate__hint {
+	font-size: 12px;
+	color: #92400e;
+	margin: 8px 0 0;
+	line-height: 1.5;
+}
 @media (max-width: 767px) {
 	.eem-event-page .picker-stall {
 		min-width: 36px;

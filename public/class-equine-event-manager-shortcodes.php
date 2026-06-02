@@ -1675,6 +1675,19 @@ class EEM_Shortcodes {
 				</div>
 				<div class="stall-selection-warn" data-eem-stall-warn><?php esc_html_e( "You've selected the maximum. Tap a selected stall to deselect, or use the +/− buttons above to reserve more.", 'equine-event-manager' ); ?></div>
 			</div>
+			<?php // V1 #5d — optional tack-stall designation. JS reveals it once stalls
+			// are picked and populates the options from the current selection. No
+			// price effect — a tack stall costs the same as any other stall. ?>
+			<div class="stall-tack-designate" data-eem-tack-designate hidden>
+				<label class="stall-tack-designate__label" for="eem-tack-select">
+					<span class="stall-tack-designate__dot" aria-hidden="true"></span>
+					<?php esc_html_e( 'Using one for tack? (optional)', 'equine-event-manager' ); ?>
+				</label>
+				<select class="stall-tack-designate__select" id="eem-tack-select" name="preferred_tack_stall" data-eem-tack-select>
+					<option value=""><?php esc_html_e( "No tack stall — we'll treat them all the same", 'equine-event-manager' ); ?></option>
+				</select>
+				<p class="stall-tack-designate__hint"><?php esc_html_e( 'Tell us which stall you plan to use for tack and storage. It costs the same — this just helps us lay out the barn.', 'equine-event-manager' ); ?></p>
+			</div>
 			<p class="stall-hint"><?php esc_html_e( 'Want different stalls? Tap a selected stall to deselect it, then pick another. To add or remove total stalls, use the +/− buttons in the product list above.', 'equine-event-manager' ); ?></p>
 		</div>
 		<?php
@@ -1940,6 +1953,10 @@ class EEM_Shortcodes {
 			'tack_stall_qty'          => 0,
 			'additional_shavings_qty' => 0,
 			'preferred_stall_units'   => $this->sanitize_preferred_stall_units( isset( $_POST['preferred_stall_units'] ) ? wp_unslash( $_POST['preferred_stall_units'] ) : array(), $data ),
+			// V1 #5d — optional customer-designated tack stall (MAPPED/pick mode
+			// only; operational, no price change). A single label, validated
+			// server-side to be one of the picked units before it's recorded.
+			'preferred_tack_stall'    => isset( $_POST['preferred_tack_stall'] ) ? sanitize_text_field( wp_unslash( $_POST['preferred_tack_stall'] ) ) : '',
 			'selected_stall_units'    => array(),
 			'selected_stall_labels'   => array(),
 			'stall_billable_quantity' => 0,
@@ -1962,6 +1979,13 @@ class EEM_Shortcodes {
 		$stall_payload['selected_stall_units']  = isset( $stall_payload['selected_stall_units'] ) && is_array( $stall_payload['selected_stall_units'] ) ? array_values( array_map( 'sanitize_text_field', $stall_payload['selected_stall_units'] ) ) : array();
 		$stall_payload['selected_stall_labels'] = isset( $stall_payload['selected_stall_labels'] ) && is_array( $stall_payload['selected_stall_labels'] ) ? array_values( array_map( 'sanitize_text_field', $stall_payload['selected_stall_labels'] ) ) : array();
 		$stall_payload['preferred_stall_units'] = isset( $stall_payload['preferred_stall_units'] ) && is_array( $stall_payload['preferred_stall_units'] ) ? array_values( array_map( 'sanitize_text_field', $stall_payload['preferred_stall_units'] ) ) : array();
+		$stall_payload['preferred_tack_stall'] = isset( $stall_payload['preferred_tack_stall'] ) ? sanitize_text_field( (string) $stall_payload['preferred_tack_stall'] ) : '';
+
+		// A designated tack stall is only meaningful when it's one of the
+		// customer's picked units — otherwise drop it silently.
+		if ( '' !== $stall_payload['preferred_tack_stall'] && ! in_array( $stall_payload['preferred_tack_stall'], $stall_payload['preferred_stall_units'], true ) ) {
+			$stall_payload['preferred_tack_stall'] = '';
+		}
 
 		return $stall_payload;
 	}
@@ -3204,6 +3228,14 @@ class EEM_Shortcodes {
 
 			if ( ! empty( $submission['preferred_stall_units'] ) ) {
 				$stall_notes = trim( $stall_notes . "\nAssigned Stall Units: " . implode( ', ', array_map( 'sanitize_text_field', (array) $submission['preferred_stall_units'] ) ) );
+			}
+
+			// V1 #5d — customer-designated tack stall (pick mode). Recorded on the
+			// same `Tack Stalls:` notes line the admin chart toggle uses, so both
+			// paths converge on one source of truth. Operational only — no price
+			// effect. Already validated to be one of the picked units above.
+			if ( ! empty( $submission['preferred_tack_stall'] ) ) {
+				$stall_notes = trim( $stall_notes . "\nTack Stalls: " . sanitize_text_field( (string) $submission['preferred_tack_stall'] ) );
 			}
 
 			$inserted = false !== $wpdb->insert(
@@ -9339,6 +9371,34 @@ RV Lot: " . $rv_lot['name'] );
 				}
 				var warnEl = picker.querySelector('[data-eem-stall-warn]');
 				if (warnEl) { warnEl.classList.toggle('show', max > 0 && selected.length >= max); }
+				syncStallTackDesignate(picker, selected);
+			}
+
+			/* V1 #5d — keep the optional tack-stall <select> in sync with the
+			   current picks. Reveal it once at least one stall is chosen; rebuild
+			   its options from the selection, preserving the prior choice if it's
+			   still selected, otherwise resetting to "no tack stall". */
+			function syncStallTackDesignate(picker, selected) {
+				var wrap = picker.querySelector('[data-eem-tack-designate]');
+				if (!wrap) { return; }
+				var sel = wrap.querySelector('[data-eem-tack-select]');
+				if (!sel) { return; }
+				var prev = sel.value;
+				var keep = selected.indexOf(prev) !== -1 ? prev : '';
+				var noneLabel = sel.options.length ? sel.options[0].textContent : '';
+				sel.innerHTML = '';
+				var none = document.createElement('option');
+				none.value = '';
+				none.textContent = noneLabel;
+				sel.appendChild(none);
+				selected.forEach(function(label) {
+					var opt = document.createElement('option');
+					opt.value = label;
+					opt.textContent = '#' + label;
+					sel.appendChild(opt);
+				});
+				sel.value = keep;
+				wrap.hidden = selected.length === 0;
 			}
 			document.addEventListener('change', function(ev) {
 				var inp = ev.target;
