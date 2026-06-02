@@ -1765,23 +1765,26 @@
 	opacity: 0;
 	cursor: pointer;
 }
+/* Official toggle style — see decisions.md DS-TOGGLE. Must stay identical to the
+   admin .eem-toggle in admin.css: 44×24, radius 8px, 18px knob, off #D9E2F2,
+   on #1668F2, knob travel translateX(20px). */
 .eem-reservation-section-toggle__track {
 	position: relative;
 	display: inline-flex;
 	align-items: center;
-	width: 58px;
-	height: 34px;
-	border-radius: 999px;
-	background: #cbd5e1;
+	width: 44px;
+	height: 24px;
+	border-radius: 8px;
+	background: #D9E2F2;
 	transition: background 0.2s ease;
 }
 .eem-reservation-section-toggle__track::after {
 	content: "";
 	position: absolute;
-	top: 4px;
-	left: 4px;
-	width: 26px;
-	height: 26px;
+	top: 3px;
+	left: 3px;
+	width: 18px;
+	height: 18px;
 	border-radius: 999px;
 	background: #fff;
 	box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
@@ -1792,10 +1795,10 @@
 	outline-offset: 3px;
 }
 .eem-reservation-section-toggle input:checked + .eem-reservation-section-toggle__track {
-	background: #52b788;
+	background: #1668F2;
 }
 .eem-reservation-section-toggle input:checked + .eem-reservation-section-toggle__track::after {
-	transform: translateX(24px);
+	transform: translateX(20px);
 }
 .eem-rate-badge {
 	display: inline-flex;
@@ -4271,25 +4274,8 @@
 	margin-bottom: 0;
 }
 
-/* Section toggle → mockup blue 44×24 pill (was green 58×34) */
-.eem-event-page .eem-reservation-section-toggle__track {
-	width: 44px;
-	height: 24px;
-	border-radius: 8px;
-	background: #D9E2F2;
-}
-.eem-event-page .eem-reservation-section-toggle__track::after {
-	width: 18px;
-	height: 18px;
-	top: 3px;
-	left: 3px;
-}
-.eem-event-page .eem-reservation-section-toggle input:checked + .eem-reservation-section-toggle__track {
-	background: #1668F2;
-}
-.eem-event-page .eem-reservation-section-toggle input:checked + .eem-reservation-section-toggle__track::after {
-	transform: translateX(20px);
-}
+/* (Toggle override removed — the official 44×24 blue values now live in the base
+   .eem-reservation-section-toggle rule above. See decisions.md DS-TOGGLE.) */
 
 /* Group rider cards (mockup .rider-card) */
 .eem-event-page .eem-group-rider-card {

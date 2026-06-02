@@ -571,9 +571,10 @@ body.eem-shell-page {
    Toggle switch — pill control used in section headers and field rows
    States are .eem-toggle.on / .eem-toggle.off (JS sets both).
    ───────────────────────────────────────────────────────────── */
-/* Canonical toggle — matches the customer reservation-form section toggle
-   (.eem-reservation-section-toggle in public.css): 58×34, electric-blue on,
-   grey off, 26px white knob. Used plugin-wide for a single toggle language. */
+/* THE OFFICIAL TOGGLE — single style plugin-wide. See decisions.md DS-TOGGLE.
+   Must stay byte-identical to .eem-reservation-section-toggle (public.css):
+   44×24, radius 8px, off #D9E2F2, on #1668F2, 18px knob, translateX(20px).
+   Do NOT change one stylesheet without the other (toggle-style-smoke guards it). */
 .eem-toggle {
 	width: 44px;
 	height: 24px;

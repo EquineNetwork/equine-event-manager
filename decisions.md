@@ -6,6 +6,44 @@ Each decision is dated. If a decision is later overturned, leave the original en
 
 ---
 
+## Design System
+
+### DS-TOGGLE. Official toggle style (LOCKED 2026-06-02)
+
+There is **one** toggle style across the entire plugin — admin and front-end. Every
+on/off switch (section enables, settings toggles, Scenario-B controls, Create
+Order section toggles, customer reservation-form section toggles) must render
+identically to this spec:
+
+| Property            | Value        |
+|---------------------|--------------|
+| track width         | `44px`       |
+| track height        | `24px`       |
+| track border-radius | `8px` (rounded rect, **not** a full pill) |
+| track background — off | `#D9E2F2` |
+| track background — on  | `#1668F2` (`--eem-electric`) |
+| knob width/height   | `18px` circle |
+| knob top / left     | `3px` / `3px` |
+| knob travel (on)    | `transform: translateX(20px)` |
+| knob background     | `#fff`, `box-shadow: 0 2px 6px rgba(15,23,42,.2)` |
+
+Canonical definitions:
+- **Admin:** `.eem-toggle` (+ `.eem-toggle--on/--off` BEM variant) in `assets/css/admin.css`. Rendered on a `<button>`, so it also resets UA chrome (`border:none; padding:0; margin:0; appearance:none`).
+- **Front-end:** `.eem-reservation-section-toggle__track` in `assets/css/public.css`.
+
+**Cascade gotcha that caused real rework (logged so it doesn't recur):** the
+front-end toggle had a base rule (58×34 green pill) that was fully overridden by a
+later `.eem-event-page` block (44×24 blue rounded-rect). Matching the *base* values
+produced a wrong toggle three times. **When matching a front-end/mockup element,
+inspect the COMPUTED style in DevTools — never the first rule you find.** The dead
+base values were consolidated into the canonical rule as part of this decision so
+the source is now honest (one definition, no misleading override).
+
+A smoke (`tests/smoke/toggle-style-smoke.php`) asserts both stylesheets carry these
+exact values; any drift trips it.
+
+---
+
 ## TEC Integration — Lifecycle & Boundaries
 
 ### TEC-1. Event deletion with linked reservation
