@@ -63,6 +63,16 @@ class EEM_Create_Order_Page {
 
 		$reservations = self::get_reservation_options();
 
+		// Localize the customer-search endpoint for admin.js (same inline pattern
+		// as the stall chart's window.eemStallChart).
+		?>
+		<script>
+			window.eemCreateOrder = window.eemCreateOrder || {};
+			window.eemCreateOrder.ajaxUrl     = <?php echo wp_json_encode( admin_url( 'admin-ajax.php' ) ); ?>;
+			window.eemCreateOrder.searchNonce = <?php echo wp_json_encode( wp_create_nonce( 'eem_create_order_customer_search' ) ); ?>;
+		</script>
+		<?php
+
 		eem_render_page_open( array(
 			'title'      => __( 'Create Order', 'equine-event-manager' ),
 			'subtitle'   => __( 'Manually create a new order on behalf of a customer — phone orders, walk-ins, or anything not coming through the customer-facing reservation form.', 'equine-event-manager' ),
@@ -341,6 +351,35 @@ class EEM_Create_Order_Page {
 			);
 		}
 		return $out;
+	}
+
+	/**
+	 * AJAX — customer typeahead for the lookup card. Returns up to 8 customers
+	 * (aggregated by email from existing orders) matching the search term.
+	 *
+	 * @return void
+	 */
+	public static function ajax_customer_search(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+		check_ajax_referer( 'eem_create_order_customer_search', '_wpnonce' );
+
+		$term    = isset( $_POST['s'] ) ? sanitize_text_field( wp_unslash( $_POST['s'] ) ) : '';
+		$results = array();
+		if ( strlen( $term ) >= 2 && class_exists( 'EEM_Customer_Profile_Repo' ) ) {
+			$repo = new EEM_Customer_Profile_Repo();
+			$list = $repo->get_customer_list( array( 'search' => $term, 'per_page' => 8, 'paged' => 1 ) );
+			$rows = isset( $list['rows'] ) && is_array( $list['rows'] ) ? $list['rows'] : array();
+			foreach ( $rows as $r ) {
+				$results[] = array(
+					'name'   => (string) ( $r['name'] ?? '' ),
+					'email'  => (string) ( $r['email'] ?? '' ),
+					'orders' => (int) ( $r['orders'] ?? 0 ),
+				);
+			}
+		}
+		wp_send_json_success( array( 'results' => $results ) );
 	}
 
 	/**

@@ -5137,3 +5137,143 @@ function duplicateReservationAjax(target) {
 		restore();
 	});
 })();
+
+/* ── C13.A.2 — Create Order page interactivity ──
+   Customer typeahead (eem_create_order_customer_search AJAX) → pick → autofill
+   contact; Skip / Change; section enable toggles; payment-tab switch; custom
+   line item add/remove. Delegated listeners; config via window.eemCreateOrder. */
+(function () {
+	function coCfg() { return window.eemCreateOrder || {}; }
+	function coEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
+	var coTimer = null;
+
+	function coRenderResults(dropdown, results) {
+		if (!dropdown) { return; }
+		var html = '';
+		if (!results.length) {
+			html = '<div class="eem-co-cs-result-new" data-eem-action="create-order-skip-customer">No matches — enter a new customer manually</div>';
+		} else {
+			results.forEach(function (r) {
+				var meta = coEsc(r.email) + (r.orders ? ' · ' + r.orders + ' prior order' + (r.orders === 1 ? '' : 's') : '');
+				html += '<div class="eem-co-cs-result" data-eem-action="create-order-pick-customer" data-name="' + coEsc(r.name) + '" data-email="' + coEsc(r.email) + '">' +
+					'<div class="eem-co-cs-result-main">' + coEsc(r.name) + '</div>' +
+					'<div class="eem-co-cs-result-meta">' + meta + '</div></div>';
+			});
+			html += '<div class="eem-co-cs-result-new" data-eem-action="create-order-skip-customer">+ Create new customer — none of these match</div>';
+		}
+		dropdown.innerHTML = html;
+		dropdown.hidden = false;
+	}
+
+	function coSearch(input) {
+		var cfg = coCfg();
+		var term = input.value.trim();
+		var wrap = input.closest('[data-eem-co-cs-wrap]');
+		var dropdown = wrap ? wrap.querySelector('[data-eem-co-cs-dropdown]') : null;
+		if (!dropdown || !cfg.ajaxUrl) { return; }
+		if (term.length < 2) { dropdown.hidden = true; dropdown.innerHTML = ''; return; }
+		clearTimeout(coTimer);
+		coTimer = setTimeout(function () {
+			var body = new URLSearchParams();
+			body.set('action', 'eem_create_order_customer_search');
+			body.set('_wpnonce', cfg.searchNonce || '');
+			body.set('s', term);
+			fetch(cfg.ajaxUrl, { method: 'POST', credentials: 'same-origin', body: body })
+				.then(function (r) { return r.json(); })
+				.then(function (j) { coRenderResults(dropdown, (j && j.success && j.data && j.data.results) ? j.data.results : []); })
+				.catch(function () {});
+		}, 250);
+	}
+
+	function coSetContact(name, email) {
+		var form = document.getElementById('eem-create-order-form');
+		if (!form) { return; }
+		var parts = String(name || '').trim().split(/\s+/);
+		var first = parts.shift() || '';
+		var last = parts.join(' ');
+		var f = form.querySelector('[data-eem-co-contact="first_name"]'); if (f) { f.value = first; }
+		var l = form.querySelector('[data-eem-co-contact="last_name"]'); if (l) { l.value = last; }
+		var e = form.querySelector('[data-eem-co-contact="email"]'); if (e) { e.value = email || ''; }
+	}
+
+	function coPick(el) {
+		var card = document.querySelector('[data-eem-co-customer]');
+		var name = el.getAttribute('data-name') || '';
+		var email = el.getAttribute('data-email') || '';
+		if (card) {
+			var pn = card.querySelector('[data-eem-co-cs-picked-name]'); if (pn) { pn.textContent = name || '—'; }
+			var pm = card.querySelector('[data-eem-co-cs-picked-meta]'); if (pm) { pm.textContent = email || '—'; }
+			var wrap = card.querySelector('[data-eem-co-cs-wrap]'); if (wrap) { wrap.hidden = true; }
+			var picked = card.querySelector('[data-eem-co-cs-picked]'); if (picked) { picked.hidden = false; }
+			var dd = card.querySelector('[data-eem-co-cs-dropdown]'); if (dd) { dd.hidden = true; }
+		}
+		coSetContact(name, email);
+	}
+
+	function coChange() {
+		var card = document.querySelector('[data-eem-co-customer]');
+		if (!card) { return; }
+		var wrap = card.querySelector('[data-eem-co-cs-wrap]'); if (wrap) { wrap.hidden = false; }
+		var picked = card.querySelector('[data-eem-co-cs-picked]'); if (picked) { picked.hidden = true; }
+		var input = card.querySelector('[data-eem-input-action="create-order-customer-search"]'); if (input) { input.value = ''; input.focus(); }
+	}
+
+	function coSkip() {
+		var card = document.querySelector('[data-eem-co-customer]');
+		if (card) { var dd = card.querySelector('[data-eem-co-cs-dropdown]'); if (dd) { dd.hidden = true; } }
+		var form = document.getElementById('eem-create-order-form');
+		var f = form ? form.querySelector('[data-eem-co-contact="first_name"]') : null; if (f) { f.focus(); }
+	}
+
+	function coAddCustomItem() {
+		var list = document.querySelector('[data-eem-co-custom-list]');
+		if (!list) { return; }
+		var row = document.createElement('div');
+		row.className = 'eem-co-custom-row';
+		row.innerHTML = '<input type="text" class="eem-field-input" name="custom_item_desc[]" placeholder="Description (e.g. Late arrival fee)">' +
+			'<div class="eem-co-ci-price-wrap"><span class="eem-co-ci-currency">$</span><input type="number" step="0.01" min="0" class="eem-field-input eem-co-ci-price" name="custom_item_amount[]" placeholder="0.00"></div>' +
+			'<button type="button" class="eem-co-ci-remove" data-eem-action="create-order-remove-custom-item" aria-label="Remove">×</button>';
+		list.appendChild(row);
+	}
+
+	document.addEventListener('input', function (ev) {
+		var t = ev.target;
+		if (t && t.getAttribute && t.getAttribute('data-eem-input-action') === 'create-order-customer-search') { coSearch(t); }
+	});
+
+	document.addEventListener('click', function (ev) {
+		var t = ev.target.closest ? ev.target.closest('[data-eem-action^="create-order-"]') : null;
+		if (!t) {
+			// Outside-click closes the typeahead dropdown.
+			var w = document.querySelector('[data-eem-co-cs-wrap]');
+			if (w && !w.contains(ev.target)) { var d = w.querySelector('[data-eem-co-cs-dropdown]'); if (d) { d.hidden = true; } }
+			return;
+		}
+		var action = t.getAttribute('data-eem-action');
+		if (action === 'create-order-pick-customer') { ev.preventDefault(); coPick(t); }
+		else if (action === 'create-order-change-customer') { ev.preventDefault(); coChange(); }
+		else if (action === 'create-order-skip-customer') { ev.preventDefault(); coSkip(); }
+		else if (action === 'create-order-add-custom-item') { ev.preventDefault(); coAddCustomItem(); }
+		else if (action === 'create-order-remove-custom-item') { ev.preventDefault(); var r = t.closest('.eem-co-custom-row'); if (r) { r.remove(); } }
+		else if (action === 'create-order-toggle-section') {
+			ev.preventDefault();
+			var on = !t.classList.contains('on');
+			t.classList.toggle('on', on); t.classList.toggle('off', !on);
+			t.setAttribute('aria-checked', on ? 'true' : 'false');
+			var sec = t.closest('[data-eem-co-section]');
+			var bodyEl = sec ? sec.querySelector('.eem-co-section-body') : null;
+			if (bodyEl) { bodyEl.hidden = !on; }
+		} else if (action === 'create-order-payment-tab') {
+			ev.preventDefault();
+			var tab = t.getAttribute('data-tab');
+			document.querySelectorAll('[data-eem-action="create-order-payment-tab"]').forEach(function (b) {
+				var active = b.getAttribute('data-tab') === tab;
+				b.classList.toggle('is-active', active);
+				b.setAttribute('aria-selected', active ? 'true' : 'false');
+			});
+			document.querySelectorAll('[data-eem-co-payment-panel]').forEach(function (p) {
+				p.hidden = p.getAttribute('data-eem-co-payment-panel') !== tab;
+			});
+		}
+	});
+})();
