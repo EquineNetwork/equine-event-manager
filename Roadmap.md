@@ -333,9 +333,25 @@ These are admin-side mockup ports that can be done AFTER C10 customer flow works
 
 ## V1 NEW SCOPE (strategic chat, 2026-06-01)
 
-Added from `BUNDLE_COMBINED_V1_NEW_SCOPE.txt`. **Recon complete →
-`docs/V1_NEW_SCOPE_RECON.md`** (file:line audit, migration plan, tack data model,
-sequencing, open questions). **No implementation until Whitney confirms the sequence.**
+Added from `BUNDLE_COMBINED_V1_NEW_SCOPE.txt`. **Recon →
+`docs/V1_NEW_SCOPE_RECON.md`**; all 7 questions locked in `decisions.md`.
+
+**Progress (4 of 5 feature commits done):**
+- ✅ Part 4 venue/organizer unlink — was already done (verified).
+- ✅ **F — Special Requests on charts** (2.4.3; + popup order#/special-requests at 2.4.6).
+- ✅ **D2 — Group Name** (2.4.7; moved into Contact Information card 2.4.8).
+- ✅ **Customers menu + paginated list** (2.4.9).
+- ✅ **Scenario B — inventory split + one-time migration `eem-mig-004`** (2.5.0).
+- ⬜ **#5 — Tack stalls** (remaining). ⚠️ Pre-existing `tack_stall_qty` count groundwork
+  exists (submission → DB column → billable qty); the bundle extends to per-STALL `is_tack`
+  (`Tack Stalls:` notes line), per-reservation tack pricing (same/discounted/free), split
+  line items, admin chart mark/unmark, "Tack Stalls" filter. **Needs Whitney design input:
+  the visual indicator ("defer to design pass" per the bundle) + the checkout per-stall
+  designation UI.** Backend (pricing settings + notes storage + split line items) is
+  autonomous-buildable; the visual parts are not.
+
+Also shipped alongside: reusable `tools/seed-test-data.php` (2.4.4–2.4.5) + C16 cleanup
+(`.DS_Store` untrack + 5-digit order-ID audit, 2.5.1).
 
 **Recommended V1 commit order** (low-risk isolated wins → migration alone → biggest
 feature last):
