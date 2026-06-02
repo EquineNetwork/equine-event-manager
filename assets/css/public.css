@@ -4221,6 +4221,7 @@
 }
 .eem-event-page .eem-group-name-field > span {
 	display: block;
+	margin-bottom: 6px;
 }
 .eem-event-page .eem-group-name-field input[type="text"] {
 	width: 100%;
