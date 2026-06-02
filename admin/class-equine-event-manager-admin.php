@@ -3719,6 +3719,30 @@ class EEM_Admin {
 		return '';
 	}
 
+	/**
+	 * Deterministic accent color for a group name, so the same group reads as the
+	 * same color across every stall pill (By Location) and every roster chip (By
+	 * Customer). Empty group → empty string (no indicator). Palette is chosen to be
+	 * distinguishable and to avoid clashing with reserved-blue, blocked-red, and the
+	 * amber tack dot.
+	 *
+	 * @param string $group_name Group label (already trimmed).
+	 * @return string Hex color, or '' when no group.
+	 */
+	private function group_color_for( string $group_name ): string {
+		$group_name = trim( $group_name );
+		if ( '' === $group_name ) {
+			return '';
+		}
+		$palette = array( '#2563eb', '#059669', '#7c3aed', '#0891b2', '#db2777', '#4f46e5', '#0d9488', '#c026d3' );
+		$sum     = 0;
+		$len     = strlen( $group_name );
+		for ( $i = 0; $i < $len; $i++ ) {
+			$sum += ord( $group_name[ $i ] );
+		}
+		return $palette[ $sum % count( $palette ) ];
+	}
+
 	private function build_stall_chart_grid( $reservation_id, $config ) {
 		$orders = array_filter(
 			$this->orders_repository->get_orders( '', 'date', 'asc' ),
@@ -4323,18 +4347,30 @@ class EEM_Admin {
 										<?php
 										$eem_cell_note  = isset( $cell['special_requests'] ) ? trim( (string) $cell['special_requests'] ) : '';
 										$eem_cell_group = isset( $cell['group_name'] ) ? trim( (string) $cell['group_name'] ) : '';
+										$eem_cell_gcolor = $this->group_color_for( $eem_cell_group );
+										// Combine group + special-requests into one hover tooltip.
+										$eem_title_parts = array();
+										if ( '' !== $eem_cell_group ) {
+											$eem_title_parts[] = sprintf( /* translators: %s: group name */ __( 'Group: %s', 'equine-event-manager' ), $eem_cell_group );
+										}
+										if ( '' !== $eem_cell_note ) {
+											$eem_title_parts[] = sprintf( /* translators: %s: customer special requests text */ __( 'Special requests: %s', 'equine-event-manager' ), $eem_cell_note );
+										}
+										$eem_pill_title = implode( ' · ', $eem_title_parts );
 										?>
-										<span class="eem-occ-pill eem-occ-pill--reserved<?php echo '' !== $eem_cell_note ? ' eem-occ-pill--has-note' : ''; ?><?php echo ! empty( $cell['is_tack'] ) ? ' eem-occ-pill--tack' : ''; ?>" data-is-tack="<?php echo ! empty( $cell['is_tack'] ) ? '1' : '0'; ?>"
+										<span class="eem-occ-pill eem-occ-pill--reserved<?php echo '' !== $eem_cell_note ? ' eem-occ-pill--has-note' : ''; ?><?php echo ! empty( $cell['is_tack'] ) ? ' eem-occ-pill--tack' : ''; ?><?php echo '' !== $eem_cell_group ? ' eem-occ-pill--grouped' : ''; ?>" data-is-tack="<?php echo ! empty( $cell['is_tack'] ) ? '1' : '0'; ?>"
 											data-order-key="<?php echo esc_attr( $cell['order_key'] ); ?>"
 											data-order-id="<?php echo esc_attr( $cell['order_key'] ); ?>"
 											data-eem-action="stall-pill-click"
 											data-customer-name="<?php echo esc_attr( $cell['label'] ); ?>"
 											data-customer="<?php echo esc_attr( $cell['label'] ); ?>"
 											data-order-number="<?php echo esc_attr( $this->format_order_number_display( (string) ( $cell['order_number'] ?? '' ) ) ); ?>"
-											<?php if ( '' !== $eem_cell_group ) : ?>data-group-name="<?php echo esc_attr( $eem_cell_group ); ?>"<?php endif; ?>
+											<?php if ( '' !== $eem_cell_group ) : ?>data-group-name="<?php echo esc_attr( $eem_cell_group ); ?>" style="--eem-group-color:<?php echo esc_attr( $eem_cell_gcolor ); ?>"<?php endif; ?>
 											data-stall="<?php echo esc_attr( (string) $row['unit'] ); ?>"
 											data-date="<?php echo esc_attr( (string) $date_key ); ?>"
-											<?php if ( '' !== $eem_cell_note ) : ?>data-special-requests="<?php echo esc_attr( $eem_cell_note ); ?>" title="<?php echo esc_attr( sprintf( /* translators: %s: customer special requests text */ __( 'Special requests: %s', 'equine-event-manager' ), $eem_cell_note ) ); ?>"<?php endif; ?>>
+											<?php if ( '' !== $eem_cell_note ) : ?>data-special-requests="<?php echo esc_attr( $eem_cell_note ); ?>"<?php endif; ?>
+											<?php if ( '' !== $eem_pill_title ) : ?>title="<?php echo esc_attr( $eem_pill_title ); ?>"<?php endif; ?>>
+											<?php if ( '' !== $eem_cell_group ) : ?><span class="eem-occ-pill__group-dot" aria-hidden="true"></span><span class="screen-reader-text"><?php echo esc_html( sprintf( /* translators: %s: group name */ __( '(group: %s)', 'equine-event-manager' ), $eem_cell_group ) ); ?></span><?php endif; ?>
 											<?php echo esc_html( $cell['label'] ); ?>
 											<?php if ( '' !== $eem_cell_note ) : ?><span class="eem-occ-pill__note-dot" aria-hidden="true"></span><span class="screen-reader-text"><?php esc_html_e( '(has special requests)', 'equine-event-manager' ); ?></span><?php endif; ?>
 											<?php if ( ! empty( $cell['is_tack'] ) ) : ?><span class="eem-occ-pill__tack-dot" aria-hidden="true"></span><span class="screen-reader-text"><?php esc_html_e( '(tack stall)', 'equine-event-manager' ); ?></span><?php endif; ?><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
@@ -4401,7 +4437,7 @@ class EEM_Admin {
 								</a>
 								<?php if ( '' !== $eem_row_group ) : ?>
 									<div class="eem-chart-cust-group">
-										<span class="eem-chart-cust-group__chip" title="<?php echo esc_attr( $eem_row_group ); ?>"><?php echo esc_html( $eem_row_group ); ?></span>
+										<span class="eem-chart-cust-group__chip" style="--eem-group-color:<?php echo esc_attr( $this->group_color_for( $eem_row_group ) ); ?>" title="<?php echo esc_attr( $eem_row_group ); ?>"><span class="eem-chart-cust-group__dot" aria-hidden="true"></span><?php echo esc_html( $eem_row_group ); ?></span>
 									</div>
 								<?php endif; ?>
 								<?php if ( '' !== $eem_row_note ) : ?>

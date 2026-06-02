@@ -7097,6 +7097,12 @@ a.eem-btn--ghost:focus    { color: #1d2327; }
 .eem-occ-pill--tack { background: var(--eem-warn-bg); color: var(--eem-warn-text); border-color: var(--eem-warn-border); }
 .eem-occ-pill--tack .eem-occ-chevron { color: var(--eem-warn-text); }
 .eem-occ-pill__tack-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--eem-warn-accent); flex-shrink: 0; }
+/* V1 D2: group indicator on the By Location grid — a leading dot colored per
+   group (same group = same color, set inline via --eem-group-color) plus a
+   matching left-border accent, so groups are scannable without leaving the
+   stall map. */
+.eem-occ-pill--grouped { border-left: 3px solid var(--eem-group-color, var(--eem-border-card)); }
+.eem-occ-pill__group-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--eem-group-color, var(--eem-text-muted)); flex-shrink: 0; }
 
 /* ── Customer night count table ── */
 .eem-cust-chart-table tbody tr { border-bottom: 1px solid #f0f0f1; }
@@ -7108,7 +7114,8 @@ a.eem-btn--ghost:focus    { color: #1d2327; }
 .eem-chart-cust-note__label { font-weight: 700; }
 /* V1 D2: Group Name — chip under the customer name + the "Show by group" toggle. */
 .eem-chart-cust-group { margin-top: 3px; }
-.eem-chart-cust-group__chip { display: inline-block; max-width: 220px; padding: 1px 9px; font-size: 11px; font-weight: 700; color: var(--eem-electric); background: var(--eem-info-bg); border: 1px solid var(--eem-info-border); border-radius: 999px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: top; }
+.eem-chart-cust-group__chip { display: inline-flex; align-items: center; gap: 5px; max-width: 220px; padding: 1px 9px; font-size: 11px; font-weight: 700; color: var(--eem-electric); background: var(--eem-info-bg); border: 1px solid var(--eem-group-color, var(--eem-info-border)); border-radius: 999px; overflow: hidden; white-space: nowrap; vertical-align: top; }
+.eem-chart-cust-group__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--eem-group-color, var(--eem-electric)); flex-shrink: 0; }
 .eem-stall-chart-group-toggle { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid var(--eem-border-card); border-radius: var(--eem-radius); background: #fff; color: var(--eem-text); font-size: 12.5px; font-weight: 600; font-family: inherit; cursor: pointer; white-space: nowrap; }
 .eem-stall-chart-group-toggle svg { width: 14px; height: 14px; }
 .eem-stall-chart-group-toggle:hover { background: var(--eem-bg-hover); border-color: var(--eem-electric); color: var(--eem-electric); }
