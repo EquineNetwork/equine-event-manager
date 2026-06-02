@@ -216,7 +216,7 @@ class EEM_Create_Order_Page {
 		<section class="eem-card eem-co-section-card" data-eem-co-section="<?php echo esc_attr( $key ); ?>">
 			<header class="eem-card-header">
 				<h2 class="eem-card-title"><?php echo $icon_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static inline SVG. ?> <?php echo esc_html( $label ); ?></h2>
-				<button type="button" class="eem-toggle <?php echo $enabled ? 'is-on' : 'is-off'; ?>" role="switch" aria-checked="<?php echo $enabled ? 'true' : 'false'; ?>" data-eem-action="create-order-toggle-section" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: section name */ __( 'Toggle %s', 'equine-event-manager' ), $label ) ); ?>"></button>
+				<button type="button" class="eem-toggle <?php echo $enabled ? 'on' : 'off'; ?>" role="switch" aria-checked="<?php echo $enabled ? 'true' : 'false'; ?>" data-eem-action="create-order-toggle-section" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: section name */ __( 'Toggle %s', 'equine-event-manager' ), $label ) ); ?>"></button>
 			</header>
 			<div class="eem-card-body eem-co-section-body"<?php echo $enabled ? '' : ' hidden'; ?>>
 				<p class="eem-field-hint eem-co-section-placeholder"><?php esc_html_e( 'Configured from the selected reservation. Choose a reservation above to load this section.', 'equine-event-manager' ); ?></p>

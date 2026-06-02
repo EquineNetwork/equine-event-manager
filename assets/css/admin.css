@@ -8116,6 +8116,11 @@ table.eem-export-history td { padding:11px 14px; font-size:13px; color:#1d2327; 
 .eem-co-main { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .eem-co-rail { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 44px; }
 .eem-co-main > .eem-card, .eem-co-rail > .eem-card { margin-bottom: 0; }
+/* All icon() svgs are 14px (outside card titles, which size their own). Without
+   this the stroke icons inside buttons render at intrinsic size (huge). */
+.eem-create-order-page .eem-card-icon { width: 14px; height: 14px; }
+/* [hidden] must win over the flex/display rules below. */
+.eem-co-cs-picked[hidden], .eem-co-cs-dropdown[hidden] { display: none; }
 
 /* Field helpers */
 .eem-req { color: #b91c1c; margin-left: 2px; }
