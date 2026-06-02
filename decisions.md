@@ -2356,3 +2356,29 @@ links); phone/email/Directions remain linked. No work needed.
 - **Skipped:** **E** discipline/barn zoning; **G2** priority placement at assignment time
   (covered by manual reassignment); **J** multi-day partial reservations (already covered by
   nightly/weekend pricing).
+
+### Locked answers to the 7 recon questions
+**Decided:** 2026-06-01 (Whitney reviewed `docs/V1_NEW_SCOPE_RECON.md` §7). **Green light to
+begin the V1 commit sequence.**
+
+1. **C9 Customer Profile = the V1 destination (ACCEPTED).** The already-shipped read-only
+   aggregate profile (v2.4.2) is the V1 Customer Profile. Net-new "Customers" work is only
+   the top-level menu + list page; reuse `EEM_Customer_Profile_Repo` wholesale.
+2. **Scenario B migration = ONE-TIME, version-gated.** Runs once on update to the new
+   version; migrates all reservations at once. (Not lazy-on-read.)
+3. **Tack stall storage = NOTES-LINE.** `Tack Stalls: …` line on the order, reusing the
+   existing per-stall notes parser. Less new code.
+4. **Tack split line items = YES.** When tack price ≠ regular, the order summary shows
+   separate lines per price tier, e.g. `2 regular @ $50 + 1 tack @ $25`.
+5. **Group Name = SEPARATE from "Group Reservation."** Brand-new field, independent of the
+   existing multi-rider Group Reservation feature; for stall assignments only in V1. Any
+   future merge of the two is out of scope.
+6. **Customers list = PAGINATED FROM THE START.** Build pagination into the list page now —
+   do not ship an in-memory all-rows aggregation that would need re-architecture in V1.1.
+7. **D1 contiguity = ACCEPT current first-N-available.** Acceptable for V1. **Document the
+   edge case:** fragmented availability can yield non-contiguous assignments for multi-stall
+   orders, so admin should check multi-stall orders after auto-assign. Revisit in V1.1 if
+   real usage shows it's a problem.
+
+**Execution rule:** ship each V1 commit individually (never bundled), browser-verify each
+before the next, and give each its own cache-bust version number.

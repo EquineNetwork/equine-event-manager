@@ -354,27 +354,32 @@ feature last):
    filter). Reuses `EEM_Customer_Profile_Repo` aggregation. **Profile page already shipped
    (C9, v2.4.2) — exceeds the planned "stub"; only the menu + list are net-new.** Links use
    the existing `?customer_email=` route (no `customer_id` — read-only aggregate model).
-   Complexity 3, ~2-3 commits.
+   **Paginated from the start** (Q6) — render-layer offset/limit over the sorted aggregate;
+   do not ship an unpaginated all-rows render. Complexity 3, ~2-3 commits.
 5. **Scenario B — Stall inventory model split + migration.** ⚠️ Migration-bearing; lands
    **alone**. Split the single `_en_stall_selection_mode` (real key — NOT
    `_en_inventory_mode`) into two independent settings: `_en_stall_inventory_type`
    (quantity_only/numbered) + `_en_stall_customer_selection` (quantity/pick_layout). Adds
-   the new **Numbered + Quantity** combination (admin assigns post-purchase). One-time
-   version-gated migration + backward-compat resolver; editor two-control UI; customer-gate
-   rewrite. **D1 contiguity verify folds in here** (current behavior = first-N-available in
-   pool order; accept for V1). Complexity 4-5, ~3-4 commits.
+   the new **Numbered + Quantity** combination (admin assigns post-purchase). **One-time
+   version-gated** migration (Q2) + backward-compat resolver; editor two-control UI;
+   customer-gate rewrite. **D1 contiguity verify folds in here** — accept current
+   first-N-available behavior (Q7); **document the edge case** in admin-facing copy:
+   fragmented availability can yield non-contiguous assignments for multi-stall orders, so
+   admins should check multi-stall orders after auto-assign. Complexity 4-5, ~3-4 commits.
 6. **H — Tack stall designation.** After B is stable (tack flow branches on Customer
-   Selection mode). Per-stall `is_tack` metadata (notes-line `Tack Stalls: …`), per-reservation
-   tack pricing (`same`/`discounted`/`free`), checkout designation + live summary recalc,
-   admin chart mark/unmark, split line items, visual indicator, "Tack Stalls" filter chip.
-   Complexity 5, ~4-6 commits.
+   Selection mode). Per-stall `is_tack` via a **`Tack Stalls: …` order-notes line** (Q3 —
+   reuses the existing per-stall parser), per-reservation tack pricing
+   (`same`/`discounted`/`free`), checkout designation + live summary recalc, admin chart
+   mark/unmark, **split line items per price tier** (Q4 — `2 regular @ $50 + 1 tack @ $25`),
+   visual indicator, "Tack Stalls" filter chip. Complexity 5, ~4-6 commits.
 
 **Total V1 new-scope ≈ 11-16 commits**, slotting alongside the existing remaining roadmap
 (C13/C14 payment-gated; C16 polish; pending C9+C15 visual-verify).
 
-**Open questions awaiting Whitney** (full list in the recon doc §7): C9-as-stub
-reconciliation, B migration timing, tack storage shape, tack line-item display, Group-Name
-independence, customers-list scale/pagination, D1 contiguity acceptance.
+**All 7 recon questions answered + locked (2026-06-01)** — see `decisions.md` → "Locked
+answers to the 7 recon questions." **Green light to begin the sequence.** Execution rule:
+ship each commit individually (never bundled), browser-verify each, own cache-bust version
+per commit.
 
 ## V1.1 NEW SCOPE (post-launch, strategic chat 2026-06-01)
 
