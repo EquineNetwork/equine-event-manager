@@ -2,7 +2,7 @@
 /**
  * DS-TOGGLE smoke — the official toggle style is consistent across both stylesheets.
  *
- * One toggle style plugin-wide (decisions.md DS-TOGGLE): 44×24, radius 8px,
+ * One toggle style plugin-wide (docs/decisions.md DS-TOGGLE): 44×24, radius 8px,
  * off #D9E2F2, on #1668F2, 18px knob, translateX(20px). The admin .eem-toggle
  * (admin.css) and the front-end .eem-reservation-section-toggle (public.css) must
  * carry these exact values. Guards against the cascade-drift that caused rework.

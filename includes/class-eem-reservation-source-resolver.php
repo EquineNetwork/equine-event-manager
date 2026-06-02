@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Canonical entry point for reading reservation title + date metadata.
  *
- * Per decisions.md RES-ARCH-1 (added 2026-05-23, formalised in C6.6),
+ * Per docs/decisions.md RES-ARCH-1 (added 2026-05-23, formalised in C6.6),
  * a reservation's user-visible event title and event dates are read-only
  * mirrors of the source event (Native CPT / TEC / External Feed). The
  * reservation's own `post_title` is a free-form admin label — not the

@@ -24,9 +24,9 @@ This folder *is* the existing plugin codebase. The overhaul happens in place —
 equine-event-manager/              ← you are here (the plugin root)
 ├── CLAUDE.md                      ← this file
 ├── README.md                      ← spec
-├── decisions.md                   ← product decisions log (TEC integration, refunds, etc.)
-├── BRAND_GUIDE.md                 ← visual tokens (authoritative text)
-├── BRAND_GUIDE.png                ← visual tokens (reference image)
+├── docs/decisions.md                   ← product decisions log (TEC integration, refunds, etc.)
+├── docs/BRAND_GUIDE.md                 ← visual tokens (authoritative text)
+├── docs/BRAND_GUIDE.png                ← visual tokens (reference image)
 ├── .mockups/                      ← pixel-accurate HTML mockups + assets
 │   ├── *.html (14 files)
 │   └── Equine Event Manager Logo.png
@@ -36,7 +36,7 @@ equine-event-manager/              ← you are here (the plugin root)
 └── ... (rest of existing plugin)
 ```
 
-**The plugin code to overhaul is everything except** the spec files (`CLAUDE.md`, `README.md`, `decisions.md`, `BRAND_GUIDE.*`) and the `.mockups/` folder. Those are reference material only — never deploy them or modify the mockups to match the code (the code should match the mockups, not the other way around).
+**The plugin code to overhaul is everything except** the spec files (`CLAUDE.md`, `README.md`, `docs/decisions.md`, `BRAND_GUIDE.*`) and the `.mockups/` folder. Those are reference material only — never deploy them or modify the mockups to match the code (the code should match the mockups, not the other way around).
 
 When the spec says "see `edit_reservation_page.html`", look in `.mockups/edit_reservation_page.html`.
 
@@ -49,10 +49,10 @@ The real logo lives at `.mockups/Equine Event Manager Logo.png`. When you implem
 **Visual reference order, most specific first:**
 
 1. **Mockups (`.mockups/*.html`)** — single source of truth for layout, behavior, and the exact pixel implementation
-2. **`BRAND_GUIDE.md`** — color tokens, typography scale, component specs, DO/DON'T rules
-3. **`BRAND_GUIDE.png`** — marketing-style overview of the identity (visual reference only; `BRAND_GUIDE.md` is the authoritative text version)
+2. **`docs/BRAND_GUIDE.md`** — color tokens, typography scale, component specs, DO/DON'T rules
+3. **`docs/BRAND_GUIDE.png`** — marketing-style overview of the identity (visual reference only; `docs/BRAND_GUIDE.md` is the authoritative text version)
 4. **`README.md`** — file inventory, data model, conditional visibility rules, naming conventions
-5. **`decisions.md`** — product decisions for behaviors the mockups don't cover (TEC integration lifecycle, refund flows, etc.). Check here for "should the system do X or Y" questions before guessing.
+5. **`docs/decisions.md`** — product decisions for behaviors the mockups don't cover (TEC integration lifecycle, refund flows, etc.). Check here for "should the system do X or Y" questions before guessing.
 
 When two references disagree, the higher-priority one wins. If the disagreement is significant, stop and ask me before proceeding.
 
@@ -146,7 +146,7 @@ Every chunk that adds or modifies code follows these rules. Skipping them turns 
 4. **All user-facing strings wrapped in `__()` / `esc_html__()` / `esc_attr__()`** with the `equine-event-manager` text domain. Strings inside server-side `wp_send_json_error` messages, admin notices, tooltip hints, label text — all of it.
 5. **Type declarations on new code.** Typed properties, return types, parameter types. Apply aggressively on private/internal methods and conservatively on `public function`s hooked into WordPress (filter callbacks where WP passes `mixed` stay loose).
 6. **No `!important` in new CSS.** Solve specificity by scoping the selector instead. If you find yourself wanting `!important`, you're either fighting a legacy rule (in which case fix the legacy rule — see next bullet) or your new selector is under-scoped. `admin-legacy.css` is grandfathered; `admin.css` and any new stylesheet is not.
-8. **No `text-decoration: underline` anywhere in plugin CSS — ever.** This is a hard product decision (logged in decisions.md "Universal hover convention"). Hover affordance is color change only. Any new `:hover` or `:focus` rule MUST NOT include `text-decoration: underline`. The root `.eem-page a:hover { text-decoration: none }` covers all links; individual component hover rules add only `color` / `background` / `border` changes. If you spot `text-decoration: underline` anywhere in admin.css or admin-legacy.css, it is a bug — remove it in the same commit you find it.
+8. **No `text-decoration: underline` anywhere in plugin CSS — ever.** This is a hard product decision (logged in docs/decisions.md "Universal hover convention"). Hover affordance is color change only. Any new `:hover` or `:focus` rule MUST NOT include `text-decoration: underline`. The root `.eem-page a:hover { text-decoration: none }` covers all links; individual component hover rules add only `color` / `background` / `border` changes. If you spot `text-decoration: underline` anywhere in admin.css or admin-legacy.css, it is a bug — remove it in the same commit you find it.
 7. **`admin-legacy.css` is remediated, not extended.** When a new component (e.g. `.eem-card`, `.eem-settings-nav`) collides with a legacy `!important` rule, the fix is to surgically remove that component class from the legacy selector list — not to add `!important` to the new rule. Document the change inline in the legacy file with a comment pointing at the Phase 3 chunk that took ownership of the class.
 
    **Prospective form-control port checklist (established c4-polish-2):** before shipping any Phase 3 chunk that introduces a new form-control component (`<select>`, `<input>`, `<textarea>` with an `eem-*` class), run `grep -n 'body\.eem-shell-page input\[type=' assets/css/admin-legacy.css` plus the same for `select` and `textarea`. Expect to find **6 distinct `!important` blocks** (verified during C4 — lines 142, 5910, 6569, 7600, 8260, 11812 plus their `body.post-type-en_reservation` mirrors). Add `:not(.eem-YOUR-COMPONENT)` exclusions to EVERY occurrence across ALL 6 blocks **as part of the component's first commit, not as a polish pass**. C4 lost ~3 review cycles diagnosing this damage piecemeal across the toolbar diagnosis because the first remediation only patched block 1; the other 5 kept silently overriding. CLEANUP.md entry #1 has the full damage profile (form-controls + ~15 button blocks) and the C16 wholesale-strip remediation plan.
@@ -434,7 +434,7 @@ Post-handoff chunk plan reflecting the mockup-audit chat's decisions landed in h
 
 **C9 — Customer Profile page**. Mockup: `.mockups/customer_profile_page.html`. Replaces the C5.G.8 hidden stub.
 
-**C10 — Customer Event Page** (customer-facing reservation form). Mockup: `.mockups/event_page.html`. Stripe + Authorize.net checkout dispatch (processor picked in Settings — see decisions.md §"Customer Event Page"). Agreement display before SAVE per per-event Agreement card content (controlled from Edit Reservation in C7). Rendered via `[en_reservation id="N"]` shortcode at the customer-facing event URL — not an admin page.
+**C10 — Customer Event Page** (customer-facing reservation form). Mockup: `.mockups/event_page.html`. Stripe + Authorize.net checkout dispatch (processor picked in Settings — see docs/decisions.md §"Customer Event Page"). Agreement display before SAVE per per-event Agreement card content (controlled from Edit Reservation in C7). Rendered via `[en_reservation id="N"]` shortcode at the customer-facing event URL — not an admin page.
 
 **C11 — Customer Confirmation Email** (NEW post-handoff split of the old C11). Mockup: `.mockups/customer_confirmation_email.html`. Template render with PHP variable substitution; **Emogrifier inlining at send-time** (see Cross-cutting backend systems); Event Day Info block conditional on `_eem_event_day_enabled` from C7; ships alongside the remaining canonical transactional templates (refund-processed, payment-reminder) that previously listed C11 as their target.
 
@@ -605,7 +605,7 @@ Features considered during Phase 3 planning but explicitly deferred to v2. Each 
 
 - **Scheduled reports (recurring exports)** — repeating CSV/PDF exports delivered by email on a cron schedule. Requires: cron job infrastructure, email delivery + bounce handling, per-recipient management, per-schedule failure log + retry policy, history view per schedule. Source: HANDOFF.md "Deferred features" / AUDIT-C12-1.
 - **Bulk "Send Payment Link" action on Orders list** — multi-select unpaid orders → bulk-send invoice emails. Considered as an AUDIT-C11-1 candidate, deferred. Source: HANDOFF.md.
-- **"Add to Show Bill" deferred-payment option on Create Order** — alternative to immediate-charge: stage the charge against a show-bill settlement record that closes at end of event. Dropped per decisions.md PRE-7 because the settlement-trigger model + show-bill data model are unresolved product questions. Source: HANDOFF.md.
+- **"Add to Show Bill" deferred-payment option on Create Order** — alternative to immediate-charge: stage the charge against a show-bill settlement record that closes at end of event. Dropped per docs/decisions.md PRE-7 because the settlement-trigger model + show-bill data model are unresolved product questions. Source: HANDOFF.md.
 - **Email templates beyond confirmation** — other transactional emails likely needed (invoice / payment received / refund / cancellation). Derivable from the confirmation email template structure once Emogrifier + the template render path are wired in C11. Defer the actual template authoring + send-trigger wiring; surface as a v1.1 incremental or v2 batch depending on traffic. Source: HANDOFF.md.
 
 ---
