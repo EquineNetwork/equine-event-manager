@@ -58,56 +58,45 @@ class EEM_Create_Order_Page {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'equine-event-manager' ) );
 		}
 
+		require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_breadcrumb.php';
+		require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_page_shell.php';
+
 		$reservations = self::get_reservation_options();
-		$orders_url   = admin_url( 'admin.php?page=equine-event-manager-orders' );
+
+		eem_render_page_open( array(
+			'title'      => __( 'Create Order', 'equine-event-manager' ),
+			'subtitle'   => __( 'Manually create a new order on behalf of a customer — phone orders, walk-ins, or anything not coming through the customer-facing reservation form.', 'equine-event-manager' ),
+			'breadcrumb' => array(
+				array( 'label' => __( 'Orders', 'equine-event-manager' ), 'url' => admin_url( 'admin.php?page=equine-event-manager-orders' ) ),
+				array( 'label' => __( 'Create Order', 'equine-event-manager' ) ),
+			),
+		) );
 		?>
-		<div class="wrap">
-			<div class="eem-page eem-create-order-page">
-
-				<nav class="eem-breadcrumb" aria-label="<?php esc_attr_e( 'Breadcrumb', 'equine-event-manager' ); ?>">
-					<a class="eem-breadcrumb-link" href="<?php echo esc_url( $orders_url ); ?>"><?php esc_html_e( 'Orders', 'equine-event-manager' ); ?></a>
-					<span class="eem-breadcrumb-sep">/</span>
-					<span class="eem-breadcrumb-current"><?php esc_html_e( 'Create Order', 'equine-event-manager' ); ?></span>
-				</nav>
-
-				<div class="eem-page-wrap">
-					<header class="eem-page-header">
-						<div class="eem-page-header-left">
-							<h1 class="eem-page-title"><?php esc_html_e( 'Create Order', 'equine-event-manager' ); ?></h1>
-							<p class="eem-page-subtitle"><?php esc_html_e( 'Manually create a new order on behalf of a customer — phone orders, walk-ins, or anything not coming through the customer-facing reservation form.', 'equine-event-manager' ); ?></p>
-						</div>
-					</header>
-
-					<div class="eem-page-body">
-						<form class="eem-co-workspace" id="eem-create-order-form" method="post" autocomplete="off">
-
-							<div class="eem-co-main">
-								<?php
-								self::render_customer_lookup_card();
-								self::render_reservation_card( $reservations );
-								self::render_contact_card();
-								self::render_section_card_stub( 'stall', __( 'Stall Reservations', 'equine-event-manager' ), self::icon( 'stall' ), true );
-								self::render_section_card_stub( 'rv', __( 'RV Reservations', 'equine-event-manager' ), self::icon( 'rv' ), false );
-								self::render_section_card_stub( 'addons', __( 'Add-Ons', 'equine-event-manager' ), self::icon( 'addon' ), true );
-								self::render_custom_items_card();
-								self::render_section_card_stub( 'group', __( 'Group Reservation', 'equine-event-manager' ), self::icon( 'group' ), false );
-								self::render_special_requests_card();
-								?>
-							</div>
-
-							<aside class="eem-co-rail">
-								<?php
-								self::render_summary_card();
-								self::render_payment_card();
-								?>
-							</aside>
-
-						</form>
-					</div>
+		<div class="eem-create-order-body">
+			<form class="eem-co-workspace" id="eem-create-order-form" method="post" autocomplete="off">
+				<div class="eem-co-main">
+					<?php
+					self::render_customer_lookup_card();
+					self::render_reservation_card( $reservations );
+					self::render_contact_card();
+					self::render_section_card_stub( 'stall', __( 'Stall Reservations', 'equine-event-manager' ), self::icon( 'stall' ), true );
+					self::render_section_card_stub( 'rv', __( 'RV Reservations', 'equine-event-manager' ), self::icon( 'rv' ), false );
+					self::render_section_card_stub( 'addons', __( 'Add-Ons', 'equine-event-manager' ), self::icon( 'addon' ), true );
+					self::render_custom_items_card();
+					self::render_section_card_stub( 'group', __( 'Group Reservation', 'equine-event-manager' ), self::icon( 'group' ), false );
+					self::render_special_requests_card();
+					?>
 				</div>
-			</div>
+				<aside class="eem-co-rail">
+					<?php
+					self::render_summary_card();
+					self::render_payment_card();
+					?>
+				</aside>
+			</form>
 		</div>
 		<?php
+		eem_render_page_close();
 	}
 
 	/**
@@ -125,7 +114,7 @@ class EEM_Create_Order_Page {
 			<div class="eem-card-body">
 				<div class="eem-co-cs-header">
 					<p class="eem-field-hint"><?php esc_html_e( 'Search by name or email to autofill contact info. Skip to enter a new customer manually.', 'equine-event-manager' ); ?></p>
-					<button type="button" class="eem-btn-secondary eem-co-cs-skip" data-eem-action="create-order-skip-customer"><?php esc_html_e( 'Skip — new customer', 'equine-event-manager' ); ?></button>
+					<button type="button" class="eem-btn eem-btn-secondary eem-co-cs-skip" data-eem-action="create-order-skip-customer"><?php esc_html_e( 'Skip — new customer', 'equine-event-manager' ); ?></button>
 				</div>
 				<div class="eem-co-cs-input-wrap" data-eem-co-cs-wrap>
 					<?php echo self::icon( 'search' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static inline SVG. ?>
@@ -137,7 +126,7 @@ class EEM_Create_Order_Page {
 						<div class="eem-co-cs-picked-name" data-eem-co-cs-picked-name>—</div>
 						<div class="eem-co-cs-picked-meta" data-eem-co-cs-picked-meta>—</div>
 					</div>
-					<button type="button" class="eem-btn-secondary" data-eem-action="create-order-change-customer"><?php esc_html_e( 'Change', 'equine-event-manager' ); ?></button>
+					<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="create-order-change-customer"><?php esc_html_e( 'Change', 'equine-event-manager' ); ?></button>
 				</div>
 			</div>
 		</section>
@@ -313,13 +302,13 @@ class EEM_Create_Order_Page {
 				<p class="eem-field-hint"><?php esc_html_e( 'Email the customer a secure link to pay their balance online. No card details needed here.', 'equine-event-manager' ); ?></p>
 				<label class="eem-field-label" for="eem-co-invoice-msg" style="display:block;margin:10px 0 5px"><?php esc_html_e( 'Personal message', 'equine-event-manager' ); ?> <span class="eem-field-optional">(<?php esc_html_e( 'optional', 'equine-event-manager' ); ?>)</span></label>
 				<textarea class="eem-field-textarea" id="eem-co-invoice-msg" name="invoice_message" rows="2" placeholder="<?php esc_attr_e( 'Add a personal note that will appear in the email body…', 'equine-event-manager' ); ?>"></textarea>
-				<button type="button" class="eem-btn-primary eem-co-btn-block" data-eem-action="create-order-send-link" disabled>
+				<button type="button" class="eem-btn eem-btn-primary eem-co-btn-block" data-eem-action="create-order-send-link" disabled>
 					<?php echo self::icon( 'send' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static inline SVG. ?> <?php esc_html_e( 'Send Payment Link', 'equine-event-manager' ); ?>
 				</button>
 			</div>
 			<div class="eem-card-body eem-co-payment-panel" data-eem-co-payment-panel="charge" hidden>
 				<p class="eem-field-hint"><?php esc_html_e( 'Charging a card happens on the Collect Payment page, where card entry is secured. Create the order first, then collect payment.', 'equine-event-manager' ); ?></p>
-				<a class="eem-btn-primary eem-co-btn-block eem-co-collect-link" href="<?php echo esc_url( $collect_url ); ?>">
+				<a class="eem-btn eem-btn-primary eem-co-btn-block eem-co-collect-link" href="<?php echo esc_url( $collect_url ); ?>">
 					<?php echo self::icon( 'card' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static inline SVG. ?> <?php esc_html_e( 'Go to Collect Payment', 'equine-event-manager' ); ?>
 				</a>
 			</div>
