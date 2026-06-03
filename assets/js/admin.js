@@ -5319,3 +5319,105 @@ function duplicateReservationAjax(target) {
 		}
 	});
 })();
+
+/* ── C13.B.2.b — Mirror embedded-form totals into the Create Order rail ─────
+   The inline pricing engine (render_form_styles(), embedded via do_shortcode)
+   writes running totals into [data-eem-total] spans inside the hidden
+   .eem-reservation-workspace__rail. coSyncTotals() reads those values and
+   rebuilds .eem-co-summary-lines in our visible admin rail on every
+   input / change event.
+
+   Timing is safe: the inline pricing script is registered before admin.js
+   loads (it is embedded in the page body as part of the shortcode output),
+   so updateReservationTotals() always fires BEFORE coSyncTotals() for any
+   given event. The DOM totals are up-to-date by the time we read them. */
+(function () {
+	/**
+	 * Read visible summary rows from the hidden embedded-form rail and rebuild
+	 * the Create Order rail's .eem-co-summary-lines block.
+	 *
+	 * The pricing engine marks rows visible by removing the `hidden` attribute
+	 * when their value transitions from zero to non-zero, so
+	 * [data-eem-summary-row]:not([hidden]) is the canonical "has a value" signal.
+	 *
+	 * @returns {void}
+	 */
+	function coSyncTotals() {
+		var embed = document.querySelector('.eem-co-form-embed');
+		if (!embed) { return; }
+
+		var summaryLines = document.querySelector('[data-eem-co-summary-lines]');
+		var totalEl      = document.querySelector('[data-eem-co-summary-total]');
+		if (!summaryLines || !totalEl) { return; }
+
+		// Preserve the PHP-rendered event-name node across rebuilds so it stays
+		// at the top of the summary on every sync pass.
+		var eventNode = summaryLines.querySelector('[data-eem-co-summary-event]');
+
+		// Visible rows = pricing engine has set a non-zero value for this line.
+		var visibleRows  = embed.querySelectorAll('[data-eem-summary-row]:not([hidden])');
+		var grandTotalEl = embed.querySelector('[data-eem-total="grand_total"]');
+		var grandTotal   = grandTotalEl ? grandTotalEl.textContent.trim() : '$0.00';
+
+		// Wipe and rebuild. Re-attach the event-name node first (detached by innerHTML
+		// clear, but the reference remains valid).
+		summaryLines.innerHTML = '';
+		if (eventNode) { summaryLines.appendChild(eventNode); }
+
+		if (!visibleRows.length) {
+			// Nothing priced yet — show the empty-state hint.
+			var empty = document.createElement('p');
+			empty.className = 'eem-field-hint';
+			empty.setAttribute('data-eem-co-summary-empty', '');
+			empty.textContent = 'Select a reservation and add items to build the order.';
+			summaryLines.appendChild(empty);
+			totalEl.textContent = '$0.00';
+			return;
+		}
+
+		visibleRows.forEach(function (row) {
+			var labelEl = row.querySelector('span:first-child');
+			var valueEl = row.querySelector('[data-eem-total]');
+			if (!labelEl || !valueEl) { return; }
+
+			var line   = document.createElement('div');
+			line.className = 'eem-co-summary-line';
+
+			var lSpan  = document.createElement('span');
+			lSpan.className   = 'eem-co-summary-line-label';
+			lSpan.textContent = labelEl.textContent.trim();
+
+			var pSpan  = document.createElement('span');
+			pSpan.className   = 'eem-co-summary-line-price';
+			pSpan.textContent = valueEl.textContent.trim();
+
+			line.appendChild(lSpan);
+			line.appendChild(pSpan);
+			summaryLines.appendChild(line);
+		});
+
+		totalEl.textContent = grandTotal;
+	}
+
+	// Wire to both event types — qty steppers dispatch 'change'; text inputs
+	// dispatch 'input'. Scope to events originating inside the embed wrapper.
+	document.addEventListener('input', function (ev) {
+		if (ev.target.closest && ev.target.closest('.eem-co-form-embed')) {
+			coSyncTotals();
+		}
+	});
+
+	document.addEventListener('change', function (ev) {
+		if (ev.target.closest && ev.target.closest('.eem-co-form-embed')) {
+			coSyncTotals();
+		}
+	});
+
+	// Init pass on DOMContentLoaded — handles the edge case where a section is
+	// pre-enabled with non-zero defaults (e.g. date-driven fees applied at load).
+	document.addEventListener('DOMContentLoaded', function () {
+		if (document.querySelector('.eem-co-form-embed')) {
+			coSyncTotals();
+		}
+	});
+})();

@@ -92,9 +92,10 @@ class EEM_Create_Order_Page {
 		?>
 		<script>
 			window.eemCreateOrder = window.eemCreateOrder || {};
-			window.eemCreateOrder.ajaxUrl        = <?php echo wp_json_encode( admin_url( 'admin-ajax.php' ) ); ?>;
-			window.eemCreateOrder.searchNonce    = <?php echo wp_json_encode( wp_create_nonce( 'eem_create_order_customer_search' ) ); ?>;
-			window.eemCreateOrder.reservationId  = <?php echo wp_json_encode( $rid > 0 ? $rid : null ); ?>;
+			window.eemCreateOrder.ajaxUrl           = <?php echo wp_json_encode( admin_url( 'admin-ajax.php' ) ); ?>;
+			window.eemCreateOrder.searchNonce       = <?php echo wp_json_encode( wp_create_nonce( 'eem_create_order_customer_search' ) ); ?>;
+			window.eemCreateOrder.reservationId     = <?php echo wp_json_encode( $rid > 0 ? $rid : null ); ?>;
+			window.eemCreateOrder.reservationTitle  = <?php echo wp_json_encode( $embedded_title ); ?>;
 		</script>
 		<?php
 
@@ -150,7 +151,7 @@ class EEM_Create_Order_Page {
 				</div>
 				<aside class="eem-co-rail">
 					<?php
-					self::render_summary_card();
+					self::render_summary_card( $embedded_title );
 					self::render_payment_card();
 					?>
 				</aside>
@@ -379,12 +380,16 @@ class EEM_Create_Order_Page {
 	}
 
 	/**
-	 * Rail — live order summary + discount affordance. Totals + discount math land
-	 * in C13.C; C13.A.1 renders the container the summary populates into.
+	 * Rail — live order summary + discount affordance. Totals are mirrored from
+	 * the embedded pricing engine by coSyncTotals() in admin.js (C13.B.2.b).
+	 * Discount math and custom-item totalling land in C13.C.
 	 *
+	 * @param string $embedded_title Reservation title shown as the event-name line
+	 *                               when a reservation is embedded (?reservation_id=N).
+	 *                               Empty string on the no-embed default state.
 	 * @return void
 	 */
-	private static function render_summary_card(): void {
+	private static function render_summary_card( string $embedded_title = '' ): void {
 		?>
 		<section class="eem-card eem-co-summary-card">
 			<header class="eem-card-header eem-co-summary-head">
@@ -392,6 +397,9 @@ class EEM_Create_Order_Page {
 			</header>
 			<div class="eem-card-body">
 				<div class="eem-co-summary-lines" data-eem-co-summary-lines>
+					<?php if ( '' !== $embedded_title ) : ?>
+					<div class="eem-co-summary-event" data-eem-co-summary-event><?php echo esc_html( $embedded_title ); ?></div>
+					<?php endif; ?>
 					<p class="eem-field-hint" data-eem-co-summary-empty><?php esc_html_e( 'Select a reservation and add items to build the order.', 'equine-event-manager' ); ?></p>
 				</div>
 				<div class="eem-co-discount" data-eem-co-discount>
