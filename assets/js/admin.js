@@ -5356,7 +5356,9 @@ function duplicateReservationAjax(target) {
 
 		// Visible rows = pricing engine has set a non-zero value for this line.
 		var visibleRows  = embed.querySelectorAll('[data-eem-summary-row]:not([hidden])');
-		var grandTotalEl = embed.querySelector('[data-eem-total="grand_total"]');
+		// The pricing engine uses data-eem-total="total" for the grand total
+		// (not "grand_total" — confirmed by DOM inspection on 2026-06-02).
+		var grandTotalEl = embed.querySelector('[data-eem-total="total"]');
 		var grandTotal   = grandTotalEl ? grandTotalEl.textContent.trim() : '$0.00';
 
 		// Wipe and rebuild. Re-attach the event-name node first (detached by innerHTML

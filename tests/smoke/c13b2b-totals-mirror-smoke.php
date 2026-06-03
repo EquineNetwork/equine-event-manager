@@ -66,9 +66,11 @@ c13b2b_ok(
 	false !== strpos( $js_clean, "[data-eem-summary-row]:not([hidden])" ),
 	$pass, $fail, $log
 );
+// Confirmed via DOM inspection: pricing engine uses data-eem-total="total",
+// not "grand_total". The smoke asserts the corrected key.
 c13b2b_ok(
-	'Reads [data-eem-total="grand_total"] for grand total',
-	false !== strpos( $js_clean, '[data-eem-total="grand_total"]' ),
+	'Reads [data-eem-total="total"] for grand total (confirmed key, not "grand_total")',
+	false !== strpos( $js_clean, '[data-eem-total="total"]' ),
 	$pass, $fail, $log
 );
 c13b2b_ok(
