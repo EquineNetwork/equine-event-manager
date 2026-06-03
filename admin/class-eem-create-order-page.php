@@ -92,10 +92,12 @@ class EEM_Create_Order_Page {
 		?>
 		<script>
 			window.eemCreateOrder = window.eemCreateOrder || {};
-			window.eemCreateOrder.ajaxUrl           = <?php echo wp_json_encode( admin_url( 'admin-ajax.php' ) ); ?>;
-			window.eemCreateOrder.searchNonce       = <?php echo wp_json_encode( wp_create_nonce( 'eem_create_order_customer_search' ) ); ?>;
-			window.eemCreateOrder.reservationId     = <?php echo wp_json_encode( $rid > 0 ? $rid : null ); ?>;
-			window.eemCreateOrder.reservationTitle  = <?php echo wp_json_encode( $embedded_title ); ?>;
+			window.eemCreateOrder.ajaxUrl             = <?php echo wp_json_encode( admin_url( 'admin-ajax.php' ) ); ?>;
+			window.eemCreateOrder.searchNonce         = <?php echo wp_json_encode( wp_create_nonce( 'eem_create_order_customer_search' ) ); ?>;
+			window.eemCreateOrder.reservationId       = <?php echo wp_json_encode( $rid > 0 ? $rid : null ); ?>;
+			window.eemCreateOrder.reservationTitle    = <?php echo wp_json_encode( $embedded_title ); ?>;
+			window.eemCreateOrder.createOrderNonce    = <?php echo wp_json_encode( $rid > 0 ? wp_create_nonce( 'eem_admin_create_order' ) : null ); ?>;
+			window.eemCreateOrder.ordersUrl           = <?php echo wp_json_encode( admin_url( 'admin.php?page=equine-event-manager-orders' ) ); ?>;
 		</script>
 		<?php
 
@@ -276,15 +278,20 @@ class EEM_Create_Order_Page {
 	 * wrapper becomes a <div> when $rid > 0) to keep HTML valid. B.2.c collects both
 	 * outer-form fields and the embedded-form fields for the actual order submission.
 	 *
+	 * admin_invoice="1" attribute: configures the shortcode for admin-invoice mode —
+	 * sets the hidden en_invoice_type='manual' + en_invoice_action_mode='send_payment_link'
+	 * control fields and hides the customer-facing billing/payment UI. These hidden
+	 * fields travel with the form data when B.2.c collects and submits them.
+	 *
 	 * @param int $rid Reservation post ID (already validated as published en_reservation).
 	 * @return void
 	 */
 	private static function render_embedded_sections( int $rid ): void {
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		// Shortcode output is already escaped by the shortcode renderer; wrapping in
-		// wp_kses_post here would strip the <script> tag that carry the pricing engine.
+		// wp_kses_post here would strip the <script> tags that carry the pricing engine.
 		echo '<div class="eem-co-form-embed">';
-		echo do_shortcode( sprintf( '[en_reservation id="%d"]', $rid ) );
+		echo do_shortcode( sprintf( '[en_reservation id="%d" admin_invoice="1"]', $rid ) );
 		echo '</div>';
 	}
 
@@ -552,6 +559,73 @@ class EEM_Create_Order_Page {
 					'label'   => __( 'Group reservation available on this reservation.', 'equine-event-manager' ),
 				),
 			),
+		) );
+	}
+
+	/**
+	 * AJAX — create an admin-initiated order from the embedded [en_reservation] form
+	 * submission (C13.B.2.c). Called by coSubmitOrder() in admin.js when the admin
+	 * clicks "Send Payment Link" on the Create Order page with a reservation embedded.
+	 *
+	 * Strategy: inject admin-invoice control fields into $_POST, hook eem_order_created
+	 * to capture the new order_key before running do_shortcode(), which internally calls
+	 * handle_reservation_submission() → insert_reservation_orders(). The rendered HTML
+	 * string is discarded; only the eem_order_created side-effect matters.
+	 *
+	 * The caller (JS) is responsible for passing all embedded-form field values (stall
+	 * selection, dates, qty, nonces) plus the admin contact fields (first_name etc.).
+	 * The handler overrides the invoice-type control fields to enforce the unpaid path.
+	 *
+	 * @return void
+	 */
+	public static function ajax_create_order(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+		check_ajax_referer( 'eem_admin_create_order', '_wpnonce' );
+
+		$rid  = isset( $_POST['en_reservation_id'] ) ? absint( wp_unslash( $_POST['en_reservation_id'] ) ) : 0;
+		$post = $rid ? get_post( $rid ) : null;
+		if ( ! $post || EEM_Reservations_CPT::POST_TYPE !== $post->post_type || 'publish' !== $post->post_status ) {
+			wp_send_json_error( array( 'message' => __( 'Reservation not found.', 'equine-event-manager' ) ), 404 );
+		}
+
+		// Force admin-invoice / unpaid path regardless of what the JS sent.
+		// This ensures no charge is dispatched and the order is created as pending.
+		$_POST['en_invoice_type']        = 'manual';
+		$_POST['en_invoice_action_mode'] = 'send_payment_link';
+
+		// Capture the created order's key via the eem_order_created action hook.
+		// The hook fires inside insert_reservation_orders() on success.
+		$captured_order_key = null;
+		add_action(
+			'eem_order_created',
+			static function ( array $payload ) use ( &$captured_order_key ): void {
+				$captured_order_key = isset( $payload['order_key'] ) ? (string) $payload['order_key'] : null;
+			}
+		);
+
+		// Run the shortcode. Because $_POST contains the reservation submission fields
+		// (en_reservation_action='submit_reservation', en_reservation_id, nonce, etc.)
+		// and REQUEST_METHOD is POST (AJAX), is_current_reservation_submission() returns
+		// true and handle_reservation_submission() fires. The HTML output is discarded.
+		do_shortcode( sprintf( '[en_reservation id="%d" admin_invoice="1"]', $rid ) );
+
+		if ( null === $captured_order_key || '' === $captured_order_key ) {
+			wp_send_json_error( array(
+				'message' => __( 'Order could not be created. Please check the form fields and try again.', 'equine-event-manager' ),
+				'code'    => 'create_failed',
+			), 422 );
+		}
+
+		$redirect_url = class_exists( 'EEM_Orders_List_Page' )
+			? EEM_Orders_List_Page::order_detail_url( $captured_order_key )
+			: admin_url( 'admin.php?page=equine-event-manager-orders' );
+
+		wp_send_json_success( array(
+			'order_key' => $captured_order_key,
+			'redirect'  => $redirect_url,
+			'message'   => __( 'Order created successfully.', 'equine-event-manager' ),
 		) );
 	}
 

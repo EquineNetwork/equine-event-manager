@@ -5423,3 +5423,103 @@ function duplicateReservationAjax(target) {
 		}
 	});
 })();
+
+/* ── C13.B.2.c — Admin order creation via embedded-form field collection ──────
+   coSubmitOrder() collects FormData from the embedded .eem-reservation-form,
+   overrides the contact fields with the admin's Contact Information card values,
+   and POSTs to eem_admin_create_order. On success it redirects to Order Detail.
+   On failure it shows the EEM save-toast in error state. */
+(function () {
+	/**
+	 * Collect the embedded form fields + admin contact fields, POST to the
+	 * eem_admin_create_order AJAX handler, and redirect on success.
+	 *
+	 * Field collection follows the render-collect-post canon:
+	 *  1. Serialize the embedded .eem-reservation-form via FormData (gets all
+	 *     hidden control fields including en_reservation_nonce, en_invoice_type,
+	 *     en_invoice_action_mode, stall/RV/add-on qty and date selects).
+	 *  2. Override the contact fields with values from our Contact Information card
+	 *     (the admin may have looked up a customer or typed manually).
+	 *  3. Override notes with our Special Requests textarea.
+	 *  4. Add the eem_admin_create_order nonce and AJAX action.
+	 *
+	 * @returns {void}
+	 */
+	function coSubmitOrder() {
+		var cfg = window.eemCreateOrder || {};
+		if (!cfg.ajaxUrl || !cfg.createOrderNonce) { return; }
+
+		var embeddedForm = document.querySelector('.eem-co-form-embed .eem-reservation-form');
+		if (!embeddedForm) { return; }
+
+		var btn = document.querySelector('[data-eem-action="create-order-send-link"]');
+		if (btn) { btn.disabled = true; }
+
+		// Collect all embedded-form fields (stall/RV/add-on selections, dates, nonces,
+		// hidden admin-invoice control fields set by the admin_invoice="1" shortcode attr).
+		var formData = new FormData(embeddedForm);
+
+		// Override contact fields with the admin contact card values.
+		// This lets the admin use the customer-lookup card to autofill, or type manually.
+		var workspace = document.getElementById('eem-create-order-form');
+		if (workspace) {
+			['first_name', 'last_name', 'email', 'phone'].forEach(function (key) {
+				var input = workspace.querySelector('[data-eem-co-contact="' + key + '"]');
+				if (input) { formData.set(key, input.value || ''); }
+			});
+		}
+
+		// Override notes with our Special Requests textarea (hides the embedded one).
+		var notesEl = workspace ? workspace.querySelector('textarea[name="notes"]') : null;
+		if (notesEl) { formData.set('notes', notesEl.value || ''); }
+
+		// Add AJAX action + admin-side nonce (separate from the reservation form nonce).
+		formData.set('action', 'eem_admin_create_order');
+		formData.set('_wpnonce', cfg.createOrderNonce);
+
+		fetch(cfg.ajaxUrl, { method: 'POST', credentials: 'same-origin', body: formData })
+			.then(function (r) { return r.json(); })
+			.then(function (j) {
+				if (j && j.success && j.data && j.data.redirect) {
+					// Show brief success toast before navigating away.
+					if (typeof EEM !== 'undefined' && EEM.showSaveToast) {
+						EEM.showSaveToast('Order created — redirecting…');
+					}
+					window.location.href = j.data.redirect;
+				} else {
+					var msg = (j && j.data && j.data.message) ? j.data.message : 'Order creation failed.';
+					if (typeof EEM !== 'undefined' && EEM.showSaveToast) {
+						EEM.showSaveToast(msg, 'error');
+					}
+					if (btn) { btn.disabled = false; }
+				}
+			})
+			.catch(function () {
+				if (typeof EEM !== 'undefined' && EEM.showSaveToast) {
+					EEM.showSaveToast('Network error — please try again.', 'error');
+				}
+				if (btn) { btn.disabled = false; }
+			});
+	}
+
+	// Wire the Send Payment Link button click.
+	// The delegated click handler in C13.A.2 already matches create-order-send-link;
+	// coSubmitOrder() is called from there when the embed is present.
+	document.addEventListener('click', function (ev) {
+		var t = ev.target.closest ? ev.target.closest('[data-eem-action="create-order-send-link"]') : null;
+		if (!t) { return; }
+		ev.preventDefault();
+		if (document.querySelector('.eem-co-form-embed')) {
+			coSubmitOrder();
+		}
+	});
+
+	// Enable the Send Payment Link button on DOMContentLoaded when the embed is present.
+	// PHP renders it disabled by default (safe fallback); JS enables it once we confirm
+	// the embed loaded and a reservation is selected.
+	document.addEventListener('DOMContentLoaded', function () {
+		if (!document.querySelector('.eem-co-form-embed')) { return; }
+		var btn = document.querySelector('[data-eem-action="create-order-send-link"]');
+		if (btn) { btn.disabled = false; }
+	});
+})();

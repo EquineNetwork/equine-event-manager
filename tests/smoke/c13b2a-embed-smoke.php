@@ -152,9 +152,10 @@ c13b2a_ok(
 	false !== strpos( $co_page, '@param int $rid Reservation post ID (already validated' ),
 	$pass, $fail, $log
 );
+// C13.B.2.c updated the call to admin_invoice="1" — assert the id= param is still present.
 c13b2a_ok(
-	'do_shortcode() called with [en_reservation id=',
-	false !== strpos( $co_clean, "do_shortcode( sprintf( '[en_reservation id=\"%d\"]'" ),
+	'do_shortcode() called with [en_reservation id= (admin_invoice="1" added in B.2.c)',
+	false !== strpos( $co_clean, "do_shortcode( sprintf( '[en_reservation id=\"%d\"" ),
 	$pass, $fail, $log
 );
 c13b2a_ok(
