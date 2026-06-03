@@ -121,6 +121,11 @@ c13b2c_ok(
 	$pass, $fail, $log
 );
 c13b2c_ok(
+	'ob_start() + ob_end_clean() wrap do_shortcode() to suppress render_form_styles() bleed',
+	false !== strpos( $co_clean, 'ob_start()' ) && false !== strpos( $co_clean, 'ob_end_clean()' ),
+	$pass, $fail, $log
+);
+c13b2c_ok(
 	'wp_send_json_error on null order_key (create_failed code)',
 	false !== strpos( $co_clean, "create_failed" ),
 	$pass, $fail, $log

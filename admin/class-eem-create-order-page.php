@@ -595,6 +595,16 @@ class EEM_Create_Order_Page {
 		$_POST['en_invoice_type']        = 'manual';
 		$_POST['en_invoice_action_mode'] = 'send_payment_link';
 
+		// Normalize phone to international format. The existing pipeline's validate_submission()
+		// requires a leading '+'. Admin contact cards don't enforce this, so we prepend '+1 '
+		// (US/CA default) when the submitted phone lacks a country-code prefix.
+		if ( isset( $_POST['phone'] ) && '' !== (string) wp_unslash( $_POST['phone'] ) ) {
+			$raw_phone = (string) wp_unslash( $_POST['phone'] );
+			if ( '+' !== substr( ltrim( $raw_phone ), 0, 1 ) ) {
+				$_POST['phone'] = '+1 ' . ltrim( $raw_phone );
+			}
+		}
+
 		// Capture the created order's key via the eem_order_created action hook.
 		// The hook fires inside insert_reservation_orders() on success.
 		$captured_order_key = null;
@@ -609,7 +619,15 @@ class EEM_Create_Order_Page {
 		// (en_reservation_action='submit_reservation', en_reservation_id, nonce, etc.)
 		// and REQUEST_METHOD is POST (AJAX), is_current_reservation_submission() returns
 		// true and handle_reservation_submission() fires. The HTML output is discarded.
+		//
+		// IMPORTANT: render_reservation() calls render_form_styles() BEFORE ob_start(),
+		// so render_form_styles() would write its <script> block directly to stdout
+		// (the HTTP response) rather than into the shortcode's ob buffer. We wrap the
+		// entire do_shortcode() call in a second buffer to capture and discard that
+		// direct output, keeping the AJAX response clean JSON.
+		ob_start();
 		do_shortcode( sprintf( '[en_reservation id="%d" admin_invoice="1"]', $rid ) );
+		ob_end_clean();
 
 		if ( null === $captured_order_key || '' === $captured_order_key ) {
 			wp_send_json_error( array(
