@@ -61,15 +61,40 @@ class EEM_Create_Order_Page {
 		require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_breadcrumb.php';
 		require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_page_shell.php';
 
-		$reservations = self::get_reservation_options();
+		// C13.B.2.a — server-side embed. When ?reservation_id=N is set, the four
+		// stub section cards are replaced by the rendered [en_reservation] shortcode
+		// output so the live pricing engine (qty steppers, date pickers, totals)
+		// runs in the admin context. Validate here so the embed path is always clean.
+		$rid           = isset( $_GET['reservation_id'] ) ? absint( wp_unslash( $_GET['reservation_id'] ) ) : 0;
+		$embedded_post = $rid ? get_post( $rid ) : null;
+		if (
+			! $embedded_post ||
+			EEM_Reservations_CPT::POST_TYPE !== $embedded_post->post_type ||
+			'publish' !== $embedded_post->post_status
+		) {
+			$rid           = 0;
+			$embedded_post = null;
+		}
+
+		$reservations   = self::get_reservation_options();
+		$embedded_title = '';
+		$embedded_dates = '';
+
+		if ( $rid > 0 && $embedded_post ) {
+			$start          = (string) get_post_meta( $rid, '_en_available_start_date', true );
+			$end            = (string) get_post_meta( $rid, '_en_available_end_date', true );
+			$embedded_dates = ( '' !== $start && '' !== $end ) ? ( $start . ' – ' . $end ) : '';
+			$embedded_title = $embedded_post->post_title;
+		}
 
 		// Localize the customer-search endpoint for admin.js (same inline pattern
 		// as the stall chart's window.eemStallChart).
 		?>
 		<script>
 			window.eemCreateOrder = window.eemCreateOrder || {};
-			window.eemCreateOrder.ajaxUrl     = <?php echo wp_json_encode( admin_url( 'admin-ajax.php' ) ); ?>;
-			window.eemCreateOrder.searchNonce = <?php echo wp_json_encode( wp_create_nonce( 'eem_create_order_customer_search' ) ); ?>;
+			window.eemCreateOrder.ajaxUrl        = <?php echo wp_json_encode( admin_url( 'admin-ajax.php' ) ); ?>;
+			window.eemCreateOrder.searchNonce    = <?php echo wp_json_encode( wp_create_nonce( 'eem_create_order_customer_search' ) ); ?>;
+			window.eemCreateOrder.reservationId  = <?php echo wp_json_encode( $rid > 0 ? $rid : null ); ?>;
 		</script>
 		<?php
 
@@ -83,17 +108,43 @@ class EEM_Create_Order_Page {
 		) );
 		?>
 		<div class="eem-create-order-body">
+			<?php
+			// C13.B.2.a: when a reservation is embedded, the outer workspace is a <div>
+			// (not <form>) because the [en_reservation] shortcode renders its own <form>.
+			// Nested <form> elements are invalid HTML and browsers close the outer form
+			// at the first inner <form> tag, making contact/notes fields unreachable.
+			// B.2.c will collect all fields (outer fields + embedded form) for submission.
+			if ( $rid > 0 ) :
+			?>
+			<div class="eem-co-workspace" id="eem-create-order-form" data-eem-co-has-embed="1">
+			<?php else : ?>
 			<form class="eem-co-workspace" id="eem-create-order-form" method="post" autocomplete="off">
+			<?php endif; ?>
 				<div class="eem-co-main">
 					<?php
 					self::render_customer_lookup_card();
-					self::render_reservation_card( $reservations );
+
+					if ( $rid > 0 ) {
+						self::render_reservation_card_picked( $rid, $embedded_title, $embedded_dates );
+					} else {
+						self::render_reservation_card( $reservations );
+					}
+
 					self::render_contact_card();
-					self::render_section_card_stub( 'stall', __( 'Stall Reservations', 'equine-event-manager' ), self::icon( 'stall' ), true );
-					self::render_section_card_stub( 'rv', __( 'RV Reservations', 'equine-event-manager' ), self::icon( 'rv' ), false );
-					self::render_section_card_stub( 'addons', __( 'Add-Ons', 'equine-event-manager' ), self::icon( 'addon' ), true );
+
+					if ( $rid > 0 ) {
+						// Stall / RV / Add-Ons / Group all come from the embedded shortcode.
+						// Group appears inside the embed block (before Custom Items) because
+						// the shortcode is a monolith — visual re-ordering is a B.2.polish task.
+						self::render_embedded_sections( $rid );
+					} else {
+						self::render_section_card_stub( 'stall', __( 'Stall Reservations', 'equine-event-manager' ), self::icon( 'stall' ), true );
+						self::render_section_card_stub( 'rv', __( 'RV Reservations', 'equine-event-manager' ), self::icon( 'rv' ), false );
+						self::render_section_card_stub( 'addons', __( 'Add-Ons', 'equine-event-manager' ), self::icon( 'addon' ), true );
+						self::render_section_card_stub( 'group', __( 'Group Reservation', 'equine-event-manager' ), self::icon( 'group' ), false );
+					}
+
 					self::render_custom_items_card();
-					self::render_section_card_stub( 'group', __( 'Group Reservation', 'equine-event-manager' ), self::icon( 'group' ), false );
 					self::render_special_requests_card();
 					?>
 				</div>
@@ -103,7 +154,11 @@ class EEM_Create_Order_Page {
 					self::render_payment_card();
 					?>
 				</aside>
+			<?php if ( $rid > 0 ) : ?>
+			</div>
+			<?php else : ?>
 			</form>
+			<?php endif; ?>
 		</div>
 		<?php
 		eem_render_page_close();
@@ -172,6 +227,64 @@ class EEM_Create_Order_Page {
 			</div>
 		</section>
 		<?php
+	}
+
+	/**
+	 * Card 2 (selected state) — reservation picker showing the already-chosen reservation.
+	 * Rendered in place of render_reservation_card() when ?reservation_id=N is set.
+	 * The "Change" link navigates back to the base Create Order URL, clearing the selection.
+	 *
+	 * @param int    $rid   Reservation post ID.
+	 * @param string $title Reservation post title.
+	 * @param string $dates Formatted date range string, or empty when dates are not set.
+	 * @return void
+	 */
+	private static function render_reservation_card_picked( int $rid, string $title, string $dates ): void {
+		$base_url = add_query_arg( 'page', self::MENU_SLUG, admin_url( 'admin.php' ) );
+		?>
+		<section class="eem-card" id="eem-co-reservation">
+			<header class="eem-card-header">
+				<h2 class="eem-card-title"><?php echo self::icon( 'calendar' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static inline SVG. ?> <?php esc_html_e( 'Choose Reservation', 'equine-event-manager' ); ?></h2>
+			</header>
+			<div class="eem-card-body">
+				<div class="eem-co-linked-res">
+					<div class="eem-co-linked-res__info">
+						<div class="eem-co-linked-res__name"><?php echo esc_html( $title ); ?></div>
+						<?php if ( '' !== $dates ) : ?>
+							<div class="eem-co-linked-res__dates"><?php echo esc_html( $dates ); ?></div>
+						<?php endif; ?>
+					</div>
+					<a href="<?php echo esc_url( $base_url ); ?>" class="eem-co-linked-res__change"><?php esc_html_e( 'Change', 'equine-event-manager' ); ?></a>
+				</div>
+				<p class="eem-field-hint" style="margin-top:8px"><?php esc_html_e( 'The reservation controls which sections, pricing, and dates are available on this form.', 'equine-event-manager' ); ?></p>
+			</div>
+		</section>
+		<?php
+	}
+
+	/**
+	 * Embedded reservation-form section block (C13.B.2.a). Calls the [en_reservation]
+	 * shortcode to render Stall / RV / Add-Ons / Group sections with the live pricing
+	 * engine. Because is_admin() is true, render_form_styles() fires inline inside the
+	 * shortcode's ob buffer, so the pricing JS is embedded directly in the output.
+	 *
+	 * CSS (.eem-co-form-embed) hides everything except data-eem-section=stall/rv/addons/group
+	 * and strips the shortcode's own visual chrome (contact, summary rail, payment, submit).
+	 *
+	 * NOTE: The embedded <form> must live outside the outer workspace <form> (the outer
+	 * wrapper becomes a <div> when $rid > 0) to keep HTML valid. B.2.c collects both
+	 * outer-form fields and the embedded-form fields for the actual order submission.
+	 *
+	 * @param int $rid Reservation post ID (already validated as published en_reservation).
+	 * @return void
+	 */
+	private static function render_embedded_sections( int $rid ): void {
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		// Shortcode output is already escaped by the shortcode renderer; wrapping in
+		// wp_kses_post here would strip the <script> tag that carry the pricing engine.
+		echo '<div class="eem-co-form-embed">';
+		echo do_shortcode( sprintf( '[en_reservation id="%d"]', $rid ) );
+		echo '</div>';
 	}
 
 	/**

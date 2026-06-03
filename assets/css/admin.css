@@ -8210,3 +8210,62 @@ table.eem-export-history td { padding:11px 14px; font-size:13px; color:#1d2327; 
 	.eem-co-cs-header { flex-direction: column; align-items: stretch; }
 	.eem-co-custom-row { grid-template-columns: 1fr 100px 32px; gap: 6px; }
 }
+
+/* C13.B.2.a — embedded [en_reservation] form scope rules. ─────────────────── */
+
+/* Strip the shortcode wrapper's own visual chrome so the sections sit flush
+   inside .eem-co-main's flex-column flow. */
+.eem-co-form-embed .eem-reservation-form-wrap {
+	padding: 0;
+	background: transparent;
+	border: none;
+	box-shadow: none;
+}
+
+/* Override the shortcode's two-column workspace grid — we only want sections,
+   and they need to flow as a single column (matching .eem-co-main gap rhythm). */
+.eem-co-form-embed .eem-reservation-workspace { display: block; }
+.eem-co-form-embed .eem-reservation-workspace__main {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+/* Hide the embedded order-summary rail. The DOM node stays so the pricing JS
+   can still write totals into it; B.2.b mirrors those values into our rail. */
+.eem-co-form-embed .eem-reservation-workspace__rail { display: none; }
+
+/* Scope-hide every section except stall / rv / addons / group.
+   Sections without a matching data-eem-section attribute are:
+     • Contact Information (no attr, first .eem-reservation-section)
+     • Stay Details / instructions (class --instructions, no attr)
+     • Special Requests (class --special-requests, no attr)
+     • Payment / Billing (class --payment, no attr)
+   Pre-Entries (data-eem-section="pre-entries") is also hidden by this rule. */
+.eem-co-form-embed .eem-reservation-section:not([data-eem-section="stall"]):not([data-eem-section="rv"]):not([data-eem-section="addons"]):not([data-eem-section="group"]) {
+	display: none;
+}
+
+/* Linked-reservation display in the picker card (selected state).
+   Same visual pattern as .eem-co-cs-picked (info-bg pill with Change action). */
+.eem-co-linked-res {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 11px 14px;
+	background: var(--eem-info-bg);
+	border: 1px solid var(--eem-info-border);
+	border-radius: var(--eem-radius);
+}
+.eem-co-linked-res__info { flex: 1; min-width: 0; }
+.eem-co-linked-res__name { font-size: 14px; font-weight: 700; color: var(--eem-navy); }
+.eem-co-linked-res__dates { font-size: 12px; color: var(--eem-text-secondary); margin-top: 2px; }
+.eem-co-linked-res__change {
+	font-size: 12.5px;
+	font-weight: 600;
+	color: var(--eem-electric);
+	white-space: nowrap;
+	flex-shrink: 0;
+}
+a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }

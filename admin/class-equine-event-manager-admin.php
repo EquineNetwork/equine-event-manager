@@ -308,6 +308,17 @@ class EEM_Admin {
 		if ( $screen && false !== strpos( (string) $screen->id, 'equine-event-manager-reservation-editor' ) ) {
 			wp_enqueue_media();
 		}
+
+		// C13.B.2.a — public.css required when Create Order embeds a reservation form.
+		// render_frontend_form_assets_in_footer() guards against is_admin() so we
+		// enqueue the stylesheet directly here instead of relying on the footer hook.
+		if (
+			'equine-event-manager-create-order' === $page &&
+			! empty( $_GET['reservation_id'] ) &&
+			class_exists( 'EEM_Events' )
+		) {
+			EEM_Events::render_frontend_styles();
+		}
 	}
 
 	/**
