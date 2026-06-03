@@ -367,8 +367,9 @@ Discipline: when introducing a new `.eem-btn-*` variant OR converting an existin
 ### Standing rule — Post-commit sync via `git push origin main` (RETIRED iCloud sync)
 
 **Established C7.C.1.4.A close (2026-05-26).** Repo migrated to
-`github.com/enwmitchell/equine-event-manager` (private). GitHub becomes
-the canonical durable remote; the iCloud sync workflow is RETIRED.
+`github.com/EquineNetwork/equine-event-manager` (private; transferred from the
+`enwmitchell` personal account to the `EquineNetwork` org on 2026-06-02). GitHub
+becomes the canonical durable remote; the iCloud sync workflow is RETIRED.
 
 **The new rule:**
 1. After every commit, run `git push origin main`. That's the entire post-commit sync workflow. No more targeted-`cp` to iCloud, no more per-file-copy ceremony.

@@ -937,7 +937,8 @@ c84e576  C7.X.5 + C7.X.6: Event Day Info + Cancellation Policy sections
 [next]   C7.X.7: Build-to-mockup verification smoke + meta-line polish
 ```
 
-All pushed to `github.com/enwmitchell/equine-event-manager`.
+All pushed to `github.com/EquineNetwork/equine-event-manager` (transferred from
+`enwmitchell` to the `EquineNetwork` org on 2026-06-02).
 
 ---
 
@@ -1059,8 +1060,9 @@ Mockup canon).
 
 ## Workflow notes
 
-- Canonical remote: `github.com/enwmitchell/equine-event-manager`
-  (private). Push after every commit via `git push origin main`.
+- Canonical remote: `github.com/EquineNetwork/equine-event-manager`
+  (private; transferred from `enwmitchell` to the `EquineNetwork` org
+  2026-06-02). Push after every commit via `git push origin main`.
 - Multi-machine: `git pull origin main` before starting work on
   a different machine. `git push origin main` after every commit.
 - iCloud sync RETIRED.
