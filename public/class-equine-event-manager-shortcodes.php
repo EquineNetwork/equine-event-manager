@@ -8273,20 +8273,6 @@ RV Lot: " . $rv_lot['name'] );
 	 *
 	 * @return void
 	 */
-	/**
-	 * Emit the reservation-form's inline pricing/JS engine on an ADMIN page.
-	 *
-	 * The normal footer path (render_frontend_form_assets_in_footer) hard-returns
-	 * under is_admin(), so the Create Order page (C13.B.2) calls this directly to
-	 * make an embedded `[en_reservation]` form interactive admin-side. public.css
-	 * must be enqueued/printed separately by the caller (EEM_Events::render_frontend_styles).
-	 *
-	 * @return void
-	 */
-	public function emit_form_assets_for_admin(): void {
-		$this->render_form_styles();
-	}
-
 	public function render_frontend_form_assets_in_footer() {
 		if ( is_admin() || ! self::$reservation_form_assets_needed ) {
 			return;
