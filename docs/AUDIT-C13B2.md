@@ -83,6 +83,13 @@ is enqueued from that same footer hook. Consequences:
    pricing engine print on the admin page.
 3. public.css is scoped to `.eem-event-page` (the shortcode wrapper), so enqueuing it on
    this one admin page is low-bleed.
+4. **`render_frontend_form_assets_in_footer()` hard-guards `if ( is_admin() ) return;`**
+   (line ~8277) and the inline pricing JS is in a **private** `render_form_styles()`. So
+   B.2.a must add a small public seam on `EEM_Shortcodes` (e.g.
+   `emit_form_assets_for_admin()`) that calls `EEM_Events::render_frontend_styles()` +
+   the (now-exposed) form-styles JS without the is_admin guard, and hook it on
+   `admin_footer` for the create-order page only. Verify late-enqueued public.css actually
+   prints on admin (it works on wp_footer; confirm the admin_footer equivalent).
 
 ### Refined sub-chunks (hybrid, reload-based)
 
