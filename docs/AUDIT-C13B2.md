@@ -91,6 +91,25 @@ is enqueued from that same footer hook. Consequences:
    `admin_footer` for the create-order page only. Verify late-enqueued public.css actually
    prints on admin (it works on wp_footer; confirm the admin_footer equivalent).
 
+### Embedded-form DOM map (exact selectors for the scope-hide)
+
+`do_shortcode('[en_reservation id=N]')` outputs (all under `.eem-event-page`):
+- `.eem-reservation-workspace` → `.eem-reservation-workspace__main` (form column) + `.eem-reservation-workspace__rail` (summary + payment + "Reserve Now" submit).
+- In `__main`, in order: **Contact** = first `.eem-reservation-section` (title "Contact Information"; also holds the Group Name field) → **Stay Details** `.eem-reservation-section--instructions` → **sections** `.eem-reservation-section[data-eem-section="stall"|"rv"|"addons"]` (the ones to KEEP) → group + special-requests sections.
+
+Scope-hide plan (keep Create Order's own chrome):
+- Hide the embedded **rail**: `.eem-co-embedded-form .eem-reservation-workspace__rail { display:none }` (clean — removes the form's summary + payment + submit; Create Order's rail is authoritative).
+- Hide the embedded **contact** section so Create Order's contact card stays the source of truth — target the first `.eem-reservation-section` in `__main`. Re-point the customer-lookup autofill to the create-order contact card (already `[data-eem-co-contact]`), OR keep the embedded contact and hide Create Order's card instead (decide at build; the Group Name field lives in the embedded contact, which argues for keeping the embedded contact + hiding ours).
+- Hide Create Order's 4 **stub section cards** + its special-requests card when embedded (the form supplies those).
+
+### Build status (started 2026-06-02)
+
+- ✅ Asset seam shipped: `EEM_Shortcodes::emit_form_assets_for_admin()` (public; emits the inline pricing JS bypassing the is_admin footer guard). Harmless until called.
+- ⬜ Remaining B.2.a (next session, needs browser-verify): the reload-based embed in
+  `EEM_Create_Order_Page::render()` (print public.css `<link>` + `do_shortcode` the form +
+  call the seam), the JS reload-on-select, and the scope-hide CSS above. **Browser-verify
+  the steppers/picker fire + no admin-chrome bleed before declaring B.2.a done.**
+
 ### Refined sub-chunks (hybrid, reload-based)
 
 - **B.2.a** — server-side embed: on `?reservation_id=N`, render the `[en_reservation]`
