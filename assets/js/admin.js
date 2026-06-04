@@ -5390,6 +5390,26 @@ function duplicateReservationAjax(target) {
 	});
 })();
 
+/* ── C14 — Collect Payment page Send Link / Charge Card tab switch ──────────
+   Standalone delegation (the create-order IIFE above is scoped to
+   create-order-* actions, so this can't live inside it). */
+(function () {
+	document.addEventListener('click', function (ev) {
+		var t = ev.target.closest ? ev.target.closest('[data-eem-action="collect-payment-tab"]') : null;
+		if (!t) { return; }
+		ev.preventDefault();
+		var tab = t.getAttribute('data-tab');
+		document.querySelectorAll('[data-eem-action="collect-payment-tab"]').forEach(function (b) {
+			var active = b.getAttribute('data-tab') === tab;
+			b.classList.toggle('is-active', active);
+			b.setAttribute('aria-selected', active ? 'true' : 'false');
+		});
+		document.querySelectorAll('[data-eem-collect-panel]').forEach(function (p) {
+			p.hidden = p.getAttribute('data-eem-collect-panel') !== tab;
+		});
+	});
+})();
+
 /* ── C13.B.2.b — Mirror embedded-form totals into the Create Order rail ─────
    The inline pricing engine (render_form_styles(), embedded via do_shortcode)
    writes running totals into [data-eem-total] spans inside the hidden

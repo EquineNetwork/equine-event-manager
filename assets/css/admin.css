@@ -8262,6 +8262,28 @@ table.eem-export-history td { padding:11px 14px; font-size:13px; color:#1d2327; 
 .eem-co-summary-line--discount .eem-co-summary-line-price { color: #15803d; }
 .eem-co-summary-line--custom .eem-co-summary-line-label { color: var(--eem-text-secondary); }
 
+/* C14 Collect Payment — read-only workspace (reuses .eem-co-workspace grid,
+   .eem-co-summary-*, .eem-co-payment-* from create-order). */
+.eem-cp-banner { background: #fff7ed; border: 1px solid #fed7aa; border-radius: var(--eem-radius); padding: 14px 18px; margin-bottom: 16px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.eem-cp-banner-icon { width: 36px; height: 36px; border-radius: 50%; background: #fed7aa; color: #c2410c; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.eem-cp-banner-icon svg { width: 18px; height: 18px; }
+.eem-cp-banner-content { flex: 1; min-width: 0; }
+.eem-cp-banner-title { font-family: var(--eem-font-head, 'Space Grotesk', sans-serif); font-size: 14px; font-weight: 700; color: #7c2d12; }
+.eem-cp-banner-meta { font-size: 13px; color: #92400e; margin-top: 2px; }
+.eem-cp-banner-amount { font-weight: 700; color: #7c2d12; }
+.eem-cp-field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.eem-cp-field-grid--1 { grid-template-columns: 1fr; margin-top: 14px; }
+.eem-cp-field-value { font-size: 14px; font-weight: 600; color: var(--eem-navy); margin-top: 2px; }
+.eem-cp-item-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 0; border-bottom: 1px solid #f0f0f1; font-size: 13.5px; }
+.eem-cp-item-row:last-child { border-bottom: none; }
+.eem-cp-item-price { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--eem-navy); }
+.eem-cp-empty { text-align: center; padding: 48px 24px; }
+.eem-cp-empty-title { font-family: var(--eem-font-head, 'Space Grotesk', sans-serif); font-size: 18px; font-weight: 700; color: var(--eem-navy); }
+.eem-cp-empty-desc { font-size: 13.5px; color: var(--eem-text-secondary); max-width: 460px; margin: 8px auto 18px; }
+@media (max-width: 767px) {
+	.eem-cp-field-grid { grid-template-columns: 1fr; }
+}
+
 /* Payment hand-off */
 .eem-co-payment-tabs { display: flex; border-bottom: 1px solid #dcdcde; background: #f3f4f5; }
 .eem-co-payment-tab { flex: 1; padding: 11px 10px; font-size: 13px; font-weight: 600; color: var(--eem-text-secondary); cursor: pointer; text-align: center; border: none; border-bottom: 3px solid transparent; background: #f3f4f5; display: flex; align-items: center; justify-content: center; gap: 6px; font-family: inherit; }
