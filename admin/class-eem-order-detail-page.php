@@ -764,12 +764,11 @@ class EEM_Order_Detail_Page {
 		$first_component = isset( $order['components'][0] ) && is_array( $order['components'][0] ) ? $order['components'][0] : array();
 		$transaction_id  = isset( $first_component['transaction_id'] ) ? (string) $first_component['transaction_id'] : '';
 
-		// Card display block (mockup lines 548-554) intentionally OMITTED.
-		// Per the C6.A.2 meta-existence audit: _en_card_brand / _en_card_last4
-		// (and every other card/brand/last4/cc_ key variant) do not exist
-		// anywhere in wp_postmeta. Honest representation beats fake '—'.
-		// Deferred via CLEANUP #34 — re-add when card-data persistence
-		// lands (likely C10/C11).
+		// Card brand/last4 (CLEANUP #34 — now captured by the C14 collect-payment
+		// confirm handler into the component notes as "Card Brand"/"Card Last4").
+		$card_notes = isset( $first_component['notes'] ) ? (string) $first_component['notes'] : '';
+		$card_brand = preg_match( '/Card Brand:\s*(.+)/i', $card_notes, $m ) ? trim( $m[1] ) : '';
+		$card_last4 = preg_match( '/Card Last4:\s*(.+)/i', $card_notes, $m ) ? trim( $m[1] ) : '';
 
 		?>
 		<div class="eem-card eem-order-card">
@@ -804,6 +803,11 @@ class EEM_Order_Detail_Page {
 				<?php if ( '' !== $transaction_id ) : ?>
 					<div class="eem-order-payment__label"><?php esc_html_e( 'Transaction ID', 'equine-event-manager' ); ?></div>
 					<div class="eem-order-payment__val eem-order-payment__mono"><?php echo esc_html( $transaction_id ); ?></div>
+				<?php endif; ?>
+
+				<?php if ( '' !== $card_brand || '' !== $card_last4 ) : ?>
+					<div class="eem-order-payment__label"><?php esc_html_e( 'Card', 'equine-event-manager' ); ?></div>
+					<div class="eem-order-payment__val"><?php echo esc_html( trim( ucfirst( $card_brand ) . ( '' !== $card_last4 ? ' •••• ' . $card_last4 : '' ) ) ); ?></div>
 				<?php endif; ?>
 
 				<div class="eem-order-payment__label"><?php esc_html_e( 'Captured', 'equine-event-manager' ); ?></div>

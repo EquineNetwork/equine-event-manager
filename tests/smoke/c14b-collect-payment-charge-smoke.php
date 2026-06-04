@@ -56,6 +56,20 @@ $check( 'confirm: verifies order_key metadata match', str_contains( $src, "\$int
 $check( 'confirm: verifies amount_received', str_contains( $src, 'amount_received' ) );
 $check( 'confirm: marks order paid via repo', str_contains( $src, "update_order_payment_details( \$order_key, 'paid', \$intent_id, 'stripe' )" ) );
 $check( 'confirm: captures card brand/last4 (CLEANUP #34)', str_contains( $src, "'Card Brand'" ) && str_contains( $src, "'Card Last4'" ) );
+$check( 'confirm: expands latest_charge for card details', str_contains( $src, 'expand[]=latest_charge' ) && str_contains( $src, "latest_charge']['payment_method_details']" ) );
+
+// --- Order Detail Payment Details renders captured card --------------------
+$odref = new ReflectionMethod( 'EEM_Order_Detail_Page', 'render_payment_details_card' );
+$odref->setAccessible( true );
+$page  = new EEM_Order_Detail_Page();
+ob_start();
+$odref->invoke( $page, array(
+	'customer_name' => 'Test', 'email' => 't@x.com', 'payment_gateway' => 'stripe', 'status_slug' => 'paid',
+	'components'    => array( array( 'transaction_id' => 'pi_abc', 'notes' => "Card Brand: visa\nCard Last4: 4242" ) ),
+) );
+$od = (string) ob_get_clean();
+$check( 'Order Detail shows the Card row', str_contains( $od, 'Card' ) && str_contains( $od, '4242' ) );
+$check( 'Order Detail formats brand + last4', str_contains( $od, 'Visa' ) && str_contains( $od, '•••• 4242' ) );
 $check( 'confirm: logs order_payment_collected', str_contains( $src, 'order_payment_collected' ) );
 
 // --- Charge Card form renders when Stripe ready ----------------------------

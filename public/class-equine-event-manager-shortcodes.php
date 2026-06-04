@@ -5941,11 +5941,17 @@ RV Lot: " . $rv_lot['name'] );
 			wp_send_json_error( array( 'message' => __( 'The amount charged does not match the balance due.', 'equine-event-manager' ) ), 400 );
 		}
 
-		// Capture card brand/last4 best-effort (CLEANUP #34).
+		// Capture card brand/last4 (CLEANUP #34). The default PaymentIntent
+		// retrieve does NOT include the card object — current Stripe API exposes
+		// only `latest_charge` (an id) unless expanded. Retrieve once more with
+		// expand[]=latest_charge; fall back to the legacy `charges` shape.
 		$brand = '';
 		$last4 = '';
-		if ( ! empty( $intent['charges']['data'][0]['payment_method_details']['card'] ) ) {
-			$card  = $intent['charges']['data'][0]['payment_method_details']['card'];
+		$expanded = $this->request_stripe_api( 'GET', 'payment_intents/' . rawurlencode( $intent_id ) . '?expand[]=latest_charge', $stripe['secret_key'] );
+		$card = ( ! is_wp_error( $expanded ) && ! empty( $expanded['latest_charge']['payment_method_details']['card'] ) )
+			? $expanded['latest_charge']['payment_method_details']['card']
+			: ( ! empty( $intent['charges']['data'][0]['payment_method_details']['card'] ) ? $intent['charges']['data'][0]['payment_method_details']['card'] : array() );
+		if ( ! empty( $card ) ) {
 			$brand = isset( $card['brand'] ) ? sanitize_text_field( $card['brand'] ) : '';
 			$last4 = isset( $card['last4'] ) ? sanitize_text_field( $card['last4'] ) : '';
 		}
