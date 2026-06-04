@@ -311,6 +311,10 @@ class EEM_Plugin {
 		add_action( 'wp_ajax_equine_event_manager_create_stripe_payment_intent', array( $this->shortcodes, 'ajax_create_stripe_payment_intent' ) );
 		add_action( 'wp_ajax_nopriv_equine_event_manager_create_stripe_payment_intent', array( $this->shortcodes, 'ajax_create_stripe_payment_intent' ) );
 
+		// Phase 4 — Stripe webhook endpoint (POST /wp-json/eem/v1/stripe-webhook).
+		// Signature-verified inside the handler; reconciles payment_intent.succeeded.
+		add_action( 'rest_api_init', array( $this->shortcodes, 'register_stripe_webhook_route' ) );
+
 		add_action( 'template_redirect', array( $this->shortcodes, 'maybe_render_hosted_receipt' ) );
 		add_action( 'template_redirect', array( $this->shortcodes, 'maybe_render_invoice_payment_page' ) );
 		add_action( 'wp_ajax_equine_event_manager_create_invoice_payment_intent', array( $this->shortcodes, 'ajax_create_invoice_payment_intent' ) );

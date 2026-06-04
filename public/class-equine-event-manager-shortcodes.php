@@ -5989,6 +5989,143 @@ RV Lot: " . $rv_lot['name'] );
 	}
 
 	/**
+	 * Register the Stripe webhook REST route (POST /wp-json/eem/v1/stripe-webhook).
+	 * Hooked on rest_api_init. Public endpoint — auth is the Stripe signature,
+	 * verified in the handler (permission_callback returns true by design).
+	 *
+	 * @return void
+	 */
+	public function register_stripe_webhook_route() {
+		register_rest_route( 'eem/v1', '/stripe-webhook', array(
+			'methods'             => 'POST',
+			'callback'            => array( $this, 'handle_stripe_webhook' ),
+			'permission_callback' => '__return_true',
+		) );
+	}
+
+	/**
+	 * Handle an incoming Stripe webhook event. Verifies the signature against the
+	 * configured signing secret, then routes by event type. Idempotent:
+	 * payment_intent.succeeded only marks an order paid if it isn't already.
+	 *
+	 * End-to-end test: `stripe listen --forward-to
+	 * <site>/wp-json/eem/v1/stripe-webhook` then `stripe trigger
+	 * payment_intent.succeeded`.
+	 *
+	 * @param WP_REST_Request $request
+	 * @return WP_REST_Response
+	 */
+	public function handle_stripe_webhook( $request ) {
+		$payload = $request->get_body();
+		$sig     = $request->get_header( 'stripe_signature' );
+		$secret  = $this->get_stripe_webhook_secret();
+
+		if ( '' === $secret ) {
+			return new WP_REST_Response( array( 'error' => 'webhook secret not configured' ), 400 );
+		}
+		if ( ! $this->verify_stripe_webhook_signature( $payload, (string) $sig, $secret ) ) {
+			return new WP_REST_Response( array( 'error' => 'signature verification failed' ), 400 );
+		}
+
+		$event = json_decode( $payload, true );
+		if ( ! is_array( $event ) || empty( $event['type'] ) ) {
+			return new WP_REST_Response( array( 'error' => 'malformed event' ), 400 );
+		}
+
+		$this->route_stripe_webhook_event( (string) $event['type'], isset( $event['data']['object'] ) && is_array( $event['data']['object'] ) ? $event['data']['object'] : array() );
+
+		// Always 200 on a verified event so Stripe stops retrying.
+		return new WP_REST_Response( array( 'received' => true ), 200 );
+	}
+
+	/**
+	 * Verify a Stripe webhook signature (scheme: `t=<ts>,v1=<hmac>`; the signed
+	 * payload is `<ts>.<raw body>`, HMAC-SHA256 with the signing secret). Includes
+	 * a 5-minute timestamp tolerance to blunt replay attacks.
+	 *
+	 * @param string $payload    Raw request body.
+	 * @param string $sig_header The Stripe-Signature header value.
+	 * @param string $secret     Webhook signing secret (whsec_…).
+	 * @return bool
+	 */
+	private function verify_stripe_webhook_signature( $payload, $sig_header, $secret ) {
+		if ( '' === $sig_header || '' === $secret ) {
+			return false;
+		}
+		$timestamp = '';
+		$v1        = '';
+		foreach ( explode( ',', $sig_header ) as $part ) {
+			$kv = explode( '=', trim( $part ), 2 );
+			if ( 2 !== count( $kv ) ) {
+				continue;
+			}
+			if ( 't' === $kv[0] ) { $timestamp = $kv[1]; }
+			if ( 'v1' === $kv[0] && '' === $v1 ) { $v1 = $kv[1]; }
+		}
+		if ( '' === $timestamp || '' === $v1 ) {
+			return false;
+		}
+		// Replay tolerance: 5 minutes.
+		if ( abs( time() - (int) $timestamp ) > 300 ) {
+			return false;
+		}
+		$expected = hash_hmac( 'sha256', $timestamp . '.' . $payload, $secret );
+		return hash_equals( $expected, $v1 );
+	}
+
+	/**
+	 * Route a verified Stripe event to its handler. Currently reconciles
+	 * payment_intent.succeeded (marks the order paid if not already) and logs
+	 * charge.refunded / charge.dispute.created for the activity trail.
+	 *
+	 * @param string              $type   Event type.
+	 * @param array<string,mixed> $object The event's data.object.
+	 * @return void
+	 */
+	private function route_stripe_webhook_event( $type, array $object ) {
+		if ( 'payment_intent.succeeded' === $type ) {
+			$order_key = isset( $object['metadata']['order_key'] ) ? sanitize_text_field( (string) $object['metadata']['order_key'] ) : '';
+			$intent_id = isset( $object['id'] ) ? sanitize_text_field( (string) $object['id'] ) : '';
+			if ( '' === $order_key || '' === $intent_id ) {
+				return;
+			}
+			$repo  = new EEM_Orders_Repository();
+			$order = $repo->get_order( $order_key );
+			if ( ! is_array( $order ) || ( isset( $order['payment_status'] ) && 'paid' === $order['payment_status'] ) ) {
+				return; // unknown order, or already paid (idempotent).
+			}
+			$repo->update_order_payment_details( $order_key, 'paid', $intent_id, 'stripe' );
+			if ( class_exists( 'EEM_Activity_Log' ) ) {
+				EEM_Activity_Log::write(
+					'order_payment_collected',
+					array( 'order_key' => $order_key, 'transaction_id' => $intent_id, 'gateway' => 'stripe', 'source' => 'stripe_webhook' ),
+					array( 'actor_type' => 'system' )
+				);
+			}
+			return;
+		}
+
+		if ( ( 'charge.refunded' === $type || 'charge.dispute.created' === $type ) && class_exists( 'EEM_Activity_Log' ) ) {
+			$order_key = isset( $object['metadata']['order_key'] ) ? sanitize_text_field( (string) $object['metadata']['order_key'] ) : '';
+			EEM_Activity_Log::write(
+				'charge.dispute.created' === $type ? 'order_dispute_opened' : 'order_refund_webhook',
+				array( 'order_key' => $order_key, 'stripe_event' => $type ),
+				array( 'actor_type' => 'system' )
+			);
+		}
+	}
+
+	/**
+	 * Read the configured Stripe webhook signing secret.
+	 *
+	 * @return string
+	 */
+	private function get_stripe_webhook_secret() {
+		$settings = $this->get_payment_settings();
+		return isset( $settings['stripe']['webhook_signing_secret'] ) ? trim( (string) $settings['stripe']['webhook_signing_secret'] ) : '';
+	}
+
+	/**
 	 * Get payment settings with defaults.
 	 *
 	 * @return array

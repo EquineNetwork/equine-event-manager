@@ -27,21 +27,21 @@ available in-repo, so this is the current "after" state.)
 | **PDF receipt (Dompdf)** | ✅ Generates valid PDF bytes (156 KB, `%PDF` header) |
 | **Send payment-link email** | ✅ Wired (Collect Payment + legacy order view → existing invoice-email feature) |
 | **Refund + refund-notify email** | ✅ Refund flow works; opt-in customer email now sends (CLEANUP #30) |
-| **Stripe webhook** | ⚠️ **NOT IMPLEMENTED** — see §3 |
+| **Stripe webhook** | ✅ **Now implemented** — `POST /wp-json/eem/v1/stripe-webhook`, HMAC signature verified (5-min replay guard), idempotent `payment_intent.succeeded` reconciliation. Live endpoint rejects unsigned (HTTP 400). End-to-end delivery needs `stripe listen`. Smoke 14/14. |
 | `wp plugin verify-checksums` | N/A — custom plugin (no WordPress.org checksum manifest) |
 
 ## 3. Known gaps / decisions before launch
 
-1. **Stripe webhook handler is not implemented.** There is a Settings field for the
-   webhook signing secret and a Dashboard "webhook not configured" attention row,
-   but **no endpoint** receives Stripe events (no `register_rest_route`, no
-   signature verification, no event routing). Payments work **synchronously**
-   (client confirms the PaymentIntent → server verifies immediately via
-   `get_stripe_payment_intent`), so the happy path is unaffected. A webhook is
-   recommended for production reliability (async payment methods, dropped-
-   connection reconciliation, dashboard-initiated refunds/disputes). **Decision
-   needed:** build the webhook endpoint, or remove the misleading Settings field +
-   Dashboard nag for a synchronous-only launch.
+1. **Stripe webhook — now implemented** (was the one Phase 4 gap). Endpoint
+   `POST /wp-json/eem/v1/stripe-webhook` verifies the Stripe HMAC signature
+   (5-minute replay tolerance) and idempotently reconciles
+   `payment_intent.succeeded` (marks the order paid if not already), plus logs
+   `charge.refunded` / `charge.dispute.created`. **Remaining setup (yours):** paste
+   the webhook signing secret into Settings → Payments, register the endpoint URL
+   in the Stripe Dashboard, and run `stripe listen --forward-to
+   <site>/wp-json/eem/v1/stripe-webhook` + `stripe trigger
+   payment_intent.succeeded` for an end-to-end check. The Dashboard "webhook not
+   configured" nag clears once the secret is set.
 2. **Plugin URI / Author URI** are `example.com` placeholders (CLEANUP #23) — must
    be set before any external/public distribution.
 3. **Authorize.net charging** is deferred (Stripe-first decision). Auth.net
