@@ -288,6 +288,12 @@ class EEM_Plugin {
 		// (logged to the Activity Log). Handler lives on the Order Detail page.
 		add_action( 'wp_ajax_eem_order_remove_discount', array( 'EEM_Order_Detail_Page', 'ajax_remove_discount' ) );
 
+		// C14 — admin Collect Payment Stripe charge (two-step: create intent →
+		// confirm). Capability + nonce gated; reuses the Stripe REST primitives on
+		// EEM_Shortcodes. Admin-only (no nopriv).
+		add_action( 'wp_ajax_eem_collect_payment_create_intent', array( $this->shortcodes, 'ajax_collect_payment_create_intent' ) );
+		add_action( 'wp_ajax_eem_collect_payment_confirm', array( $this->shortcodes, 'ajax_collect_payment_confirm' ) );
+
 		// C6.E.2 — Add Note form AJAX (writes ordernote entry to
 		// EEM_Activity_Log, returns rendered entry HTML for the JS
 		// `add-note-submit` arm to prepend).

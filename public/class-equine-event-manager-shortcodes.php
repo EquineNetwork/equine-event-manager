@@ -5829,6 +5829,160 @@ RV Lot: " . $rv_lot['name'] );
 	}
 
 	/**
+	 * Compute the amount currently due on an order: component total plus C13.C
+	 * custom line items minus the snapshotted discount. Mirrors the Collect
+	 * Payment / Order Detail recomputed total so the charge matches the display.
+	 *
+	 * @param array<string,mixed> $order     Grouped order payload.
+	 * @param string              $order_key Order key.
+	 * @return float Amount due (>= 0).
+	 */
+	private function get_order_amount_due( $order, $order_key ) {
+		$total = isset( $order['total'] ) ? (float) $order['total'] : 0.0;
+		if ( class_exists( 'EEM_Order_Adjustments_Repo' ) ) {
+			$adj    = EEM_Order_Adjustments_Repo::get_for_order( $order_key );
+			$total += (float) $adj['custom_items_total'];
+			$total -= is_array( $adj['discount'] ) ? (float) $adj['discount']['amount'] : 0.0;
+		}
+		return max( 0.0, round( $total, 2 ) );
+	}
+
+	/**
+	 * AJAX (admin, C14) — create a Stripe PaymentIntent for collecting payment on
+	 * an EXISTING order. Capability + nonce gated. Reuses the same Stripe REST
+	 * primitive (`request_stripe_api`) as the customer invoice flow. No card data
+	 * is handled here — the client confirms with Stripe Elements using the
+	 * returned client_secret.
+	 *
+	 * @return void
+	 */
+	public function ajax_collect_payment_create_intent() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+		$order_key = isset( $_POST['order_key'] ) ? sanitize_text_field( wp_unslash( $_POST['order_key'] ) ) : '';
+		check_ajax_referer( 'eem_collect_payment_' . $order_key, '_wpnonce' );
+
+		$repo  = new EEM_Orders_Repository();
+		$order = '' !== $order_key ? $repo->get_order( $order_key ) : null;
+		if ( ! is_array( $order ) ) {
+			wp_send_json_error( array( 'message' => __( 'Order not found.', 'equine-event-manager' ) ), 404 );
+		}
+		if ( isset( $order['payment_status'] ) && 'paid' === $order['payment_status'] ) {
+			wp_send_json_error( array( 'message' => __( 'This order is already paid.', 'equine-event-manager' ), 'code' => 'already_paid' ), 409 );
+		}
+
+		$stripe = $this->get_active_stripe_configuration();
+		if ( 'stripe' !== $this->get_configured_payment_gateway() || empty( $stripe['secret_key'] ) || empty( $stripe['publishable_key'] ) ) {
+			wp_send_json_error( array( 'message' => __( 'Stripe is not configured in plugin Settings.', 'equine-event-manager' ) ), 400 );
+		}
+
+		$amount_due = $this->get_order_amount_due( $order, $order_key );
+		if ( $amount_due <= 0 ) {
+			wp_send_json_error( array( 'message' => __( 'There is no balance due on this order.', 'equine-event-manager' ) ), 400 );
+		}
+
+		$intent = $this->request_stripe_api( 'POST', 'payment_intents', $stripe['secret_key'], array(
+			'amount'                 => absint( round( $amount_due * 100 ) ),
+			'currency'               => 'usd',
+			'payment_method_types[]' => 'card',
+			'description'            => sprintf( 'EEM admin collect — order %s', sanitize_text_field( (string) $order['order_number'] ) ),
+			'metadata[order_key]'    => $order_key,
+			'metadata[order_number]' => (string) $order['order_number'],
+			'metadata[source]'       => 'admin_collect_payment',
+		) );
+
+		if ( is_wp_error( $intent ) ) {
+			wp_send_json_error( array( 'message' => $intent->get_error_message() ), 400 );
+		}
+
+		wp_send_json_success( array(
+			'client_secret' => isset( $intent['client_secret'] ) ? $intent['client_secret'] : '',
+			'intent_id'     => isset( $intent['id'] ) ? $intent['id'] : '',
+			'amount'        => $amount_due,
+		) );
+	}
+
+	/**
+	 * AJAX (admin, C14) — verify a confirmed PaymentIntent and mark the order
+	 * paid. Capability + nonce gated. Retrieves the intent server-side, asserts
+	 * status=succeeded + order_key metadata match + amount match, then records the
+	 * payment, captures card brand/last4 (CLEANUP #34, best-effort), and logs.
+	 *
+	 * @return void
+	 */
+	public function ajax_collect_payment_confirm() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+		$order_key = isset( $_POST['order_key'] ) ? sanitize_text_field( wp_unslash( $_POST['order_key'] ) ) : '';
+		check_ajax_referer( 'eem_collect_payment_' . $order_key, '_wpnonce' );
+
+		$intent_id = isset( $_POST['payment_intent_id'] ) ? sanitize_text_field( wp_unslash( $_POST['payment_intent_id'] ) ) : '';
+		$repo      = new EEM_Orders_Repository();
+		$order     = '' !== $order_key ? $repo->get_order( $order_key ) : null;
+		if ( ! is_array( $order ) || '' === $intent_id ) {
+			wp_send_json_error( array( 'message' => __( 'Order or payment not found.', 'equine-event-manager' ) ), 404 );
+		}
+
+		$stripe = $this->get_active_stripe_configuration();
+		$intent = $this->get_stripe_payment_intent( $intent_id, $stripe['secret_key'] );
+		if ( is_wp_error( $intent ) ) {
+			wp_send_json_error( array( 'message' => $intent->get_error_message() ), 400 );
+		}
+		if ( empty( $intent['status'] ) || 'succeeded' !== $intent['status'] ) {
+			wp_send_json_error( array( 'message' => __( 'The payment was not completed. Please try again.', 'equine-event-manager' ) ), 400 );
+		}
+		if ( empty( $intent['metadata']['order_key'] ) || $intent['metadata']['order_key'] !== $order_key ) {
+			wp_send_json_error( array( 'message' => __( 'This payment does not belong to the order.', 'equine-event-manager' ) ), 400 );
+		}
+		$amount_due = $this->get_order_amount_due( $order, $order_key );
+		if ( isset( $intent['amount_received'] ) && absint( $intent['amount_received'] ) < absint( round( $amount_due * 100 ) ) ) {
+			wp_send_json_error( array( 'message' => __( 'The amount charged does not match the balance due.', 'equine-event-manager' ) ), 400 );
+		}
+
+		// Capture card brand/last4 best-effort (CLEANUP #34).
+		$brand = '';
+		$last4 = '';
+		if ( ! empty( $intent['charges']['data'][0]['payment_method_details']['card'] ) ) {
+			$card  = $intent['charges']['data'][0]['payment_method_details']['card'];
+			$brand = isset( $card['brand'] ) ? sanitize_text_field( $card['brand'] ) : '';
+			$last4 = isset( $card['last4'] ) ? sanitize_text_field( $card['last4'] ) : '';
+		}
+
+		$repo->update_order_payment_details( $order_key, 'paid', $intent_id, 'stripe' );
+
+		if ( '' !== $brand || '' !== $last4 ) {
+			foreach ( $order['components'] as $component ) {
+				$notes = isset( $component['notes'] ) ? (string) $component['notes'] : '';
+				$notes = $this->upsert_order_note_line( $notes, 'Card Brand', $brand );
+				$notes = $this->upsert_order_note_line( $notes, 'Card Last4', $last4 );
+				$repo->update_component_fields( $component['table'], $component['row_id'], array( 'notes' => $notes ), array( '%s' ) );
+			}
+		}
+
+		if ( class_exists( 'EEM_Activity_Log' ) ) {
+			EEM_Activity_Log::write(
+				'order_payment_collected',
+				array(
+					'order_key'      => $order_key,
+					'amount'         => $amount_due,
+					'transaction_id' => $intent_id,
+					'gateway'        => 'stripe',
+					'card_brand'     => $brand,
+					'card_last4'     => $last4,
+				),
+				array( 'actor_type' => 'admin', 'actor_id' => get_current_user_id() )
+			);
+		}
+
+		wp_send_json_success( array(
+			'requires_reload' => true,
+			'message'         => __( 'Payment collected.', 'equine-event-manager' ),
+		) );
+	}
+
+	/**
 	 * Get payment settings with defaults.
 	 *
 	 * @return array

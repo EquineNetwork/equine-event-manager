@@ -164,7 +164,7 @@ class EEM_Collect_Payment_Page {
 			<aside class="eem-co-rail">
 				<?php
 				self::render_amount_due_card( $order_no, $status, $customer, $stall_subtotal, $rv_subtotal, $fees, $custom_items, $discount, $discount_amt, $total_due );
-				self::render_payment_card( $detail_url );
+				self::render_payment_card( $detail_url, $order_key, $status, $total_due );
 				?>
 			</aside>
 		</div>
@@ -286,14 +286,46 @@ class EEM_Collect_Payment_Page {
 	}
 
 	/**
-	 * Payment card — Send Link / Charge Card tabs. Both bodies are GATED: real
-	 * dispatch is not implemented until payment-flow approval. An honest notice
-	 * points the admin at the existing manual mark-paid path on Order Detail.
+	 * Read the active Stripe publishable key + readiness from settings, without
+	 * exposing the secret key. Returns ['ready'=>bool, 'publishable'=>string].
+	 *
+	 * @return array{ready:bool, publishable:string}
+	 */
+	private static function get_stripe_client_config(): array {
+		$settings = get_option( 'equine_event_manager_payment_settings', array() );
+		$gateway  = isset( $settings['selected_gateway'] ) ? (string) $settings['selected_gateway'] : 'stripe';
+		$stripe   = isset( $settings['stripe'] ) && is_array( $settings['stripe'] ) ? $settings['stripe'] : array();
+		$mode     = isset( $stripe['mode'] ) && 'live' === $stripe['mode'] ? 'live' : 'test';
+		$pub      = 'live' === $mode
+			? ( isset( $stripe['live_publishable_key'] ) ? (string) $stripe['live_publishable_key'] : '' )
+			: ( isset( $stripe['test_publishable_key'] ) ? (string) $stripe['test_publishable_key'] : '' );
+		$sec      = 'live' === $mode
+			? ( isset( $stripe['live_secret_key'] ) ? (string) $stripe['live_secret_key'] : '' )
+			: ( isset( $stripe['test_secret_key'] ) ? (string) $stripe['test_secret_key'] : '' );
+		return array(
+			'ready'       => 'stripe' === $gateway && '' !== $pub && '' !== $sec,
+			'publishable' => $pub,
+		);
+	}
+
+	/**
+	 * Payment card — Send Link / Charge Card tabs.
+	 *
+	 * Charge Card: when Stripe is configured and the order is unpaid with a
+	 * balance due, renders a live Stripe Elements card form (client-tokenized; no
+	 * card data touches the server) wired to the gated, capability+nonce-checked
+	 * eem_collect_payment_* AJAX handlers. Otherwise a gated notice. Send Link
+	 * (email) remains gated pending separate sign-off.
 	 *
 	 * @param string $detail_url Order Detail URL.
+	 * @param string $order_key  Order key.
+	 * @param string $status     Payment status.
+	 * @param float  $total_due  Recomputed balance due.
 	 * @return void
 	 */
-	private static function render_payment_card( string $detail_url ): void {
+	private static function render_payment_card( string $detail_url, string $order_key, string $status, float $total_due ): void {
+		$stripe       = self::get_stripe_client_config();
+		$charge_ready = $stripe['ready'] && 'paid' !== $status && $total_due > 0;
 		?>
 		<section class="eem-card eem-co-payment-card">
 			<div class="eem-co-payment-tabs" role="tablist">
@@ -301,17 +333,87 @@ class EEM_Collect_Payment_Page {
 				<button type="button" class="eem-co-payment-tab" data-eem-action="collect-payment-tab" data-tab="charge" role="tab" aria-selected="false"><?php esc_html_e( 'Charge Card', 'equine-event-manager' ); ?></button>
 			</div>
 			<div class="eem-card-body eem-co-payment-panel" data-eem-collect-panel="link">
-				<p class="eem-field-hint"><?php esc_html_e( 'Resending the payment-link email and charging a card are pending payment-flow activation.', 'equine-event-manager' ); ?></p>
-				<div class="eem-info-banner eem-info-banner--preview">
-					<?php esc_html_e( 'Charge dispatch and Send-Link email require sign-off before they go live (Stripe-first, client-tokenized — no card data is handled here). In the meantime, record an offline payment from the order page.', 'equine-event-manager' ); ?>
-				</div>
+				<p class="eem-field-hint"><?php esc_html_e( 'Resending the payment-link email is pending sign-off. In the meantime you can charge a card directly or record an offline payment from the order page.', 'equine-event-manager' ); ?></p>
 				<a class="eem-btn eem-btn-secondary eem-co-btn-block" href="<?php echo esc_url( $detail_url ); ?>"><?php esc_html_e( 'Go to Order — record payment', 'equine-event-manager' ); ?></a>
 			</div>
 			<div class="eem-card-body eem-co-payment-panel" data-eem-collect-panel="charge" hidden>
-				<p class="eem-field-hint"><?php esc_html_e( 'Card charging is pending payment-flow activation. When enabled, cards are tokenized client-side (Stripe Elements) — raw card numbers are never handled by the server.', 'equine-event-manager' ); ?></p>
-				<a class="eem-btn eem-btn-secondary eem-co-btn-block" href="<?php echo esc_url( $detail_url ); ?>"><?php esc_html_e( 'Go to Order — record payment', 'equine-event-manager' ); ?></a>
+				<?php if ( $charge_ready ) : ?>
+					<p class="eem-field-hint"><?php esc_html_e( 'Enter the card to charge the balance directly. Card details are tokenized by Stripe in the browser — they never reach the server.', 'equine-event-manager' ); ?></p>
+					<div id="eem-cp-card-element" class="eem-cp-card-element"></div>
+					<div id="eem-cp-charge-error" class="eem-cp-charge-error" role="alert"></div>
+					<button type="button" id="eem-cp-charge-btn" class="eem-btn eem-btn-primary eem-co-btn-block">
+						<?php
+						/* translators: %s: amount to charge */
+						echo esc_html( sprintf( __( 'Charge $%s', 'equine-event-manager' ), number_format_i18n( $total_due, 2 ) ) );
+						?>
+					</button>
+					<p class="eem-cp-secure-note"><?php esc_html_e( 'Secured by Stripe', 'equine-event-manager' ); ?></p>
+					<?php
+					self::print_charge_assets( $order_key );
+				else :
+					?>
+					<div class="eem-info-banner eem-info-banner--preview">
+						<?php esc_html_e( 'Card charging needs Stripe configured in Settings (and an unpaid balance). Configure Stripe, or record an offline payment from the order page.', 'equine-event-manager' ); ?>
+					</div>
+					<a class="eem-btn eem-btn-secondary eem-co-btn-block" href="<?php echo esc_url( $detail_url ); ?>"><?php esc_html_e( 'Go to Order — record payment', 'equine-event-manager' ); ?></a>
+				<?php endif; ?>
 			</div>
 		</section>
+		<?php
+	}
+
+	/**
+	 * Print the Stripe.js loader + the inline charge client (create intent →
+	 * confirm card → record). Two-step: create the PaymentIntent server-side,
+	 * confirm with Stripe Elements in the browser, then verify+record server-side.
+	 * Inline (not innerHTML-injected) so it executes on page load.
+	 *
+	 * @param string $order_key Order key.
+	 * @return void
+	 */
+	private static function print_charge_assets( string $order_key ): void {
+		$cfg = array(
+			'ajaxUrl'        => admin_url( 'admin-ajax.php' ),
+			'publishableKey' => self::get_stripe_client_config()['publishable'],
+			'orderKey'       => $order_key,
+			'nonce'          => wp_create_nonce( 'eem_collect_payment_' . $order_key ),
+		);
+		?>
+		<script src="https://js.stripe.com/v3/"></script>
+		<script>
+		window.eemCollectPayment = <?php echo wp_json_encode( $cfg ); ?>;
+		(function () {
+			var cfg = window.eemCollectPayment;
+			if ( ! cfg || ! cfg.publishableKey || typeof Stripe === 'undefined' ) { return; }
+			var stripe = Stripe( cfg.publishableKey );
+			var card = stripe.elements().create( 'card' );
+			card.mount( '#eem-cp-card-element' );
+			var btn = document.getElementById( 'eem-cp-charge-btn' );
+			var errEl = document.getElementById( 'eem-cp-charge-error' );
+			function body( obj ) { var p = new URLSearchParams(); Object.keys( obj ).forEach( function ( k ) { p.set( k, obj[ k ] ); } ); return p; }
+			btn.addEventListener( 'click', function () {
+				btn.disabled = true; errEl.textContent = '';
+				fetch( cfg.ajaxUrl, { method: 'POST', credentials: 'same-origin', body: body( { action: 'eem_collect_payment_create_intent', _wpnonce: cfg.nonce, order_key: cfg.orderKey } ) } )
+					.then( function ( r ) { return r.json(); } )
+					.then( function ( j ) {
+						if ( ! j || ! j.success || ! j.data || ! j.data.client_secret ) { throw new Error( ( j && j.data && j.data.message ) || 'Could not start the payment.' ); }
+						return stripe.confirmCardPayment( j.data.client_secret, { payment_method: { card: card } } );
+					} )
+					.then( function ( result ) {
+						if ( result.error ) { throw new Error( result.error.message ); }
+						if ( ! result.paymentIntent || result.paymentIntent.status !== 'succeeded' ) { throw new Error( 'Payment was not completed.' ); }
+						return fetch( cfg.ajaxUrl, { method: 'POST', credentials: 'same-origin', body: body( { action: 'eem_collect_payment_confirm', _wpnonce: cfg.nonce, order_key: cfg.orderKey, payment_intent_id: result.paymentIntent.id } ) } ).then( function ( r ) { return r.json(); } );
+					} )
+					.then( function ( j2 ) {
+						if ( j2 && j2.success ) {
+							if ( window.EEM && typeof window.EEM.showSaveToast === 'function' ) { window.EEM.showSaveToast( 'Payment collected. Reloading…' ); }
+							setTimeout( function () { window.location.reload(); }, 700 );
+						} else { throw new Error( ( j2 && j2.data && j2.data.message ) || 'Could not record the payment.' ); }
+					} )
+					.catch( function ( e ) { errEl.textContent = e.message; btn.disabled = false; } );
+			} );
+		})();
+		</script>
 		<?php
 	}
 
