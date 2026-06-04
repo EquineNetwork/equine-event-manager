@@ -77,8 +77,11 @@ $reservation_id = wp_insert_post( array(
 	'post_status' => 'draft',
 	'post_title'  => 'C7.C.1.4 Smoke ' . wp_generate_password( 6, false, false ),
 ) );
-update_post_meta( $reservation_id, '_en_event_source',           'native' );
+update_post_meta( $reservation_id, '_en_event_source',           'feed' );
 update_post_meta( $reservation_id, '_en_use_global_event_source', 0 );
+// Linked event required for the editor to render section cards ($has_linked_event).
+update_post_meta( $reservation_id, '_en_external_event_id',       'ext-c7c14-verify' );
+update_post_meta( $reservation_id, '_en_external_event_title',    'C7.C.1.4 Verify Event' );
 update_post_meta( $reservation_id, '_en_reservation_description', 'Description body smoke' );
 update_post_meta( $reservation_id, '_en_checkin_checkout_enabled', 0 );
 update_post_meta( $reservation_id, '_en_checkin_time',             '' );

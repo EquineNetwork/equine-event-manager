@@ -56,8 +56,13 @@ $rid = wp_insert_post( array(
 	'post_status' => 'draft',
 	'post_title'  => 'C7.X Verify ' . wp_generate_password( 6, false, false ),
 ) );
-update_post_meta( $rid, '_en_event_source',           'native' );
+// The editor renders its section cards only when the reservation has a linked
+// event ($has_linked_event). Use a feed/external link so the fixture is fully
+// self-contained (no real en_event post needed).
+update_post_meta( $rid, '_en_event_source',           'feed' );
 update_post_meta( $rid, '_en_use_global_event_source', 0 );
+update_post_meta( $rid, '_en_external_event_id',       'ext-c7x-verify' );
+update_post_meta( $rid, '_en_external_event_title',    'C7.X Verify Event' );
 
 $_GET = array( 'page' => 'equine-event-manager-reservation-editor', 'reservation_id' => $rid );
 ob_start();

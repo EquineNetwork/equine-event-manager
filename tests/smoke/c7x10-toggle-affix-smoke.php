@@ -77,6 +77,11 @@ $rid = wp_insert_post( array(
 	'post_status' => 'publish',
 	'post_title'  => 'C7.X.10 Toggle ' . wp_generate_password( 6, false, false ),
 ) );
+// Linked event required for the editor to render section cards ($has_linked_event).
+update_post_meta( $rid, '_en_event_source',        'feed' );
+update_post_meta( $rid, '_en_use_global_event_source', 0 );
+update_post_meta( $rid, '_en_external_event_id',    'ext-c7x10-verify' );
+update_post_meta( $rid, '_en_external_event_title', 'C7.X.10 Verify Event' );
 // Enable the group section so its body renders the sub-toggles + rows.
 update_post_meta( $rid, '_en_group_reservations_enabled', 1 );
 // Disable both sub-toggles so the conditional rows initially render hidden.
