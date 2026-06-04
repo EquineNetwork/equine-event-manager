@@ -72,6 +72,7 @@ class EEM_Dashboard_Page {
 
 		?>
 		<div class="eem-dashboard-body">
+			<?php self::render_setup_checklist(); ?>
 			<?php self::render_range_filter( $range ); ?>
 			<?php self::render_kpi_grid( $kpi_cards ); ?>
 
@@ -109,6 +110,66 @@ class EEM_Dashboard_Page {
 		<a class="eem-btn eem-btn-ghost" href="<?php echo $res_url; ?>"><?php echo $cal; ?> <?php esc_html_e( 'View Reservations', 'equine-event-manager' ); ?></a>
 		<?php
 		return (string) ob_get_clean();
+	}
+
+	/**
+	 * First-run setup checklist card. Renders only when there's at least one
+	 * unfinished required area and the admin hasn't dismissed it. Each row
+	 * links to its Settings panel; the card auto-hides once setup is complete.
+	 *
+	 * @return void
+	 */
+	private static function render_setup_checklist() {
+		if ( ! EEM_Setup_Checklist::should_show() ) {
+			return;
+		}
+
+		$items    = EEM_Setup_Checklist::items();
+		$total    = count( $items );
+		$done     = EEM_Setup_Checklist::completed_count();
+		$nonce    = wp_create_nonce( EEM_Setup_Checklist::DISMISS_NONCE );
+		?>
+		<section class="eem-setup-checklist" data-eem-setup-checklist data-eem-dismiss-nonce="<?php echo esc_attr( $nonce ); ?>">
+			<header class="eem-setup-checklist__head">
+				<div>
+					<h2 class="eem-setup-checklist__title"><?php esc_html_e( 'Finish setting up your plugin', 'equine-event-manager' ); ?></h2>
+					<p class="eem-setup-checklist__sub">
+						<?php
+						printf(
+							/* translators: 1: completed count, 2: total count */
+							esc_html__( 'Complete these %1$d items before going live. %2$s done.', 'equine-event-manager' ),
+							(int) $total,
+							esc_html( sprintf( '%d / %d', $done, $total ) )
+						);
+						?>
+					</p>
+				</div>
+				<button type="button" class="eem-setup-checklist__dismiss" data-eem-action="setup-checklist-dismiss" aria-label="<?php esc_attr_e( 'Dismiss setup checklist', 'equine-event-manager' ); ?>">&times;</button>
+			</header>
+			<ul class="eem-setup-checklist__list">
+				<?php foreach ( $items as $item ) : ?>
+					<li class="eem-setup-checklist__item <?php echo $item['done'] ? 'is-done' : 'is-todo'; ?>">
+						<span class="eem-setup-checklist__icon" aria-hidden="true">
+							<?php if ( $item['done'] ) : ?>
+								<svg viewBox="0 0 20 20" width="18" height="18"><path fill="currentColor" d="M16.7 5.3a1 1 0 0 1 0 1.4l-7.5 7.5a1 1 0 0 1-1.4 0L3.3 9.7a1 1 0 1 1 1.4-1.4l3.3 3.3 6.8-6.8a1 1 0 0 1 1.9.5z"/></svg>
+							<?php else : ?>
+								<svg viewBox="0 0 20 20" width="18" height="18"><circle cx="10" cy="10" r="7.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+							<?php endif; ?>
+						</span>
+						<span class="eem-setup-checklist__text">
+							<span class="eem-setup-checklist__label"><?php echo esc_html( $item['label'] ); ?></span>
+							<span class="eem-setup-checklist__hint"><?php echo esc_html( $item['hint'] ); ?></span>
+						</span>
+						<?php if ( $item['done'] ) : ?>
+							<span class="eem-setup-checklist__status"><?php esc_html_e( 'Done', 'equine-event-manager' ); ?></span>
+						<?php else : ?>
+							<a class="eem-btn eem-btn-electric eem-setup-checklist__cta" href="<?php echo esc_url( $item['url'] ); ?>"><?php esc_html_e( 'Set up', 'equine-event-manager' ); ?></a>
+						<?php endif; ?>
+					</li>
+				<?php endforeach; ?>
+			</ul>
+		</section>
+		<?php
 	}
 
 	/**

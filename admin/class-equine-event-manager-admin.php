@@ -107,6 +107,7 @@ class EEM_Admin {
 		add_action( 'wp_ajax_eem_create_order_customer_search', array( 'EEM_Create_Order_Page', 'ajax_customer_search' ) );
 		add_action( 'wp_ajax_eem_create_order_reservation_meta', array( 'EEM_Create_Order_Page', 'ajax_reservation_meta' ) );
 		add_action( 'wp_ajax_eem_admin_create_order', array( 'EEM_Create_Order_Page', 'ajax_create_order' ) );
+		EEM_Setup_Checklist::register();
 	}
 
 	/**

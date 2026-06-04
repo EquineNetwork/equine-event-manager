@@ -413,6 +413,30 @@
 	 * expand to keep page-load light (5 editors × ~200KB of WP-TinyMCE deps
 	 * is a lot to fire eagerly).
 	 * ───────────────────────────────────────────────────────────── */
+	/**
+	 * Dismiss the Dashboard first-run setup checklist for the current user.
+	 * Optimistically removes the card, then persists the dismissal via AJAX
+	 * (action=eem_dismiss_setup_checklist, cap + nonce gated server-side).
+	 *
+	 * @param {HTMLElement} btn The dismiss (×) button inside the card.
+	 */
+	function dismissSetupChecklist(btn) {
+		var card = btn.closest('[data-eem-setup-checklist]');
+		if (!card) return;
+		var nonce = card.getAttribute('data-eem-dismiss-nonce') || '';
+		card.parentNode && card.parentNode.removeChild(card);
+
+		var body = new URLSearchParams();
+		body.set('action', 'eem_dismiss_setup_checklist');
+		body.set('nonce', nonce);
+		fetch(window.ajaxurl || '/wp-admin/admin-ajax.php', {
+			method: 'POST',
+			credentials: 'same-origin',
+			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+			body: body.toString()
+		});
+	}
+
 	function toggleTemplateCard(headEl) {
 		var card = headEl.closest('.eem-template-card');
 		if (!card) return;
@@ -1716,6 +1740,9 @@
 			} else if (toast) {
 				toast.remove();
 			}
+		},
+		'setup-checklist-dismiss': function (target) {
+			dismissSetupChecklist(target);
 		},
 		'template-toggle': function (target) {
 			toggleTemplateCard(target);

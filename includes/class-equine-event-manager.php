@@ -74,6 +74,10 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-dashboard-repo.php'
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-dashboard-icons.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-dashboard-page.php';
 
+// 2.7.24 — First-run setup checklist (Dashboard card). Computes go-live
+// readiness from live Settings option values; dismissible per-user.
+require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-setup-checklist.php';
+
 // 2.3.25 — WP-CLI demo data seeder. Loaded only in CLI context; the file
 // self-guards against being loaded outside WP_CLI and registers the
 // `wp eem seed_demo` command via WP_CLI::add_command().

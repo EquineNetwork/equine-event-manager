@@ -8373,3 +8373,102 @@ table.eem-export-history td { padding:11px 14px; font-size:13px; color:#1d2327; 
 	flex-shrink: 0;
 }
 a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
+
+/* ─────────────────────────────────────────────────────────────
+ * First-run setup checklist (Dashboard) — 2.7.24
+ * Dismissible go-live readiness card; auto-hides when complete.
+ * ───────────────────────────────────────────────────────────── */
+.eem-setup-checklist {
+	background: #fff;
+	border: 1px solid var(--eem-border);
+	border-left: 4px solid var(--eem-electric);
+	border-radius: var(--eem-radius-lg);
+	padding: 20px 22px;
+	margin-bottom: 20px;
+	box-shadow: 0 1px 2px rgba(3, 27, 78, 0.05);
+}
+.eem-setup-checklist__head {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 16px;
+	margin-bottom: 14px;
+}
+.eem-setup-checklist__title {
+	font-size: 16px;
+	font-weight: 700;
+	color: var(--eem-navy);
+	margin: 0 0 3px;
+}
+.eem-setup-checklist__sub {
+	font-size: 13px;
+	color: var(--eem-muted, #647089);
+	margin: 0;
+}
+.eem-setup-checklist__dismiss {
+	background: transparent;
+	border: none;
+	color: var(--eem-muted, #647089);
+	font-size: 22px;
+	line-height: 1;
+	cursor: pointer;
+	padding: 0 4px;
+	flex-shrink: 0;
+}
+.eem-setup-checklist__dismiss:hover { color: var(--eem-navy); }
+.eem-setup-checklist__list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+.eem-setup-checklist__item {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px 14px;
+	border: 1px solid var(--eem-border-soft);
+	border-radius: var(--eem-radius);
+	background: var(--eem-bg);
+}
+.eem-setup-checklist__item.is-done {
+	background: var(--eem-success-bg);
+	border-color: var(--eem-success-border);
+}
+.eem-setup-checklist__icon {
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	color: var(--eem-border-card);
+}
+.eem-setup-checklist__item.is-done .eem-setup-checklist__icon { color: var(--eem-success-accent); }
+.eem-setup-checklist__text {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	flex: 1 1 auto;
+	min-width: 0;
+}
+.eem-setup-checklist__label {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--eem-navy);
+}
+.eem-setup-checklist__hint {
+	font-size: 12.5px;
+	color: var(--eem-muted, #647089);
+}
+.eem-setup-checklist__status {
+	flex-shrink: 0;
+	font-size: 12.5px;
+	font-weight: 600;
+	color: var(--eem-success-text);
+}
+.eem-setup-checklist__cta { flex-shrink: 0; }
+@media (max-width: 600px) {
+	.eem-setup-checklist__item { flex-wrap: wrap; }
+	.eem-setup-checklist__cta,
+	.eem-setup-checklist__status { margin-left: 30px; }
+}

@@ -1,0 +1,114 @@
+<?php
+/**
+ * Smoke — first-run setup checklist completion logic (2.7.24).
+ *
+ * Verifies each required area flips done=true only when its real option value
+ * is configured, that is_complete() gates on all four, that should_show()
+ * respects completion + the per-user dismiss flag, and that the items expose
+ * the correct Settings-panel URLs.
+ *
+ * Run: wp eval-file tests/smoke/c-setup-checklist-smoke.php
+ */
+
+if ( ! defined( 'ABSPATH' ) ) { fwrite( STDERR, "Must run via wp eval-file\n" ); exit( 1 ); }
+
+$passed = 0; $failed = 0;
+$check = static function ( string $label, bool $ok ) use ( &$passed, &$failed ): void {
+	if ( $ok ) { $passed++; echo "  ok  - {$label}\n"; }
+	else { $failed++; echo "FAIL  - {$label}\n"; }
+};
+
+wp_set_current_user( 1 );
+
+// Snapshot options + dismiss meta so we restore the site afterwards.
+$snap = array(
+	'company'     => get_option( 'equine_event_manager_company_settings', null ),
+	'sender'      => get_option( EEM_Settings_Repo::OPTION_EMAIL_SENDER, null ),
+	'payment'     => get_option( 'equine_event_manager_payment_settings', null ),
+	'integration' => get_option( 'equine_event_manager_integration_settings', null ),
+);
+$dismiss_snap = get_user_meta( get_current_user_id(), EEM_Setup_Checklist::DISMISS_META, true );
+
+// Helper to map items keyed by their 'key' for easy assertion.
+$by_key = static function (): array {
+	$out = array();
+	foreach ( EEM_Setup_Checklist::items() as $it ) { $out[ $it['key'] ] = $it; }
+	return $out;
+};
+
+/* ── Empty state — nothing configured ───────────────────────── */
+delete_option( 'equine_event_manager_company_settings' );
+delete_option( EEM_Settings_Repo::OPTION_EMAIL_SENDER );
+delete_option( 'equine_event_manager_payment_settings' );
+delete_option( 'equine_event_manager_integration_settings' );
+delete_user_meta( get_current_user_id(), EEM_Setup_Checklist::DISMISS_META );
+
+$items = $by_key();
+$check( 'empty: branding not done',       false === $items['branding']['done'] );
+$check( 'empty: communications not done', false === $items['communications']['done'] );
+$check( 'empty: payments not done',       false === $items['payments']['done'] );
+$check( 'empty: sendgrid not done',       false === $items['sendgrid']['done'] );
+$check( 'empty: is_complete() false',     false === EEM_Setup_Checklist::is_complete() );
+$check( 'empty: should_show() true',      true === EEM_Setup_Checklist::should_show() );
+$check( 'empty: completed_count() == 0',  0 === EEM_Setup_Checklist::completed_count() );
+
+// URLs point at the right panels.
+$check( 'branding URL → panel=branding',             false !== strpos( $items['branding']['url'], 'panel=branding' ) );
+$check( 'communications URL → panel=communications', false !== strpos( $items['communications']['url'], 'panel=communications' ) );
+$check( 'payments URL → panel=payments',             false !== strpos( $items['payments']['url'], 'panel=payments' ) );
+$check( 'sendgrid URL → panel=integrations',         false !== strpos( $items['sendgrid']['url'], 'panel=integrations' ) );
+
+/* ── Branding: needs logo AND support email ─────────────────── */
+update_option( 'equine_event_manager_company_settings', array( 'logo_id' => 42, 'support_email' => '' ), false );
+$items = $by_key();
+$check( 'branding: logo only (no email) still not done', false === $items['branding']['done'] );
+update_option( 'equine_event_manager_company_settings', array( 'logo_id' => 42, 'support_email' => 'help@example.com' ), false );
+$items = $by_key();
+$check( 'branding: logo + email → done', true === $items['branding']['done'] );
+
+/* ── Communications: needs from_name + from_email ───────────── */
+update_option( EEM_Settings_Repo::OPTION_EMAIL_SENDER, array( 'from_name' => 'RSNC', 'from_email' => '' ), false );
+$items = $by_key();
+$check( 'communications: name only → not done', false === $items['communications']['done'] );
+update_option( EEM_Settings_Repo::OPTION_EMAIL_SENDER, array( 'from_name' => 'RSNC', 'from_email' => 'no-reply@example.com' ), false );
+$items = $by_key();
+$check( 'communications: name + email → done', true === $items['communications']['done'] );
+
+/* ── Payments: needs a complete Stripe key pair ─────────────── */
+update_option( 'equine_event_manager_payment_settings', array( 'selected_gateway' => 'stripe', 'stripe' => array( 'test_publishable_key' => 'pk_test_x' ) ), false );
+$items = $by_key();
+$check( 'payments: pub only → not done', false === $items['payments']['done'] );
+update_option( 'equine_event_manager_payment_settings', array( 'selected_gateway' => 'stripe', 'stripe' => array( 'test_publishable_key' => 'pk_test_x', 'test_secret_key' => 'sk_test_x' ) ), false );
+$items = $by_key();
+$check( 'payments: pub + secret → done', true === $items['payments']['done'] );
+
+/* ── SendGrid: needs api key ────────────────────────────────── */
+update_option( 'equine_event_manager_integration_settings', array( 'sendgrid_api_key' => 'SG.abc123' ), false );
+$items = $by_key();
+$check( 'sendgrid: key present → done', true === $items['sendgrid']['done'] );
+
+/* ── All four done → complete + hidden ──────────────────────── */
+$check( 'all set: is_complete() true', true === EEM_Setup_Checklist::is_complete() );
+$check( 'all set: should_show() false (auto-hide)', false === EEM_Setup_Checklist::should_show() );
+
+/* ── Dismiss flag hides even when incomplete ────────────────── */
+delete_option( 'equine_event_manager_integration_settings' ); // make it incomplete again
+$check( 'incomplete again: should_show() true', true === EEM_Setup_Checklist::should_show() );
+update_user_meta( get_current_user_id(), EEM_Setup_Checklist::DISMISS_META, 1 );
+$check( 'dismissed: is_dismissed() true', true === EEM_Setup_Checklist::is_dismissed() );
+$check( 'dismissed: should_show() false', false === EEM_Setup_Checklist::should_show() );
+
+/* ── Restore the site ───────────────────────────────────────── */
+foreach ( array(
+	'equine_event_manager_company_settings'     => $snap['company'],
+	EEM_Settings_Repo::OPTION_EMAIL_SENDER       => $snap['sender'],
+	'equine_event_manager_payment_settings'     => $snap['payment'],
+	'equine_event_manager_integration_settings' => $snap['integration'],
+) as $opt => $val ) {
+	if ( null === $val ) { delete_option( $opt ); } else { update_option( $opt, $val, false ); }
+}
+if ( '' === $dismiss_snap ) { delete_user_meta( get_current_user_id(), EEM_Setup_Checklist::DISMISS_META ); }
+else { update_user_meta( get_current_user_id(), EEM_Setup_Checklist::DISMISS_META, $dismiss_snap ); }
+
+echo "\n{$passed} passed, {$failed} failed\n";
+if ( $failed > 0 ) { exit( 1 ); }
