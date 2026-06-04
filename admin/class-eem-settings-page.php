@@ -595,7 +595,8 @@ class EEM_Settings_Page {
 								<input type="hidden" name="payload[logo_id]" value="<?php echo esc_attr( $logo_id ); ?>" data-eem-logo-id />
 							</div>
 							<p class="eem-field-hint">
-								<?php esc_html_e( 'Used on printable PDF receipts and email receipt branding. Not used in the plugin admin header. PNG with a transparent background works best.', 'equine-event-manager' ); ?>
+								<strong><?php esc_html_e( 'PNG only.', 'equine-event-manager' ); ?></strong>
+								<?php esc_html_e( 'A transparent-background PNG works best. WebP, SVG, and other formats are not supported — they appear broken in many email clients (e.g. Outlook) and on PDF receipts. Used on PDF receipts and email branding; not the plugin admin header.', 'equine-event-manager' ); ?>
 							</p>
 						</div>
 					</div>
@@ -1288,7 +1289,16 @@ class EEM_Settings_Page {
 			get_option( 'equine_event_manager_company_settings', array() ),
 			array( 'logo_id' => 0, 'support_phone' => '', 'support_email' => '' )
 		);
-		$current['logo_id']       = isset( $payload['logo_id'] )       ? absint( $payload['logo_id'] )                       : 0;
+		// PNG-only enforcement (server-side belt to the JS picker's PNG filter):
+		// WebP/SVG/etc. break in email clients + Dompdf PDFs, so reject a non-PNG
+		// logo and keep whatever was previously saved.
+		$existing_logo = absint( $current['logo_id'] );
+		$new_logo      = isset( $payload['logo_id'] ) ? absint( $payload['logo_id'] ) : 0;
+		if ( $new_logo > 0 && 'image/png' !== get_post_mime_type( $new_logo ) ) {
+			$errors[]  = 'logo_not_png';
+			$new_logo  = $existing_logo;
+		}
+		$current['logo_id']       = $new_logo;
 		$current['support_phone'] = isset( $payload['support_phone'] ) ? sanitize_text_field( $payload['support_phone'] )    : '';
 		$current['support_email'] = isset( $payload['support_email'] ) ? sanitize_email( $payload['support_email'] )         : '';
 

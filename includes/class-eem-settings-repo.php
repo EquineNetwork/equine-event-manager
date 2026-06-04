@@ -78,7 +78,11 @@ class EEM_Settings_Repo {
 			'reply_to'             => isset( $sender['reply_to'] )   ? sanitize_email( (string) $sender['reply_to'] )        : '',
 		);
 
-		return (bool) update_option( self::OPTION_EMAIL_SENDER, $next, false );
+		// update_option() returns false when the value is unchanged, not only on
+		// failure — treat "already stored" as success, else saving an unchanged
+		// panel falsely reports "could not be saved".
+		$saved = update_option( self::OPTION_EMAIL_SENDER, $next, false );
+		return $saved || get_option( self::OPTION_EMAIL_SENDER ) == $next; // phpcs:ignore WordPress.PHP.StrictComparisons.LooseComparison
 	}
 
 	/* ─────────────────────────────────────────────────────────────
@@ -120,7 +124,8 @@ class EEM_Settings_Repo {
 			'label'        => isset( $tax['label'] ) ? sanitize_text_field( (string) $tax['label'] ) : '',
 		);
 
-		return (bool) update_option( self::OPTION_TAX, $next, false );
+		$saved = update_option( self::OPTION_TAX, $next, false );
+		return $saved || get_option( self::OPTION_TAX ) == $next; // phpcs:ignore WordPress.PHP.StrictComparisons.LooseComparison -- unchanged = success.
 	}
 
 	/**
@@ -189,6 +194,7 @@ class EEM_Settings_Repo {
 			'terms'        => isset( $policies['terms'] )        ? wp_kses_post( (string) $policies['terms'] )        : $existing['terms'],
 		);
 
-		return (bool) update_option( self::OPTION_POLICIES, $next, false );
+		$saved = update_option( self::OPTION_POLICIES, $next, false );
+		return $saved || get_option( self::OPTION_POLICIES ) == $next; // phpcs:ignore WordPress.PHP.StrictComparisons.LooseComparison -- unchanged = success.
 	}
 }

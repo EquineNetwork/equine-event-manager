@@ -267,6 +267,10 @@ class EEM_Email_Templates_Repo {
 	 * @return bool
 	 */
 	private static function write( array $templates ) {
-		return (bool) update_option( self::OPTION_KEY, $templates, false );
+		// update_option() returns false BOTH on failure AND when the value is
+		// unchanged — so treat "stored value already matches" as success, else
+		// saving an unchanged panel spuriously reports a failure.
+		$saved = update_option( self::OPTION_KEY, $templates, false );
+		return $saved || get_option( self::OPTION_KEY ) == $templates; // phpcs:ignore WordPress.PHP.StrictComparisons.LooseComparison -- intentional array compare.
 	}
 }

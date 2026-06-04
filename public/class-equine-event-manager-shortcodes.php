@@ -5274,14 +5274,44 @@ RV Lot: " . $rv_lot['name'] );
 		}
 
 		$ext  = strtolower( pathinfo( $path, PATHINFO_EXTENSION ) );
-		$mime = 'jpg' === $ext || 'jpeg' === $ext ? 'image/jpeg' : ( 'svg' === $ext ? 'image/svg+xml' : 'image/png' );
 		$data = file_get_contents( $path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
-
 		if ( false === $data || '' === $data ) {
 			return '';
 		}
 
-		return 'data:' . $mime . ';base64,' . base64_encode( $data ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
+		// Formats Dompdf reads natively pass straight through.
+		if ( 'jpg' === $ext || 'jpeg' === $ext ) {
+			return 'data:image/jpeg;base64,' . base64_encode( $data ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
+		}
+		if ( 'png' === $ext ) {
+			return 'data:image/png;base64,' . base64_encode( $data ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
+		}
+		if ( 'svg' === $ext ) {
+			return 'data:image/svg+xml;base64,' . base64_encode( $data ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
+		}
+
+		// WEBP / GIF / other raster — Dompdf can't reliably decode these, and the
+		// previous code mislabelled them as image/png (broken logo). Transcode to
+		// PNG via GD when available so the logo renders; otherwise omit it.
+		if ( function_exists( 'imagecreatefromstring' ) ) {
+			$img = @imagecreatefromstring( $data ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+			if ( false !== $img ) {
+				if ( function_exists( 'imagepalettetotruecolor' ) ) {
+					imagepalettetotruecolor( $img );
+				}
+				imagealphablending( $img, false );
+				imagesavealpha( $img, true );
+				ob_start();
+				imagepng( $img );
+				$png = (string) ob_get_clean();
+				imagedestroy( $img );
+				if ( '' !== $png ) {
+					return 'data:image/png;base64,' . base64_encode( $png ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
+				}
+			}
+		}
+
+		return '';
 	}
 
 	/**

@@ -668,10 +668,11 @@
 		if (!host) return;
 
 		var frame = window.wp.media({
-			title: 'Choose Business Logo',
+			title: 'Choose Business Logo (PNG only)',
 			button: { text: 'Use this logo' },
 			multiple: false,
-			library: { type: 'image' }
+			// PNG only — WEBP/SVG/etc. break in Outlook emails and Dompdf PDFs.
+			library: { type: 'image/png' }
 		});
 
 		frame.on('select', function () {
@@ -679,6 +680,13 @@
 			var idInput   = host.querySelector('[data-eem-logo-id]');
 			var preview   = host.querySelector('[data-eem-logo-preview]');
 			var removeBtn = host.querySelector('[data-eem-action="logo-remove"]');
+
+			// Guard: the library filter hides non-PNG in the grid, but the Upload
+			// tab can still produce other types — reject anything but PNG.
+			if (attachment.mime && attachment.mime !== 'image/png') {
+				window.alert('Please use a PNG image for the logo. WebP, SVG, and other formats don’t display reliably in email clients or PDF receipts.');
+				return;
+			}
 
 			if (idInput) idInput.value = attachment.id || '';
 			if (preview && attachment.url) {
