@@ -10873,6 +10873,25 @@ class EEM_Admin {
 		$settings['customer_body']            = ! empty( $settings['customer_body'] ) ? $settings['customer_body'] : self::DEFAULT_CUSTOMER_RECEIPT_BODY;
 		$settings['admin_body']               = ! empty( $settings['admin_body'] ) ? $settings['admin_body'] : self::DEFAULT_ADMIN_RECEIPT_BODY;
 
+		// Launch fix: the Settings → Communications "Sender" UI writes to the
+		// newer eem_email_sender option (EEM_Settings_Repo), NOT this legacy
+		// receipt_settings option — so without this layer the From/Reply-To the
+		// admin sets in the UI is silently ignored by transactional emails. Treat
+		// the UI sender as canonical when set (mapping its `reply_to` →
+		// `reply_to_email`).
+		if ( class_exists( 'EEM_Settings_Repo' ) && method_exists( 'EEM_Settings_Repo', 'get_email_sender' ) ) {
+			$ui_sender = EEM_Settings_Repo::get_email_sender();
+			if ( ! empty( $ui_sender['from_name'] ) ) {
+				$settings['from_name'] = $ui_sender['from_name'];
+			}
+			if ( ! empty( $ui_sender['from_email'] ) && is_email( $ui_sender['from_email'] ) ) {
+				$settings['from_email'] = $ui_sender['from_email'];
+			}
+			if ( ! empty( $ui_sender['reply_to'] ) && is_email( $ui_sender['reply_to'] ) ) {
+				$settings['reply_to_email'] = $ui_sender['reply_to'];
+			}
+		}
+
 		return $settings;
 	}
 
