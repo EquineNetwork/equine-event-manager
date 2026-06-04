@@ -25,7 +25,10 @@ $is_num_str = static function ( $v ) {
 };
 $no_placeholder = static function ( $s ) {
 	$s = (string) $s;
-	return false === strpos( $s, '—' )
+	// A placeholder is a LEADING em-dash ("— customers haven't signed…") or a
+	// "Pending …" marker — not a mid-string em-dash separator, which wired titles
+	// legitimately use (e.g. "29 stalls unassigned — Event Name").
+	return ! preg_match( '/^\s*—/u', $s )
 		&& false === stripos( $s, 'Pending C8' )
 		&& false === stripos( $s, 'Pending C11' );
 };

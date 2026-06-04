@@ -91,15 +91,15 @@ ds1b_ok( 'KPI label "Unassigned Stalls" rendered',    str_contains( $html, 'Unas
 ds1b_ok( 'KPI value class rendered', substr_count( $html, 'eem-dashboard-kpi-value' ) >= 4, $pass, $fail, $log );
 ds1b_ok( 'KPI sub class rendered',   substr_count( $html, 'eem-dashboard-kpi-sub'   ) >= 4, $pass, $fail, $log );
 
-// ── [4] Em-dash placeholders (CLEANUP #37/#38) ──────────────────────
-echo "\n[4] Em-dash placeholders (graceful-degrade contract)\n";
-// Unassigned Stalls KPI value must be "—", not "0".
-ds1b_ok( 'Unassigned Stalls KPI renders "—" not "0"',
-	(bool) preg_match( '/Unassigned Stalls.*?eem-dashboard-kpi-value">—</s', $html ),
+// ── [4] Stall metrics — WIRED to live data (CLEANUP #37/#38/#39 resolved) ──
+echo "\n[4] Stall metrics wired to live data\n";
+// Unassigned Stalls KPI now renders a numeric count (was an em-dash placeholder).
+ds1b_ok( 'Unassigned Stalls KPI renders a numeric value (wired, CLEANUP #37)',
+	(bool) preg_match( '/Unassigned Stalls.*?eem-dashboard-kpi-value">\d/s', $html ),
 	$pass, $fail, $log );
-// Stall progress count em-dash — render carries "— / —" pattern.
-ds1b_ok( 'Stall progress shows "— / —" (CLEANUP #38)',
-	str_contains( $html, '— / —' ),
+// Stall progress now renders a real "N / N" assigned/total pair (was "— / —").
+ds1b_ok( 'Stall progress shows numeric "N / N" (wired, CLEANUP #38)',
+	( ! str_contains( $html, '— / —' ) ) && (bool) preg_match( '#>\s*\d+\s*/\s*\d+\s*<#s', $html ),
 	$pass, $fail, $log );
 
 // ── [5] Upcoming Reservations content density ───────────────────────
@@ -125,13 +125,12 @@ if ( ! empty( $has_res_query->posts ) ) {
 // ── [6] Needs Attention card ────────────────────────────────────────
 echo "\n[6] Needs Attention card\n";
 ds1b_ok( 'Needs Attention title rendered', str_contains( $html, 'Needs Attention' ), $pass, $fail, $log );
-ds1b_ok( '6 attention rows rendered', substr_count( $html, 'eem-dashboard-attention-row' ) === 6, $pass, $fail, $log );
-ds1b_ok( 'attention-count "6 items" pill rendered',
-	(bool) preg_match( '/eem-dashboard-attention-count">6 items?</', $html ),
-	$pass, $fail, $log );
-// CLEANUP #40 marker — agreement em-dash.
-ds1b_ok( 'agreement em-dash row title contains "— customers haven\'t signed the agreement"',
-	str_contains( $html, "— customers haven&#039;t signed the agreement" ) || str_contains( $html, "— customers haven't signed the agreement" ),
+// Attention rows are now data-driven (count varies with real conditions). Assert
+// at least one real row and that the count pill matches the rendered row count.
+$attention_rows = substr_count( $html, 'eem-dashboard-attention-row' );
+ds1b_ok( 'at least one attention row rendered (wired)', $attention_rows >= 1, $pass, $fail, $log );
+ds1b_ok( 'attention-count pill matches the rendered row count',
+	(bool) preg_match( '/eem-dashboard-attention-count">' . $attention_rows . ' items?</', $html ),
 	$pass, $fail, $log );
 
 // ── [7] Recent Orders — 5-digit + status pill ───────────────────────
@@ -190,8 +189,9 @@ ds1b_ok( 'Revenue chart renders bars OR empty-state',
 echo "\n[10] This Week\n";
 ds1b_ok( 'This Week title rendered', str_contains( $html, 'This Week' ), $pass, $fail, $log );
 ds1b_ok( '5 This Week rows rendered', substr_count( $html, 'eem-dashboard-tw-row' ) === 5, $pass, $fail, $log );
-ds1b_ok( 'This Week "Stalls assigned" row is em-dash (CLEANUP #39)',
-	(bool) preg_match( '/Stalls assigned<\/span>\s*<span class="eem-dashboard-tw-value[^"]*">—</', $html ),
+// "Stalls assigned" is now wired (CLEANUP #39 resolved) — renders a value, not "—".
+ds1b_ok( 'This Week "Stalls assigned" row renders a value (wired, CLEANUP #39)',
+	(bool) preg_match( '/Stalls assigned<\/span>\s*<span class="eem-dashboard-tw-value[^"]*">[^<]+</', $html ),
 	$pass, $fail, $log );
 
 // ── [11] CLEANUP entries ────────────────────────────────────────────
@@ -215,8 +215,11 @@ ds1b_ok( 'anchor-btn umbrella `a.eem-btn:hover` still present',
 // ── [14] DS-1.B.1: Icon-density (SVG glyph presence, not just container) ──
 echo "\n[14] Icon-density (DS-1.B.1)\n";
 $svg_count = substr_count( $html, '<svg' );
-ds1b_ok( "Render contains >=20 inline <svg tags (mockup has 22), actual={$svg_count}",
-	$svg_count >= 20,
+// Icon count is partly data-driven (one icon per attention row + per upcoming
+// reservation), so it varies below the mockup's 22 as conditions clear. Assert a
+// robust structural floor (4 KPI + 4 quick-action + card-header + >=1 each list).
+ds1b_ok( "Render contains >=15 inline <svg tags (data-driven; mockup max 22), actual={$svg_count}",
+	$svg_count >= 15,
 	$pass, $fail, $log );
 // Each KPI card carries an icon inside its label.
 preg_match_all( '#<div class="eem-dashboard-kpi-card[^"]*">.*?<div class="eem-dashboard-kpi-label">(.*?)</div>#s', $html, $kpi_blocks );

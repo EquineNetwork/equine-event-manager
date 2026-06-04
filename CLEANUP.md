@@ -75,21 +75,21 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 - **Why deferred:** Stall-chart assignment data doesn't exist — C8 builds it.
 - **Added in:** DS-1.B
 - **Unblocks deletion:** C8 close. Replace each em-dash row with the real query against the stall-chart tables / repo helpers that C8 ships; remove the `em_dash` markers.
-- **Status:** awaiting C8
+- **Status:** ✅ RESOLVED — wired live via `EEM_Admin::for_compute()->get_dashboard_stall_metrics()` (DS-1.B follow-up). Browser-verified 2026-06-04: Needs Attention shows real "N stalls unassigned — Event" + This Week "Stalls assigned" renders a value.
 
 ### 38. Dashboard Upcoming Reservations — stall progress bars
 - **What:** `EEM_Dashboard_Repo::upcoming_reservations()` ships each row's `stall_progress` block as `assigned => '—'`, `total => '—'`, `pct => 0`, `tone => 'red'`, `em_dash => true`. The mockup shows numeric assigned/total + colored fill bar; we render the chrome but the numbers are em-dashes pending C8.
 - **Why deferred:** Per-reservation stall-assignment counts come from C8 stall-chart data.
 - **Added in:** DS-1.B
 - **Unblocks deletion:** C8 close. Inside the `foreach` in `upcoming_reservations()`, compute `$assigned` + `$total` from the chart config for `$res_id`, derive `pct = $assigned/$total * 100`, set `tone` via thresholds (≥80% green, ≥50% amber, <50% red).
-- **Status:** awaiting C8
+- **Status:** ✅ RESOLVED — `stall_progress_for()` computes real assigned/total (DS-1.B follow-up). Browser-verified 2026-06-04: Upcoming Reservations shows "21 / 50" with a real fill bar.
 
 ### 37. Dashboard Unassigned Stalls KPI
 - **What:** KPI card #4 in `EEM_Dashboard_Repo::kpi_cards()` ships with `value => '—'` and `em_dash => true`. Mockup shows a count (e.g. "34") + "Needs attention across N events" subtitle.
 - **Why deferred:** Per-event unassigned-stall counts come from C8.
 - **Added in:** DS-1.B
 - **Unblocks deletion:** C8 close. Replace the em-dash with `SUM(total_stalls - assigned_stalls)` across all active stall charts; populate `sub` with affected-event count.
-- **Status:** awaiting C8
+- **Status:** ✅ RESOLVED — `unassigned_stalls_kpi()` computes the real total (DS-1.B follow-up). Browser-verified 2026-06-04: KPI shows "29" with "21 of 50 stalls assigned" subtitle.
 
 ### 41. Stub page mockup chrome cosmetic (preview-only, resolved at C13/C14)
 - **What:** DS-1.A.1's iframe-isolated stub pages (Create Order, Collect Payment) render canonical mockups via `<iframe srcdoc>`. The mockups in `.mockups/` contain simulated WordPress admin chrome (admin bar + left sidebar stubs) because they were designed as standalone-previewable HTML files. Inside the live admin's iframe, this produces visible double-chrome — once from the real WP shell wrapping the iframe, once from the mockup's simulated shell inside it.
