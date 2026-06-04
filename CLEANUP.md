@@ -168,7 +168,7 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 - **Added in:** C6.D (refund-notify scope decision during the telemetry chunk).
 - **Sequence:** lands with C11 (SendGrid + canonical templates work).
 - **Unblocks:** the C6.B notify checkbox stops being decorative.
-- **Status:** captured-but-not-sent (payload preserves intent; transport pending).
+- **Status:** ✅ RESOLVED 2026-06-04. Added the "Notify customer" checkbox (opt-in, default unchecked) to the C6 refund modal; `EEM_Admin::send_refund_email_for_order()` + `build_refund_email_html()` render and ship a "Refund Processed" email (type=refund_notification) via EEM_Mailer when `notify=1`; `handle_ajax_refund_single` returns `notification_sent`; JS toast appends "Customer notified by email." Smoke c30 16/16.
 
 ### 29. Bulk refund order-fetch optimization
 - **What:** Each `process_amount_refund` call invokes `get_grouped_orders()` (full table scan in orders-repository line ~460). For a 20-order batch this is 20 scans; for a 50-order batch, 50. Address by adding `get_orders_by_keys(array)` repo method + engine-level caching so a bulk batch performs ONE scan and serves all step calls from the cached result.

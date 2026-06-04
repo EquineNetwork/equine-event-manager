@@ -1291,9 +1291,11 @@
 			}
 		}
 
-		// 4) Toast confirmation.
+		// 4) Toast confirmation (+ note the customer email when one was sent).
 		if (window.EEM && typeof window.EEM.showSaveToast === 'function') {
-			window.EEM.showSaveToast('Refund of $' + Number(payload.refunded_amount).toFixed(2) + ' processed.');
+			var msg = 'Refund of $' + Number(payload.refunded_amount).toFixed(2) + ' processed.';
+			if (payload.notification_sent) { msg += ' Customer notified by email.'; }
+			window.EEM.showSaveToast(msg);
 		}
 	}
 

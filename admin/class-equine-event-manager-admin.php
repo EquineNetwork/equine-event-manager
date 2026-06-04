@@ -7197,6 +7197,7 @@ class EEM_Admin {
 		$amount_raw = isset( $_POST['amount'] ) ? sanitize_text_field( wp_unslash( $_POST['amount'] ) ) : '';
 		$amount     = (float) preg_replace( '/[^0-9.\-]/', '', $amount_raw );
 		$reason     = isset( $_POST['reason'] ) ? sanitize_textarea_field( wp_unslash( $_POST['reason'] ) ) : '';
+		$notify     = ! empty( $_POST['notify'] );
 
 		$result = $this->process_amount_refund( $order_key, $amount, $reason );
 
@@ -7205,6 +7206,18 @@ class EEM_Admin {
 				'code'    => $result->get_error_code(),
 				'message' => $result->get_error_message(),
 			), 400 );
+		}
+
+		// CLEANUP #30 — send the customer-facing refund-processed email when the
+		// admin opted in. Non-fatal: a send failure doesn't fail the refund (the
+		// money already moved); we surface notification_sent in the response.
+		$notification_sent = false;
+		if ( $notify ) {
+			$order_for_email   = $this->orders_repository->get_order( $order_key );
+			$emailed           = is_array( $order_for_email )
+				? $this->send_refund_email_for_order( $order_for_email, $result['refunded_amount'], $reason )
+				: new WP_Error( 'refund_email_no_order', 'Order not found for email.' );
+			$notification_sent = ! is_wp_error( $emailed ) && true === $emailed;
 		}
 
 		// C6.C: activity-log write moved into process_amount_refund kernel so
@@ -7263,6 +7276,7 @@ class EEM_Admin {
 			'banner_html'          => $banner_html,
 			'refund_history_html'  => $refund_history_html,
 			'requires_reload'      => false,
+			'notification_sent'    => $notification_sent,
 		) );
 	}
 
@@ -11109,5 +11123,107 @@ class EEM_Admin {
 		<?php
 
 		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Build the customer-facing "Refund Processed" email HTML (CLEANUP #30).
+	 *
+	 * Mirrors the invoice email shell (logo header + detail rows + support
+	 * footer); refund-themed and informational (no CTA). Sent from the refund
+	 * flow when the admin checks "Notify customer".
+	 *
+	 * @param array<string,mixed> $order         Grouped order payload.
+	 * @param float               $refund_amount Amount refunded.
+	 * @param string              $reason        Optional refund reason.
+	 * @return string Inline-styled email HTML.
+	 */
+	private function build_refund_email_html( $order, $refund_amount, $reason = '' ) {
+		$company_settings = $this->get_company_settings();
+		$company_logo_url = $this->get_company_logo_url( 'medium' );
+		$event_label      = ! empty( $order['reservation_title'] ) ? $order['reservation_title'] : $order['event_name'];
+		$support_chunks   = array_filter(
+			array(
+				! empty( $company_settings['support_phone'] ) ? $this->format_phone_label( $company_settings['support_phone'] ) : '',
+				! empty( $company_settings['support_email'] ) ? $company_settings['support_email'] : '',
+			)
+		);
+		$rows = array(
+			__( 'Order Number', 'equine-event-manager' )  => $this->format_order_number_display( (string) $order['order_number'] ),
+			__( 'Event', 'equine-event-manager' )         => $event_label,
+			__( 'Refund Amount', 'equine-event-manager' ) => '$' . number_format_i18n( (float) $refund_amount, 2 ),
+		);
+		if ( '' !== trim( (string) $reason ) ) {
+			$rows[ __( 'Reason', 'equine-event-manager' ) ] = $reason;
+		}
+
+		ob_start();
+		?>
+		<div style="margin:0;padding:28px;background:#f5f7fb;font-family:Arial,sans-serif;color:#111827;">
+			<div style="max-width:680px;margin:0 auto;">
+				<div style="margin:0 0 18px;padding:28px 30px;background:#eef2f6;border:1px solid #d9e1ea;border-radius:24px;color:#111827;">
+					<?php if ( $company_logo_url ) : ?>
+						<p style="margin:0 0 20px;"><img src="<?php echo esc_url( $company_logo_url ); ?>" alt="<?php esc_attr_e( 'Company logo', 'equine-event-manager' ); ?>" style="max-width:180px;max-height:54px;display:block;object-fit:contain;" /></p>
+					<?php endif; ?>
+					<div style="font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#5b6472;"><?php esc_html_e( 'Refund Processed', 'equine-event-manager' ); ?></div>
+					<h1 style="margin:10px 0 12px;font-size:30px;line-height:1.1;color:#111827;"><?php echo esc_html( $event_label ); ?></h1>
+					<p style="margin:0;font-size:16px;line-height:1.7;color:#111827;"><?php echo esc_html( sprintf( __( 'A refund has been processed for order #%s.', 'equine-event-manager' ), $order['order_number'] ) ); ?></p>
+				</div>
+
+				<div style="margin:0 0 18px;padding:26px 28px;background:#eef2f6;border:1px solid #d9e1ea;border-radius:24px;color:#111827;">
+					<p style="margin:0 0 16px;font-size:16px;line-height:1.7;color:#111827;"><?php echo esc_html( sprintf( __( 'Hi %s, we\'ve refunded the amount below to your original payment method. Depending on your bank, it may take a few business days to appear.', 'equine-event-manager' ), $order['customer_name'] ) ); ?></p>
+					<div style="display:grid;gap:12px;">
+						<?php foreach ( $rows as $label => $value ) : ?>
+							<div style="display:flex;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid #d9e1ea;">
+								<span style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5b6472;"><?php echo esc_html( $label ); ?></span>
+								<strong style="font-size:15px;color:#111827;text-align:right;"><?php echo esc_html( $value ); ?></strong>
+							</div>
+						<?php endforeach; ?>
+					</div>
+				</div>
+
+				<?php if ( ! empty( $support_chunks ) ) : ?>
+					<p style="margin:0;padding:0 10px;text-align:center;color:#4b5563;font-size:13px;line-height:1.7;"><?php echo esc_html__( 'Questions about your refund? Contact us:', 'equine-event-manager' ) . ' ' . esc_html( implode( ' | ', $support_chunks ) ); ?></p>
+				<?php endif; ?>
+			</div>
+		</div>
+		<?php
+
+		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Send the customer-facing refund-processed email for an order (CLEANUP #30).
+	 *
+	 * @param array<string,mixed> $order         Grouped order payload.
+	 * @param float               $refund_amount Amount refunded.
+	 * @param string              $reason        Optional refund reason.
+	 * @return bool|WP_Error True on send, WP_Error on failure / missing email.
+	 */
+	public function send_refund_email_for_order( $order, $refund_amount, $reason = '' ) {
+		if ( empty( $order ) || empty( $order['email'] ) ) {
+			return new WP_Error( 'refund_email_missing_email', __( 'No customer email on file for this order.', 'equine-event-manager' ) );
+		}
+
+		$receipt_settings  = $this->get_receipt_settings();
+		$reservation_label = ! empty( $order['reservation_title'] ) ? $order['reservation_title'] : $order['event_name'];
+		$headers           = array( 'Content-Type: text/html; charset=UTF-8' );
+		if ( ! empty( $receipt_settings['from_name'] ) && is_email( $receipt_settings['from_email'] ) ) {
+			$headers[] = 'From: ' . wp_specialchars_decode( $receipt_settings['from_name'], ENT_QUOTES ) . ' <' . $receipt_settings['from_email'] . '>';
+		}
+		if ( is_email( $receipt_settings['reply_to_email'] ) ) {
+			$headers[] = 'Reply-To: ' . $receipt_settings['reply_to_email'];
+		}
+
+		return EEM_Mailer::send_html_email(
+			sanitize_email( $order['email'] ),
+			sprintf( /* translators: %s: event or reservation title. */ __( 'Refund processed for %s', 'equine-event-manager' ), $reservation_label ),
+			$this->build_refund_email_html( $order, $refund_amount, $reason ),
+			$headers,
+			array(
+				'type'        => 'refund_notification',
+				'order_key'   => isset( $order['order_key'] ) ? (string) $order['order_key'] : '',
+				'event_label' => isset( $order['event_label'] ) ? (string) $order['event_label'] : '',
+			)
+		);
 	}
 }

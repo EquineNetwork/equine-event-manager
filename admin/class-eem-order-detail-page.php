@@ -927,6 +927,13 @@ class EEM_Order_Detail_Page {
 						<textarea class="eem-field-textarea" id="eem-order-refund-reason" name="reason" rows="3" maxlength="500" placeholder="<?php esc_attr_e( 'e.g. Customer disputed shavings quantity', 'equine-event-manager' ); ?>"></textarea>
 					</div>
 
+					<div class="eem-field-row eem-order-refund-notify-row">
+						<label class="eem-order-refund-notify">
+							<input type="checkbox" name="notify" value="1" />
+							<?php esc_html_e( 'Email the customer a refund confirmation', 'equine-event-manager' ); ?>
+						</label>
+					</div>
+
 					<div class="eem-order-refund-error" data-eem-order-refund-error hidden></div>
 				</form>
 				<footer class="eem-modal-foot eem-modal-foot--split">
