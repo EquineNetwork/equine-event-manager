@@ -50,16 +50,12 @@ class EEM_Dashboard_Page {
 		$this_week      = $repo->this_week();
 		$upcoming_count = $repo->upcoming_reservations_count( 30 );
 
-		$user           = wp_get_current_user();
-		// DS-1.B.1: ucwords() applied so a lowercase WP display_name
-		// (e.g. "whitney") renders capitalised ("Whitney") to match the
-		// mockup. Multi-word names retain per-word capitalisation.
-		$display_name   = $user ? ucwords( (string) $user->display_name ) : '';
-		$greeting       = EEM_Dashboard_Repo::format_greeting( $display_name );
 		$today          = date_i18n( 'l, F j, Y', current_time( 'timestamp' ) );
 
 		$header_actions = self::header_actions_html();
-		$subtitle       = $greeting . ' · ' . $today . ' · ' . sprintf(
+		// 2.7.23 — greeting ("Good afternoon, {name} · ") removed per product
+		// request; subtitle now leads with the date.
+		$subtitle       = $today . ' · ' . sprintf(
 			/* translators: %d: count of upcoming reservations in the next 30 days */
 			_n( '%d reservation coming up in the next 30 days', '%d reservations coming up in the next 30 days', $upcoming_count, 'equine-event-manager' ),
 			$upcoming_count
