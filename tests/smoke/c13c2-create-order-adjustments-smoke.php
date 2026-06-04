@@ -47,20 +47,17 @@ if ( ! empty( $admin ) ) {
 	wp_set_current_user( (int) $admin[0] );
 }
 
-// --- 1. collect_custom_items_from_post parses the JS array shape ------------
-$_POST['eem_custom_items'] = array(
-	array( 'description' => 'Late arrival fee', 'amount' => '25.00' ),
-	array( 'description' => '   ', 'amount' => '99' ),          // dropped: empty description
-	array( 'description' => 'Transferred credit', 'amount' => '-15.50' ),
-);
+// --- 1. collect_custom_items_from_post parses the parallel-array JS shape ----
+$_POST['custom_item_desc']   = array( 'Late arrival fee', '   ', 'Transferred credit' );
+$_POST['custom_item_amount'] = array( '25.00', '99', '-15.50' );
 $items = $collect_items->invoke( null );
 $check( 'empty-description rows dropped (2 of 3 kept)', count( $items ) === 2 );
 $check( 'first item description parsed', 'Late arrival fee' === $items[0]['description'] );
-$check( 'negative amount preserved', abs( $items[1]['amount'] - ( -15.50 ) ) < 0.001 );
+$check( 'index-aligned negative amount preserved', abs( $items[1]['amount'] - ( -15.50 ) ) < 0.001 );
 
 // No custom-items key at all -> empty array (not a warning).
-unset( $_POST['eem_custom_items'] );
-$check( 'missing eem_custom_items -> empty array', $collect_items->invoke( null ) === array() );
+unset( $_POST['custom_item_desc'], $_POST['custom_item_amount'] );
+$check( 'missing custom_item_desc -> empty array', $collect_items->invoke( null ) === array() );
 
 // --- 2. collect_discount_from_post -----------------------------------------
 $_POST['eem_discount_value']  = '0';
@@ -129,7 +126,7 @@ $check( 'custom item still persisted with null discount', count( $b2['custom_ite
 // --- cleanup ---------------------------------------------------------------
 EEM_Order_Adjustments_Repo::delete_for_order( $order_key );
 EEM_Order_Adjustments_Repo::delete_for_order( $order_key2 );
-unset( $_POST['eem_custom_items'], $_POST['eem_discount_type'], $_POST['eem_discount_value'], $_POST['eem_discount_reason'] );
+unset( $_POST['eem_discount_type'], $_POST['eem_discount_value'], $_POST['eem_discount_reason'] );
 
 echo "\n{$passed} passed, {$failed} failed\n";
 if ( $failed > 0 ) {

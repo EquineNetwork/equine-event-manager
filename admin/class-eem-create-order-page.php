@@ -413,6 +413,24 @@ class EEM_Create_Order_Page {
 					<button type="button" class="eem-co-discount-add" data-eem-action="create-order-add-discount">
 						<?php echo self::icon( 'tag' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static inline SVG. ?> <?php esc_html_e( 'Apply discount', 'equine-event-manager' ); ?>
 					</button>
+					<div class="eem-co-discount-fields" data-eem-co-discount-fields>
+						<div class="eem-co-discount-row">
+							<select class="eem-field-select eem-co-discount-type" name="eem_discount_type" data-eem-co-discount-type>
+								<option value="dollar"><?php esc_html_e( 'Dollar amount ($)', 'equine-event-manager' ); ?></option>
+								<option value="percent"><?php esc_html_e( 'Percentage (%)', 'equine-event-manager' ); ?></option>
+							</select>
+							<div class="eem-co-discount-value-wrap">
+								<span class="eem-co-discount-currency" data-eem-co-discount-symbol>$</span>
+								<input class="eem-field-input eem-co-discount-value" type="number" step="0.01" min="0" name="eem_discount_value" value="" data-eem-co-discount-value />
+							</div>
+						</div>
+						<input class="eem-field-input eem-co-discount-reason" type="text" name="eem_discount_reason" placeholder="<?php esc_attr_e( 'Reason (required, logged in Activity Log)', 'equine-event-manager' ); ?>" data-eem-co-discount-reason />
+						<div class="eem-co-discount-applied-row" data-eem-co-discount-applied hidden>
+							<span class="eem-co-discount-applied-label"><?php esc_html_e( 'Discount applied', 'equine-event-manager' ); ?></span>
+							<span class="eem-co-discount-applied-value" data-eem-co-discount-applied-value>&minus;$0.00</span>
+							<button type="button" class="eem-co-discount-remove" data-eem-action="create-order-remove-discount"><?php esc_html_e( 'Remove', 'equine-event-manager' ); ?></button>
+						</div>
+					</div>
 				</div>
 				<hr class="eem-co-summary-divider" />
 				<div class="eem-co-summary-total"><span><?php esc_html_e( 'Total', 'equine-event-manager' ); ?></span><span data-eem-co-summary-total><?php echo esc_html( self::money( 0 ) ); ?></span></div>
@@ -665,29 +683,31 @@ class EEM_Create_Order_Page {
 	/**
 	 * Collect custom line items from the submitted POST payload.
 	 *
-	 * Reads the eem_custom_items[] array the Create Order JS serializes (each
-	 * entry a {description, amount} pair). Rows with an empty description are
-	 * dropped — they're incomplete and the repo rejects them anyway. Amounts may
-	 * be negative (a credit/comp).
+	 * Reads the parallel custom_item_desc[] / custom_item_amount[] arrays the
+	 * Create Order JS serializes (one entry per row, index-aligned). Parallel
+	 * arrays avoid the reindex-on-remove churn nested-index names would require.
+	 * Rows with an empty description are dropped — they're incomplete and the repo
+	 * rejects them anyway. Amounts may be negative (a credit/comp).
 	 *
 	 * @return array<int, array{description:string, amount:float}> Cleaned items.
 	 */
 	private static function collect_custom_items_from_post(): array {
-		if ( ! isset( $_POST['eem_custom_items'] ) || ! is_array( $_POST['eem_custom_items'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce checked by caller.
+		if ( ! isset( $_POST['custom_item_desc'] ) || ! is_array( $_POST['custom_item_desc'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce checked by caller.
 			return array();
 		}
 
-		$raw   = wp_unslash( $_POST['eem_custom_items'] ); // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized per field below.
+		$descriptions = array_values( (array) wp_unslash( $_POST['custom_item_desc'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized below.
+		$amounts      = isset( $_POST['custom_item_amount'] ) && is_array( $_POST['custom_item_amount'] ) // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			? array_values( (array) wp_unslash( $_POST['custom_item_amount'] ) ) // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- cast to float below.
+			: array();
+
 		$items = array();
-		foreach ( (array) $raw as $entry ) {
-			if ( ! is_array( $entry ) ) {
-				continue;
-			}
-			$description = isset( $entry['description'] ) ? sanitize_text_field( (string) $entry['description'] ) : '';
+		foreach ( $descriptions as $i => $raw_desc ) {
+			$description = sanitize_text_field( (string) $raw_desc );
 			if ( '' === trim( $description ) ) {
 				continue;
 			}
-			$amount  = isset( $entry['amount'] ) ? (float) $entry['amount'] : 0.0;
+			$amount  = isset( $amounts[ $i ] ) ? (float) $amounts[ $i ] : 0.0;
 			$items[] = array( 'description' => $description, 'amount' => round( $amount, 2 ) );
 		}
 

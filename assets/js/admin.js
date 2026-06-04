@@ -5342,38 +5342,117 @@ function duplicateReservationAjax(target) {
 	 *
 	 * @returns {void}
 	 */
-	function coSyncTotals() {
-		var embed = document.querySelector('.eem-co-form-embed');
-		if (!embed) { return; }
+	/** Parse a "$1,234.56" / "-$5.00" money string into a float. @returns {number} */
+	function coParseMoney(s) {
+		var n = parseFloat(String(s == null ? '' : s).replace(/[^0-9.\-]/g, ''));
+		return isNaN(n) ? 0 : n;
+	}
 
+	/** Format a number as "$X.XX" / "-$X.XX". @returns {string} */
+	function coFmtMoney(n) {
+		var sign = n < 0 ? '-' : '';
+		return sign + '$' + Math.abs(n).toFixed(2);
+	}
+
+	/**
+	 * Collect non-empty custom line items from the workspace (the Custom Line
+	 * Items card lives outside the embedded reservation form).
+	 * @returns {Array<{description:string, amount:number}>}
+	 */
+	function coCollectCustomItems() {
+		var items = [];
+		document.querySelectorAll('[data-eem-co-custom-list] .eem-co-custom-row').forEach(function (row) {
+			var descEl = row.querySelector('[name="custom_item_desc[]"]');
+			var amtEl  = row.querySelector('[name="custom_item_amount[]"]');
+			var desc   = descEl ? descEl.value.trim() : '';
+			if (!desc) { return; }
+			items.push({ description: desc, amount: amtEl ? coParseMoney(amtEl.value) : 0 });
+		});
+		return items;
+	}
+
+	/**
+	 * Read the active discount from the rail, or null when none is applied.
+	 * @returns {{type:string, value:number}|null}
+	 */
+	function coReadDiscount() {
+		var wrap = document.querySelector('[data-eem-co-discount]');
+		if (!wrap || !wrap.classList.contains('open')) { return null; }
+		var valEl  = wrap.querySelector('[data-eem-co-discount-value]');
+		var typeEl = wrap.querySelector('[data-eem-co-discount-type]');
+		var val    = valEl ? coParseMoney(valEl.value) : 0;
+		if (val <= 0) { return null; }
+		return { type: (typeEl && typeEl.value === 'percent') ? 'percent' : 'dollar', value: val };
+	}
+
+	/** Build one summary line node. @returns {HTMLElement} */
+	function coSummaryLine(label, price, modifier) {
+		var line = document.createElement('div');
+		line.className = 'eem-co-summary-line' + (modifier ? ' eem-co-summary-line--' + modifier : '');
+		var l = document.createElement('span');
+		l.className = 'eem-co-summary-line-label';
+		l.textContent = label;
+		var p = document.createElement('span');
+		p.className = 'eem-co-summary-line-price';
+		p.textContent = price;
+		line.appendChild(l);
+		line.appendChild(p);
+		return line;
+	}
+
+	/** Reflect the resolved discount amount in the rail's applied-row affordance. */
+	function coUpdateAppliedRow(discountAmount) {
+		var applied = document.querySelector('[data-eem-co-discount-applied]');
+		if (!applied) { return; }
+		applied.hidden = !(discountAmount > 0);
+		var valEl = applied.querySelector('[data-eem-co-discount-applied-value]');
+		if (valEl) { valEl.textContent = '−' + coFmtMoney(discountAmount); }
+	}
+
+	/**
+	 * Rebuild the Create Order rail: embedded pricing lines + custom items +
+	 * discount, with a recomputed total. Discount preview resolves against the
+	 * running order total (embedded + custom items); the server snapshots the
+	 * authoritative reduction (against the pre-fee subtotal) at save time.
+	 *
+	 * @returns {void}
+	 */
+	function coSyncTotals() {
 		var summaryLines = document.querySelector('[data-eem-co-summary-lines]');
 		var totalEl      = document.querySelector('[data-eem-co-summary-total]');
 		if (!summaryLines || !totalEl) { return; }
 
-		// Preserve the PHP-rendered event-name node across rebuilds so it stays
-		// at the top of the summary on every sync pass.
 		var eventNode = summaryLines.querySelector('[data-eem-co-summary-event]');
 
-		// Visible rows = pricing engine has set a non-zero value for this line.
-		var visibleRows  = embed.querySelectorAll('[data-eem-summary-row]:not([hidden])');
-		// The pricing engine uses data-eem-total="total" for the grand total
-		// (not "grand_total" — confirmed by DOM inspection on 2026-06-02).
-		var grandTotalEl = embed.querySelector('[data-eem-total="total"]');
-		var grandTotal   = grandTotalEl ? grandTotalEl.textContent.trim() : '$0.00';
+		var embed        = document.querySelector('.eem-co-form-embed');
+		var visibleRows  = embed ? embed.querySelectorAll('[data-eem-summary-row]:not([hidden])') : [];
+		var grandTotalEl = embed ? embed.querySelector('[data-eem-total="total"]') : null;
+		var baseTotal    = grandTotalEl ? coParseMoney(grandTotalEl.textContent) : 0;
 
-		// Wipe and rebuild. Re-attach the event-name node first (detached by innerHTML
-		// clear, but the reference remains valid).
+		var customItems = coCollectCustomItems();
+		var customTotal = 0;
+		customItems.forEach(function (it) { customTotal += it.amount; });
+
+		var discount       = coReadDiscount();
+		var discountAmount = 0;
+		if (discount) {
+			var dbase = baseTotal + customTotal;
+			discountAmount = discount.type === 'percent' ? dbase * (discount.value / 100) : discount.value;
+			if (discountAmount > dbase) { discountAmount = dbase; }
+			if (discountAmount < 0) { discountAmount = 0; }
+		}
+
 		summaryLines.innerHTML = '';
 		if (eventNode) { summaryLines.appendChild(eventNode); }
 
-		if (!visibleRows.length) {
-			// Nothing priced yet — show the empty-state hint.
+		if (!visibleRows.length && !customItems.length) {
 			var empty = document.createElement('p');
 			empty.className = 'eem-field-hint';
 			empty.setAttribute('data-eem-co-summary-empty', '');
 			empty.textContent = 'Select a reservation and add items to build the order.';
 			summaryLines.appendChild(empty);
 			totalEl.textContent = '$0.00';
+			coUpdateAppliedRow(0);
 			return;
 		}
 
@@ -5381,42 +5460,99 @@ function duplicateReservationAjax(target) {
 			var labelEl = row.querySelector('span:first-child');
 			var valueEl = row.querySelector('[data-eem-total]');
 			if (!labelEl || !valueEl) { return; }
-
-			var line   = document.createElement('div');
-			line.className = 'eem-co-summary-line';
-
-			var lSpan  = document.createElement('span');
-			lSpan.className   = 'eem-co-summary-line-label';
-			lSpan.textContent = labelEl.textContent.trim();
-
-			var pSpan  = document.createElement('span');
-			pSpan.className   = 'eem-co-summary-line-price';
-			pSpan.textContent = valueEl.textContent.trim();
-
-			line.appendChild(lSpan);
-			line.appendChild(pSpan);
-			summaryLines.appendChild(line);
+			summaryLines.appendChild(coSummaryLine(labelEl.textContent.trim(), valueEl.textContent.trim(), ''));
 		});
 
-		totalEl.textContent = grandTotal;
+		customItems.forEach(function (it) {
+			summaryLines.appendChild(coSummaryLine(it.description, coFmtMoney(it.amount), 'custom'));
+		});
+
+		if (discountAmount > 0) {
+			summaryLines.appendChild(coSummaryLine('Discount', '−' + coFmtMoney(discountAmount), 'discount'));
+		}
+
+		totalEl.textContent = coFmtMoney(baseTotal + customTotal - discountAmount);
+		coUpdateAppliedRow(discountAmount);
 	}
 
-	// Wire to both event types — qty steppers dispatch 'change'; text inputs
-	// dispatch 'input'. Scope to events originating inside the embed wrapper.
-	document.addEventListener('input', function (ev) {
-		if (ev.target.closest && ev.target.closest('.eem-co-form-embed')) {
+	/**
+	 * Append the workspace adjustment fields (custom items + discount) to a
+	 * FormData built from the embedded form, which doesn't include them. Used by
+	 * the order-submit path so the adjustments reach the server.
+	 * @param {FormData} formData
+	 * @returns {void}
+	 */
+	function coAppendAdjustments(formData) {
+		coCollectCustomItems().forEach(function (it) {
+			formData.append('custom_item_desc[]', it.description);
+			formData.append('custom_item_amount[]', String(it.amount));
+		});
+		var discount = coReadDiscount();
+		if (discount) {
+			var wrap     = document.querySelector('[data-eem-co-discount]');
+			var reasonEl = wrap ? wrap.querySelector('[data-eem-co-discount-reason]') : null;
+			formData.set('eem_discount_type', discount.type);
+			formData.set('eem_discount_value', String(discount.value));
+			formData.set('eem_discount_reason', reasonEl ? (reasonEl.value || '') : '');
+		}
+	}
+
+	// Expose for the submit IIFE (B.2.c) which lives in a separate closure.
+	window.EEM_CO = window.EEM_CO || {};
+	window.EEM_CO.syncTotals = coSyncTotals;
+	window.EEM_CO.appendAdjustments = coAppendAdjustments;
+
+	// Re-sync when embedded pricing OR workspace adjustment fields change.
+	function coShouldSync(target) {
+		if (!target || !target.closest) { return false; }
+		return !!(target.closest('.eem-co-form-embed') ||
+			target.closest('[data-eem-co-custom-list]') ||
+			target.closest('[data-eem-co-discount]'));
+	}
+	document.addEventListener('input', function (ev) { if (coShouldSync(ev.target)) { coSyncTotals(); } });
+	document.addEventListener('change', function (ev) { if (coShouldSync(ev.target)) { coSyncTotals(); } });
+
+	// Discount + custom-item affordances (clicks). Custom add/remove DOM mutation
+	// is handled by the C13.A.2 IIFE; here we only re-sync the rail afterwards.
+	document.addEventListener('click', function (ev) {
+		var t = ev.target.closest ? ev.target.closest('[data-eem-action]') : null;
+		if (!t) { return; }
+		var action = t.getAttribute('data-eem-action');
+		if (action === 'create-order-add-discount') {
+			ev.preventDefault();
+			var wrap = document.querySelector('[data-eem-co-discount]');
+			if (wrap) {
+				wrap.classList.add('open');
+				var v = wrap.querySelector('[data-eem-co-discount-value]');
+				if (v) { v.focus(); }
+			}
+		} else if (action === 'create-order-remove-discount') {
+			ev.preventDefault();
+			var w = document.querySelector('[data-eem-co-discount]');
+			if (w) {
+				w.classList.remove('open');
+				var val = w.querySelector('[data-eem-co-discount-value]'); if (val) { val.value = ''; }
+				var rsn = w.querySelector('[data-eem-co-discount-reason]'); if (rsn) { rsn.value = ''; }
+			}
 			coSyncTotals();
+		} else if (action === 'create-order-add-custom-item' || action === 'create-order-remove-custom-item') {
+			// A.2 mutates the list; defer the re-sync to the next tick so the row
+			// add/remove has landed in the DOM before we read it.
+			setTimeout(coSyncTotals, 0);
 		}
 	});
 
+	// Swap the $/% prefix symbol when the discount type changes.
 	document.addEventListener('change', function (ev) {
-		if (ev.target.closest && ev.target.closest('.eem-co-form-embed')) {
+		var t = ev.target;
+		if (t && t.getAttribute && t.hasAttribute('data-eem-co-discount-type')) {
+			var wrap = t.closest('[data-eem-co-discount]');
+			var sym  = wrap ? wrap.querySelector('[data-eem-co-discount-symbol]') : null;
+			if (sym) { sym.textContent = t.value === 'percent' ? '%' : '$'; }
 			coSyncTotals();
 		}
 	});
 
-	// Init pass on DOMContentLoaded — handles the edge case where a section is
-	// pre-enabled with non-zero defaults (e.g. date-driven fees applied at load).
 	document.addEventListener('DOMContentLoaded', function () {
 		if (document.querySelector('.eem-co-form-embed')) {
 			coSyncTotals();
@@ -5472,6 +5608,12 @@ function duplicateReservationAjax(target) {
 		// Override notes with our Special Requests textarea (hides the embedded one).
 		var notesEl = workspace ? workspace.querySelector('textarea[name="notes"]') : null;
 		if (notesEl) { formData.set('notes', notesEl.value || ''); }
+
+		// Append the workspace adjustments (custom line items + discount) — these
+		// live OUTSIDE the embedded form, so FormData(embeddedForm) misses them.
+		if (window.EEM_CO && window.EEM_CO.appendAdjustments) {
+			window.EEM_CO.appendAdjustments(formData);
+		}
 
 		// Add AJAX action + admin-side nonce (separate from the reservation form nonce).
 		formData.set('action', 'eem_admin_create_order');
