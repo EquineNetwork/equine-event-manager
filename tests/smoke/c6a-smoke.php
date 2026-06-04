@@ -82,10 +82,11 @@ if ( ! empty( $rows ) ) {
 	ok( 'render includes Back to Orders ghost button',              str_contains( $html, 'Back to Orders' ),    $pass, $fail, $log );
 	ok( 'render includes More dropdown wrap',                       str_contains( $html, 'eem-row-menu-wrap eem-order-detail-more' ), $pass, $fail, $log );
 
-	// C11 stubs in More dropdown
-	ok( 'More menu has Send Receipt stub labeled C11',              str_contains( $html, 'Send Receipt' ) && str_contains( $html, 'C11' ), $pass, $fail, $log );
-	ok( 'More menu has Print Receipt stub labeled C11',             str_contains( $html, 'Print Receipt' ), $pass, $fail, $log );
-	ok( 'C11 stubs use .eem-btn-stub for dimmed treatment',         str_contains( $html, 'eem-btn-stub' ),     $pass, $fail, $log );
+	// Receipt actions in More dropdown — the C11-era stubs were replaced by the
+	// real C12 receipt features (View Receipt / Download PDF Receipt).
+	ok( 'More menu has View Receipt (C12, replaces C11 stub)',      str_contains( $html, 'View Receipt' ),         $pass, $fail, $log );
+	ok( 'More menu has Download PDF Receipt (C12)',                 str_contains( $html, 'Download PDF Receipt' ),  $pass, $fail, $log );
+	ok( 'receipt links open in a new tab (real, not dimmed stub)',  str_contains( $html, 'target="_blank"' ),       $pass, $fail, $log );
 
 	// Refund / CSV / Trash actions present
 	ok( 'More menu has Refund Order action',                        str_contains( $html, 'Refund Order' ),     $pass, $fail, $log );

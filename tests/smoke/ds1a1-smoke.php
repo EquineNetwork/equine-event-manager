@@ -38,28 +38,21 @@ ds1a1_ok( '.eem-btn-primary:hover block still present (no regression on existing
 	(bool) preg_match( '/\.eem-btn-primary:hover/', $css_src ),
 	$pass, $fail, $log );
 
-// ── [2] Issue 2: mockup preview is iframe srcdoc ────────────────────
-echo "\n[2] Mockup preview iframe isolation\n";
-ds1a1_ok( 'Create Order render_mockup_preview emits <iframe with srcdoc',
-	str_contains( $create_src, '<iframe class="eem-mockup-preview"' ) &&
-	str_contains( $create_src, 'srcdoc=' ),
+// ── [2] Create Order + Collect Payment are now REAL pages ───────────
+// The DS-1.A era shipped these as iframe mockup-preview stubs; C13 (Create
+// Order) and C14 (Collect Payment) replaced them with real implementations.
+echo "\n[2] Create Order + Collect Payment are real pages (no iframe stub)\n";
+ds1a1_ok( 'Create Order renders the real workspace (not an iframe stub)',
+	str_contains( $create_src, 'eem-co-workspace' ) &&
+	false === strpos( $create_src, 'eem-mockup-preview' ),
 	$pass, $fail, $log );
-ds1a1_ok( 'Collect Payment render_mockup_preview emits <iframe with srcdoc',
-	str_contains( $collect_src, '<iframe class="eem-mockup-preview"' ) &&
-	str_contains( $collect_src, 'srcdoc=' ),
+ds1a1_ok( 'Collect Payment renders the real workspace (not an iframe stub)',
+	str_contains( $collect_src, 'eem-co-workspace' ) &&
+	false === strpos( $collect_src, 'eem-mockup-preview' ),
 	$pass, $fail, $log );
-ds1a1_ok( 'Create Order no longer inline-injects mockup body via <div>',
-	false === strpos( $create_src, "'<div class=\"eem-mockup-preview\">'" ),
-	$pass, $fail, $log );
-ds1a1_ok( 'Collect Payment no longer inline-injects mockup body via <div>',
-	false === strpos( $collect_src, "'<div class=\"eem-mockup-preview\">'" ),
-	$pass, $fail, $log );
-ds1a1_ok( 'iframe carries sandbox="allow-same-origin" (defense-in-depth)',
-	str_contains( $create_src, 'sandbox="allow-same-origin"' ) &&
-	str_contains( $collect_src, 'sandbox="allow-same-origin"' ),
-	$pass, $fail, $log );
-ds1a1_ok( 'admin.css .eem-mockup-preview sizes the iframe (width + height)',
-	(bool) preg_match( '/\.eem-mockup-preview\s*\{[^}]*width:\s*100%[^}]*height:\s*80vh/s', $css_src ),
+ds1a1_ok( 'neither page ships a render_mockup_preview iframe',
+	false === strpos( $create_src, 'render_mockup_preview' ) &&
+	false === strpos( $collect_src, 'render_mockup_preview' ),
 	$pass, $fail, $log );
 
 // ── [3] Issue 4: Create Order registered as HIDDEN submenu ──────────

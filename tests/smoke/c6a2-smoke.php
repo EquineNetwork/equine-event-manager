@@ -103,15 +103,13 @@ ok( 'payment details emits Refund History label',     str_contains( $html, 'Refu
 ok( 'payment details emits separator class on Refund History',
 	str_contains( $html, 'eem-order-payment__label--sep' ),
 	$pass, $fail, $log );
-// CRITICAL: Card display block is OMITTED per CLEANUP #34.
-ok( 'NO Card display block — no >Card</ label',
-	false === strpos( $html, '>Card</div>' ),
-	$pass, $fail, $log, 'Card display block must be omitted per CLEANUP #34' );
-ok( 'NO VISA badge inline (card display omitted)',
-	false === strpos( $html, '>VISA<' ),
-	$pass, $fail, $log );
-ok( 'NO •••• masked-number glyph (card display omitted)',
-	false === strpos( $html, '••••' ),
+// CLEANUP #34 is now COMPLETE — the card brand/last4 are captured at charge time
+// (C14 confirm handler) and the Card display block renders when present.
+ok( 'Card display block renders when card data present',
+	false !== strpos( $html, '>Card</div>' ),
+	$pass, $fail, $log, 'CLEANUP #34 done — Card display now shown' );
+ok( 'card shows masked •••• last4 glyph',
+	false !== strpos( $html, '••••' ),
 	$pass, $fail, $log );
 
 // ── [7] Special Instructions — always renders ──────────────────────
@@ -139,10 +137,10 @@ ok( 'inline marker references mockup lines 586-592',            str_contains( $s
 ok( 'no Save Changes button rendered',                           false === strpos( $html, 'Save Changes' ),                                          $pass, $fail, $log );
 ok( 'no .eem-save-bar markup rendered',                          false === strpos( $html, 'eem-save-bar' ),                                          $pass, $fail, $log );
 
-// ── [9] Card display omission marker (CLEANUP #34) ─────────────────
-echo "\n[9] Card display block omitted (CLEANUP #34)\n";
+// ── [9] Card display capture marker (CLEANUP #34 — now complete) ───
+echo "\n[9] Card display block present (CLEANUP #34 complete)\n";
 ok( 'inline marker references CLEANUP #34 by number',           str_contains( $src, 'CLEANUP #34' ),                                                $pass, $fail, $log );
-ok( 'inline marker mentions _en_card_brand',                    str_contains( $src, '_en_card_brand' ),                                             $pass, $fail, $log );
+ok( 'card data sourced from captured component notes',          str_contains( $src, 'Card Brand' ) && str_contains( $src, 'Card Last4' ),           $pass, $fail, $log );
 
 // ── [10] Edit Reservation button ────────────────────────────────────
 echo "\n[10] Edit Reservation button in header actions\n";

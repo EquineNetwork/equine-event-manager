@@ -158,7 +158,7 @@ $wpdb->query( $wpdb->prepare(
 echo "\n[5] EEM_Mailer::send_html_email accepts $context arg (backward-compatible)\n";
 $mailer_refl = new ReflectionMethod( 'EEM_Mailer', 'send_html_email' );
 $params = $mailer_refl->getParameters();
-ok( 'send_html_email signature has 5 params',                           5 === count( $params ),                                                     $pass, $fail, $log );
+ok( 'send_html_email signature has 6 params (incl. C12 attachments)', 6 === count( $params ),                                                     $pass, $fail, $log );
 ok( '5th param is named context',                                        isset( $params[4] ) && 'context' === $params[4]->getName(),                $pass, $fail, $log );
 ok( '5th param has default (backward-compatible)',                      isset( $params[4] ) && $params[4]->isDefaultValueAvailable(),               $pass, $fail, $log );
 

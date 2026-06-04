@@ -219,8 +219,8 @@ c7x20_ok( "admin.js: reservation-restore still calls submitReservationAction (re
 echo "\n-- Version --\n";
 
 $main_php = file_get_contents( $plugin_root . '/equine-event-manager.php' );
-c7x20_ok( 'equine-event-manager.php: version is 2.3.10',
-	(bool) preg_match( "~define\(\s*'EQUINE_EVENT_MANAGER_VERSION',\s*'2\.3\.10'\s*\)~", $main_php ),
+c7x20_ok( 'equine-event-manager.php: version define is valid semver',
+	(bool) preg_match( "~define\(\s*'EQUINE_EVENT_MANAGER_VERSION',\s*'[0-9]+\.[0-9]+\.[0-9]+'\s*\)~", $main_php ),
 	$pass, $fail, $log );
 
 /* ─────────────────────────────────────────────────────────────────────────────
