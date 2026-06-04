@@ -794,26 +794,19 @@ class EEM_Settings_Page {
 				</div>
 			</section>
 
-			<section class="eem-card eem-card--coming-soon">
+			<section class="eem-card">
 				<header class="eem-card-header">
 					<h2 class="eem-card-title"><?php esc_html_e( 'Email Delivery', 'equine-event-manager' ); ?></h2>
-					<span class="eem-source-status is-soon"><?php esc_html_e( 'Coming Soon', 'equine-event-manager' ); ?></span>
 				</header>
 				<div class="eem-card-body">
 					<p class="eem-field-hint" style="margin-bottom:14px;">
-						<?php esc_html_e( 'SendGrid delivery is coming in a future release. For now, EEM sends customer receipts and payment-link emails through the site\'s default WordPress mailer.', 'equine-event-manager' ); ?>
+						<?php esc_html_e( 'Optional. Paste a SendGrid API key to send all customer receipts, payment-link, and refund emails through SendGrid. Leave blank to use the site\'s default WordPress mailer (wp_mail).', 'equine-event-manager' ); ?>
 					</p>
 					<div class="eem-field-row">
 						<label class="eem-field-label" for="eem-sendgrid"><?php esc_html_e( 'SendGrid API Key', 'equine-event-manager' ); ?></label>
 						<div class="eem-field-control">
-							<?php
-							// 2.3.53 (C10.C) — SendGrid is V2-deferred ("Coming Soon"), so the
-							// field is disabled. A disabled input does not POST, so the saved
-							// key is preserved by save_integrations_panel (which only overwrites
-							// sendgrid_api_key when the payload key is present). No data loss.
-							?>
-							<input class="eem-field-input" id="eem-sendgrid" type="password" value="<?php echo esc_attr( $integration['sendgrid_api_key'] ); ?>" placeholder="SG.xxxxxxxxxxxxxxxxxxxx" autocomplete="off" disabled />
-							<p class="eem-field-hint"><?php esc_html_e( 'Routing email through SendGrid will be available in a future release. Until then, the default WordPress mail configuration is used for all plugin email.', 'equine-event-manager' ); ?></p>
+							<input class="eem-field-input" id="eem-sendgrid" name="payload[sendgrid_api_key]" type="password" value="<?php echo esc_attr( $integration['sendgrid_api_key'] ); ?>" placeholder="SG.xxxxxxxxxxxxxxxxxxxx" autocomplete="off" />
+							<p class="eem-field-hint"><?php esc_html_e( 'Use a key restricted to "Mail Send" only. From / Reply-To come from the Communications panel above; the From-address domain must be authenticated in your SendGrid account.', 'equine-event-manager' ); ?></p>
 						</div>
 					</div>
 				</div>
