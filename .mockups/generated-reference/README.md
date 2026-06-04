@@ -16,6 +16,11 @@ Kept in version control so we don't lose the reference snapshots.
 - `c12-receipt-final.pdf` — the final C12 PDF after the brand-font bundling +
   layout fixes (billing card, running page footer, 2-col details, 700px sheet
   width to avoid Dompdf right-edge clipping).
+- `onboarding-checklist-preview.html` — the first-run setup checklist card
+  (v2.7.24) as rendered by `EEM_Dashboard_Page::render_setup_checklist()`,
+  shown in a 2-of-4-done state. Authoritative source is the live render method
+  + `assets/css/admin.css` (`.eem-setup-checklist*`); this is a snapshot for
+  visual review since the live card auto-hides once setup is complete.
 
 These were the visual-verify reference for C12 (Order Receipt PDF + hosted
 page). The authoritative source of truth remains the live template at

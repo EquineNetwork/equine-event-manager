@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>EEM — Onboarding / Setup Checklist Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ── Brand tokens (mirrors assets/css/admin.css :root) ───────────── */
+  :root{
+    --eem-navy:#031B4E; --eem-electric:#1668F2; --eem-electric-hover:#1355cc;
+    --eem-bg:#F7F9FC; --eem-border:#D9E2F2; --eem-border-soft:#f0f0f1;
+    --eem-border-card:#c3c4c7; --eem-muted:#647089;
+    --eem-success-bg:#F0FDFA; --eem-success-border:#bbf7d0; --eem-success-text:#0d9488; --eem-success-accent:#16a34a;
+    --eem-radius:3px; --eem-radius-lg:6px;
+  }
+  body{ background:#eef1f6; font-family:"IBM Plex Sans",-apple-system,sans-serif; color:var(--eem-navy); margin:0; padding:40px 20px; }
+  .preview-wrap{ max-width:920px; margin:0 auto; }
+  .preview-note{ font-size:13px; color:var(--eem-muted); margin:0 0 24px; }
+  .preview-note strong{ color:var(--eem-navy); }
+  h1.preview-h{ font-family:"Space Grotesk",sans-serif; font-size:20px; margin:0 0 4px; }
+
+  /* ── Setup checklist card (verbatim from admin.css 2.7.24) ───────── */
+  .eem-setup-checklist{ background:#fff; border:1px solid var(--eem-border); border-left:4px solid var(--eem-electric); border-radius:var(--eem-radius-lg); padding:20px 22px; margin-bottom:20px; box-shadow:0 1px 2px rgba(3,27,78,.05); }
+  .eem-setup-checklist__head{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:14px; }
+  .eem-setup-checklist__title{ font-family:"Space Grotesk",sans-serif; font-size:16px; font-weight:700; color:var(--eem-navy); margin:0 0 3px; }
+  .eem-setup-checklist__sub{ font-size:13px; color:var(--eem-muted); margin:0; }
+  .eem-setup-checklist__dismiss{ background:transparent; border:none; color:var(--eem-muted); font-size:22px; line-height:1; cursor:pointer; padding:0 4px; flex-shrink:0; }
+  .eem-setup-checklist__dismiss:hover{ color:var(--eem-navy); }
+  .eem-setup-checklist__list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; }
+  .eem-setup-checklist__item{ display:flex; align-items:center; gap:12px; padding:12px 14px; border:1px solid var(--eem-border-soft); border-radius:var(--eem-radius); background:var(--eem-bg); }
+  .eem-setup-checklist__item.is-done{ background:var(--eem-success-bg); border-color:var(--eem-success-border); }
+  .eem-setup-checklist__icon{ flex-shrink:0; display:flex; align-items:center; color:var(--eem-border-card); }
+  .eem-setup-checklist__item.is-done .eem-setup-checklist__icon{ color:var(--eem-success-accent); }
+  .eem-setup-checklist__text{ display:flex; flex-direction:column; gap:2px; flex:1 1 auto; min-width:0; }
+  .eem-setup-checklist__label{ font-size:14px; font-weight:600; color:var(--eem-navy); }
+  .eem-setup-checklist__hint{ font-size:12.5px; color:var(--eem-muted); }
+  .eem-setup-checklist__status{ flex-shrink:0; font-size:12.5px; font-weight:600; color:var(--eem-success-text); }
+  .eem-btn{ display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; padding:7px 14px; border-radius:var(--eem-radius); border:1px solid transparent; cursor:pointer; text-decoration:none; }
+  .eem-btn-electric{ background:var(--eem-electric); color:#fff; }
+  .eem-btn-electric:hover{ background:var(--eem-electric-hover); }
+  .eem-setup-checklist__cta{ flex-shrink:0; }
+  @media (max-width:600px){
+    .eem-setup-checklist__item{ flex-wrap:wrap; }
+    .eem-setup-checklist__cta, .eem-setup-checklist__status{ margin-left:30px; }
+  }
+</style>
+</head>
+<body>
+<div class="preview-wrap">
+  <h1 class="preview-h">Onboarding / Setup Checklist — preview</h1>
+  <p class="preview-note">
+    This is the card that appears <strong>at the top of the Dashboard</strong> for any admin who hasn't finished
+    go-live setup. Status per row is computed from your real saved Settings — the whole card
+    <strong>auto-hides</strong> once all four are configured. Shown here in a realistic
+    <strong>2&nbsp;of&nbsp;4 done</strong> state (Branding &amp; Communications complete; Payments &amp; SendGrid still to do).
+  </p>
+
+  <!-- The live component (markup mirrors EEM_Dashboard_Page::render_setup_checklist) -->
+  <section class="eem-setup-checklist">
+    <header class="eem-setup-checklist__head">
+      <div>
+        <h2 class="eem-setup-checklist__title">Finish setting up your plugin</h2>
+        <p class="eem-setup-checklist__sub">Complete these 4 items before going live. 2 / 4 done.</p>
+      </div>
+      <button type="button" class="eem-setup-checklist__dismiss" aria-label="Dismiss setup checklist">&times;</button>
+    </header>
+    <ul class="eem-setup-checklist__list">
+
+      <li class="eem-setup-checklist__item is-done">
+        <span class="eem-setup-checklist__icon" aria-hidden="true">
+          <svg viewBox="0 0 20 20" width="18" height="18"><path fill="currentColor" d="M16.7 5.3a1 1 0 0 1 0 1.4l-7.5 7.5a1 1 0 0 1-1.4 0L3.3 9.7a1 1 0 1 1 1.4-1.4l3.3 3.3 6.8-6.8a1 1 0 0 1 1.9.5z"/></svg>
+        </span>
+        <span class="eem-setup-checklist__text">
+          <span class="eem-setup-checklist__label">Branding</span>
+          <span class="eem-setup-checklist__hint">Upload your PNG logo and support email — used on receipts, PDFs, and customer emails.</span>
+        </span>
+        <span class="eem-setup-checklist__status">Done</span>
+      </li>
+
+      <li class="eem-setup-checklist__item is-done">
+        <span class="eem-setup-checklist__icon" aria-hidden="true">
+          <svg viewBox="0 0 20 20" width="18" height="18"><path fill="currentColor" d="M16.7 5.3a1 1 0 0 1 0 1.4l-7.5 7.5a1 1 0 0 1-1.4 0L3.3 9.7a1 1 0 1 1 1.4-1.4l3.3 3.3 6.8-6.8a1 1 0 0 1 1.9.5z"/></svg>
+        </span>
+        <span class="eem-setup-checklist__text">
+          <span class="eem-setup-checklist__label">Communications</span>
+          <span class="eem-setup-checklist__hint">Set the from-name and from-email so customer emails come from your business.</span>
+        </span>
+        <span class="eem-setup-checklist__status">Done</span>
+      </li>
+
+      <li class="eem-setup-checklist__item is-todo">
+        <span class="eem-setup-checklist__icon" aria-hidden="true">
+          <svg viewBox="0 0 20 20" width="18" height="18"><circle cx="10" cy="10" r="7.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+        </span>
+        <span class="eem-setup-checklist__text">
+          <span class="eem-setup-checklist__label">Payments</span>
+          <span class="eem-setup-checklist__hint">Add your Stripe publishable and secret keys so you can charge customers.</span>
+        </span>
+        <a class="eem-btn eem-btn-electric eem-setup-checklist__cta" href="#">Set up</a>
+      </li>
+
+      <li class="eem-setup-checklist__item is-todo">
+        <span class="eem-setup-checklist__icon" aria-hidden="true">
+          <svg viewBox="0 0 20 20" width="18" height="18"><circle cx="10" cy="10" r="7.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+        </span>
+        <span class="eem-setup-checklist__text">
+          <span class="eem-setup-checklist__label">Email Delivery (SendGrid)</span>
+          <span class="eem-setup-checklist__hint">Add your SendGrid API key for reliable delivery of confirmations and receipts.</span>
+        </span>
+        <a class="eem-btn eem-btn-electric eem-setup-checklist__cta" href="#">Set up</a>
+      </li>
+
+    </ul>
+  </section>
+</div>
+</body>
+</html>
