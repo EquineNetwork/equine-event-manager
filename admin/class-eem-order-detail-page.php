@@ -624,6 +624,19 @@ class EEM_Order_Detail_Page {
 		$required     = isset( $order['required_shavings_qty'] )   ? (int) $order['required_shavings_qty']   : 0;
 		$additional   = isset( $order['additional_shavings_qty'] ) ? (int) $order['additional_shavings_qty'] : 0;
 		$addon_qty    = $required + $additional;
+
+		// C13.C: order-level adjustments (custom line items + discount). These
+		// aren't part of the component-row totals, so the grand total is recomputed
+		// from $total + custom items − the discount's snapshotted reduction.
+		$order_key    = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
+		$adjustments  = ( '' !== $order_key && class_exists( 'EEM_Order_Adjustments_Repo' ) )
+			? EEM_Order_Adjustments_Repo::get_for_order( $order_key )
+			: array( 'custom_items' => array(), 'discount' => null, 'custom_items_total' => 0.0 );
+		$custom_items      = $adjustments['custom_items'];
+		$custom_items_total = (float) $adjustments['custom_items_total'];
+		$discount          = $adjustments['discount'];
+		$discount_amount   = is_array( $discount ) ? (float) $discount['amount'] : 0.0;
+		$total             = $total + $custom_items_total - $discount_amount;
 		?>
 		<div class="eem-card eem-order-card">
 			<div class="eem-order-card__header">
@@ -675,6 +688,29 @@ class EEM_Order_Detail_Page {
 						</div>
 						<div class="eem-order-summary__line"><span><?php esc_html_e( 'Non-Refundable Convenience Fee', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $fees, 2 ) ); ?></span></div>
 						<div class="eem-order-summary__section-subtotal"><span><?php esc_html_e( 'Section Total', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $fees, 2 ) ); ?></span></div>
+					</div>
+				<?php endif; ?>
+				<?php if ( ! empty( $custom_items ) ) : ?>
+					<div class="eem-order-summary__section">
+						<div class="eem-order-summary__section-header">
+							<span class="eem-order-summary__section-title"><?php esc_html_e( 'Custom Line Items', 'equine-event-manager' ); ?></span>
+							<span class="eem-order-summary__section-badge eem-order-summary__section-badge--addon"><?php echo esc_html( sprintf( _n( '%d item', '%d items', count( $custom_items ), 'equine-event-manager' ), count( $custom_items ) ) ); ?></span>
+						</div>
+						<?php foreach ( $custom_items as $item ) : ?>
+							<div class="eem-order-summary__line"><span><?php echo esc_html( $item['description'] ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( (float) $item['amount'], 2 ) ); ?></span></div>
+						<?php endforeach; ?>
+						<div class="eem-order-summary__section-subtotal"><span><?php esc_html_e( 'Section Total', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $custom_items_total, 2 ) ); ?></span></div>
+					</div>
+				<?php endif; ?>
+				<?php if ( is_array( $discount ) && $discount_amount > 0 ) : ?>
+					<div class="eem-order-summary__discount" data-eem-order-discount>
+						<div class="eem-order-summary__discount-line">
+							<span class="eem-order-summary__discount-label"><?php esc_html_e( 'Discount', 'equine-event-manager' ); ?></span>
+							<span class="eem-order-summary__discount-val"><?php echo esc_html( '−$' . number_format_i18n( $discount_amount, 2 ) ); ?></span>
+						</div>
+						<div class="eem-order-summary__discount-reason">
+							<span class="eem-order-summary__discount-chip"><?php echo esc_html( $discount['reason'] ); ?></span>
+						</div>
 					</div>
 				<?php endif; ?>
 				<div class="eem-order-summary__grand-total">

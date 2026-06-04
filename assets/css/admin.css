@@ -4283,6 +4283,39 @@ a.eem-btn-collect-banner:focus {
 	color: var(--eem-text);
 }
 
+/* C13.C.4 — order-level discount display (navy reason chip per schema). */
+.eem-order-summary__discount {
+	padding: 10px 14px;
+	margin-top: 4px;
+	border: 1px solid #bbf7d0;
+	background: #f0fdf4;
+	border-radius: var(--eem-radius);
+}
+.eem-order-summary__discount-line {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	font-size: 13px;
+	font-weight: 600;
+	color: #15803d;
+}
+.eem-order-summary__discount-val {
+	font-variant-numeric: tabular-nums;
+	font-weight: 700;
+}
+.eem-order-summary__discount-reason {
+	margin-top: 6px;
+}
+.eem-order-summary__discount-chip {
+	display: inline-block;
+	padding: 2px 9px;
+	background: var(--eem-navy);
+	color: #fff;
+	border-radius: 999px;
+	font-size: 11px;
+	font-weight: 600;
+}
+
 .eem-order-summary__grand-total {
 	display: flex;
 	justify-content: space-between;
