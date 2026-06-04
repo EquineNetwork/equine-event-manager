@@ -95,9 +95,18 @@ c7x14_ok( 'EQUINE_EVENT_MANAGER_VERSION >= 2.3.3 (cache-bust)',
 echo "\n[3] Full-editor regression sweep — every section structurally clean\n";
 
 wp_set_current_user( 1 );
-// Seed all 9 section enable toggles on res 44 so every section body
-// renders. Without this some sections collapse to header-only and
-// the section-body inventory looks empty.
+// Create a fresh, fully-configured reservation fixture (the old hardcoded res 44
+// no longer exists in the seed). Feed-linked so the editor renders section cards
+// ($has_linked_event), with all 9 section toggles on so every body renders.
+$rid_14 = wp_insert_post( array(
+	'post_type'   => 'en_reservation',
+	'post_status' => 'publish',
+	'post_title'  => 'C7.X.14 Sweep ' . wp_generate_password( 6, false, false ),
+) );
+update_post_meta( $rid_14, '_en_event_source',           'feed' );
+update_post_meta( $rid_14, '_en_use_global_event_source', 0 );
+update_post_meta( $rid_14, '_en_external_event_id',       'ext-c7x14-sweep' );
+update_post_meta( $rid_14, '_en_external_event_title',    'C7.X.14 Sweep Event' );
 foreach ( array(
 	'_en_checkin_checkout_enabled',
 	'_en_event_day_enabled',
@@ -109,26 +118,10 @@ foreach ( array(
 	'_en_venue_agreement_enabled',
 	'_en_cancellation_enabled',
 ) as $key ) {
-	update_post_meta( 44, $key, 1 );
+	update_post_meta( $rid_14, $key, 1 );
 }
 
-// C7.X.16 — auto-link res 44 to a native event so the rail card's
-// linked-state markup renders for the C7.X.15-hybrid assertions.
-$native_id_14 = 0;
-foreach ( (array) get_posts( array( 'post_type' => 'en_event', 'post_status' => 'publish', 'posts_per_page' => 1, 'fields' => 'ids' ) ) as $eid ) { $native_id_14 = (int) $eid; }
-if ( 0 === $native_id_14 ) {
-	$native_id_14 = wp_insert_post( array( 'post_type' => 'en_event', 'post_status' => 'publish', 'post_title' => 'C7.X.16 smoke event' ) );
-	update_post_meta( $native_id_14, '_equine_event_manager_event_start_date', '2025-03-10' );
-	update_post_meta( $native_id_14, '_equine_event_manager_event_end_date',   '2025-03-12' );
-}
-update_post_meta( 44, '_en_event_source', 'native' );
-update_post_meta( 44, '_en_event_id',     $native_id_14 );
-update_post_meta( 44, '_en_use_global_event_source', 0 );
-if ( 'publish' !== get_post_status( 44 ) ) {
-	wp_update_post( array( 'ID' => 44, 'post_status' => 'publish' ) );
-}
-
-$_GET['reservation_id'] = 44;
+$_GET['reservation_id'] = $rid_14;
 ob_start(); EEM_Reservation_Editor_Page::render(); $html = (string) ob_get_clean();
 $_GET = array();
 
