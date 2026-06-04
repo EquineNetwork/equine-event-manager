@@ -284,6 +284,10 @@ class EEM_Plugin {
 		// client-supplied amount) — that's the retry-safety property.
 		add_action( 'wp_ajax_eem_order_bulk_refund_step', array( $this->admin, 'handle_ajax_bulk_refund_step' ) );
 
+		// C13.C.4b — remove an order's applied discount with a required reason
+		// (logged to the Activity Log). Handler lives on the Order Detail page.
+		add_action( 'wp_ajax_eem_order_remove_discount', array( 'EEM_Order_Detail_Page', 'ajax_remove_discount' ) );
+
 		// C6.E.2 — Add Note form AJAX (writes ordernote entry to
 		// EEM_Activity_Log, returns rendered entry HTML for the JS
 		// `add-note-submit` arm to prepend).

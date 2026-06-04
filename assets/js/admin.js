@@ -1357,6 +1357,66 @@
 		});
 	}
 
+	/* C13.C.4b — Remove-discount modal (Order Detail Order Summary). Mirrors the
+	   refund modal pattern; reloads on success so the recomputed total renders. */
+	function openRemoveDiscountModal() {
+		var modal = document.getElementById('eem-order-remove-discount-modal');
+		if (!modal) return;
+		var errEl = modal.querySelector('[data-eem-remove-discount-error]');
+		if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
+		modal.classList.add('open');
+		modal.setAttribute('aria-hidden', 'false');
+		closeAllDropdowns();
+		var reason = modal.querySelector('#eem-order-remove-discount-reason');
+		if (reason) setTimeout(function () { reason.focus(); }, 50);
+	}
+
+	function closeRemoveDiscountModal() {
+		var modal = document.getElementById('eem-order-remove-discount-modal');
+		if (!modal) return;
+		modal.classList.remove('open');
+		modal.setAttribute('aria-hidden', 'true');
+	}
+
+	function submitRemoveDiscountForm() {
+		var modal = document.getElementById('eem-order-remove-discount-modal');
+		if (!modal) return;
+		var form = modal.querySelector('[data-eem-remove-discount-form]');
+		if (!form) return;
+		var errEl = modal.querySelector('[data-eem-remove-discount-error]');
+		if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
+
+		var reasonEl = modal.querySelector('#eem-order-remove-discount-reason');
+		if (!reasonEl || !reasonEl.value.trim()) {
+			if (errEl) { errEl.textContent = 'A reason is required to remove the discount.'; errEl.hidden = false; }
+			if (reasonEl) reasonEl.focus();
+			return;
+		}
+
+		var confirmBtn = modal.querySelector('[data-eem-action="order-remove-discount-confirm"]');
+		if (confirmBtn) confirmBtn.disabled = true;
+
+		fetch(window.ajaxurl || '/wp-admin/admin-ajax.php', {
+			method: 'POST', credentials: 'same-origin', body: new FormData(form)
+		}).then(function (r) {
+			return r.json().catch(function () { return { success: false, data: { message: 'Unexpected server response.' } }; });
+		}).then(function (json) {
+			if (confirmBtn) confirmBtn.disabled = false;
+			if (!json || !json.success) {
+				var msg = (json && json.data && json.data.message) ? json.data.message : 'Could not remove the discount.';
+				if (errEl) { errEl.textContent = msg; errEl.hidden = false; }
+				return;
+			}
+			if (window.EEM && typeof window.EEM.showSaveToast === 'function') {
+				window.EEM.showSaveToast('Discount removed. Reloading…');
+			}
+			setTimeout(function () { window.location.reload(); }, 600);
+		}).catch(function () {
+			if (confirmBtn) confirmBtn.disabled = false;
+			if (errEl) { errEl.textContent = 'Network error. Please try again.'; errEl.hidden = false; }
+		});
+	}
+
 	/* Bulk action — collects selected row ids from the table checkboxes,
 	   stuffs them into the hidden _eem_selected_ids field, then submits
 	   the bulk form. The PHP handler explodes on comma + absint each. */
@@ -1806,6 +1866,16 @@
 		},
 		'order-refund-single-confirm': function () {
 			submitOrderRefundForm();
+		},
+		/* C13.C.4b — Remove-discount modal (Order Detail Order Summary). */
+		'order-remove-discount-open': function () {
+			openRemoveDiscountModal();
+		},
+		'order-remove-discount-close': function () {
+			closeRemoveDiscountModal();
+		},
+		'order-remove-discount-confirm': function () {
+			submitRemoveDiscountForm();
 		},
 		/* C6.E.2 — Add Note form submit (Order Detail activity log). */
 		'add-note-submit': function (target) {

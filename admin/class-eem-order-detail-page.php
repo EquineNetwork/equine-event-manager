@@ -182,6 +182,8 @@ class EEM_Order_Detail_Page {
 
 		<?php $this->render_refund_modal( $order ); ?>
 
+		<?php $this->render_remove_discount_modal( $order ); ?>
+
 		<?php
 		eem_render_page_close();
 	}
@@ -710,6 +712,7 @@ class EEM_Order_Detail_Page {
 						</div>
 						<div class="eem-order-summary__discount-reason">
 							<span class="eem-order-summary__discount-chip"><?php echo esc_html( $discount['reason'] ); ?></span>
+							<button type="button" class="eem-order-summary__discount-remove" data-eem-action="order-remove-discount-open"><?php esc_html_e( 'Remove', 'equine-event-manager' ); ?></button>
 						</div>
 					</div>
 				<?php endif; ?>
@@ -929,6 +932,115 @@ class EEM_Order_Detail_Page {
 			</div>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Remove-discount modal — captures the REQUIRED fresh reason for removing an
+	 * applied discount (logged as a new Activity Log entry per the discount
+	 * schema). Only rendered when the order actually carries a discount.
+	 *
+	 * @param array<string, mixed> $order
+	 * @return void
+	 */
+	private function render_remove_discount_modal( array $order ) {
+		$order_key = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
+		if ( '' === $order_key || ! class_exists( 'EEM_Order_Adjustments_Repo' ) ) {
+			return;
+		}
+		if ( null === EEM_Order_Adjustments_Repo::get_discount( $order_key ) ) {
+			return;
+		}
+		?>
+		<div class="eem-modal" id="eem-order-remove-discount-modal" role="dialog" aria-modal="true" aria-labelledby="eem-order-remove-discount-title" aria-hidden="true">
+			<div class="eem-modal-card">
+				<header class="eem-modal-head">
+					<h2 class="eem-modal-title" id="eem-order-remove-discount-title"><?php esc_html_e( 'Remove Discount', 'equine-event-manager' ); ?></h2>
+					<button type="button" class="eem-modal-close" data-eem-action="order-remove-discount-close" aria-label="<?php esc_attr_e( 'Close', 'equine-event-manager' ); ?>">&times;</button>
+				</header>
+				<form class="eem-modal-body" method="post" data-eem-remove-discount-form>
+					<?php wp_nonce_field( 'eem_remove_discount_' . $order_key, '_eem_remove_discount_nonce' ); ?>
+					<input type="hidden" name="action" value="eem_order_remove_discount" />
+					<input type="hidden" name="order_key" value="<?php echo esc_attr( $order_key ); ?>" />
+					<p class="eem-order-refund-summary"><?php esc_html_e( 'Removing the discount restores the order total. A reason is required and recorded in the Activity Log.', 'equine-event-manager' ); ?></p>
+					<div class="eem-field-row">
+						<label class="eem-field-label" for="eem-order-remove-discount-reason"><?php esc_html_e( 'Reason', 'equine-event-manager' ); ?> <span class="eem-req">*</span></label>
+						<textarea class="eem-field-textarea" id="eem-order-remove-discount-reason" name="reason" rows="3" maxlength="500" required placeholder="<?php esc_attr_e( 'e.g. Discount applied in error', 'equine-event-manager' ); ?>"></textarea>
+					</div>
+					<div class="eem-order-refund-error" data-eem-remove-discount-error hidden></div>
+				</form>
+				<footer class="eem-modal-foot eem-modal-foot--split">
+					<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="order-remove-discount-close"><?php esc_html_e( 'Cancel', 'equine-event-manager' ); ?></button>
+					<button type="button" class="eem-btn eem-btn-primary" data-eem-action="order-remove-discount-confirm"><?php esc_html_e( 'Remove discount', 'equine-event-manager' ); ?></button>
+				</footer>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * AJAX — remove an order's discount with a required fresh reason.
+	 *
+	 * Capability + nonce gated. Validates the reason is non-empty, removes the
+	 * discount via the adjustments repo, and logs an order_discount_removed
+	 * Activity Log entry (order_key + reason in payload). Responds with success +
+	 * requires_reload so the client refreshes the recomputed total.
+	 *
+	 * @return void
+	 */
+	public static function ajax_remove_discount(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+
+		$order_key = isset( $_POST['order_key'] ) ? sanitize_text_field( wp_unslash( $_POST['order_key'] ) ) : '';
+		check_ajax_referer( 'eem_remove_discount_' . $order_key, '_eem_remove_discount_nonce' );
+
+		$reason = isset( $_POST['reason'] ) ? sanitize_textarea_field( wp_unslash( $_POST['reason'] ) ) : '';
+		if ( '' === trim( $reason ) ) {
+			wp_send_json_error( array(
+				'message' => __( 'A reason is required to remove the discount.', 'equine-event-manager' ),
+				'code'    => 'reason_required',
+			), 422 );
+		}
+
+		if ( '' === $order_key || ! class_exists( 'EEM_Order_Adjustments_Repo' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Order not found.', 'equine-event-manager' ) ), 404 );
+		}
+
+		$existing = EEM_Order_Adjustments_Repo::get_discount( $order_key );
+		if ( null === $existing ) {
+			wp_send_json_error( array(
+				'message' => __( 'This order has no discount to remove.', 'equine-event-manager' ),
+				'code'    => 'no_discount',
+			), 404 );
+		}
+
+		$removed = EEM_Order_Adjustments_Repo::remove_discount( $order_key );
+		if ( ! $removed ) {
+			wp_send_json_error( array( 'message' => __( 'The discount could not be removed. Please try again.', 'equine-event-manager' ) ), 500 );
+		}
+
+		if ( class_exists( 'EEM_Activity_Log' ) ) {
+			EEM_Activity_Log::write(
+				'order_discount_removed',
+				array(
+					'order_key'       => $order_key,
+					'discount_type'   => isset( $existing['type'] ) ? (string) $existing['type'] : '',
+					'discount_value'  => isset( $existing['value'] ) ? (float) $existing['value'] : 0.0,
+					'discount_amount' => isset( $existing['amount'] ) ? (float) $existing['amount'] : 0.0,
+					'reason'          => $reason,
+				),
+				array(
+					'actor_type' => 'admin',
+					'actor_id'   => get_current_user_id(),
+				)
+			);
+		}
+
+		wp_send_json_success( array(
+			'requires_reload' => true,
+			'message'         => __( 'Discount removed.', 'equine-event-manager' ),
+		) );
 	}
 
 	/**
