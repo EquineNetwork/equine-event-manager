@@ -5,7 +5,7 @@
  * Exercises the en_order_adjustments storage + discount math end-to-end:
  * custom-item insert/replace/read-back, discount set/replace/remove (at most
  * one per order), the resolve_discount_amount clamp rules, and get_for_order
- * aggregation. Uses a throwaway order_number so it leaves no fixture residue.
+ * aggregation. Uses a throwaway order_key so it leaves no fixture residue.
  *
  * Run: wp eval-file tests/smoke/c13c1-order-adjustments-smoke.php
  */
@@ -29,7 +29,10 @@ $check  = static function ( string $label, bool $ok ) use ( &$passed, &$failed )
 
 global $wpdb;
 $table = $wpdb->prefix . 'en_order_adjustments';
-$order = 'SMOKE-C13C1-' . wp_generate_password( 8, false );
+// Realistic 32-char order key (real keys are submission-token hashes, not the
+// short display order number) — guards against the varchar overflow that an
+// undersized column silently swallows.
+$order = wp_generate_password( 32, false );
 
 // --- 0. Table exists -------------------------------------------------------
 $table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) === $table;
@@ -93,7 +96,7 @@ $check( 'empty-reason discount rejected', false === $bad_d );
 
 // Replacing keeps at most one discount row.
 EEM_Order_Adjustments_Repo::set_discount( $order, 'dollar', 15.0, 'Adjusted', 200.0 );
-$rows = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE order_number = %s AND kind = %s", $order, 'discount' ) );
+$rows = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE order_key = %s AND kind = %s", $order, 'discount' ) );
 $check( 'at most one discount row after replace', 1 === $rows );
 $d = EEM_Order_Adjustments_Repo::get_discount( $order );
 $check( 'replacement discount is the current one ($15 dollar)', 'dollar' === $d['type'] && abs( $d['value'] - 15.0 ) < 0.001 );
@@ -112,7 +115,7 @@ $check( 'custom items survive discount removal', count( EEM_Order_Adjustments_Re
 // --- 7. delete_for_order cleanup -------------------------------------------
 $deleted = EEM_Order_Adjustments_Repo::delete_for_order( $order );
 $check( 'delete_for_order removes remaining rows', $deleted >= 2 );
-$remaining = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE order_number = %s", $order ) );
+$remaining = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE order_key = %s", $order ) );
 $check( 'no rows remain for test order', 0 === $remaining );
 
 echo "\n{$passed} passed, {$failed} failed\n";

@@ -3,7 +3,7 @@
  * Order adjustments data repository (C13.C).
  *
  * Orders in this plugin are stored as 1–2 component rows (en_stall_reservations /
- * en_rv_reservations) grouped by order_number; there is no native line-item or
+ * en_rv_reservations) grouped by order_key; there is no native line-item or
  * discount storage. This repo owns the {prefix}en_order_adjustments table, which
  * holds the two order-level adjustment kinds introduced by the Create Order page:
  *
@@ -68,28 +68,28 @@ class EEM_Order_Adjustments_Repo {
 	/**
 	 * Insert a single custom line item for an order.
 	 *
-	 * @param string $order_number Order key the item belongs to.
+	 * @param string $order_key Order key the item belongs to.
 	 * @param string $description  Human-readable description (e.g. "Late arrival fee").
 	 * @param float  $amount       Charge amount; negative represents a credit/comp.
 	 * @return int|false Inserted row id, or false on failure / empty description.
 	 */
-	public static function insert_custom_item( string $order_number, string $description, float $amount ) {
+	public static function insert_custom_item( string $order_key, string $description, float $amount ) {
 		global $wpdb;
 
-		$order_number = trim( $order_number );
-		$description  = trim( $description );
-		if ( '' === $order_number || '' === $description ) {
+		$order_key   = trim( $order_key );
+		$description = trim( $description );
+		if ( '' === $order_key || '' === $description ) {
 			return false;
 		}
 
 		$inserted = $wpdb->insert(
 			self::table(),
 			array(
-				'order_number' => $order_number,
-				'kind'         => self::KIND_CUSTOM_ITEM,
-				'description'  => $description,
-				'amount'       => round( $amount, 2 ),
-				'created_by'   => get_current_user_id(),
+				'order_key'   => $order_key,
+				'kind'        => self::KIND_CUSTOM_ITEM,
+				'description' => $description,
+				'amount'      => round( $amount, 2 ),
+				'created_by'  => get_current_user_id(),
 			),
 			array( '%s', '%s', '%s', '%f', '%d' )
 		);
@@ -104,21 +104,21 @@ class EEM_Order_Adjustments_Repo {
 	 * set. Discount rows are untouched. Used by the Create Order save path, which
 	 * collects the whole list at once.
 	 *
-	 * @param string                                   $order_number Order key.
+	 * @param string                                   $order_key Order key.
 	 * @param array<int, array{description:string, amount:float}> $items   Items to store.
 	 * @return int Count of items inserted.
 	 */
-	public static function replace_custom_items( string $order_number, array $items ): int {
+	public static function replace_custom_items( string $order_key, array $items ): int {
 		global $wpdb;
 
-		$order_number = trim( $order_number );
-		if ( '' === $order_number ) {
+		$order_key = trim( $order_key );
+		if ( '' === $order_key ) {
 			return 0;
 		}
 
 		$wpdb->delete(
 			self::table(),
-			array( 'order_number' => $order_number, 'kind' => self::KIND_CUSTOM_ITEM ),
+			array( 'order_key' => $order_key, 'kind' => self::KIND_CUSTOM_ITEM ),
 			array( '%s', '%s' )
 		);
 
@@ -126,7 +126,7 @@ class EEM_Order_Adjustments_Repo {
 		foreach ( $items as $item ) {
 			$description = isset( $item['description'] ) ? (string) $item['description'] : '';
 			$amount      = isset( $item['amount'] ) ? (float) $item['amount'] : 0.0;
-			if ( false !== self::insert_custom_item( $order_number, $description, $amount ) ) {
+			if ( false !== self::insert_custom_item( $order_key, $description, $amount ) ) {
 				$count++;
 			}
 		}
@@ -143,31 +143,31 @@ class EEM_Order_Adjustments_Repo {
 	 * responsible for validating that $reason is non-empty and for logging the
 	 * change to the Activity Log.
 	 *
-	 * @param string $order_number   Order key.
+	 * @param string $order_key   Order key.
 	 * @param string $discount_type  self::DISCOUNT_DOLLAR or self::DISCOUNT_PERCENT.
 	 * @param float  $discount_value Raw entered value ($ amount or % rate).
 	 * @param string $reason         Required reason for the discount.
 	 * @param float  $subtotal       Order subtotal the discount resolves against.
 	 * @return int|false Inserted row id, or false on failure / invalid input.
 	 */
-	public static function set_discount( string $order_number, string $discount_type, float $discount_value, string $reason, float $subtotal ) {
+	public static function set_discount( string $order_key, string $discount_type, float $discount_value, string $reason, float $subtotal ) {
 		global $wpdb;
 
-		$order_number  = trim( $order_number );
+		$order_key  = trim( $order_key );
 		$reason        = trim( $reason );
 		$discount_type = self::DISCOUNT_PERCENT === $discount_type ? self::DISCOUNT_PERCENT : self::DISCOUNT_DOLLAR;
-		if ( '' === $order_number || '' === $reason || $discount_value <= 0 ) {
+		if ( '' === $order_key || '' === $reason || $discount_value <= 0 ) {
 			return false;
 		}
 
-		self::remove_discount( $order_number );
+		self::remove_discount( $order_key );
 
 		$resolved = self::resolve_discount_amount( $discount_type, $discount_value, $subtotal );
 
 		$inserted = $wpdb->insert(
 			self::table(),
 			array(
-				'order_number'   => $order_number,
+				'order_key'   => $order_key,
 				'kind'           => self::KIND_DISCOUNT,
 				'amount'         => $resolved,
 				'discount_type'  => $discount_type,
@@ -210,20 +210,20 @@ class EEM_Order_Adjustments_Repo {
 	/**
 	 * Remove the discount from an order.
 	 *
-	 * @param string $order_number Order key.
+	 * @param string $order_key Order key.
 	 * @return bool True if a discount row was deleted.
 	 */
-	public static function remove_discount( string $order_number ): bool {
+	public static function remove_discount( string $order_key ): bool {
 		global $wpdb;
 
-		$order_number = trim( $order_number );
-		if ( '' === $order_number ) {
+		$order_key = trim( $order_key );
+		if ( '' === $order_key ) {
 			return false;
 		}
 
 		$deleted = $wpdb->delete(
 			self::table(),
-			array( 'order_number' => $order_number, 'kind' => self::KIND_DISCOUNT ),
+			array( 'order_key' => $order_key, 'kind' => self::KIND_DISCOUNT ),
 			array( '%s', '%s' )
 		);
 
@@ -233,22 +233,22 @@ class EEM_Order_Adjustments_Repo {
 	/**
 	 * Fetch all custom line items for an order.
 	 *
-	 * @param string $order_number Order key.
+	 * @param string $order_key Order key.
 	 * @return array<int, array{id:int, description:string, amount:float}>
 	 */
-	public static function get_custom_items( string $order_number ): array {
+	public static function get_custom_items( string $order_key ): array {
 		global $wpdb;
 
-		$order_number = trim( $order_number );
-		if ( '' === $order_number ) {
+		$order_key = trim( $order_key );
+		if ( '' === $order_key ) {
 			return array();
 		}
 
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is internal.
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				'SELECT id, description, amount FROM ' . self::table() . ' WHERE order_number = %s AND kind = %s ORDER BY id ASC',
-				$order_number,
+				'SELECT id, description, amount FROM ' . self::table() . ' WHERE order_key = %s AND kind = %s ORDER BY id ASC',
+				$order_key,
 				self::KIND_CUSTOM_ITEM
 			),
 			ARRAY_A
@@ -269,22 +269,22 @@ class EEM_Order_Adjustments_Repo {
 	/**
 	 * Fetch the discount on an order, if any.
 	 *
-	 * @param string $order_number Order key.
+	 * @param string $order_key Order key.
 	 * @return array{id:int, type:string, value:float, reason:string, amount:float}|null
 	 */
-	public static function get_discount( string $order_number ): ?array {
+	public static function get_discount( string $order_key ): ?array {
 		global $wpdb;
 
-		$order_number = trim( $order_number );
-		if ( '' === $order_number ) {
+		$order_key = trim( $order_key );
+		if ( '' === $order_key ) {
 			return null;
 		}
 
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is internal.
 		$row = $wpdb->get_row(
 			$wpdb->prepare(
-				'SELECT id, discount_type, discount_value, discount_reason, amount FROM ' . self::table() . ' WHERE order_number = %s AND kind = %s ORDER BY id DESC LIMIT 1',
-				$order_number,
+				'SELECT id, discount_type, discount_value, discount_reason, amount FROM ' . self::table() . ' WHERE order_key = %s AND kind = %s ORDER BY id DESC LIMIT 1',
+				$order_key,
 				self::KIND_DISCOUNT
 			),
 			ARRAY_A
@@ -306,11 +306,11 @@ class EEM_Order_Adjustments_Repo {
 	/**
 	 * Fetch the full adjustment set for an order in one call.
 	 *
-	 * @param string $order_number Order key.
+	 * @param string $order_key Order key.
 	 * @return array{custom_items:array<int, array{id:int, description:string, amount:float}>, discount:?array{id:int, type:string, value:float, reason:string, amount:float}, custom_items_total:float}
 	 */
-	public static function get_for_order( string $order_number ): array {
-		$custom_items = self::get_custom_items( $order_number );
+	public static function get_for_order( string $order_key ): array {
+		$custom_items = self::get_custom_items( $order_key );
 
 		$custom_total = 0.0;
 		foreach ( $custom_items as $item ) {
@@ -319,7 +319,7 @@ class EEM_Order_Adjustments_Repo {
 
 		return array(
 			'custom_items'       => $custom_items,
-			'discount'           => self::get_discount( $order_number ),
+			'discount'           => self::get_discount( $order_key ),
 			'custom_items_total' => round( $custom_total, 2 ),
 		);
 	}
@@ -329,18 +329,18 @@ class EEM_Order_Adjustments_Repo {
 	 *
 	 * Used when an order is deleted so adjustments don't orphan.
 	 *
-	 * @param string $order_number Order key.
+	 * @param string $order_key Order key.
 	 * @return int Number of rows deleted.
 	 */
-	public static function delete_for_order( string $order_number ): int {
+	public static function delete_for_order( string $order_key ): int {
 		global $wpdb;
 
-		$order_number = trim( $order_number );
-		if ( '' === $order_number ) {
+		$order_key = trim( $order_key );
+		if ( '' === $order_key ) {
 			return 0;
 		}
 
-		$deleted = $wpdb->delete( self::table(), array( 'order_number' => $order_number ), array( '%s' ) );
+		$deleted = $wpdb->delete( self::table(), array( 'order_key' => $order_key ), array( '%s' ) );
 
 		return false === $deleted ? 0 : (int) $deleted;
 	}

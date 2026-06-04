@@ -85,8 +85,8 @@ $d3 = $collect_disc->invoke( null );
 $check( 'empty reason surfaces as empty string (handler rejects)', is_array( $d3 ) && '' === $d3['reason'] );
 
 // --- 3. persist_adjustments end-to-end -> read back via repo ----------------
-// Order keys must fit order_number varchar(20) (matches the component tables).
-$order_key = 'SMK-C2-' . wp_generate_password( 8, false );
+// Realistic 32-char order keys (submission-token hashes), not the short number.
+$order_key = wp_generate_password( 32, false );
 $persist_items = array(
 	array( 'description' => 'Late arrival fee', 'amount' => 25.00 ),
 	array( 'description' => 'Damage charge', 'amount' => 40.00 ),
@@ -117,7 +117,7 @@ foreach ( (array) $log as $entry ) {
 $check( 'discount_applied entry retrievable via get_for_order_key', $found );
 
 // --- 5. persist with null discount leaves no discount row ------------------
-$order_key2 = 'SMK-C2B-' . wp_generate_password( 8, false );
+$order_key2 = wp_generate_password( 32, false );
 $persist->invoke( null, $order_key2, array( array( 'description' => 'Solo item', 'amount' => 10.0 ) ), null );
 $b2 = EEM_Order_Adjustments_Repo::get_for_order( $order_key2 );
 $check( 'null discount -> no discount row', null === $b2['discount'] );

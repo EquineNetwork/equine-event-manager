@@ -107,9 +107,12 @@ class EEM_Activator {
 		$charset_collate = $wpdb->get_charset_collate();
 		$table_name      = $wpdb->prefix . 'en_order_adjustments';
 
+		// order_key holds the order's submission token (a 32-char hash), NOT the
+		// short display order_number — so it must be wide enough (varchar(191)),
+		// matching the key Order Detail / the adjustments repo query by.
 		$sql = "CREATE TABLE {$table_name} (
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-			order_number varchar(20) NOT NULL DEFAULT '',
+			order_key varchar(191) NOT NULL DEFAULT '',
 			kind varchar(20) NOT NULL DEFAULT '',
 			description varchar(191) NOT NULL DEFAULT '',
 			amount decimal(10,2) NOT NULL DEFAULT 0.00,
@@ -119,7 +122,7 @@ class EEM_Activator {
 			created_by bigint(20) unsigned NOT NULL DEFAULT 0,
 			created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			PRIMARY KEY  (id),
-			KEY order_number (order_number),
+			KEY order_key (order_key),
 			KEY kind (kind)
 		) {$charset_collate};";
 

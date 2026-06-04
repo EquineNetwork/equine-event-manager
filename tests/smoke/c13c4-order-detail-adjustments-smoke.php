@@ -30,7 +30,7 @@ $check  = static function ( string $label, bool $ok ) use ( &$passed, &$failed )
 
 $check( 'order detail class loaded', class_exists( 'EEM_Order_Detail_Page' ) );
 
-$order_key = 'SMK-C4-' . wp_generate_password( 8, false );
+$order_key = wp_generate_password( 32, false ); // realistic 32-char order key
 
 // Seed two custom items + a $10 discount.
 EEM_Order_Adjustments_Repo::replace_custom_items( $order_key, array(
@@ -71,7 +71,7 @@ $check( 'discount reason chip shows reason text', str_contains( $html, 'eem-orde
 $check( 'grand total recomputed to $130.00', str_contains( $html, 'eem-order-summary__grand-val' ) && str_contains( $html, '$130.00' ) );
 
 // --- No-adjustments order: total unchanged, no discount markup -------------
-$plain_key = 'SMK-C4P-' . wp_generate_password( 6, false );
+$plain_key = wp_generate_password( 32, false );
 $plain = array( 'order_key' => $plain_key, 'stall_subtotal' => 50.0, 'rv_subtotal' => 0.0, 'fees' => 5.0, 'total' => 55.0 );
 ob_start();
 $ref->invoke( $page, $plain );
