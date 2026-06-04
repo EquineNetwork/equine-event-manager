@@ -590,6 +590,18 @@ class EEM_Create_Order_Page {
 			wp_send_json_error( array( 'message' => __( 'Reservation not found.', 'equine-event-manager' ) ), 404 );
 		}
 
+		// Collect the order-level adjustments (custom line items + discount) up
+		// front so the discount's required-reason rule can be validated BEFORE the
+		// order rows are written. Rejecting after creation would orphan an order.
+		$custom_items = self::collect_custom_items_from_post();
+		$discount     = self::collect_discount_from_post();
+		if ( null !== $discount && '' === $discount['reason'] ) {
+			wp_send_json_error( array(
+				'message' => __( 'A reason is required to apply a discount.', 'equine-event-manager' ),
+				'code'    => 'discount_reason_required',
+			), 422 );
+		}
+
 		// Force admin-invoice / unpaid path regardless of what the JS sent.
 		// This ensures no charge is dispatched and the order is created as pending.
 		$_POST['en_invoice_type']        = 'manual';
@@ -636,6 +648,9 @@ class EEM_Create_Order_Page {
 			), 422 );
 		}
 
+		// Persist the collected adjustments against the freshly created order.
+		self::persist_adjustments( $captured_order_key, $custom_items, $discount );
+
 		$redirect_url = class_exists( 'EEM_Orders_List_Page' )
 			? EEM_Orders_List_Page::order_detail_url( $captured_order_key )
 			: admin_url( 'admin.php?page=equine-event-manager-orders' );
@@ -645,6 +660,128 @@ class EEM_Create_Order_Page {
 			'redirect'  => $redirect_url,
 			'message'   => __( 'Order created successfully.', 'equine-event-manager' ),
 		) );
+	}
+
+	/**
+	 * Collect custom line items from the submitted POST payload.
+	 *
+	 * Reads the eem_custom_items[] array the Create Order JS serializes (each
+	 * entry a {description, amount} pair). Rows with an empty description are
+	 * dropped — they're incomplete and the repo rejects them anyway. Amounts may
+	 * be negative (a credit/comp).
+	 *
+	 * @return array<int, array{description:string, amount:float}> Cleaned items.
+	 */
+	private static function collect_custom_items_from_post(): array {
+		if ( ! isset( $_POST['eem_custom_items'] ) || ! is_array( $_POST['eem_custom_items'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce checked by caller.
+			return array();
+		}
+
+		$raw   = wp_unslash( $_POST['eem_custom_items'] ); // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized per field below.
+		$items = array();
+		foreach ( (array) $raw as $entry ) {
+			if ( ! is_array( $entry ) ) {
+				continue;
+			}
+			$description = isset( $entry['description'] ) ? sanitize_text_field( (string) $entry['description'] ) : '';
+			if ( '' === trim( $description ) ) {
+				continue;
+			}
+			$amount  = isset( $entry['amount'] ) ? (float) $entry['amount'] : 0.0;
+			$items[] = array( 'description' => $description, 'amount' => round( $amount, 2 ) );
+		}
+
+		return $items;
+	}
+
+	/**
+	 * Collect the discount definition from the submitted POST payload.
+	 *
+	 * Returns null when no discount is being applied (value <= 0). When a discount
+	 * IS applied, returns its type/value/reason — the caller validates that the
+	 * reason is non-empty before allowing the order to be created.
+	 *
+	 * @return array{type:string, value:float, reason:string}|null
+	 */
+	private static function collect_discount_from_post(): ?array {
+		$value = isset( $_POST['eem_discount_value'] ) ? (float) wp_unslash( $_POST['eem_discount_value'] ) : 0.0; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce checked by caller.
+		if ( $value <= 0 ) {
+			return null;
+		}
+
+		$type = isset( $_POST['eem_discount_type'] ) ? sanitize_text_field( (string) wp_unslash( $_POST['eem_discount_type'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce checked by caller.
+		$type = ( EEM_Order_Adjustments_Repo::DISCOUNT_PERCENT === $type ) ? EEM_Order_Adjustments_Repo::DISCOUNT_PERCENT : EEM_Order_Adjustments_Repo::DISCOUNT_DOLLAR;
+
+		$reason = isset( $_POST['eem_discount_reason'] ) ? sanitize_text_field( (string) wp_unslash( $_POST['eem_discount_reason'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce checked by caller.
+
+		return array( 'type' => $type, 'value' => round( $value, 2 ), 'reason' => trim( $reason ) );
+	}
+
+	/**
+	 * Persist the collected adjustments against a created order and log the
+	 * discount to the Activity Log.
+	 *
+	 * The discount resolves against the order subtotal (component subtotals +
+	 * custom-item total) so the snapshotted reduction matches the total the admin
+	 * saw. Failures here don't roll back the order — the order is valid without
+	 * adjustments; a failed adjustment write is surfaced via the Activity Log gap
+	 * rather than discarding a created order.
+	 *
+	 * @param string                                              $order_key    Created order key.
+	 * @param array<int, array{description:string, amount:float}> $custom_items Cleaned custom items.
+	 * @param array{type:string, value:float, reason:string}|null $discount     Discount, or null.
+	 * @return void
+	 */
+	private static function persist_adjustments( string $order_key, array $custom_items, ?array $discount ): void {
+		if ( ! class_exists( 'EEM_Order_Adjustments_Repo' ) ) {
+			return;
+		}
+
+		EEM_Order_Adjustments_Repo::replace_custom_items( $order_key, $custom_items );
+
+		if ( null === $discount ) {
+			return;
+		}
+
+		// Subtotal the discount applies to: component subtotals + custom items.
+		$subtotal = 0.0;
+		foreach ( $custom_items as $item ) {
+			$subtotal += $item['amount'];
+		}
+		if ( class_exists( 'EEM_Orders_Repository' ) ) {
+			$repo  = new EEM_Orders_Repository();
+			$order = $repo->get_order( $order_key );
+			if ( is_array( $order ) ) {
+				$subtotal += isset( $order['stall_subtotal'] ) ? (float) $order['stall_subtotal'] : 0.0;
+				$subtotal += isset( $order['rv_subtotal'] ) ? (float) $order['rv_subtotal'] : 0.0;
+			}
+		}
+
+		$discount_id = EEM_Order_Adjustments_Repo::set_discount(
+			$order_key,
+			$discount['type'],
+			$discount['value'],
+			$discount['reason'],
+			$subtotal
+		);
+
+		if ( false !== $discount_id && class_exists( 'EEM_Activity_Log' ) ) {
+			$resolved = EEM_Order_Adjustments_Repo::resolve_discount_amount( $discount['type'], $discount['value'], $subtotal );
+			EEM_Activity_Log::write(
+				'order_discount_applied',
+				array(
+					'order_key'      => $order_key,
+					'discount_type'  => $discount['type'],
+					'discount_value' => $discount['value'],
+					'discount_amount' => $resolved,
+					'reason'         => $discount['reason'],
+				),
+				array(
+					'actor_type'  => 'admin',
+					'actor_id'    => get_current_user_id(),
+				)
+			);
+		}
 	}
 
 	/**
