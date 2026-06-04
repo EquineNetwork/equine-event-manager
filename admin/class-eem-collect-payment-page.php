@@ -134,25 +134,43 @@ class EEM_Collect_Payment_Page {
 			? EEM_Orders_List_Page::order_detail_url( $order_key )
 			: admin_url( 'admin.php?page=equine-event-manager-orders' );
 
-		// Outstanding banner.
-		?>
-		<div class="eem-cp-banner">
-			<div class="eem-cp-banner-icon" aria-hidden="true">
-				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-			</div>
-			<div class="eem-cp-banner-content">
-				<div class="eem-cp-banner-title"><?php esc_html_e( 'Payment Outstanding', 'equine-event-manager' ); ?></div>
-				<div class="eem-cp-banner-meta">
-					<?php
-					printf(
-						/* translators: %s: amount due */
-						esc_html__( '%s has not been collected for this order.', 'equine-event-manager' ),
-						'<span class="eem-cp-banner-amount">$' . esc_html( number_format_i18n( $total_due, 2 ) ) . '</span>'
-					);
-					?>
+		$is_paid = 'paid' === $status;
+
+		// Status banner: green "Payment Collected" when paid, else amber outstanding.
+		if ( $is_paid ) :
+			?>
+			<div class="eem-cp-banner eem-cp-banner--paid">
+				<div class="eem-cp-banner-icon" aria-hidden="true">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+				</div>
+				<div class="eem-cp-banner-content">
+					<div class="eem-cp-banner-title"><?php esc_html_e( 'Payment Collected', 'equine-event-manager' ); ?></div>
+					<div class="eem-cp-banner-meta"><?php esc_html_e( 'This order is paid in full. No balance is due.', 'equine-event-manager' ); ?></div>
 				</div>
 			</div>
-		</div>
+			<?php
+		else :
+			?>
+			<div class="eem-cp-banner">
+				<div class="eem-cp-banner-icon" aria-hidden="true">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+				</div>
+				<div class="eem-cp-banner-content">
+					<div class="eem-cp-banner-title"><?php esc_html_e( 'Payment Outstanding', 'equine-event-manager' ); ?></div>
+					<div class="eem-cp-banner-meta">
+						<?php
+						printf(
+							/* translators: %s: amount due */
+							esc_html__( '%s has not been collected for this order.', 'equine-event-manager' ),
+							'<span class="eem-cp-banner-amount">$' . esc_html( number_format_i18n( $total_due, 2 ) ) . '</span>'
+						);
+						?>
+					</div>
+				</div>
+			</div>
+			<?php
+		endif;
+		?>
 
 		<div class="eem-co-workspace">
 			<div class="eem-co-main">
@@ -279,7 +297,7 @@ class EEM_Collect_Payment_Page {
 					<?php endif; ?>
 				</div>
 				<hr class="eem-co-summary-divider" />
-				<div class="eem-co-summary-total"><span><?php esc_html_e( 'Total Due', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $total_due, 2 ) ); ?></span></div>
+				<div class="eem-co-summary-total"><span><?php echo 'paid' === $status ? esc_html__( 'Total Paid', 'equine-event-manager' ) : esc_html__( 'Total Due', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $total_due, 2 ) ); ?></span></div>
 			</div>
 		</section>
 		<?php
@@ -324,8 +342,21 @@ class EEM_Collect_Payment_Page {
 	 * @return void
 	 */
 	private static function render_payment_card( string $detail_url, string $order_key, string $status, float $total_due ): void {
+		// Already-paid orders show a settled notice — no payment UI.
+		if ( 'paid' === $status ) {
+			?>
+			<section class="eem-card eem-co-payment-card">
+				<div class="eem-card-body">
+					<p class="eem-field-hint"><?php esc_html_e( 'This order is paid in full — there is nothing left to collect.', 'equine-event-manager' ); ?></p>
+					<a class="eem-btn eem-btn-secondary eem-co-btn-block" href="<?php echo esc_url( $detail_url ); ?>"><?php esc_html_e( 'View Order', 'equine-event-manager' ); ?></a>
+				</div>
+			</section>
+			<?php
+			return;
+		}
+
 		$stripe       = self::get_stripe_client_config();
-		$charge_ready = $stripe['ready'] && 'paid' !== $status && $total_due > 0;
+		$charge_ready = $stripe['ready'] && $total_due > 0;
 		?>
 		<section class="eem-card eem-co-payment-card">
 			<div class="eem-co-payment-tabs" role="tablist">

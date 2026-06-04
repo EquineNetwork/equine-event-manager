@@ -62,10 +62,18 @@ $check( 'discount line with reason shown', str_contains( $html, 'First-time cust
 // Total Due = 42.40 + 50 − 10 = 82.40
 $check( 'Total Due recomputed to $82.40', str_contains( $html, 'Total Due' ) && str_contains( $html, '$82.40' ) );
 
-// --- gated payment tabs — NO charge/email, honest notice -------------------
+// --- payment tabs — Stripe-tokenized, never raw card / secret --------------
 $check( 'Send Link + Charge Card tabs present', str_contains( $html, 'collect-payment-tab' ) && str_contains( $html, 'Charge Card' ) );
-$check( 'charge dispatch is gated (notice present)', str_contains( $html, 'pending payment-flow activation' ) );
-$check( 'no card input fields shipped', ! str_contains( $html, '1234 1234' ) && ! str_contains( $html, 'name="card' ) );
+$check( 'charge form is client-tokenized (honest note)', str_contains( $html, 'never reach the server' ) );
+$check( 'no raw card input fields shipped', ! str_contains( $html, '1234 1234' ) && ! str_contains( $html, 'name="card' ) );
+
+// --- paid order shows Payment Collected, not Outstanding -------------------
+$paid_order = array_merge( $order, array( 'payment_status' => 'paid' ) );
+ob_start(); $ws->invoke( null, $paid_order, $order_key, '#00021' ); $paid_html = (string) ob_get_clean();
+$check( 'paid order shows Payment Collected banner', str_contains( $paid_html, 'Payment Collected' ) && str_contains( $paid_html, 'eem-cp-banner--paid' ) );
+$check( 'paid order does NOT show Payment Outstanding', ! str_contains( $paid_html, 'Payment Outstanding' ) );
+$check( 'paid order shows Total Paid label', str_contains( $paid_html, 'Total Paid' ) );
+$check( 'paid order shows paid-in-full notice (no charge form)', str_contains( $paid_html, 'paid in full' ) && ! str_contains( $paid_html, 'id="eem-cp-card-element"' ) );
 
 // --- empty state -----------------------------------------------------------
 $es = new ReflectionMethod( 'EEM_Collect_Payment_Page', 'render_empty_state' );
@@ -78,7 +86,12 @@ $check( 'empty state back-to-orders button', str_contains( $empty, 'Back to Orde
 $src = (string) file_get_contents( dirname( __DIR__, 2 ) . '/admin/class-eem-collect-payment-page.php' );
 $check( 'page ships NO wp_remote_post', ! str_contains( $src, 'wp_remote_post' ) );
 $check( 'page ships NO wp_mail', ! str_contains( $src, 'wp_mail' ) );
-$check( 'page ships NO payment_intent / stripe secret', ! str_contains( $src, 'payment_intent' ) && ! str_contains( $src, 'api.stripe.com' ) );
+// The page may reference the client paymentIntent + create-intent action and
+// read the secret-key setting to gate readiness, but must NEVER output a secret
+// key into the rendered page, nor call the Stripe API directly (that lives in
+// the gated server handlers on EEM_Shortcodes).
+$check( 'rendered page leaks NO secret key value', ! str_contains( $html, 'sk_' ) );
+$check( 'page never calls the Stripe API directly', ! str_contains( $src, 'api.stripe.com' ) );
 
 // --- JS + CSS wiring -------------------------------------------------------
 $js  = (string) file_get_contents( dirname( __DIR__, 2 ) . '/assets/js/admin.js' );

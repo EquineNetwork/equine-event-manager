@@ -8271,6 +8271,10 @@ table.eem-export-history td { padding:11px 14px; font-size:13px; color:#1d2327; 
 .eem-cp-banner-title { font-family: var(--eem-font-head, 'Space Grotesk', sans-serif); font-size: 14px; font-weight: 700; color: #7c2d12; }
 .eem-cp-banner-meta { font-size: 13px; color: #92400e; margin-top: 2px; }
 .eem-cp-banner-amount { font-weight: 700; color: #7c2d12; }
+.eem-cp-banner--paid { background: #f0fdf4; border-color: #bbf7d0; }
+.eem-cp-banner--paid .eem-cp-banner-icon { background: #bbf7d0; color: #15803d; }
+.eem-cp-banner--paid .eem-cp-banner-title { color: #14532d; }
+.eem-cp-banner--paid .eem-cp-banner-meta { color: #15803d; }
 .eem-cp-field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .eem-cp-field-grid--1 { grid-template-columns: 1fr; margin-top: 14px; }
 .eem-cp-field-value { font-size: 14px; font-weight: 600; color: var(--eem-navy); margin-top: 2px; }
