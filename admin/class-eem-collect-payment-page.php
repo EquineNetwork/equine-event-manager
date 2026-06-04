@@ -182,7 +182,7 @@ class EEM_Collect_Payment_Page {
 			<aside class="eem-co-rail">
 				<?php
 				self::render_amount_due_card( $order_no, $status, $customer, $stall_subtotal, $rv_subtotal, $fees, $custom_items, $discount, $discount_amt, $total_due );
-				self::render_payment_card( $detail_url, $order_key, $status, $total_due );
+				self::render_payment_card( $detail_url, $order_key, $status, $total_due, $email );
 				?>
 			</aside>
 		</div>
@@ -339,9 +339,10 @@ class EEM_Collect_Payment_Page {
 	 * @param string $order_key  Order key.
 	 * @param string $status     Payment status.
 	 * @param float  $total_due  Recomputed balance due.
+	 * @param string $email      Customer email (for the Send Link copy).
 	 * @return void
 	 */
-	private static function render_payment_card( string $detail_url, string $order_key, string $status, float $total_due ): void {
+	private static function render_payment_card( string $detail_url, string $order_key, string $status, float $total_due, string $email = '' ): void {
 		// Already-paid orders show a settled notice — no payment UI.
 		if ( 'paid' === $status ) {
 			?>
@@ -364,8 +365,27 @@ class EEM_Collect_Payment_Page {
 				<button type="button" class="eem-co-payment-tab" data-eem-action="collect-payment-tab" data-tab="charge" role="tab" aria-selected="false"><?php esc_html_e( 'Charge Card', 'equine-event-manager' ); ?></button>
 			</div>
 			<div class="eem-card-body eem-co-payment-panel" data-eem-collect-panel="link">
-				<p class="eem-field-hint"><?php esc_html_e( 'Resending the payment-link email is pending sign-off. In the meantime you can charge a card directly or record an offline payment from the order page.', 'equine-event-manager' ); ?></p>
-				<a class="eem-btn eem-btn-secondary eem-co-btn-block" href="<?php echo esc_url( $detail_url ); ?>"><?php esc_html_e( 'Go to Order — record payment', 'equine-event-manager' ); ?></a>
+				<?php
+				$send_link_url = wp_nonce_url(
+					admin_url( 'admin-post.php?action=equine_event_manager_send_invoice_email&order_key=' . rawurlencode( $order_key ) ),
+					'equine_event_manager_send_invoice_email_' . $order_key
+				);
+				?>
+				<p class="eem-field-hint">
+					<?php
+					if ( '' !== $email ) {
+						printf(
+							/* translators: 1: customer email, 2: amount due */
+							esc_html__( 'Email %1$s a secure link to pay the %2$s balance online — no card details needed here.', 'equine-event-manager' ),
+							'<strong>' . esc_html( $email ) . '</strong>',
+							'<strong>$' . esc_html( number_format_i18n( $total_due, 2 ) ) . '</strong>'
+						);
+					} else {
+						esc_html_e( 'Email the customer a secure link to pay their balance online — no card details needed here.', 'equine-event-manager' );
+					}
+					?>
+				</p>
+				<a class="eem-btn eem-btn-primary eem-co-btn-block" href="<?php echo esc_url( $send_link_url ); ?>"><?php esc_html_e( 'Send Payment Link', 'equine-event-manager' ); ?></a>
 			</div>
 			<div class="eem-card-body eem-co-payment-panel" data-eem-collect-panel="charge" hidden>
 				<?php if ( $charge_ready ) : ?>

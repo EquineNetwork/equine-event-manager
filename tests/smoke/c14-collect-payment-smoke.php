@@ -64,6 +64,7 @@ $check( 'Total Due recomputed to $82.40', str_contains( $html, 'Total Due' ) && 
 
 // --- payment tabs — Stripe-tokenized, never raw card / secret --------------
 $check( 'Send Link + Charge Card tabs present', str_contains( $html, 'collect-payment-tab' ) && str_contains( $html, 'Charge Card' ) );
+$check( 'Send Link tab wires the real send-invoice-email action', str_contains( $html, 'action=equine_event_manager_send_invoice_email' ) && str_contains( $html, 'Send Payment Link' ) );
 $check( 'charge form is client-tokenized (honest note)', str_contains( $html, 'never reach the server' ) );
 $check( 'no raw card input fields shipped', ! str_contains( $html, '1234 1234' ) && ! str_contains( $html, 'name="card' ) );
 
