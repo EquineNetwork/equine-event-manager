@@ -35,6 +35,7 @@ class EEM_Activator {
 		self::create_reports_log_table();
 		self::create_activity_log_table();
 		self::create_event_defaults_table();
+		self::create_order_adjustments_table();
 		self::maybe_refresh_native_event_rewrite_rules();
 		self::run_one_time_migrations();
 		update_option( self::DB_VERSION_OPTION, EQUINE_EVENT_MANAGER_VERSION );
@@ -73,6 +74,53 @@ class EEM_Activator {
 			updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 			PRIMARY KEY  (event_id, event_source),
 			KEY event_source (event_source)
+		) {$charset_collate};";
+
+		dbDelta( $sql );
+	}
+
+	/**
+	 * Create the order adjustments table ({prefix}en_order_adjustments).
+	 *
+	 * Stores order-level adjustments that don't fit the component-row model
+	 * (en_stall_reservations / en_rv_reservations): custom line items (one-off
+	 * charges keyed by order_number) and a single per-order discount. Introduced
+	 * in C13.C (Create Order — Custom Line Items + Discount). Additive — existing
+	 * orders simply have zero adjustment rows, so no data backfill is required;
+	 * dbDelta on the post-version-change upgrade pass creates the table on
+	 * existing installs.
+	 *
+	 * Row kinds (the `kind` column):
+	 *  - 'custom_item' — uses `description` + `amount` (amount may be negative to
+	 *    represent a credit/comp); discount_* columns stay empty.
+	 *  - 'discount'    — uses `discount_type` ('dollar'|'percent') + `discount_value`
+	 *    (raw entered value) + `discount_reason` (required) + `amount` (the resolved
+	 *    positive dollar reduction at save time); at most one per order_number.
+	 *
+	 * @return void
+	 */
+	private static function create_order_adjustments_table() {
+		global $wpdb;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$charset_collate = $wpdb->get_charset_collate();
+		$table_name      = $wpdb->prefix . 'en_order_adjustments';
+
+		$sql = "CREATE TABLE {$table_name} (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			order_number varchar(20) NOT NULL DEFAULT '',
+			kind varchar(20) NOT NULL DEFAULT '',
+			description varchar(191) NOT NULL DEFAULT '',
+			amount decimal(10,2) NOT NULL DEFAULT 0.00,
+			discount_type varchar(10) NOT NULL DEFAULT '',
+			discount_value decimal(10,2) NOT NULL DEFAULT 0.00,
+			discount_reason varchar(255) NOT NULL DEFAULT '',
+			created_by bigint(20) unsigned NOT NULL DEFAULT 0,
+			created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY  (id),
+			KEY order_number (order_number),
+			KEY kind (kind)
 		) {$charset_collate};";
 
 		dbDelta( $sql );
