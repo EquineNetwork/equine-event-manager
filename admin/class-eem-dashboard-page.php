@@ -264,11 +264,11 @@ class EEM_Dashboard_Page {
 									<span><?php esc_html_e( 'Stall assignments', 'equine-event-manager' ); ?></span>
 									<span class="eem-dashboard-stall-progress-count">
 										<?php // CLEANUP #38: wire to real query at C8 close. ?>
-										<?php echo esc_html( $row['stall_progress']['assigned'] ); ?> / <?php echo esc_html( $row['stall_progress']['total'] ); ?>
+										<?php echo esc_html( $row['stall_progress']['assigned'] ?? '0' ); ?> / <?php echo esc_html( $row['stall_progress']['total'] ?? '0' ); ?>
 									</span>
 								</div>
 								<div class="eem-dashboard-stall-progress-bar">
-									<div class="eem-dashboard-stall-progress-fill eem-dashboard-fill-<?php echo esc_attr( $row['stall_progress']['tone'] ); ?>" style="width:<?php echo (int) $row['stall_progress']['pct']; ?>%"></div>
+									<div class="eem-dashboard-stall-progress-fill eem-dashboard-fill-<?php echo esc_attr( $row['stall_progress']['tone'] ?? 'green' ); ?>" style="width:<?php echo (int) ( $row['stall_progress']['pct'] ?? 0 ); ?>%"></div>
 								</div>
 							</div>
 						</div>

@@ -11105,8 +11105,8 @@ class EEM_Admin {
 			__( 'Order Number', 'equine-event-manager' )    => $this->format_order_number_display( (string) $order['order_number'] ),
 			__( 'Event', 'equine-event-manager' )           => $event_label,
 			__( 'Event Dates', 'equine-event-manager' )     => ! empty( $order['event_dates'] ) ? $order['event_dates'] : __( 'Dates unavailable', 'equine-event-manager' ),
-			__( 'Reservation Type', 'equine-event-manager' ) => $order['type'],
-			__( 'Amount Due', 'equine-event-manager' )      => '$' . number_format_i18n( (float) $order['total'], 2 ),
+			__( 'Reservation Type', 'equine-event-manager' ) => $order['type'] ?? '',
+			__( 'Amount Due', 'equine-event-manager' )      => '$' . number_format_i18n( (float) ( $order['total'] ?? 0 ), 2 ),
 		);
 
 		ob_start();

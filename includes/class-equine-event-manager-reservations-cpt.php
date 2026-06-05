@@ -1563,7 +1563,7 @@ class EEM_Reservations_CPT {
 			$use_global_event_source = 1;
 		}
 
-		$selected_event_source = isset( $source['event_source'] ) ? sanitize_key( $source['event_source'] ) : $existing['event_source'];
+		$selected_event_source = isset( $source['event_source'] ) ? sanitize_key( $source['event_source'] ) : ( $existing['event_source'] ?? '' );
 		$selected_event_source = $this->sanitize_reservation_event_source( $selected_event_source );
 		$event_source          = $use_global_event_source ? $this->sanitize_reservation_event_source( EEM_Events::get_default_event_source() ) : $selected_event_source;
 
