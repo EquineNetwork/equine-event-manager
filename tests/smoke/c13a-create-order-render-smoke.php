@@ -41,7 +41,10 @@ $check( 'apply-discount affordance', false !== strpos( $html, 'data-eem-action="
 $check( 'payment tabs (Send Link / Charge Card)', 2 === substr_count( $html, 'data-eem-action="create-order-payment-tab"' ) );
 
 // Payment-gating guard: no real charge UI; Charge Card hands off to Collect Payment.
-$check( 'Charge Card links to Collect Payment (no inline charge)', false !== strpos( $html, 'page=equine-event-manager-collect-payment' ) );
+// 2.7.25 — Charge Card now creates the order first, then redirects to Collect
+// Payment (the old bare link landed on "No Order Specified"). Assert the button
+// carries the create-order-charge action rather than a dead collect-payment link.
+$check( 'Charge Card creates order then collects (create-order-charge action)', false !== strpos( $html, 'create-order-charge' ) );
 $check( 'no card-number / CVC entry on this page', false === stripos( $html, 'name="card_number"' ) && false === stripos( $html, 'placeholder="CVC"' ) && false === stripos( $html, 'Charge $' ) );
 
 // Hygiene on the new CSS block.

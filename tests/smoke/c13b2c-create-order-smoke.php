@@ -180,7 +180,7 @@ c13b2c_ok(
 echo "\n[6] admin.js — coSubmitOrder() function\n";
 c13b2c_ok(
 	'coSubmitOrder() function declared',
-	false !== strpos( $js_clean, 'function coSubmitOrder()' ),
+	false !== strpos( $js_clean, 'function coSubmitOrder(' ),
 	$pass, $fail, $log
 );
 c13b2c_ok(

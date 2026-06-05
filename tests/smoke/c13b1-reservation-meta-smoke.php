@@ -49,7 +49,10 @@ $_POST = array();
 
 // JS wiring.
 $js = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/js/admin.js' );
-$check( 'JS loads reservation meta on select change', false !== strpos( $js, "'create-order-reservation'" ) && false !== strpos( $js, 'eem_create_order_reservation_meta' ) );
+// 2.7.25 — selecting a reservation now NAVIGATES to ?reservation_id=N so the
+// real interactive embedded form loads (was a label-only AJAX stub that never
+// produced qty/nights/pricing controls). Assert the navigate wiring.
+$check( 'JS navigates to ?reservation_id on select change', false !== strpos( $js, "'create-order-reservation'" ) && false !== strpos( $js, "searchParams.set('reservation_id'" ) );
 $check( 'JS updates section cards from the response', false !== strpos( $js, 'function coUpdateSection' ) );
 
 WP_CLI::log( "\n=== C13.B.1 reservation-meta smoke: {$pass} passed, {$fail} failed ===" );
