@@ -1051,6 +1051,11 @@
 			.then(function (r) { return r.json(); })
 			.then(function (payload) {
 				if (payload && payload.success) {
+					/* Required-done count just dropped to 0 — clear the wizard's
+					   per-session snooze so the fresh-start onboarding greets the
+					   user on the Dashboard instead of being suppressed by a stale
+					   higher close-count from earlier this session. */
+					try { window.sessionStorage.removeItem('eemWizardClosedAtCount'); } catch (e) {}
 					window.location.href = (payload.data && payload.data.redirect) || dashboardUrl || window.location.href;
 				} else {
 					throw new Error((payload && payload.data && payload.data.message) || 'Could not erase data.');

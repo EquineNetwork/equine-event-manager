@@ -120,6 +120,14 @@ class EEM_Setup_Wizard {
 	 */
 	private static function is_eem_admin_page(): bool {
 		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only screen check.
+
+		// The stall-chart print view renders a standalone print document (opened in
+		// its own tab) and doesn't exit, so admin_footer fires there too — but a
+		// modal popping over a print page is wrong. Never show the wizard there.
+		if ( 'equine-event-manager-stall-chart-print' === $page ) {
+			return false;
+		}
+
 		if ( 0 === strpos( $page, 'equine-event-manager' ) ) {
 			return true;
 		}

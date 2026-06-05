@@ -67,6 +67,16 @@ foreach ( array( 'eem-setup-wizard__card', 'eem-setup-wizard__dot', 'eem-setup-w
 	wz_ok( "CSS class .$cls exists", false !== strpos( $css, '.' . $cls ), $pass, $fail, $log );
 }
 
+// --- Page gating: print view excluded, normal EEM pages included ---
+$is_eem = new ReflectionMethod( 'EEM_Setup_Wizard', 'is_eem_admin_page' );
+$is_eem->setAccessible( true );
+$saved_get = $_GET;
+$_GET['page'] = 'equine-event-manager-stall-chart-print';
+wz_ok( 'wizard NOT shown on the stall-chart print view', false === $is_eem->invoke( null ), $pass, $fail, $log );
+$_GET['page'] = 'equine-event-manager-dashboard';
+wz_ok( 'wizard IS eligible on a normal EEM page', true === $is_eem->invoke( null ), $pass, $fail, $log );
+$_GET = $saved_get;
+
 // --- Loaded + registered ---
 wz_ok( 'wizard registers on admin_footer', false !== strpos( (string) file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-setup-wizard.php' ), "add_action( 'admin_footer'" ), $pass, $fail, $log );
 
