@@ -568,7 +568,7 @@ class EEM_Shortcodes {
 							<div class="eem-reservation-section-heading eem-reservation-section-heading--collapsible">
 								<h4 class="eem-reservation-section__title"><?php esc_html_e( 'Stall Reservations', 'equine-event-manager' ); ?></h4>
 								<label class="eem-reservation-section-toggle" aria-label="<?php esc_attr_e( 'Toggle Stall Reservations section', 'equine-event-manager' ); ?>">
-									<input type="checkbox" data-eem-section-collapse-toggle />
+									<input type="checkbox" checked data-eem-section-collapse-toggle />
 									<span class="eem-reservation-section-toggle__track" aria-hidden="true"></span>
 								</label>
 							</div>
@@ -666,7 +666,7 @@ class EEM_Shortcodes {
 							<div class="eem-reservation-section-heading eem-reservation-section-heading--collapsible">
 								<h4 class="eem-reservation-section__title"><?php esc_html_e( 'RV Reservations', 'equine-event-manager' ); ?></h4>
 								<label class="eem-reservation-section-toggle" aria-label="<?php esc_attr_e( 'Toggle RV Reservations section', 'equine-event-manager' ); ?>">
-									<input type="checkbox" data-eem-section-collapse-toggle />
+									<input type="checkbox" checked data-eem-section-collapse-toggle />
 									<span class="eem-reservation-section-toggle__track" aria-hidden="true"></span>
 								</label>
 							</div>
@@ -823,7 +823,7 @@ class EEM_Shortcodes {
 							<div class="eem-reservation-section-heading eem-reservation-section-heading--collapsible">
 								<h4 class="eem-reservation-section__title"><?php esc_html_e( 'Add-Ons', 'equine-event-manager' ); ?></h4>
 								<label class="eem-reservation-section-toggle" aria-label="<?php esc_attr_e( 'Toggle Add-Ons section', 'equine-event-manager' ); ?>">
-									<input type="checkbox" data-eem-section-collapse-toggle />
+									<input type="checkbox" checked data-eem-section-collapse-toggle />
 									<span class="eem-reservation-section-toggle__track" aria-hidden="true"></span>
 								</label>
 							</div>
@@ -862,7 +862,7 @@ class EEM_Shortcodes {
 							<div class="eem-reservation-section-heading eem-reservation-section-heading--collapsible">
 								<h4 class="eem-reservation-section__title"><?php esc_html_e( 'Event Pre-Entries', 'equine-event-manager' ); ?></h4>
 								<label class="eem-reservation-section-toggle" aria-label="<?php esc_attr_e( 'Toggle Event Pre-Entries section', 'equine-event-manager' ); ?>">
-									<input type="checkbox" data-eem-section-collapse-toggle />
+									<input type="checkbox" checked data-eem-section-collapse-toggle />
 									<span class="eem-reservation-section-toggle__track" aria-hidden="true"></span>
 								</label>
 							</div>

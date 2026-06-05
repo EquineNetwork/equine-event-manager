@@ -161,6 +161,20 @@ class EEM_Order_Telemetry {
 				break;
 		}
 
+		// Surface the acting admin on the title so the order's Activity Log reads
+		// "Order created by Whitney Mitchell", "Payment received by Whitney Mitchell",
+		// etc. Only admin actions get a "by" suffix; customer/system stay plain, and
+		// titles that already name the actor (e.g. admin notes) are left untouched.
+		$actor_type = isset( $entry['actor_type'] ) ? (string) $entry['actor_type'] : 'system';
+		if ( 'admin' === $actor_type && '' !== $actor && ! empty( $payload['title'] ) && false === strpos( (string) $payload['title'], $actor ) ) {
+			$payload['title'] = sprintf(
+				/* translators: 1: event title, 2: acting admin display name */
+				__( '%1$s by %2$s', 'equine-event-manager' ),
+				$payload['title'],
+				$actor
+			);
+		}
+
 		$entry['payload'] = $payload;
 		return $entry;
 	}
