@@ -1067,6 +1067,62 @@
 		input.focus();
 	}
 
+	/* ── First-run setup wizard (EEM_Setup_Wizard) ───────────────────────────
+	   A guided step modal rendered in admin_footer on EEM pages while required
+	   setup is incomplete. Smart auto-open: reopens only when the admin has made
+	   progress (more required steps done) since they last closed it this session —
+	   so it guides step-by-step without spamming or covering the form being filled. */
+	function eemWizardEl() { return document.getElementById('eem-setup-wizard'); }
+	function eemWizardStepEls(w) { return w.querySelectorAll('.eem-setup-wizard__step'); }
+	function eemWizardCurrentStep(w) {
+		var steps = eemWizardStepEls(w);
+		for (var i = 0; i < steps.length; i++) { if (!steps[i].hidden) return i; }
+		return 0;
+	}
+	function eemWizardShowStep(w, idx) {
+		var steps = eemWizardStepEls(w);
+		if (idx < 0) idx = 0;
+		if (idx > steps.length - 1) idx = steps.length - 1;
+		for (var i = 0; i < steps.length; i++) { steps[i].hidden = (i !== idx); }
+		var dots = w.querySelectorAll('.eem-setup-wizard__dot');
+		for (var d = 0; d < dots.length; d++) { dots[d].classList.toggle('is-active', d === idx); }
+		var back = w.querySelector('.eem-setup-wizard__back');
+		if (back) back.disabled = (idx === 0);
+		var next = w.querySelector('.eem-setup-wizard__next');
+		if (next) next.textContent = (idx === steps.length - 1) ? 'Done' : 'Next';
+	}
+	function eemWizardSnooze(w) {
+		try { window.sessionStorage.setItem('eemWizardClosedAtCount', w.getAttribute('data-eem-wizard-done-count') || '0'); } catch (e) {}
+	}
+	function eemWizardClose(w) {
+		w.classList.remove('open');
+		eemWizardSnooze(w);
+	}
+	function eemWizardMaybeAutoOpen() {
+		var w = eemWizardEl();
+		if (!w || w.getAttribute('data-eem-wizard-autoopen') !== '1') return;
+		var doneCount = parseInt(w.getAttribute('data-eem-wizard-done-count') || '0', 10);
+		var closedAt = -1;
+		try { var v = window.sessionStorage.getItem('eemWizardClosedAtCount'); if (v !== null) closedAt = parseInt(v, 10); } catch (e) {}
+		/* Open at first run (never closed → closedAt -1) or after progress (doneCount grew). */
+		if (doneCount > closedAt) {
+			eemWizardShowStep(w, parseInt(w.getAttribute('data-eem-wizard-start') || '0', 10));
+			w.classList.add('open');
+		}
+	}
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', eemWizardMaybeAutoOpen);
+	} else {
+		eemWizardMaybeAutoOpen();
+	}
+	/* Escape closes the wizard. */
+	document.addEventListener('keydown', function (e) {
+		if (e.key === 'Escape') {
+			var w = eemWizardEl();
+			if (w && w.classList.contains('open')) eemWizardClose(w);
+		}
+	});
+
 	/* C5.G.2 — Orders row-action helper. Mirror of submitReservationAction
 	   pointed at the eemOrderRowActions JS-localized nonces + the order_key
 	   form field (vs reservation_id). C5.C registered the PHP handlers +
@@ -1906,6 +1962,28 @@
 		/* Settings → Danger Zone: full in-place data wipe (typed-ERASE confirm). */
 		'settings-reset-all-data': function (target) {
 			openResetAllDataModal(target);
+		},
+		/* First-run setup wizard navigation. */
+		'setup-wizard-next': function () {
+			var w = eemWizardEl(); if (!w) return;
+			var cur = eemWizardCurrentStep(w);
+			if (cur >= eemWizardStepEls(w).length - 1) { eemWizardClose(w); }
+			else { eemWizardShowStep(w, cur + 1); }
+		},
+		'setup-wizard-back': function () {
+			var w = eemWizardEl(); if (w) eemWizardShowStep(w, eemWizardCurrentStep(w) - 1);
+		},
+		'setup-wizard-goto': function (target) {
+			var w = eemWizardEl(); if (w) eemWizardShowStep(w, parseInt(target.getAttribute('data-step') || '0', 10));
+		},
+		'setup-wizard-close': function () {
+			var w = eemWizardEl(); if (w) eemWizardClose(w);
+		},
+		'setup-wizard-cta': function (target) {
+			/* The dispatcher preventDefault()s the <a>, so close (snooze) + navigate manually. */
+			var w = eemWizardEl(); if (w) eemWizardSnooze(w);
+			var href = target.getAttribute('href');
+			if (href) window.location.href = href;
 		},
 		'bulk-apply': function (target, ev) {
 			// Hook the bulk form's submit — collect selected reservation ids
