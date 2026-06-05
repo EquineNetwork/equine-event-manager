@@ -57,6 +57,13 @@ class EEM_Setup_Checklist {
 	public static function items(): array {
 		return array(
 			array(
+				'key'   => 'event_source',
+				'label' => __( 'Event Source', 'equine-event-manager' ),
+				'hint'  => __( 'Choose where your events come from (e.g., The Events Calendar) and connect it. Reservations link to events from this source.', 'equine-event-manager' ),
+				'done'  => self::event_source_done(),
+				'url'   => self::settings_url( 'integrations' ),
+			),
+			array(
 				'key'   => 'branding',
 				'label' => __( 'Branding', 'equine-event-manager' ),
 				'hint'  => __( 'Upload your PNG logo and support email — used on receipts, PDFs, and customer emails.', 'equine-event-manager' ),
@@ -154,6 +161,57 @@ class EEM_Setup_Checklist {
 	/* ─────────────────────────────────────────────────────────────
 	 * Per-area completion checks (read live option values).
 	 * ───────────────────────────────────────────────────────────── */
+
+	/**
+	 * Event source is done once the admin has explicitly chosen + saved a source
+	 * on Settings → Events (the `eem_event_source_confirmed` flag, set by
+	 * EEM_Settings_Page::save_integrations_panel). A fresh install is NOT
+	 * considered done just because TEC is technically available — the admin must
+	 * consciously connect it, which is the whole point of this onboarding step.
+	 *
+	 * @return bool
+	 */
+	private static function event_source_done(): bool {
+		return self::is_event_source_confirmed();
+	}
+
+	/**
+	 * Whether the admin has connected an event source. True once they explicitly
+	 * save a source on Settings → Events (the `eem_event_source_confirmed` flag).
+	 *
+	 * Lazy backfill: sites that pre-date this onboarding step won't have the flag,
+	 * but a PUBLISHED reservation can only exist if a source was already connected
+	 * and used (publishing requires a linked event). So if any published
+	 * reservation exists, we set the flag and treat the source as confirmed —
+	 * existing/upgraded sites are never told to "reconnect," while a truly fresh
+	 * install (zero reservations) still gets the onboarding step.
+	 *
+	 * Used by both this checklist and the Settings → Events radio render so the two
+	 * stay in lock-step.
+	 *
+	 * @return bool
+	 */
+	public static function is_event_source_confirmed(): bool {
+		if ( get_option( 'eem_event_source_confirmed', false ) ) {
+			return true;
+		}
+
+		$post_type = class_exists( 'EEM_Reservations_CPT' ) ? EEM_Reservations_CPT::POST_TYPE : 'en_reservation';
+		$existing  = get_posts( array(
+			'post_type'      => $post_type,
+			'post_status'    => 'publish',
+			'posts_per_page' => 1,
+			'fields'         => 'ids',
+			'no_found_rows'  => true,
+		) );
+
+		if ( ! empty( $existing ) ) {
+			update_option( 'eem_event_source_confirmed', 1, false );
+			return true;
+		}
+
+		return false;
+	}
 
 	/**
 	 * Branding is done when a logo is set and a support email is present.

@@ -671,6 +671,13 @@ class EEM_Settings_Page {
 		// resolution logic are untouched (no silent migration).
 		$coming_soon_sources = array( 'native', 'feed' );
 		$display_source      = in_array( $source, $coming_soon_sources, true ) ? 'tec' : $source;
+		// Onboarding: until the admin has explicitly chosen + saved a source, NO
+		// radio is pre-selected, so a fresh install must consciously connect a
+		// source (rather than appearing pre-configured). Set by save_integrations_panel();
+		// the helper also lazily backfills already-configured sites (see its docblock).
+		$source_confirmed = class_exists( 'EEM_Setup_Checklist' )
+			? EEM_Setup_Checklist::is_event_source_confirmed()
+			: (bool) get_option( 'eem_event_source_confirmed', false );
 		$tec_active   = class_exists( 'Tribe__Events__Main' );
 		$tec_status   = $tec_active
 			? array( 'class' => 'is-active',    'label' => __( 'Available', 'equine-event-manager' ) )
@@ -689,6 +696,13 @@ class EEM_Settings_Page {
 					<p class="eem-field-hint" style="margin-bottom:14px;">
 						<?php esc_html_e( 'Choose where reservations get their events from. Only one source can be active at a time.', 'equine-event-manager' ); ?>
 					</p>
+
+					<?php if ( ! $source_confirmed ) : ?>
+						<div class="eem-source-onboarding-prompt" role="status">
+							<strong><?php esc_html_e( 'Connect your events to get started.', 'equine-event-manager' ); ?></strong>
+							<?php esc_html_e( 'Select your event source below, then click Save. The Events Calendar is the recommended source — once connected, you can search and link live events when building reservations.', 'equine-event-manager' ); ?>
+						</div>
+					<?php endif; ?>
 
 					<div class="eem-source-group" data-eem-source-group>
 						<?php
@@ -716,7 +730,9 @@ class EEM_Settings_Page {
 						);
 						foreach ( $sources as $value => $row ) :
 							$is_soon = ! empty( $row['coming_soon'] );
-							$checked = ( ! $is_soon && $value === $display_source );
+							// Pre-select a source only after the admin has explicitly confirmed
+							// one (onboarding) — a fresh install shows no selection.
+							$checked = ( ! $is_soon && $source_confirmed && $value === $display_source );
 							?>
 							<label class="eem-source-row<?php echo $checked ? ' is-selected' : ''; ?><?php echo $is_soon ? ' is-disabled' : ''; ?>" data-eem-source-value="<?php echo esc_attr( $value ); ?>">
 								<input type="radio" name="payload[source]" value="<?php echo esc_attr( $value ); ?>" <?php checked( $checked ); ?> <?php disabled( $is_soon ); ?> />
@@ -1241,10 +1257,20 @@ class EEM_Settings_Page {
 		);
 
 		$source = isset( $payload['source'] ) ? sanitize_key( $payload['source'] ) : '';
-		if ( ! in_array( $source, array( 'native', 'tec', 'feed' ), true ) ) {
+		$explicit_source_choice = in_array( $source, array( 'native', 'tec', 'feed' ), true );
+		if ( ! $explicit_source_choice ) {
 			$source = $current['default_event_source'];
 		}
 		$current['default_event_source']    = $source;
+
+		// Onboarding: the admin has now explicitly chosen + connected an event
+		// source. Set the confirmation flag that completes the "Event Source"
+		// setup-checklist item (and makes the radio render as selected). Only set
+		// it on a real, explicit choice so a save that omits the radio doesn't
+		// silently mark onboarding complete.
+		if ( $explicit_source_choice ) {
+			update_option( 'eem_event_source_confirmed', 1, false );
+		}
 		$current['tec_integration_enabled'] = ( 'tec' === $source ) ? 1 : 0;
 		$current['feed_url']                = isset( $payload['feed_url'] ) ? esc_url_raw( (string) $payload['feed_url'] ) : '';
 		$current['tec_event_category']      = isset( $payload['tec_event_category'] ) ? sanitize_text_field( (string) $payload['tec_event_category'] ) : '';
