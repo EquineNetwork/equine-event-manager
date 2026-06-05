@@ -1856,6 +1856,25 @@ class EEM_Shortcodes {
 
 		if ( empty( $insert_result['duplicate'] ) && ! empty( $insert_result['submission_token'] ) ) {
 			$this->maybe_send_receipt_emails( $insert_result['submission_token'] );
+
+			// #8 — send the customer straight to their hosted receipt/invoice page
+			// (same tab) instead of leaving them on the filled-out form with an
+			// easy-to-miss banner (which also risked an accidental re-submit). A JS
+			// redirect is used because the shortcode renders inside the_content —
+			// headers are already sent, so wp_redirect() isn't available here.
+			// Admin-created orders ('manual') are excluded: their output is
+			// discarded by ajax_create_order, which does its own redirect.
+			if ( 'manual' !== $submission['invoice_type'] ) {
+				$orders_repository = new EEM_Orders_Repository();
+				$order             = $orders_repository->get_order_by_submission_token( $insert_result['submission_token'] );
+				if ( $order && ! empty( $order['order_key'] ) ) {
+					$receipt_url = $this->get_hosted_receipt_url( $order['order_key'] );
+					if ( $receipt_url ) {
+						return $this->render_notice( __( 'Thank you! Taking you to your receipt…', 'equine-event-manager' ), 'success' )
+							. '<script>window.location.replace(' . wp_json_encode( $receipt_url ) . ');</script>';
+					}
+				}
+			}
 		}
 
 		return $this->render_notice( __( 'Thank you. Your reservation request has been received.', 'equine-event-manager' ), 'success' );
