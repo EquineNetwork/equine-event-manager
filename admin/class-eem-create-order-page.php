@@ -290,7 +290,12 @@ class EEM_Create_Order_Page {
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		// Shortcode output is already escaped by the shortcode renderer; wrapping in
 		// wp_kses_post here would strip the <script> tags that carry the pricing engine.
-		echo '<div class="eem-co-form-embed">';
+		// The `eem-event-page` class is required: ALL the front-end reservation-form
+		// styles in public.css (stall-picker grid, qty steppers, legend, etc.) are
+		// scoped under `.eem-event-page`. Without it the admin embed renders unstyled
+		// (stall picker collapses to full-width stacked rows). Adding it here makes the
+		// admin Create Order form match the customer form pixel-for-pixel.
+		echo '<div class="eem-co-form-embed eem-event-page">';
 		echo do_shortcode( sprintf( '[en_reservation id="%d" admin_invoice="1"]', $rid ) );
 		echo '</div>';
 	}
