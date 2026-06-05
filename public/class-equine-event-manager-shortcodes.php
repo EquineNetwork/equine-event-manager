@@ -8840,6 +8840,7 @@ RV Lot: " . $rv_lot['name'] );
 					initializeInvoiceBillingToggle(form);
 					initializeStripeCardField(form);
 					bindStripeSubmitHandler(form);
+						bindStallPickConfirm(form);
 					initializeCollapsibleReservationSections(form);
 					initializeGroupReservationFields(form);
 					initializeStallAssignmentSelector(form);
@@ -8852,6 +8853,40 @@ RV Lot: " . $rv_lot['name'] );
 					updateProductPricing(form);
 					updateReservationTotals(form);
 				});
+			}
+
+			function bindStallPickConfirm(form) {
+				if (form.dataset.enStallPickConfirmReady === '1') {
+					return;
+				}
+				form.dataset.enStallPickConfirmReady = '1';
+
+				// "Confirm, then allow" for pick-your-stalls mode: if the customer is
+				// reserving stalls but hasn't picked any specific units, confirm before
+				// falling back to auto-assign. Capture phase so this runs BEFORE the
+				// Stripe bubble-phase submit handler; stopImmediatePropagation on Cancel
+				// keeps the payment flow from starting. The Stripe handler resubmits via
+				// form.submit(), which does NOT re-fire submit listeners, so there is no
+				// double-confirm.
+				form.addEventListener('submit', function(event) {
+					var pickInputs = form.querySelectorAll('input[name="preferred_stall_units[]"]');
+					if (!pickInputs.length) {
+						return;
+					}
+					var stallQtyField = form.querySelector('input[name="stall_qty"]');
+					var stallQty = stallQtyField ? parseInt(stallQtyField.value || '0', 10) : 0;
+					if (stallQty <= 0) {
+						return;
+					}
+					var pickedCount = form.querySelectorAll('input[name="preferred_stall_units[]"]:checked').length;
+					if (pickedCount > 0) {
+						return;
+					}
+					if (!window.confirm('<?php echo esc_js( __( "You haven't picked specific stalls yet — we'll auto-assign them for you after checkout. Click Cancel to go back and pick your stalls, or OK to continue with auto-assign.", 'equine-event-manager' ) ); ?>')) {
+						event.preventDefault();
+						event.stopImmediatePropagation();
+					}
+				}, true);
 			}
 
 			function initializeInvoiceActionButtons(form) {
