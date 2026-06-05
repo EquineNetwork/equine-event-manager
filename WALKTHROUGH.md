@@ -1,6 +1,6 @@
 # Walkthrough & Deploy Notes
 
-**Current version: 2.7.42** · suite: **93/93 green** · branch: `main` (pushed to `github.com/EquineNetwork/equine-event-manager`)
+**Current version: 2.7.43** · suite: **94/94 green** · branch: `main` (pushed to `github.com/EquineNetwork/equine-event-manager`)
 
 This is the launch-prep reference for the staging walkthrough. It covers how to deploy, what to clear, what to test, what's new, and the few things that need you (not automatable).
 
@@ -27,6 +27,11 @@ This is the launch-prep reference for the staging walkthrough. It covers how to 
 - Order Detail no longer shows a misleading "Shavings (×N) $0.00" add-on line.
 - Hardened several undefined-array-key warnings (reservation save, invoice email, dashboard) — log is now clean.
 - Gated reservation debug logging behind `WP_DEBUG` (no more production log spam).
+
+**New feature — First-run setup wizard** (your request)
+- A guided **step-by-step modal** auto-opens for new admins, walking them through the required setup in order (Event Source → Branding → Communications → Payments → SendGrid), so they know what to connect first. Each step explains what it's for and links straight to the right Settings panel.
+- It only appears while the four **required** areas aren't done (SendGrid is optional). It reopens to guide the next step as they make progress, and disappears once required setup is complete. The Dashboard checklist card stays as the ongoing reference.
+- **To see it:** it shows on a fresh/incomplete setup. The fastest way to demo it is **Danger Zone → Erase all data & start fresh** (below) — after the wipe, the wizard greets you as a brand-new user.
 
 **New feature — Erase all data / fresh start** (your request)
 - **Settings → Danger Zone → "Erase all data & start fresh"** — type `ERASE`, confirm, and the plugin wipes all its data, re-seeds the just-installed baseline, and drops you on the Dashboard with onboarding back at 0. No reinstall needed.
