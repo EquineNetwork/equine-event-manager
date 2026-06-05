@@ -8507,3 +8507,11 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 	line-height: 1.5;
 }
 .eem-source-onboarding-prompt strong { display: block; margin-bottom: 3px; }
+
+/* Settings → Payments: inactive-mode credential fields (Test/Live) — dimmed +
+ * read-only so keys can't go in the wrong slot (2.7.29). Value still posts. */
+.eem-cred-field--inactive { opacity: 0.55; }
+.eem-cred-field--inactive .eem-field-input {
+	background: var(--eem-bg-alt, #f3f4f5);
+	cursor: not-allowed;
+}

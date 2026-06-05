@@ -5804,3 +5804,33 @@ function duplicateReservationAjax(target) {
 		});
 	});
 })();
+
+/* ── Settings → Payments: dim/lock the inactive-mode credential fields ──────────
+   When the gateway Mode is Test, the Live key fields are read-only + dimmed (and
+   vice versa) so an admin can't paste keys into the wrong slot. read-only — NOT
+   disabled — so the fields still POST their values and a previously-saved key is
+   never silently wiped on save. Wired by data-eem-cred-* attributes the Settings
+   page emits per gateway group (stripe / authnet). */
+(function () {
+	function eemSyncCredMode(select) {
+		if (!select) { return; }
+		var group = select.getAttribute('data-eem-cred-group');
+		var mode  = select.value === 'live' ? 'live' : 'test';
+		document.querySelectorAll('[data-eem-cred-group="' + group + '"][data-eem-cred-mode]').forEach(function (row) {
+			var inactive = row.getAttribute('data-eem-cred-mode') !== mode;
+			row.classList.toggle('eem-cred-field--inactive', inactive);
+			var input = row.querySelector('input');
+			if (input) { input.readOnly = inactive; }
+		});
+	}
+
+	document.addEventListener('change', function (e) {
+		if (e.target && e.target.matches && e.target.matches('[data-eem-cred-mode-select]')) {
+			eemSyncCredMode(e.target);
+		}
+	});
+
+	document.addEventListener('DOMContentLoaded', function () {
+		document.querySelectorAll('[data-eem-cred-mode-select]').forEach(eemSyncCredMode);
+	});
+})();

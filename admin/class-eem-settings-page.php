@@ -444,11 +444,11 @@ class EEM_Settings_Page {
 				</header>
 				<div class="eem-card-body">
 					<?php
-					$this->render_credential_mode_row( 'stripe-mode', 'payload[stripe][mode]', $payment['stripe']['mode'] );
-					$this->render_credential_field( array( 'id' => 'stripe-test-pub',     'name' => 'payload[stripe][test_publishable_key]',   'label' => __( 'Test Publishable Key', 'equine-event-manager' ), 'value' => $payment['stripe']['test_publishable_key'] ) );
-					$this->render_credential_field( array( 'id' => 'stripe-test-secret', 'name' => 'payload[stripe][test_secret_key]',        'label' => __( 'Test Secret Key', 'equine-event-manager' ),      'value' => $payment['stripe']['test_secret_key'], 'type' => 'password' ) );
-					$this->render_credential_field( array( 'id' => 'stripe-live-pub',     'name' => 'payload[stripe][live_publishable_key]',   'label' => __( 'Live Publishable Key', 'equine-event-manager' ), 'value' => $payment['stripe']['live_publishable_key'] ) );
-					$this->render_credential_field( array( 'id' => 'stripe-live-secret', 'name' => 'payload[stripe][live_secret_key]',        'label' => __( 'Live Secret Key', 'equine-event-manager' ),      'value' => $payment['stripe']['live_secret_key'], 'type' => 'password' ) );
+					$this->render_credential_mode_row( 'stripe-mode', 'payload[stripe][mode]', $payment['stripe']['mode'], 'stripe' );
+					$this->render_credential_field( array( 'id' => 'stripe-test-pub',     'name' => 'payload[stripe][test_publishable_key]',   'label' => __( 'Test Publishable Key', 'equine-event-manager' ), 'value' => $payment['stripe']['test_publishable_key'], 'group' => 'stripe', 'mode_group' => 'test' ) );
+					$this->render_credential_field( array( 'id' => 'stripe-test-secret', 'name' => 'payload[stripe][test_secret_key]',        'label' => __( 'Test Secret Key', 'equine-event-manager' ),      'value' => $payment['stripe']['test_secret_key'], 'type' => 'password', 'group' => 'stripe', 'mode_group' => 'test' ) );
+					$this->render_credential_field( array( 'id' => 'stripe-live-pub',     'name' => 'payload[stripe][live_publishable_key]',   'label' => __( 'Live Publishable Key', 'equine-event-manager' ), 'value' => $payment['stripe']['live_publishable_key'], 'group' => 'stripe', 'mode_group' => 'live' ) );
+					$this->render_credential_field( array( 'id' => 'stripe-live-secret', 'name' => 'payload[stripe][live_secret_key]',        'label' => __( 'Live Secret Key', 'equine-event-manager' ),      'value' => $payment['stripe']['live_secret_key'], 'type' => 'password', 'group' => 'stripe', 'mode_group' => 'live' ) );
 					$this->render_credential_field( array(
 						'id'    => 'stripe-webhook',
 						'name'  => 'payload[stripe][webhook_signing_secret]',
@@ -467,11 +467,11 @@ class EEM_Settings_Page {
 				</header>
 				<div class="eem-card-body">
 					<?php
-					$this->render_credential_mode_row( 'authnet-mode', 'payload[authorize_net][mode]', $payment['authorize_net']['mode'] );
-					$this->render_credential_field( array( 'id' => 'authnet-test-login', 'name' => 'payload[authorize_net][test_api_login]',       'label' => __( 'Test API Login ID', 'equine-event-manager' ),     'value' => $payment['authorize_net']['test_api_login'] ) );
-					$this->render_credential_field( array( 'id' => 'authnet-test-key',   'name' => 'payload[authorize_net][test_transaction_key]', 'label' => __( 'Test Transaction Key', 'equine-event-manager' ),  'value' => $payment['authorize_net']['test_transaction_key'], 'type' => 'password' ) );
-					$this->render_credential_field( array( 'id' => 'authnet-live-login', 'name' => 'payload[authorize_net][live_api_login]',       'label' => __( 'Live API Login ID', 'equine-event-manager' ),     'value' => $payment['authorize_net']['live_api_login'] ) );
-					$this->render_credential_field( array( 'id' => 'authnet-live-key',   'name' => 'payload[authorize_net][live_transaction_key]', 'label' => __( 'Live Transaction Key', 'equine-event-manager' ),  'value' => $payment['authorize_net']['live_transaction_key'], 'type' => 'password' ) );
+					$this->render_credential_mode_row( 'authnet-mode', 'payload[authorize_net][mode]', $payment['authorize_net']['mode'], 'authnet' );
+					$this->render_credential_field( array( 'id' => 'authnet-test-login', 'name' => 'payload[authorize_net][test_api_login]',       'label' => __( 'Test API Login ID', 'equine-event-manager' ),     'value' => $payment['authorize_net']['test_api_login'], 'group' => 'authnet', 'mode_group' => 'test' ) );
+					$this->render_credential_field( array( 'id' => 'authnet-test-key',   'name' => 'payload[authorize_net][test_transaction_key]', 'label' => __( 'Test Transaction Key', 'equine-event-manager' ),  'value' => $payment['authorize_net']['test_transaction_key'], 'type' => 'password', 'group' => 'authnet', 'mode_group' => 'test' ) );
+					$this->render_credential_field( array( 'id' => 'authnet-live-login', 'name' => 'payload[authorize_net][live_api_login]',       'label' => __( 'Live API Login ID', 'equine-event-manager' ),     'value' => $payment['authorize_net']['live_api_login'], 'group' => 'authnet', 'mode_group' => 'live' ) );
+					$this->render_credential_field( array( 'id' => 'authnet-live-key',   'name' => 'payload[authorize_net][live_transaction_key]', 'label' => __( 'Live Transaction Key', 'equine-event-manager' ),  'value' => $payment['authorize_net']['live_transaction_key'], 'type' => 'password', 'group' => 'authnet', 'mode_group' => 'live' ) );
 					?>
 				</div>
 			</section>
@@ -492,9 +492,16 @@ class EEM_Settings_Page {
 	 * @return void
 	 */
 	private function render_credential_field( array $args ) {
-		$args = wp_parse_args( $args, array( 'type' => 'text', 'hint' => '' ) );
+		$args = wp_parse_args( $args, array( 'type' => 'text', 'hint' => '', 'group' => '', 'mode_group' => '' ) );
+		// When this field belongs to a Test/Live mode group (e.g. Stripe live keys),
+		// tag the row so admin.js can read-only + dim it when the OTHER mode is active.
+		// This prevents pasting keys into the wrong slot. read-only (not disabled) so
+		// the value still posts and a saved key is never wiped.
+		$mode_attrs = ( '' !== $args['group'] && '' !== $args['mode_group'] )
+			? sprintf( ' data-eem-cred-group="%s" data-eem-cred-mode="%s"', esc_attr( $args['group'] ), esc_attr( $args['mode_group'] ) )
+			: '';
 		?>
-		<div class="eem-field-row">
+		<div class="eem-field-row"<?php echo $mode_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped above. ?>>
 			<label class="eem-field-label" for="eem-<?php echo esc_attr( $args['id'] ); ?>"><?php echo esc_html( $args['label'] ); ?></label>
 			<div class="eem-field-control">
 				<input class="eem-field-input" id="eem-<?php echo esc_attr( $args['id'] ); ?>" type="<?php echo esc_attr( $args['type'] ); ?>" name="<?php echo esc_attr( $args['name'] ); ?>" value="<?php echo esc_attr( $args['value'] ); ?>" autocomplete="off" />
@@ -514,13 +521,14 @@ class EEM_Settings_Page {
 	 * @param string $value Current value ('test' or 'live').
 	 * @return void
 	 */
-	private function render_credential_mode_row( $id, $name, $value ) {
+	private function render_credential_mode_row( $id, $name, $value, $group = '' ) {
 		$value = in_array( $value, array( 'test', 'live' ), true ) ? $value : 'test';
+		$group_attr = '' !== $group ? sprintf( ' data-eem-cred-mode-select data-eem-cred-group="%s"', esc_attr( $group ) ) : '';
 		?>
 		<div class="eem-field-row">
 			<label class="eem-field-label" for="eem-<?php echo esc_attr( $id ); ?>"><?php esc_html_e( 'Mode', 'equine-event-manager' ); ?></label>
 			<div class="eem-field-control">
-				<select class="eem-field-select" id="eem-<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>" style="max-width:160px;">
+				<select class="eem-field-select" id="eem-<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>" style="max-width:160px;"<?php echo $group_attr; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped above. ?>>
 					<option value="test" <?php selected( 'test', $value ); ?>><?php esc_html_e( 'Test', 'equine-event-manager' ); ?></option>
 					<option value="live" <?php selected( 'live', $value ); ?>><?php esc_html_e( 'Live', 'equine-event-manager' ); ?></option>
 				</select>
