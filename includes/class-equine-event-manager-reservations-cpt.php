@@ -3966,6 +3966,14 @@ class EEM_Reservations_CPT {
 	 * @param string $message Log message.
 	 */
 	private function debug_log( $message ) {
+		// Informational sync/cleanup tracing — fires on every reservation save.
+		// Gate behind WP_DEBUG so production (WP_DEBUG off) stays log-quiet; the
+		// genuine error-condition logs (PDF/Authorize.net failures) remain ungated
+		// on purpose so ops keep a failure trail regardless of WP_DEBUG.
+		if ( ! ( defined( 'WP_DEBUG' ) && WP_DEBUG ) ) {
+			return;
+		}
+
 		error_log( '[Equine Event Manager Reservations] ' . $message ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 	}
 
