@@ -3145,43 +3145,53 @@ class EEM_Admin {
 			// "Not yet configured" placeholder for empty/partial charts.
 			$stats = array();
 			if ( 'configured' === $chart_status ) {
-				$cfg                 = $this->get_stall_chart_config( $rid );
-				$stall_units_arr     = isset( $cfg['stall_units'] ) ? (array) $cfg['stall_units'] : array();
-				$blocked_arr         = isset( $cfg['blocked_stall_units'] ) ? (array) $cfg['blocked_stall_units'] : array();
-				$available_arr       = array_diff( $stall_units_arr, $blocked_arr );
-				$reserved_unit_count = 0;
-				$reserved_seen       = array();
-				$orders              = array_filter(
-					$this->orders_repository->get_orders( '', 'date', 'asc' ),
-					function ( $o ) use ( $rid ) {
-						return absint( isset( $o['reservation_id'] ) ? $o['reservation_id'] : 0 ) === absint( $rid );
-					}
-				);
-				foreach ( $orders as $ord ) {
-					$assigned = $this->parse_assigned_units_string(
-						$this->get_order_component_note_value( $ord, 'stall', 'Assigned Stall Units' )
-					);
-					foreach ( (array) $assigned as $u ) {
-						$u = (string) $u;
-						if ( '' === $u || isset( $reserved_seen[ $u ] ) ) {
-							continue;
+				$cfg        = $this->get_stall_chart_config( $rid );
+				$grid       = $this->build_stall_chart_grid( $rid, $cfg );
+				$stall_rows = isset( $grid['stall_rows'] ) ? (array) $grid['stall_rows'] : array();
+
+				// Classify each configured stall unit from the SAME occupancy grid
+				// the chart detail/print pages render, so this at-a-glance summary
+				// reconciles with the chart and with capacity. A unit booked on any
+				// event date is Reserved; an unbooked-but-blocked unit is Blocked;
+				// otherwise Available. The prior approach counted raw "Assigned
+				// Stall Units" note labels, which don't always map to the configured
+				// grid — that double-/over-counted, inflating Reserved past capacity
+				// (e.g. 38 of 21) and flooring Available at 0.
+				$available_count = 0;
+				$reserved_count  = 0;
+				$blocked_count   = 0;
+				foreach ( $stall_rows as $stall_unit_row ) {
+					$has_occupied = false;
+					$has_blocked  = false;
+					foreach ( (array) ( $stall_unit_row['cells'] ?? array() ) as $cell ) {
+						$cell_type = $cell['type'] ?? 'available';
+						if ( 'occupied' === $cell_type ) {
+							$has_occupied = true;
+						} elseif ( 'blocked' === $cell_type ) {
+							$has_blocked = true;
 						}
-						$reserved_seen[ $u ] = true;
-						$reserved_unit_count++;
+					}
+					if ( $has_occupied ) {
+						$reserved_count++;
+					} elseif ( $has_blocked ) {
+						$blocked_count++;
+					} else {
+						$available_count++;
 					}
 				}
+
 				$stats = array(
 					array(
 						'color' => '#22c55e',
-						'label' => sprintf( '%d Available', count( $available_arr ) - $reserved_unit_count > 0 ? count( $available_arr ) - $reserved_unit_count : 0 ),
+						'label' => sprintf( '%d Available', $available_count ),
 					),
 					array(
 						'color' => '#dc2626',
-						'label' => sprintf( '%d Reserved', $reserved_unit_count ),
+						'label' => sprintf( '%d Reserved', $reserved_count ),
 					),
 					array(
 						'color' => '#94a3b8',
-						'label' => sprintf( '%d Blocked', count( $blocked_arr ) ),
+						'label' => sprintf( '%d Blocked', $blocked_count ),
 					),
 				);
 			} else {
