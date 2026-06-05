@@ -42,6 +42,14 @@ $rid = wp_insert_post( array(
 ) );
 if ( ! $rid || is_wp_error( $rid ) ) { WP_CLI::error( 'could not create fixture reservation' ); return; }
 
+// Self-cleanup: guarantee removal even if an assertion below fatals before the
+// end-of-file delete, so "B save smoke fixture" posts never leak.
+register_shutdown_function( static function () use ( $rid ) {
+	if ( $rid && ! is_wp_error( $rid ) ) {
+		wp_delete_post( (int) $rid, true );
+	}
+} );
+
 $nonce = wp_create_nonce( 'eem_reservation_editor' );
 $do_save = function ( array $mode_fields ) use ( $rid, $nonce ) {
 	$_POST = $_REQUEST = array_merge( array(

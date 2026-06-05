@@ -64,6 +64,16 @@ update_post_meta( $rid, '_en_use_global_event_source', 0 );
 update_post_meta( $rid, '_en_external_event_id',       'ext-c7x-verify' );
 update_post_meta( $rid, '_en_external_event_title',    'C7.X Verify Event' );
 
+// Self-cleanup: guarantee removal even if an assertion below fatals before the
+// mid-file delete is reached, so "C7.X Verify …" fixtures never leak into the
+// reservation picker. (The mid-file wp_delete_post + the startup stale-sweep
+// above remain as belt-and-suspenders.)
+register_shutdown_function( static function () use ( $rid ) {
+	if ( $rid ) {
+		wp_delete_post( (int) $rid, true );
+	}
+} );
+
 // Seed the row-builder + repeating-row sections so their rows actually render.
 // Several assertions below probe rendered row markup (RV zone dropdown, stall +
 // RV delete-row buttons, the seeded pre-entry titles). Those elements are emitted

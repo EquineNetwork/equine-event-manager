@@ -531,6 +531,18 @@ class EEM_Order_Detail_Page {
 		$total_qty  = $required + $additional;
 		$subtotal   = $this->compute_addon_subtotal( $order );
 
+		// Required shavings are billed WITHIN the Stall Reservation subtotal, and
+		// their quantities are already itemized on the Stall card ("Required
+		// Shavings: N bags"). The add-on subtotal is a residual (total − stall −
+		// rv − fees), so for a stall order whose shavings are folded into the
+		// stall subtotal it resolves to $0. Rendering the card in that case
+		// produced a misleading "Shavings (×N) $0.00" line. Only render when
+		// there's a genuine add-on charge — this mirrors the order-summary
+		// sidebar gate (`$addon_subtotal > 0`) so the two stay consistent.
+		if ( $subtotal <= 0 ) {
+			return;
+		}
+
 		?>
 		<div class="eem-card eem-order-card">
 			<div class="eem-order-card__header">

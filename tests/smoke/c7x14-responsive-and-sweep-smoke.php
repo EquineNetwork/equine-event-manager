@@ -123,6 +123,15 @@ foreach ( array(
 	update_post_meta( $rid_14, $key, 1 );
 }
 
+// Self-cleanup: this fixture is ephemeral. Remove it on shutdown (even if an
+// assertion below fatals) so repeated runs don't accumulate "C7.X.14 Sweep …"
+// reservations in the picker — they previously leaked one post per run.
+register_shutdown_function( static function () use ( $rid_14 ) {
+	if ( $rid_14 ) {
+		wp_delete_post( (int) $rid_14, true );
+	}
+} );
+
 $_GET['reservation_id'] = $rid_14;
 ob_start(); EEM_Reservation_Editor_Page::render(); $html = (string) ob_get_clean();
 $_GET = array();

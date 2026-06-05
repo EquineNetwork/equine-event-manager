@@ -71,6 +71,16 @@ update_post_meta( $rid_15, '_en_event_source',            'feed' );
 update_post_meta( $rid_15, '_en_use_global_event_source', 0 );
 update_post_meta( $rid_15, '_en_external_event_id',       'ext-c7x15-sweep' );
 update_post_meta( $rid_15, '_en_external_event_title',    'C7.X.15 Sweep Event' );
+
+// Self-cleanup: this fixture is ephemeral. Remove it on shutdown (even if an
+// assertion below fatals) so repeated runs don't accumulate "C7.X.15 Sweep …"
+// reservations in the picker — they previously leaked one post per run.
+register_shutdown_function( static function () use ( $rid_15 ) {
+	if ( $rid_15 ) {
+		wp_delete_post( (int) $rid_15, true );
+	}
+} );
+
 $_GET['reservation_id'] = $rid_15;
 foreach ( array(
 	'_en_checkin_checkout_enabled',

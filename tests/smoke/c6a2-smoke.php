@@ -225,6 +225,26 @@ ok( 'addon card line item shows $24.00 (computed)',    str_contains( $addon_html
 ok( 'addon card Add-On Subtotal row',                  str_contains( $addon_html, 'Add-On Subtotal' ),                          $pass, $fail, $log );
 ok( 'addon card subtotal cell echoes $24.00',          substr_count( $addon_html, '$24.00' ) >= 2,                              $pass, $fail, $log );
 
+// ── [12b] Add-On card SUPPRESSED when residual is $0 ──────────────
+// Required shavings billed inside the stall subtotal => add-on residual is
+// $0. The card must NOT render (no misleading "Shavings (×N) $0.00" line);
+// the shavings quantities still show on the Stall card. Mirrors the
+// order-summary sidebar gate.
+echo "\n[12b] Add-On card suppressed at \$0 residual\n";
+ob_start();
+$m->invoke( $page, array(
+	'type'                    => 'Stall, Add-On',
+	'required_shavings_qty'   => 4,
+	'additional_shavings_qty' => 0,
+	'total'                   => 299.52,
+	'stall_subtotal'          => 288.00, // includes the 4 required shaving bags
+	'rv_subtotal'             => 0.0,
+	'fees'                    => 11.52,
+) );
+$addon_zero_html = ob_get_clean();
+ok( 'addon card NOT rendered when residual is $0',     '' === trim( $addon_zero_html ),                                         $pass, $fail, $log );
+ok( 'no "Shavings (×4) $0.00" misleading line',        ! str_contains( $addon_zero_html, 'Shavings (×4)' ),                     $pass, $fail, $log );
+
 // ── [13] Summary card direct render with synthetic shape ───────────
 echo "\n[13] Summary card direct render\n";
 $m = new ReflectionMethod( $page, 'render_summary_card' );
