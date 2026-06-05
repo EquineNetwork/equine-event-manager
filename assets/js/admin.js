@@ -5357,27 +5357,26 @@ function duplicateReservationAjax(target) {
 		}
 	}
 
+	/**
+	 * Load the chosen reservation's interactive order form.
+	 *
+	 * Fix (admin order flow): the old implementation posted to a label-only
+	 * AJAX endpoint and merely set placeholder text, leaving Stall / RV /
+	 * Add-On / Group sections as non-interactive stubs (no qty, nights, or
+	 * pricing). We now navigate to ?reservation_id=N so the server renders the
+	 * real embedded [en_reservation admin_invoice="1"] form via
+	 * render_embedded_sections() — the same qty-stepper + date-picker + live
+	 * pricing engine the customer checkout uses. One navigation restores all
+	 * four reservation-driven sections at once.
+	 *
+	 * @param {string} rid Selected reservation post id ('' = the placeholder option).
+	 */
 	function coLoadReservation(rid) {
-		var cfg = coCfg();
-		if (!cfg.ajaxUrl || !rid) { return; }
-		var body = new URLSearchParams();
-		body.set('action', 'eem_create_order_reservation_meta');
-		body.set('_wpnonce', cfg.searchNonce || '');
-		body.set('reservation_id', rid);
-		fetch(cfg.ajaxUrl, { method: 'POST', credentials: 'same-origin', body: body })
-			.then(function (r) { return r.json(); })
-			.then(function (j) {
-				if (!j || !j.success || !j.data) { return; }
-				var d = j.data;
-				var empty = document.querySelector('[data-eem-co-summary-empty]');
-				if (empty) { empty.textContent = d.title + (d.dates ? ' · ' + d.dates : ''); }
-				var secs = d.sections || {};
-				coUpdateSection('stall', secs.stall);
-				coUpdateSection('rv', secs.rv);
-				coUpdateSection('addons', secs.addons);
-				coUpdateSection('group', secs.group);
-			})
-			.catch(function () {});
+		if (!rid) { return; }
+		var url = new URL(window.location.href);
+		url.searchParams.set('page', 'equine-event-manager-create-order');
+		url.searchParams.set('reservation_id', rid);
+		window.location.href = url.toString();
 	}
 
 	document.addEventListener('input', function (ev) {
@@ -5708,14 +5707,16 @@ function duplicateReservationAjax(target) {
 	 *
 	 * @returns {void}
 	 */
-	function coSubmitOrder() {
+	function coSubmitOrder(mode) {
+		mode = (mode === 'charge') ? 'charge' : 'link';
 		var cfg = window.eemCreateOrder || {};
 		if (!cfg.ajaxUrl || !cfg.createOrderNonce) { return; }
 
 		var embeddedForm = document.querySelector('.eem-co-form-embed .eem-reservation-form');
 		if (!embeddedForm) { return; }
 
-		var btn = document.querySelector('[data-eem-action="create-order-send-link"]');
+		var btnSel = (mode === 'charge') ? '[data-eem-action="create-order-charge"]' : '[data-eem-action="create-order-send-link"]';
+		var btn = document.querySelector(btnSel);
 		if (btn) { btn.disabled = true; }
 
 		// Collect all embedded-form fields (stall/RV/add-on selections, dates, nonces,
@@ -5746,6 +5747,10 @@ function duplicateReservationAjax(target) {
 		formData.set('action', 'eem_admin_create_order');
 		formData.set('_wpnonce', cfg.createOrderNonce);
 
+		// Charge mode: tell the handler to redirect to the Collect Payment page
+		// (with the new order's key) instead of the Order Detail page.
+		if (mode === 'charge') { formData.set('en_collect_after', '1'); }
+
 		fetch(cfg.ajaxUrl, { method: 'POST', credentials: 'same-origin', body: formData })
 			.then(function (r) { return r.json(); })
 			.then(function (j) {
@@ -5775,20 +5780,27 @@ function duplicateReservationAjax(target) {
 	// The delegated click handler in C13.A.2 already matches create-order-send-link;
 	// coSubmitOrder() is called from there when the embed is present.
 	document.addEventListener('click', function (ev) {
-		var t = ev.target.closest ? ev.target.closest('[data-eem-action="create-order-send-link"]') : null;
-		if (!t) { return; }
-		ev.preventDefault();
-		if (document.querySelector('.eem-co-form-embed')) {
-			coSubmitOrder();
+		var link = ev.target.closest ? ev.target.closest('[data-eem-action="create-order-send-link"]') : null;
+		if (link) {
+			ev.preventDefault();
+			if (document.querySelector('.eem-co-form-embed')) { coSubmitOrder('link'); }
+			return;
+		}
+		var charge = ev.target.closest ? ev.target.closest('[data-eem-action="create-order-charge"]') : null;
+		if (charge) {
+			ev.preventDefault();
+			if (document.querySelector('.eem-co-form-embed')) { coSubmitOrder('charge'); }
 		}
 	});
 
-	// Enable the Send Payment Link button on DOMContentLoaded when the embed is present.
-	// PHP renders it disabled by default (safe fallback); JS enables it once we confirm
-	// the embed loaded and a reservation is selected.
+	// Enable the payment-action buttons on DOMContentLoaded when the embed is present.
+	// PHP renders them disabled by default (safe fallback); JS enables them once we
+	// confirm the embedded reservation form loaded.
 	document.addEventListener('DOMContentLoaded', function () {
 		if (!document.querySelector('.eem-co-form-embed')) { return; }
-		var btn = document.querySelector('[data-eem-action="create-order-send-link"]');
-		if (btn) { btn.disabled = false; }
+		['create-order-send-link', 'create-order-charge'].forEach(function (action) {
+			var btn = document.querySelector('[data-eem-action="' + action + '"]');
+			if (btn) { btn.disabled = false; }
+		});
 	});
 })();

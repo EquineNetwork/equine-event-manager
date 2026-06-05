@@ -447,7 +447,6 @@ class EEM_Create_Order_Page {
 	 * @return void
 	 */
 	private static function render_payment_card(): void {
-		$collect_url = admin_url( 'admin.php?page=equine-event-manager-collect-payment' );
 		?>
 		<section class="eem-card eem-co-payment-card">
 			<div class="eem-co-payment-tabs" role="tablist">
@@ -463,10 +462,10 @@ class EEM_Create_Order_Page {
 				</button>
 			</div>
 			<div class="eem-card-body eem-co-payment-panel" data-eem-co-payment-panel="charge" hidden>
-				<p class="eem-field-hint"><?php esc_html_e( 'Charging a card happens on the Collect Payment page, where card entry is secured. Create the order first, then collect payment.', 'equine-event-manager' ); ?></p>
-				<a class="eem-btn eem-btn-primary eem-co-btn-block eem-co-collect-link" href="<?php echo esc_url( $collect_url ); ?>">
-					<?php echo self::icon( 'card' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static inline SVG. ?> <?php esc_html_e( 'Go to Collect Payment', 'equine-event-manager' ); ?>
-				</a>
+				<p class="eem-field-hint"><?php esc_html_e( 'Creates the order, then takes you to the secured Collect Payment page to enter the card.', 'equine-event-manager' ); ?></p>
+				<button type="button" class="eem-btn eem-btn-primary eem-co-btn-block" data-eem-action="create-order-charge" disabled>
+					<?php echo self::icon( 'card' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static inline SVG. ?> <?php esc_html_e( 'Create Order & Collect Payment', 'equine-event-manager' ); ?>
+				</button>
 			</div>
 		</section>
 		<?php
@@ -669,14 +668,25 @@ class EEM_Create_Order_Page {
 		// Persist the collected adjustments against the freshly created order.
 		self::persist_adjustments( $captured_order_key, $custom_items, $discount );
 
-		$redirect_url = class_exists( 'EEM_Orders_List_Page' )
-			? EEM_Orders_List_Page::order_detail_url( $captured_order_key )
-			: admin_url( 'admin.php?page=equine-event-manager-orders' );
+		// Charge mode ("Create Order & Collect Payment") routes straight to the
+		// secured Collect Payment page for the new order; otherwise land on the
+		// Order Detail page (the payment-link email has already been sent).
+		$collect_after = isset( $_POST['en_collect_after'] ) && '1' === (string) wp_unslash( $_POST['en_collect_after'] ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce checked at handler top.
+
+		if ( $collect_after && class_exists( 'EEM_Orders_List_Page' ) ) {
+			$redirect_url = EEM_Orders_List_Page::collect_payment_url( $captured_order_key );
+			$message      = __( 'Order created — opening Collect Payment.', 'equine-event-manager' );
+		} else {
+			$redirect_url = class_exists( 'EEM_Orders_List_Page' )
+				? EEM_Orders_List_Page::order_detail_url( $captured_order_key )
+				: admin_url( 'admin.php?page=equine-event-manager-orders' );
+			$message      = __( 'Order created successfully.', 'equine-event-manager' );
+		}
 
 		wp_send_json_success( array(
 			'order_key' => $captured_order_key,
 			'redirect'  => $redirect_url,
-			'message'   => __( 'Order created successfully.', 'equine-event-manager' ),
+			'message'   => $message,
 		) );
 	}
 

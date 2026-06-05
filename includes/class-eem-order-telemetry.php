@@ -180,6 +180,20 @@ class EEM_Order_Telemetry {
 			return;
 		}
 
+		// Attribute the order to whoever created it. Orders built on the admin
+		// Create Order page submit through admin-ajax (is_admin() === true) by a
+		// privileged user, so log them as that admin. Customer self-checkout runs
+		// on the front end (is_admin() === false) and stays attributed to the
+		// customer. This is what surfaces "created by {admin}" on the order's
+		// Activity Log.
+		$created_by_admin = is_admin() && is_user_logged_in() && current_user_can( 'manage_options' );
+		$context          = $created_by_admin
+			? array( 'actor_type' => 'admin', 'actor_id' => get_current_user_id() )
+			: array(
+				'actor_type'  => 'customer',
+				'actor_label' => isset( $payload['customer_name'] ) ? (string) $payload['customer_name'] : '',
+			);
+
 		EEM_Activity_Log::write(
 			'order.create',
 			array(
@@ -193,10 +207,7 @@ class EEM_Order_Telemetry {
 				'source'         => isset( $payload['source'] ) ? (string) $payload['source'] : 'unknown',
 				'created_at'     => isset( $payload['created_at'] ) ? (string) $payload['created_at'] : '',
 			),
-			array(
-				'actor_type'  => 'customer',
-				'actor_label' => isset( $payload['customer_name'] ) ? (string) $payload['customer_name'] : '',
-			)
+			$context
 		);
 	}
 
