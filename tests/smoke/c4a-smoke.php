@@ -66,6 +66,20 @@ ok( 'type badges include rv',    in_array( 'rv',    $badges, true ), $pass, $fai
 ok( 'type badges exclude addon', ! in_array( 'addon', $badges, true ), $pass, $fail, $log );
 ok( 'type badges exclude group', ! in_array( 'group', $badges, true ), $pass, $fail, $log );
 
+// Modern inventory model: stalls/RV enabled via the section toggle + row
+// builder, with the legacy *_quantity_available meta left EMPTY. Regression
+// guard — the badge check previously keyed only off the legacy numeric meta,
+// so every row-builder reservation silently lost its Stall/RV badges.
+$modern_id = wp_insert_post( array( 'post_type' => 'en_reservation', 'post_status' => 'publish', 'post_title' => 'C45A MODERN MODEL' ) );
+update_post_meta( $modern_id, '_en_stalls_enabled', 1 );
+update_post_meta( $modern_id, '_en_rv_enabled', 1 );
+update_post_meta( $modern_id, '_en_stall_inventory_type', 'numbered' );
+// Deliberately DO NOT set the legacy _en_stall_quantity_available / _en_rv_quantity_available.
+$modern_badges = EEM_Reservations_List_Repo::get_type_badges( $modern_id );
+ok( 'modern model: stall badge from _en_stalls_enabled (no legacy qty)', in_array( 'stall', $modern_badges, true ), $pass, $fail, $log );
+ok( 'modern model: rv badge from _en_rv_enabled (no legacy qty)',        in_array( 'rv',    $modern_badges, true ), $pass, $fail, $log );
+wp_delete_post( $modern_id, true );
+
 // C6.6 / RES-ARCH-1: resolver returns source-event fields (title + dates).
 $resolved = EEM_Reservation_Source_Resolver::resolve_event_fields( $res_id );
 ok( 'resolver title = source event title (not reservation post_title)',  'C45A SOURCE EVENT' === $resolved['title'],      $pass, $fail, $log, "got '{$resolved['title']}'" );

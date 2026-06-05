@@ -360,13 +360,20 @@ class EEM_Reservations_List_Repo {
 
 		$badges = array();
 
-		// Stall section enabled when stall capacity > 0 or stall stay types are configured.
-		if ( (int) get_post_meta( $id, '_en_stall_quantity_available', true ) > 0 ) {
+		// Stall section enabled. The modern inventory model toggles the section
+		// via `_en_stalls_enabled` and derives capacity from the row builder
+		// (`_en_stall_rows`), leaving the legacy `_en_stall_quantity_available`
+		// meta empty — so check the section flag first, with the legacy numeric
+		// capacity as a fallback. Checking only the legacy meta dropped the Stall
+		// badge for every row-builder reservation.
+		if ( ! empty( get_post_meta( $id, '_en_stalls_enabled', true ) )
+			|| (int) get_post_meta( $id, '_en_stall_quantity_available', true ) > 0 ) {
 			$badges[] = 'stall';
 		}
 
-		// RV section enabled when RV capacity > 0.
-		if ( (int) get_post_meta( $id, '_en_rv_quantity_available', true ) > 0 ) {
+		// RV section enabled — same dual check (modern flag OR legacy capacity).
+		if ( ! empty( get_post_meta( $id, '_en_rv_enabled', true ) )
+			|| (int) get_post_meta( $id, '_en_rv_quantity_available', true ) > 0 ) {
 			$badges[] = 'rv';
 		}
 
