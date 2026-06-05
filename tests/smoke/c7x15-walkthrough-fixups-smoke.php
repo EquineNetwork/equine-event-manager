@@ -59,7 +59,19 @@ $js_src    = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/js/admin.js'
 $admin_ctl = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-equine-event-manager-admin.php' );
 
 wp_set_current_user( 1 );
-$_GET['reservation_id'] = 44;
+// Hardcoded res 44 no longer exists in the seed (same drift the c7x14 smoke
+// notes). Create a fresh feed-linked reservation with every section toggle on
+// so the editor renders all section cards + the event-anchor header controls.
+$rid_15 = wp_insert_post( array(
+	'post_type'   => 'en_reservation',
+	'post_status' => 'publish',
+	'post_title'  => 'C7.X.15 Sweep ' . wp_generate_password( 6, false, false ),
+) );
+update_post_meta( $rid_15, '_en_event_source',            'feed' );
+update_post_meta( $rid_15, '_en_use_global_event_source', 0 );
+update_post_meta( $rid_15, '_en_external_event_id',       'ext-c7x15-sweep' );
+update_post_meta( $rid_15, '_en_external_event_title',    'C7.X.15 Sweep Event' );
+$_GET['reservation_id'] = $rid_15;
 foreach ( array(
 	'_en_checkin_checkout_enabled',
 	'_en_event_day_enabled',
@@ -71,7 +83,7 @@ foreach ( array(
 	'_en_venue_agreement_enabled',
 	'_en_cancellation_enabled',
 ) as $key ) {
-	update_post_meta( 44, $key, 1 );
+	update_post_meta( $rid_15, $key, 1 );
 }
 ob_start(); EEM_Reservation_Editor_Page::render(); $html = (string) ob_get_clean();
 $_GET = array();
@@ -245,38 +257,34 @@ c7x15_ok( count( $enumerated_keys ) . ' .eem-* class(es) enumerated on <select> 
 	$pass, $fail, $log,
 	empty( $missing_select_prefix ) ? 'enumerated: ' . implode( ',', $enumerated_keys ) : 'missing prefix: ' . implode( ',', $missing_select_prefix ) );
 
-// ── [Issue 7 positive] hybrid restoration assertions ───────────
-echo "\n[7] Linked Event hybrid restoration — meta-line read-only + rail card actionable\n";
-// C7.X.16 — auto-link res 44 so the rail card's linked-state markup renders.
-$native_id_15 = 0;
-foreach ( (array) get_posts( array( 'post_type' => 'en_event', 'post_status' => 'publish', 'posts_per_page' => 1, 'fields' => 'ids' ) ) as $eid ) { $native_id_15 = (int) $eid; }
-if ( 0 === $native_id_15 ) {
-	$native_id_15 = wp_insert_post( array( 'post_type' => 'en_event', 'post_status' => 'publish', 'post_title' => 'C7.X.16 smoke event' ) );
-	update_post_meta( $native_id_15, '_equine_event_manager_event_start_date', '2025-03-10' );
-	update_post_meta( $native_id_15, '_equine_event_manager_event_end_date',   '2025-03-12' );
-}
-update_post_meta( 44, '_en_event_source', 'native' );
-update_post_meta( 44, '_en_event_id',     $native_id_15 );
-update_post_meta( 44, '_en_use_global_event_source', 0 );
-if ( 'publish' !== get_post_status( 44 ) ) {
-	wp_update_post( array( 'ID' => 44, 'post_status' => 'publish' ) );
-}
-
-$_GET = array(); $_GET['reservation_id'] = 44;
+// ── [Issue 7 positive] C8 header-based linked-event controls ───────
+// NOTE: the C7.X.15 rail-card "hybrid restoration" (Change link + ✕ icon
+// Unlink button living in a right-rail Linked Event card) was SUPERSEDED by
+// the C8 port. The right rail was removed entirely; the editor is now an
+// event-anchored single-column page whose event controls live in the header
+// (inline typeahead revealed by a "Change Event" button; no Unlink — the
+// reservation is always anchored to an event). The four old rail-card class
+// assertions (.eem-event-linked-change / .eem-event-unlink-icon / Unlink
+// aria-label + title) are stale; updated below to the current header model.
+echo "\n[7] C8 header-based linked-event controls (rail card retired)\n";
+// The feed-linked $rid_15 fixture already satisfies $has_linked_event, so the
+// event-anchor header controls render. Re-render it here for the Issue 7
+// assertions (kept as a separate render for clarity / future divergence).
+$_GET = array(); $_GET['reservation_id'] = $rid_15;
 ob_start(); EEM_Reservation_Editor_Page::render(); $html44 = (string) ob_get_clean();
 $_GET = array();
 
-c7x15_ok( 'rail card emits Change text link (class="eem-event-linked-change")',
-	false !== strpos( $html44, 'class="eem-event-linked-change"' ),
+c7x15_ok( 'header action group renders for linked reservation (.eem-header-actions)',
+	false !== strpos( $html44, 'class="eem-header-actions"' ),
 	$pass, $fail, $log );
-c7x15_ok( 'rail card emits ✕ icon-only Unlink button (class="eem-event-unlink-icon")',
-	false !== strpos( $html44, 'class="eem-event-unlink-icon"' ),
+c7x15_ok( 'header "Change Event" button dispatches header-change-event',
+	false !== strpos( $html44, 'data-eem-action="header-change-event"' ),
 	$pass, $fail, $log );
-c7x15_ok( 'rail card unlink button has aria-label="Unlink event" for accessibility',
-	false !== strpos( $html44, 'aria-label="Unlink event"' ),
+c7x15_ok( 'inline event typeahead present (#eem-header-typeahead) for in-place re-link',
+	false !== strpos( $html44, 'id="eem-header-typeahead"' ),
 	$pass, $fail, $log );
-c7x15_ok( 'rail card unlink button has title="Unlink event" tooltip',
-	false !== strpos( $html44, 'title="Unlink event"' ),
+c7x15_ok( 'typeahead Cancel button dispatches header-cancel-change',
+	false !== strpos( $html44, 'data-eem-action="header-cancel-change"' ),
 	$pass, $fail, $log );
 
 // Cache-bust constant.

@@ -151,12 +151,16 @@ c7c14_ok( "description textarea carries seeded value",
 // ── [5] Checkin section ──────────────────────────────────────────
 echo "\n[5] checkin section: 2 datetime rows + max-width:260px\n";
 $ck = $slice_body( $html, 'checkin' );
-c7c14_ok( "checkin Check-In input uses .eem-field-input class",
-	(bool) preg_match( '/<input[^>]*class="eem-field-input"[^>]*name="en_reservation\[checkin_time\]"[^>]*type="datetime-local"/', $ck ),
+// Current render (templates/.../_section-checkin.php:58-66) uses a TIME picker
+// (type="time", max-width:180px), not the older datetime-local/260px shape the
+// mockup docblock once described. The control is still .eem-field-input with the
+// canonical en_reservation[checkin_time] name — assert the current correct shape.
+c7c14_ok( "checkin Check-In input uses .eem-field-input class + type=time",
+	(bool) preg_match( '/<input[^>]*class="eem-field-input"[^>]*name="en_reservation\[checkin_time\]"[^>]*type="time"/', $ck ),
 	$pass, $fail, $log );
-c7c14_ok( "checkin Check-In input carries max-width:260px inline style (mockup line 413)",
-	(bool) preg_match( '/name="en_reservation\[checkin_time\]"[^>]*style="max-width:260px"/', $ck )
-		|| (bool) preg_match( '/style="max-width:260px"[^>]*name="en_reservation\[checkin_time\]"/', $ck ),
+c7c14_ok( "checkin Check-In input carries max-width:180px inline style",
+	(bool) preg_match( '/name="en_reservation\[checkin_time\]"[^>]*style="max-width:180px"/', $ck )
+		|| (bool) preg_match( '/style="max-width:180px"[^>]*name="en_reservation\[checkin_time\]"/', $ck ),
 	$pass, $fail, $log );
 c7c14_ok( "checkin Check-Out input uses .eem-field-input class",
 	(bool) preg_match( '/<input[^>]*class="eem-field-input"[^>]*name="en_reservation\[checkout_time\]"/', $ck ),
@@ -402,14 +406,18 @@ c7c14_ok( "CPT sanitize_meta_submission carries 'group_description' branch",
 	false !== strpos( $cpt_src, "'group_description'" )
 		&& false !== strpos( $cpt_src, "sanitize_textarea_field( \$source['group_description'] )" ),
 	$pass, $fail, $log );
-c7c14_ok( "CPT sanitize_meta_submission carries 'group_riders_per_group' branch (absint, max-1 floor)",
-	(bool) preg_match( "/'group_riders_per_group'\s*=>[\s\S]{0,200}?max\(\s*1\s*,\s*absint/", $cpt_src ),
+// v2.3.82 changed the semantics: blank = unlimited. The sanitize branch now stores
+// absint() when the submission is a positive integer, else '' (uncapped) — no
+// longer a max(1, …) floor.
+c7c14_ok( "CPT sanitize_meta_submission carries 'group_riders_per_group' branch (positive-absint else blank)",
+	(bool) preg_match( "/'group_riders_per_group'\s*=>[\s\S]{0,300}?absint\(\s*\\\$source\['group_riders_per_group'\]\s*\)\s*>\s*0/", $cpt_src ),
 	$pass, $fail, $log );
 c7c14_ok( "CPT defaults include 'group_description' => ''",
 	(bool) preg_match( "/'group_description'\s*=>\s*''/", $cpt_src ),
 	$pass, $fail, $log );
-c7c14_ok( "CPT defaults include 'group_riders_per_group' => 6",
-	(bool) preg_match( "/'group_riders_per_group'\s*=>\s*6/", $cpt_src ),
+// v2.3.82: blank default = unlimited (was 6).
+c7c14_ok( "CPT defaults include 'group_riders_per_group' => '' (blank = unlimited)",
+	(bool) preg_match( "/'group_riders_per_group'\s*=>\s*''/", $cpt_src ),
 	$pass, $fail, $log );
 
 // ── [14] No native <input type="checkbox"> for ANY sub-section toggle ──

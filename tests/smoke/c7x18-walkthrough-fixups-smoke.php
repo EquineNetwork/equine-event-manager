@@ -95,7 +95,9 @@ $must_use_token = array(
 	'.eem-btn-manage-layout'     => '~\.eem-btn-manage-layout\s*\{[^}]*border-radius\s*:\s*var\(--eem-radius\)~',
 	'.eem-zone-color-swatch'     => '~\.eem-zone-color-swatch\s*\{[^}]*border-radius\s*:\s*var\(--eem-radius\)~',
 	'.eem-zone-price-wrap'       => '~\.eem-zone-price-wrap\s*\{[^}]*border-radius\s*:\s*var\(--eem-radius\)~',
-	'.eem-zone-color-preset'     => '~\.eem-zone-color-preset\s*\{[^}]*border-radius\s*:\s*var\(--eem-radius\)~',
+	// NOTE: .eem-zone-color-preset (preset-picker popover) was removed in f73f5eb when
+	// RV zone colors became a single getZoneColor() auto-palette. Class no longer exists;
+	// assertion dropped (feature intentionally refactored away, not a regression).
 	'.eem-inherited-default-banner-icon' => '~\.eem-inherited-default-banner-icon\s*\{[^}]*border-radius\s*:\s*var\(--eem-radius\)~',
 );
 
@@ -217,8 +219,15 @@ c7x18_ok( 'admin.js: toggleDropdown uses getBoundingClientRect + window.innerHei
 echo "\n-- Version bump --\n";
 
 $main_php = file_get_contents( $plugin_root . '/equine-event-manager.php' );
-c7x18_ok( 'equine-event-manager.php: version is 2.3.10',
-	(bool) preg_match( "~define\(\s*'EQUINE_EVENT_MANAGER_VERSION',\s*'2\.3\.10'\s*\)~", $main_php ),
+// Self-consistency check: the plugin-header `Version:` must match the
+// EQUINE_EVENT_MANAGER_VERSION constant. (Was a hardcoded-version assertion;
+// the plugin bumps regularly, so assert header/constant agreement instead.)
+preg_match( '~^\s*\*\s*Version:\s*([0-9][0-9.]*)~mi', $main_php, $hdr_m );
+preg_match( "~define\(\s*'EQUINE_EVENT_MANAGER_VERSION',\s*'([0-9][0-9.]*)'\s*\)~", $main_php, $const_m );
+$hdr_ver   = $hdr_m[1]   ?? '';
+$const_ver = $const_m[1] ?? '';
+c7x18_ok( "equine-event-manager.php: header Version ({$hdr_ver}) matches EQUINE_EVENT_MANAGER_VERSION ({$const_ver})",
+	$hdr_ver !== '' && $hdr_ver === $const_ver,
 	$pass, $fail, $log );
 
 /* ────────────────────────────────────────────────────────────────

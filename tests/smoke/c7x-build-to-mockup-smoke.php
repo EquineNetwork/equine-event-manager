@@ -64,6 +64,28 @@ update_post_meta( $rid, '_en_use_global_event_source', 0 );
 update_post_meta( $rid, '_en_external_event_id',       'ext-c7x-verify' );
 update_post_meta( $rid, '_en_external_event_title',    'C7.X Verify Event' );
 
+// Seed the row-builder + repeating-row sections so their rows actually render.
+// Several assertions below probe rendered row markup (RV zone dropdown, stall +
+// RV delete-row buttons, the seeded pre-entry titles). Those elements are emitted
+// by per-row `foreach` loops that produce NOTHING when the meta arrays are empty,
+// so the fixture must seed at least one row per section.
+update_post_meta( $rid, '_en_stalls_enabled', 1 );
+update_post_meta( $rid, '_en_rv_enabled',     1 );
+update_post_meta( $rid, '_en_stall_rows', array(
+	array( 'name' => 'Barn A', 'layout' => 'one_sided', 'first' => '100', 'last' => '110' ),
+) );
+update_post_meta( $rid, '_en_rv_zones', array(
+	array( 'name' => 'North Field' ),
+) );
+update_post_meta( $rid, '_en_rv_rows', array(
+	array( 'name' => 'Row 1', 'layout' => 'one_sided', 'zone_id' => '0', 'first' => 'A1', 'last' => 'A8' ),
+) );
+update_post_meta( $rid, '_en_event_pre_entries_enabled', 1 );
+update_post_meta( $rid, '_en_event_pre_entries', array(
+	array( 'title' => 'Friday Reining Class',   'inventory' => 20, 'price' => '45.00', 'max_per_customer' => '2' ),
+	array( 'title' => 'Saturday Cutting Class', 'inventory' => 15, 'price' => '60.00', 'max_per_customer' => '1' ),
+) );
+
 $_GET = array( 'page' => 'equine-event-manager-reservation-editor', 'reservation_id' => $rid );
 ob_start();
 EEM_Reservation_Editor_Page::render();
@@ -103,10 +125,17 @@ c7x_ok( 'C8 delegation: data-eem-action="header-change-event" present in rendere
 c7x_ok( 'C8 delegation: data-eem-action="header-cancel-change" present in rendered HTML',
 	false !== strpos( $html, 'data-eem-action="header-cancel-change"' ),
 	$pass, $fail, $log );
-c7x_ok( 'C8 delegation: data-eem-action="toggle-inventory-mode" present in rendered HTML (stall + rv = 4×)',
-	4 === preg_match_all( '/data-eem-action="toggle-inventory-mode"/', $html ),
+// The stall section now uses its own `toggle-stall-inventory-type` action; only the
+// RV section uses `toggle-inventory-mode` (2 mode buttons). So the canonical count is
+// 2 for toggle-inventory-mode and 2 for toggle-stall-inventory-type.
+c7x_ok( 'C8 delegation: data-eem-action="toggle-inventory-mode" present in rendered HTML (RV = 2×)',
+	2 === preg_match_all( '/data-eem-action="toggle-inventory-mode"/', $html ),
 	$pass, $fail, $log,
 	'count: ' . preg_match_all( '/data-eem-action="toggle-inventory-mode"/', $html ) );
+c7x_ok( 'C8 delegation: data-eem-action="toggle-stall-inventory-type" present in rendered HTML (stall = 2×)',
+	2 === preg_match_all( '/data-eem-action="toggle-stall-inventory-type"/', $html ),
+	$pass, $fail, $log,
+	'count: ' . preg_match_all( '/data-eem-action="toggle-stall-inventory-type"/', $html ) );
 c7x_ok( 'C8 delegation: data-eem-input-action="header-filter-events" present in rendered HTML',
 	false !== strpos( $html, 'data-eem-input-action="header-filter-events"' ),
 	$pass, $fail, $log );
@@ -167,8 +196,12 @@ c7x_ok( 'sticky bar: status badge (.eem-sticky-save-status)',
 c7x_ok( 'sticky bar: nonce input present',
 	false !== strpos( $html, 'name="_eem_editor_nonce"' ),
 	$pass, $fail, $log );
-c7x_ok( 'C8: breadcrumb NOT in editor HTML (eem_render_breadcrumb removed)',
-	false === strpos( $html, 'class="eem-breadcrumb"' ),
+// 2.3.30 RE-ADDED the breadcrumb to the Edit Reservation page for navigation
+// consistency (logo + "Reservations" back-link). See section [17] (2.3.30
+// breadcrumb consistency) which asserts eem_render_breadcrumb() is called here.
+// The earlier "C8 removed the breadcrumb" decision was superseded.
+c7x_ok( '2.3.30: breadcrumb IS present in editor HTML (re-added for nav consistency)',
+	false !== strpos( $html, 'class="eem-breadcrumb"' ),
 	$pass, $fail, $log );
 c7x_ok( '.eem-sticky-save CSS: always-visible (display:flex, no display:none for main rule)',
 	(bool) preg_match( '/\.eem-sticky-save\s*\{[^}]*display:\s*flex/', $css ),
@@ -180,16 +213,21 @@ c7x_ok( '.eem-sticky-save-dot CSS defined',
 	false !== strpos( $css, '.eem-sticky-save-dot' ),
 	$pass, $fail, $log );
 
-// ── [5] All 11 sections render ───────────────────────────────────
-echo "\n[5] 11 sections — full mockup roster (includes event_pre_entries)\n";
-foreach ( array( 'description', 'checkin', 'eventday', 'stall', 'rv', 'event_pre_entries', 'addons', 'group', 'fees', 'agreement', 'cancellation' ) as $k ) {
+// ── [5] All 12 sections render ───────────────────────────────────
+// Roster grew to 12 with the addition of the `venuemap` section (enable key
+// venue_map_enabled). Canonical render order: description, checkin, eventday,
+// stall, rv, event_pre_entries, addons, group, fees, venuemap, agreement,
+// cancellation.
+echo "\n[5] 12 sections — full mockup roster (includes event_pre_entries + venuemap)\n";
+foreach ( array( 'description', 'checkin', 'eventday', 'stall', 'rv', 'event_pre_entries', 'addons', 'group', 'fees', 'venuemap', 'agreement', 'cancellation' ) as $k ) {
 	c7x_ok( "section card '{$k}' renders",
 		false !== strpos( $html, 'id="card-' . $k . '"' ),
 		$pass, $fail, $log );
 }
-c7x_ok( '11 section chevrons each carry inline <svg>+polyline',
-	11 === preg_match_all( '/<div class="eem-section-chevron"[^>]*>\s*<svg[\s\S]*?<polyline/', $html ),
-	$pass, $fail, $log );
+c7x_ok( '12 section chevrons each carry inline <svg>+polyline',
+	12 === preg_match_all( '/<div class="eem-section-chevron"[^>]*>\s*<svg[\s\S]*?<polyline/', $html ),
+	$pass, $fail, $log,
+	'count: ' . preg_match_all( '/<div class="eem-section-chevron"[^>]*>\s*<svg[\s\S]*?<polyline/', $html ) );
 
 // ── [6] Section bodies use .eem-field-row grid ───────────────────
 echo "\n[6] Section bodies — .eem-field-row grid (NOT WP form-table)\n";
@@ -555,8 +593,14 @@ foreach ( $section_files as $sf ) {
 				0 === strpos( $field_name, 'en_reservation' ) ||
 				0 === strpos( $field_name, 'eem_' )           ||
 				0 === strpos( $field_name, '_eem_' )          ||
-				'stall_selection_mode' === $field_name        ||
-				'rv_selection_mode'    === $field_name        ||
+				'stall_selection_mode'     === $field_name    ||
+				'rv_selection_mode'        === $field_name    ||
+				// These two bare hidden inputs are explicitly captured by
+				// eemCollectEditorFields() (admin.js: input[name="stall_inventory_type"],
+				// input[name="stall_customer_selection"]), so they are NOT silently
+				// dropped — they're known bare names on the allow-list.
+				'stall_inventory_type'     === $field_name    ||
+				'stall_customer_selection' === $field_name    ||
 				false !== strpos( $field_name, '__index__' )  // template placeholder rows
 			) {
 				continue;
@@ -768,10 +812,15 @@ c7x_ok(
 	$pass, $fail, $log
 );
 
-// 10b. Stall section field order: Shavings Price appears before Inventory Mode.
+// 10b. Stall section field order: Shavings Price appears before the inventory
+//      controls. The inventory row id was renamed from `-inventory-mode` to
+//      `-inventory-type` (the control is now "Stall Inventory Type"). Assert the
+//      ordering against the current id and that both rows actually render.
+$stall_shavings_pos = strpos( $html, 'row-stall-shavings-price' );
+$stall_inv_type_pos = strpos( $html, 'eem-row-stall-inventory-type' );
 c7x_ok(
-	'2.3.23: Stall — Inventory Mode row appears after Shavings Price row in rendered HTML',
-	strpos( $html, 'row-stall-shavings-price' ) < strpos( $html, 'eem-row-stall-inventory-mode' ),
+	'2.3.23: Stall — Inventory Type row appears after Shavings Price row in rendered HTML',
+	false !== $stall_shavings_pos && false !== $stall_inv_type_pos && $stall_shavings_pos < $stall_inv_type_pos,
 	$pass, $fail, $log
 );
 
@@ -853,12 +902,22 @@ c7x_ok(
 	$pass, $fail, $log
 );
 
-// 11c. No inline onclick in stall chart page render
+// 11c. No inline onclick in the stall chart DETAIL page render. Scope the scan to
+//      render_stall_chart_page()'s method body — NOT the whole file. The separate
+//      print-view page (render_stall_chart_print_page) legitimately carries an
+//      onclick="window.print()" on its own print button; that's the print page's
+//      own behavior and is out of scope for the detail page's delegation rule.
+$sc_detail_pos_24 = strpos( $admin_php, 'public function render_stall_chart_page()' );
+$sc_detail_end_24 = false !== $sc_detail_pos_24 ? strpos( $admin_php, "\n\tprivate function render_stall_chart_dynamic_region", $sc_detail_pos_24 ) : false;
+$sc_detail_src_24 = ( false !== $sc_detail_pos_24 )
+	? substr( $admin_php, $sc_detail_pos_24, ( false !== $sc_detail_end_24 ? $sc_detail_end_24 - $sc_detail_pos_24 : 6000 ) )
+	: '';
 c7x_ok(
-	'2.3.24: render_stall_chart_page has no inline onclick= handlers',
-	false === strpos( $admin_php, 'onclick="window.print()' ) &&
-	false === strpos( $admin_php, 'onclick="this.form.submit()' ) &&
-	false === strpos( $admin_php, 'onchange="this.form.submit()' ),
+	'2.3.24: render_stall_chart_page (detail) has no inline onclick=/onchange= handlers',
+	'' !== $sc_detail_src_24 &&
+	false === strpos( $sc_detail_src_24, 'onclick="window.print()' ) &&
+	false === strpos( $sc_detail_src_24, 'onclick="this.form.submit()' ) &&
+	false === strpos( $sc_detail_src_24, 'onchange="this.form.submit()' ),
 	$pass, $fail, $log
 );
 
@@ -989,11 +1048,20 @@ c7x_ok(
 	$pass, $fail, $log
 );
 
-// 12g. List page uses .eem-plugin-header (V1 shell pattern, not WP postbox).
+// 12g. List page uses the canonical eem_render_page_open() shell (V1 pattern,
+//      not a WP postbox). 2.3.29 replaced the early invented .eem-plugin-header
+//      chrome with the shared shell — see section [16]. Assert against the SCOPED
+//      method body (not the whole file, which also contains the detail page's
+//      .eem-plugin-header chrome) and that the list method itself emits no postbox.
+$sc_list_pos_25 = strpos( $admin_php_fresh, 'function render_stall_charts_list_page' );
+$sc_list_end_25 = false !== $sc_list_pos_25 ? strpos( $admin_php_fresh, "\n\tprivate function ", $sc_list_pos_25 + 10 ) : false;
+$sc_list_src_25 = ( false !== $sc_list_pos_25 )
+	? substr( $admin_php_fresh, $sc_list_pos_25, ( false !== $sc_list_end_25 ? $sc_list_end_25 - $sc_list_pos_25 : 4000 ) )
+	: '';
 c7x_ok(
-	'2.3.25: render_stall_charts_list_page uses eem-plugin-header',
-	false !== strpos( $admin_php_fresh, 'eem-plugin-header' ) &&
-	false === strpos( $admin_php_fresh, 'class="postbox"' ),
+	'2.3.29: render_stall_charts_list_page uses canonical eem_render_page_open() shell (not postbox)',
+	false !== strpos( $sc_list_src_25, 'eem_render_page_open(' ) &&
+	false === strpos( $sc_list_src_25, 'class="postbox"' ),
 	$pass, $fail, $log
 );
 
@@ -1304,8 +1372,8 @@ $admin_php_228 = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-equ
 
 // 15a. Version === 2.3.28
 c7x_ok(
-	'2.3.28: EQUINE_EVENT_MANAGER_VERSION === 2.3.28',
-	defined( 'EQUINE_EVENT_MANAGER_VERSION' ) && '2.3.28' === EQUINE_EVENT_MANAGER_VERSION,
+	'2.3.28: EQUINE_EVENT_MANAGER_VERSION >= 2.3.28 (milestone marker)',
+	defined( 'EQUINE_EVENT_MANAGER_VERSION' ) && version_compare( EQUINE_EVENT_MANAGER_VERSION, '2.3.28', '>=' ),
 	$pass, $fail, $log
 );
 
@@ -1317,10 +1385,17 @@ c7x_ok(
 	$pass, $fail, $log
 );
 
-// 15c. render output contains breadcrumb element
+// 15c. List page provides a breadcrumb. 2.3.29 moved breadcrumb rendering into the
+//      shared eem_render_page_open() shell, so the source no longer contains the
+//      literal `eem-breadcrumb` CSS class — it passes a `breadcrumb` arg to the
+//      shell, which renders the navbar. Assert the method passes a breadcrumb to
+//      the shell (scoped to the list method body).
+$sc_list_pos_28 = strpos( $admin_php_228, 'function render_stall_charts_list_page' );
+$sc_list_src_28 = ( false !== $sc_list_pos_28 ) ? substr( $admin_php_228, $sc_list_pos_28, 4000 ) : '';
 c7x_ok(
-	'2.3.28: render_stall_charts_list_page contains eem-breadcrumb',
-	false !== strpos( $admin_php_228, 'eem-breadcrumb' ),
+	'2.3.29: render_stall_charts_list_page passes a breadcrumb to eem_render_page_open() shell',
+	false !== strpos( $sc_list_src_28, 'eem_render_page_open(' ) &&
+	(bool) preg_match( "/'breadcrumb'\s*=>/", $sc_list_src_28 ),
 	$pass, $fail, $log
 );
 
@@ -1384,8 +1459,8 @@ $admin_php_229 = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-equ
 
 // 16a. Version === 2.3.29
 c7x_ok(
-	'2.3.29: EQUINE_EVENT_MANAGER_VERSION === 2.3.29',
-	defined( 'EQUINE_EVENT_MANAGER_VERSION' ) && '2.3.29' === EQUINE_EVENT_MANAGER_VERSION,
+	'2.3.29: EQUINE_EVENT_MANAGER_VERSION >= 2.3.29 (milestone marker)',
+	defined( 'EQUINE_EVENT_MANAGER_VERSION' ) && version_compare( EQUINE_EVENT_MANAGER_VERSION, '2.3.29', '>=' ),
 	$pass, $fail, $log
 );
 
@@ -1437,8 +1512,8 @@ $sc_detail_src = ( false !== $sc_detail_pos && false !== $sc_detail_end )
 
 // 17a. Version bump.
 c7x_ok(
-	'2.3.30: EQUINE_EVENT_MANAGER_VERSION === 2.3.30',
-	defined( 'EQUINE_EVENT_MANAGER_VERSION' ) && '2.3.30' === EQUINE_EVENT_MANAGER_VERSION,
+	'2.3.30: EQUINE_EVENT_MANAGER_VERSION >= 2.3.30 (milestone marker)',
+	defined( 'EQUINE_EVENT_MANAGER_VERSION' ) && version_compare( EQUINE_EVENT_MANAGER_VERSION, '2.3.30', '>=' ),
 	$pass, $fail, $log
 );
 
@@ -1501,8 +1576,8 @@ echo "\n[18] Search input placeholder convention — all inputs must use 'Search
 
 // 18a. Version bump.
 c7x_ok(
-	'2.3.31: EQUINE_EVENT_MANAGER_VERSION === 2.3.31',
-	defined( 'EQUINE_EVENT_MANAGER_VERSION' ) && '2.3.31' === EQUINE_EVENT_MANAGER_VERSION,
+	'2.3.31: EQUINE_EVENT_MANAGER_VERSION >= 2.3.31 (milestone marker)',
+	defined( 'EQUINE_EVENT_MANAGER_VERSION' ) && version_compare( EQUINE_EVENT_MANAGER_VERSION, '2.3.31', '>=' ),
 	$pass, $fail, $log
 );
 
@@ -1580,16 +1655,25 @@ c7x_ok(
 );
 
 // 18e. Orders list search input uses placeholder="Search".
+//      Anchor on the actual <input ... class="eem-search-input"> ELEMENT, not the
+//      first textual mention of `eem-search-input` (the file's docblock references
+//      the class name long before the real input, so a plain strpos anchor lands
+//      in the comment and never reaches the placeholder).
 $orders_php_231 = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-orders-list-page.php' );
-$orders_search_pos = strpos( $orders_php_231, 'eem-search-input' );
-$orders_search_line = false !== $orders_search_pos
-	? substr( $orders_php_231, $orders_search_pos, 200 )
-	: '';
+// Find the actual <input ... class="eem-search-input"> source line (the input may
+// embed `<?php … ?>` whose `?>` breaks an `[^>]*` scan, so match by line instead).
+$orders_search_line = '';
+foreach ( file( EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-orders-list-page.php', FILE_IGNORE_NEW_LINES ) as $oline ) {
+	if ( false !== strpos( $oline, '<input' ) && false !== strpos( $oline, 'class="eem-search-input"' ) ) {
+		$orders_search_line = $oline;
+		break;
+	}
+}
 c7x_ok(
 	'2.3.31: Orders list search input has placeholder="Search"',
+	'' !== $orders_search_line &&
 	false !== strpos( $orders_search_line, "'Search'" ) &&
-	false === strpos( $orders_search_line, 'Search\xe2\x80\xa6' ) &&  // no ellipsis
-	false === strpos( $orders_search_line, "Search\u{2026}" ),
+	false === strpos( $orders_search_line, 'Search…' ),  // no ellipsis
 	$pass, $fail, $log
 );
 
@@ -1629,8 +1713,8 @@ $admin_css_232 = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/css/admi
 
 // 19a. Version bump (now 2.3.33 — updated by 2.3.33 Stall Chart Detail bug bundle).
 c7x_ok(
-	'2.3.33: EQUINE_EVENT_MANAGER_VERSION === 2.3.33',
-	defined( 'EQUINE_EVENT_MANAGER_VERSION' ) && '2.3.33' === EQUINE_EVENT_MANAGER_VERSION,
+	'2.3.33: EQUINE_EVENT_MANAGER_VERSION >= 2.3.33 (milestone marker)',
+	defined( 'EQUINE_EVENT_MANAGER_VERSION' ) && version_compare( EQUINE_EVENT_MANAGER_VERSION, '2.3.33', '>=' ),
 	$pass, $fail, $log
 );
 
@@ -1844,12 +1928,26 @@ c7x_ok(
 );
 
 // 22c. @media print block hides .pv-topbar and forces colour printing.
+//      The @media print block contains NESTED rules (e.g. `*,*::before {…}`)
+//      before `.pv-topbar { display: none; }`, so a `[^}]*` scan stops at the
+//      first nested rule's closing brace and never reaches .pv-topbar. Extract
+//      the full @media print block by balancing to its closing brace and assert
+//      `.pv-topbar { display: none }` lives inside it.
+$print_block_237 = '';
+$mp_pos = strpos( $css_237, '@media print' );
+if ( false !== $mp_pos ) {
+	$brace_open = strpos( $css_237, '{', $mp_pos );
+	$depth = 0;
+	for ( $i = $brace_open, $len = strlen( $css_237 ); $i < $len; $i++ ) {
+		if ( '{' === $css_237[ $i ] ) { $depth++; }
+		elseif ( '}' === $css_237[ $i ] ) { $depth--; if ( 0 === $depth ) { $print_block_237 = substr( $css_237, $mp_pos, $i - $mp_pos + 1 ); break; } }
+	}
+}
 c7x_ok(
 	'2.3.37: @media print block hides .pv-topbar and forces -webkit-print-color-adjust: exact',
-	(bool) preg_match(
-		'/@media\s+print[^{]*\{[^}]*\.pv-topbar/',
-		$css_237
-	) && false !== strpos( $css_237, '-webkit-print-color-adjust: exact' ),
+	'' !== $print_block_237 &&
+	(bool) preg_match( '/\.pv-topbar\s*\{[^}]*display\s*:\s*none/', $print_block_237 ) &&
+	false !== strpos( $print_block_237, '-webkit-print-color-adjust: exact' ),
 	$pass, $fail, $log
 );
 
@@ -2009,15 +2107,34 @@ c7x_ok(
 	false === strpos( $css_public_24, '.form-section{' ) && false === strpos( $css_public_24, '.form-section ' ),
 	$pass, $fail, $log
 );
+// The DEAD form is the UNSCOPED bare mockup class (`.mobile-order-drawer { … }`).
+// C10 legitimately introduced a SCOPED `.eem-event-page .mobile-order-drawer` rule
+// for the customer event page — that is live, working styling and must NOT be
+// flagged. Assert only the unscoped/bare class is gone (every real occurrence is
+// prefixed with `.eem-event-page `).
+// Helper: a selector LINE referencing the class is "dead" only if it does NOT
+// carry the `.eem-event-page` page scope. C10's scoped rules are always nested
+// under `.eem-event-page` (directly or via a deeper descendant chain).
+$eem_unscoped_dead = static function ( $css, $bare ) {
+	foreach ( explode( "\n", $css ) as $line ) {
+		// Only consider selector lines (contain the class followed by space/brace/comma).
+		if ( ! preg_match( '/' . preg_quote( $bare, '/' ) . '\s*[\{,]|' . preg_quote( $bare, '/' ) . '\s+[.:\[]/', $line ) ) {
+			continue;
+		}
+		if ( false === strpos( $line, 'eem-event-page' ) ) {
+			return true; // a bare/unscoped occurrence — dead mockup class leaked in.
+		}
+	}
+	return false;
+};
 c7x_ok(
-	'C10.A (2.3.46): Dead mockup CSS class .mobile-order-drawer absent from public.css',
-	false === strpos( $css_public_24, '.mobile-order-drawer{' ) &&
-	false === strpos( $css_public_24, '.mobile-order-drawer ' ),
+	'C10.A (2.3.46): Dead UNSCOPED mockup CSS class .mobile-order-drawer absent (scoped .eem-event-page rule is allowed)',
+	! $eem_unscoped_dead( $css_public_24, '.mobile-order-drawer' ),
 	$pass, $fail, $log
 );
 c7x_ok(
-	'C10.A (2.3.46): Dead mockup CSS class .agreement-notice absent from public.css',
-	false === strpos( $css_public_24, '.agreement-notice{' ) && false === strpos( $css_public_24, '.agreement-notice ' ),
+	'C10.A (2.3.46): Dead UNSCOPED mockup CSS class .agreement-notice absent (scoped .eem-event-page rule is allowed)',
+	! $eem_unscoped_dead( $css_public_24, '.agreement-notice' ),
 	$pass, $fail, $log
 );
 
@@ -2192,20 +2309,27 @@ c7x_ok(
 	$pass, $fail, $log
 );
 
-// 27b. [2.3.43 rewrite] Pencil button (.eem-pencil-btn + data-eem-action="res-name-edit")
-//      emitted in editor page render().
+// 27b. [2.3.56 rewrite] Pencil inline-edit RETIRED — the reservation name is now
+//      read-only and always inherits the linked event title. Assert the pencil
+//      button + res-name-edit action are GONE (intentional removal, not a regression).
+// NB: the read-only wrapper class is `eem-res-name-edit-wrap`, which contains the
+// substring "res-name-edit"; assert the ACTION attribute + pencil class are gone,
+// not the substring.
 c7x_ok(
-	'[27b] eem-pencil-btn + res-name-edit action emitted in editor page (2.3.43 FIX 1)',
-	false !== strpos( $php_editor_27, 'eem-pencil-btn' ) &&
-	false !== strpos( $php_editor_27, 'res-name-edit' ),
+	'[27b] pencil edit RETIRED: no eem-pencil-btn / data-eem-action="res-name-edit" in editor page (2.3.56 read-only name)',
+	false === strpos( $php_editor_27, 'eem-pencil-btn' ) &&
+	false === strpos( $php_editor_27, 'data-eem-action="res-name-edit"' ),
 	$pass, $fail, $log
 );
 
-// 27c. [2.3.43 rewrite] eem-res-name-inline-edit wrapper emitted with rename nonce attr.
+// 27c. [2.3.56 rewrite] Read-only name view replaces the inline-edit wrapper. The
+//      editor renders .eem-res-name-edit-wrap / .eem-res-name-view (display only),
+//      and the old inline-edit wrapper + rename nonce are gone.
 c7x_ok(
-	'[27c] eem-res-name-inline-edit + rename-nonce attr emitted in editor page (2.3.43 FIX 1)',
-	false !== strpos( $php_editor_27, 'eem-res-name-inline-edit' ) &&
-	false !== strpos( $php_editor_27, 'data-rename-nonce' ),
+	'[27c] read-only name view (eem-res-name-edit-wrap) present; inline-edit + rename nonce gone (2.3.56)',
+	false !== strpos( $php_editor_27, 'eem-res-name-edit-wrap' ) &&
+	false === strpos( $php_editor_27, 'eem-res-name-inline-edit' ) &&
+	false === strpos( $php_editor_27, 'data-rename-nonce' ),
 	$pass, $fail, $log
 );
 
@@ -2309,12 +2433,16 @@ c7x_ok(
 	$pass, $fail, $log
 );
 
-// 28f. Row action links include reservation-duplicate-ajax + reservation-quick-edit + reservation-trash (FIX 3).
+// 28f. Row action links include reservation-duplicate-ajax + reservation-trash.
+//      2.3.65 — Quick Edit was REMOVED from the row actions: the reservation name +
+//      slug now always inherit the linked event name (no admin override), so the
+//      inline name/slug editor has nothing left to edit. Assert Duplicate + Trash
+//      are still emitted and Quick Edit is gone.
 c7x_ok(
-	'[28f] Row actions emit reservation-duplicate-ajax + quick-edit + trash data-eem-action attrs (FIX 3)',
+	'[28f] Row actions emit reservation-duplicate-ajax + trash; quick-edit removed (2.3.65)',
 	false !== strpos( $php_list_28, 'reservation-duplicate-ajax' ) &&
-	false !== strpos( $php_list_28, 'reservation-quick-edit' ) &&
-	false !== strpos( $php_list_28, 'reservation-trash' ),
+	false !== strpos( $php_list_28, 'reservation-trash' ) &&
+	false === strpos( $php_list_28, 'reservation-quick-edit' ),
 	$pass, $fail, $log
 );
 
@@ -2368,12 +2496,17 @@ c7x_ok(
 	$pass, $fail, $log
 );
 
-// 28m. Version bumped to 2.3.43 in both the plugin header and EQUINE_EVENT_MANAGER_VERSION.
+// 28m. Version is at least 2.3.43 (milestone marker). The plugin header `Version:`
+//      and the EQUINE_EVENT_MANAGER_VERSION constant must agree and be >= 2.3.43.
 $main_file_28 = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'equine-event-manager.php' );
+preg_match( '/Version:\s*([0-9.]+)/', $main_file_28, $hdr_ver_28 );
 c7x_ok(
-	'[28m] Plugin version 2.3.43 in header + EQUINE_EVENT_MANAGER_VERSION constant',
-	false !== strpos( $main_file_28, "Version:           2.3.43" ) &&
-	false !== strpos( $main_file_28, "'2.3.43'" ),
+	'[28m] Plugin version >= 2.3.43 in header + EQUINE_EVENT_MANAGER_VERSION constant (milestone marker)',
+	defined( 'EQUINE_EVENT_MANAGER_VERSION' ) &&
+	version_compare( EQUINE_EVENT_MANAGER_VERSION, '2.3.43', '>=' ) &&
+	! empty( $hdr_ver_28[1] ) &&
+	version_compare( $hdr_ver_28[1], '2.3.43', '>=' ) &&
+	$hdr_ver_28[1] === EQUINE_EVENT_MANAGER_VERSION,
 	$pass, $fail, $log
 );
 
@@ -2443,20 +2576,28 @@ c7x_ok(
 	$pass, $fail, $log
 );
 
-// 29h. apply_mirror() reads override flags and conditionally updates post_title/post_name (FIX 2).
+// 29h. apply_mirror() mirrors the linked event title to post_title/post_name.
+//      2.3.56 — the name/slug override flags were RETIRED; the reservation name
+//      now ALWAYS inherits the linked event name, so apply_mirror() mirrors
+//      unconditionally (guarded only by a "did it change?" check) via wp_update_post.
 c7x_ok(
-	'[29h] apply_mirror() guards on name_overridden + slug_overridden flags; calls wp_update_post (FIX 2, 2.3.44)',
-	false !== strpos( $php_editor_29, '_eem_reservation_name_overridden' ) &&
-	false !== strpos( $php_editor_29, '_eem_reservation_slug_overridden' ) &&
-	false !== strpos( $php_editor_29, 'wp_update_post( $args )' ),
+	'[29h] apply_mirror() mirrors event title unconditionally via wp_update_post (2.3.56 — override flags retired)',
+	false !== strpos( $php_editor_29, 'private static function apply_mirror(' ) &&
+	false !== strpos( $php_editor_29, 'resolve_event_fields' ) &&
+	(bool) preg_match( '/apply_mirror[\s\S]*?wp_update_post\(\s*array\(/', $php_editor_29 ) &&
+	// Override-flag gating is gone from apply_mirror's logic.
+	false === strpos( $php_editor_29, '_eem_reservation_slug_overridden' ),
 	$pass, $fail, $log
 );
 
-// 29i. Version bumped to 2.3.44.
+// 29i. Version is at least 2.3.44 (milestone marker); header + constant agree.
+preg_match( '/Version:\s*([0-9.]+)/', $main_29, $hdr_ver_29 );
 c7x_ok(
-	'[29i] Plugin version 2.3.44 in header + EQUINE_EVENT_MANAGER_VERSION constant',
-	false !== strpos( $main_29, "Version:           2.3.44" ) &&
-	false !== strpos( $main_29, "'2.3.44'" ),
+	'[29i] Plugin version >= 2.3.44 in header + EQUINE_EVENT_MANAGER_VERSION constant (milestone marker)',
+	defined( 'EQUINE_EVENT_MANAGER_VERSION' ) &&
+	version_compare( EQUINE_EVENT_MANAGER_VERSION, '2.3.44', '>=' ) &&
+	! empty( $hdr_ver_29[1] ) &&
+	$hdr_ver_29[1] === EQUINE_EVENT_MANAGER_VERSION,
 	$pass, $fail, $log
 );
 
@@ -2567,12 +2708,15 @@ if ( ! empty( $orphaned_30 ) ) {
 	$log[] = '  DETAIL: orphaned targets — ' . implode( ', ', $orphaned_30 );
 }
 
-// 30h. Version bumped to 2.3.47 (2.3.47 — shortcode TEC auto-resolve +
-// toggle-OFF persistence + cancellation-override validation fix).
+// 30h. Version is at least 2.3.47 (milestone marker: shortcode TEC auto-resolve +
+// toggle-OFF persistence + cancellation-override validation fix); header + constant agree.
+preg_match( '/Version:\s*([0-9.]+)/', $main_30, $hdr_ver_30 );
 c7x_ok(
-	'[30h] Plugin version 2.3.47 in header + EQUINE_EVENT_MANAGER_VERSION constant',
-	false !== strpos( $main_30, "Version:           2.3.47" ) &&
-	false !== strpos( $main_30, "'2.3.47'" ),
+	'[30h] Plugin version >= 2.3.47 in header + EQUINE_EVENT_MANAGER_VERSION constant (milestone marker)',
+	defined( 'EQUINE_EVENT_MANAGER_VERSION' ) &&
+	version_compare( EQUINE_EVENT_MANAGER_VERSION, '2.3.47', '>=' ) &&
+	! empty( $hdr_ver_30[1] ) &&
+	$hdr_ver_30[1] === EQUINE_EVENT_MANAGER_VERSION,
 	$pass, $fail, $log
 );
 

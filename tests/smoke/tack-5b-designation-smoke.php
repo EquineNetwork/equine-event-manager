@@ -25,21 +25,59 @@ $ref   = new ReflectionClass( $admin );
 $priv  = function ( $name ) use ( $admin, $ref ) { $m = $ref->getMethod( $name ); $m->setAccessible( true ); return $m; };
 $repo  = new EEM_Orders_Repository();
 
-// Find a #3499 order with >= 2 assigned stall units.
+// EEM_Admin::for_compute() returns a memoised singleton whose internal
+// orders_repository caches the order set in a private $cached_orders. Our $repo
+// (a separate instance) writes the Tack-Stalls note but cannot invalidate the
+// admin singleton's cache, so a grid rebuilt afterwards would otherwise re-read
+// stale pre-tack orders and report is_tack=false. In real usage each chart load
+// is a fresh request with a fresh repo, so this caching only bites the test.
+// Flush the admin's internal repo cache after every tack write so the rebuilt
+// grid reflects the new note. (Mirrors what update_component_fields() does on the
+// owning instance.)
+$flush_admin_orders_cache = function () use ( $admin, $ref ) {
+	$repo_prop = $ref->getProperty( 'orders_repository' );
+	$repo_prop->setAccessible( true );
+	$internal_repo = $repo_prop->getValue( $admin );
+	if ( $internal_repo ) {
+		$cache_prop = ( new ReflectionClass( $internal_repo ) )->getProperty( 'cached_orders' );
+		$cache_prop->setAccessible( true );
+		$cache_prop->setValue( $internal_repo, null );
+	}
+};
+
+// Build the #3499 grid up-front and find an order that OCCUPIES >= 2 grid cells.
+// (Prior versions of this test sourced $tack_unit from the order's "Assigned
+// Stall Units" note. That broke against the current seed data: the seeded order's
+// note units (100, 101) fall OUTSIDE reservation #3499's configured stall range
+// (300-320), so the allocator places the order on auto-assigned grid units (300+)
+// and the tack designation — keyed to the note value — never lands on a rendered
+// grid cell. The grid's is_tack lookup matches the Tack-Stalls note value against
+// the GRID unit, so the unit we mark as tack must itself be a unit the order
+// occupies on the chart. Derive both units from the grid to stay consistent with
+// whatever config/allocation the current seed produces.)
+$cfg  = $priv( 'get_stall_chart_config' )->invoke( $admin, 3499 );
+$grid = $priv( 'build_stall_chart_grid' )->invoke( $admin, 3499, $cfg );
+
+$occupancy = array(); // order_key => [grid units occupied]
+foreach ( $grid['stall_rows'] as $row ) {
+	foreach ( (array) $row['cells'] as $cell ) {
+		if ( ( $cell['type'] ?? '' ) !== 'occupied' ) { continue; }
+		$ok = (string) ( $cell['order_key'] ?? '' );
+		if ( '' === $ok ) { continue; }
+		$occupancy[ $ok ][ (string) $row['unit'] ] = true;
+	}
+}
 $target = null;
-foreach ( $repo->get_orders( '', 'date', 'asc' ) as $o ) {
-	if ( (int) ( $o['reservation_id'] ?? 0 ) !== 3499 ) { continue; }
-	$units = (array) $priv( 'parse_assigned_units_string' )->invoke(
-		$admin, $priv( 'get_order_component_note_value' )->invoke( $admin, $o, 'stall', 'Assigned Stall Units' )
-	);
-	if ( count( $units ) >= 2 ) { $target = array( 'order' => $o, 'units' => array_values( $units ) ); break; }
+foreach ( $occupancy as $ok => $units ) {
+	$units = array_keys( $units );
+	if ( count( $units ) >= 2 ) { $target = array( 'order_key' => $ok, 'units' => array_values( $units ) ); break; }
 }
 if ( null === $target ) {
-	WP_CLI::warning( 'No seeded #3499 order with >=2 assigned stalls — run tools/seed-test-data.php first.' );
+	WP_CLI::warning( 'No #3499 order occupies >=2 grid cells — run tools/seed-test-data.php first.' );
 	WP_CLI::error( 'precondition failed' );
 	return;
 }
-$order_key = (string) $target['order']['order_key'];
+$order_key = (string) $target['order_key'];
 $tack_unit = (string) $target['units'][0];
 $other     = (string) $target['units'][1];
 WP_CLI::log( "Test order {$order_key}; marking stall {$tack_unit} as tack (other: {$other})" );
@@ -63,7 +101,9 @@ $sr = trim( (string) $priv( 'get_special_requests_from_order_notes' )->invoke( $
 $check( 'Tack Stalls does not leak into Special Requests', false === stripos( $sr, 'Tack Stalls' ) && false === strpos( $sr, $tack_unit . ',' ) );
 
 // ── Grid marks the right cell is_tack ──
-$cfg  = $priv( 'get_stall_chart_config' )->invoke( $admin, 3499 );
+// Rebuild the grid AFTER marking the tack stall so the is_tack flag reflects the
+// new Tack-Stalls note ($cfg unchanged — config doesn't depend on tack state).
+$flush_admin_orders_cache();
 $grid = $priv( 'build_stall_chart_grid' )->invoke( $admin, 3499, $cfg );
 $tack_cell_ok = false; $other_cell_not_tack = true;
 foreach ( $grid['stall_rows'] as $row ) {

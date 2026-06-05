@@ -103,13 +103,33 @@ ok( 'payment details emits Refund History label',     str_contains( $html, 'Refu
 ok( 'payment details emits separator class on Refund History',
 	str_contains( $html, 'eem-order-payment__label--sep' ),
 	$pass, $fail, $log );
-// CLEANUP #34 is now COMPLETE — the card brand/last4 are captured at charge time
-// (C14 confirm handler) and the Card display block renders when present.
+// CLEANUP #34 is NOT yet wired into live data — card brand/last4 capture lands
+// in C14 (collect-payment confirm handler writes "Card Brand:"/"Card Last4:" into
+// the component notes). The render code is already conditional on that data
+// (admin/class-eem-order-detail-page.php ~808), so on a live seed order with no
+// card notes the Card block is correctly OMITTED. The live-render assertions that
+// previously expected the block to appear were test drift (a comment falsely
+// claiming "#34 done"). We instead prove the CONDITIONAL block via a direct render
+// that supplies the card notes — verifying real behavior: when card data IS
+// present, the Card label + masked last4 glyph render. (Empty-data omission is
+// already covered by §14's "NO Card label / NO •••• mask" assertions.)
+$card_page = new EEM_Order_Detail_Page();
+$card_m    = new ReflectionMethod( $card_page, 'render_payment_details_card' );
+$card_m->setAccessible( true );
+ob_start();
+$card_m->invoke( $card_page, array(
+	'status_slug' => 'paid',
+	'components'  => array( array(
+		'transaction_id' => 'pi_card_test',
+		'notes'          => "Card Brand: visa\nCard Last4: 4242",
+	) ),
+) );
+$card_html = ob_get_clean();
 ok( 'Card display block renders when card data present',
-	false !== strpos( $html, '>Card</div>' ),
-	$pass, $fail, $log, 'CLEANUP #34 done — Card display now shown' );
-ok( 'card shows masked •••• last4 glyph',
-	false !== strpos( $html, '••••' ),
+	false !== strpos( $card_html, '>Card</div>' ),
+	$pass, $fail, $log );
+ok( 'card shows masked •••• last4 glyph (with last4 digits)',
+	false !== strpos( $card_html, '•••• 4242' ),
 	$pass, $fail, $log );
 
 // ── [7] Special Instructions — always renders ──────────────────────

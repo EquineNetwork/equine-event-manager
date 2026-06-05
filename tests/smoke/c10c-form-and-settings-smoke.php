@@ -30,10 +30,28 @@ $rb_end   = strpos( $css, '2.3.60', $rb_start );
 $rb_block = false !== $rb_end ? substr( $css, $rb_start, $rb_end - $rb_start ) : substr( $css, $rb_start );
 ok( 'no !important in the C10.C restyle block', ! str_contains( $rb_block, '!important' ), $pass, $fail, $log );
 
-/* Field inventory: render res 43 and assert the canonical payload set. */
-$rid = 43;
+/* Field inventory: render a published reservation that emits the full customer
+ * form and assert the canonical payload set. The old hardcoded id=43 fixture was
+ * deleted by later seed churn; resolve a live published reservation that actually
+ * renders the form (first_name present) so the assertion tests real output rather
+ * than a stale id. */
 $sc  = new EEM_Shortcodes();
-$html = $sc->render_reservation( array( 'id' => $rid ) );
+$rid = 0;
+$candidates = get_posts( array(
+	'post_type'      => 'en_reservation',
+	'post_status'    => 'publish',
+	'posts_per_page' => 40,
+	'fields'         => 'ids',
+) );
+foreach ( $candidates as $cand ) {
+	$probe = $sc->render_reservation( array( 'id' => $cand ) );
+	if ( str_contains( $probe, 'name="first_name"' ) && str_contains( $probe, 'name="stall_qty"' ) ) {
+		$rid = $cand;
+		break;
+	}
+}
+ok( 'found a published reservation that renders the full form', $rid > 0, $pass, $fail, $log );
+$html = $rid ? $sc->render_reservation( array( 'id' => $rid ) ) : '';
 preg_match_all( '/\sname="([^"]+)"/', $html, $names );
 $set = array_values( array_unique( $names[1] ) );
 $required = array( 'first_name', 'last_name', 'email', 'phone', 'stall_qty', 'rv_qty', 'stripe_payment_intent_id', 'en_reservation_nonce', 'billing_first_name', 'billing_postal_code' );
@@ -54,11 +72,16 @@ ob_start(); $m->invoke( $sp ); $shtml = ob_get_clean();
 
 preg_match_all( '/data-eem-source-value="([a-z]+)"/', $shtml, $order );
 ok( 'event source order is TEC, Native, Feed', array( 'tec', 'native', 'feed' ) === $order[1], $pass, $fail, $log, implode( ',', $order[1] ) );
-ok( 'three Coming Soon pills (Native, Feed, SendGrid)', 3 === substr_count( $shtml, 'is-soon">Coming Soon' ), $pass, $fail, $log, substr_count( $shtml, 'is-soon">Coming Soon' ) );
+// Two Coming Soon pills (Native + Feed event sources). SendGrid was intentionally
+// shipped as a live, enabled Email Delivery field (commit "enable the SendGrid API
+// Key field"), so it no longer carries a Coming Soon pill.
+ok( 'two Coming Soon pills (Native, Feed)', 2 === substr_count( $shtml, 'is-soon">Coming Soon' ), $pass, $fail, $log, substr_count( $shtml, 'is-soon">Coming Soon' ) );
 ok( 'two disabled source radios', 2 === preg_match_all( '/<input type="radio"[^>]*disabled/', $shtml, $d ), $pass, $fail, $log );
-ok( 'SendGrid field is disabled', (bool) preg_match( '/id="eem-sendgrid"[^>]*disabled/', $shtml ), $pass, $fail, $log );
-ok( 'SendGrid field no longer POSTs (no name attr)', ! str_contains( $shtml, 'name="payload[sendgrid_api_key]"' ), $pass, $fail, $log );
-ok( 'Email Delivery card flagged coming-soon', str_contains( $shtml, 'eem-card eem-card--coming-soon' ), $pass, $fail, $log );
+// SendGrid is now an enabled, POSTing Email Delivery field — assert the current
+// shipped behavior (not the old coming-soon/disabled state).
+ok( 'SendGrid field is enabled (no disabled attr)', ! preg_match( '/id="eem-sendgrid"[^>]*disabled/', $shtml ), $pass, $fail, $log );
+ok( 'SendGrid field POSTs under payload[sendgrid_api_key]', str_contains( $shtml, 'name="payload[sendgrid_api_key]"' ), $pass, $fail, $log );
+ok( 'Email Delivery card is NOT flagged coming-soon', ! str_contains( $shtml, 'eem-card eem-card--coming-soon' ), $pass, $fail, $log );
 
 /* Save-preserve: a save that omits sendgrid_api_key must NOT wipe an existing key. */
 $prev = get_option( 'equine_event_manager_integration_settings' );

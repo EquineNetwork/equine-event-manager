@@ -89,38 +89,73 @@ ok( 'All tab shows Move to Trash (not Restore)', preg_match( '/data-eem-action="
 
 echo "\n[3] Sort wiring (Repo::get_paginated)\n";
 
-$page_dates = EEM_Reservations_List_Repo::get_paginated( array( 'status' => 'all', 'orderby' => 'event_dates', 'order' => 'asc', 'per_page' => 10 ) );
-$first_title = ! empty( $page_dates['items'] ) ? $page_dates['items'][0]->post_title : '';
-ok( "event_dates ASC first item is '2025 Spring Classic'", '2025 Spring Classic' === $first_title, $pass, $fail, $log, "got '{$first_title}'" );
+// Fixture drift: the named seed reservations this section originally asserted
+// against ("2025 Spring Classic", "2026 Sunshine Dressage", "2026 Lone Star
+// Invitational") were removed by later seed churn. Only one surviving seed
+// carries a sort-cache date, so hardcoded title assertions can't exercise the
+// ordering logic. Seed three throwaway reservations with KNOWN distinct
+// source-event start dates (the sort-cache key) + unique titles, assert the
+// ordering/filtering behavior against them, then hard-delete at the end of the
+// section. This tests the repo's real SQL ordering rather than stale fixtures.
+$sort_key = EEM_Reservation_Source_Resolver::SORT_CACHE_META_KEY;
+$seed = array();
+$seed['early']  = wp_insert_post( array( 'post_type' => 'en_reservation', 'post_status' => 'publish', 'post_title' => 'C4D SORT_EARLY 2024-02' ) );
+$seed['mid']    = wp_insert_post( array( 'post_type' => 'en_reservation', 'post_status' => 'publish', 'post_title' => 'C4D SORT_MID 2027-07' ) );
+$seed['late']   = wp_insert_post( array( 'post_type' => 'en_reservation', 'post_status' => 'publish', 'post_title' => 'C4D SORT_LATE 2099-11' ) );
+update_post_meta( $seed['early'], $sort_key, '2024-02-10' );
+update_post_meta( $seed['mid'],   $sort_key, '2027-07-15' );
+update_post_meta( $seed['late'],  $sort_key, '2099-11-20' );
 
-$page_dates_desc = EEM_Reservations_List_Repo::get_paginated( array( 'status' => 'all', 'orderby' => 'event_dates', 'order' => 'desc', 'per_page' => 10 ) );
+$page_dates = EEM_Reservations_List_Repo::get_paginated( array( 'status' => 'all', 'orderby' => 'event_dates', 'order' => 'asc', 'per_page' => 200 ) );
+$titles_asc = array_map( function( $p ) { return $p->post_title; }, $page_dates['items'] );
+// Among OUR three dated seeds, ASC order must be EARLY < MID < LATE.
+$ours_asc = array_values( array_filter( $titles_asc, function( $t ) { return str_starts_with( $t, 'C4D SORT_' ); } ) );
+ok( "event_dates ASC orders our seeds EARLY→MID→LATE", array( 'C4D SORT_EARLY 2024-02', 'C4D SORT_MID 2027-07', 'C4D SORT_LATE 2099-11' ) === $ours_asc, $pass, $fail, $log, implode( ' | ', $ours_asc ) );
+// 2099-11 is the latest date in the whole set, so it must lead the global ASC
+// list's tail — i.e. it precedes all null-dated rows (nulls sort last).
+$late_idx = array_search( 'C4D SORT_LATE 2099-11', $titles_asc, true );
+$first_null_idx = null;
+foreach ( $titles_asc as $i => $t ) {
+	$pid = $page_dates['items'][ $i ]->ID;
+	if ( '' === (string) get_post_meta( $pid, $sort_key, true ) ) { $first_null_idx = $i; break; }
+}
+ok( "event_dates ASC sorts null-dated rows after dated rows", null === $first_null_idx || $late_idx < $first_null_idx, $pass, $fail, $log, "late={$late_idx} firstNull=" . var_export( $first_null_idx, true ) );
+
+$page_dates_desc = EEM_Reservations_List_Repo::get_paginated( array( 'status' => 'all', 'orderby' => 'event_dates', 'order' => 'desc', 'per_page' => 200 ) );
 $first_desc = ! empty( $page_dates_desc['items'] ) ? $page_dates_desc['items'][0]->post_title : '';
-// C7.X.16 — fixture drift: "2026 Lone Star Invitational" was removed
-// from the seeded reservation set somewhere between C7.X.10 and
-// C7.X.16. Current latest by cached source-event start_date is
-// "2026 Sunshine Dressage" (2026-08-14). Assertion intent
-// unchanged: event_dates DESC puts the latest-dated reservation first.
-ok( "event_dates DESC first item is '2026 Sunshine Dressage' (post-fixture-drift)", '2026 Sunshine Dressage' === $first_desc, $pass, $fail, $log, "got '{$first_desc}'" );
+// Our LATE seed (2099-11-20) is the latest date in the entire set, so DESC must
+// place it first globally.
+ok( "event_dates DESC puts latest-dated reservation first", 'C4D SORT_LATE 2099-11' === $first_desc, $pass, $fail, $log, "got '{$first_desc}'" );
 
-$page_orders = EEM_Reservations_List_Repo::get_paginated( array( 'status' => 'all', 'orderby' => 'orders', 'order' => 'asc', 'per_page' => 25 ) );
-$titles_ord = array_map( function( $p ) { return $p->post_title; }, $page_orders['items'] );
-ok( "orders ASC: zero-orders fixture is first", ! empty( $titles_ord ) && in_array( $titles_ord[0], array( 'TEst Event', '2026 Sunshine Dressage' ), true ), $pass, $fail, $log, 'first=' . ( $titles_ord[0] ?? '' ) );
+// Orders sort: assert the result is monotonically ordered by orders-count rather
+// than against a specific (drift-prone) title. Pull the count for each returned
+// row and verify the sequence is non-decreasing (ASC) / non-increasing (DESC).
+$cnt = function( $p ) { return EEM_Reservations_List_Repo::get_orders_count_for_reservation( $p->ID ); };
+$page_orders = EEM_Reservations_List_Repo::get_paginated( array( 'status' => 'all', 'orderby' => 'orders', 'order' => 'asc', 'per_page' => 200 ) );
+$counts_asc = array_map( $cnt, $page_orders['items'] );
+$is_sorted_asc = $counts_asc === array_values( $counts_asc ) && $counts_asc === ( function( $a ) { sort( $a, SORT_NUMERIC ); return $a; } )( $counts_asc );
+ok( "orders ASC: results are non-decreasing by order count", $is_sorted_asc && ! empty( $counts_asc ) && 0 === $counts_asc[0], $pass, $fail, $log, 'head=' . implode( ',', array_slice( $counts_asc, 0, 3 ) ) );
 
-$page_ord_desc = EEM_Reservations_List_Repo::get_paginated( array( 'status' => 'all', 'orderby' => 'orders', 'order' => 'desc', 'per_page' => 25 ) );
-$titles_ord_desc = array_map( function( $p ) { return $p->post_title; }, $page_ord_desc['items'] );
-ok( "orders DESC first is '2026 Southeast Region Super Sort' (23 orders)", ! empty( $titles_ord_desc ) && '2026 Southeast Region Super Sort' === $titles_ord_desc[0], $pass, $fail, $log, 'first=' . ( $titles_ord_desc[0] ?? '' ) );
+$page_ord_desc = EEM_Reservations_List_Repo::get_paginated( array( 'status' => 'all', 'orderby' => 'orders', 'order' => 'desc', 'per_page' => 200 ) );
+$counts_desc = array_map( $cnt, $page_ord_desc['items'] );
+$sorted_desc = $counts_desc; rsort( $sorted_desc, SORT_NUMERIC );
+ok( "orders DESC: results are non-increasing by order count (max first)", $counts_desc === $sorted_desc && ! empty( $counts_desc ) && $counts_desc[0] === max( $counts_desc ), $pass, $fail, $log, 'head=' . implode( ',', array_slice( $counts_desc, 0, 3 ) ) );
 
 echo "\n[4] Date filter\n";
-$page_may = EEM_Reservations_List_Repo::get_paginated( array( 'status' => 'all', 'date_filter' => '2026-05', 'per_page' => 25 ) );
-$titles_may = array_map( function( $p ) { return $p->post_title; }, $page_may['items'] );
-ok( '?eem_date=2026-05 returns R1 only', 1 === count( $titles_may ) && '2026 Southeast Region Super Sort' === $titles_may[0], $pass, $fail, $log, var_export( $titles_may, true ) );
+// Use our seeded dates: MID is the only July-2027 row, EARLY the only Feb-2024 row.
+$page_jul = EEM_Reservations_List_Repo::get_paginated( array( 'status' => 'all', 'date_filter' => '2027-07', 'per_page' => 25 ) );
+$titles_jul = array_map( function( $p ) { return $p->post_title; }, $page_jul['items'] );
+ok( '?eem_date=2027-07 returns only our MID seed', 1 === count( $titles_jul ) && 'C4D SORT_MID 2027-07' === $titles_jul[0], $pass, $fail, $log, var_export( $titles_jul, true ) );
 
-$page_mar25 = EEM_Reservations_List_Repo::get_paginated( array( 'status' => 'all', 'date_filter' => '2025-03', 'per_page' => 25 ) );
-$titles_mar25 = array_map( function( $p ) { return $p->post_title; }, $page_mar25['items'] );
-ok( '?eem_date=2025-03 returns R2 only', 1 === count( $titles_mar25 ) && '2025 Spring Classic' === $titles_mar25[0], $pass, $fail, $log, var_export( $titles_mar25, true ) );
+$page_feb24 = EEM_Reservations_List_Repo::get_paginated( array( 'status' => 'all', 'date_filter' => '2024-02', 'per_page' => 25 ) );
+$titles_feb24 = array_map( function( $p ) { return $p->post_title; }, $page_feb24['items'] );
+ok( '?eem_date=2024-02 returns only our EARLY seed', 1 === count( $titles_feb24 ) && 'C4D SORT_EARLY 2024-02' === $titles_feb24[0], $pass, $fail, $log, var_export( $titles_feb24, true ) );
 
-$page_nomatch = EEM_Reservations_List_Repo::get_paginated( array( 'status' => 'all', 'date_filter' => '2030-01', 'per_page' => 25 ) );
-ok( '?eem_date=2030-01 returns 0', 0 === $page_nomatch['total'], $pass, $fail, $log, "got {$page_nomatch['total']}" );
+$page_nomatch = EEM_Reservations_List_Repo::get_paginated( array( 'status' => 'all', 'date_filter' => '2031-01', 'per_page' => 25 ) );
+ok( '?eem_date=2031-01 returns 0', 0 === $page_nomatch['total'], $pass, $fail, $log, "got {$page_nomatch['total']}" );
+
+// Clean up the sort/filter seeds so the reservation set is left unchanged.
+foreach ( $seed as $sid ) { wp_delete_post( $sid, true ); }
 
 echo "\n[5] Bulk handler\n";
 ok( 'handle_bulk method exists',  method_exists( 'EEM_Reservations_List_Page', 'handle_bulk' ),  $pass, $fail, $log );

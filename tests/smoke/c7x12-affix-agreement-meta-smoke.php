@@ -51,6 +51,11 @@ $rid = wp_insert_post( array(
 update_post_meta( $rid, '_en_venue_agreement_enabled',    1 );
 update_post_meta( $rid, '_en_venue_agreement_link_label', 'Custom Waiver PDF' );
 update_post_meta( $rid, '_en_rv_enabled',                 1 );
+// 2.3.56 — The editor hard-gates the configuration form behind a linked
+// event. Without a linked event the gate renders instead of the section
+// bodies, so the Agreement input never appears. Link an external event so
+// has_linked_event is true and the full form (incl. Agreement) renders.
+update_post_meta( $rid, '_en_external_event_id', 'c7x12-smoke-event' );
 
 $_GET['reservation_id'] = $rid;
 ob_start(); EEM_Reservation_Editor_Page::render(); $html = (string) ob_get_clean();
@@ -153,42 +158,42 @@ c7x12_ok( 'mockup edit_reservation_page.html Agreement section contains "Agreeme
 	&& false !== strpos( $mockup, 'Agreement name (ex: Venue Agreement)' ),
 	$pass, $fail, $log );
 
-// ── [D3] Item 7 — C7.X.15 hybrid restoration (REVERSAL of C7.X.12) ─
-echo "\n[D3] Item 7 — C7.X.15 hybrid restoration: meta-line read-only + rail card with actions\n";
+// ── [D3] Item 7 — C8 / 2.3.56 event-anchor header (rail Linked Event card RETIRED) ─
+// DRIFT NOTE: The C7.X.15 "hybrid restoration" (rail Linked Event card +
+// read-only meta-line) was a transient state. C8 (event-anchor header) +
+// 2.3.56 (hard-gate + read-only inherited name) superseded it: the rail
+// Linked Event card is retired entirely, the right rail is replaced by the
+// sticky save bar (zero .eem-rail-card in rendered output), and the
+// event-link typeahead + Change Event action live in the plugin HEADER.
+// These assertions now verify the CURRENT event-anchor-header architecture.
+echo "\n[D3] Item 7 — C8/2.3.56 event-anchor header (rail Linked Event card retired)\n";
 
-// Rail card partial RESTORED.
-c7x12_ok( '_rail-linked-event-card.php partial exists on disk (C7.X.15 restoration)',
-	file_exists( EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_rail-linked-event-card.php' ),
-	$pass, $fail, $log );
-
-// Editor page requires the rail card partial again.
 $editor_page_src = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-reservation-editor-page.php' );
-c7x12_ok( 'editor page requires _rail-linked-event-card.php (restored)',
-	false !== strpos( $editor_page_src, '_rail-linked-event-card.php' ),
+
+// Editor page no longer requires/includes the retired rail card partial.
+c7x12_ok( 'editor page does NOT require _rail-linked-event-card.php (retired by C8)',
+	! (bool) preg_match( '#(require|include)[^;]*_rail-linked-event-card\.php#', $editor_page_src ),
 	$pass, $fail, $log );
 
-// Rendered HTML — rail card AND its inline typeahead present.
-c7x12_ok( 'rendered editor has <span class="eem-rail-title">Linked Event</span>',
-	false !== strpos( $html, '<span class="eem-rail-title">Linked Event</span>' ),
+// Rendered editor (linked) — event-anchor header carries the typeahead +
+// the title eyebrow + the Change Event action. No rail Linked Event card.
+c7x12_ok( 'rendered editor has event-anchor header eyebrow "Reservation Details for"',
+	false !== strpos( $html, 'Reservation Details for' ),
 	$pass, $fail, $log );
-c7x12_ok( 'rendered editor has .eem-event-search typeahead (inline in rail card)',
-	false !== strpos( $html, 'class="eem-event-search"' )
-	|| false !== strpos( $html, 'input.eem-event-search' )
-	|| (bool) preg_match( '#<input[^>]*class="eem-event-search"#', $html ),
+c7x12_ok( 'rendered editor has header typeahead input.eem-event-search-input',
+	(bool) preg_match( '#<input[^>]*class="eem-event-search-input"#', $html ),
 	$pass, $fail, $log );
-c7x12_ok( 'rendered editor has exactly 3 rail cards (Publish + Linked Event + Shortcode)',
-	3 === substr_count( $html, 'class="eem-rail-card' ),
-	$pass, $fail, $log,
-	'found: ' . substr_count( $html, 'class="eem-rail-card' ) );
+c7x12_ok( 'rendered editor has ZERO rail Linked Event cards (rail retired for sticky save bar)',
+	false === strpos( $html, '<span class="eem-rail-title">Linked Event</span>' ),
+	$pass, $fail, $log );
 
-// Meta-line is now READ-ONLY — no action-link data attributes.
-$meta_block = '';
-if ( preg_match( '#<div class="eem-plugin-meta-line">.*?</div>#s', $html, $mlm ) ) {
-	$meta_block = $mlm[0];
-}
-c7x12_ok( 'meta-line is READ-ONLY (no data-eem-action attributes — actions live in rail card)',
-	'' !== $meta_block && false === strpos( $meta_block, 'data-eem-action' ),
+// Right rail retired entirely — the sticky save bar replaces the rail.
+c7x12_ok( 'rendered editor uses the sticky save bar (.eem-sticky-save), not a right rail',
+	false !== strpos( $html, 'class="eem-sticky-save"' ),
 	$pass, $fail, $log );
+
+// Meta-line partial source still carries no event change/unlink actions
+// (the change action lives in the header, not the meta-line).
 c7x12_ok( 'meta-line source has NO data-eem-action="reservation-editor-event-change"',
 	false === strpos( $meta_line_src, 'data-eem-action="reservation-editor-event-change"' ),
 	$pass, $fail, $log );
@@ -196,54 +201,23 @@ c7x12_ok( 'meta-line source has NO data-eem-action="reservation-editor-event-unl
 	false === strpos( $meta_line_src, 'data-eem-action="reservation-editor-event-unlink"' ),
 	$pass, $fail, $log );
 
-// C7.X.16 — ensure res 44 is linked to a native event before probing
-// the rail card's linked-state markup. The seed script (tests/seeds/
-// seed-reservation-44-link-event.php) does this for the live admin;
-// in-smoke we inline the minimum: link to any existing en_event OR
-// create one if none exist. Idempotent.
-$native_id = 0;
-foreach ( (array) get_posts( array( 'post_type' => 'en_event', 'post_status' => 'publish', 'posts_per_page' => 1, 'fields' => 'ids' ) ) as $eid ) { $native_id = (int) $eid; }
-if ( 0 === $native_id ) {
-	$native_id = wp_insert_post( array( 'post_type' => 'en_event', 'post_status' => 'publish', 'post_title' => 'C7.X.16 smoke event' ) );
-	update_post_meta( $native_id, '_equine_event_manager_event_start_date', '2025-03-10' );
-	update_post_meta( $native_id, '_equine_event_manager_event_end_date',   '2025-03-12' );
-}
-update_post_meta( 44, '_en_event_source', 'native' );
-update_post_meta( 44, '_en_event_id',     $native_id );
-update_post_meta( 44, '_en_use_global_event_source', 0 );
-// Resolver requires post_status === 'publish' to populate event fields.
-if ( 'publish' !== get_post_status( 44 ) ) {
-	wp_update_post( array( 'ID' => 44, 'post_status' => 'publish' ) );
-}
-
-// Rail card on res 44 (linked) emits Change link + ✕ icon unlink button.
-$_GET['reservation_id'] = 44;
-ob_start(); EEM_Reservation_Editor_Page::render(); $html44 = (string) ob_get_clean();
-$_GET = array();
-c7x12_ok( 'res 44 rail card emits Change link (data-eem-action="reservation-editor-event-change")',
-	false !== strpos( $html44, 'class="eem-event-linked-change"' )
-	&& false !== strpos( $html44, 'data-eem-action="reservation-editor-event-change"' ),
+// Linked-state header markup is verified against the $rid fixture above,
+// which is linked via _en_external_event_id (has_linked_event === true).
+// (The prior res-44 hardcoded ID assumed a seeded fixture that isn't
+// guaranteed present in every DB — a non-existent post renders neither the
+// gate nor the header, so it silently no-op'd. The $rid fixture is the
+// canonical linked reservation built by this smoke.)
+c7x12_ok( 'linked editor header emits Change Event action (data-eem-action="header-change-event")',
+	false !== strpos( $html, 'data-eem-action="header-change-event"' ),
 	$pass, $fail, $log );
-c7x12_ok( 'res 44 rail card emits ✕ icon Unlink button (terse, not verbose word)',
-	false !== strpos( $html44, 'class="eem-event-unlink-icon"' )
-	&& false !== strpos( $html44, 'data-eem-action="reservation-editor-event-unlink"' )
-	&& false !== strpos( $html44, 'aria-label="Unlink event"' ),
+c7x12_ok( 'linked editor renders the full form, not the link gate',
+	false === strpos( $html, 'class="eem-reservation-link-gate"' ),
 	$pass, $fail, $log );
 
-// JS handler for change/unlink — still wired (unchanged).
+// JS handler for the header change-event action — still wired.
 $js_src = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/js/admin.js' );
-c7x12_ok( 'admin.js has reservation-editor-event-change click handler',
-	false !== strpos( $js_src, "[data-eem-action=\"reservation-editor-event-change\"]" ),
-	$pass, $fail, $log );
-
-// Mockup file reflects hybrid pattern (meta-line read-only, rail card restored).
-c7x12_ok( 'mockup edit_reservation_page.html has restored rail-card>rail-title>Linked Event',
-	(bool) preg_match( '#<div class="rail-card">\s*<div class="rail-header">\s*<span class="rail-title">Linked Event<#s', $mockup ),
-	$pass, $fail, $log );
-c7x12_ok( 'mockup meta-line is read-only (no (change) or (unlink) anchor text within meta-line block)',
-	(bool) ( preg_match( '#<div class="plugin-meta-line">.*?</div>\s*</div>#s', $mockup, $mockmeta )
-		&& false === strpos( $mockmeta[0], '(change)' )
-		&& false === strpos( $mockmeta[0], '(unlink)' ) ),
+c7x12_ok( 'admin.js has header-change-event click handler',
+	false !== strpos( $js_src, "header-change-event" ),
 	$pass, $fail, $log );
 
 wp_delete_post( $rid, true );

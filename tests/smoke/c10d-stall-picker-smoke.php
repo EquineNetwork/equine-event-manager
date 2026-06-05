@@ -29,8 +29,48 @@ c10d_ok( 'expands numeric 100..103', array( '100', '101', '102', '103' ) === $em
 c10d_ok( 'expands prefixed Y1..Y4', array( 'Y1', 'Y2', 'Y3', 'Y4' ) === $em->invoke( $sc, 'Y1', 'Y4' ), $pass, $fail, $log );
 c10d_ok( 'expands padded A-01..A-03', array( 'A-01', 'A-02', 'A-03' ) === $em->invoke( $sc, 'A-01', 'A-03' ), $pass, $fail, $log, implode( ',', $em->invoke( $sc, 'A-01', 'A-03' ) ) );
 
-/* ── 2. Render res 43 ── */
-$html = $sc->render_reservation( array( 'id' => 43 ) );
+/* ── 2. Seed a deterministic picker fixture and render it ──
+ * The old hardcoded seed (id 43) was removed by later seed churn, and no surviving
+ * seed reservation carries the exact stall config this smoke asserts (one
+ * back-to-back row + one one-sided row + blocked 105/107/Y3 in exact-map mode).
+ * Build a throwaway published reservation with that precise config so the picker
+ * structure assertions test real render output, then delete it at the end. */
+$fixture_id = wp_insert_post( array(
+	'post_type'   => 'en_reservation',
+	'post_status' => 'publish',
+	'post_title'  => 'C10.D Stall Picker Smoke Fixture',
+) );
+
+// Exact-map (Numbered + Pick Layout) — the only mode the picker renders in.
+update_post_meta( $fixture_id, '_en_stalls_enabled', 1 );
+update_post_meta( $fixture_id, '_en_stall_chart_enabled', 1 );
+update_post_meta( $fixture_id, '_en_stall_inventory_type', 'numbered' );
+update_post_meta( $fixture_id, '_en_stall_customer_selection', 'pick_layout' );
+update_post_meta( $fixture_id, '_en_stall_selection_mode', 'exact_map' );
+
+// One back-to-back row (top 100..104 incl. blocked 105? no — 100..104 + bot Y1..Y4)
+// and one one-sided row (105..108, which includes blocked 105/107). This yields a
+// back-to-back row with an aisle AND a one-sided row, with blocked cells present.
+update_post_meta( $fixture_id, '_en_stall_rows', array(
+	array(
+		'name'      => 'Barn A',
+		'layout'    => 'back-to-back',
+		'top_first' => '100',
+		'top_last'  => '104',
+		'bot_first' => 'Y1',
+		'bot_last'  => 'Y4',
+	),
+	array(
+		'name'   => 'Barn B',
+		'layout' => 'one-sided',
+		'first'  => '105',
+		'last'   => '108',
+	),
+) );
+// Blocked labels: 105 + 107 (in the one-sided row) and Y3 (in the back-to-back row).
+update_post_meta( $fixture_id, '_en_blocked_stalls', array( '105', '107', 'Y3' ) );
+
+$html = $sc->render_reservation( array( 'id' => $fixture_id ) );
 
 c10d_ok( 'picker box rendered', str_contains( $html, 'data-eem-stall-picker' ), $pass, $fail, $log );
 c10d_ok( 'title "Pick Your Stalls"', str_contains( $html, 'Pick Your Stalls' ), $pass, $fail, $log );
@@ -61,6 +101,11 @@ c10d_ok( 'picker CSS scoped to .eem-event-page', str_contains( $css, '.eem-event
 
 /* ── Version ── */
 c10d_ok( 'version >= 2.3.76', version_compare( EQUINE_EVENT_MANAGER_VERSION, '2.3.76', '>=' ), $pass, $fail, $log, EQUINE_EVENT_MANAGER_VERSION );
+
+/* ── Cleanup: hard-delete the throwaway fixture so the seed set is unchanged. ── */
+if ( ! empty( $fixture_id ) ) {
+	wp_delete_post( $fixture_id, true );
+}
 
 echo implode( "\n", $log ) . "\n=== RESULT: {$pass} passed, {$fail} failed ===\n";
 exit( $fail > 0 ? 1 : 0 );

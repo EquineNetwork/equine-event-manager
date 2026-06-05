@@ -6620,6 +6620,7 @@ input.eem-event-search-input {
 	background: #fff;
 	outline: none;
 	box-sizing: border-box;
+	margin: 0; /* C7.X.15 Issue 3 — reset WP core forms.css 'input, select { margin: 0 1px; }' */
 }
 input.eem-event-search-input:focus {
 	border-color: var(--eem-electric);
@@ -7798,6 +7799,7 @@ input.eem-slug-input {
 	border-radius: 0;
 	flex: 1;
 	min-width: 0;
+	margin: 0; /* C7.X.15 Issue 3 — reset WP core forms.css 'input, select { margin: 0 1px; }' */
 	/* Reset WP core box-shadow rule so focus ring comes from the
 	   outer wrap if desired (bare input focus is fine too). */
 	box-shadow: none;
@@ -8043,7 +8045,7 @@ tr:hover .eem-row-actions,
 .eem-card-zip { border:1px solid #c0d8ff; background:#F0F4FB; margin-bottom:18px; }
 .eem-card-zip .eem-card-header { background:transparent; border-bottom:1px solid #c0d8ff; }
 .eem-zip-controls { display:flex; flex-wrap:wrap; align-items:stretch; gap:0; }
-select.eem-zip-select { flex:1; min-width:240px; padding:9px 32px 9px 12px; border:1px solid #8c8f94; border-radius:var(--eem-radius) 0 0 var(--eem-radius); border-right:none; font-size:13.5px; color:#1d2327; background:#fff; appearance:none; cursor:pointer; }
+select.eem-zip-select { flex:1; min-width:240px; padding:9px 32px 9px 12px; border:1px solid #8c8f94; border-radius:var(--eem-radius) 0 0 var(--eem-radius); border-right:none; font-size:13.5px; color:#1d2327; background:#fff; appearance:none; cursor:pointer; margin:0; /* C7.X.15 Issue 3 — reset WP core forms.css margin:0 1px */ }
 .eem-btn-zip { background:#1668F2; color:#fff; border:1px solid #1668F2; border-radius:0 var(--eem-radius) var(--eem-radius) 0; padding:9px 18px; font-size:13.5px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
 .eem-btn-zip:hover { background:#1257d1; border-color:#1257d1; }
 .eem-btn-zip svg { width:13px; height:13px; }
@@ -8051,7 +8053,7 @@ select.eem-zip-select { flex:1; min-width:240px; padding:9px 32px 9px 12px; bord
 .eem-filter-grid { display:grid; grid-template-columns:1fr 1.4fr 1fr; gap:14px; margin-bottom:14px; }
 .eem-filter-group { display:flex; flex-direction:column; gap:5px; }
 .eem-filter-label { font-size:12.5px; font-weight:600; color:#1d2327; }
-select.eem-filter-select, input.eem-filter-input { padding:8px 12px; border:1px solid #8c8f94; border-radius:var(--eem-radius); font-size:13.5px; color:#1d2327; background:#fff; width:100%; min-height:0; }
+select.eem-filter-select, input.eem-filter-input { padding:8px 12px; border:1px solid #8c8f94; border-radius:var(--eem-radius); font-size:13.5px; color:#1d2327; background:#fff; width:100%; min-height:0; margin:0; /* C7.X.15 Issue 3 — reset WP core forms.css margin:0 1px */ }
 select.eem-filter-select { padding-right:32px; appearance:none; cursor:pointer; }
 .eem-daterange-inputs { display:flex; align-items:center; gap:8px; }
 .eem-daterange-sep { font-size:12px; color:#50575e; flex-shrink:0; }

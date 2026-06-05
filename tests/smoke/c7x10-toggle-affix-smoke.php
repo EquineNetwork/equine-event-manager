@@ -140,8 +140,12 @@ c7x10_ok( '.eem-price-input still has inner-right radius 0 (left side of seam)',
 c7x10_ok( '.eem-price-symbol still has inner-right radius 0',
 	(bool) preg_match( '#\.eem-price-symbol\s*\{[^}]*border-radius:\s*var\(--eem-radius\)\s+0\s+0\s+var\(--eem-radius\)\s*;[^}]*\}#s', $admin_css ),
 	$pass, $fail, $log );
-c7x10_ok( '.eem-pct-input still has inner-right radius 0',
-	(bool) preg_match( '#\.eem-pct-input\s*\{[^}]*border-radius:\s*4px\s+0\s+0\s+4px\s*;[^}]*\}#s', $admin_css ),
+// C7.X.18 Issue A2 converted the hardcoded `4px` literals to var(--eem-radius)
+// (after --eem-radius changed 4px → 3px). C7.X.13 also added the `input.`
+// tag-prefix. Percent affix puts the input on the LEFT, symbol on the RIGHT,
+// so the input's inner (right) corners are flat: `var 0 0 var`.
+c7x10_ok( '.eem-pct-input still has inner-right radius 0 (token form, post C7.X.18)',
+	(bool) preg_match( '#(?:input)?\.eem-pct-input\s*\{[^}]*border-radius:\s*var\(--eem-radius\)\s+0\s+0\s+var\(--eem-radius\)\s*;[^}]*\}#s', $admin_css ),
 	$pass, $fail, $log );
 c7x10_ok( '.eem-pct-symbol still has inner-left radius 0',
 	(bool) preg_match( '#\.eem-pct-symbol\s*\{[^}]*border-radius:\s*0\s+4px\s+4px\s+0\s*;[^}]*\}#s', $admin_css ),

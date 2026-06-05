@@ -50,12 +50,19 @@ $legacy_nocom = preg_replace( '~/\*.*?\*/~s', '', $legacy );
 wp_set_current_user( 1 );
 
 // ── [VERSION] ──────────────────────────────────────────────────────────────
-echo "\n[VERSION] Plugin version bumped to 2.3.6\n";
-c7x17_ok( 'Plugin header reads Version: 2.3.6',
-	(bool) preg_match( '~Version:\s+2\.3\.6~', $main_php ),
+// Self-consistency check: the plugin-header `Version:` must match the
+// EQUINE_EVENT_MANAGER_VERSION constant. (Was a hardcoded 2.3.6 assertion;
+// the plugin bumps regularly, so assert header/constant agreement instead.)
+echo "\n[VERSION] Plugin header Version matches the version constant\n";
+preg_match( '~^\s*\*\s*Version:\s*([0-9][0-9.]*)~mi', $main_php, $hdr_m );
+preg_match( "~define\(\s*'EQUINE_EVENT_MANAGER_VERSION'\s*,\s*'([0-9][0-9.]*)'\s*\)~", $main_php, $const_m );
+$hdr_ver   = $hdr_m[1]   ?? '';
+$const_ver = $const_m[1] ?? '';
+c7x17_ok( "Plugin header Version ({$hdr_ver}) is parseable",
+	'' !== $hdr_ver,
 	$pass, $fail, $log );
-c7x17_ok( 'EQUINE_EVENT_MANAGER_VERSION constant is 2.3.6',
-	(bool) preg_match( "~define\(\s*'EQUINE_EVENT_MANAGER_VERSION'\s*,\s*'2\.3\.6'\s*\)~", $main_php ),
+c7x17_ok( "EQUINE_EVENT_MANAGER_VERSION ({$const_ver}) matches plugin header Version ({$hdr_ver})",
+	'' !== $const_ver && $const_ver === $hdr_ver,
 	$pass, $fail, $log );
 
 // ── [A] Border-radius token ────────────────────────────────────────────────
@@ -110,9 +117,12 @@ foreach ( array( '"text"', '"search"', '"email"', '"url"', '"password"', '"date"
 		$ok, $pass, $fail, $log );
 }
 
-// textarea exclusion chain
-c7x17_ok( 'admin-legacy.css: textarea selectors in !important block carry :not(.eem-field-textarea)',
-	false !== strpos( $legacy_nc, 'textarea:not(.eem-field-textarea)' ),
+// textarea exclusion chain. C7.X.18 Issue A1 corrected the chain: the actual
+// class on plugin textareas is .eem-field-input (not .eem-field-textarea), so
+// the exclusion is now textarea:not(.eem-field-input):not(.eem-field-textarea)
+// (both kept for safety). Old single-:not(.eem-field-textarea) check is stale.
+c7x17_ok( 'admin-legacy.css: textarea selectors in !important block carry :not(.eem-field-input):not(.eem-field-textarea)',
+	false !== strpos( $legacy_nc, 'textarea:not(.eem-field-input):not(.eem-field-textarea)' ),
 	$pass, $fail, $log );
 
 // ── [B] Select height ─────────────────────────────────────────────────────
@@ -168,9 +178,10 @@ echo "\n[D] Trash row meatballs — status-aware menu + typed-confirm modal\n";
 // D1: render_row_actions — when $is_trashed, only Restore + Delete Permanently
 // Structural check: the is_trashed branch should come BEFORE View on Front-End
 $trashed_restore_pos  = strpos( $list_nocom, 'reservation-restore' );
-$view_front_pos       = strpos( $list_nocom, 'View on Front-End' );
+// Label was "View on Front-End" at C7.X.17; renamed to "View on Frontend" since.
+$view_front_pos       = strpos( $list_nocom, 'View on Frontend' );
 $delete_perm_pos      = strpos( $list_nocom, 'reservation-delete-permanently' );
-c7x17_ok( 'Restore action appears before "View on Front-End" (is_trashed branch is primary)',
+c7x17_ok( 'Restore action appears before "View on Frontend" (is_trashed branch is primary)',
 	false !== $trashed_restore_pos && false !== $view_front_pos && $trashed_restore_pos < $view_front_pos,
 	$pass, $fail, $log );
 c7x17_ok( 'render_row_actions contains reservation-restore in is_trashed branch',
@@ -189,8 +200,13 @@ c7x17_ok( 'Delete Permanently button carries data-reservation-title attribute',
 c7x17_ok( 'handle_delete_permanently validates confirmation_title server-side',
 	(bool) preg_match( '~confirmation_title~', $list_nocom ),
 	$pass, $fail, $log );
-c7x17_ok( 'handle_delete_permanently checks typed title matches post_title',
-	(bool) preg_match( '~\$typed\s*!==\s*\$post->post_title~', $list_nocom ),
+// The typed-confirm gate was simplified plugin-wide: instead of typing the
+// reservation's post_title, the admin types the fixed uppercase word DELETE
+// (server validates 'DELETE' !== $typed). Same typed-confirm protection,
+// simpler + consistent across all permanent-delete actions. (Old
+// $typed !== $post->post_title check is stale.)
+c7x17_ok( "handle_delete_permanently checks typed word equals 'DELETE'",
+	(bool) preg_match( "~'DELETE'\s*!==\s*\\\$typed~", $list_nocom ),
 	$pass, $fail, $log );
 
 // D3: deleted-permanently notice defined in $messages array
@@ -206,8 +222,11 @@ c7x17_ok( 'admin.js: delete-permanently action calls openDeletePermanentlyModal 
 	(bool) preg_match( "~'reservation-delete-permanently'[^}]*openDeletePermanentlyModal~s", $js_src ) &&
 	! (bool) preg_match( "~'reservation-delete-permanently'[^}]*window\.confirm~s", $js_src ),
 	$pass, $fail, $log );
-c7x17_ok( 'admin.js: typed-confirm modal disables Delete button by default (disabled attribute)',
-	(bool) preg_match( '~confirmBtn\.disabled\s*=\s*\(input\.value\s*!==\s*resTitle\)~', $js_src ),
+// Client-side gate matches the simplified server gate: Delete stays disabled
+// until the typed input equals the fixed CONFIRM_WORD ('DELETE'). (Was compared
+// against resTitle; the design moved from title-match to DELETE-word match.)
+c7x17_ok( 'admin.js: typed-confirm modal disables Delete button until input equals CONFIRM_WORD',
+	(bool) preg_match( '~confirmBtn\.disabled\s*=\s*\(input\.value\s*!==\s*CONFIRM_WORD\)~', $js_src ),
 	$pass, $fail, $log );
 c7x17_ok( 'admin.js: submitReservationAction accepts extraFields 4th arg (D3 title post)',
 	(bool) preg_match( '~function submitReservationAction\s*\(\s*target\s*,\s*actionName\s*,\s*nonceAction\s*,\s*extraFields\s*\)~', $js_src ),

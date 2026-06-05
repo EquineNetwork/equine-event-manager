@@ -49,33 +49,33 @@ c7x14_ok( '@media (max-width: 767px) block present',
 	(bool) preg_match( '~@media\s*\(\s*max-width\s*:\s*767px\s*\)\s*\{~', $admin_css ),
 	$pass, $fail, $log );
 
-// At 1024px, .eem-edit-body collapses rail from 300px → 260px.
-c7x14_ok( '1024px: .eem-edit-body grid-template-columns 1fr 260px',
-	(bool) preg_match( '~@media\s*\(\s*max-width\s*:\s*1024px\s*\)\s*\{[^}]*\.eem-edit-body\s*\{[^}]*grid-template-columns\s*:\s*1fr\s+260px~s', $admin_css ),
+// C8 port (current canon): the editor is a SINGLE-COLUMN layout. The old
+// right rail (300px → 260px at 1024px, collapsing to single column at 767px)
+// was removed; .eem-edit-body is now a plain block container whose only
+// responsive change is padding. Assert the current single-column padding
+// rules at each breakpoint rather than the retired grid model.
+c7x14_ok( '1024px: .eem-edit-body single-column padding override (C8 port)',
+	(bool) preg_match( '~@media\s*\(\s*max-width\s*:\s*1024px\s*\)\s*\{[^}]*\.eem-edit-body\s*\{[^}]*padding\s*:\s*14px\s+16px~s', $admin_css ),
 	$pass, $fail, $log );
 
-// At 767px, .eem-edit-body collapses to single column + .eem-edit-rail
-// goes static with order:-1 (rail above main) + .eem-sticky-save
-// reveals (mobile save bar replaces desktop rail Publish card).
-// Note: admin.css has MULTIPLE @media (max-width: 767px) blocks (one
-// per major surface — dashboard, editor, etc.). Rather than walk
-// braces to find the editor-specific block, assert the EXACT rules
-// that ONLY exist inside the editor mobile block — these one-line
-// rule shapes are unique to the editor 767px context.
-c7x14_ok( '767px: .eem-edit-body collapses to single column (grid-template-columns: 1fr)',
-	false !== strpos( $admin_css, '.eem-edit-body { grid-template-columns: 1fr;' ),
-	$pass, $fail, $log );
-c7x14_ok( '767px: .eem-edit-rail goes position: static + order: -1 (rail above main)',
-	false !== strpos( $admin_css, '.eem-edit-rail { position: static; order: -1; }' ),
-	$pass, $fail, $log );
-c7x14_ok( '767px: .eem-sticky-save reveals (display: flex)',
-	false !== strpos( $admin_css, '.eem-sticky-save { display: flex; }' ),
+// At 767px the edit body keeps single column and only adjusts padding.
+c7x14_ok( '767px: .eem-edit-body single-column padding override (C8 port)',
+	false !== strpos( $admin_css, '.eem-edit-body { padding: 12px 12px 90px; }' ),
 	$pass, $fail, $log );
 
-// Default (non-media) .eem-sticky-save MUST be display: none so it
-// doesn't double-render on desktop alongside the rail Publish card.
-c7x14_ok( 'default .eem-sticky-save is display: none (desktop hidden)',
-	(bool) preg_match( '~(?<!\})\s*\.eem-sticky-save\s*\{[^}]*display\s*:\s*none~', $admin_css ),
+// C8 port: the .eem-sticky-save bar is a fixed bottom bar shown at ALL
+// viewports (the rail Publish card it used to alternate with was removed),
+// so its default state is display: flex (not display: none + 767px reveal).
+c7x14_ok( '.eem-sticky-save is display: flex by default (C8 fixed bottom bar at all viewports)',
+	(bool) preg_match( '~\.eem-sticky-save\s*\{[^}]*display\s*:\s*flex~', $admin_css ),
+	$pass, $fail, $log );
+c7x14_ok( '.eem-sticky-save is fixed to the bottom of the viewport (C8 port)',
+	(bool) preg_match( '~\.eem-sticky-save\s*\{[^}]*position\s*:\s*fixed[^}]*bottom\s*:\s*0~s', $admin_css ),
+	$pass, $fail, $log );
+
+// On mobile only the status badge inside the sticky-save bar is hidden.
+c7x14_ok( '767px: .eem-sticky-save-status hidden on mobile (mockup line 285)',
+	false !== strpos( $admin_css, '.eem-sticky-save-status { display: none; }' ),
 	$pass, $fail, $log );
 
 // ── [2] C7.X.14 sweep — two MORE input classes prefixed with input. ─
@@ -112,9 +112,11 @@ foreach ( array(
 	'_en_event_day_enabled',
 	'_en_stalls_enabled',
 	'_en_rv_enabled',
+	'_en_event_pre_entries_enabled',
 	'_en_general_addons_enabled',
 	'_en_group_reservations_enabled',
 	'_en_convenience_fee_enabled',
+	'_en_venue_map_enabled',
 	'_en_venue_agreement_enabled',
 	'_en_cancellation_enabled',
 ) as $key ) {
@@ -125,35 +127,39 @@ $_GET['reservation_id'] = $rid_14;
 ob_start(); EEM_Reservation_Editor_Page::render(); $html = (string) ob_get_clean();
 $_GET = array();
 
-// Each of the 10 sections renders a section card.
-$expected_sections = array( 'description', 'checkin', 'eventday', 'stall', 'rv', 'addons', 'group', 'fees', 'agreement', 'cancellation' );
+// Each of the 12 sections renders a section card. (Post-C7.X.14 the editor
+// gained `event_pre_entries` and `venuemap` sections; canonical list + order
+// from EEM_Reservation_Editor_Page section registry.) Card ids can contain
+// underscores (event_pre_entries) so the regex allows [a-z_].
+$expected_sections = array( 'description', 'checkin', 'eventday', 'stall', 'rv', 'event_pre_entries', 'addons', 'group', 'fees', 'venuemap', 'agreement', 'cancellation' );
 foreach ( $expected_sections as $sk ) {
 	c7x14_ok( "section card-{$sk} renders", false !== strpos( $html, "id=\"card-{$sk}\"" ), $pass, $fail, $log );
 }
-c7x14_ok( 'exactly 10 editor section cards present', 10 === preg_match_all( '#<section[^>]*id="card-[a-z]+"#', $html ), $pass, $fail, $log );
+c7x14_ok( 'exactly 12 editor section cards present', 12 === preg_match_all( '#<section[^>]*id="card-[a-z_]+"#', $html ), $pass, $fail, $log );
 
-// Section order matches mockup top-to-bottom.
-preg_match_all( '#<section[^>]*id="card-([a-z]+)"#', $html, $order_matches );
-c7x14_ok( 'section order matches mockup canon (description → cancellation)',
+// Section order matches the section registry top-to-bottom.
+preg_match_all( '#<section[^>]*id="card-([a-z_]+)"#', $html, $order_matches );
+c7x14_ok( 'section order matches canon (description → cancellation)',
 	$expected_sections === $order_matches[1],
 	$pass, $fail, $log,
 	implode( ',', $order_matches[1] ?? array() ) );
 
-// C7.X.15 Issue 7 — rail card count returns to 3 (hybrid restoration).
-c7x14_ok( 'right rail has exactly 3 cards (Publish + Linked Event + Shortcode — C7.X.15 hybrid)',
-	3 === substr_count( $html, 'class="eem-rail-card' ),
+// C8 port: the right rail was removed entirely; the editor is single-column
+// and the Linked-Event controls moved up into the event-anchor header. There
+// should be ZERO rail cards rendered now.
+c7x14_ok( 'no rail cards rendered (C8 port removed the right rail)',
+	0 === substr_count( $html, 'class="eem-rail-card' ),
 	$pass, $fail, $log,
 	'found ' . substr_count( $html, 'class="eem-rail-card' ) );
 
-// C7.X.15 — Linked Event rail card carries the actionable controls;
-// meta-line is read-only context.
-c7x14_ok( 'Linked Event rail card present (C7.X.15 hybrid restoration)',
-	false !== strpos( $html, '<span class="eem-rail-title">Linked Event</span>' ),
+// C8 port: the event-anchor header carries the actionable event controls.
+// "Change Event" is always present; "View Event" only renders when the
+// linked event resolves to a permalink (feed events have none).
+c7x14_ok( 'event-anchor header action group present (.eem-header-actions)',
+	false !== strpos( $html, 'class="eem-header-actions"' ),
 	$pass, $fail, $log );
-c7x14_ok( 'rail card has Change link + ✕ icon Unlink button (actionable controls live here per Issue 7 hybrid)',
-	false !== strpos( $html, 'data-eem-action="reservation-editor-event-change"' )
-	&& false !== strpos( $html, 'data-eem-action="reservation-editor-event-unlink"' )
-	&& false !== strpos( $html, 'class="eem-event-unlink-icon"' ),
+c7x14_ok( 'header carries Change Event control (data-eem-action="header-change-event")',
+	false !== strpos( $html, 'data-eem-action="header-change-event"' ),
 	$pass, $fail, $log );
 
 // VV-4 — Agreement Label field renders ABOVE the Agreement PDF row.

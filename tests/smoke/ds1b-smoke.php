@@ -255,10 +255,15 @@ ds1b_ok( 'NO bare-slug status class shipped (regression guard)',
 	0 === preg_match( '/<span class="eem-status-badge (paid|unpaid|invoice|refunded|cancelled|partial)"/', $html ),
 	$pass, $fail, $log );
 
-// ── [16] DS-1.B.1: greeting capitalization + trend deltas ──────────
-echo "\n[16] Greeting capitalization + trend deltas\n";
-ds1b_ok( 'greeting renders with capitalised name (Good morning|afternoon|evening, X)',
-	(bool) preg_match( '/Good (morning|afternoon|evening)(,\s+[A-Z]|\s+·)/', $html ),
+// ── [16] DS-1.B.1: subtitle (greeting removed v2.7.23) + trend deltas ──────────
+echo "\n[16] Subtitle (no greeting) + trend deltas\n";
+// v2.7.23 removed the "Good {morning|afternoon|evening}, {name} · " greeting per
+// product; the page subtitle now leads with the date + upcoming-reservation count.
+ds1b_ok( 'greeting NO LONGER renders (removed v2.7.23)',
+	! preg_match( '/Good (morning|afternoon|evening)/', $html ),
+	$pass, $fail, $log );
+ds1b_ok( 'subtitle leads with date + upcoming reservation count',
+	(bool) preg_match( '/\d{4} · \d+ reservations? coming up in the next 30 days/', $html ),
 	$pass, $fail, $log );
 // Trend delta — either ↑/↓ N% on Total Revenue OR "—" fallback when no prior data.
 ds1b_ok( 'Total Revenue KPI carries trend delta (↑/↓ N% or —)',
