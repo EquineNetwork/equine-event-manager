@@ -46,6 +46,7 @@ class EEM_Settings_Page {
 			'shortcodes'     => array( 'label' => __( 'Shortcodes', 'equine-event-manager' ),      'icon' => 'editor-code' ),
 			'payments'       => array( 'label' => __( 'Payments', 'equine-event-manager' ),        'icon' => 'money-alt' ),
 			'addons'         => array( 'label' => __( 'Add-Ons', 'equine-event-manager' ),         'icon' => 'admin-plugins' ),
+			'danger'         => array( 'label' => __( 'Danger Zone', 'equine-event-manager' ),     'icon' => 'warning' ),
 		);
 	}
 
@@ -225,6 +226,88 @@ class EEM_Settings_Page {
 				</div>
 			</div>
 		</section>
+		<?php
+	}
+
+	/**
+	 * Danger Zone panel — full data teardown + the delete-on-uninstall opt-in.
+	 *
+	 * Two distinct controls:
+	 *   1. "Erase all data & start fresh" — an immediate, in-place wipe (typed
+	 *      "ERASE" confirm modal in JS) that returns the site to a just-installed
+	 *      state without removing the plugin. The preview lists exactly what will
+	 *      be deleted (from EEM_Uninstaller::count_data()).
+	 *   2. A persisted opt-in checkbox so that DELETING the plugin from the
+	 *      Plugins screen also wipes its data (default OFF — see uninstall.php).
+	 *
+	 * @return void
+	 */
+	private function render_danger_panel() {
+		require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-uninstaller.php';
+
+		$counts              = EEM_Uninstaller::count_data();
+		$delete_on_uninstall = (bool) get_option( 'equine_event_manager_delete_data_on_uninstall' );
+		$reset_nonce         = wp_create_nonce( 'eem_reset_all_data' );
+		$dashboard_url       = admin_url( 'admin.php?page=equine-event-manager-dashboard' );
+
+		$summary_rows = array(
+			'reservations' => __( 'Reservations', 'equine-event-manager' ),
+			'orders'       => __( 'Orders', 'equine-event-manager' ),
+			'events'       => __( 'Native events', 'equine-event-manager' ),
+			'venues'       => __( 'Venues', 'equine-event-manager' ),
+			'producers'    => __( 'Producers', 'equine-event-manager' ),
+			'activity_log' => __( 'Activity-log entries', 'equine-event-manager' ),
+		);
+		?>
+		<section class="eem-card eem-card--danger">
+			<header class="eem-card-header">
+				<h2 class="eem-card-title"><?php esc_html_e( 'Erase all data & start fresh', 'equine-event-manager' ); ?></h2>
+			</header>
+			<div class="eem-card-body">
+				<p class="eem-field-hint" style="margin-bottom:14px;">
+					<?php esc_html_e( 'Permanently delete everything this plugin has stored and return it to a clean, just-installed state — handy for testing the new-customer setup experience from scratch. This cannot be undone.', 'equine-event-manager' ); ?>
+				</p>
+				<ul class="eem-danger-summary">
+					<?php foreach ( $summary_rows as $key => $label ) : ?>
+						<li><strong><?php echo esc_html( number_format_i18n( (int) ( $counts[ $key ] ?? 0 ) ) ); ?></strong> <?php echo esc_html( $label ); ?></li>
+					<?php endforeach; ?>
+				</ul>
+				<p class="eem-field-hint" style="margin:14px 0;">
+					<?php esc_html_e( 'Also removed: all plugin settings, uploaded report exports, and the reservation/order database tables. The Events Calendar (TEC) events and your WordPress media library are never touched.', 'equine-event-manager' ); ?>
+				</p>
+				<button
+					type="button"
+					class="eem-btn eem-btn-danger"
+					data-eem-action="settings-reset-all-data"
+					data-eem-reset-nonce="<?php echo esc_attr( $reset_nonce ); ?>"
+					data-eem-dashboard-url="<?php echo esc_url( $dashboard_url ); ?>"
+				><?php esc_html_e( 'Erase all data & start fresh', 'equine-event-manager' ); ?></button>
+			</div>
+		</section>
+
+		<form class="eem-settings-form" data-eem-settings-form data-eem-panel="danger" method="post" action="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>">
+			<input type="hidden" name="action" value="eem_save_settings" />
+			<input type="hidden" name="panel" value="danger" />
+			<?php wp_nonce_field( 'eem_settings_save', 'nonce' ); ?>
+
+			<section class="eem-card">
+				<header class="eem-card-header">
+					<h2 class="eem-card-title"><?php esc_html_e( 'Delete data when the plugin is removed', 'equine-event-manager' ); ?></h2>
+				</header>
+				<div class="eem-card-body">
+					<label class="eem-checkbox-row" style="display:flex;gap:10px;align-items:flex-start;">
+						<input type="checkbox" name="payload[delete_data_on_uninstall]" value="1" <?php checked( $delete_on_uninstall ); ?> />
+						<span><?php esc_html_e( 'Also delete all data when this plugin is deleted from the Plugins screen', 'equine-event-manager' ); ?></span>
+					</label>
+					<p class="eem-field-hint" style="margin-top:10px;">
+						<?php esc_html_e( 'Off by default: deleting the plugin keeps your reservations, orders, and settings, so reinstalling restores everything. Turn this on only if you want deleting the plugin to also wipe its data.', 'equine-event-manager' ); ?>
+					</p>
+				</div>
+				<div class="eem-settings-save-bar">
+					<button type="submit" class="eem-btn eem-btn-primary"><?php esc_html_e( 'Save Changes', 'equine-event-manager' ); ?></button>
+				</div>
+			</section>
+		</form>
 		<?php
 	}
 
@@ -1130,6 +1213,10 @@ class EEM_Settings_Page {
 				$errors = $this->save_branding_panel( $payload );
 				break;
 
+			case 'danger':
+				$errors = $this->save_danger_panel( $payload );
+				break;
+
 			case 'shortcodes':
 			case 'addons':
 				// Both are read-only panels (Shortcodes is a reference list,
@@ -1152,6 +1239,60 @@ class EEM_Settings_Page {
 		}
 
 		wp_send_json_success( array( 'message' => __( 'Settings saved.', 'equine-event-manager' ) ) );
+	}
+
+	/**
+	 * Danger Zone save — persists the delete-on-uninstall opt-in only.
+	 *
+	 * @param array $payload Expected: [ delete_data_on_uninstall => '1'? ]
+	 * @return array<int, string> Empty (this toggle cannot fail to write).
+	 */
+	private function save_danger_panel( array $payload ): array {
+		$enabled = ! empty( $payload['delete_data_on_uninstall'] ) ? 1 : 0;
+		update_option( 'equine_event_manager_delete_data_on_uninstall', $enabled );
+		return array();
+	}
+
+	/**
+	 * AJAX: erase ALL plugin data in place and return to a just-installed state.
+	 *
+	 * Destructive — guarded by manage_options, a dedicated nonce, AND a typed
+	 * "ERASE" confirmation (matching the plugin's typed-confirm convention for
+	 * permanent deletes). Truncates rather than drops the custom tables so the
+	 * still-active plugin keeps a valid schema, then re-runs activation to
+	 * re-seed the just-installed baseline.
+	 *
+	 * @return void
+	 */
+	public function handle_ajax_reset_all_data(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'equine-event-manager' ) ), 403 );
+		}
+
+		check_ajax_referer( 'eem_reset_all_data', 'nonce' );
+
+		$confirmation = isset( $_POST['confirmation'] ) ? sanitize_text_field( wp_unslash( $_POST['confirmation'] ) ) : '';
+		if ( 'ERASE' !== $confirmation ) {
+			wp_send_json_error( array( 'message' => __( 'Please type ERASE to confirm.', 'equine-event-manager' ) ), 400 );
+		}
+
+		require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-uninstaller.php';
+		$removed = EEM_Uninstaller::purge_all_data( false ); // TRUNCATE — plugin stays active.
+
+		// Re-seed the just-installed baseline (recreate/upgrade tables, default
+		// options, one-time migrations — all idempotent and no-ops on empty data).
+		if ( ! class_exists( 'EEM_Activator' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-activator.php';
+		}
+		if ( class_exists( 'EEM_Activator' ) ) {
+			EEM_Activator::activate();
+		}
+
+		wp_send_json_success( array(
+			'message'  => __( 'All plugin data has been erased. Starting fresh…', 'equine-event-manager' ),
+			'redirect' => admin_url( 'admin.php?page=equine-event-manager-dashboard' ),
+			'removed'  => $removed,
+		) );
 	}
 
 	/**

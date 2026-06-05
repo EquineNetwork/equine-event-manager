@@ -974,6 +974,99 @@
 		input.focus();
 	}
 
+	/* Settings → Danger Zone "Erase all data & start fresh" — typed-ERASE confirm
+	   modal (mirrors openDeletePermanentlyModal's canonical chrome). On confirm,
+	   POSTs action=eem_reset_all_data and redirects to the Dashboard so the
+	   new-customer onboarding replays. */
+	function openResetAllDataModal(target) {
+		var nonce = target.dataset.eemResetNonce;
+		var dashboardUrl = target.dataset.eemDashboardUrl || '';
+		if (!nonce) return;
+
+		var existing = document.getElementById('eem-reset-all-overlay');
+		if (existing) existing.remove();
+
+		var CONFIRM_WORD = 'ERASE';
+
+		var overlay = document.createElement('div');
+		overlay.id  = 'eem-reset-all-overlay';
+		overlay.className = 'eem-modal';
+		overlay.setAttribute('role', 'dialog');
+		overlay.setAttribute('aria-modal', 'true');
+		overlay.setAttribute('aria-labelledby', 'eem-reset-all-title');
+		overlay.innerHTML =
+			'<div class="eem-modal-card">' +
+				'<div class="eem-modal-head eem-modal-head--danger">' +
+					'<h2 class="eem-modal-title eem-modal-title--danger" id="eem-reset-all-title">Erase all data &amp; start fresh?</h2>' +
+				'</div>' +
+				'<div class="eem-modal-body">' +
+					'<p style="margin:0 0 10px;color:var(--eem-error-text);font-weight:600;">' +
+						'This permanently deletes every reservation, order, native event, setting, and uploaded report, and returns the plugin to a just-installed state. It cannot be undone.' +
+					'</p>' +
+					'<p style="margin:0 0 6px;">To confirm, type <strong>ERASE</strong> below:</p>' +
+					'<input type="text" id="eem-reset-all-input" class="eem-field-input" style="width:100%;box-sizing:border-box;" placeholder="Type ERASE to confirm" autocomplete="off">' +
+					'<p id="eem-reset-all-error" style="display:none;margin:10px 0 0;color:var(--eem-error-text);font-weight:600;"></p>' +
+				'</div>' +
+				'<div class="eem-modal-foot">' +
+					'<button type="button" id="eem-reset-all-cancel" class="eem-btn eem-btn-secondary">Cancel</button>' +
+					'<button type="button" id="eem-reset-all-confirm" class="eem-btn eem-btn-danger" disabled>Erase Everything</button>' +
+				'</div>' +
+			'</div>';
+
+		document.body.appendChild(overlay);
+		overlay.classList.add('open');
+
+		var input      = overlay.querySelector('#eem-reset-all-input');
+		var confirmBtn = overlay.querySelector('#eem-reset-all-confirm');
+		var cancelBtn  = overlay.querySelector('#eem-reset-all-cancel');
+		var errorEl    = overlay.querySelector('#eem-reset-all-error');
+
+		input.addEventListener('input', function () {
+			confirmBtn.disabled = (input.value !== CONFIRM_WORD);
+		});
+		cancelBtn.addEventListener('click', function () { overlay.remove(); });
+		overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.remove(); });
+		overlay.addEventListener('keydown', function (e) {
+			if (e.key === 'Escape') overlay.remove();
+			if (e.key === 'Enter' && !confirmBtn.disabled) confirmBtn.click();
+		});
+
+		confirmBtn.addEventListener('click', function () {
+			if (input.value !== CONFIRM_WORD) return;
+			confirmBtn.disabled = true;
+			confirmBtn.textContent = 'Erasing…';
+			errorEl.style.display = 'none';
+
+			var body = new URLSearchParams();
+			body.append('action', 'eem_reset_all_data');
+			body.append('nonce', nonce);
+			body.append('confirmation', CONFIRM_WORD);
+
+			fetch(window.ajaxurl || '/wp-admin/admin-ajax.php', {
+				method: 'POST',
+				credentials: 'same-origin',
+				headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+				body: body.toString()
+			})
+			.then(function (r) { return r.json(); })
+			.then(function (payload) {
+				if (payload && payload.success) {
+					window.location.href = (payload.data && payload.data.redirect) || dashboardUrl || window.location.href;
+				} else {
+					throw new Error((payload && payload.data && payload.data.message) || 'Could not erase data.');
+				}
+			})
+			.catch(function (err) {
+				errorEl.textContent = err && err.message ? err.message : 'Could not erase data.';
+				errorEl.style.display = 'block';
+				confirmBtn.disabled = false;
+				confirmBtn.textContent = 'Erase Everything';
+			});
+		});
+
+		input.focus();
+	}
+
 	/* C5.G.2 — Orders row-action helper. Mirror of submitReservationAction
 	   pointed at the eemOrderRowActions JS-localized nonces + the order_key
 	   form field (vs reservation_id). C5.C registered the PHP handlers +
@@ -1809,6 +1902,10 @@
 		   and submits with confirmation_title extra field when confirmed. */
 		'reservation-delete-permanently': function (target) {
 			openDeletePermanentlyModal(target);
+		},
+		/* Settings → Danger Zone: full in-place data wipe (typed-ERASE confirm). */
+		'settings-reset-all-data': function (target) {
+			openResetAllDataModal(target);
 		},
 		'bulk-apply': function (target, ev) {
 			// Hook the bulk form's submit — collect selected reservation ids

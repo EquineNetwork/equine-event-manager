@@ -220,6 +220,7 @@ class EEM_Plugin {
 		add_action( 'admin_footer', array( $this->admin, 'render_global_toast_container' ) );
 		add_action( 'wp_ajax_eem_save_settings', array( $this->settings_page, 'handle_ajax_save_settings' ) );
 		add_action( 'wp_ajax_eem_send_test_email', array( $this->settings_page, 'handle_ajax_send_test_email' ) );
+		add_action( 'wp_ajax_eem_reset_all_data', array( $this->settings_page, 'handle_ajax_reset_all_data' ) );
 		add_action( 'admin_enqueue_scripts', array( $this->settings_page, 'enqueue_assets' ) );
 		// C4 — redirect WP-native en_reservation list to our custom page.
 		add_action( 'current_screen', array( 'EEM_Reservations_List_Page', 'maybe_redirect_old_list' ) );
