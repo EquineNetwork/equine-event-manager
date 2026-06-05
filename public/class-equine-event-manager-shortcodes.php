@@ -2092,13 +2092,13 @@ class EEM_Shortcodes {
 			$errors[] = __( 'Please enter an international phone number beginning with a country code, such as +1.', 'equine-event-manager' );
 		}
 
-		$requires_billing_details = ! ( 'manual' === $submission['invoice_type'] && in_array( $submission['invoice_action_mode'], array( 'send_payment_link', 'add_to_show_bill', 'save_only' ), true ) );
+		$requires_billing_details = ! ( 'manual' === ( $submission['invoice_type'] ?? '' ) && in_array( $submission['invoice_action_mode'] ?? '', array( 'send_payment_link', 'add_to_show_bill', 'save_only' ), true ) );
 
-		if ( $requires_billing_details && ( '' === $submission['billing_first_name'] || '' === $submission['billing_last_name'] || '' === $submission['billing_address_1'] || '' === $submission['billing_city'] || '' === $submission['billing_state'] || '' === $submission['billing_postal_code'] || '' === $submission['billing_country'] ) ) {
+		if ( $requires_billing_details && ( '' === ( $submission['billing_first_name'] ?? '' ) || '' === ( $submission['billing_last_name'] ?? '' ) || '' === ( $submission['billing_address_1'] ?? '' ) || '' === ( $submission['billing_city'] ?? '' ) || '' === ( $submission['billing_state'] ?? '' ) || '' === ( $submission['billing_postal_code'] ?? '' ) || '' === ( $submission['billing_country'] ?? '' ) ) ) {
 			$errors[] = __( 'Please enter the full billing details, including billing first and last name.', 'equine-event-manager' );
 		}
 
-		if ( '' === $submission['submission_token'] ) {
+		if ( '' === ( $submission['submission_token'] ?? '' ) ) {
 			$errors[] = __( 'We could not verify this reservation request. Please refresh the page and try again.', 'equine-event-manager' );
 		}
 
@@ -2122,8 +2122,8 @@ class EEM_Shortcodes {
 		}
 
 		$has_stall_selection     = $this->has_stall_selection( $submission, $data, $status );
-		$has_rv_selection        = $submission['rv_qty'] > 0;
-		$has_shavings_selection  = $submission['additional_shavings_qty'] > 0;
+		$has_rv_selection        = ( $submission['rv_qty'] ?? 0 ) > 0;
+		$has_shavings_selection  = ( $submission['additional_shavings_qty'] ?? 0 ) > 0;
 		$has_rv_addon_selection  = false;
 		$has_general_addon_selection = false;
 
