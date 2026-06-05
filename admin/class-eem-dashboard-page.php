@@ -144,7 +144,7 @@ class EEM_Dashboard_Page {
 						?>
 					</p>
 				</div>
-				<button type="button" class="eem-setup-checklist__dismiss" data-eem-action="setup-checklist-dismiss" aria-label="<?php esc_attr_e( 'Dismiss setup checklist', 'equine-event-manager' ); ?>">&times;</button>
+	<?php // Non-dismissible by product decision (2.7.25): the card clears only when all required setup is complete. ?>
 			</header>
 			<ul class="eem-setup-checklist__list">
 				<?php foreach ( $items as $item ) : ?>

@@ -175,7 +175,8 @@ a:hover{text-decoration:none}
   <div class="confirm-bar">
     <div class="confirm-bar-left">
       <div class="confirm-check">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        <?php // Email-safe glyph (HTML entity). Inline SVG does not render in Outlook. ?>
+        <span style="font-size:20px;line-height:1;">&#10003;</span>
       </div>
       <div>
         <div class="confirm-text"><?php echo esc_html( sprintf( /* translators: %s: order number, e.g. #00020. */ __( 'Order %s confirmed', 'equine-event-manager' ), $c( 'order_number' ) ) ); ?></div>
@@ -290,7 +291,7 @@ a:hover{text-decoration:none}
     <?php if ( array_filter( $event_day ) ) : ?>
       <div class="whats-next">
         <div class="whats-next-head">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span style="font-size:18px;line-height:1;">&#9733;</span>
           <span><?php esc_html_e( "What's Next — Event Day Info", 'equine-event-manager' ); ?></span>
         </div>
         <div class="whats-next-body">
@@ -314,7 +315,7 @@ a:hover{text-decoration:none}
     <?php if ( $c( 'show_pdf_note' ) ) : ?>
       <div class="attachment-note">
         <div class="attach-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+          <span style="font-size:18px;line-height:1;font-weight:700;">&#8595;</span>
         </div>
         <div>
           <span class="attach-text-title"><?php esc_html_e( 'PDF Receipt Attached', 'equine-event-manager' ); ?></span>
@@ -332,13 +333,13 @@ a:hover{text-decoration:none}
         <div class="support-contact">
           <?php if ( $c( 'support_phone' ) ) : ?>
             <div class="support-contact-row">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+              <span style="font-size:16px;line-height:1;">&#9742;</span>
               <a href="tel:<?php echo esc_attr( preg_replace( '/[^0-9+]/', '', (string) $c( 'support_phone' ) ) ); ?>"><?php echo esc_html( $c( 'support_phone' ) ); ?></a>
             </div>
           <?php endif; ?>
           <?php if ( $c( 'support_email' ) ) : ?>
             <div class="support-contact-row">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              <span style="font-size:16px;line-height:1;">&#9993;</span>
               <a href="mailto:<?php echo esc_attr( $c( 'support_email' ) ); ?>"><?php echo esc_html( $c( 'support_email' ) ); ?></a>
             </div>
           <?php endif; ?>

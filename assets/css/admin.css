@@ -8248,12 +8248,16 @@ table.eem-export-history td { padding:11px 14px; font-size:13px; color:#1d2327; 
 .eem-co-discount-fields { display: none; }
 .eem-co-discount.open .eem-co-discount-add { display: none; }
 .eem-co-discount.open .eem-co-discount-fields { display: block; }
-.eem-co-discount-row { display: grid; grid-template-columns: 1fr 120px; gap: 8px; margin-bottom: 6px; }
-.eem-co-discount-type { font-size: 12.5px; padding: 7px 8px; }
-.eem-co-discount-value-wrap { position: relative; }
-.eem-co-discount-currency { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 12.5px; font-weight: 600; color: var(--eem-text-secondary); pointer-events: none; }
-.eem-co-discount-value { padding-left: 22px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 12.5px; }
-.eem-co-discount-reason { font-size: 12.5px; width: 100%; margin-bottom: 6px; }
+.eem-co-discount-row { display: grid; grid-template-columns: 1fr 120px; gap: 8px; margin-bottom: 8px; align-items: stretch; }
+.eem-co-discount-type { font-size: 12.5px; padding: 7px 8px; margin: 0; }
+/* Flex wrap so the input stretches to the grid row height — keeps the select
+   and the amount input the same height, and vertically centers the $ on the
+   actual input box (fixes the "$ stuck at the bottom" misalignment). */
+.eem-co-discount-value-wrap { position: relative; display: flex; }
+.eem-co-discount-currency { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 12.5px; font-weight: 600; color: var(--eem-text-secondary); pointer-events: none; z-index: 1; }
+.eem-co-discount-value { flex: 1 1 auto; width: 100%; margin: 0; padding-left: 22px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 12.5px; }
+/* Breathing room so the reason field never collides with the applied-discount row below it. */
+.eem-co-discount-reason { font-size: 12.5px; width: 100%; margin: 0 0 10px; }
 .eem-co-discount-applied-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 11px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--eem-radius); font-size: 12.5px; }
 .eem-co-discount-applied-label { color: #15803d; font-weight: 600; flex: 1; }
 .eem-co-discount-applied-value { color: #15803d; font-weight: 700; font-variant-numeric: tabular-nums; }

@@ -628,31 +628,36 @@ class EEM_Events {
 	 * @return string
 	 */
 	public static function get_default_event_source() {
-		$settings      = self::get_integration_settings();
-		$default       = sanitize_key( $settings['default_event_source'] );
-		$allowed       = array( 'external', 'feed' );
+		$settings = self::get_integration_settings();
+		$default  = sanitize_key( $settings['default_event_source'] );
 
+		// Sources the admin can actually select in Settings today. Native and
+		// External/Feed are "Coming Soon" in the UI, so they are not treated as
+		// active defaults. This makes a fresh install — whose stored default is
+		// the legacy 'external' — resolve to the available source (TEC) with NO
+		// Save required, instead of silently dropping linked TEC events because
+		// the source resolved to 'external'.
+		$available = array();
 		if ( self::is_native_events_enabled() ) {
-			$allowed[] = 'native';
+			$available[] = 'native';
 		}
-
 		if ( self::is_tec_integration_enabled() ) {
-			$allowed[] = 'tec';
+			$available[] = 'tec';
 		}
 
-		if ( in_array( $default, $allowed, true ) ) {
+		// Honour an explicit stored choice only when it points at an available source.
+		if ( in_array( $default, $available, true ) ) {
 			return $default;
 		}
 
-		if ( in_array( 'native', $allowed, true ) ) {
-			return 'native';
+		// Otherwise prefer the first available real source (TEC on a typical install).
+		if ( ! empty( $available ) ) {
+			return $available[0];
 		}
 
-		if ( in_array( 'tec', $allowed, true ) ) {
-			return 'tec';
-		}
-
-		return 'external';
+		// Nothing selectable is configured — fall back to the legacy feed/external
+		// behaviour so feed-only installs keep working.
+		return in_array( $default, array( 'external', 'feed' ), true ) ? $default : 'external';
 	}
 
 	/**
