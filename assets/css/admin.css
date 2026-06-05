@@ -8515,3 +8515,8 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 	background: var(--eem-bg-alt, #f3f4f5);
 	cursor: not-allowed;
 }
+
+/* Create Order — "Open Tab" secondary action, separated from the payment tabs. */
+.eem-co-open-tab-row {
+	border-top: 1px solid var(--eem-border-soft, #f0f0f1);
+}

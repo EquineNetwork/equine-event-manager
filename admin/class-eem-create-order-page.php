@@ -472,6 +472,13 @@ class EEM_Create_Order_Page {
 					<?php echo self::icon( 'card' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static inline SVG. ?> <?php esc_html_e( 'Create Order & Collect Payment', 'equine-event-manager' ); ?>
 				</button>
 			</div>
+			<?php // "Open Tab" — save the order to finish later, without emailing or charging. ?>
+			<div class="eem-card-body eem-co-open-tab-row">
+				<button type="button" class="eem-btn eem-btn-ghost eem-co-btn-block" data-eem-action="create-order-open-tab" disabled>
+					<?php esc_html_e( 'Save as Open Tab', 'equine-event-manager' ); ?>
+				</button>
+				<p class="eem-field-hint"><?php esc_html_e( 'Saves an unpaid order to finish later — nothing is emailed or charged. Send the invoice or collect payment from the order page anytime.', 'equine-event-manager' ); ?></p>
+			</div>
 		</section>
 		<?php
 	}
@@ -626,8 +633,12 @@ class EEM_Create_Order_Page {
 
 		// Force admin-invoice / unpaid path regardless of what the JS sent.
 		// This ensures no charge is dispatched and the order is created as pending.
+		// "Open Tab" (en_open_tab=1) creates the order WITHOUT emailing a payment
+		// link — the admin sends the invoice or collects payment later. Otherwise
+		// the order is created and a payment-link email is sent.
+		$open_tab = isset( $_POST['en_open_tab'] ) && '1' === (string) wp_unslash( $_POST['en_open_tab'] ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce checked at handler top.
 		$_POST['en_invoice_type']        = 'manual';
-		$_POST['en_invoice_action_mode'] = 'send_payment_link';
+		$_POST['en_invoice_action_mode'] = $open_tab ? 'save_only' : 'send_payment_link';
 
 		// Normalize phone to international format. The existing pipeline's validate_submission()
 		// requires a leading '+'. Admin contact cards don't enforce this, so we prepend '+1 '
@@ -685,7 +696,9 @@ class EEM_Create_Order_Page {
 			$redirect_url = class_exists( 'EEM_Orders_List_Page' )
 				? EEM_Orders_List_Page::order_detail_url( $captured_order_key )
 				: admin_url( 'admin.php?page=equine-event-manager-orders' );
-			$message      = __( 'Order created successfully.', 'equine-event-manager' );
+			$message      = $open_tab
+				? __( 'Open tab saved — no email sent. Send the invoice or collect payment from this order anytime.', 'equine-event-manager' )
+				: __( 'Order created and payment link sent.', 'equine-event-manager' );
 		}
 
 		wp_send_json_success( array(

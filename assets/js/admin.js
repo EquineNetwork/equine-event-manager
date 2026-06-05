@@ -5708,15 +5708,19 @@ function duplicateReservationAjax(target) {
 	 * @returns {void}
 	 */
 	function coSubmitOrder(mode) {
-		mode = (mode === 'charge') ? 'charge' : 'link';
+		mode = (mode === 'charge' || mode === 'tab') ? mode : 'link';
 		var cfg = window.eemCreateOrder || {};
 		if (!cfg.ajaxUrl || !cfg.createOrderNonce) { return; }
 
 		var embeddedForm = document.querySelector('.eem-co-form-embed .eem-reservation-form');
 		if (!embeddedForm) { return; }
 
-		var btnSel = (mode === 'charge') ? '[data-eem-action="create-order-charge"]' : '[data-eem-action="create-order-send-link"]';
-		var btn = document.querySelector(btnSel);
+		var btnSelMap = {
+			charge: '[data-eem-action="create-order-charge"]',
+			tab:    '[data-eem-action="create-order-open-tab"]',
+			link:   '[data-eem-action="create-order-send-link"]'
+		};
+		var btn = document.querySelector(btnSelMap[mode]);
 		if (btn) { btn.disabled = true; }
 
 		// Collect all embedded-form fields (stall/RV/add-on selections, dates, nonces,
@@ -5750,6 +5754,8 @@ function duplicateReservationAjax(target) {
 		// Charge mode: tell the handler to redirect to the Collect Payment page
 		// (with the new order's key) instead of the Order Detail page.
 		if (mode === 'charge') { formData.set('en_collect_after', '1'); }
+		// Open Tab: create the unpaid order WITHOUT emailing a payment link.
+		if (mode === 'tab') { formData.set('en_open_tab', '1'); }
 
 		fetch(cfg.ajaxUrl, { method: 'POST', credentials: 'same-origin', body: formData })
 			.then(function (r) { return r.json(); })
@@ -5790,6 +5796,12 @@ function duplicateReservationAjax(target) {
 		if (charge) {
 			ev.preventDefault();
 			if (document.querySelector('.eem-co-form-embed')) { coSubmitOrder('charge'); }
+			return;
+		}
+		var openTab = ev.target.closest ? ev.target.closest('[data-eem-action="create-order-open-tab"]') : null;
+		if (openTab) {
+			ev.preventDefault();
+			if (document.querySelector('.eem-co-form-embed')) { coSubmitOrder('tab'); }
 		}
 	});
 
@@ -5798,7 +5810,7 @@ function duplicateReservationAjax(target) {
 	// confirm the embedded reservation form loaded.
 	document.addEventListener('DOMContentLoaded', function () {
 		if (!document.querySelector('.eem-co-form-embed')) { return; }
-		['create-order-send-link', 'create-order-charge'].forEach(function (action) {
+		['create-order-send-link', 'create-order-charge', 'create-order-open-tab'].forEach(function (action) {
 			var btn = document.querySelector('[data-eem-action="' + action + '"]');
 			if (btn) { btn.disabled = false; }
 		});

@@ -1800,6 +1800,9 @@ class EEM_Shortcodes {
 		$errors         = $this->validate_submission( $submission, $status, $data );
 		$is_send_link   = ( 'manual' === $submission['invoice_type'] && 'send_payment_link' === $submission['invoice_action_mode'] );
 		$is_show_bill   = ( 'manual' === $submission['invoice_type'] && 'add_to_show_bill' === $submission['invoice_action_mode'] );
+		// "Open Tab" — create the unpaid order and DON'T email/charge anything. The
+		// admin can send the invoice or collect payment later from the order page.
+		$is_save_only   = ( 'manual' === $submission['invoice_type'] && 'save_only' === $submission['invoice_action_mode'] );
 		$payment_result = array(
 			'payment_status'  => 'pending',
 			'payment_gateway' => $this->get_configured_payment_gateway(),
@@ -1842,6 +1845,13 @@ class EEM_Shortcodes {
 
 		if ( empty( $insert_result['duplicate'] ) && $is_show_bill ) {
 			return $this->render_notice( __( 'Invoice created and added to the customer show bill.', 'equine-event-manager' ), 'success' );
+		}
+
+		// "Open Tab" — order saved as unpaid; no email, no receipt. The admin sends
+		// the invoice or collects payment later from the order page. Return BEFORE
+		// the receipt-email fallback below so nothing goes out.
+		if ( $is_save_only ) {
+			return $this->render_notice( __( 'Order saved as an open tab.', 'equine-event-manager' ), 'success' );
 		}
 
 		if ( empty( $insert_result['duplicate'] ) && ! empty( $insert_result['submission_token'] ) ) {
@@ -2063,7 +2073,7 @@ class EEM_Shortcodes {
 			$errors[] = __( 'Please enter an international phone number beginning with a country code, such as +1.', 'equine-event-manager' );
 		}
 
-		$requires_billing_details = ! ( 'manual' === $submission['invoice_type'] && in_array( $submission['invoice_action_mode'], array( 'send_payment_link', 'add_to_show_bill' ), true ) );
+		$requires_billing_details = ! ( 'manual' === $submission['invoice_type'] && in_array( $submission['invoice_action_mode'], array( 'send_payment_link', 'add_to_show_bill', 'save_only' ), true ) );
 
 		if ( $requires_billing_details && ( '' === $submission['billing_first_name'] || '' === $submission['billing_last_name'] || '' === $submission['billing_address_1'] || '' === $submission['billing_city'] || '' === $submission['billing_state'] || '' === $submission['billing_postal_code'] || '' === $submission['billing_country'] ) ) {
 			$errors[] = __( 'Please enter the full billing details, including billing first and last name.', 'equine-event-manager' );
@@ -2671,7 +2681,7 @@ class EEM_Shortcodes {
 	private function sanitize_invoice_action_mode( $value ) {
 		$action_mode = sanitize_key( $value );
 
-		if ( ! in_array( $action_mode, array( 'charge_now', 'send_payment_link', 'add_to_show_bill', 'customer_submit' ), true ) ) {
+		if ( ! in_array( $action_mode, array( 'charge_now', 'send_payment_link', 'add_to_show_bill', 'save_only', 'customer_submit' ), true ) ) {
 			return 'charge_now';
 		}
 
@@ -2796,6 +2806,18 @@ class EEM_Shortcodes {
 		$totals  = $this->calculate_submission_totals( $data, $submission, $status, $reservation_id );
 		$is_send_link = ( 'manual' === $submission['invoice_type'] && 'send_payment_link' === $submission['invoice_action_mode'] );
 		$is_show_bill = ( 'manual' === $submission['invoice_type'] && 'add_to_show_bill' === $submission['invoice_action_mode'] );
+		$is_save_only = ( 'manual' === $submission['invoice_type'] && 'save_only' === $submission['invoice_action_mode'] );
+
+		// "Open Tab" — never attempts a charge; always creates the order as unpaid
+		// (any balance is fine, including $0). Must short-circuit BEFORE the gateway
+		// charge path below, which would demand card details for a balance > 0.
+		if ( $is_save_only ) {
+			return array(
+				'payment_status'  => 'pending',
+				'payment_gateway' => $gateway,
+				'transaction_id'  => '',
+			);
+		}
 
 		if ( $is_send_link ) {
 			if ( $totals['total'] <= 0 ) {
