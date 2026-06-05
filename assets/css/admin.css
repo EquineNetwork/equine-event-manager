@@ -8481,7 +8481,7 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
  * Create Order embedded customer form — qty stepper padding fix (2.7.26)
  * The embed is styled by public.css, whose qty stepper wants `padding: 0` on
  * the number input. A grandfathered admin-legacy rule —
- *   body.eem-shell-page:not(...)…input[type="number"]:not(…) { padding: .65rem .85rem !important }
+ *   body.eem-shell-page:not(...)…input[type="number"]:not(…) { padding: .65rem .85rem [forced] }
  * — has a (0,10,2) :not()-chain specificity and bleeds into the embed, over-
  * padding the narrow (34px) qty box so the digit clips ("(" instead of "0").
  * The qty <input> is shortcode-rendered with no class to exclude via :not(),

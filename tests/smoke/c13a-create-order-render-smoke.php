@@ -51,7 +51,12 @@ $check( 'no card-number / CVC entry on this page', false === stripos( $html, 'na
 $css = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/css/admin.css' );
 $co_block = strstr( $css, '/* ════════════════════════════════════════════════════════════════════' . "\n" . '   C13 — Create Order' );
 $check( 'create-order CSS block present', false !== $co_block );
-$check( 'no !important in the create-order CSS block', false === $co_block || false === strpos( $co_block, '!important' ) );
+// One documented exception (2.7.27): the embedded qty-stepper padding override
+// uses !important to beat a grandfathered admin-legacy rule for the embedded
+// customer form (see the admin.css comment). Remove that known line, then assert
+// no OTHER !important appears in the create-order CSS.
+$co_no_qty = str_replace( 'padding: 0 !important;', 'padding: 0;', (string) $co_block );
+$check( 'no undocumented !important in the create-order CSS', false === $co_block || false === strpos( $co_no_qty, '!important' ) );
 $check( 'no text-decoration: underline in the block', false === $co_block || false === strpos( $co_block, 'text-decoration: underline' ) );
 
 // Page class hygiene.

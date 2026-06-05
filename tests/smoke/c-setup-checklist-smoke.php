@@ -41,7 +41,14 @@ delete_option( 'equine_event_manager_company_settings' );
 delete_option( EEM_Settings_Repo::OPTION_EMAIL_SENDER );
 delete_option( 'equine_event_manager_payment_settings' );
 delete_option( 'equine_event_manager_integration_settings' );
+delete_option( 'eem_event_source_confirmed' );
 delete_user_meta( get_current_user_id(), EEM_Setup_Checklist::DISMISS_META );
+
+// Event Source can be backfill-confirmed when the site already has a published
+// reservation (publishing requires a linked event). The other four areas are
+// purely option-driven, so they're undone after the deletes above. Compute the
+// event-source state to keep this assertion environment-robust.
+$es_done = EEM_Setup_Checklist::is_event_source_confirmed() ? 1 : 0;
 
 $items = $by_key();
 $check( 'empty: branding not done',       false === $items['branding']['done'] );
@@ -50,7 +57,7 @@ $check( 'empty: payments not done',       false === $items['payments']['done'] )
 $check( 'empty: sendgrid not done',       false === $items['sendgrid']['done'] );
 $check( 'empty: is_complete() false',     false === EEM_Setup_Checklist::is_complete() );
 $check( 'empty: should_show() true',      true === EEM_Setup_Checklist::should_show() );
-$check( 'empty: completed_count() == 0',  0 === EEM_Setup_Checklist::completed_count() );
+$check( 'empty: only event-source may be backfilled', $es_done === EEM_Setup_Checklist::completed_count() );
 
 // URLs point at the right panels.
 $check( 'branding URL → panel=branding',             false !== strpos( $items['branding']['url'], 'panel=branding' ) );
