@@ -42,6 +42,17 @@ class EEM_Shortcodes {
 	private static $reservation_form_assets_needed = false;
 
 	/**
+	 * Hosted-receipt URL to client-redirect to after a successful customer
+	 * submission (#8). Carried out-of-band rather than embedded in the notice
+	 * HTML because the notice is rendered through wp_kses_post(), which strips
+	 * <script> tags (leaving their text visible) — so the redirect must be
+	 * emitted from the shortcode's own (non-kses'd) template output instead.
+	 *
+	 * @var string
+	 */
+	private $pending_redirect_url = '';
+
+	/**
 	 * Register shortcodes.
 	 */
 	public function register() {
@@ -297,6 +308,10 @@ class EEM_Shortcodes {
 		<div id="<?php echo esc_attr( $form_anchor_id ); ?>" class="eem-reservation-form-wrap" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" tabindex="-1">
 			<?php if ( $message ) : ?>
 				<?php echo wp_kses_post( $message ); ?>
+			<?php endif; ?>
+			<?php if ( ! empty( $this->pending_redirect_url ) ) : ?>
+				<?php // #8 redirect — emitted here (NOT inside $message) so it survives wp_kses_post(); same inline-script pattern the rest of the form uses. ?>
+				<script>window.location.replace(<?php echo wp_json_encode( $this->pending_redirect_url ); ?>);</script>
 			<?php endif; ?>
 
 			<?php if ( $show_event_header && ! $is_admin_invoice ) : ?>
@@ -1861,17 +1876,21 @@ class EEM_Shortcodes {
 			// (same tab) instead of leaving them on the filled-out form with an
 			// easy-to-miss banner (which also risked an accidental re-submit). A JS
 			// redirect is used because the shortcode renders inside the_content —
-			// headers are already sent, so wp_redirect() isn't available here.
-			// Admin-created orders ('manual') are excluded: their output is
-			// discarded by ajax_create_order, which does its own redirect.
+			// headers are already sent, so wp_redirect() isn't available here. The
+			// URL is stashed on $this->pending_redirect_url and the actual
+			// <script> is emitted from the shortcode template (not here) because
+			// this notice string is rendered through wp_kses_post(), which would
+			// strip the <script> tag (the cause of the redirect showing as raw
+			// text on the page). Admin-created orders ('manual') are excluded:
+			// their output is discarded by ajax_create_order, which redirects itself.
 			if ( 'manual' !== $submission['invoice_type'] ) {
 				$orders_repository = new EEM_Orders_Repository();
 				$order             = $orders_repository->get_order_by_submission_token( $insert_result['submission_token'] );
 				if ( $order && ! empty( $order['order_key'] ) ) {
 					$receipt_url = $this->get_hosted_receipt_url( $order['order_key'] );
 					if ( $receipt_url ) {
-						return $this->render_notice( __( 'Thank you! Taking you to your receipt…', 'equine-event-manager' ), 'success' )
-							. '<script>window.location.replace(' . wp_json_encode( $receipt_url ) . ');</script>';
+						$this->pending_redirect_url = $receipt_url;
+						return $this->render_notice( __( 'Thank you! Taking you to your receipt…', 'equine-event-manager' ), 'success' );
 					}
 				}
 			}
