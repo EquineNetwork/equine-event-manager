@@ -2,3 +2,23 @@
 admin/.DS_Store export-ignore
 docs/ export-ignore
 *.zip export-ignore
+
+# Keep dev-only paths out of the archive GitHub serves for branch downloads —
+# this is the zip the in-WordPress auto-updater (EEM_Updater / PUC) installs, so
+# it must be runtime-only. Root-anchored so vendor/ and the bundled
+# plugin-update-checker are never touched.
+/.mockups/ export-ignore
+/tests/ export-ignore
+/scripts/ export-ignore
+/tools/ export-ignore
+/.claude/ export-ignore
+/.github/ export-ignore
+/CLAUDE.md export-ignore
+/CLEANUP.md export-ignore
+/OVERHAUL_REPORT.md export-ignore
+/README.md export-ignore
+/WALKTHROUGH.md export-ignore
+/AUDIT.md export-ignore
+/composer.json export-ignore
+/composer.lock export-ignore
+/phpcs.xml export-ignore

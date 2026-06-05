@@ -3,7 +3,7 @@
  * Plugin Name:       Equine Event Manager
  * Plugin URI:        https://example.com/equine-event-manager
  * Description:       Event reservation management for stalls, RV spaces, and add-on bookings — multi-event with stall-chart visualization, payment processor support (Stripe + Authorize.net), and CSV / receipt export.
- * Version:           2.7.44
+ * Version:           2.7.45
  * Requires at least: 6.0
  * Tested up to:      6.8
  * Requires PHP:      7.4
@@ -26,7 +26,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'EQUINE_EVENT_MANAGER_VERSION', '2.7.44' );
+define( 'EQUINE_EVENT_MANAGER_VERSION', '2.7.45' );
 
 define( 'EQUINE_EVENT_MANAGER_FILE', __FILE__ );
 
@@ -48,8 +48,14 @@ if ( is_readable( EQUINE_EVENT_MANAGER_PATH . 'vendor/autoload.php' ) ) {
 
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-activator.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager.php';
+require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-updater.php';
 
 register_activation_hook( __FILE__, array( 'EEM_Activator', 'activate' ) );
+
+// GitHub-backed in-WordPress auto-updates: a push to `main` with a bumped
+// Version: header surfaces "Update now" on the Plugins screen. Authenticates to
+// the private repo via the EEM_UPDATE_TOKEN wp-config constant (see EEM_Updater).
+EEM_Updater::init();
 
 /**
  * Run Equine Event Manager.
