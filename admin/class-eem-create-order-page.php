@@ -216,7 +216,17 @@ class EEM_Create_Order_Page {
 			</header>
 			<div class="eem-card-body">
 				<?php if ( empty( $reservations ) ) : ?>
-					<p class="eem-field-hint"><?php esc_html_e( 'No published reservations found. Publish a reservation first, then return here to build an order against it.', 'equine-event-manager' ); ?></p>
+					<?php
+					$new_res_url = admin_url( 'post-new.php?post_type=' . ( class_exists( 'EEM_Reservations_CPT' ) ? EEM_Reservations_CPT::POST_TYPE : 'en_reservation' ) );
+					?>
+					<div class="eem-empty-cta">
+						<div class="eem-empty-cta__icon" aria-hidden="true">
+							<svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M12 14v4M10 16h4"/></svg>
+						</div>
+						<h3 class="eem-empty-cta__title"><?php esc_html_e( 'Create your first reservation', 'equine-event-manager' ); ?></h3>
+						<p class="eem-empty-cta__text"><?php esc_html_e( 'Orders are built against a reservation, so you need one before you can create an order. A reservation defines the event, stalls / RV spaces, add-ons, and the pricing customers are charged.', 'equine-event-manager' ); ?></p>
+						<a class="eem-btn eem-btn-amber" href="<?php echo esc_url( $new_res_url ); ?>"><?php esc_html_e( 'Create First Reservation', 'equine-event-manager' ); ?></a>
+					</div>
 				<?php else : ?>
 					<label class="eem-field-label" for="eem-co-reservation-select"><?php esc_html_e( 'Reservation', 'equine-event-manager' ); ?> <span class="eem-req">*</span></label>
 					<select class="eem-field-select" id="eem-co-reservation-select" name="reservation_id" data-eem-input-action="create-order-reservation">

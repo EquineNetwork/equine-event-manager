@@ -1171,7 +1171,14 @@
 			if (payload && payload.success) {
 				eemWizardMarkStepDone(w, idx);
 				if (idx >= steps.length - 1) {
-					window.location.reload();   // finished — refresh so everything reflects it
+					// Finished: confirm immediately, flag for a post-reload toast
+					// (the wizard element is gone once setup is complete), then
+					// refresh so the dashboard reflects the completed state.
+					try { window.sessionStorage.setItem('eemWizardJustFinished', '1'); } catch (e) {}
+					if (EEM && typeof EEM.showSaveToast === 'function') {
+						EEM.showSaveToast("You're all set!", { sub: 'Your plugin is configured.', duration: 1400 });
+					}
+					setTimeout(function () { window.location.reload(); }, 1300);
 				} else {
 					eemWizardShowStep(w, idx + 1);
 				}
@@ -1216,10 +1223,23 @@
 			w.classList.add('open');
 		}
 	}
+	/* After the finish reload, show a one-time success toast pointing at the next
+	   step. Runs even though the wizard element is gone once setup is complete. */
+	function eemWizardFinishToast() {
+		var flag = null;
+		try { flag = window.sessionStorage.getItem('eemWizardJustFinished'); } catch (e) { return; }
+		if (flag !== '1') return;
+		try { window.sessionStorage.removeItem('eemWizardJustFinished'); } catch (e) {}
+		if (EEM && typeof EEM.showSaveToast === 'function') {
+			EEM.showSaveToast('Setup complete', { sub: 'Create your first reservation to start taking orders.', duration: 5000 });
+		}
+	}
 	if (document.readyState === 'loading') {
 		document.addEventListener('DOMContentLoaded', eemWizardMaybeAutoOpen);
+		document.addEventListener('DOMContentLoaded', eemWizardFinishToast);
 	} else {
 		eemWizardMaybeAutoOpen();
+		eemWizardFinishToast();
 	}
 	/* Escape closes the wizard. */
 	document.addEventListener('keydown', function (e) {
@@ -2299,6 +2319,19 @@
 	document.addEventListener('input', function (ev) {
 		if (ev.target && ev.target.dataset.eemInputAction === 'header-filter-events') {
 			filterEventOptions(ev.target.value);
+		}
+	});
+
+	// Preload the most-recent events as soon as the event-search field is focused
+	// (before the user types anything) so the dropdown is never empty on click;
+	// typing then filters by name. Only fires when the results are still empty so
+	// re-focusing after a search doesn't clobber filtered results. focusin bubbles,
+	// so document-level delegation reaches the dynamically-shown typeahead input.
+	document.addEventListener('focusin', function (ev) {
+		if (!ev.target || ev.target.dataset.eemInputAction !== 'header-filter-events') return;
+		var results = document.getElementById('eem-event-search-results');
+		if (results && 0 === results.children.length) {
+			fetchEventOptions('');
 		}
 	});
 

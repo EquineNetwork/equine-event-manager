@@ -2871,9 +2871,14 @@ class EEM_Admin {
 
 			<?php if ( empty( $rows ) ) : ?>
 			<!-- Empty state -->
-			<div class="eem-empty-state" style="padding:48px 24px;text-align:center;">
-				<p style="font-weight:600;font-size:15px;color:#031B4E;margin:0 0 8px;"><?php esc_html_e( 'No stall charts yet', 'equine-event-manager' ); ?></p>
-				<p style="font-size:13px;color:#6B7A99;margin:0;line-height:1.6;"><?php esc_html_e( 'No reservations with stalls or RV inventory yet — enable stall or RV reservations on a reservation to see them here.', 'equine-event-manager' ); ?></p>
+			<?php $new_res_url = admin_url( 'post-new.php?post_type=' . ( class_exists( 'EEM_Reservations_CPT' ) ? EEM_Reservations_CPT::POST_TYPE : 'en_reservation' ) ); ?>
+			<div class="eem-empty-cta">
+				<div class="eem-empty-cta__icon" aria-hidden="true">
+					<svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+				</div>
+				<h3 class="eem-empty-cta__title"><?php esc_html_e( 'No stall charts yet', 'equine-event-manager' ); ?></h3>
+				<p class="eem-empty-cta__text"><?php esc_html_e( 'Stall charts come from reservations. Create a reservation and enable its stall or RV reservations, and its chart will appear here ready to assign.', 'equine-event-manager' ); ?></p>
+				<a class="eem-btn eem-btn-amber" href="<?php echo esc_url( $new_res_url ); ?>"><?php esc_html_e( 'Create a Reservation', 'equine-event-manager' ); ?></a>
 			</div>
 			<?php else : ?>
 

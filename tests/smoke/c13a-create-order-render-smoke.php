@@ -31,7 +31,7 @@ $check( 'two-column workspace', false !== strpos( $html, 'eem-co-workspace' ) &&
 $check( 'breadcrumb back to Orders', false !== strpos( $html, 'page=equine-event-manager-orders' ) && false !== strpos( $html, 'eem-breadcrumb' ) );
 $check( 'customer lookup card + search input', false !== strpos( $html, 'data-eem-input-action="create-order-customer-search"' ) );
 $check( 'skip-new-customer affordance', false !== strpos( $html, 'data-eem-action="create-order-skip-customer"' ) );
-$check( 'reservation picker present', false !== strpos( $html, 'data-eem-input-action="create-order-reservation"' ) || false !== strpos( $html, 'No published reservations' ) );
+$check( 'reservation picker present', false !== strpos( $html, 'data-eem-input-action="create-order-reservation"' ) || false !== strpos( $html, 'eem-empty-cta' ) );
 $check( 'contact fields (first/last/email/phone)', false !== strpos( $html, 'data-eem-co-contact="first_name"' ) && false !== strpos( $html, 'data-eem-co-contact="email"' ) );
 $check( 'four reservation-driven section cards', 4 === substr_count( $html, 'data-eem-co-section=' ) );
 $check( 'custom line items card', false !== strpos( $html, 'data-eem-action="create-order-add-custom-item"' ) );

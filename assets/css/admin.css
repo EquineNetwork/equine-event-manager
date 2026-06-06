@@ -724,6 +724,31 @@ a.eem-btn-amber:focus {
 	color: var(--eem-text-on-navy);
 }
 
+/* Reusable empty-state CTA block (e.g. Create Order + Stall Charts with no
+   reservations yet): centered icon + title + explanation + a single action. */
+.eem-empty-cta {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+	gap: 10px;
+	padding: 28px 20px;
+}
+.eem-empty-cta__icon { color: var(--eem-warn-accent); }
+.eem-empty-cta__title {
+	margin: 0;
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--eem-navy);
+}
+.eem-empty-cta__text {
+	margin: 0;
+	max-width: 460px;
+	font-size: 13px;
+	color: var(--eem-text-secondary);
+}
+.eem-empty-cta .eem-btn { margin-top: 6px; }
+
 /* Secondary — Save Draft, Cancel, neutral */
 .eem-btn-secondary,
 a.eem-btn-secondary {
