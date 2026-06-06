@@ -69,14 +69,42 @@ class EEM_Reports_Page {
 		) );
 
 		$this->render_action_notice();
+
+		// First-run gate: reports are built from reservation + order data, so with
+		// no published reservations there is nothing to report on yet. Show the
+		// create-first-reservation CTA instead of empty report cards + a stale
+		// export history (consistent with Create Order / Stall Charts empty states).
+		$has_published = ! empty( get_posts( array(
+			'post_type'      => 'en_reservation',
+			'post_status'    => 'publish',
+			'posts_per_page' => 1,
+			'fields'         => 'ids',
+			'no_found_rows'  => true,
+		) ) );
 		?>
 		<div class="eem-reports-body">
-			<?php
-			$this->render_zip_card( $reservations, $filters );
-			$this->render_filters_card( $reservations, $filters );
-			$this->render_report_catalog( $filters );
-			$this->render_export_history();
-			?>
+			<?php if ( ! $has_published ) : ?>
+				<?php $new_res_url = admin_url( 'post-new.php?post_type=' . ( class_exists( 'EEM_Reservations_CPT' ) ? EEM_Reservations_CPT::POST_TYPE : 'en_reservation' ) ); ?>
+				<div class="eem-card">
+					<div class="eem-card-body">
+						<div class="eem-empty-cta">
+							<div class="eem-empty-cta__icon" aria-hidden="true">
+								<svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>
+							</div>
+							<h3 class="eem-empty-cta__title"><?php esc_html_e( 'No reports yet', 'equine-event-manager' ); ?></h3>
+							<p class="eem-empty-cta__text"><?php esc_html_e( 'Reports summarize your reservations and orders. Create a reservation and start taking orders, and your exportable reports will appear here.', 'equine-event-manager' ); ?></p>
+							<a class="eem-btn eem-btn-amber" href="<?php echo esc_url( $new_res_url ); ?>"><?php esc_html_e( 'Create a Reservation', 'equine-event-manager' ); ?></a>
+						</div>
+					</div>
+				</div>
+			<?php else : ?>
+				<?php
+				$this->render_zip_card( $reservations, $filters );
+				$this->render_filters_card( $reservations, $filters );
+				$this->render_report_catalog( $filters );
+				$this->render_export_history();
+				?>
+			<?php endif; ?>
 		</div>
 		<?php
 
