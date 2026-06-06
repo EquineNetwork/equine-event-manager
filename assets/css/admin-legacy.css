@@ -12411,3 +12411,34 @@ body.post-type-en_reservation.eem-shell-page #postbox-container-1 .form-table td
 	padding: 12px 0 !important;
 	vertical-align: top !important;
 }
+
+/*
+ * WP media-library modal form-control reset (added v2.7.50, onboarding QA).
+ *
+ * The broad `body.eem-shell-page … input/select/textarea` !important blocks
+ * (lines ~219 + ~2700) target every control on the page. WordPress appends its
+ * media modal (the Branding logo picker's "Choose Business Logo" frame) to
+ * <body>, OUTSIDE our `.eem-page` container, so those rules leak in and inflate
+ * WP's search box, "All dates" filter, and the Alt/Title/Caption sidebar fields
+ * to our 42px field height + 1.5px border.
+ *
+ * This reset neutralizes our injected metrics back to WP-native size, scoped to
+ * `.media-modal .media-frame` so it ONLY touches WP modal chrome — never a
+ * plugin form. Specificity is padded with the modal's real ancestor classes
+ * (.media-modal.wp-core-ui .media-frame) plus :not(.eem-*) guards so it outranks
+ * the (0,7,2) leaking blocks; the :not() guards also keep any plugin control
+ * that ever renders inside a media frame untouched.
+ */
+body.eem-shell-page .media-modal.wp-core-ui .media-frame input:not(.eem-field-input):not(.eem-search-input):not(.eem-price-input):not(.eem-pct-input),
+body.eem-shell-page .media-modal.wp-core-ui .media-frame select:not(.eem-field-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-dashboard-range-select),
+body.eem-shell-page .media-modal.wp-core-ui .media-frame textarea:not(.eem-field-input):not(.eem-field-textarea):not(.eem-price-input):not(.eem-pct-input) {
+	min-height: 0 !important;
+	height: auto !important;
+	border-width: 1px !important;
+	border-radius: 3px !important;
+	padding: 3px 8px !important;
+	font-size: 14px !important;
+	line-height: normal !important;
+	box-shadow: none !important;
+	max-width: none !important;
+}
