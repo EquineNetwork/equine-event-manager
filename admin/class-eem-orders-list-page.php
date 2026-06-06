@@ -1175,10 +1175,11 @@ class EEM_Orders_List_Page {
 	 *
 	 * Wired to admin_menu in includes/class-equine-event-manager.php.
 	 *
-	 * The placeholder is intentional plumbing — the real Customer
-	 * Profile page is on the planned roadmap (see CLEANUP.md "Customer
-	 * Profile chunk sequencing" entry) and will replace this stub
-	 * callback when it ships.
+	 * Despite the legacy "stub" name, this is the LIVE registration for the
+	 * Customer Profile route: the callback below binds the real C9 page
+	 * (EEM_Customer_Profile_Page::render) when that class is present, and falls
+	 * back to render_customer_profile_stub() only as a defensive guard if it
+	 * somehow isn't loaded.
 	 *
 	 * @return void
 	 */

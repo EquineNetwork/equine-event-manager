@@ -1657,37 +1657,6 @@ class EEM_Admin {
 	}
 
 	/**
-	 * DS-1.A stub for the Dashboard admin page (`equine-event-manager-dashboard`).
-	 * Renders a "Coming in DS-1.B" placeholder so the menu route is wired and
-	 * the sidebar entry resolves to a real page. DS-1.B replaces this method's
-	 * callback with the full Dashboard render against `dashboard_page.html`.
-	 *
-	 * @return void
-	 */
-	public function render_dashboard_stub_page() {
-		$this->guard_admin_page();
-		?>
-		<div class="wrap">
-			<div class="eem-page">
-				<div class="eem-page-wrap">
-					<header class="eem-page-header">
-						<div class="eem-page-header-left">
-							<h1 class="eem-page-title"><?php esc_html_e( 'Dashboard', 'equine-event-manager' ); ?></h1>
-						</div>
-					</header>
-					<div class="eem-page-body">
-						<div class="eem-info-banner eem-info-banner--preview">
-							<strong><?php esc_html_e( 'Coming in DS-1.B.', 'equine-event-manager' ); ?></strong>
-							<?php esc_html_e( 'Admin Dashboard rendering against the canonical dashboard_page.html mockup lands in DS-1.B (the next sub-chunk after DS-1.A). This placeholder confirms the route is wired.', 'equine-event-manager' ); ?>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-		<?php
-	}
-
-	/**
 	 * Render the reservation event overview page.
 	 *
 	 * @return void

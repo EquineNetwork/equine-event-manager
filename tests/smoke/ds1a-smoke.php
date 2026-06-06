@@ -110,11 +110,11 @@ ok( 'admin.php register_admin_pages binds Create Order',
 ok( 'admin.php register_admin_pages binds Collect Payment',
 	str_contains( $admin_src, "array( 'EEM_Collect_Payment_Page', 'render' )" ),
 	$pass, $fail, $log );
-ok( 'admin.php register_admin_pages registers Dashboard stub',
-	str_contains( $admin_src, "'equine-event-manager-dashboard'" ) && str_contains( $admin_src, 'render_dashboard_stub_page' ),
+ok( 'admin.php register_admin_pages registers the Dashboard route',
+	str_contains( $admin_src, "'equine-event-manager-dashboard'" ),
 	$pass, $fail, $log );
-ok( 'render_dashboard_stub_page method exists',
-	method_exists( 'EEM_Admin', 'render_dashboard_stub_page' ),
+ok( 'Dashboard route binds the real EEM_Dashboard_Page (DS-1.B); orphaned stub removed',
+	str_contains( $admin_src, "array( 'EEM_Dashboard_Page', 'render' )" ) && ! method_exists( 'EEM_Admin', 'render_dashboard_stub_page' ),
 	$pass, $fail, $log );
 
 // ── [6] Orders list href updates ────────────────────────────────────
