@@ -109,6 +109,7 @@ class EEM_Admin {
 		add_action( 'wp_ajax_eem_admin_create_order', array( 'EEM_Create_Order_Page', 'ajax_create_order' ) );
 		EEM_Setup_Checklist::register();
 		EEM_Setup_Wizard::register();
+		EEM_Stall_Setup_Wizard::register();
 	}
 
 	/**

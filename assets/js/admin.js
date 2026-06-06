@@ -2335,6 +2335,142 @@
 		}
 	});
 
+	/* ─────────────────────────────────────────────────────────────
+	 * First-run Stall setup wizard (EEM_Stall_Setup_Wizard).
+	 * Opens once per site when stalls are first enabled, asks a few
+	 * questions, and pre-fills the real stall controls from the answers.
+	 * ───────────────────────────────────────────────────────────── */
+	var _eemStallStepIdx = 0;
+	function eemStallEl() { return document.getElementById('eem-stall-setup-wizard'); }
+	function eemStallAnswer(w, key) {
+		var sel = w.querySelector('input[name="eem_stall_q_' + key + '"]:checked');
+		return sel ? sel.value : null;
+	}
+	function eemStallActiveSteps(w) {
+		var inv = eemStallAnswer(w, 'inventory');
+		return Array.prototype.filter.call(w.querySelectorAll('.eem-stall-setup__step'), function (s) {
+			// Branch: the customer-selection step only applies to numbered stalls.
+			if ('selection' === s.getAttribute('data-key')) return 'numbered' === inv;
+			return true;
+		});
+	}
+	function eemStallShow(w, idx) {
+		var active = eemStallActiveSteps(w);
+		if (idx < 0) idx = 0;
+		if (idx > active.length - 1) idx = active.length - 1;
+		_eemStallStepIdx = idx;
+		Array.prototype.forEach.call(w.querySelectorAll('.eem-stall-setup__step'), function (s) { s.hidden = true; });
+		active[idx].hidden = false;
+		var isSummary = active[idx].classList.contains('eem-stall-setup__summary');
+		var back = w.querySelector('[data-eem-action="stall-setup-back"]');
+		var next = w.querySelector('[data-eem-action="stall-setup-next"]');
+		if (back) back.hidden = (0 === idx);
+		if (next) next.textContent = isSummary ? 'Apply setup' : 'Next';
+		if (isSummary) eemStallRenderSummary(w);
+	}
+	function eemStallPlan(w) {
+		var inv = eemStallAnswer(w, 'inventory'), sel = eemStallAnswer(w, 'selection'),
+		    stay = eemStallAnswer(w, 'staytype'), shav = eemStallAnswer(w, 'shavings'), sched = eemStallAnswer(w, 'schedule');
+		var lines = [];
+		if ('numbered' === inv) {
+			lines.push('pick_layout' === sel ? 'Numbered stalls — customers pick exact stalls from your map' : 'Numbered stalls — customers pick how many; you assign numbers');
+		} else {
+			lines.push('Quantity-only stalls — sell a total count');
+		}
+		lines.push('both' === stay ? 'Pricing: nightly and weekend' : ('weekend' === stay ? 'Pricing: weekend package' : 'Pricing: per night'));
+		lines.push('yes' === shav ? 'Required shavings charge: on (set the price below)' : 'Required shavings: off');
+		lines.push('yes' === sched ? 'Reservation schedule: on (set open/close dates below)' : 'Reservation schedule: off (always open)');
+		return lines;
+	}
+	function eemStallRenderSummary(w) {
+		var ul = w.querySelector('[data-eem-stall-summary]');
+		if (!ul) return;
+		ul.innerHTML = eemStallPlan(w).map(function (t) { return '<li>' + escapeHtml(t) + '</li>'; }).join('');
+	}
+	function eemStallApply(w) {
+		var inv = eemStallAnswer(w, 'inventory'), sel = eemStallAnswer(w, 'selection'),
+		    stay = eemStallAnswer(w, 'staytype'), shav = eemStallAnswer(w, 'shavings'), sched = eemStallAnswer(w, 'schedule');
+		function clickCtl(action, attr, val) {
+			var el = document.querySelector('[data-eem-action="' + action + '"][' + attr + '="' + val + '"]');
+			if (el && !el.disabled) el.click();
+		}
+		// Stay-type + schedule + shavings are clickable toggle controls (a hidden
+		// mirror inside a [data-eem-action] row whose canonical state is the inner
+		// .eem-toggle--on/--off class). Flip by clicking the row only when the
+		// current visual state differs from the desired one, so the real handler
+		// runs (updates mirror + conditional visibility).
+		function setToggle(name, on) {
+			var input = document.querySelector('input[name="en_reservation[' + name + ']"]');
+			if (!input) return;
+			var ctl = input.closest('[data-eem-action]');
+			if (!ctl) return;
+			var tog = ctl.querySelector('.eem-toggle');
+			var cur = tog ? tog.classList.contains('eem-toggle--on') : ('1' === input.value);
+			if (cur !== on) ctl.click();
+		}
+		clickCtl('toggle-stall-inventory-type', 'data-type', 'numbered' === inv ? 'numbered' : 'quantity_only');
+		if ('numbered' === inv) {
+			clickCtl('toggle-stall-customer-selection', 'data-selection', 'pick_layout' === sel ? 'pick_layout' : 'quantity');
+		}
+		setToggle('stall_nightly_enabled', 'nightly' === stay || 'both' === stay);
+		setToggle('stall_weekend_enabled', 'weekend' === stay || 'both' === stay);
+		setToggle('required_shavings_enabled', 'yes' === shav);
+		setToggle('stall_schedule_enabled', 'yes' === sched);
+		eemStallClose(w);
+		if (EEM && typeof EEM.showSaveToast === 'function') {
+			EEM.showSaveToast('Stall options set', { sub: 'Review the details below, then Save the reservation.', duration: 4000 });
+		}
+	}
+	function eemStallMarkSeen(w) {
+		if ('1' !== w.getAttribute('data-eem-pending')) return;
+		w.setAttribute('data-eem-pending', '0');
+		var body = new URLSearchParams();
+		body.set('action', 'eem_stall_setup_seen');
+		body.set('which', 'stall');
+		body.set('nonce', w.getAttribute('data-eem-nonce') || '');
+		fetch(window.ajaxurl || '/wp-admin/admin-ajax.php', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body.toString() });
+	}
+	function eemStallOpen(w) { eemStallShow(w, 0); w.classList.add('open'); }
+	function eemStallClose(w) { w.classList.remove('open'); eemStallMarkSeen(w); }
+	function eemStallNext(w) {
+		var active = eemStallActiveSteps(w);
+		if (active[_eemStallStepIdx].classList.contains('eem-stall-setup__summary')) { eemStallApply(w); return; }
+		eemStallShow(w, _eemStallStepIdx + 1);
+	}
+	document.addEventListener('click', function (ev) {
+		var t = ev.target.closest ? ev.target.closest('[data-eem-action^="stall-setup-"]') : null;
+		if (!t) return;
+		var w = eemStallEl();
+		if (!w) return;
+		ev.preventDefault();
+		var action = t.getAttribute('data-eem-action');
+		if ('stall-setup-next' === action) eemStallNext(w);
+		else if ('stall-setup-back' === action) eemStallShow(w, _eemStallStepIdx - 1);
+		else if ('stall-setup-close' === action) eemStallClose(w);
+	});
+	// Auto-open once per site when the stall section is on (default) + still pending.
+	function eemStallMaybeOpen() {
+		var w = eemStallEl();
+		if (!w || '1' !== w.getAttribute('data-eem-pending')) return;
+		var mirror = document.querySelector('[data-eem-section-enabled="stall"]');
+		if (mirror && '1' === mirror.value) eemStallOpen(w);
+	}
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', eemStallMaybeOpen);
+	} else {
+		eemStallMaybeOpen();
+	}
+	// Also open when the admin turns the stall section ON later (still pending).
+	document.addEventListener('click', function (ev) {
+		var tog = ev.target.closest ? ev.target.closest('[data-eem-action="reservation-editor-toggle-enabled"][data-eem-section="stall"]') : null;
+		if (!tog) return;
+		setTimeout(function () {
+			var w = eemStallEl();
+			var mirror = document.querySelector('[data-eem-section-enabled="stall"]');
+			if (w && '1' === w.getAttribute('data-eem-pending') && mirror && '1' === mirror.value) eemStallOpen(w);
+		}, 50);
+	});
+
 	/* C8 — Row builder / zone / pre-entry input delegation. */
 	document.addEventListener('input', function (ev) {
 		var inp = ev.target;

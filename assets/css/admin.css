@@ -749,6 +749,69 @@ a.eem-btn-amber:focus {
 }
 .eem-empty-cta .eem-btn { margin-top: 6px; }
 
+/* First-run Stall (and RV) setup wizard — radio-card question modal. Reuses the
+   shared .eem-modal / .eem-modal-* chrome; these add the question + option-card
+   styling. */
+.eem-stall-setup__card { max-width: 600px; width: 94%; }
+.eem-stall-setup__body { max-height: 70vh; overflow-y: auto; }
+.eem-stall-setup__intro {
+	margin: 0 0 16px;
+	font-size: 13px;
+	color: var(--eem-text-secondary);
+}
+.eem-stall-setup__q {
+	margin: 0 0 4px;
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--eem-navy);
+}
+.eem-stall-setup__qsub {
+	margin: 0 0 14px;
+	font-size: 12.5px;
+	color: var(--eem-text-secondary);
+}
+.eem-stall-setup__options { display: flex; flex-direction: column; gap: 10px; }
+.eem-stall-setup__opt {
+	display: flex;
+	gap: 10px;
+	align-items: flex-start;
+	padding: 12px 14px;
+	border: 1px solid var(--eem-border);
+	border-radius: var(--eem-radius);
+	cursor: pointer;
+	transition: border-color .12s, background .12s;
+}
+.eem-stall-setup__opt:hover { background: var(--eem-bg-hover); }
+.eem-stall-setup__opt input { margin-top: 3px; flex-shrink: 0; }
+.eem-stall-setup__opt:has(input:checked) {
+	border-color: var(--eem-electric);
+	background: var(--eem-info-bg);
+}
+.eem-stall-setup__opt-body { display: flex; flex-direction: column; gap: 2px; }
+.eem-stall-setup__opt-label { font-size: 14px; font-weight: 600; color: var(--eem-navy); }
+.eem-stall-setup__opt-desc { font-size: 12.5px; color: var(--eem-text-secondary); }
+.eem-stall-setup__foot { display: flex; align-items: center; gap: 12px; }
+.eem-stall-setup__skip {
+	margin-left: auto;
+	border: 0;
+	background: none;
+	padding: 0;
+	cursor: pointer;
+	font-size: 12.5px;
+	font-weight: 600;
+	color: var(--eem-text-secondary);
+}
+.eem-stall-setup__skip:hover { color: var(--eem-navy); }
+.eem-stall-setup__summary-list {
+	margin: 0;
+	padding-left: 18px;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	font-size: 13px;
+	color: var(--eem-text);
+}
+
 /* Secondary — Save Draft, Cancel, neutral */
 .eem-btn-secondary,
 a.eem-btn-secondary {

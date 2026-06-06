@@ -78,6 +78,7 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-dashboard-page.php';
 // readiness from live Settings option values; dismissible per-user.
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-setup-checklist.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-setup-wizard.php';
+require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-stall-setup-wizard.php';
 
 // 2.3.25 — WP-CLI demo data seeder. Loaded only in CLI context; the file
 // self-guards against being loaded outside WP_CLI and registers the
