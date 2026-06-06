@@ -22,7 +22,27 @@ up_ok( 'EEM_Updater class exists', class_exists( 'EEM_Updater' ), $pass, $fail, 
 up_ok( 'EEM_Updater::init exists', method_exists( 'EEM_Updater', 'init' ), $pass, $fail, $log );
 up_ok( 'tracks the main branch', 'main' === EEM_Updater::BRANCH, $pass, $fail, $log );
 up_ok( 'token constant is EEM_UPDATE_TOKEN', 'EEM_UPDATE_TOKEN' === EEM_Updater::TOKEN_CONSTANT, $pass, $fail, $log );
+up_ok( 'token option key is eem_update_token', 'eem_update_token' === EEM_Updater::TOKEN_OPTION, $pass, $fail, $log );
 up_ok( 'repo URL points at the EquineNetwork repo', false !== strpos( EEM_Updater::REPO_URL, 'EquineNetwork/equine-event-manager' ), $pass, $fail, $log );
+
+// --- Token resolution: option path + constant precedence ---
+// (The EEM_UPDATE_TOKEN constant is not defined on this test site, so the
+// option is the active source here — exactly the Settings-field path staging uses.)
+$saved_token = get_option( EEM_Updater::TOKEN_OPTION );
+delete_option( EEM_Updater::TOKEN_OPTION );
+up_ok( 'no token → has_token() false', false === EEM_Updater::has_token(), $pass, $fail, $log );
+up_ok( 'no token → get_token() empty', '' === EEM_Updater::get_token(), $pass, $fail, $log );
+update_option( EEM_Updater::TOKEN_OPTION, 'github_pat_smoke', false );
+up_ok( 'option token → has_token() true', true === EEM_Updater::has_token(), $pass, $fail, $log );
+up_ok( 'option token → get_token() returns it', 'github_pat_smoke' === EEM_Updater::get_token(), $pass, $fail, $log );
+up_ok( 'option token → token_is_constant() false', false === EEM_Updater::token_is_constant(), $pass, $fail, $log );
+if ( false === $saved_token ) { delete_option( EEM_Updater::TOKEN_OPTION ); } else { update_option( EEM_Updater::TOKEN_OPTION, $saved_token, false ); }
+
+// --- Settings page surfaces the token field (no-server-access path) ---
+$settings_src = (string) file_get_contents( $root . 'admin/class-eem-settings-page.php' );
+up_ok( 'Settings renders a Plugin Updates card', false !== strpos( $settings_src, 'render_updates_card' ), $pass, $fail, $log );
+up_ok( 'Settings exposes the token input', false !== strpos( $settings_src, 'name="payload[update_token]"' ), $pass, $fail, $log );
+up_ok( 'save handler persists to TOKEN_OPTION', false !== strpos( $settings_src, 'EEM_Updater::TOKEN_OPTION' ), $pass, $fail, $log );
 
 // PUC actually loaded + registered its WP update hook (proves the checker built).
 up_ok( 'PUC v5 factory loaded', class_exists( '\\YahnisElsts\\PluginUpdateChecker\\v5\\PucFactory' ), $pass, $fail, $log );

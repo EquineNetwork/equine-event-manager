@@ -43,6 +43,15 @@ class EEM_Updater {
 	const TOKEN_CONSTANT = 'EEM_UPDATE_TOKEN';
 
 	/**
+	 * Option key the Settings → Integrations "Plugin Updates" field writes to.
+	 *
+	 * Provides a no-server-access path to supply the token: paste it in WP admin
+	 * instead of editing wp-config.php. The constant (when defined) still wins, so
+	 * an operator override in wp-config is never shadowed by a stale DB value.
+	 */
+	const TOKEN_OPTION = 'eem_update_token';
+
+	/**
 	 * Build the update checker. Safe to call once during plugin bootstrap; it
 	 * only registers hooks (the actual GitHub API call is throttled by PUC and
 	 * runs on the normal WP update schedule / Plugins-screen visit).
@@ -73,10 +82,26 @@ class EEM_Updater {
 			$checker->setBranch( self::BRANCH );
 		}
 
-		// Authenticate for the private repo when the token constant is defined.
-		if ( defined( self::TOKEN_CONSTANT ) && constant( self::TOKEN_CONSTANT ) && method_exists( $checker, 'setAuthentication' ) ) {
-			$checker->setAuthentication( constant( self::TOKEN_CONSTANT ) );
+		// Authenticate for the private repo when a token is available (wp-config
+		// constant or the Settings field). Without it, the checker simply finds
+		// no updates — no errors, no fatal.
+		$token = self::get_token();
+		if ( '' !== $token && method_exists( $checker, 'setAuthentication' ) ) {
+			$checker->setAuthentication( $token );
 		}
+	}
+
+	/**
+	 * Resolve the GitHub access token. The wp-config constant takes precedence
+	 * over the stored option so an explicit operator override always wins.
+	 *
+	 * @return string The token, or '' when none is configured.
+	 */
+	public static function get_token(): string {
+		if ( defined( self::TOKEN_CONSTANT ) && constant( self::TOKEN_CONSTANT ) ) {
+			return (string) constant( self::TOKEN_CONSTANT );
+		}
+		return (string) get_option( self::TOKEN_OPTION, '' );
 	}
 
 	/**
@@ -85,6 +110,17 @@ class EEM_Updater {
 	 * @return bool
 	 */
 	public static function has_token(): bool {
+		return '' !== self::get_token();
+	}
+
+	/**
+	 * Whether the active token comes from the wp-config constant (vs. the stored
+	 * option). Lets the Settings UI show the field as read-only / informational
+	 * when an operator has hard-coded the token in wp-config.
+	 *
+	 * @return bool
+	 */
+	public static function token_is_constant(): bool {
 		return defined( self::TOKEN_CONSTANT ) && (bool) constant( self::TOKEN_CONSTANT );
 	}
 }

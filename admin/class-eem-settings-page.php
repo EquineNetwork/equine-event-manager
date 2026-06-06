@@ -919,12 +919,95 @@ class EEM_Settings_Page {
 				</div>
 			</section>
 
+			<?php $this->render_updates_card(); ?>
+
 			<div class="eem-settings-save-bar">
 				<button type="submit" class="eem-btn eem-btn-primary">
 					<?php esc_html_e( 'Save Integrations Settings', 'equine-event-manager' ); ?>
 				</button>
 			</div>
 		</form>
+		<?php
+	}
+
+	/**
+	 * "Plugin Updates" card (bottom of the Integrations panel).
+	 *
+	 * Lets an admin paste the GitHub access token that authorizes in-WordPress
+	 * auto-updates from the private repo — no wp-config.php / server access
+	 * required. When the token is instead defined via the EEM_UPDATE_TOKEN
+	 * wp-config constant, the field renders read-only/informational (the
+	 * constant always wins; see EEM_Updater::get_token()).
+	 *
+	 * The saved token is never echoed back into the input value (it is a
+	 * secret); a masked "saved" placeholder is shown and an empty submit leaves
+	 * the stored token untouched (see save_integrations_panel()).
+	 *
+	 * @return void
+	 */
+	private function render_updates_card(): void {
+		$has_token       = class_exists( 'EEM_Updater' ) ? EEM_Updater::has_token() : false;
+		$from_constant   = class_exists( 'EEM_Updater' ) ? EEM_Updater::token_is_constant() : false;
+		$current_version = defined( 'EQUINE_EVENT_MANAGER_VERSION' ) ? EQUINE_EVENT_MANAGER_VERSION : '';
+		?>
+		<section class="eem-card">
+			<header class="eem-card-header">
+				<h2 class="eem-card-title"><?php esc_html_e( 'Plugin Updates', 'equine-event-manager' ); ?></h2>
+			</header>
+			<div class="eem-card-body">
+				<p class="eem-field-hint" style="margin-bottom:14px;">
+					<?php
+					printf(
+						/* translators: %s: installed plugin version. */
+						esc_html__( 'Equine Event Manager updates itself from its private GitHub repository. Paste a read-only GitHub access token below and WordPress will show an "Update now" link on the Plugins screen whenever a newer version is published. Installed version: %s.', 'equine-event-manager' ),
+						esc_html( $current_version )
+					);
+					?>
+				</p>
+
+				<div class="eem-field-row">
+					<span class="eem-field-label"><?php esc_html_e( 'Status', 'equine-event-manager' ); ?></span>
+					<div class="eem-field-control">
+						<?php if ( $has_token ) : ?>
+							<span class="eem-source-status is-active"><?php esc_html_e( 'Token configured', 'equine-event-manager' ); ?></span>
+							<span style="margin-left:8px;font-size:13px;color:var(--eem-text);">
+								<?php
+								echo esc_html(
+									$from_constant
+										? __( 'Set via the EEM_UPDATE_TOKEN constant in wp-config.php.', 'equine-event-manager' )
+										: __( 'Updates from GitHub are enabled.', 'equine-event-manager' )
+								);
+								?>
+							</span>
+						<?php else : ?>
+							<span class="eem-source-status is-warning"><?php esc_html_e( 'No token', 'equine-event-manager' ); ?></span>
+							<span style="margin-left:8px;font-size:13px;color:var(--eem-text);">
+								<?php esc_html_e( 'Auto-updates are disabled until a token is saved.', 'equine-event-manager' ); ?>
+							</span>
+						<?php endif; ?>
+					</div>
+				</div>
+
+				<?php if ( $from_constant ) : ?>
+					<div class="eem-field-row">
+						<span class="eem-field-label"><?php esc_html_e( 'GitHub Token', 'equine-event-manager' ); ?></span>
+						<div class="eem-field-control">
+							<p class="eem-field-hint"><?php esc_html_e( 'Managed in wp-config.php. To change it, edit the EEM_UPDATE_TOKEN constant on the server.', 'equine-event-manager' ); ?></p>
+						</div>
+					</div>
+				<?php else : ?>
+					<div class="eem-field-row">
+						<label class="eem-field-label" for="eem-update-token"><?php esc_html_e( 'GitHub Token', 'equine-event-manager' ); ?></label>
+						<div class="eem-field-control">
+							<input class="eem-field-input" id="eem-update-token" name="payload[update_token]" type="password" value="" autocomplete="off" placeholder="<?php echo esc_attr( $has_token ? __( 'saved — paste a new token to replace', 'equine-event-manager' ) : 'github_pat_…' ); ?>" />
+							<p class="eem-field-hint">
+								<?php esc_html_e( 'A fine-grained personal access token scoped to this one repository with Contents: Read-only. Leave blank to keep the saved token. Stored privately; never displayed after saving.', 'equine-event-manager' ); ?>
+							</p>
+						</div>
+					</div>
+				<?php endif; ?>
+			</div>
+		</section>
 		<?php
 	}
 
@@ -1432,6 +1515,22 @@ class EEM_Settings_Page {
 
 		if ( false === update_option( 'equine_event_manager_integration_settings', $current, false ) && get_option( 'equine_event_manager_integration_settings' ) !== $current ) {
 			$errors[] = 'integration_settings';
+		}
+
+		// Plugin Updates card: GitHub access token for in-WordPress auto-updates.
+		// Only persist when a non-empty value is submitted so an empty field
+		// (the default — the secret is never echoed back) keeps the saved token.
+		// Ignored entirely when the EEM_UPDATE_TOKEN wp-config constant is set,
+		// since the constant takes precedence in EEM_Updater::get_token().
+		$constant_token = class_exists( 'EEM_Updater' ) && EEM_Updater::token_is_constant();
+		if ( ! $constant_token && isset( $payload['update_token'] ) ) {
+			$token = trim( (string) $payload['update_token'] );
+			if ( '' !== $token ) {
+				// GitHub tokens are ASCII (github_pat_… / ghp_…); strip anything
+				// a stray paste might smuggle in without mangling the token body.
+				$token = sanitize_text_field( $token );
+				update_option( EEM_Updater::TOKEN_OPTION, $token, false );
+			}
 		}
 
 		// Mirror to feature_settings so EEM_Events::is_native_events_enabled()
