@@ -46,7 +46,7 @@ class EEM_Settings_Page {
 			'shortcodes'     => array( 'label' => __( 'Shortcodes', 'equine-event-manager' ),      'icon' => 'editor-code' ),
 			'payments'       => array( 'label' => __( 'Payments', 'equine-event-manager' ),        'icon' => 'money-alt' ),
 			'addons'         => array( 'label' => __( 'Add-Ons', 'equine-event-manager' ),         'icon' => 'admin-plugins' ),
-			'danger'         => array( 'label' => __( 'Danger Zone', 'equine-event-manager' ),     'icon' => 'warning' ),
+			'danger'         => array( 'label' => __( 'Uninstall', 'equine-event-manager' ),       'icon' => 'warning' ),
 		);
 	}
 

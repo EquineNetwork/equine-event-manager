@@ -1,14 +1,14 @@
 <?php
 /**
  * Plugin Name:       Equine Event Manager
- * Plugin URI:        https://example.com/equine-event-manager
+ * Plugin URI:        https://github.com/EquineNetwork/equine-event-manager
  * Description:       Event reservation management for stalls, RV spaces, and add-on bookings — multi-event with stall-chart visualization, payment processor support (Stripe + Authorize.net), and CSV / receipt export.
- * Version:           2.7.56
+ * Version:           2.7.57
  * Requires at least: 6.0
  * Tested up to:      6.8
  * Requires PHP:      7.4
- * Author:            Whitney Mitchell
- * Author URI:        https://example.com/equine-event-manager
+ * Author:            Equine Network
+ * Author URI:        https://equinenetwork.com
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       equine-event-manager
@@ -16,10 +16,11 @@
  * Update URI:        false
  *
  * @package           EEM_Plugin
- * @copyright         2024-2026 Whitney Mitchell
+ * @copyright         2024-2026 Equine Network
  *
- * Plugin URI + Author URI are placeholders pending external release. See
- * CLEANUP entry #23 for the to-do before publication / distribution.
+ * Plugin URI points at the canonical GitHub repo; Author URI at the Equine
+ * Network site. Confirm both are the intended public-facing URLs before any
+ * external/wordpress.org distribution (was CLEANUP #23).
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
