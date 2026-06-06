@@ -1,19 +1,23 @@
 <?php
 /**
- * In-WordPress automatic updates from the private GitHub repo.
+ * In-WordPress automatic updates from the GitHub repo.
  *
  * Wires the bundled Plugin Update Checker (PUC v5, MIT) to watch the `main`
  * branch of github.com/EquineNetwork/equine-event-manager. When a pushed commit
  * carries a higher `Version:` header than the installed copy, WordPress surfaces
  * an "Update now" link on the Plugins screen — no manual zip upload.
  *
- * The repo is PRIVATE, so each site authenticates with a GitHub token supplied
- * via a wp-config.php constant (kept out of the database and out of the repo):
+ * The repo is PUBLIC, so NO authentication is required — PUC reads it
+ * unauthenticated, exactly like the sibling Equine-Network-GAM-v2 plugin. There
+ * is nothing to configure on each site; updates "just work" after a push.
+ *
+ * Optional private-repo escape hatch: if the repo is ever switched to private,
+ * define a read-only token in wp-config.php and PUC will authenticate with it:
  *
  *     define( 'EEM_UPDATE_TOKEN', 'github_pat_xxx' );  // Contents: Read, this repo only
  *
- * Without the constant the checker loads but simply finds no updates (it can't
- * read a private repo unauthenticated) — no errors, no fatal.
+ * The constant is ignored while the repo is public (no auth needed). With no
+ * token AND a private repo, the checker simply finds no updates — no fatal.
  *
  * The GitHub branch archive WordPress downloads is trimmed to runtime-only files
  * by the `export-ignore` rules in .gitattributes (tests/, .mockups/, docs, etc.).
@@ -39,17 +43,8 @@ class EEM_Updater {
 	/** Branch to track for updates. */
 	const BRANCH = 'main';
 
-	/** wp-config constant that carries the GitHub access token for the private repo. */
+	/** Optional wp-config token constant — only consulted if the repo is made private. */
 	const TOKEN_CONSTANT = 'EEM_UPDATE_TOKEN';
-
-	/**
-	 * Option key the Settings → Integrations "Plugin Updates" field writes to.
-	 *
-	 * Provides a no-server-access path to supply the token: paste it in WP admin
-	 * instead of editing wp-config.php. The constant (when defined) still wins, so
-	 * an operator override in wp-config is never shadowed by a stale DB value.
-	 */
-	const TOKEN_OPTION = 'eem_update_token';
 
 	/**
 	 * Build the update checker. Safe to call once during plugin bootstrap; it
@@ -82,26 +77,11 @@ class EEM_Updater {
 			$checker->setBranch( self::BRANCH );
 		}
 
-		// Authenticate for the private repo when a token is available (wp-config
-		// constant or the Settings field). Without it, the checker simply finds
-		// no updates — no errors, no fatal.
-		$token = self::get_token();
-		if ( '' !== $token && method_exists( $checker, 'setAuthentication' ) ) {
-			$checker->setAuthentication( $token );
+		// Public repo: no auth needed. Only authenticate if a token constant is
+		// defined (the private-repo escape hatch). Harmless no-op while public.
+		if ( defined( self::TOKEN_CONSTANT ) && constant( self::TOKEN_CONSTANT ) && method_exists( $checker, 'setAuthentication' ) ) {
+			$checker->setAuthentication( constant( self::TOKEN_CONSTANT ) );
 		}
-	}
-
-	/**
-	 * Resolve the GitHub access token. The wp-config constant takes precedence
-	 * over the stored option so an explicit operator override always wins.
-	 *
-	 * @return string The token, or '' when none is configured.
-	 */
-	public static function get_token(): string {
-		if ( defined( self::TOKEN_CONSTANT ) && constant( self::TOKEN_CONSTANT ) ) {
-			return (string) constant( self::TOKEN_CONSTANT );
-		}
-		return (string) get_option( self::TOKEN_OPTION, '' );
 	}
 
 	/**
@@ -110,17 +90,6 @@ class EEM_Updater {
 	 * @return bool
 	 */
 	public static function has_token(): bool {
-		return '' !== self::get_token();
-	}
-
-	/**
-	 * Whether the active token comes from the wp-config constant (vs. the stored
-	 * option). Lets the Settings UI show the field as read-only / informational
-	 * when an operator has hard-coded the token in wp-config.
-	 *
-	 * @return bool
-	 */
-	public static function token_is_constant(): bool {
 		return defined( self::TOKEN_CONSTANT ) && (bool) constant( self::TOKEN_CONSTANT );
 	}
 }
