@@ -2581,6 +2581,36 @@
 		}, 50);
 	});
 
+	/* ─────────────────────────────────────────────────────────────
+	 * Payments settings: disable the INACTIVE processor's credential
+	 * fields so keys are never entered in the wrong section. The active
+	 * processor (the selected_gateway radio) stays editable; the other
+	 * is dimmed + disabled. Disabled fields don't submit, and the save
+	 * handler preserves any previously-saved keys (isset-guarded), so
+	 * switching processors never wipes the other one's credentials.
+	 * ───────────────────────────────────────────────────────────── */
+	function eemApplyProcessorState() {
+		var radios = document.querySelectorAll('[name="payload[selected_gateway]"]');
+		if (!radios.length) return;
+		var active = '';
+		Array.prototype.forEach.call(radios, function (r) { if (r.checked) { active = r.value; } });
+		Array.prototype.forEach.call(document.querySelectorAll('[data-eem-processor-section]'), function (sec) {
+			var isActive = sec.getAttribute('data-eem-processor-section') === active;
+			sec.classList.toggle('eem-processor-section--inactive', !isActive);
+			Array.prototype.forEach.call(sec.querySelectorAll('input, select, textarea, button'), function (el) {
+				el.disabled = !isActive;
+			});
+		});
+	}
+	document.addEventListener('change', function (ev) {
+		if (ev.target && 'payload[selected_gateway]' === ev.target.name) { eemApplyProcessorState(); }
+	});
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', eemApplyProcessorState);
+	} else {
+		eemApplyProcessorState();
+	}
+
 	/* C8 — Row builder / zone / pre-entry input delegation. */
 	document.addEventListener('input', function (ev) {
 		var inp = ev.target;

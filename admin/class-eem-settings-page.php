@@ -521,9 +521,10 @@ class EEM_Settings_Page {
 				</div>
 			</section>
 
-			<section class="eem-card">
+			<section class="eem-card eem-processor-section" data-eem-processor-section="stripe">
 				<header class="eem-card-header">
 					<h2 class="eem-card-title"><?php esc_html_e( 'Stripe Connection', 'equine-event-manager' ); ?></h2>
+					<span class="eem-processor-inactive-note"><?php esc_html_e( 'Inactive — select Stripe as the active processor above to edit these fields.', 'equine-event-manager' ); ?></span>
 				</header>
 				<div class="eem-card-body">
 					<?php
@@ -544,9 +545,10 @@ class EEM_Settings_Page {
 				</div>
 			</section>
 
-			<section class="eem-card">
+			<section class="eem-card eem-processor-section" data-eem-processor-section="authorize_net">
 				<header class="eem-card-header">
 					<h2 class="eem-card-title"><?php esc_html_e( 'Authorize.net Connection', 'equine-event-manager' ); ?></h2>
+					<span class="eem-processor-inactive-note"><?php esc_html_e( 'Inactive — select Authorize.net as the active processor above to edit these fields.', 'equine-event-manager' ); ?></span>
 				</header>
 				<div class="eem-card-body">
 					<?php
