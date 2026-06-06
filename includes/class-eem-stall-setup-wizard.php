@@ -71,6 +71,7 @@ class EEM_Stall_Setup_Wizard {
 			return;
 		}
 		self::render_stall_modal();
+		self::render_rv_modal();
 	}
 
 	/**
@@ -105,7 +106,7 @@ class EEM_Stall_Setup_Wizard {
 	 * @param int                                                                                                        $idx  Zero-based step index.
 	 * @return void
 	 */
-	private static function render_step( array $step, int $idx ): void {
+	private static function render_step( array $step, int $idx, string $qprefix ): void {
 		?>
 		<div class="eem-stall-setup__step" data-step="<?php echo (int) $idx; ?>" data-key="<?php echo esc_attr( $step['key'] ); ?>" <?php echo 0 === $idx ? '' : 'hidden'; ?>>
 			<h3 class="eem-stall-setup__q"><?php echo esc_html( $step['title'] ); ?></h3>
@@ -115,7 +116,7 @@ class EEM_Stall_Setup_Wizard {
 			<div class="eem-stall-setup__options">
 				<?php foreach ( $step['options'] as $oi => $opt ) : ?>
 					<label class="eem-stall-setup__opt">
-						<input type="radio" name="eem_stall_q_<?php echo esc_attr( $step['key'] ); ?>" value="<?php echo esc_attr( $opt['value'] ); ?>" <?php checked( 0, $oi ); ?> />
+						<input type="radio" name="<?php echo esc_attr( $qprefix . $step['key'] ); ?>" value="<?php echo esc_attr( $opt['value'] ); ?>" <?php checked( 0, $oi ); ?> />
 						<span class="eem-stall-setup__opt-body">
 							<span class="eem-stall-setup__opt-label"><?php echo esc_html( $opt['label'] ); ?></span>
 							<span class="eem-stall-setup__opt-desc"><?php echo esc_html( $opt['desc'] ); ?></span>
@@ -133,32 +134,85 @@ class EEM_Stall_Setup_Wizard {
 	 * @return void
 	 */
 	public static function render_stall_modal(): void {
-		$steps = self::stall_steps();
+		self::render_modal(
+			'stall',
+			__( 'Set up your stalls', 'equine-event-manager' ),
+			__( 'A few quick questions and we\'ll set your stall options the right way. You can change anything afterwards.', 'equine-event-manager' ),
+			self::stall_steps(),
+			self::stall_pending(),
+			__( 'Here\'s your stall setup', 'equine-event-manager' ),
+			__( 'We\'ll apply these to the form. Review and fine-tune the details (rates, stall rows, dates) below.', 'equine-event-manager' )
+		);
+	}
+
+	/**
+	 * Whether the RV modal should auto-open (RV flag not yet set on this site).
+	 *
+	 * @return bool
+	 */
+	public static function rv_pending(): bool {
+		return ! get_option( self::RV_FLAG, false );
+	}
+
+	/**
+	 * Render the RV setup modal (mirrors the stall modal with RV questions).
+	 *
+	 * @return void
+	 */
+	public static function render_rv_modal(): void {
+		self::render_modal(
+			'rv',
+			__( 'Set up RV reservations', 'equine-event-manager' ),
+			__( 'A few quick questions and we\'ll set your RV options the right way. You can change anything afterwards.', 'equine-event-manager' ),
+			self::rv_steps(),
+			self::rv_pending(),
+			__( 'Here\'s your RV setup', 'equine-event-manager' ),
+			__( 'We\'ll apply these to the form. Review and fine-tune the details (rates, lots, dates) below.', 'equine-event-manager' )
+		);
+	}
+
+	/**
+	 * Shared modal-chrome renderer for both the stall and RV wizards. The
+	 * `$which` slug derives the element id (eem-{which}-setup-wizard), the radio
+	 * name prefix (eem_{which}_q_), and the action prefix ({which}-setup-).
+	 *
+	 * @param string $which         'stall' | 'rv'.
+	 * @param string $title         Modal heading.
+	 * @param string $intro         Lead paragraph.
+	 * @param array  $steps         Question steps (see {stall,rv}_steps()).
+	 * @param bool   $pending       Whether the modal should auto-open (flag unset).
+	 * @param string $summary_title Summary-step heading.
+	 * @param string $summary_sub   Summary-step sub-line.
+	 * @return void
+	 */
+	private static function render_modal( string $which, string $title, string $intro, array $steps, bool $pending, string $summary_title, string $summary_sub ): void {
+		$id      = 'eem-' . $which . '-setup-wizard';
+		$qprefix = 'eem_' . $which . '_q_';
+		$act     = $which . '-setup-';
 		?>
-		<div class="eem-modal eem-stall-setup" id="eem-stall-setup-wizard"
-			data-eem-stall-setup
-			data-eem-pending="<?php echo self::stall_pending() ? '1' : '0'; ?>"
+		<div class="eem-modal eem-stall-setup" id="<?php echo esc_attr( $id ); ?>"
+			data-eem-pending="<?php echo $pending ? '1' : '0'; ?>"
 			data-eem-nonce="<?php echo esc_attr( wp_create_nonce( self::NONCE ) ); ?>">
 			<div class="eem-modal-card eem-stall-setup__card">
 				<div class="eem-modal-head">
-					<h2 class="eem-stall-setup__title"><?php esc_html_e( 'Set up your stalls', 'equine-event-manager' ); ?></h2>
-					<button type="button" class="eem-modal-close" data-eem-action="stall-setup-close" aria-label="<?php esc_attr_e( 'Close', 'equine-event-manager' ); ?>">&times;</button>
+					<h2 class="eem-stall-setup__title"><?php echo esc_html( $title ); ?></h2>
+					<button type="button" class="eem-modal-close" data-eem-action="<?php echo esc_attr( $act ); ?>close" aria-label="<?php esc_attr_e( 'Close', 'equine-event-manager' ); ?>">&times;</button>
 				</div>
 				<div class="eem-modal-body eem-stall-setup__body">
-					<p class="eem-stall-setup__intro"><?php esc_html_e( 'A few quick questions and we\'ll set your stall options the right way. You can change anything afterwards.', 'equine-event-manager' ); ?></p>
+					<p class="eem-stall-setup__intro"><?php echo esc_html( $intro ); ?></p>
 					<?php foreach ( $steps as $i => $step ) : ?>
-						<?php self::render_step( $step, $i ); ?>
+						<?php self::render_step( $step, $i, $qprefix ); ?>
 					<?php endforeach; ?>
 					<div class="eem-stall-setup__step eem-stall-setup__summary" data-step="<?php echo count( $steps ); ?>" hidden>
-						<h3 class="eem-stall-setup__q"><?php esc_html_e( 'Here\'s your stall setup', 'equine-event-manager' ); ?></h3>
-						<p class="eem-stall-setup__qsub"><?php esc_html_e( 'We\'ll apply these to the form. Review and fine-tune the details (rates, stall rows, dates) below.', 'equine-event-manager' ); ?></p>
-						<ul class="eem-stall-setup__summary-list" data-eem-stall-summary></ul>
+						<h3 class="eem-stall-setup__q"><?php echo esc_html( $summary_title ); ?></h3>
+						<p class="eem-stall-setup__qsub"><?php echo esc_html( $summary_sub ); ?></p>
+						<ul class="eem-stall-setup__summary-list" data-eem-summary></ul>
 					</div>
 				</div>
 				<div class="eem-modal-foot eem-stall-setup__foot">
-					<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="stall-setup-back" hidden><?php esc_html_e( 'Back', 'equine-event-manager' ); ?></button>
-					<button type="button" class="eem-stall-setup__skip" data-eem-action="stall-setup-close"><?php esc_html_e( 'Skip — I\'ll set it up myself', 'equine-event-manager' ); ?></button>
-					<button type="button" class="eem-btn eem-btn-primary" data-eem-action="stall-setup-next"><?php esc_html_e( 'Next', 'equine-event-manager' ); ?></button>
+					<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="<?php echo esc_attr( $act ); ?>back" hidden><?php esc_html_e( 'Back', 'equine-event-manager' ); ?></button>
+					<button type="button" class="eem-stall-setup__skip" data-eem-action="<?php echo esc_attr( $act ); ?>close"><?php esc_html_e( 'Skip — I\'ll set it up myself', 'equine-event-manager' ); ?></button>
+					<button type="button" class="eem-btn eem-btn-primary" data-eem-action="<?php echo esc_attr( $act ); ?>next"><?php esc_html_e( 'Next', 'equine-event-manager' ); ?></button>
 				</div>
 			</div>
 		</div>
@@ -214,6 +268,45 @@ class EEM_Stall_Setup_Wizard {
 			array(
 				'key'   => 'schedule',
 				'title' => __( 'Do stall reservations open and close on set dates?', 'equine-event-manager' ),
+				'sub'   => '',
+				'options' => array(
+					array( 'value' => 'no', 'label' => __( 'No — always open', 'equine-event-manager' ), 'desc' => __( 'Customers can reserve any time the reservation is live.', 'equine-event-manager' ) ),
+					array( 'value' => 'yes', 'label' => __( 'Yes — on specific dates/times', 'equine-event-manager' ), 'desc' => __( 'Reservations open and close on a schedule you set below.', 'equine-event-manager' ) ),
+				),
+			),
+		);
+	}
+
+	/**
+	 * The ordered RV question steps. Simpler than stalls: RV inventory is a single
+	 * Bulk-vs-Mapped mode (no separate inventory-type + selection split).
+	 *
+	 * @return array<int, array{key:string,title:string,sub:string,options:array}>
+	 */
+	private static function rv_steps(): array {
+		return array(
+			array(
+				'key'   => 'mode',
+				'title' => __( 'How do customers reserve RV spaces?', 'equine-event-manager' ),
+				'sub'   => __( 'This decides whether you manage an RV lot map or just a count.', 'equine-event-manager' ),
+				'options' => array(
+					array( 'value' => 'bulk', 'label' => __( 'They just pick how many lots', 'equine-event-manager' ), 'desc' => __( 'Sell a count; you assign the actual lots later from the chart. Simplest to run.', 'equine-event-manager' ) ),
+					array( 'value' => 'mapped', 'label' => __( 'They pick specific lots from a map', 'equine-event-manager' ), 'desc' => __( 'Customers tap specific RV lots on your layout at checkout.', 'equine-event-manager' ) ),
+				),
+			),
+			array(
+				'key'   => 'staytype',
+				'title' => __( 'How do customers book RV spaces?', 'equine-event-manager' ),
+				'sub'   => __( 'You can offer one or both pricing types.', 'equine-event-manager' ),
+				'options' => array(
+					array( 'value' => 'nightly', 'label' => __( 'Per night', 'equine-event-manager' ), 'desc' => __( 'Charged per night of the stay.', 'equine-event-manager' ) ),
+					array( 'value' => 'weekend', 'label' => __( 'Weekend package', 'equine-event-manager' ), 'desc' => __( 'One flat rate for a weekend package window.', 'equine-event-manager' ) ),
+					array( 'value' => 'both', 'label' => __( 'Both', 'equine-event-manager' ), 'desc' => __( 'Offer nightly and weekend; the customer chooses.', 'equine-event-manager' ) ),
+				),
+			),
+			array(
+				'key'   => 'schedule',
+				'title' => __( 'Do RV reservations open and close on set dates?', 'equine-event-manager' ),
 				'sub'   => '',
 				'options' => array(
 					array( 'value' => 'no', 'label' => __( 'No — always open', 'equine-event-manager' ), 'desc' => __( 'Customers can reserve any time the reservation is live.', 'equine-event-manager' ) ),

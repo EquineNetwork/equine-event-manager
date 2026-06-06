@@ -63,6 +63,28 @@ ss_ok( 'JS auto-opens on stall enable + persists seen',
 	false !== strpos( $js, 'function eemStallMaybeOpen' ) && false !== strpos( $js, 'eem_stall_setup_seen' ),
 	$pass, $fail, $log );
 
+// --- RV mirror: render + flag + JS apply ---
+ob_start();
+EEM_Stall_Setup_Wizard::render_rv_modal();
+$rv = (string) ob_get_clean();
+ss_ok( 'RV modal root present',            false !== strpos( $rv, 'id="eem-rv-setup-wizard"' ),  $pass, $fail, $log );
+foreach ( array( 'mode', 'staytype', 'schedule' ) as $key ) {
+	ss_ok( "RV step '$key' present",     false !== strpos( $rv, 'data-key="' . $key . '"' ),      $pass, $fail, $log );
+	ss_ok( "RV step '$key' has radios",  false !== strpos( $rv, 'name="eem_rv_q_' . $key . '"' ), $pass, $fail, $log );
+}
+ss_ok( 'RV nav actions present', false !== strpos( $rv, 'data-eem-action="rv-setup-next"' ) && false !== strpos( $rv, 'data-eem-action="rv-setup-close"' ), $pass, $fail, $log );
+$rv_saved = get_option( EEM_Stall_Setup_Wizard::RV_FLAG );
+delete_option( EEM_Stall_Setup_Wizard::RV_FLAG );
+ss_ok( 'RV pending true when flag unset', true === EEM_Stall_Setup_Wizard::rv_pending(), $pass, $fail, $log );
+if ( false === $rv_saved ) { delete_option( EEM_Stall_Setup_Wizard::RV_FLAG ); } else { update_option( EEM_Stall_Setup_Wizard::RV_FLAG, $rv_saved, false ); }
+ss_ok( 'JS defines eemRvApply targeting RV controls',
+	false !== strpos( $js, 'function eemRvApply' )
+	&& false !== strpos( $js, 'toggle-inventory-mode' )
+	&& false !== strpos( $js, "setToggle('rv_nightly_enabled'" )
+	&& false !== strpos( $js, "setToggle('rv_schedule_enabled'" ),
+	$pass, $fail, $log );
+ss_ok( 'JS auto-opens RV on rv enable', false !== strpos( $js, 'function eemRvMaybeOpen' ), $pass, $fail, $log );
+
 // --- CSS option-card classes present ---
 $css = (string) file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/css/admin.css' );
 foreach ( array( 'eem-stall-setup__opt', 'eem-stall-setup__options', 'eem-stall-setup__q', 'eem-stall-setup__summary-list' ) as $cls ) {

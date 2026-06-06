@@ -2383,7 +2383,7 @@
 		return lines;
 	}
 	function eemStallRenderSummary(w) {
-		var ul = w.querySelector('[data-eem-stall-summary]');
+		var ul = w.querySelector('[data-eem-summary]');
 		if (!ul) return;
 		ul.innerHTML = eemStallPlan(w).map(function (t) { return '<li>' + escapeHtml(t) + '</li>'; }).join('');
 	}
@@ -2468,6 +2468,116 @@
 			var w = eemStallEl();
 			var mirror = document.querySelector('[data-eem-section-enabled="stall"]');
 			if (w && '1' === w.getAttribute('data-eem-pending') && mirror && '1' === mirror.value) eemStallOpen(w);
+		}, 50);
+	});
+
+	/* ─────────────────────────────────────────────────────────────
+	 * First-run RV setup wizard — mirrors the stall wizard with RV
+	 * questions (3 steps, no branch) and RV control selectors.
+	 * ───────────────────────────────────────────────────────────── */
+	var _eemRvStepIdx = 0;
+	function eemRvEl() { return document.getElementById('eem-rv-setup-wizard'); }
+	function eemRvAnswer(w, key) {
+		var sel = w.querySelector('input[name="eem_rv_q_' + key + '"]:checked');
+		return sel ? sel.value : null;
+	}
+	function eemRvSteps(w) { return w.querySelectorAll('.eem-stall-setup__step'); }
+	function eemRvShow(w, idx) {
+		var active = eemRvSteps(w);
+		if (idx < 0) idx = 0;
+		if (idx > active.length - 1) idx = active.length - 1;
+		_eemRvStepIdx = idx;
+		Array.prototype.forEach.call(active, function (s) { s.hidden = true; });
+		active[idx].hidden = false;
+		var isSummary = active[idx].classList.contains('eem-stall-setup__summary');
+		var back = w.querySelector('[data-eem-action="rv-setup-back"]');
+		var next = w.querySelector('[data-eem-action="rv-setup-next"]');
+		if (back) back.hidden = (0 === idx);
+		if (next) next.textContent = isSummary ? 'Apply setup' : 'Next';
+		if (isSummary) eemRvRenderSummary(w);
+	}
+	function eemRvPlan(w) {
+		var mode = eemRvAnswer(w, 'mode'), stay = eemRvAnswer(w, 'staytype'), sched = eemRvAnswer(w, 'schedule');
+		var lines = [];
+		lines.push('mapped' === mode ? 'Mapped RV lots — customers pick exact lots from your map' : 'Bulk RV — customers pick how many; you assign lots');
+		lines.push('both' === stay ? 'Pricing: nightly and weekend' : ('weekend' === stay ? 'Pricing: weekend package' : 'Pricing: per night'));
+		lines.push('yes' === sched ? 'Reservation schedule: on (set open/close dates below)' : 'Reservation schedule: off (always open)');
+		return lines;
+	}
+	function eemRvRenderSummary(w) {
+		var ul = w.querySelector('[data-eem-summary]');
+		if (!ul) return;
+		ul.innerHTML = eemRvPlan(w).map(function (t) { return '<li>' + escapeHtml(t) + '</li>'; }).join('');
+	}
+	function eemRvApply(w) {
+		var mode = eemRvAnswer(w, 'mode'), stay = eemRvAnswer(w, 'staytype'), sched = eemRvAnswer(w, 'schedule');
+		function clickSel(sel) { var el = document.querySelector(sel); if (el && !el.disabled) el.click(); }
+		function setToggle(name, on) {
+			var input = document.querySelector('input[name="en_reservation[' + name + ']"]');
+			if (!input) return;
+			var ctl = input.closest('[data-eem-action]');
+			if (!ctl) return;
+			var tog = ctl.querySelector('.eem-toggle');
+			var cur = tog ? tog.classList.contains('eem-toggle--on') : ('1' === input.value);
+			if (cur !== on) ctl.click();
+		}
+		clickSel('[data-eem-action="toggle-inventory-mode"][data-section="rv"][data-mode="' + ('mapped' === mode ? 'mapped' : 'bulk') + '"]');
+		setToggle('rv_nightly_enabled', 'nightly' === stay || 'both' === stay);
+		setToggle('rv_weekend_enabled', 'weekend' === stay || 'both' === stay);
+		setToggle('rv_schedule_enabled', 'yes' === sched);
+		eemRvClose(w);
+		if (EEM && typeof EEM.showSaveToast === 'function') {
+			EEM.showSaveToast('RV options set', { sub: 'Review the details below, then Save the reservation.', duration: 4000 });
+		}
+	}
+	function eemRvMarkSeen(w) {
+		if ('1' !== w.getAttribute('data-eem-pending')) return;
+		w.setAttribute('data-eem-pending', '0');
+		var body = new URLSearchParams();
+		body.set('action', 'eem_stall_setup_seen');
+		body.set('which', 'rv');
+		body.set('nonce', w.getAttribute('data-eem-nonce') || '');
+		fetch(window.ajaxurl || '/wp-admin/admin-ajax.php', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body.toString() });
+	}
+	function eemRvOpen(w) { eemRvShow(w, 0); w.classList.add('open'); }
+	function eemRvClose(w) { w.classList.remove('open'); eemRvMarkSeen(w); }
+	function eemRvNext(w) {
+		var active = eemRvSteps(w);
+		if (active[_eemRvStepIdx].classList.contains('eem-stall-setup__summary')) { eemRvApply(w); return; }
+		eemRvShow(w, _eemRvStepIdx + 1);
+	}
+	document.addEventListener('click', function (ev) {
+		var t = ev.target.closest ? ev.target.closest('[data-eem-action^="rv-setup-"]') : null;
+		if (!t) return;
+		var w = eemRvEl();
+		if (!w) return;
+		ev.preventDefault();
+		var action = t.getAttribute('data-eem-action');
+		if ('rv-setup-next' === action) eemRvNext(w);
+		else if ('rv-setup-back' === action) eemRvShow(w, _eemRvStepIdx - 1);
+		else if ('rv-setup-close' === action) eemRvClose(w);
+	});
+	function eemRvMaybeOpen() {
+		var w = eemRvEl();
+		if (!w || '1' !== w.getAttribute('data-eem-pending')) return;
+		// Stall modal takes priority on load — don't stack two modals at once.
+		var sw = eemStallEl();
+		if (sw && sw.classList.contains('open')) return;
+		var mirror = document.querySelector('[data-eem-section-enabled="rv"]');
+		if (mirror && '1' === mirror.value) eemRvOpen(w);
+	}
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', eemRvMaybeOpen);
+	} else {
+		eemRvMaybeOpen();
+	}
+	document.addEventListener('click', function (ev) {
+		var tog = ev.target.closest ? ev.target.closest('[data-eem-action="reservation-editor-toggle-enabled"][data-eem-section="rv"]') : null;
+		if (!tog) return;
+		setTimeout(function () {
+			var w = eemRvEl();
+			var mirror = document.querySelector('[data-eem-section-enabled="rv"]');
+			if (w && '1' === w.getAttribute('data-eem-pending') && mirror && '1' === mirror.value) eemRvOpen(w);
 		}, 50);
 	});
 
