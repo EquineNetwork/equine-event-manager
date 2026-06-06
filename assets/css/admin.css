@@ -3160,6 +3160,63 @@ a.eem-settings-nav-item:focus {
 .eem-setup-wizard__foot .eem-setup-wizard__later {
 	margin-left: auto;
 }
+/* In-wizard form fields (self-contained setup). */
+.eem-setup-wizard__card {
+	max-height: 88vh;
+	display: flex;
+	flex-direction: column;
+}
+.eem-setup-wizard__body {
+	overflow-y: auto;
+}
+.eem-setup-wizard__fields {
+	margin: 6px 0 2px;
+}
+.eem-setup-wizard__fields .eem-field-row {
+	margin-bottom: 14px;
+}
+.eem-setup-wizard__fields .eem-field-input {
+	width: 100%;
+	max-width: 360px;
+	box-sizing: border-box;
+}
+.eem-setup-wizard__label {
+	display: block;
+	font-size: 12.5px;
+	font-weight: 600;
+	color: #1d2327;
+	margin-bottom: 5px;
+}
+.eem-setup-wizard__radio {
+	display: flex;
+	gap: 9px;
+	align-items: flex-start;
+	margin-bottom: 8px;
+	font-size: 13.5px;
+	color: #1d2327;
+	cursor: pointer;
+}
+.eem-setup-wizard__mode {
+	display: flex;
+	gap: 18px;
+	flex-wrap: wrap;
+	margin-bottom: 12px;
+}
+.eem-setup-wizard__note {
+	margin: 6px 0 0;
+	font-size: 12.5px;
+	color: #6b7280;
+}
+.eem-setup-wizard__error {
+	margin: 10px 0 0;
+	padding: 8px 10px;
+	border-radius: var(--eem-radius);
+	background: #fef2f2;
+	border: 1px solid #fecaca;
+	color: #b91c1c;
+	font-size: 12.5px;
+	font-weight: 600;
+}
 
 .eem-empty-state-title {
 	font-size: 13.5px;

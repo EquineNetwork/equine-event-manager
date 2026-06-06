@@ -50,6 +50,19 @@ class EEM_Setup_Wizard {
 	 */
 	public static function register(): void {
 		add_action( 'admin_footer', array( __CLASS__, 'maybe_render' ) );
+		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'maybe_enqueue_media' ) );
+	}
+
+	/**
+	 * Load the WP media library on EEM admin pages while the wizard may show, so
+	 * its in-modal logo picker (Branding step) can open the uploader.
+	 *
+	 * @return void
+	 */
+	public static function maybe_enqueue_media(): void {
+		if ( self::should_render() && function_exists( 'wp_enqueue_media' ) ) {
+			wp_enqueue_media();
+		}
 	}
 
 	/**
@@ -160,6 +173,21 @@ class EEM_Setup_Wizard {
 		$start      = self::start_step_index();
 		$done_count = self::required_done_count();
 		$required   = count( self::REQUIRED_KEYS );
+
+		// Prefill values from live options so the fields are populated.
+		$company    = (array) get_option( 'equine_event_manager_company_settings', array() );
+		$logo_id    = isset( $company['logo_id'] ) ? absint( $company['logo_id'] ) : 0;
+		$logo_url   = $logo_id ? (string) wp_get_attachment_image_url( $logo_id, 'medium' ) : '';
+		$sup_email  = isset( $company['support_email'] ) ? (string) $company['support_email'] : (string) get_option( 'admin_email', '' );
+		$sender     = class_exists( 'EEM_Settings_Repo' ) ? (array) get_option( EEM_Settings_Repo::OPTION_EMAIL_SENDER, array() ) : array();
+		$from_name  = isset( $sender['from_name'] ) ? (string) $sender['from_name'] : (string) get_option( 'blogname', '' );
+		$from_email = isset( $sender['from_email'] ) ? (string) $sender['from_email'] : (string) get_option( 'admin_email', '' );
+		$payment    = (array) get_option( 'equine_event_manager_payment_settings', array() );
+		$stripe     = isset( $payment['stripe'] ) && is_array( $payment['stripe'] ) ? $payment['stripe'] : array();
+		$has_live   = '' !== trim( (string) ( $stripe['live_publishable_key'] ?? '' ) );
+		$integ      = (array) get_option( 'equine_event_manager_integration_settings', array() );
+		$sg_key     = isset( $integ['sendgrid_api_key'] ) ? (string) $integ['sendgrid_api_key'] : '';
+		$nonce      = wp_create_nonce( 'eem_settings_save' );
 		?>
 		<div
 			class="eem-modal eem-setup-wizard"
@@ -170,6 +198,8 @@ class EEM_Setup_Wizard {
 			data-eem-wizard-autoopen="1"
 			data-eem-wizard-start="<?php echo esc_attr( (string) $start ); ?>"
 			data-eem-wizard-done-count="<?php echo esc_attr( (string) $done_count ); ?>"
+			data-eem-settings-nonce="<?php echo esc_attr( $nonce ); ?>"
+			data-eem-required="<?php echo esc_attr( (string) $required ); ?>"
 		>
 			<div class="eem-modal-card eem-setup-wizard__card">
 				<div class="eem-modal-head">
@@ -189,7 +219,7 @@ class EEM_Setup_Wizard {
 							></button>
 						<?php endforeach; ?>
 					</div>
-					<p class="eem-setup-wizard__count">
+					<p class="eem-setup-wizard__count" data-eem-wizard-count>
 						<?php
 						echo esc_html(
 							sprintf(
@@ -207,37 +237,106 @@ class EEM_Setup_Wizard {
 					<?php foreach ( $items as $i => $item ) :
 						$is_required = in_array( $item['key'], self::REQUIRED_KEYS, true );
 						$done        = ! empty( $item['done'] );
+						$panel       = in_array( $item['key'], array( 'event_source', 'sendgrid' ), true ) ? 'integrations' : $item['key'];
 						?>
-						<div class="eem-setup-wizard__step" data-step="<?php echo esc_attr( (string) $i ); ?>" <?php echo $i === $start ? '' : 'hidden'; ?>>
+						<div class="eem-setup-wizard__step" data-step="<?php echo esc_attr( (string) $i ); ?>" data-eem-wizard-panel="<?php echo esc_attr( $panel ); ?>" data-eem-wizard-key="<?php echo esc_attr( $item['key'] ); ?>" <?php echo $i === $start ? '' : 'hidden'; ?>>
 							<div class="eem-setup-wizard__step-head">
 								<span class="eem-setup-wizard__step-num"><?php echo esc_html( (string) ( $i + 1 ) ); ?></span>
 								<h3 class="eem-setup-wizard__step-title"><?php echo esc_html( $item['label'] ); ?></h3>
-								<?php if ( $done ) : ?>
-									<span class="eem-setup-wizard__badge eem-setup-wizard__badge--done"><?php esc_html_e( 'Done', 'equine-event-manager' ); ?></span>
-								<?php elseif ( $is_required ) : ?>
-									<span class="eem-setup-wizard__badge eem-setup-wizard__badge--todo"><?php esc_html_e( 'Required', 'equine-event-manager' ); ?></span>
-								<?php else : ?>
-									<span class="eem-setup-wizard__badge eem-setup-wizard__badge--optional"><?php esc_html_e( 'Optional', 'equine-event-manager' ); ?></span>
-								<?php endif; ?>
+								<span class="eem-setup-wizard__badge eem-setup-wizard__badge--<?php echo $done ? 'done' : ( $is_required ? 'todo' : 'optional' ); ?>" data-eem-wizard-badge>
+									<?php echo esc_html( $done ? __( 'Done', 'equine-event-manager' ) : ( $is_required ? __( 'Required', 'equine-event-manager' ) : __( 'Optional', 'equine-event-manager' ) ) ); ?>
+								</span>
 							</div>
 							<?php if ( 0 === $i ) : ?>
-								<p class="eem-setup-wizard__intro"><?php esc_html_e( 'A few quick steps and you’ll be ready to take reservations. We’ll walk you through each one in order — start here.', 'equine-event-manager' ); ?></p>
+								<p class="eem-setup-wizard__intro"><?php esc_html_e( 'A few quick steps and you’ll be ready to take reservations. Fill each one in and click Save & Continue — we’ll save it for you. No need to leave this window.', 'equine-event-manager' ); ?></p>
 							<?php endif; ?>
 							<p class="eem-setup-wizard__hint"><?php echo esc_html( $item['hint'] ); ?></p>
-							<a class="eem-btn <?php echo $done ? 'eem-btn-secondary' : 'eem-btn-primary'; ?> eem-setup-wizard__cta" data-eem-action="setup-wizard-cta" href="<?php echo esc_url( $item['url'] ); ?>">
+
+							<div class="eem-setup-wizard__fields">
 								<?php
-								echo $done
-									? esc_html( sprintf( /* translators: %s: step name */ __( 'Review %s', 'equine-event-manager' ), $item['label'] ) )
-									: esc_html( sprintf( /* translators: %s: step name */ __( 'Set up %s →', 'equine-event-manager' ), $item['label'] ) );
+								switch ( $item['key'] ) :
+									case 'event_source': ?>
+										<label class="eem-setup-wizard__radio">
+											<input type="radio" name="payload[source]" value="tec" checked />
+											<span><strong><?php esc_html_e( 'The Events Calendar (TEC)', 'equine-event-manager' ); ?></strong> — <?php esc_html_e( 'recommended. Reservations link to your live TEC events.', 'equine-event-manager' ); ?></span>
+										</label>
+										<p class="eem-setup-wizard__note"><?php esc_html_e( 'Native Events and External Feed are coming soon. TEC is the active source for now.', 'equine-event-manager' ); ?></p>
+										<?php break;
+
+									case 'branding': ?>
+										<div class="eem-field-row">
+											<label class="eem-setup-wizard__label"><?php esc_html_e( 'Logo (PNG)', 'equine-event-manager' ); ?></label>
+											<div class="eem-logo-upload" data-eem-logo-upload>
+												<div class="eem-logo-preview" data-eem-logo-preview>
+													<?php if ( $logo_url ) : ?>
+														<img src="<?php echo esc_url( $logo_url ); ?>" alt="" />
+													<?php else : ?>
+														<span class="eem-logo-preview-empty"><?php esc_html_e( 'No logo set', 'equine-event-manager' ); ?></span>
+													<?php endif; ?>
+												</div>
+												<div class="eem-logo-upload-actions">
+													<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="logo-pick"><?php esc_html_e( 'Choose / Upload Logo', 'equine-event-manager' ); ?></button>
+													<button type="button" class="eem-btn eem-btn-danger" data-eem-action="logo-remove" <?php disabled( 0 === $logo_id ); ?>><?php esc_html_e( 'Remove', 'equine-event-manager' ); ?></button>
+												</div>
+												<input type="hidden" name="payload[logo_id]" value="<?php echo esc_attr( (string) $logo_id ); ?>" data-eem-logo-id />
+											</div>
+										</div>
+										<div class="eem-field-row">
+											<label class="eem-setup-wizard__label" for="eem-wiz-support-email"><?php esc_html_e( 'Support email', 'equine-event-manager' ); ?></label>
+											<input class="eem-field-input" id="eem-wiz-support-email" type="email" name="payload[support_email]" value="<?php echo esc_attr( $sup_email ); ?>" style="max-width:340px;" />
+										</div>
+										<?php break;
+
+									case 'communications': ?>
+										<div class="eem-field-row">
+											<label class="eem-setup-wizard__label" for="eem-wiz-from-name"><?php esc_html_e( 'From name', 'equine-event-manager' ); ?></label>
+											<input class="eem-field-input" id="eem-wiz-from-name" type="text" name="payload[sender][from_name]" value="<?php echo esc_attr( $from_name ); ?>" style="max-width:340px;" placeholder="<?php esc_attr_e( 'e.g. RSNC', 'equine-event-manager' ); ?>" />
+										</div>
+										<div class="eem-field-row">
+											<label class="eem-setup-wizard__label" for="eem-wiz-from-email"><?php esc_html_e( 'From email', 'equine-event-manager' ); ?></label>
+											<input class="eem-field-input" id="eem-wiz-from-email" type="email" name="payload[sender][from_email]" value="<?php echo esc_attr( $from_email ); ?>" style="max-width:340px;" />
+										</div>
+										<?php break;
+
+									case 'payments': ?>
+										<input type="hidden" name="payload[selected_gateway]" value="stripe" />
+										<div class="eem-setup-wizard__mode" role="radiogroup" aria-label="<?php esc_attr_e( 'Stripe key mode', 'equine-event-manager' ); ?>">
+											<label class="eem-setup-wizard__radio"><input type="radio" name="eem_wiz_stripe_mode" value="test" <?php checked( ! $has_live ); ?> data-eem-wizard-mode /> <span><?php esc_html_e( 'Test keys (for testing)', 'equine-event-manager' ); ?></span></label>
+											<label class="eem-setup-wizard__radio"><input type="radio" name="eem_wiz_stripe_mode" value="live" <?php checked( $has_live ); ?> data-eem-wizard-mode /> <span><?php esc_html_e( 'Live keys (real charges)', 'equine-event-manager' ); ?></span></label>
+										</div>
+										<div class="eem-field-row" data-eem-wizard-mode-fields="test" <?php echo $has_live ? 'hidden' : ''; ?>>
+											<label class="eem-setup-wizard__label"><?php esc_html_e( 'Test Publishable key', 'equine-event-manager' ); ?></label>
+											<input class="eem-field-input" type="text" name="payload[stripe][test_publishable_key]" value="<?php echo esc_attr( (string) ( $stripe['test_publishable_key'] ?? '' ) ); ?>" placeholder="pk_test_…" autocomplete="off" />
+											<label class="eem-setup-wizard__label" style="margin-top:8px;"><?php esc_html_e( 'Test Secret key', 'equine-event-manager' ); ?></label>
+											<input class="eem-field-input" type="password" name="payload[stripe][test_secret_key]" value="<?php echo esc_attr( (string) ( $stripe['test_secret_key'] ?? '' ) ); ?>" placeholder="sk_test_…" autocomplete="off" />
+										</div>
+										<div class="eem-field-row" data-eem-wizard-mode-fields="live" <?php echo $has_live ? '' : 'hidden'; ?>>
+											<label class="eem-setup-wizard__label"><?php esc_html_e( 'Live Publishable key', 'equine-event-manager' ); ?></label>
+											<input class="eem-field-input" type="text" name="payload[stripe][live_publishable_key]" value="<?php echo esc_attr( (string) ( $stripe['live_publishable_key'] ?? '' ) ); ?>" placeholder="pk_live_…" autocomplete="off" />
+											<label class="eem-setup-wizard__label" style="margin-top:8px;"><?php esc_html_e( 'Live Secret key', 'equine-event-manager' ); ?></label>
+											<input class="eem-field-input" type="password" name="payload[stripe][live_secret_key]" value="<?php echo esc_attr( (string) ( $stripe['live_secret_key'] ?? '' ) ); ?>" placeholder="sk_live_…" autocomplete="off" />
+										</div>
+										<?php break;
+
+									case 'sendgrid': ?>
+										<div class="eem-field-row">
+											<label class="eem-setup-wizard__label" for="eem-wiz-sendgrid"><?php esc_html_e( 'SendGrid API key', 'equine-event-manager' ); ?></label>
+											<input class="eem-field-input" id="eem-wiz-sendgrid" type="password" name="payload[sendgrid_api_key]" value="<?php echo esc_attr( $sg_key ); ?>" placeholder="SG.xxxxxxxx" autocomplete="off" />
+											<p class="eem-setup-wizard__note"><?php esc_html_e( 'Optional — leave blank to use the site’s default WordPress mailer. You can add this later.', 'equine-event-manager' ); ?></p>
+										</div>
+										<?php break;
+								endswitch;
 								?>
-							</a>
+							</div>
+
+							<p class="eem-setup-wizard__error" data-eem-wizard-error hidden></p>
 						</div>
 					<?php endforeach; ?>
 				</div>
 
 				<div class="eem-modal-foot eem-setup-wizard__foot">
 					<button type="button" class="eem-btn eem-btn-secondary eem-setup-wizard__back" data-eem-action="setup-wizard-back"><?php esc_html_e( 'Back', 'equine-event-manager' ); ?></button>
-					<button type="button" class="eem-btn eem-btn-primary eem-setup-wizard__next" data-eem-action="setup-wizard-next" data-eem-wizard-total="<?php echo esc_attr( (string) $total ); ?>"><?php esc_html_e( 'Next', 'equine-event-manager' ); ?></button>
+					<button type="button" class="eem-btn eem-btn-primary eem-setup-wizard__next" data-eem-action="setup-wizard-save" data-eem-wizard-total="<?php echo esc_attr( (string) $total ); ?>"><?php esc_html_e( 'Save & Continue', 'equine-event-manager' ); ?></button>
 					<button type="button" class="eem-btn eem-btn-secondary eem-setup-wizard__later" data-eem-action="setup-wizard-close"><?php esc_html_e( 'I’ll finish later', 'equine-event-manager' ); ?></button>
 				</div>
 			</div>

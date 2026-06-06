@@ -1094,7 +1094,27 @@
 		var back = w.querySelector('.eem-setup-wizard__back');
 		if (back) back.disabled = (idx === 0);
 		var next = w.querySelector('.eem-setup-wizard__next');
-		if (next) next.textContent = (idx === steps.length - 1) ? 'Done' : 'Next';
+		if (next) next.textContent = (idx === steps.length - 1) ? 'Finish' : 'Save & Continue';
+	}
+	/* Per-step required-field check so the wizard only advances + marks a step
+	   "done" when the area is genuinely complete (matches the checklist criteria).
+	   Returns an error message if something's missing, else null. */
+	function eemWizardValidateStep(step, key) {
+		function v(name) { var el = step.querySelector('[name="' + name + '"]'); return el ? (el.value || '').trim() : ''; }
+		if (key === 'branding') {
+			if (!v('payload[logo_id]') || v('payload[logo_id]') === '0') return 'Please choose a logo (PNG).';
+			if (!v('payload[support_email]')) return 'Please enter a support email.';
+		} else if (key === 'communications') {
+			if (!v('payload[sender][from_name]')) return 'Please enter a from-name.';
+			if (!v('payload[sender][from_email]')) return 'Please enter a from-email.';
+		} else if (key === 'payments') {
+			var modeEl = step.querySelector('[data-eem-wizard-mode]:checked');
+			var mode = modeEl ? modeEl.value : 'test';
+			if (!v('payload[stripe][' + mode + '_publishable_key]') || !v('payload[stripe][' + mode + '_secret_key]')) {
+				return 'Please enter both the ' + mode + ' publishable and secret key.';
+			}
+		}
+		return null; // event_source + sendgrid have no required text fields
 	}
 	function eemWizardSnooze(w) {
 		try { window.sessionStorage.setItem('eemWizardClosedAtCount', w.getAttribute('data-eem-wizard-done-count') || '0'); } catch (e) {}
@@ -1103,6 +1123,80 @@
 		w.classList.remove('open');
 		eemWizardSnooze(w);
 	}
+	/* Save the current step's fields to the matching Settings panel (reusing the
+	   eem_save_settings AJAX handler), then advance — or reload on the last step
+	   so the Dashboard + checklist reflect the finished setup. */
+	function eemWizardSaveStep(w, btn) {
+		var steps = eemWizardStepEls(w);
+		var idx = eemWizardCurrentStep(w);
+		var step = steps[idx];
+		if (!step) return;
+		var errEl = step.querySelector('[data-eem-wizard-error]');
+		if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
+
+		var missing = eemWizardValidateStep(step, step.getAttribute('data-eem-wizard-key'));
+		if (missing) {
+			if (errEl) { errEl.textContent = missing; errEl.hidden = false; }
+			return;
+		}
+
+		var body = new URLSearchParams();
+		body.append('action', 'eem_save_settings');
+		body.append('panel', step.getAttribute('data-eem-wizard-panel') || '');
+		body.append('nonce', w.getAttribute('data-eem-settings-nonce') || '');
+		step.querySelectorAll('input, select, textarea').forEach(function (el) {
+			if (!el.name || el.name.indexOf('payload') !== 0) return;
+			if ((el.type === 'checkbox' || el.type === 'radio') && !el.checked) return;
+			body.append(el.name, el.value);
+		});
+
+		var label = btn ? btn.textContent : '';
+		if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+
+		fetch(window.ajaxurl || '/wp-admin/admin-ajax.php', {
+			method: 'POST', credentials: 'same-origin',
+			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+			body: body.toString()
+		})
+		.then(function (r) { return r.json(); })
+		.then(function (payload) {
+			if (btn) { btn.disabled = false; btn.textContent = label; }
+			if (payload && payload.success) {
+				eemWizardMarkStepDone(w, idx);
+				if (idx >= steps.length - 1) {
+					window.location.reload();   // finished — refresh so everything reflects it
+				} else {
+					eemWizardShowStep(w, idx + 1);
+				}
+			} else {
+				var msg = (payload && payload.data && payload.data.message) || 'Could not save — please check the fields and try again.';
+				if (errEl) { errEl.textContent = msg; errEl.hidden = false; }
+			}
+		})
+		.catch(function () {
+			if (btn) { btn.disabled = false; btn.textContent = label; }
+			if (errEl) { errEl.textContent = 'Network error — please try again.'; errEl.hidden = false; }
+		});
+	}
+	/* Mark a step done in the UI (dot + badge) and recompute the required-done count. */
+	function eemWizardMarkStepDone(w, idx) {
+		var dots = w.querySelectorAll('.eem-setup-wizard__dot');
+		if (dots[idx]) dots[idx].classList.add('is-done');
+		var step = eemWizardStepEls(w)[idx];
+		if (step) {
+			var badge = step.querySelector('[data-eem-wizard-badge]');
+			if (badge) { badge.textContent = 'Done'; badge.className = 'eem-setup-wizard__badge eem-setup-wizard__badge--done'; }
+		}
+		var required = parseInt(w.getAttribute('data-eem-required') || '4', 10);
+		var doneReq = 0;
+		for (var d = 0; d < required && d < dots.length; d++) {
+			if (dots[d].classList.contains('is-done')) doneReq++;
+		}
+		w.setAttribute('data-eem-wizard-done-count', String(doneReq));
+		var countEl = w.querySelector('[data-eem-wizard-count]');
+		if (countEl) countEl.textContent = doneReq + ' of ' + required + ' required steps done';
+	}
+
 	function eemWizardMaybeAutoOpen() {
 		var w = eemWizardEl();
 		if (!w || w.getAttribute('data-eem-wizard-autoopen') !== '1') return;
@@ -1126,6 +1220,17 @@
 			var w = eemWizardEl();
 			if (w && w.classList.contains('open')) eemWizardClose(w);
 		}
+	});
+	/* Wizard Payments step: show the Test or Live key fields per the mode toggle. */
+	document.addEventListener('change', function (e) {
+		var t = e.target;
+		if (!t || !t.matches || !t.matches('[data-eem-wizard-mode]')) return;
+		var w = eemWizardEl(); if (!w) return;
+		var step = eemWizardStepEls(w)[eemWizardCurrentStep(w)];
+		if (!step) return;
+		step.querySelectorAll('[data-eem-wizard-mode-fields]').forEach(function (grp) {
+			grp.hidden = (grp.getAttribute('data-eem-wizard-mode-fields') !== t.value);
+		});
 	});
 
 	/* C5.G.2 — Orders row-action helper. Mirror of submitReservationAction
@@ -1968,12 +2073,9 @@
 		'settings-reset-all-data': function (target) {
 			openResetAllDataModal(target);
 		},
-		/* First-run setup wizard navigation. */
-		'setup-wizard-next': function () {
-			var w = eemWizardEl(); if (!w) return;
-			var cur = eemWizardCurrentStep(w);
-			if (cur >= eemWizardStepEls(w).length - 1) { eemWizardClose(w); }
-			else { eemWizardShowStep(w, cur + 1); }
+		/* First-run setup wizard: save the current step's fields, then advance. */
+		'setup-wizard-save': function (target) {
+			var w = eemWizardEl(); if (w) eemWizardSaveStep(w, target);
 		},
 		'setup-wizard-back': function () {
 			var w = eemWizardEl(); if (w) eemWizardShowStep(w, eemWizardCurrentStep(w) - 1);
@@ -1983,12 +2085,6 @@
 		},
 		'setup-wizard-close': function () {
 			var w = eemWizardEl(); if (w) eemWizardClose(w);
-		},
-		'setup-wizard-cta': function (target) {
-			/* The dispatcher preventDefault()s the <a>, so close (snooze) + navigate manually. */
-			var w = eemWizardEl(); if (w) eemWizardSnooze(w);
-			var href = target.getAttribute('href');
-			if (href) window.location.href = href;
 		},
 		'bulk-apply': function (target, ev) {
 			// Hook the bulk form's submit — collect selected reservation ids
