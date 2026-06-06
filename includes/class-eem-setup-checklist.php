@@ -109,7 +109,9 @@ class EEM_Setup_Checklist {
 	}
 
 	/**
-	 * True when the current user has dismissed the card.
+	 * True when the current user has dismissed the optional SendGrid row. Since
+	 * 2.7.50 the dismiss control lives only on the SendGrid action (the four
+	 * required areas can be completed but never dismissed).
 	 *
 	 * @return bool
 	 */
@@ -126,7 +128,107 @@ class EEM_Setup_Checklist {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return false;
 		}
-		return ! self::is_complete() && ! self::is_dismissed();
+		return ! empty( self::pending_actions() );
+	}
+
+	/**
+	 * The ordered list of OUTSTANDING onboarding actions for the Dashboard card.
+	 *
+	 * Completed required areas are omitted entirely (they "drop off" — Whitney's
+	 * 2.7.50 product decision). Once all four required areas are configured, a
+	 * prominent "create your first reservation" action appears (until a published
+	 * reservation exists), because a reservation is the gateway to orders + stall
+	 * charts. The optional SendGrid row is the ONLY dismissable action.
+	 *
+	 * The card hides itself when this returns empty.
+	 *
+	 * @return array<int, array{type:string,key:string,label:string,hint:string,url:string,cta:string,tone:string,dismissable:bool}>
+	 */
+	public static function pending_actions(): array {
+		$by_key = array();
+		foreach ( self::items() as $it ) {
+			$by_key[ $it['key'] ] = $it;
+		}
+
+		$rows = array();
+
+		// 1. Incomplete REQUIRED setup areas, in canonical order.
+		$required_incomplete = 0;
+		foreach ( array( 'event_source', 'branding', 'communications', 'payments' ) as $k ) {
+			if ( empty( $by_key[ $k ]['done'] ) ) {
+				$required_incomplete++;
+				$rows[] = array(
+					'type'        => 'setup',
+					'key'         => $k,
+					'label'       => $by_key[ $k ]['label'],
+					'hint'        => $by_key[ $k ]['hint'],
+					'url'         => $by_key[ $k ]['url'],
+					'cta'         => __( 'Set up', 'equine-event-manager' ),
+					'tone'        => 'electric',
+					'dismissable' => false,
+				);
+			}
+		}
+
+		// 2. Setup complete → create the first reservation (gateway to orders +
+		//    stall charts). Drops off once a published reservation exists.
+		if ( 0 === $required_incomplete && ! self::has_published_reservation() ) {
+			$rows[] = array(
+				'type'        => 'reservation',
+				'key'         => 'first_reservation',
+				'label'       => __( 'Create your first reservation', 'equine-event-manager' ),
+				'hint'        => __( 'Link an event, then set your stalls / RV spaces, add-ons, and pricing. You need a published reservation before you can take orders or build stall charts.', 'equine-event-manager' ),
+				'url'         => self::new_reservation_url(),
+				'cta'         => __( 'Create Reservation', 'equine-event-manager' ),
+				'tone'        => 'amber',
+				'dismissable' => false,
+			);
+		}
+
+		// 3. Optional SendGrid — the only dismissable row.
+		if ( empty( $by_key['sendgrid']['done'] ) && ! self::is_dismissed() ) {
+			$rows[] = array(
+				'type'        => 'sendgrid',
+				'key'         => 'sendgrid',
+				'label'       => $by_key['sendgrid']['label'],
+				'hint'        => $by_key['sendgrid']['hint'],
+				'url'         => $by_key['sendgrid']['url'],
+				'cta'         => __( 'Set up', 'equine-event-manager' ),
+				'tone'        => 'electric',
+				'dismissable' => true,
+			);
+		}
+
+		return $rows;
+	}
+
+	/**
+	 * Whether at least one published reservation exists (gates the
+	 * "create your first reservation" onboarding action).
+	 *
+	 * @return bool
+	 */
+	private static function has_published_reservation(): bool {
+		$post_type = class_exists( 'EEM_Reservations_CPT' ) ? EEM_Reservations_CPT::POST_TYPE : 'en_reservation';
+		$ids       = get_posts( array(
+			'post_type'      => $post_type,
+			'post_status'    => 'publish',
+			'posts_per_page' => 1,
+			'fields'         => 'ids',
+			'no_found_rows'  => true,
+		) );
+		return ! empty( $ids );
+	}
+
+	/**
+	 * Admin URL that starts a brand-new reservation (same entry point as the
+	 * Reservations list "+ New Reservation" button).
+	 *
+	 * @return string
+	 */
+	private static function new_reservation_url(): string {
+		$post_type = class_exists( 'EEM_Reservations_CPT' ) ? EEM_Reservations_CPT::POST_TYPE : 'en_reservation';
+		return admin_url( 'post-new.php?post_type=' . $post_type );
 	}
 
 	/**
@@ -145,7 +247,8 @@ class EEM_Setup_Checklist {
 	}
 
 	/**
-	 * AJAX: dismiss the card for the current user. Cap + nonce gated.
+	 * AJAX: dismiss the optional SendGrid onboarding row for the current user.
+	 * Cap + nonce gated. The four required areas are never dismissable.
 	 *
 	 * @return void
 	 */

@@ -28,6 +28,7 @@ $snap = array(
 	'integration' => get_option( 'equine_event_manager_integration_settings', null ),
 );
 $dismiss_snap = get_user_meta( get_current_user_id(), EEM_Setup_Checklist::DISMISS_META, true );
+$es_snap      = get_option( 'eem_event_source_confirmed', null );
 
 // Helper to map items keyed by their 'key' for easy assertion.
 $by_key = static function (): array {
@@ -94,16 +95,29 @@ update_option( 'equine_event_manager_integration_settings', array( 'sendgrid_api
 $items = $by_key();
 $check( 'sendgrid: key present → done', true === $items['sendgrid']['done'] );
 
-/* ── All four done → complete + hidden ──────────────────────── */
+/* ── All required + sendgrid done → setup complete ──────────── */
+// Confirm the event source explicitly so the smoke is self-contained (no reliance
+// on a published-reservation backfill, which a fresh/empty site won't have).
+update_option( 'eem_event_source_confirmed', 1, false );
 $check( 'all set: is_complete() true', true === EEM_Setup_Checklist::is_complete() );
-$check( 'all set: should_show() false (auto-hide)', false === EEM_Setup_Checklist::should_show() );
 
-/* ── Dismiss flag hides even when incomplete ────────────────── */
-delete_option( 'equine_event_manager_integration_settings' ); // make it incomplete again
-$check( 'incomplete again: should_show() true', true === EEM_Setup_Checklist::should_show() );
+// 2.7.50 behavior: completed required areas DROP OFF the card. With no published
+// reservation yet, the card surfaces the "create your first reservation" next-step,
+// so it stays visible (and shows NO setup rows).
+$types = static function (): array {
+	return array_map( static function ( $r ) { return $r['type']; }, EEM_Setup_Checklist::pending_actions() );
+};
+$check( 'all set: completed required areas dropped off (no setup rows)', ! in_array( 'setup', $types(), true ) );
+$check( 'all set, no reservation: create-first-reservation row present', in_array( 'reservation', $types(), true ) );
+$check( 'all set, no reservation: should_show() true', true === EEM_Setup_Checklist::should_show() );
+
+/* ── SendGrid is the ONLY dismissable row ───────────────────── */
+delete_option( 'equine_event_manager_integration_settings' ); // sendgrid undone → eligible to show
+$check( 'sendgrid undone: sendgrid row present before dismiss', in_array( 'sendgrid', $types(), true ) );
 update_user_meta( get_current_user_id(), EEM_Setup_Checklist::DISMISS_META, 1 );
 $check( 'dismissed: is_dismissed() true', true === EEM_Setup_Checklist::is_dismissed() );
-$check( 'dismissed: should_show() false', false === EEM_Setup_Checklist::should_show() );
+$check( 'sendgrid dismiss removes only the sendgrid row', ! in_array( 'sendgrid', $types(), true ) );
+$check( 'dismiss does NOT hide the card while other actions remain', true === EEM_Setup_Checklist::should_show() );
 
 /* ── Restore the site ───────────────────────────────────────── */
 foreach ( array(
@@ -114,6 +128,7 @@ foreach ( array(
 ) as $opt => $val ) {
 	if ( null === $val ) { delete_option( $opt ); } else { update_option( $opt, $val, false ); }
 }
+if ( null === $es_snap ) { delete_option( 'eem_event_source_confirmed' ); } else { update_option( 'eem_event_source_confirmed', $es_snap, false ); }
 if ( '' === $dismiss_snap ) { delete_user_meta( get_current_user_id(), EEM_Setup_Checklist::DISMISS_META ); }
 else { update_user_meta( get_current_user_id(), EEM_Setup_Checklist::DISMISS_META, $dismiss_snap ); }
 

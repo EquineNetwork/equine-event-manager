@@ -707,6 +707,23 @@ a.eem-btn-electric:hover {
 	color: var(--eem-text-on-navy);
 }
 
+/* Amber — high-visibility "next step" CTA (e.g. Create your first reservation).
+   Uses the warning-accent token; anchor :link/:hover/:focus states covered per
+   the anchor-button specificity discipline (DS-1.A.1). */
+.eem-btn-amber,
+a.eem-btn-amber {
+	background: var(--eem-warn-accent);
+	color: var(--eem-text-on-navy);
+}
+
+.eem-btn-amber:hover,
+a.eem-btn-amber:hover,
+.eem-btn-amber:focus,
+a.eem-btn-amber:focus {
+	background: var(--eem-warn-text);
+	color: var(--eem-text-on-navy);
+}
+
 /* Secondary — Save Draft, Cancel, neutral */
 .eem-btn-secondary,
 a.eem-btn-secondary {
@@ -8673,9 +8690,37 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 	color: var(--eem-success-text);
 }
 .eem-setup-checklist__cta { flex-shrink: 0; }
+.eem-setup-checklist__actions {
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+/* "Skip" link on the optional SendGrid row (the only dismissable action). */
+.eem-setup-checklist__skip {
+	border: 0;
+	background: none;
+	padding: 0;
+	cursor: pointer;
+	font-size: 12.5px;
+	font-weight: 600;
+	color: var(--eem-text-secondary);
+}
+.eem-setup-checklist__skip:hover,
+.eem-setup-checklist__skip:focus {
+	color: var(--eem-navy);
+}
+/* "Next step" row (create your first reservation) — amber accent so it reads as
+   the prominent next action once the four required areas are configured. */
+.eem-setup-checklist__item.is-next {
+	background: var(--eem-warn-bg);
+	border-color: var(--eem-warn-border);
+}
+.eem-setup-checklist__item.is-next .eem-setup-checklist__icon { color: var(--eem-warn-accent); }
 @media (max-width: 600px) {
 	.eem-setup-checklist__item { flex-wrap: wrap; }
 	.eem-setup-checklist__cta,
+	.eem-setup-checklist__actions,
 	.eem-setup-checklist__status { margin-left: 30px; }
 }
 

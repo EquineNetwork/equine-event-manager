@@ -414,17 +414,24 @@
 	 * is a lot to fire eagerly).
 	 * ───────────────────────────────────────────────────────────── */
 	/**
-	 * Dismiss the Dashboard first-run setup checklist for the current user.
-	 * Optimistically removes the card, then persists the dismissal via AJAX
+	 * Dismiss the optional SendGrid row in the Dashboard setup checklist for the
+	 * current user. Optimistically removes that ROW (and the whole card only if
+	 * it was the last remaining action), then persists via AJAX
 	 * (action=eem_dismiss_setup_checklist, cap + nonce gated server-side).
 	 *
-	 * @param {HTMLElement} btn The dismiss (×) button inside the card.
+	 * @param {HTMLElement} btn The "Skip" button inside the SendGrid row.
 	 */
 	function dismissSetupChecklist(btn) {
 		var card = btn.closest('[data-eem-setup-checklist]');
 		if (!card) return;
 		var nonce = card.getAttribute('data-eem-dismiss-nonce') || '';
-		card.parentNode && card.parentNode.removeChild(card);
+
+		// Remove just this row; if no actions remain, remove the card.
+		var row = btn.closest('.eem-setup-checklist__item');
+		if (row && row.parentNode) row.parentNode.removeChild(row);
+		if (!card.querySelector('.eem-setup-checklist__item') && card.parentNode) {
+			card.parentNode.removeChild(card);
+		}
 
 		var body = new URLSearchParams();
 		body.set('action', 'eem_dismiss_setup_checklist');

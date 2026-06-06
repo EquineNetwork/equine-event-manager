@@ -120,51 +120,47 @@ class EEM_Dashboard_Page {
 	 * @return void
 	 */
 	private static function render_setup_checklist() {
-		if ( ! EEM_Setup_Checklist::should_show() ) {
+		$pending = EEM_Setup_Checklist::should_show() ? EEM_Setup_Checklist::pending_actions() : array();
+		if ( empty( $pending ) ) {
 			return;
 		}
 
-		$items    = EEM_Setup_Checklist::items();
-		$total    = count( $items );
-		$done     = EEM_Setup_Checklist::completed_count();
-		$nonce    = wp_create_nonce( EEM_Setup_Checklist::DISMISS_NONCE );
+		$nonce         = wp_create_nonce( EEM_Setup_Checklist::DISMISS_NONCE );
+		$setup_left    = count( array_filter( $pending, static function ( $r ) {
+			return 'setup' === $r['type'];
+		} ) );
+		// Sub-line adapts: still configuring vs. set-up-complete-now-add-a-reservation.
+		$sub = $setup_left > 0
+			? __( 'A few quick steps before you go live. Finished items disappear from this list.', 'equine-event-manager' )
+			: __( "You're configured — here's your next step to start taking orders.", 'equine-event-manager' );
 		?>
 		<section class="eem-setup-checklist" data-eem-setup-checklist data-eem-dismiss-nonce="<?php echo esc_attr( $nonce ); ?>">
 			<header class="eem-setup-checklist__head">
 				<div>
 					<h2 class="eem-setup-checklist__title"><?php esc_html_e( 'Finish setting up your plugin', 'equine-event-manager' ); ?></h2>
-					<p class="eem-setup-checklist__sub">
-						<?php
-						printf(
-							/* translators: 1: completed count, 2: total count */
-							esc_html__( 'Complete these %1$d items before going live. %2$s done.', 'equine-event-manager' ),
-							(int) $total,
-							esc_html( sprintf( '%d / %d', $done, $total ) )
-						);
-						?>
-					</p>
+					<p class="eem-setup-checklist__sub"><?php echo esc_html( $sub ); ?></p>
 				</div>
-	<?php // Non-dismissible by product decision (2.7.25): the card clears only when all required setup is complete. ?>
 			</header>
 			<ul class="eem-setup-checklist__list">
-				<?php foreach ( $items as $item ) : ?>
-					<li class="eem-setup-checklist__item <?php echo $item['done'] ? 'is-done' : 'is-todo'; ?>">
+				<?php foreach ( $pending as $row ) : ?>
+					<li class="eem-setup-checklist__item is-todo<?php echo 'amber' === $row['tone'] ? ' is-next' : ''; ?>">
 						<span class="eem-setup-checklist__icon" aria-hidden="true">
-							<?php if ( $item['done'] ) : ?>
-								<svg viewBox="0 0 20 20" width="18" height="18"><path fill="currentColor" d="M16.7 5.3a1 1 0 0 1 0 1.4l-7.5 7.5a1 1 0 0 1-1.4 0L3.3 9.7a1 1 0 1 1 1.4-1.4l3.3 3.3 6.8-6.8a1 1 0 0 1 1.9.5z"/></svg>
+							<?php if ( 'reservation' === $row['type'] ) : ?>
+								<svg viewBox="0 0 20 20" width="18" height="18"><path fill="currentColor" d="M10 2a1 1 0 0 1 1 1v6h6a1 1 0 1 1 0 2h-6v6a1 1 0 1 1-2 0v-6H3a1 1 0 1 1 0-2h6V3a1 1 0 0 1 1-1z"/></svg>
 							<?php else : ?>
 								<svg viewBox="0 0 20 20" width="18" height="18"><circle cx="10" cy="10" r="7.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
 							<?php endif; ?>
 						</span>
 						<span class="eem-setup-checklist__text">
-							<span class="eem-setup-checklist__label"><?php echo esc_html( $item['label'] ); ?></span>
-							<span class="eem-setup-checklist__hint"><?php echo esc_html( $item['hint'] ); ?></span>
+							<span class="eem-setup-checklist__label"><?php echo esc_html( $row['label'] ); ?></span>
+							<span class="eem-setup-checklist__hint"><?php echo esc_html( $row['hint'] ); ?></span>
 						</span>
-						<?php if ( $item['done'] ) : ?>
-							<span class="eem-setup-checklist__status"><?php esc_html_e( 'Done', 'equine-event-manager' ); ?></span>
-						<?php else : ?>
-							<a class="eem-btn eem-btn-electric eem-setup-checklist__cta" href="<?php echo esc_url( $item['url'] ); ?>"><?php esc_html_e( 'Set up', 'equine-event-manager' ); ?></a>
-						<?php endif; ?>
+						<span class="eem-setup-checklist__actions">
+							<a class="eem-btn eem-btn-<?php echo esc_attr( $row['tone'] ); ?> eem-setup-checklist__cta" href="<?php echo esc_url( $row['url'] ); ?>"><?php echo esc_html( $row['cta'] ); ?></a>
+							<?php if ( ! empty( $row['dismissable'] ) ) : ?>
+								<button type="button" class="eem-setup-checklist__skip" data-eem-action="setup-checklist-dismiss"><?php esc_html_e( 'Skip', 'equine-event-manager' ); ?></button>
+							<?php endif; ?>
+						</span>
 					</li>
 				<?php endforeach; ?>
 			</ul>
