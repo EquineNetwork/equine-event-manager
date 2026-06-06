@@ -1,6 +1,21 @@
 # Walkthrough & Deploy Notes
 
-**Current version: 2.7.43** · suite: **94/94 green** · branch: `main` (pushed to `github.com/EquineNetwork/equine-event-manager`)
+**Current version: 2.7.45** · suite: **95/95 green** · branch: `main` (pushed to `github.com/EquineNetwork/equine-event-manager`)
+
+## 0. One-time: enable in-WordPress auto-updates (push → "Update now")
+
+After this is set up once per site, you never upload a zip again — bump+push to `main`, and WordPress shows "Update now" on the Plugins screen.
+
+1. **Install v2.7.45 once, manually** (the currently-installed copy predates the updater, so it can't auto-update *to* it). Upload `equine-event-manager-2.7.45.zip` via Plugins → Add New → Upload (replace the existing copy), then Activate.
+2. **Create a GitHub token** (fine-grained, minimal): GitHub → Settings → Developer settings → **Fine-grained personal access tokens** → Generate. Repository access = **Only select repositories → EquineNetwork/equine-event-manager**. Permissions → Repository → **Contents: Read-only**. Copy the `github_pat_…` value.
+3. **Add it to `wp-config.php`** on staging (and later production), above the "stop editing" line:
+   ```php
+   define( 'EEM_UPDATE_TOKEN', 'github_pat_xxxxxxxx' );
+   ```
+4. Done. From then on: I bump the version + push to `main` → within ~12h (or immediately via Dashboard → Updates → "Check again", or the plugin row's "Check for updates" link) WordPress shows the update → click **Update now**.
+
+Notes: the token stays in `wp-config.php` (never the database or the repo). Without it, the updater loads harmlessly but finds no updates (it can't read a private repo unauthenticated). The auto-update download is trimmed to runtime-only files via `.gitattributes` export-ignore.
+
 
 This is the launch-prep reference for the staging walkthrough. It covers how to deploy, what to clear, what to test, what's new, and the few things that need you (not automatable).
 
