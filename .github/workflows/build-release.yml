@@ -1,0 +1,54 @@
+name: Build named plugin zip
+
+# Every time code lands on `main`, build a clean, installable plugin zip and
+# publish it to a GitHub Release so the repo's Releases page always has a
+# correctly-named download:
+#   * file name  -> equine-event-manager-<version>.zip   (name + current version)
+#   * folder inside -> equine-event-manager/             (correct WordPress install folder)
+# The dev-only files (tests, mockups, docs) are stripped automatically by the
+# .gitattributes export-ignore rules, same as the local build.
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  build-zip:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read the plugin version from the header
+        id: ver
+        run: |
+          VERSION=$(grep -m1 -E '^[[:space:]]*\*[[:space:]]*Version:' equine-event-manager.php \
+            | sed -E 's/.*Version:[[:space:]]*//; s/[[:space:]]+$//')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Building release for version: $VERSION"
+
+      - name: Build the correctly-named zip
+        run: |
+          git archive --format=zip \
+            --prefix=equine-event-manager/ \
+            -o "equine-event-manager-${{ steps.ver.outputs.version }}.zip" \
+            HEAD
+
+      - name: Publish (or refresh) the release with the versioned asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="v${{ steps.ver.outputs.version }}"
+          FILE="equine-event-manager-${{ steps.ver.outputs.version }}.zip"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$FILE" --clobber
+          else
+            gh release create "$TAG" "$FILE" \
+              --title "$TAG" \
+              --notes "Installable plugin zip. File is named with the version; the folder inside is \`equine-event-manager\`. Auto-built from main."
+          fi
