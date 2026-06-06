@@ -86,6 +86,8 @@ ob_start();
 ( new EEM_Reservations_List_Page() )->render();
 $all_html = ob_get_clean();
 ok( 'All tab shows Move to Trash (not Restore)', preg_match( '/data-eem-action="reservation-trash"/', $all_html ) > 0, $pass, $fail, $log );
+ok( 'bulk select offers Publish (non-trash tab)',        preg_match( '/<option value="publish"/', $all_html ) > 0, $pass, $fail, $log );
+ok( 'bulk select offers Switch to Draft (non-trash tab)', preg_match( '/<option value="draft"/', $all_html ) > 0, $pass, $fail, $log );
 
 echo "\n[3] Sort wiring (Repo::get_paginated)\n";
 
@@ -186,6 +188,50 @@ ok( "post {$bulk_a} now in trash", 'trash' === get_post_status( $bulk_a ), $pass
 ok( "post {$bulk_b} now in trash", 'trash' === get_post_status( $bulk_b ), $pass, $fail, $log );
 wp_delete_post( $bulk_a, true );
 wp_delete_post( $bulk_b, true );
+
+// Bulk Publish — eligibility gate: only reservations with a linked event publish.
+$pub_linked   = wp_insert_post( array( 'post_type' => 'en_reservation', 'post_status' => 'draft', 'post_title' => 'C4D BULK_PUB_LINKED' ) );
+$pub_unlinked = wp_insert_post( array( 'post_type' => 'en_reservation', 'post_status' => 'draft', 'post_title' => 'C4D BULK_PUB_UNLINKED' ) );
+update_post_meta( $pub_linked, '_en_event_id', 999001 ); // satisfies the linked-event gate
+$_POST = array(
+	'action'            => 'eem_reservations_bulk',
+	'bulk_action'       => 'publish',
+	'_eem_bulk_nonce'   => wp_create_nonce( 'eem_reservations_bulk' ),
+	'_eem_selected_ids' => $pub_linked . ',' . $pub_unlinked,
+	'status'            => 'draft',
+);
+$_REQUEST = $_POST;
+try {
+	EEM_Reservations_List_Page::handle_bulk();
+	ok( 'bulk publish redirected', false, $pass, $fail, $log, 'no redirect' );
+} catch ( RuntimeException $e ) {
+	ok( 'bulk publish: partial notice + counts (1 published, 1 skipped)',
+		str_contains( $e->getMessage(), 'eem_notice=bulk_published_partial' )
+		&& str_contains( $e->getMessage(), 'eem_bulk_count=1' )
+		&& str_contains( $e->getMessage(), 'eem_bulk_skipped=1' ),
+		$pass, $fail, $log );
+}
+ok( 'linked reservation published',                'publish' === get_post_status( $pub_linked ),   $pass, $fail, $log );
+ok( 'unlinked reservation stayed draft (skipped)', 'draft'   === get_post_status( $pub_unlinked ), $pass, $fail, $log );
+
+// Bulk Switch to Draft — always-safe unpublish.
+$_POST = array(
+	'action'            => 'eem_reservations_bulk',
+	'bulk_action'       => 'draft',
+	'_eem_bulk_nonce'   => wp_create_nonce( 'eem_reservations_bulk' ),
+	'_eem_selected_ids' => (string) $pub_linked,
+	'status'            => 'publish',
+);
+$_REQUEST = $_POST;
+try {
+	EEM_Reservations_List_Page::handle_bulk();
+	ok( 'bulk draft redirected', false, $pass, $fail, $log, 'no redirect' );
+} catch ( RuntimeException $e ) {
+	ok( 'bulk draft: bulk_drafted notice', str_contains( $e->getMessage(), 'eem_notice=bulk_drafted' ), $pass, $fail, $log );
+}
+ok( 'reservation switched back to draft', 'draft' === get_post_status( $pub_linked ), $pass, $fail, $log );
+wp_delete_post( $pub_linked, true );
+wp_delete_post( $pub_unlinked, true );
 
 remove_all_filters( 'wp_redirect' );
 

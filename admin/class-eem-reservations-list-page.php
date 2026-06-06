@@ -173,7 +173,8 @@ class EEM_Reservations_List_Page {
 		if ( '' === $code ) {
 			return;
 		}
-		$bulk_count = isset( $_GET['eem_bulk_count'] ) ? absint( wp_unslash( $_GET['eem_bulk_count'] ) ) : 0;
+		$bulk_count   = isset( $_GET['eem_bulk_count'] ) ? absint( wp_unslash( $_GET['eem_bulk_count'] ) ) : 0;
+		$bulk_skipped = isset( $_GET['eem_bulk_skipped'] ) ? absint( wp_unslash( $_GET['eem_bulk_skipped'] ) ) : 0;
 		$messages = array(
 			'duplicated'            => array( 'type' => 'success', 'text' => __( 'Reservation duplicated as draft.', 'equine-event-manager' ) ),
 			'trashed'               => array( 'type' => 'success', 'text' => __( 'Reservation moved to Trash.', 'equine-event-manager' ) ),
@@ -192,6 +193,23 @@ class EEM_Reservations_List_Page {
 			'bulk_deleted_permanently' => array( 'type' => 'success', 'text' => sprintf(
 				/* translators: %d: number of reservations permanently deleted */
 				_n( '%d reservation permanently deleted.', '%d reservations permanently deleted.', $bulk_count, 'equine-event-manager' ),
+				$bulk_count
+			) ),
+			'bulk_published'        => array( 'type' => 'success', 'text' => sprintf(
+				/* translators: %d: number of reservations published */
+				_n( '%d reservation published.', '%d reservations published.', $bulk_count, 'equine-event-manager' ),
+				$bulk_count
+			) ),
+			'bulk_published_partial' => array( 'type' => 'warning', 'text' => sprintf(
+				/* translators: 1: number published, 2: number skipped */
+				_n( '%1$d reservation published. %2$d skipped — link an event before publishing.', '%1$d reservations published. %2$d skipped — link an event before publishing.', $bulk_count, 'equine-event-manager' ),
+				$bulk_count,
+				$bulk_skipped
+			) ),
+			'bulk_publish_none'     => array( 'type' => 'warning', 'text' => __( 'Nothing published — the selected reservations need a linked event first.', 'equine-event-manager' ) ),
+			'bulk_drafted'          => array( 'type' => 'success', 'text' => sprintf(
+				/* translators: %d: number of reservations switched to draft */
+				_n( '%d reservation switched to Draft.', '%d reservations switched to Draft.', $bulk_count, 'equine-event-manager' ),
 				$bulk_count
 			) ),
 			'bulk_edit_unsupported' => array( 'type' => 'warning', 'text' => __( 'Bulk Edit is not available yet — it will land in a future release. Use the per-row Edit link for now.', 'equine-event-manager' ) ),
@@ -503,14 +521,12 @@ class EEM_Reservations_List_Page {
 	/**
 	 * Bulk-action dispatcher. Handles the toolbar's bulk-action <select>
 	 * + Apply form. Supported actions:
-	 *   - 'edit'  → redirects back with eem_notice=bulk_edit_unsupported;
-	 *               WP-native bulk edit is intentionally not wired (the
-	 *               new Phase 3 page can't reuse WP_List_Table's bulk
-	 *               edit UI without bringing back the legacy chrome).
-	 *               When this is needed it'll get its own modal in a
-	 *               future chunk.
-	 *   - 'trash' → loops through selected ids, calls trash_one() on
-	 *               each, redirects with a count summary.
+	 *   - 'publish' → publishes selected reservations that have a linked event
+	 *                 (the editor's hard gate); the rest are skipped + reported.
+	 *   - 'draft'   → switches selected reservations back to Draft (always safe).
+	 *   - 'trash' / 'restore' / 'delete_permanently' / 'empty_trash' → status moves.
+	 *   - 'edit'    → bulk_edit_unsupported notice. Full field bulk-edit is not
+	 *                 wired (it'd need its own modal); only status changes ship.
 	 *
 	 * @return void  Exits.
 	 */
@@ -595,6 +611,46 @@ class EEM_Reservations_List_Page {
 				);
 				break;
 
+			case 'publish':
+				// Publishing requires a linked event (same hard gate as the editor).
+				// Eligible reservations are published; the rest are skipped + reported.
+				$count = 0; $skipped = 0;
+				foreach ( $ids as $id ) {
+					$post = get_post( $id );
+					if ( ! $post || 'trash' === $post->post_status ) { continue; }
+					if ( ! self::reservation_has_linked_event( $id ) ) { $skipped++; continue; }
+					if ( 'publish' !== $post->post_status ) {
+						wp_update_post( array( 'ID' => $id, 'post_status' => 'publish' ) );
+					}
+					$count++;
+				}
+				if ( $count > 0 && $skipped > 0 ) {
+					$notice = 'bulk_published_partial';
+				} elseif ( $count > 0 ) {
+					$notice = 'bulk_published';
+				} else {
+					$notice = 'bulk_publish_none';
+				}
+				self::redirect_with_notice( $notice, array( 'status' => $status, 'eem_bulk_count' => $count, 'eem_bulk_skipped' => $skipped ) );
+				break;
+
+			case 'draft':
+				// Unpublishing is always safe; no-op on reservations already in draft.
+				$count = 0;
+				foreach ( $ids as $id ) {
+					$post = get_post( $id );
+					if ( ! $post || 'trash' === $post->post_status ) { continue; }
+					if ( 'draft' !== $post->post_status ) {
+						wp_update_post( array( 'ID' => $id, 'post_status' => 'draft' ) );
+						$count++;
+					}
+				}
+				self::redirect_with_notice(
+					$count > 0 ? 'bulk_drafted' : 'failed',
+					array( 'status' => $status, 'eem_bulk_count' => $count )
+				);
+				break;
+
 			case 'edit':
 				self::redirect_with_notice( 'bulk_edit_unsupported', array( 'status' => $status ) );
 				break;
@@ -603,6 +659,31 @@ class EEM_Reservations_List_Page {
 				self::redirect_with_notice( 'bulk_no_action', array( 'status' => $status ) );
 				break;
 		}
+	}
+
+	/**
+	 * Whether a reservation is linked to an event — the same hard gate the editor
+	 * enforces before a reservation may be published (native/TEC `_en_event_id`,
+	 * external `_en_external_event_id`, or a TEC reverse-lookup hit).
+	 *
+	 * @param int $reservation_id Reservation post ID.
+	 * @return bool
+	 */
+	private static function reservation_has_linked_event( int $reservation_id ): bool {
+		if ( absint( get_post_meta( $reservation_id, '_en_event_id', true ) ) > 0 ) {
+			return true;
+		}
+		if ( '' !== trim( (string) get_post_meta( $reservation_id, '_en_external_event_id', true ) ) ) {
+			return true;
+		}
+		if ( class_exists( 'EEM_Reservations_CPT' ) ) {
+			$cpt = new EEM_Reservations_CPT();
+			if ( method_exists( $cpt, 'get_tec_event_id_for_reservation' )
+				&& absint( $cpt->get_tec_event_id_for_reservation( $reservation_id ) ) > 0 ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -1066,6 +1147,8 @@ class EEM_Reservations_List_Page {
 							<option value="restore"><?php esc_html_e( 'Restore', 'equine-event-manager' ); ?></option>
 							<option value="delete_permanently"><?php esc_html_e( 'Delete Permanently', 'equine-event-manager' ); ?></option>
 						<?php else : ?>
+							<option value="publish"><?php esc_html_e( 'Publish', 'equine-event-manager' ); ?></option>
+							<option value="draft"><?php esc_html_e( 'Switch to Draft', 'equine-event-manager' ); ?></option>
 							<option value="trash"><?php esc_html_e( 'Move to Trash', 'equine-event-manager' ); ?></option>
 						<?php endif; ?>
 					</select>
