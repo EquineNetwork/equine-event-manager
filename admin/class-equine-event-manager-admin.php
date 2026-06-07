@@ -7218,7 +7218,7 @@ class EEM_Admin {
 		// plugin-header carries another via .eem-page-meta).
 		$status_css = EEM_Orders_List_Page::status_slug_to_css_class( $result['new_status_slug'] );
 		$status_badge_html = sprintf(
-			'<span class="eem-status-badge eem-status-badge--%1$s">%2$s</span>',
+			'<span class="eem-status-badge eem-status-%1$s">%2$s</span>',
 			esc_attr( $status_css ),
 			esc_html( $result['new_status_label'] )
 		);
@@ -7314,7 +7314,7 @@ class EEM_Admin {
 
 		$status_css        = EEM_Orders_List_Page::status_slug_to_css_class( 'cancelled' );
 		$status_badge_html = sprintf(
-			'<span class="eem-status-badge eem-status-badge--%1$s">%2$s</span>',
+			'<span class="eem-status-badge eem-status-%1$s">%2$s</span>',
 			esc_attr( $status_css ),
 			esc_html__( 'Cancelled', 'equine-event-manager' )
 		);
