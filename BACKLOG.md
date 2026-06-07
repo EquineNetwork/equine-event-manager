@@ -276,6 +276,12 @@ room block exactly. The mockups are the binding visual spec for the build.
        "Smtih Barn"). The map seats by the **admin-assigned group**, not raw text.
      - Replaces the current free-text-notes grouping (which would split a group on
        any misspelling across separate orders).
+  6. **Available Stall Inventory is map-driven (sum across all barns).** Every cell
+     with a number counts as one stall; inventory = total stall cells **summed
+     across every barn/tab**. In Option A this replaces the row-builder's
+     "computed from barn/row quantities" — the imported map *is* the inventory.
+     Importer exposes `count_stalls()` (grand total) + `barn_stall_counts()`
+     (per-barn). Validated live: Montcrief 262 + Burnett 414 = **676 total**.
 - **Conventions (v1):** values + positions only — NOT fill color / borders /
   merged cells (CSV export drops formatting; merges blank all but top-left).
   Reading fill-color for zones is a later add.

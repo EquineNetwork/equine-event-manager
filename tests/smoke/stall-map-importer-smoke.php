@@ -61,6 +61,14 @@ if ( is_wp_error( $live ) ) {
 	sm_ok( 'live: 2 barns', 2 === count( $live['barns'] ), $pass, $fail, $log );
 	sm_ok( 'live: total stalls > 600', count( EEM_Stall_Map_Importer::stall_labels( $live ) ) > 600, $pass, $fail, $log );
 	sm_ok( 'live: 0 cross-barn duplicate labels', array() === EEM_Stall_Map_Importer::find_duplicate_labels( $live ), $pass, $fail, $log );
+
+	/* inventory: per-barn counts + grand total (every numbered cell counts) */
+	$per = EEM_Stall_Map_Importer::barn_stall_counts( $live );
+	$total = EEM_Stall_Map_Importer::count_stalls( $live );
+	sm_ok( 'inventory: per-barn counts present for both barns', isset( $per['Montcrief'], $per['Burnett'] ), $pass, $fail, $log );
+	sm_ok( 'inventory: total == sum of per-barn counts', $total === array_sum( $per ), $pass, $fail, $log );
+	sm_ok( 'inventory: Montcrief == 262', 262 === ( $per['Montcrief'] ?? 0 ), $pass, $fail, $log );
+	echo "  [inventory] Montcrief=" . ( $per['Montcrief'] ?? 0 ) . "  Burnett=" . ( $per['Burnett'] ?? 0 ) . "  TOTAL AVAILABLE=" . $total . "\n";
 	sm_ok( 'live: snapshot carries source_url + synced_at', ! empty( $live['source_url'] ) && ! empty( $live['synced_at'] ), $pass, $fail, $log );
 
 	/* save → read-back via the canonical consumer (round-trip) */

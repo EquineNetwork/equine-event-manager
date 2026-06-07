@@ -239,6 +239,42 @@ class EEM_Stall_Map_Importer {
 	}
 
 	/**
+	 * Total available stall inventory = every cell that carries a stall number,
+	 * summed across ALL barns/tabs in the snapshot.
+	 *
+	 * This is the authoritative inventory count when a reservation is map-driven
+	 * (Numbered + Pick-from-layout, Option A): if a cell has a number it counts.
+	 *
+	 * @param array $snapshot Snapshot structure.
+	 * @return int Total stall count across all barns.
+	 */
+	public static function count_stalls( array $snapshot ): int {
+		return count( self::stall_labels( $snapshot ) );
+	}
+
+	/**
+	 * Per-barn stall counts, keyed by barn name (in tab order).
+	 *
+	 * @param array $snapshot Snapshot structure.
+	 * @return array<string,int>
+	 */
+	public static function barn_stall_counts( array $snapshot ): array {
+		$counts = array();
+		foreach ( ( $snapshot['barns'] ?? array() ) as $barn ) {
+			$n = 0;
+			foreach ( ( $barn['grid'] ?? array() ) as $row ) {
+				foreach ( $row as $cell ) {
+					if ( 'stall' === ( $cell['type'] ?? '' ) ) {
+						$n++;
+					}
+				}
+			}
+			$counts[ (string) ( $barn['name'] ?? '' ) ] = $n;
+		}
+		return $counts;
+	}
+
+	/**
 	 * Find stall labels that appear more than once across all barns.
 	 *
 	 * Locked decision: stall numbers are globally unique, so this should return
