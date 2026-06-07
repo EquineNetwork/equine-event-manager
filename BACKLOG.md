@@ -43,14 +43,16 @@ inactive-processor field locking · Open-Tab/open-invoice confirmed built ·
 
 ## 🐴 Tack stalls — shipped 2026-06-07
 
-- **T1 (v2.7.72)** — 3-mode tack control (Off / Admin assigns / Customers
-  designate) under Blocked Stall Numbers. New meta `_en_stall_tack_mode` +
-  `_en_stall_tack_admin_stalls`; admin mode shows a stall-number tag-select;
-  customer selector gated to 'customer' mode. Migration eem-mig-006 (old bool →
-  mode). Browser-verified runtime toggle.
-- **T2 (v2.7.72)** — tack stalls excluded from required shavings (still pay the
-  normal stall rate). Server `get_tack_stall_count()` + live-total
-  `countTackStalls()`; admin-assigned tack also written to the Tack Stalls note.
+- **Tack On/Off (v2.7.73, reworked from v2.7.72's 3-mode)** — editor control under
+  Blocked Stall Numbers is a simple Off/On. When **On**, the buyer flags a tack
+  stall at checkout; the admin assigns/overrides the *actual* tack stall via the
+  existing "Mark as Tack Stall" chip on the Stall Chart. `_en_stall_tack_mode` =
+  `off`|`customer`; migration eem-mig-006 (old bool → mode). The admin tag-select +
+  `_en_stall_tack_admin_stalls` from v2.7.72 were removed.
+- **Shavings exclusion (v2.7.72)** — tack stalls excluded from required shavings
+  (still pay the normal stall rate). Server `get_tack_stall_count()` + live-total
+  `countTackStalls()`; the designated tack stall is written to the Tack Stalls note.
+- **"One-sided" preview label removed (v2.7.73)** — leftover from back-to-back.
 
 ---
 
