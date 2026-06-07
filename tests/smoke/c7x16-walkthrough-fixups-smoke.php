@@ -179,7 +179,9 @@ c7x16_ok( 'EEM_Reservation_Editor_Page::validate_for_publish() exists',
 
 // Server gate in ajax_save calls validate_for_publish ONLY when new_status === publish.
 c7x16_ok( "ajax_save calls validate_for_publish only when new_status === 'publish'",
-	(bool) preg_match( "/if\s*\(\s*'publish'\s*===\s*\\\$new_status\s*\)\s*\{[\s\S]{0,400}validate_for_publish/", $page_src ),
+	// Bound widened (was 400) — the publish block now also computes $publish_ctx
+	// (stall/RV row counts + inventory type + RV mode) before validate_for_publish.
+	(bool) preg_match( "/if\s*\(\s*'publish'\s*===\s*\\\$new_status\s*\)\s*\{[\s\S]{0,1400}validate_for_publish/", $page_src ),
 	$pass, $fail, $log );
 
 // Code returned uses 422 + publish_validation_failed + first_section.
@@ -206,6 +208,34 @@ foreach ( array(
 	if ( false !== strpos( $page_src, $key ) ) { $rules_covered++; }
 }
 c7x16_ok( 'validate_for_publish covers all 9 toggle-gated sections', 9 === $rules_covered, $pass, $fail, $log, "covered={$rules_covered}/9" );
+
+// Layout-row publish rules: Numbered stalls need ≥1 row; Mapped RV needs ≥1 lot.
+// NOTE: stall_inventory_type / rv_selection_mode live in $ctx — they post at the
+// TOP level of $_POST, not inside en_reservation[], so they're NOT on the
+// sanitized candidate. The ctx-not-candidate placement is the exact runtime bug
+// browser-verify caught: a candidate-keyed check never matched, publish slipped.
+$stall_base = array( 'stalls_enabled' => 1, 'stall_nightly_enabled' => 1, 'stall_nightly_rate' => 50 );
+$e = EEM_Reservation_Editor_Page::validate_for_publish( $stall_base, 0, array( 'stall_inventory_type' => 'numbered', 'stall_row_count' => 0 ) );
+c7x16_ok( 'Numbered stalls with 0 rows BLOCK publish', isset( $e['stall'] ), $pass, $fail, $log );
+$e = EEM_Reservation_Editor_Page::validate_for_publish( $stall_base, 0, array( 'stall_inventory_type' => 'numbered', 'stall_row_count' => 1 ) );
+c7x16_ok( 'Numbered stalls with >=1 row PASS', ! isset( $e['stall'] ), $pass, $fail, $log );
+$e = EEM_Reservation_Editor_Page::validate_for_publish( $stall_base, 0, array( 'stall_inventory_type' => 'quantity_only', 'stall_row_count' => 0 ) );
+c7x16_ok( 'Quantity-only stalls need NO rows', ! isset( $e['stall'] ), $pass, $fail, $log );
+// Inventory type read from $ctx, NOT the candidate (regression guard for the runtime bug).
+$e = EEM_Reservation_Editor_Page::validate_for_publish( array_merge( $stall_base, array( 'stall_inventory_type' => 'numbered' ) ), 0, array( 'stall_row_count' => 0 ) );
+c7x16_ok( 'Numbered on candidate but NOT ctx does NOT block (proves ctx is the source)', ! isset( $e['stall'] ), $pass, $fail, $log );
+$rv_base = array( 'rv_enabled' => 1, 'rv_nightly_enabled' => 1, 'rv_nightly_rate' => 30 );
+$e = EEM_Reservation_Editor_Page::validate_for_publish( $rv_base, 0, array( 'rv_selection_mode' => 'exact_map', 'rv_row_count' => 0 ) );
+c7x16_ok( 'Mapped RV with 0 lots BLOCKS publish', isset( $e['rv'] ), $pass, $fail, $log );
+$e = EEM_Reservation_Editor_Page::validate_for_publish( $rv_base, 0, array( 'rv_selection_mode' => 'quantity', 'rv_row_count' => 0 ) );
+c7x16_ok( 'Bulk RV needs NO lots', ! isset( $e['rv'] ), $pass, $fail, $log );
+c7x16_ok( 'ajax_save passes stall/RV layout context (inv type + mode + row counts) to the gate',
+	(bool) preg_match( '/validate_for_publish\(\s*\$candidate,\s*\$reservation_id,\s*\$publish_ctx\s*\)/', $page_src )
+	&& false !== strpos( $page_src, "'stall_row_count'" )
+	&& false !== strpos( $page_src, "'stall_inventory_type'" )
+	&& false !== strpos( $page_src, "'rv_selection_mode'" )
+	&& false !== strpos( $page_src, "\$_POST['stall_inventory_type']" ),
+	$pass, $fail, $log );
 
 // Save Draft is NOT gated.
 c7x16_ok( "Save Draft path is NOT gated by validate_for_publish",

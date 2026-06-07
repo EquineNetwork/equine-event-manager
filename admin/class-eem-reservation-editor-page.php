@@ -453,8 +453,9 @@ class EEM_Reservation_Editor_Page {
 	 *   - Check-In/Check-Out: both times set
 	 *   - Event Day Info: ≥1 of 4 fields filled
 	 *   - Stall: ≥1 stay-type ON + that rate >0; if Schedule ON, both
-	 *     open/close datetimes; if EB ON, cutoff + ≥1 EB rate
-	 *   - RV: same shape as Stall
+	 *     open/close datetimes; if EB ON, cutoff + ≥1 EB rate; if Inventory
+	 *     Type = Numbered, ≥1 defined stall row (so stalls actually exist)
+	 *   - RV: same shape as Stall; if Inventory Mode = Mapped, ≥1 defined lot row
 	 *   - General Add-Ons: ≥1 row with name + price >0
 	 *   - Group: Riders Per Group >0
 	 *   - Convenience Fee: Flat → amount >0; Percentage → % >0
@@ -465,9 +466,17 @@ class EEM_Reservation_Editor_Page {
 	 *
 	 * @param array<string,mixed> $c              Sanitized candidate meta payload.
 	 * @param int                  $reservation_id For resolver calls (cancellation).
+	 * @param array<string,mixed>  $ctx            Layout context the candidate meta
+	 *                                             doesn't carry (these post at the top
+	 *                                             level of $_POST, not inside
+	 *                                             en_reservation[]): stall_row_count,
+	 *                                             rv_row_count, stall_inventory_type,
+	 *                                             rv_selection_mode. Row counts are
+	 *                                             only gated when the key is present
+	 *                                             (callers without layout info skip).
 	 * @return array<string,string>                Empty = valid; keys = section ids.
 	 */
-	public static function validate_for_publish( array $c, int $reservation_id ) {
+	public static function validate_for_publish( array $c, int $reservation_id, array $ctx = array() ) {
 		$err = array();
 
 		// Check-In / Check-Out
@@ -598,7 +607,56 @@ class EEM_Reservation_Editor_Page {
 			}
 		}
 
+		// Stall layout — "Numbered" inventory means specific stalls exist, so the
+		// Stall Row Builder must define at least one row (otherwise there are zero
+		// stalls to reserve, which is the "clicked Numbered but built no rows" gap).
+		// Only gated when the caller supplied a row count (the live save handler
+		// always does; bare callers skip).
+		if ( ! empty( $c['stalls_enabled'] ) && ! isset( $err['stall'] )
+			&& 'numbered' === ( isset( $ctx['stall_inventory_type'] ) ? (string) $ctx['stall_inventory_type'] : '' )
+			&& isset( $ctx['stall_row_count'] ) && (int) $ctx['stall_row_count'] < 1 ) {
+			$err['stall'] = __( 'Stall Reservations: "Numbered" is selected but no stall rows are defined. Add at least one row in the Stall Row Builder so there are stalls to reserve.', 'equine-event-manager' );
+		}
+
+		// RV layout — "Mapped" mode means customers pick specific lots, so at least
+		// one lot row must exist.
+		if ( ! empty( $c['rv_enabled'] ) && ! isset( $err['rv'] )
+			&& 'exact_map' === ( isset( $ctx['rv_selection_mode'] ) ? (string) $ctx['rv_selection_mode'] : '' )
+			&& isset( $ctx['rv_row_count'] ) && (int) $ctx['rv_row_count'] < 1 ) {
+			$err['rv'] = __( 'RV Reservations: "Mapped" lots are selected but no RV lots are defined. Add at least one lot so there are spaces to reserve.', 'equine-event-manager' );
+		}
+
 		return $err;
+	}
+
+	/**
+	 * Count stall/RV builder rows that actually define a range (and therefore
+	 * produce reservable units). Empty/half-filled rows don't count. Stall and RV
+	 * rows share the same shape (one-sided First/Last or back-to-back Top/Bottom).
+	 *
+	 * @param array<int, mixed> $rows Raw posted rows (eem_stall_rows / eem_rv_rows).
+	 * @return int Number of rows with a usable range.
+	 */
+	private static function count_usable_rows( array $rows ): int {
+		$n = 0;
+		foreach ( $rows as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			$g = static function ( $k ) use ( $row ) {
+				return trim( (string) ( $row[ $k ] ?? '' ) );
+			};
+			if ( 'back-to-back' === (string) ( $row['layout'] ?? 'one-sided' ) ) {
+				$usable = ( '' !== $g( 'top_first' ) && '' !== $g( 'top_last' ) )
+					|| ( '' !== $g( 'bot_first' ) && '' !== $g( 'bot_last' ) );
+			} else {
+				$usable = '' !== $g( 'first' ) && '' !== $g( 'last' );
+			}
+			if ( $usable ) {
+				$n++;
+			}
+		}
+		return $n;
 	}
 
 	/**
@@ -743,7 +801,20 @@ class EEM_Reservation_Editor_Page {
 			// Defense in depth — client-side mirror in admin.js gives
 			// immediate UX; this server gate is the source of truth.
 			if ( 'publish' === $new_status ) {
-				$publish_errors = self::validate_for_publish( $candidate, $reservation_id );
+				// Layout context the candidate meta doesn't carry — stall/RV row
+				// counts + RV mode — so the gate can require ≥1 defined row when
+				// Numbered stalls / Mapped RV are selected.
+				// stall_inventory_type / rv_selection_mode are posted at the TOP
+				// level of $_POST (not inside en_reservation[]), so they aren't on
+				// the sanitized candidate — read them here the same way save_meta()
+				// does so the gate sees what actually gets persisted.
+				$publish_ctx = array(
+					'stall_row_count'      => self::count_usable_rows( ( isset( $_POST['eem_stall_rows'] ) && is_array( $_POST['eem_stall_rows'] ) ) ? wp_unslash( $_POST['eem_stall_rows'] ) : array() ),
+					'rv_row_count'         => self::count_usable_rows( ( isset( $_POST['eem_rv_rows'] ) && is_array( $_POST['eem_rv_rows'] ) ) ? wp_unslash( $_POST['eem_rv_rows'] ) : array() ),
+					'stall_inventory_type' => isset( $_POST['stall_inventory_type'] ) ? EEM_Reservations_CPT::sanitize_stall_inventory_type( wp_unslash( $_POST['stall_inventory_type'] ) ) : '',
+					'rv_selection_mode'    => isset( $_POST['rv_selection_mode'] ) ? sanitize_key( wp_unslash( $_POST['rv_selection_mode'] ) ) : '',
+				);
+				$publish_errors = self::validate_for_publish( $candidate, $reservation_id, $publish_ctx );
 				if ( ! empty( $publish_errors ) ) {
 					$first_key  = array_key_first( $publish_errors );
 					$count      = count( $publish_errors );
