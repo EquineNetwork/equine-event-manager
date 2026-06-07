@@ -608,15 +608,25 @@ class EEM_Reservation_Editor_Page {
 			}
 		}
 
-		// Stall layout — "Numbered" inventory means specific stalls exist, so the
-		// Stall Row Builder must define at least one row (otherwise there are zero
-		// stalls to reserve, which is the "clicked Numbered but built no rows" gap).
-		// Only gated when the caller supplied a row count (the live save handler
-		// always does; bare callers skip).
+		// Stall layout — "Numbered" inventory means specific stalls exist. The
+		// layout source depends on Customer Selection (v4 Slice 5):
+		//   • Pick-from-layout → a connected Stall Map IS the layout, so a valid
+		//     map is required. Grandfather/fallback: legacy stall rows count as a
+		//     layout too, so existing pick reservations with rows but no map (which
+		//     render via the row fallback) are not retroactively blocked.
+		//   • Quantity → the Stall Row Builder must define ≥1 row (the admin still
+		//     numbers stalls for chart assignment).
 		if ( ! empty( $c['stalls_enabled'] ) && ! isset( $err['stall'] )
-			&& 'numbered' === ( isset( $ctx['stall_inventory_type'] ) ? (string) $ctx['stall_inventory_type'] : '' )
-			&& isset( $ctx['stall_row_count'] ) && (int) $ctx['stall_row_count'] < 1 ) {
-			$err['stall'] = __( 'Stall Reservations: "Numbered" is selected but no stall rows are defined. Add at least one row in the Stall Row Builder so there are stalls to reserve.', 'equine-event-manager' );
+			&& 'numbered' === ( isset( $ctx['stall_inventory_type'] ) ? (string) $ctx['stall_inventory_type'] : '' ) ) {
+			$is_pick   = 'pick_layout' === ( isset( $ctx['stall_customer_selection'] ) ? (string) $ctx['stall_customer_selection'] : '' );
+			$row_count = isset( $ctx['stall_row_count'] ) ? (int) $ctx['stall_row_count'] : null;
+			if ( $is_pick ) {
+				if ( empty( $ctx['stall_has_map'] ) && ( null === $row_count || $row_count < 1 ) ) {
+					$err['stall'] = __( 'Stall Reservations: "Pick from layout" requires a connected Stall Map. Connect your Google Sheet (Publish to web) under Stall Map, or switch Customer Selection to "Quantity."', 'equine-event-manager' );
+				}
+			} elseif ( null !== $row_count && $row_count < 1 ) {
+				$err['stall'] = __( 'Stall Reservations: "Numbered" is selected but no stall rows are defined. Add at least one row in the Stall Row Builder so there are stalls to reserve.', 'equine-event-manager' );
+			}
 		}
 
 		// RV layout — "Mapped" mode means customers pick specific lots from a
@@ -961,6 +971,9 @@ class EEM_Reservation_Editor_Page {
 					'rv_dupe_labels'       => self::find_duplicate_labels( $rv_rows_raw ),
 					'stall_inventory_type' => isset( $_POST['stall_inventory_type'] ) ? EEM_Reservations_CPT::sanitize_stall_inventory_type( wp_unslash( $_POST['stall_inventory_type'] ) ) : '',
 					'rv_selection_mode'    => isset( $_POST['rv_selection_mode'] ) ? sanitize_key( wp_unslash( $_POST['rv_selection_mode'] ) ) : '',
+					// v4 Slice 5: Pick-from-layout requires a connected Stall Map.
+					'stall_customer_selection' => isset( $_POST['stall_customer_selection'] ) ? EEM_Reservations_CPT::sanitize_stall_customer_selection( wp_unslash( $_POST['stall_customer_selection'] ) ) : '',
+					'stall_has_map'        => ( class_exists( 'EEM_Stall_Map_Importer' ) && ! empty( EEM_Stall_Map_Importer::get_for_reservation( $reservation_id )['barns'] ) ),
 				);
 				$publish_errors = self::validate_for_publish( $candidate, $reservation_id, $publish_ctx );
 				if ( ! empty( $publish_errors ) ) {

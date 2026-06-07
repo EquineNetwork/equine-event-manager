@@ -5041,7 +5041,7 @@
 		}
 		/* C8 — init inventory displays on page load. Stall uses the V1 #4
 		   inventory-type input; RV still uses the legacy mode button. */
-		if (document.getElementById('eem-stall-inventory-type-input')) { applyStallRowsSimpleMode(); updateStallInventoryDisplay(); }
+		if (document.getElementById('eem-stall-inventory-type-input')) { applyStallRowsSimpleMode(); applyStallLayoutSource(); updateStallInventoryDisplay(); }
 		if (document.querySelector('.eem-mode-btn[data-section="rv"]'))   updateRvInventoryDisplay();
 		/* V1 (2.3.22): zone-qty Avail Qty inputs removed from zone rows — listener removed.
 		 * RV inventory is now computed from row lot counts via updateRvInventoryDisplay(). */
@@ -5231,6 +5231,7 @@ function toggleStallInventoryType(btn) {
 
 	syncStallLegacyMode();
 	applyStallRowsSimpleMode();
+	applyStallLayoutSource();
 	updateStallInventoryDisplay();
 }
 
@@ -5266,6 +5267,11 @@ function stallMapConnect(btn) {
 			var d = res.data;
 			var bits = (d.barns || []).map(function (b) { return b.name + ' (' + b.stalls + ')'; }).join(', ');
 			statusEl.innerHTML = '<span class="eem-stall-map-ok">✓ ' + (d.barns ? d.barns.length : 0) + ' barn(s) · ' + d.total_stalls + ' stalls total</span> <span class="eem-stall-map-barns">' + bits + '</span>';
+			// v4 Slice 5: refresh the map total so computed inventory reflects the
+			// newly-connected map immediately (Pick-from-layout draws from it).
+			var mapEl = document.querySelector('[data-eem-stall-map]');
+			if (mapEl) mapEl.setAttribute('data-eem-stall-map-total', String(d.total_stalls || 0));
+			updateStallInventoryDisplay();
 			if (window.EEM && EEM.showSaveToast) { EEM.showSaveToast(d.message || 'Stall map connected.', { variant: 'success', sub: '' }); }
 		} else {
 			var msg = (res && res.data && res.data.message) ? res.data.message : 'Could not connect the sheet.';
@@ -5309,6 +5315,8 @@ function toggleStallCustomerSelection(btn) {
 	}
 	syncStallLegacyMode();
 	applyStallRowsSimpleMode();
+	applyStallLayoutSource();
+	updateStallInventoryDisplay();
 }
 
 /* Scenario B refinement (post-review): when Numbered + Quantity (customers pick a
@@ -5397,8 +5405,43 @@ function toggleInventoryMode(btn) {
 	else updateRvInventoryDisplay();
 }
 
+/* v4 Slice 5: under Numbered + Pick-from-layout the connected Stall Map IS the
+   layout, so the Stall Rows builder hides and the map-connect row shows; under
+   Numbered + Quantity the row builder shows and the map-connect row hides.
+   Driven by the two hidden mode inputs so it stays in sync as the toggles flip. */
+function applyStallLayoutSource() {
+	var inv = document.getElementById('eem-stall-inventory-type-input');
+	var sel = document.getElementById('eem-stall-customer-selection-input');
+	if (!inv || !sel) return;
+	var isPick = inv.value === 'numbered' && sel.value === 'pick_layout';
+	var rowsRow = document.getElementById('row-stall-blocks');
+	var mapRow  = document.getElementById('row-stall-map-connect');
+	if (rowsRow) rowsRow.classList.toggle('eem-row--hidden', isPick);
+	if (mapRow)  mapRow.classList.toggle('eem-row--hidden', !isPick);
+}
+
+/* The connected map's total stall count (0 when none), read from the map-connect
+   container's data attribute and kept current by stallMapConnect() on connect. */
+function stallMapTotal() {
+	var el = document.querySelector('[data-eem-stall-map]');
+	return el ? (parseInt(el.getAttribute('data-eem-stall-map-total'), 10) || 0) : 0;
+}
+
 function updateStallInventoryDisplay() {
 	if (!stallMappedIsActive()) return;
+	/* v4 Slice 5: Pick-from-layout draws inventory from the connected map
+	   (sum of stalls across all tabs), not the row builder. */
+	var selEl = document.getElementById('eem-stall-customer-selection-input');
+	if (selEl && selEl.value === 'pick_layout') {
+		var mapTotal = stallMapTotal();
+		var numElM = document.getElementById('eem-stall-inventory-number');
+		if (numElM) numElM.textContent = mapTotal;
+		var labelM = document.getElementById('eem-stall-inventory-label');
+		if (labelM) labelM.textContent = '(computed from connected map)';
+		return;
+	}
+	var labelR = document.getElementById('eem-stall-inventory-label');
+	if (labelR) labelR.textContent = '(computed from barn/row quantities)';
 	/* Stall total = sum of stall-label counts across all row cards,
 	   minus the number of blocked-stall chips. Also tally each label so we can
 	   warn (live) about overlapping/duplicate stall numbers. */

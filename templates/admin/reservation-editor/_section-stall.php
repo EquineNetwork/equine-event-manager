@@ -483,6 +483,10 @@ eem_render_editor_field_row( array(
 	'label_sub'    => $stall_is_simple_range ? __( 'Which stall numbers exist', 'equine-event-manager' ) : __( 'Which stall numbers are available', 'equine-event-manager' ),
 	'row_id'       => 'row-stall-blocks',
 	'control_html' => $stall_rows_html,
+	// v4 Slice 5: under Pick-from-layout the connected map IS the layout, so the
+	// row builder hides; it stays for Numbered + Quantity (admin still numbers
+	// stalls for the chart). JS applyStallLayoutSource() keeps this in sync.
+	'is_hidden'    => $stall_is_pick,
 ) );
 
 // ── v4 Stall Mapping — connect a Google Sheet (drives "Pick from layout") ──
@@ -490,7 +494,7 @@ $stall_map_snap = ( isset( $data['stall_map'] ) && is_array( $data['stall_map'] 
 $stall_map_src  = isset( $stall_map_snap['source_url'] ) ? (string) $stall_map_snap['source_url'] : '';
 ob_start();
 ?>
-<div class="eem-stall-map-connect" data-eem-stall-map>
+<div class="eem-stall-map-connect" data-eem-stall-map data-eem-stall-map-total="<?php echo (int) ( ! empty( $stall_map_snap['barns'] ) ? EEM_Stall_Map_Importer::count_stalls( $stall_map_snap ) : 0 ); ?>">
 	<div class="eem-stall-map-row">
 		<input type="url" class="eem-field-input" id="eem-stall-map-url" placeholder="<?php esc_attr_e( 'Paste your Google Sheet “Publish to web” link…', 'equine-event-manager' ); ?>" value="<?php echo esc_attr( $stall_map_src ); ?>" style="max-width:520px">
 		<button type="button" class="eem-btn-add" data-eem-action="stall-map-connect"><?php echo $stall_map_src ? esc_html__( 'Refresh', 'equine-event-manager' ) : esc_html__( 'Connect', 'equine-event-manager' ); ?></button>
@@ -518,6 +522,9 @@ eem_render_editor_field_row( array(
 	'label_sub'    => __( 'Google Sheet → clickable layout', 'equine-event-manager' ),
 	'row_id'       => 'row-stall-map-connect',
 	'control_html' => $stall_map_html,
+	// v4 Slice 5: the map connection is the layout source for Pick-from-layout,
+	// so it shows only in that mode (and is required to publish).
+	'is_hidden'    => ! $stall_is_pick,
 ) );
 
 // ── Blocked Stall Numbers tag-select ──

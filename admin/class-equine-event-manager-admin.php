@@ -4089,6 +4089,40 @@ class EEM_Admin {
 			}
 		}
 
+		// ── v4 Slice 5: a connected Stall Map supersedes the legacy row inventory.
+		// Stalls and their barn (the chart's "Block" column) derive from the
+		// sheet's tabs — one tab = one barn, every numbered cell = a stall — so the
+		// matrix, the assignment pool, and Available Stall Inventory all read the
+		// same source the customer + admin maps render from. ──
+		if ( class_exists( 'EEM_Stall_Map_Importer' ) ) {
+			$chart_map_snapshot = EEM_Stall_Map_Importer::get_for_reservation( (int) $reservation_id );
+			if ( ! empty( $chart_map_snapshot['barns'] ) ) {
+				$stall_units = array();
+				$barn_map    = array();
+				$barn_names  = array();
+				foreach ( (array) $chart_map_snapshot['barns'] as $chart_barn ) {
+					$chart_barn_name = (string) ( isset( $chart_barn['name'] ) ? $chart_barn['name'] : '' );
+					if ( '' !== $chart_barn_name ) {
+						$barn_names[] = $chart_barn_name;
+					}
+					foreach ( (array) ( isset( $chart_barn['grid'] ) ? $chart_barn['grid'] : array() ) as $chart_grow ) {
+						foreach ( (array) $chart_grow as $chart_cell ) {
+							if ( isset( $chart_cell['type'], $chart_cell['label'] )
+								&& 'stall' === $chart_cell['type']
+								&& '' !== (string) $chart_cell['label'] ) {
+								$chart_label                = (string) $chart_cell['label'];
+								$stall_units[]              = $chart_label;
+								$barn_map[ $chart_label ]   = $chart_barn_name;
+							}
+						}
+					}
+				}
+				$stall_units  = array_values( array_unique( $stall_units ) );
+				$barn_names   = array_values( array_unique( $barn_names ) );
+				$stall_blocks = array(); // Map supersedes the legacy block table.
+			}
+		}
+
 		// ── Blocked stalls: try legacy key first, fall back to V1 key ─────── //
 		$blocked_stall_units = get_post_meta( $reservation_id, '_en_stall_chart_blocked_stall_units', true );
 		if ( ! is_array( $blocked_stall_units ) || empty( $blocked_stall_units ) ) {
