@@ -181,7 +181,7 @@ c7x16_ok( 'EEM_Reservation_Editor_Page::validate_for_publish() exists',
 c7x16_ok( "ajax_save calls validate_for_publish only when new_status === 'publish'",
 	// Bound widened (was 400) — the publish block now also computes $publish_ctx
 	// (stall/RV row counts + inventory type + RV mode) before validate_for_publish.
-	(bool) preg_match( "/if\s*\(\s*'publish'\s*===\s*\\\$new_status\s*\)\s*\{[\s\S]{0,1400}validate_for_publish/", $page_src ),
+	(bool) preg_match( "/if\s*\(\s*'publish'\s*===\s*\\\$new_status\s*\)\s*\{[\s\S]{0,2000}validate_for_publish/", $page_src ),
 	$pass, $fail, $log );
 
 // Code returned uses 422 + publish_validation_failed + first_section.
@@ -229,6 +229,18 @@ $e = EEM_Reservation_Editor_Page::validate_for_publish( $rv_base, 0, array( 'rv_
 c7x16_ok( 'Mapped RV with 0 lots BLOCKS publish', isset( $e['rv'] ), $pass, $fail, $log );
 $e = EEM_Reservation_Editor_Page::validate_for_publish( $rv_base, 0, array( 'rv_selection_mode' => 'quantity', 'rv_row_count' => 0 ) );
 c7x16_ok( 'Bulk RV needs NO lots', ! isset( $e['rv'] ), $pass, $fail, $log );
+// Mapped RV zone gate (v2 #2): rows present but no zones -> blocked w/ zone message.
+$e = EEM_Reservation_Editor_Page::validate_for_publish( $rv_base, 0, array( 'rv_selection_mode' => 'exact_map', 'rv_row_count' => 1, 'rv_zone_count' => 0, 'rv_rows_with_zone' => 0 ) );
+c7x16_ok( 'Mapped RV with lots but 0 zones BLOCKS publish', isset( $e['rv'] ) && false !== strpos( $e['rv'], 'zone' ), $pass, $fail, $log );
+// Zone exists + rows exist but none assigned to a zone -> blocked w/ assign message.
+$e = EEM_Reservation_Editor_Page::validate_for_publish( $rv_base, 0, array( 'rv_selection_mode' => 'exact_map', 'rv_row_count' => 1, 'rv_zone_count' => 1, 'rv_rows_with_zone' => 0 ) );
+c7x16_ok( 'Mapped RV with zone but no row assigned BLOCKS publish', isset( $e['rv'] ) && false !== strpos( $e['rv'], 'assign' ), $pass, $fail, $log );
+// Fully configured Mapped RV (rows + zone + assigned) PASSES.
+$e = EEM_Reservation_Editor_Page::validate_for_publish( $rv_base, 0, array( 'rv_selection_mode' => 'exact_map', 'rv_row_count' => 1, 'rv_zone_count' => 1, 'rv_rows_with_zone' => 1 ) );
+c7x16_ok( 'Fully-configured Mapped RV PASSES', ! isset( $e['rv'] ), $pass, $fail, $log );
+// Bulk RV ignores zones entirely.
+$e = EEM_Reservation_Editor_Page::validate_for_publish( $rv_base, 0, array( 'rv_selection_mode' => 'quantity', 'rv_row_count' => 0, 'rv_zone_count' => 0, 'rv_rows_with_zone' => 0 ) );
+c7x16_ok( 'Bulk RV ignores zone requirement', ! isset( $e['rv'] ), $pass, $fail, $log );
 c7x16_ok( 'ajax_save passes stall/RV layout context (inv type + mode + row counts) to the gate',
 	(bool) preg_match( '/validate_for_publish\(\s*\$candidate,\s*\$reservation_id,\s*\$publish_ctx\s*\)/', $page_src )
 	&& false !== strpos( $page_src, "'stall_row_count'" )

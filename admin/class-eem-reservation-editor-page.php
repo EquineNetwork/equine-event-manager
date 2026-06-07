@@ -470,9 +470,10 @@ class EEM_Reservation_Editor_Page {
 	 *                                             doesn't carry (these post at the top
 	 *                                             level of $_POST, not inside
 	 *                                             en_reservation[]): stall_row_count,
-	 *                                             rv_row_count, stall_inventory_type,
-	 *                                             rv_selection_mode. Row counts are
-	 *                                             only gated when the key is present
+	 *                                             rv_row_count, rv_zone_count,
+	 *                                             rv_rows_with_zone, stall_inventory_type,
+	 *                                             rv_selection_mode. Counts are only
+	 *                                             gated when the key is present
 	 *                                             (callers without layout info skip).
 	 * @return array<string,string>                Empty = valid; keys = section ids.
 	 */
@@ -618,12 +619,23 @@ class EEM_Reservation_Editor_Page {
 			$err['stall'] = __( 'Stall Reservations: "Numbered" is selected but no stall rows are defined. Add at least one row in the Stall Row Builder so there are stalls to reserve.', 'equine-event-manager' );
 		}
 
-		// RV layout — "Mapped" mode means customers pick specific lots, so at least
-		// one lot row must exist.
+		// RV layout — "Mapped" mode means customers pick specific lots from a
+		// zoned layout. For there to be anything bookable, three things must hold,
+		// checked most-fundamental-first so the admin gets the right next step:
+		//   (a) at least one lot row is defined,
+		//   (b) at least one RV Lot Zone exists (zones carry pricing + availability),
+		//   (c) at least one lot row is assigned to a zone (rows without a zone are
+		//       unavailable to customers, so zone-less rows produce zero bookable lots).
+		// Zones are easy to miss, so the message names the exact step.
 		if ( ! empty( $c['rv_enabled'] ) && ! isset( $err['rv'] )
-			&& 'exact_map' === ( isset( $ctx['rv_selection_mode'] ) ? (string) $ctx['rv_selection_mode'] : '' )
-			&& isset( $ctx['rv_row_count'] ) && (int) $ctx['rv_row_count'] < 1 ) {
-			$err['rv'] = __( 'RV Reservations: "Mapped" lots are selected but no RV lots are defined. Add at least one lot so there are spaces to reserve.', 'equine-event-manager' );
+			&& 'exact_map' === ( isset( $ctx['rv_selection_mode'] ) ? (string) $ctx['rv_selection_mode'] : '' ) ) {
+			if ( isset( $ctx['rv_row_count'] ) && (int) $ctx['rv_row_count'] < 1 ) {
+				$err['rv'] = __( 'RV Reservations: "Mapped" lots are selected but no RV lots are defined. Add at least one lot row so there are spaces to reserve.', 'equine-event-manager' );
+			} elseif ( isset( $ctx['rv_zone_count'] ) && (int) $ctx['rv_zone_count'] < 1 ) {
+				$err['rv'] = __( 'RV Reservations: "Mapped" lots need at least one pricing zone. Add a zone under "RV Lot Zones," then assign your lot rows to it.', 'equine-event-manager' );
+			} elseif ( isset( $ctx['rv_rows_with_zone'] ) && (int) $ctx['rv_rows_with_zone'] < 1 ) {
+				$err['rv'] = __( 'RV Reservations: no lot row is assigned to a zone, so customers see no available lots. Assign at least one lot row to a zone.', 'equine-event-manager' );
+			}
 		}
 
 		return $err;
@@ -655,6 +667,41 @@ class EEM_Reservation_Editor_Page {
 			if ( $usable ) {
 				$n++;
 			}
+		}
+		return $n;
+	}
+
+	/**
+	 * Count RV lot zones that are actually defined (have a non-empty name).
+	 *
+	 * @param array<int, mixed> $zones Raw posted zones (eem_rv_zones).
+	 * @return int Number of named zones.
+	 */
+	private static function count_valid_zones( array $zones ): int {
+		$n = 0;
+		foreach ( $zones as $zone ) {
+			if ( is_array( $zone ) && '' !== trim( (string) ( $zone['name'] ?? '' ) ) ) {
+				$n++;
+			}
+		}
+		return $n;
+	}
+
+	/**
+	 * Count RV lot rows that BOTH define a usable range AND are assigned to a zone.
+	 * Rows without a zone_id are unavailable to customers, so only zoned usable rows
+	 * produce bookable lots.
+	 *
+	 * @param array<int, mixed> $rows Raw posted RV rows (eem_rv_rows).
+	 * @return int Number of usable, zone-assigned rows.
+	 */
+	private static function count_usable_rows_with_zone( array $rows ): int {
+		$n = 0;
+		foreach ( $rows as $row ) {
+			if ( ! is_array( $row ) || '' === trim( (string) ( $row['zone_id'] ?? '' ) ) ) {
+				continue;
+			}
+			$n += self::count_usable_rows( array( $row ) );
 		}
 		return $n;
 	}
@@ -808,9 +855,13 @@ class EEM_Reservation_Editor_Page {
 				// level of $_POST (not inside en_reservation[]), so they aren't on
 				// the sanitized candidate — read them here the same way save_meta()
 				// does so the gate sees what actually gets persisted.
-				$publish_ctx = array(
+				$rv_rows_raw  = ( isset( $_POST['eem_rv_rows'] ) && is_array( $_POST['eem_rv_rows'] ) ) ? wp_unslash( $_POST['eem_rv_rows'] ) : array();
+				$rv_zones_raw = ( isset( $_POST['eem_rv_zones'] ) && is_array( $_POST['eem_rv_zones'] ) ) ? wp_unslash( $_POST['eem_rv_zones'] ) : array();
+				$publish_ctx  = array(
 					'stall_row_count'      => self::count_usable_rows( ( isset( $_POST['eem_stall_rows'] ) && is_array( $_POST['eem_stall_rows'] ) ) ? wp_unslash( $_POST['eem_stall_rows'] ) : array() ),
-					'rv_row_count'         => self::count_usable_rows( ( isset( $_POST['eem_rv_rows'] ) && is_array( $_POST['eem_rv_rows'] ) ) ? wp_unslash( $_POST['eem_rv_rows'] ) : array() ),
+					'rv_row_count'         => self::count_usable_rows( $rv_rows_raw ),
+					'rv_zone_count'        => self::count_valid_zones( $rv_zones_raw ),
+					'rv_rows_with_zone'    => self::count_usable_rows_with_zone( $rv_rows_raw ),
 					'stall_inventory_type' => isset( $_POST['stall_inventory_type'] ) ? EEM_Reservations_CPT::sanitize_stall_inventory_type( wp_unslash( $_POST['stall_inventory_type'] ) ) : '',
 					'rv_selection_mode'    => isset( $_POST['rv_selection_mode'] ) ? sanitize_key( wp_unslash( $_POST['rv_selection_mode'] ) ) : '',
 				);
