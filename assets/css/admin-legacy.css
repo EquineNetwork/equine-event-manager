@@ -621,8 +621,7 @@ body.post-type-en_reservation #submitdiv .wp-core-ui .button {
 
 	body.eem-shell-page--orders .eem-order-assignment-form__controls {
 		grid-template-columns: 1fr !important;
-	}
-}
+	}}
 
 @media screen and (max-width: 782px) {
 	body.post-type-en_reservation #poststuff {
@@ -654,8 +653,7 @@ body.post-type-en_reservation #submitdiv .wp-core-ui .button {
 	body.post-type-en_reservation .postbox,
 	body.post-type-en_reservation #submitdiv {
 		margin: 0 0 0.875rem !important;
-	}
-}
+	}}
 
 /* Final order detail + badge consistency overrides */
 body.eem-shell-page .eem-shell-badge--stall {
@@ -775,10 +773,6 @@ body.eem-shell-page--orders .eem-shell-content--order-detail .eem-order-detail-t
 
 body.eem-shell-page--orders .eem-shell-content--order-detail .eem-order-detail-toolbar-card__actions .button {
 	margin: 0 !important;
-}
-
-body.eem-shell-page--orders .eem-shell-content--order-detail .eem-order-assignment-control {
-	padding: 0.125rem 0 0.25rem !important;
 }
 
 body.eem-shell-page--orders .eem-shell-content--order-detail .eem-order-assignment-form {
@@ -918,8 +912,7 @@ body.eem-shell-page--orders .eem-shell-content--order-detail table[role="present
 	body.eem-shell-page--orders .eem-shell-content--order-detail .eem-order-detail-toolbar-card__actions {
 		flex-direction: column !important;
 		align-items: stretch !important;
-	}
-}
+	}}
 
 /* Final backend consistency overrides */
 
@@ -1267,8 +1260,7 @@ body.post-type-en_reservation.post-new-php .eem-section-toggle-control__label {
 
 	body.eem-shell-page--reservations #posts-filter.eem-reservations-toolbar-ready .search-box input[type="search"] {
 		min-width: 0;
-	}
-}
+	}}
 
 body.eem-shell-page #wpbody-content {
 	padding-bottom: 96px;
@@ -3539,8 +3531,7 @@ body.eem-shell-page--settings input[readonly] {
 	.eem-shell-form-inline input[type="number"]:not(.eem-price-input):not(.eem-pct-input):not(.eem-repeat-price-in):not(.eem-zone-price-in):not(.eem-field-input) {
 		width: 100%;
 		max-width: 100%;
-	}
-}
+	}}
 
 /* Final grouped backend consistency pass */
 
@@ -4044,8 +4035,7 @@ body.post-type-en_reservation.post-new-php .eem-inline-toggle-control {
 		order: 3;
 		justify-content: flex-start;
 		text-align: left;
-	}
-}
+	}}
 
 /* Final shell hardening overrides */
 
@@ -4472,8 +4462,7 @@ body.post-type-en_reservation.post-new-php .eem-inline-toggle-control {
 	body.eem-shell-page--reservations .displaying-num,
 	body.eem-shell-page--reservations #posts-filter.eem-reservations-toolbar-ready > .tablenav.top .displaying-num {
 		justify-content: flex-start !important;
-	}
-}
+	}}
 
 /* Final backend consistency pass - authoritative */
 body.eem-shell-page .eem-shell-badge,
@@ -5104,8 +5093,7 @@ body.post-type-en_reservation.post-new-php #postbox-container-1 .button {
 	body.post-type-en_reservation.post-php #post-body.columns-2,
 	body.post-type-en_reservation.post-new-php #post-body.columns-2 {
 		grid-template-columns: 1fr !important;
-	}
-}
+	}}
 
 @media screen and (max-width: 782px) {
 	body.eem-shell-page--orders .eem-orders-toolbar {
@@ -5222,8 +5210,7 @@ body.post-type-en_reservation.post-new-php #postbox-container-1 .button {
 	body.post-type-en_reservation.post-php #poststuff,
 	body.post-type-en_reservation.post-new-php #poststuff {
 		padding: 0.75rem !important;
-	}
-}
+	}}
 
 /* Final backend consistency overrides: Orders, Reservations, Stall Charts,
    Invoicing, Reports, Overview, Order Detail, Refund, and Edit Reservation. */
@@ -5659,8 +5646,7 @@ body.eem-shell-page--reservations #posts-filter.eem-reservations-toolbar-ready >
 	body.eem-shell-page--reservations #posts-filter.eem-reservations-toolbar-ready > .search-box {
 		min-width: 0 !important;
 		justify-content: stretch !important;
-	}
-}
+	}}
 
 body.eem-shell-page--stall-chart .eem-shell-inline-actions .button-primary {
 	border-color: #2b6ee8 !important;
@@ -5811,8 +5797,7 @@ body.post-type-en_reservation.post-new-php .postbox {
 	body.post-type-en_reservation.post-php #post-body.columns-2,
 	body.post-type-en_reservation.post-new-php #post-body.columns-2 {
 		grid-template-columns: 1fr !important;
-	}
-}
+	}}
 
 @media screen and (max-width: 782px) {
 	body.eem-shell-page--orders .eem-shell-actions .button,
@@ -5876,8 +5861,7 @@ body.post-type-en_reservation.post-new-php .postbox {
 	body.post-type-en_reservation.post-php #poststuff,
 	body.post-type-en_reservation.post-new-php #poststuff {
 		padding: 0.75rem !important;
-	}
-}
+	}}
 
 /* ==========================================================================
    Final backend consistency overrides
@@ -6271,50 +6255,6 @@ body.eem-shell-page--overview .postbox {
 	margin-bottom: 1rem !important;
 }
 
-/* Stall Charts final app pass */
-body.eem-shell-page--stall-chart .eem-stall-chart-overview .inside {
-	display: grid !important;
-	gap: 1rem !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-metrics-grid {
-	display: grid !important;
-	grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-	gap: 0.875rem !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-metrics-grid .eem-shell-metric-card {
-	min-height: 0 !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-metric-meta {
-	margin: 0.375rem 0 0 !important;
-	color: #637287 !important;
-	font-size: 0.9375rem !important;
-	line-height: 1.45 !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-movement-list {
-	margin: 0.5rem 0 0 !important;
-	padding: 0 !important;
-	list-style: none !important;
-	display: grid !important;
-	grid-template-columns: 1fr !important;
-	gap: 0.375rem !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-movement-list li {
-	margin: 0 !important;
-	color: #475467 !important;
-	font-size: 0.95rem !important;
-	line-height: 1.45 !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-movement-list strong {
-	color: #1d2939 !important;
-	font-weight: 700 !important;
-}
-
 body.eem-shell-page--reservation-overview .eem-shell-actions {
 	display: flex !important;
 	flex-wrap: wrap !important;
@@ -6426,113 +6366,12 @@ body.eem-shell-page--reservation-overview .postbox > .inside > p {
 	body.eem-shell-page--reservation-overview .postbox > .inside > table.widefat th,
 	body.eem-shell-page--reservation-overview .postbox > .inside > table.widefat td {
 		padding: 0.75rem !important;
-	}
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-toolbar {
-	display: grid !important;
-	grid-template-columns: minmax(240px, 320px) minmax(0, 1fr) !important;
-	align-items: end !important;
-	gap: 0.875rem 1rem !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-view-form {
-	margin: 0 !important;
-	padding: 0 !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-view-form label {
-	margin: 0 !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-view-form select:not(.eem-dashboard-range-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-field-select) {
-	min-width: 220px !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-actions {
-	display: flex !important;
-	flex-wrap: wrap !important;
-	align-items: center !important;
-	justify-content: flex-start !important;
-	gap: 0.75rem !important;
-	margin: 0 !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-actions .button,
-body.eem-shell-page--stall-chart .eem-stall-chart-actions .button.button-primary,
-body.eem-shell-page--stall-chart .eem-stall-chart-actions .button.button-secondary {
-	margin: 0 !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-table-card .inside {
-	padding-top: 0 !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-filterbar {
-	margin: 0 -1rem 0 !important;
-	padding: 1rem !important;
-	border-bottom: 1px solid #dfe7f0 !important;
-	background: #fff !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-filterbar__controls {
-	display: grid !important;
-	grid-template-columns: auto minmax(160px, 220px) auto minmax(260px, 1fr) !important;
-	align-items: center !important;
-	gap: 0.875rem !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-filterbar__controls label {
-	margin: 0 !important;
-	color: #172033 !important;
-	font-weight: 700 !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-filterbar__controls select:not(.eem-dashboard-range-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-field-select),
-body.eem-shell-page--stall-chart .eem-stall-chart-filterbar__controls input[type="search"] {
-	margin: 0 !important;
-	min-height: 44px !important;
-	padding: 0 0.95rem !important;
-	border: 1px solid #b8c4d3 !important;
-	border-radius: 8px !important;
-	background: #ffffff !important;
-	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75) !important;
-	color: #172033 !important;
-	font-size: 1rem !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-filter-note {
-	margin: 0 !important;
-	padding: 0.875rem 0 1rem !important;
-	color: #637287 !important;
-	line-height: 1.55 !important;
-}
+	}}
 
 body.eem-shell-page--stall-chart .eem-stall-chart-empty-note {
 	margin: 0 !important;
 	padding: 0 0 1rem !important;
 	color: #637287 !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-table-card table.widefat {
-	margin-top: 0 !important;
-	border: 1px solid #dfe7f0 !important;
-	border-radius: 8px !important;
-	overflow: hidden !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-table-card table.widefat thead th {
-	background: #fff !important;
-	color: #172033 !important;
-	font-weight: 800 !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-table-card table.widefat tbody tr:nth-child(odd) td {
-	background: #f8fbff !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-table-card table.widefat tbody tr:hover td {
-	background: #f3f7fd !important;
 }
 
 body.eem-shell-page--stall-chart .eem-stall-chart-cell--available span {
@@ -6573,38 +6412,6 @@ body.eem-shell-page--stall-chart .eem-stall-chart-cell--blocked span {
 	background: #fff7e8 !important;
 	color: #986219 !important;
 	font-weight: 700 !important;
-}
-
-@media screen and (max-width: 960px) {
-	body.eem-shell-page--stall-chart .eem-stall-chart-metrics-grid {
-		grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-	}
-
-	body.eem-shell-page--stall-chart .eem-stall-chart-toolbar {
-		grid-template-columns: 1fr !important;
-		align-items: stretch !important;
-	}
-}
-
-@media screen and (max-width: 782px) {
-	body.eem-shell-page--stall-chart .eem-stall-chart-metrics-grid {
-		grid-template-columns: 1fr !important;
-	}
-
-	body.eem-shell-page--stall-chart .eem-stall-chart-filterbar {
-		margin-left: -0.875rem !important;
-		margin-right: -0.875rem !important;
-		padding: 0.875rem !important;
-	}
-
-	body.eem-shell-page--stall-chart .eem-stall-chart-filterbar__controls {
-		grid-template-columns: 1fr !important;
-		align-items: stretch !important;
-	}
-
-	body.eem-shell-page--stall-chart .eem-stall-chart-filterbar__controls label {
-		margin-bottom: -0.25rem !important;
-	}
 }
 
 body.eem-shell-page--reports .widefat,
@@ -6708,8 +6515,7 @@ body.eem-shell-page--orders .eem-shell-content > .postbox:not(.eem-card--orders-
 		break-inside: avoid;
 		page-break-inside: avoid;
 		box-shadow: none !important;
-	}
-}
+	}}
 
 /* Edit Reservation hard overrides */
 body.post-type-en_reservation .wrap img[src*="equine-event-manager-logo"]:not(.eem-shell-header__logo),
@@ -6892,8 +6698,7 @@ body.post-type-en_reservation .eem-inline-toggle-control__label {
 	body.post-type-en_reservation .button {
 		width: 100% !important;
 		justify-content: center !important;
-	}
-}
+	}}
 
 /* Final backend consistency pass */
 body.eem-shell-page .eem-shell-header,
@@ -7265,71 +7070,9 @@ body.eem-shell-page--reservations .wp-list-table td:first-child + td a {
 	text-decoration: none !important;
 }
 
-body.eem-shell-page--stall-chart .eem-stall-chart-overview > .inside {
-	padding: 1rem 1.25rem 1.25rem !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-metrics-grid {
-	display: grid !important;
-	grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-	gap: 0.875rem !important;
-}
-
 body.eem-shell-page--stall-chart .eem-stall-chart-movement-card .eem-shell-metric-label,
 body.eem-shell-page--stall-chart .eem-shell-metric-card .eem-shell-metric-label {
 	margin-bottom: 0.65rem !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-toolbar {
-	display: flex !important;
-	flex-wrap: wrap !important;
-	align-items: center !important;
-	justify-content: space-between !important;
-	gap: 0.875rem !important;
-	margin-top: 1rem !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-view-form,
-body.eem-shell-page--stall-chart .eem-stall-chart-actions {
-	display: flex !important;
-	flex-wrap: wrap !important;
-	align-items: center !important;
-	gap: 0.75rem !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-filterbar {
-	padding: 1rem 1.25rem !important;
-	border-bottom: 1px solid #e9eef5 !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-filterbar__controls {
-	display: flex !important;
-	flex-wrap: wrap !important;
-	align-items: center !important;
-	gap: 0.75rem 1rem !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-filterbar__controls label {
-	margin: 0 !important;
-	font-weight: 700 !important;
-	color: #314055 !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-filterbar__controls select:not(.eem-dashboard-range-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-field-select),
-body.eem-shell-page--stall-chart .eem-stall-chart-filterbar__controls input[type="search"] {
-	min-height: 42px !important;
-	padding: 0.65rem 0.85rem !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-filter-note {
-	margin: 0 !important;
-	padding: 0 1.25rem 1rem !important;
-	color: #5f6f85 !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-table-card table.widefat thead th {
-	color: #22324d !important;
-	font-weight: 800 !important;
 }
 
 body.eem-shell-page--stall-chart .eem-stall-chart-cell--available span {
@@ -7348,13 +7091,6 @@ body.eem-shell-page--stall-chart .eem-stall-chart-cell--blocked span {
 	background: #fff7e8 !important;
 	border-color: #f4d7a3 !important;
 	color: #9a6517 !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-actions .button.button-primary {
-	border-color: #2d6cdf !important;
-	background: #2d6cdf !important;
-	color: #fff !important;
-	box-shadow: 0 6px 14px rgba(45, 108, 223, 0.14) !important;
 }
 
 body.eem-shell-page--invoicing .postbox > .inside > h2:first-child,
@@ -7429,14 +7165,10 @@ body.post-type-en_reservation .eem-inline-toggle-control__track {
 }
 
 @media screen and (max-width: 960px) {
-	body.eem-shell-page--stall-chart .eem-stall-chart-metrics-grid {
-		grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-	}
 
 	body.post-type-en_reservation #post-body.columns-2 {
 		grid-template-columns: 1fr !important;
-	}
-}
+	}}
 
 @media screen and (max-width: 782px) {
 	body.eem-shell-page .eem-shell-header__logo,
@@ -7471,25 +7203,6 @@ body.post-type-en_reservation .eem-inline-toggle-control__track {
 		width: 100% !important;
 	}
 
-	body.eem-shell-page--stall-chart .eem-stall-chart-metrics-grid {
-		grid-template-columns: 1fr !important;
-	}
-
-	body.eem-shell-page--stall-chart .eem-stall-chart-toolbar,
-	body.eem-shell-page--stall-chart .eem-stall-chart-view-form,
-	body.eem-shell-page--stall-chart .eem-stall-chart-actions,
-	body.eem-shell-page--stall-chart .eem-stall-chart-filterbar__controls {
-		flex-direction: column !important;
-		align-items: stretch !important;
-	}
-
-	body.eem-shell-page--stall-chart .eem-stall-chart-actions .button,
-	body.eem-shell-page--stall-chart .eem-stall-chart-view-form select:not(.eem-dashboard-range-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-field-select),
-	body.eem-shell-page--stall-chart .eem-stall-chart-filterbar__controls select:not(.eem-dashboard-range-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-field-select),
-	body.eem-shell-page--stall-chart .eem-stall-chart-filterbar__controls input[type="search"] {
-		width: 100% !important;
-	}
-
 	body.post-type-en_reservation #poststuff {
 		padding: 0.875rem !important;
 	}
@@ -7498,8 +7211,7 @@ body.post-type-en_reservation .eem-inline-toggle-control__track {
 	body.post-type-en_reservation .postbox,
 body.post-type-en_reservation #submitdiv {
 		margin-bottom: 0.875rem !important;
-	}
-}
+	}}
 
 /* Final backend consistency pass: authoritative shared system */
 body.eem-shell-page,
@@ -7979,65 +7691,6 @@ body.eem-shell-page--reservations #posts-filter > table.wp-list-table tbody stro
 	text-decoration: none !important;
 }
 
-body.eem-shell-page--stall-chart .eem-stall-chart-metrics-grid {
-	display: grid !important;
-	grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-	gap: 0.875rem !important;
-	margin-bottom: 0.875rem !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-metrics-grid .eem-shell-metric-card {
-	min-height: 100% !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-toolbar {
-	display: grid !important;
-	grid-template-columns: minmax(0, 1fr) auto !important;
-	align-items: end !important;
-	gap: 0.875rem !important;
-	margin-top: 0.875rem !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-view-form {
-	display: flex !important;
-	align-items: center !important;
-	flex-wrap: wrap !important;
-	gap: 0.75rem !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-actions {
-	display: flex !important;
-	flex-wrap: wrap !important;
-	align-items: center !important;
-	justify-content: flex-end !important;
-	gap: 0.75rem !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-filterbar {
-	padding: 1rem 1rem 1.125rem !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-filterbar__controls {
-	display: flex !important;
-	flex-wrap: wrap !important;
-	align-items: center !important;
-	gap: 0.75rem 1rem !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-filterbar__controls label {
-	font-weight: 700 !important;
-	color: #314055 !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-table-card table.widefat {
-	border-top: 1px solid #dde5ee !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-table-card table.widefat thead th {
-	color: #22324d !important;
-	font-weight: 800 !important;
-}
-
 body.eem-shell-page--stall-chart .eem-stall-chart-cell--available,
 body.eem-shell-page--stall-chart .eem-stall-chart-cell--available span {
 	background: #eefaf1 !important;
@@ -8054,17 +7707,6 @@ body.eem-shell-page--stall-chart .eem-stall-chart-cell--blocked,
 body.eem-shell-page--stall-chart .eem-stall-chart-cell--blocked span {
 	background: #fff7e8 !important;
 	color: #9a6517 !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-actions .button.button-primary {
-	border-color: var(--eem-shell-accent) !important;
-	background: var(--eem-shell-accent) !important;
-	color: #fff !important;
-	box-shadow: 0 6px 14px rgba(45, 108, 223, 0.12) !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-actions .button:not(.button-primary) {
-	box-shadow: 0 3px 8px rgba(15, 23, 42, 0.04) !important;
 }
 
 body.eem-shell-page--invoicing .postbox,
@@ -8279,18 +7921,10 @@ body.post-type-en_reservation .button-link-delete {
 }
 
 @media screen and (max-width: 960px) {
-	body.eem-shell-page--stall-chart .eem-stall-chart-metrics-grid {
-		grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-	}
-
-	body.eem-shell-page--stall-chart .eem-stall-chart-toolbar {
-		grid-template-columns: 1fr !important;
-	}
 
 	body.post-type-en_reservation #post-body.columns-2 {
 		grid-template-columns: 1fr !important;
-	}
-}
+	}}
 
 @media screen and (max-width: 782px) {
 	body.eem-shell-page .eem-shell-header__logo,
@@ -8389,22 +8023,6 @@ body.post-type-en_reservation .button-link-delete {
 		width: 100% !important;
 	}
 
-	body.eem-shell-page--stall-chart .eem-stall-chart-metrics-grid {
-		grid-template-columns: 1fr !important;
-	}
-
-	body.eem-shell-page--stall-chart .eem-stall-chart-actions,
-	body.eem-shell-page--stall-chart .eem-stall-chart-view-form {
-		justify-content: stretch !important;
-	}
-
-	body.eem-shell-page--stall-chart .eem-stall-chart-actions .button,
-	body.eem-shell-page--stall-chart .eem-stall-chart-view-form select:not(.eem-dashboard-range-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-field-select),
-	body.eem-shell-page--stall-chart .eem-stall-chart-filterbar__controls select:not(.eem-dashboard-range-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-field-select),
-	body.eem-shell-page--stall-chart .eem-stall-chart-filterbar__controls input[type="search"] {
-		width: 100% !important;
-	}
-
 	body.post-type-en_reservation #poststuff {
 		padding: 0.875rem !important;
 	}
@@ -8413,8 +8031,7 @@ body.post-type-en_reservation .button-link-delete {
 	body.post-type-en_reservation .postbox,
 	body.post-type-en_reservation #submitdiv {
 		margin-bottom: 0.875rem !important;
-	}
-}
+	}}
 
 /* Final reservations/order list badge and row-alignment overrides */
 body.eem-shell-page--orders td[data-label="Type"] .eem-shell-badge--stall,
@@ -8604,8 +8221,7 @@ body.eem-shell-page--orders .eem-card--orders-list table.widefat.fixed.striped t
 body.eem-shell-page--orders .postbox.eem-card--orders-list > table.widefat.fixed.striped tbody td[data-label="Actions"] > * {
 		justify-self: start !important;
 		margin-left: 0 !important;
-	}
-}
+	}}
 
 /* Orders badge lock: no page-class dependency */
 
@@ -8939,8 +8555,7 @@ body.eem-shell-page--reservations #posts-filter > .wp-list-table tbody td[data-c
 body.eem-shell-page--reservations #posts-filter > .wp-list-table tbody td.column-actions > * {
 		justify-self: start !important;
 		margin-left: 0 !important;
-	}
-}
+	}}
 
 /* Final frontend-reference closeout overrides */
 
@@ -9272,8 +8887,7 @@ body.post-type-en_reservation #postbox-container-2 .widefat.striped {
 
 	body.post-type-en_reservation #post-body.columns-2 {
 		grid-template-columns: 1fr !important;
-	}
-}
+	}}
 
 @media screen and (max-width: 782px) {
 	body.eem-shell-page--orders .eem-card--orders-list > table.widefat.fixed.striped {
@@ -9354,8 +8968,7 @@ body.post-type-en_reservation #postbox-container-2 .widefat.striped {
 	body.eem-shell-page--orders .eem-card--orders-list > table.widefat.fixed.striped tbody td[data-label="Status"] .eem-shell-badge,
 	body.eem-shell-page--orders .eem-card--orders-list > table.widefat.fixed.striped tbody td[data-label="Type"] .eem-shell-badge {
 		margin: 0 !important;
-	}
-}
+	}}
 
 /* Orders screen lock overrides */
 
@@ -9459,8 +9072,7 @@ body.eem-shell-page--orders .eem-card--orders-list .eem-shell-badge--group {
 		display: inline-flex !important;
 		width: 40px !important;
 		max-width: none !important;
-	}
-}
+	}}
 
 /* Orders screen lock: final authoritative overrides */
 
@@ -9669,8 +9281,7 @@ body.eem-shell-page--orders .eem-card--orders-list > table.widefat.fixed.striped
 	width: 40px !important;
 	height: 40px !important;
 	max-width: none !important;
-	}
-}
+	}}
 
 /* Orders hard stop: final mobile and badge overrides */
 
@@ -9803,8 +9414,7 @@ body.eem-shell-page--orders .eem-card--orders-list > table.widefat.fixed.striped
 		width: 40px !important;
 		height: 40px !important;
 		max-width: none !important;
-	}
-}
+	}}
 
 /* Order details hard stop: Shopify-style layout */
 
@@ -10083,8 +9693,7 @@ body.eem-shell-page--orders .eem-order-assignment-form__help {
 @media screen and (max-width: 1080px) {
 	body.eem-shell-page--orders .eem-order-detail-layout {
 		grid-template-columns: 1fr !important;
-	}
-}
+	}}
 
 @media screen and (max-width: 782px) {
 	body.eem-shell-page--orders .eem-order-detail-headercard__row,
@@ -10103,8 +9712,7 @@ body.eem-shell-page--orders .eem-order-assignment-form__help {
 	body.eem-shell-page--orders .eem-order-line-item,
 	body.eem-shell-page--orders .eem-order-assignment-form__controls {
 		grid-template-columns: 1fr !important;
-	}
-}
+	}}
 
 /* Order Summary closeout: Shopify-inspired detail layout */
 body.eem-shell-page--orders .eem-shell-content--order-detail {
@@ -10258,38 +9866,6 @@ body.eem-shell-page--orders .eem-order-product-card__meta {
 	gap: 0.5rem !important;
 	align-items: center !important;
 	justify-content: flex-end !important;
-}
-
-body.eem-shell-page--orders .eem-order-product-card .eem-key-value-grid,
-body.eem-shell-page--orders .eem-order-payment-card .eem-key-value-grid {
-	margin: 1rem !important;
-	width: calc(100% - 2rem) !important;
-	border-radius: 8px !important;
-	overflow: hidden !important;
-	border: 1px solid #e3eaf2 !important;
-}
-
-body.eem-shell-page--orders .eem-order-product-card .eem-key-value-grid th,
-body.eem-shell-page--orders .eem-order-payment-card .eem-key-value-grid th {
-	width: 34% !important;
-	padding: 0.85rem 1rem !important;
-	background: #f6f9fc !important;
-	color: #6c7788 !important;
-	font-size: 0.75rem !important;
-	font-weight: 800 !important;
-	letter-spacing: 0.08em !important;
-	text-transform: uppercase !important;
-	vertical-align: top !important;
-}
-
-body.eem-shell-page--orders .eem-order-product-card .eem-key-value-grid td,
-body.eem-shell-page--orders .eem-order-payment-card .eem-key-value-grid td {
-	padding: 0.85rem 1rem !important;
-	background: #ffffff !important;
-	color: #1d2c44 !important;
-	font-weight: 600 !important;
-	line-height: 1.5 !important;
-	vertical-align: top !important;
 }
 
 body.eem-shell-page--orders .eem-order-product-card__section,
@@ -10525,8 +10101,7 @@ body.eem-shell-page--orders .eem-order-assignment-form__help {
 @media screen and (max-width: 1080px) {
 	body.eem-shell-page--orders .eem-order-detail-layout {
 		grid-template-columns: 1fr !important;
-	}
-}
+	}}
 
 @media screen and (max-width: 782px) {
 	body.eem-shell-page--orders .eem-order-detail-headercard__row,
@@ -10575,8 +10150,7 @@ body.eem-shell-page--orders .eem-order-assignment-form__help {
 	body.eem-shell-page--orders .eem-order-side-card__content {
 		margin-left: 0.75rem !important;
 		margin-right: 0.75rem !important;
-	}
-}
+	}}
 
 /* ==========================================================================
    Final Closeout: Settings + Frontend authoritative screen rules
@@ -10587,248 +10161,6 @@ body.eem-shell-page--orders .eem-card--orders-list {
 	border: 1px solid #d9e2f2 !important;
 	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
 	overflow: hidden !important;
-}
-
-body.eem-shell-page--orders .eem-orders-guide__head {
-	padding: 1rem 1.125rem !important;
-	border-bottom: 1px solid #d9e2f2 !important;
-	background: #ffffff !important;
-}
-
-body.eem-shell-page--orders .eem-orders-guide__head h2 {
-	margin: 0 !important;
-	font-family: "Space Grotesk", sans-serif !important;
-	font-size: 1.125rem !important;
-	font-weight: 700 !important;
-	color: #031b4e !important;
-}
-
-body.eem-shell-page--orders .eem-orders-guide__head p {
-	margin: 0.25rem 0 0 !important;
-	font-family: "IBM Plex Sans", sans-serif !important;
-	font-size: 0.8125rem !important;
-	line-height: 1.5 !important;
-	color: #66789d !important;
-}
-
-body.eem-shell-page--orders .eem-orders-guide__toolbar {
-	padding: 0.875rem 1.125rem !important;
-	border-bottom: 1px solid #d9e2f2 !important;
-	background: #f7f9fc !important;
-}
-
-body.eem-shell-page--orders .eem-orders-guide__toolbar-form {
-	display: flex !important;
-	align-items: center !important;
-	justify-content: space-between !important;
-	gap: 0.75rem !important;
-	flex-wrap: wrap !important;
-}
-
-body.eem-shell-page--orders .eem-orders-guide__toolbar-left,
-body.eem-shell-page--orders .eem-orders-guide__toolbar-right {
-	display: flex !important;
-	align-items: center !important;
-	gap: 0.625rem !important;
-	flex-wrap: wrap !important;
-}
-
-body.eem-shell-page--orders .eem-orders-guide__toolbar-left {
-	flex: 1 1 680px !important;
-}
-
-body.eem-shell-page--orders .eem-orders-guide__toolbar-right {
-	flex: 0 1 auto !important;
-}
-
-body.eem-shell-page--orders .eem-orders-guide__toolbar select:not(.eem-dashboard-range-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-field-select),
-body.eem-shell-page--orders .eem-orders-guide__toolbar input[type="search"] {
-	min-height: 38px !important;
-	padding: 0.5rem 0.875rem !important;
-	border: 1px solid #d9e2f2 !important;
-	border-radius: 12px !important;
-	box-shadow: none !important;
-	background: #ffffff !important;
-	font-family: "IBM Plex Sans", sans-serif !important;
-	font-size: 0.8125rem !important;
-	color: #031b4e !important;
-}
-
-body.eem-shell-page--orders .eem-orders-guide__toolbar select:not(.eem-dashboard-range-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-field-select) {
-	min-width: 120px !important;
-}
-
-body.eem-shell-page--orders .eem-orders-guide__search {
-	flex: 1 1 240px !important;
-	min-width: 200px !important;
-}
-
-body.eem-shell-page--orders .eem-orders-guide__search input[type="search"] {
-	width: 100% !important;
-}
-
-body.eem-shell-page--orders .eem-orders-guide__button {
-	min-height: 38px !important;
-	padding: 0.5rem 0.875rem !important;
-	border-radius: 12px !important;
-	border: 1px solid #d9e2f2 !important;
-	box-shadow: none !important;
-	font-family: "IBM Plex Sans", sans-serif !important;
-	font-size: 0.8125rem !important;
-	font-weight: 600 !important;
-	line-height: 1 !important;
-}
-
-body.eem-shell-page--orders .eem-orders-guide__button--ghost {
-	background: #ffffff !important;
-	color: #031b4e !important;
-}
-
-body.eem-shell-page--orders .eem-orders-guide__count {
-	margin: 0 0 0 0.25rem !important;
-	font-family: "IBM Plex Sans", sans-serif !important;
-	font-size: 0.8125rem !important;
-	font-weight: 600 !important;
-	color: #031b4e !important;
-	white-space: nowrap !important;
-}
-
-body.eem-shell-page--orders .eem-orders-guide__table-wrap {
-	display: block !important;
-}
-
-body.eem-shell-page--orders .eem-orders-table {
-	width: 100% !important;
-	border-collapse: collapse !important;
-	table-layout: fixed !important;
-}
-
-body.eem-shell-page--orders .eem-orders-table thead tr {
-	border-bottom: 1px solid #d9e2f2 !important;
-	background: #f7f9fc !important;
-}
-
-body.eem-shell-page--orders .eem-orders-table th {
-	padding: 0.75rem 0.875rem !important;
-	font-family: "IBM Plex Sans", sans-serif !important;
-	font-size: 0.6875rem !important;
-	font-weight: 700 !important;
-	letter-spacing: 0.07em !important;
-	text-transform: uppercase !important;
-	color: #66789d !important;
-}
-
-body.eem-shell-page--orders .eem-orders-table tbody tr {
-	border-bottom: 1px solid #eef2f7 !important;
-}
-
-body.eem-shell-page--orders .eem-orders-table tbody tr:last-child {
-	border-bottom: 0 !important;
-}
-
-body.eem-shell-page--orders .eem-orders-table tbody tr:hover {
-	background: #f7f9fc !important;
-}
-
-body.eem-shell-page--orders .eem-orders-table td {
-	padding: 0.875rem !important;
-	font-family: "IBM Plex Sans", sans-serif !important;
-	font-size: 0.8125rem !important;
-	color: #031b4e !important;
-	vertical-align: middle !important;
-}
-
-body.eem-shell-page--orders .eem-orders-table th:nth-child(1),
-body.eem-shell-page--orders .eem-orders-table td:nth-child(1) { width: 9% !important; }
-body.eem-shell-page--orders .eem-orders-table th:nth-child(2),
-body.eem-shell-page--orders .eem-orders-table td:nth-child(2) { width: 14% !important; }
-body.eem-shell-page--orders .eem-orders-table th:nth-child(3),
-body.eem-shell-page--orders .eem-orders-table td:nth-child(3) { width: 27% !important; }
-body.eem-shell-page--orders .eem-orders-table th:nth-child(4),
-body.eem-shell-page--orders .eem-orders-table td:nth-child(4) { width: 15% !important; }
-body.eem-shell-page--orders .eem-orders-table th:nth-child(5),
-body.eem-shell-page--orders .eem-orders-table td:nth-child(5) { width: 15% !important; }
-body.eem-shell-page--orders .eem-orders-table th:nth-child(6),
-body.eem-shell-page--orders .eem-orders-table td:nth-child(6) { width: 12% !important; }
-body.eem-shell-page--orders .eem-orders-table th:nth-child(7),
-body.eem-shell-page--orders .eem-orders-table td:nth-child(7) { width: 8% !important; }
-
-body.eem-shell-page--orders .eem-orders-table__order-link {
-	color: #1f66e2 !important;
-	font-weight: 700 !important;
-	text-decoration: none !important;
-}
-
-body.eem-shell-page--orders .eem-orders-table__customer-name {
-	font-weight: 500 !important;
-	color: #031b4e !important;
-}
-
-body.eem-shell-page--orders .eem-orders-table__event-name {
-	display: inline-block !important;
-	max-width: 100% !important;
-	color: #4a5a7a !important;
-	white-space: nowrap !important;
-	overflow: hidden !important;
-	text-overflow: ellipsis !important;
-}
-
-body.eem-shell-page--orders .eem-orders-table__date {
-	color: #66789d !important;
-	white-space: nowrap !important;
-}
-
-body.eem-shell-page--orders .eem-orders-guide__actions,
-body.eem-shell-page--orders .eem-orders-table td[data-label="Type"] .eem-shell-badges {
-	display: flex !important;
-	align-items: center !important;
-	flex-wrap: wrap !important;
-	gap: 0.375rem !important;
-}
-
-body.eem-shell-page--orders .eem-orders-table .eem-shell-badge,
-body.eem-shell-page--orders .eem-orders-guide__mobile-list .eem-shell-badge {
-	min-height: 24px !important;
-	padding: 0.125rem 0.5rem !important;
-	border-radius: 999px !important;
-	border: 1px solid #d9e2f2 !important;
-	font-family: "IBM Plex Sans", sans-serif !important;
-	font-size: 0.6875rem !important;
-	font-weight: 600 !important;
-	line-height: 1 !important;
-}
-
-body.eem-shell-page--orders .eem-orders-table .eem-shell-badge--stall,
-body.eem-shell-page--orders .eem-orders-guide__mobile-list .eem-shell-badge--stall { background: #eef4ff !important; border-color: #c0d8ff !important; color: #1668f2 !important; }
-body.eem-shell-page--orders .eem-orders-table .eem-shell-badge--rv,
-body.eem-shell-page--orders .eem-orders-guide__mobile-list .eem-shell-badge--rv { background: #f0fdf4 !important; border-color: #bbf7d0 !important; color: #15803d !important; }
-body.eem-shell-page--orders .eem-orders-table .eem-shell-badge--addon,
-body.eem-shell-page--orders .eem-orders-table .eem-shell-badge--add-on,
-body.eem-shell-page--orders .eem-orders-guide__mobile-list .eem-shell-badge--addon,
-body.eem-shell-page--orders .eem-orders-guide__mobile-list .eem-shell-badge--add-on { background: #fff7ed !important; border-color: #fed7aa !important; color: #b45309 !important; }
-body.eem-shell-page--orders .eem-orders-table .eem-shell-badge--group,
-body.eem-shell-page--orders .eem-orders-guide__mobile-list .eem-shell-badge--group { background: #f5f3ff !important; border-color: #ddd6fe !important; color: #6d28d9 !important; }
-body.eem-shell-page--orders .eem-orders-table .eem-shell-badge--paid,
-body.eem-shell-page--orders .eem-orders-guide__mobile-list .eem-shell-badge--paid { background: #f0fdf4 !important; border-color: #bbf7d0 !important; color: #15803d !important; }
-body.eem-shell-page--orders .eem-orders-table .eem-shell-badge--pending,
-body.eem-shell-page--orders .eem-orders-table .eem-shell-badge--invoice,
-body.eem-shell-page--orders .eem-orders-table .eem-shell-badge--status-invoice-sent,
-body.eem-shell-page--orders .eem-orders-table .eem-shell-badge--status-outstanding-show-bill,
-body.eem-shell-page--orders .eem-orders-guide__mobile-list .eem-shell-badge--pending,
-body.eem-shell-page--orders .eem-orders-guide__mobile-list .eem-shell-badge--invoice,
-body.eem-shell-page--orders .eem-orders-guide__mobile-list .eem-shell-badge--status-invoice-sent,
-body.eem-shell-page--orders .eem-orders-guide__mobile-list .eem-shell-badge--status-outstanding-show-bill { background: #fffbeb !important; border-color: #fde68a !important; color: #b45309 !important; }
-body.eem-shell-page--orders .eem-orders-table .eem-shell-badge--unpaid,
-body.eem-shell-page--orders .eem-orders-guide__mobile-list .eem-shell-badge--unpaid { background: #fef2f2 !important; border-color: #fecaca !important; color: #b91c1c !important; }
-body.eem-shell-page--orders .eem-orders-table .eem-shell-badge--refund,
-body.eem-shell-page--orders .eem-orders-table .eem-shell-badge--refunded,
-body.eem-shell-page--orders .eem-orders-table .eem-shell-badge--status-partially-refunded,
-body.eem-shell-page--orders .eem-orders-guide__mobile-list .eem-shell-badge--refund,
-body.eem-shell-page--orders .eem-orders-guide__mobile-list .eem-shell-badge--refunded,
-body.eem-shell-page--orders .eem-orders-guide__mobile-list .eem-shell-badge--status-partially-refunded { background: #fff7ed !important; border-color: #fed7aa !important; color: #c2410c !important; }
-
-body.eem-shell-page--orders .eem-orders-guide__mobile-list {
-	display: none !important;
 }
 
 body.eem-shell-page--orders .eem-order-detail-headercard {
@@ -11056,83 +10388,6 @@ body.post-type-en_reservation.eem-shell-page .button {
 }
 
 @media screen and (max-width: 782px) {
-	body.eem-shell-page--orders .eem-orders-guide__toolbar {
-		padding: 0.75rem 0.875rem !important;
-	}
-
-	body.eem-shell-page--orders .eem-orders-guide__toolbar-form,
-	body.eem-shell-page--orders .eem-orders-guide__toolbar-left,
-	body.eem-shell-page--orders .eem-orders-guide__toolbar-right {
-		flex-direction: column !important;
-		align-items: stretch !important;
-	}
-
-	body.eem-shell-page--orders .eem-orders-guide__toolbar-right {
-		gap: 0.5rem !important;
-	}
-
-	body.eem-shell-page--orders .eem-orders-guide__button {
-		width: 100% !important;
-		justify-content: center !important;
-	}
-
-	body.eem-shell-page--orders .eem-orders-guide__count {
-		margin: 0 !important;
-	}
-
-	body.eem-shell-page--orders .eem-orders-guide__table-wrap {
-		display: none !important;
-	}
-
-	body.eem-shell-page--orders .eem-orders-guide__mobile-list {
-		display: grid !important;
-		gap: 0.75rem !important;
-		padding: 0.875rem !important;
-	}
-
-	body.eem-shell-page--orders .eem-orders-guide__mobile-card {
-		border: 1px solid #d9e2f2 !important;
-		border-radius: 12px !important;
-		background: #ffffff !important;
-		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
-		padding: 0.875rem !important;
-	}
-
-	body.eem-shell-page--orders .eem-orders-guide__mobile-top,
-	body.eem-shell-page--orders .eem-orders-guide__mobile-bottom {
-		display: flex !important;
-		align-items: center !important;
-		justify-content: space-between !important;
-		gap: 0.75rem !important;
-		flex-wrap: wrap !important;
-	}
-
-	body.eem-shell-page--orders .eem-orders-guide__mobile-order {
-		font-family: "IBM Plex Sans", sans-serif !important;
-		font-size: 0.9375rem !important;
-		font-weight: 700 !important;
-		color: #1f66e2 !important;
-		text-decoration: none !important;
-	}
-
-	body.eem-shell-page--orders .eem-orders-guide__mobile-date {
-		font-size: 0.75rem !important;
-		color: #66789d !important;
-	}
-
-	body.eem-shell-page--orders .eem-orders-guide__mobile-customer {
-		margin: 0.375rem 0 0.125rem !important;
-		font-size: 0.875rem !important;
-		font-weight: 500 !important;
-		color: #031b4e !important;
-	}
-
-	body.eem-shell-page--orders .eem-orders-guide__mobile-event {
-		margin: 0 0 0.75rem !important;
-		font-size: 0.8125rem !important;
-		line-height: 1.45 !important;
-		color: #4a5a7a !important;
-	}
 
 	body.eem-shell-page--orders .eem-order-detail-layout,
 	body.post-type-en_reservation.eem-shell-page #post-body.columns-2,
@@ -11153,8 +10408,7 @@ body.post-type-en_reservation.eem-shell-page .button {
 
 	body.eem-shell-page--orders .eem-order-detail-toolbar-card__actions {
 		justify-content: flex-start !important;
-	}
-}
+	}}
 
 /* ==========================================================================
    Guide-driven cleanup layer
@@ -11413,177 +10667,7 @@ body.eem-shell-page--reservations .wp-list-table tbody .column-title a.row-title
 		letter-spacing: 0.06em !important;
 		text-transform: uppercase !important;
 		color: var(--eem-guide-text-secondary) !important;
-	}
-}
-
-/* Reports guide */
-body.eem-shell-page--reports .eem-reports-guide > .inside {
-	padding: 20px 24px !important;
-}
-
-body.eem-shell-page--reports .eem-reports-guide h2 {
-	font-size: 16px !important;
-	font-weight: 700 !important;
-	margin-bottom: 12px !important;
-}
-
-body.eem-shell-page--reports .eem-reports-guide--export .eem-shell-form-inline {
-	display: flex !important;
-	align-items: flex-end !important;
-	gap: 12px !important;
-	flex-wrap: wrap !important;
-	margin-bottom: 10px !important;
-}
-
-body.eem-shell-page--reports .eem-reports-guide--export .eem-shell-form-inline label {
-	display: block !important;
-	font-size: 13px !important;
-	font-weight: 600 !important;
-	color: var(--eem-guide-text) !important;
-}
-
-body.eem-shell-page--reports .eem-reports-guide--history .inside {
-	padding-bottom: 0 !important;
-}
-
-body.eem-shell-page--reports .eem-reports-guide--history table.widefat {
-	margin: 0 -24px !important;
-	width: calc(100% + 48px) !important;
-	border: 0 !important;
-	border-radius: 0 !important;
-	box-shadow: none !important;
-}
-
-body.eem-shell-page--reports .eem-reports-guide--history thead tr {
-	background: #FAFBFE !important;
-}
-
-body.eem-shell-page--reports .eem-reports-guide--history thead th {
-	font-size: 11px !important;
-	font-weight: 700 !important;
-	letter-spacing: 0.07em !important;
-	text-transform: uppercase !important;
-	color: var(--eem-guide-text-secondary) !important;
-}
-
-@media screen and (max-width: 782px) {
-	body.eem-shell-page--reports .eem-reports-guide--export .eem-shell-form-inline {
-		flex-direction: column !important;
-		align-items: stretch !important;
-	}
-
-	body.eem-shell-page--reports .eem-reports-guide--history table.widefat,
-	body.eem-shell-page--reports .eem-reports-guide--history tbody,
-	body.eem-shell-page--reports .eem-reports-guide--history tr,
-	body.eem-shell-page--reports .eem-reports-guide--history td,
-	body.eem-shell-page--reports .eem-reports-guide--history th {
-		display: block !important;
-		width: 100% !important;
-	}
-
-	body.eem-shell-page--reports .eem-reports-guide--history thead {
-		display: none !important;
-	}
-
-	body.eem-shell-page--reports .eem-reports-guide--history table.widefat {
-		margin: 0 !important;
-		width: 100% !important;
-	}
-
-	body.eem-shell-page--reports .eem-reports-guide--history tbody {
-		padding-bottom: 16px !important;
-	}
-
-	body.eem-shell-page--reports .eem-reports-guide--history tr {
-		margin: 0 0 12px !important;
-		border: 1px solid var(--eem-guide-border) !important;
-		border-radius: 12px !important;
-		box-shadow: var(--eem-guide-shadow) !important;
-		overflow: hidden !important;
-	}
-
-	body.eem-shell-page--reports .eem-reports-guide--history td {
-		padding: 10px 14px !important;
-		border-top: 1px solid #EEF2F8 !important;
-	}
-
-	body.eem-shell-page--reports .eem-reports-guide--history td::before {
-		content: attr(data-label) !important;
-		display: block !important;
-		margin-bottom: 4px !important;
-		font-size: 11px !important;
-		font-weight: 700 !important;
-		letter-spacing: 0.06em !important;
-		text-transform: uppercase !important;
-		color: var(--eem-guide-text-secondary) !important;
-	}
-}
-
-/* Invoicing guide */
-body.eem-shell-page--invoicing .eem-invoicing-guide > .inside {
-	padding: 18px 22px !important;
-}
-
-body.eem-shell-page--invoicing .eem-invoicing-guide h2 {
-	font-size: 15px !important;
-	font-weight: 700 !important;
-	margin-bottom: 12px !important;
-}
-
-body.eem-shell-page--invoicing .eem-invoicing-guide--picker .eem-shell-form-inline {
-	display: flex !important;
-	align-items: stretch !important;
-	gap: 0 !important;
-	flex-wrap: wrap !important;
-}
-
-body.eem-shell-page--invoicing .eem-invoicing-guide--picker .eem-shell-form-inline select:not(.eem-dashboard-range-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-field-select) {
-	min-width: 320px !important;
-	border-radius: 12px 0 0 12px !important;
-	border-right: 0 !important;
-}
-
-body.eem-shell-page--invoicing .eem-invoicing-guide--picker .eem-shell-form-inline .button-primary {
-	border-radius: 0 12px 12px 0 !important;
-	padding-inline: 20px !important;
-}
-
-body.eem-shell-page--invoicing .eem-invoicing-guide--workspace .inside > h2 {
-	font-size: 17px !important;
-	margin-bottom: 14px !important;
-}
-
-body.eem-shell-page--invoicing .eem-invoicing-guide--workspace #eem-reservation-admin,
-body.eem-shell-page--invoicing .eem-invoicing-guide--workspace .eem-reservation-admin,
-body.eem-shell-page--invoicing .eem-invoicing-guide--workspace .eem-reservation-form,
-body.eem-shell-page--invoicing .eem-invoicing-guide--workspace .eem-reservation-form {
-	max-width: none !important;
-}
-
-@media screen and (max-width: 782px) {
-	body.eem-shell-page--invoicing .eem-invoicing-guide--picker .eem-shell-form-inline {
-		flex-direction: column !important;
-		gap: 8px !important;
-	}
-
-	body.eem-shell-page--invoicing .eem-invoicing-guide--picker .eem-shell-form-inline select:not(.eem-dashboard-range-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-field-select),
-	body.eem-shell-page--invoicing .eem-invoicing-guide--picker .eem-shell-form-inline .button-primary {
-		width: 100% !important;
-		min-width: 0 !important;
-		border-radius: 12px !important;
-		border-right: 1.5px solid var(--eem-guide-border) !important;
-	}
-}
-
-/* Stall chart guide */
-body.eem-shell-page--stall-chart .eem-stall-chart-guide > .inside {
-	padding: 14px 18px !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-metrics-grid {
-	grid-template-columns: 1.4fr 1fr 1fr 1fr !important;
-	gap: 12px !important;
-}
+	}}
 
 body.eem-shell-page--stall-chart .eem-stall-chart-movement-card .eem-shell-metric-label,
 body.eem-shell-page--stall-chart .eem-shell-metric-card .eem-shell-metric-label {
@@ -11601,69 +10685,11 @@ body.eem-shell-page--stall-chart .eem-shell-metric-card .eem-shell-metric-value 
 	color: var(--eem-guide-text) !important;
 }
 
-body.eem-shell-page--stall-chart .eem-stall-chart-movement-list {
-	list-style: none !important;
-	margin: 0 !important;
-	padding: 0 !important;
-	display: grid !important;
-	gap: 4px !important;
-	color: #4a5a7a !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-toolbar,
-body.eem-shell-page--stall-chart .eem-stall-chart-filterbar {
-	display: flex !important;
-	align-items: center !important;
-	justify-content: space-between !important;
-	gap: 12px !important;
-	flex-wrap: wrap !important;
-	padding: 12px 18px !important;
-	border-top: 1px solid #EEF2F8 !important;
-	background: #FAFBFE !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-view-form,
-body.eem-shell-page--stall-chart .eem-stall-chart-actions,
-body.eem-shell-page--stall-chart .eem-stall-chart-filterbar__controls {
-	display: flex !important;
-	align-items: center !important;
-	gap: 8px !important;
-	flex-wrap: wrap !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-table-card > .inside {
-	padding: 0 !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-table-card > .inside > h2 {
-	padding: 16px 18px !important;
-	margin: 0 !important;
-	border-bottom: 1px solid #EEF2F8 !important;
-}
-
 body.eem-shell-page--stall-chart .eem-stall-chart-filter-note,
 body.eem-shell-page--stall-chart .eem-stall-chart-empty-note {
 	padding: 0 18px 14px !important;
 	margin: 0 !important;
 	font-size: 12px !important;
-	color: var(--eem-guide-text-secondary) !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-table-card table.widefat {
-	border: 0 !important;
-	border-radius: 0 !important;
-	box-shadow: none !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-table-card thead tr {
-	background: #FAFBFE !important;
-}
-
-body.eem-shell-page--stall-chart .eem-stall-chart-table-card thead th {
-	font-size: 11px !important;
-	font-weight: 700 !important;
-	letter-spacing: 0.07em !important;
-	text-transform: uppercase !important;
 	color: var(--eem-guide-text-secondary) !important;
 }
 
@@ -11681,32 +10707,6 @@ body.eem-shell-page--stall-chart .eem-stall-chart-cell--reserved {
 body.eem-shell-page--stall-chart .eem-stall-chart-cell--blocked {
 	background: #F8FAFC !important;
 	color: #64748B !important;
-}
-
-@media screen and (max-width: 960px) {
-	body.eem-shell-page--stall-chart .eem-stall-chart-metrics-grid {
-		grid-template-columns: 1fr 1fr !important;
-	}
-}
-
-@media screen and (max-width: 782px) {
-	body.eem-shell-page--stall-chart .eem-stall-chart-metrics-grid {
-		grid-template-columns: 1fr 1fr !important;
-		gap: 8px !important;
-	}
-
-	body.eem-shell-page--stall-chart .eem-stall-chart-toolbar,
-	body.eem-shell-page--stall-chart .eem-stall-chart-filterbar,
-	body.eem-shell-page--stall-chart .eem-stall-chart-view-form,
-	body.eem-shell-page--stall-chart .eem-stall-chart-actions,
-	body.eem-shell-page--stall-chart .eem-stall-chart-filterbar__controls {
-		flex-direction: column !important;
-		align-items: stretch !important;
-	}
-
-	body.eem-shell-page--stall-chart .eem-stall-chart-table-card .widefat {
-		min-width: 480px !important;
-	}
 }
 
 /* Edit reservation guide baseline */
