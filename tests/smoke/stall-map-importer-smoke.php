@@ -43,6 +43,18 @@ sm_ok( 'Montcrief parses to 262 stalls', 262 === count( $mont_stalls ), $pass, $
 sm_ok( 'Montcrief 0 duplicate labels', array() === EEM_Stall_Map_Importer::find_duplicate_labels( $snap_mont ), $pass, $fail, $log );
 sm_ok( 'Montcrief has 5001 and 5262', in_array( '5001', $mont_stalls, true ) && in_array( '5262', $mont_stalls, true ), $pass, $fail, $log );
 
+/* ── per-barn stats breakdown (total/available/reserved/tack/blocked) ── */
+$stats_snap = array( 'barns' => array( array( 'name' => 'A', 'grid' => array(
+	array( array( 'type' => 'stall', 'label' => '1' ), array( 'type' => 'stall', 'label' => '2' ) ),
+	array( array( 'type' => 'stall', 'label' => '3' ), array( 'type' => 'stall', 'label' => '4' ) ),
+) ) ) );
+$bs = EEM_Stall_Map_Importer::barn_stats( $stats_snap, array( '1' => 'reserved', '2' => 'tack', '3' => 'blocked' ) );
+sm_ok( 'barn_stats: total 4',     4 === $bs['A']['total'], $pass, $fail, $log );
+sm_ok( 'barn_stats: reserved 1',  1 === $bs['A']['reserved'], $pass, $fail, $log );
+sm_ok( 'barn_stats: tack 1',      1 === $bs['A']['tack'], $pass, $fail, $log );
+sm_ok( 'barn_stats: blocked 1',   1 === $bs['A']['blocked'], $pass, $fail, $log );
+sm_ok( 'barn_stats: available 1 (unlisted defaults available)', 1 === $bs['A']['available'], $pass, $fail, $log );
+
 /* ── dup detection guard (synthetic) ───────────────────────────── */
 $dup_snap = array( 'barns' => array(
 	array( 'name' => 'A', 'grid' => array( array( array( 'type' => 'stall', 'label' => '12' ) ) ) ),

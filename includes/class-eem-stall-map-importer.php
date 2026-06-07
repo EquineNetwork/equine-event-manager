@@ -275,6 +275,42 @@ class EEM_Stall_Map_Importer {
 	}
 
 	/**
+	 * Per-barn status breakdown for the admin (total / available / reserved /
+	 * tack / blocked), keyed by barn name in tab order.
+	 *
+	 * The map supplies *which stalls exist* per barn; the caller supplies the
+	 * operational status of each stall (from orders + admin actions) as a
+	 * `label => status` map. Any stall not present in `$status_map` counts as
+	 * 'available'. Keeps this method pure (no DB) and unit-testable; the admin
+	 * renderer builds `$status_map` from the assignment data.
+	 *
+	 * @param array                 $snapshot   Snapshot structure.
+	 * @param array<string,string>  $status_map label => 'reserved'|'tack'|'blocked'|'available'.
+	 * @return array<string,array{total:int,available:int,reserved:int,tack:int,blocked:int}>
+	 */
+	public static function barn_stats( array $snapshot, array $status_map = array() ): array {
+		$stats = array();
+		foreach ( ( $snapshot['barns'] ?? array() ) as $barn ) {
+			$row = array( 'total' => 0, 'available' => 0, 'reserved' => 0, 'tack' => 0, 'blocked' => 0 );
+			foreach ( ( $barn['grid'] ?? array() ) as $grow ) {
+				foreach ( $grow as $cell ) {
+					if ( 'stall' !== ( $cell['type'] ?? '' ) ) {
+						continue;
+					}
+					$row['total']++;
+					$status = $status_map[ (string) $cell['label'] ] ?? 'available';
+					if ( ! isset( $row[ $status ] ) ) {
+						$status = 'available';
+					}
+					$row[ $status ]++;
+				}
+			}
+			$stats[ (string) ( $barn['name'] ?? '' ) ] = $row;
+		}
+		return $stats;
+	}
+
+	/**
 	 * Find stall labels that appear more than once across all barns.
 	 *
 	 * Locked decision: stall numbers are globally unique, so this should return

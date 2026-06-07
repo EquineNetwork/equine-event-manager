@@ -282,6 +282,12 @@ room block exactly. The mockups are the binding visual spec for the build.
      "computed from barn/row quantities" — the imported map *is* the inventory.
      Importer exposes `count_stalls()` (grand total) + `barn_stall_counts()`
      (per-barn). Validated live: Montcrief 262 + Burnett 414 = **676 total**.
+  7. **Per-barn stats panel (admin).** Each barn/tab shows its own breakdown —
+     **total / available / reserved / tack / blocked** — not just the grand total.
+     Surface on the admin map view + the connect preview. Total comes from the map
+     (importer); status counts come from cross-referencing assignment data per
+     barn. Importer exposes `barn_stats(snapshot, status_map)` (pure aggregation;
+     the admin renderer builds the status_map from orders).
 - **Conventions (v1):** values + positions only — NOT fill color / borders /
   merged cells (CSV export drops formatting; merges blank all but top-left).
   Reading fill-color for zones is a later add.
