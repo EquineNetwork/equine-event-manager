@@ -79,10 +79,15 @@ inactive-processor field locking · Open-Tab/open-invoice confirmed built ·
 
 ### Carried over from prior v2 — blocked/deferred (need a decision)
 
-6. **Cancellation-policy cleanup** — ⛔ **BLOCKED: one-time data migration.** Writes
-   the global policy into each reservation's `_eem_cancellation_policy_override`.
-   Per CLAUDE.md, migrations need explicit approval, and this is gated on "after
-   data exists" so the per-reservation legal text can be verified. Awaiting go-ahead.
+6. **Cancellation-policy cleanup** — ✅ **DONE (v2.7.66).** The substantive work was
+   already shipped in prior chunks: per-reservation resolver
+   (`eem_resolve_cancellation_policy`), editor section, the snapshot migration
+   (eem-mig-001, registered + already run on Local), Settings global textarea
+   removed (2.3.66), customer checkout reading the per-reservation override. v2.7.66
+   stripped the two remaining stale global references in active code (the Settings
+   email-preview sample no longer reads the deprecated `cancellation_policy`
+   wp_option; the token description points at Edit Reservation). The empty wp_option
+   is read-no-write and dropped on uninstall.
 7. **BEM status-badge normalization** — 🟡 **Deferred (optional).** Zero user-facing
    change; pure internal churn with regression risk. Low value — skip until a
    broader DS pass.

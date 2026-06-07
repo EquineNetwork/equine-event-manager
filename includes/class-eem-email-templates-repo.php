@@ -171,7 +171,7 @@ class EEM_Email_Templates_Repo {
 			'stall_assignments'   => __( "Customer's assigned stall numbers / RV lots", 'equine-event-manager' ),
 			'support_phone'       => __( 'Support phone number from Settings → Branding', 'equine-event-manager' ),
 			'support_email'       => __( 'Support email from Settings → Communications', 'equine-event-manager' ),
-			'cancellation_policy' => __( 'Cancellation policy text from Settings → Communications → Policies', 'equine-event-manager' ),
+			'cancellation_policy' => __( "Cancellation policy for the reservation (set in Edit Reservation → Cancellation Policy; falls back to the event default)", 'equine-event-manager' ),
 		);
 	}
 

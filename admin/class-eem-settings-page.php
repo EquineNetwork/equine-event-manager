@@ -1599,8 +1599,7 @@ class EEM_Settings_Page {
 	 * @return array<string, string>
 	 */
 	private function build_sample_placeholder_values( $user ) {
-		$sender   = EEM_Settings_Repo::get_email_sender();
-		$policies = EEM_Settings_Repo::get_policies();
+		$sender = EEM_Settings_Repo::get_email_sender();
 
 		return array(
 			'customer_name'       => $user->display_name,
@@ -1615,7 +1614,11 @@ class EEM_Settings_Page {
 			'stall_assignments'   => __( 'Barn A · Stalls 12, 13', 'equine-event-manager' ),
 			'support_phone'       => '555-555-0100',
 			'support_email'       => '' !== $sender['from_email'] ? $sender['from_email'] : get_option( 'admin_email' ),
-			'cancellation_policy' => '' !== $policies['cancellation'] ? wp_strip_all_tags( $policies['cancellation'] ) : __( '(Cancellation policy not set — configure in Settings → Communications → Policies.)', 'equine-event-manager' ),
+			// v2: cancellation policy is per-reservation now (Edit Reservation →
+			// Cancellation Policy, with the event default as fallback). The global
+			// Settings textarea is deprecated/removed; this is just a representative
+			// sample for the email-template preview.
+			'cancellation_policy' => __( 'Cancellations 14+ days before the event are fully refundable; within 14 days, fees are non-refundable. (Sample — the live text is set per reservation.)', 'equine-event-manager' ),
 		);
 	}
 
