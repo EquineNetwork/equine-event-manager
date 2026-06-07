@@ -137,6 +137,71 @@ inactive-processor field locking · Open-Tab/open-invoice confirmed built ·
 
 ---
 
+## 🗺️ Stall Mapping — spreadsheet-driven clickable facility maps (future)
+
+**Goal:** a true RSNC-style stall map — customers click stalls in their real
+physical positions with live availability, neighbors, and aisles visible —
+*without* building a CAD/drag-and-drop editor. Reference: `legacy.rsnc.us/
+reservations/stalls/reserveStall` (building tabs → per-barn stall chart; dark =
+taken, white = available; click to add to reservation).
+
+**Core insight:** a spreadsheet grid *is* a 2D coordinate system. The cell's
+**position is the data** — a number in a cell = a stall at that physical spot, a
+blank cell = an aisle/gap, a text cell = a landmark (`ARENA`, `WASH`, `OFFICE`).
+The admin "builds the map" in a tool they already know; we only write an importer
++ a grid renderer. No canvas library, no per-facility artwork.
+
+**Stall identity stays label-based** → blocked stalls, tack, chart assignment,
+orders, and inventory all keep working untouched. The map is a new *view* over the
+same data, not a new data spine.
+
+### Phase A — spreadsheet grid + publish-to-web import (the cheap, no-dependency path)
+
+- **Admin workflow:** one Google Sheet, **one tab per barn** (tab name = barn
+  name). Numbers where stalls sit, text for landmarks, blanks for aisles. Then
+  **File → Share → Publish to web** → public no-auth CSV URL (per tab / `gid`).
+- **Plugin import:** paste the published CSV URL (or upload a `.csv`).
+  `wp_remote_get()` → parse grid → **snapshot into `_en_stall_map`** (do NOT render
+  live from Google — render from our stored copy; "Refresh from sheet" re-pulls).
+  Preview the parsed grid before save so typos are caught.
+- **Data model:** `_en_stall_map = { barns: [ { name, grid: [[cell,…],…] } ] }`
+  where each `cell = { label, type: 'stall'|'landmark'|'gap' }`. Auto-merge
+  contiguous same-label landmark cells into one block.
+- **Renderer (customer + admin chart):** CSS grid; stall cells interactive +
+  painted by live status (available/reserved/blocked/tack — existing data);
+  landmark cells static labeled blocks; blanks are gaps; barn tabs across the top.
+  Number-grid picker stays as the fallback / "no map built yet" / mobile-simple mode.
+- **Conventions (v1):** values + positions only — NOT fill color / borders /
+  merged cells (CSV export drops formatting; merges blank all but top-left).
+  Reading fill-color for zones is a later add.
+- **Prefer CSV** (pure-PHP parse, zero deps). `.xlsx` upload would need
+  PhpSpreadsheet (a composer dependency) — only add if explicitly wanted.
+
+### Phase B — image-overlay fidelity upgrade (optional, later)
+
+- For facilities that want the exact CAD drawing: admin uploads the floor-plan
+  image (reuses the existing Stall Map upload) as a background, positions numbered
+  cells on top (row-placement tool: define a label range, click start/end, auto-
+  distribute, drag to nudge). Same label-based identity + live-status renderer.
+- Bigger lift (drag UI, maybe a light SVG/canvas layer); only justified when a
+  facility needs pixel-fidelity to the real building. Grid (Phase A) covers ~90%.
+
+### Honest limits (both phases)
+
+- Flat grid can't express angled rows / curved aisles / non-uniform stall sizes.
+  Acceptable — most stall charts are grid-ish.
+- Phase A is a clean **schematic**, not artful CAD; fine for *function* (click your
+  stall, see availability + neighbors), not pixel-perfect to the building.
+
+### Test fixture (prep)
+
+- Build a representative multi-tab Google Sheet from the RSNC Burnett chart (or a
+  synthetic facility) to exercise the importer once Phase A lands. (Claude can
+  generate the grid as a pasteable CSV/TSV; it cannot write into a Google Sheet
+  directly — no Sheets connector + the browser integration is read-only.)
+
+---
+
 ## 🧭 v4 — Alternate event sources
 
 11. **Native Events source completion** (~1,500 LOC; in-plugin
