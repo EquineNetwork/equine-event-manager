@@ -21,7 +21,7 @@
     --bg:#eef2f8; --surface:#fff; --electric:#2563EB; --electric-soft:#eaf0ff;
     --avail-border:#b9c6da; --reserved:#cbd5e1; --reserved-ink:#7c8ba0;
     --blocked:#9aa6b6; --land:#e8edf4; --land-ink:#6a7890;
-    --chip:30px; --gap:4px; --radius:8px;
+    --chip:40px; --gap:4px; --radius:8px; /* sized to fit a 4-digit stall # */
     font-family:"IBM Plex Sans","Helvetica Neue",Arial,sans-serif;
   }
   *{box-sizing:border-box}
@@ -54,7 +54,7 @@
   .map-scroll{flex:1;overflow:auto;padding:18px;background:#fbfcfe;-webkit-overflow-scrolling:touch;}
   .map-grid{display:grid;gap:var(--gap);width:max-content;}
   .cell{width:var(--chip);height:var(--chip);}
-  .stall{display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;border:1px solid var(--avail-border);border-radius:5px;background:#fff;color:var(--navy);cursor:pointer;user-select:none;line-height:1;}
+  .stall{display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:1px solid var(--avail-border);border-radius:5px;background:#fff;color:var(--navy);cursor:pointer;user-select:none;line-height:1;}
   .stall:hover{background:var(--electric-soft);border-color:var(--electric);}
   .stall.reserved{background:var(--reserved);border-color:var(--reserved);color:var(--reserved-ink);cursor:not-allowed;}
   .stall.blocked{background:repeating-linear-gradient(45deg,#9aa6b6,#9aa6b6 3px,#8593a5 3px,#8593a5 6px);border-color:var(--blocked);color:transparent;cursor:not-allowed;}
@@ -67,7 +67,7 @@
   @media (max-width:680px){
     .map-view{width:100vw;height:100vh;max-height:100vh;border-radius:0;margin:0;}
     .map-scroll{padding:10px;}
-    :root{--chip:34px;}
+    :root{--chip:44px;}
     .swipe-hint{display:block;}
   }
 </style>
@@ -181,7 +181,7 @@ function renderGrid(){
       var st=seedStatus(cell.label);
       s.className='cell stall '+(st==='available'?'':st);
       if(selected[cell.label]) s.classList.add('selected');
-      s.textContent=cell.label.slice(-3);
+      s.textContent=cell.label; // full label, up to 4 digits
       s.title='Stall '+cell.label+(st!=='available'?' ('+st+')':'');
       s.dataset.label=cell.label;
       s.dataset.status=st;
