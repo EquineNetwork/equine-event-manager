@@ -91,9 +91,12 @@ inactive-processor field locking · Open-Tab/open-invoice confirmed built ·
 7. **BEM status-badge normalization** — 🟡 **Deferred (optional).** Zero user-facing
    change; pure internal churn with regression risk. Low value — skip until a
    broader DS pass.
-8. **Order-cancellation email** template + send-trigger — 🟡 **Deferred.** No mockup
-   exists, no order-cancel trigger is wired, and CLAUDE.md explicitly defers email
-   templates beyond confirmation. Real build, not a wiring job.
+8. **Order-cancellation email** + cancel action — ✅ **DONE (v2.7.67).** Built the
+   whole flow: a "Cancel Order" action (Order Detail More-menu + Orders-list bulk),
+   `cancel_order()` repo method (marks cancelled, frees stall/RV inventory, logs to
+   activity), and a branded customer cancellation email carrying the reservation's
+   cancellation policy. Cancel does NOT auto-refund — payment record is preserved
+   for a separate refund. Browser-verified end-to-end + 23/23 smoke.
 9. **Bulk "Send Payment Link"** on Orders — ⛔ **Payment-gated** (needs live keys;
    payments moved to LAST per your call).
 
