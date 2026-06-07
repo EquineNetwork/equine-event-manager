@@ -3,57 +3,42 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>Stall Map — Customer Event Page (v4 mockup)</title>
+<title>Stall Map — Customer (v4 mockup)</title>
 <!--
-  v4 Stall Mapping — CUSTOMER (Event page) mockup.
-  Renders the customer-facing pick-from-layout flow from a spreadsheet grid.
+  v4 Stall Mapping — CUSTOMER stall-map view (mockup).
+  JUST the stall map — NOT the reservation form (name/email/shavings/checkout
+  live in event_page.html). This is the pick-from-layout map the customer uses.
   Data below is Whitney's real published "Montcrief" sheet (Phase A validated).
   Conventions: numeric cell = stall, text cell = landmark, blank = aisle/gap.
-  Mobile: full-screen modal; swipe (scroll) horizontally + vertically to pan the
-  full map at a readable chip size — NO pinch-zoom. (Decided 2026-06-07.)
+  Customer states: Available / Selected / Taken / Unavailable. (Tack is a
+  post-selection/admin concept — NOT shown on the customer map.)
+  Mobile: full-screen; swipe (scroll) to pan the full map at a readable chip
+  size — NO pinch-zoom. (Decided 2026-06-07.)
 -->
 <style>
   :root {
     --navy:#031B4E; --ink:#18212f; --muted:#5f6f85; --line:#d9e2ec;
-    --bg:#f3f6fb; --surface:#fff; --electric:#2563EB; --electric-soft:#eaf0ff;
+    --bg:#eef2f8; --surface:#fff; --electric:#2563EB; --electric-soft:#eaf0ff;
     --avail-border:#b9c6da; --reserved:#cbd5e1; --reserved-ink:#7c8ba0;
-    --blocked:#9aa6b6; --tack:#E8A33D; --tack-soft:#fff5e6;
-    --land:#e8edf4; --land-ink:#6a7890; --good:#16A34A;
+    --blocked:#9aa6b6; --land:#e8edf4; --land-ink:#6a7890;
     --chip:30px; --gap:4px; --radius:8px;
     font-family:"IBM Plex Sans","Helvetica Neue",Arial,sans-serif;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);}
-  h1,h2,h3{font-family:"Space Grotesk","IBM Plex Sans",sans-serif;margin:0;}
-
-  /* ---- simplified Event page shell ---- */
-  .event-wrap{max-width:760px;margin:0 auto;padding:28px 18px 80px;}
-  .event-head{margin-bottom:18px;}
-  .event-head .eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;}
-  .event-head h1{font-size:26px;color:var(--navy);margin-top:4px;}
-  .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;box-shadow:0 10px 24px rgba(23,32,51,.05);}
-  .card h2{font-size:16px;color:var(--navy);}
-  .card .sub{font-size:13px;color:var(--muted);margin:4px 0 14px;}
-  .pick-summary{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px;}
-  .pick-summary .count{font-size:14px;color:var(--ink);}
-  .pick-summary .count strong{color:var(--navy);}
-  .chosen-list{display:flex;gap:6px;flex-wrap:wrap;}
-  .chosen-chip{background:var(--electric-soft);color:var(--electric);border:1px solid #c9d8fb;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;}
+  html,body{height:100%;}
+  body{margin:0;background:var(--bg);color:var(--ink);display:flex;}
+  h2{font-family:"Space Grotesk","IBM Plex Sans",sans-serif;margin:0;}
   .btn{appearance:none;border:0;border-radius:var(--radius);font-weight:700;font-size:14px;padding:11px 18px;cursor:pointer;}
-  .btn-primary{background:var(--electric);color:#fff;}
-  .btn-primary:hover{background:#1d4fd0;}
   .btn-ghost{background:#eef2f7;color:var(--ink);}
   .btn-navy{background:var(--navy);color:#fff;}
-  .map-note{font-size:12px;color:#8a6d3b;background:#fcf6e6;border:1px solid #f0e2bd;border-radius:8px;padding:8px 12px;margin-top:14px;}
 
-  /* ---- full-screen modal ---- */
-  .modal{position:fixed;inset:0;background:rgba(8,15,30,.55);display:none;z-index:50;}
-  .modal.open{display:flex;flex-direction:column;}
-  .modal-card{background:#fff;margin:auto;width:min(1100px,96vw);height:min(92vh,920px);border-radius:14px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.4);}
-  .modal-head{display:flex;align-items:center;gap:14px;padding:16px 18px;border-bottom:1px solid var(--line);}
-  .modal-head h2{font-size:17px;color:var(--navy);}
-  .modal-head .spacer{flex:1;}
-  .modal-close{appearance:none;border:0;background:#eef2f7;border-radius:8px;width:34px;height:34px;font-size:18px;cursor:pointer;color:var(--ink);}
+  /* the map view IS the page (centered card on desktop, full-screen on mobile) */
+  .map-view{background:#fff;margin:auto;width:min(1100px,96vw);height:min(92vh,920px);
+    border-radius:14px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 60px rgba(8,15,30,.18);}
+  .map-head{display:flex;align-items:center;gap:14px;padding:16px 18px;border-bottom:1px solid var(--line);}
+  .map-head h2{font-size:17px;color:var(--navy);}
+  .map-head .spacer{flex:1;}
+  .map-close{appearance:none;border:0;background:#eef2f7;border-radius:8px;width:34px;height:34px;font-size:18px;cursor:pointer;color:var(--ink);}
   .barn-tabs{display:flex;gap:4px;padding:10px 18px 0;flex-wrap:wrap;}
   .barn-tab{appearance:none;border:1px solid var(--line);border-bottom:0;background:#f6f9fd;color:var(--muted);font-weight:700;font-size:13px;padding:8px 14px;border-radius:8px 8px 0 0;cursor:pointer;}
   .barn-tab.active{background:#fff;color:var(--navy);box-shadow:inset 0 -2px 0 var(--electric);}
@@ -64,9 +49,8 @@
   .sw-sel{background:var(--electric);border-color:var(--electric);}
   .sw-res{background:var(--reserved);border-color:var(--reserved);}
   .sw-block{background:var(--blocked);border-color:var(--blocked);}
-  .sw-tack{background:var(--tack-soft);border-color:var(--tack);}
 
-  /* scroll/swipe area — fixed chip size, pan by scrolling (mobile = swipe) */
+  .swipe-hint{display:none;font-size:12px;color:var(--muted);padding:6px 18px;background:#f6f9fd;border-bottom:1px solid var(--line);}
   .map-scroll{flex:1;overflow:auto;padding:18px;background:#fbfcfe;-webkit-overflow-scrolling:touch;}
   .map-grid{display:grid;gap:var(--gap);width:max-content;}
   .cell{width:var(--chip);height:var(--chip);}
@@ -74,76 +58,48 @@
   .stall:hover{background:var(--electric-soft);border-color:var(--electric);}
   .stall.reserved{background:var(--reserved);border-color:var(--reserved);color:var(--reserved-ink);cursor:not-allowed;}
   .stall.blocked{background:repeating-linear-gradient(45deg,#9aa6b6,#9aa6b6 3px,#8593a5 3px,#8593a5 6px);border-color:var(--blocked);color:transparent;cursor:not-allowed;}
-  .stall.tack{border-color:var(--tack);background:var(--tack-soft);color:#9a6a14;}
-  .stall.tack::after{content:"T";position:absolute;margin-top:-14px;margin-left:14px;font-size:8px;background:var(--tack);color:#fff;border-radius:3px;padding:0 2px;}
   .stall.selected{background:var(--electric);border-color:var(--electric);color:#fff;}
   .landmark{display:flex;align-items:center;justify-content:center;text-align:center;font-size:9px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--land-ink);background:var(--land);border:1px dashed #c4cedd;border-radius:5px;padding:2px;line-height:1.1;}
-  .modal-foot{display:flex;align-items:center;gap:12px;padding:14px 18px;border-top:1px solid var(--line);background:#fff;}
-  .modal-foot .count{font-size:14px;flex:1;}
-  .modal-foot .count strong{color:var(--navy);}
+  .map-foot{display:flex;align-items:center;gap:12px;padding:14px 18px;border-top:1px solid var(--line);background:#fff;}
+  .map-foot .count{font-size:14px;flex:1;}
+  .map-foot .count strong{color:var(--navy);}
 
   @media (max-width:680px){
-    .modal-card{width:100vw;height:100vh;max-height:100vh;border-radius:0;margin:0;}
+    .map-view{width:100vw;height:100vh;max-height:100vh;border-radius:0;margin:0;}
     .map-scroll{padding:10px;}
-    :root{--chip:34px;} /* a touch bigger for fingers; swipe to pan */
-    .swipe-hint{display:block!important;}
+    :root{--chip:34px;}
+    .swipe-hint{display:block;}
   }
-  .swipe-hint{display:none;font-size:12px;color:var(--muted);padding:6px 18px;background:#f6f9fd;border-bottom:1px solid var(--line);}
 </style>
 </head>
 <body>
 
-<div class="event-wrap">
-  <div class="event-head">
-    <div class="eyebrow">Reserve Your Stalls</div>
-    <h1>2026 Southeast Region Super Sort</h1>
+<!-- the stall map view (this is the whole mockup — no reservation form) -->
+<div class="map-view">
+  <div class="map-head">
+    <h2>Choose Your Stalls</h2>
+    <span class="spacer"></span>
+    <button class="map-close" aria-label="Close">&times;</button>
   </div>
-
-  <div class="card">
-    <h2>Stall Reservations</h2>
-    <p class="sub">Pick your stalls on the live facility map. Available stalls are white; taken stalls are greyed out.</p>
-
-    <button class="btn btn-primary" data-open-map>🗺️ Choose Your Stalls</button>
-
-    <div class="pick-summary" data-summary hidden>
-      <span class="count"><strong data-count>0</strong> stalls selected</span>
-      <div class="chosen-list" data-chosen></div>
-      <button class="btn btn-ghost" data-open-map>Edit selection</button>
-    </div>
-
-    <div class="map-note">This is the live availability map for the facility. Tap a white stall to add it to your reservation.</div>
+  <div class="barn-tabs" data-barn-tabs>
+    <button class="barn-tab active" data-barn="Montcrief">Montcrief</button>
+    <button class="barn-tab" data-barn="Burnett">Burnett</button>
+    <button class="barn-tab" data-barn="EQMP Unit A">EQMP Unit A</button>
   </div>
-</div>
-
-<!-- full-screen map modal -->
-<div class="modal" data-map-modal>
-  <div class="modal-card">
-    <div class="modal-head">
-      <h2>Choose Your Stalls</h2>
-      <span class="spacer"></span>
-      <button class="modal-close" data-close-map aria-label="Close">&times;</button>
-    </div>
-    <div class="barn-tabs" data-barn-tabs>
-      <button class="barn-tab active" data-barn="Montcrief">Montcrief</button>
-      <button class="barn-tab" data-barn="Burnett">Burnett</button>
-      <button class="barn-tab" data-barn="EQMP Unit A">EQMP Unit A</button>
-    </div>
-    <div class="legend">
-      <span><i class="swatch sw-avail"></i> Available</span>
-      <span><i class="swatch sw-sel"></i> Selected</span>
-      <span><i class="swatch sw-res"></i> Taken</span>
-      <span><i class="swatch sw-block"></i> Unavailable</span>
-      <span><i class="swatch sw-tack"></i> Tack</span>
-    </div>
-    <div class="swipe-hint">Swipe to scroll the full map ←→ ↑↓</div>
-    <div class="map-scroll">
-      <div class="map-grid" data-map-grid></div>
-    </div>
-    <div class="modal-foot">
-      <span class="count"><strong data-count>0</strong> selected — <span data-chosen-inline>none yet</span></span>
-      <button class="btn btn-ghost" data-close-map>Cancel</button>
-      <button class="btn btn-navy" data-done-map>Done</button>
-    </div>
+  <div class="legend">
+    <span><i class="swatch sw-avail"></i> Available</span>
+    <span><i class="swatch sw-sel"></i> Selected</span>
+    <span><i class="swatch sw-res"></i> Taken</span>
+    <span><i class="swatch sw-block"></i> Unavailable</span>
+  </div>
+  <div class="swipe-hint">Swipe to scroll the full map ←→ ↑↓</div>
+  <div class="map-scroll">
+    <div class="map-grid" data-map-grid></div>
+  </div>
+  <div class="map-foot">
+    <span class="count"><strong data-count>0</strong> selected — <span data-chosen-inline>none yet</span></span>
+    <button class="btn btn-ghost">Cancel</button>
+    <button class="btn btn-navy">Done</button>
   </div>
 </div>
 
@@ -171,7 +127,6 @@ var MONTCRIEF_CSV = `Centennial Room,,,,,Concessions,,Office,,Lobby,,,,Storage,,
 ,,,,,,,,,,,,,,,,,,,,,,,,,,
 Wash Rack,,,,,,,,,,,,,Ramp Down to Watt Arena,,,,,,,,,,,,,`;
 
-/* parse CSV -> 2D grid of {label,type} */
 function parseGrid(csv){
   var rows = csv.split(/\r?\n/).map(function(line){ return line.split(','); });
   var maxc = rows.reduce(function(m,r){ return Math.max(m,r.length); },0);
@@ -187,13 +142,12 @@ function parseGrid(csv){
   });
 }
 
-/* deterministic pseudo-status so the demo shows all states stably */
+/* deterministic pseudo-status (customer side: available / reserved / blocked) */
 function seedStatus(label){
   var n=parseInt(String(label).replace(/\D/g,''),10)||0;
   var h=(n*2654435761)%97;
-  if(h<22) return 'reserved';
+  if(h<24) return 'reserved';
   if(h===30) return 'blocked';
-  if(h===41||h===67) return 'tack';
   return 'available';
 }
 
@@ -208,7 +162,6 @@ function renderGrid(){
   for(var r=0;r<grid.length;r++){
     for(var c=0;c<grid[r].length;c++){
       var cell=grid[r][c];
-      // landmark horizontal merge: span trailing blanks in the same row
       if(cell.type==='landmark'){
         var span=1;
         while(c+span<grid[r].length && grid[r][c+span].type==='gap'){ span++; }
@@ -224,12 +177,11 @@ function renderGrid(){
       if(cell.type==='gap'){
         var g=document.createElement('div'); g.className='cell'; host.appendChild(g); continue;
       }
-      // stall
       var s=document.createElement('div');
       var st=seedStatus(cell.label);
       s.className='cell stall '+(st==='available'?'':st);
       if(selected[cell.label]) s.classList.add('selected');
-      s.textContent=cell.label.slice(-3); // compact: last 3 digits
+      s.textContent=cell.label.slice(-3);
       s.title='Stall '+cell.label+(st!=='available'?' ('+st+')':'');
       s.dataset.label=cell.label;
       s.dataset.status=st;
@@ -240,23 +192,19 @@ function renderGrid(){
 
 function refreshSummary(){
   var labels=Object.keys(selected);
-  document.querySelectorAll('[data-count]').forEach(function(e){ e.textContent=labels.length; });
-  var chosen=document.querySelector('[data-chosen]');
-  chosen.innerHTML=labels.map(function(l){ return '<span class="chosen-chip">'+l+'</span>'; }).join('');
+  document.querySelector('[data-count]').textContent=labels.length;
   document.querySelector('[data-chosen-inline]').textContent = labels.length? labels.join(', ') : 'none yet';
-  document.querySelector('[data-summary]').hidden = labels.length===0;
 }
 
 document.querySelector('[data-map-grid]').addEventListener('click',function(ev){
   var s=ev.target.closest('.stall'); if(!s) return;
-  if(s.dataset.status!=='available' && s.dataset.status!=='tack') return; // taken/blocked not clickable
+  if(s.dataset.status!=='available') return;
   var l=s.dataset.label;
   if(selected[l]){ delete selected[l]; s.classList.remove('selected'); }
   else { selected[l]=true; s.classList.add('selected'); }
   refreshSummary();
 });
 
-/* barn tabs (only Montcrief has data in this mockup) */
 document.querySelector('[data-barn-tabs]').addEventListener('click',function(ev){
   var t=ev.target.closest('.barn-tab'); if(!t) return;
   document.querySelectorAll('.barn-tab').forEach(function(b){ b.classList.toggle('active', b===t); });
@@ -264,12 +212,6 @@ document.querySelector('[data-barn-tabs]').addEventListener('click',function(ev)
     document.querySelector('[data-map-grid]').innerHTML='<div style="padding:40px;color:#8995a8;font-size:14px">Publish this barn’s tab to the web and it renders here — same as Montcrief.</div>';
   } else { renderGrid(); }
 });
-
-function openMap(){ document.querySelector('[data-map-modal]').classList.add('open'); renderGrid(); }
-function closeMap(){ document.querySelector('[data-map-modal]').classList.remove('open'); }
-document.querySelectorAll('[data-open-map]').forEach(function(b){ b.addEventListener('click',openMap); });
-document.querySelectorAll('[data-close-map]').forEach(function(b){ b.addEventListener('click',closeMap); });
-document.querySelector('[data-done-map]').addEventListener('click',function(){ refreshSummary(); closeMap(); });
 
 renderGrid();
 </script>
