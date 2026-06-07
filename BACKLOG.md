@@ -157,6 +157,24 @@ The admin "builds the map" in a tool they already know; we only write an importe
 orders, and inventory all keep working untouched. The map is a new *view* over the
 same data, not a new data spine.
 
+**SCOPE LOCK (decided 2026-06-07):** Phase A **REPLACES the "Pick from layout"
+customer-selection mode**, it is not a parallel feature. Today "Pick from layout"
+renders the flat numbered-chip grid built from the Stall Row Builder; under Phase A
+that branch renders the spreadsheet-driven facility map instead. The
+`Customer Selection` control (Quantity vs Pick from layout) stays; only what the
+Pick-from-layout branch *renders* changes.
+
+**Option A (LOCKED):** in **Numbered + Pick from layout** mode the **spreadsheet is
+the source of truth** for both the stall *labels* AND their *positions* — it
+replaces the Stall Row Builder in that mode. The **Stall Row Builder remains for
+Quantity mode only** (where you just need a list of numbers + a count, no map).
+Labels stay the spine for blocked/tack/chart/orders, so nothing downstream breaks.
+
+**Validated 2026-06-07** against Whitney's real "Montcrief" test sheet (publish-to-
+web → `curl -L`/`wp_remote_get` follows the signed redirect → clean CSV →
+`str_getcsv` → 21×24 grid → 251 stalls, 0 dupes, 11 landmark types incl. center +
+cross aisles). Throwaway parser confirmed the importer logic end to end.
+
 ### Phase A — spreadsheet grid + publish-to-web import (the cheap, no-dependency path)
 
 - **Admin workflow:** one Google Sheet, **one tab per barn** (tab name = barn
@@ -172,7 +190,8 @@ same data, not a new data spine.
 - **Renderer (customer + admin chart):** CSS grid; stall cells interactive +
   painted by live status (available/reserved/blocked/tack — existing data);
   landmark cells static labeled blocks; blanks are gaps; barn tabs across the top.
-  Number-grid picker stays as the fallback / "no map built yet" / mobile-simple mode.
+  When a pick-from-layout reservation has **no map imported yet**, fall back to the
+  legacy flat chip grid (or a "map not configured" notice) so the mode never breaks.
 - **Conventions (v1):** values + positions only — NOT fill color / borders /
   merged cells (CSV export drops formatting; merges blank all but top-left).
   Reading fill-color for zones is a later add.
