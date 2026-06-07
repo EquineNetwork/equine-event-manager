@@ -1574,9 +1574,10 @@ class EEM_Shortcodes {
 			$eem_has_stall_map      = ! empty( $eem_stall_map_snapshot['barns'] );
 			?>
 			<?php if ( $eem_has_stall_map ) : ?>
-				<?php $this->render_stall_map_picker( $eem_stall_map_snapshot, $stall_picker_reserved, $stall_picker_blocked, ( 'off' !== ( $data['stall_tack_mode'] ?? 'customer' ) ), (int) $stall_per_customer_max ); ?>
+				<?php // v4: customers flag a tack stall only in 'customer' mode; 'admin' mode = admin designates on the chart. ?>
+				<?php $this->render_stall_map_picker( $eem_stall_map_snapshot, $stall_picker_reserved, $stall_picker_blocked, ( 'customer' === ( $data['stall_tack_mode'] ?? 'customer' ) ), (int) $stall_per_customer_max ); ?>
 			<?php elseif ( ! empty( $stall_picker_rows ) ) : ?>
-				<?php $this->render_stall_picker_grid( $stall_picker_rows, $stall_picker_blocked, $stall_picker_reserved, array(), (string) $stall_map_url, ( 'off' !== ( $data['stall_tack_mode'] ?? 'customer' ) ) ); ?>
+				<?php $this->render_stall_picker_grid( $stall_picker_rows, $stall_picker_blocked, $stall_picker_reserved, array(), (string) $stall_map_url, ( 'customer' === ( $data['stall_tack_mode'] ?? 'customer' ) ) ); ?>
 			<?php elseif ( $stall_assignment_enabled && ! empty( $stall_assignment_blocks ) ) : ?>
 				<?php $this->render_quantity_stall_assignment_selector( $stall_assignment_blocks, $stall_map_url ); ?>
 			<?php endif; ?>

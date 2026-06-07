@@ -2410,9 +2410,12 @@
 		'toggle-stall-customer-selection': function (target) {
 			toggleStallCustomerSelection(target);
 		},
-		/* T1 — Tack Stall mode (off / admin / customer). */
-		'toggle-tack-mode': function (target) {
-			toggleTackMode(target);
+		/* Tack Stalls — On/Off, then (when On) who designates: customer / admin. */
+		'tack-onoff': function (target) {
+			eemTackToggle(target, 'onoff');
+		},
+		'tack-who': function (target) {
+			eemTackToggle(target, 'who');
 		},
 		/* v4 — connect/refresh a stall-map Google Sheet. */
 		'stall-map-connect': function (target) {
@@ -5351,19 +5354,37 @@ function stallMapConnect(btn) {
 	});
 }
 
-/* Tack Stall On/Off toggle. Sets the active button + writes the hidden
-   stall_tack_mode input ('customer' = on, 'off' = off). The actual tack
-   assignment lives on the Stall Chart, so there is no admin tag-select here. */
-function toggleTackMode(btn) {
-	var mode = btn.dataset.tackMode || 'customer';
-	var group = btn.closest('[data-eem-tack-mode-btns]');
+/* Tack Stalls control. Two sub-controls: On/Off, and (when On) who designates
+   the tack stall — Customer or Admin only. The hidden stall_tack_mode input is
+   'off' when off, otherwise the active who value ('customer' | 'admin'). The
+   who-row is shown only when on. */
+function eemTackToggle(btn, which) {
+	var control = btn.closest('[data-eem-tack-control]');
+	if (!control) return;
+	var group = btn.closest('.eem-mode-btns');
 	if (group) {
 		group.querySelectorAll('.eem-mode-btn').forEach(function (b) {
 			b.classList.toggle('active', b === btn);
 		});
 	}
+	var whoRow = control.querySelector('[data-eem-tack-who-row]');
+	var offBtn = control.querySelector('[data-tack-onoff="off"]');
+	var isOff  = offBtn && offBtn.classList.contains('active');
+
+	// Show the who-row only when on.
+	if (whoRow) {
+		if (isOff) { whoRow.setAttribute('hidden', ''); } else { whoRow.removeAttribute('hidden'); }
+	}
+
+	// Recompute the stored value.
 	var input = document.getElementById('eem-stall-tack-mode-input');
-	if (input) input.value = mode;
+	if (!input) return;
+	if (isOff) {
+		input.value = 'off';
+	} else {
+		var whoActive = control.querySelector('[data-tack-who].active');
+		input.value = whoActive ? (whoActive.getAttribute('data-tack-who') || 'customer') : 'customer';
+	}
 }
 
 /* Customer Selection toggle (quantity / pick_layout). */

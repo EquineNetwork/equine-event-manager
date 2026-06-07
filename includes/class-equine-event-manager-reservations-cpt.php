@@ -2242,15 +2242,20 @@ class EEM_Reservations_CPT {
 	/**
 	 * Sanitize the Tack Stall mode.
 	 *
-	 * Two states: 'off' (no tack) or 'customer' (on — buyers flag a tack stall at
-	 * checkout for the shavings exclusion; the admin assigns the actual one on the
-	 * Stall Chart). The retired 'admin' value normalizes to 'customer' (on).
+	 * Three states: 'off' (no tack), 'customer' (on — buyers flag their own tack
+	 * stall at checkout for the shavings exclusion), or 'admin' (on, but only the
+	 * admin designates the tack stall on the Stall Chart; no checkout flag). Any
+	 * unrecognised non-off value normalises to 'customer'.
 	 *
 	 * @param mixed $value
-	 * @return string 'off' | 'customer'
+	 * @return string 'off' | 'customer' | 'admin'
 	 */
 	public static function sanitize_stall_tack_mode( $value ): string {
-		return ( 'off' === sanitize_key( $value ) ) ? 'off' : 'customer';
+		$value = sanitize_key( $value );
+		if ( 'off' === $value ) {
+			return 'off';
+		}
+		return ( 'admin' === $value ) ? 'admin' : 'customer';
 	}
 
 	/**
