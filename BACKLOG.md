@@ -227,10 +227,33 @@ room block exactly. The mockups are the binding visual spec for the build.
     form shows a compact "N stalls selected" summary + a "Choose your stalls" button;
     the modal holds the map (barn tabs, click-to-select, live status) + a Done button
     that returns picks to the form.
-  - **Mobile is the hard part** (24 cols won't fit a phone at tappable size): needs
-    **pinch-zoom + pan** inside the modal (CSS `transform: scale()` + drag, no lib)
-    and/or a **small-screen fallback** to the simple number-list flow. DECIDE which
-    at Phase A kickoff: full zoom/pan map on mobile vs. graceful list fallback.
+  - **Mobile (DECIDED 2026-06-07):** full-screen modal + **swipe-scroll** to pan
+    the full map at a readable chip size — **NO pinch-zoom** (layouts are inherently
+    portrait/landscape, so swiping to reach the rest is simpler + more reliable).
+
+- **Locked from the mockup pass (2026-06-07)** — see `.mockups/stall_map_event.html`
+  + `stall_map_admin.html` (the binding visual spec, validated vs. Whitney's real
+  published Montcrief + Burnett sheets):
+  - **Same-label RECTANGLE merge** for marked areas (drag-fill the footprint → exact
+    room, horizontal AND vertical: Centennial Room 5×3, Watt Arena 1×17, etc.).
+  - **Vertical text** (`writing-mode: vertical-rl`) on tall-narrow blocks so long
+    labels (Watt Arena, Concession, Vet Clinic) fit instead of clipping.
+  - **4-digit chips**; explicit grid placement; blank cells = empty aisle tracks.
+  - **Multi-barn:** one *Publish to web* URL → auto-discover every barn tab (each
+    tab's `gid`+name come from the published doc); a tab per barn on the map.
+  - **Connection UI** lives on Edit Reservation → Stall Reservations (pick-from-
+    layout area): paste the *Publish to web* URL → Connect/Refresh → "✓ N barns
+    found" → preview. Snapshots to `_en_stall_map`; "Refresh" re-pulls.
+  - **Admin chrome = the existing plugin Stall & RV Charts page** (title
+    `.eem-plugin-title`, KPIs `.eem-stall-chart-stat-card`, buttons `.eem-btn`):
+    the map is the new "By Location (Map)" view inside that page, not new chrome.
+  - **Group color-coding ON the map** (admin): stalls in the same group reservation
+    render with a shared group color accent (reuse the existing Show-by-group /
+    zone palette), layered on top of the status fill (assigned/tack/blocked).
+  - **Build-phase data seeding (DO when the feature is built):** seed richer demo
+    data — multiple **group reservations**, **tack stalls**, **blocked** stalls —
+    so the map demonstrates every state with realistic data, not just synthetic
+    pseudo-random status.
 - **Conventions (v1):** values + positions only — NOT fill color / borders /
   merged cells (CSV export drops formatting; merges blank all but top-left).
   Reading fill-color for zones is a later add.

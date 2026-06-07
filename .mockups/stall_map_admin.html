@@ -58,6 +58,7 @@
   .sw-resv{background:var(--resv);border-color:#bcccea;}
   .sw-tack{background:var(--tack-soft);border-color:var(--tack);}
   .sw-block{background:var(--blocked);border-color:var(--blocked);}
+  .gdot{width:11px;height:11px;border-radius:50%;display:inline-block;margin-left:2px;vertical-align:middle;}
   .map-scroll{overflow:auto;padding:18px;background:#fbfcfe;max-height:640px;-webkit-overflow-scrolling:touch;}
   .map-grid{display:grid;gap:var(--gap);width:max-content;}
   .cell{width:var(--chip);height:var(--chip);}
@@ -110,6 +111,7 @@
       <span><i class="swatch sw-resv"></i> Assigned</span>
       <span><i class="swatch sw-tack"></i> Tack</span>
       <span><i class="swatch sw-block"></i> Blocked</span>
+      <span>Groups (left edge)<i class="gdot" style="background:#DC2626"></i><i class="gdot" style="background:#16A34A"></i><i class="gdot" style="background:#9333EA"></i><i class="gdot" style="background:#CA8A04"></i></span>
       <span style="margin-left:auto;color:#8995a8">Click any stall to assign, mark tack, or block.</span>
     </div>
     <div class="map-scroll"><div class="map-grid" data-map-grid></div></div>
@@ -124,6 +126,8 @@
 <script>
 var BARNS=['Montcrief','Burnett'];
 var CUSTOMERS=['J. Smith','M. Lee','A. Garcia','T. Nguyen','R. Patel','K. Brooks','D. Owens','L. Carter'];
+/* group reservations get a shared color accent on the map (left edge) */
+var GROUPS=[{name:'Smith Barn',color:'#DC2626'},{name:'4-H Team',color:'#16A34A'},{name:'Patel Stables',color:'#9333EA'},{name:'Lone Star',color:'#CA8A04'}];
 var grid=[];
 var state={}; // label -> {status,cust}
 
@@ -136,8 +140,9 @@ function parseGrid(csv){
 }
 function seed(label){
   var n=parseInt(String(label).replace(/\D/g,''),10)||0; var h=(n*2654435761)%97;
-  if(h<24) return {status:'reserved',cust:CUSTOMERS[n%CUSTOMERS.length]};
-  if(h===41||h===67) return {status:'tack',cust:CUSTOMERS[n%CUSTOMERS.length]};
+  var grp=Math.floor(n/8)%GROUPS.length; // cluster runs of ~8 into a shared group
+  if(h<24) return {status:'reserved',cust:CUSTOMERS[n%CUSTOMERS.length],group:(h<13?grp:null)};
+  if(h===41||h===67) return {status:'tack',cust:CUSTOMERS[n%CUSTOMERS.length],group:grp};
   if(h===30) return {status:'blocked'};
   return {status:'available'};
 }
@@ -163,8 +168,9 @@ function render(){
         el.className='cell stall '+(s.status==='available'?'':s.status);
         el.textContent=cell.label; el.dataset.label=cell.label;
         el.style.gridColumn=(c+1); el.style.gridRow=(r+1);
+        if(s.group!=null){ el.style.borderLeft='4px solid '+GROUPS[s.group].color; } // group accent
         if(s.status==='tack'){var b=document.createElement('span');b.className='tbadge';b.textContent='T';el.appendChild(b);}
-        if(s.cust) el.title=cell.label+' — '+s.cust;
+        if(s.cust) el.title=cell.label+' — '+s.cust+(s.group!=null?' ('+GROUPS[s.group].name+')':'');
         host.appendChild(el);
         continue;
       }
@@ -192,8 +198,8 @@ function openPop(el){
   var label=el.dataset.label, s=state[label];
   document.querySelector('[data-pop-num]').textContent='Stall '+label;
   document.querySelector('[data-pop-st]').textContent =
-    s.status==='reserved'?('Assigned — '+s.cust):
-    s.status==='tack'?('Tack stall — '+(s.cust||'')):
+    s.status==='reserved'?('Assigned — '+s.cust+(s.group!=null?' · '+GROUPS[s.group].name:'')):
+    s.status==='tack'?('Tack stall — '+(s.cust||'')+(s.group!=null?' · '+GROUPS[s.group].name:'')):
     s.status==='blocked'?'Blocked':'Available';
   var body=document.querySelector('[data-pop-body]'); body.innerHTML='';
   function row(ic,txt,cls,fn){var b=document.createElement('button');b.className='pop-row'+(cls?' '+cls:'');
