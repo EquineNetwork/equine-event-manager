@@ -41,21 +41,16 @@ inactive-processor field locking · Open-Tab/open-invoice confirmed built ·
 
 ---
 
-## 🐴 Active — Tack stalls (in progress)
+## 🐴 Tack stalls — shipped 2026-06-07
 
-**T1. Tack stalls → 3-mode control** (replaces the v2.7.64 on/off toggle). Lives
-**under Blocked Stall Numbers** in the Stall Reservation area. Modes:
-- **Off** — no tack designation anywhere.
-- **Admin assigns** — admin picks which stall numbers are tack (tag-select like
-  Blocked Stalls); customer form shows no tack selector.
-- **Customers designate** — customer picks one of their stalls as tack at checkout.
-New meta `_en_stall_tack_mode` (off|admin|customer) + `_en_stall_tack_admin_stalls`
-(array); migration from the old bool (1→customer, 0→off).
-
-**T2. Tack stalls exempt from required shavings (pricing).** When required shavings
-is on, shavings is charged for (stalls − tack stalls) only. A tack stall pays the
-normal stall rate but no shavings. Applies to customer-designated AND admin-assigned
-tack. Fix customer checkout total **and** order line items.
+- **T1 (v2.7.72)** — 3-mode tack control (Off / Admin assigns / Customers
+  designate) under Blocked Stall Numbers. New meta `_en_stall_tack_mode` +
+  `_en_stall_tack_admin_stalls`; admin mode shows a stall-number tag-select;
+  customer selector gated to 'customer' mode. Migration eem-mig-006 (old bool →
+  mode). Browser-verified runtime toggle.
+- **T2 (v2.7.72)** — tack stalls excluded from required shavings (still pay the
+  normal stall rate). Server `get_tack_stall_count()` + live-total
+  `countTackStalls()`; admin-assigned tack also written to the Tack Stalls note.
 
 ---
 
