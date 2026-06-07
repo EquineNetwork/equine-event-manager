@@ -288,6 +288,11 @@ room block exactly. The mockups are the binding visual spec for the build.
      (importer); status counts come from cross-referencing assignment data per
      barn. Importer exposes `barn_stats(snapshot, status_map)` (pure aggregation;
      the admin renderer builds the status_map from orders).
+  8. **Customers display as "Last Name, First Name" everywhere (PLUGIN-WIDE).**
+     Not just v4 — a cross-cutting convention (orders, customer list/profile, stall
+     charts, assign menus, receipts). Add a shared formatter; apply at all display
+     points (own task). The admin map's assign control is a **searchable typeahead**
+     (events have hundreds of customers), not a plain dropdown.
 - **Conventions (v1):** values + positions only — NOT fill color / borders /
   merged cells (CSV export drops formatting; merges blank all but top-left).
   Reading fill-color for zones is a later add.

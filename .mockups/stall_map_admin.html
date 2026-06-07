@@ -80,6 +80,9 @@
   .pop-row.danger{color:#b93742;}
   .pop-row .ic{width:16px;text-align:center;}
   .pop select{width:100%;padding:8px;border:1px solid var(--line);border-radius:7px;font-size:13px;margin-top:4px;}
+  .pop-search{width:100%;padding:8px;border:1px solid var(--line);border-radius:7px;font-size:13px;margin-bottom:6px;}
+  .pop-list{max-height:180px;overflow:auto;}
+  .pop-empty{padding:9px 10px;font-size:12px;color:var(--muted);}
 </style>
 </head>
 <body>
@@ -125,7 +128,8 @@
 
 <script>
 var BARNS=['Montcrief','Burnett'];
-var CUSTOMERS=['J. Smith','M. Lee','A. Garcia','T. Nguyen','R. Patel','K. Brooks','D. Owens','L. Carter'];
+/* Customers display as "Last, First" everywhere (plugin-wide convention). */
+var CUSTOMERS=['Smith, James','Lee, Maria','Garcia, Antonio','Nguyen, Thanh','Patel, Rohan','Brooks, Kelly','Owens, Dana','Carter, Logan'];
 /* group reservations get a shared color accent on the map (left edge) */
 var GROUPS=[{name:'Smith Barn',color:'#DC2626'},{name:'4-H Team',color:'#16A34A'},{name:'Patel Stables',color:'#9333EA'},{name:'Lone Star',color:'#CA8A04'}];
 var grid=[];
@@ -205,9 +209,22 @@ function openPop(el){
   function row(ic,txt,cls,fn){var b=document.createElement('button');b.className='pop-row'+(cls?' '+cls:'');
     b.innerHTML='<span class="ic">'+ic+'</span>'+txt;b.onclick=fn;body.appendChild(b);}
   if(s.status==='available'){
-    var sel=document.createElement('select');sel.innerHTML='<option>Assign to customer…</option>'+CUSTOMERS.map(function(c){return '<option>'+c+'</option>';}).join('');
-    sel.onchange=function(){ if(sel.selectedIndex>0){ state[label]={status:'reserved',cust:sel.value}; render(); closePop(); } };
-    body.appendChild(sel);
+    // searchable customer typeahead (real events have hundreds of customers)
+    var search=document.createElement('input'); search.type='text'; search.className='pop-search'; search.placeholder='Search customer…';
+    var list=document.createElement('div'); list.className='pop-list';
+    function renderList(q){
+      list.innerHTML=''; q=(q||'').toLowerCase();
+      var hits=CUSTOMERS.filter(function(c){return c.toLowerCase().indexOf(q)!==-1;});
+      if(!hits.length){ list.innerHTML='<div class="pop-empty">No match</div>'; return; }
+      hits.forEach(function(c){
+        var b=document.createElement('button'); b.className='pop-row'; b.textContent=c;
+        b.onclick=function(){ state[label]={status:'reserved',cust:c}; render(); closePop(); };
+        list.appendChild(b);
+      });
+    }
+    search.oninput=function(){ renderList(search.value); };
+    body.appendChild(search); body.appendChild(list); renderList('');
+    setTimeout(function(){ search.focus(); }, 0);
     row('⛔','Block stall','danger',function(){state[label]={status:'blocked'};render();closePop();});
   } else if(s.status==='reserved'){
     row('🏷','Mark as Tack stall','',function(){state[label].status='tack';render();closePop();});
