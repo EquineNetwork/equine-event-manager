@@ -192,6 +192,19 @@ cross aisles). Throwaway parser confirmed the importer logic end to end.
   landmark cells static labeled blocks; blanks are gaps; barn tabs across the top.
   When a pick-from-layout reservation has **no map imported yet**, fall back to the
   legacy flat chip grid (or a "map not configured" notice) so the mode never breaks.
+- **Rendering decisions (decided 2026-06-07):**
+  - **Stall cells keep the existing chip look** (`.eem-stall-box`), just **smaller**
+    for density on a wide grid (24+ cols). Same styling = visual consistency.
+  - **Admin Stall Chart page reuses the same grid renderer** — admin and customer
+    see the identical facility map.
+  - **Customer side = full-screen modal** (`.eem-modal`) to fit big layouts: inline
+    form shows a compact "N stalls selected" summary + a "Choose your stalls" button;
+    the modal holds the map (barn tabs, click-to-select, live status) + a Done button
+    that returns picks to the form.
+  - **Mobile is the hard part** (24 cols won't fit a phone at tappable size): needs
+    **pinch-zoom + pan** inside the modal (CSS `transform: scale()` + drag, no lib)
+    and/or a **small-screen fallback** to the simple number-list flow. DECIDE which
+    at Phase A kickoff: full zoom/pan map on mobile vs. graceful list fallback.
 - **Conventions (v1):** values + positions only — NOT fill color / borders /
   merged cells (CSV export drops formatting; merges blank all but top-left).
   Reading fill-color for zones is a later add.
