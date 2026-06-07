@@ -427,6 +427,8 @@ class EEM_Shortcodes {
 					data-required-shavings-enabled="<?php echo esc_attr( ! empty( $data['required_shavings_enabled'] ) ? '1' : '0' ); ?>"
 					data-required-shavings-per-stall="<?php echo esc_attr( absint( $data['required_shavings_per_stall'] ) ); ?>"
 					data-required-shavings-price="<?php echo esc_attr( (float) $data['required_shavings_price'] ); ?>"
+					data-tack-mode="<?php echo esc_attr( (string) ( $data['stall_tack_mode'] ?? 'customer' ) ); ?>"
+					data-tack-admin-stalls="<?php echo esc_attr( wp_json_encode( array_values( array_map( 'strval', (array) ( $data['stall_tack_admin_stalls'] ?? array() ) ) ) ) ); ?>"
 					data-group-grounds-fee-enabled="<?php echo esc_attr( $group_grounds_fee_enabled ? '1' : '0' ); ?>"
 					data-group-grounds-fee-amount="<?php echo esc_attr( (float) $data['group_rider_grounds_fee_amount'] ); ?>"
 					data-group-deposit-enabled="<?php echo esc_attr( $group_deposit_enabled ? '1' : '0' ); ?>"
@@ -1517,7 +1519,7 @@ class EEM_Shortcodes {
 			<?php // C10.D — prefer the canonical "Pick Your Stalls" row picker; fall back
 			// to the legacy block-range selector only when no _en_stall_rows exist. ?>
 			<?php if ( ! empty( $stall_picker_rows ) ) : ?>
-				<?php $this->render_stall_picker_grid( $stall_picker_rows, $stall_picker_blocked, $stall_picker_reserved, array(), (string) $stall_map_url, ! empty( $data['stall_tack_designation_enabled'] ) ); ?>
+				<?php $this->render_stall_picker_grid( $stall_picker_rows, $stall_picker_blocked, $stall_picker_reserved, array(), (string) $stall_map_url, ( 'customer' === ( $data['stall_tack_mode'] ?? 'customer' ) ) ); ?>
 			<?php elseif ( $stall_assignment_enabled && ! empty( $stall_assignment_blocks ) ) : ?>
 				<?php $this->render_quantity_stall_assignment_selector( $stall_assignment_blocks, $stall_map_url ); ?>
 			<?php endif; ?>
@@ -1623,23 +1625,23 @@ class EEM_Shortcodes {
 			if ( ! is_array( $row ) ) {
 				continue;
 			}
-			$layout = isset( $row['layout'] ) && 'back-to-back' === $row['layout'] ? 'back-to-back' : 'one-sided';
-			$name   = isset( $row['name'] ) ? (string) $row['name'] : '';
+			$name = isset( $row['name'] ) ? (string) $row['name'] : '';
 
-			if ( 'back-to-back' === $layout ) {
+			// Back-to-back is retired (it implied a physical aisle we can't
+			// guarantee). Existing rows are migrated to one-sided; any stray
+			// back-to-back row is rendered as a single strip (top + bottom
+			// concatenated) so nothing is lost and no misleading aisle appears.
+			if ( isset( $row['layout'] ) && 'back-to-back' === $row['layout'] ) {
 				$top = ( '' !== (string) ( $row['top_first'] ?? '' ) && '' !== (string) ( $row['top_last'] ?? '' ) ) ? $this->expand_stall_label_range( $row['top_first'], $row['top_last'] ) : array();
 				$bot = ( '' !== (string) ( $row['bot_first'] ?? '' ) && '' !== (string) ( $row['bot_last'] ?? '' ) ) ? $this->expand_stall_label_range( $row['bot_first'], $row['bot_last'] ) : array();
-				if ( empty( $top ) && empty( $bot ) ) {
-					continue;
-				}
-				$rendered_rows[] = array( 'name' => $name, 'layout' => 'back-to-back', 'top' => $top, 'bot' => $bot, 'count' => count( $top ) + count( $bot ) );
+				$units = array_merge( $top, $bot );
 			} else {
 				$units = ( '' !== (string) ( $row['first'] ?? '' ) && '' !== (string) ( $row['last'] ?? '' ) ) ? $this->expand_stall_label_range( $row['first'], $row['last'] ) : array();
-				if ( empty( $units ) ) {
-					continue;
-				}
-				$rendered_rows[] = array( 'name' => $name, 'layout' => 'one-sided', 'units' => $units, 'count' => count( $units ) );
 			}
+			if ( empty( $units ) ) {
+				continue;
+			}
+			$rendered_rows[] = array( 'name' => $name, 'units' => $units, 'count' => count( $units ) );
 		}
 
 		if ( empty( $rendered_rows ) ) {
@@ -1656,7 +1658,18 @@ class EEM_Shortcodes {
 					</a>
 				<?php endif; ?>
 			</div>
-			<p class="stall-assign-desc"><?php esc_html_e( "Tap stalls below to pick the exact ones you want. The layout matches the venue — back-to-back rows share an aisle in the middle. If you'd rather have stalls auto-assigned, leave selections blank and we'll assign them after checkout.", 'equine-event-manager' ); ?></p>
+			<p class="stall-assign-desc"><?php esc_html_e( "Tap stalls below to pick the exact ones you want. If you'd rather have stalls auto-assigned, leave selections blank and we'll assign them after checkout.", 'equine-event-manager' ); ?></p>
+			<p class="stall-assign-note"><?php
+				if ( '' !== $stall_map_url ) {
+					printf(
+						/* translators: %s: link to the venue stall map. */
+						wp_kses( __( 'These groupings show which stall numbers are available — they are <strong>not</strong> a map of the facility. For the actual barn/stall layout, see the %s.', 'equine-event-manager' ), array( 'strong' => array() ) ),
+						'<a href="' . esc_url( $stall_map_url ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Stall Map', 'equine-event-manager' ) . '</a>'
+					);
+				} else {
+					echo wp_kses( __( 'These groupings show which stall numbers are available — they are <strong>not</strong> a map of the facility.', 'equine-event-manager' ), array( 'strong' => array() ) );
+				}
+			?></p>
 			<div class="stall-legend" aria-hidden="true">
 				<div class="legend-item"><div class="legend-dot"></div> <?php esc_html_e( 'Available', 'equine-event-manager' ); ?></div>
 				<div class="legend-item"><div class="legend-dot selected"></div> <?php esc_html_e( 'Your pick', 'equine-event-manager' ); ?></div>
@@ -1670,30 +1683,14 @@ class EEM_Shortcodes {
 							<div class="stall-row-section-name"><?php echo esc_html( $r['name'] ); ?></div>
 							<div class="stall-row-section-meta">
 								<?php
-								printf(
-									/* translators: 1: stall count, 2: layout label */
-									esc_html__( '%1$d stalls · %2$s', 'equine-event-manager' ),
-									(int) $r['count'],
-									'back-to-back' === $r['layout'] ? esc_html__( 'Back-to-back', 'equine-event-manager' ) : esc_html__( 'One-sided', 'equine-event-manager' )
-								);
+								/* translators: %d: stall count */
+								printf( esc_html( _n( '%d stall', '%d stalls', (int) $r['count'], 'equine-event-manager' ) ), (int) $r['count'] );
 								?>
 							</div>
 						</div>
-						<?php if ( 'back-to-back' === $r['layout'] ) : ?>
-							<div class="picker-stall-row back-to-back">
-								<div class="picker-stall-row-side">
-									<?php foreach ( $r['top'] as $label ) { $this->render_stall_picker_cell( (string) $label, $blocked, $reserved, $selected ); } ?>
-								</div>
-								<div class="picker-stall-row-aisle"></div>
-								<div class="picker-stall-row-side">
-									<?php foreach ( $r['bot'] as $label ) { $this->render_stall_picker_cell( (string) $label, $blocked, $reserved, $selected ); } ?>
-								</div>
-							</div>
-						<?php else : ?>
-							<div class="picker-stall-row">
-								<?php foreach ( $r['units'] as $label ) { $this->render_stall_picker_cell( (string) $label, $blocked, $reserved, $selected ); } ?>
-							</div>
-						<?php endif; ?>
+						<div class="picker-stall-row">
+							<?php foreach ( $r['units'] as $label ) { $this->render_stall_picker_cell( (string) $label, $blocked, $reserved, $selected ); } ?>
+						</div>
 					</div>
 				<?php endforeach; ?>
 			</div>
@@ -2947,6 +2944,42 @@ class EEM_Shortcodes {
 	}
 
 	/**
+	 * T2 — count how many of the selected stalls are tack stalls.
+	 *
+	 * Tack stalls are excluded from required shavings. The count depends on the
+	 * reservation's tack mode:
+	 *   'off'      — always 0.
+	 *   'customer' — 1 when the buyer designated a tack stall, else 0.
+	 *   'admin'    — the number of the buyer's picked stalls that match an
+	 *                admin-assigned tack number (0 in quantity mode, where no
+	 *                specific stalls are identified at checkout).
+	 *
+	 * @param array $submission Submission values.
+	 * @param array $data       Reservation setup data.
+	 * @return int Tack stall count (never negative).
+	 */
+	private function get_tack_stall_count( array $submission, array $data ): int {
+		$mode = isset( $data['stall_tack_mode'] ) ? (string) $data['stall_tack_mode'] : 'customer';
+
+		if ( 'off' === $mode ) {
+			return 0;
+		}
+
+		if ( 'admin' === $mode ) {
+			$admin  = array_map( 'strval', (array) ( $data['stall_tack_admin_stalls'] ?? array() ) );
+			$picked = array_map( 'strval', (array) ( $submission['preferred_stall_units'] ?? array() ) );
+			if ( empty( $admin ) || empty( $picked ) ) {
+				return 0;
+			}
+			return count( array_intersect( $picked, $admin ) );
+		}
+
+		// 'customer' — a single designated tack stall (already validated to be
+		// one of the buyer's picked stalls in normalize_stall_submission).
+		return ( '' !== (string) ( $submission['preferred_tack_stall'] ?? '' ) ) ? 1 : 0;
+	}
+
+	/**
 	 * Calculate all submitted order totals.
 	 *
 	 * @param array $data Reservation setup data.
@@ -2958,11 +2991,15 @@ class EEM_Shortcodes {
 	private function calculate_submission_totals( $data, $submission, $status, $reservation_id = 0 ) {
 		$submission = $this->maybe_sync_submission_stay_values( $submission, $data );
 		$stall_qty_total               = $this->get_stall_billable_quantity( $submission, $data, $status );
+		// T2 — tack stalls pay the normal stall rate but are excluded from
+		// required shavings. Resolve how many of the selected stalls are tack.
+		$tack_stall_count              = $this->get_tack_stall_count( $submission, $data );
+		$shavings_stall_qty            = max( 0, $stall_qty_total - $tack_stall_count );
 		$stall_unit_price              = $this->get_current_rate( $data, 'stall', $submission['stall_stay_type'] );
 		$rv_unit_price                 = ! empty( $data['rv_lot_selection_enabled'] ) && '' !== (string) $submission['rv_lot'] ? $this->get_rv_lot_rate( $data, $submission['rv_lot'], $submission['rv_stay_type'] ) : $this->get_current_rate( $data, 'rv', $submission['rv_stay_type'] );
 		$stall_night_count             = $this->get_billable_stay_units( $submission['stall_arrival_date'], $submission['stall_departure_date'], $submission['stall_stay_type'] );
 		$rv_night_count                = $this->get_billable_stay_units( $submission['rv_arrival_date'], $submission['rv_departure_date'], $submission['rv_stay_type'] );
-		$required_shavings             = ! empty( $data['required_shavings_enabled'] ) ? $stall_qty_total * absint( $data['required_shavings_per_stall'] ) : 0;
+		$required_shavings             = ! empty( $data['required_shavings_enabled'] ) ? $shavings_stall_qty * absint( $data['required_shavings_per_stall'] ) : 0;
 		$required_shavings_subtotal    = $required_shavings * (float) $data['required_shavings_price'];
 		$stall_subtotal                = ( $status['stalls_open'] && $stall_qty_total > 0 ) ? ( $stall_qty_total * $stall_unit_price * $stall_night_count ) : 0;
 		$additional_shavings_subtotal = ! empty( $data['additional_shavings_enabled'] ) ? ( absint( $submission['additional_shavings_qty'] ) * (float) $data['additional_shavings_price'] ) : 0;
@@ -3318,12 +3355,23 @@ class EEM_Shortcodes {
 				$stall_notes = trim( $stall_notes . "\nAssigned Stall Units: " . implode( ', ', array_map( 'sanitize_text_field', (array) $submission['preferred_stall_units'] ) ) );
 			}
 
-			// V1 #5d — customer-designated tack stall (pick mode). Recorded on the
-			// same `Tack Stalls:` notes line the admin chart toggle uses, so both
-			// paths converge on one source of truth. Operational only — no price
-			// effect. Already validated to be one of the picked units above.
-			if ( ! empty( $submission['preferred_tack_stall'] ) ) {
-				$stall_notes = trim( $stall_notes . "\nTack Stalls: " . sanitize_text_field( (string) $submission['preferred_tack_stall'] ) );
+			// Tack stalls recorded on the `Tack Stalls:` notes line the admin
+			// chart toggle also uses, so every path converges on one source of
+			// truth. T1: in 'customer' mode the buyer's single designated stall;
+			// in 'admin' mode the picked stalls that match an admin-assigned tack
+			// number. Tack stalls are excluded from required shavings (T2) but
+			// still pay the normal stall rate.
+			$tack_mode  = isset( $data['stall_tack_mode'] ) ? (string) $data['stall_tack_mode'] : 'customer';
+			$tack_units = array();
+			if ( 'customer' === $tack_mode && ! empty( $submission['preferred_tack_stall'] ) ) {
+				$tack_units[] = sanitize_text_field( (string) $submission['preferred_tack_stall'] );
+			} elseif ( 'admin' === $tack_mode ) {
+				$admin_tack   = array_map( 'strval', (array) ( $data['stall_tack_admin_stalls'] ?? array() ) );
+				$picked_units = array_map( 'strval', (array) ( $submission['preferred_stall_units'] ?? array() ) );
+				$tack_units   = array_values( array_intersect( $picked_units, $admin_tack ) );
+			}
+			if ( ! empty( $tack_units ) ) {
+				$stall_notes = trim( $stall_notes . "\nTack Stalls: " . implode( ', ', $tack_units ) );
 			}
 
 			$inserted = false !== $wpdb->insert(
@@ -6713,10 +6761,12 @@ RV Lot: " . $rv_lot['name'] );
 			'stall_early_bird_nightly_rate'   => '0.00',
 			'stall_early_bird_weekend_rate'   => '0.00',
 			'required_shavings_enabled'       => 0,
-			// v2 #4 — tack-stall designation gate. Defaults ON so reservations
-			// created before this field keep showing the selector (mirrors the
-			// CPT default; this duplicated defaults map is read on the front end).
-			'stall_tack_designation_enabled'  => 1,
+			// T1 — Tack Stall mode (off | admin | customer). Defaults 'customer'
+			// (mirrors the CPT default; this duplicated defaults map is read on
+			// the front end). `stall_tack_admin_stalls` holds the admin-assigned
+			// tack stall numbers used in 'admin' mode + the T2 shavings exclusion.
+			'stall_tack_mode'                 => 'customer',
+			'stall_tack_admin_stalls'         => array(),
 			'required_shavings_per_stall'     => 0,
 			'required_shavings_price'         => '0.00',
 			'additional_shavings_enabled'     => 0,
@@ -9756,7 +9806,13 @@ RV Lot: " . $rv_lot['name'] );
 				var groupDepositSubtotal = groupEnabled && groupDepositEnabled ? groupRiderCount * groupDepositAmount : 0;
 				var groupSubtotal = groupGroundsFeeSubtotal + groupDepositSubtotal;
 				var requiredShavingsEnabled = form.dataset.requiredShavingsEnabled === '1';
-				var requiredShavingsQty = requiredShavingsEnabled ? stallQty * (parseInt(form.dataset.requiredShavingsPerStall || '0', 10) || 0) : 0;
+				/* T2 — tack stalls are excluded from required shavings. Count the
+				   tack stalls in the current selection (customer-designated single
+				   pick, or admin-assigned numbers among the picked stalls) and
+				   bill shavings on the remaining stalls only. */
+				var tackCount = countTackStalls(form, stallQty);
+				var shavingsStallQty = Math.max(0, stallQty - tackCount);
+				var requiredShavingsQty = requiredShavingsEnabled ? shavingsStallQty * (parseInt(form.dataset.requiredShavingsPerStall || '0', 10) || 0) : 0;
 				var stallSubtotal = stallQty * stallRate * stallUnits;
 				var requiredShavingsSubtotal = requiredShavingsQty * requiredShavingsPrice;
 				var rvSubtotal = rvQty * rvRate * rvUnits;
@@ -9898,6 +9954,30 @@ RV Lot: " . $rv_lot['name'] );
 				});
 				sel.value = keep;
 				wrap.hidden = selected.length === 0;
+			}
+
+			/* T2 — count tack stalls in the current selection so the live total
+			   excludes them from required shavings (mirrors the server-side
+			   calculate_submission_totals logic). */
+			function countTackStalls(form, stallQty) {
+				var mode = form.dataset.tackMode || 'customer';
+				if (mode === 'off') { return 0; }
+				if (mode === 'customer') {
+					var sel = form.querySelector('[data-eem-tack-select]');
+					return (sel && sel.value !== '') ? 1 : 0;
+				}
+				/* admin mode — count picked stalls matching an admin-assigned tack
+				   number (only meaningful in pick-from-layout mode). */
+				var admin = [];
+				try { admin = JSON.parse(form.dataset.tackAdminStalls || '[]') || []; } catch (e) { admin = []; }
+				if (!admin.length) { return 0; }
+				var picker = form.querySelector('[data-eem-stall-picker]');
+				if (!picker) { return 0; }
+				var n = 0;
+				picker.querySelectorAll('.eem-stall-picker-input:checked').forEach(function (inp) {
+					if (admin.indexOf(String(inp.value)) !== -1) { n++; }
+				});
+				return Math.min(n, stallQty);
 			}
 			document.addEventListener('change', function(ev) {
 				var inp = ev.target;

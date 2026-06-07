@@ -28,6 +28,30 @@ inactive-processor field locking · Open-Tab/open-invoice confirmed built ·
 - **v2 #5 (v2.7.65)** — stall + RV layout clusters wrapped in a shaded
   `.eem-layout-group` panel (matches front-end "Pick Your Stalls").
 
+### Walkthrough bugs + polish — shipped 2026-06-07
+
+- **(v2.7.69)** — Stall Row Builder rejects overlapping/duplicate stall numbers
+  (publish gate + live red warning in the summary); `.eem-layout-group` top padding.
+- **(v2.7.70)** — **Removed back-to-back** stall/RV layout (misleading "aisle").
+  Rows are now just Barn/Row Name + first/last range. Migration eem-mig-005 split
+  existing back-to-back rows into one-sided. Front-end disclaimer: groupings are
+  *not* a facility map — see the Stall Map link.
+- **(v2.7.71)** — wording: "Barn/Row Name", "barn/row quantities", "X rows/barns";
+  Pre-Entry Inventory blank = "Unlimited" placeholder; RV empty-state padding.
+
+---
+
+## 🐴 Tack stalls — shipped 2026-06-07
+
+- **T1 (v2.7.72)** — 3-mode tack control (Off / Admin assigns / Customers
+  designate) under Blocked Stall Numbers. New meta `_en_stall_tack_mode` +
+  `_en_stall_tack_admin_stalls`; admin mode shows a stall-number tag-select;
+  customer selector gated to 'customer' mode. Migration eem-mig-006 (old bool →
+  mode). Browser-verified runtime toggle.
+- **T2 (v2.7.72)** — tack stalls excluded from required shavings (still pay the
+  normal stall rate). Server `get_tack_stall_count()` + live-total
+  `countTackStalls()`; admin-assigned tack also written to the Tack Stalls note.
+
 ---
 
 ## 🔧 v2 — Polish + smaller features + walkthrough bugs

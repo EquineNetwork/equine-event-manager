@@ -2410,6 +2410,10 @@
 		'toggle-stall-customer-selection': function (target) {
 			toggleStallCustomerSelection(target);
 		},
+		/* T1 — Tack Stall mode (off / admin / customer). */
+		'toggle-tack-mode': function (target) {
+			toggleTackMode(target);
+		},
 
 		/* C8 — Stall row builder */
 		'stall-add-row': function () {
@@ -2473,6 +2477,10 @@
 				populateTagDropdownFromLabels(input, getStallLabels());
 			} else if (target === 'eem-blocked-rv-lots-select') {
 				populateTagDropdownFromLabels(input, getRvLotLabels());
+			} else if (target === 'eem-tack-admin-select') {
+				/* T1 — admin tack-stall tag-select populates from the same
+				   live stall-row labels as Blocked Stall Numbers. */
+				populateTagDropdownFromLabels(input, getStallLabels());
 			}
 			EEM.tagFilter(input);
 		}
@@ -4997,6 +5005,35 @@ function toggleStallInventoryType(btn) {
 	updateStallInventoryDisplay();
 }
 
+/* T1 — Tack Stall mode toggle (off / admin / customer). Sets the active button,
+   writes the hidden input, shows the admin tag-select only in 'admin' mode, and
+   swaps the hint copy. */
+function toggleTackMode(btn) {
+	var mode = btn.dataset.tackMode || 'customer';
+	var group = btn.closest('[data-eem-tack-mode-btns]');
+	if (group) {
+		group.querySelectorAll('.eem-mode-btn').forEach(function (b) {
+			b.classList.toggle('active', b === btn);
+		});
+	}
+	var input = document.getElementById('eem-stall-tack-mode-input');
+	if (input) input.value = mode;
+
+	var wrap = document.querySelector('[data-eem-tack-admin-wrap]');
+	if (wrap) wrap.style.display = (mode === 'admin') ? '' : 'none';
+
+	var hint = document.querySelector('[data-eem-tack-hint]');
+	if (hint) {
+		if (mode === 'off') {
+			hint.textContent = 'No tack stalls. Customers buy stalls normally and required shavings applies to every stall.';
+		} else if (mode === 'admin') {
+			hint.textContent = 'You choose which stall numbers are tack. They are excluded from required shavings.';
+		} else {
+			hint.textContent = 'Buyers can mark one of their stalls as tack at checkout. Tack stalls are excluded from required shavings.';
+		}
+	}
+}
+
 /* Customer Selection toggle (quantity / pick_layout). */
 function toggleStallCustomerSelection(btn) {
 	if (btn.disabled) return;
@@ -5105,32 +5142,44 @@ function toggleInventoryMode(btn) {
 function updateStallInventoryDisplay() {
 	if (!stallMappedIsActive()) return;
 	/* Stall total = sum of stall-label counts across all row cards,
-	   minus the number of blocked-stall chips. */
+	   minus the number of blocked-stall chips. Also tally each label so we can
+	   warn (live) about overlapping/duplicate stall numbers. */
 	var total = 0;
+	var labelCounts = {};
 	document.querySelectorAll('#eem-stall-row-builder-list .eem-row-card').forEach(function (card) {
 		var layout = card.querySelector('[data-eem-input-action="stall-row-layout"]');
 		var isB2B  = layout && layout.value === 'back-to-back';
+		var labels = [];
 		if (isB2B) {
 			var tFirst = card.querySelector('[data-role="top-first"]');
 			var tLast  = card.querySelector('[data-role="top-last"]');
 			var bFirst = card.querySelector('[data-role="bot-first"]');
 			var bLast  = card.querySelector('[data-role="bot-last"]');
-			total += stallLabelsBetween(tFirst ? tFirst.value : '', tLast ? tLast.value : '').length;
-			total += stallLabelsBetween(bFirst ? bFirst.value : '', bLast ? bLast.value : '').length;
+			labels = stallLabelsBetween(tFirst ? tFirst.value : '', tLast ? tLast.value : '')
+				.concat(stallLabelsBetween(bFirst ? bFirst.value : '', bLast ? bLast.value : ''));
 		} else {
 			var first = card.querySelector('[data-role="first"]');
 			var last  = card.querySelector('[data-role="last"]');
-			total += stallLabelsBetween(first ? first.value : '', last ? last.value : '').length;
+			labels = stallLabelsBetween(first ? first.value : '', last ? last.value : '');
 		}
+		total += labels.length;
+		labels.forEach(function (l) { labelCounts[l] = (labelCounts[l] || 0) + 1; });
 	});
 	var blocked = document.querySelectorAll('#eem-blocked-stalls-select .eem-tag-chip').length;
 	total = Math.max(0, total - blocked);
 	var numEl = document.getElementById('eem-stall-inventory-number');
 	if (numEl) numEl.textContent = total;
-	/* Update summary line */
+	/* Update summary line (+ duplicate warning when overlapping numbers exist) */
 	var rows   = document.querySelectorAll('#eem-stall-row-builder-list .eem-row-card').length;
 	var sumEl  = document.getElementById('eem-stall-row-summary');
-	if (sumEl) sumEl.innerHTML = '<strong style="color:#031B4E">' + rows + ' ' + (rows === 1 ? 'row' : 'rows') + ' · ' + total + ' stalls total</strong> across this reservation';
+	if (sumEl) {
+		var dupes = Object.keys(labelCounts).filter(function (l) { return labelCounts[l] > 1; });
+		var html = '<strong style="color:#031B4E">' + rows + ' ' + (rows === 1 ? 'row/barn' : 'rows/barns') + ' · ' + total + ' stalls total</strong> across this reservation';
+		if (dupes.length) {
+			html += '<span style="display:block;margin-top:4px;color:#b32d2e;font-weight:600">⚠ Duplicate stall numbers: ' + escapeHtml(dupes.join(', ')) + '. Each stall number must be unique.</span>';
+		}
+		sumEl.innerHTML = html;
+	}
 }
 
 function updateRvInventoryDisplay() {
@@ -5158,27 +5207,38 @@ function updateRvInventoryDisplay() {
 	total = Math.max(0, total - blocked);
 	var numEl = document.getElementById('eem-rv-inventory-number');
 	if (numEl) numEl.textContent = total;
-	/* Update lot row summary */
+	/* Update lot row summary (+ duplicate warning when overlapping labels exist) */
 	var rows  = document.querySelectorAll('#eem-rv-row-builder-list .eem-row-card').length;
 	var lots  = 0;
+	var labelCounts = {};
 	document.querySelectorAll('#eem-rv-row-builder-list .eem-row-card').forEach(function (card) {
 		var layout = card.querySelector('[data-eem-input-action="rv-row-layout"]');
 		var isB2B  = layout && layout.value === 'back-to-back';
+		var labels = [];
 		if (isB2B) {
 			var tFirst = card.querySelector('[data-role="top-first"]');
 			var tLast  = card.querySelector('[data-role="top-last"]');
 			var bFirst = card.querySelector('[data-role="bot-first"]');
 			var bLast  = card.querySelector('[data-role="bot-last"]');
-			lots += stallLabelsBetween(tFirst ? tFirst.value : '', tLast ? tLast.value : '').length;
-			lots += stallLabelsBetween(bFirst ? bFirst.value : '', bLast ? bLast.value : '').length;
+			labels = stallLabelsBetween(tFirst ? tFirst.value : '', tLast ? tLast.value : '')
+				.concat(stallLabelsBetween(bFirst ? bFirst.value : '', bLast ? bLast.value : ''));
 		} else {
 			var first = card.querySelector('[data-role="first"]');
 			var last  = card.querySelector('[data-role="last"]');
-			lots += stallLabelsBetween(first ? first.value : '', last ? last.value : '').length;
+			labels = stallLabelsBetween(first ? first.value : '', last ? last.value : '');
 		}
+		lots += labels.length;
+		labels.forEach(function (l) { labelCounts[l] = (labelCounts[l] || 0) + 1; });
 	});
 	var sumEl = document.getElementById('eem-rv-row-summary');
-	if (sumEl) sumEl.innerHTML = '<strong style="color:#031B4E">' + rows + ' ' + (rows === 1 ? 'row' : 'rows') + ' · ' + lots + ' lots total</strong> across this reservation';
+	if (sumEl) {
+		var dupes = Object.keys(labelCounts).filter(function (l) { return labelCounts[l] > 1; });
+		var html = '<strong style="color:#031B4E">' + rows + ' ' + (rows === 1 ? 'row' : 'rows') + ' · ' + lots + ' lots total</strong> across this reservation';
+		if (dupes.length) {
+			html += '<span style="display:block;margin-top:4px;color:#b32d2e;font-weight:600">⚠ Duplicate lot labels: ' + escapeHtml(dupes.join(', ')) + '. Each lot label must be unique.</span>';
+		}
+		sumEl.innerHTML = html;
+	}
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -5414,33 +5474,17 @@ function stallAddRow() {
 	card.innerHTML =
 		'<div class="eem-row-card-top">' +
 			'<div class="eem-row-card-field">' +
-				'<span class="eem-row-card-field-label">Row Name</span>' +
+				'<span class="eem-row-card-field-label">Barn/Row Name</span>' +
 				'<input type="text" name="eem_stall_rows[' + idx + '][name]" value="" data-eem-input-action="stall-row-input">' +
 			'</div>' +
-			'<div class="eem-row-card-field eem-row-card-field-layout">' +
-				'<span class="eem-row-card-field-label">Layout</span>' +
-				'<select name="eem_stall_rows[' + idx + '][layout]" data-eem-input-action="stall-row-layout">' +
-					'<option value="one-sided" selected>One-sided</option>' +
-					'<option value="back-to-back">Back-to-back</option>' +
-				'</select>' +
-			'</div>' +
+			'<input type="hidden" name="eem_stall_rows[' + idx + '][layout]" value="one-sided">' +
 			'<button class="eem-row-card-delete" type="button" title="Delete row" data-eem-action="stall-delete-row">' +
 				'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>' +
 			'</button>' +
 		'</div>' +
 		'<div class="eem-row-card-one-sided">' +
-			'<div class="eem-row-card-field"><span class="eem-row-card-field-label">First Stall Label</span><input type="text" name="eem_stall_rows[' + idx + '][first]" value="" data-role="first" data-eem-input-action="stall-row-input"></div>' +
-			'<div class="eem-row-card-field"><span class="eem-row-card-field-label">Last Stall Label</span><input type="text" name="eem_stall_rows[' + idx + '][last]" value="" data-role="last" data-eem-input-action="stall-row-input"></div>' +
-		'</div>' +
-		'<div class="eem-row-card-sides" style="display:none">' +
-			'<div class="eem-side-block"><div class="eem-side-block-label">Top Side</div><div class="eem-side-block-row">' +
-				'<div class="eem-row-card-field"><span class="eem-row-card-field-label">First</span><input type="text" name="eem_stall_rows[' + idx + '][top_first]" value="" data-role="top-first" data-eem-input-action="stall-row-input"></div>' +
-				'<div class="eem-row-card-field"><span class="eem-row-card-field-label">Last</span><input type="text" name="eem_stall_rows[' + idx + '][top_last]" value="" data-role="top-last" data-eem-input-action="stall-row-input"></div>' +
-			'</div></div>' +
-			'<div class="eem-side-block"><div class="eem-side-block-label">Bottom Side</div><div class="eem-side-block-row">' +
-				'<div class="eem-row-card-field"><span class="eem-row-card-field-label">First</span><input type="text" name="eem_stall_rows[' + idx + '][bot_first]" value="" data-role="bot-first" data-eem-input-action="stall-row-input"></div>' +
-				'<div class="eem-row-card-field"><span class="eem-row-card-field-label">Last</span><input type="text" name="eem_stall_rows[' + idx + '][bot_last]" value="" data-role="bot-last" data-eem-input-action="stall-row-input"></div>' +
-			'</div></div>' +
+			'<div class="eem-row-card-field"><span class="eem-row-card-field-label">First Stall</span><input type="text" name="eem_stall_rows[' + idx + '][first]" value="" data-role="first" data-eem-input-action="stall-row-input"></div>' +
+			'<div class="eem-row-card-field"><span class="eem-row-card-field-label">Last Stall</span><input type="text" name="eem_stall_rows[' + idx + '][last]" value="" data-role="last" data-eem-input-action="stall-row-input"></div>' +
 		'</div>' +
 		'<div class="eem-row-card-preview">' +
 			'<div class="eem-row-card-preview-label">Preview <span class="eem-row-card-count"></span></div>' +
@@ -5537,17 +5581,13 @@ function rvAddRow() {
 	card.innerHTML =
 		'<div class="eem-row-card-top">' +
 			'<div class="eem-row-card-field"><span class="eem-row-card-field-label">Row Name</span><input type="text" name="eem_rv_rows[' + idx + '][name]" value="" data-eem-input-action="rv-row-input"></div>' +
-			'<div class="eem-row-card-field eem-row-card-field-layout"><span class="eem-row-card-field-label">Layout</span><select name="eem_rv_rows[' + idx + '][layout]" data-eem-input-action="rv-row-layout"><option value="one-sided" selected>One-sided</option><option value="back-to-back">Back-to-back</option></select></div>' +
+			'<input type="hidden" name="eem_rv_rows[' + idx + '][layout]" value="one-sided">' +
 			'<div class="eem-row-card-field eem-row-card-field-layout"><span class="eem-row-card-field-label">Zone</span><select name="eem_rv_rows[' + idx + '][zone_id]" data-eem-input-action="rv-row-input" data-field="zone_id">' + zoneOpts + '</select></div>' +
 			'<button class="eem-row-card-delete" type="button" title="Delete row" data-eem-action="rv-delete-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>' +
 		'</div>' +
 		'<div class="eem-row-card-one-sided">' +
 			'<div class="eem-row-card-field"><span class="eem-row-card-field-label">First Lot Label</span><input type="text" name="eem_rv_rows[' + idx + '][first]" value="" data-role="first" data-eem-input-action="rv-row-input"></div>' +
 			'<div class="eem-row-card-field"><span class="eem-row-card-field-label">Last Lot Label</span><input type="text" name="eem_rv_rows[' + idx + '][last]" value="" data-role="last" data-eem-input-action="rv-row-input"></div>' +
-		'</div>' +
-		'<div class="eem-row-card-sides" style="display:none">' +
-			'<div class="eem-side-block"><div class="eem-side-block-label">Top Side</div><div class="eem-side-block-row"><div class="eem-row-card-field"><span class="eem-row-card-field-label">First</span><input type="text" name="eem_rv_rows[' + idx + '][top_first]" value="" data-role="top-first" data-eem-input-action="rv-row-input"></div><div class="eem-row-card-field"><span class="eem-row-card-field-label">Last</span><input type="text" name="eem_rv_rows[' + idx + '][top_last]" value="" data-role="top-last" data-eem-input-action="rv-row-input"></div></div></div>' +
-			'<div class="eem-side-block"><div class="eem-side-block-label">Bottom Side</div><div class="eem-side-block-row"><div class="eem-row-card-field"><span class="eem-row-card-field-label">First</span><input type="text" name="eem_rv_rows[' + idx + '][bot_first]" value="" data-role="bot-first" data-eem-input-action="rv-row-input"></div><div class="eem-row-card-field"><span class="eem-row-card-field-label">Last</span><input type="text" name="eem_rv_rows[' + idx + '][bot_last]" value="" data-role="bot-last" data-eem-input-action="rv-row-input"></div></div></div>' +
 		'</div>' +
 		'<div><div class="eem-row-card-preview-label">Preview <span class="eem-row-card-count"></span></div><div class="eem-stall-row-layout"></div></div>';
 	list.appendChild(card);

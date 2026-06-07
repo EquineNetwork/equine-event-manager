@@ -638,7 +638,101 @@ class EEM_Reservation_Editor_Page {
 			}
 		}
 
+		// Stall numbers must be unique — overlapping ranges across rows/sides would
+		// let two customers reserve the "same" stall. Block any duplicate.
+		if ( ! empty( $c['stalls_enabled'] ) && ! isset( $err['stall'] ) && ! empty( $ctx['stall_dupe_labels'] ) ) {
+			$err['stall'] = sprintf(
+				/* translators: %s: comma-separated list of duplicated stall numbers. */
+				__( 'Stall Reservations: these stall numbers are used more than once: %s. Each stall number must be unique across all rows (a back-to-back bottom side should start one past the top side\'s last).', 'equine-event-manager' ),
+				implode( ', ', (array) $ctx['stall_dupe_labels'] )
+			);
+		}
+
+		// RV lot labels must likewise be unique across all lot rows/sides.
+		if ( ! empty( $c['rv_enabled'] ) && ! isset( $err['rv'] ) && ! empty( $ctx['rv_dupe_labels'] ) ) {
+			$err['rv'] = sprintf(
+				/* translators: %s: comma-separated list of duplicated RV lot labels. */
+				__( 'RV Reservations: these lot labels are used more than once: %s. Each lot label must be unique across all rows.', 'equine-event-manager' ),
+				implode( ', ', (array) $ctx['rv_dupe_labels'] )
+			);
+		}
+
 		return $err;
+	}
+
+	/**
+	 * Expand a First/Last label range into its full label list. Mirrors
+	 * EEM_Shortcodes::expand_stall_label_range so the publish gate sees the same
+	 * labels the customer picker renders: integer (100–111), prefixed (Y1–Y12), or
+	 * padded-prefixed (A-01–A-12).
+	 *
+	 * @param string $first First label.
+	 * @param string $last  Last label.
+	 * @return array<int,string>
+	 */
+	private static function expand_label_range( string $first, string $last ): array {
+		$first = trim( $first );
+		$last  = trim( $last );
+		if ( '' === $first || '' === $last ) {
+			return array();
+		}
+		if ( is_numeric( $first ) && is_numeric( $last ) ) {
+			$out = array();
+			for ( $i = min( (int) $first, (int) $last ); $i <= max( (int) $first, (int) $last ); $i++ ) {
+				$out[] = (string) $i;
+			}
+			return $out;
+		}
+		if ( preg_match( '/^([A-Za-z][A-Za-z\-]*)(\d+)$/', $first, $fm )
+			&& preg_match( '/^([A-Za-z][A-Za-z\-]*)(\d+)$/', $last, $lm )
+			&& $fm[1] === $lm[1] ) {
+			$prefix = $fm[1];
+			$pad    = strlen( $fm[2] );
+			$out    = array();
+			for ( $i = min( (int) $fm[2], (int) $lm[2] ); $i <= max( (int) $fm[2], (int) $lm[2] ); $i++ ) {
+				$out[] = $prefix . str_pad( (string) $i, $pad, '0', STR_PAD_LEFT );
+			}
+			return $out;
+		}
+		return array_values( array_unique( array( $first, $last ) ) );
+	}
+
+	/**
+	 * Find labels that appear more than once across all builder rows (both sides of
+	 * back-to-back rows included). Used to block publishing a layout with
+	 * overlapping/duplicate stall or RV-lot numbers.
+	 *
+	 * @param array<int,mixed> $rows Raw posted rows (eem_stall_rows / eem_rv_rows).
+	 * @return array<int,string> Duplicated labels (unique, first-seen order).
+	 */
+	private static function find_duplicate_labels( array $rows ): array {
+		$counts = array();
+		foreach ( $rows as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			$g = static function ( $k ) use ( $row ) {
+				return trim( (string) ( $row[ $k ] ?? '' ) );
+			};
+			if ( 'back-to-back' === (string) ( $row['layout'] ?? 'one-sided' ) ) {
+				$labels = array_merge(
+					self::expand_label_range( $g( 'top_first' ), $g( 'top_last' ) ),
+					self::expand_label_range( $g( 'bot_first' ), $g( 'bot_last' ) )
+				);
+			} else {
+				$labels = self::expand_label_range( $g( 'first' ), $g( 'last' ) );
+			}
+			foreach ( $labels as $label ) {
+				$counts[ $label ] = isset( $counts[ $label ] ) ? $counts[ $label ] + 1 : 1;
+			}
+		}
+		$dupes = array();
+		foreach ( $counts as $label => $n ) {
+			if ( $n > 1 ) {
+				$dupes[] = (string) $label;
+			}
+		}
+		return $dupes;
 	}
 
 	/**
@@ -855,13 +949,16 @@ class EEM_Reservation_Editor_Page {
 				// level of $_POST (not inside en_reservation[]), so they aren't on
 				// the sanitized candidate — read them here the same way save_meta()
 				// does so the gate sees what actually gets persisted.
+				$stall_rows_raw = ( isset( $_POST['eem_stall_rows'] ) && is_array( $_POST['eem_stall_rows'] ) ) ? wp_unslash( $_POST['eem_stall_rows'] ) : array();
 				$rv_rows_raw  = ( isset( $_POST['eem_rv_rows'] ) && is_array( $_POST['eem_rv_rows'] ) ) ? wp_unslash( $_POST['eem_rv_rows'] ) : array();
 				$rv_zones_raw = ( isset( $_POST['eem_rv_zones'] ) && is_array( $_POST['eem_rv_zones'] ) ) ? wp_unslash( $_POST['eem_rv_zones'] ) : array();
 				$publish_ctx  = array(
-					'stall_row_count'      => self::count_usable_rows( ( isset( $_POST['eem_stall_rows'] ) && is_array( $_POST['eem_stall_rows'] ) ) ? wp_unslash( $_POST['eem_stall_rows'] ) : array() ),
+					'stall_row_count'      => self::count_usable_rows( $stall_rows_raw ),
 					'rv_row_count'         => self::count_usable_rows( $rv_rows_raw ),
 					'rv_zone_count'        => self::count_valid_zones( $rv_zones_raw ),
 					'rv_rows_with_zone'    => self::count_usable_rows_with_zone( $rv_rows_raw ),
+					'stall_dupe_labels'    => self::find_duplicate_labels( $stall_rows_raw ),
+					'rv_dupe_labels'       => self::find_duplicate_labels( $rv_rows_raw ),
 					'stall_inventory_type' => isset( $_POST['stall_inventory_type'] ) ? EEM_Reservations_CPT::sanitize_stall_inventory_type( wp_unslash( $_POST['stall_inventory_type'] ) ) : '',
 					'rv_selection_mode'    => isset( $_POST['rv_selection_mode'] ) ? sanitize_key( wp_unslash( $_POST['rv_selection_mode'] ) ) : '',
 				);
@@ -921,6 +1018,14 @@ class EEM_Reservation_Editor_Page {
 			$bs_raw = wp_unslash( $_POST['eem_blocked_stalls'] );
 			$blocked_stalls_clean = array_map( 'sanitize_text_field', (array) $bs_raw );
 			update_post_meta( $reservation_id, '_en_blocked_stalls', array_values( array_filter( $blocked_stalls_clean ) ) );
+		}
+
+		// T1 — admin-assigned tack stalls. The `_present` flag lets an admin clear
+		// every chip (the array key disappears when empty, so we key off the flag).
+		if ( isset( $_POST['eem_tack_admin_stalls'] ) || isset( $_POST['eem_tack_admin_stalls_present'] ) ) {
+			$ts_raw         = isset( $_POST['eem_tack_admin_stalls'] ) ? wp_unslash( $_POST['eem_tack_admin_stalls'] ) : array();
+			$tack_admin_clean = array_map( 'sanitize_text_field', (array) $ts_raw );
+			update_post_meta( $reservation_id, '_en_stall_tack_admin_stalls', array_values( array_filter( $tack_admin_clean, 'strlen' ) ) );
 		}
 
 		// Scenario B (V1 #4): two independent settings — Stall Inventory Type +

@@ -72,25 +72,26 @@ v2p_ok(
 	$pass, $fail, $log
 );
 
-// v2 #4 — Tack Stall admin toggle. Defaults map (CPT + front-end), sanitize
-// round-trip, and the customer-render gate. Browser self-verified both directions
-// (flag=1 shows the tack selector, flag=0 hides it) on the live event page.
+// T1 (supersedes v2 #4) — Tack Stall 3-mode control. Defaults map (CPT +
+// front-end), sanitize round-trip, and the customer-render gate. The old
+// boolean `stall_tack_designation_enabled` was replaced by `stall_tack_mode`
+// ('off'|'admin'|'customer'); see tack-mode-t1-t2-smoke.php for full coverage.
 $cpt = new EEM_Reservations_CPT();
 $dref = new ReflectionMethod( 'EEM_Reservations_CPT', 'get_default_meta_values' );
 $dref->setAccessible( true );
 $defs = $dref->invoke( $cpt );
-v2p_ok( 'CPT defaults include stall_tack_designation_enabled=1', isset( $defs['stall_tack_designation_enabled'] ) && 1 === (int) $defs['stall_tack_designation_enabled'], $pass, $fail, $log );
+v2p_ok( 'CPT defaults include stall_tack_mode=customer', isset( $defs['stall_tack_mode'] ) && 'customer' === $defs['stall_tack_mode'], $pass, $fail, $log );
 
 $existing = $defs;
-$san_on  = $cpt->sanitize_meta_submission( array( 'stall_tack_designation_enabled' => '1' ), $existing );
-$san_off = $cpt->sanitize_meta_submission( array(), $existing );
-v2p_ok( 'sanitize: tack present => 1', 1 === (int) $san_on['stall_tack_designation_enabled'], $pass, $fail, $log );
-v2p_ok( 'sanitize: tack absent => 0', 0 === (int) $san_off['stall_tack_designation_enabled'], $pass, $fail, $log );
+$san_cust = $cpt->sanitize_meta_submission( array( 'stall_tack_mode' => 'customer' ), $existing );
+$san_off  = $cpt->sanitize_meta_submission( array( 'stall_tack_mode' => 'off' ), $existing );
+v2p_ok( 'sanitize: mode customer => customer', 'customer' === $san_cust['stall_tack_mode'], $pass, $fail, $log );
+v2p_ok( 'sanitize: mode off => off', 'off' === $san_off['stall_tack_mode'], $pass, $fail, $log );
 
 // Front-end duplicated defaults map must carry the key (else the gate reads empty).
 v2p_ok(
-	'front-end get_reservation_meta defaults include the tack key',
-	(bool) preg_match( "/'stall_tack_designation_enabled'\s*=>\s*1/", $js = (string) file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'public/class-equine-event-manager-shortcodes.php' ) ),
+	'front-end get_reservation_meta defaults include stall_tack_mode',
+	(bool) preg_match( "/'stall_tack_mode'\s*=>\s*'customer'/", $js = (string) file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'public/class-equine-event-manager-shortcodes.php' ) ),
 	$pass, $fail, $log
 );
 v2p_ok(

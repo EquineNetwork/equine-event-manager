@@ -241,6 +241,25 @@ c7x16_ok( 'Fully-configured Mapped RV PASSES', ! isset( $e['rv'] ), $pass, $fail
 // Bulk RV ignores zones entirely.
 $e = EEM_Reservation_Editor_Page::validate_for_publish( $rv_base, 0, array( 'rv_selection_mode' => 'quantity', 'rv_row_count' => 0, 'rv_zone_count' => 0, 'rv_rows_with_zone' => 0 ) );
 c7x16_ok( 'Bulk RV ignores zone requirement', ! isset( $e['rv'] ), $pass, $fail, $log );
+
+// Duplicate stall/RV label detection (overlapping ranges must be rejected).
+$dref = new ReflectionMethod( 'EEM_Reservation_Editor_Page', 'find_duplicate_labels' );
+$dref->setAccessible( true );
+$dupB2B = $dref->invoke( null, array( array( 'layout' => 'back-to-back', 'top_first' => '1', 'top_last' => '25', 'bot_first' => '25', 'bot_last' => '50' ) ) );
+c7x16_ok( 'find_duplicate_labels: b2b 1-25/25-50 -> [25]', array( '25' ) === $dupB2B, $pass, $fail, $log );
+$dupCross = $dref->invoke( null, array( array( 'layout' => 'one-sided', 'first' => '100', 'last' => '110' ), array( 'layout' => 'one-sided', 'first' => '108', 'last' => '115' ) ) );
+c7x16_ok( 'find_duplicate_labels: cross-row 100-110/108-115 -> 108,109,110', array( '108', '109', '110' ) === $dupCross, $pass, $fail, $log );
+$dupClean = $dref->invoke( null, array( array( 'layout' => 'back-to-back', 'top_first' => '1', 'top_last' => '25', 'bot_first' => '26', 'bot_last' => '50' ) ) );
+c7x16_ok( 'find_duplicate_labels: 1-25/26-50 -> none', array() === $dupClean, $pass, $fail, $log );
+// Gate blocks publish when dupes present (using otherwise-valid section candidates
+// so the dupe check — guarded by one-error-per-section — is the one that fires).
+$e = EEM_Reservation_Editor_Page::validate_for_publish( $stall_base, 0, array( 'stall_dupe_labels' => array( '25' ) ) );
+c7x16_ok( 'duplicate stall numbers BLOCK publish', isset( $e['stall'] ) && false !== strpos( $e['stall'], '25' ), $pass, $fail, $log );
+$e = EEM_Reservation_Editor_Page::validate_for_publish( $rv_base, 0, array( 'rv_dupe_labels' => array( 'B-2' ) ) );
+c7x16_ok( 'duplicate RV lot labels BLOCK publish', isset( $e['rv'] ) && false !== strpos( $e['rv'], 'B-2' ), $pass, $fail, $log );
+$e = EEM_Reservation_Editor_Page::validate_for_publish( array_merge( $stall_base, $rv_base ), 0, array( 'stall_dupe_labels' => array(), 'rv_dupe_labels' => array() ) );
+c7x16_ok( 'no duplicates -> no dupe error', ! isset( $e['stall'] ) && ! isset( $e['rv'] ), $pass, $fail, $log );
+c7x16_ok( 'ajax_save passes dupe-label context to the gate', false !== strpos( $page_src, "'stall_dupe_labels'" ) && false !== strpos( $page_src, "'rv_dupe_labels'" ), $pass, $fail, $log );
 c7x16_ok( 'ajax_save passes stall/RV layout context (inv type + mode + row counts) to the gate',
 	(bool) preg_match( '/validate_for_publish\(\s*\$candidate,\s*\$reservation_id,\s*\$publish_ctx\s*\)/', $page_src )
 	&& false !== strpos( $page_src, "'stall_row_count'" )

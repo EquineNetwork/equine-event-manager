@@ -161,6 +161,14 @@ class EEM_Activator {
 			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-004-stall-inventory-split.php';
 			eem_mig_004_stall_inventory_split();
 		}
+		if ( ! get_option( 'eem_mig_005_split_back_to_back_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-005-split-back-to-back.php';
+			eem_mig_005_split_back_to_back();
+		}
+		if ( ! get_option( 'eem_mig_006_tack_mode_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-006-tack-mode.php';
+			eem_mig_006_tack_mode();
+		}
 	}
 
 	/**
