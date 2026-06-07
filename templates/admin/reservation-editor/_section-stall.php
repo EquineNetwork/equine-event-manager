@@ -292,6 +292,11 @@ $stall_legacy_mode        = ( $stall_is_numbered && $stall_is_pick ) ? 'exact_ma
 // layout mode, where customers tap the actual map.
 $stall_is_simple_range    = ( $stall_is_numbered && ! $stall_is_pick );
 
+// v2 #5 — wrap the interdependent layout cluster (Inventory Type → Customer
+// Selection → Available → Max → Rows → Blocked → Map) in a shaded panel so it
+// reads as one group, mirroring the front-end "Pick Your Stalls" card.
+echo '<div class="eem-layout-group">';
+
 // ── Control 1: Stall Inventory Type ──
 ob_start();
 ?>
@@ -563,5 +568,6 @@ eem_render_editor_field_row( array(
 	'row_id'       => 'row-stall-map',
 	'control_html' => $map_html,
 ) );
+echo '</div>'; // .eem-layout-group
 ?>
 </div>

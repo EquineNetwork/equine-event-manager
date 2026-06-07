@@ -99,6 +99,16 @@ v2p_ok(
 	$pass, $fail, $log
 );
 
+// v2 #5 — stall + RV layout clusters wrapped in a shaded .eem-layout-group panel.
+$stall_tpl = (string) file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_section-stall.php' );
+$rv_tpl    = (string) file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_section-rv.php' );
+$css       = (string) file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/css/admin.css' );
+v2p_ok( 'stall partial opens the .eem-layout-group wrapper', false !== strpos( $stall_tpl, "'<div class=\"eem-layout-group\">'" ), $pass, $fail, $log );
+v2p_ok( 'stall partial closes the .eem-layout-group wrapper', false !== strpos( $stall_tpl, "echo '</div>'; // .eem-layout-group" ), $pass, $fail, $log );
+v2p_ok( 'rv partial opens the .eem-layout-group wrapper', false !== strpos( $rv_tpl, "'<div class=\"eem-layout-group\">'" ), $pass, $fail, $log );
+v2p_ok( 'rv partial closes the .eem-layout-group wrapper', false !== strpos( $rv_tpl, '</div><!-- .eem-layout-group -->' ), $pass, $fail, $log );
+v2p_ok( 'admin.css defines .eem-layout-group with the blue-gray surface token', (bool) preg_match( '/\.eem-layout-group\s*\{[^}]*background:\s*var\(--eem-bg\)/s', $css ), $pass, $fail, $log );
+
 echo "\n=== v2 parity smoke: $pass passed, $fail failed ===\n";
 foreach ( $log as $l ) { echo "  $l\n"; }
 if ( $fail > 0 ) { WP_CLI::error( "$fail assertion(s) failed" ); }

@@ -1017,6 +1017,20 @@ a.eem-btn-add:hover {
 	border-bottom: 1px solid var(--eem-border-soft);
 }
 
+/* v2 #5 — shaded panel grouping the interdependent stall/RV layout cluster
+   (Inventory Type/Mode -> Available -> Max -> Rows/Zones -> Blocked -> Map), echoing
+   the front-end "Pick Your Stalls" card so the dependent fields read as one unit. */
+.eem-layout-group {
+	margin: var(--eem-space-4) 0 0;
+	padding: 2px var(--eem-space-4) var(--eem-space-2);
+	background: var(--eem-bg);
+	border: 1px solid var(--eem-border);
+	border-radius: var(--eem-radius);
+}
+.eem-layout-group .eem-field-row:last-child {
+	border-bottom: none;
+}
+
 .eem-field-row:first-child {
 	padding-top: 0;
 }

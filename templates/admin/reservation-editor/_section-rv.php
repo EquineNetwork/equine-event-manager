@@ -202,6 +202,11 @@ eem_render_editor_field_row( array(
 	),
 ) );
 
+// v2 #5 — group the interdependent RV layout cluster (Inventory Mode → Available
+// → Max → Zones → Lot Rows → Blocked → Map) in a shaded panel, mirroring the
+// front-end "Pick Your Stalls" card.
+echo '<div class="eem-layout-group">';
+
 // Inventory Mode (C8) — UX polish 2.3.23: moved below pricing/EB so the
 // inventory cluster (Mode → Available qty → Max per customer → row builder) appears
 // as one tight group just above the Lot Zones and row builder.
@@ -546,6 +551,7 @@ eem_render_editor_field_row( array(
 ) );
 ?>
 </div>
+</div><!-- .eem-layout-group -->
 <?php
 // ── RV Add-Ons with master enable toggle (last field-row, after mapped-content) ──
 ob_start();
