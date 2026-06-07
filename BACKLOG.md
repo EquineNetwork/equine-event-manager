@@ -141,9 +141,9 @@ inactive-processor field locking · Open-Tab/open-invoice confirmed built ·
 
 ## 🗺️ v4 — Stall Mapping — spreadsheet-driven clickable facility maps
 
-> **Moved to v4 (2026-06-07).** Scoped + validated but deferred behind launch; not
-> a v1 item. Build after the v3 strip + the payment block, alongside the other v4
-> event-source work.
+> **v4 — its own group (split from event sources 2026-06-07).** Scoped + validated
+> but deferred behind launch; not a v1 item. Stall Mapping is now a standalone v4
+> initiative; the Native Events / External Feed event-source work is separate (v5).
 
 **Goal:** a true RSNC-style stall map — customers click stalls in their real
 physical positions with live availability, neighbors, and aisles visible —
@@ -240,14 +240,14 @@ cross aisles). Throwaway parser confirmed the importer logic end to end.
 
 ---
 
-## 🧭 v4 — Alternate event sources
+## 🧭 v5 — Alternate event sources
 
 11. **Native Events source completion** (~1,500 LOC; in-plugin
     `en_event` / `en_venue` / `en_producer`).
 12. **External Feed URL source** (external JSON/XML endpoint; currently "Coming Soon").
 
 > v1 event source: **The Events Calendar (TEC)** is the only fully-working source.
-> Native + Feed are deferred to v4.
+> Native + Feed are deferred to v5 (split from Stall Mapping, which is its own v4).
 
 ---
 
