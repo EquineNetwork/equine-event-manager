@@ -88,9 +88,10 @@ inactive-processor field locking · Open-Tab/open-invoice confirmed built ·
    email-preview sample no longer reads the deprecated `cancellation_policy`
    wp_option; the token description points at Edit Reservation). The empty wp_option
    is read-no-write and dropped on uninstall.
-7. **BEM status-badge normalization** — 🟡 **Deferred (optional).** Zero user-facing
-   change; pure internal churn with regression risk. Low value — skip until a
-   broader DS pass.
+7. **Status-badge normalization** — ✅ **DONE (v2.7.68).** Unified all status badges
+   to the CSS-backed legacy `eem-status-{slug}` pattern. Bonus: fixed a latent bug
+   where the refund/cancel AJAX badge fragments used a BEM class with no CSS (so
+   they rendered unstyled). Zero CSS changes; 23/23 consistency smoke.
 8. **Order-cancellation email** + cancel action — ✅ **DONE (v2.7.67).** Built the
    whole flow: a "Cancel Order" action (Order Detail More-menu + Orders-list bulk),
    `cancel_order()` repo method (marks cancelled, frees stall/RV inventory, logs to
