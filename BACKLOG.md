@@ -13,6 +13,21 @@ Reports) · event-search preload · media-modal CSS fix · stall + RV setup wiza
 inactive-processor field locking · Open-Tab/open-invoice confirmed built ·
 **publish gate: Numbered stalls require ≥1 row, Mapped RV requires ≥1 lot (v2.7.60)**.
 
+### v2 correctness + polish — shipped 2026-06-06
+
+- **v2 #1 (v2.7.61)** — front/back parity audit. Found the reported "stall/RV show
+  when disabled, groups hidden when enabled" was a reservation mismatch (renderer +
+  Create Order already gate correctly). Fixed the real bug: group/add-on/pre-entry-only
+  reservations now render on the customer form (`other_bookable` gate); gated the
+  customer "Group Name" field behind the Group Reservations toggle.
+- **v2 #2 (v2.7.62)** — RV Mapped publish gate now also requires ≥1 pricing zone and
+  ≥1 zone-assigned lot row.
+- **v2 #3 (v2.7.63)** — section open/closed state survives save+reload.
+- **v2 #4 (v2.7.64)** — "Tack Stall Selection" admin toggle gates the customer
+  tack-stall selector.
+- **v2 #5 (v2.7.65)** — stall + RV layout clusters wrapped in a shaded
+  `.eem-layout-group` panel (matches front-end "Pick Your Stalls").
+
 ---
 
 ## 🔧 v2 — Polish + smaller features + walkthrough bugs
@@ -62,15 +77,20 @@ inactive-processor field locking · Open-Tab/open-invoice confirmed built ·
    group. Same treatment for the RV chain (Inventory Mode → Available RV Inventory
    → Max RV Lots → RV Lot Zones → Lot Rows → Blocked RV Lots).
 
-### Carried over from prior v2
+### Carried over from prior v2 — blocked/deferred (need a decision)
 
-6. **Cancellation-policy cleanup** — strip deprecated global Settings
-   textarea/option (do *after* data exists so the per-reservation legal text in
-   the customer email can be verified).
-7. **BEM status-badge normalization** — internal class consistency (cosmetic;
-   optional, zero user-facing change).
-8. **Order-cancellation email** template + send-trigger (non-payment; buildable now).
-9. **Bulk "Send Payment Link"** on Orders — *payment-gated* (needs live keys).
+6. **Cancellation-policy cleanup** — ⛔ **BLOCKED: one-time data migration.** Writes
+   the global policy into each reservation's `_eem_cancellation_policy_override`.
+   Per CLAUDE.md, migrations need explicit approval, and this is gated on "after
+   data exists" so the per-reservation legal text can be verified. Awaiting go-ahead.
+7. **BEM status-badge normalization** — 🟡 **Deferred (optional).** Zero user-facing
+   change; pure internal churn with regression risk. Low value — skip until a
+   broader DS pass.
+8. **Order-cancellation email** template + send-trigger — 🟡 **Deferred.** No mockup
+   exists, no order-cancel trigger is wired, and CLAUDE.md explicitly defers email
+   templates beyond confirmation. Real build, not a wiring job.
+9. **Bulk "Send Payment Link"** on Orders — ⛔ **Payment-gated** (needs live keys;
+   payments moved to LAST per your call).
 
 ---
 
