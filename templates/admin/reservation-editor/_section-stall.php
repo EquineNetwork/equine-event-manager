@@ -379,7 +379,7 @@ ob_start();
 	style="<?php echo $stall_is_mapped ? '' : 'display:none;'; ?>">
 	<span class="eem-inventory-computed-number" id="eem-stall-inventory-number">0</span>
 	<span class="eem-inventory-computed-label" id="eem-stall-inventory-label">
-		<?php esc_html_e( '(computed from row quantities)', 'equine-event-manager' ); ?>
+		<?php esc_html_e( '(computed from barn/row quantities)', 'equine-event-manager' ); ?>
 	</span>
 </div>
 <?php
@@ -448,7 +448,7 @@ ob_start();
 	<div class="eem-row-card" data-row-index="<?php echo (int) $ri; ?>">
 		<div class="eem-row-card-top">
 			<div class="eem-row-card-field">
-				<span class="eem-row-card-field-label"><?php esc_html_e( 'Barn Name', 'equine-event-manager' ); ?></span>
+				<span class="eem-row-card-field-label"><?php esc_html_e( 'Barn/Row Name', 'equine-event-manager' ); ?></span>
 				<input type="text" name="eem_stall_rows[<?php echo (int) $ri; ?>][name]" value="<?php echo esc_attr( $r_name ); ?>" data-eem-input-action="stall-row-input">
 			</div>
 			<input type="hidden" name="eem_stall_rows[<?php echo (int) $ri; ?>][layout]" value="one-sided">

@@ -7452,7 +7452,7 @@ a.eem-btn--ghost:focus    { color: #1d2327; }
 .eem-stall-chart-filter-search .eem-stall-chart-search-input { padding-left: 25px; }
 .eem-stall-chart-filter-hint { font-size: 12px; color: #8c8f94; white-space: nowrap; }
 .eem-stall-chart-empty-note { font-size: 13px; color: #8c8f94; padding: 12px 18px; margin: 0; }
-.eem-stall-chart-no-data { font-size: 13px; color: #6B7A99; padding: 18px; margin: 0; }
+.eem-stall-chart-no-data { font-size: 13px; color: #6B7A99; padding: 28px 20px; margin: 0; text-align: center; }
 
 /* ── Occupancy table ── */
 .eem-chart-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }

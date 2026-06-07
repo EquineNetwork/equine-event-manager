@@ -5137,7 +5137,7 @@ function updateStallInventoryDisplay() {
 	var sumEl  = document.getElementById('eem-stall-row-summary');
 	if (sumEl) {
 		var dupes = Object.keys(labelCounts).filter(function (l) { return labelCounts[l] > 1; });
-		var html = '<strong style="color:#031B4E">' + rows + ' ' + (rows === 1 ? 'row' : 'rows') + ' · ' + total + ' stalls total</strong> across this reservation';
+		var html = '<strong style="color:#031B4E">' + rows + ' ' + (rows === 1 ? 'row/barn' : 'rows/barns') + ' · ' + total + ' stalls total</strong> across this reservation';
 		if (dupes.length) {
 			html += '<span style="display:block;margin-top:4px;color:#b32d2e;font-weight:600">⚠ Duplicate stall numbers: ' + escapeHtml(dupes.join(', ')) + '. Each stall number must be unique.</span>';
 		}
@@ -5437,7 +5437,7 @@ function stallAddRow() {
 	card.innerHTML =
 		'<div class="eem-row-card-top">' +
 			'<div class="eem-row-card-field">' +
-				'<span class="eem-row-card-field-label">Barn Name</span>' +
+				'<span class="eem-row-card-field-label">Barn/Row Name</span>' +
 				'<input type="text" name="eem_stall_rows[' + idx + '][name]" value="" data-eem-input-action="stall-row-input">' +
 			'</div>' +
 			'<input type="hidden" name="eem_stall_rows[' + idx + '][layout]" value="one-sided">' +

@@ -53,13 +53,15 @@ ob_start();
 	<tbody id="eem-pre-entries-list">
 		<?php foreach ( $pre_entries as $pi => $entry ) :
 			$e_title = isset( $entry['title'] )           ? (string) $entry['title']              : '';
-			$e_inv   = isset( $entry['inventory'] )       ? (int) $entry['inventory']             : 0;
+			// Blank inventory = unlimited (the customer-facing renderer treats
+			// inventory <= 0 as no cap), mirroring the Max Per Customer field.
+			$e_inv   = ( isset( $entry['inventory'] ) && (int) $entry['inventory'] > 0 ) ? (string) (int) $entry['inventory'] : '';
 			$e_max   = isset( $entry['max_per_customer'] ) ? (string) $entry['max_per_customer']  : '';
 			$e_price = isset( $entry['price'] )           ? $fmt_money( $entry['price'] )         : '0.00';
 			?>
 			<tr>
 				<td><input class="eem-repeat-input" type="text" name="eem_event_pre_entries[<?php echo (int) $pi; ?>][title]" value="<?php echo esc_attr( $e_title ); ?>" data-eem-input-action="pre-entry-input"></td>
-				<td><input class="eem-repeat-input" type="number" min="0" style="width:90px" name="eem_event_pre_entries[<?php echo (int) $pi; ?>][inventory]" value="<?php echo esc_attr( (string) $e_inv ); ?>" data-eem-input-action="pre-entry-input"></td>
+				<td><input class="eem-repeat-input" type="number" min="0" style="width:90px" name="eem_event_pre_entries[<?php echo (int) $pi; ?>][inventory]" value="<?php echo esc_attr( $e_inv ); ?>" placeholder="<?php esc_attr_e( 'Unlimited', 'equine-event-manager' ); ?>" data-eem-input-action="pre-entry-input"></td>
 				<td><input class="eem-repeat-input" type="number" min="1" step="1" style="width:90px" name="eem_event_pre_entries[<?php echo (int) $pi; ?>][max_per_customer]" value="<?php echo esc_attr( $e_max ); ?>" placeholder="<?php esc_attr_e( 'Unlimited', 'equine-event-manager' ); ?>" data-eem-input-action="pre-entry-input"></td>
 				<td><div class="eem-repeat-price-wrap"><span class="eem-repeat-price-sym">$</span><input class="eem-repeat-price-in" type="number" min="0" step="0.01" name="eem_event_pre_entries[<?php echo (int) $pi; ?>][price]" value="<?php echo esc_attr( $e_price ); ?>" data-eem-input-action="pre-entry-input"></div></td>
 				<td><button class="eem-btn-delete" type="button" aria-label="<?php esc_attr_e( 'Delete', 'equine-event-manager' ); ?>" data-eem-action="pre-entry-delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
@@ -73,7 +75,7 @@ ob_start();
 </button>
 <template id="eem-pre-entry-row-template"><tr>
 	<td><input class="eem-repeat-input" type="text" name="eem_event_pre_entries[__index__][title]" value="" placeholder="<?php esc_attr_e( 'Entry title', 'equine-event-manager' ); ?>" data-eem-input-action="pre-entry-input"></td>
-	<td><input class="eem-repeat-input" type="number" min="0" style="width:90px" name="eem_event_pre_entries[__index__][inventory]" value="0" data-eem-input-action="pre-entry-input"></td>
+	<td><input class="eem-repeat-input" type="number" min="0" style="width:90px" name="eem_event_pre_entries[__index__][inventory]" value="" placeholder="<?php esc_attr_e( 'Unlimited', 'equine-event-manager' ); ?>" data-eem-input-action="pre-entry-input"></td>
 	<td><input class="eem-repeat-input" type="number" min="1" step="1" style="width:90px" name="eem_event_pre_entries[__index__][max_per_customer]" value="" placeholder="<?php esc_attr_e( 'Unlimited', 'equine-event-manager' ); ?>" data-eem-input-action="pre-entry-input"></td>
 	<td><div class="eem-repeat-price-wrap"><span class="eem-repeat-price-sym">$</span><input class="eem-repeat-price-in" type="number" min="0" step="0.01" name="eem_event_pre_entries[__index__][price]" value="0.00" data-eem-input-action="pre-entry-input"></div></td>
 	<td><button class="eem-btn-delete" type="button" aria-label="<?php esc_attr_e( 'Delete', 'equine-event-manager' ); ?>" data-eem-action="pre-entry-delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
