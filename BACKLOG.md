@@ -17,23 +17,45 @@ inactive-processor field locking · Open-Tab/open-invoice confirmed built ·
 
 ## 🔧 v2 — Polish + smaller features + walkthrough bugs
 
-### Editor bugs / polish (from the walkthrough)
+> **Governing principle (binding):** The **Edit Reservation form is the single
+> source of truth.** Every section enable/disable and every field value there
+> must drive BOTH the customer event page (`[en_reservation]` shortcode) AND the
+> Create Order admin form. Neither downstream surface may show, hide, or default
+> anything independently of Edit Reservation.
 
-1. **RV Mapped publish-gate — add ZONES requirement.** Row-count gating already
+### Correctness bugs (highest priority)
+
+1. **Front / back / Create-Order parity audit.** Edit Reservation must be the
+   single source of truth (see principle above). Known breaks from the walkthrough:
+   - Stall Reservations + RV Reservations **disabled** on admin still **render on
+     the customer event page**. They must not appear when disabled.
+   - Group Reservations **enabled** on admin does **not** render on the customer
+     event page. It must appear when enabled.
+   - The customer contact-card **"Group Name"** field must show **only** when
+     Group Reservations is enabled on admin.
+   - Do a full field-by-field, section-by-section parity sweep: enable toggles,
+     rates, stay types, inventory modes, zones, add-ons, pre-entries, fees,
+     deposits, descriptions — everything on Edit Reservation must reflect on the
+     customer form and on Create Order. Build a parity checklist and verify each.
+
+2. **RV Mapped publish-gate — add ZONES requirement.** Row-count gating already
    ships (v2.7.60). Still needed: block publish when Mapped is selected but no
    RV Lot **Zones** exist (and/or lot rows aren't assigned to a zone), with a
    message that points the admin at the Zones step. Zones are easy to miss.
 
-2. **Section card open-state persists across save.** When an enabled section is
+3. **Section card open-state persists across save.** When an enabled section is
    expanded and the admin clicks Update Reservation, the card currently collapses
    back to closed. It should stay open if it was open.
 
-3. **Tack Stall admin toggle.** Add an on/off control in Edit Reservation ›
+### Editor polish
+
+4. **Tack Stall admin toggle.** Add an on/off control in Edit Reservation ›
    Stall Reservations that governs whether the customer-facing "Using one for
    tack? (optional)" selector appears. Some events don't want customers
-   designating a tack stall.
+   designating a tack stall. (Also a parity item — toggle off ⇒ selector gone on
+   the customer form.)
 
-4. **Visually group the dependent layout fields.** Wrap the stall config chain
+5. **Visually group the dependent layout fields.** Wrap the stall config chain
    (Inventory Type → Customer Selection → Available Stall Inventory → Max Stalls →
    Stall Rows → Blocked Stall Numbers → Stall Map) in a shaded blue-gray panel
    like the front-end "Pick your stalls" card, so it reads as one interdependent
@@ -42,13 +64,13 @@ inactive-processor field locking · Open-Tab/open-invoice confirmed built ·
 
 ### Carried over from prior v2
 
-5. **Cancellation-policy cleanup** — strip deprecated global Settings
+6. **Cancellation-policy cleanup** — strip deprecated global Settings
    textarea/option (do *after* data exists so the per-reservation legal text in
    the customer email can be verified).
-6. **BEM status-badge normalization** — internal class consistency (cosmetic;
+7. **BEM status-badge normalization** — internal class consistency (cosmetic;
    optional, zero user-facing change).
-7. **Order-cancellation email** template + send-trigger (non-payment; buildable now).
-8. **Bulk "Send Payment Link"** on Orders — *payment-gated* (needs live keys).
+8. **Order-cancellation email** template + send-trigger (non-payment; buildable now).
+9. **Bulk "Send Payment Link"** on Orders — *payment-gated* (needs live keys).
 
 ---
 
