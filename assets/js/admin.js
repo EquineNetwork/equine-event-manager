@@ -5105,32 +5105,44 @@ function toggleInventoryMode(btn) {
 function updateStallInventoryDisplay() {
 	if (!stallMappedIsActive()) return;
 	/* Stall total = sum of stall-label counts across all row cards,
-	   minus the number of blocked-stall chips. */
+	   minus the number of blocked-stall chips. Also tally each label so we can
+	   warn (live) about overlapping/duplicate stall numbers. */
 	var total = 0;
+	var labelCounts = {};
 	document.querySelectorAll('#eem-stall-row-builder-list .eem-row-card').forEach(function (card) {
 		var layout = card.querySelector('[data-eem-input-action="stall-row-layout"]');
 		var isB2B  = layout && layout.value === 'back-to-back';
+		var labels = [];
 		if (isB2B) {
 			var tFirst = card.querySelector('[data-role="top-first"]');
 			var tLast  = card.querySelector('[data-role="top-last"]');
 			var bFirst = card.querySelector('[data-role="bot-first"]');
 			var bLast  = card.querySelector('[data-role="bot-last"]');
-			total += stallLabelsBetween(tFirst ? tFirst.value : '', tLast ? tLast.value : '').length;
-			total += stallLabelsBetween(bFirst ? bFirst.value : '', bLast ? bLast.value : '').length;
+			labels = stallLabelsBetween(tFirst ? tFirst.value : '', tLast ? tLast.value : '')
+				.concat(stallLabelsBetween(bFirst ? bFirst.value : '', bLast ? bLast.value : ''));
 		} else {
 			var first = card.querySelector('[data-role="first"]');
 			var last  = card.querySelector('[data-role="last"]');
-			total += stallLabelsBetween(first ? first.value : '', last ? last.value : '').length;
+			labels = stallLabelsBetween(first ? first.value : '', last ? last.value : '');
 		}
+		total += labels.length;
+		labels.forEach(function (l) { labelCounts[l] = (labelCounts[l] || 0) + 1; });
 	});
 	var blocked = document.querySelectorAll('#eem-blocked-stalls-select .eem-tag-chip').length;
 	total = Math.max(0, total - blocked);
 	var numEl = document.getElementById('eem-stall-inventory-number');
 	if (numEl) numEl.textContent = total;
-	/* Update summary line */
+	/* Update summary line (+ duplicate warning when overlapping numbers exist) */
 	var rows   = document.querySelectorAll('#eem-stall-row-builder-list .eem-row-card').length;
 	var sumEl  = document.getElementById('eem-stall-row-summary');
-	if (sumEl) sumEl.innerHTML = '<strong style="color:#031B4E">' + rows + ' ' + (rows === 1 ? 'row' : 'rows') + ' · ' + total + ' stalls total</strong> across this reservation';
+	if (sumEl) {
+		var dupes = Object.keys(labelCounts).filter(function (l) { return labelCounts[l] > 1; });
+		var html = '<strong style="color:#031B4E">' + rows + ' ' + (rows === 1 ? 'row' : 'rows') + ' · ' + total + ' stalls total</strong> across this reservation';
+		if (dupes.length) {
+			html += '<span style="display:block;margin-top:4px;color:#b32d2e;font-weight:600">⚠ Duplicate stall numbers: ' + escapeHtml(dupes.join(', ')) + '. Each stall number must be unique.</span>';
+		}
+		sumEl.innerHTML = html;
+	}
 }
 
 function updateRvInventoryDisplay() {
@@ -5158,27 +5170,38 @@ function updateRvInventoryDisplay() {
 	total = Math.max(0, total - blocked);
 	var numEl = document.getElementById('eem-rv-inventory-number');
 	if (numEl) numEl.textContent = total;
-	/* Update lot row summary */
+	/* Update lot row summary (+ duplicate warning when overlapping labels exist) */
 	var rows  = document.querySelectorAll('#eem-rv-row-builder-list .eem-row-card').length;
 	var lots  = 0;
+	var labelCounts = {};
 	document.querySelectorAll('#eem-rv-row-builder-list .eem-row-card').forEach(function (card) {
 		var layout = card.querySelector('[data-eem-input-action="rv-row-layout"]');
 		var isB2B  = layout && layout.value === 'back-to-back';
+		var labels = [];
 		if (isB2B) {
 			var tFirst = card.querySelector('[data-role="top-first"]');
 			var tLast  = card.querySelector('[data-role="top-last"]');
 			var bFirst = card.querySelector('[data-role="bot-first"]');
 			var bLast  = card.querySelector('[data-role="bot-last"]');
-			lots += stallLabelsBetween(tFirst ? tFirst.value : '', tLast ? tLast.value : '').length;
-			lots += stallLabelsBetween(bFirst ? bFirst.value : '', bLast ? bLast.value : '').length;
+			labels = stallLabelsBetween(tFirst ? tFirst.value : '', tLast ? tLast.value : '')
+				.concat(stallLabelsBetween(bFirst ? bFirst.value : '', bLast ? bLast.value : ''));
 		} else {
 			var first = card.querySelector('[data-role="first"]');
 			var last  = card.querySelector('[data-role="last"]');
-			lots += stallLabelsBetween(first ? first.value : '', last ? last.value : '').length;
+			labels = stallLabelsBetween(first ? first.value : '', last ? last.value : '');
 		}
+		lots += labels.length;
+		labels.forEach(function (l) { labelCounts[l] = (labelCounts[l] || 0) + 1; });
 	});
 	var sumEl = document.getElementById('eem-rv-row-summary');
-	if (sumEl) sumEl.innerHTML = '<strong style="color:#031B4E">' + rows + ' ' + (rows === 1 ? 'row' : 'rows') + ' · ' + lots + ' lots total</strong> across this reservation';
+	if (sumEl) {
+		var dupes = Object.keys(labelCounts).filter(function (l) { return labelCounts[l] > 1; });
+		var html = '<strong style="color:#031B4E">' + rows + ' ' + (rows === 1 ? 'row' : 'rows') + ' · ' + lots + ' lots total</strong> across this reservation';
+		if (dupes.length) {
+			html += '<span style="display:block;margin-top:4px;color:#b32d2e;font-weight:600">⚠ Duplicate lot labels: ' + escapeHtml(dupes.join(', ')) + '. Each lot label must be unique.</span>';
+		}
+		sumEl.innerHTML = html;
+	}
 }
 
 /* ─────────────────────────────────────────────────────────────

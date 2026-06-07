@@ -1022,7 +1022,9 @@ a.eem-btn-add:hover {
    the front-end "Pick Your Stalls" card so the dependent fields read as one unit. */
 .eem-layout-group {
 	margin: var(--eem-space-4) 0 0;
-	padding: 2px var(--eem-space-4) var(--eem-space-2);
+	/* Top matches the field-row rhythm — the first .eem-field-row inside has its
+	   own top padding zeroed, so the panel supplies the breathing room. */
+	padding: var(--eem-space-4) var(--eem-space-4) var(--eem-space-2);
 	background: var(--eem-bg);
 	border: 1px solid var(--eem-border);
 	border-radius: var(--eem-radius);
