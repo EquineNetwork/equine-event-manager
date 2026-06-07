@@ -104,12 +104,17 @@ inactive-processor field locking · Open-Tab/open-invoice confirmed built ·
 9.  **`admin-legacy.css` wholesale strip** — port every page off the ~12K-line
     legacy stylesheet, then delete it. Page-by-page, verified.
 10. **Scheduled / recurring report exports** (cron + email + retry handling).
+
+---
+
+## 🧭 v4 — Alternate event sources
+
 11. **Native Events source completion** (~1,500 LOC; in-plugin
     `en_event` / `en_venue` / `en_producer`).
 12. **External Feed URL source** (external JSON/XML endpoint; currently "Coming Soon").
 
 > v1 event source: **The Events Calendar (TEC)** is the only fully-working source.
-> Native + Feed are v3.
+> Native + Feed are deferred to v4.
 
 ---
 
