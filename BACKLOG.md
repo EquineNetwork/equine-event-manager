@@ -106,7 +106,9 @@ inactive-processor field locking · Open-Tab/open-invoice confirmed built ·
 
 9.  **`admin-legacy.css` wholesale strip** — port every page off the ~12K-line
     legacy stylesheet, then delete it. Page-by-page, verified.
-10. **Scheduled / recurring report exports** (cron + email + retry handling).
+
+> ~~Scheduled / recurring report exports~~ — ❌ **REMOVED (won't do).** Reports are
+> per-event, on-demand only; no scheduling/cron needed now or planned.
 
 ---
 
