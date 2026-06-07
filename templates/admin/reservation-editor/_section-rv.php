@@ -341,6 +341,42 @@ $rv_lot_map_name = $rv_lot_map_id ? basename( (string) get_attached_file( $rv_lo
 	style="<?php echo $rv_is_mapped ? '' : 'display:none;'; ?>">
 <?php
 
+// ── v4 Slice 8 — Interactive RV Map (its OWN Google Sheet, separate from the
+// stall sheet). Every tab is an RV zone; every numbered cell an RV lot. ──
+$rv_map_snap = ( isset( $data['rv_map'] ) && is_array( $data['rv_map'] ) ) ? $data['rv_map'] : array();
+$rv_map_src  = isset( $rv_map_snap['source_url'] ) ? (string) $rv_map_snap['source_url'] : '';
+ob_start();
+?>
+<div class="eem-stall-map-connect" data-eem-rv-map data-eem-rv-map-total="<?php echo (int) ( ! empty( $rv_map_snap['barns'] ) ? EEM_Stall_Map_Importer::count_stalls( $rv_map_snap ) : 0 ); ?>">
+	<div class="eem-stall-map-row">
+		<input type="url" class="eem-field-input" id="eem-rv-map-url" placeholder="<?php esc_attr_e( 'Paste your RV sheet "Publish to web" link…', 'equine-event-manager' ); ?>" value="<?php echo esc_attr( $rv_map_src ); ?>" style="max-width:520px">
+		<button type="button" class="eem-btn-add" data-eem-action="rv-map-connect"><?php echo $rv_map_src ? esc_html__( 'Refresh', 'equine-event-manager' ) : esc_html__( 'Connect', 'equine-event-manager' ); ?></button>
+	</div>
+	<div class="eem-stall-map-status" data-eem-rv-map-status>
+		<?php
+		if ( ! empty( $rv_map_snap['barns'] ) ) {
+			$rvm_counts = EEM_Stall_Map_Importer::barn_stall_counts( $rv_map_snap );
+			$rvm_total  = EEM_Stall_Map_Importer::count_stalls( $rv_map_snap );
+			$rvm_bits   = array();
+			foreach ( $rvm_counts as $rvm_zn => $rvm_zc ) {
+				$rvm_bits[] = esc_html( $rvm_zn ) . ' (' . (int) $rvm_zc . ')';
+			}
+			echo '<span class="eem-stall-map-ok">&#x2713; ' . esc_html( sprintf( /* translators: %d: zone count */ _n( '%d zone', '%d zones', count( $rvm_counts ), 'equine-event-manager' ), count( $rvm_counts ) ) ) . ' &middot; ' . (int) $rvm_total . ' ' . esc_html__( 'lots total', 'equine-event-manager' ) . '</span> ';
+			echo '<span class="eem-stall-map-barns">' . implode( ', ', $rvm_bits ) . '</span>'; // phpcs:ignore -- bits pre-escaped
+		}
+		?>
+	</div>
+</div>
+<span class="eem-field-hint"><?php esc_html_e( 'Used when RV Selection is "Pick from layout". Build your RV layout in its OWN Google Sheet (one tab per zone), then File → Share → Publish to web and paste the link. Every tab is a zone; every numbered cell is a lot. Match the tab names to your RV Lot Zones below for pricing.', 'equine-event-manager' ); ?></span>
+<?php
+$rv_map_html = (string) ob_get_clean();
+eem_render_editor_field_row( array(
+	'label'        => __( 'Interactive RV Map', 'equine-event-manager' ),
+	'label_sub'    => __( 'Google Sheet → clickable layout', 'equine-event-manager' ),
+	'row_id'       => 'row-rv-map-connect',
+	'control_html' => $rv_map_html,
+) );
+
 // ── RV Lot Zones (nightly / weekend / available_qty) ──
 ob_start();
 ?>

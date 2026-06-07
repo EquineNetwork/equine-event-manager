@@ -2421,6 +2421,10 @@
 		'stall-map-connect': function (target) {
 			stallMapConnect(target);
 		},
+		/* v4 Slice 8 — connect/refresh the SEPARATE RV-map Google Sheet. */
+		'rv-map-connect': function (target) {
+			mapConnect(target, 'rv');
+		},
 
 		/* C8 — Stall row builder */
 		'stall-add-row': function () {
@@ -5306,13 +5310,15 @@ function toggleStallInventoryType(btn) {
 	updateStallInventoryDisplay();
 }
 
-/* v4 Stall Mapping — connect/refresh the facility-map Google Sheet. Reads the
+/* v4 Stall Mapping — connect/refresh a facility-map Google Sheet. Reads the
    pasted Publish-to-web URL, posts to the eem_stall_map_connect AJAX handler
-   (reusing the editor nonce + reservation id already in the page), and renders
-   the "✓ N barns · M stalls total" status with per-barn counts. */
-function stallMapConnect(btn) {
-	var urlInput = document.getElementById('eem-stall-map-url');
-	var statusEl = document.querySelector('[data-eem-stall-map-status]');
+   (reusing the editor nonce + reservation id already in the page) with a target
+   ('stall' | 'rv' — the SEPARATE RV sheet), and renders the status with per-tab
+   counts. target='stall' speaks "barns/stalls"; target='rv' speaks "zones/lots". */
+function mapConnect(btn, target) {
+	var isRv     = target === 'rv';
+	var urlInput = document.getElementById(isRv ? 'eem-rv-map-url' : 'eem-stall-map-url');
+	var statusEl = document.querySelector(isRv ? '[data-eem-rv-map-status]' : '[data-eem-stall-map-status]');
 	if (!urlInput || !statusEl) { return; }
 	var url = urlInput.value.trim();
 	if (!url) { statusEl.innerHTML = '<span class="eem-stall-map-err">Paste your Google Sheet “Publish to web” link first.</span>'; return; }
@@ -5321,6 +5327,8 @@ function stallMapConnect(btn) {
 	var nonce = nonceInput ? nonceInput.value : '';
 	var rid = idEl ? idEl.getAttribute('data-reservation-id') : '';
 	var orig = btn.textContent;
+	var unit = isRv ? 'zone' : 'barn';
+	var coll = isRv ? 'lots' : 'stalls';
 	btn.disabled = true; btn.textContent = 'Connecting…';
 	statusEl.innerHTML = '<span class="eem-stall-map-pending">Importing…</span>';
 	var body = new URLSearchParams();
@@ -5328,6 +5336,7 @@ function stallMapConnect(btn) {
 	body.set('_eem_editor_nonce', nonce);
 	body.set('reservation_id', rid);
 	body.set('sheet_url', url);
+	body.set('target', isRv ? 'rv' : 'stall');
 	fetch(window.ajaxurl || '/wp-admin/admin-ajax.php', {
 		method: 'POST', credentials: 'same-origin',
 		headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -5337,13 +5346,11 @@ function stallMapConnect(btn) {
 		if (res && res.success) {
 			var d = res.data;
 			var bits = (d.barns || []).map(function (b) { return b.name + ' (' + b.stalls + ')'; }).join(', ');
-			statusEl.innerHTML = '<span class="eem-stall-map-ok">✓ ' + (d.barns ? d.barns.length : 0) + ' barn(s) · ' + d.total_stalls + ' stalls total</span> <span class="eem-stall-map-barns">' + bits + '</span>';
-			// v4 Slice 5: refresh the map total so computed inventory reflects the
-			// newly-connected map immediately (Pick-from-layout draws from it).
-			var mapEl = document.querySelector('[data-eem-stall-map]');
-			if (mapEl) mapEl.setAttribute('data-eem-stall-map-total', String(d.total_stalls || 0));
-			updateStallInventoryDisplay();
-			if (window.EEM && EEM.showSaveToast) { EEM.showSaveToast(d.message || 'Stall map connected.', { variant: 'success', sub: '' }); }
+			statusEl.innerHTML = '<span class="eem-stall-map-ok">✓ ' + (d.barns ? d.barns.length : 0) + ' ' + unit + '(s) · ' + d.total_stalls + ' ' + coll + ' total</span> <span class="eem-stall-map-barns">' + bits + '</span>';
+			var mapEl = document.querySelector(isRv ? '[data-eem-rv-map]' : '[data-eem-stall-map]');
+			if (mapEl) mapEl.setAttribute(isRv ? 'data-eem-rv-map-total' : 'data-eem-stall-map-total', String(d.total_stalls || 0));
+			if (!isRv) { updateStallInventoryDisplay(); }
+			if (window.EEM && EEM.showSaveToast) { EEM.showSaveToast(d.message || (isRv ? 'RV map connected.' : 'Stall map connected.'), { variant: 'success', sub: '' }); }
 		} else {
 			var msg = (res && res.data && res.data.message) ? res.data.message : 'Could not connect the sheet.';
 			statusEl.innerHTML = '<span class="eem-stall-map-err">' + msg + '</span>';
@@ -5353,6 +5360,9 @@ function stallMapConnect(btn) {
 		statusEl.innerHTML = '<span class="eem-stall-map-err">Network error — try again.</span>';
 	});
 }
+
+/* Back-compat wrapper — the stall connector calls into the generic mapConnect. */
+function stallMapConnect(btn) { mapConnect(btn, 'stall'); }
 
 /* Tack Stalls control. Two sub-controls: On/Off, and (when On) who designates
    the tack stall — Customer or Admin only. The hidden stall_tack_mode input is

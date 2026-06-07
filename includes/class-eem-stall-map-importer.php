@@ -33,9 +33,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 class EEM_Stall_Map_Importer {
 
 	/**
-	 * Post-meta key holding the snapshot on a reservation.
+	 * Post-meta key holding the stall-map snapshot on a reservation.
 	 */
 	const META_KEY = '_en_stall_map';
+
+	/**
+	 * Post-meta key holding the RV-map snapshot (v4 Slice 8 — separate connector).
+	 * The RV Reservations section connects its own RV sheet here; every tab is an
+	 * RV zone and every numbered cell an RV lot.
+	 */
+	const RV_META_KEY = '_en_rv_map';
 
 	/**
 	 * Extract the published-document key from a "Publish to web" URL.
@@ -203,22 +210,24 @@ class EEM_Stall_Map_Importer {
 	/**
 	 * Persist a snapshot to a reservation.
 	 *
-	 * @param int   $reservation_id Reservation post id.
-	 * @param array $snapshot       Snapshot from {@see self::import()}.
+	 * @param int    $reservation_id Reservation post id.
+	 * @param array  $snapshot       Snapshot from {@see self::import()}.
+	 * @param string $meta_key       Which snapshot slot (stall map or RV map).
 	 * @return void
 	 */
-	public static function save_to_reservation( int $reservation_id, array $snapshot ): void {
-		update_post_meta( $reservation_id, self::META_KEY, $snapshot );
+	public static function save_to_reservation( int $reservation_id, array $snapshot, string $meta_key = self::META_KEY ): void {
+		update_post_meta( $reservation_id, $meta_key, $snapshot );
 	}
 
 	/**
 	 * Read a reservation's stored snapshot.
 	 *
-	 * @param int $reservation_id Reservation post id.
+	 * @param int    $reservation_id Reservation post id.
+	 * @param string $meta_key       Which snapshot slot (stall map or RV map).
 	 * @return array Snapshot, or an empty array if none stored.
 	 */
-	public static function get_for_reservation( int $reservation_id ): array {
-		$snap = get_post_meta( $reservation_id, self::META_KEY, true );
+	public static function get_for_reservation( int $reservation_id, string $meta_key = self::META_KEY ): array {
+		$snap = get_post_meta( $reservation_id, $meta_key, true );
 		return is_array( $snap ) ? $snap : array();
 	}
 

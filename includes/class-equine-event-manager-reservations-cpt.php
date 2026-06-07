@@ -2100,6 +2100,7 @@ class EEM_Reservations_CPT {
 			// v4 Stall Mapping — the imported facility-map snapshot (read-only here;
 			// written by EEM_Stall_Map_Importer via AJAX, not the form save map).
 			'stall_map'                       => array(),
+			'rv_map'                          => array(),
 			'stall_tack_mode'                 => 'customer',
 			'required_shavings_per_stall'     => 0,
 			'required_shavings_price'         => '0.00',

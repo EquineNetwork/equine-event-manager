@@ -4271,6 +4271,37 @@ class EEM_Admin {
 			}
 		}
 
+		// ── v4 Slice 8: RV map is a SEPARATE connector (_en_rv_map). Every tab is
+		// an RV zone; every numbered cell an RV lot. Supersedes legacy RV lots. ──
+		if ( class_exists( 'EEM_Stall_Map_Importer' ) ) {
+			$chart_rv_snapshot = EEM_Stall_Map_Importer::get_for_reservation( (int) $reservation_id, EEM_Stall_Map_Importer::RV_META_KEY );
+			if ( ! empty( $chart_rv_snapshot['barns'] ) ) {
+				$map_rv_lots     = array();
+				$map_rv_zone_map = array();
+				$map_rv_zones    = array();
+				foreach ( (array) $chart_rv_snapshot['barns'] as $rv_barn ) {
+					$rv_zone_name = (string) ( isset( $rv_barn['name'] ) ? $rv_barn['name'] : '' );
+					if ( '' !== $rv_zone_name ) {
+						$map_rv_zones[] = $rv_zone_name;
+					}
+					foreach ( (array) ( isset( $rv_barn['grid'] ) ? $rv_barn['grid'] : array() ) as $rv_grow ) {
+						foreach ( (array) $rv_grow as $rv_cell ) {
+							if ( isset( $rv_cell['type'], $rv_cell['label'] )
+								&& 'stall' === $rv_cell['type']
+								&& '' !== (string) $rv_cell['label'] ) {
+								// RV lots are numbered per-zone (1..N in each tab), so the
+								// lot IDENTITY is zone-qualified ("Red Lot 1") to stay
+								// unique — matching the legacy rv_zone_map convention.
+								$rv_lot_label                     = trim( $rv_zone_name . ' ' . (string) $rv_cell['label'] );
+								$map_rv_lots[]                    = $rv_lot_label;
+								$map_rv_zone_map[ $rv_lot_label ] = $rv_zone_name;
+							}
+						}
+					}
+				}
+			}
+		}
+
 		// ── Blocked stalls: try legacy key first, fall back to V1 key ─────── //
 		$blocked_stall_units = get_post_meta( $reservation_id, '_en_stall_chart_blocked_stall_units', true );
 		if ( ! is_array( $blocked_stall_units ) || empty( $blocked_stall_units ) ) {

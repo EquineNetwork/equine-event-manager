@@ -1267,6 +1267,10 @@ class EEM_Reservation_Editor_Page {
 			wp_send_json_error( array( 'message' => __( 'Reservation not found.', 'equine-event-manager' ) ), 404 );
 		}
 
+		// v4 Slice 8: which map slot — the stall sheet or the (separate) RV sheet.
+		$target   = isset( $_POST['target'] ) && 'rv' === sanitize_key( wp_unslash( $_POST['target'] ) ) ? 'rv' : 'stall';
+		$meta_key = ( 'rv' === $target ) ? EEM_Stall_Map_Importer::RV_META_KEY : EEM_Stall_Map_Importer::META_KEY;
+
 		$url = isset( $_POST['sheet_url'] ) ? trim( (string) wp_unslash( $_POST['sheet_url'] ) ) : '';
 		if ( '' === $url ) {
 			wp_send_json_error( array( 'message' => __( 'Paste your Google Sheet "Publish to web" link first.', 'equine-event-manager' ) ), 400 );
@@ -1288,7 +1292,7 @@ class EEM_Reservation_Editor_Page {
 			), 422 );
 		}
 
-		EEM_Stall_Map_Importer::save_to_reservation( $reservation_id, $snapshot );
+		EEM_Stall_Map_Importer::save_to_reservation( $reservation_id, $snapshot, $meta_key );
 
 		$per   = EEM_Stall_Map_Importer::barn_stall_counts( $snapshot );
 		$barns = array();

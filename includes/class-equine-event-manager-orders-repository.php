@@ -1240,7 +1240,34 @@ class EEM_Orders_Repository {
 				// v4: order by barn (tab order) then natural label so lowest-first
 				// auto-assign fills 1 before 11 — independent of grid traversal.
 				$stall_units  = $this->sort_map_units_by_barn( array_values( array_unique( $stall_units ) ), $barn_map, $barn_order );
-				$map_rv_units = $this->sort_map_units_by_barn( array_values( array_unique( $map_rv_units ) ), $barn_map, $barn_order );
+			}
+
+			// v4 Slice 8: RV map is a SEPARATE connector (_en_rv_map) — every tab is
+			// a zone, every numbered cell an RV lot. Drives the RV auto-assign pool.
+			$repo_rv_snapshot = EEM_Stall_Map_Importer::get_for_reservation( (int) $reservation_id, EEM_Stall_Map_Importer::RV_META_KEY );
+			if ( ! empty( $repo_rv_snapshot['barns'] ) ) {
+				$map_rv_units = array();
+				$rv_order     = array();
+				foreach ( (array) $repo_rv_snapshot['barns'] as $rv_barn ) {
+					$rv_zone_name = (string) ( isset( $rv_barn['name'] ) ? $rv_barn['name'] : '' );
+					if ( '' !== $rv_zone_name ) {
+						$rv_order[] = $rv_zone_name;
+					}
+					foreach ( (array) ( isset( $rv_barn['grid'] ) ? $rv_barn['grid'] : array() ) as $rv_grow ) {
+						foreach ( (array) $rv_grow as $rv_cell ) {
+							if ( isset( $rv_cell['type'], $rv_cell['label'] )
+								&& 'stall' === $rv_cell['type']
+								&& '' !== (string) $rv_cell['label'] ) {
+								// Zone-qualified identity ("Red Lot 1") — RV lots are
+								// numbered per-zone so the bare number isn't unique.
+								$rv_lot_label              = trim( $rv_zone_name . ' ' . (string) $rv_cell['label'] );
+								$map_rv_units[]            = $rv_lot_label;
+								$barn_map[ $rv_lot_label ] = $rv_zone_name; // RV contiguity by zone.
+							}
+						}
+					}
+				}
+				$map_rv_units = $this->sort_map_units_by_barn( array_values( array_unique( $map_rv_units ) ), $barn_map, $rv_order );
 			}
 		}
 
