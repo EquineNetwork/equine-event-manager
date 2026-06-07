@@ -1665,6 +1665,9 @@ class EEM_Reservations_CPT {
 			'stall_early_bird_nightly_rate'   => isset( $source['stall_early_bird_nightly_rate'] ) ? $this->sanitize_money_value( $source['stall_early_bird_nightly_rate'] ) : $existing['stall_early_bird_nightly_rate'],
 			'stall_early_bird_weekend_rate'   => isset( $source['stall_early_bird_weekend_rate'] ) ? $this->sanitize_money_value( $source['stall_early_bird_weekend_rate'] ) : $existing['stall_early_bird_weekend_rate'],
 			'required_shavings_enabled'       => isset( $source['required_shavings_enabled'] ) ? 1 : 0,
+			// v2 #4 — admin gate for the customer-facing "Using one for tack?"
+			// selector. Defaults ON (preserves prior always-shown behavior).
+			'stall_tack_designation_enabled'  => isset( $source['stall_tack_designation_enabled'] ) ? 1 : 0,
 			'required_shavings_per_stall'     => isset( $source['required_shavings_per_stall'] ) ? absint( $source['required_shavings_per_stall'] ) : 0,
 			'required_shavings_price'         => isset( $source['required_shavings_price'] ) ? $this->sanitize_money_value( $source['required_shavings_price'] ) : $existing['required_shavings_price'],
 			'additional_shavings_enabled'     => isset( $source['additional_shavings_enabled'] ) ? 1 : 0,
@@ -2093,6 +2096,7 @@ class EEM_Reservations_CPT {
 			'stall_early_bird_nightly_rate'   => '0.00',
 			'stall_early_bird_weekend_rate'   => '0.00',
 			'required_shavings_enabled'       => 0,
+			'stall_tack_designation_enabled'  => 1,
 			'required_shavings_per_stall'     => 0,
 			'required_shavings_price'         => '0.00',
 			'additional_shavings_enabled'     => 0,

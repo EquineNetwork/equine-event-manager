@@ -53,6 +53,9 @@ $weekend_on   = ! empty( $data['stall_weekend_enabled'] );
 $schedule_on  = ! empty( $data['stall_schedule_enabled'] );
 $eb_on        = ! empty( $data['stall_early_bird_enabled'] );
 $shavings_on  = ! empty( $data['required_shavings_enabled'] );
+// v2 #4 — gate for the customer-facing "Using one for tack?" selector. Defaults
+// ON for reservations created before this field existed (see CPT defaults).
+$tack_on      = ! isset( $data['stall_tack_designation_enabled'] ) || ! empty( $data['stall_tack_designation_enabled'] );
 
 ?>
 <input type="hidden" name="en_reservation[stalls_enabled]" data-eem-section-enabled="stall" value="<?php echo ! empty( $data['stalls_enabled'] ) ? '1' : '0'; ?>" />
@@ -230,6 +233,22 @@ $shav_html = ob_get_clean();
 eem_render_editor_field_row( array(
 	'label'        => __( 'Required Shavings', 'equine-event-manager' ),
 	'control_html' => $shav_html,
+) );
+
+// v2 #4 — Tack Stall Selection toggle. When ON, customers picking specific
+// stalls can designate one as their tack stall on the front-end form; when OFF,
+// that selector is hidden. No price effect either way.
+ob_start();
+eem_render_editor_toggle_label_row( array(
+	'name'       => 'stall_tack_designation_enabled',
+	'subsection' => 'stall-tack',
+	'label'      => __( 'Let customers designate a tack stall', 'equine-event-manager' ),
+	'is_enabled' => $tack_on,
+) );
+$tack_html = ob_get_clean();
+eem_render_editor_field_row( array(
+	'label'        => __( 'Tack Stall Selection', 'equine-event-manager' ),
+	'control_html' => $tack_html,
 ) );
 
 // 16 + 17. Shavings qty + price

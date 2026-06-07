@@ -1517,7 +1517,7 @@ class EEM_Shortcodes {
 			<?php // C10.D — prefer the canonical "Pick Your Stalls" row picker; fall back
 			// to the legacy block-range selector only when no _en_stall_rows exist. ?>
 			<?php if ( ! empty( $stall_picker_rows ) ) : ?>
-				<?php $this->render_stall_picker_grid( $stall_picker_rows, $stall_picker_blocked, $stall_picker_reserved, array(), (string) $stall_map_url ); ?>
+				<?php $this->render_stall_picker_grid( $stall_picker_rows, $stall_picker_blocked, $stall_picker_reserved, array(), (string) $stall_map_url, ! empty( $data['stall_tack_designation_enabled'] ) ); ?>
 			<?php elseif ( $stall_assignment_enabled && ! empty( $stall_assignment_blocks ) ) : ?>
 				<?php $this->render_quantity_stall_assignment_selector( $stall_assignment_blocks, $stall_map_url ); ?>
 			<?php endif; ?>
@@ -1613,9 +1613,11 @@ class EEM_Shortcodes {
 	 * @param array  $reserved      Reserved label lookup (label => true).
 	 * @param array  $selected      Pre-selected label lookup (label => true).
 	 * @param string $stall_map_url Optional stall-map download URL.
+	 * @param bool   $tack_enabled  Whether to render the optional tack-stall
+	 *                              designation selector (admin toggle; v2 #4).
 	 * @return void
 	 */
-	private function render_stall_picker_grid( array $stall_rows, array $blocked, array $reserved, array $selected, string $stall_map_url ): void {
+	private function render_stall_picker_grid( array $stall_rows, array $blocked, array $reserved, array $selected, string $stall_map_url, bool $tack_enabled = true ): void {
 		$rendered_rows = array();
 		foreach ( $stall_rows as $row ) {
 			if ( ! is_array( $row ) ) {
@@ -1704,7 +1706,9 @@ class EEM_Shortcodes {
 			</div>
 			<?php // V1 #5d — optional tack-stall designation. JS reveals it once stalls
 			// are picked and populates the options from the current selection. No
-			// price effect — a tack stall costs the same as any other stall. ?>
+			// price effect — a tack stall costs the same as any other stall.
+			// v2 #4 — gated by the per-reservation admin toggle ($tack_enabled). ?>
+			<?php if ( $tack_enabled ) : ?>
 			<div class="stall-tack-designate" data-eem-tack-designate hidden>
 				<label class="stall-tack-designate__label" for="eem-tack-select">
 					<span class="stall-tack-designate__dot" aria-hidden="true"></span>
@@ -1715,6 +1719,7 @@ class EEM_Shortcodes {
 				</select>
 				<p class="stall-tack-designate__hint"><?php esc_html_e( 'Tell us which stall you plan to use for tack and storage. It costs the same — this just helps us lay out the barn.', 'equine-event-manager' ); ?></p>
 			</div>
+			<?php endif; ?>
 			<p class="stall-hint"><?php esc_html_e( 'Want different stalls? Tap a selected stall to deselect it, then pick another. To add or remove total stalls, use the +/− buttons in the product list above.', 'equine-event-manager' ); ?></p>
 		</div>
 		<?php
@@ -6708,6 +6713,10 @@ RV Lot: " . $rv_lot['name'] );
 			'stall_early_bird_nightly_rate'   => '0.00',
 			'stall_early_bird_weekend_rate'   => '0.00',
 			'required_shavings_enabled'       => 0,
+			// v2 #4 — tack-stall designation gate. Defaults ON so reservations
+			// created before this field keep showing the selector (mirrors the
+			// CPT default; this duplicated defaults map is read on the front end).
+			'stall_tack_designation_enabled'  => 1,
 			'required_shavings_per_stall'     => 0,
 			'required_shavings_price'         => '0.00',
 			'additional_shavings_enabled'     => 0,
