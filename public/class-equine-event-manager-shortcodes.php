@@ -1515,9 +1515,16 @@ class EEM_Shortcodes {
 		$eem_stall_mode = $this->get_resolved_stall_selection_mode( $reservation_id, $data );
 		?>
 		<?php if ( 'exact_map' === $eem_stall_mode ) : ?>
-			<?php // C10.D — prefer the canonical "Pick Your Stalls" row picker; fall back
-			// to the legacy block-range selector only when no _en_stall_rows exist. ?>
-			<?php if ( ! empty( $stall_picker_rows ) ) : ?>
+			<?php
+			// v4 Stall Mapping (Option A): when an imported facility-map snapshot
+			// exists, customers pick on the real map. Otherwise fall back to the
+			// canonical "Pick Your Stalls" row picker, then the legacy block selector.
+			$eem_stall_map_snapshot = EEM_Stall_Map_Importer::get_for_reservation( (int) $reservation_id );
+			$eem_has_stall_map      = ! empty( $eem_stall_map_snapshot['barns'] );
+			?>
+			<?php if ( $eem_has_stall_map ) : ?>
+				<?php $this->render_stall_map_picker( $eem_stall_map_snapshot, $stall_picker_reserved, $stall_picker_blocked, ( 'off' !== ( $data['stall_tack_mode'] ?? 'customer' ) ), (int) $stall_per_customer_max ); ?>
+			<?php elseif ( ! empty( $stall_picker_rows ) ) : ?>
 				<?php $this->render_stall_picker_grid( $stall_picker_rows, $stall_picker_blocked, $stall_picker_reserved, array(), (string) $stall_map_url, ( 'off' !== ( $data['stall_tack_mode'] ?? 'customer' ) ) ); ?>
 			<?php elseif ( $stall_assignment_enabled && ! empty( $stall_assignment_blocks ) ) : ?>
 				<?php $this->render_quantity_stall_assignment_selector( $stall_assignment_blocks, $stall_map_url ); ?>
@@ -1598,6 +1605,180 @@ class EEM_Shortcodes {
 			<input type="checkbox" class="eem-stall-picker-input" name="preferred_stall_units[]" value="<?php echo esc_attr( $label ); ?>"<?php checked( $is_selected ); ?> />
 			<span><?php echo esc_html( $label ); ?></span>
 		</label>
+		<?php
+	}
+
+	/**
+	 * v4 — Render the spreadsheet-driven facility map picker (customer side).
+	 *
+	 * The Stall Mapping equivalent of {@see self::render_stall_picker_grid()}: when
+	 * a reservation has an imported map snapshot, customers pick stalls on the real
+	 * facility map (full-screen modal, one tab per barn) instead of the flat chip
+	 * grid. Selection drives the same checkout contract — it writes
+	 * `preferred_stall_units[]` hidden inputs and sets `stall_qty` (= the number of
+	 * stalls picked) so totals recompute exactly as the legacy picker does.
+	 *
+	 * @param array $snapshot       `_en_stall_map` snapshot (barns[].grid[][]).
+	 * @param array $reserved       Reserved label lookup (label => true).
+	 * @param array $blocked        Blocked label lookup (label => true).
+	 * @param bool  $tack_enabled   Whether to offer the optional tack designation.
+	 * @param int   $max_per        Max stalls per customer (0 = unlimited).
+	 * @return void
+	 */
+	private function render_stall_map_picker( array $snapshot, array $reserved, array $blocked, bool $tack_enabled, int $max_per ): void {
+		$barns = array();
+		foreach ( ( $snapshot['barns'] ?? array() ) as $barn ) {
+			$barns[] = array(
+				'name' => (string) ( $barn['name'] ?? '' ),
+				'grid' => $barn['grid'] ?? array(),
+			);
+		}
+		$payload = array(
+			'barns'    => $barns,
+			'reserved' => array_values( array_map( 'strval', array_keys( $reserved ) ) ),
+			'blocked'  => array_values( array_map( 'strval', array_keys( $blocked ) ) ),
+			'maxPer'   => $max_per,
+			'tack'     => $tack_enabled,
+		);
+		?>
+		<div class="eem-map-pick" data-eem-map-pick>
+			<button type="button" class="eem-map-open-btn" data-eem-map-open>&#x1f5fa;&#xfe0f; <?php esc_html_e( 'Choose Your Stalls', 'equine-event-manager' ); ?></button>
+			<div class="eem-map-summary" data-eem-map-summary></div>
+			<div data-eem-map-picks hidden></div>
+			<p class="stall-assign-note"><?php esc_html_e( 'Tap available (white) stalls on the facility map. Greyed stalls are taken.', 'equine-event-manager' ); ?></p>
+			<script type="application/json" data-eem-map-payload><?php echo wp_json_encode( $payload ); // phpcs:ignore ?></script>
+		</div>
+
+		<div class="eem-map-modal" data-eem-map-modal hidden>
+			<div class="eem-map-modal-card">
+				<div class="eem-map-modal-head">
+					<strong><?php esc_html_e( 'Choose Your Stalls', 'equine-event-manager' ); ?></strong>
+					<span style="flex:1"></span>
+					<button type="button" class="eem-map-close" data-eem-map-close aria-label="<?php esc_attr_e( 'Close', 'equine-event-manager' ); ?>">&times;</button>
+				</div>
+				<div class="eem-map-tabs" data-eem-map-tabs></div>
+				<div class="eem-map-legend">
+					<span><i class="eem-map-sw eem-map-sw--avail"></i> <?php esc_html_e( 'Available', 'equine-event-manager' ); ?></span>
+					<span><i class="eem-map-sw eem-map-sw--sel"></i> <?php esc_html_e( 'Selected', 'equine-event-manager' ); ?></span>
+					<span><i class="eem-map-sw eem-map-sw--res"></i> <?php esc_html_e( 'Taken', 'equine-event-manager' ); ?></span>
+					<span><i class="eem-map-sw eem-map-sw--block"></i> <?php esc_html_e( 'Unavailable', 'equine-event-manager' ); ?></span>
+				</div>
+				<div class="eem-map-swipe-hint"><?php esc_html_e( 'Swipe to scroll the full map', 'equine-event-manager' ); ?> &larr;&rarr; &uarr;&darr;</div>
+				<div class="eem-map-scroll"><div class="eem-map-grid" data-eem-map-grid></div></div>
+				<div class="eem-map-foot">
+					<span class="eem-map-foot-count" data-eem-map-foot></span>
+					<span style="flex:1"></span>
+					<button type="button" class="eem-map-btn-ghost" data-eem-map-close><?php esc_html_e( 'Cancel', 'equine-event-manager' ); ?></button>
+					<button type="button" class="eem-map-btn-done" data-eem-map-close><?php esc_html_e( 'Done', 'equine-event-manager' ); ?></button>
+				</div>
+			</div>
+		</div>
+
+		<script>
+		(function(){
+			var root = document.currentScript.parentNode; // resolve the form regardless of multiple instances
+			var form = document.querySelector('.eem-reservation-form'); if (!form) { return; }
+			var payloadEl = form.querySelector('[data-eem-map-payload]') || document.querySelector('[data-eem-map-payload]');
+			if (!payloadEl) { return; }
+			var P; try { P = JSON.parse(payloadEl.textContent); } catch(e){ return; }
+			var reserved = {}; P.reserved.forEach(function(l){ reserved[l]=1; });
+			var blocked  = {}; P.blocked.forEach(function(l){ blocked[l]=1; });
+			var selected = {};
+			var activeBarn = 0;
+
+			var modal   = form.querySelector('[data-eem-map-modal]') || document.querySelector('[data-eem-map-modal]');
+			var gridEl  = modal.querySelector('[data-eem-map-grid]');
+			var tabsEl  = modal.querySelector('[data-eem-map-tabs]');
+			var footEl  = modal.querySelector('[data-eem-map-foot]');
+			var summary = form.querySelector('[data-eem-map-summary]');
+			var picksEl = form.querySelector('[data-eem-map-picks]');
+
+			function statusOf(l){ if (blocked[l]) return 'blocked'; if (reserved[l]) return 'reserved'; return 'available'; }
+			function selCount(){ return Object.keys(selected).length; }
+
+			function renderGrid(){
+				var g = P.barns[activeBarn] ? P.barns[activeBarn].grid : [];
+				var rows = g.length, cols = rows ? g[0].length : 0;
+				gridEl.style.gridTemplateColumns = 'repeat(' + cols + ', var(--eem-map-chip))';
+				gridEl.style.gridTemplateRows = 'repeat(' + rows + ', var(--eem-map-chip))';
+				gridEl.innerHTML = '';
+				var used = g.map(function(r){ return r.map(function(){ return false; }); });
+				for (var r=0;r<rows;r++){ for (var c=0;c<cols;c++){
+					if (used[r][c]) continue;
+					var cell = g[r][c];
+					if (cell.type === 'gap'){ used[r][c]=true; continue; }
+					if (cell.type === 'stall'){
+						used[r][c]=true;
+						var st = statusOf(cell.label);
+						var d = document.createElement('div');
+						d.className = 'eem-map-cell eem-map-stall' + (st!=='available'?(' is-'+st):'') + (selected[cell.label]?' is-sel':'');
+						d.textContent = cell.label;
+						d.setAttribute('data-label', cell.label);
+						d.setAttribute('data-status', st);
+						d.style.gridColumn = (c+1); d.style.gridRow = (r+1);
+						gridEl.appendChild(d);
+						continue;
+					}
+					// landmark rectangle merge
+					var label=cell.label, w=1, h=1, ok=true;
+					while (c+w<cols && g[r][c+w].type==='landmark' && g[r][c+w].label===label && !used[r][c+w]) w++;
+					while (r+h<rows && ok){ for (var k=0;k<w;k++){ var cc=g[r+h][c+k]; if(!(cc.type==='landmark'&&cc.label===label&&!used[r+h][c+k])){ ok=false; break; } } if(ok) h++; }
+					for (var i=0;i<h;i++) for (var j=0;j<w;j++) used[r+i][c+j]=true;
+					var lm = document.createElement('div');
+					lm.className = 'eem-map-cell eem-map-land';
+					lm.style.gridColumn = (c+1) + ' / span ' + w;
+					lm.style.gridRow = (r+1) + ' / span ' + h;
+					if (h>w){ lm.style.writingMode='vertical-rl'; lm.style.textOrientation='mixed'; }
+					lm.textContent = label;
+					gridEl.appendChild(lm);
+				}}
+			}
+
+			function renderTabs(){
+				tabsEl.innerHTML = '';
+				P.barns.forEach(function(b,i){
+					var t = document.createElement('button');
+					t.type='button';
+					t.className = 'eem-map-tab' + (i===activeBarn?' active':'');
+					t.textContent = b.name;
+					t.onclick = function(){ activeBarn=i; renderTabs(); renderGrid(); };
+					tabsEl.appendChild(t);
+				});
+			}
+
+			function syncForm(){
+				var labels = Object.keys(selected);
+				// hidden inputs for the checkout POST
+				picksEl.innerHTML = '';
+				labels.forEach(function(l){ var inp=document.createElement('input'); inp.type='hidden'; inp.name='preferred_stall_units[]'; inp.value=l; picksEl.appendChild(inp); });
+				// drive stall_qty (= count) so totals recompute via the existing listeners
+				var qty = form.querySelector('[name="stall_qty"]');
+				if (qty){ qty.value = labels.length; qty.dispatchEvent(new Event('input',{bubbles:true})); qty.dispatchEvent(new Event('change',{bubbles:true})); }
+				var txt = labels.length ? labels.length + ' ' + <?php echo wp_json_encode( esc_html__( 'stalls selected', 'equine-event-manager' ) ); ?> + ': ' + labels.map(function(v){return '#'+v;}).join(', ') : <?php echo wp_json_encode( esc_html__( 'No stalls selected yet', 'equine-event-manager' ) ); ?>;
+				if (summary) summary.textContent = txt;
+				if (footEl) footEl.innerHTML = '<strong>' + labels.length + '</strong> ' + <?php echo wp_json_encode( esc_html__( 'selected', 'equine-event-manager' ) ); ?>;
+			}
+
+			gridEl.addEventListener('click', function(ev){
+				var s = ev.target.closest('.eem-map-stall'); if (!s) return;
+				if (s.getAttribute('data-status') !== 'available') return;
+				var l = s.getAttribute('data-label');
+				if (selected[l]){ delete selected[l]; s.classList.remove('is-sel'); }
+				else {
+					if (P.maxPer > 0 && selCount() >= P.maxPer){ footEl.innerHTML = '<span class="eem-map-warn">' + <?php echo wp_json_encode( esc_html__( 'Limit reached', 'equine-event-manager' ) ); ?> + '</span>'; return; }
+					selected[l]=1; s.classList.add('is-sel');
+				}
+				syncForm();
+			});
+
+			function openModal(){ modal.hidden=false; document.body.style.overflow='hidden'; renderTabs(); renderGrid(); syncForm(); }
+			function closeModal(){ modal.hidden=true; document.body.style.overflow=''; }
+			form.querySelectorAll('[data-eem-map-open]').forEach(function(b){ b.addEventListener('click', openModal); });
+			modal.querySelectorAll('[data-eem-map-close]').forEach(function(b){ b.addEventListener('click', closeModal); });
+
+			syncForm();
+		})();
+		</script>
 		<?php
 	}
 
