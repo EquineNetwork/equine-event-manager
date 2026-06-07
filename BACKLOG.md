@@ -43,14 +43,16 @@ inactive-processor field locking · Open-Tab/open-invoice confirmed built ·
 
 ## 🐴 Tack stalls — shipped 2026-06-07
 
-- **T1 (v2.7.72)** — 3-mode tack control (Off / Admin assigns / Customers
-  designate) under Blocked Stall Numbers. New meta `_en_stall_tack_mode` +
-  `_en_stall_tack_admin_stalls`; admin mode shows a stall-number tag-select;
-  customer selector gated to 'customer' mode. Migration eem-mig-006 (old bool →
-  mode). Browser-verified runtime toggle.
-- **T2 (v2.7.72)** — tack stalls excluded from required shavings (still pay the
-  normal stall rate). Server `get_tack_stall_count()` + live-total
-  `countTackStalls()`; admin-assigned tack also written to the Tack Stalls note.
+- **Tack On/Off (v2.7.73, reworked from v2.7.72's 3-mode)** — editor control under
+  Blocked Stall Numbers is a simple Off/On. When **On**, the buyer flags a tack
+  stall at checkout; the admin assigns/overrides the *actual* tack stall via the
+  existing "Mark as Tack Stall" chip on the Stall Chart. `_en_stall_tack_mode` =
+  `off`|`customer`; migration eem-mig-006 (old bool → mode). The admin tag-select +
+  `_en_stall_tack_admin_stalls` from v2.7.72 were removed.
+- **Shavings exclusion (v2.7.72)** — tack stalls excluded from required shavings
+  (still pay the normal stall rate). Server `get_tack_stall_count()` + live-total
+  `countTackStalls()`; the designated tack stall is written to the Tack Stalls note.
+- **"One-sided" preview label removed (v2.7.73)** — leftover from back-to-back.
 
 ---
 
@@ -134,6 +136,107 @@ inactive-processor field locking · Open-Tab/open-invoice confirmed built ·
 
 > ~~Scheduled / recurring report exports~~ — ❌ **REMOVED (won't do).** Reports are
 > per-event, on-demand only; no scheduling/cron needed now or planned.
+
+---
+
+## 🗺️ v4 — Stall Mapping — spreadsheet-driven clickable facility maps
+
+> **Moved to v4 (2026-06-07).** Scoped + validated but deferred behind launch; not
+> a v1 item. Build after the v3 strip + the payment block, alongside the other v4
+> event-source work.
+
+**Goal:** a true RSNC-style stall map — customers click stalls in their real
+physical positions with live availability, neighbors, and aisles visible —
+*without* building a CAD/drag-and-drop editor. Reference: `legacy.rsnc.us/
+reservations/stalls/reserveStall` (building tabs → per-barn stall chart; dark =
+taken, white = available; click to add to reservation).
+
+**Core insight:** a spreadsheet grid *is* a 2D coordinate system. The cell's
+**position is the data** — a number in a cell = a stall at that physical spot, a
+blank cell = an aisle/gap, a text cell = a landmark (`ARENA`, `WASH`, `OFFICE`).
+The admin "builds the map" in a tool they already know; we only write an importer
++ a grid renderer. No canvas library, no per-facility artwork.
+
+**Stall identity stays label-based** → blocked stalls, tack, chart assignment,
+orders, and inventory all keep working untouched. The map is a new *view* over the
+same data, not a new data spine.
+
+**SCOPE LOCK (decided 2026-06-07):** Phase A **REPLACES the "Pick from layout"
+customer-selection mode**, it is not a parallel feature. Today "Pick from layout"
+renders the flat numbered-chip grid built from the Stall Row Builder; under Phase A
+that branch renders the spreadsheet-driven facility map instead. The
+`Customer Selection` control (Quantity vs Pick from layout) stays; only what the
+Pick-from-layout branch *renders* changes.
+
+**Option A (LOCKED):** in **Numbered + Pick from layout** mode the **spreadsheet is
+the source of truth** for both the stall *labels* AND their *positions* — it
+replaces the Stall Row Builder in that mode. The **Stall Row Builder remains for
+Quantity mode only** (where you just need a list of numbers + a count, no map).
+Labels stay the spine for blocked/tack/chart/orders, so nothing downstream breaks.
+
+**Validated 2026-06-07** against Whitney's real "Montcrief" test sheet (publish-to-
+web → `curl -L`/`wp_remote_get` follows the signed redirect → clean CSV →
+`str_getcsv` → 21×24 grid → 251 stalls, 0 dupes, 11 landmark types incl. center +
+cross aisles). Throwaway parser confirmed the importer logic end to end.
+
+### Phase A — spreadsheet grid + publish-to-web import (the cheap, no-dependency path)
+
+- **Admin workflow:** one Google Sheet, **one tab per barn** (tab name = barn
+  name). Numbers where stalls sit, text for landmarks, blanks for aisles. Then
+  **File → Share → Publish to web** → public no-auth CSV URL (per tab / `gid`).
+- **Plugin import:** paste the published CSV URL (or upload a `.csv`).
+  `wp_remote_get()` → parse grid → **snapshot into `_en_stall_map`** (do NOT render
+  live from Google — render from our stored copy; "Refresh from sheet" re-pulls).
+  Preview the parsed grid before save so typos are caught.
+- **Data model:** `_en_stall_map = { barns: [ { name, grid: [[cell,…],…] } ] }`
+  where each `cell = { label, type: 'stall'|'landmark'|'gap' }`. Auto-merge
+  contiguous same-label landmark cells into one block.
+- **Renderer (customer + admin chart):** CSS grid; stall cells interactive +
+  painted by live status (available/reserved/blocked/tack — existing data);
+  landmark cells static labeled blocks; blanks are gaps; barn tabs across the top.
+  When a pick-from-layout reservation has **no map imported yet**, fall back to the
+  legacy flat chip grid (or a "map not configured" notice) so the mode never breaks.
+- **Rendering decisions (decided 2026-06-07):**
+  - **Stall cells keep the existing chip look** (`.eem-stall-box`), just **smaller**
+    for density on a wide grid (24+ cols). Same styling = visual consistency.
+  - **Admin Stall Chart page reuses the same grid renderer** — admin and customer
+    see the identical facility map.
+  - **Customer side = full-screen modal** (`.eem-modal`) to fit big layouts: inline
+    form shows a compact "N stalls selected" summary + a "Choose your stalls" button;
+    the modal holds the map (barn tabs, click-to-select, live status) + a Done button
+    that returns picks to the form.
+  - **Mobile is the hard part** (24 cols won't fit a phone at tappable size): needs
+    **pinch-zoom + pan** inside the modal (CSS `transform: scale()` + drag, no lib)
+    and/or a **small-screen fallback** to the simple number-list flow. DECIDE which
+    at Phase A kickoff: full zoom/pan map on mobile vs. graceful list fallback.
+- **Conventions (v1):** values + positions only — NOT fill color / borders /
+  merged cells (CSV export drops formatting; merges blank all but top-left).
+  Reading fill-color for zones is a later add.
+- **Prefer CSV** (pure-PHP parse, zero deps). `.xlsx` upload would need
+  PhpSpreadsheet (a composer dependency) — only add if explicitly wanted.
+
+### Phase B — image-overlay fidelity upgrade (optional, later)
+
+- For facilities that want the exact CAD drawing: admin uploads the floor-plan
+  image (reuses the existing Stall Map upload) as a background, positions numbered
+  cells on top (row-placement tool: define a label range, click start/end, auto-
+  distribute, drag to nudge). Same label-based identity + live-status renderer.
+- Bigger lift (drag UI, maybe a light SVG/canvas layer); only justified when a
+  facility needs pixel-fidelity to the real building. Grid (Phase A) covers ~90%.
+
+### Honest limits (both phases)
+
+- Flat grid can't express angled rows / curved aisles / non-uniform stall sizes.
+  Acceptable — most stall charts are grid-ish.
+- Phase A is a clean **schematic**, not artful CAD; fine for *function* (click your
+  stall, see availability + neighbors), not pixel-perfect to the building.
+
+### Test fixture (prep)
+
+- Build a representative multi-tab Google Sheet from the RSNC Burnett chart (or a
+  synthetic facility) to exercise the importer once Phase A lands. (Claude can
+  generate the grid as a pasteable CSV/TSV; it cannot write into a Google Sheet
+  directly — no Sheets connector + the browser integration is read-only.)
 
 ---
 

@@ -53,12 +53,11 @@ $weekend_on   = ! empty( $data['stall_weekend_enabled'] );
 $schedule_on  = ! empty( $data['stall_schedule_enabled'] );
 $eb_on        = ! empty( $data['stall_early_bird_enabled'] );
 $shavings_on  = ! empty( $data['required_shavings_enabled'] );
-// T1 — Tack Stall mode (off | admin | customer). Drives the control rendered
-// under Blocked Stall Numbers below. Defaults 'customer' (mirrors the prior
-// always-shown selector for reservations created before this field existed).
-$tack_mode         = isset( $data['stall_tack_mode'] ) ? (string) $data['stall_tack_mode'] : 'customer';
-$tack_admin_meta   = isset( $data['stall_tack_admin_stalls'] ) ? $data['stall_tack_admin_stalls'] : array();
-$tack_admin_stalls = is_array( $tack_admin_meta ) ? $tack_admin_meta : array();
+// Tack Stall mode — 'customer' (on: buyers flag a tack stall at checkout, for
+// the shavings exclusion) or 'off'. The actual tack assignment is done by the
+// admin on the Stall Chart ("Mark as Tack Stall"). The legacy 'admin' value is
+// treated as on. Control renders under Blocked Stall Numbers below.
+$tack_mode = isset( $data['stall_tack_mode'] ) ? (string) $data['stall_tack_mode'] : 'customer';
 
 ?>
 <input type="hidden" name="en_reservation[stalls_enabled]" data-eem-section-enabled="stall" value="<?php echo ! empty( $data['stalls_enabled'] ) ? '1' : '0'; ?>" />
@@ -514,47 +513,22 @@ eem_render_editor_field_row( array(
 	'control_html' => $blocked_html,
 ) );
 
-// ── T1 — Tack Stalls (3-mode), directly under Blocked Stall Numbers ──
-// Off: no tack designation. Admin assigns: pick tack stall numbers here (a
-// tag-select like Blocked Stalls). Customers designate: buyers mark one of
-// their stalls as tack at checkout. Tack stalls are excluded from required
-// shavings (T2). The admin-assigned list posts top-level as eem_tack_admin_stalls[].
+// ── Tack Stalls (On/Off), directly under Blocked Stall Numbers ──
+// On: buyers flag a tack stall at checkout so required-shavings quantity is
+// right (tack stalls are excluded from shavings — T2). The admin assigns or
+// overrides the *actual* tack stall via the "Mark as Tack Stall" chip on the
+// Stall Chart, so there is no per-reservation admin list here. Off: no tack.
+// `stall_tack_mode` is 'customer' (on) or 'off'; the 'admin' value is retired.
+$tack_on  = ( 'off' !== $tack_mode );
+$tack_val = $tack_on ? 'customer' : 'off';
 ob_start();
 ?>
 <div class="eem-mode-btns" data-eem-tack-mode-btns>
-	<button type="button" class="eem-mode-btn<?php echo 'off' === $tack_mode ? ' active' : ''; ?>" data-tack-mode="off" data-eem-action="toggle-tack-mode"><?php esc_html_e( 'Off', 'equine-event-manager' ); ?></button>
-	<button type="button" class="eem-mode-btn<?php echo 'admin' === $tack_mode ? ' active' : ''; ?>" data-tack-mode="admin" data-eem-action="toggle-tack-mode"><?php esc_html_e( 'Admin assigns', 'equine-event-manager' ); ?></button>
-	<button type="button" class="eem-mode-btn<?php echo 'customer' === $tack_mode ? ' active' : ''; ?>" data-tack-mode="customer" data-eem-action="toggle-tack-mode"><?php esc_html_e( 'Customers designate', 'equine-event-manager' ); ?></button>
+	<button type="button" class="eem-mode-btn<?php echo $tack_on ? '' : ' active'; ?>" data-tack-mode="off" data-eem-action="toggle-tack-mode"><?php esc_html_e( 'Off', 'equine-event-manager' ); ?></button>
+	<button type="button" class="eem-mode-btn<?php echo $tack_on ? ' active' : ''; ?>" data-tack-mode="customer" data-eem-action="toggle-tack-mode"><?php esc_html_e( 'On', 'equine-event-manager' ); ?></button>
 </div>
-<input type="hidden" name="en_reservation[stall_tack_mode]" id="eem-stall-tack-mode-input" value="<?php echo esc_attr( $tack_mode ); ?>">
-<span class="eem-field-hint" data-eem-tack-hint><?php
-	if ( 'off' === $tack_mode ) {
-		esc_html_e( 'No tack stalls. Customers buy stalls normally and required shavings applies to every stall.', 'equine-event-manager' );
-	} elseif ( 'admin' === $tack_mode ) {
-		esc_html_e( 'You choose which stall numbers are tack. They are excluded from required shavings.', 'equine-event-manager' );
-	} else {
-		esc_html_e( 'Buyers can mark one of their stalls as tack at checkout. Tack stalls are excluded from required shavings.', 'equine-event-manager' );
-	}
-?></span>
-<div class="eem-tack-admin-wrap" data-eem-tack-admin-wrap style="margin-top:10px;<?php echo 'admin' === $tack_mode ? '' : 'display:none'; ?>">
-	<div class="eem-tag-select" id="eem-tack-admin-select">
-		<div class="eem-tag-select-input" data-eem-action="tag-open">
-			<?php foreach ( $tack_admin_stalls as $ts_val ) : ?>
-			<span class="eem-tag-chip" data-value="<?php echo esc_attr( (string) $ts_val ); ?>">
-				<?php echo esc_html( (string) $ts_val ); ?>
-				<button type="button" class="eem-tag-chip-remove" data-eem-action="tag-remove" aria-label="<?php esc_attr_e( 'Remove', 'equine-event-manager' ); ?>">&#xd7;</button>
-				<input type="hidden" name="eem_tack_admin_stalls[]" value="<?php echo esc_attr( (string) $ts_val ); ?>">
-			</span>
-			<?php endforeach; ?>
-			<input class="eem-tag-search" type="text" placeholder="<?php esc_attr_e( 'Type a stall number…', 'equine-event-manager' ); ?>" data-eem-input-action="tag-search" data-eem-tag-target="eem-tack-admin-select">
-		</div>
-		<div class="eem-tag-dropdown" id="eem-tack-admin-dropdown">
-			<div class="eem-tag-dropdown-empty" style="display:none"><?php esc_html_e( 'No matching stall numbers.', 'equine-event-manager' ); ?></div>
-		</div>
-	</div>
-	<span class="eem-field-hint"><?php esc_html_e( 'Type a stall number to filter, then click to mark it as a tack stall. Click × on a chip to remove.', 'equine-event-manager' ); ?></span>
-</div>
-<input type="hidden" name="eem_tack_admin_stalls_present" value="1">
+<input type="hidden" name="en_reservation[stall_tack_mode]" id="eem-stall-tack-mode-input" value="<?php echo esc_attr( $tack_val ); ?>">
+<span class="eem-field-hint"><?php esc_html_e( 'When on, buyers flag a tack stall at checkout — it is excluded from required shavings. You assign or override the actual tack stall on the Stall Chart ("Mark as Tack Stall").', 'equine-event-manager' ); ?></span>
 <?php
 $tack_html = (string) ob_get_clean();
 eem_render_editor_field_row( array(

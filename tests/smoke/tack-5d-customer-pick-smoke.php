@@ -67,9 +67,9 @@ $src = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'public/class-equine-event
 $css = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/css/public.css' );
 $check( 'JS sync helper present', false !== strpos( $src, 'function syncStallTackDesignate' ) );
 $check( 'sync helper invoked from syncStallPicker', false !== strpos( $src, 'syncStallTackDesignate(picker, selected)' ) );
-// T1 — the note writer is now mode-aware (customer single pick OR admin-assigned
-// matches), writing the joined list rather than a single sanitize_text_field call.
-$check( 'submission writes the Tack Stalls note', false !== strpos( $src, '"\nTack Stalls: " . implode' ) );
+// Note writer fires whenever tack is on (off !== mode) with the buyer's single
+// designated stall.
+$check( 'submission writes the Tack Stalls note', false !== strpos( $src, '"\nTack Stalls: " . sanitize_text_field' ) );
 $check( 'Tack Stalls is stripped from Special Requests', false !== strpos( $src, 'Tack Stalls|Add-On' ) );
 $check( 'CSS for the tack-designate block exists', false !== strpos( $css, '.stall-tack-designate' ) );
 
