@@ -254,6 +254,28 @@ room block exactly. The mockups are the binding visual spec for the build.
     data — multiple **group reservations**, **tack stalls**, **blocked** stalls —
     so the map demonstrates every state with realistic data, not just synthetic
     pseudo-random status.
+
+- **PRE-BUILD DECISIONS LOCKED (2026-06-07, Whitney):**
+  1. **Stall numbers are globally unique across barns** in an event (Montcrief
+     5001–5262, Burnett 1–473). The **label alone identifies a stall** — no
+     barn namespacing needed; blocked/tack/orders/inventory all key off the number.
+  2. **Every tab in the connected sheet = a barn.** No tab-picker UI; if the admin
+     adds a non-map tab it would render as a barn (document this in the connect UI).
+  3. **Scope = stalls AND RV lots** — one unified map system; a barn tab can be an
+     RV-lot area. (Bigger than stalls-only, but single codebase.)
+  4. **Group-contiguous seating is IN this build.** "Generate Assignments" seats
+     group members in **adjacent stalls** so groups cluster on the map (colors next
+     to each other). Goal: *always keep a group's stalls together.*
+  5. **Group identity model (free text is NOT the grouping key):**
+     - **Checkout:** free-text Group Name WITH **autocomplete** suggesting groups
+       already used for this event (so the 2nd buyer picks "Smith Barn" instead of
+       retyping/misspelling). Normalize (trim / collapse spaces / case-insensitive)
+       for matching.
+     - **Admin is the source of truth:** on the Stall Chart the admin reconciles /
+       merges / assigns orders into a **canonical group** (fixes misspellings like
+       "Smtih Barn"). The map seats by the **admin-assigned group**, not raw text.
+     - Replaces the current free-text-notes grouping (which would split a group on
+       any misspelling across separate orders).
 - **Conventions (v1):** values + positions only — NOT fill color / borders /
   merged cells (CSV export drops formatting; merges blank all but top-left).
   Reading fill-color for zones is a later add.
