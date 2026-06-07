@@ -1232,6 +1232,70 @@ class EEM_Reservation_Editor_Page {
 	}
 
 	/**
+	 * AJAX: connect (or refresh) a stall-map Google Sheet for a reservation.
+	 *
+	 * Imports the pasted "Publish to web" URL via {@see EEM_Stall_Map_Importer},
+	 * snapshots it onto the reservation, and returns the discovered barns with
+	 * per-barn stall counts + the grand total (map-driven inventory) for the
+	 * editor's "✓ N barns found" status + preview. Rejects sheets whose stall
+	 * numbers collide across barns (the labels must be globally unique).
+	 *
+	 * @return void
+	 */
+	public static function ajax_stall_map_connect() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+		check_ajax_referer( 'eem_reservation_editor', '_eem_editor_nonce' );
+
+		$reservation_id = isset( $_POST['reservation_id'] ) ? absint( wp_unslash( $_POST['reservation_id'] ) ) : 0;
+		$post           = $reservation_id > 0 ? get_post( $reservation_id ) : null;
+		if ( ! $post || EEM_Reservations_CPT::POST_TYPE !== $post->post_type ) {
+			wp_send_json_error( array( 'message' => __( 'Reservation not found.', 'equine-event-manager' ) ), 404 );
+		}
+
+		$url = isset( $_POST['sheet_url'] ) ? trim( (string) wp_unslash( $_POST['sheet_url'] ) ) : '';
+		if ( '' === $url ) {
+			wp_send_json_error( array( 'message' => __( 'Paste your Google Sheet "Publish to web" link first.', 'equine-event-manager' ) ), 400 );
+		}
+
+		$snapshot = EEM_Stall_Map_Importer::import( $url );
+		if ( is_wp_error( $snapshot ) ) {
+			wp_send_json_error( array( 'message' => $snapshot->get_error_message() ), 422 );
+		}
+
+		$dupes = EEM_Stall_Map_Importer::find_duplicate_labels( $snapshot );
+		if ( ! empty( $dupes ) ) {
+			wp_send_json_error( array(
+				'message' => sprintf(
+					/* translators: %s: comma-separated duplicated stall numbers */
+					__( 'These stall numbers are used in more than one barn: %s. Every stall number must be unique across the whole event.', 'equine-event-manager' ),
+					implode( ', ', $dupes )
+				),
+			), 422 );
+		}
+
+		EEM_Stall_Map_Importer::save_to_reservation( $reservation_id, $snapshot );
+
+		$per   = EEM_Stall_Map_Importer::barn_stall_counts( $snapshot );
+		$barns = array();
+		foreach ( $per as $name => $count ) {
+			$barns[] = array( 'name' => $name, 'stalls' => $count );
+		}
+		wp_send_json_success( array(
+			'reservation_id' => $reservation_id,
+			'barns'          => $barns,
+			'total_stalls'   => EEM_Stall_Map_Importer::count_stalls( $snapshot ),
+			'synced_at'      => (int) ( $snapshot['synced_at'] ?? time() ),
+			'message'        => sprintf(
+				/* translators: %d: number of barns found */
+				_n( '%d barn found.', '%d barns found.', count( $barns ), 'equine-event-manager' ),
+				count( $barns )
+			),
+		) );
+	}
+
+	/**
 	 * AJAX: rename the reservation — called by the pencil inline-edit form in the
 	 * editor header (FIX 1, 2.3.43).  Accepts `eem_res_name` (the new title; empty
 	 * = clear override and mirror immediately from the linked event title).  Sets

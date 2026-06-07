@@ -2414,6 +2414,10 @@
 		'toggle-tack-mode': function (target) {
 			toggleTackMode(target);
 		},
+		/* v4 — connect/refresh a stall-map Google Sheet. */
+		'stall-map-connect': function (target) {
+			stallMapConnect(target);
+		},
 
 		/* C8 — Stall row builder */
 		'stall-add-row': function () {
@@ -4999,6 +5003,49 @@ function toggleStallInventoryType(btn) {
 	syncStallLegacyMode();
 	applyStallRowsSimpleMode();
 	updateStallInventoryDisplay();
+}
+
+/* v4 Stall Mapping — connect/refresh the facility-map Google Sheet. Reads the
+   pasted Publish-to-web URL, posts to the eem_stall_map_connect AJAX handler
+   (reusing the editor nonce + reservation id already in the page), and renders
+   the "✓ N barns · M stalls total" status with per-barn counts. */
+function stallMapConnect(btn) {
+	var urlInput = document.getElementById('eem-stall-map-url');
+	var statusEl = document.querySelector('[data-eem-stall-map-status]');
+	if (!urlInput || !statusEl) { return; }
+	var url = urlInput.value.trim();
+	if (!url) { statusEl.innerHTML = '<span class="eem-stall-map-err">Paste your Google Sheet “Publish to web” link first.</span>'; return; }
+	var nonceInput = document.querySelector('input[name="_eem_editor_nonce"]');
+	var idEl = document.querySelector('[data-reservation-id]');
+	var nonce = nonceInput ? nonceInput.value : '';
+	var rid = idEl ? idEl.getAttribute('data-reservation-id') : '';
+	var orig = btn.textContent;
+	btn.disabled = true; btn.textContent = 'Connecting…';
+	statusEl.innerHTML = '<span class="eem-stall-map-pending">Importing…</span>';
+	var body = new URLSearchParams();
+	body.set('action', 'eem_stall_map_connect');
+	body.set('_eem_editor_nonce', nonce);
+	body.set('reservation_id', rid);
+	body.set('sheet_url', url);
+	fetch(window.ajaxurl || '/wp-admin/admin-ajax.php', {
+		method: 'POST', credentials: 'same-origin',
+		headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+		body: body.toString()
+	}).then(function (r) { return r.json(); }).then(function (res) {
+		btn.disabled = false; btn.textContent = 'Refresh';
+		if (res && res.success) {
+			var d = res.data;
+			var bits = (d.barns || []).map(function (b) { return b.name + ' (' + b.stalls + ')'; }).join(', ');
+			statusEl.innerHTML = '<span class="eem-stall-map-ok">✓ ' + (d.barns ? d.barns.length : 0) + ' barn(s) · ' + d.total_stalls + ' stalls total</span> <span class="eem-stall-map-barns">' + bits + '</span>';
+			if (window.EEM && EEM.showSaveToast) { EEM.showSaveToast(d.message || 'Stall map connected.', { variant: 'success', sub: '' }); }
+		} else {
+			var msg = (res && res.data && res.data.message) ? res.data.message : 'Could not connect the sheet.';
+			statusEl.innerHTML = '<span class="eem-stall-map-err">' + msg + '</span>';
+		}
+	}).catch(function () {
+		btn.disabled = false; btn.textContent = orig;
+		statusEl.innerHTML = '<span class="eem-stall-map-err">Network error — try again.</span>';
+	});
 }
 
 /* Tack Stall On/Off toggle. Sets the active button + writes the hidden

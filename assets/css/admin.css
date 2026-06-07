@@ -1033,6 +1033,23 @@ a.eem-btn-add:hover {
 	border-bottom: none;
 }
 
+/* v4 Stall Mapping — Edit Reservation connection field. */
+.eem-stall-map-row {
+	display: flex;
+	gap: var(--eem-space-2);
+	align-items: center;
+	flex-wrap: wrap;
+}
+.eem-stall-map-status {
+	margin-top: var(--eem-space-2);
+	font-size: 13px;
+	line-height: 1.5;
+}
+.eem-stall-map-ok { color: var(--eem-good, #16A34A); font-weight: 700; }
+.eem-stall-map-err { color: #b93742; font-weight: 600; }
+.eem-stall-map-pending { color: var(--eem-muted, #5f6f85); }
+.eem-stall-map-barns { color: var(--eem-muted, #5f6f85); margin-left: 6px; }
+
 .eem-field-row:first-child {
 	padding-top: 0;
 }

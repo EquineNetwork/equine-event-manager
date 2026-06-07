@@ -485,6 +485,41 @@ eem_render_editor_field_row( array(
 	'control_html' => $stall_rows_html,
 ) );
 
+// ── v4 Stall Mapping — connect a Google Sheet (drives "Pick from layout") ──
+$stall_map_snap = ( isset( $data['stall_map'] ) && is_array( $data['stall_map'] ) ) ? $data['stall_map'] : array();
+$stall_map_src  = isset( $stall_map_snap['source_url'] ) ? (string) $stall_map_snap['source_url'] : '';
+ob_start();
+?>
+<div class="eem-stall-map-connect" data-eem-stall-map>
+	<div class="eem-stall-map-row">
+		<input type="url" class="eem-field-input" id="eem-stall-map-url" placeholder="<?php esc_attr_e( 'Paste your Google Sheet “Publish to web” link…', 'equine-event-manager' ); ?>" value="<?php echo esc_attr( $stall_map_src ); ?>" style="max-width:520px">
+		<button type="button" class="eem-btn-add" data-eem-action="stall-map-connect"><?php echo $stall_map_src ? esc_html__( 'Refresh', 'equine-event-manager' ) : esc_html__( 'Connect', 'equine-event-manager' ); ?></button>
+	</div>
+	<div class="eem-stall-map-status" data-eem-stall-map-status>
+		<?php
+		if ( ! empty( $stall_map_snap['barns'] ) ) {
+			$smc_counts = EEM_Stall_Map_Importer::barn_stall_counts( $stall_map_snap );
+			$smc_total  = EEM_Stall_Map_Importer::count_stalls( $stall_map_snap );
+			$smc_bits   = array();
+			foreach ( $smc_counts as $smc_bn => $smc_bc ) {
+				$smc_bits[] = esc_html( $smc_bn ) . ' (' . (int) $smc_bc . ')';
+			}
+			echo '<span class="eem-stall-map-ok">&#x2713; ' . esc_html( sprintf( /* translators: %d: barn count */ _n( '%d barn', '%d barns', count( $smc_counts ), 'equine-event-manager' ), count( $smc_counts ) ) ) . ' &middot; ' . (int) $smc_total . ' ' . esc_html__( 'stalls total', 'equine-event-manager' ) . '</span> ';
+			echo '<span class="eem-stall-map-barns">' . implode( ', ', $smc_bits ) . '</span>'; // phpcs:ignore -- bits pre-escaped
+		}
+		?>
+	</div>
+</div>
+<span class="eem-field-hint"><?php esc_html_e( 'Used when Customer Selection is “Pick from layout”. Build your facility map in Google Sheets (one tab per barn), then File → Share → Publish to web and paste the link. Every tab is a barn; every numbered cell is a stall. We import a snapshot — “Refresh” re-pulls.', 'equine-event-manager' ); ?></span>
+<?php
+$stall_map_html = (string) ob_get_clean();
+eem_render_editor_field_row( array(
+	'label'        => __( 'Stall Map', 'equine-event-manager' ),
+	'label_sub'    => __( 'Google Sheet → clickable layout', 'equine-event-manager' ),
+	'row_id'       => 'row-stall-map-connect',
+	'control_html' => $stall_map_html,
+) );
+
 // ── Blocked Stall Numbers tag-select ──
 ob_start();
 ?>
