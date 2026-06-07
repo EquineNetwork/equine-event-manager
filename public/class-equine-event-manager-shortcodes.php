@@ -246,6 +246,10 @@ class EEM_Shortcodes {
 		$checkin_time                 = $checkin_checkout_enabled && ! empty( $data['checkin_time'] ) ? $this->format_time_label( $data['checkin_time'] ) : '';
 		$checkout_time                = $checkin_checkout_enabled && ! empty( $data['checkout_time'] ) ? $this->format_time_label( $data['checkout_time'] ) : '';
 		$group_reservations_enabled   = ! empty( $data['group_reservations_enabled'] );
+		// v4 Slice 6 — existing group names for this reservation, offered as a
+		// datalist on the checkout Group Name field so travellers reuse an exact
+		// spelling instead of misspelling a variant that fragments the group.
+		$group_existing_names         = $group_reservations_enabled ? $this->get_existing_group_names( (int) $reservation_id ) : array();
 		$group_grounds_fee_enabled    = ! empty( $data['group_rider_grounds_fee_enabled'] ) && (float) $data['group_rider_grounds_fee_amount'] > 0;
 		$group_deposit_enabled        = ! empty( $data['group_rider_deposit_enabled'] ) && (float) $data['group_rider_deposit_amount'] > 0;
 		$show_section_toggles         = ( ! empty( $data['stalls_enabled'] ) ? 1 : 0 ) + ( ! empty( $data['rv_enabled'] ) ? 1 : 0 ) > 1;
@@ -490,8 +494,15 @@ class EEM_Shortcodes {
 						<?php if ( $group_reservations_enabled ) : ?>
 						<label class="eem-group-name-field">
 							<span><?php esc_html_e( 'Group Name', 'equine-event-manager' ); ?></span>
-							<input type="text" name="group_name" maxlength="100" autocomplete="off" />
-							<small class="eem-reservation-help"><?php esc_html_e( 'Optional — if you\'re travelling with a group, enter the group name so we can try to place you together.', 'equine-event-manager' ); ?></small>
+							<input type="text" name="group_name" maxlength="100" autocomplete="off"<?php echo ! empty( $group_existing_names ) ? ' list="eem-group-names"' : ''; ?> />
+							<?php if ( ! empty( $group_existing_names ) ) : ?>
+							<datalist id="eem-group-names">
+								<?php foreach ( $group_existing_names as $eem_gname ) : ?>
+								<option value="<?php echo esc_attr( $eem_gname ); ?>"></option>
+								<?php endforeach; ?>
+							</datalist>
+							<?php endif; ?>
+							<small class="eem-reservation-help"><?php esc_html_e( 'Optional — if you\'re travelling with a group, enter the group name so we can try to place you together. Pick an existing name from the list to join that group.', 'equine-event-manager' ); ?></small>
 						</label>
 						<?php endif; ?>
 					</div>
@@ -1411,6 +1422,41 @@ class EEM_Shortcodes {
 		$selection_mode = apply_filters( 'eem_stall_selection_mode', $selection_mode, $reservation_id, $data, $this );
 
 		return $this->sanitize_stall_selection_mode( $selection_mode );
+	}
+
+	/**
+	 * Distinct group names already used by orders on a reservation (v4 Slice 6).
+	 *
+	 * Powers the checkout Group Name datalist so a traveller joining an existing
+	 * group reuses the exact spelling rather than typing a near-miss variant that
+	 * fragments the group. Group names are non-sensitive (barn/team labels) and
+	 * are the shared key the whole grouping feature is built around, so surfacing
+	 * them on the form is intentional. Returns names sorted case-insensitively.
+	 *
+	 * @param int $reservation_id Reservation post ID.
+	 * @return string[] Distinct, trimmed group names.
+	 */
+	private function get_existing_group_names( int $reservation_id ): array {
+		if ( $reservation_id < 1 || ! class_exists( 'EEM_Orders_Repository' ) ) {
+			return array();
+		}
+		$orders = ( new EEM_Orders_Repository() )->get_orders( '', 'date', 'asc' );
+		$names  = array();
+		foreach ( (array) $orders as $order ) {
+			if ( absint( isset( $order['reservation_id'] ) ? $order['reservation_id'] : 0 ) !== $reservation_id ) {
+				continue;
+			}
+			$notes = (string) ( isset( $order['notes'] ) ? $order['notes'] : '' );
+			if ( preg_match( '/(?:^|\n)Group Name:\s*(.+)$/im', $notes, $m ) ) {
+				$name = trim( $m[1] );
+				if ( '' !== $name ) {
+					$names[ $name ] = true;
+				}
+			}
+		}
+		$names = array_keys( $names );
+		sort( $names, SORT_NATURAL | SORT_FLAG_CASE );
+		return $names;
 	}
 
 	/**

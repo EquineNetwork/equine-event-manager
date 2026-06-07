@@ -104,6 +104,7 @@ class EEM_Admin {
 		add_action( 'wp_ajax_eem_move_stall_assignment', array( $this, 'ajax_move_stall_assignment' ) );
 		add_action( 'wp_ajax_eem_toggle_tack_stall', array( $this, 'ajax_toggle_tack_stall' ) );
 		add_action( 'wp_ajax_eem_stall_map_action', array( $this, 'ajax_stall_map_action' ) );
+		add_action( 'wp_ajax_eem_group_rename', array( $this, 'ajax_group_rename' ) );
 		add_action( 'wp_ajax_eem_auto_assign', array( $this, 'ajax_auto_assign' ) );
 		add_action( 'wp_ajax_eem_create_order_customer_search', array( 'EEM_Create_Order_Page', 'ajax_customer_search' ) );
 		add_action( 'wp_ajax_eem_create_order_reservation_meta', array( 'EEM_Create_Order_Page', 'ajax_reservation_meta' ) );
@@ -2269,6 +2270,38 @@ class EEM_Admin {
 							</div>
 							<p class="eem-stall-chart-empty-note" hidden><?php esc_html_e( 'No assignment rows match this search.', 'equine-event-manager' ); ?></p>
 
+							<?php
+							// v4 Slice 6 — group reconciliation. Distinct group names across
+							// this reservation's orders, with an inline rename so the admin can
+							// fold a misspelled variant into the canonical group.
+							$eem_group_counts = array();
+							foreach ( $order_rows as $eem_or ) {
+								$eem_g = trim( (string) ( isset( $eem_or['group_name'] ) ? $eem_or['group_name'] : '' ) );
+								if ( '' !== $eem_g ) {
+									$eem_group_counts[ $eem_g ] = ( isset( $eem_group_counts[ $eem_g ] ) ? $eem_group_counts[ $eem_g ] : 0 ) + 1;
+								}
+							}
+							uksort( $eem_group_counts, 'strcasecmp' );
+							if ( ! empty( $eem_group_counts ) ) :
+							?>
+							<div class="eem-group-manage" data-eem-group-manage data-reservation-id="<?php echo (int) $reservation_id; ?>">
+								<button type="button" class="eem-stall-chart-group-toggle" data-eem-action="group-manage-toggle" aria-expanded="false">
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+									<?php esc_html_e( 'Manage Groups', 'equine-event-manager' ); ?>
+								</button>
+								<div class="eem-group-manage-panel" hidden>
+									<p class="eem-group-manage-hint"><?php esc_html_e( 'Rename a group to merge misspelled variants — every order in the group is updated. The admin-set name is the source of truth.', 'equine-event-manager' ); ?></p>
+									<?php foreach ( $eem_group_counts as $eem_gname => $eem_gcount ) : ?>
+									<div class="eem-group-manage-row" data-group-from="<?php echo esc_attr( (string) $eem_gname ); ?>">
+										<input type="text" class="eem-group-manage-input" value="<?php echo esc_attr( (string) $eem_gname ); ?>" data-role="group-name" aria-label="<?php esc_attr_e( 'Group name', 'equine-event-manager' ); ?>">
+										<span class="eem-group-manage-count"><?php echo esc_html( sprintf( /* translators: %d: order count */ _n( '%d order', '%d orders', (int) $eem_gcount, 'equine-event-manager' ), (int) $eem_gcount ) ); ?></span>
+										<button type="button" class="eem-btn-add" data-eem-action="group-rename-save"><?php esc_html_e( 'Save', 'equine-event-manager' ); ?></button>
+									</div>
+									<?php endforeach; ?>
+								</div>
+							</div>
+							<?php endif; ?>
+
 							<?php $this->render_stall_chart_order_count_table( $order_rows, $date_cols ); ?>
 
 						</div><!-- /panel-customer -->
@@ -2737,6 +2770,68 @@ class EEM_Admin {
 
 		wp_send_json_success( array(
 			'message' => $message,
+			'html'    => $html,
+		) );
+	}
+
+	/**
+	 * AJAX: reconcile a group name across a reservation's orders (v4 Slice 6).
+	 *
+	 * Renames every order whose Group Name equals `from` to `to` (case-sensitive
+	 * exact match on the stored label), so an admin can fold a misspelled variant
+	 * ("Smith Barn ", "smith barn") into the canonical group. The admin-assigned
+	 * name is the source of truth for grouping. Returns the re-rendered dynamic
+	 * region for an in-place swap. Reuses the eem_stall_chart_move nonce.
+	 *
+	 * @return void
+	 */
+	public function ajax_group_rename() {
+		check_ajax_referer( 'eem_stall_chart_move', '_wpnonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+
+		$reservation_id = isset( $_POST['reservation_id'] ) ? absint( wp_unslash( $_POST['reservation_id'] ) ) : 0;
+		$from           = isset( $_POST['from'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['from'] ) ) : '';
+		$to             = isset( $_POST['to'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['to'] ) ) : '';
+		$inv            = isset( $_POST['inv'] ) ? sanitize_key( wp_unslash( $_POST['inv'] ) ) : 'all';
+		$inv            = in_array( $inv, array( 'all', 'stalls', 'rv' ), true ) ? $inv : 'all';
+		$tab            = isset( $_POST['tab'] ) ? sanitize_key( wp_unslash( $_POST['tab'] ) ) : 'customer';
+		$tab            = in_array( $tab, array( 'location', 'customer' ), true ) ? $tab : 'customer';
+
+		if ( $reservation_id < 1 || 'en_reservation' !== get_post_type( $reservation_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'Reservation not found.', 'equine-event-manager' ) ), 404 );
+		}
+		$from = trim( $from );
+		$to   = trim( $to );
+		if ( '' === $from || '' === $to ) {
+			wp_send_json_error( array( 'message' => __( 'Both the current and new group name are required.', 'equine-event-manager' ) ), 400 );
+		}
+
+		$renamed = 0;
+		foreach ( $this->get_reservation_orders( $reservation_id ) as $order ) {
+			$current = $this->get_group_name_from_order_notes( (string) ( isset( $order['notes'] ) ? $order['notes'] : '' ) );
+			if ( $current === $from && isset( $order['order_key'] ) ) {
+				if ( $this->orders_repository->update_order_group_name( (string) $order['order_key'], $to ) ) {
+					$renamed++;
+				}
+			}
+		}
+
+		$config = $this->get_stall_chart_config( $reservation_id );
+		ob_start();
+		$this->render_stall_chart_dynamic_region( $reservation_id, $config, $inv, $tab );
+		$html = ob_get_clean();
+
+		wp_send_json_success( array(
+			'message' => sprintf(
+				/* translators: 1: number of orders, 2: new group name */
+				_n( '%1$d order moved to "%2$s".', '%1$d orders moved to "%2$s".', $renamed, 'equine-event-manager' ),
+				$renamed,
+				$to
+			),
+			'renamed' => $renamed,
 			'html'    => $html,
 		) );
 	}

@@ -561,6 +561,43 @@ class EEM_Orders_Repository {
 	}
 
 	/**
+	 * Set (or clear) an order's Group Name across all of its components (v4 Slice 6).
+	 *
+	 * The `Group Name:` note line is written into every component's notes at
+	 * checkout, so the admin reconciliation rename must rewrite it on each one to
+	 * keep them consistent. An empty $group_name removes the line entirely.
+	 *
+	 * @param string $order_key  Order key.
+	 * @param string $group_name New group name (empty clears it).
+	 * @return bool True when any component row was updated.
+	 */
+	public function update_order_group_name( $order_key, $group_name = '' ) {
+		$order = $this->get_order( $order_key );
+		if ( ! $order ) {
+			return false;
+		}
+
+		$group_name  = trim( sanitize_text_field( $group_name ) );
+		$updated_any = false;
+
+		foreach ( $order['components'] as $component ) {
+			$notes = isset( $component['notes'] ) ? (string) $component['notes'] : '';
+			$notes = ( '' === $group_name )
+				? $this->remove_note_line( $notes, 'Group Name' )
+				: $this->upsert_note_line( $notes, 'Group Name', $group_name );
+
+			$updated_any = $this->update_component_fields(
+				$component['table'],
+				$component['row_id'],
+				array( 'notes' => $notes ),
+				array( '%s' )
+			) || $updated_any;
+		}
+
+		return $updated_any;
+	}
+
+	/**
 	 * Auto-assign stall and RV units for a single order.
 	 *
 	 * Thin wrapper over {@see auto_assign_units_for_reservation()} scoped to one

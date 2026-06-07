@@ -4921,6 +4921,74 @@
 		document.querySelectorAll('[data-eem-smap-pop].open').forEach(function (p) { p.classList.remove('open'); });
 	});
 
+	/* v4 Slice 6 — group reconciliation. "Manage Groups" reveals an inline rename
+	   per distinct group; saving renames the group across every matching order so
+	   a misspelled variant folds into the canonical name. */
+	document.addEventListener('click', function (ev) {
+		var t = ev.target;
+		if (!t || !t.closest) return;
+
+		var toggle = t.closest('[data-eem-action="group-manage-toggle"]');
+		if (toggle) {
+			ev.preventDefault();
+			var panel = toggle.parentNode.querySelector('.eem-group-manage-panel');
+			if (panel) {
+				var open = panel.hasAttribute('hidden');
+				if (open) { panel.removeAttribute('hidden'); } else { panel.setAttribute('hidden', ''); }
+				toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+			}
+			return;
+		}
+
+		var saveBtn = t.closest('[data-eem-action="group-rename-save"]');
+		if (saveBtn) {
+			ev.preventDefault();
+			var row = saveBtn.closest('.eem-group-manage-row');
+			var wrap = saveBtn.closest('[data-eem-group-manage]');
+			if (!row || !wrap) return;
+			var from = row.getAttribute('data-group-from') || '';
+			var input = row.querySelector('[data-role="group-name"]');
+			var to = input ? input.value.trim() : '';
+			if (!to || to === from) { return; }
+			var cfg = window.eemStallChart || {};
+			var body = new URLSearchParams();
+			body.set('action', 'eem_group_rename');
+			body.set('_wpnonce', cfg.moveNonce || '');
+			body.set('reservation_id', wrap.getAttribute('data-reservation-id') || String(cfg.reservationId || ''));
+			body.set('from', from);
+			body.set('to', to);
+			body.set('inv', window._eemScInv || 'all');
+			body.set('tab', window._eemScTab || 'customer');
+			saveBtn.disabled = true;
+			fetch((cfg.ajaxUrl || window.ajaxurl || '/wp-admin/admin-ajax.php'), {
+				method: 'POST', credentials: 'same-origin',
+				headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+				body: body.toString()
+			}).then(function (r) { return r.json(); }).then(function (resp) {
+				saveBtn.disabled = false;
+				var data = (resp && resp.data) || {};
+				if (resp && resp.success && data.html) {
+					var region = document.getElementById('eem-stall-chart-dynamic');
+					if (region) {
+						region.innerHTML = data.html;
+						eemScApplyState(window._eemScInv || 'all', window._eemScTab || 'customer');
+						if (EEM.renderStallMaps) EEM.renderStallMaps();
+					}
+				}
+				if (window.EEM && window.EEM.showSaveToast) {
+					window.EEM.showSaveToast(data.message || (resp && resp.success ? 'Group updated.' : 'Could not rename the group.'),
+						{ variant: (resp && resp.success) ? 'success' : 'error', sub: '' });
+				}
+			}).catch(function () {
+				saveBtn.disabled = false;
+				if (window.EEM && window.EEM.showSaveToast) {
+					window.EEM.showSaveToast('Could not reach the server.', { variant: 'error', sub: '' });
+				}
+			});
+			return;
+		}
+	});
+
 	// Initialise stall chart inv/tab state from URL params on page load.
 	document.addEventListener('DOMContentLoaded', function () {
 		if (!document.querySelector('[data-eem-action="sc-inv-switch"]')) return;
