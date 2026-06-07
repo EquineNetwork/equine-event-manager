@@ -407,7 +407,7 @@ class EEM_Shortcodes {
 				</div>
 			<?php endif; ?>
 
-			<?php if ( ! $status['stalls_bookable'] && ! $status['rv_bookable'] && ! $status['shavings_bookable'] ) : ?>
+			<?php if ( ! $status['stalls_bookable'] && ! $status['rv_bookable'] && ! $status['shavings_bookable'] && empty( $status['other_bookable'] ) ) : ?>
 				<?php echo wp_kses_post( $this->render_notice( $this->get_reservation_status_message( $reservation, $data ) ) ); ?>
 			<?php else : ?>
 				<form
@@ -481,13 +481,18 @@ class EEM_Shortcodes {
 							</label>
 						</div>
 						<?php // V1 D2 — optional Group Name tag (clustering hint for stabling a
-						// travelling group together). Independent of the multi-rider "Group
-						// Reservation" feature. Lives in Contact Information, below email/phone. ?>
+						// travelling group together). v2: gated behind the per-reservation
+						// Group Reservations toggle (Edit Reservation is the single source of
+						// truth) — when groups are off for this reservation, the field is
+						// hidden on the customer form. Lives in Contact Information, below
+						// email/phone. ?>
+						<?php if ( $group_reservations_enabled ) : ?>
 						<label class="eem-group-name-field">
 							<span><?php esc_html_e( 'Group Name', 'equine-event-manager' ); ?></span>
 							<input type="text" name="group_name" maxlength="100" autocomplete="off" />
 							<small class="eem-reservation-help"><?php esc_html_e( 'Optional — if you\'re travelling with a group, enter the group name so we can try to place you together.', 'equine-event-manager' ); ?></small>
 						</label>
+						<?php endif; ?>
 					</div>
 
 					<?php if ( $data['stalls_enabled'] || $data['rv_enabled'] ) : ?>
@@ -7035,6 +7040,14 @@ RV Lot: " . $rv_lot['name'] );
 			'rv_lot_inventory'         => $rv_lot_inventory,
 			'rv_sold_out'               => $rv_sold_out,
 			'rv_bookable'               => $rv_open && ! $rv_sold_out,
+			// Group Reservations / Add-Ons / Pre-Entries are purchasable sections
+			// with no schedule window or sold-out concept, so "enabled" == bookable.
+			// A reservation offering only these (no stalls/RV) is still bookable —
+			// without this the form-vs-"not available" gate would hide it (the
+			// "groups on but not showing on front" bug). Edit Reservation drives this.
+			'other_bookable'            => ! empty( $data['group_reservations_enabled'] )
+				|| ! empty( $data['general_addons_enabled'] )
+				|| ! empty( $data['event_pre_entries_enabled'] ),
 		);
 	}
 
