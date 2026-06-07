@@ -2410,6 +2410,10 @@
 		'toggle-stall-customer-selection': function (target) {
 			toggleStallCustomerSelection(target);
 		},
+		/* T1 — Tack Stall mode (off / admin / customer). */
+		'toggle-tack-mode': function (target) {
+			toggleTackMode(target);
+		},
 
 		/* C8 — Stall row builder */
 		'stall-add-row': function () {
@@ -2473,6 +2477,10 @@
 				populateTagDropdownFromLabels(input, getStallLabels());
 			} else if (target === 'eem-blocked-rv-lots-select') {
 				populateTagDropdownFromLabels(input, getRvLotLabels());
+			} else if (target === 'eem-tack-admin-select') {
+				/* T1 — admin tack-stall tag-select populates from the same
+				   live stall-row labels as Blocked Stall Numbers. */
+				populateTagDropdownFromLabels(input, getStallLabels());
 			}
 			EEM.tagFilter(input);
 		}
@@ -4995,6 +5003,35 @@ function toggleStallInventoryType(btn) {
 	syncStallLegacyMode();
 	applyStallRowsSimpleMode();
 	updateStallInventoryDisplay();
+}
+
+/* T1 — Tack Stall mode toggle (off / admin / customer). Sets the active button,
+   writes the hidden input, shows the admin tag-select only in 'admin' mode, and
+   swaps the hint copy. */
+function toggleTackMode(btn) {
+	var mode = btn.dataset.tackMode || 'customer';
+	var group = btn.closest('[data-eem-tack-mode-btns]');
+	if (group) {
+		group.querySelectorAll('.eem-mode-btn').forEach(function (b) {
+			b.classList.toggle('active', b === btn);
+		});
+	}
+	var input = document.getElementById('eem-stall-tack-mode-input');
+	if (input) input.value = mode;
+
+	var wrap = document.querySelector('[data-eem-tack-admin-wrap]');
+	if (wrap) wrap.style.display = (mode === 'admin') ? '' : 'none';
+
+	var hint = document.querySelector('[data-eem-tack-hint]');
+	if (hint) {
+		if (mode === 'off') {
+			hint.textContent = 'No tack stalls. Customers buy stalls normally and required shavings applies to every stall.';
+		} else if (mode === 'admin') {
+			hint.textContent = 'You choose which stall numbers are tack. They are excluded from required shavings.';
+		} else {
+			hint.textContent = 'Buyers can mark one of their stalls as tack at checkout. Tack stalls are excluded from required shavings.';
+		}
+	}
 }
 
 /* Customer Selection toggle (quantity / pick_layout). */
