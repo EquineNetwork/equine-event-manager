@@ -2028,6 +2028,11 @@ class EEM_Admin {
 		$stall_map_snapshot = class_exists( 'EEM_Stall_Map_Importer' )
 			? EEM_Stall_Map_Importer::get_for_reservation( $reservation_id )
 			: array();
+		// v4 Slice 8: the By-Location stall map shows stall-kind tabs only; RV-kind
+		// tabs feed the RV inventory/matrix instead.
+		if ( ! empty( $stall_map_snapshot['barns'] ) ) {
+			$stall_map_snapshot = EEM_Stall_Map_Importer::snapshot_of_kind( $stall_map_snapshot, 'stall' );
+		}
 		$has_stall_map = ! empty( $stall_map_snapshot['barns'] );
 		$stall_map_overlay = $has_stall_map
 			? $this->build_stall_map_overlay_state( $order_rows, $this->get_raw_blocked_stall_labels( $reservation_id ) )
@@ -4189,6 +4194,9 @@ class EEM_Admin {
 		// sheet's tabs — one tab = one barn, every numbered cell = a stall — so the
 		// matrix, the assignment pool, and Available Stall Inventory all read the
 		// same source the customer + admin maps render from. ──
+		$map_rv_lots      = array();   // v4 Slice 8: RV lots from RV-kind tabs.
+		$map_rv_zone_map  = array();   // lot label => RV barn (zone) name.
+		$map_rv_zones     = array();   // RV barn names.
 		if ( class_exists( 'EEM_Stall_Map_Importer' ) ) {
 			$chart_map_snapshot = EEM_Stall_Map_Importer::get_for_reservation( (int) $reservation_id );
 			if ( ! empty( $chart_map_snapshot['barns'] ) ) {
@@ -4197,17 +4205,28 @@ class EEM_Admin {
 				$barn_names  = array();
 				foreach ( (array) $chart_map_snapshot['barns'] as $chart_barn ) {
 					$chart_barn_name = (string) ( isset( $chart_barn['name'] ) ? $chart_barn['name'] : '' );
+					// v4 Slice 8: RV-named tabs supply RV lots, not stalls.
+					$chart_is_rv = ( 'rv' === EEM_Stall_Map_Importer::barn_kind( (array) $chart_barn ) );
 					if ( '' !== $chart_barn_name ) {
-						$barn_names[] = $chart_barn_name;
+						if ( $chart_is_rv ) {
+							$map_rv_zones[] = $chart_barn_name;
+						} else {
+							$barn_names[] = $chart_barn_name;
+						}
 					}
 					foreach ( (array) ( isset( $chart_barn['grid'] ) ? $chart_barn['grid'] : array() ) as $chart_grow ) {
 						foreach ( (array) $chart_grow as $chart_cell ) {
 							if ( isset( $chart_cell['type'], $chart_cell['label'] )
 								&& 'stall' === $chart_cell['type']
 								&& '' !== (string) $chart_cell['label'] ) {
-								$chart_label                = (string) $chart_cell['label'];
-								$stall_units[]              = $chart_label;
-								$barn_map[ $chart_label ]   = $chart_barn_name;
+								$chart_label = (string) $chart_cell['label'];
+								if ( $chart_is_rv ) {
+									$map_rv_lots[]                = $chart_label;
+									$map_rv_zone_map[ $chart_label ] = $chart_barn_name;
+								} else {
+									$stall_units[]            = $chart_label;
+									$barn_map[ $chart_label ] = $chart_barn_name;
+								}
 							}
 						}
 					}
@@ -4269,6 +4288,19 @@ class EEM_Admin {
 			}
 			$rv_zone_options = array_values( array_unique( $rv_zone_options ) );
 			sort( $rv_zone_options, SORT_NATURAL | SORT_FLAG_CASE );
+		}
+
+		// ── v4 Slice 8: RV-kind map tabs supersede legacy RV lots. Each RV tab is
+		// a zone; every numbered cell is an RV lot named by its label. ──
+		$rv_barn_map = array();
+		if ( ! empty( $map_rv_lots ) ) {
+			$rv_lot_names    = array_values( array_unique( $map_rv_lots ) );
+			$rv_zone_map     = $map_rv_zone_map;
+			$rv_barn_map     = $map_rv_zone_map; // label => zone (for contiguity).
+			$rv_zone_options = array_values( array_unique( $map_rv_zones ) );
+			sort( $rv_zone_options, SORT_NATURAL | SORT_FLAG_CASE );
+			$rv_lots         = array(); // Map supersedes the legacy lot config.
+			$blocked_rv_lots = $this->sanitize_chart_unit_list( is_array( $blocked_rv_lots ) ? $blocked_rv_lots : array(), $rv_lot_names );
 		}
 
 		return array(

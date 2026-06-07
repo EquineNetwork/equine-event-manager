@@ -1566,6 +1566,11 @@ class EEM_Shortcodes {
 			// exists, customers pick on the real map. Otherwise fall back to the
 			// canonical "Pick Your Stalls" row picker, then the legacy block selector.
 			$eem_stall_map_snapshot = EEM_Stall_Map_Importer::get_for_reservation( (int) $reservation_id );
+			// v4 Slice 8: the stall picker shows stall-kind tabs only (RV-kind tabs
+			// drive the RV picker instead).
+			if ( ! empty( $eem_stall_map_snapshot['barns'] ) ) {
+				$eem_stall_map_snapshot = EEM_Stall_Map_Importer::snapshot_of_kind( $eem_stall_map_snapshot, 'stall' );
+			}
 			$eem_has_stall_map      = ! empty( $eem_stall_map_snapshot['barns'] );
 			?>
 			<?php if ( $eem_has_stall_map ) : ?>

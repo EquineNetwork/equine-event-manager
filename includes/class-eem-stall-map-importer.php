@@ -183,6 +183,10 @@ class EEM_Stall_Map_Importer {
 			$out[] = array(
 				'name' => $barn['name'],
 				'gid'  => $barn['gid'],
+				// v4 Slice 8: a tab whose name reads as RV (e.g. "RV North",
+				// "North RV", "RV - Lot A") supplies RV lots instead of stalls, so
+				// stalls + RV live in one published sheet.
+				'kind' => self::classify_barn_kind( $barn['name'] ),
 				'rows' => count( $grid ),
 				'cols' => empty( $grid ) ? 0 : count( $grid[0] ),
 				'grid' => $grid,
@@ -338,5 +342,57 @@ class EEM_Stall_Map_Importer {
 		return array_map( static function ( $b ) {
 			return (string) ( $b['name'] ?? '' );
 		}, $snapshot['barns'] ?? array() );
+	}
+
+	/**
+	 * Classify a tab as supplying RV lots or stalls from its name (v4 Slice 8).
+	 *
+	 * A tab whose name contains "RV" as a whole word is treated as RV; anything
+	 * else is a stall barn. This lets one published sheet hold both — e.g. tabs
+	 * "Montcrief", "Burnett" (stalls) alongside "RV North", "North RV" (lots).
+	 *
+	 * @param string $name Tab name.
+	 * @return string 'rv' | 'stall'
+	 */
+	public static function classify_barn_kind( string $name ): string {
+		return preg_match( '/(^|[\s\-_])rv([\s\-_]|$)/i', trim( $name ) ) ? 'rv' : 'stall';
+	}
+
+	/**
+	 * A barn's kind, defaulting to 'stall' for snapshots imported before Slice 8.
+	 *
+	 * @param array $barn Barn structure.
+	 * @return string 'rv' | 'stall'
+	 */
+	public static function barn_kind( array $barn ): string {
+		$kind = isset( $barn['kind'] ) ? (string) $barn['kind'] : '';
+		return 'rv' === $kind ? 'rv' : 'stall';
+	}
+
+	/**
+	 * Barns of a given kind ('stall' | 'rv'), in tab order.
+	 *
+	 * @param array  $snapshot Snapshot structure.
+	 * @param string $kind     'stall' | 'rv'.
+	 * @return array<int,array> Matching barn structures.
+	 */
+	public static function barns_of_kind( array $snapshot, string $kind ): array {
+		$kind = 'rv' === $kind ? 'rv' : 'stall';
+		return array_values( array_filter( (array) ( $snapshot['barns'] ?? array() ), static function ( $b ) use ( $kind ) {
+			return self::barn_kind( (array) $b ) === $kind;
+		} ) );
+	}
+
+	/**
+	 * A snapshot restricted to barns of one kind (so the existing stall helpers —
+	 * count_stalls, barn_stats, stall_labels — operate on just that kind).
+	 *
+	 * @param array  $snapshot Snapshot structure.
+	 * @param string $kind     'stall' | 'rv'.
+	 * @return array Snapshot with only matching barns.
+	 */
+	public static function snapshot_of_kind( array $snapshot, string $kind ): array {
+		$snapshot['barns'] = self::barns_of_kind( $snapshot, $kind );
+		return $snapshot;
 	}
 }

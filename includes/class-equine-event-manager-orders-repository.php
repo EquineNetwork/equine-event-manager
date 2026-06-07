@@ -1182,6 +1182,7 @@ class EEM_Orders_Repository {
 		// Stalls + their barn (label => tab name) come from the sheet so the
 		// auto-assign pool + group-contiguous fill operate on the real facility,
 		// matching EEM_Admin::get_stall_chart_config(). ──
+		$map_rv_units = array(); // v4 Slice 8: RV lots from RV-kind tabs.
 		if ( class_exists( 'EEM_Stall_Map_Importer' ) ) {
 			$repo_map_snapshot = EEM_Stall_Map_Importer::get_for_reservation( (int) $reservation_id );
 			if ( ! empty( $repo_map_snapshot['barns'] ) ) {
@@ -1189,14 +1190,20 @@ class EEM_Orders_Repository {
 				$barn_map    = array();
 				foreach ( (array) $repo_map_snapshot['barns'] as $repo_barn ) {
 					$repo_barn_name = (string) ( isset( $repo_barn['name'] ) ? $repo_barn['name'] : '' );
+					$repo_is_rv     = ( 'rv' === EEM_Stall_Map_Importer::barn_kind( (array) $repo_barn ) );
 					foreach ( (array) ( isset( $repo_barn['grid'] ) ? $repo_barn['grid'] : array() ) as $repo_grow ) {
 						foreach ( (array) $repo_grow as $repo_cell ) {
 							if ( isset( $repo_cell['type'], $repo_cell['label'] )
 								&& 'stall' === $repo_cell['type']
 								&& '' !== (string) $repo_cell['label'] ) {
-								$repo_label              = (string) $repo_cell['label'];
-								$stall_units[]           = $repo_label;
-								$barn_map[ $repo_label ] = $repo_barn_name;
+								$repo_label = (string) $repo_cell['label'];
+								if ( $repo_is_rv ) {
+									$map_rv_units[]          = $repo_label;
+									$barn_map[ $repo_label ] = $repo_barn_name; // RV contiguity by zone.
+								} else {
+									$stall_units[]           = $repo_label;
+									$barn_map[ $repo_label ] = $repo_barn_name;
+								}
 							}
 						}
 					}
@@ -1214,14 +1221,19 @@ class EEM_Orders_Repository {
 			}
 		}
 
-		// ── RV units: V1 _en_rv_rows wins; legacy _en_rv_lots is fallback ─── //
+		// ── RV units: map RV tabs win; then V1 _en_rv_rows; then legacy _en_rv_lots ─ //
 		$rv_lots = array();
-		$v1_rv_rows = get_post_meta( $reservation_id, '_en_rv_rows', true );
-		if ( is_array( $v1_rv_rows ) && ! empty( $v1_rv_rows ) ) {
-			$rv_units = $this->expand_rv_lot_names_from_v1_rows( $v1_rv_rows );
+		if ( ! empty( $map_rv_units ) ) {
+			// v4 Slice 8: RV-kind map tabs supersede the legacy RV lot config.
+			$rv_units = array_values( array_unique( $map_rv_units ) );
 		} else {
-			$rv_lots  = get_post_meta( $reservation_id, '_en_rv_lots', true );
-			$rv_units = $this->get_chart_rv_lot_names( $rv_lots );
+			$v1_rv_rows = get_post_meta( $reservation_id, '_en_rv_rows', true );
+			if ( is_array( $v1_rv_rows ) && ! empty( $v1_rv_rows ) ) {
+				$rv_units = $this->expand_rv_lot_names_from_v1_rows( $v1_rv_rows );
+			} else {
+				$rv_lots  = get_post_meta( $reservation_id, '_en_rv_lots', true );
+				$rv_units = $this->get_chart_rv_lot_names( $rv_lots );
+			}
 		}
 
 		// ── Blocked RV: try legacy key first, fall back to V1 key ─────────── //

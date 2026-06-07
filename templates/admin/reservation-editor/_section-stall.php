@@ -494,7 +494,7 @@ $stall_map_snap = ( isset( $data['stall_map'] ) && is_array( $data['stall_map'] 
 $stall_map_src  = isset( $stall_map_snap['source_url'] ) ? (string) $stall_map_snap['source_url'] : '';
 ob_start();
 ?>
-<div class="eem-stall-map-connect" data-eem-stall-map data-eem-stall-map-total="<?php echo (int) ( ! empty( $stall_map_snap['barns'] ) ? EEM_Stall_Map_Importer::count_stalls( $stall_map_snap ) : 0 ); ?>">
+<div class="eem-stall-map-connect" data-eem-stall-map data-eem-stall-map-total="<?php echo (int) ( ! empty( $stall_map_snap['barns'] ) ? EEM_Stall_Map_Importer::count_stalls( EEM_Stall_Map_Importer::snapshot_of_kind( $stall_map_snap, 'stall' ) ) : 0 ); ?>">
 	<div class="eem-stall-map-row">
 		<input type="url" class="eem-field-input" id="eem-stall-map-url" placeholder="<?php esc_attr_e( 'Paste your Google Sheet “Publish to web” link…', 'equine-event-manager' ); ?>" value="<?php echo esc_attr( $stall_map_src ); ?>" style="max-width:520px">
 		<button type="button" class="eem-btn-add" data-eem-action="stall-map-connect"><?php echo $stall_map_src ? esc_html__( 'Refresh', 'equine-event-manager' ) : esc_html__( 'Connect', 'equine-event-manager' ); ?></button>
