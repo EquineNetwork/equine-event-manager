@@ -990,6 +990,31 @@ class EEM_Orders_Repository {
 	}
 
 	/**
+	 * Order map unit labels by barn (tab order) then natural label (v4).
+	 *
+	 * Mirrors EEM_Admin::sort_units_by_barn — map snapshots collect labels in
+	 * grid-traversal order, but the auto-assign pool wants 1, 2, 3 within each
+	 * barn (in tab order) so lowest-first fill is intuitive.
+	 *
+	 * @param array $units      Unit labels.
+	 * @param array $unit_barn  label => barn name.
+	 * @param array $barn_order Barn names in tab order.
+	 * @return array Sorted labels.
+	 */
+	private function sort_map_units_by_barn( array $units, array $unit_barn, array $barn_order ) {
+		$index = array_flip( array_values( array_unique( $barn_order ) ) );
+		usort( $units, static function ( $a, $b ) use ( $unit_barn, $index ) {
+			$ba = isset( $unit_barn[ $a ], $index[ $unit_barn[ $a ] ] ) ? $index[ $unit_barn[ $a ] ] : PHP_INT_MAX;
+			$bb = isset( $unit_barn[ $b ], $index[ $unit_barn[ $b ] ] ) ? $index[ $unit_barn[ $b ] ] : PHP_INT_MAX;
+			if ( $ba !== $bb ) {
+				return $ba <=> $bb;
+			}
+			return strnatcasecmp( (string) $a, (string) $b );
+		} );
+		return array_values( $units );
+	}
+
+	/**
 	 * Build grouped orders from stall and RV reservation tables.
 	 *
 	 * @return array
@@ -1188,9 +1213,13 @@ class EEM_Orders_Repository {
 			if ( ! empty( $repo_map_snapshot['barns'] ) ) {
 				$stall_units = array();
 				$barn_map    = array();
+				$barn_order  = array();
 				foreach ( (array) $repo_map_snapshot['barns'] as $repo_barn ) {
 					$repo_barn_name = (string) ( isset( $repo_barn['name'] ) ? $repo_barn['name'] : '' );
 					$repo_is_rv     = ( 'rv' === EEM_Stall_Map_Importer::barn_kind( (array) $repo_barn ) );
+					if ( '' !== $repo_barn_name ) {
+						$barn_order[] = $repo_barn_name;
+					}
 					foreach ( (array) ( isset( $repo_barn['grid'] ) ? $repo_barn['grid'] : array() ) as $repo_grow ) {
 						foreach ( (array) $repo_grow as $repo_cell ) {
 							if ( isset( $repo_cell['type'], $repo_cell['label'] )
@@ -1208,7 +1237,10 @@ class EEM_Orders_Repository {
 						}
 					}
 				}
-				$stall_units = array_values( array_unique( $stall_units ) );
+				// v4: order by barn (tab order) then natural label so lowest-first
+				// auto-assign fills 1 before 11 — independent of grid traversal.
+				$stall_units  = $this->sort_map_units_by_barn( array_values( array_unique( $stall_units ) ), $barn_map, $barn_order );
+				$map_rv_units = $this->sort_map_units_by_barn( array_values( array_unique( $map_rv_units ) ), $barn_map, $barn_order );
 			}
 		}
 

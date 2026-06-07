@@ -2871,6 +2871,32 @@ class EEM_Admin {
 	}
 
 	/**
+	 * Order unit labels by their barn (tab order) then natural label (v4).
+	 *
+	 * Map snapshots collect labels in grid-traversal order, which can run a row
+	 * right-to-left (…11, 10, 9…). The matrix list + lowest-first auto-assign want
+	 * 1, 2, 3 within each barn, in the barn's tab order. The spatial map is
+	 * unaffected (it renders from the snapshot grid, not this list).
+	 *
+	 * @param array $units      Unit labels.
+	 * @param array $unit_barn  label => barn name.
+	 * @param array $barn_order Barn names in tab order.
+	 * @return array Sorted labels.
+	 */
+	private function sort_units_by_barn( array $units, array $unit_barn, array $barn_order ): array {
+		$index = array_flip( array_values( $barn_order ) );
+		usort( $units, static function ( $a, $b ) use ( $unit_barn, $index ) {
+			$ba = isset( $unit_barn[ $a ], $index[ $unit_barn[ $a ] ] ) ? $index[ $unit_barn[ $a ] ] : PHP_INT_MAX;
+			$bb = isset( $unit_barn[ $b ], $index[ $unit_barn[ $b ] ] ) ? $index[ $unit_barn[ $b ] ] : PHP_INT_MAX;
+			if ( $ba !== $bb ) {
+				return $ba <=> $bb;
+			}
+			return strnatcasecmp( (string) $a, (string) $b );
+		} );
+		return array_values( $units );
+	}
+
+	/**
 	 * Get all orders linked to a reservation.
 	 *
 	 * @param int $reservation_id Reservation post ID.
@@ -4233,6 +4259,11 @@ class EEM_Admin {
 				}
 				$stall_units  = array_values( array_unique( $stall_units ) );
 				$barn_names   = array_values( array_unique( $barn_names ) );
+				// v4: order by barn (tab order) then natural label so the matrix
+				// lists 1,2,3… and lowest-first auto-assign fills 1 before 11 —
+				// independent of the sheet's grid traversal. The spatial map keeps
+				// grid order (it renders from the snapshot, not this list).
+				$stall_units  = $this->sort_units_by_barn( $stall_units, $barn_map, $barn_names );
 				$stall_blocks = array(); // Map supersedes the legacy block table.
 			}
 		}
@@ -4294,7 +4325,7 @@ class EEM_Admin {
 		// a zone; every numbered cell is an RV lot named by its label. ──
 		$rv_barn_map = array();
 		if ( ! empty( $map_rv_lots ) ) {
-			$rv_lot_names    = array_values( array_unique( $map_rv_lots ) );
+			$rv_lot_names    = $this->sort_units_by_barn( array_values( array_unique( $map_rv_lots ) ), $map_rv_zone_map, $map_rv_zones );
 			$rv_zone_map     = $map_rv_zone_map;
 			$rv_barn_map     = $map_rv_zone_map; // label => zone (for contiguity).
 			$rv_zone_options = array_values( array_unique( $map_rv_zones ) );
