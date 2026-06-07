@@ -735,6 +735,12 @@ class EEM_Orders_Repository {
 			);
 		}
 
+		// Pass 1.5 (v4 Slice 7) — seat same-group members in a contiguous run of
+		// stalls within one barn before the per-order lowest-first fill, so a
+		// travelling group is stabled together. Augments each member's stall_base
+		// (+ marks occupancy); Pass 2 then persists it with no extra fill.
+		$this->assign_group_contiguous_stalls( $orders, $state, $stall_pool, $stall_map, isset( $config['barn_map'] ) ? (array) $config['barn_map'] : array() );
+
 		// Pass 2 — fill each order's remaining need and persist.
 		foreach ( $orders as $index => $candidate ) {
 			$s = $state[ $index ];
@@ -807,6 +813,180 @@ class EEM_Orders_Repository {
 			'assigned'   => $assigned,
 			'unassigned' => max( 0, $needed - count( $assigned ) ),
 		);
+	}
+
+	/**
+	 * Seat same-group orders in a contiguous run of stalls (v4 Slice 7).
+	 *
+	 * For each group with 2+ members still needing stalls, finds the first
+	 * contiguous run of consecutive stall labels within a single barn long enough
+	 * for the group's combined need, then hands successive labels to each member
+	 * (augmenting their stall_base + marking shared occupancy). When no single run
+	 * is large enough the group is left untouched — its members fall through to
+	 * the normal per-order lowest-first fill (all-or-nothing contiguity for v1).
+	 *
+	 * "Contiguous" = consecutive numeric labels sharing the same prefix in the
+	 * same barn (e.g. 5009→5010, A-01→A-02), which tracks how stalls are numbered
+	 * along a barn aisle, so the run reads as physically together on the map.
+	 *
+	 * @param array $orders    Grouped orders (sorted by creation order).
+	 * @param array $state     Per-index allocation state, mutated by reference.
+	 * @param array $pool      Available stall labels.
+	 * @param array $map       Shared occupancy map, mutated by reference.
+	 * @param array $barn_map  label => barn name.
+	 * @return void
+	 */
+	private function assign_group_contiguous_stalls( array $orders, array &$state, array $pool, array &$map, array $barn_map ) {
+		$groups = array();
+		foreach ( $orders as $index => $candidate ) {
+			$group = $this->extract_group_name_from_notes( isset( $candidate['notes'] ) ? (string) $candidate['notes'] : '' );
+			if ( '' === $group ) {
+				continue;
+			}
+			$remaining = (int) $state[ $index ]['stall_needed'] - count( $state[ $index ]['stall_base'] );
+			if ( $remaining > 0 ) {
+				$groups[ $group ][] = $index;
+			}
+		}
+
+		foreach ( $groups as $indexes ) {
+			if ( count( $indexes ) < 2 ) {
+				continue; // A single member has nobody to sit next to.
+			}
+
+			$needs = array();
+			$total = 0;
+			foreach ( $indexes as $index ) {
+				$need           = max( 0, (int) $state[ $index ]['stall_needed'] - count( $state[ $index ]['stall_base'] ) );
+				$needs[ $index ] = $need;
+				$total          += $need;
+			}
+			if ( $total < 2 ) {
+				continue;
+			}
+
+			$run = $this->find_contiguous_stall_run( $pool, $map, $barn_map, $total, $state[ $indexes[0] ]['stall_dates'] );
+			if ( count( $run ) < $total ) {
+				continue; // No run big enough — leave to normal fill.
+			}
+
+			$cursor = 0;
+			foreach ( $indexes as $index ) {
+				$take = $needs[ $index ];
+				if ( $take < 1 ) {
+					continue;
+				}
+				$slice   = array_slice( $run, $cursor, $take );
+				$cursor += $take;
+				foreach ( $slice as $label ) {
+					$this->mark_chart_unit_occupied( $map, $label, $state[ $index ]['stall_dates'], $orders[ $index ]['order_key'] );
+					$state[ $index ]['stall_base'][] = $label;
+				}
+			}
+		}
+	}
+
+	/**
+	 * Find the first contiguous run of N available consecutive stall labels in
+	 * one barn (v4 Slice 7 helper).
+	 *
+	 * @param array $pool     Available stall labels.
+	 * @param array $map      Occupancy map.
+	 * @param array $barn_map label => barn name.
+	 * @param int   $need     Run length required.
+	 * @param array $dates    Nightly date keys the run must be free for.
+	 * @return string[] Run of exactly $need labels, or [] when none fits.
+	 */
+	private function find_contiguous_stall_run( array $pool, array $map, array $barn_map, $need, array $dates ) {
+		$by_barn = array();
+		foreach ( $pool as $label ) {
+			if ( ! $this->chart_unit_is_available( $map, $label, $dates ) ) {
+				continue;
+			}
+			$barn               = isset( $barn_map[ $label ] ) ? (string) $barn_map[ $label ] : '';
+			$by_barn[ $barn ][] = (string) $label;
+		}
+
+		foreach ( $by_barn as $labels ) {
+			usort( $labels, array( $this, 'compare_stall_labels' ) );
+			$run = array();
+			foreach ( $labels as $label ) {
+				if ( empty( $run ) || $this->stall_labels_consecutive( $run[ count( $run ) - 1 ], $label ) ) {
+					$run[] = $label;
+				} else {
+					$run = array( $label );
+				}
+				if ( count( $run ) >= $need ) {
+					return array_slice( $run, 0, $need );
+				}
+			}
+		}
+
+		return array();
+	}
+
+	/**
+	 * Split a stall label into [prefix, number|null] for ordering/adjacency.
+	 *
+	 * @param string $label Stall label (e.g. "5010", "A-12", "Y3").
+	 * @return array{0:string,1:?int}
+	 */
+	private function stall_label_parts( $label ) {
+		if ( preg_match( '/^(.*?)(\d+)$/', (string) $label, $m ) ) {
+			return array( $m[1], (int) $m[2] );
+		}
+		return array( (string) $label, null );
+	}
+
+	/**
+	 * Whether two stall labels are numerically consecutive within one prefix.
+	 *
+	 * @param string $a First label.
+	 * @param string $b Second label.
+	 * @return bool
+	 */
+	private function stall_labels_consecutive( $a, $b ) {
+		list( $pa, $na ) = $this->stall_label_parts( $a );
+		list( $pb, $nb ) = $this->stall_label_parts( $b );
+		return $pa === $pb && null !== $na && null !== $nb && 1 === ( $nb - $na );
+	}
+
+	/**
+	 * Compare two stall labels by prefix then number (usort callback).
+	 *
+	 * @param string $a First label.
+	 * @param string $b Second label.
+	 * @return int
+	 */
+	public function compare_stall_labels( $a, $b ) {
+		list( $pa, $na ) = $this->stall_label_parts( $a );
+		list( $pb, $nb ) = $this->stall_label_parts( $b );
+		if ( $pa !== $pb ) {
+			return strcmp( $pa, $pb );
+		}
+		if ( $na === $nb ) {
+			return 0;
+		}
+		if ( null === $na ) {
+			return -1;
+		}
+		if ( null === $nb ) {
+			return 1;
+		}
+		return $na <=> $nb;
+	}
+
+	/**
+	 * Extract the Group Name note line from an order's notes (empty if none).
+	 *
+	 * @param string $notes Order notes.
+	 * @return string
+	 */
+	private function extract_group_name_from_notes( $notes ) {
+		if ( preg_match( '/(?:^|\n)Group Name:\s*(.+)$/im', (string) $notes, $m ) ) {
+			return trim( $m[1] );
+		}
+		return '';
 	}
 
 	/**
@@ -985,6 +1165,7 @@ class EEM_Orders_Repository {
 	private function get_stall_chart_config( $reservation_id ) {
 		$stall_units = array();
 		$rv_units    = array();
+		$barn_map    = array();
 
 		// ── Stall units: V1 _en_stall_rows wins; legacy blocks are fallback ── //
 		$v1_stall_rows = get_post_meta( $reservation_id, '_en_stall_rows', true );
@@ -994,6 +1175,33 @@ class EEM_Orders_Repository {
 			$stall_blocks = get_post_meta( $reservation_id, '_en_stall_chart_stall_blocks', true );
 			if ( is_array( $stall_blocks ) && ! empty( $stall_blocks ) ) {
 				$stall_units = $this->expand_chart_units( $stall_blocks );
+			}
+		}
+
+		// ── v4 Slice 5/7: a connected Stall Map supersedes the legacy inventory.
+		// Stalls + their barn (label => tab name) come from the sheet so the
+		// auto-assign pool + group-contiguous fill operate on the real facility,
+		// matching EEM_Admin::get_stall_chart_config(). ──
+		if ( class_exists( 'EEM_Stall_Map_Importer' ) ) {
+			$repo_map_snapshot = EEM_Stall_Map_Importer::get_for_reservation( (int) $reservation_id );
+			if ( ! empty( $repo_map_snapshot['barns'] ) ) {
+				$stall_units = array();
+				$barn_map    = array();
+				foreach ( (array) $repo_map_snapshot['barns'] as $repo_barn ) {
+					$repo_barn_name = (string) ( isset( $repo_barn['name'] ) ? $repo_barn['name'] : '' );
+					foreach ( (array) ( isset( $repo_barn['grid'] ) ? $repo_barn['grid'] : array() ) as $repo_grow ) {
+						foreach ( (array) $repo_grow as $repo_cell ) {
+							if ( isset( $repo_cell['type'], $repo_cell['label'] )
+								&& 'stall' === $repo_cell['type']
+								&& '' !== (string) $repo_cell['label'] ) {
+								$repo_label              = (string) $repo_cell['label'];
+								$stall_units[]           = $repo_label;
+								$barn_map[ $repo_label ] = $repo_barn_name;
+							}
+						}
+					}
+				}
+				$stall_units = array_values( array_unique( $stall_units ) );
 			}
 		}
 
@@ -1044,6 +1252,8 @@ class EEM_Orders_Repository {
 			'auto_assignable_rv_units' => ! empty( $rv_lots )
 				? $this->get_auto_assignable_rv_lot_names( $rv_lots, $blocked_rv_lots )
 				: array_values( array_diff( $rv_units, $blocked_rv_lots ) ),
+			// v4 Slice 7 — label => barn name (from the map) for contiguous fill.
+			'barn_map'             => $barn_map,
 		);
 	}
 
