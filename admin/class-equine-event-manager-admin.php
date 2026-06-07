@@ -2375,10 +2375,13 @@ class EEM_Admin {
 	 * everything before is the given name(s). Single-token names (businesses,
 	 * mononyms) and already-comma-formatted names are returned unchanged.
 	 *
+	 * Public + static so admin list/table surfaces across the plugin share one
+	 * implementation. NOT for customer-facing greetings (emails keep "Hi James").
+	 *
 	 * @param string $name Raw customer name (typically "First Last").
 	 * @return string "Last, First", or the input unchanged when it can't be split.
 	 */
-	private function format_customer_last_first( string $name ): string {
+	public static function format_customer_last_first( string $name ): string {
 		$name = trim( preg_replace( '/\s+/', ' ', $name ) );
 		if ( '' === $name || false !== strpos( $name, ',' ) ) {
 			return $name;
@@ -2414,7 +2417,7 @@ class EEM_Admin {
 		$group_set = array();
 
 		foreach ( $order_rows as $row ) {
-			$cust  = $this->format_customer_last_first( (string) ( isset( $row['customer_name'] ) ? $row['customer_name'] : '' ) );
+			$cust  = self::format_customer_last_first( (string) ( isset( $row['customer_name'] ) ? $row['customer_name'] : '' ) );
 			$group = trim( (string) ( isset( $row['group_name'] ) ? $row['group_name'] : '' ) );
 			$okey  = (string) ( isset( $row['order_key'] ) ? $row['order_key'] : '' );
 			$onum  = (string) ( isset( $row['order_number'] ) ? $row['order_number'] : '' );
@@ -5111,7 +5114,7 @@ class EEM_Admin {
 						<tr data-stall-chart-search="<?php echo esc_attr( strtolower( implode( ' ', array_filter( $search_parts ) ) ) ); ?>" data-stall-chart-block="" data-has-stalls="<?php echo ! empty( $row['stall_units'] ) ? '1' : '0'; ?>" data-has-rv="<?php echo ! empty( $row['rv_units'] ) ? '1' : '0'; ?>" data-group="<?php echo esc_attr( $eem_row_group ); ?>" data-has-tack="<?php echo ! empty( $row['tack_units'] ) ? '1' : '0'; ?>">
 							<td>
 								<a class="eem-chart-cust-link" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-order&order_key=' . rawurlencode( $row['order_key'] ) ) ); ?>">
-									<?php echo esc_html( $row['customer_name'] ); ?>
+									<?php echo esc_html( self::format_customer_last_first( (string) $row['customer_name'] ) ); ?>
 								</a>
 								<?php if ( '' !== $eem_row_group ) : ?>
 									<div class="eem-chart-cust-group">

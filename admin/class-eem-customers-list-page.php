@@ -153,7 +153,7 @@ class EEM_Customers_List_Page {
 						<?php foreach ( $rows as $row ) : ?>
 							<?php $profile_url = self::profile_url( $row['email'] ); ?>
 							<tr>
-								<td><a class="eem-customers-name" href="<?php echo esc_url( $profile_url ); ?>"><?php echo esc_html( $row['name'] ); ?></a></td>
+								<td><a class="eem-customers-name" href="<?php echo esc_url( $profile_url ); ?>"><?php echo esc_html( EEM_Admin::format_customer_last_first( (string) $row['name'] ) ); ?></a></td>
 								<td><a class="eem-customers-email" href="<?php echo esc_attr( 'mailto:' . $row['email'] ); ?>"><?php echo esc_html( $row['email'] ); ?></a></td>
 								<td class="eem-table-c"><?php echo esc_html( number_format_i18n( (int) $row['orders'] ) ); ?></td>
 								<td class="eem-table-r"><?php echo esc_html( $row['spent'] ); ?></td>
@@ -168,7 +168,7 @@ class EEM_Customers_List_Page {
 			<?php foreach ( $rows as $row ) : ?>
 				<div class="eem-mobile-card">
 					<div class="eem-mobile-card-top">
-						<a class="eem-mobile-card-id" href="<?php echo esc_url( self::profile_url( $row['email'] ) ); ?>"><?php echo esc_html( $row['name'] ); ?></a>
+						<a class="eem-mobile-card-id" href="<?php echo esc_url( self::profile_url( $row['email'] ) ); ?>"><?php echo esc_html( EEM_Admin::format_customer_last_first( (string) $row['name'] ) ); ?></a>
 						<span class="eem-mobile-card-meta"><?php echo esc_html( $row['last_activity'] ); ?></span>
 					</div>
 					<div class="eem-mobile-card-sub"><?php echo esc_html( $row['email'] ); ?></div>

@@ -405,7 +405,8 @@ class EEM_Orders_List_Page {
 	private function render_table_row( array $order ) {
 		$order_key    = isset( $order['order_key'] )    ? (string) $order['order_key']    : '';
 		$order_number = isset( $order['order_number'] ) ? (string) $order['order_number'] : '';
-		$customer     = isset( $order['customer_name'] ) ? (string) $order['customer_name'] : '';
+		// Plugin-wide convention: admin lists show "Last, First".
+		$customer     = EEM_Admin::format_customer_last_first( isset( $order['customer_name'] ) ? (string) $order['customer_name'] : '' );
 		$event_name   = $this->derive_event_name( $order );
 		$type_keys    = EEM_Orders_List_Repo::derive_type_keys( $order );
 		$type_labels  = array(
@@ -563,7 +564,8 @@ class EEM_Orders_List_Page {
 			<?php foreach ( $items as $order ) :
 				$order_key    = isset( $order['order_key'] )    ? (string) $order['order_key']    : '';
 				$order_number = isset( $order['order_number'] ) ? (string) $order['order_number'] : '';
-				$customer     = isset( $order['customer_name'] ) ? (string) $order['customer_name'] : '';
+				// Plugin-wide convention: admin lists show "Last, First".
+		$customer     = EEM_Admin::format_customer_last_first( isset( $order['customer_name'] ) ? (string) $order['customer_name'] : '' );
 				$event_name   = $this->derive_event_name( $order );
 				$type_keys    = EEM_Orders_List_Repo::derive_type_keys( $order );
 				$status_slug  = isset( $order['status_slug'] )  ? (string) $order['status_slug']  : '';

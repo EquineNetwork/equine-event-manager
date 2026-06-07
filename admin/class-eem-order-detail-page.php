@@ -282,9 +282,9 @@ class EEM_Order_Detail_Page {
 			<?php if ( '' !== $customer_name ) : ?>
 				<span><?php esc_html_e( 'Customer:', 'equine-event-manager' ); ?>
 					<?php if ( '' !== $customer_email ) : ?>
-						<a href="<?php echo esc_url( EEM_Orders_List_Page::customer_profile_url( $customer_email ) ); ?>"><?php echo esc_html( $customer_name ); ?></a>
+						<a href="<?php echo esc_url( EEM_Orders_List_Page::customer_profile_url( $customer_email ) ); ?>"><?php echo esc_html( EEM_Admin::format_customer_last_first( (string) $customer_name ) ); ?></a>
 					<?php else : ?>
-						<?php echo esc_html( $customer_name ); ?>
+						<?php echo esc_html( EEM_Admin::format_customer_last_first( (string) $customer_name ) ); ?>
 					<?php endif; ?>
 				</span>
 			<?php endif; ?>
@@ -797,9 +797,9 @@ class EEM_Order_Detail_Page {
 					<div class="eem-order-payment__label"><?php esc_html_e( 'Customer', 'equine-event-manager' ); ?></div>
 					<div class="eem-order-payment__customer-name">
 						<?php if ( '' !== $customer_email ) : ?>
-							<a href="<?php echo esc_url( EEM_Orders_List_Page::customer_profile_url( $customer_email ) ); ?>"><?php echo esc_html( $customer_name ); ?></a>
+							<a href="<?php echo esc_url( EEM_Orders_List_Page::customer_profile_url( $customer_email ) ); ?>"><?php echo esc_html( EEM_Admin::format_customer_last_first( (string) $customer_name ) ); ?></a>
 						<?php else : ?>
-							<?php echo esc_html( $customer_name ); ?>
+							<?php echo esc_html( EEM_Admin::format_customer_last_first( (string) $customer_name ) ); ?>
 						<?php endif; ?>
 					</div>
 					<div class="eem-order-payment__val">
