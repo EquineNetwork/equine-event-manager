@@ -179,6 +179,28 @@ web → `curl -L`/`wp_remote_get` follows the signed redirect → clean CSV →
 `str_getcsv` → 21×24 grid → 251 stalls, 0 dupes, 11 landmark types incl. center +
 cross aisles). Throwaway parser confirmed the importer logic end to end.
 
+### Sheet authoring guide (how an admin builds the stall-map sheet) — LOCKED 2026-06-07
+
+The importer reads cell **values + positions only** — the CSV export strips all
+colors, borders, and merged-cell formatting. So the authoring rules are:
+
+1. **A number = a stall** at that exact grid position. One number per cell.
+2. **A blank cell = an aisle / gap.** Leave it empty.
+3. **Text = a marked area** (room, arena, wash rack, office).
+4. **Never merge cells.** Merged cells collapse to a single top-left value on CSV
+   export, so the footprint is lost. Instead, **drag-fill the area's label across
+   its whole footprint** (type once, drag the corner). The importer detects the
+   maximal **same-label rectangle** (horizontal AND vertical) and renders the room
+   at its exact size — incl. tall blocks (e.g. Watt Arena 1×17) and wide strips
+   (Wash Rack). A single label cell still works as a 1×1 fallback.
+5. **One tab per barn** (tab name = barn name).
+6. **Color is cosmetic** — invisible to the system; use it for your own
+   readability if you like, but stall-vs-aisle is decided by number-vs-blank.
+
+Validated 2026-06-07 against Whitney's filled-footprint Montcrief sheet — both
+mockups (`.mockups/stall_map_event.html`, `stall_map_admin.html`) render every
+room block exactly. The mockups are the binding visual spec for the build.
+
 ### Phase A — spreadsheet grid + publish-to-web import (the cheap, no-dependency path)
 
 - **Admin workflow:** one Google Sheet, **one tab per barn** (tab name = barn
