@@ -28,6 +28,35 @@ inactive-processor field locking · Open-Tab/open-invoice confirmed built ·
 - **v2 #5 (v2.7.65)** — stall + RV layout clusters wrapped in a shaded
   `.eem-layout-group` panel (matches front-end "Pick Your Stalls").
 
+### Walkthrough bugs + polish — shipped 2026-06-07
+
+- **(v2.7.69)** — Stall Row Builder rejects overlapping/duplicate stall numbers
+  (publish gate + live red warning in the summary); `.eem-layout-group` top padding.
+- **(v2.7.70)** — **Removed back-to-back** stall/RV layout (misleading "aisle").
+  Rows are now just Barn/Row Name + first/last range. Migration eem-mig-005 split
+  existing back-to-back rows into one-sided. Front-end disclaimer: groupings are
+  *not* a facility map — see the Stall Map link.
+- **(v2.7.71)** — wording: "Barn/Row Name", "barn/row quantities", "X rows/barns";
+  Pre-Entry Inventory blank = "Unlimited" placeholder; RV empty-state padding.
+
+---
+
+## 🐴 Active — Tack stalls (in progress)
+
+**T1. Tack stalls → 3-mode control** (replaces the v2.7.64 on/off toggle). Lives
+**under Blocked Stall Numbers** in the Stall Reservation area. Modes:
+- **Off** — no tack designation anywhere.
+- **Admin assigns** — admin picks which stall numbers are tack (tag-select like
+  Blocked Stalls); customer form shows no tack selector.
+- **Customers designate** — customer picks one of their stalls as tack at checkout.
+New meta `_en_stall_tack_mode` (off|admin|customer) + `_en_stall_tack_admin_stalls`
+(array); migration from the old bool (1→customer, 0→off).
+
+**T2. Tack stalls exempt from required shavings (pricing).** When required shavings
+is on, shavings is charged for (stalls − tack stalls) only. A tack stall pays the
+normal stall rate but no shavings. Applies to customer-designated AND admin-assigned
+tack. Fix customer checkout total **and** order line items.
+
 ---
 
 ## 🔧 v2 — Polish + smaller features + walkthrough bugs
