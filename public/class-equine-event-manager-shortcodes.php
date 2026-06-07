@@ -1623,23 +1623,23 @@ class EEM_Shortcodes {
 			if ( ! is_array( $row ) ) {
 				continue;
 			}
-			$layout = isset( $row['layout'] ) && 'back-to-back' === $row['layout'] ? 'back-to-back' : 'one-sided';
-			$name   = isset( $row['name'] ) ? (string) $row['name'] : '';
+			$name = isset( $row['name'] ) ? (string) $row['name'] : '';
 
-			if ( 'back-to-back' === $layout ) {
+			// Back-to-back is retired (it implied a physical aisle we can't
+			// guarantee). Existing rows are migrated to one-sided; any stray
+			// back-to-back row is rendered as a single strip (top + bottom
+			// concatenated) so nothing is lost and no misleading aisle appears.
+			if ( isset( $row['layout'] ) && 'back-to-back' === $row['layout'] ) {
 				$top = ( '' !== (string) ( $row['top_first'] ?? '' ) && '' !== (string) ( $row['top_last'] ?? '' ) ) ? $this->expand_stall_label_range( $row['top_first'], $row['top_last'] ) : array();
 				$bot = ( '' !== (string) ( $row['bot_first'] ?? '' ) && '' !== (string) ( $row['bot_last'] ?? '' ) ) ? $this->expand_stall_label_range( $row['bot_first'], $row['bot_last'] ) : array();
-				if ( empty( $top ) && empty( $bot ) ) {
-					continue;
-				}
-				$rendered_rows[] = array( 'name' => $name, 'layout' => 'back-to-back', 'top' => $top, 'bot' => $bot, 'count' => count( $top ) + count( $bot ) );
+				$units = array_merge( $top, $bot );
 			} else {
 				$units = ( '' !== (string) ( $row['first'] ?? '' ) && '' !== (string) ( $row['last'] ?? '' ) ) ? $this->expand_stall_label_range( $row['first'], $row['last'] ) : array();
-				if ( empty( $units ) ) {
-					continue;
-				}
-				$rendered_rows[] = array( 'name' => $name, 'layout' => 'one-sided', 'units' => $units, 'count' => count( $units ) );
 			}
+			if ( empty( $units ) ) {
+				continue;
+			}
+			$rendered_rows[] = array( 'name' => $name, 'units' => $units, 'count' => count( $units ) );
 		}
 
 		if ( empty( $rendered_rows ) ) {
@@ -1656,7 +1656,18 @@ class EEM_Shortcodes {
 					</a>
 				<?php endif; ?>
 			</div>
-			<p class="stall-assign-desc"><?php esc_html_e( "Tap stalls below to pick the exact ones you want. The layout matches the venue — back-to-back rows share an aisle in the middle. If you'd rather have stalls auto-assigned, leave selections blank and we'll assign them after checkout.", 'equine-event-manager' ); ?></p>
+			<p class="stall-assign-desc"><?php esc_html_e( "Tap stalls below to pick the exact ones you want. If you'd rather have stalls auto-assigned, leave selections blank and we'll assign them after checkout.", 'equine-event-manager' ); ?></p>
+			<p class="stall-assign-note"><?php
+				if ( '' !== $stall_map_url ) {
+					printf(
+						/* translators: %s: link to the venue stall map. */
+						wp_kses( __( 'These groupings show which stall numbers are available — they are <strong>not</strong> a map of the facility. For the actual barn/stall layout, see the %s.', 'equine-event-manager' ), array( 'strong' => array() ) ),
+						'<a href="' . esc_url( $stall_map_url ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Stall Map', 'equine-event-manager' ) . '</a>'
+					);
+				} else {
+					echo wp_kses( __( 'These groupings show which stall numbers are available — they are <strong>not</strong> a map of the facility.', 'equine-event-manager' ), array( 'strong' => array() ) );
+				}
+			?></p>
 			<div class="stall-legend" aria-hidden="true">
 				<div class="legend-item"><div class="legend-dot"></div> <?php esc_html_e( 'Available', 'equine-event-manager' ); ?></div>
 				<div class="legend-item"><div class="legend-dot selected"></div> <?php esc_html_e( 'Your pick', 'equine-event-manager' ); ?></div>
@@ -1670,30 +1681,14 @@ class EEM_Shortcodes {
 							<div class="stall-row-section-name"><?php echo esc_html( $r['name'] ); ?></div>
 							<div class="stall-row-section-meta">
 								<?php
-								printf(
-									/* translators: 1: stall count, 2: layout label */
-									esc_html__( '%1$d stalls · %2$s', 'equine-event-manager' ),
-									(int) $r['count'],
-									'back-to-back' === $r['layout'] ? esc_html__( 'Back-to-back', 'equine-event-manager' ) : esc_html__( 'One-sided', 'equine-event-manager' )
-								);
+								/* translators: %d: stall count */
+								printf( esc_html( _n( '%d stall', '%d stalls', (int) $r['count'], 'equine-event-manager' ) ), (int) $r['count'] );
 								?>
 							</div>
 						</div>
-						<?php if ( 'back-to-back' === $r['layout'] ) : ?>
-							<div class="picker-stall-row back-to-back">
-								<div class="picker-stall-row-side">
-									<?php foreach ( $r['top'] as $label ) { $this->render_stall_picker_cell( (string) $label, $blocked, $reserved, $selected ); } ?>
-								</div>
-								<div class="picker-stall-row-aisle"></div>
-								<div class="picker-stall-row-side">
-									<?php foreach ( $r['bot'] as $label ) { $this->render_stall_picker_cell( (string) $label, $blocked, $reserved, $selected ); } ?>
-								</div>
-							</div>
-						<?php else : ?>
-							<div class="picker-stall-row">
-								<?php foreach ( $r['units'] as $label ) { $this->render_stall_picker_cell( (string) $label, $blocked, $reserved, $selected ); } ?>
-							</div>
-						<?php endif; ?>
+						<div class="picker-stall-row">
+							<?php foreach ( $r['units'] as $label ) { $this->render_stall_picker_cell( (string) $label, $blocked, $reserved, $selected ); } ?>
+						</div>
 					</div>
 				<?php endforeach; ?>
 			</div>

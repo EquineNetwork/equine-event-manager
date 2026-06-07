@@ -5437,33 +5437,17 @@ function stallAddRow() {
 	card.innerHTML =
 		'<div class="eem-row-card-top">' +
 			'<div class="eem-row-card-field">' +
-				'<span class="eem-row-card-field-label">Row Name</span>' +
+				'<span class="eem-row-card-field-label">Barn Name</span>' +
 				'<input type="text" name="eem_stall_rows[' + idx + '][name]" value="" data-eem-input-action="stall-row-input">' +
 			'</div>' +
-			'<div class="eem-row-card-field eem-row-card-field-layout">' +
-				'<span class="eem-row-card-field-label">Layout</span>' +
-				'<select name="eem_stall_rows[' + idx + '][layout]" data-eem-input-action="stall-row-layout">' +
-					'<option value="one-sided" selected>One-sided</option>' +
-					'<option value="back-to-back">Back-to-back</option>' +
-				'</select>' +
-			'</div>' +
+			'<input type="hidden" name="eem_stall_rows[' + idx + '][layout]" value="one-sided">' +
 			'<button class="eem-row-card-delete" type="button" title="Delete row" data-eem-action="stall-delete-row">' +
 				'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>' +
 			'</button>' +
 		'</div>' +
 		'<div class="eem-row-card-one-sided">' +
-			'<div class="eem-row-card-field"><span class="eem-row-card-field-label">First Stall Label</span><input type="text" name="eem_stall_rows[' + idx + '][first]" value="" data-role="first" data-eem-input-action="stall-row-input"></div>' +
-			'<div class="eem-row-card-field"><span class="eem-row-card-field-label">Last Stall Label</span><input type="text" name="eem_stall_rows[' + idx + '][last]" value="" data-role="last" data-eem-input-action="stall-row-input"></div>' +
-		'</div>' +
-		'<div class="eem-row-card-sides" style="display:none">' +
-			'<div class="eem-side-block"><div class="eem-side-block-label">Top Side</div><div class="eem-side-block-row">' +
-				'<div class="eem-row-card-field"><span class="eem-row-card-field-label">First</span><input type="text" name="eem_stall_rows[' + idx + '][top_first]" value="" data-role="top-first" data-eem-input-action="stall-row-input"></div>' +
-				'<div class="eem-row-card-field"><span class="eem-row-card-field-label">Last</span><input type="text" name="eem_stall_rows[' + idx + '][top_last]" value="" data-role="top-last" data-eem-input-action="stall-row-input"></div>' +
-			'</div></div>' +
-			'<div class="eem-side-block"><div class="eem-side-block-label">Bottom Side</div><div class="eem-side-block-row">' +
-				'<div class="eem-row-card-field"><span class="eem-row-card-field-label">First</span><input type="text" name="eem_stall_rows[' + idx + '][bot_first]" value="" data-role="bot-first" data-eem-input-action="stall-row-input"></div>' +
-				'<div class="eem-row-card-field"><span class="eem-row-card-field-label">Last</span><input type="text" name="eem_stall_rows[' + idx + '][bot_last]" value="" data-role="bot-last" data-eem-input-action="stall-row-input"></div>' +
-			'</div></div>' +
+			'<div class="eem-row-card-field"><span class="eem-row-card-field-label">First Stall</span><input type="text" name="eem_stall_rows[' + idx + '][first]" value="" data-role="first" data-eem-input-action="stall-row-input"></div>' +
+			'<div class="eem-row-card-field"><span class="eem-row-card-field-label">Last Stall</span><input type="text" name="eem_stall_rows[' + idx + '][last]" value="" data-role="last" data-eem-input-action="stall-row-input"></div>' +
 		'</div>' +
 		'<div class="eem-row-card-preview">' +
 			'<div class="eem-row-card-preview-label">Preview <span class="eem-row-card-count"></span></div>' +
@@ -5560,17 +5544,13 @@ function rvAddRow() {
 	card.innerHTML =
 		'<div class="eem-row-card-top">' +
 			'<div class="eem-row-card-field"><span class="eem-row-card-field-label">Row Name</span><input type="text" name="eem_rv_rows[' + idx + '][name]" value="" data-eem-input-action="rv-row-input"></div>' +
-			'<div class="eem-row-card-field eem-row-card-field-layout"><span class="eem-row-card-field-label">Layout</span><select name="eem_rv_rows[' + idx + '][layout]" data-eem-input-action="rv-row-layout"><option value="one-sided" selected>One-sided</option><option value="back-to-back">Back-to-back</option></select></div>' +
+			'<input type="hidden" name="eem_rv_rows[' + idx + '][layout]" value="one-sided">' +
 			'<div class="eem-row-card-field eem-row-card-field-layout"><span class="eem-row-card-field-label">Zone</span><select name="eem_rv_rows[' + idx + '][zone_id]" data-eem-input-action="rv-row-input" data-field="zone_id">' + zoneOpts + '</select></div>' +
 			'<button class="eem-row-card-delete" type="button" title="Delete row" data-eem-action="rv-delete-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>' +
 		'</div>' +
 		'<div class="eem-row-card-one-sided">' +
 			'<div class="eem-row-card-field"><span class="eem-row-card-field-label">First Lot Label</span><input type="text" name="eem_rv_rows[' + idx + '][first]" value="" data-role="first" data-eem-input-action="rv-row-input"></div>' +
 			'<div class="eem-row-card-field"><span class="eem-row-card-field-label">Last Lot Label</span><input type="text" name="eem_rv_rows[' + idx + '][last]" value="" data-role="last" data-eem-input-action="rv-row-input"></div>' +
-		'</div>' +
-		'<div class="eem-row-card-sides" style="display:none">' +
-			'<div class="eem-side-block"><div class="eem-side-block-label">Top Side</div><div class="eem-side-block-row"><div class="eem-row-card-field"><span class="eem-row-card-field-label">First</span><input type="text" name="eem_rv_rows[' + idx + '][top_first]" value="" data-role="top-first" data-eem-input-action="rv-row-input"></div><div class="eem-row-card-field"><span class="eem-row-card-field-label">Last</span><input type="text" name="eem_rv_rows[' + idx + '][top_last]" value="" data-role="top-last" data-eem-input-action="rv-row-input"></div></div></div>' +
-			'<div class="eem-side-block"><div class="eem-side-block-label">Bottom Side</div><div class="eem-side-block-row"><div class="eem-row-card-field"><span class="eem-row-card-field-label">First</span><input type="text" name="eem_rv_rows[' + idx + '][bot_first]" value="" data-role="bot-first" data-eem-input-action="rv-row-input"></div><div class="eem-row-card-field"><span class="eem-row-card-field-label">Last</span><input type="text" name="eem_rv_rows[' + idx + '][bot_last]" value="" data-role="bot-last" data-eem-input-action="rv-row-input"></div></div></div>' +
 		'</div>' +
 		'<div><div class="eem-row-card-preview-label">Preview <span class="eem-row-card-count"></span></div><div class="eem-stall-row-layout"></div></div>';
 	list.appendChild(card);
