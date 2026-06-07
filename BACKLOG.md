@@ -139,7 +139,11 @@ inactive-processor field locking · Open-Tab/open-invoice confirmed built ·
 
 ---
 
-## 🗺️ Stall Mapping — spreadsheet-driven clickable facility maps (future)
+## 🗺️ v4 — Stall Mapping — spreadsheet-driven clickable facility maps
+
+> **Moved to v4 (2026-06-07).** Scoped + validated but deferred behind launch; not
+> a v1 item. Build after the v3 strip + the payment block, alongside the other v4
+> event-source work.
 
 **Goal:** a true RSNC-style stall map — customers click stalls in their real
 physical positions with live availability, neighbors, and aisles visible —
