@@ -196,6 +196,7 @@ function render(){
       var cell=grid[r][c];
       if(cell.type==='landmark'){
         var span=1; while(c+span<grid[r].length && grid[r][c+span].type==='gap'){span++;}
+        if(c+span>=grid[r].length){span=1;} // label whose blanks run to row end stays one cell
         var d=document.createElement('div'); d.className='cell landmark'; d.style.gridColumn='span '+span;
         d.style.width='calc('+span+' * var(--chip) + '+(span-1)+' * var(--gap))'; d.textContent=cell.label;
         host.appendChild(d); c+=span-1; continue;

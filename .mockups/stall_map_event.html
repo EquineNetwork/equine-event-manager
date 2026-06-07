@@ -165,6 +165,9 @@ function renderGrid(){
       if(cell.type==='landmark'){
         var span=1;
         while(c+span<grid[r].length && grid[r][c+span].type==='gap'){ span++; }
+        // only merge across blanks when bounded on the right by another cell;
+        // a label whose blanks run to the end of the row stays a single cell.
+        if(c+span>=grid[r].length){ span=1; }
         var d=document.createElement('div');
         d.className='cell landmark';
         d.style.gridColumn='span '+span;
