@@ -2477,10 +2477,6 @@
 				populateTagDropdownFromLabels(input, getStallLabels());
 			} else if (target === 'eem-blocked-rv-lots-select') {
 				populateTagDropdownFromLabels(input, getRvLotLabels());
-			} else if (target === 'eem-tack-admin-select') {
-				/* T1 — admin tack-stall tag-select populates from the same
-				   live stall-row labels as Blocked Stall Numbers. */
-				populateTagDropdownFromLabels(input, getStallLabels());
 			}
 			EEM.tagFilter(input);
 		}
@@ -5005,9 +5001,9 @@ function toggleStallInventoryType(btn) {
 	updateStallInventoryDisplay();
 }
 
-/* T1 — Tack Stall mode toggle (off / admin / customer). Sets the active button,
-   writes the hidden input, shows the admin tag-select only in 'admin' mode, and
-   swaps the hint copy. */
+/* Tack Stall On/Off toggle. Sets the active button + writes the hidden
+   stall_tack_mode input ('customer' = on, 'off' = off). The actual tack
+   assignment lives on the Stall Chart, so there is no admin tag-select here. */
 function toggleTackMode(btn) {
 	var mode = btn.dataset.tackMode || 'customer';
 	var group = btn.closest('[data-eem-tack-mode-btns]');
@@ -5018,20 +5014,6 @@ function toggleTackMode(btn) {
 	}
 	var input = document.getElementById('eem-stall-tack-mode-input');
 	if (input) input.value = mode;
-
-	var wrap = document.querySelector('[data-eem-tack-admin-wrap]');
-	if (wrap) wrap.style.display = (mode === 'admin') ? '' : 'none';
-
-	var hint = document.querySelector('[data-eem-tack-hint]');
-	if (hint) {
-		if (mode === 'off') {
-			hint.textContent = 'No tack stalls. Customers buy stalls normally and required shavings applies to every stall.';
-		} else if (mode === 'admin') {
-			hint.textContent = 'You choose which stall numbers are tack. They are excluded from required shavings.';
-		} else {
-			hint.textContent = 'Buyers can mark one of their stalls as tack at checkout. Tack stalls are excluded from required shavings.';
-		}
-	}
 }
 
 /* Customer Selection toggle (quantity / pick_layout). */
@@ -5457,7 +5439,7 @@ function generateStallPreview(rowCard) {
 		var labels = stallLabelsBetween(first ? first.value : '', last ? last.value : '');
 		previewDiv.innerHTML = labels.map(cellHtml).join('');
 		var unitWord2 = isRvRow ? 'lots' : 'stalls';
-		if (countEl) countEl.textContent = labels.length + ' ' + unitWord2 + ' \xb7 One-sided';
+		if (countEl) countEl.textContent = labels.length + ' ' + unitWord2;
 	}
 }
 

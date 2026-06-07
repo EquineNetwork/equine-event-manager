@@ -1020,14 +1020,6 @@ class EEM_Reservation_Editor_Page {
 			update_post_meta( $reservation_id, '_en_blocked_stalls', array_values( array_filter( $blocked_stalls_clean ) ) );
 		}
 
-		// T1 — admin-assigned tack stalls. The `_present` flag lets an admin clear
-		// every chip (the array key disappears when empty, so we key off the flag).
-		if ( isset( $_POST['eem_tack_admin_stalls'] ) || isset( $_POST['eem_tack_admin_stalls_present'] ) ) {
-			$ts_raw         = isset( $_POST['eem_tack_admin_stalls'] ) ? wp_unslash( $_POST['eem_tack_admin_stalls'] ) : array();
-			$tack_admin_clean = array_map( 'sanitize_text_field', (array) $ts_raw );
-			update_post_meta( $reservation_id, '_en_stall_tack_admin_stalls', array_values( array_filter( $tack_admin_clean, 'strlen' ) ) );
-		}
-
 		// Scenario B (V1 #4): two independent settings — Stall Inventory Type +
 		// Customer Selection. Write both new keys plus the DERIVED legacy
 		// `_en_stall_selection_mode` so every existing reader stays consistent.

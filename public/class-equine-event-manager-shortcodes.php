@@ -428,7 +428,6 @@ class EEM_Shortcodes {
 					data-required-shavings-per-stall="<?php echo esc_attr( absint( $data['required_shavings_per_stall'] ) ); ?>"
 					data-required-shavings-price="<?php echo esc_attr( (float) $data['required_shavings_price'] ); ?>"
 					data-tack-mode="<?php echo esc_attr( (string) ( $data['stall_tack_mode'] ?? 'customer' ) ); ?>"
-					data-tack-admin-stalls="<?php echo esc_attr( wp_json_encode( array_values( array_map( 'strval', (array) ( $data['stall_tack_admin_stalls'] ?? array() ) ) ) ) ); ?>"
 					data-group-grounds-fee-enabled="<?php echo esc_attr( $group_grounds_fee_enabled ? '1' : '0' ); ?>"
 					data-group-grounds-fee-amount="<?php echo esc_attr( (float) $data['group_rider_grounds_fee_amount'] ); ?>"
 					data-group-deposit-enabled="<?php echo esc_attr( $group_deposit_enabled ? '1' : '0' ); ?>"
@@ -1519,7 +1518,7 @@ class EEM_Shortcodes {
 			<?php // C10.D — prefer the canonical "Pick Your Stalls" row picker; fall back
 			// to the legacy block-range selector only when no _en_stall_rows exist. ?>
 			<?php if ( ! empty( $stall_picker_rows ) ) : ?>
-				<?php $this->render_stall_picker_grid( $stall_picker_rows, $stall_picker_blocked, $stall_picker_reserved, array(), (string) $stall_map_url, ( 'customer' === ( $data['stall_tack_mode'] ?? 'customer' ) ) ); ?>
+				<?php $this->render_stall_picker_grid( $stall_picker_rows, $stall_picker_blocked, $stall_picker_reserved, array(), (string) $stall_map_url, ( 'off' !== ( $data['stall_tack_mode'] ?? 'customer' ) ) ); ?>
 			<?php elseif ( $stall_assignment_enabled && ! empty( $stall_assignment_blocks ) ) : ?>
 				<?php $this->render_quantity_stall_assignment_selector( $stall_assignment_blocks, $stall_map_url ); ?>
 			<?php endif; ?>
@@ -2946,13 +2945,11 @@ class EEM_Shortcodes {
 	/**
 	 * T2 — count how many of the selected stalls are tack stalls.
 	 *
-	 * Tack stalls are excluded from required shavings. The count depends on the
-	 * reservation's tack mode:
-	 *   'off'      — always 0.
-	 *   'customer' — 1 when the buyer designated a tack stall, else 0.
-	 *   'admin'    — the number of the buyer's picked stalls that match an
-	 *                admin-assigned tack number (0 in quantity mode, where no
-	 *                specific stalls are identified at checkout).
+	 * Tack stalls are excluded from required shavings. Tack is either off (always
+	 * 0) or on ('customer'), where the buyer designates a single tack stall at
+	 * checkout — 1 when designated, else 0. The admin can additionally mark/override
+	 * the actual tack stall on the Stall Chart, but that is operational and does
+	 * not change the buyer's shavings math. The legacy 'admin' mode is treated as on.
 	 *
 	 * @param array $submission Submission values.
 	 * @param array $data       Reservation setup data.
@@ -2965,17 +2962,8 @@ class EEM_Shortcodes {
 			return 0;
 		}
 
-		if ( 'admin' === $mode ) {
-			$admin  = array_map( 'strval', (array) ( $data['stall_tack_admin_stalls'] ?? array() ) );
-			$picked = array_map( 'strval', (array) ( $submission['preferred_stall_units'] ?? array() ) );
-			if ( empty( $admin ) || empty( $picked ) ) {
-				return 0;
-			}
-			return count( array_intersect( $picked, $admin ) );
-		}
-
-		// 'customer' — a single designated tack stall (already validated to be
-		// one of the buyer's picked stalls in normalize_stall_submission).
+		// On — a single buyer-designated tack stall (validated to be one of the
+		// buyer's picked stalls in normalize_stall_submission).
 		return ( '' !== (string) ( $submission['preferred_tack_stall'] ?? '' ) ) ? 1 : 0;
 	}
 
@@ -3355,23 +3343,13 @@ class EEM_Shortcodes {
 				$stall_notes = trim( $stall_notes . "\nAssigned Stall Units: " . implode( ', ', array_map( 'sanitize_text_field', (array) $submission['preferred_stall_units'] ) ) );
 			}
 
-			// Tack stalls recorded on the `Tack Stalls:` notes line the admin
-			// chart toggle also uses, so every path converges on one source of
-			// truth. T1: in 'customer' mode the buyer's single designated stall;
-			// in 'admin' mode the picked stalls that match an admin-assigned tack
-			// number. Tack stalls are excluded from required shavings (T2) but
-			// still pay the normal stall rate.
-			$tack_mode  = isset( $data['stall_tack_mode'] ) ? (string) $data['stall_tack_mode'] : 'customer';
-			$tack_units = array();
-			if ( 'customer' === $tack_mode && ! empty( $submission['preferred_tack_stall'] ) ) {
-				$tack_units[] = sanitize_text_field( (string) $submission['preferred_tack_stall'] );
-			} elseif ( 'admin' === $tack_mode ) {
-				$admin_tack   = array_map( 'strval', (array) ( $data['stall_tack_admin_stalls'] ?? array() ) );
-				$picked_units = array_map( 'strval', (array) ( $submission['preferred_stall_units'] ?? array() ) );
-				$tack_units   = array_values( array_intersect( $picked_units, $admin_tack ) );
-			}
-			if ( ! empty( $tack_units ) ) {
-				$stall_notes = trim( $stall_notes . "\nTack Stalls: " . implode( ', ', $tack_units ) );
+			// Buyer-designated tack stall recorded on the `Tack Stalls:` notes line
+			// the admin chart chip also uses, so both converge on one source of
+			// truth. Written whenever tack is on (not 'off'). Excluded from required
+			// shavings (T2) but still pays the normal stall rate.
+			$tack_mode = isset( $data['stall_tack_mode'] ) ? (string) $data['stall_tack_mode'] : 'customer';
+			if ( 'off' !== $tack_mode && ! empty( $submission['preferred_tack_stall'] ) ) {
+				$stall_notes = trim( $stall_notes . "\nTack Stalls: " . sanitize_text_field( (string) $submission['preferred_tack_stall'] ) );
 			}
 
 			$inserted = false !== $wpdb->insert(
@@ -6761,12 +6739,11 @@ RV Lot: " . $rv_lot['name'] );
 			'stall_early_bird_nightly_rate'   => '0.00',
 			'stall_early_bird_weekend_rate'   => '0.00',
 			'required_shavings_enabled'       => 0,
-			// T1 — Tack Stall mode (off | admin | customer). Defaults 'customer'
-			// (mirrors the CPT default; this duplicated defaults map is read on
-			// the front end). `stall_tack_admin_stalls` holds the admin-assigned
-			// tack stall numbers used in 'admin' mode + the T2 shavings exclusion.
+			// Tack Stall mode — 'customer' (on) or 'off'. Defaults 'customer'
+			// (mirrors the CPT default; this duplicated defaults map is read on the
+			// front end). On = buyer flags a tack stall at checkout (T2 shavings
+			// exclusion); the admin assigns the actual one on the Stall Chart.
 			'stall_tack_mode'                 => 'customer',
-			'stall_tack_admin_stalls'         => array(),
 			'required_shavings_per_stall'     => 0,
 			'required_shavings_price'         => '0.00',
 			'additional_shavings_enabled'     => 0,
@@ -9962,22 +9939,8 @@ RV Lot: " . $rv_lot['name'] );
 			function countTackStalls(form, stallQty) {
 				var mode = form.dataset.tackMode || 'customer';
 				if (mode === 'off') { return 0; }
-				if (mode === 'customer') {
-					var sel = form.querySelector('[data-eem-tack-select]');
-					return (sel && sel.value !== '') ? 1 : 0;
-				}
-				/* admin mode — count picked stalls matching an admin-assigned tack
-				   number (only meaningful in pick-from-layout mode). */
-				var admin = [];
-				try { admin = JSON.parse(form.dataset.tackAdminStalls || '[]') || []; } catch (e) { admin = []; }
-				if (!admin.length) { return 0; }
-				var picker = form.querySelector('[data-eem-stall-picker]');
-				if (!picker) { return 0; }
-				var n = 0;
-				picker.querySelectorAll('.eem-stall-picker-input:checked').forEach(function (inp) {
-					if (admin.indexOf(String(inp.value)) !== -1) { n++; }
-				});
-				return Math.min(n, stallQty);
+				var sel = form.querySelector('[data-eem-tack-select]');
+				return (sel && sel.value !== '') ? 1 : 0;
 			}
 			document.addEventListener('change', function(ev) {
 				var inp = ev.target;

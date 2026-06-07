@@ -1665,10 +1665,9 @@ class EEM_Reservations_CPT {
 			'stall_early_bird_nightly_rate'   => isset( $source['stall_early_bird_nightly_rate'] ) ? $this->sanitize_money_value( $source['stall_early_bird_nightly_rate'] ) : $existing['stall_early_bird_nightly_rate'],
 			'stall_early_bird_weekend_rate'   => isset( $source['stall_early_bird_weekend_rate'] ) ? $this->sanitize_money_value( $source['stall_early_bird_weekend_rate'] ) : $existing['stall_early_bird_weekend_rate'],
 			'required_shavings_enabled'       => isset( $source['required_shavings_enabled'] ) ? 1 : 0,
-			// T1 — Tack Stall mode (off | admin | customer). Replaces the v2 #4
-			// boolean. The admin-assigned stall list is a separate top-level
-			// array key (`_en_stall_tack_admin_stalls`) saved in the editor's
-			// AJAX handler alongside blocked stalls, not through this map.
+			// Tack Stall mode — 'off' or 'customer' (on). On = buyers flag a tack
+			// stall at checkout for the shavings exclusion; the admin assigns the
+			// actual tack stall on the Stall Chart ("Mark as Tack Stall").
 			'stall_tack_mode'                 => self::sanitize_stall_tack_mode( isset( $source['stall_tack_mode'] ) ? $source['stall_tack_mode'] : ( $existing['stall_tack_mode'] ?? 'customer' ) ),
 			'required_shavings_per_stall'     => isset( $source['required_shavings_per_stall'] ) ? absint( $source['required_shavings_per_stall'] ) : 0,
 			'required_shavings_price'         => isset( $source['required_shavings_price'] ) ? $this->sanitize_money_value( $source['required_shavings_price'] ) : $existing['required_shavings_price'],
@@ -2099,7 +2098,6 @@ class EEM_Reservations_CPT {
 			'stall_early_bird_weekend_rate'   => '0.00',
 			'required_shavings_enabled'       => 0,
 			'stall_tack_mode'                 => 'customer',
-			'stall_tack_admin_stalls'         => array(),
 			'required_shavings_per_stall'     => 0,
 			'required_shavings_price'         => '0.00',
 			'additional_shavings_enabled'     => 0,
@@ -2239,21 +2237,17 @@ class EEM_Reservations_CPT {
 	}
 
 	/**
-	 * T1 — sanitize the Tack Stall mode.
+	 * Sanitize the Tack Stall mode.
 	 *
-	 * Replaces the v2 #4 boolean `stall_tack_designation_enabled`. Three modes:
-	 *   'off'      — no tack designation anywhere.
-	 *   'admin'    — admin pre-assigns which stall numbers are tack
-	 *                (see `_en_stall_tack_admin_stalls`); customer form hides
-	 *                the tack selector.
-	 *   'customer' — buyers mark one of their stalls as tack at checkout.
+	 * Two states: 'off' (no tack) or 'customer' (on — buyers flag a tack stall at
+	 * checkout for the shavings exclusion; the admin assigns the actual one on the
+	 * Stall Chart). The retired 'admin' value normalizes to 'customer' (on).
 	 *
 	 * @param mixed $value
-	 * @return string 'off' | 'admin' | 'customer'
+	 * @return string 'off' | 'customer'
 	 */
 	public static function sanitize_stall_tack_mode( $value ): string {
-		$v = sanitize_key( $value );
-		return in_array( $v, array( 'off', 'admin', 'customer' ), true ) ? $v : 'customer';
+		return ( 'off' === sanitize_key( $value ) ) ? 'off' : 'customer';
 	}
 
 	/**
