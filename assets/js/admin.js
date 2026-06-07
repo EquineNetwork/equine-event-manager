@@ -1677,6 +1677,155 @@
 		});
 	}
 
+	/* v2 — Single-order Cancel modal (Order Detail page). Cancel is terminal:
+	   frees inventory + emails the customer. Reloads on success so the status
+	   badge, More menu, and payment banner all re-render correctly. */
+	function openOrderCancelModal() {
+		var modal = document.getElementById('eem-order-cancel-modal');
+		if (!modal) return;
+		var errEl = modal.querySelector('[data-eem-order-cancel-error]');
+		if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
+		modal.classList.add('open');
+		modal.setAttribute('aria-hidden', 'false');
+		closeAllDropdowns();
+	}
+
+	function closeOrderCancelModal() {
+		var modal = document.getElementById('eem-order-cancel-modal');
+		if (!modal) return;
+		modal.classList.remove('open');
+		modal.setAttribute('aria-hidden', 'true');
+	}
+
+	function showOrderCancelError(message) {
+		var modal = document.getElementById('eem-order-cancel-modal');
+		if (!modal) return;
+		var errEl = modal.querySelector('[data-eem-order-cancel-error]');
+		if (!errEl) { window.alert(message); return; }
+		errEl.textContent = message;
+		errEl.hidden = false;
+	}
+
+	function submitOrderCancelForm() {
+		var modal = document.getElementById('eem-order-cancel-modal');
+		if (!modal) return;
+		var form = modal.querySelector('[data-eem-order-cancel-form]');
+		if (!form) return;
+
+		var errEl = modal.querySelector('[data-eem-order-cancel-error]');
+		if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
+
+		var confirmBtn = modal.querySelector('[data-eem-action="order-cancel-single-confirm"]');
+		if (confirmBtn) confirmBtn.disabled = true;
+
+		fetch(window.ajaxurl || '/wp-admin/admin-ajax.php', {
+			method: 'POST',
+			credentials: 'same-origin',
+			body: new FormData(form)
+		}).then(function (response) {
+			return response.json().catch(function () { return { success: false, data: { message: 'Unexpected server response.' } }; });
+		}).then(function (json) {
+			if (confirmBtn) confirmBtn.disabled = false;
+			if (!json || !json.success) {
+				showOrderCancelError((json && json.data && json.data.message) ? json.data.message : 'Cancellation failed.');
+				return;
+			}
+			if (window.EEM && typeof window.EEM.showSaveToast === 'function') {
+				var msg = 'Order cancelled.';
+				if (json.data && json.data.notification_sent) { msg += ' Customer notified by email.'; }
+				window.EEM.showSaveToast(msg);
+			}
+			setTimeout(function () { window.location.reload(); }, 700);
+		}).catch(function () {
+			if (confirmBtn) confirmBtn.disabled = false;
+			showOrderCancelError('Network error. Please try again.');
+		});
+	}
+
+	/* v2 — Orders-list bulk Cancel. Lean sequential queue over the
+	   eem_order_bulk_cancel_step endpoint (no multi-state modal). */
+	var _bulkCancelKeys = [];
+
+	function bulkCancelNonce() {
+		return (window.eemOrderRowActions && window.eemOrderRowActions.nonces && window.eemOrderRowActions.nonces.eem_bulk_cancel) || '';
+	}
+
+	function openOrdersBulkCancelModal() {
+		var checked = document.querySelectorAll('input.eem-orders-row-cb:checked');
+		if (!checked.length) {
+			window.alert('Select at least one order before clicking Apply.');
+			return;
+		}
+		_bulkCancelKeys = Array.prototype.map.call(checked, function (cb) { return cb.value; });
+		var modal = document.getElementById('eem-orders-bulk-cancel-modal');
+		if (!modal) return;
+		var summary = modal.querySelector('[data-eem-bulk-cancel-summary]');
+		if (summary) summary.textContent = 'Cancel ' + _bulkCancelKeys.length + ' selected order' + (_bulkCancelKeys.length === 1 ? '' : 's') + '?';
+		var progress = modal.querySelector('[data-eem-bulk-cancel-progress]');
+		if (progress) { progress.innerHTML = ''; progress.hidden = true; }
+		var errEl = modal.querySelector('[data-eem-bulk-cancel-error]');
+		if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
+		var confirmBtn = modal.querySelector('[data-eem-bulk-cancel-confirm]');
+		if (confirmBtn) confirmBtn.disabled = false;
+		modal.classList.add('open');
+		modal.setAttribute('aria-hidden', 'false');
+		closeAllDropdowns();
+	}
+
+	function closeOrdersBulkCancelModal() {
+		var modal = document.getElementById('eem-orders-bulk-cancel-modal');
+		if (!modal) return;
+		modal.classList.remove('open');
+		modal.setAttribute('aria-hidden', 'true');
+	}
+
+	function startBulkCancelQueue() {
+		var modal = document.getElementById('eem-orders-bulk-cancel-modal');
+		if (!modal || !_bulkCancelKeys.length) return;
+		var nonce = bulkCancelNonce();
+		var reason = (modal.querySelector('[data-eem-bulk-cancel-reason]') || {}).value || '';
+		var notifyEl = modal.querySelector('[data-eem-bulk-cancel-notify]');
+		var notify = notifyEl ? (notifyEl.checked ? '1' : '') : '1';
+		var confirmBtn = modal.querySelector('[data-eem-bulk-cancel-confirm]');
+		if (confirmBtn) confirmBtn.disabled = true;
+		var progress = modal.querySelector('[data-eem-bulk-cancel-progress]');
+		if (progress) { progress.hidden = false; progress.innerHTML = ''; }
+
+		var queue = _bulkCancelKeys.slice();
+		var done = 0, failed = 0;
+
+		function step() {
+			if (!queue.length) {
+				if (window.EEM && typeof window.EEM.showSaveToast === 'function') {
+					window.EEM.showSaveToast(done + ' order' + (done === 1 ? '' : 's') + ' cancelled' + (failed ? ' · ' + failed + ' failed' : '') + '.');
+				}
+				setTimeout(function () { window.location.reload(); }, 900);
+				return;
+			}
+			var key = queue.shift();
+			var li = document.createElement('li');
+			li.className = 'eem-bulk-cancel-progress-item';
+			li.textContent = '⏳ ' + key.substring(0, 12) + '…';
+			if (progress) progress.appendChild(li);
+
+			var body = new FormData();
+			body.append('action', 'eem_order_bulk_cancel_step');
+			body.append('_eem_bulk_cancel_nonce', nonce);
+			body.append('order_key', key);
+			body.append('reason', reason);
+			body.append('notify', notify);
+
+			fetch(window.ajaxurl || '/wp-admin/admin-ajax.php', { method: 'POST', credentials: 'same-origin', body: body })
+				.then(function (r) { return r.json().catch(function () { return { success: false }; }); })
+				.then(function (json) {
+					if (json && json.success) { done++; li.textContent = '✓ ' + key.substring(0, 12) + '…' + (json.data && json.data.was_noop ? ' (already cancelled)' : ''); }
+					else { failed++; li.textContent = '✗ ' + key.substring(0, 12) + '… ' + ((json && json.data && json.data.message) || 'failed'); }
+					step();
+				}).catch(function () { failed++; li.textContent = '✗ ' + key.substring(0, 12) + '… network error'; step(); });
+		}
+		step();
+	}
+
 	/* C13.C.4b — Remove-discount modal (Order Detail Order Summary). Mirrors the
 	   refund modal pattern; reloads on success so the recomputed total renders. */
 	function openRemoveDiscountModal() {
@@ -2176,7 +2325,15 @@
 			document.querySelectorAll('input.eem-orders-row-cb').forEach(function (cb) { cb.checked = checked; });
 		},
 		'orders-bulk-apply': function () {
+			var sel = document.querySelector('[data-eem-orders-bulk-action]');
+			if (sel && sel.value === 'cancel') { openOrdersBulkCancelModal(); return; }
 			openOrdersBulkRefundModal();
+		},
+		'orders-bulk-cancel-close': function () {
+			closeOrdersBulkCancelModal();
+		},
+		'orders-bulk-cancel-confirm': function () {
+			startBulkCancelQueue();
 		},
 		'orders-bulk-refund-close': function () {
 			closeOrdersBulkRefundModal();
@@ -2206,6 +2363,16 @@
 		},
 		'order-refund-single-confirm': function () {
 			submitOrderRefundForm();
+		},
+		/* v2 — Single-order Cancel modal (Order Detail page). */
+		'order-cancel-single': function () {
+			openOrderCancelModal();
+		},
+		'order-cancel-single-close': function () {
+			closeOrderCancelModal();
+		},
+		'order-cancel-single-confirm': function () {
+			submitOrderCancelForm();
 		},
 		/* C13.C.4b — Remove-discount modal (Order Detail Order Summary). */
 		'order-remove-discount-open': function () {

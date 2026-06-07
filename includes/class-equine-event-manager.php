@@ -285,6 +285,11 @@ class EEM_Plugin {
 		// new public process_amount_refund() adapter on EEM_Admin.
 		add_action( 'wp_ajax_eem_order_refund_single', array( $this->admin, 'handle_ajax_refund_single' ) );
 
+		// v2 — order cancellation (single + bulk step). Cancel is terminal,
+		// frees inventory, and emails the customer; independent of refunds.
+		add_action( 'wp_ajax_eem_order_cancel_single', array( $this->admin, 'handle_ajax_cancel_single' ) );
+		add_action( 'wp_ajax_eem_order_bulk_cancel_step', array( $this->admin, 'handle_ajax_bulk_cancel_step' ) );
+
 		// C6.C — bulk-refund step endpoint. Called sequentially by the
 		// runBulkRefundQueue JS layer, once per selected order. Server
 		// computes amount = remaining_refundable at call time (no

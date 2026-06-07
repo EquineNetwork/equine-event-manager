@@ -7268,6 +7268,112 @@ class EEM_Admin {
 	}
 
 	/**
+	 * AJAX endpoint: cancel a single order (v2 — order cancellation).
+	 *
+	 * Sets the order to cancelled (terminal; frees its stall/RV inventory) and,
+	 * when the admin opted in, emails the customer a cancellation notice carrying
+	 * the reservation's cancellation policy. Cancel is independent of refunds —
+	 * if money is owed back the admin refunds the (still-recorded) payment first.
+	 *
+	 * @return void
+	 */
+	public function handle_ajax_cancel_single() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'code' => 'capability', 'message' => __( 'You do not have permission to cancel orders.', 'equine-event-manager' ) ), 403 );
+		}
+
+		$order_key = isset( $_POST['order_key'] ) ? sanitize_text_field( wp_unslash( $_POST['order_key'] ) ) : '';
+		$nonce     = isset( $_POST['_eem_cancel_single_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['_eem_cancel_single_nonce'] ) ) : '';
+
+		if ( '' === $order_key || ! wp_verify_nonce( $nonce, 'eem_cancel_single_' . $order_key ) ) {
+			wp_send_json_error( array( 'code' => 'nonce', 'message' => __( 'Security check failed. Please reload and try again.', 'equine-event-manager' ) ), 400 );
+		}
+
+		$reason = isset( $_POST['reason'] ) ? sanitize_textarea_field( wp_unslash( $_POST['reason'] ) ) : '';
+		$notify = ! isset( $_POST['notify'] ) || ! empty( $_POST['notify'] );
+
+		$order = $this->orders_repository->get_order( $order_key );
+		if ( ! is_array( $order ) ) {
+			wp_send_json_error( array( 'code' => 'not_found', 'message' => __( 'Order not found.', 'equine-event-manager' ) ), 404 );
+		}
+		if ( isset( $order['status_slug'] ) && 'cancelled' === $order['status_slug'] ) {
+			wp_send_json_error( array( 'code' => 'already_cancelled', 'message' => __( 'This order is already cancelled.', 'equine-event-manager' ) ), 409 );
+		}
+
+		$cancelled = $this->orders_repository->cancel_order( $order_key, $reason );
+		if ( ! $cancelled ) {
+			wp_send_json_error( array( 'code' => 'cancel_failed', 'message' => __( 'The order could not be cancelled. Please reload and try again.', 'equine-event-manager' ) ), 400 );
+		}
+
+		// Customer notification — non-fatal: a send failure doesn't undo the cancel.
+		$notification_sent = false;
+		if ( $notify ) {
+			$emailed           = $this->send_cancellation_email_for_order( $order, $reason );
+			$notification_sent = ! is_wp_error( $emailed ) && true === $emailed;
+		}
+
+		$status_css        = EEM_Orders_List_Page::status_slug_to_css_class( 'cancelled' );
+		$status_badge_html = sprintf(
+			'<span class="eem-status-badge eem-status-badge--%1$s">%2$s</span>',
+			esc_attr( $status_css ),
+			esc_html__( 'Cancelled', 'equine-event-manager' )
+		);
+
+		wp_send_json_success( array(
+			'new_status_slug'   => 'cancelled',
+			'new_status_label'  => __( 'Cancelled', 'equine-event-manager' ),
+			'new_status_css'    => $status_css,
+			'status_badge_html' => $status_badge_html,
+			'notification_sent' => $notification_sent,
+		) );
+	}
+
+	/**
+	 * AJAX endpoint: bulk-cancel single step. Processes ONE order from a bulk
+	 * batch; the JS layer calls it sequentially per selected order so a per-order
+	 * failure doesn't halt the batch (mirrors the bulk-refund step contract).
+	 *
+	 * @return void
+	 */
+	public function handle_ajax_bulk_cancel_step() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'code' => 'capability', 'message' => __( 'You do not have permission to cancel orders.', 'equine-event-manager' ) ), 403 );
+		}
+
+		$nonce = isset( $_POST['_eem_bulk_cancel_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['_eem_bulk_cancel_nonce'] ) ) : '';
+		if ( ! wp_verify_nonce( $nonce, 'eem_bulk_cancel' ) ) {
+			wp_send_json_error( array( 'code' => 'nonce', 'message' => __( 'Security check failed. Please reload and try again.', 'equine-event-manager' ) ), 400 );
+		}
+
+		$order_key = isset( $_POST['order_key'] ) ? sanitize_text_field( wp_unslash( $_POST['order_key'] ) ) : '';
+		$reason    = isset( $_POST['reason'] ) ? sanitize_textarea_field( wp_unslash( $_POST['reason'] ) ) : '';
+		$notify    = ! isset( $_POST['notify'] ) || ! empty( $_POST['notify'] );
+
+		$order = '' !== $order_key ? $this->orders_repository->get_order( $order_key ) : null;
+		if ( ! is_array( $order ) ) {
+			wp_send_json_error( array( 'code' => 'not_found', 'order_key' => $order_key, 'message' => __( 'Order not found.', 'equine-event-manager' ) ), 404 );
+		}
+
+		$was_noop = isset( $order['status_slug'] ) && 'cancelled' === $order['status_slug'];
+		if ( ! $was_noop ) {
+			$cancelled = $this->orders_repository->cancel_order( $order_key, $reason );
+			if ( ! $cancelled ) {
+				wp_send_json_error( array( 'code' => 'cancel_failed', 'order_key' => $order_key, 'message' => __( 'Could not cancel this order.', 'equine-event-manager' ) ), 400 );
+			}
+			if ( $notify ) {
+				$this->send_cancellation_email_for_order( $order, $reason );
+			}
+		}
+
+		wp_send_json_success( array(
+			'order_key'        => $order_key,
+			'new_status_slug'  => 'cancelled',
+			'new_status_label' => __( 'Cancelled', 'equine-event-manager' ),
+			'was_noop'         => $was_noop,
+		) );
+	}
+
+	/**
 	 * AJAX endpoint: bulk-refund single step (C6.C).
 	 *
 	 * Processes ONE order from a bulk-refund batch. The JS layer
@@ -11227,6 +11333,137 @@ class EEM_Admin {
 			$headers,
 			array(
 				'type'        => 'refund_notification',
+				'order_key'   => isset( $order['order_key'] ) ? (string) $order['order_key'] : '',
+				'event_label' => isset( $order['event_label'] ) ? (string) $order['event_label'] : '',
+			)
+		);
+	}
+
+	/**
+	 * Resolve the reservation ID backing an order, parsed from the
+	 * "Reservation setup ID: N" note line written at checkout. Used to pull the
+	 * per-reservation cancellation policy into the cancellation email.
+	 *
+	 * @param array<string,mixed> $order Grouped order payload.
+	 * @return int Reservation ID, or 0 when not present.
+	 */
+	private function get_order_reservation_id( $order ) {
+		if ( isset( $order['reservation_id'] ) && (int) $order['reservation_id'] > 0 ) {
+			return (int) $order['reservation_id'];
+		}
+		$notes = isset( $order['notes'] ) ? (string) $order['notes'] : '';
+		if ( preg_match( '/Reservation setup ID:\s*(\d+)/', $notes, $m ) ) {
+			return (int) $m[1];
+		}
+		return 0;
+	}
+
+	/**
+	 * Build the customer-facing order-cancellation email HTML. Mirrors the
+	 * refund-email layout (company-branded, inline-styled for client safety) and
+	 * surfaces the reservation's cancellation policy (resolved per reservation,
+	 * with the event default as fallback) per the cancellation-policy decision.
+	 *
+	 * @param array<string,mixed> $order  Grouped order payload.
+	 * @param string              $reason Optional admin-entered cancellation reason.
+	 * @return string
+	 */
+	private function build_cancellation_email_html( $order, $reason = '' ) {
+		$company_settings = $this->get_company_settings();
+		$company_logo_url = $this->get_company_logo_url( 'medium' );
+		$event_label      = ! empty( $order['reservation_title'] ) ? $order['reservation_title'] : $order['event_name'];
+		$support_chunks   = array_filter(
+			array(
+				! empty( $company_settings['support_phone'] ) ? $this->format_phone_label( $company_settings['support_phone'] ) : '',
+				! empty( $company_settings['support_email'] ) ? $company_settings['support_email'] : '',
+			)
+		);
+		$rows = array(
+			__( 'Order Number', 'equine-event-manager' ) => $this->format_order_number_display( (string) $order['order_number'] ),
+			__( 'Event', 'equine-event-manager' )         => $event_label,
+		);
+		if ( '' !== trim( (string) $reason ) ) {
+			$rows[ __( 'Reason', 'equine-event-manager' ) ] = $reason;
+		}
+
+		$policy_text = '';
+		$reservation_id = $this->get_order_reservation_id( $order );
+		if ( $reservation_id > 0 && function_exists( 'eem_resolve_cancellation_policy' ) ) {
+			$resolved = eem_resolve_cancellation_policy( $reservation_id );
+			$policy_text = ( null !== $resolved ) ? trim( (string) $resolved ) : '';
+		}
+
+		ob_start();
+		?>
+		<div style="margin:0;padding:28px;background:#f5f7fb;font-family:Arial,sans-serif;color:#111827;">
+			<div style="max-width:680px;margin:0 auto;">
+				<div style="margin:0 0 18px;padding:28px 30px;background:#eef2f6;border:1px solid #d9e1ea;border-radius:24px;color:#111827;">
+					<?php if ( $company_logo_url ) : ?>
+						<p style="margin:0 0 20px;"><img src="<?php echo esc_url( $company_logo_url ); ?>" alt="<?php esc_attr_e( 'Company logo', 'equine-event-manager' ); ?>" style="max-width:180px;max-height:54px;display:block;object-fit:contain;" /></p>
+					<?php endif; ?>
+					<div style="font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#5b6472;"><?php esc_html_e( 'Reservation Cancelled', 'equine-event-manager' ); ?></div>
+					<h1 style="margin:10px 0 12px;font-size:30px;line-height:1.1;color:#111827;"><?php echo esc_html( $event_label ); ?></h1>
+					<p style="margin:0;font-size:16px;line-height:1.7;color:#111827;"><?php echo esc_html( sprintf( /* translators: %s: order number. */ __( 'Your reservation under order #%s has been cancelled.', 'equine-event-manager' ), $order['order_number'] ) ); ?></p>
+				</div>
+
+				<div style="margin:0 0 18px;padding:26px 28px;background:#eef2f6;border:1px solid #d9e1ea;border-radius:24px;color:#111827;">
+					<p style="margin:0 0 16px;font-size:16px;line-height:1.7;color:#111827;"><?php echo esc_html( sprintf( /* translators: %s: customer name. */ __( 'Hi %s, the reservation below has been cancelled. If you believe this was a mistake, please contact us.', 'equine-event-manager' ), $order['customer_name'] ) ); ?></p>
+					<div style="display:grid;gap:12px;">
+						<?php foreach ( $rows as $label => $value ) : ?>
+							<div style="display:flex;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid #d9e1ea;">
+								<span style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5b6472;"><?php echo esc_html( $label ); ?></span>
+								<strong style="font-size:15px;color:#111827;text-align:right;"><?php echo esc_html( $value ); ?></strong>
+							</div>
+						<?php endforeach; ?>
+					</div>
+				</div>
+
+				<?php if ( '' !== $policy_text ) : ?>
+					<div style="margin:0 0 18px;padding:20px 24px;background:#f3f4f5;border:1px solid #e5e7eb;border-radius:18px;color:#50575e;">
+						<div style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#031B4E;margin-bottom:8px;"><?php esc_html_e( 'Cancellation Policy', 'equine-event-manager' ); ?></div>
+						<p style="margin:0;font-size:13px;line-height:1.6;color:#50575e;"><?php echo wp_kses( nl2br( esc_html( $policy_text ) ), array( 'br' => array() ) ); ?></p>
+					</div>
+				<?php endif; ?>
+
+				<?php if ( ! empty( $support_chunks ) ) : ?>
+					<p style="margin:0;padding:0 10px;text-align:center;color:#4b5563;font-size:13px;line-height:1.7;"><?php echo esc_html__( 'Questions? Contact us:', 'equine-event-manager' ) . ' ' . esc_html( implode( ' | ', $support_chunks ) ); ?></p>
+				<?php endif; ?>
+			</div>
+		</div>
+		<?php
+
+		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Send the customer-facing order-cancellation email.
+	 *
+	 * @param array<string,mixed> $order  Grouped order payload.
+	 * @param string              $reason Optional cancellation reason.
+	 * @return bool|WP_Error True on send, WP_Error on missing email / failure.
+	 */
+	public function send_cancellation_email_for_order( $order, $reason = '' ) {
+		if ( empty( $order ) || empty( $order['email'] ) ) {
+			return new WP_Error( 'cancellation_email_missing_email', __( 'No customer email on file for this order.', 'equine-event-manager' ) );
+		}
+
+		$receipt_settings  = $this->get_receipt_settings();
+		$reservation_label = ! empty( $order['reservation_title'] ) ? $order['reservation_title'] : $order['event_name'];
+		$headers           = array( 'Content-Type: text/html; charset=UTF-8' );
+		if ( ! empty( $receipt_settings['from_name'] ) && is_email( $receipt_settings['from_email'] ) ) {
+			$headers[] = 'From: ' . wp_specialchars_decode( $receipt_settings['from_name'], ENT_QUOTES ) . ' <' . $receipt_settings['from_email'] . '>';
+		}
+		if ( is_email( $receipt_settings['reply_to_email'] ) ) {
+			$headers[] = 'Reply-To: ' . $receipt_settings['reply_to_email'];
+		}
+
+		return EEM_Mailer::send_html_email(
+			sanitize_email( $order['email'] ),
+			sprintf( /* translators: %s: event or reservation title. */ __( 'Reservation cancelled — %s', 'equine-event-manager' ), $reservation_label ),
+			$this->build_cancellation_email_html( $order, $reason ),
+			$headers,
+			array(
+				'type'        => 'cancellation_notification',
 				'order_key'   => isset( $order['order_key'] ) ? (string) $order['order_key'] : '',
 				'event_label' => isset( $order['event_label'] ) ? (string) $order['event_label'] : '',
 			)

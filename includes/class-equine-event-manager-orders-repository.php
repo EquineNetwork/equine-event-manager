@@ -407,6 +407,75 @@ class EEM_Orders_Repository {
 	}
 
 	/**
+	 * Cancel an order: set every component's payment_status to 'cancelled',
+	 * record the cancellation reason + timestamp in the notes, and emit the
+	 * status-change telemetry/activity-log event. Cancellation is terminal and
+	 * independent of refunds (per product decision: cancel does NOT auto-refund;
+	 * if money is owed back, the admin refunds first, then cancels). Cancelled
+	 * orders are excluded from inventory usage, freeing their stalls/RV lots.
+	 *
+	 * @param string $order_key Order key.
+	 * @param string $reason    Optional admin-entered cancellation reason.
+	 * @return bool True if at least one component was updated.
+	 */
+	public function cancel_order( $order_key, $reason = '' ) {
+		$order = $this->get_order( $order_key );
+
+		if ( ! $order ) {
+			return false;
+		}
+
+		$old_status_slug = isset( $order['status_slug'] ) ? (string) $order['status_slug'] : '';
+		if ( 'cancelled' === $old_status_slug ) {
+			return false; // Already cancelled — idempotent no-op.
+		}
+
+		$updated_any   = false;
+		$cancelled_at  = current_time( 'mysql' );
+		$reason        = trim( sanitize_textarea_field( $reason ) );
+
+		foreach ( $order['components'] as $component ) {
+			$notes = isset( $component['notes'] ) ? (string) $component['notes'] : '';
+			$notes = $this->upsert_note_line( $notes, 'Order Status', 'Cancelled' );
+			$notes = $this->upsert_note_line( $notes, 'Cancelled At', $cancelled_at );
+			if ( '' !== $reason ) {
+				$notes = $this->upsert_note_line( $notes, 'Cancellation Reason', $reason );
+			}
+
+			// payment_status -> cancelled; transaction_id + gateway preserved so
+			// the original payment record survives for a separate refund.
+			$updated_any = $this->update_component_fields(
+				$component['table'],
+				$component['row_id'],
+				array(
+					'payment_status' => 'cancelled',
+					'notes'          => $notes,
+				),
+				array( '%s', '%s' )
+			) || $updated_any;
+		}
+
+		if ( $updated_any && 'cancelled' !== $old_status_slug ) {
+			/**
+			 * @since 2.7.67
+			 */
+			do_action( 'eem_order_payment_status_changed', array(
+				'order_key'      => (string) $order_key,
+				'old_status'     => $old_status_slug,
+				'new_status'     => 'cancelled',
+				'gateway'        => '',
+				'transaction_id' => '',
+				'source'         => 'cancel_order',
+				'actor_type'     => is_user_logged_in() ? 'admin' : 'system',
+				'actor_id'       => get_current_user_id() ?: null,
+				'reason'         => $reason,
+			) );
+		}
+
+		return $updated_any;
+	}
+
+	/**
 	 * Update saved stall and RV unit assignments for an order.
 	 *
 	 * @param string $order_key   Order key.
@@ -1487,6 +1556,13 @@ class EEM_Orders_Repository {
 			return $current;
 		}
 
+		// Cancellation is terminal — if any component is cancelled the order reads
+		// cancelled (cancel_order sets all components, so this is a safety net for
+		// any mixed state).
+		if ( in_array( 'cancelled', array( $current, $incoming ), true ) ) {
+			return 'cancelled';
+		}
+
 		if ( in_array( 'refunded', array( $current, $incoming ), true ) ) {
 			return 'partially_refunded';
 		}
@@ -1779,6 +1855,15 @@ class EEM_Orders_Repository {
 	 */
 	private function get_order_status_display( $payment_status, $notes ) {
 		$status = sanitize_key( (string) $payment_status );
+
+		// Cancelled is a terminal admin action — takes precedence over the
+		// underlying payment state (a paid-then-cancelled order reads "Cancelled").
+		if ( 'cancelled' === $status ) {
+			return array(
+				'label' => __( 'Cancelled', 'equine-event-manager' ),
+				'slug'  => 'cancelled',
+			);
+		}
 
 		if ( 'partially_refunded' === $status ) {
 			return array(

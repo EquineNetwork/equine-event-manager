@@ -182,6 +182,8 @@ class EEM_Order_Detail_Page {
 
 		<?php $this->render_refund_modal( $order ); ?>
 
+		<?php $this->render_cancel_modal( $order ); ?>
+
 		<?php $this->render_remove_discount_modal( $order ); ?>
 
 		<?php
@@ -328,6 +330,9 @@ class EEM_Order_Detail_Page {
 				<?php endif; ?>
 				<a class="eem-row-dd-item" href="#" data-eem-action="order-export-csv-single"><?php esc_html_e( 'Export CSV', 'equine-event-manager' ); ?></a>
 				<a class="eem-row-dd-item" href="#" data-eem-action="order-refund-single"><?php esc_html_e( 'Refund Order', 'equine-event-manager' ); ?></a>
+				<?php if ( ! isset( $order['status_slug'] ) || 'cancelled' !== $order['status_slug'] ) : ?>
+					<a class="eem-row-dd-item eem-row-dd-item--danger" href="#" data-eem-action="order-cancel-single"><?php esc_html_e( 'Cancel Order', 'equine-event-manager' ); ?></a>
+				<?php endif; ?>
 				<a class="eem-row-dd-item eem-row-dd-item--danger" href="#" data-eem-action="order-trash"><?php esc_html_e( 'Move to Trash', 'equine-event-manager' ); ?></a>
 			</div>
 		</div>
@@ -951,6 +956,66 @@ class EEM_Order_Detail_Page {
 				<footer class="eem-modal-foot eem-modal-foot--split">
 					<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="order-refund-single-close"><?php esc_html_e( 'Cancel', 'equine-event-manager' ); ?></button>
 					<button type="button" class="eem-btn eem-btn-primary" data-eem-action="order-refund-single-confirm"><?php esc_html_e( 'Confirm refund', 'equine-event-manager' ); ?></button>
+				</footer>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Cancel-order modal — captures an optional reason and a notify toggle, then
+	 * dispatches eem_order_cancel_single. Cancelling is terminal: it frees the
+	 * reserved stalls/RV lots and emails the customer, but does NOT refund any
+	 * payment (the admin refunds separately if money is owed back).
+	 *
+	 * @param array<string, mixed> $order
+	 * @return void
+	 */
+	private function render_cancel_modal( array $order ) {
+		if ( isset( $order['status_slug'] ) && 'cancelled' === $order['status_slug'] ) {
+			return; // Already cancelled — no modal needed.
+		}
+		$order_key     = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
+		$customer_name = isset( $order['customer_name'] ) ? (string) $order['customer_name'] : '';
+		?>
+		<div class="eem-modal" id="eem-order-cancel-modal" role="dialog" aria-modal="true" aria-labelledby="eem-order-cancel-title" aria-hidden="true">
+			<div class="eem-modal-card">
+				<header class="eem-modal-head">
+					<h2 class="eem-modal-title" id="eem-order-cancel-title"><?php esc_html_e( 'Cancel Order', 'equine-event-manager' ); ?></h2>
+					<button type="button" class="eem-modal-close" data-eem-action="order-cancel-single-close" aria-label="<?php esc_attr_e( 'Close', 'equine-event-manager' ); ?>">&times;</button>
+				</header>
+				<form class="eem-modal-body" method="post" data-eem-order-cancel-form>
+					<?php wp_nonce_field( 'eem_cancel_single_' . $order_key, '_eem_cancel_single_nonce' ); ?>
+					<input type="hidden" name="action" value="eem_order_cancel_single" />
+					<input type="hidden" name="order_key" value="<?php echo esc_attr( $order_key ); ?>" />
+
+					<p class="eem-order-refund-summary">
+						<?php
+						printf(
+							/* translators: 1: customer name */
+							esc_html__( 'Cancel this order for %1$s. The reserved stalls / RV lots are freed for others, and the customer is emailed a cancellation notice. This does NOT refund any payment — refund separately first if money is owed back.', 'equine-event-manager' ),
+							'<strong>' . esc_html( $customer_name ) . '</strong>'
+						);
+						?>
+					</p>
+
+					<div class="eem-field-row">
+						<label class="eem-field-label" for="eem-order-cancel-reason"><?php esc_html_e( 'Reason (optional)', 'equine-event-manager' ); ?></label>
+						<textarea class="eem-field-textarea" id="eem-order-cancel-reason" name="reason" rows="3" maxlength="500" placeholder="<?php esc_attr_e( 'e.g. Customer can no longer attend', 'equine-event-manager' ); ?>"></textarea>
+					</div>
+
+					<div class="eem-field-row eem-order-refund-notify-row">
+						<label class="eem-order-refund-notify">
+							<input type="checkbox" name="notify" value="1" checked />
+							<?php esc_html_e( 'Email the customer a cancellation notice', 'equine-event-manager' ); ?>
+						</label>
+					</div>
+
+					<div class="eem-order-refund-error" data-eem-order-cancel-error hidden></div>
+				</form>
+				<footer class="eem-modal-foot eem-modal-foot--split">
+					<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="order-cancel-single-close"><?php esc_html_e( 'Keep order', 'equine-event-manager' ); ?></button>
+					<button type="button" class="eem-btn eem-btn-delete" data-eem-action="order-cancel-single-confirm"><?php esc_html_e( 'Cancel order', 'equine-event-manager' ); ?></button>
 				</footer>
 			</div>
 		</div>

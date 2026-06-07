@@ -139,6 +139,7 @@ class EEM_Orders_List_Page {
 		?>
 		<?php $this->render_action_notice(); ?>
 		<?php $this->render_bulk_refund_modal(); ?>
+		<?php $this->render_bulk_cancel_modal(); ?>
 		<?php /* C5.F-toolbar: toolbar restructured to mirror the C4
 		         Reservations pattern — two stacked .eem-list-toolbar rows
 		         using shared C1.3 primitives. Row 1 = event filter + billing
@@ -272,6 +273,7 @@ class EEM_Orders_List_Page {
 					<select class="eem-toolbar-select" name="bulk_action" data-eem-orders-bulk-action>
 						<option value=""><?php esc_html_e( 'Bulk actions', 'equine-event-manager' ); ?></option>
 						<option value="refund"><?php esc_html_e( 'Refund Selected', 'equine-event-manager' ); ?></option>
+						<option value="cancel"><?php esc_html_e( 'Cancel Selected', 'equine-event-manager' ); ?></option>
 					</select>
 					<button type="button" class="eem-toolbar-btn" data-eem-action="orders-bulk-apply"><?php esc_html_e( 'Apply', 'equine-event-manager' ); ?></button>
 				</form>
@@ -903,6 +905,7 @@ class EEM_Orders_List_Page {
 				'eem_order_trash'               => wp_create_nonce( 'eem_order_trash' ),
 				'eem_order_print_receipt'       => wp_create_nonce( 'eem_order_print_receipt' ),
 				'eem_orders_bulk_refund'        => wp_create_nonce( 'eem_orders_bulk_refund' ),
+				'eem_bulk_cancel'               => wp_create_nonce( 'eem_bulk_cancel' ),
 			),
 		) );
 	}
@@ -945,6 +948,51 @@ class EEM_Orders_List_Page {
 	 *
 	 * @return void
 	 */
+	/**
+	 * Lean bulk-cancel modal (v2). Single-state: reason + notify + a per-order
+	 * progress list the JS fills as it runs the sequential cancel queue against
+	 * the eem_order_bulk_cancel_step endpoint. Cancelling frees inventory and
+	 * emails each customer; it does not refund.
+	 *
+	 * @return void
+	 */
+	private function render_bulk_cancel_modal() {
+		?>
+		<div class="eem-modal eem-bulk-cancel-modal" id="eem-orders-bulk-cancel-modal" role="dialog" aria-modal="true" aria-labelledby="eem-orders-bulk-cancel-title" aria-hidden="true" data-eem-bulk-cancel-modal>
+			<div class="eem-modal-card">
+				<header class="eem-modal-head">
+					<h2 class="eem-modal-title" id="eem-orders-bulk-cancel-title"><?php esc_html_e( 'Cancel Selected Orders', 'equine-event-manager' ); ?></h2>
+					<button type="button" class="eem-modal-close" data-eem-action="orders-bulk-cancel-close" aria-label="<?php esc_attr_e( 'Close', 'equine-event-manager' ); ?>">&times;</button>
+				</header>
+				<div class="eem-modal-body">
+					<?php wp_nonce_field( 'eem_bulk_cancel', '_eem_bulk_cancel_nonce' ); ?>
+					<p class="eem-order-refund-summary" data-eem-bulk-cancel-summary><?php esc_html_e( 'Cancel the selected orders?', 'equine-event-manager' ); ?></p>
+					<p class="eem-field-hint"><?php esc_html_e( 'Each order is cancelled, its stalls / RV lots are freed, and the customer is emailed. This does not refund any payment.', 'equine-event-manager' ); ?></p>
+
+					<div class="eem-field-row">
+						<label class="eem-field-label" for="eem-orders-bulk-cancel-reason"><?php esc_html_e( 'Reason (optional)', 'equine-event-manager' ); ?></label>
+						<textarea class="eem-field-textarea" id="eem-orders-bulk-cancel-reason" name="reason" rows="2" maxlength="500" data-eem-bulk-cancel-reason></textarea>
+					</div>
+
+					<div class="eem-field-row eem-order-refund-notify-row">
+						<label class="eem-order-refund-notify">
+							<input type="checkbox" data-eem-bulk-cancel-notify value="1" checked />
+							<?php esc_html_e( 'Email each customer a cancellation notice', 'equine-event-manager' ); ?>
+						</label>
+					</div>
+
+					<ul class="eem-bulk-cancel-progress" data-eem-bulk-cancel-progress hidden></ul>
+					<div class="eem-order-refund-error" data-eem-bulk-cancel-error hidden></div>
+				</div>
+				<footer class="eem-modal-foot eem-modal-foot--split">
+					<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="orders-bulk-cancel-close"><?php esc_html_e( 'Keep orders', 'equine-event-manager' ); ?></button>
+					<button type="button" class="eem-btn eem-btn-delete" data-eem-action="orders-bulk-cancel-confirm" data-eem-bulk-cancel-confirm><?php esc_html_e( 'Cancel orders', 'equine-event-manager' ); ?></button>
+				</footer>
+			</div>
+		</div>
+		<?php
+	}
+
 	private function render_bulk_refund_modal() {
 		// C6.C: modal now has three render states the JS toggles between:
 		//   - intro      (default open state — confirm form, tab-close warning)

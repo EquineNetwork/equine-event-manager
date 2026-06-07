@@ -7084,18 +7084,21 @@ RV Lot: " . $rv_lot['name'] );
 		$stall_table = $wpdb->prefix . 'en_stall_reservations';
 		$rv_table    = $wpdb->prefix . 'en_rv_reservations';
 
+		// Refunded AND cancelled line items free their inventory (v2 — order cancel).
 		$stall_sold = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT COALESCE(SUM(stall_qty + tack_stall_qty), 0) FROM {$stall_table} WHERE notes LIKE %s AND payment_status != %s",
+				"SELECT COALESCE(SUM(stall_qty + tack_stall_qty), 0) FROM {$stall_table} WHERE notes LIKE %s AND payment_status NOT IN ( %s, %s )",
 				$notes_like,
-				'refunded'
+				'refunded',
+				'cancelled'
 			)
 		);
 		$rv_rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT rv_qty, notes FROM {$rv_table} WHERE notes LIKE %s AND payment_status != %s",
+				"SELECT rv_qty, notes FROM {$rv_table} WHERE notes LIKE %s AND payment_status NOT IN ( %s, %s )",
 				$notes_like,
-				'refunded'
+				'refunded',
+				'cancelled'
 			),
 			ARRAY_A
 		);
