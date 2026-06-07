@@ -61,6 +61,17 @@ v2p_ok(
 	$pass, $fail, $log
 );
 
+// v2 #3 — section open-state persists across save+reload (admin.js).
+// Source-presence guard; browser self-verified directly (Check-In/Check-Out
+// stayed expanded after Update Reservation reloaded the page).
+$js = (string) file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/js/admin.js' );
+v2p_ok( 'admin.js defines eemPersistAllSectionStates', false !== strpos( $js, 'function eemPersistAllSectionStates' ), $pass, $fail, $log );
+v2p_ok(
+	'section-state sweep runs before the save reload',
+	(bool) preg_match( '/eemPersistAllSectionStates\(\);[\s\S]{0,200}window\.location\.reload/', $js ),
+	$pass, $fail, $log
+);
+
 echo "\n=== v2 parity smoke: $pass passed, $fail failed ===\n";
 foreach ( $log as $l ) { echo "  $l\n"; }
 if ( $fail > 0 ) { WP_CLI::error( "$fail assertion(s) failed" ); }

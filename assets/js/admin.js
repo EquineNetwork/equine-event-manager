@@ -2788,6 +2788,27 @@
 
 	var EEM_EDITOR_AJAX_URL = (window.ajaxurl || '/wp-admin/admin-ajax.php');
 
+	/* Persist the current collapse/expand state of every editor section to
+	   sessionStorage. Called immediately before the save+reload so that whatever
+	   the admin had open stays open after the page comes back — regardless of how
+	   it was opened (chevron click, enable-toggle auto-expand, or default render).
+	   The chevron handler persists per-toggle too; this sweep is the catch-all so
+	   no open path is missed (the "RV open before Update, closed after" bug).
+	   Mirrors the restore reader at DOMContentLoaded. */
+	function eemPersistAllSectionStates() {
+		try {
+			if (!window.sessionStorage) { return; }
+			var stickyBar = document.getElementById('eem-sticky-save');
+			var rid = stickyBar ? (stickyBar.dataset.eemReservationId || '0') : '0';
+			document.querySelectorAll('.eem-reservation-editor-section[id]').forEach(function (card) {
+				sessionStorage.setItem(
+					'eem-section-STATE-' + rid + '-' + card.id,
+					card.classList.contains('eem-section-collapsed') ? 'collapsed' : 'expanded'
+				);
+			});
+		} catch (e) { /* sessionStorage unavailable — degrade silently */ }
+	}
+
 	function eemReservationEditorNonce() {
 		// C7.X.15 Issue 2A — the original lookup queried `.eem-save-bar`,
 		// which was retired at C7.X.3. The nonce input now lives in the
@@ -2900,6 +2921,10 @@
 		}).then(function (r) { return r.json(); }).then(function (resp) {
 			if (resp && resp.success) {
 				eemSaveBarToast(resp.data && resp.data.message ? resp.data.message : 'Saved.', 'success');
+				// Capture every section's open/closed state so it survives the
+				// reload below — otherwise a section opened via the enable-toggle
+				// (which doesn't persist on its own) reverts to default-collapsed.
+				eemPersistAllSectionStates();
 				// Brief delay so the toast is visible before reload swaps
 				// the rail buttons. 600ms is short enough to feel snappy.
 				setTimeout(function () { window.location.reload(); }, 600);
