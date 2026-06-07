@@ -28,7 +28,7 @@
   .crumbs{font-size:12px;color:var(--muted);margin-bottom:10px;}
   .crumbs b{color:var(--navy);}
   .page-head{display:flex;align-items:center;gap:14px;margin-bottom:16px;}
-  .page-head h1{font-size:24px;color:var(--navy);}
+  .page-head h1{font-size:22px;color:var(--navy);} /* matches plugin .eem-plugin-title (Space Grotesk 22/700/navy) */
   .page-head .spacer{flex:1;}
   .btn{appearance:none;border:1px solid var(--line);border-radius:var(--radius);font-weight:700;font-size:13px;padding:9px 14px;cursor:pointer;background:#fff;color:var(--ink);display:inline-flex;align-items:center;gap:7px;}
   .btn:hover{background:#f2f6fb;}
@@ -93,13 +93,13 @@
     <div class="kpi"><div class="label">Daily Movement</div>
       <div class="mv"><b>Jun 26:</b> Arriving 14, Departing 0<br><b>Jun 27:</b> Arriving 9, Departing 2<br><b>Jun 28:</b> Arriving 0, Departing 23</div></div>
     <div class="kpi"><div class="label">Stall Units</div><div class="val" data-kpi-stalls>—</div></div>
-    <div class="kpi"><div class="label">Assigned</div><div class="val" data-kpi-assigned>—</div></div>
+    <div class="kpi"><div class="label">RV Lots</div><div class="val">0</div></div>
     <div class="kpi"><div class="label">Orders on Chart</div><div class="val">21</div></div>
   </div>
   <div class="actionbar">
-    <button class="btn btn-primary">⚌ Generate Assignments</button>
-    <button class="btn">🖨 Print View</button>
-    <button class="btn">✎ Edit Reservation</button>
+    <button class="btn btn-primary">Generate Assignments</button>
+    <button class="btn">Print View</button>
+    <button class="btn">Edit Reservation</button>
   </div>
   <div class="panel">
     <div class="view-tabs"><div class="seg"><button class="active">All</button><button>Stalls</button><button>RV</button></div></div>
@@ -178,11 +178,13 @@ function render(){
       var d=document.createElement('div');
       d.className='landmark';
       d.style.gridColumn=(c+1)+' / span '+w; d.style.gridRow=(r+1)+' / span '+h;
+      // tall-narrow blocks (taller than wide) get vertical text so long labels
+      // (Watt Arena, Concession, French Room) fit instead of getting clipped.
+      if(h>w){ d.style.writingMode='vertical-rl'; d.style.textOrientation='mixed'; }
       d.textContent=label; host.appendChild(d);
     }
   }
   document.querySelector('[data-kpi-stalls]').textContent=stallCount;
-  document.querySelector('[data-kpi-assigned]').textContent=assigned;
 }
 
 var pop=document.querySelector('[data-pop]');

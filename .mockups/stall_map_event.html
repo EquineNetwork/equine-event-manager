@@ -156,6 +156,8 @@ function renderGrid(){
       d.className='landmark';
       d.style.gridColumn=(c+1)+' / span '+w;
       d.style.gridRow=(r+1)+' / span '+h;
+      // tall-narrow blocks get vertical text so long labels fit (no clipping)
+      if(h>w){ d.style.writingMode='vertical-rl'; d.style.textOrientation='mixed'; }
       d.textContent=label;
       host.appendChild(d);
     }
