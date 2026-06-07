@@ -4693,6 +4693,234 @@
 		}).join('');
 	});
 
+	/* ──────────────────────────────────────────────────────────────────────
+	 * v4 Stall Mapping — By-Location facility MAP renderer (admin).
+	 *
+	 * PHP (render_stall_map_location_view) emits a [data-eem-smap] container with
+	 * a JSON payload (barns + per-label state + groups + customer roster) and an
+	 * empty grid the client renders into. Lives in admin.js (not inline) so it
+	 * survives the auto-assign dynamic-region innerHTML swaps — EEM.renderStallMaps
+	 * is re-called after every swap. Spatial render reuses the same-label
+	 * rectangle-merge + vertical-text logic as the customer picker (Slice 3).
+	 * ────────────────────────────────────────────────────────────────────── */
+	function eemSmapEsc(s) {
+		return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+			return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+		});
+	}
+
+	function eemSmapRenderGrid(container, payload, barnIdx) {
+		var grid = (payload.barns[barnIdx] && payload.barns[barnIdx].grid) || [];
+		var host = container.querySelector('[data-eem-smap-grid]');
+		if (!host) return;
+		var rows = grid.length, cols = rows ? grid[0].length : 0;
+		host.style.gridTemplateColumns = 'repeat(' + cols + ', var(--eem-smap-chip, 40px))';
+		host.style.gridTemplateRows = 'repeat(' + rows + ', var(--eem-smap-chip, 40px))';
+		host.innerHTML = '';
+		var used = grid.map(function (r) { return r.map(function () { return false; }); });
+		for (var r = 0; r < rows; r++) {
+			for (var c = 0; c < cols; c++) {
+				if (used[r][c]) continue;
+				var cell = grid[r][c];
+				if (!cell || cell.t === 'g') { used[r][c] = true; continue; }
+				if (cell.t === 's') {
+					used[r][c] = true;
+					var st = payload.state[cell.l] || { s: 'available' };
+					var status = st.s || 'available';
+					var el = document.createElement('div');
+					el.className = 'eem-smap-cell eem-smap-stall' + (status === 'available' ? '' : ' is-' + status);
+					el.textContent = cell.l;
+					el.setAttribute('data-eem-smap-stall', cell.l);
+					el.style.gridColumn = (c + 1);
+					el.style.gridRow = (r + 1);
+					if (st.gc) el.style.borderLeft = '4px solid ' + st.gc;
+					if (st.c) el.title = cell.l + ' — ' + st.c + (st.g ? ' (' + st.g + ')' : '');
+					if (status === 'tack') {
+						var b = document.createElement('span');
+						b.className = 'eem-smap-tbadge';
+						b.textContent = 'T';
+						el.appendChild(b);
+					}
+					host.appendChild(el);
+					continue;
+				}
+				// Landmark: same-label rectangle merge (horizontal then vertical).
+				var label = cell.l, w = 1, h = 1, ok = true;
+				while (c + w < cols && grid[r][c + w].t === 'l' && grid[r][c + w].l === label && !used[r][c + w]) w++;
+				while (r + h < rows && ok) {
+					for (var k = 0; k < w; k++) {
+						var cc = grid[r + h][c + k];
+						if (!(cc.t === 'l' && cc.l === label && !used[r + h][c + k])) { ok = false; break; }
+					}
+					if (ok) h++;
+				}
+				for (var i = 0; i < h; i++) for (var j = 0; j < w; j++) used[r + i][c + j] = true;
+				var d = document.createElement('div');
+				d.className = 'eem-smap-land';
+				d.style.gridColumn = (c + 1) + ' / span ' + w;
+				d.style.gridRow = (r + 1) + ' / span ' + h;
+				if (h > w) { d.style.writingMode = 'vertical-rl'; d.style.textOrientation = 'mixed'; }
+				d.textContent = label;
+				host.appendChild(d);
+			}
+		}
+	}
+
+	function eemSmapClosePop(container) {
+		var pop = container.parentNode && container.parentNode.querySelector('[data-eem-smap-pop]');
+		if (pop) pop.classList.remove('open');
+	}
+
+	function eemSmapAction(container, op, stall, orderKey) {
+		var cfg = window.eemStallChart || {};
+		var body = new URLSearchParams();
+		body.set('action', 'eem_stall_map_action');
+		body.set('_wpnonce', cfg.moveNonce || '');
+		body.set('reservation_id', String(cfg.reservationId || ''));
+		body.set('op', op);
+		body.set('stall', stall);
+		if (orderKey) body.set('order_key', orderKey);
+		body.set('inv', window._eemScInv || 'all');
+		body.set('tab', window._eemScTab || 'location');
+		eemSmapClosePop(container);
+		fetch((cfg.ajaxUrl || window.ajaxurl || '/wp-admin/admin-ajax.php'), {
+			method: 'POST', credentials: 'same-origin',
+			headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+			body: body.toString()
+		}).then(function (r) { return r.json(); }).then(function (resp) {
+			var data = (resp && resp.data) || {};
+			if (resp && resp.success && data.html) {
+				var region = document.getElementById('eem-stall-chart-dynamic');
+				if (region) {
+					region.innerHTML = data.html;
+					eemScApplyState(window._eemScInv || 'all', window._eemScTab || 'location');
+					EEM.renderStallMaps();
+				}
+			}
+			if (window.EEM && window.EEM.showSaveToast) {
+				window.EEM.showSaveToast(data.message || (resp && resp.success ? 'Updated.' : 'Could not update the stall.'),
+					{ variant: (resp && resp.success) ? 'success' : 'error', sub: '' });
+			}
+		}).catch(function () {
+			if (window.EEM && window.EEM.showSaveToast) {
+				window.EEM.showSaveToast('Could not reach the server.', { variant: 'error', sub: '' });
+			}
+		});
+	}
+
+	function eemSmapOpenPop(container, cellEl, payload) {
+		var pop = container.parentNode && container.parentNode.querySelector('[data-eem-smap-pop]');
+		if (!pop) return;
+		var label = cellEl.getAttribute('data-eem-smap-stall');
+		var st = payload.state[label] || { s: 'available' };
+		var status = st.s || 'available';
+		pop.querySelector('[data-eem-smap-pop-num]').textContent = 'Stall ' + label;
+		pop.querySelector('[data-eem-smap-pop-st]').textContent =
+			status === 'reserved' ? ('Assigned — ' + (st.c || '') + (st.g ? ' · ' + st.g : '')) :
+			status === 'tack' ? ('Tack stall — ' + (st.c || '') + (st.g ? ' · ' + st.g : '')) :
+			status === 'blocked' ? 'Blocked' : 'Available';
+		var bodyEl = pop.querySelector('[data-eem-smap-pop-body]');
+		bodyEl.innerHTML = '';
+		function row(txt, cls, fn) {
+			var b = document.createElement('button');
+			b.type = 'button';
+			b.className = 'eem-smap-pop-row' + (cls ? ' ' + cls : '');
+			b.textContent = txt;
+			b.addEventListener('click', fn);
+			bodyEl.appendChild(b);
+		}
+		if (status === 'available') {
+			var search = document.createElement('input');
+			search.type = 'text';
+			search.className = 'eem-smap-pop-search';
+			search.placeholder = 'Search customer…';
+			var list = document.createElement('div');
+			list.className = 'eem-smap-pop-list';
+			function renderList(q) {
+				list.innerHTML = '';
+				q = (q || '').toLowerCase();
+				var hits = (payload.customers || []).filter(function (cu) { return cu.n.toLowerCase().indexOf(q) !== -1; });
+				if (!hits.length) { list.innerHTML = '<div class="eem-smap-pop-empty">No match</div>'; return; }
+				hits.forEach(function (cu) {
+					var b = document.createElement('button');
+					b.type = 'button';
+					b.className = 'eem-smap-pop-row';
+					b.textContent = cu.n;
+					b.addEventListener('click', function () { eemSmapAction(container, 'assign', label, cu.o); });
+					list.appendChild(b);
+				});
+			}
+			search.addEventListener('input', function () { renderList(search.value); });
+			bodyEl.appendChild(search);
+			bodyEl.appendChild(list);
+			renderList('');
+			setTimeout(function () { search.focus(); }, 0);
+			row('Block stall', 'danger', function () { eemSmapAction(container, 'block', label, ''); });
+		} else if (status === 'reserved') {
+			row('Mark as Tack stall', '', function () { eemSmapAction(container, 'tack', label, st.o || ''); });
+			row('Unassign', 'danger', function () { eemSmapAction(container, 'unassign', label, st.o || ''); });
+		} else if (status === 'tack') {
+			row('Unmark Tack (keep assigned)', '', function () { eemSmapAction(container, 'untack', label, st.o || ''); });
+			row('Unassign', 'danger', function () { eemSmapAction(container, 'unassign', label, st.o || ''); });
+		} else if (status === 'blocked') {
+			row('Unblock stall', '', function () { eemSmapAction(container, 'unblock', label, ''); });
+		}
+		var rect = cellEl.getBoundingClientRect();
+		pop.style.left = Math.min(rect.right + 8, window.innerWidth - 256) + 'px';
+		pop.style.top = Math.min(rect.top, window.innerHeight - 280) + 'px';
+		pop.classList.add('open');
+	}
+
+	EEM.renderStallMaps = function (root) {
+		var scope = root || document;
+		scope.querySelectorAll('[data-eem-smap]').forEach(function (container) {
+			var payloadEl = container.querySelector('[data-eem-smap-payload]');
+			if (!payloadEl) return;
+			var payload;
+			try { payload = JSON.parse(payloadEl.textContent); } catch (e) { return; }
+			if (!payload.barns || !payload.barns.length) return;
+			container._eemSmapBarn = container._eemSmapBarn || 0;
+			if (container._eemSmapBarn >= payload.barns.length) container._eemSmapBarn = 0;
+			// Barn tabs.
+			var tabHost = container.querySelector('[data-eem-smap-tabs]');
+			if (tabHost) {
+				tabHost.innerHTML = '';
+				payload.barns.forEach(function (b, i) {
+					var t = document.createElement('button');
+					t.type = 'button';
+					t.className = 'eem-smap-barn-tab' + (i === container._eemSmapBarn ? ' active' : '');
+					t.textContent = b.name;
+					t.addEventListener('click', function () {
+						container._eemSmapBarn = i;
+						eemSmapClosePop(container);
+						EEM.renderStallMaps(container.parentNode || document);
+					});
+					tabHost.appendChild(t);
+				});
+			}
+			eemSmapRenderGrid(container, payload, container._eemSmapBarn);
+			// Cell click → popover (bound once per render via the grid host).
+			var host = container.querySelector('[data-eem-smap-grid]');
+			if (host && !host._eemSmapBound) {
+				host._eemSmapBound = true;
+				host.addEventListener('click', function (ev) {
+					var cell = ev.target.closest('[data-eem-smap-stall]');
+					if (!cell) return;
+					ev.stopPropagation();
+					var pEl = container.querySelector('[data-eem-smap-payload]');
+					var p; try { p = JSON.parse(pEl.textContent); } catch (e) { return; }
+					eemSmapOpenPop(container, cell, p);
+				});
+			}
+		});
+	};
+
+	// Dismiss the map popover on outside click.
+	document.addEventListener('click', function (ev) {
+		if (ev.target.closest('[data-eem-smap-pop]') || ev.target.closest('[data-eem-smap-grid]')) return;
+		document.querySelectorAll('[data-eem-smap-pop].open').forEach(function (p) { p.classList.remove('open'); });
+	});
+
 	// Initialise stall chart inv/tab state from URL params on page load.
 	document.addEventListener('DOMContentLoaded', function () {
 		if (!document.querySelector('[data-eem-action="sc-inv-switch"]')) return;
@@ -4703,6 +4931,7 @@
 			if (['all', 'stalls', 'rv'].indexOf(initInv) === -1) initInv = 'all';
 			if (['location', 'customer'].indexOf(initTab) === -1) initTab = 'location';
 			eemScApplyState(initInv, initTab);
+			if (EEM.renderStallMaps) EEM.renderStallMaps();
 		} catch (e) { /* ignore */ }
 	});
 

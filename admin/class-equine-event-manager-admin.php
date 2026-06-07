@@ -103,6 +103,7 @@ class EEM_Admin {
 		add_action( 'all_admin_notices', array( $this, 'render_native_content_list_banner' ) );
 		add_action( 'wp_ajax_eem_move_stall_assignment', array( $this, 'ajax_move_stall_assignment' ) );
 		add_action( 'wp_ajax_eem_toggle_tack_stall', array( $this, 'ajax_toggle_tack_stall' ) );
+		add_action( 'wp_ajax_eem_stall_map_action', array( $this, 'ajax_stall_map_action' ) );
 		add_action( 'wp_ajax_eem_auto_assign', array( $this, 'ajax_auto_assign' ) );
 		add_action( 'wp_ajax_eem_create_order_customer_search', array( 'EEM_Create_Order_Page', 'ajax_customer_search' ) );
 		add_action( 'wp_ajax_eem_create_order_reservation_meta', array( 'EEM_Create_Order_Page', 'ajax_reservation_meta' ) );
@@ -2019,6 +2020,17 @@ class EEM_Admin {
 		$rv_zone_map       = isset( $config['rv_zone_map'] ) ? $config['rv_zone_map'] : array();
 		$reservation_dates = $this->get_reservation_date_range_label( $reservation_id );
 		$reservation_title = get_the_title( $reservation_id );
+
+		// v4 Stall Mapping: when a facility-map snapshot is connected, the
+		// By-Location panel renders the spatial map (above the date matrix) and
+		// the whole card shows even if the legacy row-builder inventory is empty.
+		$stall_map_snapshot = class_exists( 'EEM_Stall_Map_Importer' )
+			? EEM_Stall_Map_Importer::get_for_reservation( $reservation_id )
+			: array();
+		$has_stall_map = ! empty( $stall_map_snapshot['barns'] );
+		$stall_map_overlay = $has_stall_map
+			? $this->build_stall_map_overlay_state( $order_rows, $this->get_raw_blocked_stall_labels( $reservation_id ) )
+			: array();
 		?>
 				<!-- Stats Bar -->
 				<div class="eem-stall-chart-stats-bar">
@@ -2078,7 +2090,7 @@ class EEM_Admin {
 					</div>
 				</div>
 
-				<?php if ( empty( $grid['stall_rows'] ) && empty( $grid['rv_rows'] ) ) : ?>
+				<?php if ( empty( $grid['stall_rows'] ) && empty( $grid['rv_rows'] ) && ! $has_stall_map ) : ?>
 					<div class="eem-stall-chart-empty-card">
 						<p><?php esc_html_e( 'No paid or reserved orders are currently linked to this reservation.', 'equine-event-manager' ); ?></p>
 					</div>
@@ -2135,6 +2147,13 @@ class EEM_Admin {
 								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
 								<span><strong><?php esc_html_e( 'Tip:', 'equine-event-manager' ); ?></strong> <?php esc_html_e( 'Click any customer name to view their order or move them to a different stall.', 'equine-event-manager' ); ?></span>
 							</div>
+
+							<?php
+							// v4 Stall Mapping: spatial facility map (snapshot-connected reservations).
+							if ( $has_stall_map && 'rv' !== $inv ) {
+								$this->render_stall_map_location_view( $reservation_id, $stall_map_snapshot, $stall_map_overlay );
+							}
+							?>
 
 							<!-- FILTER ROW -->
 							<div class="eem-stall-chart-filter-row">
@@ -2299,6 +2318,471 @@ class EEM_Admin {
 					</div>
 				<?php endif; ?>
 		<?php
+	}
+
+	/**
+	 * Group accent palette for the By-Location map (matches stall_map_admin.html).
+	 *
+	 * Distinct group names are assigned a color by their position in the sorted
+	 * group list so the same group reads the same color across barns and reloads.
+	 *
+	 * @var string[]
+	 */
+	private const STALL_MAP_GROUP_COLORS = array( '#DC2626', '#16A34A', '#9333EA', '#CA8A04', '#2563EB', '#DB2777', '#0891B2', '#65A30D' );
+
+	/**
+	 * Format a customer's display name as "Last, First" (plugin-wide convention).
+	 *
+	 * Splits on the last whitespace run: everything after it is the surname,
+	 * everything before is the given name(s). Single-token names (businesses,
+	 * mononyms) and already-comma-formatted names are returned unchanged.
+	 *
+	 * @param string $name Raw customer name (typically "First Last").
+	 * @return string "Last, First", or the input unchanged when it can't be split.
+	 */
+	private function format_customer_last_first( string $name ): string {
+		$name = trim( preg_replace( '/\s+/', ' ', $name ) );
+		if ( '' === $name || false !== strpos( $name, ',' ) ) {
+			return $name;
+		}
+		$pos = strrpos( $name, ' ' );
+		if ( false === $pos ) {
+			return $name;
+		}
+		$first = trim( substr( $name, 0, $pos ) );
+		$last  = trim( substr( $name, $pos + 1 ) );
+		return ( '' !== $last && '' !== $first ) ? $last . ', ' . $first : $name;
+	}
+
+	/**
+	 * Build the per-stall-label overlay state for the By-Location map.
+	 *
+	 * Reads each order's *current* assigned stall labels (from the canonical
+	 * `Assigned Stall Units:` note), marks them reserved (or tack when the label
+	 * is in the order's `Tack Stalls:` note), tags the assigned customer +
+	 * group, then overlays blocked labels that aren't otherwise assigned. The
+	 * customer roster (for the assign typeahead) and group→color map are derived
+	 * from the same order rows so the map is self-consistent without depending on
+	 * the legacy stall-row inventory ($config['stall_units']) — map-connected
+	 * reservations draw inventory from the snapshot, not the row builder.
+	 *
+	 * @param array $order_rows Rows from build_stall_chart_rows().
+	 * @param array $blocked    Blocked stall labels (config['blocked_stall_units']).
+	 * @return array{state:array<string,array>,groups:array<string,string>,customers:array<int,array>}
+	 */
+	private function build_stall_map_overlay_state( array $order_rows, array $blocked ): array {
+		$state     = array();
+		$customers = array();
+		$group_set = array();
+
+		foreach ( $order_rows as $row ) {
+			$cust  = $this->format_customer_last_first( (string) ( isset( $row['customer_name'] ) ? $row['customer_name'] : '' ) );
+			$group = trim( (string) ( isset( $row['group_name'] ) ? $row['group_name'] : '' ) );
+			$okey  = (string) ( isset( $row['order_key'] ) ? $row['order_key'] : '' );
+			$onum  = (string) ( isset( $row['order_number'] ) ? $row['order_number'] : '' );
+			$tack  = array_map( 'strval', (array) ( isset( $row['tack_units'] ) ? $row['tack_units'] : array() ) );
+
+			if ( '' !== $group ) {
+				$group_set[ $group ] = true;
+			}
+
+			$customers[] = array(
+				'o' => $okey,
+				'n' => '' !== $cust ? $cust : $onum,
+			);
+
+			foreach ( (array) ( isset( $row['stall_units'] ) ? $row['stall_units'] : array() ) as $label ) {
+				$label = (string) $label;
+				if ( '' === $label ) {
+					continue;
+				}
+				$state[ $label ] = array(
+					's' => in_array( $label, $tack, true ) ? 'tack' : 'reserved',
+					'c' => $cust,
+					'g' => $group,
+					'o' => $okey,
+					'n' => $onum,
+				);
+			}
+		}
+
+		foreach ( (array) $blocked as $label ) {
+			$label = (string) $label;
+			if ( '' !== $label && ! isset( $state[ $label ] ) ) {
+				$state[ $label ] = array( 's' => 'blocked' );
+			}
+		}
+
+		// Distinct groups → stable color by sorted position.
+		$group_names = array_keys( $group_set );
+		sort( $group_names, SORT_NATURAL | SORT_FLAG_CASE );
+		$groups = array();
+		foreach ( $group_names as $i => $gname ) {
+			$groups[ $gname ] = self::STALL_MAP_GROUP_COLORS[ $i % count( self::STALL_MAP_GROUP_COLORS ) ];
+		}
+		foreach ( $state as $label => &$s ) {
+			if ( ! empty( $s['g'] ) && isset( $groups[ $s['g'] ] ) ) {
+				$s['gc'] = $groups[ $s['g'] ];
+			}
+		}
+		unset( $s );
+
+		// Dedupe + sort the customer roster (Last, First) for the typeahead.
+		$seen = array();
+		$roster = array();
+		foreach ( $customers as $c ) {
+			$k = $c['o'] . '|' . $c['n'];
+			if ( '' === $c['o'] || isset( $seen[ $k ] ) ) {
+				continue;
+			}
+			$seen[ $k ] = true;
+			$roster[]   = $c;
+		}
+		usort( $roster, static function ( $a, $b ) {
+			return strcasecmp( $a['n'], $b['n'] );
+		} );
+
+		return array(
+			'state'     => $state,
+			'groups'    => $groups,
+			'customers' => $roster,
+		);
+	}
+
+	/**
+	 * Render the By-Location facility MAP for a map-connected reservation.
+	 *
+	 * Emits the per-barn stats strip, barn tabs, legend, an empty grid container
+	 * the client renders into, the click-popover shell, and a JSON payload
+	 * (barns + per-label state + groups + customer roster) consumed by
+	 * EEM.renderStallMaps() in admin.js. The spatial render (same-label
+	 * rectangle merge + vertical text for tall-narrow blocks) and the
+	 * assign/tack/block popover live client-side so they survive the
+	 * auto-assign dynamic-region swaps.
+	 *
+	 * @param int   $reservation_id Reservation post ID.
+	 * @param array $snapshot       Stall-map snapshot (EEM_Stall_Map_Importer shape).
+	 * @param array $overlay        build_stall_map_overlay_state() result.
+	 * @return void
+	 */
+	private function render_stall_map_location_view( int $reservation_id, array $snapshot, array $overlay ): void {
+		$barns = isset( $snapshot['barns'] ) ? (array) $snapshot['barns'] : array();
+		if ( empty( $barns ) ) {
+			return;
+		}
+
+		$status_map = array();
+		foreach ( $overlay['state'] as $label => $s ) {
+			$status_map[ $label ] = isset( $s['s'] ) ? $s['s'] : 'available';
+		}
+		$barn_stats = class_exists( 'EEM_Stall_Map_Importer' )
+			? EEM_Stall_Map_Importer::barn_stats( $snapshot, $status_map )
+			: array();
+
+		// Compact barn payload: grid cells as {t,l} (type letter + label).
+		$payload_barns = array();
+		foreach ( $barns as $barn ) {
+			$grid_out = array();
+			foreach ( (array) ( isset( $barn['grid'] ) ? $barn['grid'] : array() ) as $grow ) {
+				$row_out = array();
+				foreach ( (array) $grow as $cell ) {
+					$type = isset( $cell['type'] ) ? $cell['type'] : 'gap';
+					$row_out[] = array(
+						't' => 'stall' === $type ? 's' : ( 'landmark' === $type ? 'l' : 'g' ),
+						'l' => isset( $cell['label'] ) ? (string) $cell['label'] : '',
+					);
+				}
+				$grid_out[] = $row_out;
+			}
+			$payload_barns[] = array(
+				'name' => (string) ( isset( $barn['name'] ) ? $barn['name'] : '' ),
+				'grid' => $grid_out,
+			);
+		}
+
+		$payload = array(
+			'barns'     => $payload_barns,
+			'state'     => (object) $overlay['state'],
+			'groups'    => (object) $overlay['groups'],
+			'customers' => $overlay['customers'],
+		);
+		?>
+		<div class="eem-smap" data-eem-smap>
+			<?php if ( ! empty( $barn_stats ) ) : ?>
+				<div class="eem-smap-barn-stats" data-eem-smap-barn-stats>
+					<?php foreach ( $barn_stats as $bname => $bs ) : ?>
+						<div class="eem-smap-barn-stat">
+							<div class="eem-smap-barn-stat-name"><?php echo esc_html( (string) $bname ); ?></div>
+							<div class="eem-smap-barn-stat-nums">
+								<span><strong><?php echo esc_html( number_format_i18n( (int) $bs['total'] ) ); ?></strong> <?php esc_html_e( 'total', 'equine-event-manager' ); ?></span>
+								<span class="eem-smap-stat-avail"><strong><?php echo esc_html( number_format_i18n( (int) $bs['available'] ) ); ?></strong> <?php esc_html_e( 'avail', 'equine-event-manager' ); ?></span>
+								<span class="eem-smap-stat-resv"><strong><?php echo esc_html( number_format_i18n( (int) $bs['reserved'] ) ); ?></strong> <?php esc_html_e( 'assigned', 'equine-event-manager' ); ?></span>
+								<span class="eem-smap-stat-tack"><strong><?php echo esc_html( number_format_i18n( (int) $bs['tack'] ) ); ?></strong> <?php esc_html_e( 'tack', 'equine-event-manager' ); ?></span>
+								<span class="eem-smap-stat-block"><strong><?php echo esc_html( number_format_i18n( (int) $bs['blocked'] ) ); ?></strong> <?php esc_html_e( 'blocked', 'equine-event-manager' ); ?></span>
+							</div>
+						</div>
+					<?php endforeach; ?>
+				</div>
+			<?php endif; ?>
+
+			<div class="eem-smap-barn-tabs" data-eem-smap-tabs></div>
+
+			<div class="eem-smap-legend">
+				<span><i class="eem-smap-sw eem-smap-sw--avail"></i> <?php esc_html_e( 'Available', 'equine-event-manager' ); ?></span>
+				<span><i class="eem-smap-sw eem-smap-sw--resv"></i> <?php esc_html_e( 'Assigned', 'equine-event-manager' ); ?></span>
+				<span><i class="eem-smap-sw eem-smap-sw--tack"></i> <?php esc_html_e( 'Tack', 'equine-event-manager' ); ?></span>
+				<span><i class="eem-smap-sw eem-smap-sw--block"></i> <?php esc_html_e( 'Blocked', 'equine-event-manager' ); ?></span>
+				<span class="eem-smap-legend-hint"><?php esc_html_e( 'Click any stall to assign, mark tack, or block.', 'equine-event-manager' ); ?></span>
+			</div>
+
+			<div class="eem-smap-scroll"><div class="eem-smap-grid" data-eem-smap-grid></div></div>
+
+			<script type="application/json" data-eem-smap-payload><?php echo wp_json_encode( $payload ); ?></script>
+		</div>
+
+		<div class="eem-smap-pop" data-eem-smap-pop>
+			<div class="eem-smap-pop-head">
+				<div class="eem-smap-pop-num" data-eem-smap-pop-num></div>
+				<div class="eem-smap-pop-st" data-eem-smap-pop-st></div>
+			</div>
+			<div class="eem-smap-pop-body" data-eem-smap-pop-body></div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * AJAX: mutate a single stall from the By-Location map popover.
+	 *
+	 * Sub-actions (op): assign | unassign | block | unblock | tack | untack.
+	 * Assignment reuses the canonical per-order `Assigned Stall Units:` note
+	 * (no new data model); block/unblock toggles the reservation's
+	 * `_en_stall_chart_blocked_stall_units` meta; tack/untack toggles the order's
+	 * `Tack Stalls:` note. On success the freshly-rendered dynamic chart region
+	 * is returned so the client swaps #eem-stall-chart-dynamic and re-inits the
+	 * map. Reuses the eem_stall_chart_move nonce already on the page.
+	 *
+	 * @return void
+	 */
+	public function ajax_stall_map_action() {
+		check_ajax_referer( 'eem_stall_chart_move', '_wpnonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+
+		$reservation_id = isset( $_POST['reservation_id'] ) ? absint( wp_unslash( $_POST['reservation_id'] ) ) : 0;
+		$op             = isset( $_POST['op'] ) ? sanitize_key( wp_unslash( $_POST['op'] ) ) : '';
+		$stall          = isset( $_POST['stall'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['stall'] ) ) : '';
+		$order_key      = isset( $_POST['order_key'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['order_key'] ) ) : '';
+		$inv            = isset( $_POST['inv'] ) ? sanitize_key( wp_unslash( $_POST['inv'] ) ) : 'all';
+		$inv            = in_array( $inv, array( 'all', 'stalls', 'rv' ), true ) ? $inv : 'all';
+		$tab            = isset( $_POST['tab'] ) ? sanitize_key( wp_unslash( $_POST['tab'] ) ) : 'location';
+		$tab            = in_array( $tab, array( 'location', 'customer' ), true ) ? $tab : 'location';
+
+		if ( $reservation_id < 1 || 'en_reservation' !== get_post_type( $reservation_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'Reservation not found.', 'equine-event-manager' ) ), 404 );
+		}
+		if ( '' === $op || '' === $stall ) {
+			wp_send_json_error( array( 'message' => __( 'Missing required parameters.', 'equine-event-manager' ) ), 400 );
+		}
+
+		$message = '';
+
+		if ( 'block' === $op || 'unblock' === $op ) {
+			$blocked = get_post_meta( $reservation_id, '_en_stall_chart_blocked_stall_units', true );
+			$blocked = array_values( array_filter( array_map( 'strval', is_array( $blocked ) ? $blocked : array() ) ) );
+
+			if ( 'block' === $op ) {
+				// Refuse to block a stall that's currently assigned.
+				$orders = $this->get_reservation_orders( $reservation_id );
+				foreach ( $orders as $o ) {
+					$units = array_map( 'strval', (array) $this->parse_assigned_units_string(
+						$this->get_order_component_note_value( $o, 'stall', 'Assigned Stall Units' )
+					) );
+					if ( in_array( $stall, $units, true ) ) {
+						wp_send_json_error( array( 'message' => __( 'Unassign this stall before blocking it.', 'equine-event-manager' ) ), 409 );
+					}
+				}
+				if ( ! in_array( $stall, $blocked, true ) ) {
+					$blocked[] = $stall;
+				}
+				$message = __( 'Stall blocked.', 'equine-event-manager' );
+			} else {
+				$blocked = array_values( array_diff( $blocked, array( $stall ) ) );
+				// Also clear the editor's Blocked Stall Numbers field so a stall
+				// blocked there can be unblocked from the map.
+				$editor_blocked = get_post_meta( $reservation_id, '_en_blocked_stalls', true );
+				if ( is_array( $editor_blocked ) ) {
+					$editor_blocked = array_values( array_diff( array_map( 'strval', $editor_blocked ), array( $stall ) ) );
+					update_post_meta( $reservation_id, '_en_blocked_stalls', $editor_blocked );
+				}
+				$message = __( 'Stall unblocked.', 'equine-event-manager' );
+			}
+			update_post_meta( $reservation_id, '_en_stall_chart_blocked_stall_units', $blocked );
+		} elseif ( 'assign' === $op ) {
+			if ( '' === $order_key ) {
+				wp_send_json_error( array( 'message' => __( 'Choose a customer to assign.', 'equine-event-manager' ) ), 400 );
+			}
+			$order = $this->orders_repository->get_order( $order_key );
+			if ( ! $order ) {
+				wp_send_json_error( array( 'message' => __( 'Order not found.', 'equine-event-manager' ) ), 404 );
+			}
+			// Conflict: stall already assigned to another order on this reservation.
+			foreach ( $this->get_reservation_orders( $reservation_id ) as $o ) {
+				if ( (string) $o['order_key'] === (string) $order_key ) {
+					continue;
+				}
+				$units = array_map( 'strval', (array) $this->parse_assigned_units_string(
+					$this->get_order_component_note_value( $o, 'stall', 'Assigned Stall Units' )
+				) );
+				if ( in_array( $stall, $units, true ) ) {
+					wp_send_json_error( array( 'message' => __( 'That stall is already assigned to another customer.', 'equine-event-manager' ) ), 409 );
+				}
+			}
+			$current = array_map( 'strval', (array) $this->parse_assigned_units_string(
+				$this->get_order_component_note_value( $order, 'stall', 'Assigned Stall Units' )
+			) );
+			if ( ! in_array( $stall, $current, true ) ) {
+				$current[] = $stall;
+			}
+			$existing_rv = (array) $this->parse_assigned_units_string(
+				$this->get_order_component_note_value( $order, 'rv', 'Assigned RV Lots' )
+			);
+			$ok = $this->orders_repository->update_order_unit_assignments(
+				$order_key,
+				implode( ', ', $current ),
+				implode( ', ', array_filter( array_map( 'strval', $existing_rv ) ) )
+			);
+			if ( ! $ok ) {
+				wp_send_json_error( array( 'message' => __( 'Could not assign the stall.', 'equine-event-manager' ) ), 500 );
+			}
+			$message = __( 'Stall assigned.', 'equine-event-manager' );
+		} elseif ( 'unassign' === $op || 'tack' === $op || 'untack' === $op ) {
+			// Resolve the owning order: prefer the posted key, else find it.
+			$order = '' !== $order_key ? $this->orders_repository->get_order( $order_key ) : null;
+			if ( ! $order ) {
+				foreach ( $this->get_reservation_orders( $reservation_id ) as $o ) {
+					$units = array_map( 'strval', (array) $this->parse_assigned_units_string(
+						$this->get_order_component_note_value( $o, 'stall', 'Assigned Stall Units' )
+					) );
+					if ( in_array( $stall, $units, true ) ) {
+						$order     = $o;
+						$order_key = (string) $o['order_key'];
+						break;
+					}
+				}
+			}
+			if ( ! $order ) {
+				wp_send_json_error( array( 'message' => __( 'No order owns that stall.', 'equine-event-manager' ) ), 404 );
+			}
+
+			if ( 'unassign' === $op ) {
+				$current = array_map( 'strval', (array) $this->parse_assigned_units_string(
+					$this->get_order_component_note_value( $order, 'stall', 'Assigned Stall Units' )
+				) );
+				$current = array_values( array_diff( $current, array( $stall ) ) );
+				$existing_rv = (array) $this->parse_assigned_units_string(
+					$this->get_order_component_note_value( $order, 'rv', 'Assigned RV Lots' )
+				);
+				$ok = $this->orders_repository->update_order_unit_assignments(
+					$order_key,
+					implode( ', ', $current ),
+					implode( ', ', array_filter( array_map( 'strval', $existing_rv ) ) )
+				);
+				// Removing an assignment also clears any tack flag on that stall.
+				$tack = array_map( 'strval', (array) $this->parse_assigned_units_string(
+					$this->get_order_component_note_value( $order, 'stall', 'Tack Stalls' )
+				) );
+				if ( in_array( $stall, $tack, true ) ) {
+					$tack = array_values( array_diff( $tack, array( $stall ) ) );
+					$this->orders_repository->update_order_tack_stalls( $order_key, implode( ', ', $tack ) );
+				}
+				if ( ! $ok ) {
+					wp_send_json_error( array( 'message' => __( 'Could not unassign the stall.', 'equine-event-manager' ) ), 500 );
+				}
+				$message = __( 'Stall unassigned.', 'equine-event-manager' );
+			} else {
+				$tack = array_map( 'strval', (array) $this->parse_assigned_units_string(
+					$this->get_order_component_note_value( $order, 'stall', 'Tack Stalls' )
+				) );
+				$assigned = array_map( 'strval', (array) $this->parse_assigned_units_string(
+					$this->get_order_component_note_value( $order, 'stall', 'Assigned Stall Units' )
+				) );
+				if ( 'tack' === $op ) {
+					if ( ! in_array( $stall, $assigned, true ) ) {
+						wp_send_json_error( array( 'message' => __( 'Assign the stall before marking it tack.', 'equine-event-manager' ) ), 409 );
+					}
+					if ( ! in_array( $stall, $tack, true ) ) {
+						$tack[] = $stall;
+					}
+					$message = __( 'Marked as tack stall.', 'equine-event-manager' );
+				} else {
+					$tack    = array_values( array_diff( $tack, array( $stall ) ) );
+					$message = __( 'Tack designation removed.', 'equine-event-manager' );
+				}
+				$ok = $this->orders_repository->update_order_tack_stalls( $order_key, implode( ', ', $tack ) );
+				if ( ! $ok ) {
+					wp_send_json_error( array( 'message' => __( 'Could not update tack designation.', 'equine-event-manager' ) ), 500 );
+				}
+			}
+		} else {
+			wp_send_json_error( array( 'message' => __( 'Unknown action.', 'equine-event-manager' ) ), 400 );
+		}
+
+		// Re-render the dynamic region against fresh state for an in-place swap.
+		$config = $this->get_stall_chart_config( $reservation_id );
+		ob_start();
+		$this->render_stall_chart_dynamic_region( $reservation_id, $config, $inv, $tab );
+		$html = ob_get_clean();
+
+		wp_send_json_success( array(
+			'message' => $message,
+			'html'    => $html,
+		) );
+	}
+
+	/**
+	 * Get the raw blocked-stall labels for a reservation (unfiltered).
+	 *
+	 * Unions the chart-block meta (`_en_stall_chart_blocked_stall_units`, written
+	 * by the map popover) with the editor's Blocked Stall Numbers field
+	 * (`_en_blocked_stalls`). Unlike get_stall_chart_config()'s blocked list this
+	 * is NOT intersected with the legacy row-builder inventory — map-connected
+	 * reservations draw inventory from the snapshot, so a snapshot label that
+	 * isn't in `_en_stall_rows` must still survive as blocked.
+	 *
+	 * @param int $reservation_id Reservation post ID.
+	 * @return string[] Blocked stall labels.
+	 */
+	private function get_raw_blocked_stall_labels( int $reservation_id ): array {
+		$labels = array();
+		foreach ( array( '_en_stall_chart_blocked_stall_units', '_en_blocked_stalls' ) as $key ) {
+			$meta = get_post_meta( $reservation_id, $key, true );
+			if ( is_array( $meta ) ) {
+				foreach ( $meta as $label ) {
+					$label = (string) $label;
+					if ( '' !== $label ) {
+						$labels[ $label ] = true;
+					}
+				}
+			}
+		}
+		return array_keys( $labels );
+	}
+
+	/**
+	 * Get all orders linked to a reservation.
+	 *
+	 * @param int $reservation_id Reservation post ID.
+	 * @return array[] Orders whose reservation_id matches.
+	 */
+	private function get_reservation_orders( int $reservation_id ): array {
+		return array_values( array_filter(
+			$this->orders_repository->get_orders(),
+			static function ( $order ) use ( $reservation_id ) {
+				return absint( isset( $order['reservation_id'] ) ? $order['reservation_id'] : 0 ) === $reservation_id;
+			}
+		) );
 	}
 
 	/**
