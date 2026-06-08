@@ -50,7 +50,21 @@
 		return g;
 	}
 	function Z() { return B.zones[B.active]; }
-	function snapshot() { B.history.push(JSON.stringify(B.zones)); if (B.history.length > 60) { B.history.shift(); } B.future = []; B.dirty = true; updateUndo(); }
+	function snapshot() { B.history.push(JSON.stringify(B.zones)); if (B.history.length > 60) { B.history.shift(); } B.future = []; B.dirty = true; updateUndo(); scheduleAutoSave(); }
+
+	// Inline builders auto-persist ~1s after any edit (tab rename/add/delete or
+	// drawing) so changes survive a reload without a separate "Save Map" click —
+	// e.g. renaming tabs then clicking "Update Reservation" now sticks.
+	var _mbAutoSaveT = null;
+	function scheduleAutoSave() {
+		if (!B.inline) { return; }
+		var t = B.target;
+		clearTimeout(_mbAutoSaveT);
+		_mbAutoSaveT = setTimeout(function () {
+			var i = INSTANCES[t];
+			if (i && i.overlay) { B = i; save(); }
+		}, 1000);
+	}
 	function updateUndo() {
 		var u = q('#eem-mb-undo'), rd = q('#eem-mb-redo');
 		if (u) { u.disabled = !B.history.length; }

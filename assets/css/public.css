@@ -1057,7 +1057,9 @@
 .eem-map-stall.is-reserved { background: #cbd5e1; border-color: #cbd5e1; color: #7c8ba0; cursor: not-allowed; }
 .eem-map-stall.is-blocked { background: repeating-linear-gradient(45deg,#9aa6b6,#9aa6b6 3px,#8593a5 3px,#8593a5 6px); border-color: #9aa6b6; color: transparent; cursor: not-allowed; }
 .eem-map-stall.is-sel { background: #1668F2; border-color: #1668F2; color: #fff; }
-.eem-map-land { display: flex; align-items: center; justify-content: center; text-align: center; font-size: 9px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: #6a7890; background: #e8edf4; border: 1px dashed #c4cedd; border-radius: 5px; padding: 2px; line-height: 1.1; }
+/* Match the builder Preview's landmark styling (amber) so "what the customer sees"
+   and the admin Preview look identical. */
+.eem-map-land { display: flex; align-items: center; justify-content: center; text-align: center; font-size: clamp(7px, calc(var(--eem-map-chip, 40px) * 0.22), 11px); font-weight: 700; letter-spacing: .02em; color: #b45309; background: #fff7e6; border: 1px solid #fde4bf; border-radius: 5px; padding: 2px; line-height: 1.15; overflow: hidden; }
 .eem-map-foot { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-top: 1px solid #e2e8f0; background: #fff; font-size: 14px; }
 .eem-map-warn { color: #b93742; font-weight: 700; }
 .eem-map-btn-ghost { appearance: none; border: 0; border-radius: 8px; background: #eef2f7; color: #18212f; font-weight: 700; font-size: 14px; padding: 11px 18px; cursor: pointer; }
