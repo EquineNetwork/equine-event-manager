@@ -361,10 +361,12 @@ the interactive grid-editor JS + a thin save endpoint.
   exact rule the `target==='rv'` dupe-skip already encodes).
 - **Preview customer view.** A button that renders the same map the customer sees
   (reuse the picker renderer) so the admin verifies before saving.
-- **Import-from-Sheet seed.** Keep the Google import as an alternate "Import from
-  Sheet" button that **seeds** the builder once (fetch → populate grids → edit
-  natively), so existing sheet-connected reservations convert in one click. No
-  forced cutover; Phase A stays as the quick path.
+- **Load existing snapshot for editing.** The builder hydrates from whatever is
+  already stored in `_en_stall_map` / `_en_rv_map`. Because every map the
+  Google-Sheet importer ever produced is ALREADY persisted as a snapshot in
+  post-meta (it was never a live fetch), existing sheet-connected reservations
+  open straight into the builder for editing — **no migration, no data loss, no
+  re-import.** This is what makes a clean Sheets removal safe.
 
 #### 4. Build plan (slices, with sizing)
 - **C1 — Data + save layer** *(small-med; mostly back end).* Serialize the builder
@@ -381,10 +383,14 @@ the interactive grid-editor JS + a thin save endpoint.
   fill. Touch support.
 - **C4 — Zones/tabs** *(medium).* Zone add/rename/delete/reorder; tab switcher;
   per-zone grids; RV zone → pricing auto-feed; duplicate-zone (copy a barn layout).
-- **C5 — Editor integration + import-seed** *(medium).* Wire the builder into the
-  "Interactive Stall Map" / "Interactive RV Map" connector slots (full-screen modal
-  or dedicated sub-panel) with a "Build / Edit Map" button + built-status summary
-  ("✓ 2 barns · 676 stalls"); "Import from Sheet" seed; preview-customer-view.
+- **C5 — Editor integration + Sheets removal** *(medium).* Replace the
+  "Interactive Stall Map" / "Interactive RV Map" Google-Sheet connector slots
+  (paste-URL + Refresh) with a "Build / Edit Map" button opening the builder;
+  built-status summary ("✓ 2 barns · 676 stalls"); preview-customer-view. **Rip
+  out** the Google-Sheet connector UI + the importer's live-fetch path
+  (`EEM_Stall_Map_Importer` fetch/parse, the connect AJAX, the URL meta). Keep the
+  snapshot read/write helpers + the `_en_stall_map` / `_en_rv_map` shape untouched
+  so stored maps and all consumers keep working.
 - **C6 — Polish + verify** *(medium-large).* Undo/redo (command history — drag-fill
   mistakes are common, so this is near-essential not optional); live dup-label
   highlighting; large-grid performance pass; touch QA; full browser verify against
@@ -408,9 +414,14 @@ the interactive grid-editor JS + a thin save endpoint.
   through when wanted.
 - **Shrink that orphans labelled cells:** **confirm first** — warn "This removes N
   labeled stalls" and require confirmation before deleting.
-- **Google Sheets after builder ships:** **demote to seed** — builder becomes
-  primary; Sheets import stays as a one-click "Import from Sheet" that seeds the
-  builder, then edit natively. Existing reservations convert in one click.
+- **Google Sheets after builder ships:** **REMOVE entirely** (revised 2026-06-07
+  after Whitney saw the prototype — supersedes the earlier "demote to seed").
+  The native builder is the ONLY map authoring path; it shows when Inventory Type =
+  **Mapped**. Rip out the paste-URL connector, the Refresh action, the importer's
+  live-fetch/parse, and the Settings sheet-URL plumbing. Existing maps survive
+  because they're already stored snapshots (see "Load existing snapshot" above) —
+  no migration. Keep `EEM_Stall_Map_Importer`'s snapshot read/write + the meta
+  shape; only the Google-fetch surface is removed.
 - **Touch:** **desktop-first** — optimize for mouse drag-select; touch usable but
   not pixel-perfect. (Trims C3/C6 effort.)
 
