@@ -174,41 +174,17 @@ body.post-type-en_reservation #submitdiv > .postbox-header + .inside {
 	padding-top: 0.875rem !important;
 }
 
-/* C7.X.18 Issue B — exclude .button-link (WP's link-style buttons like .media-frame-menu-toggle)
-   from plugin button sizing. Without this, the 40px min-height and 8px border-radius apply
-   to WP's responsive media-frame menu toggle and other native link-style buttons. */
-body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) .button:not(.button-link),
-body.eem-shell-page .wp-core-ui .button:not(.button-link),
-body.post-type-en_reservation .button:not(.button-link),
-body.post-type-en_reservation .wp-core-ui .button:not(.button-link) {
-	min-height: 40px !important;
-	padding: 0.625rem 1rem !important;
-	border-radius: 8px !important;
-	border: 1px solid var(--eem-app-card-border) !important;
-	background: #fff !important;
-	color: var(--eem-app-heading) !important;
-	box-shadow: 0 3px 10px rgba(15, 23, 42, 0.04) !important;
-	font-weight: 700 !important;
-	line-height: 1.2 !important;
-}
-
-body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) .button.button-primary,
-body.eem-shell-page .wp-core-ui .button.button-primary,
-body.post-type-en_reservation .button.button-primary,
-body.post-type-en_reservation .wp-core-ui .button.button-primary {
-	border-color: var(--eem-app-accent) !important;
-	background: var(--eem-app-accent) !important;
-	color: #fff !important;
-	box-shadow: 0 10px 20px rgba(214, 43, 81, 0.18) !important;
-}
-
-body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) .button.button-primary:hover,
-body.eem-shell-page:not(.eem-shell-page--settings):not(.eem-shell-page--reservations-list):not(.eem-shell-page--orders) .button.button-primary:focus,
-body.post-type-en_reservation .button.button-primary:hover,
-body.post-type-en_reservation .button.button-primary:focus {
-	background: var(--eem-app-accent-hover) !important;
-	border-color: var(--eem-app-accent-hover) !important;
-}
+/* C16 (CLEANUP #1) — the generic `.button` / `.button.button-primary` `!important`
+   cartel was REMOVED here. It restyled every WP-native `.button` on shell pages
+   (and, via the broad `body.eem-shell-page .wp-core-ui .button` selector with no
+   port-exclusion chain, the WP Media Library modal's own buttons). Browser audit
+   of every ported shell page (reservation-editor, create-order, stall-charts,
+   dashboard, etc.) found ZERO plugin-owned WP-native `.button` elements — the
+   plugin exclusively uses `.eem-btn*` components (styled in admin.css). The only
+   live consumer was transient WP modal chrome, which is correct to render
+   WP-native. Nothing plugin-owned depended on these rules, so they are stripped
+   rather than migrated. WP core buttons.css fully styles any `.button` that
+   appears in WP chrome. */
 
 body.eem-shell-page .description,
 body.post-type-en_reservation .description {
