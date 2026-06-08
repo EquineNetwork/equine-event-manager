@@ -20,6 +20,102 @@ class EEM_Reservations_CPT {
 	const VALIDATION_TRANSIENT_PREFIX = 'en_reservation_validation_';
 
 	/**
+	 * Canonical section-enabled meta-key map (CLEANUP #44 rename).
+	 *
+	 * Each reservation section's on/off toggle historically lived under an
+	 * inconsistent legacy `_en_<field>_enabled` post-meta key (no shared infix:
+	 * `_en_checkin_checkout_enabled` vs `_en_general_addons_enabled` vs
+	 * `_en_convenience_fee_enabled`). The canonical scheme is
+	 * `_eem_section_enabled_<shortkey>`. This map translates the editor's
+	 * un-prefixed form-field name (the array key used throughout the meta save /
+	 * read loops) to the canonical short key (the value).
+	 *
+	 * The legacy `_en_<field>_enabled` keys are migrated to the canonical keys
+	 * once by eem-mig-007 and then left in place read-no-write as a historical
+	 * record (and as a read fallback for any reservation that predates the
+	 * migration). All reads resolve new-first, old-fallback via
+	 * {@see self::read_section_enabled_raw()}; the single write site (the meta
+	 * save loop) writes only the canonical key via {@see self::section_enabled_meta_key()}.
+	 *
+	 * @var array<string,string> form-field name => canonical short key
+	 */
+	const SECTION_ENABLED_MAP = array(
+		'stalls_enabled'             => 'stalls',
+		'rv_enabled'                 => 'rv',
+		'checkin_checkout_enabled'   => 'checkin',
+		'general_addons_enabled'     => 'addons',
+		'group_reservations_enabled' => 'group',
+		'convenience_fee_enabled'    => 'fees',
+		'venue_agreement_enabled'    => 'agreement',
+	);
+
+	/**
+	 * Resolve the canonical post-meta key for a reservation field.
+	 *
+	 * Returns the canonical `_eem_section_enabled_<shortkey>` key for the seven
+	 * section-toggle fields; for every other field returns the standard
+	 * `_en_<field>` key so the central save/read loops can call this uniformly.
+	 *
+	 * @param string $field Un-prefixed form-field name (e.g. `stalls_enabled`).
+	 * @return string Fully-qualified post-meta key.
+	 */
+	public static function section_enabled_meta_key( string $field ): string {
+		return isset( self::SECTION_ENABLED_MAP[ $field ] )
+			? '_eem_section_enabled_' . self::SECTION_ENABLED_MAP[ $field ]
+			: '_en_' . $field;
+	}
+
+	/**
+	 * Read a section-toggle value, preferring the canonical key, falling back
+	 * to the legacy `_en_<field>_enabled` key when the canonical one is absent.
+	 *
+	 * Use this (or {@see self::section_enabled()}) for EVERY read of a section
+	 * toggle so a reservation that has not yet been re-saved post-migration —
+	 * or one that slipped past eem-mig-007 — still resolves correctly. Returns
+	 * the raw stored value (string), or '' when neither key exists.
+	 *
+	 * @param int    $post_id Reservation post id.
+	 * @param string $field   Un-prefixed form-field name (e.g. `rv_enabled`).
+	 * @return mixed Raw post-meta value, or '' when unset.
+	 */
+	public static function read_section_enabled_raw( int $post_id, string $field ) {
+		$canonical = self::section_enabled_meta_key( $field );
+		if ( '_en_' . $field === $canonical ) {
+			// Not a mapped section toggle — single key, no fallback needed.
+			return get_post_meta( $post_id, $canonical, true );
+		}
+		if ( metadata_exists( 'post', $post_id, $canonical ) ) {
+			return get_post_meta( $post_id, $canonical, true );
+		}
+		return get_post_meta( $post_id, '_en_' . $field, true );
+	}
+
+	/**
+	 * Boolean convenience wrapper around {@see self::read_section_enabled_raw()}.
+	 *
+	 * @param int    $post_id Reservation post id.
+	 * @param string $field   Un-prefixed form-field name.
+	 * @return bool Whether the section is enabled.
+	 */
+	public static function section_enabled( int $post_id, string $field ): bool {
+		return (bool) self::read_section_enabled_raw( $post_id, $field );
+	}
+
+	/**
+	 * Whether a section-toggle value is stored under EITHER the canonical or the
+	 * legacy key (parity with the old `metadata_exists( '_en_<field>' )` checks
+	 * that drive first-save legacy-default logic).
+	 *
+	 * @param int    $post_id Reservation post id.
+	 * @param string $field   Un-prefixed form-field name.
+	 * @return bool
+	 */
+	public static function section_enabled_exists( int $post_id, string $field ): bool {
+		return metadata_exists( 'post', $post_id, self::section_enabled_meta_key( $field ) )
+			|| metadata_exists( 'post', $post_id, '_en_' . $field );
+	}
+
+	/**
 	 * Register the Reservations custom post type.
 	 */
 	public function register_post_type() {
@@ -764,8 +860,8 @@ class EEM_Reservations_CPT {
 	public function get_assignment_status_summary( $post_id, $type = 'stall' ) {
 		$post_id             = absint( $post_id );
 		// 2.3.52 — type-aware chart signal; replaces removed _en_stall_chart_enabled.
-		$stalls_enabled      = (bool) get_post_meta( $post_id, '_en_stalls_enabled', true );
-		$rv_enabled          = (bool) get_post_meta( $post_id, '_en_rv_enabled', true );
+		$stalls_enabled      = self::section_enabled( $post_id, 'stalls_enabled' );
+		$rv_enabled          = self::section_enabled( $post_id, 'rv_enabled' );
 		$stall_blocks        = get_post_meta( $post_id, '_en_stall_chart_stall_blocks', true );
 		$stall_units         = $this->expand_chart_units( is_array( $stall_blocks ) ? $stall_blocks : array() );
 		$rv_lots             = get_post_meta( $post_id, '_en_rv_lots', true );
@@ -972,7 +1068,9 @@ class EEM_Reservations_CPT {
 		}
 
 		foreach ( $data as $key => $value ) {
-			update_post_meta( $post_id, '_en_' . $key, $value );
+			// CLEANUP #44 — section-toggle fields write the canonical
+			// `_eem_section_enabled_<shortkey>` key; everything else keeps `_en_<field>`.
+			update_post_meta( $post_id, self::section_enabled_meta_key( $key ), $value );
 		}
 
 		// Bidirectional one-to-one enforcement for TEC event links.
@@ -1897,7 +1995,9 @@ class EEM_Reservations_CPT {
 		$values   = array();
 
 		foreach ( $defaults as $key => $default ) {
-			$value = get_post_meta( $post_id, '_en_' . $key, true );
+			// CLEANUP #44 — section toggles resolve new-first, legacy-fallback;
+			// all other fields read `_en_<field>` directly (helper handles both).
+			$value = self::read_section_enabled_raw( $post_id, $key );
 
 			$values[ $key ] = '' === $value ? $default : $value;
 		}
@@ -1973,7 +2073,7 @@ class EEM_Reservations_CPT {
 		// OFF — respect the stored value. Without the metadata_exists() guard
 		// the section flips back ON on every reload because its add-on rows
 		// persist. (2.3.48 — matches the use_global_event_source guard above.)
-		if ( ! metadata_exists( 'post', $post_id, '_en_general_addons_enabled' )
+		if ( ! self::section_enabled_exists( $post_id, 'general_addons_enabled' )
 			&& empty( $values['general_addons_enabled'] ) && ! empty( $values['general_addons'] ) && is_array( $values['general_addons'] ) ) {
 			$values['general_addons_enabled'] = 1;
 		}
@@ -1982,7 +2082,7 @@ class EEM_Reservations_CPT {
 			$values['rv_addons_enabled'] = 1;
 		}
 
-		if ( empty( $values['group_reservations_enabled'] ) && ! empty( get_post_meta( $post_id, '_en_group_reservations_enabled', true ) ) ) {
+		if ( empty( $values['group_reservations_enabled'] ) && self::section_enabled( $post_id, 'group_reservations_enabled' ) ) {
 			$values['group_reservations_enabled'] = 1;
 		}
 
@@ -2015,7 +2115,7 @@ class EEM_Reservations_CPT {
 
 		// 2.3.48 — legacy inference only; an explicitly-stored 0 (toggle turned
 		// OFF) must survive reload even though check-in/out times persist.
-		if ( ! metadata_exists( 'post', $post_id, '_en_checkin_checkout_enabled' )
+		if ( ! self::section_enabled_exists( $post_id, 'checkin_checkout_enabled' )
 			&& empty( $values['checkin_checkout_enabled'] ) && ( ! empty( $values['checkin_time_enabled'] ) || ! empty( $values['checkout_time_enabled'] ) || ! empty( $values['checkin_time'] ) || ! empty( $values['checkout_time'] ) ) ) {
 			$values['checkin_checkout_enabled'] = 1;
 		}
@@ -2031,7 +2131,7 @@ class EEM_Reservations_CPT {
 		// 2.3.48 — legacy inference only; an explicitly-stored 0 (toggle turned
 		// OFF) must survive reload even though the uploaded agreement file_id
 		// persists.
-		if ( ! metadata_exists( 'post', $post_id, '_en_venue_agreement_enabled' )
+		if ( ! self::section_enabled_exists( $post_id, 'venue_agreement_enabled' )
 			&& empty( $values['venue_agreement_enabled'] ) && ! empty( $values['venue_agreement_file_id'] ) ) {
 			$values['venue_agreement_enabled'] = 1;
 		}

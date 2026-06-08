@@ -1141,8 +1141,8 @@ class EEM_Admin {
 		foreach ( $reservation_ids as $reservation_id ) {
 			$event_id         = absint( get_post_meta( $reservation_id, '_en_event_id', true ) );
 			$native_event_id  = absint( get_post_meta( $reservation_id, '_en_native_event_id', true ) );
-			$stall_chart      = ! empty( get_post_meta( $reservation_id, '_en_stalls_enabled', true ) );
-			$rv_lot_selection = ! empty( get_post_meta( $reservation_id, '_en_rv_enabled', true ) );
+			$stall_chart      = EEM_Reservations_CPT::section_enabled( $reservation_id, 'stalls_enabled' );
+			$rv_lot_selection = EEM_Reservations_CPT::section_enabled( $reservation_id, 'rv_enabled' );
 
 			if ( $event_id || $native_event_id ) {
 				$metrics['linked']++;
@@ -3756,10 +3756,22 @@ class EEM_Admin {
 				// 2.3.50 — any reservation selling stalls OR RV lots needs a chart
 				// view (to verify customer-picked assignments in Mapped mode, or to
 				// manually assign in Bulk mode), regardless of inventory mode.
+				// CLEANUP #44 — match canonical `_eem_section_enabled_*` OR legacy
+				// `_en_*_enabled` so unmigrated reservations still resolve.
 				'meta_query'     => array(
 					'relation' => 'OR',
 					array(
+						'key'     => EEM_Reservations_CPT::section_enabled_meta_key( 'stalls_enabled' ),
+						'value'   => '1',
+						'compare' => '=',
+					),
+					array(
 						'key'     => '_en_stalls_enabled',
+						'value'   => '1',
+						'compare' => '=',
+					),
+					array(
+						'key'     => EEM_Reservations_CPT::section_enabled_meta_key( 'rv_enabled' ),
 						'value'   => '1',
 						'compare' => '=',
 					),
@@ -3934,9 +3946,12 @@ class EEM_Admin {
 				'posts_per_page' => 200,
 				'fields'         => 'ids',
 				'no_found_rows'  => true,
+				// CLEANUP #44 — canonical OR legacy section-enabled keys.
 				'meta_query'     => array(
 					'relation' => 'OR',
+					array( 'key' => EEM_Reservations_CPT::section_enabled_meta_key( 'stalls_enabled' ), 'value' => '1', 'compare' => '=' ),
 					array( 'key' => '_en_stalls_enabled', 'value' => '1', 'compare' => '=' ),
+					array( 'key' => EEM_Reservations_CPT::section_enabled_meta_key( 'rv_enabled' ), 'value' => '1', 'compare' => '=' ),
 					array( 'key' => '_en_rv_enabled', 'value' => '1', 'compare' => '=' ),
 				),
 			)
@@ -4455,7 +4470,7 @@ class EEM_Admin {
 			// 2.3.52 — chart is active when Stall OR RV reservations are enabled.
 			// Replaces the removed _en_stall_chart_enabled gate (the field that
 			// left the Stall Chart Detail page showing "disabled" after 2.3.50).
-			'enabled'               => (bool) get_post_meta( $reservation_id, '_en_stalls_enabled', true ) || (bool) get_post_meta( $reservation_id, '_en_rv_enabled', true ),
+			'enabled'               => EEM_Reservations_CPT::section_enabled( $reservation_id, 'stalls_enabled' ) || EEM_Reservations_CPT::section_enabled( $reservation_id, 'rv_enabled' ),
 			'stall_blocks'          => $stall_blocks,
 			'stall_units'           => $stall_units,
 			'rv_lot_names'          => $rv_lot_names,
@@ -6237,10 +6252,10 @@ class EEM_Admin {
 			'external_event_name'         => (string) get_post_meta( $reservation_id, '_en_external_event_name', true ),
 			'available_start_date'        => (string) get_post_meta( $reservation_id, '_en_available_start_date', true ),
 			'available_end_date'          => (string) get_post_meta( $reservation_id, '_en_available_end_date', true ),
-			'stalls_enabled'              => ! empty( get_post_meta( $reservation_id, '_en_stalls_enabled', true ) ) ? 1 : 0,
-			'rv_enabled'                  => ! empty( get_post_meta( $reservation_id, '_en_rv_enabled', true ) ) ? 1 : 0,
-			'general_addons_enabled'      => ! empty( get_post_meta( $reservation_id, '_en_general_addons_enabled', true ) ) ? 1 : 0,
-			'group_reservations_enabled'  => ! empty( get_post_meta( $reservation_id, '_en_group_reservations_enabled', true ) ) ? 1 : 0,
+			'stalls_enabled'              => EEM_Reservations_CPT::section_enabled( $reservation_id, 'stalls_enabled' ) ? 1 : 0,
+			'rv_enabled'                  => EEM_Reservations_CPT::section_enabled( $reservation_id, 'rv_enabled' ) ? 1 : 0,
+			'general_addons_enabled'      => EEM_Reservations_CPT::section_enabled( $reservation_id, 'general_addons_enabled' ) ? 1 : 0,
+			'group_reservations_enabled'  => EEM_Reservations_CPT::section_enabled( $reservation_id, 'group_reservations_enabled' ) ? 1 : 0,
 			'group_rider_grounds_fee_enabled' => ! empty( get_post_meta( $reservation_id, '_en_group_rider_grounds_fee_enabled', true ) ) ? 1 : 0,
 			'group_rider_grounds_fee_amount'  => (string) get_post_meta( $reservation_id, '_en_group_rider_grounds_fee_amount', true ),
 			'group_rider_deposit_enabled'     => ! empty( get_post_meta( $reservation_id, '_en_group_rider_deposit_enabled', true ) ) ? 1 : 0,
@@ -6694,7 +6709,7 @@ class EEM_Admin {
 			$group_rider_count       = self::parse_group_rider_count_from_notes( $order['notes'] );
 			$group_rider_names       = self::parse_group_rider_names_from_notes( $order['notes'] );
 			$general_addons          = $this->parse_general_addon_breakdown_from_notes( $order['notes'] );
-			$stall_chart_enabled     = $reservation_id ? ( (bool) get_post_meta( $reservation_id, '_en_stalls_enabled', true ) || (bool) get_post_meta( $reservation_id, '_en_rv_enabled', true ) ) : false;
+			$stall_chart_enabled     = $reservation_id ? ( EEM_Reservations_CPT::section_enabled( $reservation_id, 'stalls_enabled' ) || EEM_Reservations_CPT::section_enabled( $reservation_id, 'rv_enabled' ) ) : false;
 			$stall_chart_config      = $reservation_id ? $this->get_stall_chart_config( $reservation_id ) : array();
 			$stall_assignment_ready  = $stall_chart_enabled || ! empty( $stall_chart_config['stall_units'] );
 			$rv_assignment_ready     = $stall_chart_enabled || ! empty( $stall_chart_config['rv_lot_names'] );

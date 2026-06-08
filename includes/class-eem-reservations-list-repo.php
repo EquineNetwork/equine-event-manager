@@ -366,13 +366,13 @@ class EEM_Reservations_List_Repo {
 		// meta empty — so check the section flag first, with the legacy numeric
 		// capacity as a fallback. Checking only the legacy meta dropped the Stall
 		// badge for every row-builder reservation.
-		if ( ! empty( get_post_meta( $id, '_en_stalls_enabled', true ) )
+		if ( EEM_Reservations_CPT::section_enabled( $id, 'stalls_enabled' )
 			|| (int) get_post_meta( $id, '_en_stall_quantity_available', true ) > 0 ) {
 			$badges[] = 'stall';
 		}
 
 		// RV section enabled — same dual check (modern flag OR legacy capacity).
-		if ( ! empty( get_post_meta( $id, '_en_rv_enabled', true ) )
+		if ( EEM_Reservations_CPT::section_enabled( $id, 'rv_enabled' )
 			|| (int) get_post_meta( $id, '_en_rv_quantity_available', true ) > 0 ) {
 			$badges[] = 'rv';
 		}
@@ -384,7 +384,7 @@ class EEM_Reservations_List_Repo {
 		}
 
 		// Group section enabled when group reservations toggle is on.
-		if ( ! empty( get_post_meta( $id, '_en_group_reservations_enabled', true ) ) ) {
+		if ( EEM_Reservations_CPT::section_enabled( $id, 'group_reservations_enabled' ) ) {
 			$badges[] = 'group';
 		}
 
@@ -409,8 +409,8 @@ class EEM_Reservations_List_Repo {
 		if ( $id <= 0 ) {
 			return false;
 		}
-		return (bool) get_post_meta( $id, '_en_stalls_enabled', true )
-			|| (bool) get_post_meta( $id, '_en_rv_enabled', true );
+		return EEM_Reservations_CPT::section_enabled( $id, 'stalls_enabled' )
+			|| EEM_Reservations_CPT::section_enabled( $id, 'rv_enabled' );
 	}
 
 	/**

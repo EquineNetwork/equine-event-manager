@@ -42,7 +42,11 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 - **Why deferred (Option A vs Option C audit at C7.C.1.1):** Renaming requires coordinated cascade — customer-facing surfaces (C10 customer event page / C11 confirmation email / C12 receipt + hosted page) all read the legacy keys today. Splitting the rename across chunks would create a backend-writes-new-keys / frontend-reads-old-keys window that silently breaks customer-facing state for every reservation saved through the new editor. C7.C.1.1 took Option C (hidden-input mirrors the legacy name on the editor body; no rename) precisely to avoid that breakage window.
 - **Added in:** C7.C.1.1
 - **Unblocks deletion:** C16 polish pass — single coordinated commit window that lands C10/C11/C12 read-side migration in the same commit as the save-side rename. Migration step: snapshot existing `_en_*_enabled` values into `_eem_section_enabled_{key}` for every existing reservation in the activator's `maybe_upgrade` (flag-gated, one-time), then strip the legacy read paths.
-- **Status:** awaiting C16
+- **Status:** ✅ RESOLVED in C16 (v2.7.124). Implemented as a single coordinated change:
+  - `EEM_Reservations_CPT::SECTION_ENABLED_MAP` (7 fields → short keys) + `section_enabled_meta_key()` / `read_section_enabled_raw()` (new-first, **legacy-fallback**) / `section_enabled()` / `section_enabled_exists()` helpers.
+  - Single write site (meta save loop) writes only the canonical `_eem_section_enabled_<shortkey>` key; central read loop + every literal read (cpt, admin, orders-repo, list-repo, shortcodes) + the legacy-default `metadata_exists` guards all route through the resolver. Two `WP_Query` meta_queries OR canonical+legacy keys.
+  - `eem-mig-007-section-enabled-rename.php` (flag-gated, idempotent) snapshots every legacy value onto the canonical key for all reservations; legacy keys LEFT in place read-no-write as the fallback + historical record.
+  - Verified live: migration populated canonical keys with exact values (incl. `0`s) for an all-on (5990) and mixed (6038) reservation; editor reads + AJAX-save write round-trip both confirmed against the canonical keys.
 
 ### 43. Throwaway audit scripts — `c7c1-audit-roundtrip.php` + `c7c1-audit-savemeta.php` (already deleted)
 - **What:** Two diagnostic scripts used to root-cause the C7.C.1 save-bug + double-toggle bug. Lived briefly under `tests/smoke/` to share the smoke runner's bootstrap path; deleted at C7.C.1.1 close per Decision F.

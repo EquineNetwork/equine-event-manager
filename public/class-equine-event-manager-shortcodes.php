@@ -8708,8 +8708,11 @@ RV Lot: " . $rv_lot['name'] );
 			return 0;
 		}
 
-		$meta_key = 'stall' === $type ? '_en_stalls_enabled' : '_en_rv_enabled';
-		$posts    = get_posts(
+		// CLEANUP #44 — match the section toggle under the canonical
+		// `_eem_section_enabled_<shortkey>` key OR its legacy `_en_<field>` key
+		// so unmigrated reservations still resolve.
+		$field   = 'stall' === $type ? 'stalls_enabled' : 'rv_enabled';
+		$posts   = get_posts(
 			array(
 				'post_type'      => 'en_reservation',
 				'post_status'    => 'publish',
@@ -8727,9 +8730,17 @@ RV Lot: " . $rv_lot['name'] );
 						'compare' => '=',
 					),
 					array(
-						'key'     => $meta_key,
-						'value'   => 1,
-						'compare' => '=',
+						'relation' => 'OR',
+						array(
+							'key'     => EEM_Reservations_CPT::section_enabled_meta_key( $field ),
+							'value'   => 1,
+							'compare' => '=',
+						),
+						array(
+							'key'     => '_en_' . $field,
+							'value'   => 1,
+							'compare' => '=',
+						),
 					),
 				),
 			)

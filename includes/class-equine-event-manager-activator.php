@@ -169,6 +169,10 @@ class EEM_Activator {
 			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-006-tack-mode.php';
 			eem_mig_006_tack_mode();
 		}
+		if ( ! get_option( 'eem_mig_007_section_enabled_rename_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-007-section-enabled-rename.php';
+			eem_mig_007_section_enabled_rename();
+		}
 	}
 
 	/**
