@@ -25,7 +25,7 @@
 		target: 'stall', overlay: null, dirty: false,
 		inline: false, host: null, zoom: 1
 	};
-	var ZMIN = 0.5, ZMAX = 1.8, ZBASE_C = 46, ZBASE_R = 42;
+	var ZMIN = 0.18, ZMAX = 1.8, ZBASE_C = 46, ZBASE_R = 42;
 
 	// Multi-instance support: the stall + RV editors render inline at the same
 	// time, so each target keeps its own state object in INSTANCES. `B` always
@@ -95,6 +95,8 @@
 		var cw = Math.round(ZBASE_C * B.zoom), ch = Math.round(ZBASE_R * B.zoom);
 		g.style.gridTemplateColumns = 'repeat(' + cols + ',' + cw + 'px)';
 		g.style.gridAutoRows = ch + 'px';
+		g.style.setProperty('--eem-mb-chip', cw + 'px');  // cell width + label font scale
+		g.style.setProperty('--eem-mb-chiph', ch + 'px'); // cell height
 		g.innerHTML = '';
 		var consumed = {};
 		for (var r = 0; r < z.grid.length; r++) {

@@ -9059,7 +9059,10 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
    gridlines — no per-cell borders / negative-margin overlap (which produced the
    thick lines + protruding "legs"). */
 .eem-mb-grid { display: inline-grid; gap: 1px; border: 1px solid var(--eem-border, #D9E2F2); background: var(--eem-border, #D9E2F2); user-select: none; }
-.eem-mb-cell { width: 46px; height: 42px; background: var(--eem-surface, #fff); display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 600; color: var(--eem-navy, #031B4E); position: relative; cursor: pointer; }
+/* Cell fills its zoomed grid track (set via --eem-mb-chip / -chiph in render) so
+   zoom actually resizes cells — not just the track — letting big layouts shrink
+   to fit. Label scales with the chip + clips so multi-digit numbers never spill. */
+.eem-mb-cell { width: var(--eem-mb-chip, 46px); height: var(--eem-mb-chiph, 42px); background: var(--eem-surface, #fff); display: flex; align-items: center; justify-content: center; font-size: clamp(5px, calc(var(--eem-mb-chip, 46px) * 0.27), 13px); font-weight: 600; color: var(--eem-navy, #031B4E); position: relative; cursor: pointer; overflow: hidden; }
 .eem-mb-cell.gap { background: #eef1f6; background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, #e2e7ef 5px, #e2e7ef 6px); color: transparent; }
 .eem-mb-cell.stall:hover { background: var(--eem-info-bg, #EEF4FF); }
 /* landmark cells span their whole merged region (width/height auto fill the
