@@ -9029,6 +9029,20 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 .eem-mb-seg4 button:first-child { border-left: none; }
 .eem-mb-seg4 button.on { background: var(--eem-electric, #1668F2); color: #fff; }
 .eem-mb-gridscroll { overflow: auto; padding: 18px; max-height: 56vh; }
+/* Zoom control — mirrors the row/col stepper chrome; drives grid cell size in JS. */
+.eem-mb-zoom { display: inline-flex; border: 1px solid var(--eem-border-card, #c3c4c7); border-radius: var(--eem-radius, 3px); overflow: hidden; }
+.eem-mb-zoom button { border: 0; border-left: 1px solid var(--eem-border, #D9E2F2); background: var(--eem-surface, #fff); color: var(--eem-navy, #031B4E); font-weight: 700; font-size: 13px; padding: 5px 11px; line-height: 1; cursor: pointer; }
+.eem-mb-zoom button:first-child { border-left: 0; }
+.eem-mb-zoom button:hover { background: #eef4ff; }
+/* Inline mode — the builder lives inside the section card instead of a fixed
+   modal overlay (Whitney: "the map builder needs to just live in this card").
+   Static positioning, no backdrop, full-width, capped grid viewport that pans. */
+.eem-mb-inline-host { margin-top: 12px; }
+.eem-mb-inline-host:empty { margin-top: 0; }
+.eem-mb-overlay.eem-mb-inline { position: static; inset: auto; background: none; z-index: auto; display: block; padding: 0; overflow: visible; }
+.eem-mb-overlay.eem-mb-inline .eem-mb-card { max-width: none; width: 100%; box-shadow: none; border: 1px solid var(--eem-border, #D9E2F2); }
+.eem-mb-overlay.eem-mb-inline #eem-mb-cancel { display: none; }
+.eem-mb-overlay.eem-mb-inline .eem-mb-gridscroll { max-height: 460px; }
 /* 1px-gap grid: the grid's background shows through the gaps as uniform thin
    gridlines — no per-cell borders / negative-margin overlap (which produced the
    thick lines + protruding "legs"). */

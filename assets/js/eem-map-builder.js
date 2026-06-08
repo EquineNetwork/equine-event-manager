@@ -22,8 +22,10 @@
 		history: [], future: [],
 		fill: { start: '1', step: 1, dir: 'lr' },
 		lm: { name: 'Wash Rack' },
-		target: 'stall', overlay: null, dirty: false
+		target: 'stall', overlay: null, dirty: false,
+		inline: false, host: null, zoom: 1
 	};
+	var ZMIN = 0.5, ZMAX = 1.8, ZBASE_C = 46, ZBASE_R = 42;
 
 	function noun(plural) {
 		var rv = B.target === 'rv';
@@ -61,6 +63,19 @@
 	function sameLm(z, r, c, label) { return r >= 0 && c >= 0 && r < z.grid.length && c < z.grid[0].length && z.grid[r][c].type === 'landmark' && z.grid[r][c].label === label; }
 	function inSel(r, c) { if (!B.sel) { return false; } var s = B.sel; return r >= Math.min(s.r1, s.r2) && r <= Math.max(s.r1, s.r2) && c >= Math.min(s.c1, s.c2) && c <= Math.max(s.c1, s.c2); }
 
+	// Fit the active zone's grid width to the visible scroll viewport so the whole
+	// map is in view; zoom in/out then pans within the capped viewport.
+	function fitZoom() {
+		var z = Z(); if (!z) { return; }
+		var cols = z.grid[0] ? z.grid[0].length : 0;
+		var scroll = q('#eem-mb-gridscroll') || q('.eem-mb-gridscroll');
+		if (!cols || !scroll) { B.zoom = 1; render(); return; }
+		var avail = scroll.clientWidth - 28; // padding allowance
+		var want = avail / (cols * ZBASE_C);
+		B.zoom = Math.max(ZMIN, Math.min(1, want));
+		render();
+	}
+
 	function render() {
 		var z = Z();
 		var rv = q('#eem-mb-rowval'), cv = q('#eem-mb-colval');
@@ -69,8 +84,9 @@
 		var dups = findDups(z);
 		var g = q('#eem-mb-grid');
 		var cols = z.grid[0] ? z.grid[0].length : 0;
-		g.style.gridTemplateColumns = 'repeat(' + cols + ',46px)';
-		g.style.gridAutoRows = '42px';
+		var cw = Math.round(ZBASE_C * B.zoom), ch = Math.round(ZBASE_R * B.zoom);
+		g.style.gridTemplateColumns = 'repeat(' + cols + ',' + cw + 'px)';
+		g.style.gridAutoRows = ch + 'px';
 		g.innerHTML = '';
 		var consumed = {};
 		for (var r = 0; r < z.grid.length; r++) {
@@ -313,6 +329,7 @@
 						'<div class="eem-mb-gridbar">' +
 							'<span class="eem-mb-step">Rows <button type="button" data-resize="row" data-d="-1">−</button><span id="eem-mb-rowval">0</span><button type="button" data-resize="row" data-d="1">+</button></span>' +
 							'<span class="eem-mb-step">Cols <button type="button" data-resize="col" data-d="-1">−</button><span id="eem-mb-colval">0</span><button type="button" data-resize="col" data-d="1">+</button></span>' +
+							'<span class="eem-mb-zoom"><button type="button" data-zoom="out" title="Zoom out">−</button><button type="button" data-zoom="fit" title="Fit">Fit</button><button type="button" data-zoom="in" title="Zoom in">+</button></span>' +
 							'<span class="eem-mb-controls" id="eem-mb-controls"></span>' +
 						'</div>' +
 						'<div class="eem-mb-gridscroll"><div class="eem-mb-grid" id="eem-mb-grid"></div></div>' +
@@ -320,8 +337,14 @@
 				'</div>' +
 				'<div class="eem-mb-toast" id="eem-mb-toast"></div>' +
 			'</div>';
-		document.body.appendChild(o);
 		B.overlay = o;
+		if (B.inline && B.host) {
+			o.classList.add('eem-mb-inline');
+			B.host.innerHTML = '';
+			B.host.appendChild(o);
+		} else {
+			document.body.appendChild(o);
+		}
 
 		// tool selection
 		o.querySelector('.eem-mb-toolbar').addEventListener('click', function (e) {
@@ -335,6 +358,15 @@
 		});
 		// resize steppers
 		o.querySelector('.eem-mb-gridbar').addEventListener('click', function (e) {
+			var z = e.target.closest('[data-zoom]');
+			if (z) {
+				var act = z.getAttribute('data-zoom');
+				if (act === 'in') { B.zoom = Math.min(ZMAX, B.zoom + 0.2); }
+				else if (act === 'out') { B.zoom = Math.max(ZMIN, B.zoom - 0.2); }
+				else { fitZoom(); return; }
+				render();
+				return;
+			}
 			var b = e.target.closest('[data-resize]'); if (!b) { return; }
 			resizeGrid(b.getAttribute('data-resize'), parseInt(b.getAttribute('data-d'), 10));
 		});
@@ -359,7 +391,8 @@
 		o.querySelector('#eem-mb-preview').addEventListener('click', previewCustomer);
 		o.querySelector('#eem-mb-cancel').addEventListener('click', close);
 		o.querySelector('#eem-mb-save').addEventListener('click', save);
-		o.addEventListener('mousedown', function (e) { if (e.target === o) { close(); } });
+		// Backdrop click closes only the floating modal; inline lives in the card.
+		if (!B.inline) { o.addEventListener('mousedown', function (e) { if (e.target === o) { close(); } }); }
 	}
 	// On mouse-up: a Select-tool click (no drag) on a single cell opens its label
 	// editor — "select something to change a label".
@@ -392,15 +425,17 @@
 				return { name: b.name || (cap(zoneNoun(false))), grid: grid };
 			});
 		}
-		B.active = 0; B.sel = null; B.tool = 'fill'; B.history = []; B.future = []; B.dirty = false; B.fill = { start: '1', step: 1, dir: 'lr' }; B.lm = { name: 'Wash Rack' };
+		B.active = 0; B.sel = null; B.tool = 'fill'; B.history = []; B.future = []; B.dirty = false; B.zoom = 1; B.fill = { start: '1', step: 1, dir: 'lr' }; B.lm = { name: 'Wash Rack' };
 	}
 
 	function open(target) {
 		if (B.overlay) { close(); }
 		hydrate(target);
+		B.host = document.querySelector('[data-eem-map-host="' + target + '"]');
+		B.inline = !!B.host;
 		buildModal();
 		q('.eem-mb-title').textContent = (target === 'rv' ? 'RV Map Builder' : 'Stall Map Builder');
-		requestAnimationFrame(function () { B.overlay.classList.add('open'); });
+		requestAnimationFrame(function () { B.overlay.classList.add('open'); fitZoom(); });
 		render(); renderControls();
 	}
 
@@ -409,6 +444,7 @@
 		document.removeEventListener('mouseup', onUp);
 		B.overlay.parentNode.removeChild(B.overlay);
 		B.overlay = null;
+		B.inline = false; B.host = null;
 	}
 
 	// ---- styled prompt / confirm (replaces native window.prompt / .confirm) ----
@@ -530,7 +566,7 @@
 				var seed = document.getElementById('eem-map-seed-' + B.target);
 				if (seed) { seed.textContent = JSON.stringify(serializeBarns()); }
 				if (window.EEM && EEM.showSaveToast) { EEM.showSaveToast(res.data.message || 'Map saved.', { variant: 'success', sub: '' }); }
-				close();
+				if (!B.inline) { close(); }
 			} else {
 				var msg = (res && res.data && res.data.message) ? res.data.message : 'Could not save the map.';
 				toast(msg);

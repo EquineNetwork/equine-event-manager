@@ -481,6 +481,7 @@ ob_start();
 		?>
 	</div>
 	<script type="application/json" id="eem-map-seed-rv"><?php echo wp_json_encode( $rv_seed ); // phpcs:ignore -- JSON seed for the Map Builder ?></script>
+	<div class="eem-mb-inline-host" data-eem-map-host="rv"></div>
 </div>
 <span class="eem-field-hint"><?php esc_html_e( 'Used when RV Selection is "Pick from layout". Click Build Map to draw your RV layout — add a tab per zone, then drag to number the lots. Each tab becomes a zone in RV Lot Zones above, where you set its pricing.', 'equine-event-manager' ); ?></span>
 <?php

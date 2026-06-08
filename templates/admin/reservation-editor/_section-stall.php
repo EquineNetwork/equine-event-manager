@@ -547,8 +547,9 @@ ob_start();
 		?>
 	</div>
 	<script type="application/json" id="eem-map-seed-stall"><?php echo wp_json_encode( $stall_seed ); // phpcs:ignore -- JSON seed for the Map Builder ?></script>
+	<div class="eem-mb-inline-host" data-eem-map-host="stall"></div>
 </div>
-<span class="eem-field-hint"><?php esc_html_e( 'Used when Customer Selection is “Pick from layout”. Click Build Map to draw your facility — add a tab per barn, then drag to number the stalls. No spreadsheet required.', 'equine-event-manager' ); ?></span>
+<span class="eem-field-hint"><?php esc_html_e( 'Used when Customer Selection is “Pick from layout”. Click Build Map to draw your facility right here in this card — add a tab per barn, then drag to number the stalls. No spreadsheet required.', 'equine-event-manager' ); ?></span>
 <?php
 $stall_map_html = (string) ob_get_clean();
 eem_render_editor_field_row( array(
