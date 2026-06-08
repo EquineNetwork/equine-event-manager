@@ -393,6 +393,36 @@ eem_render_editor_field_row( array(
 	'hint'         => __( 'Limits how many stalls a single customer can reserve. Enforced at checkout.', 'equine-event-manager' ),
 ) );
 
+// ── Tack Stalls (On/Off) — order: after Max Stalls Per Customer, before the map ──
+$tack_on  = ( 'off' !== $tack_mode );
+$tack_who = ( 'admin' === $tack_mode ) ? 'admin' : 'customer';
+$tack_val = $tack_on ? $tack_who : 'off';
+ob_start();
+?>
+<div class="eem-tack-control" data-eem-tack-control>
+	<div class="eem-mode-btns" data-eem-tack-onoff>
+		<button type="button" class="eem-mode-btn<?php echo $tack_on ? '' : ' active'; ?>" data-tack-onoff="off" data-eem-action="tack-onoff"><?php esc_html_e( 'Off', 'equine-event-manager' ); ?></button>
+		<button type="button" class="eem-mode-btn<?php echo $tack_on ? ' active' : ''; ?>" data-tack-onoff="on" data-eem-action="tack-onoff"><?php esc_html_e( 'On', 'equine-event-manager' ); ?></button>
+	</div>
+	<div class="eem-tack-who-row" data-eem-tack-who-row<?php echo $tack_on ? '' : ' hidden'; ?>>
+		<span class="eem-field-sublabel"><?php esc_html_e( 'Who designates the tack stall?', 'equine-event-manager' ); ?></span>
+		<div class="eem-mode-btns" data-eem-tack-who>
+			<button type="button" class="eem-mode-btn<?php echo 'customer' === $tack_who ? ' active' : ''; ?>" data-tack-who="customer" data-eem-action="tack-who"><?php esc_html_e( 'Customer', 'equine-event-manager' ); ?></button>
+			<button type="button" class="eem-mode-btn<?php echo 'admin' === $tack_who ? ' active' : ''; ?>" data-tack-who="admin" data-eem-action="tack-who"><?php esc_html_e( 'Admin only', 'equine-event-manager' ); ?></button>
+		</div>
+	</div>
+</div>
+<input type="hidden" name="en_reservation[stall_tack_mode]" id="eem-stall-tack-mode-input" value="<?php echo esc_attr( $tack_val ); ?>">
+<span class="eem-field-hint"><?php esc_html_e( 'When on, a tack stall is excluded from required shavings. "Customer" lets buyers flag their own tack stall at checkout; "Admin only" hides that from checkout and you mark the tack stall on the Stall Chart. Either way you can assign or override it on the Stall Chart ("Mark as Tack Stall").', 'equine-event-manager' ); ?></span>
+<?php
+$tack_html = (string) ob_get_clean();
+eem_render_editor_field_row( array(
+	'label'        => __( 'Tack Stalls', 'equine-event-manager' ),
+	'label_sub'    => __( 'Excluded from required shavings', 'equine-event-manager' ),
+	'row_id'       => 'row-stall-tack',
+	'control_html' => $tack_html,
+) );
+
 // 18. Stall Row Builder — inside mapped-content wrapper (C8)
 // Load meta from $data (pre-populated by get_meta_values()) or fall back to 3 seeded rows.
 // NOTE: use $data, NOT a direct post-meta call with get_the_ID() — on custom admin pages
@@ -557,42 +587,6 @@ eem_render_editor_field_row( array(
 	'label_sub'    => __( 'Hold back from reservation', 'equine-event-manager' ),
 	'row_id'       => 'row-stall-blocked',
 	'control_html' => $blocked_html,
-) );
-
-// ── Tack Stalls (On/Off), directly under Blocked Stall Numbers ──
-// On: buyers flag a tack stall at checkout so required-shavings quantity is
-// right (tack stalls are excluded from shavings — T2). The admin assigns or
-// overrides the *actual* tack stall via the "Mark as Tack Stall" chip on the
-// Stall Chart, so there is no per-reservation admin list here. Off: no tack.
-// `stall_tack_mode` is 'off' | 'customer' | 'admin'. On = customer OR admin;
-// the sub-control picks WHO designates the tack stall when on.
-$tack_on  = ( 'off' !== $tack_mode );
-$tack_who = ( 'admin' === $tack_mode ) ? 'admin' : 'customer';
-$tack_val = $tack_on ? $tack_who : 'off';
-ob_start();
-?>
-<div class="eem-tack-control" data-eem-tack-control>
-	<div class="eem-mode-btns" data-eem-tack-onoff>
-		<button type="button" class="eem-mode-btn<?php echo $tack_on ? '' : ' active'; ?>" data-tack-onoff="off" data-eem-action="tack-onoff"><?php esc_html_e( 'Off', 'equine-event-manager' ); ?></button>
-		<button type="button" class="eem-mode-btn<?php echo $tack_on ? ' active' : ''; ?>" data-tack-onoff="on" data-eem-action="tack-onoff"><?php esc_html_e( 'On', 'equine-event-manager' ); ?></button>
-	</div>
-	<div class="eem-tack-who-row" data-eem-tack-who-row<?php echo $tack_on ? '' : ' hidden'; ?>>
-		<span class="eem-field-sublabel"><?php esc_html_e( 'Who designates the tack stall?', 'equine-event-manager' ); ?></span>
-		<div class="eem-mode-btns" data-eem-tack-who>
-			<button type="button" class="eem-mode-btn<?php echo 'customer' === $tack_who ? ' active' : ''; ?>" data-tack-who="customer" data-eem-action="tack-who"><?php esc_html_e( 'Customer', 'equine-event-manager' ); ?></button>
-			<button type="button" class="eem-mode-btn<?php echo 'admin' === $tack_who ? ' active' : ''; ?>" data-tack-who="admin" data-eem-action="tack-who"><?php esc_html_e( 'Admin only', 'equine-event-manager' ); ?></button>
-		</div>
-	</div>
-</div>
-<input type="hidden" name="en_reservation[stall_tack_mode]" id="eem-stall-tack-mode-input" value="<?php echo esc_attr( $tack_val ); ?>">
-<span class="eem-field-hint"><?php esc_html_e( 'When on, a tack stall is excluded from required shavings. "Customer" lets buyers flag their own tack stall at checkout; "Admin only" hides that from checkout and you mark the tack stall on the Stall Chart. Either way you can assign or override it on the Stall Chart ("Mark as Tack Stall").', 'equine-event-manager' ); ?></span>
-<?php
-$tack_html = (string) ob_get_clean();
-eem_render_editor_field_row( array(
-	'label'        => __( 'Tack Stalls', 'equine-event-manager' ),
-	'label_sub'    => __( 'Excluded from required shavings', 'equine-event-manager' ),
-	'row_id'       => 'row-stall-tack',
-	'control_html' => $tack_html,
 ) );
 
 // ── Stall Map file upload ──
