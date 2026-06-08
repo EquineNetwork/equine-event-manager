@@ -183,7 +183,12 @@ body.eem-shell-page {
 	list-style: none;
 }
 
-.eem-page a {
+/* C16 (CLEANUP #12) — the global plugin link color must NOT bleed onto
+   anchor-rendered buttons/components (`<a class="eem-btn-*">`, `<a class="eem-...">`).
+   Excluding any anchor that carries an `eem-` class means component classes own
+   their own color/hover without needing `a.eem-...` specificity chains. Bare
+   content links (`<a href>` with no eem- class) still get the electric treatment. */
+.eem-page a:not([class*="eem-"]) {
 	color: var(--eem-electric);
 	text-decoration: none;
 }

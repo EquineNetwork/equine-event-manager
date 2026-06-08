@@ -9,8 +9,8 @@
         }
     ],
     "support": {
-        "source": "https://example.com/equine-event-manager",
-        "issues": "https://example.com/equine-event-manager/issues"
+        "source": "https://github.com/EquineNetwork/equine-event-manager",
+        "issues": "https://github.com/EquineNetwork/equine-event-manager/issues"
     },
     "require": {
         "php": ">=7.4",
