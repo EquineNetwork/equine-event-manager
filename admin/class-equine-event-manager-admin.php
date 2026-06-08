@@ -3211,7 +3211,7 @@ class EEM_Admin {
 								<tr>
 									<td class="pv-stall-num"><?php echo esc_html( $stall_row['unit'] ); ?></td>
 									<td class="pv-customer<?php echo $is_empty ? ' pv-customer-empty' : ''; ?>">
-										<?php echo $is_empty ? '—' : esc_html( $prim_customer ); ?>
+										<?php echo $is_empty ? '—' : esc_html( self::format_customer_last_first( (string) $prim_customer ) ); ?>
 									</td>
 									<td class="pv-order"><?php echo esc_html( $is_empty ? '—' : ( $prim_order_num ?: '—' ) ); ?></td>
 									<td class="pv-checkin">
@@ -3283,7 +3283,7 @@ class EEM_Admin {
 							<tr>
 								<td class="pv-stall-num"><?php echo esc_html( $rv_row['unit'] ); ?></td>
 								<td class="pv-customer<?php echo $is_empty ? ' pv-customer-empty' : ''; ?>">
-									<?php echo $is_empty ? '—' : esc_html( $prim_customer ); ?>
+									<?php echo $is_empty ? '—' : esc_html( self::format_customer_last_first( (string) $prim_customer ) ); ?>
 								</td>
 								<td class="pv-order"><?php echo esc_html( $is_empty ? '—' : ( $prim_order_num ?: '—' ) ); ?></td>
 								<td class="pv-checkin">
@@ -3361,7 +3361,7 @@ class EEM_Admin {
 							$rv_disp    = implode( ', ', (array) ( $or['rv_units'] ?? array() ) );
 							?>
 							<tr>
-								<td class="pv-customer"><?php echo esc_html( $or['customer_name'] ?? '' ); ?></td>
+								<td class="pv-customer"><?php echo esc_html( self::format_customer_last_first( (string) ( $or['customer_name'] ?? '' ) ) ); ?></td>
 								<td class="pv-order"><?php echo esc_html( $or_display ); ?></td>
 								<td class="pv-checkin"><span class="pv-checkbox"></span></td>
 								<td class="pv-night-cell"><?php echo esc_html( (string) $nights ); ?></td>
