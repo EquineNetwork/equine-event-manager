@@ -9029,14 +9029,19 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 .eem-mb-seg4 button:first-child { border-left: none; }
 .eem-mb-seg4 button.on { background: var(--eem-electric, #1668F2); color: #fff; }
 .eem-mb-gridscroll { overflow: auto; padding: 18px; max-height: 56vh; }
-.eem-mb-grid { display: inline-grid; gap: 0; border: 1px solid var(--eem-border, #D9E2F2); background: var(--eem-border, #D9E2F2); user-select: none; }
-.eem-mb-cell { width: 46px; height: 42px; background: var(--eem-surface, #fff); border: 1px solid var(--eem-border, #D9E2F2); margin: -0.5px; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 600; color: var(--eem-navy, #031B4E); position: relative; cursor: pointer; }
+/* 1px-gap grid: the grid's background shows through the gaps as uniform thin
+   gridlines — no per-cell borders / negative-margin overlap (which produced the
+   thick lines + protruding "legs"). */
+.eem-mb-grid { display: inline-grid; gap: 1px; border: 1px solid var(--eem-border, #D9E2F2); background: var(--eem-border, #D9E2F2); user-select: none; }
+.eem-mb-cell { width: 46px; height: 42px; background: var(--eem-surface, #fff); display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 600; color: var(--eem-navy, #031B4E); position: relative; cursor: pointer; }
 .eem-mb-cell.gap { background: #eef1f6; background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, #e2e7ef 5px, #e2e7ef 6px); color: transparent; }
 .eem-mb-cell.stall:hover { background: var(--eem-info-bg, #EEF4FF); }
-.eem-mb-cell.landmark { background: #fff7e6; color: var(--eem-warn-text, #b45309); font-size: 10.5px; text-align: center; line-height: 1.15; padding: 2px; }
+/* landmark cells span their whole merged region (width/height auto fill the
+   spanned grid tracks) so the label is centred across the block, never clipped. */
+.eem-mb-cell.landmark { width: auto; height: auto; background: #fff7e6; color: var(--eem-warn-text, #b45309); font-size: 10.5px; }
 .eem-mb-cell.sel { box-shadow: inset 0 0 0 2px var(--eem-electric, #1668F2); z-index: 3; }
 .eem-mb-cell.dup { background: #fdecec; color: #c0392b; box-shadow: inset 0 0 0 2px #e74c3c; z-index: 2; }
-.eem-mb-cell .eem-mb-lmlabel { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; text-align: center; padding: 2px; }
+.eem-mb-lmlabel { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; pointer-events: none; text-align: center; line-height: 1.15; padding: 2px; }
 .eem-mb-cell.vert .eem-mb-lmlabel { writing-mode: vertical-rl; transform: rotate(180deg); }
 .eem-mb-celledit { width: 100%; height: 100%; border: none; text-align: center; font: inherit; color: var(--eem-navy, #031B4E); background: #fffbe6; outline: 2px solid var(--eem-electric, #1668F2); }
 .eem-mb-toast { position: absolute; bottom: 18px; right: 18px; background: var(--eem-navy, #031B4E); color: #fff; padding: 11px 16px; border-radius: var(--eem-radius, 3px); font-weight: 600; font-size: 13px; opacity: 0; transform: translateY(8px); transition: .25s; pointer-events: none; }
@@ -9047,3 +9052,28 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 	.eem-mb-sep { width: 1px; height: 34px; margin: 0 6px; }
 	.eem-mb-flow { margin-left: 0; flex-basis: 100%; }
 }
+
+/* Map Builder — styled prompt/confirm dialog (replaces native window.prompt). */
+.eem-mb-dialog { position: fixed; inset: 0; background: rgba(3,27,78,.4); z-index: 100010; display: flex; align-items: center; justify-content: center; padding: 24px; opacity: 0; transition: opacity .12s; }
+.eem-mb-dialog.open { opacity: 1; }
+.eem-mb-dialog-card { background: var(--eem-surface, #fff); border-radius: var(--eem-radius-lg, 6px); box-shadow: 0 20px 60px rgba(3,27,78,.4); padding: 20px 22px; width: 100%; max-width: 420px; }
+.eem-mb-dialog-msg { font-size: 14.5px; color: var(--eem-navy, #031B4E); font-weight: 600; margin-bottom: 14px; }
+.eem-mb-dialog-input { width: 100%; padding: 9px 11px; border: 1.5px solid var(--eem-border, #D9E2F2); border-radius: var(--eem-radius, 3px); font-size: 14px; color: var(--eem-text, #1d2327); margin-bottom: 16px; }
+.eem-mb-dialog-input:focus { outline: none; border-color: var(--eem-electric, #1668F2); }
+.eem-mb-dialog-actions { display: flex; justify-content: flex-end; gap: 10px; }
+
+/* Map Builder — customer-view preview overlay. */
+.eem-mb-preview-overlay { z-index: 100005; }
+.eem-mb-preview-card { max-width: 900px; }
+.eem-mb-preview-zonebar { display: flex; gap: 6px; flex-wrap: wrap; padding: 14px 20px 0; }
+.eem-mb-preview-tab { border: 1px solid var(--eem-border, #D9E2F2); background: #f4f7fc; color: var(--eem-text-secondary, #6B7A99); font-weight: 600; font-size: 13px; padding: 7px 14px; border-radius: 999px; cursor: pointer; }
+.eem-mb-preview-tab.active { background: var(--eem-navy, #031B4E); color: #fff; border-color: var(--eem-navy, #031B4E); }
+.eem-mb-preview-scroll { overflow: auto; padding: 16px 20px; max-height: 60vh; }
+.eem-mb-preview-grid { display: inline-grid; gap: 5px; }
+.eem-mb-cust-cell { width: 42px; height: 38px; display: flex; align-items: center; justify-content: center; border-radius: var(--eem-radius, 3px); font-size: 12.5px; font-weight: 600; }
+.eem-mb-cust-cell.stall { background: #fff; border: 1.5px solid var(--eem-border, #D9E2F2); color: var(--eem-navy, #031B4E); cursor: pointer; }
+.eem-mb-cust-cell.stall:hover { border-color: var(--eem-electric, #1668F2); background: var(--eem-info-bg, #EEF4FF); }
+.eem-mb-cust-cell.stall.picked { background: var(--eem-electric, #1668F2); border-color: var(--eem-electric, #1668F2); color: #fff; }
+.eem-mb-cust-cell.gap { background: transparent; }
+.eem-mb-cust-cell.landmark { background: #fff7e6; color: var(--eem-warn-text, #b45309); font-size: 9.5px; text-align: center; line-height: 1.1; padding: 2px; }
+.eem-mb-preview-foot { padding: 14px 20px; border-top: 1px solid var(--eem-border, #D9E2F2); font-weight: 700; color: var(--eem-navy, #031B4E); }

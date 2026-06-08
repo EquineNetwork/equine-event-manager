@@ -70,27 +70,37 @@
 		var g = q('#eem-mb-grid');
 		var cols = z.grid[0] ? z.grid[0].length : 0;
 		g.style.gridTemplateColumns = 'repeat(' + cols + ',46px)';
+		g.style.gridAutoRows = '42px';
 		g.innerHTML = '';
+		var consumed = {};
 		for (var r = 0; r < z.grid.length; r++) {
 			for (var c = 0; c < cols; c++) {
+				if (consumed[r + ',' + c]) { continue; }        // covered by a merged landmark
 				var cell = z.grid[r][c];
 				var d = document.createElement('div');
-				d.className = 'eem-mb-cell ' + cell.type;
 				d.setAttribute('data-r', r); d.setAttribute('data-c', c);
-				if (inSel(r, c)) { d.classList.add('sel'); }
-				if (cell.type === 'stall' && dups[cell.label]) { d.classList.add('dup'); }
+				d.style.gridColumn = (c + 1);
+				d.style.gridRow = (r + 1);
 				if (cell.type === 'landmark') {
-					if (sameLm(z, r, c + 1, cell.label)) { d.style.borderRight = '1px solid #fff7e6'; }
-					if (sameLm(z, r + 1, c, cell.label)) { d.style.borderBottom = '1px solid #fff7e6'; }
-					var topLeft = !sameLm(z, r - 1, c, cell.label) && !sameLm(z, r, c - 1, cell.label);
-					if (topLeft) {
-						var lab = document.createElement('span'); lab.className = 'eem-mb-lmlabel'; lab.textContent = cell.label; d.appendChild(lab);
-						var h = 1; while (sameLm(z, r + h, c, cell.label)) { h++; }
-						var w = 1; while (sameLm(z, r, c + w, cell.label)) { w++; }
-						if (h > w) { d.classList.add('vert'); }
-					}
-				} else {
+					// collapse the same-label rectangle into ONE spanning block so the
+					// label spans the whole region (no per-cell clipping) and covers the
+					// internal gridlines.
+					var w = 1; while (sameLm(z, r, c + w, cell.label)) { w++; }
+					var h = 1; while (sameLm(z, r + h, c, cell.label)) { h++; }
+					for (var rr = r; rr < r + h; rr++) { for (var cc = c; cc < c + w; cc++) { consumed[rr + ',' + cc] = 1; } }
+					d.className = 'eem-mb-cell landmark';
+					d.style.gridColumn = (c + 1) + ' / span ' + w;
+					d.style.gridRow = (r + 1) + ' / span ' + h;
+					if (h > w) { d.classList.add('vert'); }
+					var lab = document.createElement('span'); lab.className = 'eem-mb-lmlabel'; lab.textContent = cell.label; d.appendChild(lab);
+				} else if (cell.type === 'stall') {
+					d.className = 'eem-mb-cell stall';
+					if (inSel(r, c)) { d.classList.add('sel'); }
+					if (dups[cell.label]) { d.classList.add('dup'); }
 					d.textContent = cell.label;
+				} else {
+					d.className = 'eem-mb-cell gap';
+					if (inSel(r, c)) { d.classList.add('sel'); }
 				}
 				g.appendChild(d);
 			}
@@ -108,22 +118,23 @@
 			b.innerHTML = escapeHtml(z.name) + (B.zones.length > 1 ? ' <span class="x" aria-label="Delete">&times;</span>' : '');
 			b.onclick = function (ev) {
 				if (ev.target.classList.contains('x')) {
-					if (window.confirm('Delete ' + zoneNoun(false) + ' "' + z.name + '"? This removes its ' + countStalls(z) + ' ' + noun(true) + '.')) {
+					mbConfirm('Delete ' + zoneNoun(false) + ' “' + z.name + '”? This removes its ' + countStalls(z) + ' ' + noun(true) + '.', function () {
 						snapshot(); B.zones.splice(i, 1); B.active = Math.max(0, B.active - (i <= B.active ? 1 : 0)); B.sel = null; render(); renderControls();
-					}
+					});
 					return;
 				}
 				B.active = i; B.sel = null; render(); renderControls();
 			};
-			b.ondblclick = function () { var n = window.prompt('Rename ' + zoneNoun(false), z.name); if (n) { snapshot(); z.name = n.trim(); render(); } };
+			b.ondblclick = function () { mbPrompt('Rename ' + zoneNoun(false), z.name, function (n) { snapshot(); z.name = n; render(); }); };
 			t.appendChild(b);
 		});
 		var add = document.createElement('button');
 		add.type = 'button'; add.className = 'eem-mb-tab-add';
 		add.textContent = '+ Add ' + cap(zoneNoun(false));
 		add.onclick = function () {
-			var n = window.prompt(cap(zoneNoun(false)) + ' name', cap(zoneNoun(false)) + ' ' + (B.zones.length + 1));
-			if (n) { snapshot(); B.zones.push({ name: n.trim(), grid: mkGrid(5, 10) }); B.active = B.zones.length - 1; B.sel = null; render(); renderControls(); }
+			mbPrompt(cap(zoneNoun(false)) + ' name', cap(zoneNoun(false)) + ' ' + (B.zones.length + 1), function (n) {
+				snapshot(); B.zones.push({ name: n, grid: mkGrid(5, 10) }); B.active = B.zones.length - 1; B.sel = null; render(); renderControls();
+			});
 		};
 		t.appendChild(add);
 	}
@@ -173,29 +184,30 @@
 	function eraseCell(r, c) { Z().grid[r][c] = { type: 'gap', label: '' }; }
 	function clearGrid() {
 		var z = Z(), n = countStalls(z);
-		if (n && !window.confirm('Clear all ' + n + ' ' + noun(true) + ' from "' + z.name + '"? You can Undo.')) { return; }
-		snapshot();
-		var rows = z.grid.length, cols = z.grid[0] ? z.grid[0].length : 0;
-		z.grid = mkGrid(rows, cols); B.sel = null; B.fill.start = '1'; render(); renderControls(); toast('Cleared "' + z.name + '"');
+		var doClear = function () {
+			snapshot();
+			var rows = z.grid.length, cols = z.grid[0] ? z.grid[0].length : 0;
+			z.grid = mkGrid(rows, cols); B.sel = null; B.fill.start = '1'; render(); renderControls(); toast('Cleared “' + z.name + '”');
+		};
+		if (n) { mbConfirm('Clear all ' + n + ' ' + noun(true) + ' from “' + z.name + '”? You can Undo.', doClear); } else { doClear(); }
 	}
 	function resizeGrid(which, delta) {
-		var z = Z(), cols = z.grid[0] ? z.grid[0].length : 0, rows = z.grid.length, lost, i;
+		var z = Z(), cols = z.grid[0] ? z.grid[0].length : 0, rows = z.grid.length, lost;
 		if (which === 'row') {
 			if (delta < 0) {
 				if (rows <= 1) { return; }
 				lost = z.grid[rows - 1].filter(function (c) { return c.type === 'stall'; }).length;
-				if (lost && !window.confirm('Removing this row deletes ' + lost + ' labeled ' + noun(true) + '. Continue?')) { return; }
-				snapshot(); z.grid.pop();
-			} else { snapshot(); z.grid.push(mkGrid(1, cols)[0]); }
+				var doRow = function () { snapshot(); z.grid.pop(); B.sel = null; render(); };
+				if (lost) { mbConfirm('Removing this row deletes ' + lost + ' labeled ' + noun(true) + '. Continue?', doRow); } else { doRow(); }
+			} else { snapshot(); z.grid.push(mkGrid(1, cols)[0]); B.sel = null; render(); }
 		} else {
 			if (delta < 0) {
 				if (cols <= 1) { return; }
 				lost = z.grid.filter(function (row) { return row[cols - 1].type === 'stall'; }).length;
-				if (lost && !window.confirm('Removing this column deletes ' + lost + ' labeled ' + noun(true) + '. Continue?')) { return; }
-				snapshot(); z.grid.forEach(function (row) { row.pop(); });
-			} else { snapshot(); z.grid.forEach(function (row) { row.push({ type: 'gap', label: '' }); }); }
+				var doCol = function () { snapshot(); z.grid.forEach(function (row) { row.pop(); }); B.sel = null; render(); };
+				if (lost) { mbConfirm('Removing this column deletes ' + lost + ' labeled ' + noun(true) + '. Continue?', doCol); } else { doCol(); }
+			} else { snapshot(); z.grid.forEach(function (row) { row.push({ type: 'gap', label: '' }); }); B.sel = null; render(); }
 		}
-		B.sel = null; render();
 	}
 
 	function undo() { if (!B.history.length) { return; } B.future.push(JSON.stringify(B.zones)); B.zones = JSON.parse(B.history.pop()); B.active = Math.min(B.active, B.zones.length - 1); B.sel = null; render(); renderControls(); updateUndo(); }
@@ -273,6 +285,7 @@
 				'<div class="eem-mb-head">' +
 					'<div><h2 class="eem-mb-title"></h2><p class="eem-mb-sub">Draw your facility once. Number ' + noun(true) + ' by dragging.</p></div>' +
 					'<div class="eem-mb-head-actions"><span class="eem-mb-pill" id="eem-mb-count"></span>' +
+						'<button type="button" class="eem-mb-btn" id="eem-mb-preview">Preview</button>' +
 						'<button type="button" class="eem-mb-btn" id="eem-mb-cancel">Cancel</button>' +
 						'<button type="button" class="eem-mb-btn eem-mb-btn-primary" id="eem-mb-save">Save Map</button></div>' +
 				'</div>' +
@@ -285,6 +298,7 @@
 				'</div>' +
 				'<div class="eem-mb-body">' +
 					'<div class="eem-mb-toolbar">' +
+						tool('select', 'Select', '<path d="M5 3l14 9-6 1.5L11 20 5 3z"/>') +
 						tool('fill', 'Fill', '<path d="M4 7h6M4 12h10M4 17h7"/><path d="M16 5l4 4-9 9-4 1 1-4 8-10z"/>') +
 						tool('label', 'Label', '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/>') +
 						tool('landmark', 'Landmark', '<path d="M20.6 13.4 13.4 20.6a2 2 0 01-2.8 0L3 13V3h10l7.6 7.6a2 2 0 010 2.8z"/><circle cx="8" cy="8" r="1.4"/>') +
@@ -331,21 +345,31 @@
 			var r = +cl.getAttribute('data-r'), c = +cl.getAttribute('data-c');
 			if (B.tool === 'label') { startLabelEdit(r, c); return; }
 			if (B.tool === 'erase') { snapshot(); B.drag = { erase: true }; eraseCell(r, c); render(); return; }
-			B.drag = { r1: r, c1: c }; B.sel = { r1: r, c1: c, r2: r, c2: c }; render(); updateSelMeta();
+			B.drag = { r1: r, c1: c, moved: false }; B.sel = { r1: r, c1: c, r2: r, c2: c }; render(); updateSelMeta();
 		});
 		grid.addEventListener('mouseover', function (e) {
 			if (!B.drag) { return; }
 			var cl = e.target.closest('.eem-mb-cell'); if (!cl) { return; }
 			var r = +cl.getAttribute('data-r'), c = +cl.getAttribute('data-c');
 			if (B.drag.erase) { eraseCell(r, c); render(); return; }
+			if (r !== B.drag.r1 || c !== B.drag.c1) { B.drag.moved = true; }
 			B.sel = { r1: B.drag.r1, c1: B.drag.c1, r2: r, c2: c }; render(); updateSelMeta();
 		});
 		document.addEventListener('mouseup', onUp);
+		o.querySelector('#eem-mb-preview').addEventListener('click', previewCustomer);
 		o.querySelector('#eem-mb-cancel').addEventListener('click', close);
 		o.querySelector('#eem-mb-save').addEventListener('click', save);
 		o.addEventListener('mousedown', function (e) { if (e.target === o) { close(); } });
 	}
-	function onUp() { if (B.overlay) { updateSelMeta(); } B.drag = null; }
+	// On mouse-up: a Select-tool click (no drag) on a single cell opens its label
+	// editor — "select something to change a label".
+	function onUp() {
+		if (B.drag && !B.drag.erase && B.tool === 'select' && !B.drag.moved && B.sel) {
+			var r = B.sel.r1, c = B.sel.c1; B.drag = null; startLabelEdit(r, c); return;
+		}
+		if (B.overlay) { updateSelMeta(); }
+		B.drag = null;
+	}
 
 	function tool(name, label, path, id) {
 		return '<button type="button" class="eem-mb-tool' + (name === 'fill' ? ' active' : '') + '" data-tool="' + name + '"' + (id ? ' id="' + id + '"' : '') + '><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' + path + '</svg>' + label + '</button>';
@@ -385,6 +409,97 @@
 		document.removeEventListener('mouseup', onUp);
 		B.overlay.parentNode.removeChild(B.overlay);
 		B.overlay = null;
+	}
+
+	// ---- styled prompt / confirm (replaces native window.prompt / .confirm) ----
+	function mbDialog(opts) {
+		var o = document.createElement('div');
+		o.className = 'eem-mb-dialog';
+		o.innerHTML =
+			'<div class="eem-mb-dialog-card">' +
+				'<div class="eem-mb-dialog-msg">' + escapeHtml(opts.message) + '</div>' +
+				(opts.input ? '<input type="text" class="eem-mb-dialog-input" value="' + escapeAttr(opts.value || '') + '">' : '') +
+				'<div class="eem-mb-dialog-actions">' +
+					'<button type="button" class="eem-mb-btn eem-mb-dialog-cancel">Cancel</button>' +
+					'<button type="button" class="eem-mb-btn eem-mb-btn-primary eem-mb-dialog-ok">' + escapeHtml(opts.confirmText || 'OK') + '</button>' +
+				'</div>' +
+			'</div>';
+		(B.overlay || document.body).appendChild(o);
+		var inp = o.querySelector('.eem-mb-dialog-input');
+		if (inp) { inp.focus(); inp.select(); }
+		function done(val) { o.parentNode.removeChild(o); if (opts.onConfirm) { opts.onConfirm(val); } }
+		o.querySelector('.eem-mb-dialog-ok').addEventListener('click', function () { done(inp ? inp.value.trim() : true); });
+		o.querySelector('.eem-mb-dialog-cancel').addEventListener('click', function () { o.parentNode.removeChild(o); });
+		o.addEventListener('mousedown', function (e) { if (e.target === o) { o.parentNode.removeChild(o); } });
+		if (inp) { inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { done(inp.value.trim()); } if (e.key === 'Escape') { o.parentNode.removeChild(o); } }); }
+		requestAnimationFrame(function () { o.classList.add('open'); });
+	}
+	function mbPrompt(message, value, cb) { mbDialog({ message: message, input: true, value: value, confirmText: 'OK', onConfirm: function (v) { if (v) { cb(v); } } }); }
+	function mbConfirm(message, cb) { mbDialog({ message: message, input: false, confirmText: 'Continue', onConfirm: function () { cb(); } }); }
+
+	// ---- customer-view preview ----
+	var preview = { overlay: null, active: 0, picked: {} };
+	function previewCustomer() {
+		preview.active = 0; preview.picked = {};
+		var o = document.createElement('div');
+		o.className = 'eem-mb-overlay eem-mb-preview-overlay';
+		o.innerHTML =
+			'<div class="eem-mb-card eem-mb-preview-card">' +
+				'<div class="eem-mb-head"><div><h2 class="eem-mb-title">Customer View — Pick Your ' + cap(noun(true)) + '</h2>' +
+					'<p class="eem-mb-sub">Exactly what a customer sees, generated from your map. Aisles &amp; landmarks aren’t selectable.</p></div>' +
+					'<button type="button" class="eem-mb-btn eem-mb-btn-primary" id="eem-mb-preview-close">Looks good</button></div>' +
+				'<div class="eem-mb-preview-zonebar" id="eem-mb-preview-zones"></div>' +
+				'<div class="eem-mb-preview-scroll"><div class="eem-mb-preview-grid" id="eem-mb-preview-grid"></div></div>' +
+				'<div class="eem-mb-preview-foot"><span id="eem-mb-preview-count"></span></div>' +
+			'</div>';
+		document.body.appendChild(o);
+		preview.overlay = o;
+		requestAnimationFrame(function () { o.classList.add('open'); });
+		o.querySelector('#eem-mb-preview-close').addEventListener('click', closePreview);
+		o.addEventListener('mousedown', function (e) { if (e.target === o) { closePreview(); } });
+		renderPreview();
+	}
+	function closePreview() { if (preview.overlay) { preview.overlay.parentNode.removeChild(preview.overlay); preview.overlay = null; } }
+	function renderPreview() {
+		var bar = preview.overlay.querySelector('#eem-mb-preview-zones'); bar.innerHTML = '';
+		B.zones.forEach(function (z, i) {
+			var b = document.createElement('button'); b.type = 'button';
+			b.className = 'eem-mb-preview-tab' + (i === preview.active ? ' active' : ''); b.textContent = z.name;
+			b.onclick = function () { preview.active = i; renderPreview(); };
+			bar.appendChild(b);
+		});
+		var z = B.zones[preview.active];
+		var g = preview.overlay.querySelector('#eem-mb-preview-grid');
+		var cols = z.grid[0] ? z.grid[0].length : 0;
+		g.style.gridTemplateColumns = 'repeat(' + cols + ',42px)';
+		g.style.gridAutoRows = '38px';
+		g.innerHTML = '';
+		var consumed = {};
+		for (var r = 0; r < z.grid.length; r++) {
+			for (var c = 0; c < cols; c++) {
+				if (consumed[r + ',' + c]) { continue; }
+				var cell = z.grid[r][c];
+				var d = document.createElement('div');
+				d.style.gridColumn = (c + 1); d.style.gridRow = (r + 1);
+				if (cell.type === 'landmark') {
+					var w = 1; while (sameLm(z, r, c + w, cell.label)) { w++; }
+					var h = 1; while (sameLm(z, r + h, c, cell.label)) { h++; }
+					for (var rr = r; rr < r + h; rr++) { for (var cc = c; cc < c + w; cc++) { consumed[rr + ',' + cc] = 1; } }
+					d.className = 'eem-mb-cust-cell landmark';
+					d.style.gridColumn = (c + 1) + ' / span ' + w; d.style.gridRow = (r + 1) + ' / span ' + h;
+					d.style.width = 'auto'; d.style.height = 'auto'; d.textContent = cell.label;
+				} else if (cell.type === 'stall') {
+					var key = z.name + ' ' + cell.label;
+					d.className = 'eem-mb-cust-cell stall' + (preview.picked[key] ? ' picked' : '');
+					d.textContent = cell.label;
+					d.onclick = (function (k) { return function () { if (preview.picked[k]) { delete preview.picked[k]; } else { preview.picked[k] = 1; } renderPreview(); }; })(key);
+				} else {
+					d.className = 'eem-mb-cust-cell gap';
+				}
+				g.appendChild(d);
+			}
+		}
+		preview.overlay.querySelector('#eem-mb-preview-count').textContent = Object.keys(preview.picked).length + ' ' + noun(true) + ' selected';
 	}
 
 	// ---- serialize + save ----
