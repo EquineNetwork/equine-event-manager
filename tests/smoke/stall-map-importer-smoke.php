@@ -29,11 +29,6 @@ sm_ok( 'parse_grid: (0,0) stall 100', 'stall' === $g[0][0]['type'] && '100' === 
 sm_ok( 'parse_grid: (0,1) gap', 'gap' === $g[0][1]['type'], $pass, $fail, $log );
 sm_ok( 'parse_grid: (0,2) landmark', 'landmark' === $g[0][2]['type'] && 'Office' === $g[0][2]['label'], $pass, $fail, $log );
 
-/* ── extract_published_key ─────────────────────────────────────── */
-sm_ok( 'key: pubhtml URL -> key', '2PACX-abc' === EEM_Stall_Map_Importer::extract_published_key( 'https://docs.google.com/spreadsheets/d/e/2PACX-abc/pubhtml' ), $pass, $fail, $log );
-sm_ok( 'key: pub csv URL -> key', '2PACX-abc' === EEM_Stall_Map_Importer::extract_published_key( 'https://docs.google.com/spreadsheets/d/e/2PACX-abc/pub?gid=1&output=csv' ), $pass, $fail, $log );
-sm_ok( 'key: private edit URL -> null', null === EEM_Stall_Map_Importer::extract_published_key( 'https://docs.google.com/spreadsheets/d/1ckPjAAk9T/edit' ), $pass, $fail, $log );
-
 /* ── offline parse of the REAL Montcrief mockup CSV ────────────── */
 $mont_csv = (string) file_get_contents( EQUINE_EVENT_MANAGER_PATH . '.mockups/montcrief.csv' );
 $mont = EEM_Stall_Map_Importer::parse_grid( $mont_csv );
@@ -62,40 +57,25 @@ $dup_snap = array( 'barns' => array(
 ) );
 sm_ok( 'find_duplicate_labels catches cross-barn dup', array( '12' ) === EEM_Stall_Map_Importer::find_duplicate_labels( $dup_snap ), $pass, $fail, $log );
 
-/* ── LIVE import against Whitney's published sheet (network) ────── */
-$PUBLISHED = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSOenXtY5omsr9MJwSh034WPfEYGn2kaD0DxIdB74ltsJAsYOBFak0Jff1bJv0HtcRcRtxz7acFJhXJ/pubhtml';
-$live = EEM_Stall_Map_Importer::import( $PUBLISHED );
-if ( is_wp_error( $live ) ) {
-	$fail++; $log[] = 'FAIL: live import returned WP_Error — ' . $live->get_error_message();
-} else {
-	$names = EEM_Stall_Map_Importer::barn_names( $live );
-	sm_ok( 'live: discovers Montcrief + Burnett (in order)', array( 'Montcrief', 'Burnett' ) === $names, $pass, $fail, $log );
-	sm_ok( 'live: 2 barns', 2 === count( $live['barns'] ), $pass, $fail, $log );
-	sm_ok( 'live: total stalls > 600', count( EEM_Stall_Map_Importer::stall_labels( $live ) ) > 600, $pass, $fail, $log );
-	sm_ok( 'live: 0 cross-barn duplicate labels', array() === EEM_Stall_Map_Importer::find_duplicate_labels( $live ), $pass, $fail, $log );
+/* ── Montcrief grid → builder-shaped snapshot → consumer helpers ── */
+// The Map Builder authors maps now; feed the parsed Montcrief grid through
+// snapshot_from_builder (the canonical author path) and assert the consumers.
+$built = EEM_Stall_Map_Importer::snapshot_from_builder( array( array( 'name' => 'Montcrief', 'grid' => $mont ) ), 'stall' );
+sm_ok( 'builder snapshot: source=builder', 'builder' === ( $built['source'] ?? '' ), $pass, $fail, $log );
+sm_ok( 'builder snapshot: 262 stalls', 262 === EEM_Stall_Map_Importer::count_stalls( $built ), $pass, $fail, $log );
+sm_ok( 'builder snapshot: barn kind=stall', 'stall' === $built['barns'][0]['kind'], $pass, $fail, $log );
+sm_ok( 'builder snapshot: 0 duplicate labels', array() === EEM_Stall_Map_Importer::find_duplicate_labels( $built ), $pass, $fail, $log );
 
-	/* inventory: per-barn counts + grand total (every numbered cell counts) */
-	$per = EEM_Stall_Map_Importer::barn_stall_counts( $live );
-	$total = EEM_Stall_Map_Importer::count_stalls( $live );
-	sm_ok( 'inventory: per-barn counts present for both barns', isset( $per['Montcrief'], $per['Burnett'] ), $pass, $fail, $log );
-	sm_ok( 'inventory: total == sum of per-barn counts', $total === array_sum( $per ), $pass, $fail, $log );
-	sm_ok( 'inventory: Montcrief == 262', 262 === ( $per['Montcrief'] ?? 0 ), $pass, $fail, $log );
-	echo "  [inventory] Montcrief=" . ( $per['Montcrief'] ?? 0 ) . "  Burnett=" . ( $per['Burnett'] ?? 0 ) . "  TOTAL AVAILABLE=" . $total . "\n";
-	sm_ok( 'live: snapshot carries source_url + synced_at', ! empty( $live['source_url'] ) && ! empty( $live['synced_at'] ), $pass, $fail, $log );
-
-	/* save → read-back via the canonical consumer (round-trip) */
-	$rid = (int) ( get_posts( array( 'post_type' => 'en_reservation', 'post_status' => 'any', 'posts_per_page' => 1, 'fields' => 'ids' ) )[0] ?? 0 );
-	if ( $rid ) {
-		$before = EEM_Stall_Map_Importer::get_for_reservation( $rid ); // preserve to restore
-		EEM_Stall_Map_Importer::save_to_reservation( $rid, $live );
-		$back = EEM_Stall_Map_Importer::get_for_reservation( $rid );
-		sm_ok( 'round-trip: read-back barns match', EEM_Stall_Map_Importer::barn_names( $back ) === $names, $pass, $fail, $log );
-		// restore prior state so the smoke leaves no residue
-		if ( empty( $before ) ) { delete_post_meta( $rid, EEM_Stall_Map_Importer::META_KEY ); }
-		else { EEM_Stall_Map_Importer::save_to_reservation( $rid, $before ); }
-	}
+/* save → read-back via the canonical consumer (round-trip) on a throwaway post */
+$rid = wp_insert_post( array( 'post_type' => 'en_reservation', 'post_title' => 'Importer Smoke', 'post_status' => 'draft' ) );
+if ( $rid ) {
+	EEM_Stall_Map_Importer::save_to_reservation( $rid, $built );
+	$back = EEM_Stall_Map_Importer::get_for_reservation( $rid );
+	sm_ok( 'round-trip: read-back is Montcrief', array( 'Montcrief' ) === EEM_Stall_Map_Importer::barn_names( $back ), $pass, $fail, $log );
+	sm_ok( 'round-trip: 262 stalls survive', 262 === EEM_Stall_Map_Importer::count_stalls( $back ), $pass, $fail, $log );
+	wp_delete_post( $rid, true );
 }
 
-echo "\n=== Stall Map importer (Slice 1) smoke: $pass passed, $fail failed ===\n";
+echo "\n=== Stall Map importer smoke: $pass passed, $fail failed ===\n";
 foreach ( $log as $l ) { echo "  $l\n"; }
 if ( $fail > 0 ) { WP_CLI::error( "$fail assertion(s) failed" ); }

@@ -5318,60 +5318,6 @@ function toggleStallInventoryType(btn) {
 	updateStallInventoryDisplay();
 }
 
-/* v4 Stall Mapping — connect/refresh a facility-map Google Sheet. Reads the
-   pasted Publish-to-web URL, posts to the eem_stall_map_connect AJAX handler
-   (reusing the editor nonce + reservation id already in the page) with a target
-   ('stall' | 'rv' — the SEPARATE RV sheet), and renders the status with per-tab
-   counts. target='stall' speaks "barns/stalls"; target='rv' speaks "zones/lots". */
-function mapConnect(btn, target) {
-	var isRv     = target === 'rv';
-	var urlInput = document.getElementById(isRv ? 'eem-rv-map-url' : 'eem-stall-map-url');
-	var statusEl = document.querySelector(isRv ? '[data-eem-rv-map-status]' : '[data-eem-stall-map-status]');
-	if (!urlInput || !statusEl) { return; }
-	var url = urlInput.value.trim();
-	if (!url) { statusEl.innerHTML = '<span class="eem-stall-map-err">Paste your Google Sheet “Publish to web” link first.</span>'; return; }
-	var nonceInput = document.querySelector('input[name="_eem_editor_nonce"]');
-	var idEl = document.querySelector('[data-reservation-id]');
-	var nonce = nonceInput ? nonceInput.value : '';
-	var rid = idEl ? idEl.getAttribute('data-reservation-id') : '';
-	var orig = btn.textContent;
-	var unit = isRv ? 'zone' : 'barn';
-	var coll = isRv ? 'lots' : 'stalls';
-	btn.disabled = true; btn.textContent = 'Connecting…';
-	statusEl.innerHTML = '<span class="eem-stall-map-pending">Importing…</span>';
-	var body = new URLSearchParams();
-	body.set('action', 'eem_stall_map_connect');
-	body.set('_eem_editor_nonce', nonce);
-	body.set('reservation_id', rid);
-	body.set('sheet_url', url);
-	body.set('target', isRv ? 'rv' : 'stall');
-	fetch(window.ajaxurl || '/wp-admin/admin-ajax.php', {
-		method: 'POST', credentials: 'same-origin',
-		headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-		body: body.toString()
-	}).then(function (r) { return r.json(); }).then(function (res) {
-		btn.disabled = false; btn.textContent = 'Refresh';
-		if (res && res.success) {
-			var d = res.data;
-			var bits = (d.barns || []).map(function (b) { return b.name + ' (' + b.stalls + ')'; }).join(', ');
-			statusEl.innerHTML = '<span class="eem-stall-map-ok">✓ ' + (d.barns ? d.barns.length : 0) + ' ' + unit + '(s) · ' + d.total_stalls + ' ' + coll + ' total</span> <span class="eem-stall-map-barns">' + bits + '</span>';
-			var mapEl = document.querySelector(isRv ? '[data-eem-rv-map]' : '[data-eem-stall-map]');
-			if (mapEl) mapEl.setAttribute(isRv ? 'data-eem-rv-map-total' : 'data-eem-stall-map-total', String(d.total_stalls || 0));
-			if (!isRv) { updateStallInventoryDisplay(); }
-			if (window.EEM && EEM.showSaveToast) { EEM.showSaveToast(d.message || (isRv ? 'RV map connected.' : 'Stall map connected.'), { variant: 'success', sub: '' }); }
-		} else {
-			var msg = (res && res.data && res.data.message) ? res.data.message : 'Could not connect the sheet.';
-			statusEl.innerHTML = '<span class="eem-stall-map-err">' + msg + '</span>';
-		}
-	}).catch(function () {
-		btn.disabled = false; btn.textContent = orig;
-		statusEl.innerHTML = '<span class="eem-stall-map-err">Network error — try again.</span>';
-	});
-}
-
-/* Back-compat wrapper — the stall connector calls into the generic mapConnect. */
-function stallMapConnect(btn) { mapConnect(btn, 'stall'); }
-
 /* Tack Stalls control. Two sub-controls: On/Off, and (when On) who designates
    the tack stall — Customer or Admin only. The hidden stall_tack_mode input is
    'off' when off, otherwise the active who value ('customer' | 'admin'). The
@@ -5610,8 +5556,8 @@ function applyStallLayoutSource() {
 	if (mapRow)  mapRow.classList.toggle('eem-row--hidden', !isPick);
 }
 
-/* The connected map's total stall count (0 when none), read from the map-connect
-   container's data attribute and kept current by stallMapConnect() on connect. */
+/* The connected map's total stall count (0 when none), read from the map
+   container's data attribute and kept current by the Map Builder on save. */
 function stallMapTotal() {
 	var el = document.querySelector('[data-eem-stall-map]');
 	return el ? (parseInt(el.getAttribute('data-eem-stall-map-total'), 10) || 0) : 0;

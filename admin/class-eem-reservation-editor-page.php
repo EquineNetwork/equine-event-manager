@@ -622,7 +622,7 @@ class EEM_Reservation_Editor_Page {
 			$row_count = isset( $ctx['stall_row_count'] ) ? (int) $ctx['stall_row_count'] : null;
 			if ( $is_pick ) {
 				if ( empty( $ctx['stall_has_map'] ) && ( null === $row_count || $row_count < 1 ) ) {
-					$err['stall'] = __( 'Stall Reservations: "Pick from layout" requires a connected Stall Map. Connect your Google Sheet (Publish to web) under Stall Map, or switch Customer Selection to "Quantity."', 'equine-event-manager' );
+					$err['stall'] = __( 'Stall Reservations: "Pick from layout" requires a stall map. Click "Build Map" under Interactive Stall Map to draw your facility, or switch Customer Selection to "Quantity."', 'equine-event-manager' );
 				}
 			} elseif ( null !== $row_count && $row_count < 1 ) {
 				$err['stall'] = __( 'Stall Reservations: "Numbered" is selected but no stall rows are defined. Add at least one row in the Stall Row Builder so there are stalls to reserve.', 'equine-event-manager' );
@@ -1280,77 +1280,6 @@ class EEM_Reservation_Editor_Page {
 			'reservation_id' => $reservation_id,
 			'redirect_url'   => admin_url( 'admin.php?page=' . EEM_Reservations_List_Page::MENU_SLUG ),
 			'message'        => __( 'Reservation moved to Trash.', 'equine-event-manager' ),
-		) );
-	}
-
-	/**
-	 * AJAX: connect (or refresh) a stall-map Google Sheet for a reservation.
-	 *
-	 * Imports the pasted "Publish to web" URL via {@see EEM_Stall_Map_Importer},
-	 * snapshots it onto the reservation, and returns the discovered barns with
-	 * per-barn stall counts + the grand total (map-driven inventory) for the
-	 * editor's "✓ N barns found" status + preview. Rejects sheets whose stall
-	 * numbers collide across barns (the labels must be globally unique).
-	 *
-	 * @return void
-	 */
-	public static function ajax_stall_map_connect() {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
-		}
-		check_ajax_referer( 'eem_reservation_editor', '_eem_editor_nonce' );
-
-		$reservation_id = isset( $_POST['reservation_id'] ) ? absint( wp_unslash( $_POST['reservation_id'] ) ) : 0;
-		$post           = $reservation_id > 0 ? get_post( $reservation_id ) : null;
-		if ( ! $post || EEM_Reservations_CPT::POST_TYPE !== $post->post_type ) {
-			wp_send_json_error( array( 'message' => __( 'Reservation not found.', 'equine-event-manager' ) ), 404 );
-		}
-
-		// v4 Slice 8: which map slot — the stall sheet or the (separate) RV sheet.
-		$target   = isset( $_POST['target'] ) && 'rv' === sanitize_key( wp_unslash( $_POST['target'] ) ) ? 'rv' : 'stall';
-		$meta_key = ( 'rv' === $target ) ? EEM_Stall_Map_Importer::RV_META_KEY : EEM_Stall_Map_Importer::META_KEY;
-
-		$url = isset( $_POST['sheet_url'] ) ? trim( (string) wp_unslash( $_POST['sheet_url'] ) ) : '';
-		if ( '' === $url ) {
-			wp_send_json_error( array( 'message' => __( 'Paste your Google Sheet "Publish to web" link first.', 'equine-event-manager' ) ), 400 );
-		}
-
-		$snapshot = EEM_Stall_Map_Importer::import( $url );
-		if ( is_wp_error( $snapshot ) ) {
-			wp_send_json_error( array( 'message' => $snapshot->get_error_message() ), 422 );
-		}
-
-		// Stalls must be globally unique across barns. RV lots are numbered
-		// per-zone (1..N in each tab) and identified zone-qualified ("Red Lot 1"),
-		// so cross-tab repeats are expected — skip the dupe check for the RV map.
-		$dupes = ( 'rv' === $target ) ? array() : EEM_Stall_Map_Importer::find_duplicate_labels( $snapshot );
-		if ( ! empty( $dupes ) ) {
-			wp_send_json_error( array(
-				'message' => sprintf(
-					/* translators: %s: comma-separated duplicated stall numbers */
-					__( 'These stall numbers are used in more than one barn: %s. Every stall number must be unique across the whole event.', 'equine-event-manager' ),
-					implode( ', ', $dupes )
-				),
-			), 422 );
-		}
-
-		EEM_Stall_Map_Importer::save_to_reservation( $reservation_id, $snapshot, $meta_key );
-
-		$per   = EEM_Stall_Map_Importer::barn_stall_counts( $snapshot );
-		$barns = array();
-		foreach ( $per as $name => $count ) {
-			$barns[] = array( 'name' => $name, 'stalls' => $count );
-		}
-		wp_send_json_success( array(
-			'reservation_id' => $reservation_id,
-			'barns'          => $barns,
-			'total_stalls'   => EEM_Stall_Map_Importer::count_stalls( $snapshot ),
-			'synced_at'      => (int) ( $snapshot['synced_at'] ?? time() ),
-			'message'        => sprintf(
-				/* translators: %d: number of barns found */
-				_n( '%d barn found.', '%d barns found.', count( $barns ), 'equine-event-manager' ),
-				count( $barns )
-			),
 		) );
 	}
 

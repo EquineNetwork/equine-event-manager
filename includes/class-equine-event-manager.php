@@ -120,7 +120,6 @@ add_action( 'save_post_tribe_events', array( 'EEM_Reservation_Editor_Page', 'on_
 // (rail-card Unlink button) + event-search typeahead handler in a later commit.
 add_action( 'wp_ajax_eem_reservation_editor_unlink_event', array( 'EEM_Reservation_Editor_Page', 'ajax_unlink_event' ) );
 add_action( 'wp_ajax_eem_reservation_editor_trash',        array( 'EEM_Reservation_Editor_Page', 'ajax_trash' ) );
-add_action( 'wp_ajax_eem_stall_map_connect',               array( 'EEM_Reservation_Editor_Page', 'ajax_stall_map_connect' ) );
 add_action( 'wp_ajax_eem_map_builder_save',                array( 'EEM_Reservation_Editor_Page', 'ajax_map_builder_save' ) );
 
 // Redirect legacy WP CPT edit URL (`post.php?post=N&action=edit`) to the

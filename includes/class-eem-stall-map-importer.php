@@ -1,17 +1,22 @@
 <?php
 /**
- * Stall Map importer (v4 Stall Mapping — Phase A, Slice 1).
+ * Stall Map model + helpers (v4 Stall Mapping).
  *
- * Turns a Google Sheet "Publish to web" link into a stored facility-map snapshot
- * on a reservation. One published sheet = one facility; **every tab is a barn**
- * (locked decision 2026-06-07). The admin pastes ONE published URL; we discover
- * all barn tabs from it, fetch each tab's CSV, parse the grid (number = stall,
- * blank = aisle/gap, text = marked area), and snapshot the result to
- * `_en_stall_map`. The customer/admin renderers read from that snapshot — we do
- * NOT render live from Google (a "Refresh" re-pulls).
+ * Holds the facility-map snapshot on a reservation and the helpers every consumer
+ * reads (customer picker, admin chart, auto-assign). A snapshot is
+ * `{ source, synced_at, barns:[{ name, kind, rows, cols, grid:[[{type,label}]] }] }`
+ * with cell `type ∈ {stall, gap, landmark}`, stored at `_en_stall_map` (stalls)
+ * and `_en_rv_map` (RV lots).
+ *
+ * Maps are authored in the native in-plugin Map Builder, which posts its zones to
+ * {@see self::snapshot_from_builder()} (via the eem_map_builder_save handler). The
+ * earlier Google-Sheet import path was removed once the builder shipped; existing
+ * sheet-imported snapshots keep working unchanged because the stored shape is
+ * identical and this class never re-fetches from Google.
  *
  * Stall numbers are globally unique across barns, so a stall's label alone
- * identifies it (no barn namespacing). Pure-PHP CSV parsing, zero dependencies.
+ * identifies it; RV lots are zone-qualified (lot numbers repeat per zone). Pure
+ * PHP, zero dependencies.
  *
  * @package   EEM_Plugin
  * @license   GPL-2.0-or-later
@@ -23,12 +28,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Fetches, parses, and persists spreadsheet-driven stall maps.
+ * Builds, persists, and reads facility-map snapshots.
  *
- * Caller contract: {@see self::import()} performs network I/O (returns a snapshot
- * array or WP_Error); {@see self::save_to_reservation()} persists it; the
- * renderers consume {@see self::get_for_reservation()}. All parsing helpers are
- * pure (no network/DB) and unit-testable in isolation.
+ * Caller contract: {@see self::snapshot_from_builder()} turns Map Builder zones
+ * into a snapshot; {@see self::save_to_reservation()} persists it; the renderers
+ * consume {@see self::get_for_reservation()}. All helpers are pure (no
+ * network/DB except the two persistence methods) and unit-testable in isolation.
  */
 class EEM_Stall_Map_Importer {
 
@@ -43,77 +48,6 @@ class EEM_Stall_Map_Importer {
 	 * RV zone and every numbered cell an RV lot.
 	 */
 	const RV_META_KEY = '_en_rv_map';
-
-	/**
-	 * Extract the published-document key from a "Publish to web" URL.
-	 *
-	 * Accepts the published form (`/spreadsheets/d/e/{KEY}/...`). The private
-	 * edit form (`/spreadsheets/d/{ID}/edit`) is intentionally rejected — it
-	 * requires authentication and cannot be fetched.
-	 *
-	 * @param string $url Pasted sheet URL.
-	 * @return string|null The `2PACX-…` key, or null if not a published URL.
-	 */
-	public static function extract_published_key( string $url ): ?string {
-		if ( preg_match( '#/spreadsheets/d/e/([^/]+)/#', $url, $m ) ) {
-			return $m[1];
-		}
-		return null;
-	}
-
-	/**
-	 * Build the published `pubhtml` URL for a document key.
-	 *
-	 * @param string $key Published document key.
-	 * @return string
-	 */
-	private static function pubhtml_url( string $key ): string {
-		return 'https://docs.google.com/spreadsheets/d/e/' . $key . '/pubhtml';
-	}
-
-	/**
-	 * Build the published CSV URL for a single tab (by gid).
-	 *
-	 * @param string $key Published document key.
-	 * @param string $gid Tab gid.
-	 * @return string
-	 */
-	private static function tab_csv_url( string $key, string $gid ): string {
-		return 'https://docs.google.com/spreadsheets/d/e/' . $key . '/pub?gid=' . rawurlencode( $gid ) . '&single=true&output=csv';
-	}
-
-	/**
-	 * Discover every barn tab (name + gid, in tab order) in a published sheet.
-	 *
-	 * Parses the `pubhtml` page's embedded sheet list
-	 * (`items.push({name: "…", … gid: "…"})`).
-	 *
-	 * @param string $key Published document key.
-	 * @return array<int,array{name:string,gid:string}>|WP_Error
-	 */
-	public static function discover_barns( string $key ) {
-		$res = wp_remote_get( self::pubhtml_url( $key ), array( 'timeout' => 15, 'redirection' => 5 ) );
-		if ( is_wp_error( $res ) ) {
-			return $res;
-		}
-		if ( 200 !== (int) wp_remote_retrieve_response_code( $res ) ) {
-			return new WP_Error( 'eem_stall_map_pubhtml', __( 'Could not read the published sheet. Make sure it is published to the web.', 'equine-event-manager' ) );
-		}
-		$html = (string) wp_remote_retrieve_body( $res );
-		$barns = array();
-		if ( preg_match_all( '/items\.push\(\{name:\s*"([^"]+)"[^}]*?gid:\s*"(\d+)"/s', $html, $m, PREG_SET_ORDER ) ) {
-			foreach ( $m as $row ) {
-				$barns[] = array(
-					'name' => trim( html_entity_decode( $row[1], ENT_QUOTES ) ),
-					'gid'  => $row[2],
-				);
-			}
-		}
-		if ( empty( $barns ) ) {
-			return new WP_Error( 'eem_stall_map_no_tabs', __( 'No sheet tabs were found in that published link.', 'equine-event-manager' ) );
-		}
-		return $barns;
-	}
 
 	/**
 	 * Classify a single raw cell value into the map cell language.
@@ -163,55 +97,10 @@ class EEM_Stall_Map_Importer {
 	}
 
 	/**
-	 * Fetch + parse every barn in a published sheet into a snapshot structure.
-	 *
-	 * @param string $url The pasted "Publish to web" URL.
-	 * @return array{source_url:string,key:string,synced_at:int,barns:array}|WP_Error
-	 */
-	public static function import( string $url ) {
-		$key = self::extract_published_key( $url );
-		if ( null === $key ) {
-			return new WP_Error( 'eem_stall_map_url', __( 'That is not a "Publish to web" link. In Google Sheets use File → Share → Publish to web, then paste that link.', 'equine-event-manager' ) );
-		}
-		$barns = self::discover_barns( $key );
-		if ( is_wp_error( $barns ) ) {
-			return $barns;
-		}
-		$out = array();
-		foreach ( $barns as $barn ) {
-			$res = wp_remote_get( self::tab_csv_url( $key, $barn['gid'] ), array( 'timeout' => 15, 'redirection' => 5 ) );
-			if ( is_wp_error( $res ) ) {
-				return $res;
-			}
-			if ( 200 !== (int) wp_remote_retrieve_response_code( $res ) ) {
-				return new WP_Error( 'eem_stall_map_tab', sprintf( /* translators: %s: barn/tab name */ __( 'Could not read the "%s" tab.', 'equine-event-manager' ), $barn['name'] ) );
-			}
-			$grid = self::parse_grid( (string) wp_remote_retrieve_body( $res ) );
-			$out[] = array(
-				'name' => $barn['name'],
-				'gid'  => $barn['gid'],
-				// v4 Slice 8: a tab whose name reads as RV (e.g. "RV North",
-				// "North RV", "RV - Lot A") supplies RV lots instead of stalls, so
-				// stalls + RV live in one published sheet.
-				'kind' => self::classify_barn_kind( $barn['name'] ),
-				'rows' => count( $grid ),
-				'cols' => empty( $grid ) ? 0 : count( $grid[0] ),
-				'grid' => $grid,
-			);
-		}
-		return array(
-			'source_url' => esc_url_raw( $url ),
-			'key'        => $key,
-			'synced_at'  => time(),
-			'barns'      => $out,
-		);
-	}
-
-	/**
 	 * Persist a snapshot to a reservation.
 	 *
 	 * @param int    $reservation_id Reservation post id.
-	 * @param array  $snapshot       Snapshot from {@see self::import()}.
+	 * @param array  $snapshot       Snapshot from {@see self::snapshot_from_builder()}.
 	 * @param string $meta_key       Which snapshot slot (stall map or RV map).
 	 * @return void
 	 */
@@ -351,20 +240,6 @@ class EEM_Stall_Map_Importer {
 		return array_map( static function ( $b ) {
 			return (string) ( $b['name'] ?? '' );
 		}, $snapshot['barns'] ?? array() );
-	}
-
-	/**
-	 * Classify a tab as supplying RV lots or stalls from its name (v4 Slice 8).
-	 *
-	 * A tab whose name contains "RV" as a whole word is treated as RV; anything
-	 * else is a stall barn. This lets one published sheet hold both — e.g. tabs
-	 * "Montcrief", "Burnett" (stalls) alongside "RV North", "North RV" (lots).
-	 *
-	 * @param string $name Tab name.
-	 * @return string 'rv' | 'stall'
-	 */
-	public static function classify_barn_kind( string $name ): string {
-		return preg_match( '/(^|[\s\-_])rv([\s\-_]|$)/i', trim( $name ) ) ? 'rv' : 'stall';
 	}
 
 	/**

@@ -21,16 +21,6 @@ function ok( $cond, $label ) {
 
 $C = 'EEM_Stall_Map_Importer';
 
-// ── classify_barn_kind ─────────────────────────────────────────────────────
-ok( 'stall' === $C::classify_barn_kind( 'Montcrief' ), 'Montcrief -> stall' );
-ok( 'stall' === $C::classify_barn_kind( 'Burnett' ), 'Burnett -> stall' );
-ok( 'rv'    === $C::classify_barn_kind( 'RV North' ), 'RV North -> rv' );
-ok( 'rv'    === $C::classify_barn_kind( 'North RV' ), 'North RV -> rv' );
-ok( 'rv'    === $C::classify_barn_kind( 'RV - Lot A' ), 'RV - Lot A -> rv' );
-ok( 'rv'    === $C::classify_barn_kind( 'rv_south' ), 'rv_south -> rv' );
-ok( 'stall' === $C::classify_barn_kind( 'Riverside' ), 'Riverside -> stall (rv not a whole word)' );
-ok( 'stall' === $C::classify_barn_kind( 'Harvey' ), 'Harvey -> stall (embedded rv ignored)' );
-
 // ── barn_kind default (pre-Slice-8 snapshots have no kind) ─────────────────
 ok( 'stall' === $C::barn_kind( array( 'name' => 'Montcrief' ) ), 'missing kind -> stall' );
 ok( 'rv'    === $C::barn_kind( array( 'name' => 'X', 'kind' => 'rv' ) ), 'explicit rv kind' );
