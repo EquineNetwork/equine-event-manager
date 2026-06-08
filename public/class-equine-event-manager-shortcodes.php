@@ -816,6 +816,34 @@ class EEM_Shortcodes {
 											)
 										);
 										?>
+										<?php
+										// v4 RV spatial picker — Mapped + Pick-from-layout with a connected
+										// RV map. Renders below the qty stepper and drives rv_qty (mirrors the
+										// stall picker). Lots are zone-qualified ("Red Lot 1").
+										$eem_rv_mode = EEM_Reservations_CPT::resolve_rv_pair( (int) $reservation_id )['selection_mode'];
+										if ( 'exact_map' === $eem_rv_mode ) {
+											$eem_rv_map_snapshot = EEM_Stall_Map_Importer::get_for_reservation( (int) $reservation_id, EEM_Stall_Map_Importer::RV_META_KEY );
+											if ( ! empty( $eem_rv_map_snapshot['barns'] ) ) {
+												$eem_rv_max_per = ( isset( $data['rv_max_per_customer'] ) && '' !== (string) $data['rv_max_per_customer'] ) ? absint( $data['rv_max_per_customer'] ) : 0;
+												$this->render_stall_map_picker(
+													$eem_rv_map_snapshot,
+													array(), // reserved (zone-qualified) — overlay refinement, server validates on submit
+													array(), // blocked
+													false,    // no tack for RV
+													$eem_rv_max_per,
+													array(
+														'unit_field'     => 'preferred_rv_lots',
+														'qty_field'      => 'rv_qty',
+														'zone_qualified' => true,
+														'open_label'     => __( 'Choose Your RV Lots', 'equine-event-manager' ),
+														'noun_plural'    => __( 'lots', 'equine-event-manager' ),
+														'hint'           => __( 'Tap available (white) lots on the RV map. Greyed lots are taken.', 'equine-event-manager' ),
+														'prefix'         => '',
+													)
+												);
+											}
+										}
+										?>
 									<?php if ( ! empty( $rv_addon_options ) ) : ?>
 										<p class="eem-reservation-help eem-rv-addon-help">
 											<?php esc_html_e( 'Add-on prices are charged in addition to your RV rate — per night for a Nightly stay, or once for a Weekend Rate stay.', 'equine-event-manager' ); ?>
@@ -1677,7 +1705,20 @@ class EEM_Shortcodes {
 	 * @param int   $max_per        Max stalls per customer (0 = unlimited).
 	 * @return void
 	 */
-	private function render_stall_map_picker( array $snapshot, array $reserved, array $blocked, bool $tack_enabled, int $max_per ): void {
+	private function render_stall_map_picker( array $snapshot, array $reserved, array $blocked, bool $tack_enabled, int $max_per, array $opts = array() ): void {
+		// v4: defaults reproduce the stall picker exactly; the RV picker passes
+		// zone_qualified=true + the RV field names. Each cell's identity is its
+		// POST unit — the bare label for stalls, "Red Lot 1" (zone-qualified) for
+		// RV — so reserved/blocked/selected all key consistently.
+		$opts = array_merge( array(
+			'unit_field'     => 'preferred_stall_units',
+			'qty_field'      => 'stall_qty',
+			'zone_qualified' => false,
+			'open_label'     => __( 'Choose Your Stalls', 'equine-event-manager' ),
+			'noun_plural'    => __( 'stalls', 'equine-event-manager' ),
+			'hint'           => __( 'Tap available (white) stalls on the facility map. Greyed stalls are taken.', 'equine-event-manager' ),
+			'prefix'         => '#',
+		), $opts );
 		$barns = array();
 		foreach ( ( $snapshot['barns'] ?? array() ) as $barn ) {
 			$barns[] = array(
@@ -1686,25 +1727,30 @@ class EEM_Shortcodes {
 			);
 		}
 		$payload = array(
-			'barns'    => $barns,
-			'reserved' => array_values( array_map( 'strval', array_keys( $reserved ) ) ),
-			'blocked'  => array_values( array_map( 'strval', array_keys( $blocked ) ) ),
-			'maxPer'   => $max_per,
-			'tack'     => $tack_enabled,
+			'barns'         => $barns,
+			'reserved'      => array_values( array_map( 'strval', array_keys( $reserved ) ) ),
+			'blocked'       => array_values( array_map( 'strval', array_keys( $blocked ) ) ),
+			'maxPer'        => $max_per,
+			'tack'          => $tack_enabled,
+			'unitField'     => (string) $opts['unit_field'],
+			'qtyField'      => (string) $opts['qty_field'],
+			'zoneQualified' => (bool) $opts['zone_qualified'],
+			'prefix'        => (string) $opts['prefix'],
 		);
 		?>
+		<div class="eem-map-instance">
 		<div class="eem-map-pick" data-eem-map-pick>
-			<button type="button" class="eem-map-open-btn" data-eem-map-open>&#x1f5fa;&#xfe0f; <?php esc_html_e( 'Choose Your Stalls', 'equine-event-manager' ); ?></button>
+			<button type="button" class="eem-map-open-btn" data-eem-map-open>&#x1f5fa;&#xfe0f; <?php echo esc_html( $opts['open_label'] ); ?></button>
 			<div class="eem-map-summary" data-eem-map-summary></div>
 			<div data-eem-map-picks hidden></div>
-			<p class="stall-assign-note"><?php esc_html_e( 'Tap available (white) stalls on the facility map. Greyed stalls are taken.', 'equine-event-manager' ); ?></p>
+			<p class="stall-assign-note"><?php echo esc_html( $opts['hint'] ); ?></p>
 			<script type="application/json" data-eem-map-payload><?php echo wp_json_encode( $payload ); // phpcs:ignore ?></script>
 		</div>
 
 		<div class="eem-map-modal" data-eem-map-modal hidden>
 			<div class="eem-map-modal-card">
 				<div class="eem-map-modal-head">
-					<strong><?php esc_html_e( 'Choose Your Stalls', 'equine-event-manager' ); ?></strong>
+					<strong><?php echo esc_html( $opts['open_label'] ); ?></strong>
 					<span style="flex:1"></span>
 					<button type="button" class="eem-map-close" data-eem-map-close aria-label="<?php esc_attr_e( 'Close', 'equine-event-manager' ); ?>">&times;</button>
 				</div>
@@ -1728,24 +1774,32 @@ class EEM_Shortcodes {
 
 		<script>
 		(function(){
-			var root = document.currentScript.parentNode; // resolve the form regardless of multiple instances
-			var form = document.querySelector('.eem-reservation-form'); if (!form) { return; }
-			var payloadEl = form.querySelector('[data-eem-map-payload]') || document.querySelector('[data-eem-map-payload]');
-			if (!payloadEl) { return; }
+			// Scope to THIS picker's own pick + modal (stall and RV pickers can both
+			// be on one page) — the script, .eem-map-pick and .eem-map-modal are
+			// siblings under one container per picker.
+			var script = document.currentScript;
+			var root = script.closest('.eem-map-instance') || script.parentNode;
+			var form = script.closest('.eem-reservation-form') || document.querySelector('.eem-reservation-form'); if (!form) { return; }
+			var payloadEl = root.querySelector('[data-eem-map-payload]'); if (!payloadEl) { return; }
 			var P; try { P = JSON.parse(payloadEl.textContent); } catch(e){ return; }
+			// reserved/blocked are keyed by POST unit (zone-qualified for RV).
 			var reserved = {}; P.reserved.forEach(function(l){ reserved[l]=1; });
 			var blocked  = {}; P.blocked.forEach(function(l){ blocked[l]=1; });
-			var selected = {};
+			var selected = {}; // unit -> 1
 			var activeBarn = 0;
+			var pre = P.prefix || '';
 
-			var modal   = form.querySelector('[data-eem-map-modal]') || document.querySelector('[data-eem-map-modal]');
+			var modal   = root.querySelector('[data-eem-map-modal]');
 			var gridEl  = modal.querySelector('[data-eem-map-grid]');
 			var tabsEl  = modal.querySelector('[data-eem-map-tabs]');
 			var footEl  = modal.querySelector('[data-eem-map-foot]');
-			var summary = form.querySelector('[data-eem-map-summary]');
-			var picksEl = form.querySelector('[data-eem-map-picks]');
+			var summary = root.querySelector('[data-eem-map-summary]');
+			var picksEl = root.querySelector('[data-eem-map-picks]');
 
-			function statusOf(l){ if (blocked[l]) return 'blocked'; if (reserved[l]) return 'reserved'; return 'available'; }
+			// A cell's identity is its POST unit: the bare label for stalls, or the
+			// zone-qualified "Barn Label" for RV (lots repeat 1..N per zone).
+			function unitOf(label){ return P.zoneQualified ? (P.barns[activeBarn].name + ' ' + label) : label; }
+			function statusOf(u){ if (blocked[u]) return 'blocked'; if (reserved[u]) return 'reserved'; return 'available'; }
 			function selCount(){ return Object.keys(selected).length; }
 
 			function renderGrid(){
@@ -1761,11 +1815,12 @@ class EEM_Shortcodes {
 					if (cell.type === 'gap'){ used[r][c]=true; continue; }
 					if (cell.type === 'stall'){
 						used[r][c]=true;
-						var st = statusOf(cell.label);
+						var unit = unitOf(cell.label);
+						var st = statusOf(unit);
 						var d = document.createElement('div');
-						d.className = 'eem-map-cell eem-map-stall' + (st!=='available'?(' is-'+st):'') + (selected[cell.label]?' is-sel':'');
-						d.textContent = cell.label;
-						d.setAttribute('data-label', cell.label);
+						d.className = 'eem-map-cell eem-map-stall' + (st!=='available'?(' is-'+st):'') + (selected[unit]?' is-sel':'');
+						d.textContent = cell.label; // display the bare label
+						d.setAttribute('data-unit', unit);
 						d.setAttribute('data-status', st);
 						d.style.gridColumn = (c+1); d.style.gridRow = (r+1);
 						gridEl.appendChild(d);
@@ -1799,38 +1854,39 @@ class EEM_Shortcodes {
 			}
 
 			function syncForm(){
-				var labels = Object.keys(selected);
-				// hidden inputs for the checkout POST
+				var units = Object.keys(selected);
+				// hidden inputs for the checkout POST (RV: "Red Lot 1", stall: "5009")
 				picksEl.innerHTML = '';
-				labels.forEach(function(l){ var inp=document.createElement('input'); inp.type='hidden'; inp.name='preferred_stall_units[]'; inp.value=l; picksEl.appendChild(inp); });
-				// drive stall_qty (= count) so totals recompute via the existing listeners
-				var qty = form.querySelector('[name="stall_qty"]');
-				if (qty){ qty.value = labels.length; qty.dispatchEvent(new Event('input',{bubbles:true})); qty.dispatchEvent(new Event('change',{bubbles:true})); }
-				var txt = labels.length ? labels.length + ' ' + <?php echo wp_json_encode( esc_html__( 'stalls selected', 'equine-event-manager' ) ); ?> + ': ' + labels.map(function(v){return '#'+v;}).join(', ') : <?php echo wp_json_encode( esc_html__( 'No stalls selected yet', 'equine-event-manager' ) ); ?>;
+				units.forEach(function(u){ var inp=document.createElement('input'); inp.type='hidden'; inp.name=P.unitField+'[]'; inp.value=u; picksEl.appendChild(inp); });
+				// drive the qty field (= count) so totals recompute via existing listeners
+				var qty = form.querySelector('[name="'+P.qtyField+'"]');
+				if (qty){ qty.value = units.length; qty.dispatchEvent(new Event('input',{bubbles:true})); qty.dispatchEvent(new Event('change',{bubbles:true})); }
+				var txt = units.length ? units.length + ' ' + <?php echo wp_json_encode( esc_html__( 'selected', 'equine-event-manager' ) ); ?> + ': ' + units.map(function(v){return pre+v;}).join(', ') : <?php echo wp_json_encode( esc_html__( 'None selected yet', 'equine-event-manager' ) ); ?>;
 				if (summary) summary.textContent = txt;
-				if (footEl) footEl.innerHTML = '<strong>' + labels.length + '</strong> ' + <?php echo wp_json_encode( esc_html__( 'selected', 'equine-event-manager' ) ); ?>;
+				if (footEl) footEl.innerHTML = '<strong>' + units.length + '</strong> ' + <?php echo wp_json_encode( esc_html__( 'selected', 'equine-event-manager' ) ); ?>;
 			}
 
 			gridEl.addEventListener('click', function(ev){
 				var s = ev.target.closest('.eem-map-stall'); if (!s) return;
 				if (s.getAttribute('data-status') !== 'available') return;
-				var l = s.getAttribute('data-label');
-				if (selected[l]){ delete selected[l]; s.classList.remove('is-sel'); }
+				var u = s.getAttribute('data-unit');
+				if (selected[u]){ delete selected[u]; s.classList.remove('is-sel'); }
 				else {
 					if (P.maxPer > 0 && selCount() >= P.maxPer){ footEl.innerHTML = '<span class="eem-map-warn">' + <?php echo wp_json_encode( esc_html__( 'Limit reached', 'equine-event-manager' ) ); ?> + '</span>'; return; }
-					selected[l]=1; s.classList.add('is-sel');
+					selected[u]=1; s.classList.add('is-sel');
 				}
 				syncForm();
 			});
 
 			function openModal(){ modal.hidden=false; document.body.style.overflow='hidden'; renderTabs(); renderGrid(); syncForm(); }
 			function closeModal(){ modal.hidden=true; document.body.style.overflow=''; }
-			form.querySelectorAll('[data-eem-map-open]').forEach(function(b){ b.addEventListener('click', openModal); });
+			root.querySelectorAll('[data-eem-map-open]').forEach(function(b){ b.addEventListener('click', openModal); });
 			modal.querySelectorAll('[data-eem-map-close]').forEach(function(b){ b.addEventListener('click', closeModal); });
 
 			syncForm();
 		})();
 		</script>
+		</div><!-- /.eem-map-instance -->
 		<?php
 	}
 
@@ -2173,6 +2229,8 @@ class EEM_Shortcodes {
 			'rv_departure_date'       => isset( $_POST['rv_departure_date'] ) ? sanitize_text_field( wp_unslash( $_POST['rv_departure_date'] ) ) : '',
 			'rv_lot'                  => isset( $_POST['rv_lot'] ) ? sanitize_text_field( wp_unslash( $_POST['rv_lot'] ) ) : '',
 			'rv_qty'                  => isset( $_POST['rv_qty'] ) ? absint( $_POST['rv_qty'] ) : 0,
+			// v4 RV spatial picker: zone-qualified lots the customer tapped ("Red Lot 1").
+			'preferred_rv_lots'       => isset( $_POST['preferred_rv_lots'] ) ? array_values( array_filter( array_map( 'sanitize_text_field', (array) wp_unslash( $_POST['preferred_rv_lots'] ) ) ) ) : array(),
 			'billing_address_1'       => isset( $_POST['billing_address_1'] ) ? sanitize_text_field( wp_unslash( $_POST['billing_address_1'] ) ) : '',
 			'billing_address_2'       => isset( $_POST['billing_address_2'] ) ? sanitize_text_field( wp_unslash( $_POST['billing_address_2'] ) ) : '',
 			'billing_city'            => isset( $_POST['billing_city'] ) ? sanitize_text_field( wp_unslash( $_POST['billing_city'] ) ) : '',
@@ -3644,6 +3702,13 @@ class EEM_Shortcodes {
 			if ( $rv_lot && ! empty( $rv_lot['name'] ) ) {
 				$rv_notes = trim( $rv_notes . "
 RV Lot: " . $rv_lot['name'] );
+			}
+
+			// v4 RV spatial picker: the customer's zone-qualified lot picks ("Red Lot
+			// 1") record on the canonical Assigned RV Lots note the chart + auto-assign
+			// read, so the picked lots show on the Stall & RV Charts page.
+			if ( ! empty( $submission['preferred_rv_lots'] ) ) {
+				$rv_notes = trim( $rv_notes . "\nAssigned RV Lots: " . implode( ', ', array_map( 'sanitize_text_field', (array) $submission['preferred_rv_lots'] ) ) );
 			}
 
 			if ( ! empty( $rv_addon_labels ) ) {
