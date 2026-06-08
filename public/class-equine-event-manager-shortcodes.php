@@ -1808,6 +1808,7 @@ class EEM_Shortcodes {
 			var blocked  = {}; P.blocked.forEach(function(l){ blocked[l]=1; });
 			var selected = {}; // unit -> 1
 			var activeBarn = 0;
+			var didPan = false; // true right after a drag-to-pan, to suppress select
 			var pre = P.prefix || '';
 
 			var pickEl  = root.querySelector('[data-eem-map-pick]');
@@ -1922,6 +1923,7 @@ class EEM_Shortcodes {
 			}
 
 			gridEl.addEventListener('click', function(ev){
+				if (didPan) { return; }   // a drag-to-pan just happened; don't select
 				var s = ev.target.closest('.eem-map-stall'); if (!s) return;
 				if (s.getAttribute('data-status') !== 'available') return;
 				var u = s.getAttribute('data-unit');
@@ -1941,6 +1943,29 @@ class EEM_Shortcodes {
 					else if (k === 'out'){ zoom = Math.max(0.5, zoom - 0.2); applyZoom(); }
 					else { fitZoom(); }
 				});
+			});
+
+			// Click-and-drag to pan a large map (like dragging a map). Movement past a
+			// small threshold counts as a pan and suppresses the stall-select click.
+			var panning = false, panMoved = false, panX = 0, panY = 0, panL = 0, panT = 0;
+			scrollEl.addEventListener('mousedown', function(ev){
+				if (ev.button !== 0) return;
+				panning = true; panMoved = false; didPan = false;
+				panX = ev.clientX; panY = ev.clientY; panL = scrollEl.scrollLeft; panT = scrollEl.scrollTop;
+				scrollEl.classList.add('is-panning');
+			});
+			document.addEventListener('mousemove', function(ev){
+				if (!panning) return;
+				var dx = ev.clientX - panX, dy = ev.clientY - panY;
+				if (!panMoved && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) { panMoved = true; }
+				if (panMoved) { scrollEl.scrollLeft = panL - dx; scrollEl.scrollTop = panT - dy; }
+			});
+			document.addEventListener('mouseup', function(){
+				if (!panning) return;
+				panning = false;
+				didPan = panMoved;                 // gate the click that fires next
+				scrollEl.classList.remove('is-panning');
+				if (panMoved) { setTimeout(function(){ didPan = false; }, 0); }
 			});
 
 			// Tack designation change → nudge the qty field so the live total recomputes
