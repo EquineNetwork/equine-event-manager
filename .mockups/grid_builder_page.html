@@ -175,8 +175,8 @@ button{font-family:var(--font-ui);cursor:pointer}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h6M4 12h10M4 17h7"/><path d="M16 5l4 4-9 9-4 1 1-4 8-10z"/></svg>Fill</button>
       <button class="tool" data-tool="label" title="Type one label (L)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>Label</button>
-      <button class="tool" data-tool="landmark" title="Landmark / room (M)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.6 13.4 13.4 20.6a2 2 0 01-2.8 0L3 13V3h10l7.6 7.6a2 2 0 010 2.8z"/><circle cx="8" cy="8" r="1.4"/></svg>Room</button>
+      <button class="tool" data-tool="landmark" title="Landmark (M)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.6 13.4 13.4 20.6a2 2 0 01-2.8 0L3 13V3h10l7.6 7.6a2 2 0 010 2.8z"/><circle cx="8" cy="8" r="1.4"/></svg>Landmark</button>
       <button class="tool" data-tool="erase" title="Erase to aisle (E)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 21h10M5 13l6-6 8 8-6 6H9l-4-4z"/></svg>Erase</button>
       <div class="tool-sep"></div>
@@ -214,7 +214,7 @@ button{font-family:var(--font-ui);cursor:pointer}
       <button class="x" onclick="closePreview()">×</button>
     </div>
     <div class="modal-body">
-      <div class="cust-intro">This is exactly what a customer sees on the event page, generated live from the grid you just built. Tap stalls to select. Aisles and rooms are not selectable.</div>
+      <div class="cust-intro">This is exactly what a customer sees on the event page, generated live from the grid you just built. Tap stalls to select. Aisles and landmarks are not selectable.</div>
       <div class="cust-zonebar" id="custZonebar"></div>
       <div style="overflow:auto"><div class="cust-grid" id="custGrid"></div></div>
       <div class="cust-foot">
@@ -267,7 +267,7 @@ document.getElementById('toolbar').addEventListener('click',e=>{
   if(b.dataset.act==='redo')return redo();
   tool=b.dataset.tool;sel=null;
   document.querySelectorAll('.tool[data-tool]').forEach(t=>t.classList.toggle('active',t.dataset.tool===tool));
-  const hints={select:'Drag to select cells',fill:'Drag a block, then set the start number →',label:'Click a cell to type its number',landmark:'Drag a block, then name the room →',erase:'Click or drag to clear back to aisle'};
+  const hints={select:'Drag to select cells',fill:'Drag a block, then set the start number →',label:'Click a cell to type its number',landmark:'Drag a block, then name the landmark →',erase:'Click or drag to clear back to aisle'};
   document.getElementById('modeHint').textContent=hints[tool];
   render();renderPanel();
 });
@@ -394,7 +394,7 @@ function applyFill(){
 /* ---------- LANDMARK fill ---------- */
 function applyLandmark(){
   if(!sel){toast('Drag a block of cells first');return;}
-  const name=document.getElementById('lm_name').value.trim();if(!name){toast('Name the room first');return;}
+  const name=document.getElementById('lm_name').value.trim();if(!name){toast('Name the landmark first');return;}
   const z=Z();const r1=Math.min(sel.r1,sel.r2),r2=Math.max(sel.r1,sel.r2),c1=Math.min(sel.c1,sel.c2),c2=Math.max(sel.c1,sel.c2);
   snapshot();for(let r=r1;r<=r2;r++)for(let c=c1;c<=c2;c++)z.grid[r][c]={type:'landmark',label:name};
   toast('Added "'+name+'"');render();
@@ -445,20 +445,20 @@ function renderPanel(){
     p.querySelector('#f_skip').addEventListener('change',e=>fillState.skip=e.target.checked);
     p.querySelector('#f_dir').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;p.querySelectorAll('#f_dir button').forEach(x=>x.classList.remove('on'));b.classList.add('on');fillState.dir=b.dataset.dir;});
   } else if(tool==='landmark'){
-    p.innerHTML=`<h3>Room / Landmark</h3><div class="sel-meta">${selMeta}</div>
+    p.innerHTML=`<h3>Landmark</h3><div class="sel-meta">${selMeta}</div>
       <div class="field"><label>Label</label><input type="text" id="lm_name" value="${lmState.name.replace(/"/g,'&quot;')}" placeholder="Wash Rack, Office, Arena…"></div>
-      <button class="btn-primary btn" onclick="applyLandmark()">Mark as Room</button>
-      <div class="tip">Tall, narrow rooms render with <b>vertical text</b> automatically — same as the live map. Customers can't select rooms.</div>`;
+      <button class="btn-primary btn" onclick="applyLandmark()">Mark as Landmark</button>
+      <div class="tip">Tall, narrow landmarks render with <b>vertical text</b> automatically — same as the live map. Customers can't select landmarks.</div>`;
     p.querySelector('#lm_name').addEventListener('input',e=>lmState.name=e.target.value);
   } else {
     p.innerHTML=`<h3>Legend</h3>
       <div class="legend">
         <div><span class="swatch sw-stall"></span> Stall — sellable, numbered</div>
         <div><span class="swatch sw-gap"></span> Aisle / gap — not sellable</div>
-        <div><span class="swatch sw-lm"></span> Room — wash rack, office, arena</div>
+        <div><span class="swatch sw-lm"></span> Landmark — wash rack, office, arena</div>
         <div><span class="swatch sw-sel"></span> Current selection</div>
       </div>
-      <div class="tip"><b>Workflow:</b><br>1. Add a <b>Zone</b> (barn or RV lot) as a tab.<br>2. Size the grid to the aisle.<br>3. <b>Erase</b> the aisle gaps.<br>4. <b>Fill</b> a row → auto-numbered.<br>5. Mark <b>Rooms</b>.<br>6. <b>Preview</b>, then <b>Save</b>.</div>
+      <div class="tip"><b>Workflow:</b><br>1. Add a <b>Zone</b> (barn or RV lot) as a tab.<br>2. Size the grid to the aisle.<br>3. <b>Erase</b> the aisle gaps.<br>4. <b>Fill</b> a row → auto-numbered.<br>5. Mark <b>Landmarks</b>.<br>6. <b>Preview</b>, then <b>Save</b>.</div>
       <div class="tip"><b>Same data, no spreadsheet.</b> This writes the identical map structure the Google-Sheet import produces — so charts, auto-assign, and the customer picker all work unchanged.</div>`;
   }
 }
@@ -475,12 +475,29 @@ function renderCust(){
   const bar=document.getElementById('custZonebar');bar.innerHTML='';
   zones.forEach((z,i)=>{const b=document.createElement('button');b.className=i===custActive?'on':'';b.textContent=z.name;b.onclick=()=>{custActive=i;renderCust();};bar.appendChild(b);});
   const z=zones[custActive];const g=document.getElementById('custGrid');
-  g.style.gridTemplateColumns='repeat('+z.cols+',42px)';g.innerHTML='';
+  g.style.gridTemplateColumns='repeat('+z.cols+',42px)';
+  g.style.gridAutoRows='38px';g.innerHTML='';
+  const consumed=new Set();
   for(let r=0;r<z.rows;r++)for(let c=0;c<z.cols;c++){
-    const cell=z.grid[r][c];const d=document.createElement('div');d.className='cust-cell '+cell.type;
-    if(cell.type==='stall'){const key=z.name+' '+cell.label;d.textContent=cell.label;if(picked[key])d.classList.add('picked');
-      d.onclick=()=>{picked[key]?delete picked[key]:picked[key]=1;renderCust();};}
-    else if(cell.type==='landmark'){d.textContent=cell.label;}
+    if(consumed.has(r+','+c))continue;                         // covered by a merged landmark
+    const cell=z.grid[r][c];const d=document.createElement('div');
+    d.style.gridColumn=(c+1);d.style.gridRow=(r+1);            // explicit placement keeps alignment when cells are merged
+    if(cell.type==='landmark'){
+      // collapse the whole same-label rectangle into ONE spanning block with a single centered label
+      let w=1;while(sameLm(z,r,c+w,cell.label))w++;
+      let h=1;while(sameLm(z,r+h,c,cell.label))h++;
+      for(let rr=r;rr<r+h;rr++)for(let cc=c;cc<c+w;cc++)consumed.add(rr+','+cc);
+      d.className='cust-cell landmark';
+      d.style.gridColumn=(c+1)+' / span '+w;
+      d.style.gridRow=(r+1)+' / span '+h;
+      d.style.height='auto';d.style.width='auto';d.textContent=cell.label;
+    } else if(cell.type==='stall'){
+      const key=z.name+' '+cell.label;d.className='cust-cell stall';d.textContent=cell.label;
+      if(picked[key])d.classList.add('picked');
+      d.onclick=()=>{picked[key]?delete picked[key]:picked[key]=1;renderCust();};
+    } else {
+      d.className='cust-cell gap';
+    }
     g.appendChild(d);
   }
   document.getElementById('custCount').textContent=Object.keys(picked).length;
