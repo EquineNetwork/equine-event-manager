@@ -7611,7 +7611,10 @@ a.eem-btn--ghost:focus    { color: #1d2327; }
 .eem-smap-sw--resv { background: #dbe4f3; border-color: #bcccea; }
 .eem-smap-sw--tack { background: #fff5e6; border-color: #E8A33D; }
 .eem-smap-sw--block { background: #9aa6b6; border-color: #9aa6b6; }
-.eem-smap-scroll { overflow: auto; padding: 18px 0; background: #fbfcfe; max-height: 640px; -webkit-overflow-scrolling: touch; }
+.eem-smap-scroll { overflow: auto; padding: 18px 0; background: #fbfcfe; max-height: 640px; -webkit-overflow-scrolling: touch; min-width: 0; max-width: 100%; }
+/* "Map zoom": chips resize inside this capped viewport; the chart card never
+   grows. min-width:0 stops the grid's intrinsic width from stretching the card. */
+.eem-smap, .eem-smap-zoombar { min-width: 0; max-width: 100%; }
 /* Chart zoom control — drives --eem-smap-chip; mirrors the map-builder zoom chrome. */
 .eem-smap-zoombar { display: flex; justify-content: flex-end; padding: 8px 0 2px; }
 .eem-smap-zoom { display: inline-flex; border: 1px solid var(--eem-line, #d9e2ec); border-radius: var(--eem-radius, 3px); overflow: hidden; }
@@ -9034,7 +9037,7 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 .eem-mb-seg4 button { border: none; border-left: 1px solid var(--eem-border, #D9E2F2); background: var(--eem-surface, #fff); padding: 6px 9px; font-size: 11px; font-weight: 600; color: var(--eem-text-secondary, #6B7A99); cursor: pointer; }
 .eem-mb-seg4 button:first-child { border-left: none; }
 .eem-mb-seg4 button.on { background: var(--eem-electric, #1668F2); color: #fff; }
-.eem-mb-gridscroll { overflow: auto; padding: 18px; max-height: 56vh; }
+.eem-mb-gridscroll { overflow: auto; padding: 18px; max-height: 56vh; min-width: 0; max-width: 100%; }
 /* Zoom control — mirrors the row/col stepper chrome; drives grid cell size in JS. */
 .eem-mb-zoom { display: inline-flex; border: 1px solid var(--eem-border-card, #c3c4c7); border-radius: var(--eem-radius, 3px); overflow: hidden; }
 .eem-mb-zoom button { border: 0; border-left: 1px solid var(--eem-border, #D9E2F2); background: var(--eem-surface, #fff); color: var(--eem-navy, #031B4E); font-weight: 700; font-size: 13px; padding: 5px 11px; line-height: 1; cursor: pointer; }
