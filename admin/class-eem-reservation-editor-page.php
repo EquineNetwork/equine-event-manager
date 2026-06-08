@@ -1355,6 +1355,73 @@ class EEM_Reservation_Editor_Page {
 	}
 
 	/**
+	 * AJAX: save a facility map built in the native Map Builder.
+	 *
+	 * Replaces the Google-Sheet import path. Accepts the builder's `barns` payload
+	 * (JSON: an array of zones, each a rectangular grid of {type,label} cells) plus
+	 * a `target` ('stall' | 'rv') choosing the map slot. Snapshots it onto the
+	 * reservation in the same shape every consumer already reads, rejecting
+	 * stall-number collisions (RV lots are zone-qualified, so cross-zone repeats are
+	 * allowed). Returns the per-zone counts + grand total for the section status.
+	 *
+	 * @return void
+	 */
+	public static function ajax_map_builder_save() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+		check_ajax_referer( 'eem_reservation_editor', '_eem_editor_nonce' );
+
+		$reservation_id = isset( $_POST['reservation_id'] ) ? absint( wp_unslash( $_POST['reservation_id'] ) ) : 0;
+		$post           = $reservation_id > 0 ? get_post( $reservation_id ) : null;
+		if ( ! $post || EEM_Reservations_CPT::POST_TYPE !== $post->post_type ) {
+			wp_send_json_error( array( 'message' => __( 'Reservation not found.', 'equine-event-manager' ) ), 404 );
+		}
+
+		$target   = isset( $_POST['target'] ) && 'rv' === sanitize_key( wp_unslash( $_POST['target'] ) ) ? 'rv' : 'stall';
+		$meta_key = ( 'rv' === $target ) ? EEM_Stall_Map_Importer::RV_META_KEY : EEM_Stall_Map_Importer::META_KEY;
+
+		// The builder posts its zones as a JSON string (nested arrays don't survive
+		// urlencoded form bodies cleanly). Decode, then sanitise in the importer.
+		$raw   = isset( $_POST['barns'] ) ? (string) wp_unslash( $_POST['barns'] ) : '';
+		$barns = json_decode( $raw, true );
+		if ( ! is_array( $barns ) ) {
+			wp_send_json_error( array( 'message' => __( 'Could not read the map you built. Please try again.', 'equine-event-manager' ) ), 400 );
+		}
+
+		$snapshot = EEM_Stall_Map_Importer::snapshot_from_builder( $barns, $target );
+
+		// Stalls must be globally unique across barns; RV lots repeat per zone.
+		$dupes = ( 'rv' === $target ) ? array() : EEM_Stall_Map_Importer::find_duplicate_labels( $snapshot );
+		if ( ! empty( $dupes ) ) {
+			wp_send_json_error( array(
+				'message' => sprintf(
+					/* translators: %s: comma-separated duplicated stall numbers */
+					__( 'These stall numbers are used more than once: %s. Every stall number must be unique across the whole event.', 'equine-event-manager' ),
+					implode( ', ', $dupes )
+				),
+			), 422 );
+		}
+
+		EEM_Stall_Map_Importer::save_to_reservation( $reservation_id, $snapshot, $meta_key );
+
+		$per   = EEM_Stall_Map_Importer::barn_stall_counts( $snapshot );
+		$barns_out = array();
+		foreach ( $per as $name => $count ) {
+			$barns_out[] = array( 'name' => $name, 'stalls' => $count );
+		}
+		$unit = ( 'rv' === $target ) ? _n( '%d zone saved.', '%d zones saved.', count( $barns_out ), 'equine-event-manager' ) : _n( '%d barn saved.', '%d barns saved.', count( $barns_out ), 'equine-event-manager' );
+		wp_send_json_success( array(
+			'reservation_id' => $reservation_id,
+			'barns'          => $barns_out,
+			'total_stalls'   => EEM_Stall_Map_Importer::count_stalls( $snapshot ),
+			'synced_at'      => (int) ( $snapshot['synced_at'] ?? time() ),
+			/* translators: %d: number of zones saved */
+			'message'        => sprintf( $unit, count( $barns_out ) ),
+		) );
+	}
+
+	/**
 	 * AJAX: rename the reservation — called by the pencil inline-edit form in the
 	 * editor header (FIX 1, 2.3.43).  Accepts `eem_res_name` (the new title; empty
 	 * = clear override and mirror immediately from the linked event title).  Sets

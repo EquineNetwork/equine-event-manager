@@ -404,4 +404,87 @@ class EEM_Stall_Map_Importer {
 		$snapshot['barns'] = self::barns_of_kind( $snapshot, $kind );
 		return $snapshot;
 	}
+
+	/**
+	 * Build a stored snapshot from native Map Builder grid data.
+	 *
+	 * The in-plugin Map Builder (replacing the Google-Sheet import) posts an array
+	 * of zones, each a rectangular grid of cells. This sanitises that payload into
+	 * the canonical snapshot shape every consumer already understands — same
+	 * structure the old sheet import produced, with `source` = 'builder'. Every
+	 * zone's `kind` is forced to $kind because the builder edits one map slot
+	 * (the stall map OR the RV map) at a time.
+	 *
+	 * @param array  $barns Raw zones: [ ['name'=>string,'grid'=>[[ ['type'=>string,'label'=>string] ]] ], ... ].
+	 * @param string $kind  'stall' | 'rv'.
+	 * @return array{source:string,synced_at:int,barns:array}
+	 */
+	public static function snapshot_from_builder( array $barns, string $kind = 'stall' ): array {
+		$kind = 'rv' === $kind ? 'rv' : 'stall';
+		$out  = array();
+		foreach ( $barns as $barn ) {
+			if ( ! is_array( $barn ) ) {
+				continue;
+			}
+			$name     = isset( $barn['name'] ) ? sanitize_text_field( (string) $barn['name'] ) : '';
+			$raw_grid = ( isset( $barn['grid'] ) && is_array( $barn['grid'] ) ) ? $barn['grid'] : array();
+			$grid     = array();
+			$cols     = 0;
+			foreach ( $raw_grid as $row ) {
+				if ( ! is_array( $row ) ) {
+					continue;
+				}
+				$out_row = array();
+				foreach ( $row as $cell ) {
+					$out_row[] = self::sanitize_builder_cell( is_array( $cell ) ? $cell : array() );
+				}
+				$cols   = max( $cols, count( $out_row ) );
+				$grid[] = $out_row;
+			}
+			// Pad every row to the widest so the stored grid stays rectangular.
+			foreach ( $grid as &$grow ) {
+				while ( count( $grow ) < $cols ) {
+					$grow[] = array( 'type' => 'gap', 'label' => '' );
+				}
+			}
+			unset( $grow );
+			if ( '' === $name ) {
+				/* translators: %d: zone number */
+				$name = sprintf( __( 'Zone %d', 'equine-event-manager' ), count( $out ) + 1 );
+			}
+			$out[] = array(
+				'name' => $name,
+				'kind' => $kind,
+				'rows' => count( $grid ),
+				'cols' => $cols,
+				'grid' => $grid,
+			);
+		}
+		return array(
+			'source'    => 'builder',
+			'synced_at' => time(),
+			'barns'     => $out,
+		);
+	}
+
+	/**
+	 * Sanitise one Map Builder cell into the canonical {type,label} cell language.
+	 *
+	 * Anything that is not an explicitly-labelled stall or landmark collapses to a
+	 * gap (aisle), so a malformed/partial cell can never become sellable inventory.
+	 *
+	 * @param array $cell Raw cell from the builder payload.
+	 * @return array{type:string,label:string}
+	 */
+	private static function sanitize_builder_cell( array $cell ): array {
+		$type  = isset( $cell['type'] ) ? (string) $cell['type'] : 'gap';
+		$label = isset( $cell['label'] ) ? sanitize_text_field( (string) $cell['label'] ) : '';
+		if ( 'stall' === $type && '' !== $label ) {
+			return array( 'type' => 'stall', 'label' => $label );
+		}
+		if ( 'landmark' === $type && '' !== $label ) {
+			return array( 'type' => 'landmark', 'label' => $label );
+		}
+		return array( 'type' => 'gap', 'label' => '' );
+	}
 }
