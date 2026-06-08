@@ -387,16 +387,18 @@ $rv_lot_map_name = $rv_lot_map_id ? basename( (string) get_attached_file( $rv_lo
 	style="<?php echo $rv_is_mapped ? '' : 'display:none;'; ?>">
 <?php
 
-// ── v4 Slice 8 — Interactive RV Map (its OWN Google Sheet, separate from the
-// stall sheet). Every tab is an RV zone; every numbered cell an RV lot. ──
+// ── v4 RV Mapping — native RV Map Builder (its OWN map slot, separate from the
+// stall map). Every tab is an RV zone; every numbered cell an RV lot. ──
 $rv_map_snap = ( isset( $data['rv_map'] ) && is_array( $data['rv_map'] ) ) ? $data['rv_map'] : array();
-$rv_map_src  = isset( $rv_map_snap['source_url'] ) ? (string) $rv_map_snap['source_url'] : '';
+$rv_seed     = array();
+foreach ( ( $rv_map_snap['barns'] ?? array() ) as $rv_seed_barn ) {
+	$rv_seed[] = array( 'name' => (string) ( $rv_seed_barn['name'] ?? '' ), 'grid' => ( $rv_seed_barn['grid'] ?? array() ) );
+}
 ob_start();
 ?>
 <div class="eem-stall-map-connect" data-eem-rv-map data-eem-rv-map-total="<?php echo (int) ( ! empty( $rv_map_snap['barns'] ) ? EEM_Stall_Map_Importer::count_stalls( $rv_map_snap ) : 0 ); ?>">
 	<div class="eem-stall-map-row">
-		<input type="url" class="eem-field-input" id="eem-rv-map-url" placeholder="<?php esc_attr_e( 'Paste your RV sheet "Publish to web" link…', 'equine-event-manager' ); ?>" value="<?php echo esc_attr( $rv_map_src ); ?>" style="max-width:520px">
-		<button type="button" class="eem-btn-add" data-eem-action="rv-map-connect"><?php echo $rv_map_src ? esc_html__( 'Refresh', 'equine-event-manager' ) : esc_html__( 'Connect', 'equine-event-manager' ); ?></button>
+		<button type="button" class="eem-btn-add" data-eem-action="open-map-builder" data-target="rv"><?php echo ! empty( $rv_map_snap['barns'] ) ? esc_html__( 'Edit Map', 'equine-event-manager' ) : esc_html__( 'Build Map', 'equine-event-manager' ); ?></button>
 	</div>
 	<div class="eem-stall-map-status" data-eem-rv-map-status>
 		<?php
@@ -412,13 +414,14 @@ ob_start();
 		}
 		?>
 	</div>
+	<script type="application/json" id="eem-map-seed-rv"><?php echo wp_json_encode( $rv_seed ); // phpcs:ignore -- JSON seed for the Map Builder ?></script>
 </div>
-<span class="eem-field-hint"><?php esc_html_e( 'Used when RV Selection is "Pick from layout". Build your RV layout in its OWN Google Sheet (one tab per zone), then File → Share → Publish to web and paste the link. Every tab is a zone; every numbered cell is a lot. Match the tab names to your RV Lot Zones below for pricing.', 'equine-event-manager' ); ?></span>
+<span class="eem-field-hint"><?php esc_html_e( 'Used when RV Selection is "Pick from layout". Click Build Map to draw your RV layout — add a tab per zone, then drag to number the lots. Zone names match your RV Lot Zones below for pricing.', 'equine-event-manager' ); ?></span>
 <?php
 $rv_map_html = (string) ob_get_clean();
 eem_render_editor_field_row( array(
 	'label'        => __( 'Interactive RV Map', 'equine-event-manager' ),
-	'label_sub'    => __( 'Google Sheet → clickable layout', 'equine-event-manager' ),
+	'label_sub'    => __( 'Draw your RV layout — no spreadsheet', 'equine-event-manager' ),
 	'row_id'       => 'row-rv-map-connect',
 	'control_html' => $rv_map_html,
 	// v4 RV two-control: the map is the layout source for Pick-from-layout only.

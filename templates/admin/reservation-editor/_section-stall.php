@@ -489,21 +489,24 @@ eem_render_editor_field_row( array(
 	'is_hidden'    => $stall_is_pick,
 ) );
 
-// ── v4 Stall Mapping — connect a Google Sheet (drives "Pick from layout") ──
-$stall_map_snap = ( isset( $data['stall_map'] ) && is_array( $data['stall_map'] ) ) ? $data['stall_map'] : array();
-$stall_map_src  = isset( $stall_map_snap['source_url'] ) ? (string) $stall_map_snap['source_url'] : '';
+// ── v4 Stall Mapping — native Map Builder (drives "Pick from layout") ──
+$stall_map_snap  = ( isset( $data['stall_map'] ) && is_array( $data['stall_map'] ) ) ? $data['stall_map'] : array();
+$stall_map_kind  = EEM_Stall_Map_Importer::snapshot_of_kind( $stall_map_snap, 'stall' );
+$stall_seed      = array();
+foreach ( ( $stall_map_kind['barns'] ?? array() ) as $smk_barn ) {
+	$stall_seed[] = array( 'name' => (string) ( $smk_barn['name'] ?? '' ), 'grid' => ( $smk_barn['grid'] ?? array() ) );
+}
 ob_start();
 ?>
-<div class="eem-stall-map-connect" data-eem-stall-map data-eem-stall-map-total="<?php echo (int) ( ! empty( $stall_map_snap['barns'] ) ? EEM_Stall_Map_Importer::count_stalls( EEM_Stall_Map_Importer::snapshot_of_kind( $stall_map_snap, 'stall' ) ) : 0 ); ?>">
+<div class="eem-stall-map-connect" data-eem-stall-map data-eem-stall-map-total="<?php echo (int) ( ! empty( $stall_map_kind['barns'] ) ? EEM_Stall_Map_Importer::count_stalls( $stall_map_kind ) : 0 ); ?>">
 	<div class="eem-stall-map-row">
-		<input type="url" class="eem-field-input" id="eem-stall-map-url" placeholder="<?php esc_attr_e( 'Paste your Google Sheet “Publish to web” link…', 'equine-event-manager' ); ?>" value="<?php echo esc_attr( $stall_map_src ); ?>" style="max-width:520px">
-		<button type="button" class="eem-btn-add" data-eem-action="stall-map-connect"><?php echo $stall_map_src ? esc_html__( 'Refresh', 'equine-event-manager' ) : esc_html__( 'Connect', 'equine-event-manager' ); ?></button>
+		<button type="button" class="eem-btn-add" data-eem-action="open-map-builder" data-target="stall"><?php echo ! empty( $stall_map_kind['barns'] ) ? esc_html__( 'Edit Map', 'equine-event-manager' ) : esc_html__( 'Build Map', 'equine-event-manager' ); ?></button>
 	</div>
 	<div class="eem-stall-map-status" data-eem-stall-map-status>
 		<?php
-		if ( ! empty( $stall_map_snap['barns'] ) ) {
-			$smc_counts = EEM_Stall_Map_Importer::barn_stall_counts( $stall_map_snap );
-			$smc_total  = EEM_Stall_Map_Importer::count_stalls( $stall_map_snap );
+		if ( ! empty( $stall_map_kind['barns'] ) ) {
+			$smc_counts = EEM_Stall_Map_Importer::barn_stall_counts( $stall_map_kind );
+			$smc_total  = EEM_Stall_Map_Importer::count_stalls( $stall_map_kind );
 			$smc_bits   = array();
 			foreach ( $smc_counts as $smc_bn => $smc_bc ) {
 				$smc_bits[] = esc_html( $smc_bn ) . ' (' . (int) $smc_bc . ')';
@@ -513,13 +516,14 @@ ob_start();
 		}
 		?>
 	</div>
+	<script type="application/json" id="eem-map-seed-stall"><?php echo wp_json_encode( $stall_seed ); // phpcs:ignore -- JSON seed for the Map Builder ?></script>
 </div>
-<span class="eem-field-hint"><?php esc_html_e( 'Used when Customer Selection is “Pick from layout”. Build your facility map in Google Sheets (one tab per barn), then File → Share → Publish to web and paste the link. Every tab is a barn; every numbered cell is a stall. We import a snapshot — “Refresh” re-pulls.', 'equine-event-manager' ); ?></span>
+<span class="eem-field-hint"><?php esc_html_e( 'Used when Customer Selection is “Pick from layout”. Click Build Map to draw your facility — add a tab per barn, then drag to number the stalls. No spreadsheet required.', 'equine-event-manager' ); ?></span>
 <?php
 $stall_map_html = (string) ob_get_clean();
 eem_render_editor_field_row( array(
 	'label'        => __( 'Interactive Stall Map', 'equine-event-manager' ),
-	'label_sub'    => __( 'Google Sheet → clickable layout', 'equine-event-manager' ),
+	'label_sub'    => __( 'Draw your facility — no spreadsheet', 'equine-event-manager' ),
 	'row_id'       => 'row-stall-map-connect',
 	'control_html' => $stall_map_html,
 	// v4 Slice 5: the map connection is the layout source for Pick-from-layout,

@@ -2424,13 +2424,13 @@
 		'tack-who': function (target) {
 			eemTackToggle(target, 'who');
 		},
-		/* v4 — connect/refresh a stall-map Google Sheet. */
-		'stall-map-connect': function (target) {
-			stallMapConnect(target);
-		},
-		/* v4 Slice 8 — connect/refresh the SEPARATE RV-map Google Sheet. */
-		'rv-map-connect': function (target) {
-			mapConnect(target, 'rv');
+		/* Native Map Builder — open the in-plugin grid builder for the stall map
+		   or the RV map (the data-target attr picks the slot). Replaces the old
+		   Google-Sheet connect/refresh actions. */
+		'open-map-builder': function (target) {
+			if (window.EEM && EEM.openMapBuilder) {
+				EEM.openMapBuilder(target.getAttribute('data-target') === 'rv' ? 'rv' : 'stall');
+			}
 		},
 
 		/* C8 — Stall row builder */
