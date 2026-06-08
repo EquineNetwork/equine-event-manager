@@ -7612,6 +7612,12 @@ a.eem-btn--ghost:focus    { color: #1d2327; }
 .eem-smap-sw--tack { background: #fff5e6; border-color: #E8A33D; }
 .eem-smap-sw--block { background: #9aa6b6; border-color: #9aa6b6; }
 .eem-smap-scroll { overflow: auto; padding: 18px 0; background: #fbfcfe; max-height: 640px; -webkit-overflow-scrolling: touch; }
+/* Chart zoom control — drives --eem-smap-chip; mirrors the map-builder zoom chrome. */
+.eem-smap-zoombar { display: flex; justify-content: flex-end; padding: 8px 0 2px; }
+.eem-smap-zoom { display: inline-flex; border: 1px solid var(--eem-line, #d9e2ec); border-radius: var(--eem-radius, 3px); overflow: hidden; }
+.eem-smap-zoom button { border: 0; border-left: 1px solid var(--eem-line, #d9e2ec); background: #fff; color: var(--eem-navy, #031B4E); font-weight: 700; font-size: 13px; padding: 5px 12px; line-height: 1; cursor: pointer; }
+.eem-smap-zoom button:first-child { border-left: 0; }
+.eem-smap-zoom button:hover { background: #eef4ff; }
 .eem-smap-grid { display: grid; gap: var(--eem-smap-gap); width: max-content; }
 .eem-smap-cell { width: var(--eem-smap-chip); height: var(--eem-smap-chip); }
 .eem-smap-stall { position: relative; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; border: 1px solid #b9c6da; border-radius: 5px; background: #fff; color: var(--eem-navy, #031B4E); cursor: pointer; user-select: none; line-height: 1; }

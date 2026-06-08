@@ -4932,6 +4932,37 @@
 					eemSmapOpenPop(container, cell, p);
 				});
 			}
+			// Zoom control — drives --eem-smap-chip cell size so the grid reflows and
+			// pans within the capped scroll viewport (same pattern as the customer
+			// picker). Bound once per container; the chosen size persists across barn
+			// switches so the admin's zoom isn't reset when they change tabs.
+			var smapZoomBar = container.querySelector('[data-eem-smap-zoom]');
+			if (smapZoomBar && !smapZoomBar._eemSmapBound) {
+				smapZoomBar._eemSmapBound = true;
+				var SMAP_BASE = 40, SMAP_MIN = 22, SMAP_MAX = 72;
+				var applySmapZoom = function (px) { container.style.setProperty('--eem-smap-chip', px + 'px'); };
+				var fitSmap = function () {
+					var p2; try { p2 = JSON.parse(container.querySelector('[data-eem-smap-payload]').textContent); } catch (e) { return; }
+					var barn = (p2.barns || [])[container._eemSmapBarn || 0] || {};
+					var grid = barn.grid || [];
+					var cols = grid.length ? grid[0].length : 0;
+					var scroll = container.querySelector('[data-eem-smap-scroll]');
+					if (!cols || !scroll) { applySmapZoom(SMAP_BASE); return; }
+					var avail = scroll.clientWidth - 28;
+					var px = Math.max(SMAP_MIN, Math.min(SMAP_BASE, Math.floor(avail / cols) - 4));
+					container._eemSmapChip = px; applySmapZoom(px);
+				};
+				smapZoomBar.addEventListener('click', function (ev) {
+					var b = ev.target.closest('[data-zoom]'); if (!b) return;
+					var act = b.getAttribute('data-zoom');
+					var cur = container._eemSmapChip || SMAP_BASE;
+					if (act === 'in') { cur = Math.min(SMAP_MAX, cur + 8); }
+					else if (act === 'out') { cur = Math.max(SMAP_MIN, cur - 8); }
+					else { fitSmap(); return; }
+					container._eemSmapChip = cur; applySmapZoom(cur);
+				});
+				fitSmap();
+			}
 		});
 	};
 

@@ -2609,7 +2609,15 @@ class EEM_Admin {
 				<span class="eem-smap-legend-hint"><?php echo esc_html( $is_rv ? __( 'Click any lot to assign or block.', 'equine-event-manager' ) : __( 'Click any stall to assign, mark tack, or block.', 'equine-event-manager' ) ); ?></span>
 			</div>
 
-			<div class="eem-smap-scroll"><div class="eem-smap-grid" data-eem-smap-grid></div></div>
+			<div class="eem-smap-zoombar">
+				<span class="eem-smap-zoom" data-eem-smap-zoom>
+					<button type="button" data-zoom="out" title="<?php esc_attr_e( 'Zoom out', 'equine-event-manager' ); ?>">&minus;</button>
+					<button type="button" data-zoom="fit" title="<?php esc_attr_e( 'Fit to width', 'equine-event-manager' ); ?>"><?php esc_html_e( 'Fit', 'equine-event-manager' ); ?></button>
+					<button type="button" data-zoom="in" title="<?php esc_attr_e( 'Zoom in', 'equine-event-manager' ); ?>">+</button>
+				</span>
+			</div>
+
+			<div class="eem-smap-scroll" data-eem-smap-scroll><div class="eem-smap-grid" data-eem-smap-grid></div></div>
 
 			<script type="application/json" data-eem-smap-payload><?php echo wp_json_encode( $payload ); ?></script>
 		</div>
