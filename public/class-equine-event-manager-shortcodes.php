@@ -1756,10 +1756,9 @@ class EEM_Shortcodes {
 		?>
 		<div class="eem-map-instance">
 		<div class="eem-map-pick" data-eem-map-pick>
-			<button type="button" class="eem-map-open-btn" data-eem-map-open>&#x1f5fa;&#xfe0f; <?php echo esc_html( $opts['open_label'] ); ?></button>
+			<button type="button" class="eem-map-open-btn" data-eem-map-open><?php echo esc_html( $opts['open_label'] ); ?></button>
 			<div class="eem-map-summary" data-eem-map-summary></div>
 			<div data-eem-map-picks hidden></div>
-			<p class="stall-assign-note"><?php echo esc_html( $opts['hint'] ); ?></p>
 			<script type="application/json" data-eem-map-payload><?php echo wp_json_encode( $payload ); // phpcs:ignore ?></script>
 		</div>
 
@@ -1821,8 +1820,8 @@ class EEM_Shortcodes {
 			function renderGrid(){
 				var g = P.barns[activeBarn] ? P.barns[activeBarn].grid : [];
 				var rows = g.length, cols = rows ? g[0].length : 0;
-				gridEl.style.gridTemplateColumns = 'repeat(' + cols + ', var(--eem-map-chip))';
-				gridEl.style.gridTemplateRows = 'repeat(' + rows + ', var(--eem-map-chip))';
+				gridEl.style.gridTemplateColumns = 'repeat(' + cols + ', var(--eem-map-chip, 40px))';
+				gridEl.style.gridTemplateRows = 'repeat(' + rows + ', var(--eem-map-chip, 40px))';
 				gridEl.innerHTML = '';
 				var used = g.map(function(r){ return r.map(function(){ return false; }); });
 				for (var r=0;r<rows;r++){ for (var c=0;c<cols;c++){
@@ -7317,7 +7316,8 @@ RV Lot: " . $rv_lot['name'] );
 
 		for ( $current = $start; $current <= $end; $current = $current->modify( '+1 day' ) ) {
 			$value             = $current->format( 'Y-m-d' );
-			$options[ $value ] = wp_date( 'l, F j, Y', $current->getTimestamp(), $timezone );
+			// 3-letter day + month so the option fits the dropdown ("Fri, Jun 26, 2026").
+			$options[ $value ] = wp_date( 'D, M j, Y', $current->getTimestamp(), $timezone );
 		}
 
 		return $options;
