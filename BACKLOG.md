@@ -308,6 +308,57 @@ room block exactly. The mockups are the binding visual spec for the build.
 - Bigger lift (drag UI, maybe a light SVG/canvas layer); only justified when a
   facility needs pixel-fidelity to the real building. Grid (Phase A) covers ~90%.
 
+### Phase C — native in-plugin grid builder (eliminate the Google Sheets dependency) — SCOPED 2026-06-07
+
+> **Whitney's ask:** "A way to cut out Google Sheets dependency. The plugin
+> generates a grid where admin can select and drag to populate rows with numbers
+> or names to make the maps we use Google Sheets for. Admin sets 'Zones' which
+> become the tabs they modify using the drag-and-select system." Future to-do —
+> NOT scheduled yet. Phase A (sheet import) ships first and stays as a fallback.
+
+**Goal.** Replace "paste a Published Google Sheet URL" with an in-plugin
+spreadsheet-like canvas. Same output, zero external dependency / network fetch /
+publish-to-web friction. The admin builds the facility map directly in the editor.
+
+**Key reuse — output is the SAME snapshot shape, so nothing downstream changes.**
+The builder writes the identical `_en_stall_map` / `_en_rv_map` structure the
+importer produces: `{ barns:[{ name, kind, rows, cols, grid:[[{type,label}]] }] }`
+with `type ∈ {stall, gap, landmark}`. Every renderer, the config routing, the
+chart matrix, auto-assign, group-contiguity — all keep working untouched. The
+builder is purely a new *authoring* front-end for the existing data model.
+
+**Scope (build order when scheduled):**
+1. **Zones = tabs.** Admin adds named Zones (Stall side: barns "Montcrief",
+   "Burnett"; RV side: "Red Lot" etc.). Each zone owns one grid. (Maps onto the
+   existing per-tab snapshot barn; on the RV side the zone is already both the
+   tab AND the pricing zone — one name.)
+2. **Grid canvas per zone.** A resizable grid of cells (add/remove rows+cols).
+   Each cell is empty (gap), a number (stall/lot), or text (landmark) — reuse
+   `EEM_Stall_Map_Importer::classify_cell()` semantics verbatim.
+3. **Drag-select + drag-fill.** Click-drag to select a rectangle; fill it with an
+   auto-incrementing sequence (start value + direction: L→R, R→L, serpentine) or
+   a single repeated label. Spreadsheet "fill handle" UX. This is the core
+   interaction and the main JS lift (canvas or DOM-grid + pointer events).
+4. **Landmark cells.** Type free text into a cell → landmark; the existing
+   same-label rectangle-merge + vertical-text renderer already handles display.
+5. **Block / aisle painting.** A "gap" brush to clear cells back to aisles.
+6. **Persist directly.** Save the built grid straight to the meta key (no import,
+   no dupe-fetch). Reuse the importer's validators (stall labels globally unique;
+   RV lots zone-qualified, so cross-zone repeats allowed — same rule the
+   `target==='rv'` dupe-skip already encodes).
+7. **Migration / coexistence.** Keep the Google-Sheet import as an alternate
+   "Import from Sheet" button that seeds the builder (one-time), so existing
+   sheet-connected reservations convert in one click. Don't force a cutover.
+
+**Lift estimate (preliminary):** medium-large — a real interactive grid editor
+(drag-select, fill-series, cell typing, resize) + serialize-to-snapshot + wire
+into both the Stall and RV editor sections. The back end is mostly free (data
+shape + validators + renderers already exist). The cost is the authoring UI/JS.
+
+**Why it's worth it:** removes the Publish-to-web setup friction (the #1 admin
+onboarding hurdle), keeps everything in WP, no Google account / sharing-settings
+dependency, instant edits. Phase A remains the quick path until this lands.
+
 ### Honest limits (both phases)
 
 - Flat grid can't express angled rows / curved aisles / non-uniform stall sizes.

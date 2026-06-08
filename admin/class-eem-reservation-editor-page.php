@@ -1320,7 +1320,10 @@ class EEM_Reservation_Editor_Page {
 			wp_send_json_error( array( 'message' => $snapshot->get_error_message() ), 422 );
 		}
 
-		$dupes = EEM_Stall_Map_Importer::find_duplicate_labels( $snapshot );
+		// Stalls must be globally unique across barns. RV lots are numbered
+		// per-zone (1..N in each tab) and identified zone-qualified ("Red Lot 1"),
+		// so cross-tab repeats are expected — skip the dupe check for the RV map.
+		$dupes = ( 'rv' === $target ) ? array() : EEM_Stall_Map_Importer::find_duplicate_labels( $snapshot );
 		if ( ! empty( $dupes ) ) {
 			wp_send_json_error( array(
 				'message' => sprintf(
