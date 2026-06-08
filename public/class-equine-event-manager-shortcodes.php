@@ -994,11 +994,15 @@ class EEM_Shortcodes {
 							<div class="eem-reservation-section-heading eem-reservation-section-heading--collapsible">
 								<h4 class="eem-reservation-section__title"><?php esc_html_e( 'Group Reservation', 'equine-event-manager' ); ?></h4>
 								<label class="eem-reservation-section-toggle" aria-label="<?php esc_attr_e( 'Toggle Group Reservation section', 'equine-event-manager' ); ?>">
-									<input type="checkbox" name="group_reservation_enabled" value="1" data-eem-group-toggle data-eem-section-collapse-toggle />
+									<input type="checkbox" checked data-eem-section-collapse-toggle />
 									<span class="eem-reservation-section-toggle__track" aria-hidden="true"></span>
 								</label>
 							</div>
 							<div class="eem-reservation-section__body" data-eem-section-collapse-body>
+								<label class="eem-group-optin">
+									<input type="checkbox" name="group_reservation_enabled" value="1" data-eem-group-toggle />
+									<span class="eem-group-optin__text"><?php esc_html_e( 'Yes, this is a group reservation', 'equine-event-manager' ); ?></span>
+								</label>
 								<p class="eem-reservation-help"><?php esc_html_e( 'Turn this on to capture the total rider count and a first and last name for each rider in the group.', 'equine-event-manager' ); ?></p>
 								<div class="eem-group-reservation-fields" data-eem-group-fields hidden>
 									<div class="eem-product-list eem-product-list--group-reservation">

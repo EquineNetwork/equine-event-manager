@@ -1825,6 +1825,32 @@
 .eem-group-reservation-fields[hidden] {
 	display: none !important;
 }
+/* Explicit group-reservation opt-in (decoupled from the section collapse toggle
+   so the card renders expanded like every other enabled section, while the
+   fee-adding choice stays an unchecked, deliberate customer action). */
+.eem-group-optin {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	padding: 10px 14px;
+	margin-bottom: 12px;
+	border: 1px solid #cbd5e1;
+	border-radius: 10px;
+	background: #f6f9fd;
+	cursor: pointer;
+	font-weight: 700;
+	color: #031B4E;
+}
+.eem-group-optin input {
+	width: 18px;
+	height: 18px;
+	accent-color: #1668F2;
+	cursor: pointer;
+}
+.eem-group-optin:hover {
+	background: #eef4ff;
+	border-color: #1668F2;
+}
 .eem-group-riders-list {
 	display: grid;
 	gap: 14px;
