@@ -9048,7 +9048,10 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
    Static positioning, no backdrop, full-width, capped grid viewport that pans. */
 .eem-mb-inline-host { margin-top: 12px; }
 .eem-mb-inline-host:empty { margin-top: 0; }
-.eem-mb-overlay.eem-mb-inline { position: static; inset: auto; background: none; z-index: auto; display: block; padding: 0; overflow: visible; }
+/* Inline editors are always visible — no modal fade-in. opacity:1 here (0,2,0
+   beats the base .eem-mb-overlay opacity:0) guarantees the editor shows even if
+   the deferred `.open` toggle is missed (e.g. the auto-mount rAF race). */
+.eem-mb-overlay.eem-mb-inline { position: static; inset: auto; background: none; z-index: auto; display: block; padding: 0; overflow: visible; opacity: 1; }
 .eem-mb-overlay.eem-mb-inline .eem-mb-card { max-width: none; width: 100%; box-shadow: none; border: 1px solid var(--eem-border, #D9E2F2); }
 .eem-mb-overlay.eem-mb-inline #eem-mb-cancel { display: none; }
 .eem-mb-overlay.eem-mb-inline .eem-mb-gridscroll { max-height: 460px; }
