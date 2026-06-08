@@ -1012,6 +1012,17 @@
 .eem-map-modal-head { display: flex; align-items: center; gap: 12px; padding: 16px 18px; border-bottom: 1px solid #e2e8f0; font-size: 17px; color: #031B4E; }
 .eem-map-close { appearance: none; border: 0; background: #eef2f7; border-radius: 8px; width: 34px; height: 34px; font-size: 18px; cursor: pointer; color: #18212f; }
 .eem-map-close:hover { background: #dde5ee; color: #031B4E; } /* brand-neutral, not the theme's pink */
+/* ── Inline facility-map picker (replaces the modal) ── */
+.eem-map-inline .eem-map-pick { border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; background: #fff; margin-top: 10px; }
+.eem-map-inline-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.eem-map-inline .eem-map-tabs { padding: 0; }
+.eem-map-zoom { display: inline-flex; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; flex: none; }
+.eem-map-zoom-btn { appearance: none; border: 0; border-left: 1px solid #e2e8f0; background: #fff; color: #031B4E; font-weight: 700; font-size: 14px; padding: 7px 12px; cursor: pointer; line-height: 1; }
+.eem-map-zoom-btn:first-child { border-left: 0; }
+.eem-map-zoom-btn:hover { background: #eef4ff; }
+.eem-map-inline .eem-map-legend { padding: 6px 0 10px; border: 0; }
+.eem-map-inline .eem-map-scroll { max-height: 460px; overflow: auto; padding: 14px; background: #fbfcfe; border: 1px solid #e2e8f0; border-radius: 10px; -webkit-overflow-scrolling: touch; }
+.eem-map-inline .eem-map-summary { margin-top: 10px; font-size: 14px; color: #2b3648; font-weight: 600; }
 .eem-map-tabs { display: flex; gap: 4px; padding: 10px 18px 0; flex-wrap: wrap; }
 .eem-map-tab { appearance: none; border: 1px solid #e2e8f0; border-bottom: 0; background: #f6f9fd; color: #5f6f85; font-weight: 700; font-size: 13px; padding: 8px 14px; border-radius: 8px 8px 0 0; cursor: pointer; }
 .eem-map-tab.active { background: #fff; color: #031B4E; box-shadow: inset 0 -2px 0 #1668F2; }

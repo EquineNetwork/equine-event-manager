@@ -1754,44 +1754,31 @@ class EEM_Shortcodes {
 			'prefix'        => (string) $opts['prefix'],
 		);
 		?>
-		<div class="eem-map-instance">
+		<div class="eem-map-instance eem-map-inline">
 		<div class="eem-map-pick" data-eem-map-pick>
-			<button type="button" class="eem-map-open-btn" data-eem-map-open><?php echo esc_html( $opts['open_label'] ); ?></button>
+			<div class="eem-map-inline-bar">
+				<div class="eem-map-tabs" data-eem-map-tabs></div>
+				<div class="eem-map-zoom" role="group" aria-label="<?php esc_attr_e( 'Zoom', 'equine-event-manager' ); ?>">
+					<button type="button" class="eem-map-zoom-btn" data-eem-map-zoom="out" aria-label="<?php esc_attr_e( 'Zoom out', 'equine-event-manager' ); ?>">&minus;</button>
+					<button type="button" class="eem-map-zoom-btn" data-eem-map-zoom="fit"><?php esc_html_e( 'Fit', 'equine-event-manager' ); ?></button>
+					<button type="button" class="eem-map-zoom-btn" data-eem-map-zoom="in" aria-label="<?php esc_attr_e( 'Zoom in', 'equine-event-manager' ); ?>">+</button>
+				</div>
+			</div>
+			<div class="eem-map-legend">
+				<span><i class="eem-map-sw eem-map-sw--avail"></i> <?php esc_html_e( 'Available', 'equine-event-manager' ); ?></span>
+				<span><i class="eem-map-sw eem-map-sw--sel"></i> <?php esc_html_e( 'Selected', 'equine-event-manager' ); ?></span>
+				<span><i class="eem-map-sw eem-map-sw--res"></i> <?php esc_html_e( 'Taken', 'equine-event-manager' ); ?></span>
+				<span><i class="eem-map-sw eem-map-sw--block"></i> <?php esc_html_e( 'Unavailable', 'equine-event-manager' ); ?></span>
+			</div>
+			<div class="eem-map-scroll" data-eem-map-scroll><div class="eem-map-grid" data-eem-map-grid></div></div>
 			<div class="eem-map-summary" data-eem-map-summary></div>
 			<div data-eem-map-picks hidden></div>
 			<script type="application/json" data-eem-map-payload><?php echo wp_json_encode( $payload ); // phpcs:ignore ?></script>
 		</div>
 
-		<div class="eem-map-modal" data-eem-map-modal hidden>
-			<div class="eem-map-modal-card">
-				<div class="eem-map-modal-head">
-					<strong><?php echo esc_html( $opts['open_label'] ); ?></strong>
-					<span style="flex:1"></span>
-					<button type="button" class="eem-map-close" data-eem-map-close aria-label="<?php esc_attr_e( 'Close', 'equine-event-manager' ); ?>">&times;</button>
-				</div>
-				<div class="eem-map-tabs" data-eem-map-tabs></div>
-				<div class="eem-map-legend">
-					<span><i class="eem-map-sw eem-map-sw--avail"></i> <?php esc_html_e( 'Available', 'equine-event-manager' ); ?></span>
-					<span><i class="eem-map-sw eem-map-sw--sel"></i> <?php esc_html_e( 'Selected', 'equine-event-manager' ); ?></span>
-					<span><i class="eem-map-sw eem-map-sw--res"></i> <?php esc_html_e( 'Taken', 'equine-event-manager' ); ?></span>
-					<span><i class="eem-map-sw eem-map-sw--block"></i> <?php esc_html_e( 'Unavailable', 'equine-event-manager' ); ?></span>
-				</div>
-				<div class="eem-map-swipe-hint"><?php esc_html_e( 'Swipe to scroll the full map', 'equine-event-manager' ); ?> &larr;&rarr; &uarr;&darr;</div>
-				<div class="eem-map-scroll"><div class="eem-map-grid" data-eem-map-grid></div></div>
-				<div class="eem-map-foot">
-					<span class="eem-map-foot-count" data-eem-map-foot></span>
-					<span style="flex:1"></span>
-					<button type="button" class="eem-map-btn-ghost" data-eem-map-close><?php esc_html_e( 'Cancel', 'equine-event-manager' ); ?></button>
-					<button type="button" class="eem-map-btn-done" data-eem-map-close><?php esc_html_e( 'Done', 'equine-event-manager' ); ?></button>
-				</div>
-			</div>
-		</div>
-
 		<script>
 		(function(){
-			// Scope to THIS picker's own pick + modal (stall and RV pickers can both
-			// be on one page) — the script, .eem-map-pick and .eem-map-modal are
-			// siblings under one container per picker.
+			// Scope to THIS picker (stall + RV pickers can both be on one page).
 			var script = document.currentScript;
 			var root = script.closest('.eem-map-instance') || script.parentNode;
 			var form = script.closest('.eem-reservation-form') || document.querySelector('.eem-reservation-form'); if (!form) { return; }
@@ -1804,12 +1791,25 @@ class EEM_Shortcodes {
 			var activeBarn = 0;
 			var pre = P.prefix || '';
 
-			var modal   = root.querySelector('[data-eem-map-modal]');
-			var gridEl  = modal.querySelector('[data-eem-map-grid]');
-			var tabsEl  = modal.querySelector('[data-eem-map-tabs]');
-			var footEl  = modal.querySelector('[data-eem-map-foot]');
+			var pickEl  = root.querySelector('[data-eem-map-pick]');
+			var gridEl  = root.querySelector('[data-eem-map-grid]');
+			var tabsEl  = root.querySelector('[data-eem-map-tabs]');
+			var scrollEl= root.querySelector('[data-eem-map-scroll]');
 			var summary = root.querySelector('[data-eem-map-summary]');
 			var picksEl = root.querySelector('[data-eem-map-picks]');
+			var footEl  = null; // inline: count lives in the summary line
+
+			// ── Zoom: drive the chip size CSS var so the grid actually reflows (so the
+			// scroll container can pan); transform-scale wouldn't change scroll size.
+			var BASE = 40, zoom = 1;
+			function applyZoom(){ pickEl.style.setProperty('--eem-map-chip', (BASE * zoom).toFixed(1) + 'px'); }
+			function fitZoom(){
+				var g = P.barns[activeBarn] ? P.barns[activeBarn].grid : [];
+				var cols = g.length ? g[0].length : 1;
+				var avail = (scrollEl.clientWidth || 600) - 4;
+				var chip = Math.max(20, Math.min(48, Math.floor(avail / Math.max(1, cols)) - 4));
+				zoom = chip / BASE; applyZoom();
+			}
 
 			// A cell's identity is its POST unit: the bare label for stalls, or the
 			// zone-qualified "Barn Label" for RV (lots repeat 1..N per zone).
@@ -1863,7 +1863,7 @@ class EEM_Shortcodes {
 					t.type='button';
 					t.className = 'eem-map-tab' + (i===activeBarn?' active':'');
 					t.textContent = b.name;
-					t.onclick = function(){ activeBarn=i; renderTabs(); renderGrid(); };
+					t.onclick = function(){ activeBarn=i; renderTabs(); renderGrid(); fitZoom(); };
 					tabsEl.appendChild(t);
 				});
 			}
@@ -1887,18 +1887,26 @@ class EEM_Shortcodes {
 				var u = s.getAttribute('data-unit');
 				if (selected[u]){ delete selected[u]; s.classList.remove('is-sel'); }
 				else {
-					if (P.maxPer > 0 && selCount() >= P.maxPer){ footEl.innerHTML = '<span class="eem-map-warn">' + <?php echo wp_json_encode( esc_html__( 'Limit reached', 'equine-event-manager' ) ); ?> + '</span>'; return; }
+					if (P.maxPer > 0 && selCount() >= P.maxPer){ if (summary){ summary.innerHTML = '<span class="eem-map-warn">' + <?php echo wp_json_encode( esc_html__( 'Limit reached', 'equine-event-manager' ) ); ?> + '</span>'; } return; }
 					selected[u]=1; s.classList.add('is-sel');
 				}
 				syncForm();
 			});
 
-			function openModal(){ modal.hidden=false; document.body.style.overflow='hidden'; renderTabs(); renderGrid(); syncForm(); }
-			function closeModal(){ modal.hidden=true; document.body.style.overflow=''; }
-			root.querySelectorAll('[data-eem-map-open]').forEach(function(b){ b.addEventListener('click', openModal); });
-			modal.querySelectorAll('[data-eem-map-close]').forEach(function(b){ b.addEventListener('click', closeModal); });
+			// Zoom controls.
+			root.querySelectorAll('[data-eem-map-zoom]').forEach(function(b){
+				b.addEventListener('click', function(){
+					var k = b.getAttribute('data-eem-map-zoom');
+					if (k === 'in'){ zoom = Math.min(1.8, zoom + 0.2); applyZoom(); }
+					else if (k === 'out'){ zoom = Math.max(0.5, zoom - 0.2); applyZoom(); }
+					else { fitZoom(); }
+				});
+			});
 
-			syncForm();
+			// Inline init — the map is always visible (no modal).
+			renderTabs(); renderGrid(); applyZoom(); fitZoom(); syncForm();
+			// Re-fit if the viewport width changes (responsive).
+			if (window.ResizeObserver){ try { new ResizeObserver(function(){ /* keep current zoom; user controls it */ }).observe(scrollEl); } catch(e){} }
 		})();
 		</script>
 		</div><!-- /.eem-map-instance -->
