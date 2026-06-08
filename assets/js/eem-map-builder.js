@@ -565,6 +565,29 @@
 		requestAnimationFrame(function () { o.classList.add('open'); });
 		o.querySelector('#eem-mb-preview-close').addEventListener('click', closePreview);
 		o.addEventListener('mousedown', function (e) { if (e.target === o) { closePreview(); } });
+		// Click-and-drag to pan the preview chart; a drag past 4px suppresses the
+		// stall-pick click so panning never toggles a stall.
+		var psc = o.querySelector('.eem-mb-preview-scroll');
+		if (psc) {
+			var pp = false, pm = false, px = 0, py = 0, pl = 0, pt = 0;
+			psc.addEventListener('mousedown', function (e) {
+				if (e.button !== 0) { return; }
+				pp = true; pm = false; preview.didPan = false;
+				px = e.clientX; py = e.clientY; pl = psc.scrollLeft; pt = psc.scrollTop;
+				psc.classList.add('is-panning');
+			});
+			document.addEventListener('mousemove', function (e) {
+				if (!pp) { return; }
+				var dx = e.clientX - px, dy = e.clientY - py;
+				if (!pm && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) { pm = true; }
+				if (pm) { psc.scrollLeft = pl - dx; psc.scrollTop = pt - dy; }
+			});
+			document.addEventListener('mouseup', function () {
+				if (!pp) { return; }
+				pp = false; preview.didPan = pm; psc.classList.remove('is-panning');
+				if (pm) { setTimeout(function () { preview.didPan = false; }, 0); }
+			});
+		}
 		renderPreview();
 	}
 	function closePreview() { if (preview.overlay) { preview.overlay.parentNode.removeChild(preview.overlay); preview.overlay = null; } }
@@ -600,7 +623,7 @@
 					var key = z.name + ' ' + cell.label;
 					d.className = 'eem-mb-cust-cell stall' + (preview.picked[key] ? ' picked' : '');
 					d.textContent = cell.label;
-					d.onclick = (function (k) { return function () { if (preview.picked[k]) { delete preview.picked[k]; } else { preview.picked[k] = 1; } renderPreview(); }; })(key);
+					d.onclick = (function (k) { return function () { if (preview.didPan) { return; } if (preview.picked[k]) { delete preview.picked[k]; } else { preview.picked[k] = 1; } renderPreview(); }; })(key);
 				} else {
 					d.className = 'eem-mb-cust-cell gap';
 				}
