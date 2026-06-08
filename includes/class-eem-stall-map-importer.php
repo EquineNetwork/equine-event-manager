@@ -186,28 +186,36 @@ class EEM_Stall_Map_Importer {
 	 * 'available'. Keeps this method pure (no DB) and unit-testable; the admin
 	 * renderer builds `$status_map` from the assignment data.
 	 *
-	 * @param array                 $snapshot   Snapshot structure.
-	 * @param array<string,string>  $status_map label => 'reserved'|'tack'|'blocked'|'available'.
+	 * Stall labels are globally unique, so `$status_map` is keyed by bare label.
+	 * RV lots repeat per zone, so pass `$zone_qualified = true` to key the lookup
+	 * by "{barn name} {label}" (e.g. "Red Lot 1") — matching the zone-qualified
+	 * units the customer/admin RV surfaces store.
+	 *
+	 * @param array                 $snapshot       Snapshot structure.
+	 * @param array<string,string>  $status_map     unit => 'reserved'|'tack'|'blocked'|'available'.
+	 * @param bool                  $zone_qualified Key the lookup by "{barn} {label}" (RV).
 	 * @return array<string,array{total:int,available:int,reserved:int,tack:int,blocked:int}>
 	 */
-	public static function barn_stats( array $snapshot, array $status_map = array() ): array {
+	public static function barn_stats( array $snapshot, array $status_map = array(), bool $zone_qualified = false ): array {
 		$stats = array();
 		foreach ( ( $snapshot['barns'] ?? array() ) as $barn ) {
-			$row = array( 'total' => 0, 'available' => 0, 'reserved' => 0, 'tack' => 0, 'blocked' => 0 );
+			$bname = (string) ( $barn['name'] ?? '' );
+			$row   = array( 'total' => 0, 'available' => 0, 'reserved' => 0, 'tack' => 0, 'blocked' => 0 );
 			foreach ( ( $barn['grid'] ?? array() ) as $grow ) {
 				foreach ( $grow as $cell ) {
 					if ( 'stall' !== ( $cell['type'] ?? '' ) ) {
 						continue;
 					}
 					$row['total']++;
-					$status = $status_map[ (string) $cell['label'] ] ?? 'available';
+					$key    = $zone_qualified ? ( $bname . ' ' . (string) $cell['label'] ) : (string) $cell['label'];
+					$status = $status_map[ $key ] ?? 'available';
 					if ( ! isset( $row[ $status ] ) ) {
 						$status = 'available';
 					}
 					$row[ $status ]++;
 				}
 			}
-			$stats[ (string) ( $barn['name'] ?? '' ) ] = $row;
+			$stats[ $bname ] = $row;
 		}
 		return $stats;
 	}

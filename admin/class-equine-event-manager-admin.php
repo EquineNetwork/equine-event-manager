@@ -2039,6 +2039,27 @@ class EEM_Admin {
 		$stall_map_overlay = $has_stall_map
 			? $this->build_stall_map_overlay_state( $order_rows, $this->get_raw_blocked_stall_labels( $reservation_id ) )
 			: array();
+
+		// v4 RV spatial map (separate _en_rv_map connector). Every barn is an RV
+		// zone; lots are zone-qualified ("Red Lot 1"). Shown when inv != stalls.
+		$rv_map_snapshot = class_exists( 'EEM_Stall_Map_Importer' )
+			? EEM_Stall_Map_Importer::get_for_reservation( $reservation_id, EEM_Stall_Map_Importer::RV_META_KEY )
+			: array();
+		$has_rv_map = ! empty( $rv_map_snapshot['barns'] );
+		$rv_blocked = array();
+		if ( $has_rv_map ) {
+			$rv_chart_blocked = get_post_meta( $reservation_id, '_en_stall_chart_blocked_rv_lots', true );
+			$rv_blocked       = array_values( array_filter( array_map( 'strval', is_array( $rv_chart_blocked ) ? $rv_chart_blocked : array() ) ) );
+			foreach ( (array) ( isset( $config['blocked_rv_lots'] ) ? $config['blocked_rv_lots'] : array() ) as $brl ) {
+				$brl = (string) $brl;
+				if ( '' !== $brl && ! in_array( $brl, $rv_blocked, true ) ) {
+					$rv_blocked[] = $brl;
+				}
+			}
+		}
+		$rv_map_overlay = $has_rv_map
+			? $this->build_stall_map_overlay_state( $order_rows, $rv_blocked, 'rv_units', false )
+			: array();
 		?>
 				<!-- Stats Bar -->
 				<div class="eem-stall-chart-stats-bar">
@@ -2159,7 +2180,11 @@ class EEM_Admin {
 							<?php
 							// v4 Stall Mapping: spatial facility map (snapshot-connected reservations).
 							if ( $has_stall_map && 'rv' !== $inv ) {
-								$this->render_stall_map_location_view( $reservation_id, $stall_map_snapshot, $stall_map_overlay );
+								$this->render_stall_map_location_view( $reservation_id, $stall_map_snapshot, $stall_map_overlay, 'stall' );
+							}
+							// v4 RV spatial map (zone-qualified). Shown for all/rv inventory.
+							if ( $has_rv_map && 'stalls' !== $inv ) {
+								$this->render_stall_map_location_view( $reservation_id, $rv_map_snapshot, $rv_map_overlay, 'rv' );
 							}
 							?>
 
@@ -2413,7 +2438,7 @@ class EEM_Admin {
 	 * @param array $blocked    Blocked stall labels (config['blocked_stall_units']).
 	 * @return array{state:array<string,array>,groups:array<string,string>,customers:array<int,array>}
 	 */
-	private function build_stall_map_overlay_state( array $order_rows, array $blocked ): array {
+	private function build_stall_map_overlay_state( array $order_rows, array $blocked, string $units_key = 'stall_units', bool $with_tack = true ): array {
 		$state     = array();
 		$customers = array();
 		$group_set = array();
@@ -2423,7 +2448,7 @@ class EEM_Admin {
 			$group = trim( (string) ( isset( $row['group_name'] ) ? $row['group_name'] : '' ) );
 			$okey  = (string) ( isset( $row['order_key'] ) ? $row['order_key'] : '' );
 			$onum  = (string) ( isset( $row['order_number'] ) ? $row['order_number'] : '' );
-			$tack  = array_map( 'strval', (array) ( isset( $row['tack_units'] ) ? $row['tack_units'] : array() ) );
+			$tack  = $with_tack ? array_map( 'strval', (array) ( isset( $row['tack_units'] ) ? $row['tack_units'] : array() ) ) : array();
 
 			if ( '' !== $group ) {
 				$group_set[ $group ] = true;
@@ -2434,13 +2459,13 @@ class EEM_Admin {
 				'n' => '' !== $cust ? $cust : $onum,
 			);
 
-			foreach ( (array) ( isset( $row['stall_units'] ) ? $row['stall_units'] : array() ) as $label ) {
+			foreach ( (array) ( isset( $row[ $units_key ] ) ? $row[ $units_key ] : array() ) as $label ) {
 				$label = (string) $label;
 				if ( '' === $label ) {
 					continue;
 				}
 				$state[ $label ] = array(
-					's' => in_array( $label, $tack, true ) ? 'tack' : 'reserved',
+					's' => ( $with_tack && in_array( $label, $tack, true ) ) ? 'tack' : 'reserved',
 					'c' => $cust,
 					'g' => $group,
 					'o' => $okey,
@@ -2508,18 +2533,20 @@ class EEM_Admin {
 	 * @param array $overlay        build_stall_map_overlay_state() result.
 	 * @return void
 	 */
-	private function render_stall_map_location_view( int $reservation_id, array $snapshot, array $overlay ): void {
+	private function render_stall_map_location_view( int $reservation_id, array $snapshot, array $overlay, string $kind = 'stall' ): void {
 		$barns = isset( $snapshot['barns'] ) ? (array) $snapshot['barns'] : array();
 		if ( empty( $barns ) ) {
 			return;
 		}
+		$is_rv = 'rv' === $kind;            // RV lots are zone-qualified ("Red Lot 1").
+		$noun  = $is_rv ? __( 'lot', 'equine-event-manager' ) : __( 'stall', 'equine-event-manager' );
 
 		$status_map = array();
 		foreach ( $overlay['state'] as $label => $s ) {
 			$status_map[ $label ] = isset( $s['s'] ) ? $s['s'] : 'available';
 		}
 		$barn_stats = class_exists( 'EEM_Stall_Map_Importer' )
-			? EEM_Stall_Map_Importer::barn_stats( $snapshot, $status_map )
+			? EEM_Stall_Map_Importer::barn_stats( $snapshot, $status_map, $is_rv )
 			: array();
 
 		// Compact barn payload: grid cells as {t,l} (type letter + label).
@@ -2544,13 +2571,15 @@ class EEM_Admin {
 		}
 
 		$payload = array(
-			'barns'     => $payload_barns,
-			'state'     => (object) $overlay['state'],
-			'groups'    => (object) $overlay['groups'],
-			'customers' => $overlay['customers'],
+			'barns'         => $payload_barns,
+			'state'         => (object) $overlay['state'],
+			'groups'        => (object) $overlay['groups'],
+			'customers'     => $overlay['customers'],
+			'zoneQualified' => $is_rv,
+			'kind'          => $kind,
 		);
 		?>
-		<div class="eem-smap" data-eem-smap>
+		<div class="eem-smap" data-eem-smap data-eem-smap-kind="<?php echo esc_attr( $kind ); ?>">
 			<?php if ( ! empty( $barn_stats ) ) : ?>
 				<div class="eem-smap-barn-stats" data-eem-smap-barn-stats>
 					<?php foreach ( $barn_stats as $bname => $bs ) : ?>
@@ -2573,9 +2602,11 @@ class EEM_Admin {
 			<div class="eem-smap-legend">
 				<span><i class="eem-smap-sw eem-smap-sw--avail"></i> <?php esc_html_e( 'Available', 'equine-event-manager' ); ?></span>
 				<span><i class="eem-smap-sw eem-smap-sw--resv"></i> <?php esc_html_e( 'Assigned', 'equine-event-manager' ); ?></span>
-				<span><i class="eem-smap-sw eem-smap-sw--tack"></i> <?php esc_html_e( 'Tack', 'equine-event-manager' ); ?></span>
+				<?php if ( ! $is_rv ) : ?>
+					<span><i class="eem-smap-sw eem-smap-sw--tack"></i> <?php esc_html_e( 'Tack', 'equine-event-manager' ); ?></span>
+				<?php endif; ?>
 				<span><i class="eem-smap-sw eem-smap-sw--block"></i> <?php esc_html_e( 'Blocked', 'equine-event-manager' ); ?></span>
-				<span class="eem-smap-legend-hint"><?php esc_html_e( 'Click any stall to assign, mark tack, or block.', 'equine-event-manager' ); ?></span>
+				<span class="eem-smap-legend-hint"><?php echo esc_html( $is_rv ? __( 'Click any lot to assign or block.', 'equine-event-manager' ) : __( 'Click any stall to assign, mark tack, or block.', 'equine-event-manager' ) ); ?></span>
 			</div>
 
 			<div class="eem-smap-scroll"><div class="eem-smap-grid" data-eem-smap-grid></div></div>
@@ -2629,39 +2660,67 @@ class EEM_Admin {
 			wp_send_json_error( array( 'message' => __( 'Missing required parameters.', 'equine-event-manager' ) ), 400 );
 		}
 
+		// v4: which map — stall or the (zone-qualified) RV map. Picks the note
+		// component + assignment label + chart-blocked meta key. RV has no tack.
+		$kind         = ( isset( $_POST['kind'] ) && 'rv' === sanitize_key( wp_unslash( $_POST['kind'] ) ) ) ? 'rv' : 'stall';
+		$is_rv        = 'rv' === $kind;
+		$note_comp    = $is_rv ? 'rv' : 'stall';
+		$note_label   = $is_rv ? 'Assigned RV Lots' : 'Assigned Stall Units';
+		$blocked_meta = $is_rv ? '_en_stall_chart_blocked_rv_lots' : '_en_stall_chart_blocked_stall_units';
+		$unit_noun    = $is_rv ? __( 'lot', 'equine-event-manager' ) : __( 'stall', 'equine-event-manager' );
+
+		if ( $is_rv && in_array( $op, array( 'tack', 'untack' ), true ) ) {
+			wp_send_json_error( array( 'message' => __( 'Tack does not apply to RV lots.', 'equine-event-manager' ) ), 400 );
+		}
+
+		// Helper: build the (stall_csv, rv_csv) pair for an order, modifying only
+		// the active component's list and preserving the other.
+		$build_pair = function ( array $order, array $active_units ) use ( $is_rv ) {
+			if ( $is_rv ) {
+				$stall_csv = implode( ', ', array_filter( array_map( 'strval', (array) $this->parse_assigned_units_string( $this->get_order_component_note_value( $order, 'stall', 'Assigned Stall Units' ) ) ) ) );
+				$rv_csv    = implode( ', ', $active_units );
+			} else {
+				$stall_csv = implode( ', ', $active_units );
+				$rv_csv    = implode( ', ', array_filter( array_map( 'strval', (array) $this->parse_assigned_units_string( $this->get_order_component_note_value( $order, 'rv', 'Assigned RV Lots' ) ) ) ) );
+			}
+			return array( $stall_csv, $rv_csv );
+		};
+
 		$message = '';
 
 		if ( 'block' === $op || 'unblock' === $op ) {
-			$blocked = get_post_meta( $reservation_id, '_en_stall_chart_blocked_stall_units', true );
+			$blocked = get_post_meta( $reservation_id, $blocked_meta, true );
 			$blocked = array_values( array_filter( array_map( 'strval', is_array( $blocked ) ? $blocked : array() ) ) );
 
 			if ( 'block' === $op ) {
-				// Refuse to block a stall that's currently assigned.
+				// Refuse to block a unit that's currently assigned.
 				$orders = $this->get_reservation_orders( $reservation_id );
 				foreach ( $orders as $o ) {
 					$units = array_map( 'strval', (array) $this->parse_assigned_units_string(
-						$this->get_order_component_note_value( $o, 'stall', 'Assigned Stall Units' )
+						$this->get_order_component_note_value( $o, $note_comp, $note_label )
 					) );
 					if ( in_array( $stall, $units, true ) ) {
-						wp_send_json_error( array( 'message' => __( 'Unassign this stall before blocking it.', 'equine-event-manager' ) ), 409 );
+						wp_send_json_error( array( 'message' => sprintf( /* translators: %s: stall/lot */ __( 'Unassign this %s before blocking it.', 'equine-event-manager' ), $unit_noun ) ), 409 );
 					}
 				}
 				if ( ! in_array( $stall, $blocked, true ) ) {
 					$blocked[] = $stall;
 				}
-				$message = __( 'Stall blocked.', 'equine-event-manager' );
+				$message = $is_rv ? __( 'Lot blocked.', 'equine-event-manager' ) : __( 'Stall blocked.', 'equine-event-manager' );
 			} else {
 				$blocked = array_values( array_diff( $blocked, array( $stall ) ) );
-				// Also clear the editor's Blocked Stall Numbers field so a stall
-				// blocked there can be unblocked from the map.
-				$editor_blocked = get_post_meta( $reservation_id, '_en_blocked_stalls', true );
-				if ( is_array( $editor_blocked ) ) {
-					$editor_blocked = array_values( array_diff( array_map( 'strval', $editor_blocked ), array( $stall ) ) );
-					update_post_meta( $reservation_id, '_en_blocked_stalls', $editor_blocked );
+				// Stalls: also clear the editor's Blocked Stall Numbers field so a
+				// stall blocked there can be unblocked from the map.
+				if ( ! $is_rv ) {
+					$editor_blocked = get_post_meta( $reservation_id, '_en_blocked_stalls', true );
+					if ( is_array( $editor_blocked ) ) {
+						$editor_blocked = array_values( array_diff( array_map( 'strval', $editor_blocked ), array( $stall ) ) );
+						update_post_meta( $reservation_id, '_en_blocked_stalls', $editor_blocked );
+					}
 				}
-				$message = __( 'Stall unblocked.', 'equine-event-manager' );
+				$message = $is_rv ? __( 'Lot unblocked.', 'equine-event-manager' ) : __( 'Stall unblocked.', 'equine-event-manager' );
 			}
-			update_post_meta( $reservation_id, '_en_stall_chart_blocked_stall_units', $blocked );
+			update_post_meta( $reservation_id, $blocked_meta, $blocked );
 		} elseif ( 'assign' === $op ) {
 			if ( '' === $order_key ) {
 				wp_send_json_error( array( 'message' => __( 'Choose a customer to assign.', 'equine-event-manager' ) ), 400 );
@@ -2670,43 +2729,52 @@ class EEM_Admin {
 			if ( ! $order ) {
 				wp_send_json_error( array( 'message' => __( 'Order not found.', 'equine-event-manager' ) ), 404 );
 			}
-			// Conflict: stall already assigned to another order on this reservation.
+			// The assignment note can only live on a component of the matching kind.
+			// Assigning an RV lot to a stall-only order (no RV component) would
+			// silently no-op, so reject it with a clear message.
+			$has_component = false;
+			foreach ( (array) ( isset( $order['components'] ) ? $order['components'] : array() ) as $comp ) {
+				if ( ( isset( $comp['table'] ) ? $comp['table'] : '' ) === $note_comp ) {
+					$has_component = true;
+					break;
+				}
+			}
+			if ( ! $has_component ) {
+				wp_send_json_error( array( 'message' => $is_rv
+					? __( 'That order has no RV booking — assign a lot only to an order that includes RV.', 'equine-event-manager' )
+					: __( 'That order has no stall booking — assign a stall only to an order that includes stalls.', 'equine-event-manager' ) ), 409 );
+			}
+			// Conflict: unit already assigned to another order on this reservation.
 			foreach ( $this->get_reservation_orders( $reservation_id ) as $o ) {
 				if ( (string) $o['order_key'] === (string) $order_key ) {
 					continue;
 				}
 				$units = array_map( 'strval', (array) $this->parse_assigned_units_string(
-					$this->get_order_component_note_value( $o, 'stall', 'Assigned Stall Units' )
+					$this->get_order_component_note_value( $o, $note_comp, $note_label )
 				) );
 				if ( in_array( $stall, $units, true ) ) {
-					wp_send_json_error( array( 'message' => __( 'That stall is already assigned to another customer.', 'equine-event-manager' ) ), 409 );
+					wp_send_json_error( array( 'message' => sprintf( /* translators: %s: stall/lot */ __( 'That %s is already assigned to another customer.', 'equine-event-manager' ), $unit_noun ) ), 409 );
 				}
 			}
 			$current = array_map( 'strval', (array) $this->parse_assigned_units_string(
-				$this->get_order_component_note_value( $order, 'stall', 'Assigned Stall Units' )
+				$this->get_order_component_note_value( $order, $note_comp, $note_label )
 			) );
 			if ( ! in_array( $stall, $current, true ) ) {
 				$current[] = $stall;
 			}
-			$existing_rv = (array) $this->parse_assigned_units_string(
-				$this->get_order_component_note_value( $order, 'rv', 'Assigned RV Lots' )
-			);
-			$ok = $this->orders_repository->update_order_unit_assignments(
-				$order_key,
-				implode( ', ', $current ),
-				implode( ', ', array_filter( array_map( 'strval', $existing_rv ) ) )
-			);
+			list( $stall_csv, $rv_csv ) = $build_pair( $order, $current );
+			$ok = $this->orders_repository->update_order_unit_assignments( $order_key, $stall_csv, $rv_csv );
 			if ( ! $ok ) {
-				wp_send_json_error( array( 'message' => __( 'Could not assign the stall.', 'equine-event-manager' ) ), 500 );
+				wp_send_json_error( array( 'message' => sprintf( /* translators: %s: stall/lot */ __( 'Could not assign the %s.', 'equine-event-manager' ), $unit_noun ) ), 500 );
 			}
-			$message = __( 'Stall assigned.', 'equine-event-manager' );
+			$message = $is_rv ? __( 'Lot assigned.', 'equine-event-manager' ) : __( 'Stall assigned.', 'equine-event-manager' );
 		} elseif ( 'unassign' === $op || 'tack' === $op || 'untack' === $op ) {
 			// Resolve the owning order: prefer the posted key, else find it.
 			$order = '' !== $order_key ? $this->orders_repository->get_order( $order_key ) : null;
 			if ( ! $order ) {
 				foreach ( $this->get_reservation_orders( $reservation_id ) as $o ) {
 					$units = array_map( 'strval', (array) $this->parse_assigned_units_string(
-						$this->get_order_component_note_value( $o, 'stall', 'Assigned Stall Units' )
+						$this->get_order_component_note_value( $o, $note_comp, $note_label )
 					) );
 					if ( in_array( $stall, $units, true ) ) {
 						$order     = $o;
@@ -2716,34 +2784,30 @@ class EEM_Admin {
 				}
 			}
 			if ( ! $order ) {
-				wp_send_json_error( array( 'message' => __( 'No order owns that stall.', 'equine-event-manager' ) ), 404 );
+				wp_send_json_error( array( 'message' => sprintf( /* translators: %s: stall/lot */ __( 'No order owns that %s.', 'equine-event-manager' ), $unit_noun ) ), 404 );
 			}
 
 			if ( 'unassign' === $op ) {
 				$current = array_map( 'strval', (array) $this->parse_assigned_units_string(
-					$this->get_order_component_note_value( $order, 'stall', 'Assigned Stall Units' )
+					$this->get_order_component_note_value( $order, $note_comp, $note_label )
 				) );
 				$current = array_values( array_diff( $current, array( $stall ) ) );
-				$existing_rv = (array) $this->parse_assigned_units_string(
-					$this->get_order_component_note_value( $order, 'rv', 'Assigned RV Lots' )
-				);
-				$ok = $this->orders_repository->update_order_unit_assignments(
-					$order_key,
-					implode( ', ', $current ),
-					implode( ', ', array_filter( array_map( 'strval', $existing_rv ) ) )
-				);
-				// Removing an assignment also clears any tack flag on that stall.
-				$tack = array_map( 'strval', (array) $this->parse_assigned_units_string(
-					$this->get_order_component_note_value( $order, 'stall', 'Tack Stalls' )
-				) );
-				if ( in_array( $stall, $tack, true ) ) {
-					$tack = array_values( array_diff( $tack, array( $stall ) ) );
-					$this->orders_repository->update_order_tack_stalls( $order_key, implode( ', ', $tack ) );
+				list( $stall_csv, $rv_csv ) = $build_pair( $order, $current );
+				$ok = $this->orders_repository->update_order_unit_assignments( $order_key, $stall_csv, $rv_csv );
+				// Stalls: removing an assignment also clears any tack flag.
+				if ( ! $is_rv ) {
+					$tack = array_map( 'strval', (array) $this->parse_assigned_units_string(
+						$this->get_order_component_note_value( $order, 'stall', 'Tack Stalls' )
+					) );
+					if ( in_array( $stall, $tack, true ) ) {
+						$tack = array_values( array_diff( $tack, array( $stall ) ) );
+						$this->orders_repository->update_order_tack_stalls( $order_key, implode( ', ', $tack ) );
+					}
 				}
 				if ( ! $ok ) {
-					wp_send_json_error( array( 'message' => __( 'Could not unassign the stall.', 'equine-event-manager' ) ), 500 );
+					wp_send_json_error( array( 'message' => sprintf( /* translators: %s: stall/lot */ __( 'Could not unassign the %s.', 'equine-event-manager' ), $unit_noun ) ), 500 );
 				}
-				$message = __( 'Stall unassigned.', 'equine-event-manager' );
+				$message = $is_rv ? __( 'Lot unassigned.', 'equine-event-manager' ) : __( 'Stall unassigned.', 'equine-event-manager' );
 			} else {
 				$tack = array_map( 'strval', (array) $this->parse_assigned_units_string(
 					$this->get_order_component_note_value( $order, 'stall', 'Tack Stalls' )

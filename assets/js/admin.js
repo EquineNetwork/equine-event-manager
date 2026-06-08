@@ -4724,7 +4724,10 @@
 	}
 
 	function eemSmapRenderGrid(container, payload, barnIdx) {
-		var grid = (payload.barns[barnIdx] && payload.barns[barnIdx].grid) || [];
+		var barn = payload.barns[barnIdx] || {};
+		var grid = barn.grid || [];
+		var zq = !!payload.zoneQualified;     // RV lots key by "{zone} {label}" (e.g. "Red Lot 1").
+		var barnName = barn.name || '';
 		var host = container.querySelector('[data-eem-smap-grid]');
 		if (!host) return;
 		var rows = grid.length, cols = rows ? grid[0].length : 0;
@@ -4739,12 +4742,13 @@
 				if (!cell || cell.t === 'g') { used[r][c] = true; continue; }
 				if (cell.t === 's') {
 					used[r][c] = true;
-					var st = payload.state[cell.l] || { s: 'available' };
+					var unit = zq ? (barnName + ' ' + cell.l) : cell.l;
+					var st = payload.state[unit] || { s: 'available' };
 					var status = st.s || 'available';
 					var el = document.createElement('div');
 					el.className = 'eem-smap-cell eem-smap-stall' + (status === 'available' ? '' : ' is-' + status);
-					el.textContent = cell.l;
-					el.setAttribute('data-eem-smap-stall', cell.l);
+					el.textContent = cell.l;             // display the bare label
+					el.setAttribute('data-eem-smap-stall', unit);  // store the zone-qualified unit key
 					el.style.gridColumn = (c + 1);
 					el.style.gridRow = (r + 1);
 					if (st.gc) el.style.borderLeft = '4px solid ' + st.gc;
@@ -4793,6 +4797,7 @@
 		body.set('reservation_id', String(cfg.reservationId || ''));
 		body.set('op', op);
 		body.set('stall', stall);
+		body.set('kind', (container && container.getAttribute && container.getAttribute('data-eem-smap-kind')) || 'stall');
 		if (orderKey) body.set('order_key', orderKey);
 		body.set('inv', window._eemScInv || 'all');
 		body.set('tab', window._eemScTab || 'location');
@@ -4826,9 +4831,10 @@
 		var pop = container.parentNode && container.parentNode.querySelector('[data-eem-smap-pop]');
 		if (!pop) return;
 		var label = cellEl.getAttribute('data-eem-smap-stall');
+		var zq = !!payload.zoneQualified;
 		var st = payload.state[label] || { s: 'available' };
 		var status = st.s || 'available';
-		pop.querySelector('[data-eem-smap-pop-num]').textContent = 'Stall ' + label;
+		pop.querySelector('[data-eem-smap-pop-num]').textContent = zq ? label : ('Stall ' + label);
 		pop.querySelector('[data-eem-smap-pop-st]').textContent =
 			status === 'reserved' ? ('Assigned — ' + (st.c || '') + (st.g ? ' · ' + st.g : '')) :
 			status === 'tack' ? ('Tack stall — ' + (st.c || '') + (st.g ? ' · ' + st.g : '')) :
@@ -4869,15 +4875,15 @@
 			bodyEl.appendChild(list);
 			renderList('');
 			setTimeout(function () { search.focus(); }, 0);
-			row('Block stall', 'danger', function () { eemSmapAction(container, 'block', label, ''); });
+			row(zq ? 'Block lot' : 'Block stall', 'danger', function () { eemSmapAction(container, 'block', label, ''); });
 		} else if (status === 'reserved') {
-			row('Mark as Tack stall', '', function () { eemSmapAction(container, 'tack', label, st.o || ''); });
+			if (!zq) { row('Mark as Tack stall', '', function () { eemSmapAction(container, 'tack', label, st.o || ''); }); }
 			row('Unassign', 'danger', function () { eemSmapAction(container, 'unassign', label, st.o || ''); });
 		} else if (status === 'tack') {
 			row('Unmark Tack (keep assigned)', '', function () { eemSmapAction(container, 'untack', label, st.o || ''); });
 			row('Unassign', 'danger', function () { eemSmapAction(container, 'unassign', label, st.o || ''); });
 		} else if (status === 'blocked') {
-			row('Unblock stall', '', function () { eemSmapAction(container, 'unblock', label, ''); });
+			row(zq ? 'Unblock lot' : 'Unblock stall', '', function () { eemSmapAction(container, 'unblock', label, ''); });
 		}
 		var rect = cellEl.getBoundingClientRect();
 		pop.style.left = Math.min(rect.right + 8, window.innerWidth - 256) + 'px';
