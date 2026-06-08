@@ -1760,7 +1760,7 @@ class EEM_Shortcodes {
 				<div class="eem-map-tabs" data-eem-map-tabs></div>
 				<div class="eem-map-zoom" role="group" aria-label="<?php esc_attr_e( 'Zoom', 'equine-event-manager' ); ?>">
 					<button type="button" class="eem-map-zoom-btn" data-eem-map-zoom="out" aria-label="<?php esc_attr_e( 'Zoom out', 'equine-event-manager' ); ?>">&minus;</button>
-					<button type="button" class="eem-map-zoom-btn" data-eem-map-zoom="fit"><?php esc_html_e( 'Fit', 'equine-event-manager' ); ?></button>
+					<button type="button" class="eem-map-zoom-btn" data-eem-map-zoom="fit"><?php esc_html_e( 'Zoom', 'equine-event-manager' ); ?></button>
 					<button type="button" class="eem-map-zoom-btn" data-eem-map-zoom="in" aria-label="<?php esc_attr_e( 'Zoom in', 'equine-event-manager' ); ?>">+</button>
 				</div>
 			</div>

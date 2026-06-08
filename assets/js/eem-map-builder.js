@@ -163,6 +163,24 @@
 	// ---- fill series ----
 	function parseStart(s) { var m = String(s).match(/^(.*?)(\d+)$/); return m ? { prefix: m[1], num: parseInt(m[2], 10), pad: m[2].length } : { prefix: s, num: null, pad: 0 }; }
 	function nextLabel(p, i, step) { if (p.num === null) { return p.prefix + (i ? i + 1 : ''); } var s = String(p.num + i * step); while (s.length < p.pad) { s = '0' + s; } return p.prefix + s; }
+	// Scan every placed stall/lot across all zones and return the label that should
+	// follow the highest existing numeric one (same prefix + zero-padding). Lets a
+	// re-opened builder continue numbering (…60 → start at 61) instead of resetting
+	// to 1. Falls back to '1' when nothing numeric is placed yet.
+	function nextStartLabel() {
+		var best = null, bestVal = -Infinity;
+		B.zones.forEach(function (z) {
+			(z.grid || []).forEach(function (row) {
+				(row || []).forEach(function (c) {
+					if (c && c.type === 'stall') {
+						var p = parseStart(c.label);
+						if (p.num !== null && p.num > bestVal) { bestVal = p.num; best = p; }
+					}
+				});
+			});
+		});
+		return best ? nextLabel(best, 1, 1) : '1';
+	}
 	function applyFill() {
 		if (!B.sel) { toast('Drag a block of cells first'); return; }
 		var z = Z(), s = B.sel;
@@ -329,7 +347,7 @@
 						'<div class="eem-mb-gridbar">' +
 							'<span class="eem-mb-step">Rows <button type="button" data-resize="row" data-d="-1">−</button><span id="eem-mb-rowval">0</span><button type="button" data-resize="row" data-d="1">+</button></span>' +
 							'<span class="eem-mb-step">Cols <button type="button" data-resize="col" data-d="-1">−</button><span id="eem-mb-colval">0</span><button type="button" data-resize="col" data-d="1">+</button></span>' +
-							'<span class="eem-mb-zoom"><button type="button" data-zoom="out" title="Zoom out">−</button><button type="button" data-zoom="fit" title="Fit">Fit</button><button type="button" data-zoom="in" title="Zoom in">+</button></span>' +
+							'<span class="eem-mb-zoom"><button type="button" data-zoom="out" title="Zoom out">−</button><button type="button" data-zoom="fit" title="Fit to width">Zoom</button><button type="button" data-zoom="in" title="Zoom in">+</button></span>' +
 							'<span class="eem-mb-controls" id="eem-mb-controls"></span>' +
 						'</div>' +
 						'<div class="eem-mb-gridscroll"><div class="eem-mb-grid" id="eem-mb-grid"></div></div>' +
@@ -425,7 +443,7 @@
 				return { name: b.name || (cap(zoneNoun(false))), grid: grid };
 			});
 		}
-		B.active = 0; B.sel = null; B.tool = 'fill'; B.history = []; B.future = []; B.dirty = false; B.zoom = 1; B.fill = { start: '1', step: 1, dir: 'lr' }; B.lm = { name: 'Wash Rack' };
+		B.active = 0; B.sel = null; B.tool = 'fill'; B.history = []; B.future = []; B.dirty = false; B.zoom = 1; B.fill = { start: nextStartLabel(), step: 1, dir: 'lr' }; B.lm = { name: 'Wash Rack' };
 	}
 
 	function open(target) {

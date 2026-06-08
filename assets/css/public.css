@@ -1019,13 +1019,20 @@
 .eem-map-zoom { display: inline-flex; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; flex: none; }
 .eem-map-zoom-btn { appearance: none; border: 0; border-left: 1px solid #e2e8f0; background: #fff; color: #031B4E; font-weight: 700; font-size: 14px; padding: 7px 12px; cursor: pointer; line-height: 1; }
 .eem-map-zoom-btn:first-child { border-left: 0; }
-.eem-map-zoom-btn:hover { background: #eef4ff; }
+/* Scope hover under .eem-event-page so the brand blue wins over the theme's
+   generic button:hover (which was bleeding pink/washed-out into these). */
+.eem-event-page .eem-map-zoom-btn:hover,
+.eem-event-page .eem-map-zoom-btn:focus { background: #eef4ff; color: #1668F2; }
 .eem-map-inline .eem-map-legend { padding: 6px 0 10px; border: 0; }
 .eem-map-inline .eem-map-scroll { max-height: 460px; overflow: auto; padding: 14px; background: #fbfcfe; border: 1px solid #e2e8f0; border-radius: 10px; -webkit-overflow-scrolling: touch; }
 .eem-map-inline .eem-map-summary { margin-top: 10px; font-size: 14px; color: #2b3648; font-weight: 600; }
 .eem-map-tabs { display: flex; gap: 4px; padding: 10px 18px 0; flex-wrap: wrap; }
 .eem-map-tab { appearance: none; border: 1px solid #e2e8f0; border-bottom: 0; background: #f6f9fd; color: #5f6f85; font-weight: 700; font-size: 13px; padding: 8px 14px; border-radius: 8px 8px 0 0; cursor: pointer; }
 .eem-map-tab.active { background: #fff; color: #031B4E; box-shadow: inset 0 -2px 0 #1668F2; }
+/* Brand-blue hover, scoped to beat the theme's pink button:hover. */
+.eem-event-page .eem-map-tab:hover,
+.eem-event-page .eem-map-tab:focus { background: #eef4ff; color: #1668F2; }
+.eem-event-page .eem-map-tab.active:hover { color: #031B4E; }
 .eem-map-legend { display: flex; gap: 14px; flex-wrap: wrap; padding: 10px 18px; border-bottom: 1px solid #e2e8f0; font-size: 12px; color: #5f6f85; }
 .eem-map-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .eem-map-sw { width: 14px; height: 14px; border-radius: 4px; border: 1px solid #cbd5e1; display: inline-block; }
