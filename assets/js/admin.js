@@ -5995,47 +5995,128 @@ function stallRowLayoutChange(select) {
 /* ─────────────────────────────────────────────────────────────
  * C8 — RV zone + row builder helpers
  * ───────────────────────────────────────────────────────────── */
-function rvAddZone() {
+/* ── Zones-drive-tabs sync (the RV Lot Zones list is the source of truth) ──
+   Editing the zones list drives the inline RV Map Builder's tabs 1:1, and the
+   builder calls back via EEM.onMapZonesChanged for its own tab edits. A guard
+   flag prevents the two directions from looping. `rvMapIsLive()` is true only in
+   Mapped mode with the builder mounted, so Quantity mode is unaffected. */
+var _rvZoneSyncing = false;
+var _rvMapSaveTimer = null;
+
+function rvMapIsLive() {
+	return !!(window.EEM && EEM.getMapZoneNames && EEM.getMapZoneNames('rv').length);
+}
+
+/* Persist the built map (debounced) so a zone rename/add/delete survives reload —
+   the map tab names are what the zones list re-populates from on next render. */
+function rvScheduleMapSave() {
+	if (!(window.EEM && EEM.saveMap)) { return; }
+	clearTimeout(_rvMapSaveTimer);
+	_rvMapSaveTimer = setTimeout(function () { EEM.saveMap('rv'); }, 900);
+}
+
+/* Append one zone row to the list DOM (no builder callback). Returns the row. */
+function rvAppendZoneRow(name) {
 	var list = document.getElementById('eem-lot-zones-list');
 	var tmpl = document.getElementById('eem-lot-zone-row-template');
-	if (!list || !tmpl) return;
+	if (!list || !tmpl) { return null; }
 	var idx  = list.querySelectorAll('.eem-zone-row').length;
 	var frag = tmpl.content.cloneNode(true);
-	/* Replace __index__ placeholders */
-	frag.querySelectorAll('[name]').forEach(function (el) {
-		el.name = el.name.replace('__index__', idx);
-	});
-	frag.querySelectorAll('[data-zone-index]').forEach(function (el) {
-		el.dataset.zoneIndex = idx;
-	});
+	frag.querySelectorAll('[name]').forEach(function (el) { el.name = el.name.replace('__index__', idx); });
+	frag.querySelectorAll('[data-zone-index]').forEach(function (el) { el.dataset.zoneIndex = idx; });
 	list.appendChild(frag);
-	/* Apply auto-palette color to the new zone's swatch — must happen AFTER
-	   appendChild (fragment is consumed), so we query the live DOM. */
 	var newRow = list.querySelectorAll('.eem-zone-row')[idx];
 	if (newRow) {
 		var swatch = newRow.querySelector('.eem-zone-color-swatch');
 		if (swatch) { swatch.style.background = getZoneColor(idx); }
+		if (name) { var ni = newRow.querySelector('.eem-zone-name-input'); if (ni) { ni.value = name; } }
+	}
+	return newRow;
+}
+
+/* Re-number data-zone-index + form-field names + swatch colors after add/delete. */
+function rvReindexZoneRows() {
+	document.querySelectorAll('#eem-lot-zones-list .eem-zone-row').forEach(function (zRow, zi) {
+		zRow.dataset.zoneIndex = zi;
+		zRow.querySelectorAll('[name]').forEach(function (el) {
+			el.name = el.name.replace(/eem_rv_zones\[\d+\]/, 'eem_rv_zones[' + zi + ']');
+		});
+		var swatch = zRow.querySelector('.eem-zone-color-swatch');
+		if (swatch) { swatch.style.background = getZoneColor(zi); }
+	});
+}
+
+function rvAddZone() {
+	var before = document.querySelectorAll('#eem-lot-zones-list .eem-zone-row').length;
+	var defaultName = 'Zone ' + (before + 1);
+	var newRow = rvAppendZoneRow('');
+	if (!_rvZoneSyncing && rvMapIsLive() && EEM.addMapZone) {
+		/* Mapped: add a matching tab to draw, then mirror its name into the row. */
+		if (EEM.addMapZone('rv', defaultName)) {
+			var names = EEM.getMapZoneNames('rv');
+			var ni = newRow ? newRow.querySelector('.eem-zone-name-input') : null;
+			if (ni && names.length) { ni.value = names[names.length - 1]; }
+			rvScheduleMapSave();
+		}
 	}
 	updateRvInventoryDisplay();
 }
 
 function rvDeleteZone(btn) {
 	var row = btn.closest('.eem-zone-row');
-	if (row) row.remove();
-	/* Re-apply auto-palette colors to remaining zones — their visual indices
-	   shift after a deletion so each swatch needs to reflect its new position. */
-	document.querySelectorAll('#eem-lot-zones-list .eem-zone-row').forEach(function (zRow, zi) {
-		var swatch = zRow.querySelector('.eem-zone-color-swatch');
-		if (swatch) { swatch.style.background = getZoneColor(zi); }
-	});
+	if (!row) { return; }
+	var idx = parseInt(row.dataset.zoneIndex, 10);
+	if (!_rvZoneSyncing && rvMapIsLive() && EEM.removeMapZone) {
+		/* Mapped: keep 1:1 — if the builder refuses (last zone), don't delete here. */
+		if (!EEM.removeMapZone('rv', idx)) { return; }
+		rvScheduleMapSave();
+	}
+	row.remove();
+	rvReindexZoneRows();
 	updateRvInventoryDisplay();
 }
 
 // V2 BACKLOG: rvCountUnassignedLots, openUnassignedLotsWarning, rvRebuildPaintDropdown
 // were removed in V1 (2.3.22) when per-lot painting was deferred. See docs/c10-contracts.md.
 
-function rvZoneInputChange() {
+function rvZoneInputChange(inp) {
 	updateRvInventoryDisplay();
+	if (_rvZoneSyncing) { return; }
+	if (inp && inp.classList && inp.classList.contains('eem-zone-name-input') && rvMapIsLive() && EEM.renameMapZone) {
+		var row = inp.closest('.eem-zone-row');
+		var idx = row ? parseInt(row.dataset.zoneIndex, 10) : -1;
+		if (idx >= 0 && EEM.renameMapZone('rv', idx, inp.value)) {
+			rvScheduleMapSave();
+		}
+	}
+}
+
+/* Builder → list: mirror tab rename/add/delete done inside the map builder back
+   into the zones list, keeping them 1:1. Guarded so it never re-triggers the
+   list → builder path above. */
+window.EEM = window.EEM || {};
+if (window.EEM) {
+	EEM.onMapZonesChanged = function (target, names) {
+		if (target !== 'rv') { return; }
+		var list = document.getElementById('eem-lot-zones-list');
+		if (!list) { return; }
+		_rvZoneSyncing = true;
+		try {
+			var rows = list.querySelectorAll('.eem-zone-row');
+			for (var i = rows.length - 1; i >= names.length; i--) { rows[i].remove(); }
+			names.forEach(function (nm, i) {
+				var row = list.querySelectorAll('.eem-zone-row')[i];
+				if (!row) { rvAppendZoneRow(nm); return; }
+				var ni = row.querySelector('.eem-zone-name-input');
+				if (ni && ni.value !== nm) { ni.value = nm; }
+			});
+			rvReindexZoneRows();
+			updateRvInventoryDisplay();
+		} finally {
+			_rvZoneSyncing = false;
+		}
+		rvScheduleMapSave();
+	};
 }
 
 function rvAddRow() {

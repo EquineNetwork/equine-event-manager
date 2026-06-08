@@ -403,7 +403,7 @@ ob_start();
 		?>
 		<div class="eem-zone-row" data-zone-index="<?php echo (int) $zi; ?>">
 			<div class="eem-zone-color-swatch" style="background:<?php echo esc_attr( $z_color ); ?>"></div>
-			<input class="eem-zone-name-input" type="text" name="eem_rv_zones[<?php echo (int) $zi; ?>][name]" value="<?php echo esc_attr( $z_name ); ?>" placeholder="<?php esc_attr_e( 'Zone name', 'equine-event-manager' ); ?>" data-eem-input-action="rv-zone-input"<?php echo $rv_map_connected ? ' readonly title="' . esc_attr__( 'Zone name comes from the connected RV Map tab', 'equine-event-manager' ) . '"' : ''; ?>>
+			<input class="eem-zone-name-input" type="text" name="eem_rv_zones[<?php echo (int) $zi; ?>][name]" value="<?php echo esc_attr( $z_name ); ?>" placeholder="<?php esc_attr_e( 'Zone name', 'equine-event-manager' ); ?>" data-eem-input-action="rv-zone-input"<?php echo $rv_map_connected ? ' title="' . esc_attr__( 'Renaming this zone renames its tab on the RV map', 'equine-event-manager' ) . '"' : ''; ?>>
 			<div class="eem-zone-price-group">
 				<span class="eem-zone-price-label"><?php esc_html_e( '+ Nightly', 'equine-event-manager' ); ?></span>
 				<div class="eem-zone-price-wrap"><span class="eem-zone-price-sym">$</span><input class="eem-zone-price-in" type="number" step="0.01" min="0" name="eem_rv_zones[<?php echo (int) $zi; ?>][nightly]" value="<?php echo esc_attr( $z_night ); ?>" data-eem-input-action="rv-zone-input"></div>
@@ -412,18 +412,18 @@ ob_start();
 				<span class="eem-zone-price-label"><?php esc_html_e( '+ Weekend', 'equine-event-manager' ); ?></span>
 				<div class="eem-zone-price-wrap"><span class="eem-zone-price-sym">$</span><input class="eem-zone-price-in" type="number" step="0.01" min="0" name="eem_rv_zones[<?php echo (int) $zi; ?>][weekend]" value="<?php echo esc_attr( $z_weekend ); ?>" data-eem-input-action="rv-zone-input"></div>
 			</div>
-			<button class="eem-row-card-delete" type="button" title="<?php esc_attr_e( 'Delete zone', 'equine-event-manager' ); ?>" data-eem-action="rv-delete-zone"<?php echo $rv_map_connected ? ' style="display:none"' : ''; ?>>
+			<button class="eem-row-card-delete" type="button" title="<?php esc_attr_e( 'Delete zone', 'equine-event-manager' ); ?>" data-eem-action="rv-delete-zone">
 				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
 			</button>
 		</div>
 	<?php endforeach; ?>
 </div>
-<button class="eem-zone-add-btn" type="button" data-eem-action="rv-add-zone"<?php echo $rv_map_connected ? ' style="display:none"' : ''; ?>>
+<button class="eem-zone-add-btn" type="button" data-eem-action="rv-add-zone">
 	<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
 	<?php esc_html_e( 'Add Zone', 'equine-event-manager' ); ?>
 </button>
 <?php if ( $rv_map_connected ) : ?>
-<span class="eem-field-hint" style="display:block;margin-top:8px"><?php esc_html_e( 'Zones come from your connected RV Map tabs — just set the pricing for each.', 'equine-event-manager' ); ?></span>
+<span class="eem-field-hint" style="display:block;margin-top:8px"><?php esc_html_e( 'Zones and your RV Map tabs stay in sync — add or rename a zone here and its tab appears on the map below to draw. Set the pricing for each.', 'equine-event-manager' ); ?></span>
 <?php endif; ?>
 <template id="eem-lot-zone-row-template">
 <div class="eem-zone-row" data-zone-index="__index__">

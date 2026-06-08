@@ -145,13 +145,13 @@
 			b.onclick = function (ev) {
 				if (ev.target.classList.contains('x')) {
 					mbConfirm('Delete ' + zoneNoun(false) + ' “' + z.name + '”? This removes its ' + countStalls(z) + ' ' + noun(true) + '.', function () {
-						snapshot(); B.zones.splice(i, 1); B.active = Math.max(0, B.active - (i <= B.active ? 1 : 0)); B.sel = null; render(); renderControls();
+						snapshot(); B.zones.splice(i, 1); B.active = Math.max(0, B.active - (i <= B.active ? 1 : 0)); B.sel = null; render(); renderControls(); notifyZones();
 					});
 					return;
 				}
 				B.active = i; B.sel = null; render(); renderControls();
 			};
-			b.ondblclick = function () { mbPrompt('Rename ' + zoneNoun(false), z.name, function (n) { snapshot(); z.name = n; render(); }); };
+			b.ondblclick = function () { mbPrompt('Rename ' + zoneNoun(false), z.name, function (n) { snapshot(); z.name = n; render(); notifyZones(); }); };
 			t.appendChild(b);
 		});
 		var add = document.createElement('button');
@@ -159,10 +159,18 @@
 		add.textContent = '+ Add ' + cap(zoneNoun(false));
 		add.onclick = function () {
 			mbPrompt(cap(zoneNoun(false)) + ' name', cap(zoneNoun(false)) + ' ' + (B.zones.length + 1), function (n) {
-				snapshot(); B.zones.push({ name: n, grid: mkGrid(5, 10) }); B.active = B.zones.length - 1; B.sel = null; render(); renderControls();
+				snapshot(); B.zones.push({ name: n, grid: mkGrid(5, 10) }); B.active = B.zones.length - 1; B.sel = null; render(); renderControls(); notifyZones();
 			});
 		};
 		t.appendChild(add);
+	}
+
+	// Tell the editor's zone list that the builder's tabs changed (rename/add/delete
+	// from inside the builder), so it can keep the RV Lot Zones rows 1:1 in sync.
+	function notifyZones() {
+		if (typeof EEM.onMapZonesChanged === 'function') {
+			EEM.onMapZonesChanged(B.target, B.zones.map(function (z) { return z.name; }));
+		}
 	}
 
 	function updateCount() {
@@ -656,6 +664,37 @@
 
 	EEM.openMapBuilder = open;
 	EEM.autoMountMapBuilders = autoMountInlineHosts;
+
+	// ── Zones-drive-tabs API (the RV Lot Zones list is the source of truth) ──
+	// The editor calls these when the admin edits the zones list; each keeps the
+	// matching builder tab 1:1 and re-renders. Returns false if no live instance.
+	EEM.getMapZoneNames = function (target) {
+		var i = INSTANCES[target];
+		return i ? i.zones.map(function (z) { return z.name; }) : [];
+	};
+	EEM.renameMapZone = function (target, index, name) {
+		var i = INSTANCES[target]; if (!i || !i.zones[index]) { return false; }
+		B = i; i.zones[index].name = String(name || '').trim() || i.zones[index].name;
+		renderTabs(); updateCount(); return true;
+	};
+	EEM.addMapZone = function (target, name) {
+		var i = INSTANCES[target]; if (!i) { return false; }
+		B = i; i.zones.push({ name: String(name || '').trim() || (cap(zoneNoun(false)) + ' ' + (i.zones.length + 1)), grid: mkGrid(5, 10) });
+		i.active = i.zones.length - 1; i.sel = null; render(); renderControls(); return true;
+	};
+	EEM.removeMapZone = function (target, index) {
+		var i = INSTANCES[target]; if (!i || i.zones.length <= 1 || index < 0 || index >= i.zones.length) { return false; }
+		B = i; i.zones.splice(index, 1); i.active = Math.min(i.active, i.zones.length - 1); i.sel = null; render(); renderControls(); return true;
+	};
+	// Persist the built map (used after zone-list edits so the rename/add/delete
+	// survives reload). Mirrors the Save Map button but callable programmatically.
+	EEM.saveMap = function (target) {
+		var i = INSTANCES[target]; if (!i) { return; }
+		B = i; save();
+	};
+	// EEM.onMapZonesChanged is set by the editor (admin.js) to mirror builder-
+	// initiated tab edits back into the zones list. Do NOT initialise it here —
+	// admin.js may load first, and assigning null would clobber its handler.
 
 	// Auto-mount on load so the editor is visible without a click.
 	if (document.readyState === 'loading') {
