@@ -2178,14 +2178,23 @@ class EEM_Admin {
 							</div>
 
 							<?php
-							// v4 Stall Mapping: spatial facility map (snapshot-connected reservations).
-							if ( $has_stall_map && 'rv' !== $inv ) {
-								$this->render_stall_map_location_view( $reservation_id, $stall_map_snapshot, $stall_map_overlay, 'stall' );
-							}
-							// v4 RV spatial map (zone-qualified). Shown for all/rv inventory.
-							if ( $has_rv_map && 'stalls' !== $inv ) {
-								$this->render_stall_map_location_view( $reservation_id, $rv_map_snapshot, $rv_map_overlay, 'rv' );
-							}
+							// v4 Stall Mapping: spatial facility maps. Wrapped in
+							// data-inv-section so the All/Stalls/RV toggle hides them
+							// client-side too (the JS filter keys off data-inv-section).
+							if ( $has_stall_map ) :
+								?>
+								<div data-inv-section="stalls"<?php echo 'rv' === $inv ? ' style="display:none"' : ''; ?>>
+									<?php $this->render_stall_map_location_view( $reservation_id, $stall_map_snapshot, $stall_map_overlay, 'stall' ); ?>
+								</div>
+								<?php
+							endif;
+							if ( $has_rv_map ) :
+								?>
+								<div data-inv-section="rv"<?php echo 'stalls' === $inv ? ' style="display:none"' : ''; ?>>
+									<?php $this->render_stall_map_location_view( $reservation_id, $rv_map_snapshot, $rv_map_overlay, 'rv' ); ?>
+								</div>
+								<?php
+							endif;
 							?>
 
 							<!-- FILTER ROW -->

@@ -4191,11 +4191,15 @@
 		if (locPanel)  locPanel.style.display  = tab === 'location' ? '' : 'none';
 		if (custPanel) custPanel.style.display = tab === 'customer'  ? '' : 'none';
 
-		// 4. Show / hide stall section and RV section within the location panel.
-		var stallSection = document.getElementById('eem-sc-loc-stalls');
-		var rvSection    = document.getElementById('eem-sc-loc-rv');
-		if (stallSection) stallSection.style.display = inv === 'rv'     ? 'none' : '';
-		if (rvSection)    rvSection.style.display    = inv === 'stalls' ? 'none' : '';
+		// 4. Show / hide every stall-kind and RV-kind block within the location
+		//    panel — both the spatial maps AND the matrix tables carry
+		//    data-inv-section, so this one pass covers them all.
+		document.querySelectorAll('[data-inv-section="stalls"]').forEach(function (el) {
+			el.style.display = inv === 'rv' ? 'none' : '';
+		});
+		document.querySelectorAll('[data-inv-section="rv"]').forEach(function (el) {
+			el.style.display = inv === 'stalls' ? 'none' : '';
+		});
 
 		// 5. Barn tabs: only in stalls mode. Zone tabs: only in rv mode.
 		var barnTabsWrap = document.getElementById('eem-sc-barn-tabs');
