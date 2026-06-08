@@ -6829,6 +6829,10 @@ input.eem-zone-price-in:focus { border-color: var(--eem-electric); box-shadow: 0
 
 /* ── Repeating rows (add-ons table, mockup line 202) ── */
 .eem-repeat-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+/* Per-add-on zone multi-select (RV add-ons). Compact; ⌘/Ctrl-click to multi-pick. */
+.eem-rv-addon-zones { width: 100%; min-width: 140px; border: 1.5px solid var(--eem-border, #D9E2F2); border-radius: var(--eem-radius, 3px); font-size: 12.5px; padding: 3px; color: var(--eem-text, #1d2327); background: #fff; }
+.eem-rv-addon-zones:focus { outline: none; border-color: var(--eem-electric, #1668F2); }
+.eem-rv-addon-zones option { padding: 3px 6px; border-radius: 3px; }
 .eem-repeat-table thead { background: #f3f4f5; border-bottom: 1px solid #dcdcde; }
 .eem-repeat-table thead th { padding: 11px 12px; font-size: 13px; font-weight: 600; color: var(--eem-text); text-align: left; white-space: nowrap; }
 .eem-repeat-table tbody tr { border-bottom: 1px solid #f0f0f1; }

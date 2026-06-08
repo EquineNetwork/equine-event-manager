@@ -636,16 +636,43 @@ eem_render_editor_toggle_label_row( array(
 	'controls'   => array( 'rv-addons-table-wrap' ),
 ) );
 ?>
+<?php
+// Zone names available to restrict an add-on to (RV map mode). Empty list = the
+// Zones column is hidden (no zones defined yet → add-ons apply to everything).
+$rv_addon_zone_names = array();
+foreach ( (array) $rv_zones as $rvz ) {
+	$zn = isset( $rvz['name'] ) ? trim( (string) $rvz['name'] ) : '';
+	if ( '' !== $zn ) {
+		$rv_addon_zone_names[] = $zn;
+	}
+}
+$rv_addon_has_zones = ! empty( $rv_addon_zone_names );
+$rv_addon_zone_opts = function ( array $selected ) use ( $rv_addon_zone_names ) {
+	$sel = array_map( 'strtolower', array_map( 'trim', $selected ) );
+	$html = '';
+	foreach ( $rv_addon_zone_names as $zn ) {
+		$is = in_array( strtolower( $zn ), $sel, true );
+		$html .= '<option value="' . esc_attr( $zn ) . '"' . ( $is ? ' selected' : '' ) . '>' . esc_html( $zn ) . '</option>';
+	}
+	return $html;
+};
+?>
 <div id="rv-addons-table-wrap" <?php echo $rv_addons_on ? '' : 'style="display:none"'; ?>>
 	<p class="eem-field-help eem-rv-addons-help">
 		<?php esc_html_e( 'Add-on prices are charged in addition to the RV rate the customer selects. "Per Night" is multiplied by the number of nights for a Nightly stay; "Weekend" is a flat charge applied once for a Weekend Rate stay. Fill in only the rate(s) you offer.', 'equine-event-manager' ); ?>
+		<?php if ( $rv_addon_has_zones ) : ?>
+			<br><?php esc_html_e( 'Leave Zones empty to offer an add-on for every zone, or pick specific zones to restrict it (e.g. Sewer Hookup only for Red Lot).', 'equine-event-manager' ); ?>
+		<?php endif; ?>
 	</p>
 	<table class="eem-repeat-table">
 		<thead>
 			<tr>
 				<th><?php esc_html_e( 'Add-On', 'equine-event-manager' ); ?></th>
-				<th style="width:130px"><?php esc_html_e( 'Per Night', 'equine-event-manager' ); ?></th>
-				<th style="width:130px"><?php esc_html_e( 'Weekend', 'equine-event-manager' ); ?></th>
+				<th style="width:120px"><?php esc_html_e( 'Per Night', 'equine-event-manager' ); ?></th>
+				<th style="width:120px"><?php esc_html_e( 'Weekend', 'equine-event-manager' ); ?></th>
+				<?php if ( $rv_addon_has_zones ) : ?>
+					<th style="width:170px"><?php esc_html_e( 'Zones', 'equine-event-manager' ); ?></th>
+				<?php endif; ?>
 				<th style="width:40px"></th>
 			</tr>
 		</thead>
@@ -654,11 +681,15 @@ eem_render_editor_toggle_label_row( array(
 				$a_name    = isset( $addon['name'] ) ? (string) $addon['name'] : '';
 				$a_price   = isset( $addon['price'] ) ? (float) $addon['price'] : 0.0;
 				$a_weekend = isset( $addon['weekend_price'] ) ? (float) $addon['weekend_price'] : 0.0;
+				$a_zones   = ( isset( $addon['zones'] ) && is_array( $addon['zones'] ) ) ? array_map( 'strval', $addon['zones'] ) : array();
 				?>
 				<tr>
 					<td><input class="eem-repeat-input" type="text" name="en_reservation[rv_addons][<?php echo (int) $idx; ?>][name]" value="<?php echo esc_attr( $a_name ); ?>" /></td>
 					<td><div class="eem-repeat-price-wrap"><span class="eem-repeat-price-sym">$</span><input class="eem-repeat-price-in" type="number" step="0.01" min="0" name="en_reservation[rv_addons][<?php echo (int) $idx; ?>][price]" value="<?php echo esc_attr( $fmt_money( $a_price ) ); ?>" /></div></td>
 					<td><div class="eem-repeat-price-wrap"><span class="eem-repeat-price-sym">$</span><input class="eem-repeat-price-in" type="number" step="0.01" min="0" name="en_reservation[rv_addons][<?php echo (int) $idx; ?>][weekend_price]" value="<?php echo esc_attr( $fmt_money( $a_weekend ) ); ?>" /></div></td>
+					<?php if ( $rv_addon_has_zones ) : ?>
+						<td><select class="eem-rv-addon-zones" multiple size="<?php echo (int) min( 4, max( 2, count( $rv_addon_zone_names ) ) ); ?>" name="en_reservation[rv_addons][<?php echo (int) $idx; ?>][zones][]" title="<?php esc_attr_e( 'Hold ⌘/Ctrl to pick more than one. Empty = all zones.', 'equine-event-manager' ); ?>"><?php echo $rv_addon_zone_opts( $a_zones ); // phpcs:ignore -- options pre-escaped ?></select></td>
+					<?php endif; ?>
 					<td><button class="eem-btn-delete" type="button" aria-label="<?php esc_attr_e( 'Delete', 'equine-event-manager' ); ?>" data-eem-action="reservation-editor-remove-repeating-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
 				</tr>
 			<?php endforeach; ?>
@@ -672,6 +703,9 @@ eem_render_editor_toggle_label_row( array(
 		<td><input class="eem-repeat-input" type="text" name="en_reservation[rv_addons][__index__][name]" value="" placeholder="<?php esc_attr_e( 'Add-on name', 'equine-event-manager' ); ?>" /></td>
 		<td><div class="eem-repeat-price-wrap"><span class="eem-repeat-price-sym">$</span><input class="eem-repeat-price-in" type="number" step="0.01" min="0" name="en_reservation[rv_addons][__index__][price]" value="0.00" /></div></td>
 		<td><div class="eem-repeat-price-wrap"><span class="eem-repeat-price-sym">$</span><input class="eem-repeat-price-in" type="number" step="0.01" min="0" name="en_reservation[rv_addons][__index__][weekend_price]" value="0.00" /></div></td>
+		<?php if ( $rv_addon_has_zones ) : ?>
+			<td><select class="eem-rv-addon-zones" multiple size="<?php echo (int) min( 4, max( 2, count( $rv_addon_zone_names ) ) ); ?>" name="en_reservation[rv_addons][__index__][zones][]" title="<?php esc_attr_e( 'Hold ⌘/Ctrl to pick more than one. Empty = all zones.', 'equine-event-manager' ); ?>"><?php echo $rv_addon_zone_opts( array() ); // phpcs:ignore -- options pre-escaped ?></select></td>
+		<?php endif; ?>
 		<td><button class="eem-btn-delete" type="button" aria-label="<?php esc_attr_e( 'Delete', 'equine-event-manager' ); ?>" data-eem-action="reservation-editor-remove-repeating-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
 	</tr></template>
 </div>

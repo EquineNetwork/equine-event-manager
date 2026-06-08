@@ -2580,11 +2580,26 @@ class EEM_Reservations_CPT {
 				continue;
 			}
 
+			// Per-zone availability (RV map mode). Empty = available for all zones;
+			// otherwise the add-on is only offered when a picked lot is in one of
+			// these zones.
+			$zones = array();
+			if ( isset( $addon['zones'] ) && is_array( $addon['zones'] ) ) {
+				foreach ( $addon['zones'] as $z ) {
+					$z = sanitize_text_field( (string) $z );
+					if ( '' !== $z ) {
+						$zones[] = $z;
+					}
+				}
+				$zones = array_values( array_unique( $zones ) );
+			}
+
 			$sanitized[] = array(
 				'name'          => $name,
 				'description'   => $description,
 				'price'         => '' !== $price ? $price : '0.00',
 				'weekend_price' => '' !== $weekend_price ? $weekend_price : '0.00',
+				'zones'         => $zones,
 			);
 		}
 

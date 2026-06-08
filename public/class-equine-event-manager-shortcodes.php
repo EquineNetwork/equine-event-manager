@@ -878,7 +878,14 @@ class EEM_Shortcodes {
 											<?php esc_html_e( 'Add-on prices are charged in addition to your RV rate — per night for a Nightly stay, or once for a Weekend Rate stay.', 'equine-event-manager' ); ?>
 										</p>
 									<?php endif; ?>
-									<?php foreach ( $rv_addon_options as $addon_key => $addon ) : ?>
+									<?php
+									foreach ( $rv_addon_options as $addon_key => $addon ) :
+										// data-eem-addon-zones drives the customer-side zone filter:
+										// empty = every zone; otherwise the add-on only shows when a
+										// picked lot is in one of these (lowercased) zones.
+										$addon_zone_attr = strtolower( implode( '|', ( isset( $addon['zones'] ) && is_array( $addon['zones'] ) ) ? $addon['zones'] : array() ) );
+										?>
+										<div class="eem-rv-addon-wrap" data-eem-addon-zones="<?php echo esc_attr( $addon_zone_attr ); ?>">
 											<?php
 											$this->render_checkbox_product_line_item(
 												$addon['name'],
@@ -892,7 +899,8 @@ class EEM_Shortcodes {
 												)
 											);
 											?>
-										<?php endforeach; ?>
+										</div>
+									<?php endforeach; ?>
 									</div>
 									<div class="eem-section-subtotal" aria-live="polite">
 										<span><?php esc_html_e( 'RV Subtotal', 'equine-event-manager' ); ?></span>
@@ -1938,6 +1946,25 @@ class EEM_Shortcodes {
 				if (footEl) footEl.innerHTML = '<strong>' + units.length + '</strong> ' + <?php echo wp_json_encode( esc_html__( 'selected', 'equine-event-manager' ) ); ?>;
 				syncTack(units);
 				syncSurcharge(units);
+				filterAddonsByZone(units);
+			}
+
+			// Per-zone RV add-on availability: show an add-on only when it has no
+			// zone restriction, or a picked lot is in one of its zones (the
+			// "offer if any eligible lot" rule). Hidden add-ons get unchecked so
+			// they're never charged. Only the RV (zone-qualified) picker drives this.
+			function filterAddonsByZone(units){
+				if (!P.zoneQualified) return;
+				var wraps = form.querySelectorAll('[data-eem-addon-zones]');
+				if (!wraps.length) return;
+				var zoneSet = {};
+				units.forEach(function(u){ if (selZone[u]) zoneSet[selZone[u]] = 1; });
+				wraps.forEach(function(wrap){
+					var allowed = (wrap.getAttribute('data-eem-addon-zones') || '').split('|').filter(Boolean);
+					var show = allowed.length === 0 || allowed.some(function(z){ return zoneSet[z]; });
+					wrap.style.display = show ? '' : 'none';
+					if (!show){ var cb = wrap.querySelector('input[type="checkbox"]'); if (cb && cb.checked){ cb.checked = false; cb.dispatchEvent(new Event('change',{bubbles:true})); } }
+				});
 			}
 
 			// Sum each picked lot's per-night zone surcharge (nightly + weekend) and
@@ -2031,6 +2058,14 @@ class EEM_Shortcodes {
 
 			// Inline init — the map is always visible (no modal).
 			renderTabs(); renderGrid(); applyZoom(); fitZoom(); syncForm();
+
+			// This inline script runs mid-parse, before the RV add-on section below
+			// it exists, so the initial zone filter found nothing. Re-run it once the
+			// page finishes parsing so zone-restricted add-ons start hidden.
+			if (P.zoneQualified) {
+				if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', function(){ filterAddonsByZone(Object.keys(selected)); }); }
+				else { filterAddonsByZone(Object.keys(selected)); }
+			}
 			// Re-fit if the viewport width changes (responsive).
 			if (window.ResizeObserver){ try { new ResizeObserver(function(){ /* keep current zoom; user controls it */ }).observe(scrollEl); } catch(e){} }
 		})();
@@ -3455,9 +3490,18 @@ class EEM_Shortcodes {
 		$rv_subtotal                  = ( $status['rv_open'] && absint( $submission['rv_qty'] ) > 0 ) ? ( ( absint( $submission['rv_qty'] ) * $rv_unit_price + $rv_zone_surcharge_sum ) * $rv_night_count ) : 0;
 
 		if ( $status['rv_open'] && absint( $submission['rv_qty'] ) > 0 ) {
+			// Zones of the customer's picked lots — gate per-zone add-ons so an
+			// add-on restricted to (say) Red Lot is only charged when a Red Lot
+			// is in the selection ("offer if any eligible lot").
+			$picked_rv_zones = $this->get_zones_of_rv_units( $data, (array) ( $submission['preferred_rv_lots'] ?? array() ) );
 			foreach ( $this->get_enabled_rv_addon_options( $data ) as $addon_key => $addon ) {
 				if ( empty( $submission[ 'rv_addon_' . $addon_key ] ) ) {
 					continue;
+				}
+
+				$addon_zones = ( isset( $addon['zones'] ) && is_array( $addon['zones'] ) ) ? array_map( 'strtolower', array_map( 'trim', $addon['zones'] ) ) : array();
+				if ( ! empty( $addon_zones ) && empty( array_intersect( $addon_zones, $picked_rv_zones ) ) ) {
+					continue; // restricted add-on, no eligible lot picked → never charge
 				}
 
 				$addon_rate = $this->get_current_rv_addon_rate( $data, $addon_key, $submission['rv_stay_type'] );
@@ -8269,6 +8313,39 @@ RV Lot: " . $rv_lot['name'] );
 		return $total;
 	}
 
+	/**
+	 * Resolve the distinct (lowercased) zone names of a set of picked RV lots,
+	 * from the RV map. Used to gate per-zone add-on availability.
+	 *
+	 * @param array $data  Reservation setup data.
+	 * @param array $units Picked zone-qualified lot units (preferred_rv_lots).
+	 * @return array<int,string> Lowercased zone names.
+	 */
+	private function get_zones_of_rv_units( array $data, array $units ): array {
+		if ( empty( $units ) ) {
+			return array();
+		}
+		$zone_of_unit = array();
+		$snap = ( isset( $data['rv_map'] ) && is_array( $data['rv_map'] ) ) ? $data['rv_map'] : array();
+		foreach ( ( $snap['barns'] ?? array() ) as $barn ) {
+			$bname = (string) ( $barn['name'] ?? '' );
+			foreach ( (array) ( $barn['grid'] ?? array() ) as $row ) {
+				foreach ( (array) $row as $cell ) {
+					if ( is_array( $cell ) && 'stall' === ( $cell['type'] ?? '' ) && '' !== (string) ( $cell['label'] ?? '' ) ) {
+						$zone_of_unit[ $bname . ' ' . (string) $cell['label'] ] = strtolower( trim( $bname ) );
+					}
+				}
+			}
+		}
+		$out = array();
+		foreach ( $units as $u ) {
+			if ( isset( $zone_of_unit[ (string) $u ] ) ) {
+				$out[ $zone_of_unit[ (string) $u ] ] = true;
+			}
+		}
+		return array_keys( $out );
+	}
+
 	private function get_rv_lot_rate( $data, $lot_key, $stay_type ) {
 		$lot = $this->get_rv_lot( $data, $lot_key );
 
@@ -8381,11 +8458,14 @@ RV Lot: " . $rv_lot['name'] );
 				continue;
 			}
 
+			$zones = ( isset( $addon['zones'] ) && is_array( $addon['zones'] ) ) ? array_values( array_map( 'strval', $addon['zones'] ) ) : array();
+
 			$options[ (string) $addon_key ] = array(
 				'name'          => $name,
 				'description'   => $description,
 				'price'         => '' !== $price ? $price : '0.00',
 				'weekend_price' => '' !== $weekend_price ? $weekend_price : '0.00',
+				'zones'         => $zones,
 			);
 		}
 
