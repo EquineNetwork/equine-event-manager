@@ -3249,9 +3249,9 @@
 
 	/* C7.C.1 — Fee-type visibility helper. The Convenience Fee section's
 	   `[convenience_fee_type]` select toggles between None / Flat /
-	   Percentage. The render_fee_value_row() helper outputs both $ and
-	   % flavors with corresponding row classes; we show only the row
-	   matching the current selection. None hides both. */
+	   Percentage. The fees section partial outputs both $ and % value
+	   rows with corresponding row classes; we show only the row matching
+	   the current selection. None hides both. */
 	function eemApplyFeeTypeVisibility(select) {
 		if (!select) return;
 		var value = select.value;

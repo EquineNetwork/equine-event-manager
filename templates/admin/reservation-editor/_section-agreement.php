@@ -5,8 +5,8 @@
  *
  * Mockup lines 1054–1090. Single field-row containing the
  * .eem-file-row chrome: file-name display (with PDF icon) +
- * View link + Replace button + delete glyph. Replaces the legacy
- * render_editor_file_field_row helper output.
+ * View link + Replace button + delete glyph. (Replaced the legacy
+ * meta-box file-field helper, since removed in C16.)
  *
  * @package   EEM_Plugin
  * @license   GPL-2.0-or-later

@@ -393,43 +393,6 @@ class EEM_Reservations_CPT {
 	}
 
 	/**
-	 * Render a blocked-unit searchable multi-select field.
-	 *
-	 * @param string $field_key Field key.
-	 * @param string $label Field label.
-	 * @param array  $options Available units.
-	 * @param array  $selected Selected blocked units.
-	 * @param string $description Supporting text.
-	 * @return void
-	 */
-	private function render_chart_blocked_units_field( $field_key, $label, $options, $selected, $description = '' ) {
-		?>
-		<div class="eem-stall-chart-blocked-field">
-			<h5><?php echo esc_html( $label ); ?></h5>
-			<select
-				name="en_reservation[<?php echo esc_attr( $field_key ); ?>][]"
-				multiple="multiple"
-				class="eem-stall-chart-blocked-select"
-				data-placeholder="<?php esc_attr_e( 'Start typing a unit number', 'equine-event-manager' ); ?>"
-				data-stall-chart-field="<?php echo esc_attr( $field_key ); ?>"
-				<?php disabled( empty( $options ) ); ?>
-			>
-				<?php foreach ( (array) $options as $unit ) : ?>
-					<option value="<?php echo esc_attr( $unit ); ?>" <?php selected( in_array( (string) $unit, (array) $selected, true ) ); ?>>
-						<?php echo esc_html( $unit ); ?>
-					</option>
-				<?php endforeach; ?>
-			</select>
-			<?php if ( empty( $options ) ) : ?>
-				<p class="description"><?php esc_html_e( 'Add a numbered range above before blocking specific units.', 'equine-event-manager' ); ?></p>
-			<?php elseif ( '' !== $description ) : ?>
-				<p class="description"><?php echo esc_html( $description ); ?></p>
-			<?php endif; ?>
-		</div>
-		<?php
-	}
-
-	/**
 	 * Build assignment summary data for editor and sidebar displays.
 	 *
 	 * @param int    $post_id Reservation post ID.
@@ -2818,30 +2781,6 @@ class EEM_Reservations_CPT {
 	 */
 	private function get_event_source_label( $event_source ) {
 		return EEM_Events::get_event_source_label( $event_source );
-	}
-
-	/**
-	 * Parse a saved time value into selector components.
-	 *
-	 * @param string $value Saved time value.
-	 * @return array{hour:string,minute:string,meridiem:string}
-	 */
-	private function parse_time_value( $value ) {
-		$timestamp = strtotime( preg_replace( '/\b(after|before|by)\b/i', '', (string) $value ) );
-
-		if ( ! $timestamp ) {
-			return array(
-				'hour'     => '',
-				'minute'   => '',
-				'meridiem' => '',
-			);
-		}
-
-		return array(
-			'hour'     => gmdate( 'h', $timestamp ),
-			'minute'   => gmdate( 'i', $timestamp ),
-			'meridiem' => gmdate( 'A', $timestamp ),
-		);
 	}
 
 	/**
