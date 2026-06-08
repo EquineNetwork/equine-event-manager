@@ -308,7 +308,19 @@ room block exactly. The mockups are the binding visual spec for the build.
 - Bigger lift (drag UI, maybe a light SVG/canvas layer); only justified when a
   facility needs pixel-fidelity to the real building. Grid (Phase A) covers ~90%.
 
-### Phase C — native in-plugin grid builder (eliminate the Google Sheets dependency) — FULLY SCOPED 2026-06-07
+### Phase C — native in-plugin grid builder (eliminate the Google Sheets dependency) — ✅ BUILT & SHIPPED 2026-06-07 (v2.7.91)
+
+> **DONE.** The native Map Builder replaced Google Sheets for both stalls and RV.
+> Shipped as C1 (snapshot_from_builder + eem_map_builder_save AJAX) → C2/C3
+> (eem-map-builder.js modal + admin.css eem-mb-* + editor "Build/Edit Map" button
+> + JSON seed) → C4 (removed import()/discover_barns/connect AJAX/mapConnect) →
+> C5 (reseed-maps-builder.php restamps maps to source=builder). Browser-verified
+> end-to-end on res 6124: builder opens, hydrates the stored map, Fill-default
+> toolbar (no Select/Skip per Whitney), saves through the real AJAX (676 stalls +
+> 360 lots preserved). Existing maps survived with zero migration. The scope below
+> is retained as the build record.
+
+### Phase C (original scope) — FULLY SCOPED 2026-06-07
 
 > **Whitney's ask:** "A way to cut out Google Sheets dependency. The plugin
 > generates a grid where admin can select and drag to populate rows with numbers
