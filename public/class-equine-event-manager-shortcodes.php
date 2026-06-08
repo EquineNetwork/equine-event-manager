@@ -841,6 +841,18 @@ class EEM_Shortcodes {
 														$eem_rv_blocked[ $eem_brl ] = true;
 													}
 												}
+												// Per-zone surcharge map (lowercased zone name => nightly/weekend)
+												// so the picker can add each picked lot's surcharge to the total.
+												$eem_rv_zone_surcharge = array();
+												foreach ( ( isset( $data['rv_zones'] ) && is_array( $data['rv_zones'] ) ? $data['rv_zones'] : array() ) as $eem_rvz ) {
+													$eem_rvz_name = isset( $eem_rvz['name'] ) ? strtolower( trim( (string) $eem_rvz['name'] ) ) : '';
+													if ( '' !== $eem_rvz_name ) {
+														$eem_rv_zone_surcharge[ $eem_rvz_name ] = array(
+															'nightly' => isset( $eem_rvz['nightly'] ) ? (float) $eem_rvz['nightly'] : 0.0,
+															'weekend' => isset( $eem_rvz['weekend'] ) ? (float) $eem_rvz['weekend'] : 0.0,
+														);
+													}
+												}
 												$this->render_stall_map_picker(
 													$eem_rv_map_snapshot,
 													$eem_rv_reserved, // zone-qualified lots taken by existing orders
@@ -855,6 +867,7 @@ class EEM_Shortcodes {
 														'noun_plural'    => __( 'lots', 'equine-event-manager' ),
 														'hint'           => __( 'Tap available (white) lots on the RV map. Greyed lots are taken.', 'equine-event-manager' ),
 														'prefix'         => '',
+														'zone_surcharge' => $eem_rv_zone_surcharge,
 													)
 												);
 											}
@@ -1738,6 +1751,7 @@ class EEM_Shortcodes {
 			'noun_plural'    => __( 'stalls', 'equine-event-manager' ),
 			'hint'           => __( 'Tap available (white) stalls on the facility map. Greyed stalls are taken.', 'equine-event-manager' ),
 			'prefix'         => '#',
+			'zone_surcharge' => array(),
 		), $opts );
 		$barns = array();
 		foreach ( ( $snapshot['barns'] ?? array() ) as $barn ) {
@@ -1756,6 +1770,7 @@ class EEM_Shortcodes {
 			'qtyField'      => (string) $opts['qty_field'],
 			'zoneQualified' => (bool) $opts['zone_qualified'],
 			'prefix'        => (string) $opts['prefix'],
+			'zoneSurcharge' => (object) $opts['zone_surcharge'],
 		);
 		?>
 		<div class="eem-map-instance eem-map-inline">
@@ -1792,6 +1807,12 @@ class EEM_Shortcodes {
 				</div>
 			<?php endif; ?>
 			<div data-eem-map-picks hidden></div>
+			<?php if ( ! empty( $opts['zone_surcharge'] ) ) : ?>
+				<?php // Per-night zone-surcharge sums for the picked lots; the totals JS adds
+				// the one matching the RV stay type. Server recomputes authoritatively. ?>
+				<input type="hidden" name="rv_surcharge_nightly" value="0" data-eem-map-surcharge="nightly">
+				<input type="hidden" name="rv_surcharge_weekend" value="0" data-eem-map-surcharge="weekend">
+			<?php endif; ?>
 			<script type="application/json" data-eem-map-payload><?php echo wp_json_encode( $payload ); // phpcs:ignore ?></script>
 		</div>
 
@@ -1807,6 +1828,7 @@ class EEM_Shortcodes {
 			var reserved = {}; P.reserved.forEach(function(l){ reserved[l]=1; });
 			var blocked  = {}; P.blocked.forEach(function(l){ blocked[l]=1; });
 			var selected = {}; // unit -> 1
+			var selZone = {};  // unit -> lowercased zone (barn) name, for surcharge
 			var activeBarn = 0;
 			var didPan = false; // true right after a drag-to-pan, to suppress select
 			var pre = P.prefix || '';
@@ -1906,6 +1928,23 @@ class EEM_Shortcodes {
 				if (summary) summary.textContent = txt;
 				if (footEl) footEl.innerHTML = '<strong>' + units.length + '</strong> ' + <?php echo wp_json_encode( esc_html__( 'selected', 'equine-event-manager' ) ); ?>;
 				syncTack(units);
+				syncSurcharge(units);
+			}
+
+			// Sum each picked lot's per-night zone surcharge (nightly + weekend) and
+			// write the hidden inputs the totals JS reads. Server recomputes the same
+			// sum authoritatively, so the displayed + charged amounts stay in lockstep.
+			function syncSurcharge(units){
+				var zs = P.zoneSurcharge || {};
+				var nNight = root.querySelector('[data-eem-map-surcharge="nightly"]');
+				var nWeek  = root.querySelector('[data-eem-map-surcharge="weekend"]');
+				if (!nNight || !nWeek) return;
+				var sumN = 0, sumW = 0;
+				units.forEach(function(u){ var z = zs[selZone[u]]; if (z){ sumN += (+z.nightly || 0); sumW += (+z.weekend || 0); } });
+				nNight.value = sumN.toFixed(2); nWeek.value = sumW.toFixed(2);
+				// Nudge the qty field so the existing totals listener recomputes.
+				var qty = form.querySelector('[name="'+P.qtyField+'"]');
+				if (qty){ qty.dispatchEvent(new Event('input',{bubbles:true})); }
 			}
 
 			// Rebuild the tack-stall <select> from the current picks, preserving the
@@ -1927,10 +1966,11 @@ class EEM_Shortcodes {
 				var s = ev.target.closest('.eem-map-stall'); if (!s) return;
 				if (s.getAttribute('data-status') !== 'available') return;
 				var u = s.getAttribute('data-unit');
-				if (selected[u]){ delete selected[u]; s.classList.remove('is-sel'); }
+				if (selected[u]){ delete selected[u]; delete selZone[u]; s.classList.remove('is-sel'); }
 				else {
 					if (P.maxPer > 0 && selCount() >= P.maxPer){ if (summary){ summary.innerHTML = '<span class="eem-map-warn">' + <?php echo wp_json_encode( esc_html__( 'Limit reached', 'equine-event-manager' ) ); ?> + '</span>'; } return; }
 					selected[u]=1; s.classList.add('is-sel');
+					selZone[u] = ((P.barns[activeBarn] && P.barns[activeBarn].name) || '').toLowerCase().trim();
 				}
 				syncForm();
 			});
@@ -3392,7 +3432,11 @@ class EEM_Shortcodes {
 		$general_addons_subtotal      = 0.0;
 		$stall_subtotal              += $required_shavings_subtotal + $additional_shavings_subtotal;
 		$rv_addon_subtotals           = array();
-		$rv_subtotal                  = ( $status['rv_open'] && absint( $submission['rv_qty'] ) > 0 ) ? ( absint( $submission['rv_qty'] ) * $rv_unit_price * $rv_night_count ) : 0;
+		// v4 RV map picker: each picked lot also carries its zone's surcharge on
+		// top of the base rate. Summed server-side (source of truth) from the
+		// picked zone-qualified units so the charge matches the displayed total.
+		$rv_zone_surcharge_sum        = $this->get_rv_zone_surcharge_for_units( $data, (array) ( $submission['preferred_rv_lots'] ?? array() ), (string) $submission['rv_stay_type'] );
+		$rv_subtotal                  = ( $status['rv_open'] && absint( $submission['rv_qty'] ) > 0 ) ? ( ( absint( $submission['rv_qty'] ) * $rv_unit_price + $rv_zone_surcharge_sum ) * $rv_night_count ) : 0;
 
 		if ( $status['rv_open'] && absint( $submission['rv_qty'] ) > 0 ) {
 			foreach ( $this->get_enabled_rv_addon_options( $data ) as $addon_key => $addon ) {
@@ -7132,6 +7176,11 @@ RV Lot: " . $rv_lot['name'] );
 			'rv_close_at'                     => '',
 			'rv_inventory'                    => '',
 			'rv_addons_enabled'               => 0,
+			// v4: RV Lot Zones pricing (_en_rv_zones) + the RV map snapshot
+			// (_en_rv_map) so the customer total can add each picked lot's zone
+			// surcharge (read by get_rv_zone_surcharge_for_units + the picker).
+			'rv_zones'                        => array(),
+			'rv_map'                          => array(),
 			'stall_nightly_rate'              => '0.00',
 			'stall_weekend_rate'              => '0.00',
 			'stall_early_bird_enabled'        => 0,
@@ -8154,6 +8203,56 @@ RV Lot: " . $rv_lot['name'] );
 	 * @param string $stay_type Stay type.
 	 * @return float
 	 */
+	/**
+	 * Sum the per-zone surcharge for a set of map-picked RV lots (the v4 picker).
+	 *
+	 * Each picked unit is zone-qualified ("Zone Label"); its zone is the RV map
+	 * barn it belongs to. The surcharge per zone comes from the RV Lot Zones
+	 * pricing ($data['rv_zones']). Used by both the live total and the server
+	 * charge so the displayed and charged amounts match.
+	 *
+	 * @param array  $data      Reservation setup data.
+	 * @param array  $units     Picked zone-qualified lot units (preferred_rv_lots).
+	 * @param string $stay_type 'weekend' or 'nightly'.
+	 * @return float Total surcharge (per night) across the picked lots.
+	 */
+	private function get_rv_zone_surcharge_for_units( array $data, array $units, string $stay_type ): float {
+		if ( empty( $units ) ) {
+			return 0.0;
+		}
+		$rate_key = 'weekend' === $stay_type ? 'weekend' : 'nightly';
+		$surcharge_by_zone = array(); // lowercased zone name => surcharge
+		foreach ( ( isset( $data['rv_zones'] ) && is_array( $data['rv_zones'] ) ? $data['rv_zones'] : array() ) as $zone ) {
+			$zname = isset( $zone['name'] ) ? strtolower( trim( (string) $zone['name'] ) ) : '';
+			if ( '' !== $zname ) {
+				$surcharge_by_zone[ $zname ] = isset( $zone[ $rate_key ] ) ? (float) $zone[ $rate_key ] : 0.0;
+			}
+		}
+		if ( empty( $surcharge_by_zone ) ) {
+			return 0.0;
+		}
+		$zone_of_unit = array(); // "Zone Label" => lowercased zone name
+		$snap = ( isset( $data['rv_map'] ) && is_array( $data['rv_map'] ) ) ? $data['rv_map'] : array();
+		foreach ( ( $snap['barns'] ?? array() ) as $barn ) {
+			$bname = (string) ( $barn['name'] ?? '' );
+			foreach ( (array) ( $barn['grid'] ?? array() ) as $row ) {
+				foreach ( (array) $row as $cell ) {
+					if ( is_array( $cell ) && 'stall' === ( $cell['type'] ?? '' ) && '' !== (string) ( $cell['label'] ?? '' ) ) {
+						$zone_of_unit[ $bname . ' ' . (string) $cell['label'] ] = strtolower( trim( $bname ) );
+					}
+				}
+			}
+		}
+		$total = 0.0;
+		foreach ( $units as $unit ) {
+			$zn = isset( $zone_of_unit[ (string) $unit ] ) ? $zone_of_unit[ (string) $unit ] : '';
+			if ( '' !== $zn && isset( $surcharge_by_zone[ $zn ] ) ) {
+				$total += $surcharge_by_zone[ $zn ];
+			}
+		}
+		return $total;
+	}
+
 	private function get_rv_lot_rate( $data, $lot_key, $stay_type ) {
 		$lot = $this->get_rv_lot( $data, $lot_key );
 
@@ -10193,7 +10292,11 @@ RV Lot: " . $rv_lot['name'] );
 				var requiredShavingsQty = requiredShavingsEnabled ? shavingsStallQty * (parseInt(form.dataset.requiredShavingsPerStall || '0', 10) || 0) : 0;
 				var stallSubtotal = stallQty * stallRate * stallUnits;
 				var requiredShavingsSubtotal = requiredShavingsQty * requiredShavingsPrice;
-				var rvSubtotal = rvQty * rvRate * rvUnits;
+				/* v4 RV map picker: add each picked lot's per-night zone surcharge
+				   (the map picker writes the summed nightly/weekend surcharge to the
+				   hidden inputs). Server recomputes the same sum authoritatively. */
+				var rvZoneSurcharge = parseCurrency(getFieldValue(form, rvStayType === 'weekend' ? 'rv_surcharge_weekend' : 'rv_surcharge_nightly'));
+				var rvSubtotal = (rvQty * rvRate + rvZoneSurcharge) * rvUnits;
 				var generalAddonsSubtotal = 0;
 				var stallSectionSubtotal = stallSubtotal + requiredShavingsSubtotal;
 				var subtotal = 0;
