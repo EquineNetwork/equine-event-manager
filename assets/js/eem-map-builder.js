@@ -27,6 +27,14 @@
 	};
 	var ZMIN = 0.5, ZMAX = 1.8, ZBASE_C = 46, ZBASE_R = 42;
 
+	// Multi-instance support: the stall + RV editors render inline at the same
+	// time, so each target keeps its own state object in INSTANCES. `B` always
+	// points at the *active* one; a capture-phase listener on each overlay swaps
+	// `B` to that overlay's instance before any bubble handler runs, so all the
+	// B-referencing helpers operate on the editor the user is touching.
+	var INSTANCES = {};
+	function activate(target) { if (INSTANCES[target]) { B = INSTANCES[target]; } }
+
 	function noun(plural) {
 		var rv = B.target === 'rv';
 		return plural ? (rv ? 'lots' : 'stalls') : (rv ? 'lot' : 'stall');
@@ -447,22 +455,48 @@
 	}
 
 	function open(target) {
-		if (B.overlay) { close(); }
+		// Already mounted for this target? Just make it the active instance.
+		if (INSTANCES[target] && INSTANCES[target].overlay) { activate(target); return; }
+		// Fresh per-target state object (no shared single-instance carryover).
+		B = INSTANCES[target] = { overlay: null, inline: false, host: null };
 		hydrate(target);
 		B.host = document.querySelector('[data-eem-map-host="' + target + '"]');
 		B.inline = !!B.host;
 		buildModal();
+		B.overlay.__eemTarget = target;
+		// Capture phase: swap `B` to THIS instance before any bubble handler fires.
+		var act = function () { activate(target); };
+		B.overlay.addEventListener('mousedown', act, true);
+		B.overlay.addEventListener('click', act, true);
+		B.overlay.addEventListener('input', act, true);
 		q('.eem-mb-title').textContent = (target === 'rv' ? 'RV Map Builder' : 'Stall Map Builder');
 		requestAnimationFrame(function () { B.overlay.classList.add('open'); fitZoom(); });
 		render(); renderControls();
 	}
 
+	// Auto-mount every inline host on load so the editor "just loads" — no button
+	// click. The stall + RV editors render side by side in their own cards.
+	function autoMountInlineHosts() {
+		var hosts = document.querySelectorAll('[data-eem-map-host]');
+		Array.prototype.forEach.call(hosts, function (h) {
+			var target = h.getAttribute('data-eem-map-host');
+			if (!target) { return; }
+			if (INSTANCES[target] && INSTANCES[target].overlay) { return; }
+			open(target);
+			// The old "Build / Edit Map" button is now redundant — the editor is
+			// always visible. Hide it to remove the easy-to-miss extra click.
+			var btn = document.querySelector('[data-eem-action="open-map-builder"][data-target="' + target + '"]');
+			if (btn) { var row = btn.closest('.eem-stall-map-row') || btn; row.style.display = 'none'; }
+		});
+	}
+
 	function close() {
 		if (!B.overlay) { return; }
-		document.removeEventListener('mouseup', onUp);
+		var t = B.overlay.__eemTarget;
 		B.overlay.parentNode.removeChild(B.overlay);
 		B.overlay = null;
 		B.inline = false; B.host = null;
+		if (t && INSTANCES[t]) { delete INSTANCES[t]; }
 	}
 
 	// ---- styled prompt / confirm (replaces native window.prompt / .confirm) ----
@@ -609,4 +643,12 @@
 	}
 
 	EEM.openMapBuilder = open;
+	EEM.autoMountMapBuilders = autoMountInlineHosts;
+
+	// Auto-mount on load so the editor is visible without a click.
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', autoMountInlineHosts);
+	} else {
+		autoMountInlineHosts();
+	}
 })();
