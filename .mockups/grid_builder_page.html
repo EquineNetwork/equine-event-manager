@@ -230,9 +230,7 @@ button{font-family:var(--font-ui);cursor:pointer}
   <div class="builder">
     <!-- TOOLBAR -->
     <div class="card toolbar" id="toolbar">
-      <button class="tool active" data-tool="select" title="Select &amp; move (V)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l14 9-6 1.5L11 20 5 3z"/></svg>Select</button>
-      <button class="tool" data-tool="fill" title="Fill series (F)">
+      <button class="tool active" data-tool="fill" title="Fill series (F)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h6M4 12h10M4 17h7"/><path d="M16 5l4 4-9 9-4 1 1-4 8-10z"/></svg>Fill</button>
       <button class="tool" data-tool="label" title="Type one label (L)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>Label</button>
@@ -256,7 +254,7 @@ button{font-family:var(--font-ui);cursor:pointer}
         <span class="stepper">Rows <button onclick="resizeGrid('row',-1)">−</button><span class="val" id="rowVal">0</span><button onclick="resizeGrid('row',1)">+</button></span>
         <span class="stepper">Cols <button onclick="resizeGrid('col',-1)">−</button><span class="val" id="colVal">0</span><button onclick="resizeGrid('col',1)">+</button></span>
         <span class="tool-controls" id="toolControls"></span>
-        <span class="hint-inline" id="modeHint">Drag to select cells</span>
+        <span class="hint-inline" id="modeHint">Drag a block, then set the start number →</span>
       </div>
       <div class="grid-scroll">
         <div class="grid" id="grid"></div>
@@ -311,10 +309,10 @@ let zones=[
   {name:'Montcrief',rows:7,cols:12,grid:seedMontcrief()},
   {name:'Burnett',rows:5,cols:10,grid:seedBurnett()}
 ];
-let active=0, tool='select', sel=null, drag=null;
+let active=0, tool='fill', sel=null, drag=null;
 let history=[], future=[];
 // Persisted panel settings so a selection change never wipes what you typed.
-let fillState={start:'1',step:1,dir:'lr',skip:true};
+let fillState={start:'1',step:1,dir:'lr'};
 let lmState={name:'Wash Rack'};
 
 const Z=()=>zones[active];
@@ -332,14 +330,14 @@ document.getElementById('toolbar').addEventListener('click',e=>{
   if(b.dataset.act==='clear')return clearGrid();
   tool=b.dataset.tool;sel=null;
   document.querySelectorAll('.tool[data-tool]').forEach(t=>t.classList.toggle('active',t.dataset.tool===tool));
-  const hints={select:'Drag to select cells',fill:'Drag a block, then set the start number →',label:'Click a cell to type its number',landmark:'Drag a block, then name the landmark →',erase:'Click or drag to clear back to aisle'};
+  const hints={fill:'Drag a block, then set the start number →',label:'Click a cell to type its number',landmark:'Drag a block, then name the landmark →',erase:'Click or drag to clear back to aisle'};
   document.getElementById('modeHint').textContent=hints[tool];
   render();renderPanel();
 });
 document.addEventListener('keydown',e=>{
   if(e.target.tagName==='INPUT')return;
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();return;}
-  const map={v:'select',f:'fill',l:'label',m:'landmark',e:'erase'};
+  const map={f:'fill',l:'label',m:'landmark',e:'erase'};
   if(map[e.key]){document.querySelector('.tool[data-tool="'+map[e.key]+'"]').click();}
 });
 
@@ -433,7 +431,6 @@ function applyFill(){
   const start=fillState.start||'1';
   const step=fillState.step||1;
   const dir=fillState.dir;
-  const skip=fillState.skip;
   const p=parseStart(start);const z=Z();
   const r1=Math.min(sel.r1,sel.r2),r2=Math.max(sel.r1,sel.r2),c1=Math.min(sel.c1,sel.c2),c2=Math.max(sel.c1,sel.c2);
   const order=[];
@@ -441,16 +438,11 @@ function applyFill(){
   else if(dir==='rl'){for(let r=r1;r<=r2;r++)for(let c=c2;c>=c1;c--)order.push([r,c]);}     // rows top→bottom, right→left
   else if(dir==='tb'){for(let c=c1;c<=c2;c++)for(let r=r1;r<=r2;r++)order.push([r,c]);}     // cols left→right, top→bottom
   else{for(let c=c1;c<=c2;c++)for(let r=r2;r>=r1;r--)order.push([r,c]);}                    // cols left→right, bottom→top
-  // Skip-gaps preserves aisles ONLY when the selection also contains real cells.
-  // A wholly-blank selection means "lay down a fresh row" — fill it regardless.
-  const hasReal=order.some(([r,c])=>z.grid[r][c].type!=='gap');
-  const effSkip=skip&&hasReal;
+  // Fill every selected cell; unselected cells stay aisles.
   snapshot();let i=0;
   order.forEach(([r,c])=>{
-    if(effSkip&&z.grid[r][c].type==='gap')return;       // skip carved-out aisles
     z.grid[r][c]={type:'stall',label:nextLabel(p,i,step)};i++;
   });
-  if(i===0){toast('All cells were aisles — uncheck “Skip aisle cells” to number them');render();return;}
   toast('Filled '+i+' stalls ('+start+'→'+nextLabel(p,i-1,step)+')');
   fillState.start=nextLabel(p,i,step);   // auto-advance so the next row keeps counting
   sel=null;render();renderPanel();
@@ -500,12 +492,10 @@ function renderPanel(){
       <span class="seg-inline" id="f_dir">
         <button class="${fillState.dir==='lr'?'on':''}" data-dir="lr" title="Left → Right">→ L→R</button><button class="${fillState.dir==='rl'?'on':''}" data-dir="rl" title="Right → Left">← R→L</button>
         <button class="${fillState.dir==='tb'?'on':''}" data-dir="tb" title="Top → Bottom">↓ T→B</button><button class="${fillState.dir==='bt'?'on':''}" data-dir="bt" title="Bottom → Top">↑ B→T</button></span>
-      <label class="check"><input type="checkbox" id="f_skip" ${fillState.skip?'checked':''}> Skip aisles</label>
       <button class="btn-primary btn tc-apply" onclick="applyFill()">Apply Fill</button>
       <span class="sel-meta tc-sel">No selection</span>`;
     p.querySelector('#f_start').addEventListener('input',e=>fillState.start=e.target.value);
     p.querySelector('#f_step').addEventListener('input',e=>fillState.step=parseInt(e.target.value||'1',10));
-    p.querySelector('#f_skip').addEventListener('change',e=>fillState.skip=e.target.checked);
     p.querySelector('#f_dir').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;p.querySelectorAll('#f_dir button').forEach(x=>x.classList.remove('on'));b.classList.add('on');fillState.dir=b.dataset.dir;});
   } else if(tool==='landmark'){
     p.innerHTML=`<label class="tc">Label <input type="text" id="lm_name" class="tc-input tc-input-wide" value="${lmState.name.replace(/"/g,'&quot;')}" placeholder="Wash Rack, Office, Arena…"></label>

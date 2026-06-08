@@ -313,6 +313,8 @@ class EEM_Admin {
 		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
 		if ( $screen && false !== strpos( (string) $screen->id, 'equine-event-manager-reservation-editor' ) ) {
 			wp_enqueue_media();
+			// Native Map Builder modal (replaces the Google-Sheet connector).
+			wp_enqueue_script( 'eem-map-builder', EQUINE_EVENT_MANAGER_URL . 'assets/js/eem-map-builder.js', array( 'eem-admin' ), $ver, true );
 		}
 
 		// C13.B.2.a — public.css required when Create Order embeds a reservation form.

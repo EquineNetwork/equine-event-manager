@@ -18,9 +18,9 @@
 
 	// ---- module state (one builder open at a time) ----
 	var B = {
-		zones: [], active: 0, tool: 'select', sel: null, drag: null,
+		zones: [], active: 0, tool: 'fill', sel: null, drag: null,
 		history: [], future: [],
-		fill: { start: '1', step: 1, dir: 'lr', skip: true },
+		fill: { start: '1', step: 1, dir: 'lr' },
 		lm: { name: 'Wash Rack' },
 		target: 'stall', overlay: null, dirty: false
 	};
@@ -145,16 +145,14 @@
 		else if (B.fill.dir === 'rl') { for (r = r1; r <= r2; r++) { for (c = c2; c >= c1; c--) { order.push([r, c]); } } }
 		else if (B.fill.dir === 'tb') { for (c = c1; c <= c2; c++) { for (r = r1; r <= r2; r++) { order.push([r, c]); } } }
 		else { for (c = c1; c <= c2; c++) { for (r = r2; r >= r1; r--) { order.push([r, c]); } } }
-		var hasReal = order.some(function (rc) { return z.grid[rc[0]][rc[1]].type !== 'gap'; });
-		var effSkip = B.fill.skip && hasReal;
 		var p = parseStart(B.fill.start || '1'), step = B.fill.step || 1;
 		snapshot();
+		// Fill every selected cell — the admin selects exactly what should be a
+		// stall/lot; anything they don't select stays an aisle.
 		var i = 0;
 		order.forEach(function (rc) {
-			if (effSkip && z.grid[rc[0]][rc[1]].type === 'gap') { return; }
 			z.grid[rc[0]][rc[1]] = { type: 'stall', label: nextLabel(p, i, step) }; i++;
 		});
-		if (i === 0) { toast('All cells were aisles — uncheck "Skip aisles" to number them'); render(); return; }
 		toast('Filled ' + i + ' ' + noun(true) + ' (' + (B.fill.start || '1') + '→' + nextLabel(p, i - 1, step) + ')');
 		B.fill.start = nextLabel(p, i, step);
 		B.sel = null; render(); renderControls();
@@ -213,12 +211,10 @@
 				'<span class="eem-mb-seg4" id="eem-mb-fdir">' +
 					seg('lr', '→ L→R') + seg('rl', '← R→L') + seg('tb', '↓ T→B') + seg('bt', '↑ B→T') +
 				'</span>' +
-				'<label class="eem-mb-check"><input type="checkbox" id="eem-mb-fskip"' + (B.fill.skip ? ' checked' : '') + '> Skip aisles</label>' +
 				'<button type="button" class="eem-mb-apply" id="eem-mb-apply">Apply Fill</button>' +
 				'<span class="eem-mb-selmeta">No selection</span>';
 			q('#eem-mb-fstart').addEventListener('input', function (e) { B.fill.start = e.target.value; });
 			q('#eem-mb-fstep').addEventListener('input', function (e) { B.fill.step = parseInt(e.target.value || '1', 10); });
-			q('#eem-mb-fskip').addEventListener('change', function (e) { B.fill.skip = e.target.checked; });
 			q('#eem-mb-apply').addEventListener('click', applyFill);
 			q('#eem-mb-fdir').addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) { return; } qa('#eem-mb-fdir button').forEach(function (x) { x.classList.remove('on'); }); b.classList.add('on'); B.fill.dir = b.getAttribute('data-dir'); });
 		} else if (B.tool === 'landmark') {
@@ -289,7 +285,6 @@
 				'</div>' +
 				'<div class="eem-mb-body">' +
 					'<div class="eem-mb-toolbar">' +
-						tool('select', 'Select', '<path d="M5 3l14 9-6 1.5L11 20 5 3z"/>') +
 						tool('fill', 'Fill', '<path d="M4 7h6M4 12h10M4 17h7"/><path d="M16 5l4 4-9 9-4 1 1-4 8-10z"/>') +
 						tool('label', 'Label', '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/>') +
 						tool('landmark', 'Landmark', '<path d="M20.6 13.4 13.4 20.6a2 2 0 01-2.8 0L3 13V3h10l7.6 7.6a2 2 0 010 2.8z"/><circle cx="8" cy="8" r="1.4"/>') +
@@ -353,7 +348,7 @@
 	function onUp() { if (B.overlay) { updateSelMeta(); } B.drag = null; }
 
 	function tool(name, label, path, id) {
-		return '<button type="button" class="eem-mb-tool' + (name === 'select' ? ' active' : '') + '" data-tool="' + name + '"' + (id ? ' id="' + id + '"' : '') + '><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' + path + '</svg>' + label + '</button>';
+		return '<button type="button" class="eem-mb-tool' + (name === 'fill' ? ' active' : '') + '" data-tool="' + name + '"' + (id ? ' id="' + id + '"' : '') + '><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' + path + '</svg>' + label + '</button>';
 	}
 	function act(name, label, path, id) {
 		return '<button type="button" class="eem-mb-tool" data-act="' + name + '"' + (id ? ' id="' + id + '"' : '') + '><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' + path + '</svg>' + label + '</button>';
@@ -373,7 +368,7 @@
 				return { name: b.name || (cap(zoneNoun(false))), grid: grid };
 			});
 		}
-		B.active = 0; B.sel = null; B.tool = 'select'; B.history = []; B.future = []; B.dirty = false; B.fill = { start: '1', step: 1, dir: 'lr', skip: true }; B.lm = { name: 'Wash Rack' };
+		B.active = 0; B.sel = null; B.tool = 'fill'; B.history = []; B.future = []; B.dirty = false; B.fill = { start: '1', step: 1, dir: 'lr' }; B.lm = { name: 'Wash Rack' };
 	}
 
 	function open(target) {
