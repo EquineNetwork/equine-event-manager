@@ -1776,6 +1776,21 @@ class EEM_Shortcodes {
 			</div>
 			<div class="eem-map-scroll" data-eem-map-scroll><div class="eem-map-grid" data-eem-map-grid></div></div>
 			<div class="eem-map-summary" data-eem-map-summary></div>
+			<?php if ( $tack_enabled ) : ?>
+				<?php // v4: customer-designated tack stall for the map picker. Mirrors the
+				// quantity-picker control; shares the [data-eem-tack-select] hook so the
+				// live total + server both exclude it from required shavings. ?>
+				<div class="stall-tack-designate eem-map-tack" data-eem-tack-designate hidden>
+					<label class="stall-tack-designate__label" for="eem-map-tack-select">
+						<span class="stall-tack-designate__dot" aria-hidden="true"></span>
+						<?php esc_html_e( 'Using one for tack? (optional)', 'equine-event-manager' ); ?>
+					</label>
+					<select class="stall-tack-designate__select" id="eem-map-tack-select" name="preferred_tack_stall" data-eem-tack-select data-eem-map-tack-select>
+						<option value=""><?php esc_html_e( "No tack stall — we'll treat them all the same", 'equine-event-manager' ); ?></option>
+					</select>
+					<p class="stall-tack-designate__hint"><?php esc_html_e( 'Pick which stall you plan to use for tack and storage. It is excluded from required shavings.', 'equine-event-manager' ); ?></p>
+				</div>
+			<?php endif; ?>
 			<div data-eem-map-picks hidden></div>
 			<script type="application/json" data-eem-map-payload><?php echo wp_json_encode( $payload ); // phpcs:ignore ?></script>
 		</div>
@@ -1802,6 +1817,12 @@ class EEM_Shortcodes {
 			var summary = root.querySelector('[data-eem-map-summary]');
 			var picksEl = root.querySelector('[data-eem-map-picks]');
 			var footEl  = null; // inline: count lives in the summary line
+			// v4: optional tack-stall designation (stall picker, 'customer' mode only;
+			// the RV picker passes tack=false so these stay null). Shares the
+			// [data-eem-tack-select] hook with the quantity picker so the live total +
+			// server both exclude the chosen stall from required shavings.
+			var tackWrap = root.querySelector('[data-eem-tack-designate]');
+			var tackSel  = root.querySelector('[data-eem-map-tack-select]');
 
 			// ── Zoom: drive the chip size CSS var so the grid actually reflows (so the
 			// scroll container can pan); transform-scale wouldn't change scroll size.
@@ -1883,6 +1904,21 @@ class EEM_Shortcodes {
 				var txt = units.length ? units.length + ' ' + <?php echo wp_json_encode( esc_html__( 'selected', 'equine-event-manager' ) ); ?> + ': ' + units.map(function(v){return pre+v;}).join(', ') : <?php echo wp_json_encode( esc_html__( 'None selected yet', 'equine-event-manager' ) ); ?>;
 				if (summary) summary.textContent = txt;
 				if (footEl) footEl.innerHTML = '<strong>' + units.length + '</strong> ' + <?php echo wp_json_encode( esc_html__( 'selected', 'equine-event-manager' ) ); ?>;
+				syncTack(units);
+			}
+
+			// Rebuild the tack-stall <select> from the current picks, preserving the
+			// prior choice when it's still selected; reveal it once a stall is chosen.
+			function syncTack(units){
+				if (!tackWrap || !tackSel) return;
+				var prev = tackSel.value;
+				var keep = units.indexOf(prev) !== -1 ? prev : '';
+				var noneLabel = tackSel.options.length ? tackSel.options[0].textContent : '';
+				tackSel.innerHTML = '';
+				var none = document.createElement('option'); none.value = ''; none.textContent = noneLabel; tackSel.appendChild(none);
+				units.forEach(function(u){ var o = document.createElement('option'); o.value = u; o.textContent = pre + u; tackSel.appendChild(o); });
+				tackSel.value = keep;
+				tackWrap.hidden = units.length === 0;
 			}
 
 			gridEl.addEventListener('click', function(ev){
@@ -1906,6 +1942,11 @@ class EEM_Shortcodes {
 					else { fitZoom(); }
 				});
 			});
+
+			// Tack designation change → nudge the qty field so the live total recomputes
+			// (countTackStalls() reads [data-eem-tack-select]; the qty event is what the
+			// existing total listeners are bound to).
+			if (tackSel){ tackSel.addEventListener('change', function(){ var q = form.querySelector('[name="'+P.qtyField+'"]'); if (q){ q.dispatchEvent(new Event('input',{bubbles:true})); q.dispatchEvent(new Event('change',{bubbles:true})); } }); }
 
 			// Inline init — the map is always visible (no modal).
 			renderTabs(); renderGrid(); applyZoom(); fitZoom(); syncForm();
