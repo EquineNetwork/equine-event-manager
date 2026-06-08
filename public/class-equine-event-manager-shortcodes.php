@@ -825,10 +825,26 @@ class EEM_Shortcodes {
 											$eem_rv_map_snapshot = EEM_Stall_Map_Importer::get_for_reservation( (int) $reservation_id, EEM_Stall_Map_Importer::RV_META_KEY );
 											if ( ! empty( $eem_rv_map_snapshot['barns'] ) ) {
 												$eem_rv_max_per = ( isset( $data['rv_max_per_customer'] ) && '' !== (string) $data['rv_max_per_customer'] ) ? absint( $data['rv_max_per_customer'] ) : 0;
+												// Grey out lots already taken by existing orders (zone-qualified)
+												// + lots blocked from the editor or the admin By-Location map.
+												$eem_rv_reserved = array();
+												foreach ( array_keys( $this->get_stall_assignment_occupancy_map( (int) $reservation_id, $data, 'rv' ) ) as $eem_rl ) {
+													$eem_rv_reserved[ (string) $eem_rl ] = true;
+												}
+												$eem_rv_blocked = array();
+												foreach ( array_merge(
+													(array) get_post_meta( (int) $reservation_id, '_en_stall_chart_blocked_rv_units', true ),
+													(array) get_post_meta( (int) $reservation_id, '_en_stall_chart_blocked_rv_lots', true )
+												) as $eem_brl ) {
+													$eem_brl = (string) $eem_brl;
+													if ( '' !== $eem_brl ) {
+														$eem_rv_blocked[ $eem_brl ] = true;
+													}
+												}
 												$this->render_stall_map_picker(
 													$eem_rv_map_snapshot,
-													array(), // reserved (zone-qualified) — overlay refinement, server validates on submit
-													array(), // blocked
+													$eem_rv_reserved, // zone-qualified lots taken by existing orders
+													$eem_rv_blocked,  // editor + admin-map blocked lots
 													false,    // no tack for RV
 													$eem_rv_max_per,
 													array(
@@ -2677,13 +2693,22 @@ class EEM_Shortcodes {
 	 * @param array $data Reservation data.
 	 * @return array<string, array<int, string>>
 	 */
-	private function get_stall_assignment_occupancy_map( $reservation_id, $data ) {
+	private function get_stall_assignment_occupancy_map( $reservation_id, $data, $kind = 'stall' ) {
 		$occupied_map = array();
 		$reservation_id = absint( $reservation_id );
 
 		if ( $reservation_id <= 0 ) {
 			return $occupied_map;
 		}
+
+		// Stall vs RV: RV lots are zone-qualified ("Red Lot 1") and live in the
+		// 'rv' component's "Assigned RV Lots" note.
+		$is_rv      = 'rv' === $kind;
+		$qty_field  = $is_rv ? 'rv_quantity' : 'stall_quantity';
+		$arr_field  = $is_rv ? 'rv_arrival_date' : 'stall_arrival_date';
+		$dep_field  = $is_rv ? 'rv_departure_date' : 'stall_departure_date';
+		$note_comp  = $is_rv ? 'rv' : 'stall';
+		$note_label = $is_rv ? 'Assigned RV Lots' : 'Assigned Stall Units';
 
 		$orders = array_filter(
 			( new EEM_Orders_Repository() )->get_orders( '', 'date', 'asc' ),
@@ -2693,15 +2718,15 @@ class EEM_Shortcodes {
 		);
 
 		foreach ( (array) $orders as $order ) {
-			$stall_quantity = absint( isset( $order['stall_quantity'] ) ? $order['stall_quantity'] : 0 );
+			$quantity = absint( isset( $order[ $qty_field ] ) ? $order[ $qty_field ] : 0 );
 
-			if ( $stall_quantity <= 0 ) {
+			if ( $quantity <= 0 ) {
 				continue;
 			}
 
 			$order_dates = $this->get_assignment_date_keys(
-				isset( $order['stall_arrival_date'] ) ? $order['stall_arrival_date'] : '',
-				isset( $order['stall_departure_date'] ) ? $order['stall_departure_date'] : ''
+				isset( $order[ $arr_field ] ) ? $order[ $arr_field ] : '',
+				isset( $order[ $dep_field ] ) ? $order[ $dep_field ] : ''
 			);
 
 			if ( empty( $order_dates ) ) {
@@ -2709,7 +2734,7 @@ class EEM_Shortcodes {
 			}
 
 			$assigned_units = $this->parse_assigned_units_string(
-				$this->get_order_component_note_value( $order, 'stall', 'Assigned Stall Units' )
+				$this->get_order_component_note_value( $order, $note_comp, $note_label )
 			);
 
 			foreach ( $assigned_units as $assigned_unit ) {
