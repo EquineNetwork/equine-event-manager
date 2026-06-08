@@ -56,6 +56,7 @@ button{font-family:var(--font-ui);cursor:pointer}
 
 /* layout */
 .builder{display:grid;grid-template-columns:64px 1fr;gap:16px;align-items:start}
+.builder>*{min-width:0}   /* stop the wide grid from blowing out its column; grid-scroll scrolls instead */
 
 /* horizontal legend bar (under header, full width) */
 .legend-bar{display:flex;align-items:center;gap:20px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border-card);border-radius:var(--radius-lg);padding:11px 18px;margin-bottom:14px;font-size:12.5px}
@@ -188,7 +189,6 @@ button{font-family:var(--font-ui);cursor:pointer}
   .toolbar .tool svg{width:17px;height:17px}
   .grid-toolbar{padding:10px 12px;gap:12px}
   .grid-scroll{padding:12px;max-height:54vh}
-  .cell{width:40px;height:38px;font-size:12px}
   .tool-controls{gap:10px}
   .tc-input{width:64px}
   .modal{padding:12px 8px}
@@ -213,7 +213,7 @@ button{font-family:var(--font-ui);cursor:pointer}
     </div>
     <div class="head-actions">
       <span class="status-pill"><span class="dot"></span><span id="count-pill">0 zones · 0 stalls</span></span>
-      <button class="btn" onclick="openPreview()">Preview Customer View</button>
+      <button class="btn" onclick="openPreview()">Preview</button>
       <button class="btn-primary btn" onclick="saveMap()">Save Map</button>
     </div>
   </div>
@@ -221,7 +221,7 @@ button{font-family:var(--font-ui);cursor:pointer}
   <div class="legend-bar">
     <span class="lg-item"><i class="swatch sw-stall"></i> Stall — sellable</span>
     <span class="lg-item"><i class="swatch sw-gap"></i> Aisle — not sellable</span>
-    <span class="lg-item"><i class="swatch sw-lm"></i> Landmark — wash rack, office</span>
+    <span class="lg-item"><i class="swatch sw-lm"></i> Landmark</span>
     <span class="lg-item"><i class="swatch sw-sel"></i> Selection</span>
     <span class="lg-flow">Add a Zone → Erase aisles → Fill a row → mark Landmarks → Preview → Save</span>
   </div>
