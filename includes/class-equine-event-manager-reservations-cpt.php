@@ -1922,6 +1922,12 @@ class EEM_Reservations_CPT {
 		$values['stall_customer_selection'] = $stall_pair['customer_selection'];
 		$values['stall_selection_mode']     = $stall_pair['selection_mode'];
 
+		// v4 RV two-control — same pair resolution for RV.
+		$rv_pair = self::resolve_rv_pair( (int) $post_id );
+		$values['rv_inventory_type']     = $rv_pair['inventory_type'];
+		$values['rv_customer_selection'] = $rv_pair['customer_selection'];
+		$values['rv_selection_mode']     = $rv_pair['selection_mode'];
+
 		$stall_start_date = get_post_meta( $post_id, '_en_stall_available_start_date', true );
 		$stall_end_date   = get_post_meta( $post_id, '_en_stall_available_end_date', true );
 		$rv_start_date    = get_post_meta( $post_id, '_en_rv_available_start_date', true );
@@ -2055,6 +2061,8 @@ class EEM_Reservations_CPT {
 			'stall_inventory_type'            => 'quantity_only',
 			'stall_customer_selection'        => 'quantity',
 			'rv_selection_mode'               => 'quantity',
+			'rv_inventory_type'               => 'bulk',
+			'rv_customer_selection'           => 'quantity',
 			'rv_enabled'                      => 0,
 			'nightly_enabled'                 => 1,
 			'weekend_enabled'                 => 1,
@@ -2314,6 +2322,83 @@ class EEM_Reservations_CPT {
 			'inventory_type'     => $type,
 			'customer_selection' => $sel,
 			'selection_mode'     => self::derive_stall_selection_mode( $type, $sel ),
+		);
+	}
+
+	/**
+	 * v4 RV two-control — sanitize the RV Inventory Type.
+	 *
+	 * @param mixed $value
+	 * @return string 'bulk' | 'mapped'
+	 */
+	public static function sanitize_rv_inventory_type( $value ): string {
+		$v = sanitize_key( $value );
+		return in_array( $v, array( 'bulk', 'mapped' ), true ) ? $v : 'bulk';
+	}
+
+	/**
+	 * v4 RV two-control — sanitize the RV Customer Selection.
+	 *
+	 * @param mixed $value
+	 * @return string 'quantity' | 'pick_layout'
+	 */
+	public static function sanitize_rv_customer_selection( $value ): string {
+		$v = sanitize_key( $value );
+		return in_array( $v, array( 'quantity', 'pick_layout' ), true ) ? $v : 'quantity';
+	}
+
+	/**
+	 * v4 RV two-control — derive the legacy `_en_rv_selection_mode` from the new
+	 * (inventory_type, customer_selection) pair. `exact_map` (customer picks a
+	 * specific lot on the map) is true ONLY for mapped + pick_layout; every other
+	 * combo behaves as `quantity`. Mirrors derive_stall_selection_mode so every
+	 * existing reader of `_en_rv_selection_mode` keeps working.
+	 *
+	 * @param string $inventory_type
+	 * @param string $customer_selection
+	 * @return string 'quantity' | 'exact_map'
+	 */
+	public static function derive_rv_selection_mode( string $inventory_type, string $customer_selection ): string {
+		$inventory_type     = self::sanitize_rv_inventory_type( $inventory_type );
+		$customer_selection = self::sanitize_rv_customer_selection( $customer_selection );
+		return ( 'mapped' === $inventory_type && 'pick_layout' === $customer_selection ) ? 'exact_map' : 'quantity';
+	}
+
+	/**
+	 * v4 RV two-control — resolve a reservation's RV mode triple from post meta.
+	 *
+	 * Precedence mirrors resolve_stall_pair: the new keys win when present;
+	 * otherwise the pair is derived from the legacy `_en_rv_selection_mode`
+	 * (`exact_map`→mapped+pick_layout, `quantity`→bulk+quantity). No migration
+	 * needed. `bulk` forces customer_selection to `quantity`.
+	 *
+	 * @param int $post_id
+	 * @return array{inventory_type:string, customer_selection:string, selection_mode:string}
+	 */
+	public static function resolve_rv_pair( int $post_id ): array {
+		$legacy = get_post_meta( $post_id, '_en_rv_selection_mode', true );
+		$legacy = in_array( $legacy, array( 'quantity', 'exact_map' ), true ) ? $legacy : 'quantity';
+
+		if ( metadata_exists( 'post', $post_id, '_en_rv_inventory_type' ) ) {
+			$type = self::sanitize_rv_inventory_type( get_post_meta( $post_id, '_en_rv_inventory_type', true ) );
+		} else {
+			$type = ( 'exact_map' === $legacy ) ? 'mapped' : 'bulk';
+		}
+
+		if ( metadata_exists( 'post', $post_id, '_en_rv_customer_selection' ) ) {
+			$sel = self::sanitize_rv_customer_selection( get_post_meta( $post_id, '_en_rv_customer_selection', true ) );
+		} else {
+			$sel = ( 'exact_map' === $legacy ) ? 'pick_layout' : 'quantity';
+		}
+
+		if ( 'bulk' === $type ) {
+			$sel = 'quantity'; // Pick-from-layout is invalid without mapped lots.
+		}
+
+		return array(
+			'inventory_type'     => $type,
+			'customer_selection' => $sel,
+			'selection_mode'     => self::derive_rv_selection_mode( $type, $sel ),
 		);
 	}
 

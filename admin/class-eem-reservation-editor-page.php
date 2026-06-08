@@ -637,15 +637,35 @@ class EEM_Reservation_Editor_Page {
 		//   (c) at least one lot row is assigned to a zone (rows without a zone are
 		//       unavailable to customers, so zone-less rows produce zero bookable lots).
 		// Zones are easy to miss, so the message names the exact step.
+		// v4 RV two-control: exact_map = Mapped + Pick-from-layout. The connected
+		// Interactive RV Map IS the layout (lots + zones from its tabs). Legacy
+		// lot rows grandfather in (map-less pick reservations keep working via the
+		// row layout). With neither, require a map. Mapped + Quantity (which is
+		// rv_selection_mode='quantity', not exact_map) is gated separately below.
 		if ( ! empty( $c['rv_enabled'] ) && ! isset( $err['rv'] )
 			&& 'exact_map' === ( isset( $ctx['rv_selection_mode'] ) ? (string) $ctx['rv_selection_mode'] : '' ) ) {
-			if ( isset( $ctx['rv_row_count'] ) && (int) $ctx['rv_row_count'] < 1 ) {
-				$err['rv'] = __( 'RV Reservations: "Mapped" lots are selected but no RV lots are defined. Add at least one lot row so there are spaces to reserve.', 'equine-event-manager' );
-			} elseif ( isset( $ctx['rv_zone_count'] ) && (int) $ctx['rv_zone_count'] < 1 ) {
-				$err['rv'] = __( 'RV Reservations: "Mapped" lots need at least one pricing zone. Add a zone under "RV Lot Zones," then assign your lot rows to it.', 'equine-event-manager' );
-			} elseif ( isset( $ctx['rv_rows_with_zone'] ) && (int) $ctx['rv_rows_with_zone'] < 1 ) {
-				$err['rv'] = __( 'RV Reservations: no lot row is assigned to a zone, so customers see no available lots. Assign at least one lot row to a zone.', 'equine-event-manager' );
+			$rv_has_map   = ! empty( $ctx['rv_has_map'] );
+			$rv_row_count = isset( $ctx['rv_row_count'] ) ? (int) $ctx['rv_row_count'] : null;
+			if ( ! $rv_has_map && ( null === $rv_row_count || $rv_row_count < 1 ) ) {
+				$err['rv'] = __( 'RV Reservations: "Pick from layout" requires a connected RV Map. Connect your RV sheet under "Interactive RV Map," or switch Customer Selection to "Quantity."', 'equine-event-manager' );
+			} elseif ( ! $rv_has_map ) {
+				// Legacy lot-rows path — keep the zone checks.
+				if ( isset( $ctx['rv_zone_count'] ) && (int) $ctx['rv_zone_count'] < 1 ) {
+					$err['rv'] = __( 'RV Reservations: "Mapped" lots need at least one pricing zone. Add a zone under "RV Lot Zones," then assign your lot rows to it.', 'equine-event-manager' );
+				} elseif ( isset( $ctx['rv_rows_with_zone'] ) && (int) $ctx['rv_rows_with_zone'] < 1 ) {
+					$err['rv'] = __( 'RV Reservations: no lot row is assigned to a zone, so customers see no available lots. Assign at least one lot row to a zone.', 'equine-event-manager' );
+				}
 			}
+		}
+
+		// v4 RV two-control: Mapped + Quantity needs >=1 lot row defined (the admin
+		// numbers lots for chart assignment), mirroring the stall Numbered+Quantity
+		// gate. rv_selection_mode is 'quantity' here, so distinguish via the pair.
+		if ( ! empty( $c['rv_enabled'] ) && ! isset( $err['rv'] )
+			&& 'mapped' === EEM_Reservations_CPT::sanitize_rv_inventory_type( isset( $ctx['rv_inventory_type'] ) ? (string) $ctx['rv_inventory_type'] : '' )
+			&& 'pick_layout' !== ( isset( $ctx['rv_customer_selection'] ) ? (string) $ctx['rv_customer_selection'] : '' )
+			&& isset( $ctx['rv_row_count'] ) && (int) $ctx['rv_row_count'] < 1 ) {
+			$err['rv'] = __( 'RV Reservations: "Mapped" is selected but no RV lots are defined. Add at least one lot row so there are spaces to reserve.', 'equine-event-manager' );
 		}
 
 		// Stall numbers must be unique — overlapping ranges across rows/sides would
@@ -974,6 +994,10 @@ class EEM_Reservation_Editor_Page {
 					// v4 Slice 5: Pick-from-layout requires a connected Stall Map.
 					'stall_customer_selection' => isset( $_POST['stall_customer_selection'] ) ? EEM_Reservations_CPT::sanitize_stall_customer_selection( wp_unslash( $_POST['stall_customer_selection'] ) ) : '',
 					'stall_has_map'        => ( class_exists( 'EEM_Stall_Map_Importer' ) && ! empty( EEM_Stall_Map_Importer::get_for_reservation( $reservation_id )['barns'] ) ),
+					// v4 RV two-control: Mapped + Pick requires a connected RV Map.
+					'rv_inventory_type'    => isset( $_POST['rv_inventory_type'] ) ? EEM_Reservations_CPT::sanitize_rv_inventory_type( wp_unslash( $_POST['rv_inventory_type'] ) ) : '',
+					'rv_customer_selection' => isset( $_POST['rv_customer_selection'] ) ? EEM_Reservations_CPT::sanitize_rv_customer_selection( wp_unslash( $_POST['rv_customer_selection'] ) ) : '',
+					'rv_has_map'           => ( class_exists( 'EEM_Stall_Map_Importer' ) && ! empty( EEM_Stall_Map_Importer::get_for_reservation( $reservation_id, EEM_Stall_Map_Importer::RV_META_KEY )['barns'] ) ),
 				);
 				$publish_errors = self::validate_for_publish( $candidate, $reservation_id, $publish_ctx );
 				if ( ! empty( $publish_errors ) ) {
@@ -1055,10 +1079,25 @@ class EEM_Reservation_Editor_Page {
 			update_post_meta( $reservation_id, '_en_stall_selection_mode', EEM_Reservations_CPT::derive_stall_selection_mode( $inv_type, $cust_sel ) );
 		}
 
-		// RV selection mode (Bulk = 'quantity', Mapped = 'exact_map')
-		if ( isset( $_POST['rv_selection_mode'] ) ) {
-			$rv_mode_raw = sanitize_key( wp_unslash( $_POST['rv_selection_mode'] ) );
-			update_post_meta( $reservation_id, '_en_rv_selection_mode', in_array( $rv_mode_raw, array( 'quantity', 'exact_map' ), true ) ? $rv_mode_raw : 'quantity' );
+		// v4 RV two-control — the editor posts rv_inventory_type (bulk|mapped) +
+		// rv_customer_selection (quantity|pick_layout); the legacy single
+		// rv_selection_mode is derived from the pair so every existing reader
+		// stays consistent. Falls back to the legacy single value for old clients.
+		if ( isset( $_POST['rv_inventory_type'] ) || isset( $_POST['rv_customer_selection'] ) || isset( $_POST['rv_selection_mode'] ) ) {
+			if ( isset( $_POST['rv_inventory_type'] ) || isset( $_POST['rv_customer_selection'] ) ) {
+				$rv_inv_type = EEM_Reservations_CPT::sanitize_rv_inventory_type( isset( $_POST['rv_inventory_type'] ) ? wp_unslash( $_POST['rv_inventory_type'] ) : 'bulk' );
+				$rv_cust_sel = EEM_Reservations_CPT::sanitize_rv_customer_selection( isset( $_POST['rv_customer_selection'] ) ? wp_unslash( $_POST['rv_customer_selection'] ) : 'quantity' );
+			} else {
+				$rv_legacy   = sanitize_key( wp_unslash( $_POST['rv_selection_mode'] ) );
+				$rv_inv_type = ( 'exact_map' === $rv_legacy ) ? 'mapped' : 'bulk';
+				$rv_cust_sel = ( 'exact_map' === $rv_legacy ) ? 'pick_layout' : 'quantity';
+			}
+			if ( 'bulk' === $rv_inv_type ) {
+				$rv_cust_sel = 'quantity';
+			}
+			update_post_meta( $reservation_id, '_en_rv_inventory_type', $rv_inv_type );
+			update_post_meta( $reservation_id, '_en_rv_customer_selection', $rv_cust_sel );
+			update_post_meta( $reservation_id, '_en_rv_selection_mode', EEM_Reservations_CPT::derive_rv_selection_mode( $rv_inv_type, $rv_cust_sel ) );
 		}
 
 		// Max stalls per customer — Enforced at checkout (C10 scope) — zero/empty = unlimited.

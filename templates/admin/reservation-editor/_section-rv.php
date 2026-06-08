@@ -210,41 +210,58 @@ echo '<div class="eem-layout-group">';
 // Inventory Mode (C8) — UX polish 2.3.23: moved below pricing/EB so the
 // inventory cluster (Mode → Available qty → Max per customer → row builder) appears
 // as one tight group just above the Lot Zones and row builder.
-$rv_selection_mode = isset( $data['rv_selection_mode'] ) ? (string) $data['rv_selection_mode'] : 'quantity';
-$rv_is_mapped      = ( 'exact_map' === $rv_selection_mode );
+// v4 RV two-control — mirror the stall section: RV Inventory Type (Bulk |
+// Mapped) + Customer Selection (Quantity | Pick from layout). The legacy
+// rv_selection_mode = exact_map iff mapped + pick_layout.
+$rv_inv_type    = isset( $data['rv_inventory_type'] ) ? (string) $data['rv_inventory_type'] : 'bulk';
+$rv_cust_sel    = isset( $data['rv_customer_selection'] ) ? (string) $data['rv_customer_selection'] : 'quantity';
+$rv_is_mapped   = ( 'mapped' === $rv_inv_type );
+$rv_is_pick     = ( $rv_is_mapped && 'pick_layout' === $rv_cust_sel );
+$rv_legacy_mode = ( $rv_is_mapped && 'pick_layout' === $rv_cust_sel ) ? 'exact_map' : 'quantity';
+
+// ── Control 1: RV Inventory Type ──
 ob_start();
 ?>
 <div class="eem-mode-btns">
-	<button type="button"
-		class="eem-mode-btn<?php echo $rv_is_mapped ? '' : ' active'; ?>"
-		data-mode="bulk"
-		data-section="rv"
-		data-eem-action="toggle-inventory-mode">
-		<?php esc_html_e( 'Bulk', 'equine-event-manager' ); ?>
-	</button>
-	<button type="button"
-		class="eem-mode-btn<?php echo $rv_is_mapped ? ' active' : ''; ?>"
-		data-mode="mapped"
-		data-section="rv"
-		data-eem-action="toggle-inventory-mode">
-		<?php esc_html_e( 'Mapped', 'equine-event-manager' ); ?>
-	</button>
+	<button type="button" class="eem-mode-btn<?php echo $rv_is_mapped ? '' : ' active'; ?>" data-type="bulk" data-eem-action="toggle-rv-inventory-type"><?php esc_html_e( 'Bulk', 'equine-event-manager' ); ?></button>
+	<button type="button" class="eem-mode-btn<?php echo $rv_is_mapped ? ' active' : ''; ?>" data-type="mapped" data-eem-action="toggle-rv-inventory-type"><?php esc_html_e( 'Mapped', 'equine-event-manager' ); ?></button>
 </div>
-<input type="hidden"
-	name="rv_selection_mode"
-	id="eem-rv-selection-mode-input"
-	value="<?php echo esc_attr( $rv_is_mapped ? 'exact_map' : 'quantity' ); ?>">
+<input type="hidden" name="rv_inventory_type" id="eem-rv-inventory-type-input" value="<?php echo esc_attr( $rv_inv_type ); ?>">
+<span class="eem-field-hint eem-rv-inventory-type-hint"><?php
+	echo esc_html( $rv_is_mapped
+		? __( 'Specific RV lots exist — define them with the layout below.', 'equine-event-manager' )
+		: __( 'Sell a total count with no specific lots (first come, first served).', 'equine-event-manager' ) );
+?></span>
 <?php
-$rv_mode_html = (string) ob_get_clean();
-$rv_mode_hint_text = $rv_is_mapped
-	? __( 'Customers select specific lots from your layout at checkout', 'equine-event-manager' )
-	: __( 'Customers pick how many lots they need at checkout; admin assigns specific lots on the Stall & RV Charts page', 'equine-event-manager' );
-$rv_mode_html .= '<span class="eem-field-hint eem-inventory-mode-hint">' . esc_html( $rv_mode_hint_text ) . '</span>';
+$rv_type_html = (string) ob_get_clean();
 eem_render_editor_field_row( array(
-	'label'        => __( 'Inventory Mode', 'equine-event-manager' ),
-	'label_sub'    => __( 'How is RV inventory defined for this reservation?', 'equine-event-manager' ),
-	'row_id'       => 'eem-row-rv-inventory-mode',
-	'control_html' => $rv_mode_html,
+	'label'        => __( 'RV Inventory Type', 'equine-event-manager' ),
+	'label_sub'    => __( 'Do specific lots exist, or just a count?', 'equine-event-manager' ),
+	'row_id'       => 'eem-row-rv-inventory-type',
+	'control_html' => $rv_type_html,
+) );
+
+// ── Control 2: Customer Selection ──
+ob_start();
+?>
+<div class="eem-mode-btns">
+	<button type="button" class="eem-mode-btn<?php echo $rv_is_pick ? '' : ' active'; ?>" data-selection="quantity" data-eem-action="toggle-rv-customer-selection"><?php esc_html_e( 'Quantity', 'equine-event-manager' ); ?></button>
+	<button type="button" class="eem-mode-btn<?php echo $rv_is_pick ? ' active' : ''; ?><?php echo $rv_is_mapped ? '' : ' is-disabled'; ?>" data-selection="pick_layout" data-eem-action="toggle-rv-customer-selection" <?php disabled( ! $rv_is_mapped ); ?>><?php esc_html_e( 'Pick from layout', 'equine-event-manager' ); ?></button>
+</div>
+<input type="hidden" name="rv_customer_selection" id="eem-rv-customer-selection-input" value="<?php echo esc_attr( $rv_cust_sel ); ?>">
+<input type="hidden" name="rv_selection_mode" id="eem-rv-selection-mode-input" value="<?php echo esc_attr( $rv_legacy_mode ); ?>">
+<span class="eem-field-hint eem-rv-customer-selection-hint"><?php
+	echo esc_html( $rv_is_pick
+		? __( 'Customers select specific lots from your layout at checkout.', 'equine-event-manager' )
+		: __( 'Customers pick how many lots they need; you assign specific lots on the Stall & RV Charts page.', 'equine-event-manager' ) );
+?></span>
+<?php
+$rv_sel_html = (string) ob_get_clean();
+eem_render_editor_field_row( array(
+	'label'        => __( 'Customer Selection', 'equine-event-manager' ),
+	'label_sub'    => __( 'How do customers choose lots at checkout?', 'equine-event-manager' ),
+	'row_id'       => 'eem-row-rv-customer-selection',
+	'control_html' => $rv_sel_html,
 ) );
 
 // Available RV Inventory (dual-state: editable in Bulk mode, computed in Mapped mode)
@@ -297,6 +314,35 @@ $rv_zones_meta = isset( $data['rv_zones'] ) ? $data['rv_zones'] : array();
 $rv_zones      = ( is_array( $rv_zones_meta ) && ! empty( $rv_zones_meta ) )
 	? $rv_zones_meta
 	: array();
+
+// v4 RV two-control: when an RV map is connected, the ZONES are the sheet's tabs
+// (Red Lot, Yellow Lot, Blue Lot). Auto-populate the zone list from the tab
+// names so the admin only fills in pricing — merging any saved pricing matched
+// by zone name. The names become read-only (they come from the map).
+$rv_map_zones_snap = ( isset( $data['rv_map'] ) && is_array( $data['rv_map'] ) ) ? $data['rv_map'] : array();
+$rv_map_connected  = ! empty( $rv_map_zones_snap['barns'] );
+if ( $rv_map_connected && class_exists( 'EEM_Stall_Map_Importer' ) ) {
+	$saved_pricing = array(); // lowercase zone name => [nightly, weekend]
+	foreach ( (array) $rv_zones as $sz ) {
+		$sz_name = isset( $sz['name'] ) ? strtolower( trim( (string) $sz['name'] ) ) : '';
+		if ( '' !== $sz_name ) {
+			$saved_pricing[ $sz_name ] = array(
+				'nightly' => isset( $sz['nightly'] ) ? $sz['nightly'] : '0.00',
+				'weekend' => isset( $sz['weekend'] ) ? $sz['weekend'] : '0.00',
+			);
+		}
+	}
+	$rv_zones = array();
+	foreach ( EEM_Stall_Map_Importer::barn_names( $rv_map_zones_snap ) as $tab_name ) {
+		$tab_name = (string) $tab_name;
+		$key      = strtolower( trim( $tab_name ) );
+		$rv_zones[] = array(
+			'name'    => $tab_name,
+			'nightly' => isset( $saved_pricing[ $key ]['nightly'] ) ? $saved_pricing[ $key ]['nightly'] : '0.00',
+			'weekend' => isset( $saved_pricing[ $key ]['weekend'] ) ? $saved_pricing[ $key ]['weekend'] : '0.00',
+		);
+	}
+}
 
 $rv_rows_meta = isset( $data['rv_rows'] ) ? $data['rv_rows'] : array();
 $rv_rows      = ( is_array( $rv_rows_meta ) && ! empty( $rv_rows_meta ) )
@@ -375,6 +421,8 @@ eem_render_editor_field_row( array(
 	'label_sub'    => __( 'Google Sheet → clickable layout', 'equine-event-manager' ),
 	'row_id'       => 'row-rv-map-connect',
 	'control_html' => $rv_map_html,
+	// v4 RV two-control: the map is the layout source for Pick-from-layout only.
+	'is_hidden'    => ! $rv_is_pick,
 ) );
 
 // ── RV Lot Zones (nightly / weekend / available_qty) ──
@@ -393,7 +441,7 @@ ob_start();
 		?>
 		<div class="eem-zone-row" data-zone-index="<?php echo (int) $zi; ?>">
 			<div class="eem-zone-color-swatch" style="background:<?php echo esc_attr( $z_color ); ?>"></div>
-			<input class="eem-zone-name-input" type="text" name="eem_rv_zones[<?php echo (int) $zi; ?>][name]" value="<?php echo esc_attr( $z_name ); ?>" placeholder="<?php esc_attr_e( 'Zone name', 'equine-event-manager' ); ?>" data-eem-input-action="rv-zone-input">
+			<input class="eem-zone-name-input" type="text" name="eem_rv_zones[<?php echo (int) $zi; ?>][name]" value="<?php echo esc_attr( $z_name ); ?>" placeholder="<?php esc_attr_e( 'Zone name', 'equine-event-manager' ); ?>" data-eem-input-action="rv-zone-input"<?php echo $rv_map_connected ? ' readonly title="' . esc_attr__( 'Zone name comes from the connected RV Map tab', 'equine-event-manager' ) . '"' : ''; ?>>
 			<div class="eem-zone-price-group">
 				<span class="eem-zone-price-label"><?php esc_html_e( '+ Nightly', 'equine-event-manager' ); ?></span>
 				<div class="eem-zone-price-wrap"><span class="eem-zone-price-sym">$</span><input class="eem-zone-price-in" type="number" step="0.01" min="0" name="eem_rv_zones[<?php echo (int) $zi; ?>][nightly]" value="<?php echo esc_attr( $z_night ); ?>" data-eem-input-action="rv-zone-input"></div>
@@ -402,16 +450,19 @@ ob_start();
 				<span class="eem-zone-price-label"><?php esc_html_e( '+ Weekend', 'equine-event-manager' ); ?></span>
 				<div class="eem-zone-price-wrap"><span class="eem-zone-price-sym">$</span><input class="eem-zone-price-in" type="number" step="0.01" min="0" name="eem_rv_zones[<?php echo (int) $zi; ?>][weekend]" value="<?php echo esc_attr( $z_weekend ); ?>" data-eem-input-action="rv-zone-input"></div>
 			</div>
-			<button class="eem-row-card-delete" type="button" title="<?php esc_attr_e( 'Delete zone', 'equine-event-manager' ); ?>" data-eem-action="rv-delete-zone">
+			<button class="eem-row-card-delete" type="button" title="<?php esc_attr_e( 'Delete zone', 'equine-event-manager' ); ?>" data-eem-action="rv-delete-zone"<?php echo $rv_map_connected ? ' style="display:none"' : ''; ?>>
 				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
 			</button>
 		</div>
 	<?php endforeach; ?>
 </div>
-<button class="eem-zone-add-btn" type="button" data-eem-action="rv-add-zone">
+<button class="eem-zone-add-btn" type="button" data-eem-action="rv-add-zone"<?php echo $rv_map_connected ? ' style="display:none"' : ''; ?>>
 	<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
 	<?php esc_html_e( 'Add Zone', 'equine-event-manager' ); ?>
 </button>
+<?php if ( $rv_map_connected ) : ?>
+<span class="eem-field-hint" style="display:block;margin-top:8px"><?php esc_html_e( 'Zones come from your connected RV Map tabs — just set the pricing for each.', 'equine-event-manager' ); ?></span>
+<?php endif; ?>
 <template id="eem-lot-zone-row-template">
 <div class="eem-zone-row" data-zone-index="__index__">
 	<!-- Swatch color is set by rvAddZone() in admin.js using getZoneColor(newIndex). -->
@@ -510,6 +561,9 @@ eem_render_editor_field_row( array(
 	'label_sub'    => __( 'Define the physical layout customers will see', 'equine-event-manager' ),
 	'row_id'       => 'row-rv-rows-builder',
 	'control_html' => $rv_rows_html,
+	// v4 RV two-control: under Pick-from-layout the connected map IS the layout,
+	// so the manual lot rows hide; they stay for Mapped + Quantity.
+	'is_hidden'    => $rv_is_pick,
 ) );
 
 // ── Blocked RV Lots tag-select ──

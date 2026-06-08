@@ -2410,6 +2410,13 @@
 		'toggle-stall-customer-selection': function (target) {
 			toggleStallCustomerSelection(target);
 		},
+		/* v4 RV two-control — mirrors the stall pair. */
+		'toggle-rv-inventory-type': function (target) {
+			toggleRvInventoryType(target);
+		},
+		'toggle-rv-customer-selection': function (target) {
+			toggleRvCustomerSelection(target);
+		},
 		/* Tack Stalls — On/Off, then (when On) who designates: customer / admin. */
 		'tack-onoff': function (target) {
 			eemTackToggle(target, 'onoff');
@@ -5117,6 +5124,7 @@
 		/* C8 — init inventory displays on page load. Stall uses the V1 #4
 		   inventory-type input; RV still uses the legacy mode button. */
 		if (document.getElementById('eem-stall-inventory-type-input')) { applyStallRowsSimpleMode(); applyStallLayoutSource(); updateStallInventoryDisplay(); }
+		if (document.getElementById('eem-rv-inventory-type-input')) { applyRvLayoutSource(); updateRvInventoryDisplay(); }
 		if (document.querySelector('.eem-mode-btn[data-section="rv"]'))   updateRvInventoryDisplay();
 		/* V1 (2.3.22): zone-qty Avail Qty inputs removed from zone rows — listener removed.
 		 * RV inventory is now computed from row lot counts via updateRvInventoryDisplay(). */
@@ -5465,8 +5473,91 @@ function applyStallRowsSimpleMode() {
 }
 
 function rvMappedIsActive() {
-	var btn = document.querySelector('.eem-mode-btn.active[data-section="rv"]');
-	return btn && btn.dataset.mode === 'mapped';
+	// v4 RV two-control: "mapped" follows the RV Inventory Type control.
+	var inv = document.getElementById('eem-rv-inventory-type-input');
+	return !!inv && inv.value === 'mapped';
+}
+
+/* v4 RV two-control — keep the legacy hidden rv mode input in sync with the pair
+   (exact_map iff mapped + pick_layout). */
+function syncRvLegacyMode() {
+	var inv = document.getElementById('eem-rv-inventory-type-input');
+	var sel = document.getElementById('eem-rv-customer-selection-input');
+	var mode = document.getElementById('eem-rv-selection-mode-input');
+	if (!mode) return;
+	mode.value = (inv && inv.value === 'mapped' && sel && sel.value === 'pick_layout') ? 'exact_map' : 'quantity';
+}
+
+/* v4 RV two-control — under Mapped + Pick-from-layout the connected RV map IS the
+   layout (Lot Rows hide, the map-connect row shows); under Mapped + Quantity the
+   Lot Rows show and the map row hides. */
+function applyRvLayoutSource() {
+	var inv = document.getElementById('eem-rv-inventory-type-input');
+	var sel = document.getElementById('eem-rv-customer-selection-input');
+	if (!inv || !sel) return;
+	var isPick = inv.value === 'mapped' && sel.value === 'pick_layout';
+	var rowsRow = document.getElementById('row-rv-rows-builder');
+	var mapRow  = document.getElementById('row-rv-map-connect');
+	if (rowsRow) rowsRow.classList.toggle('eem-row--hidden', isPick);
+	if (mapRow)  mapRow.classList.toggle('eem-row--hidden', !isPick);
+}
+
+/* RV Inventory Type toggle (bulk / mapped). Drives the mapped-content panel +
+   inventory-input visibility and enables/disables Pick-from-layout. */
+function toggleRvInventoryType(btn) {
+	var isMapped = btn.dataset.type === 'mapped';
+	document.querySelectorAll('[data-eem-action="toggle-rv-inventory-type"]').forEach(function (b) {
+		b.classList.toggle('active', b === btn);
+	});
+	var inv = document.getElementById('eem-rv-inventory-type-input');
+	if (inv) inv.value = btn.dataset.type;
+
+	var panel    = document.getElementById('eem-rv-mapped-content');
+	var editable = document.getElementById('eem-rv-inventory-input');
+	var computed = document.getElementById('eem-rv-inventory-computed');
+	if (panel)    panel.style.display    = isMapped ? '' : 'none';
+	if (editable) editable.style.display = isMapped ? 'none' : '';
+	if (computed) computed.style.display = isMapped ? '' : 'none';
+
+	var typeHint = document.querySelector('.eem-rv-inventory-type-hint');
+	if (typeHint) {
+		typeHint.textContent = isMapped
+			? 'Specific RV lots exist — define them with the layout below.'
+			: 'Sell a total count with no specific lots (first come, first served).';
+	}
+
+	var pickBtn = document.querySelector('[data-eem-action="toggle-rv-customer-selection"][data-selection="pick_layout"]');
+	if (pickBtn) {
+		pickBtn.disabled = !isMapped;
+		pickBtn.classList.toggle('is-disabled', !isMapped);
+		if (!isMapped && pickBtn.classList.contains('active')) {
+			var qtyBtn = document.querySelector('[data-eem-action="toggle-rv-customer-selection"][data-selection="quantity"]');
+			if (qtyBtn) toggleRvCustomerSelection(qtyBtn);
+		}
+	}
+
+	syncRvLegacyMode();
+	applyRvLayoutSource();
+	updateRvInventoryDisplay();
+}
+
+/* RV Customer Selection toggle (quantity / pick_layout). */
+function toggleRvCustomerSelection(btn) {
+	if (btn.disabled) return;
+	document.querySelectorAll('[data-eem-action="toggle-rv-customer-selection"]').forEach(function (b) {
+		b.classList.toggle('active', b === btn);
+	});
+	var sel = document.getElementById('eem-rv-customer-selection-input');
+	if (sel) sel.value = btn.dataset.selection;
+	var selHint = document.querySelector('.eem-rv-customer-selection-hint');
+	if (selHint) {
+		selHint.textContent = btn.dataset.selection === 'pick_layout'
+			? 'Customers select specific lots from your layout at checkout.'
+			: 'Customers pick how many lots they need; you assign specific lots on the Stall & RV Charts page.';
+	}
+	syncRvLegacyMode();
+	applyRvLayoutSource();
+	updateRvInventoryDisplay();
 }
 
 function toggleInventoryMode(btn) {
