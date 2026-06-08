@@ -308,7 +308,7 @@ room block exactly. The mockups are the binding visual spec for the build.
 - Bigger lift (drag UI, maybe a light SVG/canvas layer); only justified when a
   facility needs pixel-fidelity to the real building. Grid (Phase A) covers ~90%.
 
-### Phase C — native in-plugin grid builder (eliminate the Google Sheets dependency) — SCOPED 2026-06-07
+### Phase C — native in-plugin grid builder (eliminate the Google Sheets dependency) — FULLY SCOPED 2026-06-07
 
 > **Whitney's ask:** "A way to cut out Google Sheets dependency. The plugin
 > generates a grid where admin can select and drag to populate rows with numbers
@@ -316,48 +316,124 @@ room block exactly. The mockups are the binding visual spec for the build.
 > become the tabs they modify using the drag-and-select system." Future to-do —
 > NOT scheduled yet. Phase A (sheet import) ships first and stays as a fallback.
 
-**Goal.** Replace "paste a Published Google Sheet URL" with an in-plugin
-spreadsheet-like canvas. Same output, zero external dependency / network fetch /
-publish-to-web friction. The admin builds the facility map directly in the editor.
+#### 1. Goal & why it matters
+Replace "paste a Published Google Sheet URL" with an in-plugin spreadsheet-lite
+canvas where the admin builds the facility map directly in the editor. Removes
+the Publish-to-web setup friction (the #1 onboarding hurdle), the Google-account /
+sharing-settings dependency, and the import round-trip. Instant edits, everything
+in WP.
 
-**Key reuse — output is the SAME snapshot shape, so nothing downstream changes.**
-The builder writes the identical `_en_stall_map` / `_en_rv_map` structure the
-importer produces: `{ barns:[{ name, kind, rows, cols, grid:[[{type,label}]] }] }`
-with `type ∈ {stall, gap, landmark}`. Every renderer, the config routing, the
-chart matrix, auto-assign, group-contiguity — all keep working untouched. The
-builder is purely a new *authoring* front-end for the existing data model.
+#### 2. The leverage — the back end is ~90% already built
+The builder writes the **identical snapshot shape** the importer produces:
+`{ source, synced_at, barns:[{ name, kind, rows, cols, grid:[[{type,label}]] }] }`,
+`type ∈ {stall, gap, landmark}`, stored on `_en_stall_map` / `_en_rv_map`. So
+**every consumer keeps working unchanged**: customer picker, admin By-Location
+map, chart matrix, config routing (stall_units / rv_units / zones / barn_map),
+inventory, auto-assign, group-contiguity, validators. Phase C is purely a new
+**authoring front-end** for an existing, proven data model. The entire cost is
+the interactive grid-editor JS + a thin save endpoint.
 
-**Scope (build order when scheduled):**
-1. **Zones = tabs.** Admin adds named Zones (Stall side: barns "Montcrief",
-   "Burnett"; RV side: "Red Lot" etc.). Each zone owns one grid. (Maps onto the
-   existing per-tab snapshot barn; on the RV side the zone is already both the
-   tab AND the pricing zone — one name.)
-2. **Grid canvas per zone.** A resizable grid of cells (add/remove rows+cols).
-   Each cell is empty (gap), a number (stall/lot), or text (landmark) — reuse
-   `EEM_Stall_Map_Importer::classify_cell()` semantics verbatim.
-3. **Drag-select + drag-fill.** Click-drag to select a rectangle; fill it with an
-   auto-incrementing sequence (start value + direction: L→R, R→L, serpentine) or
-   a single repeated label. Spreadsheet "fill handle" UX. This is the core
-   interaction and the main JS lift (canvas or DOM-grid + pointer events).
-4. **Landmark cells.** Type free text into a cell → landmark; the existing
-   same-label rectangle-merge + vertical-text renderer already handles display.
-5. **Block / aisle painting.** A "gap" brush to clear cells back to aisles.
-6. **Persist directly.** Save the built grid straight to the meta key (no import,
-   no dupe-fetch). Reuse the importer's validators (stall labels globally unique;
-   RV lots zone-qualified, so cross-zone repeats allowed — same rule the
-   `target==='rv'` dupe-skip already encodes).
-7. **Migration / coexistence.** Keep the Google-Sheet import as an alternate
-   "Import from Sheet" button that seeds the builder (one-time), so existing
-   sheet-connected reservations convert in one click. Don't force a cutover.
+#### 3. Feature inventory (what the editor must do)
+- **Zones = tabs.** Add / rename / delete / reorder named zones. Stall side: a
+  zone is a barn ("Montcrief"). RV side: a zone is both the tab AND the pricing
+  zone ("Red Lot") — one name, and it auto-feeds the RV Lot Zones pricing list
+  (the auto-populate wiring already shipped in the RV two-control work).
+- **Per-zone grid canvas.** Resizable grid (add/remove rows + cols, with row/col
+  insert + delete handles). Each cell is empty (gap/aisle), a number (stall/lot),
+  or text (landmark). Cell classification reuses `classify_cell()` semantics.
+- **Drag-select.** Pointer-drag a rectangle of cells; visible highlight; touch
+  support (tablet).
+- **Fill-series (the headline interaction).** With a rectangle selected, fill
+  with an auto-incrementing sequence: start value + step + traversal order.
+  **DECIDED 2026-06-07 (Whitney):** ship **two directions only — L→R row-major
+  and top→bottom col-major** — those match how the existing Google-Sheet maps are
+  already numbered. R→L and serpentine are dropped from v1 (revisit only if a real
+  facility needs them). Prefix-aware: increments the numeric tail and preserves
+  prefix + zero-padding ("A-01"→"A-02", "Y1"→"Y2"). Option to skip or fill gap
+  cells inside the rectangle.
+- **Single-cell typing.** Click a cell, type a number/label or landmark text.
+- **Landmark regions.** Select a rectangle + type a label → all cells get that
+  landmark label; the existing same-label rectangle-merge + vertical-text renderer
+  handles display (no merge UI needed; tall-narrow → auto vertical text).
+- **Gap/erase brush.** Clear cells back to aisle.
+- **Live validation.** Highlight duplicate labels as the admin builds (stall:
+  globally unique across barns; RV: zone-qualified so cross-zone repeats OK — the
+  exact rule the `target==='rv'` dupe-skip already encodes).
+- **Preview customer view.** A button that renders the same map the customer sees
+  (reuse the picker renderer) so the admin verifies before saving.
+- **Import-from-Sheet seed.** Keep the Google import as an alternate "Import from
+  Sheet" button that **seeds** the builder once (fetch → populate grids → edit
+  natively), so existing sheet-connected reservations convert in one click. No
+  forced cutover; Phase A stays as the quick path.
 
-**Lift estimate (preliminary):** medium-large — a real interactive grid editor
-(drag-select, fill-series, cell typing, resize) + serialize-to-snapshot + wire
-into both the Stall and RV editor sections. The back end is mostly free (data
-shape + validators + renderers already exist). The cost is the authoring UI/JS.
+#### 4. Build plan (slices, with sizing)
+- **C1 — Data + save layer** *(small-med; mostly back end).* Serialize the builder
+  grid ↔ snapshot shape; AJAX `eem_map_builder_save` writing `_en_stall_map` /
+  `_en_rv_map` with `source='builder'` + the right `kind`; reuse `find_duplicate_labels`
+  (+ the rv skip). Smoke the round-trip (grid → snapshot → grid).
+- **C2 — Grid canvas core** *(medium; foundational UI).* Render a resizable DOM
+  grid per zone; cell state model (gap/stall/landmark + label); add/remove rows &
+  cols; click-to-type a single cell. DOM grid (not canvas) — 676 cells is fine;
+  add virtualization only if a facility needs thousands.
+- **C3 — Drag-select + fill-series** *(large; the core interaction + trickiest JS).*
+  Pointer-event rectangle selection + highlight; the fill-series engine (start /
+  step / traversal incl. serpentine, prefix-aware); gap brush; landmark-region
+  fill. Touch support.
+- **C4 — Zones/tabs** *(medium).* Zone add/rename/delete/reorder; tab switcher;
+  per-zone grids; RV zone → pricing auto-feed; duplicate-zone (copy a barn layout).
+- **C5 — Editor integration + import-seed** *(medium).* Wire the builder into the
+  "Interactive Stall Map" / "Interactive RV Map" connector slots (full-screen modal
+  or dedicated sub-panel) with a "Build / Edit Map" button + built-status summary
+  ("✓ 2 barns · 676 stalls"); "Import from Sheet" seed; preview-customer-view.
+- **C6 — Polish + verify** *(medium-large).* Undo/redo (command history — drag-fill
+  mistakes are common, so this is near-essential not optional); live dup-label
+  highlighting; large-grid performance pass; touch QA; full browser verify against
+  a rebuilt Montcrief/Burnett + RV map; smokes.
 
-**Why it's worth it:** removes the Publish-to-web setup friction (the #1 admin
-onboarding hurdle), keeps everything in WP, no Google account / sharing-settings
-dependency, instant edits. Phase A remains the quick path until this lands.
+#### 5. Technical decisions (recommended)
+- **Vanilla JS, no grid library.** Matches the plugin's no-dependency ethos;
+  avoids Handsontable/AG-Grid weight + licensing. The interaction set is bounded
+  (select, fill, type, resize) — buildable cleanly in vanilla.
+- **DOM grid over canvas.** Simpler hit-testing, text, accessibility; fast enough
+  at facility scale (hundreds–low-thousands of cells).
+- **Builder is its own JS module** in `admin.js` (or a new `map-builder.js`
+  enqueued only on the editor), not inline — it's large + interactive.
+- **Undo/redo in v1.** A drag-fill editor without undo is frustrating; include a
+  bounded command stack from the start (don't defer to "polish").
+
+#### 6. Kickoff decisions — ALL SETTLED 2026-06-07 (Whitney)
+- **Traversal directions:** L→R row-major + top→bottom col-major **only**. Matches
+  the existing maps. R→L + serpentine dropped from v1.
+- **Fill across gap cells:** **skip gaps** by default; per-fill toggle to number
+  through when wanted.
+- **Shrink that orphans labelled cells:** **confirm first** — warn "This removes N
+  labeled stalls" and require confirmation before deleting.
+- **Google Sheets after builder ships:** **demote to seed** — builder becomes
+  primary; Sheets import stays as a one-click "Import from Sheet" that seeds the
+  builder, then edit natively. Existing reservations convert in one click.
+- **Touch:** **desktop-first** — optimize for mouse drag-select; touch usable but
+  not pixel-perfect. (Trims C3/C6 effort.)
+
+No open questions remain — Phase C is fully spec'd and ready to schedule.
+
+#### 7. De-scoped (explicitly NOT in Phase C)
+- Pixel-perfect CAD / image-overlay (that's Phase B).
+- Angled rows / curved aisles / non-uniform cell sizes (flat grid only — same
+  limit as the sheet path).
+- Real-time multi-admin collaboration.
+- Manual cell-merge UI (the renderer auto-merges same-label landmarks).
+
+#### 8. Effort estimate
+Substantial — comparable to a multi-slice v4 chunk, **larger than any single v4
+slice, smaller than the whole v4 feature**. The back end is nearly free; the cost
+concentrates in **C2 + C3** (the spreadsheet-lite editor) and **C6** (undo +
+polish). Order-of-magnitude: a few focused sessions. Highest-risk slice is C3
+(the fill-series + pointer interaction); lowest-risk is C1 (data round-trip).
+
+**Why it's worth it:** removes the single biggest setup-friction point for new
+admins, keeps the whole map lifecycle inside WordPress, and rides entirely on the
+data model + renderers already shipped in v4. Phase A remains the quick path until
+this lands.
 
 ### Honest limits (both phases)
 
