@@ -212,7 +212,6 @@ class EEM_Reservations_List_Page {
 				_n( '%d reservation switched to Draft.', '%d reservations switched to Draft.', $bulk_count, 'equine-event-manager' ),
 				$bulk_count
 			) ),
-			'bulk_edit_unsupported' => array( 'type' => 'warning', 'text' => __( 'Bulk Edit is not available yet — it will land in a future release. Use the per-row Edit link for now.', 'equine-event-manager' ) ),
 			'bulk_no_selection'     => array( 'type' => 'warning', 'text' => __( 'Pick at least one reservation before clicking Apply.', 'equine-event-manager' ) ),
 			'bulk_no_action'        => array( 'type' => 'warning', 'text' => __( 'Pick a bulk action before clicking Apply.', 'equine-event-manager' ) ),
 			'denied'                => array( 'type' => 'error',   'text' => __( 'You do not have permission to perform that action.', 'equine-event-manager' ) ),
@@ -525,8 +524,10 @@ class EEM_Reservations_List_Page {
 	 *                 (the editor's hard gate); the rest are skipped + reported.
 	 *   - 'draft'   → switches selected reservations back to Draft (always safe).
 	 *   - 'trash' / 'restore' / 'delete_permanently' / 'empty_trash' → status moves.
-	 *   - 'edit'    → bulk_edit_unsupported notice. Full field bulk-edit is not
-	 *                 wired (it'd need its own modal); only status changes ship.
+	 *
+	 * Field-level bulk edit is intentionally NOT offered (the toolbar dropdown
+	 * exposes only status moves) — per-reservation editing uses the per-row Edit
+	 * link. Any unrecognized action falls through to the 'bulk_no_action' notice.
 	 *
 	 * @return void  Exits.
 	 */
@@ -649,10 +650,6 @@ class EEM_Reservations_List_Page {
 					$count > 0 ? 'bulk_drafted' : 'failed',
 					array( 'status' => $status, 'eem_bulk_count' => $count )
 				);
-				break;
-
-			case 'edit':
-				self::redirect_with_notice( 'bulk_edit_unsupported', array( 'status' => $status ) );
 				break;
 
 			default:
