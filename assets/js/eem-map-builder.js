@@ -470,7 +470,17 @@
 		B.overlay.addEventListener('click', act, true);
 		B.overlay.addEventListener('input', act, true);
 		q('.eem-mb-title').textContent = (target === 'rv' ? 'RV Map Builder' : 'Stall Map Builder');
-		requestAnimationFrame(function () { B.overlay.classList.add('open'); fitZoom(); });
+		// Capture THIS instance: auto-mount opens stall then rv synchronously, so by
+		// the time these rAF callbacks fire the shared `B` points at the last-opened
+		// instance. Without capturing, the stall overlay never gets `.open` (it stays
+		// opacity:0 → blank). Pin the instance + re-activate before fitZoom.
+		var inst = INSTANCES[target];
+		requestAnimationFrame(function () {
+			if (!inst.overlay) { return; }
+			inst.overlay.classList.add('open');
+			B = inst;
+			fitZoom();
+		});
 		render(); renderControls();
 	}
 
