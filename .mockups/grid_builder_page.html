@@ -68,6 +68,7 @@ button{font-family:var(--font-ui);cursor:pointer}
 .tool-controls{display:inline-flex;align-items:center;gap:13px;flex-wrap:wrap}
 .tc{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--navy)}
 .tc-input{width:78px;padding:6px 8px;border:1.5px solid var(--border);border-radius:var(--radius);font:inherit;font-size:12.5px;color:var(--text)}
+.tc-input-wide{width:180px}
 .tc-num{width:52px;padding:6px 8px;border:1.5px solid var(--border);border-radius:var(--radius);font:inherit;font-size:12.5px;color:var(--text)}
 .tc-input:focus,.tc-num:focus{outline:none;border-color:var(--electric)}
 .tc-apply{padding:7px 15px;font-size:12.5px}
@@ -313,7 +314,7 @@ let zones=[
 let active=0, tool='select', sel=null, drag=null;
 let history=[], future=[];
 // Persisted panel settings so a selection change never wipes what you typed.
-let fillState={start:'201',step:1,dir:'lr',skip:true};
+let fillState={start:'1',step:1,dir:'lr',skip:true};
 let lmState={name:'Wash Rack'};
 
 const Z=()=>zones[active];
@@ -321,7 +322,7 @@ function snapshot(){history.push(JSON.stringify(zones));if(history.length>60)his
 function updateUndo(){document.getElementById('undoBtn').disabled=!history.length;document.getElementById('redoBtn').disabled=!future.length;}
 function clearGrid(){const z=Z();const n=countStalls(z);
   if(n&&!confirm('Clear all '+n+' stalls from “'+z.name+'”? You can Undo.'))return;
-  snapshot();z.grid=mkGrid(z.rows,z.cols);sel=null;render();renderPanel();toast('Cleared “'+z.name+'”');}
+  snapshot();z.grid=mkGrid(z.rows,z.cols);sel=null;fillState.start='1';render();renderPanel();toast('Cleared “'+z.name+'”');}
 
 /* ---------- TOOLS ---------- */
 document.getElementById('toolbar').addEventListener('click',e=>{
@@ -507,7 +508,7 @@ function renderPanel(){
     p.querySelector('#f_skip').addEventListener('change',e=>fillState.skip=e.target.checked);
     p.querySelector('#f_dir').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;p.querySelectorAll('#f_dir button').forEach(x=>x.classList.remove('on'));b.classList.add('on');fillState.dir=b.dataset.dir;});
   } else if(tool==='landmark'){
-    p.innerHTML=`<label class="tc">Label <input type="text" id="lm_name" class="tc-input" value="${lmState.name.replace(/"/g,'&quot;')}" placeholder="Wash Rack, Office…"></label>
+    p.innerHTML=`<label class="tc">Label <input type="text" id="lm_name" class="tc-input tc-input-wide" value="${lmState.name.replace(/"/g,'&quot;')}" placeholder="Wash Rack, Office, Arena…"></label>
       <button class="btn-primary btn tc-apply" onclick="applyLandmark()">Mark as Landmark</button>
       <span class="sel-meta tc-sel">No selection</span>`;
     p.querySelector('#lm_name').addEventListener('input',e=>lmState.name=e.target.value);
