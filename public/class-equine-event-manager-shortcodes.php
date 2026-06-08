@@ -1907,10 +1907,23 @@ class EEM_Shortcodes {
 					t.type='button';
 					t.className = 'eem-map-tab' + (i===activeBarn?' active':'');
 					t.textContent = b.name;
+					// Show each zone's surcharge so customers see Red Lot costs more
+					// than Blue Lot before they pick.
+					var sc = zoneSurcharge(b.name);
+					if (sc > 0) { var badge = document.createElement('span'); badge.className = 'eem-map-tab-surcharge'; badge.textContent = '+' + money(sc); t.appendChild(badge); }
 					t.onclick = function(){ activeBarn=i; renderTabs(); renderGrid(); fitZoom(); };
 					tabsEl.appendChild(t);
 				});
 			}
+
+			// Per-night zone surcharge for the current RV stay type (0 for stalls).
+			function zoneSurcharge(zoneName){
+				var zs = (P.zoneSurcharge || {})[(zoneName || '').toLowerCase().trim()];
+				if (!zs) return 0;
+				var weekend = (form.querySelector('[name="rv_stay_type"]') || {}).value === 'weekend';
+				return (+(weekend ? zs.weekend : zs.nightly)) || 0;
+			}
+			function money(n){ return '$' + (n % 1 === 0 ? n : n.toFixed(2)); }
 
 			function syncForm(){
 				var units = Object.keys(selected);
@@ -2008,6 +2021,13 @@ class EEM_Shortcodes {
 			// (countTackStalls() reads [data-eem-tack-select]; the qty event is what the
 			// existing total listeners are bound to).
 			if (tackSel){ tackSel.addEventListener('change', function(){ var q = form.querySelector('[name="'+P.qtyField+'"]'); if (q){ q.dispatchEvent(new Event('input',{bubbles:true})); q.dispatchEvent(new Event('change',{bubbles:true})); } }); }
+
+			// Re-render the tab surcharges when the RV stay type flips (nightly vs
+			// weekend surcharges can differ).
+			if (P.zoneSurcharge && Object.keys(P.zoneSurcharge).length) {
+				var stayField = form.querySelector('[name="rv_stay_type"]');
+				if (stayField) { stayField.addEventListener('change', function(){ renderTabs(); }); }
+			}
 
 			// Inline init — the map is always visible (no modal).
 			renderTabs(); renderGrid(); applyZoom(); fitZoom(); syncForm();
