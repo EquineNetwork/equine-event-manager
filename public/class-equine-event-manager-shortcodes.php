@@ -1015,12 +1015,14 @@ class EEM_Shortcodes {
 							<div class="eem-reservation-section-heading eem-reservation-section-heading--collapsible">
 								<h4 class="eem-reservation-section__title"><?php esc_html_e( 'Group Reservation', 'equine-event-manager' ); ?></h4>
 								<label class="eem-reservation-section-toggle" aria-label="<?php esc_attr_e( 'Turn on group reservation', 'equine-event-manager' ); ?>">
-									<input type="checkbox" name="group_reservation_enabled" value="1" data-eem-group-toggle />
+									<?php // Enabled in the editor → ON by default on the front so customers
+									// don't miss it. The customer can switch it off if they aren't a group. ?>
+									<input type="checkbox" name="group_reservation_enabled" value="1" data-eem-group-toggle checked />
 									<span class="eem-reservation-section-toggle__track" aria-hidden="true"></span>
 								</label>
 							</div>
 							<div class="eem-reservation-section__body">
-								<p class="eem-reservation-help"><?php esc_html_e( 'Turn on the toggle above if this is a group reservation — we’ll capture the rider count and a first and last name for each rider.', 'equine-event-manager' ); ?></p>
+								<p class="eem-reservation-help"><?php esc_html_e( 'This is a group reservation — we’ll capture the rider count and a first and last name for each rider. Switch the toggle off if you’re not booking for a group.', 'equine-event-manager' ); ?></p>
 								<div class="eem-group-reservation-fields" data-eem-group-fields hidden>
 									<div class="eem-product-list eem-product-list--group-reservation">
 										<?php $this->render_product_list_header(); ?>
