@@ -21,6 +21,7 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-pdf.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-reservations-cpt.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-stall-map-importer.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-events.php';
+require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-gems-client.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-equine-event-manager-admin.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-equine-event-manager-reservation-editor.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'public/class-equine-event-manager-shortcodes.php';
