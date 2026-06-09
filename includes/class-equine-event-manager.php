@@ -357,6 +357,11 @@ class EEM_Plugin {
 		add_action( 'wp_ajax_equine_event_manager_test_feed_url', array( $this->events, 'ajax_test_feed_url' ) );
 		add_action( 'wp_ajax_equine_event_manager_search_feed_events', array( $this->events, 'ajax_search_feed_events' ) );
 
+		// Brand the "Reservations" bridge button the GEMS for WordPress plugin
+		// renders on its event listings (Electric Blue navigation CTA). EEM owns
+		// the styling because EEM supplies the button's URL.
+		add_action( 'wp_enqueue_scripts', array( 'EEM_Gems_Client', 'enqueue_bridge_button_styles' ) );
+
 		if ( EEM_Events::is_native_events_enabled() ) {
 			add_action( 'init', array( $this->events, 'register_content_types' ) );
 			add_filter( 'use_block_editor_for_post_type', array( $this->events, 'filter_use_block_editor_for_post_type' ), 10, 2 );

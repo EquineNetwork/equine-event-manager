@@ -353,4 +353,41 @@ class EEM_Gems_Client {
 			'message' => sprintf( _n( '✓ Connected — %d scheduled event found.', '✓ Connected — %d scheduled events found.', $count, 'equine-event-manager' ), $count ),
 		);
 	}
+
+	/**
+	 * Enqueue brand styling for the "Reservations" button that the GEMS for
+	 * WordPress plugin renders on its event listings (the bridge button emitted
+	 * by gems_reservation_button() → eem_get_reservation_url_for_event()).
+	 *
+	 * The GEMS plugin owns the markup (an <a class="gems-reservations-btn">),
+	 * but the button only exists because EEM supplied the reservation URL — so
+	 * EEM owns its visual identity, keeping it on-brand (Electric Blue
+	 * navigation CTA per the brand guide) regardless of the GEMS plugin's own
+	 * default styling. The selector is scoped `.gems-feed a.gems-reservations-btn`
+	 * (specificity 0,2,1) so it reliably overrides the GEMS plugin's
+	 * single-class default no matter the stylesheet load order. Hooked to
+	 * wp_enqueue_scripts; only emits when GEMS is the active event source.
+	 *
+	 * @return void
+	 */
+	public static function enqueue_bridge_button_styles(): void {
+		if ( is_admin() || ! self::is_configured() ) {
+			return;
+		}
+
+		$handle = 'eem-gems-bridge';
+		wp_register_style( $handle, false, array(), EQUINE_EVENT_MANAGER_VERSION );
+		wp_enqueue_style( $handle );
+
+		// Electric Blue (#1668F2) navigation CTA — mirrors .eem-btn-electric:
+		// 8px/16px padding, 4px radius, IBM Plex Sans 13px/600, white text,
+		// no underline (per the universal hover convention). Hover darkens to
+		// #1355cc. Tracks the admin.css token values by hand because this is
+		// front-end CSS that does not load admin.css.
+		$css = <<<'CSS'
+.gems-feed a.gems-reservations-btn{display:inline-flex;align-items:center;justify-content:center;padding:8px 16px;border:none;border-radius:4px;background:#1668F2;color:#fff;font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:13px;font-weight:600;line-height:1.4;text-decoration:none;white-space:nowrap;cursor:pointer;transition:background .15s,color .15s;}
+.gems-feed a.gems-reservations-btn:hover,.gems-feed a.gems-reservations-btn:focus{background:#1355cc;color:#fff;text-decoration:none;}
+CSS;
+		wp_add_inline_style( $handle, $css );
+	}
 }
