@@ -2628,6 +2628,15 @@ class EEM_Shortcodes {
 		$has_shavings_selection  = ( $submission['additional_shavings_qty'] ?? 0 ) > 0;
 		$has_rv_addon_selection  = false;
 		$has_general_addon_selection = false;
+		$has_pre_entry_selection = false;
+
+		// A group reservation (riders only — no stall/RV) is itself a purchasable
+		// item: the Rider Grounds Fee / Rider Deposit line items are billed per
+		// rider. Treat a valid group selection as a reservation item so a
+		// group-only event can check out.
+		$has_group_selection = ! empty( $data['group_reservations_enabled'] )
+			&& ! empty( $submission['group_reservation_enabled'] )
+			&& (int) ( $submission['group_rider_count'] ?? 0 ) >= 1;
 
 		foreach ( $this->get_enabled_rv_addon_options( $data ) as $addon_key => $addon ) {
 			if ( ! empty( $submission[ 'rv_addon_' . $addon_key ] ) ) {
@@ -2659,6 +2668,8 @@ class EEM_Shortcodes {
 			if ( $qty <= 0 ) {
 				continue;
 			}
+
+			$has_pre_entry_selection = true;
 
 			if ( $pre_entry['max_per_customer'] > 0 && $qty > $pre_entry['max_per_customer'] ) {
 				$errors[] = sprintf(
@@ -2746,7 +2757,14 @@ class EEM_Shortcodes {
 			$errors[] = __( 'Please select at least one RV spot before choosing RV add-ons.', 'equine-event-manager' );
 		}
 
-		if ( ! $has_stall_selection && ! $has_rv_selection && ! $has_shavings_selection ) {
+		// "At least one item" guard — fire ONLY when nothing purchasable is
+		// selected. Every sellable line type counts: stalls, RV, shavings,
+		// general add-ons + RV add-ons (standalone-purchasable per the 2.3.66
+		// decision), group riders, and event pre-entries. Omitting any of these
+		// blocks an otherwise-valid checkout (e.g. a group-only event).
+		if ( ! $has_stall_selection && ! $has_rv_selection && ! $has_shavings_selection
+			&& ! $has_general_addon_selection && ! $has_rv_addon_selection
+			&& ! $has_group_selection && ! $has_pre_entry_selection ) {
 			$errors[] = __( 'Please select at least one reservation item.', 'equine-event-manager' );
 		}
 
