@@ -328,7 +328,13 @@ class EEM_Events {
 		}
 
 		$reservation_id = (int) $ids[0];
-		$url            = (string) get_permalink( $reservation_id );
+
+		// The en_reservation CPT is public => false, so get_permalink() yields a
+		// non-routable ?post_type=en_reservation&p=N URL that 404s. Customers
+		// reach a reservation through the plugin's virtual event route
+		// (/equine-event/{id}/), the same page TEC-linked reservations use —
+		// featured image + event info + the booking form below. Build that URL.
+		$url = (string) home_url( user_trailingslashit( self::VIRTUAL_EVENT_ROUTE_BASE . '/' . $reservation_id ) );
 
 		if ( '' === $url ) {
 			return null;

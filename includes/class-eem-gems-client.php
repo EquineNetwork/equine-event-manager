@@ -180,7 +180,11 @@ class EEM_Gems_Client {
 			'event_type'        => isset( $r['eventType'] ) ? (string) $r['eventType'] : '',
 			'ref_id'            => isset( $r['refId'] ) ? (string) $r['refId'] : '',
 			'logo'              => isset( $r['imgLogo'] ) ? (string) $r['imgLogo'] : '',
-			'content_raw'       => isset( $r['eventType'] ) ? (string) $r['eventType'] : '',
+			// GEMS provides no event description body. content_raw feeds the
+			// event-page hero bullets, so leave it empty — do NOT fall back to
+			// eventType (that surfaced as a stray "Non-Sanctioned" bullet under
+			// the event title).
+			'content_raw'       => '',
 		);
 	}
 
