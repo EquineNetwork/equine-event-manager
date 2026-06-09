@@ -880,7 +880,7 @@ class EEM_Settings_Page {
 								'coming_soon' => true,
 							),
 							'feed' => array(
-								'title'  => __( 'GEMS Events', 'equine-event-manager' ),
+								'title'  => __( 'GEMS Integration', 'equine-event-manager' ),
 								'desc'   => __( 'Pull events from your GEMS Web Data connection (via the GEMS for WordPress plugin). Reservations search and link to live GEMS events, just like The Events Calendar.', 'equine-event-manager' ),
 								'status' => $gems_status,
 							),

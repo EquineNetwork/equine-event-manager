@@ -288,6 +288,60 @@ class EEM_Events {
 	}
 
 	/**
+	 * Bridge for external integrations (e.g. the GEMS for WordPress plugin):
+	 * find the PUBLISHED reservation linked to an external event id and return
+	 * its public booking-page details, so the external event listing can render
+	 * a "Reservations" button that links to the EN reservation page.
+	 *
+	 * A reservation is "linked" when its `_en_external_event_id` post-meta equals
+	 * the external event id (the GEMS eventUID stored when the admin picks the
+	 * event in the reservation editor).
+	 *
+	 * @param string $external_event_id External event id (GEMS eventUID).
+	 * @return array{reservation_id:int, url:string, title:string}|null Null when none.
+	 */
+	public static function get_reservation_for_external_event( $external_event_id ) {
+		$external_event_id = trim( (string) $external_event_id );
+		if ( '' === $external_event_id ) {
+			return null;
+		}
+
+		$ids = get_posts(
+			array(
+				'post_type'        => 'en_reservation',
+				'post_status'      => 'publish',
+				'numberposts'      => 1,
+				'fields'           => 'ids',
+				'no_found_rows'    => true,
+				'suppress_filters' => false,
+				'meta_query'       => array(
+					array(
+						'key'   => '_en_external_event_id',
+						'value' => $external_event_id,
+					),
+				),
+			)
+		);
+
+		if ( empty( $ids ) ) {
+			return null;
+		}
+
+		$reservation_id = (int) $ids[0];
+		$url            = (string) get_permalink( $reservation_id );
+
+		if ( '' === $url ) {
+			return null;
+		}
+
+		return array(
+			'reservation_id' => $reservation_id,
+			'url'            => $url,
+			'title'          => (string) get_the_title( $reservation_id ),
+		);
+	}
+
+	/**
 	 * Get the normalized feed event index for a URL.
 	 *
 	 * @param string $feed_url Optional feed URL.
@@ -4271,5 +4325,29 @@ class EEM_Featured_Event_Widget extends WP_Widget {
 		return array(
 			'title' => sanitize_text_field( isset( $new_instance['title'] ) ? $new_instance['title'] : '' ),
 		);
+	}
+}
+
+if ( ! function_exists( 'eem_get_reservation_url_for_event' ) ) {
+	/**
+	 * Public bridge for external plugins (e.g. GEMS for WordPress): return the
+	 * URL of the EN reservation booking page linked to an external event id, or
+	 * an empty string when no published reservation is attached.
+	 *
+	 * Usage in another plugin (guard against EEM being inactive):
+	 *   if ( function_exists( 'eem_get_reservation_url_for_event' ) ) {
+	 *       $url = eem_get_reservation_url_for_event( $event->eventUID );
+	 *       if ( $url ) { echo "...Reservations button linking to $url..."; }
+	 *   }
+	 *
+	 * @param string $external_event_id External event id (GEMS eventUID).
+	 * @return string Reservation booking-page URL, or '' when none.
+	 */
+	function eem_get_reservation_url_for_event( $external_event_id ) {
+		if ( ! class_exists( 'EEM_Events' ) ) {
+			return '';
+		}
+		$match = EEM_Events::get_reservation_for_external_event( $external_event_id );
+		return is_array( $match ) && ! empty( $match['url'] ) ? (string) $match['url'] : '';
 	}
 }
