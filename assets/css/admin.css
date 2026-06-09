@@ -4797,7 +4797,10 @@ a.eem-btn-collect-banner:focus {
 
 /* C6.A.2: Group reservation rider list (mockup lines 468-471). */
 .eem-rider-list {
-	padding: 0 14px 14px;
+	padding: 12px 14px 14px;
+	/* Separator under the single "Rider Count" row above — without this the
+	   count value floats with no visible boundary from the rider list. */
+	border-top: 1px solid var(--eem-border-soft);
 }
 
 .eem-rider-row {
