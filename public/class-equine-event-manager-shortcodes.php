@@ -3707,12 +3707,14 @@ class EEM_Shortcodes {
 		$transaction_id  = ! empty( $payment_result['transaction_id'] ) ? $payment_result['transaction_id'] : '';
 		$order_number    = '';
 		$totals          = $this->calculate_submission_totals( $data, $submission, $status, $reservation_id );
-		// NOTE (C3.D.1 / SET-6): $totals['tax'] is the aggregate tax for this submission.
-		// The per-order rows persisted below (stall + rv) keep their pre-tax `total` column
-		// for now — tax allocation between split orders + a dedicated `tax` schema column is
-		// C11 scope (receipt/email breakouts). Customer is still charged the correct
-		// tax-inclusive total via $totals['total'] in process_payment_submission /
-		// ajax_create_stripe_payment_intent.
+		// NOTE (C3.D.1 / SET-6 → CLEANUP #9 resolved): $totals['tax'] is the aggregate
+		// tax for this submission. The per-order rows persisted below keep their `total`
+		// column pre-tax (subtotal+fee) so the existing refund/component logic is untouched;
+		// the dedicated `tax` column on each row carries that row's PROPORTIONAL share of
+		// the aggregate tax (computed just below, split by taxable subtotal), and the
+		// orders-repository aggregation adds tax back into the grouped order total. Customer
+		// is charged the correct tax-inclusive total via $totals['total'] in
+		// process_payment_submission / ajax_create_stripe_payment_intent.
 		$has_stall_order = ( $status['stalls_open'] && $this->has_stall_selection( $submission, $data, $status ) ) || ( ! empty( $status['shavings_open'] ) && $submission['additional_shavings_qty'] > 0 );
 		$has_rv_order    = $status['rv_open'] && $submission['rv_qty'] > 0;
 		$has_group_fees  = ! empty( $totals['group_subtotal'] );
@@ -3723,6 +3725,34 @@ class EEM_Shortcodes {
 			$has_stall_order          = true;
 			$attach_general_addons_to = 'stall';
 			$attach_group_charges_to  = 'stall';
+		}
+
+		// CLEANUP #9 — split the aggregate tax (`$totals['tax']`) across the stall +
+		// RV order rows in proportion to each row's taxable subtotal, so a split
+		// stall+RV order's per-component receipts each carry their fair share and a
+		// single-component refund releases the right amount of tax. The taxable base
+		// per row is its subtotal plus any add-on / group charges attached to it (the
+		// same bases used in the inserts below). The stall row takes the rounded
+		// share; the RV row takes the exact remainder so the two always sum to
+		// `$totals['tax']` to the cent. Single-component orders behave exactly as
+		// before — all the tax lands on the one component that exists.
+		$eem_stall_tax_base = (float) $totals['stall_subtotal']
+			+ ( 'stall' === $attach_general_addons_to ? (float) $totals['general_addons_subtotal'] : 0.0 )
+			+ ( 'stall' === $attach_group_charges_to ? (float) $totals['group_subtotal'] : 0.0 );
+		$eem_rv_tax_base = (float) $totals['rv_subtotal']
+			+ ( 'rv' === $attach_general_addons_to ? (float) $totals['general_addons_subtotal'] : 0.0 )
+			+ ( 'rv' === $attach_group_charges_to ? (float) $totals['group_subtotal'] : 0.0 );
+		$eem_total_tax = (float) $totals['tax'];
+		$eem_base_sum  = $eem_stall_tax_base + $eem_rv_tax_base;
+		if ( $has_stall_order && $has_rv_order && $eem_base_sum > 0 ) {
+			$eem_stall_tax = round( $eem_total_tax * $eem_stall_tax_base / $eem_base_sum, 2 );
+			$eem_rv_tax    = round( $eem_total_tax - $eem_stall_tax, 2 );
+		} elseif ( $has_stall_order ) {
+			$eem_stall_tax = $eem_total_tax;
+			$eem_rv_tax    = 0.0;
+		} else {
+			$eem_stall_tax = 0.0;
+			$eem_rv_tax    = $eem_total_tax;
 		}
 
 		if ( $has_stall_order || $has_rv_order || ! empty( $totals['general_addons_subtotal'] ) || $has_group_fees ) {
@@ -3870,13 +3900,12 @@ class EEM_Shortcodes {
 					'unit_price'                => $stall_unit_price,
 					'subtotal'                  => $stall_subtotal,
 					'convenience_fee'           => $stall_fee,
-					// C12: persist the order-level tax once (on the stall row when a
-					// stall order exists; otherwise on the RV row below) so the
-					// receipt/hosted page can render the Sales Tax line and the
-					// grouped order total reflects what was actually charged. Tax
-					// lives in its own column — row `total` stays subtotal+fee so the
-					// existing refund/component logic is untouched.
-					'tax'                       => (float) $totals['tax'],
+					// C12 + CLEANUP #9: this row's proportional share of the order tax
+					// ($eem_stall_tax, computed above). Tax lives in its own column —
+					// row `total` stays subtotal+fee so the existing refund/component
+					// logic is untouched; the grouped order total adds tax back in the
+					// orders-repository aggregation.
+					'tax'                       => (float) $eem_stall_tax,
 					'tax_rate'                  => (float) $totals['tax_rate'],
 					'total'                     => $stall_subtotal + $stall_fee,
 					'payment_status'            => $payment_status,
@@ -3940,9 +3969,10 @@ RV Lot: " . $rv_lot['name'] );
 					'unit_price'        => $rv_unit_price,
 					'subtotal'          => $rv_subtotal,
 					'convenience_fee'   => $rv_fee,
-					// C12: carry the full order tax here only when there is no stall
-					// row to hold it (avoids double-counting); rate stored on both.
-					'tax'               => $has_stall_order ? 0.0 : (float) $totals['tax'],
+					// C12 + CLEANUP #9: this row's proportional share of the order tax
+					// ($eem_rv_tax = exact remainder after the stall row's rounded
+					// share, so stall_tax + rv_tax == $totals['tax'] to the cent).
+					'tax'               => (float) $eem_rv_tax,
 					'tax_rate'          => (float) $totals['tax_rate'],
 					'total'             => $rv_subtotal + $rv_fee,
 					'payment_status'    => $payment_status,
