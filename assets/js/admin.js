@@ -327,6 +327,21 @@
 	 * @param {string} [options.variant]  'success' (default) or 'error'.
 	 * @param {number} [options.duration] Ms before auto-dismiss. Default 3200.
 	 */
+	/**
+	 * True when an admin-ajax response is WordPress's nonce/auth failure
+	 * sentinel (`-1` or `0`, as number or string) or otherwise not a JSON object.
+	 * check_ajax_referer() emits this when the page nonce has expired, which
+	 * res.json() parses to a bare number — so callers can show a "reload" message
+	 * instead of a confusing generic "Save failed."
+	 *
+	 * @param {*} json Parsed admin-ajax response.
+	 * @returns {boolean}
+	 */
+	EEM.isSessionExpiredResponse = function (json) {
+		return json === -1 || json === 0 || json === '-1' || json === '0'
+			|| json === null || typeof json !== 'object';
+	};
+
 	EEM.showSaveToast = function (message, options) {
 		var opts = options || {};
 		var wrap = document.querySelector('.eem-toast-wrap');
@@ -529,10 +544,15 @@
 		})
 			.then(function (res) { return res.json(); })
 			.then(function (json) {
-				if (json && json.success) {
+				if (json && typeof json === 'object' && json.success) {
 					EEM.showSaveToast(
 						(json.data && json.data.message) || 'Saved.'
 					);
+				} else if (EEM.isSessionExpiredResponse(json)) {
+					// WordPress returns -1/0 from check_ajax_referer when the page
+					// nonce has expired (common after the Settings tab has been open
+					// a long time). Tell the user to reload instead of a bare fail.
+					EEM.showSaveToast('Your session expired. Reload the page and try again.', { variant: 'error', sub: '' });
 				} else {
 					var msg = (json && json.data && json.data.message) || 'Save failed.';
 					EEM.showSaveToast(msg, { variant: 'error', sub: '' });
@@ -636,8 +656,10 @@
 		})
 			.then(function (res) { return res.json(); })
 			.then(function (json) {
-				if (json && json.success) {
+				if (json && typeof json === 'object' && json.success) {
 					EEM.showSaveToast((json.data && json.data.message) || 'Notes saved.');
+				} else if (EEM.isSessionExpiredResponse(json)) {
+					EEM.showSaveToast('Your session expired. Reload the page and try again.', { variant: 'error', sub: '' });
 				} else {
 					var msg = (json && json.data && json.data.message) || 'Save failed.';
 					EEM.showSaveToast(msg, { variant: 'error', sub: '' });
