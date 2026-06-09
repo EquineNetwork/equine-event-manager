@@ -60,6 +60,13 @@ h1,h2,h3 { font-family: 'Space Grotesk','DejaVu Sans','Helvetica Neue',Arial,san
 .order-box .obl { font-size: 11.5px; font-weight: 600; color: #50575e; }
 .order-box .obv { font-size: 13.5px; font-weight: 700; color: #031B4E; margin-bottom: 8px; }
 .order-box .obv.paid { font-size: 17px; color: #1668F2; margin-bottom: 0; }
+.receipt-status-pill { display: inline-block; margin-top: 8px; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; background: #FCEAEA; color: #B3261E; border: 1px solid #E6A6A0; }
+
+/* Refund / void status banner */
+.refund-banner { margin: 0 0 16px; padding: 12px 16px; border-radius: 4px; background: #FCEAEA; border: 1px solid #E6A6A0; color: #7A1A12; font-size: 13px; }
+.refund-banner-label { font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.refund-banner-detail { margin-left: 6px; }
+.totals-inner tr.refunded-row td { color: #B3261E; font-weight: 700; }
 
 /* Customer + Billing */
 .details-table { width: 100%; margin-bottom: 16px; border-spacing: 0; table-layout: fixed; }
@@ -191,9 +198,22 @@ $eem_footer_right = trim( $c( 'order_number' ) . ( $c( 'event_title' ) ? '  ·  
         <?php endif; ?>
         <div class="obl"><?php esc_html_e( 'Amount Paid', 'equine-event-manager' ); ?></div>
         <div class="obv paid"><?php echo esc_html( $c( 'amount_paid' ) ); ?></div>
+        <?php if ( $c( 'status_label' ) ) : ?>
+          <div class="receipt-status-pill"><?php echo esc_html( $c( 'status_label' ) ); ?></div>
+        <?php endif; ?>
       </div>
     </td>
   </tr></tbody></table>
+
+  <?php if ( $c( 'is_refunded' ) ) : ?>
+    <!-- REFUND / VOID STATUS BANNER -->
+    <div class="refund-banner">
+      <span class="refund-banner-label"><?php echo esc_html( $c( 'status_label' ) ); ?></span>
+      <?php if ( $c( 'refunded_amount' ) ) : ?>
+        <span class="refund-banner-detail"><?php echo esc_html( sprintf( /* translators: %s: refunded amount, e.g. $2.00. */ __( '%s was returned to the original payment method.', 'equine-event-manager' ), $c( 'refunded_amount' ) ) ); ?></span>
+      <?php endif; ?>
+    </div>
+  <?php endif; ?>
 
   <!-- CUSTOMER + BILLING -->
   <table class="details-table"><tbody><tr>
@@ -360,7 +380,13 @@ $eem_footer_right = trim( $c( 'order_number' ) . ( $c( 'event_title' ) ? '  ·  
         <?php if ( $c( 'tax' ) ) : ?>
           <tr><td class="tl"><?php echo esc_html( sprintf( /* translators: %s: tax rate, e.g. 7.5%%. */ __( 'Sales Tax (%s)', 'equine-event-manager' ), $c( 'tax_rate_label' ) ) ); ?></td><td class="tv"><?php echo esc_html( $c( 'tax' ) ); ?></td></tr>
         <?php endif; ?>
-        <tr class="grand"><td class="tl"><?php esc_html_e( 'Total Amount Paid', 'equine-event-manager' ); ?></td><td class="tv"><?php echo esc_html( $c( 'grand_total' ) ); ?></td></tr>
+        <?php if ( $c( 'is_refunded' ) && $c( 'refunded_amount' ) ) : ?>
+          <tr class="grand"><td class="tl"><?php esc_html_e( 'Order Total', 'equine-event-manager' ); ?></td><td class="tv"><?php echo esc_html( $c( 'grand_total' ) ); ?></td></tr>
+          <tr class="refunded-row"><td class="tl"><?php esc_html_e( 'Refunded', 'equine-event-manager' ); ?></td><td class="tv">&minus;<?php echo esc_html( $c( 'refunded_amount' ) ); ?></td></tr>
+          <tr class="grand"><td class="tl"><?php esc_html_e( 'Net Paid', 'equine-event-manager' ); ?></td><td class="tv"><?php echo esc_html( $c( 'net_paid' ) ); ?></td></tr>
+        <?php else : ?>
+          <tr class="grand"><td class="tl"><?php esc_html_e( 'Total Amount Paid', 'equine-event-manager' ); ?></td><td class="tv"><?php echo esc_html( $c( 'grand_total' ) ); ?></td></tr>
+        <?php endif; ?>
       </tbody></table>
     </div>
     <div class="clear"></div>

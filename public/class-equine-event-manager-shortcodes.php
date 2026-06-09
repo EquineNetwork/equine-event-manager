@@ -4899,6 +4899,29 @@ RV Lot: " . $rv_lot['name'] );
 		$paid_ts        = ! empty( $order['created_at'] ) ? strtotime( (string) $order['created_at'] ) : false;
 		$tax_rate_value = (float) $order['tax_rate'];
 
+		// Refund / void status — surface it on the receipt so a refunded order's
+		// receipt no longer reads like a clean paid receipt. A void (unsettled
+		// reversal) is recorded the same way as a refund, so both surface as
+		// "Refunded" to the customer.
+		$refunded_total = 0.0;
+		foreach ( (array) ( $order['components'] ?? array() ) as $eem_refund_component ) {
+			$refunded_total += isset( $eem_refund_component['refunded_amount'] ) ? (float) $eem_refund_component['refunded_amount'] : 0.0;
+		}
+		$eem_payment_status  = isset( $order['payment_status'] ) ? (string) $order['payment_status'] : '';
+		$eem_order_total     = (float) $order['total'];
+		$is_cancelled        = 'cancelled' === $eem_payment_status;
+		$is_fully_refunded   = ! $is_cancelled && ( 'refunded' === $eem_payment_status || ( $refunded_total > 0.009 && $refunded_total + 0.009 >= $eem_order_total ) );
+		$is_partial_refunded = ! $is_cancelled && ! $is_fully_refunded && ( 'partially_refunded' === $eem_payment_status || $refunded_total > 0.009 );
+		$status_label        = '';
+		if ( $is_cancelled ) {
+			$status_label = __( 'Cancelled', 'equine-event-manager' );
+		} elseif ( $is_fully_refunded ) {
+			$status_label = __( 'Refunded', 'equine-event-manager' );
+		} elseif ( $is_partial_refunded ) {
+			$status_label = __( 'Partially Refunded', 'equine-event-manager' );
+		}
+		$net_paid = max( 0, $eem_order_total - $refunded_total );
+
 		$ctx = array(
 			'logo_url'            => $for_pdf ? $this->get_company_logo_data_uri() : $this->get_company_logo_url( 'medium' ),
 			'order_number'        => sprintf( '#%05d', absint( $order['order_number'] ) ),
@@ -4925,6 +4948,11 @@ RV Lot: " . $rv_lot['name'] );
 			'cancellation_policy' => trim( (string) ( $reservation_data['cancellation_policy_override'] ?? '' ) ),
 			'support_phone'       => $support_phone ? $this->format_phone_label( $support_phone ) : '',
 			'support_email'       => $support_email,
+			// Refund/void status (empty string when a normal paid order).
+			'status_label'        => $status_label,
+			'is_refunded'         => '' !== $status_label,
+			'refunded_amount'     => $refunded_total > 0.009 ? $money( $refunded_total ) : '',
+			'net_paid'            => $money( $net_paid ),
 		);
 
 		ob_start();
