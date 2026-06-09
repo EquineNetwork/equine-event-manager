@@ -16,6 +16,18 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 
 ## Active entries
 
+> **Reconciliation note (2026-06, post perf/housekeeping batch):** All numbered
+> roadmap chunks (C1–C16, DS-1) and all v2 items have shipped. Entries below whose
+> Status still reads "awaiting C7 / C10 / C11 / C14 / C16 / …" are **stale** —
+> their gating chunk completed, so the work either landed inside that chunk or is
+> moot. Treat a non-`✅` "awaiting CX" status as resolved-by-completion unless the
+> entry describes a concrete deliverable that's verifiably still missing in the
+> code. The remaining genuinely-open items are tracked in the live to-do list, not
+> here: the Authorize.net admin charge tab and the Native/Feed source un-gate
+> decision (both functional), plus the explicitly-deferred V2 features
+> (scheduled reports, bulk send-payment-link, show-bill, extra email templates,
+> orders soft-delete).
+
 ### 47. New `_en_group_description` + `_en_group_riders_per_group` meta keys — customer-facing C10 cascade
 - **What:** C7.C.1.4.A introduced two new reservation post-meta keys per mockup canon (mockup lines 958–970, Decision N1): `_en_group_description` (textarea — what a group reservation includes) and `_en_group_riders_per_group` (int — max riders one customer can register). Mockup-canonical fields with no legacy equivalent; added non-destructively (Option L1 pattern).
 - **Why deferred:** Editor save-side wires these in C7.C.1.4.A. Customer-facing C10 (Customer Event Page) needs to (a) display the group description text on the group-reservations toggle, (b) enforce the riders-per-group max on the rider-count input. Neither is wired today; values persist but aren't yet consumed by the customer flow.
@@ -185,7 +197,7 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 - **Added in:** C6.C (audit-time surfacing).
 - **Sequence:** any time after C6 closes; folds naturally into C16 polish or its own focused chunk. CLEANUP #27 (EEM_Refund_Engine extraction) is a natural co-landing because both touch the same per-order/per-batch boundary.
 - **Unblocks:** larger bulk batches (100+ orders) without quadratic-feeling delays.
-- **Status:** queued; functional impact only at large batch sizes.
+- **Status:** ✅ RESOLVED (v2.7.138). `EEM_Orders_Repository::get_orders_by_keys( array $keys )` does a SINGLE `get_grouped_orders()` pass + key-index lookup (input order preserved, unknown keys skipped) instead of one `get_order()` (full regroup + scan) per key. `handle_bulk_refund()`'s validation loop replaced with `count( $repo->get_orders_by_keys( $keys ) )`. Method is reusable by the future bulk refund engine (#15).
 
 ### 28. AJAX smoke harness for wp_die paths
 - **What:** Subshell wp-cli for isolated `wp_send_json_*` / `wp_die` paths so AJAX handlers can be exercised end-to-end in smokes without killing the runner. Surfaced during C6.B; current workaround is gate-only testing + manual browser verify.
@@ -198,7 +210,7 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 - **Added in:** C6.B (smoke limitation surfaced during the AJAX gate testing).
 - **Sequence:** Before C6.C if possible (would give C6.C bulk engine real end-to-end coverage from the start), otherwise immediately after C6.E close as part of the C6 chunk-end audit work. Trivial in isolation (~80 LOC bash + ~60 LOC PHP helpers); the real cost is retrofitting existing AJAX smokes (c6b currently, c6c when it lands) to use the new pattern.
 - **Unblocks:** end-to-end AJAX coverage for every present + future AJAX endpoint. Reduces the "manual browser verify" surface considerably.
-- **Status:** queued; gate-only workaround in place for C6.B and C6.C as a deliberate stopgap.
+- **Status:** ✅ RESOLVED (v2.7.138). Built `tests/smoke/_ajax-harness.php` (`eem_dispatch_ajax( $action, $post, $user_id )`) + `tests/smoke/_ajax-runner.php` (the isolated child) + `tests/smoke/ajax-harness-smoke.php` (demo). The runner mirrors `wp-admin/admin-ajax.php` (defines `DOING_AJAX` + `WP_ADMIN` so `is_admin()` is true and the plugin's admin-gated AJAX hooks register), bootstraps WP, sets `$_POST` + current user, installs a `wp_die_ajax_handler` that captures the buffered JSON to stdout and `exit(0)`s, then fires `do_action( 'wp_ajax_{$action}' )`. The parent decodes stdout into `{raw, json, success, data}`. Verified live: dispatching `eem_order_refund_single` logged-out captures `{"success":false,"data":{"code":"capability",…}}` and a SECOND dispatch still runs (the load-bearing proof that the child's `wp_die()` exit no longer kills the smoke). Implemented as a subprocess via `PHP_BINARY` rather than `wp eval` (no wp-cli dependency).
 
 ### 27. Extract EEM_Refund_Engine — gateway-dispatch + amount-distribution + persistence
 - **What:** C6.B introduced `EEM_Admin::process_amount_refund( $order_key, $amount, $reason )` as a public adapter around the legacy private refund stack (`refund_order_component` → gateway dispatch → `persist_component_refund`). Wraps were chosen over class extraction in C6.B to keep the chunk small and let C6.C's bulk-engine requirements clarify the contract. **After C6.C ships**, extract into a clean `EEM_Refund_Engine` class:
@@ -246,7 +258,7 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
   2. Update `composer.json` → `support.source` and `support.issues`.
   3. If publishing to WordPress.org, also remove the `Update URI: false` line in the plugin header (it suppresses WP.org update checks — intentional for in-development copies, wrong for published ones).
   4. Audit `README.md` for any placeholder URLs and update them too.
-- **Status:** placeholders shipped intentionally; awaiting external-release decision.
+- **Status:** ✅ MOSTLY RESOLVED. Plugin header `Plugin URI` → `https://github.com/EquineNetwork/equine-event-manager` and `Author URI` → `https://equinenetwork.com` (set during the C7.C.1.4.A repo migration / C16). `composer.json` `support.source` / `support.issues` → the real GitHub URLs (C16, v2.7.122). Remaining pre-WordPress.org-submission steps only: drop `Update URI: false` from the header (intentional for the private dev copy; wrong for a published one), and audit README.md for any stray placeholder URLs. No `example.com` placeholders remain in code.
 
 ### 22. ~~RES-ARCH-1 non-conformance — reservation title + dates read from post, not source event~~ ✅ Resolved in C6.6
 - **What was wrong:** Per decisions.md RES-ARCH-1, reservation's user-visible title and event dates are read-only mirrors of the source event (Native / TEC / External Feed). Pre-C6.6 code violated this: `EEM_Reservations_List_Page::render_table_row()` + `render_mobile_cards()` called `get_the_title( $post )` (reservation post_title), `EEM_Reservations_List_Repo::get_event_date_range_label()` read `_en_nightly_*_date` / `_en_weekend_*_date` from reservation post_meta, and `get_date_filter_options()` queried the same meta key.

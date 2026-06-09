@@ -1304,14 +1304,10 @@ class EEM_Orders_List_Page {
 			self::redirect_with_notice( 'bulk_no_selection' );
 		}
 
+		// CLEANUP #29 — single grouping pass instead of one get_order() (full
+		// regroup + scan) per key.
 		$repo  = new EEM_Orders_Repository();
-		$valid = 0;
-		foreach ( $keys as $k ) {
-			$o = $repo->get_order( $k );
-			if ( is_array( $o ) ) {
-				$valid++;
-			}
-		}
+		$valid = count( $repo->get_orders_by_keys( $keys ) );
 		if ( 0 === $valid ) {
 			self::redirect_with_notice( 'notfound' );
 		}

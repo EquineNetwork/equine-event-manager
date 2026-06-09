@@ -122,6 +122,48 @@ class EEM_Orders_Repository {
 	}
 
 	/**
+	 * Batch-fetch grouped orders for a set of order keys in a SINGLE grouping
+	 * pass (CLEANUP #29). `get_order()` rebuilds + linear-scans the entire
+	 * grouped-order set on every call, so looping it over N keys is N× the
+	 * grouping work; this groups once, indexes by `order_key`, and returns only
+	 * the matches (input key order preserved; unknown keys skipped). Used by the
+	 * bulk-refund validation and reusable by the future bulk refund engine.
+	 *
+	 * @param string[] $order_keys Order keys to resolve.
+	 * @return array<int,array<string,mixed>> Matched grouped orders.
+	 */
+	public function get_orders_by_keys( array $order_keys ) {
+		$wanted = array();
+		foreach ( $order_keys as $k ) {
+			$k = (string) $k;
+			if ( '' !== $k ) {
+				$wanted[ $k ] = true;
+			}
+		}
+		if ( empty( $wanted ) ) {
+			return array();
+		}
+
+		$found = array();
+		foreach ( $this->get_grouped_orders() as $order ) {
+			$k = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
+			if ( '' !== $k && isset( $wanted[ $k ] ) ) {
+				$found[ $k ] = $order;
+			}
+		}
+
+		// Preserve input key order; skip keys with no matching order.
+		$ordered = array();
+		foreach ( $order_keys as $k ) {
+			$k = (string) $k;
+			if ( isset( $found[ $k ] ) ) {
+				$ordered[] = $found[ $k ];
+			}
+		}
+		return $ordered;
+	}
+
+	/**
 	 * Get a single order by the stored submission token in its notes.
 	 *
 	 * @param string $submission_token Submission token.
