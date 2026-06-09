@@ -35,24 +35,32 @@ $ref = new ReflectionMethod( 'EEM_Shortcodes', 'build_receipt_html' );
 $ref->setAccessible( true );
 $sc  = new EEM_Shortcodes();
 
-// Paid control: ensure status is paid.
+// Paid control: ensure status is paid AND strip any refund traces (the chosen
+// order may itself be refunded in the live DB — scrub it to a clean paid state).
 $paid = $order;
 $paid['payment_status'] = 'paid';
 if ( ! empty( $paid['components'] ) ) {
-	foreach ( $paid['components'] as $i => $c ) { $paid['components'][ $i ]['refunded_amount'] = 0; }
+	foreach ( $paid['components'] as $i => $c ) {
+		$paid['components'][ $i ]['refunded_amount'] = 0;
+		$paid['components'][ $i ]['payment_status']  = 'paid';
+		$paid['components'][ $i ]['notes']           = preg_replace( '/^.*Refunded Amount:.*$/mi', '', (string) ( $c['notes'] ?? '' ) );
+	}
 }
 $paid_html = (string) $ref->invoke( $sc, $paid, false );
 $ok( 'paid receipt has NO refund banner div', false === strpos( $paid_html, '<div class="refund-banner">' ) );
 $ok( 'paid receipt has NO status pill div', false === strpos( $paid_html, '<div class="receipt-status-pill">' ) );
 $ok( 'paid receipt shows "Total Amount Paid"', false !== strpos( $paid_html, 'Total Amount Paid' ) );
 
-// Refunded simulation.
+// Refunded simulation — mirror the REAL data shape: the refunded amount lives
+// in the component notes ("Refunded Amount: X"), NOT the (often-NULL) column.
 $refunded = $order;
 $refunded['payment_status'] = 'refunded';
 if ( ! empty( $refunded['components'] ) ) {
 	foreach ( $refunded['components'] as $i => $c ) {
-		$refunded['components'][ $i ]['refunded_amount'] = (float) $order['total'];
+		$refunded['components'][ $i ]['refunded_amount'] = null;
 		$refunded['components'][ $i ]['payment_status']  = 'refunded';
+		$refunded['components'][ $i ]['notes']           = (string) ( $c['notes'] ?? '' )
+			. "\nRefunded Amount: " . number_format( (float) $order['total'], 2, '.', '' );
 	}
 }
 $ref_html = (string) $ref->invoke( $sc, $refunded, false );
@@ -61,6 +69,9 @@ $ok( 'refunded receipt renders the status pill', false !== strpos( $ref_html, '<
 $ok( 'refunded receipt shows "Refunded"', false !== strpos( $ref_html, 'Refunded' ) );
 $ok( 'refunded receipt shows a "Net Paid" line', false !== strpos( $ref_html, 'Net Paid' ) );
 $ok( 'refunded receipt has the returned-to-payment-method copy', false !== strpos( $ref_html, 'returned to the original payment method' ) );
+// The amount must come through from the NOTES (column is NULL) — guards the
+// real-world data shape where refunded_amount lives only in the notes.
+$ok( 'refunded receipt shows the refunded amount from notes (not $0.00 detail)', false !== strpos( $ref_html, 'refund-banner-detail' ) );
 
 echo implode( "\n", $log ) . "\n";
 echo "receipt-refund-status-smoke: {$pass} passed, {$fail} failed\n";

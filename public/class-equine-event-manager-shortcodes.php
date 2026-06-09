@@ -4903,11 +4903,27 @@ RV Lot: " . $rv_lot['name'] );
 		// receipt no longer reads like a clean paid receipt. A void (unsettled
 		// reversal) is recorded the same way as a refund, so both surface as
 		// "Refunded" to the customer.
+		$eem_payment_status  = isset( $order['payment_status'] ) ? (string) $order['payment_status'] : '';
 		$refunded_total = 0.0;
 		foreach ( (array) ( $order['components'] ?? array() ) as $eem_refund_component ) {
-			$refunded_total += isset( $eem_refund_component['refunded_amount'] ) ? (float) $eem_refund_component['refunded_amount'] : 0.0;
+			$eem_comp_refunded = isset( $eem_refund_component['refunded_amount'] ) ? (float) $eem_refund_component['refunded_amount'] : 0.0;
+			// The refunded amount is persisted in the component notes ("Refunded
+			// Amount: X"); the dedicated column is often NULL. Read the notes when
+			// the column is empty so the receipt can show the real amount.
+			if ( $eem_comp_refunded <= 0.009 && ! empty( $eem_refund_component['notes'] )
+				&& preg_match( '/Refunded Amount:\s*([0-9]+(?:\.[0-9]+)?)/i', (string) $eem_refund_component['notes'], $eem_rm ) ) {
+				$eem_comp_refunded = (float) $eem_rm[1];
+			}
+			// A component flagged refunded with no parseable amount = its full total.
+			if ( $eem_comp_refunded <= 0.009 && isset( $eem_refund_component['payment_status'] ) && 'refunded' === $eem_refund_component['payment_status'] ) {
+				$eem_comp_refunded = isset( $eem_refund_component['total'] ) ? (float) $eem_refund_component['total'] : 0.0;
+			}
+			$refunded_total += $eem_comp_refunded;
 		}
-		$eem_payment_status  = isset( $order['payment_status'] ) ? (string) $order['payment_status'] : '';
+		// Final fallback: a fully-refunded order with no per-component amount → full total.
+		if ( $refunded_total <= 0.009 && 'refunded' === $eem_payment_status ) {
+			$refunded_total = (float) $order['total'];
+		}
 		$eem_order_total     = (float) $order['total'];
 		$is_cancelled        = 'cancelled' === $eem_payment_status;
 		$is_fully_refunded   = ! $is_cancelled && ( 'refunded' === $eem_payment_status || ( $refunded_total > 0.009 && $refunded_total + 0.009 >= $eem_order_total ) );
