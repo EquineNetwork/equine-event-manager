@@ -327,6 +327,30 @@ class EEM_Collect_Payment_Page {
 	}
 
 	/**
+	 * Authorize.net charge readiness for the Charge Card tab. Auth.net charges are
+	 * server-side (raw card → authCaptureTransaction), so unlike Stripe there is no
+	 * publishable key — readiness is just selected_gateway === 'authorize_net' plus
+	 * the active-mode API login + transaction key being present in Settings.
+	 *
+	 * @return array{ready:bool}
+	 */
+	private static function get_authorize_net_client_config(): array {
+		$settings = get_option( 'equine_event_manager_payment_settings', array() );
+		$gateway  = isset( $settings['selected_gateway'] ) ? (string) $settings['selected_gateway'] : 'stripe';
+		$an       = isset( $settings['authorize_net'] ) && is_array( $settings['authorize_net'] ) ? $settings['authorize_net'] : array();
+		$mode     = isset( $an['mode'] ) && 'live' === $an['mode'] ? 'live' : 'test';
+		$login    = 'live' === $mode
+			? ( isset( $an['live_api_login'] ) ? (string) $an['live_api_login'] : '' )
+			: ( isset( $an['test_api_login'] ) ? (string) $an['test_api_login'] : '' );
+		$key      = 'live' === $mode
+			? ( isset( $an['live_transaction_key'] ) ? (string) $an['live_transaction_key'] : '' )
+			: ( isset( $an['test_transaction_key'] ) ? (string) $an['test_transaction_key'] : '' );
+		return array(
+			'ready' => 'authorize_net' === $gateway && '' !== trim( $login ) && '' !== trim( $key ),
+		);
+	}
+
+	/**
 	 * Payment card — Send Link / Charge Card tabs.
 	 *
 	 * Charge Card: when Stripe is configured and the order is unpaid with a
@@ -356,8 +380,11 @@ class EEM_Collect_Payment_Page {
 			return;
 		}
 
-		$stripe       = self::get_stripe_client_config();
-		$charge_ready = $stripe['ready'] && $total_due > 0;
+		$stripe        = self::get_stripe_client_config();
+		$authnet       = self::get_authorize_net_client_config();
+		$stripe_ready  = $stripe['ready'] && $total_due > 0;
+		$authnet_ready = $authnet['ready'] && $total_due > 0;
+		$charge_ready  = $stripe_ready || $authnet_ready;
 		?>
 		<section class="eem-card eem-co-payment-card">
 			<div class="eem-co-payment-tabs" role="tablist">
@@ -388,7 +415,7 @@ class EEM_Collect_Payment_Page {
 				<a class="eem-btn eem-btn-primary eem-co-btn-block" href="<?php echo esc_url( $send_link_url ); ?>"><?php esc_html_e( 'Send Payment Link', 'equine-event-manager' ); ?></a>
 			</div>
 			<div class="eem-card-body eem-co-payment-panel" data-eem-collect-panel="charge" hidden>
-				<?php if ( $charge_ready ) : ?>
+				<?php if ( $stripe_ready ) : ?>
 					<p class="eem-field-hint"><?php esc_html_e( 'Enter the card to charge the balance directly. Card details are tokenized by Stripe in the browser — they never reach the server.', 'equine-event-manager' ); ?></p>
 					<div id="eem-cp-card-element" class="eem-cp-card-element"></div>
 					<div id="eem-cp-charge-error" class="eem-cp-charge-error" role="alert"></div>
@@ -401,10 +428,43 @@ class EEM_Collect_Payment_Page {
 					<p class="eem-cp-secure-note"><?php esc_html_e( 'Secured by Stripe', 'equine-event-manager' ); ?></p>
 					<?php
 					self::print_charge_assets( $order_key );
+				elseif ( $authnet_ready ) :
+					?>
+					<p class="eem-field-hint"><?php esc_html_e( 'Enter the card to charge the balance directly through Authorize.net.', 'equine-event-manager' ); ?></p>
+					<div class="eem-cp-an-fields">
+						<label class="eem-field-row">
+							<span class="eem-field-label"><?php esc_html_e( 'Card Number', 'equine-event-manager' ); ?></span>
+							<input type="text" id="eem-cp-an-number" class="eem-field-input" inputmode="numeric" autocomplete="cc-number" maxlength="23" placeholder="1234 5678 9012 3456" />
+						</label>
+						<div class="eem-cp-an-row">
+							<label class="eem-field-row">
+								<span class="eem-field-label"><?php esc_html_e( 'Exp. Month', 'equine-event-manager' ); ?></span>
+								<input type="text" id="eem-cp-an-exp-month" class="eem-field-input" inputmode="numeric" autocomplete="cc-exp-month" maxlength="2" placeholder="MM" />
+							</label>
+							<label class="eem-field-row">
+								<span class="eem-field-label"><?php esc_html_e( 'Exp. Year', 'equine-event-manager' ); ?></span>
+								<input type="text" id="eem-cp-an-exp-year" class="eem-field-input" inputmode="numeric" autocomplete="cc-exp-year" maxlength="4" placeholder="YYYY" />
+							</label>
+							<label class="eem-field-row">
+								<span class="eem-field-label"><?php esc_html_e( 'CVC', 'equine-event-manager' ); ?></span>
+								<input type="text" id="eem-cp-an-cvc" class="eem-field-input" inputmode="numeric" autocomplete="cc-csc" maxlength="4" placeholder="123" />
+							</label>
+						</div>
+					</div>
+					<div id="eem-cp-charge-error" class="eem-cp-charge-error" role="alert"></div>
+					<button type="button" id="eem-cp-an-charge-btn" class="eem-btn eem-btn-primary eem-co-btn-block">
+						<?php
+						/* translators: %s: amount to charge */
+						echo esc_html( sprintf( __( 'Charge $%s', 'equine-event-manager' ), number_format_i18n( $total_due, 2 ) ) );
+						?>
+					</button>
+					<p class="eem-cp-secure-note"><?php esc_html_e( 'Secured by Authorize.net', 'equine-event-manager' ); ?></p>
+					<?php
+					self::print_authorize_charge_assets( $order_key );
 				else :
 					?>
 					<div class="eem-info-banner eem-info-banner--preview">
-						<?php esc_html_e( 'Card charging needs Stripe configured in Settings (and an unpaid balance). Configure Stripe, or record an offline payment from the order page.', 'equine-event-manager' ); ?>
+						<?php esc_html_e( 'Card charging needs Stripe or Authorize.net configured in Settings (and an unpaid balance). Configure a payment gateway, or record an offline payment from the order page.', 'equine-event-manager' ); ?>
 					</div>
 					<a class="eem-btn eem-btn-secondary eem-co-btn-block" href="<?php echo esc_url( $detail_url ); ?>"><?php esc_html_e( 'Go to Order — record payment', 'equine-event-manager' ); ?></a>
 				<?php endif; ?>
@@ -460,6 +520,67 @@ class EEM_Collect_Payment_Page {
 							if ( window.EEM && typeof window.EEM.showSaveToast === 'function' ) { window.EEM.showSaveToast( 'Payment collected. Reloading…' ); }
 							setTimeout( function () { window.location.reload(); }, 700 );
 						} else { throw new Error( ( j2 && j2.data && j2.data.message ) || 'Could not record the payment.' ); }
+					} )
+					.catch( function ( e ) { errEl.textContent = e.message; btn.disabled = false; } );
+			} );
+		})();
+		</script>
+		<?php
+	}
+
+	/**
+	 * Print the Authorize.net charge client. Unlike Stripe, Auth.net charges are
+	 * a single server-side step: collect the raw card fields and POST them to
+	 * `eem_collect_payment_authorize_charge`, which runs the proven
+	 * authCaptureTransaction dispatch + records the payment. (Auth.net here uses
+	 * raw card fields server-side, matching the existing customer invoice-pay
+	 * path; no client tokenization.) Inline so it runs on load.
+	 *
+	 * @param string $order_key Order key.
+	 * @return void
+	 */
+	private static function print_authorize_charge_assets( string $order_key ): void {
+		$cfg = array(
+			'ajaxUrl'  => admin_url( 'admin-ajax.php' ),
+			'orderKey' => $order_key,
+			'nonce'    => wp_create_nonce( 'eem_collect_payment_' . $order_key ),
+		);
+		?>
+		<script>
+		window.eemCollectPaymentAn = <?php echo wp_json_encode( $cfg ); ?>;
+		(function () {
+			var cfg = window.eemCollectPaymentAn;
+			if ( ! cfg ) { return; }
+			var btn   = document.getElementById( 'eem-cp-an-charge-btn' );
+			var errEl = document.getElementById( 'eem-cp-charge-error' );
+			if ( ! btn || ! errEl ) { return; }
+			function val( id ) { var el = document.getElementById( id ); return el ? el.value.replace( /[^0-9]/g, '' ) : ''; }
+			function body( obj ) { var p = new URLSearchParams(); Object.keys( obj ).forEach( function ( k ) { p.set( k, obj[ k ] ); } ); return p; }
+			btn.addEventListener( 'click', function () {
+				errEl.textContent = '';
+				var num = val( 'eem-cp-an-number' ), mm = val( 'eem-cp-an-exp-month' ), yy = val( 'eem-cp-an-exp-year' ), cvc = val( 'eem-cp-an-cvc' );
+				if ( num.length < 13 || num.length > 19 || ! mm || ! yy || cvc.length < 3 ) {
+					errEl.textContent = 'Enter a complete card number, expiration date, and security code.';
+					return;
+				}
+				btn.disabled = true;
+				fetch( cfg.ajaxUrl, { method: 'POST', credentials: 'same-origin', body: body( {
+					action: 'eem_collect_payment_authorize_charge',
+					_wpnonce: cfg.nonce,
+					order_key: cfg.orderKey,
+					authorize_card_number: num,
+					authorize_exp_month: mm,
+					authorize_exp_year: yy,
+					authorize_card_code: cvc
+				} ) } )
+					.then( function ( r ) { return r.json(); } )
+					.then( function ( j ) {
+						if ( j && j.success ) {
+							if ( window.EEM && typeof window.EEM.showSaveToast === 'function' ) { window.EEM.showSaveToast( 'Payment collected. Reloading…' ); }
+							setTimeout( function () { window.location.reload(); }, 700 );
+						} else {
+							throw new Error( ( j && j.data && j.data.message ) || 'The charge could not be completed.' );
+						}
 					} )
 					.catch( function ( e ) { errEl.textContent = e.message; btn.disabled = false; } );
 			} );

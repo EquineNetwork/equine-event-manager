@@ -6676,6 +6676,80 @@ RV Lot: " . $rv_lot['name'] );
 	}
 
 	/**
+	 * AJAX (admin, C14) — charge an existing order's balance via Authorize.net.
+	 *
+	 * Unlike Stripe (two-step: create-intent + client-confirm + server-confirm),
+	 * Authorize.net is a single server-side authCaptureTransaction. This handler
+	 * reuses the PROVEN customer-invoice dispatch (`process_authorize_net_invoice_payment`,
+	 * which reads the raw card fields from `$_POST`), then records the payment and
+	 * logs it exactly as the Stripe confirm path does. The order's `total` is
+	 * overridden with the live balance due so the charge reflects any adjustments.
+	 *
+	 * Capability + nonce gated (`eem_collect_payment_{order_key}`). Card data is
+	 * never persisted — it flows straight to Authorize.net and is discarded.
+	 *
+	 * @return void
+	 */
+	public function ajax_collect_payment_authorize_charge() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+		$order_key = isset( $_POST['order_key'] ) ? sanitize_text_field( wp_unslash( $_POST['order_key'] ) ) : '';
+		check_ajax_referer( 'eem_collect_payment_' . $order_key, '_wpnonce' );
+
+		$repo  = new EEM_Orders_Repository();
+		$order = '' !== $order_key ? $repo->get_order( $order_key ) : null;
+		if ( ! is_array( $order ) ) {
+			wp_send_json_error( array( 'message' => __( 'Order not found.', 'equine-event-manager' ) ), 404 );
+		}
+		if ( isset( $order['payment_status'] ) && 'paid' === $order['payment_status'] ) {
+			wp_send_json_error( array( 'message' => __( 'This order is already paid.', 'equine-event-manager' ), 'code' => 'already_paid' ), 409 );
+		}
+		if ( 'authorize_net' !== $this->get_configured_payment_gateway() ) {
+			wp_send_json_error( array( 'message' => __( 'Authorize.net is not the configured payment gateway in plugin Settings.', 'equine-event-manager' ) ), 400 );
+		}
+
+		$amount_due = $this->get_order_amount_due( $order, $order_key );
+		if ( $amount_due <= 0 ) {
+			wp_send_json_error( array( 'message' => __( 'There is no balance due on this order.', 'equine-event-manager' ) ), 400 );
+		}
+
+		// Charge the live balance due, not the stored order total (which may
+		// predate adjustments). The dispatch reads `total` for the amount.
+		$charge_order          = $order;
+		$charge_order['total'] = $amount_due;
+
+		$ref    = 'cp' . substr( (string) $order_key, 0, 16 );
+		$result = $this->process_authorize_net_invoice_payment( $charge_order, $ref );
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ), 400 );
+		}
+
+		$transaction_id = isset( $result['transaction_id'] ) ? (string) $result['transaction_id'] : '';
+		$repo->update_order_payment_details( $order_key, 'paid', $transaction_id, 'authorize_net' );
+
+		if ( class_exists( 'EEM_Activity_Log' ) ) {
+			EEM_Activity_Log::write(
+				'order_payment_collected',
+				array(
+					'order_key'      => $order_key,
+					'amount'         => $amount_due,
+					'transaction_id' => $transaction_id,
+					'gateway'        => 'authorize_net',
+					'card_brand'     => '',
+					'card_last4'     => '',
+				),
+				array( 'actor_type' => 'admin', 'actor_id' => get_current_user_id() )
+			);
+		}
+
+		wp_send_json_success( array(
+			'requires_reload' => true,
+			'message'         => __( 'Payment collected.', 'equine-event-manager' ),
+		) );
+	}
+
+	/**
 	 * Register the Stripe webhook REST route (POST /wp-json/eem/v1/stripe-webhook).
 	 * Hooked on rest_api_init. Public endpoint — auth is the Stripe signature,
 	 * verified in the handler (permission_callback returns true by design).
