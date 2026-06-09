@@ -873,16 +873,16 @@ class EEM_Settings_Page {
 								'desc'   => __( 'When the TEC plugin is active, reservations can search and link to live TEC events directly.', 'equine-event-manager' ),
 								'status' => $tec_status,
 							),
+							'feed' => array(
+								'title'  => __( 'GEMS Integration', 'equine-event-manager' ),
+								'desc'   => __( 'Pull events from your GEMS Web Data connection (via the GEMS for WordPress plugin). Reservations search and link to live GEMS events, just like The Events Calendar.', 'equine-event-manager' ),
+								'status' => $gems_status,
+							),
 							'native' => array(
 								'title'       => __( 'Native Events', 'equine-event-manager' ),
 								'desc'        => __( 'Use Equine Event Manager as the main event system with native events, categories, venues, producers, widgets, and the shared frontend event template.', 'equine-event-manager' ),
 								'status'      => array( 'class' => 'is-info', 'label' => __( 'Built-in', 'equine-event-manager' ) ),
 								'coming_soon' => true,
-							),
-							'feed' => array(
-								'title'  => __( 'GEMS Integration', 'equine-event-manager' ),
-								'desc'   => __( 'Pull events from your GEMS Web Data connection (via the GEMS for WordPress plugin). Reservations search and link to live GEMS events, just like The Events Calendar.', 'equine-event-manager' ),
-								'status' => $gems_status,
 							),
 						);
 						foreach ( $sources as $value => $row ) :
