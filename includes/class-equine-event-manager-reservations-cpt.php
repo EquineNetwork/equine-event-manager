@@ -1464,8 +1464,12 @@ class EEM_Reservations_CPT {
 	public function validate_meta_submission( $data ) {
 		$errors = array();
 
-		if ( 'feed' === $data['event_source'] && empty( $data['event_feed_url'] ) ) {
-			$errors[] = __( 'External Feed URL is the active event source, so add a Feed URL in Settings > Integrations before saving this reservation.', 'equine-event-manager' );
+		// The 'feed' source is valid when either a classic External Feed URL is
+		// set OR a GEMS Web Data connection is configured (GEMS authenticates with
+		// an Association ID + JWT, not a feed URL — so it has no event_feed_url).
+		$gems_connected = class_exists( 'EEM_Gems_Client' ) && EEM_Gems_Client::is_configured();
+		if ( 'feed' === $data['event_source'] && empty( $data['event_feed_url'] ) && ! $gems_connected ) {
+			$errors[] = __( 'No event source is connected. Connect the GEMS for WordPress plugin (or add an External Feed URL) in Settings > Integrations before saving this reservation.', 'equine-event-manager' );
 		}
 
 		if ( ! empty( $data['checkin_checkout_enabled'] ) && ( empty( $data['checkin_time'] ) || empty( $data['checkout_time'] ) ) ) {
