@@ -7607,8 +7607,24 @@ RV Lot: " . $rv_lot['name'] );
 
 		$data = array();
 
+		// The seven section-toggle fields (stalls_enabled, rv_enabled,
+		// checkin_checkout_enabled, general_addons_enabled,
+		// group_reservations_enabled, convenience_fee_enabled,
+		// venue_agreement_enabled) live under the canonical
+		// `_eem_section_enabled_<shortkey>` keys since migration eem-mig-007.
+		// read_section_enabled_raw() returns the canonical value for those and
+		// the legacy `_en_<field>` value for every other field, so the whole
+		// loop can route through it uniformly. Without this the customer form
+		// read the stale `_en_stalls_enabled` key (always empty post-migration)
+		// and the booking form fell through to "Reservations are not available
+		// right now." even when the section was enabled in the editor.
+		$use_section_resolver = class_exists( 'EEM_Reservations_CPT' )
+			&& method_exists( 'EEM_Reservations_CPT', 'read_section_enabled_raw' );
+
 		foreach ( $defaults as $key => $default ) {
-			$value        = get_post_meta( $reservation_id, '_en_' . $key, true );
+			$value = $use_section_resolver
+				? EEM_Reservations_CPT::read_section_enabled_raw( (int) $reservation_id, $key )
+				: get_post_meta( $reservation_id, '_en_' . $key, true );
 			$data[ $key ] = '' === $value ? $default : $value;
 		}
 
