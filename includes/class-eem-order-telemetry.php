@@ -125,6 +125,14 @@ class EEM_Order_Telemetry {
 						number_format_i18n( $amount, 2 )
 					)
 					: __( 'Refund processed', 'equine-event-manager' );
+				// Surface WHO ran the refund so the log answers "who refunded".
+				if ( '' !== $actor ) {
+					$payload['title'] .= sprintf(
+						/* translators: %s: admin display name who processed the refund */
+						__( ' by %s', 'equine-event-manager' ),
+						$actor
+					);
+				}
 				break;
 			case 'order_payment_received':
 				$payload['title'] = __( 'Payment received', 'equine-event-manager' );

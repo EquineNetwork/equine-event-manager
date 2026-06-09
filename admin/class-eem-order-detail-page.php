@@ -836,8 +836,43 @@ class EEM_Order_Detail_Page {
 					<?php endif; ?>
 				</div>
 
+				<?php
+				// Render PERSISTED refunds on page load. The JS only fills this
+				// after an in-page refund, so without this a reload (or an
+				// out-of-band reconcile) shows "No refunds processed" even when the
+				// order is refunded. Each refunded component records "Refunded
+				// Amount" / "Last Refund Transaction" / "Last Refunded At" in notes.
+				$eem_refund_lines = array();
+				foreach ( (array) ( $order['components'] ?? array() ) as $eem_rc ) {
+					$eem_rc_notes = isset( $eem_rc['notes'] ) ? (string) $eem_rc['notes'] : '';
+					if ( '' === $eem_rc_notes || ! preg_match( '/Refunded Amount:\s*([0-9]+(?:\.[0-9]+)?)/i', $eem_rc_notes, $eem_ra ) ) {
+						continue;
+					}
+					$eem_amt = (float) $eem_ra[1];
+					if ( $eem_amt <= 0.009 ) {
+						continue;
+					}
+					$eem_refund_lines[] = array(
+						'amount' => $eem_amt,
+						'txn'    => preg_match( '/Last Refund Transaction:\s*(.+)/i', $eem_rc_notes, $eem_rt ) ? trim( $eem_rt[1] ) : '',
+						'when'   => preg_match( '/Last Refunded At:\s*(.+)/i', $eem_rc_notes, $eem_rw ) ? trim( $eem_rw[1] ) : '',
+					);
+				}
+				?>
 				<div class="eem-order-payment__label eem-order-payment__label--sep"><?php esc_html_e( 'Refund History', 'equine-event-manager' ); ?></div>
-				<div class="eem-order-payment__val eem-order-payment__hint" data-eem-refund-history><?php esc_html_e( 'No refunds processed', 'equine-event-manager' ); ?></div>
+				<div class="eem-order-payment__val<?php echo empty( $eem_refund_lines ) ? ' eem-order-payment__hint' : ''; ?>" data-eem-refund-history>
+					<?php if ( empty( $eem_refund_lines ) ) : ?>
+						<?php esc_html_e( 'No refunds processed', 'equine-event-manager' ); ?>
+					<?php else : ?>
+						<?php foreach ( $eem_refund_lines as $eem_line ) : ?>
+							<div class="eem-order-payment__refund-line">
+								<strong>$<?php echo esc_html( number_format( $eem_line['amount'], 2 ) ); ?></strong>
+								<?php if ( '' !== $eem_line['when'] ) : ?> <span class="eem-order-payment__hint"><?php echo esc_html( $eem_line['when'] ); ?></span><?php endif; ?>
+								<?php if ( '' !== $eem_line['txn'] ) : ?> <span class="eem-order-payment__mono"><?php echo esc_html( $eem_line['txn'] ); ?></span><?php endif; ?>
+							</div>
+						<?php endforeach; ?>
+					<?php endif; ?>
+				</div>
 			</div>
 		</div>
 		<?php
