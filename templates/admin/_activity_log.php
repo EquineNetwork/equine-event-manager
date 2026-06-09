@@ -108,6 +108,7 @@ if ( ! function_exists( 'eem_activity_log_variant_for' ) ) {
 		$map = array(
 			'order_created'               => 'create',
 			'order_edited'                => 'edit',
+			'reservation_edited'          => 'edit',
 			'status_changed'              => 'info',
 			'refund_processed'            => 'refund',
 			'assignment_changed'          => 'assignment',
@@ -172,6 +173,7 @@ if ( ! function_exists( 'eem_activity_log_default_title' ) ) {
 		$titles = array(
 			'order_created'               => __( 'Order created', 'equine-event-manager' ),
 			'order_edited'                => __( 'Order edited', 'equine-event-manager' ),
+			'reservation_edited'          => __( 'Reservation edited', 'equine-event-manager' ),
 			'status_changed'              => __( 'Status changed', 'equine-event-manager' ),
 			'refund_processed'            => __( 'Refund processed', 'equine-event-manager' ),
 			'assignment_changed'          => __( 'Assignment changed', 'equine-event-manager' ),

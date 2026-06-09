@@ -116,6 +116,149 @@ class EEM_Reservations_CPT {
 	}
 
 	/**
+	 * Field-name → human label map for the edit-diff activity entry (CLEANUP #26).
+	 * Keys not listed fall back to a humanized version of the field name.
+	 *
+	 * @var array<string,string>
+	 */
+	const DIFF_FIELD_LABELS = array(
+		'stalls_enabled'             => 'Stall Reservations',
+		'rv_enabled'                 => 'RV Reservations',
+		'checkin_checkout_enabled'   => 'Check-In / Check-Out',
+		'general_addons_enabled'     => 'General Add-Ons',
+		'group_reservations_enabled' => 'Group Reservations',
+		'convenience_fee_enabled'    => 'Convenience Fee',
+		'venue_agreement_enabled'    => 'Venue Agreement',
+		'event_day_enabled'          => 'Event Day Info',
+		'stall_nightly_rate'         => 'Stall Nightly Rate',
+		'stall_weekend_rate'         => 'Stall Weekend Rate',
+		'rv_nightly_rate'            => 'RV Nightly Rate',
+		'rv_weekend_rate'            => 'RV Weekend Rate',
+		'stall_inventory'            => 'Stall Inventory',
+		'rv_inventory'               => 'RV Inventory',
+		'convenience_fee_type'       => 'Convenience Fee Type',
+		'convenience_fee_amount'     => 'Convenience Fee Amount',
+		'convenience_fee_percent'    => 'Convenience Fee %',
+		'required_shavings_price'    => 'Required Shavings Price',
+		'stall_tack_mode'            => 'Tack Stall Mode',
+		'description'                => 'Reservation Description',
+		'cancellation_policy_override' => 'Cancellation Policy',
+	);
+
+	/**
+	 * Meta keys excluded from the edit-diff (noise that churns on every save or
+	 * is a derived/cache value rather than an admin-meaningful field).
+	 *
+	 * @var array<int,string>
+	 */
+	const DIFF_NOISE_FIELDS = array(
+		'reservation_shortcode',
+		'source_event_start_date',
+		'event_id',
+		'use_global_event_source',
+		'event_source',
+		'external_event_id',
+	);
+
+	/**
+	 * Compute a scalar-field diff between two get_meta_values() snapshots
+	 * (CLEANUP #26). Only scalar values are compared — nested arrays (stall rows,
+	 * add-on lists, maps) are too complex to render as a one-line change and are
+	 * skipped. Noise/derived/cache keys are excluded.
+	 *
+	 * @param array<string,mixed> $before Pre-save meta values.
+	 * @param array<string,mixed> $after  Post-save meta values.
+	 * @return array<int,array{field:string,label:string,old:string,new:string}>
+	 */
+	public static function compute_scalar_meta_diff( array $before, array $after ): array {
+		$changes = array();
+		foreach ( $after as $field => $new_value ) {
+			if ( in_array( $field, self::DIFF_NOISE_FIELDS, true ) ) {
+				continue;
+			}
+			if ( is_array( $new_value ) || ( isset( $before[ $field ] ) && is_array( $before[ $field ] ) ) ) {
+				continue; // skip complex values
+			}
+			$old_value = isset( $before[ $field ] ) ? $before[ $field ] : '';
+			if ( (string) $old_value === (string) $new_value ) {
+				continue;
+			}
+			$label = isset( self::DIFF_FIELD_LABELS[ $field ] )
+				? self::DIFF_FIELD_LABELS[ $field ]
+				: ucwords( str_replace( '_', ' ', $field ) );
+			$changes[] = array(
+				'field' => $field,
+				'label' => $label,
+				'old'   => (string) $old_value,
+				'new'   => (string) $new_value,
+			);
+		}
+		return $changes;
+	}
+
+	/**
+	 * Snapshot-diff-log helper for reservation edits (CLEANUP #26). Computes the
+	 * scalar diff between pre/post-save meta snapshots and, when something changed,
+	 * writes a `reservation_edited` activity-log entry with a human-readable
+	 * "Label: old → new" change list. No-op when nothing changed or the log class
+	 * is unavailable. Caller passes snapshots taken either side of save_meta().
+	 *
+	 * @param int                 $reservation_id Reservation post ID.
+	 * @param array<string,mixed> $before         Pre-save get_meta_values() snapshot.
+	 * @param array<string,mixed> $after          Post-save get_meta_values() snapshot.
+	 * @return void
+	 */
+	public static function log_reservation_edit_diff( int $reservation_id, array $before, array $after ): void {
+		if ( ! class_exists( 'EEM_Activity_Log' ) || $reservation_id <= 0 ) {
+			return;
+		}
+
+		$changes = self::compute_scalar_meta_diff( $before, $after );
+		if ( empty( $changes ) ) {
+			return;
+		}
+
+		// Render the "Label: old → new" change list (cap at 8 to keep the entry
+		// readable; note the overflow count).
+		$shown   = array_slice( $changes, 0, 8 );
+		$parts   = array();
+		foreach ( $shown as $c ) {
+			$old = '' === $c['old'] ? '—' : $c['old'];
+			$new = '' === $c['new'] ? '—' : $c['new'];
+			$parts[] = $c['label'] . ': ' . $old . ' → ' . $new;
+		}
+		$meta = implode( ' · ', $parts );
+		if ( count( $changes ) > count( $shown ) ) {
+			$meta .= ' · ' . sprintf(
+				/* translators: %d: number of additional changed fields not shown */
+				_n( '+%d more change', '+%d more changes', count( $changes ) - count( $shown ), 'equine-event-manager' ),
+				count( $changes ) - count( $shown )
+			);
+		}
+
+		$actor_id    = get_current_user_id();
+		$actor       = $actor_id ? ( get_userdata( $actor_id ) ? get_userdata( $actor_id )->display_name : '' ) : '';
+		$title       = '' !== $actor
+			? sprintf( /* translators: %s: admin display name */ __( 'Reservation edited by %s', 'equine-event-manager' ), $actor )
+			: __( 'Reservation edited', 'equine-event-manager' );
+
+		EEM_Activity_Log::write(
+			'reservation_edited',
+			array(
+				'title'   => $title,
+				'meta'    => $meta,
+				'changes' => $changes, // structured, for any future consumer
+			),
+			array(
+				'reservation_id' => $reservation_id,
+				'actor_type'     => $actor_id ? 'admin' : 'system',
+				'actor_id'       => $actor_id ? $actor_id : null,
+				'actor_label'    => $actor,
+			)
+		);
+	}
+
+	/**
 	 * Register the Reservations custom post type.
 	 */
 	public function register_post_type() {

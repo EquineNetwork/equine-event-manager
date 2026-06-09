@@ -1159,6 +1159,35 @@ class EEM_Order_Detail_Page {
 			? EEM_Activity_Log::get_for_order_key( $order_key, 100 )
 			: array();
 
+		// CLEANUP #26 — also surface reservation-config edits (the
+		// `reservation_edited` diff entries logged on save) for the reservation
+		// behind this order, so an order's Activity Log shows the underlying setup
+		// changes as context. Merge, de-dupe by row id, and re-sort newest-first.
+		$reservation_id = absint( $reservation_id );
+		if ( $reservation_id > 0 ) {
+			$res_entries = EEM_Activity_Log::get_for_reservation( $reservation_id, 100 );
+			$seen        = array();
+			foreach ( $entries as $e ) {
+				if ( isset( $e['id'] ) ) {
+					$seen[ (int) $e['id'] ] = true;
+				}
+			}
+			foreach ( $res_entries as $e ) {
+				if ( ! isset( $e['id'] ) || empty( $seen[ (int) $e['id'] ] ) ) {
+					$entries[] = $e;
+				}
+			}
+			usort( $entries, static function ( $a, $b ) {
+				$ca = isset( $a['created_at'] ) ? (string) $a['created_at'] : '';
+				$cb = isset( $b['created_at'] ) ? (string) $b['created_at'] : '';
+				$cmp = strcmp( $cb, $ca ); // newest first
+				if ( 0 !== $cmp ) {
+					return $cmp;
+				}
+				return (int) ( $b['id'] ?? 0 ) <=> (int) ( $a['id'] ?? 0 );
+			} );
+		}
+
 		// Enrich each entry with a render-ready title so the C2 partial's
 		// default-title resolver doesn't fall through on our C6.D event
 		// type taxonomy (which it wouldn't recognize otherwise).

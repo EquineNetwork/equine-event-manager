@@ -1022,7 +1022,16 @@ class EEM_Reservation_Editor_Page {
 
 			$_POST['equine_event_manager_reservation_meta_nonce'] = wp_create_nonce( 'equine_event_manager_save_reservation_meta' );
 			$refreshed = get_post( $reservation_id );
+
+			// CLEANUP #26 — snapshot the reservation's scalar meta before save_meta
+			// so the post-save diff can log a "Field: old → new" Activity Log entry.
+			$eem_diff_before = $cpt->get_meta_values( $reservation_id );
 			$cpt->save_meta( $reservation_id, $refreshed );
+			EEM_Reservations_CPT::log_reservation_edit_diff(
+				$reservation_id,
+				$eem_diff_before,
+				$cpt->get_meta_values( $reservation_id )
+			);
 		}
 
 		// ── C8 mapped-layout meta (not routed through en_reservation[]) ──
