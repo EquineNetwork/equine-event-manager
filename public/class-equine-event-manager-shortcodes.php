@@ -7258,6 +7258,102 @@ RV Lot: " . $rv_lot['name'] );
 	}
 
 	/**
+	 * AJAX (admin) — diagnostic "Test Connection" for Authorize.net. Sends a
+	 * no-charge authenticateTestRequest with the selected mode's credentials and
+	 * surfaces the gateway's ACTUAL response (resultCode + message text + HTTP
+	 * status + endpoint) so an admin can tell exactly why a credential set works
+	 * or fails — without running a full checkout.
+	 *
+	 * Reads the credentials POSTed from the Settings form (so an unsaved set can
+	 * be tried), falling back to the saved option when a field is left blank
+	 * (e.g. the masked Transaction Key). No funds move; this only validates auth.
+	 *
+	 * @return void
+	 */
+	public function ajax_test_authorize_net_connection() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+		check_ajax_referer( 'eem_test_authorize_net', '_wpnonce' );
+
+		$mode  = ( isset( $_POST['mode'] ) && 'live' === $_POST['mode'] ) ? 'live' : 'test';
+		$login = isset( $_POST['api_login'] ) ? sanitize_text_field( wp_unslash( $_POST['api_login'] ) ) : '';
+		$key   = isset( $_POST['transaction_key'] ) ? sanitize_text_field( wp_unslash( $_POST['transaction_key'] ) ) : '';
+
+		// Fall back to the saved credentials for any blank field (the masked key
+		// field is commonly left untouched when re-testing).
+		if ( '' === $login || '' === $key ) {
+			$settings = get_option( 'equine_event_manager_payment_settings', array() );
+			$an       = ( isset( $settings['authorize_net'] ) && is_array( $settings['authorize_net'] ) ) ? $settings['authorize_net'] : array();
+			if ( '' === $login ) { $login = isset( $an[ $mode . '_api_login' ] ) ? (string) $an[ $mode . '_api_login' ] : ''; }
+			if ( '' === $key )   { $key   = isset( $an[ $mode . '_transaction_key' ] ) ? (string) $an[ $mode . '_transaction_key' ] : ''; }
+		}
+
+		if ( '' === trim( $login ) || '' === trim( $key ) ) {
+			wp_send_json_error( array(
+				/* translators: %s: gateway mode (test/live). */
+				'message' => sprintf( __( 'Enter the %s-mode API Login ID and Transaction Key first.', 'equine-event-manager' ), $mode ),
+			) );
+		}
+
+		$endpoint = 'live' === $mode
+			? 'https://api.authorize.net/xml/v1/request.api'
+			: 'https://apitest.authorize.net/xml/v1/request.api';
+
+		$response = wp_remote_post( $endpoint, array(
+			'timeout' => 30,
+			'headers' => array( 'Content-Type' => 'application/json; charset=utf-8', 'Accept' => 'application/json' ),
+			'body'    => wp_json_encode( array(
+				'authenticateTestRequest' => array(
+					'merchantAuthentication' => array(
+						'name'           => trim( $login ),
+						'transactionKey' => trim( $key ),
+					),
+				),
+			) ),
+		) );
+
+		if ( is_wp_error( $response ) ) {
+			wp_send_json_error( array(
+				/* translators: %s: transport error message. */
+				'message' => sprintf( __( 'Could not reach Authorize.net: %s', 'equine-event-manager' ), $response->get_error_message() ),
+			) );
+		}
+
+		$http    = (int) wp_remote_retrieve_response_code( $response );
+		$payload = $this->parse_authorize_net_response_body( wp_remote_retrieve_body( $response ) );
+
+		if ( ! is_array( $payload ) ) {
+			wp_send_json_error( array(
+				/* translators: %d: HTTP status code. */
+				'message' => sprintf( __( 'Authorize.net returned an unreadable response (HTTP %d).', 'equine-event-manager' ), $http ),
+			) );
+		}
+
+		$result_code = isset( $payload['messages']['resultCode'] ) ? (string) $payload['messages']['resultCode'] : '';
+		$messages    = $this->get_authorize_net_response_messages( $payload );
+		$detail      = ! empty( $messages ) ? implode( ' ', $messages ) : '';
+
+		if ( 'Ok' === $result_code ) {
+			wp_send_json_success( array(
+				/* translators: 1: mode (test/live), 2: endpoint host. */
+				'message' => sprintf( __( '✓ Connected (%1$s mode). Authorize.net accepted these credentials.', 'equine-event-manager' ), $mode ),
+				'detail'  => $detail,
+				'mode'    => $mode,
+				'endpoint'=> $endpoint,
+			) );
+		}
+
+		wp_send_json_error( array(
+			/* translators: %s: mode (test/live). */
+			'message' => sprintf( __( '✗ Authorize.net rejected these %s-mode credentials.', 'equine-event-manager' ), $mode ),
+			'detail'  => '' !== $detail ? $detail : __( 'Unknown error — check the API Login ID, Transaction Key, and that the mode matches the account (sandbox vs production).', 'equine-event-manager' ),
+			'mode'    => $mode,
+			'endpoint'=> $endpoint,
+		) );
+	}
+
+	/**
 	 * Create a Stripe PaymentIntent.
 	 *
 	 * @param int    $reservation_id Reservation setup ID.

@@ -318,6 +318,7 @@ class EEM_Plugin {
 		add_action( 'wp_ajax_eem_collect_payment_create_intent', array( $this->shortcodes, 'ajax_collect_payment_create_intent' ) );
 		add_action( 'wp_ajax_eem_collect_payment_confirm', array( $this->shortcodes, 'ajax_collect_payment_confirm' ) );
 		add_action( 'wp_ajax_eem_collect_payment_authorize_charge', array( $this->shortcodes, 'ajax_collect_payment_authorize_charge' ) );
+		add_action( 'wp_ajax_eem_test_authorize_net_connection', array( $this->shortcodes, 'ajax_test_authorize_net_connection' ) );
 
 		// C6.E.2 — Add Note form AJAX (writes ordernote entry to
 		// EEM_Activity_Log, returns rendered entry HTML for the JS

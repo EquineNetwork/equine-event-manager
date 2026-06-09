@@ -558,8 +558,64 @@ class EEM_Settings_Page {
 					$this->render_credential_field( array( 'id' => 'authnet-live-login', 'name' => 'payload[authorize_net][live_api_login]',       'label' => __( 'Live API Login ID', 'equine-event-manager' ),     'value' => $payment['authorize_net']['live_api_login'], 'group' => 'authnet', 'mode_group' => 'live' ) );
 					$this->render_credential_field( array( 'id' => 'authnet-live-key',   'name' => 'payload[authorize_net][live_transaction_key]', 'label' => __( 'Live Transaction Key', 'equine-event-manager' ),  'value' => $payment['authorize_net']['live_transaction_key'], 'type' => 'password', 'group' => 'authnet', 'mode_group' => 'live' ) );
 					?>
+					<div class="eem-field-row">
+						<button type="button" class="eem-btn eem-btn-secondary" data-eem-authnet-test
+							data-ajax-url="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>"
+							data-nonce="<?php echo esc_attr( wp_create_nonce( 'eem_test_authorize_net' ) ); ?>">
+							<?php esc_html_e( 'Test Connection', 'equine-event-manager' ); ?>
+						</button>
+						<p class="eem-field-hint"><?php esc_html_e( "Pings Authorize.net with the selected mode's credentials (no charge) and shows the gateway's actual response, so you can verify a credential set before saving.", 'equine-event-manager' ); ?></p>
+						<div class="eem-authnet-test-result" data-eem-authnet-test-result hidden></div>
+					</div>
 				</div>
 			</section>
+			<script>
+			(function () {
+				var btn = document.querySelector('[data-eem-authnet-test]');
+				if (!btn || btn.dataset.enReady === '1') { return; }
+				btn.dataset.enReady = '1';
+				var section = btn.closest('[data-eem-processor-section="authorize_net"]') || document;
+				var resultEl = section.querySelector('[data-eem-authnet-test-result]');
+				function show(msg, detail, ok) {
+					resultEl.hidden = false;
+					resultEl.className = 'eem-authnet-test-result eem-authnet-test-result--' + (ok ? 'ok' : 'fail');
+					resultEl.textContent = '';
+					var head = document.createElement('strong');
+					head.textContent = msg;
+					resultEl.appendChild(head);
+					if (detail) {
+						var d = document.createElement('div');
+						d.className = 'eem-authnet-test-result__detail';
+						d.textContent = detail;
+						resultEl.appendChild(d);
+					}
+				}
+				btn.addEventListener('click', function () {
+					var modeEl = section.querySelector('select[name="payload[authorize_net][mode]"]');
+					var mode = modeEl ? modeEl.value : 'test';
+					var loginEl = section.querySelector('[name="payload[authorize_net][' + mode + '_api_login]"]');
+					var keyEl = section.querySelector('[name="payload[authorize_net][' + mode + '_transaction_key]"]');
+					var body = new URLSearchParams();
+					body.set('action', 'eem_test_authorize_net_connection');
+					body.set('_wpnonce', btn.dataset.nonce);
+					body.set('mode', mode);
+					body.set('api_login', loginEl ? loginEl.value : '');
+					body.set('transaction_key', keyEl ? keyEl.value : '');
+					var prev = btn.textContent;
+					btn.disabled = true;
+					btn.textContent = '<?php echo esc_js( __( 'Testing…', 'equine-event-manager' ) ); ?>';
+					if (resultEl) { resultEl.hidden = true; }
+					fetch(btn.dataset.ajaxUrl, { method: 'POST', credentials: 'same-origin', body: body })
+						.then(function (r) { return r.json(); })
+						.then(function (j) {
+							var d = (j && j.data) || {};
+							show(d.message || (j && j.success ? 'Connected.' : 'Failed.'), d.detail || '', !!(j && j.success));
+						})
+						.catch(function (e) { show('<?php echo esc_js( __( 'Request failed:', 'equine-event-manager' ) ); ?> ' + e.message, '', false); })
+						.then(function () { btn.disabled = false; btn.textContent = prev; });
+				});
+			})();
+			</script>
 
 			<div class="eem-settings-save-bar">
 				<button type="submit" class="eem-btn eem-btn-primary">
