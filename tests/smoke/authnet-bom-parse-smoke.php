@@ -47,5 +47,15 @@ $ok( '[3] non-BOM JSON still decodes', is_array( $plain ) );
 // [4] Empty body still returns null.
 $ok( '[4] empty body returns null', null === $ref->invoke( $sc, '' ) );
 
+// [5] The refund engine has its OWN Authorize.net response parse (void/refund)
+// separate from the shared parser above — guard that it ALSO strips the BOM, or
+// a successful void reads as a failure while the money is already returned.
+$engine_src = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-refund-engine.php' );
+$ok( '[5] refund engine strips a leading BOM before json_decode',
+	$engine_src && false !== strpos( $engine_src, '\xEF\xBB\xBF' )
+	&& (bool) preg_match( '/preg_replace\(.*\\\\xEF\\\\xBB\\\\xBF.*\)\s*;\s*[^;]*json_decode/s', $engine_src ) );
+$ok( '[5] refund engine self-heals already-reversed transactions',
+	$engine_src && false !== strpos( $engine_src, 'authorize_net_transaction_is_reversed' ) );
+
 echo implode( "\n", $log ) . "\n";
 echo "authnet-bom-parse-smoke: {$pass} passed, {$fail} failed\n";

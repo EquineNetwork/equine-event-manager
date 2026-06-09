@@ -301,14 +301,84 @@ class EEM_Refund_Engine {
 			return $response;
 		}
 
-		$payload = json_decode( wp_remote_retrieve_body( $response ), true );
-		$result  = isset( $payload['transactionResponse']['responseCode'] ) ? (string) $payload['transactionResponse']['responseCode'] : '';
+		// Authorize.net prepends a UTF-8 BOM (EF BB BF) to every JSON response;
+		// a raw json_decode() therefore returns null and a SUCCESSFUL void reads
+		// as a failure (the void still happens at the gateway, but the order is
+		// never marked refunded). Strip a leading BOM before decoding.
+		$raw_body = (string) wp_remote_retrieve_body( $response );
+		$raw_body = preg_replace( '/^(?:\xEF\xBB\xBF|\xFF\xFE\x00\x00|\x00\x00\xFE\xFF|\xFF\xFE|\xFE\xFF)/', '', $raw_body );
+		$payload  = json_decode( trim( $raw_body ), true );
+		$result   = isset( $payload['transactionResponse']['responseCode'] ) ? (string) $payload['transactionResponse']['responseCode'] : '';
 
 		if ( '1' !== $result ) {
+			// Idempotency / self-heal: a previous attempt may have voided the
+			// transaction at the gateway but mis-reported failure (e.g. the BOM
+			// parse bug, or a transient timeout after the void posted). If the
+			// transaction is ALREADY reversed at Authorize.net, treat this as a
+			// success so the order reconciles to refunded instead of being stuck
+			// on "paid" with the money already returned.
+			if ( $this->authorize_net_transaction_is_reversed( $component['transaction_id'], $login_id, $transaction_key, $endpoint ) ) {
+				return ! empty( $component['transaction_id'] ) ? sanitize_text_field( (string) $component['transaction_id'] ) : 'authorize-net-refund';
+			}
+
 			$message = ! empty( $payload['messages']['message'][0]['text'] ) ? $payload['messages']['message'][0]['text'] : __( 'Authorize.net refund/void failed. Settled refunds may require more card detail storage.', 'equine-event-manager' );
 			return new WP_Error( 'authorize_refund_failed', $message );
 		}
 
 		return ! empty( $payload['transactionResponse']['transId'] ) ? sanitize_text_field( $payload['transactionResponse']['transId'] ) : 'authorize-net-refund';
+	}
+
+	/**
+	 * Read-only check: is an Authorize.net transaction already reversed (voided
+	 * or refunded) at the gateway? Used to self-heal a void/refund that posted at
+	 * the gateway but was mis-reported locally. No money moves.
+	 *
+	 * @param string $transaction_id  Gateway transaction id.
+	 * @param string $login_id        API Login ID.
+	 * @param string $transaction_key Transaction Key.
+	 * @param string $endpoint        Gateway endpoint URL.
+	 * @return bool True when the transaction's status is a reversed state.
+	 */
+	private function authorize_net_transaction_is_reversed( $transaction_id, $login_id, $transaction_key, $endpoint ) {
+		if ( empty( $transaction_id ) ) {
+			return false;
+		}
+
+		$response = wp_remote_post(
+			$endpoint,
+			array(
+				'timeout' => 30,
+				'headers' => array(
+					'Content-Type' => 'application/json; charset=utf-8',
+					'Accept'       => 'application/json',
+				),
+				'body'    => wp_json_encode(
+					array(
+						'getTransactionDetailsRequest' => array(
+							'merchantAuthentication' => array(
+								'name'           => $login_id,
+								'transactionKey' => $transaction_key,
+							),
+							'transId'                => (string) $transaction_id,
+						),
+					)
+				),
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			return false;
+		}
+
+		$raw_body = (string) wp_remote_retrieve_body( $response );
+		$raw_body = preg_replace( '/^(?:\xEF\xBB\xBF|\xFF\xFE\x00\x00|\x00\x00\xFE\xFF|\xFF\xFE|\xFE\xFF)/', '', $raw_body );
+		$payload  = json_decode( trim( $raw_body ), true );
+		$status   = isset( $payload['transaction']['transactionStatus'] ) ? (string) $payload['transaction']['transactionStatus'] : '';
+
+		return in_array(
+			$status,
+			array( 'voided', 'refundSettledSuccessfully', 'refundPendingSettlement' ),
+			true
+		);
 	}
 }
