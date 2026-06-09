@@ -857,6 +857,26 @@ a.eem-btn-amber:focus {
 	font-size: 12px;
 }
 
+/* GEMS feed "Test Connection" result banner (Settings → Integrations). */
+.eem-gems-test-result {
+	margin-top: 10px;
+	padding: 10px 12px;
+	border-radius: var(--eem-radius);
+	font-size: 13px;
+	line-height: 1.4;
+	border: 1px solid transparent;
+}
+.eem-gems-test-result--ok {
+	background: var(--eem-ok-bg, #e6f4ea);
+	color: var(--eem-ok-text, #137333);
+	border-color: var(--eem-ok-text, #137333);
+}
+.eem-gems-test-result--fail {
+	background: var(--eem-warn-bg, #fce8e6);
+	color: var(--eem-danger-text, #b3261e);
+	border-color: var(--eem-danger-text, #b3261e);
+}
+
 /* Secondary — Save Draft, Cancel, neutral */
 .eem-btn-secondary,
 a.eem-btn-secondary {

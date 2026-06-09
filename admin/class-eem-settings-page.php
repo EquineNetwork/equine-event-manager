@@ -818,7 +818,7 @@ class EEM_Settings_Page {
 		// detail panel) so a disabled option is never rendered as checked. This
 		// is a DISPLAY-only coercion — the saved option value and the server-side
 		// resolution logic are untouched (no silent migration).
-		$coming_soon_sources = array( 'native', 'feed' );
+		$coming_soon_sources = array( 'native' );
 		$display_source      = in_array( $source, $coming_soon_sources, true ) ? 'tec' : $source;
 		// Onboarding: until the admin has explicitly chosen + saved a source, NO
 		// radio is pre-selected, so a fresh install must consciously connect a
@@ -831,6 +831,15 @@ class EEM_Settings_Page {
 		$tec_status   = $tec_active
 			? array( 'class' => 'is-active',    'label' => __( 'Available', 'equine-event-manager' ) )
 			: array( 'class' => 'is-warning',   'label' => __( 'Plugin not active', 'equine-event-manager' ) );
+
+		// GEMS feed source — reads its connection from the GEMS for WordPress
+		// plugin (or EEM's own override). Status drives the "GEMS Events" row +
+		// detail panel below.
+		$gems_configured = class_exists( 'EEM_Gems_Client' ) && EEM_Gems_Client::is_configured();
+		$gems_creds      = class_exists( 'EEM_Gems_Client' ) ? EEM_Gems_Client::get_credentials() : array( 'assn' => '' );
+		$gems_status     = $gems_configured
+			? array( 'class' => 'is-active',  'label' => __( 'Connected', 'equine-event-manager' ) )
+			: array( 'class' => 'is-warning', 'label' => __( 'Setup needed', 'equine-event-manager' ) );
 		?>
 		<form class="eem-settings-form" data-eem-settings-form data-eem-panel="integrations" method="post" action="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>">
 			<input type="hidden" name="action" value="eem_save_settings" />
@@ -871,10 +880,9 @@ class EEM_Settings_Page {
 								'coming_soon' => true,
 							),
 							'feed' => array(
-								'title'       => __( 'External Feed URL', 'equine-event-manager' ),
-								'desc'        => __( 'Pull events from an external JSON or XML endpoint. Reservations inherit the feed URL automatically when this source is active.', 'equine-event-manager' ),
-								'status'      => array( 'class' => 'is-info', 'label' => __( 'Available', 'equine-event-manager' ) ),
-								'coming_soon' => true,
+								'title'  => __( 'GEMS Events', 'equine-event-manager' ),
+								'desc'   => __( 'Pull events from your GEMS Web Data connection (via the GEMS for WordPress plugin). Reservations search and link to live GEMS events, just like The Events Calendar.', 'equine-event-manager' ),
+								'status' => $gems_status,
 							),
 						);
 						foreach ( $sources as $value => $row ) :
@@ -940,24 +948,74 @@ class EEM_Settings_Page {
 					</div>
 
 					<div class="eem-source-detail" data-eem-source-detail="feed" <?php if ( 'feed' !== $display_source ) { echo 'hidden'; } ?>>
-						<div class="eem-source-detail-title"><?php esc_html_e( 'External Feed URL', 'equine-event-manager' ); ?></div>
+						<div class="eem-source-detail-title"><?php esc_html_e( 'GEMS Connection', 'equine-event-manager' ); ?></div>
+						<p class="eem-field-hint" style="margin-bottom:14px;">
+							<?php esc_html_e( 'EEM reads events from the same GEMS Web Data connection the GEMS for WordPress plugin uses (Association ID + JWT token). Manage those credentials on the GEMS Events → Integrations page.', 'equine-event-manager' ); ?>
+						</p>
 						<div class="eem-field-row">
-							<label class="eem-field-label" for="eem-feed-url"><?php esc_html_e( 'Feed URL', 'equine-event-manager' ); ?></label>
+							<span class="eem-field-label"><?php esc_html_e( 'Association', 'equine-event-manager' ); ?></span>
 							<div class="eem-field-control">
-								<input class="eem-field-input" id="eem-feed-url" type="url" name="payload[feed_url]" value="<?php echo esc_attr( $integration['feed_url'] ); ?>" placeholder="https://example.com/events.json" />
-								<p class="eem-field-hint"><?php esc_html_e( 'JSON or XML event endpoints are both supported. Use the Test Feed URL button to verify the response.', 'equine-event-manager' ); ?></p>
+								<strong><?php echo '' !== (string) $gems_creds['assn'] ? esc_html( (string) $gems_creds['assn'] ) : esc_html__( '—', 'equine-event-manager' ); ?></strong>
 							</div>
 						</div>
 						<div class="eem-field-row">
-							<span class="eem-field-label"><?php esc_html_e( 'Test Connection', 'equine-event-manager' ); ?></span>
+							<span class="eem-field-label"><?php esc_html_e( 'Connection', 'equine-event-manager' ); ?></span>
 							<div class="eem-field-control">
-								<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="test-feed-url"><?php esc_html_e( 'Test Feed URL', 'equine-event-manager' ); ?></button>
-								<p class="eem-field-hint"><?php esc_html_e( 'Fetches the feed and validates the response structure. Saves nothing.', 'equine-event-manager' ); ?></p>
+								<?php if ( ! $gems_configured ) : ?>
+									<span class="eem-source-status is-warning"><?php esc_html_e( 'Not connected', 'equine-event-manager' ); ?></span>
+									<p class="eem-field-hint">
+										<?php
+										printf(
+											/* translators: %s: admin URL for the GEMS plugin Integrations page. */
+											wp_kses( __( 'Add your GEMS JWT Token + Association Id on the <a href="%s">GEMS Events → Integrations</a> page, then reload this page.', 'equine-event-manager' ), array( 'a' => array( 'href' => array() ) ) ),
+											esc_url( admin_url( 'admin.php?page=gems-integrations' ) )
+										);
+										?>
+									</p>
+								<?php else : ?>
+									<button type="button" class="eem-btn eem-btn-secondary" data-eem-gems-test
+										data-ajax-url="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>"
+										data-nonce="<?php echo esc_attr( wp_create_nonce( 'eem_test_gems' ) ); ?>"><?php esc_html_e( 'Test Connection', 'equine-event-manager' ); ?></button>
+									<div class="eem-gems-test-result" data-eem-gems-test-result hidden></div>
+									<p class="eem-field-hint"><?php esc_html_e( 'Fetches the GEMS schedule and reports how many events are available. Saves nothing.', 'equine-event-manager' ); ?></p>
+								<?php endif; ?>
 							</div>
 						</div>
 					</div>
 				</div>
 			</section>
+
+			<script>
+			(function () {
+				var btn = document.querySelector('[data-eem-gems-test]');
+				if (!btn || btn.dataset.enReady === '1') { return; }
+				btn.dataset.enReady = '1';
+				var resultEl = (btn.closest('.eem-field-control') || document).querySelector('[data-eem-gems-test-result]');
+				btn.addEventListener('click', function () {
+					var body = new URLSearchParams();
+					body.set('action', 'eem_test_gems_connection');
+					body.set('_wpnonce', btn.dataset.nonce);
+					var prev = btn.textContent;
+					btn.disabled = true;
+					btn.textContent = '<?php echo esc_js( __( 'Testing…', 'equine-event-manager' ) ); ?>';
+					if (resultEl) { resultEl.hidden = true; }
+					fetch(btn.dataset.ajaxUrl, { method: 'POST', credentials: 'same-origin', body: body })
+						.then(function (r) { return r.json(); })
+						.then(function (j) {
+							var d = (j && j.data) || {};
+							if (resultEl) {
+								resultEl.hidden = false;
+								resultEl.className = 'eem-gems-test-result eem-gems-test-result--' + ((j && j.success) ? 'ok' : 'fail');
+								resultEl.textContent = d.message || ((j && j.success) ? 'Connected.' : 'Failed.');
+							}
+						})
+						.catch(function (e) {
+							if (resultEl) { resultEl.hidden = false; resultEl.className = 'eem-gems-test-result eem-gems-test-result--fail'; resultEl.textContent = '<?php echo esc_js( __( 'Request failed:', 'equine-event-manager' ) ); ?> ' + e.message; }
+						})
+						.then(function () { btn.disabled = false; btn.textContent = prev; });
+				});
+			})();
+			</script>
 
 			<section class="eem-card">
 				<header class="eem-card-header">
@@ -1231,6 +1289,33 @@ class EEM_Settings_Page {
 	 *
 	 * Nonce action: `eem_settings_save` (one per page load — checked here).
 	 * ───────────────────────────────────────────────────────────── */
+
+	/**
+	 * AJAX — diagnostic Test Connection for the GEMS feed source. Fetches the
+	 * GEMS schedule with the saved (GEMS-plugin or EEM-override) credentials and
+	 * reports the event count or the real error. Read-only; saves nothing.
+	 *
+	 * @return void
+	 */
+	public function handle_ajax_test_gems_connection() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+		check_ajax_referer( 'eem_test_gems', '_wpnonce' );
+
+		if ( ! class_exists( 'EEM_Gems_Client' ) ) {
+			wp_send_json_error( array( 'message' => __( 'GEMS client unavailable.', 'equine-event-manager' ) ) );
+		}
+
+		$creds  = EEM_Gems_Client::get_credentials();
+		$result = EEM_Gems_Client::test_connection( $creds['base_url'], $creds['token'], $creds['assn'] );
+
+		if ( empty( $result['ok'] ) ) {
+			wp_send_json_error( array( 'message' => $result['message'] ) );
+		}
+
+		wp_send_json_success( array( 'message' => $result['message'], 'count' => (int) $result['count'] ) );
+	}
 
 	/**
 	 * Top-level AJAX handler. Validates auth + nonce, then routes to the
