@@ -315,7 +315,7 @@ class EEM_Shortcodes {
 			<?php endif; ?>
 			<?php if ( ! empty( $this->pending_redirect_url ) ) : ?>
 				<?php // #8 redirect — emitted here (NOT inside $message) so it survives wp_kses_post(); same inline-script pattern the rest of the form uses. ?>
-				<script>window.location.replace(<?php echo wp_json_encode( $this->pending_redirect_url ); ?>);</script>
+				<script>try{sessionStorage.removeItem('eem_resform_v1_<?php echo esc_js( (string) $reservation_id ); ?>');}catch(e){}window.location.replace(<?php echo wp_json_encode( $this->pending_redirect_url ); ?>);</script>
 			<?php endif; ?>
 
 			<?php if ( $show_event_header && ! $is_admin_invoice ) : ?>
@@ -7149,7 +7149,15 @@ RV Lot: " . $rv_lot['name'] );
 	 * @return array|null
 	 */
 	private function parse_authorize_net_response_body( $raw_body ) {
-		$raw_body = trim( (string) $raw_body );
+		$raw_body = (string) $raw_body;
+
+		// Authorize.net's JSON API prepends a UTF-8 BOM (EF BB BF) to every
+		// response body. trim() does NOT strip it, so json_decode() fails with a
+		// syntax error and the whole response reads as "unreadable" even when the
+		// transaction succeeded. Strip a leading BOM (UTF-8/UTF-16/UTF-32) before
+		// decoding. Confirmed live: the gateway returns a valid BOM-prefixed JSON.
+		$raw_body = preg_replace( '/^(?:\xEF\xBB\xBF|\xFF\xFE\x00\x00|\x00\x00\xFE\xFF|\xFF\xFE|\xFE\xFF)/', '', $raw_body );
+		$raw_body = trim( $raw_body );
 
 		if ( '' === $raw_body ) {
 			return null;
@@ -9629,6 +9637,148 @@ RV Lot: " . $rv_lot['name'] );
 				});
 			}
 
+			// --- Draft autosave / restore -------------------------------------
+			// A server-side validation error reloads the whole page and wipes the
+			// form. To stop the customer from re-typing everything, we mirror the
+			// form's user-entered values into sessionStorage as they type and
+			// restore them on the next load (within the same tab session). Card
+			// number / CVC / expiry and one-time security tokens are NEVER stored.
+			var EEM_FORM_STATE_PREFIX = 'eem_resform_v1_';
+			var EEM_FORM_STATE_DENY = {
+				'authorize_card_number': 1, 'authorize_card_code': 1,
+				'authorize_exp_month': 1, 'authorize_exp_year': 1,
+				'stripe_payment_intent_id': 1, 'en_reservation_nonce': 1,
+				'_wpnonce': 1, 'en_submission_token': 1
+			};
+
+			function eemFormStateKey(form) {
+				var wrap = form.closest('[data-reservation-id]');
+				var id = wrap ? wrap.getAttribute('data-reservation-id') : '';
+				if (!id) {
+					var ridInput = form.querySelector('input[name="en_reservation_id"]');
+					id = ridInput ? ridInput.value : '';
+				}
+				return EEM_FORM_STATE_PREFIX + (id || 'default');
+			}
+
+			function eemNameSelector(name) {
+				if (window.CSS && typeof CSS.escape === 'function') {
+					return '[name="' + CSS.escape(name) + '"]';
+				}
+				return '[name="' + name.replace(/(["\\\]\[])/g, '\\$1') + '"]';
+			}
+
+			function eemCollectFormState(form) {
+				var state = { fields: {}, checks: {} };
+				form.querySelectorAll('input[name], select[name], textarea[name]').forEach(function(el) {
+					var name = el.getAttribute('name');
+					if (!name || EEM_FORM_STATE_DENY[name]) { return; }
+					var type = (el.getAttribute('type') || '').toLowerCase();
+					if (type === 'password' || type === 'file') { return; }
+					if (type === 'checkbox' || type === 'radio') {
+						if (!state.checks[name]) { state.checks[name] = []; }
+						if (el.checked) { state.checks[name].push(el.value); }
+						return;
+					}
+					state.fields[name] = el.value;
+				});
+				return state;
+			}
+
+			function eemSaveFormState(form) {
+				try {
+					sessionStorage.setItem(eemFormStateKey(form), JSON.stringify(eemCollectFormState(form)));
+				} catch (e) {}
+			}
+
+			function bindReservationFormAutosave(form) {
+				if (form.dataset.enAutosaveReady === '1') { return; }
+				form.dataset.enAutosaveReady = '1';
+				var pending = null;
+				var save = function() {
+					if (pending) { return; }
+					pending = window.setTimeout(function() { pending = null; eemSaveFormState(form); }, 250);
+				};
+				form.addEventListener('input', save);
+				form.addEventListener('change', save);
+				// Flush the final state synchronously on submit (the debounced save
+				// may not have fired yet). The draft is cleared only on a SUCCESSFUL
+				// submit — see the redirect script in the template. On a validation
+				// error the page reloads and the draft is restored.
+				form.addEventListener('submit', function() {
+					if (pending) { window.clearTimeout(pending); pending = null; }
+					eemSaveFormState(form);
+				});
+			}
+
+			function restoreReservationFormState(form) {
+				if (form.dataset.enRestoreDone === '1') { return; }
+				form.dataset.enRestoreDone = '1';
+				var raw;
+				try { raw = sessionStorage.getItem(eemFormStateKey(form)); } catch (e) { return; }
+				if (!raw) { return; }
+				var state;
+				try { state = JSON.parse(raw); } catch (e) { return; }
+				if (!state || typeof state !== 'object') { return; }
+				var fields = state.fields || {};
+				var checks = state.checks || {};
+
+				// 1) Group toggle + rider count FIRST so the rider rows are rebuilt
+				// before we try to fill them.
+				var groupToggle = form.querySelector('[data-eem-group-toggle]');
+				if (groupToggle && checks[groupToggle.getAttribute('name')]) {
+					var wantOn = checks[groupToggle.getAttribute('name')].indexOf(groupToggle.value) !== -1;
+					if (groupToggle.checked !== wantOn) {
+						groupToggle.checked = wantOn;
+						groupToggle.dispatchEvent(new Event('change', { bubbles: true }));
+					}
+				}
+				var groupCount = form.querySelector('[data-eem-group-count]');
+				if (groupCount && typeof fields[groupCount.getAttribute('name')] !== 'undefined') {
+					groupCount.value = fields[groupCount.getAttribute('name')];
+					groupCount.dispatchEvent(new Event('change', { bubbles: true }));
+				}
+
+				// 2) Text / select / textarea (rider inputs now exist).
+				Object.keys(fields).forEach(function(name) {
+					if (EEM_FORM_STATE_DENY[name]) { return; }
+					var els = form.querySelectorAll(eemNameSelector(name));
+					if (!els.length) { return; }
+					els.forEach(function(el) {
+						var type = (el.getAttribute('type') || '').toLowerCase();
+						if (type === 'checkbox' || type === 'radio' || type === 'password' || type === 'file') { return; }
+						if (el.value !== fields[name]) {
+							el.value = fields[name];
+							el.dispatchEvent(new Event('change', { bubbles: true }));
+						}
+					});
+				});
+
+				// 3) Checkboxes / radios.
+				Object.keys(checks).forEach(function(name) {
+					if (EEM_FORM_STATE_DENY[name]) { return; }
+					var els = form.querySelectorAll(eemNameSelector(name));
+					els.forEach(function(el) {
+						var type = (el.getAttribute('type') || '').toLowerCase();
+						if (type !== 'checkbox' && type !== 'radio') { return; }
+						var shouldCheck = checks[name].indexOf(el.value) !== -1;
+						if (el.checked !== shouldCheck) {
+							el.checked = shouldCheck;
+							el.dispatchEvent(new Event('change', { bubbles: true }));
+						}
+					});
+				});
+
+				// 4) Recompute derived UI now that values are back.
+				try {
+					syncReservationSectionToggles(form);
+					syncRvAddonAvailability(form);
+					syncGeneralAddonAvailability(form);
+					updateProductPricing(form);
+					updateReservationTotals(form);
+				} catch (e) {}
+			}
+
 			function initializeReservationForms(root) {
 				(root || document).querySelectorAll('.eem-reservation-form').forEach(function(form) {
 					clampQuantityInputsToMax(form);
@@ -9648,6 +9798,11 @@ RV Lot: " . $rv_lot['name'] );
 					syncGeneralAddonAvailability(form);
 					updateProductPricing(form);
 					updateReservationTotals(form);
+					// Restore any draft saved before a validation-error reload, then
+					// keep saving as the customer types. Restore runs last so it can
+					// re-fill the dynamically-built rider rows + recompute totals.
+					restoreReservationFormState(form);
+					bindReservationFormAutosave(form);
 				});
 			}
 
@@ -9825,8 +9980,8 @@ RV Lot: " . $rv_lot['name'] );
 						card.innerHTML =
 							'<h4>Rider ' + (index + 1) + '</h4>' +
 							'<div class=\"eem-reservation-grid eem-reservation-grid--two\">' +
-								'<label><span>First Name <strong>*</strong></span><input type=\"text\" name=\"group_riders[' + index + '][first_name]\" value=\"' + escapeHtml(rider.first_name) + '\" data-eem-group-first-name /></label>' +
-								'<label><span>Last Name <strong>*</strong></span><input type=\"text\" name=\"group_riders[' + index + '][last_name]\" value=\"' + escapeHtml(rider.last_name) + '\" data-eem-group-last-name /></label>' +
+								'<label><span>First Name <strong>*</strong></span><input type=\"text\" name=\"group_riders[' + index + '][first_name]\" value=\"' + escapeHtml(rider.first_name) + '\" data-eem-group-first-name required /></label>' +
+								'<label><span>Last Name <strong>*</strong></span><input type=\"text\" name=\"group_riders[' + index + '][last_name]\" value=\"' + escapeHtml(rider.last_name) + '\" data-eem-group-last-name required /></label>' +
 							'</div>';
 						list.appendChild(card);
 					}
