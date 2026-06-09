@@ -500,15 +500,24 @@ The mockups are not exhaustive. The following features exist (or will exist) in 
 
 The plugin supports both Stripe and Authorize.net as payment processors. Auth.net is currently partially implemented (refund handling exists, full flow is unfinished). When the mockups show "Stripe" specifically (e.g. in Settings → Payments), that's the example processor — the actual UI should accommodate both. Plan for finishing the Auth.net flow as part of this overhaul rather than treating it as Codex bloat.
 
+> **V1 SCOPE (2026-06-09, Whitney): the admin Collect Payment "Charge Card" tab IS v1.** Customer-side Auth.net charge + refunds already work; the one remaining piece is wiring the *admin* Collect Payment "Charge Card" dispatch for Auth.net (currently Stripe-only). **Blocked on credentials, not code** — Whitney is providing the Auth.net API login + transaction key (~2026-06-10). Until those are in Settings → Payments you can't end-to-end test a live charge, so this is the last v1 item: implement the Auth.net charge dispatch parallel to the Stripe path, then verify once credentials land. Touches payment flow → confirm gateway/credential approach before wiring live charges.
+
 ### Event source — three options, user picks one in Settings
+
+> **V1 SCOPE (2026-06-09, Whitney): TEC is the only v1 event source. Native Events
+> + Event Feed are deferred to v2** (see "v2 deferred features" below). They stay
+> shipped-but-gated "Coming Soon" in Settings → Integrations — keep all the
+> plumbing (meta keys, source-mode switch, gated sub-sections); just don't finish
+> or un-gate them for v1. The text below describes the full three-source design
+> that v2 completes.
 
 The plugin supports **three mutually-exclusive event sources**. The Settings → Events tab lets the site admin choose one:
 
-1. **Native Events** — `en_event`, `en_venue`, `en_producer` CPTs managed in the plugin itself. ~1,500 LOC. Currently partially built; needs to be finished after the cleanup pass is stable.
-2. **TEC Integration** — when The Events Calendar plugin is installed, pull events from it via TEC's APIs. ~500 LOC. Working integration today.
-3. **Event Feed** — pull events from an external JSON URL configured in Settings.
+1. **Native Events** *(v2)* — `en_event`, `en_venue`, `en_producer` CPTs managed in the plugin itself. ~1,500 LOC. Partially built; finish in v2.
+2. **TEC Integration** *(v1)* — when The Events Calendar plugin is installed, pull events from it via TEC's APIs. ~500 LOC. Working integration today — the v1 source.
+3. **Event Feed** *(v2)* — pull events from an external JSON URL configured in Settings.
 
-All three must be preserved. Where the mockups reference an "event link" or "event source" (e.g. on `edit_reservation_page.html`, on the Settings page, in the Linked Event meta bar), the implementation should accept any of the three sources transparently — the reservation just needs a reference to an event, regardless of which source provided it.
+All three must be preserved (kept in code even while Native/Feed are gated). Where the mockups reference an "event link" or "event source" (e.g. on `edit_reservation_page.html`, on the Settings page, in the Linked Event meta bar), the implementation should accept any of the three sources transparently — the reservation just needs a reference to an event, regardless of which source provided it.
 
 **Implementation notes for Phase 3:**
 - The reservation `_en_event_id` / `_en_native_event_id` / `_en_external_event_*` meta keys observed in the audit are the multi-source plumbing. Keep them.
@@ -596,7 +605,8 @@ In-flight architectural decisions whose final shape spans multiple chunks. Each 
 
 Tracks scope items explicitly REMOVED from v1 (vs. deferred). A removed decision should not be reintroduced without re-opening the original decision conversation.
 
-*(No active entries — global cancellation policy was previously listed here as REMOVED but has been reframed as DEPRECATED-LIVE-PENDING-CLEANUP under "Architecture decisions in flight" → Cancellation policy architecture, above.)*
+- **"Add to Show Bill" deferred-payment option — REMOVED entirely (2026-06-09, Whitney).** Not v1, not v2. The use case it was meant to serve — staging charges to settle later — is **already covered** by the existing ability to create an "open" unpaid order and keep adding line items to it for the customer. No separate show-bill settlement record / settlement-trigger model is needed. Do not reintroduce a distinct "Show Bill" concept without re-opening the conversation. (Previously sat under "v2 deferred features"; moved here.)
+- *(Global cancellation policy was previously listed here as REMOVED but has been reframed as DEPRECATED-LIVE-PENDING-CLEANUP under "Architecture decisions in flight" → Cancellation policy architecture, above.)*
 
 ---
 
@@ -604,10 +614,11 @@ Tracks scope items explicitly REMOVED from v1 (vs. deferred). A removed decision
 
 Features considered during Phase 3 planning but explicitly deferred to v2. Each entry includes the source decision so future product conversations can pick up the thread.
 
+- **Native Events + Event Feed sources — V2 (2026-06-09, Whitney).** Of the three event sources, **only The Events Calendar (TEC) ships in v1.** Native Events (`en_event`/`en_venue`/`en_producer` CPTs, ~1,500 LOC, partially built) and Event Feed (external JSON/XML URL) are deferred to v2. Keep them **gated "Coming Soon"** in Settings → Integrations exactly as shipped — the plumbing/meta-keys/source-mode switch stay (do NOT rip them out), they just don't get finished/un-gated for v1. See the "Event source" section above (annotated with this decision).
 - **Scheduled reports (recurring exports)** — repeating CSV/PDF exports delivered by email on a cron schedule. Requires: cron job infrastructure, email delivery + bounce handling, per-recipient management, per-schedule failure log + retry policy, history view per schedule. Source: HANDOFF.md "Deferred features" / AUDIT-C12-1.
 - **Bulk "Send Payment Link" action on Orders list** — multi-select unpaid orders → bulk-send invoice emails. Considered as an AUDIT-C11-1 candidate, deferred. Source: HANDOFF.md.
-- **"Add to Show Bill" deferred-payment option on Create Order** — alternative to immediate-charge: stage the charge against a show-bill settlement record that closes at end of event. Dropped per docs/decisions.md PRE-7 because the settlement-trigger model + show-bill data model are unresolved product questions. Source: HANDOFF.md.
 - **Email templates beyond confirmation** — other transactional emails likely needed (invoice / payment received / refund / cancellation). Derivable from the confirmation email template structure once Emogrifier + the template render path are wired in C11. Defer the actual template authoring + send-trigger wiring; surface as a v1.1 incremental or v2 batch depending on traffic. Source: HANDOFF.md.
+- **Orders soft-delete (Move to Trash)** — a trash/restore lifecycle for orders (parallel to the reservations Trash tab). Deferred to v2. Source: CLEANUP #14.
 
 ---
 
