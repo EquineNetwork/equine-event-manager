@@ -199,12 +199,19 @@ foreach ( array( 'eem-general-addons-row-template' => 'eem-general-addons-rows',
 		false !== strpos( $html, 'id="' . $tb . '"' ), $pass, $fail, $log );
 }
 
-// JS source — handler reads from button OR ancestor (the C7.X.11 fallback).
-c7x11_ok( 'JS handler uses addBtn.hasAttribute("data-eem-repeating-template") to source attrs',
-	false !== strpos( $js_src, "addBtn.hasAttribute('data-eem-repeating-template')" ),
+// JS source — handler reads template/tbody IDs directly from the button.
+// C16 UPDATE: the orphan `_repeating-row-helper.php` partial (the only
+// emitter of the `.eem-repeating-row-helper` wrapper class) was removed
+// as dead code, so the prior ancestor fallback was deliberately deleted.
+// The handler now sources the attrs from the BUTTON via getAttribute()
+// (admin.js ~3210-3212: `var source = addBtn; ... source.getAttribute(
+// 'data-eem-repeating-template')`). hasAttribute() is no longer used.
+c7x11_ok( 'JS handler sources data-eem-repeating-template directly from the add button',
+	false !== strpos( $js_src, "source.getAttribute('data-eem-repeating-template')" )
+		&& false !== strpos( $js_src, 'var source = addBtn' ),
 	$pass, $fail, $log );
-c7x11_ok( 'JS handler still falls back to .eem-repeating-row-helper ancestor (orphan-partial back-compat)',
-	false !== strpos( $js_src, ".closest('.eem-repeating-row-helper')" ),
+c7x11_ok( 'JS handler reads data-eem-repeating-tbody from the same button source',
+	false !== strpos( $js_src, "source.getAttribute('data-eem-repeating-tbody')" ),
 	$pass, $fail, $log );
 
 // Anti-pattern guard — pre-C7.X.11 form must not return.

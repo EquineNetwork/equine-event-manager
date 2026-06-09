@@ -69,28 +69,33 @@ $no_broad_fc_12px = ! (bool) preg_match(
 c7x19_ok( 'admin-legacy.css: broad shell-page input[type="text"]:not(.eem-field-input) block has no 12px !important',
 	$no_broad_fc_12px, $pass, $fail, $log );
 
-// Positive: block 6 must use var(--eem-radius) — confirmed by finding the selector chain
-// that ends with textarea:not(.eem-field-input):not(.eem-field-textarea) paired with
-// border-radius: var(--eem-radius) in the same rule block.
-$block6_uses_token = (bool) preg_match(
-	'~textarea\s*:not\(\s*\.eem-field-input\s*\)\s*:not\(\s*\.eem-field-textarea\s*\)\s*\{[^}]*border-radius\s*:\s*var\(--eem-radius\)\s*!important~s',
-	$legacy_nc
-);
-c7x19_ok( 'admin-legacy.css: form-control block 6 (textarea exclusion) uses var(--eem-radius) !important',
-	$block6_uses_token, $pass, $fail, $log );
+// C16 UPDATE: the C7.X.19 Issue-1 fix originally converted the "block 6"
+// 12px !important to var(--eem-radius) !important. The C16 admin-legacy
+// cleanup went further and DELETED the broad form-control !important blocks
+// entirely (the cartel that was the cascade winner for .eem-zone-name-input /
+// .eem-repeat-input). So the regression is now resolved more cleanly: there is
+// NO admin-legacy.css override for those classes at all — they take radius
+// purely from admin.css. Assert that stronger state instead of a token block
+// that no longer exists.
+//
+// (a) admin-legacy.css carries NO selector targeting .eem-zone-name-input /
+//     .eem-repeat-input — nothing overrides their radius.
+$no_legacy_override = ( false === strpos( $legacy_nc, '.eem-zone-name-input' ) )
+	&& ( false === strpos( $legacy_nc, '.eem-repeat-input' ) );
+c7x19_ok( 'admin-legacy.css: no override targets .eem-zone-name-input / .eem-repeat-input (cartel block removed in C16)',
+	$no_legacy_override, $pass, $fail, $log );
 
-// The select:not() companion selector in block 6 also uses the token.
-$block6_select_token = (bool) preg_match(
-	'~select\s*:not\(\s*\.eem-dashboard-range-select\s*\)(?:[^{]*:not\([^)]+\))*\s*,\s*\n[^{]*textarea[^{]*\{\s*[^}]*border-radius\s*:\s*var\(--eem-radius\)~s',
-	$legacy_nc
+// (b) admin.css gives both input classes the token radius (var(--eem-radius-sm)),
+//     so the computed value is the design-token radius, not 12px.
+$admin_token_radius = (bool) preg_match(
+	'~input\.eem-zone-name-input\s*\{[^}]*border-radius\s*:\s*var\(--eem-radius-sm\)~s',
+	$admin_raw
+) && (bool) preg_match(
+	'~input\.eem-repeat-input\s*\{[^}]*border-radius\s*:\s*var\(--eem-radius-sm\)~s',
+	$admin_raw
 );
-// Looser check: the block containing select + textarea exclusions uses var(--eem-radius)
-$block6_select_token2 = (bool) preg_match(
-	'~select\s*:not\(\s*\.eem-dashboard-range-select\s*\):not\(\s*\.eem-list-select\s*\):not\(\s*\.eem-toolbar-select\s*\):not\(\s*\.eem-field-select\s*\)~',
-	$legacy_nc
-) && $block6_uses_token;
-c7x19_ok( 'admin-legacy.css: block 6 selector chain (select + textarea exclusions) present alongside token radius',
-	$block6_select_token2, $pass, $fail, $log );
+c7x19_ok( 'admin.css: input.eem-zone-name-input + input.eem-repeat-input use var(--eem-radius-sm) (token radius)',
+	$admin_token_radius, $pass, $fail, $log );
 
 // Confirm all 6 broad form-control blocks (body.eem-shell-page:not(...) input[type="text"]:not(.eem-field-input))
 // use a token or no border-radius — no px literal in those specific block bodies.

@@ -28,6 +28,13 @@ $reservations_cpt = $cpt;
 
 $render = function ( array $overrides ) use ( $base, $reservations_cpt ) {
 	$data = array_merge( $base, $overrides );
+	// Ensure at least one stall row so the row-card markup (preview block, inputs)
+	// is always exercised regardless of which fixture reservation seeds $base.
+	if ( empty( $data['stall_rows'] ) ) {
+		$data['stall_rows'] = array(
+			array( 'name' => 'Barn A', 'layout' => 'one-sided', 'first' => '100', 'last' => '111' ),
+		);
+	}
 	ob_start();
 	include EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_section-stall.php';
 	return (string) ob_get_clean();
@@ -46,7 +53,12 @@ $full = $render( array( 'stall_inventory_type' => 'numbered', 'stall_customer_se
 $check( 'pick mode does NOT add the simple class', false === strpos( $full, 'eem-stall-rows--simple' ) );
 $check( 'pick mode label is "Stall Rows"', false !== strpos( $full, '>Stall Rows<' ) );
 $check( 'pick mode button says "Add Row"', false !== strpos( $full, 'Add Row' ) );
-$check( 'pick mode keeps the Layout dropdown markup', false !== strpos( $full, 'data-eem-input-action="stall-row-layout"' ) );
+// Back-to-back rows were removed (completed task), so the server template no
+// longer emits a per-row Layout dropdown — every row is one-sided via a hidden
+// input. Under Pick-from-layout the connected map IS the layout, so the whole
+// row-builder field row renders hidden (is_hidden => $stall_is_pick).
+$check( 'pick mode no longer emits a per-row Layout dropdown', false === strpos( $full, 'data-eem-input-action="stall-row-layout"' ) );
+$check( 'pick mode fixes every row to one-sided via hidden input', false !== strpos( $full, '[layout]" value="one-sided"' ) );
 
 // ── JS + CSS hooks ──
 $js  = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/js/admin.js' );

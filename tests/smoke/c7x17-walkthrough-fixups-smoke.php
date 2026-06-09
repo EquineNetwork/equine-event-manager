@@ -98,23 +98,31 @@ foreach ( array(
 // legitimately bare selectors in page-variant-scoped blocks like
 // body.eem-shell-page--reservations ... input[type="search"]).
 $legacy_nc = $legacy_nocom;
-foreach ( array( '"text"', '"search"', '"email"', '"url"', '"password"', '"date"', '"time"', '"datetime-local"' ) as $type ) {
+// C16 UPDATE: the generic `body.eem-shell-page:not(...) input[type=X] { … !important }`
+// form-control cartel block was STRIPPED in the C16 admin-legacy cleanup. The
+// cross-input-type :not() exclusion chains now live in the editor- and
+// post-type-scoped blocks instead (admin-legacy.css ~2633 + ~2650/2660):
+//   body.eem-shell-page--editor input[type=X]:not(.eem-field-input):not(.eem-search-input)
+//   body.post-type-en_reservation.post-php  input[type=X]:not(...)
+//   body.post-type-en_reservation.post-new-php input[type=X]:not(...)
+// These blocks are NOT !important — specificity (0,2,2) wins naturally over
+// admin.css (0,1,1), per the C7.X.17 Issue A comment in the file. The
+// exclusion-chain invariant is preserved; only its host block moved. Search
+// remains exempt (page-variant search inputs are legitimately bare elsewhere).
+foreach ( array( '"text"', '"email"', '"url"', '"password"', '"date"', '"time"', '"datetime-local"' ) as $type ) {
 	$tq = preg_quote( $type, '~' );
-	// The general shell-page:not(...) block must have input[type=X]:not(...)
-	$shell_ok = (bool) preg_match(
-		'~body\.eem-shell-page:not\([^{]*input\[type=' . $tq . '\]\s*:not\(~',
+	// The editor-scoped block must carry input[type=X]:not(...)
+	$editor_ok = (bool) preg_match(
+		'~body\.eem-shell-page--editor input\[type=' . $tq . '\]\s*:not\(~',
 		$legacy_nc
 	);
-	// The body.post-type-en_reservation block must have input[type=X]:not(...)
-	// (type="datetime-local" is only in some blocks; skip post-type check for it
-	// since the first block uses datetime-local only in the post-type mirror).
+	// The post-type editor block must carry input[type=X]:not(...)
 	$post_type_ok = (bool) preg_match(
-		'~body\.post-type-en_reservation\s+input\[type=' . $tq . '\]\s*:not\(~',
+		'~body\.post-type-en_reservation\.post-php input\[type=' . $tq . '\]\s*:not\(~',
 		$legacy_nc
 	);
-	$ok = '"datetime-local"' === $type ? $shell_ok : ( $shell_ok && $post_type_ok );
-	c7x17_ok( "admin-legacy.css: shell-page !important block has :not() chain for input[type={$type}]",
-		$ok, $pass, $fail, $log );
+	c7x17_ok( "admin-legacy.css: editor/post-type block has :not() chain for input[type={$type}]",
+		$editor_ok && $post_type_ok, $pass, $fail, $log );
 }
 
 // textarea exclusion chain. C7.X.18 Issue A1 corrected the chain: the actual

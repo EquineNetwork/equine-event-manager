@@ -3,8 +3,9 @@
  * C10.D (2.3.76) smoke — "Pick Your Stalls" interactive picker.
  *
  * Renders the canonical seed reservation (43) and asserts the picker structure
- * from .mockups/event_page.html: box + header + legend + row sections (one-sided
- * and back-to-back with an aisle) + selectable cells posting preferred_stall_units[]
+ * from .mockups/event_page.html: box + header + legend + single-strip row sections
+ * (back-to-back is retired — a stray b2b row collapses to one strip, no aisle) +
+ * selectable cells posting preferred_stall_units[]
  * + blocked/reserved inert cells + the selection summary. Plus unit tests on the
  * label-range expander (numeric / prefixed / padded). Read-only — no mutation.
  */
@@ -75,9 +76,16 @@ $html = $sc->render_reservation( array( 'id' => $fixture_id ) );
 c10d_ok( 'picker box rendered', str_contains( $html, 'data-eem-stall-picker' ), $pass, $fail, $log );
 c10d_ok( 'title "Pick Your Stalls"', str_contains( $html, 'Pick Your Stalls' ), $pass, $fail, $log );
 c10d_ok( 'legend present (4 dots)', 4 === substr_count( $html, 'class="legend-dot' ), $pass, $fail, $log, (string) substr_count( $html, 'class="legend-dot' ) );
-c10d_ok( 'back-to-back row + aisle', str_contains( $html, 'picker-stall-row back-to-back' ) && str_contains( $html, 'picker-stall-row-aisle' ), $pass, $fail, $log );
-c10d_ok( 'one-sided row present', str_contains( $html, 'class="picker-stall-row">' ), $pass, $fail, $log );
-c10d_ok( 'row meta shows stall count + layout', str_contains( $html, 'stalls · Back-to-back' ) && str_contains( $html, 'stalls · One-sided' ), $pass, $fail, $log );
+// Back-to-back layout was retired (completed task): the renderer now collapses
+// every row — including a stray back-to-back fixture row — to a single strip with
+// NO aisle and NO "back-to-back" class. Top+bottom labels are concatenated into
+// one picker-stall-row so nothing is lost. Assert the retired markup is gone and
+// the surviving fixture row (Barn A: 100..104 + Y1..Y4) renders as one strip.
+c10d_ok( 'back-to-back markup retired (no aisle / no back-to-back class)', ! str_contains( $html, 'picker-stall-row back-to-back' ) && ! str_contains( $html, 'picker-stall-row-aisle' ), $pass, $fail, $log );
+c10d_ok( 'rows render as single picker-stall-row strips', str_contains( $html, 'class="picker-stall-row">' ), $pass, $fail, $log );
+// Section meta now shows a plain stall count only — no "· Back-to-back / · One-sided"
+// layout suffix (the layout distinction was removed with back-to-back).
+c10d_ok( 'row meta shows a plain stall count (no layout suffix)', str_contains( $html, ' stalls' ) && ! str_contains( $html, 'stalls ·' ), $pass, $fail, $log );
 
 // Selectable cells post preferred_stall_units[] (server already validates this field).
 preg_match_all( '/name="preferred_stall_units\[\]" value="([^"]+)"/', $html, $sel );

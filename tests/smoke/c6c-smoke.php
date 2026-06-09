@@ -46,10 +46,14 @@ if ( $paid_order ) {
 // without duplicating the write. Source-grep is sufficient evidence.
 echo "\n[3] Activity-log write moved into process_amount_refund kernel\n";
 $admin_src = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-equine-event-manager-admin.php' );
-$kernel_pos = strpos( $admin_src, 'public function process_amount_refund' );
-$next_method_pos = strpos( $admin_src, 'public function get_order_remaining_refundable' );
-$kernel_block = $kernel_pos && $next_method_pos ? substr( $admin_src, $kernel_pos, $next_method_pos - $kernel_pos ) : '';
-ok( 'process_amount_refund body contains EEM_Activity_Log::write call',
+// CLEANUP #27: the process_amount_refund kernel was extracted into
+// EEM_Refund_Engine. The admin method is now a thin delegate; the real
+// kernel body (with the EEM_Activity_Log::write call) lives in the engine.
+$engine_src = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-refund-engine.php' );
+$kernel_pos = strpos( $engine_src, 'public function process_amount_refund' );
+$next_method_pos = strpos( $engine_src, "\n\tpublic function ", $kernel_pos + 1 );
+$kernel_block = $kernel_pos && $next_method_pos ? substr( $engine_src, $kernel_pos, $next_method_pos - $kernel_pos ) : substr( $engine_src, (int) $kernel_pos );
+ok( 'process_amount_refund kernel (EEM_Refund_Engine) contains EEM_Activity_Log::write call',
 	false !== strpos( $kernel_block, 'EEM_Activity_Log::write' ),
 	$pass, $fail, $log );
 

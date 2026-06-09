@@ -1,13 +1,20 @@
 <?php
 /**
- * Tack Stalls — On/Off control + shavings exclusion.
+ * Tack Stalls — 3-mode control (off / customer / admin) + shavings exclusion.
  *
- * `_en_stall_tack_mode` is 'off' or 'customer' (on). When on, the buyer flags a
- * single tack stall at checkout (drives the required-shavings exclusion — tack
- * stalls still pay the normal stall rate). The admin assigns/overrides the actual
- * tack stall via the "Mark as Tack Stall" chip on the Stall Chart — there is no
- * per-reservation admin tag-select. The legacy 'admin' mode normalizes to on.
- * Migration #006 converts the old boolean toggle.
+ * `_en_stall_tack_mode` is one of 'off', 'customer', or 'admin' (task #59).
+ * "off" disables the feature; "customer" lets the buyer flag a single tack
+ * stall at checkout; "admin" keeps the feature on (drives the shavings
+ * exclusion) but hides the checkout selector — the admin marks the tack stall
+ * on the Stall Chart. Either on-mode excludes a tack stall from required
+ * shavings (tack stalls still pay the normal stall rate). Garbage values
+ * normalize to 'customer'; legacy 'admin' is now a first-class mode (no longer
+ * folded into 'customer'). Migration #006 converts the old boolean toggle.
+ *
+ * Editor control: two button groups — On/Off (data-eem-action="tack-onoff")
+ * plus a who-row (Customer / Admin only, data-eem-action="tack-who") shown only
+ * when On. JS handler is eemTackToggle (assets/js/admin.js). The customer-facing
+ * checkout selector is gated to the 'customer' mode specifically.
  */
 
 $pass = 0; $fail = 0; $log = array();
@@ -18,7 +25,7 @@ function tk_ok( $label, $cond, &$pass, &$fail, &$log ) {
 /* ── CPT data layer ─────────────────────────────────────────────── */
 tk_ok( 'sanitize_stall_tack_mode keeps off',          'off'      === EEM_Reservations_CPT::sanitize_stall_tack_mode( 'off' ),      $pass, $fail, $log );
 tk_ok( 'sanitize_stall_tack_mode keeps customer',     'customer' === EEM_Reservations_CPT::sanitize_stall_tack_mode( 'customer' ), $pass, $fail, $log );
-tk_ok( 'sanitize_stall_tack_mode maps legacy admin → customer', 'customer' === EEM_Reservations_CPT::sanitize_stall_tack_mode( 'admin' ), $pass, $fail, $log );
+tk_ok( 'sanitize_stall_tack_mode keeps admin (3-mode, task #59)', 'admin'    === EEM_Reservations_CPT::sanitize_stall_tack_mode( 'admin' ), $pass, $fail, $log );
 tk_ok( 'sanitize_stall_tack_mode garbage → customer', 'customer' === EEM_Reservations_CPT::sanitize_stall_tack_mode( 'wat' ),   $pass, $fail, $log );
 
 $cpt      = new EEM_Reservations_CPT();
@@ -35,13 +42,14 @@ $pos_blocked = strpos( $section, 'Blocked Stall Numbers' );
 $pos_tack    = strpos( $section, 'eem-stall-tack-mode-input' );
 tk_ok( 'tack-mode hidden input present',                 false !== $pos_tack, $pass, $fail, $log );
 tk_ok( 'tack control renders AFTER Blocked Stall Numbers', false !== $pos_blocked && false !== $pos_tack && $pos_tack > $pos_blocked, $pass, $fail, $log );
-tk_ok( 'tack control is a 2-button On/Off',              2 === substr_count( $section, 'data-eem-action="toggle-tack-mode"' ), $pass, $fail, $log );
+tk_ok( 'tack On/Off group has 2 buttons',                2 === substr_count( $section, 'data-eem-action="tack-onoff"' ), $pass, $fail, $log );
+tk_ok( 'tack who-row group has 2 buttons (Customer/Admin)', 2 === substr_count( $section, 'data-eem-action="tack-who"' ), $pass, $fail, $log );
 tk_ok( 'admin tack tag-select removed',                  false === strpos( $section, 'eem-tack-admin-select' ) && false === strpos( $section, 'eem_tack_admin_stalls' ), $pass, $fail, $log );
 tk_ok( 'old boolean toggle removed from partial',        false === strpos( $section, "'stall_tack_designation_enabled'" ), $pass, $fail, $log );
 
 /* ── JS wiring ──────────────────────────────────────────────────── */
 $js = (string) file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/js/admin.js' );
-tk_ok( 'JS registers toggle-tack-mode action', false !== strpos( $js, "'toggle-tack-mode'" ) && false !== strpos( $js, 'function toggleTackMode' ), $pass, $fail, $log );
+tk_ok( 'JS registers tack-onoff + tack-who actions', false !== strpos( $js, "'tack-onoff'" ) && false !== strpos( $js, "'tack-who'" ) && false !== strpos( $js, 'function eemTackToggle' ), $pass, $fail, $log );
 tk_ok( 'JS no longer references tack-admin tag-select', false === strpos( $js, 'eem-tack-admin-select' ), $pass, $fail, $log );
 
 /* ── Save handler no longer persists admin tack stalls ──────────── */
@@ -50,7 +58,7 @@ tk_ok( 'save handler dropped _en_stall_tack_admin_stalls', false === strpos( $ed
 
 /* ── Customer selector gated to "on" (off !== mode) ─────────────── */
 $sc_src = (string) file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'public/class-equine-event-manager-shortcodes.php' );
-tk_ok( 'customer tack selector shown when tack is on', false !== strpos( $sc_src, "'off' !== ( \$data['stall_tack_mode'] ?? 'customer' )" ), $pass, $fail, $log );
+tk_ok( 'customer tack selector gated to customer mode (3-mode)', false !== strpos( $sc_src, "'customer' === ( \$data['stall_tack_mode'] ?? 'customer' )" ), $pass, $fail, $log );
 
 /* ── get_tack_stall_count (private) — off vs on ─────────────────── */
 $sc  = new EEM_Shortcodes();

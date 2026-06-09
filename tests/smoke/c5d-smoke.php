@@ -16,12 +16,11 @@
  *   - Bulk Refund modal markup: modal container + form posting to
  *     admin-post.php + nonce + hidden order_keys field + reason +
  *     notify checkbox.
- *   - localize_row_action_nonces includes the bulk-refund nonce.
- *   - handle_bulk_refund hook registered.
- *   - handle_bulk_refund end-to-end against 1 real order_key →
- *     bulk_refund_deferred notice + eem_bulk_count=1.
- *   - Empty-selection path → bulk_no_selection notice.
  *   - Repo sort modes still produce items: order_number ASC, date DESC.
+ *
+ * NOTE: the old deferred `handle_bulk_refund` admin-post stub was removed once
+ * the live C6.C bulk-refund modal/AJAX-queue shipped; its end-to-end coverage
+ * now lives in c6c-smoke section [6].
  */
 if ( ! function_exists( 'get_option' ) ) { echo "FAIL: WP not loaded\n"; exit( 1 ); }
 $pass=0;$fail=0;$log=array();
@@ -92,54 +91,11 @@ ok( 'modal notify checkbox present',           str_contains( $html, 'id="eem-ord
 ok( 'modal Confirm button',                    str_contains( $html, 'data-eem-action="orders-bulk-refund-confirm"' ), $pass, $fail, $log );
 ok( 'modal Cancel button',                     str_contains( $html, 'data-eem-action="orders-bulk-refund-close"' ),   $pass, $fail, $log );
 
-echo "\n[6] Nonce localizer + hook registration\n";
-ok( 'admin_post_eem_orders_bulk_refund hook registered', false !== has_action( 'admin_post_eem_orders_bulk_refund', array( 'EEM_Orders_List_Page', 'handle_bulk_refund' ) ), $pass, $fail, $log );
-ok( 'handle_bulk_refund method exists',                  method_exists( 'EEM_Orders_List_Page', 'handle_bulk_refund' ),                                                       $pass, $fail, $log );
-
-echo "\n[7] handle_bulk_refund end-to-end\n";
-$repo = new EEM_Orders_Repository();
-$orders = $repo->get_orders();
-if ( ! empty( $orders ) ) {
-	$key = $orders[0]['order_key'];
-	$_POST = array(
-		'action'                => 'eem_orders_bulk_refund',
-		'_eem_bulk_refund_nonce' => wp_create_nonce( 'eem_orders_bulk_refund' ),
-		'order_keys'            => $key,
-		'reason'                => 'Smoke test',
-		'notify'                => '1',
-	);
-	$_REQUEST = $_POST;
-	remove_all_filters( 'wp_redirect' );
-	add_filter( 'wp_redirect', function( $url ) { throw new RuntimeException( 'REDIR:' . $url ); }, 1 );
-	try {
-		EEM_Orders_List_Page::handle_bulk_refund();
-		ok( 'bulk refund redirected', false, $pass, $fail, $log, 'no redirect' );
-	} catch ( RuntimeException $e ) {
-		$msg = $e->getMessage();
-		ok( 'redirected with bulk_refund_deferred', str_contains( $msg, 'eem_notice=bulk_refund_deferred' ), $pass, $fail, $log, $msg );
-		ok( 'redirect carries eem_bulk_count=1',    str_contains( $msg, 'eem_bulk_count=1' ),                $pass, $fail, $log, $msg );
-	}
-	remove_all_filters( 'wp_redirect' );
-
-	// Empty-selection path
-	$_POST = array(
-		'action'                => 'eem_orders_bulk_refund',
-		'_eem_bulk_refund_nonce' => wp_create_nonce( 'eem_orders_bulk_refund' ),
-		'order_keys'            => '',
-	);
-	$_REQUEST = $_POST;
-	remove_all_filters( 'wp_redirect' );
-	add_filter( 'wp_redirect', function( $url ) { throw new RuntimeException( 'REDIR:' . $url ); }, 1 );
-	try {
-		EEM_Orders_List_Page::handle_bulk_refund();
-		ok( 'empty selection redirected', false, $pass, $fail, $log, 'no redirect' );
-	} catch ( RuntimeException $e ) {
-		ok( 'empty selection → bulk_no_selection', str_contains( $e->getMessage(), 'eem_notice=bulk_no_selection' ), $pass, $fail, $log, $e->getMessage() );
-	}
-	remove_all_filters( 'wp_redirect' );
-} else {
-	$log[] = "  (no orders — bulk refund end-to-end skipped)";
-}
+// [6]+[7] RETIRED: the deferred `handle_bulk_refund` admin-post stub (and its
+// bulk_refund_deferred notice) was removed once the live C6.C bulk-refund flow
+// shipped — the modal now drives the eem_bulk_refund_step AJAX queue
+// (startBulkRefundQueue), covered end-to-end by c6c-smoke section [6]. The modal
+// markup is still asserted in section [5] above.
 
 echo "\n[8] Repo sort modes against fixtures\n";
 $asc_num = EEM_Orders_List_Repo::get_paginated( array( 'orderby' => 'order_number', 'order' => 'asc',  'per_page' => 50 ) );

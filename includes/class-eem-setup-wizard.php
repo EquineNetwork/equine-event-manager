@@ -255,12 +255,22 @@ class EEM_Setup_Wizard {
 							<div class="eem-setup-wizard__fields">
 								<?php
 								switch ( $item['key'] ) :
-									case 'event_source': ?>
+									case 'event_source':
+										$eem_gems_ready = class_exists( 'EEM_Gems_Client' ) && EEM_Gems_Client::is_configured();
+										?>
 										<label class="eem-setup-wizard__radio">
-											<input type="radio" name="payload[source]" value="tec" checked />
+											<input type="radio" name="payload[source]" value="tec" <?php checked( ! $eem_gems_ready ); ?> />
 											<span><strong><?php esc_html_e( 'The Events Calendar (TEC)', 'equine-event-manager' ); ?></strong> — <?php esc_html_e( 'recommended. Reservations link to your live TEC events.', 'equine-event-manager' ); ?></span>
 										</label>
-										<p class="eem-setup-wizard__note"><?php esc_html_e( 'Native Events and External Feed are coming soon. TEC is the active source for now.', 'equine-event-manager' ); ?></p>
+										<?php if ( $eem_gems_ready ) : ?>
+											<label class="eem-setup-wizard__radio">
+												<input type="radio" name="payload[source]" value="feed" <?php checked( true ); ?> />
+												<span><strong><?php esc_html_e( 'GEMS Integration', 'equine-event-manager' ); ?></strong> — <?php esc_html_e( 'reservations link to your live GEMS events (via the GEMS for WordPress plugin).', 'equine-event-manager' ); ?></span>
+											</label>
+											<p class="eem-setup-wizard__note"><?php esc_html_e( 'Native Events is coming soon.', 'equine-event-manager' ); ?></p>
+										<?php else : ?>
+											<p class="eem-setup-wizard__note"><?php esc_html_e( 'Native Events and the GEMS Integration are coming soon. TEC is the active source for now. (Connect the GEMS for WordPress plugin to enable the GEMS source.)', 'equine-event-manager' ); ?></p>
+										<?php endif; ?>
 										<?php break;
 
 									case 'branding': ?>

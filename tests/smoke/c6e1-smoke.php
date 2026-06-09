@@ -57,9 +57,9 @@ ok( 'read-back returns 3 entries (all writes round-tripped)',          3 === cou
 // Verify event_type taxonomy round-trips (sanitize_key form per CLEANUP #31).
 $event_types = array_map( function ( $r ) { return $r['event_type']; }, $readback );
 sort( $event_types );
-ok( 'read-back includes ordercreate event',                            in_array( 'ordercreate', $event_types, true ),                                  $pass, $fail, $log );
-ok( 'read-back includes orderpayment_received event',                  in_array( 'orderpayment_received', $event_types, true ),                        $pass, $fail, $log );
-ok( 'read-back includes orderemail_sent event',                        in_array( 'orderemail_sent', $event_types, true ),                              $pass, $fail, $log );
+ok( 'read-back includes ordercreate event',                            in_array( 'order_create', $event_types, true ),                                  $pass, $fail, $log );
+ok( 'read-back includes orderpayment_received event',                  in_array( 'order_payment_received', $event_types, true ),                        $pass, $fail, $log );
+ok( 'read-back includes orderemail_sent event',                        in_array( 'order_email_sent', $event_types, true ),                              $pass, $fail, $log );
 
 // Verify payload JSON decoded into array (caller-convenience contract).
 ok( 'read-back entries have decoded payload arrays',                   is_array( $readback[0]['payload'] ?? null ),                                    $pass, $fail, $log );
@@ -83,37 +83,37 @@ ok( 'EEM_Order_Telemetry::enrich_entry_for_render exists',             method_ex
 ok( 'eem_activity_log_variant filter is registered',                   false !== has_filter( 'eem_activity_log_variant' ),                             $pass, $fail, $log );
 
 // Variant mapping coverage for each C6.D/E event type.
-ok( 'ordercreate → create variant',                                    'create'       === EEM_Order_Telemetry::filter_render_variant( 'info', 'ordercreate' ),       $pass, $fail, $log );
-ok( 'orderrefund → refund variant',                                    'refund'       === EEM_Order_Telemetry::filter_render_variant( 'info', 'orderrefund' ),       $pass, $fail, $log );
-ok( 'orderpayment_received → notification variant',                    'notification' === EEM_Order_Telemetry::filter_render_variant( 'info', 'orderpayment_received' ), $pass, $fail, $log );
-ok( 'orderstatus_change → info variant',                               'info'         === EEM_Order_Telemetry::filter_render_variant( 'info', 'orderstatus_change' ), $pass, $fail, $log );
-ok( 'orderemail_sent → notification variant',                          'notification' === EEM_Order_Telemetry::filter_render_variant( 'info', 'orderemail_sent' ),   $pass, $fail, $log );
+ok( 'ordercreate → create variant',                                    'create'       === EEM_Order_Telemetry::filter_render_variant( 'info', 'order_create' ),       $pass, $fail, $log );
+ok( 'orderrefund → refund variant',                                    'refund'       === EEM_Order_Telemetry::filter_render_variant( 'info', 'order_refund' ),       $pass, $fail, $log );
+ok( 'orderpayment_received → notification variant',                    'notification' === EEM_Order_Telemetry::filter_render_variant( 'info', 'order_payment_received' ), $pass, $fail, $log );
+ok( 'orderstatus_change → info variant',                               'info'         === EEM_Order_Telemetry::filter_render_variant( 'info', 'order_status_change' ), $pass, $fail, $log );
+ok( 'orderemail_sent → notification variant',                          'notification' === EEM_Order_Telemetry::filter_render_variant( 'info', 'order_email_sent' ),   $pass, $fail, $log );
 ok( 'ordernote → edit variant (for C6.E.2)',                          'edit'         === EEM_Order_Telemetry::filter_render_variant( 'info', 'ordernote' ),         $pass, $fail, $log );
 ok( 'unknown event_type → default passthrough',                       'something_else' === EEM_Order_Telemetry::filter_render_variant( 'something_else', 'unknown_event' ), $pass, $fail, $log );
 
 // Enricher injects render-ready title.
 $enriched = EEM_Order_Telemetry::enrich_entry_for_render( array(
-	'event_type' => 'ordercreate',
+	'event_type' => 'order_create',
 	'payload'    => array( 'order_key' => 'x' ),
 	'actor_label'=> 'Admin',
 ) );
 ok( 'enrich injects title for ordercreate',                            ! empty( $enriched['payload']['title'] ) && str_contains( (string) $enriched['payload']['title'], 'created' ), $pass, $fail, $log );
 
 $enriched_refund = EEM_Order_Telemetry::enrich_entry_for_render( array(
-	'event_type' => 'orderrefund',
+	'event_type' => 'order_refund',
 	'payload'    => array( 'order_key' => 'x', 'amount' => 42.50 ),
 ) );
 ok( 'enrich injects refund title with amount',                         ! empty( $enriched_refund['payload']['title'] ) && str_contains( (string) $enriched_refund['payload']['title'], '42.50' ), $pass, $fail, $log );
 
 $enriched_status = EEM_Order_Telemetry::enrich_entry_for_render( array(
-	'event_type' => 'orderstatus_change',
+	'event_type' => 'order_status_change',
 	'payload'    => array( 'order_key' => 'x', 'old_status' => 'unpaid', 'new_status' => 'refunded' ),
 ) );
 ok( 'enrich injects status_change title with old→new',                 ! empty( $enriched_status['payload']['title'] ) && str_contains( (string) $enriched_status['payload']['title'], 'unpaid' ) && str_contains( (string) $enriched_status['payload']['title'], 'refunded' ), $pass, $fail, $log );
 
 // Caller-supplied title wins.
 $enriched_explicit = EEM_Order_Telemetry::enrich_entry_for_render( array(
-	'event_type' => 'ordercreate',
+	'event_type' => 'order_create',
 	'payload'    => array( 'title' => 'Custom title', 'order_key' => 'x' ),
 ) );
 ok( 'enrich respects caller-supplied title (does not overwrite)',      'Custom title' === $enriched_explicit['payload']['title'],                       $pass, $fail, $log );

@@ -158,8 +158,26 @@ ds1b_ok( '4 quick-action tiles rendered', substr_count( $html, 'eem-dashboard-qa
 ds1b_ok( 'Quick Actions "Collect Payment" tile routes to orders&billing=unpaid (NOT status, NOT collect-payment)',
 	(bool) preg_match( '/eem-dashboard-qa-btn" href="[^"]*page=equine-event-manager-orders[^"]*billing=unpaid[^"]*">\s*<span class="eem-dashboard-qa-icon eem-dashboard-qi-purple/s', $html ),
 	$pass, $fail, $log );
-ds1b_ok( 'Needs Attention "orders awaiting payment" row uses billing=unpaid (not status=)',
-	(bool) preg_match( '/eem-dashboard-attention-row" href="[^"]*page=equine-event-manager-orders[^"]*billing=unpaid/', $html ),
+// The "orders awaiting payment" attention row is render-gated on $out_count > 0
+// (EEM_Dashboard_Repo::attention_items, ~line 505) — it only appears when the DB
+// holds outstanding orders. On an empty/paid-up test DB the row is absent, so
+// assert the billing=unpaid href ONLY when the row is actually rendered (seed-
+// resilient), and unconditionally verify the contract at the source level below.
+// Gate on an actual attention ROW that targets the Orders page — NOT a loose
+// "awaiting payment" substring (that phrase also appears in the KPI subtitle at
+// repo line ~196, which renders regardless of outstanding-order count).
+if ( preg_match( '/eem-dashboard-attention-row" href="[^"]*page=equine-event-manager-orders/', $html ) ) {
+	ds1b_ok( 'Needs Attention "orders awaiting payment" row uses billing=unpaid (not status=)',
+		(bool) preg_match( '/eem-dashboard-attention-row" href="[^"]*page=equine-event-manager-orders[^"]*billing=unpaid/', $html ),
+		$pass, $fail, $log );
+} else {
+	$log[] = '  • SKIP (seed): no outstanding orders → orders-targeting attention row not rendered';
+}
+// Source-level contract guard (seed-independent): the awaiting-payment attention
+// item builds its href via billing=unpaid, never status=.
+$repo_src = (string) file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-dashboard-repo.php' );
+ds1b_ok( 'attention_items builds awaiting-payment href with billing=unpaid (source contract)',
+	(bool) preg_match( "/EEM_Orders_List_Page::url\(\s*array\(\s*'billing'\s*=>\s*'unpaid'/", $repo_src ),
 	$pass, $fail, $log );
 ds1b_ok( 'No Dashboard hrefs use the wrong ?status= param against Orders (regression guard)',
 	0 === preg_match( '/page=equine-event-manager-orders[^"]*[?&]status=/', $html ),

@@ -26,7 +26,7 @@ ok( 'eem_email_sent hook registered',                    false !== has_action( '
 echo "\n[2] on_order_created — writes order.create entry\n";
 $captured_create = array();
 $capture_create_filter = function ( $event_type ) use ( &$captured_create ) {
-	if ( 'ordercreate' === $event_type ) { $captured_create[] = func_get_args(); }
+	if ( 'order_create' === $event_type ) { $captured_create[] = func_get_args(); }
 	return $event_type;
 };
 add_filter( 'eem_activity_log_event_type', $capture_create_filter, 10, 1 );
@@ -52,7 +52,7 @@ remove_filter( 'eem_activity_log_event_type', $capture_create_filter, 10 );
 global $wpdb;
 $created_rows = (int) $wpdb->get_var( $wpdb->prepare(
 	"SELECT COUNT(*) FROM {$wpdb->prefix}en_activity_log WHERE event_type = %s AND payload LIKE %s",
-	'ordercreate',
+	'order_create',
 	'%c6d-smoke-create-test%'
 ) );
 ok( 'do_action eem_order_created → exactly 1 order.create row inserted',  1 === $created_rows, $pass, $fail, $log, "got {$created_rows}" );
@@ -75,7 +75,7 @@ do_action( 'eem_order_payment_status_changed', array(
 ) );
 $pr_rows = (int) $wpdb->get_var( $wpdb->prepare(
 	"SELECT COUNT(*) FROM {$wpdb->prefix}en_activity_log WHERE event_type = %s AND payload LIKE %s",
-	'orderpayment_received',
+	'order_payment_received',
 	'%c6d-smoke-funnel-pr%'
 ) );
 ok( 'outstanding (invoice-sent) → paid emits order.payment_received',     1 === $pr_rows, $pass, $fail, $log, "got {$pr_rows}" );
@@ -89,7 +89,7 @@ do_action( 'eem_order_payment_status_changed', array(
 ) );
 $sc_rows = (int) $wpdb->get_var( $wpdb->prepare(
 	"SELECT COUNT(*) FROM {$wpdb->prefix}en_activity_log WHERE event_type = %s AND payload LIKE %s",
-	'orderstatus_change',
+	'order_status_change',
 	'%c6d-smoke-funnel-sc%'
 ) );
 ok( 'paid → refunded emits order.status_change (not payment_received)',   1 === $sc_rows, $pass, $fail, $log, "got {$sc_rows}" );
@@ -208,7 +208,7 @@ do_action( 'eem_email_sent', array(
 ) );
 $with_rows = (int) $wpdb->get_var( $wpdb->prepare(
 	"SELECT COUNT(*) FROM {$wpdb->prefix}en_activity_log WHERE event_type = %s AND payload LIKE %s",
-	'orderemail_sent',
+	'order_email_sent',
 	'%c6d-smoke-email-with%'
 ) );
 ok( 'email with order_key context → order.email_sent entry written',      1 === $with_rows, $pass, $fail, $log, "got {$with_rows}" );
@@ -221,7 +221,7 @@ do_action( 'eem_email_sent', array(
 ) );
 $without_rows = (int) $wpdb->get_var( $wpdb->prepare(
 	"SELECT COUNT(*) FROM {$wpdb->prefix}en_activity_log WHERE event_type = %s AND payload LIKE %s",
-	'orderemail_sent',
+	'order_email_sent',
 	'%C6D Smoke Email No Order%'
 ) );
 ok( 'email without order_key context (test_email) → NO entry written',    0 === $without_rows, $pass, $fail, $log, "got {$without_rows}" );
@@ -239,7 +239,7 @@ foreach ( $orders as $o ) { if ( 'paid' === ( $o['status_slug'] ?? '' ) ) { $pai
 if ( $paid_order ) {
 	$pre_count = (int) $wpdb->get_var( $wpdb->prepare(
 		"SELECT COUNT(*) FROM {$wpdb->prefix}en_activity_log WHERE event_type = %s AND payload LIKE %s",
-		'orderrefund',
+		'order_refund',
 		'%' . $paid_order['order_key'] . '%'
 	) );
 
@@ -254,7 +254,7 @@ if ( $paid_order ) {
 
 	$post_count = (int) $wpdb->get_var( $wpdb->prepare(
 		"SELECT COUNT(*) FROM {$wpdb->prefix}en_activity_log WHERE event_type = %s AND payload LIKE %s",
-		'orderrefund',
+		'order_refund',
 		'%' . $paid_order['order_key'] . '%'
 	) );
 
@@ -268,7 +268,7 @@ if ( $paid_order ) {
 	// Self-clean any test row.
 	$wpdb->query( $wpdb->prepare(
 		"DELETE FROM {$wpdb->prefix}en_activity_log WHERE event_type = %s AND payload LIKE %s",
-		'orderrefund',
+		'order_refund',
 		'%C6D regression-guard probe%'
 	) );
 } else {

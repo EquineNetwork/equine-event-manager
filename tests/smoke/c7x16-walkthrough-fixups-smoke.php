@@ -179,9 +179,12 @@ c7x16_ok( 'EEM_Reservation_Editor_Page::validate_for_publish() exists',
 
 // Server gate in ajax_save calls validate_for_publish ONLY when new_status === publish.
 c7x16_ok( "ajax_save calls validate_for_publish only when new_status === 'publish'",
-	// Bound widened (was 400) — the publish block now also computes $publish_ctx
-	// (stall/RV row counts + inventory type + RV mode) before validate_for_publish.
-	(bool) preg_match( "/if\s*\(\s*'publish'\s*===\s*\\\$new_status\s*\)\s*\{[\s\S]{0,2000}validate_for_publish/", $page_src ),
+	// Bound widened (was 400, then 2000) — the v4 slices grew $publish_ctx to
+	// ~10 keys (stall/RV row counts, dupe labels, inventory type, RV mode,
+	// stall_has_map/rv_has_map map-connection checks), pushing the if→call
+	// distance to ~2825 chars. Bound raised to 4000 to absorb the layout-context
+	// expansion. Code remains correct: `if ('publish' === $new_status) { … validate_for_publish`.
+	(bool) preg_match( "/if\s*\(\s*'publish'\s*===\s*\\\$new_status\s*\)\s*\{[\s\S]{0,4000}validate_for_publish/", $page_src ),
 	$pass, $fail, $log );
 
 // Code returned uses 422 + publish_validation_failed + first_section.

@@ -167,18 +167,34 @@ foreach ( $ten as $k ) {
 // ── SOURCE CONTRACT — guards + value-aware writes are in place ────
 echo "\n[Source] read-path guards + write-path value-awareness\n";
 
+// Post-refactor (tasks #77-81: section-enabled key resolver + mig-007 rename),
+// the three read-path backfills no longer inline `metadata_exists( '_en_<field>' )`
+// — the guard routes through the new resolver helper
+// `! self::section_enabled_exists( $post_id, '<field>_enabled' )`. Behavior is
+// preserved (the runtime read-path assertions above still pass), so this is the
+// current shape of the same OFF-persistence guard.
 foreach ( array(
-	'_en_general_addons_enabled',
-	'_en_checkin_checkout_enabled',
-	'_en_venue_agreement_enabled',
-) as $meta_key ) {
-	fix2348_ok( "backfill for {$meta_key} is metadata_exists()-guarded",
+	'general_addons_enabled',
+	'checkin_checkout_enabled',
+	'venue_agreement_enabled',
+) as $field ) {
+	fix2348_ok( "backfill for {$field} is section_enabled_exists()-guarded (post-#77 resolver)",
 		(bool) preg_match(
-			"~!\s*metadata_exists\(\s*'post',\s*\\\$post_id,\s*'" . preg_quote( $meta_key, '~' ) . "'\s*\)~",
+			"~!\s*self::section_enabled_exists\(\s*\\\$post_id,\s*'" . preg_quote( $field, '~' ) . "'\s*\)~",
 			$cpt_nocom
 		),
 		$pass, $fail, $log );
 }
+
+// The resolver helper itself still anchors on metadata_exists() against BOTH the
+// canonical `_eem_section_enabled_<shortkey>` key and the legacy `_en_<field>`
+// key — this is where the real "only infer when never stored" contract now lives.
+fix2348_ok( 'section_enabled_exists() checks canonical + legacy keys via metadata_exists()',
+	(bool) preg_match(
+		"~function section_enabled_exists\([^)]*\)[^{]*\{\s*return\s*metadata_exists\(\s*'post',\s*\\\$post_id,\s*self::section_enabled_meta_key\(\s*\\\$field\s*\)\s*\)\s*\|\|\s*metadata_exists\(\s*'post',\s*\\\$post_id,\s*'_en_'\s*\.\s*\\\$field\s*\)~",
+		$cpt_nocom
+	),
+	$pass, $fail, $log );
 
 foreach ( $three as $k ) {
 	fix2348_ok( "sanitize: {$k}_enabled is value-aware ( isset && '1' === )",

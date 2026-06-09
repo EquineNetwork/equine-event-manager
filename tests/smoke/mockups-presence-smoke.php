@@ -65,6 +65,13 @@ $canonical = array(
 	'preentries_list_page.html'         => 'c583e7982dc4921cf687019f5bdba6f3',
 	'preentries_print_view.html'        => '4246eb229cdcd93f1a1f47aeec39e3dc',
 
+	// Native Map Builder mockups (added 2026-06-07; see MEMORY "Native Map
+	// Builder — BUILT v2.7.91"). The in-plugin grid builder + admin/event
+	// stall-map views replaced the Google Sheets workflow.
+	'grid_builder_page.html'            => '0edade5965845392196f00f18363cb4e',
+	'stall_map_admin.html'              => '4e5ed095a6b989e2bd591cb4e066196a',
+	'stall_map_event.html'              => '5993add72d81e2ce6dbc049deb1d74ba',
+
 	// Plugin brand asset (referenced by admin shell + breadcrumb)
 	'Equine Event Manager Logo.png'     => 'fad15ea2d6637ca49090ab8c118250a5',
 );
@@ -107,6 +114,10 @@ $actual_files = array_filter( scandir( $mockups_dir ), function ( $f ) {
 	// (e.g. C12 receipt previews) — NOT canonical mockups. Excluded from the
 	// stray-file inventory for the same reason as `.archive/`: it's an
 	// intentionally separate subfolder, not part of the active canonical set.
+	// `*.csv` files are RV-lot / stall import test fixtures (e.g. burnett.csv,
+	// montcrief.csv — see MEMORY "RV lot test sheet"), NOT canonical mockups,
+	// so they carry no MD5 fingerprint and are excluded from the inventory.
+	if ( '.csv' === strtolower( (string) substr( $f, -4 ) ) ) { return false; }
 	return '.' !== $f && '..' !== $f && '.DS_Store' !== $f && '.archive' !== $f && 'generated-reference' !== $f;
 } );
 $stray = array_diff( $actual_files, $expected_set );

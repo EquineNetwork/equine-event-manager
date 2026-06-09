@@ -63,15 +63,21 @@ $new_pattern = (bool) preg_match(
 c7x18_ok( 'admin-legacy.css: textarea :not(.eem-field-input):not(.eem-field-textarea) pattern present',
 	$new_pattern, $pass, $fail, $log );
 
-// The six !important blocks that needed updating — verify the pattern appears
-// at multiple points in the file (not just block 1).
+// C16 UPDATE: the generic shell-page form-control `!important` cartel blocks
+// were stripped in the C16 admin-legacy cleanup. The textarea exclusion chain
+// now survives only in the legitimate scoped blocks — verified present at 4
+// locations (admin-legacy.css 2642 editor, 2659/2669 post-type editor mirrors,
+// 12246 media-modal). The invariant "chain appears in multiple blocks, not
+// just one" still holds; the count dropped from 6 to 4 because the cartel
+// blocks it used to live in no longer exist (their overrides are gone, so no
+// exclusion is needed there anymore).
 $all_matches = preg_match_all(
 	'~textarea\s*:not\(\s*\.eem-field-input\s*\)\s*:not\(\s*\.eem-field-textarea\s*\)~',
 	$legacy_nc,
 	$textarea_hits
 );
-c7x18_ok( "admin-legacy.css: textarea :not() chain appears in ≥6 locations (got {$all_matches})",
-	$all_matches >= 6, $pass, $fail, $log );
+c7x18_ok( "admin-legacy.css: textarea :not() chain appears in ≥4 surviving scoped blocks (got {$all_matches})",
+	$all_matches >= 4, $pass, $fail, $log );
 
 /* ────────────────────────────────────────────────────────────────
    ISSUE A2 — Hardcoded border-radius: 4px values converted to token
