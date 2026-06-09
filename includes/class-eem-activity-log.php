@@ -105,18 +105,23 @@ class EEM_Activity_Log {
 			? (string) $context['created_at']
 			: current_time( 'mysql', true );
 
+		// CLEANUP #32 — denormalize the payload's `order_key` into a dedicated
+		// indexed column so get_for_order_key() is an O(1) index lookup instead
+		// of a LIKE-on-JSON full-table scan. Empty string when the event has no
+		// order_key (non-order events), matching the column's NOT NULL DEFAULT ''.
+		$order_key = isset( $payload['order_key'] ) ? sanitize_text_field( (string) $payload['order_key'] ) : '';
+
 		$row = array(
 			'order_id'       => $context['order_id'] ? absint( $context['order_id'] ) : null,
 			'reservation_id' => $context['reservation_id'] ? absint( $context['reservation_id'] ) : null,
 			'event_type'     => $event_type,
+			'order_key'      => $order_key,
 			'payload'        => $payload ? wp_json_encode( $payload ) : null,
 			'actor_type'     => $actor_type,
 			'actor_id'       => $actor_id,
 			'actor_label'    => $actor_label,
 			'created_at'     => $created_at,
 		);
-
-		$formats = array( '%d', '%d', '%s', '%s', '%s', '%d', '%s', '%s' );
 
 		// Drop nullable keys when empty so wpdb writes NULL instead of 0/'' coercion.
 		foreach ( array( 'order_id', 'reservation_id', 'actor_id', 'payload' ) as $maybe_null ) {
@@ -130,6 +135,7 @@ class EEM_Activity_Log {
 			'order_id'       => '%d',
 			'reservation_id' => '%d',
 			'event_type'     => '%s',
+			'order_key'      => '%s',
 			'payload'        => '%s',
 			'actor_type'     => '%s',
 			'actor_id'       => '%d',
@@ -172,12 +178,11 @@ class EEM_Activity_Log {
 	 * payload, so get_for_order() returns zero rows for them. This method
 	 * queries via LIKE on the payload column instead.
 	 *
-	 * **Performance caveat (CLEANUP #32):** scans the payload column with
-	 * no index. Acceptable at v2.2.0 scale (admin-only view, infrequent
-	 * visits, ~dozens of entries per order). Proper fix is a dedicated
-	 * `order_key` column + index — tracked as CLEANUP #32 for pre-
-	 * production. Until then, the `$limit` floor (default 100, capped at
-	 * 500 internally by self::query()) bounds the worst case.
+	 * **Performance (CLEANUP #32, resolved):** filters on the dedicated indexed
+	 * `order_key` column (`KEY order_key_created (order_key, created_at)`) — an
+	 * O(log n) index seek instead of the former LIKE-on-JSON full-table scan.
+	 * `EEM_Activity_Log::write()` populates the column from `$payload['order_key']`;
+	 * legacy rows were backfilled by eem-mig-008.
 	 *
 	 * @param string $order_key Order key (the md5 hash assigned by the orders repo).
 	 * @param int    $limit     Optional max rows. Default 100.
@@ -192,16 +197,15 @@ class EEM_Activity_Log {
 		}
 
 		$table = self::table_name();
-		$like  = '%' . $wpdb->esc_like( '"order_key":"' . $order_key . '"' ) . '%';
 		$cap   = $limit > 0 ? min( (int) $limit, 500 ) : 100;
 
 		$sql = "SELECT id, order_id, reservation_id, event_type, payload, actor_type, actor_id, actor_label, created_at
 			FROM {$table}
-			WHERE payload LIKE %s
+			WHERE order_key = %s
 			ORDER BY created_at DESC, id DESC
 			LIMIT %d";
 
-		$rows = $wpdb->get_results( $wpdb->prepare( $sql, $like, $cap ), ARRAY_A );
+		$rows = $wpdb->get_results( $wpdb->prepare( $sql, $order_key, $cap ), ARRAY_A );
 
 		if ( ! is_array( $rows ) ) {
 			return array();

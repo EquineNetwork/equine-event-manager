@@ -143,7 +143,7 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 - **Added in:** C6.E.1 (audit-time surfacing).
 - **Sequence:** before any production deployment with high activity-log volume, OR alongside C16 polish. Trivial in isolation (~40 LOC schema + ~10 LOC method swap); the real cost is the backfill verification.
 - **Unblocks:** O(1) lookup per order regardless of table size; reporting / analytics features that scan by order_key.
-- **Status:** queued; LIKE-on-JSON acceptable at v2.2.0 scale.
+- **Status:** ✅ RESOLVED (v2.7.129). dbDelta adds `order_key varchar(64) NOT NULL DEFAULT ''` + `KEY order_key_created (order_key, created_at)`; `write()` denormalizes `$payload['order_key']` into the column; `get_for_order_key()` switched to indexed `WHERE order_key = %s`; `eem-mig-008` backfills legacy rows (JSON_EXTRACT with a PHP-decode fallback). Verified live: column + index present, all 39/39 payload-carrying rows backfilled, indexed lookup returns rows.
 
 ### 31. Activity log event-type sanitization quirk — dotted names normalize to flat strings
 - **What:** `EEM_Activity_Log::write()` runs `sanitize_key()` on the `$event_type` argument. `sanitize_key` strips dots, so code-level event names diverge from the strings actually persisted to the `wp_en_activity_log.event_type` column:

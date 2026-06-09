@@ -173,6 +173,10 @@ class EEM_Activator {
 			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-007-section-enabled-rename.php';
 			eem_mig_007_section_enabled_rename();
 		}
+		if ( ! get_option( 'eem_mig_008_activity_log_order_key_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-008-activity-log-order-key.php';
+			eem_mig_008_activity_log_order_key();
+		}
 	}
 
 	/**
@@ -340,6 +344,7 @@ class EEM_Activator {
 			order_id bigint(20) unsigned DEFAULT NULL,
 			reservation_id bigint(20) unsigned DEFAULT NULL,
 			event_type varchar(64) NOT NULL DEFAULT '',
+			order_key varchar(64) NOT NULL DEFAULT '',
 			payload longtext NULL,
 			actor_type varchar(32) NOT NULL DEFAULT 'system',
 			actor_id bigint(20) unsigned DEFAULT NULL,
@@ -348,7 +353,8 @@ class EEM_Activator {
 			PRIMARY KEY  (id),
 			KEY order_created (order_id, created_at),
 			KEY reservation_created (reservation_id, created_at),
-			KEY event_type_created (event_type, created_at)
+			KEY event_type_created (event_type, created_at),
+			KEY order_key_created (order_key, created_at)
 		) {$charset_collate};";
 
 		dbDelta( $sql );
