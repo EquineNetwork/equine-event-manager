@@ -160,7 +160,7 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 - **Recommended:** (b) — underscore-separated names. Simplest mental model long-term; the historical-row backfill is a one-line `UPDATE wp_en_activity_log SET event_type = REPLACE(...) WHERE event_type LIKE 'order%'` migration.
 - **Added in:** C6.D (surfaced when c6d-smoke initially queried for dotted names and got zero hits).
 - **Sequence:** before any production deployment that will ship a query-by-event-type feature. Folds naturally into C11 (mailer telemetry surfacing) or C16 polish — whichever first introduces an event-type filter UI.
-- **Status:** quirk documented; behavioral fix queued.
+- **Status:** ✅ RESOLVED (v2.7.137) via option (b). All 4 dotted write sites switched to underscores — `order_create`, `order_refund`, `order_payment_received`, `order_status_change`, `order_email_sent` (these survive `sanitize_key` unchanged). Both `EEM_Order_Telemetry::enrich_entry_for_render` switches (variant + title) updated to the underscore cases. `eem-mig-010` backfills the historical flat-sanitized rows (`ordercreate`→`order_create`, etc.). `charge.dispute.created` is Stripe's external webhook name (we already store `order_dispute_opened`) — untouched. Verified live: 0 legacy flat forms remain. Now a single consistent taxonomy that query-by-event-type can rely on.
 
 ### 30. Refund-notify email wiring for C6.B notify checkbox
 - **What:** The C6.B single-order refund modal carries a "Notify customer" checkbox; its checked state is captured in the form payload (currently sent as `notify` POST field, surfaced via the activity-log payload's `notify` key when refund processes). The actual email send — rendering an "Event Cancelled — Refund Processed" template and shipping it via EEM_Mailer — is **not wired** in C6.B.
@@ -403,7 +403,7 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 - **Why deferred:** Phase 3 added a parallel copy at `assets/images/logo.png` for the breadcrumb partial; the legacy file still has one live consumer in the Reservation Editor's header shim.
 - **Added in:** C1 (flagged during the C1 wrap-up)
 - **Unblocks deletion:** C7 (Edit Reservation port), when `render_editor_header` is rewritten or removed. At that point: switch the surviving reference to `assets/images/logo.png` (or remove if no longer needed) and `git rm admin/images/equine-event-manager-logo.png`.
-- **Status:** unchanged since C1
+- **Status:** ✅ RESOLVED (v2.7.137). The legacy logo was NOT orphaned after #46 — it had 5 live consumers (PDF receipt brand banner, customer email logo, customer event page, editor header). All repointed to the canonical brand logo `assets/images/logo.png` (per CLAUDE.md the real `.mockups/` logo lives there; it's already what the admin breadcrumb uses). Legacy `admin/images/equine-event-manager-logo.png` `git rm`'d. Both files were PNG so Dompdf is unaffected (the `c-pdf-logo-webp-smoke` concern was WEBP-specific). Verified live: canonical logo present, legacy gone, receipt PDF still generates valid (%PDF, 170KB, image xobject embedded).
 
 ### 3. ~~`EEM_Admin::render_settings_page` — legacy 662-line method~~ ✅ Resolved in C3.D.4
 - **What:** Original Settings page renderer in `admin/class-equine-event-manager-admin.php`. Was wired as the menu callback through C3.A–C3.C so the live Settings page kept working during the parallel build-up.

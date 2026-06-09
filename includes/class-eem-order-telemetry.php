@@ -82,12 +82,12 @@ class EEM_Order_Telemetry {
 	 */
 	public static function filter_render_variant( $variant, $event_type ) {
 		switch ( (string) $event_type ) {
-			case 'ordercreate':           return 'create';
-			case 'orderrefund':           return 'refund';
-			case 'orderpayment_received': return 'notification';
-			case 'orderstatus_change':    return 'info';
-			case 'orderemail_sent':       return 'notification';
-			case 'ordernote':             return 'edit';
+			case 'order_create':           return 'create';
+			case 'order_refund':           return 'refund';
+			case 'order_payment_received': return 'notification';
+			case 'order_status_change':    return 'info';
+			case 'order_email_sent':       return 'notification';
+			case 'ordernote':              return 'edit';
 		}
 		return $variant;
 	}
@@ -113,10 +113,10 @@ class EEM_Order_Telemetry {
 		}
 
 		switch ( $event_type ) {
-			case 'ordercreate':
+			case 'order_create':
 				$payload['title'] = __( 'Order created', 'equine-event-manager' );
 				break;
-			case 'orderrefund':
+			case 'order_refund':
 				$amount = isset( $payload['amount'] ) ? (float) $payload['amount'] : 0.0;
 				$payload['title'] = $amount > 0
 					? sprintf(
@@ -126,10 +126,10 @@ class EEM_Order_Telemetry {
 					)
 					: __( 'Refund processed', 'equine-event-manager' );
 				break;
-			case 'orderpayment_received':
+			case 'order_payment_received':
 				$payload['title'] = __( 'Payment received', 'equine-event-manager' );
 				break;
-			case 'orderstatus_change':
+			case 'order_status_change':
 				$old = isset( $payload['old_status'] ) ? (string) $payload['old_status'] : '';
 				$new = isset( $payload['new_status'] ) ? (string) $payload['new_status'] : '';
 				$payload['title'] = ( '' !== $old && '' !== $new )
@@ -141,7 +141,7 @@ class EEM_Order_Telemetry {
 					)
 					: __( 'Status changed', 'equine-event-manager' );
 				break;
-			case 'orderemail_sent':
+			case 'order_email_sent':
 				$type_label = isset( $payload['type'] ) ? (string) $payload['type'] : 'email';
 				$payload['title'] = sprintf(
 					/* translators: %s: email type (invoice, checkout_confirmation, etc.) */
@@ -209,7 +209,7 @@ class EEM_Order_Telemetry {
 			);
 
 		EEM_Activity_Log::write(
-			'order.create',
+			'order_create',
 			array(
 				'order_key'      => (string) $payload['order_key'],
 				'order_number'   => isset( $payload['order_number'] ) ? (string) $payload['order_number'] : '',
@@ -259,7 +259,7 @@ class EEM_Order_Telemetry {
 			&& in_array( $old_status, self::OUTSTANDING_STATUSES, true )
 		);
 
-		$event_type = $is_payment_received ? 'order.payment_received' : 'order.status_change';
+		$event_type = $is_payment_received ? 'order_payment_received' : 'order_status_change';
 
 		EEM_Activity_Log::write(
 			$event_type,
@@ -304,7 +304,7 @@ class EEM_Order_Telemetry {
 		}
 
 		EEM_Activity_Log::write(
-			'order.email_sent',
+			'order_email_sent',
 			array(
 				'order_key' => $order_key,
 				'type'      => isset( $context['type'] ) ? (string) $context['type'] : 'unknown',

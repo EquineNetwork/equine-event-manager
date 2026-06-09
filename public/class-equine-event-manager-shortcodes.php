@@ -5874,7 +5874,7 @@ RV Lot: " . $rv_lot['name'] );
 		$logo_url         = ! empty( $company_settings['logo_id'] ) ? wp_get_attachment_image_url( absint( $company_settings['logo_id'] ), $size ) : '';
 
 		if ( ! $logo_url ) {
-			$logo_url = EQUINE_EVENT_MANAGER_URL . 'admin/images/equine-event-manager-logo.png';
+			$logo_url = EQUINE_EVENT_MANAGER_URL . 'assets/images/logo.png';
 		}
 
 		return $logo_url;
@@ -5902,7 +5902,7 @@ RV Lot: " . $rv_lot['name'] );
 		}
 
 		if ( '' === $path ) {
-			$fallback = EQUINE_EVENT_MANAGER_PATH . 'admin/images/equine-event-manager-logo.png';
+			$fallback = EQUINE_EVENT_MANAGER_PATH . 'assets/images/logo.png';
 			if ( is_readable( $fallback ) ) {
 				$path = $fallback;
 			}

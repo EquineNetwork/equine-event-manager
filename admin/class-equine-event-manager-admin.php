@@ -10011,7 +10011,7 @@ class EEM_Admin {
 	 * @param string $description Optional supporting text.
 	 */
 	private function render_brand_banner( $title, $description = '' ) {
-		$logo_url = EQUINE_EVENT_MANAGER_URL . 'admin/images/equine-event-manager-logo.png';
+		$logo_url = EQUINE_EVENT_MANAGER_URL . 'assets/images/logo.png';
 		?>
 		<header class="eem-shell-header">
 			<div class="eem-shell-header__inner">
@@ -11497,7 +11497,7 @@ class EEM_Admin {
 		$logo_url         = ! empty( $company_settings['logo_id'] ) ? wp_get_attachment_image_url( absint( $company_settings['logo_id'] ), $size ) : '';
 
 		if ( ! $logo_url ) {
-			$logo_url = EQUINE_EVENT_MANAGER_URL . 'admin/images/equine-event-manager-logo.png';
+			$logo_url = EQUINE_EVENT_MANAGER_URL . 'assets/images/logo.png';
 		}
 
 		return $logo_url;

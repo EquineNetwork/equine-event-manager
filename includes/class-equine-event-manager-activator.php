@@ -181,6 +181,10 @@ class EEM_Activator {
 			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-009-order-reservation-id.php';
 			eem_mig_009_order_reservation_id();
 		}
+		if ( ! get_option( 'eem_mig_010_activity_event_type_underscores_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-010-activity-event-type-underscores.php';
+			eem_mig_010_activity_event_type_underscores();
+		}
 	}
 
 	/**

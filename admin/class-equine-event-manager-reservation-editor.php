@@ -295,7 +295,7 @@ class EEM_Reservation_Editor {
 		if ( ! $post instanceof WP_Post || EEM_Reservations_CPT::POST_TYPE !== $post->post_type ) {
 			return;
 		}
-		$logo_url = EQUINE_EVENT_MANAGER_URL . 'admin/images/equine-event-manager-logo.png';
+		$logo_url = EQUINE_EVENT_MANAGER_URL . 'assets/images/logo.png';
 		?>
 		<header class="eem-shell-header">
 			<div class="eem-shell-header__inner">

@@ -169,7 +169,7 @@ class EEM_Refund_Engine {
 		if ( class_exists( 'EEM_Activity_Log' ) ) {
 			$current_user = wp_get_current_user();
 			EEM_Activity_Log::write(
-				'order.refund',
+				'order_refund',
 				array(
 					'order_key'        => $order_key,
 					'amount'           => $requested_amount,
