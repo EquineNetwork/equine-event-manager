@@ -317,6 +317,16 @@ class EEM_Admin {
 			wp_enqueue_script( 'eem-map-builder', EQUINE_EVENT_MANAGER_URL . 'assets/js/eem-map-builder.js', array( 'eem-admin' ), $ver, true );
 		}
 
+			// CLEANUP #21 (Choices.js, MIT) -- searchable filter dropdowns on the Orders
+			// event filter + Reservations date filter, where a native select becomes an
+			// unusable long scroll past ~50 events. Loaded only on those two list screens.
+			if ( in_array( $page, array( 'equine-event-manager-orders', EEM_Reservations_List_Page::MENU_SLUG ), true ) ) {
+				wp_enqueue_style( 'eem-choices-vendor', EQUINE_EVENT_MANAGER_URL . 'assets/vendor/choices/choices.min.css', array(), '10.2.0' );
+				wp_enqueue_style( 'eem-choices', EQUINE_EVENT_MANAGER_URL . 'assets/css/eem-choices.css', array( 'eem-choices-vendor', 'eem-admin' ), $ver );
+				wp_enqueue_script( 'eem-choices-vendor', EQUINE_EVENT_MANAGER_URL . 'assets/vendor/choices/choices.min.js', array(), '10.2.0', true );
+				wp_enqueue_script( 'eem-choices', EQUINE_EVENT_MANAGER_URL . 'assets/js/eem-choices.js', array( 'eem-choices-vendor' ), $ver, true );
+			}
+
 		// C13.B.2.a — public.css required when Create Order embeds a reservation form.
 		// render_frontend_form_assets_in_footer() guards against is_admin() so we
 		// enqueue the stylesheet directly here instead of relying on the footer hook.

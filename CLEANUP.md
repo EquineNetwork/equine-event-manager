@@ -279,7 +279,7 @@ Each entry includes: what, where (file:line if applicable), why deferred, when a
 - **Sequence:** After C6 (Order Detail) or C7 (Edit Reservation), whichever has lighter dependencies. **Tag as "UX scaling" — do NOT defer to C16.** Must land before user testing because users with real event histories will hit the unusable native-select first.
 - **Estimated scope:** ~100–150 LOC across PHP enqueue + JS init + CSS shell styling. Adding Choices.js requires explicit user approval (third-party JS library — per CLAUDE.md decision policy "Adding any third-party JS library — confirm the choice with me").
 - **Unblocks deletion:** N/A — this is an additive UX upgrade, not legacy code removal.
-- **Status:** queued; awaiting sequencing decision
+- **Status:** ✅ RESOLVED (v2.7.133). Bundled Choices.js 10.2.0 (MIT) under `assets/vendor/choices/`; `assets/js/eem-choices.js` mounts a searchable typeahead on every `select[data-eem-choices]` (keeps the native select + dispatches `change`, so the Orders filter's inline auto-submit still fires); `assets/css/eem-choices.css` restyles the shell to EEM tokens (navy border, Electric Blue focus ring, token radius, IBM Plex Sans, no underline-on-hover). Applied to the Orders event filter (the genuine >50-event scaling target) + the Reservations date filter (parity). Enqueued only on those two list screens. Library use was explicitly approved by Whitney. Verified live: Choices mounts, the dropdown opens with a search box + styled options + electric-tint highlight, and the list renders/paginates normally.
 
 ### 20. Recurring dead-code audit after each chunk merge
 - **What:** Run a focused dead-code sweep AFTER each chunk merges to main, BEFORE the next chunk starts. Check four categories:

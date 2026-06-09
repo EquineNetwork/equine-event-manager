@@ -237,7 +237,7 @@ class EEM_Orders_List_Page {
 					<input type="hidden" name="billing" value="<?php echo esc_attr( $billing ); ?>" />
 					<?php if ( '' !== $type )   : ?><input type="hidden" name="type"  value="<?php echo esc_attr( $type ); ?>" /><?php endif; ?>
 					<?php if ( '' !== $search ) : ?><input type="hidden" name="s"     value="<?php echo esc_attr( $search ); ?>" /><?php endif; ?>
-					<select class="eem-toolbar-select" name="event" data-eem-orders-event-select onchange="this.form.submit()">
+					<select class="eem-toolbar-select" name="event" data-eem-orders-event-select data-eem-choices data-eem-choices-search="<?php esc_attr_e( 'Search events…', 'equine-event-manager' ); ?>" onchange="this.form.submit()">
 						<option value=""><?php esc_html_e( 'All events', 'equine-event-manager' ); ?></option>
 						<?php foreach ( $event_opts as $label => $value ) : ?>
 							<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $event, $value ); ?>><?php echo esc_html( $label ); ?></option>

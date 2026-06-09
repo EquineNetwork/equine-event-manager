@@ -1,0 +1,87 @@
+/**
+ * EEM — Choices.js shell overrides (CLEANUP #21).
+ *
+ * Restyles the vendored Choices.js dropdown to match the EEM design tokens so it
+ * reads as a first-class `.eem-toolbar-select` rather than the library default:
+ * navy border, Electric Blue focus ring, token border-radius, IBM Plex Sans.
+ * Scoped to `.eem-choices` (added via the initialiser's classNames option) so it
+ * never leaks onto a Choices instance some other plugin might mount.
+ *
+ * Loaded after the vendor choices.min.css (dependency order in the enqueue).
+ */
+
+.eem-choices.choices {
+	margin-bottom: 0;
+	min-width: 200px;
+	font-family: var( --eem-font-sans, "IBM Plex Sans", system-ui, sans-serif );
+}
+
+.eem-choices .choices__inner {
+	min-height: 38px;
+	padding: 5px 28px 5px 10px;
+	background: #fff;
+	border: 1px solid var( --eem-border, #d9e2f2 );
+	border-radius: var( --eem-radius, 3px );
+	font-size: 13px;
+	color: var( --eem-text, #1d2327 );
+	line-height: 1.4;
+}
+
+.eem-choices.is-focused .choices__inner,
+.eem-choices.is-open .choices__inner {
+	border-color: var( --eem-electric, #1668f2 );
+	box-shadow: 0 0 0 1px var( --eem-electric, #1668f2 );
+	outline: none;
+}
+
+/* Single-select selected value pill — render as plain text, no chip chrome. */
+.eem-choices .choices__list--single {
+	padding: 0;
+}
+
+.eem-choices .choices__list--single .choices__item {
+	color: var( --eem-text, #1d2327 );
+}
+
+/* Dropdown panel. */
+.eem-choices .choices__list--dropdown,
+.eem-choices .choices__list[aria-expanded] {
+	border: 1px solid var( --eem-border, #d9e2f2 );
+	border-radius: var( --eem-radius, 3px );
+	box-shadow: 0 8px 22px rgba( 15, 23, 42, 0.12 );
+	margin-top: 4px;
+	font-size: 13px;
+}
+
+/* In-dropdown search box. */
+.eem-choices .choices__list--dropdown .choices__input,
+.eem-choices .choices__list[aria-expanded] .choices__input {
+	border: 1px solid var( --eem-border, #d9e2f2 );
+	border-radius: var( --eem-radius, 3px );
+	padding: 7px 9px;
+	font-size: 13px;
+}
+
+.eem-choices .choices__list--dropdown .choices__input:focus,
+.eem-choices .choices__list[aria-expanded] .choices__input:focus {
+	border-color: var( --eem-electric, #1668f2 );
+	box-shadow: 0 0 0 1px var( --eem-electric, #1668f2 );
+	outline: none;
+}
+
+/* Highlighted / hovered option — Electric Blue tint, never an underline. */
+.eem-choices .choices__list--dropdown .choices__item--selectable.is-highlighted,
+.eem-choices .choices__list[aria-expanded] .choices__item--selectable.is-highlighted {
+	background: var( --eem-electric-tint, #eaf1fe );
+	color: var( --eem-electric, #1668f2 );
+	text-decoration: none;
+}
+
+/* Dropdown caret matches the toolbar-select chevron tone. */
+.eem-choices.choices[data-type*="select-one"]::after {
+	border-color: var( --eem-text-muted, #5b6b7f ) transparent transparent;
+}
+
+.eem-choices.choices[data-type*="select-one"].is-open::after {
+	border-color: transparent transparent var( --eem-text-muted, #5b6b7f );
+}

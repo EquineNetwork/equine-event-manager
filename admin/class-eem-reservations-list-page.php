@@ -1167,7 +1167,7 @@ class EEM_Reservations_List_Page {
 					<?php if ( '' !== $search ) : ?>
 						<input type="hidden" name="s" value="<?php echo esc_attr( $search ); ?>" />
 					<?php endif; ?>
-					<select class="eem-toolbar-select" name="eem_date">
+					<select class="eem-toolbar-select" name="eem_date" data-eem-choices data-eem-choices-search="<?php esc_attr_e( 'Search dates…', 'equine-event-manager' ); ?>">
 						<option value=""><?php esc_html_e( 'All dates', 'equine-event-manager' ); ?></option>
 						<?php foreach ( $date_options as $value => $label ) : ?>
 							<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $date_filter, $value ); ?>><?php echo esc_html( $label ); ?></option>
