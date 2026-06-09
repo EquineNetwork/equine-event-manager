@@ -163,7 +163,11 @@ class EEM_Settings_Repo {
 	 * ───────────────────────────────────────────────────────────── */
 
 	/**
-	 * @return array{cancellation:string, terms:string}
+	 * Terms & Conditions only. The global Cancellation Policy was retired in
+	 * favor of per-reservation policy (post-meta `_eem_cancellation_policy_override`)
+	 * + per-event default; its Settings field and stored key are gone.
+	 *
+	 * @return array{terms:string}
 	 */
 	public static function get_policies() {
 		$stored = get_option( self::OPTION_POLICIES, array() );
@@ -172,26 +176,22 @@ class EEM_Settings_Repo {
 		}
 
 		return array(
-			'cancellation' => isset( $stored['cancellation'] ) ? (string) $stored['cancellation'] : '',
-			'terms'        => isset( $stored['terms'] )        ? (string) $stored['terms']        : '',
+			'terms' => isset( $stored['terms'] ) ? (string) $stored['terms'] : '',
 		);
 	}
 
 	/**
-	 * Both policy bodies sanitize via wp_kses_post — light formatting is welcome
-	 * (lists, bold, links) but scripts/iframes/style are blocked.
+	 * The Terms body sanitizes via wp_kses_post — light formatting is welcome
+	 * (lists, bold, links) but scripts/iframes/style are blocked. When the key is
+	 * absent from the submission, the stored value is preserved.
 	 *
-	 * @param array{cancellation?:string, terms?:string} $policies
+	 * @param array{terms?:string} $policies
 	 * @return bool
 	 */
 	public static function update_policies( array $policies ) {
-		// 2.3.66 — Cancellation Policy is per-reservation now and its Settings field
-		// was removed, so the global option becomes read-only: when a key is absent
-		// from the submission, preserve the stored value rather than wiping it.
 		$existing = self::get_policies();
 		$next = array(
-			'cancellation' => isset( $policies['cancellation'] ) ? wp_kses_post( (string) $policies['cancellation'] ) : $existing['cancellation'],
-			'terms'        => isset( $policies['terms'] )        ? wp_kses_post( (string) $policies['terms'] )        : $existing['terms'],
+			'terms' => isset( $policies['terms'] ) ? wp_kses_post( (string) $policies['terms'] ) : $existing['terms'],
 		);
 
 		$saved = update_option( self::OPTION_POLICIES, $next, false );

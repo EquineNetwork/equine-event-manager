@@ -1150,10 +1150,9 @@ class EEM_Settings_Page {
 				<h2 class="eem-card-title"><?php esc_html_e( 'Policies', 'equine-event-manager' ); ?></h2>
 			</header>
 			<div class="eem-card-body">
-				<?php // 2.3.66 — Cancellation Policy is set per-reservation (Edit Reservation
-				// → Cancellation Policy), not globally. The global field was removed from
-				// Settings per product decision; the stored option remains read-only for
-				// any legacy Cancellation email rendering until that path is retired. ?>
+				<?php // Cancellation Policy is set per-reservation (Edit Reservation →
+				// Cancellation Policy), not globally — the global field, its stored
+				// option key, and the editor's global fallback have all been retired. ?>
 				<div class="eem-field-row">
 					<label class="eem-field-label" for="eem-policy-terms"><?php esc_html_e( 'Terms &amp; Conditions', 'equine-event-manager' ); ?></label>
 					<div class="eem-field-control">

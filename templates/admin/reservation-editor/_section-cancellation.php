@@ -35,9 +35,11 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_pa
 $override     = isset( $data['cancellation_policy_override'] ) ? (string) $data['cancellation_policy_override'] : '';
 $has_override = '' !== trim( $override );
 
-// Resolve event-default cancellation policy. The resolver
-// (C7.A) reads the linked event's default from the event_defaults
-// table; fall back to the legacy global option if no event default.
+// Resolve event-default cancellation policy. The resolver (C7.A) reads the
+// linked event's default from the event_defaults table. The deprecated global
+// wp_option fallback was removed once the global Settings field was retired
+// (the per-reservation override is the canonical source; the per-event default
+// is the inheritance source).
 $event_default = '';
 if ( class_exists( 'EEM_Cancellation_Policy' ) ) {
 	$reservation_id = (int) get_the_ID();
@@ -54,9 +56,6 @@ if ( class_exists( 'EEM_Cancellation_Policy' ) ) {
 			$event_default = $resolved;
 		}
 	}
-}
-if ( '' === $event_default ) {
-	$event_default = (string) get_option( 'equine_event_manager_cancellation_policy', '' );
 }
 $has_event_default = '' !== trim( $event_default );
 ?>
