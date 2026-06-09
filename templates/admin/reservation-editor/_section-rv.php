@@ -617,7 +617,7 @@ ob_start();
 <?php
 $rv_map_html = (string) ob_get_clean();
 eem_render_editor_field_row( array(
-	'label'        => __( 'RV Lot Map', 'equine-event-manager' ),
+	'label'        => __( 'View Only RV Lot Map', 'equine-event-manager' ),
 	'label_sub'    => __( 'PDF or image customers can open', 'equine-event-manager' ),
 	'row_id'       => 'row-rv-lot-map',
 	'control_html' => $rv_map_html,
