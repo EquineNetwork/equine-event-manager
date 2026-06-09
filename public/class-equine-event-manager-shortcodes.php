@@ -3886,6 +3886,11 @@ class EEM_Shortcodes {
 				array(
 					'event_source'              => $data['event_source'],
 					'event_id'                  => $event_id,
+					// CLEANUP #11 — denormalize the reservation id into its own indexed
+					// column (the value also lives in the `Reservation setup ID: N`
+					// notes line) so the Reservations-list orders-count + sort can run
+					// as an indexed SQL JOIN instead of a notes-LIKE / PHP two-pass.
+					'reservation_id'            => absint( $reservation_id ),
 					'external_event_id'         => $data['external_event_id'],
 					'customer_name'             => $customer_name,
 					'email'                     => $submission['email'],
@@ -3957,6 +3962,8 @@ RV Lot: " . $rv_lot['name'] );
 				array(
 					'event_source'      => $data['event_source'],
 					'event_id'          => $event_id,
+					// CLEANUP #11 — denormalized indexed reservation id (see stall insert).
+					'reservation_id'    => absint( $reservation_id ),
 					'external_event_id' => $data['external_event_id'],
 					'customer_name'     => $customer_name,
 					'email'             => $submission['email'],

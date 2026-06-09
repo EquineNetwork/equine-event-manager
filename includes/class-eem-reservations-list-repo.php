@@ -260,35 +260,31 @@ class EEM_Reservations_List_Repo {
 			$query_args['meta_key'] = $sort_key;
 			$query_args['order']    = $order;
 		} elseif ( 'orders' === $orderby ) {
-			// PHP-side sort path: pull all matching posts (capped at 500
-			// for safety), compute orders count for each, sort, then
-			// hand-paginate. WP_Query alone can't do this since the
-			// orders table isn't joinable.
-			$all_args             = $query_args;
-			$all_args['orderby']  = 'title';
-			$all_args['order']    = 'ASC';
-			$all_args['posts_per_page'] = 500;
-			$all_args['paged']    = 1;
-			$all = ( new WP_Query( $all_args ) )->posts;
-			$counts = array();
-			foreach ( $all as $p ) {
-				$counts[ $p->ID ] = self::get_orders_count_for_reservation( $p->ID );
-			}
-			usort( $all, function( $a, $b ) use ( $counts, $order ) {
-				$cmp = $counts[ $a->ID ] <=> $counts[ $b->ID ];
-				return 'DESC' === $order ? -$cmp : $cmp;
-			} );
-			$total       = count( $all );
-			$per_page    = max( 1, (int) $args['per_page'] );
-			$paged       = max( 1, (int) $args['paged'] );
-			$page_items  = array_slice( $all, ( $paged - 1 ) * $per_page, $per_page );
-			return array(
-				'items'       => $page_items,
-				'total'       => $total,
-				'total_pages' => (int) ceil( $total / $per_page ),
-				'page'        => $paged,
-				'per_page'    => $per_page,
-			);
+			// CLEANUP #11 — SQL JOIN sort, replacing the former fetch-up-to-500 +
+			// PHP usort + hand-paginate. A posts_clauses filter LEFT JOINs a
+			// per-reservation orders-count derived table (union of stall + rv rows
+			// grouped by the indexed `reservation_id` column) and ORDER BYs the
+			// count, so WP_Query paginates normally with correct found_posts and no
+			// 500-row cap. Zero-order reservations sort as 0 via COALESCE; post_title
+			// is the stable secondary key. Filter is removed right after the query
+			// (shared `$left_join_filter` cleanup below).
+			global $wpdb;
+			$orders_stall_table = $wpdb->prefix . 'en_stall_reservations';
+			$orders_rv_table    = $wpdb->prefix . 'en_rv_reservations';
+			$orders_dir         = 'DESC' === $order ? 'DESC' : 'ASC';
+			$left_join_filter   = static function ( $clauses ) use ( $wpdb, $orders_stall_table, $orders_rv_table, $orders_dir ) {
+				$clauses['join'] .= " LEFT JOIN ("
+					. "SELECT reservation_id, COUNT(*) AS eem_oc FROM ("
+					. "SELECT reservation_id FROM `{$orders_stall_table}` WHERE reservation_id > 0"
+					. ' UNION ALL '
+					. "SELECT reservation_id FROM `{$orders_rv_table}` WHERE reservation_id > 0"
+					. ') eem_u GROUP BY reservation_id'
+					. ") eem_ordc ON eem_ordc.reservation_id = {$wpdb->posts}.ID";
+				$clauses['orderby'] = "COALESCE(eem_ordc.eem_oc, 0) {$orders_dir}, {$wpdb->posts}.post_title ASC";
+				return $clauses;
+			};
+			add_filter( 'posts_clauses', $left_join_filter );
+			$query_args['orderby'] = 'none';
 		} else {
 			$query_args['orderby'] = 'title';
 			$query_args['order']   = $order;
@@ -329,16 +325,16 @@ class EEM_Reservations_List_Repo {
 		$stall_table = $wpdb->prefix . 'en_stall_reservations';
 		$rv_table    = $wpdb->prefix . 'en_rv_reservations';
 
-		// `notes` column carries `Reservation setup ID: N` per
-		// insert_reservation_orders. C4.D revisits this if perf is a
-		// concern (consider a denormalized reservation_id column).
-		$needle = '%Reservation setup ID: ' . $id . '%';
-
+		// CLEANUP #11 — filter on the indexed `reservation_id` column (populated
+		// at checkout insert + backfilled from the `Reservation setup ID: N` notes
+		// line by eem-mig-009). This is an indexed equality lookup instead of the
+		// former unindexed `notes LIKE '%…: N%'` scan, AND it fixes the LIKE
+		// prefix-match bug where setup ID 5 also matched 50/51/…/etc.
 		$stall_count = (int) $wpdb->get_var(
-			$wpdb->prepare( "SELECT COUNT(*) FROM `{$stall_table}` WHERE notes LIKE %s", $needle )
+			$wpdb->prepare( "SELECT COUNT(*) FROM `{$stall_table}` WHERE reservation_id = %d", $id )
 		);
 		$rv_count = (int) $wpdb->get_var(
-			$wpdb->prepare( "SELECT COUNT(*) FROM `{$rv_table}` WHERE notes LIKE %s", $needle )
+			$wpdb->prepare( "SELECT COUNT(*) FROM `{$rv_table}` WHERE reservation_id = %d", $id )
 		);
 
 		return $stall_count + $rv_count;

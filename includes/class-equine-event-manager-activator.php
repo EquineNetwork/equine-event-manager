@@ -177,6 +177,10 @@ class EEM_Activator {
 			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-008-activity-log-order-key.php';
 			eem_mig_008_activity_log_order_key();
 		}
+		if ( ! get_option( 'eem_mig_009_order_reservation_id_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-009-order-reservation-id.php';
+			eem_mig_009_order_reservation_id();
+		}
 	}
 
 	/**
@@ -225,6 +229,7 @@ class EEM_Activator {
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 			event_source varchar(100) NOT NULL DEFAULT '',
 			event_id bigint(20) unsigned DEFAULT NULL,
+			reservation_id bigint(20) unsigned NOT NULL DEFAULT 0,
 			external_event_id varchar(191) NOT NULL DEFAULT '',
 			customer_name varchar(191) NOT NULL DEFAULT '',
 			email varchar(191) NOT NULL DEFAULT '',
@@ -252,6 +257,7 @@ class EEM_Activator {
 			created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			PRIMARY KEY  (id),
 			KEY event_id (event_id),
+			KEY reservation_id (reservation_id),
 			KEY external_event_id (external_event_id),
 			KEY payment_status (payment_status),
 			KEY order_number (order_number),
@@ -262,6 +268,7 @@ class EEM_Activator {
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 			event_source varchar(100) NOT NULL DEFAULT '',
 			event_id bigint(20) unsigned DEFAULT NULL,
+			reservation_id bigint(20) unsigned NOT NULL DEFAULT 0,
 			external_event_id varchar(191) NOT NULL DEFAULT '',
 			customer_name varchar(191) NOT NULL DEFAULT '',
 			email varchar(191) NOT NULL DEFAULT '',
@@ -287,6 +294,7 @@ class EEM_Activator {
 			created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			PRIMARY KEY  (id),
 			KEY event_id (event_id),
+			KEY reservation_id (reservation_id),
 			KEY external_event_id (external_event_id),
 			KEY payment_status (payment_status),
 			KEY order_number (order_number),
