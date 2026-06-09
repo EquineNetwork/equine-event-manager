@@ -116,6 +116,13 @@ add_action( 'wp_ajax_eem_reservation_duplicate_ajax', array( 'EEM_Reservations_L
 // FIX 2 (2.3.44) — Push name/slug mirror to linked reservations when a TEC
 // event is saved (admin edits TEC event title → all reservations auto-sync).
 add_action( 'save_post_tribe_events', array( 'EEM_Reservation_Editor_Page', 'on_tec_event_save' ), 20, 2 );
+// CLEANUP #24 — source-event → reservation sort-cache sync. When a source event's
+// start_date is edited, refresh `_en_source_event_start_date` on every linked
+// reservation so the Reservations-list date sort/filter SQL stays correct without
+// waiting for each reservation to be re-saved. Late priority so the event's own
+// meta is persisted first.
+add_action( 'save_post_tribe_events', array( 'EEM_Reservation_Source_Resolver', 'on_tec_event_saved' ), 40, 2 );
+add_action( 'save_post_en_event', array( 'EEM_Reservation_Source_Resolver', 'on_native_event_saved' ), 40, 2 );
 // C7.X.3 — change_linked_event handler retired; replaced by ajax_unlink_event
 // (rail-card Unlink button) + event-search typeahead handler in a later commit.
 add_action( 'wp_ajax_eem_reservation_editor_unlink_event', array( 'EEM_Reservation_Editor_Page', 'ajax_unlink_event' ) );

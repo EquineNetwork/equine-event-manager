@@ -193,6 +193,90 @@ class EEM_Reservation_Source_Resolver {
 	}
 
 	/**
+	 * Source-event → reservation sync (CLEANUP #24, RES-ARCH-1 follow-on).
+	 *
+	 * The sort cache ({@see self::SORT_CACHE_META_KEY}) is normally written from
+	 * the reservation side on `save_post_en_reservation`. If a SOURCE event's
+	 * start_date changes after a reservation is linked, that reservation's cache
+	 * stays stale until it is itself next saved — so the Reservations-list
+	 * `orderby=event_dates` SQL / date-filter month range read a stale value
+	 * (display reads via the live resolver are always correct). These handlers
+	 * close that gap: when a source event is saved, every reservation linked to it
+	 * re-resolves + rewrites its cache.
+	 *
+	 * Registered on `save_post_en_event` (native) + `save_post_tribe_events` (TEC)
+	 * at a late priority so the event's own meta is persisted first.
+	 *
+	 * @param int          $event_id Source event post ID.
+	 * @param WP_Post|null $post     Source event post object.
+	 * @return void
+	 */
+	public static function on_native_event_saved( int $event_id, $post = null ): void {
+		if ( ! $post instanceof WP_Post || wp_is_post_revision( $event_id ) || wp_is_post_autosave( $event_id ) ) {
+			return;
+		}
+		self::sync_linked_reservations( $event_id, 'native' );
+	}
+
+	/**
+	 * TEC counterpart of {@see self::on_native_event_saved()}.
+	 *
+	 * @param int          $event_id TEC event (tribe_events) post ID.
+	 * @param WP_Post|null $post     TEC event post object.
+	 * @return void
+	 */
+	public static function on_tec_event_saved( int $event_id, $post = null ): void {
+		if ( ! $post instanceof WP_Post || wp_is_post_revision( $event_id ) || wp_is_post_autosave( $event_id ) ) {
+			return;
+		}
+		self::sync_linked_reservations( $event_id, 'tec' );
+	}
+
+	/**
+	 * Refresh the sort-cache on every reservation linked to a given source event.
+	 *
+	 * Matches reservations by the linked-event meta pair (`_en_event_id` +
+	 * `_en_event_source`) — robust even if multiple reservations point at one
+	 * event — and re-runs {@see self::cache_source_event_start_date()} on each,
+	 * which re-resolves the (now-updated) source-event start_date live.
+	 *
+	 * @param int    $event_id Source event post ID.
+	 * @param string $source   Reservation `_en_event_source` value to match ('native'|'tec'|'feed').
+	 * @return int Number of reservations refreshed.
+	 */
+	public static function sync_linked_reservations( int $event_id, string $source ): int {
+		if ( $event_id <= 0 || '' === $source ) {
+			return 0;
+		}
+
+		$reservation_ids = get_posts(
+			array(
+				'post_type'      => 'en_reservation',
+				'post_status'    => 'any',
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+				'no_found_rows'  => true,
+				'meta_query'     => array(
+					'relation' => 'AND',
+					array( 'key' => '_en_event_id', 'value' => (string) $event_id ),
+					array( 'key' => '_en_event_source', 'value' => $source ),
+				),
+			)
+		);
+
+		$count = 0;
+		foreach ( (array) $reservation_ids as $rid ) {
+			$reservation = get_post( (int) $rid );
+			if ( $reservation instanceof WP_Post ) {
+				self::cache_source_event_start_date( (int) $rid, $reservation );
+				$count++;
+			}
+		}
+
+		return $count;
+	}
+
+	/**
 	 * Default empty-fields shape for resolution failures.
 	 *
 	 * @return array{title:string,start_date:string,end_date:string,venue:string}
