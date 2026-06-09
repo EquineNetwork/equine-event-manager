@@ -3124,6 +3124,14 @@
 		if (linkedEventInput && linkedEventInput.value && '0' !== String(linkedEventInput.value)) {
 			body.set('en_reservation[event_id]', linkedEventInput.value);
 		}
+		// GEMS / feed link lives in the header typeahead too — submit it explicitly
+		// (same reason as event_id: it's outside the scraped editor body).
+		var extEventInput = document.getElementById('eem-linked-external-event-id-input');
+		if (extEventInput && extEventInput.value) {
+			body.set('en_reservation[external_event_id]', extEventInput.value);
+			var extNameInput = document.getElementById('eem-linked-external-event-name-input');
+			if (extNameInput) { body.set('en_reservation[external_event_name]', extNameInput.value); }
+		}
 		fetch(EEM_EDITOR_AJAX_URL, {
 			method: 'POST',
 			credentials: 'same-origin',
@@ -5228,10 +5236,22 @@ function selectLinkedEvent(eventId) {
 		}
 	}
 
-	// Update hidden form field and typeahead data attribute.
-	var hiddenInput = document.getElementById('eem-linked-event-id-input');
-	if (hiddenInput) hiddenInput.value = eventId;
+	// Update hidden form field(s) + typeahead data attribute. Source-aware:
+	// the GEMS-backed Feed links via the external event id + name; TEC links via
+	// the WP event post id.
 	var tah = document.getElementById('eem-header-typeahead');
+	if (tah && tah.dataset.eventSource === 'feed') {
+		var extId = document.getElementById('eem-linked-external-event-id-input');
+		if (extId) extId.value = eventId;
+		var extName = document.getElementById('eem-linked-external-event-name-input');
+		if (extName && chosen) {
+			var nmSpan = chosen.querySelector('.eem-event-option-name');
+			extName.value = nmSpan ? nmSpan.textContent.replace(/\s*CURRENT\s*$/i, '').trim() : '';
+		}
+	} else {
+		var hiddenInput = document.getElementById('eem-linked-event-id-input');
+		if (hiddenInput) hiddenInput.value = eventId;
+	}
 	if (tah) tah.dataset.currentEventId = eventId;
 
 	cancelChangeEvent();
@@ -5265,7 +5285,10 @@ function fetchEventOptions(query) {
 	// Exclude the reservation being edited so its own linked event still shows
 	// (and so taken-by-others events are filtered server-side — one-to-one guard).
 	var excludeRid = String(tah.dataset.reservationId || '0');
-	var params = 'action=equine_event_manager_search_tec_events&nonce=' + encodeURIComponent(nonce) + '&term=' + encodeURIComponent(query) + '&reservation_id=' + encodeURIComponent(excludeRid);
+	// Source-aware: TEC searches the TEC endpoint; the GEMS-backed Feed searches
+	// the feed endpoint. Both return {results:[{id,text,start_date,...}]}.
+	var searchAction = tah.dataset.searchAction || 'equine_event_manager_search_tec_events';
+	var params = 'action=' + encodeURIComponent(searchAction) + '&nonce=' + encodeURIComponent(nonce) + '&term=' + encodeURIComponent(query) + '&reservation_id=' + encodeURIComponent(excludeRid);
 	var xhr = new XMLHttpRequest();
 	_eventSearchXhr = xhr;
 	xhr.open('GET', ajaxUrl + '?' + params, true);

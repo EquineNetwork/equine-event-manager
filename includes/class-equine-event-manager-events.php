@@ -198,6 +198,13 @@ class EEM_Events {
 	 * @return array<int, array<string, mixed>>|WP_Error
 	 */
 	public static function search_feed_events( $term = '', $feed_url = '', $limit = 20 ) {
+		// The Feed source is backed by the GEMS Web Data API when a GEMS
+		// connection is configured — delegate so the editor's event picker
+		// searches live GEMS events (mirrors how TEC is searched).
+		if ( class_exists( 'EEM_Gems_Client' ) && EEM_Gems_Client::is_configured() ) {
+			return EEM_Gems_Client::search( $term, $limit, true );
+		}
+
 		$feed_index = self::get_feed_event_index( $feed_url );
 
 		if ( is_wp_error( $feed_index ) ) {
@@ -258,6 +265,11 @@ class EEM_Events {
 
 		if ( '' === $external_event_id ) {
 			return array();
+		}
+
+		// GEMS-backed feed: resolve the linked event from the GEMS schedule.
+		if ( class_exists( 'EEM_Gems_Client' ) && EEM_Gems_Client::is_configured() ) {
+			return EEM_Gems_Client::get_event_by_id( $external_event_id );
 		}
 
 		$feed_index = self::get_feed_event_index( $feed_url );
@@ -643,6 +655,11 @@ class EEM_Events {
 		}
 		if ( self::is_tec_integration_enabled() ) {
 			$available[] = 'tec';
+		}
+		// The Feed source is real (selectable) when a GEMS connection is
+		// configured — events are read from the GEMS Web Data API.
+		if ( class_exists( 'EEM_Gems_Client' ) && EEM_Gems_Client::is_configured() ) {
+			$available[] = 'feed';
 		}
 
 		// Honour an explicit stored choice only when it points at an available source.

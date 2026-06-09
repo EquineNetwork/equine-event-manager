@@ -197,7 +197,21 @@ class EEM_Reservation_Editor_Page {
 		// authoritative currently-linked event ID; nonce authorises the search AJAX.
 		$_cpt_obj             = new EEM_Reservations_CPT();
 		$current_tec_event_id = $_cpt_obj->get_tec_event_id_for_reservation( $reservation_id );
-		$_search_nonce        = wp_create_nonce( 'equine_event_manager_search_tec_events' );
+
+		// Event-source-aware typeahead. When the active source is the GEMS-backed
+		// Feed, the picker searches GEMS events (different AJAX action + nonce) and
+		// links via _en_external_event_id instead of the TEC post id.
+		$_active_source        = class_exists( 'EEM_Events' ) ? EEM_Events::get_default_event_source() : 'tec';
+		$_is_feed_source       = ( 'feed' === $_active_source );
+		$current_external_id   = (string) get_post_meta( $reservation_id, '_en_external_event_id', true );
+		$current_external_name = (string) get_post_meta( $reservation_id, '_en_external_event_name', true );
+		if ( $_is_feed_source ) {
+			$_search_nonce  = wp_create_nonce( 'equine_event_manager_search_feed_events' );
+			$_search_action = 'equine_event_manager_search_feed_events';
+		} else {
+			$_search_nonce  = wp_create_nonce( 'equine_event_manager_search_tec_events' );
+			$_search_action = 'equine_event_manager_search_tec_events';
+		}
 
 		// 2.3.56 — Hard gate: a reservation must be linked to an event before its
 		// configuration form can be filled out. "Linked" is the presence of an
@@ -250,9 +264,14 @@ class EEM_Reservation_Editor_Page {
 							id="eem-linked-event-id-input"
 							name="en_reservation[event_id]"
 							value="<?php echo esc_attr( (string) $current_tec_event_id ); ?>">
+						<?php // GEMS / feed link — id + name persisted to _en_external_event_*. ?>
+						<input type="hidden" id="eem-linked-external-event-id-input" name="en_reservation[external_event_id]" value="<?php echo esc_attr( $current_external_id ); ?>">
+						<input type="hidden" id="eem-linked-external-event-name-input" name="en_reservation[external_event_name]" value="<?php echo esc_attr( $current_external_name ); ?>">
 						<div class="eem-header-typeahead" id="eem-header-typeahead"
 							style="<?php echo $has_linked_event ? 'display:none;' : ''; ?>"
-							data-current-event-id="<?php echo esc_attr( (string) $current_tec_event_id ); ?>"
+							data-current-event-id="<?php echo esc_attr( $_is_feed_source ? $current_external_id : (string) $current_tec_event_id ); ?>"
+							data-event-source="<?php echo esc_attr( $_active_source ); ?>"
+							data-search-action="<?php echo esc_attr( $_search_action ); ?>"
 							data-reservation-id="<?php echo esc_attr( (string) $reservation_id ); ?>"
 							data-ajax-url="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>"
 							data-search-nonce="<?php echo esc_attr( $_search_nonce ); ?>">
