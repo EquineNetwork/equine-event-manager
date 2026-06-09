@@ -3521,20 +3521,44 @@ class EEM_Reservations_CPT {
 	}
 
 	/**
-	 * Populate available dates from the selected TEC event until an admin edits them.
+	 * Populate available dates from the linked event until an admin edits them.
+	 *
+	 * Supports all three event sources: TEC and native events link by numeric
+	 * event_id; the feed source (GEMS) links by external_event_id and resolves
+	 * its dates from the GEMS schedule. The Available Reservation Dates always
+	 * default to the linked event's start/end date until the admin manually
+	 * overrides them.
 	 *
 	 * @param array $data Reservation meta data.
 	 * @return array
 	 */
 	private function populate_available_dates_from_event( $data ) {
-		if ( ! empty( $data['available_dates_manually_edited'] ) || empty( $data['event_id'] ) ) {
+		if ( ! empty( $data['available_dates_manually_edited'] ) ) {
 			return $data;
 		}
 
 		if ( 'tec' === $data['event_source'] ) {
+			if ( empty( $data['event_id'] ) ) {
+				return $data;
+			}
 			$event_dates = $this->get_tec_event_date_values( absint( $data['event_id'] ) );
 		} elseif ( 'native' === $data['event_source'] ) {
+			if ( empty( $data['event_id'] ) ) {
+				return $data;
+			}
 			$event_dates = EEM_Events::get_native_event_date_values( absint( $data['event_id'] ) );
+		} elseif ( 'feed' === $data['event_source'] ) {
+			if ( empty( $data['external_event_id'] ) ) {
+				return $data;
+			}
+			$feed_url    = isset( $data['event_feed_url'] ) ? (string) $data['event_feed_url'] : '';
+			$feed_event  = EEM_Events::get_feed_event_by_external_id( (string) $data['external_event_id'], $feed_url );
+			$event_dates = is_array( $feed_event )
+				? array(
+					'start_date' => isset( $feed_event['start_date'] ) ? (string) $feed_event['start_date'] : '',
+					'end_date'   => isset( $feed_event['end_date'] ) ? (string) $feed_event['end_date'] : '',
+				)
+				: array();
 		} else {
 			return $data;
 		}
