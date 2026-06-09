@@ -2593,11 +2593,17 @@ class EEM_Events {
 			}
 		}
 
-		if ( empty( $start_date ) && ! empty( $feed_event['start_date'] ) ) {
+		// For the 'feed' source the linked event (e.g. a GEMS event) is the
+		// authoritative source of dates — like a TEC/native event — so it wins
+		// over the reservation's own availability window. Other external sources
+		// keep the empty-only fallback.
+		$feed_dates_authoritative = ( 'feed' === $event_source );
+
+		if ( ( $feed_dates_authoritative || empty( $start_date ) ) && ! empty( $feed_event['start_date'] ) ) {
 			$start_date = (string) $feed_event['start_date'];
 		}
 
-		if ( empty( $end_date ) && ! empty( $feed_event['end_date'] ) ) {
+		if ( ( $feed_dates_authoritative || empty( $end_date ) ) && ! empty( $feed_event['end_date'] ) ) {
 			$end_date = (string) $feed_event['end_date'];
 		}
 
