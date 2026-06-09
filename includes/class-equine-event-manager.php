@@ -28,6 +28,10 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'public/class-equine-event-manager-shor
 // Phase 3 — Activity Log subsystem (ODET-7, CDET-5).
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-activity-log.php';
 
+// CLEANUP #27 — refund kernel extracted off EEM_Admin (Stripe + Authorize.net
+// dispatch, amount distribution, persistence). EEM_Admin keeps thin delegators.
+require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-refund-engine.php';
+
 // Phase 3 — Settings subsystem (SET-*). Repos load eagerly so any code path
 // (admin page render OR AJAX save) can use them without a separate guard.
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-email-templates-repo.php';
