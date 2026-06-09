@@ -177,7 +177,6 @@ class EEM_Orders_List_Page {
 			'export_failed'            => array( 'type' => 'error',   'text' => __( 'Could not generate the CSV export. The order may have been deleted.', 'equine-event-manager' ) ),
 			'order_trash_deferred'     => array( 'type' => 'warning', 'text' => __( 'Move to Trash for orders is not yet wired — the soft-delete schema lands in a future chunk. No changes were made.', 'equine-event-manager' ) ),
 			'print_receipt_deferred'   => array( 'type' => 'info',    'text' => __( 'Receipt print view lands with the Order Detail page in C6. No action taken.', 'equine-event-manager' ) ),
-			'bulk_refund_deferred'     => array( 'type' => 'info',    'text' => $this->bulk_refund_deferred_text() ),
 			'bulk_no_selection'        => array( 'type' => 'warning', 'text' => __( 'Pick at least one order before clicking Apply.', 'equine-event-manager' ) ),
 			'bulk_no_action'           => array( 'type' => 'warning', 'text' => __( 'Pick a bulk action before clicking Apply.', 'equine-event-manager' ) ),
 			'denied'                   => array( 'type' => 'error',   'text' => __( 'You do not have permission to perform that action.', 'equine-event-manager' ) ),
@@ -906,34 +905,9 @@ class EEM_Orders_List_Page {
 				'eem_order_export_csv'          => wp_create_nonce( 'eem_order_export_csv' ),
 				'eem_order_trash'               => wp_create_nonce( 'eem_order_trash' ),
 				'eem_order_print_receipt'       => wp_create_nonce( 'eem_order_print_receipt' ),
-				'eem_orders_bulk_refund'        => wp_create_nonce( 'eem_orders_bulk_refund' ),
 				'eem_bulk_cancel'               => wp_create_nonce( 'eem_bulk_cancel' ),
 			),
 		) );
-	}
-
-	/**
-	 * Compose the bulk_refund_deferred notice text. Inspects
-	 * ?eem_bulk_count=N (URL param set by handle_bulk_refund on
-	 * redirect) so the message reflects the actual selection size.
-	 *
-	 * @return string
-	 */
-	private function bulk_refund_deferred_text() {
-		$n = isset( $_GET['eem_bulk_count'] ) ? absint( wp_unslash( $_GET['eem_bulk_count'] ) ) : 0;
-		if ( $n > 0 ) {
-			return sprintf(
-				/* translators: %d: number of orders the admin selected for bulk refund */
-				_n(
-					'Bulk refund queued for %d order — the async refund engine lands with the Order Detail page in C6. No refunds processed yet.',
-					'Bulk refund queued for %d orders — the async refund engine lands with the Order Detail page in C6. No refunds processed yet.',
-					$n,
-					'equine-event-manager'
-				),
-				$n
-			);
-		}
-		return __( 'Bulk refund stub — the async refund engine lands in C6. No refunds processed yet.', 'equine-event-manager' );
 	}
 
 	/**
@@ -941,12 +915,10 @@ class EEM_Orders_List_Page {
 	 *
 	 * Opens via data-eem-action="orders-bulk-apply" when the bulk
 	 * action select is set to "refund" and at least one row is
-	 * checked. The Confirm button submits the modal form to
-	 * admin-post.php (action=eem_orders_bulk_refund) with the
-	 * selected order_keys[], the reason text, and the notify-customers
-	 * flag. Server-side engine deferred to C6 (see CLEANUP.md #15) —
-	 * for now the handler just validates and redirects with a
-	 * deferred-notice carrying the count.
+	 * checked. The Confirm button drives a JS queue (startBulkRefundQueue)
+	 * that POSTs each selected order_key to the eem_bulk_refund_step AJAX
+	 * endpoint sequentially (nonce eem_bulk_refund_step), updating the
+	 * per-order progress list and collecting failures for retry.
 	 *
 	 * @return void
 	 */
@@ -1201,21 +1173,6 @@ class EEM_Orders_List_Page {
 	}
 
 	/**
-	 * Bulk Refund Selected dispatcher (per REF-3 / ORD-2). Validates
-	 * the modal POST (cap + nonce + at least one order_key + each key
-	 * resolves to an existing order), then redirects with
-	 * ?eem_notice=bulk_refund_deferred&eem_bulk_count=N until the
-	 * async refund engine ships in C6.
-	 *
-	 * The handler intentionally does NOT call the merchant API yet —
-	 * see CLEANUP.md #15 for the engine scope (queued per-order
-	 * processing, activity log entries, customer notifications,
-	 * error collection at the end). C5.D wires the dispatcher so the
-	 * modal form posts somewhere coherent; C6 fills in the engine.
-	 *
-	 * @return void
-	 */
-	/**
 	 * Register the Customer Profile placeholder admin page. Hidden from
 	 * the menu (parent=null) so it doesn't pollute the sidebar, but
 	 * reachable at admin.php?page=equine-event-manager-customer so the
@@ -1287,35 +1244,5 @@ class EEM_Orders_List_Page {
 		</div>
 		<?php
 		eem_render_page_close( array( 'wrap' => true ) );
-	}
-
-	public static function handle_bulk_refund() {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			self::redirect_with_notice( 'denied' );
-		}
-		check_admin_referer( 'eem_orders_bulk_refund', '_eem_bulk_refund_nonce' );
-
-		$keys_raw = isset( $_POST['order_keys'] ) ? wp_unslash( $_POST['order_keys'] ) : '';
-		// The modal serializes selected keys as a comma-joined string
-		// into a single hidden input (data-eem-orders-bulk-refund-keys)
-		// so the JS layer doesn't have to manage multiple inputs.
-		$keys = array_values( array_filter( array_map( 'sanitize_text_field', explode( ',', (string) $keys_raw ) ) ) );
-		if ( empty( $keys ) ) {
-			self::redirect_with_notice( 'bulk_no_selection' );
-		}
-
-		// CLEANUP #29 — single grouping pass instead of one get_order() (full
-		// regroup + scan) per key.
-		$repo  = new EEM_Orders_Repository();
-		$valid = count( $repo->get_orders_by_keys( $keys ) );
-		if ( 0 === $valid ) {
-			self::redirect_with_notice( 'notfound' );
-		}
-
-		// Engine TODO (C6): per REF-3, queue async per-order refund
-		// processing via merchant API, write activity log entries,
-		// send notification emails (when notify=1), collect failures
-		// for a "Needs Attention" list. See CLEANUP #15.
-		self::redirect_with_notice( 'bulk_refund_deferred', array( 'eem_bulk_count' => $valid ) );
 	}
 }

@@ -7042,7 +7042,9 @@ RV Lot: " . $rv_lot['name'] );
 		);
 
 		if ( is_wp_error( $response ) ) {
-			error_log( '[Equine Event Manager] Authorize.net transport error: ' . $response->get_error_message() );
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( '[Equine Event Manager] Authorize.net transport error: ' . $response->get_error_message() );
+			}
 			return $response;
 		}
 
@@ -7052,7 +7054,9 @@ RV Lot: " . $rv_lot['name'] );
 		$response_code = isset( $payload['transactionResponse']['responseCode'] ) ? (string) $payload['transactionResponse']['responseCode'] : '';
 
 		if ( ! is_array( $payload ) ) {
-			error_log( '[Equine Event Manager] Authorize.net unreadable response (' . $http_status . '): ' . substr( (string) $raw_body, 0, 500 ) );
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( '[Equine Event Manager] Authorize.net unreadable response (' . $http_status . '): ' . substr( (string) $raw_body, 0, 500 ) );
+			}
 			return new WP_Error( 'authorize_payment_failed', __( 'Authorize.net returned an unreadable response. Please verify the gateway mode, API Login ID, and Transaction Key.', 'equine-event-manager' ) );
 		}
 
@@ -7060,7 +7064,9 @@ RV Lot: " . $rv_lot['name'] );
 			$messages = $this->get_authorize_net_response_messages( $payload );
 			$message  = ! empty( $messages ) ? implode( ' ', $messages ) : __( 'Authorize.net payment failed. Please verify the gateway mode, credentials, and card details, then try again.', 'equine-event-manager' );
 
-			error_log( '[Equine Event Manager] Authorize.net payment failed (' . $http_status . '): ' . wp_json_encode( $payload ) );
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( '[Equine Event Manager] Authorize.net payment failed (' . $http_status . '): ' . wp_json_encode( $payload ) );
+			}
 
 			return new WP_Error( 'authorize_payment_failed', $message );
 		}
