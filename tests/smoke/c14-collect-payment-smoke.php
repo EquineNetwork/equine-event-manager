@@ -45,9 +45,16 @@ $order = array(
 	'event_label'    => '2026 Southeast Region Super Sort',
 );
 
+// This smoke covers the STRIPE charge form, so force Stripe as the active
+// gateway for the render (the box may have Authorize.net selected). Restore after.
+$pay_orig = get_option( 'equine_event_manager_payment_settings' );
+update_option( 'equine_event_manager_payment_settings', array_merge( (array) $pay_orig, array( 'selected_gateway' => 'stripe' ) ) );
+
 $ws = new ReflectionMethod( 'EEM_Collect_Payment_Page', 'render_workspace' );
 $ws->setAccessible( true );
 ob_start(); $ws->invoke( null, $order, $order_key, '#00021' ); $html = (string) ob_get_clean();
+
+update_option( 'equine_event_manager_payment_settings', $pay_orig ); // restore active gateway
 
 $check( 'outstanding banner rendered', str_contains( $html, 'eem-cp-banner' ) && str_contains( $html, 'Payment Outstanding' ) );
 $check( 'customer name shown', str_contains( $html, 'Devon Lacroix' ) );

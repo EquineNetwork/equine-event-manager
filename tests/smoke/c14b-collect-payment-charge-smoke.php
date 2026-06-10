@@ -73,9 +73,14 @@ $check( 'Order Detail formats brand + last4', str_contains( $od, 'Visa' ) && str
 $check( 'confirm: logs order_payment_collected', str_contains( $src, 'order_payment_collected' ) );
 
 // --- Charge Card form renders when Stripe ready ----------------------------
+// This smoke covers the STRIPE charge form specifically, so force Stripe as the
+// active gateway for the render (the box may have Authorize.net selected).
+$pay_orig = get_option( 'equine_event_manager_payment_settings' );
+update_option( 'equine_event_manager_payment_settings', array_merge( (array) $pay_orig, array( 'selected_gateway' => 'stripe' ) ) );
 $pref = new ReflectionMethod( 'EEM_Collect_Payment_Page', 'render_payment_card' );
 $pref->setAccessible( true );
 ob_start(); $pref->invoke( null, admin_url( 'admin.php' ), wp_generate_password( 32, false ), 'pending', 140.00 ); $card = (string) ob_get_clean();
+update_option( 'equine_event_manager_payment_settings', $pay_orig ); // restore active gateway
 // Stripe is configured in this dev env, so the live form should render.
 $check( 'card element mount point rendered', str_contains( $card, 'id="eem-cp-card-element"' ) );
 $check( 'charge button shows amount', str_contains( $card, 'Charge $140.00' ) );

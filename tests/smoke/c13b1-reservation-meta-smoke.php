@@ -25,9 +25,20 @@ if ( ! defined( 'DOING_AJAX' ) ) { define( 'DOING_AJAX', true ); }
 
 $check( 'AJAX action registered', has_action( 'wp_ajax_eem_create_order_reservation_meta' ) !== false );
 
+// Self-created fixture (was hardcoded reservation #3499). Stalls enabled + a
+// nightly rate so the section config and "Stalls" rate label are present, and a
+// date window so the dates range resolves.
+$rid = wp_insert_post( array( 'post_type' => 'en_reservation', 'post_status' => 'publish', 'post_title' => 'C13B1 reservation-meta fixture' ) );
+update_post_meta( $rid, '_eem_section_enabled_stalls', 1 );
+update_post_meta( $rid, '_en_stall_nightly_enabled', 1 );
+update_post_meta( $rid, '_en_stall_nightly_rate', '10.00' );
+update_post_meta( $rid, '_en_available_start_date', '2026-07-03' );
+update_post_meta( $rid, '_en_available_end_date', '2026-07-05' );
+register_shutdown_function( static function () use ( $rid ) { if ( $rid ) { wp_delete_post( (int) $rid, true ); } } );
+
 $_POST = $_REQUEST = array(
 	'_wpnonce'       => wp_create_nonce( 'eem_create_order_customer_search' ),
-	'reservation_id' => 3499,
+	'reservation_id' => $rid,
 );
 try { ob_start(); EEM_Create_Order_Page::ajax_reservation_meta(); $raw = ob_get_clean(); }
 catch ( Exception $e ) { $raw = ob_get_clean(); }
