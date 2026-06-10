@@ -1204,30 +1204,6 @@ body.eem-shell-page h1.eem-shell-header__title {
 	padding: 0.875rem 1rem 0;
 }
 
-.eem-shell-tabs {
-	display: flex;
-	flex-wrap: wrap;
-	background: #fff;
-	border-bottom: 1px solid #dcdcde;
-}
-
-.eem-shell-tabs__item {
-	padding: 0.875rem 1rem;
-	border-right: 1px solid #dcdcde;
-	color: #1d2327;
-	font-weight: 600;
-	text-decoration: none;
-}
-
-.eem-shell-tabs__item:hover,
-.eem-shell-tabs__item:focus {
-	color: #135e96;
-}
-
-.eem-shell-tabs__item--active {
-	box-shadow: inset 0 -3px 0 #2271b1;
-}
-
 body.eem-shell-page .postbox,
 body.eem-shell-page .notice.inline {
 	margin: 0;
