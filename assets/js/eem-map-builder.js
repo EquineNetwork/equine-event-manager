@@ -709,6 +709,26 @@
 		var i = INSTANCES[target];
 		return i ? i.zones.map(function (z) { return z.name; }) : [];
 	};
+	// Every stall/lot label currently drawn on the map (across all barns/zones),
+	// de-duplicated, in draw order. Lets the editor's Blocked-Stalls / Blocked-Lots
+	// tag-search source its candidate list from the Map Builder when the layout
+	// comes from the interactive map rather than the Row Builder.
+	EEM.getMapLabels = function (target) {
+		var i = INSTANCES[target];
+		if (!i || !i.zones) { return []; }
+		var out = [], seen = {};
+		i.zones.forEach(function (z) {
+			(z.grid || []).forEach(function (row) {
+				(row || []).forEach(function (c) {
+					if (c && c.type === 'stall' && c.label !== '' && !seen[c.label]) {
+						seen[c.label] = 1;
+						out.push(c.label);
+					}
+				});
+			});
+		});
+		return out;
+	};
 	EEM.renameMapZone = function (target, index, name) {
 		var i = INSTANCES[target]; if (!i || !i.zones[index]) { return false; }
 		B = i; i.zones[index].name = String(name || '').trim() || i.zones[index].name;

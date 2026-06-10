@@ -5846,6 +5846,14 @@ function stallLabelsBetween(first, last) {
 function getStallLabels() {
 	var labels = [];
 	var seen   = {};
+	// Map Builder (Pick-from-layout) is an alternate layout source to the Row
+	// Builder — merge the stalls drawn on the live map so Blocked Stall Numbers
+	// can find them even when no row cards exist.
+	if (window.EEM && typeof EEM.getMapLabels === 'function') {
+		EEM.getMapLabels('stall').forEach(function (l) {
+			if (l !== '' && !seen[l]) { seen[l] = true; labels.push(l); }
+		});
+	}
 	var list   = document.getElementById('eem-stall-row-builder-list');
 	if (!list) return labels;
 	var cards = list.querySelectorAll('.eem-row-card');
@@ -5877,6 +5885,12 @@ function getStallLabels() {
 function getRvLotLabels() {
 	var labels = [];
 	var seen   = {};
+	// RV Map Builder labels merge in too (Pick-from-layout for RV lots).
+	if (window.EEM && typeof EEM.getMapLabels === 'function') {
+		EEM.getMapLabels('rv').forEach(function (l) {
+			if (l !== '' && !seen[l]) { seen[l] = true; labels.push(l); }
+		});
+	}
 	var list   = document.getElementById('eem-rv-row-builder-list');
 	if (!list) return labels;
 	var cards = list.querySelectorAll('.eem-row-card');
