@@ -54,7 +54,10 @@ ok( 'found a published reservation that renders the full form', $rid > 0, $pass,
 $html = $rid ? $sc->render_reservation( array( 'id' => $rid ) ) : '';
 preg_match_all( '/\sname="([^"]+)"/', $html, $names );
 $set = array_values( array_unique( $names[1] ) );
-$required = array( 'first_name', 'last_name', 'email', 'phone', 'stall_qty', 'rv_qty', 'stripe_payment_intent_id', 'en_reservation_nonce', 'billing_first_name', 'billing_postal_code' );
+// rv_qty is section-conditional (only present when an RV section is enabled in
+// quantity mode), so it is NOT a universal required field — the picked
+// reservation may be stall-only. Keep stall_qty as the representative qty field.
+$required = array( 'first_name', 'last_name', 'email', 'phone', 'stall_qty', 'stripe_payment_intent_id', 'en_reservation_nonce', 'billing_first_name', 'billing_postal_code' );
 foreach ( $required as $f ) {
 	ok( "form still submits field name={$f}", in_array( $f, $set, true ), $pass, $fail, $log );
 }
@@ -65,18 +68,29 @@ ok( 'JS-critical class .eem-reservation-form preserved', str_contains( $html, 'e
 /* ── Part 2: Settings Integrations ── */
 $admin = get_users( array( 'role' => 'administrator', 'number' => 1 ) );
 if ( $admin ) { wp_set_current_user( $admin[0]->ID ); }
+
+// GEMS (the 'feed' source) is un-gated when the GEMS for WordPress connection is
+// configured (2.7.156). When configured, only Native stays "Coming Soon"; when
+// not, both Native + Feed do. Source ORDER is always TEC, GEMS(feed), Native.
+$gems_ready = class_exists( 'EEM_Gems_Client' ) && EEM_Gems_Client::is_configured();
+$soon_count = $gems_ready ? 1 : 2;
+
+// Render with a known active source (tec) so the per-source detail-panel
+// visibility assertions below are deterministic regardless of the box's saved
+// source. Capture the TRUE original first; restored at the end.
+$integ_orig = get_option( 'equine_event_manager_integration_settings' );
+update_option( 'equine_event_manager_integration_settings', array_merge( (array) $integ_orig, array( 'default_event_source' => 'tec' ) ) );
+
 $sp = new EEM_Settings_Page();
 $m  = new ReflectionMethod( 'EEM_Settings_Page', 'render_integrations_panel' );
 $m->setAccessible( true );
 ob_start(); $m->invoke( $sp ); $shtml = ob_get_clean();
 
 preg_match_all( '/data-eem-source-value="([a-z]+)"/', $shtml, $order );
-ok( 'event source order is TEC, Native, Feed', array( 'tec', 'native', 'feed' ) === $order[1], $pass, $fail, $log, implode( ',', $order[1] ) );
-// Two Coming Soon pills (Native + Feed event sources). SendGrid was intentionally
-// shipped as a live, enabled Email Delivery field (commit "enable the SendGrid API
-// Key field"), so it no longer carries a Coming Soon pill.
-ok( 'two Coming Soon pills (Native, Feed)', 2 === substr_count( $shtml, 'is-soon">Coming Soon' ), $pass, $fail, $log, substr_count( $shtml, 'is-soon">Coming Soon' ) );
-ok( 'two disabled source radios', 2 === preg_match_all( '/<input type="radio"[^>]*disabled/', $shtml, $d ), $pass, $fail, $log );
+ok( 'event source order is TEC, GEMS(feed), Native', array( 'tec', 'feed', 'native' ) === $order[1], $pass, $fail, $log, implode( ',', $order[1] ) );
+// Coming Soon pills: Native always; Feed only when GEMS is NOT configured.
+ok( "{$soon_count} Coming Soon pill(s)", $soon_count === substr_count( $shtml, 'is-soon">Coming Soon' ), $pass, $fail, $log, substr_count( $shtml, 'is-soon">Coming Soon' ) );
+ok( "{$soon_count} disabled source radio(s)", $soon_count === preg_match_all( '/<input type="radio"[^>]*disabled/', $shtml, $d ), $pass, $fail, $log );
 // SendGrid is now an enabled, POSTing Email Delivery field — assert the current
 // shipped behavior (not the old coming-soon/disabled state).
 ok( 'SendGrid field is enabled (no disabled attr)', ! preg_match( '/id="eem-sendgrid"[^>]*disabled/', $shtml ), $pass, $fail, $log );
@@ -84,14 +98,13 @@ ok( 'SendGrid field POSTs under payload[sendgrid_api_key]', str_contains( $shtml
 ok( 'Email Delivery card is NOT flagged coming-soon', ! str_contains( $shtml, 'eem-card eem-card--coming-soon' ), $pass, $fail, $log );
 
 /* Save-preserve: a save that omits sendgrid_api_key must NOT wipe an existing key. */
-$prev = get_option( 'equine_event_manager_integration_settings' );
 update_option( 'equine_event_manager_integration_settings', array( 'default_event_source' => 'tec', 'sendgrid_api_key' => 'SG.SMOKE_PRESERVE' ) );
 $sv = new ReflectionMethod( 'EEM_Settings_Page', 'save_integrations_panel' );
 $sv->setAccessible( true );
 $sv->invoke( $sp, array( 'source' => 'tec' ) );
 $saved = get_option( 'equine_event_manager_integration_settings' );
 ok( 'disabled SendGrid key preserved across save', 'SG.SMOKE_PRESERVE' === $saved['sendgrid_api_key'], $pass, $fail, $log, $saved['sendgrid_api_key'] );
-update_option( 'equine_event_manager_integration_settings', $prev ); // restore
+update_option( 'equine_event_manager_integration_settings', $integ_orig ); // restore the TRUE original source/settings
 ok( 'native detail panel hidden', (bool) preg_match( '/data-eem-source-detail="native"[^>]*hidden/', $shtml ), $pass, $fail, $log );
 ok( 'feed detail panel hidden', (bool) preg_match( '/data-eem-source-detail="feed"[^>]*hidden/', $shtml ), $pass, $fail, $log );
 ok( 'tec detail panel visible', ! preg_match( '/data-eem-source-detail="tec"[^>]*hidden/', $shtml ), $pass, $fail, $log );

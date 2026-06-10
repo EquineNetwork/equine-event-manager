@@ -80,7 +80,7 @@ $cpt = new EEM_Reservations_CPT();
 $dref = new ReflectionMethod( 'EEM_Reservations_CPT', 'get_default_meta_values' );
 $dref->setAccessible( true );
 $defs = $dref->invoke( $cpt );
-v2p_ok( 'CPT defaults include stall_tack_mode=customer', isset( $defs['stall_tack_mode'] ) && 'customer' === $defs['stall_tack_mode'], $pass, $fail, $log );
+v2p_ok( 'CPT defaults include stall_tack_mode=off (2.7.164: Tack default OFF)', isset( $defs['stall_tack_mode'] ) && 'off' === $defs['stall_tack_mode'], $pass, $fail, $log );
 
 $existing = $defs;
 $san_cust = $cpt->sanitize_meta_submission( array( 'stall_tack_mode' => 'customer' ), $existing );
@@ -91,7 +91,7 @@ v2p_ok( 'sanitize: mode off => off', 'off' === $san_off['stall_tack_mode'], $pas
 // Front-end duplicated defaults map must carry the key (else the gate reads empty).
 v2p_ok(
 	'front-end get_reservation_meta defaults include stall_tack_mode',
-	(bool) preg_match( "/'stall_tack_mode'\s*=>\s*'customer'/", $js = (string) file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'public/class-equine-event-manager-shortcodes.php' ) ),
+	(bool) preg_match( "/'stall_tack_mode'\s*=>\s*'off'/", $js = (string) file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'public/class-equine-event-manager-shortcodes.php' ) ),
 	$pass, $fail, $log
 );
 v2p_ok(

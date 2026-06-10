@@ -26,13 +26,13 @@ function tk_ok( $label, $cond, &$pass, &$fail, &$log ) {
 tk_ok( 'sanitize_stall_tack_mode keeps off',          'off'      === EEM_Reservations_CPT::sanitize_stall_tack_mode( 'off' ),      $pass, $fail, $log );
 tk_ok( 'sanitize_stall_tack_mode keeps customer',     'customer' === EEM_Reservations_CPT::sanitize_stall_tack_mode( 'customer' ), $pass, $fail, $log );
 tk_ok( 'sanitize_stall_tack_mode keeps admin (3-mode, task #59)', 'admin'    === EEM_Reservations_CPT::sanitize_stall_tack_mode( 'admin' ), $pass, $fail, $log );
-tk_ok( 'sanitize_stall_tack_mode garbage → customer', 'customer' === EEM_Reservations_CPT::sanitize_stall_tack_mode( 'wat' ),   $pass, $fail, $log );
+tk_ok( 'sanitize_stall_tack_mode garbage → off (2.7.164: Tack default OFF)', 'off' === EEM_Reservations_CPT::sanitize_stall_tack_mode( 'wat' ),   $pass, $fail, $log );
 
 $cpt      = new EEM_Reservations_CPT();
 $defaults = ( new ReflectionMethod( 'EEM_Reservations_CPT', 'get_default_meta_values' ) );
 $defaults->setAccessible( true );
 $dmap = $defaults->invoke( $cpt );
-tk_ok( 'defaults expose stall_tack_mode=customer',  isset( $dmap['stall_tack_mode'] ) && 'customer' === $dmap['stall_tack_mode'], $pass, $fail, $log );
+tk_ok( 'defaults expose stall_tack_mode=off (2.7.164)',  isset( $dmap['stall_tack_mode'] ) && 'off' === $dmap['stall_tack_mode'], $pass, $fail, $log );
 tk_ok( 'admin-stalls default removed',              ! array_key_exists( 'stall_tack_admin_stalls', $dmap ), $pass, $fail, $log );
 tk_ok( 'old boolean key absent from defaults',      ! array_key_exists( 'stall_tack_designation_enabled', $dmap ), $pass, $fail, $log );
 
