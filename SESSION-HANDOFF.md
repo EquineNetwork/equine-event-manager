@@ -1,7 +1,7 @@
 # Session Handoff — GEMS Integration + Demo Prep
 
 **Last updated:** end of the 2026-06-09/10 working session.
-**Current version:** `2.7.170` (in `equine-event-manager.php` header + `EQUINE_EVENT_MANAGER_VERSION`).
+**Current version:** `2.7.171` (in `equine-event-manager.php` header + `EQUINE_EVENT_MANAGER_VERSION`).
 **Branch:** `v4-stall-mapping` — this is the active dev branch. **`main` is kept fast-forwarded to it** (they point at the same commit). The in-WordPress auto-updater watches `main`, so Whitney updates her sites via Plugins → "Update now".
 
 > Read `CLAUDE.md` first (workflow + binding command-hygiene rules), then `README.md` (data model / naming), then this file for where the last session left off.
@@ -73,13 +73,7 @@ Association `236` (NTR), ~18 upcoming events. Test event used throughout: GEMS `
 
 ## OPEN ITEMS (none block the demo unless noted)
 
-0. **🟡 IN PROGRESS (2.7.170, awaiting staging verify) — Customer booking-form headings render VERTICALLY on staging.** On `/equine-event/{id}/` under the staging Elementor theme ("National Team Roping"), section headings collapsed to ~15px-wide × ~277px-tall with text one letter per line.
-
-   **Root cause identified:** `writing-mode: horizontal-tb !important` in 2.7.169 used `.eem-event-page *` (specificity **0,1,0**). Any Elementor/theme rule targeting `h4` as an element — e.g. `.entry-content h4` (0,1,1) — beats the universal `*` selector. Element beats universal in cascade.
-
-   **2.7.170 fix:** Added `.eem-event-page h4.eem-reservation-section__title` at specificity **(0,2,1)** — wins over any real-world Elementor chained selector. Also added `max-width:none`, `width:auto`, `transform:none`, `text-orientation:mixed` on the title, plus `display:flex !important` + `width:100% !important` on the heading containers.
-
-   **Next step:** Upload 2.7.170 to staging, clear WP Engine cache, load the event page, confirm headings render horizontally. If still broken, open DevTools → Computed → read `writing-mode` on the `<h4>` — if it's still not `horizontal-tb`, the Elementor selector is even more deeply chained than (0,2,1) can beat, and we'll need to see the exact winning rule.
+0. **✅ FIXED (2.7.171) — Customer booking-form headings rendered vertically on staging.** Two-bug sequence: (1) `writing-mode` was overridden by Elementor's `.elementor-X h4` at (0,1,1) — fixed in 2.7.170 by adding `.eem-event-page h4.eem-reservation-section__title` at (0,2,1). (2) After writing-mode fixed, DevTools Computed showed `width:0px` on the h4 — Elementor's `.elementor-X label` rule at (0,1,1) set `display:grid; width:100%` on the `<label>` toggle, consuming the full flex-container width and collapsing the h4. Fixed in 2.7.171 by adding `label.eem-reservation-section-toggle` at (0,2,1) and moving `flex:1 1 auto` to the h4's (0,2,1) rule. Confirmed fixed on staging by Whitney.
 
 1. **🔴 WP Media modal ("Choose Agreement PDF") renders broken** — when the venue-agreement file picker opens, WP's media-library modal layout is jacked (filter misplaced, screen-reader "Load more"/"Jump to first loaded item" buttons visible). The plugin's own `.media-modal` CSS is minimal (z-index/backdrop only at `admin.css:6082`), so a **broad editor-scoped rule is leaking into the modal**. This is a **documented hard-to-reproduce CSS-cascade issue** — `admin.css:6061` (C7.X.16 Issue E) and `CLEANUP.md` already note it needs a **live DevTools probe of computed styles**, not a code-only audit. **Next step: open the agreement-upload modal on Local in Chrome, inspect the misplaced "Filter by date" element's computed styles, find the `body.eem-shell-page--editor` / `body.post-type-en_reservation` rule that's overriding it, and add a `:not()`/media-chrome exclusion (see the C7.X.18 lesson in CLAUDE.md about excluding WP modal chrome).**
 2. **✅ Auth.net admin "Charge Card"** (Collect Payment) — confirmed working end-to-end: live charge + refund both completed successfully (2026-06-10).
