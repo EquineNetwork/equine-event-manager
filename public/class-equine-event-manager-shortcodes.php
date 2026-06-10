@@ -7533,11 +7533,11 @@ RV Lot: " . $rv_lot['name'] );
 			'stall_early_bird_nightly_rate'   => '0.00',
 			'stall_early_bird_weekend_rate'   => '0.00',
 			'required_shavings_enabled'       => 0,
-			// Tack Stall mode — 'customer' (on) or 'off'. Defaults 'customer'
+			// Tack Stall mode — 'customer' (on) or 'off'. Defaults 'off'
 			// (mirrors the CPT default; this duplicated defaults map is read on the
-			// front end). On = buyer flags a tack stall at checkout (T2 shavings
-			// exclusion); the admin assigns the actual one on the Stall Chart.
-			'stall_tack_mode'                 => 'customer',
+			// front end). When on, the buyer flags a tack stall at checkout (T2
+			// shavings exclusion); the admin assigns the actual one on the Stall Chart.
+			'stall_tack_mode'                 => 'off',
 			'required_shavings_per_stall'     => 0,
 			'required_shavings_price'         => '0.00',
 			'additional_shavings_enabled'     => 0,

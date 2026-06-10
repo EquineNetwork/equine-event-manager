@@ -291,8 +291,13 @@ class EEM_Reservation_Editor_Page {
 						<div class="eem-header-actions">
 							<?php
 							// 2.3.83 — "View Event" opens the linked event's public page in
-							// a new tab so admins can preview what customers see.
-							$eem_event_permalink = $current_tec_event_id ? get_permalink( $current_tec_event_id ) : '';
+							// a new tab so admins can preview what customers see. Use the
+							// plugin's virtual event route so it works for every source
+							// (TEC, native, and feed/GEMS), not just TEC — the en_reservation
+							// CPT is public => false and has no routable permalink.
+							$eem_event_permalink = class_exists( 'EEM_Events' )
+								? EEM_Events::get_reservation_public_url( $reservation_id )
+								: ( $current_tec_event_id ? get_permalink( $current_tec_event_id ) : '' );
 							if ( $eem_event_permalink ) :
 								?>
 								<a class="eem-btn-primary eem-header-action-view"

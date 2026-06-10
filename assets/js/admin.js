@@ -2618,7 +2618,14 @@
 	function eemStallRenderSummary(w) {
 		var ul = w.querySelector('[data-eem-summary]');
 		if (!ul) return;
-		ul.innerHTML = eemStallPlan(w).map(function (t) { return '<li>' + escapeHtml(t) + '</li>'; }).join('');
+		// Bold the leading label (the part before the first ':' or em-dash) so
+		// each summary line reads "Label: value" with the label emphasised.
+		ul.innerHTML = eemStallPlan(w).map(function (t) {
+			var m = t.match(/^(.+?)(\s*[:—].*)$/);
+			return m
+				? '<li><strong>' + escapeHtml(m[1]) + '</strong>' + escapeHtml(m[2]) + '</li>'
+				: '<li>' + escapeHtml(t) + '</li>';
+		}).join('');
 	}
 	function eemStallApply(w) {
 		var inv = eemStallAnswer(w, 'inventory'), sel = eemStallAnswer(w, 'selection'),

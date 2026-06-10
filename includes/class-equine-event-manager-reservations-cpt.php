@@ -1331,7 +1331,7 @@ class EEM_Reservations_CPT {
 			// Tack Stall mode — 'off' or 'customer' (on). On = buyers flag a tack
 			// stall at checkout for the shavings exclusion; the admin assigns the
 			// actual tack stall on the Stall Chart ("Mark as Tack Stall").
-			'stall_tack_mode'                 => self::sanitize_stall_tack_mode( isset( $source['stall_tack_mode'] ) ? $source['stall_tack_mode'] : ( $existing['stall_tack_mode'] ?? 'customer' ) ),
+			'stall_tack_mode'                 => self::sanitize_stall_tack_mode( isset( $source['stall_tack_mode'] ) ? $source['stall_tack_mode'] : ( $existing['stall_tack_mode'] ?? 'off' ) ),
 			'required_shavings_per_stall'     => isset( $source['required_shavings_per_stall'] ) ? absint( $source['required_shavings_per_stall'] ) : 0,
 			'required_shavings_price'         => isset( $source['required_shavings_price'] ) ? $this->sanitize_money_value( $source['required_shavings_price'] ) : $existing['required_shavings_price'],
 			'additional_shavings_enabled'     => isset( $source['additional_shavings_enabled'] ) ? 1 : 0,
@@ -1778,7 +1778,8 @@ class EEM_Reservations_CPT {
 			// written by EEM_Stall_Map_Importer via AJAX, not the form save map).
 			'stall_map'                       => array(),
 			'rv_map'                          => array(),
-			'stall_tack_mode'                 => 'customer',
+			// Tack Stalls default OFF — admins opt in per reservation.
+			'stall_tack_mode'                 => 'off',
 			'required_shavings_per_stall'     => 0,
 			'required_shavings_price'         => '0.00',
 			'additional_shavings_enabled'     => 0,
@@ -1930,10 +1931,9 @@ class EEM_Reservations_CPT {
 	 */
 	public static function sanitize_stall_tack_mode( $value ): string {
 		$value = sanitize_key( $value );
-		if ( 'off' === $value ) {
-			return 'off';
-		}
-		return ( 'admin' === $value ) ? 'admin' : 'customer';
+		// Preserve any explicit valid mode; empty/unknown defaults to 'off'
+		// (Tack Stalls are opt-in per reservation).
+		return in_array( $value, array( 'off', 'admin', 'customer' ), true ) ? $value : 'off';
 	}
 
 	/**

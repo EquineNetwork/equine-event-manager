@@ -3053,6 +3053,27 @@ class EEM_Events {
 	}
 
 	/**
+	 * Public customer-facing URL for a reservation, regardless of event source.
+	 *
+	 * Returns the plugin's virtual event route (/equine-event/{id}/) — the page
+	 * that renders the event hero + the booking form. Works for TEC, native, and
+	 * feed/GEMS reservations alike, because the en_reservation CPT is
+	 * public => false and has no routable permalink of its own. Used by the
+	 * editor header "View Event" button and the Reservations list "View on
+	 * Frontend" action.
+	 *
+	 * @param int $reservation_id Reservation post id.
+	 * @return string Absolute URL, or '' when the id is invalid.
+	 */
+	public static function get_reservation_public_url( $reservation_id ) {
+		$reservation_id = absint( $reservation_id );
+		if ( $reservation_id <= 0 ) {
+			return '';
+		}
+		return (string) home_url( user_trailingslashit( self::VIRTUAL_EVENT_ROUTE_BASE . '/' . $reservation_id ) );
+	}
+
+	/**
 	 * Get the frontend URL for any normalized event source.
 	 *
 	 * @param array<string, mixed> $event_data Normalized event data.

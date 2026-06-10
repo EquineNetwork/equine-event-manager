@@ -900,9 +900,22 @@ class EEM_Reservations_List_Page {
 		}
 
 		// 2. Require a linked event; without one there is no meaningful front-end URL.
-		$event_id = (int) get_post_meta( $reservation_id, '_en_event_id', true );
-		if ( $event_id <= 0 ) {
+		//    A reservation is "linked" via a TEC/native event_id OR a feed/GEMS
+		//    external_event_id.
+		$event_id     = (int) get_post_meta( $reservation_id, '_en_event_id', true );
+		$external_id  = (string) get_post_meta( $reservation_id, '_en_external_event_id', true );
+		if ( $event_id <= 0 && '' === $external_id ) {
 			return '';
+		}
+
+		// 2b. Every source resolves to the plugin's virtual event route
+		//     (/equine-event/{id}/) — the customer-facing booking page. The
+		//     en_reservation CPT is public => false, so get_permalink() yields a
+		//     non-routable URL; the feed/GEMS path has no event_id at all. Use the
+		//     virtual route uniformly. Not cached (it's a cheap home_url() build,
+		//     and caching risked a stale URL after a permalink-structure change).
+		if ( class_exists( 'EEM_Events' ) ) {
+			return EEM_Events::get_reservation_public_url( $reservation_id );
 		}
 
 		// 3. Scan published posts/pages for an [en_reservation shortcode containing

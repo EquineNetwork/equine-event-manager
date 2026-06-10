@@ -179,6 +179,7 @@ class EEM_Setup_Wizard {
 		$logo_id    = isset( $company['logo_id'] ) ? absint( $company['logo_id'] ) : 0;
 		$logo_url   = $logo_id ? (string) wp_get_attachment_image_url( $logo_id, 'medium' ) : '';
 		$sup_email  = isset( $company['support_email'] ) ? (string) $company['support_email'] : (string) get_option( 'admin_email', '' );
+		$sup_phone  = isset( $company['support_phone'] ) ? (string) $company['support_phone'] : '';
 		$sender     = class_exists( 'EEM_Settings_Repo' ) ? (array) get_option( EEM_Settings_Repo::OPTION_EMAIL_SENDER, array() ) : array();
 		$from_name  = isset( $sender['from_name'] ) ? (string) $sender['from_name'] : (string) get_option( 'blogname', '' );
 		$from_email = isset( $sender['from_email'] ) ? (string) $sender['from_email'] : (string) get_option( 'admin_email', '' );
@@ -293,6 +294,10 @@ class EEM_Setup_Wizard {
 												</div>
 												<input type="hidden" name="payload[logo_id]" value="<?php echo esc_attr( (string) $logo_id ); ?>" data-eem-logo-id />
 											</div>
+										</div>
+										<div class="eem-field-row">
+											<label class="eem-setup-wizard__label" for="eem-wiz-support-phone"><?php esc_html_e( 'Support phone', 'equine-event-manager' ); ?></label>
+											<input class="eem-field-input" id="eem-wiz-support-phone" type="tel" name="payload[support_phone]" value="<?php echo esc_attr( $sup_phone ); ?>" style="max-width:280px;" />
 										</div>
 										<div class="eem-field-row">
 											<label class="eem-setup-wizard__label" for="eem-wiz-support-email"><?php esc_html_e( 'Support email', 'equine-event-manager' ); ?></label>
