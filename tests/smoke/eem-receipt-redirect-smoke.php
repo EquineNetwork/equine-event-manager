@@ -47,20 +47,23 @@ $html = $sc->render_reservation( array( 'id' => $rid ) );
 
 rok( 'render produced output', is_string( $html ) && strlen( $html ) > 200, $pass, $fail, $log );
 
-// The intact <script> must be present (NOT kses-stripped to bare text).
-$needle = '<script>window.location.replace(';
-rok( 'intact <script>window.location.replace( present', false !== strpos( $html, $needle ), $pass, $fail, $log );
+// The redirect must live inside an intact <script> tag (NOT kses-stripped to bare
+// text). The script carries a sessionStorage.removeItem(...) try/catch prefix
+// before the redirect (autosave-state cleanup), so match the call within the same
+// <script> tag rather than immediately after the opening tag.
+$intact = (bool) preg_match( '#<script>[^<]*window\.location\.replace\(#', $html );
+rok( 'intact <script>…window.location.replace( present', $intact, $pass, $fail, $log );
 rok( 'redirect URL present in script',                  false !== strpos( $html, 'eem_receipt=deadbeef' ), $pass, $fail, $log );
 
 // Negative: the bug signature was the JS statement appearing WITHOUT its <script>
-// wrapper (kses stripped the tag). Assert we are NOT in that state — i.e. every
-// occurrence of window.location.replace is immediately preceded by "<script>".
-$stripped_bug = preg_match( '/(?<!<script>)window\.location\.replace\(/', $html );
-rok( 'no kses-stripped (tagless) redirect statement', 0 === $stripped_bug, $pass, $fail, $log );
+// wrapper (kses stripped the tag). Strip all <script>…</script> blocks and assert
+// no bare window.location.replace survives.
+$no_scripts = preg_replace( '#<script>.*?</script>#s', '', $html );
+rok( 'no kses-stripped (tagless) redirect statement', false === strpos( (string) $no_scripts, 'window.location.replace' ), $pass, $fail, $log );
 
 // Survives wpautop() (the_content autop pass) — wpautop must not break/strip it.
 $after_autop = wpautop( $html );
-rok( 'redirect <script> survives wpautop()', false !== strpos( $after_autop, $needle ), $pass, $fail, $log );
+rok( 'redirect <script> survives wpautop()', (bool) preg_match( '#<script>[^<]*window\.location\.replace\(#', $after_autop ), $pass, $fail, $log );
 
 // Control: confirm wp_kses_post() WOULD strip it (documents why the script can't
 // live inside the kses'd $message).

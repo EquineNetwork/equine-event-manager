@@ -18,10 +18,24 @@ $check = function ( $label, $cond ) use ( &$fail, &$pass ) {
 
 wp_set_current_user( 1 );
 
+// Self-created fixture (was hardcoded reservation #3499, which is not present on
+// every box). Needs a linked event so the editor renders the full form (not the
+// "link an event" gate) and stalls enabled so the Stall Reservations controls
+// render.
+$rid = wp_insert_post( array( 'post_type' => 'en_reservation', 'post_status' => 'publish', 'post_title' => 'B2 inventory-gate fixture' ) );
+update_post_meta( $rid, '_en_event_source', 'feed' );
+update_post_meta( $rid, '_en_use_global_event_source', 0 );
+update_post_meta( $rid, '_en_external_event_id', 'ext-b2-gate' );
+update_post_meta( $rid, '_en_external_event_name', 'B2 Gate Event' );
+update_post_meta( $rid, '_eem_section_enabled_stalls', 1 );
+update_post_meta( $rid, '_en_stall_inventory_type', 'numbered' );
+update_post_meta( $rid, '_en_stall_customer_selection', 'quantity' );
+register_shutdown_function( static function () use ( $rid ) { if ( $rid ) { wp_delete_post( (int) $rid, true ); } } );
+
 // ── Editor render: the two controls replace the single toggle ──
 $_GET['page'] = 'equine-event-manager-reservation-editor';
-$_GET['reservation_id'] = '3499';
-$_REQUEST['reservation_id'] = '3499';
+$_GET['reservation_id'] = (string) $rid;
+$_REQUEST['reservation_id'] = (string) $rid;
 ob_start();
 EEM_Reservation_Editor_Page::render();
 $editor = ob_get_clean();
@@ -35,7 +49,7 @@ $check( 'old Bulk/Mapped stall toggle (data-section=stall) is gone', false === s
 // the section with controlled data so this doesn't depend on #3499's persisted
 // mode (which is mutable — e.g. flipped to pick mode for a review fixture).
 $cpt_probe        = new EEM_Reservations_CPT();
-$data             = array_merge( $cpt_probe->get_meta_values( 3499 ), array( 'stall_inventory_type' => 'quantity_only', 'stall_customer_selection' => 'quantity' ) );
+$data             = array_merge( $cpt_probe->get_meta_values( $rid ), array( 'stall_inventory_type' => 'quantity_only', 'stall_customer_selection' => 'quantity' ) );
 $reservations_cpt = $cpt_probe;
 ob_start();
 include EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_section-stall.php';
