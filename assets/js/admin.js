@@ -4995,17 +4995,26 @@
 			var smapZoomBar = container.querySelector('[data-eem-smap-zoom]');
 			if (smapZoomBar && !smapZoomBar._eemSmapBound) {
 				smapZoomBar._eemSmapBound = true;
-				var SMAP_BASE = 40, SMAP_MIN = 22, SMAP_MAX = 72;
+				// SMAP_MIN low (12) so a large facility map can shrink far enough to
+				// show EVERY chip on load without horizontal/vertical scroll — the
+				// customer should see the whole layout the moment the page loads.
+				var SMAP_BASE = 40, SMAP_MIN = 12, SMAP_MAX = 72;
 				var applySmapZoom = function (px) { container.style.setProperty('--eem-smap-chip', px + 'px'); };
 				var fitSmap = function () {
 					var p2; try { p2 = JSON.parse(container.querySelector('[data-eem-smap-payload]').textContent); } catch (e) { return; }
 					var barn = (p2.barns || [])[container._eemSmapBarn || 0] || {};
 					var grid = barn.grid || [];
-					var cols = grid.length ? grid[0].length : 0;
+					var rows = grid.length;
+					var cols = rows ? grid[0].length : 0;
 					var scroll = container.querySelector('[data-eem-smap-scroll]');
 					if (!cols || !scroll) { applySmapZoom(SMAP_BASE); return; }
-					var avail = scroll.clientWidth - 28;
-					var px = Math.max(SMAP_MIN, Math.min(SMAP_BASE, Math.floor(avail / cols) - 4));
+					// Fit to BOTH axes so the entire grid is visible. ~4px chip gap +
+					// padding allowance per axis; height only constrains when the scroll
+					// viewport is actually capped (clientHeight > 0 and < content).
+					var pxW = Math.floor((scroll.clientWidth - 28) / cols) - 4;
+					var availH = scroll.clientHeight;
+					var pxH = availH > 0 ? Math.floor((availH - 12) / rows) - 4 : pxW;
+					var px = Math.max(SMAP_MIN, Math.min(SMAP_BASE, pxW, pxH));
 					container._eemSmapChip = px; applySmapZoom(px);
 				};
 				smapZoomBar.addEventListener('click', function (ev) {

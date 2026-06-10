@@ -173,7 +173,7 @@
 		add.textContent = '+ Add ' + cap(zoneNoun(false));
 		add.onclick = function () {
 			mbPrompt(cap(zoneNoun(false)) + ' name', cap(zoneNoun(false)) + ' ' + (B.zones.length + 1), function (n) {
-				snapshot(); B.zones.push({ name: n, grid: mkGrid(5, 10) }); B.active = B.zones.length - 1; B.sel = null; render(); renderControls(); notifyZones();
+				snapshot(); B.zones.push({ name: n, grid: mkGrid(10, 20) }); B.active = B.zones.length - 1; B.sel = null; render(); renderControls(); notifyZones();
 			});
 		};
 		t.appendChild(add);
@@ -467,11 +467,11 @@
 		var barns = [];
 		if (seed) { try { barns = JSON.parse(seed.textContent || '[]'); } catch (e) { barns = []; } }
 		if (!Array.isArray(barns) || !barns.length) {
-			B.zones = [{ name: cap(zoneNoun(false)) + ' 1', grid: mkGrid(6, 12) }];
+			B.zones = [{ name: cap(zoneNoun(false)) + ' 1', grid: mkGrid(10, 20) }];
 		} else {
 			B.zones = barns.map(function (b) {
 				var grid = (b.grid || []).map(function (row) { return (row || []).map(function (c) { return { type: (c && c.type) || 'gap', label: (c && c.label) || '' }; }); });
-				if (!grid.length) { grid = mkGrid(5, 10); }
+				if (!grid.length) { grid = mkGrid(10, 20); }
 				return { name: b.name || (cap(zoneNoun(false))), grid: grid };
 			});
 		}
@@ -736,7 +736,7 @@
 	};
 	EEM.addMapZone = function (target, name) {
 		var i = INSTANCES[target]; if (!i) { return false; }
-		B = i; i.zones.push({ name: String(name || '').trim() || (cap(zoneNoun(false)) + ' ' + (i.zones.length + 1)), grid: mkGrid(5, 10) });
+		B = i; i.zones.push({ name: String(name || '').trim() || (cap(zoneNoun(false)) + ' ' + (i.zones.length + 1)), grid: mkGrid(10, 20) });
 		i.active = i.zones.length - 1; i.sel = null; render(); renderControls(); return true;
 	};
 	EEM.removeMapZone = function (target, index) {
