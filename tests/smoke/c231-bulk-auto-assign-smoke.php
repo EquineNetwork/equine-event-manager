@@ -52,7 +52,8 @@ ok( 'overlays localizes autoAssignNonce', strpos( $admin_src, 'window.eemStallCh
 ok( 'overlays creates eem_auto_assign nonce', strpos( $admin_src, "wp_create_nonce( 'eem_auto_assign' )" ) !== false, $pass, $fail, $log );
 
 /* ── Admin: button markup ── */
-ok( 'Generate Assignments is now a button (auto-assign-all action)', preg_match( '/<button[^>]*data-eem-action="stall-chart-auto-assign-all"[^>]*>\s*<svg[^>]*>.*?Generate Assignments/s', $admin_src ) === 1, $pass, $fail, $log );
+// Text-only per the no-icons-on-buttons rule (leading SVG removed 2.7.175).
+ok( 'Generate Assignments is now a button (auto-assign-all action)', preg_match( '/<button[^>]*data-eem-action="stall-chart-auto-assign-all"[^>]*>.*?Generate Assignments/s', $admin_src ) === 1, $pass, $fail, $log );
 // Scope the negative to the chart-detail dynamic region; the legacy admin-post
 // flow legitimately persists on the CPT edit screen + chart-disabled fallback.
 $dyn_start = strpos( $admin_src, 'function render_stall_chart_dynamic_region(' );

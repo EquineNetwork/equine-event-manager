@@ -504,7 +504,6 @@ class EEM_Orders_List_Page {
 		<div class="eem-actions-cell">
 			<?php if ( $can_collect ) : ?>
 				<a class="eem-btn-collect" href="<?php echo esc_url( $collect_url ); ?>" data-order-key="<?php echo esc_attr( $order_key ); ?>">
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
 					<?php esc_html_e( 'Collect', 'equine-event-manager' ); ?>
 				</a>
 			<?php endif; ?>

@@ -2130,17 +2130,14 @@ class EEM_Admin {
 				<div class="eem-stall-chart-action-bar">
 					<div class="eem-stall-chart-action-bar-btns">
 						<button class="eem-btn eem-btn--primary" type="button" data-eem-action="stall-chart-auto-assign-all">
-							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
 							<?php esc_html_e( 'Generate Assignments', 'equine-event-manager' ); ?>
 						</button>
 						<button class="eem-btn eem-btn--ghost" type="button"
 							data-eem-action="stall-chart-print"
 							data-print-url="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-stall-chart-print&reservation_id=' . $reservation_id ) ); ?>">
-							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
 							<?php esc_html_e( 'Print View', 'equine-event-manager' ); ?>
 						</button>
 						<a class="eem-btn eem-btn--ghost" href="<?php echo esc_url( get_edit_post_link( $reservation_id, '' ) ); ?>">
-							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
 							<?php esc_html_e( 'Edit Reservation', 'equine-event-manager' ); ?>
 						</a>
 					</div>
@@ -2404,7 +2401,6 @@ class EEM_Admin {
 									<?php if ( is_array( $issue ) && ! empty( $issue['order_key'] ) ) : ?>
 										<div class="eem-stall-chart-issue-actions">
 											<button class="eem-btn eem-btn--ghost eem-stall-chart-issue-auto-btn" type="button" data-eem-action="stall-chart-auto-assign-order" data-order-key="<?php echo esc_attr( $issue['order_key'] ); ?>">
-												<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
 												<?php esc_html_e( 'Auto-Assign', 'equine-event-manager' ); ?>
 											</button>
 											<a class="eem-stall-chart-issue-view-link" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-order&order_key=' . rawurlencode( $issue['order_key'] ) ) ); ?>">
