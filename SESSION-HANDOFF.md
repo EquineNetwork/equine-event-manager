@@ -1,7 +1,7 @@
 # Session Handoff — GEMS Integration + Demo Prep
 
 **Last updated:** end of the 2026-06-09/10 working session.
-**Current version:** `2.7.169` (in `equine-event-manager.php` header + `EQUINE_EVENT_MANAGER_VERSION`).
+**Current version:** `2.7.170` (in `equine-event-manager.php` header + `EQUINE_EVENT_MANAGER_VERSION`).
 **Branch:** `v4-stall-mapping` — this is the active dev branch. **`main` is kept fast-forwarded to it** (they point at the same commit). The in-WordPress auto-updater watches `main`, so Whitney updates her sites via Plugins → "Update now".
 
 > Read `CLAUDE.md` first (workflow + binding command-hygiene rules), then `README.md` (data model / naming), then this file for where the last session left off.
@@ -73,30 +73,19 @@ Association `236` (NTR), ~18 upcoming events. Test event used throughout: GEMS `
 
 ## OPEN ITEMS (none block the demo unless noted)
 
-0. **🔴 NOT FIXED — Customer booking-form headings render VERTICALLY (one letter per line) on staging.** This is the most important open bug. On `/equine-event/{id}/` (the customer event/booking page) under the **staging Elementor theme** ("National Team Roping"), the section headings collapse into a ~15px-wide × ~277px-tall column with text stacked one letter per line: **"Stall Reservations", "Add-Ons", "Event Pre-Entries"** (the `h4.eem-reservation-section__title`) AND the product-list **"PRODUCT"** head. The on/off toggle sits beside the vertical text. **It renders perfectly on Local** (default theme) — so it's host-theme interference, NOT a plugin layout bug per se.
+0. **🟡 IN PROGRESS (2.7.170, awaiting staging verify) — Customer booking-form headings render VERTICALLY on staging.** On `/equine-event/{id}/` under the staging Elementor theme ("National Team Roping"), section headings collapsed to ~15px-wide × ~277px-tall with text one letter per line.
 
-   **What Whitney's DevTools confirmed (on staging):** the heading `div.eem-reservation-section-heading--collapsible` is `display:flex`; the title rule `.eem-reservation-section-heading--collapsible .eem-reservation-section__title { flex: 1 1 auto }` (public.css ~1770) IS applying; `public.css` IS loaded (the 2.7.166 in-`<head>` fix works); the title computes Space Grotesk 12px/700. Yet the `<h4>` is collapsed to ~15px wide.
+   **Root cause identified:** `writing-mode: horizontal-tb !important` in 2.7.169 used `.eem-event-page *` (specificity **0,1,0**). Any Elementor/theme rule targeting `h4` as an element — e.g. `.entry-content h4` (0,1,1) — beats the universal `*` selector. Element beats universal in cascade.
 
-   **What was tried and FAILED:**
-   - **2.7.166** — enqueue `public.css` before `get_header()` so it lands in `<head>`. Necessary (CSS now loads) but did NOT fix the vertical text.
-   - **2.7.169** — theme-hardening block in `public.css` scoped to `.eem-event-page` (see ~line 1773): forced `writing-mode: horizontal-tb !important` on ALL `.eem-event-page *`, `word-break/overflow-wrap: normal !important` + `flex: 1 1 auto !important` on the titles + product head, `flex-direction: row !important` on the headings, and pinned `.eem-reservation-section-toggle` to `flex: 0 0 auto !important`. **Whitney reports this did NOT fix it.**
+   **2.7.170 fix:** Added `.eem-event-page h4.eem-reservation-section__title` at specificity **(0,2,1)** — wins over any real-world Elementor chained selector. Also added `max-width:none`, `width:auto`, `transform:none`, `text-orientation:mixed` on the title, plus `display:flex !important` + `width:100% !important` on the heading containers.
 
-   **What that rules OUT** (because 2.7.169 force-overrode them with `!important` and it's still broken): writing-mode, word-break, overflow-wrap, flex-direction on the heading, flex-grow on the title, and the toggle stealing width. The cause is something ELSE not yet covered.
-
-   **Leading remaining suspects (check these next):**
-   1. **The new CSS may not actually be applied** — verify on staging that `public.css?ver=2.7.169` (NOT an older ver) is the loaded file, and that the `.eem-event-page .eem-reservation-section__title { word-break: normal !important; ... }` rule shows in the Styles/Computed panel **without being struck through**. WP Engine caches hard — confirm the cache was cleared and the `?ver` bumped.
-   2. **A width/`max-width` constraint on the `<h4>` or an ancestor** (e.g. theme `max-width: min-content`, or a fixed `width`). 2.7.169 set `min-width:0` but NOT `max-width:none`/`width:auto` on the title — add those. A constrained width + `word-break: normal` would wrap at word boundaries (min = "Reservations"), but combined with `overflow-wrap`/hyphenation it can still narrow further.
-   3. **A `transform: rotate()` / `text-orientation` on an ancestor.**
-   4. **The element is being laid out by an ancestor grid/flex from the theme** that gives it a 0/tiny track.
-
-   **DEFINITIVE next step (needs the live page — do this in the new chat with Whitney's DevTools):** click the vertical `<h4>` → **Computed** tab → read the actual computed values of: `writing-mode`, `word-break`, `overflow-wrap`, `width`, `max-width`, `white-space`, and `flex`/`flex-basis`; then select the PARENT and read `display`, `flex-direction`, `width`. Whichever is the smoking gun (almost certainly a width/max-width or a property whose Computed value still isn't what 2.7.169 forced → meaning the rule isn't winning/loading) points to the exact counter-rule. Files: `assets/css/public.css` heading block ~lines 1757–1805; rules enqueued via `EEM_Events::render_frontend_styles()` with `?ver=EQUINE_EVENT_MANAGER_VERSION`.
+   **Next step:** Upload 2.7.170 to staging, clear WP Engine cache, load the event page, confirm headings render horizontally. If still broken, open DevTools → Computed → read `writing-mode` on the `<h4>` — if it's still not `horizontal-tb`, the Elementor selector is even more deeply chained than (0,2,1) can beat, and we'll need to see the exact winning rule.
 
 1. **🔴 WP Media modal ("Choose Agreement PDF") renders broken** — when the venue-agreement file picker opens, WP's media-library modal layout is jacked (filter misplaced, screen-reader "Load more"/"Jump to first loaded item" buttons visible). The plugin's own `.media-modal` CSS is minimal (z-index/backdrop only at `admin.css:6082`), so a **broad editor-scoped rule is leaking into the modal**. This is a **documented hard-to-reproduce CSS-cascade issue** — `admin.css:6061` (C7.X.16 Issue E) and `CLEANUP.md` already note it needs a **live DevTools probe of computed styles**, not a code-only audit. **Next step: open the agreement-upload modal on Local in Chrome, inspect the misplaced "Filter by date" element's computed styles, find the `body.eem-shell-page--editor` / `body.post-type-en_reservation` rule that's overriding it, and add a `:not()`/media-chrome exclusion (see the C7.X.18 lesson in CLAUDE.md about excluding WP modal chrome).**
-2. **🟡 Auth.net admin "Charge Card"** (Collect Payment) — last v1 payment item, **blocked on live credentials** (Whitney's CTO providing Auth.net API login + transaction key). Code path is wired; needs an end-to-end live charge test once creds land.
-3. **🟡 Settled-refund path** — Auth.net refunds AFTER settlement need stored card last-4. Offered earlier; **awaiting Whitney's decision** on whether to build for v1.
+2. **✅ Auth.net admin "Charge Card"** (Collect Payment) — confirmed working end-to-end: live charge + refund both completed successfully (2026-06-10).
+3. **✅ Settled-refund path** — confirmed working (charge + refund verified on 2026-06-10).
 4. **🟡 Smoke-suite reconciliation** — 46 failing assertions across 16 files are test-drift (stale fixtures/keys) + seed-dependent, not product bugs. Should be cleaned up so CI is green before release. (Old task #96.)
 5. **🟡 OVERHAUL_REPORT.md** is stale (says v2.7.18). Refresh before release. (Old task #97.)
-6. **⚪ Multi-source TEC+GEMS picker** — Whitney explicitly chose **"Hold for now."** The idea: let the editor event picker search ALL configured sources and badge each result TEC/GEMS, while keeping single-active source. Architecture already tolerates mixed per-reservation sources (`_en_event_source` is stored per reservation), so no data migration needed when it's built. **Don't build unless asked.**
 
 ---
 
