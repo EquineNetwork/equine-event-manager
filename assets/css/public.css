@@ -1770,6 +1770,37 @@
 .eem-reservation-section-heading--collapsible .eem-reservation-section__title {
 	flex: 1 1 auto;
 }
+/* Theme-hardening (front-end). The booking form renders inside the active
+   site theme; some themes (e.g. Elementor-based) impose word-break:break-word /
+   overflow-wrap:anywhere / writing-mode / flex overrides on generic descendant
+   elements, which collapsed flex-item titles into a 1-character vertical column
+   (toggle pushed beside a ~15px-wide, ~277px-tall <h4>). Seen on section titles
+   ("Stall Reservations"), the product-list head ("PRODUCT"), Add-Ons, and
+   Event Pre-Entries. Force horizontal text + the intended row layout regardless
+   of the theme. !important is warranted: we're outranking an unknown third-party
+   theme rule on the FRONT end — the admin no-!important hygiene rule governs
+   admin.css/admin-legacy.css, not public.css fighting a host theme. */
+.eem-event-page,
+.eem-event-page * {
+	writing-mode: horizontal-tb !important;
+}
+.eem-event-page .eem-reservation-section-heading,
+.eem-event-page .eem-reservation-section-heading--collapsible,
+.eem-event-page .eem-product-list__head {
+	flex-direction: row !important;
+	flex-wrap: nowrap !important;
+}
+.eem-event-page .eem-reservation-section__title,
+.eem-event-page .eem-product-list__head {
+	word-break: normal !important;
+	overflow-wrap: normal !important;
+	white-space: normal !important;
+	flex: 1 1 auto !important;
+	min-width: 0;
+}
+.eem-event-page .eem-reservation-section-toggle {
+	flex: 0 0 auto !important;
+}
 .eem-reservation-section__body {
 	display: grid;
 	gap: 14px;
