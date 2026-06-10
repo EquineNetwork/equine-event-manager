@@ -32,8 +32,22 @@ $check( 'group_color_for is deterministic', $c_carlos === $gc->invoke( $admin, '
 $check( 'empty group → empty color', '' === $gc->invoke( $admin, '' ) );
 
 // ── By Location grid: occupied pills with a group carry the dot + color + title ──
-$cfg  = $priv( 'get_stall_chart_config' )->invoke( $admin, 3499 );
-$grid = $priv( 'build_stall_chart_grid' )->invoke( $admin, 3499, $cfg );
+// Discover the reservation carrying the seeded group orders (tools/seed-test-data.php
+// targets whichever reservation has a configured chart), so this isn't tied to a
+// hardcoded id.
+// The By Location matrix needs grouped orders assigned to GRID CELLS (not just
+// group rows), so discover a reservation whose stall-chart grid has grouped cells.
+$seed_rid = 0; $cfg = array(); $grid = array();
+foreach ( get_posts( array( 'post_type' => 'en_reservation', 'post_status' => 'publish', 'numberposts' => -1, 'fields' => 'ids' ) ) as $cand ) {
+	$ccfg = $priv( 'get_stall_chart_config' )->invoke( $admin, (int) $cand );
+	$cgrid = $priv( 'build_stall_chart_grid' )->invoke( $admin, (int) $cand, $ccfg );
+	foreach ( (array) ( $cgrid['stall_rows'] ?? array() ) as $crow ) {
+		foreach ( (array) ( $crow['cells'] ?? array() ) as $ccell ) {
+			if ( '' !== trim( (string) ( $ccell['group_name'] ?? '' ) ) ) { $seed_rid = (int) $cand; $cfg = $ccfg; $grid = $cgrid; break 3; }
+		}
+	}
+}
+$check( 'found a seeded reservation with grouped grid cells (run tools/seed-test-data.php first)', $seed_rid > 0 );
 ob_start();
 $priv( 'render_stall_chart_matrix_table' )->invoke( $admin, $grid['stall_rows'], $grid['date_columns'], 'Stall', 'Block' );
 $loc_html = ob_get_clean();
@@ -43,7 +57,7 @@ $check( 'By Location sets the --eem-group-color var', false !== strpos( $loc_htm
 $check( 'By Location pill title carries the group label', false !== strpos( $loc_html, 'Group: ' ) );
 
 // ── By Customer roster: chip reuses the same color + a dot ──
-$rows = $priv( 'build_stall_chart_rows' )->invoke( $admin, 3499, $cfg );
+$rows = $priv( 'build_stall_chart_rows' )->invoke( $admin, $seed_rid, $cfg );
 ob_start();
 $priv( 'render_stall_chart_order_count_table' )->invoke( $admin, $rows, $grid['date_columns'] );
 $cust_html = ob_get_clean();

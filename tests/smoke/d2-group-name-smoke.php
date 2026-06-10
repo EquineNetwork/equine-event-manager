@@ -82,8 +82,20 @@ $check( 'get_group_name_from_order_notes returns the tag', $GROUP === $gn->invok
 $check( 'get_group_name_from_order_notes empty when absent', '' === $gn->invoke( $admin, "Reservation setup ID: 3499\nJust a note" ) );
 
 // ── D) Live: build_stall_chart_rows carries group names; no leak into requests ──
-$cfg  = $priv( 'get_stall_chart_config' )->invoke( $admin, 3499 );
-$brow = $priv( 'build_stall_chart_rows' )->invoke( $admin, 3499, $cfg );
+// Discover the reservation that carries the seeded group orders (tools/seed-test-data.php
+// targets whichever reservation has a configured chart — #5990 on the dev box), so
+// this doesn't depend on a hardcoded id.
+$seed_rid = 0;
+foreach ( get_posts( array( 'post_type' => 'en_reservation', 'post_status' => 'publish', 'numberposts' => -1, 'fields' => 'ids' ) ) as $cand ) {
+	$ccfg = $priv( 'get_stall_chart_config' )->invoke( $admin, (int) $cand );
+	$crow = $priv( 'build_stall_chart_rows' )->invoke( $admin, (int) $cand, $ccfg );
+	foreach ( (array) $crow as $rr ) {
+		if ( $GROUP === trim( (string) ( $rr['group_name'] ?? '' ) ) ) { $seed_rid = (int) $cand; break 2; }
+	}
+}
+$check( 'found a seeded reservation with group orders (run tools/seed-test-data.php first)', $seed_rid > 0 );
+$cfg  = $priv( 'get_stall_chart_config' )->invoke( $admin, $seed_rid );
+$brow = $priv( 'build_stall_chart_rows' )->invoke( $admin, $seed_rid, $cfg );
 $groups = array(); $leak = false;
 foreach ( (array) $brow as $r ) {
 	$g = trim( (string) ( $r['group_name'] ?? '' ) );
