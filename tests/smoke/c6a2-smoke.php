@@ -79,8 +79,17 @@ ok( 'addon card placeholder string GONE — "See summary"',
 
 // ── [5] Summary card — per-section breakdown + badges + Section Total ──
 echo "\n[5] Order Summary content density (mockup lines 479-529)\n";
-$has_stall_sub = $order && (float) ( $order['stall_subtotal'] ?? 0 ) > 0;
-$has_rv_sub    = $order && (float) ( $order['rv_subtotal']    ?? 0 ) > 0;
+// The night-count badge only renders when the section has computed nights
+// (compute_nights from arrival/departure dates), NOT merely a subtotal — a
+// flat-rate stall order has a subtotal but zero nights. Gate the badge
+// assertions on nights computed the same way the page does.
+$nights_ref = new ReflectionMethod( 'EEM_Order_Detail_Page', 'compute_nights' );
+$nights_ref->setAccessible( true );
+$odp = new EEM_Order_Detail_Page();
+$stall_nights = $order ? (int) $nights_ref->invoke( $odp, (string) ( $order['stall_arrival_date'] ?? '' ), (string) ( $order['stall_departure_date'] ?? '' ) ) : 0;
+$rv_nights    = $order ? (int) $nights_ref->invoke( $odp, (string) ( $order['rv_arrival_date'] ?? '' ),    (string) ( $order['rv_departure_date'] ?? '' ) ) : 0;
+$has_stall_sub = $order && (float) ( $order['stall_subtotal'] ?? 0 ) > 0 && $stall_nights > 0;
+$has_rv_sub    = $order && (float) ( $order['rv_subtotal']    ?? 0 ) > 0 && $rv_nights > 0;
 $has_fees      = $order && (float) ( $order['fees']           ?? 0 ) > 0;
 ok( 'summary emits Section Total label',                       str_contains( $html, 'Section Total' ),                                              $pass, $fail, $log );
 ok( 'summary emits .eem-order-summary__section-subtotal class', str_contains( $html, 'eem-order-summary__section-subtotal' ),                       $pass, $fail, $log );

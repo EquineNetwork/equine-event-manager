@@ -43,7 +43,9 @@ $data  = $repo->get_customer_list( array( 'per_page' => 20, 'paged' => 1 ) );
 $rows_on_page = substr_count( $html, 'eem-customers-name' );
 $check( 'page shows up to PER_PAGE (20) customer rows', $rows_on_page > 0 && $rows_on_page <= 20 );
 $check( 'rows match repo page-1 count', $rows_on_page === count( $data['rows'] ) );
-$first_name = $data['rows'][0]['name'];
+// The list renders names through EEM_Admin::format_customer_last_first()
+// (plugin-wide "Last, First" display), so compare against the formatted form.
+$first_name = EEM_Admin::format_customer_last_first( (string) $data['rows'][0]['name'] );
 $check( 'first customer name is rendered', false !== strpos( $html, esc_html( $first_name ) ) );
 $check( 'rows link to the profile route (customer_email)', false !== strpos( $html, 'customer_email=' ) );
 $check( 'rows have mailto links', false !== strpos( $html, 'mailto:' ) );

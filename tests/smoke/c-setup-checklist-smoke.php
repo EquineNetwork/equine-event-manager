@@ -104,6 +104,20 @@ $check( 'all set: is_complete() true', true === EEM_Setup_Checklist::is_complete
 // 2.7.50 behavior: completed required areas DROP OFF the card. With no published
 // reservation yet, the card surfaces the "create your first reservation" next-step,
 // so it stays visible (and shows NO setup rows).
+//
+// The dev box has seeded published reservations, which would legitimately drop the
+// onboarding row. Force the empty-site "no published reservation" state for the
+// onboarding assertions with a non-destructive posts_pre_query short-circuit on
+// en_reservation publish queries; removed before the restore block below.
+$force_no_reservation = static function ( $posts, $q ) {
+	$pt = $q->get( 'post_type' );
+	if ( 'en_reservation' === $pt || ( is_array( $pt ) && in_array( 'en_reservation', $pt, true ) ) ) {
+		return array();
+	}
+	return $posts;
+};
+add_filter( 'posts_pre_query', $force_no_reservation, 10, 2 );
+
 $types = static function (): array {
 	return array_map( static function ( $r ) { return $r['type']; }, EEM_Setup_Checklist::pending_actions() );
 };
@@ -118,6 +132,8 @@ update_user_meta( get_current_user_id(), EEM_Setup_Checklist::DISMISS_META, 1 );
 $check( 'dismissed: is_dismissed() true', true === EEM_Setup_Checklist::is_dismissed() );
 $check( 'sendgrid dismiss removes only the sendgrid row', ! in_array( 'sendgrid', $types(), true ) );
 $check( 'dismiss does NOT hide the card while other actions remain', true === EEM_Setup_Checklist::should_show() );
+
+remove_filter( 'posts_pre_query', $force_no_reservation, 10 );
 
 /* ── Restore the site ───────────────────────────────────────── */
 foreach ( array(

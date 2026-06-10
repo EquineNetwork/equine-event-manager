@@ -135,13 +135,19 @@ c7x_ok( 'C8 delegation: data-eem-action="header-change-event" present in rendere
 c7x_ok( 'C8 delegation: data-eem-action="header-cancel-change" present in rendered HTML',
 	false !== strpos( $html, 'data-eem-action="header-cancel-change"' ),
 	$pass, $fail, $log );
-// The stall section now uses its own `toggle-stall-inventory-type` action; only the
-// RV section uses `toggle-inventory-mode` (2 mode buttons). So the canonical count is
-// 2 for toggle-inventory-mode and 2 for toggle-stall-inventory-type.
-c7x_ok( 'C8 delegation: data-eem-action="toggle-inventory-mode" present in rendered HTML (RV = 2×)',
-	2 === preg_match_all( '/data-eem-action="toggle-inventory-mode"/', $html ),
+// v4 RV two-control: the RV section uses its own pair of toggle actions —
+// `toggle-rv-inventory-type` (Bulk / Mapped, 2 buttons) and
+// `toggle-rv-customer-selection` (Quantity / Pick from layout, 2 buttons) —
+// mirroring the stall section's `toggle-stall-inventory-type`. The old single
+// `toggle-inventory-mode` action was retired in the RV refactor.
+c7x_ok( 'C8 delegation: data-eem-action="toggle-rv-inventory-type" present in rendered HTML (RV = 2×)',
+	2 === preg_match_all( '/data-eem-action="toggle-rv-inventory-type"/', $html ),
 	$pass, $fail, $log,
-	'count: ' . preg_match_all( '/data-eem-action="toggle-inventory-mode"/', $html ) );
+	'count: ' . preg_match_all( '/data-eem-action="toggle-rv-inventory-type"/', $html ) );
+c7x_ok( 'C8 delegation: data-eem-action="toggle-rv-customer-selection" present in rendered HTML (RV = 2×)',
+	2 === preg_match_all( '/data-eem-action="toggle-rv-customer-selection"/', $html ),
+	$pass, $fail, $log,
+	'count: ' . preg_match_all( '/data-eem-action="toggle-rv-customer-selection"/', $html ) );
 c7x_ok( 'C8 delegation: data-eem-action="toggle-stall-inventory-type" present in rendered HTML (stall = 2×)',
 	2 === preg_match_all( '/data-eem-action="toggle-stall-inventory-type"/', $html ),
 	$pass, $fail, $log,
@@ -605,13 +611,21 @@ foreach ( $section_files as $sf ) {
 				0 === strpos( $field_name, '_eem_' )          ||
 				'stall_selection_mode'     === $field_name    ||
 				'rv_selection_mode'        === $field_name    ||
-				// These two bare hidden inputs are explicitly captured by
+				// These bare hidden inputs are explicitly captured by
 				// eemCollectEditorFields() (admin.js: input[name="stall_inventory_type"],
-				// input[name="stall_customer_selection"]), so they are NOT silently
-				// dropped — they're known bare names on the allow-list.
+				// stall_customer_selection, rv_inventory_type, rv_customer_selection),
+				// so they are NOT silently dropped — known bare names on the allow-list.
 				'stall_inventory_type'     === $field_name    ||
 				'stall_customer_selection' === $field_name    ||
-				false !== strpos( $field_name, '__index__' )  // template placeholder rows
+				'rv_inventory_type'        === $field_name    ||
+				'rv_customer_selection'    === $field_name    ||
+				false !== strpos( $field_name, '__index__' )  || // template placeholder rows
+				// Dynamically-built name (PHP concatenation captured from raw source,
+				// e.g. name="' . esc_attr( $field_name ) . '" in the addon-zone-pill
+				// helper). The guard scans source, not rendered HTML; the callers pass
+				// en_reservation[*] names (collected), so these are not real orphans.
+				false !== strpos( $field_name, '$' )          ||
+				false !== strpos( $field_name, 'esc_attr' )
 			) {
 				continue;
 			}
@@ -834,10 +848,14 @@ c7x_ok(
 	$pass, $fail, $log
 );
 
-// 10c. RV section field order: Early Bird Weekend Rate appears before RV Inventory Mode.
+// 10c. RV section field order: Early Bird Weekend Rate appears before RV Inventory
+//      Type. (Row id renamed `-inventory-mode` → `-inventory-type` in the v4 RV
+//      two-control refactor, mirroring the stall rename in 10b.)
+$rv_early_pos   = strpos( $html, 'rv_early_bird_weekend_rate' );
+$rv_inv_type_pos = strpos( $html, 'eem-row-rv-inventory-type' );
 c7x_ok(
-	'2.3.23: RV — Inventory Mode row appears after Early Bird Weekend Rate in rendered HTML',
-	strpos( $html, 'rv_early_bird_weekend_rate' ) < strpos( $html, 'eem-row-rv-inventory-mode' ),
+	'2.3.23: RV — Inventory Type row appears after Early Bird Weekend Rate in rendered HTML',
+	false !== $rv_early_pos && false !== $rv_inv_type_pos && $rv_early_pos < $rv_inv_type_pos,
 	$pass, $fail, $log
 );
 
@@ -1671,7 +1689,9 @@ c7x_ok(
 //      in the comment and never reaches the placeholder).
 $orders_php_231 = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-orders-list-page.php' );
 // Find the actual <input ... class="eem-search-input"> source line (the input may
-// embed `<?php … ?>` whose `?>` breaks an `[^>]*` scan, so match by line instead).
+// embed a PHP echo tag whose closing delimiter breaks an `[^>]*` scan, so match by
+// line instead). NB: never write a literal PHP close-tag inside a // comment here —
+// `//` comments are terminated by it, which would silently drop the rest of the file.
 $orders_search_line = '';
 foreach ( file( EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-orders-list-page.php', FILE_IGNORE_NEW_LINES ) as $oline ) {
 	if ( false !== strpos( $oline, '<input' ) && false !== strpos( $oline, 'class="eem-search-input"' ) ) {

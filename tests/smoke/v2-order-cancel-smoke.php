@@ -17,6 +17,16 @@ function oc_ok( $label, $cond, &$pass, &$fail, &$log ) {
 global $wpdb;
 $st = $wpdb->prefix . 'en_stall_reservations';
 
+$repo = new EEM_Orders_Repository();
+$sc   = new EEM_Shortcodes();
+$inv  = new ReflectionMethod( 'EEM_Shortcodes', 'get_reservation_inventory_usage' );
+$inv->setAccessible( true );
+
+// Baseline inventory BEFORE inserting the synthetic order — reservation 5990 may
+// already carry other seeded paid stall orders, so assert the DELTA (+4 then back
+// to baseline), not absolute 4 → 0.
+$inv_base = (int) $inv->invoke( $sc, 5990 )['stall_sold'];
+
 // ── Behavioral: insert a synthetic PAID order tied to demo reservation 5990
 //    (which carries a cancellation-policy snapshot), cancel it, assert effects.
 $wpdb->insert( $st, array(
@@ -31,17 +41,12 @@ $wpdb->insert( $st, array(
 ) );
 $row_id = (int) $wpdb->insert_id;
 
-$repo = new EEM_Orders_Repository();
-$sc   = new EEM_Shortcodes();
-$inv  = new ReflectionMethod( 'EEM_Shortcodes', 'get_reservation_inventory_usage' );
-$inv->setAccessible( true );
-
 $order = $repo->get_order_by_submission_token( 'tok_cancel_smoke_99777' );
 $key   = $order ? $order['order_key'] : '';
 oc_ok( 'synthetic order resolves', '' !== $key, $pass, $fail, $log );
 
-$inv_before = $inv->invoke( $sc, 5990 )['stall_sold'];
-oc_ok( 'inventory counts the paid order before cancel', 4 === (int) $inv_before, $pass, $fail, $log );
+$inv_before = (int) $inv->invoke( $sc, 5990 )['stall_sold'];
+oc_ok( 'inventory counts the paid order before cancel (+4)', $inv_base + 4 === $inv_before, $pass, $fail, $log );
 
 $cancelled = $repo->cancel_order( $key, 'Smoke reason.' );
 oc_ok( 'cancel_order returns true', true === $cancelled, $pass, $fail, $log );
@@ -49,8 +54,8 @@ oc_ok( 'cancel_order returns true', true === $cancelled, $pass, $fail, $log );
 $order2 = $repo->get_order_by_submission_token( 'tok_cancel_smoke_99777' );
 oc_ok( 'order status becomes cancelled', isset( $order2['status_slug'] ) && 'cancelled' === $order2['status_slug'], $pass, $fail, $log );
 
-$inv_after = $inv->invoke( $sc, 5990 )['stall_sold'];
-oc_ok( 'inventory released after cancel (4 -> 0)', 0 === (int) $inv_after, $pass, $fail, $log );
+$inv_after = (int) $inv->invoke( $sc, 5990 )['stall_sold'];
+oc_ok( 'inventory released after cancel (back to baseline)', $inv_base === $inv_after, $pass, $fail, $log );
 
 $row = $wpdb->get_row( $wpdb->prepare( "SELECT payment_status, transaction_id, notes FROM $st WHERE id=%d", $row_id ), ARRAY_A );
 oc_ok( 'line item payment_status = cancelled', 'cancelled' === $row['payment_status'], $pass, $fail, $log );

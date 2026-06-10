@@ -45,35 +45,36 @@ $flush_admin_orders_cache = function () use ( $admin, $ref ) {
 	}
 };
 
-// Build the #3499 grid up-front and find an order that OCCUPIES >= 2 grid cells.
-// (Prior versions of this test sourced $tack_unit from the order's "Assigned
-// Stall Units" note. That broke against the current seed data: the seeded order's
-// note units (100, 101) fall OUTSIDE reservation #3499's configured stall range
-// (300-320), so the allocator places the order on auto-assigned grid units (300+)
-// and the tack designation — keyed to the note value — never lands on a rendered
-// grid cell. The grid's is_tack lookup matches the Tack-Stalls note value against
-// the GRID unit, so the unit we mark as tack must itself be a unit the order
-// occupies on the chart. Derive both units from the grid to stay consistent with
-// whatever config/allocation the current seed produces.)
-$cfg  = $priv( 'get_stall_chart_config' )->invoke( $admin, 3499 );
-$grid = $priv( 'build_stall_chart_grid' )->invoke( $admin, 3499, $cfg );
-
-$occupancy = array(); // order_key => [grid units occupied]
-foreach ( $grid['stall_rows'] as $row ) {
-	foreach ( (array) $row['cells'] as $cell ) {
-		if ( ( $cell['type'] ?? '' ) !== 'occupied' ) { continue; }
-		$ok = (string) ( $cell['order_key'] ?? '' );
-		if ( '' === $ok ) { continue; }
-		$occupancy[ $ok ][ (string) $row['unit'] ] = true;
+// Discover a reservation whose stall-chart grid has an order OCCUPYING >= 2 grid
+// cells, then derive the tack unit + a sibling unit from that grid. (Was keyed to a
+// hardcoded reservation #3499, which doesn't exist on every box. The unit we mark
+// as tack must be a unit the order actually occupies on the chart, since the grid's
+// is_tack lookup matches the Tack-Stalls note value against the GRID unit — so we
+// derive everything from whatever config/allocation the current seed produces.)
+$seed_rid = 0; $cfg = array(); $grid = array(); $target = null;
+foreach ( get_posts( array( 'post_type' => 'en_reservation', 'post_status' => 'publish', 'numberposts' => -1, 'fields' => 'ids' ) ) as $cand ) {
+	$ccfg  = $priv( 'get_stall_chart_config' )->invoke( $admin, (int) $cand );
+	$cgrid = $priv( 'build_stall_chart_grid' )->invoke( $admin, (int) $cand, $ccfg );
+	$occ = array(); // order_key => [grid units occupied]
+	foreach ( (array) ( $cgrid['stall_rows'] ?? array() ) as $row ) {
+		foreach ( (array) ( $row['cells'] ?? array() ) as $cell ) {
+			if ( ( $cell['type'] ?? '' ) !== 'occupied' ) { continue; }
+			$ok = (string) ( $cell['order_key'] ?? '' );
+			if ( '' === $ok ) { continue; }
+			$occ[ $ok ][ (string) $row['unit'] ] = true;
+		}
+	}
+	foreach ( $occ as $ok => $units ) {
+		$units = array_keys( $units );
+		if ( count( $units ) >= 2 ) {
+			$seed_rid = (int) $cand; $cfg = $ccfg; $grid = $cgrid;
+			$target = array( 'order_key' => $ok, 'units' => array_values( $units ) );
+			break 2;
+		}
 	}
 }
-$target = null;
-foreach ( $occupancy as $ok => $units ) {
-	$units = array_keys( $units );
-	if ( count( $units ) >= 2 ) { $target = array( 'order_key' => $ok, 'units' => array_values( $units ) ); break; }
-}
 if ( null === $target ) {
-	WP_CLI::warning( 'No #3499 order occupies >=2 grid cells — run tools/seed-test-data.php first.' );
+	WP_CLI::warning( 'No reservation has an order occupying >=2 grid cells — run tools/seed-test-data.php first.' );
 	WP_CLI::error( 'precondition failed' );
 	return;
 }
@@ -104,7 +105,7 @@ $check( 'Tack Stalls does not leak into Special Requests', false === stripos( $s
 // Rebuild the grid AFTER marking the tack stall so the is_tack flag reflects the
 // new Tack-Stalls note ($cfg unchanged — config doesn't depend on tack state).
 $flush_admin_orders_cache();
-$grid = $priv( 'build_stall_chart_grid' )->invoke( $admin, 3499, $cfg );
+$grid = $priv( 'build_stall_chart_grid' )->invoke( $admin, $seed_rid, $cfg );
 $tack_cell_ok = false; $other_cell_not_tack = true;
 foreach ( $grid['stall_rows'] as $row ) {
 	foreach ( (array) $row['cells'] as $cell ) {
@@ -125,7 +126,7 @@ $check( 'Tack badge carries the "Tack" label', (bool) preg_match( '/eem-occ-badg
 $check( 'render outputs data-is-tack="1" somewhere', false !== strpos( $html, 'data-is-tack="1"' ) );
 
 // ── #5b.2: by-customer view shows the amber Tack note + data-has-tack + filter ──
-$brows = $priv( 'build_stall_chart_rows' )->invoke( $admin, 3499, $cfg );
+$brows = $priv( 'build_stall_chart_rows' )->invoke( $admin, $seed_rid, $cfg );
 $row_tack_ok = false;
 foreach ( (array) $brows as $r ) {
 	if ( (string) $r['order_key'] === $order_key ) {

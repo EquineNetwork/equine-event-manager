@@ -133,9 +133,15 @@ if ( $paid_order ) {
 			// each AJAX bulk-step request gets a fresh handler invocation.
 			$admin_fresh = new EEM_Admin();
 			$after = $admin_fresh->get_order_remaining_refundable( $paid_order['order_key'] );
+			// A $30 synthetic refund on one component can only drop the order's
+			// remaining by what that component still had left — the helper clamps
+			// component remaining at 0. So the expected drop is min(30, before)
+			// (a nearly-fully-refunded seed order may have < $30 left). The point
+			// of the assertion is that the FRESH read reflects the parallel refund.
+			$expected_drop = min( 30.0, (float) $before );
 			ok( 'remaining_refundable DROPS by parallel refund amount (synthetic)',
-				abs( ( $before - $after ) - 30.0 ) < 0.01,
-				$pass, $fail, $log, "before={$before}, after={$after}, delta=" . ( $before - $after ) );
+				abs( ( $before - $after ) - $expected_drop ) < 0.01,
+				$pass, $fail, $log, "before={$before}, after={$after}, delta=" . ( $before - $after ) . ", expected={$expected_drop}" );
 
 			// Restore notes (smoke must be self-cleaning).
 			$wpdb->update(

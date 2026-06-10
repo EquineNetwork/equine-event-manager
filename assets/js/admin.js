@@ -3100,6 +3100,11 @@
 			// lossy (both quantity-only and numbered+quantity map to 'quantity'), so
 			// omitting these silently collapses Numbered+Quantity to Quantity-only.
 			'input[name="stall_inventory_type"], input[name="stall_customer_selection"], ' +
+			// v4 RV two-control: the same lossiness applies to RV. rv_selection_mode
+			// alone cannot distinguish Mapped+Quantity from Bulk+Quantity (both map to
+			// 'quantity'), so the precise pair MUST be collected or the save handler
+			// falls back to the lossy legacy branch and silently collapses Mapped to Bulk.
+			'input[name="rv_inventory_type"], input[name="rv_customer_selection"], ' +
 			'input[name="stall_selection_mode"], input[name="rv_selection_mode"]'
 		).forEach(function (el) {
 			if ((el.type === 'checkbox' || el.type === 'radio') && !el.checked) return;
