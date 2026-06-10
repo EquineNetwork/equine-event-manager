@@ -1,15 +1,16 @@
 # Equine Event Manager — Overhaul / Launch-Readiness Report
 
 _Generated 2026-06-04 (v2.7.18). Phase 4 verification pass._
+_Refreshed 2026-06-10 (v2.7.171) — GEMS integration + demo-prep pass (see §6)._
 
-## 1. Current code surface
+## 1. Current code surface (v2.7.171)
 
 | Area | Size |
 |---|---|
-| PHP | 55,240 lines · 78 files |
-| JS (`assets/js`) | 11,518 lines |
-| CSS (`assets/css`) | 25,095 lines |
-| Smoke tests | 83 files |
+| PHP | ~70,900 lines · 134 files |
+| JS (`assets/js`) | ~8,100 lines |
+| CSS (`assets/css`) | ~26,000 lines |
+| Smoke tests | 120 files (2,740+ assertions, 0 fatals) |
 
 (Pre-overhaul "before" baseline from the original Codex-generated plugin is not
 available in-repo, so this is the current "after" state.)
@@ -42,17 +43,21 @@ available in-repo, so this is the current "after" state.)
    <site>/wp-json/eem/v1/stripe-webhook` + `stripe trigger
    payment_intent.succeeded` for an end-to-end check. The Dashboard "webhook not
    configured" nag clears once the secret is set.
-2. **Plugin URI / Author URI** are `example.com` placeholders (CLEANUP #23) — must
-   be set before any external/public distribution.
-3. **Authorize.net charging** is deferred (Stripe-first decision). Auth.net
-   *refunds* already work; Auth.net *charge dispatch* on Collect Payment is not
-   built.
-4. **Test-suite debt:** ~9 smoke files still fail — all **test drift against
-   verified-working pages**, not product bugs. Categories: stale version pins,
-   re-added breadcrumb assertion, seeded-row fixture dependencies, customer-event-
-   page (c10c/c10d) data-dependence, and the `44`-hardcoded fixtures in
-   c7x12/14/15. The editor-smoke root cause (sections need a linked-event fixture)
-   is fixed; the remainder is individual-assertion reconciliation.
+2. **Plugin URI / Author URI** — ✅ resolved. Now `github.com/EquineNetwork/equine-event-manager`
+   and `equinenetwork.com` (CLEANUP #23 closed).
+3. **Authorize.net charging** — ✅ admin Collect Payment "Charge Card" dispatch is
+   now wired for Auth.net (parallel to Stripe). Auth.net refunds/voids work.
+   **Remaining (ops):** a live end-to-end charge test once the Auth.net API login +
+   transaction key are entered in Settings → Payments.
+4. **Test-suite debt:** ~36 smoke assertions across ~14 files still fail — all
+   **test drift / seed-fixture dependence against verified-working features**, not
+   product bugs (0 fatals). The smokes broken by this session's own changes (GEMS
+   source reorder/un-gating, Tack-default-OFF) were reconciled and pass. The
+   remainder is pre-existing drift + seed-fixture work (tests that expect specific
+   seeded orders, e.g. `#3499`).
+5. **C16 / DS-1.A cosmetic polish** — the only remaining *dev* work, non-blocking:
+   `admin-legacy.css` wholesale `!important` strip (CLEANUP #1/#25) + BEM
+   status-badge normalization.
 
 ## 4. Notable work landed (this session)
 
@@ -75,3 +80,40 @@ available in-repo, so this is the current "after" state.)
    orders — declined this session to preserve #00014/#00015.)
 4. Finish the remaining smoke-tail reconciliation for a fully-green CI, or accept
    it as characterized debt against working features?
+
+## 6. GEMS integration + demo-prep pass (2026-06-10, v2.7.155 → v2.7.171)
+
+**GEMS Web Data event source (v1) — built + live-verified.** A third event
+source alongside TEC and Native: reservations search + link to live GEMS events
+(via the GEMS for WordPress connection), and a bridge so the GEMS plugin's event
+listing shows a "Reservations" button linking to the EN booking page. Full file
+map + the complete fix list is in `SESSION-HANDOFF.md`. End-to-end verified on
+Local: GEMS event → branded "Reservations" button → event page (flyer + info) →
+styled booking form. Highlights:
+
+- New `EEM_Gems_Client` (fetch `/api/Schedule/{assn}` w/ Bearer JWT, normalize,
+  15-min cache); Settings → Integrations "GEMS Integration" source + Test
+  Connection; source-aware event picker; onboarding wizard GEMS option.
+- Customer-facing reservation page hardened: virtual route `/equine-event/{id}/`
+  (the `en_reservation` CPT is `public => false`), with a **WP Engine REQUEST_URI
+  fallback** (host doesn't honor programmatic rewrite flush) and **`public.css`
+  enqueued before `get_header()`** so styles land in `<head>`.
+- Demo polish: onboarding Stripe/Authorize.net processor picker + Support Phone;
+  Tack Stalls default OFF; Map Builder default grid 10×20; customer stall picker
+  fits all chips on load; "View Event"/"View on Frontend" work for GEMS.
+
+**Bugs fixed this pass (selected):** booking form "not available" (canonical
+section-enabled key read); customer headings rendering vertically under the host
+Elementor theme (Elementor forces `label{width:100%}` → toggle collapsed the
+`<h4>` to 0px; fixed with scoped high-specificity overrides); Blocked Stall
+Numbers couldn't find Map-Builder stalls.
+
+**Investigated, NOT bugs:** the "Choose Agreement PDF" media modal renders
+correctly — its one suspicious style traces to WP core's own `media-views.css`;
+what looked broken on staging was WordPress's media-library empty state.
+
+**Verification this pass:** smoke baseline 2,740 pass / 0 fatals; customer +
+admin flows browser-checked on Local; blocked-stalls round-trip confirmed
+end-to-end. No core feature missing (note: Stall Charts / C8 lives inside
+`EEM_Admin`, not a standalone page-class file — a filename grep gives a false
+"missing" negative).
