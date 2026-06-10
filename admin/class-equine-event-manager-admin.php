@@ -3529,9 +3529,6 @@ class EEM_Admin {
 	private function render_stall_charts_list_page( int $invalid_reservation_id ): void {
 		$rows = $this->get_stall_charts_list_data();
 
-		$view_chart_svg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>';
-		$edit_res_svg   = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
-
 		// Derive a "Month YYYY" option list from the rendered reservations for
 		// the toolbar date filter (mockup A2 — All dates + monthly stubs).
 		$date_options = array();
@@ -3668,12 +3665,10 @@ class EEM_Admin {
 								<div class="eem-sc-actions-cell">
 									<a class="eem-sc-action-btn eem-sc-action-btn--primary"
 									   href="<?php echo esc_url( $chart_url ); ?>">
-										<?php echo $view_chart_svg; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG ?>
 										<?php echo esc_html( $btn_label ); ?>
 									</a>
 									<a class="eem-sc-action-btn eem-sc-action-btn--ghost"
 									   href="<?php echo esc_url( $edit_url ); ?>">
-										<?php echo $edit_res_svg; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG ?>
 										<?php esc_html_e( 'Edit Reservation', 'equine-event-manager' ); ?>
 									</a>
 								</div>
@@ -3719,11 +3714,9 @@ class EEM_Admin {
 						</div>
 						<div class="eem-sc-mob-card-bottom">
 							<a class="eem-sc-action-btn eem-sc-action-btn--primary" href="<?php echo esc_url( $chart_url ); ?>">
-								<?php echo $view_chart_svg; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 								<?php echo esc_html( $btn_label ); ?>
 							</a>
 							<a class="eem-sc-action-btn eem-sc-action-btn--ghost" href="<?php echo esc_url( $edit_url ); ?>">
-								<?php echo $edit_res_svg; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 								<?php esc_html_e( 'Edit Reservation', 'equine-event-manager' ); ?>
 							</a>
 						</div>
