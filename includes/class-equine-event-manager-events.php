@@ -1090,6 +1090,20 @@ class EEM_Events {
 		$directory_type = sanitize_key( (string) get_query_var( 'eem_event_directory_type' ) );
 		$directory_slug = sanitize_title( (string) get_query_var( 'eem_event_directory_slug' ) );
 
+		// Hosting-resilient fallback. Some hosts (notably WP Engine) cache the
+		// rewrite-rules table and don't honor a programmatic flush_rewrite_rules()
+		// after a plugin update, so the pretty `/equine-event/{id}/` rule can be
+		// absent and the query var empty — the URL then falls through to the front
+		// page. Detect the reservation id straight from the request path so the
+		// page still resolves without a permalink re-save. Matches the route base
+		// as a path suffix, which also covers subdirectory installs.
+		if ( ! $reservation_id && ! $directory_type && isset( $_SERVER['REQUEST_URI'] ) ) {
+			$path = (string) wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ), PHP_URL_PATH );
+			if ( preg_match( '#/' . preg_quote( self::VIRTUAL_EVENT_ROUTE_BASE, '#' ) . '/([0-9]+)/?$#', $path, $m ) ) {
+				$reservation_id = absint( $m[1] );
+			}
+		}
+
 		if ( ! $reservation_id && ! $directory_type ) {
 			return;
 		}
