@@ -1128,6 +1128,13 @@ class EEM_Events {
 		status_header( 200 );
 		nocache_headers();
 
+		// Enqueue the front-end stylesheet BEFORE get_header() fires wp_head, so
+		// the <link> lands in <head>. render_event_shortcode() also enqueues it,
+		// but that runs after get_header() — relying on WP's late-footer style
+		// printing, which some hosts/themes (e.g. WP Engine + optimizer plugins)
+		// drop, leaving the booking form unstyled (collapsed section headings).
+		self::render_frontend_styles();
+
 		add_filter(
 			'document_title_parts',
 			static function ( $parts ) use ( $event_data ) {
