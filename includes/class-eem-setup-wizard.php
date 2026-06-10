@@ -184,7 +184,10 @@ class EEM_Setup_Wizard {
 		$from_email = isset( $sender['from_email'] ) ? (string) $sender['from_email'] : (string) get_option( 'admin_email', '' );
 		$payment    = (array) get_option( 'equine_event_manager_payment_settings', array() );
 		$stripe     = isset( $payment['stripe'] ) && is_array( $payment['stripe'] ) ? $payment['stripe'] : array();
-		$has_live   = '' !== trim( (string) ( $stripe['live_publishable_key'] ?? '' ) );
+		$authnet    = isset( $payment['authorize_net'] ) && is_array( $payment['authorize_net'] ) ? $payment['authorize_net'] : array();
+		$gateway    = in_array( ( $payment['selected_gateway'] ?? 'stripe' ), array( 'stripe', 'authorize_net' ), true ) ? (string) $payment['selected_gateway'] : 'stripe';
+		$stripe_live = 'live' === ( $stripe['mode'] ?? '' ) || ( ! isset( $stripe['mode'] ) && '' !== trim( (string) ( $stripe['live_publishable_key'] ?? '' ) ) );
+		$authnet_live = 'live' === ( $authnet['mode'] ?? '' );
 		$integ      = (array) get_option( 'equine_event_manager_integration_settings', array() );
 		$sg_key     = isset( $integ['sendgrid_api_key'] ) ? (string) $integ['sendgrid_api_key'] : '';
 		$nonce      = wp_create_nonce( 'eem_settings_save' );
@@ -309,22 +312,47 @@ class EEM_Setup_Wizard {
 										<?php break;
 
 									case 'payments': ?>
-										<input type="hidden" name="payload[selected_gateway]" value="stripe" />
-										<div class="eem-setup-wizard__mode" role="radiogroup" aria-label="<?php esc_attr_e( 'Stripe key mode', 'equine-event-manager' ); ?>">
-											<label class="eem-setup-wizard__radio"><input type="radio" name="eem_wiz_stripe_mode" value="test" <?php checked( ! $has_live ); ?> data-eem-wizard-mode /> <span><?php esc_html_e( 'Test keys (for testing)', 'equine-event-manager' ); ?></span></label>
-											<label class="eem-setup-wizard__radio"><input type="radio" name="eem_wiz_stripe_mode" value="live" <?php checked( $has_live ); ?> data-eem-wizard-mode /> <span><?php esc_html_e( 'Live keys (real charges)', 'equine-event-manager' ); ?></span></label>
+										<div class="eem-setup-wizard__mode" role="radiogroup" aria-label="<?php esc_attr_e( 'Payment processor', 'equine-event-manager' ); ?>">
+											<label class="eem-setup-wizard__radio"><input type="radio" name="payload[selected_gateway]" value="stripe" <?php checked( 'stripe', $gateway ); ?> data-eem-wizard-processor-pick /> <span><?php esc_html_e( 'Stripe', 'equine-event-manager' ); ?></span></label>
+											<label class="eem-setup-wizard__radio"><input type="radio" name="payload[selected_gateway]" value="authorize_net" <?php checked( 'authorize_net', $gateway ); ?> data-eem-wizard-processor-pick /> <span><?php esc_html_e( 'Authorize.net', 'equine-event-manager' ); ?></span></label>
 										</div>
-										<div class="eem-field-row" data-eem-wizard-mode-fields="test" <?php echo $has_live ? 'hidden' : ''; ?>>
-											<label class="eem-setup-wizard__label"><?php esc_html_e( 'Test Publishable key', 'equine-event-manager' ); ?></label>
-											<input class="eem-field-input" type="text" name="payload[stripe][test_publishable_key]" value="<?php echo esc_attr( (string) ( $stripe['test_publishable_key'] ?? '' ) ); ?>" placeholder="pk_test_…" autocomplete="off" />
-											<label class="eem-setup-wizard__label" style="margin-top:8px;"><?php esc_html_e( 'Test Secret key', 'equine-event-manager' ); ?></label>
-											<input class="eem-field-input" type="password" name="payload[stripe][test_secret_key]" value="<?php echo esc_attr( (string) ( $stripe['test_secret_key'] ?? '' ) ); ?>" placeholder="sk_test_…" autocomplete="off" />
+
+										<div data-eem-wizard-processor="stripe" <?php echo 'stripe' === $gateway ? '' : 'hidden'; ?>>
+											<div class="eem-setup-wizard__mode" role="radiogroup" aria-label="<?php esc_attr_e( 'Stripe key mode', 'equine-event-manager' ); ?>">
+												<label class="eem-setup-wizard__radio"><input type="radio" name="payload[stripe][mode]" value="test" <?php checked( ! $stripe_live ); ?> data-eem-wizard-mode /> <span><?php esc_html_e( 'Test keys (for testing)', 'equine-event-manager' ); ?></span></label>
+												<label class="eem-setup-wizard__radio"><input type="radio" name="payload[stripe][mode]" value="live" <?php checked( $stripe_live ); ?> data-eem-wizard-mode /> <span><?php esc_html_e( 'Live keys (real charges)', 'equine-event-manager' ); ?></span></label>
+											</div>
+											<div class="eem-field-row" data-eem-wizard-mode-fields="test" <?php echo $stripe_live ? 'hidden' : ''; ?>>
+												<label class="eem-setup-wizard__label"><?php esc_html_e( 'Test Publishable key', 'equine-event-manager' ); ?></label>
+												<input class="eem-field-input" type="text" name="payload[stripe][test_publishable_key]" value="<?php echo esc_attr( (string) ( $stripe['test_publishable_key'] ?? '' ) ); ?>" placeholder="pk_test_…" autocomplete="off" />
+												<label class="eem-setup-wizard__label" style="margin-top:8px;"><?php esc_html_e( 'Test Secret key', 'equine-event-manager' ); ?></label>
+												<input class="eem-field-input" type="password" name="payload[stripe][test_secret_key]" value="<?php echo esc_attr( (string) ( $stripe['test_secret_key'] ?? '' ) ); ?>" placeholder="sk_test_…" autocomplete="off" />
+											</div>
+											<div class="eem-field-row" data-eem-wizard-mode-fields="live" <?php echo $stripe_live ? '' : 'hidden'; ?>>
+												<label class="eem-setup-wizard__label"><?php esc_html_e( 'Live Publishable key', 'equine-event-manager' ); ?></label>
+												<input class="eem-field-input" type="text" name="payload[stripe][live_publishable_key]" value="<?php echo esc_attr( (string) ( $stripe['live_publishable_key'] ?? '' ) ); ?>" placeholder="pk_live_…" autocomplete="off" />
+												<label class="eem-setup-wizard__label" style="margin-top:8px;"><?php esc_html_e( 'Live Secret key', 'equine-event-manager' ); ?></label>
+												<input class="eem-field-input" type="password" name="payload[stripe][live_secret_key]" value="<?php echo esc_attr( (string) ( $stripe['live_secret_key'] ?? '' ) ); ?>" placeholder="sk_live_…" autocomplete="off" />
+											</div>
 										</div>
-										<div class="eem-field-row" data-eem-wizard-mode-fields="live" <?php echo $has_live ? '' : 'hidden'; ?>>
-											<label class="eem-setup-wizard__label"><?php esc_html_e( 'Live Publishable key', 'equine-event-manager' ); ?></label>
-											<input class="eem-field-input" type="text" name="payload[stripe][live_publishable_key]" value="<?php echo esc_attr( (string) ( $stripe['live_publishable_key'] ?? '' ) ); ?>" placeholder="pk_live_…" autocomplete="off" />
-											<label class="eem-setup-wizard__label" style="margin-top:8px;"><?php esc_html_e( 'Live Secret key', 'equine-event-manager' ); ?></label>
-											<input class="eem-field-input" type="password" name="payload[stripe][live_secret_key]" value="<?php echo esc_attr( (string) ( $stripe['live_secret_key'] ?? '' ) ); ?>" placeholder="sk_live_…" autocomplete="off" />
+
+										<div data-eem-wizard-processor="authorize_net" <?php echo 'authorize_net' === $gateway ? '' : 'hidden'; ?>>
+											<div class="eem-setup-wizard__mode" role="radiogroup" aria-label="<?php esc_attr_e( 'Authorize.net mode', 'equine-event-manager' ); ?>">
+												<label class="eem-setup-wizard__radio"><input type="radio" name="payload[authorize_net][mode]" value="test" <?php checked( ! $authnet_live ); ?> data-eem-wizard-mode /> <span><?php esc_html_e( 'Sandbox (for testing)', 'equine-event-manager' ); ?></span></label>
+												<label class="eem-setup-wizard__radio"><input type="radio" name="payload[authorize_net][mode]" value="live" <?php checked( $authnet_live ); ?> data-eem-wizard-mode /> <span><?php esc_html_e( 'Production (real charges)', 'equine-event-manager' ); ?></span></label>
+											</div>
+											<div class="eem-field-row" data-eem-wizard-mode-fields="test" <?php echo $authnet_live ? 'hidden' : ''; ?>>
+												<label class="eem-setup-wizard__label"><?php esc_html_e( 'Sandbox API Login ID', 'equine-event-manager' ); ?></label>
+												<input class="eem-field-input" type="text" name="payload[authorize_net][test_api_login]" value="<?php echo esc_attr( (string) ( $authnet['test_api_login'] ?? '' ) ); ?>" autocomplete="off" />
+												<label class="eem-setup-wizard__label" style="margin-top:8px;"><?php esc_html_e( 'Sandbox Transaction Key', 'equine-event-manager' ); ?></label>
+												<input class="eem-field-input" type="password" name="payload[authorize_net][test_transaction_key]" value="<?php echo esc_attr( (string) ( $authnet['test_transaction_key'] ?? '' ) ); ?>" autocomplete="off" />
+											</div>
+											<div class="eem-field-row" data-eem-wizard-mode-fields="live" <?php echo $authnet_live ? '' : 'hidden'; ?>>
+												<label class="eem-setup-wizard__label"><?php esc_html_e( 'Production API Login ID', 'equine-event-manager' ); ?></label>
+												<input class="eem-field-input" type="text" name="payload[authorize_net][live_api_login]" value="<?php echo esc_attr( (string) ( $authnet['live_api_login'] ?? '' ) ); ?>" autocomplete="off" />
+												<label class="eem-setup-wizard__label" style="margin-top:8px;"><?php esc_html_e( 'Production Transaction Key', 'equine-event-manager' ); ?></label>
+												<input class="eem-field-input" type="password" name="payload[authorize_net][live_transaction_key]" value="<?php echo esc_attr( (string) ( $authnet['live_transaction_key'] ?? '' ) ); ?>" autocomplete="off" />
+											</div>
 										</div>
 										<?php break;
 

@@ -1137,10 +1137,19 @@
 			if (!v('payload[sender][from_name]')) return 'Please enter a from-name.';
 			if (!v('payload[sender][from_email]')) return 'Please enter a from-email.';
 		} else if (key === 'payments') {
-			var modeEl = step.querySelector('[data-eem-wizard-mode]:checked');
+			var gwEl = step.querySelector('[data-eem-wizard-processor-pick]:checked');
+			var gateway = gwEl ? gwEl.value : 'stripe';
+			var section = step.querySelector('[data-eem-wizard-processor="' + gateway + '"]');
+			var modeEl = section ? section.querySelector('[data-eem-wizard-mode]:checked') : null;
 			var mode = modeEl ? modeEl.value : 'test';
-			if (!v('payload[stripe][' + mode + '_publishable_key]') || !v('payload[stripe][' + mode + '_secret_key]')) {
-				return 'Please enter both the ' + mode + ' publishable and secret key.';
+			if (gateway === 'authorize_net') {
+				if (!v('payload[authorize_net][' + mode + '_api_login]') || !v('payload[authorize_net][' + mode + '_transaction_key]')) {
+					return 'Please enter both the Authorize.net API Login ID and Transaction Key.';
+				}
+			} else {
+				if (!v('payload[stripe][' + mode + '_publishable_key]') || !v('payload[stripe][' + mode + '_secret_key]')) {
+					return 'Please enter both the ' + mode + ' publishable and secret key.';
+				}
 			}
 		}
 		return null; // event_source + sendgrid have no required text fields
@@ -1277,8 +1286,21 @@
 		var w = eemWizardEl(); if (!w) return;
 		var step = eemWizardStepEls(w)[eemWizardCurrentStep(w)];
 		if (!step) return;
-		step.querySelectorAll('[data-eem-wizard-mode-fields]').forEach(function (grp) {
+		var scope = t.closest('[data-eem-wizard-processor]') || step;
+		scope.querySelectorAll('[data-eem-wizard-mode-fields]').forEach(function (grp) {
 			grp.hidden = (grp.getAttribute('data-eem-wizard-mode-fields') !== t.value);
+		});
+	});
+
+	/* Wizard Payments step: reveal the chosen processor's credential section. */
+	document.addEventListener('change', function (e) {
+		var t = e.target;
+		if (!t || !t.matches || !t.matches('[data-eem-wizard-processor-pick]')) return;
+		var w = eemWizardEl(); if (!w) return;
+		var step = eemWizardStepEls(w)[eemWizardCurrentStep(w)];
+		if (!step) return;
+		step.querySelectorAll('[data-eem-wizard-processor]').forEach(function (sec) {
+			sec.hidden = (sec.getAttribute('data-eem-wizard-processor') !== t.value);
 		});
 	});
 
