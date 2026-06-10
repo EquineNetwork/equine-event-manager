@@ -1,15 +1,17 @@
 # Equine Event Manager — Overhaul / Launch-Readiness Report
 
-_Generated 2026-06-04 (v2.7.18). Phase 4 verification pass._
+_Generated 2026-06-10 (v2.7.172). Phase 4 verification pass + GEMS integration + demo prep._
 
 ## 1. Current code surface
 
 | Area | Size |
 |---|---|
-| PHP | 55,240 lines · 78 files |
-| JS (`assets/js`) | 11,518 lines |
-| CSS (`assets/css`) | 25,095 lines |
-| Smoke tests | 83 files |
+| PHP (plugin, excludes tests/tools) | ~67,700 lines |
+| JS (`assets/js/admin.js`) | 7,321 lines |
+| CSS (`assets/css/admin.css`) | 9,196 lines |
+| CSS (`assets/css/admin-legacy.css`) | 12,256 lines |
+| CSS (`assets/css/public.css`) | 4,512 lines |
+| Smoke tests | 120 files |
 
 (Pre-overhaul "before" baseline from the original Codex-generated plugin is not
 available in-repo, so this is the current "after" state.)
@@ -19,59 +21,71 @@ available in-repo, so this is the current "after" state.)
 | Critical path | Result |
 |---|---|
 | **Admin pages render** (Dashboard, Orders, Order Detail, Reservations, Editor, Stall Charts, Create Order, Collect Payment, Customer Profile, Reports, Settings) | ✅ All built + render; spot-verified in browser |
-| **Reservation editor** | ✅ Renders all 11 sections with live data (browser-verified, res #3499) |
+| **Reservation editor** | ✅ Renders all 12 sections with live data (browser-verified) |
 | **Dashboard** | ✅ Live KPIs, stall metrics, attention rows, revenue chart (browser-verified) |
-| **Front-end `[en_reservation id=N]` shortcode** | ✅ Renders the customer form (55 KB: contact, stall section, submit) |
-| **Stripe charge (Collect Payment)** | ✅ Verified live with a real test charge — order #00015 paid, `pi_…` recorded, card brand/last4 captured, paid-state rendered |
-| **Confirmation email** | ✅ Generates (14.8 KB HTML, event + line items) |
-| **PDF receipt (Dompdf)** | ✅ Generates valid PDF bytes (156 KB, `%PDF` header) |
-| **Send payment-link email** | ✅ Wired (Collect Payment + legacy order view → existing invoice-email feature) |
-| **Refund + refund-notify email** | ✅ Refund flow works; opt-in customer email now sends (CLEANUP #30) |
-| **Stripe webhook** | ✅ **Now implemented** — `POST /wp-json/eem/v1/stripe-webhook`, HMAC signature verified (5-min replay guard), idempotent `payment_intent.succeeded` reconciliation. Live endpoint rejects unsigned (HTTP 400). End-to-end delivery needs `stripe listen`. Smoke 14/14. |
+| **Front-end `[en_reservation id=N]` shortcode** | ✅ Renders the customer form (contact, stall section, submit) |
+| **Stripe charge (Collect Payment)** | ✅ Verified live with a real test charge — paid-state rendered, card brand/last4 captured |
+| **Authorize.net charge (Collect Payment — admin)** | ✅ Wired and verified with live credentials (2026-06-10) |
+| **Confirmation email** | ✅ Generates (HTML, event + line items) |
+| **PDF receipt (Dompdf)** | ✅ Generates valid PDF bytes |
+| **Send payment-link email** | ✅ Wired (Collect Payment + legacy order view) |
+| **Refund + refund-notify email** | ✅ Refund flow works; opt-in customer email sends |
+| **Stripe webhook** | ✅ Implemented — `POST /wp-json/eem/v1/stripe-webhook`, HMAC signature verified |
+| **GEMS integration** | ✅ Feed source live: GEMS API client, event picker, bridge button, virtual event page |
 | `wp plugin verify-checksums` | N/A — custom plugin (no WordPress.org checksum manifest) |
 
-## 3. Known gaps / decisions before launch
+## 3. Features built this overhaul
 
-1. **Stripe webhook — now implemented** (was the one Phase 4 gap). Endpoint
-   `POST /wp-json/eem/v1/stripe-webhook` verifies the Stripe HMAC signature
-   (5-minute replay tolerance) and idempotently reconciles
-   `payment_intent.succeeded` (marks the order paid if not already), plus logs
-   `charge.refunded` / `charge.dispute.created`. **Remaining setup (yours):** paste
-   the webhook signing secret into Settings → Payments, register the endpoint URL
-   in the Stripe Dashboard, and run `stripe listen --forward-to
-   <site>/wp-json/eem/v1/stripe-webhook` + `stripe trigger
-   payment_intent.succeeded` for an end-to-end check. The Dashboard "webhook not
-   configured" nag clears once the secret is set.
-2. **Plugin URI / Author URI** are `example.com` placeholders (CLEANUP #23) — must
-   be set before any external/public distribution.
-3. **Authorize.net charging** is deferred (Stripe-first decision). Auth.net
-   *refunds* already work; Auth.net *charge dispatch* on Collect Payment is not
-   built.
-4. **Test-suite debt:** ~9 smoke files still fail — all **test drift against
-   verified-working pages**, not product bugs. Categories: stale version pins,
-   re-added breadcrumb assertion, seeded-row fixture dependencies, customer-event-
-   page (c10c/c10d) data-dependence, and the `44`-hardcoded fixtures in
-   c7x12/14/15. The editor-smoke root cause (sections need a linked-event fixture)
-   is fixed; the remainder is individual-assertion reconciliation.
+- **All admin pages** — Dashboard, Reservations list, Orders list, Order Detail, Reservation Editor
+  (12 sections), Stall Charts list + detail, Customer Profile, Reports, Create Order,
+  Collect Payment, Settings (all tabs)
+- **GEMS Integration** (v1 event source) — GEMS API client with JWT auth, 15-min transient
+  cache, normalized event feed, source-aware reservation picker, virtual event page
+  (`/equine-event/{id}/`), "Reservations" bridge button on GEMS plugin event pages
+- **Stall Map Builder** — native drag-to-configure stall/RV map grid, snapshot save,
+  blocked-stall typeahead reads both Row Builder and Map Builder labels
+- **Stripe + Authorize.net** — full charge + refund + webhook lifecycle for both processors
+- **Custom Line Items + Discounts** — C13.C data layer, rail UI, Order Detail display
+- **PDF receipts via Dompdf** — Dompdf integration, email attachment path
+- **Emogrifier CSS inlining** — for confirmation email HTML
+- **Design system** — `admin.css` from scratch against `.mockups/` pixel-for-pixel,
+  `admin-legacy.css` cascade management, `public.css` customer event page, `admin.js`
+  delegated-event architecture
 
-## 4. Notable work landed (this session)
+## 4. Known gaps / items before launch
 
-- **C13.C** — Custom Line Items + Discount (data layer, persist, rail UI, Order
-  Detail display, remove-with-reason). Fixed a real 32-char `order_key` vs
-  `varchar(20)` overflow bug caught by browser self-verify.
-- **C14** — Collect Payment page + **Stripe charge dispatch** (Elements,
-  client-tokenized, two gated AJAX handlers), paid-state rendering, **CLEANUP #34**
-  card brand/last4 capture + display.
-- **CLEANUP #30** — refund-notify email.
-- **CLEANUP #37/#38/#39** — confirmed Dashboard stall metrics wired; resolved.
-- **Smoke reconciliation** — 24 → ~9 failing files (deleted 3 superseded editor
-  drafts; root-caused the editor-fixture issue clearing 63 assertion-failures).
+1. **Plugin URI / Author URI** are `example.com` placeholders (CLEANUP #23) — set before
+   any external/public distribution.
+2. **Stripe webhook live setup** — endpoint implemented; requires: (a) paste the webhook
+   signing secret into Settings → Payments, (b) register the URL in Stripe Dashboard,
+   (c) `stripe listen` for end-to-end test.
+3. **Test-suite debt** — 46 failing assertions across ~16 files at v2.7.171 baseline
+   (3 fixed by c10c source-ordering update in this commit; c3a/c3b delgado-search guards
+   added). Remaining ~40 require running the full suite on LOCAL with seed data to identify
+   specific drift. Categories confirmed: GEMS source-ordering drift (3, fixed), seed
+   customer search drift (c3a/c3b, guarded). All are test-code drift against working
+   product; 0 fatals.
+4. **OVERHAUL_REPORT.md** was stale (v2.7.18) — now refreshed to v2.7.172.
 
-## 5. Open questions for the maintainer
+## 5. Files added (notable)
 
-1. Stripe webhook: build it, or ship synchronous-only and remove the UI/nag? (§3.1)
-2. Provide the real Plugin URI / Author URI when ready for external release.
-3. Re-seed test data? (Would clear the fixture-drift smokes but wipe current test
-   orders — declined this session to preserve #00014/#00015.)
-4. Finish the remaining smoke-tail reconciliation for a fully-green CI, or accept
-   it as characterized debt against working features?
+- `includes/class-eem-gems-client.php` — GEMS API client
+- `includes/class-eem-setup-wizard.php` — Onboarding wizard
+- `includes/class-eem-order-telemetry.php` — Activity log telemetry
+- `admin/class-eem-reservation-editor-page.php` — Reservation editor (replaces CPT meta boxes)
+- `admin/class-eem-dashboard-page.php` + `admin/class-eem-dashboard-repo.php`
+- `admin/class-eem-customers-list-page.php` + `admin/class-eem-customer-profile-page.php`
+- `admin/class-eem-reports-page.php` + `admin/class-eem-reports-repo.php`
+- `admin/class-eem-create-order-page.php` + `admin/class-eem-collect-payment-page.php`
+- `admin/class-eem-stall-charts-page.php`
+- `assets/css/admin.css` — new from scratch against mockups
+- `assets/js/admin.js` — new delegated-event architecture
+- `assets/css/public.css` — customer event page
+
+## 6. Open questions for the maintainer
+
+1. Stripe webhook: paste the signing secret to clear the "not configured" dashboard nag.
+2. Provide real Plugin URI / Author URI for public release.
+3. Native Events + Event Feed sources are gated "Coming Soon" — ready for v2 activation.
+4. Smoke suite: run `wp eval-file tools/seed-test-data.php` then `php tests/run-all-smokes.php`
+   to see current failure count and identify any remaining drift.

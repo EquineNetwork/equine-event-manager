@@ -71,12 +71,13 @@ $m->setAccessible( true );
 ob_start(); $m->invoke( $sp ); $shtml = ob_get_clean();
 
 preg_match_all( '/data-eem-source-value="([a-z]+)"/', $shtml, $order );
-ok( 'event source order is TEC, Native, Feed', array( 'tec', 'native', 'feed' ) === $order[1], $pass, $fail, $log, implode( ',', $order[1] ) );
-// Two Coming Soon pills (Native + Feed event sources). SendGrid was intentionally
+// Source order: TEC (live) → GEMS/feed (live, added 2.7.155) → Native (Coming Soon).
+ok( 'event source order is TEC, Feed, Native', array( 'tec', 'feed', 'native' ) === $order[1], $pass, $fail, $log, implode( ',', $order[1] ) );
+// Only Native is Coming Soon; GEMS/feed is a live source. SendGrid was intentionally
 // shipped as a live, enabled Email Delivery field (commit "enable the SendGrid API
 // Key field"), so it no longer carries a Coming Soon pill.
-ok( 'two Coming Soon pills (Native, Feed)', 2 === substr_count( $shtml, 'is-soon">Coming Soon' ), $pass, $fail, $log, substr_count( $shtml, 'is-soon">Coming Soon' ) );
-ok( 'two disabled source radios', 2 === preg_match_all( '/<input type="radio"[^>]*disabled/', $shtml, $d ), $pass, $fail, $log );
+ok( 'one Coming Soon pill (Native only)', 1 === substr_count( $shtml, 'is-soon">Coming Soon' ), $pass, $fail, $log, substr_count( $shtml, 'is-soon">Coming Soon' ) );
+ok( 'one disabled source radio (Native only)', 1 === preg_match_all( '/<input type="radio"[^>]*disabled/', $shtml, $d ), $pass, $fail, $log );
 // SendGrid is now an enabled, POSTing Email Delivery field — assert the current
 // shipped behavior (not the old coming-soon/disabled state).
 ok( 'SendGrid field is enabled (no disabled attr)', ! preg_match( '/id="eem-sendgrid"[^>]*disabled/', $shtml ), $pass, $fail, $log );
