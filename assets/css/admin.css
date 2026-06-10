@@ -6085,6 +6085,22 @@ a.eem-dashboard-qa-btn:focus {
 	opacity: 1 !important;
 }
 .media-modal { z-index: 200000; }
+/* Defensive layout reset — plugin page CSS must not override WP media
+   Backbone views. WP's .toolbar, .search-wrap, .pagination, .item-count,
+   .page-btn classes inside the media frame must render with WP's own rules.
+   This reset ensures any stale unscoped plugin rules cannot win inside the
+   modal even if they slip through (belt-and-suspenders; the real fix is
+   that all stall-chart unscoped classes are now body.eem-shell-page--stall-chart
+   scoped, so they can never match inside this modal at all). */
+body.eem-shell-page .media-modal .media-frame .toolbar {
+	display: block;
+	align-items: unset;
+	justify-content: unset;
+	gap: unset;
+	flex: unset;
+}
+body.eem-shell-page .media-modal .media-frame .search-wrap { flex: unset; }
+body.eem-shell-page .media-modal .media-frame .pagination { display: block; gap: unset; }
 
 /* C7.X.16 Issue A — stripped `padding: 18px 18px` declaration here.
    `<main>` carries both `.eem-edit-main` AND `.eem-reservation-editor
@@ -7956,64 +7972,69 @@ a.eem-sc-mob-res-name:hover { color: var(--eem-electric); }
 
 /* ───────────────────────────────────────────────────────────────
  * 2.3.27 — Stall & RV Charts: list page polish + detail switching
+ * All rules scoped to body.eem-shell-page--stall-chart so that
+ * generic class names (.toolbar, .search-wrap, .pagination, etc.)
+ * do not leak into WP core admin chrome — in particular the WP
+ * media library Backbone views that use .toolbar for layout.
  * ─────────────────────────────────────────────────────────────── */
 
 /* ── List page polish ── */
-.res-dates { font-size: 12.5px; color: #6B7A99; margin-top: 2px; }
-.chart-stats { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
-.chart-stat { font-size: 12px; color: #6B7A99; display: inline-flex; align-items: center; gap: 4px; }
-.stat-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
-.stat-dot--available { background: #22c55e; }
-.stat-dot--reserved { background: #dc2626; }
-.stat-dot--blocked { background: #94a3b8; }
+body.eem-shell-page--stall-chart .res-dates { font-size: 12.5px; color: #6B7A99; margin-top: 2px; }
+body.eem-shell-page--stall-chart .chart-stats { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
+body.eem-shell-page--stall-chart .chart-stat { font-size: 12px; color: #6B7A99; display: inline-flex; align-items: center; gap: 4px; }
+body.eem-shell-page--stall-chart .stat-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+body.eem-shell-page--stall-chart .stat-dot--available { background: #22c55e; }
+body.eem-shell-page--stall-chart .stat-dot--reserved { background: #dc2626; }
+body.eem-shell-page--stall-chart .stat-dot--blocked { background: #94a3b8; }
 
-th.sortable { cursor: pointer; white-space: nowrap; }
-.sort-icon { opacity: 0.5; font-size: 11px; margin-left: 3px; }
+body.eem-shell-page--stall-chart th.sortable { cursor: pointer; white-space: nowrap; }
+body.eem-shell-page--stall-chart .sort-icon { opacity: 0.5; font-size: 11px; margin-left: 3px; }
 
-.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.toolbar-left { display: flex; align-items: center; gap: 8px; flex: 1; }
-.toolbar-right { display: flex; align-items: center; gap: 8px; }
-.toolbar-select { font-size: 13px; border: 1px solid #8c8f94; border-radius: 4px; padding: 4px 8px; background: #fff; font-family: inherit; }
-.search-wrap { flex: 1; }
-.item-count { font-size: 13px; color: #50575e; white-space: nowrap; }
+body.eem-shell-page--stall-chart .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+body.eem-shell-page--stall-chart .toolbar-left { display: flex; align-items: center; gap: 8px; flex: 1; }
+body.eem-shell-page--stall-chart .toolbar-right { display: flex; align-items: center; gap: 8px; }
+body.eem-shell-page--stall-chart .toolbar-select { font-size: 13px; border: 1px solid #8c8f94; border-radius: 4px; padding: 4px 8px; background: #fff; font-family: inherit; }
+body.eem-shell-page--stall-chart .search-wrap { flex: 1; }
+body.eem-shell-page--stall-chart .item-count { font-size: 13px; color: #50575e; white-space: nowrap; }
 
-.pagination-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; border-top: 1px solid #dcdcde; background: #f3f4f5; flex-wrap: wrap; gap: 8px; }
-.pagination-info { font-size: 13px; color: #50575e; }
-.pagination { display: flex; gap: 4px; }
-.page-btn { border: 1px solid #c3c4c7; background: #fff; border-radius: 4px; padding: 4px 10px; font-size: 13px; cursor: pointer; font-family: inherit; color: #50575e; min-width: 28px; }
-.page-btn--active, .page-btn.active { background: #1668F2; color: #fff; border-color: #1668F2; }
-.page-btn[disabled] { opacity: 0.4; cursor: default; }
+body.eem-shell-page--stall-chart .pagination-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; border-top: 1px solid #dcdcde; background: #f3f4f5; flex-wrap: wrap; gap: 8px; }
+body.eem-shell-page--stall-chart .pagination-info { font-size: 13px; color: #50575e; }
+body.eem-shell-page--stall-chart .pagination { display: flex; gap: 4px; }
+body.eem-shell-page--stall-chart .page-btn { border: 1px solid #c3c4c7; background: #fff; border-radius: 4px; padding: 4px 10px; font-size: 13px; cursor: pointer; font-family: inherit; color: #50575e; min-width: 28px; }
+body.eem-shell-page--stall-chart .page-btn--active,
+body.eem-shell-page--stall-chart .page-btn.active { background: #1668F2; color: #fff; border-color: #1668F2; }
+body.eem-shell-page--stall-chart .page-btn[disabled] { opacity: 0.4; cursor: default; }
 
 /* ── Detail page — augment existing cell-action popover with BEM aliases ── */
-.cell-action-menu.eem-stall-chart-cell-menu { /* shared with existing eem-stall-chart-cell-menu */ }
-.cell-action-menu__title { font-size: 13px; font-weight: 600; color: #031B4E; line-height: 1.3; margin-bottom: 2px; }
-.cell-action-menu__subtitle { font-size: 11.5px; color: #6B7A99; }
-.cell-action-menu__btn { display: flex; align-items: center; gap: 8px; padding: 9px 12px; background: #fff; border: none; border-radius: 4px; font-size: 13px; font-weight: 500; color: #1d2327; cursor: pointer; text-align: left; width: 100%; font-family: inherit; }
-.cell-action-menu__btn:hover { background: #f6f7f7; }
-.cell-action-menu__btn svg { width: 13px; height: 13px; flex-shrink: 0; color: #6B7A99; }
+body.eem-shell-page--stall-chart .cell-action-menu.eem-stall-chart-cell-menu { /* shared with existing eem-stall-chart-cell-menu */ }
+body.eem-shell-page--stall-chart .cell-action-menu__title { font-size: 13px; font-weight: 600; color: #031B4E; line-height: 1.3; margin-bottom: 2px; }
+body.eem-shell-page--stall-chart .cell-action-menu__subtitle { font-size: 11.5px; color: #6B7A99; }
+body.eem-shell-page--stall-chart .cell-action-menu__btn { display: flex; align-items: center; gap: 8px; padding: 9px 12px; background: #fff; border: none; border-radius: 4px; font-size: 13px; font-weight: 500; color: #1d2327; cursor: pointer; text-align: left; width: 100%; font-family: inherit; }
+body.eem-shell-page--stall-chart .cell-action-menu__btn:hover { background: #f6f7f7; }
+body.eem-shell-page--stall-chart .cell-action-menu__btn svg { width: 13px; height: 13px; flex-shrink: 0; color: #6B7A99; }
 
 /* ── Destination banner (BEM aliases on existing classes) ── */
-.destination-banner { position: fixed; top: 32px; left: 0; right: 0; z-index: 300; background: #1668F2; color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; font-size: 14px; gap: 12px; box-shadow: 0 2px 8px rgba(22,104,242,.25); }
-.destination-banner__msg { flex: 1; }
-.destination-banner__cancel { background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.4); color: #fff; border-radius: 4px; padding: 5px 14px; cursor: pointer; font-size: 13px; font-family: inherit; }
-.destination-banner__cancel:hover { background: rgba(255,255,255,.28); }
-body.destination-mode { padding-top: 48px; }
-body.destination-mode .eem-occ-pill--available { outline: 2px dashed #1668F2; outline-offset: -2px; cursor: pointer; animation: eem-pulse-avail 1.4s ease-in-out infinite; }
-body.destination-mode .eem-occ-pill--reserved,
-body.destination-mode .eem-occ-pill--blocked { opacity: 0.5; pointer-events: none; }
+body.eem-shell-page--stall-chart .destination-banner { position: fixed; top: 32px; left: 0; right: 0; z-index: 300; background: #1668F2; color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; font-size: 14px; gap: 12px; box-shadow: 0 2px 8px rgba(22,104,242,.25); }
+body.eem-shell-page--stall-chart .destination-banner__msg { flex: 1; }
+body.eem-shell-page--stall-chart .destination-banner__cancel { background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.4); color: #fff; border-radius: 4px; padding: 5px 14px; cursor: pointer; font-size: 13px; font-family: inherit; }
+body.eem-shell-page--stall-chart .destination-banner__cancel:hover { background: rgba(255,255,255,.28); }
+body.destination-mode.eem-shell-page--stall-chart { padding-top: 48px; }
+body.destination-mode.eem-shell-page--stall-chart .eem-occ-pill--available { outline: 2px dashed #1668F2; outline-offset: -2px; cursor: pointer; animation: eem-pulse-avail 1.4s ease-in-out infinite; }
+body.destination-mode.eem-shell-page--stall-chart .eem-occ-pill--reserved,
+body.destination-mode.eem-shell-page--stall-chart .eem-occ-pill--blocked { opacity: 0.5; pointer-events: none; }
 @keyframes eem-pulse-avail { 0%, 100% { box-shadow: 0 0 0 2px #1668F2; } 50% { box-shadow: 0 0 0 4px rgba(22,104,242,.45); } }
 
 /* ── Scope modal ── */
-.scope-modal-overlay { position: fixed; inset: 0; background: rgba(3,27,78,.5); z-index: 400; display: flex; align-items: center; justify-content: center; padding: 20px; }
-.scope-modal { background: #fff; border-radius: 10px; padding: 24px; min-width: 360px; max-width: 480px; width: 100%; box-shadow: 0 16px 48px rgba(3,27,78,.25); }
-.scope-modal__title { font-size: 18px; font-weight: 600; margin: 0 0 16px; color: #031B4E; }
-.scope-modal__section { margin-bottom: 16px; }
-.scope-modal__label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: #6B7A99; margin-bottom: 6px; }
-.scope-modal__current-info { background: #f3f4f5; border: 1px solid #dcdcde; border-radius: 6px; padding: 10px 12px; font-size: 13px; color: #031B4E; }
-.scope-radio { display: flex; align-items: center; gap: 8px; font-size: 14px; margin-bottom: 6px; cursor: pointer; padding: 8px 10px; border: 1px solid #dcdcde; border-radius: 4px; }
-.scope-radio:hover { border-color: #1668F2; }
-.scope-modal-footer { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 20px; border-top: 1px solid #dcdcde; padding-top: 16px; }
-.scope-modal__error { color: #b91c1c; font-size: 13px; flex: 1; }
+body.eem-shell-page--stall-chart .scope-modal-overlay { position: fixed; inset: 0; background: rgba(3,27,78,.5); z-index: 400; display: flex; align-items: center; justify-content: center; padding: 20px; }
+body.eem-shell-page--stall-chart .scope-modal { background: #fff; border-radius: 10px; padding: 24px; min-width: 360px; max-width: 480px; width: 100%; box-shadow: 0 16px 48px rgba(3,27,78,.25); }
+body.eem-shell-page--stall-chart .scope-modal__title { font-size: 18px; font-weight: 600; margin: 0 0 16px; color: #031B4E; }
+body.eem-shell-page--stall-chart .scope-modal__section { margin-bottom: 16px; }
+body.eem-shell-page--stall-chart .scope-modal__label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: #6B7A99; margin-bottom: 6px; }
+body.eem-shell-page--stall-chart .scope-modal__current-info { background: #f3f4f5; border: 1px solid #dcdcde; border-radius: 6px; padding: 10px 12px; font-size: 13px; color: #031B4E; }
+body.eem-shell-page--stall-chart .scope-radio { display: flex; align-items: center; gap: 8px; font-size: 14px; margin-bottom: 6px; cursor: pointer; padding: 8px 10px; border: 1px solid #dcdcde; border-radius: 4px; }
+body.eem-shell-page--stall-chart .scope-radio:hover { border-color: #1668F2; }
+body.eem-shell-page--stall-chart .scope-modal-footer { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 20px; border-top: 1px solid #dcdcde; padding-top: 16px; }
+body.eem-shell-page--stall-chart .scope-modal__error { color: #b91c1c; font-size: 13px; flex: 1; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
 /* ─────────────────────────────────────────────────────────────
