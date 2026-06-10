@@ -1,7 +1,7 @@
 # Session Handoff — GEMS Integration + Demo Prep
 
 **Last updated:** end of the 2026-06-09/10 working session.
-**Current version:** `2.7.168` (in `equine-event-manager.php` header + `EQUINE_EVENT_MANAGER_VERSION`).
+**Current version:** `2.7.169` (in `equine-event-manager.php` header + `EQUINE_EVENT_MANAGER_VERSION`).
 **Branch:** `v4-stall-mapping` — this is the active dev branch. **`main` is kept fast-forwarded to it** (they point at the same commit). The in-WordPress auto-updater watches `main`, so Whitney updates her sites via Plugins → "Update now".
 
 > Read `CLAUDE.md` first (workflow + binding command-hygiene rules), then `README.md` (data model / naming), then this file for where the last session left off.
