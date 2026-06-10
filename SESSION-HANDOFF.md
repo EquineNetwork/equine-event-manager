@@ -6,6 +6,8 @@
 
 > Read `CLAUDE.md` first (workflow + binding command-hygiene rules), then `README.md` (data model / naming), then this file for where the last session left off.
 
+> **⚠️ Completeness-audit guardrail (verified 2026-06-10): file-absence ≠ feature-absence.** A prior chat grepped for `class-eem-stall-charts-page.php`, didn't find it, and wrongly concluded "C8 Stall Charts is the only missing chunk." FALSE — Stall Charts (list, detail with By Location/By Customer tabs, order overlays, print view) has been built for a long time and Whitney uses it daily; it lives inside the monolithic `admin/class-equine-event-manager-admin.php` (`EEM_Admin`), not a standalone page-class file. Proof: menu slug `equine-event-manager-stall-charts` registered ~line 718; `render_stall_chart_page()` ~1911; `render_stall_chart_dynamic_region()` ~2042; By Location/By Customer tabs ~2176-2194; `render_stall_chart_print_page()` ~3120. Earlier C-chunks (orders, reservations list, stall charts) render from `EEM_Admin`; only later chunks (C9/C13/C14/C15/DS-1.B) use separate page-class files. **When auditing what's done, grep the FEATURE (menu slug / render method), not a presumed filename.**
+
 ---
 
 ## How to ship a change (the established loop)
