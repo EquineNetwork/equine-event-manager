@@ -98,31 +98,18 @@ foreach ( array(
 // legitimately bare selectors in page-variant-scoped blocks like
 // body.eem-shell-page--reservations ... input[type="search"]).
 $legacy_nc = $legacy_nocom;
-// C16 UPDATE: the generic `body.eem-shell-page:not(...) input[type=X] { … !important }`
-// form-control cartel block was STRIPPED in the C16 admin-legacy cleanup. The
-// cross-input-type :not() exclusion chains now live in the editor- and
-// post-type-scoped blocks instead (admin-legacy.css ~2633 + ~2650/2660):
-//   body.eem-shell-page--editor input[type=X]:not(.eem-field-input):not(.eem-search-input)
-//   body.post-type-en_reservation.post-php  input[type=X]:not(...)
-//   body.post-type-en_reservation.post-new-php input[type=X]:not(...)
-// These blocks are NOT !important — specificity (0,2,2) wins naturally over
-// admin.css (0,1,1), per the C7.X.17 Issue A comment in the file. The
-// exclusion-chain invariant is preserved; only its host block moved. Search
-// remains exempt (page-variant search inputs are legitimately bare elsewhere).
-foreach ( array( '"text"', '"email"', '"url"', '"password"', '"date"', '"time"', '"datetime-local"' ) as $type ) {
-	$tq = preg_quote( $type, '~' );
-	// The editor-scoped block must carry input[type=X]:not(...)
-	$editor_ok = (bool) preg_match(
-		'~body\.eem-shell-page--editor input\[type=' . $tq . '\]\s*:not\(~',
-		$legacy_nc
-	);
-	// The post-type editor block must carry input[type=X]:not(...)
-	$post_type_ok = (bool) preg_match(
-		'~body\.post-type-en_reservation\.post-php input\[type=' . $tq . '\]\s*:not\(~',
-		$legacy_nc
-	);
-	c7x17_ok( "admin-legacy.css: editor/post-type block has :not() chain for input[type={$type}]",
-		$editor_ok && $post_type_ok, $pass, $fail, $log );
+// DS-1.A / C16 UPDATE (2.7.173): the editor- and post-type-scoped form-control
+// blocks that previously hosted the cross-input-type :not() exclusion chains
+//   body.eem-shell-page--editor input[type=X]:not(...)
+//   body.post-type-en_reservation.post-php / .post-new-php input[type=X]:not(...)
+// were REMOVED as dead code. The classic WP CPT edit screens (post.php /
+// post-new.php for en_reservation) unconditionally redirect to the custom route
+// `equine-event-manager-reservation-editor` (body `--reservation-editor`, styled
+// entirely by admin.css with no legacy rules), so those blocks matched zero
+// rendered elements. Guard against the dead blocks being reintroduced.
+foreach ( array( 'body.eem-shell-page--editor input[type=', 'body.post-type-en_reservation.post-php input[type=', 'body.post-type-en_reservation.post-new-php input[type=' ) as $dead ) {
+	c7x17_ok( "admin-legacy.css: dead classic-editor form-control block stays removed ({$dead}…)",
+		false === strpos( $legacy_nc, $dead ), $pass, $fail, $log );
 }
 
 // textarea exclusion chain. C7.X.18 Issue A1 corrected the chain: the actual

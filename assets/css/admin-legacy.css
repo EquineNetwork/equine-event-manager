@@ -2627,52 +2627,15 @@ body.eem-shell-page--editor .description {
 	line-height: 1.6;
 }
 
-/* C7.X.17 Issue A — same cross-type exclusion applied to the editor-page blocks.
-   These rules have specificity (0,2,2) which beats admin.css (0,1,1) component
-   rules even without !important, so exclusion chains are required here too. */
-body.eem-shell-page--editor input[type="text"]:not(.eem-field-input):not(.eem-search-input),
-body.eem-shell-page--editor input[type="email"]:not(.eem-field-input):not(.eem-search-input),
-body.eem-shell-page--editor input[type="url"]:not(.eem-field-input):not(.eem-search-input),
-body.eem-shell-page--editor input[type="number"]:not(.eem-price-input):not(.eem-pct-input):not(.eem-repeat-price-in):not(.eem-zone-price-in):not(.eem-field-input),
-body.eem-shell-page--editor input[type="password"]:not(.eem-field-input):not(.eem-search-input),
-body.eem-shell-page--editor input[type="date"]:not(.eem-field-input):not(.eem-search-input),
-body.eem-shell-page--editor input[type="time"]:not(.eem-field-input):not(.eem-search-input),
-body.eem-shell-page--editor input[type="datetime-local"]:not(.eem-field-input):not(.eem-search-input),
-body.eem-shell-page--editor select:not(.eem-dashboard-range-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-field-select),
-body.eem-shell-page--editor textarea:not(.eem-field-input):not(.eem-field-textarea) {
-	border: 1px solid #d7dee8;
-	border-radius: 8px;
-	background: #ffffff;
-	color: #172033;
-	box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
-}
-
-body.post-type-en_reservation.post-php input[type="text"]:not(.eem-field-input):not(.eem-search-input),
-body.post-type-en_reservation.post-php input[type="email"]:not(.eem-field-input):not(.eem-search-input),
-body.post-type-en_reservation.post-php input[type="url"]:not(.eem-field-input):not(.eem-search-input),
-body.post-type-en_reservation.post-php input[type="number"]:not(.eem-price-input):not(.eem-pct-input):not(.eem-repeat-price-in):not(.eem-zone-price-in):not(.eem-field-input),
-body.post-type-en_reservation.post-php input[type="password"]:not(.eem-field-input):not(.eem-search-input),
-body.post-type-en_reservation.post-php input[type="date"]:not(.eem-field-input):not(.eem-search-input),
-body.post-type-en_reservation.post-php input[type="time"]:not(.eem-field-input):not(.eem-search-input),
-body.post-type-en_reservation.post-php input[type="datetime-local"]:not(.eem-field-input):not(.eem-search-input),
-body.post-type-en_reservation.post-php select:not(.eem-dashboard-range-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-field-select),
-body.post-type-en_reservation.post-php textarea:not(.eem-field-input):not(.eem-field-textarea),
-body.post-type-en_reservation.post-new-php input[type="text"]:not(.eem-field-input):not(.eem-search-input),
-body.post-type-en_reservation.post-new-php input[type="email"]:not(.eem-field-input):not(.eem-search-input),
-body.post-type-en_reservation.post-new-php input[type="url"]:not(.eem-field-input):not(.eem-search-input),
-body.post-type-en_reservation.post-new-php input[type="number"]:not(.eem-price-input):not(.eem-pct-input):not(.eem-repeat-price-in):not(.eem-zone-price-in):not(.eem-field-input),
-body.post-type-en_reservation.post-new-php input[type="password"]:not(.eem-field-input):not(.eem-search-input),
-body.post-type-en_reservation.post-new-php input[type="date"]:not(.eem-field-input):not(.eem-search-input),
-body.post-type-en_reservation.post-new-php input[type="time"]:not(.eem-field-input):not(.eem-search-input),
-body.post-type-en_reservation.post-new-php input[type="datetime-local"]:not(.eem-field-input):not(.eem-search-input),
-body.post-type-en_reservation.post-new-php select:not(.eem-dashboard-range-select):not(.eem-list-select):not(.eem-toolbar-select):not(.eem-field-select),
-body.post-type-en_reservation.post-new-php textarea:not(.eem-field-input):not(.eem-field-textarea) {
-	border: 1px solid #d7dee8;
-	border-radius: 8px;
-	background: #ffffff;
-	color: #172033;
-	box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
-}
+/* DS-1.A / C16 (2.7.173) — REMOVED dead classic-CPT-editor form-control blocks.
+   The classic `post.php` / `post-new.php` edit screens for en_reservation
+   (body classes `eem-shell-page--editor`, `post-type-en_reservation.post-php`,
+   `post-type-en_reservation.post-new-php`) unconditionally redirect to the custom
+   route `equine-event-manager-reservation-editor` (body `--reservation-editor`)
+   via EEM_Reservation_Editor_Page::maybe_redirect_legacy_edit() /
+   maybe_redirect_new_reservation(), so those screens never paint. The removed
+   form-control restyle rules matched zero rendered elements. The live custom
+   editor is styled entirely by admin.css and carries no legacy rules. */
 
 body.eem-shell-page--editor textarea {
 	min-height: 120px;

@@ -63,21 +63,24 @@ $new_pattern = (bool) preg_match(
 c7x18_ok( 'admin-legacy.css: textarea :not(.eem-field-input):not(.eem-field-textarea) pattern present',
 	$new_pattern, $pass, $fail, $log );
 
-// C16 UPDATE: the generic shell-page form-control `!important` cartel blocks
-// were stripped in the C16 admin-legacy cleanup. The textarea exclusion chain
-// now survives only in the legitimate scoped blocks — verified present at 4
-// locations (admin-legacy.css 2642 editor, 2659/2669 post-type editor mirrors,
-// 12246 media-modal). The invariant "chain appears in multiple blocks, not
-// just one" still holds; the count dropped from 6 to 4 because the cartel
-// blocks it used to live in no longer exist (their overrides are gone, so no
-// exclusion is needed there anymore).
+// DS-1.A / C16 UPDATE (2.7.173): the dead classic-CPT-editor form-control blocks
+// (body.eem-shell-page--editor + body.post-type-en_reservation.post-php /
+// .post-new-php) that hosted the textarea exclusion chain were REMOVED — those
+// screens redirect to the custom route and never paint. The chain now survives
+// where it's genuinely load-bearing (the media-modal scoped block). The real
+// invariant is just that the corrected chain still exists at least once (asserted
+// above); the prior "≥4 blocks" count was an artifact of the dead blocks.
 $all_matches = preg_match_all(
 	'~textarea\s*:not\(\s*\.eem-field-input\s*\)\s*:not\(\s*\.eem-field-textarea\s*\)~',
 	$legacy_nc,
 	$textarea_hits
 );
-c7x18_ok( "admin-legacy.css: textarea :not() chain appears in ≥4 surviving scoped blocks (got {$all_matches})",
-	$all_matches >= 4, $pass, $fail, $log );
+c7x18_ok( "admin-legacy.css: textarea :not() chain survives in ≥1 live scoped block (got {$all_matches})",
+	$all_matches >= 1, $pass, $fail, $log );
+c7x18_ok( 'admin-legacy.css: dead classic-editor textarea blocks stay removed',
+	false === strpos( $legacy_nc, 'body.eem-shell-page--editor textarea:not(' )
+	&& false === strpos( $legacy_nc, 'body.post-type-en_reservation.post-php textarea:not(' ),
+	$pass, $fail, $log );
 
 /* ────────────────────────────────────────────────────────────────
    ISSUE A2 — Hardcoded border-radius: 4px values converted to token
