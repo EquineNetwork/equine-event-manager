@@ -2657,6 +2657,10 @@ class EEM_Events {
 				'filter_url' => '',
 			),
 			'featured_image' => ! empty( $feed_event['featured_image'] ) ? (string) $feed_event['featured_image'] : '',
+			// The single-event hero reads 'hero_image'; feed sources have no
+			// separate flyer attachment, so the feed event's featured image is
+			// the hero image.
+			'hero_image'     => ! empty( $feed_event['featured_image'] ) ? (string) $feed_event['featured_image'] : '',
 			'flyer_url'      => ! empty( $feed_event['flyer_url'] ) ? (string) $feed_event['flyer_url'] : '',
 			'external_url'   => ! empty( $feed_event['external_url'] ) ? (string) $feed_event['external_url'] : '',
 			'reservation_id' => $reservation_id,
@@ -3233,7 +3237,10 @@ class EEM_Events {
 				<div class="hero-inner">
 					<div class="hero-img-col">
 						<?php if ( $hero_image ) : ?>
-							<img src="<?php echo esc_url( $hero_image ); ?>" alt="<?php echo esc_attr( $event_data['title'] ); ?>" />
+							<img src="<?php echo esc_url( $hero_image ); ?>" alt="<?php echo esc_attr( $event_data['title'] ); ?>" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+							<div class="hero-img-placeholder" aria-hidden="true" style="display:none;">
+								<span><?php esc_html_e( 'Event Featured Image', 'equine-event-manager' ); ?></span>
+							</div>
 						<?php else : ?>
 							<div class="hero-img-placeholder" aria-hidden="true">
 								<span><?php esc_html_e( 'Event Featured Image', 'equine-event-manager' ); ?></span>

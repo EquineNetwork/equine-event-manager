@@ -37,6 +37,17 @@ class EEM_Gems_Client {
 	const DEFAULT_BASE_URL = 'https://webdataapi-ehbahmadepazg8e3.centralus-01.azurewebsites.net';
 
 	/**
+	 * Base URL for GEMS event flyer images. The GEMS schedule API returns no
+	 * usable image URL (imgLogo is just the association code), but the GEMS for
+	 * WordPress plugin renders the per-event flyer from the event's refId at
+	 * `{FLYER_IMAGE_BASE}/{refId}.jpg`. We mirror that so the linked event page
+	 * shows the same flyer as the GEMS listing.
+	 *
+	 * @var string
+	 */
+	const FLYER_IMAGE_BASE = 'https://www.globalhandicaps.com/images/schedule';
+
+	/**
 	 * Transient TTL for a fetched schedule (seconds).
 	 *
 	 * @var int
@@ -160,6 +171,12 @@ class EEM_Gems_Client {
 		$state = isset( $r['arenaState'] ) ? trim( (string) $r['arenaState'] ) : '';
 		$loc   = trim( $city . ( '' !== $city && '' !== $state ? ', ' : '' ) . $state );
 
+		// Build the flyer image URL from refId (same scheme the GEMS for
+		// WordPress plugin uses). The schedule API carries no image URL of its
+		// own. Browsers hide a 404 flyer via the render's onerror fallback.
+		$ref_id         = isset( $r['refId'] ) ? trim( (string) $r['refId'] ) : '';
+		$featured_image = '' !== $ref_id ? self::FLYER_IMAGE_BASE . '/' . rawurlencode( $ref_id ) . '.jpg' : '';
+
 		return array(
 			'source'            => 'feed',
 			'external_event_id' => $uid,
@@ -178,8 +195,9 @@ class EEM_Gems_Client {
 				'email' => isset( $r['producerEmail'] ) ? (string) $r['producerEmail'] : '',
 			),
 			'event_type'        => isset( $r['eventType'] ) ? (string) $r['eventType'] : '',
-			'ref_id'            => isset( $r['refId'] ) ? (string) $r['refId'] : '',
+			'ref_id'            => $ref_id,
 			'logo'              => isset( $r['imgLogo'] ) ? (string) $r['imgLogo'] : '',
+			'featured_image'    => $featured_image,
 			// GEMS provides no event description body. content_raw feeds the
 			// event-page hero bullets, so leave it empty — do NOT fall back to
 			// eventType (that surfaced as a stray "Non-Sanctioned" bullet under
