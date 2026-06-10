@@ -1779,16 +1779,35 @@
    Event Pre-Entries. Force horizontal text + the intended row layout regardless
    of the theme. !important is warranted: we're outranking an unknown third-party
    theme rule on the FRONT end — the admin no-!important hygiene rule governs
-   admin.css/admin-legacy.css, not public.css fighting a host theme. */
+   admin.css/admin-legacy.css, not public.css fighting a host theme.
+   2.7.170 — specificity upgrade: the .eem-event-page * writing-mode rule has
+   specificity (0,1,0); any theme selector of the form ".class h4" (0,1,1) beats
+   it on element-vs-universal. Added targeted (0,2,1) and (0,2,0) rules for the
+   specific broken elements so Elementor's own h4/heading rules can no longer win.
+   Also added max-width:none + transform:none (two uncovered suspects from
+   DevTools checklist) and display:flex on the heading container. */
 .eem-event-page,
 .eem-event-page * {
 	writing-mode: horizontal-tb !important;
 }
+/* High-specificity (0,2,1) writing-mode + width/transform reset for the exact
+   broken element — beats any theme .class h4 rule at (0,1,1). */
+.eem-event-page h4.eem-reservation-section__title {
+	writing-mode: horizontal-tb !important;
+	max-width: none !important;
+	width: auto !important;
+	transform: none !important;
+	text-orientation: mixed !important;
+}
 .eem-event-page .eem-reservation-section-heading,
 .eem-event-page .eem-reservation-section-heading--collapsible,
 .eem-event-page .eem-product-list__head {
+	display: flex !important;
 	flex-direction: row !important;
 	flex-wrap: nowrap !important;
+	width: 100% !important;
+	max-width: none !important;
+	transform: none !important;
 }
 .eem-event-page .eem-reservation-section__title,
 .eem-event-page .eem-product-list__head {
