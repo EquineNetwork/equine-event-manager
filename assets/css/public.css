@@ -1790,14 +1790,20 @@
 .eem-event-page * {
 	writing-mode: horizontal-tb !important;
 }
-/* High-specificity (0,2,1) writing-mode + width/transform reset for the exact
-   broken element — beats any theme .class h4 rule at (0,1,1). */
+/* High-specificity (0,2,1) h4 rule — beats any theme .class h4 at (0,1,1).
+   2.7.170: writing-mode + width/transform.
+   2.7.171: added flex:1 1 auto (DevTools showed width:0px because the (0,2,0)
+   flex rule was being beaten by an Elementor label rule that forced the toggle
+   to 100% width, consuming all flex space and collapsing the h4 to 0px). */
 .eem-event-page h4.eem-reservation-section__title {
 	writing-mode: horizontal-tb !important;
+	-webkit-text-orientation: mixed !important;
+	text-orientation: mixed !important;
+	flex: 1 1 auto !important;
+	min-width: 0 !important;
 	max-width: none !important;
 	width: auto !important;
 	transform: none !important;
-	text-orientation: mixed !important;
 }
 .eem-event-page .eem-reservation-section-heading,
 .eem-event-page .eem-reservation-section-heading--collapsible,
@@ -1805,6 +1811,7 @@
 	display: flex !important;
 	flex-direction: row !important;
 	flex-wrap: nowrap !important;
+	align-items: center !important;
 	width: 100% !important;
 	max-width: none !important;
 	transform: none !important;
@@ -1817,8 +1824,17 @@
 	flex: 1 1 auto !important;
 	min-width: 0;
 }
-.eem-event-page .eem-reservation-section-toggle {
+/* High-specificity (0,2,1) toggle rule — Elementor sets display:grid + width:100%
+   on label elements via a .elementor-X label selector (0,1,1), which beats our
+   .eem-reservation-section-toggle rule (0,1,0) and forces the toggle to consume
+   the full flex-container width, collapsing the h4 to 0px. The label.class
+   selector here reaches (0,2,1) and wins decisively. */
+.eem-event-page label.eem-reservation-section-toggle {
 	flex: 0 0 auto !important;
+	width: auto !important;
+	min-width: auto !important;
+	max-width: none !important;
+	display: inline-flex !important;
 }
 .eem-reservation-section__body {
 	display: grid;
