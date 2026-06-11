@@ -77,5 +77,38 @@ $check( 'reservation_id guard still present',
 $check( 'one-token-one-order dedup transient still in place',
 	str_contains( $sc_src, 'has_processed_submission_token' ) && str_contains( $sc_src, 'mark_submission_token_processed' ) );
 
+// === FIX 3 — inventory oversell: per-reservation checkout advisory lock ====
+// handle_reservation_submission must serialize the re-validate -> charge ->
+// insert critical section behind a per-reservation MySQL advisory lock, re-read
+// availability FRESH inside the lock, and release in a finally. Source-presence
+// assertions on structure + a runtime check that the lock primitive works and
+// frees on this DB.
+$check( 'checkout acquires a per-reservation GET_LOCK',
+	str_contains( $sc_src, "'eem_checkout_' . absint( \$reservation_id )" ) && str_contains( $sc_src, 'GET_LOCK' ) );
+$check( 'checkout lock released in a finally via RELEASE_LOCK',
+	str_contains( $sc_src, 'RELEASE_LOCK' ) && str_contains( $sc_src, '} finally {' ) );
+$check( 'timeout-to-acquire returns a friendly retry notice (no charge)',
+	str_contains( $sc_src, 'Another checkout for this event is still finishing' ) );
+
+// Availability is recomputed under the lock and re-validated before charging.
+$lock_pos   = strpos( $sc_src, "'eem_checkout_'" );
+$status_pos = strpos( $sc_src, '$live_status = $this->get_reservation_status( $data, $reservation_id );' );
+$reval_pos  = strpos( $sc_src, '$live_errors = $this->validate_submission( $submission, $live_status, $data );' );
+$pay_pos    = strpos( $sc_src, '$payment_result = $this->process_payment_submission( $reservation_id, $data, $submission, $live_status );' );
+$insert_pos = strpos( $sc_src, '$insert_result = $this->insert_reservation_orders( $reservation_id, $data, $submission, $live_status, $payment_result );' );
+$check( 'fresh status recomputed inside the lock', false !== $status_pos && $status_pos > $lock_pos );
+$check( 're-validation runs against the fresh status', false !== $reval_pos && $reval_pos > $status_pos );
+$check( 'payment uses the fresh (locked) status, not the stale snapshot', false !== $pay_pos && $pay_pos > $reval_pos );
+$check( 'insert happens after the re-validation + charge, inside the lock',
+	false !== $insert_pos && $insert_pos > $pay_pos );
+
+// Runtime: the checkout-lock primitive works on this DB and frees cleanly.
+$ck_lock = 'eem_checkout_smoke_' . wp_generate_password( 8, false );
+$got     = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, %d)', $ck_lock, 2 ) );
+$held    = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT IS_FREE_LOCK(%s)', $ck_lock ) );
+$wpdb->query( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $ck_lock ) );
+$freed   = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT IS_FREE_LOCK(%s)', $ck_lock ) );
+$check( 'GET_LOCK acquires + IS_FREE_LOCK reflects held/freed', 1 === $got && 0 === $held && 1 === $freed );
+
 echo "\n{$passed} passed, {$failed} failed\n";
 if ( $failed > 0 ) { exit( 1 ); }

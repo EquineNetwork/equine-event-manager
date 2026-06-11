@@ -2309,13 +2309,45 @@ class EEM_Shortcodes {
 			return $this->render_notice( implode( ' ', $errors ), 'error' );
 		}
 
-		$payment_result = $this->process_payment_submission( $reservation_id, $data, $submission, $status );
-
-		if ( is_wp_error( $payment_result ) ) {
-			return $this->render_notice( $payment_result->get_error_message(), 'error' );
+		// --- Inventory oversell guard (HIGH fix) ----------------------------
+		// The validation above ran against a $status snapshot taken when the page
+		// was rendered. Between then and now a concurrent checkout may have taken
+		// the same mapped stall / RV lot, or the last quantity slot. Serialize the
+		// re-validate -> charge -> insert critical section per-reservation with a
+		// MySQL advisory lock, recompute availability FRESH inside the lock, and
+		// bail BEFORE charging if the inventory is gone — so the loser of a race is
+		// told the space was taken instead of being charged for a stall that can't
+		// be fulfilled. Every invoice type is wrapped (pending / open-tab / send-
+		// link orders all count toward sold inventory). The lock is connection-
+		// scoped, so separate request processes genuinely block each other, and
+		// MySQL auto-releases it if a process dies — it can never get stuck.
+		global $wpdb;
+		$checkout_lock = 'eem_checkout_' . absint( $reservation_id );
+		$got_lock      = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, %d)', $checkout_lock, 20 ) );
+		if ( 1 !== $got_lock ) {
+			return $this->render_notice( __( 'Another checkout for this event is still finishing. Please wait a moment and submit again.', 'equine-event-manager' ), 'error' );
 		}
 
-		$insert_result = $this->insert_reservation_orders( $reservation_id, $data, $submission, $status, $payment_result );
+		try {
+			// Authoritative availability snapshot, recomputed under the lock so it
+			// reflects any order a concurrent request just inserted.
+			$live_status = $this->get_reservation_status( $data, $reservation_id );
+			$live_errors = $this->validate_submission( $submission, $live_status, $data );
+
+			if ( ! empty( $live_errors ) ) {
+				return $this->render_notice( implode( ' ', $live_errors ), 'error' );
+			}
+
+			$payment_result = $this->process_payment_submission( $reservation_id, $data, $submission, $live_status );
+
+			if ( is_wp_error( $payment_result ) ) {
+				return $this->render_notice( $payment_result->get_error_message(), 'error' );
+			}
+
+			$insert_result = $this->insert_reservation_orders( $reservation_id, $data, $submission, $live_status, $payment_result );
+		} finally {
+			$wpdb->query( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $checkout_lock ) );
+		}
 
 		if ( empty( $insert_result['success'] ) ) {
 			return $this->render_notice( __( 'We could not save this reservation request. Please try again.', 'equine-event-manager' ), 'error' );
