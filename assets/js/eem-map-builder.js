@@ -379,8 +379,8 @@
 						'<div class="eem-mb-gridbar">' +
 							'<span class="eem-mb-step">Rows <button type="button" data-resize="row" data-d="-1">−</button><span id="eem-mb-rowval">0</span><button type="button" data-resize="row" data-d="1">+</button></span>' +
 							'<span class="eem-mb-step">Cols <button type="button" data-resize="col" data-d="-1">−</button><span id="eem-mb-colval">0</span><button type="button" data-resize="col" data-d="1">+</button></span>' +
-							'<span class="eem-mb-zoom"><button type="button" data-zoom="out" title="Zoom out">−</button><button type="button" data-zoom="fit" title="Fit to width">Zoom</button><button type="button" data-zoom="in" title="Zoom in">+</button></span>' +
 							'<span class="eem-mb-controls" id="eem-mb-controls"></span>' +
+							'<span class="eem-mb-zoom"><button type="button" data-zoom="out" title="Zoom out">−</button><button type="button" data-zoom="fit" title="Fit to width">Zoom</button><button type="button" data-zoom="in" title="Zoom in">+</button></span>' +
 						'</div>' +
 						'<div class="eem-mb-gridscroll"><div class="eem-mb-grid" id="eem-mb-grid"></div></div>' +
 					'</div>' +
