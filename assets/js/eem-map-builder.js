@@ -93,8 +93,14 @@
 		var cols = z.grid[0] ? z.grid[0].length : 0;
 		var scroll = q('#eem-mb-gridscroll') || q('.eem-mb-gridscroll');
 		if (!cols || !scroll) { return 1; }
-		var avail = scroll.clientWidth - 28;
-		return Math.max(ZMIN, Math.min(1, avail / (cols * ZBASE_C)));
+		// clientWidth includes the 18px scroll padding each side; the inline-grid adds
+		// (cols-1) 1px gaps + a 1px border each side. Subtract it all and FLOOR the
+		// per-cell width so the grid never overflows (right columns were clipped at
+		// Fit). render() does round(ZBASE_C*zoom); picking zoom = (integer cw)/ZBASE_C
+		// makes that round back to the same integer, so no rounding overflow either.
+		var usable = scroll.clientWidth - 36 - (cols - 1) - 2;
+		var cw = Math.floor(usable / cols);
+		return Math.max(ZMIN, Math.min(1, cw / ZBASE_C));
 	}
 	function mbSetActive(level) {
 		var bar = q('.eem-mb-zoom'); if (!bar) { return; }
