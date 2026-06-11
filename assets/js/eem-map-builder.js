@@ -383,6 +383,7 @@
 						tool('label', 'Label', '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/>') +
 						tool('landmark', 'Landmark', '<path d="M20.6 13.4 13.4 20.6a2 2 0 01-2.8 0L3 13V3h10l7.6 7.6a2 2 0 010 2.8z"/><circle cx="8" cy="8" r="1.4"/>') +
 						tool('erase', 'Erase', '<path d="M7 21h10M5 13l6-6 8 8-6 6H9l-4-4z"/>') +
+						tool('pan', 'Pan', '<path d="M5 9l-3 3 3 3"/><path d="M9 5l3-3 3 3"/><path d="M15 19l-3 3-3-3"/><path d="M19 9l3 3-3 3"/><path d="M2 12h20"/><path d="M12 2v20"/>') +
 						act('clear', 'Clear', '<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/>') +
 						'<div class="eem-mb-sep"></div>' +
 						act('undo', 'Undo', '<path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 015 5v0a5 5 0 01-5 5H9"/>', 'eem-mb-undo') +
@@ -418,6 +419,8 @@
 			if (b.getAttribute('data-act') === 'clear') { return clearGrid(); }
 			B.tool = b.getAttribute('data-tool'); B.sel = null;
 			qa('.eem-mb-tool[data-tool]').forEach(function (t) { t.classList.toggle('active', t.getAttribute('data-tool') === B.tool); });
+			var gsc = q('#eem-mb-gridscroll') || q('.eem-mb-gridscroll');
+			if (gsc) { gsc.style.cursor = (B.tool === 'pan') ? 'grab' : ''; }
 			render(); renderControls();
 		});
 		// resize steppers
@@ -433,6 +436,11 @@
 		// drag-select on the grid
 		var grid = o.querySelector('#eem-mb-grid');
 		grid.addEventListener('mousedown', function (e) {
+			if (B.tool === 'pan') {
+				var psc = q('#eem-mb-gridscroll') || q('.eem-mb-gridscroll');
+				if (psc) { B.pan = { sx: e.clientX, sy: e.clientY, sl: psc.scrollLeft, st: psc.scrollTop, el: psc }; psc.style.cursor = 'grabbing'; e.preventDefault(); }
+				return;
+			}
 			var cl = e.target.closest('.eem-mb-cell'); if (!cl) { return; }
 			var r = +cl.getAttribute('data-r'), c = +cl.getAttribute('data-c');
 			if (B.tool === 'label') { startLabelEdit(r, c); return; }
@@ -448,6 +456,12 @@
 			B.sel = { r1: B.drag.r1, c1: B.drag.c1, r2: r, c2: c }; render(); updateSelMeta();
 		});
 		document.addEventListener('mouseup', onUp);
+		window.addEventListener('mousemove', function (e) {
+			if (!B.pan) { return; }
+			B.pan.el.scrollLeft = B.pan.sl - (e.clientX - B.pan.sx);
+			B.pan.el.scrollTop = B.pan.st - (e.clientY - B.pan.sy);
+			e.preventDefault();
+		});
 		o.querySelector('#eem-mb-preview').addEventListener('click', previewCustomer);
 		o.querySelector('#eem-mb-cancel').addEventListener('click', close);
 		o.querySelector('#eem-mb-save').addEventListener('click', save);
@@ -457,6 +471,7 @@
 	// On mouse-up: a Select-tool click (no drag) on a single cell opens its label
 	// editor — "select something to change a label".
 	function onUp() {
+		if (B.pan) { if (B.pan.el) { B.pan.el.style.cursor = 'grab'; } B.pan = null; return; }
 		if (B.drag && !B.drag.erase && B.tool === 'select' && !B.drag.moved && B.sel) {
 			var r = B.sel.r1, c = B.sel.c1; B.drag = null; startLabelEdit(r, c); return;
 		}
