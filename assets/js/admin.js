@@ -4800,7 +4800,17 @@
 			for (var c = 0; c < cols; c++) {
 				if (used[r][c]) continue;
 				var cell = grid[r][c];
-				if (!cell || cell.t === 'g') { used[r][c] = true; continue; }
+				if (!cell || cell.t === 'g') {
+					// Render the empty/aisle position as a hatched gap cell so the
+					// admin chart matches the Stall Map Builder (gray-where-nothing).
+					used[r][c] = true;
+					var gap = document.createElement('div');
+					gap.className = 'eem-smap-cell eem-smap-cell--gap';
+					gap.style.gridColumn = (c + 1);
+					gap.style.gridRow = (r + 1);
+					host.appendChild(gap);
+					continue;
+				}
 				if (cell.t === 's') {
 					used[r][c] = true;
 					var unit = zq ? (barnName + ' ' + cell.l) : cell.l;
