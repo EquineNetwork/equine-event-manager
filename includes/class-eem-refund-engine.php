@@ -87,7 +87,58 @@ class EEM_Refund_Engine {
 		);
 	}
 
+	/**
+	 * Refund an arbitrary dollar amount against an order, distributing it across
+	 * the order's refundable components.
+	 *
+	 * Serialized behind a per-order MySQL advisory lock so concurrent or replayed
+	 * refund requests for the same order cannot both pass the remaining-balance
+	 * check and over-refund (HIGH money-path fix). The second request blocks
+	 * until the first releases, then re-reads the now-depleted balance inside
+	 * {@see self::process_amount_refund_locked()} and is rejected by the existing
+	 * "exceeds remaining" guard. The named lock is connection-scoped, so separate
+	 * PHP request processes (separate DB connections) genuinely block each other;
+	 * MySQL auto-releases it if a process dies, so the lock can never get stuck.
+	 *
+	 * @param string $order_key        Order identifier.
+	 * @param float  $requested_amount Dollar amount to refund.
+	 * @param string $reason           Optional admin-supplied reason (logged).
+	 * @return array|WP_Error Refund result array, or WP_Error on failure.
+	 */
 	public function process_amount_refund( $order_key, $requested_amount, $reason = '' ) {
+		global $wpdb;
+
+		// 64-char-safe, namespaced lock name keyed on the order.
+		$lock_name = 'eem_refund_' . md5( (string) $order_key );
+
+		// Wait up to 15s for an in-flight refund on the same order to finish.
+		$got_lock = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, %d)', $lock_name, 15 ) );
+		if ( 1 !== $got_lock ) {
+			return new WP_Error(
+				'refund_locked',
+				__( 'Another refund for this order is still processing. Please wait a moment and try again.', 'equine-event-manager' )
+			);
+		}
+
+		try {
+			return $this->process_amount_refund_locked( $order_key, $requested_amount, $reason );
+		} finally {
+			$wpdb->query( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $lock_name ) );
+		}
+	}
+
+	/**
+	 * Worker for {@see self::process_amount_refund()}. MUST be called only while
+	 * holding that method's per-order advisory lock — it reads the remaining
+	 * refundable balance, dispatches to the gateway, and persists without any
+	 * internal locking of its own.
+	 *
+	 * @param string $order_key        Order identifier.
+	 * @param float  $requested_amount Dollar amount to refund.
+	 * @param string $reason           Optional admin-supplied reason (logged).
+	 * @return array|WP_Error Refund result array, or WP_Error on failure.
+	 */
+	private function process_amount_refund_locked( $order_key, $requested_amount, $reason = '' ) {
 		$order = $this->orders_repository->get_order( $order_key );
 
 		if ( ! $order ) {

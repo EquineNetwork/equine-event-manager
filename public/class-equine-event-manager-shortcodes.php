@@ -3428,6 +3428,22 @@ class EEM_Shortcodes {
 				return new WP_Error( 'stripe_reservation_mismatch', __( 'This Stripe payment does not belong to the current reservation form.', 'equine-event-manager' ) );
 			}
 
+			// HIGH money-path fix: bind the PaymentIntent to THIS submission.
+			// The intent is created with metadata[submission_token] set to the
+			// form's per-page-load token (see create_stripe_payment_intent). The
+			// reservation_id check alone lets a paid intent from one submission be
+			// replayed into a fresh form (new token) for the same reservation,
+			// minting a second "paid" order off a single charge. Requiring the
+			// token to match — combined with the one-token-one-order dedup
+			// transient (has_processed_submission_token) — caps each intent at a
+			// single paid order. A succeeded intent that carries no token (only
+			// ever ours, which always sets it) is treated as a mismatch.
+			$intent_token     = isset( $intent['metadata']['submission_token'] ) ? (string) $intent['metadata']['submission_token'] : '';
+			$submission_token = isset( $submission['submission_token'] ) ? (string) $submission['submission_token'] : '';
+			if ( '' === $intent_token || '' === $submission_token || ! hash_equals( $intent_token, $submission_token ) ) {
+				return new WP_Error( 'stripe_token_mismatch', __( 'This Stripe payment could not be matched to your reservation submission. Please refresh the page and pay again.', 'equine-event-manager' ) );
+			}
+
 			return array(
 				'payment_status'  => 'paid',
 				'payment_gateway' => 'stripe',
