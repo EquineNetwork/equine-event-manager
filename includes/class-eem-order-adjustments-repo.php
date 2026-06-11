@@ -159,6 +159,11 @@ class EEM_Order_Adjustments_Repo {
 		if ( '' === $order_key || '' === $reason || $discount_value <= 0 ) {
 			return false;
 		}
+		// Defensive backstop (the Create Order handler rejects this earlier with a
+		// user-facing message): never persist a percentage discount above 100%.
+		if ( self::DISCOUNT_PERCENT === $discount_type && $discount_value > 100 ) {
+			return false;
+		}
 
 		self::remove_discount( $order_key );
 

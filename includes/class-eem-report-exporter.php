@@ -52,10 +52,10 @@ class EEM_Report_Exporter {
 		}
 
 		if ( ! empty( $headers ) ) {
-			fputcsv( $fh, array_map( 'strval', $headers ) );
+			fputcsv( $fh, array_map( array( $this, 'neutralize_csv_cell' ), $headers ) );
 		}
 		foreach ( $rows as $row ) {
-			fputcsv( $fh, array_map( 'strval', (array) $row ) );
+			fputcsv( $fh, array_map( array( $this, 'neutralize_csv_cell' ), (array) $row ) );
 		}
 
 		rewind( $fh );
@@ -63,6 +63,38 @@ class EEM_Report_Exporter {
 		fclose( $fh );
 
 		return "\xEF\xBB\xBF" . ( is_string( $csv ) ? $csv : '' );
+	}
+
+	/**
+	 * Neutralize CSV formula injection (CWE-1236) in a single cell.
+	 *
+	 * Customer-supplied fields (names, notes, event names) flow into exported
+	 * reports. A cell beginning with `=`, `+`, `-`, `@`, `|` or `%` is interpreted
+	 * as a formula by Excel / LibreOffice / Sheets when the admin opens the file —
+	 * e.g. `=WEBSERVICE(...)` can exfiltrate data. Prefixing a single quote forces
+	 * the spreadsheet to treat the cell as literal text. Genuine numbers (incl.
+	 * negative / decimal) are left untouched so money + count columns stay numeric.
+	 *
+	 * @param mixed $value Raw cell value.
+	 * @return string Neutralized cell value.
+	 */
+	private function neutralize_csv_cell( $value ): string {
+		$value = (string) $value;
+
+		if ( '' === $value ) {
+			return $value;
+		}
+
+		// Leave real numbers alone (keeps money/qty columns sortable + summable).
+		if ( preg_match( '/^-?\d+(?:\.\d+)?$/', $value ) ) {
+			return $value;
+		}
+
+		if ( in_array( $value[0], array( '=', '+', '-', '@', '|', '%' ), true ) ) {
+			return "'" . $value;
+		}
+
+		return $value;
 	}
 
 	/**

@@ -640,6 +640,18 @@ class EEM_Create_Order_Page {
 				'code'    => 'discount_reason_required',
 			), 422 );
 		}
+		// A percentage discount above 100% is rejected outright. The resolved
+		// dollar amount is clamped to the subtotal regardless, but storing/
+		// logging a >100% value is a data-entry error that should be corrected,
+		// not silently capped.
+		if ( null !== $discount
+			&& EEM_Order_Adjustments_Repo::DISCOUNT_PERCENT === $discount['type']
+			&& $discount['value'] > 100 ) {
+			wp_send_json_error( array(
+				'message' => __( 'A percentage discount cannot exceed 100%.', 'equine-event-manager' ),
+				'code'    => 'discount_percent_too_large',
+			), 422 );
+		}
 
 		// Force admin-invoice / unpaid path regardless of what the JS sent.
 		// This ensures no charge is dispatched and the order is created as pending.
