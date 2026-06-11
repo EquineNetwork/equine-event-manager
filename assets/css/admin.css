@@ -7684,6 +7684,9 @@ a.eem-btn--ghost:focus    { color: #1d2327; }
 .eem-smap-zoom button { border: 0; border-left: 1px solid var(--eem-line, #d9e2ec); background: #fff; color: var(--eem-navy, #031B4E); font-weight: 700; font-size: 13px; padding: 5px 12px; line-height: 1; cursor: pointer; }
 .eem-smap-zoom button:first-child { border-left: 0; }
 .eem-smap-zoom button:hover { background: #eef4ff; }
+/* Active preset (Fit / 2x / 3x) — the current zoom level reads at a glance. */
+.eem-smap-zoom button.is-active { background: var(--eem-electric, #1668F2); color: #fff; }
+.eem-smap-zoom button.is-active:hover { background: var(--eem-electric, #1668F2); }
 /* Admin chart grid mirrors the Stall Map Builder (.eem-mb-grid): a solid gray
    grid where the 1px gaps + empty/aisle cells read gray, square white stall
    cells, hatched aisles, square cream landmarks. Per the stall-grid visual

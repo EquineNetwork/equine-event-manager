@@ -2643,9 +2643,9 @@ class EEM_Admin {
 
 			<div class="eem-smap-zoombar">
 				<span class="eem-smap-zoom" data-eem-smap-zoom>
-					<button type="button" data-zoom="out" title="<?php esc_attr_e( 'Zoom out', 'equine-event-manager' ); ?>">&minus;</button>
-					<button type="button" data-zoom="fit" title="<?php esc_attr_e( 'Fit to width', 'equine-event-manager' ); ?>"><?php esc_html_e( 'Zoom', 'equine-event-manager' ); ?></button>
-					<button type="button" data-zoom="in" title="<?php esc_attr_e( 'Zoom in', 'equine-event-manager' ); ?>">+</button>
+					<button type="button" data-zoom="fit" title="<?php esc_attr_e( 'Fit the whole facility', 'equine-event-manager' ); ?>"><?php esc_html_e( 'Fit', 'equine-event-manager' ); ?></button>
+					<button type="button" data-zoom="2x" title="<?php esc_attr_e( '2× detail', 'equine-event-manager' ); ?>">2&times;</button>
+					<button type="button" data-zoom="3x" title="<?php esc_attr_e( '3× detail', 'equine-event-manager' ); ?>">3&times;</button>
 				</span>
 			</div>
 

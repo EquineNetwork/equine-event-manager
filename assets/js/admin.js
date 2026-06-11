@@ -4999,6 +4999,7 @@
 				});
 			}
 			eemSmapRenderGrid(container, payload, container._eemSmapBarn);
+			if (container._eemSmapApplyLevel) { container._eemSmapApplyLevel(); }
 			// Cell click → popover (bound once per render via the grid host).
 			var host = container.querySelector('[data-eem-smap-grid]');
 			if (host && !host._eemSmapBound) {
@@ -5022,7 +5023,7 @@
 				// SMAP_MIN low (12) so a large facility map can shrink far enough to
 				// show EVERY chip on load without horizontal/vertical scroll — the
 				// customer should see the whole layout the moment the page loads.
-				var SMAP_BASE = 40, SMAP_MIN = 12, SMAP_MAX = 72;
+				var SMAP_BASE = 40, SMAP_MIN = 12;
 				var applySmapZoom = function (px) {
 					container.style.setProperty('--eem-smap-chip', px + 'px');
 					// Below ~24px a 4-digit stall number is illegible — switch the grid
@@ -5030,33 +5031,40 @@
 					var dotHost = container.querySelector('[data-eem-smap-grid]');
 					if (dotHost) { dotHost.classList.toggle('eem-smap-grid--dots', px < 24); }
 				};
-				var fitSmap = function () {
-					var p2; try { p2 = JSON.parse(container.querySelector('[data-eem-smap-payload]').textContent); } catch (e) { return; }
+				// Fit-to-view chip px for the current barn — the "Fit"/1x anchor that the
+				// 2x and 3x presets multiply, so the levels adapt to any facility size.
+				var smapFitPx = function () {
+					var p2; try { p2 = JSON.parse(container.querySelector('[data-eem-smap-payload]').textContent); } catch (e) { return SMAP_BASE; }
 					var barn = (p2.barns || [])[container._eemSmapBarn || 0] || {};
 					var grid = barn.grid || [];
-					var rows = grid.length;
-					var cols = rows ? grid[0].length : 0;
+					var rows = grid.length, cols = rows ? grid[0].length : 0;
 					var scroll = container.querySelector('[data-eem-smap-scroll]');
-					if (!cols || !scroll) { applySmapZoom(SMAP_BASE); return; }
-					// Fit to BOTH axes so the entire grid is visible. ~4px chip gap +
-					// padding allowance per axis; height only constrains when the scroll
-					// viewport is actually capped (clientHeight > 0 and < content).
+					if (!cols || !scroll) { return SMAP_BASE; }
 					var pxW = Math.floor((scroll.clientWidth - 28) / cols) - 4;
 					var availH = scroll.clientHeight;
 					var pxH = availH > 0 ? Math.floor((availH - 12) / rows) - 4 : pxW;
-					var px = Math.max(SMAP_MIN, Math.min(SMAP_BASE, pxW, pxH));
-					container._eemSmapChip = px; applySmapZoom(px);
+					return Math.max(SMAP_MIN, Math.min(SMAP_BASE, pxW, pxH));
 				};
+				var smapSetActive = function (level) {
+					var btns = smapZoomBar.querySelectorAll('[data-zoom]');
+					for (var i = 0; i < btns.length; i++) { btns[i].classList.toggle('is-active', btns[i].getAttribute('data-zoom') === level); }
+				};
+				// Discrete zoom presets: Fit (whole facility), 2x or 3x of Fit.
+				var smapApplyLevel = function (level) {
+					level = level || container._eemSmapLevel || 'fit';
+					container._eemSmapLevel = level;
+					var fit = smapFitPx();
+					var px = level === '2x' ? Math.round(fit * 2) : level === '3x' ? Math.round(fit * 3) : fit;
+					container._eemSmapChip = px;
+					applySmapZoom(px);
+					smapSetActive(level);
+				};
+				container._eemSmapApplyLevel = smapApplyLevel;
 				smapZoomBar.addEventListener('click', function (ev) {
 					var b = ev.target.closest('[data-zoom]'); if (!b) return;
-					var act = b.getAttribute('data-zoom');
-					var cur = container._eemSmapChip || SMAP_BASE;
-					if (act === 'in') { cur = Math.min(SMAP_MAX, cur + 8); }
-					else if (act === 'out') { cur = Math.max(SMAP_MIN, cur - 8); }
-					else { fitSmap(); return; }
-					container._eemSmapChip = cur; applySmapZoom(cur);
+					smapApplyLevel(b.getAttribute('data-zoom'));
 				});
-				fitSmap();
+				smapApplyLevel(container._eemSmapLevel || 'fit');
 			}
 		});
 	};
