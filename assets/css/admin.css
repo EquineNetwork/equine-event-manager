@@ -9134,6 +9134,9 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 .eem-mb-zoom button { border: 0; border-left: 1px solid var(--eem-border, #D9E2F2); background: var(--eem-surface, #fff); color: var(--eem-navy, #031B4E); font-weight: 700; font-size: 13px; padding: 5px 11px; line-height: 1; cursor: pointer; }
 .eem-mb-zoom button:first-child { border-left: 0; }
 .eem-mb-zoom button:hover { background: #eef4ff; }
+/* Active preset (Fit / 2x / 3x) — the current zoom level reads at a glance. */
+.eem-mb-zoom button.is-active { background: var(--eem-electric, #1668F2); color: #fff; }
+.eem-mb-zoom button.is-active:hover { background: var(--eem-electric, #1668F2); }
 /* Inline mode — the builder lives inside the section card instead of a fixed
    modal overlay (Whitney: "the map builder needs to just live in this card").
    Static positioning, no backdrop, full-width, capped grid viewport that pans. */

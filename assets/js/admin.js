@@ -5066,8 +5066,38 @@
 				});
 				smapApplyLevel(container._eemSmapLevel || 'fit');
 			}
+			eemSmapBindPan(container.querySelector('[data-eem-smap-scroll]'));
 		});
 	};
+
+	// Drag-to-pan a stall-map scroll viewport so the 2x/3x zoom levels aren't trapped
+	// on scrollbars. A 4px move threshold distinguishes a pan from a click, and the
+	// pan-ending click is swallowed (capture phase) so cells don't open the popover
+	// after a drag. Touch devices already pan via native scroll.
+	function eemSmapBindPan(scroll) {
+		if (!scroll || scroll._eemPanBound) { return; }
+		scroll._eemPanBound = true;
+		var down = false, moved = false, sx = 0, sy = 0, sl = 0, st = 0;
+		scroll.style.cursor = 'grab';
+		scroll.addEventListener('mousedown', function (e) {
+			if (e.button !== 0) { return; }
+			down = true; moved = false; sx = e.clientX; sy = e.clientY; sl = scroll.scrollLeft; st = scroll.scrollTop;
+		});
+		window.addEventListener('mousemove', function (e) {
+			if (!down) { return; }
+			var dx = e.clientX - sx, dy = e.clientY - sy;
+			if (!moved && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) { moved = true; scroll.style.cursor = 'grabbing'; }
+			if (moved) { scroll.scrollLeft = sl - dx; scroll.scrollTop = st - dy; e.preventDefault(); }
+		});
+		window.addEventListener('mouseup', function () {
+			if (!down) { return; }
+			down = false; scroll.style.cursor = 'grab';
+			if (moved) { scroll._eemPanned = true; setTimeout(function () { scroll._eemPanned = false; }, 0); }
+		});
+		scroll.addEventListener('click', function (e) {
+			if (scroll._eemPanned) { e.stopPropagation(); e.preventDefault(); }
+		}, true);
+	}
 
 	// Dismiss the map popover on outside click.
 	document.addEventListener('click', function (ev) {

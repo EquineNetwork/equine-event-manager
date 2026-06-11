@@ -87,16 +87,30 @@
 
 	// Fit the active zone's grid width to the visible scroll viewport so the whole
 	// map is in view; zoom in/out then pans within the capped viewport.
-	function fitZoom() {
-		var z = Z(); if (!z) { return; }
+	// Fit factor (<=1) for the active zone — the "Fit"/1x anchor the 2x/3x presets multiply.
+	function mbFitFactor() {
+		var z = Z(); if (!z) { return 1; }
 		var cols = z.grid[0] ? z.grid[0].length : 0;
 		var scroll = q('#eem-mb-gridscroll') || q('.eem-mb-gridscroll');
-		if (!cols || !scroll) { B.zoom = 1; render(); return; }
-		var avail = scroll.clientWidth - 28; // padding allowance
-		var want = avail / (cols * ZBASE_C);
-		B.zoom = Math.max(ZMIN, Math.min(1, want));
-		render();
+		if (!cols || !scroll) { return 1; }
+		var avail = scroll.clientWidth - 28;
+		return Math.max(ZMIN, Math.min(1, avail / (cols * ZBASE_C)));
 	}
+	function mbSetActive(level) {
+		var bar = q('.eem-mb-zoom'); if (!bar) { return; }
+		var btns = bar.querySelectorAll('[data-zoom]');
+		for (var i = 0; i < btns.length; i++) { btns[i].classList.toggle('is-active', btns[i].getAttribute('data-zoom') === level); }
+	}
+	// Discrete zoom presets: Fit (whole facility), 2x or 3x of Fit.
+	function mbApplyLevel(level) {
+		level = level || B.mbLevel || 'fit';
+		B.mbLevel = level;
+		var fit = mbFitFactor();
+		B.zoom = level === '2x' ? fit * 2 : level === '3x' ? fit * 3 : fit;
+		render();
+		mbSetActive(level);
+	}
+	function fitZoom() { mbApplyLevel('fit'); }
 
 	function render() {
 		var z = Z();
@@ -380,7 +394,7 @@
 							'<span class="eem-mb-step">Rows <button type="button" data-resize="row" data-d="-1">−</button><span id="eem-mb-rowval">0</span><button type="button" data-resize="row" data-d="1">+</button></span>' +
 							'<span class="eem-mb-step">Cols <button type="button" data-resize="col" data-d="-1">−</button><span id="eem-mb-colval">0</span><button type="button" data-resize="col" data-d="1">+</button></span>' +
 							'<span class="eem-mb-controls" id="eem-mb-controls"></span>' +
-							'<span class="eem-mb-zoom"><button type="button" data-zoom="out" title="Zoom out">−</button><button type="button" data-zoom="fit" title="Fit to width">Zoom</button><button type="button" data-zoom="in" title="Zoom in">+</button></span>' +
+							'<span class="eem-mb-zoom">' + '<button type="button" data-zoom="fit" title="Fit the whole facility">Fit</button>' + '<button type="button" data-zoom="2x" title="2× detail">2×</button>' + '<button type="button" data-zoom="3x" title="3× detail">3×</button>' + '</span>' +
 						'</div>' +
 						'<div class="eem-mb-gridscroll"><div class="eem-mb-grid" id="eem-mb-grid"></div></div>' +
 					'</div>' +
@@ -410,11 +424,7 @@
 		o.querySelector('.eem-mb-gridbar').addEventListener('click', function (e) {
 			var z = e.target.closest('[data-zoom]');
 			if (z) {
-				var act = z.getAttribute('data-zoom');
-				if (act === 'in') { B.zoom = Math.min(ZMAX, B.zoom + 0.2); }
-				else if (act === 'out') { B.zoom = Math.max(ZMIN, B.zoom - 0.2); }
-				else { fitZoom(); return; }
-				render();
+				mbApplyLevel(z.getAttribute('data-zoom'));
 				return;
 			}
 			var b = e.target.closest('[data-resize]'); if (!b) { return; }
