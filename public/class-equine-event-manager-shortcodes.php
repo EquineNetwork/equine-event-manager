@@ -6965,6 +6965,38 @@ RV Lot: " . $rv_lot['name'] );
 			if ( ! is_array( $order ) || ( isset( $order['payment_status'] ) && 'paid' === $order['payment_status'] ) ) {
 				return; // unknown order, or already paid (idempotent).
 			}
+
+			// Defense in depth (MEDIUM fix): never flip an order to paid from a
+			// webhook without confirming the intent actually SUCCEEDED and
+			// COVERED the order total. The signature check upstream proves the
+			// event is genuinely from Stripe, but a misrouted intent or one for a
+			// tampered/short amount must not mark the order paid. Compare the
+			// intent's captured amount (cents) against the order total (cents);
+			// overpayment is allowed, underpayment is rejected + logged.
+			$intent_status = isset( $object['status'] ) ? (string) $object['status'] : '';
+			if ( 'succeeded' !== $intent_status ) {
+				return;
+			}
+			$expected_cents = (int) round( ( isset( $order['total'] ) ? (float) $order['total'] : 0.0 ) * 100 );
+			$paid_cents     = isset( $object['amount_received'] ) ? (int) $object['amount_received'] : ( isset( $object['amount'] ) ? (int) $object['amount'] : 0 );
+			if ( $expected_cents > 0 && $paid_cents < $expected_cents ) {
+				if ( class_exists( 'EEM_Activity_Log' ) ) {
+					EEM_Activity_Log::write(
+						'order_payment_amount_mismatch',
+						array(
+							'order_key'      => $order_key,
+							'transaction_id' => $intent_id,
+							'gateway'        => 'stripe',
+							'source'         => 'stripe_webhook',
+							'expected_cents' => $expected_cents,
+							'paid_cents'     => $paid_cents,
+						),
+						array( 'actor_type' => 'system' )
+					);
+				}
+				return; // intent did not cover the order total — do NOT mark paid.
+			}
+
 			$repo->update_order_payment_details( $order_key, 'paid', $intent_id, 'stripe' );
 			if ( class_exists( 'EEM_Activity_Log' ) ) {
 				EEM_Activity_Log::write(

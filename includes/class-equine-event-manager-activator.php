@@ -185,6 +185,10 @@ class EEM_Activator {
 			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-010-activity-event-type-underscores.php';
 			eem_mig_010_activity_event_type_underscores();
 		}
+		if ( ! get_option( 'eem_mig_011_refund_amount_column_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-011-refund-amount-column.php';
+			eem_mig_011_refund_amount_column();
+		}
 	}
 
 	/**
@@ -256,6 +260,7 @@ class EEM_Activator {
 			order_number varchar(20) NOT NULL DEFAULT '',
 			transaction_id varchar(191) NOT NULL DEFAULT '',
 			refund_transaction_id varchar(191) NOT NULL DEFAULT '',
+			refunded_amount decimal(10,2) NOT NULL DEFAULT 0.00,
 			refunded_at datetime DEFAULT NULL,
 			notes text NULL,
 			created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -293,6 +298,7 @@ class EEM_Activator {
 			order_number varchar(20) NOT NULL DEFAULT '',
 			transaction_id varchar(191) NOT NULL DEFAULT '',
 			refund_transaction_id varchar(191) NOT NULL DEFAULT '',
+			refunded_amount decimal(10,2) NOT NULL DEFAULT 0.00,
 			refunded_at datetime DEFAULT NULL,
 			notes text NULL,
 			created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,

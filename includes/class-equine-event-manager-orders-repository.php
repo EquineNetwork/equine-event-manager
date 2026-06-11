@@ -1779,6 +1779,10 @@ class EEM_Orders_Repository {
 			'payment_status'        => isset( $row['payment_status'] ) ? sanitize_key( $row['payment_status'] ) : 'pending',
 			'transaction_id'        => isset( $row['transaction_id'] ) ? sanitize_text_field( $row['transaction_id'] ) : '',
 			'refund_transaction_id' => isset( $row['refund_transaction_id'] ) ? sanitize_text_field( $row['refund_transaction_id'] ) : '',
+			// Authoritative numeric refund ledger (mig-011). Falls back to 0 for
+			// rows loaded before the column existed; the refund engine reads
+			// max(column, notes-parse) so an un-backfilled row never under-reports.
+			'refunded_amount'       => isset( $row['refunded_amount'] ) ? (float) $row['refunded_amount'] : 0.0,
 			'notes'                 => isset( $row['notes'] ) ? (string) $row['notes'] : '',
 			'total'                 => isset( $row['total'] ) ? (float) $row['total'] : 0.0,
 		);

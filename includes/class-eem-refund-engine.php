@@ -40,18 +40,25 @@ class EEM_Refund_Engine {
 	}
 
 	public function get_component_refunded_amount( $component ) {
-		$notes = isset( $component['notes'] ) ? (string) $component['notes'] : '';
-		$value = $this->admin->get_order_note_value( $notes, 'Refunded Amount' );
+		// The numeric `refunded_amount` column is the authoritative ledger
+		// (mig-011). The legacy free-text notes line is kept only for human-
+		// readable display and as a safety FLOOR for any row not yet backfilled.
+		// Returning max(column, notes) biases to the safe side: for a refund
+		// ledger, over-reporting refunded-to-date only ever blocks a further
+		// refund, whereas under-reporting would permit an over-refund.
+		$column = isset( $component['refunded_amount'] ) ? max( 0.0, (float) $component['refunded_amount'] ) : 0.0;
+
+		$from_notes = 0.0;
+		$notes      = isset( $component['notes'] ) ? (string) $component['notes'] : '';
+		$value      = $this->admin->get_order_note_value( $notes, 'Refunded Amount' );
 
 		if ( '' !== $value ) {
-			return max( 0, (float) preg_replace( '/[^0-9.\-]/', '', $value ) );
+			$from_notes = max( 0.0, (float) preg_replace( '/[^0-9.\-]/', '', $value ) );
+		} elseif ( isset( $component['payment_status'] ) && 'refunded' === $component['payment_status'] ) {
+			$from_notes = isset( $component['total'] ) ? max( 0.0, (float) $component['total'] ) : 0.0;
 		}
 
-		if ( isset( $component['payment_status'] ) && 'refunded' === $component['payment_status'] ) {
-			return isset( $component['total'] ) ? max( 0, (float) $component['total'] ) : 0.0;
-		}
-
-		return 0.0;
+		return max( $column, $from_notes );
 	}
 
 	public function get_component_remaining_refundable_amount( $component ) {
@@ -80,10 +87,13 @@ class EEM_Refund_Engine {
 			array(
 				'payment_status'        => $new_status,
 				'refund_transaction_id' => sanitize_text_field( $refund_transaction_id ),
+				// Authoritative numeric ledger (mig-011) — written alongside the
+				// human-readable notes line so the two always agree.
+				'refunded_amount'       => number_format( $new_refunded_amount, 2, '.', '' ),
 				'refunded_at'           => current_time( 'mysql' ),
 				'notes'                 => $notes,
 			),
-			array( '%s', '%s', '%s', '%s' )
+			array( '%s', '%s', '%s', '%s', '%s' )
 		);
 	}
 

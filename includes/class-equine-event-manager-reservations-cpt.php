@@ -1356,7 +1356,7 @@ class EEM_Reservations_CPT {
 			'venue_map_image_id'              => isset( $source['venue_map_image_id'] ) ? absint( $source['venue_map_image_id'] ) : 0,
 			'venue_map_caption'               => isset( $source['venue_map_caption'] ) ? sanitize_text_field( $source['venue_map_caption'] ) : '',
 			'venue_agreement_enabled'         => ( isset( $source['venue_agreement_enabled'] ) && '1' === (string) $source['venue_agreement_enabled'] ) ? 1 : 0,
-			'venue_agreement_file_id'         => isset( $source['venue_agreement_file_id'] ) ? absint( $source['venue_agreement_file_id'] ) : 0,
+			'venue_agreement_file_id'         => isset( $source['venue_agreement_file_id'] ) ? $this->sanitize_agreement_file_id( $source['venue_agreement_file_id'] ) : 0,
 			'venue_agreement_file_label'      => isset( $source['venue_agreement_file_label'] ) ? sanitize_text_field( $source['venue_agreement_file_label'] ) : __( 'Agreement', 'equine-event-manager' ),
 			'venue_agreement_label'           => isset( $source['venue_agreement_label'] ) ? sanitize_text_field( $source['venue_agreement_label'] ) : __( 'I agree to the venue terms and conditions.', 'equine-event-manager' ),
 			// C7.X.12 VV-4 — customer-facing link text for the agreement
@@ -3073,6 +3073,30 @@ class EEM_Reservations_CPT {
 		}
 
 		return date( 'Y-m-d H:i:s', $timestamp );
+	}
+
+	/**
+	 * Sanitize the venue-agreement attachment id, enforcing that it points at a
+	 * real PDF.
+	 *
+	 * The Media Library picker filters to PDFs on the CLIENT side only
+	 * (assets/js/admin.js `library: { type: 'application/pdf' }`), which is
+	 * trivially bypassable via dev tools or a crafted POST. This is the
+	 * authoritative server-side gate: a non-PDF (or non-existent) attachment id
+	 * is dropped to 0 so a malicious or mistaken upload can never be persisted
+	 * and later served to customers as the "agreement" document.
+	 *
+	 * @param mixed $raw Submitted attachment id.
+	 * @return int Validated PDF attachment id, or 0.
+	 */
+	private function sanitize_agreement_file_id( $raw ): int {
+		$file_id = absint( $raw );
+
+		if ( $file_id <= 0 ) {
+			return 0;
+		}
+
+		return ( 'application/pdf' === get_post_mime_type( $file_id ) ) ? $file_id : 0;
 	}
 
 	/**

@@ -110,5 +110,31 @@ $wpdb->query( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $ck_lock ) );
 $freed   = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT IS_FREE_LOCK(%s)', $ck_lock ) );
 $check( 'GET_LOCK acquires + IS_FREE_LOCK reflects held/freed', 1 === $got && 0 === $held && 1 === $freed );
 
+// === FIX 4 — agreement upload server-side PDF MIME enforcement =============
+// sanitize_agreement_file_id() must drop any non-PDF (or non-existent)
+// attachment id to 0 — the client-side Media Library filter is bypassable.
+$cpt    = new EEM_Reservations_CPT();
+$mimefn = new ReflectionMethod( 'EEM_Reservations_CPT', 'sanitize_agreement_file_id' );
+$mimefn->setAccessible( true );
+
+$pdf_id = wp_insert_post( array( 'post_type' => 'attachment', 'post_mime_type' => 'application/pdf', 'post_title' => 'smoke-agreement', 'post_status' => 'inherit' ) );
+$png_id = wp_insert_post( array( 'post_type' => 'attachment', 'post_mime_type' => 'image/png', 'post_title' => 'smoke-not-agreement', 'post_status' => 'inherit' ) );
+$check( 'a real PDF attachment id is accepted', (int) $pdf_id === (int) $mimefn->invoke( $cpt, $pdf_id ) );
+$check( 'a non-PDF (image) attachment id is rejected to 0', 0 === (int) $mimefn->invoke( $cpt, $png_id ) );
+$check( 'a non-existent attachment id is rejected to 0', 0 === (int) $mimefn->invoke( $cpt, 99999999 ) );
+$check( 'zero / empty stays 0', 0 === (int) $mimefn->invoke( $cpt, 0 ) );
+$check( 'save sanitizer routes the agreement id through the PDF gate',
+	str_contains( (string) file_get_contents( dirname( __DIR__, 2 ) . '/includes/class-equine-event-manager-reservations-cpt.php' ), '$this->sanitize_agreement_file_id( $source[\'venue_agreement_file_id\'] )' ) );
+wp_delete_post( (int) $pdf_id, true );
+wp_delete_post( (int) $png_id, true );
+
+// === FIX 5 — Stripe webhook re-checks amount + status before marking paid ==
+$check( 'webhook requires intent status === succeeded',
+	str_contains( $sc_src, "'succeeded' !== \$intent_status" ) );
+$check( 'webhook compares captured cents against the order total',
+	str_contains( $sc_src, '$expected_cents' ) && str_contains( $sc_src, 'amount_received' ) );
+$check( 'underpayment is logged + does NOT mark paid',
+	str_contains( $sc_src, "'order_payment_amount_mismatch'" ) && str_contains( $sc_src, '$paid_cents < $expected_cents' ) );
+
 echo "\n{$passed} passed, {$failed} failed\n";
 if ( $failed > 0 ) { exit( 1 ); }
