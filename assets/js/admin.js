@@ -4822,7 +4822,16 @@
 					el.setAttribute('data-eem-smap-stall', unit);  // store the zone-qualified unit key
 					el.style.gridColumn = (c + 1);
 					el.style.gridRow = (r + 1);
-					if (st.gc) el.style.borderLeft = '4px solid ' + st.gc;
+					// Group membership → a left accent bar that scales with the cell
+					// (CSS reads --eem-grp), instead of a fixed-width 4px border.
+					if (st.gc) { el.classList.add('is-grouped'); el.style.setProperty('--eem-grp', st.gc); }
+					// Status/group dot — only visible in dot mode (very small zoom), where
+					// a 4-digit number can't be read. Group color wins; else by status.
+					var eemDotColor = st.gc || (status === 'available' ? '#9fb2cc' : status === 'blocked' ? '#8593a5' : status === 'tack' ? '#E8A33D' : '#1f6fe0');
+					var eemDot = document.createElement('span');
+					eemDot.className = 'eem-smap-dot';
+					eemDot.style.setProperty('--eem-dot', eemDotColor);
+					el.appendChild(eemDot);
 					if (st.c) el.title = cell.l + ' — ' + st.c + (st.g ? ' (' + st.g + ')' : '');
 					if (status === 'tack') {
 						var b = document.createElement('span');
@@ -5014,7 +5023,13 @@
 				// show EVERY chip on load without horizontal/vertical scroll — the
 				// customer should see the whole layout the moment the page loads.
 				var SMAP_BASE = 40, SMAP_MIN = 12, SMAP_MAX = 72;
-				var applySmapZoom = function (px) { container.style.setProperty('--eem-smap-chip', px + 'px'); };
+				var applySmapZoom = function (px) {
+					container.style.setProperty('--eem-smap-chip', px + 'px');
+					// Below ~24px a 4-digit stall number is illegible — switch the grid
+					// to dot mode (each chip shows a single status/group-colored dot).
+					var dotHost = container.querySelector('[data-eem-smap-grid]');
+					if (dotHost) { dotHost.classList.toggle('eem-smap-grid--dots', px < 24); }
+				};
 				var fitSmap = function () {
 					var p2; try { p2 = JSON.parse(container.querySelector('[data-eem-smap-payload]').textContent); } catch (e) { return; }
 					var barn = (p2.barns || [])[container._eemSmapBarn || 0] || {};

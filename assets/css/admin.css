@@ -7692,11 +7692,26 @@ a.eem-btn--ghost:focus    { color: #1d2327; }
 .eem-smap-cell { width: var(--eem-smap-chip); height: var(--eem-smap-chip); }
 /* Hatched aisle / empty cell — same texture the builder uses (.eem-mb-cell.gap). */
 .eem-smap-cell--gap { background: #eef1f6; background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, #e2e7ef 5px, #e2e7ef 6px); }
-.eem-smap-stall { position: relative; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; border: 0; border-radius: 0; background: #fff; color: var(--eem-navy, #031B4E); cursor: pointer; user-select: none; line-height: 1; }
+/* Font scales with the chip (like the builder's .eem-mb-cell) so numbers shrink to
+   fit and never overflow/overlap; overflow:hidden clips anything that can't fit. */
+.eem-smap-stall { position: relative; display: flex; align-items: center; justify-content: center; font-size: clamp(5px, calc(var(--eem-smap-chip, 40px) * 0.32), 13px); font-weight: 700; border: 0; border-radius: 0; background: #fff; color: var(--eem-navy, #031B4E); cursor: pointer; user-select: none; line-height: 1; overflow: hidden; }
 .eem-smap-stall:hover { outline: 2px solid var(--eem-electric, #1668F2); outline-offset: -1px; z-index: 1; }
 .eem-smap-stall.is-reserved { background: #dbe4f3; color: #2b4a78; }
 .eem-smap-stall.is-blocked { background: repeating-linear-gradient(45deg, #9aa6b6, #9aa6b6 3px, #8593a5 3px, #8593a5 6px); color: #fff; }
 .eem-smap-stall.is-tack { background: #fff5e6; color: #9a6a14; }
+/* Group membership: a left accent bar whose width scales WITH the cell, so the
+   indicator stays proportional ("same size as the box") at every zoom level
+   instead of a fixed 4px sliver. */
+.eem-smap-stall.is-grouped { border-left: max(2px, calc(var(--eem-smap-chip, 40px) * 0.14)) solid var(--eem-grp, transparent); }
+/* Status/group dot — hidden until the grid enters dot mode (very small zoom). */
+.eem-smap-dot { display: none; width: 46%; height: 46%; border-radius: 50%; background: var(--eem-dot, #9fb2cc); }
+/* Dot mode: when chips get too small to read a 4-digit number, admin.js adds
+   .eem-smap-grid--dots and each chip shows a single status/group-colored dot
+   instead of an unreadable number — a clean readable "max zoom out" state. */
+.eem-smap-grid--dots .eem-smap-stall { font-size: 0; }
+.eem-smap-grid--dots .eem-smap-stall.is-grouped { border-left-width: 0; }
+.eem-smap-grid--dots .eem-smap-dot { display: block; }
+.eem-smap-grid--dots .eem-smap-tbadge { display: none; }
 .eem-smap-tbadge { position: absolute; top: -5px; right: -5px; font-size: 8px; background: #E8A33D; color: #fff; border-radius: 3px; padding: 0 3px; font-weight: 800; }
 /* Match the amber landmark styling used by the builder, Preview, and customer
    picker so every map surface looks identical (was grey/uppercase). */
