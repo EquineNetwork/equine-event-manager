@@ -47,13 +47,13 @@ architecture in `docs/ARCHITECTURE-DATA-OWNERSHIP.md` and `docs/WORKPLAN-postmet
 
 Full source notes for each live in `CLAUDE.md` → "v2 deferred features".
 
-1. **Notifications** — **dedicated page** (Event Manager → Notifications): pick an event →
-   build an **audience** (Include segment [All / Stall / RV / Add-on / a Division's entrants /
-   Group] − optional Exclude segment + optional Payment filter [All/Paid/Unpaid]) with a live
-   recipient count → compose subject+body → batched send. Covers "everyone who entered #9.5
-   Division" and "RV buyers but not stall customers." Recipients from orders (incl. division-only)
-   + the division ledger; Emogrifier-inlined; activity-log history. Supersedes the per-reservation
-   Email Customers modal. *(Building now.)*
+1. ✅ **Notifications — DONE (2.7.224–226).** Dedicated page (Event Manager → Notifications):
+   pick an event → build an **audience** (Include [All/Stall/RV/Add-on/a Division's entrants/
+   Group] − optional Exclude + optional Payment [All/Paid/Unpaid]) with a live recipient count →
+   compose → **batched send** (25/req, no timeout) → **history**. Covers "everyone who entered
+   #9.5 Division" + "RV buyers but not stall customers." Recipients from orders (incl. division-
+   only) + the division ledger; Emogrifier-inlined. `EEM_Notifications` + `EEM_Notifications_Page`;
+   38 smoke assertions across 3 files.
 2. **Venues + Facility Layout Templates** — **two layers** (design locked: `docs/ARCHITECTURE-VENUES.md`):
    - **Venues** — a single **source-agnostic Venue entity** (relational tables, not postmeta)
      that owns saved layouts; TEC/GEMS venues resolve into it via `EEM_Venue_Resolver`; Native
