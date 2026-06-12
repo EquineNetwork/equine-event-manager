@@ -259,6 +259,11 @@ class EEM_Admin {
 			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--customers' );
 		}
 
+		// v2 Notifications page.
+		if ( EEM_Notifications_Page::MENU_SLUG === $page ) {
+			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--notifications' );
+		}
+
 		return $classes;
 	}
 
@@ -300,7 +305,7 @@ class EEM_Admin {
 			$should_load = true;
 		}
 
-		if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-order', 'equine-event-manager-order-refund', 'equine-event-manager-settings', 'equine-event-manager-stall-charts', 'equine-event-manager-stall-chart-print', 'equine-event-manager-reports', 'equine-event-manager-reservation-overview', 'equine-event-manager-create-order', 'equine-event-manager-collect-payment', 'equine-event-manager-dashboard', 'equine-event-manager-reservation-editor', EEM_Entries::EDITOR_SLUG, EEM_Entries::LIST_SLUG, 'equine-event-manager-customer', 'equine-event-manager-customers', EEM_Reservations_List_Page::MENU_SLUG ), true ) ) {
+		if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-order', 'equine-event-manager-order-refund', 'equine-event-manager-settings', 'equine-event-manager-stall-charts', 'equine-event-manager-stall-chart-print', 'equine-event-manager-reports', 'equine-event-manager-reservation-overview', 'equine-event-manager-create-order', 'equine-event-manager-collect-payment', 'equine-event-manager-dashboard', 'equine-event-manager-reservation-editor', EEM_Entries::EDITOR_SLUG, EEM_Entries::LIST_SLUG, 'equine-event-manager-customer', 'equine-event-manager-customers', EEM_Notifications_Page::MENU_SLUG, EEM_Reservations_List_Page::MENU_SLUG ), true ) ) {
 			$should_load = true;
 		}
 
@@ -355,11 +360,17 @@ class EEM_Admin {
 			// CLEANUP #21 (Choices.js, MIT) -- searchable filter dropdowns on the Orders
 			// event filter + Reservations date filter, where a native select becomes an
 			// unusable long scroll past ~50 events. Loaded only on those two list screens.
-			if ( in_array( $page, array( 'equine-event-manager-orders', EEM_Reservations_List_Page::MENU_SLUG, EEM_Entries::LIST_SLUG ), true ) ) {
+			if ( in_array( $page, array( 'equine-event-manager-orders', EEM_Reservations_List_Page::MENU_SLUG, EEM_Entries::LIST_SLUG, EEM_Notifications_Page::MENU_SLUG ), true ) ) {
 				wp_enqueue_style( 'eem-choices-vendor', EQUINE_EVENT_MANAGER_URL . 'assets/vendor/choices/choices.min.css', array(), '10.2.0' );
 				wp_enqueue_style( 'eem-choices', EQUINE_EVENT_MANAGER_URL . 'assets/css/eem-choices.css', array( 'eem-choices-vendor', 'eem-admin' ), $ver );
 				wp_enqueue_script( 'eem-choices-vendor', EQUINE_EVENT_MANAGER_URL . 'assets/vendor/choices/choices.min.js', array(), '10.2.0', true );
 				wp_enqueue_script( 'eem-choices', EQUINE_EVENT_MANAGER_URL . 'assets/js/eem-choices.js', array( 'eem-choices-vendor' ), $ver, true );
+			}
+
+			// v2 Notifications page JS (audience builder + live count + send).
+			if ( EEM_Notifications_Page::MENU_SLUG === $page ) {
+				wp_enqueue_script( 'eem-notifications', EQUINE_EVENT_MANAGER_URL . 'assets/js/notifications.js', array( 'eem-admin' ), $ver, true );
+				wp_localize_script( 'eem-notifications', 'eemNotifications', array( 'ajaxUrl' => admin_url( 'admin-ajax.php' ) ) );
 			}
 
 		// C13.B.2.a — public.css required when Create Order embeds a reservation form.
@@ -464,6 +475,7 @@ class EEM_Admin {
 			'equine-event-manager-stall-charts',
 			'equine-event-manager-customers',
 			'equine-event-manager-orders',
+			EEM_Notifications_Page::MENU_SLUG,
 			'edit.php?post_type=en_event',
 			'post-new.php?post_type=en_event',
 			'edit-tags.php?taxonomy=en_event_tag&post_type=en_event',
