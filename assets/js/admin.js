@@ -7479,3 +7479,64 @@ function duplicateReservationAjax(target) {
 		document.querySelectorAll('[data-eem-cred-mode-select]').forEach(eemSyncCredMode);
 	});
 })();
+
+
+/* Entries (Divisions) list — event filter + column sort (delegated). */
+(function () {
+	'use strict';
+	function tableEl() { return document.querySelector('[data-eem-entries-table]'); }
+	function dataRows(table) {
+		return Array.prototype.slice.call(table.querySelectorAll('tbody tr')).filter(function (tr) {
+			return tr.hasAttribute('data-eem-event-id');
+		});
+	}
+	function applyFilter(table) {
+		var sel = document.querySelector('[data-eem-input-action="entries-filter-event"]');
+		var val = sel ? sel.value : '';
+		var shown = 0;
+		dataRows(table).forEach(function (tr) {
+			var match = (val === '' || tr.getAttribute('data-eem-event-id') === val);
+			tr.hidden = !match;
+			if (match) { shown++; }
+		});
+		var empty = table.querySelector('.eem-entries-empty-filtered');
+		if (empty) { empty.hidden = (shown !== 0); }
+		var count = document.querySelector('[data-eem-entries-count]');
+		if (count) { count.textContent = shown + (shown === 1 ? ' division' : ' divisions'); }
+	}
+	function sortBy(table, key, type, dir) {
+		var tbody = table.querySelector('tbody');
+		var rows = dataRows(table);
+		rows.sort(function (a, b) {
+			var av = a.getAttribute('data-sort-' + key) || '';
+			var bv = b.getAttribute('data-sort-' + key) || '';
+			var cmp;
+			if (type === 'num') { cmp = (parseFloat(av) || 0) - (parseFloat(bv) || 0); }
+			else { cmp = av.localeCompare(bv); }
+			return dir === 'desc' ? -cmp : cmp;
+		});
+		rows.forEach(function (tr) { tbody.appendChild(tr); });
+		var empty = table.querySelector('.eem-entries-empty-filtered');
+		if (empty) { tbody.appendChild(empty); }
+	}
+	document.addEventListener('change', function (e) {
+		if (e.target && e.target.matches && e.target.matches('[data-eem-input-action="entries-filter-event"]')) {
+			var t = tableEl(); if (t) { applyFilter(t); }
+		}
+	});
+	document.addEventListener('click', function (e) {
+		var th = e.target && e.target.closest ? e.target.closest('th.eem-sortable') : null;
+		if (!th) { return; }
+		var table = tableEl(); if (!table) { return; }
+		var key = th.getAttribute('data-eem-sort');
+		var type = th.getAttribute('data-eem-sort-type') || 'text';
+		var dir = th.getAttribute('data-eem-sort-dir') === 'asc' ? 'desc' : 'asc';
+		table.querySelectorAll('th.eem-sortable').forEach(function (h) {
+			h.removeAttribute('data-eem-sort-dir');
+			h.classList.remove('is-sorted-asc', 'is-sorted-desc');
+		});
+		th.setAttribute('data-eem-sort-dir', dir);
+		th.classList.add(dir === 'asc' ? 'is-sorted-asc' : 'is-sorted-desc');
+		sortBy(table, key, type, dir);
+	});
+})();

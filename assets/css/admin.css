@@ -9243,13 +9243,31 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 .eem-mb-preview-foot { padding: 14px 20px; border-top: 1px solid var(--eem-border, #D9E2F2); font-weight: 700; color: var(--eem-navy, #031B4E); flex: none; }
 /* ── Division detail stats (Entries → Divisions rework, Slice 3) ──
    Reuses the dashboard KPI card vocabulary (colored top border, navy value)
-   but in a fixed 3-up grid sized for the entrants summary. */
+   in a full-width 3-up grid that spans the content area like the Dashboard
+   KPI row. */
 .eem-division-stat-grid {
 	grid-template-columns: repeat(3, minmax(0, 1fr));
-	max-width: 600px;
 	margin-top: 4px;
 	margin-bottom: 22px;
 }
-@media (max-width: 600px) {
-	.eem-division-stat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 782px) {
+	.eem-division-stat-grid { grid-template-columns: 1fr; }
 }
+
+/* ── Entries (Divisions) list toolbar + sortable columns ── */
+.eem-entries-toolbar {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	flex-wrap: wrap;
+	margin-bottom: 14px;
+}
+.eem-entries-toolbar__filter { display: inline-flex; align-items: center; gap: 8px; }
+.eem-entries-toolbar__label { font-size: 12.5px; font-weight: 600; color: #50575e; }
+.eem-entries-toolbar__filter select { min-width: 240px; }
+.eem-entries-toolbar__count { margin-left: auto; font-size: 12.5px; color: var(--eem-muted, #64748b); font-weight: 600; }
+.eem-entries-table th.eem-sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+.eem-entries-table th.eem-sortable:hover { color: var(--eem-electric, #1668F2); }
+.eem-sort-ind { display: inline-block; width: 0; height: 0; margin-left: 6px; vertical-align: middle; opacity: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; }
+.eem-entries-table th.is-sorted-asc  .eem-sort-ind { opacity: 1; border-bottom: 5px solid currentColor; }
+.eem-entries-table th.is-sorted-desc .eem-sort-ind { opacity: 1; border-top: 5px solid currentColor; }

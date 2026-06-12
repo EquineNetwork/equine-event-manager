@@ -38,6 +38,7 @@ ob_start(); EEM_Entries::render_list(); $list_html = (string) ob_get_clean();
 $check( 'list renders the plugin page-header chrome', false !== strpos( $list_html, 'eem-page-header' ) || false !== strpos( $list_html, 'eem-breadcrumb' ) );
 $check( 'list renders the "+ New Division" electric button', false !== strpos( $list_html, 'New Division' ) && false !== strpos( $list_html, 'eem-btn-electric' ) );
 $check( 'list renders the styled .eem-table (not the WP table)', false !== strpos( $list_html, 'eem-table' ) );
+$check( 'admin.js carries the entries filter+sort handler', false !== strpos( (string) file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/js/admin.js' ), "data-eem-input-action=\"entries-filter-event\"" ) );
 // CPT-list redirect: edit-en_entry screen → custom list.
 $fake_screen = (object) array( 'id' => 'edit-en_entry', 'base' => 'edit' );
 $check( 'maybe_redirect_old_list targets the edit-en_entry screen', is_object( $fake_screen ) ); // smoke can't trigger exit; structural guard.
@@ -52,6 +53,14 @@ $_GET = array( 'post' => (string) $eid, 'action' => 'edit' );
 $redir = EEM_Entries::resolve_legacy_edit_redirect_url();
 $_GET = array();
 $check( 'legacy en_entry edit URL redirects to the custom editor', is_string( $redir ) && false !== strpos( (string) $redir, EEM_Entries::EDITOR_SLUG ) );
+
+// --- list toolbar: event filter + sortable columns (Whitney walkthrough) ----
+// Render with at least one division present so the toolbar (gated on rows) shows.
+update_post_meta( $eid, EEM_Entries::META_RESERVATION, $rid_for_entry );
+ob_start(); EEM_Entries::render_list(); $list_html2 = (string) ob_get_clean();
+$check( 'list renders the event-filter toolbar select', false !== strpos( $list_html2, 'data-eem-input-action="entries-filter-event"' ) );
+$check( 'list marks columns sortable (data-eem-sort)', false !== strpos( $list_html2, 'class="eem-sortable" data-eem-sort="name"' ) && false !== strpos( $list_html2, 'data-eem-sort="entered"' ) );
+$check( 'list rows carry the event-id filter attribute', false !== strpos( $list_html2, 'data-eem-event-id="' . $rid_for_entry . '"' ) );
 
 // --- styled editor render --------------------------------------------------
 update_post_meta( $eid, EEM_Entries::META_RESERVATION, $rid_for_entry );

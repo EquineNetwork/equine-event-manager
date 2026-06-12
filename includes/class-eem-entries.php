@@ -371,6 +371,35 @@ class EEM_Entries {
 			'order'          => 'DESC',
 		) );
 
+		// Pre-compute each row + collect the distinct events for the filter.
+		$rows   = array();
+		$events = array(); // reservation_id => title
+		foreach ( $entries as $e ) {
+			$rid       = (int) get_post_meta( $e->ID, self::META_RESERVATION, true );
+			$event     = $rid > 0 ? self::reservation_label( $rid )['title'] : '';
+			$div_name  = (string) get_post_meta( $e->ID, self::META_DIVISION_NAME, true );
+			$price     = (string) get_post_meta( $e->ID, self::META_PRICE, true );
+			$spots     = get_post_meta( $e->ID, self::META_SPOTS, true );
+			$spots_int = ( '' === (string) $spots || (int) $spots <= 0 ) ? 0 : (int) $spots;
+			$entered   = class_exists( 'EEM_Division_Entries' ) ? EEM_Division_Entries::entered_count( (int) $e->ID ) : 0;
+			$is_pub    = ( 'publish' === get_post_status( $e ) );
+			if ( $rid > 0 && '' !== $event ) {
+				$events[ $rid ] = $event;
+			}
+			$rows[] = array(
+				'id'        => (int) $e->ID,
+				'rid'       => $rid,
+				'event'     => $event,
+				'name'      => '' !== $div_name ? $div_name : get_the_title( $e ),
+				'price'     => $price,
+				'spots_int' => $spots_int,
+				'entered'   => $entered,
+				'oversold'  => ( $spots_int > 0 && $entered > $spots_int ) ? ( $entered - $spots_int ) : 0,
+				'is_pub'    => $is_pub,
+			);
+		}
+		asort( $events );
+
 		eem_render_page_open( array(
 			'title'      => __( 'Entries', 'equine-event-manager' ),
 			'subtitle'   => __( 'Divisions customers pay to enter, connected to an event. Each division surfaces as a purchasable option on that event\'s customer reservation page and folds into the order at checkout.', 'equine-event-manager' ),
@@ -384,21 +413,44 @@ class EEM_Entries {
 			),
 			'wrap'       => true,
 		) );
+
+		if ( ! empty( $rows ) ) :
+			?>
+			<div class="eem-entries-toolbar">
+				<label class="eem-entries-toolbar__filter">
+					<span class="eem-entries-toolbar__label"><?php esc_html_e( 'Event', 'equine-event-manager' ); ?></span>
+					<select class="eem-field-select eem-list-select" data-eem-input-action="entries-filter-event">
+						<option value=""><?php esc_html_e( 'All events', 'equine-event-manager' ); ?></option>
+						<?php foreach ( $events as $eid => $etitle ) : ?>
+							<option value="<?php echo esc_attr( (string) $eid ); ?>"><?php echo esc_html( $etitle ); ?></option>
+						<?php endforeach; ?>
+					</select>
+				</label>
+				<div class="eem-entries-toolbar__count" data-eem-entries-count><?php
+					echo esc_html( sprintf(
+						/* translators: %d: division count. */
+						_n( '%d division', '%d divisions', count( $rows ), 'equine-event-manager' ),
+						count( $rows )
+					) );
+				?></div>
+			</div>
+			<?php
+		endif;
 		?>
 		<div class="eem-desktop-table">
-			<table class="eem-table">
+			<table class="eem-table eem-entries-table" data-eem-entries-table>
 				<thead>
 					<tr>
-						<th><?php esc_html_e( 'Division', 'equine-event-manager' ); ?></th>
-						<th><?php esc_html_e( 'Event', 'equine-event-manager' ); ?></th>
-						<th><?php esc_html_e( 'Price', 'equine-event-manager' ); ?></th>
-						<th><?php esc_html_e( 'Entered / Spots', 'equine-event-manager' ); ?></th>
-						<th><?php esc_html_e( 'Status', 'equine-event-manager' ); ?></th>
+						<th class="eem-sortable" data-eem-sort="name" data-eem-sort-type="text"><?php esc_html_e( 'Division', 'equine-event-manager' ); ?><span class="eem-sort-ind" aria-hidden="true"></span></th>
+						<th class="eem-sortable" data-eem-sort="event" data-eem-sort-type="text"><?php esc_html_e( 'Event', 'equine-event-manager' ); ?><span class="eem-sort-ind" aria-hidden="true"></span></th>
+						<th class="eem-sortable" data-eem-sort="price" data-eem-sort-type="num"><?php esc_html_e( 'Price', 'equine-event-manager' ); ?><span class="eem-sort-ind" aria-hidden="true"></span></th>
+						<th class="eem-sortable" data-eem-sort="entered" data-eem-sort-type="num"><?php esc_html_e( 'Entered / Spots', 'equine-event-manager' ); ?><span class="eem-sort-ind" aria-hidden="true"></span></th>
+						<th class="eem-sortable" data-eem-sort="status" data-eem-sort-type="text"><?php esc_html_e( 'Status', 'equine-event-manager' ); ?><span class="eem-sort-ind" aria-hidden="true"></span></th>
 						<th><?php esc_html_e( 'Actions', 'equine-event-manager' ); ?></th>
 					</tr>
 				</thead>
 				<tbody>
-					<?php if ( empty( $entries ) ) : ?>
+					<?php if ( empty( $rows ) ) : ?>
 						<tr><td colspan="6" class="eem-table-empty">
 							<?php
 							printf(
@@ -409,39 +461,36 @@ class EEM_Entries {
 							?>
 						</td></tr>
 					<?php else : ?>
-						<?php foreach ( $entries as $e ) :
-							$edit_url = self::editor_url( (int) $e->ID );
-							$rid      = (int) get_post_meta( $e->ID, self::META_RESERVATION, true );
-							$event    = $rid > 0 ? self::reservation_label( $rid )['title'] : '';
-							$div_name = (string) get_post_meta( $e->ID, self::META_DIVISION_NAME, true );
-							$price    = (string) get_post_meta( $e->ID, self::META_PRICE, true );
-							$spots    = get_post_meta( $e->ID, self::META_SPOTS, true );
-							$spots_int = ( '' === (string) $spots || (int) $spots <= 0 ) ? 0 : (int) $spots;
-							$entered  = class_exists( 'EEM_Division_Entries' ) ? EEM_Division_Entries::entered_count( (int) $e->ID ) : 0;
-							$oversold = ( $spots_int > 0 && $entered > $spots_int ) ? ( $entered - $spots_int ) : 0;
-							$detail_url = self::detail_url( (int) $e->ID );
-							$status   = get_post_status( $e );
-							$is_pub   = ( 'publish' === $status );
+						<?php foreach ( $rows as $r ) :
+							$edit_url   = self::editor_url( $r['id'] );
+							$detail_url = self::detail_url( $r['id'] );
 							?>
-							<tr>
-								<td><a class="eem-res-name" href="<?php echo esc_url( $detail_url ); ?>"><?php echo esc_html( '' !== $div_name ? $div_name : get_the_title( $e ) ); ?></a></td>
-								<td><?php echo $event ? esc_html( $event ) : '<span class="eem-orders-count is-zero">' . esc_html__( '— not connected —', 'equine-event-manager' ) . '</span>'; ?></td>
-								<td><?php echo '' !== $price ? esc_html( '$' . number_format( (float) $price, 2 ) ) : '<span class="eem-orders-count is-zero">—</span>'; ?></td>
+							<tr
+								data-eem-event-id="<?php echo esc_attr( (string) $r['rid'] ); ?>"
+								data-sort-name="<?php echo esc_attr( strtolower( $r['name'] ) ); ?>"
+								data-sort-event="<?php echo esc_attr( strtolower( $r['event'] ) ); ?>"
+								data-sort-price="<?php echo esc_attr( '' !== $r['price'] ? (string) (float) $r['price'] : '-1' ); ?>"
+								data-sort-entered="<?php echo esc_attr( (string) $r['entered'] ); ?>"
+								data-sort-status="<?php echo esc_attr( $r['is_pub'] ? '1' : '0' ); ?>">
+								<td><a class="eem-res-name" href="<?php echo esc_url( $detail_url ); ?>"><?php echo esc_html( $r['name'] ); ?></a></td>
+								<td><?php echo '' !== $r['event'] ? esc_html( $r['event'] ) : '<span class="eem-orders-count is-zero">' . esc_html__( '— not connected —', 'equine-event-manager' ) . '</span>'; ?></td>
+								<td><?php echo '' !== $r['price'] ? esc_html( '$' . number_format( (float) $r['price'], 2 ) ) : '<span class="eem-orders-count is-zero">—</span>'; ?></td>
 								<td>
 									<?php
-									echo esc_html( $entered . ' / ' . ( $spots_int > 0 ? (string) $spots_int : __( 'Unlimited', 'equine-event-manager' ) ) );
-									if ( $oversold > 0 ) {
+									echo esc_html( $r['entered'] . ' / ' . ( $r['spots_int'] > 0 ? (string) $r['spots_int'] : __( 'Unlimited', 'equine-event-manager' ) ) );
+									if ( $r['oversold'] > 0 ) {
 										echo ' <span class="eem-status-badge eem-status-refunded">' . esc_html(
 											/* translators: %d: count oversold by. */
-											sprintf( __( 'oversold by %d', 'equine-event-manager' ), $oversold )
+											sprintf( __( 'oversold by %d', 'equine-event-manager' ), $r['oversold'] )
 										) . '</span>';
 									}
 									?>
 								</td>
-								<td><span class="eem-res-status eem-res-status--<?php echo $is_pub ? 'active' : 'draft'; ?>"><?php echo esc_html( $is_pub ? __( 'Published', 'equine-event-manager' ) : __( 'Draft', 'equine-event-manager' ) ); ?></span></td>
+								<td><span class="eem-res-status eem-res-status--<?php echo $r['is_pub'] ? 'active' : 'draft'; ?>"><?php echo esc_html( $r['is_pub'] ? __( 'Published', 'equine-event-manager' ) : __( 'Draft', 'equine-event-manager' ) ); ?></span></td>
 								<td><a class="eem-btn eem-btn-sm" href="<?php echo esc_url( $edit_url ); ?>"><?php esc_html_e( 'Edit', 'equine-event-manager' ); ?></a></td>
 							</tr>
 						<?php endforeach; ?>
+						<tr class="eem-entries-empty-filtered" hidden><td colspan="6" class="eem-table-empty"><?php esc_html_e( 'No divisions for this event.', 'equine-event-manager' ); ?></td></tr>
 					<?php endif; ?>
 				</tbody>
 			</table>
