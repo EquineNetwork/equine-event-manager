@@ -93,4 +93,64 @@
 	[includeSel, excludeSel, paymentSel].forEach(function (sel) {
 		if (sel) { sel.addEventListener('change', refreshCount); }
 	});
+
+	/* ── Batched send ──────────────────────────────────────────── */
+	var sendBtn  = root.querySelector('[data-eem-action="notifications-send"]');
+	var status   = root.querySelector('[data-eem-notif-status]');
+	var subjectEl = root.querySelector('[data-eem-notif-subject]');
+	var bodyEl    = root.querySelector('[data-eem-notif-body]');
+
+	function setStatus(msg) { if (status) { status.textContent = msg || ''; } }
+
+	function stepSend(token, offset, total) {
+		post('eem_notifications_send_step', { token: token, offset: offset }).then(function (resp) {
+			if (!resp || !resp.success || !resp.data) {
+				setStatus((resp && resp.data && resp.data.message) || 'Send failed.');
+				if (sendBtn) { sendBtn.disabled = false; }
+				return;
+			}
+			var d = resp.data;
+			setStatus('Sending… ' + Math.min(d.next_offset, d.total) + ' / ' + d.total);
+			if (d.done) {
+				setStatus('Sent to ' + d.sent + ' of ' + d.total + (d.failed ? ' (' + d.failed + ' failed)' : '') + '.');
+				if (sendBtn) { sendBtn.disabled = false; }
+				if (subjectEl) { subjectEl.value = ''; }
+				if (bodyEl) { bodyEl.value = ''; }
+				setTimeout(function () { window.location.reload(); }, 1500); // refresh history
+			} else {
+				stepSend(token, d.next_offset, total);
+			}
+		}).catch(function () {
+			setStatus('Could not reach the server.');
+			if (sendBtn) { sendBtn.disabled = false; }
+		});
+	}
+
+	if (sendBtn) {
+		sendBtn.addEventListener('click', function () {
+			var rid = currentEvent();
+			var subject = subjectEl ? subjectEl.value.trim() : '';
+			var body = bodyEl ? bodyEl.value.trim() : '';
+			if (!rid || !subject || !body) { setStatus('Pick an event and enter a subject + message.'); return; }
+			sendBtn.disabled = true;
+			setStatus('Preparing…');
+			post('eem_notifications_send_start', {
+				reservation_id: rid,
+				include: includeSel ? includeSel.value : 'all',
+				exclude: excludeSel ? excludeSel.value : '',
+				payment: paymentSel ? paymentSel.value : 'all',
+				subject: subject, body: body
+			}).then(function (resp) {
+				if (!resp || !resp.success || !resp.data) {
+					setStatus((resp && resp.data && resp.data.message) || 'Could not start the send.');
+					sendBtn.disabled = false;
+					return;
+				}
+				stepSend(resp.data.token, 0, resp.data.total);
+			}).catch(function () {
+				setStatus('Could not reach the server.');
+				sendBtn.disabled = false;
+			});
+		});
+	}
 })();

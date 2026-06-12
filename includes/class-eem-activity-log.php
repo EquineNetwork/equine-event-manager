@@ -244,6 +244,23 @@ class EEM_Activity_Log {
 	}
 
 	/**
+	 * Recent entries of one event type, newest first (across all orders/events).
+	 * Used by the Notifications history view.
+	 *
+	 * @param string $event_type One of the class constants (e.g. NOTIFICATION_SENT).
+	 * @param int    $limit      Max rows (capped at 500).
+	 * @return array<int, array<string, mixed>>
+	 */
+	public static function get_recent_by_type( $event_type, $limit = 25 ) {
+		return self::query(
+			array(
+				'event_type' => sanitize_key( (string) $event_type ),
+				'limit'      => absint( $limit ),
+			)
+		);
+	}
+
+	/**
 	 * Run a parameterized fetch. Internal; callers use the get_for_* helpers.
 	 *
 	 * @param array $args See body for accepted keys.
@@ -257,6 +274,7 @@ class EEM_Activity_Log {
 			array(
 				'order_id'       => 0,
 				'reservation_id' => 0,
+				'event_type'     => '',
 				'limit'          => 100,
 			)
 		);
@@ -273,6 +291,11 @@ class EEM_Activity_Log {
 		if ( $args['reservation_id'] > 0 ) {
 			$where[]  = 'reservation_id = %d';
 			$params[] = (int) $args['reservation_id'];
+		}
+
+		if ( '' !== (string) $args['event_type'] ) {
+			$where[]  = 'event_type = %s';
+			$params[] = (string) $args['event_type'];
 		}
 
 		$limit = $args['limit'] > 0 ? min( $args['limit'], 500 ) : 100;
