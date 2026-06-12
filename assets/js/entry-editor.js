@@ -2,10 +2,10 @@
  * Entry editor (v1 #1b) — self-contained typeahead + save dispatch.
  *
  * Mirrors the reservation editor's event-connect flow without entangling its
- * reservation-specific JS. The repeating items table reuses the generic
- * reservation-editor-add/remove-repeating-row handlers in admin.js (template +
- * tbody driven), so this file only owns: the event-connect typeahead (search
- * reservations-as-events + select) and the save dispatch (Draft / Publish).
+ * reservation-specific JS. One record = one Division (name + price + spots +
+ * max-per-customer), so this file owns: the event-connect typeahead (search
+ * reservations-as-events + select) and the save dispatch (Draft / Publish)
+ * which collects the single set of Division fields.
  *
  * Element contract (rendered by EEM_Entries::render):
  *   #eem-entry-typeahead[data-ajax-url|data-search-nonce]
@@ -114,9 +114,14 @@
 		body.set('reservation_id', resInput ? (resInput.value || '0') : '0');
 		var descEl = document.getElementById('eem-entry-description');
 		body.set('description', descEl ? descEl.value : '');
-		document.querySelectorAll('#eem-entry-items-list input[name^="eem_entry_items"]').forEach(function (inp) {
-			body.append(inp.name, inp.value);
-		});
+		var nameEl2  = document.getElementById('eem-division-name');
+		var priceEl  = document.getElementById('eem-division-price');
+		var spotsEl  = document.getElementById('eem-division-spots');
+		var maxEl    = document.getElementById('eem-division-max');
+		body.set('division_name', nameEl2 ? nameEl2.value : '');
+		body.set('price', priceEl ? priceEl.value : '');
+		body.set('spots', spotsEl ? spotsEl.value : '');
+		body.set('max', maxEl ? maxEl.value : '');
 
 		fetch(window.ajaxurl || '/wp-admin/admin-ajax.php', {
 			method: 'POST', credentials: 'same-origin',

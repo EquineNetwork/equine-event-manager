@@ -2,12 +2,12 @@
 /**
  * Entries CPT + styled-editor smoke (v1 — Entries feature, #1 + #1b).
  *
- * The "Entries" entity: an `en_entry` CPT under the Orders menu, each connected
- * to a reservation (event), holding a Description + a list of purchasable line
- * items (title/price/inventory/max). A custom editor (EEM_Entries::render) mirrors
- * the Edit Reservation chrome — event-connect typeahead + Description + the
- * Pre-Entries line-items card. The resolver expands each entry's items into the
- * legacy customer-pipeline option shape.
+ * The "Entries" menu = a catalog of Divisions. Each `en_entry` CPT post = ONE
+ * Division (Division Name + Price + Spots + Max Per Customer + Description),
+ * connected to a reservation (event). A custom editor (EEM_Entries::render)
+ * mirrors the Edit Reservation chrome — event-connect typeahead + Division card
+ * + Description card. The title composes "Event Name - Division Name". The
+ * resolver returns ONE customer-pipeline option per Division (key entry_{id}).
  *
  * Run: wp eval-file tests/smoke/entries-cpt-smoke.php
  */
@@ -36,7 +36,7 @@ $check( 'render_list + list_url + redirect defined', method_exists( 'EEM_Entries
 $check( 'list_url points at the custom list route', false !== strpos( EEM_Entries::list_url(), EEM_Entries::LIST_SLUG ) );
 ob_start(); EEM_Entries::render_list(); $list_html = (string) ob_get_clean();
 $check( 'list renders the plugin page-header chrome', false !== strpos( $list_html, 'eem-page-header' ) || false !== strpos( $list_html, 'eem-breadcrumb' ) );
-$check( 'list renders the "+ New Entry" electric button', false !== strpos( $list_html, 'New Entry' ) && false !== strpos( $list_html, 'eem-btn-electric' ) );
+$check( 'list renders the "+ New Division" electric button', false !== strpos( $list_html, 'New Division' ) && false !== strpos( $list_html, 'eem-btn-electric' ) );
 $check( 'list renders the styled .eem-table (not the WP table)', false !== strpos( $list_html, 'eem-table' ) );
 // CPT-list redirect: edit-en_entry screen → custom list.
 $fake_screen = (object) array( 'id' => 'edit-en_entry', 'base' => 'edit' );
@@ -55,35 +55,34 @@ $check( 'legacy en_entry edit URL redirects to the custom editor', is_string( $r
 
 // --- styled editor render --------------------------------------------------
 update_post_meta( $eid, EEM_Entries::META_RESERVATION, $rid_for_entry );
-update_post_meta( $eid, EEM_Entries::META_DESCRIPTION, 'Pre-purchase your classes.' );
-update_post_meta( $eid, EEM_Entries::META_ITEMS, array(
-	array( 'title' => 'Friday Reining', 'price' => '45.00', 'inventory' => 20, 'max_per_customer' => 2 ),
-	array( 'title' => 'Saturday Cutting', 'price' => '60.00', 'inventory' => 0, 'max_per_customer' => 0 ),
-) );
+update_post_meta( $eid, EEM_Entries::META_DESCRIPTION, 'Pre-purchase your division entry.' );
+update_post_meta( $eid, EEM_Entries::META_DIVISION_NAME, '#9.5 Division' );
+update_post_meta( $eid, EEM_Entries::META_PRICE, '45.00' );
+update_post_meta( $eid, EEM_Entries::META_SPOTS, 20 );
+update_post_meta( $eid, EEM_Entries::META_MAX, 2 );
 $_GET = array( 'entry_id' => (string) $eid );
 ob_start(); EEM_Entries::render(); $html = (string) ob_get_clean();
 $_GET = array();
 
 $check( 'editor renders the plugin shell (eem-plugin-wrap)', false !== strpos( $html, 'eem-plugin-wrap' ) );
 $check( 'editor renders the event-connect typeahead', false !== strpos( $html, 'id="eem-entry-typeahead"' ) && false !== strpos( $html, 'entry-filter-events' ) );
-$check( 'editor renders the Description field with its value', false !== strpos( $html, 'id="eem-entry-description"' ) && false !== strpos( $html, 'Pre-purchase your classes.' ) );
-$check( 'editor renders the Pre-Entries line-items card', false !== strpos( $html, 'id="card-entry-items"' ) && false !== strpos( $html, 'eem-repeat-table' ) );
+$check( 'editor renders the Description field with its value', false !== strpos( $html, 'id="eem-entry-description"' ) && false !== strpos( $html, 'Pre-purchase your division entry.' ) );
+$check( 'editor renders the Division Name field with its value', false !== strpos( $html, 'id="eem-division-name"' ) && false !== strpos( $html, '#9.5 Division' ) );
+$check( 'editor renders Price + Spots + Max fields', false !== strpos( $html, 'id="eem-division-price"' ) && false !== strpos( $html, 'id="eem-division-spots"' ) && false !== strpos( $html, 'id="eem-division-max"' ) );
 $check( 'cards use the reservation-editor section chrome (icon chip + title)', 2 === substr_count( $html, 'eem-section-icon eem-section-icon--' ) && false !== strpos( $html, 'eem-section-icon--blue' ) && false !== strpos( $html, 'eem-section-icon--green' ) );
-$check( 'editor renders seeded item rows', false !== strpos( $html, 'Friday Reining' ) && false !== strpos( $html, 'Saturday Cutting' ) );
-$check( 'editor reuses the generic repeating-row add + template', false !== strpos( $html, 'reservation-editor-add-repeating-row' ) && false !== strpos( $html, 'eem-entry-item-row-template' ) );
 $check( 'editor renders the sticky save bar (Draft + Publish)', false !== strpos( $html, 'entry-editor-save-draft' ) && false !== strpos( $html, 'entry-editor-publish' ) );
-$check( 'header shows the connected event title', false !== strpos( $html, 'Entries Smoke Event' ) );
+$check( 'header composes "Event Name - Division Name"', false !== strpos( $html, 'Entries Smoke Event - #9.5 Division' ) );
 
 // --- resolver round-trip (publish required) --------------------------------
 wp_update_post( array( 'ID' => $eid, 'post_status' => 'publish' ) );
 $opts = EEM_Entries::get_for_reservation( $rid_for_entry );
-$check( 'resolver expands each item into its own option', 2 === count( $opts ) );
-$k0   = 'entry_' . $eid . '_0';
-$check( 'resolver keys options entry_{postID}_{idx}', isset( $opts[ $k0 ] ) );
-$check( 'resolver carries item title', isset( $opts[ $k0 ]['title'] ) && 'Friday Reining' === $opts[ $k0 ]['title'] );
+$check( 'resolver returns one option per Division', 1 === count( $opts ) );
+$k0   = 'entry_' . $eid;
+$check( 'resolver keys the option entry_{postID}', isset( $opts[ $k0 ] ) );
+$check( 'resolver carries the division name as title', isset( $opts[ $k0 ]['title'] ) && '#9.5 Division' === $opts[ $k0 ]['title'] );
 $check( 'resolver carries price as a 2dp string', isset( $opts[ $k0 ]['price'] ) && '45.00' === $opts[ $k0 ]['price'] );
-$check( 'resolver carries inventory + max as ints', 20 === $opts[ $k0 ]['inventory'] && 2 === $opts[ $k0 ]['max_per_customer'] );
-$check( 'unlimited item resolves to 0 inventory + 0 max', 0 === $opts[ 'entry_' . $eid . '_1' ]['inventory'] && 0 === $opts[ 'entry_' . $eid . '_1' ]['max_per_customer'] );
+$check( 'resolver carries spots + max as ints', 20 === $opts[ $k0 ]['inventory'] && 2 === $opts[ $k0 ]['max_per_customer'] );
+$check( 'resolver carries division_id', isset( $opts[ $k0 ]['division_id'] ) && (int) $eid === $opts[ $k0 ]['division_id'] );
 
 // Drafts don't surface to customers.
 wp_update_post( array( 'ID' => $eid, 'post_status' => 'draft' ) );
@@ -102,7 +101,7 @@ $ar_prop->setValue( $sc, $rid_for_entry );
 $resolve = new ReflectionMethod( 'EEM_Shortcodes', 'get_enabled_pre_entry_options' );
 $resolve->setAccessible( true );
 $merged = $resolve->invoke( $sc, array() );
-$check( 'shortcode resolver includes the CPT entry items', isset( $merged[ $k0 ] ) && 'Friday Reining' === $merged[ $k0 ]['title'] );
+$check( 'shortcode resolver includes the CPT division', isset( $merged[ $k0 ] ) && '#9.5 Division' === $merged[ $k0 ]['title'] );
 
 // --- save write-path round-trip (via the testable save_entry_fields) --------
 // ajax_save() validates the nonce/cap then delegates the writes to
@@ -111,20 +110,15 @@ $ret = EEM_Entries::save_entry_fields(
 	$eid,
 	$rid_for_entry,
 	'Edited via save handler.',
-	array(
-		array( 'title' => 'Sunday Roping', 'price' => '30.00', 'inventory' => '10', 'max_per_customer' => '1' ),
-		array( 'title' => '', 'price' => '5.00', 'inventory' => '0', 'max_per_customer' => '0' ), // blank → dropped
-	),
+	array( 'division_name' => '#10.5 Division', 'price' => '30.00', 'spots' => '10', 'max' => '1' ),
 	'publish'
 );
-$check( 'save returns the inherited title + status', 'Entries Smoke Event' === $ret['title'] && 'publish' === $ret['status'] );
+$check( 'save composes "Event - Division" title + status', 'Entries Smoke Event - #10.5 Division' === $ret['title'] && 'publish' === $ret['status'] );
 
-$saved_desc  = (string) get_post_meta( $eid, EEM_Entries::META_DESCRIPTION, true );
-$saved_items = get_post_meta( $eid, EEM_Entries::META_ITEMS, true );
-$check( 'ajax_save persisted the description', 'Edited via save handler.' === $saved_desc );
-$check( 'ajax_save dropped the blank-title row (1 item kept)', is_array( $saved_items ) && 1 === count( $saved_items ) );
-$check( 'ajax_save kept the real item with sanitized values', is_array( $saved_items ) && 'Sunday Roping' === $saved_items[0]['title'] && '30.00' === $saved_items[0]['price'] && 10 === $saved_items[0]['inventory'] );
-$check( 'ajax_save published + inherited the event title', 'publish' === get_post_status( $eid ) && 'Entries Smoke Event' === get_post_field( 'post_title', $eid ) );
+$check( 'save persisted the description', 'Edited via save handler.' === (string) get_post_meta( $eid, EEM_Entries::META_DESCRIPTION, true ) );
+$check( 'save persisted the division name', '#10.5 Division' === (string) get_post_meta( $eid, EEM_Entries::META_DIVISION_NAME, true ) );
+$check( 'save persisted price as 2dp + spots/max as ints', '30.00' === (string) get_post_meta( $eid, EEM_Entries::META_PRICE, true ) && 10 === (int) get_post_meta( $eid, EEM_Entries::META_SPOTS, true ) && 1 === (int) get_post_meta( $eid, EEM_Entries::META_MAX, true ) );
+$check( 'save published + composed the title', 'publish' === get_post_status( $eid ) && 'Entries Smoke Event - #10.5 Division' === get_post_field( 'post_title', $eid ) );
 
 wp_delete_post( (int) $eid, true );
 wp_delete_post( (int) $rid_for_entry, true );
