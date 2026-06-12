@@ -2,20 +2,23 @@
 /**
  * EEM_Entries — the "Entries" feature (v1).
  *
- * Replaces the per-reservation "Pre-Entries" editor section with a first-class,
- * reservation-linked entity: each Entry is one purchasable line item (name +
- * price + inventory + per-customer cap) attached to a reservation (which is the
- * plugin's handle for an event instance). Entries are managed under
- * Event Manager → Orders → Entries; on the customer event page they surface as
- * another purchasable card and fold into the reservation order at checkout.
+ * Each Entry is a first-class, reservation-linked record carrying a Description
+ * plus a list of purchasable line items (title / inventory / max-per-customer /
+ * price). Entries are managed under Event Manager → Orders → Entries through a
+ * custom editor that MIRRORS the Edit Reservation experience: the admin searches
+ * for an event, connects it, then fills the Description + the Pre-Entries
+ * line-items card. On the customer event page the items surface as another
+ * purchasable card and fold into the reservation order at checkout.
+ *
+ * Linkage: an Entry points at a RESERVATION (the plugin's per-event handle), so
+ * the customer resolver {@see self::get_for_reservation()} is a trivial direct
+ * match and we side-step the reservation event-typeahead's one-to-one filter
+ * (which would hide events that already have a reservation — exactly the events
+ * an Entry needs). Entries therefore use their own event search that returns
+ * reservations-as-events without that exclusion.
  *
  * Named generically ("Entries", not "Pre-Entries") so the concept can later grow
  * into contestant entries (disciplines/fees) without a rename.
- *
- * The customer-facing render, pricing, validation, totals and order-note
- * pipeline all consume {@see self::get_for_reservation()}, which returns the same
- * option shape the legacy reservation-meta resolver did — so nothing downstream
- * had to change.
  *
  * @package   EEM_Plugin
  * @license   GPL-2.0-or-later
@@ -27,40 +30,45 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Entries CPT + admin meta box + reservation-scoped resolver.
+ * Entries CPT + custom styled editor + reservation-scoped resolver.
  */
 class EEM_Entries {
 
 	/** @var string The Entry custom post type. */
 	const POST_TYPE = 'en_entry';
 
+	/** @var string Custom editor page slug (hidden submenu, like the reservation editor). */
+	const EDITOR_SLUG = 'equine-event-manager-entry-editor';
+
 	/** @var string Linked-reservation meta key. */
 	const META_RESERVATION = '_en_entry_reservation_id';
 
-	/** @var string Price meta key (decimal string). */
-	const META_PRICE = '_en_entry_price';
+	/** @var string Description meta key (string). */
+	const META_DESCRIPTION = '_en_entry_description';
 
-	/** @var string Inventory cap meta key (0 = unlimited). */
-	const META_INVENTORY = '_en_entry_inventory';
-
-	/** @var string Max-per-customer meta key (0 = unlimited). */
-	const META_MAX = '_en_entry_max';
+	/** @var string Line-items meta key (array of {title,price,inventory,max_per_customer}). */
+	const META_ITEMS = '_en_entry_items';
 
 	/**
-	 * Register the CPT, meta box, save handler and list-table columns.
+	 * Wire the CPT, custom editor route, redirects, AJAX handlers and list columns.
 	 *
 	 * @return void
 	 */
 	public static function register(): void {
 		add_action( 'init', array( __CLASS__, 'register_post_type' ) );
-		add_action( 'add_meta_boxes', array( __CLASS__, 'add_meta_box' ) );
-		add_action( 'save_post_' . self::POST_TYPE, array( __CLASS__, 'save' ), 10, 2 );
+		add_action( 'admin_menu', array( __CLASS__, 'register_editor_route' ) );
+		add_action( 'load-post-new.php', array( __CLASS__, 'maybe_redirect_new_entry' ) );
+		add_action( 'load-post.php', array( __CLASS__, 'maybe_redirect_legacy_edit' ) );
+		add_action( 'wp_ajax_eem_entry_editor_save', array( __CLASS__, 'ajax_save' ) );
+		add_action( 'wp_ajax_eem_entry_search_events', array( __CLASS__, 'ajax_search_events' ) );
 		add_filter( 'manage_' . self::POST_TYPE . '_posts_columns', array( __CLASS__, 'columns' ) );
 		add_action( 'manage_' . self::POST_TYPE . '_posts_custom_column', array( __CLASS__, 'column_value' ), 10, 2 );
 	}
 
 	/**
-	 * Register the `en_entry` post type under the Orders menu.
+	 * Register the `en_entry` post type under the Orders menu. No `editor`
+	 * support — the custom editor at {@see self::EDITOR_SLUG} replaces the WP
+	 * meta-box screen (the classic new/edit URLs redirect there).
 	 *
 	 * @return void
 	 */
@@ -68,7 +76,7 @@ class EEM_Entries {
 		register_post_type(
 			self::POST_TYPE,
 			array(
-				'labels'             => array(
+				'labels'          => array(
 					'name'               => __( 'Entries', 'equine-event-manager' ),
 					'singular_name'      => __( 'Entry', 'equine-event-manager' ),
 					'add_new'            => __( 'Add Entry', 'equine-event-manager' ),
@@ -82,120 +90,488 @@ class EEM_Entries {
 					'all_items'          => __( 'Entries', 'equine-event-manager' ),
 					'menu_name'          => __( 'Entries', 'equine-event-manager' ),
 				),
-				'public'             => false,
-				'show_ui'            => true,
-				'show_in_menu'       => 'equine-event-manager-orders',
-				'show_in_rest'       => false,
-				'capability_type'    => 'post',
-				'map_meta_cap'       => true,
-				'capabilities'       => array( 'create_posts' => 'manage_options' ),
-				'hierarchical'       => false,
-				'supports'           => array( 'title' ),
-				'has_archive'        => false,
-				'rewrite'            => false,
-				'query_var'          => false,
+				'public'          => false,
+				'show_ui'         => true,
+				'show_in_menu'    => 'equine-event-manager-orders',
+				'show_in_rest'    => false,
+				'capability_type' => 'post',
+				'map_meta_cap'    => true,
+				'capabilities'    => array( 'create_posts' => 'manage_options' ),
+				'hierarchical'    => false,
+				'supports'        => array( 'title' ),
+				'has_archive'     => false,
+				'rewrite'         => false,
+				'query_var'       => false,
 			)
 		);
 	}
 
 	/**
-	 * Register the Entry Details meta box.
+	 * Register the hidden custom-editor submenu (parent '' so it's routable but
+	 * not a nav entry), mirroring the reservation editor's registration.
 	 *
 	 * @return void
 	 */
-	public static function add_meta_box(): void {
-		add_meta_box(
-			'eem-entry-details',
-			__( 'Entry Details', 'equine-event-manager' ),
-			array( __CLASS__, 'render_meta_box' ),
-			self::POST_TYPE,
-			'normal',
-			'high'
+	public static function register_editor_route(): void {
+		add_submenu_page(
+			'',
+			__( 'Edit Entry', 'equine-event-manager' ),
+			'',
+			'manage_options',
+			self::EDITOR_SLUG,
+			array( __CLASS__, 'render' )
 		);
 	}
 
 	/**
-	 * Render the Entry Details fields (event/reservation, price, inventory, cap).
+	 * Editor URL for an entry id (0 → a fresh draft is created on first visit).
 	 *
-	 * @param WP_Post $post The entry being edited.
+	 * @param int $entry_id Entry post id.
+	 * @return string
+	 */
+	public static function editor_url( int $entry_id ): string {
+		$base = admin_url( 'admin.php?page=' . self::EDITOR_SLUG );
+		return $entry_id > 0 ? $base . '&entry_id=' . $entry_id : $base;
+	}
+
+	/**
+	 * Intercept `post-new.php?post_type=en_entry`: create a draft Entry and
+	 * redirect to the custom editor. Mirrors the reservation editor.
+	 *
 	 * @return void
 	 */
-	public static function render_meta_box( WP_Post $post ): void {
-		wp_nonce_field( 'eem_entry_save', 'eem_entry_nonce' );
+	public static function maybe_redirect_new_entry(): void {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended
+		if ( ! isset( $_GET['post_type'] ) || self::POST_TYPE !== sanitize_key( wp_unslash( $_GET['post_type'] ) ) ) {
+			return;
+		}
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			return;
+		}
 
-		$reservation_id = (int) get_post_meta( $post->ID, self::META_RESERVATION, true );
-		$price          = (string) get_post_meta( $post->ID, self::META_PRICE, true );
-		$inventory      = (string) get_post_meta( $post->ID, self::META_INVENTORY, true );
-		$max            = (string) get_post_meta( $post->ID, self::META_MAX, true );
-
-		$reservations = get_posts( array(
-			'post_type'      => EEM_Reservations_CPT::POST_TYPE,
-			'post_status'    => array( 'publish', 'draft' ),
-			'posts_per_page' => -1,
-			'orderby'        => 'title',
-			'order'          => 'ASC',
+		$new_id = wp_insert_post( array(
+			'post_type'   => self::POST_TYPE,
+			'post_status' => 'draft',
+			'post_title'  => __( 'New Entry', 'equine-event-manager' ),
 		) );
+		if ( is_wp_error( $new_id ) || ! $new_id ) {
+			return;
+		}
+
+		wp_safe_redirect( self::editor_url( (int) $new_id ), 302 );
+		exit;
+	}
+
+	/**
+	 * Redirect the legacy `post.php?post=N&action=edit` URL for en_entry posts
+	 * to the custom editor.
+	 *
+	 * @return void
+	 */
+	public static function maybe_redirect_legacy_edit(): void {
+		$url = self::resolve_legacy_edit_redirect_url();
+		if ( null === $url ) {
+			return;
+		}
+		wp_safe_redirect( $url, 302 );
+		exit;
+	}
+
+	/**
+	 * Pure resolver for the legacy-edit redirect (split out so smokes can verify
+	 * the target without triggering exit).
+	 *
+	 * @return string|null
+	 */
+	public static function resolve_legacy_edit_redirect_url(): ?string {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended
+		if ( ! isset( $_GET['post'] ) ) {
+			return null;
+		}
+		$action = isset( $_GET['action'] ) ? sanitize_key( wp_unslash( $_GET['action'] ) ) : '';
+		if ( '' !== $action && 'edit' !== $action ) {
+			return null;
+		}
+		$post_id = absint( wp_unslash( $_GET['post'] ) );
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+		if ( $post_id <= 0 || self::POST_TYPE !== get_post_type( $post_id ) ) {
+			return null;
+		}
+		return self::editor_url( $post_id );
+	}
+
+	/**
+	 * Resolve a reservation's display label (its linked event title + dates) for
+	 * the editor header + the search results.
+	 *
+	 * @param int $reservation_id Reservation id.
+	 * @return array{title:string,dates:string}
+	 */
+	private static function reservation_label( int $reservation_id ): array {
+		$title = '';
+		$dates = '';
+		if ( $reservation_id > 0 ) {
+			$title = (string) get_the_title( $reservation_id );
+			if ( class_exists( 'EEM_Reservation_Source_Resolver' ) && class_exists( 'EEM_Dashboard_Repo' ) ) {
+				$fields = EEM_Reservation_Source_Resolver::resolve_event_fields( $reservation_id );
+				if ( ! empty( $fields['title'] ) ) {
+					$title = (string) $fields['title'];
+				}
+				$dates = EEM_Dashboard_Repo::format_date_range(
+					isset( $fields['start_date'] ) ? (string) $fields['start_date'] : '',
+					isset( $fields['end_date'] ) ? (string) $fields['end_date'] : ''
+				);
+			}
+		}
+		return array( 'title' => $title, 'dates' => $dates );
+	}
+
+	/**
+	 * Render the custom Entry editor (mirrors the reservation editor chrome).
+	 *
+	 * @return void
+	 */
+	public static function render(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'equine-event-manager' ) );
+		}
+
+		// Shared editor helpers: eem_render_breadcrumb() + eem_render_editor_field_row().
+		require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_breadcrumb.php';
+		require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_partial-field-row.php';
+
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended
+		$entry_id = isset( $_GET['entry_id'] ) ? absint( wp_unslash( $_GET['entry_id'] ) ) : 0;
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+		$post = $entry_id > 0 ? get_post( $entry_id ) : null;
+
+		if ( ! $post || self::POST_TYPE !== $post->post_type ) {
+			echo '<div class="eem-page"><div class="eem-plugin-wrap"><header class="eem-plugin-header"><h1 class="eem-plugin-title">' . esc_html__( 'Entry not found', 'equine-event-manager' ) . '</h1></header><p style="padding:20px">' . esc_html__( 'That entry could not be loaded.', 'equine-event-manager' ) . ' <a href="' . esc_url( admin_url( 'edit.php?post_type=' . self::POST_TYPE ) ) . '">' . esc_html__( 'Back to Entries', 'equine-event-manager' ) . '</a></p></div></div>';
+			return;
+		}
+
+		$reservation_id = (int) get_post_meta( $entry_id, self::META_RESERVATION, true );
+		$description    = (string) get_post_meta( $entry_id, self::META_DESCRIPTION, true );
+		$items          = get_post_meta( $entry_id, self::META_ITEMS, true );
+		$items          = is_array( $items ) ? $items : array();
+
+		$label            = self::reservation_label( $reservation_id );
+		$has_linked_event = ( $reservation_id > 0 && '' !== $label['title'] );
+		$header_title     = $has_linked_event ? $label['title'] : __( 'New Entry', 'equine-event-manager' );
+
+		$search_nonce = wp_create_nonce( 'eem_entry_search' );
+		$save_nonce   = wp_create_nonce( 'eem_entry_editor' );
+		$status       = get_post_status( $post );
+		$is_published = ( 'publish' === $status );
+
+		$fmt_money = static function ( $v ) {
+			return number_format( (float) $v, 2, '.', '' );
+		};
 		?>
-		<style>
-			.eem-entry-field { margin: 0 0 14px; }
-			.eem-entry-field label { display: block; font-weight: 600; margin-bottom: 4px; }
-			.eem-entry-field .description { color: #6B7A99; }
-			.eem-entry-field input[type="number"], .eem-entry-field input[type="text"], .eem-entry-field select { width: 100%; max-width: 420px; }
-		</style>
-		<p class="eem-entry-field">
-			<label for="eem-entry-reservation"><?php esc_html_e( 'Event', 'equine-event-manager' ); ?></label>
-			<select id="eem-entry-reservation" name="eem_entry_reservation_id">
-				<option value="0"><?php esc_html_e( '— Select an event —', 'equine-event-manager' ); ?></option>
-				<?php foreach ( $reservations as $r ) : ?>
-					<option value="<?php echo esc_attr( (string) $r->ID ); ?>" <?php selected( $reservation_id, $r->ID ); ?>><?php echo esc_html( get_the_title( $r ) ); ?></option>
-				<?php endforeach; ?>
-			</select>
-			<span class="description"><?php esc_html_e( 'The event this entry belongs to. It will show as a card on that event\'s customer reservation page.', 'equine-event-manager' ); ?></span>
-		</p>
-		<p class="eem-entry-field">
-			<label for="eem-entry-price"><?php esc_html_e( 'Price', 'equine-event-manager' ); ?></label>
-			<input type="number" id="eem-entry-price" name="eem_entry_price" step="0.01" min="0" value="<?php echo esc_attr( '' !== $price ? $price : '0.00' ); ?>">
-			<span class="description"><?php esc_html_e( 'Price per entry the customer pays.', 'equine-event-manager' ); ?></span>
-		</p>
-		<p class="eem-entry-field">
-			<label for="eem-entry-inventory"><?php esc_html_e( 'Inventory', 'equine-event-manager' ); ?></label>
-			<input type="number" id="eem-entry-inventory" name="eem_entry_inventory" step="1" min="0" value="<?php echo esc_attr( $inventory ); ?>" placeholder="<?php esc_attr_e( 'Blank or 0 = unlimited', 'equine-event-manager' ); ?>">
-			<span class="description"><?php esc_html_e( 'Total available. Blank or 0 = unlimited.', 'equine-event-manager' ); ?></span>
-		</p>
-		<p class="eem-entry-field">
-			<label for="eem-entry-max"><?php esc_html_e( 'Max Per Customer', 'equine-event-manager' ); ?></label>
-			<input type="number" id="eem-entry-max" name="eem_entry_max" step="1" min="0" value="<?php echo esc_attr( $max ); ?>" placeholder="<?php esc_attr_e( 'Blank or 0 = unlimited', 'equine-event-manager' ); ?>">
-			<span class="description"><?php esc_html_e( 'Most a single customer may buy. Blank or 0 = unlimited.', 'equine-event-manager' ); ?></span>
-		</p>
+		<div class="eem-page" data-eem-entry-editor data-entry-id="<?php echo esc_attr( (string) $entry_id ); ?>">
+			<?php
+			eem_render_breadcrumb( array(
+				array(
+					'label' => __( 'Entries', 'equine-event-manager' ),
+					'url'   => admin_url( 'edit.php?post_type=' . self::POST_TYPE ),
+				),
+				array( 'label' => $header_title ),
+			) );
+			?>
+			<div class="eem-plugin-wrap">
+				<header class="eem-plugin-header">
+					<div class="eem-plugin-header-left">
+						<div class="eem-res-name-edit-wrap">
+							<div class="eem-res-name-view">
+								<?php if ( $has_linked_event ) : ?>
+									<span class="eem-res-name-eyebrow"><?php esc_html_e( 'Entry for', 'equine-event-manager' ); ?></span>
+								<?php endif; ?>
+								<h1 class="eem-plugin-title" id="eem-entry-header-name"><?php echo esc_html( $header_title ); ?></h1>
+							</div>
+						</div>
+						<div class="eem-plugin-header-meta" id="eem-entry-header-meta"><?php
+							echo esc_html__( 'Editing Entry', 'equine-event-manager' ) . ' #' . esc_html( (string) $entry_id );
+							if ( '' !== $label['dates'] ) {
+								echo ' &nbsp;&middot;&nbsp; ' . esc_html( $label['dates'] );
+							}
+						?></div>
+
+						<input type="hidden" id="eem-entry-reservation-input" value="<?php echo esc_attr( (string) $reservation_id ); ?>">
+
+						<div class="eem-header-typeahead" id="eem-entry-typeahead"
+							style="<?php echo $has_linked_event ? 'display:none;' : ''; ?>"
+							data-current-reservation-id="<?php echo esc_attr( (string) $reservation_id ); ?>"
+							data-ajax-url="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>"
+							data-search-nonce="<?php echo esc_attr( $search_nonce ); ?>">
+							<input type="text" class="eem-event-search-input" id="eem-entry-event-search-input"
+								placeholder="<?php esc_attr_e( "Search events\xe2\x80\xa6", 'equine-event-manager' ); ?>"
+								data-eem-input-action="entry-filter-events" autocomplete="off">
+							<div class="eem-event-search-results" id="eem-entry-event-search-results"></div>
+							<?php if ( $has_linked_event ) : ?>
+								<button type="button" class="eem-header-typeahead-cancel" data-eem-action="entry-cancel-change">
+									<?php esc_html_e( 'Cancel', 'equine-event-manager' ); ?>
+								</button>
+							<?php endif; ?>
+						</div>
+					</div>
+					<?php if ( $has_linked_event ) : ?>
+						<div class="eem-header-actions">
+							<button type="button" class="eem-header-action-change" data-eem-action="entry-change-event">
+								<?php esc_html_e( 'Change Event', 'equine-event-manager' ); ?>
+							</button>
+						</div>
+					<?php endif; ?>
+				</header>
+
+				<div class="eem-edit-body">
+					<main class="eem-edit-main">
+						<?php if ( ! $has_linked_event ) : ?>
+							<div class="eem-reservation-link-gate" role="status" id="eem-entry-link-gate">
+								<div class="eem-reservation-link-gate__icon" aria-hidden="true">
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+								</div>
+								<h2 class="eem-reservation-link-gate__title"><?php esc_html_e( 'Connect an event to get started', 'equine-event-manager' ); ?></h2>
+								<p class="eem-reservation-link-gate__text">
+									<?php esc_html_e( 'Search for the event in the box above and choose it. The entry takes its name from the connected event and its items appear on that event\'s customer reservation page.', 'equine-event-manager' ); ?>
+								</p>
+							</div>
+						<?php endif; ?>
+
+						<!-- Description card -->
+						<section class="eem-card eem-entry-card" id="eem-entry-description-card" <?php echo $has_linked_event ? '' : 'style="display:none"'; ?>>
+							<div class="eem-card-head"><h2 class="eem-card-title"><?php esc_html_e( 'Description', 'equine-event-manager' ); ?></h2></div>
+							<div class="eem-card-body">
+								<?php
+								eem_render_editor_field_row( array(
+									'label'        => __( 'Description', 'equine-event-manager' ),
+									'label_sub'    => __( 'Optional intro shown above the entry items on the customer page', 'equine-event-manager' ),
+									'control_html' => '<textarea class="eem-field-input" id="eem-entry-description" rows="3" placeholder="' . esc_attr__( 'e.g. Pre-purchase your class entries below.', 'equine-event-manager' ) . '">' . esc_textarea( $description ) . '</textarea>',
+								) );
+								?>
+							</div>
+						</section>
+
+						<!-- Pre-Entries line-items card -->
+						<section class="eem-card eem-entry-card" id="eem-entry-items-card" <?php echo $has_linked_event ? '' : 'style="display:none"'; ?>>
+							<div class="eem-card-head"><h2 class="eem-card-title"><?php esc_html_e( 'Entry Items', 'equine-event-manager' ); ?></h2></div>
+							<div class="eem-card-body">
+								<table class="eem-repeat-table">
+									<thead>
+										<tr>
+											<th><?php esc_html_e( 'Event Title', 'equine-event-manager' ); ?></th>
+											<th style="width:110px"><?php esc_html_e( 'Inventory', 'equine-event-manager' ); ?></th>
+											<th style="width:120px"><?php esc_html_e( 'Max Per Customer', 'equine-event-manager' ); ?></th>
+											<th style="width:140px"><?php esc_html_e( 'Price', 'equine-event-manager' ); ?></th>
+											<th style="width:40px"></th>
+										</tr>
+									</thead>
+									<tbody id="eem-entry-items-list">
+										<?php foreach ( $items as $ii => $item ) :
+											$i_title = isset( $item['title'] ) ? (string) $item['title'] : '';
+											$i_inv   = ( isset( $item['inventory'] ) && (int) $item['inventory'] > 0 ) ? (string) (int) $item['inventory'] : '';
+											$i_max   = ( isset( $item['max_per_customer'] ) && (int) $item['max_per_customer'] > 0 ) ? (string) (int) $item['max_per_customer'] : '';
+											$i_price = isset( $item['price'] ) ? $fmt_money( $item['price'] ) : '0.00';
+											?>
+											<tr>
+												<td><input class="eem-repeat-input" type="text" name="eem_entry_items[<?php echo (int) $ii; ?>][title]" value="<?php echo esc_attr( $i_title ); ?>"></td>
+												<td><input class="eem-repeat-input" type="number" min="0" style="width:90px" name="eem_entry_items[<?php echo (int) $ii; ?>][inventory]" value="<?php echo esc_attr( $i_inv ); ?>" placeholder="<?php esc_attr_e( 'Unlimited', 'equine-event-manager' ); ?>"></td>
+												<td><input class="eem-repeat-input" type="number" min="1" step="1" style="width:90px" name="eem_entry_items[<?php echo (int) $ii; ?>][max_per_customer]" value="<?php echo esc_attr( $i_max ); ?>" placeholder="<?php esc_attr_e( 'Unlimited', 'equine-event-manager' ); ?>"></td>
+												<td><div class="eem-repeat-price-wrap"><span class="eem-repeat-price-sym">$</span><input class="eem-repeat-price-in" type="number" min="0" step="0.01" name="eem_entry_items[<?php echo (int) $ii; ?>][price]" value="<?php echo esc_attr( $i_price ); ?>"></div></td>
+												<td><button class="eem-btn-delete" type="button" aria-label="<?php esc_attr_e( 'Delete', 'equine-event-manager' ); ?>" data-eem-action="reservation-editor-remove-repeating-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
+											</tr>
+										<?php endforeach; ?>
+									</tbody>
+								</table>
+								<button class="eem-btn-add" type="button"
+									data-eem-action="reservation-editor-add-repeating-row"
+									data-eem-repeating-template="eem-entry-item-row-template"
+									data-eem-repeating-tbody="eem-entry-items-list">
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+									<?php esc_html_e( 'Add Item', 'equine-event-manager' ); ?>
+								</button>
+								<template id="eem-entry-item-row-template"><tr>
+									<td><input class="eem-repeat-input" type="text" name="eem_entry_items[__index__][title]" value="" placeholder="<?php esc_attr_e( 'Entry title', 'equine-event-manager' ); ?>"></td>
+									<td><input class="eem-repeat-input" type="number" min="0" style="width:90px" name="eem_entry_items[__index__][inventory]" value="" placeholder="<?php esc_attr_e( 'Unlimited', 'equine-event-manager' ); ?>"></td>
+									<td><input class="eem-repeat-input" type="number" min="1" step="1" style="width:90px" name="eem_entry_items[__index__][max_per_customer]" value="" placeholder="<?php esc_attr_e( 'Unlimited', 'equine-event-manager' ); ?>"></td>
+									<td><div class="eem-repeat-price-wrap"><span class="eem-repeat-price-sym">$</span><input class="eem-repeat-price-in" type="number" min="0" step="0.01" name="eem_entry_items[__index__][price]" value="0.00"></div></td>
+									<td><button class="eem-btn-delete" type="button" aria-label="<?php esc_attr_e( 'Delete', 'equine-event-manager' ); ?>" data-eem-action="reservation-editor-remove-repeating-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
+								</tr></template>
+							</div>
+						</section>
+					</main>
+				</div>
+			</div>
+		</div>
+
+		<!-- Sticky save bar (entry-editor actions) -->
+		<div class="eem-sticky-save" id="eem-entry-sticky-save"
+			data-entry-id="<?php echo esc_attr( (string) $entry_id ); ?>"
+			data-save-nonce="<?php echo esc_attr( $save_nonce ); ?>">
+			<div class="eem-sticky-save-status eem-sticky-save-status--<?php echo $is_published ? 'published' : 'draft'; ?>">
+				<span class="eem-sticky-save-dot" aria-hidden="true"></span>
+				<span data-eem-entry-status><?php echo esc_html( $is_published ? __( 'Published', 'equine-event-manager' ) : __( 'Draft', 'equine-event-manager' ) ); ?></span>
+			</div>
+			<div class="eem-sticky-save-spacer"></div>
+			<div class="eem-sticky-save-actions">
+				<button type="button" class="eem-btn-save-draft" data-eem-action="entry-editor-save-draft">
+					<span><?php esc_html_e( 'Save as Draft', 'equine-event-manager' ); ?></span>
+				</button>
+				<button type="button" class="eem-btn-update" data-eem-action="entry-editor-publish">
+					<?php echo esc_html( $is_published ? __( 'Update Entry', 'equine-event-manager' ) : __( 'Publish Entry', 'equine-event-manager' ) ); ?>
+				</button>
+			</div>
+		</div>
 		<?php
 	}
 
 	/**
-	 * Persist the Entry Details fields.
+	 * AJAX: search reservations (as events) for the entry event-connect typeahead.
+	 * Returns reservations-as-events WITHOUT the one-to-one exclusion that the
+	 * reservation editor's event search applies.
 	 *
-	 * @param int     $post_id The entry post id.
-	 * @param WP_Post $post    The entry post.
 	 * @return void
 	 */
-	public static function save( int $post_id, WP_Post $post ): void {
-		if ( ! isset( $_POST['eem_entry_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['eem_entry_nonce'] ) ), 'eem_entry_save' ) ) {
-			return;
-		}
-		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
-			return;
-		}
-		if ( ! current_user_can( 'edit_post', $post_id ) ) {
-			return;
+	public static function ajax_search_events(): void {
+		check_ajax_referer( 'eem_entry_search', 'nonce' );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
 		}
 
-		update_post_meta( $post_id, self::META_RESERVATION, isset( $_POST['eem_entry_reservation_id'] ) ? absint( wp_unslash( $_POST['eem_entry_reservation_id'] ) ) : 0 );
-		update_post_meta( $post_id, self::META_PRICE, isset( $_POST['eem_entry_price'] ) ? number_format( (float) wp_unslash( $_POST['eem_entry_price'] ), 2, '.', '' ) : '0.00' );
-		update_post_meta( $post_id, self::META_INVENTORY, isset( $_POST['eem_entry_inventory'] ) ? absint( wp_unslash( $_POST['eem_entry_inventory'] ) ) : 0 );
-		update_post_meta( $post_id, self::META_MAX, isset( $_POST['eem_entry_max'] ) ? absint( wp_unslash( $_POST['eem_entry_max'] ) ) : 0 );
+		$term = isset( $_GET['term'] ) ? sanitize_text_field( wp_unslash( $_GET['term'] ) ) : '';
+
+		$reservations = get_posts( array(
+			'post_type'      => EEM_Reservations_CPT::POST_TYPE,
+			'post_status'    => array( 'publish', 'draft' ),
+			'posts_per_page' => 20,
+			'orderby'        => 'title',
+			'order'          => 'ASC',
+			's'              => $term,
+		) );
+
+		$results = array();
+		foreach ( $reservations as $r ) {
+			$label     = self::reservation_label( (int) $r->ID );
+			$results[] = array(
+				'id'         => (string) $r->ID,
+				'text'       => '' !== $label['title'] ? $label['title'] : get_the_title( $r ),
+				'start_date' => '',
+				'dates'      => $label['dates'],
+			);
+		}
+
+		wp_send_json_success( array( 'results' => $results ) );
 	}
 
 	/**
-	 * List-table columns: Event + Price alongside the title.
+	 * AJAX: persist the entry (description + linked reservation + items). The
+	 * post_title inherits the connected event title so the list shows it.
+	 *
+	 * @return void
+	 */
+	public static function ajax_save(): void {
+		check_ajax_referer( 'eem_entry_editor', '_wpnonce' );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+
+		$entry_id = isset( $_POST['entry_id'] ) ? absint( wp_unslash( $_POST['entry_id'] ) ) : 0;
+		if ( $entry_id <= 0 || self::POST_TYPE !== get_post_type( $entry_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'Entry not found.', 'equine-event-manager' ) ), 404 );
+		}
+
+		$save_kind      = isset( $_POST['save_kind'] ) ? sanitize_key( wp_unslash( $_POST['save_kind'] ) ) : 'publish';
+		$reservation_id = isset( $_POST['reservation_id'] ) ? absint( wp_unslash( $_POST['reservation_id'] ) ) : 0;
+		$description    = isset( $_POST['description'] ) ? sanitize_textarea_field( wp_unslash( $_POST['description'] ) ) : '';
+
+		// Validate the linked reservation.
+		if ( $reservation_id > 0 && EEM_Reservations_CPT::POST_TYPE !== get_post_type( $reservation_id ) ) {
+			$reservation_id = 0;
+		}
+		if ( 'publish' === $save_kind && $reservation_id <= 0 ) {
+			wp_send_json_error( array(
+				'message' => __( 'Connect an event before publishing this entry.', 'equine-event-manager' ),
+				'code'    => 'entry_requires_event',
+			), 422 );
+		}
+
+		$result = self::save_entry_fields(
+			$entry_id,
+			$reservation_id,
+			$description,
+			isset( $_POST['eem_entry_items'] ) ? wp_unslash( $_POST['eem_entry_items'] ) : array(),
+			$save_kind
+		);
+
+		wp_send_json_success( array(
+			'message'  => ( 'publish' === $save_kind ) ? __( 'Entry published.', 'equine-event-manager' ) : __( 'Draft saved.', 'equine-event-manager' ),
+			'entry_id' => $entry_id,
+			'title'    => $result['title'],
+		) );
+	}
+
+	/**
+	 * Persist an entry's fields (description + reservation + sanitized items) and
+	 * sync its title (inherits the connected event title) + status. Split out of
+	 * {@see self::ajax_save()} so the write path is testable without wp_die().
+	 *
+	 * @param int    $entry_id       Entry post id.
+	 * @param int    $reservation_id Connected reservation id (0 = none).
+	 * @param string $description    Sanitized description.
+	 * @param mixed  $raw_items      Raw posted `eem_entry_items` value.
+	 * @param string $save_kind      'publish' | 'save_draft'.
+	 * @return array{title:string,status:string,items:array<int,array<string,mixed>>}
+	 */
+	public static function save_entry_fields( int $entry_id, int $reservation_id, string $description, $raw_items, string $save_kind ): array {
+		$items = self::sanitize_items( $raw_items );
+
+		update_post_meta( $entry_id, self::META_RESERVATION, $reservation_id );
+		update_post_meta( $entry_id, self::META_DESCRIPTION, $description );
+		update_post_meta( $entry_id, self::META_ITEMS, $items );
+
+		$label     = self::reservation_label( $reservation_id );
+		$new_title = '' !== $label['title'] ? $label['title'] : __( 'New Entry', 'equine-event-manager' );
+		$status    = ( 'publish' === $save_kind ) ? 'publish' : 'draft';
+		wp_update_post( array(
+			'ID'          => $entry_id,
+			'post_title'  => $new_title,
+			'post_status' => $status,
+		) );
+
+		return array( 'title' => $new_title, 'status' => $status, 'items' => $items );
+	}
+
+	/**
+	 * Sanitize the posted line-items array into the canonical item shape.
+	 *
+	 * @param mixed $raw Posted `eem_entry_items` value.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private static function sanitize_items( $raw ): array {
+		if ( ! is_array( $raw ) ) {
+			return array();
+		}
+		$out = array();
+		foreach ( $raw as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			$title = isset( $row['title'] ) ? sanitize_text_field( (string) $row['title'] ) : '';
+			if ( '' === trim( $title ) ) {
+				continue; // drop blank rows.
+			}
+			$out[] = array(
+				'title'            => $title,
+				'price'            => number_format( (float) ( isset( $row['price'] ) ? $row['price'] : 0 ), 2, '.', '' ),
+				'inventory'        => isset( $row['inventory'] ) ? absint( $row['inventory'] ) : 0,
+				'max_per_customer' => isset( $row['max_per_customer'] ) ? absint( $row['max_per_customer'] ) : 0,
+			);
+		}
+		return $out;
+	}
+
+	/**
+	 * List-table columns: Event + item count alongside the title.
 	 *
 	 * @param array<string,string> $columns Default columns.
 	 * @return array<string,string>
@@ -206,7 +582,7 @@ class EEM_Entries {
 			$out[ $key ] = $label;
 			if ( 'title' === $key ) {
 				$out['eem_entry_event'] = __( 'Event', 'equine-event-manager' );
-				$out['eem_entry_price'] = __( 'Price', 'equine-event-manager' );
+				$out['eem_entry_items'] = __( 'Items', 'equine-event-manager' );
 			}
 		}
 		return $out;
@@ -222,18 +598,19 @@ class EEM_Entries {
 	public static function column_value( string $column, int $post_id ): void {
 		if ( 'eem_entry_event' === $column ) {
 			$rid = (int) get_post_meta( $post_id, self::META_RESERVATION, true );
-			echo $rid > 0 ? esc_html( get_the_title( $rid ) ) : '<span style="color:#b91c1c">' . esc_html__( '— not linked —', 'equine-event-manager' ) . '</span>';
-		} elseif ( 'eem_entry_price' === $column ) {
-			echo esc_html( '$' . number_format_i18n( (float) get_post_meta( $post_id, self::META_PRICE, true ), 2 ) );
+			echo $rid > 0 ? esc_html( get_the_title( $rid ) ) : '<span style="color:#b91c1c">' . esc_html__( '— not connected —', 'equine-event-manager' ) . '</span>';
+		} elseif ( 'eem_entry_items' === $column ) {
+			$items = get_post_meta( $post_id, self::META_ITEMS, true );
+			echo esc_html( (string) ( is_array( $items ) ? count( $items ) : 0 ) );
 		}
 	}
 
 	/**
-	 * Resolve published Entries linked to a reservation, in the same option shape
-	 * the legacy reservation-meta pre-entry resolver returned (keyed by a stable
-	 * `entry_{id}` key, with title/price/inventory/max_per_customer). Consumed by
-	 * the customer-page render, pricing matrix, checkout validation, totals and
-	 * order notes.
+	 * Resolve published Entries linked to a reservation into the customer-pipeline
+	 * option shape (keyed `entry_{postID}_{itemIndex}`, each with
+	 * title/price/inventory/max_per_customer). Each Entry post expands into one
+	 * option per line item. Consumed by the customer-page render, pricing matrix,
+	 * checkout validation, totals and order notes.
 	 *
 	 * @param int $reservation_id Reservation (event) id.
 	 * @return array<string, array<string, mixed>>
@@ -259,16 +636,22 @@ class EEM_Entries {
 
 		$options = array();
 		foreach ( $posts as $p ) {
-			$title = trim( (string) get_the_title( $p ) );
-			if ( '' === $title ) {
+			$items = get_post_meta( $p->ID, self::META_ITEMS, true );
+			if ( ! is_array( $items ) ) {
 				continue;
 			}
-			$options[ 'entry_' . $p->ID ] = array(
-				'title'            => $title,
-				'price'            => number_format( (float) get_post_meta( $p->ID, self::META_PRICE, true ), 2, '.', '' ),
-				'inventory'        => absint( get_post_meta( $p->ID, self::META_INVENTORY, true ) ),
-				'max_per_customer' => absint( get_post_meta( $p->ID, self::META_MAX, true ) ),
-			);
+			foreach ( $items as $idx => $item ) {
+				$title = isset( $item['title'] ) ? trim( (string) $item['title'] ) : '';
+				if ( '' === $title ) {
+					continue;
+				}
+				$options[ 'entry_' . $p->ID . '_' . (int) $idx ] = array(
+					'title'            => $title,
+					'price'            => number_format( (float) ( isset( $item['price'] ) ? $item['price'] : 0 ), 2, '.', '' ),
+					'inventory'        => isset( $item['inventory'] ) ? absint( $item['inventory'] ) : 0,
+					'max_per_customer' => isset( $item['max_per_customer'] ) ? absint( $item['max_per_customer'] ) : 0,
+				);
+			}
 		}
 
 		return $options;

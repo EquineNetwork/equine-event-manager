@@ -1,10 +1,13 @@
 <?php
 /**
- * Entries CPT smoke (v1 — Entries feature, commit 1).
+ * Entries CPT + styled-editor smoke (v1 — Entries feature, #1 + #1b).
  *
- * The standalone "Entries" entity: an `en_entry` CPT under the Orders menu, each
- * linked to a reservation (event), with price/inventory/max meta, resolved into
- * the legacy pre-entry option shape for the customer/checkout pipeline.
+ * The "Entries" entity: an `en_entry` CPT under the Orders menu, each connected
+ * to a reservation (event), holding a Description + a list of purchasable line
+ * items (title/price/inventory/max). A custom editor (EEM_Entries::render) mirrors
+ * the Edit Reservation chrome — event-connect typeahead + Description + the
+ * Pre-Entries line-items card. The resolver expands each entry's items into the
+ * legacy customer-pipeline option shape.
  *
  * Run: wp eval-file tests/smoke/entries-cpt-smoke.php
  */
@@ -17,59 +20,102 @@ $check = static function ( string $label, bool $ok ) use ( &$passed, &$failed ):
 	else { $failed++; echo "FAIL  - {$label}\n"; }
 };
 
+$admins = get_users( array( 'role' => 'administrator', 'number' => 1 ) );
+if ( $admins ) { wp_set_current_user( $admins[0]->ID ); }
+
 // --- registration ----------------------------------------------------------
 $check( 'en_entry CPT is registered', post_type_exists( 'en_entry' ) );
 $obj = get_post_type_object( 'en_entry' );
 $check( 'Entries CPT lives under the Orders menu', $obj && 'equine-event-manager-orders' === $obj->show_in_menu );
 $check( 'Entries CPT is non-public (admin-only)', $obj && ! $obj->public );
-$check( 'register() wires the save + meta-box hooks', method_exists( 'EEM_Entries', 'register' ) && method_exists( 'EEM_Entries', 'save' ) && method_exists( 'EEM_Entries', 'render_meta_box' ) );
+$check( 'CPT supports title only (no WP editor — custom editor replaces it)', $obj && post_type_supports( 'en_entry', 'title' ) && ! post_type_supports( 'en_entry', 'editor' ) );
 
-// --- resolver round-trip ---------------------------------------------------
-$rid = wp_insert_post( array( 'post_type' => 'en_reservation', 'post_status' => 'publish', 'post_title' => 'Entries Smoke Event' ) );
-$eid = wp_insert_post( array( 'post_type' => 'en_entry', 'post_status' => 'publish', 'post_title' => 'Open 4D Barrels' ) );
-update_post_meta( $eid, EEM_Entries::META_RESERVATION, $rid );
-update_post_meta( $eid, EEM_Entries::META_PRICE, '45.00' );
-update_post_meta( $eid, EEM_Entries::META_INVENTORY, 30 );
-update_post_meta( $eid, EEM_Entries::META_MAX, 2 );
+// --- custom editor route + redirects ---------------------------------------
+$check( 'register() wires the editor render + ajax_save + ajax_search', method_exists( 'EEM_Entries', 'render' ) && method_exists( 'EEM_Entries', 'ajax_save' ) && method_exists( 'EEM_Entries', 'ajax_search_events' ) );
+$check( 'editor_url builds the custom route', false !== strpos( EEM_Entries::editor_url( 42 ), EEM_Entries::EDITOR_SLUG ) && false !== strpos( EEM_Entries::editor_url( 42 ), 'entry_id=42' ) );
+// Legacy CPT edit URL redirects to the custom editor.
+$rid_for_entry = wp_insert_post( array( 'post_type' => 'en_reservation', 'post_status' => 'publish', 'post_title' => 'Entries Smoke Event' ) );
+$eid = wp_insert_post( array( 'post_type' => 'en_entry', 'post_status' => 'draft', 'post_title' => 'New Entry' ) );
+$_GET = array( 'post' => (string) $eid, 'action' => 'edit' );
+$redir = EEM_Entries::resolve_legacy_edit_redirect_url();
+$_GET = array();
+$check( 'legacy en_entry edit URL redirects to the custom editor', is_string( $redir ) && false !== strpos( (string) $redir, EEM_Entries::EDITOR_SLUG ) );
 
-$opts = EEM_Entries::get_for_reservation( $rid );
-$key  = 'entry_' . $eid;
-$check( 'resolver returns the linked entry, keyed entry_{id}', isset( $opts[ $key ] ) );
-$check( 'resolver carries title', isset( $opts[ $key ]['title'] ) && 'Open 4D Barrels' === $opts[ $key ]['title'] );
-$check( 'resolver carries price as a 2dp string', isset( $opts[ $key ]['price'] ) && '45.00' === $opts[ $key ]['price'] );
-$check( 'resolver carries inventory + max as ints', 30 === $opts[ $key ]['inventory'] && 2 === $opts[ $key ]['max_per_customer'] );
+// --- styled editor render --------------------------------------------------
+update_post_meta( $eid, EEM_Entries::META_RESERVATION, $rid_for_entry );
+update_post_meta( $eid, EEM_Entries::META_DESCRIPTION, 'Pre-purchase your classes.' );
+update_post_meta( $eid, EEM_Entries::META_ITEMS, array(
+	array( 'title' => 'Friday Reining', 'price' => '45.00', 'inventory' => 20, 'max_per_customer' => 2 ),
+	array( 'title' => 'Saturday Cutting', 'price' => '60.00', 'inventory' => 0, 'max_per_customer' => 0 ),
+) );
+$_GET = array( 'entry_id' => (string) $eid );
+ob_start(); EEM_Entries::render(); $html = (string) ob_get_clean();
+$_GET = array();
 
-// Unlinked / other-reservation entries don't leak in.
-$other = EEM_Entries::get_for_reservation( $rid + 999999 );
-$check( 'unrelated reservation gets no entries', array() === $other );
+$check( 'editor renders the plugin shell (eem-plugin-wrap)', false !== strpos( $html, 'eem-plugin-wrap' ) );
+$check( 'editor renders the event-connect typeahead', false !== strpos( $html, 'id="eem-entry-typeahead"' ) && false !== strpos( $html, 'entry-filter-events' ) );
+$check( 'editor renders the Description field with its value', false !== strpos( $html, 'id="eem-entry-description"' ) && false !== strpos( $html, 'Pre-purchase your classes.' ) );
+$check( 'editor renders the Pre-Entries line-items card', false !== strpos( $html, 'id="eem-entry-items-card"' ) && false !== strpos( $html, 'eem-repeat-table' ) );
+$check( 'editor renders seeded item rows', false !== strpos( $html, 'Friday Reining' ) && false !== strpos( $html, 'Saturday Cutting' ) );
+$check( 'editor reuses the generic repeating-row add + template', false !== strpos( $html, 'reservation-editor-add-repeating-row' ) && false !== strpos( $html, 'eem-entry-item-row-template' ) );
+$check( 'editor renders the sticky save bar (Draft + Publish)', false !== strpos( $html, 'entry-editor-save-draft' ) && false !== strpos( $html, 'entry-editor-publish' ) );
+$check( 'header shows the connected event title', false !== strpos( $html, 'Entries Smoke Event' ) );
+
+// --- resolver round-trip (publish required) --------------------------------
+wp_update_post( array( 'ID' => $eid, 'post_status' => 'publish' ) );
+$opts = EEM_Entries::get_for_reservation( $rid_for_entry );
+$check( 'resolver expands each item into its own option', 2 === count( $opts ) );
+$k0   = 'entry_' . $eid . '_0';
+$check( 'resolver keys options entry_{postID}_{idx}', isset( $opts[ $k0 ] ) );
+$check( 'resolver carries item title', isset( $opts[ $k0 ]['title'] ) && 'Friday Reining' === $opts[ $k0 ]['title'] );
+$check( 'resolver carries price as a 2dp string', isset( $opts[ $k0 ]['price'] ) && '45.00' === $opts[ $k0 ]['price'] );
+$check( 'resolver carries inventory + max as ints', 20 === $opts[ $k0 ]['inventory'] && 2 === $opts[ $k0 ]['max_per_customer'] );
+$check( 'unlimited item resolves to 0 inventory + 0 max', 0 === $opts[ 'entry_' . $eid . '_1' ]['inventory'] && 0 === $opts[ 'entry_' . $eid . '_1' ]['max_per_customer'] );
+
+// Drafts don't surface to customers.
+wp_update_post( array( 'ID' => $eid, 'post_status' => 'draft' ) );
+$check( 'draft entries excluded from the resolver', array() === EEM_Entries::get_for_reservation( $rid_for_entry ) );
+
+// Unlinked / other-reservation reservations don't leak in.
+$check( 'unrelated reservation gets no entries', array() === EEM_Entries::get_for_reservation( $rid_for_entry + 999999 ) );
 $check( 'reservation 0 returns empty (guard)', array() === EEM_Entries::get_for_reservation( 0 ) );
 
-// --- customer-pipeline merge: the shortcode resolver pulls CPT entries -------
-// get_enabled_pre_entry_options() merges legacy reservation-meta entries with
-// the reservation's linked Entries (keyed entry_{id}), using the active
-// reservation id set during render/submission.
+// --- shortcode pipeline still merges CPT entries ----------------------------
+wp_update_post( array( 'ID' => $eid, 'post_status' => 'publish' ) );
 $sc      = new EEM_Shortcodes();
 $ar_prop = new ReflectionProperty( 'EEM_Shortcodes', 'active_reservation_id' );
 $ar_prop->setAccessible( true );
-$ar_prop->setValue( $sc, $rid );
+$ar_prop->setValue( $sc, $rid_for_entry );
 $resolve = new ReflectionMethod( 'EEM_Shortcodes', 'get_enabled_pre_entry_options' );
 $resolve->setAccessible( true );
+$merged = $resolve->invoke( $sc, array() );
+$check( 'shortcode resolver includes the CPT entry items', isset( $merged[ $k0 ] ) && 'Friday Reining' === $merged[ $k0 ]['title'] );
 
-// Legacy meta entry (numeric key) + the CPT entry (entry_{id}) coexist.
-$legacy_data = array( 'event_pre_entries_enabled' => 1, 'event_pre_entries' => array( array( 'title' => 'Legacy Stall Pass', 'price' => '10.00', 'inventory' => 5, 'max_per_customer' => 1 ) ) );
-$merged = $resolve->invoke( $sc, $legacy_data );
-$check( 'resolver includes the CPT entry (entry_{id})', isset( $merged[ $key ] ) && 'Open 4D Barrels' === $merged[ $key ]['title'] );
-$check( 'resolver still includes the legacy numeric entry', isset( $merged['0'] ) && 'Legacy Stall Pass' === $merged['0']['title'] );
-$check( 'legacy + CPT keys do not collide', count( $merged ) >= 2 );
+// --- save write-path round-trip (via the testable save_entry_fields) --------
+// ajax_save() validates the nonce/cap then delegates the writes to
+// save_entry_fields(); we exercise that directly so wp_die() doesn't abort.
+$ret = EEM_Entries::save_entry_fields(
+	$eid,
+	$rid_for_entry,
+	'Edited via save handler.',
+	array(
+		array( 'title' => 'Sunday Roping', 'price' => '30.00', 'inventory' => '10', 'max_per_customer' => '1' ),
+		array( 'title' => '', 'price' => '5.00', 'inventory' => '0', 'max_per_customer' => '0' ), // blank → dropped
+	),
+	'publish'
+);
+$check( 'save returns the inherited title + status', 'Entries Smoke Event' === $ret['title'] && 'publish' === $ret['status'] );
 
-// With no active reservation, only legacy entries resolve (no CPT leak).
-$ar_prop->setValue( $sc, 0 );
-$legacy_only = $resolve->invoke( $sc, $legacy_data );
-$check( 'no active reservation → CPT entries excluded', ! isset( $legacy_only[ $key ] ) && isset( $legacy_only['0'] ) );
+$saved_desc  = (string) get_post_meta( $eid, EEM_Entries::META_DESCRIPTION, true );
+$saved_items = get_post_meta( $eid, EEM_Entries::META_ITEMS, true );
+$check( 'ajax_save persisted the description', 'Edited via save handler.' === $saved_desc );
+$check( 'ajax_save dropped the blank-title row (1 item kept)', is_array( $saved_items ) && 1 === count( $saved_items ) );
+$check( 'ajax_save kept the real item with sanitized values', is_array( $saved_items ) && 'Sunday Roping' === $saved_items[0]['title'] && '30.00' === $saved_items[0]['price'] && 10 === $saved_items[0]['inventory'] );
+$check( 'ajax_save published + inherited the event title', 'publish' === get_post_status( $eid ) && 'Entries Smoke Event' === get_post_field( 'post_title', $eid ) );
 
 wp_delete_post( (int) $eid, true );
-wp_delete_post( (int) $rid, true );
-$check( 'cleaned up temp posts', null === get_post( $eid ) && null === get_post( $rid ) );
+wp_delete_post( (int) $rid_for_entry, true );
+$check( 'cleaned up temp posts', null === get_post( $eid ) && null === get_post( $rid_for_entry ) );
 
 echo "\n{$passed} passed, {$failed} failed\n";
 if ( $failed > 0 ) { exit( 1 ); }

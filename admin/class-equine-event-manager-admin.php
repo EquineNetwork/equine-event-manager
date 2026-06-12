@@ -219,6 +219,19 @@ class EEM_Admin {
 			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--reservation-editor' );
 		}
 
+		// Entries editor — reuse the reservation-editor shell variant so the
+		// styled editor renders identically. Per the DS-1.B.4 lesson this branch
+		// is required or admin-legacy.css carve-outs shrink the page.
+		if ( EEM_Entries::EDITOR_SLUG === $page ) {
+			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--reservation-editor' );
+		}
+
+		// Entries CPT list — apply the plugin shell so the bare WP list table
+		// picks up the plugin chrome (font, width, background).
+		if ( 'edit-' . EEM_Entries::POST_TYPE === $screen->id ) {
+			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--orders' );
+		}
+
 		// DS-1.B.4: Dashboard branch added. Without this, the Dashboard
 		// page rendered with NO eem-shell-page class on body, causing
 		// admin-legacy.css `:not(.eem-shell-page--…)` carve-out rules to
@@ -287,7 +300,12 @@ class EEM_Admin {
 			$should_load = true;
 		}
 
-		if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-order', 'equine-event-manager-order-refund', 'equine-event-manager-settings', 'equine-event-manager-stall-charts', 'equine-event-manager-stall-chart-print', 'equine-event-manager-reports', 'equine-event-manager-reservation-overview', 'equine-event-manager-create-order', 'equine-event-manager-collect-payment', 'equine-event-manager-dashboard', 'equine-event-manager-reservation-editor', 'equine-event-manager-customer', 'equine-event-manager-customers', EEM_Reservations_List_Page::MENU_SLUG ), true ) ) {
+		// Entries CPT list screen — style it with the plugin shell.
+		if ( EEM_Entries::POST_TYPE === $post_type && 'edit-' . EEM_Entries::POST_TYPE === $screen->id ) {
+			$should_load = true;
+		}
+
+		if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-order', 'equine-event-manager-order-refund', 'equine-event-manager-settings', 'equine-event-manager-stall-charts', 'equine-event-manager-stall-chart-print', 'equine-event-manager-reports', 'equine-event-manager-reservation-overview', 'equine-event-manager-create-order', 'equine-event-manager-collect-payment', 'equine-event-manager-dashboard', 'equine-event-manager-reservation-editor', EEM_Entries::EDITOR_SLUG, 'equine-event-manager-customer', 'equine-event-manager-customers', EEM_Reservations_List_Page::MENU_SLUG ), true ) ) {
 			$should_load = true;
 		}
 
@@ -323,6 +341,11 @@ class EEM_Admin {
 
 		// Shared admin JS (delegated handlers, EEM namespace).
 		wp_enqueue_script( 'eem-admin', EQUINE_EVENT_MANAGER_URL . 'assets/js/admin.js', array(), $ver, true );
+
+		// Entry editor — self-contained typeahead + save dispatch (v1 #1b).
+		if ( EEM_Entries::EDITOR_SLUG === $page ) {
+			wp_enqueue_script( 'eem-entry-editor', EQUINE_EVENT_MANAGER_URL . 'assets/js/entry-editor.js', array( 'eem-admin' ), $ver, true );
+		}
 
 		// C7.X.15 Issue 2B — Reservation Editor needs the WordPress
 		// Media Library for the Agreement upload button. Enqueue only on
