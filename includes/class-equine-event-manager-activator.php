@@ -189,6 +189,10 @@ class EEM_Activator {
 			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-011-refund-amount-column.php';
 			eem_mig_011_refund_amount_column();
 		}
+		if ( ! get_option( 'eem_mig_012_frontend_url_cache_cleanup_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-012-frontend-url-cache-cleanup.php';
+			eem_mig_012_frontend_url_cache_cleanup();
+		}
 	}
 
 	/**

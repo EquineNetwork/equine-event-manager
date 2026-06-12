@@ -893,29 +893,27 @@ class EEM_Reservations_List_Page {
 	 * @return string  Absolute URL or '' if none found.
 	 */
 	private static function resolve_frontend_url( int $reservation_id ): string {
-		// 1. Cached?
+		// 1. Linked reservations resolve to the plugin's readable virtual event
+		//    route (/equine-event/{slug}-{id}/) — the customer-facing booking page,
+		//    the same for TEC, native and feed/GEMS sources. This is computed FRESH
+		//    every time (a cheap home_url() build) and deliberately NOT cached: the
+		//    slug is derived from the current reservation title, so a renamed event
+		//    or a permalink-structure change is reflected immediately and the link
+		//    can never go stale. (v1 #5 — this ordering ALSO fixes pre-existing
+		//    reservations that still carried a legacy `_eem_frontend_url_cache`
+		//    pointing at the old /event/{slug}/ form; the cache is now bypassed for
+		//    linked reservations, and eem-mig-012 deletes the dead meta.)
+		$event_id    = (int) get_post_meta( $reservation_id, '_en_event_id', true );
+		$external_id = (string) get_post_meta( $reservation_id, '_en_external_event_id', true );
+		if ( ( $event_id > 0 || '' !== $external_id ) && class_exists( 'EEM_Events' ) ) {
+			return EEM_Events::get_reservation_public_url( $reservation_id );
+		}
+
+		// 2. Unlinked reservation — no canonical event route. Fall back to a cached
+		//    content scan for a page hosting the [en_reservation] shortcode.
 		$cached = (string) get_post_meta( $reservation_id, '_eem_frontend_url_cache', true );
 		if ( '' !== $cached ) {
 			return $cached;
-		}
-
-		// 2. Require a linked event; without one there is no meaningful front-end URL.
-		//    A reservation is "linked" via a TEC/native event_id OR a feed/GEMS
-		//    external_event_id.
-		$event_id     = (int) get_post_meta( $reservation_id, '_en_event_id', true );
-		$external_id  = (string) get_post_meta( $reservation_id, '_en_external_event_id', true );
-		if ( $event_id <= 0 && '' === $external_id ) {
-			return '';
-		}
-
-		// 2b. Every source resolves to the plugin's virtual event route
-		//     (/equine-event/{id}/) — the customer-facing booking page. The
-		//     en_reservation CPT is public => false, so get_permalink() yields a
-		//     non-routable URL; the feed/GEMS path has no event_id at all. Use the
-		//     virtual route uniformly. Not cached (it's a cheap home_url() build,
-		//     and caching risked a stale URL after a permalink-structure change).
-		if ( class_exists( 'EEM_Events' ) ) {
-			return EEM_Events::get_reservation_public_url( $reservation_id );
 		}
 
 		// 3. Scan published posts/pages for an [en_reservation shortcode containing
