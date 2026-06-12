@@ -88,6 +88,18 @@ class EEM_Events {
 	}
 
 	/**
+	 * Google Maps API key from integration settings (powers the events map view
+	 * + venue address geocoding). Empty string when not configured.
+	 *
+	 * @return string
+	 */
+	public static function get_google_maps_api_key() {
+		$settings = self::get_integration_settings();
+
+		return isset( $settings['google_maps_api_key'] ) ? trim( (string) $settings['google_maps_api_key'] ) : '';
+	}
+
+	/**
 	 * Get the default external feed URL configured in settings.
 	 *
 	 * @return string
@@ -1043,6 +1055,11 @@ class EEM_Events {
 	public function register_shortcodes() {
 		add_shortcode( 'equine_event_manager_events', array( $this, 'render_events_shortcode' ) );
 		add_shortcode( 'equine_event_manager_event', array( $this, 'render_event_shortcode' ) );
+		// Canonical `en_` aliases (README §13 prefix) — the short, memorable
+		// shortcodes the docs point admins at. They forward to the same handlers,
+		// so [en_events view="list|month|map"] and [en_event id="N"] just work.
+		add_shortcode( 'en_events', array( $this, 'render_events_shortcode' ) );
+		add_shortcode( 'en_event', array( $this, 'render_event_shortcode' ) );
 	}
 
 	/**
@@ -1998,12 +2015,23 @@ class EEM_Events {
 				'source'        => 'all',
 				'month'         => '',
 				'timeframe'     => 'current_upcoming',
+				'images'        => 'yes',
 			),
 			$atts,
 			'equine_event_manager_events'
 		);
 
-		$view            = in_array( sanitize_key( $atts['view'] ), array( 'list', 'calendar' ), true ) ? sanitize_key( $atts['view'] ) : 'list';
+		// `month` is the friendly alias for the calendar grid (README/UX wording);
+		// normalize it to the internal `calendar` view. `map` is handled in the
+		// map branch below.
+		$view = sanitize_key( $atts['view'] );
+		if ( 'month' === $view ) {
+			$view = 'calendar';
+		}
+		if ( ! in_array( $view, array( 'list', 'calendar', 'map' ), true ) ) {
+			$view = 'list';
+		}
+		$show_images = ! in_array( strtolower( (string) $atts['images'] ), array( 'no', 'false', '0', 'off' ), true );
 		$collection_atts = $atts;
 		$per_page        = max( 1, absint( $atts['limit'] ) );
 		$current_page    = max( 1, absint( get_query_var( 'eem_events_page' ) ? get_query_var( 'eem_events_page' ) : ( isset( $_GET['eem_events_page'] ) ? wp_unslash( $_GET['eem_events_page'] ) : 1 ) ) );
@@ -2042,7 +2070,7 @@ class EEM_Events {
 			echo wp_kses_post( $this->render_event_calendar_markup( $events, (string) $atts['month'] ) );
 		} else {
 			?>
-			<div class="eem-event-list" data-eem-events-page="<?php echo esc_attr( $current_page ); ?>">
+			<div class="eem-event-list<?php echo $show_images ? '' : ' eem-event-list--no-images'; ?>" data-eem-events-page="<?php echo esc_attr( $current_page ); ?>">
 				<?php foreach ( $events as $event_data ) : ?>
 					<?php echo wp_kses_post( $this->render_event_list_row_markup( $event_data ) ); ?>
 				<?php endforeach; ?>

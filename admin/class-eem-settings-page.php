@@ -804,6 +804,7 @@ class EEM_Settings_Page {
 				'feed_url'             => '',
 				'tec_event_category'   => '',
 				'sendgrid_api_key'     => '',
+				'google_maps_api_key'  => '',
 			)
 		);
 
@@ -812,13 +813,10 @@ class EEM_Settings_Page {
 			$source = 'tec';
 		}
 
-		// 2.3.53 (C10.C) — Native Events + External Feed are deferred to V2.
-		// Their radios are disabled in the UI. If a pre-V1 site has one of them
-		// saved, display TEC as the active selection (and show only the TEC
-		// detail panel) so a disabled option is never rendered as checked. This
-		// is a DISPLAY-only coercion — the saved option value and the server-side
-		// resolution logic are untouched (no silent migration).
-		$coming_soon_sources = array( 'native' );
+		// Native Events shipped (v3, 2.7.234) — no longer "Coming Soon". The
+		// coming-soon coercion list is kept (empty) so a future deferral can be
+		// re-added by listing a source here without rewiring the picker.
+		$coming_soon_sources = array();
 		$display_source      = in_array( $source, $coming_soon_sources, true ) ? 'tec' : $source;
 		// Onboarding: until the admin has explicitly chosen + saved a source, NO
 		// radio is pre-selected, so a fresh install must consciously connect a
@@ -879,10 +877,9 @@ class EEM_Settings_Page {
 								'status' => $gems_status,
 							),
 							'native' => array(
-								'title'       => __( 'Native Events', 'equine-event-manager' ),
-								'desc'        => __( 'Use Equine Event Manager as the main event system with native events, categories, venues, producers, widgets, and the shared frontend event template.', 'equine-event-manager' ),
-								'status'      => array( 'class' => 'is-info', 'label' => __( 'Built-in', 'equine-event-manager' ) ),
-								'coming_soon' => true,
+								'title'  => __( 'Native Events', 'equine-event-manager' ),
+								'desc'   => __( 'Use Equine Event Manager as the main event system with native events, categories, venues, producers, a frontend calendar (list / month / map), and the shared event template.', 'equine-event-manager' ),
+								'status' => array( 'class' => 'is-info', 'label' => __( 'Built-in', 'equine-event-manager' ) ),
 							),
 						);
 						foreach ( $sources as $value => $row ) :
@@ -920,6 +917,15 @@ class EEM_Settings_Page {
 							);
 							?>
 						</p>
+						<div class="eem-field-row">
+							<label class="eem-field-label" for="eem-gmaps-key"><?php esc_html_e( 'Google Maps API Key', 'equine-event-manager' ); ?></label>
+							<div class="eem-field-control">
+								<input class="eem-field-input" id="eem-gmaps-key" type="password" name="payload[google_maps_api_key]" value="<?php echo esc_attr( $integration['google_maps_api_key'] ); ?>" placeholder="AIza…" autocomplete="off" />
+								<p class="eem-field-hint">
+									<?php esc_html_e( 'Optional. Powers the events map view and auto-converts venue addresses to map pins. Create a key in Google Cloud Console with the Maps JavaScript API and Geocoding API enabled. Leave blank to use list + month views only.', 'equine-event-manager' ); ?>
+								</p>
+							</div>
+						</div>
 					</div>
 
 					<div class="eem-source-detail" data-eem-source-detail="tec" <?php if ( 'tec' !== $display_source ) { echo 'hidden'; } ?>>
@@ -1544,7 +1550,7 @@ class EEM_Settings_Page {
 
 		$current = wp_parse_args(
 			get_option( 'equine_event_manager_integration_settings', array() ),
-			array( 'default_event_source' => 'tec', 'feed_url' => '', 'tec_event_category' => '', 'sendgrid_api_key' => '', 'tec_integration_enabled' => 1 )
+			array( 'default_event_source' => 'tec', 'feed_url' => '', 'tec_event_category' => '', 'sendgrid_api_key' => '', 'google_maps_api_key' => '', 'tec_integration_enabled' => 1 )
 		);
 
 		$source = isset( $payload['source'] ) ? sanitize_key( $payload['source'] ) : '';
@@ -1570,6 +1576,11 @@ class EEM_Settings_Page {
 		// previously-saved key (or a future re-enabled field) is never silently wiped.
 		if ( isset( $payload['sendgrid_api_key'] ) ) {
 			$current['sendgrid_api_key'] = sanitize_text_field( (string) $payload['sendgrid_api_key'] );
+		}
+		// Google Maps API key — only overwrite when present so an unrelated save
+		// (a different panel field) never wipes a previously-saved key.
+		if ( isset( $payload['google_maps_api_key'] ) ) {
+			$current['google_maps_api_key'] = sanitize_text_field( (string) $payload['google_maps_api_key'] );
 		}
 
 		if ( false === update_option( 'equine_event_manager_integration_settings', $current, false ) && get_option( 'equine_event_manager_integration_settings' ) !== $current ) {

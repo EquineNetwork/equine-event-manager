@@ -69,11 +69,12 @@ ok( 'JS-critical class .eem-reservation-form preserved', str_contains( $html, 'e
 $admin = get_users( array( 'role' => 'administrator', 'number' => 1 ) );
 if ( $admin ) { wp_set_current_user( $admin[0]->ID ); }
 
-// GEMS (the 'feed' source) is un-gated when the GEMS for WordPress connection is
-// configured (2.7.156). When configured, only Native stays "Coming Soon"; when
-// not, both Native + Feed do. Source ORDER is always TEC, GEMS(feed), Native.
+// Native Events shipped (2.7.234) — no longer "Coming Soon". GEMS (the 'feed'
+// source) is un-gated when the GEMS for WordPress connection is configured
+// (2.7.156). So the only remaining coming-soon source is Feed, and only when
+// GEMS is NOT configured. Source ORDER is always TEC, GEMS(feed), Native.
 $gems_ready = class_exists( 'EEM_Gems_Client' ) && EEM_Gems_Client::is_configured();
-$soon_count = $gems_ready ? 1 : 2;
+$soon_count = $gems_ready ? 0 : 1;
 
 // Render with a known active source (tec) so the per-source detail-panel
 // visibility assertions below are deterministic regardless of the box's saved
@@ -88,7 +89,7 @@ ob_start(); $m->invoke( $sp ); $shtml = ob_get_clean();
 
 preg_match_all( '/data-eem-source-value="([a-z]+)"/', $shtml, $order );
 ok( 'event source order is TEC, GEMS(feed), Native', array( 'tec', 'feed', 'native' ) === $order[1], $pass, $fail, $log, implode( ',', $order[1] ) );
-// Coming Soon pills: Native always; Feed only when GEMS is NOT configured.
+// Coming Soon pills: Feed only when GEMS is NOT configured (Native shipped).
 ok( "{$soon_count} Coming Soon pill(s)", $soon_count === substr_count( $shtml, 'is-soon">Coming Soon' ), $pass, $fail, $log, substr_count( $shtml, 'is-soon">Coming Soon' ) );
 ok( "{$soon_count} disabled source radio(s)", $soon_count === preg_match_all( '/<input type="radio"[^>]*disabled/', $shtml, $d ), $pass, $fail, $log );
 // SendGrid is now an enabled, POSTing Email Delivery field — assert the current
