@@ -34,15 +34,12 @@ architecture in `docs/ARCHITECTURE-DATA-OWNERSHIP.md` and `docs/WORKPLAN-postmet
 
 ---
 
-## 🚦 v1 — REMAINING BEFORE LAUNCH (not engineering)
+## 🚦 v1 — REMAINING BEFORE LAUNCH
 
-1. **Auth.net live charge test** — the admin Collect Payment "Charge Card" path is
-   **code-complete + smoke-tested**; it just needs **real Auth.net credentials entered in
-   Settings → Payments + one live test charge** end-to-end. *Ops step for Whitney — cannot be
-   automated (entering credentials / running a live charge).* This is the only thing between
-   "done" and "ready to take live payments."
+**Nothing.** v1 is feature-complete and launch-ready.
 
-*(That's the whole v1 remaining list. Everything else is built and green.)*
+- ✅ **Auth.net live charge — VERIFIED (2026-06-12).** Two live test charges run through the
+  admin Collect Payment "Charge Card" path; both succeeded. The last launch gate is cleared.
 
 ---
 
