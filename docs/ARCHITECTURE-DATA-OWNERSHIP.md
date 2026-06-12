@@ -96,6 +96,21 @@ options below.
 > the money/oversell path on the proven WordPress transaction. Move to Model B only if GH
 > must be the real-time authority *and* can commit to the inventory API in §4.
 
+### 3a. Native mobile app angle (why API-first matters long term)
+A future **native mobile app** is a strong argument in this direction — but the thing that
+actually enables a mobile app is an **API-first backend**, not specifically "the data lives
+in GH's database." A mobile app can't talk to a MySQL table; it talks to an API.
+
+- WordPress already ships a full **REST API**, so a mobile app *could* be built against the
+  plugin directly. But that ties the app to WordPress + the plugin's internal shape.
+- The cleaner long-term picture: **GH exposes one API** that the WordPress plugin, the Razor
+  web app, **and** a future mobile app all consume — memberships, events (GEMS), and
+  reservations behind a single contract, one source of truth. That is exactly what **Model B
+  (or at least an API-first design)** delivers, and it future-proofs the ecosystem.
+- Net: the mobile-app goal **reinforces investing in the API contract** (§5/§8) early, even
+  if you launch on Model A. Designing the sync payload (§8) now as if it were the public API
+  keeps the door open to Model B + mobile without rework.
+
 ---
 
 ## 4. The make-or-break technical requirement: oversell + payment atomicity
