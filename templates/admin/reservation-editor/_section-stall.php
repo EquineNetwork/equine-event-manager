@@ -517,6 +517,10 @@ eem_render_editor_field_row( array(
 	'is_hidden'    => $stall_is_pick,
 ) );
 
+// v2 Venues Slice 3 — Save Layout / Load Layout to the reservation's venue.
+$context = 'stall';
+require EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_layout-template-bar.php';
+
 // ── v4 Stall Mapping — native Map Builder (drives "Pick from layout") ──
 $stall_map_snap  = ( isset( $data['stall_map'] ) && is_array( $data['stall_map'] ) ) ? $data['stall_map'] : array();
 $stall_map_kind  = EEM_Stall_Map_Importer::snapshot_of_kind( $stall_map_snap, 'stall' );

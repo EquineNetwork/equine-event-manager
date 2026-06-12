@@ -42,6 +42,10 @@ class EEM_Venues_Page {
 	public static function register(): void {
 		add_action( 'wp_ajax_eem_venue_rename_layout', array( __CLASS__, 'ajax_rename_layout' ) );
 		add_action( 'wp_ajax_eem_venue_delete_layout', array( __CLASS__, 'ajax_delete_layout' ) );
+		// Slice 3 — "Save Layout" / "Load Layout" on the Edit Reservation builders.
+		add_action( 'wp_ajax_eem_venue_save_layout', array( __CLASS__, 'ajax_save_layout' ) );
+		add_action( 'wp_ajax_eem_venue_list_layouts', array( __CLASS__, 'ajax_list_layouts' ) );
+		add_action( 'wp_ajax_eem_venue_load_layout', array( __CLASS__, 'ajax_load_layout' ) );
 	}
 
 	/**
@@ -318,6 +322,98 @@ class EEM_Venues_Page {
 		}
 		if ( ! EEM_Venue::delete_layout( $layout_id ) ) {
 			wp_send_json_error( array( 'message' => __( 'Could not delete the layout.', 'equine-event-manager' ) ), 500 );
+		}
+		wp_send_json_success();
+	}
+
+	/* ── Editor "Save Layout" / "Load Layout" ───────────────────── */
+
+	/**
+	 * AJAX: save the reservation's current saved layout to its resolved Venue
+	 * (the "Save Layout" action on the Edit Reservation stall/RV builders).
+	 * Captures the COMBINED structural layout (stall grid + RV lots/zones +
+	 * blocked units + map geometry) from the reservation's persisted post-meta.
+	 *
+	 * @return void
+	 */
+	public static function ajax_save_layout(): void {
+		self::guard();
+		$reservation_id = isset( $_POST['reservation_id'] ) ? absint( wp_unslash( $_POST['reservation_id'] ) ) : 0;
+		$name           = isset( $_POST['name'] ) ? sanitize_text_field( wp_unslash( $_POST['name'] ) ) : '';
+		if ( $reservation_id <= 0 || EEM_Reservations_CPT::POST_TYPE !== get_post_type( $reservation_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid reservation.', 'equine-event-manager' ) ), 400 );
+		}
+		if ( '' === $name ) {
+			wp_send_json_error( array( 'message' => __( 'A layout name is required.', 'equine-event-manager' ) ), 400 );
+		}
+		$venue_id = EEM_Venue::resolve_for_reservation( $reservation_id );
+		if ( $venue_id <= 0 ) {
+			wp_send_json_error( array( 'message' => __( 'Link this reservation to an event before saving a layout — the layout is saved to that event’s venue.', 'equine-event-manager' ) ), 409 );
+		}
+		$layout_id = EEM_Venue::save_layout( $venue_id, $reservation_id, $name );
+		if ( $layout_id <= 0 ) {
+			wp_send_json_error( array( 'message' => __( 'Could not save the layout.', 'equine-event-manager' ) ), 500 );
+		}
+		$venue = EEM_Venue::get( $venue_id );
+		wp_send_json_success( array(
+			'layout_id'  => $layout_id,
+			'venue_name' => $venue ? (string) $venue['name'] : '',
+		) );
+	}
+
+	/**
+	 * AJAX: list the saved layouts available to a reservation's resolved Venue
+	 * (read-only; never creates a venue). Powers the "Load Layout" picker.
+	 *
+	 * @return void
+	 */
+	public static function ajax_list_layouts(): void {
+		self::guard();
+		$reservation_id = isset( $_POST['reservation_id'] ) ? absint( wp_unslash( $_POST['reservation_id'] ) ) : 0;
+		if ( $reservation_id <= 0 ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid reservation.', 'equine-event-manager' ) ), 400 );
+		}
+		$venue_id = EEM_Venue::find_for_reservation( $reservation_id );
+		if ( $venue_id <= 0 ) {
+			wp_send_json_success( array( 'venue_name' => '', 'layouts' => array() ) );
+		}
+		$venue   = EEM_Venue::get( $venue_id );
+		$out      = array();
+		foreach ( EEM_Venue::get_layouts( $venue_id ) as $l ) {
+			$out[] = array(
+				'id'      => (int) $l['id'],
+				'name'    => (string) $l['name'],
+				'created' => self::format_date( (string) $l['created_at'] ),
+			);
+		}
+		wp_send_json_success( array(
+			'venue_name' => $venue ? (string) $venue['name'] : '',
+			'layouts'    => $out,
+		) );
+	}
+
+	/**
+	 * AJAX: clone a saved Venue layout into the reservation (the "Load Layout"
+	 * action). COPY-ON-USE — writes the layout onto THIS reservation's post-meta;
+	 * never mutates the saved Venue layout. Verifies the chosen layout belongs to
+	 * the reservation's own resolved venue.
+	 *
+	 * @return void
+	 */
+	public static function ajax_load_layout(): void {
+		self::guard();
+		$reservation_id = isset( $_POST['reservation_id'] ) ? absint( wp_unslash( $_POST['reservation_id'] ) ) : 0;
+		$layout_id      = isset( $_POST['layout_id'] ) ? absint( wp_unslash( $_POST['layout_id'] ) ) : 0;
+		if ( $reservation_id <= 0 || EEM_Reservations_CPT::POST_TYPE !== get_post_type( $reservation_id ) || $layout_id <= 0 ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid request.', 'equine-event-manager' ) ), 400 );
+		}
+		$layout   = EEM_Venue::get_layout( $layout_id );
+		$venue_id = EEM_Venue::find_for_reservation( $reservation_id );
+		if ( null === $layout || $venue_id <= 0 || (int) $layout['venue_id'] !== $venue_id ) {
+			wp_send_json_error( array( 'message' => __( 'That layout is not available for this reservation’s venue.', 'equine-event-manager' ) ), 409 );
+		}
+		if ( ! EEM_Venue::apply_layout_to_reservation( $layout_id, $reservation_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'Could not load the layout.', 'equine-event-manager' ) ), 500 );
 		}
 		wp_send_json_success();
 	}

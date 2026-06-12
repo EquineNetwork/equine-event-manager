@@ -183,6 +183,62 @@ class EEM_Venue {
 	}
 
 	/**
+	 * Read-only lookup of an existing canonical venue (exact source-map hit, then
+	 * normalized-name match). Unlike resolve(), NEVER creates a venue or source
+	 * mapping — used by read paths (e.g. "Load Layout") that must not pollute the
+	 * venue table when nothing matches yet.
+	 *
+	 * @param string $source            native | tec | gems.
+	 * @param string $source_venue_id   Stable source id when available (else '').
+	 * @param string $source_venue_name Raw venue name from the source.
+	 * @return int Canonical venue id, or 0 when no existing venue matches.
+	 */
+	public static function find( string $source, string $source_venue_id, string $source_venue_name ): int {
+		global $wpdb;
+		$source = sanitize_key( $source );
+		if ( '' !== $source_venue_id ) {
+			$hit = (int) $wpdb->get_var( $wpdb->prepare( // phpcs:ignore WordPress.DB
+				'SELECT venue_id FROM ' . self::source_map_table() . ' WHERE source = %s AND source_venue_id = %s LIMIT 1',
+				$source, $source_venue_id
+			) );
+			if ( $hit > 0 ) {
+				return $hit;
+			}
+		}
+		$nkey = self::normalize_key( trim( $source_venue_name ) );
+		if ( '' === $nkey ) {
+			return 0;
+		}
+		return (int) $wpdb->get_var( $wpdb->prepare( // phpcs:ignore WordPress.DB
+			'SELECT id FROM ' . self::venues_table() . ' WHERE normalized_key = %s LIMIT 1',
+			$nkey
+		) );
+	}
+
+	/**
+	 * Read-only counterpart to resolve_for_reservation(): the existing canonical
+	 * venue for a reservation's linked event, or 0 if none exists yet.
+	 *
+	 * @param int $reservation_id Reservation id.
+	 * @return int Canonical venue id, or 0.
+	 */
+	public static function find_for_reservation( int $reservation_id ): int {
+		if ( $reservation_id <= 0 ) {
+			return 0;
+		}
+		$source   = (string) get_post_meta( $reservation_id, '_en_event_source', true );
+		$event_id = (string) get_post_meta( $reservation_id, '_en_event_id', true );
+		$ext_id   = (string) get_post_meta( $reservation_id, '_en_external_event_id', true );
+		$venue    = '';
+		if ( class_exists( 'EEM_Reservation_Source_Resolver' ) ) {
+			$fields = EEM_Reservation_Source_Resolver::resolve_event_fields( $reservation_id );
+			$venue  = isset( $fields['venue'] ) ? (string) $fields['venue'] : '';
+		}
+		$source_venue_id = '' !== $ext_id ? $ext_id : $event_id;
+		return self::find( '' !== $source ? $source : 'native', $source_venue_id, $venue );
+	}
+
+	/**
 	 * Resolve the canonical Venue for a reservation's linked event (the source
 	 * of the venue name). Returns 0 when no venue is resolvable.
 	 *

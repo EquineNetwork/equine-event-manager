@@ -9310,3 +9310,14 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 .eem-venue-card .eem-card-body > .eem-table { margin: 0; }
 .eem-venue-source-badge { background: var(--eem-bg-alt, #eef2fb); color: var(--eem-navy, #031B4E); }
 .eem-venue-layout-name { font-weight: 600; color: var(--eem-navy, #031B4E); }
+
+/* Save/Load Layout toolbar inside the stall + RV builders (Slice 3). */
+.eem-layout-template-bar { margin: 4px 0 14px; padding: 12px 14px; background: var(--eem-bg-alt, #f7f9fc); border: 1px solid var(--eem-border, #D9E2F2); border-radius: var(--eem-radius, 3px); }
+.eem-layout-template-bar__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.eem-layout-template-bar__hint { margin: 8px 0 0; font-size: 12px; color: var(--eem-muted, #64748b); }
+/* Load-Layout picker option rows in the modal. */
+.eem-venue-load-options { display: flex; flex-direction: column; gap: 6px; max-height: 280px; overflow-y: auto; }
+.eem-venue-load-option { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--eem-border, #D9E2F2); border-radius: var(--eem-radius, 3px); cursor: pointer; }
+.eem-venue-load-option:hover { border-color: var(--eem-electric, #2563eb); }
+.eem-venue-load-option__name { font-weight: 600; color: var(--eem-navy, #031B4E); }
+.eem-venue-load-option__date { margin-left: auto; font-size: 12px; color: var(--eem-muted, #64748b); }

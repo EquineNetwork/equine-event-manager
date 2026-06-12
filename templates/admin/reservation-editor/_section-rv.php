@@ -571,6 +571,11 @@ eem_render_editor_field_row( array(
 	'is_hidden'    => $rv_is_pick,
 ) );
 
+// v2 Venues Slice 3 — Save Layout / Load Layout to the reservation's venue
+// (combined layout — same action as the stall builder's bar).
+$context = 'rv';
+require EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_layout-template-bar.php';
+
 // ── Blocked RV Lots tag-select ──
 ob_start();
 ?>

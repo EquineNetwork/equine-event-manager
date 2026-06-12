@@ -359,6 +359,12 @@ class EEM_Admin {
 			wp_enqueue_media();
 			// Native Map Builder modal (replaces the Google-Sheet connector).
 			wp_enqueue_script( 'eem-map-builder', EQUINE_EVENT_MANAGER_URL . 'assets/js/eem-map-builder.js', array( 'eem-admin' ), $ver, true );
+			// v2 Venues Slice 3 — Save Layout / Load Layout to Venue.
+			wp_enqueue_script( 'eem-venue-layouts', EQUINE_EVENT_MANAGER_URL . 'assets/js/venue-layouts.js', array( 'eem-admin' ), $ver, true );
+			wp_localize_script( 'eem-venue-layouts', 'eemVenueLayouts', array(
+				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+				'nonce'   => wp_create_nonce( 'eem_venue_layout' ),
+			) );
 		}
 
 			// CLEANUP #21 (Choices.js, MIT) -- searchable filter dropdowns on the Orders
