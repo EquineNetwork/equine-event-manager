@@ -264,6 +264,10 @@ class EEM_Admin {
 			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--notifications' );
 		}
 
+		if ( EEM_Venues_Page::MENU_SLUG === $page ) {
+			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--venues' );
+		}
+
 		return $classes;
 	}
 
@@ -305,7 +309,7 @@ class EEM_Admin {
 			$should_load = true;
 		}
 
-		if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-order', 'equine-event-manager-order-refund', 'equine-event-manager-settings', 'equine-event-manager-stall-charts', 'equine-event-manager-stall-chart-print', 'equine-event-manager-reports', 'equine-event-manager-reservation-overview', 'equine-event-manager-create-order', 'equine-event-manager-collect-payment', 'equine-event-manager-dashboard', 'equine-event-manager-reservation-editor', EEM_Entries::EDITOR_SLUG, EEM_Entries::LIST_SLUG, 'equine-event-manager-customer', 'equine-event-manager-customers', EEM_Notifications_Page::MENU_SLUG, EEM_Reservations_List_Page::MENU_SLUG ), true ) ) {
+		if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-order', 'equine-event-manager-order-refund', 'equine-event-manager-settings', 'equine-event-manager-stall-charts', 'equine-event-manager-stall-chart-print', 'equine-event-manager-reports', 'equine-event-manager-reservation-overview', 'equine-event-manager-create-order', 'equine-event-manager-collect-payment', 'equine-event-manager-dashboard', 'equine-event-manager-reservation-editor', EEM_Entries::EDITOR_SLUG, EEM_Entries::LIST_SLUG, 'equine-event-manager-customer', 'equine-event-manager-customers', EEM_Notifications_Page::MENU_SLUG, EEM_Venues_Page::MENU_SLUG, EEM_Reservations_List_Page::MENU_SLUG ), true ) ) {
 			$should_load = true;
 		}
 
@@ -371,6 +375,12 @@ class EEM_Admin {
 			if ( EEM_Notifications_Page::MENU_SLUG === $page ) {
 				wp_enqueue_script( 'eem-notifications', EQUINE_EVENT_MANAGER_URL . 'assets/js/notifications.js', array( 'eem-admin' ), $ver, true );
 				wp_localize_script( 'eem-notifications', 'eemNotifications', array( 'ajaxUrl' => admin_url( 'admin-ajax.php' ) ) );
+			}
+
+			// v2 Venues detail page JS (saved-layout rename/delete modals).
+			if ( EEM_Venues_Page::MENU_SLUG === $page ) {
+				wp_enqueue_script( 'eem-venues', EQUINE_EVENT_MANAGER_URL . 'assets/js/venues.js', array( 'eem-admin' ), $ver, true );
+				wp_localize_script( 'eem-venues', 'eemVenues', array( 'ajaxUrl' => admin_url( 'admin-ajax.php' ) ) );
 			}
 
 		// C13.B.2.a — public.css required when Create Order embeds a reservation form.
@@ -473,6 +483,7 @@ class EEM_Admin {
 			'equine-event-manager-entries',
 			'equine-event-manager-reservations',
 			'equine-event-manager-stall-charts',
+			EEM_Venues_Page::MENU_SLUG,
 			'equine-event-manager-customers',
 			'equine-event-manager-orders',
 			EEM_Notifications_Page::MENU_SLUG,
@@ -752,6 +763,18 @@ class EEM_Admin {
 			'manage_options',
 			'equine-event-manager-stall-charts',
 			array( $this, 'render_stall_chart_page' )
+		);
+
+		// v2 Facility Layout Templates: Venues page nested under Stall & RV
+		// Charts (layouts are stall/RV grids). Source-agnostic Venue list +
+		// saved-layout management; see docs/ARCHITECTURE-VENUES.md.
+		add_submenu_page(
+			self::MENU_SLUG,
+			__( 'Venues', 'equine-event-manager' ),
+			__( 'Venues', 'equine-event-manager' ),
+			'manage_options',
+			EEM_Venues_Page::MENU_SLUG,
+			array( 'EEM_Venues_Page', 'render' )
 		);
 
 		// V1 #3: Customers list (top-level index of every customer by email,

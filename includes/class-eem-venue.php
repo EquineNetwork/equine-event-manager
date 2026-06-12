@@ -243,6 +243,24 @@ class EEM_Venue {
 		return is_array( $rows ) ? $rows : array();
 	}
 
+	/**
+	 * Source mappings for a venue (which event sources point at it).
+	 *
+	 * @param int $venue_id Venue id.
+	 * @return array<int, array<string,mixed>>
+	 */
+	public static function get_source_mappings( int $venue_id ): array {
+		global $wpdb;
+		if ( $venue_id <= 0 ) {
+			return array();
+		}
+		$rows = $wpdb->get_results( $wpdb->prepare( // phpcs:ignore WordPress.DB
+			'SELECT id, source, source_venue_id, source_venue_name FROM ' . self::source_map_table() . ' WHERE venue_id = %d ORDER BY source ASC, id ASC',
+			$venue_id
+		), ARRAY_A );
+		return is_array( $rows ) ? $rows : array();
+	}
+
 	/* ── Saved layouts ──────────────────────────────────────────── */
 
 	/**

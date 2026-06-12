@@ -9291,3 +9291,22 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 .eem-notif-history p.eem-table-empty { margin: 0; padding: 28px; text-align: center; color: var(--eem-muted, #64748b); background: var(--eem-bg-alt, #fafafa); border: 1px solid var(--eem-border, #D9E2F2); border-radius: var(--eem-radius, 3px); }
 .eem-notif-history .eem-desktop-table { border: 1px solid var(--eem-border, #D9E2F2); border-radius: var(--eem-radius, 3px); overflow: hidden; }
 @media (max-width: 782px) { .eem-notif-audience { grid-template-columns: 1fr; } }
+
+/* ── Venues (v2 Facility Layout Templates) ─────────────────────────────────
+   Page body has padding:0 (custom page rendering into .eem-page-body); the
+   .eem-venues wrapper self-gutters to align with the 18px header inset. */
+.eem-venues { padding: 18px; }
+.eem-venues-intro { margin: 0 0 18px; color: var(--eem-muted, #64748b); max-width: 760px; }
+.eem-venues-empty { padding: 40px 28px; text-align: center; background: var(--eem-bg-alt, #fafafa); border: 1px solid var(--eem-border, #D9E2F2); border-radius: var(--eem-radius, 3px); }
+.eem-venues-empty h3 { margin: 0 0 8px; font-size: 16px; color: var(--eem-navy, #031B4E); }
+.eem-venues-empty p { margin: 0 auto; max-width: 460px; color: var(--eem-muted, #64748b); }
+.eem-venues-table .eem-venues-name { font-weight: 600; color: var(--eem-navy, #031B4E); }
+.eem-venues-table .eem-venues-name:hover { color: var(--eem-electric, #2563eb); }
+/* compact row-action button used in the layouts table */
+.eem-btn-sm { padding: 4px 10px; font-size: 12.5px; }
+.eem-venue-detail { display: flex; flex-direction: column; gap: 18px; }
+.eem-venue-card .eem-card-body { padding: 0; }
+.eem-venue-card .eem-card-body > .eem-venue-empty-note { padding: 18px; margin: 0; color: var(--eem-muted, #64748b); }
+.eem-venue-card .eem-card-body > .eem-table { margin: 0; }
+.eem-venue-source-badge { background: var(--eem-bg-alt, #eef2fb); color: var(--eem-navy, #031B4E); }
+.eem-venue-layout-name { font-weight: 600; color: var(--eem-navy, #031B4E); }
