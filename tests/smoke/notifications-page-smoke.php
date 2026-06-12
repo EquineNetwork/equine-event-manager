@@ -29,11 +29,14 @@ $check( 'event-meta AJAX hooked', false !== has_action( 'wp_ajax_eem_notificatio
 // --- menu lands under the Event Manager parent -----------------------------
 do_action( 'admin_menu' );
 global $submenu;
-$slugs = array();
-if ( isset( $submenu['equine-event-manager'] ) ) {
-	foreach ( $submenu['equine-event-manager'] as $item ) { $slugs[] = $item[2]; }
+// The Event Manager TOP-LEVEL slug is the Orders page (EEM_Admin::MENU_SLUG),
+// NOT 'equine-event-manager' — every EM submenu attaches there.
+$parent = EEM_Admin::MENU_SLUG;
+$slugs  = array();
+if ( isset( $submenu[ $parent ] ) ) {
+	foreach ( $submenu[ $parent ] as $item ) { $slugs[] = $item[2]; }
 }
-$check( 'Notifications submenu registered under Event Manager', in_array( EEM_Notifications_Page::MENU_SLUG, $slugs, true ) );
+$check( 'Notifications submenu attaches to the EM top-level (Orders) parent', in_array( EEM_Notifications_Page::MENU_SLUG, $slugs, true ) );
 
 // --- render ----------------------------------------------------------------
 $_GET = array( 'page' => EEM_Notifications_Page::MENU_SLUG );

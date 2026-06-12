@@ -48,8 +48,13 @@ class EEM_Notifications_Page {
 	 * @return void
 	 */
 	public static function register_route(): void {
+		// Parent is the Event Manager TOP-LEVEL slug, which is the Orders page
+		// slug (EEM_Admin::MENU_SLUG === 'equine-event-manager-orders') — NOT
+		// the literal 'equine-event-manager'. Every other EM submenu attaches
+		// here; using the wrong parent orphans the menu item (the page still
+		// registers, so the URL works, but it never shows in the sidebar).
 		add_submenu_page(
-			'equine-event-manager',
+			EEM_Admin::MENU_SLUG,
 			__( 'Notifications', 'equine-event-manager' ),
 			__( 'Notifications', 'equine-event-manager' ),
 			'manage_options',
