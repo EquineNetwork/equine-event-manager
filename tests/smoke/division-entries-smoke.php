@@ -116,6 +116,28 @@ $fold_row = $wpdb->get_row( $wpdb->prepare( "SELECT division_id, qty, status, cu
 $check( 'fold wrote a ledger row for the division', is_array( $fold_row ) && (int) $fold_row['division_id'] === (int) $did );
 $check( 'fold row carries qty + paid status + name', is_array( $fold_row ) && 1 === (int) $fold_row['qty'] && 'paid' === $fold_row['status'] && 'Fold, Tester' === $fold_row['customer_name'] );
 
+// --- Slice 3: detail page + list column ------------------------------------
+$check( 'detail_url carries the division_id param', false !== strpos( EEM_Entries::detail_url( $did ), 'division_id=' . $did ) );
+
+ob_start(); EEM_Entries::render_detail( $did ); $detail_html = (string) ob_get_clean();
+$check( 'detail renders the composed Event - Division title', false !== strpos( $detail_html, 'Divisions Ledger Event - #5 Division' ) );
+$check( 'detail renders the Entered / Spots / Spots Left stat cards', 3 === substr_count( $detail_html, 'eem-stat-card' ) );
+$check( 'detail renders the entrants table with the held customer', false !== strpos( $detail_html, 'eem-table' ) && false !== strpos( $detail_html, 'Hold, One' ) );
+$check( 'detail renders an Edit Division action', false !== strpos( $detail_html, 'Edit Division' ) );
+$check( 'detail renders a paid status badge', false !== strpos( $detail_html, 'eem-status-paid' ) );
+
+// list dispatch routes division_id → detail
+$_GET = array( 'page' => EEM_Entries::LIST_SLUG, 'division_id' => (string) $did );
+ob_start(); EEM_Entries::render_list(); $dispatch_html = (string) ob_get_clean();
+$_GET = array();
+$check( 'render_list dispatches division_id to the detail view', false !== strpos( $dispatch_html, 'Divisions Ledger Event - #5 Division' ) && false !== strpos( $dispatch_html, 'eem-stat-card' ) );
+
+// oversold: drop spots below entered → list shows the oversold note
+update_post_meta( $did, EEM_Entries::META_SPOTS, 1 ); // entered is 1 (ORDER-HOLD) → not oversold; add another hold.
+EEM_Division_Entries::record_entry( $did, 'ORDER-OVER', 'Over, Sold', 'over@example.com', 1, 'paid' );
+ob_start(); EEM_Entries::render_detail( $did ); $over_html = (string) ob_get_clean();
+$check( 'detail shows the oversold note when entered > spots', false !== stripos( $over_html, 'Oversold by' ) );
+
 // --- cleanup ---------------------------------------------------------------
 $wpdb->query( $wpdb->prepare( "DELETE FROM {$table} WHERE division_id = %d", $did ) );
 wp_delete_post( (int) $did, true );

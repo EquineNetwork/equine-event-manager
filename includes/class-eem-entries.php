@@ -163,6 +163,150 @@ class EEM_Entries {
 	}
 
 	/**
+	 * URL for a single Division's detail view (entrants + spots stats).
+	 *
+	 * @param int $division_id en_entry post id.
+	 * @return string
+	 */
+	public static function detail_url( int $division_id ): string {
+		return admin_url( 'admin.php?page=' . self::LIST_SLUG . '&division_id=' . $division_id );
+	}
+
+	/**
+	 * Render the single-Division detail view: header (Event - Division),
+	 * summary stats (Entered / Spots / Spots Left, oversold note), and the
+	 * entrants roster (name, qty, order #, date, paid status). The entrants +
+	 * counts come from the EEM_Division_Entries ledger (Slice 2).
+	 *
+	 * @param int $division_id en_entry post id.
+	 * @return void
+	 */
+	public static function render_detail( int $division_id ): void {
+		require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_page_shell.php';
+
+		$post = $division_id > 0 ? get_post( $division_id ) : null;
+		if ( ! $post || self::POST_TYPE !== $post->post_type ) {
+			eem_render_page_open( array(
+				'title'      => __( 'Division not found', 'equine-event-manager' ),
+				'breadcrumb' => array(
+					array( 'label' => __( 'Entries', 'equine-event-manager' ), 'url' => self::list_url() ),
+					array( 'label' => __( 'Not found', 'equine-event-manager' ) ),
+				),
+				'wrap'       => true,
+			) );
+			echo '<p style="padding:20px">' . esc_html__( 'That division could not be loaded.', 'equine-event-manager' ) . '</p>';
+			eem_render_page_close( array( 'wrap' => true ) );
+			return;
+		}
+
+		$rid       = (int) get_post_meta( $division_id, self::META_RESERVATION, true );
+		$event     = $rid > 0 ? self::reservation_label( $rid )['title'] : '';
+		$div_name  = (string) get_post_meta( $division_id, self::META_DIVISION_NAME, true );
+		$price     = (string) get_post_meta( $division_id, self::META_PRICE, true );
+		$spots_raw = get_post_meta( $division_id, self::META_SPOTS, true );
+		$spots_int = ( '' === (string) $spots_raw || (int) $spots_raw <= 0 ) ? 0 : (int) $spots_raw;
+
+		$entered   = class_exists( 'EEM_Division_Entries' ) ? EEM_Division_Entries::entered_count( $division_id ) : 0;
+		$left      = ( $spots_int > 0 ) ? max( 0, $spots_int - $entered ) : null;
+		$oversold  = ( $spots_int > 0 && $entered > $spots_int ) ? ( $entered - $spots_int ) : 0;
+		$entrants  = class_exists( 'EEM_Division_Entries' ) ? EEM_Division_Entries::get_entrants( $division_id ) : array();
+
+		$title = '' !== $event && '' !== $div_name ? $event . ' - ' . $div_name : get_the_title( $post );
+
+		// "Edit Division" + (when connected) "View Event" actions.
+		$actions  = sprintf(
+			'<a class="eem-btn eem-btn-electric" href="%s">%s</a>',
+			esc_url( self::editor_url( $division_id ) ),
+			esc_html__( 'Edit Division', 'equine-event-manager' )
+		);
+		$event_url = ( $rid > 0 && class_exists( 'EEM_Events' ) ) ? EEM_Events::get_reservation_public_url( $rid ) : '';
+		if ( $event_url ) {
+			$actions = sprintf(
+				'<a class="eem-btn" href="%s" target="_blank" rel="noopener noreferrer">%s</a> ',
+				esc_url( $event_url ),
+				esc_html__( 'View Event', 'equine-event-manager' )
+			) . $actions;
+		}
+
+		eem_render_page_open( array(
+			'title'      => $title,
+			'subtitle'   => '' !== $price ? sprintf( /* translators: %s: price */ __( 'Entry fee: $%s per spot', 'equine-event-manager' ), number_format( (float) $price, 2 ) ) : '',
+			'breadcrumb' => array(
+				array( 'label' => __( 'Entries', 'equine-event-manager' ), 'url' => self::list_url() ),
+				array( 'label' => '' !== $div_name ? $div_name : __( 'Division', 'equine-event-manager' ) ),
+			),
+			'actions'    => $actions,
+			'wrap'       => true,
+		) );
+		?>
+		<div class="eem-stat-row" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px">
+			<div class="eem-stat-card"><div class="eem-stat-value"><?php echo esc_html( (string) $entered ); ?></div><div class="eem-stat-label"><?php esc_html_e( 'Entered', 'equine-event-manager' ); ?></div></div>
+			<div class="eem-stat-card"><div class="eem-stat-value"><?php echo esc_html( $spots_int > 0 ? (string) $spots_int : __( 'Unlimited', 'equine-event-manager' ) ); ?></div><div class="eem-stat-label"><?php esc_html_e( 'Spots', 'equine-event-manager' ); ?></div></div>
+			<div class="eem-stat-card"><div class="eem-stat-value"><?php echo esc_html( null === $left ? '—' : (string) $left ); ?></div><div class="eem-stat-label"><?php esc_html_e( 'Spots Left', 'equine-event-manager' ); ?></div></div>
+		</div>
+		<?php if ( $oversold > 0 ) : ?>
+			<p class="eem-notice-inline"><span class="eem-status-badge eem-status-refunded"><?php
+				echo esc_html( sprintf(
+					/* translators: %d: count oversold by. */
+					__( 'Oversold by %d — more entries than configured spots.', 'equine-event-manager' ),
+					$oversold
+				) );
+			?></span></p>
+		<?php endif; ?>
+
+		<div class="eem-desktop-table">
+			<table class="eem-table">
+				<thead>
+					<tr>
+						<th><?php esc_html_e( 'Customer', 'equine-event-manager' ); ?></th>
+						<th><?php esc_html_e( 'Qty', 'equine-event-manager' ); ?></th>
+						<th><?php esc_html_e( 'Order', 'equine-event-manager' ); ?></th>
+						<th><?php esc_html_e( 'Date', 'equine-event-manager' ); ?></th>
+						<th><?php esc_html_e( 'Status', 'equine-event-manager' ); ?></th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php if ( empty( $entrants ) ) : ?>
+						<tr><td colspan="5" class="eem-table-empty"><?php esc_html_e( 'No entries yet.', 'equine-event-manager' ); ?></td></tr>
+					<?php else : ?>
+						<?php
+						$status_labels = array(
+							'paid'      => __( 'Paid', 'equine-event-manager' ),
+							'unpaid'    => __( 'Unpaid', 'equine-event-manager' ),
+							'refunded'  => __( 'Refunded', 'equine-event-manager' ),
+							'cancelled' => __( 'Cancelled', 'equine-event-manager' ),
+						);
+						foreach ( $entrants as $row ) :
+							$ekey   = (string) $row['order_key'];
+							$order  = ( '' !== $ekey && class_exists( 'EEM_Orders_Repository' ) ) ? ( new EEM_Orders_Repository() )->get_order( $ekey ) : null;
+							$ord_no = ( is_array( $order ) && ! empty( $order['order_number'] ) ) ? sprintf( '#%05d', (int) $order['order_number'] ) : '—';
+							$ord_url = ( '' !== $ekey && class_exists( 'EEM_Orders_List_Page' ) ) ? EEM_Orders_List_Page::order_detail_url( $ekey ) : '';
+							$st     = (string) $row['status'];
+							$st_lbl = isset( $status_labels[ $st ] ) ? $status_labels[ $st ] : ucfirst( $st );
+							?>
+							<tr>
+								<td><?php echo esc_html( '' !== (string) $row['customer_name'] ? (string) $row['customer_name'] : (string) $row['email'] ); ?></td>
+								<td><?php echo esc_html( (string) (int) $row['qty'] ); ?></td>
+								<td><?php
+									if ( '' !== $ord_url && '—' !== $ord_no ) {
+										echo '<a class="eem-res-name" href="' . esc_url( $ord_url ) . '">' . esc_html( $ord_no ) . '</a>';
+									} else {
+										echo esc_html( $ord_no );
+									}
+								?></td>
+								<td><?php echo esc_html( mysql2date( get_option( 'date_format' ), (string) $row['created_at'] ) ); ?></td>
+								<td><span class="eem-status-badge eem-status-<?php echo esc_attr( $st ); ?>"><?php echo esc_html( $st_lbl ); ?></span></td>
+							</tr>
+						<?php endforeach; ?>
+					<?php endif; ?>
+				</tbody>
+			</table>
+		</div>
+		<?php
+		eem_render_page_close( array( 'wrap' => true ) );
+	}
+
+	/**
 	 * Redirect the WP CPT list (`edit.php?post_type=en_entry`) to the styled
 	 * custom list page. Wired to `current_screen`.
 	 *
@@ -186,6 +330,15 @@ class EEM_Entries {
 	public static function render_list(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'equine-event-manager' ) );
+		}
+
+		// A `division_id` param routes to the single-Division detail view
+		// (entrants + spots stats) rather than the catalog list.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only view dispatch.
+		$detail_id = isset( $_GET['division_id'] ) ? absint( wp_unslash( $_GET['division_id'] ) ) : 0;
+		if ( $detail_id > 0 ) {
+			self::render_detail( $detail_id );
+			return;
 		}
 
 		require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_page_shell.php';
@@ -219,7 +372,7 @@ class EEM_Entries {
 						<th><?php esc_html_e( 'Division', 'equine-event-manager' ); ?></th>
 						<th><?php esc_html_e( 'Event', 'equine-event-manager' ); ?></th>
 						<th><?php esc_html_e( 'Price', 'equine-event-manager' ); ?></th>
-						<th><?php esc_html_e( 'Spots', 'equine-event-manager' ); ?></th>
+						<th><?php esc_html_e( 'Entered / Spots', 'equine-event-manager' ); ?></th>
 						<th><?php esc_html_e( 'Status', 'equine-event-manager' ); ?></th>
 						<th><?php esc_html_e( 'Actions', 'equine-event-manager' ); ?></th>
 					</tr>
@@ -243,15 +396,28 @@ class EEM_Entries {
 							$div_name = (string) get_post_meta( $e->ID, self::META_DIVISION_NAME, true );
 							$price    = (string) get_post_meta( $e->ID, self::META_PRICE, true );
 							$spots    = get_post_meta( $e->ID, self::META_SPOTS, true );
-							$spots_lbl = ( '' === (string) $spots || (int) $spots <= 0 ) ? __( 'Unlimited', 'equine-event-manager' ) : (string) (int) $spots;
+							$spots_int = ( '' === (string) $spots || (int) $spots <= 0 ) ? 0 : (int) $spots;
+							$entered  = class_exists( 'EEM_Division_Entries' ) ? EEM_Division_Entries::entered_count( (int) $e->ID ) : 0;
+							$oversold = ( $spots_int > 0 && $entered > $spots_int ) ? ( $entered - $spots_int ) : 0;
+							$detail_url = self::detail_url( (int) $e->ID );
 							$status   = get_post_status( $e );
 							$is_pub   = ( 'publish' === $status );
 							?>
 							<tr>
-								<td><a class="eem-res-name" href="<?php echo esc_url( $edit_url ); ?>"><?php echo esc_html( '' !== $div_name ? $div_name : get_the_title( $e ) ); ?></a></td>
+								<td><a class="eem-res-name" href="<?php echo esc_url( $detail_url ); ?>"><?php echo esc_html( '' !== $div_name ? $div_name : get_the_title( $e ) ); ?></a></td>
 								<td><?php echo $event ? esc_html( $event ) : '<span class="eem-orders-count is-zero">' . esc_html__( '— not connected —', 'equine-event-manager' ) . '</span>'; ?></td>
 								<td><?php echo '' !== $price ? esc_html( '$' . number_format( (float) $price, 2 ) ) : '<span class="eem-orders-count is-zero">—</span>'; ?></td>
-								<td><?php echo esc_html( $spots_lbl ); ?></td>
+								<td>
+									<?php
+									echo esc_html( $entered . ' / ' . ( $spots_int > 0 ? (string) $spots_int : __( 'Unlimited', 'equine-event-manager' ) ) );
+									if ( $oversold > 0 ) {
+										echo ' <span class="eem-status-badge eem-status-refunded">' . esc_html(
+											/* translators: %d: count oversold by. */
+											sprintf( __( 'oversold by %d', 'equine-event-manager' ), $oversold )
+										) . '</span>';
+									}
+									?>
+								</td>
 								<td><span class="eem-res-status eem-res-status--<?php echo $is_pub ? 'active' : 'draft'; ?>"><?php echo esc_html( $is_pub ? __( 'Published', 'equine-event-manager' ) : __( 'Draft', 'equine-event-manager' ) ); ?></span></td>
 								<td><a class="eem-btn eem-btn-sm" href="<?php echo esc_url( $edit_url ); ?>"><?php esc_html_e( 'Edit', 'equine-event-manager' ); ?></a></td>
 							</tr>
