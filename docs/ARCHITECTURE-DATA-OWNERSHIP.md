@@ -7,6 +7,15 @@ adopted alongside memberships, membership IDs, and the GEMS event calendar.
 **Status:** Discussion document. None of this is a v1 launch blocker — v1 ships on the
 WordPress database as described in §1. §3–§4 are the forward integration paths.
 
+> **Guiding principle (Equine Network, 2026-06-12): WordPress is a replaceable front-end,
+> not the permanent foundation.** The durable assets are (1) the **data** and (2) the
+> **business rules** (pricing, oversell/inventory, entries, refunds). Those must be able to
+> outlive WordPress. The strategy that delivers this is **API-first**: put the data + rules
+> behind an API (GH's, or a dedicated service), and treat the WordPress plugin as *one*
+> client of that API — swappable later for a custom web front-end, a mobile app, or
+> absorption into GH's platform. v1 launching on WordPress is fine and fast; the discipline
+> is to keep it *replaceable* (see §9).
+
 ---
 
 ## 1. Where the data lives today
@@ -275,3 +284,48 @@ though internally it is several component rows).
 ```
 This `reserve` call is the §4 atomic guarantee — it is the one endpoint GH must implement
 correctly (concurrency-safe) for Model B to be viable.
+
+---
+
+## 9. Keeping it WordPress-replaceable (avoiding lock-in)
+
+Per the guiding principle, WordPress should be a *swappable front-end*. Honest assessment of
+where the plugin already helps and where the real lock-in is:
+
+**Already portable (low WordPress coupling):**
+- The **transactional data** lives in plain relational MySQL tables (`*_stall_reservations`,
+  `*_rv_reservations`, `*_eem_division_entries`, `*_order_adjustments`, …). These move to any
+  system as-is.
+- The **business logic** is funneled through repository classes, not scattered through
+  templates — so the rules (pricing, oversell, entries, refunds) are separable from WP even
+  though they currently call `wp_*` helpers.
+
+**The real lock-in (what to unwind to be truly portable):**
+1. **Reservation + Division *config* lives in `wp_postmeta`** (WordPress's EAV key-value
+   store) under `_en_*` keys, and events are WP custom post types. This is the single
+   biggest WordPress chain. **Unwinding step:** move that config into clean relational tables
+   (or GH's schema). Everything else is already relational.
+2. **Customer booking page** is a WP shortcode rendered by the theme (Elementor). In a
+   headless future it becomes a front-end calling the API.
+3. **Admin UI + auth** are WP admin + WP users. These are the *interim* admin surface; a
+   replacement front-end (or GH's platform) takes over later.
+4. **Payments** run in the WP request flow (Stripe/Auth.net). Portable, but the charge +
+   order-create transaction would move to whatever owns the API.
+
+**The path to "not chained to WordPress":**
+1. **Design the §8 payload as the real API contract now** — even while syncing (Model A), so
+   the interface is front-end-agnostic from day one.
+2. **Migrate the postmeta-backed config to relational tables** (a focused data-layer refactor)
+   so the data model no longer depends on WordPress internals.
+3. **Stand up the API** (GH-owned, or — since the other team is .NET — a dedicated .NET
+   service that owns the DB + API). WordPress keeps writing through it.
+4. **Swap the front-end** when ready: a custom web app, a mobile app, or GH's platform —
+   WordPress is retired or kept only as one admin client. No data migration needed at that
+   point because the data + rules already live behind the API.
+
+**Practical guardrails to apply even during v1 (cheap insurance, no launch cost):**
+- Keep all new persistence behind the repository classes (don't write `wp_*` data calls into
+  templates/UI).
+- Prefer the plugin's relational custom tables over `wp_postmeta` for any *new* structured
+  data (the Divisions entrants ledger already follows this).
+- Treat the §8 order/entry shape as the canonical contract, not a WordPress array.
