@@ -183,7 +183,10 @@ charged for a spot that couldn't be secured.
    item; everything else is straightforward CRUD.
 4. Agree the **order/entry payload schema** (we can supply our current order + entrants shape
    as the starting contract).
-5. Sequence it as a **v2 integration**; v1 launches on the WordPress database unchanged.
+5. Sequence it as a **v3 architecture-track effort** (after the v2 feature backlog); v1
+   launches on the WordPress database unchanged. Do the postmeta→relational de-coupling
+   (`WORKPLAN-postmeta-decouple.md`) first so the sync/API layer reads the repository, not
+   postmeta.
 
 ---
 

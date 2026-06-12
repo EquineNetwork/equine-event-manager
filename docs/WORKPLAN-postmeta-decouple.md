@@ -9,7 +9,9 @@ backend (WP tables → GH's DB / a .NET service) becomes a one-class swap.
 **Not in scope:** the customer booking UI, payments, the admin chrome — those are front-end
 concerns handled separately in the headless roadmap. This plan is the *data layer* only.
 
-**Not a v1 blocker.** Start after launch, when the API direction is committed.
+**Roadmap tier: v3 (architecture track)** — moved out of v2 on 2026-06-12; runs after the v2
+feature backlog. **Not a v1 blocker.** Start after launch, when the API direction is committed.
+This is **v3 #1**, sequenced before **v3 #2** (the GH API integration).
 
 ---
 

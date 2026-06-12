@@ -43,7 +43,7 @@ architecture in `docs/ARCHITECTURE-DATA-OWNERSHIP.md` and `docs/WORKPLAN-postmet
 
 ---
 
-## 🔭 v2 — BACKLOG (logged, not started)
+## 🔭 v2 — FEATURE BACKLOG (logged, not started)
 
 Full source notes for each live in `CLAUDE.md` → "v2 deferred features".
 
@@ -61,19 +61,28 @@ Full source notes for each live in `CLAUDE.md` → "v2 deferred features".
    for an event** (schedule changes, weather, gate times). Builds on the existing Email
    Customers modal; add compose UI, audience filters, send log, Emogrifier send path.
 
-### v2 — Architecture track (strategic; see dedicated docs)
-6. **Global Handicaps data ownership / API integration** — make GH the system of record for
-   reservation data (they already own memberships + GEMS events). Two models (Sync vs.
-   GH-primary); gating dependency is GH providing an **atomic inventory-reserve API**. Full
-   spec + payload contract: `docs/ARCHITECTURE-DATA-OWNERSHIP.md`.
-7. **Postmeta → relational de-coupling** *(binding direction: "not chained to WordPress
+---
+
+## 🏗️ v3 — ARCHITECTURE TRACK (strategic; see dedicated docs)
+
+*Moved out of v2 (2026-06-12) — these are the platform/headless-foundation efforts, sequenced
+after the v2 feature work.*
+
+1. **Postmeta → relational de-coupling** *(binding direction: "not chained to WordPress
    forever")* — move reservation/division config out of `wp_postmeta` into relational tables
    behind an `EEM_Reservation_Config` repository, making WordPress a replaceable front-end.
    **Phase 1 (funnel) is the recommended first move** — low-risk, independently valuable.
-   ~2.5–4 weeks. Full plan: `docs/WORKPLAN-postmeta-decouple.md`. *Do this before #6.*
+   ~2.5–4 weeks. Full plan: `docs/WORKPLAN-postmeta-decouple.md`. **Do this before the GH API.**
+2. **Global Handicaps data ownership / API integration** — make GH the system of record for
+   reservation data (they already own memberships + GEMS events). Two models (Sync vs.
+   GH-primary); gating dependency is GH providing an **atomic inventory-reserve API**. Full
+   spec + payload contract: `docs/ARCHITECTURE-DATA-OWNERSHIP.md`. Enables a future native
+   mobile app via the same API contract.
 
-**Suggested v2 sequencing:** #7 Phase 1 (de-coupling funnel) → #6 GH API → then feature work
-(#1–#5) as priorities dictate. #7 makes #6 clean; #3 Templates benefits from #7's config rows.
+**Suggested v3 sequencing:** v3 #1 Phase 1 (de-coupling funnel) → v3 #2 GH API. The de-coupling
+makes the GH integration clean (sync layer reads the repository, not postmeta). Note v2 #3
+(Facility Layout Templates) benefits from v3 #1's config rows, so if Templates is prioritized
+early it may pull v3 #1 forward.
 
 ---
 
