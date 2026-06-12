@@ -200,7 +200,9 @@ class EEM_Entries {
 		}
 
 		$rid       = (int) get_post_meta( $division_id, self::META_RESERVATION, true );
-		$event     = $rid > 0 ? self::reservation_label( $rid )['title'] : '';
+		$res_label = $rid > 0 ? self::reservation_label( $rid ) : array( 'title' => '', 'end_date' => '' );
+		$event     = (string) $res_label['title'];
+		$is_past   = self::event_is_past( (string) $res_label['end_date'] );
 		$div_name  = (string) get_post_meta( $division_id, self::META_DIVISION_NAME, true );
 		$price     = (string) get_post_meta( $division_id, self::META_PRICE, true );
 		$spots_raw = get_post_meta( $division_id, self::META_SPOTS, true );
@@ -239,6 +241,9 @@ class EEM_Entries {
 			'wrap'       => true,
 		) );
 		?>
+		<?php if ( $is_past ) : ?>
+			<p class="eem-notice-inline"><span class="eem-res-status eem-res-status--past"><?php esc_html_e( 'Past', 'equine-event-manager' ); ?></span> <span class="eem-orders-count"><?php esc_html_e( 'This event has already ended.', 'equine-event-manager' ); ?></span></p>
+		<?php endif; ?>
 		<?php
 		// "Spots Left" tone follows availability: green when spots remain,
 		// orange when sold out, red when oversold (mirrors the dashboard KPI
@@ -376,7 +381,9 @@ class EEM_Entries {
 		$events = array(); // reservation_id => title
 		foreach ( $entries as $e ) {
 			$rid       = (int) get_post_meta( $e->ID, self::META_RESERVATION, true );
-			$event     = $rid > 0 ? self::reservation_label( $rid )['title'] : '';
+			$res_label = $rid > 0 ? self::reservation_label( $rid ) : array( 'title' => '', 'end_date' => '' );
+			$event     = (string) $res_label['title'];
+			$is_past   = self::event_is_past( (string) $res_label['end_date'] );
 			$div_name  = (string) get_post_meta( $e->ID, self::META_DIVISION_NAME, true );
 			$price     = (string) get_post_meta( $e->ID, self::META_PRICE, true );
 			$spots     = get_post_meta( $e->ID, self::META_SPOTS, true );
@@ -396,6 +403,7 @@ class EEM_Entries {
 				'entered'   => $entered,
 				'oversold'  => ( $spots_int > 0 && $entered > $spots_int ) ? ( $entered - $spots_int ) : 0,
 				'is_pub'    => $is_pub,
+				'is_past'   => $is_past,
 			);
 		}
 		asort( $events );
@@ -487,7 +495,12 @@ class EEM_Entries {
 									}
 									?>
 								</td>
-								<td><span class="eem-res-status eem-res-status--<?php echo $r['is_pub'] ? 'active' : 'draft'; ?>"><?php echo esc_html( $r['is_pub'] ? __( 'Published', 'equine-event-manager' ) : __( 'Draft', 'equine-event-manager' ) ); ?></span></td>
+								<td>
+								<span class="eem-res-status eem-res-status--<?php echo $r['is_pub'] ? 'active' : 'draft'; ?>"><?php echo esc_html( $r['is_pub'] ? __( 'Published', 'equine-event-manager' ) : __( 'Draft', 'equine-event-manager' ) ); ?></span>
+								<?php if ( ! empty( $r['is_past'] ) ) : ?>
+									<span class="eem-res-status eem-res-status--past"><?php esc_html_e( 'Past', 'equine-event-manager' ); ?></span>
+								<?php endif; ?>
+							</td>
 								<td><a class="eem-btn eem-btn-sm" href="<?php echo esc_url( $edit_url ); ?>"><?php esc_html_e( 'Edit', 'equine-event-manager' ); ?></a></td>
 							</tr>
 						<?php endforeach; ?>
@@ -583,11 +596,12 @@ class EEM_Entries {
 	 * the editor header + the search results.
 	 *
 	 * @param int $reservation_id Reservation id.
-	 * @return array{title:string,dates:string}
+	 * @return array{title:string,dates:string,end_date:string}
 	 */
 	private static function reservation_label( int $reservation_id ): array {
-		$title = '';
-		$dates = '';
+		$title    = '';
+		$dates    = '';
+		$end_date = '';
 		if ( $reservation_id > 0 ) {
 			$title = (string) get_the_title( $reservation_id );
 			if ( class_exists( 'EEM_Reservation_Source_Resolver' ) && class_exists( 'EEM_Dashboard_Repo' ) ) {
@@ -595,13 +609,34 @@ class EEM_Entries {
 				if ( ! empty( $fields['title'] ) ) {
 					$title = (string) $fields['title'];
 				}
-				$dates = EEM_Dashboard_Repo::format_date_range(
+				$end_date = isset( $fields['end_date'] ) ? (string) $fields['end_date'] : '';
+				$dates    = EEM_Dashboard_Repo::format_date_range(
 					isset( $fields['start_date'] ) ? (string) $fields['start_date'] : '',
-					isset( $fields['end_date'] ) ? (string) $fields['end_date'] : ''
+					$end_date
 				);
 			}
 		}
-		return array( 'title' => $title, 'dates' => $dates );
+		return array( 'title' => $title, 'dates' => $dates, 'end_date' => $end_date );
+	}
+
+	/**
+	 * Whether a reservation's event has already ended (end date strictly before
+	 * today). Display-only — drives the "Past" pill on the Entries list/detail.
+	 * Returns false when no end date is resolvable (open-ended / not connected).
+	 *
+	 * @param string $end_date Resolved event end date (any strtotime-parseable form).
+	 * @return bool
+	 */
+	private static function event_is_past( string $end_date ): bool {
+		if ( '' === trim( $end_date ) ) {
+			return false;
+		}
+		$end_ts = strtotime( $end_date );
+		if ( ! $end_ts ) {
+			return false;
+		}
+		$today = strtotime( current_time( 'Y-m-d' ) );
+		return $end_ts < $today;
 	}
 
 	/**

@@ -3758,6 +3758,10 @@ a.eem-res-name:focus {
 .eem-res-status--archived::before { background: #71717a; }
 .eem-res-status--trashed  { background: #fee2e2; color: #b91c1c; }
 .eem-res-status--trashed::before  { background: #dc2626; }
+/* Derived "Past" pill (Entries) — muted slate; the event's end date has passed.
+   Display-only, computed at render time (no stored status). */
+.eem-res-status--past     { background: #e5e7eb; color: #52525b; }
+.eem-res-status--past::before     { background: #94a3b8; }
 
 /* Orders count cell. Zero counts dim per RES-5. Mockup lines 115-116. */
 .eem-orders-count {

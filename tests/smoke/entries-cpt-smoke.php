@@ -62,6 +62,14 @@ $check( 'list renders the event-filter toolbar select', false !== strpos( $list_
 $check( 'list marks columns sortable (data-eem-sort)', false !== strpos( $list_html2, 'class="eem-sortable" data-eem-sort="name"' ) && false !== strpos( $list_html2, 'data-eem-sort="entered"' ) );
 $check( 'list rows carry the event-id filter attribute', false !== strpos( $list_html2, 'data-eem-event-id="' . $rid_for_entry . '"' ) );
 
+// Derived "Past" pill logic (event_is_past — private, exercised via Reflection).
+$past_ref = new ReflectionMethod( 'EEM_Entries', 'event_is_past' );
+$past_ref->setAccessible( true );
+$check( 'event_is_past true for a date before today', true === $past_ref->invoke( null, gmdate( 'Y-m-d', time() - 5 * DAY_IN_SECONDS ) ) );
+$check( 'event_is_past false for a future date', false === $past_ref->invoke( null, gmdate( 'Y-m-d', time() + 5 * DAY_IN_SECONDS ) ) );
+$check( 'event_is_past false for empty / open-ended', false === $past_ref->invoke( null, '' ) );
+$check( 'admin.css defines the .eem-res-status--past pill', false !== strpos( (string) file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/css/admin.css' ), '.eem-res-status--past' ) );
+
 // --- styled editor render --------------------------------------------------
 update_post_meta( $eid, EEM_Entries::META_RESERVATION, $rid_for_entry );
 update_post_meta( $eid, EEM_Entries::META_DESCRIPTION, 'Pre-purchase your division entry.' );
