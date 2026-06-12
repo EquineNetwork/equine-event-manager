@@ -7135,6 +7135,18 @@ input.eem-event-search-input:focus {
 	margin-bottom: 12px;
 }
 .eem-row-card-one-sided .eem-row-card-field { flex: 1 1 140px; min-width: 120px; max-width: 220px; }
+/* One-line stall row: Barn/Row Name (wider, optional) + First + Last + delete. */
+.eem-row-card-line {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: 10px;
+	margin-bottom: 12px;
+}
+.eem-row-card-line .eem-row-card-field { flex: 1 1 120px; min-width: 100px; max-width: 200px; }
+.eem-row-card-line .eem-row-card-field--name { flex: 2 1 200px; min-width: 160px; max-width: none; }
+.eem-row-card-line .eem-row-card-delete { flex: 0 0 auto; }
+.eem-row-card-optional { font-weight: 400; color: #6B7A99; font-size: 11px; }
 .eem-row-card-sides {
 	display: flex;
 	flex-wrap: wrap;

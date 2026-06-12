@@ -2295,7 +2295,15 @@ class EEM_Admin {
 							<!-- STALL SECTION: hidden when inv=rv -->
 							<div id="eem-sc-loc-stalls" data-inv-section="stalls"<?php echo 'rv' === $inv ? ' style="display:none"' : ''; ?>>
 								<?php if ( ! empty( $grid['stall_rows'] ) ) : ?>
-									<?php $this->render_stall_chart_matrix_table( $grid['stall_rows'], $date_cols, __( 'Stall', 'equine-event-manager' ), __( 'Block', 'equine-event-manager' ) ); ?>
+									<?php
+									// Barn/Row names are optional. When every stall row is unnamed the
+									// chart is "by number" â drop the Block column + barn dividers.
+									$eem_has_block = false;
+									foreach ( (array) $grid['stall_rows'] as $eem_sr ) {
+										if ( '' !== trim( (string) ( $eem_sr['block'] ?? '' ) ) ) { $eem_has_block = true; break; }
+									}
+									?>
+									<?php $this->render_stall_chart_matrix_table( $grid['stall_rows'], $date_cols, __( 'Stall', 'equine-event-manager' ), $eem_has_block ? __( 'Block', 'equine-event-manager' ) : '' ); ?>
 								<?php else : ?>
 									<p class="eem-stall-chart-no-data"><?php esc_html_e( 'No stall assignments configured for this reservation.', 'equine-event-manager' ); ?></p>
 								<?php endif; ?>

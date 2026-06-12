@@ -6108,19 +6108,17 @@ function stallAddRow() {
 	card.className   = 'eem-row-card';
 	card.dataset.rowIndex = idx;
 	card.innerHTML =
-		'<div class="eem-row-card-top">' +
-			'<div class="eem-row-card-field">' +
-				'<span class="eem-row-card-field-label">Barn/Row Name</span>' +
-				'<input type="text" name="eem_stall_rows[' + idx + '][name]" value="" data-eem-input-action="stall-row-input">' +
+		'<input type="hidden" name="eem_stall_rows[' + idx + '][layout]" value="one-sided">' +
+		'<div class="eem-row-card-line">' +
+			'<div class="eem-row-card-field eem-row-card-field--name">' +
+				'<span class="eem-row-card-field-label">Barn/Row Name <span class="eem-row-card-optional">(optional)</span></span>' +
+				'<input type="text" name="eem_stall_rows[' + idx + '][name]" value="" placeholder="Leave blank to number stalls only" data-eem-input-action="stall-row-input">' +
 			'</div>' +
-			'<input type="hidden" name="eem_stall_rows[' + idx + '][layout]" value="one-sided">' +
+			'<div class="eem-row-card-field"><span class="eem-row-card-field-label">First Stall</span><input type="text" name="eem_stall_rows[' + idx + '][first]" value="" data-role="first" data-eem-input-action="stall-row-input"></div>' +
+			'<div class="eem-row-card-field"><span class="eem-row-card-field-label">Last Stall</span><input type="text" name="eem_stall_rows[' + idx + '][last]" value="" data-role="last" data-eem-input-action="stall-row-input"></div>' +
 			'<button class="eem-row-card-delete" type="button" title="Delete row" data-eem-action="stall-delete-row">' +
 				'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>' +
 			'</button>' +
-		'</div>' +
-		'<div class="eem-row-card-one-sided">' +
-			'<div class="eem-row-card-field"><span class="eem-row-card-field-label">First Stall</span><input type="text" name="eem_stall_rows[' + idx + '][first]" value="" data-role="first" data-eem-input-action="stall-row-input"></div>' +
-			'<div class="eem-row-card-field"><span class="eem-row-card-field-label">Last Stall</span><input type="text" name="eem_stall_rows[' + idx + '][last]" value="" data-role="last" data-eem-input-action="stall-row-input"></div>' +
 		'</div>' +
 		'<div class="eem-row-card-preview">' +
 			'<div class="eem-row-card-preview-label">Preview <span class="eem-row-card-count"></span></div>' +

@@ -466,17 +466,12 @@ ob_start();
 	$is_b2b      = ( 'back-to-back' === $r_layout );
 	?>
 	<div class="eem-row-card" data-row-index="<?php echo (int) $ri; ?>">
-		<div class="eem-row-card-top">
-			<div class="eem-row-card-field">
-				<span class="eem-row-card-field-label"><?php esc_html_e( 'Barn/Row Name', 'equine-event-manager' ); ?></span>
-				<input type="text" name="eem_stall_rows[<?php echo (int) $ri; ?>][name]" value="<?php echo esc_attr( $r_name ); ?>" data-eem-input-action="stall-row-input">
+		<input type="hidden" name="eem_stall_rows[<?php echo (int) $ri; ?>][layout]" value="one-sided">
+		<div class="eem-row-card-line">
+			<div class="eem-row-card-field eem-row-card-field--name">
+				<span class="eem-row-card-field-label"><?php esc_html_e( 'Barn/Row Name', 'equine-event-manager' ); ?> <span class="eem-row-card-optional"><?php esc_html_e( '(optional)', 'equine-event-manager' ); ?></span></span>
+				<input type="text" name="eem_stall_rows[<?php echo (int) $ri; ?>][name]" value="<?php echo esc_attr( $r_name ); ?>" placeholder="<?php esc_attr_e( 'Leave blank to number stalls only', 'equine-event-manager' ); ?>" data-eem-input-action="stall-row-input">
 			</div>
-			<input type="hidden" name="eem_stall_rows[<?php echo (int) $ri; ?>][layout]" value="one-sided">
-			<button class="eem-row-card-delete" type="button" title="<?php esc_attr_e( 'Delete row', 'equine-event-manager' ); ?>" data-eem-action="stall-delete-row">
-				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-			</button>
-		</div>
-		<div class="eem-row-card-one-sided">
 			<div class="eem-row-card-field">
 				<span class="eem-row-card-field-label"><?php esc_html_e( 'First Stall', 'equine-event-manager' ); ?></span>
 				<input type="text" name="eem_stall_rows[<?php echo (int) $ri; ?>][first]" value="<?php echo esc_attr( $r_first ); ?>" data-role="first" data-eem-input-action="stall-row-input">
@@ -485,6 +480,9 @@ ob_start();
 				<span class="eem-row-card-field-label"><?php esc_html_e( 'Last Stall', 'equine-event-manager' ); ?></span>
 				<input type="text" name="eem_stall_rows[<?php echo (int) $ri; ?>][last]" value="<?php echo esc_attr( $r_last ); ?>" data-role="last" data-eem-input-action="stall-row-input">
 			</div>
+			<button class="eem-row-card-delete" type="button" title="<?php esc_attr_e( 'Delete row', 'equine-event-manager' ); ?>" data-eem-action="stall-delete-row">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+			</button>
 		</div>
 		<div class="eem-row-card-preview">
 			<div class="eem-row-card-preview-label"><?php esc_html_e( 'Preview', 'equine-event-manager' ); ?> <span class="eem-row-card-count"></span></div>
