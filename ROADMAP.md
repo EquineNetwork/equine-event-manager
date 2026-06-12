@@ -1,7 +1,7 @@
 # Equine Event Manager — Roadmap & To-Do
 
-**Canonical, version-controlled to-do list.** Last updated 2026-06-12 · plugin at **v2.7.223**
-· branch `v4-stall-mapping`. Authoritative decision history lives in `CLAUDE.md`; deep
+**Canonical, version-controlled to-do list.** Last updated 2026-06-12 · plugin at **v2.7.231**
+· branch `v4-stall-mapping`. **v1 + v2 are complete; only the v3 track remains.** Authoritative decision history lives in `CLAUDE.md`; deep
 architecture in `docs/ARCHITECTURE-DATA-OWNERSHIP.md` and `docs/WORKPLAN-postmeta-decouple.md`.
 
 ---
