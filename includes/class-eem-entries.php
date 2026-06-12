@@ -40,6 +40,9 @@ class EEM_Entries {
 	/** @var string Custom editor page slug (hidden submenu, like the reservation editor). */
 	const EDITOR_SLUG = 'equine-event-manager-entry-editor';
 
+	/** @var string Custom list page slug (visible submenu, like the reservations list). */
+	const LIST_SLUG = 'equine-event-manager-entries';
+
 	/** @var string Linked-reservation meta key. */
 	const META_RESERVATION = '_en_entry_reservation_id';
 
@@ -56,7 +59,12 @@ class EEM_Entries {
 	 */
 	public static function register(): void {
 		add_action( 'init', array( __CLASS__, 'register_post_type' ) );
-		add_action( 'admin_menu', array( __CLASS__, 'register_editor_route' ) );
+		// Priority 30: after EEM_Admin::register_menu (priority 20) creates the
+		// Orders parent menu, but before normalize_event_manager_submenu_order
+		// (priority 1001) reorders the submenu per $preferred_order. This ordering
+		// is what lets the Entries list submenu attach AND land below Orders.
+		add_action( 'admin_menu', array( __CLASS__, 'register_routes' ), 30 );
+		add_action( 'current_screen', array( __CLASS__, 'maybe_redirect_old_list' ) );
 		add_action( 'load-post-new.php', array( __CLASS__, 'maybe_redirect_new_entry' ) );
 		add_action( 'load-post.php', array( __CLASS__, 'maybe_redirect_legacy_edit' ) );
 		add_action( 'wp_ajax_eem_entry_editor_save', array( __CLASS__, 'ajax_save' ) );
@@ -92,7 +100,9 @@ class EEM_Entries {
 				),
 				'public'          => false,
 				'show_ui'         => true,
-				'show_in_menu'    => 'equine-event-manager-orders',
+				// Hidden from the menu — the custom styled list page (LIST_SLUG)
+				// is the menu entry; the WP CPT list redirects to it.
+				'show_in_menu'    => false,
 				'show_in_rest'    => false,
 				'capability_type' => 'post',
 				'map_meta_cap'    => true,
@@ -107,12 +117,23 @@ class EEM_Entries {
 	}
 
 	/**
-	 * Register the hidden custom-editor submenu (parent '' so it's routable but
-	 * not a nav entry), mirroring the reservation editor's registration.
+	 * Register the visible Entries list submenu (under Orders) + the hidden
+	 * custom-editor route, mirroring the reservations list + editor pair.
 	 *
 	 * @return void
 	 */
-	public static function register_editor_route(): void {
+	public static function register_routes(): void {
+		// Visible list page under the Orders menu.
+		add_submenu_page(
+			'equine-event-manager-orders',
+			__( 'Entries', 'equine-event-manager' ),
+			__( 'Entries', 'equine-event-manager' ),
+			'manage_options',
+			self::LIST_SLUG,
+			array( __CLASS__, 'render_list' )
+		);
+
+		// Hidden editor route (parent '' — routable but not a nav entry).
 		add_submenu_page(
 			'',
 			__( 'Edit Entry', 'equine-event-manager' ),
@@ -121,6 +142,113 @@ class EEM_Entries {
 			self::EDITOR_SLUG,
 			array( __CLASS__, 'render' )
 		);
+	}
+
+	/**
+	 * The styled Entries list page URL.
+	 *
+	 * @return string
+	 */
+	public static function list_url(): string {
+		return admin_url( 'admin.php?page=' . self::LIST_SLUG );
+	}
+
+	/**
+	 * Redirect the WP CPT list (`edit.php?post_type=en_entry`) to the styled
+	 * custom list page. Wired to `current_screen`.
+	 *
+	 * @param mixed $screen Current screen object.
+	 * @return void
+	 */
+	public static function maybe_redirect_old_list( $screen ): void {
+		if ( ! is_object( $screen ) || 'edit-' . self::POST_TYPE !== $screen->id || 'edit' !== $screen->base ) {
+			return;
+		}
+		wp_safe_redirect( self::list_url(), 302 );
+		exit;
+	}
+
+	/**
+	 * Render the styled Entries list (mirrors the Reservations list chrome:
+	 * Equine breadcrumb + header + "+ New Entry" button + bordered card table).
+	 *
+	 * @return void
+	 */
+	public static function render_list(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'equine-event-manager' ) );
+		}
+
+		require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_page_shell.php';
+
+		$entries = get_posts( array(
+			'post_type'      => self::POST_TYPE,
+			'post_status'    => array( 'publish', 'draft' ),
+			'posts_per_page' => 200,
+			'orderby'        => 'date',
+			'order'          => 'DESC',
+		) );
+
+		eem_render_page_open( array(
+			'title'      => __( 'Entries', 'equine-event-manager' ),
+			'subtitle'   => __( 'Purchasable entry items connected to an event. Each entry surfaces as a card on that event\'s customer reservation page and folds into the order at checkout.', 'equine-event-manager' ),
+			'breadcrumb' => array(
+				array( 'label' => __( 'Entries', 'equine-event-manager' ) ),
+			),
+			'actions'    => sprintf(
+				'<a class="eem-btn eem-btn-electric" href="%s">+ %s</a>',
+				esc_url( admin_url( 'post-new.php?post_type=' . self::POST_TYPE ) ),
+				esc_html__( 'New Entry', 'equine-event-manager' )
+			),
+			'wrap'       => true,
+		) );
+		?>
+		<div class="eem-desktop-table">
+			<table class="eem-table">
+				<thead>
+					<tr>
+						<th><?php esc_html_e( 'Entry', 'equine-event-manager' ); ?></th>
+						<th><?php esc_html_e( 'Event', 'equine-event-manager' ); ?></th>
+						<th><?php esc_html_e( 'Items', 'equine-event-manager' ); ?></th>
+						<th><?php esc_html_e( 'Status', 'equine-event-manager' ); ?></th>
+						<th><?php esc_html_e( 'Actions', 'equine-event-manager' ); ?></th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php if ( empty( $entries ) ) : ?>
+						<tr><td colspan="5" class="eem-table-empty">
+							<?php
+							printf(
+								/* translators: %s: New Entry link */
+								esc_html__( 'No entries yet. %s to create your first one.', 'equine-event-manager' ),
+								'<a href="' . esc_url( admin_url( 'post-new.php?post_type=' . self::POST_TYPE ) ) . '">' . esc_html__( 'Add an entry', 'equine-event-manager' ) . '</a>'
+							);
+							?>
+						</td></tr>
+					<?php else : ?>
+						<?php foreach ( $entries as $e ) :
+							$edit_url = self::editor_url( (int) $e->ID );
+							$rid      = (int) get_post_meta( $e->ID, self::META_RESERVATION, true );
+							$event    = $rid > 0 ? self::reservation_label( $rid )['title'] : '';
+							$items    = get_post_meta( $e->ID, self::META_ITEMS, true );
+							$count    = is_array( $items ) ? count( $items ) : 0;
+							$status   = get_post_status( $e );
+							$is_pub   = ( 'publish' === $status );
+							?>
+							<tr>
+								<td><a class="eem-res-name" href="<?php echo esc_url( $edit_url ); ?>"><?php echo esc_html( '' !== $event ? $event : get_the_title( $e ) ); ?></a></td>
+								<td><?php echo $event ? esc_html( $event ) : '<span class="eem-orders-count is-zero">' . esc_html__( '— not connected —', 'equine-event-manager' ) . '</span>'; ?></td>
+								<td><?php echo esc_html( (string) $count ); ?></td>
+								<td><span class="eem-res-status eem-res-status--<?php echo $is_pub ? 'active' : 'draft'; ?>"><?php echo esc_html( $is_pub ? __( 'Published', 'equine-event-manager' ) : __( 'Draft', 'equine-event-manager' ) ); ?></span></td>
+								<td><a class="eem-btn eem-btn-sm" href="<?php echo esc_url( $edit_url ); ?>"><?php esc_html_e( 'Edit', 'equine-event-manager' ); ?></a></td>
+							</tr>
+						<?php endforeach; ?>
+					<?php endif; ?>
+				</tbody>
+			</table>
+		</div>
+		<?php
+		eem_render_page_close( array( 'wrap' => true ) );
 	}
 
 	/**

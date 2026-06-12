@@ -226,10 +226,10 @@ class EEM_Admin {
 			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--reservation-editor' );
 		}
 
-		// Entries CPT list — apply the plugin shell so the bare WP list table
-		// picks up the plugin chrome (font, width, background).
-		if ( 'edit-' . EEM_Entries::POST_TYPE === $screen->id ) {
-			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--orders' );
+		// Entries list — reuse the reservations-list shell variant so the custom
+		// list page renders with identical chrome.
+		if ( EEM_Entries::LIST_SLUG === $page ) {
+			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--reservations-list' );
 		}
 
 		// DS-1.B.4: Dashboard branch added. Without this, the Dashboard
@@ -300,12 +300,7 @@ class EEM_Admin {
 			$should_load = true;
 		}
 
-		// Entries CPT list screen — style it with the plugin shell.
-		if ( EEM_Entries::POST_TYPE === $post_type && 'edit-' . EEM_Entries::POST_TYPE === $screen->id ) {
-			$should_load = true;
-		}
-
-		if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-order', 'equine-event-manager-order-refund', 'equine-event-manager-settings', 'equine-event-manager-stall-charts', 'equine-event-manager-stall-chart-print', 'equine-event-manager-reports', 'equine-event-manager-reservation-overview', 'equine-event-manager-create-order', 'equine-event-manager-collect-payment', 'equine-event-manager-dashboard', 'equine-event-manager-reservation-editor', EEM_Entries::EDITOR_SLUG, 'equine-event-manager-customer', 'equine-event-manager-customers', EEM_Reservations_List_Page::MENU_SLUG ), true ) ) {
+		if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-order', 'equine-event-manager-order-refund', 'equine-event-manager-settings', 'equine-event-manager-stall-charts', 'equine-event-manager-stall-chart-print', 'equine-event-manager-reports', 'equine-event-manager-reservation-overview', 'equine-event-manager-create-order', 'equine-event-manager-collect-payment', 'equine-event-manager-dashboard', 'equine-event-manager-reservation-editor', EEM_Entries::EDITOR_SLUG, EEM_Entries::LIST_SLUG, 'equine-event-manager-customer', 'equine-event-manager-customers', EEM_Reservations_List_Page::MENU_SLUG ), true ) ) {
 			$should_load = true;
 		}
 
@@ -463,8 +458,8 @@ class EEM_Admin {
 		$preferred_order = array(
 			'equine-event-manager-dashboard',
 			self::MENU_SLUG,
-			// Entries sits directly below Orders (it's an Orders-adjacent CPT).
-			'edit.php?post_type=en_entry',
+			// Entries sits directly below Orders (custom styled list page).
+			'equine-event-manager-entries',
 			'equine-event-manager-reservations',
 			'equine-event-manager-stall-charts',
 			'equine-event-manager-customers',

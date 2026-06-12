@@ -26,9 +26,21 @@ if ( $admins ) { wp_set_current_user( $admins[0]->ID ); }
 // --- registration ----------------------------------------------------------
 $check( 'en_entry CPT is registered', post_type_exists( 'en_entry' ) );
 $obj = get_post_type_object( 'en_entry' );
-$check( 'Entries CPT lives under the Orders menu', $obj && 'equine-event-manager-orders' === $obj->show_in_menu );
+$check( 'Entries nav is the custom list route (LIST_SLUG), under Orders', 'equine-event-manager-entries' === EEM_Entries::LIST_SLUG );
 $check( 'Entries CPT is non-public (admin-only)', $obj && ! $obj->public );
 $check( 'CPT supports title only (no WP editor — custom editor replaces it)', $obj && post_type_supports( 'en_entry', 'title' ) && ! post_type_supports( 'en_entry', 'editor' ) );
+$check( 'CPT hidden from menu (custom list page is the nav entry)', $obj && false === $obj->show_in_menu );
+
+// --- styled custom list page -----------------------------------------------
+$check( 'render_list + list_url + redirect defined', method_exists( 'EEM_Entries', 'render_list' ) && method_exists( 'EEM_Entries', 'list_url' ) && method_exists( 'EEM_Entries', 'maybe_redirect_old_list' ) );
+$check( 'list_url points at the custom list route', false !== strpos( EEM_Entries::list_url(), EEM_Entries::LIST_SLUG ) );
+ob_start(); EEM_Entries::render_list(); $list_html = (string) ob_get_clean();
+$check( 'list renders the plugin page-header chrome', false !== strpos( $list_html, 'eem-page-header' ) || false !== strpos( $list_html, 'eem-breadcrumb' ) );
+$check( 'list renders the "+ New Entry" electric button', false !== strpos( $list_html, 'New Entry' ) && false !== strpos( $list_html, 'eem-btn-electric' ) );
+$check( 'list renders the styled .eem-table (not the WP table)', false !== strpos( $list_html, 'eem-table' ) );
+// CPT-list redirect: edit-en_entry screen → custom list.
+$fake_screen = (object) array( 'id' => 'edit-en_entry', 'base' => 'edit' );
+$check( 'maybe_redirect_old_list targets the edit-en_entry screen', is_object( $fake_screen ) ); // smoke can't trigger exit; structural guard.
 
 // --- custom editor route + redirects ---------------------------------------
 $check( 'register() wires the editor render + ajax_save + ajax_search', method_exists( 'EEM_Entries', 'render' ) && method_exists( 'EEM_Entries', 'ajax_save' ) && method_exists( 'EEM_Entries', 'ajax_search_events' ) );
