@@ -9271,7 +9271,11 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 .eem-entries-table th.is-sorted-asc  .eem-sort-ind { opacity: 1; border-bottom: 5px solid currentColor; }
 .eem-entries-table th.is-sorted-desc .eem-sort-ind { opacity: 1; border-top: 5px solid currentColor; }
 
-/* ── Notifications page (v2) ── */
+/* ── Notifications page (v2) ──
+   The page body has padding:0 (list pages self-pad via their toolbar/table),
+   so this custom page carries its own 18px gutter to align with the header
+   inset instead of sitting flush against the card border. */
+.eem-notifications { padding: 18px; }
 .eem-notif-grid { max-width: 720px; }
 .eem-notif-field { margin-bottom: 16px; }
 .eem-notif-field .eem-field-select { min-width: 280px; max-width: 100%; }
@@ -9284,4 +9288,6 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 .eem-notif-send-status { font-size: 13px; color: var(--eem-muted, #64748b); }
 .eem-notif-history { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--eem-border, #D9E2F2); }
 .eem-notif-history-title { font-size: 15px; font-weight: 700; color: var(--eem-navy, #031B4E); margin: 0 0 12px; }
+.eem-notif-history p.eem-table-empty { margin: 0; padding: 28px; text-align: center; color: var(--eem-muted, #64748b); background: var(--eem-bg-alt, #fafafa); border: 1px solid var(--eem-border, #D9E2F2); border-radius: var(--eem-radius, 3px); }
+.eem-notif-history .eem-desktop-table { border: 1px solid var(--eem-border, #D9E2F2); border-radius: var(--eem-radius, 3px); overflow: hidden; }
 @media (max-width: 782px) { .eem-notif-audience { grid-template-columns: 1fr; } }
