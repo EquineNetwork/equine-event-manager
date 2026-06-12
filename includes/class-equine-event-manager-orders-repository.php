@@ -37,8 +37,21 @@ class EEM_Orders_Repository {
 	 * @param string $search_term Optional search term.
 	 * @return array
 	 */
-	public function get_orders( $event_filter = '', $orderby = 'date', $order = 'desc', $search_term = '' ) {
+	public function get_orders( $event_filter = '', $orderby = 'date', $order = 'desc', $search_term = '', $trashed = 'exclude' ) {
 		$orders = $this->get_grouped_orders();
+
+		// v1 #9 — soft-delete filter. 'exclude' (default) drops trashed orders so
+		// every existing caller (list, counts, reports, dashboard) hides them;
+		// 'only' returns just the Trash tab; 'all' returns both.
+		if ( 'all' !== $trashed ) {
+			$want_trashed = ( 'only' === $trashed );
+			$orders = array_filter(
+				$orders,
+				static function ( $order ) use ( $want_trashed ) {
+					return ! empty( $order['trashed'] ) === $want_trashed;
+				}
+			);
+		}
 
 		if ( '' !== $event_filter ) {
 			$orders = array_filter(
@@ -239,6 +252,66 @@ class EEM_Orders_Repository {
 	}
 
 	/**
+	 * Soft-delete an order (move to Trash) by stamping `trashed_at = NOW()` on
+	 * every component row. Excluded from the default order list + counts; visible
+	 * under the Trash tab where it can be restored or deleted permanently (v1 #9).
+	 *
+	 * @param string $order_key Order key.
+	 * @return bool True when at least one component row was stamped.
+	 */
+	public function trash_order( $order_key ) {
+		return $this->set_order_trashed_at( $order_key, current_time( 'mysql' ) );
+	}
+
+	/**
+	 * Restore a trashed order by clearing `trashed_at` on every component row.
+	 *
+	 * @param string $order_key Order key.
+	 * @return bool True when at least one component row was updated.
+	 */
+	public function restore_order( $order_key ) {
+		return $this->set_order_trashed_at( $order_key, null );
+	}
+
+	/**
+	 * Stamp (or clear) `trashed_at` across every component of an order.
+	 *
+	 * @param string      $order_key Order key.
+	 * @param string|null $value     MySQL datetime to trash, or null to restore.
+	 * @return bool
+	 */
+	private function set_order_trashed_at( $order_key, $value ) {
+		global $wpdb;
+
+		// Use 'all' so a trashed order can still be looked up + restored.
+		$order = null;
+		foreach ( $this->get_orders( '', 'date', 'desc', '', 'all' ) as $candidate ) {
+			if ( isset( $candidate['order_key'] ) && (string) $candidate['order_key'] === (string) $order_key ) {
+				$order = $candidate;
+				break;
+			}
+		}
+		if ( ! $order ) {
+			return false;
+		}
+
+		$updated_any = false;
+		foreach ( $order['components'] as $component ) {
+			$ok = $wpdb->update(
+				$this->get_table_name( $component['table'] ),
+				array( 'trashed_at' => $value ),
+				array( 'id' => absint( $component['row_id'] ) ),
+				array( null === $value ? null : '%s' ),
+				array( '%d' )
+			);
+			$updated_any = ( false !== $ok ) || $updated_any;
+		}
+
+		$this->cached_orders = null;
+		return $updated_any;
+	}
+
+	/**
 	 * Delete all table rows for an order.
 	 *
 	 * @param string $order_key Order key.
@@ -247,7 +320,15 @@ class EEM_Orders_Repository {
 	public function delete_order( $order_key ) {
 		global $wpdb;
 
-		$order = $this->get_order( $order_key );
+		// Permanent delete must find TRASHED orders too (the default get_order()
+		// now excludes them), so look up across all trash states.
+		$order = null;
+		foreach ( $this->get_orders( '', 'date', 'desc', '', 'all' ) as $candidate ) {
+			if ( isset( $candidate['order_key'] ) && (string) $candidate['order_key'] === (string) $order_key ) {
+				$order = $candidate;
+				break;
+			}
+		}
 
 		if ( ! $order ) {
 			return false;
@@ -1834,6 +1915,10 @@ class EEM_Orders_Repository {
 			'notes'                   => isset( $row['notes'] ) ? $row['notes'] : '',
 			'components'              => array(),
 			'can_refund'              => false,
+			// v1 #9 — soft-delete. trash/restore set trashed_at on every component
+			// atomically, so the seed row reflects the whole order's trash state.
+			'trashed_at'              => isset( $row['trashed_at'] ) ? $row['trashed_at'] : null,
+			'trashed'                 => ! empty( $row['trashed_at'] ),
 		);
 	}
 

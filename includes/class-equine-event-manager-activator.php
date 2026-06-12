@@ -193,6 +193,10 @@ class EEM_Activator {
 			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-012-frontend-url-cache-cleanup.php';
 			eem_mig_012_frontend_url_cache_cleanup();
 		}
+		if ( ! get_option( 'eem_mig_013_order_trashed_at_column_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-013-order-trashed-at-column.php';
+			eem_mig_013_order_trashed_at_column();
+		}
 	}
 
 	/**
@@ -266,6 +270,7 @@ class EEM_Activator {
 			refund_transaction_id varchar(191) NOT NULL DEFAULT '',
 			refunded_amount decimal(10,2) NOT NULL DEFAULT 0.00,
 			refunded_at datetime DEFAULT NULL,
+			trashed_at datetime DEFAULT NULL,
 			notes text NULL,
 			created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			PRIMARY KEY  (id),
@@ -304,6 +309,7 @@ class EEM_Activator {
 			refund_transaction_id varchar(191) NOT NULL DEFAULT '',
 			refunded_amount decimal(10,2) NOT NULL DEFAULT 0.00,
 			refunded_at datetime DEFAULT NULL,
+			trashed_at datetime DEFAULT NULL,
 			notes text NULL,
 			created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			PRIMARY KEY  (id),
