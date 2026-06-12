@@ -43,7 +43,8 @@
 	color: var( --eem-text, #1d2327 );
 }
 
-/* Dropdown panel. */
+/* Dropdown panel. Widen past the (compact) control so long event names show
+   on one line instead of wrapping; truncate with an ellipsis past the cap. */
 .eem-choices .choices__list--dropdown,
 .eem-choices .choices__list[aria-expanded] {
 	border: 1px solid var( --eem-border, #d9e2f2 );
@@ -51,6 +52,14 @@
 	box-shadow: 0 8px 22px rgba( 15, 23, 42, 0.12 );
 	margin-top: 4px;
 	font-size: 13px;
+	min-width: 280px;
+}
+
+.eem-choices .choices__list--dropdown .choices__item,
+.eem-choices .choices__list[aria-expanded] .choices__item {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 /* In-dropdown search box. */

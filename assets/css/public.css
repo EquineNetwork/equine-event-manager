@@ -1042,6 +1042,17 @@
 .eem-event-page .eem-map-tab:hover,
 .eem-event-page .eem-map-tab:focus { background: #eef4ff; color: #1668F2; }
 .eem-event-page .eem-map-tab.active:hover { color: #031B4E; }
+/* Base-state hardening (2.7.220): the host theme / Elementor kit styles bare
+   <button> with a higher-specificity border (bleeding red onto the zone tabs +
+   zoom controls — the grid CELLS are <div> so stayed correct). The :hover rules
+   above were already scoped to .eem-event-page to beat the theme; the base
+   border/background/color need the same treatment or the resting state shows the
+   theme's button chrome. Re-assert the intended map-picker chrome here. */
+.eem-event-page .eem-map-tab { border: 1px solid #e2e8f0; border-bottom: 0; background: #f6f9fd; color: #5f6f85; }
+.eem-event-page .eem-map-tab.active { border-color: #e2e8f0; background: #fff; color: #031B4E; box-shadow: inset 0 -2px 0 #1668F2; }
+.eem-event-page .eem-map-zoom { border: 1px solid #cbd5e1; }
+.eem-event-page .eem-map-zoom-btn { border: 0; border-left: 1px solid #e2e8f0; background: #fff; color: #031B4E; }
+.eem-event-page .eem-map-zoom-btn:first-child { border-left: 0; }
 .eem-map-legend { display: flex; gap: 14px; flex-wrap: wrap; padding: 10px 18px; border-bottom: 1px solid #e2e8f0; font-size: 12px; color: #5f6f85; }
 .eem-map-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .eem-map-sw { width: 14px; height: 14px; border-radius: 4px; border: 1px solid #cbd5e1; display: inline-block; }
