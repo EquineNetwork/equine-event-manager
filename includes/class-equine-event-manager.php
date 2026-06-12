@@ -306,6 +306,8 @@ class EEM_Plugin {
 		// frees inventory, and emails the customer; independent of refunds.
 		add_action( 'wp_ajax_eem_order_cancel_single', array( $this->admin, 'handle_ajax_cancel_single' ) );
 		add_action( 'wp_ajax_eem_order_bulk_cancel_step', array( $this->admin, 'handle_ajax_bulk_cancel_step' ) );
+		// v1 #7 — bulk "Send Payment Link" step endpoint (sequential per-order).
+		add_action( 'wp_ajax_eem_order_bulk_send_link_step', array( $this->admin, 'handle_ajax_bulk_send_link_step' ) );
 
 		// C6.C — bulk-refund step endpoint. Called sequentially by the
 		// runBulkRefundQueue JS layer, once per selected order. Server

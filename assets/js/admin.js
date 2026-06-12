@@ -1870,6 +1870,87 @@
 		step();
 	}
 
+	/* v1 #7 — Orders-list bulk Send Payment Link. Sequential queue over the
+	   eem_order_bulk_send_link_step endpoint; mirrors the bulk-cancel queue.
+	   Paid / no-email orders come back as skips (success), not failures. */
+	var _bulkSendLinkKeys = [];
+
+	function bulkSendLinkNonce() {
+		return (window.eemOrderRowActions && window.eemOrderRowActions.nonces && window.eemOrderRowActions.nonces.eem_bulk_send_link) || '';
+	}
+
+	function openOrdersBulkSendLinkModal() {
+		var checked = document.querySelectorAll('input.eem-orders-row-cb:checked');
+		if (!checked.length) {
+			window.alert('Select at least one order before clicking Apply.');
+			return;
+		}
+		_bulkSendLinkKeys = Array.prototype.map.call(checked, function (cb) { return cb.value; });
+		var modal = document.getElementById('eem-orders-bulk-send-link-modal');
+		if (!modal) return;
+		var summary = modal.querySelector('[data-eem-bulk-send-link-summary]');
+		if (summary) summary.textContent = 'Email a payment link to ' + _bulkSendLinkKeys.length + ' selected order' + (_bulkSendLinkKeys.length === 1 ? '' : 's') + '?';
+		var progress = modal.querySelector('[data-eem-bulk-send-link-progress]');
+		if (progress) { progress.innerHTML = ''; progress.hidden = true; }
+		var errEl = modal.querySelector('[data-eem-bulk-send-link-error]');
+		if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
+		var confirmBtn = modal.querySelector('[data-eem-bulk-send-link-confirm]');
+		if (confirmBtn) confirmBtn.disabled = false;
+		modal.classList.add('open');
+		modal.setAttribute('aria-hidden', 'false');
+		closeAllDropdowns();
+	}
+
+	function closeOrdersBulkSendLinkModal() {
+		var modal = document.getElementById('eem-orders-bulk-send-link-modal');
+		if (!modal) return;
+		modal.classList.remove('open');
+		modal.setAttribute('aria-hidden', 'true');
+	}
+
+	function startBulkSendLinkQueue() {
+		var modal = document.getElementById('eem-orders-bulk-send-link-modal');
+		if (!modal || !_bulkSendLinkKeys.length) return;
+		var nonce = bulkSendLinkNonce();
+		var confirmBtn = modal.querySelector('[data-eem-bulk-send-link-confirm]');
+		if (confirmBtn) confirmBtn.disabled = true;
+		var progress = modal.querySelector('[data-eem-bulk-send-link-progress]');
+		if (progress) { progress.hidden = false; progress.innerHTML = ''; }
+
+		var queue = _bulkSendLinkKeys.slice();
+		var sent = 0, skipped = 0, failed = 0;
+
+		function step() {
+			if (!queue.length) {
+				if (window.EEM && typeof window.EEM.showSaveToast === 'function') {
+					window.EEM.showSaveToast(sent + ' payment link' + (sent === 1 ? '' : 's') + ' sent' + (skipped ? ' \u00b7 ' + skipped + ' skipped' : '') + (failed ? ' \u00b7 ' + failed + ' failed' : '') + '.');
+				}
+				setTimeout(function () { window.location.reload(); }, 900);
+				return;
+			}
+			var key = queue.shift();
+			var li = document.createElement('li');
+			li.className = 'eem-bulk-cancel-progress-item';
+			li.textContent = '\u23f3 ' + key.substring(0, 12) + '\u2026';
+			if (progress) progress.appendChild(li);
+
+			var body = new FormData();
+			body.append('action', 'eem_order_bulk_send_link_step');
+			body.append('_eem_bulk_send_link_nonce', nonce);
+			body.append('order_key', key);
+
+			fetch(window.ajaxurl || '/wp-admin/admin-ajax.php', { method: 'POST', credentials: 'same-origin', body: body })
+				.then(function (r) { return r.json().catch(function () { return { success: false }; }); })
+				.then(function (json) {
+					if (json && json.success && json.data && json.data.skipped) { skipped++; li.textContent = '\u2014 ' + key.substring(0, 12) + '\u2026 (skipped: ' + (json.data.reason || 'n/a') + ')'; }
+					else if (json && json.success) { sent++; li.textContent = '\u2713 ' + key.substring(0, 12) + '\u2026'; }
+					else { failed++; li.textContent = '\u2717 ' + key.substring(0, 12) + '\u2026 ' + ((json && json.data && json.data.message) || 'failed'); }
+					step();
+				}).catch(function () { failed++; li.textContent = '\u2717 ' + key.substring(0, 12) + '\u2026 network error'; step(); });
+		}
+		step();
+	}
+
 	/* C13.C.4b — Remove-discount modal (Order Detail Order Summary). Mirrors the
 	   refund modal pattern; reloads on success so the recomputed total renders. */
 	function openRemoveDiscountModal() {
@@ -2371,6 +2452,7 @@
 		'orders-bulk-apply': function () {
 			var sel = document.querySelector('[data-eem-orders-bulk-action]');
 			if (sel && sel.value === 'cancel') { openOrdersBulkCancelModal(); return; }
+			if (sel && sel.value === 'send_link') { openOrdersBulkSendLinkModal(); return; }
 			openOrdersBulkRefundModal();
 		},
 		'orders-bulk-cancel-close': function () {
@@ -2378,6 +2460,12 @@
 		},
 		'orders-bulk-cancel-confirm': function () {
 			startBulkCancelQueue();
+		},
+		'orders-bulk-send-link-close': function () {
+			closeOrdersBulkSendLinkModal();
+		},
+		'orders-bulk-send-link-confirm': function () {
+			startBulkSendLinkQueue();
 		},
 		'orders-bulk-refund-close': function () {
 			closeOrdersBulkRefundModal();

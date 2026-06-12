@@ -8531,6 +8531,72 @@ class EEM_Admin {
 	}
 
 	/**
+	 * AJAX endpoint: bulk "Send Payment Link" single step (v1 #7).
+	 *
+	 * Emails the hosted invoice payment link for ONE unpaid order from a bulk
+	 * batch. The JS queue (startBulkSendLinkQueue) calls this sequentially per
+	 * selected order; each call is independent so a per-order failure doesn't halt
+	 * the batch. Paid orders (or orders without a customer email) are SKIPPED — a
+	 * skip is a success with `skipped=true` + a reason, not a batch failure, so the
+	 * progress row shows "(skipped)" rather than "failed". Reuses the same
+	 * send_invoice_email_for_order() helper as the single-order "Email Payment
+	 * Link" row action.
+	 *
+	 * @return void
+	 */
+	public function handle_ajax_bulk_send_link_step() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'code' => 'capability', 'message' => __( 'You do not have permission to send payment links.', 'equine-event-manager' ) ), 403 );
+		}
+
+		$nonce = isset( $_POST['_eem_bulk_send_link_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['_eem_bulk_send_link_nonce'] ) ) : '';
+		if ( ! wp_verify_nonce( $nonce, 'eem_bulk_send_link' ) ) {
+			wp_send_json_error( array( 'code' => 'nonce', 'message' => __( 'Security check failed. Please reload and try again.', 'equine-event-manager' ) ), 400 );
+		}
+
+		$order_key = isset( $_POST['order_key'] ) ? sanitize_text_field( wp_unslash( $_POST['order_key'] ) ) : '';
+		$order     = '' !== $order_key ? $this->orders_repository->get_order( $order_key ) : null;
+
+		$gate = $this->classify_bulk_send_link_target( $order );
+		if ( 'not_found' === $gate['result'] ) {
+			wp_send_json_error( array( 'code' => 'not_found', 'order_key' => $order_key, 'message' => __( 'Order not found.', 'equine-event-manager' ) ), 404 );
+		}
+		if ( 'skip' === $gate['result'] ) {
+			wp_send_json_success( array( 'order_key' => $order_key, 'skipped' => true, 'reason' => $gate['reason'] ) );
+		}
+
+		$sent = $this->send_invoice_email_for_order( $order );
+		if ( is_wp_error( $sent ) ) {
+			wp_send_json_error( array( 'code' => 'send_failed', 'order_key' => $order_key, 'message' => $sent->get_error_message() ), 400 );
+		}
+
+		wp_send_json_success( array( 'order_key' => $order_key, 'skipped' => false ) );
+	}
+
+	/**
+	 * Decide whether a bulk "Send Payment Link" step should send, skip, or error
+	 * for an order. Split out of {@see self::handle_ajax_bulk_send_link_step} so the
+	 * gate is testable without wp_die(). Only unpaid / invoice-sent orders with a
+	 * customer email are sent; any other state is a benign skip.
+	 *
+	 * @param mixed $order The order array (or null when not found).
+	 * @return array{result:string,reason?:string} result = send | skip | not_found.
+	 */
+	public function classify_bulk_send_link_target( $order ): array {
+		if ( ! is_array( $order ) ) {
+			return array( 'result' => 'not_found' );
+		}
+		$status = isset( $order['status_slug'] ) ? (string) $order['status_slug'] : '';
+		if ( ! in_array( $status, array( 'unpaid', 'invoice-sent' ), true ) ) {
+			return array( 'result' => 'skip', 'reason' => __( 'already paid', 'equine-event-manager' ) );
+		}
+		if ( empty( $order['email'] ) ) {
+			return array( 'result' => 'skip', 'reason' => __( 'no email', 'equine-event-manager' ) );
+		}
+		return array( 'result' => 'send' );
+	}
+
+	/**
 	 * AJAX endpoint: bulk-refund single step (C6.C).
 	 *
 	 * Processes ONE order from a bulk-refund batch. The JS layer

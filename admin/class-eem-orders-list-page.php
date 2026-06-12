@@ -140,6 +140,7 @@ class EEM_Orders_List_Page {
 		<?php $this->render_action_notice(); ?>
 		<?php $this->render_bulk_refund_modal(); ?>
 		<?php $this->render_bulk_cancel_modal(); ?>
+		<?php $this->render_bulk_send_link_modal(); ?>
 		<?php /* C5.F-toolbar: toolbar restructured to mirror the C4
 		         Reservations pattern — two stacked .eem-list-toolbar rows
 		         using shared C1.3 primitives. Row 1 = event filter + billing
@@ -273,6 +274,7 @@ class EEM_Orders_List_Page {
 						<option value=""><?php esc_html_e( 'Bulk actions', 'equine-event-manager' ); ?></option>
 						<option value="refund"><?php esc_html_e( 'Refund Selected', 'equine-event-manager' ); ?></option>
 						<option value="cancel"><?php esc_html_e( 'Cancel Selected', 'equine-event-manager' ); ?></option>
+						<option value="send_link"><?php esc_html_e( 'Send Payment Link', 'equine-event-manager' ); ?></option>
 					</select>
 					<button type="button" class="eem-toolbar-btn" data-eem-action="orders-bulk-apply"><?php esc_html_e( 'Apply', 'equine-event-manager' ); ?></button>
 				</form>
@@ -905,6 +907,7 @@ class EEM_Orders_List_Page {
 				'eem_order_trash'               => wp_create_nonce( 'eem_order_trash' ),
 				'eem_order_print_receipt'       => wp_create_nonce( 'eem_order_print_receipt' ),
 				'eem_bulk_cancel'               => wp_create_nonce( 'eem_bulk_cancel' ),
+				'eem_bulk_send_link'            => wp_create_nonce( 'eem_bulk_send_link' ),
 			),
 		) );
 	}
@@ -960,6 +963,41 @@ class EEM_Orders_List_Page {
 				<footer class="eem-modal-foot eem-modal-foot--split">
 					<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="orders-bulk-cancel-close"><?php esc_html_e( 'Keep orders', 'equine-event-manager' ); ?></button>
 					<button type="button" class="eem-btn eem-btn-delete" data-eem-action="orders-bulk-cancel-confirm" data-eem-bulk-cancel-confirm><?php esc_html_e( 'Cancel orders', 'equine-event-manager' ); ?></button>
+				</footer>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Bulk "Send Payment Link" modal (v1 #7). Lean single-state modal that mirrors
+	 * the bulk-cancel pattern: a confirm prompt + per-order progress list. The JS
+	 * (startBulkSendLinkQueue) POSTs each selected order_key to the
+	 * eem_order_bulk_send_link_step endpoint sequentially. Each step emails the
+	 * hosted invoice payment link for an unpaid order; paid orders are skipped with
+	 * a per-row note rather than failing the batch.
+	 *
+	 * @return void
+	 */
+	private function render_bulk_send_link_modal(): void {
+		?>
+		<div class="eem-modal eem-bulk-send-link-modal" id="eem-orders-bulk-send-link-modal" role="dialog" aria-modal="true" aria-labelledby="eem-orders-bulk-send-link-title" aria-hidden="true" data-eem-bulk-send-link-modal>
+			<div class="eem-modal-card">
+				<header class="eem-modal-head">
+					<h2 class="eem-modal-title" id="eem-orders-bulk-send-link-title"><?php esc_html_e( 'Send Payment Link', 'equine-event-manager' ); ?></h2>
+					<button type="button" class="eem-modal-close" data-eem-action="orders-bulk-send-link-close" aria-label="<?php esc_attr_e( 'Close', 'equine-event-manager' ); ?>">&times;</button>
+				</header>
+				<div class="eem-modal-body">
+					<?php wp_nonce_field( 'eem_bulk_send_link', '_eem_bulk_send_link_nonce' ); ?>
+					<p class="eem-order-refund-summary" data-eem-bulk-send-link-summary><?php esc_html_e( 'Email a payment link to the selected orders?', 'equine-event-manager' ); ?></p>
+					<p class="eem-field-hint"><?php esc_html_e( 'Each unpaid order with a customer email is sent the hosted invoice payment link. Paid orders and orders without an email address are skipped.', 'equine-event-manager' ); ?></p>
+
+					<ul class="eem-bulk-cancel-progress" data-eem-bulk-send-link-progress hidden></ul>
+					<div class="eem-order-refund-error" data-eem-bulk-send-link-error hidden></div>
+				</div>
+				<footer class="eem-modal-foot eem-modal-foot--split">
+					<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="orders-bulk-send-link-close"><?php esc_html_e( 'Close', 'equine-event-manager' ); ?></button>
+					<button type="button" class="eem-btn eem-btn-electric" data-eem-action="orders-bulk-send-link-confirm" data-eem-bulk-send-link-confirm><?php esc_html_e( 'Send payment links', 'equine-event-manager' ); ?></button>
 				</footer>
 			</div>
 		</div>
