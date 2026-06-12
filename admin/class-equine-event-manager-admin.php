@@ -440,6 +440,8 @@ class EEM_Admin {
 		$preferred_order = array(
 			'equine-event-manager-dashboard',
 			self::MENU_SLUG,
+			// Entries sits directly below Orders (it's an Orders-adjacent CPT).
+			'edit.php?post_type=en_entry',
 			'equine-event-manager-reservations',
 			'equine-event-manager-stall-charts',
 			'equine-event-manager-customers',
