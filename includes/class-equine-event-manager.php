@@ -335,6 +335,9 @@ class EEM_Plugin {
 		// C6.D — activity-log auto-fire telemetry listeners (order.create,
 		// order.payment_received / order.status_change funnel, order.email_sent).
 		EEM_Order_Telemetry::register();
+		// v1 #8 — "Payment Received" customer email on outstanding → paid (priority
+		// 20, after the telemetry funnel writes its activity-log entry at 10).
+		add_action( 'eem_order_payment_status_changed', array( $this->admin, 'on_payment_received_send_email' ), 20, 1 );
 		add_action( 'admin_post_equine_event_manager_send_invoice_email', array( $this->admin, 'handle_send_invoice_email' ) );
 		add_action( 'admin_post_equine_event_manager_resend_customer_notification', array( $this->admin, 'handle_resend_customer_notification' ) );
 		add_action( 'admin_post_equine_event_manager_mark_order_paid', array( $this->admin, 'handle_mark_order_paid' ) );

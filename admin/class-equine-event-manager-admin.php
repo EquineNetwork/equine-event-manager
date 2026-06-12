@@ -12593,4 +12593,126 @@ class EEM_Admin {
 			)
 		);
 	}
+
+	/**
+	 * Listener for `eem_order_payment_status_changed`: when an outstanding order
+	 * transitions to PAID (invoice link paid, Mark Cash/Check, Collect Payment
+	 * charge), email the customer a "Payment Received" confirmation (v1 #8).
+	 *
+	 * Mirrors the telemetry funnel's payment-received detection so the two stay in
+	 * sync. Orders created already-paid at checkout do NOT transition, so this
+	 * never double-sends with the checkout confirmation/receipt email.
+	 *
+	 * @param array<string,mixed> $payload Hook payload (order_key, old/new status, …).
+	 * @return void
+	 */
+	public function on_payment_received_send_email( $payload ) {
+		if ( ! is_array( $payload ) || empty( $payload['order_key'] ) ) {
+			return;
+		}
+		$old = isset( $payload['old_status'] ) ? (string) $payload['old_status'] : '';
+		$new = isset( $payload['new_status'] ) ? (string) $payload['new_status'] : '';
+		$outstanding = class_exists( 'EEM_Order_Telemetry' ) ? EEM_Order_Telemetry::OUTSTANDING_STATUSES : array( 'unpaid', 'invoice-sent' );
+		if ( 'paid' !== $new || ! in_array( $old, (array) $outstanding, true ) ) {
+			return;
+		}
+		$order = $this->orders_repository->get_order( (string) $payload['order_key'] );
+		if ( ! is_array( $order ) || empty( $order['email'] ) ) {
+			return;
+		}
+		$this->send_payment_received_email_for_order( $order );
+	}
+
+	/**
+	 * Send the customer-facing "Payment Received" email for a now-paid order.
+	 *
+	 * @param array<string,mixed> $order Grouped order payload.
+	 * @return bool|WP_Error True on send, WP_Error on missing email / failure.
+	 */
+	public function send_payment_received_email_for_order( $order ) {
+		if ( empty( $order ) || empty( $order['email'] ) ) {
+			return new WP_Error( 'payment_received_email_missing_email', __( 'No customer email on file for this order.', 'equine-event-manager' ) );
+		}
+
+		$receipt_settings  = $this->get_receipt_settings();
+		$reservation_label = ! empty( $order['reservation_title'] ) ? $order['reservation_title'] : $order['event_name'];
+		$headers           = array( 'Content-Type: text/html; charset=UTF-8' );
+		if ( ! empty( $receipt_settings['from_name'] ) && is_email( $receipt_settings['from_email'] ) ) {
+			$headers[] = 'From: ' . wp_specialchars_decode( $receipt_settings['from_name'], ENT_QUOTES ) . ' <' . $receipt_settings['from_email'] . '>';
+		}
+		if ( is_email( $receipt_settings['reply_to_email'] ) ) {
+			$headers[] = 'Reply-To: ' . $receipt_settings['reply_to_email'];
+		}
+
+		return EEM_Mailer::send_html_email(
+			sanitize_email( $order['email'] ),
+			sprintf( /* translators: %s: event or reservation title. */ __( 'Payment received — %s', 'equine-event-manager' ), $reservation_label ),
+			$this->build_payment_received_email_html( $order ),
+			$headers,
+			array(
+				'type'        => 'payment_received_notification',
+				'order_key'   => isset( $order['order_key'] ) ? (string) $order['order_key'] : '',
+				'event_label' => isset( $order['event_label'] ) ? (string) $order['event_label'] : '',
+			)
+		);
+	}
+
+	/**
+	 * Build the customer-facing "Payment Received" email HTML. Branded + inline-
+	 * styled for email-client safety, mirroring the refund / cancellation layout.
+	 *
+	 * @param array<string,mixed> $order Grouped order payload.
+	 * @return string
+	 */
+	private function build_payment_received_email_html( $order ) {
+		$company_settings = $this->get_company_settings();
+		$company_logo_url = $this->get_company_logo_url( 'medium' );
+		$event_label      = ! empty( $order['reservation_title'] ) ? $order['reservation_title'] : $order['event_name'];
+		$amount_paid      = '$' . number_format_i18n( (float) ( isset( $order['total'] ) ? $order['total'] : 0 ), 2 );
+		$support_chunks   = array_filter(
+			array(
+				! empty( $company_settings['support_phone'] ) ? $this->format_phone_label( $company_settings['support_phone'] ) : '',
+				! empty( $company_settings['support_email'] ) ? $company_settings['support_email'] : '',
+			)
+		);
+		$rows = array(
+			__( 'Order Number', 'equine-event-manager' ) => $this->format_order_number_display( (string) $order['order_number'] ),
+			__( 'Event', 'equine-event-manager' )         => $event_label,
+			__( 'Amount Paid', 'equine-event-manager' )   => $amount_paid,
+		);
+
+		ob_start();
+		?>
+		<div style="margin:0;padding:28px;background:#f5f7fb;font-family:Arial,sans-serif;color:#111827;">
+			<div style="max-width:680px;margin:0 auto;">
+				<div style="margin:0 0 18px;padding:28px 30px;background:#eef2f6;border:1px solid #d9e1ea;border-radius:24px;color:#111827;">
+					<?php if ( $company_logo_url ) : ?>
+						<p style="margin:0 0 20px;"><img src="<?php echo esc_url( $company_logo_url ); ?>" alt="<?php esc_attr_e( 'Company logo', 'equine-event-manager' ); ?>" style="max-width:180px;max-height:54px;display:block;object-fit:contain;" /></p>
+					<?php endif; ?>
+					<div style="font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#15803d;"><?php esc_html_e( 'Payment Received', 'equine-event-manager' ); ?></div>
+					<h1 style="margin:10px 0 12px;font-size:30px;line-height:1.1;color:#111827;"><?php echo esc_html( $event_label ); ?></h1>
+					<p style="margin:0;font-size:16px;line-height:1.7;color:#111827;"><?php echo esc_html( sprintf( /* translators: %s: order number. */ __( 'Thank you — we\'ve received your payment for order #%s.', 'equine-event-manager' ), $order['order_number'] ) ); ?></p>
+				</div>
+
+				<div style="margin:0 0 18px;padding:26px 28px;background:#eef2f6;border:1px solid #d9e1ea;border-radius:24px;color:#111827;">
+					<p style="margin:0 0 16px;font-size:16px;line-height:1.7;color:#111827;"><?php echo esc_html( sprintf( /* translators: %s: customer name. */ __( 'Hi %s, your payment is confirmed. Here are the details for your records.', 'equine-event-manager' ), $order['customer_name'] ) ); ?></p>
+					<div style="display:grid;gap:12px;">
+						<?php foreach ( $rows as $label => $value ) : ?>
+							<div style="display:flex;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid #d9e1ea;">
+								<span style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5b6472;"><?php echo esc_html( $label ); ?></span>
+								<strong style="font-size:15px;color:#111827;text-align:right;"><?php echo esc_html( $value ); ?></strong>
+							</div>
+						<?php endforeach; ?>
+					</div>
+				</div>
+
+				<?php if ( ! empty( $support_chunks ) ) : ?>
+					<p style="margin:0;padding:0 10px;text-align:center;color:#4b5563;font-size:13px;line-height:1.7;"><?php echo esc_html__( 'Questions? Contact us:', 'equine-event-manager' ) . ' ' . esc_html( implode( ' | ', $support_chunks ) ); ?></p>
+				<?php endif; ?>
+			</div>
+		</div>
+		<?php
+
+		return (string) ob_get_clean();
+	}
 }
