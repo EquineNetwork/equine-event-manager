@@ -100,6 +100,90 @@ class EEM_Events {
 	}
 
 	/**
+	 * Assemble a venue's single-line address from its component meta (for
+	 * geocoding + map queries). Empty parts are skipped.
+	 *
+	 * @param int $venue_id Venue post id.
+	 * @return string
+	 */
+	public static function get_venue_address_string( $venue_id ) {
+		$venue_id = absint( $venue_id );
+		if ( ! $venue_id ) {
+			return '';
+		}
+		$parts = array();
+		foreach ( array( 'address_1', 'address_2', 'city', 'state', 'postal_code' ) as $field ) {
+			$val = trim( (string) get_post_meta( $venue_id, '_equine_event_manager_venue_' . $field, true ) );
+			if ( '' !== $val ) {
+				$parts[] = $val;
+			}
+		}
+		return implode( ', ', $parts );
+	}
+
+	/**
+	 * Geocode an address string to lat/lng via the Google Geocoding API.
+	 *
+	 * @param string $address Single-line address.
+	 * @param string $api_key Google Maps API key (Geocoding API enabled).
+	 * @return array{lat:float,lng:float}|null  Null on empty input, no key, transport error, or zero results.
+	 */
+	public static function geocode_address( $address, $api_key ) {
+		$address = trim( (string) $address );
+		$api_key = trim( (string) $api_key );
+		if ( '' === $address || '' === $api_key ) {
+			return null;
+		}
+		$url  = 'https://maps.googleapis.com/maps/api/geocode/json?address=' . rawurlencode( $address ) . '&key=' . rawurlencode( $api_key );
+		$resp = wp_remote_get( $url, array( 'timeout' => 8 ) );
+		if ( is_wp_error( $resp ) ) {
+			return null;
+		}
+		$body = json_decode( (string) wp_remote_retrieve_body( $resp ), true );
+		if ( ! is_array( $body ) || empty( $body['results'][0]['geometry']['location'] ) ) {
+			return null;
+		}
+		$loc = $body['results'][0]['geometry']['location'];
+		if ( ! isset( $loc['lat'], $loc['lng'] ) ) {
+			return null;
+		}
+		return array( 'lat' => (float) $loc['lat'], 'lng' => (float) $loc['lng'] );
+	}
+
+	/**
+	 * Geocode a venue's address into _en_venue_lat / _en_venue_lng when a Maps
+	 * key is configured and the address has changed (or coords are missing).
+	 * No-ops gracefully without a key, address, or on geocode failure. Skipped
+	 * when the admin has entered manual coordinates (caller's responsibility).
+	 *
+	 * @param int $venue_id Venue post id.
+	 * @return void
+	 */
+	public static function maybe_geocode_venue( $venue_id ) {
+		$venue_id = absint( $venue_id );
+		$key      = self::get_google_maps_api_key();
+		if ( ! $venue_id || '' === $key ) {
+			return;
+		}
+		$address = self::get_venue_address_string( $venue_id );
+		if ( '' === $address ) {
+			return;
+		}
+		$last_geocoded = (string) get_post_meta( $venue_id, '_en_venue_geocoded_address', true );
+		$has_coords    = '' !== (string) get_post_meta( $venue_id, '_en_venue_lat', true );
+		if ( $has_coords && $last_geocoded === $address ) {
+			return; // address unchanged since last successful geocode.
+		}
+		$coords = self::geocode_address( $address, $key );
+		if ( null === $coords ) {
+			return;
+		}
+		update_post_meta( $venue_id, '_en_venue_lat', $coords['lat'] );
+		update_post_meta( $venue_id, '_en_venue_lng', $coords['lng'] );
+		update_post_meta( $venue_id, '_en_venue_geocoded_address', $address );
+	}
+
+	/**
 	 * Get the default external feed URL configured in settings.
 	 *
 	 * @return string
@@ -1494,6 +1578,20 @@ class EEM_Events {
 			}
 			update_post_meta( $post_id, '_equine_event_manager_venue_' . $field, $value );
 		}
+
+		// Coordinates (Slice 3). A valid manual lat/lng pair always wins; clearing
+		// it falls back to auto-geocoding the address via Google (when a Maps key
+		// is configured). The geocoded-address cache marker is reset on manual
+		// entry so a later blank re-triggers geocoding.
+		$manual_lat = isset( $_POST['en_venue_lat'] ) ? trim( (string) wp_unslash( $_POST['en_venue_lat'] ) ) : '';
+		$manual_lng = isset( $_POST['en_venue_lng'] ) ? trim( (string) wp_unslash( $_POST['en_venue_lng'] ) ) : '';
+		if ( '' !== $manual_lat && '' !== $manual_lng && is_numeric( $manual_lat ) && is_numeric( $manual_lng ) ) {
+			update_post_meta( $post_id, '_en_venue_lat', (float) $manual_lat );
+			update_post_meta( $post_id, '_en_venue_lng', (float) $manual_lng );
+			update_post_meta( $post_id, '_en_venue_geocoded_address', '' );
+		} else {
+			self::maybe_geocode_venue( $post_id );
+		}
 	}
 
 	/**
@@ -1806,6 +1904,9 @@ class EEM_Events {
 		$postal_code        = (string) get_post_meta( $post->ID, '_equine_event_manager_venue_postal_code', true );
 		$phone              = (string) get_post_meta( $post->ID, '_equine_event_manager_venue_phone', true );
 		$website            = (string) get_post_meta( $post->ID, '_equine_event_manager_venue_website', true );
+		$venue_lat          = (string) get_post_meta( $post->ID, '_en_venue_lat', true );
+		$venue_lng          = (string) get_post_meta( $post->ID, '_en_venue_lng', true );
+		$maps_key_set       = '' !== self::get_google_maps_api_key();
 		$linked_event_count = $this->count_linked_native_events( '_equine_event_manager_event_venue_id', $post->ID );
 		$location_label     = trim( implode( ', ', array_filter( array( $city, $state ) ) ) );
 		$has_address        = '' !== $address_1 || '' !== $address_2;
@@ -1905,6 +2006,26 @@ class EEM_Events {
 					<input type="text" class="regular-text" id="equine_event_manager_venue_website" name="equine_event_manager_venue_website" value="<?php echo esc_attr( $website ); ?>" />
 					<span class="eem-event-editor-field__description"><?php esc_html_e( 'Use the full URL if linked events should send visitors to the venue website.', 'equine-event-manager' ); ?></span>
 				</label>
+
+				<label class="eem-event-editor-field">
+					<span class="eem-event-editor-field__label"><?php esc_html_e( 'Latitude', 'equine-event-manager' ); ?></span>
+					<input type="text" class="regular-text" id="en_venue_lat" name="en_venue_lat" value="<?php echo esc_attr( $venue_lat ); ?>" placeholder="<?php esc_attr_e( 'Auto-filled from address', 'equine-event-manager' ); ?>" />
+				</label>
+
+				<label class="eem-event-editor-field">
+					<span class="eem-event-editor-field__label"><?php esc_html_e( 'Longitude', 'equine-event-manager' ); ?></span>
+					<input type="text" class="regular-text" id="en_venue_lng" name="en_venue_lng" value="<?php echo esc_attr( $venue_lng ); ?>" placeholder="<?php esc_attr_e( 'Auto-filled from address', 'equine-event-manager' ); ?>" />
+				</label>
+
+				<p class="eem-event-editor-field eem-event-editor-field--full eem-event-editor-field__description" style="margin:0;">
+					<?php
+					if ( $maps_key_set ) {
+						esc_html_e( 'Coordinates power the events map view. Leave Latitude/Longitude blank to auto-fill them from the address above when you save (via Google). Enter values manually to override.', 'equine-event-manager' );
+					} else {
+						esc_html_e( 'Add a Google Maps API key under Settings → Integrations to auto-fill coordinates from the address, or enter Latitude/Longitude manually to place this venue on the events map.', 'equine-event-manager' );
+					}
+					?>
+				</p>
 			</div>
 		</div>
 		<?php
