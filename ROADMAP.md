@@ -51,13 +51,20 @@ Full source notes for each live in `CLAUDE.md` → "v2 deferred features".
    for an event** (schedule changes, weather, gate times). Builds on the existing Email
    Customers modal; add compose UI, audience filters, send log, Emogrifier send path.
    *(Build first — fast, self-contained.)*
-2. **Facility Layout Templates** — save a venue's stall/RV grid as a reusable per-venue
-   template; clone into next year's reservation with **copy-on-use** (edits never touch the
-   original). **Template captures the FULL structural layout** (stall grid + RV lots/zones +
-   blocked stalls/lots + map geometry; excludes pricing/dates). Requires persisting normalized
-   venue names from GEMS/TEC/Native.
-3. **Event Entries** — competition-management entries. **Scope being defined** (relationship to
-   the shipped Divisions feature is the open question — see CLAUDE.md). Build last in v2.
+2. **Venues + Facility Layout Templates** — **two layers** (design locked: `docs/ARCHITECTURE-VENUES.md`):
+   - **Venues** — a single **source-agnostic Venue entity** (relational tables, not postmeta)
+     that owns saved layouts; TEC/GEMS venues resolve into it via `EEM_Venue_Resolver`; Native
+     Events (v3) plugs in later with **no new nav**. Lives **under Stall & RV Charts**. Producers
+     stay a Native-Events-only concept (separate from Venues).
+   - **Templates** — "Save as layout for {Venue}" on the grid builder; "Start from a saved
+     layout" on new reservations via **copy-on-use** (deep-clone, lineage tracked, original never
+     mutated). Captures the **FULL structural layout** (stall grid + RV lots/zones + blocked
+     stalls/lots + map geometry; excludes pricing/dates).
+**Event Entries — RESOLVED (2026-06-12): already delivered by Divisions.** Whitney confirmed the
+need is "selling entry spots + tracking who's entered," which the shipped Divisions feature does.
+No additional v2 work. The richer *competition-management* version (horse/rider details, results/
+placings/times, payouts/added money/jackpot, go-rounds/draw order) is a genuine **future feature**
+— not currently requested — parked in v3 deferred features below.
 
 ---
 
@@ -84,6 +91,10 @@ Full source notes for each live in `CLAUDE.md` → "v2 deferred features".
 4. **PDF Venue Map → overlay / conversion** *(exploratory)* — upload a PDF venue map; MVP =
    render to image + drop/snap stall hotspots onto it. Needs a server PDF-render dependency.
    Pairs with Facility Layout Templates.
+5. **Event Entries — competition management** *(future, not yet requested)* — the richer layer
+   beyond selling entry spots (which Divisions already does): horse/rider details per entry,
+   results/placings/times, payouts/added money/jackpot, multiple go-rounds + draw order. Build
+   as an extension of the Divisions entrants ledger if/when wanted.
 
 **Suggested v3 sequencing:** architecture #1 (de-coupling funnel) → #2 (GH API); deferred
 features as priorities dictate. The de-coupling makes the GH integration clean (sync layer
@@ -99,6 +110,8 @@ reads the repository, not postmeta).
 
 ## 📚 Reference documents
 - `CLAUDE.md` — authoritative decisions, conventions, v1/v2 source notes, chunk history.
+- `docs/ARCHITECTURE-VENUES.md` — source-agnostic Venue model + resolver + Facility Layout
+  Templates design (spans v2 + v3 Native Events).
 - `docs/ARCHITECTURE-DATA-OWNERSHIP.md` — data storage, GH integration models, payload
   contract, WordPress-replaceable principle.
 - `docs/WORKPLAN-postmeta-decouple.md` — the postmeta→relational migration plan + estimate.
