@@ -116,6 +116,11 @@ $fold_row = $wpdb->get_row( $wpdb->prepare( "SELECT division_id, qty, status, cu
 $check( 'fold wrote a ledger row for the division', is_array( $fold_row ) && (int) $fold_row['division_id'] === (int) $did );
 $check( 'fold row carries qty + paid status + name', is_array( $fold_row ) && 1 === (int) $fold_row['qty'] && 'paid' === $fold_row['status'] && 'Fold, Tester' === $fold_row['customer_name'] );
 
+// --- order_has_entries (Orders list "Entry" type badge) --------------------
+$check( 'order_has_entries true for a seeded order_key', EEM_Division_Entries::order_has_entries( 'ORDER-HOLD' ) );
+$check( 'order_has_entries false for an unknown order_key', ! EEM_Division_Entries::order_has_entries( 'NO-SUCH-ORDER' ) );
+$check( 'order_has_entries false for empty key', ! EEM_Division_Entries::order_has_entries( '' ) );
+
 // --- Slice 3: detail page + list column ------------------------------------
 $check( 'detail_url carries the division_id param', false !== strpos( EEM_Entries::detail_url( $did ), 'division_id=' . $did ) );
 

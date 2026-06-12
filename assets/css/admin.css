@@ -1392,6 +1392,9 @@ input.eem-price-input:focus {
 .eem-type-rv     { background: var(--eem-type-rv-bg);     color: var(--eem-type-rv-text);     border: 1px solid var(--eem-type-rv-border); }
 .eem-type-addon  { background: var(--eem-type-addon-bg);  color: var(--eem-type-addon-text);  border: 1px solid var(--eem-type-addon-border); }
 .eem-type-group  { background: var(--eem-type-group-bg);  color: var(--eem-type-group-text);  border: 1px solid var(--eem-type-group-border); }
+/* Division entry badge (Entries → Divisions rework) — violet, distinct from
+   the stall/rv/addon/group palette. */
+.eem-type-entry  { background: #F5F3FF; color: #6d28d9; border: 1px solid #ddd6fe; }
 
 /* ─────────────────────────────────────────────────────────────
    Component responsive — stack labels above controls on mobile
@@ -9243,29 +9246,21 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 .eem-mb-preview-foot { padding: 14px 20px; border-top: 1px solid var(--eem-border, #D9E2F2); font-weight: 700; color: var(--eem-navy, #031B4E); flex: none; }
 /* ── Division detail stats (Entries → Divisions rework, Slice 3) ──
    Reuses the dashboard KPI card vocabulary (colored top border, navy value)
-   in a full-width 3-up grid that spans the content area like the Dashboard
-   KPI row. */
+   in a full-width 3-up grid. Renders into .eem-page-body (padding:0), so the
+   grid carries its own gutter to align with the table cell padding below. */
 .eem-division-stat-grid {
 	grid-template-columns: repeat(3, minmax(0, 1fr));
-	margin-top: 4px;
-	margin-bottom: 22px;
+	padding: 16px 14px 0;
+	margin: 0 0 4px;
 }
 @media (max-width: 782px) {
 	.eem-division-stat-grid { grid-template-columns: 1fr; }
 }
 
-/* ── Entries (Divisions) list toolbar + sortable columns ── */
-.eem-entries-toolbar {
-	display: flex;
-	align-items: center;
-	gap: 16px;
-	flex-wrap: wrap;
-	margin-bottom: 14px;
-}
-.eem-entries-toolbar__filter { display: inline-flex; align-items: center; gap: 8px; }
-.eem-entries-toolbar__label { font-size: 12.5px; font-weight: 600; color: #50575e; }
-.eem-entries-toolbar__filter select { min-width: 240px; }
-.eem-entries-toolbar__count { margin-left: auto; font-size: 12.5px; color: var(--eem-muted, #64748b); font-weight: 600; }
+/* ── Entries (Divisions) list — sortable columns ──
+   The toolbar reuses the canonical .eem-list-toolbar chrome (padded, #fafafa)
+   shared with the Orders + Reservations lists, so only the sort affordance is
+   net-new here. */
 .eem-entries-table th.eem-sortable { cursor: pointer; user-select: none; white-space: nowrap; }
 .eem-entries-table th.eem-sortable:hover { color: var(--eem-electric, #1668F2); }
 .eem-sort-ind { display: inline-block; width: 0; height: 0; margin-left: 6px; vertical-align: middle; opacity: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; }

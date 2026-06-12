@@ -416,23 +416,24 @@ class EEM_Entries {
 
 		if ( ! empty( $rows ) ) :
 			?>
-			<div class="eem-entries-toolbar">
-				<label class="eem-entries-toolbar__filter">
-					<span class="eem-entries-toolbar__label"><?php esc_html_e( 'Event', 'equine-event-manager' ); ?></span>
-					<select class="eem-field-select eem-list-select" data-eem-input-action="entries-filter-event">
+			<div class="eem-list-toolbar">
+				<div class="eem-list-toolbar-left">
+					<select class="eem-toolbar-select" data-eem-input-action="entries-filter-event" data-eem-choices data-eem-choices-search="<?php esc_attr_e( 'Search events…', 'equine-event-manager' ); ?>">
 						<option value=""><?php esc_html_e( 'All events', 'equine-event-manager' ); ?></option>
 						<?php foreach ( $events as $eid => $etitle ) : ?>
 							<option value="<?php echo esc_attr( (string) $eid ); ?>"><?php echo esc_html( $etitle ); ?></option>
 						<?php endforeach; ?>
 					</select>
-				</label>
-				<div class="eem-entries-toolbar__count" data-eem-entries-count><?php
-					echo esc_html( sprintf(
-						/* translators: %d: division count. */
-						_n( '%d division', '%d divisions', count( $rows ), 'equine-event-manager' ),
-						count( $rows )
-					) );
-				?></div>
+				</div>
+				<div class="eem-list-toolbar-right">
+					<span class="eem-item-count" data-eem-entries-count><?php
+						echo esc_html( sprintf(
+							/* translators: %d: division count. */
+							_n( '%d division', '%d divisions', count( $rows ), 'equine-event-manager' ),
+							count( $rows )
+						) );
+					?></span>
+				</div>
 			</div>
 			<?php
 		endif;

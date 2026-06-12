@@ -181,6 +181,25 @@ class EEM_Division_Entries {
 	}
 
 	/**
+	 * Whether an order has at least one division entry (any status). Used by
+	 * the Orders list to show the "Entry" type badge.
+	 *
+	 * @param string $order_key Owning order key.
+	 * @return bool
+	 */
+	public static function order_has_entries( string $order_key ): bool {
+		global $wpdb;
+		if ( '' === $order_key ) {
+			return false;
+		}
+		$count = $wpdb->get_var( $wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			'SELECT COUNT(*) FROM ' . self::table_name() . ' WHERE order_key = %s',
+			$order_key
+		) );
+		return (int) $count > 0;
+	}
+
+	/**
 	 * Sync every ledger row for an order to a new status (refund/cancel free the
 	 * spot; a later payment promotes unpaid → paid). Terminal statuses
 	 * (refunded/cancelled) are not overwritten by a subsequent paid event.

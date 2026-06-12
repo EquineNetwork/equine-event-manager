@@ -420,7 +420,13 @@ class EEM_Orders_List_Page {
 			'rv'    => __( 'RV',     'equine-event-manager' ),
 			'addon' => __( 'Add-On', 'equine-event-manager' ),
 			'group' => __( 'Group',  'equine-event-manager' ),
+			'entry' => __( 'Entry',  'equine-event-manager' ),
 		);
+		// Division entries don't fold into the legacy component `type` string,
+		// so source the "Entry" badge from the entrants ledger.
+		if ( class_exists( 'EEM_Division_Entries' ) && '' !== $order_key && EEM_Division_Entries::order_has_entries( $order_key ) ) {
+			$type_keys[] = 'entry';
+		}
 		$status_slug  = isset( $order['status_slug'] )  ? (string) $order['status_slug']  : '';
 		$status_label = isset( $order['status_label'] ) ? (string) $order['status_label'] : '';
 		$status_css   = self::status_slug_to_css_class( $status_slug );
@@ -584,6 +590,9 @@ class EEM_Orders_List_Page {
 		$customer     = EEM_Admin::format_customer_last_first( isset( $order['customer_name'] ) ? (string) $order['customer_name'] : '' );
 				$event_name   = $this->derive_event_name( $order );
 				$type_keys    = EEM_Orders_List_Repo::derive_type_keys( $order );
+				if ( class_exists( 'EEM_Division_Entries' ) && '' !== $order_key && EEM_Division_Entries::order_has_entries( $order_key ) ) {
+					$type_keys[] = 'entry';
+				}
 				$status_slug  = isset( $order['status_slug'] )  ? (string) $order['status_slug']  : '';
 				$status_label = isset( $order['status_label'] ) ? (string) $order['status_label'] : '';
 				$status_css   = self::status_slug_to_css_class( $status_slug );
@@ -594,6 +603,7 @@ class EEM_Orders_List_Page {
 					'rv'    => __( 'RV',     'equine-event-manager' ),
 					'addon' => __( 'Add-On', 'equine-event-manager' ),
 					'group' => __( 'Group',  'equine-event-manager' ),
+					'entry' => __( 'Entry',  'equine-event-manager' ),
 				);
 				?>
 				<div class="eem-mobile-card" data-order-key="<?php echo esc_attr( $order_key ); ?>">
