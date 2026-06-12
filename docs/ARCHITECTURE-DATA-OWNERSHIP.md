@@ -160,3 +160,103 @@ charged for a spot that couldn't be secured.
 4. Agree the **order/entry payload schema** (we can supply our current order + entrants shape
    as the starting contract).
 5. Sequence it as a **v2 integration**; v1 launches on the WordPress database unchanged.
+
+---
+
+## 8. Starter payload contract (order + entrants)
+
+This is the **shape the plugin can emit per order** (Model A push, or the body of a
+Model B write). It is derived from the plugin's current internal order model — treat it as
+a starting point for the contract, not a frozen spec. Money values are decimal strings;
+dates are ISO‑8601. `order_key` is the idempotency key (an order is one logical unit even
+though internally it is several component rows).
+
+```jsonc
+{
+  "order_key": "5001a1cf01aaa8a4f955aa61388c54a4",   // idempotency key (stable, unique)
+  "order_number": "00020",                            // human-facing, zero-padded #00020
+  "source": "equine-event-manager",
+  "created_at": "2026-06-12T14:33:00Z",
+  "status": "paid",                                   // paid | unpaid | invoice_sent | refunded | partially_refunded | cancelled
+
+  "event": {
+    "label": "2026 Southeast Region Super Sort",
+    "reservation_id": 5990,                           // our reservation/event instance id
+    "gems_event_id": "30597",                         // GH/GEMS id when the event came from GEMS (null otherwise)
+    "start_date": "2026-06-26",
+    "end_date": "2026-06-28"
+  },
+
+  "customer": {
+    "name": "Thompson, Emma",
+    "email": "emma@example.com",
+    "phone": "+1 5551234567",
+    "membership_id": null                             // GH membership id if/when resolved (Model A optional, Model B required)
+  },
+
+  "billing": {
+    "first_name": "Emma", "last_name": "Thompson",
+    "address_1": "", "address_2": "", "city": "", "state": "", "postal_code": "", "country": "US"
+  },
+
+  "line_items": [
+    { "type": "stall",     "label": "Stall #A-12",            "qty": 1, "unit_price": "45.00", "subtotal": "45.00", "stall_number": "A-12", "nights": 2 },
+    { "type": "rv",        "label": "RV Spot (Red Lot #14)",  "qty": 1, "unit_price": "10.00", "subtotal": "20.00", "lot": "Red Lot", "spot": "14", "nights": 2 },
+    { "type": "entry",     "label": "#9.5 Division",          "qty": 2, "unit_price": "45.00", "subtotal": "90.00", "division_id": 10491 },
+    { "type": "addon",     "label": "50-amp Hookup Upgrade",  "qty": 1, "unit_price": "20.00", "subtotal": "20.00" },
+    { "type": "custom",    "label": "Late fee",               "qty": 1, "unit_price": "15.00", "subtotal": "15.00" },
+    { "type": "fee",       "label": "Non-Refundable Convenience Fee", "qty": 1, "unit_price": "5.00", "subtotal": "5.00" }
+  ],
+
+  "discount": {                                        // null when none
+    "type": "percent",                                 // dollar | percent
+    "value": "10",
+    "reason": "Returning customer",
+    "amount": "9.00"                                   // resolved dollar amount applied to subtotal
+  },
+
+  "totals": {
+    "subtotal": "175.00",
+    "discount": "9.00",
+    "convenience_fee": "5.00",
+    "tax": "0.00",
+    "total": "171.00",
+    "amount_paid": "171.00",
+    "amount_refunded": "0.00"
+  },
+
+  "payment": {
+    "gateway": "authorize_net",                        // stripe | authorize_net
+    "transaction_id": "60012345678",
+    "card_brand": null,                                // captured at charge time when available
+    "card_last4": null
+  },
+
+  "entries": [                                          // entrants ledger rows (the authoritative entry records)
+    { "division_id": 10491, "division_name": "#9.5 Division", "qty": 2, "status": "paid",
+      "customer_name": "Thompson, Emma", "email": "emma@example.com", "created_at": "2026-06-12T14:33:00Z" }
+  ]
+}
+```
+
+**Event hooks the push would fire on (our side already emits these):**
+- `eem_order_created` — full order created (checkout or admin Create Order).
+- `eem_order_payment_status_changed` — paid / refunded / cancelled transitions (send a
+  status patch keyed by `order_key`).
+
+**For Model B only — the inbound call we would make to GH before charging:**
+```jsonc
+// POST /reservations/reserve   → atomic check-and-reserve, returns success/failure
+{
+  "event": { "reservation_id": 5990 },
+  "holds": [
+    { "type": "stall", "stall_number": "A-12", "nights": ["2026-06-26","2026-06-27"] },
+    { "type": "rv",    "lot": "Red Lot", "spot": "14", "nights": ["2026-06-26","2026-06-27"] },
+    { "type": "entry", "division_id": 10491, "qty": 2 }
+  ],
+  "customer": { "email": "emma@example.com", "membership_id": null }
+}
+// 200 { "reserved": true, "hold_id": "..." }  |  409 { "reserved": false, "conflicts": [ ... ] }
+```
+This `reserve` call is the §4 atomic guarantee — it is the one endpoint GH must implement
+correctly (concurrency-safe) for Model B to be viable.
