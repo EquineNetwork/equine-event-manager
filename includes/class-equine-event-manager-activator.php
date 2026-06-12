@@ -36,6 +36,9 @@ class EEM_Activator {
 		self::create_activity_log_table();
 		self::create_event_defaults_table();
 		self::create_order_adjustments_table();
+		if ( class_exists( 'EEM_Division_Entries' ) ) {
+			EEM_Division_Entries::create_table();
+		}
 		self::maybe_refresh_native_event_rewrite_rules();
 		self::run_one_time_migrations();
 		update_option( self::DB_VERSION_OPTION, EQUINE_EVENT_MANAGER_VERSION );

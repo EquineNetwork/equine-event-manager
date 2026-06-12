@@ -2723,6 +2723,32 @@ class EEM_Shortcodes {
 					$pre_entry['title']
 				);
 			}
+
+			// Divisions rework Slice 2 — hard spots cap. Division-backed options
+			// carry a division_id; the entrants ledger is the authoritative
+			// spots-left source. Recomputed live so the in-lock re-validation
+			// (handle_reservation_submission) catches concurrent sell-outs before
+			// any charge. Legacy data-array pre-entries (no division_id) are
+			// unaffected — they keep their display-only inventory behavior.
+			if ( ! empty( $pre_entry['division_id'] ) && class_exists( 'EEM_Division_Entries' ) ) {
+				$division_id = (int) $pre_entry['division_id'];
+				$spots       = (int) $pre_entry['inventory']; // 0 = unlimited.
+				$left        = EEM_Division_Entries::spots_left( $division_id, $spots > 0 ? $spots : null );
+				if ( null !== $left && $qty > $left ) {
+					$errors[] = 0 === $left
+						? sprintf(
+							/* translators: %s: division title. */
+							__( '%s is full.', 'equine-event-manager' ),
+							$pre_entry['title']
+						)
+						: sprintf(
+							/* translators: 1: remaining spots, 2: division title. */
+							_n( 'Only %1$d spot remains in %2$s.', 'Only %1$d spots remain in %2$s.', $left, 'equine-event-manager' ),
+							$left,
+							$pre_entry['title']
+						);
+				}
+			}
 		}
 
 		if ( $has_stall_selection && ! $status['stalls_open'] ) {
@@ -4081,6 +4107,21 @@ RV Lot: " . $rv_lot['name'] );
 			if ( $saved_order && ! empty( $saved_order['order_key'] ) ) {
 				$order_repository->auto_assign_units_for_order( $saved_order['order_key'] );
 
+				// Divisions rework Slice 2 — write the entrants ledger for any
+				// Division (en_entry) the customer entered. The ledger is the
+				// authoritative spots-left + roster source for both checkout
+				// entry points (customer form + admin Create Order both reach
+				// here via the shared shortcode submission path).
+				$this->record_division_entries(
+					(int) $reservation_id,
+					$data,
+					$submission,
+					(string) $saved_order['order_key'],
+					$customer_name,
+					(string) $submission['email'],
+					$payment_status
+				);
+
 				/**
 				 * Fires once per successful order creation (after the
 				 * duplicate-submission-token guard at the top of this
@@ -4128,6 +4169,45 @@ RV Lot: " . $rv_lot['name'] );
 			'duplicate'        => false,
 			'submission_token' => $submission_token,
 		);
+	}
+
+	/**
+	 * Write the division entrants ledger for a freshly created order. One row
+	 * per Division the customer entered (qty > 0). The ledger status is derived
+	 * from the order's payment status (paid → paid, else unpaid — both hold a
+	 * spot). Refund/cancel later frees the spot via the status-change listener.
+	 *
+	 * @param int    $reservation_id Reservation (event) id.
+	 * @param array  $data           Reservation config.
+	 * @param array  $submission     Sanitized submission (carries pre_entry qtys).
+	 * @param string $order_key      Owning order key.
+	 * @param string $customer_name  Customer display name.
+	 * @param string $email          Customer email.
+	 * @param string $payment_status Order payment status.
+	 * @return void
+	 */
+	private function record_division_entries( int $reservation_id, array $data, array $submission, string $order_key, string $customer_name, string $email, string $payment_status ): void {
+		if ( ! class_exists( 'EEM_Entries' ) || ! class_exists( 'EEM_Division_Entries' ) || $reservation_id <= 0 ) {
+			return;
+		}
+		$ledger_status = EEM_Division_Entries::ledger_status_for_order_status( $payment_status );
+		foreach ( EEM_Entries::get_for_reservation( $reservation_id ) as $key => $division ) {
+			if ( empty( $division['division_id'] ) ) {
+				continue;
+			}
+			$qty = isset( $submission[ 'pre_entry_' . $key . '_qty' ] ) ? absint( $submission[ 'pre_entry_' . $key . '_qty' ] ) : 0;
+			if ( $qty <= 0 ) {
+				continue;
+			}
+			EEM_Division_Entries::record_entry(
+				(int) $division['division_id'],
+				$order_key,
+				$customer_name,
+				$email,
+				$qty,
+				$ledger_status
+			);
+		}
 	}
 
 	/**

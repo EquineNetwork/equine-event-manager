@@ -20,6 +20,7 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-ma
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-pdf.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-reservations-cpt.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-entries.php';
+require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-division-entries.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-stall-map-importer.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-events.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-gems-client.php';
@@ -341,6 +342,9 @@ class EEM_Plugin {
 		// v1 #8 — "Payment Received" customer email on outstanding → paid (priority
 		// 20, after the telemetry funnel writes its activity-log entry at 10).
 		add_action( 'eem_order_payment_status_changed', array( $this->admin, 'on_payment_received_send_email' ), 20, 1 );
+		// Divisions rework Slice 2 — keep the entrants ledger in step with the
+		// order lifecycle (refund/cancel free the spot; payment promotes it).
+		add_action( 'eem_order_payment_status_changed', array( 'EEM_Division_Entries', 'on_order_payment_status_changed' ), 30, 1 );
 		add_action( 'admin_post_equine_event_manager_send_invoice_email', array( $this->admin, 'handle_send_invoice_email' ) );
 		add_action( 'admin_post_equine_event_manager_resend_customer_notification', array( $this->admin, 'handle_resend_customer_notification' ) );
 		add_action( 'admin_post_equine_event_manager_mark_order_paid', array( $this->admin, 'handle_mark_order_paid' ) );
