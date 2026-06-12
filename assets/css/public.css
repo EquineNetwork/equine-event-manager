@@ -4387,10 +4387,16 @@
 }
 
 /* 2.3.60 — Complete Reservation button → mockup .complete-btn: full-width
-   Electric Blue, 8px radius, larger padding (was dark slate, fit-content). */
+   Electric Blue, 8px radius, larger padding (was dark slate, fit-content).
+   border:0 here (not just on the base .eem-reservation-submit) because the
+   active theme's reset.css applies `border:1px solid #cc3366` to
+   `[type="submit"], button` — an attribute selector at (0,1,0) that TIES the
+   base class rule and wins on source order. This .eem-event-page-scoped rule is
+   (0,2,0) and beats the reset cleanly without !important. */
 .eem-event-page .eem-reservation-submit {
 	width: 100%;
 	padding: 15px;
+	border: 0;
 	border-radius: 8px;
 	background: #1668F2;
 	color: #fff;
