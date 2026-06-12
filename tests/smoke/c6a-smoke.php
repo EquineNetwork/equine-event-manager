@@ -142,7 +142,10 @@ foreach ( $rows as $r ) {
 		( new EEM_Order_Detail_Page() )->render();
 		$h_stall = ob_get_clean();
 		ok( 'stall card renders Assigned Stall Units label',            str_contains( $h_stall, 'Assigned Stall Units' ),    $pass, $fail, $log );
-		ok( 'stall card defers interactive editor to C8',               str_contains( $h_stall, 'Stall &amp; RV Charts (C8)' ), $pass, $fail, $log );
+		// 2.7.192 — the stale "(C8)" stub is replaced by a real deep-link to the
+		// (now shipped) Stall & RV Charts page for this reservation.
+		ok( 'stall card no longer shows the stale "(C8)" stub',         ! str_contains( $h_stall, '(C8)' ), $pass, $fail, $log );
+		ok( 'stall card links to the Stall & RV Charts page to assign', str_contains( $h_stall, 'page=equine-event-manager-stall-charts' ) && str_contains( $h_stall, 'reservation_id=' ), $pass, $fail, $log );
 		break;
 	}
 }

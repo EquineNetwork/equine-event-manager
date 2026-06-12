@@ -415,6 +415,16 @@ class EEM_Order_Detail_Page {
 		$assigned  = $this->extract_assigned_stalls( $order );
 		$subtotal  = isset( $order['stall_subtotal'] ) ? (float) $order['stall_subtotal'] : 0.0;
 
+		// Deep-link to this reservation's Stall & RV Charts page, where stalls are
+		// assigned / auto-assigned. (The page accepts ?reservation_id=N.)
+		$res_id     = isset( $order['reservation_id'] ) ? (int) $order['reservation_id'] : 0;
+		$charts_url = $res_id > 0
+			? add_query_arg(
+				array( 'page' => 'equine-event-manager-stall-charts', 'reservation_id' => $res_id ),
+				admin_url( 'admin.php' )
+			)
+			: '';
+
 		?>
 		<div class="eem-card eem-order-card">
 			<div class="eem-order-card__header">
@@ -457,7 +467,15 @@ class EEM_Order_Detail_Page {
 						<span class="eem-stall-assignment__none"><?php esc_html_e( '— not yet assigned —', 'equine-event-manager' ); ?></span>
 					<?php endif; ?>
 				</div>
-				<div class="eem-stall-assignment__note"><?php esc_html_e( 'Stall assignment editor will be available with Stall & RV Charts (C8).', 'equine-event-manager' ); ?></div>
+				<?php if ( '' !== $charts_url ) : ?>
+					<div class="eem-stall-assignment__note">
+						<a href="<?php echo esc_url( $charts_url ); ?>"><?php
+							echo '' !== $assigned
+								? esc_html__( 'Manage assignment on the Stall & RV Charts page', 'equine-event-manager' )
+								: esc_html__( 'Assign stalls on the Stall & RV Charts page', 'equine-event-manager' );
+						?></a>
+					</div>
+				<?php endif; ?>
 			</div>
 		</div>
 		<?php
