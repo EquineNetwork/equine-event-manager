@@ -43,31 +43,29 @@ architecture in `docs/ARCHITECTURE-DATA-OWNERSHIP.md` and `docs/WORKPLAN-postmet
 
 ---
 
-## 🔭 v2 — FEATURE BACKLOG (logged, not started)
+## 🔭 v2 — FEATURE BACKLOG (scoped 2026-06-12)
 
 Full source notes for each live in `CLAUDE.md` → "v2 deferred features".
 
-1. **Native Events source** — finish + un-gate the `en_event`/`en_venue`/`en_producer` CPTs
-   (currently "Coming Soon"). ~1,500 LOC partially built. (v1 sources are TEC + GEMS.)
-2. **Event Entries** — take contestant entries for events (disciplines, entry fees, entrant
-   roster). Competition-management; distinct from the customer-page Divisions/Pre-Entries.
-3. **Facility Layout Templates** — save a venue's stall/RV grid as a reusable per-venue
-   template; clone into next year's reservation with **copy-on-use** (edits never touch the
-   original). Requires persisting normalized venue names from GEMS/TEC/Native.
-4. **PDF Venue Map → overlay / conversion** *(exploratory)* — upload a PDF venue map; MVP =
-   render to image + drop/snap stall hotspots onto it (manual overlay) reusing the grid data
-   model. Pairs with Facility Layout Templates.
-5. **Notifications** — admin composes an email and **sends it to all customers with an order
+1. **Notifications** — admin composes an email and **sends it to all customers with an order
    for an event** (schedule changes, weather, gate times). Builds on the existing Email
    Customers modal; add compose UI, audience filters, send log, Emogrifier send path.
+   *(Build first — fast, self-contained.)*
+2. **Facility Layout Templates** — save a venue's stall/RV grid as a reusable per-venue
+   template; clone into next year's reservation with **copy-on-use** (edits never touch the
+   original). **Template captures the FULL structural layout** (stall grid + RV lots/zones +
+   blocked stalls/lots + map geometry; excludes pricing/dates). Requires persisting normalized
+   venue names from GEMS/TEC/Native.
+3. **Event Entries** — competition-management entries. **Scope being defined** (relationship to
+   the shipped Divisions feature is the open question — see CLAUDE.md). Build last in v2.
 
 ---
 
-## 🏗️ v3 — ARCHITECTURE TRACK (strategic; see dedicated docs)
+## 🏗️ v3 — ARCHITECTURE TRACK + DEFERRED FEATURES
 
-*Moved out of v2 (2026-06-12) — these are the platform/headless-foundation efforts, sequenced
-after the v2 feature work.*
+*Sequenced after the v2 feature work.*
 
+### Architecture (strategic; see dedicated docs)
 1. **Postmeta → relational de-coupling** *(binding direction: "not chained to WordPress
    forever")* — move reservation/division config out of `wp_postmeta` into relational tables
    behind an `EEM_Reservation_Config` repository, making WordPress a replaceable front-end.
@@ -79,10 +77,17 @@ after the v2 feature work.*
    spec + payload contract: `docs/ARCHITECTURE-DATA-OWNERSHIP.md`. Enables a future native
    mobile app via the same API contract.
 
-**Suggested v3 sequencing:** v3 #1 Phase 1 (de-coupling funnel) → v3 #2 GH API. The de-coupling
-makes the GH integration clean (sync layer reads the repository, not postmeta). Note v2 #3
-(Facility Layout Templates) benefits from v3 #1's config rows, so if Templates is prioritized
-early it may pull v3 #1 forward.
+### Deferred features (moved out of v2, 2026-06-12)
+3. **Native Events source** — finish + un-gate the `en_event`/`en_venue`/`en_producer` CPTs
+   (currently "Coming Soon"). ~1,500 LOC partially built. Low priority — TEC + GEMS already
+   cover event sourcing.
+4. **PDF Venue Map → overlay / conversion** *(exploratory)* — upload a PDF venue map; MVP =
+   render to image + drop/snap stall hotspots onto it. Needs a server PDF-render dependency.
+   Pairs with Facility Layout Templates.
+
+**Suggested v3 sequencing:** architecture #1 (de-coupling funnel) → #2 (GH API); deferred
+features as priorities dictate. The de-coupling makes the GH integration clean (sync layer
+reads the repository, not postmeta).
 
 ---
 
