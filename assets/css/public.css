@@ -3917,6 +3917,22 @@
 	text-decoration: none;
 	display: inline-block;
 }
+/* Event social links (Facebook / Instagram) under the hero CTAs. */
+.eem-event-page .hero-social {
+	display: flex;
+	gap: 16px;
+	margin-top: 14px;
+	flex-wrap: wrap;
+}
+.eem-event-page .hero-social-link {
+	color: #1668F2;
+	font-size: 13.5px;
+	font-weight: 600;
+	text-decoration: none;
+}
+.eem-event-page .hero-social-link:hover {
+	color: #031B4E;
+}
 .eem-event-page .eem-event-body {
 	max-width: 1300px;
 	margin: 0 auto;

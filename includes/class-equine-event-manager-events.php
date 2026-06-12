@@ -1457,6 +1457,10 @@ class EEM_Events {
 		update_post_meta( $post_id, '_equine_event_manager_event_location_label', sanitize_text_field( isset( $_POST['equine_event_manager_event_location_label'] ) ? wp_unslash( $_POST['equine_event_manager_event_location_label'] ) : '' ) );
 		update_post_meta( $post_id, '_equine_event_manager_event_cta_label', sanitize_text_field( isset( $_POST['equine_event_manager_event_cta_label'] ) ? wp_unslash( $_POST['equine_event_manager_event_cta_label'] ) : __( 'Reserve Now', 'equine-event-manager' ) ) );
 		update_post_meta( $post_id, '_equine_event_manager_event_featured', empty( $_POST['equine_event_manager_event_featured'] ) ? 0 : 1 );
+
+		// Social links (canonical _en_ keys). Stored as full URLs; blank clears.
+		update_post_meta( $post_id, '_en_event_facebook', esc_url_raw( isset( $_POST['en_event_facebook'] ) ? wp_unslash( $_POST['en_event_facebook'] ) : '' ) );
+		update_post_meta( $post_id, '_en_event_instagram', esc_url_raw( isset( $_POST['en_event_instagram'] ) ? wp_unslash( $_POST['en_event_instagram'] ) : '' ) );
 	}
 
 	/**
@@ -1569,6 +1573,8 @@ class EEM_Events {
 		$flyer_file_id      = absint( get_post_meta( $post->ID, '_equine_event_manager_event_flyer_file_id', true ) );
 		$location_label     = (string) get_post_meta( $post->ID, '_equine_event_manager_event_location_label', true );
 		$cta_label          = (string) get_post_meta( $post->ID, '_equine_event_manager_event_cta_label', true );
+		$facebook_url       = (string) get_post_meta( $post->ID, '_en_event_facebook', true );
+		$instagram_url      = (string) get_post_meta( $post->ID, '_en_event_instagram', true );
 		$featured           = (int) get_post_meta( $post->ID, '_equine_event_manager_event_featured', true );
 		$venues             = $this->get_posts_for_select( self::VENUE_POST_TYPE );
 		$producers          = $this->get_posts_for_select( self::PRODUCER_POST_TYPE );
@@ -1739,6 +1745,16 @@ class EEM_Events {
 				<label class="eem-event-editor-field">
 					<span class="eem-event-editor-field__label"><?php esc_html_e( 'Button Label', 'equine-event-manager' ); ?></span>
 					<input type="text" class="regular-text" id="equine_event_manager_event_cta_label" name="equine_event_manager_event_cta_label" value="<?php echo esc_attr( $cta_label ? $cta_label : __( 'Reserve Now', 'equine-event-manager' ) ); ?>" />
+				</label>
+
+				<label class="eem-event-editor-field">
+					<span class="eem-event-editor-field__label"><?php esc_html_e( 'Facebook URL', 'equine-event-manager' ); ?></span>
+					<input type="url" class="regular-text" id="en_event_facebook" name="en_event_facebook" value="<?php echo esc_attr( $facebook_url ); ?>" placeholder="https://facebook.com/…" />
+				</label>
+
+				<label class="eem-event-editor-field">
+					<span class="eem-event-editor-field__label"><?php esc_html_e( 'Instagram URL', 'equine-event-manager' ); ?></span>
+					<input type="url" class="regular-text" id="en_event_instagram" name="en_event_instagram" value="<?php echo esc_attr( $instagram_url ); ?>" placeholder="https://instagram.com/…" />
 				</label>
 
 				<div class="eem-event-editor-field eem-event-editor-field--full">
@@ -3396,6 +3412,21 @@ class EEM_Events {
 								<a class="btn-directions" href="<?php echo esc_url( $directions_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Directions', 'equine-event-manager' ); ?></a>
 							<?php endif; ?>
 						</div>
+
+						<?php
+						$social_fb = ! empty( $event_data['social']['facebook'] ) ? (string) $event_data['social']['facebook'] : '';
+						$social_ig = ! empty( $event_data['social']['instagram'] ) ? (string) $event_data['social']['instagram'] : '';
+						if ( '' !== $social_fb || '' !== $social_ig ) :
+							?>
+							<div class="hero-social">
+								<?php if ( '' !== $social_fb ) : ?>
+									<a class="hero-social-link" href="<?php echo esc_url( $social_fb ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Facebook', 'equine-event-manager' ); ?></a>
+								<?php endif; ?>
+								<?php if ( '' !== $social_ig ) : ?>
+									<a class="hero-social-link" href="<?php echo esc_url( $social_ig ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Instagram', 'equine-event-manager' ); ?></a>
+								<?php endif; ?>
+							</div>
+						<?php endif; ?>
 					</div>
 				</div>
 			</div>
@@ -3463,6 +3494,10 @@ class EEM_Events {
 			'flyer_url'      => $flyer_file_url ? $flyer_file_url : ( $flyer_file_id ? wp_get_attachment_url( $flyer_file_id ) : '' ),
 			'reservation_id' => $reservation_id,
 			'cta_label'      => (string) get_post_meta( $event_id, '_equine_event_manager_event_cta_label', true ),
+			'social'         => array(
+				'facebook'  => (string) get_post_meta( $event_id, '_en_event_facebook', true ),
+				'instagram' => (string) get_post_meta( $event_id, '_en_event_instagram', true ),
+			),
 			'categories'     => is_wp_error( $categories ) ? array() : array_values( array_filter( array_map( 'strval', $categories ) ) ),
 			'tags'           => is_wp_error( $tags ) ? array() : array_values( array_filter( array_map( 'strval', $tags ) ) ),
 		);
