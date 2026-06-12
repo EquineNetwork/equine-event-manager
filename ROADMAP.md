@@ -54,15 +54,19 @@ Full source notes for each live in `CLAUDE.md` → "v2 deferred features".
    #9.5 Division" + "RV buyers but not stall customers." Recipients from orders (incl. division-
    only) + the division ledger; Emogrifier-inlined. `EEM_Notifications` + `EEM_Notifications_Page`;
    38 smoke assertions across 3 files.
-2. **Venues + Facility Layout Templates** — **two layers** (design locked: `docs/ARCHITECTURE-VENUES.md`):
+2. ✅ **Venues + Facility Layout Templates — DONE (2.7.229–231).** **Two layers** (design locked: `docs/ARCHITECTURE-VENUES.md`):
    - **Venues** — a single **source-agnostic Venue entity** (relational tables, not postmeta)
-     that owns saved layouts; TEC/GEMS venues resolve into it via `EEM_Venue_Resolver`; Native
-     Events (v3) plugs in later with **no new nav**. Lives **under Stall & RV Charts**. Producers
-     stay a Native-Events-only concept (separate from Venues).
-   - **Templates** — "Save as layout for {Venue}" on the grid builder; "Start from a saved
-     layout" on new reservations via **copy-on-use** (deep-clone, lineage tracked, original never
-     mutated). Captures the **FULL structural layout** (stall grid + RV lots/zones + blocked
-     stalls/lots + map geometry; excludes pricing/dates).
+     that owns saved layouts; TEC/GEMS venues resolve into it via `EEM_Venue` (resolver + repo;
+     not a separate `EEM_Venue_Resolver` class); Native Events (v3) plugs in later with **no new
+     nav**. Page **under Stall & RV Charts** (list + per-venue detail, layout rename/delete).
+     Producers stay a Native-Events-only concept (separate from Venues).
+   - **Templates** — **"Save Layout to Venue" / "Load Layout from Venue"** on BOTH the stall and
+     RV builders in Edit Reservation. Load is **copy-on-use** (deep-clone into THIS reservation,
+     original never mutated). Captures the **FULL combined structural layout** (stall grid + RV
+     lots/zones + blocked stalls/lots + map geometry; excludes pricing/dates). Browser-verified
+     live (save→list→load→cross-venue-guard→delete). 60 smoke assertions across 3 files. NOTE:
+     the builders render only on a *configured* reservation; a fresh/unlinked one shows the
+     first-run setup wizard instead.
 **Event Entries — RESOLVED (2026-06-12): already delivered by Divisions.** Whitney confirmed the
 need is "selling entry spots + tracking who's entered," which the shipped Divisions feature does.
 No additional v2 work. The richer *competition-management* version (horse/rider details, results/
