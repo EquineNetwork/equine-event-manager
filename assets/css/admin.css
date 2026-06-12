@@ -8191,7 +8191,14 @@ body.eem-shell-page--print .wrap { margin: 0; }
 .pv-topbar-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .pv-topbar-title { font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 700; color: #031B4E; }
 .pv-topbar-sub { font-size: 12px; color: #6B7A99; margin-top: 1px; }
-.pv-topbar-btns { display: flex; gap: 8px; flex-shrink: 0; }
+.pv-topbar-btns { display: flex; gap: 8px; flex-shrink: 0; align-items: center; }
+/* Choose-what-to-print segmented control (screen only; toolbar is hidden on print). */
+.pv-view-toggle { display: inline-flex; border: 1px solid #D9E2F2; border-radius: var(--eem-radius); overflow: hidden; }
+.pv-view-btn { padding: 7px 12px; font-size: 12.5px; font-weight: 600; color: #475569; background: #fff; border-right: 1px solid #D9E2F2; text-decoration: none; }
+.pv-view-btn:last-child { border-right: 0; }
+.pv-view-btn:hover, .pv-view-btn:focus { background: #EEF4FF; color: #1668F2; text-decoration: none; }
+.pv-view-btn.is-active { background: #1668F2; color: #fff; }
+.pv-view-btn.is-active:hover, .pv-view-btn.is-active:focus { background: #0d52cc; color: #fff; }
 .btn-pv-print { background: #1668F2; color: #fff; border: 1px solid #1668F2; padding: 8px 16px; border-radius: 4px; font-size: 13px; font-weight: 600; font-family: 'IBM Plex Sans', sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
 .btn-pv-print:hover { background: #1257d1; border-color: #1257d1; }
 .btn-pv-print svg { width: 13px; height: 13px; }
@@ -8293,6 +8300,9 @@ body.eem-shell-page--print .wrap { margin: 0; }
 	.pv-customer { font-size: 10.5px; }
 	.pv-order { font-size: 9.5px; }
 	.pv-occ { font-size: 9px; padding: 1.5px 7px; }
+	/* Don't flood the page with green "Available" pills — render free nights as
+	   faint plain text so occupied (Reserved) cells stand out on paper. */
+	.pv-occ-avail { background: transparent; border-color: transparent; color: #b6bdca; font-weight: 400; padding: 1.5px 2px; }
 	.pv-barn-header td { padding: 5px 8px; font-size: 10px; }
 	.pv-checkbox { width: 11px; height: 11px; }
 	.pv-section-by-customer { break-before: auto; }

@@ -63,7 +63,7 @@ class EEM_Reports_Page {
 
 		eem_render_page_open( array(
 			'title'      => __( 'Reports', 'equine-event-manager' ),
-			'subtitle'   => __( 'View, export, and re-download reports for one or all reservations. Use filters to narrow results, then export individual reports as CSV or PDF — or grab everything at once as a ZIP.', 'equine-event-manager' ),
+			'subtitle'   => __( 'View, export, and re-download reports for one or all reservations. Use filters to narrow results, then export individual reports as CSV or PDF.', 'equine-event-manager' ),
 			'breadcrumb' => array( array( 'label' => __( 'Reports', 'equine-event-manager' ) ) ),
 			'wrap'       => true,
 		) );
@@ -99,7 +99,6 @@ class EEM_Reports_Page {
 				</div>
 			<?php else : ?>
 				<?php
-				$this->render_zip_card( $reservations, $filters );
 				$this->render_filters_card( $reservations, $filters );
 				$this->render_report_catalog( $filters );
 				$this->render_export_history();
@@ -163,8 +162,10 @@ class EEM_Reports_Page {
 	 * @return void
 	 */
 	private function export_form( string $slug, string $format, string $label, array $filters, string $class = 'btn-export' ): void {
+		// PDFs open inline in a new tab (no "insecure download blocked"); CSVs download.
+		$target = ( 'pdf' === $format ) ? ' target="_blank"' : '';
 		?>
-		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="eem-export-form">
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="eem-export-form"<?php echo $target; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static string. ?>>
 			<input type="hidden" name="action" value="eem_reports_export">
 			<?php wp_nonce_field( self::NONCE_ACTION ); ?>
 			<input type="hidden" name="report" value="<?php echo esc_attr( $slug ); ?>">
@@ -177,42 +178,6 @@ class EEM_Reports_Page {
 		<?php
 	}
 
-	/**
-	 * ZIP "export all reports for one reservation" card.
-	 *
-	 * @param array $reservations Reservation posts.
-	 * @param array $filters      Current filters.
-	 * @return void
-	 */
-	private function render_zip_card( array $reservations, array $filters ): void {
-		?>
-		<div class="eem-card eem-card-zip">
-			<div class="eem-card-header">
-				<div class="eem-card-title"><?php esc_html_e( 'Export all reports for one reservation', 'equine-event-manager' ); ?></div>
-				<div class="eem-card-subtitle"><?php esc_html_e( 'One ZIP file with all 6 reports (Orders, Reservations, Revenue, Stall Occupancy, Customer List, Refund Log) in both CSV and PDF format.', 'equine-event-manager' ); ?></div>
-			</div>
-			<div class="eem-card-body">
-				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="eem-zip-controls">
-					<input type="hidden" name="action" value="eem_reports_export">
-					<?php wp_nonce_field( self::NONCE_ACTION ); ?>
-					<input type="hidden" name="report" value="orders">
-					<input type="hidden" name="format" value="zip">
-					<input type="hidden" name="date_from" value="<?php echo esc_attr( $filters['date_from'] ); ?>">
-					<input type="hidden" name="date_to" value="<?php echo esc_attr( $filters['date_to'] ); ?>">
-					<input type="hidden" name="status" value="<?php echo esc_attr( $filters['status'] ); ?>">
-					<select class="eem-zip-select" name="reservation_id">
-						<?php foreach ( $reservations as $r ) : ?>
-							<option value="<?php echo esc_attr( $r->ID ); ?>" <?php selected( $filters['reservation_id'], $r->ID ); ?>><?php echo esc_html( get_the_title( $r ) ); ?></option>
-						<?php endforeach; ?>
-					</select>
-					<button class="eem-btn-zip" type="submit">
-						<?php esc_html_e( 'Export ZIP (6 reports × CSV + PDF)', 'equine-event-manager' ); ?>
-					</button>
-				</form>
-			</div>
-		</div>
-		<?php
-	}
 
 	/**
 	 * Global Filters card (GET form — Apply reloads with the filter query args).
@@ -583,7 +548,9 @@ class EEM_Reports_Page {
 
 		nocache_headers();
 		header( 'Content-Type: ' . $type );
-		header( 'Content-Disposition: attachment; filename="' . sanitize_file_name( $filename ) . '"' );
+		// PDFs render inline (open in the new tab); everything else downloads.
+		$disposition = ( 'pdf' === $ext ) ? 'inline' : 'attachment';
+		header( 'Content-Disposition: ' . $disposition . '; filename="' . sanitize_file_name( $filename ) . '"' );
 		header( 'Content-Length: ' . (string) filesize( $path ) );
 		readfile( $path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_readfile
 		exit;

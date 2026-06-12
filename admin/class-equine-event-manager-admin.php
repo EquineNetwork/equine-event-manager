@@ -2134,7 +2134,7 @@ class EEM_Admin {
 						</button>
 						<button class="eem-btn eem-btn--ghost" type="button"
 							data-eem-action="stall-chart-print"
-							data-print-url="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-stall-chart-print&reservation_id=' . $reservation_id ) ); ?>">
+							data-print-url="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-stall-chart-print&reservation_id=' . $reservation_id . '&view=' . ( 'customer' === $tab ? 'customer' : 'location' ) ) ); ?>">
 							<?php esc_html_e( 'Print View', 'equine-event-manager' ); ?>
 						</button>
 						<a class="eem-btn eem-btn--ghost" href="<?php echo esc_url( get_edit_post_link( $reservation_id, '' ) ); ?>">
@@ -3141,6 +3141,18 @@ class EEM_Admin {
 		$reservation_id = isset( $_GET['reservation_id'] ) ? absint( wp_unslash( $_GET['reservation_id'] ) ) : 0;
 		$reservation    = $reservation_id ? get_post( $reservation_id ) : null;
 
+		// Which section(s) to print: 'location', 'customer', or 'both' (default).
+		$pv_view = isset( $_GET['view'] ) ? sanitize_key( wp_unslash( $_GET['view'] ) ) : 'both';
+		if ( ! in_array( $pv_view, array( 'location', 'customer', 'both' ), true ) ) {
+			$pv_view = 'both';
+		}
+		$pv_view_url = static function ( $v ) use ( $reservation_id ) {
+			return add_query_arg(
+				array( 'page' => 'equine-event-manager-stall-chart-print', 'reservation_id' => $reservation_id, 'view' => $v ),
+				admin_url( 'admin.php' )
+			);
+		};
+
 		if ( ! $reservation instanceof WP_Post || 'en_reservation' !== $reservation->post_type ) {
 			wp_die(
 				esc_html__( 'Reservation not found.', 'equine-event-manager' ),
@@ -3206,6 +3218,11 @@ class EEM_Admin {
 				</div>
 			</div>
 			<div class="pv-topbar-btns">
+				<div class="pv-view-toggle" role="group" aria-label="<?php esc_attr_e( 'Choose what to print', 'equine-event-manager' ); ?>">
+					<a class="pv-view-btn<?php echo 'both' === $pv_view ? ' is-active' : ''; ?>" href="<?php echo esc_url( $pv_view_url( 'both' ) ); ?>"><?php esc_html_e( 'Both', 'equine-event-manager' ); ?></a>
+					<a class="pv-view-btn<?php echo 'location' === $pv_view ? ' is-active' : ''; ?>" href="<?php echo esc_url( $pv_view_url( 'location' ) ); ?>"><?php esc_html_e( 'By Location', 'equine-event-manager' ); ?></a>
+					<a class="pv-view-btn<?php echo 'customer' === $pv_view ? ' is-active' : ''; ?>" href="<?php echo esc_url( $pv_view_url( 'customer' ) ); ?>"><?php esc_html_e( 'By Customer', 'equine-event-manager' ); ?></a>
+				</div>
 				<button class="btn-pv-print" type="button" onclick="window.print()">
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
 					<?php esc_html_e( 'Print / Save PDF', 'equine-event-manager' ); ?>
@@ -3261,7 +3278,7 @@ class EEM_Admin {
 			<!-- BY LOCATION                                           -->
 			<!-- ══════════════════════════════════════════════════════ -->
 
-			<?php if ( ! empty( $grid['stall_rows'] ) ) : ?>
+			<?php if ( 'customer' !== $pv_view && ! empty( $grid['stall_rows'] ) ) : ?>
 			<div class="pv-section-band"><?php esc_html_e( 'By Location', 'equine-event-manager' ); ?></div>
 			<div class="pv-table-wrap">
 				<table class="pv-table">
@@ -3447,7 +3464,7 @@ class EEM_Admin {
 			<!-- BY CUSTOMER                                           -->
 			<!-- ══════════════════════════════════════════════════════ -->
 
-			<?php if ( ! empty( $order_rows ) ) : ?>
+			<?php if ( 'location' !== $pv_view && ! empty( $order_rows ) ) : ?>
 			<div class="pv-section-band pv-section-by-customer"><?php esc_html_e( 'By Customer', 'equine-event-manager' ); ?></div>
 			<div class="pv-table-wrap">
 				<table class="pv-table">
