@@ -24,16 +24,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 $context = isset( $context ) ? (string) $context : 'stall';
 ?>
 <div class="eem-layout-template-bar" data-eem-layout-context="<?php echo esc_attr( $context ); ?>">
+	<div class="eem-layout-template-bar__text">
+		<h4 class="eem-layout-template-bar__title"><?php esc_html_e( 'Facility Layout Templates', 'equine-event-manager' ); ?></h4>
+		<p class="eem-layout-template-bar__hint">
+			<?php esc_html_e( 'Save this reservation’s stall &amp; RV layout to its venue to reuse next year, or load a previously saved layout. Save the reservation first to capture recent edits.', 'equine-event-manager' ); ?>
+		</p>
+	</div>
 	<div class="eem-layout-template-bar__actions">
-		<button type="button" class="eem-btn-secondary eem-btn-sm" data-eem-action="venue-save-layout">
+		<button type="button" class="eem-btn-primary" data-eem-action="venue-save-layout">
 			<?php esc_html_e( 'Save Layout to Venue', 'equine-event-manager' ); ?>
 		</button>
-		<button type="button" class="eem-btn-secondary eem-btn-sm" data-eem-action="venue-load-layout">
+		<button type="button" class="eem-btn-secondary" data-eem-action="venue-load-layout">
 			<?php esc_html_e( 'Load Layout from Venue', 'equine-event-manager' ); ?>
 		</button>
 	</div>
-	<p class="eem-layout-template-bar__hint">
-		<?php esc_html_e( 'Save this reservation’s saved stall &amp; RV layout to its venue to reuse next year, or load a previously saved layout. Save the reservation first to capture recent edits.', 'equine-event-manager' ); ?>
-	</p>
 </div>
 <?php

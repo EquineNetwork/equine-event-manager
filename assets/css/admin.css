@@ -9311,10 +9311,20 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 .eem-venue-source-badge { background: var(--eem-bg-alt, #eef2fb); color: var(--eem-navy, #031B4E); }
 .eem-venue-layout-name { font-weight: 600; color: var(--eem-navy, #031B4E); }
 
-/* Save/Load Layout toolbar inside the stall + RV builders (Slice 3). */
-.eem-layout-template-bar { margin: 4px 0 14px; padding: 12px 14px; background: var(--eem-bg-alt, #f7f9fc); border: 1px solid var(--eem-border, #D9E2F2); border-radius: var(--eem-radius, 3px); }
-.eem-layout-template-bar__actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.eem-layout-template-bar__hint { margin: 8px 0 0; font-size: 12px; color: var(--eem-muted, #64748b); }
+/* Save/Load Layout toolbar inside the stall + RV builders (Slice 3).
+   White card + left accent so it reads as an intentional feature block (the
+   prior gray-on-gray bar was too faint to spot). Title + hint on the left,
+   the two buttons on the right; stacks on narrow widths. */
+.eem-layout-template-bar { display: flex; align-items: center; gap: 18px; margin: 8px 0 16px; padding: 14px 16px; background: #fff; border: 1px solid var(--eem-border, #D9E2F2); border-left: 3px solid var(--eem-electric, #2563eb); border-radius: var(--eem-radius, 3px); box-shadow: 0 1px 2px rgba(3, 27, 78, 0.05); }
+.eem-layout-template-bar__text { flex: 1 1 auto; min-width: 0; }
+.eem-layout-template-bar__title { margin: 0 0 3px; font-size: 13.5px; font-weight: 700; color: var(--eem-navy, #031B4E); }
+.eem-layout-template-bar__hint { margin: 0; font-size: 12px; color: var(--eem-muted, #64748b); }
+.eem-layout-template-bar__actions { display: flex; flex-wrap: wrap; gap: 8px; flex: 0 0 auto; }
+@media (max-width: 782px) {
+	.eem-layout-template-bar { flex-direction: column; align-items: stretch; }
+	.eem-layout-template-bar__actions { justify-content: stretch; }
+	.eem-layout-template-bar__actions > * { flex: 1 1 auto; text-align: center; }
+}
 /* Load-Layout picker option rows in the modal. */
 .eem-venue-load-options { display: flex; flex-direction: column; gap: 6px; max-height: 280px; overflow-y: auto; }
 .eem-venue-load-option { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--eem-border, #D9E2F2); border-radius: var(--eem-radius, 3px); cursor: pointer; }
