@@ -334,7 +334,7 @@ class EEM_Events {
 		// reach a reservation through the plugin's virtual event route
 		// (/equine-event/{id}/), the same page TEC-linked reservations use —
 		// featured image + event info + the booking form below. Build that URL.
-		$url = (string) home_url( user_trailingslashit( self::VIRTUAL_EVENT_ROUTE_BASE . '/' . $reservation_id ) );
+		$url = self::get_reservation_public_url( $reservation_id );
 
 		if ( '' === $url ) {
 			return null;
@@ -1054,8 +1054,13 @@ class EEM_Events {
 		add_rewrite_tag( '%eem_reservation_event%', '([0-9]+)' );
 		add_rewrite_tag( '%eem_event_directory_type%', '([^&]+)' );
 		add_rewrite_tag( '%eem_event_directory_slug%', '([^&]+)' );
+		// Resolve on the TRAILING reservation id. An optional readable prefix
+		// (e.g. "ntr-rapid-city-sd-") may precede it for human-friendly / SEO
+		// URLs — the prefix is cosmetic and ignored. The same rule still matches
+		// bare "/equine-event/6519/", so every link already sent to a customer
+		// keeps working (no migration, no broken links).
 		add_rewrite_rule(
-			'^' . self::VIRTUAL_EVENT_ROUTE_BASE . '/([0-9]+)/?$',
+			'^' . self::VIRTUAL_EVENT_ROUTE_BASE . '/(?:[^/]+-)?([0-9]+)/?$',
 			'index.php?eem_reservation_event=$matches[1]',
 			'top'
 		);
@@ -1099,7 +1104,7 @@ class EEM_Events {
 		// as a path suffix, which also covers subdirectory installs.
 		if ( ! $reservation_id && ! $directory_type && isset( $_SERVER['REQUEST_URI'] ) ) {
 			$path = (string) wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ), PHP_URL_PATH );
-			if ( preg_match( '#/' . preg_quote( self::VIRTUAL_EVENT_ROUTE_BASE, '#' ) . '/([0-9]+)/?$#', $path, $m ) ) {
+			if ( preg_match( '#/' . preg_quote( self::VIRTUAL_EVENT_ROUTE_BASE, '#' ) . '/(?:[^/]+-)?([0-9]+)/?$#', $path, $m ) ) {
 				$reservation_id = absint( $m[1] );
 			}
 		}
@@ -3091,7 +3096,29 @@ class EEM_Events {
 		if ( $reservation_id <= 0 ) {
 			return '';
 		}
-		return (string) home_url( user_trailingslashit( self::VIRTUAL_EVENT_ROUTE_BASE . '/' . $reservation_id ) );
+		return (string) home_url( user_trailingslashit( self::VIRTUAL_EVENT_ROUTE_BASE . '/' . self::reservation_route_slug( $reservation_id ) ) );
+	}
+
+	/**
+	 * Build the URL slug for a reservation's public event page.
+	 *
+	 * Format: a readable prefix derived from the reservation title (which itself
+	 * inherits the linked event name) followed by the post id —
+	 * e.g. "ntr-rapid-city-sd-6519". The trailing id is what the route resolves
+	 * on; the prefix is cosmetic + SEO. Appending the id keeps the slug unique
+	 * for events that recur every year under the same name (no WordPress "-2"
+	 * suffixing) and means the bare-id route still matches old links. Falls back
+	 * to just the id when the title is empty.
+	 *
+	 * @param int $reservation_id Reservation post id.
+	 * @return string e.g. "ntr-rapid-city-sd-6519", or "6519" when untitled.
+	 */
+	private static function reservation_route_slug( $reservation_id ) {
+		$reservation_id = absint( $reservation_id );
+		$title          = $reservation_id ? (string) get_post_field( 'post_title', $reservation_id ) : '';
+		$prefix         = sanitize_title( $title );
+
+		return '' !== $prefix ? $prefix . '-' . $reservation_id : (string) $reservation_id;
 	}
 
 	/**
@@ -3106,7 +3133,7 @@ class EEM_Events {
 		}
 
 		if ( ! empty( $event_data['reservation_id'] ) ) {
-			return home_url( user_trailingslashit( self::VIRTUAL_EVENT_ROUTE_BASE . '/' . absint( $event_data['reservation_id'] ) ) );
+			return self::get_reservation_public_url( absint( $event_data['reservation_id'] ) );
 		}
 
 		return '';
