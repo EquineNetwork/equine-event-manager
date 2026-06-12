@@ -606,6 +606,7 @@ In-flight architectural decisions whose final shape spans multiple chunks. Each 
 Tracks scope items explicitly REMOVED from v1 (vs. deferred). A removed decision should not be reintroduced without re-opening the original decision conversation.
 
 - **"Add to Show Bill" deferred-payment option — REMOVED entirely (2026-06-09, Whitney).** Not v1, not v2. The use case it was meant to serve — staging charges to settle later — is **already covered** by the existing ability to create an "open" unpaid order and keep adding line items to it for the customer. No separate show-bill settlement record / settlement-trigger model is needed. Do not reintroduce a distinct "Show Bill" concept without re-opening the conversation. (Previously sat under "v2 deferred features"; moved here.)
+- **Scheduled / recurring report exports — REMOVED entirely (2026-06-12, Whitney).** Not v1, not v2, not ever. Cron-scheduled CSV/PDF exports delivered by email are explicitly rejected. Do NOT reintroduce as a deferred/TODO item. (Previously listed under "v2 deferred features"; killed.)
 - *(Global cancellation policy was previously listed here as REMOVED but has been reframed as DEPRECATED-LIVE-PENDING-CLEANUP under "Architecture decisions in flight" → Cancellation policy architecture, above.)*
 
 ---
@@ -614,11 +615,13 @@ Tracks scope items explicitly REMOVED from v1 (vs. deferred). A removed decision
 
 Features considered during Phase 3 planning but explicitly deferred to v2. Each entry includes the source decision so future product conversations can pick up the thread.
 
-- **Native Events + Event Feed sources — V2 (2026-06-09, Whitney).** Of the three event sources, **only The Events Calendar (TEC) ships in v1.** Native Events (`en_event`/`en_venue`/`en_producer` CPTs, ~1,500 LOC, partially built) and Event Feed (external JSON/XML URL) are deferred to v2. Keep them **gated "Coming Soon"** in Settings → Integrations exactly as shipped — the plumbing/meta-keys/source-mode switch stay (do NOT rip them out), they just don't get finished/un-gated for v1. See the "Event source" section above (annotated with this decision).
-- **Scheduled reports (recurring exports)** — repeating CSV/PDF exports delivered by email on a cron schedule. Requires: cron job infrastructure, email delivery + bounce handling, per-recipient management, per-schedule failure log + retry policy, history view per schedule. Source: HANDOFF.md "Deferred features" / AUDIT-C12-1.
-- **Bulk "Send Payment Link" action on Orders list** — multi-select unpaid orders → bulk-send invoice emails. Considered as an AUDIT-C11-1 candidate, deferred. Source: HANDOFF.md.
-- **Email templates beyond confirmation** — other transactional emails likely needed (invoice / payment received / refund / cancellation). Derivable from the confirmation email template structure once Emogrifier + the template render path are wired in C11. Defer the actual template authoring + send-trigger wiring; surface as a v1.1 incremental or v2 batch depending on traffic. Source: HANDOFF.md.
-- **Orders soft-delete (Move to Trash)** — a trash/restore lifecycle for orders (parallel to the reservations Trash tab). Deferred to v2. Source: CLEANUP #14.
+- **Native Events source — V2 (2026-06-09, Whitney; updated 2026-06-12).** Native Events (`en_event`/`en_venue`/`en_producer` CPTs, ~1,500 LOC, partially built) is deferred to v2 — keep it **gated "Coming Soon"** in Settings → Integrations (plumbing/meta-keys/source-mode switch stay; do NOT rip them out). NOTE: the generic "Event Feed" source is NO LONGER deferred — it was realized as the **GEMS** integration, which ships in v1 (live, 2.7.168). So v1 event sources = **TEC + GEMS**; only Native Events remains v2.
+- **Event Entries — V2 (2026-06-12, Whitney).** Ability to take contestant entries for events (e.g. rodeo / show entries): per-discipline entry, entry fees, etc. Distinct from "Pre-Entries" (item: pre-purchasable items on the customer page) — Event Entries is competition-management (disciplines + fees + entrant roster). Scope TBD at v2 kickoff.
+
+> **MOVED TO v1 (2026-06-12, Whitney):** the three items below were previously v2-deferred but are now v1-launch scope (appended to the v1 build list). Kept here as historical source notes only.
+- **Bulk "Send Payment Link" action on Orders list** — multi-select unpaid orders → bulk-send invoice emails. Source: HANDOFF.md AUDIT-C11-1. (now v1)
+- **Email templates beyond confirmation** — other transactional emails (invoice / payment received / refund / cancellation), derivable from the confirmation template + Emogrifier render path. Source: HANDOFF.md. (now v1)
+- **Orders soft-delete (Move to Trash)** — a trash/restore lifecycle for orders, parallel to the reservations Trash tab. Source: CLEANUP #14. (now v1)
 
 ---
 

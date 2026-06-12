@@ -19,6 +19,7 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-customer-profile-re
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-mailer.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-pdf.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-reservations-cpt.php';
+require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-entries.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-stall-map-importer.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-events.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-gems-client.php';
@@ -214,6 +215,8 @@ class EEM_Plugin {
 		add_action( 'init', array( 'EEM_Activator', 'maybe_upgrade' ) );
 		add_action( 'init', array( 'EEM_Activator', 'maybe_refresh_runtime_rewrite_rules' ), 30 );
 		add_action( 'init', array( $this->reservations_cpt, 'register_post_type' ) );
+		// Entries feature (v1): CPT + admin under Orders, reservation-linked.
+		EEM_Entries::register();
 		// C7.C.1 — meta-box registration retired. The Reservation Editor
 		// is now a custom render page (EEM_Reservation_Editor_Page); the
 		// legacy EEM_Reservation_Editor class is kept ONLY as a "save +
