@@ -7566,6 +7566,19 @@ a.eem-btn--ghost:focus    { color: #1d2327; }
 .eem-occ-pill--reserved:hover .eem-occ-chevron { opacity: 1; }
 .eem-occ-pill--available { background: #F0FDF4; color: #15803d; border-color: #bbf7d0; }
 .eem-occ-pill--blocked { background: #FEF2F2; color: #b91c1c; border-color: #fecaca; }
+/* Suggested (auto-proposed, NOT saved) placement — a dashed amber "draft" look
+   so admins can tell it apart from a solid, saved assignment. Becomes a normal
+   solid --reserved pill once Generate Assignments / a manual move persists it. */
+.eem-occ-pill--suggested { background: #FFF8EC; color: #92600A; border-style: dashed; border-color: #E5A823; font-style: italic; }
+.eem-occ-pill--suggested .eem-occ-chevron { color: #92600A; }
+/* Unsaved auto-suggested layout banner (above the chart card). */
+.eem-stall-chart-unsaved-banner { display: flex; align-items: flex-start; gap: 10px; margin: 0 0 16px; padding: 12px 16px; background: #FFF8EC; border: 1px solid #F2D9A0; border-radius: var(--eem-radius); font-size: 13px; line-height: 1.5; color: #6B4A0A; }
+.eem-stall-chart-unsaved-banner svg { width: 16px; height: 16px; color: #E5A823; flex-shrink: 0; margin-top: 1px; }
+.eem-stall-chart-unsaved-banner strong { color: #6B4A0A; }
+/* Inline link-style button (e.g. "Generate Assignments" inside the banner copy).
+   Color-only affordance — no underline, per the universal hover convention. */
+.eem-link-btn { display: inline; padding: 0; border: 0; background: none; color: #1668F2; font: inherit; font-weight: 600; cursor: pointer; }
+.eem-link-btn:hover, .eem-link-btn:focus { color: #0d52cc; }
 
 /* V1 Scenario F: special-requests indicator on a reserved pill (hover the pill
    for the native tooltip; the amber dot is the at-a-glance cue). */

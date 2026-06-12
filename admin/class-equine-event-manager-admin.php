@@ -2143,6 +2143,20 @@ class EEM_Admin {
 					</div>
 				</div>
 
+				<?php $eem_unsaved = isset( $grid['unsaved_order_count'] ) ? (int) $grid['unsaved_order_count'] : 0; ?>
+				<?php if ( $eem_unsaved > 0 ) : ?>
+					<!-- Unsaved auto-suggested layout banner -->
+					<div class="eem-stall-chart-unsaved-banner" role="status">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+						<span>
+							<strong><?php echo esc_html( sprintf( /* translators: %d: number of orders */ _n( '%d order has a suggested stall that isn\'t saved yet.', '%d orders have suggested stalls that aren\'t saved yet.', $eem_unsaved, 'equine-event-manager' ), $eem_unsaved ) ); ?></strong>
+							<?php esc_html_e( 'The placements shown below are an auto-suggested layout. Click', 'equine-event-manager' ); ?>
+							<button type="button" class="eem-link-btn" data-eem-action="stall-chart-auto-assign-all"><?php esc_html_e( 'Generate Assignments', 'equine-event-manager' ); ?></button>
+							<?php esc_html_e( 'to save this layout, or click a customer\'s name to place them manually.', 'equine-event-manager' ); ?>
+						</span>
+					</div>
+				<?php endif; ?>
+
 				<?php if ( empty( $grid['stall_rows'] ) && empty( $grid['rv_rows'] ) && ! $has_stall_map ) : ?>
 					<div class="eem-stall-chart-empty-card">
 						<p><?php esc_html_e( 'No paid or reserved orders are currently linked to this reservation.', 'equine-event-manager' ); ?></p>
@@ -2198,7 +2212,7 @@ class EEM_Admin {
 							<!-- Tip banner -->
 							<div class="eem-stall-chart-help">
 								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-								<span><strong><?php esc_html_e( 'Tip:', 'equine-event-manager' ); ?></strong> <?php esc_html_e( 'Click any customer name to view their order or move them to a different stall.', 'equine-event-manager' ); ?></span>
+								<span><strong><?php esc_html_e( 'Tip:', 'equine-event-manager' ); ?></strong> <?php esc_html_e( 'Click any customer name to view their order or move them to a different stall. A dashed outline means the placement is auto-suggested and not saved yet — Generate Assignments saves it.', 'equine-event-manager' ); ?></span>
 							</div>
 
 							<?php
@@ -4583,6 +4597,11 @@ class EEM_Admin {
 		$issues       = array();
 		$stall_map    = array();
 		$rv_map       = array();
+		// Track orders whose displayed placement is auto-SUGGESTED (computed live
+		// for the proposed layout) rather than SAVED (persisted to the order from
+		// a prior Generate Assignments / manual move). Drives the "not yet saved"
+		// banner + the per-pill suggested styling so admins can tell the two apart.
+		$unsaved_order_keys = array();
 
 		foreach ( $orders as $order ) {
 			$stall_dates  = $this->get_stall_chart_occupied_dates( $order['stall_arrival_date'], $order['stall_departure_date'] );
@@ -4611,7 +4630,15 @@ class EEM_Admin {
 				true
 			);
 
+			// A unit is SAVED when it came from the order's persisted "Assigned
+			// Stall Units" notes ($stall_manual); anything else was auto-filled
+			// just now for the proposed layout and is SUGGESTED (unsaved).
+			$saved_stall_set = array_fill_keys( array_map( 'strval', (array) $stall_manual ), true );
 			foreach ( $stall_units['assigned'] as $unit ) {
+				$unit_suggested = ! isset( $saved_stall_set[ (string) $unit ] );
+				if ( $unit_suggested ) {
+					$unsaved_order_keys[ $order['order_key'] ] = true;
+				}
 				foreach ( $stall_dates as $date_key ) {
 					if ( isset( $stall_rows[ $unit ]['cells'][ $date_key ] ) ) {
 						$stall_rows[ $unit ]['cells'][ $date_key ] = array(
@@ -4622,12 +4649,18 @@ class EEM_Admin {
 							'special_requests' => $special_requests,
 							'group_name'       => $group_name,
 							'is_tack'          => isset( $tack_lookup[ (string) $unit ] ),
+							'suggested'        => $unit_suggested,
 						);
 					}
 				}
 			}
 
+			$saved_rv_set = array_fill_keys( array_map( 'strval', (array) $rv_manual ), true );
 			foreach ( $rv_units['assigned'] as $unit ) {
+				$rv_unit_suggested = ! isset( $saved_rv_set[ (string) $unit ] );
+				if ( $rv_unit_suggested ) {
+					$unsaved_order_keys[ $order['order_key'] ] = true;
+				}
 				foreach ( $rv_dates as $date_key ) {
 					if ( isset( $rv_rows[ $unit ]['cells'][ $date_key ] ) ) {
 						$rv_rows[ $unit ]['cells'][ $date_key ] = array(
@@ -4637,6 +4670,7 @@ class EEM_Admin {
 							'order_number'     => (string) $order['order_number'],
 							'special_requests' => $special_requests,
 							'group_name'       => $group_name,
+							'suggested'        => $rv_unit_suggested,
 						);
 					}
 				}
@@ -4666,6 +4700,7 @@ class EEM_Admin {
 			'movement_summary' => $movement,
 			'issues'       => array_values( $issues ),
 			'order_count'  => count( $orders ),
+			'unsaved_order_count' => count( $unsaved_order_keys ),
 		);
 	}
 
@@ -5183,7 +5218,7 @@ class EEM_Admin {
 										}
 										$eem_pill_title = implode( ' · ', $eem_title_parts );
 										?>
-										<span class="eem-occ-pill eem-occ-pill--reserved<?php echo '' !== $eem_cell_note ? ' eem-occ-pill--has-note' : ''; ?>" data-is-tack="<?php echo ! empty( $cell['is_tack'] ) ? '1' : '0'; ?>"
+										<span class="eem-occ-pill eem-occ-pill--reserved<?php echo '' !== $eem_cell_note ? ' eem-occ-pill--has-note' : ''; ?><?php echo ! empty( $cell['suggested'] ) ? ' eem-occ-pill--suggested' : ''; ?>" data-is-tack="<?php echo ! empty( $cell['is_tack'] ) ? '1' : '0'; ?>" data-suggested="<?php echo ! empty( $cell['suggested'] ) ? '1' : '0'; ?>"
 											data-order-key="<?php echo esc_attr( $cell['order_key'] ); ?>"
 											data-order-id="<?php echo esc_attr( $cell['order_key'] ); ?>"
 											data-eem-action="stall-pill-click"
@@ -5198,6 +5233,7 @@ class EEM_Admin {
 											<?php if ( '' !== $eem_cell_group || ! empty( $cell['is_tack'] ) ) : ?><span class="eem-occ-pill__badges"><?php if ( ! empty( $cell['is_tack'] ) ) : ?><span class="eem-occ-badge eem-occ-badge--tack" data-eem-tack-badge><?php esc_html_e( 'Tack', 'equine-event-manager' ); ?></span><?php endif; ?><?php if ( '' !== $eem_cell_group ) : ?><span class="eem-occ-badge eem-occ-badge--group"><?php esc_html_e( 'Group', 'equine-event-manager' ); ?></span><?php endif; ?></span><?php endif; ?>
 											<?php if ( '' !== $eem_cell_group ) : ?><span class="screen-reader-text"><?php echo esc_html( sprintf( /* translators: %s: group name */ __( '(group: %s)', 'equine-event-manager' ), $eem_cell_group ) ); ?></span><?php endif; ?>
 											<?php echo esc_html( $cell['label'] ); ?>
+											<?php if ( ! empty( $cell['suggested'] ) ) : ?><span class="screen-reader-text"><?php esc_html_e( '(suggested — not saved)', 'equine-event-manager' ); ?></span><?php endif; ?>
 											<?php if ( '' !== $eem_cell_note ) : ?><span class="eem-occ-pill__note-dot" aria-hidden="true"></span><span class="screen-reader-text"><?php esc_html_e( '(has special requests)', 'equine-event-manager' ); ?></span><?php endif; ?>
 											<svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
 										</span>
