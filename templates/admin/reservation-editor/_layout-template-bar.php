@@ -31,10 +31,10 @@ $context = isset( $context ) ? (string) $context : 'stall';
 		</p>
 	</div>
 	<div class="eem-layout-template-bar__actions">
-		<button type="button" class="eem-btn-primary" data-eem-action="venue-save-layout">
+		<button type="button" class="eem-btn eem-btn-primary" data-eem-action="venue-save-layout">
 			<?php esc_html_e( 'Save Layout to Venue', 'equine-event-manager' ); ?>
 		</button>
-		<button type="button" class="eem-btn-secondary" data-eem-action="venue-load-layout">
+		<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="venue-load-layout">
 			<?php esc_html_e( 'Load Layout from Venue', 'equine-event-manager' ); ?>
 		</button>
 	</div>
