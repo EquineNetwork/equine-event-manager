@@ -365,9 +365,12 @@ class EEM_Entries {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'equine-event-manager' ) );
 		}
 
-		// Shared editor helpers: eem_render_breadcrumb() + eem_render_editor_field_row().
+		// Shared editor helpers: breadcrumb, field-row, and the section-card
+		// skeleton (icon chip + padded header + body) used by the reservation
+		// editor — reused so the entry cards match it exactly.
 		require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/_breadcrumb.php';
 		require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_partial-field-row.php';
+		require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_section-skeleton.php';
 
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended
 		$entry_id = isset( $_GET['entry_id'] ) ? absint( wp_unslash( $_GET['entry_id'] ) ) : 0;
@@ -466,24 +469,24 @@ class EEM_Entries {
 							</div>
 						<?php endif; ?>
 
-						<!-- Description card -->
-						<section class="eem-card eem-entry-card" id="eem-entry-description-card" <?php echo $has_linked_event ? '' : 'style="display:none"'; ?>>
-							<div class="eem-card-head"><h2 class="eem-card-title"><?php esc_html_e( 'Description', 'equine-event-manager' ); ?></h2></div>
-							<div class="eem-card-body">
-								<?php
-								eem_render_editor_field_row( array(
-									'label'        => __( 'Description', 'equine-event-manager' ),
-									'label_sub'    => __( 'Optional intro shown above the entry items on the customer page', 'equine-event-manager' ),
-									'control_html' => '<textarea class="eem-field-input" id="eem-entry-description" rows="3" placeholder="' . esc_attr__( 'e.g. Pre-purchase your class entries below.', 'equine-event-manager' ) . '">' . esc_textarea( $description ) . '</textarea>',
-								) );
-								?>
-							</div>
-						</section>
+						<?php if ( $has_linked_event ) : ?>
+						<?php
+						// Build each card's body, then render through the shared
+						// reservation-editor section helper so the Entry cards get the
+						// SAME chrome as Edit Reservation (icon chip + padded header).
 
-						<!-- Pre-Entries line-items card -->
-						<section class="eem-card eem-entry-card" id="eem-entry-items-card" <?php echo $has_linked_event ? '' : 'style="display:none"'; ?>>
-							<div class="eem-card-head"><h2 class="eem-card-title"><?php esc_html_e( 'Entry Items', 'equine-event-manager' ); ?></h2></div>
-							<div class="eem-card-body">
+						// Description card body.
+						ob_start();
+						eem_render_editor_field_row( array(
+							'label'        => __( 'Description', 'equine-event-manager' ),
+							'label_sub'    => __( 'Optional intro shown above the entry items on the customer page', 'equine-event-manager' ),
+							'control_html' => '<textarea class="eem-field-input" id="eem-entry-description" rows="3" placeholder="' . esc_attr__( 'e.g. Pre-purchase your class entries below.', 'equine-event-manager' ) . '">' . esc_textarea( $description ) . '</textarea>',
+						) );
+						$eem_desc_body = (string) ob_get_clean();
+
+						// Entry Items card body.
+						ob_start();
+						?>
 								<table class="eem-repeat-table">
 									<thead>
 										<tr>
@@ -525,8 +528,30 @@ class EEM_Entries {
 									<td><div class="eem-repeat-price-wrap"><span class="eem-repeat-price-sym">$</span><input class="eem-repeat-price-in" type="number" min="0" step="0.01" name="eem_entry_items[__index__][price]" value="0.00"></div></td>
 									<td><button class="eem-btn-delete" type="button" aria-label="<?php esc_attr_e( 'Delete', 'equine-event-manager' ); ?>" data-eem-action="reservation-editor-remove-repeating-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
 								</tr></template>
-							</div>
-						</section>
+						<?php
+						$eem_items_body = (string) ob_get_clean();
+
+						// Render both cards through the shared section helper.
+						eem_render_reservation_editor_section( array(
+							'key'           => 'entry-description',
+							'title'         => __( 'Description', 'equine-event-manager' ),
+							'icon_tone'     => 'blue',
+							'icon_key'      => 'file-text',
+							'enable_toggle' => false,
+							'collapsed'     => false,
+							'body_html'     => $eem_desc_body,
+						) );
+						eem_render_reservation_editor_section( array(
+							'key'           => 'entry-items',
+							'title'         => __( 'Entry Items', 'equine-event-manager' ),
+							'icon_tone'     => 'green',
+							'icon_key'      => 'package',
+							'enable_toggle' => false,
+							'collapsed'     => false,
+							'body_html'     => $eem_items_body,
+						) );
+						?>
+						<?php endif; ?>
 					</main>
 				</div>
 			</div>
