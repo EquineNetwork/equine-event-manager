@@ -2303,7 +2303,7 @@ class EEM_Admin {
 										if ( '' !== trim( (string) ( $eem_sr['block'] ?? '' ) ) ) { $eem_has_block = true; break; }
 									}
 									?>
-									<?php $this->render_stall_chart_matrix_table( $grid['stall_rows'], $date_cols, __( 'Stall', 'equine-event-manager' ), $eem_has_block ? __( 'Block', 'equine-event-manager' ) : '' ); ?>
+									<?php $this->render_stall_chart_matrix_table( $grid['stall_rows'], $date_cols, __( 'Stall', 'equine-event-manager' ), $eem_has_block ? __( 'Block', 'equine-event-manager' ) : '', array(), 'stall' ); ?>
 								<?php else : ?>
 									<p class="eem-stall-chart-no-data"><?php esc_html_e( 'No stall assignments configured for this reservation.', 'equine-event-manager' ); ?></p>
 								<?php endif; ?>
@@ -2320,7 +2320,7 @@ class EEM_Admin {
 							<!-- RV SECTION: hidden when inv=stalls -->
 							<div id="eem-sc-loc-rv" data-inv-section="rv"<?php echo 'stalls' === $inv ? ' style="display:none"' : ''; ?>>
 								<?php if ( ! empty( $grid['rv_rows'] ) ) : ?>
-									<?php $this->render_stall_chart_matrix_table( $grid['rv_rows'], $date_cols, __( 'RV Lot', 'equine-event-manager' ), '', $rv_zone_map ); ?>
+									<?php $this->render_stall_chart_matrix_table( $grid['rv_rows'], $date_cols, __( 'RV Lot', 'equine-event-manager' ), '', $rv_zone_map, 'rv' ); ?>
 								<?php else : ?>
 									<p class="eem-stall-chart-no-data"><?php esc_html_e( 'No RV lot assignments configured for this reservation.', 'equine-event-manager' ); ?></p>
 								<?php endif; ?>
@@ -4889,6 +4889,47 @@ class EEM_Admin {
 				}
 			}
 
+			// Per-night override overlay for RV lots (v1 #4) — mirror of the stall
+			// overlay above. If this order carries a saved RV Lot Night Map, vacate
+			// the lots it no longer wants on overridden nights and occupy the new lot.
+			if ( '' !== (string) $this->get_order_component_note_value( $order, 'rv', 'RV Lot Night Map' ) ) {
+				$rv_night_assign = $this->get_order_night_assignments( $order, $rv_dates, $rv_manual, 'rv', 'RV Lot Night Map' );
+				foreach ( $rv_dates as $date_key ) {
+					$want = isset( $rv_night_assign[ $date_key ] ) ? array_map( 'strval', (array) $rv_night_assign[ $date_key ] ) : array();
+
+					foreach ( (array) $rv_units['assigned'] as $held ) {
+						if ( in_array( (string) $held, $want, true ) ) {
+							continue;
+						}
+						if ( isset( $rv_rows[ $held ]['cells'][ $date_key ]['order_key'] )
+							&& (string) $rv_rows[ $held ]['cells'][ $date_key ]['order_key'] === (string) $order['order_key'] ) {
+							$rv_rows[ $held ]['cells'][ $date_key ] = array( 'type' => 'available', 'label' => __( 'Available', 'equine-event-manager' ) );
+							unset( $rv_map[ $held ][ $date_key ] );
+						}
+					}
+
+					foreach ( $want as $unit ) {
+						if ( ! isset( $rv_rows[ $unit ]['cells'][ $date_key ] ) ) {
+							continue;
+						}
+						$cur = $rv_rows[ $unit ]['cells'][ $date_key ];
+						if ( isset( $cur['type'] ) && 'occupied' === $cur['type'] && (string) ( $cur['order_key'] ?? '' ) !== (string) $order['order_key'] ) {
+							continue;
+						}
+						$rv_rows[ $unit ]['cells'][ $date_key ] = array(
+							'type'             => 'occupied',
+							'label'            => $order['customer_name'],
+							'order_key'        => $order['order_key'],
+							'order_number'     => (string) $order['order_number'],
+							'special_requests' => $special_requests,
+							'group_name'       => $group_name,
+							'suggested'        => false,
+						);
+						$this->mark_stall_chart_unit_occupied( $rv_map, $unit, array( $date_key ), $order['order_key'] );
+					}
+				}
+			}
+
 			if ( $stall_units['unassigned'] > 0 ) {
 				$issues[] = array(
 					'text'          => sprintf( __( 'Order #%1$s (%2$s) still has %3$d unassigned stall(s).', 'equine-event-manager' ), $order['order_number'], $order['customer_name'], $stall_units['unassigned'] ),
@@ -5206,6 +5247,15 @@ class EEM_Admin {
 		$src_date    = isset( $_POST['source_date'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['source_date'] ) ) : '';
 		$dest_stall  = isset( $_POST['destination_stall'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['destination_stall'] ) ) : '';
 		$scope       = isset( $_POST['scope'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['scope'] ) ) : 'this-night';
+		// v1 #4: the same move flow drives stall AND RV-lot per-night moves; the
+		// kind picks which component / assignment note / night-map / chart config
+		// the swap reads and writes.
+		$kind        = ( isset( $_POST['kind'] ) && 'rv' === sanitize_key( wp_unslash( $_POST['kind'] ) ) ) ? 'rv' : 'stall';
+		$is_rv       = ( 'rv' === $kind );
+		$note_comp   = $is_rv ? 'rv' : 'stall';
+		$assign_lbl  = $is_rv ? 'Assigned RV Lots' : 'Assigned Stall Units';
+		$night_lbl   = $is_rv ? 'RV Lot Night Map' : 'Stall Night Map';
+		$unit_noun   = $is_rv ? __( 'lot', 'equine-event-manager' ) : __( 'stall', 'equine-event-manager' );
 
 		if ( '' === $order_key || '' === $src_stall || '' === $dest_stall ) {
 			wp_send_json_error( array( 'message' => __( 'Missing required parameters.', 'equine-event-manager' ) ), 400 );
@@ -5223,25 +5273,29 @@ class EEM_Admin {
 			$this->send_assignment_lock_busy();
 		}
 
-		// This order's occupied stall nights, and which of them this move targets.
-		// "Just this night" (this-night) scopes the move to $src_date only; any
-		// other scope moves the whole stay. Falling back to all nights when the
-		// single date is missing keeps the move safe rather than a no-op.
-		$order_stall_dates = $this->get_stall_chart_occupied_dates( $order['stall_arrival_date'], $order['stall_departure_date'] );
-		$single_night      = ( 'this-night' === $scope && '' !== $src_date && in_array( $src_date, $order_stall_dates, true ) );
-		$target_dates      = $single_night ? array( $src_date ) : $order_stall_dates;
+		// This order's occupied nights (for the active kind), and which this move
+		// targets. "Just this night" (this-night) scopes the move to $src_date
+		// only; any other scope moves the whole stay. Falling back to all nights
+		// when the single date is missing keeps the move safe rather than a no-op.
+		$arrival   = $is_rv ? $order['rv_arrival_date'] : $order['stall_arrival_date'];
+		$departure = $is_rv ? $order['rv_departure_date'] : $order['stall_departure_date'];
+		$order_dates  = $this->get_stall_chart_occupied_dates( $arrival, $departure );
+		$single_night = ( 'this-night' === $scope && '' !== $src_date && in_array( $src_date, $order_dates, true ) );
+		$target_dates = $single_night ? array( $src_date ) : $order_dates;
 
-		// Validate destination stall exists + isn't blocked.
+		// Validate the destination unit exists in the chart + isn't blocked.
 		if ( $reservation_id > 0 ) {
-			$config = $this->get_stall_chart_config( $reservation_id );
-			if ( in_array( $dest_stall, (array) $config['blocked_stall_units'], true ) ) {
-				wp_send_json_error( array( 'message' => __( 'Destination stall is blocked.', 'equine-event-manager' ) ), 409 );
+			$config       = $this->get_stall_chart_config( $reservation_id );
+			$blocked_pool = $is_rv ? ( $config['blocked_rv_lots'] ?? array() ) : ( $config['blocked_stall_units'] ?? array() );
+			$unit_pool    = $is_rv ? ( $config['rv_lot_names'] ?? array() ) : ( $config['stall_units'] ?? array() );
+			if ( in_array( $dest_stall, (array) $blocked_pool, true ) ) {
+				wp_send_json_error( array( 'message' => sprintf( /* translators: %s: stall/lot noun */ __( 'Destination %s is blocked.', 'equine-event-manager' ), $unit_noun ) ), 409 );
 			}
-			if ( ! in_array( $dest_stall, (array) $config['stall_units'], true ) ) {
-				wp_send_json_error( array( 'message' => __( 'Destination stall is not part of this chart.', 'equine-event-manager' ) ), 409 );
+			if ( ! in_array( $dest_stall, (array) $unit_pool, true ) ) {
+				wp_send_json_error( array( 'message' => sprintf( /* translators: %s: stall/lot noun */ __( 'Destination %s is not part of this chart.', 'equine-event-manager' ), $unit_noun ) ), 409 );
 			}
 
-			// Per-DATE conflict check: is destination_stall occupied by ANOTHER
+			// Per-DATE conflict check: is the destination unit occupied by ANOTHER
 			// order on any of the dates this move actually touches? (A whole-stay
 			// move checks every night; a single-night move checks just that night.)
 			$other_orders = array_filter(
@@ -5253,12 +5307,14 @@ class EEM_Admin {
 			);
 			$target_lookup = array_fill_keys( $target_dates, true );
 			foreach ( $other_orders as $other ) {
-				$other_dates = $this->get_stall_chart_occupied_dates( $other['stall_arrival_date'], $other['stall_departure_date'] );
-				$other_flat  = $this->parse_assigned_units_string( $this->get_order_component_note_value( $other, 'stall', 'Assigned Stall Units' ) );
-				$other_night = $this->get_order_night_assignments( $other, $other_dates, $other_flat );
+				$other_arr   = $is_rv ? $other['rv_arrival_date'] : $other['stall_arrival_date'];
+				$other_dep   = $is_rv ? $other['rv_departure_date'] : $other['stall_departure_date'];
+				$other_dates = $this->get_stall_chart_occupied_dates( $other_arr, $other_dep );
+				$other_flat  = $this->parse_assigned_units_string( $this->get_order_component_note_value( $other, $note_comp, $assign_lbl ) );
+				$other_night = $this->get_order_night_assignments( $other, $other_dates, $other_flat, $note_comp, $night_lbl );
 				foreach ( $other_night as $d => $units ) {
 					if ( isset( $target_lookup[ $d ] ) && in_array( (string) $dest_stall, array_map( 'strval', (array) $units ), true ) ) {
-						wp_send_json_error( array( 'message' => __( 'Destination stall is already reserved on one of those nights.', 'equine-event-manager' ) ), 409 );
+						wp_send_json_error( array( 'message' => sprintf( /* translators: %s: stall/lot noun */ __( 'Destination %s is already reserved on one of those nights.', 'equine-event-manager' ), $unit_noun ) ), 409 );
 					}
 				}
 			}
@@ -5266,8 +5322,8 @@ class EEM_Admin {
 
 		// Resolve the order's current per-night assignment, then swap src -> dest
 		// only on the target date(s).
-		$flat  = $this->parse_assigned_units_string( $this->get_order_component_note_value( $order, 'stall', 'Assigned Stall Units' ) );
-		$night = $this->get_order_night_assignments( $order, $order_stall_dates, $flat );
+		$flat  = $this->parse_assigned_units_string( $this->get_order_component_note_value( $order, $note_comp, $assign_lbl ) );
+		$night = $this->get_order_night_assignments( $order, $order_dates, $flat, $note_comp, $night_lbl );
 		foreach ( $target_dates as $d ) {
 			$units   = isset( $night[ $d ] ) ? array_values( array_map( 'strval', (array) $night[ $d ] ) ) : array();
 			$swapped = array();
@@ -5295,18 +5351,27 @@ class EEM_Admin {
 		}
 		$new_flat   = array_keys( $new_flat );
 		$serialized = $this->serialize_stall_night_map( $night );
+		$new_csv    = implode( ', ', array_filter( array_map( 'strval', $new_flat ) ) );
 
-		$existing_rv = $this->parse_assigned_units_string(
-			$this->get_order_component_note_value( $order, 'rv', 'Assigned RV Lots' )
-		);
+		// Preserve the OTHER component's assignment untouched while we rewrite this
+		// kind's flat assignment (update_order_unit_assignments takes both CSVs).
+		if ( $is_rv ) {
+			$preserved_stall = $this->parse_assigned_units_string( $this->get_order_component_note_value( $order, 'stall', 'Assigned Stall Units' ) );
+			$stall_csv = implode( ', ', array_filter( array_map( 'strval', (array) $preserved_stall ) ) );
+			$rv_csv    = $new_csv;
+		} else {
+			$preserved_rv = $this->parse_assigned_units_string( $this->get_order_component_note_value( $order, 'rv', 'Assigned RV Lots' ) );
+			$stall_csv = $new_csv;
+			$rv_csv    = implode( ', ', array_filter( array_map( 'strval', (array) $preserved_rv ) ) );
+		}
 
-		$ok = $this->orders_repository->update_order_unit_assignments(
-			$order_key,
-			implode( ', ', array_filter( array_map( 'strval', $new_flat ) ) ),
-			implode( ', ', array_filter( array_map( 'strval', (array) $existing_rv ) ) )
-		);
-		// Persist (or clear) the per-night override map.
-		$this->orders_repository->update_order_stall_night_map( $order_key, $serialized );
+		$ok = $this->orders_repository->update_order_unit_assignments( $order_key, $stall_csv, $rv_csv );
+		// Persist (or clear) the per-night override map on the active kind.
+		if ( $is_rv ) {
+			$this->orders_repository->update_order_rv_night_map( $order_key, $serialized );
+		} else {
+			$this->orders_repository->update_order_stall_night_map( $order_key, $serialized );
+		}
 
 		$this->release_assignment_lock( $reservation_id );
 
@@ -5315,8 +5380,11 @@ class EEM_Admin {
 		}
 
 		wp_send_json_success( array(
-			'message'           => __( 'Stall assignment moved.', 'equine-event-manager' ),
+			'message'           => $is_rv
+				? __( 'RV lot assignment moved.', 'equine-event-manager' )
+				: __( 'Stall assignment moved.', 'equine-event-manager' ),
 			'order_id'          => $order_key,
+			'kind'              => $kind,
 			'source_stall'      => $src_stall,
 			'destination_stall' => $dest_stall,
 			'scope'             => $scope,
@@ -5413,7 +5481,8 @@ class EEM_Admin {
 		) );
 	}
 
-	private function render_stall_chart_matrix_table( $rows, $date_columns, $primary_label = 'Unit', $secondary_label = 'Block', $zone_map = array() ) {
+	private function render_stall_chart_matrix_table( $rows, $date_columns, $primary_label = 'Unit', $secondary_label = 'Block', $zone_map = array(), $kind = 'stall' ) {
+		$kind = ( 'rv' === $kind ) ? 'rv' : 'stall';
 		$show_secondary_column = '' !== (string) $secondary_label;
 		$table_class = ( 'Stall' === $primary_label || 'Unit' === $primary_label ) ? 'eem-stall-chart-table' : 'eem-rv-chart-table';
 		?>
@@ -5480,6 +5549,7 @@ class EEM_Admin {
 											data-order-key="<?php echo esc_attr( $cell['order_key'] ); ?>"
 											data-order-id="<?php echo esc_attr( $cell['order_key'] ); ?>"
 											data-eem-action="stall-pill-click"
+											data-kind="<?php echo esc_attr( $kind ); ?>"
 											data-customer-name="<?php echo esc_attr( $cell['label'] ); ?>"
 											data-customer="<?php echo esc_attr( $cell['label'] ); ?>"
 											data-order-number="<?php echo esc_attr( $this->format_order_number_display( (string) ( $cell['order_number'] ?? '' ) ) ); ?>"
@@ -5500,6 +5570,7 @@ class EEM_Admin {
 									<?php else : ?>
 										<span class="eem-occ-pill eem-occ-pill--available"
 											data-eem-action="stall-available-click"
+											data-kind="<?php echo esc_attr( $kind ); ?>"
 											data-stall="<?php echo esc_attr( (string) $row['unit'] ); ?>"
 											data-date="<?php echo esc_attr( (string) $date_key ); ?>"><?php esc_html_e( 'Available', 'equine-event-manager' ); ?></span>
 									<?php endif; ?>
@@ -6222,8 +6293,8 @@ class EEM_Admin {
 	 * @param array $order Order payload.
 	 * @return array<string, array<int, string>> date (Y-m-d) => list of unit labels.
 	 */
-	private function parse_stall_night_overrides( $order ) {
-		$raw = $this->get_order_component_note_value( $order, 'stall', 'Stall Night Map' );
+	private function parse_stall_night_overrides( $order, $component = 'stall', $note_label = 'Stall Night Map' ) {
+		$raw = $this->get_order_component_note_value( $order, $component, $note_label );
 		$map = array();
 
 		if ( '' === (string) $raw ) {
@@ -6288,8 +6359,8 @@ class EEM_Admin {
 	 * @param array<int, string> $flat_units  Whole-stay assigned units.
 	 * @return array<string, array<int, string>> date => list of unit labels.
 	 */
-	private function get_order_night_assignments( $order, $stall_dates, $flat_units ) {
-		$overrides = $this->parse_stall_night_overrides( $order );
+	private function get_order_night_assignments( $order, $stall_dates, $flat_units, $component = 'stall', $note_label = 'Stall Night Map' ) {
+		$overrides = $this->parse_stall_night_overrides( $order, $component, $note_label );
 		$result    = array();
 
 		foreach ( (array) $stall_dates as $date ) {

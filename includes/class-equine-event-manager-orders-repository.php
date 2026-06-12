@@ -576,6 +576,35 @@ class EEM_Orders_Repository {
 	 * @return bool True when at least one component row was updated.
 	 */
 	public function update_order_stall_night_map( $order_key, $serialized_map = '' ) {
+		return $this->update_order_night_map( $order_key, 'stall', 'Stall Night Map', $serialized_map );
+	}
+
+	/**
+	 * Persist (or clear) an order's per-night RV-lot override map (v1 #4).
+	 *
+	 * RV lots are normally assigned for the whole stay (the `Assigned RV Lots`
+	 * line applies to every night). This optional `RV Lot Night Map` line records
+	 * per-DATE overrides for nights that differ — e.g. moving a rig to a different
+	 * lot for a single night. Same format + semantics as the stall night map.
+	 *
+	 * @param string $order_key      Order key.
+	 * @param string $serialized_map Serialized override map, or '' to clear.
+	 * @return bool True when at least one component row was updated.
+	 */
+	public function update_order_rv_night_map( $order_key, $serialized_map = '' ) {
+		return $this->update_order_night_map( $order_key, 'rv', 'RV Lot Night Map', $serialized_map );
+	}
+
+	/**
+	 * Shared writer for a per-night override map note on an order component.
+	 *
+	 * @param string $order_key      Order key.
+	 * @param string $component      Component table slug ('stall' | 'rv').
+	 * @param string $note_label     Note line label ('Stall Night Map' | 'RV Lot Night Map').
+	 * @param string $serialized_map Serialized override map, or '' to clear the line.
+	 * @return bool True when at least one component row was updated.
+	 */
+	private function update_order_night_map( $order_key, $component, $note_label, $serialized_map = '' ) {
 		$order = $this->get_order( $order_key );
 
 		if ( ! $order ) {
@@ -585,19 +614,19 @@ class EEM_Orders_Repository {
 		$serialized_map = trim( (string) $serialized_map );
 		$updated_any    = false;
 
-		foreach ( $order['components'] as $component ) {
-			if ( 'stall' !== $component['table'] ) {
+		foreach ( $order['components'] as $comp ) {
+			if ( $component !== $comp['table'] ) {
 				continue;
 			}
 
-			$notes = isset( $component['notes'] ) ? (string) $component['notes'] : '';
+			$notes = isset( $comp['notes'] ) ? (string) $comp['notes'] : '';
 			$notes = ( '' === $serialized_map )
-				? $this->remove_note_line( $notes, 'Stall Night Map' )
-				: $this->upsert_note_line( $notes, 'Stall Night Map', $serialized_map );
+				? $this->remove_note_line( $notes, $note_label )
+				: $this->upsert_note_line( $notes, $note_label, $serialized_map );
 
 			$updated_any = $this->update_component_fields(
-				$component['table'],
-				$component['row_id'],
+				$comp['table'],
+				$comp['row_id'],
 				array( 'notes' => $notes ),
 				array( '%s' )
 			) || $updated_any;

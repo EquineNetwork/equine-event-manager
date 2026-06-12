@@ -4458,6 +4458,9 @@
 			window._scActiveDate      = srcDate;
 			window._scCustomerName    = customer;
 			window._scActivePillEl    = pill;
+			// v1 #4: remember whether this pill is a stall or an RV lot so the
+			// move targets the right component (only same-kind drops allowed).
+			window._scActiveKind      = pill.getAttribute('data-kind') || 'stall';
 			// V1 #5: set the tack toggle button's label from the pill's state.
 			window._scActiveIsTack = pill.getAttribute('data-is-tack') === '1';
 			var tackLabel = document.querySelector('#eem-stall-chart-tack-btn [data-eem-tack-btn-label]');
@@ -4613,14 +4616,23 @@
 		var availPill = t.closest('[data-eem-action="stall-available-click"]');
 		if (availPill && document.body.classList.contains('destination-mode')) {
 			ev.preventDefault();
+			// v1 #4: only allow dropping onto a destination of the SAME kind.
+			var destKind = availPill.getAttribute('data-kind') || 'stall';
+			if (destKind !== (window._scActiveKind || 'stall')) {
+				if (window.EEM && window.EEM.showSaveToast) {
+					window.EEM.showSaveToast('Move a stall to a stall and an RV lot to an RV lot.', { variant: 'error', sub: '' });
+				}
+				return;
+			}
+			var noun = (window._scActiveKind === 'rv') ? 'Lot' : 'Stall';
 			window._scDestStall = availPill.getAttribute('data-stall') || '';
 			window._scDestDate  = availPill.getAttribute('data-date') || '';
 			var overlay = document.getElementById('eem-scope-modal-overlay');
 			var info    = document.getElementById('eem-scope-modal-current');
 			if (info) {
 				info.innerHTML = '<strong>' + (window._scCustomerName || '—') + '</strong> &mdash; ' +
-					'Stall ' + (window._scActiveStall || '—') + ' on ' + (window._scActiveDate || '—') +
-					' &rarr; Stall ' + (window._scDestStall || '—');
+					noun + ' ' + (window._scActiveStall || '—') + ' on ' + (window._scActiveDate || '—') +
+					' &rarr; ' + noun + ' ' + (window._scDestStall || '—');
 			}
 			var errEl = document.getElementById('eem-scope-modal-error');
 			if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
@@ -4652,6 +4664,7 @@
 			body.set('source_date', window._scActiveDate || '');
 			body.set('destination_stall', window._scDestStall || '');
 			body.set('scope', scope);
+			body.set('kind', window._scActiveKind || 'stall');
 			confirmBtn.disabled = true;
 			fetch((cfg.ajaxUrl || window.ajaxurl || '/wp-admin/admin-ajax.php'), {
 				method: 'POST', credentials: 'same-origin',
