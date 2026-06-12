@@ -2203,7 +2203,9 @@ class EEM_Events {
 
 		ob_start();
 
-		if ( 'calendar' === $view ) {
+		if ( 'map' === $view ) {
+			echo $this->render_event_map_markup( $events ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped within (incl. wp_json_encode payload).
+		} elseif ( 'calendar' === $view ) {
 			echo wp_kses_post( $this->render_event_calendar_markup( $events, (string) $atts['month'] ) );
 		} else {
 			?>
@@ -3311,6 +3313,57 @@ class EEM_Events {
 	 * @param string                           $month Optional month in `Y-m` format.
 	 * @return string
 	 */
+	/**
+	 * Render the events map view ([en_events view="map"]). Plots one Google Maps
+	 * pin per event that has venue coordinates; each pin's info window links to
+	 * the event. Degrades gracefully: a friendly notice when no Maps key is
+	 * configured or when no events have coordinates yet.
+	 *
+	 * @param array<int, array<string, mixed>> $events Normalized event collection.
+	 * @return string
+	 */
+	private function render_event_map_markup( $events ) {
+		$api_key = self::get_google_maps_api_key();
+		if ( '' === $api_key ) {
+			return '<div class="eem-event-map-notice">' . esc_html__( 'The map view needs a Google Maps API key. Add one under Settings → Integrations to show events on a map.', 'equine-event-manager' ) . '</div>';
+		}
+
+		$pins = array();
+		foreach ( $events as $event_data ) {
+			$lat = isset( $event_data['venue']['lat'] ) ? (string) $event_data['venue']['lat'] : '';
+			$lng = isset( $event_data['venue']['lng'] ) ? (string) $event_data['venue']['lng'] : '';
+			if ( '' === $lat || '' === $lng || ! is_numeric( $lat ) || ! is_numeric( $lng ) ) {
+				continue;
+			}
+			$pins[] = array(
+				'title' => (string) $event_data['title'],
+				'date'  => self::format_date_range_label( $event_data['start_date'], $event_data['end_date'] ),
+				'venue' => isset( $event_data['venue_name'] ) ? (string) $event_data['venue_name'] : '',
+				'url'   => (string) self::get_event_frontend_url( $event_data ),
+				'lat'   => (float) $lat,
+				'lng'   => (float) $lng,
+			);
+		}
+
+		if ( empty( $pins ) ) {
+			return '<div class="eem-event-map-notice">' . esc_html__( 'No events have map coordinates yet. Open a venue and save it (with a Maps key set) to auto-fill its location, or enter Latitude/Longitude manually.', 'equine-event-manager' ) . '</div>';
+		}
+
+		$ver = defined( 'EQUINE_EVENT_MANAGER_VERSION' ) ? EQUINE_EVENT_MANAGER_VERSION : false;
+		wp_enqueue_script( 'eem-event-map', EQUINE_EVENT_MANAGER_URL . 'assets/js/event-map.js', array(), $ver, true );
+		// Google Maps JS loads after event-map.js (dependency) so the callback
+		// `eemInitEventMaps` is already defined when Maps invokes it.
+		wp_enqueue_script(
+			'eem-google-maps',
+			'https://maps.googleapis.com/maps/api/js?key=' . rawurlencode( $api_key ) . '&callback=eemInitEventMaps&loading=async',
+			array( 'eem-event-map' ),
+			null,
+			true
+		);
+
+		return '<div class="eem-event-map" data-eem-event-map data-events="' . esc_attr( (string) wp_json_encode( $pins ) ) . '"></div>';
+	}
+
 	private function render_event_calendar_markup( $events, $month = '' ) {
 		$month = preg_match( '/^\d{4}-\d{2}$/', (string) $month ) ? (string) $month : '';
 
@@ -3802,6 +3855,8 @@ class EEM_Events {
 				'address_display' => '',
 				'map_query'       => '',
 				'filter_url'      => '',
+				'lat'             => '',
+				'lng'             => '',
 			);
 		}
 
@@ -3838,6 +3893,8 @@ class EEM_Events {
 			'address_display' => implode( "\n", $lines ),
 			'map_query'       => implode( ', ', $lines ),
 			'filter_url'      => self::get_directory_url( self::DIRECTORY_LOCATION_ROUTE_BASE, $name ),
+			'lat'             => (string) get_post_meta( $venue_id, '_en_venue_lat', true ),
+			'lng'             => (string) get_post_meta( $venue_id, '_en_venue_lng', true ),
 		);
 	}
 
