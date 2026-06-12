@@ -263,6 +263,9 @@ class EEM_Plugin {
 		// C15 — Reports export + cached-file download endpoints.
 		EEM_Reports_Page::register();
 		add_action( 'admin_post_eem_order_trash',                 array( 'EEM_Orders_List_Page', 'handle_trash' ) );
+		// v1 #9 — Orders Trash lifecycle: restore + permanent delete.
+		add_action( 'admin_post_eem_order_restore',              array( 'EEM_Orders_List_Page', 'handle_restore' ) );
+		add_action( 'admin_post_eem_order_delete_permanently',   array( 'EEM_Orders_List_Page', 'handle_delete_permanently' ) );
 		add_action( 'admin_post_eem_order_print_receipt',         array( 'EEM_Orders_List_Page', 'handle_print_receipt' ) );
 		// C5.G.8 — hidden Customer Profile placeholder page. Real page
 		// replaces this stub when the planned-roadmap chunk ships

@@ -102,7 +102,7 @@ $o3 = array( 'notes' => 'no id here' );
 ok( 'returns 0 when no match', 0 === $rid_ref->invoke( $page_obj, $o3 ), $pass, $fail, $log );
 
 echo "\n[8] Inline notice rendering\n";
-foreach ( array( 'notification_resent', 'notification_no_email', 'export_failed', 'order_trash_deferred', 'print_receipt_deferred', 'denied', 'notfound' ) as $code ) {
+foreach ( array( 'notification_resent', 'notification_no_email', 'export_failed', 'order_trashed', 'order_restored', 'order_deleted', 'print_receipt_deferred', 'denied', 'notfound' ) as $code ) {
 	$_GET = array( 'page' => EEM_Orders_List_Page::MENU_SLUG, 'eem_notice' => $code );
 	ob_start();
 	( new EEM_Orders_List_Page() )->render();
@@ -140,7 +140,7 @@ if ( $no_email_order ) {
 	$log[] = "  (no orders with empty email — resend handler end-to-end skipped)";
 }
 
-echo "\n[10] handle_trash stub end-to-end\n";
+echo "\n[10] handle_trash end-to-end (v1 #9 — real soft-delete)\n";
 $any_order = ! empty( $orders ) ? $orders[0] : null;
 if ( $any_order ) {
 	$_POST = array(
@@ -154,9 +154,11 @@ if ( $any_order ) {
 		EEM_Orders_List_Page::handle_trash();
 		ok( 'trash handler redirected', false, $pass, $fail, $log, 'no redirect' );
 	} catch ( RuntimeException $e ) {
-		ok( 'trash redirects with order_trash_deferred (stub per CLEANUP #14)', str_contains( $e->getMessage(), 'eem_notice=order_trash_deferred' ), $pass, $fail, $log, $e->getMessage() );
+		ok( 'trash redirects with order_trashed', str_contains( $e->getMessage(), 'eem_notice=order_trashed' ), $pass, $fail, $log, $e->getMessage() );
 	}
 	remove_all_filters( 'wp_redirect' );
+	// Restore — this test really trashes now; leave the DB as we found it.
+	( new EEM_Orders_Repository() )->restore_order( $any_order['order_key'] );
 } else {
 	$log[] = "  (no orders — trash handler skipped)";
 }

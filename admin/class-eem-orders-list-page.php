@@ -176,7 +176,12 @@ class EEM_Orders_List_Page {
 			'notification_no_email'    => array( 'type' => 'warning', 'text' => __( 'Cannot resend — this order has no customer email on file.', 'equine-event-manager' ) ),
 			'notification_failed'      => array( 'type' => 'error',   'text' => __( 'Could not resend the notification email. Check the WordPress error log.', 'equine-event-manager' ) ),
 			'export_failed'            => array( 'type' => 'error',   'text' => __( 'Could not generate the CSV export. The order may have been deleted.', 'equine-event-manager' ) ),
-			'order_trash_deferred'     => array( 'type' => 'warning', 'text' => __( 'Move to Trash for orders is not yet wired — the soft-delete schema lands in a future chunk. No changes were made.', 'equine-event-manager' ) ),
+			'order_trashed'            => array( 'type' => 'success', 'text' => __( 'Order moved to Trash.', 'equine-event-manager' ) ),
+			'order_trash_failed'       => array( 'type' => 'error',   'text' => __( 'Could not move the order to Trash.', 'equine-event-manager' ) ),
+			'order_restored'           => array( 'type' => 'success', 'text' => __( 'Order restored.', 'equine-event-manager' ) ),
+			'order_restore_failed'     => array( 'type' => 'error',   'text' => __( 'Could not restore the order.', 'equine-event-manager' ) ),
+			'order_deleted'            => array( 'type' => 'success', 'text' => __( 'Order permanently deleted.', 'equine-event-manager' ) ),
+			'order_delete_failed'      => array( 'type' => 'error',   'text' => __( 'Could not delete the order.', 'equine-event-manager' ) ),
 			'print_receipt_deferred'   => array( 'type' => 'info',    'text' => __( 'Receipt print view lands with the Order Detail page in C6. No action taken.', 'equine-event-manager' ) ),
 			'bulk_no_selection'        => array( 'type' => 'warning', 'text' => __( 'Pick at least one order before clicking Apply.', 'equine-event-manager' ) ),
 			'bulk_no_action'           => array( 'type' => 'warning', 'text' => __( 'Pick a bulk action before clicking Apply.', 'equine-event-manager' ) ),
@@ -539,10 +544,21 @@ class EEM_Orders_List_Page {
 							<?php esc_html_e( 'Refund Order', 'equine-event-manager' ); ?>
 						</a>
 					<?php endif; ?>
-					<button type="button" class="eem-row-dd-item eem-row-dd-danger" data-eem-action="order-trash" data-order-key="<?php echo esc_attr( $order_key ); ?>" role="menuitem">
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-						<?php esc_html_e( 'Move to Trash', 'equine-event-manager' ); ?>
-					</button>
+					<?php if ( ! empty( $order['trashed'] ) ) : ?>
+						<button type="button" class="eem-row-dd-item" data-eem-action="order-restore" data-order-key="<?php echo esc_attr( $order_key ); ?>" role="menuitem">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><polyline points="3 3 3 8 8 8"/></svg>
+							<?php esc_html_e( 'Restore', 'equine-event-manager' ); ?>
+						</button>
+						<button type="button" class="eem-row-dd-item eem-row-dd-danger" data-eem-action="order-delete-permanently" data-order-key="<?php echo esc_attr( $order_key ); ?>" data-order-number="<?php echo esc_attr( $this->format_order_number_display( (string) ( $order['order_number'] ?? '' ) ) ); ?>" role="menuitem">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+							<?php esc_html_e( 'Delete Permanently', 'equine-event-manager' ); ?>
+						</button>
+					<?php else : ?>
+						<button type="button" class="eem-row-dd-item eem-row-dd-danger" data-eem-action="order-trash" data-order-key="<?php echo esc_attr( $order_key ); ?>" role="menuitem">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+							<?php esc_html_e( 'Move to Trash', 'equine-event-manager' ); ?>
+						</button>
+					<?php endif; ?>
 				</div>
 			</div>
 		</div>
@@ -905,6 +921,8 @@ class EEM_Orders_List_Page {
 				'eem_order_resend_notification' => wp_create_nonce( 'eem_order_resend_notification' ),
 				'eem_order_export_csv'          => wp_create_nonce( 'eem_order_export_csv' ),
 				'eem_order_trash'               => wp_create_nonce( 'eem_order_trash' ),
+				'eem_order_restore'             => wp_create_nonce( 'eem_order_restore' ),
+				'eem_order_delete_permanently'  => wp_create_nonce( 'eem_order_delete_permanently' ),
 				'eem_order_print_receipt'       => wp_create_nonce( 'eem_order_print_receipt' ),
 				'eem_bulk_cancel'               => wp_create_nonce( 'eem_bulk_cancel' ),
 				'eem_bulk_send_link'            => wp_create_nonce( 'eem_bulk_send_link' ),
@@ -1193,8 +1211,65 @@ class EEM_Orders_List_Page {
 	 * @return void
 	 */
 	public static function handle_trash() {
-		self::check_order_action_request( 'eem_order_trash' );
-		self::redirect_with_notice( 'order_trash_deferred' );
+		$order = self::check_order_action_request( 'eem_order_trash' );
+		$repo  = new EEM_Orders_Repository();
+		if ( $repo->trash_order( (string) $order['order_key'] ) ) {
+			self::redirect_with_notice( 'order_trashed' );
+		}
+		self::redirect_with_notice( 'order_trash_failed' );
+	}
+
+	/**
+	 * Restore a trashed order (v1 #9). The order is trashed, so the default
+	 * get_order() lookup in check_order_action_request would miss it — verify
+	 * cap + nonce + key directly, then restore via the repo (which looks up
+	 * across all trash states).
+	 *
+	 * @return void
+	 */
+	public static function handle_restore() {
+		$key = self::guard_trashed_order_action( 'eem_order_restore' );
+		$repo = new EEM_Orders_Repository();
+		if ( $repo->restore_order( $key ) ) {
+			self::redirect_with_notice( 'order_restored' );
+		}
+		self::redirect_with_notice( 'order_restore_failed' );
+	}
+
+	/**
+	 * Permanently delete a trashed order (v1 #9) — hard delete of all component
+	 * rows, unrecoverable.
+	 *
+	 * @return void
+	 */
+	public static function handle_delete_permanently() {
+		$key = self::guard_trashed_order_action( 'eem_order_delete_permanently' );
+		$repo = new EEM_Orders_Repository();
+		if ( $repo->delete_order( $key ) ) {
+			self::redirect_with_notice( 'order_deleted' );
+		}
+		self::redirect_with_notice( 'order_delete_failed' );
+	}
+
+	/**
+	 * Cap + nonce + order_key guard for actions on a TRASHED order (restore /
+	 * delete-permanently). Unlike {@see check_order_action_request} it does not
+	 * require the order to be in the live (non-trashed) list. Returns the
+	 * order_key; redirects + exits on failure.
+	 *
+	 * @param string $action Nonce action.
+	 * @return string Sanitized order_key.
+	 */
+	private static function guard_trashed_order_action( $action ) {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			self::redirect_with_notice( 'denied' );
+		}
+		check_admin_referer( $action, '_eem_action_nonce' );
+		$order_key = isset( $_POST['order_key'] ) ? sanitize_text_field( wp_unslash( $_POST['order_key'] ) ) : '';
+		if ( '' === $order_key ) {
+			self::redirect_with_notice( 'notfound' );
+		}
+		return $order_key;
 	}
 
 	/**

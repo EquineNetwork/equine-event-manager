@@ -54,6 +54,9 @@ class EEM_Orders_List_Repo {
 			'unpaid'    => __( 'Unpaid',    'equine-event-manager' ),
 			'refunded'  => __( 'Refunded',  'equine-event-manager' ),
 			'cancelled' => __( 'Cancelled', 'equine-event-manager' ),
+			// v1 #9 — soft-deleted orders. Special tab: not a payment status, it
+			// fetches only trashed orders (the others exclude them).
+			'trash'     => __( 'Trash',     'equine-event-manager' ),
 		);
 	}
 
@@ -119,8 +122,10 @@ class EEM_Orders_List_Repo {
 			'unpaid'    => 0,
 			'refunded'  => 0,
 			'cancelled' => 0,
+			'trash'     => 0,
 		);
 		$repo   = new EEM_Orders_Repository();
+		// Live tabs count non-trashed orders only (the default).
 		foreach ( $repo->get_orders() as $order ) {
 			$tab = self::map_status_slug_to_tab( isset( $order['status_slug'] ) ? $order['status_slug'] : '' );
 			$counts['all']++;
@@ -128,6 +133,8 @@ class EEM_Orders_List_Repo {
 				$counts[ $tab ]++;
 			}
 		}
+		// Trash tab counts only trashed orders.
+		$counts['trash'] = count( $repo->get_orders( '', 'date', 'desc', '', 'only' ) );
 		return $counts;
 	}
 
@@ -220,8 +227,11 @@ class EEM_Orders_List_Repo {
 		);
 		$args = wp_parse_args( $args, $defaults );
 
-		$repo   = new EEM_Orders_Repository();
-		$orders = $repo->get_orders( (string) $args['event'], 'date', 'desc', (string) $args['search'] );
+		$billing_pre = sanitize_key( (string) $args['billing_status'] );
+		$is_trash    = ( 'trash' === $billing_pre );
+		$repo        = new EEM_Orders_Repository();
+		// Trash tab fetches ONLY trashed orders; every other tab excludes them.
+		$orders = $repo->get_orders( (string) $args['event'], 'date', 'desc', (string) $args['search'], $is_trash ? 'only' : 'exclude' );
 
 		// C5.F-toolbar: type filter is now a SINGLE-select dropdown.
 		// '' = "All Types" (no type filter). A non-empty type that
@@ -240,7 +250,9 @@ class EEM_Orders_List_Repo {
 
 		$filtered = array();
 		foreach ( $orders as $order ) {
-			if ( 'all' !== $billing ) {
+			// The Trash tab shows every trashed order regardless of payment status;
+			// the payment-status tabs only apply to the (non-trashed) live list.
+			if ( ! $is_trash && 'all' !== $billing ) {
 				$tab = self::map_status_slug_to_tab( isset( $order['status_slug'] ) ? $order['status_slug'] : '' );
 				if ( $tab !== $billing ) {
 					continue;

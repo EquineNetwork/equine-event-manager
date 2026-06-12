@@ -2435,6 +2435,13 @@
 		'order-trash': function (target) {
 			submitOrderAction(target, 'eem_order_trash', 'eem_order_trash', 'Move this order to Trash?');
 		},
+		'order-restore': function (target) {
+			submitOrderAction(target, 'eem_order_restore', 'eem_order_restore');
+		},
+		'order-delete-permanently': function (target) {
+			var num = target.dataset.orderNumber || 'this order';
+			submitOrderAction(target, 'eem_order_delete_permanently', 'eem_order_delete_permanently', 'Permanently delete ' + num + '? This cannot be undone.');
+		},
 		'order-resend-notification': function (target) {
 			submitOrderAction(target, 'eem_order_resend_notification', 'eem_order_resend_notification');
 		},

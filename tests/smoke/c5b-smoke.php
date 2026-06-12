@@ -43,7 +43,7 @@ ok( 'event-filter onchange auto-submits', str_contains( $html, 'onchange="this.f
 ok( 'first event option is "All events"', str_contains( $html, '<option value="">All events</option>' ),  $pass, $fail, $log );
 ok( 'billing-tabs primitive .eem-filter-tabs', str_contains( $html, 'class="eem-filter-tabs"' ),          $pass, $fail, $log );
 $tab_count = preg_match_all( '/class="eem-filter-tab(?:\s|")/', $html );
-ok( 'renders all 5 billing tabs', 5 === $tab_count, $pass, $fail, $log, "got {$tab_count}" );
+ok( 'renders all 6 billing tabs (incl. Trash)', 6 === $tab_count, $pass, $fail, $log, "got {$tab_count}" );
 ok( '"All" tab active by default', str_contains( $html, 'eem-filter-tab active' ),                        $pass, $fail, $log );
 
 echo "\n[2] Toolbar — Row 2 (bulk-form + type-filter + search + count)\n";

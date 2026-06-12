@@ -13,7 +13,7 @@ ok( 'legacy EEM_Orders_Repository still loaded', class_exists( 'EEM_Orders_Repos
 
 echo "\n[2] Billing tabs API\n";
 $tabs = EEM_Orders_List_Repo::billing_tabs();
-ok( 'billing_tabs returns 5 entries', count( $tabs ) === 5, $pass, $fail, $log );
+ok( 'billing_tabs returns 6 entries (incl. Trash)', count( $tabs ) === 6, $pass, $fail, $log );
 foreach ( array( 'all', 'paid', 'unpaid', 'refunded', 'cancelled' ) as $tab ) {
 	ok( "tab '{$tab}' registered", isset( $tabs[ $tab ] ), $pass, $fail, $log );
 }
@@ -50,7 +50,7 @@ ok( "missing type key → empty array",    array() === EEM_Orders_List_Repo::der
 
 echo "\n[5] counts_by_billing_status\n";
 $counts = EEM_Orders_List_Repo::counts_by_billing_status();
-ok( 'counts returns 5 keys', count( $counts ) === 5, $pass, $fail, $log );
+ok( 'counts returns 6 keys (incl. trash)', count( $counts ) === 6, $pass, $fail, $log );
 foreach ( array( 'all', 'paid', 'unpaid', 'refunded', 'cancelled' ) as $tab ) {
 	ok( "counts[{$tab}] is int", isset( $counts[ $tab ] ) && is_int( $counts[ $tab ] ), $pass, $fail, $log );
 }
