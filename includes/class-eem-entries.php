@@ -448,6 +448,16 @@ class EEM_Entries {
 					</div>
 					<?php if ( $has_linked_event ) : ?>
 						<div class="eem-header-actions">
+							<?php
+							// "View Event" opens the connected event's public reservation
+							// page in a new tab — same control + style as Edit Reservation.
+							$eem_event_url = class_exists( 'EEM_Events' ) ? EEM_Events::get_reservation_public_url( $reservation_id ) : '';
+							if ( $eem_event_url ) :
+								?>
+								<a class="eem-btn-primary eem-header-action-view" href="<?php echo esc_url( $eem_event_url ); ?>" target="_blank" rel="noopener noreferrer">
+									<?php esc_html_e( 'View Event', 'equine-event-manager' ); ?>
+								</a>
+							<?php endif; ?>
 							<button type="button" class="eem-header-action-change" data-eem-action="entry-change-event">
 								<?php esc_html_e( 'Change Event', 'equine-event-manager' ); ?>
 							</button>
@@ -490,10 +500,10 @@ class EEM_Entries {
 								<table class="eem-repeat-table">
 									<thead>
 										<tr>
-											<th><?php esc_html_e( 'Event Title', 'equine-event-manager' ); ?></th>
-											<th style="width:110px"><?php esc_html_e( 'Inventory', 'equine-event-manager' ); ?></th>
-											<th style="width:120px"><?php esc_html_e( 'Max Per Customer', 'equine-event-manager' ); ?></th>
-											<th style="width:140px"><?php esc_html_e( 'Price', 'equine-event-manager' ); ?></th>
+											<th style="width:42%"><?php esc_html_e( 'Entry Title', 'equine-event-manager' ); ?></th>
+											<th style="width:130px"><?php esc_html_e( 'Inventory', 'equine-event-manager' ); ?></th>
+											<th style="width:150px"><?php esc_html_e( 'Max Per Customer', 'equine-event-manager' ); ?></th>
+											<th style="width:150px"><?php esc_html_e( 'Price', 'equine-event-manager' ); ?></th>
 											<th style="width:40px"></th>
 										</tr>
 									</thead>
@@ -506,8 +516,8 @@ class EEM_Entries {
 											?>
 											<tr>
 												<td><input class="eem-repeat-input" type="text" name="eem_entry_items[<?php echo (int) $ii; ?>][title]" value="<?php echo esc_attr( $i_title ); ?>"></td>
-												<td><input class="eem-repeat-input" type="number" min="0" style="width:90px" name="eem_entry_items[<?php echo (int) $ii; ?>][inventory]" value="<?php echo esc_attr( $i_inv ); ?>" placeholder="<?php esc_attr_e( 'Unlimited', 'equine-event-manager' ); ?>"></td>
-												<td><input class="eem-repeat-input" type="number" min="1" step="1" style="width:90px" name="eem_entry_items[<?php echo (int) $ii; ?>][max_per_customer]" value="<?php echo esc_attr( $i_max ); ?>" placeholder="<?php esc_attr_e( 'Unlimited', 'equine-event-manager' ); ?>"></td>
+												<td><input class="eem-repeat-input" type="number" min="0" style="width:100%" name="eem_entry_items[<?php echo (int) $ii; ?>][inventory]" value="<?php echo esc_attr( $i_inv ); ?>" placeholder="<?php esc_attr_e( 'Unlimited', 'equine-event-manager' ); ?>"></td>
+												<td><input class="eem-repeat-input" type="number" min="1" step="1" style="width:100%" name="eem_entry_items[<?php echo (int) $ii; ?>][max_per_customer]" value="<?php echo esc_attr( $i_max ); ?>" placeholder="<?php esc_attr_e( 'Unlimited', 'equine-event-manager' ); ?>"></td>
 												<td><div class="eem-repeat-price-wrap"><span class="eem-repeat-price-sym">$</span><input class="eem-repeat-price-in" type="number" min="0" step="0.01" name="eem_entry_items[<?php echo (int) $ii; ?>][price]" value="<?php echo esc_attr( $i_price ); ?>"></div></td>
 												<td><button class="eem-btn-delete" type="button" aria-label="<?php esc_attr_e( 'Delete', 'equine-event-manager' ); ?>" data-eem-action="reservation-editor-remove-repeating-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
 											</tr>
@@ -523,8 +533,8 @@ class EEM_Entries {
 								</button>
 								<template id="eem-entry-item-row-template"><tr>
 									<td><input class="eem-repeat-input" type="text" name="eem_entry_items[__index__][title]" value="" placeholder="<?php esc_attr_e( 'Entry title', 'equine-event-manager' ); ?>"></td>
-									<td><input class="eem-repeat-input" type="number" min="0" style="width:90px" name="eem_entry_items[__index__][inventory]" value="" placeholder="<?php esc_attr_e( 'Unlimited', 'equine-event-manager' ); ?>"></td>
-									<td><input class="eem-repeat-input" type="number" min="1" step="1" style="width:90px" name="eem_entry_items[__index__][max_per_customer]" value="" placeholder="<?php esc_attr_e( 'Unlimited', 'equine-event-manager' ); ?>"></td>
+									<td><input class="eem-repeat-input" type="number" min="0" style="width:100%" name="eem_entry_items[__index__][inventory]" value="" placeholder="<?php esc_attr_e( 'Unlimited', 'equine-event-manager' ); ?>"></td>
+									<td><input class="eem-repeat-input" type="number" min="1" step="1" style="width:100%" name="eem_entry_items[__index__][max_per_customer]" value="" placeholder="<?php esc_attr_e( 'Unlimited', 'equine-event-manager' ); ?>"></td>
 									<td><div class="eem-repeat-price-wrap"><span class="eem-repeat-price-sym">$</span><input class="eem-repeat-price-in" type="number" min="0" step="0.01" name="eem_entry_items[__index__][price]" value="0.00"></div></td>
 									<td><button class="eem-btn-delete" type="button" aria-label="<?php esc_attr_e( 'Delete', 'equine-event-manager' ); ?>" data-eem-action="reservation-editor-remove-repeating-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
 								</tr></template>
