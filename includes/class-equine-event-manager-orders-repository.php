@@ -562,6 +562,51 @@ class EEM_Orders_Repository {
 	}
 
 	/**
+	 * Persist (or clear) an order's per-night stall override map.
+	 *
+	 * Stalls are normally assigned for the whole stay (the `Assigned Stall Units`
+	 * line applies to every night). This optional `Stall Night Map` line records
+	 * per-DATE overrides for nights that differ — e.g. moving a horse to a
+	 * different stall for a single night. Format: `DATE=unit,unit;DATE=unit`.
+	 * An empty value removes the line (back to uniform whole-stay assignment).
+	 * Written on the stall component(s), mirroring update_order_unit_assignments.
+	 *
+	 * @param string $order_key      Order key.
+	 * @param string $serialized_map Serialized override map, or '' to clear.
+	 * @return bool True when at least one component row was updated.
+	 */
+	public function update_order_stall_night_map( $order_key, $serialized_map = '' ) {
+		$order = $this->get_order( $order_key );
+
+		if ( ! $order ) {
+			return false;
+		}
+
+		$serialized_map = trim( (string) $serialized_map );
+		$updated_any    = false;
+
+		foreach ( $order['components'] as $component ) {
+			if ( 'stall' !== $component['table'] ) {
+				continue;
+			}
+
+			$notes = isset( $component['notes'] ) ? (string) $component['notes'] : '';
+			$notes = ( '' === $serialized_map )
+				? $this->remove_note_line( $notes, 'Stall Night Map' )
+				: $this->upsert_note_line( $notes, 'Stall Night Map', $serialized_map );
+
+			$updated_any = $this->update_component_fields(
+				$component['table'],
+				$component['row_id'],
+				array( 'notes' => $notes ),
+				array( '%s' )
+			) || $updated_any;
+		}
+
+		return $updated_any;
+	}
+
+	/**
 	 * Update the operational "Tack Stalls" designation for an order (V1 #5).
 	 *
 	 * Tack stalls are a subset of the order's assigned stall units flagged as
