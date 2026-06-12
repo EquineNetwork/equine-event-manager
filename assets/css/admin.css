@@ -9241,14 +9241,15 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 .eem-mb-cust-cell.gap { background: transparent; }
 .eem-mb-cust-cell.landmark { background: #fff7e6; color: var(--eem-warn-text, #b45309); font-size: 9.5px; text-align: center; line-height: 1.1; padding: 2px; }
 .eem-mb-preview-foot { padding: 14px 20px; border-top: 1px solid var(--eem-border, #D9E2F2); font-weight: 700; color: var(--eem-navy, #031B4E); flex: none; }
-/* ── Division detail stat cards (Entries → Divisions rework, Slice 3) ── */
-.eem-stat-card {
-	min-width: 120px;
-	padding: 16px 20px;
-	border: 1px solid var(--eem-border, #D9E2F2);
-	border-radius: var(--eem-radius, 3px);
-	background: #fff;
+/* ── Division detail stats (Entries → Divisions rework, Slice 3) ──
+   Reuses the dashboard KPI card vocabulary (colored top border, navy value)
+   but in a fixed 3-up grid sized for the entrants summary. */
+.eem-division-stat-grid {
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	max-width: 600px;
+	margin-top: 4px;
+	margin-bottom: 22px;
 }
-.eem-stat-card .eem-stat-value { font-size: 26px; font-weight: 700; color: var(--eem-navy, #031B4E); line-height: 1.1; }
-.eem-stat-card .eem-stat-label { margin-top: 4px; font-size: 12px; font-weight: 600; color: var(--eem-muted, #64748b); text-transform: uppercase; letter-spacing: .03em; }
-.eem-notice-inline { margin: 0 0 18px; }
+@media (max-width: 600px) {
+	.eem-division-stat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

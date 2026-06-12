@@ -239,20 +239,40 @@ class EEM_Entries {
 			'wrap'       => true,
 		) );
 		?>
-		<div class="eem-stat-row" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px">
-			<div class="eem-stat-card"><div class="eem-stat-value"><?php echo esc_html( (string) $entered ); ?></div><div class="eem-stat-label"><?php esc_html_e( 'Entered', 'equine-event-manager' ); ?></div></div>
-			<div class="eem-stat-card"><div class="eem-stat-value"><?php echo esc_html( $spots_int > 0 ? (string) $spots_int : __( 'Unlimited', 'equine-event-manager' ) ); ?></div><div class="eem-stat-label"><?php esc_html_e( 'Spots', 'equine-event-manager' ); ?></div></div>
-			<div class="eem-stat-card"><div class="eem-stat-value"><?php echo esc_html( null === $left ? '—' : (string) $left ); ?></div><div class="eem-stat-label"><?php esc_html_e( 'Spots Left', 'equine-event-manager' ); ?></div></div>
+		<?php
+		// "Spots Left" tone follows availability: green when spots remain,
+		// orange when sold out, red when oversold (mirrors the dashboard KPI
+		// accent vocabulary).
+		$left_tone = 'green';
+		if ( $oversold > 0 ) {
+			$left_tone = 'red';
+		} elseif ( null !== $left && 0 === $left ) {
+			$left_tone = 'orange';
+		}
+		?>
+		<div class="eem-dashboard-kpi-grid eem-division-stat-grid">
+			<div class="eem-dashboard-kpi-card eem-dashboard-kpi-card--blue">
+				<div class="eem-dashboard-kpi-label"><?php esc_html_e( 'Entered', 'equine-event-manager' ); ?></div>
+				<div class="eem-dashboard-kpi-value"><?php echo esc_html( (string) $entered ); ?></div>
+			</div>
+			<div class="eem-dashboard-kpi-card eem-dashboard-kpi-card--green">
+				<div class="eem-dashboard-kpi-label"><?php esc_html_e( 'Spots', 'equine-event-manager' ); ?></div>
+				<div class="eem-dashboard-kpi-value"><?php echo esc_html( $spots_int > 0 ? (string) $spots_int : __( 'Unlimited', 'equine-event-manager' ) ); ?></div>
+			</div>
+			<div class="eem-dashboard-kpi-card eem-dashboard-kpi-card--<?php echo esc_attr( $left_tone ); ?>">
+				<div class="eem-dashboard-kpi-label"><?php esc_html_e( 'Spots Left', 'equine-event-manager' ); ?></div>
+				<div class="eem-dashboard-kpi-value"><?php echo esc_html( null === $left ? '—' : (string) $left ); ?></div>
+				<?php if ( $oversold > 0 ) : ?>
+					<div class="eem-dashboard-kpi-sub eem-dashboard-kpi-tone--down"><?php
+						echo esc_html( sprintf(
+							/* translators: %d: count oversold by. */
+							__( 'Oversold by %d', 'equine-event-manager' ),
+							$oversold
+						) );
+					?></div>
+				<?php endif; ?>
+			</div>
 		</div>
-		<?php if ( $oversold > 0 ) : ?>
-			<p class="eem-notice-inline"><span class="eem-status-badge eem-status-refunded"><?php
-				echo esc_html( sprintf(
-					/* translators: %d: count oversold by. */
-					__( 'Oversold by %d — more entries than configured spots.', 'equine-event-manager' ),
-					$oversold
-				) );
-			?></span></p>
-		<?php endif; ?>
 
 		<div class="eem-desktop-table">
 			<table class="eem-table">

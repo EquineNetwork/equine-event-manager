@@ -121,7 +121,7 @@ $check( 'detail_url carries the division_id param', false !== strpos( EEM_Entrie
 
 ob_start(); EEM_Entries::render_detail( $did ); $detail_html = (string) ob_get_clean();
 $check( 'detail renders the composed Event - Division title', false !== strpos( $detail_html, 'Divisions Ledger Event - #5 Division' ) );
-$check( 'detail renders the Entered / Spots / Spots Left stat cards', 3 === substr_count( $detail_html, 'eem-stat-card' ) );
+$check( 'detail renders the Entered / Spots / Spots Left stat cards', 3 === substr_count( $detail_html, 'eem-dashboard-kpi-card eem-dashboard-kpi-card--' ) );
 $check( 'detail renders the entrants table with the held customer', false !== strpos( $detail_html, 'eem-table' ) && false !== strpos( $detail_html, 'Hold, One' ) );
 $check( 'detail renders an Edit Division action', false !== strpos( $detail_html, 'Edit Division' ) );
 $check( 'detail renders a paid status badge', false !== strpos( $detail_html, 'eem-status-paid' ) );
@@ -130,7 +130,7 @@ $check( 'detail renders a paid status badge', false !== strpos( $detail_html, 'e
 $_GET = array( 'page' => EEM_Entries::LIST_SLUG, 'division_id' => (string) $did );
 ob_start(); EEM_Entries::render_list(); $dispatch_html = (string) ob_get_clean();
 $_GET = array();
-$check( 'render_list dispatches division_id to the detail view', false !== strpos( $dispatch_html, 'Divisions Ledger Event - #5 Division' ) && false !== strpos( $dispatch_html, 'eem-stat-card' ) );
+$check( 'render_list dispatches division_id to the detail view', false !== strpos( $dispatch_html, 'Divisions Ledger Event - #5 Division' ) && false !== strpos( $dispatch_html, 'eem-dashboard-kpi-card' ) );
 
 // oversold: drop spots below entered → list shows the oversold note
 update_post_meta( $did, EEM_Entries::META_SPOTS, 1 ); // entered is 1 (ORDER-HOLD) → not oversold; add another hold.
