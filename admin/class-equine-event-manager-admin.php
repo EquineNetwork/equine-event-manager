@@ -3213,11 +3213,40 @@ class EEM_Admin {
 		if ( ! in_array( $pv_view, array( 'location', 'customer', 'both' ), true ) ) {
 			$pv_view = 'both';
 		}
-		$pv_view_url = static function ( $v ) use ( $reservation_id ) {
+
+		// Which rows to print: 'assigned' (only stalls/lots with an occupied or
+		// blocked night — the dense default Whitney asked for) or 'all' (every
+		// stall/lot, e.g. a blank walk-up check-in sheet).
+		$pv_rows = isset( $_GET['rows'] ) ? sanitize_key( wp_unslash( $_GET['rows'] ) ) : 'assigned';
+		if ( ! in_array( $pv_rows, array( 'assigned', 'all' ), true ) ) {
+			$pv_rows = 'assigned';
+		}
+		$assigned_only = ( 'assigned' === $pv_rows );
+
+		// Nav-URL builder that preserves both toggles, overriding only the keys passed.
+		$pv_nav_url = static function ( array $over ) use ( $reservation_id, $pv_view, $pv_rows ) {
 			return add_query_arg(
-				array( 'page' => 'equine-event-manager-stall-chart-print', 'reservation_id' => $reservation_id, 'view' => $v ),
+				array_merge(
+					array( 'page' => 'equine-event-manager-stall-chart-print', 'reservation_id' => $reservation_id, 'view' => $pv_view, 'rows' => $pv_rows ),
+					$over
+				),
 				admin_url( 'admin.php' )
 			);
+		};
+		$pv_view_url = static function ( $v ) use ( $pv_nav_url ) {
+			return $pv_nav_url( array( 'view' => $v ) );
+		};
+
+		// True when a chart row has any occupied or blocked night (worth printing
+		// in assigned-only mode); a purely-available row is dropped.
+		$row_has_content = static function ( array $row ): bool {
+			foreach ( (array) ( $row['cells'] ?? array() ) as $cell ) {
+				$t = $cell['type'] ?? 'available';
+				if ( 'occupied' === $t || 'blocked' === $t ) {
+					return true;
+				}
+			}
+			return false;
 		};
 
 		if ( ! $reservation instanceof WP_Post || 'en_reservation' !== $reservation->post_type ) {
@@ -3266,6 +3295,16 @@ class EEM_Admin {
 			$by_barn[ $barn ][] = $row;
 		}
 
+		// Assigned/blocked row counts — drive the assigned-only empty-state note.
+		$assigned_stall_count = 0;
+		foreach ( $grid['stall_rows'] as $row ) {
+			if ( $row_has_content( $row ) ) { $assigned_stall_count++; }
+		}
+		$assigned_rv_count = 0;
+		foreach ( (array) ( $grid['rv_rows'] ?? array() ) as $row ) {
+			if ( $row_has_content( $row ) ) { $assigned_rv_count++; }
+		}
+
 		// By Location table colspan = Stall + Customer + Order + ✓Arr. + date columns.
 		$by_loc_colspan = 4 + count( $date_cols );
 		?>
@@ -3289,6 +3328,10 @@ class EEM_Admin {
 					<a class="pv-view-btn<?php echo 'both' === $pv_view ? ' is-active' : ''; ?>" href="<?php echo esc_url( $pv_view_url( 'both' ) ); ?>"><?php esc_html_e( 'Both', 'equine-event-manager' ); ?></a>
 					<a class="pv-view-btn<?php echo 'location' === $pv_view ? ' is-active' : ''; ?>" href="<?php echo esc_url( $pv_view_url( 'location' ) ); ?>"><?php esc_html_e( 'By Location', 'equine-event-manager' ); ?></a>
 					<a class="pv-view-btn<?php echo 'customer' === $pv_view ? ' is-active' : ''; ?>" href="<?php echo esc_url( $pv_view_url( 'customer' ) ); ?>"><?php esc_html_e( 'By Customer', 'equine-event-manager' ); ?></a>
+				</div>
+				<div class="pv-view-toggle" role="group" aria-label="<?php esc_attr_e( 'Choose which rows to print', 'equine-event-manager' ); ?>">
+					<a class="pv-view-btn<?php echo $assigned_only ? ' is-active' : ''; ?>" href="<?php echo esc_url( $pv_nav_url( array( 'rows' => 'assigned' ) ) ); ?>"><?php esc_html_e( 'Assigned only', 'equine-event-manager' ); ?></a>
+					<a class="pv-view-btn<?php echo $assigned_only ? '' : ' is-active'; ?>" href="<?php echo esc_url( $pv_nav_url( array( 'rows' => 'all' ) ) ); ?>"><?php esc_html_e( 'All stalls', 'equine-event-manager' ); ?></a>
 				</div>
 				<button class="btn-pv-print" type="button" onclick="window.print()">
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
@@ -3347,6 +3390,9 @@ class EEM_Admin {
 
 			<?php if ( 'customer' !== $pv_view && ! empty( $grid['stall_rows'] ) ) : ?>
 			<div class="pv-section-band"><?php esc_html_e( 'By Location', 'equine-event-manager' ); ?></div>
+			<?php if ( $assigned_only && 0 === $assigned_stall_count ) : ?>
+			<p class="pv-empty-note"><?php esc_html_e( 'No stalls are assigned or blocked yet. Switch to “All stalls” to print a blank check-in sheet.', 'equine-event-manager' ); ?></p>
+			<?php else : ?>
 			<div class="pv-table-wrap">
 				<table class="pv-table">
 					<thead>
@@ -3375,16 +3421,25 @@ class EEM_Admin {
 									max( $b_numeric )
 								);
 							}
-							// Count stalls with at least one occupied cell.
-							$occ_count   = 0;
-							$total_count = count( $barn_rows );
+							// Count stalls with at least one occupied cell, and (for the
+							// assigned-only skip) those with any occupied OR blocked cell.
+							$occ_count     = 0;
+							$content_count = 0;
+							$total_count   = count( $barn_rows );
 							foreach ( $barn_rows as $br ) {
+								if ( $row_has_content( $br ) ) {
+									$content_count++;
+								}
 								foreach ( (array) ( $br['cells'] ?? array() ) as $cell ) {
 									if ( 'occupied' === ( $cell['type'] ?? '' ) ) {
 										$occ_count++;
 										break;
 									}
 								}
+							}
+							// Assigned-only: drop barns with nothing to show.
+							if ( $assigned_only && 0 === $content_count ) {
+								continue;
 							}
 							?>
 							<tr class="pv-barn-header">
@@ -3419,6 +3474,10 @@ class EEM_Admin {
 									? sprintf( '#%05d', $order_num_map[ $prim_order_key ] )
 									: '';
 								$is_empty = '' === $prim_customer;
+								// Assigned-only: drop purely-available stalls (keep occupied + blocked).
+								if ( $assigned_only && ! $row_has_content( $stall_row ) ) {
+									continue;
+								}
 								?>
 								<tr>
 									<td class="pv-stall-num"><?php echo esc_html( $stall_row['unit'] ); ?></td>
@@ -3455,6 +3514,7 @@ class EEM_Admin {
 				</table>
 			</div>
 			<?php endif; ?>
+			<?php endif; ?>
 
 			<!-- ══════════════════════════════════════════════════════ -->
 			<!-- RV LOTS                                               -->
@@ -3462,6 +3522,9 @@ class EEM_Admin {
 
 			<?php if ( ! empty( $grid['rv_rows'] ) ) : ?>
 			<div class="pv-section-band"><?php esc_html_e( 'RV Lots', 'equine-event-manager' ); ?></div>
+			<?php if ( $assigned_only && 0 === $assigned_rv_count ) : ?>
+			<p class="pv-empty-note"><?php esc_html_e( 'No RV lots are assigned or blocked yet. Switch to “All stalls” to print a blank check-in sheet.', 'equine-event-manager' ); ?></p>
+			<?php else : ?>
 			<div class="pv-table-wrap">
 				<table class="pv-table">
 					<thead>
@@ -3491,6 +3554,10 @@ class EEM_Admin {
 								? sprintf( '#%05d', $order_num_map[ $prim_order_key ] )
 								: '';
 							$is_empty = '' === $prim_customer;
+							// Assigned-only: drop purely-available RV lots (keep occupied + blocked).
+							if ( $assigned_only && ! $row_has_content( $rv_row ) ) {
+								continue;
+							}
 							?>
 							<tr>
 								<td class="pv-stall-num"><?php echo esc_html( $rv_row['unit'] ); ?></td>
@@ -3525,6 +3592,7 @@ class EEM_Admin {
 					</tbody>
 				</table>
 			</div>
+			<?php endif; ?>
 			<?php endif; ?>
 
 			<!-- ══════════════════════════════════════════════════════ -->

@@ -8244,6 +8244,9 @@ body.eem-shell-page--print .wrap { margin: 0; }
 .pv-checkin { text-align: center; }
 .pv-night-cell { text-align: center; font-variant-numeric: tabular-nums; }
 
+/* Assigned-only empty state — shown when a section has nothing assigned/blocked. */
+.pv-empty-note { margin: 0 0 18px; padding: 14px 16px; border: 1px dashed #dcdcde; border-radius: 4px; background: #f6f7f7; color: #6b7280; font-size: 13px; }
+
 /* Arrival checkbox (print-and-check field) */
 .pv-checkbox { display: inline-block; width: 16px; height: 16px; border: 1.5px solid #6B7A99; border-radius: 2px; background: #fff; }
 
