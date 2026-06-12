@@ -2687,6 +2687,64 @@ class EEM_Admin {
 	}
 
 	/**
+	 * Acquire the per-reservation assignment lock (shared with customer checkout).
+	 *
+	 * Every admin assignment write for a reservation — manual map assign/unassign,
+	 * drag-move, auto-generate, and the Order Detail assignment form — serializes
+	 * behind this MySQL advisory lock, which is the SAME key the customer checkout
+	 * path uses (`eem_checkout_{reservation_id}`). Holding it across a handler's
+	 * conflict re-check AND the write that follows makes the pair atomic, so two
+	 * concurrent admin assigns (or an admin assign racing a checkout) can never
+	 * both pass their availability check and double-book the same stall / RV lot.
+	 *
+	 * The lock is connection-scoped: MySQL auto-releases it when the request ends,
+	 * so the `wp_send_json_*` / redirect exit paths (which terminate the request)
+	 * release it implicitly even without an explicit {@see release_assignment_lock}.
+	 *
+	 * @param int $reservation_id Reservation whose inventory is being mutated.
+	 * @return bool True if the lock was acquired (or none is needed for id 0);
+	 *              false on a 15s wait timeout (another assign is mid-flight).
+	 */
+	private function acquire_assignment_lock( int $reservation_id ): bool {
+		if ( $reservation_id < 1 ) {
+			return true;
+		}
+		global $wpdb;
+		$got = (int) $wpdb->get_var(
+			$wpdb->prepare( 'SELECT GET_LOCK(%s, %d)', 'eem_checkout_' . $reservation_id, 15 )
+		);
+		return 1 === $got;
+	}
+
+	/**
+	 * Release the per-reservation assignment lock from {@see acquire_assignment_lock}.
+	 *
+	 * @param int $reservation_id Reservation whose lock to release.
+	 * @return void
+	 */
+	private function release_assignment_lock( int $reservation_id ): void {
+		if ( $reservation_id < 1 ) {
+			return;
+		}
+		global $wpdb;
+		$wpdb->query(
+			$wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', 'eem_checkout_' . $reservation_id )
+		);
+	}
+
+	/**
+	 * Standard "another assignment is finishing" 409 for AJAX handlers that fail
+	 * to acquire {@see acquire_assignment_lock}. Ends the request.
+	 *
+	 * @return void
+	 */
+	private function send_assignment_lock_busy(): void {
+		wp_send_json_error( array(
+			'message' => __( 'Another assignment for this event is still finishing. Please wait a moment and try again.', 'equine-event-manager' ),
+		), 409 );
+	}
+
+	/**
 	 * AJAX: mutate a single stall from the By-Location map popover.
 	 *
 	 * Sub-actions (op): assign | unassign | block | unblock | tack | untack.
@@ -2733,6 +2791,12 @@ class EEM_Admin {
 
 		if ( $is_rv && in_array( $op, array( 'tack', 'untack' ), true ) ) {
 			wp_send_json_error( array( 'message' => __( 'Tack does not apply to RV lots.', 'equine-event-manager' ) ), 400 );
+		}
+
+		// Serialize the conflict re-check + write below behind the per-reservation
+		// lock so concurrent map actions / auto-assigns / checkouts can't double-book.
+		if ( ! $this->acquire_assignment_lock( $reservation_id ) ) {
+			$this->send_assignment_lock_busy();
 		}
 
 		// Helper: build the (stall_csv, rv_csv) pair for an order, modifying only
@@ -2897,6 +2961,9 @@ class EEM_Admin {
 		} else {
 			wp_send_json_error( array( 'message' => __( 'Unknown action.', 'equine-event-manager' ) ), 400 );
 		}
+
+		// Write done — release before the (read-only) re-render + response.
+		$this->release_assignment_lock( $reservation_id );
 
 		// Re-render the dynamic region against fresh state for an in-place swap.
 		$config = $this->get_stall_chart_config( $reservation_id );
@@ -4312,7 +4379,13 @@ class EEM_Admin {
 
 		$stall_units = ! empty( $stall_unit_values ) ? $this->sanitize_assignment_selection( $stall_unit_values, $stall_limit ) : '';
 		$rv_lots     = isset( $_POST['assigned_rv_lots'] ) ? $this->sanitize_assignment_selection( wp_unslash( $_POST['assigned_rv_lots'] ) ) : '';
-		$updated     = $this->orders_repository->update_order_unit_assignments( $order_key, $stall_units, $rv_lots );
+
+		// Serialize the write behind the per-reservation lock so this manual
+		// override can't interleave with a concurrent auto-assign / checkout.
+		$assign_res_id = isset( $order['reservation_id'] ) ? absint( $order['reservation_id'] ) : 0;
+		$this->acquire_assignment_lock( $assign_res_id );
+		$updated = $this->orders_repository->update_order_unit_assignments( $order_key, $stall_units, $rv_lots );
+		$this->release_assignment_lock( $assign_res_id );
 
 		if ( ! $updated ) {
 			$this->redirect_to_order_notice( $order_key, 'assignment_update_failed', __( 'Assignments could not be updated.', 'equine-event-manager' ) );
@@ -5075,6 +5148,13 @@ class EEM_Admin {
 			wp_send_json_error( array( 'message' => __( 'Order not found.', 'equine-event-manager' ) ), 404 );
 		}
 
+		// Serialize the per-DATE conflict re-check + write below behind the
+		// per-reservation lock (shared with checkout + other admin assigns).
+		$reservation_id = isset( $order['reservation_id'] ) ? absint( $order['reservation_id'] ) : 0;
+		if ( ! $this->acquire_assignment_lock( $reservation_id ) ) {
+			$this->send_assignment_lock_busy();
+		}
+
 		// This order's occupied stall nights, and which of them this move targets.
 		// "Just this night" (this-night) scopes the move to $src_date only; any
 		// other scope moves the whole stay. Falling back to all nights when the
@@ -5084,7 +5164,6 @@ class EEM_Admin {
 		$target_dates      = $single_night ? array( $src_date ) : $order_stall_dates;
 
 		// Validate destination stall exists + isn't blocked.
-		$reservation_id = isset( $order['reservation_id'] ) ? absint( $order['reservation_id'] ) : 0;
 		if ( $reservation_id > 0 ) {
 			$config = $this->get_stall_chart_config( $reservation_id );
 			if ( in_array( $dest_stall, (array) $config['blocked_stall_units'], true ) ) {
@@ -5161,6 +5240,8 @@ class EEM_Admin {
 		// Persist (or clear) the per-night override map.
 		$this->orders_repository->update_order_stall_night_map( $order_key, $serialized );
 
+		$this->release_assignment_lock( $reservation_id );
+
 		if ( ! $ok ) {
 			wp_send_json_error( array( 'message' => __( 'Could not update assignment.', 'equine-event-manager' ) ), 500 );
 		}
@@ -5209,7 +5290,17 @@ class EEM_Admin {
 			wp_send_json_error( array( 'message' => __( 'Reservation not found.', 'equine-event-manager' ) ), 404 );
 		}
 
-		$result = $this->orders_repository->auto_assign_units_for_reservation( $reservation_id, $order_key );
+		// The conflict-aware fill reads every order then writes assignments back —
+		// serialize it behind the per-reservation lock so it can't race a checkout
+		// or another admin assign and double-book a stall / RV lot.
+		if ( ! $this->acquire_assignment_lock( $reservation_id ) ) {
+			$this->send_assignment_lock_busy();
+		}
+		try {
+			$result = $this->orders_repository->auto_assign_units_for_reservation( $reservation_id, $order_key );
+		} finally {
+			$this->release_assignment_lock( $reservation_id );
+		}
 
 		// Re-render the dynamic region against fresh assignment state.
 		$config = $this->get_stall_chart_config( $reservation_id );
@@ -9478,6 +9569,10 @@ class EEM_Admin {
 		$rv_map      = array();
 		$updated_any = false;
 
+		// Serialize the whole allocate-then-write sweep behind the per-reservation
+		// lock so it can't race a checkout or another admin assign mid-loop.
+		$this->acquire_assignment_lock( $reservation_id );
+		try {
 		foreach ( $orders as $order ) {
 			$stall_dates  = $this->get_stall_chart_occupied_dates( $order['stall_arrival_date'], $order['stall_departure_date'] );
 			$rv_dates     = $this->get_stall_chart_occupied_dates( $order['rv_arrival_date'], $order['rv_departure_date'] );
@@ -9499,6 +9594,9 @@ class EEM_Admin {
 				implode( ', ', $stall_units['assigned'] ),
 				implode( ', ', $rv_units['assigned'] )
 			) || $updated_any;
+		}
+		} finally {
+			$this->release_assignment_lock( $reservation_id );
 		}
 
 		$this->redirect_to_reservation_notice_destination(
