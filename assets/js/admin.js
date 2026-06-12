@@ -2448,14 +2448,10 @@
 		'order-export-csv': function (target) {
 			submitOrderAction(target, 'eem_order_export_csv', 'eem_order_export_csv');
 		},
-		'orders-toggle-all': function (target) {
-			// Dispatcher already called ev.preventDefault() which suppresses
-			// the browser's default checkbox-toggle, so flip manually first
-			// before propagating to row checkboxes.
-			target.checked = !target.checked;
-			var checked = !!target.checked;
-			document.querySelectorAll('input.eem-orders-row-cb').forEach(function (cb) { cb.checked = checked; });
-		},
+		// NOTE: 'orders-toggle-all' is intentionally NOT handled here. The click
+		// dispatcher preventDefaults every data-eem-action, which on a checkbox
+		// fought the browser's native toggle and netted a no-op. Select-all is
+		// wired on the `change` event instead (see the change listener below).
 		'orders-bulk-apply': function () {
 			var sel = document.querySelector('[data-eem-orders-bulk-action]');
 			if (sel && sel.value === 'cancel') { openOrdersBulkCancelModal(); return; }
@@ -2612,6 +2608,16 @@
 		}
 		if (!ev.target.closest('.eem-tag-select')) {
 			closeAllTagSelects();
+		}
+	});
+
+	// Orders bulk select-all — wired on `change` (NOT the click dispatcher,
+	// which preventDefaults every data-eem-action and double-toggled the
+	// checkbox into a no-op). The header checkbox drives every row checkbox.
+	document.addEventListener('change', function (ev) {
+		var t = ev.target;
+		if (t && t.matches && t.matches('[data-eem-action="orders-toggle-all"]')) {
+			document.querySelectorAll('input.eem-orders-row-cb').forEach(function (cb) { cb.checked = t.checked; });
 		}
 	});
 
