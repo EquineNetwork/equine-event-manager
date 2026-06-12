@@ -44,6 +44,29 @@ $other = EEM_Entries::get_for_reservation( $rid + 999999 );
 $check( 'unrelated reservation gets no entries', array() === $other );
 $check( 'reservation 0 returns empty (guard)', array() === EEM_Entries::get_for_reservation( 0 ) );
 
+// --- customer-pipeline merge: the shortcode resolver pulls CPT entries -------
+// get_enabled_pre_entry_options() merges legacy reservation-meta entries with
+// the reservation's linked Entries (keyed entry_{id}), using the active
+// reservation id set during render/submission.
+$sc      = new EEM_Shortcodes();
+$ar_prop = new ReflectionProperty( 'EEM_Shortcodes', 'active_reservation_id' );
+$ar_prop->setAccessible( true );
+$ar_prop->setValue( $sc, $rid );
+$resolve = new ReflectionMethod( 'EEM_Shortcodes', 'get_enabled_pre_entry_options' );
+$resolve->setAccessible( true );
+
+// Legacy meta entry (numeric key) + the CPT entry (entry_{id}) coexist.
+$legacy_data = array( 'event_pre_entries_enabled' => 1, 'event_pre_entries' => array( array( 'title' => 'Legacy Stall Pass', 'price' => '10.00', 'inventory' => 5, 'max_per_customer' => 1 ) ) );
+$merged = $resolve->invoke( $sc, $legacy_data );
+$check( 'resolver includes the CPT entry (entry_{id})', isset( $merged[ $key ] ) && 'Open 4D Barrels' === $merged[ $key ]['title'] );
+$check( 'resolver still includes the legacy numeric entry', isset( $merged['0'] ) && 'Legacy Stall Pass' === $merged['0']['title'] );
+$check( 'legacy + CPT keys do not collide', count( $merged ) >= 2 );
+
+// With no active reservation, only legacy entries resolve (no CPT leak).
+$ar_prop->setValue( $sc, 0 );
+$legacy_only = $resolve->invoke( $sc, $legacy_data );
+$check( 'no active reservation → CPT entries excluded', ! isset( $legacy_only[ $key ] ) && isset( $legacy_only['0'] ) );
+
 wp_delete_post( (int) $eid, true );
 wp_delete_post( (int) $rid, true );
 $check( 'cleaned up temp posts', null === get_post( $eid ) && null === get_post( $rid ) );

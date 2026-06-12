@@ -175,6 +175,7 @@ class EEM_Shortcodes {
 		}
 
 		$data    = $this->get_reservation_meta( $reservation_id );
+		$this->active_reservation_id = (int) $reservation_id;
 		$status  = $this->get_reservation_status( $data, $reservation_id );
 		$message = '';
 		$min_date = ! empty( $data['available_start_date'] ) ? $data['available_start_date'] : '';
@@ -2287,7 +2288,18 @@ class EEM_Shortcodes {
 	 * @param array $status Open/closed status.
 	 * @return string
 	 */
+	/**
+	 * The reservation currently being rendered or submitted. Set at the render
+	 * and submission entry points so get_enabled_pre_entry_options() can resolve
+	 * the reservation's linked Entries (en_entry CPT) without threading the id
+	 * through every consumer (pricing/validation/totals/notes).
+	 *
+	 * @var int
+	 */
+	private $active_reservation_id = 0;
+
 	private function handle_reservation_submission( $reservation_id, $data, $status ) {
+		$this->active_reservation_id = (int) $reservation_id;
 		if ( ! isset( $_POST['en_reservation_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['en_reservation_nonce'] ) ), 'en_submit_reservation_' . $reservation_id ) ) {
 			return $this->render_notice( __( 'We could not verify this reservation request. Please refresh the page and try again.', 'equine-event-manager' ), 'error' );
 		}
@@ -8974,24 +8986,31 @@ RV Lot: " . $rv_lot['name'] );
 	 * @return array<string, array<string, mixed>>
 	 */
 	private function get_enabled_pre_entry_options( array $data ): array {
-		if ( empty( $data['event_pre_entries_enabled'] ) ) {
-			return array();
-		}
-
-		$entries = isset( $data['event_pre_entries'] ) && is_array( $data['event_pre_entries'] ) ? $data['event_pre_entries'] : array();
 		$options = array();
 
-		foreach ( $entries as $index => $entry ) {
-			if ( ! is_array( $entry ) || empty( $entry['title'] ) ) {
-				continue;
+		// Legacy: per-reservation `event_pre_entries` meta (back-compat — the
+		// editor definition UI was removed when Entries became a CPT, but old
+		// reservations keep rendering their saved entries). Keyed by numeric index.
+		if ( ! empty( $data['event_pre_entries_enabled'] ) ) {
+			$entries = isset( $data['event_pre_entries'] ) && is_array( $data['event_pre_entries'] ) ? $data['event_pre_entries'] : array();
+			foreach ( $entries as $index => $entry ) {
+				if ( ! is_array( $entry ) || empty( $entry['title'] ) ) {
+					continue;
+				}
+				$options[ (string) $index ] = array(
+					'title'            => sanitize_text_field( (string) $entry['title'] ),
+					'price'            => isset( $entry['price'] ) ? (string) $entry['price'] : '0.00',
+					'inventory'        => isset( $entry['inventory'] ) ? absint( $entry['inventory'] ) : 0,
+					'max_per_customer' => isset( $entry['max_per_customer'] ) && '' !== $entry['max_per_customer'] ? absint( $entry['max_per_customer'] ) : 0,
+				);
 			}
+		}
 
-			$options[ (string) $index ] = array(
-				'title'            => sanitize_text_field( (string) $entry['title'] ),
-				'price'            => isset( $entry['price'] ) ? (string) $entry['price'] : '0.00',
-				'inventory'        => isset( $entry['inventory'] ) ? absint( $entry['inventory'] ) : 0,
-				'max_per_customer' => isset( $entry['max_per_customer'] ) && '' !== $entry['max_per_customer'] ? absint( $entry['max_per_customer'] ) : 0,
-			);
+		// New: Entries (en_entry CPT) linked to this reservation. Keyed `entry_{id}`
+		// so they never collide with the legacy numeric keys. Same option shape, so
+		// the rest of the pipeline (pricing/validation/totals/notes) is unchanged.
+		if ( class_exists( 'EEM_Entries' ) && $this->active_reservation_id > 0 ) {
+			$options += EEM_Entries::get_for_reservation( $this->active_reservation_id );
 		}
 
 		return $options;
