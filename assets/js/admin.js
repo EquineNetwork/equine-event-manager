@@ -3128,6 +3128,7 @@
 		return out;
 	}
 
+	var _eemStructuralAck = false;
 	function eemDispatchSave(kind) {
 		// C7.X.15 Issue 2A — the original lookup queried `.eem-save-bar`,
 		// which was retired at C7.X.3. Source the reservation-id from
@@ -3146,6 +3147,7 @@
 		body.set('_eem_editor_nonce', eemReservationEditorNonce());
 		body.set('reservation_id', rid);
 		body.set('save_kind', kind);
+		if (_eemStructuralAck) { body.set('eem_structural_change_ack', '1'); }
 		eemCollectEditorFields().forEach(function (pair) { body.append(pair[0], pair[1]); });
 		// 2.3.78 — the linked-event id input lives in the header typeahead, OUTSIDE
 		// .eem-reservation-editor-body, so eemCollectEditorFields() never collected
@@ -3188,6 +3190,18 @@
 				// with `message` carrying the first validation-error
 				// string and `errors` carrying the full list.
 				var msg = (resp && resp.data && resp.data.message) ? resp.data.message : 'Save failed.';
+				// Changing stall inventory type / customer selection after orders
+				// exist: confirm, then resubmit the same save with the ack flag.
+				if (resp && resp.data && 'structural_change_requires_ack' === resp.data.code) {
+					if (window.confirm(msg)) {
+						_eemStructuralAck = true;
+						eemDispatchSave(kind);
+						_eemStructuralAck = false;
+					} else {
+						eemSaveBarToast('Change cancelled \u2014 nothing was saved.', 'info');
+					}
+					return;
+				}
 				// C7.X.16 Issue I — publish-gate failure surfaces with a
 				// per-section error map + first_section key. Highlight
 				// every failed section's card with .eem-section-invalid

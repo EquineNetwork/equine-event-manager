@@ -988,6 +988,42 @@ class EEM_Reservation_Editor_Page {
 				), 422 );
 			}
 
+			// Guardrail: changing how stalls work (Stall Inventory Type / Customer
+			// Selection) AFTER orders already exist can strand existing stall
+			// assignments, so require an explicit acknowledgment in that case. The
+			// client re-submits with eem_structural_change_ack=1 once confirmed.
+			if ( empty( $_POST['eem_structural_change_ack'] ) ) {
+				$eem_new_inv = isset( $_POST['stall_inventory_type'] ) ? EEM_Reservations_CPT::sanitize_stall_inventory_type( wp_unslash( $_POST['stall_inventory_type'] ) ) : '';
+				$eem_new_sel = isset( $_POST['stall_customer_selection'] ) ? EEM_Reservations_CPT::sanitize_stall_customer_selection( wp_unslash( $_POST['stall_customer_selection'] ) ) : '';
+				$eem_cur_inv = isset( $existing['stall_inventory_type'] ) ? (string) $existing['stall_inventory_type'] : '';
+				$eem_cur_sel = isset( $existing['stall_customer_selection'] ) ? (string) $existing['stall_customer_selection'] : '';
+				$eem_changed = array();
+				if ( '' !== $eem_new_inv && $eem_new_inv !== $eem_cur_inv ) { $eem_changed[] = __( 'Stall Inventory Type', 'equine-event-manager' ); }
+				if ( '' !== $eem_new_sel && $eem_new_sel !== $eem_cur_sel ) { $eem_changed[] = __( 'Customer Selection', 'equine-event-manager' ); }
+				if ( ! empty( $eem_changed ) ) {
+					$eem_repo        = new EEM_Orders_Repository();
+					$eem_order_count = count( array_filter(
+						$eem_repo->get_orders( '', 'date', 'asc' ),
+						static function ( $o ) use ( $reservation_id ) {
+							return absint( isset( $o['reservation_id'] ) ? $o['reservation_id'] : 0 ) === absint( $reservation_id );
+						}
+					) );
+					if ( $eem_order_count > 0 ) {
+						wp_send_json_error( array(
+							'message'     => sprintf(
+								/* translators: 1: changed setting names, 2: order count */
+								_n( 'You are changing %1$s, but this reservation already has %2$d order. Existing stall assignments may no longer line up. Save anyway?', 'You are changing %1$s, but this reservation already has %2$d orders. Existing stall assignments may no longer line up. Save anyway?', $eem_order_count, 'equine-event-manager' ),
+								implode( ' + ', $eem_changed ),
+								$eem_order_count
+							),
+							'code'        => 'structural_change_requires_ack',
+							'changed'     => $eem_changed,
+							'order_count' => $eem_order_count,
+						), 409 );
+					}
+				}
+			}
+
 			// C7.X.16 Issue I — per-section publish-gate validation.
 			// Runs ONLY when the resulting status is `publish` (covers
 			// save_kind='publish' AND save_kind='update' which both
