@@ -423,8 +423,6 @@ class EEM_Reservation_Editor_Page {
 				return __( 'This section is disabled. Enable it to offer stall reservations.', 'equine-event-manager' );
 			case 'rv':
 				return __( 'This section is disabled. Enable it to offer RV reservations.', 'equine-event-manager' );
-			case 'event_pre_entries':
-				return __( 'This section is disabled. Enable it to add class or competition entries customers can purchase.', 'equine-event-manager' );
 			case 'eventday':
 				return __( 'This section is disabled. Event-day info will be hidden from customers.', 'equine-event-manager' );
 			default:
@@ -449,7 +447,6 @@ class EEM_Reservation_Editor_Page {
 			'venuemap'           => 'venue_map_enabled',
 			'stall'              => 'stalls_enabled',
 			'rv'                 => 'rv_enabled',
-			'event_pre_entries'  => 'event_pre_entries_enabled',
 			'eventday'           => 'event_day_enabled',
 			'cancellation' => 'cancellation_enabled',
 		);
@@ -870,7 +867,6 @@ class EEM_Reservation_Editor_Page {
 			'eventday'     => '_section-eventday.php',
 			'stall'             => '_section-stall.php',
 			'rv'                => '_section-rv.php',
-			'event_pre_entries' => '_section-event-pre-entries.php',
 			'addons'            => '_section-addons.php',
 			'group'        => '_section-group.php',
 			'fees'         => '_section-fees.php',
@@ -900,7 +896,6 @@ class EEM_Reservation_Editor_Page {
 			array( 'key' => 'eventday',     'title' => __( 'Event Day Info',          'equine-event-manager' ), 'icon_tone' => 'orange', 'icon_key' => 'map-pin',   'enable_toggle' => true,  'collapsed' => false ),
 			array( 'key' => 'stall',        'title' => __( 'Stall Reservations',      'equine-event-manager' ), 'icon_tone' => 'green',  'icon_key' => 'grid',      'enable_toggle' => true,  'collapsed' => false ),
 			array( 'key' => 'rv',                'title' => __( 'RV Reservations',         'equine-event-manager' ), 'icon_tone' => 'purple', 'icon_key' => 'truck',     'enable_toggle' => true,  'collapsed' => true  ), // mockup line 650
-			array( 'key' => 'event_pre_entries', 'title' => __( 'Event Pre-Entries',       'equine-event-manager' ), 'icon_tone' => 'teal',   'icon_key' => 'plus',      'enable_toggle' => true,  'collapsed' => true  ),
 			array( 'key' => 'addons',            'title' => __( 'General Add-Ons',         'equine-event-manager' ), 'icon_tone' => 'orange', 'icon_key' => 'plus',      'enable_toggle' => true,  'collapsed' => true  ),
 			array( 'key' => 'group',        'title' => __( 'Group Reservations',      'equine-event-manager' ), 'icon_tone' => 'green',  'icon_key' => 'users',     'enable_toggle' => true,  'collapsed' => true  ),
 			array( 'key' => 'fees',         'title' => __( 'Convenience Fee',         'equine-event-manager' ), 'icon_tone' => 'orange', 'icon_key' => 'dollar',    'enable_toggle' => true,  'collapsed' => true  ),
@@ -1246,37 +1241,6 @@ class EEM_Reservation_Editor_Page {
 		// C10 ENFORCEMENT CONTRACT: rows with no zone_id = lots in that row are unavailable.
 		// See: docs/c10-contracts.md
 
-		// Event Pre-Entries enabled flag.
-		// FIX 2 (2.3.47) — write unconditionally. The header toggle's only form
-		// field is a hidden `data-eem-section-enabled` mirror that the editor JS
-		// collector SKIPS when off (it submits nothing for an off toggle, to
-		// match the legacy `isset() ? 1 : 0` convention). The previous
-		// `isset()` guard therefore never ran on toggle-OFF, so the prior ON
-		// value lingered and the section "came back" enabled after saving it
-		// off. Mirror the stall-chart handling above: absent / not "1" = 0.
-		update_post_meta(
-			$reservation_id,
-			'_en_event_pre_entries_enabled',
-			isset( $_POST['eem_event_pre_entries_enabled'] ) && '1' === (string) wp_unslash( $_POST['eem_event_pre_entries_enabled'] ) ? 1 : 0
-		);
-
-		// Event Pre-Entries rows
-		if ( isset( $_POST['eem_event_pre_entries'] ) && is_array( $_POST['eem_event_pre_entries'] ) ) {
-			$pe_raw = wp_unslash( $_POST['eem_event_pre_entries'] );
-			$pe_clean = array();
-			foreach ( (array) $pe_raw as $entry ) {
-				if ( ! is_array( $entry ) ) continue;
-				$pe_max = absint( $entry['max_per_customer'] ?? 0 );
-				$pe_clean[] = array(
-					'title'           => sanitize_text_field( (string) ( $entry['title']     ?? '' ) ),
-					'inventory'       => absint( $entry['inventory'] ?? 0 ),
-					'price'           => number_format( (float) ( $entry['price'] ?? 0 ), 2, '.', '' ),
-					// Enforced at checkout (C10 scope) — zero/empty = unlimited.
-					'max_per_customer' => $pe_max > 0 ? $pe_max : '',
-				);
-			}
-			update_post_meta( $reservation_id, '_en_event_pre_entries', $pe_clean );
-		}
 
 		// FIX 2 (2.3.43/2.3.44) — Unconditional name/slug auto-mirror on every save.
 		// Logic extracted into apply_mirror() so the same path fires on ajax_save(),

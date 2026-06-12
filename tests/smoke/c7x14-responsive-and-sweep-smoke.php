@@ -112,7 +112,6 @@ foreach ( array(
 	'_en_event_day_enabled',
 	'_en_stalls_enabled',
 	'_en_rv_enabled',
-	'_en_event_pre_entries_enabled',
 	'_en_general_addons_enabled',
 	'_en_group_reservations_enabled',
 	'_en_convenience_fee_enabled',
@@ -136,15 +135,15 @@ $_GET['reservation_id'] = $rid_14;
 ob_start(); EEM_Reservation_Editor_Page::render(); $html = (string) ob_get_clean();
 $_GET = array();
 
-// Each of the 12 sections renders a section card. (Post-C7.X.14 the editor
-// gained `event_pre_entries` and `venuemap` sections; canonical list + order
-// from EEM_Reservation_Editor_Page section registry.) Card ids can contain
-// underscores (event_pre_entries) so the regex allows [a-z_].
-$expected_sections = array( 'description', 'checkin', 'eventday', 'stall', 'rv', 'event_pre_entries', 'addons', 'group', 'fees', 'venuemap', 'agreement', 'cancellation' );
+// Each of the 11 sections renders a section card. (The former `event_pre_entries`
+// section was extracted into the standalone `en_entry` Entries CPT — see
+// entries-cpt-smoke.php — so it is no longer an editor section.) Card ids can
+// contain underscores so the regex allows [a-z_].
+$expected_sections = array( 'description', 'checkin', 'eventday', 'stall', 'rv', 'addons', 'group', 'fees', 'venuemap', 'agreement', 'cancellation' );
 foreach ( $expected_sections as $sk ) {
 	c7x14_ok( "section card-{$sk} renders", false !== strpos( $html, "id=\"card-{$sk}\"" ), $pass, $fail, $log );
 }
-c7x14_ok( 'exactly 12 editor section cards present', 12 === preg_match_all( '#<section[^>]*id="card-[a-z_]+"#', $html ), $pass, $fail, $log );
+c7x14_ok( 'exactly 11 editor section cards present', 11 === preg_match_all( '#<section[^>]*id="card-[a-z_]+"#', $html ), $pass, $fail, $log );
 
 // Section order matches the section registry top-to-bottom.
 preg_match_all( '#<section[^>]*id="card-([a-z_]+)"#', $html, $order_matches );

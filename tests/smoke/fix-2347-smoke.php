@@ -106,15 +106,12 @@ fix2347_ok( 'render_reservation preserves explicit-id-wins ($explicit_id)',
 // ── FIX 2 — toggle OFF persistence ───────────────────────────────
 echo "\n[FIX 2] Section toggles persist OFF state\n";
 
-// Event Pre-Entries flag write is now UNCONDITIONAL (no isset() guard wrap).
-fix2347_ok( 'ajax_save: event_pre_entries_enabled written unconditionally (absent/not-"1" = 0)',
-	(bool) preg_match(
-		"~update_post_meta\(\s*\\\$reservation_id,\s*'_en_event_pre_entries_enabled',\s*isset\(\s*\\\$_POST\['eem_event_pre_entries_enabled'\]\s*\)\s*&&\s*'1'\s*===~",
-		$page_nocom
-	),
-	$pass, $fail, $log );
-fix2347_ok( 'ajax_save: event_pre_entries_enabled write is NOT isset()-guarded out',
-	false === strpos( $page_nocom, "if ( isset( \$_POST['eem_event_pre_entries_enabled'] ) ) {" ),
+// Event Pre-Entries was extracted into the standalone `en_entry` Entries CPT
+// (see entries-cpt-smoke.php); the editor save no longer writes the legacy
+// _en_event_pre_entries_enabled flag at all. Assert the writer is gone so the
+// extraction can't silently regress back into the editor save path.
+fix2347_ok( 'ajax_save: no longer writes _en_event_pre_entries_enabled (extracted to Entries CPT)',
+	false === strpos( $page_nocom, "'_en_event_pre_entries_enabled'" ),
 	$pass, $fail, $log );
 
 // en_reservation[]-routed toggles persist OFF via the CPT sanitizer:

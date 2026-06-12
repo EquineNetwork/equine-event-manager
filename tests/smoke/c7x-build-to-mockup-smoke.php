@@ -76,9 +76,9 @@ register_shutdown_function( static function () use ( $rid ) {
 
 // Seed the row-builder + repeating-row sections so their rows actually render.
 // Several assertions below probe rendered row markup (RV zone dropdown, stall +
-// RV delete-row buttons, the seeded pre-entry titles). Those elements are emitted
-// by per-row `foreach` loops that produce NOTHING when the meta arrays are empty,
-// so the fixture must seed at least one row per section.
+// RV delete-row buttons). Those elements are emitted by per-row `foreach` loops
+// that produce NOTHING when the meta arrays are empty, so the fixture must seed
+// at least one row per section.
 update_post_meta( $rid, '_en_stalls_enabled', 1 );
 update_post_meta( $rid, '_en_rv_enabled',     1 );
 update_post_meta( $rid, '_en_stall_rows', array(
@@ -89,11 +89,6 @@ update_post_meta( $rid, '_en_rv_zones', array(
 ) );
 update_post_meta( $rid, '_en_rv_rows', array(
 	array( 'name' => 'Row 1', 'layout' => 'one_sided', 'zone_id' => '0', 'first' => 'A1', 'last' => 'A8' ),
-) );
-update_post_meta( $rid, '_en_event_pre_entries_enabled', 1 );
-update_post_meta( $rid, '_en_event_pre_entries', array(
-	array( 'title' => 'Friday Reining Class',   'inventory' => 20, 'price' => '45.00', 'max_per_customer' => '2' ),
-	array( 'title' => 'Saturday Cutting Class', 'inventory' => 15, 'price' => '60.00', 'max_per_customer' => '1' ),
 ) );
 
 $_GET = array( 'page' => 'equine-event-manager-reservation-editor', 'reservation_id' => $rid );
@@ -229,19 +224,19 @@ c7x_ok( '.eem-sticky-save-dot CSS defined',
 	false !== strpos( $css, '.eem-sticky-save-dot' ),
 	$pass, $fail, $log );
 
-// ── [5] All 12 sections render ───────────────────────────────────
-// Roster grew to 12 with the addition of the `venuemap` section (enable key
-// venue_map_enabled). Canonical render order: description, checkin, eventday,
-// stall, rv, event_pre_entries, addons, group, fees, venuemap, agreement,
-// cancellation.
-echo "\n[5] 12 sections — full mockup roster (includes event_pre_entries + venuemap)\n";
-foreach ( array( 'description', 'checkin', 'eventday', 'stall', 'rv', 'event_pre_entries', 'addons', 'group', 'fees', 'venuemap', 'agreement', 'cancellation' ) as $k ) {
+// ── [5] All 11 sections render ───────────────────────────────────
+// The former `event_pre_entries` section was extracted into the standalone
+// `en_entry` Entries CPT (see entries-cpt-smoke.php), leaving 11 editor
+// sections. Canonical render order: description, checkin, eventday, stall, rv,
+// addons, group, fees, venuemap, agreement, cancellation.
+echo "\n[5] 11 sections — full mockup roster (event_pre_entries extracted to Entries CPT)\n";
+foreach ( array( 'description', 'checkin', 'eventday', 'stall', 'rv', 'addons', 'group', 'fees', 'venuemap', 'agreement', 'cancellation' ) as $k ) {
 	c7x_ok( "section card '{$k}' renders",
 		false !== strpos( $html, 'id="card-' . $k . '"' ),
 		$pass, $fail, $log );
 }
-c7x_ok( '12 section chevrons each carry inline <svg>+polyline',
-	12 === preg_match_all( '/<div class="eem-section-chevron"[^>]*>\s*<svg[\s\S]*?<polyline/', $html ),
+c7x_ok( '11 section chevrons each carry inline <svg>+polyline',
+	11 === preg_match_all( '/<div class="eem-section-chevron"[^>]*>\s*<svg[\s\S]*?<polyline/', $html ),
 	$pass, $fail, $log,
 	'count: ' . preg_match_all( '/<div class="eem-section-chevron"[^>]*>\s*<svg[\s\S]*?<polyline/', $html ) );
 
@@ -357,16 +352,13 @@ c7x_ok( 'CSS: .eem-paint-mode-active defined',
 	false !== strpos( $css, '.eem-paint-mode-active' ),
 	$pass, $fail, $log );
 
-// ── [10.6] Event Pre-Entries section (C8) ───────────────────────
-echo "\n[10.6] Event Pre-Entries — card + enable toggle + repeat table\n";
-c7x_ok( '#card-event_pre_entries renders',        false !== strpos( $html, 'id="card-event_pre_entries"' ),          $pass, $fail, $log );
-c7x_ok( '#eem-pre-entries-list renders',          false !== strpos( $html, 'id="eem-pre-entries-list"' ),            $pass, $fail, $log );
-c7x_ok( 'pre-entry-add action wired',             false !== strpos( $html, 'data-eem-action="pre-entry-add"' ),      $pass, $fail, $log );
-c7x_ok( 'pre-entry-delete action wired',          false !== strpos( $html, 'data-eem-action="pre-entry-delete"' ),   $pass, $fail, $log );
-c7x_ok( '#eem-pre-entry-row-template renders',    false !== strpos( $html, 'id="eem-pre-entry-row-template"' ),      $pass, $fail, $log );
-c7x_ok( 'seeded Friday Reining Class row',        false !== strpos( $html, 'Friday Reining Class' ),                 $pass, $fail, $log );
-c7x_ok( 'seeded Saturday Cutting Class row',      false !== strpos( $html, 'Saturday Cutting Class' ),               $pass, $fail, $log );
-c7x_ok( 'disabled note references pre-entries',   false !== strpos( $html, 'class or competition entries' ),         $pass, $fail, $log );
+// ── [10.6] Event Pre-Entries section — EXTRACTED to Entries CPT ──
+// The inline Pre-Entries editor section was removed; entries are now the
+// standalone `en_entry` CPT (entries-cpt-smoke.php covers it). Assert the
+// editor no longer renders the old section so it can't regress back.
+echo "\n[10.6] Event Pre-Entries — section extracted to Entries CPT (must be absent)\n";
+c7x_ok( '#card-event_pre_entries NOT rendered (extracted)', false === strpos( $html, 'id="card-event_pre_entries"' ), $pass, $fail, $log );
+c7x_ok( '#eem-pre-entries-list NOT rendered (extracted)',   false === strpos( $html, 'id="eem-pre-entries-list"' ),   $pass, $fail, $log );
 
 // ── [11] Layout summary widgets removed from mapped content ──────
 echo "\n[11] Layout summary stub — removed from mapped-content (C8 row builder replaces it)\n";
@@ -498,11 +490,13 @@ c7x_ok( 'C8: rvDeleteZone function defined',      false !== strpos( $js, 'functi
 c7x_ok( 'C8: rvAddRow function defined',          false !== strpos( $js, 'function rvAddRow' ),          $pass, $fail, $log );
 c7x_ok( 'C8: rvDeleteRow function defined',       false !== strpos( $js, 'function rvDeleteRow' ),       $pass, $fail, $log );
 c7x_ok( 'C8: rvRowInputChange function defined',  false !== strpos( $js, 'function rvRowInputChange' ),  $pass, $fail, $log );
-c7x_ok( 'C8: preEntryAdd function defined',       false !== strpos( $js, 'function preEntryAdd' ),       $pass, $fail, $log );
-c7x_ok( 'C8: preEntryDelete function defined',    false !== strpos( $js, 'function preEntryDelete' ),    $pass, $fail, $log );
+// preEntryAdd/preEntryDelete + the pre-entry-* dispatcher entries were removed
+// when the Pre-Entries section was extracted into the Entries CPT.
+c7x_ok( 'C8: preEntryAdd function removed (extracted to Entries CPT)',    false === strpos( $js, 'function preEntryAdd' ),  $pass, $fail, $log );
+c7x_ok( 'C8: preEntryDelete function removed (extracted to Entries CPT)', false === strpos( $js, 'function preEntryDelete' ), $pass, $fail, $log );
 c7x_ok( 'C8: stall-add-row in actions dispatcher', false !== strpos( $js, "'stall-add-row'" ),           $pass, $fail, $log );
 c7x_ok( 'C8: rv-add-zone in actions dispatcher',   false !== strpos( $js, "'rv-add-zone'" ),             $pass, $fail, $log );
-c7x_ok( 'C8: pre-entry-add in actions dispatcher', false !== strpos( $js, "'pre-entry-add'" ),           $pass, $fail, $log );
+c7x_ok( 'C8: pre-entry-add dispatcher entry removed',  false === strpos( $js, "'pre-entry-add'" ),       $pass, $fail, $log );
 c7x_ok( 'C8: no inline onclick in stall row builder (data-eem-action used instead)',
 	false === strpos( $js, 'onclick="addRow()' ) &&
 	false === strpos( $js, 'onclick="addPreEntry()' ),
@@ -543,11 +537,11 @@ c7x_ok(
 	$pass, $fail, $log
 );
 
-// 5. Max Per Customer column in pre-entries template (eem_event_pre_entries[__index__][max_per_customer]).
-$pe_php = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_section-event-pre-entries.php' );
+// 5. Max Per Customer lives on the Entries CPT now (Max Per Customer meta box);
+//    the old inline pre-entries section template was deleted. Assert it's gone.
 c7x_ok(
-	'Feature: Max Per Customer column in pre-entries template (eem_event_pre_entries[__index__][max_per_customer])',
-	false !== strpos( $pe_php, 'eem_event_pre_entries[__index__][max_per_customer]' ),
+	'Feature: legacy _section-event-pre-entries.php template removed (Entries CPT owns Max Per Customer)',
+	! file_exists( EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_section-event-pre-entries.php' ),
 	$pass, $fail, $log
 );
 
@@ -647,27 +641,20 @@ c7x_ok(
 
 $cpt_php = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-reservations-cpt.php' );
 
-// 8a. event_pre_entries_enabled registered in get_default_meta_values().
+// 8a. event_pre_entries_enabled still registered in get_default_meta_values().
+//     The editor section was extracted to the Entries CPT, but the legacy meta
+//     keys remain registered so existing reservations' legacy entries still
+//     resolve through get_enabled_pre_entry_options() (back-compat merge).
 c7x_ok(
-	'Regression guard: event_pre_entries_enabled in get_default_meta_values()',
+	'Regression guard: event_pre_entries_enabled in get_default_meta_values() (legacy back-compat)',
 	false !== strpos( $cpt_php, "'event_pre_entries_enabled'" ),
 	$pass, $fail, $log
 );
 
 // 8b. event_pre_entries registered in get_default_meta_values().
 c7x_ok(
-	'Regression guard: event_pre_entries in get_default_meta_values()',
+	'Regression guard: event_pre_entries in get_default_meta_values() (legacy back-compat)',
 	false !== strpos( $cpt_php, "'event_pre_entries'" ),
-	$pass, $fail, $log
-);
-
-// 8c. Pre-entries template does NOT use get_post_meta(get_the_ID(), ...) pattern.
-//     That call returns 0 on custom admin pages (not inside WP loop).
-$pe_php_src = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_section-event-pre-entries.php' );
-c7x_ok(
-	'Regression guard: _section-event-pre-entries.php does not call get_post_meta(get_the_ID())',
-	false === strpos( $pe_php_src, 'get_post_meta( get_the_ID()' ) &&
-	false === strpos( $pe_php_src, 'get_post_meta(get_the_ID()' ),
 	$pass, $fail, $log
 );
 

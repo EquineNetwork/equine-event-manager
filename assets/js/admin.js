@@ -2498,14 +2498,6 @@
 		'rv-delete-row': function (target) {
 			rvDeleteRow(target);
 		},
-
-		/* C8 — Event Pre-Entries */
-		'pre-entry-add': function () {
-			preEntryAdd();
-		},
-		'pre-entry-delete': function (target) {
-			preEntryDelete(target);
-		}
 	};
 
 	document.addEventListener('click', function (ev) {
@@ -6356,26 +6348,6 @@ function rvRowLayoutChange(select) {
 	if (sides)    sides.style.display    = isB2B ? '' : 'none';
 	generateStallPreview(card);
 	updateRvInventoryDisplay();
-}
-
-/* ─────────────────────────────────────────────────────────────
- * C8 — Event Pre-Entries helpers
- * ───────────────────────────────────────────────────────────── */
-function preEntryAdd() {
-	var tbody = document.getElementById('eem-pre-entries-list');
-	var tmpl  = document.getElementById('eem-pre-entry-row-template');
-	if (!tbody || !tmpl) return;
-	var idx  = tbody.querySelectorAll('tr').length;
-	var frag = tmpl.content.cloneNode(true);
-	frag.querySelectorAll('[name]').forEach(function (el) {
-		el.name = el.name.replace('__index__', idx);
-	});
-	tbody.appendChild(frag);
-}
-
-function preEntryDelete(btn) {
-	var row = btn.closest('tr');
-	if (row) row.remove();
 }
 
 /* C8 — initialise previews for seeded rows on page load */
