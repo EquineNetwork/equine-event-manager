@@ -9774,17 +9774,12 @@ a.eem-add-term-link:hover { color: #1257d1; }
 .eem-sr-rail-label { color: var(--eem-text-secondary); }
 .eem-sr-rail-num { font-family: var(--eem-font-display); font-weight: 700; color: var(--eem-navy); font-size: 15px; }
 
-/* Settings → Add-Ons: optional-feature toggle rows */
-.eem-addon-row { display: flex; gap: 14px; align-items: flex-start; padding: 16px 0; border-bottom: 1px solid var(--eem-border-soft); cursor: pointer; }
+/* Settings → Add-Ons: optional-feature toggle rows.
+   Uses THE OFFICIAL .eem-toggle (see DS-TOGGLE) — same control as the Edit
+   Reservation section toggles. No bespoke switch component here. */
+.eem-addon-row { display: flex; gap: 14px; align-items: flex-start; padding: 16px 0; border-bottom: 1px solid var(--eem-border-soft); }
 .eem-addon-row:last-child { border-bottom: none; }
+.eem-addon-row > .eem-toggle { margin-top: 1px; }
 .eem-addon-row__text { display: flex; flex-direction: column; gap: 3px; }
 .eem-addon-row__title { font-weight: 600; color: var(--eem-navy); font-size: 14px; }
 .eem-addon-row__desc { font-size: 13px; color: var(--eem-text-secondary); line-height: 1.5; }
-/* Toggle switch (styled checkbox) */
-.eem-switch { position: relative; display: inline-block; width: 42px; height: 22px; flex-shrink: 0; margin-top: 1px; }
-.eem-switch input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
-.eem-switch__slider { position: absolute; inset: 0; background: #c3c4c7; border-radius: 999px; transition: background 0.15s ease; pointer-events: none; }
-.eem-switch__slider::before { content: ''; position: absolute; left: 2px; top: 2px; width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: transform 0.15s ease; box-shadow: 0 1px 2px rgba( 0, 0, 0, 0.2 ); }
-.eem-switch input:checked + .eem-switch__slider { background: var(--eem-electric); }
-.eem-switch input:checked + .eem-switch__slider::before { transform: translateX(20px); }
-.eem-switch input:focus-visible + .eem-switch__slider { box-shadow: 0 0 0 2px rgba( 22, 104, 242, 0.35 ); }

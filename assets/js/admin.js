@@ -72,7 +72,15 @@
 	}
 
 	EEM.toggleSwitch = function (el) {
-		setSwitchState(el, !el.classList.contains('on'));
+		var on = !el.classList.contains('on');
+		setSwitchState(el, on);
+		// If the toggle is paired with a hidden input (data-eem-input="<id>"),
+		// keep its value in sync so plain form submits carry the on/off state.
+		var inputId = el.dataset.eemInput;
+		if (inputId) {
+			var input = document.getElementById(inputId);
+			if (input) { input.value = on ? '1' : '0'; }
+		}
 	};
 
 	/**

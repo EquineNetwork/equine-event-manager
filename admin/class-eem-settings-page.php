@@ -227,27 +227,23 @@ class EEM_Settings_Page {
 						<?php esc_html_e( 'Turn optional features on or off for this site. Turning one off hides it everywhere — its menu, editor sections, customer-facing pages, and buttons — without deleting any data. Turn it back on any time to restore it exactly as it was.', 'equine-event-manager' ); ?>
 					</p>
 
-					<label class="eem-addon-row">
-						<span class="eem-switch">
-							<input type="checkbox" name="payload[entries_enabled]" value="1" <?php checked( $entries_on ); ?> />
-							<span class="eem-switch__slider" aria-hidden="true"></span>
-						</span>
+					<div class="eem-addon-row">
+						<button type="button" class="eem-toggle <?php echo $entries_on ? 'on' : 'off'; ?>" data-eem-action="switch-toggle" data-eem-input="eem-addon-entries-input" role="switch" aria-checked="<?php echo $entries_on ? 'true' : 'false'; ?>" aria-label="<?php esc_attr_e( 'Entries', 'equine-event-manager' ); ?>"></button>
+						<input type="hidden" name="payload[entries_enabled]" id="eem-addon-entries-input" value="<?php echo $entries_on ? '1' : '0'; ?>" />
 						<span class="eem-addon-row__text">
 							<span class="eem-addon-row__title"><?php esc_html_e( 'Entries', 'equine-event-manager' ); ?></span>
 							<span class="eem-addon-row__desc"><?php esc_html_e( 'Sell entry spots in divisions/classes and track who has entered. When off: the Entries menu, the customer checkout entries section, and the Create Order entries fold are hidden.', 'equine-event-manager' ); ?></span>
 						</span>
-					</label>
+					</div>
 
-					<label class="eem-addon-row">
-						<span class="eem-switch">
-							<input type="checkbox" name="payload[sheets_results_enabled]" value="1" <?php checked( $sheets_on ); ?> />
-							<span class="eem-switch__slider" aria-hidden="true"></span>
-						</span>
+					<div class="eem-addon-row">
+						<button type="button" class="eem-toggle <?php echo $sheets_on ? 'on' : 'off'; ?>" data-eem-action="switch-toggle" data-eem-input="eem-addon-sheets-input" role="switch" aria-checked="<?php echo $sheets_on ? 'true' : 'false'; ?>" aria-label="<?php esc_attr_e( 'Sheets & Results', 'equine-event-manager' ); ?>"></button>
+						<input type="hidden" name="payload[sheets_results_enabled]" id="eem-addon-sheets-input" value="<?php echo $sheets_on ? '1' : '0'; ?>" />
 						<span class="eem-addon-row__text">
 							<span class="eem-addon-row__title"><?php esc_html_e( 'Sheets & Results', 'equine-event-manager' ); ?></span>
 							<span class="eem-addon-row__desc"><?php esc_html_e( 'Upload draw sheets and result PDFs per event. When off: the Sheets & Results menu, the event-editor section, the public per-event page, and the event-card buttons are hidden.', 'equine-event-manager' ); ?></span>
 						</span>
-					</label>
+					</div>
 				</div>
 				<div class="eem-settings-save-bar">
 					<button type="submit" class="eem-btn eem-btn-primary"><?php esc_html_e( 'Save Features', 'equine-event-manager' ); ?></button>
