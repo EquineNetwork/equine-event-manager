@@ -974,31 +974,9 @@ class EEM_Events {
 			)
 		);
 
-		register_taxonomy(
-			self::EVENT_TAG_TAXONOMY,
-			array( self::EVENT_POST_TYPE ),
-			array(
-				'labels'            => array(
-					'name'          => __( 'Tags', 'equine-event-manager' ),
-					'singular_name' => __( 'Tag', 'equine-event-manager' ),
-					'search_items'  => __( 'Search Tags', 'equine-event-manager' ),
-					'all_items'     => __( 'All Tags', 'equine-event-manager' ),
-					'edit_item'     => __( 'Edit Tag', 'equine-event-manager' ),
-					'update_item'   => __( 'Update Tag', 'equine-event-manager' ),
-					'add_new_item'  => __( 'Add New Tag', 'equine-event-manager' ),
-					'new_item_name' => __( 'New Tag Name', 'equine-event-manager' ),
-					'menu_name'     => __( 'Tags', 'equine-event-manager' ),
-				),
-				'public'            => true,
-				'show_ui'           => true,
-				'show_admin_column' => true,
-				'show_in_rest'      => true,
-				'hierarchical'      => false,
-				'rewrite'           => array(
-					'slug' => 'event-tag',
-				),
-			)
-		);
+		// Event Tags (en_event_tag) removed entirely (Whitney 2026-06-13) — not
+		// needed. The taxonomy is no longer registered; EVENT_TAG_TAXONOMY is kept
+		// only so any remaining reads degrade to empty instead of fatal.
 
 		register_post_type(
 			self::VENUE_POST_TYPE,
@@ -1686,9 +1664,7 @@ class EEM_Events {
 		$producer_edit_url  = $producer_id ? get_edit_post_link( $producer_id, 'raw' ) : '';
 		$featured_image_id  = get_post_thumbnail_id( $post->ID );
 		$category_terms     = get_the_terms( $post->ID, self::EVENT_CATEGORY_TAXONOMY );
-		$tag_terms          = get_the_terms( $post->ID, self::EVENT_TAG_TAXONOMY );
 		$category_count     = is_array( $category_terms ) ? count( $category_terms ) : 0;
-		$tag_count          = is_array( $tag_terms ) ? count( $tag_terms ) : 0;
 		$content_word_count = str_word_count( wp_strip_all_tags( (string) $post->post_content ) );
 		$has_description    = $content_word_count > 0;
 		$date_snapshot      = __( 'Dates not set yet', 'equine-event-manager' );
@@ -1785,7 +1761,6 @@ class EEM_Events {
 				<div class="eem-event-editor-card__summary-card">
 					<span class="eem-event-editor-card__summary-label"><?php esc_html_e( 'Taxonomies', 'equine-event-manager' ); ?></span>
 					<strong class="eem-event-editor-card__summary-value"><?php echo esc_html( sprintf( _n( '%d category', '%d categories', $category_count, 'equine-event-manager' ), $category_count ) ); ?></strong>
-					<span class="eem-event-editor-card__summary-note"><?php echo esc_html( sprintf( _n( '%d tag attached', '%d tags attached', $tag_count, 'equine-event-manager' ), $tag_count ) ); ?></span>
 				</div>
 				<div class="eem-event-editor-card__summary-card">
 					<span class="eem-event-editor-card__summary-label"><?php esc_html_e( 'Connections', 'equine-event-manager' ); ?></span>
@@ -1799,7 +1774,6 @@ class EEM_Events {
 				<a class="eem-event-editor-card__quicklink" href="#postdivrich"><?php esc_html_e( 'Jump To Description', 'equine-event-manager' ); ?></a>
 				<a class="eem-event-editor-card__quicklink" href="#postimagediv"><?php esc_html_e( 'Open Featured Image', 'equine-event-manager' ); ?></a>
 				<a class="eem-event-editor-card__quicklink" href="#en_event_categorydiv"><?php esc_html_e( 'Open Categories', 'equine-event-manager' ); ?></a>
-				<a class="eem-event-editor-card__quicklink" href="#tagsdiv-en_event_tag"><?php esc_html_e( 'Open Tags', 'equine-event-manager' ); ?></a>
 				<a class="eem-event-editor-card__quicklink" href="#submitdiv"><?php esc_html_e( 'Open Publish Tools', 'equine-event-manager' ); ?></a>
 			</div>
 

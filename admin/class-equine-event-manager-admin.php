@@ -494,8 +494,6 @@ class EEM_Admin {
 			'equine-event-manager-orders',
 			EEM_Notifications_Page::MENU_SLUG,
 			'edit.php?post_type=en_event',
-			'post-new.php?post_type=en_event',
-			'edit-tags.php?taxonomy=en_event_tag&post_type=en_event',
 			'edit-tags.php?taxonomy=en_event_category&post_type=en_event',
 			'edit.php?post_type=en_venue',
 			'edit-tags.php?taxonomy=en_venue_category&post_type=en_venue',
@@ -634,8 +632,6 @@ class EEM_Admin {
 
 		$event_submenus = array(
 			'edit.php?post_type=en_event',
-			'post-new.php?post_type=en_event',
-			'edit-tags.php?taxonomy=en_event_tag&post_type=en_event',
 			'edit-tags.php?taxonomy=en_event_category&post_type=en_event',
 			'edit.php?post_type=en_venue',
 			'edit-tags.php?taxonomy=en_venue_category&post_type=en_venue',
@@ -879,21 +875,9 @@ class EEM_Admin {
 				'edit.php?post_type=en_event'
 			);
 
-			add_submenu_page(
-				self::MENU_SLUG,
-				__( 'Add New Event', 'equine-event-manager' ),
-				__( 'Add New Event', 'equine-event-manager' ),
-				'manage_options',
-				'post-new.php?post_type=en_event'
-			);
-
-			add_submenu_page(
-				self::MENU_SLUG,
-				__( 'Tags', 'equine-event-manager' ),
-				__( 'Tags', 'equine-event-manager' ),
-				'manage_options',
-				'edit-tags.php?taxonomy=en_event_tag&post_type=en_event'
-			);
+			// "Add New Event" removed from the sidebar (Whitney 2026-06-13) — the
+			// Events list page already has an "Add Event" button. "Tags" removed
+			// entirely (the en_event_tag taxonomy is no longer registered).
 
 			add_submenu_page(
 				self::MENU_SLUG,
