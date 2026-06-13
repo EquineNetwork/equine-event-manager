@@ -92,9 +92,15 @@ placings/times, payouts/added money/jackpot, go-rounds/draw order) is a genuine 
    mobile app via the same API contract.
 
 ### Deferred features (moved out of v2, 2026-06-12)
-3. **Native Events source** — finish + un-gate the `en_event`/`en_venue`/`en_producer` CPTs
-   (currently "Coming Soon"). ~1,500 LOC partially built. Low priority — TEC + GEMS already
-   cover event sourcing.
+3. ✅ **Native Events source — DONE (2.7.234–237).** Un-gated the `en_event`/`en_venue`/
+   `en_producer` CPTs (selectable in Settings → Integrations). Added: Facebook + Instagram
+   event fields (`_en_event_*`, rendered on the event page); venue geocoding (lat/lng +
+   auto-geocode on save via Google Geocoding API, with manual override); a frontend calendar via
+   `[en_events]` with **list** (incl. `images="no"`), **month**, and **map** (`view="map"`,
+   Google Maps with per-event pins) views; a Google Maps API-key setting. Browser-verified
+   end-to-end (list/no-images/month/single-event + social links live; map shows the API-key
+   notice until a key is set). 48 smoke assertions across 4 files. **No tickets** (per Whitney).
+   To turn on: Settings → Integrations → select Native Events → Save.
 4. **PDF Venue Map → overlay / conversion** *(exploratory)* — upload a PDF venue map; MVP =
    render to image + drop/snap stall hotspots onto it. Needs a server PDF-render dependency.
    Pairs with Facility Layout Templates.
