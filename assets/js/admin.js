@@ -1003,6 +1003,54 @@
 		input.focus();
 	}
 
+	/* Native Events Admin B — branded confirm modal for deleting a taxonomy
+	   category (single row or bulk). This is routine, recoverable taxonomy CRUD
+	   (a deleted category can be recreated; no orders/audit history is lost), so
+	   it uses a simple Cancel/Delete confirm rather than the typed-DELETE modal
+	   reserved for reservation permanent-delete. `message` is set via textContent
+	   (never innerHTML) so an admin-entered category name can't inject markup.
+	   onConfirm() performs the actual destructive action. */
+	function openTermDeleteModal(message, onConfirm) {
+		var existing = document.getElementById('eem-term-del-overlay');
+		if (existing) existing.remove();
+
+		var overlay = document.createElement('div');
+		overlay.id = 'eem-term-del-overlay';
+		overlay.className = 'eem-modal';
+		overlay.setAttribute('role', 'dialog');
+		overlay.setAttribute('aria-modal', 'true');
+		overlay.setAttribute('aria-labelledby', 'eem-term-del-title');
+		overlay.innerHTML =
+			'<div class="eem-modal-card">' +
+				'<div class="eem-modal-head eem-modal-head--danger">' +
+					'<h2 class="eem-modal-title eem-modal-title--danger" id="eem-term-del-title">Delete category?</h2>' +
+				'</div>' +
+				'<div class="eem-modal-body"><p style="margin:0;" id="eem-term-del-msg"></p></div>' +
+				'<div class="eem-modal-foot">' +
+					'<button type="button" class="eem-btn eem-btn--secondary" id="eem-term-del-cancel">Cancel</button>' +
+					'<button type="button" class="eem-btn eem-btn--danger" id="eem-term-del-confirm">Delete</button>' +
+				'</div>' +
+			'</div>';
+
+		document.body.appendChild(overlay);
+		overlay.querySelector('#eem-term-del-msg').textContent = message;
+		overlay.classList.add('open');
+
+		var cancelBtn  = overlay.querySelector('#eem-term-del-cancel');
+		var confirmBtn = overlay.querySelector('#eem-term-del-confirm');
+		cancelBtn.addEventListener('click', function () { overlay.remove(); });
+		overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.remove(); });
+		overlay.addEventListener('keydown', function (e) {
+			if (e.key === 'Escape') overlay.remove();
+			if (e.key === 'Enter') confirmBtn.click();
+		});
+		confirmBtn.addEventListener('click', function () {
+			overlay.remove();
+			onConfirm();
+		});
+		confirmBtn.focus();
+	}
+
 	/* Settings → Danger Zone "Erase all data & start fresh" — typed-ERASE confirm
 	   modal (mirrors openDeletePermanentlyModal's canonical chrome). On confirm,
 	   POSTs action=eem_reset_all_data and redirects to the Dashboard so the
@@ -2589,6 +2637,38 @@
 		'rv-delete-row': function (target) {
 			rvDeleteRow(target);
 		},
+
+		/* Native Events Admin B — Term Categories single-row delete. The link
+		   already carries a nonced href to admin-post.php; intercept it to show
+		   the branded confirm modal, then navigate on confirm. */
+		'eem-term-delete': function (target) {
+			var href = target.getAttribute('href');
+			if (!href) return;
+			var name = target.getAttribute('data-term-name') || '';
+			var msg = name
+				? 'Delete the category "' + name + '"? This cannot be undone.'
+				: 'Delete this category? This cannot be undone.';
+			openTermDeleteModal(msg, function () { window.location.href = href; });
+		},
+
+		/* Native Events Admin B — Term Categories bulk Apply. If "Delete" is the
+		   selected bulk action and at least one category is checked, confirm via
+		   the modal before submitting; otherwise submit straight through (the
+		   server validates the empty-selection case and shows a notice). */
+		'eem-term-bulk-apply': function (target) {
+			var form = document.getElementById('eem-term-bulk-form');
+			if (!form) return;
+			var action = form.querySelector('[name="bulk_action"]');
+			var checked = document.querySelectorAll('input[form="eem-term-bulk-form"][name="term_ids[]"]:checked');
+			if (action && action.value === 'delete' && checked.length > 0) {
+				var msg = checked.length === 1
+					? 'Delete the selected category? This cannot be undone.'
+					: 'Delete the ' + checked.length + ' selected categories? This cannot be undone.';
+				openTermDeleteModal(msg, function () { form.submit(); });
+			} else {
+				form.submit();
+			}
+		},
 	};
 
 	document.addEventListener('click', function (ev) {
@@ -2618,6 +2698,11 @@
 		var t = ev.target;
 		if (t && t.matches && t.matches('[data-eem-action="orders-toggle-all"]')) {
 			document.querySelectorAll('input.eem-orders-row-cb').forEach(function (cb) { cb.checked = t.checked; });
+		}
+		// Term Categories bulk select-all — drives every row checkbox associated
+		// with the bulk form (associated via the HTML5 form= attribute).
+		if (t && t.matches && t.matches('[data-eem-action="eem-term-toggle-all"]')) {
+			document.querySelectorAll('input[form="eem-term-bulk-form"][name="term_ids[]"]').forEach(function (cb) { cb.checked = t.checked; });
 		}
 	});
 

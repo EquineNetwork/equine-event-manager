@@ -112,6 +112,7 @@ class EEM_Admin {
 		add_action( 'admin_init', array( $this, 'maybe_redirect_disabled_native_event_admin_screens' ) );
 		add_action( 'admin_init', array( $this, 'maybe_redirect_legacy_event_manager_admin_routes' ) );
 		add_action( 'admin_init', array( $this, 'maybe_redirect_venue_list_to_branded_page' ) );
+		add_action( 'admin_init', array( $this, 'maybe_redirect_taxonomy_screens_to_branded_pages' ) );
 		add_action( 'admin_menu', array( $this, 'position_event_manager_after_tec_events' ), 1002 );
 		add_action( 'admin_menu', array( $this, 'normalize_event_manager_submenu_order' ), 1001 );
 		add_action( 'admin_menu', array( $this, 'maybe_remove_disabled_native_event_menu_items' ), 999 );
@@ -269,6 +270,13 @@ class EEM_Admin {
 			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--venues' );
 		}
 
+		// Native Events Admin B — branded taxonomy Categories pages (Event /
+		// Venue / Producer). Same shell-page branch requirement (DS-1.B.4) so
+		// legacy carve-outs don't shrink .eem-page.
+		if ( in_array( $page, EEM_Term_Categories_Page::slugs(), true ) ) {
+			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--term-categories' );
+		}
+
 		return $classes;
 	}
 
@@ -311,6 +319,11 @@ class EEM_Admin {
 		}
 
 		if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-order', 'equine-event-manager-order-refund', 'equine-event-manager-settings', 'equine-event-manager-stall-charts', 'equine-event-manager-stall-chart-print', 'equine-event-manager-reports', 'equine-event-manager-reservation-overview', 'equine-event-manager-create-order', 'equine-event-manager-collect-payment', 'equine-event-manager-dashboard', 'equine-event-manager-reservation-editor', EEM_Entries::EDITOR_SLUG, EEM_Entries::LIST_SLUG, 'equine-event-manager-customer', 'equine-event-manager-customers', EEM_Notifications_Page::MENU_SLUG, EEM_Venues_Page::MENU_SLUG, EEM_Reservations_List_Page::MENU_SLUG ), true ) ) {
+			$should_load = true;
+		}
+
+		// Native Events Admin B — branded taxonomy Categories pages.
+		if ( in_array( $page, EEM_Term_Categories_Page::slugs(), true ) ) {
 			$should_load = true;
 		}
 
@@ -494,11 +507,11 @@ class EEM_Admin {
 			'equine-event-manager-orders',
 			EEM_Notifications_Page::MENU_SLUG,
 			'edit.php?post_type=en_event',
-			'edit-tags.php?taxonomy=en_event_category&post_type=en_event',
+			'equine-event-manager-event-categories',
 			EEM_Venues_Page::MENU_SLUG,
-			'edit-tags.php?taxonomy=en_venue_category&post_type=en_venue',
+			'equine-event-manager-venue-categories',
 			'edit.php?post_type=en_producer',
-			'edit-tags.php?taxonomy=en_producer_category&post_type=en_producer',
+			'equine-event-manager-producer-categories',
 			'equine-event-manager-reports',
 			'equine-event-manager-settings',
 		);
@@ -607,6 +620,41 @@ class EEM_Admin {
 				admin_url( 'admin.php' )
 			)
 		);
+		exit;
+	}
+
+	/**
+	 * Bounce the raw WP `edit-tags.php` term list and `term.php` term editor for
+	 * the three managed category taxonomies (en_event_category / en_venue_category
+	 * / en_producer_category) to the branded EEM_Term_Categories_Page. The term
+	 * editor carries the term id forward as `?edit=N` so the branded page opens in
+	 * edit mode. No-op when native events are disabled.
+	 *
+	 * @return void
+	 */
+	public function maybe_redirect_taxonomy_screens_to_branded_pages() {
+		if ( wp_doing_ajax() || ! EEM_Events::is_native_events_enabled() ) {
+			return;
+		}
+
+		global $pagenow;
+
+		if ( ! in_array( $pagenow, array( 'edit-tags.php', 'term.php' ), true ) ) {
+			return;
+		}
+
+		$taxonomy = isset( $_GET['taxonomy'] ) ? sanitize_key( wp_unslash( $_GET['taxonomy'] ) ) : '';
+		$slug     = EEM_Term_Categories_Page::slug_for_taxonomy( $taxonomy );
+		if ( '' === $slug ) {
+			return;
+		}
+
+		$args = array( 'page' => $slug );
+		if ( 'term.php' === $pagenow && ! empty( $_GET['tag_ID'] ) ) {
+			$args['edit'] = absint( wp_unslash( $_GET['tag_ID'] ) );
+		}
+
+		wp_safe_redirect( add_query_arg( $args, admin_url( 'admin.php' ) ) );
 		exit;
 	}
 
@@ -901,12 +949,16 @@ class EEM_Admin {
 			// Events list page already has an "Add Event" button. "Tags" removed
 			// entirely (the en_event_tag taxonomy is no longer registered).
 
+			// Category taxonomies use the branded EEM_Term_Categories_Page split
+			// form/table layout, not the raw WP edit-tags.php screen (which is
+			// redirected here). One page class, three slugs.
 			add_submenu_page(
 				self::MENU_SLUG,
 				__( 'Event Categories', 'equine-event-manager' ),
 				__( 'Event Categories', 'equine-event-manager' ),
 				'manage_options',
-				'edit-tags.php?taxonomy=en_event_category&post_type=en_event'
+				'equine-event-manager-event-categories',
+				array( 'EEM_Term_Categories_Page', 'render' )
 			);
 
 			// "Venues" = the branded EEM_Venues_Page list (en_venue posts + their
@@ -926,7 +978,8 @@ class EEM_Admin {
 				__( 'Venue Categories', 'equine-event-manager' ),
 				__( 'Venue Categories', 'equine-event-manager' ),
 				'manage_options',
-				'edit-tags.php?taxonomy=en_venue_category&post_type=en_venue'
+				'equine-event-manager-venue-categories',
+				array( 'EEM_Term_Categories_Page', 'render' )
 			);
 
 			add_submenu_page(
@@ -942,7 +995,8 @@ class EEM_Admin {
 				__( 'Producer Categories', 'equine-event-manager' ),
 				__( 'Producer Categories', 'equine-event-manager' ),
 				'manage_options',
-				'edit-tags.php?taxonomy=en_producer_category&post_type=en_producer'
+				'equine-event-manager-producer-categories',
+				array( 'EEM_Term_Categories_Page', 'render' )
 			);
 
 		}

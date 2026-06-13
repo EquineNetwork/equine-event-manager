@@ -9375,3 +9375,45 @@ a.eem-tpl-link:focus { font-size: 12px; color: var(--eem-electric, #1668F2); mar
 	.eem-venues-stats { gap: 8px; }
 	.eem-stat-card { flex: 1 1 calc(50% - 4px); min-width: 0; }
 }
+
+/* ==========================================================================
+   Taxonomy Categories page (EEM_Term_Categories_Page) — branded port of
+   .mockups/taxonomy_categories_admin_page.html. Split body: left Add/Edit
+   form panel + right sortable/searchable term table. Reuses .eem-field-*,
+   .eem-table, .eem-search-*, .eem-row-* chrome.
+   ========================================================================== */
+
+/* Split body: form panel (fixed) + table panel (fluid). */
+.eem-term-split { display: flex; align-items: flex-start; gap: 0; }
+.eem-term-form-panel { width: 320px; min-width: 280px; flex-shrink: 0; border-right: 1px solid var(--eem-border, #dcdcde); padding: 4px 22px 8px 0; }
+.eem-term-form-title { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 700; color: var(--eem-navy, #031B4E); margin: 0 0 18px; }
+.eem-term-form-actions { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+.eem-term-table-panel { flex: 1; min-width: 0; padding-left: 22px; }
+
+/* Toolbar: bulk form + search form + count, on one flex row. */
+.eem-term-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 0 0 12px; border-bottom: 1px solid var(--eem-border, #dcdcde); margin-bottom: 0; }
+.eem-term-bulk-form, .eem-term-search-form { display: flex; align-items: center; gap: 8px; margin: 0; }
+
+/* Term name cell — bold navy, no underline (no-underline rule). */
+a.eem-term-name,
+a.eem-term-name:link,
+a.eem-term-name:visited,
+a.eem-term-name:hover,
+a.eem-term-name:focus { font-weight: 700; color: var(--eem-navy, #031B4E); font-size: 13px; display: block; text-decoration: none; }
+a.eem-term-name:hover { color: var(--eem-electric, #1668F2); }
+
+/* Slug chip (monospace pill). */
+.eem-term-slug { font-family: 'IBM Plex Mono', 'Courier New', monospace; font-size: 12.5px; color: #50575e; background: #f3f4f5; padding: 1px 6px; border-radius: 3px; display: inline-block; }
+
+/* Count cell. */
+.eem-term-count { font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: var(--eem-navy, #031B4E); font-size: 13.5px; }
+.eem-term-count-zero { font-weight: 400; color: #8c8f94; }
+.eem-term-muted { color: #8c8f94; }
+
+.eem-term-notice { margin: 0 0 16px; }
+
+@media (max-width: 767px) {
+	.eem-term-split { flex-direction: column; }
+	.eem-term-form-panel { width: 100%; border-right: none; border-bottom: 1px solid var(--eem-border, #dcdcde); padding: 0 0 18px; }
+	.eem-term-table-panel { padding-left: 0; padding-top: 18px; }
+}

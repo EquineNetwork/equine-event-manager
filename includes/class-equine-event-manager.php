@@ -60,6 +60,7 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-orders-list-repo.ph
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-orders-list-page.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-notifications-page.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-venues-page.php';
+require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-term-categories-page.php';
 
 // DS-1.A — Create Order + Collect Payment admin page stubs (functional
 // implementation lands in C13/C14). Each renders the canonical mockup
@@ -224,6 +225,7 @@ class EEM_Plugin {
 		EEM_Entries::register();
 		EEM_Notifications_Page::register();
 		EEM_Venues_Page::register();
+		EEM_Term_Categories_Page::register();
 		// C7.C.1 — meta-box registration retired. The Reservation Editor
 		// is now a custom render page (EEM_Reservation_Editor_Page); the
 		// legacy EEM_Reservation_Editor class is kept ONLY as a "save +
