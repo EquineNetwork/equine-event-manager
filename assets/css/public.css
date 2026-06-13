@@ -50,7 +50,7 @@
 .eem-event-directory-page__title {
 	margin: 0 0 20px;
 	color: #031B4E;
-	font-family: "Space Grotesk", system-ui, sans-serif;
+	font-family: "IBM Plex Sans", system-ui, sans-serif;
 	font-size: clamp(1.8rem, 3vw, 2.4rem);
 	line-height: 1.08;
 	letter-spacing: -0.03em;
@@ -127,10 +127,32 @@
 	border-color: #b9ccef;
 	box-shadow: 0 4px 14px rgba(3, 27, 78, 0.08);
 }
-/* `images="no"` list variant — drop the media column so rows are a compact,
-   text-only single column (e.g. for a sidebar or dense schedule). */
+/* `images="no"` list variant — a clean, card-less, divider-separated stack for
+   website sidebars. Drops the media column, the card chrome (border / shadow /
+   background / radius / hover), and uses a single hairline divider between rows
+   with a slightly smaller title. */
+.eem-event-list--no-images {
+	gap: 0;
+}
 .eem-event-list--no-images .eem-event-list-row {
 	grid-template-columns: minmax(0, 1fr);
+	border: none;
+	border-radius: 0;
+	box-shadow: none;
+	background: transparent;
+	padding: 14px 0;
+	border-bottom: 1px solid #E4EAF3;
+}
+.eem-event-list--no-images .eem-event-list-row:last-child {
+	border-bottom: none;
+}
+.eem-event-list--no-images .eem-event-list-row:hover {
+	border-color: transparent;
+	border-bottom-color: #E4EAF3;
+	box-shadow: none;
+}
+.eem-event-list--no-images .eem-event-list-row__title {
+	font-size: 1.15rem !important;
 }
 .eem-event-list--no-images .eem-event-list-row__media {
 	display: none;
@@ -239,7 +261,7 @@
 .eem-event-list-row__title {
 	margin: 0 !important;
 	color: #031B4E;
-	font-family: "Space Grotesk", system-ui, sans-serif !important;
+	font-family: "IBM Plex Sans", system-ui, sans-serif !important;
 	font-size: 1.5rem !important;
 	font-weight: 700 !important;
 	line-height: 1.15 !important;
@@ -682,7 +704,7 @@
 .equine-event-manager-calendar__header h2 {
 	margin: 0;
 	color: #031B4E;
-	font-family: "Space Grotesk", system-ui, sans-serif;
+	font-family: "IBM Plex Sans", system-ui, sans-serif;
 	font-size: 28px;
 	font-weight: 700;
 	letter-spacing: -0.02em;
@@ -3899,7 +3921,7 @@
 	border-color: #c0d8ff;
 }
 .eem-event-page .hero-title {
-	font-family: 'Space Grotesk', sans-serif;
+	font-family: "IBM Plex Sans", system-ui, sans-serif;
 	font-size: 30px;
 	font-weight: 700;
 	color: #031B4E;
