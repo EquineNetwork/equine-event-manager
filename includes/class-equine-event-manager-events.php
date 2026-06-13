@@ -95,7 +95,10 @@ class EEM_Events {
 			get_option( self::INTEGRATION_SETTINGS_OPTION, array() ),
 			array(
 				'tec_integration_enabled' => 1,
-				'default_event_source'    => 'external',
+				// Native Events is the fresh-install default source (Whitney
+				// 2026-06-13) — keeps the picker default + the resolved reservation
+				// source consistent.
+				'default_event_source'    => 'native',
 				'feed_url'                => '',
 			)
 		);

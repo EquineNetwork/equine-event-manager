@@ -1077,7 +1077,10 @@ class EEM_Admin {
 			add_submenu_page(
 				self::MENU_SLUG,
 				__( 'Event Categories', 'equine-event-manager' ),
-				__( 'Event Categories', 'equine-event-manager' ),
+				// Menu label is just "Categories" — it renders as a hover sub-item
+				// under "Events", so the parent already supplies the context (and
+				// the short label avoids wrapping/squishing in the narrow sidebar).
+				__( 'Categories', 'equine-event-manager' ),
 				'manage_options',
 				'equine-event-manager-event-categories',
 				array( 'EEM_Term_Categories_Page', 'render' )
@@ -1098,7 +1101,7 @@ class EEM_Admin {
 			add_submenu_page(
 				self::MENU_SLUG,
 				__( 'Venue Categories', 'equine-event-manager' ),
-				__( 'Venue Categories', 'equine-event-manager' ),
+				__( 'Categories', 'equine-event-manager' ),
 				'manage_options',
 				'equine-event-manager-venue-categories',
 				array( 'EEM_Term_Categories_Page', 'render' )
@@ -1119,7 +1122,7 @@ class EEM_Admin {
 			add_submenu_page(
 				self::MENU_SLUG,
 				__( 'Producer Categories', 'equine-event-manager' ),
-				__( 'Producer Categories', 'equine-event-manager' ),
+				__( 'Categories', 'equine-event-manager' ),
 				'manage_options',
 				'equine-event-manager-producer-categories',
 				array( 'EEM_Term_Categories_Page', 'render' )

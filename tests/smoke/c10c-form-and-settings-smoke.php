@@ -88,7 +88,7 @@ $m->setAccessible( true );
 ob_start(); $m->invoke( $sp ); $shtml = ob_get_clean();
 
 preg_match_all( '/data-eem-source-value="([a-z]+)"/', $shtml, $order );
-ok( 'event source order is TEC, GEMS(feed), Native', array( 'tec', 'feed', 'native' ) === $order[1], $pass, $fail, $log, implode( ',', $order[1] ) );
+ok( 'event source order is Native, TEC, GEMS(feed)', array( 'native', 'tec', 'feed' ) === $order[1], $pass, $fail, $log, implode( ',', $order[1] ) );
 // Coming Soon pills: Feed only when GEMS is NOT configured (Native shipped).
 ok( "{$soon_count} Coming Soon pill(s)", $soon_count === substr_count( $shtml, 'is-soon">Coming Soon' ), $pass, $fail, $log, substr_count( $shtml, 'is-soon">Coming Soon' ) );
 ok( "{$soon_count} disabled source radio(s)", $soon_count === preg_match_all( '/<input type="radio"[^>]*disabled/', $shtml, $d ), $pass, $fail, $log );

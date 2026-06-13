@@ -797,10 +797,9 @@ class EEM_Settings_Page {
 		$integration = wp_parse_args(
 			get_option( 'equine_event_manager_integration_settings', array() ),
 			array(
-				// 2.3.53 (C10.C) — TEC is the only V1-functional source, so it is
-				// the fresh-install default. Native Events + External Feed are
-				// "Coming Soon" (V2) and disabled in the picker below.
-				'default_event_source' => 'tec',
+				// Native Events is the fresh-install default source (Whitney
+				// 2026-06-13) — it's the built-in system and the first picker option.
+				'default_event_source' => 'native',
 				'feed_url'             => '',
 				'tec_event_category'   => '',
 				'sendgrid_api_key'     => '',
@@ -810,14 +809,14 @@ class EEM_Settings_Page {
 
 		$source       = sanitize_key( $integration['default_event_source'] );
 		if ( ! in_array( $source, array( 'native', 'tec', 'feed' ), true ) ) {
-			$source = 'tec';
+			$source = 'native';
 		}
 
 		// Native Events shipped (v3, 2.7.234) — no longer "Coming Soon". The
 		// coming-soon coercion list is kept (empty) so a future deferral can be
 		// re-added by listing a source here without rewiring the picker.
 		$coming_soon_sources = array();
-		$display_source      = in_array( $source, $coming_soon_sources, true ) ? 'tec' : $source;
+		$display_source      = in_array( $source, $coming_soon_sources, true ) ? 'native' : $source;
 		// Onboarding: until the admin has explicitly chosen + saved a source, NO
 		// radio is pre-selected, so a fresh install must consciously connect a
 		// source (rather than appearing pre-configured). Set by save_integrations_panel();
@@ -865,7 +864,14 @@ class EEM_Settings_Page {
 						// 2.3.53 (C10.C) — order: TEC (functional) first, then the two
 						// V2 "Coming Soon" sources. 'coming_soon' rows render a muted
 						// pill and a disabled radio.
+						// Native Events is listed first + is the default source
+						// (Whitney 2026-06-13), then TEC, then GEMS.
 						$sources = array(
+							'native' => array(
+								'title'  => __( 'Native Events', 'equine-event-manager' ),
+								'desc'   => __( 'Use Equine Event Manager as the main event system with native events, categories, venues, producers, a frontend calendar (list / month / map), and the shared event template.', 'equine-event-manager' ),
+								'status' => array( 'class' => 'is-info', 'label' => __( 'Built-in', 'equine-event-manager' ) ),
+							),
 							'tec' => array(
 								'title'  => __( 'The Events Calendar (TEC)', 'equine-event-manager' ),
 								'desc'   => __( 'When the TEC plugin is active, reservations can search and link to live TEC events directly.', 'equine-event-manager' ),
@@ -875,11 +881,6 @@ class EEM_Settings_Page {
 								'title'  => __( 'GEMS Integration', 'equine-event-manager' ),
 								'desc'   => __( 'Pull events from your GEMS Web Data connection (via the GEMS for WordPress plugin). Reservations search and link to live GEMS events, just like The Events Calendar.', 'equine-event-manager' ),
 								'status' => $gems_status,
-							),
-							'native' => array(
-								'title'  => __( 'Native Events', 'equine-event-manager' ),
-								'desc'   => __( 'Use Equine Event Manager as the main event system with native events, categories, venues, producers, a frontend calendar (list / month / map), and the shared event template.', 'equine-event-manager' ),
-								'status' => array( 'class' => 'is-info', 'label' => __( 'Built-in', 'equine-event-manager' ) ),
 							),
 						);
 						foreach ( $sources as $value => $row ) :
@@ -1550,7 +1551,7 @@ class EEM_Settings_Page {
 
 		$current = wp_parse_args(
 			get_option( 'equine_event_manager_integration_settings', array() ),
-			array( 'default_event_source' => 'tec', 'feed_url' => '', 'tec_event_category' => '', 'sendgrid_api_key' => '', 'google_maps_api_key' => '', 'tec_integration_enabled' => 1 )
+			array( 'default_event_source' => 'native', 'feed_url' => '', 'tec_event_category' => '', 'sendgrid_api_key' => '', 'google_maps_api_key' => '', 'tec_integration_enabled' => 1 )
 		);
 
 		$source = isset( $payload['source'] ) ? sanitize_key( $payload['source'] ) : '';
