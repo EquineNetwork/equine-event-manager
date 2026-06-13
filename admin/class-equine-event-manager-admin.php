@@ -700,16 +700,40 @@ class EEM_Admin {
 		}
 		?>
 		<style id="eem-cat-submenu-nesting">
-			#adminmenu li.eem-cat-subitem { display: none; }
-			#adminmenu li.eem-cat-parent:hover + li.eem-cat-subitem,
-			#adminmenu li.eem-cat-subitem:hover,
-			#adminmenu li.eem-cat-subitem.current { display: block; }
-			#adminmenu .wp-submenu li.eem-cat-subitem a { padding-left: 28px; }
-			#adminmenu .wp-submenu li.eem-cat-subitem a::before {
-				content: '\21B3'; /* downwards arrow with corner leftwards */
-				margin-right: 6px;
-				opacity: .55;
+			/* Category items fly out to the RIGHT of their parent row
+			   (Events / Venues / Producers) on hover — a small popup panel —
+			   instead of expanding inline and pushing the submenu down. The
+			   .eem-cat-flyout <ul> is created + populated by the JS below. */
+			#adminmenu li.eem-cat-parent { position: relative; }
+			#adminmenu ul.eem-cat-flyout {
+				position: absolute;
+				left: 100%;
+				top: -1px;
+				margin: 0;
+				padding: 0;
+				min-width: 160px;
+				list-style: none;
+				background: #2c3338;
+				box-shadow: 0 3px 6px rgba( 0, 0, 0, 0.25 );
+				display: none;
+				z-index: 10000;
 			}
+			#adminmenu li.eem-cat-parent:hover > ul.eem-cat-flyout,
+			#adminmenu ul.eem-cat-flyout:hover { display: block; }
+			#adminmenu ul.eem-cat-flyout li { display: block; margin: 0; }
+			#adminmenu ul.eem-cat-flyout li a {
+				display: block;
+				padding: 8px 12px;
+				font-size: 13px;
+				color: #c3c4c7;
+			}
+			#adminmenu ul.eem-cat-flyout li a:hover,
+			#adminmenu ul.eem-cat-flyout li a:focus {
+				color: #72aee6;
+				background: #1d2327;
+				box-shadow: none;
+			}
+			#adminmenu ul.eem-cat-flyout li.current a { color: #fff; font-weight: 600; }
 		</style>
 		<?php
 	}
@@ -745,9 +769,21 @@ class EEM_Admin {
 				if (!match) { continue; }
 				var li = links[i].closest('li');
 				if (!li) { continue; }
+				// The parent row (Events / Venues / Producers) immediately
+				// precedes the Categories item in the submenu order.
+				var parent = li.previousElementSibling;
+				if (!parent) { continue; }
+				parent.classList.add('eem-cat-parent');
+				// Create (or reuse) a flyout <ul> on the parent and move the
+				// Categories <li> into it so it pops out to the side on hover.
+				var fly = parent.querySelector(':scope > ul.eem-cat-flyout');
+				if (!fly) {
+					fly = document.createElement('ul');
+					fly.className = 'eem-cat-flyout';
+					parent.appendChild(fly);
+				}
 				li.classList.add('eem-cat-subitem');
-				var prev = li.previousElementSibling;
-				if (prev) { prev.classList.add('eem-cat-parent'); }
+				fly.appendChild(li);
 			}
 		})();
 		</script>
