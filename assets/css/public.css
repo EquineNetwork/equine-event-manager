@@ -154,6 +154,10 @@
 .eem-event-list--no-images .eem-event-list-row__title {
 	font-size: 1.15rem !important;
 }
+/* Sidebar/no-images variant shows Date -> Title -> Venue only (no producer). */
+.eem-event-list--no-images .eem-event-list-row__producer {
+	display: none;
+}
 .eem-event-list--no-images .eem-event-list-row__media {
 	display: none;
 }
