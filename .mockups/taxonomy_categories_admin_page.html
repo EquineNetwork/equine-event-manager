@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equine Event Manager – Event Categories</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
+a{text-decoration:none}
+a:hover{text-decoration:none}
+
+/* ── WP SHELL ── */
+.wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;position:sticky;top:0;z-index:200;flex-shrink:0}
+.wp-admin-bar span{font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-admin-bar span.site{color:#fff;font-weight:600}
+.wp-body{display:flex;flex:1}
+.wp-sidebar{width:160px;min-width:160px;background:#1d2327;min-height:calc(100vh - 32px)}
+.wp-sidebar-item{padding:8px 12px;font-size:13px;color:#c3c4c7;cursor:pointer;display:flex;align-items:center;gap:8px;border-left:3px solid transparent}
+.wp-sidebar-item:hover{background:#2c3338;color:#fff}
+.wp-sidebar-item.active{background:#1668F2;color:#fff;border-left-color:#90c4ff}
+.wp-sidebar-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 0}
+.wp-sidebar-label{padding:8px 12px 4px;font-size:10px;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.wp-sidebar-sub{padding:6px 12px 6px 28px;font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-sidebar-sub:hover{color:#fff}
+.wp-sidebar-sub.active{color:#90c4ff;font-weight:600}
+
+/* ── CONTENT ── */
+.wp-content{flex:1;padding:12px 20px 40px;min-width:0}
+
+/* Breadcrumb */
+.breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.breadcrumb-logo-box{width:160px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb;flex-shrink:0}
+.breadcrumb-sep{font-size:13px;color:#8c8f94}
+.breadcrumb-page{font-size:13px;color:#1d2327;font-weight:600}
+
+/* ── PLUGIN-WRAP ── */
+.plugin-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
+
+/* PAGE HEADER */
+.plugin-header{padding:18px 22px;border-bottom:1px solid #dcdcde;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.plugin-header-left{flex:1;min-width:0}
+.plugin-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;line-height:1.2;margin-bottom:4px}
+.plugin-subtitle{font-size:13px;color:#6B7A99;line-height:1.45}
+
+/* ── SPLIT BODY ── */
+.split-body{display:flex;align-items:flex-start;gap:0}
+
+/* ── ADD FORM PANEL ── */
+.form-panel{width:320px;min-width:280px;flex-shrink:0;border-right:1px solid #dcdcde;padding:20px 22px 28px}
+.form-panel-title{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:#031B4E;margin-bottom:18px}
+
+.field{margin-bottom:16px}
+.field-label{display:block;font-size:13px;font-weight:600;color:#1d2327;margin-bottom:5px}
+.field-input{width:100%;padding:7px 11px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;outline:none}
+.field-input:focus{border-color:#1668F2;box-shadow:0 0 0 1px #1668F2}
+.field-input::placeholder{color:#b0b0b0}
+.field-hint{font-size:12px;color:#6B7A99;margin-top:5px;line-height:1.45}
+textarea.field-input{resize:vertical;min-height:90px}
+.field-select{width:100%;padding:7px 28px 7px 11px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 9px center;appearance:none;cursor:pointer;outline:none}
+.field-select:focus{border-color:#1668F2;box-shadow:0 0 0 1px #1668F2}
+
+.btn-primary{background:#1668F2;color:#fff;border:1px solid #1668F2;padding:9px 18px;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn-primary:hover{background:#1257d1;border-color:#1257d1}
+
+/* ── TABLE PANEL ── */
+.table-panel{flex:1;min-width:0;display:flex;flex-direction:column}
+
+/* Toolbar */
+.table-toolbar{padding:10px 18px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.toolbar-select{padding:6px 28px 6px 12px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 9px center;appearance:none;cursor:pointer;min-width:130px}
+.toolbar-btn{padding:6px 14px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;cursor:pointer;white-space:nowrap}
+.toolbar-btn:hover{background:#f6f7f7}
+.search-wrap{position:relative;min-width:160px;max-width:220px;flex:1}
+.search-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:#8c8f94}
+.search-input{width:100%;padding:6px 10px 6px 28px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;outline:none}
+.search-input:focus{border-color:#1668F2;box-shadow:0 0 0 1px #1668F2}
+.search-input::placeholder{color:#b0b0b0}
+.item-count{font-size:13px;color:#50575e;white-space:nowrap;margin-left:auto}
+
+/* Table */
+table{width:100%;border-collapse:collapse}
+thead{background:#f3f4f5;border-bottom:1px solid #dcdcde}
+thead th{padding:11px 14px;font-size:13px;font-weight:600;color:#1d2327;text-align:left;white-space:nowrap}
+thead th.col-cb{width:36px;padding:11px 8px 11px 18px}
+thead th.sortable{cursor:pointer;color:#1668F2}
+thead th.sortable:hover{color:#1257d1}
+.sort-icon{display:inline-flex;flex-direction:column;gap:1px;margin-left:4px;vertical-align:middle;opacity:.5}
+.sort-icon span{display:block;width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent}
+.sort-icon span:first-child{border-bottom:4px solid currentColor}
+.sort-icon span:last-child{border-top:4px solid currentColor}
+
+tbody tr{border-bottom:1px solid #f0f0f1}
+tbody tr:last-child{border-bottom:none}
+td{padding:13px 14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
+td.col-cb{padding:13px 8px 13px 18px;width:36px}
+
+.cat-name{font-weight:700;color:#031B4E;font-size:13px;text-decoration:none;display:block;margin-bottom:3px}
+.cat-name:hover{color:#1668F2}
+.cat-row-actions{display:none;gap:8px}
+tbody tr:hover .cat-row-actions{display:flex}
+.cat-row-action{font-size:12px;color:#1668F2;cursor:pointer}
+.cat-row-action:hover{color:#1257d1}
+.cat-row-action-sep{font-size:12px;color:#c3c4c7}
+
+.cat-slug{font-size:13px;color:#50575e;font-family:'IBM Plex Mono','Courier New',monospace;font-size:12.5px;background:#f3f4f5;padding:1px 6px;border-radius:3px;display:inline-block}
+.cat-desc{font-size:13px;color:#50575e}
+.cat-desc-empty{font-size:13px;color:#8c8f94}
+.cat-count{font-size:13.5px;font-weight:700;color:#031B4E;font-family:'Space Grotesk',sans-serif}
+.cat-count-zero{font-weight:400;color:#8c8f94}
+
+/* Actions */
+.actions-cell{display:flex;align-items:center;gap:5px;justify-content:flex-end}
+.more-btn{width:30px;height:30px;border-radius:4px;border:1px solid #c3c4c7;background:#fff;color:#50575e;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;letter-spacing:.05em;line-height:1}
+.more-btn:hover{background:#f0f0f1;border-color:#8c8f94}
+.row-menu-wrap{position:relative;display:inline-block}
+.row-dropdown{display:none;position:absolute;top:calc(100% + 4px);right:0;background:#fff;border:1px solid #c3c4c7;border-radius:4px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:180px;z-index:100;overflow:hidden}
+.row-dropdown.open{display:block}
+.row-dd-item{display:flex;align-items:center;gap:9px;padding:9px 14px;font-size:13px;color:#1d2327;cursor:pointer;border-bottom:1px solid #f0f0f1;white-space:nowrap;text-decoration:none}
+.row-dd-item:last-child{border-bottom:none}
+.row-dd-item:hover{background:#f6f7f7}
+.row-dd-item svg{width:13px;height:13px;color:#6B7A99;flex-shrink:0}
+.row-dd-danger{color:#b91c1c}
+.row-dd-danger svg{color:#fca5a5}
+.row-dd-danger:hover{background:#fef2f2}
+
+/* Empty state */
+.empty-state{padding:40px 20px;text-align:center;color:#8c8f94;font-size:13px}
+.empty-state svg{width:32px;height:32px;color:#c3c4c7;margin-bottom:10px}
+
+/* Table footer */
+.table-footer{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-top:1px solid #dcdcde;background:#f3f4f5;flex-wrap:wrap;gap:8px}
+.table-footer-info{font-size:13px;color:#50575e}
+
+/* ── RESPONSIVE ── */
+@media(max-width:960px){
+  .wp-sidebar{display:none}
+  .wp-content{padding:10px 14px 40px}
+}
+@media(max-width:767px){
+  .split-body{flex-direction:column}
+  .form-panel{width:100%;border-right:none;border-bottom:1px solid #dcdcde}
+  .wp-content{padding:8px 10px 32px}
+  .plugin-title{font-size:18px}
+}
+</style>
+</head>
+<body>
+
+<div class="wp-admin-bar">
+  <span>&#9776;</span>
+  <span class="site">My Equestrian Site</span>
+  <span>+ New</span>
+  <span style="margin-left:auto">Howdy, whitney</span>
+</div>
+
+<div class="wp-body">
+  <nav class="wp-sidebar">
+    <div class="wp-sidebar-item">Dashboard</div>
+    <div class="wp-sidebar-item">Media</div>
+    <div class="wp-sidebar-item">Posts</div>
+    <div class="wp-sidebar-item">Pages</div>
+    <div class="wp-sidebar-sep"></div>
+    <div class="wp-sidebar-label">Event Manager</div>
+    <div class="wp-sidebar-sub">Events</div>
+    <div class="wp-sidebar-sub active">Event Categories</div>
+    <div class="wp-sidebar-sub">Orders</div>
+    <div class="wp-sidebar-sub">Reservations</div>
+    <div class="wp-sidebar-sub">Stall Charts</div>
+    <div class="wp-sidebar-sub">Venues</div>
+    <div class="wp-sidebar-sub">Producers</div>
+    <div class="wp-sidebar-sub">Reports</div>
+    <div class="wp-sidebar-sub">Settings</div>
+  </nav>
+
+  <main class="wp-content">
+
+    <div class="breadcrumb">
+      <div class="breadcrumb-logo-box">Plugin Logo</div>
+      <span class="breadcrumb-sep">/</span>
+      <span class="breadcrumb-page">Event Categories</span>
+    </div>
+
+    <div class="plugin-wrap">
+
+      <!-- PAGE HEADER -->
+      <header class="plugin-header">
+        <div class="plugin-header-left">
+          <h1 class="plugin-title">Event Categories</h1>
+          <div class="plugin-subtitle">Organize events into categories. Categories can be nested and assigned to events at any time.</div>
+        </div>
+      </header>
+
+      <!-- SPLIT BODY -->
+      <div class="split-body">
+
+        <!-- ADD FORM -->
+        <div class="form-panel">
+          <div class="form-panel-title">Add New Category</div>
+
+          <div class="field">
+            <label class="field-label" for="cat-name">Name</label>
+            <input class="field-input" id="cat-name" type="text" placeholder="e.g. Reining">
+            <div class="field-hint">The name is how it appears on your site.</div>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="cat-slug">Slug</label>
+            <input class="field-input" id="cat-slug" type="text" placeholder="e.g. reining">
+            <div class="field-hint">The slug is the URL-friendly version of the name — lowercase letters, numbers, and hyphens only.</div>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="cat-parent">Parent Category</label>
+            <select class="field-select" id="cat-parent">
+              <option>None</option>
+              <option>Western</option>
+              <option>English</option>
+              <option>Speed Events</option>
+            </select>
+            <div class="field-hint">Assign a parent to create a hierarchy — e.g. Reining under Western.</div>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="cat-desc">Description</label>
+            <textarea class="field-input" id="cat-desc" placeholder="Optional description..."></textarea>
+            <div class="field-hint">The description is not shown publicly by default.</div>
+          </div>
+
+          <button class="btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Category
+          </button>
+        </div>
+
+        <!-- TABLE PANEL -->
+        <div class="table-panel">
+
+          <div class="table-toolbar">
+            <select class="toolbar-select">
+              <option>Bulk actions</option>
+              <option>Delete</option>
+            </select>
+            <button class="toolbar-btn">Apply</button>
+            <div class="search-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input class="search-input" type="text" placeholder="Search categories...">
+            </div>
+            <button class="toolbar-btn">Search</button>
+            <span class="item-count">5 items</span>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th class="col-cb"><input type="checkbox"></th>
+                <th class="sortable">Name <span class="sort-icon"><span></span><span></span></span></th>
+                <th>Slug</th>
+                <th>Description</th>
+                <th class="sortable">Count <span class="sort-icon"><span></span><span></span></span></th>
+                <th style="text-align:right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="col-cb"><input type="checkbox"></td>
+                <td>
+                  <a class="cat-name" href="#">Western</a>
+                  <div class="cat-row-actions">
+                    <a class="cat-row-action" href="#">Edit</a>
+                    <span class="cat-row-action-sep">|</span>
+                    <a class="cat-row-action" href="#">Delete</a>
+                    <span class="cat-row-action-sep">|</span>
+                    <a class="cat-row-action" href="#">View</a>
+                  </div>
+                </td>
+                <td><span class="cat-slug">western</span></td>
+                <td><span class="cat-desc-empty">—</span></td>
+                <td><span class="cat-count">14</span></td>
+                <td>
+                  <div class="actions-cell">
+                    <div class="row-menu-wrap">
+                      <button class="more-btn" onclick="toggleRowMenu('cat-menu-1',event)">···</button>
+                      <div class="row-dropdown" id="cat-menu-1">
+                        <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit</a>
+                        <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View Events</a>
+                        <a class="row-dd-item row-dd-danger" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Delete</a>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td class="col-cb"><input type="checkbox"></td>
+                <td>
+                  <a class="cat-name" href="#">— Reining</a>
+                  <div class="cat-row-actions">
+                    <a class="cat-row-action" href="#">Edit</a>
+                    <span class="cat-row-action-sep">|</span>
+                    <a class="cat-row-action" href="#">Delete</a>
+                    <span class="cat-row-action-sep">|</span>
+                    <a class="cat-row-action" href="#">View</a>
+                  </div>
+                </td>
+                <td><span class="cat-slug">reining</span></td>
+                <td><span class="cat-desc">NRHA-affiliated reining events</span></td>
+                <td><span class="cat-count">6</span></td>
+                <td>
+                  <div class="actions-cell">
+                    <div class="row-menu-wrap"><button class="more-btn">···</button></div>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td class="col-cb"><input type="checkbox"></td>
+                <td>
+                  <a class="cat-name" href="#">— Cutting</a>
+                  <div class="cat-row-actions">
+                    <a class="cat-row-action" href="#">Edit</a>
+                    <span class="cat-row-action-sep">|</span>
+                    <a class="cat-row-action" href="#">Delete</a>
+                  </div>
+                </td>
+                <td><span class="cat-slug">cutting</span></td>
+                <td><span class="cat-desc-empty">—</span></td>
+                <td><span class="cat-count">4</span></td>
+                <td>
+                  <div class="actions-cell">
+                    <div class="row-menu-wrap"><button class="more-btn">···</button></div>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td class="col-cb"><input type="checkbox"></td>
+                <td>
+                  <a class="cat-name" href="#">English</a>
+                  <div class="cat-row-actions">
+                    <a class="cat-row-action" href="#">Edit</a>
+                    <span class="cat-row-action-sep">|</span>
+                    <a class="cat-row-action" href="#">Delete</a>
+                    <span class="cat-row-action-sep">|</span>
+                    <a class="cat-row-action" href="#">View</a>
+                  </div>
+                </td>
+                <td><span class="cat-slug">english</span></td>
+                <td><span class="cat-desc-empty">—</span></td>
+                <td><span class="cat-count">3</span></td>
+                <td>
+                  <div class="actions-cell">
+                    <div class="row-menu-wrap"><button class="more-btn">···</button></div>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td class="col-cb"><input type="checkbox"></td>
+                <td>
+                  <a class="cat-name" href="#">Speed Events</a>
+                  <div class="cat-row-actions">
+                    <a class="cat-row-action" href="#">Edit</a>
+                    <span class="cat-row-action-sep">|</span>
+                    <a class="cat-row-action" href="#">Delete</a>
+                  </div>
+                </td>
+                <td><span class="cat-slug">speed-events</span></td>
+                <td><span class="cat-desc">Barrel racing, pole bending, and similar timed events</span></td>
+                <td><span class="cat-count cat-count-zero">0</span></td>
+                <td>
+                  <div class="actions-cell">
+                    <div class="row-menu-wrap"><button class="more-btn">···</button></div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="table-footer">
+            <div class="table-footer-info">5 categories</div>
+          </div>
+
+        </div><!-- /table-panel -->
+      </div><!-- /split-body -->
+
+    </div><!-- /plugin-wrap -->
+
+  </main>
+</div>
+
+<script>
+function toggleRowMenu(id,e){
+  e.stopPropagation();
+  var menu=document.getElementById(id);
+  document.querySelectorAll('.row-dropdown').forEach(function(d){if(d!==menu)d.classList.remove('open');});
+  menu.classList.toggle('open');
+}
+document.addEventListener('click',function(){
+  document.querySelectorAll('.row-dropdown').forEach(function(d){d.classList.remove('open');});
+});
+</script>
+
+</body>
+</html>
