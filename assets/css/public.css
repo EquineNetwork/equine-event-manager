@@ -210,9 +210,9 @@
 	margin: 0 !important;
 	color: #031B4E;
 	font-family: "Space Grotesk", system-ui, sans-serif !important;
-	font-size: 1.35rem !important;
+	font-size: 1.5rem !important;
 	font-weight: 700 !important;
-	line-height: 1.2 !important;
+	line-height: 1.15 !important;
 	letter-spacing: -0.01em;
 	text-transform: none !important;
 }
@@ -231,8 +231,15 @@
 .eem-event-list-row__title a:focus {
 	color: #1668F2;
 }
+/* Date / label / value typography mirrors the single-event hero
+   (.eem-event-page .hero-dates / .hero-meta-label / .hero-meta-val) so the list
+   reads as the same brand system. */
 .eem-event-list-row__date {
 	margin: 0;
+	font-family: "IBM Plex Sans", system-ui, sans-serif !important;
+	font-size: 14px !important;
+	font-weight: 500 !important;
+	color: #6B7A99 !important;
 }
 .eem-event-list-row__facts {
 	display: grid;
@@ -244,21 +251,25 @@
 }
 .eem-event-list-row__fact-label {
 	display: block;
-	margin-bottom: 4px;
-	color: #617086;
-	font-size: 0.74rem;
-	font-weight: 800;
+	margin-bottom: 3px;
+	color: #8a9ab8;
+	font-family: "IBM Plex Sans", system-ui, sans-serif;
+	font-size: 11px;
+	font-weight: 600;
 	letter-spacing: 0.1em;
 	text-transform: uppercase;
 }
 .eem-event-list-row__fact-value {
-	color: #273244;
-	font-size: 1rem;
-	line-height: 1.5;
+	color: #031B4E;
+	font-family: "IBM Plex Sans", system-ui, sans-serif;
+	font-size: 14px;
+	font-weight: 500;
+	line-height: 1.45;
 }
 .eem-event-list-row__fact-value strong,
 .eem-event-list-row__fact-value a {
 	color: #031B4E;
+	font-weight: 500;
 	text-decoration: none;
 }
 .eem-event-list-row__fact-value a:hover,
