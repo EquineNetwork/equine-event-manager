@@ -139,6 +139,13 @@ $check( 'grouped: breakaway empty group', isset( $by_id[ $breakaway_id ] ) && 0 
 $check( 'grouped: tie-down empty group', isset( $by_id[ $tiedown_id ] ) && 0 === count( $by_id[ $tiedown_id ]['entries'] ) );
 $check( 'grouped: barrels name carried', isset( $by_id[ $barrels_id ] ) && 'SR Smoke Barrel Racing' === $by_id[ $barrels_id ]['discipline_name'] );
 
+// --- 9b. delete_for_event_discipline ----------------------------------------
+$dfd_id = EEM_Sheet_Entries::add_entry( array( 'event_id' => $event_id, 'discipline_id' => $breakaway_id, 'label' => 'Breakaway Draw', 'drawsheet_pdf' => 71 ) );
+$check( 'seed entry under breakaway', $dfd_id > 0 );
+$check( 'delete_for_event_discipline removes the breakaway entry', 1 === EEM_Sheet_Entries::delete_for_event_discipline( $event_id, $breakaway_id ) );
+$check( 'breakaway entry gone after discipline delete', null === EEM_Sheet_Entries::get( $dfd_id ) );
+$check( 'other disciplines untouched by discipline delete', null !== EEM_Sheet_Entries::get( $entry_id ) );
+
 // --- 10. delete_entry --------------------------------------------------------
 $check( 'delete_entry ok', true === EEM_Sheet_Entries::delete_entry( $bad ) );
 $check( 'deleted row gone', null === EEM_Sheet_Entries::get( $bad ) );

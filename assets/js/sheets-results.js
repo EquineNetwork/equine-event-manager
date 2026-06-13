@@ -166,6 +166,36 @@
 			return;
 		}
 
+		if (action === 'sr-rename-discipline') {
+			ev.preventDefault();
+			var curName = t.getAttribute('data-name') || '';
+			var newName = window.prompt('Rename discipline:', curName);
+			if (newName === null) { return; }
+			newName = newName.trim();
+			if (!newName || newName === curName) { return; }
+			post('eem_sr_rename_discipline', { event_id: root.dataset.eventId, discipline_id: t.getAttribute('data-discipline-id'), name: newName })
+				.then(function (res) {
+					if (res && res.success) { toast(res.data.message || 'Renamed'); reload(activeTab()); }
+					else { toast((res && res.data && res.data.message) || 'Failed', true); }
+				}).catch(function () { toast('Failed', true); });
+			return;
+		}
+
+		if (action === 'sr-delete-discipline') {
+			ev.preventDefault();
+			var dName = t.getAttribute('data-name') || 'this discipline';
+			var fileCount = parseInt(t.getAttribute('data-file-count') || '0', 10);
+			var dMsg = 'Remove "' + dName + '" from this event?';
+			if (fileCount > 0) { dMsg += '\n\nThis also deletes its ' + fileCount + ' uploaded file row(s).'; }
+			if (!window.confirm(dMsg)) { return; }
+			post('eem_sr_delete_discipline', { event_id: root.dataset.eventId, discipline_id: t.getAttribute('data-discipline-id') })
+				.then(function (res) {
+					if (res && res.success) { toast(res.data.message || 'Removed'); reload('drawsheets'); }
+					else { toast((res && res.data && res.data.message) || 'Failed', true); }
+				}).catch(function () { toast('Failed', true); });
+			return;
+		}
+
 		if (action === 'sr-replace-pdf') {
 			ev.preventDefault();
 			var entryId = t.getAttribute('data-entry-id');

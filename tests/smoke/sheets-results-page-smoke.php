@@ -37,6 +37,8 @@ $check( 'page class loaded', class_exists( 'EEM_Sheets_Results_Page' ) );
 $check( 'menu slug', EEM_Sheets_Results_Page::MENU_SLUG === 'equine-event-manager-sheets-results' );
 $check( 'url() builds with event + tab', false !== strpos( EEM_Sheets_Results_Page::url( 42, 'results' ), 'event_id=42' ) && false !== strpos( EEM_Sheets_Results_Page::url( 42, 'results' ), 'tab=results' ) );
 $check( 'add-discipline AJAX registered', false !== has_action( 'wp_ajax_eem_sr_add_discipline' ) );
+$check( 'rename-discipline AJAX registered', false !== has_action( 'wp_ajax_eem_sr_rename_discipline' ) );
+$check( 'delete-discipline AJAX registered', false !== has_action( 'wp_ajax_eem_sr_delete_discipline' ) );
 $check( 'add-entry AJAX registered', false !== has_action( 'wp_ajax_eem_sr_add_entry' ) );
 $check( 'set-pdf AJAX registered', false !== has_action( 'wp_ajax_eem_sr_set_pdf' ) );
 $check( 'delete-entry AJAX registered', false !== has_action( 'wp_ajax_eem_sr_delete_entry' ) );
@@ -78,6 +80,8 @@ $check( 'renders the add-discipline bar', false !== strpos( $html, 'data-eem-act
 $check( 'renders the Barrel Racing group', false !== strpos( $html, 'SR2 Barrel Racing ' . $suffix ) );
 $check( 'renders the (empty) Breakaway group', false !== strpos( $html, 'SR2 Breakaway ' . $suffix ) );
 $check( 'renders an Add File button per group', substr_count( $html, 'data-eem-action="sr-toggle-add"' ) >= 2 );
+$check( 'renders a Rename discipline link', false !== strpos( $html, 'data-eem-action="sr-rename-discipline"' ) );
+$check( 'renders a Delete discipline link', false !== strpos( $html, 'data-eem-action="sr-delete-discipline"' ) );
 $check( 'renders the add-file panel with round options', false !== strpos( $html, 'eem-sr-add-panel' ) && false !== strpos( $html, 'value="finals"' ) );
 $check( 'renders the draw-sheet row label', false !== strpos( $html, 'Open 5D Long Go ' . $suffix ) );
 $check( 'draw-sheet row shows Live badge', false !== strpos( $html, 'eem-sr-live-badge' ) );

@@ -228,7 +228,10 @@ class EEM_Settings_Page {
 					</p>
 
 					<label class="eem-addon-row">
-						<input type="checkbox" name="payload[entries_enabled]" value="1" <?php checked( $entries_on ); ?> />
+						<span class="eem-switch">
+							<input type="checkbox" name="payload[entries_enabled]" value="1" <?php checked( $entries_on ); ?> />
+							<span class="eem-switch__slider" aria-hidden="true"></span>
+						</span>
 						<span class="eem-addon-row__text">
 							<span class="eem-addon-row__title"><?php esc_html_e( 'Entries', 'equine-event-manager' ); ?></span>
 							<span class="eem-addon-row__desc"><?php esc_html_e( 'Sell entry spots in divisions/classes and track who has entered. When off: the Entries menu, the customer checkout entries section, and the Create Order entries fold are hidden.', 'equine-event-manager' ); ?></span>
@@ -236,7 +239,10 @@ class EEM_Settings_Page {
 					</label>
 
 					<label class="eem-addon-row">
-						<input type="checkbox" name="payload[sheets_results_enabled]" value="1" <?php checked( $sheets_on ); ?> />
+						<span class="eem-switch">
+							<input type="checkbox" name="payload[sheets_results_enabled]" value="1" <?php checked( $sheets_on ); ?> />
+							<span class="eem-switch__slider" aria-hidden="true"></span>
+						</span>
 						<span class="eem-addon-row__text">
 							<span class="eem-addon-row__title"><?php esc_html_e( 'Sheets & Results', 'equine-event-manager' ); ?></span>
 							<span class="eem-addon-row__desc"><?php esc_html_e( 'Upload draw sheets and result PDFs per event. When off: the Sheets & Results menu, the event-editor section, the public per-event page, and the event-card buttons are hidden.', 'equine-event-manager' ); ?></span>

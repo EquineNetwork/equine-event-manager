@@ -259,6 +259,25 @@ class EEM_Sheet_Entries {
 	}
 
 	/**
+	 * Delete all rows for one event + discipline (used when a discipline is
+	 * removed from an event). Attachments are left in the Media Library.
+	 *
+	 * @param int $event_id      en_event post id.
+	 * @param int $discipline_id en_discipline term id.
+	 * @return int Rows deleted.
+	 */
+	public static function delete_for_event_discipline( int $event_id, int $discipline_id ): int {
+		global $wpdb;
+		if ( $event_id <= 0 ) {
+			return 0;
+		}
+		return (int) $wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			self::table_name(),
+			array( 'event_id' => $event_id, 'discipline_id' => $discipline_id )
+		);
+	}
+
+	/**
 	 * Delete a row entirely (removes both the draw sheet and result slots).
 	 * The attachments themselves are left in the Media Library.
 	 *

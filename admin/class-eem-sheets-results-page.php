@@ -54,6 +54,8 @@ class EEM_Sheets_Results_Page {
 			return;
 		}
 		add_action( 'wp_ajax_eem_sr_add_discipline', array( __CLASS__, 'ajax_add_discipline' ) );
+		add_action( 'wp_ajax_eem_sr_rename_discipline', array( __CLASS__, 'ajax_rename_discipline' ) );
+		add_action( 'wp_ajax_eem_sr_delete_discipline', array( __CLASS__, 'ajax_delete_discipline' ) );
 		add_action( 'wp_ajax_eem_sr_add_entry', array( __CLASS__, 'ajax_add_entry' ) );
 		add_action( 'wp_ajax_eem_sr_set_pdf', array( __CLASS__, 'ajax_set_pdf' ) );
 		add_action( 'wp_ajax_eem_sr_delete_entry', array( __CLASS__, 'ajax_delete_entry' ) );
@@ -333,7 +335,13 @@ class EEM_Sheets_Results_Page {
 			<div class="eem-sr-group">
 				<div class="eem-sr-group-head">
 					<div class="eem-sr-group-name"><?php echo esc_html( $g['discipline_name'] ); ?> <span class="eem-sr-group-count"><?php echo esc_html( sprintf( /* translators: %d: file count */ _n( '%d file', '%d files', $file_count, 'equine-event-manager' ), $file_count ) ); ?></span></div>
-					<button type="button" class="eem-sr-add-file-btn" data-eem-action="sr-toggle-add" data-discipline-id="<?php echo esc_attr( (string) $did ); ?>"><?php esc_html_e( '+ Add File', 'equine-event-manager' ); ?></button>
+					<div class="eem-sr-group-actions">
+						<?php if ( $did > 0 ) : ?>
+							<button type="button" class="eem-sr-group-link" data-eem-action="sr-rename-discipline" data-discipline-id="<?php echo esc_attr( (string) $did ); ?>" data-name="<?php echo esc_attr( $g['discipline_name'] ); ?>"><?php esc_html_e( 'Rename', 'equine-event-manager' ); ?></button>
+							<button type="button" class="eem-sr-group-link is-danger" data-eem-action="sr-delete-discipline" data-discipline-id="<?php echo esc_attr( (string) $did ); ?>" data-name="<?php echo esc_attr( $g['discipline_name'] ); ?>" data-file-count="<?php echo esc_attr( (string) count( $g['entries'] ) ); ?>"><?php esc_html_e( 'Delete', 'equine-event-manager' ); ?></button>
+						<?php endif; ?>
+						<button type="button" class="eem-sr-add-file-btn" data-eem-action="sr-toggle-add" data-discipline-id="<?php echo esc_attr( (string) $did ); ?>"><?php esc_html_e( '+ Add File', 'equine-event-manager' ); ?></button>
+					</div>
 				</div>
 				<?php self::render_add_panel( $event_id, $did ); ?>
 				<?php
@@ -611,6 +619,50 @@ class EEM_Sheets_Results_Page {
 		wp_send_json_success( array(
 			'discipline_id' => $term_id,
 			'message'       => __( 'Discipline added.', 'equine-event-manager' ),
+		) );
+	}
+
+	/**
+	 * AJAX: rename a discipline term. The term is global (shared across events),
+	 * so the new name applies everywhere it's used.
+	 *
+	 * @return void
+	 */
+	public static function ajax_rename_discipline(): void {
+		self::guard();
+		self::require_event( isset( $_POST['event_id'] ) ? absint( wp_unslash( $_POST['event_id'] ) ) : 0 );
+		$term_id = isset( $_POST['discipline_id'] ) ? absint( wp_unslash( $_POST['discipline_id'] ) ) : 0;
+		$name    = isset( $_POST['name'] ) ? sanitize_text_field( wp_unslash( $_POST['name'] ) ) : '';
+		if ( $term_id <= 0 || '' === trim( $name ) ) {
+			wp_send_json_error( array( 'message' => __( 'Enter a discipline name.', 'equine-event-manager' ) ), 422 );
+		}
+		$res = wp_update_term( $term_id, EEM_Sheet_Entries::TAXONOMY, array( 'name' => $name ) );
+		if ( is_wp_error( $res ) ) {
+			wp_send_json_error( array( 'message' => $res->get_error_message() ), 400 );
+		}
+		wp_send_json_success( array( 'message' => __( 'Discipline renamed.', 'equine-event-manager' ) ) );
+	}
+
+	/**
+	 * AJAX: remove a discipline from this event AND delete this event's draw
+	 * sheets / results filed under it. The term itself is left in place (it may
+	 * be used by other events); only this event's link + documents are removed.
+	 *
+	 * @return void
+	 */
+	public static function ajax_delete_discipline(): void {
+		self::guard();
+		$event_id = isset( $_POST['event_id'] ) ? absint( wp_unslash( $_POST['event_id'] ) ) : 0;
+		self::require_event( $event_id );
+		$term_id = isset( $_POST['discipline_id'] ) ? absint( wp_unslash( $_POST['discipline_id'] ) ) : 0;
+		if ( $term_id <= 0 ) {
+			wp_send_json_error( array( 'message' => __( 'Discipline not found.', 'equine-event-manager' ) ), 404 );
+		}
+		wp_remove_object_terms( $event_id, $term_id, EEM_Sheet_Entries::TAXONOMY );
+		$deleted = EEM_Sheet_Entries::delete_for_event_discipline( $event_id, $term_id );
+		wp_send_json_success( array(
+			'deleted' => $deleted,
+			'message' => __( 'Discipline removed from this event.', 'equine-event-manager' ),
 		) );
 	}
 
