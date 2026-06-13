@@ -284,6 +284,12 @@ class EEM_Admin {
 			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--reservation-editor' );
 		}
 
+		// Sheets & Results manager — header shell variant (single-column page
+		// with the bordered plugin-wrap, like the list pages).
+		if ( EEM_Sheets_Results_Page::MENU_SLUG === $page ) {
+			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--sheets-results' );
+		}
+
 		// Native Events Admin B — branded taxonomy Categories pages (Event /
 		// Venue / Producer). Same shell-page branch requirement (DS-1.B.4) so
 		// legacy carve-outs don't shrink .eem-page.
@@ -349,6 +355,13 @@ class EEM_Admin {
 		// Native Events Admin E — branded Event editor (needs the WP media
 		// library for the flyer PDF + featured image pickers).
 		if ( EEM_Event_Editor_Page::MENU_SLUG === $page ) {
+			$should_load = true;
+			wp_enqueue_media();
+		}
+
+		// Sheets & Results manager — needs the WP media library for the draw
+		// sheet / result PDF pickers.
+		if ( EEM_Sheets_Results_Page::MENU_SLUG === $page ) {
 			$should_load = true;
 			wp_enqueue_media();
 		}
@@ -427,6 +440,12 @@ class EEM_Admin {
 			if ( EEM_Venues_Page::MENU_SLUG === $page ) {
 				wp_enqueue_script( 'eem-venues', EQUINE_EVENT_MANAGER_URL . 'assets/js/venues.js', array( 'eem-admin' ), $ver, true );
 				wp_localize_script( 'eem-venues', 'eemVenues', array( 'ajaxUrl' => admin_url( 'admin-ajax.php' ) ) );
+			}
+
+			// Sheets & Results manager JS (tabs + add-file panel + PDF pickers +
+			// add/replace/delete dispatch). Reads ajaxUrl + nonce from the page root.
+			if ( EEM_Sheets_Results_Page::MENU_SLUG === $page ) {
+				wp_enqueue_script( 'eem-sheets-results', EQUINE_EVENT_MANAGER_URL . 'assets/js/sheets-results.js', array( 'eem-admin' ), $ver, true );
 			}
 
 		// C13.B.2.a — public.css required when Create Order embeds a reservation form.
@@ -533,6 +552,7 @@ class EEM_Admin {
 			self::MENU_SLUG, // Orders (top-level Event Manager slug).
 			'equine-event-manager-entries',
 			'equine-event-manager-reservations',
+			EEM_Sheets_Results_Page::MENU_SLUG,
 			'equine-event-manager-stall-charts',
 			EEM_Events_List_Page::MENU_SLUG,
 			'equine-event-manager-event-categories',
@@ -1126,6 +1146,18 @@ class EEM_Admin {
 				'manage_options',
 				'equine-event-manager-producer-categories',
 				array( 'EEM_Term_Categories_Page', 'render' )
+			);
+
+			// "Sheets & Results" = the draw-sheet / result PDF manager
+			// (EEM_Sheets_Results_Page). Native-events scoped because the
+			// documents + en_discipline taxonomy attach to en_event posts.
+			add_submenu_page(
+				self::MENU_SLUG,
+				__( 'Sheets & Results', 'equine-event-manager' ),
+				__( 'Sheets & Results', 'equine-event-manager' ),
+				'manage_options',
+				EEM_Sheets_Results_Page::MENU_SLUG,
+				array( 'EEM_Sheets_Results_Page', 'render' )
 			);
 
 		}
