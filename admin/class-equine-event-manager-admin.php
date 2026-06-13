@@ -270,6 +270,12 @@ class EEM_Admin {
 			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--venues' );
 		}
 
+		// Native Events Admin C — branded Producers + Events lists (reuse the
+		// venues shell variant so they render with identical chrome).
+		if ( EEM_Producers_Page::MENU_SLUG === $page || EEM_Events_List_Page::MENU_SLUG === $page ) {
+			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--venues' );
+		}
+
 		// Native Events Admin B — branded taxonomy Categories pages (Event /
 		// Venue / Producer). Same shell-page branch requirement (DS-1.B.4) so
 		// legacy carve-outs don't shrink .eem-page.
@@ -324,6 +330,11 @@ class EEM_Admin {
 
 		// Native Events Admin B — branded taxonomy Categories pages.
 		if ( in_array( $page, EEM_Term_Categories_Page::slugs(), true ) ) {
+			$should_load = true;
+		}
+
+		// Native Events Admin C — branded Producers + Events lists.
+		if ( EEM_Producers_Page::MENU_SLUG === $page || EEM_Events_List_Page::MENU_SLUG === $page ) {
 			$should_load = true;
 		}
 
@@ -506,11 +517,11 @@ class EEM_Admin {
 			'equine-event-manager-customers',
 			'equine-event-manager-orders',
 			EEM_Notifications_Page::MENU_SLUG,
-			'edit.php?post_type=en_event',
+			EEM_Events_List_Page::MENU_SLUG,
 			'equine-event-manager-event-categories',
 			EEM_Venues_Page::MENU_SLUG,
 			'equine-event-manager-venue-categories',
-			'edit.php?post_type=en_producer',
+			EEM_Producers_Page::MENU_SLUG,
 			'equine-event-manager-producer-categories',
 			'equine-event-manager-reports',
 			'equine-event-manager-settings',
@@ -610,13 +621,19 @@ class EEM_Admin {
 			return;
 		}
 
-		if ( empty( $_GET['post_type'] ) || 'en_venue' !== sanitize_key( wp_unslash( $_GET['post_type'] ) ) ) {
+		$post_type = ! empty( $_GET['post_type'] ) ? sanitize_key( wp_unslash( $_GET['post_type'] ) ) : '';
+		$map       = array(
+			'en_venue'    => EEM_Venues_Page::MENU_SLUG,
+			'en_producer' => EEM_Producers_Page::MENU_SLUG,
+			'en_event'    => EEM_Events_List_Page::MENU_SLUG,
+		);
+		if ( ! isset( $map[ $post_type ] ) ) {
 			return;
 		}
 
 		wp_safe_redirect(
 			add_query_arg(
-				array( 'page' => EEM_Venues_Page::MENU_SLUG ),
+				array( 'page' => $map[ $post_type ] ),
 				admin_url( 'admin.php' )
 			)
 		);
@@ -937,12 +954,16 @@ class EEM_Admin {
 		);
 
 		if ( $native_events_enabled ) {
+			// "Events" = the branded EEM_Events_List_Page (en_event posts + date /
+			// venue / producer / reservation columns), not the raw WP CPT list
+			// (redirected here). Edit Event still opens the native WP editor.
 			add_submenu_page(
 				self::MENU_SLUG,
 				__( 'Events', 'equine-event-manager' ),
 				__( 'Events', 'equine-event-manager' ),
 				'manage_options',
-				'edit.php?post_type=en_event'
+				EEM_Events_List_Page::MENU_SLUG,
+				array( 'EEM_Events_List_Page', 'render' )
 			);
 
 			// "Add New Event" removed from the sidebar (Whitney 2026-06-13) — the
@@ -982,12 +1003,16 @@ class EEM_Admin {
 				array( 'EEM_Term_Categories_Page', 'render' )
 			);
 
+			// "Producers" = the branded EEM_Producers_Page list (en_producer posts +
+			// contact + linked-event counts), not the raw WP CPT list (redirected
+			// here). Edit Producer still opens the native WP producer editor.
 			add_submenu_page(
 				self::MENU_SLUG,
 				__( 'Producers', 'equine-event-manager' ),
 				__( 'Producers', 'equine-event-manager' ),
 				'manage_options',
-				'edit.php?post_type=en_producer'
+				EEM_Producers_Page::MENU_SLUG,
+				array( 'EEM_Producers_Page', 'render' )
 			);
 
 			add_submenu_page(

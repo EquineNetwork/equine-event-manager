@@ -3,11 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Equine Event Manager – Venues</title>
+<title>Equine Event Manager – Events</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
+
 a{text-decoration:none}
 a:hover{text-decoration:none}
 
@@ -43,6 +44,8 @@ a:hover{text-decoration:none}
 .plugin-header-left{flex:1;min-width:0}
 .plugin-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;line-height:1.2;margin-bottom:4px}
 .plugin-subtitle{font-size:13px;color:#6B7A99;line-height:1.45}
+
+/* Header quick links */
 .header-links{display:flex;gap:14px;margin-top:8px;flex-wrap:wrap}
 .header-link{font-size:13px;color:#1668F2;font-weight:500}
 .header-link:hover{color:#1257d1}
@@ -57,6 +60,7 @@ a:hover{text-decoration:none}
 .stat-card{background:#fff;border:1px solid #dcdcde;border-radius:6px;padding:14px 18px;flex:1;min-width:140px}
 .stat-card-label{font-size:10.5px;font-weight:700;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
 .stat-card-num{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:#031B4E;line-height:1}
+/* Daily movement card — wider, list layout */
 .stat-card-wide{flex:2;min-width:220px}
 .stat-card-rows{display:flex;flex-direction:column;gap:3px;margin-top:2px}
 .stat-card-row{font-size:13px;color:#1d2327}
@@ -102,25 +106,24 @@ tbody tr:last-child{border-bottom:none}
 td{padding:14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
 td.col-cb{padding:14px 8px 14px 18px;width:36px}
 
-/* Venue name */
-.venue-title{font-weight:700;color:#031B4E;font-size:13.5px;text-decoration:none;display:block;margin-bottom:3px}
-.venue-title:hover{color:#1668F2}
-.venue-row-actions{display:none;gap:8px;margin-top:4px}
-tbody tr:hover .venue-row-actions{display:flex}
-.venue-row-action{font-size:12px;color:#1668F2;cursor:pointer}
-.venue-row-action:hover{color:#1257d1}
-.venue-row-action-sep{font-size:12px;color:#c3c4c7}
+/* Event title */
+.event-title{font-weight:700;color:#031B4E;font-size:13.5px;text-decoration:none;display:block;margin-bottom:3px}
+.event-title:hover{color:#1668F2}
+.event-row-actions{display:none;gap:8px;margin-top:4px}
+tbody tr:hover .event-row-actions{display:flex}
+.event-row-action{font-size:12px;color:#1668F2;cursor:pointer}
+.event-row-action:hover{color:#1257d1}
+.event-row-action-sep{font-size:12px;color:#c3c4c7}
 
-/* Location */
-.location-val{font-size:13px;color:#50575e}
-.location-val-empty{font-size:13px;color:#8c8f94}
+/* Date cell */
+.date-val{color:#1d2327;white-space:nowrap;font-size:13px}
+.date-val-empty{color:#8c8f94;font-size:13px}
 
-/* Facility templates count */
-.template-count{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#1d2327}
-.template-count-num{font-family:'Space Grotesk',sans-serif;font-weight:700;color:#031B4E;font-size:15px}
-.template-count-zero{color:#8c8f94;font-weight:400;font-size:13px}
-.template-link{font-size:12px;color:#1668F2;margin-left:4px}
-.template-link:hover{color:#1257d1}
+/* Venue / Producer */
+.venue-val{color:#1d2327;font-size:13px}
+.venue-val-empty{color:#8c8f94;font-size:13px}
+.producer-val{color:#1d2327;font-size:13px}
+.producer-val-empty{color:#8c8f94;font-size:13px}
 
 /* Status badges */
 .ev-status{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;line-height:1.5;white-space:nowrap}
@@ -131,11 +134,15 @@ tbody tr:hover .venue-row-actions{display:flex}
 .status-draft::before{background:#ca8a04}
 .status-archived{background:#e5e7eb;color:#52525b}
 .status-archived::before{background:#71717a}
+.status-trashed{background:#fee2e2;color:#b91c1c}
+.status-trashed::before{background:#dc2626}
 
 /* Actions */
 .actions-cell{display:flex;align-items:center;gap:5px;justify-content:flex-end}
 .more-btn{width:30px;height:30px;border-radius:4px;border:1px solid #c3c4c7;background:#fff;color:#50575e;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;letter-spacing:.05em;line-height:1}
-.more-btn:hover{background:#f0f0f1;border-color:#8c8f94}
+.more-btn:hover{background:#f0f0f1;color:#1d2327;border-color:#8c8f94}
+
+/* Row dropdown */
 .row-menu-wrap{position:relative;display:inline-block}
 .row-dropdown{display:none;position:absolute;top:calc(100% + 4px);right:0;background:#fff;border:1px solid #c3c4c7;border-radius:4px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:210px;z-index:100;overflow:hidden}
 .row-dropdown.open{display:block}
@@ -151,19 +158,19 @@ tbody tr:hover .venue-row-actions{display:flex}
 .table-footer{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-top:1px solid #dcdcde;background:#f3f4f5;flex-wrap:wrap;gap:8px}
 .table-footer-info{font-size:13px;color:#50575e}
 .pagination{display:flex;align-items:center;gap:3px}
-.page-btn{width:28px;height:28px;border-radius:4px;border:1px solid #c3c4c7;background:#fff;color:#50575e;font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
+.page-btn{width:28px;height:28px;border-radius:4px;border:1px solid #c3c4c7;background:#fff;color:#50575e;font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-family:'IBM Plex Sans',sans-serif;text-decoration:none}
 .page-btn:hover{background:#f6f7f7}
 .page-btn.active{background:#1668F2;color:#fff;border-color:#1668F2}
 .page-btn.disabled{opacity:.45;cursor:not-allowed}
 
 /* ── MOBILE CARDS ── */
-.mobile-venues{display:none;padding:12px 14px}
-.mobile-venue-card{background:#fff;border:1px solid #dcdcde;border-radius:4px;padding:14px;margin-bottom:8px}
-.mob-venue-title{font-size:14px;font-weight:700;color:#031B4E;margin-bottom:4px;text-decoration:none;display:block}
-.mob-venue-title:hover{color:#1668F2}
-.mob-venue-meta{font-size:12.5px;color:#50575e;margin-bottom:6px}
-.mob-venue-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
-.mob-venue-actions{display:flex;gap:5px}
+.mobile-events{display:none;padding:12px 14px}
+.mobile-event-card{background:#fff;border:1px solid #dcdcde;border-radius:4px;padding:14px;margin-bottom:8px}
+.mob-ev-title{font-size:14px;font-weight:700;color:#031B4E;margin-bottom:4px;text-decoration:none;display:block}
+.mob-ev-title:hover{color:#1668F2}
+.mob-ev-meta{font-size:12.5px;color:#50575e;margin-bottom:6px;display:flex;flex-direction:column;gap:2px}
+.mob-ev-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.mob-ev-actions{display:flex;gap:5px}
 
 /* ── RESPONSIVE ── */
 @media(max-width:960px){
@@ -171,20 +178,22 @@ tbody tr:hover .venue-row-actions{display:flex}
   .wp-content{padding:10px 14px 40px}
 }
 @media(max-width:767px){
+  .wp-admin-bar span:not(.site):not(:first-child):not(:last-child){display:none}
   .wp-content{padding:8px 10px 32px}
+  .breadcrumb-logo-box{width:120px;height:30px;font-size:10px}
   .plugin-header{padding:14px;flex-direction:column;align-items:stretch;gap:10px}
   .plugin-title{font-size:18px}
   .btn-primary{justify-content:center}
   .stats-bar{padding:12px 14px;gap:8px}
   .stat-card{flex:1 1 calc(50% - 6px);min-width:0}
   .stat-card-wide{flex:1 1 100%}
-  .status-tabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch}
+  .status-tabs{overflow-x:auto;flex-wrap:nowrap;padding:8px 14px 0;-webkit-overflow-scrolling:touch}
   .toolbar{flex-direction:column;align-items:stretch;padding:10px 14px}
   .toolbar-left{flex-wrap:nowrap}
   .toolbar-left .toolbar-select{flex:1;min-width:0}
   .search-wrap{flex:1;max-width:100%}
   .desktop-table{display:none}
-  .mobile-venues{display:block}
+  .mobile-events{display:block}
   .table-footer{padding:10px 14px}
 }
 </style>
@@ -206,12 +215,11 @@ tbody tr:hover .venue-row-actions{display:flex}
     <div class="wp-sidebar-item">Pages</div>
     <div class="wp-sidebar-sep"></div>
     <div class="wp-sidebar-label">Event Manager</div>
-    <div class="wp-sidebar-sub">Events</div>
+    <div class="wp-sidebar-sub active">Events</div>
     <div class="wp-sidebar-sub">Orders</div>
     <div class="wp-sidebar-sub">Reservations</div>
     <div class="wp-sidebar-sub">Stall Charts</div>
-    <div class="wp-sidebar-sub active">Venues</div>
-    <div class="wp-sidebar-sub">Producers</div>
+    <div class="wp-sidebar-sub">Invoicing</div>
     <div class="wp-sidebar-sub">Reports</div>
     <div class="wp-sidebar-sub">Settings</div>
   </nav>
@@ -221,7 +229,7 @@ tbody tr:hover .venue-row-actions{display:flex}
     <div class="breadcrumb">
       <div class="breadcrumb-logo-box">Plugin Logo</div>
       <span class="breadcrumb-sep">/</span>
-      <span class="breadcrumb-page">Venues</span>
+      <span class="breadcrumb-page">Events</span>
     </div>
 
     <div class="plugin-wrap">
@@ -229,50 +237,52 @@ tbody tr:hover .venue-row-actions{display:flex}
       <!-- PAGE HEADER -->
       <header class="plugin-header">
         <div class="plugin-header-left">
-          <h1 class="plugin-title">Venues</h1>
-          <div class="plugin-subtitle">Manage the facilities where your events are held. Each venue can store facility templates for stall and RV layouts.</div>
+          <h1 class="plugin-title">Events</h1>
+          <div class="plugin-subtitle">Manage your equine events. Each event can be linked to a reservation setup for stall, RV, and add-on bookings.</div>
           <div class="header-links">
-            <a class="header-link" href="#">View Events</a>
+            <a class="header-link" href="#">View Venues</a>
             <a class="header-link" href="#">View Producers</a>
           </div>
         </div>
         <a href="#" class="btn-primary">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Add Venue
+          Add Event
         </a>
       </header>
 
       <!-- STATS CARDS -->
       <div class="stats-bar">
+        <div class="stat-card stat-card-wide">
+          <div class="stat-card-label">Current + Upcoming</div>
+          <div class="stat-card-rows">
+            <div class="stat-card-row"><strong>Jun 14:</strong> Southeast Region Super Sort begins</div>
+            <div class="stat-card-row"><strong>Jul 3:</strong> Gulf Coast Classic begins</div>
+            <div class="stat-card-row"><strong>Aug 8:</strong> Lone Star Invitational begins</div>
+          </div>
+        </div>
         <div class="stat-card">
-          <div class="stat-card-label">Total</div>
-          <div class="stat-card-num">6</div>
+          <div class="stat-card-label">Total Events</div>
+          <div class="stat-card-num">8</div>
         </div>
         <div class="stat-card">
           <div class="stat-card-label">Published</div>
-          <div class="stat-card-num">5</div>
+          <div class="stat-card-num">6</div>
         </div>
         <div class="stat-card">
-          <div class="stat-card-label">In Use</div>
-          <div class="stat-card-num">4</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-card-label">With Website</div>
+          <div class="stat-card-label">Linked Reservations</div>
           <div class="stat-card-num">3</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-card-label">Facility Templates</div>
-          <div class="stat-card-num">11</div>
         </div>
       </div>
 
       <!-- STATUS TABS -->
       <div class="status-tabs">
-        <a class="status-tab active" href="#">All <span class="status-tab-count">(6)</span></a>
+        <a class="status-tab active" href="#">All <span class="status-tab-count">(8)</span></a>
         <span class="status-tab-sep">|</span>
-        <a class="status-tab" href="#">Published <span class="status-tab-count">(5)</span></a>
+        <a class="status-tab" href="#">Published <span class="status-tab-count">(6)</span></a>
         <span class="status-tab-sep">|</span>
         <a class="status-tab" href="#">Draft <span class="status-tab-count">(1)</span></a>
+        <span class="status-tab-sep">|</span>
+        <a class="status-tab" href="#">Archived <span class="status-tab-count">(1)</span></a>
         <span class="status-tab-sep">|</span>
         <a class="status-tab" href="#">Trash <span class="status-tab-count">(0)</span></a>
       </div>
@@ -290,16 +300,22 @@ tbody tr:hover .venue-row-actions{display:flex}
             <option>All dates</option>
             <option>June 2026</option>
             <option>May 2026</option>
+            <option>April 2026</option>
+          </select>
+          <select class="toolbar-select">
+            <option>All producers</option>
+            <option>AQHA</option>
+            <option>NRHA</option>
           </select>
           <button class="toolbar-btn">Filter</button>
         </div>
         <div class="toolbar-right">
           <div class="search-wrap">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input class="search-input" type="text" placeholder="Search venues...">
+            <input class="search-input" type="text" placeholder="Search events...">
           </div>
-          <button class="toolbar-btn">Search Venues</button>
-          <span class="item-count">6 items</span>
+          <button class="toolbar-btn">Search Events</button>
+          <span class="item-count">8 items</span>
         </div>
       </div>
 
@@ -309,9 +325,11 @@ tbody tr:hover .venue-row-actions{display:flex}
           <thead>
             <tr>
               <th class="col-cb"><input type="checkbox"></th>
-              <th class="sortable">Venue Name <span class="sort-icon"><span></span><span></span></span></th>
-              <th>City / State</th>
-              <th class="sortable">Facility Templates <span class="sort-icon"><span></span><span></span></span></th>
+              <th class="sortable">Event Title <span class="sort-icon"><span></span><span></span></span></th>
+              <th class="sortable">Date <span class="sort-icon"><span></span><span></span></span></th>
+              <th>Venue</th>
+              <th>Producer</th>
+              <th>Status</th>
               <th style="text-align:right">Actions</th>
             </tr>
           </thead>
@@ -319,31 +337,28 @@ tbody tr:hover .venue-row-actions{display:flex}
             <tr>
               <td class="col-cb"><input type="checkbox"></td>
               <td>
-                <a class="venue-title" href="#">Georgia National Fairgrounds</a>
-                <div class="venue-row-actions">
-                  <a class="venue-row-action" href="#">Edit</a>
-                  <span class="venue-row-action-sep">|</span>
-                  <a class="venue-row-action" href="#">View Events</a>
-                  <span class="venue-row-action-sep">|</span>
-                  <a class="venue-row-action" href="#">View</a>
+                <a class="event-title" href="#">2026 Southeast Region Super Sort</a>
+                <div class="event-row-actions">
+                  <a class="event-row-action" href="#">Edit</a>
+                  <span class="event-row-action-sep">|</span>
+                  <a class="event-row-action" href="#">View Reservations</a>
+                  <span class="event-row-action-sep">|</span>
+                  <a class="event-row-action" href="#">View</a>
                 </div>
               </td>
-              <td><span class="location-val">Perry, GA</span></td>
-              <td>
-                <span class="template-count">
-                  <span class="template-count-num">3</span>
-                </span>
-                <a class="template-link" href="#">View</a>
-              </td>
+              <td><span class="date-val">Jun 14 – Jun 18, 2026</span></td>
+              <td><span class="venue-val">Georgia National Fairgrounds</span></td>
+              <td><span class="producer-val">NRHA Southeast</span></td>
+              <td><span class="ev-status status-published">Published</span></td>
               <td>
                 <div class="actions-cell">
                   <div class="row-menu-wrap">
-                    <button class="more-btn" onclick="toggleRowMenu('v-menu-1',event)">···</button>
-                    <div class="row-dropdown" id="v-menu-1">
-                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Venue</a>
-                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View Venue</a>
-                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Facility Templates</a>
-                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>View Events</a>
+                    <button class="more-btn" onclick="toggleRowMenu('ev-menu-1',event)">···</button>
+                    <div class="row-dropdown" id="ev-menu-1">
+                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Event</a>
+                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View Event</a>
+                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>View Reservations</a>
+                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Duplicate</a>
                       <a class="row-dd-item row-dd-danger" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Move to Trash</a>
                     </div>
                   </div>
@@ -353,22 +368,50 @@ tbody tr:hover .venue-row-actions{display:flex}
             <tr>
               <td class="col-cb"><input type="checkbox"></td>
               <td>
-                <a class="venue-title" href="#">Katy Prairie Arena</a>
-                <div class="venue-row-actions">
-                  <a class="venue-row-action" href="#">Edit</a>
-                  <span class="venue-row-action-sep">|</span>
-                  <a class="venue-row-action" href="#">View Events</a>
-                  <span class="venue-row-action-sep">|</span>
-                  <a class="venue-row-action" href="#">View</a>
+                <a class="event-title" href="#">2026 Gulf Coast Classic</a>
+                <div class="event-row-actions">
+                  <a class="event-row-action" href="#">Edit</a>
+                  <span class="event-row-action-sep">|</span>
+                  <a class="event-row-action" href="#">View Reservations</a>
+                  <span class="event-row-action-sep">|</span>
+                  <a class="event-row-action" href="#">View</a>
                 </div>
               </td>
-              <td><span class="location-val">Katy, TX</span></td>
+              <td><span class="date-val">Jul 3 – Jul 6, 2026</span></td>
+              <td><span class="venue-val">Katy Prairie Arena</span></td>
+              <td><span class="producer-val">Gulf Coast Equine Events</span></td>
+              <td><span class="ev-status status-published">Published</span></td>
               <td>
-                <span class="template-count">
-                  <span class="template-count-num">2</span>
-                </span>
-                <a class="template-link" href="#">View</a>
+                <div class="actions-cell">
+                  <div class="row-menu-wrap">
+                    <button class="more-btn" onclick="toggleRowMenu('ev-menu-2',event)">···</button>
+                    <div class="row-dropdown" id="ev-menu-2">
+                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Event</a>
+                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View Event</a>
+                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>View Reservations</a>
+                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Duplicate</a>
+                      <a class="row-dd-item row-dd-danger" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Move to Trash</a>
+                    </div>
+                  </div>
+                </div>
               </td>
+            </tr>
+            <tr>
+              <td class="col-cb"><input type="checkbox"></td>
+              <td>
+                <a class="event-title" href="#">2026 Lone Star Invitational</a>
+                <div class="event-row-actions">
+                  <a class="event-row-action" href="#">Edit</a>
+                  <span class="event-row-action-sep">|</span>
+                  <a class="event-row-action" href="#">View Reservations</a>
+                  <span class="event-row-action-sep">|</span>
+                  <a class="event-row-action" href="#">View</a>
+                </div>
+              </td>
+              <td><span class="date-val">Aug 8 – Aug 11, 2026</span></td>
+              <td><span class="venue-val">Fort Worth Stockyards</span></td>
+              <td><span class="producer-val">Lone Star Productions</span></td>
+              <td><span class="ev-status status-published">Published</span></td>
               <td>
                 <div class="actions-cell">
                   <div class="row-menu-wrap"><button class="more-btn">···</button></div>
@@ -378,22 +421,17 @@ tbody tr:hover .venue-row-actions{display:flex}
             <tr>
               <td class="col-cb"><input type="checkbox"></td>
               <td>
-                <a class="venue-title" href="#">Fort Worth Stockyards</a>
-                <div class="venue-row-actions">
-                  <a class="venue-row-action" href="#">Edit</a>
-                  <span class="venue-row-action-sep">|</span>
-                  <a class="venue-row-action" href="#">View Events</a>
-                  <span class="venue-row-action-sep">|</span>
-                  <a class="venue-row-action" href="#">View</a>
+                <a class="event-title" href="#">2026 Sunshine Dressage Classic</a>
+                <div class="event-row-actions">
+                  <a class="event-row-action" href="#">Edit</a>
+                  <span class="event-row-action-sep">|</span>
+                  <a class="event-row-action" href="#">View</a>
                 </div>
               </td>
-              <td><span class="location-val">Fort Worth, TX</span></td>
-              <td>
-                <span class="template-count">
-                  <span class="template-count-num">4</span>
-                </span>
-                <a class="template-link" href="#">View</a>
-              </td>
+              <td><span class="date-val">Sep 19 – Sep 21, 2026</span></td>
+              <td><span class="venue-val">Florida Horse Park</span></td>
+              <td><span class="producer-val-empty">—</span></td>
+              <td><span class="ev-status status-draft">Draft</span></td>
               <td>
                 <div class="actions-cell">
                   <div class="row-menu-wrap"><button class="more-btn">···</button></div>
@@ -403,38 +441,19 @@ tbody tr:hover .venue-row-actions{display:flex}
             <tr>
               <td class="col-cb"><input type="checkbox"></td>
               <td>
-                <a class="venue-title" href="#">Florida Horse Park</a>
-                <div class="venue-row-actions">
-                  <a class="venue-row-action" href="#">Edit</a>
-                  <span class="venue-row-action-sep">|</span>
-                  <a class="venue-row-action" href="#">View</a>
+                <a class="event-title" href="#">Black Hills Stock Show (EEMDEMO)</a>
+                <div class="event-row-actions">
+                  <a class="event-row-action" href="#">Edit</a>
+                  <span class="event-row-action-sep">|</span>
+                  <a class="event-row-action" href="#">View Reservations</a>
+                  <span class="event-row-action-sep">|</span>
+                  <a class="event-row-action" href="#">View</a>
                 </div>
               </td>
-              <td><span class="location-val">Ocala, FL</span></td>
-              <td>
-                <span class="template-count">
-                  <span class="template-count-num">2</span>
-                </span>
-                <a class="template-link" href="#">View</a>
-              </td>
-              <td>
-                <div class="actions-cell">
-                  <div class="row-menu-wrap"><button class="more-btn">···</button></div>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td class="col-cb"><input type="checkbox"></td>
-              <td>
-                <a class="venue-title" href="#">Lancaster Event Center (EEMDEMO)</a>
-                <div class="venue-row-actions">
-                  <a class="venue-row-action" href="#">Edit</a>
-                  <span class="venue-row-action-sep">|</span>
-                  <a class="venue-row-action" href="#">View</a>
-                </div>
-              </td>
-              <td><span class="location-val">Lincoln, NE</span></td>
-              <td><span class="template-count-zero">—</span></td>
+              <td><span class="date-val">Jan 27 – Feb 2, 2026</span></td>
+              <td><span class="venue-val">Rushmore Plaza Civic Center</span></td>
+              <td><span class="producer-val">BHSS Productions</span></td>
+              <td><span class="ev-status status-published">Published</span></td>
               <td>
                 <div class="actions-cell">
                   <div class="row-menu-wrap"><button class="more-btn">···</button></div>
@@ -444,13 +463,57 @@ tbody tr:hover .venue-row-actions{display:flex}
             <tr>
               <td class="col-cb"><input type="checkbox"></td>
               <td>
-                <a class="venue-title" href="#">Rushmore Plaza Civic Center (EEMDEMO)</a>
-                <div class="venue-row-actions">
-                  <a class="venue-row-action" href="#">Edit</a>
+                <a class="event-title" href="#">Cornhusker Classic (EEMDEMO)</a>
+                <div class="event-row-actions">
+                  <a class="event-row-action" href="#">Edit</a>
+                  <span class="event-row-action-sep">|</span>
+                  <a class="event-row-action" href="#">View</a>
                 </div>
               </td>
-              <td><span class="location-val-empty">—</span></td>
-              <td><span class="template-count-zero">—</span></td>
+              <td><span class="date-val">Mar 12 – Mar 15, 2026</span></td>
+              <td><span class="venue-val">Lancaster Event Center</span></td>
+              <td><span class="producer-val">Nebraska Horse Council</span></td>
+              <td><span class="ev-status status-published">Published</span></td>
+              <td>
+                <div class="actions-cell">
+                  <div class="row-menu-wrap"><button class="more-btn">···</button></div>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-cb"><input type="checkbox"></td>
+              <td>
+                <a class="event-title" href="#">Energy Capital Reining (EEMDEMO)</a>
+                <div class="event-row-actions">
+                  <a class="event-row-action" href="#">Edit</a>
+                  <span class="event-row-action-sep">|</span>
+                  <a class="event-row-action" href="#">View</a>
+                </div>
+              </td>
+              <td><span class="date-val">Apr 4 – Apr 6, 2026</span></td>
+              <td><span class="venue-val">NRG Center</span></td>
+              <td><span class="producer-val-empty">—</span></td>
+              <td><span class="ev-status status-published">Published</span></td>
+              <td>
+                <div class="actions-cell">
+                  <div class="row-menu-wrap"><button class="more-btn">···</button></div>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-cb"><input type="checkbox"></td>
+              <td>
+                <a class="event-title" href="#">Late Summer Barrel Bash (EEMDEMO)</a>
+                <div class="event-row-actions">
+                  <a class="event-row-action" href="#">Edit</a>
+                  <span class="event-row-action-sep">|</span>
+                  <a class="event-row-action" href="#">View</a>
+                </div>
+              </td>
+              <td><span class="date-val-empty">—</span></td>
+              <td><span class="venue-val-empty">—</span></td>
+              <td><span class="producer-val-empty">—</span></td>
+              <td><span class="ev-status status-archived">Archived</span></td>
               <td>
                 <div class="actions-cell">
                   <div class="row-menu-wrap"><button class="more-btn">···</button></div>
@@ -462,28 +525,45 @@ tbody tr:hover .venue-row-actions{display:flex}
       </div>
 
       <!-- MOBILE CARDS -->
-      <div class="mobile-venues">
-        <div class="mobile-venue-card">
-          <a class="mob-venue-title" href="#">Georgia National Fairgrounds</a>
-          <div class="mob-venue-meta">Perry, GA · 3 facility templates</div>
-          <div class="mob-venue-bottom">
+      <div class="mobile-events">
+        <div class="mobile-event-card">
+          <a class="mob-ev-title" href="#">2026 Southeast Region Super Sort</a>
+          <div class="mob-ev-meta">
+            <span>Jun 14 – Jun 18, 2026</span>
+            <span>Georgia National Fairgrounds · NRHA Southeast</span>
+          </div>
+          <div class="mob-ev-bottom">
             <span class="ev-status status-published">Published</span>
-            <div class="mob-venue-actions"><button class="more-btn">···</button></div>
+            <div class="mob-ev-actions"><button class="more-btn">···</button></div>
           </div>
         </div>
-        <div class="mobile-venue-card">
-          <a class="mob-venue-title" href="#">Katy Prairie Arena</a>
-          <div class="mob-venue-meta">Katy, TX · 2 facility templates</div>
-          <div class="mob-venue-bottom">
+        <div class="mobile-event-card">
+          <a class="mob-ev-title" href="#">2026 Gulf Coast Classic</a>
+          <div class="mob-ev-meta">
+            <span>Jul 3 – Jul 6, 2026</span>
+            <span>Katy Prairie Arena · Gulf Coast Equine Events</span>
+          </div>
+          <div class="mob-ev-bottom">
             <span class="ev-status status-published">Published</span>
-            <div class="mob-venue-actions"><button class="more-btn">···</button></div>
+            <div class="mob-ev-actions"><button class="more-btn">···</button></div>
+          </div>
+        </div>
+        <div class="mobile-event-card">
+          <a class="mob-ev-title" href="#">2026 Sunshine Dressage Classic</a>
+          <div class="mob-ev-meta">
+            <span>Sep 19 – Sep 21, 2026</span>
+            <span>Florida Horse Park</span>
+          </div>
+          <div class="mob-ev-bottom">
+            <span class="ev-status status-draft">Draft</span>
+            <div class="mob-ev-actions"><button class="more-btn">···</button></div>
           </div>
         </div>
       </div>
 
       <!-- TABLE FOOTER -->
       <div class="table-footer">
-        <div class="table-footer-info">Showing 1–6 of 6 venues</div>
+        <div class="table-footer-info">Showing 1–8 of 8 events</div>
         <div class="pagination">
           <a class="page-btn disabled"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="8 2 3 6 8 10"/></svg></a>
           <a class="page-btn active" href="#">1</a>

@@ -73,9 +73,12 @@ $canonical = array(
 	'stall_map_event.html'              => '5993add72d81e2ce6dbc049deb1d74ba',
 
 	// Native Events admin page mockups (added 2026-06-13; Native Events Admin
-	// A/B). Branded ports of the default WP CPT/taxonomy screens.
-	'venues_admin_page.html'            => '7abb6ac5271a032f8fb98482980eb876',
+	// A/B/C). Branded ports of the default WP CPT/taxonomy screens. Venues +
+	// Producers + Events refined 2026-06-13 (stat cards match Stall & RV Charts).
+	'venues_admin_page.html'            => '742a91f274f746df111164e9decdb8b4',
 	'taxonomy_categories_admin_page.html' => '86bb5ed3967e1f63116e5ea0dd1a7967',
+	'producers_admin_page.html'         => 'a34b0c7eda2edc9dde8e7c6142f1d290',
+	'events_admin_page.html'            => 'da26217ff4a01e799fe191143c28320c',
 
 	// Plugin brand asset (referenced by admin shell + breadcrumb)
 	'Equine Event Manager Logo.png'     => 'fad15ea2d6637ca49090ab8c118250a5',
