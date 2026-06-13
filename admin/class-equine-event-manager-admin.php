@@ -111,6 +111,7 @@ class EEM_Admin {
 		add_filter( 'admin_body_class', array( $this, 'filter_backend_shell_body_class' ) );
 		add_action( 'admin_init', array( $this, 'maybe_redirect_disabled_native_event_admin_screens' ) );
 		add_action( 'admin_init', array( $this, 'maybe_redirect_legacy_event_manager_admin_routes' ) );
+		add_action( 'admin_init', array( $this, 'maybe_redirect_venue_list_to_branded_page' ) );
 		add_action( 'admin_menu', array( $this, 'position_event_manager_after_tec_events' ), 1002 );
 		add_action( 'admin_menu', array( $this, 'normalize_event_manager_submenu_order' ), 1001 );
 		add_action( 'admin_menu', array( $this, 'maybe_remove_disabled_native_event_menu_items' ), 999 );
@@ -494,7 +495,7 @@ class EEM_Admin {
 			EEM_Notifications_Page::MENU_SLUG,
 			'edit.php?post_type=en_event',
 			'edit-tags.php?taxonomy=en_event_category&post_type=en_event',
-			'edit.php?post_type=en_venue',
+			EEM_Venues_Page::MENU_SLUG,
 			'edit-tags.php?taxonomy=en_venue_category&post_type=en_venue',
 			'edit.php?post_type=en_producer',
 			'edit-tags.php?taxonomy=en_producer_category&post_type=en_producer',
@@ -570,6 +571,39 @@ class EEM_Admin {
 					'tab'       => 'integrations',
 					'en_notice' => 'native_events_disabled',
 				),
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
+	 * Bounce the raw `edit.php?post_type=en_venue` WP list to the branded
+	 * EEM_Venues_Page. Only the list view is redirected — add-new
+	 * (`post-new.php`) and the single-venue editor (`post.php`) stay on the
+	 * native WP screens. No-op when native events are disabled (that case is
+	 * handled by maybe_redirect_disabled_native_event_admin_screens).
+	 *
+	 * @return void
+	 */
+	public function maybe_redirect_venue_list_to_branded_page() {
+		if ( wp_doing_ajax() || ! EEM_Events::is_native_events_enabled() ) {
+			return;
+		}
+
+		global $pagenow;
+
+		if ( 'edit.php' !== $pagenow ) {
+			return;
+		}
+
+		if ( empty( $_GET['post_type'] ) || 'en_venue' !== sanitize_key( wp_unslash( $_GET['post_type'] ) ) ) {
+			return;
+		}
+
+		wp_safe_redirect(
+			add_query_arg(
+				array( 'page' => EEM_Venues_Page::MENU_SLUG ),
 				admin_url( 'admin.php' )
 			)
 		);
@@ -875,15 +909,16 @@ class EEM_Admin {
 				'edit-tags.php?taxonomy=en_event_category&post_type=en_event'
 			);
 
-			// "Locations" renamed to "Venues" (Whitney 2026-06-13) — the native
-			// en_venue record is the single Venue concept. (The relational
-			// EEM_Venue layout store is no longer a separate "Venues" menu page.)
+			// "Venues" = the branded EEM_Venues_Page list (en_venue posts + their
+			// facility-template counts), not the raw WP CPT list. The raw
+			// edit.php?post_type=en_venue screen is redirected here.
 			add_submenu_page(
 				self::MENU_SLUG,
 				__( 'Venues', 'equine-event-manager' ),
 				__( 'Venues', 'equine-event-manager' ),
 				'manage_options',
-				'edit.php?post_type=en_venue'
+				EEM_Venues_Page::MENU_SLUG,
+				array( 'EEM_Venues_Page', 'render' )
 			);
 
 			add_submenu_page(

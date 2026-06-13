@@ -9331,3 +9331,47 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 .eem-venue-load-option:hover { border-color: var(--eem-electric, #2563eb); }
 .eem-venue-load-option__name { font-weight: 600; color: var(--eem-navy, #031B4E); }
 .eem-venue-load-option__date { margin-left: auto; font-size: 12px; color: var(--eem-muted, #64748b); }
+
+/* ==========================================================================
+   Venues list page (EEM_Venues_Page::render_list) — branded port of
+   .mockups/venues_admin_page.html. Stats strip, venue-name cell, facility-
+   template count column, and mobile cards. Reuses shared list chrome
+   (.eem-status-tabs / .eem-list-toolbar / .eem-table / row dropdown).
+   ========================================================================== */
+
+/* Header meta link row (under the page subtitle). */
+.eem-page-meta-links { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 6px; }
+.eem-page-meta-links a,
+.eem-page-meta-links a:hover,
+.eem-page-meta-links a:focus { font-size: 12.5px; font-weight: 600; color: var(--eem-electric, #1668F2); text-decoration: none; }
+.eem-page-meta-links a:hover { color: #1257d1; }
+
+/* Stats strip — five cards summarizing the venue list. */
+.eem-venues-stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+.eem-stat-card { background: #fff; border: 1px solid var(--eem-border, #D9E2F2); border-radius: var(--eem-radius-lg, 8px); padding: 14px 18px; flex: 1; min-width: 140px; }
+.eem-stat-card-label { font-size: 10.5px; font-weight: 700; color: #8c8f94; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 10px; }
+.eem-stat-card-num { font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700; color: var(--eem-navy, #031B4E); line-height: 1; }
+
+/* Venue name cell. */
+a.eem-venue-name,
+a.eem-venue-name:link,
+a.eem-venue-name:visited,
+a.eem-venue-name:hover,
+a.eem-venue-name:focus { font-weight: 700; color: var(--eem-navy, #031B4E); font-size: 13.5px; display: block; text-decoration: none; }
+a.eem-venue-name:hover { color: var(--eem-electric, #1668F2); }
+
+/* Facility-template count column. */
+.eem-tpl-count { font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: var(--eem-navy, #031B4E); font-size: 15px; }
+a.eem-tpl-link,
+a.eem-tpl-link:hover,
+a.eem-tpl-link:focus { font-size: 12px; color: var(--eem-electric, #1668F2); margin-left: 6px; text-decoration: none; }
+.eem-tpl-link:hover { color: #1257d1; }
+.eem-venue-muted { font-size: 13px; color: #8c8f94; }
+
+/* Mobile venue cards (sub line: city · N templates). */
+.eem-mobile-venues .eem-mobile-card-sub { font-size: 12.5px; color: #50575e; margin: 4px 0 6px; }
+
+@media (max-width: 782px) {
+	.eem-venues-stats { gap: 8px; }
+	.eem-stat-card { flex: 1 1 calc(50% - 4px); min-width: 0; }
+}

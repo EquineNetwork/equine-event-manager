@@ -37,13 +37,28 @@ $lid = EEM_Venue::save_layout( $vid, $rid, 'Page Smoke Layout' );
 $check( 'seed layout created', $lid > 0 );
 
 // --- list render -----------------------------------------------------------
+// The branded list (DS Native Events Admin A) is backed by en_venue POSTS, not
+// the relational EEM_Venue store, so seed a real en_venue post for the list.
+$venue_post = wp_insert_post( array(
+	'post_type'   => 'en_venue',
+	'post_status' => 'publish',
+	'post_title'  => 'Page Smoke Venue ' . $suffix,
+) );
+update_post_meta( $venue_post, '_equine_event_manager_venue_city', 'Perry' );
+update_post_meta( $venue_post, '_equine_event_manager_venue_state', 'GA' );
+
 ob_start();
 $_GET = array( 'page' => EEM_Venues_Page::MENU_SLUG );
 EEM_Venues_Page::render();
 $list = ob_get_clean();
-$check( 'list renders the venues table', false !== strpos( $list, 'eem-venues-table' ) );
-$check( 'list shows the seeded venue name', false !== strpos( $list, 'Page Smoke Arena ' . $suffix ) );
-$check( 'list shows the intro copy', false !== strpos( $list, 'eem-venues-intro' ) );
+$check( 'list renders the shared list table', false !== strpos( $list, 'eem-table' ) );
+$check( 'list renders the stats strip', false !== strpos( $list, 'eem-venues-stats' ) );
+$check( 'list renders stat cards', false !== strpos( $list, 'eem-stat-card-num' ) );
+$check( 'list shows the seeded venue name', false !== strpos( $list, 'Page Smoke Venue ' . $suffix ) );
+$check( 'list shows the venue city/state', false !== strpos( $list, 'Perry, GA' ) );
+$check( 'list renders status tabs', false !== strpos( $list, 'eem-status-tabs' ) );
+$check( 'list renders the search toolbar', false !== strpos( $list, 'eem-search-input' ) );
+$check( 'list wires venue-name links', false !== strpos( $list, 'eem-venue-name' ) );
 
 // --- detail render ---------------------------------------------------------
 ob_start();
@@ -85,6 +100,7 @@ $wpdb->query( $wpdb->prepare( 'DELETE FROM ' . EEM_Venue::source_map_table() . '
 $wpdb->query( $wpdb->prepare( 'DELETE FROM ' . EEM_Venue::layouts_table() . ' WHERE venue_id = %d', $vid ) );
 $wpdb->query( $wpdb->prepare( 'DELETE FROM ' . EEM_Venue::venues_table() . ' WHERE id = %d', $vid ) );
 wp_delete_post( (int) $rid, true );
+wp_delete_post( (int) $venue_post, true );
 $_GET = array();
 $_POST = array();
 
