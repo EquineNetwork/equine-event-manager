@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EEM – Screen 4: Public Sheets &amp; Results Page</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',sans-serif;background:#f8f8f8;color:#1d2327;font-size:14px;line-height:1.5}
+a{text-decoration:none;color:inherit}
+
+/* Tabs */
+.doc-type-tabs{display:flex;border-bottom:2px solid #e5e7eb;margin-bottom:24px;background:#fff;padding:0 24px}
+.doc-type-tab{padding:14px 20px;font-size:14px;font-weight:600;color:#6B7A99;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.doc-type-tab:hover{color:#031B4E}
+.doc-type-tab.active{color:#031B4E;border-bottom-color:#1668F2}
+.tab-count{font-size:11px;font-weight:700;background:#f0f0f1;color:#6B7A99;padding:2px 7px;border-radius:10px}
+.doc-type-tab.active .tab-count{background:#EEF4FF;color:#1668F2}
+
+/* Body */
+.results-body{max-width:860px;margin:0 auto;padding:0 24px 40px}
+
+/* Discipline group */
+.results-discipline{margin-bottom:28px}
+.results-discipline-title{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#6B7A99;letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.results-discipline-title::after{content:'';flex:1;height:1px;background:#e5e7eb}
+
+/* Day label */
+.day-label{font-size:12px;font-weight:700;color:#8c8f94;letter-spacing:.06em;text-transform:uppercase;padding:8px 0 4px;display:flex;align-items:center;gap:8px}
+.day-label::after{content:'';flex:1;height:1px;background:#f0f0f1}
+
+/* Result item */
+.result-item{display:flex;align-items:center;gap:12px;padding:10px 14px;background:#fff;border:1px solid #e5e7eb;border-radius:4px;margin-bottom:6px;text-decoration:none}
+.result-item:hover{border-color:#1668F2;background:#fafcff}
+.result-item-icon{width:34px;height:34px;background:#fee2e2;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.result-item-icon svg{width:16px;height:16px;color:#b91c1c}
+.result-item-info{flex:1;min-width:0}
+.result-item-name{font-size:13.5px;font-weight:600;color:#031B4E;display:block;margin-bottom:1px}
+.result-item-meta{font-size:12px;color:#6B7A99}
+.result-item-arrow{color:#c3c4c7;flex-shrink:0}
+.result-item-arrow svg{width:16px;height:16px}
+.result-item:hover .result-item-arrow{color:#1668F2}
+
+/* Empty state */
+.empty-state{text-align:center;padding:32px 20px;color:#8c8f94}
+.empty-state svg{width:32px;height:32px;color:#c3c4c7;margin:0 auto 10px;display:block}
+.empty-state strong{color:#50575e;font-size:14px;display:block;margin-bottom:4px}
+.empty-state p{font-size:13px}
+</style>
+</head>
+<body>
+
+<!-- TABS -->
+<div class="doc-type-tabs">
+  <div class="doc-type-tab active" id="s4-tab-drawsheets" onclick="switchTab('drawsheets')">
+    Draw Sheets <span class="tab-count">8</span>
+  </div>
+  <div class="doc-type-tab" id="s4-tab-results" onclick="switchTab('results')">
+    Results <span class="tab-count">7</span>
+  </div>
+</div>
+
+<!-- DRAW SHEETS CONTENT -->
+<div class="results-body" id="s4-drawsheets">
+
+  <div class="results-discipline">
+    <div class="results-discipline-title">Barrel Racing</div>
+    <div class="day-label">Friday, Jun 14</div>
+    <a class="result-item" href="#">
+      <div class="result-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+      <div class="result-item-info"><span class="result-item-name">Open 5D Draw Sheet</span><span class="result-item-meta">PDF</span></div>
+      <div class="result-item-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </a>
+    <div class="day-label">Sunday, Jun 16</div>
+    <a class="result-item" href="#">
+      <div class="result-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+      <div class="result-item-info"><span class="result-item-name">19U Barrels Draw</span><span class="result-item-meta">PDF</span></div>
+      <div class="result-item-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </a>
+  </div>
+
+  <div class="results-discipline">
+    <div class="results-discipline-title">Breakaway Roping</div>
+    <div class="day-label">Wednesday, Jun 12</div>
+    <a class="result-item" href="#">
+      <div class="result-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+      <div class="result-item-info"><span class="result-item-name">15U Breakaway Draw Sheet</span><span class="result-item-meta">PDF</span></div>
+      <div class="result-item-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </a>
+  </div>
+
+  <div class="results-discipline">
+    <div class="results-discipline-title">Tie-Down Roping</div>
+    <div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <strong>No draw sheets posted yet</strong>
+      <p>Check back closer to the event.</p>
+    </div>
+  </div>
+
+</div><!-- /s4-drawsheets -->
+
+<!-- RESULTS CONTENT -->
+<div class="results-body" id="s4-results" style="display:none">
+
+  <div class="results-discipline">
+    <div class="results-discipline-title">Barrel Racing</div>
+    <div class="day-label">Friday, Jun 14</div>
+    <a class="result-item" href="#">
+      <div class="result-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+      <div class="result-item-info"><span class="result-item-name">Open Long Go Results</span><span class="result-item-meta">1st Go · PDF</span></div>
+      <div class="result-item-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </a>
+    <div class="day-label">Saturday, Jun 15</div>
+    <a class="result-item" href="#">
+      <div class="result-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+      <div class="result-item-info"><span class="result-item-name">Open 5D Final Round</span><span class="result-item-meta">Finals · PDF</span></div>
+      <div class="result-item-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </a>
+    <div class="day-label">Sunday, Jun 16</div>
+    <a class="result-item" href="#" style="opacity:.55;pointer-events:none;cursor:default">
+      <div class="result-item-icon" style="background:#f3f4f5"><svg viewBox="0 0 24 24" fill="none" stroke="#c3c4c7" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+      <div class="result-item-info"><span class="result-item-name" style="color:#6B7A99">19U Barrels Finals</span><span class="result-item-meta">Finals · Not yet posted</span></div>
+      <span style="font-size:11px;font-weight:700;color:#8c8f94;background:#f3f4f5;padding:2px 8px;border-radius:10px;white-space:nowrap">Coming soon</span>
+    </a>
+  </div>
+
+  <div class="results-discipline">
+    <div class="results-discipline-title">Breakaway Roping</div>
+    <div class="day-label">Wednesday, Jun 12</div>
+    <a class="result-item" href="#">
+      <div class="result-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+      <div class="result-item-info"><span class="result-item-name">15U Breakaway Semi Finals Average</span><span class="result-item-meta">Average · PDF</span></div>
+      <div class="result-item-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </a>
+    <div class="day-label">Sunday, Jun 16</div>
+    <a class="result-item" href="#">
+      <div class="result-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+      <div class="result-item-info"><span class="result-item-name">19U Breakaway Finals Round</span><span class="result-item-meta">Finals · PDF</span></div>
+      <div class="result-item-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </a>
+  </div>
+
+  <div class="results-discipline">
+    <div class="results-discipline-title">Tie-Down Roping</div>
+    <div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <strong>No results posted yet</strong>
+      <p>Check back as the event progresses.</p>
+    </div>
+  </div>
+
+</div><!-- /s4-results -->
+
+<script>
+function switchTab(tab){
+  ['drawsheets','results'].forEach(function(t){
+    document.getElementById('s4-tab-'+t).classList.toggle('active', t===tab);
+    document.getElementById('s4-'+t).style.display = (t===tab) ? '' : 'none';
+  });
+}
+</script>
+</body>
+</html>
