@@ -9746,3 +9746,24 @@ a.eem-add-term-link:hover { color: #1257d1; }
 	.eem-sr-selector { padding: 14px 16px; }
 	.eem-sr-event-select { max-width: none; }
 }
+
+/* Embedded in the Event editor (Screen 2) — the same manager body inside a
+   section card. The top bar carries the "Manage in Sheets & Results" link; the
+   body is pulled full-width so the discipline bands reach the card edges (the
+   bands carry their own internal padding, matching the standalone page). */
+.eem-sr-embed-bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	flex-wrap: wrap;
+	margin-bottom: 14px;
+}
+.eem-sr-embedded .eem-sr-body { margin: 0 -18px -16px; }
+.eem-sr-embedded .eem-sr-add-discipline { border-top: 1px solid var(--eem-border-soft); }
+
+/* Event-editor rail summary card */
+.eem-sr-rail-summary { display: flex; flex-direction: column; gap: 6px; }
+.eem-sr-rail-row { display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
+.eem-sr-rail-label { color: var(--eem-text-secondary); }
+.eem-sr-rail-num { font-family: var(--eem-font-display); font-weight: 700; color: var(--eem-navy); font-size: 15px; }

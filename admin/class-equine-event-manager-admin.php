@@ -443,8 +443,10 @@ class EEM_Admin {
 			}
 
 			// Sheets & Results manager JS (tabs + add-file panel + PDF pickers +
-			// add/replace/delete dispatch). Reads ajaxUrl + nonce from the page root.
-			if ( EEM_Sheets_Results_Page::MENU_SLUG === $page ) {
+			// add/replace/delete dispatch). Reads ajaxUrl + nonce from the page
+			// root. Loaded on the standalone manager page AND the Event editor
+			// (which embeds the same section via render_embedded_section()).
+			if ( EEM_Sheets_Results_Page::MENU_SLUG === $page || EEM_Event_Editor_Page::MENU_SLUG === $page ) {
 				wp_enqueue_script( 'eem-sheets-results', EQUINE_EVENT_MANAGER_URL . 'assets/js/sheets-results.js', array( 'eem-admin' ), $ver, true );
 			}
 

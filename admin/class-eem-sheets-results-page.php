@@ -52,6 +52,7 @@ class EEM_Sheets_Results_Page {
 		add_action( 'wp_ajax_eem_sr_add_entry', array( __CLASS__, 'ajax_add_entry' ) );
 		add_action( 'wp_ajax_eem_sr_set_pdf', array( __CLASS__, 'ajax_set_pdf' ) );
 		add_action( 'wp_ajax_eem_sr_delete_entry', array( __CLASS__, 'ajax_delete_entry' ) );
+		add_action( 'wp_ajax_eem_sr_render_section', array( __CLASS__, 'ajax_render_section' ) );
 	}
 
 	/**
@@ -188,7 +189,9 @@ class EEM_Sheets_Results_Page {
 				<?php else : ?>
 					<?php self::render_event_selector( $events, $event_id, $event ); ?>
 					<?php if ( $event ) : ?>
-						<?php self::render_tabs_and_body( $event_id, $tab ); ?>
+						<div class="eem-sr-body">
+							<?php self::render_body_inner( $event_id, $tab ); ?>
+						</div>
 					<?php endif; ?>
 				<?php endif; ?>
 			</div>
@@ -226,13 +229,44 @@ class EEM_Sheets_Results_Page {
 	}
 
 	/**
-	 * Tabs + the two tab bodies for the selected event.
+	 * Render the embedded Sheets & Results section for the Event editor (Screen
+	 * 2). Same body as the manager page — tabs, discipline groups, add panels,
+	 * rows — minus the event selector (the editor is already scoped to one
+	 * event). Mutations re-render via the AJAX fragment endpoint (no full reload)
+	 * so unsaved event-editor field edits aren't lost. Returns a string for use
+	 * as a section card's `body_html`.
+	 *
+	 * @param int $event_id Event id.
+	 * @return string
+	 */
+	public static function render_embedded_section( int $event_id ): string {
+		$nonce = wp_create_nonce( self::NONCE );
+		ob_start();
+		?>
+		<div class="eem-sheets-results eem-sr-embedded"
+			data-ajax-url="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>"
+			data-nonce="<?php echo esc_attr( $nonce ); ?>"
+			data-event-id="<?php echo esc_attr( (string) $event_id ); ?>">
+			<div class="eem-sr-embed-bar">
+				<span class="eem-field-hint"><?php esc_html_e( 'Files go live immediately when saved.', 'equine-event-manager' ); ?></span>
+				<a class="eem-btn eem-btn-secondary" href="<?php echo esc_url( self::url( $event_id ) ); ?>"><?php esc_html_e( 'Manage in Sheets & Results', 'equine-event-manager' ); ?></a>
+			</div>
+			<div class="eem-sr-body">
+				<?php self::render_body_inner( $event_id, 'drawsheets' ); ?>
+			</div>
+		</div>
+		<?php
+		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Tabs + the two tab bodies for the selected event (no selector).
 	 *
 	 * @param int    $event_id Selected event id.
 	 * @param string $tab      Active tab.
 	 * @return void
 	 */
-	private static function render_tabs_and_body( int $event_id, string $tab ): void {
+	private static function render_body_inner( int $event_id, string $tab ): void {
 		$groups = EEM_Sheet_Entries::get_for_event_grouped_by_discipline( $event_id );
 		$counts = EEM_Sheet_Entries::counts( $event_id );
 		?>
@@ -654,5 +688,29 @@ class EEM_Sheets_Results_Page {
 			wp_send_json_error( array( 'message' => __( 'Could not delete.', 'equine-event-manager' ) ), 500 );
 		}
 		wp_send_json_success( array( 'message' => __( 'Deleted.', 'equine-event-manager' ) ) );
+	}
+
+	/**
+	 * AJAX: return the freshly-rendered body fragment (tabs + panels) + counts
+	 * for an event. Used by the embedded editor section to re-render after a
+	 * mutation without a full page reload (which would discard unsaved event
+	 * fields).
+	 *
+	 * @return void
+	 */
+	public static function ajax_render_section(): void {
+		self::guard();
+		$event_id = isset( $_POST['event_id'] ) ? absint( wp_unslash( $_POST['event_id'] ) ) : 0;
+		self::require_event( $event_id );
+		$tab = ( isset( $_POST['tab'] ) && 'results' === sanitize_key( wp_unslash( $_POST['tab'] ) ) ) ? 'results' : 'drawsheets';
+
+		ob_start();
+		self::render_body_inner( $event_id, $tab );
+		$html = (string) ob_get_clean();
+
+		wp_send_json_success( array(
+			'html'   => $html,
+			'counts' => EEM_Sheet_Entries::counts( $event_id ),
+		) );
 	}
 }

@@ -36,11 +36,35 @@
 		}).then(function (r) { return r.json(); });
 	}
 
-	/** Reload preserving the current event_id + active tab. */
+	/**
+	 * Refresh after a mutation. On the standalone page: full reload preserving
+	 * event_id + tab. Embedded in the Event editor: re-render just the body
+	 * fragment via AJAX so unsaved event-editor fields aren't lost.
+	 */
 	function reload(tab) {
+		if (root.classList.contains('eem-sr-embedded')) {
+			post('eem_sr_render_section', { event_id: root.dataset.eventId, tab: tab || activeTab() })
+				.then(function (res) {
+					if (res && res.success) {
+						var body = root.querySelector('.eem-sr-body');
+						if (body) { body.innerHTML = res.data.html; }
+						updateRailCounts(res.data.counts);
+					}
+				});
+			return;
+		}
 		var url = new URL(window.location.href);
 		if (tab) { url.searchParams.set('tab', tab); }
 		window.location.href = url.toString();
+	}
+
+	/** Update the editor rail's Draw Sheets / Results count chips, if present. */
+	function updateRailCounts(counts) {
+		if (!counts) { return; }
+		var ds = document.querySelector('[data-sr-rail-drawsheets]');
+		var rs = document.querySelector('[data-sr-rail-results]');
+		if (ds) { ds.textContent = counts.drawsheets; }
+		if (rs) { rs.textContent = counts.results; }
 	}
 
 	function activeTab() {
