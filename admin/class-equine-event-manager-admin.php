@@ -718,6 +718,20 @@ class EEM_Admin {
 				display: none;
 				z-index: 10000;
 			}
+			/* Connector triangle on the flyout's left edge, pointing back to the
+			   parent row — only visible while the flyout is shown (it's part of
+			   the flyout, which is hidden until hover), like WP's native pointer. */
+			#adminmenu ul.eem-cat-flyout::before {
+				content: '';
+				position: absolute;
+				left: -7px;
+				top: 12px;
+				width: 0;
+				height: 0;
+				border-top: 7px solid transparent;
+				border-bottom: 7px solid transparent;
+				border-right: 7px solid #2c3338;
+			}
 			#adminmenu li.eem-cat-parent:hover > ul.eem-cat-flyout,
 			#adminmenu ul.eem-cat-flyout:hover { display: block; }
 			#adminmenu ul.eem-cat-flyout li { display: block; margin: 0; }
