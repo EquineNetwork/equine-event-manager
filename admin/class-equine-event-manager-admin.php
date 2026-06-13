@@ -115,6 +115,8 @@ class EEM_Admin {
 		add_action( 'admin_init', array( $this, 'maybe_redirect_taxonomy_screens_to_branded_pages' ) );
 		add_action( 'admin_menu', array( $this, 'position_event_manager_after_tec_events' ), 1002 );
 		add_action( 'admin_menu', array( $this, 'normalize_event_manager_submenu_order' ), 1001 );
+		add_action( 'admin_head', array( $this, 'print_category_submenu_nesting_css' ) );
+		add_action( 'admin_footer', array( $this, 'print_category_submenu_nesting_js' ) );
 		add_action( 'admin_menu', array( $this, 'maybe_remove_disabled_native_event_menu_items' ), 999 );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_backend_shell_styles' ) );
 		add_action( 'admin_footer', array( $this, 'print_reservations_list_toolbar_normalizer' ) );
@@ -507,22 +509,26 @@ class EEM_Admin {
 		// CPT URL is still reachable via direct nav (the C4
 		// maybe_redirect_old_list bounce handles accidental hits).
 		// DS-1.B.4: Dashboard pinned to position 0 (above Orders).
+		// Native-events order (Whitney 2026-06-13): Dashboard, Orders, Entries,
+		// Reservations, Stall & RV Charts, then the native-events cluster (Events,
+		// Venues, Producers — each immediately followed by its Categories child so
+		// the hover-reveal nesting works), then Customers, Notifications, Reports,
+		// Settings. When native is off the Events/Venues/Producers/Categories
+		// entries don't exist and the order collapses cleanly.
 		$preferred_order = array(
 			'equine-event-manager-dashboard',
-			self::MENU_SLUG,
-			// Entries sits directly below Orders (custom styled list page).
+			self::MENU_SLUG, // Orders (top-level Event Manager slug).
 			'equine-event-manager-entries',
 			'equine-event-manager-reservations',
 			'equine-event-manager-stall-charts',
-			'equine-event-manager-customers',
-			'equine-event-manager-orders',
-			EEM_Notifications_Page::MENU_SLUG,
 			EEM_Events_List_Page::MENU_SLUG,
 			'equine-event-manager-event-categories',
 			EEM_Venues_Page::MENU_SLUG,
 			'equine-event-manager-venue-categories',
 			EEM_Producers_Page::MENU_SLUG,
 			'equine-event-manager-producer-categories',
+			'equine-event-manager-customers',
+			EEM_Notifications_Page::MENU_SLUG,
 			'equine-event-manager-reports',
 			'equine-event-manager-settings',
 		);
@@ -638,6 +644,76 @@ class EEM_Admin {
 			)
 		);
 		exit;
+	}
+
+	/**
+	 * Print the admin-menu CSS that nests the three Category submenu items as
+	 * hover-revealed sub-items under their parent (Events / Venues / Producers).
+	 * Hidden by default; revealed on parent-row hover, on self-hover, or when the
+	 * sub-item is the current page. Pure CSS — the tagging classes are applied by
+	 * {@see EEM_Admin::print_category_submenu_nesting_js()}. No-op when native
+	 * events are disabled (the category items don't exist then).
+	 *
+	 * @return void
+	 */
+	public function print_category_submenu_nesting_css() {
+		if ( ! EEM_Events::is_native_events_enabled() ) {
+			return;
+		}
+		?>
+		<style id="eem-cat-submenu-nesting">
+			#adminmenu li.eem-cat-subitem { display: none; }
+			#adminmenu li.eem-cat-parent:hover + li.eem-cat-subitem,
+			#adminmenu li.eem-cat-subitem:hover,
+			#adminmenu li.eem-cat-subitem.current { display: block; }
+			#adminmenu .wp-submenu li.eem-cat-subitem a { padding-left: 28px; }
+			#adminmenu .wp-submenu li.eem-cat-subitem a::before {
+				content: '\21B3'; /* downwards arrow with corner leftwards */
+				margin-right: 6px;
+				opacity: .55;
+			}
+		</style>
+		<?php
+	}
+
+	/**
+	 * Print the footer script that tags the three Category submenu list items
+	 * (`.eem-cat-subitem`) and their parent rows (`.eem-cat-parent`) so the nesting
+	 * CSS can hide/reveal them. Runs on every admin page (the sidebar is global);
+	 * no-op when native events are disabled.
+	 *
+	 * @return void
+	 */
+	public function print_category_submenu_nesting_js() {
+		if ( ! EEM_Events::is_native_events_enabled() ) {
+			return;
+		}
+		$slugs = array(
+			'page=equine-event-manager-event-categories',
+			'page=equine-event-manager-venue-categories',
+			'page=equine-event-manager-producer-categories',
+		);
+		?>
+		<script id="eem-cat-submenu-nesting-js">
+		(function () {
+			var slugs = <?php echo wp_json_encode( $slugs ); ?>;
+			var links = document.querySelectorAll('#adminmenu .wp-submenu a');
+			for (var i = 0; i < links.length; i++) {
+				var href = links[i].getAttribute('href') || '';
+				var match = false;
+				for (var s = 0; s < slugs.length; s++) {
+					if (href.indexOf(slugs[s]) > -1) { match = true; break; }
+				}
+				if (!match) { continue; }
+				var li = links[i].closest('li');
+				if (!li) { continue; }
+				li.classList.add('eem-cat-subitem');
+				var prev = li.previousElementSibling;
+				if (prev) { prev.classList.add('eem-cat-parent'); }
+			}
+		})();
+		</script>
+		<?php
 	}
 
 	/**

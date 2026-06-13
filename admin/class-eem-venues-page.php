@@ -328,13 +328,12 @@ class EEM_Venues_Page {
 						<?php self::sortable_th( 'title', __( 'Venue Name', 'equine-event-manager' ), $orderby, $order, $status, $search ); ?>
 						<th><?php esc_html_e( 'City / State', 'equine-event-manager' ); ?></th>
 						<?php self::sortable_th( 'templates', __( 'Facility Templates', 'equine-event-manager' ), $orderby, $order, $status, $search ); ?>
-						<th><?php esc_html_e( 'Status', 'equine-event-manager' ); ?></th>
 						<th style="text-align:right"><?php esc_html_e( 'Actions', 'equine-event-manager' ); ?></th>
 					</tr>
 				</thead>
 				<tbody>
 					<?php if ( empty( $rows ) ) : ?>
-						<tr><td colspan="5" class="eem-table-empty"><?php esc_html_e( 'No venues match your filters.', 'equine-event-manager' ); ?></td></tr>
+						<tr><td colspan="4" class="eem-table-empty"><?php esc_html_e( 'No venues match your filters.', 'equine-event-manager' ); ?></td></tr>
 					<?php else : ?>
 						<?php foreach ( $rows as $r ) : ?>
 							<?php
@@ -357,7 +356,6 @@ class EEM_Venues_Page {
 										<span class="eem-venue-muted">—</span>
 									<?php endif; ?>
 								</td>
-								<td><?php self::status_badge( (string) $r['status'] ); ?></td>
 								<td>
 									<div class="eem-actions-cell">
 										<div class="eem-row-menu-wrap">
@@ -395,7 +393,6 @@ class EEM_Venues_Page {
 						);
 						echo esc_html( implode( ' · ', $bits ) );
 					?></div>
-					<div class="eem-mobile-card-bottom"><?php self::status_badge( (string) $r['status'] ); ?></div>
 				</div>
 			<?php endforeach; ?>
 		</div>
@@ -418,21 +415,6 @@ class EEM_Venues_Page {
 			esc_url( $href ),
 			esc_html( $label )
 		);
-	}
-
-	/**
-	 * Status pill for a venue post status.
-	 *
-	 * @return void
-	 */
-	private static function status_badge( string $status ): void {
-		$map = array(
-			'publish' => array( 'eem-status-active', __( 'Published', 'equine-event-manager' ) ),
-			'draft'   => array( 'eem-status-draft', __( 'Draft', 'equine-event-manager' ) ),
-			'trash'   => array( 'eem-status-trashed', __( 'Trash', 'equine-event-manager' ) ),
-		);
-		$cfg = $map[ $status ] ?? array( 'eem-status-archived', ucfirst( $status ) );
-		printf( '<span class="eem-status-badge %s">%s</span>', esc_attr( $cfg[0] ), esc_html( $cfg[1] ) );
 	}
 
 	/**

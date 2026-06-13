@@ -1376,6 +1376,10 @@ input.eem-price-input:focus {
 .eem-status-archived::before    { background: #94a3b8; }
 .eem-status-trashed             { background: #FFF1F2; color: var(--eem-error-text); border: 1px solid var(--eem-error-border); }
 .eem-status-trashed::before     { background: var(--eem-error-accent); }
+/* Event lifecycle badges (Events list Status column) — Upcoming=blue,
+   Ongoing reuses .eem-status-active (green), Past reuses .eem-status-archived. */
+.eem-status-upcoming            { background: #EEF4FF; color: #1668F2; border: 1px solid #c0d8ff; }
+.eem-status-upcoming::before    { background: #1668F2; }
 
 /* Type badges — stall/rv/addon/group, no dot, color-tinted bg only */
 .eem-type-badge {
@@ -9350,7 +9354,9 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
    cards (.eem-stall-chart-stat-card): white bg, thin gray border, 4px radius,
    uppercase gray label + Space Grotesk navy number. (Whitney 2026-06-13: "make
    them look like the ones on stall & rv charts".) */
-.eem-venues-stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+/* Full-bleed stats band — padded so the white cards inset from the page-wrap
+   edges (Whitney 2026-06-13: cards were flush to the left/right borders). */
+.eem-venues-stats { display: flex; gap: 12px; flex-wrap: wrap; padding: 16px 22px; margin-bottom: 0; border-bottom: 1px solid #dcdcde; }
 .eem-stat-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 4px; padding: 14px 18px; flex: 1; min-width: 140px; }
 .eem-stat-card-label { font-size: 10.5px; font-weight: 700; color: #8c8f94; letter-spacing: .09em; text-transform: uppercase; margin-bottom: 8px; }
 .eem-stat-card-num { font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700; color: var(--eem-navy, #031B4E); line-height: 1; }
@@ -9380,7 +9386,7 @@ a.eem-tpl-link:focus { font-size: 12px; color: var(--eem-electric, #1668F2); mar
 .eem-mobile-venues .eem-mobile-card-sub { font-size: 12.5px; color: #50575e; margin: 4px 0 6px; }
 
 @media (max-width: 782px) {
-	.eem-venues-stats { gap: 8px; }
+	.eem-venues-stats { gap: 8px; padding: 12px 14px; }
 	.eem-stat-card { flex: 1 1 calc(50% - 4px); min-width: 0; }
 }
 
@@ -9393,13 +9399,22 @@ a.eem-tpl-link:focus { font-size: 12px; color: var(--eem-electric, #1668F2); mar
 
 /* Split body: form panel (fixed) + table panel (fluid). */
 .eem-term-split { display: flex; align-items: flex-start; gap: 0; }
-.eem-term-form-panel { width: 320px; min-width: 280px; flex-shrink: 0; border-right: 1px solid var(--eem-border, #dcdcde); padding: 4px 22px 8px 0; }
+.eem-term-form-panel { width: 320px; min-width: 280px; flex-shrink: 0; border-right: 1px solid var(--eem-border, #dcdcde); padding: 20px 22px 28px; }
 .eem-term-form-title { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 700; color: var(--eem-navy, #031B4E); margin: 0 0 18px; }
 .eem-term-form-actions { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
-.eem-term-table-panel { flex: 1; min-width: 0; padding-left: 22px; }
+/* Stack the form fields in the narrow panel (label above a full-width input) —
+   the shared .eem-field-row is a 200px label grid that squishes the input here. */
+.eem-term-form-panel .eem-field-row { display: block; padding: 0; border-bottom: none; margin-bottom: 16px; }
+.eem-term-form-panel .eem-field-label { padding-top: 0; margin-bottom: 5px; }
+.eem-term-form-panel .eem-field-input,
+.eem-term-form-panel .eem-field-select,
+.eem-term-form-panel .eem-field-textarea { width: 100%; }
+.eem-term-form-panel .eem-field-hint { margin-top: 5px; }
+.eem-term-table-panel { flex: 1; min-width: 0; padding: 0; }
 
-/* Toolbar: bulk form + search form + count, on one flex row. */
-.eem-term-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 0 0 12px; border-bottom: 1px solid var(--eem-border, #dcdcde); margin-bottom: 0; }
+/* Toolbar: bulk form + search form + count, on one flex row. Internal padding
+   so the search box + Apply/Search buttons inset from the panel edges. */
+.eem-term-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 16px 18px 12px; border-bottom: 1px solid var(--eem-border, #dcdcde); margin-bottom: 0; }
 .eem-term-bulk-form, .eem-term-search-form { display: flex; align-items: center; gap: 8px; margin: 0; }
 
 /* Term name cell — bold navy, no underline (no-underline rule). */
@@ -9418,10 +9433,17 @@ a.eem-term-name:hover { color: var(--eem-electric, #1668F2); }
 .eem-term-count-zero { font-weight: 400; color: #8c8f94; }
 .eem-term-muted { color: #8c8f94; }
 
-.eem-term-notice { margin: 0 0 16px; }
+.eem-term-notice { margin: 16px 22px 0; }
+
+/* Align the term table's edge cells with the toolbar's 18px inset. */
+.eem-term-table-panel .eem-table th:first-child,
+.eem-term-table-panel .eem-table td:first-child { padding-left: 18px; }
+.eem-term-table-panel .eem-table th:last-child,
+.eem-term-table-panel .eem-table td:last-child { padding-right: 18px; }
 
 @media (max-width: 767px) {
 	.eem-term-split { flex-direction: column; }
-	.eem-term-form-panel { width: 100%; border-right: none; border-bottom: 1px solid var(--eem-border, #dcdcde); padding: 0 0 18px; }
-	.eem-term-table-panel { padding-left: 0; padding-top: 18px; }
+	.eem-term-form-panel { width: 100%; border-right: none; border-bottom: 1px solid var(--eem-border, #dcdcde); padding: 18px 16px; }
+	.eem-term-table-panel { padding: 0; }
+	.eem-term-toolbar { padding: 14px 16px 12px; }
 }

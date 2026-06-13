@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equine Event Manager – Add Event</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
+a{text-decoration:none}
+a:hover{text-decoration:none}
+
+/* ── WP SHELL ── */
+.wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;position:sticky;top:0;z-index:300}
+.wp-admin-bar span{font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-admin-bar span.site{color:#fff;font-weight:600}
+.wp-body{display:flex;flex:1}
+.wp-sidebar{width:160px;min-width:160px;background:#1d2327;min-height:calc(100vh - 32px)}
+.wp-sidebar-item{padding:8px 12px;font-size:13px;color:#c3c4c7;cursor:pointer;display:flex;align-items:center;gap:8px;border-left:3px solid transparent}
+.wp-sidebar-item:hover{background:#2c3338;color:#fff}
+.wp-sidebar-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 0}
+.wp-sidebar-label{padding:8px 12px 4px;font-size:10px;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.wp-sidebar-sub{padding:6px 12px 6px 28px;font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-sidebar-sub:hover{color:#fff}
+.wp-sidebar-sub.active{color:#90c4ff;font-weight:600}
+
+/* ── CONTENT ── */
+.wp-content{flex:1;padding:12px 20px 60px;min-width:0}
+
+.breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.breadcrumb-logo-box{width:160px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb;flex-shrink:0}
+.breadcrumb-sep{font-size:13px;color:#8c8f94}
+.breadcrumb-page{font-size:13px;color:#50575e}
+.breadcrumb-page a{color:#50575e}
+.breadcrumb-page a:hover{color:#1668F2}
+
+/* ── PLUGIN-WRAP ── */
+.plugin-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
+
+/* PAGE HEADER */
+.plugin-header{padding:18px 22px;border-bottom:1px solid #dcdcde}
+.plugin-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;line-height:1.2;margin-bottom:4px}
+.plugin-subtitle{font-size:13px;color:#6B7A99;line-height:1.45}
+
+/* ── EDIT BODY ── */
+.edit-body{padding:18px 22px;display:grid;grid-template-columns:1fr 300px;gap:18px;align-items:start}
+.edit-main{display:flex;flex-direction:column;gap:14px;min-width:0}
+.edit-rail{display:flex;flex-direction:column;gap:14px;position:sticky;top:44px}
+
+/* ── INNER CARDS ── */
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden}
+
+.section-header{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;cursor:pointer;user-select:none;gap:10px;background:#fff}
+.section-header.is-open{border-bottom:1px solid #f0f0f1}
+.section-header-left{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
+.section-icon{width:28px;height:28px;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.section-icon svg{width:14px;height:14px}
+.icon-blue{background:#EEF4FF;color:#1668F2}
+.icon-green{background:#F0FDF4;color:#15803d}
+.icon-purple{background:#F5F3FF;color:#6d28d9}
+.icon-orange{background:#FFF7ED;color:#c2410c}
+.icon-teal{background:#F0FDFA;color:#0d9488}
+.icon-navy{background:#EEF4FF;color:#031B4E}
+.icon-rose{background:#FFF1F2;color:#be123c}
+.section-title{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#031B4E}
+.section-badge{font-size:11px;font-weight:600;background:#f3f4f5;color:#6B7A99;padding:2px 8px;border-radius:10px;margin-left:6px}
+.section-header-right{display:flex;align-items:center;gap:14px;flex-shrink:0}
+.section-chevron{color:#8c8f94;transition:transform .2s;flex-shrink:0}
+.section-chevron svg{width:16px;height:16px}
+.section-collapsed .section-chevron{transform:rotate(-90deg)}
+
+.enable-toggle{display:flex;align-items:center;gap:7px;font-size:12px;color:#6B7A99;flex-shrink:0;cursor:pointer}
+.enable-toggle .enable-label{font-weight:500}
+
+.toggle{width:36px;height:20px;border-radius:10px;position:relative;cursor:pointer;flex-shrink:0;transition:background .15s}
+.toggle.on{background:#1668F2}
+.toggle.off{background:#c3c4c7}
+.toggle::after{content:'';position:absolute;width:14px;height:14px;background:#fff;border-radius:50%;top:3px;transition:left .15s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle.on::after{left:19px}
+.toggle.off::after{left:3px}
+
+.section-body{padding:16px 18px}
+.section-body.hidden{display:none}
+.section-body.disabled{opacity:.55;pointer-events:none}
+.section-disabled-note{font-size:12.5px;color:#6B7A99;font-style:italic;padding:10px 14px;background:#f3f4f5;border-radius:4px;margin-bottom:14px}
+
+/* ── FIELD ROWS ── */
+.field-row{display:grid;grid-template-columns:200px 1fr;gap:16px;align-items:start;padding:12px 0;border-bottom:1px solid #f0f0f1}
+.field-row:first-child{padding-top:0}
+.field-row:last-child{border-bottom:none;padding-bottom:0}
+.field-label{font-size:13.5px;font-weight:600;color:#1d2327;padding-top:9px;line-height:1.4}
+.field-label-sub{font-size:12px;color:#6B7A99;font-weight:400;margin-top:2px}
+.field-control{display:flex;flex-direction:column;gap:6px}
+.field-input{padding:8px 12px;border:1px solid #8c8f94;border-radius:4px;font-size:13.5px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;width:100%;outline:none}
+.field-input:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
+.field-input::placeholder{color:#b0b0b0}
+.field-textarea{padding:8px 12px;border:1px solid #8c8f94;border-radius:4px;font-size:13.5px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;width:100%;resize:vertical;min-height:100px;line-height:1.6;outline:none}
+.field-textarea:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
+.field-select{padding:8px 28px 8px 12px;border:1px solid #8c8f94;border-radius:4px;font-size:13.5px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center;appearance:none;width:100%;outline:none;cursor:pointer}
+.field-select:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
+.field-hint{font-size:12px;color:#6B7A99;line-height:1.6}
+
+/* Title field — large */
+.title-input{padding:10px 14px;border:1px solid #8c8f94;border-radius:4px;font-size:17px;font-family:'Space Grotesk',sans-serif;font-weight:600;color:#031B4E;background:#fff;width:100%;outline:none}
+.title-input:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
+.title-input::placeholder{color:#b0b0b0;font-weight:400}
+
+/* Date range */
+.date-range{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.date-sep{font-size:13px;color:#8c8f94;white-space:nowrap}
+.date-input{padding:8px 12px;border:1px solid #8c8f94;border-radius:4px;font-size:13.5px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;outline:none;max-width:180px}
+.date-input:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
+
+/* Button label input */
+.btn-label-wrap{display:flex;align-items:center;gap:0;max-width:320px}
+.btn-label-prefix{padding:8px 12px;background:#f3f4f5;border:1px solid #8c8f94;border-right:none;border-radius:4px 0 0 4px;font-size:13px;color:#6B7A99;font-weight:500;white-space:nowrap}
+.btn-label-input{padding:8px 12px;border:1px solid #8c8f94;border-radius:0 4px 4px 0;font-size:13.5px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;flex:1;outline:none}
+.btn-label-input:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
+
+/* File upload row */
+.file-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.file-name{padding:8px 12px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;color:#8c8f94;font-style:italic;flex:1;min-width:160px;background:#f3f4f5}
+.btn-upload{padding:7px 14px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-weight:500;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;cursor:pointer;white-space:nowrap}
+.btn-upload:hover{background:#f6f7f7}
+
+/* Toggle chip */
+.toggle-chip{display:inline-flex;align-items:center;gap:10px;padding:8px 14px;border:1px solid #8c8f94;border-radius:4px;cursor:pointer;background:#fff;user-select:none}
+.toggle-chip:hover{border-color:#1668F2}
+.toggle-chip span{font-size:13.5px;color:#1d2327;font-weight:500}
+
+/* Checklist (categories) */
+.checklist{display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:4px;padding:10px 12px;background:#fafafa}
+.checklist-item{display:flex;align-items:center;gap:8px;font-size:13px;color:#1d2327;cursor:pointer}
+.checklist-item input[type=checkbox]{accent-color:#1668F2;width:14px;height:14px;cursor:pointer}
+.checklist-empty{font-size:12.5px;color:#8c8f94;font-style:italic}
+.checklist-footer{margin-top:8px}
+.add-term-link{font-size:12.5px;color:#1668F2;font-weight:600;cursor:pointer}
+.add-term-link:hover{color:#1257d1}
+
+/* Status checklist inline section */
+.status-options{display:flex;gap:8px;flex-wrap:wrap}
+.status-opt{display:flex;align-items:center;gap:7px;padding:8px 14px;border:1px solid #8c8f94;border-radius:4px;cursor:pointer;font-size:13.5px;font-weight:500;color:#1d2327;background:#fff;user-select:none}
+.status-opt:hover{border-color:#1668F2}
+.status-opt.active{border-color:#1668F2;background:#EEF4FF;color:#1668F2}
+
+/* Progress indicator */
+.completeness-bar{background:#f3f4f5;border:1px solid #dcdcde;border-radius:4px;padding:14px 16px}
+.completeness-label{font-size:11.5px;font-weight:700;color:#6B7A99;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
+.completeness-track{height:6px;background:#e5e7eb;border-radius:3px;overflow:hidden;margin-bottom:10px}
+.completeness-fill{height:100%;background:#1668F2;border-radius:3px;width:35%}
+.completeness-items{display:flex;flex-direction:column;gap:5px}
+.comp-item{display:flex;align-items:center;gap:7px;font-size:12.5px}
+.comp-item.done{color:#15803d}
+.comp-item.todo{color:#6B7A99}
+.comp-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.comp-item.done .comp-dot{background:#16a34a}
+.comp-item.todo .comp-dot{background:#c3c4c7}
+
+/* ── RIGHT RAIL ── */
+.rail-card{background:#fff;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden}
+.rail-header{padding:11px 16px;border-bottom:1px solid #dcdcde;background:#f3f4f5;display:flex;align-items:center;justify-content:space-between}
+.rail-title{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#031B4E}
+.rail-body{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.rail-hint{font-size:12.5px;color:#6B7A99;line-height:1.5}
+
+/* Publish meta */
+.publish-row{display:flex;align-items:center;gap:8px;font-size:13px;color:#1d2327}
+.publish-row svg{width:14px;height:14px;color:#6B7A99;flex-shrink:0}
+.publish-row strong{color:#031B4E;font-weight:600}
+.publish-row a{color:#1668F2;font-size:12px;font-weight:600;margin-left:auto}
+.publish-row a:hover{color:#1257d1}
+.publish-divider{height:1px;background:#f0f0f1;margin:4px 0}
+
+/* Rail buttons */
+.btn-save-draft{width:100%;background:#fff;color:#1d2327;border:1px solid #8c8f94;padding:9px;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
+.btn-save-draft:hover{background:#f6f7f7}
+.btn-publish{width:100%;background:#1668F2;color:#fff;border:1px solid #1668F2;padding:10px;border-radius:4px;font-size:13.5px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
+.btn-publish:hover{background:#1257d1;border-color:#1257d1}
+.btn-preview{width:100%;background:#fff;color:#1668F2;border:1px solid #c0d8ff;padding:9px;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn-preview:hover{background:#EEF4FF;border-color:#1668F2}
+.btn-preview svg{width:13px;height:13px}
+
+/* Rail select */
+.rail-select{padding:8px 28px 8px 12px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center;appearance:none;width:100%;outline:none;cursor:pointer}
+.rail-select:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
+.rail-label{font-size:12px;font-weight:600;color:#1d2327;margin-bottom:4px;display:block}
+
+/* Featured image placeholder */
+.featured-img-placeholder{border:2px dashed #c3c4c7;border-radius:4px;padding:24px;text-align:center;cursor:pointer;background:#fafafa}
+.featured-img-placeholder:hover{border-color:#1668F2;background:#EEF4FF}
+.featured-img-placeholder svg{width:24px;height:24px;color:#8c8f94;margin-bottom:6px}
+.featured-img-placeholder p{font-size:12.5px;color:#6B7A99}
+.featured-img-placeholder strong{color:#1668F2;font-size:13px}
+
+/* Sticky mobile save */
+.sticky-save{display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #dcdcde;padding:12px 16px;z-index:200;gap:8px}
+.sticky-save .btn-publish,.sticky-save .btn-save-draft{width:auto;flex:1}
+
+/* ── RESPONSIVE ── */
+@media(max-width:1024px){
+  .wp-sidebar{display:none}
+  .wp-content{padding:10px 14px 80px}
+  .edit-body{grid-template-columns:1fr 260px;padding:14px 16px}
+  .field-row{grid-template-columns:170px 1fr}
+}
+@media(max-width:767px){
+  .wp-admin-bar span:not(.site):not(:first-child):not(:last-child){display:none}
+  .wp-content{padding:8px 10px 90px}
+  .plugin-header{padding:14px}
+  .plugin-title{font-size:18px}
+  .edit-body{grid-template-columns:1fr;padding:12px;gap:14px}
+  .edit-rail{position:static;order:-1}
+  .field-row{grid-template-columns:1fr;gap:6px;padding:10px 0}
+  .field-label{padding-top:0}
+  .sticky-save{display:flex}
+  .section-header{padding:11px 14px}
+  .section-body{padding:12px 14px}
+  .enable-toggle .enable-label{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="wp-admin-bar">
+  <span>&#9776;</span>
+  <span class="site">My Equestrian Site</span>
+  <span>+ New</span>
+  <span style="margin-left:auto">Howdy, whitney</span>
+</div>
+
+<div class="wp-body">
+  <nav class="wp-sidebar">
+    <div class="wp-sidebar-item">Dashboard</div>
+    <div class="wp-sidebar-item">Media</div>
+    <div class="wp-sidebar-item">Posts</div>
+    <div class="wp-sidebar-item">Pages</div>
+    <div class="wp-sidebar-sep"></div>
+    <div class="wp-sidebar-label">Event Manager</div>
+    <div class="wp-sidebar-sub active">Events</div>
+    <div class="wp-sidebar-sub">Orders</div>
+    <div class="wp-sidebar-sub">Reservations</div>
+    <div class="wp-sidebar-sub">Stall Charts</div>
+    <div class="wp-sidebar-sub">Venues</div>
+    <div class="wp-sidebar-sub">Producers</div>
+    <div class="wp-sidebar-sub">Reports</div>
+    <div class="wp-sidebar-sub">Settings</div>
+  </nav>
+
+  <main class="wp-content">
+
+    <div class="breadcrumb">
+      <div class="breadcrumb-logo-box">Plugin Logo</div>
+      <span class="breadcrumb-sep">/</span>
+      <span class="breadcrumb-page"><a href="#">Events</a> &nbsp;/&nbsp; Add Event</span>
+    </div>
+
+    <div class="plugin-wrap">
+
+      <header class="plugin-header">
+        <h1 class="plugin-title">Add Event</h1>
+        <div class="plugin-subtitle">Create a new event. Set the dates, venue, producer, and content, then link a reservation setup to enable stall and RV bookings.</div>
+      </header>
+
+      <div class="edit-body">
+
+        <!-- ══════════ MAIN COLUMN ══════════ -->
+        <div class="edit-main">
+
+          <!-- ── Title ── -->
+          <section class="card" id="card-title">
+            <div class="section-header is-open" onclick="toggleCollapse('title')">
+              <div class="section-header-left">
+                <div class="section-icon icon-navy">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h10M4 18h7"/></svg>
+                </div>
+                <span class="section-title">Event Title</span>
+              </div>
+              <div class="section-header-right">
+                <div class="section-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+              </div>
+            </div>
+            <div class="section-body" id="body-title">
+              <input class="title-input" type="text" placeholder="Enter event title…">
+              <div class="field-hint" style="margin-top:8px">This becomes the page title and is shown in all event cards and listings.</div>
+            </div>
+          </section>
+
+          <!-- ── Event Details ── -->
+          <section class="card" id="card-details">
+            <div class="section-header is-open" onclick="toggleCollapse('details')">
+              <div class="section-header-left">
+                <div class="section-icon icon-blue">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                </div>
+                <span class="section-title">Event Details</span>
+              </div>
+              <div class="section-header-right">
+                <div class="section-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+              </div>
+            </div>
+            <div class="section-body" id="body-details">
+
+              <div class="field-row">
+                <div class="field-label">Event Dates
+                  <div class="field-label-sub">Start and end date</div>
+                </div>
+                <div class="field-control">
+                  <div class="date-range">
+                    <input class="date-input" type="date" placeholder="mm/dd/yyyy">
+                    <span class="date-sep">to</span>
+                    <input class="date-input" type="date" placeholder="mm/dd/yyyy">
+                  </div>
+                </div>
+              </div>
+
+              <div class="field-row">
+                <div class="field-label">Venue</div>
+                <div class="field-control">
+                  <select class="field-select">
+                    <option value="">Select a venue…</option>
+                    <option>Georgia National Fairgrounds</option>
+                    <option>Katy Prairie Arena</option>
+                    <option>Fort Worth Stockyards</option>
+                    <option>Florida Horse Park</option>
+                    <option>Lancaster Event Center</option>
+                  </select>
+                  <span class="field-hint">Can't find it? <a href="#" style="color:#1668F2;font-weight:600">Add a new venue</a></span>
+                </div>
+              </div>
+
+              <div class="field-row">
+                <div class="field-label">Producer</div>
+                <div class="field-control">
+                  <select class="field-select">
+                    <option value="">Select a producer…</option>
+                    <option>NRHA Southeast</option>
+                    <option>Gulf Coast Equine Events</option>
+                    <option>Lone Star Productions</option>
+                    <option>Black Hills Rodeo Co.</option>
+                  </select>
+                  <span class="field-hint">Can't find it? <a href="#" style="color:#1668F2;font-weight:600">Add a new producer</a></span>
+                </div>
+              </div>
+
+              <div class="field-row">
+                <div class="field-label">Location Override
+                  <div class="field-label-sub">Optional</div>
+                </div>
+                <div class="field-control">
+                  <input class="field-input" type="text" placeholder="e.g. Perry, GA – Mane Arena">
+                  <span class="field-hint">Shown on event cards instead of the venue city/state when you need something more specific.</span>
+                </div>
+              </div>
+
+            </div>
+          </section>
+
+          <!-- ── Description ── -->
+          <section class="card" id="card-desc">
+            <div class="section-header is-open" onclick="toggleCollapse('desc')">
+              <div class="section-header-left">
+                <div class="section-icon icon-blue">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                </div>
+                <span class="section-title">Description</span>
+              </div>
+              <div class="section-header-right">
+                <div class="section-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+              </div>
+            </div>
+            <div class="section-body" id="body-desc">
+              <div class="field-row">
+                <div class="field-label">Event Description
+                  <div class="field-label-sub">Shown on the event page</div>
+                </div>
+                <div class="field-control">
+                  <textarea class="field-textarea" placeholder="Describe the event for attendees…"></textarea>
+                  <span class="field-hint">Displayed on the public event page. Supports plain text.</span>
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field-label">Excerpt
+                  <div class="field-label-sub">Optional short summary</div>
+                </div>
+                <div class="field-control">
+                  <textarea class="field-textarea" style="min-height:70px" placeholder="Optional hand-crafted summary for listings and widgets…"></textarea>
+                  <span class="field-hint">Used in event cards and widgets if set; otherwise auto-generated from the description.</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ── Connections & Media ── -->
+          <section class="card" id="card-media">
+            <div class="section-header is-open" onclick="toggleCollapse('media')">
+              <div class="section-header-left">
+                <div class="section-icon icon-purple">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                </div>
+                <span class="section-title">Connections &amp; Media</span>
+              </div>
+              <div class="section-header-right">
+                <div class="section-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+              </div>
+            </div>
+            <div class="section-body" id="body-media">
+
+              <div class="field-row">
+                <div class="field-label">Button Label
+                  <div class="field-label-sub">CTA on event cards</div>
+                </div>
+                <div class="field-control">
+                  <div class="btn-label-wrap">
+                    <span class="btn-label-prefix">Button</span>
+                    <input class="btn-label-input" type="text" value="Reserve Now">
+                  </div>
+                  <span class="field-hint">Text shown on the primary action button on the event page and cards.</span>
+                </div>
+              </div>
+
+              <div class="field-row">
+                <div class="field-label">Facebook URL</div>
+                <div class="field-control">
+                  <input class="field-input" type="url" placeholder="https://facebook.com/…">
+                </div>
+              </div>
+
+              <div class="field-row">
+                <div class="field-label">Instagram URL</div>
+                <div class="field-control">
+                  <input class="field-input" type="url" placeholder="https://instagram.com/…">
+                </div>
+              </div>
+
+              <div class="field-row">
+                <div class="field-label">Event Flyer PDF
+                  <div class="field-label-sub">Optional</div>
+                </div>
+                <div class="field-control">
+                  <div class="file-row">
+                    <div class="file-name">No file selected</div>
+                    <button class="btn-upload">Add File</button>
+                  </div>
+                  <span class="field-hint">Customers can open or download the flyer from the event page.</span>
+                </div>
+              </div>
+
+              <div class="field-row">
+                <div class="field-label">Featured Event
+                  <div class="field-label-sub">Widgets &amp; shortcodes</div>
+                </div>
+                <div class="field-control">
+                  <label class="toggle-chip" onclick="this.querySelector('.toggle').classList.toggle('on');this.querySelector('.toggle').classList.toggle('off')">
+                    <div class="toggle off"></div>
+                    <span>Include in featured widgets and shortcodes</span>
+                  </label>
+                </div>
+              </div>
+
+            </div>
+          </section>
+
+          <!-- ── Link Reservation (optional, collapsible) ── -->
+          <section class="card section-collapsed" id="card-reservation">
+            <div class="section-header" onclick="toggleCollapse('reservation')">
+              <div class="section-header-left">
+                <div class="section-icon icon-teal">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                </div>
+                <span class="section-title">Link Reservation</span>
+              </div>
+              <div class="section-header-right">
+                <div class="enable-toggle" onclick="event.stopPropagation();toggleEnabled('reservation')">
+                  <div class="toggle off" data-section="reservation"></div>
+                  <span class="enable-label">Disabled</span>
+                </div>
+                <div class="section-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+              </div>
+            </div>
+            <div class="section-body hidden disabled" id="body-reservation">
+              <div class="section-disabled-note">Enable this to connect a reservation setup. The event page will render the reservation booking flow once linked.</div>
+              <div class="field-row">
+                <div class="field-label">Reservation Setup
+                  <div class="field-label-sub">Choose or create</div>
+                </div>
+                <div class="field-control">
+                  <select class="field-select">
+                    <option value="">No linked reservation</option>
+                    <option>2026 Southeast Region Super Sort – Reservation</option>
+                    <option>2026 Gulf Coast Classic – Reservation</option>
+                  </select>
+                  <span class="field-hint">Choose an existing reservation setup, or <a href="#" style="color:#1668F2;font-weight:600">create a new one</a> after saving this event.</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+        </div><!-- /edit-main -->
+
+        <!-- ══════════ RIGHT RAIL ══════════ -->
+        <aside class="edit-rail">
+
+          <!-- Publish -->
+          <div class="rail-card">
+            <div class="rail-header">
+              <span class="rail-title">Publish</span>
+            </div>
+            <div class="rail-body">
+              <button class="btn-save-draft">Save Draft</button>
+              <button class="btn-preview">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                Preview
+              </button>
+              <div class="publish-divider"></div>
+              <div class="publish-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Status: <strong>Draft</strong>
+                <a href="#">Edit</a>
+              </div>
+              <div class="publish-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                Visibility: <strong>Public</strong>
+                <a href="#">Edit</a>
+              </div>
+              <div class="publish-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Publish: <strong>Immediately</strong>
+                <a href="#">Edit</a>
+              </div>
+              <div class="publish-divider"></div>
+              <button class="btn-publish">Publish Event</button>
+            </div>
+          </div>
+
+          <!-- Event Categories -->
+          <div class="rail-card">
+            <div class="rail-header">
+              <span class="rail-title">Event Categories</span>
+            </div>
+            <div class="rail-body">
+              <div class="checklist">
+                <label class="checklist-item"><input type="checkbox"> Western</label>
+                <label class="checklist-item" style="padding-left:14px"><input type="checkbox"> — Reining</label>
+                <label class="checklist-item" style="padding-left:14px"><input type="checkbox"> — Cutting</label>
+                <label class="checklist-item"><input type="checkbox"> English</label>
+                <label class="checklist-item"><input type="checkbox"> Speed Events</label>
+              </div>
+              <div class="checklist-footer">
+                <a class="add-term-link" href="#">+ Add New Category</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Featured Image -->
+          <div class="rail-card">
+            <div class="rail-header">
+              <span class="rail-title">Featured Image</span>
+            </div>
+            <div class="rail-body">
+              <div class="featured-img-placeholder">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <p><strong>Set featured image</strong></p>
+                <p>Click to upload or select from Media Library</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Completeness -->
+          <div class="rail-card">
+            <div class="rail-header">
+              <span class="rail-title">Event Setup</span>
+            </div>
+            <div class="rail-body">
+              <div class="completeness-bar">
+                <div class="completeness-label">Progress</div>
+                <div class="completeness-track"><div class="completeness-fill"></div></div>
+                <div class="completeness-items">
+                  <div class="comp-item todo"><div class="comp-dot"></div>Add title</div>
+                  <div class="comp-item todo"><div class="comp-dot"></div>Set event dates</div>
+                  <div class="comp-item todo"><div class="comp-dot"></div>Select a venue</div>
+                  <div class="comp-item todo"><div class="comp-dot"></div>Add description</div>
+                  <div class="comp-item todo"><div class="comp-dot"></div>Set featured image</div>
+                  <div class="comp-item todo"><div class="comp-dot"></div>Link reservation <span style="color:#8c8f94;font-size:11px;margin-left:4px">(optional)</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </aside>
+
+      </div><!-- /edit-body -->
+    </div><!-- /plugin-wrap -->
+  </main>
+</div>
+
+<!-- Mobile sticky save -->
+<div class="sticky-save">
+  <button class="btn-save-draft">Save Draft</button>
+  <button class="btn-publish">Publish Event</button>
+</div>
+
+<script>
+function toggleCollapse(id){
+  const card=document.getElementById('card-'+id);
+  const body=document.getElementById('body-'+id);
+  const header=card.querySelector('.section-header');
+  const sectionToggle=card.querySelector('.toggle[data-section]');
+  if(!card||!body) return;
+  if(sectionToggle&&sectionToggle.classList.contains('off')) return;
+  const collapsed=card.classList.toggle('section-collapsed');
+  body.classList.toggle('hidden',collapsed);
+  header.classList.toggle('is-open',!collapsed);
+}
+
+function toggleEnabled(id){
+  const card=document.getElementById('card-'+id);
+  const body=document.getElementById('body-'+id);
+  const header=card.querySelector('.section-header');
+  const sectionToggle=card.querySelector('.toggle[data-section]');
+  const label=card.querySelector('.enable-label');
+  if(!sectionToggle) return;
+  const turningOn=sectionToggle.classList.contains('off');
+  sectionToggle.classList.toggle('on',turningOn);
+  sectionToggle.classList.toggle('off',!turningOn);
+  if(label) label.textContent=turningOn?'Enabled':'Disabled';
+  body.classList.toggle('disabled',!turningOn);
+  if(turningOn){
+    card.classList.remove('section-collapsed');
+    body.classList.remove('hidden');
+    header.classList.add('is-open');
+  } else {
+    card.classList.add('section-collapsed');
+    body.classList.add('hidden');
+    header.classList.remove('is-open');
+  }
+}
+</script>
+
+</body>
+</html>

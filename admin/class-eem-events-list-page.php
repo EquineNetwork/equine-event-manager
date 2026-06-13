@@ -413,7 +413,7 @@ class EEM_Events_List_Page {
 								<td><?php echo '' !== $r['date_label'] ? esc_html( $r['date_label'] ) : '<span class="eem-venue-muted">—</span>'; ?></td>
 								<td><?php echo '' !== $r['venue'] ? esc_html( $r['venue'] ) : '<span class="eem-venue-muted">—</span>'; ?></td>
 								<td><?php echo '' !== $r['producer'] ? esc_html( $r['producer'] ) : '<span class="eem-venue-muted">—</span>'; ?></td>
-								<td><?php self::status_badge( (string) $r['status'] ); ?></td>
+								<td><?php self::lifecycle_badge( (string) $r['start'], (string) $r['end'] ); ?></td>
 								<td>
 									<div class="eem-actions-cell">
 										<div class="eem-row-menu-wrap">
@@ -448,7 +448,7 @@ class EEM_Events_List_Page {
 						if ( '' !== $place ) { $bits[] = $place; }
 						echo esc_html( implode( ' — ', $bits ) );
 					?></div>
-					<div class="eem-mobile-card-bottom"><?php self::status_badge( (string) $r['status'] ); ?></div>
+					<div class="eem-mobile-card-bottom"><?php self::lifecycle_badge( (string) $r['start'], (string) $r['end'] ); ?></div>
 				</div>
 			<?php endforeach; ?>
 		</div>
@@ -478,18 +478,32 @@ class EEM_Events_List_Page {
 	}
 
 	/**
-	 * Status pill for an event post status.
+	 * Lifecycle pill derived from the event's dates (NOT the WP post status):
+	 * Upcoming (starts in the future), Ongoing (today within start–end), or
+	 * Past Event (ended). Undated events render a muted dash.
 	 *
+	 * @param string $start Y-m-d start date.
+	 * @param string $end   Y-m-d end date.
 	 * @return void
 	 */
-	private static function status_badge( string $status ): void {
-		$map = array(
-			'publish' => array( 'eem-status-active', __( 'Published', 'equine-event-manager' ) ),
-			'draft'   => array( 'eem-status-draft', __( 'Draft', 'equine-event-manager' ) ),
-			'trash'   => array( 'eem-status-trashed', __( 'Trash', 'equine-event-manager' ) ),
-		);
-		$cfg = $map[ $status ] ?? array( 'eem-status-archived', ucfirst( $status ) );
-		printf( '<span class="eem-status-badge %s">%s</span>', esc_attr( $cfg[0] ), esc_html( $cfg[1] ) );
+	private static function lifecycle_badge( string $start, string $end ): void {
+		if ( '' === $start ) {
+			echo '<span class="eem-venue-muted">—</span>';
+			return;
+		}
+		$today = gmdate( 'Y-m-d' );
+		$end   = '' !== $end ? $end : $start;
+		if ( $end < $today ) {
+			$class = 'eem-status-archived';
+			$label = __( 'Past Event', 'equine-event-manager' );
+		} elseif ( $start <= $today && $today <= $end ) {
+			$class = 'eem-status-active';
+			$label = __( 'Ongoing', 'equine-event-manager' );
+		} else {
+			$class = 'eem-status-upcoming';
+			$label = __( 'Upcoming', 'equine-event-manager' );
+		}
+		printf( '<span class="eem-status-badge %s">%s</span>', esc_attr( $class ), esc_html( $label ) );
 	}
 
 	/**
