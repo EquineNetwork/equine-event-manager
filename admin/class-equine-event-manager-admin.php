@@ -489,7 +489,6 @@ class EEM_Admin {
 			'equine-event-manager-entries',
 			'equine-event-manager-reservations',
 			'equine-event-manager-stall-charts',
-			EEM_Venues_Page::MENU_SLUG,
 			'equine-event-manager-customers',
 			'equine-event-manager-orders',
 			EEM_Notifications_Page::MENU_SLUG,
@@ -767,17 +766,6 @@ class EEM_Admin {
 			array( $this, 'render_stall_chart_page' )
 		);
 
-		// v2 Facility Layout Templates: Venues page nested under Stall & RV
-		// Charts (layouts are stall/RV grids). Source-agnostic Venue list +
-		// saved-layout management; see docs/ARCHITECTURE-VENUES.md.
-		add_submenu_page(
-			self::MENU_SLUG,
-			__( 'Venues', 'equine-event-manager' ),
-			__( 'Venues', 'equine-event-manager' ),
-			'manage_options',
-			EEM_Venues_Page::MENU_SLUG,
-			array( 'EEM_Venues_Page', 'render' )
-		);
 
 		// V1 #3: Customers list (top-level index of every customer by email,
 		// linking to the read-only Customer Profile page).
@@ -887,18 +875,21 @@ class EEM_Admin {
 				'edit-tags.php?taxonomy=en_event_category&post_type=en_event'
 			);
 
+			// "Locations" renamed to "Venues" (Whitney 2026-06-13) — the native
+			// en_venue record is the single Venue concept. (The relational
+			// EEM_Venue layout store is no longer a separate "Venues" menu page.)
 			add_submenu_page(
 				self::MENU_SLUG,
-				__( 'Locations', 'equine-event-manager' ),
-				__( 'Locations', 'equine-event-manager' ),
+				__( 'Venues', 'equine-event-manager' ),
+				__( 'Venues', 'equine-event-manager' ),
 				'manage_options',
 				'edit.php?post_type=en_venue'
 			);
 
 			add_submenu_page(
 				self::MENU_SLUG,
-				__( 'Location Categories', 'equine-event-manager' ),
-				__( 'L Categories', 'equine-event-manager' ),
+				__( 'Venue Categories', 'equine-event-manager' ),
+				__( 'Venue Categories', 'equine-event-manager' ),
 				'manage_options',
 				'edit-tags.php?taxonomy=en_venue_category&post_type=en_venue'
 			);
@@ -914,7 +905,7 @@ class EEM_Admin {
 			add_submenu_page(
 				self::MENU_SLUG,
 				__( 'Producer Categories', 'equine-event-manager' ),
-				__( 'L Categories', 'equine-event-manager' ),
+				__( 'Producer Categories', 'equine-event-manager' ),
 				'manage_options',
 				'edit-tags.php?taxonomy=en_producer_category&post_type=en_producer'
 			);
