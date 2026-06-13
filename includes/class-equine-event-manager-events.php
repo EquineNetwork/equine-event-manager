@@ -87,6 +87,33 @@ class EEM_Events {
 	}
 
 	/**
+	 * Whether the Entries (Divisions) feature is enabled (Settings → Add-Ons).
+	 * Optional per-site; when OFF its admin menu, customer checkout section, and
+	 * Create-Order fold are all hidden (data preserved). Defaults to ON when the
+	 * flag has never been written, so existing installs are never hidden
+	 * unexpectedly — eem-mig-014 writes the explicit on/existing, off/new default.
+	 *
+	 * @return bool
+	 */
+	public static function is_entries_enabled() {
+		$s = self::get_feature_settings();
+		return ! array_key_exists( 'entries_enabled', $s ) || ! empty( $s['entries_enabled'] );
+	}
+
+	/**
+	 * Whether the Sheets & Results feature is enabled (Settings → Add-Ons).
+	 * Optional per-site; when OFF its admin menu, the event-editor section, the
+	 * public per-event page + event-card buttons + shortcode are all hidden (data
+	 * preserved). Same default semantics as {@see self::is_entries_enabled()}.
+	 *
+	 * @return bool
+	 */
+	public static function is_sheets_results_enabled() {
+		$s = self::get_feature_settings();
+		return ! array_key_exists( 'sheets_results_enabled', $s ) || ! empty( $s['sheets_results_enabled'] );
+	}
+
+	/**
 	 * Get integration settings with defaults.
 	 *
 	 * @return array<string, string|int>
@@ -1238,6 +1265,9 @@ class EEM_Events {
 	 * @return array<string,mixed>
 	 */
 	public function filter_sheets_request( $vars ) {
+		if ( ! self::is_sheets_results_enabled() ) {
+			return $vars; // Optional feature is OFF — don't route the public page.
+		}
 		if ( ! empty( $vars['eem_sheets'] ) ) {
 			return $vars; // Already routed by the rewrite rule.
 		}
@@ -1281,6 +1311,9 @@ class EEM_Events {
 	 * @return string
 	 */
 	public function render_sheets_results_shortcode( $atts ) {
+		if ( ! self::is_sheets_results_enabled() ) {
+			return '';
+		}
 		$atts     = shortcode_atts( array( 'event_id' => 0, 'id' => 0 ), $atts, 'eem_sheets_results' );
 		$event_id = absint( $atts['event_id'] ? $atts['event_id'] : $atts['id'] );
 		if ( $event_id <= 0 ) {
@@ -1462,7 +1495,7 @@ class EEM_Events {
 		// Sheets & Results variant — render the sheets body instead of the event
 		// content. Covers the case where the single-event template takeover is
 		// ceded (e.g. an Elementor-built event single still fires the_content).
-		if ( get_query_var( 'eem_sheets' ) && class_exists( 'EEM_Sheets_Results_Page' ) ) {
+		if ( get_query_var( 'eem_sheets' ) && self::is_sheets_results_enabled() && class_exists( 'EEM_Sheets_Results_Page' ) ) {
 			$eem_sheets_id = (int) get_the_ID();
 			if ( $eem_sheets_id && self::EVENT_POST_TYPE === get_post_type( $eem_sheets_id ) ) {
 				return EEM_Sheets_Results_Page::render_public_page( $eem_sheets_id );
@@ -2745,8 +2778,9 @@ class EEM_Events {
 				// events only — `event_id` is the en_event post id. Each button
 				// shows only when the matching document type has ≥1 uploaded PDF.
 				$sr_event_id = ! empty( $event_data['event_id'] ) ? absint( $event_data['event_id'] ) : 0;
-				$sr_has_draw = $sr_event_id > 0 && class_exists( 'EEM_Sheet_Entries' ) && EEM_Sheet_Entries::has_drawsheets( $sr_event_id );
-				$sr_has_res  = $sr_event_id > 0 && class_exists( 'EEM_Sheet_Entries' ) && EEM_Sheet_Entries::has_results( $sr_event_id );
+				$sr_enabled  = self::is_sheets_results_enabled();
+				$sr_has_draw = $sr_enabled && $sr_event_id > 0 && class_exists( 'EEM_Sheet_Entries' ) && EEM_Sheet_Entries::has_drawsheets( $sr_event_id );
+				$sr_has_res  = $sr_enabled && $sr_event_id > 0 && class_exists( 'EEM_Sheet_Entries' ) && EEM_Sheet_Entries::has_results( $sr_event_id );
 				if ( $sr_has_draw || $sr_has_res ) :
 					?>
 					<div class="eem-event-list-row__actions">

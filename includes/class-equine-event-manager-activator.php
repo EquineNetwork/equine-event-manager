@@ -206,6 +206,10 @@ class EEM_Activator {
 			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-013-order-trashed-at-column.php';
 			eem_mig_013_order_trashed_at_column();
 		}
+		if ( ! get_option( 'eem_mig_014_optional_feature_defaults_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-014-optional-feature-defaults.php';
+			eem_mig_014_optional_feature_defaults();
+		}
 	}
 
 	/**

@@ -1205,15 +1205,18 @@ class EEM_Admin {
 
 			// "Sheets & Results" = the draw-sheet / result PDF manager
 			// (EEM_Sheets_Results_Page). Native-events scoped because the
-			// documents + en_discipline taxonomy attach to en_event posts.
-			add_submenu_page(
-				self::MENU_SLUG,
-				__( 'Sheets & Results', 'equine-event-manager' ),
-				__( 'Sheets & Results', 'equine-event-manager' ),
-				'manage_options',
-				EEM_Sheets_Results_Page::MENU_SLUG,
-				array( 'EEM_Sheets_Results_Page', 'render' )
-			);
+			// documents + en_discipline taxonomy attach to en_event posts; also an
+			// optional feature (Settings → Add-Ons), hidden when off.
+			if ( EEM_Events::is_sheets_results_enabled() ) {
+				add_submenu_page(
+					self::MENU_SLUG,
+					__( 'Sheets & Results', 'equine-event-manager' ),
+					__( 'Sheets & Results', 'equine-event-manager' ),
+					'manage_options',
+					EEM_Sheets_Results_Page::MENU_SLUG,
+					array( 'EEM_Sheets_Results_Page', 'render' )
+				);
+			}
 
 		}
 

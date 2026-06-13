@@ -48,6 +48,11 @@ class EEM_Sheets_Results_Page {
 	 * @return void
 	 */
 	public static function register(): void {
+		// Optional feature (Settings → Add-Ons) — skip the mutation endpoints
+		// entirely when off (the manager page + its menu are hidden too).
+		if ( ! EEM_Events::is_sheets_results_enabled() ) {
+			return;
+		}
 		add_action( 'wp_ajax_eem_sr_add_discipline', array( __CLASS__, 'ajax_add_discipline' ) );
 		add_action( 'wp_ajax_eem_sr_add_entry', array( __CLASS__, 'ajax_add_entry' ) );
 		add_action( 'wp_ajax_eem_sr_set_pdf', array( __CLASS__, 'ajax_set_pdf' ) );

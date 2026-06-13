@@ -211,21 +211,43 @@ class EEM_Settings_Page {
 	 * @return void
 	 */
 	private function render_addons_panel() {
+		$entries_on = EEM_Events::is_entries_enabled();
+		$sheets_on  = EEM_Events::is_sheets_results_enabled();
 		?>
-		<section class="eem-card">
-			<header class="eem-card-header">
-				<h2 class="eem-card-title"><?php esc_html_e( 'Add-On Access', 'equine-event-manager' ); ?></h2>
-			</header>
-			<div class="eem-card-body">
-				<p class="eem-field-hint" style="margin-bottom:14px;">
-					<?php esc_html_e( 'Future Equine Event Manager add-ons will appear here so you can enable and configure them from one place.', 'equine-event-manager' ); ?>
-				</p>
-				<div class="eem-empty-state">
-					<div class="eem-empty-state-title"><?php esc_html_e( 'No add-ons available yet', 'equine-event-manager' ); ?></div>
-					<div class="eem-empty-state-desc"><?php esc_html_e( 'This tab is reserved for upcoming expansion modules. When add-ons ship, you\'ll see their toggles and configuration here.', 'equine-event-manager' ); ?></div>
+		<form class="eem-settings-form" data-eem-settings-form data-eem-panel="addons" method="post" action="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>">
+			<input type="hidden" name="action" value="eem_save_settings" />
+			<input type="hidden" name="panel" value="addons" />
+			<?php wp_nonce_field( 'eem_settings_save', 'nonce' ); ?>
+			<section class="eem-card">
+				<header class="eem-card-header">
+					<h2 class="eem-card-title"><?php esc_html_e( 'Optional Features', 'equine-event-manager' ); ?></h2>
+				</header>
+				<div class="eem-card-body">
+					<p class="eem-field-hint" style="margin-bottom:16px;">
+						<?php esc_html_e( 'Turn optional features on or off for this site. Turning one off hides it everywhere — its menu, editor sections, customer-facing pages, and buttons — without deleting any data. Turn it back on any time to restore it exactly as it was.', 'equine-event-manager' ); ?>
+					</p>
+
+					<label class="eem-addon-row">
+						<input type="checkbox" name="payload[entries_enabled]" value="1" <?php checked( $entries_on ); ?> />
+						<span class="eem-addon-row__text">
+							<span class="eem-addon-row__title"><?php esc_html_e( 'Entries', 'equine-event-manager' ); ?></span>
+							<span class="eem-addon-row__desc"><?php esc_html_e( 'Sell entry spots in divisions/classes and track who has entered. When off: the Entries menu, the customer checkout entries section, and the Create Order entries fold are hidden.', 'equine-event-manager' ); ?></span>
+						</span>
+					</label>
+
+					<label class="eem-addon-row">
+						<input type="checkbox" name="payload[sheets_results_enabled]" value="1" <?php checked( $sheets_on ); ?> />
+						<span class="eem-addon-row__text">
+							<span class="eem-addon-row__title"><?php esc_html_e( 'Sheets & Results', 'equine-event-manager' ); ?></span>
+							<span class="eem-addon-row__desc"><?php esc_html_e( 'Upload draw sheets and result PDFs per event. When off: the Sheets & Results menu, the event-editor section, the public per-event page, and the event-card buttons are hidden.', 'equine-event-manager' ); ?></span>
+						</span>
+					</label>
 				</div>
-			</div>
-		</section>
+				<div class="eem-settings-save-bar">
+					<button type="submit" class="eem-btn eem-btn-primary"><?php esc_html_e( 'Save Features', 'equine-event-manager' ); ?></button>
+				</div>
+			</section>
+		</form>
 		<?php
 	}
 
@@ -1366,12 +1388,13 @@ class EEM_Settings_Page {
 				$errors = $this->save_danger_panel( $payload );
 				break;
 
-			case 'shortcodes':
 			case 'addons':
-				// Both are read-only panels (Shortcodes is a reference list,
-				// Add-Ons is a future-expansion placeholder). Submitting either
-				// is a no-op success so the JS submit handler still gets a
-				// well-formed response.
+				$errors = $this->save_addons_panel( $payload );
+				break;
+
+			case 'shortcodes':
+				// Read-only reference list; submitting is a no-op success so the
+				// JS submit handler still gets a well-formed response.
 				break;
 
 			default:
@@ -1399,6 +1422,25 @@ class EEM_Settings_Page {
 	private function save_danger_panel( array $payload ): array {
 		$enabled = ! empty( $payload['delete_data_on_uninstall'] ) ? 1 : 0;
 		update_option( 'equine_event_manager_delete_data_on_uninstall', $enabled );
+		return array();
+	}
+
+	/**
+	 * Add-Ons save — persists the optional-feature toggles (Entries + Sheets &
+	 * Results) into the shared feature_settings option. Unchecked boxes are not
+	 * posted, so each flag is written explicitly from presence in the payload.
+	 *
+	 * @param array $payload Expected: [ entries_enabled => '1'?, sheets_results_enabled => '1'? ]
+	 * @return array<int, string> Empty (these toggles cannot fail to write).
+	 */
+	private function save_addons_panel( array $payload ): array {
+		$features = get_option( EEM_Events::FEATURES_SETTINGS_OPTION, array() );
+		if ( ! is_array( $features ) ) {
+			$features = array();
+		}
+		$features['entries_enabled']        = ! empty( $payload['entries_enabled'] ) ? 1 : 0;
+		$features['sheets_results_enabled'] = ! empty( $payload['sheets_results_enabled'] ) ? 1 : 0;
+		update_option( EEM_Events::FEATURES_SETTINGS_OPTION, $features );
 		return array();
 	}
 

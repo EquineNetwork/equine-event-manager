@@ -9767,3 +9767,11 @@ a.eem-add-term-link:hover { color: #1257d1; }
 .eem-sr-rail-row { display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
 .eem-sr-rail-label { color: var(--eem-text-secondary); }
 .eem-sr-rail-num { font-family: var(--eem-font-display); font-weight: 700; color: var(--eem-navy); font-size: 15px; }
+
+/* Settings → Add-Ons: optional-feature toggle rows */
+.eem-addon-row { display: flex; gap: 12px; align-items: flex-start; padding: 14px 0; border-bottom: 1px solid var(--eem-border-soft); cursor: pointer; }
+.eem-addon-row:last-child { border-bottom: none; }
+.eem-addon-row input[type="checkbox"] { margin-top: 3px; flex-shrink: 0; }
+.eem-addon-row__text { display: flex; flex-direction: column; gap: 3px; }
+.eem-addon-row__title { font-weight: 600; color: var(--eem-navy); font-size: 14px; }
+.eem-addon-row__desc { font-size: 13px; color: var(--eem-text-secondary); line-height: 1.5; }

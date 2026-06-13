@@ -67,7 +67,13 @@ class EEM_Entries {
 	 * @return void
 	 */
 	public static function register(): void {
+		// The CPT always registers so existing data survives a disable (with
+		// show_ui following the flag). When Entries is OFF (Settings → Add-Ons),
+		// every admin + checkout surface below is skipped.
 		add_action( 'init', array( __CLASS__, 'register_post_type' ) );
+		if ( ! EEM_Events::is_entries_enabled() ) {
+			return;
+		}
 		// Priority 30: after EEM_Admin::register_menu (priority 20) creates the
 		// Orders parent menu, but before normalize_event_manager_submenu_order
 		// (priority 1001) reorders the submenu per $preferred_order. This ordering
@@ -108,7 +114,8 @@ class EEM_Entries {
 					'menu_name'          => __( 'Entries', 'equine-event-manager' ),
 				),
 				'public'          => false,
-				'show_ui'         => true,
+				// Hidden entirely when the Entries feature is OFF (data preserved).
+				'show_ui'         => EEM_Events::is_entries_enabled(),
 				// Hidden from the menu — the custom styled list page (LIST_SLUG)
 				// is the menu entry; the WP CPT list redirects to it.
 				'show_in_menu'    => false,

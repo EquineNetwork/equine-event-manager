@@ -19,7 +19,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 $eem_event_id  = (int) get_queried_object_id();
-$eem_is_sheets = (bool) get_query_var( 'eem_sheets' ) && class_exists( 'EEM_Sheets_Results_Page' );
+$eem_is_sheets = (bool) get_query_var( 'eem_sheets' ) && class_exists( 'EEM_Sheets_Results_Page' )
+	&& class_exists( 'EEM_Events' ) && EEM_Events::is_sheets_results_enabled();
 
 // On the Sheets & Results variant, retitle the document before the header
 // prints <title>.

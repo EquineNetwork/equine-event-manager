@@ -255,11 +255,13 @@ class EEM_Event_Editor_Page {
 			'icon_tone' => 'purple', 'icon_key' => 'package', 'enable_toggle' => false,
 			'body_html' => self::body_media( $d ),
 		) );
-		eem_render_reservation_editor_section( array(
-			'key' => 'sheets', 'title' => __( 'Sheets & Results', 'equine-event-manager' ),
-			'icon_tone' => 'orange', 'icon_key' => 'file-text', 'enable_toggle' => false,
-			'body_html' => EEM_Sheets_Results_Page::render_embedded_section( (int) $d['id'] ),
-		) );
+		if ( EEM_Events::is_sheets_results_enabled() ) {
+			eem_render_reservation_editor_section( array(
+				'key' => 'sheets', 'title' => __( 'Sheets & Results', 'equine-event-manager' ),
+				'icon_tone' => 'orange', 'icon_key' => 'file-text', 'enable_toggle' => false,
+				'body_html' => EEM_Sheets_Results_Page::render_embedded_section( (int) $d['id'] ),
+			) );
+		}
 		eem_render_reservation_editor_section( array(
 			'key' => 'reservation', 'title' => __( 'Link Reservation', 'equine-event-manager' ),
 			'icon_tone' => 'teal', 'icon_key' => 'lightning', 'enable_toggle' => true,
@@ -527,20 +529,22 @@ class EEM_Event_Editor_Page {
 		</div>
 
 		<?php
-		$sr_counts = EEM_Sheet_Entries::counts( (int) $d['id'] );
-		?>
-		<div class="eem-rail-card">
-			<div class="eem-rail-header"><span class="eem-rail-title"><?php esc_html_e( 'Sheets & Results', 'equine-event-manager' ); ?></span></div>
-			<div class="eem-rail-body">
-				<div class="eem-sr-rail-summary">
-					<div class="eem-sr-rail-row"><span class="eem-sr-rail-label"><?php esc_html_e( 'Draw Sheets', 'equine-event-manager' ); ?></span><span class="eem-sr-rail-num" data-sr-rail-drawsheets><?php echo esc_html( (string) $sr_counts['drawsheets'] ); ?></span></div>
-					<div class="eem-sr-rail-row"><span class="eem-sr-rail-label"><?php esc_html_e( 'Results', 'equine-event-manager' ); ?></span><span class="eem-sr-rail-num" data-sr-rail-results><?php echo esc_html( (string) $sr_counts['results'] ); ?></span></div>
+		if ( EEM_Events::is_sheets_results_enabled() ) :
+			$sr_counts = EEM_Sheet_Entries::counts( (int) $d['id'] );
+			?>
+			<div class="eem-rail-card">
+				<div class="eem-rail-header"><span class="eem-rail-title"><?php esc_html_e( 'Sheets & Results', 'equine-event-manager' ); ?></span></div>
+				<div class="eem-rail-body">
+					<div class="eem-sr-rail-summary">
+						<div class="eem-sr-rail-row"><span class="eem-sr-rail-label"><?php esc_html_e( 'Draw Sheets', 'equine-event-manager' ); ?></span><span class="eem-sr-rail-num" data-sr-rail-drawsheets><?php echo esc_html( (string) $sr_counts['drawsheets'] ); ?></span></div>
+						<div class="eem-sr-rail-row"><span class="eem-sr-rail-label"><?php esc_html_e( 'Results', 'equine-event-manager' ); ?></span><span class="eem-sr-rail-num" data-sr-rail-results><?php echo esc_html( (string) $sr_counts['results'] ); ?></span></div>
+					</div>
+					<div class="eem-rail-divider"></div>
+					<div class="eem-rail-hint"><?php esc_html_e( 'The Draw Sheets and Results buttons appear on the public event listing once files are uploaded.', 'equine-event-manager' ); ?></div>
+					<a class="eem-btn eem-btn-secondary eem-rail-btn" href="<?php echo esc_url( EEM_Sheets_Results_Page::url( (int) $d['id'] ) ); ?>"><?php esc_html_e( 'Open Sheets & Results →', 'equine-event-manager' ); ?></a>
 				</div>
-				<div class="eem-rail-divider"></div>
-				<div class="eem-rail-hint"><?php esc_html_e( 'The Draw Sheets and Results buttons appear on the public event listing once files are uploaded.', 'equine-event-manager' ); ?></div>
-				<a class="eem-btn eem-btn-secondary eem-rail-btn" href="<?php echo esc_url( EEM_Sheets_Results_Page::url( (int) $d['id'] ) ); ?>"><?php esc_html_e( 'Open Sheets & Results →', 'equine-event-manager' ); ?></a>
 			</div>
-		</div>
+		<?php endif; ?>
 		<?php
 	}
 

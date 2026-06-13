@@ -4187,7 +4187,7 @@ RV Lot: " . $rv_lot['name'] );
 	 * @return void
 	 */
 	private function record_division_entries( int $reservation_id, array $data, array $submission, string $order_key, string $customer_name, string $email, string $payment_status ): void {
-		if ( ! class_exists( 'EEM_Entries' ) || ! class_exists( 'EEM_Division_Entries' ) || $reservation_id <= 0 ) {
+		if ( ! class_exists( 'EEM_Entries' ) || ! class_exists( 'EEM_Division_Entries' ) || $reservation_id <= 0 || ! EEM_Events::is_entries_enabled() ) {
 			return;
 		}
 		$ledger_status = EEM_Division_Entries::ledger_status_for_order_status( $payment_status );
@@ -9089,7 +9089,8 @@ RV Lot: " . $rv_lot['name'] );
 		// New: Entries (en_entry CPT) linked to this reservation. Keyed `entry_{id}`
 		// so they never collide with the legacy numeric keys. Same option shape, so
 		// the rest of the pipeline (pricing/validation/totals/notes) is unchanged.
-		if ( class_exists( 'EEM_Entries' ) && $this->active_reservation_id > 0 ) {
+		// Skipped when the Entries feature is OFF (Settings → Add-Ons).
+		if ( class_exists( 'EEM_Entries' ) && $this->active_reservation_id > 0 && EEM_Events::is_entries_enabled() ) {
 			$options += EEM_Entries::get_for_reservation( $this->active_reservation_id );
 		}
 
