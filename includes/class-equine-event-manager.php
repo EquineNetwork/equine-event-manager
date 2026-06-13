@@ -381,7 +381,12 @@ class EEM_Plugin {
 		add_action( 'init', array( $this->events, 'register_event_routes' ) );
 		add_filter( 'query_vars', array( $this->events, 'filter_query_vars' ) );
 		add_action( 'template_redirect', array( $this->events, 'maybe_render_virtual_event_page' ) );
-		add_action( 'template_redirect', array( $this->events, 'maybe_render_sheets_results_page' ) );
+		// Sheets & Results public page: route the URL to a real singular en_event
+		// query (request filter = path fallback for un-flushed rewrites) + enqueue
+		// the front-end styles in <head>. The single-event template takeover swaps
+		// in the sheets body when the `eem_sheets` flag is set.
+		add_filter( 'request', array( $this->events, 'filter_sheets_request' ) );
+		add_action( 'wp_enqueue_scripts', array( $this->events, 'maybe_enqueue_sheets_styles' ) );
 		add_action( 'init', array( $this->events, 'register_shortcodes' ) );
 		add_filter( 'template_include', array( $this->events, 'filter_single_event_template' ), 99 );
 		add_filter( 'the_content', array( $this->events, 'filter_single_event_content' ), 20 );

@@ -1197,13 +1197,15 @@ class EEM_Events {
 			'top'
 		);
 		// Public per-event Sheets & Results page (Slice 5):
-		// `/events/{slug}/sheets-and-results/`. A path-based fallback in
-		// maybe_render_sheets_results_page() also resolves it if the rewrite
-		// rules haven't been flushed, so the page works without a permalink
-		// re-save (same resilience pattern as the virtual event route).
+		// `/events/{slug}/sheets-and-results/`. Routes to a REAL singular
+		// en_event query (+ the `eem_sheets` flag) so the request is a genuine
+		// event single — the theme + Elementor then render their normal header /
+		// footer chrome around the Sheets & Results body (the single-event
+		// template takeover swaps in the sheets markup). A `request`-filter
+		// path fallback (filter_sheets_request) covers un-flushed rewrites.
 		add_rewrite_rule(
 			'^' . self::get_event_rewrite_slug() . '/([^/]+)/sheets-and-results/?$',
-			'index.php?eem_sheets_event=$matches[1]',
+			'index.php?post_type=' . self::EVENT_POST_TYPE . '&name=$matches[1]&eem_sheets=1',
 			'top'
 		);
 	}
@@ -1218,66 +1220,56 @@ class EEM_Events {
 		$vars[] = 'eem_reservation_event';
 		$vars[] = 'eem_event_directory_type';
 		$vars[] = 'eem_event_directory_slug';
-		$vars[] = 'eem_sheets_event';
+		$vars[] = 'eem_sheets';
 
 		return $vars;
 	}
 
 	/**
-	 * Render the public per-event Sheets & Results page (Screen 4) at
-	 * `/events/{slug}/sheets-and-results/`. Resolves the event slug from the
-	 * query var, falling back to a path match so the page works even if the
-	 * rewrite rules haven't been flushed.
+	 * Path-based fallback that routes `/events/{slug}/sheets-and-results/` to a
+	 * real singular en_event query (+ the `eem_sheets` flag) when the rewrite
+	 * rules haven't been flushed. Running as a `request` filter (before the main
+	 * query) makes the request a genuine singular event view, so the theme +
+	 * Elementor render their normal header/footer chrome — unlike a
+	 * template_redirect takeover, which renders outside that context and lost the
+	 * theme's menu styling.
+	 *
+	 * @param array<string,mixed> $vars Parsed query vars.
+	 * @return array<string,mixed>
+	 */
+	public function filter_sheets_request( $vars ) {
+		if ( ! empty( $vars['eem_sheets'] ) ) {
+			return $vars; // Already routed by the rewrite rule.
+		}
+		if ( ! isset( $_SERVER['REQUEST_URI'] ) ) {
+			return $vars;
+		}
+		$path = (string) wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ), PHP_URL_PATH );
+		if ( ! preg_match( '#/([^/]+)/sheets-and-results/?$#', $path, $m ) ) {
+			return $vars;
+		}
+		$slug = sanitize_title( $m[1] );
+		if ( '' === $slug || ! ( get_page_by_path( $slug, OBJECT, self::EVENT_POST_TYPE ) instanceof WP_Post ) ) {
+			return $vars;
+		}
+		return array(
+			'post_type'  => self::EVENT_POST_TYPE,
+			'name'       => $slug,
+			'eem_sheets' => '1',
+		);
+	}
+
+	/**
+	 * Enqueue the front-end stylesheet on the public Sheets & Results page so
+	 * the `<link>` lands in `<head>` (head-timed, unlike the late shortcode
+	 * enqueue). The page is a singular en_event with the `eem_sheets` flag.
 	 *
 	 * @return void
 	 */
-	public function maybe_render_sheets_results_page() {
-		$slug = sanitize_title( (string) get_query_var( 'eem_sheets_event' ) );
-
-		if ( '' === $slug && isset( $_SERVER['REQUEST_URI'] ) ) {
-			$path = (string) wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ), PHP_URL_PATH );
-			if ( preg_match( '#/([^/]+)/sheets-and-results/?$#', $path, $m ) ) {
-				$slug = sanitize_title( $m[1] );
-			}
+	public function maybe_enqueue_sheets_styles() {
+		if ( get_query_var( 'eem_sheets' ) ) {
+			self::render_frontend_styles();
 		}
-
-		if ( '' === $slug || ! class_exists( 'EEM_Sheets_Results_Page' ) ) {
-			return;
-		}
-
-		$event = get_page_by_path( $slug, OBJECT, self::EVENT_POST_TYPE );
-		if ( ! $event instanceof WP_Post ) {
-			return; // Not our route — let WordPress handle it (404 or otherwise).
-		}
-
-		$body = EEM_Sheets_Results_Page::render_public_page( (int) $event->ID );
-		if ( '' === $body ) {
-			return;
-		}
-
-		status_header( 200 );
-		nocache_headers();
-		self::render_frontend_styles();
-
-		$event_title = get_the_title( $event->ID );
-		add_filter(
-			'document_title_parts',
-			static function ( $parts ) use ( $event_title ) {
-				$parts['title'] = $event_title . ' — ' . __( 'Sheets & Results', 'equine-event-manager' );
-				return $parts;
-			}
-		);
-
-		if ( function_exists( 'get_header' ) ) {
-			get_header();
-		}
-		echo '<main class="equine-event-manager-sheets-results-page">';
-		echo $body; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pre-escaped in render_public_page().
-		echo '</main>';
-		if ( function_exists( 'get_footer' ) ) {
-			get_footer();
-		}
-		exit;
 	}
 
 	/**
@@ -1465,6 +1457,16 @@ class EEM_Events {
 	public function filter_single_event_content( $content ) {
 		if ( is_admin() || ! is_main_query() || ! in_the_loop() || self::$is_rendering_event_template ) {
 			return $content;
+		}
+
+		// Sheets & Results variant — render the sheets body instead of the event
+		// content. Covers the case where the single-event template takeover is
+		// ceded (e.g. an Elementor-built event single still fires the_content).
+		if ( get_query_var( 'eem_sheets' ) && class_exists( 'EEM_Sheets_Results_Page' ) ) {
+			$eem_sheets_id = (int) get_the_ID();
+			if ( $eem_sheets_id && self::EVENT_POST_TYPE === get_post_type( $eem_sheets_id ) ) {
+				return EEM_Sheets_Results_Page::render_public_page( $eem_sheets_id );
+			}
 		}
 
 		// 2.3.50 — when the template_include takeover owns this request, the EEM

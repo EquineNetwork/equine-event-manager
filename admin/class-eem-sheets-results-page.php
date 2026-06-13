@@ -784,7 +784,7 @@ class EEM_Sheets_Results_Page {
 		ob_start();
 		?>
 		<div class="eem-sr-public">
-			<div class="eem-sr-public-hero">
+			<div class="eem-sr-public-head">
 				<div class="eem-sr-public-eyebrow">
 					<?php if ( $events_url ) : ?><a href="<?php echo esc_url( $events_url ); ?>"><?php esc_html_e( 'Events', 'equine-event-manager' ); ?></a> / <?php endif; ?>
 					<a href="<?php echo esc_url( (string) get_permalink( $event_id ) ); ?>"><?php echo esc_html( $title ); ?></a> / <?php esc_html_e( 'Sheets & Results', 'equine-event-manager' ); ?>

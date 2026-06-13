@@ -4777,38 +4777,49 @@ a.eem-event-list-row__btn--results:focus {
    Navy hero + lime-accent tabs, discipline groups, day labels, PDF rows.
    ============================================================ */
 .eem-sr-public { font-family: "IBM Plex Sans", system-ui, sans-serif; color: #1d2327; }
-.eem-sr-public-hero { background: #031B4E; padding: 32px 24px 0; }
+/* Light header (no heavy navy band) — matches the plugin's admin pages. */
+.eem-sr-public-head { max-width: 860px; margin: 0 auto; padding: 28px 24px 0; }
 .eem-sr-public-eyebrow {
-	font-size: 12px;
+	font-size: 12.5px;
 	font-weight: 600;
-	color: rgba(255,255,255,.55);
-	letter-spacing: .04em;
+	color: #6B7A99;
+	letter-spacing: .02em;
 	margin-bottom: 8px;
 }
-.eem-sr-public-eyebrow a { color: rgba(255,255,255,.55) !important; text-decoration: none !important; }
-.eem-sr-public-eyebrow a:hover { color: rgba(255,255,255,.85) !important; }
+.eem-sr-public-eyebrow a { color: #6B7A99 !important; text-decoration: none !important; }
+.eem-sr-public-eyebrow a:hover { color: #1668F2 !important; }
 .eem-sr-public-title {
 	font-family: "Space Grotesk", "IBM Plex Sans", system-ui, sans-serif !important;
 	font-size: 1.7rem !important;
 	font-weight: 700 !important;
-	color: #fff !important;
+	color: #031B4E !important;
 	margin: 0 0 8px !important;
 	text-transform: none !important;
 	line-height: 1.15 !important;
 }
-.eem-sr-public-meta { display: flex; gap: 16px; flex-wrap: wrap; padding-bottom: 18px; }
-.eem-sr-public-meta span { font-size: 13px; color: rgba(255,255,255,.6); }
-.eem-sr-public-status { color: rgba(255,255,255,.82) !important; font-weight: 600; }
-.eem-sr-public-tabs { display: flex; gap: 0; }
+.eem-sr-public-meta { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+.eem-sr-public-meta span { font-size: 13.5px; color: #6B7A99; }
+.eem-sr-public-status { color: #031B4E !important; font-weight: 600; }
+/* Tabs — plugin style: gray inactive, navy active with an electric-blue
+   underline, on a light hairline border (matches the admin Sheets & Results
+   doc-type tabs). */
+.eem-sr-public-tabs { display: flex; gap: 0; margin-top: 18px; border-bottom: 1px solid #dcdcde; }
 .eem-sr-public-tab {
-	padding: 11px 22px;
+	padding: 11px 20px;
 	font-size: 14px;
 	font-weight: 600;
-	color: rgba(255,255,255,.55) !important;
+	color: #50575e !important;
 	background: transparent !important;
-	border: none;
-	border-bottom: 3px solid transparent;
+	/* Theme-proof: the active theme paints a pink border + outline on
+	   <button>; kill the side borders and keep only the underline. */
+	border-top: 0 !important;
+	border-left: 0 !important;
+	border-right: 0 !important;
+	border-bottom: 3px solid transparent !important;
 	border-radius: 0 !important;
+	outline: none !important;
+	box-shadow: none !important;
+	margin-bottom: -1px;
 	cursor: pointer;
 	font-family: inherit;
 	display: inline-flex;
@@ -4816,18 +4827,19 @@ a.eem-event-list-row__btn--results:focus {
 	gap: 8px;
 }
 .eem-sr-public-tab:hover,
-.eem-sr-public-tab:focus { color: rgba(255,255,255,.85) !important; }
-.eem-sr-public-tab.is-active { color: #fff !important; border-bottom-color: #C8FF00; }
+.eem-sr-public-tab:focus { color: #031B4E !important; }
+.eem-sr-public-tab.is-active { color: #031B4E !important; border-bottom-color: #1668F2 !important; }
 .eem-sr-public-tab-count {
 	font-size: 11px;
 	font-weight: 700;
-	background: rgba(255,255,255,.15);
+	background: #f0f0f1;
+	color: #6B7A99;
 	padding: 2px 7px;
 	border-radius: 10px;
 }
-.eem-sr-public-tab.is-active .eem-sr-public-tab-count { background: rgba(200,255,0,.25); color: #C8FF00; }
+.eem-sr-public-tab.is-active .eem-sr-public-tab-count { background: #EEF4FF; color: #1668F2; }
 
-.eem-sr-public-body { max-width: 860px; margin: 0 auto; padding: 26px 24px 40px; }
+.eem-sr-public-body { max-width: 860px; margin: 0 auto; padding: 22px 24px 40px; }
 .eem-sr-pub-disc { margin-bottom: 26px; }
 .eem-sr-pub-disc-title {
 	font-family: "Space Grotesk", "IBM Plex Sans", system-ui, sans-serif;

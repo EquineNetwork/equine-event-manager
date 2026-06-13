@@ -18,12 +18,29 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+$eem_event_id  = (int) get_queried_object_id();
+$eem_is_sheets = (bool) get_query_var( 'eem_sheets' ) && class_exists( 'EEM_Sheets_Results_Page' );
+
+// On the Sheets & Results variant, retitle the document before the header
+// prints <title>.
+if ( $eem_is_sheets && $eem_event_id ) {
+	add_filter(
+		'document_title_parts',
+		static function ( $parts ) use ( $eem_event_id ) {
+			$parts['title'] = get_the_title( $eem_event_id ) . ' — ' . __( 'Sheets & Results', 'equine-event-manager' );
+			return $parts;
+		}
+	);
+}
+
 get_header();
 
-$eem_event_id = (int) get_queried_object_id();
-
 if ( $eem_event_id ) {
-	echo do_shortcode( sprintf( '[equine_event_manager_event id="%d" show_content="1" show_reservation="1"]', $eem_event_id ) );
+	if ( $eem_is_sheets ) {
+		echo EEM_Sheets_Results_Page::render_public_page( $eem_event_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pre-escaped in render_public_page().
+	} else {
+		echo do_shortcode( sprintf( '[equine_event_manager_event id="%d" show_content="1" show_reservation="1"]', $eem_event_id ) );
+	}
 }
 
 get_footer();
