@@ -2595,75 +2595,34 @@ class EEM_Events {
 				<?php endif; ?>
 			</div>
 			<div class="eem-event-list-row__content">
-				<header class="eem-event-list-row__header">
-					<h4 class="eem-event-list-row__title">
-						<?php if ( $event_url ) : ?>
-							<a href="<?php echo esc_url( $event_url ); ?>"><?php echo esc_html( $event_data['title'] ); ?></a>
-						<?php else : ?>
-							<?php echo esc_html( $event_data['title'] ); ?>
-						<?php endif; ?>
-					</h4>
-					<?php if ( $date_label ) : ?>
-						<h5 class="eem-event-list-row__date"><?php echo esc_html( $date_label ); ?></h5>
-					<?php endif; ?>
-				</header>
+				<?php if ( $date_label ) : ?>
+					<div class="eem-event-list-row__date"><?php echo esc_html( $date_label ); ?></div>
+				<?php endif; ?>
 
-				<div class="eem-event-list-row__facts">
-					<?php if ( $primary_category ) : ?>
-						<div class="eem-event-list-row__fact">
-							<div class="eem-event-list-row__fact-value">
-								<span class="eem-event-list-row__fact-label"><?php esc_html_e( 'Event Type', 'equine-event-manager' ); ?></span>
-								<strong><?php echo esc_html( $primary_category ); ?></strong>
-							</div>
-						</div>
+				<h3 class="eem-event-list-row__title">
+					<?php if ( $event_url ) : ?>
+						<a href="<?php echo esc_url( $event_url ); ?>"><?php echo esc_html( $event_data['title'] ); ?></a>
+					<?php else : ?>
+						<?php echo esc_html( $event_data['title'] ); ?>
 					<?php endif; ?>
+				</h3>
 
-					<?php if ( $venue_name ) : ?>
-						<div class="eem-event-list-row__fact">
-							<div class="eem-event-list-row__fact-value">
-								<span class="eem-event-list-row__fact-label"><?php esc_html_e( 'Venue', 'equine-event-manager' ); ?></span>
-								<?php if ( $venue_filter_url ) : ?>
-									<a href="<?php echo esc_url( $venue_filter_url ); ?>"><strong><?php echo esc_html( $venue_name ); ?></strong></a>
-								<?php else : ?>
-									<strong><?php echo esc_html( $venue_name ); ?></strong>
-								<?php endif; ?>
-							</div>
-						</div>
-					<?php endif; ?>
+				<?php if ( $producer_name ) : ?>
+					<div class="eem-event-list-row__producer"><?php echo esc_html( $producer_name ); ?></div>
+				<?php endif; ?>
 
-					<?php if ( $producer_name ) : ?>
-						<div class="eem-event-list-row__fact">
-							<div class="eem-event-list-row__fact-value">
-								<span class="eem-event-list-row__fact-label"><?php esc_html_e( 'Organizer', 'equine-event-manager' ); ?></span>
-								<?php if ( $producer_filter ) : ?>
-									<a href="<?php echo esc_url( $producer_filter ); ?>"><strong><?php echo esc_html( $producer_name ); ?></strong></a>
-								<?php else : ?>
-									<strong><?php echo esc_html( $producer_name ); ?></strong>
-								<?php endif; ?>
-							</div>
-						</div>
-					<?php endif; ?>
-
-					<?php if ( $location_label ) : ?>
-						<div class="eem-event-list-row__fact">
-							<div class="eem-event-list-row__fact-value">
-								<span class="eem-event-list-row__fact-label"><?php esc_html_e( 'City, State', 'equine-event-manager' ); ?></span>
-								<strong><?php echo esc_html( $location_label ); ?></strong>
-							</div>
-						</div>
-					<?php endif; ?>
-				</div>
-
-				<footer class="eem-event-list-row__footer">
-					<div class="eem-event-list-row__actions">
-						<?php if ( $event_url ) : ?>
-							<a class="eem-event-list-row__view-link" href="<?php echo esc_url( $event_url ); ?>"><?php esc_html_e( 'View Event', 'equine-event-manager' ); ?></a>
-						<?php endif; ?>
-						<?php if ( $reserve_url ) : ?>
-							<a class="eem-event-card__button" href="<?php echo esc_url( $reserve_url ); ?>"><?php echo esc_html( $reserve_label ); ?></a>
-						<?php endif; ?>
+				<?php
+				// "📍 Venue · City, State" — a single muted line; either part is optional.
+				$venue_bits = array_filter( array( $venue_name, $location_label ), static function ( $v ) {
+					return '' !== trim( (string) $v );
+				} );
+				if ( ! empty( $venue_bits ) ) :
+					?>
+					<div class="eem-event-list-row__venue">
+						<span class="eem-event-list-row__pin" aria-hidden="true"></span>
+						<span><?php echo esc_html( implode( ' · ', $venue_bits ) ); ?></span>
 					</div>
-				</footer>
+				<?php endif; ?>
 			</div>
 		</article>
 		<?php
