@@ -278,6 +278,12 @@ class EEM_Admin {
 			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--venues' );
 		}
 
+		// Native Events Admin E — branded Event editor (reuse the reservation-
+		// editor shell variant: full-width 2-col editor chrome).
+		if ( EEM_Event_Editor_Page::MENU_SLUG === $page ) {
+			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--reservation-editor' );
+		}
+
 		// Native Events Admin B — branded taxonomy Categories pages (Event /
 		// Venue / Producer). Same shell-page branch requirement (DS-1.B.4) so
 		// legacy carve-outs don't shrink .eem-page.
@@ -338,6 +344,13 @@ class EEM_Admin {
 		// Native Events Admin C — branded Producers + Events lists.
 		if ( EEM_Producers_Page::MENU_SLUG === $page || EEM_Events_List_Page::MENU_SLUG === $page ) {
 			$should_load = true;
+		}
+
+		// Native Events Admin E — branded Event editor (needs the WP media
+		// library for the flyer PDF + featured image pickers).
+		if ( EEM_Event_Editor_Page::MENU_SLUG === $page ) {
+			$should_load = true;
+			wp_enqueue_media();
 		}
 
 		if ( ! $should_load ) {
@@ -1006,6 +1019,18 @@ class EEM_Admin {
 			'manage_options',
 			'equine-event-manager-reservation-editor',
 			array( 'EEM_Reservation_Editor_Page', 'render' )
+		);
+
+		// Native Events Admin E: branded Add/Edit Event editor. Hidden submenu
+		// (label '') — reached via the Events list "+ Add Event" / "Edit Event"
+		// (the raw WP en_event editor screens are redirected here).
+		add_submenu_page(
+			'',
+			__( 'Edit Event', 'equine-event-manager' ),
+			'',
+			'manage_options',
+			EEM_Event_Editor_Page::MENU_SLUG,
+			array( 'EEM_Event_Editor_Page', 'render' )
 		);
 
 		// DS-1.B: Admin Dashboard page — real render against
