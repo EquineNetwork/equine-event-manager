@@ -541,21 +541,24 @@ class EEM_Admin {
 		// CPT URL is still reachable via direct nav (the C4
 		// maybe_redirect_old_list bounce handles accidental hits).
 		// DS-1.B.4: Dashboard pinned to position 0 (above Orders).
-		// Native-events order (Whitney 2026-06-13): Dashboard, Orders, Entries,
-		// Reservations, Stall & RV Charts, then the native-events cluster (Events,
-		// Venues, Producers — each immediately followed by its Categories child so
-		// the hover-reveal nesting works), then Customers, Notifications, Reports,
-		// Settings. When native is off the Events/Venues/Producers/Categories
-		// entries don't exist and the order collapses cleanly.
+		// Menu order (Whitney 2026-06-13): Dashboard, Orders, Reservations,
+		// Stall & RV Charts, Events, Entries, Sheets & Results, Venues,
+		// Producers, Customers, Notifications, Reports, Settings. Each native
+		// Categories child immediately follows its parent (Events/Venues/
+		// Producers) so the hover-reveal nesting works — the Categories rows are
+		// hidden hover sub-items, so they don't occupy a visible slot. Sheets &
+		// Results sits with the event-content cluster (after Entries). When
+		// native is off the Events/Venues/Producers/Categories/Sheets entries
+		// don't exist and the order collapses cleanly.
 		$preferred_order = array(
 			'equine-event-manager-dashboard',
 			self::MENU_SLUG, // Orders (top-level Event Manager slug).
-			'equine-event-manager-entries',
 			'equine-event-manager-reservations',
-			EEM_Sheets_Results_Page::MENU_SLUG,
 			'equine-event-manager-stall-charts',
 			EEM_Events_List_Page::MENU_SLUG,
 			'equine-event-manager-event-categories',
+			'equine-event-manager-entries',
+			EEM_Sheets_Results_Page::MENU_SLUG,
 			EEM_Venues_Page::MENU_SLUG,
 			'equine-event-manager-venue-categories',
 			EEM_Producers_Page::MENU_SLUG,
