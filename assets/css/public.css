@@ -113,9 +113,9 @@
 }
 .eem-event-list-row {
 	display: grid;
-	grid-template-columns: 240px minmax(0, 1fr);
+	grid-template-columns: 220px minmax(0, 1fr);
 	gap: 18px;
-	align-items: stretch;
+	align-items: start;
 	padding: 16px;
 	border: 1px solid #D9E2F2;
 	border-radius: 8px;
@@ -137,7 +137,7 @@
 }
 .eem-event-list-row__media {
 	position: relative;
-	min-height: 200px;
+	height: 210px;
 	border-radius: 6px;
 	overflow: hidden;
 	background: #eef2fb;
@@ -203,14 +203,29 @@
 	display: grid;
 	gap: 8px;
 }
+/* Theme-proof the event title — front-end themes style h4 heavily (size,
+   transform, font), so enforce the brand treatment with !important (public CSS
+   competing with the active theme, same rationale as the radii above). */
 .eem-event-list-row__title {
-	margin: 0;
-	color: inherit;
+	margin: 0 !important;
+	color: #031B4E;
+	font-family: "Space Grotesk", system-ui, sans-serif !important;
+	font-size: 1.35rem !important;
+	font-weight: 700 !important;
+	line-height: 1.2 !important;
+	letter-spacing: -0.01em;
+	text-transform: none !important;
 }
 .eem-event-list-row__title a {
-	color: #031B4E;
-	font-family: "Space Grotesk", system-ui, sans-serif;
+	color: #031B4E !important;
+	font-family: inherit !important;
+	font-size: inherit !important;
+	font-weight: inherit !important;
 	text-decoration: none;
+}
+.eem-event-list-row__title a:hover,
+.eem-event-list-row__title a:focus {
+	color: #1668F2 !important;
 }
 .eem-event-list-row__title a:hover,
 .eem-event-list-row__title a:focus {
