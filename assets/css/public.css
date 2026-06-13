@@ -2,11 +2,11 @@
 	--eem-surface: #ffffff;
 	--eem-surface-alt: #f7f9fc;
 	--eem-line: #d7e0ea;
-	--eem-shadow: 0 18px 48px rgba(15, 23, 42, 0.12);
-	--eem-text: #18212f;
-	--eem-muted: #5f6f85;
-	--eem-accent: #b93742;
-	--eem-accent-dark: #1d2838;
+	--eem-shadow: 0 4px 14px rgba(3, 27, 78, 0.08);
+	--eem-text: #031B4E;
+	--eem-muted: #64748b;
+	--eem-accent: #1668F2;
+	--eem-accent-dark: #031B4E;
 	--eem-radius: 8px;
 	--eem-card-gap: 0.875rem;
 	color: var(--eem-text);
@@ -19,18 +19,19 @@
 }
 .eem-event-list {
 	display: grid;
-	gap: var(--eem-card-gap);
+	gap: 14px;
 	margin: 24px 0;
+	font-family: "IBM Plex Sans", system-ui, sans-serif;
 }
 .eem-event-list-empty {
 	display: grid;
 	gap: 8px;
 	padding: 28px 32px;
-	border: 1px solid #d9e2ec;
-	border-radius: var(--eem-radius);
-	background: linear-gradient(180deg, #ffffff 0%, #f8fbfe 100%);
-	box-shadow: 0 18px 38px rgba(23, 32, 51, 0.06);
+	border: 1px solid #D9E2F2;
+	border-radius: 8px;
+	background: #F7F9FC;
 	color: #273244;
+	font-family: "IBM Plex Sans", system-ui, sans-serif;
 }
 .eem-event-list-empty strong {
 	color: #172033;
@@ -48,7 +49,8 @@
 }
 .eem-event-directory-page__title {
 	margin: 0 0 20px;
-	color: #172033;
+	color: #031B4E;
+	font-family: "Space Grotesk", system-ui, sans-serif;
 	font-size: clamp(1.8rem, 3vw, 2.4rem);
 	line-height: 1.08;
 	letter-spacing: -0.03em;
@@ -112,13 +114,18 @@
 .eem-event-list-row {
 	display: grid;
 	grid-template-columns: 240px minmax(0, 1fr);
-	gap: var(--eem-card-gap);
+	gap: 18px;
 	align-items: stretch;
-	padding: 18px;
-	border: 1px solid #e1e8f0;
-	border-radius: var(--eem-radius);
-	background: linear-gradient(180deg, #ffffff 0%, #f8fbfe 100%);
-	box-shadow: 0 18px 38px rgba(23, 32, 51, 0.06);
+	padding: 16px;
+	border: 1px solid #D9E2F2;
+	border-radius: 8px;
+	background: #fff;
+	box-shadow: 0 1px 3px rgba(3, 27, 78, 0.06);
+	transition: border-color 0.15s, box-shadow 0.15s;
+}
+.eem-event-list-row:hover {
+	border-color: #b9ccef;
+	box-shadow: 0 4px 14px rgba(3, 27, 78, 0.08);
 }
 /* `images="no"` list variant — drop the media column so rows are a compact,
    text-only single column (e.g. for a sidebar or dense schedule). */
@@ -130,11 +137,11 @@
 }
 .eem-event-list-row__media {
 	position: relative;
-	min-height: 210px;
-	border-radius: var(--eem-radius);
+	min-height: 200px;
+	border-radius: 6px;
 	overflow: hidden;
-	background: linear-gradient(180deg, #f4f8fc 0%, #e8eef5 100%);
-	border: 1px solid #dbe5ee;
+	background: #eef2fb;
+	border: 1px solid #D9E2F2;
 }
 .eem-event-list-row__media img {
 	display: block;
@@ -149,14 +156,14 @@
 	display: inline-flex;
 	align-items: center;
 	gap: 8px;
-	padding: 9px 14px;
+	padding: 7px 12px;
 	border-radius: 999px;
 	background: rgba(255, 255, 255, 0.96);
-	color: #18212f;
-	font-size: 0.86rem;
-	font-weight: 800;
+	color: #031B4E;
+	font-size: 0.8rem;
+	font-weight: 700;
 	line-height: 1;
-	box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+	box-shadow: 0 2px 8px rgba(3, 27, 78, 0.14);
 }
 .eem-event-list-row__media-badge-icon {
 	display: inline-flex;
@@ -201,12 +208,13 @@
 	color: inherit;
 }
 .eem-event-list-row__title a {
-	color: #172033;
+	color: #031B4E;
+	font-family: "Space Grotesk", system-ui, sans-serif;
 	text-decoration: none;
 }
 .eem-event-list-row__title a:hover,
 .eem-event-list-row__title a:focus {
-	color: var(--eem-accent);
+	color: #1668F2;
 }
 .eem-event-list-row__date {
 	margin: 0;
@@ -235,12 +243,12 @@
 }
 .eem-event-list-row__fact-value strong,
 .eem-event-list-row__fact-value a {
-	color: #172033;
+	color: #031B4E;
 	text-decoration: none;
 }
 .eem-event-list-row__fact-value a:hover,
 .eem-event-list-row__fact-value a:focus {
-	color: var(--eem-accent);
+	color: #1668F2;
 }
 .eem-event-list-row__footer {
 	display: flex;
@@ -259,20 +267,20 @@
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	padding: 8px 14px;
-	border-radius: 999px;
-	background: #e8eef6;
-	color: #4f627d;
-	font-size: 0.74rem;
-	font-weight: 800;
-	letter-spacing: 0.08em;
+	padding: 9px 18px;
+	border-radius: 6px;
+	background: #1668F2;
+	color: #fff !important;
+	font-size: 0.82rem;
+	font-weight: 600;
+	letter-spacing: 0;
 	text-decoration: none;
-	text-transform: uppercase;
+	text-transform: none;
 }
 .eem-event-list-row__view-link:hover,
 .eem-event-list-row__view-link:focus {
-	background: #dde7f1;
-	color: #31445e;
+	background: #0f52cc;
+	color: #fff !important;
 }
 .eem-event-pagination {
 	display: flex;
@@ -613,12 +621,14 @@
 .equine-event-manager-calendar {
 	display: grid;
 	gap: 16px;
+	font-family: "IBM Plex Sans", system-ui, sans-serif;
 }
 .equine-event-manager-calendar__header h2 {
 	margin: 0;
-	color: #172033;
+	color: #031B4E;
+	font-family: "Space Grotesk", system-ui, sans-serif;
 	font-size: 28px;
-	font-weight: 800;
+	font-weight: 700;
 	letter-spacing: -0.02em;
 }
 .equine-event-manager-calendar__weekdays,
@@ -629,63 +639,68 @@
 }
 .equine-event-manager-calendar__weekday,
 .equine-event-manager-calendar__day {
-	border-radius: var(--eem-radius);
+	border-radius: 6px;
 	background: #fff;
-	border: 1px solid #dde6f0;
+	border: 1px solid #D9E2F2;
 }
 .equine-event-manager-calendar__weekday {
-	padding: 12px;
-	color: #617086;
+	padding: 10px;
+	color: #64748b;
 	font-size: 12px;
-	font-weight: 800;
-	letter-spacing: 0.08em;
+	font-weight: 600;
+	letter-spacing: 0.06em;
 	text-align: center;
 	text-transform: uppercase;
 }
 .equine-event-manager-calendar__day {
-	min-height: 140px;
-	padding: 12px;
-	box-shadow: 0 12px 24px rgba(23, 32, 51, 0.05);
+	min-height: 132px;
+	padding: 10px;
+	box-shadow: 0 1px 3px rgba(3, 27, 78, 0.05);
 }
 .equine-event-manager-calendar__day--empty {
-	background: transparent;
+	background: #F7F9FC;
 	border-style: dashed;
 	box-shadow: none;
 }
 .equine-event-manager-calendar__day-number {
-	margin-bottom: 10px;
-	color: #172033;
-	font-size: 15px;
-	font-weight: 800;
+	margin-bottom: 8px;
+	color: #031B4E;
+	font-size: 14px;
+	font-weight: 700;
 }
 .equine-event-manager-calendar__events {
 	display: grid;
-	gap: 8px;
+	gap: 6px;
 }
 .equine-event-manager-calendar__event {
 	display: block;
-	padding: 10px 12px;
-	border-radius: var(--eem-radius);
-	background: #f3f6fb;
-	color: #172033;
-	font-size: 13px;
-	font-weight: 700;
+	padding: 7px 10px;
+	border-radius: 5px;
+	background: #eef2fb;
+	color: #031B4E !important;
+	font-size: 12.5px;
+	font-weight: 600;
 	line-height: 1.35;
 	text-decoration: none;
 }
 .equine-event-manager-calendar__event:hover,
 .equine-event-manager-calendar__event:focus {
-	background: #172033;
-	color: #fff;
+	background: #1668F2;
+	color: #fff !important;
 }
-.eem-event-list-row,
+/* Theme-proof the brand corner radii — some front-end themes (e.g.
+   hello-elementor) reset border-radius to 0 on links/cards, flattening our
+   rounded brand surfaces. !important is appropriate here: this is the public
+   stylesheet competing with an arbitrary active theme, not admin CSS. */
+.eem-event-list-row { border-radius: 8px !important; }
 .eem-event-list-row__media,
+.eem-event-list-row__view-link,
+.equine-event-manager-calendar__weekday,
+.equine-event-manager-calendar__day { border-radius: 6px !important; }
+.equine-event-manager-calendar__event { border-radius: 5px !important; }
 .eem-event-hero__panel,
 .eem-event-media-card__visual,
-.eem-event-spotlight__reservation,
-.equine-event-manager-calendar__weekday,
-.equine-event-manager-calendar__day,
-.equine-event-manager-calendar__event {
+.eem-event-spotlight__reservation {
 	border-radius: var(--eem-radius);
 }
 
