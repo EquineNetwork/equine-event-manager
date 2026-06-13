@@ -1167,6 +1167,9 @@ class EEM_Events {
 		// so [en_events view="list|month|map"] and [en_event id="N"] just work.
 		add_shortcode( 'en_events', array( $this, 'render_events_shortcode' ) );
 		add_shortcode( 'en_event', array( $this, 'render_event_shortcode' ) );
+		// Public per-event Sheets & Results page, as a theme-placeable fallback
+		// to the `/events/{slug}/sheets-and-results/` route (Slice 5).
+		add_shortcode( 'eem_sheets_results', array( $this, 'render_sheets_results_shortcode' ) );
 	}
 
 	/**
@@ -1193,6 +1196,16 @@ class EEM_Events {
 			'index.php?eem_event_directory_type=$matches[1]&eem_event_directory_slug=$matches[2]',
 			'top'
 		);
+		// Public per-event Sheets & Results page (Slice 5):
+		// `/events/{slug}/sheets-and-results/`. A path-based fallback in
+		// maybe_render_sheets_results_page() also resolves it if the rewrite
+		// rules haven't been flushed, so the page works without a permalink
+		// re-save (same resilience pattern as the virtual event route).
+		add_rewrite_rule(
+			'^' . self::get_event_rewrite_slug() . '/([^/]+)/sheets-and-results/?$',
+			'index.php?eem_sheets_event=$matches[1]',
+			'top'
+		);
 	}
 
 	/**
@@ -1205,8 +1218,90 @@ class EEM_Events {
 		$vars[] = 'eem_reservation_event';
 		$vars[] = 'eem_event_directory_type';
 		$vars[] = 'eem_event_directory_slug';
+		$vars[] = 'eem_sheets_event';
 
 		return $vars;
+	}
+
+	/**
+	 * Render the public per-event Sheets & Results page (Screen 4) at
+	 * `/events/{slug}/sheets-and-results/`. Resolves the event slug from the
+	 * query var, falling back to a path match so the page works even if the
+	 * rewrite rules haven't been flushed.
+	 *
+	 * @return void
+	 */
+	public function maybe_render_sheets_results_page() {
+		$slug = sanitize_title( (string) get_query_var( 'eem_sheets_event' ) );
+
+		if ( '' === $slug && isset( $_SERVER['REQUEST_URI'] ) ) {
+			$path = (string) wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ), PHP_URL_PATH );
+			if ( preg_match( '#/([^/]+)/sheets-and-results/?$#', $path, $m ) ) {
+				$slug = sanitize_title( $m[1] );
+			}
+		}
+
+		if ( '' === $slug || ! class_exists( 'EEM_Sheets_Results_Page' ) ) {
+			return;
+		}
+
+		$event = get_page_by_path( $slug, OBJECT, self::EVENT_POST_TYPE );
+		if ( ! $event instanceof WP_Post ) {
+			return; // Not our route — let WordPress handle it (404 or otherwise).
+		}
+
+		$body = EEM_Sheets_Results_Page::render_public_page( (int) $event->ID );
+		if ( '' === $body ) {
+			return;
+		}
+
+		status_header( 200 );
+		nocache_headers();
+		self::render_frontend_styles();
+
+		$event_title = get_the_title( $event->ID );
+		add_filter(
+			'document_title_parts',
+			static function ( $parts ) use ( $event_title ) {
+				$parts['title'] = $event_title . ' — ' . __( 'Sheets & Results', 'equine-event-manager' );
+				return $parts;
+			}
+		);
+
+		if ( function_exists( 'get_header' ) ) {
+			get_header();
+		}
+		echo '<main class="equine-event-manager-sheets-results-page">';
+		echo $body; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pre-escaped in render_public_page().
+		echo '</main>';
+		if ( function_exists( 'get_footer' ) ) {
+			get_footer();
+		}
+		exit;
+	}
+
+	/**
+	 * `[eem_sheets_results]` fallback shortcode — renders the same public page
+	 * body for a given event id (or the current en_event post) so themes can
+	 * place it on a normal page when the rewrite route isn't desired.
+	 *
+	 * @param array|string $atts Shortcode attributes.
+	 * @return string
+	 */
+	public function render_sheets_results_shortcode( $atts ) {
+		$atts     = shortcode_atts( array( 'event_id' => 0, 'id' => 0 ), $atts, 'eem_sheets_results' );
+		$event_id = absint( $atts['event_id'] ? $atts['event_id'] : $atts['id'] );
+		if ( $event_id <= 0 ) {
+			$current = get_post();
+			if ( $current instanceof WP_Post && self::EVENT_POST_TYPE === $current->post_type ) {
+				$event_id = (int) $current->ID;
+			}
+		}
+		if ( $event_id <= 0 || ! class_exists( 'EEM_Sheets_Results_Page' ) ) {
+			return '';
+		}
+		self::render_frontend_styles();
+		return EEM_Sheets_Results_Page::render_public_page( $event_id );
 	}
 
 	/**
@@ -2642,6 +2737,25 @@ class EEM_Events {
 						<span><?php echo esc_html( implode( ' · ', $venue_bits ) ); ?></span>
 					</div>
 				<?php endif; ?>
+
+				<?php
+				// Conditional Sheets & Results buttons (Slice 4, additive). Native
+				// events only — `event_id` is the en_event post id. Each button
+				// shows only when the matching document type has ≥1 uploaded PDF.
+				$sr_event_id = ! empty( $event_data['event_id'] ) ? absint( $event_data['event_id'] ) : 0;
+				$sr_has_draw = $sr_event_id > 0 && class_exists( 'EEM_Sheet_Entries' ) && EEM_Sheet_Entries::has_drawsheets( $sr_event_id );
+				$sr_has_res  = $sr_event_id > 0 && class_exists( 'EEM_Sheet_Entries' ) && EEM_Sheet_Entries::has_results( $sr_event_id );
+				if ( $sr_has_draw || $sr_has_res ) :
+					?>
+					<div class="eem-event-list-row__actions">
+						<?php if ( $sr_has_draw ) : ?>
+							<a class="eem-event-list-row__btn eem-event-list-row__btn--draw" href="<?php echo esc_url( self::get_event_sheets_results_url( $sr_event_id, 'drawsheets' ) ); ?>"><?php esc_html_e( 'Draw Sheets', 'equine-event-manager' ); ?></a>
+						<?php endif; ?>
+						<?php if ( $sr_has_res ) : ?>
+							<a class="eem-event-list-row__btn eem-event-list-row__btn--results" href="<?php echo esc_url( self::get_event_sheets_results_url( $sr_event_id, 'results' ) ); ?>"><?php esc_html_e( 'Results', 'equine-event-manager' ); ?></a>
+						<?php endif; ?>
+					</div>
+				<?php endif; ?>
 			</div>
 		</article>
 		<?php
@@ -3282,6 +3396,30 @@ class EEM_Events {
 		}
 
 		return '';
+	}
+
+	/**
+	 * Public URL for a native event's Sheets & Results page (Screen 4):
+	 * `/events/{slug}/sheets-and-results/`. Used by the conditional event-card
+	 * buttons (Slice 4) and the per-event page handler (Slice 5).
+	 *
+	 * @param int    $event_id Native en_event post id.
+	 * @param string $tab      'drawsheets' (default) or 'results'.
+	 * @return string Empty string when the event has no permalink.
+	 */
+	public static function get_event_sheets_results_url( int $event_id, string $tab = 'drawsheets' ): string {
+		if ( $event_id <= 0 ) {
+			return '';
+		}
+		$base = get_permalink( $event_id );
+		if ( ! $base ) {
+			return '';
+		}
+		$url = trailingslashit( $base ) . 'sheets-and-results/';
+		if ( 'results' === $tab ) {
+			$url = add_query_arg( 'tab', 'results', $url );
+		}
+		return $url;
 	}
 
 	/**

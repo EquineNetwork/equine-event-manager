@@ -713,4 +713,209 @@ class EEM_Sheets_Results_Page {
 			'counts' => EEM_Sheet_Entries::counts( $event_id ),
 		) );
 	}
+
+	/* ---- public per-event page (Screen 4) --------------------------------- */
+
+	/**
+	 * Group a discipline's entries by their date (Y-m-d), preserving order.
+	 * Entries with no date collect under the '' key (rendered without a day
+	 * label). Only entries carrying the requested PDF column are included.
+	 *
+	 * @param array  $entries Discipline entries.
+	 * @param string $which   'drawsheet' (rows needing a draw-sheet PDF) or
+	 *                        'result' (mirror set: rows that HAVE a draw sheet).
+	 * @return array<string,array>
+	 */
+	private static function group_by_day( array $entries, string $which ): array {
+		$days = array();
+		foreach ( $entries as $e ) {
+			if ( 'result' === $which ) {
+				if ( $e['drawsheet_pdf'] <= 0 ) {
+					continue; // result rows mirror draw sheets only.
+				}
+			} elseif ( $e['drawsheet_pdf'] <= 0 ) {
+				continue;
+			}
+			$key = $e['entry_date'];
+			if ( ! isset( $days[ $key ] ) ) {
+				$days[ $key ] = array();
+			}
+			$days[ $key ][] = $e;
+		}
+		return $days;
+	}
+
+	/**
+	 * Render the public per-event Sheets & Results page (Screen 4): navy hero
+	 * with breadcrumb + status copy + tabs, then discipline groups with day
+	 * labels and PDF-link rows. The Results tab shows a "Coming soon" pill for a
+	 * mirrored row whose result PDF hasn't been uploaded yet.
+	 *
+	 * @param int $event_id Native en_event post id.
+	 * @return string Empty string when the event is invalid.
+	 */
+	public static function render_public_page( int $event_id ): string {
+		if ( $event_id <= 0 || EEM_Events::EVENT_POST_TYPE !== get_post_type( $event_id ) ) {
+			return '';
+		}
+		$title  = get_the_title( $event_id );
+		$start  = (string) get_post_meta( $event_id, '_equine_event_manager_event_start_date', true );
+		$end    = (string) get_post_meta( $event_id, '_equine_event_manager_event_end_date', true );
+		$range  = self::date_range_label( $start, $end );
+		list( $life_class, $life_label ) = self::lifecycle( $start, $end );
+
+		$venue_id   = (int) get_post_meta( $event_id, '_equine_event_manager_event_venue_id', true );
+		$venue_name = $venue_id > 0 ? get_the_title( $venue_id ) : '';
+		$location   = (string) get_post_meta( $event_id, '_equine_event_manager_event_location_label', true );
+
+		$status_copy = $life_label;
+		if ( 'eem-status-active' === $life_class ) {
+			$status_copy = __( 'Ongoing — results update as rounds complete', 'equine-event-manager' );
+		}
+
+		$groups   = EEM_Sheet_Entries::get_for_event_grouped_by_discipline( $event_id );
+		$counts   = EEM_Sheet_Entries::counts( $event_id );
+		$events_url = '';
+		$slug = EEM_Events::get_event_rewrite_slug();
+		if ( $slug ) {
+			$events_url = home_url( user_trailingslashit( $slug ) );
+		}
+
+		ob_start();
+		?>
+		<div class="eem-sr-public">
+			<div class="eem-sr-public-hero">
+				<div class="eem-sr-public-eyebrow">
+					<?php if ( $events_url ) : ?><a href="<?php echo esc_url( $events_url ); ?>"><?php esc_html_e( 'Events', 'equine-event-manager' ); ?></a> / <?php endif; ?>
+					<a href="<?php echo esc_url( (string) get_permalink( $event_id ) ); ?>"><?php echo esc_html( $title ); ?></a> / <?php esc_html_e( 'Sheets & Results', 'equine-event-manager' ); ?>
+				</div>
+				<h1 class="eem-sr-public-title"><?php echo esc_html( $title ); ?></h1>
+				<div class="eem-sr-public-meta">
+					<?php if ( '' !== $range ) : ?><span><?php echo esc_html( $range ); ?></span><?php endif; ?>
+					<?php
+					$venue_bits = array_filter( array( $venue_name, $location ) );
+					if ( ! empty( $venue_bits ) ) :
+						?>
+						<span><?php echo esc_html( implode( ' · ', $venue_bits ) ); ?></span>
+					<?php endif; ?>
+					<span class="eem-sr-public-status"><?php echo esc_html( $status_copy ); ?></span>
+				</div>
+				<div class="eem-sr-public-tabs">
+					<button type="button" class="eem-sr-public-tab is-active" data-eem-pub-tab="drawsheets"><?php esc_html_e( 'Draw Sheets', 'equine-event-manager' ); ?> <span class="eem-sr-public-tab-count"><?php echo esc_html( (string) $counts['drawsheets'] ); ?></span></button>
+					<button type="button" class="eem-sr-public-tab" data-eem-pub-tab="results"><?php esc_html_e( 'Results', 'equine-event-manager' ); ?> <span class="eem-sr-public-tab-count"><?php echo esc_html( (string) $counts['results'] ); ?></span></button>
+				</div>
+			</div>
+
+			<div class="eem-sr-public-body" data-eem-pub-panel="drawsheets">
+				<?php self::render_public_discipline_list( $groups, 'drawsheet' ); ?>
+			</div>
+			<div class="eem-sr-public-body" data-eem-pub-panel="results" hidden>
+				<?php self::render_public_discipline_list( $groups, 'result' ); ?>
+			</div>
+		</div>
+		<script>
+		(function () {
+			var root = document.currentScript.closest('.eem-sr-public');
+			if (!root) { return; }
+			function show(tab) {
+				root.querySelectorAll('.eem-sr-public-tab').forEach(function (b) { b.classList.toggle('is-active', b.getAttribute('data-eem-pub-tab') === tab); });
+				root.querySelectorAll('[data-eem-pub-panel]').forEach(function (p) { p.hidden = p.getAttribute('data-eem-pub-panel') !== tab; });
+			}
+			root.addEventListener('click', function (ev) {
+				var t = ev.target.closest('[data-eem-pub-tab]');
+				if (t) { show(t.getAttribute('data-eem-pub-tab')); }
+			});
+			var params = new URLSearchParams(window.location.search);
+			if (params.get('tab') === 'results') { show('results'); }
+		})();
+		</script>
+		<?php
+		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Render the discipline list for one public tab.
+	 *
+	 * @param array  $groups Grouped entries.
+	 * @param string $which  'drawsheet' or 'result'.
+	 * @return void
+	 */
+	private static function render_public_discipline_list( array $groups, string $which ): void {
+		$any = false;
+		foreach ( $groups as $g ) {
+			$days = self::group_by_day( $g['entries'], $which );
+			?>
+			<div class="eem-sr-pub-disc">
+				<div class="eem-sr-pub-disc-title"><?php echo esc_html( $g['discipline_name'] ); ?></div>
+				<?php
+				$rows_rendered = false;
+				foreach ( $days as $date => $entries ) {
+					if ( '' !== $date ) {
+						$ts = strtotime( $date );
+						if ( false !== $ts ) {
+							echo '<div class="eem-sr-pub-day">' . esc_html( date_i18n( 'l, M j', $ts ) ) . '</div>';
+						}
+					}
+					foreach ( $entries as $e ) {
+						$rows_rendered = true;
+						$any           = true;
+						self::render_public_item( $e, $which );
+					}
+				}
+				if ( ! $rows_rendered ) {
+					$msg = 'result' === $which
+						? __( 'No results posted yet. Check back as the event progresses.', 'equine-event-manager' )
+						: __( 'No draw sheets posted yet. Check back closer to the event.', 'equine-event-manager' );
+					echo '<div class="eem-sr-pub-empty">' . esc_html( $msg ) . '</div>';
+				}
+				?>
+			</div>
+			<?php
+		}
+		if ( empty( $groups ) ) {
+			echo '<div class="eem-sr-pub-empty eem-sr-pub-empty--all">' . esc_html__( 'Nothing posted yet. Check back closer to the event.', 'equine-event-manager' ) . '</div>';
+		}
+		unset( $any );
+	}
+
+	/**
+	 * Render a single public PDF-link row (or "Coming soon" pill on the Results
+	 * tab when the result PDF isn't uploaded yet).
+	 *
+	 * @param array  $e     Entry row.
+	 * @param string $which 'drawsheet' or 'result'.
+	 * @return void
+	 */
+	private static function render_public_item( array $e, string $which ): void {
+		$round = EEM_Sheet_Entries::round_label( $e['round'] );
+		$name  = '' !== $e['label'] ? $e['label'] : __( '(untitled)', 'equine-event-manager' );
+
+		if ( 'result' === $which && $e['result_pdf'] <= 0 ) {
+			// Mirrored result not uploaded yet.
+			$meta = '' !== $round ? $round . ' · ' . __( 'Not yet posted', 'equine-event-manager' ) : __( 'Not yet posted', 'equine-event-manager' );
+			?>
+			<div class="eem-sr-pub-item eem-sr-pub-item--pending">
+				<div class="eem-sr-pub-item-info">
+					<span class="eem-sr-pub-item-name"><?php echo esc_html( $name ); ?></span>
+					<span class="eem-sr-pub-item-meta"><?php echo esc_html( $meta ); ?></span>
+				</div>
+				<span class="eem-sr-pub-soon"><?php esc_html_e( 'Coming soon', 'equine-event-manager' ); ?></span>
+			</div>
+			<?php
+			return;
+		}
+
+		$pdf_id = 'result' === $which ? $e['result_pdf'] : $e['drawsheet_pdf'];
+		$url    = $pdf_id > 0 ? (string) wp_get_attachment_url( $pdf_id ) : '';
+		$meta   = '' !== $round ? $round . ' · PDF' : 'PDF';
+		?>
+		<a class="eem-sr-pub-item" href="<?php echo esc_url( $url ); ?>" target="_blank" rel="noopener">
+			<div class="eem-sr-pub-item-info">
+				<span class="eem-sr-pub-item-name"><?php echo esc_html( $name ); ?></span>
+				<span class="eem-sr-pub-item-meta"><?php echo esc_html( $meta ); ?></span>
+			</div>
+			<span class="eem-sr-pub-item-arrow" aria-hidden="true">&rsaquo;</span>
+		</a>
+		<?php
+	}
 }

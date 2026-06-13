@@ -4716,3 +4716,167 @@
 		margin-right: 16px;
 	}
 }
+
+/* ============================================================
+   Sheets & Results — conditional event-card buttons (Slice 4, additive).
+   Text-only buttons (binding: no icons on buttons). Shown only when the
+   event has uploaded draw sheets / results. Theme-proofed with !important
+   on color/border (public CSS competes with the active front-end theme).
+   ============================================================ */
+.eem-event-list-row__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 10px;
+}
+.eem-event-list-row__btn {
+	display: inline-flex;
+	align-items: center;
+	padding: 7px 16px;
+	border-radius: 6px;
+	border: 1px solid transparent;
+	font-family: "IBM Plex Sans", system-ui, sans-serif;
+	font-size: 13px;
+	font-weight: 600;
+	line-height: 1.2;
+	white-space: nowrap;
+	cursor: pointer;
+	text-decoration: none !important;
+}
+/* Draw Sheets — teal outline (mockup .card-btn-draw). */
+.eem-event-list-row__btn--draw,
+.eem-event-list-row__btn--draw:visited {
+	background: #ffffff !important;
+	color: #0d9488 !important;
+	border-color: #0d9488 !important;
+}
+.eem-event-list-row__btn--draw:hover,
+.eem-event-list-row__btn--draw:focus {
+	background: #F0FDFA !important;
+	color: #0d9488 !important;
+}
+/* Results — navy filled (mockup .card-btn-results). */
+.eem-event-list-row__btn--results,
+.eem-event-list-row__btn--results:visited {
+	background: #031B4E !important;
+	color: #ffffff !important;
+	border-color: #031B4E !important;
+}
+.eem-event-list-row__btn--results:hover,
+.eem-event-list-row__btn--results:focus {
+	background: #04256a !important;
+	color: #ffffff !important;
+}
+
+/* ============================================================
+   Public per-event Sheets & Results page (Slice 5, Screen 4).
+   Navy hero + lime-accent tabs, discipline groups, day labels, PDF rows.
+   ============================================================ */
+.eem-sr-public { font-family: "IBM Plex Sans", system-ui, sans-serif; color: #1d2327; }
+.eem-sr-public-hero { background: #031B4E; padding: 32px 24px 0; }
+.eem-sr-public-eyebrow {
+	font-size: 12px;
+	font-weight: 600;
+	color: rgba(255,255,255,.55);
+	letter-spacing: .04em;
+	margin-bottom: 8px;
+}
+.eem-sr-public-eyebrow a { color: rgba(255,255,255,.55) !important; text-decoration: none !important; }
+.eem-sr-public-eyebrow a:hover { color: rgba(255,255,255,.85) !important; }
+.eem-sr-public-title {
+	font-family: "Space Grotesk", "IBM Plex Sans", system-ui, sans-serif !important;
+	font-size: 1.7rem !important;
+	font-weight: 700 !important;
+	color: #fff !important;
+	margin: 0 0 8px !important;
+	text-transform: none !important;
+	line-height: 1.15 !important;
+}
+.eem-sr-public-meta { display: flex; gap: 16px; flex-wrap: wrap; padding-bottom: 18px; }
+.eem-sr-public-meta span { font-size: 13px; color: rgba(255,255,255,.6); }
+.eem-sr-public-status { color: rgba(255,255,255,.82) !important; font-weight: 600; }
+.eem-sr-public-tabs { display: flex; gap: 0; }
+.eem-sr-public-tab {
+	padding: 11px 22px;
+	font-size: 14px;
+	font-weight: 600;
+	color: rgba(255,255,255,.55);
+	background: transparent;
+	border: none;
+	border-bottom: 3px solid transparent;
+	cursor: pointer;
+	font-family: inherit;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+.eem-sr-public-tab:hover { color: rgba(255,255,255,.85); }
+.eem-sr-public-tab.is-active { color: #fff; border-bottom-color: #C8FF00; }
+.eem-sr-public-tab-count {
+	font-size: 11px;
+	font-weight: 700;
+	background: rgba(255,255,255,.15);
+	padding: 2px 7px;
+	border-radius: 10px;
+}
+.eem-sr-public-tab.is-active .eem-sr-public-tab-count { background: rgba(200,255,0,.25); color: #C8FF00; }
+
+.eem-sr-public-body { max-width: 860px; margin: 0 auto; padding: 26px 24px 40px; }
+.eem-sr-pub-disc { margin-bottom: 26px; }
+.eem-sr-pub-disc-title {
+	font-family: "Space Grotesk", "IBM Plex Sans", system-ui, sans-serif;
+	font-size: 13px;
+	font-weight: 700;
+	color: #6B7A99;
+	letter-spacing: .1em;
+	text-transform: uppercase;
+	margin-bottom: 12px;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+.eem-sr-pub-disc-title::after { content: ""; flex: 1; height: 1px; background: #e5e7eb; }
+.eem-sr-pub-day {
+	font-size: 12px;
+	font-weight: 700;
+	color: #8c8f94;
+	letter-spacing: .04em;
+	text-transform: uppercase;
+	padding: 8px 0 4px;
+}
+.eem-sr-pub-item {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 11px 14px;
+	background: #fff;
+	border: 1px solid #e5e7eb;
+	border-radius: 6px;
+	margin-bottom: 6px;
+	text-decoration: none !important;
+}
+.eem-sr-pub-item:hover { border-color: #1668F2; background: #fafcff; }
+.eem-sr-pub-item--pending { opacity: .85; }
+.eem-sr-pub-item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.eem-sr-pub-item-name { font-size: 14px; font-weight: 600; color: #031B4E; }
+.eem-sr-pub-item-meta { font-size: 12px; color: #6B7A99; }
+.eem-sr-pub-item-arrow { color: #c3c4c7; font-size: 20px; line-height: 1; flex-shrink: 0; }
+.eem-sr-pub-item:hover .eem-sr-pub-item-arrow { color: #1668F2; }
+.eem-sr-pub-soon {
+	font-size: 11px;
+	font-weight: 700;
+	color: #8c8f94;
+	background: #f3f4f5;
+	padding: 3px 9px;
+	border-radius: 10px;
+	white-space: nowrap;
+}
+.eem-sr-pub-empty {
+	text-align: center;
+	padding: 24px 16px;
+	color: #8c8f94;
+	font-size: 13px;
+	background: #fff;
+	border: 1px dashed #e5e7eb;
+	border-radius: 6px;
+}
