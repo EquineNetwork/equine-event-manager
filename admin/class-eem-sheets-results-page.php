@@ -815,7 +815,9 @@ class EEM_Sheets_Results_Page {
 		</div>
 		<script>
 		(function () {
-			var root = document.currentScript.closest('.eem-sr-public');
+			var root = document.currentScript && document.currentScript.previousElementSibling && document.currentScript.previousElementSibling.classList.contains('eem-sr-public')
+				? document.currentScript.previousElementSibling
+				: document.querySelector('.eem-sr-public');
 			if (!root) { return; }
 			function show(tab) {
 				root.querySelectorAll('.eem-sr-public-tab').forEach(function (b) { b.classList.toggle('is-active', b.getAttribute('data-eem-pub-tab') === tab); });
