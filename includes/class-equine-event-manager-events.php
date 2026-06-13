@@ -63,9 +63,23 @@ class EEM_Events {
 	/**
 	 * Determine whether native events are enabled.
 	 *
+	 * The Settings → Integrations event-source picker is the canonical control:
+	 * selecting "Native Events" turns the whole native system on (sidebar items,
+	 * taxonomies, frontend calendar). We read `default_event_source` directly so
+	 * menu/taxonomy visibility can NEVER drift out of sync with what the radio
+	 * shows — the legacy `native_events_enabled` feature flag (mirrored from the
+	 * picker on save) is kept only as a backward-compatible fallback for installs
+	 * saved before this unification. Fixes the "radio says Native Events but the
+	 * Events/Venues/Producers sidebar items vanish" drift.
+	 *
 	 * @return bool
 	 */
 	public static function is_native_events_enabled() {
+		$integration = self::get_integration_settings();
+		if ( isset( $integration['default_event_source'] ) && 'native' === $integration['default_event_source'] ) {
+			return true;
+		}
+
 		$settings = self::get_feature_settings();
 
 		return ! empty( $settings['native_events_enabled'] );
