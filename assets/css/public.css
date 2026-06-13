@@ -4010,6 +4010,33 @@
 .eem-event-page .hero-social-link:hover {
 	color: #031B4E;
 }
+
+/* Whitney 2026-06-13: text links across all event surfaces render BOLD dark-navy
+   (#091A35), never underlined, with an electric-blue hover. The theme/accent was
+   coloring contact (tel:/mailto:) links maroon. Fill buttons (Reserve Now,
+   Directions, View Event) and the chip-style calendar events keep their own
+   treatment; nothing — link or button — is ever underlined. !important is
+   required to beat the theme's link color (public CSS vs active theme). */
+.eem-event-page a,
+.eem-event-list a,
+.equine-event-manager-calendar a {
+	text-decoration: none !important;
+}
+.eem-event-page a:not(.btn-reserve):not(.btn-directions),
+.eem-event-list a:not(.eem-event-list-row__view-link),
+.equine-event-manager-calendar a:not(.equine-event-manager-calendar__event) {
+	color: #091A35 !important;
+	font-weight: 700 !important;
+}
+.eem-event-page a:not(.btn-reserve):not(.btn-directions):hover,
+.eem-event-page a:not(.btn-reserve):not(.btn-directions):focus,
+.eem-event-list a:not(.eem-event-list-row__view-link):hover,
+.eem-event-list a:not(.eem-event-list-row__view-link):focus,
+.equine-event-manager-calendar a:not(.equine-event-manager-calendar__event):hover,
+.equine-event-manager-calendar a:not(.equine-event-manager-calendar__event):focus {
+	color: #1668F2 !important;
+	text-decoration: none !important;
+}
 .eem-event-page .eem-event-body {
 	max-width: 1300px;
 	margin: 0 auto;
