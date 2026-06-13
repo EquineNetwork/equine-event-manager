@@ -29,6 +29,7 @@ class EEM_Events {
 	const EVENT_TAG_TAXONOMY = 'en_event_tag';
 	const VENUE_CATEGORY_TAXONOMY = 'en_venue_category';
 	const PRODUCER_CATEGORY_TAXONOMY = 'en_producer_category';
+	const DISCIPLINE_TAXONOMY = 'en_discipline';
 	const EVENT_META_NONCE = 'equine_event_manager_event_meta_nonce';
 	const VENUE_META_NONCE = 'equine_event_manager_venue_meta_nonce';
 	const PRODUCER_META_NONCE = 'equine_event_manager_producer_meta_nonce';
@@ -1088,6 +1089,33 @@ class EEM_Events {
 				'show_admin_column' => true,
 				'show_in_rest'      => true,
 				'hierarchical'      => true,
+			)
+		);
+
+		// Disciplines (en_discipline) — flat taxonomy on events used by the
+		// Sheets & Results system to group draw-sheet / result documents
+		// (Barrel Racing, Breakaway Roping, Tie-Down Roping, …). Flat (not
+		// hierarchical) because disciplines have no parent/child structure.
+		register_taxonomy(
+			self::DISCIPLINE_TAXONOMY,
+			array( self::EVENT_POST_TYPE ),
+			array(
+				'labels'            => array(
+					'name'          => __( 'Disciplines', 'equine-event-manager' ),
+					'singular_name' => __( 'Discipline', 'equine-event-manager' ),
+					'search_items'  => __( 'Search Disciplines', 'equine-event-manager' ),
+					'all_items'     => __( 'All Disciplines', 'equine-event-manager' ),
+					'edit_item'     => __( 'Edit Discipline', 'equine-event-manager' ),
+					'update_item'   => __( 'Update Discipline', 'equine-event-manager' ),
+					'add_new_item'  => __( 'Add Discipline', 'equine-event-manager' ),
+					'new_item_name' => __( 'New Discipline Name', 'equine-event-manager' ),
+					'menu_name'     => __( 'Disciplines', 'equine-event-manager' ),
+				),
+				'public'            => false,
+				'show_ui'           => true,
+				'show_admin_column' => false,
+				'show_in_rest'      => true,
+				'hierarchical'      => false,
 			)
 		);
 	}

@@ -42,6 +42,9 @@ class EEM_Activator {
 		if ( class_exists( 'EEM_Venue' ) ) {
 			EEM_Venue::create_tables();
 		}
+		if ( class_exists( 'EEM_Sheet_Entries' ) ) {
+			EEM_Sheet_Entries::create_table();
+		}
 		self::maybe_refresh_native_event_rewrite_rules();
 		self::run_one_time_migrations();
 		update_option( self::DB_VERSION_OPTION, EQUINE_EVENT_MANAGER_VERSION );
