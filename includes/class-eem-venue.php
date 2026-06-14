@@ -142,14 +142,46 @@ class EEM_Venue {
 			return 0;
 		}
 
-		// 1) exact source-map hit.
+		// 1) exact source-map hit — but re-check if the upstream venue name
+		//    changed (e.g. admin edited the TEC event's venue). When the name
+		//    drifts, update the source map to point at the correct canonical venue.
 		if ( '' !== $source_venue_id ) {
-			$hit = (int) $wpdb->get_var( $wpdb->prepare( // phpcs:ignore WordPress.DB
-				'SELECT venue_id FROM ' . self::source_map_table() . ' WHERE source = %s AND source_venue_id = %s LIMIT 1',
+			$map_row = $wpdb->get_row( $wpdb->prepare( // phpcs:ignore WordPress.DB
+				'SELECT id, venue_id, source_venue_name FROM ' . self::source_map_table() . ' WHERE source = %s AND source_venue_id = %s LIMIT 1',
 				$source, $source_venue_id
-			) );
-			if ( $hit > 0 ) {
-				return $hit;
+			), ARRAY_A );
+			if ( $map_row ) {
+				$old_name = trim( (string) ( $map_row['source_venue_name'] ?? '' ) );
+				if ( '' !== $name && $name !== $old_name ) {
+					// Venue changed upstream — resolve the new name.
+					$nkey       = self::normalize_key( $name );
+					$new_venue  = 0;
+					if ( '' !== $nkey ) {
+						$new_venue = (int) $wpdb->get_var( $wpdb->prepare( // phpcs:ignore WordPress.DB
+							'SELECT id FROM ' . self::venues_table() . ' WHERE normalized_key = %s LIMIT 1',
+							$nkey
+						) );
+					}
+					if ( $new_venue <= 0 ) {
+						$wpdb->insert( self::venues_table(), array( // phpcs:ignore WordPress.DB
+							'name'           => $name,
+							'normalized_key' => '' !== $nkey ? $nkey : self::normalize_key( $source_venue_id ),
+							'created_at'     => current_time( 'mysql' ),
+						), array( '%s', '%s', '%s' ) );
+						$new_venue = (int) $wpdb->insert_id;
+					}
+					if ( $new_venue > 0 ) {
+						$wpdb->update( // phpcs:ignore WordPress.DB
+							self::source_map_table(),
+							array( 'venue_id' => $new_venue, 'source_venue_name' => $name ),
+							array( 'id' => (int) $map_row['id'] ),
+							array( '%d', '%s' ),
+							array( '%d' )
+						);
+						return $new_venue;
+					}
+				}
+				return (int) $map_row['venue_id'];
 			}
 		}
 
