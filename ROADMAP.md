@@ -159,6 +159,26 @@ proving ground for the relational-migration pattern that #2 then applies at scal
    provider). Needs a source-type column on `wp_eem_sheet_entries` + per-type render + the admin
    "Add File" panel growing a type picker. Keep PDF as the default.
 
+### Hardening / audits (v3)
+
+5. **VERY thorough financial-security audit + a referenceable report.** A deeper pass than the
+   Jun-2026 audit (which fixed refund double-spend, Stripe payment-method reuse, and oversell via
+   advisory locks — see `[[security-inventory-hardening]]`). Cover the full money path end-to-end:
+   Stripe + Authorize.net charge/refund dispatch, amount/total integrity (no client-trusted prices;
+   server recomputes), idempotency on charge + refund, webhook auth + replay, discount/tax/
+   convenience-fee math, payment-key handling, capability + nonce on every money endpoint, and
+   activity-log completeness. **Deliverable: commit a `docs/SECURITY-AUDIT-REPORT.md` to the repo**
+   the dev team can refer to — scope, threat model, findings (with severity), what's mitigated and
+   how, and accepted-risk items.
+6. **STRICT inventory / concurrency audit for high-demand sellouts.** Entries + stall/RV
+   reservations can sell out in minutes with many simultaneous buyers. Audit every reserve/assign
+   write path for race-free, exactly-once allocation under heavy concurrency: the `GET_LOCK`
+   advisory-lock coverage (all 5 admin assign paths + checkout), atomic check-and-reserve before
+   charging, the entries spots-cap (`wp_eem_division_entries` ledger), double-submit / refresh /
+   back-button replays, and DB-level uniqueness as a backstop (the notes→table migration still
+   deferred — re-evaluate it here). Goal: provably no oversell, no lost-update, no double-charge no
+   matter how many people hit "buy" at once. Document the guarantees alongside the security report.
+
 ---
 
 ## 📱 v4 — HEADLESS CLIENTS (not soon; the payoff of the v2/v3 architecture work)
