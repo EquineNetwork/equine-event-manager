@@ -42,8 +42,9 @@ class EEM_Dashboard_Page {
 		$range = EEM_Dashboard_Repo::sanitize_range( isset( $_GET['range'] ) ? wp_unslash( $_GET['range'] ) : '' );
 		$repo  = new EEM_Dashboard_Repo();
 
-		$kpi_cards      = $repo->kpi_cards( $range );
-		$upcoming       = $repo->upcoming_reservations();
+		$kpi_cards       = $repo->kpi_cards( $range );
+		$upcoming        = $repo->upcoming_reservations();
+		$upcoming_events = $repo->upcoming_events();
 		$attention      = $repo->attention_items();
 		$recent_orders  = $repo->recent_orders();
 		$revenue_chart  = $repo->revenue_chart();
@@ -80,6 +81,9 @@ class EEM_Dashboard_Page {
 			<div class="eem-dashboard-grid">
 				<div class="eem-dashboard-main">
 					<?php self::render_upcoming_card( $upcoming ); ?>
+					<?php if ( class_exists( 'EEM_Events' ) && EEM_Events::is_native_events_enabled() ) : ?>
+						<?php self::render_upcoming_events_card( $upcoming_events ); ?>
+					<?php endif; ?>
 					<?php self::render_attention_card( $attention ); ?>
 					<?php self::render_recent_orders_card( $recent_orders ); ?>
 				</div>
@@ -275,6 +279,44 @@ class EEM_Dashboard_Page {
 							<div class="eem-dashboard-res-orders-label"><?php esc_html_e( 'orders', 'equine-event-manager' ); ?></div>
 							<div class="eem-dashboard-res-revenue"><?php echo esc_html( $row['revenue'] ); ?></div>
 						</div>
+					</a>
+				<?php endforeach; ?>
+			<?php endif; ?>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Upcoming Events card (Native Events) — listed when the Native Events
+	 * feature is on, parallel to Upcoming Reservations. Each row: event title +
+	 * date range · venue, with a relative "when" chip. Whitney 2026-06-14.
+	 *
+	 * @param array<int, array<string, mixed>> $events
+	 * @return void
+	 */
+	private static function render_upcoming_events_card( array $events ) {
+		?>
+		<div class="eem-card eem-dashboard-card">
+			<div class="eem-card-header">
+				<div class="eem-card-title"><?php echo EEM_Dashboard_Icons::svg( 'calendar' ); ?> <?php esc_html_e( 'Upcoming Events', 'equine-event-manager' ); ?></div>
+				<a class="eem-card-link" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-events' ) ); ?>"><?php esc_html_e( 'View all →', 'equine-event-manager' ); ?></a>
+			</div>
+			<?php if ( empty( $events ) ) : ?>
+				<div class="eem-dashboard-empty"><?php esc_html_e( 'No upcoming events.', 'equine-event-manager' ); ?></div>
+			<?php else : ?>
+				<?php foreach ( $events as $ev ) :
+					$edit_url = class_exists( 'EEM_Event_Editor_Page' ) ? EEM_Event_Editor_Page::url( (int) $ev['id'] ) : '';
+					?>
+					<a class="eem-dashboard-event-row" href="<?php echo esc_url( $edit_url ); ?>">
+						<div class="eem-dashboard-event-main">
+							<div class="eem-dashboard-event-name"><?php echo esc_html( $ev['title'] ); ?></div>
+							<div class="eem-dashboard-event-meta">
+								<?php echo esc_html( $ev['date_range'] ); ?><?php if ( '' !== (string) $ev['venue'] ) : ?> · <?php echo esc_html( $ev['venue'] ); ?><?php endif; ?>
+							</div>
+						</div>
+						<?php if ( ! empty( $ev['when']['label'] ) ) : ?>
+							<span class="eem-dashboard-event-when eem-dashboard-res-<?php echo esc_attr( $ev['when']['tone'] ); ?>"><?php echo esc_html( $ev['when']['label'] ); ?></span>
+						<?php endif; ?>
 					</a>
 				<?php endforeach; ?>
 			<?php endif; ?>

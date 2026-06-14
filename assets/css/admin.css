@@ -5793,6 +5793,42 @@ a.eem-dashboard-qa-btn:focus {
 }
 .eem-dashboard-res-opens-soon { color: #15803d; font-weight: 600; }
 .eem-dashboard-res-future     { color: #50575e; font-weight: 500; }
+
+/* Upcoming Events card rows (Native Events) — title + date · venue, with a
+   relative "when" pill on the right. Simpler than the reservation row (no
+   stall-progress bar). Added 2.7.295 (Whitney: dashboard completeness). */
+.eem-dashboard-event-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 12px 18px;
+	border-bottom: 1px solid var(--eem-border-soft);
+	color: var(--eem-text);
+}
+.eem-dashboard-event-row:last-child { border-bottom: none; }
+.eem-dashboard-event-row:hover { background: #f6f7f7; }
+.eem-dashboard-event-main { min-width: 0; }
+.eem-dashboard-event-name {
+	font-size: 14px;
+	font-weight: 700;
+	color: var(--eem-navy);
+	margin-bottom: 2px;
+}
+.eem-dashboard-event-row:hover .eem-dashboard-event-name { color: var(--eem-electric); }
+.eem-dashboard-event-meta { font-size: 12.5px; color: #50575e; }
+.eem-dashboard-event-when {
+	flex-shrink: 0;
+	font-size: 11.5px;
+	font-weight: 700;
+	padding: 3px 10px;
+	border-radius: 999px;
+	white-space: nowrap;
+}
+/* Pill tones — green when live/today, blue when still upcoming. These compound
+   selectors out-rank the plain text-colour `.eem-dashboard-res-*` rules above. */
+.eem-dashboard-event-when.eem-dashboard-res-opens-soon { background: #dcfce7; color: #15803d; }
+.eem-dashboard-event-when.eem-dashboard-res-future     { background: #dbeafe; color: #1d4ed8; }
 .eem-dashboard-res-tags {
 	display: flex;
 	gap: 5px;

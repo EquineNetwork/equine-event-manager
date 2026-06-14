@@ -880,6 +880,82 @@ class EEM_Dashboard_Repo {
 	 *   sheets:  array{enabled: bool, events: int, drawsheets: int, results: int, awaiting: int}
 	 * }
 	 */
+	/**
+	 * Upcoming native events for the Dashboard "Upcoming Events" card — shown
+	 * only when the Native Events feature is enabled (Whitney 2026-06-14: make
+	 * sure nothing is left out of the dashboard). Returns published `en_event`
+	 * events that haven't ended yet (upcoming + ongoing), soonest first, each
+	 * with a relative "when" chip parallel to the Upcoming Reservations card.
+	 *
+	 * @param int $limit Max rows to return.
+	 * @return array<int, array{id:int,title:string,date_range:string,venue:string,when:array{label:string,tone:string}}>
+	 */
+	public function upcoming_events( int $limit = 5 ): array {
+		if ( ! class_exists( 'EEM_Events' ) || ! EEM_Events::is_native_events_enabled() ) {
+			return array();
+		}
+
+		$posts = EEM_Events::get_upcoming_native_events( 200 );
+		$today = (int) strtotime( current_time( 'Y-m-d' ) );
+		$out   = array();
+
+		foreach ( $posts as $p ) {
+			if ( 'publish' !== get_post_status( $p ) ) {
+				continue;
+			}
+			$start    = (string) get_post_meta( $p->ID, '_equine_event_manager_event_start_date', true );
+			$end      = (string) get_post_meta( $p->ID, '_equine_event_manager_event_end_date', true );
+			$start_ts = '' !== trim( $start ) ? (int) strtotime( $start ) : 0;
+			$end_ts   = '' !== trim( $end ) ? (int) strtotime( $end ) : $start_ts;
+			// Skip events that have already ended.
+			if ( $end_ts && $end_ts < $today ) {
+				continue;
+			}
+			$venue_id = (int) get_post_meta( $p->ID, '_equine_event_manager_event_venue_id', true );
+
+			$out[] = array(
+				'id'         => (int) $p->ID,
+				'title'      => (string) get_the_title( $p ),
+				'date_range' => self::format_date_range( $start, $end ),
+				'venue'      => $venue_id > 0 ? (string) get_the_title( $venue_id ) : '',
+				'when'       => self::event_when_label( $start_ts, $end_ts, $today ),
+			);
+			if ( count( $out ) >= $limit ) {
+				break;
+			}
+		}
+
+		return $out;
+	}
+
+	/**
+	 * Relative "when" chip for an upcoming event: Happening now / Today /
+	 * In N days. Tone drives the pill colour (opens-soon = live/today/green,
+	 * future = blue).
+	 *
+	 * @param int $start_ts Event start (unix, 0 if none).
+	 * @param int $end_ts   Event end (unix, 0 if none).
+	 * @param int $today    Midnight-today (unix).
+	 * @return array{label:string,tone:string}
+	 */
+	private static function event_when_label( int $start_ts, int $end_ts, int $today ): array {
+		if ( $start_ts && $start_ts < $today && ( ! $end_ts || $end_ts >= $today ) ) {
+			return array( 'label' => __( 'Happening now', 'equine-event-manager' ), 'tone' => 'opens-soon' );
+		}
+		if ( $start_ts && $start_ts === $today ) {
+			return array( 'label' => __( 'Today', 'equine-event-manager' ), 'tone' => 'opens-soon' );
+		}
+		if ( $start_ts && $start_ts > $today ) {
+			$days = (int) round( ( $start_ts - $today ) / DAY_IN_SECONDS );
+			return array(
+				/* translators: %d: number of days until the event starts. */
+				'label' => sprintf( _n( 'In %d day', 'In %d days', $days, 'equine-event-manager' ), $days ),
+				'tone'  => 'future',
+			);
+		}
+		return array( 'label' => '', 'tone' => 'future' );
+	}
+
 	public static function addons_summary(): array {
 		global $wpdb;
 
