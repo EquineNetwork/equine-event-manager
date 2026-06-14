@@ -57,7 +57,8 @@
 		overlay.classList.add('open');
 
 		var close = function () { overlay.remove(); };
-		overlay.querySelector('[data-role="cancel"]').addEventListener('click', close);
+		var cancelBtn = overlay.querySelector('[data-role="cancel"]');
+		if (cancelBtn) cancelBtn.addEventListener('click', close);
 		overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
 		overlay.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 		overlay._close = close;
