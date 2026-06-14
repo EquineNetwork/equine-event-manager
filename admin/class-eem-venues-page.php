@@ -527,7 +527,7 @@ class EEM_Venues_Page {
 										<td class="eem-venue-layout-name"><?php echo esc_html( $l['name'] ); ?></td>
 										<td><?php echo esc_html( self::format_date( (string) $l['created_at'] ) ); ?></td>
 										<td class="eem-table-r">
-											<button type="button" class="eem-btn eem-btn-secondary eem-btn-sm" data-eem-action="venue-layout-view" data-layout-id="<?php echo esc_attr( (string) (int) $l['id'] ); ?>" data-layout-name="<?php echo esc_attr( (string) $l['name'] ); ?>"><?php esc_html_e( 'View', 'equine-event-manager' ); ?></button>
+											<button type="button" class="eem-btn eem-btn-primary eem-btn-sm" data-eem-action="venue-layout-view" data-layout-id="<?php echo esc_attr( (string) (int) $l['id'] ); ?>" data-layout-name="<?php echo esc_attr( (string) $l['name'] ); ?>"><?php esc_html_e( 'View', 'equine-event-manager' ); ?></button>
 											<button type="button" class="eem-btn eem-btn-secondary eem-btn-sm" data-eem-action="venue-layout-rename" data-layout-id="<?php echo esc_attr( (string) (int) $l['id'] ); ?>" data-layout-name="<?php echo esc_attr( (string) $l['name'] ); ?>"><?php esc_html_e( 'Rename', 'equine-event-manager' ); ?></button>
 											<button type="button" class="eem-btn eem-btn-danger eem-btn-sm" data-eem-action="venue-layout-delete" data-layout-id="<?php echo esc_attr( (string) (int) $l['id'] ); ?>" data-layout-name="<?php echo esc_attr( (string) $l['name'] ); ?>"><?php esc_html_e( 'Delete', 'equine-event-manager' ); ?></button>
 										</td>
