@@ -535,7 +535,7 @@ class EEM_Entries {
 								<td><?php echo '' !== $r['price'] ? esc_html( '$' . number_format( (float) $r['price'], 2 ) ) : '<span class="eem-orders-count is-zero">—</span>'; ?></td>
 								<td>
 									<?php
-									echo esc_html( $r['entered'] . ' / ' . ( $r['spots_int'] > 0 ? (string) $r['spots_int'] : __( 'Unlimited', 'equine-event-manager' ) ) );
+									echo wp_kses_post( self::entered_spots_html( (int) $r['entered'], (int) $r['spots_int'], (int) $r['oversold'] ) );
 									if ( $r['oversold'] > 0 ) {
 										echo ' <span class="eem-status-badge eem-status-refunded">' . esc_html(
 											/* translators: %d: count oversold by. */
@@ -592,7 +592,7 @@ class EEM_Entries {
 						<div class="eem-mobile-card-sub"><?php echo '' !== $r['event'] ? esc_html( $r['event'] ) : esc_html__( '— not connected —', 'equine-event-manager' ); ?></div>
 						<div class="eem-mobile-card-bottom">
 							<div class="eem-mobile-card-badges">
-								<span class="eem-mobile-card-metric"><?php echo esc_html( $r['entered'] . ' / ' . ( $r['spots_int'] > 0 ? (string) $r['spots_int'] : __( 'Unlimited', 'equine-event-manager' ) ) ); ?></span>
+								<span class="eem-mobile-card-metric"><?php echo wp_kses_post( self::entered_spots_html( (int) $r['entered'], (int) $r['spots_int'], (int) $r['oversold'] ) ); ?></span>
 								<?php if ( $r['oversold'] > 0 ) : ?>
 									<span class="eem-status-badge eem-status-refunded"><?php echo esc_html( sprintf( /* translators: %d: count oversold by. */ __( 'oversold by %d', 'equine-event-manager' ), $r['oversold'] ) ); ?></span>
 								<?php endif; ?>
@@ -749,6 +749,27 @@ class EEM_Entries {
 			return 'ongoing';
 		}
 		return 'scheduled';
+	}
+
+	/**
+	 * Render the "Entered / Spots" value with colour-coded numbers so the column
+	 * reads at a glance (Whitney 2026-06-14): entered in electric blue (red when
+	 * oversold), spots in green, muted slash between. Open-ended divisions show
+	 * "Unlimited" for spots.
+	 *
+	 * @param int $entered   Number of entrants.
+	 * @param int $spots_int Capacity (0 = unlimited).
+	 * @param int $oversold  How many over capacity (0 = within cap).
+	 * @return string Safe HTML (all values escaped; echo via wp_kses_post()).
+	 */
+	private static function entered_spots_html( int $entered, int $spots_int, int $oversold ): string {
+		$spots_label = $spots_int > 0 ? number_format_i18n( $spots_int ) : __( 'Unlimited', 'equine-event-manager' );
+		$entered_cls = 'eem-entered-count' . ( $oversold > 0 ? ' is-oversold' : '' );
+		return '<span class="eem-entered-spots">'
+			. '<span class="' . esc_attr( $entered_cls ) . '">' . esc_html( number_format_i18n( $entered ) ) . '</span>'
+			. '<span class="eem-entered-sep">/</span>'
+			. '<span class="eem-spots-count">' . esc_html( $spots_label ) . '</span>'
+			. '</span>';
 	}
 
 	/**

@@ -3861,6 +3861,16 @@ a.eem-res-name:focus {
 .eem-res-status--past     { background: #e5e7eb; color: #52525b; }
 .eem-res-status--past::before     { background: #94a3b8; }
 
+/* Entries/Divisions "Entered / Spots" cell — make the numbers legible at a
+   glance (Whitney 2026-06-14): ENTERED in electric blue (red when oversold),
+   SPOTS in green, with a muted slash between. Bold + tabular figures so the
+   columns line up. */
+.eem-entered-spots { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.eem-entered-count { color: var(--eem-electric); }
+.eem-entered-count.is-oversold { color: #dc2626; }
+.eem-entered-sep { color: var(--eem-text-muted); font-weight: 400; margin: 0 3px; }
+.eem-spots-count { color: #15803d; }
+
 /* Orders count cell. Zero counts dim per RES-5. Mockup lines 115-116. */
 .eem-orders-count {
 	font-size: 14px;
