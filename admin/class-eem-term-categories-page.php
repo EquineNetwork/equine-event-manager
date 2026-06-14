@@ -363,7 +363,7 @@ class EEM_Term_Categories_Page {
 				</span>
 			</div>
 
-			<div class="eem-desktop-table">
+			<div class="eem-desktop-table eem-desktop-table--scroll">
 				<table class="eem-table eem-term-table">
 					<thead>
 						<tr>

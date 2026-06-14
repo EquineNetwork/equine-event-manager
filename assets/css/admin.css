@@ -5651,7 +5651,18 @@ select.eem-dashboard-range-select:focus {
 	display: flex;
 	flex-direction: column;
 	gap: 14px;
+	/* min-width:0 lets the grid `1fr` track shrink below the cards'
+	   intrinsic min-content width on phone/tablet. Without it, the
+	   long order/reservation rows (~467px min-content) force the track
+	   open and `.eem-page-wrap`'s overflow-x:hidden clips the right
+	   edge — the mobile clip Whitney reported (2026-06-14). */
+	min-width: 0;
 }
+/* Same shrink-floor reset for the cards (flex items of the column) and
+   the KPI cards (grid items), so their ellipsis-truncating rows clip
+   instead of widening the layout. */
+.eem-dashboard-card,
+.eem-dashboard-kpi-card { min-width: 0; }
 
 /* Inner card chrome shared with .eem-card — but reset card-title size
    to the Dashboard's slightly larger 15px scale (mockup line 84). */
@@ -9869,3 +9880,147 @@ a.eem-add-term-link:hover { color: #1257d1; }
 .eem-venue-layouts__name { font-weight: 600; color: var(--eem-navy); font-size: 13px; }
 .eem-venue-layouts__actions { display: flex; gap: 10px; flex-shrink: 0; }
 .eem-venue-layouts__hint { font-size: 12px; color: var(--eem-text-muted); line-height: 1.4; margin: 0; }
+
+/* =====================================================================
+   MOBILE / TABLET OVERFLOW HARDENING — full-plugin responsive audit
+   (2026-06-14). Whitney reported the Dashboard right edge clipping on
+   an iPhone; a browser-inspected sweep of every admin + customer screen
+   at phone (≤390) and tablet (≤768) found the same root cause family on
+   several pages: a flex/grid item or form control with the default
+   `min-width:auto` refusing to shrink below its content's min-content
+   width, which forces the layout wider than the viewport. Because
+   `.eem-page-wrap` is `overflow-x:hidden`, the excess is silently
+   CLIPPED (no scrollbar) — the right edge just disappears.
+
+   The cure is `min-width:0` (+ `max-width:100%`) so the track/control
+   can shrink and its own ellipsis / wrap takes over. Base-width rules
+   below are safe at all widths; the rest are scoped to ≤767.
+   ===================================================================== */
+
+/* Order Detail 2-col grid items — same family as the Dashboard fix
+   (.eem-dashboard-main/-side above). Safe at desktop (content fits). */
+.eem-order-main,
+.eem-order-side,
+.eem-order-card { min-width: 0; }
+
+@media (max-width: 767px) {
+	/* List toolbars (Orders/Events/Reservations/etc.): the Choices.js
+	   event-filter widget, search form and item-count weren't covered by
+	   the `.eem-toolbar-select` shrink rule, so they pushed the toolbar
+	   wider than the viewport. Let every toolbar child wrap + shrink. */
+	/* The toolbar goes column at ≤767. Its left/right groups carry the
+	   base `flex:1` (flex-basis:0%), which in a COLUMN flex parent leaves
+	   their width content-driven — so a long Choices value or search input
+	   blew them past the viewport. `width:100% + flex-basis:auto` pins them
+	   to the column width; the children then truncate/wrap inside. */
+	.eem-list-toolbar-left,
+	.eem-list-toolbar-right { flex-wrap: wrap; min-width: 0; width: 100%; max-width: 100%; flex-basis: auto; }
+	/* `.eem-choices.choices` (0,2,0) in eem-choices.css hard-floors the
+	   widget at min-width:200px and loads after admin.css, so this needs
+	   the compound `.eem-list-toolbar .eem-choices.choices` (0,3,0) to win
+	   and let the event-filter shrink to the column. */
+	.eem-list-toolbar .eem-choices.choices,
+	.eem-orders-event-filter-form,
+	.eem-events-toolbar-form,
+	.eem-search-form { flex: 1 1 100%; min-width: 0; max-width: 100%; width: 100%; }
+	.eem-list-toolbar .choices__inner { min-width: 0; }
+	/* The Choices selected value is a long, nowrap event name — truncate it
+	   with an ellipsis so it can't force the control wider than the column. */
+	.eem-list-toolbar .choices__list--single .choices__item { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+	.eem-list-toolbar .eem-search-wrap { width: 100%; min-width: 0; max-width: 100%; }
+	.eem-list-toolbar .eem-search-input { min-width: 0; width: 100%; }
+	/* The open dropdown panel is intentionally wider than the control
+	   (280px) to show long event names; cap it to the viewport on phones
+	   so it never spills off-screen. */
+	.eem-choices .choices__list--dropdown,
+	.eem-choices .choices__list[aria-expanded] { min-width: 0; max-width: calc(100vw - 24px); }
+	.eem-item-count,
+	.eem-list-count { flex-basis: 100%; }
+
+	/* Notifications audience builder — the Include/Exclude/Payment
+	   selects + live count overflowed their column. */
+	.eem-notif-field,
+	.eem-notif-field .eem-field-select,
+	.eem-notif-field .choices,
+	.eem-notif-count { min-width: 0; max-width: 100%; width: 100%; }
+
+	/* Reports — filter groups, the two-up date-range inputs, and the
+	   Export History table all overran. Filters wrap/shrink; the table
+	   gets its own horizontal scroll so nothing is clipped off-screen. */
+	.eem-filter-group,
+	.eem-daterange-inputs { flex-wrap: wrap; min-width: 0; }
+	.eem-filter-input,
+	.eem-filter-select,
+	.eem-daterange-inputs > * { min-width: 0; max-width: 100%; }
+	.eem-export-history { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+	/* Admin-config list tables (Entries entrants + divisions, Notifications
+	   send-history, taxonomy Categories) have no mobile-card fallback, so the
+	   base `.eem-desktop-table { display:none }` left them BLANK on phones.
+	   The `--scroll` opt-in keeps the full table but makes it horizontally
+	   scrollable instead of hidden, so every row stays reachable. (The
+	   high-traffic Orders/Reservations lists keep their dedicated mobile
+	   cards and are intentionally NOT tagged with this modifier.) */
+	.eem-desktop-table--scroll { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+	/* Sheets & Results — the event-select, discipline typeahead and the
+	   "Add File" action row were clipped past the card edge (un-tappable).
+	   The group header is a nowrap [title | actions] flex row; let the
+	   actions wrap under the title, and let the discipline tabs scroll. */
+	.eem-sr-group-head { flex-wrap: wrap; }
+	.eem-sr-group-actions { flex-wrap: wrap; }
+	.eem-sr-tabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+	.eem-sr-event-select,
+	.eem-sr-discipline-input { min-width: 0; max-width: 100%; width: 100%; }
+
+	/* Taxonomy Categories (Event/Venue/Producer) — the page is a two-panel
+	   flex row (add/edit form | table). Stack it on phones and let every
+	   panel + the table toolbar/search shrink to the column. */
+	.eem-term-split { flex-direction: column; }
+	.eem-term-form-panel,
+	.eem-term-table-panel { min-width: 0; max-width: 100%; width: 100%; }
+	.eem-term-form-panel .eem-field-input,
+	.eem-term-form-panel .eem-field-select,
+	.eem-term-form-panel .eem-field-textarea { min-width: 0; max-width: 100%; }
+	.eem-term-toolbar { flex-wrap: wrap; min-width: 0; }
+	.eem-term-search-form,
+	.eem-term-search-form .eem-search-wrap,
+	.eem-term-search-form .eem-search-input { min-width: 0; max-width: 100%; }
+
+	/* Reservation editor — the stall Map Builder header actions + control
+	   row pushed buttons off-screen; let them wrap. */
+	.eem-mb-head-actions,
+	.eem-mb-controls { flex-wrap: wrap; min-width: 0; }
+	.eem-mb-btn { min-width: 0; }
+	/* Sticky save bar — 4 buttons (Preview / Save Draft / Delete / Update)
+	   were a nowrap row that ran off the right edge; wrap them on phones. */
+	.eem-sticky-save,
+	.eem-sticky-save-actions { flex-wrap: wrap; }
+	/* General form-control shrink safety for the editor pages: any field
+	   input/select/textarea may carry an intrinsic width — clamp to the row. */
+	.eem-field-control,
+	.eem-field-input,
+	.eem-field-select,
+	.eem-field-textarea { min-width: 0; max-width: 100%; }
+
+	/* Event editor (Sheets & Results section) — the labelled-button input
+	   row overran slightly. */
+	.eem-btn-label-wrap { flex-wrap: wrap; min-width: 0; }
+	.eem-btn-label-input { min-width: 0; max-width: 100%; }
+}
+
+/* Tablet band (768–1024). The dedicated mobile cards only replace the
+   data tables at ≤767, so a PORTRAIT tablet (768) still renders the full
+   desktop table — and the wide Orders/Reservations/Events/Entries tables
+   and the taxonomy Categories table exceed that width. Let those tables
+   scroll horizontally inside their container instead of overflowing the
+   page, and stack the taxonomy two-panel layout. (At ≤767 `.eem-desktop-
+   table` is display:none, so this overflow rule is inert there — no
+   conflict with the mobile cards.) */
+@media (max-width: 1024px) {
+	.eem-desktop-table,
+	.eem-term-table-panel { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+	.eem-term-split { flex-direction: column; }
+	.eem-term-form-panel,
+	.eem-term-table-panel { min-width: 0; max-width: 100%; width: 100%; }
+}

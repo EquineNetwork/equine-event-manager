@@ -195,7 +195,7 @@ class EEM_Notifications_Page {
 			return;
 		}
 		?>
-		<div class="eem-desktop-table">
+		<div class="eem-desktop-table eem-desktop-table--scroll">
 			<table class="eem-table">
 				<thead><tr>
 					<th><?php esc_html_e( 'Sent', 'equine-event-manager' ); ?></th>

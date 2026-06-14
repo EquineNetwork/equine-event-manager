@@ -286,7 +286,7 @@ class EEM_Entries {
 			</div>
 		</div>
 
-		<div class="eem-desktop-table">
+		<div class="eem-desktop-table eem-desktop-table--scroll">
 			<table class="eem-table">
 				<thead>
 					<tr>
@@ -453,7 +453,7 @@ class EEM_Entries {
 			<?php
 		endif;
 		?>
-		<div class="eem-desktop-table">
+		<div class="eem-desktop-table eem-desktop-table--scroll">
 			<table class="eem-table eem-entries-table" data-eem-entries-table>
 				<thead>
 					<tr>
