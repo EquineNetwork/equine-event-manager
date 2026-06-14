@@ -4794,8 +4794,23 @@ class EEM_Admin {
 
 		// Serialize the write behind the per-reservation lock so this manual
 		// override can't interleave with a concurrent auto-assign / checkout.
+		// Fail SAFE if the lock can't be acquired (was previously ignored — the
+		// override would proceed unserialized on a 15s timeout). [audit LOW-1]
 		$assign_res_id = isset( $order['reservation_id'] ) ? absint( $order['reservation_id'] ) : 0;
-		$this->acquire_assignment_lock( $assign_res_id );
+		if ( ! $this->acquire_assignment_lock( $assign_res_id ) ) {
+			$this->redirect_to_order_notice( $order_key, 'assignment_update_failed', __( 'Another change to this event is still finishing. Please wait a moment and try again.', 'equine-event-manager' ) );
+		}
+
+		// Reject any stall/lot already assigned to a DIFFERENT order on this
+		// reservation — the override previously wrote the admin's selection
+		// verbatim with no cross-order conflict check, so two admins editing two
+		// orders could double-book the same unit. [audit MED-2]
+		$conflict = $this->find_assignment_conflict( $assign_res_id, $order_key, $stall_units, $rv_lots );
+		if ( '' !== $conflict ) {
+			$this->release_assignment_lock( $assign_res_id );
+			$this->redirect_to_order_notice( $order_key, 'assignment_update_failed', $conflict );
+		}
+
 		$updated = $this->orders_repository->update_order_unit_assignments( $order_key, $stall_units, $rv_lots );
 		$this->release_assignment_lock( $assign_res_id );
 
@@ -4804,6 +4819,61 @@ class EEM_Admin {
 		}
 
 		$this->redirect_to_order_notice( $order_key, 'assignment_update_success' );
+	}
+
+	/**
+	 * Detect whether any requested stall/RV unit is already assigned to a
+	 * DIFFERENT order on the same reservation. Mirrors the cross-order conflict
+	 * scan in ajax_stall_map_action so the Order Detail override gets the same
+	 * double-book protection. MUST be called while holding the per-reservation
+	 * assignment lock so the scan + the subsequent write are atomic. [audit MED-2]
+	 *
+	 * @param int    $reservation_id Reservation post id.
+	 * @param string $order_key      The order being edited (excluded from the scan).
+	 * @param string $stall_csv      Comma-separated stall units the admin selected.
+	 * @param string $rv_csv         Comma-separated RV lots the admin selected.
+	 * @return string Empty when there is no conflict; otherwise a ready-to-show error message.
+	 */
+	private function find_assignment_conflict( int $reservation_id, string $order_key, string $stall_csv, string $rv_csv ): string {
+		$want_stalls = array_map( 'strval', (array) $this->parse_assigned_units_string( $stall_csv ) );
+		$want_rv     = array_map( 'strval', (array) $this->parse_assigned_units_string( $rv_csv ) );
+		if ( empty( $want_stalls ) && empty( $want_rv ) ) {
+			return '';
+		}
+
+		foreach ( $this->get_reservation_orders( $reservation_id ) as $o ) {
+			if ( (string) $o['order_key'] === (string) $order_key ) {
+				continue;
+			}
+			if ( ! empty( $want_stalls ) ) {
+				$other = array_map( 'strval', (array) $this->parse_assigned_units_string(
+					$this->get_order_component_note_value( $o, 'stall', 'Assigned Stall Units' )
+				) );
+				$clash = array_values( array_intersect( $want_stalls, $other ) );
+				if ( ! empty( $clash ) ) {
+					return sprintf(
+						/* translators: %s: comma-separated stall labels. */
+						_n( 'Stall %s is already assigned to another customer.', 'Stalls %s are already assigned to another customer.', count( $clash ), 'equine-event-manager' ),
+						implode( ', ', $clash )
+					);
+				}
+			}
+			if ( ! empty( $want_rv ) ) {
+				$other = array_map( 'strval', (array) $this->parse_assigned_units_string(
+					$this->get_order_component_note_value( $o, 'rv', 'Assigned RV Lots' )
+				) );
+				$clash = array_values( array_intersect( $want_rv, $other ) );
+				if ( ! empty( $clash ) ) {
+					return sprintf(
+						/* translators: %s: comma-separated RV lot labels. */
+						_n( 'RV lot %s is already assigned to another customer.', 'RV lots %s are already assigned to another customer.', count( $clash ), 'equine-event-manager' ),
+						implode( ', ', $clash )
+					);
+				}
+			}
+		}
+
+		return '';
 	}
 
 	/**
@@ -10119,8 +10189,11 @@ class EEM_Admin {
 		$updated_any = false;
 
 		// Serialize the whole allocate-then-write sweep behind the per-reservation
-		// lock so it can't race a checkout or another admin assign mid-loop.
-		$this->acquire_assignment_lock( $reservation_id );
+		// lock so it can't race a checkout or another admin assign mid-loop. Fail
+		// SAFE if the lock can't be acquired (was previously ignored). [audit LOW-1]
+		if ( ! $this->acquire_assignment_lock( $reservation_id ) ) {
+			$this->redirect_to_reservation_notice_destination( $reservation_id, 'stall_assignments_generation_failed', __( 'Another change to this event is still finishing. Please wait a moment and try again.', 'equine-event-manager' ), $return_page );
+		}
 		try {
 		foreach ( $orders as $order ) {
 			$stall_dates  = $this->get_stall_chart_occupied_dates( $order['stall_arrival_date'], $order['stall_departure_date'] );
