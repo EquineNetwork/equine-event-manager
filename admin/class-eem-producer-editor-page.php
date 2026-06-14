@@ -210,12 +210,12 @@ class EEM_Producer_Editor_Page {
 	private static function render_main_cards( array $d ): void {
 		eem_render_reservation_editor_section( array(
 			'key' => 'producer-name', 'title' => __( 'Producer Name', 'equine-event-manager' ),
-			'icon_tone' => 'navy', 'icon_key' => 'user', 'enable_toggle' => false,
+			'icon_tone' => 'navy', 'icon_key' => 'users', 'enable_toggle' => false,
 			'body_html' => self::body_name( $d ),
 		) );
 		eem_render_reservation_editor_section( array(
 			'key' => 'producer-details', 'title' => __( 'Contact Details', 'equine-event-manager' ),
-			'icon_tone' => 'blue', 'icon_key' => 'info', 'enable_toggle' => false,
+			'icon_tone' => 'blue', 'icon_key' => 'mail', 'enable_toggle' => false,
 			'body_html' => self::body_details( $d ),
 		) );
 		eem_render_reservation_editor_section( array(

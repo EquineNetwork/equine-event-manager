@@ -220,7 +220,7 @@ class EEM_Venue_Editor_Page {
 		) );
 		eem_render_reservation_editor_section( array(
 			'key' => 'venue-details', 'title' => __( 'Address & Contact', 'equine-event-manager' ),
-			'icon_tone' => 'blue', 'icon_key' => 'info', 'enable_toggle' => false,
+			'icon_tone' => 'blue', 'icon_key' => 'map-pin', 'enable_toggle' => false,
 			'body_html' => self::body_details( $d ),
 		) );
 		eem_render_reservation_editor_section( array(
