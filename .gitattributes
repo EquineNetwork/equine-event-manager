@@ -22,3 +22,8 @@ docs/ export-ignore
 /composer.json export-ignore
 /composer.lock export-ignore
 /phpcs.xml export-ignore
+/BACKLOG.md export-ignore
+/ROADMAP.md export-ignore
+/SESSION-HANDOFF.md export-ignore
+/.gitattributes export-ignore
+/.gitignore export-ignore
