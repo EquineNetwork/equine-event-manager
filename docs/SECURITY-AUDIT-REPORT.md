@@ -63,7 +63,7 @@ fix) · ⚠️ accepted risk.
 | ID | Sev | Status | Finding | Where | Notes / fix |
 |---|---|---|---|---|---|
 | **F1** | HIGH | ✅ **fixed 2.7.283** | Hosted-invoice payment path charged with **no lock + no dedup** → concurrent/replayed invoice POSTs could double-charge (launch processor). | `shortcodes.php` `handle_invoice_payment_submission` | Wrapped in a per-invoice `eem_invoice_<md5>` advisory lock with an in-lock fresh payable re-read before charge; released in `finally`. Smoke `invoice-payment-lock-smoke.php`. |
-| **MED-1** | MEDIUM | 📝 pending | Main `[en_reservation]` checkout fires the Auth.net charge *before* the duplicate-submission-token check (`charge` at `shortcodes.php:2353`, dedup inside insert at `:3799`). A replayed submission creates no duplicate *order* but can fire a second *charge*. Stripe unaffected. Auth.net's server-side Duplicate Window (~120s default) is the only current backstop. | `shortcodes.php:2353` / `:3799` | Fix: move `has_processed_submission_token()` ahead of `process_payment_submission()` (it only marks-processed on success, so legitimate retries after a decline still work), and/or send an explicit idempotency / `duplicateWindow` to Auth.net. **Payment-path change — do as one verified edit.** |
+| **MED-1** | MEDIUM | ✅ **fixed 2.7.284** | Main `[en_reservation]` checkout fired the Auth.net charge *before* the duplicate-submission-token check (`charge` at `shortcodes.php:2353`, dedup inside insert at `:3799`). A replayed submission created no duplicate *order* but could fire a second *charge*. Stripe unaffected. | `shortcodes.php` `handle_reservation_submission` | Now checks `has_processed_submission_token()` ahead of `process_payment_submission()`, under the same checkout lock, returning the identical duplicate-success shape (confirmation render unchanged). Token only marks-processed on success, so retries after a decline still charge. Smoke `checkout-replay-guard-smoke.php`. |
 | **MED-2** | MEDIUM | ✅ **fixed 2.7.282** | Order Detail manual assignment override wrote admin-chosen stalls/lots with **no cross-order conflict check** → two admins could double-book a unit. | `admin.php` `handle_update_order_assignments` | Added `find_assignment_conflict()` run inside the per-reservation lock; rejects any unit already assigned to another order. Smoke `assignment-conflict-smoke.php`. |
 | **LOW-1** | LOW | ✅ **fixed 2.7.282** | Two admin assign paths ignored the lock-acquire return (fail *open* on a 15s timeout). | `admin.php` `handle_update_order_assignments`, `handle_generate_stall_assignments` | Now refuse with a notice when the lock can't be acquired. |
 | **LOW-2** | LOW | 📝 pending | No DB-level **UNIQUE** backstop: stall/RV assignments live in free-text order `notes`; the entry ledger (`wp_eem_division_entries`) has only non-unique keys. The advisory lock is the sole guard. | `class-eem-division-entries.php:60-73` etc. | Notes→table migration + `UNIQUE(reservation_id, unit, date)` and `UNIQUE(division_id, order_key)`. Land **with** the v2/v3 postmeta→relational de-coupling (same storage-normalization work). Needs a data migration. |
@@ -107,14 +107,13 @@ These were specifically checked and are **correct** as of v2.7.283:
 
 ## 6. Recommendations (priority order)
 
-1. **MED-1 — close the main-checkout Auth.net replay double-charge.** The one remaining customer-facing
-   double-charge vector on the launch processor. Move the dedup-token check ahead of the charge and/or
-   add an Auth.net idempotency guard. Do as a single, smoke-verified payment-code change.
-2. **LOW-2 — add the DB UNIQUE backstop.** The durable structural fix; pairs with the v2/v3
+*(Both known double-charge vectors on the launch processor — F1 and MED-1 — are now closed.)*
+
+1. **LOW-2 — add the DB UNIQUE backstop.** The durable structural fix; pairs with the v2/v3
    postmeta→relational de-coupling.
-3. **F3 — Auth.net partial/settled refunds** via `refundTransaction` when the workflow needs it.
-4. **F2 — confirm production `debug.log` is non-public** (or trim the Auth.net response log).
-5. **Add a concurrency load-test** (per the inventory report §10) to validate the no-oversell /
+2. **F3 — Auth.net partial/settled refunds** via `refundTransaction` when the workflow needs it.
+3. **F2 — confirm production `debug.log` is non-public** (or trim the Auth.net response log).
+4. **Add a concurrency load-test** (per the inventory report §10) to validate the no-oversell /
    no-double-charge guarantees end-to-end under real parallel load, not just by inspection.
 
 ---
@@ -129,6 +128,7 @@ Run `bash tests/smoke/run-all.sh`; the security-relevant guards are:
 - `assignment-lock-smoke.php` — the 5 admin assign paths share the checkout lock.
 - `assignment-conflict-smoke.php` — MED-2 cross-order double-book is blocked (real seeded orders).
 - `invoice-payment-lock-smoke.php` — F1 hosted-invoice lock + in-lock re-read.
+- `checkout-replay-guard-smoke.php` — MED-1 replay short-circuits before the charge.
 
 ---
 
