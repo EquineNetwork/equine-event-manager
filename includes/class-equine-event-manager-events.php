@@ -1171,6 +1171,17 @@ class EEM_Events {
 			'high'
 		);
 
+		if ( class_exists( 'EEM_Venue' ) ) {
+			add_meta_box(
+				'equine_event_manager_venue_layouts',
+				__( 'Saved Stall / RV Layouts', 'equine-event-manager' ),
+				array( $this, 'render_venue_layouts_meta_box' ),
+				self::VENUE_POST_TYPE,
+				'side',
+				'default'
+			);
+		}
+
 		add_meta_box(
 			'equine_event_manager_producer_details',
 			__( 'Producer Details', 'equine-event-manager' ),
@@ -2177,6 +2188,87 @@ class EEM_Events {
 				</p>
 			</div>
 		</div>
+		<?php
+	}
+
+	/**
+	 * Render the "Saved Stall / RV Layouts" side meta box on the venue editor.
+	 *
+	 * Surfaces the layouts saved against this venue's canonical EEM_Venue record
+	 * (resolved from the native en_venue post), with rename/delete actions that
+	 * reuse the existing EEM_Venues_Page AJAX handlers. Read-only resolution — no
+	 * canonical venue is created just by viewing the editor.
+	 *
+	 * @param WP_Post $post Current venue post.
+	 * @return void
+	 */
+	public function render_venue_layouts_meta_box( $post ) {
+		if ( ! class_exists( 'EEM_Venue' ) ) {
+			return;
+		}
+		$venue_id = EEM_Venue::find_for_native_venue( (int) $post->ID, (string) $post->post_title );
+		$layouts  = $venue_id > 0 ? EEM_Venue::get_layouts( $venue_id ) : array();
+		$nonce    = wp_create_nonce( 'eem_venue_layout' );
+		?>
+		<div class="eem-venue-layouts" data-eem-venue-layouts data-nonce="<?php echo esc_attr( $nonce ); ?>" data-ajax="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>">
+			<?php if ( empty( $layouts ) ) : ?>
+				<p class="eem-venue-layouts__empty"><?php esc_html_e( 'No saved layouts yet. Build a stall or RV map on a reservation at this venue, then use "Save Layout" to store it here for reuse.', 'equine-event-manager' ); ?></p>
+			<?php else : ?>
+				<ul class="eem-venue-layouts__list">
+					<?php foreach ( $layouts as $layout ) : ?>
+						<li class="eem-venue-layouts__row" data-layout-id="<?php echo esc_attr( (string) $layout['id'] ); ?>">
+							<span class="eem-venue-layouts__name"><?php echo esc_html( (string) $layout['name'] ); ?></span>
+							<span class="eem-venue-layouts__actions">
+								<button type="button" class="button-link" data-eem-action="venue-layout-rename"><?php esc_html_e( 'Rename', 'equine-event-manager' ); ?></button>
+								<button type="button" class="button-link button-link-delete" data-eem-action="venue-layout-delete"><?php esc_html_e( 'Delete', 'equine-event-manager' ); ?></button>
+							</span>
+						</li>
+					<?php endforeach; ?>
+				</ul>
+			<?php endif; ?>
+			<p class="eem-venue-layouts__hint"><?php esc_html_e( 'Layouts are shared by every event held at this venue.', 'equine-event-manager' ); ?></p>
+		</div>
+		<script>
+		(function () {
+			var root = document.querySelector('[data-eem-venue-layouts]');
+			if (!root || root.dataset.eemBound) { return; }
+			root.dataset.eemBound = '1';
+			var ajax = root.dataset.ajax, nonce = root.dataset.nonce;
+			function post(action, params) {
+				var body = new URLSearchParams();
+				body.append('action', action); body.append('nonce', nonce);
+				Object.keys(params).forEach(function (k) { body.append(k, params[k]); });
+				return fetch(ajax, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body.toString() }).then(function (r) { return r.json(); });
+			}
+			root.addEventListener('click', function (ev) {
+				var t = ev.target.closest('[data-eem-action]');
+				if (!t) { return; }
+				ev.preventDefault();
+				var row = t.closest('.eem-venue-layouts__row');
+				if (!row) { return; }
+				var id = row.getAttribute('data-layout-id');
+				var action = t.dataset.eemAction;
+				if (action === 'venue-layout-rename') {
+					var nameEl = row.querySelector('.eem-venue-layouts__name');
+					var current = nameEl ? nameEl.textContent : '';
+					var next = window.prompt(<?php echo wp_json_encode( __( 'Rename layout:', 'equine-event-manager' ) ); ?>, current);
+					if (next === null) { return; }
+					next = next.trim();
+					if (!next || next === current) { return; }
+					post('eem_venue_rename_layout', { layout_id: id, name: next }).then(function (res) {
+						if (res && res.success) { if (nameEl) { nameEl.textContent = next; } }
+						else { window.alert((res && res.data && res.data.message) || <?php echo wp_json_encode( __( 'Could not rename the layout.', 'equine-event-manager' ) ); ?>); }
+					});
+				} else if (action === 'venue-layout-delete') {
+					if (!window.confirm(<?php echo wp_json_encode( __( 'Delete this saved layout? This cannot be undone.', 'equine-event-manager' ) ); ?>)) { return; }
+					post('eem_venue_delete_layout', { layout_id: id }).then(function (res) {
+						if (res && res.success) { row.parentNode.removeChild(row); }
+						else { window.alert((res && res.data && res.data.message) || <?php echo wp_json_encode( __( 'Could not delete the layout.', 'equine-event-manager' ) ); ?>); }
+					});
+				}
+			});
+		})();
+		</script>
 		<?php
 	}
 

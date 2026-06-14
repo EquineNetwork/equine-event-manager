@@ -234,8 +234,9 @@ class EEM_Venue {
 			$fields = EEM_Reservation_Source_Resolver::resolve_event_fields( $reservation_id );
 			$venue  = isset( $fields['venue'] ) ? (string) $fields['venue'] : '';
 		}
-		$source_venue_id = '' !== $ext_id ? $ext_id : $event_id;
-		return self::find( '' !== $source ? $source : 'native', $source_venue_id, $venue );
+		$resolved_source = '' !== $source ? $source : 'native';
+		$source_venue_id = self::source_venue_key( $resolved_source, $ext_id, $event_id );
+		return self::find( $resolved_source, $source_venue_id, $venue );
 	}
 
 	/**
@@ -259,8 +260,67 @@ class EEM_Venue {
 		}
 		// Use the source venue id when present, else fall back to the event id as
 		// the stable key (keeps the same physical venue stable across reuses).
-		$source_venue_id = '' !== $ext_id ? $ext_id : $event_id;
-		return self::resolve( '' !== $source ? $source : 'native', $source_venue_id, $venue );
+		$resolved_source = '' !== $source ? $source : 'native';
+		$source_venue_id = self::source_venue_key( $resolved_source, $ext_id, $event_id );
+		return self::resolve( $resolved_source, $source_venue_id, $venue );
+	}
+
+	/**
+	 * Stable source-venue key for a reservation's linked event.
+	 *
+	 * For native events the physical venue is the linked `en_venue` post, so two
+	 * events at the same venue resolve to ONE canonical Venue (and share its
+	 * saved layouts). For external sources the external/event id is the key.
+	 *
+	 * @param string $source   Resolved event source (native|tec|gems|…).
+	 * @param string $ext_id   External event id, if any.
+	 * @param string $event_id Linked event post/source id.
+	 * @return string Source venue key.
+	 */
+	private static function source_venue_key( string $source, string $ext_id, string $event_id ): string {
+		if ( 'native' === $source && '' !== $event_id ) {
+			$native_venue = (int) get_post_meta( (int) $event_id, '_equine_event_manager_event_venue_id', true );
+			if ( $native_venue > 0 ) {
+				return (string) $native_venue;
+			}
+		}
+		return '' !== $ext_id ? $ext_id : $event_id;
+	}
+
+	/**
+	 * Resolve (creating if needed) the canonical Venue for a native `en_venue`
+	 * post. Lets the en_venue editor surface and manage that venue's layouts.
+	 *
+	 * @param int    $en_venue_post_id The `en_venue` post id.
+	 * @param string $name             Optional name override (defaults to the post title).
+	 * @return int Canonical venue id, or 0.
+	 */
+	public static function resolve_for_native_venue( int $en_venue_post_id, string $name = '' ): int {
+		if ( $en_venue_post_id <= 0 ) {
+			return 0;
+		}
+		if ( '' === $name ) {
+			$name = (string) get_the_title( $en_venue_post_id );
+		}
+		return self::resolve( 'native', (string) $en_venue_post_id, $name );
+	}
+
+	/**
+	 * Read-only counterpart to resolve_for_native_venue(): the existing canonical
+	 * Venue for a native `en_venue` post, or 0 if none exists yet.
+	 *
+	 * @param int    $en_venue_post_id The `en_venue` post id.
+	 * @param string $name             Optional name override (defaults to the post title).
+	 * @return int Canonical venue id, or 0.
+	 */
+	public static function find_for_native_venue( int $en_venue_post_id, string $name = '' ): int {
+		if ( $en_venue_post_id <= 0 ) {
+			return 0;
+		}
+		if ( '' === $name ) {
+			$name = (string) get_the_title( $en_venue_post_id );
+		}
+		return self::find( 'native', (string) $en_venue_post_id, $name );
 	}
 
 	/**
