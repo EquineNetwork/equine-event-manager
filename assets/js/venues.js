@@ -42,13 +42,13 @@
 		overlay.setAttribute('role', 'dialog');
 		overlay.setAttribute('aria-modal', 'true');
 		overlay.innerHTML =
-			'<div class="eem-modal-card">' +
+			'<div class="eem-modal-card"' + (opts.wide ? ' style="max-width:720px;"' : '') + '>' +
 				'<div class="eem-modal-head' + (opts.danger ? ' eem-modal-head--danger' : '') + '">' +
 					'<h2 class="eem-modal-title' + (opts.danger ? ' eem-modal-title--danger' : '') + '">' + opts.title + '</h2>' +
 				'</div>' +
 				'<div class="eem-modal-body">' + opts.body + '</div>' +
 				'<div class="eem-modal-foot">' +
-					'<button type="button" class="eem-btn eem-btn-secondary" data-role="cancel">' + (opts.cancelLabel || 'Cancel') + '</button>' +
+					(opts.hideCancel ? '' : '<button type="button" class="eem-btn eem-btn-secondary" data-role="cancel">' + (opts.cancelLabel || 'Cancel') + '</button>') +
 					'<button type="button" class="eem-btn ' + (opts.danger ? 'eem-btn-danger' : 'eem-btn-primary') + '" data-role="confirm"' + (opts.confirmDisabled ? ' disabled' : '') + '>' + opts.confirmLabel + '</button>' +
 				'</div>' +
 			'</div>';
@@ -101,6 +101,59 @@
 		input.select();
 	}
 
+	function openView(layoutId, name) {
+		var overlay = openModal({
+			title: name || 'Layout Preview',
+			body: '<p style="text-align:center;color:#666;">Loading layout&hellip;</p>',
+			confirmLabel: 'Close',
+			hideCancel: true,
+			wide: true
+		});
+		overlay.querySelector('[data-role="confirm"]').addEventListener('click', function () { overlay._close(); });
+		var body = overlay.querySelector('.eem-modal-body');
+		postLayout('eem_venue_view_layout', { layout_id: layoutId }, function (data) {
+			body.innerHTML = buildGridPreview(data.stall_map, data.rv_map);
+		}, function (msg) {
+			body.innerHTML = '<p style="color:var(--eem-error-text);">' + escapeHtml(msg || 'Could not load layout.') + '</p>';
+		});
+	}
+
+	function buildGridPreview(stallMap, rvMap) {
+		var html = '';
+		var hasBoth = hasBarns(stallMap) && hasBarns(rvMap);
+		if (hasBarns(stallMap)) {
+			if (hasBoth) html += '<h3 style="margin:0 0 8px;font-size:14px;font-weight:600;">Stalls</h3>';
+			html += renderMapGrid(stallMap);
+		}
+		if (hasBarns(rvMap)) {
+			if (hasBoth) html += '<h3 style="margin:16px 0 8px;font-size:14px;font-weight:600;">RV Lots</h3>';
+			html += renderMapGrid(rvMap);
+		}
+		if (!html) html = '<p style="color:#666;">This layout has no map data.</p>';
+		return html;
+	}
+
+	function hasBarns(map) { return map && Array.isArray(map.barns) && map.barns.length > 0; }
+
+	function renderMapGrid(map) {
+		var html = '';
+		(map.barns || []).forEach(function (barn) {
+			if (barn.name) html += '<div style="font-size:12px;font-weight:600;color:#031B4E;margin:8px 0 4px;">' + escapeHtml(barn.name) + '</div>';
+			html += '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px;">';
+			(barn.grid || []).forEach(function (row) {
+				row.forEach(function (cell) {
+					if (cell.type === 'stall' || cell.type === 'rv') {
+						html += '<span style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:4px;font-size:11px;font-weight:500;background:#f3f4f5;border:1px solid #dcdcde;color:#1d2327;">' + escapeHtml(cell.label || '') + '</span>';
+					} else if (cell.type === 'land' || cell.type === 'empty') {
+						html += '<span style="display:inline-block;width:36px;height:36px;"></span>';
+					}
+				});
+			});
+			html += '</div>';
+		});
+		return html;
+	}
+
 	function openDelete(layoutId, name) {
 		var overlay = openModal({
 			title: 'Delete layout?',
@@ -145,6 +198,12 @@
 	}
 
 	document.addEventListener('click', function (e) {
+		var view = e.target.closest('[data-eem-action="venue-layout-view"]');
+		if (view) {
+			e.preventDefault();
+			openView(view.getAttribute('data-layout-id'), view.getAttribute('data-layout-name'));
+			return;
+		}
 		var rename = e.target.closest('[data-eem-action="venue-layout-rename"]');
 		if (rename) {
 			e.preventDefault();

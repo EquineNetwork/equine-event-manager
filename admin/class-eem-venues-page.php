@@ -40,6 +40,7 @@ class EEM_Venues_Page {
 	 * @return void
 	 */
 	public static function register(): void {
+		add_action( 'wp_ajax_eem_venue_view_layout', array( __CLASS__, 'ajax_view_layout' ) );
 		add_action( 'wp_ajax_eem_venue_rename_layout', array( __CLASS__, 'ajax_rename_layout' ) );
 		add_action( 'wp_ajax_eem_venue_delete_layout', array( __CLASS__, 'ajax_delete_layout' ) );
 		// Slice 3 — "Save Layout" / "Load Layout" on the Edit Reservation builders.
@@ -526,6 +527,7 @@ class EEM_Venues_Page {
 										<td class="eem-venue-layout-name"><?php echo esc_html( $l['name'] ); ?></td>
 										<td><?php echo esc_html( self::format_date( (string) $l['created_at'] ) ); ?></td>
 										<td class="eem-table-r">
+											<button type="button" class="eem-btn eem-btn-secondary eem-btn-sm" data-eem-action="venue-layout-view" data-layout-id="<?php echo esc_attr( (string) (int) $l['id'] ); ?>" data-layout-name="<?php echo esc_attr( (string) $l['name'] ); ?>"><?php esc_html_e( 'View', 'equine-event-manager' ); ?></button>
 											<button type="button" class="eem-btn eem-btn-secondary eem-btn-sm" data-eem-action="venue-layout-rename" data-layout-id="<?php echo esc_attr( (string) (int) $l['id'] ); ?>" data-layout-name="<?php echo esc_attr( (string) $l['name'] ); ?>"><?php esc_html_e( 'Rename', 'equine-event-manager' ); ?></button>
 											<button type="button" class="eem-btn eem-btn-danger eem-btn-sm" data-eem-action="venue-layout-delete" data-layout-id="<?php echo esc_attr( (string) (int) $l['id'] ); ?>" data-layout-name="<?php echo esc_attr( (string) $l['name'] ); ?>"><?php esc_html_e( 'Delete', 'equine-event-manager' ); ?></button>
 										</td>
@@ -594,6 +596,31 @@ class EEM_Venues_Page {
 			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
 		}
 		check_ajax_referer( 'eem_venue_layout', 'nonce' );
+	}
+
+	/**
+	 * AJAX: return a layout's grid data for the read-only preview modal.
+	 *
+	 * @return void
+	 */
+	public static function ajax_view_layout(): void {
+		self::guard();
+		$layout_id = isset( $_POST['layout_id'] ) ? absint( wp_unslash( $_POST['layout_id'] ) ) : 0;
+		if ( $layout_id <= 0 ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid layout.', 'equine-event-manager' ) ), 400 );
+		}
+		$layout = EEM_Venue::get_layout( $layout_id );
+		if ( null === $layout ) {
+			wp_send_json_error( array( 'message' => __( 'Layout not found.', 'equine-event-manager' ) ), 404 );
+		}
+		$data = is_array( $layout['layout'] ?? null ) ? $layout['layout'] : array();
+		$stall_map = isset( $data['_en_stall_map'] ) && is_array( $data['_en_stall_map'] ) ? $data['_en_stall_map'] : array();
+		$rv_map    = isset( $data['_en_rv_map'] ) && is_array( $data['_en_rv_map'] ) ? $data['_en_rv_map'] : array();
+		wp_send_json_success( array(
+			'name'      => (string) $layout['name'],
+			'stall_map' => $stall_map,
+			'rv_map'    => $rv_map,
+		) );
 	}
 
 	/**
