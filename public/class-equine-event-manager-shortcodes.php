@@ -184,6 +184,10 @@ class EEM_Shortcodes {
 		$stall_weekend_end_date     = $this->get_weekend_package_end_date( $data, 'stall' );
 		$rv_weekend_start_date      = $this->get_weekend_package_start_date( $data, 'rv' );
 		$rv_weekend_end_date        = $this->get_weekend_package_end_date( $data, 'rv' );
+		$stall_weekly_start_date    = isset( $data['stall_weekly_package_start_date'] ) ? $data['stall_weekly_package_start_date'] : '';
+		$stall_weekly_end_date      = isset( $data['stall_weekly_package_end_date'] ) ? $data['stall_weekly_package_end_date'] : '';
+		$rv_weekly_start_date       = isset( $data['rv_weekly_package_start_date'] ) ? $data['rv_weekly_package_start_date'] : '';
+		$rv_weekly_end_date         = isset( $data['rv_weekly_package_end_date'] ) ? $data['rv_weekly_package_end_date'] : '';
 		$stall_stay_type_options    = $this->get_enabled_stay_type_options( $data, 'stall' );
 		$rv_stay_type_options       = $this->get_enabled_stay_type_options( $data, 'rv' );
 		$rv_addon_options           = $this->get_enabled_rv_addon_options( $data );
@@ -210,10 +214,10 @@ class EEM_Shortcodes {
 		$rv_default_lot             = '';
 		$stall_default_stay_type    = array_key_first( $stall_stay_type_options );
 		$rv_default_stay_type       = array_key_first( $rv_stay_type_options );
-		$stall_default_arrival_date = 'weekend' === $stall_default_stay_type ? $stall_weekend_start_date : $min_date;
-		$stall_default_departure_date = 'weekend' === $stall_default_stay_type ? $stall_weekend_end_date : ( $max_date ? $max_date : $min_date );
-		$rv_default_arrival_date    = 'weekend' === $rv_default_stay_type ? $rv_weekend_start_date : $min_date;
-		$rv_default_departure_date  = 'weekend' === $rv_default_stay_type ? $rv_weekend_end_date : ( $max_date ? $max_date : $min_date );
+		$stall_default_arrival_date   = 'weekend' === $stall_default_stay_type ? $stall_weekend_start_date : ( 'weekly' === $stall_default_stay_type ? $stall_weekly_start_date : $min_date );
+		$stall_default_departure_date = 'weekend' === $stall_default_stay_type ? $stall_weekend_end_date : ( 'weekly' === $stall_default_stay_type ? $stall_weekly_end_date : ( $max_date ? $max_date : $min_date ) );
+		$rv_default_arrival_date      = 'weekend' === $rv_default_stay_type ? $rv_weekend_start_date : ( 'weekly' === $rv_default_stay_type ? $rv_weekly_start_date : $min_date );
+		$rv_default_departure_date    = 'weekend' === $rv_default_stay_type ? $rv_weekend_end_date : ( 'weekly' === $rv_default_stay_type ? $rv_weekly_end_date : ( $max_date ? $max_date : $min_date ) );
 		$stall_default_night_count  = $this->get_selected_night_count( $stall_default_arrival_date, $stall_default_departure_date );
 		$rv_default_night_count     = $this->get_selected_night_count( $rv_default_arrival_date, $rv_default_departure_date );
 		$special_requests_description = $this->get_special_requests_description();
@@ -280,6 +284,27 @@ class EEM_Shortcodes {
 				__( 'Weekend Rate package dates: %1$s to %2$s.', 'equine-event-manager' ),
 				$rv_weekend_start_date ? $this->format_date_label( $rv_weekend_start_date ) : __( 'Package start date unavailable', 'equine-event-manager' ),
 				$rv_weekend_end_date ? $this->format_date_label( $rv_weekend_end_date ) : __( 'Package end date unavailable', 'equine-event-manager' )
+			);
+		}
+
+		$stall_weekly_date_summary = '';
+		$rv_weekly_date_summary    = '';
+
+		if ( ! empty( $data['stall_weekly_enabled'] ) && ( $stall_weekly_start_date || $stall_weekly_end_date ) ) {
+			$stall_weekly_date_summary = sprintf(
+				/* translators: 1: start date, 2: end date. */
+				__( 'Weekly Rate package dates: %1$s to %2$s.', 'equine-event-manager' ),
+				$stall_weekly_start_date ? $this->format_date_label( $stall_weekly_start_date ) : __( 'Package start date unavailable', 'equine-event-manager' ),
+				$stall_weekly_end_date ? $this->format_date_label( $stall_weekly_end_date ) : __( 'Package end date unavailable', 'equine-event-manager' )
+			);
+		}
+
+		if ( ! empty( $data['rv_weekly_enabled'] ) && ( $rv_weekly_start_date || $rv_weekly_end_date ) ) {
+			$rv_weekly_date_summary = sprintf(
+				/* translators: 1: start date, 2: end date. */
+				__( 'Weekly Rate package dates: %1$s to %2$s.', 'equine-event-manager' ),
+				$rv_weekly_start_date ? $this->format_date_label( $rv_weekly_start_date ) : __( 'Package start date unavailable', 'equine-event-manager' ),
+				$rv_weekly_end_date ? $this->format_date_label( $rv_weekly_end_date ) : __( 'Package end date unavailable', 'equine-event-manager' )
 			);
 		}
 
@@ -421,8 +446,10 @@ class EEM_Shortcodes {
 					action="<?php echo esc_url( $form_action_url ); ?>"
 					data-stall-nightly-rate="<?php echo esc_attr( $this->get_current_rate( $data, 'stall', 'nightly' ) ); ?>"
 					data-stall-weekend-rate="<?php echo esc_attr( $this->get_current_rate( $data, 'stall', 'weekend' ) ); ?>"
+					data-stall-weekly-rate="<?php echo esc_attr( $this->get_current_rate( $data, 'stall', 'weekly' ) ); ?>"
 					data-rv-nightly-rate="<?php echo esc_attr( $this->get_current_rate( $data, 'rv', 'nightly' ) ); ?>"
 					data-rv-weekend-rate="<?php echo esc_attr( $this->get_current_rate( $data, 'rv', 'weekend' ) ); ?>"
+					data-rv-weekly-rate="<?php echo esc_attr( $this->get_current_rate( $data, 'rv', 'weekly' ) ); ?>"
 					data-rv-addon-pricing="<?php echo esc_attr( wp_json_encode( $this->get_enabled_rv_addon_pricing_matrix( $data ) ) ); ?>"
 					data-general-addon-pricing="<?php echo esc_attr( wp_json_encode( $this->get_enabled_general_addon_pricing_matrix( $data ) ) ); ?>"
 					data-pre-entry-pricing="<?php echo esc_attr( wp_json_encode( $this->get_pre_entry_pricing_matrix( $data ) ) ); ?>"
@@ -627,8 +654,19 @@ class EEM_Shortcodes {
 										data-weekend-summary="<?php echo esc_attr( $stall_weekend_date_summary ); ?>"
 										data-weekend-start-date="<?php echo esc_attr( $stall_weekend_start_date ); ?>"
 										data-weekend-end-date="<?php echo esc_attr( $stall_weekend_end_date ); ?>"
+										data-weekly-summary="<?php echo esc_attr( $stall_weekly_date_summary ); ?>"
+										data-weekly-start-date="<?php echo esc_attr( $stall_weekly_start_date ); ?>"
+										data-weekly-end-date="<?php echo esc_attr( $stall_weekly_end_date ); ?>"
 									>
-										<p class="eem-reservation-help eem-section-stay-controls__help"><?php echo esc_html( 'weekend' === $stall_default_stay_type && $stall_weekend_date_summary ? $stall_weekend_date_summary : $nightly_date_summary ); ?></p>
+										<p class="eem-reservation-help eem-section-stay-controls__help"><?php
+											if ( 'weekend' === $stall_default_stay_type && $stall_weekend_date_summary ) {
+												echo esc_html( $stall_weekend_date_summary );
+											} elseif ( 'weekly' === $stall_default_stay_type && $stall_weekly_date_summary ) {
+												echo esc_html( $stall_weekly_date_summary );
+											} else {
+												echo esc_html( $nightly_date_summary );
+											}
+										?></p>
 										<div class="eem-reservation-grid eem-reservation-grid--stay-controls">
 										<label class="eem-stay-type-field">
 											<span><?php esc_html_e( 'Rate Type', 'equine-event-manager' ); ?></span>
@@ -725,8 +763,19 @@ class EEM_Shortcodes {
 										data-weekend-summary="<?php echo esc_attr( $rv_weekend_date_summary ); ?>"
 										data-weekend-start-date="<?php echo esc_attr( $rv_weekend_start_date ); ?>"
 										data-weekend-end-date="<?php echo esc_attr( $rv_weekend_end_date ); ?>"
+										data-weekly-summary="<?php echo esc_attr( $rv_weekly_date_summary ); ?>"
+										data-weekly-start-date="<?php echo esc_attr( $rv_weekly_start_date ); ?>"
+										data-weekly-end-date="<?php echo esc_attr( $rv_weekly_end_date ); ?>"
 									>
-										<p class="eem-reservation-help eem-section-stay-controls__help"><?php echo esc_html( 'weekend' === $rv_default_stay_type && $rv_weekend_date_summary ? $rv_weekend_date_summary : $nightly_date_summary ); ?></p>
+										<p class="eem-reservation-help eem-section-stay-controls__help"><?php
+											if ( 'weekend' === $rv_default_stay_type && $rv_weekend_date_summary ) {
+												echo esc_html( $rv_weekend_date_summary );
+											} elseif ( 'weekly' === $rv_default_stay_type && $rv_weekly_date_summary ) {
+												echo esc_html( $rv_weekly_date_summary );
+											} else {
+												echo esc_html( $nightly_date_summary );
+											}
+										?></p>
 										<div class="eem-reservation-grid eem-reservation-grid--stay-controls">
 											<label class="eem-stay-type-field">
 												<span><?php esc_html_e( 'Rate Type', 'equine-event-manager' ); ?></span>
@@ -1931,8 +1980,9 @@ class EEM_Shortcodes {
 			function zoneSurcharge(zoneName){
 				var zs = (P.zoneSurcharge || {})[(zoneName || '').toLowerCase().trim()];
 				if (!zs) return 0;
-				var weekend = (form.querySelector('[name="rv_stay_type"]') || {}).value === 'weekend';
-				return (+(weekend ? zs.weekend : zs.nightly)) || 0;
+				var rvStayTypeVal = (form.querySelector('[name="rv_stay_type"]') || {}).value;
+				var useWeekendZone = rvStayTypeVal === 'weekend' || rvStayTypeVal === 'weekly';
+				return (+(useWeekendZone ? zs.weekend : zs.nightly)) || 0;
 			}
 			function money(n){ return '$' + (n % 1 === 0 ? n : n.toFixed(2)); }
 
@@ -3286,7 +3336,7 @@ class EEM_Shortcodes {
 	private function sanitize_stay_type_value( $value ) {
 		$stay_type = sanitize_key( $value );
 
-		if ( ! in_array( $stay_type, array( 'nightly', 'weekend' ), true ) ) {
+		if ( ! in_array( $stay_type, array( 'nightly', 'weekend', 'weekly' ), true ) ) {
 			return 'nightly';
 		}
 
@@ -3340,6 +3390,7 @@ class EEM_Shortcodes {
 		$departure_key   = $section . '_departure_date';
 		$nightly_key     = $section . '_nightly_enabled';
 		$weekend_key     = $section . '_weekend_enabled';
+		$weekly_key      = $section . '_weekly_enabled';
 		$section_label   = 'rv' === $section ? __( 'RV', 'equine-event-manager' ) : __( 'Stall', 'equine-event-manager' );
 		$stay_type       = isset( $submission[ $stay_type_key ] ) ? $submission[ $stay_type_key ] : 'nightly';
 		$arrival_date    = isset( $submission[ $arrival_key ] ) ? $submission[ $arrival_key ] : '';
@@ -3351,6 +3402,10 @@ class EEM_Shortcodes {
 
 		if ( 'weekend' === $stay_type && empty( $data[ $weekend_key ] ) ) {
 			$errors[] = sprintf( __( '%s weekend package reservations are not available for this event.', 'equine-event-manager' ), $section_label );
+		}
+
+		if ( 'weekly' === $stay_type && empty( $data[ $weekly_key ] ) ) {
+			$errors[] = sprintf( __( '%s weekly package reservations are not available for this event.', 'equine-event-manager' ), $section_label );
 		}
 
 		if ( ! $this->is_valid_date( $arrival_date ) || ! $this->is_valid_date( $departure_date ) ) {
@@ -3386,6 +3441,17 @@ class EEM_Shortcodes {
 				$errors[] = sprintf( __( '%s weekend package dates are not configured for this reservation.', 'equine-event-manager' ), $section_label );
 			} elseif ( $arrival_date !== $weekend_start || $departure_date !== $weekend_end ) {
 				$errors[] = sprintf( __( '%s weekend reservations must use the configured weekend package dates.', 'equine-event-manager' ), $section_label );
+			}
+		}
+
+		if ( 'weekly' === $stay_type ) {
+			$weekly_start = isset( $data[ $section . '_weekly_package_start_date' ] ) ? $data[ $section . '_weekly_package_start_date' ] : '';
+			$weekly_end   = isset( $data[ $section . '_weekly_package_end_date' ] ) ? $data[ $section . '_weekly_package_end_date' ] : '';
+
+			if ( ! $weekly_start || ! $weekly_end ) {
+				$errors[] = sprintf( __( '%s weekly package dates are not configured for this reservation.', 'equine-event-manager' ), $section_label );
+			} elseif ( $arrival_date !== $weekly_start || $departure_date !== $weekly_end ) {
+				$errors[] = sprintf( __( '%s weekly reservations must use the configured weekly package dates.', 'equine-event-manager' ), $section_label );
 			}
 		}
 
@@ -3733,7 +3799,7 @@ class EEM_Shortcodes {
 	 * @return int
 	 */
 	private function get_billable_stay_units( $arrival_date, $departure_date, $stay_type ) {
-		if ( 'weekend' === $stay_type ) {
+		if ( 'weekend' === $stay_type || 'weekly' === $stay_type ) {
 			return 1;
 		}
 
@@ -4706,7 +4772,13 @@ RV Lot: " . $rv_lot['name'] );
 			return $divisor > 0 ? '$' . number_format_i18n( $total / $divisor, 2 ) : '—';
 		};
 		$units_label = function ( $stay_type, int $count ): string {
-			return 'weekend' === $stay_type ? __( 'Weekend', 'equine-event-manager' ) : $this->get_night_count_label( $count );
+			if ( 'weekend' === $stay_type ) {
+				return __( 'Weekend', 'equine-event-manager' );
+			}
+			if ( 'weekly' === $stay_type ) {
+				return __( 'Weekly', 'equine-event-manager' );
+			}
+			return $this->get_night_count_label( $count );
 		};
 		$stay_desc = function ( $stay_type, $arrival, $departure ): string {
 			$range = $this->format_reservation_date_label( $arrival );
@@ -5006,7 +5078,7 @@ RV Lot: " . $rv_lot['name'] );
 				'badge' => sprintf( _n( '%d Reserved', '%d Reserved', $stall_qty, 'equine-event-manager' ), $stall_qty ),
 				'rows'  => array(
 					array( 'label' => __( 'Stay Type', 'equine-event-manager' ), 'value' => $this->format_stay_type_label( $order['stall_stay_type'] ) ),
-					array( 'label' => __( 'Nights', 'equine-event-manager' ), 'value' => 'weekend' === $order['stall_stay_type'] ? __( 'Weekend', 'equine-event-manager' ) : $this->get_night_count_label( $stall_units ) ),
+					array( 'label' => __( 'Nights', 'equine-event-manager' ), 'value' => 'weekend' === $order['stall_stay_type'] ? __( 'Weekend', 'equine-event-manager' ) : ( 'weekly' === $order['stall_stay_type'] ? __( 'Weekly', 'equine-event-manager' ) : $this->get_night_count_label( $stall_units ) ) ),
 					array( 'label' => __( 'Arrival', 'equine-event-manager' ), 'value' => $this->format_reservation_date_label( $order['stall_arrival_date'] ) ),
 					array( 'label' => __( 'Departure', 'equine-event-manager' ), 'value' => $this->format_reservation_date_label( $order['stall_departure_date'] ) ),
 					array( 'label' => __( 'Stalls', 'equine-event-manager' ), 'value' => (string) $stall_qty ),
@@ -5017,7 +5089,7 @@ RV Lot: " . $rv_lot['name'] );
 		if ( $rv_qty > 0 ) {
 			$rv_rows = array(
 				array( 'label' => __( 'Stay Type', 'equine-event-manager' ), 'value' => $this->format_stay_type_label( $order['rv_stay_type'] ) ),
-				array( 'label' => __( 'Nights', 'equine-event-manager' ), 'value' => 'weekend' === $order['rv_stay_type'] ? __( 'Weekend', 'equine-event-manager' ) : $this->get_night_count_label( $rv_units ) ),
+				array( 'label' => __( 'Nights', 'equine-event-manager' ), 'value' => 'weekend' === $order['rv_stay_type'] ? __( 'Weekend', 'equine-event-manager' ) : ( 'weekly' === $order['rv_stay_type'] ? __( 'Weekly', 'equine-event-manager' ) : $this->get_night_count_label( $rv_units ) ) ),
 				array( 'label' => __( 'Arrival', 'equine-event-manager' ), 'value' => $this->format_reservation_date_label( $order['rv_arrival_date'] ) ),
 				array( 'label' => __( 'Departure', 'equine-event-manager' ), 'value' => $this->format_reservation_date_label( $order['rv_departure_date'] ) ),
 				array( 'label' => __( 'RV Spots', 'equine-event-manager' ), 'value' => (string) $rv_qty ),
@@ -6185,6 +6257,10 @@ RV Lot: " . $rv_lot['name'] );
 
 		if ( 'weekend' === $stay_type ) {
 			return __( 'Weekend', 'equine-event-manager' );
+		}
+
+		if ( 'weekly' === $stay_type ) {
+			return __( 'Weekly', 'equine-event-manager' );
 		}
 
 		if ( 'nightly' === $stay_type ) {
@@ -8603,15 +8679,16 @@ RV Lot: " . $rv_lot['name'] );
 	 * @return float
 	 */
 	private function get_current_rate( $data, $type, $stay_type ) {
-		$prefix       = 'stall' === $type ? 'stall' : 'rv';
-		$is_weekend   = 'weekend' === $stay_type;
-		$regular_key  = $prefix . ( $is_weekend ? '_weekend_rate' : '_nightly_rate' );
-		$early_key    = $prefix . '_early_bird_' . ( $is_weekend ? 'weekend_rate' : 'nightly_rate' );
-		$enabled_key  = $prefix . '_early_bird_enabled';
-		$cutoff_key   = $prefix . '_early_bird_cutoff';
-		$use_early    = ! empty( $data[ $enabled_key ] ) && ! empty( $data[ $cutoff_key ] ) && current_time( 'timestamp' ) <= strtotime( $data[ $cutoff_key ] );
+		$prefix      = 'stall' === $type ? 'stall' : 'rv';
+		$rate_suffix = 'weekend' === $stay_type ? '_weekend_rate' : ( 'weekly' === $stay_type ? '_weekly_rate' : '_nightly_rate' );
+		$eb_suffix   = 'weekend' === $stay_type ? 'weekend_rate' : ( 'weekly' === $stay_type ? 'weekly_rate' : 'nightly_rate' );
+		$regular_key = $prefix . $rate_suffix;
+		$early_key   = $prefix . '_early_bird_' . $eb_suffix;
+		$enabled_key = $prefix . '_early_bird_enabled';
+		$cutoff_key  = $prefix . '_early_bird_cutoff';
+		$use_early   = ! empty( $data[ $enabled_key ] ) && ! empty( $data[ $cutoff_key ] ) && current_time( 'timestamp' ) <= strtotime( $data[ $cutoff_key ] );
 
-		return (float) ( $use_early ? $data[ $early_key ] : $data[ $regular_key ] );
+		return (float) ( $use_early ? ( $data[ $early_key ] ?? 0 ) : ( $data[ $regular_key ] ?? 0 ) );
 	}
 
 	/**
@@ -8702,9 +8779,10 @@ RV Lot: " . $rv_lot['name'] );
 	 * @return array<string, string>
 	 */
 	private function get_enabled_stay_type_options( $data, $type ) {
-		$options = array();
+		$options             = array();
 		$nightly_enabled_key = 'stall' === $type ? 'stall_nightly_enabled' : 'rv_nightly_enabled';
 		$weekend_enabled_key = 'stall' === $type ? 'stall_weekend_enabled' : 'rv_weekend_enabled';
+		$weekly_enabled_key  = 'stall' === $type ? 'stall_weekly_enabled' : 'rv_weekly_enabled';
 
 		if ( ! empty( $data[ $nightly_enabled_key ] ) ) {
 			$options['nightly'] = __( 'Nightly', 'equine-event-manager' );
@@ -8712,6 +8790,10 @@ RV Lot: " . $rv_lot['name'] );
 
 		if ( ! empty( $data[ $weekend_enabled_key ] ) ) {
 			$options['weekend'] = __( 'Weekend Rate', 'equine-event-manager' );
+		}
+
+		if ( ! empty( $data[ $weekly_enabled_key ] ) ) {
+			$options['weekly'] = __( 'Weekly Rate', 'equine-event-manager' );
 		}
 
 		if ( empty( $options ) ) {
@@ -10981,8 +11063,10 @@ RV Lot: " . $rv_lot['name'] );
 				var rvAddonPricingMatrix = parseJsonAttribute(form.dataset.rvAddonPricing);
 				var rvLotPricingMatrix = parseJsonAttribute(form.dataset.rvLotPricing);
 				var selectedRvLot = getFieldValue(form, 'rv_lot');
-				var stallRate = parseCurrency(form.dataset[stallStayType === 'weekend' ? 'stallWeekendRate' : 'stallNightlyRate']);
-				var rvRate = parseCurrency(rvLotPricingMatrix && rvLotPricingMatrix[selectedRvLot] ? rvLotPricingMatrix[selectedRvLot][rvStayType] : form.dataset[rvStayType === 'weekend' ? 'rvWeekendRate' : 'rvNightlyRate']);
+				var stallRateKey = stallStayType === 'weekend' ? 'stallWeekendRate' : (stallStayType === 'weekly' ? 'stallWeeklyRate' : 'stallNightlyRate');
+				var stallRate = parseCurrency(form.dataset[stallRateKey]);
+				var rvRateKey = rvStayType === 'weekend' ? 'rvWeekendRate' : (rvStayType === 'weekly' ? 'rvWeeklyRate' : 'rvNightlyRate');
+				var rvRate = parseCurrency(rvLotPricingMatrix && rvLotPricingMatrix[selectedRvLot] ? rvLotPricingMatrix[selectedRvLot][rvStayType] : form.dataset[rvRateKey]);
 
 				form.querySelectorAll('[data-dynamic-price-label]').forEach(function(label) {
 					var type = label.getAttribute('data-dynamic-price-label');
@@ -11036,9 +11120,11 @@ RV Lot: " . $rv_lot['name'] );
 				var generalAddonPricingMatrix = parseJsonAttribute(form.dataset.generalAddonPricing);
 				var preEntryPricingMatrix = parseJsonAttribute(form.dataset.preEntryPricing);
 				var rvLotPricingMatrix = parseJsonAttribute(form.dataset.rvLotPricing);
-				var stallRate = parseCurrency(form.dataset[stallStayType === 'weekend' ? 'stallWeekendRate' : 'stallNightlyRate']);
+				var stallRateKey2 = stallStayType === 'weekend' ? 'stallWeekendRate' : (stallStayType === 'weekly' ? 'stallWeeklyRate' : 'stallNightlyRate');
+				var stallRate = parseCurrency(form.dataset[stallRateKey2]);
 				var selectedRvLot = getFieldValue(form, 'rv_lot');
-				var rvRate = parseCurrency(rvLotPricingMatrix && rvLotPricingMatrix[selectedRvLot] ? rvLotPricingMatrix[selectedRvLot][rvStayType] : form.dataset[rvStayType === 'weekend' ? 'rvWeekendRate' : 'rvNightlyRate']);
+				var rvRateKey2 = rvStayType === 'weekend' ? 'rvWeekendRate' : (rvStayType === 'weekly' ? 'rvWeeklyRate' : 'rvNightlyRate');
+				var rvRate = parseCurrency(rvLotPricingMatrix && rvLotPricingMatrix[selectedRvLot] ? rvLotPricingMatrix[selectedRvLot][rvStayType] : form.dataset[rvRateKey2]);
 				var stallUnits = getBillableStayUnits(getFieldValue(form, 'stall_arrival_date'), getFieldValue(form, 'stall_departure_date'), stallStayType);
 				var rvUnits = getBillableStayUnits(getFieldValue(form, 'rv_arrival_date'), getFieldValue(form, 'rv_departure_date'), rvStayType);
 				var requiredShavingsPrice = parseCurrency(form.dataset.requiredShavingsPrice);
@@ -11260,7 +11346,7 @@ RV Lot: " . $rv_lot['name'] );
 				var departureUtc;
 				var diffDays;
 
-				if (stayType === 'weekend') {
+				if (stayType === 'weekend' || stayType === 'weekly') {
 					return 1;
 				}
 
@@ -11291,14 +11377,16 @@ RV Lot: " . $rv_lot['name'] );
 				var controls = form.querySelector('[data-section-stay-controls="' + section + '"]');
 				var arrival = form.querySelector('[name="' + section + '_arrival_date"]');
 				var departure = form.querySelector('[name="' + section + '_departure_date"]');
-				var stayType = getFieldValue(form, section + '_stay_type') === 'weekend' ? 'weekend' : 'nightly';
+				var rawStayType = getFieldValue(form, section + '_stay_type');
+				var stayType = (rawStayType === 'weekend' || rawStayType === 'weekly') ? rawStayType : 'nightly';
 				var minDate;
 				var maxDate;
-				var weekendStart;
-				var weekendEnd;
+				var packageStart;
+				var packageEnd;
 				var stayDetailsHelp = controls ? controls.querySelector('.eem-section-stay-controls__help') : null;
 				var nightlySummary = controls ? (controls.dataset.nightlySummary || '') : '';
 				var weekendSummary = controls ? (controls.dataset.weekendSummary || '') : '';
+				var weeklySummary = controls ? (controls.dataset.weeklySummary || '') : '';
 				var weekendSummaryWrap = controls ? controls.querySelector('.eem-weekend-package-summary') : null;
 				var nightCountSummary = controls ? controls.querySelector('[data-stay-nights-summary]') : null;
 				var arrivalFieldWrap = controls ? controls.querySelector('.eem-stay-date-field--arrival') : null;
@@ -11310,17 +11398,29 @@ RV Lot: " . $rv_lot['name'] );
 
 				if (!getFieldValue(form, section + '_stay_type') && form.querySelector('[name="' + section + '_stay_type"][data-default-stay-type]')) {
 					form.querySelector('[name="' + section + '_stay_type"]').value = form.querySelector('[name="' + section + '_stay_type"]').dataset.defaultStayType;
-					stayType = getFieldValue(form, section + '_stay_type') === 'weekend' ? 'weekend' : 'nightly';
+					rawStayType = getFieldValue(form, section + '_stay_type');
+					stayType = (rawStayType === 'weekend' || rawStayType === 'weekly') ? rawStayType : 'nightly';
 				}
 
-				minDate = stayType === 'weekend' ? (controls.dataset.weekendStartDate || '') : (form.dataset.nightlyStartDate || getDateFieldBoundary(arrival, departure, 'min'));
-				maxDate = stayType === 'weekend' ? (controls.dataset.weekendEndDate || controls.dataset.weekendStartDate || '') : (form.dataset.nightlyEndDate || getDateFieldBoundary(arrival, departure, 'max'));
-				weekendStart = controls.dataset.weekendStartDate || minDate;
-				weekendEnd = controls.dataset.weekendEndDate || maxDate;
-
 				if (stayType === 'weekend') {
-					if (stayDetailsHelp && weekendSummary) {
-						stayDetailsHelp.textContent = weekendSummary;
+					packageStart = controls.dataset.weekendStartDate || '';
+					packageEnd = controls.dataset.weekendEndDate || controls.dataset.weekendStartDate || '';
+				} else if (stayType === 'weekly') {
+					packageStart = controls.dataset.weeklyStartDate || '';
+					packageEnd = controls.dataset.weeklyEndDate || controls.dataset.weeklyStartDate || '';
+				} else {
+					packageStart = '';
+					packageEnd = '';
+				}
+
+				minDate = (stayType === 'weekend' || stayType === 'weekly') ? packageStart : (form.dataset.nightlyStartDate || getDateFieldBoundary(arrival, departure, 'min'));
+				maxDate = (stayType === 'weekend' || stayType === 'weekly') ? packageEnd : (form.dataset.nightlyEndDate || getDateFieldBoundary(arrival, departure, 'max'));
+
+				if (stayType === 'weekend' || stayType === 'weekly') {
+					var packageSummary = stayType === 'weekly' ? weeklySummary : weekendSummary;
+
+					if (stayDetailsHelp && packageSummary) {
+						stayDetailsHelp.textContent = packageSummary;
 					}
 
 					if (arrivalFieldWrap) {
@@ -11335,20 +11435,20 @@ RV Lot: " . $rv_lot['name'] );
 						weekendSummaryWrap.hidden = false;
 					}
 
-					if (weekendStart) {
-						arrival.value = weekendStart;
+					if (packageStart) {
+						arrival.value = packageStart;
 					}
 
-					if (weekendEnd) {
-						departure.value = weekendEnd;
+					if (packageEnd) {
+						departure.value = packageEnd;
 					}
 
-					syncDateSelectOptions(arrival, departure, weekendStart, weekendEnd, changedField);
-					lockDateSelectValue(arrival, weekendStart);
-					lockDateSelectValue(departure, weekendEnd);
+					syncDateSelectOptions(arrival, departure, packageStart, packageEnd, changedField);
+					lockDateSelectValue(arrival, packageStart);
+					lockDateSelectValue(departure, packageEnd);
 					lockDateField(arrival, true);
 					lockDateField(departure, true);
-					updateStayNightCountSummary(nightCountSummary, weekendStart, weekendEnd);
+					updateStayNightCountSummary(nightCountSummary, packageStart, packageEnd);
 					return;
 				}
 

@@ -46,6 +46,10 @@ if ( ! function_exists( 'eem_render_editor_stay_type_pair' ) ) {
 			'weekend_label'    => __( 'Weekend Rate', 'equine-event-manager' ),
 			'weekend_on'       => false,
 			'weekend_controls' => array(),
+			'weekly_name'      => '',
+			'weekly_label'     => __( 'Weekly Rate', 'equine-event-manager' ),
+			'weekly_on'        => false,
+			'weekly_controls'  => array(),
 			'group_slug'       => '',
 		), $args );
 
@@ -73,6 +77,9 @@ if ( ! function_exists( 'eem_render_editor_stay_type_pair' ) ) {
 		<div class="eem-stay-types" data-eem-stay-group="<?php echo esc_attr( $d['group_slug'] ); ?>" role="group" aria-label="<?php echo esc_attr( $d['group_label'] ); ?>">
 			<?php $render_btn( $d['nightly_name'], $d['nightly_label'], (bool) $d['nightly_on'], $d['nightly_controls'] ); ?>
 			<?php $render_btn( $d['weekend_name'], $d['weekend_label'], (bool) $d['weekend_on'], $d['weekend_controls'] ); ?>
+			<?php if ( $d['weekly_name'] ) : ?>
+				<?php $render_btn( $d['weekly_name'], $d['weekly_label'], (bool) $d['weekly_on'], $d['weekly_controls'] ); ?>
+			<?php endif; ?>
 		</div>
 		<?php
 	}

@@ -35,6 +35,7 @@ $fmt_money = function ( $v ) { return number_format( (float) $v, 2, '.', '' ); }
 
 $nightly_on   = ! empty( $data['rv_nightly_enabled'] );
 $weekend_on   = ! empty( $data['rv_weekend_enabled'] );
+$weekly_on    = ! empty( $data['rv_weekly_enabled'] );
 $schedule_on  = ! empty( $data['rv_schedule_enabled'] );
 $eb_on        = ! empty( $data['rv_early_bird_enabled'] );
 $rv_addons_on = ! empty( $data['rv_addons_enabled'] );
@@ -77,13 +78,17 @@ eem_render_editor_stay_type_pair( array(
 	'weekend_name'     => 'rv_weekend_enabled',
 	'weekend_on'       => $weekend_on,
 	'weekend_controls' => array( 'row-rv-weekend-dates', 'row-rv-rate-weekend', 'row-rv-eb-weekend' ),
+	'weekly_name'      => 'rv_weekly_enabled',
+	'weekly_label'     => __( 'Weekly Rate', 'equine-event-manager' ),
+	'weekly_on'        => $weekly_on,
+	'weekly_controls'  => array( 'row-rv-weekly-dates', 'row-rv-rate-weekly', 'row-rv-eb-weekly' ),
 ) );
 $stay = ob_get_clean();
 eem_render_editor_field_row( array(
 	'label'        => __( 'Stay Types', 'equine-event-manager' ),
 	'label_sub'    => __( 'Enable one or both', 'equine-event-manager' ),
 	'control_html' => $stay,
-	'hint'         => __( 'Weekend Rate uses the RV weekend package dates configured below.', 'equine-event-manager' ),
+	'hint'         => __( 'Weekend Rate and Weekly Rate each use their own package dates configured below.', 'equine-event-manager' ),
 ) );
 
 // 4. Weekend Package Dates
@@ -97,6 +102,20 @@ eem_render_editor_field_row( array(
 		esc_attr( (string) $data['rv_weekend_package_start_date'] ),
 		esc_html__( 'End', 'equine-event-manager' ),
 		esc_attr( (string) $data['rv_weekend_package_end_date'] )
+	),
+) );
+
+// 4b. Weekly Package Dates (conditional)
+eem_render_editor_field_row( array(
+	'label'        => __( 'Weekly Package Dates', 'equine-event-manager' ),
+	'row_id'       => 'row-rv-weekly-dates',
+	'is_hidden'    => ! $weekly_on,
+	'control_html' => sprintf(
+		'<div class="eem-date-range"><span style="font-size:12px;color:#6B7A99;padding-top:9px">%s</span><input class="eem-field-input" type="date" name="en_reservation[rv_weekly_package_start_date]" value="%s" style="width:160px" /><span style="font-size:12px;color:#6B7A99;padding-top:9px">%s</span><input class="eem-field-input" type="date" name="en_reservation[rv_weekly_package_end_date]" value="%s" style="width:160px" /></div>',
+		esc_html__( 'Start', 'equine-event-manager' ),
+		esc_attr( (string) ( $data['rv_weekly_package_start_date'] ?? '' ) ),
+		esc_html__( 'End', 'equine-event-manager' ),
+		esc_attr( (string) ( $data['rv_weekly_package_end_date'] ?? '' ) )
 	),
 ) );
 
@@ -158,6 +177,15 @@ eem_render_editor_field_row( array(
 		esc_attr( $fmt_money( $data['rv_weekend_rate'] ) )
 	),
 ) );
+eem_render_editor_field_row( array(
+	'label'        => __( 'RV Weekly Rate', 'equine-event-manager' ),
+	'row_id'       => 'row-rv-rate-weekly',
+	'is_hidden'    => ! $weekly_on,
+	'control_html' => sprintf(
+		'<div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[rv_weekly_rate]" value="%s" /></div>',
+		esc_attr( $fmt_money( $data['rv_weekly_rate'] ?? '0.00' ) )
+	),
+) );
 
 // 11. Early Bird toggle
 ob_start();
@@ -166,7 +194,7 @@ eem_render_editor_toggle_label_row( array(
 	'subsection' => 'rv-eb',
 	'label'      => __( 'Enable RV early bird pricing', 'equine-event-manager' ),
 	'is_enabled' => $eb_on,
-	'controls'   => array( 'row-rv-eb-cutoff', 'row-rv-eb-nightly', 'row-rv-eb-weekend' ),
+	'controls'   => array( 'row-rv-eb-cutoff', 'row-rv-eb-nightly', 'row-rv-eb-weekend', 'row-rv-eb-weekly' ),
 ) );
 $eb = ob_get_clean();
 eem_render_editor_field_row( array(
@@ -199,6 +227,15 @@ eem_render_editor_field_row( array(
 	'control_html' => sprintf(
 		'<div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[rv_early_bird_weekend_rate]" value="%s" /></div>',
 		esc_attr( $fmt_money( $data['rv_early_bird_weekend_rate'] ) )
+	),
+) );
+eem_render_editor_field_row( array(
+	'label'        => __( 'Early Bird Weekly Rate', 'equine-event-manager' ),
+	'row_id'       => 'row-rv-eb-weekly',
+	'is_hidden'    => ! ( $eb_on && $weekly_on ),
+	'control_html' => sprintf(
+		'<div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[rv_early_bird_weekly_rate]" value="%s" /></div>',
+		esc_attr( $fmt_money( $data['rv_early_bird_weekly_rate'] ?? '0.00' ) )
 	),
 ) );
 

@@ -50,6 +50,7 @@ $fmt_money = function ( $v ) { return number_format( (float) $v, 2, '.', '' ); }
 // Initial state
 $nightly_on   = ! empty( $data['stall_nightly_enabled'] );
 $weekend_on   = ! empty( $data['stall_weekend_enabled'] );
+$weekly_on    = ! empty( $data['stall_weekly_enabled'] );
 $schedule_on  = ! empty( $data['stall_schedule_enabled'] );
 $eb_on        = ! empty( $data['stall_early_bird_enabled'] );
 $shavings_on  = ! empty( $data['required_shavings_enabled'] );
@@ -97,13 +98,17 @@ eem_render_editor_stay_type_pair( array(
 	'weekend_label'    => __( 'Weekend Rate', 'equine-event-manager' ),
 	'weekend_on'       => $weekend_on,
 	'weekend_controls' => array( 'row-stall-weekend-dates', 'row-stall-rate-weekend', 'row-stall-eb-weekend' ),
+	'weekly_name'      => 'stall_weekly_enabled',
+	'weekly_label'     => __( 'Weekly Rate', 'equine-event-manager' ),
+	'weekly_on'        => $weekly_on,
+	'weekly_controls'  => array( 'row-stall-weekly-dates', 'row-stall-rate-weekly', 'row-stall-eb-weekly' ),
 ) );
 $stay_html = ob_get_clean();
 eem_render_editor_field_row( array(
 	'label'        => __( 'Stay Types', 'equine-event-manager' ),
 	'label_sub'    => __( 'Enable one or both', 'equine-event-manager' ),
 	'control_html' => $stay_html,
-	'hint'         => __( 'Weekend Rate uses the stall weekend package dates configured below.', 'equine-event-manager' ),
+	'hint'         => __( 'Weekend Rate and Weekly Rate each use their own package dates configured below.', 'equine-event-manager' ),
 ) );
 
 // 4. Weekend Package Dates (conditional)
@@ -117,6 +122,20 @@ eem_render_editor_field_row( array(
 		esc_attr( (string) $data['stall_weekend_package_start_date'] ),
 		esc_html__( 'End', 'equine-event-manager' ),
 		esc_attr( (string) $data['stall_weekend_package_end_date'] )
+	),
+) );
+
+// 4b. Weekly Package Dates (conditional)
+eem_render_editor_field_row( array(
+	'label'        => __( 'Weekly Package Dates', 'equine-event-manager' ),
+	'row_id'       => 'row-stall-weekly-dates',
+	'is_hidden'    => ! $weekly_on,
+	'control_html' => sprintf(
+		'<div class="eem-date-range"><span style="font-size:12px;color:#6B7A99;padding-top:9px">%s</span><input class="eem-field-input" type="date" name="en_reservation[stall_weekly_package_start_date]" value="%s" style="width:160px" /><span style="font-size:12px;color:#6B7A99;padding-top:9px">%s</span><input class="eem-field-input" type="date" name="en_reservation[stall_weekly_package_end_date]" value="%s" style="width:160px" /></div>',
+		esc_html__( 'Start', 'equine-event-manager' ),
+		esc_attr( (string) ( $data['stall_weekly_package_start_date'] ?? '' ) ),
+		esc_html__( 'End', 'equine-event-manager' ),
+		esc_attr( (string) ( $data['stall_weekly_package_end_date'] ?? '' ) )
 	),
 ) );
 
@@ -177,6 +196,15 @@ eem_render_editor_field_row( array(
 		esc_attr( $fmt_money( $data['stall_weekend_rate'] ) )
 	),
 ) );
+eem_render_editor_field_row( array(
+	'label'        => __( 'Stall Weekly Rate', 'equine-event-manager' ),
+	'row_id'       => 'row-stall-rate-weekly',
+	'is_hidden'    => ! $weekly_on,
+	'control_html' => sprintf(
+		'<div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[stall_weekly_rate]" value="%s" /></div>',
+		esc_attr( $fmt_money( $data['stall_weekly_rate'] ?? '0.00' ) )
+	),
+) );
 
 // 11. Early Bird Pricing toggle
 ob_start();
@@ -185,7 +213,7 @@ eem_render_editor_toggle_label_row( array(
 	'subsection' => 'stall-eb',
 	'label'      => __( 'Enable stall early bird pricing', 'equine-event-manager' ),
 	'is_enabled' => $eb_on,
-	'controls'   => array( 'row-stall-eb-cutoff', 'row-stall-eb-nightly', 'row-stall-eb-weekend' ),
+	'controls'   => array( 'row-stall-eb-cutoff', 'row-stall-eb-nightly', 'row-stall-eb-weekend', 'row-stall-eb-weekly' ),
 ) );
 $eb_html = ob_get_clean();
 eem_render_editor_field_row( array(
@@ -219,6 +247,15 @@ eem_render_editor_field_row( array(
 	'control_html' => sprintf(
 		'<div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[stall_early_bird_weekend_rate]" value="%s" /></div>',
 		esc_attr( $fmt_money( $data['stall_early_bird_weekend_rate'] ) )
+	),
+) );
+eem_render_editor_field_row( array(
+	'label'        => __( 'Early Bird Weekly Rate', 'equine-event-manager' ),
+	'row_id'       => 'row-stall-eb-weekly',
+	'is_hidden'    => ! ( $eb_on && $weekly_on ),
+	'control_html' => sprintf(
+		'<div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[stall_early_bird_weekly_rate]" value="%s" /></div>',
+		esc_attr( $fmt_money( $data['stall_early_bird_weekly_rate'] ?? '0.00' ) )
 	),
 ) );
 

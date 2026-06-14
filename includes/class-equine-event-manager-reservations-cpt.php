@@ -132,8 +132,10 @@ class EEM_Reservations_CPT {
 		'event_day_enabled'          => 'Event Day Info',
 		'stall_nightly_rate'         => 'Stall Nightly Rate',
 		'stall_weekend_rate'         => 'Stall Weekend Rate',
+		'stall_weekly_rate'          => 'Stall Weekly Rate',
 		'rv_nightly_rate'            => 'RV Nightly Rate',
 		'rv_weekend_rate'            => 'RV Weekend Rate',
+		'rv_weekly_rate'             => 'RV Weekly Rate',
 		'stall_inventory'            => 'Stall Inventory',
 		'rv_inventory'               => 'RV Inventory',
 		'convenience_fee_type'       => 'Convenience Fee Type',
@@ -1291,8 +1293,10 @@ class EEM_Reservations_CPT {
 			'weekend_enabled'                 => isset( $source['weekend_enabled'] ) ? 1 : 0,
 			'stall_nightly_enabled'           => isset( $source['stall_nightly_enabled'] ) ? 1 : 0,
 			'stall_weekend_enabled'           => isset( $source['stall_weekend_enabled'] ) ? 1 : 0,
+			'stall_weekly_enabled'            => isset( $source['stall_weekly_enabled'] ) ? 1 : 0,
 			'rv_nightly_enabled'              => isset( $source['rv_nightly_enabled'] ) ? 1 : 0,
 			'rv_weekend_enabled'              => isset( $source['rv_weekend_enabled'] ) ? 1 : 0,
+			'rv_weekly_enabled'               => isset( $source['rv_weekly_enabled'] ) ? 1 : 0,
 			'available_start_date'            => $this->sanitize_date_value( isset( $source['available_start_date'] ) ? $source['available_start_date'] : '' ),
 			'available_end_date'              => $this->sanitize_date_value( isset( $source['available_end_date'] ) ? $source['available_end_date'] : '' ),
 			'weekend_package_start_date'      => $this->sanitize_date_value( isset( $source['weekend_package_start_date'] ) ? $source['weekend_package_start_date'] : $existing['weekend_package_start_date'] ),
@@ -1301,6 +1305,10 @@ class EEM_Reservations_CPT {
 			'stall_weekend_package_end_date'   => $this->sanitize_date_value( isset( $source['stall_weekend_package_end_date'] ) ? $source['stall_weekend_package_end_date'] : $existing['stall_weekend_package_end_date'] ),
 			'rv_weekend_package_start_date'    => $this->sanitize_date_value( isset( $source['rv_weekend_package_start_date'] ) ? $source['rv_weekend_package_start_date'] : $existing['rv_weekend_package_start_date'] ),
 			'rv_weekend_package_end_date'      => $this->sanitize_date_value( isset( $source['rv_weekend_package_end_date'] ) ? $source['rv_weekend_package_end_date'] : $existing['rv_weekend_package_end_date'] ),
+			'stall_weekly_package_start_date'  => $this->sanitize_date_value( isset( $source['stall_weekly_package_start_date'] ) ? $source['stall_weekly_package_start_date'] : ( $existing['stall_weekly_package_start_date'] ?? '' ) ),
+			'stall_weekly_package_end_date'    => $this->sanitize_date_value( isset( $source['stall_weekly_package_end_date'] ) ? $source['stall_weekly_package_end_date'] : ( $existing['stall_weekly_package_end_date'] ?? '' ) ),
+			'rv_weekly_package_start_date'     => $this->sanitize_date_value( isset( $source['rv_weekly_package_start_date'] ) ? $source['rv_weekly_package_start_date'] : ( $existing['rv_weekly_package_start_date'] ?? '' ) ),
+			'rv_weekly_package_end_date'       => $this->sanitize_date_value( isset( $source['rv_weekly_package_end_date'] ) ? $source['rv_weekly_package_end_date'] : ( $existing['rv_weekly_package_end_date'] ?? '' ) ),
 			'available_dates_manually_edited' => isset( $source['available_dates_manually_edited'] ) ? absint( $source['available_dates_manually_edited'] ) : 0,
 			'sync_stay_selections'          => 0,
 			'stall_description'               => isset( $source['stall_description'] ) ? sanitize_textarea_field( $source['stall_description'] ) : '',
@@ -1323,10 +1331,12 @@ class EEM_Reservations_CPT {
 			'rv_lots'                         => $rv_lots,
 			'stall_nightly_rate'              => isset( $source['stall_nightly_rate'] ) ? $this->sanitize_money_value( $source['stall_nightly_rate'] ) : $existing['stall_nightly_rate'],
 			'stall_weekend_rate'              => isset( $source['stall_weekend_rate'] ) ? $this->sanitize_money_value( $source['stall_weekend_rate'] ) : $existing['stall_weekend_rate'],
+			'stall_weekly_rate'               => isset( $source['stall_weekly_rate'] ) ? $this->sanitize_money_value( $source['stall_weekly_rate'] ) : ( $existing['stall_weekly_rate'] ?? '0.00' ),
 			'stall_early_bird_enabled'        => isset( $source['stall_early_bird_enabled'] ) ? 1 : 0,
 			'stall_early_bird_cutoff'         => $this->sanitize_datetime_value( isset( $source['stall_early_bird_cutoff'] ) ? $source['stall_early_bird_cutoff'] : '' ),
 			'stall_early_bird_nightly_rate'   => isset( $source['stall_early_bird_nightly_rate'] ) ? $this->sanitize_money_value( $source['stall_early_bird_nightly_rate'] ) : $existing['stall_early_bird_nightly_rate'],
 			'stall_early_bird_weekend_rate'   => isset( $source['stall_early_bird_weekend_rate'] ) ? $this->sanitize_money_value( $source['stall_early_bird_weekend_rate'] ) : $existing['stall_early_bird_weekend_rate'],
+			'stall_early_bird_weekly_rate'    => isset( $source['stall_early_bird_weekly_rate'] ) ? $this->sanitize_money_value( $source['stall_early_bird_weekly_rate'] ) : ( $existing['stall_early_bird_weekly_rate'] ?? '0.00' ),
 			'required_shavings_enabled'       => isset( $source['required_shavings_enabled'] ) ? 1 : 0,
 			// Tack Stall mode — 'off' or 'customer' (on). On = buyers flag a tack
 			// stall at checkout for the shavings exclusion; the admin assigns the
@@ -1402,10 +1412,12 @@ class EEM_Reservations_CPT {
 			'cancellation_policy_override'    => isset( $source['cancellation_policy_override'] ) ? sanitize_textarea_field( $source['cancellation_policy_override'] ) : '',
 			'rv_nightly_rate'                 => isset( $source['rv_nightly_rate'] ) ? $this->sanitize_money_value( $source['rv_nightly_rate'] ) : $existing['rv_nightly_rate'],
 			'rv_weekend_rate'                 => isset( $source['rv_weekend_rate'] ) ? $this->sanitize_money_value( $source['rv_weekend_rate'] ) : $existing['rv_weekend_rate'],
+			'rv_weekly_rate'                  => isset( $source['rv_weekly_rate'] ) ? $this->sanitize_money_value( $source['rv_weekly_rate'] ) : ( $existing['rv_weekly_rate'] ?? '0.00' ),
 			'rv_early_bird_enabled'           => isset( $source['rv_early_bird_enabled'] ) ? 1 : 0,
 			'rv_early_bird_cutoff'            => $this->sanitize_datetime_value( isset( $source['rv_early_bird_cutoff'] ) ? $source['rv_early_bird_cutoff'] : '' ),
 			'rv_early_bird_nightly_rate'      => isset( $source['rv_early_bird_nightly_rate'] ) ? $this->sanitize_money_value( $source['rv_early_bird_nightly_rate'] ) : $existing['rv_early_bird_nightly_rate'],
 			'rv_early_bird_weekend_rate'      => isset( $source['rv_early_bird_weekend_rate'] ) ? $this->sanitize_money_value( $source['rv_early_bird_weekend_rate'] ) : $existing['rv_early_bird_weekend_rate'],
+			'rv_early_bird_weekly_rate'       => isset( $source['rv_early_bird_weekly_rate'] ) ? $this->sanitize_money_value( $source['rv_early_bird_weekly_rate'] ) : ( $existing['rv_early_bird_weekly_rate'] ?? '0.00' ),
 			'convenience_fee_label'           => isset( $source['convenience_fee_label'] ) ? sanitize_text_field( $source['convenience_fee_label'] ) : __( 'Non-Refundable Convenience Fee', 'equine-event-manager' ),
 			'convenience_fee_enabled'         => isset( $source['convenience_fee_enabled'] ) ? 1 : 0,
 			'convenience_fee_type'            => $this->sanitize_fee_type( isset( $source['convenience_fee_type'] ) ? $source['convenience_fee_type'] : 'none' ),
@@ -1420,11 +1432,11 @@ class EEM_Reservations_CPT {
 			$data['convenience_fee_type'] = 'none';
 		}
 
-		if ( ! $data['stall_nightly_enabled'] && ! $data['stall_weekend_enabled'] ) {
+		if ( ! $data['stall_nightly_enabled'] && ! $data['stall_weekend_enabled'] && ! $data['stall_weekly_enabled'] ) {
 			$data['stall_nightly_enabled'] = 1;
 		}
 
-		if ( ! $data['rv_nightly_enabled'] && ! $data['rv_weekend_enabled'] ) {
+		if ( ! $data['rv_nightly_enabled'] && ! $data['rv_weekend_enabled'] && ! $data['rv_weekly_enabled'] ) {
 			$data['rv_nightly_enabled'] = 1;
 		}
 
@@ -1434,6 +1446,7 @@ class EEM_Reservations_CPT {
 
 		$data['nightly_enabled'] = $data['stall_nightly_enabled'] || $data['rv_nightly_enabled'] ? 1 : 0;
 		$data['weekend_enabled'] = $data['stall_weekend_enabled'] || $data['rv_weekend_enabled'] ? 1 : 0;
+		$data['weekly_enabled']  = $data['stall_weekly_enabled'] || $data['rv_weekly_enabled'] ? 1 : 0;
 
 		if ( 'feed' === $data['event_source'] && empty( $data['event_feed_url'] ) ) {
 			$data['event_feed_url'] = EEM_Events::get_default_feed_url();
@@ -1445,8 +1458,12 @@ class EEM_Reservations_CPT {
 		$data = $this->normalize_date_only_range( $data, 'available_start_date', 'available_end_date' );
 		$data = $this->normalize_date_only_range( $data, 'stall_weekend_package_start_date', 'stall_weekend_package_end_date' );
 		$data = $this->normalize_date_only_range( $data, 'rv_weekend_package_start_date', 'rv_weekend_package_end_date' );
+		$data = $this->normalize_date_only_range( $data, 'stall_weekly_package_start_date', 'stall_weekly_package_end_date' );
+		$data = $this->normalize_date_only_range( $data, 'rv_weekly_package_start_date', 'rv_weekly_package_end_date' );
 		$data = $this->normalize_weekend_package_range( $data, 'stall' );
 		$data = $this->normalize_weekend_package_range( $data, 'rv' );
+		$data = $this->normalize_weekly_package_range( $data, 'stall' );
+		$data = $this->normalize_weekly_package_range( $data, 'rv' );
 
 		return $data;
 	}
@@ -1735,10 +1752,13 @@ class EEM_Reservations_CPT {
 			'rv_enabled'                      => 0,
 			'nightly_enabled'                 => 1,
 			'weekend_enabled'                 => 1,
+			'weekly_enabled'                  => 0,
 			'stall_nightly_enabled'           => 1,
 			'stall_weekend_enabled'           => 1,
+			'stall_weekly_enabled'            => 0,
 			'rv_nightly_enabled'              => 1,
 			'rv_weekend_enabled'              => 1,
+			'rv_weekly_enabled'               => 0,
 			'available_start_date'            => '',
 			'available_end_date'              => '',
 			'weekend_package_start_date'      => '',
@@ -1747,6 +1767,10 @@ class EEM_Reservations_CPT {
 			'stall_weekend_package_end_date'   => '',
 			'rv_weekend_package_start_date'    => '',
 			'rv_weekend_package_end_date'      => '',
+			'stall_weekly_package_start_date'  => '',
+			'stall_weekly_package_end_date'    => '',
+			'rv_weekly_package_start_date'     => '',
+			'rv_weekly_package_end_date'       => '',
 			'available_dates_manually_edited' => 0,
 			'sync_stay_selections'          => 0,
 			'stall_description'               => '',
@@ -1769,10 +1793,12 @@ class EEM_Reservations_CPT {
 			'rv_lots'                         => array(),
 			'stall_nightly_rate'              => '0.00',
 			'stall_weekend_rate'              => '0.00',
+			'stall_weekly_rate'               => '0.00',
 			'stall_early_bird_enabled'        => 0,
 			'stall_early_bird_cutoff'         => '',
 			'stall_early_bird_nightly_rate'   => '0.00',
 			'stall_early_bird_weekend_rate'   => '0.00',
+			'stall_early_bird_weekly_rate'    => '0.00',
 			'required_shavings_enabled'       => 0,
 			// v4 Stall Mapping — the imported facility-map snapshot (read-only here;
 			// written by EEM_Stall_Map_Importer via AJAX, not the form save map).
@@ -1827,10 +1853,12 @@ class EEM_Reservations_CPT {
 			'rv_addons'                       => array(),
 			'rv_nightly_rate'                 => '0.00',
 			'rv_weekend_rate'                 => '0.00',
+			'rv_weekly_rate'                  => '0.00',
 			'rv_early_bird_enabled'           => 0,
 			'rv_early_bird_cutoff'            => '',
 			'rv_early_bird_nightly_rate'      => '0.00',
 			'rv_early_bird_weekend_rate'      => '0.00',
+			'rv_early_bird_weekly_rate'       => '0.00',
 			'convenience_fee_label'           => __( 'Non-Refundable Convenience Fee', 'equine-event-manager' ),
 			'convenience_fee_enabled'         => 0,
 			'convenience_fee_type'            => 'none',
@@ -3640,6 +3668,53 @@ class EEM_Reservations_CPT {
 		$enabled_key = $prefix ? $prefix . '_weekend_enabled' : 'weekend_enabled';
 		$start_key   = $prefix ? $prefix . '_weekend_package_start_date' : 'weekend_package_start_date';
 		$end_key     = $prefix ? $prefix . '_weekend_package_end_date' : 'weekend_package_end_date';
+
+		if ( empty( $data['available_start_date'] ) || empty( $data['available_end_date'] ) ) {
+			return $data;
+		}
+
+		if ( empty( $data[ $enabled_key ] ) ) {
+			$data[ $start_key ] = '';
+			$data[ $end_key ]   = '';
+			return $data;
+		}
+
+		if ( empty( $data[ $start_key ] ) ) {
+			$data[ $start_key ] = $data['available_start_date'];
+		}
+
+		if ( empty( $data[ $end_key ] ) ) {
+			$data[ $end_key ] = $data['available_end_date'];
+		}
+
+		if ( $data[ $start_key ] < $data['available_start_date'] ) {
+			$data[ $start_key ] = $data['available_start_date'];
+		}
+
+		if ( $data[ $end_key ] > $data['available_end_date'] ) {
+			$data[ $end_key ] = $data['available_end_date'];
+		}
+
+		if ( $data[ $end_key ] < $data[ $start_key ] ) {
+			$data[ $end_key ] = $data[ $start_key ];
+		}
+
+		return $data;
+	}
+
+	/**
+	 * Clamp/default weekly package dates to the reservation's available window.
+	 *
+	 * Parallel to normalize_weekend_package_range — operates on `{prefix}_weekly_*` keys.
+	 *
+	 * @param array  $data   Candidate meta array.
+	 * @param string $prefix 'stall' or 'rv'.
+	 * @return array Updated meta array.
+	 */
+	private function normalize_weekly_package_range( array $data, string $prefix = '' ): array {
+		$enabled_key = $prefix ? $prefix . '_weekly_enabled' : 'weekly_enabled';
+		$start_key   = $prefix ? $prefix . '_weekly_package_start_date' : 'weekly_package_start_date';
+		$end_key     = $prefix ? $prefix . '_weekly_package_end_date' : 'weekly_package_end_date';
 
 		if ( empty( $data['available_start_date'] ) || empty( $data['available_end_date'] ) ) {
 			return $data;
