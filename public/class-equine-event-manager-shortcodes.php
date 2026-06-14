@@ -2350,13 +2350,32 @@ class EEM_Shortcodes {
 				return $this->render_notice( implode( ' ', $live_errors ), 'error' );
 			}
 
-			$payment_result = $this->process_payment_submission( $reservation_id, $data, $submission, $live_status );
+			// [audit MED-1] Short-circuit a replay of an ALREADY-completed
+			// submission BEFORE charging, so a double-submit / refresh / retry
+			// can't fire a second gateway charge. Auth.net charges synchronously,
+			// and the post-charge dedup inside insert_reservation_orders prevented
+			// a duplicate ORDER but not a duplicate CHARGE. The token is only
+			// marked processed after a successful order, so a genuine retry after
+			// a decline still charges. This check + the insert both run under the
+			// same checkout lock, so the read is atomic. The duplicate-success
+			// shape below is identical to what insert_reservation_orders returns
+			// for a duplicate, so the confirmation render path is unchanged.
+			$replay_token = isset( $submission['submission_token'] ) ? (string) $submission['submission_token'] : '';
+			if ( '' !== $replay_token && $this->has_processed_submission_token( $replay_token ) ) {
+				$insert_result = array(
+					'success'          => true,
+					'duplicate'        => true,
+					'submission_token' => $replay_token,
+				);
+			} else {
+				$payment_result = $this->process_payment_submission( $reservation_id, $data, $submission, $live_status );
 
-			if ( is_wp_error( $payment_result ) ) {
-				return $this->render_notice( $payment_result->get_error_message(), 'error' );
+				if ( is_wp_error( $payment_result ) ) {
+					return $this->render_notice( $payment_result->get_error_message(), 'error' );
+				}
+
+				$insert_result = $this->insert_reservation_orders( $reservation_id, $data, $submission, $live_status, $payment_result );
 			}
-
-			$insert_result = $this->insert_reservation_orders( $reservation_id, $data, $submission, $live_status, $payment_result );
 		} finally {
 			$wpdb->query( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $checkout_lock ) );
 		}
