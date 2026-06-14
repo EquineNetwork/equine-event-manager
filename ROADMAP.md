@@ -119,6 +119,13 @@ succeeded; the last launch gate is cleared.
    style — alongside the existing Add-Ons summary card. Consider the same treatment for Sheets &
    Results if useful. Gate on the feature flags. (Verified 2.7.281: revenue wiring is correct; this
    is an additive surfacing task, not a bug fix.)
+   - **Dashboard completeness — make sure nothing is left out (Whitney 2026-06-14).**
+     - **Native Events → "Upcoming Events" card.** When the Native Events feature/source is ON, add
+       a dedicated dashboard card listing upcoming `en_event` events (date · title · venue),
+       parallel to the existing "Upcoming Reservations" card. Gate on Native Events being enabled.
+     - **Entries card.** Entries already shows in the Add-Ons card (divisions/entered counts +
+       Manage link). Confirm that's prominent enough; give Entries its own card if the Add-Ons line
+       isn't sufficient. Goal: an admin sees Entries activity at a glance when the feature is on.
 
 2. **Mobile-experience + PWA polish — CUSTOMER *and* ADMIN (binding: Whitney 2026-06-13).** Make
    the whole plugin feel like a real app on phones AND tablets — *without* leaving WordPress
@@ -182,6 +189,17 @@ proving ground for the relational-migration pattern that #2 then applies at scal
    (funnel) is the recommended first move** — low-risk, independently valuable. Full plan:
    `docs/WORKPLAN-postmeta-decouple.md`.
 
+### v2 — Features
+
+3. **"Weekly Rate" pricing in Edit Reservations (Whitney 2026-06-14).** Add a THIRD pricing option
+   alongside Nightly and Weekend Rate — **Nightly · Weekend Rate · Weekly Rate** — for BOTH stalls
+   and RVs. Same logic/shape as the existing Weekend Rate (a flat rate charged once for a "weekly"
+   stay, with its own enable toggle + rate field + package dates + Early-Bird variant, mirroring the
+   Weekend Rate rows). Touches the stay-type toggles + pricing fields in the Edit Reservation
+   editor (stall + RV sections), the customer checkout pricing math (`calculate_submission_totals`),
+   and the at-least-one-stay-type constraint. Follow the Weekend Rate implementation as the template
+   (see docs/decisions.md pricing rules + `weekend_rate`/`weekend_price` in the orders repo + CPT).
+
 ---
 
 ## 🏗️ v3 — ARCHITECTURE TRACK + DEFERRED FEATURES
@@ -206,6 +224,14 @@ proving ground for the relational-migration pattern that #2 then applies at scal
    (live link/embed, or pull-and-cache), and a plain **external URL** (link out to a results
    provider). Needs a source-type column on `wp_eem_sheet_entries` + per-type render + the admin
    "Add File" panel growing a type picker. Keep PDF as the default.
+5. **"Accept Deposits" option (Whitney 2026-06-14).** Let the admin enable a **deposit** on stall
+   and/or RV reservations: set a deposit amount (per the reservation, on stalls and/or RVs), the
+   customer pays just the deposit online at checkout, and the **remaining balance is collected at
+   the event by cash or card**. Needs: a deposit toggle + amount field in the Edit Reservation
+   pricing (stall + RV), checkout charging the deposit instead of the full total (order records the
+   deposit paid + balance due), and a "balance due / collect at event" state surfaced on the Order
+   (so admin can take the rest via the existing Collect Payment flow or mark cash-paid). Touches
+   pricing math, order totals/`amount_due`, and the Collect Payment / Order Detail surfaces.
 
 ### Hardening / audits (v3)
 
