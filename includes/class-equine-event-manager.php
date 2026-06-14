@@ -405,6 +405,7 @@ class EEM_Plugin {
 			add_action( 'add_meta_boxes_en_event', array( $this->reservations_cpt, 'register_native_event_meta_box' ) );
 			add_action( 'save_post_en_event', array( $this->events, 'save_event_meta' ), 10, 2 );
 			add_action( 'save_post_en_venue', array( $this->events, 'save_venue_meta' ), 10, 2 );
+			add_action( 'save_post_en_venue', array( $this->events, 'sync_native_venue_on_save' ), 20, 1 );
 			add_action( 'save_post_en_producer', array( $this->events, 'save_producer_meta' ), 10, 2 );
 			add_action( 'save_post_en_event', array( $this->reservations_cpt, 'save_native_event_meta' ), 20, 2 );
 			add_action( 'widgets_init', array( $this->events, 'register_widgets' ) );

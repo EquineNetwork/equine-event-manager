@@ -44,6 +44,15 @@ class EEM_Venue {
 		'_en_blocked_rv_lots',
 	);
 
+	/**
+	 * Post-meta key on an `en_venue` post that durably stores the id of its
+	 * canonical EEM_Venue row. Written by sync_native_venue() / on venue save so
+	 * the two records are one (no per-request re-resolution).
+	 *
+	 * @var string
+	 */
+	const CANONICAL_VENUE_META = '_eem_canonical_venue_id';
+
 	/* ── Table names ─────────────────────────────────────────────── */
 
 	/** @return string */
@@ -302,12 +311,18 @@ class EEM_Venue {
 		if ( '' === $name ) {
 			$name = (string) get_the_title( $en_venue_post_id );
 		}
-		return self::resolve( 'native', (string) $en_venue_post_id, $name );
+		$venue_id = self::resolve( 'native', (string) $en_venue_post_id, $name );
+		if ( $venue_id > 0 ) {
+			update_post_meta( $en_venue_post_id, self::CANONICAL_VENUE_META, $venue_id );
+		}
+		return $venue_id;
 	}
 
 	/**
 	 * Read-only counterpart to resolve_for_native_venue(): the existing canonical
-	 * Venue for a native `en_venue` post, or 0 if none exists yet.
+	 * Venue for a native `en_venue` post, or 0 if none exists yet. Prefers the
+	 * durable back-reference post-meta (fast path) before falling back to a
+	 * source-map / name lookup.
 	 *
 	 * @param int    $en_venue_post_id The `en_venue` post id.
 	 * @param string $name             Optional name override (defaults to the post title).
@@ -317,10 +332,65 @@ class EEM_Venue {
 		if ( $en_venue_post_id <= 0 ) {
 			return 0;
 		}
+		$ref = (int) get_post_meta( $en_venue_post_id, self::CANONICAL_VENUE_META, true );
+		if ( $ref > 0 && null !== self::get( $ref ) ) {
+			return $ref;
+		}
 		if ( '' === $name ) {
 			$name = (string) get_the_title( $en_venue_post_id );
 		}
 		return self::find( 'native', (string) $en_venue_post_id, $name );
+	}
+
+	/**
+	 * Update a canonical venue's display name (and its normalized matching key).
+	 * Used to keep the canonical record in lock-step with its native `en_venue`
+	 * post title.
+	 *
+	 * @param int    $venue_id Canonical venue id.
+	 * @param string $name     New display name.
+	 * @return bool True on a successful update.
+	 */
+	public static function update_name( int $venue_id, string $name ): bool {
+		global $wpdb;
+		$name = trim( $name );
+		if ( $venue_id <= 0 || '' === $name ) {
+			return false;
+		}
+		$ok = $wpdb->update( // phpcs:ignore WordPress.DB
+			self::venues_table(),
+			array( 'name' => $name, 'normalized_key' => self::normalize_key( $name ) ),
+			array( 'id' => $venue_id ),
+			array( '%s', '%s' ),
+			array( '%d' )
+		);
+		return false !== $ok;
+	}
+
+	/**
+	 * Unify a native `en_venue` post with its canonical EEM_Venue record: resolve
+	 * (creating if needed), keep the canonical name in sync with the post title,
+	 * and persist the durable back-reference on the post. Idempotent — safe to run
+	 * on every venue save and from the backfill migration.
+	 *
+	 * @param int $en_venue_post_id The `en_venue` post id.
+	 * @return int Canonical venue id, or 0 when the post is not a usable venue.
+	 */
+	public static function sync_native_venue( int $en_venue_post_id ): int {
+		if ( $en_venue_post_id <= 0 || 'en_venue' !== get_post_type( $en_venue_post_id ) ) {
+			return 0;
+		}
+		$name     = (string) get_the_title( $en_venue_post_id );
+		$venue_id = self::resolve( 'native', (string) $en_venue_post_id, $name );
+		if ( $venue_id <= 0 ) {
+			return 0;
+		}
+		$row = self::get( $venue_id );
+		if ( $row && '' !== trim( $name ) && (string) $row['name'] !== $name ) {
+			self::update_name( $venue_id, $name );
+		}
+		update_post_meta( $en_venue_post_id, self::CANONICAL_VENUE_META, $venue_id );
+		return $venue_id;
 	}
 
 	/**

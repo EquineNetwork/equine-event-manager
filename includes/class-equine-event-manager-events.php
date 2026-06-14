@@ -1759,6 +1759,31 @@ class EEM_Events {
 	}
 
 	/**
+	 * Keep a native `en_venue` post unified with its canonical EEM_Venue record on
+	 * every save (covers the branded editor, quick-edit title changes, and bulk
+	 * edits — any path that fires save_post_en_venue). Runs independently of the
+	 * meta-box nonce so a title-only change still syncs.
+	 *
+	 * @param int $post_id Saved post id.
+	 * @return void
+	 */
+	public function sync_native_venue_on_save( $post_id ) {
+		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+			return;
+		}
+		if ( wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) {
+			return;
+		}
+		$post = get_post( $post_id );
+		if ( ! $post || 'auto-draft' === $post->post_status || self::VENUE_POST_TYPE !== $post->post_type ) {
+			return;
+		}
+		if ( class_exists( 'EEM_Venue' ) ) {
+			EEM_Venue::sync_native_venue( (int) $post_id );
+		}
+	}
+
+	/**
 	 * Save producer metadata.
 	 *
 	 * @param int     $post_id Post ID.

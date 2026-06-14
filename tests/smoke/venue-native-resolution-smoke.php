@@ -44,9 +44,11 @@ foreach ( array( $res_a => $ev_a, $res_b => $ev_b ) as $rid => $eid ) {
 $ok( 'seed venue + 2 events + 2 reservations', $venue > 0 && $ev_a > 0 && $ev_b > 0 && $res_a > 0 && $res_b > 0 );
 
 // --- native venue resolution -------------------------------------------------
-$ok( 'find_for_native_venue returns 0 before any resolve', 0 === EEM_Venue::find_for_native_venue( (int) $venue ) );
+// NOTE: the save_post_en_venue sync hook unifies eagerly on insert (2.7.279), so
+// the seeded venue is already linked here — find returns its canonical id, not 0.
+$ok( 'find_for_native_venue returns the eagerly-linked venue', EEM_Venue::find_for_native_venue( (int) $venue ) > 0 );
 $vid = EEM_Venue::resolve_for_native_venue( (int) $venue );
-$ok( 'resolve_for_native_venue creates a canonical venue', $vid > 0 );
+$ok( 'resolve_for_native_venue returns the canonical venue', $vid > 0 );
 $ok( 'find_for_native_venue now returns the same venue', EEM_Venue::find_for_native_venue( (int) $venue ) === $vid );
 $ok( 'resolve is idempotent (same id on second call)', EEM_Venue::resolve_for_native_venue( (int) $venue ) === $vid );
 
