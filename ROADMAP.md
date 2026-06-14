@@ -80,16 +80,23 @@ succeeded; the last launch gate is cleared.
 
 ---
 
-## 🔭 v2 — FEATURE + ARCHITECTURE BACKLOG
+## 🔭 v2 — ARCHITECTURE TRACK (next up; build order set 2026-06-13)
 
-1. **Postmeta → relational de-coupling** *(binding direction: "not chained to WordPress
-   forever")* — move reservation/division config out of `wp_postmeta` into relational tables
-   behind an `EEM_Reservation_Config` repository, making WordPress a replaceable front-end.
-   **Phase 1 (funnel) is the recommended first move** — low-risk, independently valuable.
-   Full plan: `docs/WORKPLAN-postmeta-decouple.md`.
-2. **Event Entries — competition management** *(future, beyond selling entry spots, which
-   Divisions already does)* — horse/rider details per entry, results/placings/times, payouts/
-   added money/jackpot, multiple go-rounds + draw order. Extends the Divisions entrants ledger.
+**Recommended order: #1 (`en_venue` unification) → #2 (postmeta de-coupling).** The venue work
+is smaller, lower-risk, builds directly on the just-shipped venue resolution (2.7.274), and is a
+proving ground for the relational-migration pattern that #2 then applies at scale.
+
+1. **`en_venue` → canonical `EEM_Venue` unification** — the source-aware *resolution* + the venue
+   editor's Saved-Layouts meta box already landed (2.7.274). What remains: persist the link
+   between each `en_venue` post and its canonical `EEM_Venue` row (so they are durably one record,
+   not re-resolved each time), and make the `en_venue` editor write venue identity/address through
+   to the relational store. Venue tables are already relational — no big migration; this is the
+   warm-up that de-risks #2.
+2. **Postmeta → relational de-coupling** *(binding direction: "not chained to WordPress forever")*
+   — move reservation/division config out of `wp_postmeta` into relational tables behind an
+   `EEM_Reservation_Config` repository, making WordPress a replaceable front-end. **Phase 1
+   (funnel) is the recommended first move** — low-risk, independently valuable. Full plan:
+   `docs/WORKPLAN-postmeta-decouple.md`.
 
 ---
 
@@ -97,14 +104,15 @@ succeeded; the last launch gate is cleared.
 
 *Sequenced after v2.*
 
-1. **`en_venue` → canonical `EEM_Venue` wiring** — let native Native-Events venues resolve into
-   the canonical `EEM_Venue` store (source=native) so the two venue records become one and native
-   reservations get venue layouts. (Tables already relational — no migration needed.)
-2. **Global Handicaps data ownership / API integration** — make GH the system of record for
+1. **Global Handicaps data ownership / API integration** — make GH the system of record for
    reservation data (they already own memberships + GEMS events). Two models (Sync vs.
    GH-primary); gating dependency is GH providing an **atomic inventory-reserve API**. Full
    spec + payload contract: `docs/ARCHITECTURE-DATA-OWNERSHIP.md`. Do **after** the v2 postmeta
    de-coupling (the sync layer reads the repository, not postmeta).
+2. **Event Entries — competition management** *(moved from v2, 2026-06-13; future, beyond selling
+   entry spots which Divisions already does)* — horse/rider details per entry, results/placings/
+   times, payouts/added money/jackpot, multiple go-rounds + draw order. Extends the Divisions
+   entrants ledger.
 3. **PDF Venue Map → overlay / conversion** *(exploratory)* — upload a PDF venue map; MVP =
    render to image + drop/snap stall hotspots onto it. Needs a server PDF-render dependency.
    Pairs with Facility Layout Templates.
