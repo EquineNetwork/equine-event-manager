@@ -1,12 +1,14 @@
 # Equine Event Manager — Roadmap & To-Do
 
-**Canonical, version-controlled to-do list.** Last updated 2026-06-12 · plugin at **v2.7.231**
-· branch `v4-stall-mapping`. **v1 + v2 are complete; only the v3 track remains.** Authoritative decision history lives in `CLAUDE.md`; deep
-architecture in `docs/ARCHITECTURE-DATA-OWNERSHIP.md` and `docs/WORKPLAN-postmeta-decouple.md`.
+**Canonical, version-controlled to-do list.** Last updated 2026-06-13 · plugin at **v2.7.271**
+· branch `v4-stall-mapping`. **v1 is complete and launch-ready.** Remaining work is optional
+polish + the v2 feature/architecture backlog and the v3 track. Authoritative decision history
+lives in `CLAUDE.md`; deep architecture in `docs/ARCHITECTURE-DATA-OWNERSHIP.md`,
+`docs/ARCHITECTURE-VENUES.md`, and `docs/WORKPLAN-postmeta-decouple.md`.
 
 ---
 
-## ✅ v1 — DONE (shipped this cycle)
+## ✅ v1 — DONE (shipped)
 
 **Core v1 build list (1–9):**
 1. ✅ Entries restructure — `en_entry` CPT + styled editor + custom list (2.7.201–207)
@@ -19,18 +21,40 @@ architecture in `docs/ARCHITECTURE-DATA-OWNERSHIP.md` and `docs/WORKPLAN-postmet
 8. ✅ More transactional emails — added Payment-Received (2.7.212)
 9. ✅ Orders soft-delete / Trash lifecycle (2.7.213)
 
-**Entries → Divisions rework (post-list request):**
-- ✅ Slice 1 — single-Division data model + editor + list (2.7.214)
-- ✅ Slice 2 — entrants ledger `wp_eem_division_entries` + spots cap (in-lock) + customer & Create-Order fold (2.7.215)
-- ✅ Slice 3 — Division detail page + list Entered/Spots stats + oversold note (2.7.216)
-- ✅ Polish — full-width KPI cards, canonical list toolbar, Entry type badge on Orders, Choices dropdown width (2.7.217–219)
-- ✅ "Past" pill on divisions whose event has ended (2.7.222)
+**Entries → Divisions rework:**
+- ✅ Single-Division data model + editor + list; entrants ledger `wp_eem_division_entries` +
+  spots cap (in-lock) + customer & Create-Order fold; Division detail page + stats; polish
+  (full-width KPI cards, canonical toolbar, Entry-type badge, "Past" pill) (2.7.214–222)
 
-**Fixes shipped:**
-- ✅ Frontend stall/RV picker: theme red-border bleed on tabs/zoom + wrong button font (2.7.220–221)
-- ✅ Orders bulk select-all checkbox (double-toggle no-op) (2.7.223)
+**Notifications — DONE (2.7.224–226).** Dedicated page: pick an event → build an audience
+(Include [All/Stall/RV/Add-on/a Division's entrants/Group] − optional Exclude + optional Payment
+filter) with a live recipient count → compose → batched send (25/req) → history. Recipients from
+orders (incl. division-only) + the division ledger; Emogrifier-inlined.
 
-**Health:** smoke suite **135 files / 3,613 assertions / 0 failures**. All committed + pushed.
+**Venues + Facility Layout Templates — DONE (2.7.229–231).** Source-agnostic Venue entity
+(relational tables) owns saved layouts; TEC/GEMS resolve into it via `EEM_Venue`. "Save Layout /
+Load Layout" on both the stall and RV builders (copy-on-use clone; full combined structural
+layout). Unified under the native `en_venue` "Venues" surface at 2.7.249 (see Remaining #3).
+
+**Native Events — DONE (2.7.234–256).** Un-gated `en_event`/`en_venue`/`en_producer` CPTs
+(selectable in Settings → Integrations); Facebook + Instagram event fields; venue geocoding
+(Google Geocoding); frontend calendar via `[en_events]` (list / `images="no"` / month / map);
+Google Maps API-key setting; **no tickets**. Branded admin pages (Venues / Producers / Events /
+Categories list pages + branded Add/Edit Event editor) replacing the raw WP screens (2.7.251–256).
+
+**Sheets & Results — DONE (2.7.258–271).** Draw-sheet / result PDF system per event
+(`en_discipline` taxonomy, `wp_eem_sheet_entries`): admin manager page, event-editor section,
+additive public event-list buttons, public per-event page; discipline rename/delete; tied-together
+demo seeder. Mockups imported to `.mockups/` (`screen1–4` + scope doc).
+
+**Optional feature toggles — DONE (2.7.269–271).** Entries + Sheets & Results disableable
+per-site via Settings → Add-Ons (official `.eem-toggle` control). On-for-existing / off-for-new
+installs; turning one off hides it everywhere without deleting data.
+
+**Auth.net live charge — VERIFIED (2026-06-12).** Two live admin Collect Payment charges
+succeeded; the last launch gate is cleared.
+
+**Health:** smoke suite **154 files, 0 failures**. All committed + pushed.
 
 ---
 
@@ -38,93 +62,61 @@ architecture in `docs/ARCHITECTURE-DATA-OWNERSHIP.md` and `docs/WORKPLAN-postmet
 
 **Nothing.** v1 is feature-complete and launch-ready.
 
-- ✅ **Auth.net live charge — VERIFIED (2026-06-12).** Two live test charges run through the
-  admin Collect Payment "Charge Card" path; both succeeded. The last launch gate is cleared.
+---
+
+## 🔧 POLISH / FOLLOW-UPS (optional; no launch blocker)
+
+1. **Sync 5 Native Events admin mockups to as-built** — `venues_admin_page`,
+   `producers_admin_page`, `events_admin_page`, `taxonomy_categories_admin_page`,
+   `add_event_page` lag the live pages by the 2.7.255–256 polish (status-column removal,
+   date-derived lifecycle badge, branded Event editor). Diff + update + commit.
+2. **Surface saved layouts on the `en_venue` editor** — the 2.7.249 Venues unification removed the
+   standalone layout rename/delete UI; layouts still save/load underneath. Re-surface them on the
+   `en_venue` editor.
+3. **`filter="ongoing"/"past"/"upcoming"` alias** for `[en_events]` (the `timeframe` attr already
+   covers this — convenience alias).
+4. **Event-Setup completeness meter** on the event editor (the mockup's 4th rail card — deferred
+   cosmetic gap).
+5. **Dashboard: surface Entries + Sheets & Results** info when those features are ON (entry counts,
+   recent uploads, disciplines pending results).
 
 ---
 
-## 🔭 v2 — FEATURE BACKLOG (scoped 2026-06-12)
+## 🔭 v2 — FEATURE + ARCHITECTURE BACKLOG
 
-Full source notes for each live in `CLAUDE.md` → "v2 deferred features".
-
-1. ✅ **Notifications — DONE (2.7.224–226).** Dedicated page (Event Manager → Notifications):
-   pick an event → build an **audience** (Include [All/Stall/RV/Add-on/a Division's entrants/
-   Group] − optional Exclude + optional Payment [All/Paid/Unpaid]) with a live recipient count →
-   compose → **batched send** (25/req, no timeout) → **history**. Covers "everyone who entered
-   #9.5 Division" + "RV buyers but not stall customers." Recipients from orders (incl. division-
-   only) + the division ledger; Emogrifier-inlined. `EEM_Notifications` + `EEM_Notifications_Page`;
-   38 smoke assertions across 3 files.
-2. ✅ **Venues + Facility Layout Templates — DONE (2.7.229–231).** **Two layers** (design locked: `docs/ARCHITECTURE-VENUES.md`):
-   - **Venues** — a single **source-agnostic Venue entity** (relational tables, not postmeta)
-     that owns saved layouts; TEC/GEMS venues resolve into it via `EEM_Venue` (resolver + repo;
-     not a separate `EEM_Venue_Resolver` class); Native Events (v3) plugs in later with **no new
-     nav**. Page **under Stall & RV Charts** (list + per-venue detail, layout rename/delete).
-     Producers stay a Native-Events-only concept (separate from Venues).
-   - **Templates** — **"Save Layout to Venue" / "Load Layout from Venue"** on BOTH the stall and
-     RV builders in Edit Reservation. Load is **copy-on-use** (deep-clone into THIS reservation,
-     original never mutated). Captures the **FULL combined structural layout** (stall grid + RV
-     lots/zones + blocked stalls/lots + map geometry; excludes pricing/dates). Browser-verified
-     live (save→list→load→cross-venue-guard→delete). 60 smoke assertions across 3 files. NOTE:
-     the builders render only on a *configured* reservation; a fresh/unlinked one shows the
-     first-run setup wizard instead.
-**Event Entries — RESOLVED (2026-06-12): already delivered by Divisions.** Whitney confirmed the
-need is "selling entry spots + tracking who's entered," which the shipped Divisions feature does.
-No additional v2 work. The richer *competition-management* version (horse/rider details, results/
-placings/times, payouts/added money/jackpot, go-rounds/draw order) is a genuine **future feature**
-— not currently requested — parked in v3 deferred features below.
+1. **Postmeta → relational de-coupling** *(binding direction: "not chained to WordPress
+   forever")* — move reservation/division config out of `wp_postmeta` into relational tables
+   behind an `EEM_Reservation_Config` repository, making WordPress a replaceable front-end.
+   **Phase 1 (funnel) is the recommended first move** — low-risk, independently valuable.
+   Full plan: `docs/WORKPLAN-postmeta-decouple.md`.
+2. **Event Entries — competition management** *(future, beyond selling entry spots, which
+   Divisions already does)* — horse/rider details per entry, results/placings/times, payouts/
+   added money/jackpot, multiple go-rounds + draw order. Extends the Divisions entrants ledger.
 
 ---
 
 ## 🏗️ v3 — ARCHITECTURE TRACK + DEFERRED FEATURES
 
-*Sequenced after the v2 feature work.*
+*Sequenced after v2.*
 
-### Architecture (strategic; see dedicated docs)
-1. **Postmeta → relational de-coupling** *(binding direction: "not chained to WordPress
-   forever")* — move reservation/division config out of `wp_postmeta` into relational tables
-   behind an `EEM_Reservation_Config` repository, making WordPress a replaceable front-end.
-   **Phase 1 (funnel) is the recommended first move** — low-risk, independently valuable.
-   ~2.5–4 weeks. Full plan: `docs/WORKPLAN-postmeta-decouple.md`. **Do this before the GH API.**
+1. **`en_venue` → canonical `EEM_Venue` wiring** — let native Native-Events venues resolve into
+   the canonical `EEM_Venue` store (source=native) so the two venue records become one and native
+   reservations get venue layouts. (Tables already relational — no migration needed.)
 2. **Global Handicaps data ownership / API integration** — make GH the system of record for
    reservation data (they already own memberships + GEMS events). Two models (Sync vs.
    GH-primary); gating dependency is GH providing an **atomic inventory-reserve API**. Full
-   spec + payload contract: `docs/ARCHITECTURE-DATA-OWNERSHIP.md`. Enables a future native
-   mobile app via the same API contract.
-
-### Deferred features (moved out of v2, 2026-06-12)
-3. ✅ **Native Events source — DONE (2.7.234–237).** Un-gated the `en_event`/`en_venue`/
-   `en_producer` CPTs (selectable in Settings → Integrations). Added: Facebook + Instagram
-   event fields (`_en_event_*`, rendered on the event page); venue geocoding (lat/lng +
-   auto-geocode on save via Google Geocoding API, with manual override); a frontend calendar via
-   `[en_events]` with **list** (incl. `images="no"`), **month**, and **map** (`view="map"`,
-   Google Maps with per-event pins) views; a Google Maps API-key setting. Browser-verified
-   end-to-end (list/no-images/month/single-event + social links live; map shows the API-key
-   notice until a key is set). 48 smoke assertions across 4 files. **No tickets** (per Whitney).
-   To turn on: Settings → Integrations → select Native Events → Save.
-4. **PDF Venue Map → overlay / conversion** *(exploratory)* — upload a PDF venue map; MVP =
+   spec + payload contract: `docs/ARCHITECTURE-DATA-OWNERSHIP.md`. Do **after** the v2 postmeta
+   de-coupling (the sync layer reads the repository, not postmeta).
+3. **PDF Venue Map → overlay / conversion** *(exploratory)* — upload a PDF venue map; MVP =
    render to image + drop/snap stall hotspots onto it. Needs a server PDF-render dependency.
    Pairs with Facility Layout Templates.
-5. **Event Entries — competition management** *(future, not yet requested)* — the richer layer
-   beyond selling entry spots (which Divisions already does): horse/rider details per entry,
-   results/placings/times, payouts/added money/jackpot, multiple go-rounds + draw order. Build
-   as an extension of the Divisions entrants ledger if/when wanted.
-
-**Suggested v3 sequencing:** architecture #1 (de-coupling funnel) → #2 (GH API); deferred
-features as priorities dictate. The de-coupling makes the GH integration clean (sync layer
-reads the repository, not postmeta).
-
----
-
-## ❌ KILLED — do not reintroduce
-- **Scheduled / recurring report exports** (cron + email) — rejected 2026-06-12.
-- **"Add to Show Bill"** deferred-payment record — covered by open unpaid orders; rejected 2026-06-09.
 
 ---
 
 ## 📚 Reference documents
 - `CLAUDE.md` — authoritative decisions, conventions, v1/v2 source notes, chunk history.
 - `docs/ARCHITECTURE-VENUES.md` — source-agnostic Venue model + resolver + Facility Layout
-  Templates design (spans v2 + v3 Native Events).
+  Templates design.
 - `docs/ARCHITECTURE-DATA-OWNERSHIP.md` — data storage, GH integration models, payload
   contract, WordPress-replaceable principle.
 - `docs/WORKPLAN-postmeta-decouple.md` — the postmeta→relational migration plan + estimate.

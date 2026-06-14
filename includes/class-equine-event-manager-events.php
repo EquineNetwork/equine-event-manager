@@ -2301,11 +2301,18 @@ class EEM_Events {
 				'source'        => 'all',
 				'month'         => '',
 				'timeframe'     => 'current_upcoming',
+				'filter'        => '',
 				'images'        => 'yes',
 			),
 			$atts,
 			'equine_event_manager_events'
 		);
+
+		// `filter` is a friendly alias for `timeframe` (upcoming / ongoing / past / all).
+		// When provided it overrides `timeframe`; parse_timeframe_filter normalizes both.
+		if ( '' !== trim( (string) $atts['filter'] ) ) {
+			$atts['timeframe'] = $atts['filter'];
+		}
 
 		// `month` is the friendly alias for the calendar grid (README/UX wording);
 		// normalize it to the internal `calendar` view. `map` is handled in the
@@ -3127,9 +3134,13 @@ class EEM_Events {
 	private static function parse_timeframe_filter( $timeframe ) {
 		$timeframe = sanitize_key( (string) $timeframe );
 
-		if ( in_array( $timeframe, array( 'upcoming', 'current_upcoming', 'past', 'all', 'include_past' ), true ) ) {
+		if ( in_array( $timeframe, array( 'upcoming', 'current_upcoming', 'ongoing', 'current', 'past', 'all', 'include_past' ), true ) ) {
 			if ( 'upcoming' === $timeframe ) {
 				return 'current_upcoming';
+			}
+
+			if ( 'current' === $timeframe ) {
+				return 'ongoing';
 			}
 
 			if ( 'include_past' === $timeframe ) {
@@ -3170,6 +3181,12 @@ class EEM_Events {
 
 					if ( 'past' === $timeframe ) {
 						return $sort_date < $today;
+					}
+
+					if ( 'ongoing' === $timeframe ) {
+						// Currently running: started on/before today AND not yet ended.
+						$begin = $start_date ? $start_date : $sort_date;
+						return $begin <= $today && $sort_date >= $today;
 					}
 
 					return $sort_date >= $today;
