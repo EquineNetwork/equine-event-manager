@@ -9340,6 +9340,11 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 .eem-venue-card .eem-card-body { padding: 0; }
 .eem-venue-card .eem-card-body > .eem-venue-empty-note { padding: 18px; margin: 0; color: var(--eem-muted, #64748b); }
 .eem-venue-card .eem-card-body > .eem-table { margin: 0; }
+/* Align the full-bleed table's outer cells with the 18px card-header inset. */
+.eem-venue-card .eem-card-body > .eem-table th:first-child,
+.eem-venue-card .eem-card-body > .eem-table td:first-child { padding-left: 18px; }
+.eem-venue-card .eem-card-body > .eem-table th:last-child,
+.eem-venue-card .eem-card-body > .eem-table td:last-child { padding-right: 18px; }
 .eem-venue-source-badge { background: var(--eem-bg-alt, #eef2fb); color: var(--eem-navy, #031B4E); }
 .eem-venue-layout-name { font-weight: 600; color: var(--eem-navy, #031B4E); }
 

@@ -507,7 +507,7 @@ class EEM_Venues_Page {
 		?>
 		<div class="eem-venues eem-venue-detail" data-venue-nonce="<?php echo esc_attr( $nonce ); ?>">
 			<div class="eem-card eem-venue-card">
-				<div class="eem-card-head"><h2 class="eem-card-title"><?php esc_html_e( 'Saved Layouts', 'equine-event-manager' ); ?></h2></div>
+				<div class="eem-card-header"><h2 class="eem-card-title"><?php esc_html_e( 'Saved Layouts', 'equine-event-manager' ); ?></h2></div>
 				<div class="eem-card-body">
 					<?php if ( empty( $layouts ) ) : ?>
 						<p class="eem-venue-empty-note"><?php esc_html_e( 'No saved layouts for this venue yet. Use “Save Layout” on a reservation’s stall or RV builder to capture one.', 'equine-event-manager' ); ?></p>
@@ -538,7 +538,7 @@ class EEM_Venues_Page {
 			</div>
 
 			<div class="eem-card eem-venue-card">
-				<div class="eem-card-head"><h2 class="eem-card-title"><?php esc_html_e( 'Event Sources', 'equine-event-manager' ); ?></h2></div>
+				<div class="eem-card-header"><h2 class="eem-card-title"><?php esc_html_e( 'Event Sources', 'equine-event-manager' ); ?></h2></div>
 				<div class="eem-card-body">
 					<p class="eem-venue-empty-note"><?php esc_html_e( 'These event sources resolve to this venue. The same physical place reached through multiple sources or seasons unifies here.', 'equine-event-manager' ); ?></p>
 					<?php if ( ! empty( $sources ) ) : ?>
