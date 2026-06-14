@@ -430,9 +430,9 @@ class EEM_Entries {
 		$events = array(); // reservation_id => title
 		foreach ( $entries as $e ) {
 			$rid       = (int) get_post_meta( $e->ID, self::META_RESERVATION, true );
-			$res_label = $rid > 0 ? self::reservation_label( $rid ) : array( 'title' => '', 'end_date' => '' );
+			$res_label = $rid > 0 ? self::reservation_label( $rid ) : array( 'title' => '', 'start_date' => '', 'end_date' => '' );
 			$event     = (string) $res_label['title'];
-			$is_past   = self::event_is_past( (string) $res_label['end_date'] );
+			$ev_status = self::event_status( (string) ( $res_label['start_date'] ?? '' ), (string) $res_label['end_date'] );
 			$div_name  = (string) get_post_meta( $e->ID, self::META_DIVISION_NAME, true );
 			$price     = (string) get_post_meta( $e->ID, self::META_PRICE, true );
 			$spots     = get_post_meta( $e->ID, self::META_SPOTS, true );
@@ -452,7 +452,7 @@ class EEM_Entries {
 				'entered'   => $entered,
 				'oversold'  => ( $spots_int > 0 && $entered > $spots_int ) ? ( $entered - $spots_int ) : 0,
 				'is_pub'    => $is_pub,
-				'is_past'   => $is_past,
+				'ev_status' => $ev_status,
 			);
 		}
 		asort( $events );
@@ -529,7 +529,7 @@ class EEM_Entries {
 								data-sort-event="<?php echo esc_attr( strtolower( $r['event'] ) ); ?>"
 								data-sort-price="<?php echo esc_attr( '' !== $r['price'] ? (string) (float) $r['price'] : '-1' ); ?>"
 								data-sort-entered="<?php echo esc_attr( (string) $r['entered'] ); ?>"
-								data-sort-status="<?php echo esc_attr( $r['is_pub'] ? '1' : '0' ); ?>">
+								data-sort-status="<?php echo esc_attr( empty( $r['is_pub'] ) ? '0' : ( 'past' === $r['ev_status'] ? '1' : ( 'ongoing' === $r['ev_status'] ? '2' : '3' ) ) ); ?>">
 								<td><a class="eem-res-name" href="<?php echo esc_url( $detail_url ); ?>"><?php echo esc_html( $r['name'] ); ?></a></td>
 								<td><?php echo '' !== $r['event'] ? esc_html( $r['event'] ) : '<span class="eem-orders-count is-zero">' . esc_html__( '— not connected —', 'equine-event-manager' ) . '</span>'; ?></td>
 								<td><?php echo '' !== $r['price'] ? esc_html( '$' . number_format( (float) $r['price'], 2 ) ) : '<span class="eem-orders-count is-zero">—</span>'; ?></td>
@@ -545,9 +545,17 @@ class EEM_Entries {
 									?>
 								</td>
 								<td>
-								<span class="eem-res-status eem-res-status--<?php echo $r['is_pub'] ? 'active' : 'draft'; ?>"><?php echo esc_html( $r['is_pub'] ? __( 'Published', 'equine-event-manager' ) : __( 'Draft', 'equine-event-manager' ) ); ?></span>
-								<?php if ( ! empty( $r['is_past'] ) ) : ?>
-									<span class="eem-res-status eem-res-status--past"><?php esc_html_e( 'Past', 'equine-event-manager' ); ?></span>
+								<?php
+								$eem_div_status_labels = array(
+									'scheduled' => __( 'Scheduled', 'equine-event-manager' ),
+									'ongoing'   => __( 'Ongoing', 'equine-event-manager' ),
+									'past'      => __( 'Past', 'equine-event-manager' ),
+								);
+								$eem_div_status = isset( $eem_div_status_labels[ $r['ev_status'] ] ) ? (string) $r['ev_status'] : 'scheduled';
+								?>
+								<span class="eem-res-status eem-res-status--<?php echo esc_attr( $eem_div_status ); ?>"><?php echo esc_html( $eem_div_status_labels[ $eem_div_status ] ); ?></span>
+								<?php if ( empty( $r['is_pub'] ) ) : ?>
+									<span class="eem-res-status eem-res-status--draft"><?php esc_html_e( 'Draft', 'equine-event-manager' ); ?></span>
 								<?php endif; ?>
 							</td>
 								<td><a class="eem-btn eem-btn-sm" href="<?php echo esc_url( $edit_url ); ?>"><?php esc_html_e( 'Edit', 'equine-event-manager' ); ?></a></td>
@@ -588,9 +596,17 @@ class EEM_Entries {
 								<?php if ( $r['oversold'] > 0 ) : ?>
 									<span class="eem-status-badge eem-status-refunded"><?php echo esc_html( sprintf( /* translators: %d: count oversold by. */ __( 'oversold by %d', 'equine-event-manager' ), $r['oversold'] ) ); ?></span>
 								<?php endif; ?>
-								<span class="eem-res-status eem-res-status--<?php echo $r['is_pub'] ? 'active' : 'draft'; ?>"><?php echo esc_html( $r['is_pub'] ? __( 'Published', 'equine-event-manager' ) : __( 'Draft', 'equine-event-manager' ) ); ?></span>
-								<?php if ( ! empty( $r['is_past'] ) ) : ?>
-									<span class="eem-res-status eem-res-status--past"><?php esc_html_e( 'Past', 'equine-event-manager' ); ?></span>
+								<?php
+								$eem_div_status_labels = array(
+									'scheduled' => __( 'Scheduled', 'equine-event-manager' ),
+									'ongoing'   => __( 'Ongoing', 'equine-event-manager' ),
+									'past'      => __( 'Past', 'equine-event-manager' ),
+								);
+								$eem_div_status = isset( $eem_div_status_labels[ $r['ev_status'] ] ) ? (string) $r['ev_status'] : 'scheduled';
+								?>
+								<span class="eem-res-status eem-res-status--<?php echo esc_attr( $eem_div_status ); ?>"><?php echo esc_html( $eem_div_status_labels[ $eem_div_status ] ); ?></span>
+								<?php if ( empty( $r['is_pub'] ) ) : ?>
+									<span class="eem-res-status eem-res-status--draft"><?php esc_html_e( 'Draft', 'equine-event-manager' ); ?></span>
 								<?php endif; ?>
 							</div>
 							<a class="eem-btn eem-btn-sm" href="<?php echo esc_url( $edit_url ); ?>"><?php esc_html_e( 'Edit', 'equine-event-manager' ); ?></a>
@@ -687,12 +703,13 @@ class EEM_Entries {
 	 * the editor header + the search results.
 	 *
 	 * @param int $reservation_id Reservation id.
-	 * @return array{title:string,dates:string,end_date:string}
+	 * @return array{title:string,dates:string,start_date:string,end_date:string}
 	 */
 	private static function reservation_label( int $reservation_id ): array {
-		$title    = '';
-		$dates    = '';
-		$end_date = '';
+		$title      = '';
+		$dates      = '';
+		$start_date = '';
+		$end_date   = '';
 		if ( $reservation_id > 0 ) {
 			$title = (string) get_the_title( $reservation_id );
 			if ( class_exists( 'EEM_Reservation_Source_Resolver' ) && class_exists( 'EEM_Dashboard_Repo' ) ) {
@@ -700,14 +717,38 @@ class EEM_Entries {
 				if ( ! empty( $fields['title'] ) ) {
 					$title = (string) $fields['title'];
 				}
-				$end_date = isset( $fields['end_date'] ) ? (string) $fields['end_date'] : '';
-				$dates    = EEM_Dashboard_Repo::format_date_range(
-					isset( $fields['start_date'] ) ? (string) $fields['start_date'] : '',
-					$end_date
-				);
+				$start_date = isset( $fields['start_date'] ) ? (string) $fields['start_date'] : '';
+				$end_date   = isset( $fields['end_date'] ) ? (string) $fields['end_date'] : '';
+				$dates      = EEM_Dashboard_Repo::format_date_range( $start_date, $end_date );
 			}
 		}
-		return array( 'title' => $title, 'dates' => $dates, 'end_date' => $end_date );
+		return array( 'title' => $title, 'dates' => $dates, 'start_date' => $start_date, 'end_date' => $end_date );
+	}
+
+	/**
+	 * Derive an event-timing status from its start/end dates — drives the
+	 * Scheduled / Ongoing / Past pill on the Divisions list (replaces the old
+	 * Published/Draft status per Whitney 2026-06-14). `scheduled` = not started
+	 * yet (or no dates / open-ended), `ongoing` = started and not yet ended,
+	 * `past` = ended. Display-only; computed at render time.
+	 *
+	 * @param string $start_date Resolved event start date (strtotime-parseable).
+	 * @param string $end_date   Resolved event end date (strtotime-parseable).
+	 * @return string One of 'scheduled' | 'ongoing' | 'past'.
+	 */
+	private static function event_status( string $start_date, string $end_date ): string {
+		$today    = strtotime( current_time( 'Y-m-d' ) );
+		$start_ts = '' !== trim( $start_date ) ? strtotime( $start_date ) : 0;
+		$end_ts   = '' !== trim( $end_date ) ? strtotime( $end_date ) : 0;
+		if ( $end_ts && $today > $end_ts ) {
+			return 'past';
+		}
+		if ( $start_ts && $today >= $start_ts ) {
+			// Started; still ongoing unless the end date has already passed
+			// (handled above). Open-ended (no end date) stays ongoing.
+			return 'ongoing';
+		}
+		return 'scheduled';
 	}
 
 	/**

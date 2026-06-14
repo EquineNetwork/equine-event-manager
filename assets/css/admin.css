@@ -3849,8 +3849,15 @@ a.eem-res-name:focus {
 .eem-res-status--archived::before { background: #71717a; }
 .eem-res-status--trashed  { background: #fee2e2; color: #b91c1c; }
 .eem-res-status--trashed::before  { background: #dc2626; }
-/* Derived "Past" pill (Entries) — muted slate; the event's end date has passed.
-   Display-only, computed at render time (no stored status). */
+/* Derived event-timing pills (Entries / Divisions) — computed at render time
+   from the linked event's start/end dates (no stored status). Scheduled = the
+   event hasn't started (blue), Ongoing = happening now (green), Past = ended
+   (muted slate). Replaces the old Published/Draft status per Whitney 2026-06-14
+   ("'published' should not be a status for entries — just scheduled/ongoing/past"). */
+.eem-res-status--scheduled { background: #dbeafe; color: #1d4ed8; }
+.eem-res-status--scheduled::before { background: #2563eb; }
+.eem-res-status--ongoing   { background: #dcfce7; color: #15803d; }
+.eem-res-status--ongoing::before   { background: #16a34a; }
 .eem-res-status--past     { background: #e5e7eb; color: #52525b; }
 .eem-res-status--past::before     { background: #94a3b8; }
 
