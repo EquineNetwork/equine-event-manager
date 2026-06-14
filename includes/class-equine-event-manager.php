@@ -65,6 +65,8 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-term-categories-page.p
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-producers-page.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-events-list-page.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-event-editor-page.php';
+require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-venue-editor-page.php';
+require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-producer-editor-page.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-sheets-results-page.php';
 
 // DS-1.A — Create Order + Collect Payment admin page stubs (functional
@@ -97,6 +99,7 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-dashboard-page.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-setup-checklist.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-setup-wizard.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-stall-setup-wizard.php';
+require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-pwa.php';
 
 // 2.3.25 — WP-CLI demo data seeder. Loaded only in CLI context; the file
 // self-guards against being loaded outside WP_CLI and registers the
@@ -232,7 +235,10 @@ class EEM_Plugin {
 		EEM_Venues_Page::register();
 		EEM_Term_Categories_Page::register();
 		EEM_Event_Editor_Page::register();
+		EEM_Venue_Editor_Page::register();
+		EEM_Producer_Editor_Page::register();
 		EEM_Sheets_Results_Page::register();
+		EEM_PWA::init();
 		// C7.C.1 — meta-box registration retired. The Reservation Editor
 		// is now a custom render page (EEM_Reservation_Editor_Page); the
 		// legacy EEM_Reservation_Editor class is kept ONLY as a "save +

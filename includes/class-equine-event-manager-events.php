@@ -2420,6 +2420,7 @@ class EEM_Events {
 				'timeframe'     => 'current_upcoming',
 				'filter'        => '',
 				'images'        => 'yes',
+				'flyer'         => 'no',
 			),
 			$atts,
 			'equine_event_manager_events'
@@ -2438,7 +2439,7 @@ class EEM_Events {
 		if ( 'month' === $view ) {
 			$view = 'calendar';
 		}
-		if ( ! in_array( $view, array( 'list', 'calendar', 'map' ), true ) ) {
+		if ( ! in_array( $view, array( 'list', 'cards', 'calendar', 'map' ), true ) ) {
 			$view = 'list';
 		}
 		$show_images = ! in_array( strtolower( (string) $atts['images'] ), array( 'no', 'false', '0', 'off' ), true );
@@ -2480,6 +2481,18 @@ class EEM_Events {
 			echo $this->render_event_map_markup( $events ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped within (incl. wp_json_encode payload).
 		} elseif ( 'calendar' === $view ) {
 			echo wp_kses_post( $this->render_event_calendar_markup( $events, (string) $atts['month'] ) );
+		} elseif ( 'cards' === $view ) {
+			$show_flyer = ! in_array( strtolower( (string) ( $atts['flyer'] ?? 'no' ) ), array( 'no', 'false', '0', 'off' ), true );
+			?>
+			<div class="eem-event-cards" data-eem-events-page="<?php echo esc_attr( $current_page ); ?>">
+				<?php foreach ( $events as $event_data ) : ?>
+					<?php echo wp_kses_post( $this->render_event_card_markup( $event_data, $show_flyer ) ); ?>
+				<?php endforeach; ?>
+			</div>
+			<?php if ( $total_pages > 1 ) : ?>
+				<?php echo wp_kses_post( $this->render_event_list_pagination( $current_page, $total_pages ) ); ?>
+			<?php endif; ?>
+			<?php
 		} else {
 			?>
 			<div class="eem-event-list<?php echo $show_images ? '' : ' eem-event-list--no-images'; ?>" data-eem-events-page="<?php echo esc_attr( $current_page ); ?>">
@@ -2916,6 +2929,74 @@ class EEM_Events {
 						<?php endif; ?>
 					</div>
 				<?php endif; ?>
+			</div>
+		</article>
+		<?php
+
+		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Render a single event as a vertical card (view="cards").
+	 *
+	 * @param array $event_data Normalized event data.
+	 * @param bool  $show_flyer Whether to show the flyer PDF link.
+	 * @return string
+	 */
+	private function render_event_card_markup( array $event_data, bool $show_flyer = false ): string {
+		if ( empty( $event_data ) ) {
+			return '';
+		}
+
+		$event_url      = self::get_event_frontend_url( $event_data );
+		$date_label     = self::format_date_range_label( $event_data['start_date'], $event_data['end_date'] );
+		$venue_name     = ! empty( $event_data['venue_name'] ) ? (string) $event_data['venue_name'] : '';
+		$location_label = self::get_event_city_state_label( $event_data );
+		$producer_name  = ! empty( $event_data['producer']['name'] ) ? (string) $event_data['producer']['name'] : '';
+		$reserve_label  = ! empty( $event_data['cta_label'] ) ? (string) $event_data['cta_label'] : __( 'Reserve Now', 'equine-event-manager' );
+		$flyer_url      = $show_flyer && ! empty( $event_data['flyer_url'] ) ? (string) $event_data['flyer_url'] : '';
+
+		$venue_bits = array_filter( array( $venue_name, $location_label ), static function ( $v ) {
+			return '' !== trim( (string) $v );
+		} );
+
+		ob_start();
+		?>
+		<article class="eem-event-card">
+			<?php if ( ! empty( $event_data['featured_image'] ) ) : ?>
+				<div class="eem-event-card__image">
+					<?php if ( $event_url ) : ?>
+						<a href="<?php echo esc_url( $event_url ); ?>"><img src="<?php echo esc_url( $event_data['featured_image'] ); ?>" alt="<?php echo esc_attr( $event_data['title'] ); ?>" loading="lazy" /></a>
+					<?php else : ?>
+						<img src="<?php echo esc_url( $event_data['featured_image'] ); ?>" alt="<?php echo esc_attr( $event_data['title'] ); ?>" loading="lazy" />
+					<?php endif; ?>
+				</div>
+			<?php endif; ?>
+			<div class="eem-event-card__body">
+				<?php if ( $date_label ) : ?>
+					<div class="eem-event-card__date"><?php echo esc_html( $date_label ); ?></div>
+				<?php endif; ?>
+				<h3 class="eem-event-card__title">
+					<?php if ( $event_url ) : ?>
+						<a href="<?php echo esc_url( $event_url ); ?>"><?php echo esc_html( $event_data['title'] ); ?></a>
+					<?php else : ?>
+						<?php echo esc_html( $event_data['title'] ); ?>
+					<?php endif; ?>
+				</h3>
+				<?php if ( $producer_name ) : ?>
+					<div class="eem-event-card__producer"><?php echo esc_html( $producer_name ); ?></div>
+				<?php endif; ?>
+				<?php if ( ! empty( $venue_bits ) ) : ?>
+					<div class="eem-event-card__venue"><?php echo esc_html( implode( ' · ', $venue_bits ) ); ?></div>
+				<?php endif; ?>
+				<div class="eem-event-card__actions">
+					<?php if ( $event_url ) : ?>
+						<a class="eem-event-card__btn" href="<?php echo esc_url( $event_url ); ?>"><?php echo esc_html( $reserve_label ); ?></a>
+					<?php endif; ?>
+					<?php if ( $flyer_url ) : ?>
+						<a class="eem-event-card__btn eem-event-card__btn--flyer" href="<?php echo esc_url( $flyer_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View Flyer', 'equine-event-manager' ); ?></a>
+					<?php endif; ?>
+				</div>
 			</div>
 		</article>
 		<?php
