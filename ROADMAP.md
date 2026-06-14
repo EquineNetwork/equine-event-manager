@@ -1,10 +1,37 @@
 # Equine Event Manager — Roadmap & To-Do
 
-**Canonical, version-controlled to-do list.** Last updated 2026-06-13 · plugin at **v2.7.271**
-· branch `v4-stall-mapping`. **v1 is complete and launch-ready.** Remaining work is optional
-polish + the v2 feature/architecture backlog and the v3 track. Authoritative decision history
+**Canonical, version-controlled to-do list.** Last updated 2026-06-13 · plugin at **v2.7.281**
+· branch `v4-stall-mapping`. **v1 is complete and launch-ready.** Authoritative decision history
 lives in `CLAUDE.md`; deep architecture in `docs/ARCHITECTURE-DATA-OWNERSHIP.md`,
 `docs/ARCHITECTURE-VENUES.md`, and `docs/WORKPLAN-postmeta-decouple.md`.
+
+The sections below are grouped by **version tier** (v2/v3/v4). The **EXECUTION ORDER** is a
+separate axis — it cuts across the tiers, prioritising *protect the live business → serve the
+device customers use → finish small threads → strategic refactor → net-new features → months-out
+API/native last.*
+
+---
+
+## 🥇 RECOMMENDED EXECUTION ORDER (set 2026-06-13)
+
+*Live system handling money + selling out in minutes → protect first, refactor later.*
+
+1. **Strict inventory / concurrency audit** (sellouts) — oversell/double-charge is the worst case.
+2. **Financial-security audit + `docs/SECURITY-AUDIT-REPORT.md`** — pairs with #1 as one
+   "bulletproof the transactional core" pass.
+3. **Mobile-experience + PWA polish (customer-facing)** — customers buy on phones during sellouts;
+   big payoff, doable now (the PWA also gives "app feel" while native is months out).
+4. **Venue Slice 2** — `en_venue` → canonical-table write-through (finishes the venue thread).
+5. **Repo cleanup — delete dead docs** (the ship-only-runtime half is already done).
+6. **Entry-aware Dashboard headline metrics** — small additive admin visibility.
+7. **Postmeta → relational de-coupling** — the big "not chained to WordPress" migration; after the
+   live system is hardened. (Judgment call: mid-list so features #8–10 store relationally from the
+   start; could slide to just-above #11 if shipping features sooner is preferred.)
+8. **Sheets & Results — CSV / Google Sheets / external URLs.**
+9. **Event Entries — competition management.**
+10. **PDF venue map → stall-grid overlay** (exploratory).
+11. **Global Handicaps data-ownership / API integration** — months out (Whitney).
+12. **Native mobile app (v4)** — API-gated; comes with/after #11.
 
 ---
 
