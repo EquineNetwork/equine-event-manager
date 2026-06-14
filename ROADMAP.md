@@ -152,6 +152,12 @@ proving ground for the relational-migration pattern that #2 then applies at scal
 3. **PDF Venue Map → overlay / conversion** *(exploratory)* — upload a PDF venue map; MVP =
    render to image + drop/snap stall hotspots onto it. Needs a server PDF-render dependency.
    Pairs with Facility Layout Templates.
+4. **Sheets & Results — more source types beyond PDF.** Today each draw-sheet/result is a single
+   uploaded PDF (`drawsheet_pdf` / `result_pdf` attachment ids). Extend the entry to accept other
+   sources: **CSV upload** (render as a table on the public page), a **Google Sheets connection**
+   (live link/embed, or pull-and-cache), and a plain **external URL** (link out to a results
+   provider). Needs a source-type column on `wp_eem_sheet_entries` + per-type render + the admin
+   "Add File" panel growing a type picker. Keep PDF as the default.
 
 ---
 
