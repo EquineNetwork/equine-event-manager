@@ -80,6 +80,20 @@ succeeded; the last launch gate is cleared.
 
 ---
 
+## 🔧 OPEN FOLLOW-UPS (actionable; no launch blocker)
+
+1. **Entry-aware Dashboard headline metrics.** Entry/division revenue **already flows into Total
+   Revenue / Total Orders / This Week** (entries fold into the order subtotal at checkout —
+   `shortcodes.php:3644`, `$subtotal += $pre_entries_subtotal`; the dashboard reads order totals).
+   What's missing is *visibility*: entries are summed into the aggregates but never broken out as
+   their own headline figure. When Entries is ON, add an entry-focused KPI/metric (e.g. "Entries
+   Sold" count + entry revenue) to the dashboard's top metric row, matching the 4-color KPI card
+   style — alongside the existing Add-Ons summary card. Consider the same treatment for Sheets &
+   Results if useful. Gate on the feature flags. (Verified 2.7.281: revenue wiring is correct; this
+   is an additive surfacing task, not a bug fix.)
+
+---
+
 ## 🔭 v2 — ARCHITECTURE TRACK (next up; build order set 2026-06-13)
 
 **Recommended order: #1 (`en_venue` unification) → #2 (postmeta de-coupling).** The venue work
