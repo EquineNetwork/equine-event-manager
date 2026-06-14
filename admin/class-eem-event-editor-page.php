@@ -545,6 +545,53 @@ class EEM_Event_Editor_Page {
 				</div>
 			</div>
 		<?php endif; ?>
+		<?php self::render_setup_meter( $d ); ?>
+		<?php
+	}
+
+	/**
+	 * Event Setup completeness meter rail card.
+	 *
+	 * Server-renders the initial done/todo state; the editor JS keeps the dots
+	 * and progress bar live as fields change (see print_editor_js). The optional
+	 * "Link reservation" item does not count toward the progress percentage.
+	 *
+	 * @param array<string, mixed> $d Event data array from collect_event_data().
+	 * @return void
+	 */
+	private static function render_setup_meter( array $d ): void {
+		$checks = array(
+			array( 'key' => 'title', 'label' => __( 'Add title', 'equine-event-manager' ), 'done' => '' !== trim( (string) $d['title'] ), 'optional' => false ),
+			array( 'key' => 'dates', 'label' => __( 'Set event dates', 'equine-event-manager' ), 'done' => '' !== trim( (string) $d['start'] ), 'optional' => false ),
+			array( 'key' => 'venue', 'label' => __( 'Select a venue', 'equine-event-manager' ), 'done' => (int) $d['venue_id'] > 0, 'optional' => false ),
+			array( 'key' => 'desc', 'label' => __( 'Add description', 'equine-event-manager' ), 'done' => '' !== trim( wp_strip_all_tags( (string) $d['description'] ) ), 'optional' => false ),
+			array( 'key' => 'thumb', 'label' => __( 'Set featured image', 'equine-event-manager' ), 'done' => (int) $d['thumbnail_id'] > 0, 'optional' => false ),
+			array( 'key' => 'reservation', 'label' => __( 'Link reservation', 'equine-event-manager' ), 'done' => (int) $d['linked_res_id'] > 0, 'optional' => true ),
+		);
+
+		$required  = array_filter( $checks, static function ( array $c ): bool { return ! $c['optional']; } );
+		$total_req = count( $required );
+		$done_req  = count( array_filter( $required, static function ( array $c ): bool { return (bool) $c['done']; } ) );
+		$pct       = $total_req > 0 ? (int) round( $done_req / $total_req * 100 ) : 0;
+		?>
+		<div class="eem-rail-card">
+			<div class="eem-rail-header"><span class="eem-rail-title"><?php esc_html_e( 'Event Setup', 'equine-event-manager' ); ?></span></div>
+			<div class="eem-rail-body">
+				<div class="eem-completeness" id="eem-event-completeness" data-required="<?php echo esc_attr( (string) $total_req ); ?>">
+					<div class="eem-completeness-label"><?php esc_html_e( 'Progress', 'equine-event-manager' ); ?></div>
+					<div class="eem-completeness-track"><div class="eem-completeness-fill" id="eem-event-completeness-fill" style="width:<?php echo esc_attr( (string) $pct ); ?>%"></div></div>
+					<div class="eem-completeness-items">
+						<?php foreach ( $checks as $c ) : ?>
+							<div class="eem-comp-item <?php echo $c['done'] ? 'is-done' : 'is-todo'; ?>" data-comp="<?php echo esc_attr( (string) $c['key'] ); ?>">
+								<span class="eem-comp-dot" aria-hidden="true"></span>
+								<?php echo esc_html( (string) $c['label'] ); ?>
+								<?php if ( $c['optional'] ) : ?><span class="eem-comp-optional"><?php esc_html_e( '(optional)', 'equine-event-manager' ); ?></span><?php endif; ?>
+							</div>
+						<?php endforeach; ?>
+					</div>
+				</div>
+			</div>
+		</div>
 		<?php
 	}
 
@@ -639,17 +686,45 @@ class EEM_Event_Editor_Page {
 						document.getElementById('eem-event-thumb-id').value = att.id;
 						var url = (att.sizes && att.sizes.medium) ? att.sizes.medium.url : att.url;
 						document.getElementById('eem-event-featured-img').innerHTML = '<img src="' + url + '" alt="">';
-						document.getElementById('eem-event-thumb-clear').style.display = '';
+						document.getElementById('eem-event-thumb-clear').style.display = ''; recomputeSetupMeter();
 					});
 				}
 				else if (action === 'event-editor-clear-thumb') {
 					ev.preventDefault();
-					document.getElementById('eem-event-thumb-id').value = '0';
+					document.getElementById('eem-event-thumb-id').value = '0'; recomputeSetupMeter();
 					document.getElementById('eem-event-featured-img').innerHTML = '<div class="eem-featured-img-placeholder"><p><strong><?php echo esc_js( __( 'Set featured image', 'equine-event-manager' ) ); ?></strong></p><p><?php echo esc_js( __( 'Click to upload or select from Media Library', 'equine-event-manager' ) ); ?></p></div>';
 					t.style.display = 'none';
 				}
 			});
-		})();
+		// Event Setup completeness meter — keep dots + progress bar live as fields change.
+				function recomputeSetupMeter() {
+					var wrap = document.getElementById('eem-event-completeness');
+					if (!wrap) { return; }
+					function val(sel) { var el = form.querySelector(sel); return el ? el.value : ''; }
+					function filled(v) { v = (v || '').toString().trim(); return v !== '' && v !== '0'; }
+					var done = {
+						title: filled(val('[name="en_event[title]"]')),
+						dates: filled(val('[name="en_event[start_date]"]')),
+						venue: filled(val('[name="en_event[venue_id]"]')),
+						desc: filled(val('[name="en_event[description]"]')),
+						thumb: filled((document.getElementById('eem-event-thumb-id') || {}).value),
+						reservation: filled(val('[name="en_event[reservation_id]"]'))
+					};
+					var required = parseInt(wrap.getAttribute('data-required') || '5', 10);
+					var doneReq = 0;
+					wrap.querySelectorAll('.eem-comp-item').forEach(function (item) {
+						var key = item.getAttribute('data-comp');
+						var isDone = !!done[key];
+						item.classList.toggle('is-done', isDone);
+						item.classList.toggle('is-todo', !isDone);
+						if (key !== 'reservation' && isDone) { doneReq++; }
+					});
+					var fill = document.getElementById('eem-event-completeness-fill');
+					if (fill) { fill.style.width = Math.round(doneReq / required * 100) + '%'; }
+				}
+				form.addEventListener('input', recomputeSetupMeter);
+				form.addEventListener('change', recomputeSetupMeter);
+			})();
 		</script>
 		<?php
 	}

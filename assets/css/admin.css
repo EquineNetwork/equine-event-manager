@@ -6743,6 +6743,17 @@ input.eem-pct-input:focus {
 .eem-rail-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
 .eem-rail-hint { font-size: 12.5px; color: var(--eem-text-muted); line-height: 1.5; margin-bottom: 6px; }
 
+/* ── Event Setup completeness meter (event editor rail) ── */
+.eem-completeness-label { font-size: 11.5px; font-weight: 700; color: var(--eem-text-secondary); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 8px; }
+.eem-completeness-track { height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden; margin-bottom: 10px; }
+.eem-completeness-fill { height: 100%; background: var(--eem-electric); border-radius: 3px; transition: width 0.25s ease; }
+.eem-completeness-items { display: flex; flex-direction: column; gap: 5px; }
+.eem-comp-item { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--eem-text-secondary); }
+.eem-comp-item.is-done { color: #15803d; }
+.eem-comp-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; background: #c3c4c7; }
+.eem-comp-item.is-done .eem-comp-dot { background: #16a34a; }
+.eem-comp-optional { color: var(--eem-text-muted); font-size: 11px; margin-left: 4px; }
+
 /* ── Publish-meta rows in rail (mockup line 241) ── */
 .eem-publish-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--eem-text); }
 .eem-publish-row svg { width: 14px; height: 14px; color: var(--eem-text-muted); flex-shrink: 0; }

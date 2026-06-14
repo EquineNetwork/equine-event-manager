@@ -66,6 +66,17 @@ $check( 'renders the save buttons', false !== strpos( $html, 'data-eem-action="e
 $check( 'renders the mobile sticky save', false !== strpos( $html, 'eem-sticky-save' ) );
 $check( 'pre-fills the seeded title', false !== strpos( $html, 'value="EE Event ' . $suffix . '"' ) );
 
+// --- Event Setup completeness meter ----------------------------------------
+$check( 'renders the Event Setup meter card', false !== strpos( $html, 'Event Setup' ) && false !== strpos( $html, 'eem-completeness' ) );
+$check( 'meter declares 5 required items', false !== strpos( $html, 'data-required="5"' ) );
+$check( 'meter renders 6 checklist items', 6 === substr_count( $html, 'data-comp="' ) );
+$check( 'meter: title item is done (title seeded)', 1 === preg_match( '/eem-comp-item is-done"\s+data-comp="title"/', $html ) );
+$check( 'meter: dates item is done (start date seeded)', 1 === preg_match( '/eem-comp-item is-done"\s+data-comp="dates"/', $html ) );
+$check( 'meter: venue item is done (venue seeded)', 1 === preg_match( '/eem-comp-item is-done"\s+data-comp="venue"/', $html ) );
+$check( 'meter: featured image item is todo (no thumb)', 1 === preg_match( '/eem-comp-item is-todo"\s+data-comp="thumb"/', $html ) );
+$check( 'meter: reservation item marked optional', false !== strpos( $html, 'eem-comp-optional' ) );
+$check( 'meter: fill at 60% (3 of 5 required: title+dates+venue)', false !== strpos( $html, 'width:60%' ) );
+
 // --- save round-trip (replicate the handler's persistence) -----------------
 // The handler writes the same keys; assert the canonical keys read back.
 wp_update_post( array( 'ID' => $event, 'post_title' => 'EE Renamed ' . $suffix, 'post_status' => 'publish' ) );
