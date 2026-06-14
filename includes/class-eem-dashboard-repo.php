@@ -869,4 +869,45 @@ class EEM_Dashboard_Repo {
 		}
 		return $prefix . ', ' . $display_name;
 	}
+
+	/**
+	 * Optional-add-on activity for the Dashboard, gated on the per-site feature
+	 * flags. Only the enabled add-ons return a populated payload; the card
+	 * renders nothing when both are off.
+	 *
+	 * @return array{
+	 *   entries: array{enabled: bool, divisions: int, entrants: int},
+	 *   sheets:  array{enabled: bool, events: int, drawsheets: int, results: int, awaiting: int}
+	 * }
+	 */
+	public static function addons_summary(): array {
+		global $wpdb;
+
+		$entries_on = class_exists( 'EEM_Events' ) && EEM_Events::is_entries_enabled();
+		$sheets_on  = class_exists( 'EEM_Events' ) && EEM_Events::is_sheets_results_enabled();
+
+		$out = array(
+			'entries' => array( 'enabled' => $entries_on, 'divisions' => 0, 'entrants' => 0 ),
+			'sheets'  => array( 'enabled' => $sheets_on, 'events' => 0, 'drawsheets' => 0, 'results' => 0, 'awaiting' => 0 ),
+		);
+
+		if ( $entries_on ) {
+			$counts                       = wp_count_posts( EEM_Entries::POST_TYPE );
+			$out['entries']['divisions']  = isset( $counts->publish ) ? (int) $counts->publish : 0;
+			if ( class_exists( 'EEM_Division_Entries' ) ) {
+				$table                       = EEM_Division_Entries::table_name();
+				$out['entries']['entrants']  = (int) $wpdb->get_var( "SELECT COALESCE(SUM(qty),0) FROM {$table} WHERE status IN ('paid','unpaid')" ); // phpcs:ignore WordPress.DB
+			}
+		}
+
+		if ( $sheets_on && class_exists( 'EEM_Sheet_Entries' ) ) {
+			$table                       = EEM_Sheet_Entries::table_name();
+			$out['sheets']['events']     = (int) $wpdb->get_var( "SELECT COUNT(DISTINCT event_id) FROM {$table} WHERE drawsheet_pdf > 0 OR result_pdf > 0" ); // phpcs:ignore WordPress.DB
+			$out['sheets']['drawsheets'] = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE drawsheet_pdf > 0" ); // phpcs:ignore WordPress.DB
+			$out['sheets']['results']    = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE result_pdf > 0" ); // phpcs:ignore WordPress.DB
+			$out['sheets']['awaiting']   = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE drawsheet_pdf > 0 AND result_pdf = 0" ); // phpcs:ignore WordPress.DB
+		}
+
+		return $out;
+	}
 }

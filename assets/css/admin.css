@@ -5975,6 +5975,23 @@ a.eem-dashboard-qa-btn:focus {
 	flex-direction: column;
 	gap: 11px;
 }
+/* Add-Ons dashboard card rows (Entries / Sheets & Results) */
+.eem-dashboard-addon-row {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	padding: 10px 12px;
+	border: 1px solid var(--eem-border-soft);
+	border-radius: var(--eem-radius);
+	text-decoration: none;
+	transition: border-color 0.15s ease, background 0.15s ease;
+}
+.eem-dashboard-addon-row:hover { border-color: var(--eem-electric); background: #fafcff; }
+.eem-dashboard-addon-row__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.eem-dashboard-addon-row__title { font-weight: 600; color: var(--eem-navy); font-size: 13.5px; }
+.eem-dashboard-addon-row__cta { font-size: 12px; font-weight: 600; color: var(--eem-electric); }
+.eem-dashboard-addon-row__stats { font-size: 12.5px; color: var(--eem-text-secondary); }
+.eem-dashboard-addon-row__alert { font-size: 12px; font-weight: 600; color: #a16207; }
 .eem-dashboard-tw-row {
 	display: flex;
 	justify-content: space-between;

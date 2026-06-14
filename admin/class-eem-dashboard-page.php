@@ -48,6 +48,7 @@ class EEM_Dashboard_Page {
 		$recent_orders  = $repo->recent_orders();
 		$revenue_chart  = $repo->revenue_chart();
 		$this_week      = $repo->this_week();
+		$addons         = EEM_Dashboard_Repo::addons_summary();
 		$upcoming_count = $repo->upcoming_reservations_count( 30 );
 
 		$today          = date_i18n( 'l, F j, Y', current_time( 'timestamp' ) );
@@ -84,6 +85,7 @@ class EEM_Dashboard_Page {
 				</div>
 				<div class="eem-dashboard-side">
 					<?php self::render_quick_actions_card(); ?>
+					<?php self::render_addons_card( $addons ); ?>
 					<?php self::render_revenue_chart_card( $revenue_chart ); ?>
 					<?php self::render_this_week_card( $this_week ); ?>
 				</div>
@@ -460,6 +462,85 @@ class EEM_Dashboard_Page {
 	 * @param array<int, array<string, mixed>> $rows
 	 * @return void
 	 */
+	/**
+	 * "Add-Ons" side card — surfaces Entries + Sheets & Results activity, each
+	 * row gated on its per-site feature flag. Renders nothing when both add-ons
+	 * are disabled.
+	 *
+	 * @param array $addons Summary from EEM_Dashboard_Repo::addons_summary().
+	 * @return void
+	 */
+	private static function render_addons_card( array $addons ) {
+		$entries = isset( $addons['entries'] ) ? $addons['entries'] : array( 'enabled' => false );
+		$sheets  = isset( $addons['sheets'] ) ? $addons['sheets'] : array( 'enabled' => false );
+		if ( empty( $entries['enabled'] ) && empty( $sheets['enabled'] ) ) {
+			return; // Both add-ons off — render nothing.
+		}
+		?>
+		<div class="eem-card eem-dashboard-card">
+			<div class="eem-card-header">
+				<div class="eem-card-title"><?php echo EEM_Dashboard_Icons::svg( 'package' ); ?> <?php esc_html_e( 'Add-Ons', 'equine-event-manager' ); ?></div>
+			</div>
+			<div class="eem-dashboard-tw-body">
+				<?php if ( ! empty( $entries['enabled'] ) ) : ?>
+					<a class="eem-dashboard-addon-row" href="<?php echo esc_url( admin_url( 'edit.php?post_type=' . EEM_Entries::POST_TYPE ) ); ?>">
+						<span class="eem-dashboard-addon-row__head">
+							<span class="eem-dashboard-addon-row__title"><?php esc_html_e( 'Entries', 'equine-event-manager' ); ?></span>
+							<span class="eem-dashboard-addon-row__cta"><?php esc_html_e( 'Manage →', 'equine-event-manager' ); ?></span>
+						</span>
+						<span class="eem-dashboard-addon-row__stats">
+							<?php
+							/* translators: 1: division count, 2: entrant count. */
+							echo esc_html(
+								sprintf(
+									/* translators: 1: number of divisions, 2: number of entrants. */
+									_n( '%1$s division · %2$s entered', '%1$s divisions · %2$s entered', (int) $entries['divisions'], 'equine-event-manager' ),
+									number_format_i18n( (int) $entries['divisions'] ),
+									number_format_i18n( (int) $entries['entrants'] )
+								)
+							);
+							?>
+						</span>
+					</a>
+				<?php endif; ?>
+				<?php if ( ! empty( $sheets['enabled'] ) ) : ?>
+					<a class="eem-dashboard-addon-row" href="<?php echo esc_url( admin_url( 'admin.php?page=' . EEM_Sheets_Results_Page::MENU_SLUG ) ); ?>">
+						<span class="eem-dashboard-addon-row__head">
+							<span class="eem-dashboard-addon-row__title"><?php esc_html_e( 'Sheets & Results', 'equine-event-manager' ); ?></span>
+							<span class="eem-dashboard-addon-row__cta"><?php esc_html_e( 'Open →', 'equine-event-manager' ); ?></span>
+						</span>
+						<span class="eem-dashboard-addon-row__stats">
+							<?php
+							echo esc_html(
+								sprintf(
+									/* translators: 1: draw-sheet count, 2: result count. */
+									__( '%1$s draw sheets · %2$s results', 'equine-event-manager' ),
+									number_format_i18n( (int) $sheets['drawsheets'] ),
+									number_format_i18n( (int) $sheets['results'] )
+								)
+							);
+							?>
+						</span>
+						<?php if ( (int) $sheets['awaiting'] > 0 ) : ?>
+							<span class="eem-dashboard-addon-row__alert">
+								<?php
+								echo esc_html(
+									sprintf(
+										/* translators: %s: number of draw sheets awaiting a result PDF. */
+										_n( '%s awaiting results', '%s awaiting results', (int) $sheets['awaiting'], 'equine-event-manager' ),
+										number_format_i18n( (int) $sheets['awaiting'] )
+									)
+								);
+								?>
+							</span>
+						<?php endif; ?>
+					</a>
+				<?php endif; ?>
+			</div>
+		</div>
+		<?php
+	}
+
 	private static function render_this_week_card( array $rows ) {
 		?>
 		<div class="eem-card eem-dashboard-card">

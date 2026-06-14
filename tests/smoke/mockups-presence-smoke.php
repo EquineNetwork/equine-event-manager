@@ -77,9 +77,17 @@ $canonical = array(
 	// Producers + Events refined 2026-06-13 (stat cards match Stall & RV Charts).
 	'venues_admin_page.html'            => '742a91f274f746df111164e9decdb8b4',
 	'taxonomy_categories_admin_page.html' => '86bb5ed3967e1f63116e5ea0dd1a7967',
-	'producers_admin_page.html'         => 'a34b0c7eda2edc9dde8e7c6142f1d290',
-	'events_admin_page.html'            => 'da26217ff4a01e799fe191143c28320c',
+	'producers_admin_page.html'         => '6e54881436742aed1b52e07eab5b26b1', // 2.7.272 — as-built sync: Location column removed
+	'events_admin_page.html'            => '1672c676ac7446b6172e9975ff893402', // 2.7.272 — as-built sync: Status column = date-derived lifecycle badge
 	'add_event_page.html'               => '44c810b35304bc2d2bf3652e28726611',
+
+	// Sheets & Results mockups (imported 2.7.270; screen1 updated for as-built
+	// Add Discipline bar + per-group Rename/Delete).
+	'screen1_sheets_results_manager.html'    => '99d40a2103bbcee94a8d9c1c074afdf5',
+	'screen2_event_edit_documents.html'      => '8027b0ebf883c98ac5054c7ede5b70cd',
+	'screen3_public_events_list.html'        => 'da724e03fbe48ad2a439eacc98b36852',
+	'screen4_public_sheets_results_page.html' => 'adfeb56982e938a48bdafcb7532e3b90',
+	'sheets_and_results_scope.md'            => '7389c8b83fa38e925919083d9930e31d',
 
 	// Plugin brand asset (referenced by admin shell + breadcrumb)
 	'Equine Event Manager Logo.png'     => 'fad15ea2d6637ca49090ab8c118250a5',
