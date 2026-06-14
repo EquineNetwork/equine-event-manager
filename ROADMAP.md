@@ -92,6 +92,18 @@ succeeded; the last launch gate is cleared.
    Results if useful. Gate on the feature flags. (Verified 2.7.281: revenue wiring is correct; this
    is an additive surfacing task, not a bug fix.)
 
+2. **Mobile-experience + PWA polish (customer-facing).** Make the customer surfaces feel like a
+   real app on phones — *without* leaving WordPress (Vercel/native is the v4 headless track, gated
+   on the v2/v3 API; a PWA on the current pages is the right move now and a clean stepping stone to
+   it). Highest real-world payoff: customers buy stalls/entries on phones, often during fast
+   sellouts. Scope: **(a) responsive/touch audit** of the customer-facing pages we fully control
+   (`[en_reservation]` checkout, event pages, public sheets/results) — large touch targets, sticky
+   bottom action bars (mockups already spec `sticky-save`), AJAX-not-reload interactions, loading/
+   skeleton states, the stall/RV picker on small screens; **(b) PWA wrapper** — `manifest.json` +
+   service worker + install prompt so customers can "Add to Home Screen" (full-screen, splash,
+   offline shell). Deliverable on the current stack; the eventual v4 client replaces it behind the
+   same URLs. Keep it customer-first (admin-on-mobile benefits more from the v4 headless app later).
+
 ---
 
 ## 🧭 ARCHITECTURE TRAJECTORY — "off WordPress" path (the why behind v2 → v4)
