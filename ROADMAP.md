@@ -64,21 +64,19 @@ succeeded; the last launch gate is cleared.
 
 ---
 
-## 🔧 POLISH / FOLLOW-UPS (optional; no launch blocker)
+## 🔧 POLISH / FOLLOW-UPS — ✅ DONE (2.7.272–275)
 
-1. **Sync 5 Native Events admin mockups to as-built** — `venues_admin_page`,
-   `producers_admin_page`, `events_admin_page`, `taxonomy_categories_admin_page`,
-   `add_event_page` lag the live pages by the 2.7.255–256 polish (status-column removal,
-   date-derived lifecycle badge, branded Event editor). Diff + update + commit.
-2. **Surface saved layouts on the `en_venue` editor** — the 2.7.249 Venues unification removed the
-   standalone layout rename/delete UI; layouts still save/load underneath. Re-surface them on the
-   `en_venue` editor.
-3. **`filter="ongoing"/"past"/"upcoming"` alias** for `[en_events]` (the `timeframe` attr already
-   covers this — convenience alias).
-4. **Event-Setup completeness meter** on the event editor (the mockup's 4th rail card — deferred
-   cosmetic gap).
-5. **Dashboard: surface Entries + Sheets & Results** info when those features are ON (entry counts,
-   recent uploads, disciplines pending results).
+1. ✅ **Synced 5 Native Events admin mockups to as-built** (producers Location column removed;
+   events Status → lifecycle badge; venues/categories/add_event already matched).
+2. ✅ **Saved layouts on the `en_venue` editor** — "Saved Stall / RV Layouts" meta box (list +
+   rename/delete), backed by native en_venue → canonical `EEM_Venue` resolution so two events at
+   the same venue share one layout set (2.7.274).
+3. ✅ **`filter="upcoming/ongoing/past/all"` alias** for `[en_events]` + new `ongoing` timeframe
+   (2.7.272).
+4. ✅ **Event-Setup completeness meter** on the event editor rail (progress bar + 6-item
+   checklist, live-updating) (2.7.273).
+5. ✅ **Dashboard Add-Ons card** — Entries (divisions/entrants) + Sheets & Results
+   (draw-sheets/results/awaiting) activity, gated on the feature flags (2.7.275).
 
 ---
 
