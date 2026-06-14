@@ -6609,12 +6609,33 @@ RV Lot: " . $rv_lot['name'] );
 			return new WP_Error( 'invalid_invoice_nonce', __( 'We could not verify this invoice payment request. Please refresh the page and try again.', 'equine-event-manager' ) );
 		}
 
-		if ( ! $this->invoice_order_is_payable( $order ) ) {
-			return new WP_Error( 'invoice_unavailable', __( 'This invoice has already been paid or is no longer payable.', 'equine-event-manager' ) );
+		// Serialize the payable-check → charge → mark-paid behind a per-invoice
+		// advisory lock, re-reading the order fresh INSIDE the lock, so two
+		// concurrent or replayed invoice POSTs (double-click / retry) can't both
+		// charge the card. The main [en_reservation] checkout already does this;
+		// the hosted-invoice path previously had no lock at all. [financial audit F1]
+		global $wpdb;
+		$invoice_lock = 'eem_invoice_' . md5( (string) $invoice_token );
+		$got_lock     = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, %d)', $invoice_lock, 20 ) );
+		if ( 1 !== $got_lock ) {
+			return new WP_Error( 'invoice_busy', __( 'This invoice payment is still finishing. Please wait a moment and try again.', 'equine-event-manager' ) );
 		}
 
-		$gateway = $this->get_invoice_order_gateway( $order );
-		$result  = array();
+		try {
+			// Authoritative status snapshot under the lock — a concurrent payment
+			// that just marked this order paid is seen here before we charge.
+			$lock_repo = new EEM_Orders_Repository();
+			$fresh     = $lock_repo->get_order( $order['order_key'] );
+			if ( is_array( $fresh ) ) {
+				$order = $fresh;
+			}
+
+			if ( ! $this->invoice_order_is_payable( $order ) ) {
+				return new WP_Error( 'invoice_unavailable', __( 'This invoice has already been paid or is no longer payable.', 'equine-event-manager' ) );
+			}
+
+			$gateway = $this->get_invoice_order_gateway( $order );
+			$result  = array();
 
 		if ( 'stripe' === $gateway ) {
 			$intent_id     = isset( $_POST['stripe_payment_intent_id'] ) ? sanitize_text_field( wp_unslash( $_POST['stripe_payment_intent_id'] ) ) : '';
@@ -6655,17 +6676,20 @@ RV Lot: " . $rv_lot['name'] );
 			return new WP_Error( 'invoice_gateway_invalid', __( 'This invoice could not determine a supported payment gateway.', 'equine-event-manager' ) );
 		}
 
-		$this->mark_invoice_order_paid( $order, $invoice_token, $result['payment_gateway'], $result['transaction_id'] );
+			$this->mark_invoice_order_paid( $order, $invoice_token, $result['payment_gateway'], $result['transaction_id'] );
 
-		$orders_repository = new EEM_Orders_Repository();
-		$updated_order     = $orders_repository->get_order( $order['order_key'] );
+			$orders_repository = new EEM_Orders_Repository();
+			$updated_order     = $orders_repository->get_order( $order['order_key'] );
 
-		if ( $updated_order ) {
-			$this->send_receipt_emails_for_order( $updated_order );
-			return $updated_order;
+			if ( $updated_order ) {
+				$this->send_receipt_emails_for_order( $updated_order );
+				return $updated_order;
+			}
+
+			return $order;
+		} finally {
+			$wpdb->query( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $invoice_lock ) );
 		}
-
-		return $order;
 	}
 
 	/**
