@@ -268,7 +268,7 @@ class EEM_Orders_List_Page {
 				</div>
 			</div>
 		</div>
-		<div class="eem-list-toolbar">
+		<div class="eem-list-toolbar eem-toolbar-controls">
 			<div class="eem-list-toolbar-left">
 				<form class="eem-bulk-form" data-eem-orders-bulk-form>
 					<?php /* Apply is type="button" — opens the Bulk Refund modal

@@ -286,7 +286,7 @@ class EEM_Entries {
 			</div>
 		</div>
 
-		<div class="eem-desktop-table eem-desktop-table--scroll">
+		<div class="eem-desktop-table">
 			<table class="eem-table">
 				<thead>
 					<tr>
@@ -333,6 +333,48 @@ class EEM_Entries {
 					<?php endif; ?>
 				</tbody>
 			</table>
+		</div>
+
+		<?php // Mobile cards — replace the (hidden ≤767) table so entrants stay readable on phones. ?>
+		<div class="eem-mobile-cards">
+			<?php if ( empty( $entrants ) ) : ?>
+				<div class="eem-mobile-card eem-mobile-card--empty"><?php esc_html_e( 'No entries yet.', 'equine-event-manager' ); ?></div>
+			<?php else : ?>
+				<?php foreach ( $entrants as $row ) :
+					$ekey    = (string) $row['order_key'];
+					$order   = ( '' !== $ekey && class_exists( 'EEM_Orders_Repository' ) ) ? ( new EEM_Orders_Repository() )->get_order( $ekey ) : null;
+					$ord_no  = ( is_array( $order ) && ! empty( $order['order_number'] ) ) ? sprintf( '#%05d', (int) $order['order_number'] ) : '';
+					$ord_url = ( '' !== $ekey && class_exists( 'EEM_Orders_List_Page' ) ) ? EEM_Orders_List_Page::order_detail_url( $ekey ) : '';
+					$st      = (string) $row['status'];
+					$st_lbl  = isset( $status_labels[ $st ] ) ? $status_labels[ $st ] : ucfirst( $st );
+					?>
+					<div class="eem-mobile-card">
+						<div class="eem-mobile-card-top">
+							<span class="eem-mobile-card-id"><?php echo esc_html( '' !== (string) $row['customer_name'] ? (string) $row['customer_name'] : (string) $row['email'] ); ?></span>
+							<span class="eem-mobile-card-meta"><?php echo esc_html( mysql2date( get_option( 'date_format' ), (string) $row['created_at'] ) ); ?></span>
+						</div>
+						<div class="eem-mobile-card-sub">
+							<?php
+							/* translators: %d: quantity entered. */
+							echo esc_html( sprintf( _n( '%d entry', '%d entries', (int) $row['qty'], 'equine-event-manager' ), (int) $row['qty'] ) );
+							if ( '' !== $ord_no ) {
+								echo ' · ';
+								if ( '' !== $ord_url ) {
+									echo '<a class="eem-res-name" href="' . esc_url( $ord_url ) . '">' . esc_html( $ord_no ) . '</a>';
+								} else {
+									echo esc_html( $ord_no );
+								}
+							}
+							?>
+						</div>
+						<div class="eem-mobile-card-bottom">
+							<div class="eem-mobile-card-badges">
+								<span class="eem-status-badge eem-status-<?php echo esc_attr( $st ); ?>"><?php echo esc_html( $st_lbl ); ?></span>
+							</div>
+						</div>
+					</div>
+				<?php endforeach; ?>
+			<?php endif; ?>
 		</div>
 		<?php
 		eem_render_page_close( array( 'wrap' => true ) );
@@ -453,7 +495,7 @@ class EEM_Entries {
 			<?php
 		endif;
 		?>
-		<div class="eem-desktop-table eem-desktop-table--scroll">
+		<div class="eem-desktop-table">
 			<table class="eem-table eem-entries-table" data-eem-entries-table>
 				<thead>
 					<tr>
@@ -515,6 +557,48 @@ class EEM_Entries {
 					<?php endif; ?>
 				</tbody>
 			</table>
+		</div>
+
+		<?php // Mobile cards — replace the (hidden ≤767) table; carry data-eem-event-id so the event filter applies to them too (admin.js entries filter). ?>
+		<div class="eem-mobile-cards eem-entries-mobile">
+			<?php if ( empty( $rows ) ) : ?>
+				<div class="eem-mobile-card eem-mobile-card--empty">
+					<?php
+					printf(
+						/* translators: %s: New Division link */
+						esc_html__( 'No divisions yet. %s to create your first one.', 'equine-event-manager' ),
+						'<a href="' . esc_url( admin_url( 'post-new.php?post_type=' . self::POST_TYPE ) ) . '">' . esc_html__( 'Add a division', 'equine-event-manager' ) . '</a>'
+					);
+					?>
+				</div>
+			<?php else : ?>
+				<?php foreach ( $rows as $r ) :
+					$edit_url   = self::editor_url( $r['id'] );
+					$detail_url = self::detail_url( $r['id'] );
+					?>
+					<div class="eem-mobile-card" data-eem-event-id="<?php echo esc_attr( (string) $r['rid'] ); ?>">
+						<div class="eem-mobile-card-top">
+							<a class="eem-mobile-card-id" href="<?php echo esc_url( $detail_url ); ?>"><?php echo esc_html( $r['name'] ); ?></a>
+							<span class="eem-mobile-card-meta"><?php echo '' !== $r['price'] ? esc_html( '$' . number_format( (float) $r['price'], 2 ) ) : '—'; ?></span>
+						</div>
+						<div class="eem-mobile-card-sub"><?php echo '' !== $r['event'] ? esc_html( $r['event'] ) : esc_html__( '— not connected —', 'equine-event-manager' ); ?></div>
+						<div class="eem-mobile-card-bottom">
+							<div class="eem-mobile-card-badges">
+								<span class="eem-mobile-card-metric"><?php echo esc_html( $r['entered'] . ' / ' . ( $r['spots_int'] > 0 ? (string) $r['spots_int'] : __( 'Unlimited', 'equine-event-manager' ) ) ); ?></span>
+								<?php if ( $r['oversold'] > 0 ) : ?>
+									<span class="eem-status-badge eem-status-refunded"><?php echo esc_html( sprintf( /* translators: %d: count oversold by. */ __( 'oversold by %d', 'equine-event-manager' ), $r['oversold'] ) ); ?></span>
+								<?php endif; ?>
+								<span class="eem-res-status eem-res-status--<?php echo $r['is_pub'] ? 'active' : 'draft'; ?>"><?php echo esc_html( $r['is_pub'] ? __( 'Published', 'equine-event-manager' ) : __( 'Draft', 'equine-event-manager' ) ); ?></span>
+								<?php if ( ! empty( $r['is_past'] ) ) : ?>
+									<span class="eem-res-status eem-res-status--past"><?php esc_html_e( 'Past', 'equine-event-manager' ); ?></span>
+								<?php endif; ?>
+							</div>
+							<a class="eem-btn eem-btn-sm" href="<?php echo esc_url( $edit_url ); ?>"><?php esc_html_e( 'Edit', 'equine-event-manager' ); ?></a>
+						</div>
+					</div>
+				<?php endforeach; ?>
+				<div class="eem-mobile-card eem-mobile-card--empty eem-entries-mobile-empty" hidden><?php esc_html_e( 'No divisions for this event.', 'equine-event-manager' ); ?></div>
+			<?php endif; ?>
 		</div>
 		<?php
 		eem_render_page_close( array( 'wrap' => true ) );

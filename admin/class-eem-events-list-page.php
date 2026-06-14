@@ -362,14 +362,14 @@ class EEM_Events_List_Page {
 						<input class="eem-search-input" type="search" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="<?php esc_attr_e( 'Search events…', 'equine-event-manager' ); ?>" />
 					</span>
 					<button type="submit" class="eem-toolbar-btn eem-search-btn"><?php esc_html_e( 'Search Events', 'equine-event-manager' ); ?></button>
-					<span class="eem-item-count"><?php
-						echo esc_html( sprintf(
-							/* translators: %s: item count */
-							_n( '%s item', '%s items', $total, 'equine-event-manager' ),
-							number_format_i18n( $total )
-						) );
-					?></span>
 				</div>
+				<span class="eem-item-count"><?php
+					echo esc_html( sprintf(
+						/* translators: %s: item count */
+						_n( '%s item', '%s items', $total, 'equine-event-manager' ),
+						number_format_i18n( $total )
+					) );
+				?></span>
 			</form>
 		</div>
 		<?php

@@ -3800,7 +3800,7 @@
 .eem-venue-agreement-card a {
 	color: #8b5e00;
 	font-weight: 700;
-	text-decoration: underline;
+	text-decoration: none; /* Universal no-underline rule (Whitney hard rule). */
 }
 .eem-venue-agreement-card a:hover,
 .eem-venue-agreement-card a:focus {
@@ -4220,12 +4220,24 @@
 .eem-event-page .agreement-notice a:visited {
 	color: #1668F2;
 	font-weight: 600;
-	text-decoration: underline;
+	text-decoration: none; /* Universal no-underline rule (Whitney hard rule). */
 }
 .eem-event-page .agreement-notice a:hover,
 .eem-event-page .agreement-notice a:focus {
 	color: #0d52cc;
 }
+
+/* ============================================================================
+   GLOBAL UNDERLINE KILL-SWITCH (customer side) — Whitney hard rule
+   (locked 2026-06-14). Mirrors the admin.css kill-switch: NO customer-facing
+   plugin link is ever underlined, any class, any state. Hover = colour only.
+   ============================================================================ */
+.eem-event-page a,
+.eem-event-page a:link,
+.eem-event-page a:visited,
+.eem-event-page a:hover,
+.eem-event-page a:focus,
+.eem-event-page a:active { text-decoration: none; }
 
 /* 2.3.58 — Phone field double-border fix. The flag+input affix wraps the input
    in .eem-phone-field (which carries the single mockup border); the inner input

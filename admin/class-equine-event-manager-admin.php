@@ -4076,7 +4076,7 @@ class EEM_Admin {
 			<?php endif; ?>
 
 			<!-- Toolbar -->
-			<div class="eem-list-toolbar eem-sc-list-toolbar toolbar">
+			<div class="eem-list-toolbar eem-sc-list-toolbar toolbar eem-toolbar-controls">
 				<div class="eem-list-toolbar-left toolbar-left">
 					<select class="toolbar-select eem-toolbar-select eem-sc-date-filter" id="eem-sc-date-filter" data-eem-input-action="sc-list-date-filter">
 						<option value="all"><?php esc_html_e( 'All dates', 'equine-event-manager' ); ?></option>

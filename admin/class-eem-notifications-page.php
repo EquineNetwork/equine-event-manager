@@ -195,7 +195,7 @@ class EEM_Notifications_Page {
 			return;
 		}
 		?>
-		<div class="eem-desktop-table eem-desktop-table--scroll">
+		<div class="eem-desktop-table">
 			<table class="eem-table">
 				<thead><tr>
 					<th><?php esc_html_e( 'Sent', 'equine-event-manager' ); ?></th>
@@ -228,6 +228,34 @@ class EEM_Notifications_Page {
 					<?php endforeach; ?>
 				</tbody>
 			</table>
+		</div>
+
+		<?php // Mobile cards — replace the (hidden ≤767) history table on phones. ?>
+		<div class="eem-mobile-cards">
+			<?php foreach ( $entries as $e ) :
+				$p     = is_array( $e['payload'] ?? null ) ? $e['payload'] : array();
+				$rid   = (int) ( $e['reservation_id'] ?? 0 );
+				$event = $rid > 0 ? get_the_title( $rid ) : '—';
+				$sent  = (int) ( $p['sent'] ?? 0 );
+				$total = (int) ( $p['recipient_count'] ?? 0 );
+				$fail  = (int) ( $p['failed'] ?? 0 );
+				?>
+				<div class="eem-mobile-card">
+					<div class="eem-mobile-card-top">
+						<span class="eem-mobile-card-id"><?php echo esc_html( (string) ( $p['subject'] ?? '' ) ); ?></span>
+						<span class="eem-mobile-card-meta"><?php echo esc_html( mysql2date( get_option( 'date_format' ), (string) ( $e['created_at'] ?? '' ) ) ); ?></span>
+					</div>
+					<div class="eem-mobile-card-sub"><?php echo esc_html( $event ); ?> · <?php echo esc_html( (string) ( $p['audience'] ?? '—' ) ); ?></div>
+					<div class="eem-mobile-card-bottom">
+						<div class="eem-mobile-card-badges">
+							<span class="eem-mobile-card-metric"><?php echo esc_html( sprintf( /* translators: 1: sent count, 2: total recipients */ __( '%1$d / %2$d sent', 'equine-event-manager' ), $sent, $total ) ); ?></span>
+							<?php if ( $fail > 0 ) : ?>
+								<span class="eem-status-badge eem-status-refunded"><?php echo esc_html( sprintf( /* translators: %d: failed count */ __( '%d failed', 'equine-event-manager' ), $fail ) ); ?></span>
+							<?php endif; ?>
+						</div>
+					</div>
+				</div>
+			<?php endforeach; ?>
 		</div>
 		<?php
 	}

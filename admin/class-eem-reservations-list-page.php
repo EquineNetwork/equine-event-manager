@@ -1142,7 +1142,7 @@ class EEM_Reservations_List_Page {
 	private function render_toolbar( $search, $date_filter, $total, $active_tab ) {
 		$date_options = $this->get_date_filter_options();
 		?>
-		<div class="eem-list-toolbar">
+		<div class="eem-list-toolbar eem-toolbar-controls">
 			<div class="eem-list-toolbar-left">
 				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="eem-bulk-form" onsubmit="return this.bulk_action.value !== 'delete_permanently' || confirm('<?php echo esc_js( __( 'Permanently delete the selected reservations? This cannot be undone.', 'equine-event-manager' ) ); ?>');">
 					<input type="hidden" name="action" value="eem_reservations_bulk" />

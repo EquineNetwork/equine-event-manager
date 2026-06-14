@@ -202,6 +202,32 @@ body.eem-shell-page {
 	text-decoration: none; /* Decision: no underline on hover plugin-wide — color change is sufficient */
 }
 
+/* ============================================================================
+   GLOBAL UNDERLINE KILL-SWITCH — Whitney hard rule (locked 2026-06-14).
+   NO link anywhere in the plugin (admin OR customer), of ANY class, in ANY
+   state, is ever underlined. Hover/focus affordance is colour change only.
+   The colour rule above intentionally excludes `eem-`classed anchors via
+   `:not([class*="eem-"])` so components own their colour — but that also left
+   their underline uncovered, so name links (.eem-res-name, .eem-customer-name,
+   .eem-mobile-card-id, etc.) inherited the WP/browser default underline. This
+   blanket rule covers every anchor unconditionally; the `body.eem-shell-page`
+   scope (specificity 0,2,1) ties + out-orders WP-core `.wrap a:hover`.
+   See docs/decisions.md "Universal hover convention". DO NOT reintroduce
+   `text-decoration: underline` anywhere — that is always a bug.
+   ============================================================================ */
+body.eem-shell-page a,
+body.eem-shell-page a:link,
+body.eem-shell-page a:visited,
+body.eem-shell-page a:hover,
+body.eem-shell-page a:focus,
+body.eem-shell-page a:active,
+.eem-page a,
+.eem-page a:link,
+.eem-page a:visited,
+.eem-page a:hover,
+.eem-page a:focus,
+.eem-page a:active { text-decoration: none; }
+
 /* Hide the WP screen-reader-only heading "Edit Reservation" etc. left over
    from the default screen template; our breadcrumb replaces that role. */
 .eem-page > .wrap > h1.wp-heading-inline,
@@ -1973,6 +1999,23 @@ th.sorted-desc .eem-sort-icon span:first-child {
 	border-radius: var(--eem-radius);
 	padding: 14px;
 	margin-bottom: 8px;
+}
+
+/* Inline metric chip inside a mobile card's badge row (entered/spots, sent
+   count, etc.) — used by the Entries, Notifications + Categories card
+   fallbacks added in the mobile responsiveness pass. */
+.eem-mobile-card-metric {
+	font-size: 12.5px;
+	font-weight: 600;
+	color: var(--eem-text-secondary);
+}
+
+/* Empty-state row rendered inside a .eem-mobile-cards container when the
+   list (or a filtered view) has no items. */
+.eem-mobile-card--empty {
+	color: var(--eem-text-secondary);
+	font-size: 13px;
+	text-align: center;
 }
 
 .eem-mobile-card-top {
@@ -9937,6 +9980,91 @@ a.eem-add-term-link:hover { color: #1257d1; }
 	.eem-item-count,
 	.eem-list-count { flex-basis: 100%; }
 
+	/* ---- Canonical mobile layout for a list page's CONTROLS row ----
+	   (the toolbar row carrying bulk-actions / type-filter / search, tagged
+	   `.eem-toolbar-controls`). Whitney's locked spec (2026-06-14, approved on
+	   Orders first): SEARCH full-width on top, then "Bulk actions + Apply" on
+	   one row, then "<Filter dropdown> + Filter" on one row, then the count —
+	   all left-aligned, never centered. `display:contents` on the left/right
+	   wrappers promotes the individual <form>s to direct flex children so we
+	   can order them independently. Replicate by adding `.eem-toolbar-controls`
+	   to the same row on every other list page. */
+	.eem-toolbar-controls { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
+	/* Promote the left/right wrapper groups so the individual forms/controls
+	   inside become direct flex children we can order + size. `display:contents`
+	   keeps DOM parent→child intact for selectors below. */
+	.eem-toolbar-controls > .eem-list-toolbar-left,
+	.eem-toolbar-controls > .eem-list-toolbar-right { display: contents; }
+
+	/* ORDER (covers every page's class variants): search first, then bulk, then
+	   the filter dropdown, then any extra action, then the count last. */
+	.eem-toolbar-controls .eem-search-form,
+	.eem-toolbar-controls .eem-term-search-form,
+	.eem-toolbar-controls > .eem-list-toolbar-left > .eem-search-wrap { order: 1; }
+	.eem-toolbar-controls .eem-bulk-form,
+	.eem-toolbar-controls .eem-term-bulk-form { order: 2; }
+	.eem-toolbar-controls .eem-type-filter-form,
+	.eem-toolbar-controls .eem-date-filter-form,
+	.eem-toolbar-controls > .eem-list-toolbar-left > .eem-toolbar-select { order: 3; }
+	.eem-toolbar-controls .eem-empty-trash-form { order: 4; }
+	.eem-toolbar-controls .eem-item-count,
+	.eem-toolbar-controls .eem-list-count { order: 5; padding-top: 2px; }
+
+	/* Each inline form = one full-width row, control ATTACHED to its button —
+	   touching, shared seam — like the search input group (Whitney 2026-06-14:
+	   "connected to their buttons just like the search was before"). */
+	.eem-toolbar-controls .eem-bulk-form,
+	.eem-toolbar-controls .eem-term-bulk-form,
+	.eem-toolbar-controls .eem-type-filter-form,
+	.eem-toolbar-controls .eem-date-filter-form,
+	.eem-toolbar-controls .eem-search-form,
+	.eem-toolbar-controls .eem-term-search-form,
+	.eem-toolbar-controls .eem-empty-trash-form { display: flex; flex-direction: row; flex-wrap: nowrap; align-items: stretch; gap: 0; width: 100%; max-width: 100%; margin: 0; box-sizing: border-box; }
+	.eem-toolbar-controls .eem-empty-trash-form .eem-toolbar-btn { flex: 1 1 auto; }
+
+	/* The control fills the row; the button hugs the right. Covers plain
+	   selects, the search wrap, AND Choices.js widgets (date/event filters). */
+	.eem-toolbar-controls .eem-bulk-form > .eem-toolbar-select,
+	.eem-toolbar-controls .eem-term-bulk-form > .eem-toolbar-select,
+	.eem-toolbar-controls .eem-type-filter-form > .eem-toolbar-select,
+	.eem-toolbar-controls .eem-date-filter-form > .eem-toolbar-select,
+	.eem-toolbar-controls .eem-search-wrap,
+	.eem-toolbar-controls form > .eem-choices.choices { flex: 1 1 auto; min-width: 0; }
+	/* Bare controls that aren't wrapped in a form (Stall Charts live filters)
+	   go full-width block. */
+	.eem-toolbar-controls > .eem-list-toolbar-left > .eem-toolbar-select,
+	.eem-toolbar-controls > .eem-list-toolbar-left > .eem-search-wrap { width: 100%; max-width: 100%; }
+
+	/* Square the control's right edge so it meets the button cleanly. */
+	.eem-toolbar-controls .eem-bulk-form > .eem-toolbar-select,
+	.eem-toolbar-controls .eem-term-bulk-form > .eem-toolbar-select,
+	.eem-toolbar-controls .eem-type-filter-form > .eem-toolbar-select,
+	.eem-toolbar-controls .eem-date-filter-form > .eem-toolbar-select,
+	.eem-toolbar-controls form > .eem-choices.choices .choices__inner,
+	.eem-toolbar-controls .eem-search-wrap--attached .eem-search-input { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+	/* Buttons attach: square left edge, drop the seam border, never shrink. */
+	.eem-toolbar-controls .eem-toolbar-btn,
+	.eem-toolbar-controls .eem-search-btn { flex: 0 0 auto; white-space: nowrap; border-top-left-radius: 0; border-bottom-left-radius: 0; border-left: none; }
+	/* The filter dropdowns end up the EXACT same width by giving the action
+	   buttons a shared minimum width (Whitney: "exact same width"). */
+	.eem-toolbar-controls .eem-bulk-form .eem-toolbar-btn,
+	.eem-toolbar-controls .eem-term-bulk-form .eem-toolbar-btn,
+	.eem-toolbar-controls .eem-type-filter-form .eem-toolbar-btn,
+	.eem-toolbar-controls .eem-date-filter-form .eem-toolbar-btn { min-width: 84px; justify-content: center; }
+
+	/* Events list — special case: its producer filter + search + count all live
+	   inside ONE form (.eem-events-toolbar-form) with nested left/right groups,
+	   so the generic .eem-toolbar-controls flattening doesn't apply. Stack the
+	   form: search group (input+button, already attached) on top, producer
+	   filter full-width below, count last. Matches the Orders pattern intent. */
+	.eem-events-toolbar-form { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
+	.eem-events-toolbar-form .eem-list-toolbar-right { order: 1; display: flex; flex-direction: row; flex-wrap: nowrap; align-items: stretch; gap: 0; width: 100%; }
+	.eem-events-toolbar-form .eem-list-toolbar-left { order: 2; display: block; width: 100%; }
+	.eem-events-toolbar-form .eem-list-toolbar-left .eem-toolbar-select { width: 100%; max-width: 100%; }
+	.eem-events-toolbar-form .eem-search-wrap { flex: 1 1 auto; min-width: 0; }
+	.eem-events-toolbar-form .eem-search-btn { flex: 0 0 auto; white-space: nowrap; }
+	.eem-events-toolbar-form .eem-item-count { order: 3; padding-top: 2px; }
+
 	/* Notifications audience builder — the Include/Exclude/Payment
 	   selects + live count overflowed their column. */
 	.eem-notif-field,
@@ -9953,15 +10081,6 @@ a.eem-add-term-link:hover { color: #1257d1; }
 	.eem-filter-select,
 	.eem-daterange-inputs > * { min-width: 0; max-width: 100%; }
 	.eem-export-history { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-
-	/* Admin-config list tables (Entries entrants + divisions, Notifications
-	   send-history, taxonomy Categories) have no mobile-card fallback, so the
-	   base `.eem-desktop-table { display:none }` left them BLANK on phones.
-	   The `--scroll` opt-in keeps the full table but makes it horizontally
-	   scrollable instead of hidden, so every row stays reachable. (The
-	   high-traffic Orders/Reservations lists keep their dedicated mobile
-	   cards and are intentionally NOT tagged with this modifier.) */
-	.eem-desktop-table--scroll { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
 	/* Sheets & Results — the event-select, discipline typeahead and the
 	   "Add File" action row were clipped past the card edge (un-tappable).

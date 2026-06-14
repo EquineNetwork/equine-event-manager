@@ -290,7 +290,7 @@ class EEM_Venues_Page {
 	 */
 	private static function render_toolbar( string $search, int $total ): void {
 		?>
-		<div class="eem-list-toolbar">
+		<div class="eem-list-toolbar eem-toolbar-controls">
 			<div class="eem-list-toolbar-left"></div>
 			<div class="eem-list-toolbar-right">
 				<form class="eem-search-form" role="search" method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>">

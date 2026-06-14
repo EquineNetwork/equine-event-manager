@@ -7602,6 +7602,18 @@ function duplicateReservationAjax(target) {
 		if (empty) { empty.hidden = (shown !== 0); }
 		var count = document.querySelector('[data-eem-entries-count]');
 		if (count) { count.textContent = shown + (shown === 1 ? ' division' : ' divisions'); }
+		// Mobile cards mirror the same event filter (they replace the table <768).
+		var mobile = document.querySelector('.eem-entries-mobile');
+		if (mobile) {
+			var mShown = 0;
+			Array.prototype.slice.call(mobile.querySelectorAll('.eem-mobile-card[data-eem-event-id]')).forEach(function (card) {
+				var m = (val === '' || card.getAttribute('data-eem-event-id') === val);
+				card.hidden = !m;
+				if (m) { mShown++; }
+			});
+			var mEmpty = mobile.querySelector('.eem-entries-mobile-empty');
+			if (mEmpty) { mEmpty.hidden = (mShown !== 0); }
+		}
 	}
 	function sortBy(table, key, type, dir) {
 		var tbody = table.querySelector('tbody');

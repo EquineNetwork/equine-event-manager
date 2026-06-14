@@ -334,7 +334,7 @@ class EEM_Term_Categories_Page {
 		$count = count( $rows );
 		?>
 		<div class="eem-term-table-panel">
-			<div class="eem-term-toolbar">
+			<div class="eem-term-toolbar eem-toolbar-controls">
 				<form class="eem-term-bulk-form" id="eem-term-bulk-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 					<input type="hidden" name="action" value="eem_bulk_delete_terms" />
 					<input type="hidden" name="eem_page" value="<?php echo esc_attr( $slug ); ?>" />
@@ -363,7 +363,7 @@ class EEM_Term_Categories_Page {
 				</span>
 			</div>
 
-			<div class="eem-desktop-table eem-desktop-table--scroll">
+			<div class="eem-desktop-table">
 				<table class="eem-table eem-term-table">
 					<thead>
 						<tr>
@@ -385,6 +385,17 @@ class EEM_Term_Categories_Page {
 						<?php endif; ?>
 					</tbody>
 				</table>
+			</div>
+
+			<?php // Mobile cards — replace the (hidden ≤767) categories table on phones. ?>
+			<div class="eem-mobile-cards">
+				<?php if ( empty( $rows ) ) : ?>
+					<div class="eem-mobile-card eem-mobile-card--empty"><?php esc_html_e( 'No categories match your filters.', 'equine-event-manager' ); ?></div>
+				<?php else : ?>
+					<?php foreach ( $rows as $row ) : ?>
+						<?php self::render_mobile_card( $slug, $cfg, $row['term'], (int) $row['depth'] ); ?>
+					<?php endforeach; ?>
+				<?php endif; ?>
 			</div>
 
 			<div class="eem-table-footer">
@@ -452,6 +463,49 @@ class EEM_Term_Categories_Page {
 				</div>
 			</td>
 		</tr>
+		<?php
+	}
+
+	/**
+	 * Render a single term as a mobile card (phone fallback for the table row).
+	 *
+	 * @param string  $slug  Page slug.
+	 * @param array   $cfg   Page config.
+	 * @param WP_Term $term  The term.
+	 * @param int     $depth Hierarchy depth (for the name indent prefix).
+	 * @return void
+	 */
+	private static function render_mobile_card( string $slug, array $cfg, WP_Term $term, int $depth ): void {
+		$edit_url = self::url( $slug, array( 'edit' => $term->term_id ) );
+		$view_url = add_query_arg(
+			array(
+				'post_type'      => $cfg['post_type'],
+				$cfg['taxonomy'] => $term->slug,
+			),
+			admin_url( 'edit.php' )
+		);
+		$prefix = $depth > 0 ? str_repeat( '— ', $depth ) : '';
+		$count  = (int) $term->count;
+		?>
+		<div class="eem-mobile-card">
+			<div class="eem-mobile-card-top">
+				<a class="eem-mobile-card-id" href="<?php echo esc_url( $edit_url ); ?>"><?php echo esc_html( $prefix . $term->name ); ?></a>
+				<span class="eem-mobile-card-meta"><?php
+					/* translators: %s: post count for this category. */
+					echo esc_html( sprintf( _n( '%s item', '%s items', $count, 'equine-event-manager' ), number_format_i18n( $count ) ) );
+				?></span>
+			</div>
+			<div class="eem-mobile-card-sub">
+				<span class="eem-term-slug"><?php echo esc_html( $term->slug ); ?></span>
+				<?php echo '' !== $term->description ? ' · ' . esc_html( $term->description ) : ''; ?>
+			</div>
+			<div class="eem-mobile-card-bottom">
+				<div class="eem-mobile-card-actions">
+					<a class="eem-btn eem-btn-sm" href="<?php echo esc_url( $view_url ); ?>"><?php /* translators: %s: plural object label, e.g. Events. */ printf( esc_html__( 'View %s', 'equine-event-manager' ), esc_html( $cfg['object_plural'] ) ); ?></a>
+					<a class="eem-btn eem-btn-sm" href="<?php echo esc_url( $edit_url ); ?>"><?php esc_html_e( 'Edit', 'equine-event-manager' ); ?></a>
+				</div>
+			</div>
+		</div>
 		<?php
 	}
 
