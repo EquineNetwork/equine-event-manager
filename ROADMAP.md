@@ -178,6 +178,16 @@ proving ground for the relational-migration pattern that #2 then applies at scal
    back-button replays, and DB-level uniqueness as a backstop (the notes→table migration still
    deferred — re-evaluate it here). Goal: provably no oversell, no lost-update, no double-charge no
    matter how many people hit "buy" at once. Document the guarantees alongside the security report.
+7. **Repo / distribution cleanup.** A lot of dev-only and superseded files are tracked. Two facets:
+   (a) **delete the genuinely dead** — historical/process docs no longer needed (candidates:
+   `BACKLOG.md`, `CLEANUP.md`, `OVERHAUL_REPORT.md`, `SESSION-HANDOFF.md`, `WALKTHROUGH.md`, the
+   per-chunk `docs/AUDIT-*.md`, stray `.mockups/*.csv` + `.mockups/.archive/` + `.mockups/
+   generated-reference/`); (b) **keep but EXCLUDE from the shipped plugin ZIP** the dev-reference
+   that's still useful in the repo (`.mockups/`, `docs/`, `tests/`, `scripts/`, `tools/`, `phpcs.xml`,
+   `composer.*`) via `.gitattributes export-ignore` / the `build-release.yml` workflow, so the
+   distributed plugin carries only runtime code. **Keep at root:** `ROADMAP.md`, `CLAUDE.md`,
+   `README.md`. Verify each deletion with a full-project grep first (some docs are cross-referenced),
+   and confirm the keep/delete list with Whitney before removing anything.
 
 ---
 
