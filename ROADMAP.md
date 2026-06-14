@@ -94,6 +94,28 @@ succeeded; the last launch gate is cleared.
 
 ---
 
+## 🧭 ARCHITECTURE TRAJECTORY — "off WordPress" path (the why behind v2 → v4)
+
+The binding direction is *"not chained to WordPress forever — WordPress is a replaceable
+front-end, API-first/headless."* That destination (a PWA or native mobile app) is reached in
+**four moves, each enabling the next.** Each is necessary but NOT sufficient on its own:
+
+1. **Decouple (v2)** — move data + business rules out of `wp_postmeta`/CPTs into relational tables
+   behind repository classes. *Frees the data.* This is the foundation; without it any later client
+   would be screen-scraping WP's EAV mess or facing a rewrite.
+2. **API (v3)** — stand up a REST/GraphQL layer exposing those repositories as the canonical
+   contract (the §8 order/entry payload). *This is the thing a PWA/native app actually talks to* —
+   apps need an API, not direct DB access. Lands with the GH data-ownership integration.
+3. **Swap/add front-ends (v4)** — web, **PWA, native mobile**, or GH's own platform, all hitting
+   the same API. No data migration needed at that point because data + rules already sit behind it.
+
+Key nuance: a PWA *could* technically be built against WP's REST API today, but it would be brittle
+(reading EAV/CPT data directly). The v2 decouple is what turns "possible but fragile" into "clean
+and durable." **Keep every new persistence behind a repository + prefer relational tables over
+`wp_postmeta` so the eventual API is clean** — that's the cheap v1/v2 guardrail that keeps v4 easy.
+
+---
+
 ## 🔭 v2 — ARCHITECTURE TRACK (next up; build order set 2026-06-13)
 
 **Recommended order: #1 (`en_venue` unification) → #2 (postmeta de-coupling).** The venue work
@@ -130,6 +152,24 @@ proving ground for the relational-migration pattern that #2 then applies at scal
 3. **PDF Venue Map → overlay / conversion** *(exploratory)* — upload a PDF venue map; MVP =
    render to image + drop/snap stall hotspots onto it. Needs a server PDF-render dependency.
    Pairs with Facility Layout Templates.
+
+---
+
+## 📱 v4 — HEADLESS CLIENTS (not soon; the payoff of the v2/v3 architecture work)
+
+*Strictly gated on v2 (decouple) + v3 (API) being done — these are clients of the API, not new
+data models. Not happening for a while; listed so the architecture stays aimed at it.*
+
+1. **PWA (installable web app)** — offline-capable, installable customer/admin web app served from
+   the same API. No app-store dependency; fastest path to a "real app" feel.
+2. **Native mobile app** — iOS/Android client over the same API contract. Same backend as the PWA;
+   differs only in distribution + device integration (camera for check-in, push, etc.).
+
+**Readiness gate (do NOT start v4 until all true):** (a) reservation/division config lives in
+relational tables behind repositories, not `wp_postmeta`; (b) a stable, versioned API exposes the
+§8 order/entry payload + the atomic inventory-reserve endpoint; (c) auth works outside the WP admin
+cookie session. Until then, every v1–v3 chunk just keeps paying down the guardrail (repositories +
+relational tables) so this stays cheap when the time comes.
 
 ---
 
