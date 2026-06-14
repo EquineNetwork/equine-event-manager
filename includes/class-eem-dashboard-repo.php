@@ -956,6 +956,47 @@ class EEM_Dashboard_Repo {
 		return array( 'label' => '', 'tone' => 'future' );
 	}
 
+	/**
+	 * General Add-Ons offered across reservations — for the dashboard "Add-Ons"
+	 * card (Whitney 2026-06-14: this card is for the purchasable add-on items
+	 * configured in Edit Reservation → General Add-Ons, e.g. Golf Cart Rental /
+	 * Extra Wristband — NOT plugin features). Counts the distinct add-on line
+	 * items configured on published reservations that have General Add-Ons on.
+	 *
+	 * @return array{items:int,reservations:int}
+	 */
+	public function general_addons_summary(): array {
+		$ids   = get_posts( array(
+			'post_type'      => 'en_reservation',
+			'post_status'    => 'publish',
+			'posts_per_page' => -1,
+			'fields'         => 'ids',
+		) );
+		$items = 0;
+		$res   = 0;
+		foreach ( $ids as $rid ) {
+			if ( '1' !== (string) get_post_meta( (int) $rid, '_en_general_addons_enabled', true ) ) {
+				continue;
+			}
+			$cfg = get_post_meta( (int) $rid, '_en_general_addons', true );
+			if ( ! is_array( $cfg ) ) {
+				continue;
+			}
+			$count = 0;
+			foreach ( $cfg as $item ) {
+				if ( is_array( $item ) && '' !== trim( (string) ( $item['name'] ?? '' ) ) ) {
+					$count++;
+				}
+			}
+			if ( $count > 0 ) {
+				$items += $count;
+				$res++;
+			}
+		}
+
+		return array( 'items' => $items, 'reservations' => $res );
+	}
+
 	public static function addons_summary(): array {
 		global $wpdb;
 

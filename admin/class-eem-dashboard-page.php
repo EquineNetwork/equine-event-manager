@@ -50,6 +50,7 @@ class EEM_Dashboard_Page {
 		$revenue_chart  = $repo->revenue_chart();
 		$this_week      = $repo->this_week();
 		$addons         = EEM_Dashboard_Repo::addons_summary();
+		$general_addons = $repo->general_addons_summary();
 		$upcoming_count = $repo->upcoming_reservations_count( 30 );
 
 		$today          = date_i18n( 'l, F j, Y', current_time( 'timestamp' ) );
@@ -89,6 +90,7 @@ class EEM_Dashboard_Page {
 				</div>
 				<div class="eem-dashboard-side">
 					<?php self::render_quick_actions_card(); ?>
+					<?php self::render_addons_card( $general_addons ); ?>
 					<?php self::render_entries_card( isset( $addons['entries'] ) ? $addons['entries'] : array() ); ?>
 					<?php self::render_sheets_card( isset( $addons['sheets'] ) ? $addons['sheets'] : array() ); ?>
 					<?php self::render_revenue_chart_card( $revenue_chart ); ?>
@@ -585,6 +587,49 @@ class EEM_Dashboard_Page {
 						?>
 					</span>
 				<?php endif; ?>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Add-Ons card — the purchasable General Add-Ons configured in Edit
+	 * Reservation (Golf Cart Rental, Extra Wristband, …). NOT plugin features
+	 * (Whitney 2026-06-14). Shown only when at least one reservation offers
+	 * general add-ons.
+	 *
+	 * @param array{items:int,reservations:int} $addons From general_addons_summary().
+	 * @return void
+	 */
+	private static function render_addons_card( array $addons ) {
+		$items = isset( $addons['items'] ) ? (int) $addons['items'] : 0;
+		if ( $items < 1 ) {
+			return;
+		}
+		?>
+		<div class="eem-card eem-dashboard-card">
+			<div class="eem-card-header">
+				<div class="eem-card-title"><?php echo EEM_Dashboard_Icons::svg( 'package' ); ?> <?php esc_html_e( 'Add-Ons', 'equine-event-manager' ); ?></div>
+				<a class="eem-card-link" href="<?php echo esc_url( EEM_Reservations_List_Page::url() ); ?>"><?php esc_html_e( 'Manage →', 'equine-event-manager' ); ?></a>
+			</div>
+			<div class="eem-dashboard-feature-body">
+				<span class="eem-dashboard-feature-stat">
+					<?php
+					$res = isset( $addons['reservations'] ) ? (int) $addons['reservations'] : 0;
+					echo esc_html( sprintf(
+						/* translators: %s: number of purchasable add-on items offered. */
+						_n( '%s add-on offered', '%s add-ons offered', $items, 'equine-event-manager' ),
+						number_format_i18n( $items )
+					) );
+					if ( $res > 0 ) {
+						echo esc_html( ' · ' . sprintf(
+							/* translators: %s: number of reservations that offer add-ons. */
+							_n( '%s reservation', '%s reservations', $res, 'equine-event-manager' ),
+							number_format_i18n( $res )
+						) );
+					}
+					?>
+				</span>
 			</div>
 		</div>
 		<?php
