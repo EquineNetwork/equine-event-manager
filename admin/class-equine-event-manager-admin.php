@@ -543,10 +543,10 @@ class EEM_Admin {
 		// CPT URL is still reachable via direct nav (the C4
 		// maybe_redirect_old_list bounce handles accidental hits).
 		// DS-1.B.4: Dashboard pinned to position 0 (above Orders).
-		// Menu order (Whitney 2026-06-13): Dashboard, Orders, Reservations,
-		// Stall & RV Charts, Events, Entries, Sheets & Results, Venues,
-		// Producers, Customers, Notifications, Reports, Settings. Each native
-		// Categories child immediately follows its parent (Events/Venues/
+		// Menu order (Whitney 2026-06-13, Events moved up): Dashboard, Orders,
+		// Events, Reservations, Stall & RV Charts, Entries, Sheets & Results,
+		// Venues, Producers, Customers, Notifications, Reports, Settings. Each
+		// native Categories child immediately follows its parent (Events/Venues/
 		// Producers) so the hover-reveal nesting works — the Categories rows are
 		// hidden hover sub-items, so they don't occupy a visible slot. Sheets &
 		// Results sits with the event-content cluster (after Entries). When
@@ -555,10 +555,10 @@ class EEM_Admin {
 		$preferred_order = array(
 			'equine-event-manager-dashboard',
 			self::MENU_SLUG, // Orders (top-level Event Manager slug).
-			'equine-event-manager-reservations',
-			'equine-event-manager-stall-charts',
 			EEM_Events_List_Page::MENU_SLUG,
 			'equine-event-manager-event-categories',
+			'equine-event-manager-reservations',
+			'equine-event-manager-stall-charts',
 			'equine-event-manager-entries',
 			EEM_Sheets_Results_Page::MENU_SLUG,
 			EEM_Venues_Page::MENU_SLUG,
