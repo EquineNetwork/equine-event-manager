@@ -338,6 +338,10 @@ class EEM_Admin {
 			$should_load = true;
 		}
 
+		if ( in_array( $post_type, array( 'en_venue', 'en_producer' ), true ) && in_array( $hook_suffix, array( 'post.php', 'post-new.php' ), true ) ) {
+			$should_load = true;
+		}
+
 		if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-order', 'equine-event-manager-order-refund', 'equine-event-manager-settings', 'equine-event-manager-stall-charts', 'equine-event-manager-stall-chart-print', 'equine-event-manager-reports', 'equine-event-manager-reservation-overview', 'equine-event-manager-create-order', 'equine-event-manager-collect-payment', 'equine-event-manager-dashboard', 'equine-event-manager-reservation-editor', EEM_Entries::EDITOR_SLUG, EEM_Entries::LIST_SLUG, 'equine-event-manager-customer', 'equine-event-manager-customers', EEM_Notifications_Page::MENU_SLUG, EEM_Venues_Page::MENU_SLUG, EEM_Reservations_List_Page::MENU_SLUG ), true ) ) {
 			$should_load = true;
 		}

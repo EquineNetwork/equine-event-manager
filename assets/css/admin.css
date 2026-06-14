@@ -9689,6 +9689,51 @@ a.eem-add-term-link:hover { color: #1257d1; }
 	.eem-event-editor .eem-edit-rail { position: static; order: -1; }
 }
 
+/* ---------- Event Editor Card (Venue / Producer meta boxes) ---------- */
+.eem-event-editor-card { background: #fff; border: 1px solid #e5e7eb; border-radius: var(--eem-radius-lg, 8px); padding: 24px; margin-bottom: 16px; }
+.eem-event-editor-card__intro { display: grid; grid-template-columns: 1fr 200px; gap: 24px; margin-bottom: 20px; }
+.eem-event-editor-card__intro h3 { margin: 4px 0 6px; font-size: 16px; font-weight: 700; color: var(--eem-navy, #031B4E); }
+.eem-event-editor-card__intro p { margin: 0 0 12px; font-size: 13.5px; color: #6B7A99; line-height: 1.5; }
+.eem-event-editor-card__eyebrow { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #1668F2; }
+.eem-event-editor-card__status-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.eem-event-editor-card__status-pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 600; background: #f3f4f5; color: #6B7A99; }
+.eem-event-editor-card__status-pill.is-ready { background: #E6F4EA; color: #1B7D3A; }
+.eem-event-editor-card__status-pill.is-unlinked { background: #FFF3E0; color: #B45309; }
+.eem-event-editor-card__status-pill.is-media { background: #EEF4FF; color: #1668F2; }
+.eem-event-editor-card__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+a.eem-event-editor-card__action, a.eem-event-editor-card__action:hover, a.eem-event-editor-card__action:focus { font-size: 12.5px; font-weight: 600; color: #1668F2; text-decoration: none; padding: 4px 10px; border: 1px solid #e5e7eb; border-radius: var(--eem-radius, 3px); background: #fff; }
+a.eem-event-editor-card__action:hover { background: #EEF4FF; border-color: #1668F2; }
+a.eem-event-editor-card__action--primary, a.eem-event-editor-card__action--primary:hover, a.eem-event-editor-card__action--primary:focus { background: #1668F2; color: #fff; border-color: #1668F2; text-decoration: none; }
+a.eem-event-editor-card__action--primary:hover { background: #1257d1; }
+.eem-event-editor-card__meta { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #1d2327; }
+.eem-event-editor-card__meta strong { font-weight: 600; color: var(--eem-navy, #031B4E); margin-bottom: 6px; }
+.eem-event-editor-card__meta-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; color: #8c8f94; margin-top: 6px; }
+.eem-event-editor-card__summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.eem-event-editor-card__summary-card { padding: 14px 16px; background: #f9fafb; border: 1px solid #f0f0f1; border-radius: var(--eem-radius, 3px); }
+.eem-event-editor-card__summary-label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; color: #8c8f94; margin-bottom: 4px; }
+.eem-event-editor-card__summary-value { display: block; font-size: 14px; font-weight: 600; color: var(--eem-navy, #031B4E); margin-bottom: 4px; }
+.eem-event-editor-card__summary-note { display: block; font-size: 12px; color: #6B7A99; line-height: 1.4; }
+.eem-event-editor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px; }
+.eem-event-editor-field { display: flex; flex-direction: column; gap: 4px; }
+.eem-event-editor-field--full { grid-column: 1 / -1; }
+.eem-event-editor-field__label { font-size: 12.5px; font-weight: 600; color: var(--eem-navy, #031B4E); }
+.eem-event-editor-field__description { font-size: 12px; color: #6B7A99; margin-top: 2px; }
+.eem-event-editor-field input.regular-text { width: 100%; max-width: 100%; }
+.eem-event-editor-toggle { display: flex; align-items: center; gap: 10px; padding: 10px 0; }
+.eem-event-editor-toggle__copy { font-size: 13px; color: #1d2327; }
+.eem-event-editor-card__quicklinks { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+a.eem-event-editor-card__quicklink, a.eem-event-editor-card__quicklink:hover { font-size: 12px; color: #1668F2; text-decoration: none; }
+a.eem-event-editor-card__quicklink:hover { color: #1257d1; }
+@media (max-width: 767px) {
+	.eem-event-editor-card { padding: 16px; }
+	.eem-event-editor-card__intro { grid-template-columns: 1fr; gap: 14px; }
+	.eem-event-editor-grid { grid-template-columns: 1fr; }
+	.eem-event-editor-card__summary-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+	.eem-event-editor-card__summary-grid { grid-template-columns: 1fr; }
+}
+
 /* ============================================================
    Sheets & Results manager (Screen 1) — screen1_sheets_results_manager.html
    Draw-sheet / result document manager: event selector band, doc-type tabs,
