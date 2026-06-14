@@ -123,8 +123,8 @@ c7x17_ok( 'admin-legacy.css: textarea selectors in !important block carry :not(.
 // ── [B] Select height ─────────────────────────────────────────────────────
 echo "\n[B] Dashboard range-select height normalisation\n";
 
-c7x17_ok( '--eem-select-height token defined in admin.css',
-	(bool) preg_match( '~--eem-select-height\s*:\s*29px~', $admin_css ),
+c7x17_ok( '--eem-select-height token defined in admin.css (38px canonical, raised from 29px 2.7.281)',
+	(bool) preg_match( '~--eem-select-height\s*:\s*38px~', $admin_css ),
 	$pass, $fail, $log );
 
 // Dashboard range-select block has min-height + line-height:normal

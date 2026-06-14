@@ -111,7 +111,12 @@
 	--eem-radius-sm: 2px;
 	--eem-radius: 3px;       /* form inputs, buttons, chips — C7.X.17 Issue A: token-level change from 4px */
 	--eem-radius-lg: 6px;    /* cards, modals */
-	--eem-select-height: 29px; /* C7.X.17 Issue B: shared height for toolbar + dashboard selects */
+
+	/* THE canonical control height for EVERY dropdown / select / filter / toolbar
+	   control across the whole plugin (Whitney 2026-06-13: one set style for all
+	   pages — raised 29px → 38px to match the Choices.js dropdowns + text inputs).
+	   Do NOT diverge per page; change this token, not a per-page rule. */
+	--eem-select-height: 38px;
 
 	/* Borders */
 	--eem-border-input: 1.5px solid var(--eem-border);
@@ -3569,6 +3574,45 @@ select.eem-toolbar-select {
 	background: var(--eem-surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 8px center;
 	appearance: none;
 	cursor: pointer;
+}
+
+/* ── CANONICAL CONTROL HEIGHT — one set style for every dropdown/select/filter
+   across the whole plugin (Whitney 2026-06-13). A FIXED height + box-sizing
+   means inherited line-heights or stray min-heights can't stretch the box
+   (the Notifications selects were rendering 56px from an inherited line-height
+   before this). The `select.` prefix ties WP core forms.css; placed after every
+   per-class select rule so cascade order wins. NEVER set a divergent select
+   height per page — change --eem-control-height instead. */
+select.eem-field-select,
+select.eem-toolbar-select,
+select.eem-list-select,
+select.eem-dashboard-range-select {
+	height: var(--eem-select-height);
+	min-height: var(--eem-select-height);
+	line-height: normal;
+	box-sizing: border-box;
+	padding-top: 0;
+	padding-bottom: 0;
+}
+/* The other controls that share a filter/toolbar row with those selects align to
+   the same height so each bar reads as one tidy strip. */
+input.eem-search-input {
+	margin: 0; /* WP core forms.css input margin reset, C7.X.15 pattern */
+	height: var(--eem-select-height);
+	min-height: var(--eem-select-height);
+	box-sizing: border-box;
+	padding-top: 0;
+	padding-bottom: 0;
+}
+.eem-toolbar-btn,
+.eem-search-btn {
+	height: var(--eem-select-height);
+	min-height: var(--eem-select-height);
+	box-sizing: border-box;
+	padding-top: 0;
+	padding-bottom: 0;
+	display: inline-flex;
+	align-items: center;
 }
 
 .eem-toolbar-btn {
