@@ -81,11 +81,12 @@ class EEM_Dashboard_Page {
 
 			<div class="eem-dashboard-grid">
 				<div class="eem-dashboard-main">
-					<?php self::render_upcoming_card( $upcoming ); ?>
+					<?php // Order (Whitney 2026-06-14): Needs Attention first, then Upcoming Events (Native Events only), then Upcoming Reservations, then Recent Orders. ?>
+					<?php self::render_attention_card( $attention ); ?>
 					<?php if ( class_exists( 'EEM_Events' ) && EEM_Events::is_native_events_enabled() ) : ?>
 						<?php self::render_upcoming_events_card( $upcoming_events ); ?>
 					<?php endif; ?>
-					<?php self::render_attention_card( $attention ); ?>
+					<?php self::render_upcoming_card( $upcoming ); ?>
 					<?php self::render_recent_orders_card( $recent_orders ); ?>
 				</div>
 				<div class="eem-dashboard-side">
