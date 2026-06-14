@@ -19,8 +19,9 @@ API/native last.*
 1. **Strict inventory / concurrency audit** (sellouts) — oversell/double-charge is the worst case.
 2. **Financial-security audit + `docs/SECURITY-AUDIT-REPORT.md`** — pairs with #1 as one
    "bulletproof the transactional core" pass.
-3. **Mobile-experience + PWA polish (customer-facing)** — customers buy on phones during sellouts;
-   big payoff, doable now (the PWA also gives "app feel" while native is months out).
+3. **Mobile-experience + PWA polish — CUSTOMER *and* ADMIN (tablet + phone)** — customers buy on
+   phones during sellouts AND admins run this on the fly ringside; both surfaces must be VERY
+   responsive. Doable now (the PWA also gives "app feel" while native is months out).
 4. **Venue Slice 2** — `en_venue` → canonical-table write-through (finishes the venue thread).
 5. **Repo cleanup — delete dead docs** (the ship-only-runtime half is already done).
 6. **Entry-aware Dashboard headline metrics** — small additive admin visibility.
@@ -119,17 +120,25 @@ succeeded; the last launch gate is cleared.
    Results if useful. Gate on the feature flags. (Verified 2.7.281: revenue wiring is correct; this
    is an additive surfacing task, not a bug fix.)
 
-2. **Mobile-experience + PWA polish (customer-facing).** Make the customer surfaces feel like a
-   real app on phones — *without* leaving WordPress (Vercel/native is the v4 headless track, gated
-   on the v2/v3 API; a PWA on the current pages is the right move now and a clean stepping stone to
-   it). Highest real-world payoff: customers buy stalls/entries on phones, often during fast
-   sellouts. Scope: **(a) responsive/touch audit** of the customer-facing pages we fully control
-   (`[en_reservation]` checkout, event pages, public sheets/results) — large touch targets, sticky
-   bottom action bars (mockups already spec `sticky-save`), AJAX-not-reload interactions, loading/
-   skeleton states, the stall/RV picker on small screens; **(b) PWA wrapper** — `manifest.json` +
-   service worker + install prompt so customers can "Add to Home Screen" (full-screen, splash,
-   offline shell). Deliverable on the current stack; the eventual v4 client replaces it behind the
-   same URLs. Keep it customer-first (admin-on-mobile benefits more from the v4 headless app later).
+2. **Mobile-experience + PWA polish — CUSTOMER *and* ADMIN (binding: Whitney 2026-06-13).** Make
+   the whole plugin feel like a real app on phones AND tablets — *without* leaving WordPress
+   (Vercel/native is the v4 headless track, gated on the v2/v3 API; a PWA on the current pages is
+   the right move now and a clean stepping stone to it). **Both surfaces are in scope and both must
+   be VERY responsive at tablet + phone widths** — admins run this on the fly from a phone/tablet
+   (assigning stalls, taking payments, checking orders ringside), so the admin pages are NOT a
+   "later, via the headless app" item. Scope:
+   - **(a) Customer-facing responsive/touch audit** — `[en_reservation]` checkout, event pages,
+     public sheets/results: large touch targets, sticky bottom action bars (mockups spec
+     `sticky-save`), AJAX-not-reload, loading/skeleton states, the stall/RV picker on small screens.
+   - **(b) Admin responsive/touch audit (tablet + phone)** — every branded admin page (Dashboard,
+     Orders + Order Detail, Reservations, Reservation editor, Stall & RV Charts + the chart/picker,
+     Entries, Sheets & Results, Venues/Producers/Events, Notifications, Reports, Settings). Tables
+     collapse to mobile cards (pattern already exists), toolbars wrap/stack, the stall-chart grid is
+     pan/zoom usable on a phone, modals + forms fit small screens, 38px controls stay tap-friendly.
+     Audit at two breakpoints explicitly: **tablet (~768px) and phone (~390px).**
+   - **(c) PWA wrapper** — `manifest.json` + service worker + install prompt for "Add to Home
+     Screen" (full-screen, splash, offline shell), covering both the customer route and the admin.
+   Deliverable on the current stack; the eventual v4 client replaces it behind the same URLs.
 
 ---
 
