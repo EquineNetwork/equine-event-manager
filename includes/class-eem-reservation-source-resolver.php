@@ -249,20 +249,7 @@ class EEM_Reservation_Source_Resolver {
 			return 0;
 		}
 
-		$reservation_ids = get_posts(
-			array(
-				'post_type'      => 'en_reservation',
-				'post_status'    => 'any',
-				'posts_per_page' => -1,
-				'fields'         => 'ids',
-				'no_found_rows'  => true,
-				'meta_query'     => array(
-					'relation' => 'AND',
-					array( 'key' => '_en_event_id', 'value' => (string) $event_id ),
-					array( 'key' => '_en_event_source', 'value' => $source ),
-				),
-			)
-		);
+		$reservation_ids = EEM_Reservation_Config::for_event_and_source( $event_id, $source );
 
 		$count = 0;
 		foreach ( (array) $reservation_ids as $rid ) {

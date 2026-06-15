@@ -1503,18 +1503,10 @@ class EEM_Reservation_Editor_Page {
 		}
 
 		// Find all reservations whose _en_event_id points at this event.
-		$linked = get_posts( array(
-			'post_type'      => EEM_Reservations_CPT::POST_TYPE,
-			'post_status'    => array( 'publish', 'draft', 'pending', 'private' ),
-			'posts_per_page' => -1,
-			'fields'         => 'ids',
-			'meta_query'     => array(
-				array(
-					'key'   => '_en_event_id',
-					'value' => (string) $event_id,
-				),
-			),
-		) );
+		$linked = EEM_Reservation_Config::for_event(
+			$event_id,
+			array( 'publish', 'draft', 'pending', 'private' )
+		);
 
 		foreach ( (array) $linked as $reservation_id ) {
 			self::apply_mirror( (int) $reservation_id );

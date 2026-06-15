@@ -259,11 +259,11 @@ class EEM_Reservation_Config {
 	 * Phase 1: delegates to WP_Query with meta_query.
 	 * Phase 2: becomes a simple SQL query against the config table.
 	 *
-	 * @param int    $event_id     Event post ID.
-	 * @param string $post_status  Post status filter (default 'publish').
+	 * @param int          $event_id     Event post ID.
+	 * @param string|array $post_status  Post status filter (default 'publish').
 	 * @return int[] Reservation post IDs.
 	 */
-	public static function for_event( int $event_id, string $post_status = 'publish' ): array {
+	public static function for_event( int $event_id, $post_status = 'publish' ): array {
 		$query = new WP_Query( array(
 			'post_type'      => 'en_reservation',
 			'post_status'    => $post_status,
@@ -326,5 +326,128 @@ class EEM_Reservation_Config {
 	 */
 	public static function rv_enabled( int $reservation_id ): bool {
 		return EEM_Reservations_CPT::section_enabled( $reservation_id, 'rv_enabled' );
+	}
+
+	/**
+	 * Find reservation IDs by event ID AND source type.
+	 *
+	 * Phase 1: meta_query on _en_event_id + _en_event_source.
+	 * Phase 2: single indexed query on the config table.
+	 *
+	 * @param int    $event_id Event post ID.
+	 * @param string $source   Event source ('tec', 'feed', 'native').
+	 * @param string $status   Post status filter ('any', 'publish', etc.).
+	 * @return int[]
+	 */
+	public static function for_event_and_source( int $event_id, string $source, string $status = 'any' ): array {
+		$query = new WP_Query( array(
+			'post_type'      => 'en_reservation',
+			'post_status'    => $status,
+			'posts_per_page' => -1,
+			'fields'         => 'ids',
+			'no_found_rows'  => true,
+			'meta_query'     => array(
+				'relation' => 'AND',
+				array( 'key' => '_en_event_id', 'value' => (string) $event_id ),
+				array( 'key' => '_en_event_source', 'value' => sanitize_key( $source ) ),
+			),
+		) );
+
+		return array_map( 'intval', (array) $query->posts );
+	}
+
+	/**
+	 * Find reservation IDs with stalls and/or RV enabled.
+	 *
+	 * Handles the CLEANUP #44 dual-key compat pattern: checks both the
+	 * canonical _eem_section_enabled_* key and the legacy _en_* key.
+	 *
+	 * Phase 1: meta_query with OR relation across both key formats.
+	 * Phase 2: simple column filter on the config table.
+	 *
+	 * @param string|string[] $post_status Post status(es) to include.
+	 * @param int             $limit       Max results (default 200).
+	 * @return int[]
+	 */
+	public static function with_stalls_or_rv( $post_status = 'publish', int $limit = 200 ): array {
+		$query = new WP_Query( array(
+			'post_type'      => 'en_reservation',
+			'post_status'    => $post_status,
+			'posts_per_page' => $limit,
+			'fields'         => 'ids',
+			'no_found_rows'  => true,
+			'meta_query'     => array(
+				'relation' => 'OR',
+				array(
+					'key'     => EEM_Reservations_CPT::section_enabled_meta_key( 'stalls_enabled' ),
+					'value'   => '1',
+					'compare' => '=',
+				),
+				array(
+					'key'     => '_en_stalls_enabled',
+					'value'   => '1',
+					'compare' => '=',
+				),
+				array(
+					'key'     => EEM_Reservations_CPT::section_enabled_meta_key( 'rv_enabled' ),
+					'value'   => '1',
+					'compare' => '=',
+				),
+				array(
+					'key'     => '_en_rv_enabled',
+					'value'   => '1',
+					'compare' => '=',
+				),
+			),
+		) );
+
+		return array_map( 'intval', (array) $query->posts );
+	}
+
+	/**
+	 * Find a single reservation for a TEC event with a specific section enabled.
+	 *
+	 * Used by the customer shortcode to find the reservation backing a
+	 * TEC event's stall or RV page.
+	 *
+	 * @param int    $event_id TEC event post ID.
+	 * @param string $section  'stalls_enabled' or 'rv_enabled'.
+	 * @return int Reservation post ID, or 0 if none found.
+	 */
+	public static function for_tec_event_with_section( int $event_id, string $section ): int {
+		$field = in_array( $section, array( 'stalls_enabled', 'rv_enabled' ), true ) ? $section : 'stalls_enabled';
+		$query = new WP_Query( array(
+			'post_type'      => 'en_reservation',
+			'post_status'    => 'publish',
+			'posts_per_page' => 1,
+			'fields'         => 'ids',
+			'meta_query'     => array(
+				array(
+					'key'     => '_en_event_source',
+					'value'   => 'tec',
+					'compare' => '=',
+				),
+				array(
+					'key'     => '_en_event_id',
+					'value'   => $event_id,
+					'compare' => '=',
+				),
+				array(
+					'relation' => 'OR',
+					array(
+						'key'     => EEM_Reservations_CPT::section_enabled_meta_key( $field ),
+						'value'   => 1,
+						'compare' => '=',
+					),
+					array(
+						'key'     => '_en_' . $field,
+						'value'   => 1,
+						'compare' => '=',
+					),
+				),
+			),
+		) );
+
+		return ! empty( $query->posts ) ? absint( $query->posts[0] ) : 0;
 	}
 }

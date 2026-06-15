@@ -9315,44 +9315,9 @@ RV Lot: " . $rv_lot['name'] );
 		}
 
 		// CLEANUP #44 — match the section toggle under the canonical
-		// `_eem_section_enabled_<shortkey>` key OR its legacy `_en_<field>` key
-		// so unmigrated reservations still resolve.
-		$field   = 'stall' === $type ? 'stalls_enabled' : 'rv_enabled';
-		$posts   = get_posts(
-			array(
-				'post_type'      => 'en_reservation',
-				'post_status'    => 'publish',
-				'posts_per_page' => 1,
-				'fields'         => 'ids',
-				'meta_query'     => array(
-					array(
-						'key'     => '_en_event_source',
-						'value'   => 'tec',
-						'compare' => '=',
-					),
-					array(
-						'key'     => '_en_event_id',
-						'value'   => $event_id,
-						'compare' => '=',
-					),
-					array(
-						'relation' => 'OR',
-						array(
-							'key'     => EEM_Reservations_CPT::section_enabled_meta_key( $field ),
-							'value'   => 1,
-							'compare' => '=',
-						),
-						array(
-							'key'     => '_en_' . $field,
-							'value'   => 1,
-							'compare' => '=',
-						),
-					),
-				),
-			)
-		);
+		$field = 'stall' === $type ? 'stalls_enabled' : 'rv_enabled';
 
-		return ! empty( $posts ) ? absint( $posts[0] ) : 0;
+		return EEM_Reservation_Config::for_tec_event_with_section( $event_id, $field );
 	}
 
 	/**

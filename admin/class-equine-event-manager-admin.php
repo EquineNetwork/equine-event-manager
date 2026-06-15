@@ -4309,52 +4309,23 @@ class EEM_Admin {
 	 * @return array<int, array<string, mixed>>
 	 */
 	private function get_stall_charts_list_data(): array {
-		$query = new WP_Query(
-			array(
-				'post_type'      => 'en_reservation',
-				'post_status'    => array( 'publish', 'draft', 'future', 'pending', 'private' ),
-				'posts_per_page' => 200,
-				'orderby'        => 'title',
-				'order'          => 'ASC',
-				'fields'         => 'ids',
-				// 2.3.50 — any reservation selling stalls OR RV lots needs a chart
-				// view (to verify customer-picked assignments in Mapped mode, or to
-				// manually assign in Bulk mode), regardless of inventory mode.
-				// CLEANUP #44 — match canonical `_eem_section_enabled_*` OR legacy
-				// `_en_*_enabled` so unmigrated reservations still resolve.
-				'meta_query'     => array(
-					'relation' => 'OR',
-					array(
-						'key'     => EEM_Reservations_CPT::section_enabled_meta_key( 'stalls_enabled' ),
-						'value'   => '1',
-						'compare' => '=',
-					),
-					array(
-						'key'     => '_en_stalls_enabled',
-						'value'   => '1',
-						'compare' => '=',
-					),
-					array(
-						'key'     => EEM_Reservations_CPT::section_enabled_meta_key( 'rv_enabled' ),
-						'value'   => '1',
-						'compare' => '=',
-					),
-					array(
-						'key'     => '_en_rv_enabled',
-						'value'   => '1',
-						'compare' => '=',
-					),
-				),
-			)
+		$chart_ids = EEM_Reservation_Config::with_stalls_or_rv(
+			array( 'publish', 'draft', 'future', 'pending', 'private' ),
+			200
 		);
 
-		if ( empty( $query->posts ) || ! is_array( $query->posts ) ) {
+		if ( empty( $chart_ids ) ) {
 			return array();
 		}
 
+		// Sort by title (the original WP_Query used orderby=title).
+		usort( $chart_ids, static function ( $a, $b ) {
+			return strnatcasecmp( get_the_title( $a ), get_the_title( $b ) );
+		} );
+
 		$rows = array();
 
-		foreach ( $query->posts as $rid ) {
+		foreach ( $chart_ids as $rid ) {
 			$rid = absint( $rid );
 			if ( $rid <= 0 ) {
 				continue;
@@ -4504,31 +4475,18 @@ class EEM_Admin {
 			'assigned_by_order_key'   => array(),
 		);
 
-		$query = new WP_Query(
-			array(
-				'post_type'      => 'en_reservation',
-				'post_status'    => array( 'publish', 'private' ),
-				'posts_per_page' => 200,
-				'fields'         => 'ids',
-				'no_found_rows'  => true,
-				// CLEANUP #44 — canonical OR legacy section-enabled keys.
-				'meta_query'     => array(
-					'relation' => 'OR',
-					array( 'key' => EEM_Reservations_CPT::section_enabled_meta_key( 'stalls_enabled' ), 'value' => '1', 'compare' => '=' ),
-					array( 'key' => '_en_stalls_enabled', 'value' => '1', 'compare' => '=' ),
-					array( 'key' => EEM_Reservations_CPT::section_enabled_meta_key( 'rv_enabled' ), 'value' => '1', 'compare' => '=' ),
-					array( 'key' => '_en_rv_enabled', 'value' => '1', 'compare' => '=' ),
-				),
-			)
+		$chart_ids = EEM_Reservation_Config::with_stalls_or_rv(
+			array( 'publish', 'private' ),
+			200
 		);
 
-		if ( empty( $query->posts ) || ! is_array( $query->posts ) ) {
+		if ( empty( $chart_ids ) ) {
 			return $out;
 		}
 
 		$all_orders = $this->orders_repository->get_orders( '', 'date', 'asc' );
 
-		foreach ( $query->posts as $rid ) {
+		foreach ( $chart_ids as $rid ) {
 			$rid = absint( $rid );
 			if ( $rid <= 0 ) {
 				continue;
