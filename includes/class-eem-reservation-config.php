@@ -224,21 +224,110 @@ class EEM_Reservation_Config {
 	}
 
 	// ------------------------------------------------------------------
-	// Hydration (Phase 1: postmeta-backed)
+	// Hydration (Phase 2: relational table preferred, postmeta fallback)
 	// ------------------------------------------------------------------
 
 	/**
-	 * Read all config keys from postmeta and apply legacy fallbacks.
+	 * Hydrate config from the best available source.
 	 *
-	 * This is a direct delegation to EEM_Reservations_CPT::get_meta_values()
-	 * which already encapsulates all the legacy-fallback logic (event-source
-	 * inference, stall/RV pair resolution, date fallbacks, stay-type auto-enable,
-	 * legacy RV addon migration, etc.). The repo wraps it rather than duplicating it.
+	 * Phase 2: reads from the relational table when it exists and has a
+	 * row for this reservation. Falls back to postmeta (Phase 1 path)
+	 * for reservations not yet migrated or when the table doesn't exist.
 	 */
 	private function hydrate(): void {
+		if ( self::table_exists() && $this->hydrate_from_table() ) {
+			$this->hydrated = true;
+			return;
+		}
+
 		$cpt          = self::get_cpt_instance();
 		$this->data   = $cpt->get_meta_values( $this->reservation_id );
 		$this->hydrated = true;
+	}
+
+	/**
+	 * Read config from the relational table.
+	 *
+	 * @return bool True if a row was found and hydrated.
+	 */
+	private function hydrate_from_table(): bool {
+		global $wpdb;
+
+		$table = $wpdb->prefix . 'eem_reservation_config';
+		$row   = $wpdb->get_row(
+			$wpdb->prepare( "SELECT * FROM {$table} WHERE reservation_id = %d", $this->reservation_id ),
+			ARRAY_A
+		);
+
+		if ( ! $row ) {
+			return false;
+		}
+
+		$col_map  = self::column_map();
+		$json_set = array_flip( self::json_keys() );
+		$data     = array();
+
+		foreach ( $row as $key => $value ) {
+			if ( 'reservation_id' === $key || 'updated_at' === $key ) {
+				continue;
+			}
+
+			if ( 'extra_json' === $key ) {
+				if ( ! empty( $value ) ) {
+					$extra = json_decode( $value, true );
+					if ( is_array( $extra ) ) {
+						$data = array_merge( $data, $extra );
+					}
+				}
+				continue;
+			}
+
+			if ( isset( $json_set[ $key ] ) ) {
+				$data[ $key ] = ( null !== $value && '' !== $value ) ? json_decode( $value, true ) : array();
+				if ( ! is_array( $data[ $key ] ) ) {
+					$data[ $key ] = array();
+				}
+				continue;
+			}
+
+			if ( isset( $col_map[ $key ] ) ) {
+				$data[ $key ] = self::cast_from_db( $value, $col_map[ $key ] );
+				continue;
+			}
+
+			$data[ $key ] = $value;
+		}
+
+		// Merge defaults for any keys not present in the row.
+		$defaults   = self::defaults();
+		$this->data = array_merge( $defaults, $data );
+
+		return true;
+	}
+
+	/**
+	 * Cast a DB value back to the PHP type callers expect.
+	 *
+	 * @param mixed  $value DB value (always string from wpdb).
+	 * @param string $type  SQL column type from column_map().
+	 * @return mixed
+	 */
+	private static function cast_from_db( $value, string $type ) {
+		if ( null === $value ) {
+			if ( str_starts_with( $type, 'tinyint' ) || str_starts_with( $type, 'int' ) || str_starts_with( $type, 'bigint' ) ) {
+				return 0;
+			}
+			if ( str_starts_with( $type, 'decimal' ) ) {
+				return '0.00';
+			}
+			return '';
+		}
+
+		if ( str_starts_with( $type, 'tinyint' ) || str_starts_with( $type, 'int' ) || str_starts_with( $type, 'bigint' ) ) {
+			return (int) $value;
+		}
+
+		return (string) $value;
 	}
 
 	/**
