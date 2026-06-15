@@ -767,6 +767,12 @@ class EEM_Reservations_CPT {
 			update_post_meta( $post_id, self::section_enabled_meta_key( $key ), $value );
 		}
 
+		// Sync to relational table (postmeta decouple P2.4).
+		if ( EEM_Reservation_Config::table_exists() ) {
+			EEM_Reservation_Config::insert_from_values( $post_id, $data );
+			EEM_Reservation_Config::flush_cache( $post_id );
+		}
+
 		// Bidirectional one-to-one enforcement for TEC event links.
 		$this->enforce_tec_event_link_one_to_one( $post_id, $old_tec_event_id, $new_tec_event_id );
 

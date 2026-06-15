@@ -150,7 +150,10 @@ class EEM_Reservation_Config {
 	}
 
 	/**
-	 * Persist all dirty keys to storage (postmeta in Phase 1).
+	 * Persist all dirty keys to storage.
+	 *
+	 * Phase 2.4: writes to the relational table only. Falls back to
+	 * postmeta when the table doesn't exist (safety net).
 	 *
 	 * @return bool True if at least one key was written.
 	 */
@@ -159,20 +162,14 @@ class EEM_Reservation_Config {
 			return false;
 		}
 
-		foreach ( $this->dirty as $key => $_ ) {
-			$meta_key = EEM_Reservations_CPT::section_enabled_meta_key( $key );
-			$value    = $this->data[ $key ] ?? '';
-
-			if ( is_array( $value ) ) {
-				update_post_meta( $this->reservation_id, $meta_key, $value );
-			} else {
-				update_post_meta( $this->reservation_id, $meta_key, $value );
-			}
-		}
-
-		// Phase 2 dual-write: mirror full state to relational table.
 		if ( self::table_exists() ) {
 			self::insert_from_values( $this->reservation_id, $this->data );
+		} else {
+			foreach ( $this->dirty as $key => $_ ) {
+				$meta_key = EEM_Reservations_CPT::section_enabled_meta_key( $key );
+				$value    = $this->data[ $key ] ?? '';
+				update_post_meta( $this->reservation_id, $meta_key, $value );
+			}
 		}
 
 		$this->dirty = array();
