@@ -30,6 +30,7 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-notifications.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-venue.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-sheet-entries.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-stall-map-importer.php';
+require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-stall-status-repo.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-events.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-gems-client.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-equine-event-manager-admin.php';
