@@ -350,6 +350,16 @@ Native Events sources.
 | `id` | `bigint unsigned` | NO | auto | PK |
 | `name` | `varchar(191)` | NO | `''` | |
 | `normalized_key` | `varchar(191)` | NO | `''` | Lowercased deduplication key |
+| `address_1` | `varchar(255)` | NO | `''` | Street address line 1 |
+| `address_2` | `varchar(255)` | NO | `''` | Street address line 2 |
+| `city` | `varchar(100)` | NO | `''` | |
+| `state` | `varchar(100)` | NO | `''` | State / province |
+| `postal_code` | `varchar(20)` | NO | `''` | ZIP / postal code |
+| `phone` | `varchar(50)` | NO | `''` | |
+| `website` | `varchar(500)` | NO | `''` | |
+| `lat` | `double` | YES | `NULL` | Latitude (geocoded or manual) |
+| `lng` | `double` | YES | `NULL` | Longitude (geocoded or manual) |
+| `geocoded_address` | `varchar(500)` | NO | `''` | Last-geocoded address (cache key) |
 | `created_at` | `datetime` | NO | `CURRENT_TIMESTAMP` | |
 
 **Indexes:** `PRIMARY(id)`, `normalized_key`.
@@ -400,7 +410,7 @@ These entities use the WordPress CPT system. Listed for completeness:
 | `en_reservation` | Reservation events | **DECOUPLED** — config in `wp_eem_reservation_config`; only linkage keys remain in postmeta |
 | `en_entry` | Divisions/classes | Uses postmeta (26 calls); entrant ledger in `wp_eem_division_entries` |
 | `en_event` | Native Events | Uses postmeta (140+ calls across events class + editor) |
-| `en_venue` | Native Venues | Uses postmeta (14 calls in editor); canonical venue in `wp_eem_venues` |
+| `en_venue` | Native Venues | Detail decoupled into `wp_eem_venues` columns; canonical venue in `wp_eem_venues` |
 | `en_producer` | Native Producers | Uses postmeta (8 calls in editor) |
 
 ## Settings (WordPress `wp_options`)

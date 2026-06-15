@@ -241,6 +241,16 @@ class EEM_Activator {
 			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-019-drop-producer-postmeta.php';
 			eem_mig_019_drop_producer_postmeta();
 		}
+
+		if ( ! get_option( 'eem_mig_020_venue_detail_backfill_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-020-venue-detail-backfill.php';
+			eem_mig_020_venue_detail_backfill();
+		}
+
+		if ( ! get_option( 'eem_mig_021_drop_venue_detail_postmeta_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-021-drop-venue-detail-postmeta.php';
+			eem_mig_021_drop_venue_detail_postmeta();
+		}
 	}
 
 	/**

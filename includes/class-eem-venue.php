@@ -82,6 +82,16 @@ class EEM_Venue {
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 			name varchar(191) NOT NULL DEFAULT '',
 			normalized_key varchar(191) NOT NULL DEFAULT '',
+			address_1 varchar(255) NOT NULL DEFAULT '',
+			address_2 varchar(255) NOT NULL DEFAULT '',
+			city varchar(100) NOT NULL DEFAULT '',
+			state varchar(100) NOT NULL DEFAULT '',
+			postal_code varchar(20) NOT NULL DEFAULT '',
+			phone varchar(50) NOT NULL DEFAULT '',
+			website varchar(500) NOT NULL DEFAULT '',
+			lat double DEFAULT NULL,
+			lng double DEFAULT NULL,
+			geocoded_address varchar(500) NOT NULL DEFAULT '',
 			created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			PRIMARY KEY  (id),
 			KEY normalized_key (normalized_key)
@@ -608,5 +618,188 @@ class EEM_Venue {
 			return false;
 		}
 		return false !== $wpdb->delete( self::layouts_table(), array( 'id' => $layout_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB
+	}
+
+	/* ── Venue detail (address / geo / contact) ────────────────── */
+
+	/**
+	 * Detail column names stored on wp_eem_venues.
+	 *
+	 * @var string[]
+	 */
+	const DETAIL_FIELDS = array(
+		'address_1',
+		'address_2',
+		'city',
+		'state',
+		'postal_code',
+		'phone',
+		'website',
+		'lat',
+		'lng',
+		'geocoded_address',
+	);
+
+	/** @var array<int, array<string,mixed>> */
+	private static array $detail_cache = array();
+
+	/**
+	 * Resolve the canonical venue_id for an en_venue post ID.
+	 *
+	 * Checks the _eem_canonical_venue_id postmeta first (fast path), then
+	 * falls back to source_map lookup.
+	 *
+	 * @param int $post_id en_venue post ID.
+	 * @return int 0 if unresolvable.
+	 */
+	public static function venue_id_for_post( int $post_id ): int {
+		if ( $post_id <= 0 ) {
+			return 0;
+		}
+		$cached = (int) get_post_meta( $post_id, self::CANONICAL_VENUE_META, true );
+		if ( $cached > 0 ) {
+			return $cached;
+		}
+		global $wpdb;
+		$venue_id = (int) $wpdb->get_var( $wpdb->prepare(
+			'SELECT venue_id FROM ' . self::source_map_table() . ' WHERE source = %s AND source_venue_id = %s LIMIT 1',
+			'native',
+			(string) $post_id
+		) ); // phpcs:ignore WordPress.DB
+		return $venue_id > 0 ? $venue_id : 0;
+	}
+
+	/**
+	 * Get all detail fields for a venue.
+	 *
+	 * Accepts either a canonical venue_id or an en_venue post ID (resolved
+	 * transparently). Falls back to postmeta when the table lacks the row or
+	 * hasn't been upgraded yet.
+	 *
+	 * @param int  $id           Canonical venue_id OR en_venue post ID.
+	 * @param bool $is_post_id   True when $id is a post ID (default false).
+	 * @return array<string,mixed>
+	 */
+	public static function get_detail( int $id, bool $is_post_id = false ): array {
+		$defaults = array(
+			'address_1'        => '',
+			'address_2'        => '',
+			'city'             => '',
+			'state'            => '',
+			'postal_code'      => '',
+			'phone'            => '',
+			'website'          => '',
+			'lat'              => '',
+			'lng'              => '',
+			'geocoded_address' => '',
+		);
+
+		if ( $id <= 0 ) {
+			return $defaults;
+		}
+
+		$post_id  = $is_post_id ? $id : 0;
+		$venue_id = $is_post_id ? self::venue_id_for_post( $id ) : $id;
+
+		if ( $venue_id > 0 && isset( self::$detail_cache[ $venue_id ] ) ) {
+			return self::$detail_cache[ $venue_id ];
+		}
+
+		if ( $venue_id > 0 && self::table_has_detail_columns() ) {
+			$row = self::get( $venue_id );
+			if ( $row ) {
+				$detail = array();
+				foreach ( self::DETAIL_FIELDS as $f ) {
+					$detail[ $f ] = isset( $row[ $f ] ) ? (string) $row[ $f ] : '';
+				}
+				self::$detail_cache[ $venue_id ] = $detail;
+				return $detail;
+			}
+		}
+
+		if ( $post_id <= 0 ) {
+			return $defaults;
+		}
+		$detail = array();
+		foreach ( array( 'address_1', 'address_2', 'city', 'state', 'postal_code', 'phone', 'website' ) as $f ) {
+			$detail[ $f ] = (string) get_post_meta( $post_id, '_equine_event_manager_venue_' . $f, true );
+		}
+		$detail['lat']              = (string) get_post_meta( $post_id, '_en_venue_lat', true );
+		$detail['lng']              = (string) get_post_meta( $post_id, '_en_venue_lng', true );
+		$detail['geocoded_address'] = (string) get_post_meta( $post_id, '_en_venue_geocoded_address', true );
+		return $detail;
+	}
+
+	/**
+	 * Save detail fields for a venue.
+	 *
+	 * @param int                  $id         Canonical venue_id OR en_venue post ID.
+	 * @param array<string,mixed>  $data       Field => value pairs (only DETAIL_FIELDS keys accepted).
+	 * @param bool                 $is_post_id True when $id is a post ID.
+	 * @return bool
+	 */
+	public static function save_detail( int $id, array $data, bool $is_post_id = false ): bool {
+		if ( $id <= 0 ) {
+			return false;
+		}
+
+		$venue_id = $is_post_id ? self::venue_id_for_post( $id ) : $id;
+
+		$cols   = array();
+		$vals   = array();
+		$format = array();
+		foreach ( self::DETAIL_FIELDS as $f ) {
+			if ( ! array_key_exists( $f, $data ) ) {
+				continue;
+			}
+			$cols[] = $f;
+			if ( 'lat' === $f || 'lng' === $f ) {
+				$v = $data[ $f ];
+				if ( '' === $v || null === $v ) {
+					$vals[]   = null;
+					$format[] = '%s';
+				} else {
+					$vals[]   = (float) $v;
+					$format[] = '%f';
+				}
+			} else {
+				$vals[]   = (string) $data[ $f ];
+				$format[] = '%s';
+			}
+		}
+
+		if ( empty( $cols ) ) {
+			return false;
+		}
+
+		if ( $venue_id > 0 && self::table_has_detail_columns() ) {
+			global $wpdb;
+			$result = $wpdb->update( self::venues_table(), array_combine( $cols, $vals ), array( 'id' => $venue_id ), $format, array( '%d' ) ); // phpcs:ignore WordPress.DB
+			unset( self::$detail_cache[ $venue_id ] );
+			return false !== $result;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Check whether the venues table has the detail columns (post-upgrade guard).
+	 *
+	 * @return bool
+	 */
+	private static function table_has_detail_columns(): bool {
+		static $has = null;
+		if ( null !== $has ) {
+			return $has;
+		}
+		global $wpdb;
+		$col = $wpdb->get_var( $wpdb->prepare(
+			'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND COLUMN_NAME = %s',
+			DB_NAME,
+			self::venues_table(),
+			'address_1'
+		) ); // phpcs:ignore WordPress.DB
+		$has = ( null !== $col );
+		return $has;
 	}
 }

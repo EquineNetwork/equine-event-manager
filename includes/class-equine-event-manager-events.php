@@ -156,9 +156,10 @@ class EEM_Events {
 		if ( ! $venue_id ) {
 			return '';
 		}
-		$parts = array();
+		$detail = EEM_Venue::get_detail( $venue_id, true );
+		$parts  = array();
 		foreach ( array( 'address_1', 'address_2', 'city', 'state', 'postal_code' ) as $field ) {
-			$val = trim( (string) get_post_meta( $venue_id, '_equine_event_manager_venue_' . $field, true ) );
+			$val = trim( $detail[ $field ] );
 			if ( '' !== $val ) {
 				$parts[] = $val;
 			}
@@ -214,18 +215,21 @@ class EEM_Events {
 		if ( '' === $address ) {
 			return;
 		}
-		$last_geocoded = (string) get_post_meta( $venue_id, '_en_venue_geocoded_address', true );
-		$has_coords    = '' !== (string) get_post_meta( $venue_id, '_en_venue_lat', true );
+		$detail        = EEM_Venue::get_detail( $venue_id, true );
+		$last_geocoded = $detail['geocoded_address'];
+		$has_coords    = '' !== $detail['lat'];
 		if ( $has_coords && $last_geocoded === $address ) {
-			return; // address unchanged since last successful geocode.
+			return;
 		}
 		$coords = self::geocode_address( $address, $key );
 		if ( null === $coords ) {
 			return;
 		}
-		update_post_meta( $venue_id, '_en_venue_lat', $coords['lat'] );
-		update_post_meta( $venue_id, '_en_venue_lng', $coords['lng'] );
-		update_post_meta( $venue_id, '_en_venue_geocoded_address', $address );
+		EEM_Venue::save_detail( $venue_id, array(
+			'lat'              => $coords['lat'],
+			'lng'              => $coords['lng'],
+			'geocoded_address' => $address,
+		), true );
 	}
 
 	/**
@@ -1733,6 +1737,7 @@ class EEM_Events {
 			'website',
 		);
 
+		$detail_data = array();
 		foreach ( $fields as $field ) {
 			$value = isset( $_POST[ 'equine_event_manager_venue_' . $field ] ) ? wp_unslash( $_POST[ 'equine_event_manager_venue_' . $field ] ) : '';
 			if ( 'website' === $field ) {
@@ -1740,20 +1745,20 @@ class EEM_Events {
 			} else {
 				$value = sanitize_text_field( $value );
 			}
-			update_post_meta( $post_id, '_equine_event_manager_venue_' . $field, $value );
+			$detail_data[ $field ] = $value;
 		}
 
-		// Coordinates (Slice 3). A valid manual lat/lng pair always wins; clearing
-		// it falls back to auto-geocoding the address via Google (when a Maps key
-		// is configured). The geocoded-address cache marker is reset on manual
-		// entry so a later blank re-triggers geocoding.
 		$manual_lat = isset( $_POST['en_venue_lat'] ) ? trim( (string) wp_unslash( $_POST['en_venue_lat'] ) ) : '';
 		$manual_lng = isset( $_POST['en_venue_lng'] ) ? trim( (string) wp_unslash( $_POST['en_venue_lng'] ) ) : '';
 		if ( '' !== $manual_lat && '' !== $manual_lng && is_numeric( $manual_lat ) && is_numeric( $manual_lng ) ) {
-			update_post_meta( $post_id, '_en_venue_lat', (float) $manual_lat );
-			update_post_meta( $post_id, '_en_venue_lng', (float) $manual_lng );
-			update_post_meta( $post_id, '_en_venue_geocoded_address', '' );
-		} else {
+			$detail_data['lat']              = (float) $manual_lat;
+			$detail_data['lng']              = (float) $manual_lng;
+			$detail_data['geocoded_address'] = '';
+		}
+
+		EEM_Venue::save_detail( $post_id, $detail_data, true );
+
+		if ( ! isset( $detail_data['lat'] ) ) {
 			self::maybe_geocode_venue( $post_id );
 		}
 	}
@@ -2078,15 +2083,16 @@ class EEM_Events {
 	public function render_venue_details_meta_box( $post ) {
 		wp_nonce_field( 'equine_event_manager_save_venue_meta', self::VENUE_META_NONCE );
 
-		$address_1          = (string) get_post_meta( $post->ID, '_equine_event_manager_venue_address_1', true );
-		$address_2          = (string) get_post_meta( $post->ID, '_equine_event_manager_venue_address_2', true );
-		$city               = (string) get_post_meta( $post->ID, '_equine_event_manager_venue_city', true );
-		$state              = (string) get_post_meta( $post->ID, '_equine_event_manager_venue_state', true );
-		$postal_code        = (string) get_post_meta( $post->ID, '_equine_event_manager_venue_postal_code', true );
-		$phone              = (string) get_post_meta( $post->ID, '_equine_event_manager_venue_phone', true );
-		$website            = (string) get_post_meta( $post->ID, '_equine_event_manager_venue_website', true );
-		$venue_lat          = (string) get_post_meta( $post->ID, '_en_venue_lat', true );
-		$venue_lng          = (string) get_post_meta( $post->ID, '_en_venue_lng', true );
+		$detail             = EEM_Venue::get_detail( $post->ID, true );
+		$address_1          = $detail['address_1'];
+		$address_2          = $detail['address_2'];
+		$city               = $detail['city'];
+		$state              = $detail['state'];
+		$postal_code        = $detail['postal_code'];
+		$phone              = $detail['phone'];
+		$website            = $detail['website'];
+		$venue_lat          = $detail['lat'];
+		$venue_lng          = $detail['lng'];
 		$maps_key_set       = '' !== self::get_google_maps_api_key();
 		$linked_event_count = $this->count_linked_native_events( '_equine_event_manager_event_venue_id', $post->ID );
 		$location_label     = trim( implode( ', ', array_filter( array( $city, $state ) ) ) );
@@ -4225,41 +4231,26 @@ class EEM_Events {
 			);
 		}
 
-		$name = get_the_title( $venue_id );
+		$name   = get_the_title( $venue_id );
+		$detail = EEM_Venue::get_detail( $venue_id, true );
 
-		$city        = trim( (string) get_post_meta( $venue_id, '_equine_event_manager_venue_city', true ) );
-		$state       = trim( (string) get_post_meta( $venue_id, '_equine_event_manager_venue_state', true ) );
-		$postal_code = trim( (string) get_post_meta( $venue_id, '_equine_event_manager_venue_postal_code', true ) );
-		$city_state  = trim(
-			implode(
-				', ',
-				array_filter(
-					array(
-						$city,
-						$state,
-					)
-				)
-			)
-		);
+		$city        = trim( $detail['city'] );
+		$state       = trim( $detail['state'] );
+		$postal_code = trim( $detail['postal_code'] );
+		$city_state  = trim( implode( ', ', array_filter( array( $city, $state ) ) ) );
 
 		if ( '' !== $postal_code ) {
 			$city_state = trim( $city_state . ' ' . $postal_code );
 		}
 
-		$lines = array_filter(
-			array(
-				(string) get_post_meta( $venue_id, '_equine_event_manager_venue_address_1', true ),
-				(string) get_post_meta( $venue_id, '_equine_event_manager_venue_address_2', true ),
-				$city_state,
-			)
-		);
+		$lines = array_filter( array( $detail['address_1'], $detail['address_2'], $city_state ) );
 
 		return array(
 			'address_display' => implode( "\n", $lines ),
 			'map_query'       => implode( ', ', $lines ),
 			'filter_url'      => self::get_directory_url( self::DIRECTORY_LOCATION_ROUTE_BASE, $name ),
-			'lat'             => (string) get_post_meta( $venue_id, '_en_venue_lat', true ),
-			'lng'             => (string) get_post_meta( $venue_id, '_en_venue_lng', true ),
+			'lat'             => $detail['lat'],
+			'lng'             => $detail['lng'],
 		);
 	}
 
@@ -4622,10 +4613,9 @@ class EEM_Events {
 	 * @return string
 	 */
 	private static function get_venue_location_label( $venue_id ) {
-		$city  = (string) get_post_meta( $venue_id, '_equine_event_manager_venue_city', true );
-		$state = (string) get_post_meta( $venue_id, '_equine_event_manager_venue_state', true );
+		$detail = EEM_Venue::get_detail( (int) $venue_id, true );
 
-		return trim( implode( ', ', array_filter( array( $city, $state ) ) ) );
+		return trim( implode( ', ', array_filter( array( $detail['city'], $detail['state'] ) ) ) );
 	}
 
 	/**
@@ -4700,17 +4690,20 @@ class EEM_Events {
 		}
 
 		update_post_meta( $venue_id, '_equine_event_manager_imported_tec_venue_id', $tec_venue_id );
-		update_post_meta( $venue_id, '_equine_event_manager_venue_address_1', (string) get_post_meta( $tec_venue_id, '_VenueAddress', true ) );
-		update_post_meta( $venue_id, '_equine_event_manager_venue_address_2', (string) get_post_meta( $tec_venue_id, '_VenueAddress2', true ) );
-		update_post_meta( $venue_id, '_equine_event_manager_venue_city', (string) get_post_meta( $tec_venue_id, '_VenueCity', true ) );
+
 		$state = (string) get_post_meta( $tec_venue_id, '_VenueStateProvince', true );
 		if ( '' === $state ) {
 			$state = (string) get_post_meta( $tec_venue_id, '_VenueState', true );
 		}
-		update_post_meta( $venue_id, '_equine_event_manager_venue_state', $state );
-		update_post_meta( $venue_id, '_equine_event_manager_venue_postal_code', (string) get_post_meta( $tec_venue_id, '_VenueZip', true ) );
-		update_post_meta( $venue_id, '_equine_event_manager_venue_phone', (string) get_post_meta( $tec_venue_id, '_VenuePhone', true ) );
-		update_post_meta( $venue_id, '_equine_event_manager_venue_website', esc_url_raw( (string) get_post_meta( $tec_venue_id, '_VenueWebsite', true ) ) );
+		EEM_Venue::save_detail( (int) $venue_id, array(
+			'address_1'   => (string) get_post_meta( $tec_venue_id, '_VenueAddress', true ),
+			'address_2'   => (string) get_post_meta( $tec_venue_id, '_VenueAddress2', true ),
+			'city'        => (string) get_post_meta( $tec_venue_id, '_VenueCity', true ),
+			'state'       => $state,
+			'postal_code' => (string) get_post_meta( $tec_venue_id, '_VenueZip', true ),
+			'phone'       => (string) get_post_meta( $tec_venue_id, '_VenuePhone', true ),
+			'website'     => esc_url_raw( (string) get_post_meta( $tec_venue_id, '_VenueWebsite', true ) ),
+		), true );
 
 		return absint( $venue_id );
 	}

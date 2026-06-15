@@ -94,20 +94,14 @@ Last updated 2026-06-15, plugin version **2.7.318**.
   everything else hangs off. But the decoupling only affects the Native Events
   source; TEC/GEMS are already external.
 
-### 8. Native Venues (en_venue CPT) — **PARTIAL**
+### 8. Native Venues (en_venue CPT) — **DONE**
 
-- **Current storage:** `wp_postmeta` for address, geocoding, social links
-- **Relational:** `wp_eem_venues` + `wp_eem_venue_source_map` hold the
-  source-agnostic identity and cross-source mapping
-- **Call count:** 14 in venue editor page
-- **Keys:** `_equine_event_manager_venue_address`, `_equine_event_manager_venue_city`,
-  `_equine_event_manager_venue_state`, `_equine_event_manager_venue_zip`,
-  `_equine_event_manager_venue_country`, `_en_venue_lat`, `_en_venue_lng`,
-  `_en_venue_geocoded_address`
-- **Effort:** Small (~0.5 week). Few keys, mostly strings. Add columns to
-  `wp_eem_venues` or a sibling detail table.
-- **API priority:** Medium. Venue identity is already relational; the address/geo
-  detail would enrich the API response but isn't blocking.
+- **Table:** `wp_eem_venues` (detail columns: address_1, address_2, city, state,
+  postal_code, phone, website, lat, lng, geocoded_address)
+- **Repository:** `EEM_Venue::get_detail()` / `EEM_Venue::save_detail()`
+- **Postmeta calls:** 0 (fallback path in get_detail only fires pre-migration)
+- **Migrations:** mig-020 (backfill from postmeta), mig-021 (drop postmeta rows)
+- **API readiness:** Ready. Decoupled at v2.7.320.
 
 ### 9. Native Producers (en_producer CPT) — **DONE**
 
@@ -155,13 +149,12 @@ Last updated 2026-06-15, plugin version **2.7.318**.
 | 5 | Event Defaults | **DONE** | 0 | — | Ready |
 | 6 | Division Config | NOT STARTED | 26 | 0.5 wk | Medium |
 | 7 | Native Events | NOT STARTED | 166 | 1–1.5 wk | High |
-| 8 | Native Venues (detail) | PARTIAL | 14 | 0.5 wk | Medium |
+| 8 | Native Venues (detail) | **DONE** | 0 | — | Ready |
 | 9 | Producers | **DONE** | 0 | — | Ready |
 | 10 | Sheets & Results | **DONE** | 0 | — | Ready |
 | 11 | Settings | N/A | 0 | — | Ready |
 
-**Bottom line:** 7 of 10 business entities are fully decoupled and API-ready
-today. The remaining 3 (Division Config, Native Events, Native Venue detail)
-total ~2–2.5 weeks of work, but **none of them block the initial API layer** —
-the API can launch exposing the 7 ready entities and add the remaining 3
-incrementally as they're decoupled.
+**Bottom line:** 8 of 10 business entities are fully decoupled and API-ready
+today. The remaining 2 (Division Config, Native Events) total ~1.5–2 weeks of
+work, but **neither blocks the initial API layer** — the API can launch exposing
+the 8 ready entities and add the remaining 2 incrementally as they're decoupled.
