@@ -622,6 +622,20 @@ class EEM_Orders_Repository {
 
 			if ( 'stall' === $component['table'] ) {
 				$notes = $this->upsert_note_line( $notes, 'Assigned Stall Units', $stall_units );
+
+				// Sync stall status table: delete old rows, create new occupied rows.
+				EEM_Stall_Status_Repo::delete_for_order( (int) $component['row_id'] );
+				$unit_array = array_values( array_filter( array_map( 'trim', explode( ',', $stall_units ) ) ) );
+				if ( ! empty( $unit_array ) && ! empty( $order['stall_arrival_date'] ) && ! empty( $order['stall_departure_date'] ) ) {
+					EEM_Stall_Status_Repo::create_occupied(
+						(int) $order['reservation_id'],
+						(int) $component['row_id'],
+						$unit_array,
+						(string) $order['stall_arrival_date'],
+						(string) $order['stall_departure_date'],
+						get_current_user_id()
+					);
+				}
 			}
 
 			if ( 'rv' === $component['table'] ) {

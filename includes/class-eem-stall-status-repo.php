@@ -210,6 +210,19 @@ class EEM_Stall_Status_Repo {
 		foreach ( $stall_units as $unit ) {
 			$unit = sanitize_text_field( $unit );
 			foreach ( $dates as $date ) {
+				// Idempotent: skip if a row already exists for this stall+night+reservation.
+				$exists = $wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT 1 FROM {$table} WHERE reservation_id = %d AND stall_unit = %s AND night_date = %s LIMIT 1",
+						$reservation_id,
+						$unit,
+						$date
+					)
+				);
+				if ( $exists ) {
+					continue;
+				}
+
 				$result = $wpdb->insert(
 					$table,
 					array(

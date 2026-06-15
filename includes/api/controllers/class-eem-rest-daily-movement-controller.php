@@ -142,8 +142,12 @@ class EEM_REST_Daily_Movement_Controller extends EEM_REST_Controller {
 		$not_checked_in_count = (int) $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(*) FROM {$table} sr
-				 LEFT JOIN {$status_table} ss
-				   ON ss.order_id = sr.id AND ss.night_date = %s
+				 LEFT JOIN (
+				   SELECT order_id, MIN(status) AS status
+				   FROM {$status_table}
+				   WHERE night_date = %s
+				   GROUP BY order_id
+				 ) ss ON ss.order_id = sr.id
 				 WHERE sr.reservation_id = %d
 				   AND sr.arrival_date <= %s
 				   AND sr.departure_date >= %s

@@ -4113,6 +4113,21 @@ class EEM_Shortcodes {
 					'created_at'                => $created,
 				)
 			) || $inserted;
+
+				// Seed stall status rows so the check-in/out lifecycle starts at 'occupied'.
+				$stall_order_row_id = (int) $wpdb->insert_id;
+				if ( $stall_order_row_id > 0 && ! empty( $submission['preferred_stall_units'] ) ) {
+					$checkout_stall_units = array_values( array_filter( array_map( 'sanitize_text_field', (array) $submission['preferred_stall_units'] ) ) );
+					if ( ! empty( $checkout_stall_units ) ) {
+						EEM_Stall_Status_Repo::create_occupied(
+							absint( $reservation_id ),
+							$stall_order_row_id,
+							$checkout_stall_units,
+							(string) $submission['stall_arrival_date'],
+							(string) $submission['stall_departure_date']
+						);
+					}
+				}
 		}
 
 		if ( $has_rv_order ) {
