@@ -502,17 +502,23 @@ class EEM_Reservations_CPT {
 		$this->set_linked_reservation_for_event( $post_id, $reservation_id );
 
 		if ( $previous_reservation_id && $previous_reservation_id !== $reservation_id ) {
-			if ( 'native' === $this->get_effective_event_source_for_reservation( $previous_reservation_id ) && absint( get_post_meta( $previous_reservation_id, '_en_event_id', true ) ) === absint( $post_id ) ) {
-				update_post_meta( $previous_reservation_id, '_en_event_source', 'external' );
-				update_post_meta( $previous_reservation_id, '_en_use_global_event_source', 0 );
-				update_post_meta( $previous_reservation_id, '_en_event_id', 0 );
+			$prev_cfg = EEM_Reservation_Config::for( $previous_reservation_id );
+			if ( 'native' === $this->get_effective_event_source_for_reservation( $previous_reservation_id ) && absint( $prev_cfg->get( 'event_id', 0 ) ) === absint( $post_id ) ) {
+				$prev_cfg->set( 'event_source', 'external' )
+					->set( 'use_global_event_source', 0 )
+					->set( 'event_id', 0 )
+					->save();
+				EEM_Reservation_Config::flush_cache( $previous_reservation_id );
 			}
 		}
 
 		if ( $reservation_id && self::POST_TYPE === get_post_type( $reservation_id ) ) {
-			update_post_meta( $reservation_id, '_en_use_global_event_source', 0 );
-			update_post_meta( $reservation_id, '_en_event_source', 'native' );
-			update_post_meta( $reservation_id, '_en_event_id', $post_id );
+			$link_cfg = EEM_Reservation_Config::for( $reservation_id );
+			$link_cfg->set( 'use_global_event_source', 0 )
+				->set( 'event_source', 'native' )
+				->set( 'event_id', $post_id )
+				->save();
+			EEM_Reservation_Config::flush_cache( $reservation_id );
 		}
 	}
 
@@ -549,9 +555,10 @@ class EEM_Reservations_CPT {
 		// 2.3.52 — type-aware chart signal; replaces removed _en_stall_chart_enabled.
 		$stalls_enabled      = self::section_enabled( $post_id, 'stalls_enabled' );
 		$rv_enabled          = self::section_enabled( $post_id, 'rv_enabled' );
-		$stall_blocks        = get_post_meta( $post_id, '_en_stall_chart_stall_blocks', true );
+		$summary_cfg         = EEM_Reservation_Config::for( $post_id );
+		$stall_blocks        = $summary_cfg->get( 'stall_chart_stall_blocks', array() );
 		$stall_units         = $this->expand_chart_units( is_array( $stall_blocks ) ? $stall_blocks : array() );
-		$rv_lots             = get_post_meta( $post_id, '_en_rv_lots', true );
+		$rv_lots             = $summary_cfg->get( 'rv_lots', array() );
 		$rv_lot_names        = $this->get_chart_rv_lot_names( is_array( $rv_lots ) ? $rv_lots : array() );
 		$orders_repository   = new EEM_Orders_Repository();
 		$orders              = array_filter(
@@ -745,7 +752,7 @@ class EEM_Reservations_CPT {
 		// (ajax_unlink_event) — it must NEVER be a side effect of a normal save. So
 		// when the save submits no event but a link already exists, preserve it.
 		if ( 0 === $new_tec_event_id ) {
-			$existing_en_event_id = absint( get_post_meta( $post_id, '_en_event_id', true ) );
+			$existing_en_event_id = absint( EEM_Reservation_Config::for( $post_id )->get( 'event_id', 0 ) );
 			if ( $old_tec_event_id > 0 ) {
 				$new_tec_event_id  = $old_tec_event_id;
 				$data['event_id']  = $old_tec_event_id;
@@ -974,7 +981,7 @@ class EEM_Reservations_CPT {
 		}
 
 		$event_source = $this->get_effective_event_source_for_reservation( $post_id );
-		$event_id     = absint( get_post_meta( $post_id, '_en_event_id', true ) );
+		$event_id     = absint( EEM_Reservation_Config::for( $post_id )->get( 'event_id', 0 ) );
 		$shortcode    = $this->get_reservation_shortcode( $post_id );
 
 		if ( 'publish' !== $post->post_status ) {
@@ -1024,7 +1031,7 @@ class EEM_Reservations_CPT {
 		}
 
 		$event_source = $this->get_effective_event_source_for_reservation( $post_id );
-		$event_id     = absint( get_post_meta( $post_id, '_en_event_id', true ) );
+		$event_id     = absint( EEM_Reservation_Config::for( $post_id )->get( 'event_id', 0 ) );
 		$shortcode    = $this->get_reservation_shortcode( $post_id );
 
 		$this->debug_log(
@@ -2008,17 +2015,18 @@ class EEM_Reservations_CPT {
 	 * @return array{inventory_type:string, customer_selection:string, selection_mode:string}
 	 */
 	public static function resolve_stall_pair( int $post_id ): array {
-		$legacy = get_post_meta( $post_id, '_en_stall_selection_mode', true );
+		$cfg    = EEM_Reservation_Config::for( $post_id );
+		$legacy = $cfg->get( 'stall_selection_mode', '' );
 		$legacy = in_array( $legacy, array( 'quantity', 'exact_map' ), true ) ? $legacy : 'quantity';
 
 		if ( metadata_exists( 'post', $post_id, '_en_stall_inventory_type' ) ) {
-			$type = self::sanitize_stall_inventory_type( get_post_meta( $post_id, '_en_stall_inventory_type', true ) );
+			$type = self::sanitize_stall_inventory_type( $cfg->get( 'stall_inventory_type', '' ) );
 		} else {
 			$type = ( 'exact_map' === $legacy ) ? 'numbered' : 'quantity_only';
 		}
 
 		if ( metadata_exists( 'post', $post_id, '_en_stall_customer_selection' ) ) {
-			$sel = self::sanitize_stall_customer_selection( get_post_meta( $post_id, '_en_stall_customer_selection', true ) );
+			$sel = self::sanitize_stall_customer_selection( $cfg->get( 'stall_customer_selection', '' ) );
 		} else {
 			$sel = ( 'exact_map' === $legacy ) ? 'pick_layout' : 'quantity';
 		}
@@ -2085,17 +2093,18 @@ class EEM_Reservations_CPT {
 	 * @return array{inventory_type:string, customer_selection:string, selection_mode:string}
 	 */
 	public static function resolve_rv_pair( int $post_id ): array {
-		$legacy = get_post_meta( $post_id, '_en_rv_selection_mode', true );
+		$rv_cfg = EEM_Reservation_Config::for( $post_id );
+		$legacy = $rv_cfg->get( 'rv_selection_mode', '' );
 		$legacy = in_array( $legacy, array( 'quantity', 'exact_map' ), true ) ? $legacy : 'quantity';
 
 		if ( metadata_exists( 'post', $post_id, '_en_rv_inventory_type' ) ) {
-			$type = self::sanitize_rv_inventory_type( get_post_meta( $post_id, '_en_rv_inventory_type', true ) );
+			$type = self::sanitize_rv_inventory_type( $rv_cfg->get( 'rv_inventory_type', '' ) );
 		} else {
 			$type = ( 'exact_map' === $legacy ) ? 'mapped' : 'bulk';
 		}
 
 		if ( metadata_exists( 'post', $post_id, '_en_rv_customer_selection' ) ) {
-			$sel = self::sanitize_rv_customer_selection( get_post_meta( $post_id, '_en_rv_customer_selection', true ) );
+			$sel = self::sanitize_rv_customer_selection( $rv_cfg->get( 'rv_customer_selection', '' ) );
 		} else {
 			$sel = ( 'exact_map' === $legacy ) ? 'pick_layout' : 'quantity';
 		}
@@ -3457,7 +3466,10 @@ class EEM_Reservations_CPT {
 		if ( $new_tec_event_id ) {
 			$displaced_reservation_id = absint( get_post_meta( $new_tec_event_id, '_equine_event_manager_reservation_id', true ) );
 			if ( $displaced_reservation_id && $displaced_reservation_id !== absint( $reservation_id ) ) {
-				update_post_meta( $displaced_reservation_id, '_en_event_id', 0 );
+				EEM_Reservation_Config::for( $displaced_reservation_id )
+					->set( 'event_id', 0 )
+					->save();
+				EEM_Reservation_Config::flush_cache( $displaced_reservation_id );
 			}
 
 			// 2.3.79 — Write the event's reverse link to THIS reservation immediately.

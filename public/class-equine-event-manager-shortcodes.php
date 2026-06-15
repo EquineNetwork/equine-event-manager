@@ -175,6 +175,7 @@ class EEM_Shortcodes {
 		}
 
 		$data    = $this->get_reservation_meta( $reservation_id );
+		$cfg     = EEM_Reservation_Config::for( $reservation_id );
 		$this->active_reservation_id = (int) $reservation_id;
 		$status  = $this->get_reservation_status( $data, $reservation_id );
 		$message = '';
@@ -200,10 +201,10 @@ class EEM_Shortcodes {
 		// C10.D — "Pick Your Stalls" picker data, from the canonical _en_stall_rows
 		// row builder (replaces the legacy block-range selector). Blocked = admin;
 		// reserved = units occupied by existing orders for this reservation.
-		$stall_rows_raw             = get_post_meta( $reservation_id, '_en_stall_rows', true );
+		$stall_rows_raw             = $cfg->get( 'stall_rows' );
 		$stall_picker_rows          = is_array( $stall_rows_raw ) ? $stall_rows_raw : array();
 		$stall_picker_blocked       = array();
-		foreach ( (array) get_post_meta( $reservation_id, '_en_blocked_stalls', true ) as $eem_blk ) {
+		foreach ( (array) $cfg->get( 'blocked_stalls' ) as $eem_blk ) {
 			$stall_picker_blocked[ (string) $eem_blk ] = true;
 		}
 		$stall_picker_reserved      = array();
@@ -883,7 +884,7 @@ class EEM_Shortcodes {
 												}
 												$eem_rv_blocked = array();
 												foreach ( array_merge(
-													(array) get_post_meta( (int) $reservation_id, '_en_stall_chart_blocked_rv_units', true ),
+													(array) $cfg->get( 'stall_chart_blocked_rv_units' ),
 													(array) get_post_meta( (int) $reservation_id, '_en_stall_chart_blocked_rv_lots', true )
 												) as $eem_brl ) {
 													$eem_brl = (string) $eem_brl;
@@ -5350,8 +5351,9 @@ RV Lot: " . $rv_lot['name'] );
 		// own receipt line. The order total is unchanged (stall_subtotal already
 		// includes shavings); this only restores the correct per-line split the
 		// confirmation/receipt templates render.
-		$required_price                = $reservation_id ? (float) get_post_meta( $reservation_id, '_en_required_shavings_price', true ) : 0.0;
-		$additional_price              = $reservation_id ? (float) get_post_meta( $reservation_id, '_en_additional_shavings_price', true ) : 0.0;
+		$cfg_stall                     = $reservation_id ? EEM_Reservation_Config::for( $reservation_id ) : null;
+		$required_price                = $cfg_stall ? (float) $cfg_stall->get( 'required_shavings_price' ) : 0.0;
+		$additional_price              = $cfg_stall ? (float) $cfg_stall->get( 'additional_shavings_price' ) : 0.0;
 		$required_shavings_qty         = 0;
 		$additional_shavings_qty       = 0;
 		$required_shavings_subtotal    = 0.0;

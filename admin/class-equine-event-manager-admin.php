@@ -1538,7 +1538,8 @@ class EEM_Admin {
 		);
 
 		foreach ( $reservation_ids as $reservation_id ) {
-			$event_id         = absint( get_post_meta( $reservation_id, '_en_event_id', true ) );
+			$_cfg             = EEM_Reservation_Config::for( $reservation_id );
+			$event_id         = absint( $_cfg->get( 'event_id', 0 ) );
 			$native_event_id  = absint( get_post_meta( $reservation_id, '_en_native_event_id', true ) );
 			$stall_chart      = EEM_Reservations_CPT::section_enabled( $reservation_id, 'stalls_enabled' );
 			$rv_lot_selection = EEM_Reservations_CPT::section_enabled( $reservation_id, 'rv_enabled' );
@@ -3210,10 +3211,11 @@ class EEM_Admin {
 				// Stalls: also clear the editor's Blocked Stall Numbers field so a
 				// stall blocked there can be unblocked from the map.
 				if ( ! $is_rv ) {
-					$editor_blocked = get_post_meta( $reservation_id, '_en_blocked_stalls', true );
+					$_cfg = EEM_Reservation_Config::for( $reservation_id );
+					$editor_blocked = $_cfg->get( 'blocked_stalls' );
 					if ( is_array( $editor_blocked ) ) {
 						$editor_blocked = array_values( array_diff( array_map( 'strval', $editor_blocked ), array( $stall ) ) );
-						update_post_meta( $reservation_id, '_en_blocked_stalls', $editor_blocked );
+						$_cfg->set( 'blocked_stalls', $editor_blocked )->save();
 					}
 				}
 				$message = $is_rv ? __( 'Lot unblocked.', 'equine-event-manager' ) : __( 'Stall unblocked.', 'equine-event-manager' );
@@ -4358,7 +4360,8 @@ class EEM_Admin {
 				continue;
 			}
 
-			$stall_rows = get_post_meta( $rid, '_en_stall_rows', true );
+			$cfg        = EEM_Reservation_Config::for( $rid );
+			$stall_rows = $cfg->get( 'stall_rows' );
 			$has_rows   = is_array( $stall_rows ) && ! empty( $stall_rows );
 
 			// Barn names from stall rows
@@ -4372,7 +4375,7 @@ class EEM_Admin {
 			}
 
 			// RV zone names
-			$rv_zones      = get_post_meta( $rid, '_en_rv_zones', true );
+			$rv_zones      = $cfg->get( 'rv_zones' );
 			$rv_zone_names = array();
 			if ( is_array( $rv_zones ) ) {
 				foreach ( $rv_zones as $zone ) {
@@ -4533,9 +4536,10 @@ class EEM_Admin {
 
 			// Configured = has a stall-row layout OR named RV zones (matches
 			// get_stall_charts_list_data()).
-			$stall_rows = get_post_meta( $rid, '_en_stall_rows', true );
+			$cfg        = EEM_Reservation_Config::for( $rid );
+			$stall_rows = $cfg->get( 'stall_rows' );
 			$has_rows   = is_array( $stall_rows ) && ! empty( $stall_rows );
-			$rv_zones   = get_post_meta( $rid, '_en_rv_zones', true );
+			$rv_zones   = $cfg->get( 'rv_zones' );
 			$has_zones  = is_array( $rv_zones ) && ! empty( array_filter( array_column( $rv_zones, 'name' ) ) );
 
 			if ( ! $has_rows && ! $has_zones ) {
@@ -4937,14 +4941,15 @@ class EEM_Admin {
 		$rv_lot_names = array();
 
 		// ── Stall units: V1 _en_stall_rows wins; legacy _en_stall_chart_stall_blocks is fallback ── //
-		$v1_stall_rows = get_post_meta( $reservation_id, '_en_stall_rows', true );
+		$cfg           = EEM_Reservation_Config::for( $reservation_id );
+		$v1_stall_rows = $cfg->get( 'stall_rows' );
 		if ( is_array( $v1_stall_rows ) && ! empty( $v1_stall_rows ) ) {
 			$stall_units = $this->expand_v1_stall_rows( $v1_stall_rows );
 			$barn_map    = $this->build_barn_map_from_v1_rows( $v1_stall_rows );
 			$barn_names  = array_values( array_unique( array_filter( array_column( $v1_stall_rows, 'name' ) ) ) );
 			$stall_blocks = array(); // V1 rows supersede blocks; keep for legacy callers.
 		} else {
-			$stall_blocks = get_post_meta( $reservation_id, '_en_stall_chart_stall_blocks', true );
+			$stall_blocks = $cfg->get( 'stall_chart_stall_blocks' );
 			if ( is_array( $stall_blocks ) && ! empty( $stall_blocks ) ) {
 				$stall_units = $this->expand_stall_chart_units( $stall_blocks );
 				$barn_map    = $this->map_stall_chart_unit_blocks( $stall_blocks );
@@ -5039,9 +5044,9 @@ class EEM_Admin {
 		}
 
 		// ── Blocked stalls: try legacy key first, fall back to V1 key ─────── //
-		$blocked_stall_units = get_post_meta( $reservation_id, '_en_stall_chart_blocked_stall_units', true );
+		$blocked_stall_units = $cfg->get( 'stall_chart_blocked_stall_units' );
 		if ( ! is_array( $blocked_stall_units ) || empty( $blocked_stall_units ) ) {
-			$v1_blocked = get_post_meta( $reservation_id, '_en_blocked_stalls', true );
+			$v1_blocked = $cfg->get( 'blocked_stalls' );
 			if ( is_array( $v1_blocked ) ) {
 				$blocked_stall_units = $v1_blocked;
 			}
@@ -5049,20 +5054,20 @@ class EEM_Admin {
 
 		// ── RV lots: V1 _en_rv_rows wins; legacy _en_rv_lots is fallback ──── //
 		$rv_lots = array();
-		$v1_rv_rows = get_post_meta( $reservation_id, '_en_rv_rows', true );
+		$v1_rv_rows = $cfg->get( 'rv_rows' );
 		if ( is_array( $v1_rv_rows ) && ! empty( $v1_rv_rows ) ) {
 			$rv_lot_names = $this->expand_rv_lot_names_from_v1_rows( $v1_rv_rows );
 		} else {
-			$rv_lots = get_post_meta( $reservation_id, '_en_rv_lots', true );
+			$rv_lots = $cfg->get( 'rv_lots' );
 			if ( is_array( $rv_lots ) && ! empty( $rv_lots ) ) {
 				$rv_lot_names = $this->get_stall_chart_rv_lot_names( $rv_lots );
 			}
 		}
 
 		// ── Blocked RV: try legacy key first, fall back to V1 key ─────────── //
-		$blocked_rv_lots = get_post_meta( $reservation_id, '_en_stall_chart_blocked_rv_units', true );
+		$blocked_rv_lots = $cfg->get( 'stall_chart_blocked_rv_units' );
 		if ( ! is_array( $blocked_rv_lots ) || empty( $blocked_rv_lots ) ) {
-			$v1_blocked_rv = get_post_meta( $reservation_id, '_en_blocked_rv_lots', true );
+			$v1_blocked_rv = $cfg->get( 'blocked_rv_lots' );
 			if ( is_array( $v1_blocked_rv ) ) {
 				$blocked_rv_lots = $v1_blocked_rv;
 			}
@@ -6661,8 +6666,9 @@ class EEM_Admin {
 	 * @return array
 	 */
 	private function get_stall_chart_date_columns( $reservation_id, $rows ) {
-		$start_date = get_post_meta( $reservation_id, '_en_available_start_date', true );
-		$end_date   = get_post_meta( $reservation_id, '_en_available_end_date', true );
+		$cfg        = EEM_Reservation_Config::for( $reservation_id );
+		$start_date = $cfg->get( 'available_start_date' );
+		$end_date   = $cfg->get( 'available_end_date' );
 		$keys       = array();
 
 		if ( $start_date && $end_date ) {
@@ -7156,25 +7162,26 @@ class EEM_Admin {
 	 * @return array
 	 */
 	private function get_reservation_meta_values( $reservation_id ) {
+		$cfg  = EEM_Reservation_Config::for( $reservation_id );
 		$data = array(
 			'event_source'                => $this->get_effective_reservation_event_source( $reservation_id ),
-			'event_id'                    => absint( get_post_meta( $reservation_id, '_en_event_id', true ) ),
-			'external_event_name'         => (string) get_post_meta( $reservation_id, '_en_external_event_name', true ),
-			'available_start_date'        => (string) get_post_meta( $reservation_id, '_en_available_start_date', true ),
-			'available_end_date'          => (string) get_post_meta( $reservation_id, '_en_available_end_date', true ),
+			'event_id'                    => absint( $cfg->get( 'event_id' ) ),
+			'external_event_name'         => (string) $cfg->get( 'external_event_name' ),
+			'available_start_date'        => (string) $cfg->get( 'available_start_date' ),
+			'available_end_date'          => (string) $cfg->get( 'available_end_date' ),
 			'stalls_enabled'              => EEM_Reservations_CPT::section_enabled( $reservation_id, 'stalls_enabled' ) ? 1 : 0,
 			'rv_enabled'                  => EEM_Reservations_CPT::section_enabled( $reservation_id, 'rv_enabled' ) ? 1 : 0,
 			'general_addons_enabled'      => EEM_Reservations_CPT::section_enabled( $reservation_id, 'general_addons_enabled' ) ? 1 : 0,
 			'group_reservations_enabled'  => EEM_Reservations_CPT::section_enabled( $reservation_id, 'group_reservations_enabled' ) ? 1 : 0,
-			'group_rider_grounds_fee_enabled' => ! empty( get_post_meta( $reservation_id, '_en_group_rider_grounds_fee_enabled', true ) ) ? 1 : 0,
-			'group_rider_grounds_fee_amount'  => (string) get_post_meta( $reservation_id, '_en_group_rider_grounds_fee_amount', true ),
-			'group_rider_deposit_enabled'     => ! empty( get_post_meta( $reservation_id, '_en_group_rider_deposit_enabled', true ) ) ? 1 : 0,
-			'group_rider_deposit_amount'      => (string) get_post_meta( $reservation_id, '_en_group_rider_deposit_amount', true ),
-			'general_addons'              => get_post_meta( $reservation_id, '_en_general_addons', true ),
-			'rv_addons'                   => get_post_meta( $reservation_id, '_en_rv_addons', true ),
-			'rv_lots'                     => get_post_meta( $reservation_id, '_en_rv_lots', true ),
-			'stall_inventory'             => get_post_meta( $reservation_id, '_en_stall_inventory', true ),
-			'rv_inventory'                => get_post_meta( $reservation_id, '_en_rv_inventory', true ),
+			'group_rider_grounds_fee_enabled' => ! empty( $cfg->get( 'group_rider_grounds_fee_enabled' ) ) ? 1 : 0,
+			'group_rider_grounds_fee_amount'  => (string) $cfg->get( 'group_rider_grounds_fee_amount' ),
+			'group_rider_deposit_enabled'     => ! empty( $cfg->get( 'group_rider_deposit_enabled' ) ) ? 1 : 0,
+			'group_rider_deposit_amount'      => (string) $cfg->get( 'group_rider_deposit_amount' ),
+			'general_addons'              => $cfg->get( 'general_addons' ),
+			'rv_addons'                   => $cfg->get( 'rv_addons' ),
+			'rv_lots'                     => $cfg->get( 'rv_lots' ),
+			'stall_inventory'             => $cfg->get( 'stall_inventory' ),
+			'rv_inventory'                => $cfg->get( 'rv_inventory' ),
 		);
 
 		if ( ! is_array( $data['general_addons'] ) ) {
@@ -7501,8 +7508,9 @@ class EEM_Admin {
 	 * @return string
 	 */
 	private function get_effective_reservation_event_source( $reservation_id ) {
-		$use_global_event_source = ! empty( get_post_meta( $reservation_id, '_en_use_global_event_source', true ) );
-		$event_source            = sanitize_key( (string) get_post_meta( $reservation_id, '_en_event_source', true ) );
+		$cfg                     = EEM_Reservation_Config::for( $reservation_id );
+		$use_global_event_source = ! empty( $cfg->get( 'use_global_event_source' ) );
+		$event_source            = sanitize_key( (string) $cfg->get( 'event_source' ) );
 		$allowed_sources         = array( 'native', 'tec', 'feed', 'external' );
 
 		if ( $use_global_event_source || ! in_array( $event_source, $allowed_sources, true ) ) {

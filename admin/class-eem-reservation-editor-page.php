@@ -203,8 +203,9 @@ class EEM_Reservation_Editor_Page {
 		// links via _en_external_event_id instead of the TEC post id.
 		$_active_source        = class_exists( 'EEM_Events' ) ? EEM_Events::get_default_event_source() : 'tec';
 		$_is_feed_source       = ( 'feed' === $_active_source );
-		$current_external_id   = (string) get_post_meta( $reservation_id, '_en_external_event_id', true );
-		$current_external_name = (string) get_post_meta( $reservation_id, '_en_external_event_name', true );
+		$cfg                   = EEM_Reservation_Config::for( $reservation_id );
+		$current_external_id   = (string) $cfg->get( 'external_event_id', '' );
+		$current_external_name = (string) $cfg->get( 'external_event_name', '' );
 		if ( $_is_feed_source ) {
 			$_search_nonce  = wp_create_nonce( 'equine_event_manager_search_feed_events' );
 			$_search_action = 'equine_event_manager_search_feed_events';
@@ -219,8 +220,8 @@ class EEM_Reservation_Editor_Page {
 		//   - native / TEC sources  -> `_en_event_id`
 		//   - feed / external source -> `_en_external_event_id`
 		//   - belt-and-braces: a TEC event reverse-lookup hit.
-		$has_linked_event = ( absint( get_post_meta( $reservation_id, '_en_event_id', true ) ) > 0 )
-			|| ( '' !== trim( (string) get_post_meta( $reservation_id, '_en_external_event_id', true ) ) )
+		$has_linked_event = ( absint( $cfg->get( 'event_id', 0 ) ) > 0 )
+			|| ( '' !== trim( (string) $cfg->get( 'external_event_id', '' ) ) )
 			|| ( $current_tec_event_id > 0 );
 		?>
 		<div class="eem-page">
@@ -925,6 +926,8 @@ class EEM_Reservation_Editor_Page {
 			wp_send_json_error( array( 'message' => __( 'Reservation not found.', 'equine-event-manager' ) ), 404 );
 		}
 
+		$cfg = EEM_Reservation_Config::for( $reservation_id );
+
 		// One-to-one guard: refuse to link an event that already has another
 		// active (non-trashed) reservation. The event picker hides taken events
 		// client-side; this is the server-side backstop against double-booking
@@ -1087,6 +1090,8 @@ class EEM_Reservation_Editor_Page {
 				$eem_diff_before,
 				$cpt->get_meta_values( $reservation_id )
 			);
+			EEM_Reservation_Config::flush_cache( $reservation_id );
+			$cfg = EEM_Reservation_Config::for( $reservation_id );
 		}
 
 		// ── C8 mapped-layout meta (not routed through en_reservation[]) ──
@@ -1111,14 +1116,14 @@ class EEM_Reservation_Editor_Page {
 					'bot_last'  => sanitize_text_field( (string) ( $row['bot_last']  ?? '' ) ),
 				);
 			}
-			update_post_meta( $reservation_id, '_en_stall_rows', $stall_rows_clean );
+			$cfg->set( 'stall_rows', $stall_rows_clean );
 		}
 
 		// Blocked stalls
 		if ( isset( $_POST['eem_blocked_stalls'] ) ) {
 			$bs_raw = wp_unslash( $_POST['eem_blocked_stalls'] );
 			$blocked_stalls_clean = array_map( 'sanitize_text_field', (array) $bs_raw );
-			update_post_meta( $reservation_id, '_en_blocked_stalls', array_values( array_filter( $blocked_stalls_clean ) ) );
+			$cfg->set( 'blocked_stalls', array_values( array_filter( $blocked_stalls_clean ) ) );
 		}
 
 		// Scenario B (V1 #4): two independent settings — Stall Inventory Type +
@@ -1138,9 +1143,9 @@ class EEM_Reservation_Editor_Page {
 			if ( 'quantity_only' === $inv_type ) {
 				$cust_sel = 'quantity'; // pick-from-layout requires numbered stalls.
 			}
-			update_post_meta( $reservation_id, '_en_stall_inventory_type', $inv_type );
-			update_post_meta( $reservation_id, '_en_stall_customer_selection', $cust_sel );
-			update_post_meta( $reservation_id, '_en_stall_selection_mode', EEM_Reservations_CPT::derive_stall_selection_mode( $inv_type, $cust_sel ) );
+			$cfg->set( 'stall_inventory_type', $inv_type );
+			$cfg->set( 'stall_customer_selection', $cust_sel );
+			$cfg->set( 'stall_selection_mode', EEM_Reservations_CPT::derive_stall_selection_mode( $inv_type, $cust_sel ) );
 		}
 
 		// v4 RV two-control — the editor posts rv_inventory_type (bulk|mapped) +
@@ -1159,31 +1164,31 @@ class EEM_Reservation_Editor_Page {
 			if ( 'bulk' === $rv_inv_type ) {
 				$rv_cust_sel = 'quantity';
 			}
-			update_post_meta( $reservation_id, '_en_rv_inventory_type', $rv_inv_type );
-			update_post_meta( $reservation_id, '_en_rv_customer_selection', $rv_cust_sel );
-			update_post_meta( $reservation_id, '_en_rv_selection_mode', EEM_Reservations_CPT::derive_rv_selection_mode( $rv_inv_type, $rv_cust_sel ) );
+			$cfg->set( 'rv_inventory_type', $rv_inv_type );
+			$cfg->set( 'rv_customer_selection', $rv_cust_sel );
+			$cfg->set( 'rv_selection_mode', EEM_Reservations_CPT::derive_rv_selection_mode( $rv_inv_type, $rv_cust_sel ) );
 		}
 
 		// Max stalls per customer — Enforced at checkout (C10 scope) — zero/empty = unlimited.
 		if ( array_key_exists( 'eem_stall_max_per_customer', $_POST ) ) {
 			$smax = absint( wp_unslash( $_POST['eem_stall_max_per_customer'] ) );
-			update_post_meta( $reservation_id, '_en_stall_max_per_customer', $smax > 0 ? $smax : '' );
+			$cfg->set( 'stall_max_per_customer', $smax > 0 ? $smax : '' );
 		}
 
 		// Max RV lots per customer — Enforced at checkout (C10 scope) — zero/empty = unlimited.
 		if ( array_key_exists( 'eem_rv_max_per_customer', $_POST ) ) {
 			$rmax = absint( wp_unslash( $_POST['eem_rv_max_per_customer'] ) );
-			update_post_meta( $reservation_id, '_en_rv_max_per_customer', $rmax > 0 ? $rmax : '' );
+			$cfg->set( 'rv_max_per_customer', $rmax > 0 ? $rmax : '' );
 		}
 
 		// Stall map attachment ID
 		if ( isset( $_POST['eem_stall_map_id'] ) ) {
-			update_post_meta( $reservation_id, '_en_stall_map_id', absint( wp_unslash( $_POST['eem_stall_map_id'] ) ) );
+			$cfg->set( 'stall_map_id', absint( wp_unslash( $_POST['eem_stall_map_id'] ) ) );
 		}
 
 		// RV lot map attachment ID (2.3.23)
 		if ( isset( $_POST['eem_rv_lot_map_id'] ) ) {
-			update_post_meta( $reservation_id, '_en_rv_lot_map_id', absint( wp_unslash( $_POST['eem_rv_lot_map_id'] ) ) );
+			$cfg->set( 'rv_lot_map_id', absint( wp_unslash( $_POST['eem_rv_lot_map_id'] ) ) );
 		}
 
 		// RV zones
@@ -1201,7 +1206,7 @@ class EEM_Reservation_Editor_Page {
 					'available_qty' => absint( $zone['available_qty'] ?? 0 ),
 				);
 			}
-			update_post_meta( $reservation_id, '_en_rv_zones', $rv_zones_clean );
+			$cfg->set( 'rv_zones', $rv_zones_clean );
 		}
 
 		// RV rows
@@ -1225,14 +1230,14 @@ class EEM_Reservation_Editor_Page {
 					'zone_id'   => sanitize_text_field( (string) ( $row['zone_id']   ?? '' ) ),
 				);
 			}
-			update_post_meta( $reservation_id, '_en_rv_rows', $rv_rows_clean );
+			$cfg->set( 'rv_rows', $rv_rows_clean );
 		}
 
 		// Blocked RV lots
 		if ( isset( $_POST['eem_blocked_rv_lots'] ) ) {
 			$bl_raw = wp_unslash( $_POST['eem_blocked_rv_lots'] );
 			$blocked_rv_clean = array_map( 'sanitize_text_field', (array) $bl_raw );
-			update_post_meta( $reservation_id, '_en_blocked_rv_lots', array_values( array_filter( $blocked_rv_clean ) ) );
+			$cfg->set( 'blocked_rv_lots', array_values( array_filter( $blocked_rv_clean ) ) );
 		}
 
 		// V2 BACKLOG — RV per-lot zone assignments (Paint Mode) removed in V1 (2.3.22).
@@ -1241,6 +1246,8 @@ class EEM_Reservation_Editor_Page {
 		// C10 ENFORCEMENT CONTRACT: rows with no zone_id = lots in that row are unavailable.
 		// See: docs/c10-contracts.md
 
+
+		$cfg->save();
 
 		// FIX 2 (2.3.43/2.3.44) — Unconditional name/slug auto-mirror on every save.
 		// Logic extracted into apply_mirror() so the same path fires on ajax_save(),
