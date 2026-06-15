@@ -45,6 +45,9 @@ class EEM_Activator {
 		if ( class_exists( 'EEM_Sheet_Entries' ) ) {
 			EEM_Sheet_Entries::create_table();
 		}
+		if ( class_exists( 'EEM_Reservation_Config' ) ) {
+			EEM_Reservation_Config::create_table();
+		}
 		self::maybe_refresh_native_event_rewrite_rules();
 		self::run_one_time_migrations();
 		update_option( self::DB_VERSION_OPTION, EQUINE_EVENT_MANAGER_VERSION );
@@ -214,6 +217,11 @@ class EEM_Activator {
 		if ( ! get_option( 'eem_mig_015_native_venue_unify_complete' ) ) {
 			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-015-native-venue-unify.php';
 			eem_mig_015_native_venue_unify();
+		}
+
+		if ( ! get_option( 'eem_mig_016_reservation_config_table_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-016-reservation-config-table.php';
+			eem_mig_016_reservation_config_table();
 		}
 	}
 

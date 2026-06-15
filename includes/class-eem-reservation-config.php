@@ -170,6 +170,11 @@ class EEM_Reservation_Config {
 			}
 		}
 
+		// Phase 2 dual-write: mirror full state to relational table.
+		if ( self::table_exists() ) {
+			self::insert_from_values( $this->reservation_id, $this->data );
+		}
+
 		$this->dirty = array();
 		return true;
 	}
@@ -449,5 +454,337 @@ class EEM_Reservation_Config {
 		) );
 
 		return ! empty( $query->posts ) ? absint( $query->posts[0] ) : 0;
+	}
+
+	// ------------------------------------------------------------------
+	// Phase 2: Relational table (schema + dual-write)
+	// ------------------------------------------------------------------
+
+	/**
+	 * Column map: short config key → SQL column definition.
+	 *
+	 * Scalar keys become typed columns; array/blob keys become JSON columns.
+	 * Keys not listed here are stored in the catch-all `extra_json` column.
+	 *
+	 * @return array<string,string> key → column type fragment
+	 */
+	private static function column_map(): array {
+		return array(
+			// Event linkage.
+			'use_global_event_source'        => 'tinyint(1)',
+			'event_source'                   => 'varchar(32)',
+			'event_id'                       => 'varchar(191)',
+			'event_feed_url'                 => 'varchar(2048)',
+			'external_event_name'            => 'varchar(255)',
+			'external_event_id'              => 'varchar(191)',
+			// Section toggles.
+			'stalls_enabled'                 => 'tinyint(1)',
+			'rv_enabled'                     => 'tinyint(1)',
+			// Selection modes.
+			'stall_selection_mode'           => 'varchar(32)',
+			'stall_inventory_type'           => 'varchar(32)',
+			'stall_customer_selection'       => 'varchar(32)',
+			'rv_selection_mode'              => 'varchar(32)',
+			'rv_inventory_type'              => 'varchar(32)',
+			'rv_customer_selection'          => 'varchar(32)',
+			// Stay-type toggles.
+			'nightly_enabled'                => 'tinyint(1)',
+			'weekend_enabled'                => 'tinyint(1)',
+			'weekly_enabled'                 => 'tinyint(1)',
+			'stall_nightly_enabled'          => 'tinyint(1)',
+			'stall_weekend_enabled'          => 'tinyint(1)',
+			'stall_weekly_enabled'           => 'tinyint(1)',
+			'rv_nightly_enabled'             => 'tinyint(1)',
+			'rv_weekend_enabled'             => 'tinyint(1)',
+			'rv_weekly_enabled'              => 'tinyint(1)',
+			// Dates.
+			'available_start_date'           => 'varchar(20)',
+			'available_end_date'             => 'varchar(20)',
+			'weekend_package_start_date'     => 'varchar(20)',
+			'weekend_package_end_date'       => 'varchar(20)',
+			'stall_weekend_package_start_date' => 'varchar(20)',
+			'stall_weekend_package_end_date'   => 'varchar(20)',
+			'rv_weekend_package_start_date'    => 'varchar(20)',
+			'rv_weekend_package_end_date'      => 'varchar(20)',
+			'stall_weekly_package_start_date'  => 'varchar(20)',
+			'stall_weekly_package_end_date'    => 'varchar(20)',
+			'rv_weekly_package_start_date'     => 'varchar(20)',
+			'rv_weekly_package_end_date'       => 'varchar(20)',
+			'available_dates_manually_edited'  => 'tinyint(1)',
+			'sync_stay_selections'             => 'tinyint(1)',
+			// Stall descriptions / schedule.
+			'stall_description'              => 'text',
+			'stall_schedule_enabled'         => 'tinyint(1)',
+			'stalls_open_at'                 => 'varchar(10)',
+			'stalls_close_at'                => 'varchar(10)',
+			'stall_inventory'                => 'varchar(20)',
+			// RV descriptions / schedule.
+			'rv_description'                 => 'text',
+			'rv_schedule_enabled'            => 'tinyint(1)',
+			'rv_open_at'                     => 'varchar(10)',
+			'rv_close_at'                    => 'varchar(10)',
+			'rv_inventory'                   => 'varchar(20)',
+			// Pricing — stall.
+			'stall_nightly_rate'             => 'decimal(10,2)',
+			'stall_weekend_rate'             => 'decimal(10,2)',
+			'stall_weekly_rate'              => 'decimal(10,2)',
+			'stall_early_bird_enabled'       => 'tinyint(1)',
+			'stall_early_bird_cutoff'        => 'varchar(20)',
+			'stall_early_bird_nightly_rate'  => 'decimal(10,2)',
+			'stall_early_bird_weekend_rate'  => 'decimal(10,2)',
+			'stall_early_bird_weekly_rate'   => 'decimal(10,2)',
+			// Pricing — RV.
+			'rv_nightly_rate'                => 'decimal(10,2)',
+			'rv_weekend_rate'                => 'decimal(10,2)',
+			'rv_weekly_rate'                 => 'decimal(10,2)',
+			'rv_early_bird_enabled'          => 'tinyint(1)',
+			'rv_early_bird_cutoff'           => 'varchar(20)',
+			'rv_early_bird_nightly_rate'     => 'decimal(10,2)',
+			'rv_early_bird_weekend_rate'     => 'decimal(10,2)',
+			'rv_early_bird_weekly_rate'      => 'decimal(10,2)',
+			// Convenience fee.
+			'convenience_fee_label'          => 'varchar(255)',
+			'convenience_fee_enabled'        => 'tinyint(1)',
+			'convenience_fee_type'           => 'varchar(32)',
+			'convenience_fee_value'          => 'decimal(10,2)',
+			// Shavings.
+			'required_shavings_enabled'      => 'tinyint(1)',
+			'required_shavings_per_stall'    => 'int',
+			'required_shavings_price'        => 'decimal(10,2)',
+			'additional_shavings_enabled'    => 'tinyint(1)',
+			'additional_shavings_description' => 'varchar(255)',
+			'additional_shavings_price'       => 'decimal(10,2)',
+			// Descriptions / venue / check-in.
+			'reservation_description'        => 'text',
+			'event_details_summary'          => 'text',
+			'venue_name'                     => 'varchar(255)',
+			'event_location'                 => 'varchar(255)',
+			'venue_address'                  => 'text',
+			'checkin_checkout_enabled'       => 'tinyint(1)',
+			'checkin_time_enabled'           => 'tinyint(1)',
+			'checkout_time_enabled'          => 'tinyint(1)',
+			'checkin_time'                   => 'varchar(10)',
+			'checkout_time'                  => 'varchar(10)',
+			// Venue map.
+			'venue_map_enabled'              => 'tinyint(1)',
+			'venue_map_download_url'         => 'varchar(2048)',
+			'venue_map_image_id'             => 'bigint(20)',
+			'venue_map_caption'              => 'varchar(255)',
+			// Agreement.
+			'venue_agreement_enabled'        => 'tinyint(1)',
+			'venue_agreement_file_id'        => 'bigint(20)',
+			'venue_agreement_file_label'     => 'varchar(255)',
+			'venue_agreement_label'          => 'text',
+			'venue_agreement_link_label'     => 'varchar(255)',
+			'venue_agreement_text'           => 'longtext',
+			// Groups.
+			'general_addons_enabled'         => 'tinyint(1)',
+			'group_reservations_enabled'     => 'tinyint(1)',
+			'group_description'              => 'text',
+			'group_riders_per_group'         => 'varchar(10)',
+			'group_rider_grounds_fee_enabled' => 'tinyint(1)',
+			'group_rider_grounds_fee_amount'  => 'decimal(10,2)',
+			'group_rider_deposit_enabled'     => 'tinyint(1)',
+			'group_rider_deposit_amount'      => 'decimal(10,2)',
+			// Event day.
+			'event_day_enabled'              => 'tinyint(1)',
+			'event_day_checkin'              => 'text',
+			'event_day_bring'                => 'text',
+			'event_day_parking'              => 'text',
+			'event_day_contact'              => 'text',
+			// Cancellation.
+			'cancellation_enabled'           => 'tinyint(1)',
+			'cancellation_policy_override'   => 'longtext',
+			// Tack + limits.
+			'stall_tack_mode'                => 'varchar(32)',
+			'stall_max_per_customer'         => 'varchar(10)',
+			'rv_max_per_customer'            => 'varchar(10)',
+			// File/map IDs.
+			'stall_map_file_id'              => 'bigint(20)',
+			'rv_lot_selection_enabled'        => 'tinyint(1)',
+			'rv_addons_enabled'              => 'tinyint(1)',
+			'stall_map_id'                   => 'bigint(20)',
+			'rv_lot_map_id'                  => 'bigint(20)',
+			'event_pre_entries_enabled'      => 'tinyint(1)',
+		);
+	}
+
+	/**
+	 * Keys whose values are arrays stored as JSON columns.
+	 *
+	 * @return string[]
+	 */
+	private static function json_keys(): array {
+		return array(
+			'stall_chart_stall_blocks',
+			'stall_chart_rv_blocks',
+			'stall_chart_blocked_stall_units',
+			'stall_chart_blocked_rv_units',
+			'rv_lots',
+			'general_addons',
+			'rv_lot_zones',
+			'rv_addons',
+			'stall_map',
+			'rv_map',
+			'event_pre_entries',
+			'stall_rows',
+			'blocked_stalls',
+			'rv_zones',
+			'rv_rows',
+			'blocked_rv_lots',
+		);
+	}
+
+	/**
+	 * Create the wp_eem_reservation_config table. Idempotent via dbDelta.
+	 *
+	 * @return void
+	 */
+	public static function create_table(): void {
+		global $wpdb;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$charset_collate = $wpdb->get_charset_collate();
+		$table           = $wpdb->prefix . 'eem_reservation_config';
+
+		$cols = array( 'reservation_id bigint(20) unsigned NOT NULL' );
+
+		foreach ( self::column_map() as $key => $type ) {
+			$col_name = $key;
+			$default  = self::sql_default_for_type( $type );
+			$cols[]   = "{$col_name} {$type}{$default}";
+		}
+
+		foreach ( self::json_keys() as $key ) {
+			$cols[] = "{$key} longtext NULL";
+		}
+
+		$cols[] = "extra_json longtext NULL";
+		$cols[] = "updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP";
+		$cols[] = "PRIMARY KEY  (reservation_id)";
+		$cols[] = "KEY event_lookup (event_source, event_id)";
+		$cols[] = "KEY stalls_enabled (stalls_enabled)";
+		$cols[] = "KEY rv_enabled (rv_enabled)";
+
+		$col_str = implode( ",\n", $cols );
+
+		$sql = "CREATE TABLE {$table} (\n{$col_str}\n) {$charset_collate};";
+
+		dbDelta( $sql );
+	}
+
+	/**
+	 * SQL DEFAULT clause for a column type.
+	 *
+	 * @param string $type SQL column type.
+	 * @return string
+	 */
+	private static function sql_default_for_type( string $type ): string {
+		if ( str_starts_with( $type, 'tinyint' ) ) {
+			return ' NOT NULL DEFAULT 0';
+		}
+		if ( str_starts_with( $type, 'int' ) || str_starts_with( $type, 'bigint' ) ) {
+			return ' NOT NULL DEFAULT 0';
+		}
+		if ( str_starts_with( $type, 'decimal' ) ) {
+			return ' NOT NULL DEFAULT 0.00';
+		}
+		return ' NULL';
+	}
+
+	/**
+	 * Insert a row from a hydrated values array (used by migration + dual-write).
+	 *
+	 * @param int                 $reservation_id Reservation post ID.
+	 * @param array<string,mixed> $values         Hydrated short-key → value map.
+	 * @return bool True on success.
+	 */
+	public static function insert_from_values( int $reservation_id, array $values ): bool {
+		global $wpdb;
+
+		$table   = $wpdb->prefix . 'eem_reservation_config';
+		$data    = array( 'reservation_id' => $reservation_id );
+		$formats = array( '%d' );
+
+		$col_map  = self::column_map();
+		$json_set = array_flip( self::json_keys() );
+		$extra    = array();
+
+		foreach ( $values as $key => $value ) {
+			if ( isset( $col_map[ $key ] ) ) {
+				$data[ $key ]    = self::cast_for_db( $value, $col_map[ $key ] );
+				$formats[]       = self::format_for_type( $col_map[ $key ] );
+			} elseif ( isset( $json_set[ $key ] ) ) {
+				$data[ $key ] = is_array( $value ) ? wp_json_encode( $value ) : (string) $value;
+				$formats[]    = '%s';
+			} else {
+				$extra[ $key ] = $value;
+			}
+		}
+
+		if ( ! empty( $extra ) ) {
+			$data['extra_json'] = wp_json_encode( $extra );
+			$formats[]          = '%s';
+		}
+
+		$result = $wpdb->replace( $table, $data, $formats );
+
+		return false !== $result;
+	}
+
+	/**
+	 * Cast a PHP value for DB insertion.
+	 *
+	 * @param mixed  $value PHP value.
+	 * @param string $type  SQL column type.
+	 * @return mixed
+	 */
+	private static function cast_for_db( $value, string $type ) {
+		if ( str_starts_with( $type, 'tinyint' ) ) {
+			return (int) $value;
+		}
+		if ( str_starts_with( $type, 'int' ) || str_starts_with( $type, 'bigint' ) ) {
+			return (int) $value;
+		}
+		if ( str_starts_with( $type, 'decimal' ) ) {
+			return ( '' === $value || null === $value ) ? '0.00' : (string) $value;
+		}
+		if ( is_array( $value ) ) {
+			return wp_json_encode( $value );
+		}
+		return (string) $value;
+	}
+
+	/**
+	 * wpdb format string for a column type.
+	 *
+	 * @param string $type SQL column type.
+	 * @return string
+	 */
+	private static function format_for_type( string $type ): string {
+		if ( str_starts_with( $type, 'tinyint' ) || str_starts_with( $type, 'int' ) || str_starts_with( $type, 'bigint' ) ) {
+			return '%d';
+		}
+		if ( str_starts_with( $type, 'decimal' ) ) {
+			return '%s';
+		}
+		return '%s';
+	}
+
+	/**
+	 * Check whether the relational table exists.
+	 *
+	 * @return bool
+	 */
+	public static function table_exists(): bool {
+		global $wpdb;
+		static $exists = null;
+		if ( null !== $exists ) {
+			return $exists;
+		}
+		$table  = $wpdb->prefix . 'eem_reservation_config';
+		$exists = (bool) $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) );
+		return $exists;
 	}
 }
