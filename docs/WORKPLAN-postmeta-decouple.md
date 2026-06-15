@@ -100,20 +100,23 @@ outside `EEM_Reservation_Config`. (A grep guard in the smoke suite enforces it g
 **This phase is independently valuable even if Phase 2 never happens** — it's a strict
 codebase improvement with no risk surface.
 
-### PHASE 2 — Swap the backend to relational tables (~30% of effort, the higher-risk part)
-- **P2.1 — Schema + migration.** Create the tables (§4), write `eem-mig-NNN` to copy existing
-  postmeta → tables (proven pattern; idempotent; flag-gated). Dual-write window: repo writes
-  BOTH postmeta and tables, reads from postmeta — proves the tables fill correctly with zero
-  risk. Smoke: post-migration, table values == postmeta values for every seeded reservation.
-- **P2.2 — Flip reads to tables** inside the repo (still dual-writing). Smoke: full suite green
-  reading from tables. Bake on staging.
-- **P2.3 — Rewrite the `query()` lookups as SQL JOINs** against the new tables (this is the
-  real payoff — fast event/status filters instead of postmeta joins). Smoke: list parity.
-- **P2.4 — Stop writing postmeta; drop the dual-write.** Optional: leave a one-way export to
-  postmeta if any third-party reads it. Smoke + final regression sweep.
+### PHASE 2 — Swap the backend to relational tables ✅ COMPLETE (2.7.311–2.7.317)
+- **P2.1 — Schema + migration.** ✅ `wp_eem_reservation_config` table (~100 typed scalar columns
+  + 16 JSON columns + `extra_json` catch-all). Migration `eem-mig-016` backfills from postmeta.
+  Dual-write active in `save()`. (2.7.314)
+- **P2.2 — Flip reads to tables.** ✅ `hydrate()` reads from relational table, falls back to
+  postmeta for unmigrated reservations. JSON columns decoded, scalar columns cast. (2.7.315)
+- **P2.3 — Rewrite query helpers as SQL JOINs.** ✅ `for_event()`, `for_source()`,
+  `for_event_and_source()`, `with_stalls_or_rv()`, `for_tec_event_with_section()` all use
+  direct SQL on the config table with postmeta fallback. Shared `query_table()` helper. (2.7.316)
+- **P2.4 — Repo save writes table-only.** ✅ `EEM_Reservation_Config::save()` writes only to the
+  relational table. `EEM_Reservations_CPT::save_meta()` still writes postmeta AND syncs to the
+  table (transitional dual-write at the CPT level). (2.7.317)
 
-**Exit criteria for Phase 2:** config lives in relational tables; postmeta no longer the source
-of truth; the repo is the only access path; storage backend is now a one-class swap to GH/.NET.
+**Remaining work (future session):**
+- Migrate `save_meta()` to go through `EEM_Reservation_Config` instead of direct `update_post_meta`
+- Drop the `_en_*` / `_eem_section_enabled_*` postmeta rows (after bake period confirms table is reliable)
+- Storage backend is then a one-class swap to GH/.NET
 
 ---
 

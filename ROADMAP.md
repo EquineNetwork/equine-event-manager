@@ -25,9 +25,11 @@ API/native last.*
 4. **Venue Slice 2** — `en_venue` → canonical-table write-through (finishes the venue thread).
 5. **Repo cleanup — delete dead docs** (the ship-only-runtime half is already done).
 6. **Entry-aware Dashboard headline metrics** — small additive admin visibility.
-7. **Postmeta → relational de-coupling** — the big "not chained to WordPress" migration; after the
-   live system is hardened. (Judgment call: mid-list so features #8–10 store relationally from the
-   start; could slide to just-above #11 if shipping features sooner is preferred.)
+7. **Postmeta → relational de-coupling** — ✅ Phase 2 complete (2.7.311–2.7.317).
+   `EEM_Reservation_Config` repo skeleton (P1), relational table `wp_eem_reservation_config`
+   with backfill migration (P2.1), reads from table (P2.2), query helpers as SQL JOINs (P2.3),
+   repo save writes table-only / CPT save syncs to table (P2.4). Remaining: migrate CPT
+   `save_meta()` to go through the repo entirely, then drop `_en_*` postmeta rows.
 8. **Sheets & Results — CSV / Google Sheets / external URLs.**
 9. **Event Entries — competition management.**
 10. **PDF venue map → stall-grid overlay** (exploratory).
@@ -199,6 +201,21 @@ proving ground for the relational-migration pattern that #2 then applies at scal
    editor (stall + RV sections), the customer checkout pricing math (`calculate_submission_totals`),
    and the at-least-one-stay-type constraint. Follow the Weekend Rate implementation as the template
    (see docs/decisions.md pricing rules + `weekend_rate`/`weekend_price` in the orders repo + CPT).
+   Est. ~1 session.
+
+4. **Paddock Assignments (Whitney 2026-06-14).** In the stall map grid, allow adjacent stall chips
+   to be merged into a single bookable "paddock" unit. Admin selects adjacent chips → names the
+   paddock (e.g. "Paddock 1") → sets a flat or nightly rate independent of stall pricing. The merged
+   unit books and invoices as one line item; renders as a wider block on the stall chart. Reuses the
+   full stall engine (assignment, chart, orders) — the merge just groups chips into one bookable
+   unit with its own pricing. Est. ~2 sessions.
+
+5. **Upload .xlsx → Stall Grid (Whitney 2026-06-14).** "Upload Layout" button in the stall row
+   builder (and on Venue layouts) accepts an `.xlsx` file and auto-generates stall rows from it.
+   Parser uses PHP's built-in `ZipArchive` + `SimpleXML` — no new Composer dependencies. Concept
+   proven against the COJT-SUMMER stall chart: barns/sections + stall number ranges parse cleanly.
+   Includes a **"Download Example Template"** link so users know the expected format (simple 2-section
+   template, not the complex COJT layout). Est. ~2 sessions.
 
 ---
 
