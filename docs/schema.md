@@ -317,6 +317,27 @@ CPT post. Decoupled from postmeta at v2.7.319.
 
 ---
 
+## 6b. `wp_eem_division_config`
+
+**Purpose:** Division (class) configuration fields. One row per `en_entry` CPT
+post. Decoupled from postmeta at v2.7.321.
+
+| Column | Type | Null | Default | Notes |
+|---|---|---|---|---|
+| `division_id` | `bigint unsigned` | NO | — | PK, matches `wp_posts.ID` (en_entry) |
+| `reservation_id` | `bigint unsigned` | NO | `0` | Parent reservation post ID |
+| `description` | `text` | NO | `''` | Division description |
+| `division_name` | `varchar(255)` | NO | `''` | Display name |
+| `price` | `decimal(10,2)` | NO | `0.00` | Per-entry price |
+| `spots` | `int unsigned` | NO | `0` | Available spots (0 = unlimited) |
+| `max_per_customer` | `int unsigned` | NO | `0` | Max entries per customer (0 = unlimited) |
+
+**Indexes:** `PRIMARY(division_id)`, `KEY reservation_id(reservation_id)`.
+
+**Repository:** `EEM_Division_Config_Repo` — static methods `get()`, `get_field()`, `save()`.
+
+---
+
 ## 7. `wp_eem_sheet_entries`
 
 **Purpose:** Draw sheets and results for Sheets & Results feature. One row per

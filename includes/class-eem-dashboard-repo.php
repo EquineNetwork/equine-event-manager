@@ -270,9 +270,9 @@ class EEM_Dashboard_Repo {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$row = $wpdb->get_row( $wpdb->prepare(
 			"SELECT COALESCE(SUM(e.qty), 0) AS sold,
-			        COALESCE(SUM(e.qty * CAST(pm.meta_value AS DECIMAL(10,2))), 0) AS revenue
+			        COALESCE(SUM(e.qty * dc.price), 0) AS revenue
 			 FROM {$table} e
-			 INNER JOIN {$wpdb->postmeta} pm ON pm.post_id = e.division_id AND pm.meta_key = '_en_division_price'
+			 INNER JOIN {$wpdb->prefix}eem_division_config dc ON dc.division_id = e.division_id
 			 WHERE e.status IN ('paid','unpaid')
 			   AND e.created_at >= %s
 			   AND e.created_at <= %s",

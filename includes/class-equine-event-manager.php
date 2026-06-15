@@ -23,6 +23,7 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-reservation-config.
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-producer-repo.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-entries.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-division-entries.php';
+require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-division-config-repo.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-notifications.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-venue.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-sheet-entries.php';

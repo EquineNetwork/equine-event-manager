@@ -2,7 +2,7 @@
 
 **Purpose:** Inventory of every entity that still uses `wp_postmeta` for
 business data, with decoupling status and effort estimate for the API layer.
-Last updated 2026-06-15, plugin version **2.7.318**.
+Last updated 2026-06-15, plugin version **2.7.321**.
 
 ---
 
@@ -63,16 +63,14 @@ Last updated 2026-06-15, plugin version **2.7.318**.
 - **Postmeta calls:** 0
 - **API readiness:** Ready.
 
-### 6. Divisions / Classes (en_entry CPT config) — **NOT STARTED**
+### 6. Division Config (en_entry CPT config) — **DONE**
 
-- **Current storage:** `wp_postmeta` on `en_entry` posts
-- **Keys:** `_en_entry_price`, `_en_entry_spots_cap`, `_en_entry_status`,
-  `_en_entry_event_id`, `_en_entry_event_source`, plus ~10 more
-- **Call count:** ~26 `get/update_post_meta` calls in `class-eem-entries.php`
-- **Effort:** Small (~0.5 week). Clean CPT with few keys. Mirror the
-  `EEM_Reservation_Config` pattern: flat table, repo class, backfill migration.
-- **API priority:** Medium. Divisions are a v2 feature; the entrant ledger
-  (already relational) is the high-value query surface.
+- **Table:** `wp_eem_division_config` (division_id PK, reservation_id,
+  description, division_name, price, spots, max_per_customer)
+- **Repository:** `EEM_Division_Config_Repo` — static `get()`, `get_field()`, `save()`
+- **Postmeta calls:** 0 (fallback path in repo only fires pre-migration)
+- **Migrations:** mig-022 (backfill from postmeta), mig-023 (drop postmeta rows)
+- **API readiness:** Ready. Decoupled at v2.7.321.
 
 ### 7. Native Events (en_event CPT) — **NOT STARTED**
 
@@ -147,14 +145,14 @@ Last updated 2026-06-15, plugin version **2.7.318**.
 | 3 | Division Entries (ledger) | **DONE** | 0 | — | Ready |
 | 4 | Venues (identity) | **DONE** | 0 | — | Ready |
 | 5 | Event Defaults | **DONE** | 0 | — | Ready |
-| 6 | Division Config | NOT STARTED | 26 | 0.5 wk | Medium |
+| 6 | Division Config | **DONE** | 0 | — | Ready |
 | 7 | Native Events | NOT STARTED | 166 | 1–1.5 wk | High |
 | 8 | Native Venues (detail) | **DONE** | 0 | — | Ready |
 | 9 | Producers | **DONE** | 0 | — | Ready |
 | 10 | Sheets & Results | **DONE** | 0 | — | Ready |
 | 11 | Settings | N/A | 0 | — | Ready |
 
-**Bottom line:** 8 of 10 business entities are fully decoupled and API-ready
-today. The remaining 2 (Division Config, Native Events) total ~1.5–2 weeks of
-work, but **neither blocks the initial API layer** — the API can launch exposing
-the 8 ready entities and add the remaining 2 incrementally as they're decoupled.
+**Bottom line:** 9 of 10 business entities are fully decoupled and API-ready
+today. The remaining 1 (Native Events) is ~1–1.5 weeks of work, but **does not
+block the initial API layer** — the API can launch exposing the 9 ready entities
+and add Native Events incrementally as it's decoupled.

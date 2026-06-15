@@ -206,14 +206,14 @@ class EEM_Entries {
 			return;
 		}
 
-		$rid       = (int) get_post_meta( $division_id, self::META_RESERVATION, true );
+		$cfg       = EEM_Division_Config_Repo::get( $division_id );
+		$rid       = $cfg['reservation_id'];
 		$res_label = $rid > 0 ? self::reservation_label( $rid ) : array( 'title' => '', 'end_date' => '' );
 		$event     = (string) $res_label['title'];
 		$is_past   = self::event_is_past( (string) $res_label['end_date'] );
-		$div_name  = (string) get_post_meta( $division_id, self::META_DIVISION_NAME, true );
-		$price     = (string) get_post_meta( $division_id, self::META_PRICE, true );
-		$spots_raw = get_post_meta( $division_id, self::META_SPOTS, true );
-		$spots_int = ( '' === (string) $spots_raw || (int) $spots_raw <= 0 ) ? 0 : (int) $spots_raw;
+		$div_name  = $cfg['division_name'];
+		$price     = $cfg['price'];
+		$spots_int = $cfg['spots'];
 
 		$entered   = class_exists( 'EEM_Division_Entries' ) ? EEM_Division_Entries::entered_count( $division_id ) : 0;
 		$left      = ( $spots_int > 0 ) ? max( 0, $spots_int - $entered ) : null;
@@ -429,14 +429,14 @@ class EEM_Entries {
 		$rows   = array();
 		$events = array(); // reservation_id => title
 		foreach ( $entries as $e ) {
-			$rid       = (int) get_post_meta( $e->ID, self::META_RESERVATION, true );
+			$cfg       = EEM_Division_Config_Repo::get( (int) $e->ID );
+			$rid       = $cfg['reservation_id'];
 			$res_label = $rid > 0 ? self::reservation_label( $rid ) : array( 'title' => '', 'start_date' => '', 'end_date' => '' );
 			$event     = (string) $res_label['title'];
 			$ev_status = self::event_status( (string) ( $res_label['start_date'] ?? '' ), (string) $res_label['end_date'] );
-			$div_name  = (string) get_post_meta( $e->ID, self::META_DIVISION_NAME, true );
-			$price     = (string) get_post_meta( $e->ID, self::META_PRICE, true );
-			$spots     = get_post_meta( $e->ID, self::META_SPOTS, true );
-			$spots_int = ( '' === (string) $spots || (int) $spots <= 0 ) ? 0 : (int) $spots;
+			$div_name  = $cfg['division_name'];
+			$price     = $cfg['price'];
+			$spots_int = $cfg['spots'];
 			$entered   = class_exists( 'EEM_Division_Entries' ) ? EEM_Division_Entries::entered_count( (int) $e->ID ) : 0;
 			$is_pub    = ( 'publish' === get_post_status( $e ) );
 			if ( $rid > 0 && '' !== $event ) {
@@ -819,12 +819,13 @@ class EEM_Entries {
 			return;
 		}
 
-		$reservation_id = (int) get_post_meta( $entry_id, self::META_RESERVATION, true );
-		$description    = (string) get_post_meta( $entry_id, self::META_DESCRIPTION, true );
-		$division_name  = (string) get_post_meta( $entry_id, self::META_DIVISION_NAME, true );
-		$price_raw      = get_post_meta( $entry_id, self::META_PRICE, true );
-		$spots_raw      = get_post_meta( $entry_id, self::META_SPOTS, true );
-		$max_raw        = get_post_meta( $entry_id, self::META_MAX, true );
+		$cfg            = EEM_Division_Config_Repo::get( $entry_id );
+		$reservation_id = $cfg['reservation_id'];
+		$description    = $cfg['description'];
+		$division_name  = $cfg['division_name'];
+		$price_raw      = $cfg['price'];
+		$spots_raw      = $cfg['spots'];
+		$max_raw        = $cfg['max_per_customer'];
 
 		$label            = self::reservation_label( $reservation_id );
 		$has_linked_event = ( $reservation_id > 0 && '' !== $label['title'] );
@@ -1128,12 +1129,14 @@ class EEM_Entries {
 		$spots         = isset( $fields['spots'] ) ? absint( $fields['spots'] ) : 0;
 		$max           = isset( $fields['max'] ) ? absint( $fields['max'] ) : 0;
 
-		update_post_meta( $entry_id, self::META_RESERVATION, $reservation_id );
-		update_post_meta( $entry_id, self::META_DESCRIPTION, $description );
-		update_post_meta( $entry_id, self::META_DIVISION_NAME, $division_name );
-		update_post_meta( $entry_id, self::META_PRICE, $price );
-		update_post_meta( $entry_id, self::META_SPOTS, $spots );
-		update_post_meta( $entry_id, self::META_MAX, $max );
+		EEM_Division_Config_Repo::save( $entry_id, array(
+			'reservation_id'   => $reservation_id,
+			'description'      => $description,
+			'division_name'    => $division_name,
+			'price'            => $price,
+			'spots'            => $spots,
+			'max_per_customer' => $max,
+		) );
 
 		$label      = self::reservation_label( $reservation_id );
 		$event_name = (string) $label['title'];
@@ -1183,11 +1186,11 @@ class EEM_Entries {
 	 */
 	public static function column_value( string $column, int $post_id ): void {
 		if ( 'eem_entry_event' === $column ) {
-			$rid = (int) get_post_meta( $post_id, self::META_RESERVATION, true );
+			$rid = EEM_Division_Config_Repo::get_field( $post_id, 'reservation_id' );
 			echo $rid > 0 ? esc_html( get_the_title( $rid ) ) : '<span style="color:#b91c1c">' . esc_html__( '— not connected —', 'equine-event-manager' ) . '</span>';
 		} elseif ( 'eem_entry_price' === $column ) {
-			$price = (string) get_post_meta( $post_id, self::META_PRICE, true );
-			echo '' !== $price ? esc_html( '$' . number_format( (float) $price, 2 ) ) : '—';
+			$price = (string) EEM_Division_Config_Repo::get_field( $post_id, 'price' );
+			echo '' !== $price && '0.00' !== $price ? esc_html( '$' . number_format( (float) $price, 2 ) ) : '—';
 		}
 	}
 
@@ -1207,12 +1210,43 @@ class EEM_Entries {
 			return array();
 		}
 
+		if ( EEM_Division_Config_Repo::table_exists() ) {
+			global $wpdb;
+			$cfg_table = EEM_Division_Config_Repo::table_name();
+			$rows = $wpdb->get_results( $wpdb->prepare(
+				"SELECT dc.division_id, dc.division_name, dc.price, dc.spots, dc.max_per_customer
+				 FROM {$cfg_table} dc
+				 INNER JOIN {$wpdb->posts} p ON p.ID = dc.division_id AND p.post_type = %s AND p.post_status = 'publish'
+				 WHERE dc.reservation_id = %d
+				 ORDER BY p.menu_order ASC, p.post_title ASC",
+				self::POST_TYPE,
+				$reservation_id
+			), ARRAY_A ); // phpcs:ignore WordPress.DB
+
+			$options = array();
+			foreach ( $rows as $r ) {
+				$title = trim( (string) $r['division_name'] );
+				if ( '' === $title ) {
+					continue;
+				}
+				$did = (int) $r['division_id'];
+				$options[ 'entry_' . $did ] = array(
+					'title'            => $title,
+					'price'            => number_format( (float) $r['price'], 2, '.', '' ),
+					'inventory'        => (int) $r['spots'],
+					'max_per_customer' => (int) $r['max_per_customer'],
+					'division_id'      => $did,
+				);
+			}
+			return $options;
+		}
+
 		$posts = get_posts( array(
 			'post_type'      => self::POST_TYPE,
 			'post_status'    => 'publish',
 			'posts_per_page' => -1,
 			'orderby'        => array( 'menu_order' => 'ASC', 'title' => 'ASC' ),
-			'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- bounded admin-defined set.
+			'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 				array(
 					'key'   => self::META_RESERVATION,
 					'value' => $reservation_id,
@@ -1222,15 +1256,16 @@ class EEM_Entries {
 
 		$options = array();
 		foreach ( $posts as $p ) {
-			$title = trim( (string) get_post_meta( $p->ID, self::META_DIVISION_NAME, true ) );
+			$cfg   = EEM_Division_Config_Repo::get( (int) $p->ID );
+			$title = trim( $cfg['division_name'] );
 			if ( '' === $title ) {
 				continue;
 			}
 			$options[ 'entry_' . $p->ID ] = array(
 				'title'            => $title,
-				'price'            => number_format( (float) get_post_meta( $p->ID, self::META_PRICE, true ), 2, '.', '' ),
-				'inventory'        => absint( get_post_meta( $p->ID, self::META_SPOTS, true ) ),
-				'max_per_customer' => absint( get_post_meta( $p->ID, self::META_MAX, true ) ),
+				'price'            => $cfg['price'],
+				'inventory'        => $cfg['spots'],
+				'max_per_customer' => $cfg['max_per_customer'],
 				'division_id'      => (int) $p->ID,
 			);
 		}
