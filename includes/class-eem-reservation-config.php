@@ -163,7 +163,13 @@ class EEM_Reservation_Config {
 		}
 
 		if ( self::table_exists() ) {
-			self::insert_from_values( $this->reservation_id, $this->data );
+			$dirty_data = array();
+			foreach ( $this->dirty as $key => $_ ) {
+				if ( array_key_exists( $key, $this->data ) ) {
+					$dirty_data[ $key ] = $this->data[ $key ];
+				}
+			}
+			self::upsert_dirty( $this->reservation_id, $dirty_data );
 		} else {
 			foreach ( $this->dirty as $key => $_ ) {
 				$meta_key = EEM_Reservations_CPT::section_enabled_meta_key( $key );
@@ -918,6 +924,58 @@ class EEM_Reservation_Config {
 		}
 
 		$result = $wpdb->replace( $table, $data, $formats );
+
+		return false !== $result;
+	}
+
+	/**
+	 * Upsert only the dirty (changed) columns for a reservation.
+	 *
+	 * Uses UPDATE for existing rows (preserving untouched columns) and INSERT
+	 * for new rows. Replaces the dangerous replace() pattern that wiped
+	 * columns not present in the current save payload.
+	 *
+	 * @param int                 $reservation_id Reservation post ID.
+	 * @param array<string,mixed> $dirty_values   Only the changed short-key → value pairs.
+	 * @return bool True on success.
+	 */
+	private static function upsert_dirty( int $reservation_id, array $dirty_values ): bool {
+		global $wpdb;
+
+		$table = $wpdb->prefix . 'eem_reservation_config';
+
+		$row_exists = (bool) $wpdb->get_var(
+			$wpdb->prepare( "SELECT 1 FROM $table WHERE reservation_id = %d LIMIT 1", $reservation_id )
+		);
+
+		if ( ! $row_exists ) {
+			// New row — full insert is safe since there's nothing to wipe.
+			return self::insert_from_values( $reservation_id, $dirty_values );
+		}
+
+		// Existing row — only update the dirty columns.
+		$col_map  = self::column_map();
+		$json_set = array_flip( self::json_keys() );
+		$data     = array();
+		$formats  = array();
+
+		foreach ( $dirty_values as $key => $value ) {
+			if ( isset( $col_map[ $key ] ) ) {
+				$data[ $key ] = self::cast_for_db( $value, $col_map[ $key ] );
+				$formats[]    = self::format_for_type( $col_map[ $key ] );
+			} elseif ( isset( $json_set[ $key ] ) ) {
+				$data[ $key ] = is_array( $value ) ? wp_json_encode( $value ) : (string) $value;
+				$formats[]    = '%s';
+			}
+			// Extra keys: skip for now — extra_json partial merge is complex
+			// and the current save path doesn't produce extra keys in practice.
+		}
+
+		if ( empty( $data ) ) {
+			return true;
+		}
+
+		$result = $wpdb->update( $table, $data, array( 'reservation_id' => $reservation_id ), $formats, array( '%d' ) );
 
 		return false !== $result;
 	}
