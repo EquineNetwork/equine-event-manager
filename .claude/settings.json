@@ -28,8 +28,7 @@
 
       "Bash(git add:*)",
       "Bash(git commit -m *)",
-      "Bash(git push origin main)",
-      "Bash(git push origin main *)",
+      "Bash(git push origin:*)",
 
       "Bash(git -C /Users/whitneymitchell/Projects/equine-event-manager status:*)",
       "Bash(git -C /Users/whitneymitchell/Projects/equine-event-manager log:*)",
@@ -40,12 +39,12 @@
       "Bash(git -C /Users/whitneymitchell/Projects/equine-event-manager stash list:*)",
       "Bash(git -C /Users/whitneymitchell/Projects/equine-event-manager add:*)",
       "Bash(git -C /Users/whitneymitchell/Projects/equine-event-manager commit -m *)",
-      "Bash(git -C /Users/whitneymitchell/Projects/equine-event-manager push origin main)",
-      "Bash(git -C /Users/whitneymitchell/Projects/equine-event-manager push origin main *)",
+      "Bash(git -C /Users/whitneymitchell/Projects/equine-event-manager push origin:*)",
 
       "Bash(ls:*)",
       "Bash(cat:*)",
       "Bash(grep:*)",
+      "Bash(ugrep:*)",
       "Bash(rg:*)",
       "Bash(find:*)",
       "Bash(head:*)",

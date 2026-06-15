@@ -105,6 +105,9 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-setup-wizard.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-stall-setup-wizard.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-pwa.php';
 
+// Phase 2 — REST API layer (WP REST API endpoints under eem/v1).
+require_once EQUINE_EVENT_MANAGER_PATH . 'includes/api/class-eem-rest-api.php';
+
 // 2.3.25 — WP-CLI demo data seeder. Loaded only in CLI context; the file
 // self-guards against being loaded outside WP_CLI and registers the
 // `wp eem seed_demo` command via WP_CLI::add_command().
@@ -382,6 +385,10 @@ class EEM_Plugin {
 		// Phase 4 — Stripe webhook endpoint (POST /wp-json/eem/v1/stripe-webhook).
 		// Signature-verified inside the handler; reconciles payment_intent.succeeded.
 		add_action( 'rest_api_init', array( $this->shortcodes, 'register_stripe_webhook_route' ) );
+
+		// Phase 2 — REST API endpoints (auth, orders, etc.) under eem/v1.
+		$rest_api = new EEM_REST_API();
+		$rest_api->init();
 
 		add_action( 'template_redirect', array( $this->shortcodes, 'maybe_render_hosted_receipt' ) );
 		add_action( 'template_redirect', array( $this->shortcodes, 'maybe_render_invoice_payment_page' ) );

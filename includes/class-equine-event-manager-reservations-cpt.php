@@ -2055,6 +2055,33 @@ class EEM_Reservations_CPT {
 	 * @param mixed $value
 	 * @return string 'bulk' | 'mapped'
 	 */
+	/**
+	 * Update a reservation's post status.
+	 *
+	 * Abstraction boundary for wp_update_post — keeps controllers
+	 * free of direct WP calls for future portability.
+	 *
+	 * @param int    $reservation_id Reservation post ID.
+	 * @param string $status         Target post status (publish|draft|trash|pending).
+	 * @return bool True on success.
+	 */
+	public static function update_status( int $reservation_id, string $status ): bool {
+		$allowed = array( 'publish', 'draft', 'trash', 'pending' );
+		if ( ! in_array( $status, $allowed, true ) ) {
+			return false;
+		}
+
+		$result = wp_update_post(
+			array(
+				'ID'          => $reservation_id,
+				'post_status' => $status,
+			),
+			true
+		);
+
+		return ! is_wp_error( $result );
+	}
+
 	public static function sanitize_rv_inventory_type( $value ): string {
 		$v = sanitize_key( $value );
 		return in_array( $v, array( 'bulk', 'mapped' ), true ) ? $v : 'bulk';
