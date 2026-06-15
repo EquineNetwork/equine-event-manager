@@ -1390,7 +1390,7 @@ class EEM_Orders_Repository {
 		$barn_map    = array();
 
 		// ── Stall units: V1 _en_stall_rows wins; legacy blocks are fallback ── //
-		$v1_stall_rows = get_post_meta( $reservation_id, '_en_stall_rows', true );
+		$v1_stall_rows = EEM_Reservation_Config::for( $reservation_id )->get( 'stall_rows', array() );
 		if ( is_array( $v1_stall_rows ) && ! empty( $v1_stall_rows ) ) {
 			$stall_units = $this->expand_v1_stall_rows( $v1_stall_rows );
 		} else {
@@ -1483,11 +1483,11 @@ class EEM_Orders_Repository {
 			// v4 Slice 8: RV-kind map tabs supersede the legacy RV lot config.
 			$rv_units = array_values( array_unique( $map_rv_units ) );
 		} else {
-			$v1_rv_rows = get_post_meta( $reservation_id, '_en_rv_rows', true );
+			$v1_rv_rows = EEM_Reservation_Config::for( $reservation_id )->get( 'rv_rows', array() );
 			if ( is_array( $v1_rv_rows ) && ! empty( $v1_rv_rows ) ) {
 				$rv_units = $this->expand_rv_lot_names_from_v1_rows( $v1_rv_rows );
 			} else {
-				$rv_lots  = get_post_meta( $reservation_id, '_en_rv_lots', true );
+				$rv_lots  = EEM_Reservation_Config::for( $reservation_id )->get( 'rv_lots', array() );
 				$rv_units = $this->get_chart_rv_lot_names( $rv_lots );
 			}
 		}

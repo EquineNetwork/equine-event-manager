@@ -549,11 +549,12 @@ class EEM_Reports_Repo {
 	 * @return int Capacity, or 0 when unknown/unlimited.
 	 */
 	private function stall_capacity_for_reservation( int $reservation_id ): int {
-		$inventory = get_post_meta( $reservation_id, '_en_stall_inventory', true );
+		$cfg       = EEM_Reservation_Config::for( $reservation_id );
+		$inventory = $cfg->get( 'stall_inventory', '' );
 		if ( '' !== $inventory && is_numeric( $inventory ) ) {
 			return absint( $inventory );
 		}
-		$rows = get_post_meta( $reservation_id, '_en_stall_rows', true );
+		$rows = $cfg->get( 'stall_rows', array() );
 		return is_array( $rows ) ? $this->count_units_in_rows( $rows ) : 0;
 	}
 
@@ -564,11 +565,12 @@ class EEM_Reports_Repo {
 	 * @return int
 	 */
 	private function rv_capacity_for_reservation( int $reservation_id ): int {
-		$inventory = get_post_meta( $reservation_id, '_en_rv_inventory', true );
+		$cfg       = EEM_Reservation_Config::for( $reservation_id );
+		$inventory = $cfg->get( 'rv_inventory', '' );
 		if ( '' !== $inventory && is_numeric( $inventory ) ) {
 			return absint( $inventory );
 		}
-		$rows = get_post_meta( $reservation_id, '_en_rv_rows', true );
+		$rows = $cfg->get( 'rv_rows', array() );
 		return is_array( $rows ) ? $this->count_units_in_rows( $rows ) : 0;
 	}
 
