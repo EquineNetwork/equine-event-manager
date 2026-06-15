@@ -96,14 +96,23 @@ class EEM_REST_Daily_Movement_Controller extends EEM_REST_Controller {
 	 */
 	private function build_date_report( int $reservation_id, string $date ): array {
 		global $wpdb;
-		$table = $wpdb->prefix . 'en_stall_reservations';
+		$table        = $wpdb->prefix . 'en_stall_reservations';
+		$status_table = $wpdb->prefix . 'eem_stall_status';
 
 		$arriving = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT id, customer_name, arrival_date, departure_date, notes,
-				        required_shavings_qty, additional_shavings_qty
-				 FROM {$table}
-				 WHERE reservation_id = %d AND arrival_date = %s AND trashed_at IS NULL",
+				"SELECT sr.id, sr.customer_name, sr.arrival_date, sr.departure_date, sr.notes,
+				        sr.required_shavings_qty, sr.additional_shavings_qty,
+				        ss.status AS live_status
+				 FROM {$table} sr
+				 LEFT JOIN (
+				   SELECT order_id, MIN(status) AS status
+				   FROM {$status_table}
+				   WHERE night_date = %s
+				   GROUP BY order_id
+				 ) ss ON ss.order_id = sr.id
+				 WHERE sr.reservation_id = %d AND sr.arrival_date = %s AND sr.trashed_at IS NULL",
+				$date,
 				$reservation_id,
 				$date
 			),
@@ -112,10 +121,18 @@ class EEM_REST_Daily_Movement_Controller extends EEM_REST_Controller {
 
 		$departing = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT id, customer_name, arrival_date, departure_date, notes,
-				        required_shavings_qty, additional_shavings_qty
-				 FROM {$table}
-				 WHERE reservation_id = %d AND departure_date = %s AND trashed_at IS NULL",
+				"SELECT sr.id, sr.customer_name, sr.arrival_date, sr.departure_date, sr.notes,
+				        sr.required_shavings_qty, sr.additional_shavings_qty,
+				        ss.status AS live_status
+				 FROM {$table} sr
+				 LEFT JOIN (
+				   SELECT order_id, MIN(status) AS status
+				   FROM {$status_table}
+				   WHERE night_date = %s
+				   GROUP BY order_id
+				 ) ss ON ss.order_id = sr.id
+				 WHERE sr.reservation_id = %d AND sr.departure_date = %s AND sr.trashed_at IS NULL",
+				$date,
 				$reservation_id,
 				$date
 			),
@@ -124,11 +141,15 @@ class EEM_REST_Daily_Movement_Controller extends EEM_REST_Controller {
 
 		$not_checked_in_count = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$table}
-				 WHERE reservation_id = %d
-				   AND arrival_date <= %s
-				   AND departure_date >= %s
-				   AND trashed_at IS NULL",
+				"SELECT COUNT(*) FROM {$table} sr
+				 LEFT JOIN {$status_table} ss
+				   ON ss.order_id = sr.id AND ss.night_date = %s
+				 WHERE sr.reservation_id = %d
+				   AND sr.arrival_date <= %s
+				   AND sr.departure_date >= %s
+				   AND sr.trashed_at IS NULL
+				   AND (ss.status IS NULL OR ss.status = 'occupied')",
+				$date,
 				$reservation_id,
 				$date,
 				$date
@@ -191,13 +212,15 @@ class EEM_REST_Daily_Movement_Controller extends EEM_REST_Controller {
 	private function shape_movement_row( array $row ): array {
 		$notes = isset( $row['notes'] ) ? (string) $row['notes'] : '';
 
+		$live_status = ! empty( $row['live_status'] ) ? (string) $row['live_status'] : 'not_checked_in';
+
 		return array(
 			'order_key'            => $this->extract_note_value( $notes, 'Submission token' ),
 			'customer_name'        => (string) ( $row['customer_name'] ?? '' ),
 			'stall_numbers'        => $this->extract_stall_numbers( $notes ),
 			'date'                 => $this->format_display_date( (string) ( $row['arrival_date'] ?? '' ) ),
 			'shavings'             => (int) ( $row['required_shavings_qty'] ?? 0 ) + (int) ( $row['additional_shavings_qty'] ?? 0 ),
-			'check_in_status'      => 'not_checked_in',
+			'check_in_status'      => $live_status,
 			'special_instructions' => $this->extract_special_instructions( $notes ),
 		);
 	}
