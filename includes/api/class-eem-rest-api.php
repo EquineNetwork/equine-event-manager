@@ -53,6 +53,7 @@ class EEM_REST_API {
 		require_once $dir . 'controllers/class-eem-rest-sheets-controller.php';
 		require_once $dir . 'controllers/class-eem-rest-customers-controller.php';
 		require_once $dir . 'controllers/class-eem-rest-venues-controller.php';
+		require_once $dir . 'controllers/class-eem-rest-daily-movement-controller.php';
 
 		$this->controllers[] = new EEM_REST_Auth_Controller();
 		$this->controllers[] = new EEM_REST_Orders_Controller();
@@ -61,6 +62,7 @@ class EEM_REST_API {
 		$this->controllers[] = new EEM_REST_Sheets_Controller();
 		$this->controllers[] = new EEM_REST_Customers_Controller();
 		$this->controllers[] = new EEM_REST_Venues_Controller();
+		$this->controllers[] = new EEM_REST_Daily_Movement_Controller();
 	}
 
 	/**
