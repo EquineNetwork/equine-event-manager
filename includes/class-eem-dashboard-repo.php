@@ -173,7 +173,7 @@ class EEM_Dashboard_Repo {
 		$revenue_trend = self::format_trend_percent( $totals['revenue'], $prior['revenue'] );
 		$orders_trend  = self::format_trend_absolute( count( $orders ), count( $prior_orders ) );
 
-		return array(
+		$cards = array(
 			array(
 				'border'   => 'blue',
 				'icon'     => 'dollar',
@@ -207,6 +207,12 @@ class EEM_Dashboard_Repo {
 			),
 			$this->unassigned_stalls_kpi(),
 		);
+
+		if ( class_exists( 'EEM_Events' ) && EEM_Events::is_entries_enabled() ) {
+			$cards[] = $this->entries_kpi( $from, $to );
+		}
+
+		return $cards;
 	}
 
 	/**
@@ -243,6 +249,47 @@ class EEM_Dashboard_Repo {
 			'value'    => number_format_i18n( $unassigned ),
 			'sub'      => $sub,
 			'sub_tone' => $tone,
+		);
+	}
+
+	/**
+	 * KPI card 5 (conditional) — Entries Sold. Shows total entrants purchased
+	 * within the date window and their combined revenue (qty × division price).
+	 *
+	 * @param int $from Unix timestamp window start.
+	 * @param int $to   Unix timestamp window end.
+	 * @return array<string, mixed>
+	 */
+	private function entries_kpi( int $from, int $to ): array {
+		global $wpdb;
+
+		$table    = $wpdb->prefix . 'eem_division_entries';
+		$from_sql = gmdate( 'Y-m-d H:i:s', $from );
+		$to_sql   = gmdate( 'Y-m-d H:i:s', $to );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$row = $wpdb->get_row( $wpdb->prepare(
+			"SELECT COALESCE(SUM(e.qty), 0) AS sold,
+			        COALESCE(SUM(e.qty * CAST(pm.meta_value AS DECIMAL(10,2))), 0) AS revenue
+			 FROM {$table} e
+			 INNER JOIN {$wpdb->postmeta} pm ON pm.post_id = e.division_id AND pm.meta_key = '_en_division_price'
+			 WHERE e.status IN ('paid','unpaid')
+			   AND e.created_at >= %s
+			   AND e.created_at <= %s",
+			$from_sql,
+			$to_sql
+		) );
+
+		$sold    = $row ? (int) $row->sold : 0;
+		$revenue = $row ? (float) $row->revenue : 0.0;
+
+		return array(
+			'border'   => 'purple',
+			'icon'     => 'users',
+			'label'    => __( 'Entries Sold', 'equine-event-manager' ),
+			'value'    => number_format_i18n( $sold ),
+			'sub'      => self::format_currency( $revenue ) . ' ' . __( 'revenue', 'equine-event-manager' ),
+			'sub_tone' => 'flat',
 		);
 	}
 
