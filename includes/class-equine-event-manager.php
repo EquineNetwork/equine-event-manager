@@ -19,6 +19,7 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-customer-profile-re
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-mailer.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-pdf.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-reservations-cpt.php';
+require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-reservation-config.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-entries.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-division-entries.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-notifications.php';
@@ -404,8 +405,15 @@ class EEM_Plugin {
 		// the styling because EEM supplies the button's URL.
 		add_action( 'wp_enqueue_scripts', array( 'EEM_Gems_Client', 'enqueue_bridge_button_styles' ) );
 
-		if ( EEM_Events::is_native_events_enabled() ) {
+		// Content types (en_event, en_venue, en_producer, en_discipline) must
+		// register when EITHER Native Events OR Sheets & Results is enabled.
+		// S&R attaches disciplines + documents to en_event posts; the CPTs
+		// need to exist even when the full Native Events admin UI is off.
+		if ( EEM_Events::is_native_events_enabled() || EEM_Events::is_sheets_results_enabled() ) {
 			add_action( 'init', array( $this->events, 'register_content_types' ) );
+		}
+
+		if ( EEM_Events::is_native_events_enabled() ) {
 			add_filter( 'use_block_editor_for_post_type', array( $this->events, 'filter_use_block_editor_for_post_type' ), 10, 2 );
 			add_action( 'add_meta_boxes', array( $this->events, 'register_meta_boxes' ) );
 			add_action( 'add_meta_boxes_en_event', array( $this->reservations_cpt, 'register_native_event_meta_box' ) );

@@ -284,6 +284,11 @@ class EEM_Admin {
 			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--reservation-editor' );
 		}
 
+		// Branded Venue + Producer editors — same shell variant as the Event editor.
+		if ( EEM_Venue_Editor_Page::MENU_SLUG === $page || EEM_Producer_Editor_Page::MENU_SLUG === $page ) {
+			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--reservation-editor' );
+		}
+
 		// Sheets & Results manager — header shell variant (single-column page
 		// with the bordered plugin-wrap, like the list pages).
 		if ( EEM_Sheets_Results_Page::MENU_SLUG === $page ) {
@@ -342,7 +347,7 @@ class EEM_Admin {
 			$should_load = true;
 		}
 
-		if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-order', 'equine-event-manager-order-refund', 'equine-event-manager-settings', 'equine-event-manager-stall-charts', 'equine-event-manager-stall-chart-print', 'equine-event-manager-reports', 'equine-event-manager-reservation-overview', 'equine-event-manager-create-order', 'equine-event-manager-collect-payment', 'equine-event-manager-dashboard', 'equine-event-manager-reservation-editor', EEM_Entries::EDITOR_SLUG, EEM_Entries::LIST_SLUG, 'equine-event-manager-customer', 'equine-event-manager-customers', EEM_Notifications_Page::MENU_SLUG, EEM_Venues_Page::MENU_SLUG, EEM_Reservations_List_Page::MENU_SLUG ), true ) ) {
+		if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-order', 'equine-event-manager-order-refund', 'equine-event-manager-settings', 'equine-event-manager-stall-charts', 'equine-event-manager-stall-chart-print', 'equine-event-manager-reports', 'equine-event-manager-reservation-overview', 'equine-event-manager-create-order', 'equine-event-manager-collect-payment', 'equine-event-manager-dashboard', 'equine-event-manager-reservation-editor', EEM_Entries::EDITOR_SLUG, EEM_Entries::LIST_SLUG, 'equine-event-manager-customer', 'equine-event-manager-customers', EEM_Notifications_Page::MENU_SLUG, EEM_Venues_Page::MENU_SLUG, EEM_Reservations_List_Page::MENU_SLUG, EEM_Venue_Editor_Page::MENU_SLUG, EEM_Producer_Editor_Page::MENU_SLUG ), true ) ) {
 			$should_load = true;
 		}
 
@@ -1112,6 +1117,26 @@ class EEM_Admin {
 			array( 'EEM_Event_Editor_Page', 'render' )
 		);
 
+		// Branded Venue editor (hidden submenu — reached via Venues list Edit links).
+		add_submenu_page(
+			'',
+			__( 'Edit Venue', 'equine-event-manager' ),
+			'',
+			'manage_options',
+			EEM_Venue_Editor_Page::MENU_SLUG,
+			array( 'EEM_Venue_Editor_Page', 'render' )
+		);
+
+		// Branded Producer editor (hidden submenu — reached via Producers list Edit links).
+		add_submenu_page(
+			'',
+			__( 'Edit Producer', 'equine-event-manager' ),
+			'',
+			'manage_options',
+			EEM_Producer_Editor_Page::MENU_SLUG,
+			array( 'EEM_Producer_Editor_Page', 'render' )
+		);
+
 		// DS-1.B: Admin Dashboard page — real render against
 		// .mockups/dashboard_page.html. DS-1.A reserved the slug + sidebar
 		// entry; DS-1.B replaces the placeholder callback with
@@ -1207,21 +1232,20 @@ class EEM_Admin {
 				array( 'EEM_Term_Categories_Page', 'render' )
 			);
 
-			// "Sheets & Results" = the draw-sheet / result PDF manager
-			// (EEM_Sheets_Results_Page). Native-events scoped because the
-			// documents + en_discipline taxonomy attach to en_event posts; also an
-			// optional feature (Settings → Add-Ons), hidden when off.
-			if ( EEM_Events::is_sheets_results_enabled() ) {
-				add_submenu_page(
-					self::MENU_SLUG,
-					__( 'Sheets & Results', 'equine-event-manager' ),
-					__( 'Sheets & Results', 'equine-event-manager' ),
-					'manage_options',
-					EEM_Sheets_Results_Page::MENU_SLUG,
-					array( 'EEM_Sheets_Results_Page', 'render' )
-				);
-			}
+		}
 
+		// "Sheets & Results" = the draw-sheet / result PDF manager.
+		// Independent of the Native Events gate — the feature has its own
+		// toggle in Settings → Add-Ons and works with any event source.
+		if ( EEM_Events::is_sheets_results_enabled() ) {
+			add_submenu_page(
+				self::MENU_SLUG,
+				__( 'Sheets & Results', 'equine-event-manager' ),
+				__( 'Sheets & Results', 'equine-event-manager' ),
+				'manage_options',
+				EEM_Sheets_Results_Page::MENU_SLUG,
+				array( 'EEM_Sheets_Results_Page', 'render' )
+			);
 		}
 
 		add_submenu_page(
