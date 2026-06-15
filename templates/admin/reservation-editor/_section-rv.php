@@ -618,11 +618,11 @@ ob_start();
 ?>
 <div class="eem-tag-select" id="eem-blocked-rv-lots-select">
 	<div class="eem-tag-select-input" data-eem-action="tag-open">
+		<input type="hidden" name="eem_blocked_rv_lots" value="<?php echo esc_attr( implode( ',', array_map( 'strval', $blocked_rv_lots ) ) ); ?>">
 		<?php foreach ( $blocked_rv_lots as $bl_val ) : ?>
 		<span class="eem-tag-chip" data-value="<?php echo esc_attr( (string) $bl_val ); ?>">
 			<?php echo esc_html( (string) $bl_val ); ?>
 			<button type="button" class="eem-tag-chip-remove" data-eem-action="tag-remove" aria-label="<?php esc_attr_e( 'Remove', 'equine-event-manager' ); ?>">&#xd7;</button>
-			<input type="hidden" name="eem_blocked_rv_lots[]" value="<?php echo esc_attr( (string) $bl_val ); ?>">
 		</span>
 		<?php endforeach; ?>
 		<input class="eem-tag-search" type="text" placeholder="<?php esc_attr_e( 'Type a lot label…', 'equine-event-manager' ); ?>" data-eem-input-action="tag-search" data-eem-tag-target="eem-blocked-rv-lots-select">

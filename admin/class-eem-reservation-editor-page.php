@@ -1122,6 +1122,9 @@ class EEM_Reservation_Editor_Page {
 		// Blocked stalls
 		if ( isset( $_POST['eem_blocked_stalls'] ) ) {
 			$bs_raw = wp_unslash( $_POST['eem_blocked_stalls'] );
+			if ( is_string( $bs_raw ) ) {
+				$bs_raw = array_filter( array_map( 'trim', explode( ',', $bs_raw ) ), 'strlen' );
+			}
 			$blocked_stalls_clean = array_map( 'sanitize_text_field', (array) $bs_raw );
 			$cfg->set( 'blocked_stalls', array_values( array_filter( $blocked_stalls_clean ) ) );
 		}
@@ -1236,6 +1239,9 @@ class EEM_Reservation_Editor_Page {
 		// Blocked RV lots
 		if ( isset( $_POST['eem_blocked_rv_lots'] ) ) {
 			$bl_raw = wp_unslash( $_POST['eem_blocked_rv_lots'] );
+			if ( is_string( $bl_raw ) ) {
+				$bl_raw = array_filter( array_map( 'trim', explode( ',', $bl_raw ) ), 'strlen' );
+			}
 			$blocked_rv_clean = array_map( 'sanitize_text_field', (array) $bl_raw );
 			$cfg->set( 'blocked_rv_lots', array_values( array_filter( $blocked_rv_clean ) ) );
 		}

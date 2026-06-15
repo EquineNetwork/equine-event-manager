@@ -605,12 +605,12 @@ eem_render_editor_field_row( array(
 ob_start();
 ?>
 <div class="eem-tag-select" id="eem-blocked-stalls-select">
+	<input type="hidden" name="eem_blocked_stalls" value="<?php echo esc_attr( implode( ',', array_map( 'strval', $blocked_stalls ) ) ); ?>">
 	<div class="eem-tag-select-input" data-eem-action="tag-open">
 		<?php foreach ( $blocked_stalls as $bs_val ) : ?>
 		<span class="eem-tag-chip" data-value="<?php echo esc_attr( (string) $bs_val ); ?>">
 			<?php echo esc_html( (string) $bs_val ); ?>
 			<button type="button" class="eem-tag-chip-remove" data-eem-action="tag-remove" aria-label="<?php esc_attr_e( 'Remove', 'equine-event-manager' ); ?>">&#xd7;</button>
-			<input type="hidden" name="eem_blocked_stalls[]" value="<?php echo esc_attr( (string) $bs_val ); ?>">
 		</span>
 		<?php endforeach; ?>
 		<input class="eem-tag-search" type="text" placeholder="<?php esc_attr_e( 'Type a stall number…', 'equine-event-manager' ); ?>" data-eem-input-action="tag-search" data-eem-tag-target="eem-blocked-stalls-select">
