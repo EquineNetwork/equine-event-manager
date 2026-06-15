@@ -358,6 +358,10 @@ class EEM_Reservation_Config {
 	 * @return int[] Reservation post IDs.
 	 */
 	public static function for_event( int $event_id, $post_status = 'publish' ): array {
+		if ( self::table_exists() ) {
+			return self::query_table( array( 'event_id' => (string) $event_id ), $post_status );
+		}
+
 		$query = new WP_Query( array(
 			'post_type'      => 'en_reservation',
 			'post_status'    => $post_status,
@@ -383,6 +387,10 @@ class EEM_Reservation_Config {
 	 * @return int[]
 	 */
 	public static function for_source( string $source, string $status = 'publish' ): array {
+		if ( self::table_exists() ) {
+			return self::query_table( array( 'event_source' => sanitize_key( $source ) ), $status );
+		}
+
 		$query = new WP_Query( array(
 			'post_type'      => 'en_reservation',
 			'post_status'    => $status,
@@ -434,6 +442,13 @@ class EEM_Reservation_Config {
 	 * @return int[]
 	 */
 	public static function for_event_and_source( int $event_id, string $source, string $status = 'any' ): array {
+		if ( self::table_exists() ) {
+			return self::query_table(
+				array( 'event_id' => (string) $event_id, 'event_source' => sanitize_key( $source ) ),
+				$status
+			);
+		}
+
 		$query = new WP_Query( array(
 			'post_type'      => 'en_reservation',
 			'post_status'    => $status,
@@ -464,6 +479,30 @@ class EEM_Reservation_Config {
 	 * @return int[]
 	 */
 	public static function with_stalls_or_rv( $post_status = 'publish', int $limit = 200 ): array {
+		if ( self::table_exists() ) {
+			global $wpdb;
+			$table   = $wpdb->prefix . 'eem_reservation_config';
+			$statuses = (array) $post_status;
+			if ( in_array( 'any', $statuses, true ) ) {
+				$status_clause = "p.post_status NOT IN ('auto-draft','inherit')";
+			} else {
+				$placeholders  = implode( ',', array_fill( 0, count( $statuses ), '%s' ) );
+				$status_clause = $wpdb->prepare( "p.post_status IN ($placeholders)", ...$statuses );
+			}
+
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$ids = $wpdb->get_col(
+				"SELECT c.reservation_id FROM {$table} c
+				 INNER JOIN {$wpdb->posts} p ON p.ID = c.reservation_id
+				 WHERE (c.stalls_enabled = 1 OR c.rv_enabled = 1)
+				 AND p.post_type = 'en_reservation'
+				 AND {$status_clause}
+				 LIMIT {$limit}"
+			);
+
+			return array_map( 'intval', $ids );
+		}
+
 		$query = new WP_Query( array(
 			'post_type'      => 'en_reservation',
 			'post_status'    => $post_status,
@@ -510,6 +549,26 @@ class EEM_Reservation_Config {
 	 */
 	public static function for_tec_event_with_section( int $event_id, string $section ): int {
 		$field = in_array( $section, array( 'stalls_enabled', 'rv_enabled' ), true ) ? $section : 'stalls_enabled';
+
+		if ( self::table_exists() ) {
+			global $wpdb;
+			$table = $wpdb->prefix . 'eem_reservation_config';
+
+			$id = $wpdb->get_var( $wpdb->prepare(
+				"SELECT c.reservation_id FROM {$table} c
+				 INNER JOIN {$wpdb->posts} p ON p.ID = c.reservation_id
+				 WHERE c.event_source = 'tec'
+				 AND c.event_id = %s
+				 AND c.{$field} = 1
+				 AND p.post_type = 'en_reservation'
+				 AND p.post_status = 'publish'
+				 LIMIT 1",
+				(string) $event_id
+			) );
+
+			return $id ? absint( $id ) : 0;
+		}
+
 		$query = new WP_Query( array(
 			'post_type'      => 'en_reservation',
 			'post_status'    => 'publish',
@@ -543,6 +602,50 @@ class EEM_Reservation_Config {
 		) );
 
 		return ! empty( $query->posts ) ? absint( $query->posts[0] ) : 0;
+	}
+
+	/**
+	 * Query the config table for reservation IDs matching column conditions.
+	 *
+	 * @param array<string,string> $where   Column => value pairs (AND).
+	 * @param string|string[]      $post_status Post status filter.
+	 * @param int                  $limit   Max results (0 = unlimited).
+	 * @return int[]
+	 */
+	private static function query_table( array $where, $post_status = 'publish', int $limit = 0 ): array {
+		global $wpdb;
+		$table    = $wpdb->prefix . 'eem_reservation_config';
+		$statuses = (array) $post_status;
+
+		if ( in_array( 'any', $statuses, true ) ) {
+			$status_clause = "p.post_status NOT IN ('auto-draft','inherit')";
+		} else {
+			$placeholders  = implode( ',', array_fill( 0, count( $statuses ), '%s' ) );
+			$status_clause = $wpdb->prepare( "p.post_status IN ($placeholders)", ...$statuses );
+		}
+
+		$conditions = array();
+		$values     = array();
+		foreach ( $where as $col => $val ) {
+			$conditions[] = "c.{$col} = %s";
+			$values[]     = $val;
+		}
+		$where_sql = implode( ' AND ', $conditions );
+
+		$sql = "SELECT c.reservation_id FROM {$table} c
+				INNER JOIN {$wpdb->posts} p ON p.ID = c.reservation_id
+				WHERE {$where_sql}
+				AND p.post_type = 'en_reservation'
+				AND {$status_clause}";
+
+		if ( $limit > 0 ) {
+			$sql .= " LIMIT {$limit}";
+		}
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$ids = $wpdb->get_col( $wpdb->prepare( $sql, ...$values ) );
+
+		return array_map( 'intval', $ids );
 	}
 
 	// ------------------------------------------------------------------
