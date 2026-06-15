@@ -1734,6 +1734,18 @@ class EEM_Reservations_CPT {
 	 *
 	 * @return array
 	 */
+	/**
+	 * Public accessor for the default meta values manifest.
+	 *
+	 * Used by EEM_Reservation_Config to expose the key manifest without
+	 * duplicating it. Internal callers should continue using the private method.
+	 *
+	 * @return array<string,mixed>
+	 */
+	public function get_default_meta_values_public(): array {
+		return $this->get_default_meta_values();
+	}
+
 	private function get_default_meta_values() {
 		$defaults = array(
 			'use_global_event_source'        => 1,
