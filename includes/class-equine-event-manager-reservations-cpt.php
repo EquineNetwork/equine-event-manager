@@ -2015,18 +2015,20 @@ class EEM_Reservations_CPT {
 	 * @return array{inventory_type:string, customer_selection:string, selection_mode:string}
 	 */
 	public static function resolve_stall_pair( int $post_id ): array {
-		$cfg    = EEM_Reservation_Config::for( $post_id );
-		$legacy = $cfg->get( 'stall_selection_mode', '' );
+		// Direct get_post_meta — NOT EEM_Reservation_Config — because this
+		// method is called from get_meta_values() during hydration; using the
+		// repo here would create an infinite recursion loop.
+		$legacy = (string) get_post_meta( $post_id, '_en_stall_selection_mode', true );
 		$legacy = in_array( $legacy, array( 'quantity', 'exact_map' ), true ) ? $legacy : 'quantity';
 
 		if ( metadata_exists( 'post', $post_id, '_en_stall_inventory_type' ) ) {
-			$type = self::sanitize_stall_inventory_type( $cfg->get( 'stall_inventory_type', '' ) );
+			$type = self::sanitize_stall_inventory_type( (string) get_post_meta( $post_id, '_en_stall_inventory_type', true ) );
 		} else {
 			$type = ( 'exact_map' === $legacy ) ? 'numbered' : 'quantity_only';
 		}
 
 		if ( metadata_exists( 'post', $post_id, '_en_stall_customer_selection' ) ) {
-			$sel = self::sanitize_stall_customer_selection( $cfg->get( 'stall_customer_selection', '' ) );
+			$sel = self::sanitize_stall_customer_selection( (string) get_post_meta( $post_id, '_en_stall_customer_selection', true ) );
 		} else {
 			$sel = ( 'exact_map' === $legacy ) ? 'pick_layout' : 'quantity';
 		}
@@ -2093,18 +2095,20 @@ class EEM_Reservations_CPT {
 	 * @return array{inventory_type:string, customer_selection:string, selection_mode:string}
 	 */
 	public static function resolve_rv_pair( int $post_id ): array {
-		$rv_cfg = EEM_Reservation_Config::for( $post_id );
-		$legacy = $rv_cfg->get( 'rv_selection_mode', '' );
+		// Direct get_post_meta — NOT EEM_Reservation_Config — because this
+		// method is called from get_meta_values() during hydration; using the
+		// repo here would create an infinite recursion loop.
+		$legacy = (string) get_post_meta( $post_id, '_en_rv_selection_mode', true );
 		$legacy = in_array( $legacy, array( 'quantity', 'exact_map' ), true ) ? $legacy : 'quantity';
 
 		if ( metadata_exists( 'post', $post_id, '_en_rv_inventory_type' ) ) {
-			$type = self::sanitize_rv_inventory_type( $rv_cfg->get( 'rv_inventory_type', '' ) );
+			$type = self::sanitize_rv_inventory_type( (string) get_post_meta( $post_id, '_en_rv_inventory_type', true ) );
 		} else {
 			$type = ( 'exact_map' === $legacy ) ? 'mapped' : 'bulk';
 		}
 
 		if ( metadata_exists( 'post', $post_id, '_en_rv_customer_selection' ) ) {
-			$sel = self::sanitize_rv_customer_selection( $rv_cfg->get( 'rv_customer_selection', '' ) );
+			$sel = self::sanitize_rv_customer_selection( (string) get_post_meta( $post_id, '_en_rv_customer_selection', true ) );
 		} else {
 			$sel = ( 'exact_map' === $legacy ) ? 'pick_layout' : 'quantity';
 		}
