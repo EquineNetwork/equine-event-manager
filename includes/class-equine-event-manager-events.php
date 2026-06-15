@@ -1701,18 +1701,18 @@ class EEM_Events {
 			$end_date = $start_date;
 		}
 
-		update_post_meta( $post_id, '_equine_event_manager_event_start_date', $start_date );
-		update_post_meta( $post_id, '_equine_event_manager_event_end_date', $end_date ? $end_date : $start_date );
-		update_post_meta( $post_id, '_equine_event_manager_event_venue_id', absint( isset( $_POST['equine_event_manager_event_venue_id'] ) ? wp_unslash( $_POST['equine_event_manager_event_venue_id'] ) : 0 ) );
-		update_post_meta( $post_id, '_equine_event_manager_event_producer_id', absint( isset( $_POST['equine_event_manager_event_producer_id'] ) ? wp_unslash( $_POST['equine_event_manager_event_producer_id'] ) : 0 ) );
-		update_post_meta( $post_id, '_equine_event_manager_event_flyer_file_id', absint( isset( $_POST['equine_event_manager_event_flyer_file_id'] ) ? wp_unslash( $_POST['equine_event_manager_event_flyer_file_id'] ) : 0 ) );
-		update_post_meta( $post_id, '_equine_event_manager_event_location_label', sanitize_text_field( isset( $_POST['equine_event_manager_event_location_label'] ) ? wp_unslash( $_POST['equine_event_manager_event_location_label'] ) : '' ) );
-		update_post_meta( $post_id, '_equine_event_manager_event_cta_label', sanitize_text_field( isset( $_POST['equine_event_manager_event_cta_label'] ) ? wp_unslash( $_POST['equine_event_manager_event_cta_label'] ) : __( 'Reserve Now', 'equine-event-manager' ) ) );
-		update_post_meta( $post_id, '_equine_event_manager_event_featured', empty( $_POST['equine_event_manager_event_featured'] ) ? 0 : 1 );
-
-		// Social links (canonical _en_ keys). Stored as full URLs; blank clears.
-		update_post_meta( $post_id, '_en_event_facebook', esc_url_raw( isset( $_POST['en_event_facebook'] ) ? wp_unslash( $_POST['en_event_facebook'] ) : '' ) );
-		update_post_meta( $post_id, '_en_event_instagram', esc_url_raw( isset( $_POST['en_event_instagram'] ) ? wp_unslash( $_POST['en_event_instagram'] ) : '' ) );
+		EEM_Native_Event_Repo::save( $post_id, array(
+			'start_date'     => $start_date,
+			'end_date'       => $end_date ? $end_date : $start_date,
+			'venue_id'       => absint( isset( $_POST['equine_event_manager_event_venue_id'] ) ? wp_unslash( $_POST['equine_event_manager_event_venue_id'] ) : 0 ),
+			'producer_id'    => absint( isset( $_POST['equine_event_manager_event_producer_id'] ) ? wp_unslash( $_POST['equine_event_manager_event_producer_id'] ) : 0 ),
+			'flyer_file_id'  => absint( isset( $_POST['equine_event_manager_event_flyer_file_id'] ) ? wp_unslash( $_POST['equine_event_manager_event_flyer_file_id'] ) : 0 ),
+			'location_label' => sanitize_text_field( isset( $_POST['equine_event_manager_event_location_label'] ) ? wp_unslash( $_POST['equine_event_manager_event_location_label'] ) : '' ),
+			'cta_label'      => sanitize_text_field( isset( $_POST['equine_event_manager_event_cta_label'] ) ? wp_unslash( $_POST['equine_event_manager_event_cta_label'] ) : __( 'Reserve Now', 'equine-event-manager' ) ),
+			'featured'       => empty( $_POST['equine_event_manager_event_featured'] ) ? 0 : 1,
+			'facebook'       => esc_url_raw( isset( $_POST['en_event_facebook'] ) ? wp_unslash( $_POST['en_event_facebook'] ) : '' ),
+			'instagram'      => esc_url_raw( isset( $_POST['en_event_instagram'] ) ? wp_unslash( $_POST['en_event_instagram'] ) : '' ),
+		) );
 	}
 
 	/**
@@ -1854,16 +1854,17 @@ class EEM_Events {
 	public function render_event_details_meta_box( $post ) {
 		wp_nonce_field( 'equine_event_manager_save_event_meta', self::EVENT_META_NONCE );
 
-		$start_date         = (string) get_post_meta( $post->ID, '_equine_event_manager_event_start_date', true );
-		$end_date           = (string) get_post_meta( $post->ID, '_equine_event_manager_event_end_date', true );
-		$venue_id           = absint( get_post_meta( $post->ID, '_equine_event_manager_event_venue_id', true ) );
-		$producer_id        = absint( get_post_meta( $post->ID, '_equine_event_manager_event_producer_id', true ) );
-		$flyer_file_id      = absint( get_post_meta( $post->ID, '_equine_event_manager_event_flyer_file_id', true ) );
-		$location_label     = (string) get_post_meta( $post->ID, '_equine_event_manager_event_location_label', true );
-		$cta_label          = (string) get_post_meta( $post->ID, '_equine_event_manager_event_cta_label', true );
-		$facebook_url       = (string) get_post_meta( $post->ID, '_en_event_facebook', true );
-		$instagram_url      = (string) get_post_meta( $post->ID, '_en_event_instagram', true );
-		$featured           = (int) get_post_meta( $post->ID, '_equine_event_manager_event_featured', true );
+		$evt                = EEM_Native_Event_Repo::get( $post->ID );
+		$start_date         = $evt['start_date'];
+		$end_date           = $evt['end_date'];
+		$venue_id           = $evt['venue_id'];
+		$producer_id        = $evt['producer_id'];
+		$flyer_file_id      = $evt['flyer_file_id'];
+		$location_label     = $evt['location_label'];
+		$cta_label          = $evt['cta_label'];
+		$facebook_url       = $evt['facebook'];
+		$instagram_url      = $evt['instagram'];
+		$featured           = $evt['featured'];
 		$venues             = $this->get_posts_for_select( self::VENUE_POST_TYPE );
 		$producers          = $this->get_posts_for_select( self::PRODUCER_POST_TYPE );
 		$flyer_url          = $flyer_file_id ? wp_get_attachment_url( $flyer_file_id ) : '';
@@ -2611,8 +2612,8 @@ class EEM_Events {
 	 * @return array{start_date:string,end_date:string}
 	 */
 	public static function get_native_event_date_values( $event_id ) {
-		$start = (string) get_post_meta( $event_id, '_equine_event_manager_event_start_date', true );
-		$end   = (string) get_post_meta( $event_id, '_equine_event_manager_event_end_date', true );
+		$start = (string) EEM_Native_Event_Repo::get_field( $event_id, 'start_date' );
+		$end   = (string) EEM_Native_Event_Repo::get_field( $event_id, 'end_date' );
 
 		return array(
 			'start_date' => self::normalize_date_for_input( $start ),
@@ -2627,8 +2628,8 @@ class EEM_Events {
 	 * @return array{venue_name:string,location:string}
 	 */
 	public static function get_native_event_card_details( $event_id ) {
-		$venue_id       = absint( get_post_meta( $event_id, '_equine_event_manager_event_venue_id', true ) );
-		$location_label = (string) get_post_meta( $event_id, '_equine_event_manager_event_location_label', true );
+		$venue_id       = (int) EEM_Native_Event_Repo::get_field( $event_id, 'venue_id' );
+		$location_label = (string) EEM_Native_Event_Repo::get_field( $event_id, 'location_label' );
 		$venue_name     = '';
 		$location       = $location_label;
 
@@ -2675,6 +2676,20 @@ class EEM_Events {
 	 * @return array
 	 */
 	public static function get_upcoming_native_events( $limit = 200 ) {
+		if ( EEM_Native_Event_Repo::table_exists() ) {
+			global $wpdb;
+			$ne = EEM_Native_Event_Repo::table_name();
+			$ids = $wpdb->get_col( $wpdb->prepare(
+				"SELECT p.ID FROM {$wpdb->posts} p
+				 LEFT JOIN {$ne} ne ON ne.event_id = p.ID
+				 WHERE p.post_type = %s AND p.post_status IN ('publish','future','draft')
+				 ORDER BY ne.start_date ASC
+				 LIMIT %d",
+				self::EVENT_POST_TYPE,
+				absint( $limit )
+			) ); // phpcs:ignore WordPress.DB
+			return array_filter( array_map( 'get_post', $ids ) );
+		}
 		return get_posts(
 			array(
 				'post_type'      => self::EVENT_POST_TYPE,
@@ -2773,12 +2788,14 @@ class EEM_Events {
 		}
 
 		update_post_meta( $event_id, '_equine_event_manager_imported_tec_event_id', $tec_event_id );
-		update_post_meta( $event_id, '_equine_event_manager_event_start_date', $dates['start_date'] );
-		update_post_meta( $event_id, '_equine_event_manager_event_end_date', $dates['end_date'] ? $dates['end_date'] : $dates['start_date'] );
-		update_post_meta( $event_id, '_equine_event_manager_event_venue_id', $venue_id );
-		update_post_meta( $event_id, '_equine_event_manager_event_producer_id', $producer_id );
-		update_post_meta( $event_id, '_equine_event_manager_event_location_label', self::get_tec_event_location_label( $tec_event_id, $venue_id ) );
-		update_post_meta( $event_id, '_equine_event_manager_event_cta_label', __( 'Reserve Now', 'equine-event-manager' ) );
+		EEM_Native_Event_Repo::save( $event_id, array(
+			'start_date'     => $dates['start_date'],
+			'end_date'       => $dates['end_date'] ? $dates['end_date'] : $dates['start_date'],
+			'venue_id'       => $venue_id,
+			'producer_id'    => $producer_id,
+			'location_label' => self::get_tec_event_location_label( $tec_event_id, $venue_id ),
+			'cta_label'      => __( 'Reserve Now', 'equine-event-manager' ),
+		) );
 
 		$thumbnail_id = get_post_thumbnail_id( $tec_event_id );
 		if ( $thumbnail_id ) {
@@ -3466,6 +3483,10 @@ class EEM_Events {
 	 * @return array<int, int>
 	 */
 	private static function get_native_events_for_display( $atts, $limit ) {
+		if ( EEM_Native_Event_Repo::table_exists() ) {
+			return self::get_native_events_for_display_sql( $atts, $limit );
+		}
+
 		$query_args = array(
 			'post_type'      => self::EVENT_POST_TYPE,
 			'post_status'    => 'publish',
@@ -3515,6 +3536,49 @@ class EEM_Events {
 		}
 
 		return array_map( 'absint', get_posts( $query_args ) );
+	}
+
+	/**
+	 * SQL-based native events query using the relational table.
+	 *
+	 * @param array $atts  Shortcode attributes.
+	 * @param int   $limit Query limit.
+	 * @return array<int, int>
+	 */
+	private static function get_native_events_for_display_sql( array $atts, int $limit ): array {
+		global $wpdb;
+		$ne = EEM_Native_Event_Repo::table_name();
+
+		$where = array( "p.post_type = '" . esc_sql( self::EVENT_POST_TYPE ) . "'", "p.post_status = 'publish'" );
+		$join  = "LEFT JOIN {$ne} ne ON ne.event_id = p.ID";
+		$args  = array();
+
+		if ( ! empty( $atts['featured'] ) ) {
+			$where[] = 'ne.featured = 1';
+		}
+		if ( ! empty( $atts['venue'] ) ) {
+			$where[] = $wpdb->prepare( 'ne.venue_id = %d', absint( $atts['venue'] ) );
+		}
+		if ( ! empty( $atts['producer'] ) ) {
+			$where[] = $wpdb->prepare( 'ne.producer_id = %d', absint( $atts['producer'] ) );
+		}
+		if ( ! empty( $atts['category'] ) ) {
+			$tax = esc_sql( self::EVENT_CATEGORY_TAXONOMY );
+			$field = is_numeric( $atts['category'] ) ? 'tt.term_id' : 't.slug';
+			$val   = is_numeric( $atts['category'] ) ? absint( $atts['category'] ) : sanitize_title( $atts['category'] );
+			$join .= " INNER JOIN {$wpdb->term_relationships} tr ON tr.object_id = p.ID";
+			$join .= " INNER JOIN {$wpdb->term_taxonomy} tt ON tt.term_taxonomy_id = tr.term_taxonomy_id AND tt.taxonomy = '{$tax}'";
+			if ( ! is_numeric( $atts['category'] ) ) {
+				$join .= " INNER JOIN {$wpdb->terms} t ON t.term_id = tt.term_id";
+			}
+			$where[] = $wpdb->prepare( "{$field} = %s", $val );
+		}
+
+		$where_sql = implode( ' AND ', $where );
+		// phpcs:ignore WordPress.DB
+		return array_map( 'absint', $wpdb->get_col(
+			"SELECT p.ID FROM {$wpdb->posts} p {$join} WHERE {$where_sql} ORDER BY ne.start_date ASC LIMIT " . absint( $limit )
+		) );
 	}
 
 	/**
@@ -4010,13 +4074,12 @@ class EEM_Events {
 	 * @return array<string, mixed>
 	 */
 	private static function get_normalized_native_event_data( $event_id, $post ) {
+		$evt              = EEM_Native_Event_Repo::get( $event_id );
 		$reservation_id   = absint( get_post_meta( $event_id, '_equine_event_manager_reservation_id', true ) );
-		$flyer_file_id    = absint( get_post_meta( $event_id, '_equine_event_manager_event_flyer_file_id', true ) );
-		$flyer_file_url   = (string) get_post_meta( $event_id, '_equine_event_manager_event_flyer_url', true );
+		$flyer_file_id    = $evt['flyer_file_id'];
+		$flyer_file_url   = $evt['flyer_url'];
 		$event_dates      = self::get_native_event_date_values( $event_id );
 		$event_details    = self::get_native_event_card_details( $event_id );
-		$venue_id         = absint( get_post_meta( $event_id, '_equine_event_manager_event_venue_id', true ) );
-		$producer_id      = absint( get_post_meta( $event_id, '_equine_event_manager_event_producer_id', true ) );
 		$categories       = wp_get_post_terms( $event_id, self::EVENT_CATEGORY_TAXONOMY, array( 'fields' => 'names' ) );
 		$tags             = wp_get_post_terms( $event_id, self::EVENT_TAG_TAXONOMY, array( 'fields' => 'names' ) );
 
@@ -4030,17 +4093,17 @@ class EEM_Events {
 			'end_date'       => $event_dates['end_date'],
 			'venue_name'     => $event_details['venue_name'],
 			'location'       => $event_details['location'],
-			'venue'          => self::get_venue_details( $venue_id ),
-			'producer'       => self::get_producer_details( $producer_id ),
-			'featured'       => (bool) get_post_meta( $event_id, '_equine_event_manager_event_featured', true ),
+			'venue'          => self::get_venue_details( $evt['venue_id'] ),
+			'producer'       => self::get_producer_details( $evt['producer_id'] ),
+			'featured'       => (bool) $evt['featured'],
 			'featured_image' => get_the_post_thumbnail_url( $event_id, 'large' ),
 			'hero_image'     => self::resolve_hero_image_url( $flyer_file_id, (string) get_the_post_thumbnail_url( $event_id, 'large' ) ),
 			'flyer_url'      => $flyer_file_url ? $flyer_file_url : ( $flyer_file_id ? wp_get_attachment_url( $flyer_file_id ) : '' ),
 			'reservation_id' => $reservation_id,
-			'cta_label'      => (string) get_post_meta( $event_id, '_equine_event_manager_event_cta_label', true ),
+			'cta_label'      => $evt['cta_label'],
 			'social'         => array(
-				'facebook'  => (string) get_post_meta( $event_id, '_en_event_facebook', true ),
-				'instagram' => (string) get_post_meta( $event_id, '_en_event_instagram', true ),
+				'facebook'  => $evt['facebook'],
+				'instagram' => $evt['instagram'],
 			),
 			'categories'     => is_wp_error( $categories ) ? array() : array_values( array_filter( array_map( 'strval', $categories ) ) ),
 			'tags'           => is_wp_error( $tags ) ? array() : array_values( array_filter( array_map( 'strval', $tags ) ) ),

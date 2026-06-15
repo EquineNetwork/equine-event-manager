@@ -338,6 +338,33 @@ post. Decoupled from postmeta at v2.7.321.
 
 ---
 
+## 6c. `wp_eem_native_events`
+
+**Purpose:** Native Event (en_event CPT) fields. One row per `en_event` post.
+Decoupled from postmeta at v2.7.322.
+
+| Column | Type | Null | Default | Notes |
+|---|---|---|---|---|
+| `event_id` | `bigint unsigned` | NO | — | PK, matches `wp_posts.ID` (en_event) |
+| `start_date` | `datetime` | YES | `NULL` | Event start date/time |
+| `end_date` | `datetime` | YES | `NULL` | Event end date/time |
+| `venue_id` | `bigint unsigned` | NO | `0` | Linked en_venue post ID |
+| `producer_id` | `bigint unsigned` | NO | `0` | Linked en_producer post ID |
+| `location_label` | `varchar(255)` | NO | `''` | Display location string |
+| `cta_label` | `varchar(255)` | NO | `''` | Call-to-action button text |
+| `flyer_file_id` | `bigint unsigned` | NO | `0` | WP attachment ID for flyer |
+| `flyer_url` | `varchar(500)` | NO | `''` | Direct flyer URL |
+| `featured` | `tinyint(1) unsigned` | NO | `0` | 1 = featured event |
+| `facebook` | `varchar(500)` | NO | `''` | Facebook page URL |
+| `instagram` | `varchar(500)` | NO | `''` | Instagram handle/URL |
+| `details_summary` | `text` | NO | `''` | Event details summary |
+
+**Indexes:** `PRIMARY(event_id)`, `KEY start_date(start_date)`.
+
+**Repository:** `EEM_Native_Event_Repo` — static methods `get()`, `get_field()`, `save()`.
+
+---
+
 ## 7. `wp_eem_sheet_entries`
 
 **Purpose:** Draw sheets and results for Sheets & Results feature. One row per

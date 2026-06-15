@@ -2,7 +2,7 @@
 
 **Purpose:** Inventory of every entity that still uses `wp_postmeta` for
 business data, with decoupling status and effort estimate for the API layer.
-Last updated 2026-06-15, plugin version **2.7.321**.
+Last updated 2026-06-15, plugin version **2.7.322**.
 
 ---
 
@@ -72,25 +72,18 @@ Last updated 2026-06-15, plugin version **2.7.321**.
 - **Migrations:** mig-022 (backfill from postmeta), mig-023 (drop postmeta rows)
 - **API readiness:** Ready. Decoupled at v2.7.321.
 
-### 7. Native Events (en_event CPT) — **NOT STARTED**
+### 7. Native Events (en_event CPT) — **DONE**
 
-- **Current storage:** `wp_postmeta` on `en_event` posts
-- **Keys:** `_equine_event_manager_event_start_date`, `_equine_event_manager_event_end_date`,
-  `_equine_event_manager_event_venue_id`, `_equine_event_manager_event_producer_id`,
-  `_equine_event_manager_event_flyer_file_id`, `_equine_event_manager_event_location_label`,
-  `_equine_event_manager_event_cta_label`, `_equine_event_manager_event_featured`,
-  `_en_event_facebook`, `_en_event_instagram`, plus Elementor integration keys
-- **Call count:** ~140 `get/update_post_meta` calls in `class-equine-event-manager-events.php`
-  + 26 in `class-eem-event-editor-page.php`
-- **Effort:** Medium (~1–1.5 weeks). Many keys but mostly scalar. The v2 Native
-  Events subsystem is the largest remaining postmeta consumer.
-- **Complication:** Events are source-polymorphic (TEC / GEMS / Native). TEC and
-  GEMS events don't use postmeta at all — they're fetched from external
-  APIs/feeds. Only Native Events use postmeta. The API layer needs to present a
-  unified event interface regardless of source.
-- **API priority:** High for the API layer — events are the root entity
-  everything else hangs off. But the decoupling only affects the Native Events
-  source; TEC/GEMS are already external.
+- **Table:** `wp_eem_native_events` (event_id PK, start_date, end_date,
+  venue_id, producer_id, location_label, cta_label, flyer_file_id, flyer_url,
+  featured, facebook, instagram, details_summary)
+- **Repository:** `EEM_Native_Event_Repo` — static `get()`, `get_field()`, `save()`
+- **Postmeta calls:** 0 on en_event posts (fallback paths only fire pre-migration;
+  TEC event posts still use postmeta for flyer/featured — that's TEC's data, not ours)
+- **Migrations:** mig-024 (backfill from postmeta), mig-025 (drop postmeta rows)
+- **WP_Query meta_query:** replaced with direct SQL JOINing wp_eem_native_events
+  for ordering + featured/venue/producer filtering (postmeta fallback retained pre-migration)
+- **API readiness:** Ready. Decoupled at v2.7.322.
 
 ### 8. Native Venues (en_venue CPT) — **DONE**
 
@@ -146,13 +139,11 @@ Last updated 2026-06-15, plugin version **2.7.321**.
 | 4 | Venues (identity) | **DONE** | 0 | — | Ready |
 | 5 | Event Defaults | **DONE** | 0 | — | Ready |
 | 6 | Division Config | **DONE** | 0 | — | Ready |
-| 7 | Native Events | NOT STARTED | 166 | 1–1.5 wk | High |
+| 7 | Native Events | **DONE** | 0 | — | Ready |
 | 8 | Native Venues (detail) | **DONE** | 0 | — | Ready |
 | 9 | Producers | **DONE** | 0 | — | Ready |
 | 10 | Sheets & Results | **DONE** | 0 | — | Ready |
 | 11 | Settings | N/A | 0 | — | Ready |
 
-**Bottom line:** 9 of 10 business entities are fully decoupled and API-ready
-today. The remaining 1 (Native Events) is ~1–1.5 weeks of work, but **does not
-block the initial API layer** — the API can launch exposing the 9 ready entities
-and add Native Events incrementally as it's decoupled.
+**Bottom line:** All 10 business entities are fully decoupled and API-ready.
+Postmeta decouple Phase 1 is complete as of v2.7.322.

@@ -950,15 +950,16 @@ class EEM_Dashboard_Repo {
 			if ( 'publish' !== get_post_status( $p ) ) {
 				continue;
 			}
-			$start    = (string) get_post_meta( $p->ID, '_equine_event_manager_event_start_date', true );
-			$end      = (string) get_post_meta( $p->ID, '_equine_event_manager_event_end_date', true );
+			$evt      = EEM_Native_Event_Repo::get( (int) $p->ID );
+			$start    = $evt['start_date'];
+			$end      = $evt['end_date'];
 			$start_ts = '' !== trim( $start ) ? (int) strtotime( $start ) : 0;
 			$end_ts   = '' !== trim( $end ) ? (int) strtotime( $end ) : $start_ts;
 			// Skip events that have already ended.
 			if ( $end_ts && $end_ts < $today ) {
 				continue;
 			}
-			$venue_id = (int) get_post_meta( $p->ID, '_equine_event_manager_event_venue_id', true );
+			$venue_id = $evt['venue_id'];
 
 			$out[] = array(
 				'id'         => (int) $p->ID,

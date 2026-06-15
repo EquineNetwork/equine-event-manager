@@ -54,6 +54,9 @@ class EEM_Activator {
 		if ( class_exists( 'EEM_Division_Config_Repo' ) ) {
 			EEM_Division_Config_Repo::create_table();
 		}
+		if ( class_exists( 'EEM_Native_Event_Repo' ) ) {
+			EEM_Native_Event_Repo::create_table();
+		}
 		self::maybe_refresh_native_event_rewrite_rules();
 		self::run_one_time_migrations();
 		update_option( self::DB_VERSION_OPTION, EQUINE_EVENT_MANAGER_VERSION );
@@ -263,6 +266,16 @@ class EEM_Activator {
 		if ( ! get_option( 'eem_mig_023_drop_division_config_postmeta_complete' ) ) {
 			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-023-drop-division-config-postmeta.php';
 			eem_mig_023_drop_division_config_postmeta();
+		}
+
+		if ( ! get_option( 'eem_mig_024_native_event_backfill_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-024-native-event-backfill.php';
+			eem_mig_024_native_event_backfill();
+		}
+
+		if ( ! get_option( 'eem_mig_025_drop_native_event_postmeta_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-025-drop-native-event-postmeta.php';
+			eem_mig_025_drop_native_event_postmeta();
 		}
 	}
 
