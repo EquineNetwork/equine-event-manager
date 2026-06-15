@@ -761,16 +761,15 @@ class EEM_Reservations_CPT {
 			}
 		}
 
-		foreach ( $data as $key => $value ) {
-			// CLEANUP #44 — section-toggle fields write the canonical
-			// `_eem_section_enabled_<shortkey>` key; everything else keeps `_en_<field>`.
-			update_post_meta( $post_id, self::section_enabled_meta_key( $key ), $value );
-		}
-
-		// Sync to relational table (postmeta decouple P2.4).
+		// Postmeta decouple: write to relational table (primary) with
+		// postmeta fallback when the table doesn't exist yet.
 		if ( EEM_Reservation_Config::table_exists() ) {
 			EEM_Reservation_Config::insert_from_values( $post_id, $data );
 			EEM_Reservation_Config::flush_cache( $post_id );
+		} else {
+			foreach ( $data as $key => $value ) {
+				update_post_meta( $post_id, self::section_enabled_meta_key( $key ), $value );
+			}
 		}
 
 		// Bidirectional one-to-one enforcement for TEC event links.

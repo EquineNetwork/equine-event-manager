@@ -223,6 +223,11 @@ class EEM_Activator {
 			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-016-reservation-config-table.php';
 			eem_mig_016_reservation_config_table();
 		}
+
+		if ( ! get_option( 'eem_mig_017_drop_config_postmeta_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-017-drop-config-postmeta.php';
+			eem_mig_017_drop_config_postmeta();
+		}
 	}
 
 	/**

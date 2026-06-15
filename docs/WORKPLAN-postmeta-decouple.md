@@ -113,10 +113,10 @@ codebase improvement with no risk surface.
   relational table. `EEM_Reservations_CPT::save_meta()` still writes postmeta AND syncs to the
   table (transitional dual-write at the CPT level). (2.7.317)
 
-**Remaining work (future session):**
-- Migrate `save_meta()` to go through `EEM_Reservation_Config` instead of direct `update_post_meta`
-- Drop the `_en_*` / `_eem_section_enabled_*` postmeta rows (after bake period confirms table is reliable)
-- Storage backend is then a one-class swap to GH/.NET
+**✅ Postmeta cleanup tail (2.7.318):**
+- `save_meta()` now writes relational-primary with postmeta fallback (no dual-write)
+- Migration 017 drops `_en_*` / `_eem_section_enabled_*` postmeta rows for migrated reservations
+- Storage backend is now a one-class swap to GH/.NET
 
 ---
 

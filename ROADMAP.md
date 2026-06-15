@@ -23,13 +23,14 @@ API/native last.*
    phones during sellouts AND admins run this on the fly ringside; both surfaces must be VERY
    responsive. Doable now (the PWA also gives "app feel" while native is months out).
 4. **Venue Slice 2** — `en_venue` → canonical-table write-through (finishes the venue thread).
-5. **Repo cleanup — delete dead docs** (the ship-only-runtime half is already done).
+5. ✅ **Repo cleanup — delete dead docs** (dead dev docs removed 2.7.317).
 6. **Entry-aware Dashboard headline metrics** — small additive admin visibility.
-7. **Postmeta → relational de-coupling** — ✅ Phase 2 complete (2.7.311–2.7.317).
+7. ✅ **Postmeta → relational de-coupling** — COMPLETE (2.7.311–2.7.318).
    `EEM_Reservation_Config` repo skeleton (P1), relational table `wp_eem_reservation_config`
    with backfill migration (P2.1), reads from table (P2.2), query helpers as SQL JOINs (P2.3),
-   repo save writes table-only / CPT save syncs to table (P2.4). Remaining: migrate CPT
-   `save_meta()` to go through the repo entirely, then drop `_en_*` postmeta rows.
+   repo save writes table-only (P2.4), CPT `save_meta()` writes relational-primary with
+   postmeta fallback (2.7.318), migration 017 drops `_en_*` config postmeta rows (2.7.318).
+   Storage backend is now a one-class swap to GH/.NET.
 8. **Sheets & Results — CSV / Google Sheets / external URLs.**
 9. **Event Entries — competition management.**
 10. **PDF venue map → stall-grid overlay** (exploratory).
