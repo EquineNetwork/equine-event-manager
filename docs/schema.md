@@ -297,7 +297,27 @@ division per order).
 
 ---
 
-## 6. `wp_eem_sheet_entries`
+## 6. `wp_eem_producers`
+
+**Purpose:** Producer (event organizer) detail fields. One row per `en_producer`
+CPT post. Decoupled from postmeta at v2.7.319.
+
+| Column | Type | Null | Default | Notes |
+|---|---|---|---|---|
+| `producer_id` | `bigint unsigned` | NO | — | PK, matches `wp_posts.ID` |
+| `contact_name` | `varchar(191)` | NO | `''` | |
+| `email` | `varchar(191)` | NO | `''` | |
+| `phone` | `varchar(50)` | NO | `''` | |
+| `website` | `varchar(500)` | NO | `''` | |
+| `imported_tec_organizer_id` | `bigint unsigned` | NO | `0` | TEC organizer post ID (0 if not imported) |
+
+**Indexes:** `PRIMARY(producer_id)`.
+
+**Repository:** `EEM_Producer_Repo` — static methods `get()`, `get_field()`, `save()`.
+
+---
+
+## 7. `wp_eem_sheet_entries`
 
 **Purpose:** Draw sheets and results for Sheets & Results feature. One row per
 sheet/result entry per event.
@@ -320,7 +340,7 @@ sheet/result entry per event.
 
 ---
 
-## 7. `wp_eem_venues`
+## 8. `wp_eem_venues`
 
 **Purpose:** Source-agnostic venue entity. Normalized across TEC, GEMS, and
 Native Events sources.
@@ -336,7 +356,7 @@ Native Events sources.
 
 ---
 
-## 8. `wp_eem_venue_source_map`
+## 9. `wp_eem_venue_source_map`
 
 **Purpose:** Maps source-specific venue identifiers to the canonical
 `wp_eem_venues` row.
@@ -353,7 +373,7 @@ Native Events sources.
 
 ---
 
-## 9. `wp_eem_venue_layouts`
+## 10. `wp_eem_venue_layouts`
 
 **Purpose:** Saved facility layouts (stall/RV grid configs) per venue. Reusable
 templates for recurring events.

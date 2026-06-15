@@ -109,17 +109,13 @@ Last updated 2026-06-15, plugin version **2.7.318**.
 - **API priority:** Medium. Venue identity is already relational; the address/geo
   detail would enrich the API response but isn't blocking.
 
-### 9. Native Producers (en_producer CPT) — **NOT STARTED**
+### 9. Native Producers (en_producer CPT) — **DONE**
 
-- **Current storage:** `wp_postmeta` on `en_producer` posts
-- **Keys:** `_en_producer_website`, `_en_producer_email`, `_en_producer_phone`,
-  `_en_producer_facebook`, `_en_producer_instagram`, `_en_producer_logo_id`,
-  `_en_producer_banner_id`
-- **Call count:** 8 in producer editor page
-- **Effort:** Tiny (~2 days). 8 keys, all strings/integers. New table
-  `wp_eem_producers` or extend an existing one.
-- **API priority:** Low. Producers are metadata on events, not independently
-  queried by consumers.
+- **Table:** `wp_eem_producers`
+- **Repository:** `EEM_Producer_Repo` — static `get()`, `get_field()`, `save()`
+- **Postmeta calls:** 0 (fallback path in repo only fires pre-migration)
+- **Migrations:** mig-018 (backfill from postmeta), mig-019 (drop postmeta rows)
+- **API readiness:** Ready. Decoupled at v2.7.319.
 
 ### 10. Sheets & Results — **DONE**
 
@@ -160,12 +156,12 @@ Last updated 2026-06-15, plugin version **2.7.318**.
 | 6 | Division Config | NOT STARTED | 26 | 0.5 wk | Medium |
 | 7 | Native Events | NOT STARTED | 166 | 1–1.5 wk | High |
 | 8 | Native Venues (detail) | PARTIAL | 14 | 0.5 wk | Medium |
-| 9 | Producers | NOT STARTED | 8 | 2 days | Low |
+| 9 | Producers | **DONE** | 0 | — | Ready |
 | 10 | Sheets & Results | **DONE** | 0 | — | Ready |
 | 11 | Settings | N/A | 0 | — | Ready |
 
-**Bottom line:** 6 of 10 business entities are fully decoupled and API-ready
-today. The remaining 4 (Division Config, Native Events, Native Venue detail,
-Producers) total ~2.5–3 weeks of work, but **none of them block the initial API
-layer** — the API can launch exposing the 6 ready entities and add the remaining
-4 incrementally as they're decoupled.
+**Bottom line:** 7 of 10 business entities are fully decoupled and API-ready
+today. The remaining 3 (Division Config, Native Events, Native Venue detail)
+total ~2–2.5 weeks of work, but **none of them block the initial API layer** —
+the API can launch exposing the 7 ready entities and add the remaining 3
+incrementally as they're decoupled.

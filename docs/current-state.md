@@ -1,6 +1,6 @@
 # Current State — EEM Codebase Inventory
 
-**Generated 2026-06-15 at plugin version 2.7.318.**
+**Generated 2026-06-15 at plugin version 2.7.319.**
 
 ---
 
@@ -75,9 +75,10 @@ wp_eem_sheet_entries          — draw sheets and results
 wp_eem_venues                 — source-agnostic venue entities
 wp_eem_venue_source_map       — venue cross-source identity mapping
 wp_eem_venue_layouts          — saved facility layout templates
+wp_eem_producers              — producer detail fields (decoupled from postmeta)
 ```
 
-**9 custom tables total.** Full schema documented in `docs/schema.md`.
+**10 custom tables total.** Full schema documented in `docs/schema.md`.
 
 ---
 

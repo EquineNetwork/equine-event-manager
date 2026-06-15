@@ -1795,14 +1795,8 @@ class EEM_Events {
 			return;
 		}
 
-		$fields = array(
-			'contact_name',
-			'email',
-			'phone',
-			'website',
-		);
-
-		foreach ( $fields as $field ) {
+		$data = array();
+		foreach ( array( 'contact_name', 'email', 'phone', 'website' ) as $field ) {
 			$value = isset( $_POST[ 'equine_event_manager_producer_' . $field ] ) ? wp_unslash( $_POST[ 'equine_event_manager_producer_' . $field ] ) : '';
 
 			if ( 'website' === $field ) {
@@ -1813,8 +1807,10 @@ class EEM_Events {
 				$value = sanitize_text_field( $value );
 			}
 
-			update_post_meta( $post_id, '_equine_event_manager_producer_' . $field, $value );
+			$data[ $field ] = $value;
 		}
+
+		EEM_Producer_Repo::save( (int) $post_id, $data );
 	}
 
 	/**
@@ -2306,10 +2302,11 @@ class EEM_Events {
 	public function render_producer_details_meta_box( $post ) {
 		wp_nonce_field( 'equine_event_manager_save_producer_meta', self::PRODUCER_META_NONCE );
 
-		$contact_name       = (string) get_post_meta( $post->ID, '_equine_event_manager_producer_contact_name', true );
-		$email              = (string) get_post_meta( $post->ID, '_equine_event_manager_producer_email', true );
-		$phone              = (string) get_post_meta( $post->ID, '_equine_event_manager_producer_phone', true );
-		$website            = (string) get_post_meta( $post->ID, '_equine_event_manager_producer_website', true );
+		$producer_data      = EEM_Producer_Repo::get( (int) $post->ID );
+		$contact_name       = $producer_data['contact_name'];
+		$email              = $producer_data['email'];
+		$phone              = $producer_data['phone'];
+		$website            = $producer_data['website'];
 		$linked_event_count = $this->count_linked_native_events( '_equine_event_manager_event_producer_id', $post->ID );
 		$website_url        = $website ? esc_url( $website ) : '';
 		$contact_ready      = $contact_name || $email || $phone;
@@ -4199,13 +4196,14 @@ class EEM_Events {
 			);
 		}
 
-		$name = get_the_title( $producer_id );
+		$name          = get_the_title( $producer_id );
+		$producer_data = EEM_Producer_Repo::get( (int) $producer_id );
 
 		return array(
 			'name'       => $name,
-			'email'      => (string) get_post_meta( $producer_id, '_equine_event_manager_producer_email', true ),
-			'phone'      => (string) get_post_meta( $producer_id, '_equine_event_manager_producer_phone', true ),
-			'website'    => (string) get_post_meta( $producer_id, '_equine_event_manager_producer_website', true ),
+			'email'      => $producer_data['email'],
+			'phone'      => $producer_data['phone'],
+			'website'    => $producer_data['website'],
 			'filter_url' => self::get_directory_url( self::DIRECTORY_PRODUCER_ROUTE_BASE, $name ),
 		);
 	}
@@ -4730,23 +4728,9 @@ class EEM_Events {
 			return 0;
 		}
 
-		$existing = get_posts(
-			array(
-				'post_type'      => self::PRODUCER_POST_TYPE,
-				'post_status'    => array( 'publish', 'draft', 'private' ),
-				'posts_per_page' => 1,
-				'fields'         => 'ids',
-				'meta_query'     => array(
-					array(
-						'key'   => '_equine_event_manager_imported_tec_organizer_id',
-						'value' => $organizer_id,
-					),
-				),
-			)
-		);
-
-		if ( ! empty( $existing[0] ) ) {
-			return absint( $existing[0] );
+		$existing_id = self::find_producer_by_tec_organizer( (int) $organizer_id );
+		if ( $existing_id ) {
+			return $existing_id;
 		}
 
 		$producer_id = wp_insert_post(
@@ -4763,13 +4747,48 @@ class EEM_Events {
 			return 0;
 		}
 
-		update_post_meta( $producer_id, '_equine_event_manager_imported_tec_organizer_id', $organizer_id );
-		update_post_meta( $producer_id, '_equine_event_manager_producer_contact_name', get_the_title( $organizer_id ) );
-		update_post_meta( $producer_id, '_equine_event_manager_producer_email', sanitize_email( (string) get_post_meta( $organizer_id, '_OrganizerEmail', true ) ) );
-		update_post_meta( $producer_id, '_equine_event_manager_producer_phone', (string) get_post_meta( $organizer_id, '_OrganizerPhone', true ) );
-		update_post_meta( $producer_id, '_equine_event_manager_producer_website', esc_url_raw( (string) get_post_meta( $organizer_id, '_OrganizerWebsite', true ) ) );
+		EEM_Producer_Repo::save( (int) $producer_id, array(
+			'imported_tec_organizer_id' => (int) $organizer_id,
+			'contact_name'              => get_the_title( $organizer_id ),
+			'email'                     => sanitize_email( (string) get_post_meta( $organizer_id, '_OrganizerEmail', true ) ),
+			'phone'                     => (string) get_post_meta( $organizer_id, '_OrganizerPhone', true ),
+			'website'                   => esc_url_raw( (string) get_post_meta( $organizer_id, '_OrganizerWebsite', true ) ),
+		) );
 
 		return absint( $producer_id );
+	}
+
+	/**
+	 * Find a producer post that was imported from a TEC organizer.
+	 *
+	 * @param int $organizer_id TEC organizer post ID.
+	 * @return int Producer post ID, or 0 if not found.
+	 */
+	private static function find_producer_by_tec_organizer( int $organizer_id ): int {
+		global $wpdb;
+
+		if ( EEM_Producer_Repo::table_exists() ) {
+			$id = $wpdb->get_var( $wpdb->prepare(
+				'SELECT producer_id FROM ' . EEM_Producer_Repo::table_name() . ' WHERE imported_tec_organizer_id = %d LIMIT 1',
+				$organizer_id
+			) );
+			return $id ? (int) $id : 0;
+		}
+
+		$posts = get_posts( array(
+			'post_type'      => self::PRODUCER_POST_TYPE,
+			'post_status'    => array( 'publish', 'draft', 'private' ),
+			'posts_per_page' => 1,
+			'fields'         => 'ids',
+			'meta_query'     => array(
+				array(
+					'key'   => '_equine_event_manager_imported_tec_organizer_id',
+					'value' => $organizer_id,
+				),
+			),
+		) );
+
+		return ! empty( $posts[0] ) ? absint( $posts[0] ) : 0;
 	}
 
 	/**

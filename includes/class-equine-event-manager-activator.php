@@ -48,6 +48,9 @@ class EEM_Activator {
 		if ( class_exists( 'EEM_Reservation_Config' ) ) {
 			EEM_Reservation_Config::create_table();
 		}
+		if ( class_exists( 'EEM_Producer_Repo' ) ) {
+			EEM_Producer_Repo::create_table();
+		}
 		self::maybe_refresh_native_event_rewrite_rules();
 		self::run_one_time_migrations();
 		update_option( self::DB_VERSION_OPTION, EQUINE_EVENT_MANAGER_VERSION );
@@ -227,6 +230,16 @@ class EEM_Activator {
 		if ( ! get_option( 'eem_mig_017_drop_config_postmeta_complete' ) ) {
 			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-017-drop-config-postmeta.php';
 			eem_mig_017_drop_config_postmeta();
+		}
+
+		if ( ! get_option( 'eem_mig_018_producer_table_backfill_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-018-producer-table-backfill.php';
+			eem_mig_018_producer_table_backfill();
+		}
+
+		if ( ! get_option( 'eem_mig_019_drop_producer_postmeta_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-019-drop-producer-postmeta.php';
+			eem_mig_019_drop_producer_postmeta();
 		}
 	}
 
