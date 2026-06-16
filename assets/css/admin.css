@@ -10279,24 +10279,56 @@ a.eem-event-editor-card__quicklink:hover { color: #1257d1; }
 	display: flex;
 	align-items: stretch;
 }
-.eem-dm-toolbar-date-input {
+input.eem-dm-toolbar-date-input {
 	border-top-right-radius: 0;
 	border-bottom-right-radius: 0;
 	border-right: none;
+	height: 40px;
+	box-sizing: border-box;
+	margin: 0;
 }
 .eem-dm-toolbar-go {
 	border-top-left-radius: 0;
 	border-bottom-left-radius: 0;
+	border-top-right-radius: var(--eem-radius, 3px);
+	border-bottom-right-radius: var(--eem-radius, 3px);
+	border-left: none;
 	white-space: nowrap;
+	height: 40px;
+	box-sizing: border-box;
+	margin: 0;
+	padding-top: 0;
+	padding-bottom: 0;
+	line-height: 40px;
 }
 
-/* ── View tabs (Today / All Days) ─────────────────────────────────── */
+/* ── View tabs (Today / All Days) — underline style matching stall chart view tabs */
 .eem-dm-view-tabs {
 	display: flex;
 	gap: 0;
 	padding: 0 22px;
 	border-bottom: 1px solid var(--eem-border, #dcdcde);
 	background: #fff;
+}
+a.eem-dm-view-tab,
+a.eem-dm-view-tab:visited {
+	padding: 14px 22px 12px;
+	font-size: 14px;
+	font-weight: 600;
+	color: #6B7A99;
+	cursor: pointer;
+	border-bottom: 3px solid transparent;
+	text-decoration: none;
+	transition: color .15s, border-color .15s;
+}
+a.eem-dm-view-tab:hover {
+	color: #031B4E;
+	text-decoration: none;
+}
+a.eem-dm-view-tab.active,
+a.eem-dm-view-tab.active:visited {
+	color: #1668F2;
+	border-bottom-color: #1668F2;
 }
 
 /* ── Content area ──────────────────────────────────────────────────── */
@@ -10504,8 +10536,14 @@ a.eem-event-editor-card__quicklink:hover { color: #1257d1; }
 		align-items: stretch;
 		gap: 10px;
 	}
+	.eem-dm-toolbar-group {
+		width: 100%;
+	}
+	.eem-dm-toolbar-group select {
+		width: 100%;
+	}
 	.eem-dm-toolbar-date-wrap {
-		flex: 1;
+		width: 100%;
 	}
 	.eem-dm-toolbar-date-input {
 		flex: 1;
@@ -10514,6 +10552,10 @@ a.eem-event-editor-card__quicklink:hover { color: #1257d1; }
 	.eem-dm-view-tabs {
 		padding: 0 14px;
 	}
+	a.eem-dm-view-tab {
+		padding: 10px 16px;
+		font-size: 13px;
+	}
 	.eem-dm-date-section { padding: 16px 14px 0; }
 	.eem-dm-table {
 		display: block;
@@ -10521,8 +10563,12 @@ a.eem-event-editor-card__quicklink:hover { color: #1257d1; }
 		-webkit-overflow-scrolling: touch;
 	}
 	.eem-dm-summary {
-		flex-direction: column;
+		flex-wrap: wrap;
 		gap: 6px;
+	}
+	.eem-dm-summary-item {
+		font-size: 10.5px;
+		padding: 2px 7px;
 	}
 }
 

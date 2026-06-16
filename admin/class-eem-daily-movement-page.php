@@ -439,19 +439,17 @@ class EEM_Daily_Movement_Page {
 		$base     = admin_url( 'admin.php?page=' . self::MENU_SLUG . '&reservation_id=' . $reservation_id );
 		?>
 		<div class="eem-dm-view-tabs">
-			<div class="eem-filter-tabs">
-				<a class="eem-filter-tab<?php echo $is_today ? ' active' : ''; ?>" href="<?php echo esc_url( $base . '&view=today' ); ?>">
-					<?php esc_html_e( 'Today', 'equine-event-manager' ); ?>
+			<a class="eem-dm-view-tab<?php echo $is_all ? ' active' : ''; ?>" href="<?php echo esc_url( $base . '&view=all' ); ?>">
+				<?php esc_html_e( 'All Days', 'equine-event-manager' ); ?>
+			</a>
+			<a class="eem-dm-view-tab<?php echo $is_today ? ' active' : ''; ?>" href="<?php echo esc_url( $base . '&view=today' ); ?>">
+				<?php esc_html_e( 'Today', 'equine-event-manager' ); ?>
+			</a>
+			<?php if ( '' !== $date && ! $is_all ) : ?>
+				<a class="eem-dm-view-tab active" href="<?php echo esc_url( $base . '&date=' . urlencode( $date ) ); ?>">
+					<?php echo esc_html( EEM_Daily_Movement_Service::format_display_date( $date ) ); ?>
 				</a>
-				<a class="eem-filter-tab<?php echo $is_all ? ' active' : ''; ?>" href="<?php echo esc_url( $base . '&view=all' ); ?>">
-					<?php esc_html_e( 'All Days', 'equine-event-manager' ); ?>
-				</a>
-				<?php if ( '' !== $date && ! $is_all ) : ?>
-					<a class="eem-filter-tab active" href="<?php echo esc_url( $base . '&date=' . urlencode( $date ) ); ?>">
-						<?php echo esc_html( EEM_Daily_Movement_Service::format_display_date( $date ) ); ?>
-					</a>
-				<?php endif; ?>
-			</div>
+			<?php endif; ?>
 		</div>
 		<?php
 	}

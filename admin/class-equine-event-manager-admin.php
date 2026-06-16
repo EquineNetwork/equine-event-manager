@@ -850,6 +850,12 @@ class EEM_Admin {
 			if ( $dm_slug === $current_page ) :
 			?>
 			li.classList.add('current');
+			var topMenu = reportsLi.closest('li.menu-top');
+			if (topMenu) {
+				topMenu.classList.remove('wp-not-current-submenu');
+				topMenu.classList.add('wp-has-current-submenu', 'wp-menu-open');
+				reportsLi.classList.add('current');
+			}
 			<?php endif; ?>
 			li.appendChild(a);
 			fly.appendChild(li);
