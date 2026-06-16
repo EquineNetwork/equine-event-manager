@@ -20,6 +20,7 @@ $ctx     = isset( $ctx ) && is_array( $ctx ) ? $ctx : array();
 $title   = isset( $ctx['title'] ) ? (string) $ctx['title'] : '';
 $sub     = isset( $ctx['subtitle'] ) ? (string) $ctx['subtitle'] : '';
 $gen     = isset( $ctx['generated'] ) ? (string) $ctx['generated'] : '';
+$logo    = isset( $ctx['logo'] ) ? (string) $ctx['logo'] : '';
 $headers = isset( $ctx['headers'] ) && is_array( $ctx['headers'] ) ? $ctx['headers'] : array();
 $rows    = isset( $ctx['rows'] ) && is_array( $ctx['rows'] ) ? $ctx['rows'] : array();
 ?>
@@ -32,10 +33,11 @@ $rows    = isset( $ctx['rows'] ) && is_array( $ctx['rows'] ) ? $ctx['rows'] : ar
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'IBM Plex Sans','DejaVu Sans',Helvetica,Arial,sans-serif; color: #1d2327; font-size: 9.5px; }
 .sheet { padding: 8px 10px; }
+.r-logo { max-width: 160px; max-height: 38px; display: block; margin-bottom: 10px; }
 .r-title { font-family: 'Space Grotesk','DejaVu Sans',Arial,sans-serif; font-size: 17px; font-weight: 700; color: #031B4E; }
 .r-sub { font-size: 10px; color: #50575e; margin-top: 2px; }
 .r-gen { font-size: 9px; color: #8c8f94; margin-top: 2px; }
-.r-head { border-bottom: 2px solid #031B4E; padding-bottom: 8px; margin-bottom: 10px; }
+.r-head { border-bottom: 2px solid #031B4E; padding-bottom: 12px; margin-bottom: 12px; }
 table { width: 100%; border-collapse: collapse; border: 1px solid #e5e7eb; }
 thead tr { background: #f3f4f5; }
 thead th { padding: 5px 6px; font-size: 9px; font-weight: 700; color: #1d2327; text-align: left; border-bottom: 1px solid #dcdcde; }
@@ -43,12 +45,16 @@ tbody td { padding: 4px 6px; font-size: 9px; color: #1d2327; border-bottom: 1px 
 tbody tr:nth-child(even) td { background: #f9f9f9; }
 .r-empty { padding: 14px; font-size: 11px; color: #50575e; text-align: center; }
 .r-foot { margin-top: 10px; font-size: 8.5px; color: #8c8f94; }
-@page { size: letter landscape; margin: 0.4in; }
+@page { size: letter portrait; margin: 0.5in 0.5in 0.7in 0.5in; }
 </style>
 </head>
 <body>
 <div class="sheet">
   <div class="r-head">
+    <?php if ( '' !== $logo ) : ?>
+      <?php // The PDF embeds the logo as a data: URI generated from a local file; esc_url() strips data: by default, so allow it explicitly. ?>
+      <img class="r-logo" src="<?php echo esc_url( $logo, array( 'http', 'https', 'data' ) ); ?>" alt="">
+    <?php endif; ?>
     <div class="r-title"><?php echo esc_html( $title ); ?></div>
     <?php if ( '' !== $sub ) : ?><div class="r-sub"><?php echo esc_html( $sub ); ?></div><?php endif; ?>
     <?php if ( '' !== $gen ) : ?><div class="r-gen"><?php echo esc_html( $gen ); ?></div><?php endif; ?>

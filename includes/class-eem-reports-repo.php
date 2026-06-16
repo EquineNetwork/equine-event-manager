@@ -432,8 +432,17 @@ class EEM_Reports_Repo {
 			$rid = absint( $o['reservation_id'] ?? 0 );
 			$key = $rid > 0 ? (string) $rid : 'r:' . (string) ( $o['event_name'] ?? '' );
 			if ( ! isset( $events[ $key ] ) ) {
+				$title = (string) ( $o['reservation_title'] ?? ( $o['event_name'] ?? '' ) );
+				if ( '' === trim( $title ) && $rid > 0 ) {
+					// Fall back to the reservation's own post title so the Event
+					// column is never blank on the report.
+					$title = (string) get_the_title( $rid );
+				}
+				if ( '' === trim( $title ) ) {
+					$title = __( '(Unlinked reservation)', 'equine-event-manager' );
+				}
 				$events[ $key ] = array(
-					'title'  => (string) ( $o['reservation_title'] ?? ( $o['event_name'] ?? '' ) ),
+					'title'  => $title,
 					'dates'  => (string) ( $o['event_dates'] ?? '' ),
 					'orders' => array(),
 				);

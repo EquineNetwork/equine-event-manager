@@ -98,7 +98,10 @@ class EEM_Report_Exporter {
 	}
 
 	/**
-	 * Render a report dataset to a landscape tabular PDF (C15.E).
+	 * Render a report dataset to a portrait, brand-headed tabular PDF (C15.E).
+	 *
+	 * Portrait letter with the company logo header, matching the styling of the
+	 * order receipt / stall-chart print views.
 	 *
 	 * @param array $report Report dataset { title, headers, rows }.
 	 * @param array $meta   Optional { subtitle, generated }.
@@ -113,6 +116,7 @@ class EEM_Report_Exporter {
 			'title'     => isset( $report['title'] ) ? (string) $report['title'] : '',
 			'subtitle'  => isset( $meta['subtitle'] ) ? (string) $meta['subtitle'] : '',
 			'generated' => isset( $meta['generated'] ) ? (string) $meta['generated'] : '',
+			'logo'      => $this->company_logo_data_uri(),
 			'headers'   => isset( $report['headers'] ) && is_array( $report['headers'] ) ? $report['headers'] : array(),
 			'rows'      => isset( $report['rows'] ) && is_array( $report['rows'] ) ? $report['rows'] : array(),
 		);
@@ -121,7 +125,47 @@ class EEM_Report_Exporter {
 		include EQUINE_EVENT_MANAGER_PATH . 'templates/reports/report-pdf.php';
 		$html = (string) ob_get_clean();
 
-		return EEM_PDF::render( $html, 'letter', 'landscape' );
+		return EEM_PDF::render( $html, 'letter', 'portrait' );
+	}
+
+	/**
+	 * Company logo as a base64 data URI for embedding in the report PDF header.
+	 *
+	 * Dompdf renders with remote loading disabled, so the logo must be inlined.
+	 * Resolves the configured company logo attachment, else the bundled fallback
+	 * asset. Mirrors EEM shortcodes' receipt-logo helper.
+	 *
+	 * @return string Data URI, or '' when no readable image is found.
+	 */
+	private function company_logo_data_uri(): string {
+		$path     = '';
+		$settings = get_option( 'equine_event_manager_company_settings', array() );
+		if ( is_array( $settings ) && ! empty( $settings['logo_id'] ) ) {
+			$attached = get_attached_file( absint( $settings['logo_id'] ) );
+			if ( $attached && is_readable( $attached ) ) {
+				$path = $attached;
+			}
+		}
+		if ( '' === $path ) {
+			$fallback = EQUINE_EVENT_MANAGER_PATH . 'assets/images/logo.png';
+			$path     = is_readable( $fallback ) ? $fallback : '';
+		}
+		if ( '' === $path ) {
+			return '';
+		}
+
+		$ext  = strtolower( pathinfo( $path, PATHINFO_EXTENSION ) );
+		$data = file_get_contents( $path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+		if ( false === $data || '' === $data ) {
+			return '';
+		}
+		$mime = 'png';
+		if ( 'jpg' === $ext || 'jpeg' === $ext ) {
+			$mime = 'jpeg';
+		} elseif ( 'svg' === $ext ) {
+			$mime = 'svg+xml';
+		}
+		return 'data:image/' . $mime . ';base64,' . base64_encode( $data ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
 	}
 
 	/**
