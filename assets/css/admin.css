@@ -10664,14 +10664,6 @@ input.eem-pkg-price-input:focus { box-shadow: inset 0 0 0 1px var(--eem-electric
    only as a JS show/hide hook. */
 
 .eem-package-inline-form {
-	background: var(--eem-bg-muted); border: 1px solid var(--eem-border);
-	border-radius: var(--eem-radius); padding: 14px 16px; margin-bottom: 12px;
+	margin-bottom: 12px;
 }
-.eem-package-form-fields {
-	display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 10px;
-}
-.eem-package-form-field { display: flex; flex-direction: column; gap: 4px; }
-.eem-package-form-field label { font-size: 11px; font-weight: 600; color: var(--eem-slate); text-transform: uppercase; letter-spacing: 0.04em; }
-.eem-package-form-field .eem-field-input,
-.eem-package-form-field .eem-price-input { font-size: 13px; }
-.eem-package-form-actions { display: flex; gap: 8px; }
+.eem-package-form-actions { display: flex; gap: 8px; margin-top: 8px; }

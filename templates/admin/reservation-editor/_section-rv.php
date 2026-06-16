@@ -149,27 +149,13 @@ echo '</div>'; // .eem-rv-nightly-content
 	</div>
 
 	<div class="eem-package-inline-form" id="eem-rv-package-form" style="display:none">
-		<div class="eem-package-form-fields">
-			<div class="eem-package-form-field">
-				<label><?php esc_html_e( 'Name', 'equine-event-manager' ); ?></label>
-				<input type="text" class="eem-field-input" id="eem-rv-pkg-name" placeholder="<?php esc_attr_e( 'e.g. Week 1, Full Event', 'equine-event-manager' ); ?>">
-			</div>
-			<div class="eem-package-form-field">
-				<label><?php esc_html_e( 'Start Date', 'equine-event-manager' ); ?></label>
-				<input type="date" class="eem-field-input" id="eem-rv-pkg-start">
-			</div>
-			<div class="eem-package-form-field">
-				<label><?php esc_html_e( 'End Date', 'equine-event-manager' ); ?></label>
-				<input type="date" class="eem-field-input" id="eem-rv-pkg-end">
-			</div>
-			<div class="eem-package-form-field">
-				<label><?php esc_html_e( 'Price', 'equine-event-manager' ); ?></label>
-				<div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input type="number" step="0.01" min="0" class="eem-price-input" id="eem-rv-pkg-price"></div>
-			</div>
-			<div class="eem-package-form-field">
-				<label><?php esc_html_e( 'Max Qty', 'equine-event-manager' ); ?></label>
-				<input type="number" min="0" step="1" class="eem-field-input" id="eem-rv-pkg-max-qty" placeholder="<?php esc_attr_e( 'Unlimited', 'equine-event-manager' ); ?>" style="max-width:100px">
-			</div>
+		<div class="eem-pkg-row">
+			<input type="text" class="eem-pkg-name-input" id="eem-rv-pkg-name" placeholder="<?php esc_attr_e( 'e.g. Week 1, Full Event', 'equine-event-manager' ); ?>">
+			<input type="date" class="eem-pkg-date-input" id="eem-rv-pkg-start">
+			<span class="eem-pkg-sep">&ndash;</span>
+			<input type="date" class="eem-pkg-date-input" id="eem-rv-pkg-end">
+			<div class="eem-pkg-price-wrap"><span class="eem-pkg-price-sym">$</span><input type="number" step="0.01" min="0" class="eem-pkg-price-input" id="eem-rv-pkg-price"></div>
+			<input type="number" min="0" step="1" class="eem-pkg-name-input" id="eem-rv-pkg-max-qty" placeholder="<?php esc_attr_e( 'Unlimited', 'equine-event-manager' ); ?>" style="max-width:100px">
 		</div>
 		<div class="eem-package-form-actions">
 			<button type="button" class="eem-btn eem-btn-primary eem-btn-sm" id="eem-rv-pkg-save"><?php esc_html_e( 'Save', 'equine-event-manager' ); ?></button>
