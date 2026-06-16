@@ -189,6 +189,16 @@ class EEM_Shortcodes {
 		$stall_weekly_end_date      = isset( $data['stall_weekly_package_end_date'] ) ? $data['stall_weekly_package_end_date'] : '';
 		$rv_weekly_start_date       = isset( $data['rv_weekly_package_start_date'] ) ? $data['rv_weekly_package_start_date'] : '';
 		$rv_weekly_end_date         = isset( $data['rv_weekly_package_end_date'] ) ? $data['rv_weekly_package_end_date'] : '';
+		// Stay Packages (customer-facing): when a section's pricing mode is
+		// 'packages', the named packages become the selectable rate options. Load
+		// them into $data so the rate/unit helpers below price by package. Guarded
+		// so nightly/weekend reservations are completely unaffected.
+		$data['stall_packages'] = ( 'packages' === ( $data['stall_pricing_mode'] ?? 'nightly' ) && class_exists( 'EEM_Stay_Packages_Repo' ) )
+			? EEM_Stay_Packages_Repo::get_packages( (int) $reservation_id, 'stall' )
+			: array();
+		$data['rv_packages'] = ( 'packages' === ( $data['rv_pricing_mode'] ?? 'nightly' ) && class_exists( 'EEM_Stay_Packages_Repo' ) )
+			? EEM_Stay_Packages_Repo::get_packages( (int) $reservation_id, 'rv' )
+			: array();
 		$stall_stay_type_options    = $this->get_enabled_stay_type_options( $data, 'stall' );
 		$rv_stay_type_options       = $this->get_enabled_stay_type_options( $data, 'rv' );
 		$rv_addon_options           = $this->get_enabled_rv_addon_options( $data );
@@ -462,6 +472,8 @@ class EEM_Shortcodes {
 					data-rv-nightly-rate="<?php echo esc_attr( $this->get_current_rate( $data, 'rv', 'nightly' ) ); ?>"
 					data-rv-weekend-rate="<?php echo esc_attr( $this->get_current_rate( $data, 'rv', 'weekend' ) ); ?>"
 					data-rv-weekly-rate="<?php echo esc_attr( $this->get_current_rate( $data, 'rv', 'weekly' ) ); ?>"
+					data-stall-packages="<?php echo esc_attr( wp_json_encode( $this->get_package_price_map( $data, 'stall' ) ) ); ?>"
+					data-rv-packages="<?php echo esc_attr( wp_json_encode( $this->get_package_price_map( $data, 'rv' ) ) ); ?>"
 					data-rv-addon-pricing="<?php echo esc_attr( wp_json_encode( $this->get_enabled_rv_addon_pricing_matrix( $data ) ) ); ?>"
 					data-general-addon-pricing="<?php echo esc_attr( wp_json_encode( $this->get_enabled_general_addon_pricing_matrix( $data ) ) ); ?>"
 					data-pre-entry-pricing="<?php echo esc_attr( wp_json_encode( $this->get_pre_entry_pricing_matrix( $data ) ) ); ?>"
@@ -3348,6 +3360,11 @@ class EEM_Shortcodes {
 	private function sanitize_stay_type_value( $value ) {
 		$stay_type = sanitize_key( $value );
 
+		// Stay Packages submit `pkg_<id>` as the stay type.
+		if ( 0 === strpos( $stay_type, 'pkg_' ) && preg_match( '/^pkg_\d+$/', $stay_type ) ) {
+			return $stay_type;
+		}
+
 		if ( ! in_array( $stay_type, array( 'nightly', 'weekend', 'weekly' ), true ) ) {
 			return 'nightly';
 		}
@@ -3811,7 +3828,9 @@ class EEM_Shortcodes {
 	 * @return int
 	 */
 	private function get_billable_stay_units( $arrival_date, $departure_date, $stay_type ) {
-		if ( 'weekend' === $stay_type || 'weekly' === $stay_type ) {
+		// Weekend/weekly packages AND named Stay Packages bill once (the price is
+		// the whole-stay price, not a per-night rate).
+		if ( 'weekend' === $stay_type || 'weekly' === $stay_type || ( is_string( $stay_type ) && 0 === strpos( $stay_type, 'pkg_' ) ) ) {
 			return 1;
 		}
 
@@ -8053,6 +8072,25 @@ RV Lot: " . $rv_lot['name'] );
 			$data['rv_weekend_enabled'] = $data['weekend_enabled'] ? 1 : 0;
 		}
 
+		// Stay Packages (customer-facing): read the pricing mode from the config
+		// table (canonical) and load the named packages so the rate helpers can
+		// price by package in BOTH the render and submission paths. This is the
+		// single source — get_reservation_meta() feeds the form render AND the
+		// order-creation handler, so packages can never be mis-priced between them.
+		$data['stall_pricing_mode'] = 'nightly';
+		$data['rv_pricing_mode']    = 'nightly';
+		if ( class_exists( 'EEM_Reservation_Config' ) ) {
+			$eem_cfg = EEM_Reservation_Config::for( (int) $reservation_id );
+			$data['stall_pricing_mode'] = $eem_cfg->get( 'stall_pricing_mode' ) ?: 'nightly';
+			$data['rv_pricing_mode']    = $eem_cfg->get( 'rv_pricing_mode' ) ?: 'nightly';
+		}
+		$data['stall_packages'] = ( 'packages' === $data['stall_pricing_mode'] && class_exists( 'EEM_Stay_Packages_Repo' ) )
+			? EEM_Stay_Packages_Repo::get_packages( (int) $reservation_id, 'stall' )
+			: array();
+		$data['rv_packages'] = ( 'packages' === $data['rv_pricing_mode'] && class_exists( 'EEM_Stay_Packages_Repo' ) )
+			? EEM_Stay_Packages_Repo::get_packages( (int) $reservation_id, 'rv' )
+			: array();
+
 		return $data;
 	}
 
@@ -8707,6 +8745,13 @@ RV Lot: " . $rv_lot['name'] );
 	 * @return float
 	 */
 	private function get_current_rate( $data, $type, $stay_type ) {
+		// Stay Packages: the package's fixed price IS the unit rate (billed once —
+		// get_billable_stay_units returns 1 for a package stay type).
+		$pkg = $this->find_package_for_stay_type( (array) $data, (string) $type, $stay_type );
+		if ( null !== $pkg ) {
+			return (float) ( $pkg['price'] ?? 0 );
+		}
+
 		$prefix      = 'stall' === $type ? 'stall' : 'rv';
 		$rate_suffix = 'weekend' === $stay_type ? '_weekend_rate' : ( 'weekly' === $stay_type ? '_weekly_rate' : '_nightly_rate' );
 		$eb_suffix   = 'weekend' === $stay_type ? 'weekend_rate' : ( 'weekly' === $stay_type ? 'weekly_rate' : 'nightly_rate' );
@@ -8801,12 +8846,89 @@ RV Lot: " . $rv_lot['name'] );
 
 
 	/**
+	 * Human label for a Stay Package option (name + date range).
+	 *
+	 * @param array $pkg Package row.
+	 * @return string
+	 */
+	private function format_package_option_label( array $pkg ): string {
+		$name  = (string) ( $pkg['name'] ?? '' );
+		$start = $this->format_date_label( (string) ( $pkg['start_date'] ?? '' ) );
+		$end   = $this->format_date_label( (string) ( $pkg['end_date'] ?? '' ) );
+		if ( '' !== $start && '' !== $end ) {
+			return sprintf( '%s (%s – %s)', $name, $start, $end );
+		}
+		return '' !== $name ? $name : __( 'Package', 'equine-event-manager' );
+	}
+
+	/**
+	 * Build a `pkg_<id> => { price, units }` map for the JS live-total calculator
+	 * so a selected package prices the same client-side as the server charges.
+	 *
+	 * @param array  $data Reservation setup data.
+	 * @param string $type 'stall' | 'rv'.
+	 * @return array<string, array<string, float>>
+	 */
+	private function get_package_price_map( array $data, string $type ): array {
+		$map = array();
+		foreach ( ( $data[ $type . '_packages' ] ?? array() ) as $pkg ) {
+			if ( ! is_array( $pkg ) || empty( $pkg['id'] ) ) {
+				continue;
+			}
+			$map[ 'pkg_' . (int) $pkg['id'] ] = array(
+				'price' => (float) ( $pkg['price'] ?? 0 ),
+				'start' => (string) ( $pkg['start_date'] ?? '' ),
+				'end'   => (string) ( $pkg['end_date'] ?? '' ),
+			);
+		}
+		return $map;
+	}
+
+	/**
+	 * Resolve a Stay Package row from a `pkg_<id>` stay-type value.
+	 *
+	 * @param array  $data      Reservation setup data (carries `{type}_packages`).
+	 * @param string $type      'stall' | 'rv'.
+	 * @param string $stay_type Stay-type value (may be `pkg_<id>`).
+	 * @return array|null The package row, or null when not a package / not found.
+	 */
+	private function find_package_for_stay_type( array $data, string $type, $stay_type ) {
+		if ( ! is_string( $stay_type ) || 0 !== strpos( $stay_type, 'pkg_' ) ) {
+			return null;
+		}
+		$pid = (int) substr( $stay_type, 4 );
+		foreach ( ( $data[ $type . '_packages' ] ?? array() ) as $pkg ) {
+			if ( is_array( $pkg ) && (int) ( $pkg['id'] ?? 0 ) === $pid ) {
+				return $pkg;
+			}
+		}
+		return null;
+	}
+
+	/**
 	 * Get the enabled stay type options for the reservation form.
 	 *
 	 * @param array $data Reservation setup data.
 	 * @return array<string, string>
 	 */
 	private function get_enabled_stay_type_options( $data, $type ) {
+		// Stay Packages mode: the named packages ARE the rate options. Each option
+		// is keyed `pkg_<id>` and labelled with its name + date range. Falls
+		// through to nightly/weekend when the mode is on but no packages exist yet.
+		$mode_key = 'stall' === $type ? 'stall_pricing_mode' : 'rv_pricing_mode';
+		if ( 'packages' === ( $data[ $mode_key ] ?? 'nightly' ) ) {
+			$pkg_options = array();
+			foreach ( ( $data[ $type . '_packages' ] ?? array() ) as $pkg ) {
+				if ( ! is_array( $pkg ) || empty( $pkg['id'] ) ) {
+					continue;
+				}
+				$pkg_options[ 'pkg_' . (int) $pkg['id'] ] = $this->format_package_option_label( $pkg );
+			}
+			if ( ! empty( $pkg_options ) ) {
+				return $pkg_options;
+			}
+		}
+
 		$options             = array();
 		$nightly_enabled_key = 'stall' === $type ? 'stall_nightly_enabled' : 'rv_nightly_enabled';
 		$weekend_enabled_key = 'stall' === $type ? 'stall_weekend_enabled' : 'rv_weekend_enabled';
@@ -11050,16 +11172,28 @@ RV Lot: " . $rv_lot['name'] );
 					.replace(/'/g, '&#039;');
 			}
 
+			// Stay Packages: resolve the selected `pkg_<id>` to its {price,start,end}
+			// from the injected map, so the live total matches what the server charges.
+			function eemPackageFor(form, type, raw) {
+				if (!raw || raw.indexOf('pkg_') !== 0) { return null; }
+				var map = parseJsonAttribute(form.dataset[type === 'stall' ? 'stallPackages' : 'rvPackages']) || {};
+				return map[raw] || null;
+			}
+
 			function updateProductPricing(form) {
-				var stallStayType = getFieldValue(form, 'stall_stay_type') === 'weekend' ? 'weekend' : 'nightly';
-				var rvStayType = getFieldValue(form, 'rv_stay_type') === 'weekend' ? 'weekend' : 'nightly';
+				var stallStayRaw = getFieldValue(form, 'stall_stay_type');
+				var rvStayRaw = getFieldValue(form, 'rv_stay_type');
+				var stallPkg = eemPackageFor(form, 'stall', stallStayRaw);
+				var rvPkg = eemPackageFor(form, 'rv', rvStayRaw);
+				var stallStayType = stallStayRaw === 'weekend' ? 'weekend' : 'nightly';
+				var rvStayType = rvStayRaw === 'weekend' ? 'weekend' : 'nightly';
 				var rvAddonPricingMatrix = parseJsonAttribute(form.dataset.rvAddonPricing);
 				var rvLotPricingMatrix = parseJsonAttribute(form.dataset.rvLotPricing);
 				var selectedRvLot = getFieldValue(form, 'rv_lot');
 				var stallRateKey = stallStayType === 'weekend' ? 'stallWeekendRate' : (stallStayType === 'weekly' ? 'stallWeeklyRate' : 'stallNightlyRate');
-				var stallRate = parseCurrency(form.dataset[stallRateKey]);
+				var stallRate = stallPkg ? parseCurrency(stallPkg.price) : parseCurrency(form.dataset[stallRateKey]);
 				var rvRateKey = rvStayType === 'weekend' ? 'rvWeekendRate' : (rvStayType === 'weekly' ? 'rvWeeklyRate' : 'rvNightlyRate');
-				var rvRate = parseCurrency(rvLotPricingMatrix && rvLotPricingMatrix[selectedRvLot] ? rvLotPricingMatrix[selectedRvLot][rvStayType] : form.dataset[rvRateKey]);
+				var rvRate = rvPkg ? parseCurrency(rvPkg.price) : parseCurrency(rvLotPricingMatrix && rvLotPricingMatrix[selectedRvLot] ? rvLotPricingMatrix[selectedRvLot][rvStayType] : form.dataset[rvRateKey]);
 
 				form.querySelectorAll('[data-dynamic-price-label]').forEach(function(label) {
 					var type = label.getAttribute('data-dynamic-price-label');
@@ -11067,13 +11201,14 @@ RV Lot: " . $rv_lot['name'] );
 					var baseLabel = label.getAttribute('data-product-base-label') || '';
 					var price = stallRate;
 					var stayType = stallStayType;
-					var stayTypeLabel = stayType === 'weekend' ? 'weekend' : 'per night';
+					// Stay Packages are a flat whole-stay price — no "per night" suffix.
+					var stayTypeLabel = stallPkg ? '' : (stayType === 'weekend' ? 'weekend' : 'per night');
 					var titleText = label.querySelector('.eem-product-line-item__title-text');
 
 					if (type === 'rv') {
 						price = rvRate;
 						stayType = rvStayType;
-						stayTypeLabel = stayType === 'weekend' ? 'each' : 'per night';
+						stayTypeLabel = rvPkg ? '' : (stayType === 'weekend' ? 'each' : 'per night');
 					} else if (type === 'rv_addon') {
 						price = parseCurrency(rvAddonPricingMatrix && rvAddonPricingMatrix[dynamicKey] ? rvAddonPricingMatrix[dynamicKey][rvStayType] : 0);
 						stayType = rvStayType;
@@ -11107,19 +11242,24 @@ RV Lot: " . $rv_lot['name'] );
 				syncReservationSectionToggles(form);
 				syncRvAddonAvailability(form);
 				syncGeneralAddonAvailability(form);
-				var stallStayType = getFieldValue(form, 'stall_stay_type') === 'weekend' ? 'weekend' : 'nightly';
-				var rvStayType = getFieldValue(form, 'rv_stay_type') === 'weekend' ? 'weekend' : 'nightly';
+				var stallStayRaw = getFieldValue(form, 'stall_stay_type');
+				var rvStayRaw = getFieldValue(form, 'rv_stay_type');
+				var stallPkg = eemPackageFor(form, 'stall', stallStayRaw);
+				var rvPkg = eemPackageFor(form, 'rv', rvStayRaw);
+				var stallStayType = stallStayRaw === 'weekend' ? 'weekend' : 'nightly';
+				var rvStayType = rvStayRaw === 'weekend' ? 'weekend' : 'nightly';
 				var rvAddonPricingMatrix = parseJsonAttribute(form.dataset.rvAddonPricing);
 				var generalAddonPricingMatrix = parseJsonAttribute(form.dataset.generalAddonPricing);
 				var preEntryPricingMatrix = parseJsonAttribute(form.dataset.preEntryPricing);
 				var rvLotPricingMatrix = parseJsonAttribute(form.dataset.rvLotPricing);
 				var stallRateKey2 = stallStayType === 'weekend' ? 'stallWeekendRate' : (stallStayType === 'weekly' ? 'stallWeeklyRate' : 'stallNightlyRate');
-				var stallRate = parseCurrency(form.dataset[stallRateKey2]);
+				var stallRate = stallPkg ? parseCurrency(stallPkg.price) : parseCurrency(form.dataset[stallRateKey2]);
 				var selectedRvLot = getFieldValue(form, 'rv_lot');
 				var rvRateKey2 = rvStayType === 'weekend' ? 'rvWeekendRate' : (rvStayType === 'weekly' ? 'rvWeeklyRate' : 'rvNightlyRate');
-				var rvRate = parseCurrency(rvLotPricingMatrix && rvLotPricingMatrix[selectedRvLot] ? rvLotPricingMatrix[selectedRvLot][rvStayType] : form.dataset[rvRateKey2]);
-				var stallUnits = getBillableStayUnits(getFieldValue(form, 'stall_arrival_date'), getFieldValue(form, 'stall_departure_date'), stallStayType);
-				var rvUnits = getBillableStayUnits(getFieldValue(form, 'rv_arrival_date'), getFieldValue(form, 'rv_departure_date'), rvStayType);
+				var rvRate = rvPkg ? parseCurrency(rvPkg.price) : parseCurrency(rvLotPricingMatrix && rvLotPricingMatrix[selectedRvLot] ? rvLotPricingMatrix[selectedRvLot][rvStayType] : form.dataset[rvRateKey2]);
+				// Stay Packages bill once (flat whole-stay price), so units = 1.
+				var stallUnits = stallPkg ? 1 : getBillableStayUnits(getFieldValue(form, 'stall_arrival_date'), getFieldValue(form, 'stall_departure_date'), stallStayType);
+				var rvUnits = rvPkg ? 1 : getBillableStayUnits(getFieldValue(form, 'rv_arrival_date'), getFieldValue(form, 'rv_departure_date'), rvStayType);
 				var requiredShavingsPrice = parseCurrency(form.dataset.requiredShavingsPrice);
 				var groupToggle = form.querySelector('[data-eem-group-toggle]');
 				var groupEnabled = !!(groupToggle && groupToggle.checked);
