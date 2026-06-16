@@ -5773,8 +5773,8 @@ function eemEditPackage(target, type) {
 	form.style.display = '';
 	form.querySelector('#eem-' + type + '-pkg-editing-id').value = pkgId;
 	form.querySelector('#eem-' + type + '-pkg-name').value = cells[1].textContent.trim();
-	form.querySelector('#eem-' + type + '-pkg-start').value = cells[2].textContent.trim();
-	form.querySelector('#eem-' + type + '-pkg-end').value = cells[3].textContent.trim();
+	form.querySelector('#eem-' + type + '-pkg-start').value = cells[2].dataset.iso || cells[2].textContent.trim();
+	form.querySelector('#eem-' + type + '-pkg-end').value = cells[3].dataset.iso || cells[3].textContent.trim();
 	form.querySelector('#eem-' + type + '-pkg-price').value = cells[4].textContent.replace('$', '').trim();
 	var maxQty = cells[5].textContent.trim();
 	form.querySelector('#eem-' + type + '-pkg-max-qty').value = maxQty === '—' ? '' : maxQty;
@@ -5898,8 +5898,8 @@ function eemSavePackage(type, skipOverlapCheck) {
 				tr.dataset.packageId = pkg.id;
 				tr.innerHTML = '<td class="eem-packages-col-drag"><span class="eem-drag-handle">&#x2630;</span></td>'
 					+ '<td>' + eemEsc(pkg.name) + '</td>'
-					+ '<td>' + eemEsc(eemFmtMDY(pkg.start_date)) + '</td>'
-					+ '<td>' + eemEsc(eemFmtMDY(pkg.end_date)) + '</td>'
+					+ '<td data-iso="' + eemEsc(pkg.start_date) + '">' + eemEsc(eemFmtMDY(pkg.start_date)) + '</td>'
+					+ '<td data-iso="' + eemEsc(pkg.end_date) + '">' + eemEsc(eemFmtMDY(pkg.end_date)) + '</td>'
 					+ '<td>$' + parseFloat(pkg.price).toFixed(2) + '</td>'
 					+ '<td>' + maxDisplay + '</td>'
 					+ '<td class="eem-packages-col-actions">'
