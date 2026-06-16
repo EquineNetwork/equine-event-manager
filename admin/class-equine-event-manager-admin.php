@@ -117,6 +117,7 @@ class EEM_Admin {
 		add_action( 'admin_menu', array( $this, 'normalize_event_manager_submenu_order' ), 1001 );
 		add_action( 'admin_head', array( $this, 'print_category_submenu_nesting_css' ) );
 		add_action( 'admin_footer', array( $this, 'print_category_submenu_nesting_js' ) );
+		add_action( 'admin_footer', array( $this, 'print_reports_flyout_js' ) );
 		add_action( 'admin_menu', array( $this, 'maybe_remove_disabled_native_event_menu_items' ), 999 );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_backend_shell_styles' ) );
 		add_action( 'admin_footer', array( $this, 'print_reservations_list_toolbar_normalizer' ) );
@@ -199,6 +200,10 @@ class EEM_Admin {
 
 		if ( 'equine-event-manager-reports' === $page ) {
 			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--reports' );
+		}
+
+		if ( EEM_Daily_Movement_Page::MENU_SLUG === $page ) {
+			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--daily-movement' );
 		}
 
 		if ( 'equine-event-manager-reservation-overview' === $page ) {
@@ -347,7 +352,7 @@ class EEM_Admin {
 			$should_load = true;
 		}
 
-		if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-order', 'equine-event-manager-order-refund', 'equine-event-manager-settings', 'equine-event-manager-stall-charts', 'equine-event-manager-stall-chart-print', 'equine-event-manager-reports', 'equine-event-manager-reservation-overview', 'equine-event-manager-create-order', 'equine-event-manager-collect-payment', 'equine-event-manager-dashboard', 'equine-event-manager-reservation-editor', EEM_Entries::EDITOR_SLUG, EEM_Entries::LIST_SLUG, 'equine-event-manager-customer', 'equine-event-manager-customers', EEM_Notifications_Page::MENU_SLUG, EEM_Venues_Page::MENU_SLUG, EEM_Reservations_List_Page::MENU_SLUG, EEM_Venue_Editor_Page::MENU_SLUG, EEM_Producer_Editor_Page::MENU_SLUG ), true ) ) {
+		if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-order', 'equine-event-manager-order-refund', 'equine-event-manager-settings', 'equine-event-manager-stall-charts', 'equine-event-manager-stall-chart-print', 'equine-event-manager-reports', 'equine-event-manager-reservation-overview', 'equine-event-manager-create-order', 'equine-event-manager-collect-payment', 'equine-event-manager-dashboard', 'equine-event-manager-reservation-editor', EEM_Entries::EDITOR_SLUG, EEM_Entries::LIST_SLUG, 'equine-event-manager-customer', 'equine-event-manager-customers', EEM_Notifications_Page::MENU_SLUG, EEM_Venues_Page::MENU_SLUG, EEM_Reservations_List_Page::MENU_SLUG, EEM_Venue_Editor_Page::MENU_SLUG, EEM_Producer_Editor_Page::MENU_SLUG, EEM_Daily_Movement_Page::MENU_SLUG ), true ) ) {
 			$should_load = true;
 		}
 
@@ -814,6 +819,43 @@ class EEM_Admin {
 	}
 
 	/**
+	 * Print footer JS that nests "Daily Movement" as a flyout sub-item under Reports.
+	 * Reuses the same `.eem-cat-flyout` CSS from the Category nesting (already loaded).
+	 *
+	 * @return void
+	 */
+	public function print_reports_flyout_js() {
+		$dm_slug = EEM_Daily_Movement_Page::MENU_SLUG;
+		?>
+		<script id="eem-reports-flyout-js">
+		(function () {
+			var reportsLink = document.querySelector('#adminmenu a[href*="page=equine-event-manager-reports"]');
+			if (!reportsLink) { return; }
+			var reportsLi = reportsLink.closest('li');
+			if (!reportsLi) { return; }
+			reportsLi.classList.add('eem-cat-parent');
+			var fly = document.createElement('ul');
+			fly.className = 'eem-cat-flyout';
+			var li = document.createElement('li');
+			var a = document.createElement('a');
+			a.href = '<?php echo esc_url( admin_url( 'admin.php?page=' . $dm_slug ) ); ?>';
+			a.textContent = '<?php echo esc_js( __( 'Daily Movement', 'equine-event-manager' ) ); ?>';
+			<?php
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$current_page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+			if ( $dm_slug === $current_page ) :
+			?>
+			li.classList.add('current');
+			<?php endif; ?>
+			li.appendChild(a);
+			fly.appendChild(li);
+			reportsLi.appendChild(fly);
+		})();
+		</script>
+		<?php
+	}
+
+	/**
 	 * Bounce the raw WP `edit-tags.php` term list and `term.php` term editor for
 	 * the three managed category taxonomies (en_event_category / en_venue_category
 	 * / en_producer_category) to the branded EEM_Term_Categories_Page. The term
@@ -1257,6 +1299,15 @@ class EEM_Admin {
 			// C15.C — mockup-faithful Reports page replaces the legacy
 			// render_reports_page (kept for now but no longer the menu callback).
 			array( new EEM_Reports_Page(), 'render' )
+		);
+
+		add_submenu_page(
+			null,
+			__( 'Daily Movement', 'equine-event-manager' ),
+			__( 'Daily Movement', 'equine-event-manager' ),
+			'manage_options',
+			EEM_Daily_Movement_Page::MENU_SLUG,
+			array( 'EEM_Daily_Movement_Page', 'render' )
 		);
 
 		// Settings page is rendered by the Phase 3 EEM_Settings_Page controller
