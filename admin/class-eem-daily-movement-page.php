@@ -428,7 +428,7 @@ class EEM_Daily_Movement_Page {
 						<option value=""><?php esc_html_e( 'All Days', 'equine-event-manager' ); ?></option>
 						<?php foreach ( $available_dates as $d ) : ?>
 							<option value="<?php echo esc_attr( $d ); ?>" <?php selected( $date, $d ); ?>>
-								<?php echo esc_html( EEM_Daily_Movement_Service::format_display_date( $d ) ); ?>
+								<?php echo esc_html( date_i18n( 'l, F j', strtotime( $d ) ) ); ?>
 							</option>
 						<?php endforeach; ?>
 					</select>
