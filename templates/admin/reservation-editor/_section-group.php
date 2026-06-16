@@ -72,62 +72,44 @@ eem_render_editor_field_row( array(
 	),
 ) );
 
-// 3.6 Grounds Fee toggle-label-row.
-// C7.X.10 — converted from class-token controls (`eem-ctrl--grounds-amt`)
-// to ID-based controls (`row-group-grounds-amt`). The C7.X.9 toggle
-// handler routes through `eemApplyControlsById` which does
-// `document.getElementById(id)` for each token in data-controls — class
-// tokens were silently no-op'd, so Grounds Fee + Deposit toggles never
-// hid their dependent rows. Group was the last partial on the retired
-// class-token system; stall + rv + cancellation + fees converted in
-// C7.X.4–C7.X.6.
+// 3.6 Grounds Fee — toggle + amount on same row.
 ob_start();
 eem_render_editor_toggle_label_row( array(
 	'name'       => 'group_rider_grounds_fee_enabled',
 	'subsection' => 'grounds-fee',
-	'label'      => __( 'Charge a grounds fee for each rider', 'equine-event-manager' ),
+	'label'      => __( 'Enable Grounds Fee', 'equine-event-manager' ),
 	'is_enabled' => $grounds_on,
-	'controls'   => array( 'row-group-grounds-amt' ),
+	'controls'   => array( 'group-grounds-amt-inline' ),
 ) );
 $grounds_toggle_html = (string) ob_get_clean();
+$grounds_amt_html = sprintf(
+	'<div id="group-grounds-amt-inline" class="eem-inline-amt"%s><div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" name="en_reservation[group_rider_grounds_fee_amount]" id="en_group_rider_grounds_fee_amount" type="number" step="0.01" min="0" value="%s" /></div></div>',
+	$grounds_on ? '' : ' style="display:none"',
+	esc_attr( number_format( $grounds_amt, 2, '.', '' ) )
+);
 eem_render_editor_field_row( array(
 	'label'        => __( 'Grounds Fee', 'equine-event-manager' ),
-	'control_html' => $grounds_toggle_html,
+	'label_sub'    => __( 'Charge a grounds fee for each rider', 'equine-event-manager' ),
+	'control_html' => $grounds_toggle_html . $grounds_amt_html,
 ) );
 
-// 3.7 Grounds Fee Amount (conditional)
-eem_render_editor_field_row( array(
-	'label'        => __( 'Grounds Fee Amount', 'equine-event-manager' ),
-	'control_html' => sprintf(
-		'<div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" name="en_reservation[group_rider_grounds_fee_amount]" id="en_group_rider_grounds_fee_amount" type="number" step="0.01" min="0" value="%s" /></div>',
-		esc_attr( number_format( $grounds_amt, 2, '.', '' ) )
-	),
-	'row_id'       => 'row-group-grounds-amt',
-	'is_hidden'    => ! $grounds_on,
-) );
-
-// 3.9 Deposit toggle-label-row (same C7.X.10 conversion as 3.6).
+// 3.9 Deposit — toggle + amount on same row.
 ob_start();
 eem_render_editor_toggle_label_row( array(
 	'name'       => 'group_rider_deposit_enabled',
 	'subsection' => 'deposit',
-	'label'      => __( 'Require a deposit for each rider', 'equine-event-manager' ),
+	'label'      => __( 'Rider Deposit', 'equine-event-manager' ),
 	'is_enabled' => $deposit_on,
-	'controls'   => array( 'row-group-deposit-amt' ),
+	'controls'   => array( 'group-deposit-amt-inline' ),
 ) );
 $deposit_toggle_html = (string) ob_get_clean();
+$deposit_amt_html = sprintf(
+	'<div id="group-deposit-amt-inline" class="eem-inline-amt"%s><div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" name="en_reservation[group_rider_deposit_amount]" id="en_group_rider_deposit_amount" type="number" step="0.01" min="0" value="%s" /></div></div>',
+	$deposit_on ? '' : ' style="display:none"',
+	esc_attr( number_format( $deposit_amt, 2, '.', '' ) )
+);
 eem_render_editor_field_row( array(
 	'label'        => __( 'Deposit', 'equine-event-manager' ),
-	'control_html' => $deposit_toggle_html,
-) );
-
-// 3.10 Deposit Amount (conditional)
-eem_render_editor_field_row( array(
-	'label'        => __( 'Deposit Amount', 'equine-event-manager' ),
-	'control_html' => sprintf(
-		'<div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" name="en_reservation[group_rider_deposit_amount]" id="en_group_rider_deposit_amount" type="number" step="0.01" min="0" value="%s" /></div>',
-		esc_attr( number_format( $deposit_amt, 2, '.', '' ) )
-	),
-	'row_id'       => 'row-group-deposit-amt',
-	'is_hidden'    => ! $deposit_on,
+	'label_sub'    => __( 'Require a deposit for each rider', 'equine-event-manager' ),
+	'control_html' => $deposit_toggle_html . $deposit_amt_html,
 ) );

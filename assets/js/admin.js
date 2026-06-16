@@ -5969,7 +5969,7 @@ function eemSavePackageInline(input) {
 			_pkgTimer = setTimeout(function () { eemSavePackageInline(e.target); }, 150);
 		}
 	});
-})()
+})();
 
 (function () {
 	document.addEventListener('click', function (e) {
