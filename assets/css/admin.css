@@ -10608,10 +10608,17 @@ a.eem-dm-view-tab.active:visited {
 }
 
 /* ─── Stay Packages table + inline form ─────────────────────────────────────── */
-/* Breathing room above the packages table so its header/empty-state isn't
-   crammed against the Pricing Mode hint/border directly above it. */
+/* Group the whole Stay Packages block (table + empty state + Add Package +
+   inline form) into one subtly-shaded panel so the options read as a unit,
+   set apart from the Pricing Mode toggle above it. */
 .eem-stall-packages-content,
-.eem-rv-packages-content { padding-top: 24px; }
+.eem-rv-packages-content {
+	margin-top: 14px;
+	padding: 16px 18px 18px;
+	background: var(--eem-bg-muted, #f6f8fb);
+	border: 1px solid var(--eem-border);
+	border-radius: var(--eem-radius);
+}
 .eem-packages-table-wrap { margin-bottom: 12px; }
 .eem-packages-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .eem-packages-table thead th {
