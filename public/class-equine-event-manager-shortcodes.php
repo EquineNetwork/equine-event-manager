@@ -488,6 +488,8 @@ class EEM_Shortcodes {
 					data-group-grounds-fee-amount="<?php echo esc_attr( (float) $data['group_rider_grounds_fee_amount'] ); ?>"
 					data-group-deposit-enabled="<?php echo esc_attr( $group_deposit_enabled ? '1' : '0' ); ?>"
 					data-group-deposit-amount="<?php echo esc_attr( (float) $data['group_rider_deposit_amount'] ); ?>"
+					data-stall-pricing-mode="<?php echo esc_attr( $data['stall_pricing_mode'] ?? 'nightly' ); ?>"
+					data-rv-pricing-mode="<?php echo esc_attr( $data['rv_pricing_mode'] ?? 'nightly' ); ?>"
 					data-fee-type="<?php echo esc_attr( $data['convenience_fee_type'] ); ?>"
 					data-fee-value="<?php echo esc_attr( (float) $data['convenience_fee_value'] ); ?>"
 					<?php
@@ -691,7 +693,11 @@ class EEM_Shortcodes {
 												echo esc_html( $nightly_date_summary );
 											}
 										?></p>
-										<div class="eem-reservation-grid eem-reservation-grid--stay-controls">
+										<?php $stall_multi_stepper = in_array( $data['stall_pricing_mode'] ?? 'nightly', array( 'packages', 'both' ), true ) && count( $stall_stay_type_options ) > 1; ?>
+										<div class="eem-reservation-grid eem-reservation-grid--stay-controls"<?php if ( in_array( $data['stall_pricing_mode'] ?? 'nightly', array( 'packages', 'both' ), true ) ) echo ' style="display:none"'; ?>>
+										<?php if ( $stall_multi_stepper ) : ?>
+										<input type="hidden" name="stall_stay_type" value="<?php echo esc_attr( $stall_default_stay_type ); ?>" data-default-stay-type="<?php echo esc_attr( $stall_default_stay_type ); ?>" />
+										<?php else : ?>
 										<label class="eem-stay-type-field">
 											<span><?php esc_html_e( 'Rate Type', 'equine-event-manager' ); ?></span>
 											<select name="stall_stay_type" data-default-stay-type="<?php echo esc_attr( $stall_default_stay_type ); ?>">
@@ -700,6 +706,7 @@ class EEM_Shortcodes {
 												<?php endforeach; ?>
 											</select>
 										</label>
+										<?php endif; ?>
 										<label class="eem-stay-date-field eem-stay-date-field--arrival">
 											<span><?php esc_html_e( 'Arrival Date', 'equine-event-manager' ); ?> <strong>*</strong></span>
 											<?php if ( ! empty( $stay_date_options ) ) : ?>
@@ -1666,17 +1673,109 @@ class EEM_Shortcodes {
 			if ( $stall_per_customer_max > 0 ) {
 				$stall_stepper_max = ( null === $stall_stepper_max ) ? $stall_per_customer_max : min( (int) $stall_stepper_max, $stall_per_customer_max );
 			}
-			$this->render_product_line_item(
-				__( 'Stalls', 'equine-event-manager' ),
-				$stall_product_description,
-				'stall_qty',
-				'',
-				array(
-					'dynamic_price_type' => 'stall',
-					'early_bird_active'  => $stall_early_bird_active,
-					'max_quantity'       => $stall_stepper_max,
-				)
-			);
+
+			$stall_pricing_mode   = $data['stall_pricing_mode'] ?? 'nightly';
+			$stall_is_multi       = in_array( $stall_pricing_mode, array( 'packages', 'both' ), true );
+			$stall_type_options   = $this->get_enabled_stay_type_options( $data, 'stall' );
+			$stall_is_multi       = $stall_is_multi && count( $stall_type_options ) > 1;
+
+			if ( $stall_is_multi ) :
+				$stall_pkg_map = $this->get_package_price_map( $data, 'stall' );
+				foreach ( $stall_type_options as $st_key => $st_label ) :
+					$st_field_name = 'stall_qty_' . $st_key;
+					$st_is_pkg     = 0 === strpos( $st_key, 'pkg_' );
+					$st_pkg_info   = $st_is_pkg && isset( $stall_pkg_map[ $st_key ] ) ? $stall_pkg_map[ $st_key ] : null;
+					$st_desc       = $stall_product_description;
+
+					if ( $st_pkg_info ) {
+						$st_desc = '';
+						if ( ! empty( $st_pkg_info['start'] ) && ! empty( $st_pkg_info['end'] ) ) {
+							$st_desc = sprintf(
+								'%s – %s',
+								date_i18n( 'M j, Y', strtotime( $st_pkg_info['start'] ) ),
+								date_i18n( 'M j, Y', strtotime( $st_pkg_info['end'] ) )
+							);
+						}
+					} elseif ( 'nightly' !== $st_key ) {
+						$st_desc = '';
+					}
+
+					$st_args = array(
+						'max_quantity'  => $stall_stepper_max,
+					);
+					if ( $st_is_pkg && $st_pkg_info ) {
+						$st_args['static_price']        = $st_pkg_info['price'];
+						$st_args['static_price_suffix']  = '';
+					} else {
+						$st_args['dynamic_price_type']   = 'stall';
+						$st_args['dynamic_price_key']    = $st_key;
+						$st_args['early_bird_active']    = $stall_early_bird_active;
+					}
+
+					$this->render_product_line_item(
+						$st_label,
+						$st_desc,
+						$st_field_name,
+						'',
+						$st_args
+					);
+
+					if ( 'nightly' === $st_key && 'both' === $stall_pricing_mode ) :
+						$id_min_date                  = ! empty( $data['available_start_date'] ) ? $data['available_start_date'] : '';
+						$id_max_date                  = ! empty( $data['available_end_date'] ) ? $data['available_end_date'] : '';
+						$id_default_arrival           = $id_min_date;
+						$id_default_departure         = $id_max_date ? $id_max_date : $id_min_date;
+						$id_night_count               = $this->get_selected_night_count( $id_default_arrival, $id_default_departure );
+						$id_stay_date_options         = $this->get_available_stay_date_options( $id_min_date, $id_max_date );
+					?>
+						<div class="eem-reservation-grid eem-reservation-grid--stay-controls eem-reservation-grid--inline-dates">
+							<label class="eem-stay-date-field eem-stay-date-field--arrival">
+								<span><?php esc_html_e( 'Arrival Date', 'equine-event-manager' ); ?> <strong>*</strong></span>
+								<?php if ( ! empty( $id_stay_date_options ) ) : ?>
+									<select name="stall_arrival_date" data-default-date="<?php echo esc_attr( $id_default_arrival ); ?>" required>
+										<?php foreach ( $id_stay_date_options as $option_value => $option_label ) : ?>
+											<option value="<?php echo esc_attr( $option_value ); ?>" <?php selected( $option_value, $id_default_arrival ); ?>><?php echo esc_html( $option_label ); ?></option>
+										<?php endforeach; ?>
+									</select>
+								<?php else : ?>
+									<input type="date" name="stall_arrival_date" min="<?php echo esc_attr( $id_min_date ); ?>" max="<?php echo esc_attr( $id_max_date ); ?>" value="<?php echo esc_attr( $id_default_arrival ); ?>" data-default-date="<?php echo esc_attr( $id_default_arrival ); ?>" required />
+								<?php endif; ?>
+							</label>
+							<label class="eem-stay-date-field eem-stay-date-field--departure">
+								<span><?php esc_html_e( 'Departure Date', 'equine-event-manager' ); ?> <strong>*</strong></span>
+								<?php if ( ! empty( $id_stay_date_options ) ) : ?>
+									<select name="stall_departure_date" data-default-date="<?php echo esc_attr( $id_default_departure ); ?>" required>
+										<?php foreach ( $id_stay_date_options as $option_value => $option_label ) : ?>
+											<option value="<?php echo esc_attr( $option_value ); ?>" <?php selected( $option_value, $id_default_departure ); ?>><?php echo esc_html( $option_label ); ?></option>
+										<?php endforeach; ?>
+									</select>
+								<?php else : ?>
+									<input type="date" name="stall_departure_date" min="<?php echo esc_attr( $id_min_date ); ?>" max="<?php echo esc_attr( $id_max_date ); ?>" value="<?php echo esc_attr( $id_default_departure ); ?>" data-default-date="<?php echo esc_attr( $id_default_departure ); ?>" required />
+								<?php endif; ?>
+							</label>
+							<div class="eem-stay-night-field">
+								<span class="eem-stay-night-field__label"><?php esc_html_e( 'Nights', 'equine-event-manager' ); ?></span>
+								<div class="eem-stay-night-field__value">
+									<strong data-stay-nights-summary><?php echo esc_html( $this->get_night_count_label( $id_night_count ) ); ?></strong>
+								</div>
+							</div>
+						</div>
+					<?php endif;
+
+				endforeach;
+			else :
+				$this->render_product_line_item(
+					__( 'Stalls', 'equine-event-manager' ),
+					$stall_product_description,
+					'stall_qty',
+					'',
+					array(
+						'dynamic_price_type' => 'stall',
+						'early_bird_active'  => $stall_early_bird_active,
+						'max_quantity'       => $stall_stepper_max,
+					)
+				);
+			endif;
 			?>
 			<?php if ( ! empty( $data['required_shavings_enabled'] ) ) : ?>
 				<?php
@@ -2660,6 +2759,31 @@ class EEM_Shortcodes {
 		// customer's picked units — otherwise drop it silently.
 		if ( '' !== $stall_payload['preferred_tack_stall'] && ! in_array( $stall_payload['preferred_tack_stall'], $stall_payload['preferred_stall_units'], true ) ) {
 			$stall_payload['preferred_tack_stall'] = '';
+		}
+
+		$stall_pricing_mode = $data['stall_pricing_mode'] ?? 'nightly';
+		if ( in_array( $stall_pricing_mode, array( 'packages', 'both' ), true ) ) {
+			$stall_items   = array();
+			$stall_qty_sum = 0;
+			$stay_options  = $this->get_enabled_stay_type_options( $data, 'stall' );
+			foreach ( $stay_options as $st_key => $st_label ) {
+				$post_key = 'stall_qty_' . $st_key;
+				$qty      = isset( $_POST[ $post_key ] ) ? absint( $_POST[ $post_key ] ) : 0;
+				if ( $qty <= 0 ) {
+					continue;
+				}
+				$stall_qty_sum += $qty;
+				$stall_items[] = array(
+					'stay_type' => $this->sanitize_stay_type_value( $st_key ),
+					'qty'       => $qty,
+				);
+			}
+			if ( ! empty( $stall_items ) ) {
+				$stall_payload['stall_items']          = $stall_items;
+				$stall_payload['stall_qty']            = $stall_qty_sum;
+				$stall_payload['stall_billable_quantity'] = $stall_qty_sum + absint( $stall_payload['tack_stall_qty'] );
+				$stall_payload['stall_stay_type']      = $stall_items[0]['stay_type'];
+			}
 		}
 
 		return $stall_payload;
@@ -3687,13 +3811,42 @@ class EEM_Shortcodes {
 		// required shavings. Resolve how many of the selected stalls are tack.
 		$tack_stall_count              = $this->get_tack_stall_count( $submission, $data );
 		$shavings_stall_qty            = max( 0, $stall_qty_total - $tack_stall_count );
-		$stall_unit_price              = $this->get_current_rate( $data, 'stall', $submission['stall_stay_type'] );
 		$rv_unit_price                 = ! empty( $data['rv_lot_selection_enabled'] ) && '' !== (string) $submission['rv_lot'] ? $this->get_rv_lot_rate( $data, $submission['rv_lot'], $submission['rv_stay_type'] ) : $this->get_current_rate( $data, 'rv', $submission['rv_stay_type'] );
-		$stall_night_count             = $this->get_billable_stay_units( $submission['stall_arrival_date'], $submission['stall_departure_date'], $submission['stall_stay_type'] );
 		$rv_night_count                = $this->get_billable_stay_units( $submission['rv_arrival_date'], $submission['rv_departure_date'], $submission['rv_stay_type'] );
 		$required_shavings             = ! empty( $data['required_shavings_enabled'] ) ? $shavings_stall_qty * absint( $data['required_shavings_per_stall'] ) : 0;
 		$required_shavings_subtotal    = $required_shavings * (float) $data['required_shavings_price'];
-		$stall_subtotal                = ( $status['stalls_open'] && $stall_qty_total > 0 ) ? ( $stall_qty_total * $stall_unit_price * $stall_night_count ) : 0;
+
+		$stall_unit_price = 0.0;
+		$stall_night_count = 0;
+		$stall_subtotal = 0.0;
+		$stall_item_totals = array();
+
+		if ( ! empty( $submission['stall_items'] ) && $status['stalls_open'] ) {
+			foreach ( $submission['stall_items'] as $si ) {
+				$si_rate   = $this->get_current_rate( $data, 'stall', $si['stay_type'] );
+				$si_dates  = $this->resolve_stay_dates_for_type( $data, $submission, 'stall', $si['stay_type'] );
+				$si_units  = $this->get_billable_stay_units( $si_dates['arrival'], $si_dates['departure'], $si['stay_type'] );
+				$si_sub    = $si['qty'] * $si_rate * $si_units;
+				$stall_subtotal += $si_sub;
+				$stall_item_totals[] = array(
+					'stay_type'      => $si['stay_type'],
+					'qty'            => $si['qty'],
+					'unit_price'     => $si_rate,
+					'arrival_date'   => $si_dates['arrival'],
+					'departure_date' => $si_dates['departure'],
+					'night_count'    => $si_units,
+					'subtotal'       => $si_sub,
+				);
+			}
+			if ( ! empty( $stall_item_totals ) ) {
+				$stall_unit_price  = $stall_item_totals[0]['unit_price'];
+				$stall_night_count = $stall_item_totals[0]['night_count'];
+			}
+		} else {
+			$stall_unit_price  = $this->get_current_rate( $data, 'stall', $submission['stall_stay_type'] );
+			$stall_night_count = $this->get_billable_stay_units( $submission['stall_arrival_date'], $submission['stall_departure_date'], $submission['stall_stay_type'] );
+			$stall_subtotal    = ( $status['stalls_open'] && $stall_qty_total > 0 ) ? ( $stall_qty_total * $stall_unit_price * $stall_night_count ) : 0;
+		}
 		$additional_shavings_subtotal = ! empty( $data['additional_shavings_enabled'] ) ? ( absint( $submission['additional_shavings_qty'] ) * (float) $data['additional_shavings_price'] ) : 0;
 		$group_rider_count            = ( ! empty( $data['group_reservations_enabled'] ) && ! empty( $submission['group_reservation_enabled'] ) ) ? absint( $submission['group_rider_count'] ) : 0;
 		$group_rider_grounds_fee_subtotal = ( ! empty( $data['group_rider_grounds_fee_enabled'] ) && $group_rider_count > 0 ) ? $group_rider_count * (float) $data['group_rider_grounds_fee_amount'] : 0.0;
@@ -3783,6 +3936,7 @@ class EEM_Shortcodes {
 			'required_shavings_subtotal'   => $required_shavings_subtotal,
 			'additional_shavings_subtotal' => $additional_shavings_subtotal,
 			'stall_subtotal'               => $stall_subtotal,
+			'stall_item_totals'            => $stall_item_totals,
 			'rv_subtotal'                  => $rv_subtotal,
 			'subtotal'                     => $subtotal,
 			'fees'                         => $fees,
@@ -3827,6 +3981,34 @@ class EEM_Shortcodes {
 	 * @param string $stay_type Stay type slug.
 	 * @return int
 	 */
+	private function resolve_stay_dates_for_type( array $data, array $submission, string $section, string $stay_type ): array {
+		$pkg = $this->find_package_for_stay_type( $data, $section, $stay_type );
+		if ( null !== $pkg ) {
+			return array(
+				'arrival'   => (string) ( $pkg['start_date'] ?? '' ),
+				'departure' => (string) ( $pkg['end_date'] ?? '' ),
+			);
+		}
+		if ( 'weekend' === $stay_type ) {
+			$prefix = 'stall' === $section ? 'stall' : 'rv';
+			return array(
+				'arrival'   => (string) ( $data[ $prefix . '_weekend_start_date' ] ?? '' ),
+				'departure' => (string) ( $data[ $prefix . '_weekend_end_date' ] ?? '' ),
+			);
+		}
+		if ( 'weekly' === $stay_type ) {
+			$prefix = 'stall' === $section ? 'stall' : 'rv';
+			return array(
+				'arrival'   => (string) ( $data[ $prefix . '_weekly_start_date' ] ?? '' ),
+				'departure' => (string) ( $data[ $prefix . '_weekly_end_date' ] ?? '' ),
+			);
+		}
+		return array(
+			'arrival'   => (string) ( $submission[ $section . '_arrival_date' ] ?? '' ),
+			'departure' => (string) ( $submission[ $section . '_departure_date' ] ?? '' ),
+		);
+	}
+
 	private function get_billable_stay_units( $arrival_date, $departure_date, $stay_type ) {
 		// Weekend/weekly packages AND named Stay Packages bill once (the price is
 		// the whole-stay price, not a per-night rate).
@@ -4081,10 +4263,7 @@ class EEM_Shortcodes {
 
 		if ( $has_stall_order ) {
 			$stall_table       = $wpdb->prefix . 'en_stall_reservations';
-			$stall_unit_price  = $totals['stall_unit_price'];
 			$required_shavings = $totals['required_shavings_qty'];
-			$stall_subtotal    = $totals['stall_subtotal'] + ( 'stall' === $attach_general_addons_to ? (float) $totals['general_addons_subtotal'] : 0.0 ) + ( 'stall' === $attach_group_charges_to ? (float) $totals['group_subtotal'] : 0.0 );
-			$stall_fee         = $this->calculate_convenience_fee( $stall_subtotal, $data );
 
 			$stall_notes = $notes;
 
@@ -4092,72 +4271,96 @@ class EEM_Shortcodes {
 				$stall_notes = trim( $stall_notes . "\nAssigned Stall Units: " . implode( ', ', array_map( 'sanitize_text_field', (array) $submission['preferred_stall_units'] ) ) );
 			}
 
-			// Buyer-designated tack stall recorded on the `Tack Stalls:` notes line
-			// the admin chart chip also uses, so both converge on one source of
-			// truth. Written whenever tack is on (not 'off'). Excluded from required
-			// shavings (T2) but still pays the normal stall rate.
 			$tack_mode = isset( $data['stall_tack_mode'] ) ? (string) $data['stall_tack_mode'] : 'customer';
 			if ( 'off' !== $tack_mode && ! empty( $submission['preferred_tack_stall'] ) ) {
 				$stall_notes = trim( $stall_notes . "\nTack Stalls: " . sanitize_text_field( (string) $submission['preferred_tack_stall'] ) );
 			}
 
-			$inserted = false !== $wpdb->insert(
-				$stall_table,
-				array(
-					'event_source'              => $data['event_source'],
-					'event_id'                  => $event_id,
-					// CLEANUP #11 — denormalize the reservation id into its own indexed
-					// column (the value also lives in the `Reservation setup ID: N`
-					// notes line) so the Reservations-list orders-count + sort can run
-					// as an indexed SQL JOIN instead of a notes-LIKE / PHP two-pass.
-					'reservation_id'            => absint( $reservation_id ),
-					'external_event_id'         => $data['external_event_id'],
-					'customer_name'             => $customer_name,
-					'email'                     => $submission['email'],
-					'phone'                     => $submission['phone'],
-					'stall_qty'                 => $submission['stall_qty'],
-					'tack_stall_qty'            => $submission['tack_stall_qty'],
-					'stay_type'                 => $submission['stall_stay_type'],
-					'arrival_date'              => $submission['stall_arrival_date'],
-					'departure_date'            => $submission['stall_departure_date'],
-					'required_shavings_qty'     => $required_shavings,
-					'additional_shavings_qty'   => $submission['additional_shavings_qty'],
-					'unit_price'                => $stall_unit_price,
-					'subtotal'                  => $stall_subtotal,
-					'convenience_fee'           => $stall_fee,
-					// C12 + CLEANUP #9: this row's proportional share of the order tax
-					// ($eem_stall_tax, computed above). Tax lives in its own column —
-					// row `total` stays subtotal+fee so the existing refund/component
-					// logic is untouched; the grouped order total adds tax back in the
-					// orders-repository aggregation.
-					'tax'                       => (float) $eem_stall_tax,
-					'tax_rate'                  => (float) $totals['tax_rate'],
-					'total'                     => $stall_subtotal + $stall_fee,
-					'payment_status'            => $payment_status,
-					'payment_gateway'           => $payment_gateway,
-					'order_number'              => $order_number,
-					'transaction_id'            => $transaction_id,
-					'refund_transaction_id'     => '',
-					'refunded_at'               => null,
-					'notes'                     => $stall_notes,
-					'created_at'                => $created,
-				)
-			) || $inserted;
+			$stall_items_to_insert = array();
+			if ( ! empty( $totals['stall_item_totals'] ) ) {
+				foreach ( $totals['stall_item_totals'] as $si_idx => $si ) {
+					$stall_items_to_insert[] = array(
+						'stay_type'      => $si['stay_type'],
+						'qty'            => $si['qty'],
+						'unit_price'     => $si['unit_price'],
+						'arrival_date'   => $si['arrival_date'],
+						'departure_date' => $si['departure_date'],
+						'subtotal'       => $si['subtotal'],
+					);
+				}
+			} else {
+				$stall_items_to_insert[] = array(
+					'stay_type'      => $submission['stall_stay_type'],
+					'qty'            => $submission['stall_qty'],
+					'unit_price'     => $totals['stall_unit_price'],
+					'arrival_date'   => $submission['stall_arrival_date'],
+					'departure_date' => $submission['stall_departure_date'],
+					'subtotal'       => $totals['stall_subtotal'],
+				);
+			}
 
-				// Seed stall status rows so the check-in/out lifecycle starts at 'occupied'.
-				$stall_order_row_id = (int) $wpdb->insert_id;
-				if ( $stall_order_row_id > 0 && ! empty( $submission['preferred_stall_units'] ) ) {
-					$checkout_stall_units = array_values( array_filter( array_map( 'sanitize_text_field', (array) $submission['preferred_stall_units'] ) ) );
-					if ( ! empty( $checkout_stall_units ) ) {
-						EEM_Stall_Status_Repo::create_occupied(
-							absint( $reservation_id ),
-							$stall_order_row_id,
-							$checkout_stall_units,
-							(string) $submission['stall_arrival_date'],
-							(string) $submission['stall_departure_date']
-						);
+			$stall_addon_extra  = 'stall' === $attach_general_addons_to ? (float) $totals['general_addons_subtotal'] : 0.0;
+			$stall_group_extra  = 'stall' === $attach_group_charges_to ? (float) $totals['group_subtotal'] : 0.0;
+			$stall_row_count    = count( $stall_items_to_insert );
+
+			foreach ( $stall_items_to_insert as $si_row_idx => $si_row ) {
+				$row_subtotal = $si_row['subtotal'];
+				if ( 0 === $si_row_idx ) {
+					$row_subtotal += $stall_addon_extra + $stall_group_extra;
+				}
+				$row_fee = $this->calculate_convenience_fee( $row_subtotal, $data );
+				$row_tax = ( 0 === $si_row_idx ) ? (float) $eem_stall_tax : 0.0;
+
+				$inserted = false !== $wpdb->insert(
+					$stall_table,
+					array(
+						'event_source'              => $data['event_source'],
+						'event_id'                  => $event_id,
+						'reservation_id'            => absint( $reservation_id ),
+						'external_event_id'         => $data['external_event_id'],
+						'customer_name'             => $customer_name,
+						'email'                     => $submission['email'],
+						'phone'                     => $submission['phone'],
+						'stall_qty'                 => $si_row['qty'],
+						'tack_stall_qty'            => ( 0 === $si_row_idx ) ? $submission['tack_stall_qty'] : 0,
+						'stay_type'                 => $si_row['stay_type'],
+						'arrival_date'              => $si_row['arrival_date'],
+						'departure_date'            => $si_row['departure_date'],
+						'required_shavings_qty'     => ( 0 === $si_row_idx ) ? $required_shavings : 0,
+						'additional_shavings_qty'   => ( 0 === $si_row_idx ) ? $submission['additional_shavings_qty'] : 0,
+						'unit_price'                => $si_row['unit_price'],
+						'subtotal'                  => $row_subtotal,
+						'convenience_fee'           => $row_fee,
+						'tax'                       => $row_tax,
+						'tax_rate'                  => (float) $totals['tax_rate'],
+						'total'                     => $row_subtotal + $row_fee,
+						'payment_status'            => $payment_status,
+						'payment_gateway'           => $payment_gateway,
+						'order_number'              => $order_number,
+						'transaction_id'            => $transaction_id,
+						'refund_transaction_id'     => '',
+						'refunded_at'               => null,
+						'notes'                     => $stall_notes,
+						'created_at'                => $created,
+					)
+				) || $inserted;
+
+				if ( 0 === $si_row_idx ) {
+					$stall_order_row_id = (int) $wpdb->insert_id;
+					if ( $stall_order_row_id > 0 && ! empty( $submission['preferred_stall_units'] ) ) {
+						$checkout_stall_units = array_values( array_filter( array_map( 'sanitize_text_field', (array) $submission['preferred_stall_units'] ) ) );
+						if ( ! empty( $checkout_stall_units ) ) {
+							EEM_Stall_Status_Repo::create_occupied(
+								absint( $reservation_id ),
+								$stall_order_row_id,
+								$checkout_stall_units,
+								(string) $si_row['arrival_date'],
+								(string) $si_row['departure_date']
+							);
+						}
 					}
 				}
+			}
 		}
 
 		if ( $has_rv_order ) {
@@ -9515,6 +9718,7 @@ RV Lot: " . $rv_lot['name'] );
 			$args,
 			array(
 				'dynamic_price_type' => '',
+				'dynamic_price_key'  => '',
 				'static_price'       => null,
 				'static_price_suffix'=> '',
 				'early_bird_active'  => false,
@@ -9538,6 +9742,9 @@ RV Lot: " . $rv_lot['name'] );
 				esc_attr( $args['dynamic_price_type'] ),
 				esc_attr( $title )
 			);
+			if ( '' !== (string) $args['dynamic_price_key'] ) {
+				$title_attributes .= sprintf( ' data-dynamic-price-key="%s"', esc_attr( $args['dynamic_price_key'] ) );
+			}
 		} elseif ( null !== $args['static_price'] ) {
 			$title_attributes = sprintf(
 				' data-product-base-label="%1$s" data-static-price="%2$s" data-static-price-suffix="%3$s"',
@@ -11270,7 +11477,34 @@ RV Lot: " . $rv_lot['name'] );
 				var groupDepositAmount = parseCurrency(form.dataset.groupDepositAmount);
 				var feeType = form.dataset.feeType || 'none';
 				var feeValue = parseCurrency(form.dataset.feeValue);
-				var stallQty = getNumberFieldValue(form, 'stall_qty');
+				var stallPricingMode = form.dataset.stallPricingMode || 'nightly';
+				var stallIsMulti = (stallPricingMode === 'packages' || stallPricingMode === 'both');
+				var stallQty = 0;
+				var stallSubtotal = 0;
+				if (stallIsMulti) {
+					var stallPkgMap = parseJsonAttribute(form.dataset.stallPackages) || {};
+					form.querySelectorAll('[name^="stall_qty_"]').forEach(function(input) {
+						var stKey = input.name.replace('stall_qty_', '');
+						var stQty = parseInt(input.value, 10) || 0;
+						stallQty += stQty;
+						if (stQty <= 0) { return; }
+						var stPkg = stallPkgMap[stKey] || null;
+						var stRate, stUnits;
+						if (stPkg) {
+							stRate = parseCurrency(stPkg.price);
+							stUnits = 1;
+						} else {
+							var stType = (stKey === 'weekend') ? 'weekend' : (stKey === 'weekly' ? 'weekly' : 'nightly');
+							var stRateKey = stType === 'weekend' ? 'stallWeekendRate' : (stType === 'weekly' ? 'stallWeeklyRate' : 'stallNightlyRate');
+							stRate = parseCurrency(form.dataset[stRateKey]);
+							stUnits = getBillableStayUnits(getFieldValue(form, 'stall_arrival_date'), getFieldValue(form, 'stall_departure_date'), stType);
+						}
+						stallSubtotal += stQty * stRate * stUnits;
+					});
+				} else {
+					stallQty = getNumberFieldValue(form, 'stall_qty');
+					stallSubtotal = stallQty * stallRate * stallUnits;
+				}
 				var rvQty = getNumberFieldValue(form, 'rv_qty');
 				var rvAddonSubtotals = {};
 				var generalAddonSubtotals = {};
@@ -11280,14 +11514,9 @@ RV Lot: " . $rv_lot['name'] );
 				var groupDepositSubtotal = groupEnabled && groupDepositEnabled ? groupRiderCount * groupDepositAmount : 0;
 				var groupSubtotal = groupGroundsFeeSubtotal + groupDepositSubtotal;
 				var requiredShavingsEnabled = form.dataset.requiredShavingsEnabled === '1';
-				/* T2 — tack stalls are excluded from required shavings. Count the
-				   tack stalls in the current selection (customer-designated single
-				   pick, or admin-assigned numbers among the picked stalls) and
-				   bill shavings on the remaining stalls only. */
 				var tackCount = countTackStalls(form, stallQty);
 				var shavingsStallQty = Math.max(0, stallQty - tackCount);
 				var requiredShavingsQty = requiredShavingsEnabled ? shavingsStallQty * (parseInt(form.dataset.requiredShavingsPerStall || '0', 10) || 0) : 0;
-				var stallSubtotal = stallQty * stallRate * stallUnits;
 				var requiredShavingsSubtotal = requiredShavingsQty * requiredShavingsPrice;
 				/* v4 RV map picker: add each picked lot's per-night zone surcharge
 				   (the map picker writes the summed nightly/weekend surcharge to the
