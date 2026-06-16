@@ -54,14 +54,22 @@ eem_render_editor_field_row( array(
 	'hint'         => __( 'Shown in the RV Reservations section on the customer form.', 'equine-event-manager' ),
 ) );
 
-// 2. Available Reservation Dates
+// 2. Available Reservation Dates — default to event dates when empty
+$_avail_start = (string) $data['available_start_date'];
+$_avail_end   = (string) $data['available_end_date'];
+if ( '' === $_avail_start && ! empty( $data['_event_start_date'] ) ) {
+	$_avail_start = gmdate( 'Y-m-d', strtotime( (string) $data['_event_start_date'] ) );
+}
+if ( '' === $_avail_end && ! empty( $data['_event_end_date'] ) ) {
+	$_avail_end = gmdate( 'Y-m-d', strtotime( (string) $data['_event_end_date'] ) );
+}
 eem_render_editor_field_row( array(
 	'label'        => __( 'Available Reservation Dates', 'equine-event-manager' ),
 	'label_sub'    => __( 'Bookable date window for RV lots', 'equine-event-manager' ),
 	'control_html' => sprintf(
 		'<div class="eem-date-range"><input class="eem-field-input" type="date" name="en_reservation[available_start_date]" value="%s" style="width:170px" /><span class="eem-date-sep">–</span><input class="eem-field-input" type="date" name="en_reservation[available_end_date]" value="%s" style="width:170px" /></div>',
-		esc_attr( (string) $data['available_start_date'] ),
-		esc_attr( (string) $data['available_end_date'] )
+		esc_attr( $_avail_start ),
+		esc_attr( $_avail_end )
 	),
 ) );
 
@@ -97,6 +105,16 @@ echo '<div class="eem-rv-nightly-content" id="eem-rv-nightly-content"' . ( $is_r
 // Hidden mirror — always-on nightly when in nightly mode (backend still checks this key)
 echo '<input type="hidden" name="en_reservation[rv_nightly_enabled]" value="1">';
 
+// 9. RV Nightly Rate
+eem_render_editor_field_row( array(
+	'label'        => __( 'RV Nightly Rate', 'equine-event-manager' ),
+	'control_html' => sprintf(
+		'<div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[rv_nightly_rate]" value="%s" /></div>',
+		esc_attr( $fmt_money( $data['rv_nightly_rate'] ) )
+	),
+	'hint'         => __( 'Base nightly rate. Lot zones below may add tier-specific pricing.', 'equine-event-manager' ),
+) );
+
 // 5. Reservation Schedule toggle
 ob_start();
 eem_render_editor_toggle_label_row( array(
@@ -131,16 +149,6 @@ eem_render_editor_field_row( array(
 		'<input class="eem-field-input" type="datetime-local" name="en_reservation[rv_close_at]" value="%s" style="max-width:260px" />',
 		esc_attr( $fmt_dt( $data['rv_close_at'] ) )
 	),
-) );
-
-// 9. RV Nightly Rate
-eem_render_editor_field_row( array(
-	'label'        => __( 'RV Nightly Rate', 'equine-event-manager' ),
-	'control_html' => sprintf(
-		'<div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[rv_nightly_rate]" value="%s" /></div>',
-		esc_attr( $fmt_money( $data['rv_nightly_rate'] ) )
-	),
-	'hint'         => __( 'Base nightly rate. Lot zones below may add tier-specific pricing.', 'equine-event-manager' ),
 ) );
 
 // 11. Early Bird toggle

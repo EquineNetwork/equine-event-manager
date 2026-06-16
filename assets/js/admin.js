@@ -5856,6 +5856,21 @@ function eemEsc(str) {
 	});
 })();
 
+// Auto-fill package end date to start+1 day when start is picked and end is empty
+['stall', 'rv'].forEach(function (type) {
+	var startEl = document.getElementById('eem-' + type + '-pkg-start');
+	if (startEl) {
+		startEl.addEventListener('change', function () {
+			var endEl = document.getElementById('eem-' + type + '-pkg-end');
+			if (endEl && !endEl.value && startEl.value) {
+				var d = new Date(startEl.value + 'T00:00:00');
+				d.setDate(d.getDate() + 1);
+				endEl.value = d.toISOString().slice(0, 10);
+			}
+		});
+	}
+});
+
 /* ─── End Stay Packages ─────────────────────────────────────────────────────── */
 
 /* Stall Inventory Type toggle (quantity_only / numbered). Drives the Stall Row

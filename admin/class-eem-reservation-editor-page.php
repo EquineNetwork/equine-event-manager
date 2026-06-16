@@ -377,6 +377,11 @@ class EEM_Reservation_Editor_Page {
 	private static function render_section_skeletons( $reservation_id ) {
 		$reservations_cpt = new EEM_Reservations_CPT();
 		$data             = $reservations_cpt->get_editor_meta_values( $reservation_id );
+		if ( class_exists( 'EEM_Reservation_Source_Resolver' ) ) {
+			$_ev = EEM_Reservation_Source_Resolver::resolve_event_fields( $reservation_id );
+			$data['_event_start_date'] = isset( $_ev['start_date'] ) ? (string) $_ev['start_date'] : '';
+			$data['_event_end_date']   = isset( $_ev['end_date'] )   ? (string) $_ev['end_date']   : '';
+		}
 		$addons_context   = $reservations_cpt->get_editor_general_addons_context( $reservation_id );
 		$addons           = isset( $addons_context['addons'] ) ? (array) $addons_context['addons'] : array();
 
