@@ -8808,6 +8808,7 @@ select.eem-filter-select { padding-right:32px; appearance:none; cursor:pointer; 
 .eem-report-icon-reservations { background:#F5F3FF; color:#6d28d9; }
 .eem-report-icon-revenue { background:#F0FDF4; color:#15803d; }
 .eem-report-icon-occupancy { background:#F0FDFA; color:#0d9488; }
+.eem-report-icon-shavings { background:#FEFCE8; color:#a16207; }
 .eem-report-icon-customers { background:#FFF7ED; color:#c2410c; }
 .eem-report-icon-refunds { background:#FEF2F2; color:#b91c1c; }
 .eem-report-card-title { font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:700; color:#031B4E; margin-bottom:3px; }

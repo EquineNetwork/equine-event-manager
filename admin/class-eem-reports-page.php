@@ -133,6 +133,7 @@ class EEM_Reports_Page {
 			array( 'slug' => 'reservations', 'tone' => 'reservations', 'title' => __( 'Reservations', 'equine-event-manager' ), 'desc' => __( 'Event-level summary: dates, total orders, total revenue, occupancy %, capacity used.', 'equine-event-manager' ) ),
 			array( 'slug' => 'revenue', 'tone' => 'revenue', 'title' => __( 'Revenue', 'equine-event-manager' ), 'desc' => __( 'Revenue breakdown by date, reservation, payment method. Includes refunds + convenience fees + tax.', 'equine-event-manager' ) ),
 			array( 'slug' => 'stall_occupancy', 'tone' => 'occupancy', 'title' => __( 'Stall Occupancy', 'equine-event-manager' ), 'desc' => __( 'Stall + RV lot utilization per event. Capacity, fill rate, booked counts.', 'equine-event-manager' ) ),
+			array( 'slug' => 'shavings', 'tone' => 'shavings', 'title' => __( 'Shavings', 'equine-event-manager' ), 'desc' => __( 'Bedding worksheet per event: required + additional bags per order, with per-event totals for the barn.', 'equine-event-manager' ) ),
 			array( 'slug' => 'customer_list', 'tone' => 'customers', 'title' => __( 'Customer List', 'equine-event-manager' ), 'desc' => __( 'All customers with contact info + order count + lifetime value. Good for marketing.', 'equine-event-manager' ) ),
 			array( 'slug' => 'refund_log', 'tone' => 'refunds', 'title' => __( 'Refund Log', 'equine-event-manager' ), 'desc' => __( 'Refunds with amount, date, reason, and section. For reconciliation.', 'equine-event-manager' ) ),
 		);

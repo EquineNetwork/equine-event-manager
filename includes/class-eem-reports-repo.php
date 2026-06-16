@@ -37,7 +37,7 @@ class EEM_Reports_Repo {
 	 *
 	 * @var array<int,string>
 	 */
-	const REPORTS = array( 'orders', 'reservations', 'revenue', 'stall_occupancy', 'customer_list', 'refund_log' );
+	const REPORTS = array( 'orders', 'reservations', 'revenue', 'stall_occupancy', 'shavings', 'customer_list', 'refund_log' );
 
 	/**
 	 * Orders repository.
@@ -169,6 +169,8 @@ class EEM_Reports_Repo {
 				return $this->revenue_report( $filters );
 			case 'stall_occupancy':
 				return $this->stall_occupancy_report( $filters );
+			case 'shavings':
+				return $this->shavings_report( $filters );
 			case 'customer_list':
 				return $this->customer_list_report( $filters );
 			case 'refund_log':
@@ -402,6 +404,141 @@ class EEM_Reports_Repo {
 				__( 'Fill Rate', 'equine-event-manager' ),
 				__( 'RV Capacity', 'equine-event-manager' ),
 				__( 'RV Booked', 'equine-event-manager' ),
+			),
+			'rows'    => $rows,
+		);
+	}
+
+	/**
+	 * Report — Shavings: per-order bedding worksheet, grouped by event.
+	 *
+	 * One row per order that carries any required or additional shavings, sorted
+	 * by event then customer so the facility can pull a delivery list. A trailing
+	 * subtotal row per event and a grand-total row give the per-event bag counts
+	 * the barn needs for fulfillment. Orders with zero shavings are omitted.
+	 *
+	 * @param array $filters Filters.
+	 * @return array{title:string,slug:string,headers:array,rows:array}
+	 */
+	public function shavings_report( array $filters ): array {
+		// Collect shavings-bearing orders keyed by event so we can sort + subtotal.
+		$events = array();
+		foreach ( $this->get_filtered_orders( $filters ) as $o ) {
+			$req = absint( $o['required_shavings_qty'] ?? 0 );
+			$add = absint( $o['additional_shavings_qty'] ?? 0 );
+			if ( $req <= 0 && $add <= 0 ) {
+				continue;
+			}
+			$rid = absint( $o['reservation_id'] ?? 0 );
+			$key = $rid > 0 ? (string) $rid : 'r:' . (string) ( $o['event_name'] ?? '' );
+			if ( ! isset( $events[ $key ] ) ) {
+				$events[ $key ] = array(
+					'title'  => (string) ( $o['reservation_title'] ?? ( $o['event_name'] ?? '' ) ),
+					'dates'  => (string) ( $o['event_dates'] ?? '' ),
+					'orders' => array(),
+				);
+			}
+			$events[ $key ]['orders'][] = array(
+				'number'   => absint( $o['order_number'] ?? 0 ),
+				'customer' => (string) ( $o['customer_name'] ?? '' ),
+				'phone'    => (string) ( $o['phone'] ?? '' ),
+				'stalls'   => absint( $o['stall_quantity'] ?? 0 ),
+				'req'      => $req,
+				'add'      => $add,
+				'status'   => (string) ( $o['status_label'] ?? ( $o['payment_status'] ?? '' ) ),
+			);
+		}
+
+		// Sort events by title for a stable, scannable worksheet.
+		uasort(
+			$events,
+			static function ( $a, $b ) {
+				return strcasecmp( $a['title'], $b['title'] );
+			}
+		);
+
+		$rows        = array();
+		$grand_req   = 0;
+		$grand_add   = 0;
+		$multi_event = count( $events ) > 1;
+
+		foreach ( $events as $event ) {
+			$orders = $event['orders'];
+			usort(
+				$orders,
+				static function ( $a, $b ) {
+					return strcasecmp( $a['customer'], $b['customer'] );
+				}
+			);
+
+			$event_req = 0;
+			$event_add = 0;
+			foreach ( $orders as $row ) {
+				$rows[]     = array(
+					$event['title'],
+					$event['dates'],
+					sprintf( '#%05d', $row['number'] ),
+					$row['customer'],
+					$row['phone'],
+					(string) $row['stalls'],
+					(string) $row['req'],
+					(string) $row['add'],
+					(string) ( $row['req'] + $row['add'] ),
+					$row['status'],
+				);
+				$event_req += $row['req'];
+				$event_add += $row['add'];
+			}
+
+			// Per-event subtotal row.
+			$rows[] = array(
+				/* translators: %s: event/reservation name. */
+				sprintf( __( '%s — Subtotal', 'equine-event-manager' ), $event['title'] ),
+				'',
+				'',
+				'',
+				'',
+				'',
+				(string) $event_req,
+				(string) $event_add,
+				(string) ( $event_req + $event_add ),
+				'',
+			);
+
+			$grand_req += $event_req;
+			$grand_add += $event_add;
+		}
+
+		// Grand total across all events (only meaningful when more than one).
+		if ( $multi_event && ! empty( $rows ) ) {
+			$rows[] = array(
+				__( 'All Events — Total', 'equine-event-manager' ),
+				'',
+				'',
+				'',
+				'',
+				'',
+				(string) $grand_req,
+				(string) $grand_add,
+				(string) ( $grand_req + $grand_add ),
+				'',
+			);
+		}
+
+		return array(
+			'title'   => __( 'Shavings', 'equine-event-manager' ),
+			'slug'    => 'shavings',
+			'headers' => array(
+				__( 'Event', 'equine-event-manager' ),
+				__( 'Event Dates', 'equine-event-manager' ),
+				__( 'Order #', 'equine-event-manager' ),
+				__( 'Customer', 'equine-event-manager' ),
+				__( 'Phone', 'equine-event-manager' ),
+				__( 'Stalls', 'equine-event-manager' ),
+				__( 'Required Bags', 'equine-event-manager' ),
+				__( 'Additional Bags', 'equine-event-manager' ),
+				__( 'Total Bags', 'equine-event-manager' ),
+				__( 'Status', 'equine-event-manager' ),
 			),
 			'rows'    => $rows,
 		);
