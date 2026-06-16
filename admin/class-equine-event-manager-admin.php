@@ -1983,7 +1983,15 @@ class EEM_Admin {
 				return 'equine-event-manager-reports';
 			}
 
-			if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-reports', 'equine-event-manager-settings', 'equine-event-manager-create-order', 'equine-event-manager-collect-payment', 'equine-event-manager-dashboard', 'equine-event-manager-reservation-editor' ), true ) ) {
+			// The full-page Reservation editor is a hidden page (not a visible
+			// submenu item), so returning its own slug leaves the Event Manager
+			// menu with no "current" submenu and WP collapses it. Point it at the
+			// visible Reservations item so the menu stays open + highlighted.
+			if ( 'equine-event-manager-reservation-editor' === $page ) {
+				return 'edit.php?post_type=en_reservation';
+			}
+
+			if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-reports', 'equine-event-manager-settings', 'equine-event-manager-create-order', 'equine-event-manager-collect-payment', 'equine-event-manager-dashboard' ), true ) ) {
 				return $page;
 			}
 

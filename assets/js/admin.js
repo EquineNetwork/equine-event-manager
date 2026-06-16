@@ -3343,6 +3343,20 @@
 
 	var _eemStructuralAck = false;
 	function eemDispatchSave(kind) {
+		// Auto-commit any open, filled inline package form BEFORE the main save,
+		// so a user who fills a package and clicks "Update Reservation" (instead
+		// of the package's own Save) doesn't lose it on the post-save reload.
+		// Guarded by a one-shot flag so a failing package save can't loop.
+		if (!eemDispatchSave._pkgFlushed) {
+			var pendingPkgs = eemPendingPackageTypes();
+			if (pendingPkgs.length) {
+				eemDispatchSave._pkgFlushed = true;
+				Promise.all(pendingPkgs.map(function (type) { return eemSavePackage(type); }))
+					.then(function () { eemDispatchSave(kind); }, function () { eemDispatchSave(kind); });
+				return;
+			}
+		}
+		eemDispatchSave._pkgFlushed = false;
 		// C7.X.15 Issue 2A — the original lookup queried `.eem-save-bar`,
 		// which was retired at C7.X.3. Source the reservation-id from
 		// any element carrying the data attribute (rail Publish card,
@@ -5787,6 +5801,19 @@ function eemDeletePackage(target, type) {
 		});
 }
 
+// Which inline package forms are currently OPEN with a name typed in (i.e. the
+// user filled a package but hasn't clicked the package's own "Save"). Used so
+// the main "Update Reservation" save commits them first instead of discarding
+// them on the post-save reload.
+function eemPendingPackageTypes() {
+	return ['stall', 'rv'].filter(function (type) {
+		var form = document.getElementById('eem-' + type + '-package-form');
+		if (!form || form.style.display === 'none') { return false; }
+		var nameEl = form.querySelector('#eem-' + type + '-pkg-name');
+		return nameEl && nameEl.value.trim() !== '';
+	});
+}
+
 function eemSavePackage(type) {
 	var form = document.getElementById('eem-' + type + '-package-form');
 	var editingId = form.querySelector('#eem-' + type + '-pkg-editing-id').value;
@@ -5804,7 +5831,7 @@ function eemSavePackage(type) {
 	fd.append('max_quantity', form.querySelector('#eem-' + type + '-pkg-max-qty').value || '0');
 	if (isEdit) fd.append('package_id', editingId);
 
-	fetch(ajaxurl, { method: 'POST', body: fd, credentials: 'same-origin' })
+	return fetch(ajaxurl, { method: 'POST', body: fd, credentials: 'same-origin' })
 		.then(function (r) { return r.json(); })
 		.then(function (resp) {
 			if (resp.success) {
