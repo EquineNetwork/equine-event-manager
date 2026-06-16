@@ -11535,8 +11535,8 @@ RV Lot: " . $rv_lot['name'] );
 				}
 
 				if (isPackage && pkgData) {
-					packageStart = pkgData.start_date || '';
-					packageEnd = pkgData.end_date || '';
+					packageStart = pkgData.start || '';
+					packageEnd = pkgData.end || '';
 				} else if (stayType === 'weekend') {
 					packageStart = controls.dataset.weekendStartDate || '';
 					packageEnd = controls.dataset.weekendEndDate || controls.dataset.weekendStartDate || '';
