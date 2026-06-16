@@ -11560,15 +11560,16 @@ RV Lot: " . $rv_lot['name'] );
 					}
 
 					if (arrivalFieldWrap) {
-						arrivalFieldWrap.hidden = true;
+						arrivalFieldWrap.style.display = 'none';
 					}
 
 					if (departureFieldWrap) {
-						departureFieldWrap.hidden = true;
+						departureFieldWrap.style.display = 'none';
 					}
 
 					if (weekendSummaryWrap) {
-						weekendSummaryWrap.hidden = false;
+						weekendSummaryWrap.removeAttribute('hidden');
+						weekendSummaryWrap.style.display = '';
 						if (isPackage && pkgData) {
 							var arrLabel = weekendSummaryWrap.querySelector('[data-weekend-arrival-label]');
 							var depLabel = weekendSummaryWrap.querySelector('[data-weekend-departure-label]');
@@ -11599,15 +11600,16 @@ RV Lot: " . $rv_lot['name'] );
 				}
 
 				if (arrivalFieldWrap) {
-					arrivalFieldWrap.hidden = false;
+					arrivalFieldWrap.style.display = '';
 				}
 
 				if (departureFieldWrap) {
-					departureFieldWrap.hidden = false;
+					departureFieldWrap.style.display = '';
 				}
 
 				if (weekendSummaryWrap) {
-					weekendSummaryWrap.hidden = true;
+					weekendSummaryWrap.setAttribute('hidden', '');
+					weekendSummaryWrap.style.display = 'none';
 				}
 
 				lockDateField(arrival, false);
