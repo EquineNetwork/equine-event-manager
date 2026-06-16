@@ -5907,7 +5907,7 @@ function eemSavePackage(type, skipOverlapCheck) {
 				div.innerHTML = '<span class="eem-drag-handle">&#x2630;</span>'
 					+ '<span class="eem-pkg-name">' + eemEsc(pkg.name) + '</span>'
 					+ '<span class="eem-pkg-dates">' + eemEsc(startFmt + ' – ' + endFmt) + '</span>'
-					+ '<div class="eem-zone-price-group"><div class="eem-zone-price-wrap"><span class="eem-zone-price-sym">$</span><span class="eem-pkg-price-val">' + parseFloat(pkg.price).toFixed(2) + '</span></div></div>'
+					+ '<span class="eem-pkg-price">$' + parseFloat(pkg.price).toFixed(2) + '</span>'
 					+ maxChip
 					+ '<div class="eem-pkg-actions">'
 					+ '<button type="button" class="eem-pkg-edit-btn" data-eem-action="' + type + '-package-edit" data-package-id="' + pkg.id + '" title="Edit"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>'

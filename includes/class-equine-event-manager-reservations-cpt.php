@@ -1700,9 +1700,6 @@ class EEM_Reservations_CPT {
 			$values['rv_addons_enabled'] = 1;
 		}
 
-		if ( empty( $values['group_reservations_enabled'] ) && self::section_enabled( $post_id, 'group_reservations_enabled' ) ) {
-			$values['group_reservations_enabled'] = 1;
-		}
 
 		if ( empty( $values['rv_addons'] ) || ! is_array( $values['rv_addons'] ) ) {
 			$legacy_rv_addons = array();

@@ -153,9 +153,7 @@ echo '</div>'; // .eem-stall-nightly-content
 			<span class="eem-drag-handle">&#x2630;</span>
 			<span class="eem-pkg-name"><?php echo esc_html( $pkg['name'] ); ?></span>
 			<span class="eem-pkg-dates"><?php echo esc_html( $_start_fmt . ' – ' . $_end_fmt ); ?></span>
-			<div class="eem-zone-price-group">
-				<div class="eem-zone-price-wrap"><span class="eem-zone-price-sym">$</span><span class="eem-pkg-price-val"><?php echo esc_html( number_format( (float) $pkg['price'], 2 ) ); ?></span></div>
-			</div>
+			<span class="eem-pkg-price">$<?php echo esc_html( number_format( (float) $pkg['price'], 2 ) ); ?></span>
 			<?php if ( $_max_label ) : ?>
 			<span class="eem-pkg-max-chip"><?php echo esc_html( $_max_label ); ?></span>
 			<?php endif; ?>
