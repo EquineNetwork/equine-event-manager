@@ -1825,16 +1825,23 @@ class EEM_Shortcodes {
 				// tabs so customers can choose different stalls for different periods.
 				if ( $stall_is_multi ) :
 				?>
-					<div class="eem-same-stall-toggle" data-eem-same-stall-toggle>
-						<label class="eem-same-stall-toggle__label">
-							<input type="checkbox" name="stall_same_for_all" value="1" checked data-eem-same-stall-check />
-							<span><?php esc_html_e( 'Same stall for all stays', 'equine-event-manager' ); ?></span>
-						</label>
-						<div class="eem-same-stall-toggle__tabs" data-eem-rate-tabs hidden>
+					<div class="eem-stall-assign-card" data-eem-same-stall-toggle>
+						<div class="eem-stall-assign-card__head">
+							<strong class="eem-stall-assign-card__title"><?php esc_html_e( 'Stall Assignments', 'equine-event-manager' ); ?></strong>
+							<label class="eem-stall-assign-card__check-label">
+								<input type="checkbox" name="stall_same_for_all" value="1" checked data-eem-same-stall-check />
+								<span><?php esc_html_e( 'Same stall for all stays', 'equine-event-manager' ); ?></span>
+							</label>
+						</div>
+						<div class="eem-stall-assign-card__list" data-eem-assign-list>
 							<?php foreach ( $stall_type_options as $rt_key => $rt_label ) : ?>
-								<button type="button" class="eem-same-stall-toggle__tab<?php echo array_key_first( $stall_type_options ) === $rt_key ? ' eem-same-stall-toggle__tab--active' : ''; ?>" data-rate-type="<?php echo esc_attr( $rt_key ); ?>"><?php echo esc_html( $rt_label ); ?></button>
+								<button type="button" class="eem-stall-assign-row" data-assign-rate="<?php echo esc_attr( $rt_key ); ?>">
+									<span class="eem-stall-assign-row__label"><?php echo esc_html( $rt_label ); ?></span>
+									<span class="eem-stall-assign-row__value" data-assign-value="<?php echo esc_attr( $rt_key ); ?>">&mdash;</span>
+								</button>
 							<?php endforeach; ?>
 						</div>
+						<p class="eem-stall-assign-card__hint" data-eem-assign-hint><?php esc_html_e( 'Select stalls on the map below. They will apply to all stay types.', 'equine-event-manager' ); ?></p>
 					</div>
 				<?php endif; ?>
 				<?php $this->render_stall_map_picker(
@@ -2049,11 +2056,11 @@ class EEM_Shortcodes {
 			var activeRateType = rateTypes.length ? rateTypes[0] : '';
 			rateTypes.forEach(function(rt){ perRateSelected[rt] = {}; perRateZone[rt] = {}; });
 			var sameCheck = form.querySelector('[data-eem-same-stall-check]');
-			var rateTabs = form.querySelector('[data-eem-rate-tabs]');
+			var assignList = form.querySelector('[data-eem-assign-list]');
+			var assignHint = form.querySelector('[data-eem-assign-hint]');
 			function switchToPerRate(){
 				perRateMode = true;
-				if (rateTabs) rateTabs.hidden = false;
-				// Copy current shared selection into the first rate type.
+				if (assignList) assignList.classList.add('is-active');
 				var first = rateTypes[0];
 				if (first) {
 					perRateSelected[first] = JSON.parse(JSON.stringify(selected));
@@ -2062,20 +2069,20 @@ class EEM_Shortcodes {
 				activeRateType = first || '';
 				selected = perRateSelected[activeRateType] || {};
 				selZone = perRateZone[activeRateType] || {};
-				updateRateTabsUI();
+				updateAssignUI();
 				refreshCellStates();
 				syncForm();
 			}
 			function switchToShared(){
 				perRateMode = false;
-				if (rateTabs) rateTabs.hidden = true;
-				// Merge all per-rate selections into shared.
+				if (assignList) assignList.classList.remove('is-active');
 				selected = {}; selZone = {};
 				rateTypes.forEach(function(rt){
 					var s = perRateSelected[rt] || {};
 					var z = perRateZone[rt] || {};
 					Object.keys(s).forEach(function(u){ selected[u] = 1; selZone[u] = z[u] || ''; });
 				});
+				updateAssignUI();
 				refreshCellStates();
 				syncForm();
 			}
@@ -2086,15 +2093,26 @@ class EEM_Shortcodes {
 				activeRateType = rt;
 				selected = perRateSelected[rt] || {};
 				selZone = perRateZone[rt] || {};
-				updateRateTabsUI();
+				updateAssignUI();
 				refreshCellStates();
 				syncForm();
 			}
-			function updateRateTabsUI(){
-				if (!rateTabs) return;
-				rateTabs.querySelectorAll('[data-rate-type]').forEach(function(btn){
-					btn.classList.toggle('eem-same-stall-toggle__tab--active', btn.getAttribute('data-rate-type') === activeRateType);
+			function updateAssignUI(){
+				if (!assignList) return;
+				assignList.querySelectorAll('[data-assign-rate]').forEach(function(row){
+					var rt = row.getAttribute('data-assign-rate');
+					row.classList.toggle('is-active', perRateMode && rt === activeRateType);
+					var valEl = row.querySelector('[data-assign-value]');
+					if (!valEl) return;
+					var rtUnits = Object.keys(perRateMode ? (perRateSelected[rt] || {}) : selected);
+					valEl.textContent = rtUnits.length ? rtUnits.map(function(u){ return pre + u; }).join(', ') : '—';
 				});
+				if (assignHint) {
+					assignHint.textContent = perRateMode
+						? <?php echo wp_json_encode( esc_html__( 'Click a stay type above, then pick stalls on the map for that period.', 'equine-event-manager' ) ); ?>
+
+						: <?php echo wp_json_encode( esc_html__( 'Select stalls on the map below. They will apply to all stay types.', 'equine-event-manager' ) ); ?>;
+				}
 			}
 			function refreshCellStates(){
 				gridEl.querySelectorAll('.eem-map-stall').forEach(function(cell){
@@ -2107,10 +2125,10 @@ class EEM_Shortcodes {
 					if (sameCheck.checked) switchToShared(); else switchToPerRate();
 				});
 			}
-			if (rateTabs) {
-				rateTabs.addEventListener('click', function(ev){
-					var btn = ev.target.closest('[data-rate-type]');
-					if (btn) switchRateType(btn.getAttribute('data-rate-type'));
+			if (assignList) {
+				assignList.addEventListener('click', function(ev){
+					var row = ev.target.closest('[data-assign-rate]');
+					if (row) switchRateType(row.getAttribute('data-assign-rate'));
 				});
 			}
 			var didPan = false; // true right after a drag-to-pan, to suppress select
@@ -2258,6 +2276,7 @@ class EEM_Shortcodes {
 				syncTack(units);
 				syncSurcharge(units);
 				filterAddonsByZone(units);
+				updateAssignUI();
 			}
 
 			// Per-zone RV add-on availability: show an add-on only when it has no
