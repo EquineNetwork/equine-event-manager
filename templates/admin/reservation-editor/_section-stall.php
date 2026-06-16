@@ -238,9 +238,13 @@ echo '</div>'; // .eem-stall-nightly-content
 				<?php endforeach; ?>
 			</tbody>
 		</table>
-		<?php if ( empty( $stall_packages ) ) : ?>
-		<p class="eem-packages-empty" id="eem-stall-packages-empty"><?php esc_html_e( 'No packages yet. Click "+ Add Package" to create one.', 'equine-event-manager' ); ?></p>
-		<?php endif; ?>
+		<div class="eem-empty-cta eem-packages-empty" id="eem-stall-packages-empty"<?php echo empty( $stall_packages ) ? '' : ' style="display:none"'; ?>>
+			<div class="eem-empty-cta__icon" aria-hidden="true">
+				<svg viewBox="0 0 24 24" width="38" height="38" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+			</div>
+			<h3 class="eem-empty-cta__title"><?php esc_html_e( 'No packages yet', 'equine-event-manager' ); ?></h3>
+			<p class="eem-empty-cta__text"><?php esc_html_e( 'Click “+ Add Package” below to create your first stay package.', 'equine-event-manager' ); ?></p>
+		</div>
 	</div>
 
 	<div class="eem-package-inline-form" id="eem-stall-package-form" style="display:none">
