@@ -1444,6 +1444,8 @@ class EEM_Reservations_CPT {
 			'convenience_fee_enabled'         => isset( $source['convenience_fee_enabled'] ) ? 1 : 0,
 			'convenience_fee_type'            => $this->sanitize_fee_type( isset( $source['convenience_fee_type'] ) ? $source['convenience_fee_type'] : 'none' ),
 			'convenience_fee_value'           => $this->sanitize_money_value( isset( $source['convenience_fee_value'] ) ? $source['convenience_fee_value'] : '' ),
+			'stall_pricing_mode'              => isset( $source['stall_pricing_mode'] ) && in_array( $source['stall_pricing_mode'], array( 'nightly', 'packages', 'both' ), true ) ? $source['stall_pricing_mode'] : ( $existing['stall_pricing_mode'] ?? 'nightly' ),
+			'rv_pricing_mode'                 => isset( $source['rv_pricing_mode'] ) && in_array( $source['rv_pricing_mode'], array( 'nightly', 'packages', 'both' ), true ) ? $source['rv_pricing_mode'] : ( $existing['rv_pricing_mode'] ?? 'nightly' ),
 		);
 
 		if ( 'percentage' === $data['convenience_fee_type'] && (float) $data['convenience_fee_value'] > 100 ) {

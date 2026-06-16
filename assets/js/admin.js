@@ -5726,9 +5726,11 @@ function eemTogglePricingMode(btn, type) {
 	document.getElementById('eem-' + type + '-pricing-mode-input').value = mode;
 
 	var nightlyEl = document.getElementById('eem-' + type + '-nightly-content');
-	var pkgEl = document.getElementById('eem-' + type + '-packages-content');
-	if (nightlyEl) nightlyEl.style.display = mode === 'nightly' ? '' : 'none';
-	if (pkgEl) pkgEl.style.display = mode === 'packages' ? '' : 'none';
+	var nightlyOptsEl = document.getElementById('eem-' + type + '-nightly-options');
+	var pkgListEl = document.getElementById('eem-' + type + '-packages-list-wrap');
+	if (nightlyEl) nightlyEl.style.display = (mode === 'nightly' || mode === 'both') ? '' : 'none';
+	if (nightlyOptsEl) nightlyOptsEl.style.display = (mode === 'nightly' || mode === 'both') ? '' : 'none';
+	if (pkgListEl) pkgListEl.style.display = (mode === 'packages' || mode === 'both') ? '' : 'none';
 }
 
 function eemGetReservationId() {
@@ -5746,6 +5748,10 @@ function eemGetNonce() {
 function eemFmtMDY(ymd) {
 	var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(ymd || ''));
 	return m ? (m[2] + '/' + m[3] + '/' + m[1]) : (ymd || '');
+}
+function eemFmtMD(ymd) {
+	var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(ymd || ''));
+	return m ? (m[2] + '/' + m[3]) : (ymd || '');
 }
 
 function eemShowPackageForm(type) {
@@ -5766,23 +5772,21 @@ function eemShowPackageForm(type) {
 }
 
 function eemEditPackage(target, type) {
-	var row = target.closest('tr');
-	var pkgId = row.dataset.packageId;
-	var cells = row.querySelectorAll('td');
+	var row = target.closest('.eem-pkg-row');
 	var form = document.getElementById('eem-' + type + '-package-form');
 	form.style.display = '';
-	form.querySelector('#eem-' + type + '-pkg-editing-id').value = pkgId;
-	form.querySelector('#eem-' + type + '-pkg-name').value = cells[1].textContent.trim();
-	form.querySelector('#eem-' + type + '-pkg-start').value = cells[2].dataset.iso || cells[2].textContent.trim();
-	form.querySelector('#eem-' + type + '-pkg-end').value = cells[3].dataset.iso || cells[3].textContent.trim();
-	form.querySelector('#eem-' + type + '-pkg-price').value = cells[4].textContent.replace('$', '').trim();
-	var maxQty = cells[5].textContent.trim();
-	form.querySelector('#eem-' + type + '-pkg-max-qty').value = maxQty === '—' ? '' : maxQty;
+	form.querySelector('#eem-' + type + '-pkg-editing-id').value = row.dataset.packageId;
+	form.querySelector('#eem-' + type + '-pkg-name').value = row.dataset.pkgName || '';
+	form.querySelector('#eem-' + type + '-pkg-start').value = row.dataset.pkgStart || '';
+	form.querySelector('#eem-' + type + '-pkg-end').value = row.dataset.pkgEnd || '';
+	form.querySelector('#eem-' + type + '-pkg-price').value = row.dataset.pkgPrice || '';
+	var mq = row.dataset.pkgMaxQty;
+	form.querySelector('#eem-' + type + '-pkg-max-qty').value = (mq && mq !== '0') ? mq : '';
 	form.querySelector('#eem-' + type + '-pkg-name').focus();
 }
 
 function eemDeletePackage(target, type) {
-	var row = target.closest('tr');
+	var row = target.closest('.eem-pkg-row');
 	var pkgId = row.dataset.packageId;
 	// Safe i18n access — EEM.i18n may be undefined; the old `EEM.i18n.confirmDelete`
 	// threw a TypeError here, which silently killed the whole delete handler.
@@ -5801,7 +5805,7 @@ function eemDeletePackage(target, type) {
 			if (resp.success) {
 				row.remove();
 				var tbody = document.getElementById('eem-' + type + '-packages-tbody');
-				if (!tbody.children.length) {
+				if (!tbody.querySelectorAll('.eem-pkg-row').length) {
 					var empty = document.getElementById('eem-' + type + '-packages-empty');
 					if (empty) empty.style.display = '';
 				}
@@ -5827,24 +5831,19 @@ function eemPendingPackageTypes() {
 function eemCheckPackageDateOverlap(type, startDate, endDate, editingId) {
 	var tbody = document.getElementById('eem-' + type + '-packages-tbody');
 	if (!tbody) return [];
-	var rows = tbody.querySelectorAll('tr[data-package-id]');
+	var rows = tbody.querySelectorAll('.eem-pkg-row[data-package-id]');
 	var overlaps = [];
 	var newStart = new Date(startDate + 'T00:00:00');
 	var newEnd = new Date(endDate + 'T00:00:00');
 	rows.forEach(function (row) {
 		if (editingId && row.dataset.packageId === editingId) return;
-		var cells = row.querySelectorAll('td');
-		var name = cells[1] ? cells[1].textContent.trim() : '';
-		var rowStartText = cells[2] ? cells[2].textContent.trim() : '';
-		var rowEndText = cells[3] ? cells[3].textContent.trim() : '';
-		var parts = rowStartText.split('/');
-		if (parts.length !== 3) return;
-		var rs = new Date(parts[2] + '-' + parts[0] + '-' + parts[1] + 'T00:00:00');
-		parts = rowEndText.split('/');
-		if (parts.length !== 3) return;
-		var re = new Date(parts[2] + '-' + parts[0] + '-' + parts[1] + 'T00:00:00');
+		var rowStart = row.dataset.pkgStart || '';
+		var rowEnd = row.dataset.pkgEnd || '';
+		if (!rowStart || !rowEnd) return;
+		var rs = new Date(rowStart + 'T00:00:00');
+		var re = new Date(rowEnd + 'T00:00:00');
 		if (newStart < re && newEnd > rs) {
-			overlaps.push(name || 'Unnamed');
+			overlaps.push(row.dataset.pkgName || 'Unnamed');
 		}
 	});
 	return overlaps;
@@ -5887,26 +5886,34 @@ function eemSavePackage(type, skipOverlapCheck) {
 			if (resp.success) {
 				var pkg = resp.data.package;
 				var tbody = document.getElementById('eem-' + type + '-packages-tbody');
-				var maxDisplay = parseInt(pkg.max_quantity, 10) > 0 ? pkg.max_quantity : '—';
+				var maxInt = parseInt(pkg.max_quantity, 10);
+				var maxChip = maxInt > 0 ? '<span class="eem-pkg-max-chip">Max ' + maxInt + '</span>' : '';
+				var startFmt = pkg.start_date ? eemFmtMD(pkg.start_date) : '';
+				var endFmt = pkg.end_date ? eemFmtMDY(pkg.end_date) : '';
 
 				if (isEdit) {
-					var existing = tbody.querySelector('tr[data-package-id="' + editingId + '"]');
+					var existing = tbody.querySelector('.eem-pkg-row[data-package-id="' + editingId + '"]');
 					if (existing) existing.remove();
 				}
 
-				var tr = document.createElement('tr');
-				tr.dataset.packageId = pkg.id;
-				tr.innerHTML = '<td class="eem-packages-col-drag"><span class="eem-drag-handle">&#x2630;</span></td>'
-					+ '<td>' + eemEsc(pkg.name) + '</td>'
-					+ '<td data-iso="' + eemEsc(pkg.start_date) + '">' + eemEsc(eemFmtMDY(pkg.start_date)) + '</td>'
-					+ '<td data-iso="' + eemEsc(pkg.end_date) + '">' + eemEsc(eemFmtMDY(pkg.end_date)) + '</td>'
-					+ '<td>$' + parseFloat(pkg.price).toFixed(2) + '</td>'
-					+ '<td>' + maxDisplay + '</td>'
-					+ '<td class="eem-packages-col-actions">'
-					+ '<button type="button" class="eem-btn-icon" data-eem-action="' + type + '-package-edit" data-package-id="' + pkg.id + '" aria-label="Edit package" title="Edit"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>'
-					+ '<button type="button" class="eem-btn-icon eem-btn-icon--danger" data-eem-action="' + type + '-package-delete" data-package-id="' + pkg.id + '" aria-label="Delete package" title="Delete"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>'
-					+ '</td>';
-				tbody.appendChild(tr);
+				var div = document.createElement('div');
+				div.className = 'eem-pkg-row';
+				div.dataset.packageId = pkg.id;
+				div.dataset.pkgName = pkg.name;
+				div.dataset.pkgStart = pkg.start_date;
+				div.dataset.pkgEnd = pkg.end_date;
+				div.dataset.pkgPrice = parseFloat(pkg.price).toFixed(2);
+				div.dataset.pkgMaxQty = String(maxInt || 0);
+				div.innerHTML = '<span class="eem-drag-handle">&#x2630;</span>'
+					+ '<span class="eem-pkg-name">' + eemEsc(pkg.name) + '</span>'
+					+ '<span class="eem-pkg-dates">' + eemEsc(startFmt + ' – ' + endFmt) + '</span>'
+					+ '<div class="eem-zone-price-group"><div class="eem-zone-price-wrap"><span class="eem-zone-price-sym">$</span><span class="eem-pkg-price-val">' + parseFloat(pkg.price).toFixed(2) + '</span></div></div>'
+					+ maxChip
+					+ '<div class="eem-pkg-actions">'
+					+ '<button type="button" class="eem-pkg-edit-btn" data-eem-action="' + type + '-package-edit" data-package-id="' + pkg.id + '" title="Edit"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>'
+					+ '<button type="button" class="eem-row-card-delete" data-eem-action="' + type + '-package-delete" data-package-id="' + pkg.id + '" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>'
+					+ '</div>';
+				tbody.appendChild(div);
 
 				var empty = document.getElementById('eem-' + type + '-packages-empty');
 				if (empty) empty.style.display = 'none';

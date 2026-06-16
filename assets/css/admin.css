@@ -10621,31 +10621,31 @@ a.eem-dm-view-tab.active:visited {
 	border: 1px solid var(--eem-border);
 	border-radius: var(--eem-radius);
 }
-.eem-packages-table-wrap { margin-bottom: 12px; }
-.eem-packages-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.eem-packages-table thead th {
-	text-align: left; padding: 6px 10px; font-weight: 600; font-size: 11px;
-	color: var(--eem-slate); text-transform: uppercase; letter-spacing: 0.04em;
-	border-bottom: 1px solid var(--eem-border);
+/* ── Package card rows (matching .eem-zone-row pattern) ── */
+.eem-packages-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.eem-pkg-row {
+	display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+	border: 1px solid #8c8f94; border-radius: 4px; background: #fff; flex-wrap: wrap;
 }
-.eem-packages-table tbody td { padding: 8px 10px; border-bottom: 1px solid var(--eem-border); }
-.eem-packages-table tbody tr:last-child td { border-bottom: none; }
-.eem-packages-col-drag { width: 30px; text-align: center; }
-.eem-drag-handle { cursor: grab; color: var(--eem-slate); font-size: 16px; }
-.eem-packages-col-actions { white-space: nowrap; text-align: right; }
+.eem-drag-handle { cursor: grab; color: var(--eem-slate); font-size: 16px; flex-shrink: 0; }
+.eem-pkg-name { font-weight: 600; color: var(--eem-navy); font-size: 13px; white-space: nowrap; }
+.eem-pkg-dates { font-size: 12px; color: var(--eem-text-muted); white-space: nowrap; }
+.eem-pkg-max-chip {
+	font-size: 11px; font-weight: 600; color: var(--eem-slate); background: var(--eem-bg-muted);
+	padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+}
+.eem-pkg-actions { display: flex; align-items: center; gap: 6px; margin-left: auto; flex-shrink: 0; }
+.eem-pkg-edit-btn {
+	width: 32px; height: 32px; border-radius: var(--eem-radius, 3px);
+	border: 1px solid var(--eem-border); background: #fff; color: var(--eem-slate);
+	cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.eem-pkg-edit-btn svg { width: 14px; height: 14px; }
+.eem-pkg-edit-btn:hover { background: var(--eem-bg-muted); color: var(--eem-navy); border-color: var(--eem-navy); }
 .eem-btn-sm:not(.eem-btn-primary):not(.eem-btn-electric) { padding: 3px 10px; font-size: 12px; border: 1px solid var(--eem-border); border-radius: var(--eem-radius); background: #fff; cursor: pointer; color: var(--eem-navy); }
 .eem-btn-sm:not(.eem-btn-primary):not(.eem-btn-electric):hover { background: var(--eem-bg-muted); }
 .eem-btn-sm--danger { color: var(--eem-red, #d63638); border-color: var(--eem-red, #d63638); }
 .eem-btn-sm--danger:hover { background: #fef0f0; }
-/* Icon-only row actions (Edit = pencil, Delete = trash) for the packages table. */
-.eem-page .eem-btn-icon {
-	display: inline-flex; align-items: center; justify-content: center;
-	width: 30px; height: 30px; padding: 0; margin-left: 4px;
-	border: 1px solid var(--eem-border); border-radius: var(--eem-radius);
-	background: #fff; color: var(--eem-slate); cursor: pointer; vertical-align: middle;
-}
-.eem-page .eem-btn-icon:hover { background: var(--eem-bg-muted); color: var(--eem-navy); border-color: var(--eem-navy); }
-.eem-page .eem-btn-icon--danger:hover { background: #fef0f0; color: var(--eem-red, #d63638); border-color: var(--eem-red, #d63638); }
 /* The packages empty-state uses the shared .eem-empty-cta component (icon +
    title + text) — styling lives there. The .eem-packages-empty class remains
    only as a JS show/hide hook. */

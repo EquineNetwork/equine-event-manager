@@ -193,10 +193,10 @@ class EEM_Shortcodes {
 		// 'packages', the named packages become the selectable rate options. Load
 		// them into $data so the rate/unit helpers below price by package. Guarded
 		// so nightly/weekend reservations are completely unaffected.
-		$data['stall_packages'] = ( 'packages' === ( $data['stall_pricing_mode'] ?? 'nightly' ) && class_exists( 'EEM_Stay_Packages_Repo' ) )
+		$data['stall_packages'] = ( in_array( $data['stall_pricing_mode'] ?? 'nightly', array( 'packages', 'both' ), true ) && class_exists( 'EEM_Stay_Packages_Repo' ) )
 			? EEM_Stay_Packages_Repo::get_packages( (int) $reservation_id, 'stall' )
 			: array();
-		$data['rv_packages'] = ( 'packages' === ( $data['rv_pricing_mode'] ?? 'nightly' ) && class_exists( 'EEM_Stay_Packages_Repo' ) )
+		$data['rv_packages'] = ( in_array( $data['rv_pricing_mode'] ?? 'nightly', array( 'packages', 'both' ), true ) && class_exists( 'EEM_Stay_Packages_Repo' ) )
 			? EEM_Stay_Packages_Repo::get_packages( (int) $reservation_id, 'rv' )
 			: array();
 		$stall_stay_type_options    = $this->get_enabled_stay_type_options( $data, 'stall' );
@@ -8084,10 +8084,10 @@ RV Lot: " . $rv_lot['name'] );
 			$data['stall_pricing_mode'] = $eem_cfg->get( 'stall_pricing_mode' ) ?: 'nightly';
 			$data['rv_pricing_mode']    = $eem_cfg->get( 'rv_pricing_mode' ) ?: 'nightly';
 		}
-		$data['stall_packages'] = ( 'packages' === $data['stall_pricing_mode'] && class_exists( 'EEM_Stay_Packages_Repo' ) )
+		$data['stall_packages'] = ( in_array( $data['stall_pricing_mode'], array( 'packages', 'both' ), true ) && class_exists( 'EEM_Stay_Packages_Repo' ) )
 			? EEM_Stay_Packages_Repo::get_packages( (int) $reservation_id, 'stall' )
 			: array();
-		$data['rv_packages'] = ( 'packages' === $data['rv_pricing_mode'] && class_exists( 'EEM_Stay_Packages_Repo' ) )
+		$data['rv_packages'] = ( in_array( $data['rv_pricing_mode'], array( 'packages', 'both' ), true ) && class_exists( 'EEM_Stay_Packages_Repo' ) )
 			? EEM_Stay_Packages_Repo::get_packages( (int) $reservation_id, 'rv' )
 			: array();
 
@@ -8907,19 +8907,18 @@ RV Lot: " . $rv_lot['name'] );
 	 * @return array<string, string>
 	 */
 	private function get_enabled_stay_type_options( $data, $type ) {
-		// Stay Packages mode: the named packages ARE the rate options. Each option
-		// is keyed `pkg_<id>` and labelled with its name + date range. Falls
-		// through to nightly/weekend when the mode is on but no packages exist yet.
 		$mode_key = 'stall' === $type ? 'stall_pricing_mode' : 'rv_pricing_mode';
-		if ( 'packages' === ( $data[ $mode_key ] ?? 'nightly' ) ) {
-			$pkg_options = array();
+		$mode     = $data[ $mode_key ] ?? 'nightly';
+
+		$pkg_options = array();
+		if ( 'packages' === $mode || 'both' === $mode ) {
 			foreach ( ( $data[ $type . '_packages' ] ?? array() ) as $pkg ) {
 				if ( ! is_array( $pkg ) || empty( $pkg['id'] ) ) {
 					continue;
 				}
 				$pkg_options[ 'pkg_' . (int) $pkg['id'] ] = $this->format_package_option_label( $pkg );
 			}
-			if ( ! empty( $pkg_options ) ) {
+			if ( 'packages' === $mode && ! empty( $pkg_options ) ) {
 				return $pkg_options;
 			}
 		}
@@ -8929,16 +8928,22 @@ RV Lot: " . $rv_lot['name'] );
 		$weekend_enabled_key = 'stall' === $type ? 'stall_weekend_enabled' : 'rv_weekend_enabled';
 		$weekly_enabled_key  = 'stall' === $type ? 'stall_weekly_enabled' : 'rv_weekly_enabled';
 
-		if ( ! empty( $data[ $nightly_enabled_key ] ) ) {
-			$options['nightly'] = __( 'Nightly', 'equine-event-manager' );
+		if ( 'nightly' === $mode || 'both' === $mode ) {
+			if ( ! empty( $data[ $nightly_enabled_key ] ) ) {
+				$options['nightly'] = __( 'Nightly', 'equine-event-manager' );
+			}
+
+			if ( ! empty( $data[ $weekend_enabled_key ] ) ) {
+				$options['weekend'] = __( 'Weekend Rate', 'equine-event-manager' );
+			}
+
+			if ( ! empty( $data[ $weekly_enabled_key ] ) ) {
+				$options['weekly'] = __( 'Weekly Rate', 'equine-event-manager' );
+			}
 		}
 
-		if ( ! empty( $data[ $weekend_enabled_key ] ) ) {
-			$options['weekend'] = __( 'Weekend Rate', 'equine-event-manager' );
-		}
-
-		if ( ! empty( $data[ $weekly_enabled_key ] ) ) {
-			$options['weekly'] = __( 'Weekly Rate', 'equine-event-manager' );
+		if ( 'both' === $mode && ! empty( $pkg_options ) ) {
+			$options = array_merge( $options, $pkg_options );
 		}
 
 		if ( empty( $options ) ) {
