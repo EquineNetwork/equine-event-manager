@@ -2204,10 +2204,6 @@
 	gap: 20px;
 	align-items: center;
 	padding: 22px 0;
-	border-bottom: 1px solid #e2e8f0;
-}
-.eem-product-line-item:last-child {
-	border-bottom: 0;
 }
 .eem-product-line-item--readonly {
 	opacity: 0.58;
@@ -2307,6 +2303,22 @@
 .eem-reservation-grid--stay-controls {
 	grid-template-columns: 0.72fr 1fr 1fr 0.72fr;
 	align-items: end;
+}
+.eem-reservation-grid.eem-reservation-grid--inline-dates {
+	grid-template-columns: 1fr 1fr auto;
+	padding: 0 0 22px;
+	margin-top: -16px;
+	border-bottom: 1px solid #F0F4FB;
+}
+.eem-reservation-grid--inline-dates select {
+	width: 100%;
+}
+.eem-product-line-item + .eem-reservation-grid--inline-dates {
+	margin-top: -12px;
+}
+.eem-event-page .eem-product-line-item:has(+ .eem-reservation-grid--inline-dates) {
+	border-bottom: 0;
+	padding-bottom: 10px;
 }
 .eem-stay-type-field {
 	min-width: 0;

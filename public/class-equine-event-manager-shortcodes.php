@@ -1690,14 +1690,19 @@ class EEM_Shortcodes {
 					if ( $st_pkg_info ) {
 						$st_desc = '';
 						if ( ! empty( $st_pkg_info['start'] ) && ! empty( $st_pkg_info['end'] ) ) {
+							$pkg_nights = $this->get_selected_night_count( $st_pkg_info['start'], $st_pkg_info['end'] );
 							$st_desc = sprintf(
-								'%s – %s',
+								'%s – %s (%s)',
 								date_i18n( 'M j, Y', strtotime( $st_pkg_info['start'] ) ),
-								date_i18n( 'M j, Y', strtotime( $st_pkg_info['end'] ) )
+								date_i18n( 'M j, Y', strtotime( $st_pkg_info['end'] ) ),
+								$this->get_night_count_label( $pkg_nights )
 							);
 						}
+						if ( $stall_product_description ) {
+							$st_desc = $st_desc ? $st_desc . "\n" . $stall_product_description : $stall_product_description;
+						}
 					} elseif ( 'nightly' !== $st_key ) {
-						$st_desc = '';
+						$st_desc = $stall_product_description;
 					}
 
 					$st_args = array(
@@ -9128,20 +9133,10 @@ RV Lot: " . $rv_lot['name'] );
 
 		$options             = array();
 		$nightly_enabled_key = 'stall' === $type ? 'stall_nightly_enabled' : 'rv_nightly_enabled';
-		$weekend_enabled_key = 'stall' === $type ? 'stall_weekend_enabled' : 'rv_weekend_enabled';
-		$weekly_enabled_key  = 'stall' === $type ? 'stall_weekly_enabled' : 'rv_weekly_enabled';
 
 		if ( 'nightly' === $mode || 'both' === $mode ) {
 			if ( ! empty( $data[ $nightly_enabled_key ] ) ) {
 				$options['nightly'] = __( 'Nightly', 'equine-event-manager' );
-			}
-
-			if ( ! empty( $data[ $weekend_enabled_key ] ) ) {
-				$options['weekend'] = __( 'Weekend Rate', 'equine-event-manager' );
-			}
-
-			if ( ! empty( $data[ $weekly_enabled_key ] ) ) {
-				$options['weekly'] = __( 'Weekly Rate', 'equine-event-manager' );
 			}
 		}
 
