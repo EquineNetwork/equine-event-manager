@@ -511,7 +511,7 @@ class EEM_Venues_Page {
 				<div class="eem-card-header"><h2 class="eem-card-title"><?php esc_html_e( 'Saved Layouts', 'equine-event-manager' ); ?></h2></div>
 				<div class="eem-card-body">
 					<?php if ( empty( $layouts ) ) : ?>
-						<p class="eem-venue-empty-note"><?php esc_html_e( 'No saved layouts for this venue yet. Use “Save Layout” on a reservation’s stall or RV builder to capture one.', 'equine-event-manager' ); ?></p>
+						<p class="eem-venue-empty-note"><?php esc_html_e( 'No saved layouts for this venue yet. Use "Save Layout" on a reservation’s stall or RV builder to capture one.', 'equine-event-manager' ); ?></p>
 					<?php else : ?>
 						<table class="eem-table eem-venue-layouts-table">
 							<thead>

@@ -78,31 +78,31 @@ eem_render_editor_field_row( array(
 
 // 3a. Pricing Mode + rates live inside a single grouped panel.
 ?>
-<div class=”eem-rv-packages-content” id=”eem-rv-packages-content”>
+<div class="eem-rv-packages-content" id="eem-rv-packages-content">
 <?php
 ob_start();
 ?>
-<div class=”eem-mode-btns”>
-	<button type=”button”
-		class=”eem-mode-btn<?php echo ( 'nightly' === $rv_pricing_mode || ( ! $is_rv_packages && ! $is_rv_both ) ) ? ' active' : ''; ?>”
-		data-pricing-mode=”nightly”
-		data-eem-action=”toggle-rv-pricing-mode”>
+<div class="eem-mode-btns">
+	<button type="button"
+		class="eem-mode-btn<?php echo ( 'nightly' === $rv_pricing_mode || ( ! $is_rv_packages && ! $is_rv_both ) ) ? ' active' : ''; ?>"
+		data-pricing-mode="nightly"
+		data-eem-action="toggle-rv-pricing-mode">
 		<?php esc_html_e( 'Nightly Rate', 'equine-event-manager' ); ?>
 	</button>
-	<button type=”button”
-		class=”eem-mode-btn<?php echo $is_rv_packages ? ' active' : ''; ?>”
-		data-pricing-mode=”packages”
-		data-eem-action=”toggle-rv-pricing-mode”>
+	<button type="button"
+		class="eem-mode-btn<?php echo $is_rv_packages ? ' active' : ''; ?>"
+		data-pricing-mode="packages"
+		data-eem-action="toggle-rv-pricing-mode">
 		<?php esc_html_e( 'Stay Packages', 'equine-event-manager' ); ?>
 	</button>
-	<button type=”button”
-		class=”eem-mode-btn<?php echo $is_rv_both ? ' active' : ''; ?>”
-		data-pricing-mode=”both”
-		data-eem-action=”toggle-rv-pricing-mode”>
+	<button type="button"
+		class="eem-mode-btn<?php echo $is_rv_both ? ' active' : ''; ?>"
+		data-pricing-mode="both"
+		data-eem-action="toggle-rv-pricing-mode">
 		<?php esc_html_e( 'Both', 'equine-event-manager' ); ?>
 	</button>
 </div>
-<input type=”hidden” name=”en_reservation[rv_pricing_mode]” id=”eem-rv-pricing-mode-input” value=”<?php echo esc_attr( $rv_pricing_mode ); ?>”>
+<input type="hidden" name="en_reservation[rv_pricing_mode]" id="eem-rv-pricing-mode-input" value="<?php echo esc_attr( $rv_pricing_mode ); ?>">
 <?php
 $pricing_mode_html = (string) ob_get_clean();
 eem_render_editor_field_row( array(
@@ -112,74 +112,74 @@ eem_render_editor_field_row( array(
 ) );
 
 // ── Nightly-mode rate (hidden when pricing mode = packages only) ──
-echo '<div class=”eem-rv-nightly-content” id=”eem-rv-nightly-content”' . ( ! $show_rv_nightly ? ' style=”display:none”' : '' ) . '>';
-echo '<input type=”hidden” name=”en_reservation[rv_nightly_enabled]” value=”1”>';
+echo '<div class="eem-rv-nightly-content" id="eem-rv-nightly-content"' . ( ! $show_rv_nightly ? ' style="display:none"' : '' ) . '>';
+echo '<input type="hidden" name="en_reservation[rv_nightly_enabled]" value="1">';
 
 eem_render_editor_field_row( array(
 	'label'        => __( 'RV Nightly Rate', 'equine-event-manager' ),
 	'control_html' => sprintf(
-		'<div class=”eem-price-wrap”><span class=”eem-price-symbol”>$</span><input class=”eem-price-input” type=”number” step=”0.01” min=”0” name=”en_reservation[rv_nightly_rate]” value=”%s” /></div>',
+		'<div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[rv_nightly_rate]" value="%s" /></div>',
 		esc_attr( $fmt_money( $data['rv_nightly_rate'] ) )
 	),
 	'hint'         => __( 'Base nightly rate. Lot zones below may add tier-specific pricing.', 'equine-event-manager' ),
 ) );
 echo '</div>'; // .eem-rv-nightly-content
 ?>
-<div id=”eem-rv-packages-list-wrap”<?php echo $show_rv_packages ? '' : ' style=”display:none”'; ?>>
-	<div class=”eem-packages-list” id=”eem-rv-packages-tbody”>
+<div id="eem-rv-packages-list-wrap"<?php echo $show_rv_packages ? '' : ' style="display:none"'; ?>>
+	<div class="eem-packages-list" id="eem-rv-packages-tbody">
 		<?php foreach ( $rv_packages as $pkg ) :
 			$_price_fmt = number_format( (float) $pkg['price'], 2, '.', '' );
 		?>
-		<div class=”eem-pkg-row” data-package-id=”<?php echo (int) $pkg['id']; ?>”>
-			<input type=”text” class=”eem-pkg-name-input” value=”<?php echo esc_attr( $pkg['name'] ); ?>” data-field=”name” placeholder=”<?php esc_attr_e( 'Package name', 'equine-event-manager' ); ?>”>
-			<input type=”date” class=”eem-pkg-date-input” value=”<?php echo esc_attr( $pkg['start_date'] ); ?>” data-field=”start_date”>
-			<span class=”eem-pkg-sep”>&ndash;</span>
-			<input type=”date” class=”eem-pkg-date-input” value=”<?php echo esc_attr( $pkg['end_date'] ); ?>” data-field=”end_date”>
-			<div class=”eem-pkg-price-wrap”><span class=”eem-pkg-price-sym”>$</span><input type=”number” step=”0.01” min=”0” class=”eem-pkg-price-input” value=”<?php echo esc_attr( $_price_fmt ); ?>” data-field=”price”></div>
-			<button type=”button” class=”eem-row-card-delete” data-eem-action=”rv-package-delete” data-package-id=”<?php echo (int) $pkg['id']; ?>” title=”<?php esc_attr_e( 'Delete', 'equine-event-manager' ); ?>”><svg viewBox=”0 0 24 24” fill=”none” stroke=”currentColor” stroke-width=”2” aria-hidden=”true”><polyline points=”3 6 5 6 21 6”/><path d=”M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6”/></svg></button>
+		<div class="eem-pkg-row" data-package-id="<?php echo (int) $pkg['id']; ?>">
+			<input type="text" class="eem-pkg-name-input" value="<?php echo esc_attr( $pkg['name'] ); ?>" data-field="name" placeholder="<?php esc_attr_e( 'Package name', 'equine-event-manager' ); ?>">
+			<input type="date" class="eem-pkg-date-input" value="<?php echo esc_attr( $pkg['start_date'] ); ?>" data-field="start_date">
+			<span class="eem-pkg-sep">&ndash;</span>
+			<input type="date" class="eem-pkg-date-input" value="<?php echo esc_attr( $pkg['end_date'] ); ?>" data-field="end_date">
+			<div class="eem-pkg-price-wrap"><span class="eem-pkg-price-sym">$</span><input type="number" step="0.01" min="0" class="eem-pkg-price-input" value="<?php echo esc_attr( $_price_fmt ); ?>" data-field="price"></div>
+			<button type="button" class="eem-row-card-delete" data-eem-action="rv-package-delete" data-package-id="<?php echo (int) $pkg['id']; ?>" title="<?php esc_attr_e( 'Delete', 'equine-event-manager' ); ?>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
 		</div>
 		<?php endforeach; ?>
 	</div>
-	<div class=”eem-empty-cta eem-packages-empty” id=”eem-rv-packages-empty”<?php echo empty( $rv_packages ) ? '' : ' style=”display:none”'; ?>>
-		<div class=”eem-empty-cta__icon” aria-hidden=”true”>
-			<svg viewBox=”0 0 24 24” width=”38” height=”38” fill=”none” stroke=”currentColor” stroke-width=”1.6” stroke-linecap=”round” stroke-linejoin=”round”><path d=”m7.5 4.27 9 5.15”/><path d=”M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z”/><path d=”m3.3 7 8.7 5 8.7-5”/><path d=”M12 22V12”/></svg>
+	<div class="eem-empty-cta eem-packages-empty" id="eem-rv-packages-empty"<?php echo empty( $rv_packages ) ? '' : ' style="display:none"'; ?>>
+		<div class="eem-empty-cta__icon" aria-hidden="true">
+			<svg viewBox="0 0 24 24" width="38" height="38" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
 		</div>
-		<h3 class=”eem-empty-cta__title”><?php esc_html_e( 'No packages yet', 'equine-event-manager' ); ?></h3>
-		<p class=”eem-empty-cta__text”><?php esc_html_e( 'Click “+ Add Package” below to create your first stay package.', 'equine-event-manager' ); ?></p>
+		<h3 class="eem-empty-cta__title"><?php esc_html_e( 'No packages yet', 'equine-event-manager' ); ?></h3>
+		<p class="eem-empty-cta__text"><?php esc_html_e( 'Click + Add Package below to create your first stay package.', 'equine-event-manager' ); ?></p>
 	</div>
 
-	<div class=”eem-package-inline-form” id=”eem-rv-package-form” style=”display:none”>
-		<div class=”eem-package-form-fields”>
-			<div class=”eem-package-form-field”>
+	<div class="eem-package-inline-form" id="eem-rv-package-form" style="display:none">
+		<div class="eem-package-form-fields">
+			<div class="eem-package-form-field">
 				<label><?php esc_html_e( 'Name', 'equine-event-manager' ); ?></label>
-				<input type=”text” class=”eem-field-input” id=”eem-rv-pkg-name” placeholder=”<?php esc_attr_e( 'e.g. Week 1, Full Event', 'equine-event-manager' ); ?>”>
+				<input type="text" class="eem-field-input" id="eem-rv-pkg-name" placeholder="<?php esc_attr_e( 'e.g. Week 1, Full Event', 'equine-event-manager' ); ?>">
 			</div>
-			<div class=”eem-package-form-field”>
+			<div class="eem-package-form-field">
 				<label><?php esc_html_e( 'Start Date', 'equine-event-manager' ); ?></label>
-				<input type=”date” class=”eem-field-input” id=”eem-rv-pkg-start”>
+				<input type="date" class="eem-field-input" id="eem-rv-pkg-start">
 			</div>
-			<div class=”eem-package-form-field”>
+			<div class="eem-package-form-field">
 				<label><?php esc_html_e( 'End Date', 'equine-event-manager' ); ?></label>
-				<input type=”date” class=”eem-field-input” id=”eem-rv-pkg-end”>
+				<input type="date" class="eem-field-input" id="eem-rv-pkg-end">
 			</div>
-			<div class=”eem-package-form-field”>
+			<div class="eem-package-form-field">
 				<label><?php esc_html_e( 'Price', 'equine-event-manager' ); ?></label>
-				<div class=”eem-price-wrap”><span class=”eem-price-symbol”>$</span><input type=”number” step=”0.01” min=”0” class=”eem-price-input” id=”eem-rv-pkg-price”></div>
+				<div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input type="number" step="0.01" min="0" class="eem-price-input" id="eem-rv-pkg-price"></div>
 			</div>
-			<div class=”eem-package-form-field”>
+			<div class="eem-package-form-field">
 				<label><?php esc_html_e( 'Max Qty', 'equine-event-manager' ); ?></label>
-				<input type=”number” min=”0” step=”1” class=”eem-field-input” id=”eem-rv-pkg-max-qty” placeholder=”<?php esc_attr_e( 'Unlimited', 'equine-event-manager' ); ?>” style=”max-width:100px”>
+				<input type="number" min="0" step="1" class="eem-field-input" id="eem-rv-pkg-max-qty" placeholder="<?php esc_attr_e( 'Unlimited', 'equine-event-manager' ); ?>" style="max-width:100px">
 			</div>
 		</div>
-		<div class=”eem-package-form-actions”>
-			<button type=”button” class=”eem-btn eem-btn-primary eem-btn-sm” id=”eem-rv-pkg-save”><?php esc_html_e( 'Save', 'equine-event-manager' ); ?></button>
-			<button type=”button” class=”eem-btn eem-btn-ghost eem-btn-sm” id=”eem-rv-pkg-cancel”><?php esc_html_e( 'Cancel', 'equine-event-manager' ); ?></button>
+		<div class="eem-package-form-actions">
+			<button type="button" class="eem-btn eem-btn-primary eem-btn-sm" id="eem-rv-pkg-save"><?php esc_html_e( 'Save', 'equine-event-manager' ); ?></button>
+			<button type="button" class="eem-btn eem-btn-ghost eem-btn-sm" id="eem-rv-pkg-cancel"><?php esc_html_e( 'Cancel', 'equine-event-manager' ); ?></button>
 		</div>
-		<input type=”hidden” id=”eem-rv-pkg-editing-id” value=””>
+		<input type="hidden" id="eem-rv-pkg-editing-id" value="">
 	</div>
 
-	<button type=”button” class=”eem-btn-add” id=”eem-rv-pkg-add-btn” data-eem-action=”rv-package-add”>
-		<svg viewBox=”0 0 24 24” fill=”none” stroke=”currentColor” stroke-width=”2” aria-hidden=”true”><line x1=”12” y1=”5” x2=”12” y2=”19”/><line x1=”5” y1=”12” x2=”19” y2=”12”/></svg>
+	<button type="button" class="eem-btn-add" id="eem-rv-pkg-add-btn" data-eem-action="rv-package-add">
+		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
 		<?php esc_html_e( 'Add Package', 'equine-event-manager' ); ?>
 	</button>
 </div><!-- #eem-rv-packages-list-wrap -->

@@ -162,7 +162,7 @@ echo '</div>'; // .eem-stall-nightly-content
 				<svg viewBox="0 0 24 24" width="38" height="38" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
 			</div>
 			<h3 class="eem-empty-cta__title"><?php esc_html_e( 'No packages yet', 'equine-event-manager' ); ?></h3>
-			<p class="eem-empty-cta__text"><?php esc_html_e( 'Click “+ Add Package” below to create your first stay package.', 'equine-event-manager' ); ?></p>
+			<p class="eem-empty-cta__text"><?php esc_html_e( 'Click + Add Package below to create your first stay package.', 'equine-event-manager' ); ?></p>
 		</div>
 	</div>
 
@@ -619,7 +619,7 @@ ob_start();
 	<script type="application/json" id="eem-map-seed-stall"><?php echo wp_json_encode( $stall_seed ); // phpcs:ignore -- JSON seed for the Map Builder ?></script>
 	<div class="eem-mb-inline-host" data-eem-map-host="stall"></div>
 </div>
-<span class="eem-field-hint"><?php esc_html_e( 'Used when Customer Selection is “Pick from layout”. Click Build Map to draw your facility right here in this card — add a tab per barn, then drag to number the stalls. No spreadsheet required.', 'equine-event-manager' ); ?></span>
+<span class="eem-field-hint"><?php esc_html_e( 'Used when Customer Selection is "Pick from layout". Click Build Map to draw your facility right here in this card — add a tab per barn, then drag to number the stalls. No spreadsheet required.', 'equine-event-manager' ); ?></span>
 <?php
 $stall_map_html = (string) ob_get_clean();
 eem_render_editor_field_row( array(

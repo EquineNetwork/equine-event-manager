@@ -3851,7 +3851,7 @@ class EEM_Admin {
 			<?php if ( 'customer' !== $pv_view && ! empty( $grid['stall_rows'] ) ) : ?>
 			<div class="pv-section-band"><?php esc_html_e( 'By Location', 'equine-event-manager' ); ?></div>
 			<?php if ( $assigned_only && 0 === $assigned_stall_count ) : ?>
-			<p class="pv-empty-note"><?php esc_html_e( 'No stalls are assigned or blocked yet. Switch to “All stalls” to print a blank check-in sheet.', 'equine-event-manager' ); ?></p>
+			<p class="pv-empty-note"><?php esc_html_e( 'No stalls are assigned or blocked yet. Switch to "All stalls" to print a blank check-in sheet.', 'equine-event-manager' ); ?></p>
 			<?php else : ?>
 			<div class="pv-table-wrap">
 				<table class="pv-table">
@@ -3983,7 +3983,7 @@ class EEM_Admin {
 			<?php if ( ! empty( $grid['rv_rows'] ) ) : ?>
 			<div class="pv-section-band"><?php esc_html_e( 'RV Lots', 'equine-event-manager' ); ?></div>
 			<?php if ( $assigned_only && 0 === $assigned_rv_count ) : ?>
-			<p class="pv-empty-note"><?php esc_html_e( 'No RV lots are assigned or blocked yet. Switch to “All stalls” to print a blank check-in sheet.', 'equine-event-manager' ); ?></p>
+			<p class="pv-empty-note"><?php esc_html_e( 'No RV lots are assigned or blocked yet. Switch to "All stalls" to print a blank check-in sheet.', 'equine-event-manager' ); ?></p>
 			<?php else : ?>
 			<div class="pv-table-wrap">
 				<table class="pv-table">
