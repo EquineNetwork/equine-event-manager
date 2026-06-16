@@ -71,279 +71,65 @@ class EEM_REST_Daily_Movement_Controller extends EEM_REST_Controller {
 			return $this->respond_error( 'reservation_not_found', __( 'Reservation not found.', 'equine-event-manager' ), 404 );
 		}
 
+		require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-daily-movement-service.php';
+
 		$date_param = (string) $request->get_param( 'date' );
 		$view       = (string) $request->get_param( 'view' );
 
 		if ( '' !== $date_param ) {
-			$report = $this->build_date_report( $reservation_id, $date_param );
-			return $this->respond( $report );
+			$report = EEM_Daily_Movement_Service::build_date_report( $reservation_id, $date_param );
+			return $this->respond( $this->format_api_report( $report ) );
 		}
 
 		if ( 'all' === $view ) {
-			return $this->respond( $this->build_all_dates_report( $reservation_id ) );
+			$all = EEM_Daily_Movement_Service::build_all_dates_report( $reservation_id );
+			return $this->respond( array_map( array( $this, 'format_api_report' ), $all ) );
 		}
 
-		$report = $this->build_date_report( $reservation_id, wp_date( 'Y-m-d' ) );
-		return $this->respond( $report );
+		$report = EEM_Daily_Movement_Service::build_date_report( $reservation_id, wp_date( 'Y-m-d' ) );
+		return $this->respond( $this->format_api_report( $report ) );
 	}
 
 	/**
-	 * Build the movement report for a single date.
+	 * Format a service report into the API response shape.
 	 *
-	 * @param int    $reservation_id Reservation post ID.
-	 * @param string $date           Date in Y-m-d format.
+	 * The service returns raw Y-m-d dates + a date_display field. The API
+	 * historically returned 'date' as formatted display text, so we preserve
+	 * that contract.
+	 *
+	 * @param array $report Service report array.
 	 * @return array
 	 */
-	private function build_date_report( int $reservation_id, string $date ): array {
-		global $wpdb;
-		$table        = $wpdb->prefix . 'en_stall_reservations';
-		$status_table = $wpdb->prefix . 'eem_stall_status';
+	private function format_api_report( array $report ): array {
+		$arriving = array_map( function ( $row ) {
+			return array(
+				'order_key'            => $row['order_key'],
+				'customer_name'        => $row['customer_name'],
+				'stall_numbers'        => $row['stall_numbers'],
+				'date'                 => EEM_Daily_Movement_Service::format_display_date( $row['arrival_date'] ),
+				'shavings'             => $row['shavings'],
+				'check_in_status'      => $row['check_in_status'],
+				'special_instructions' => $row['special_instructions'],
+			);
+		}, $report['arriving'] );
 
-		$arriving = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT sr.id, sr.customer_name, sr.arrival_date, sr.departure_date, sr.notes,
-				        sr.required_shavings_qty, sr.additional_shavings_qty,
-				        ss.status AS live_status
-				 FROM {$table} sr
-				 LEFT JOIN (
-				   SELECT order_id, MIN(status) AS status
-				   FROM {$status_table}
-				   WHERE night_date = %s
-				   GROUP BY order_id
-				 ) ss ON ss.order_id = sr.id
-				 WHERE sr.reservation_id = %d AND sr.arrival_date = %s AND sr.trashed_at IS NULL",
-				$date,
-				$reservation_id,
-				$date
-			),
-			ARRAY_A
-		);
-
-		$departing = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT sr.id, sr.customer_name, sr.arrival_date, sr.departure_date, sr.notes,
-				        sr.required_shavings_qty, sr.additional_shavings_qty,
-				        ss.status AS live_status
-				 FROM {$table} sr
-				 LEFT JOIN (
-				   SELECT order_id, MIN(status) AS status
-				   FROM {$status_table}
-				   WHERE night_date = %s
-				   GROUP BY order_id
-				 ) ss ON ss.order_id = sr.id
-				 WHERE sr.reservation_id = %d AND sr.departure_date = %s AND sr.trashed_at IS NULL",
-				$date,
-				$reservation_id,
-				$date
-			),
-			ARRAY_A
-		);
-
-		$not_checked_in_count = (int) $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$table} sr
-				 LEFT JOIN (
-				   SELECT order_id, MIN(status) AS status
-				   FROM {$status_table}
-				   WHERE night_date = %s
-				   GROUP BY order_id
-				 ) ss ON ss.order_id = sr.id
-				 WHERE sr.reservation_id = %d
-				   AND sr.arrival_date <= %s
-				   AND sr.departure_date >= %s
-				   AND sr.trashed_at IS NULL
-				   AND (ss.status IS NULL OR ss.status = 'occupied')",
-				$date,
-				$reservation_id,
-				$date,
-				$date
-			)
-		);
-
-		$arriving_rows  = array_map( array( $this, 'shape_movement_row' ), $arriving );
-		$departing_rows = array_map( array( $this, 'shape_movement_row' ), $departing );
+		$departing = array_map( function ( $row ) {
+			return array(
+				'order_key'            => $row['order_key'],
+				'customer_name'        => $row['customer_name'],
+				'stall_numbers'        => $row['stall_numbers'],
+				'date'                 => EEM_Daily_Movement_Service::format_display_date( $row['departure_date'] ),
+				'shavings'             => $row['shavings'],
+				'check_in_status'      => $row['check_in_status'],
+				'special_instructions' => $row['special_instructions'],
+			);
+		}, $report['departing'] );
 
 		return array(
-			'date'      => $this->format_display_date( $date ),
-			'summary'   => array(
-				'arriving'           => count( $arriving_rows ),
-				'departing'          => count( $departing_rows ),
-				'not_yet_checked_in' => $not_checked_in_count,
-			),
-			'arriving'  => $arriving_rows,
-			'departing' => $departing_rows,
+			'date'      => $report['date_display'],
+			'summary'   => $report['summary'],
+			'arriving'  => $arriving,
+			'departing' => $departing,
 		);
-	}
-
-	/**
-	 * Build the report for all dates that have any movement.
-	 *
-	 * @param int $reservation_id Reservation post ID.
-	 * @return array
-	 */
-	private function build_all_dates_report( int $reservation_id ): array {
-		global $wpdb;
-		$table = $wpdb->prefix . 'en_stall_reservations';
-
-		$dates = $wpdb->get_col(
-			$wpdb->prepare(
-				"SELECT DISTINCT d FROM (
-				   SELECT arrival_date AS d FROM {$table} WHERE reservation_id = %d AND trashed_at IS NULL
-				   UNION
-				   SELECT departure_date AS d FROM {$table} WHERE reservation_id = %d AND trashed_at IS NULL
-				 ) AS all_dates ORDER BY d ASC",
-				$reservation_id,
-				$reservation_id
-			)
-		);
-
-		$reports = array();
-		foreach ( $dates as $date ) {
-			if ( ! empty( $date ) ) {
-				$reports[] = $this->build_date_report( $reservation_id, $date );
-			}
-		}
-
-		return $reports;
-	}
-
-	/**
-	 * Shape a raw DB row into the API response format.
-	 *
-	 * @param array $row Raw row from wp_en_stall_reservations.
-	 * @return array
-	 */
-	private function shape_movement_row( array $row ): array {
-		$notes = isset( $row['notes'] ) ? (string) $row['notes'] : '';
-
-		$live_status = ! empty( $row['live_status'] ) ? (string) $row['live_status'] : 'not_checked_in';
-
-		return array(
-			'order_key'            => $this->extract_note_value( $notes, 'Submission token' ),
-			'customer_name'        => (string) ( $row['customer_name'] ?? '' ),
-			'stall_numbers'        => $this->extract_stall_numbers( $notes ),
-			'date'                 => $this->format_display_date( (string) ( $row['arrival_date'] ?? '' ) ),
-			'shavings'             => (int) ( $row['required_shavings_qty'] ?? 0 ) + (int) ( $row['additional_shavings_qty'] ?? 0 ),
-			'check_in_status'      => $live_status,
-			'special_instructions' => $this->extract_special_instructions( $notes ),
-		);
-	}
-
-	/**
-	 * Extract assigned stall numbers from the notes field.
-	 *
-	 * @param string $notes Raw notes text.
-	 * @return string[]
-	 */
-	private function extract_stall_numbers( string $notes ): array {
-		$value = $this->extract_note_value( $notes, 'Assigned Stall Units' );
-		if ( '' === $value ) {
-			return array();
-		}
-		return array_values( array_filter( array_map( 'trim', explode( ',', $value ) ) ) );
-	}
-
-	/**
-	 * Extract a key-value note line.
-	 *
-	 * @param string $notes Raw notes text.
-	 * @param string $label Label to search for.
-	 * @return string
-	 */
-	private function extract_note_value( string $notes, string $label ): string {
-		if ( preg_match( '/^' . preg_quote( $label, '/' ) . ':\s*(.+)$/mi', $notes, $matches ) ) {
-			return trim( $matches[1] );
-		}
-		return '';
-	}
-
-	/**
-	 * Extract free-text lines from notes that aren't structured key-value pairs.
-	 *
-	 * Structured lines follow the pattern "Label: value" and are used for internal
-	 * data (billing, tokens, assignments). Free-text lines are customer-facing
-	 * special instructions or imported comments (e.g. Roper Comments from GH).
-	 *
-	 * @param string $notes Raw notes text.
-	 * @return string
-	 */
-	private function extract_special_instructions( string $notes ): string {
-		$known_labels = array(
-			'Billing Name',
-			'Billing Address',
-			'Invoice Type',
-			'Invoice Token',
-			'Invoice Status',
-			'Invoice Paid At',
-			'Manual Payment Method',
-			'Manual Payment Recorded At',
-			'Reservation setup ID',
-			'Submission token',
-			'Assigned Stall Units',
-			'Assigned RV Lots',
-			'Assigned RV Units',
-			'Stall Night Map',
-			'RV Lot Night Map',
-			'Tack Stalls',
-			'RV Lot',
-			'Group Name',
-			'Order Status',
-			'Cancelled At',
-			'Cancellation Reason',
-			'Roper Comments',
-		);
-
-		$lines      = preg_split( '/\r?\n/', $notes );
-		$free_lines = array();
-
-		foreach ( $lines as $line ) {
-			$line = trim( $line );
-			if ( '' === $line ) {
-				continue;
-			}
-
-			$is_structured = false;
-			foreach ( $known_labels as $label ) {
-				if ( 0 === strpos( $line, $label . ':' ) ) {
-					$is_structured = true;
-					break;
-				}
-			}
-
-			if ( $is_structured ) {
-				continue;
-			}
-
-			if ( preg_match( '/^[^:]+,\s+[A-Z][a-z]/', $line ) ) {
-				continue;
-			}
-
-			if ( preg_match( '/^(United States|Canada|Mexico|United Kingdom)\s*$/i', $line ) ) {
-				continue;
-			}
-
-			$free_lines[] = $line;
-		}
-
-		return implode( ' | ', $free_lines );
-	}
-
-	/**
-	 * Format a Y-m-d date string as "Mon, Jul 15" for display.
-	 *
-	 * @param string $date Date in Y-m-d format.
-	 * @return string
-	 */
-	private function format_display_date( string $date ): string {
-		if ( empty( $date ) ) {
-			return '';
-		}
-
-		$timestamp = strtotime( $date );
-		if ( false === $timestamp ) {
-			return $date;
-		}
-
-		return date_i18n( 'D, M j', $timestamp );
 	}
 }

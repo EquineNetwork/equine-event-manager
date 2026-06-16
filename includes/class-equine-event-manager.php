@@ -86,6 +86,7 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-collect-payment-page.p
 // telemetry land in C6.B/C/D/E).
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-order-detail-page.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-reports-page.php';
+require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-daily-movement-page.php';
 
 // C9 — Customer Profile page (read-only aggregate by email) + its data repo.
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-customer-profile-page.php';

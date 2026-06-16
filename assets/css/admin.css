@@ -10275,10 +10275,19 @@ a.eem-event-editor-card__quicklink:hover { color: #1257d1; }
 	text-transform: uppercase;
 	letter-spacing: 0.05em;
 }
-.eem-dm-toolbar-date {
+.eem-dm-toolbar-date-wrap {
 	display: flex;
-	gap: 6px;
-	align-items: center;
+	align-items: stretch;
+}
+.eem-dm-toolbar-date-input {
+	border-top-right-radius: 0;
+	border-bottom-right-radius: 0;
+	border-right: none;
+}
+.eem-dm-toolbar-go {
+	border-top-left-radius: 0;
+	border-bottom-left-radius: 0;
+	white-space: nowrap;
 }
 
 /* ── View tabs (Today / All Days) ─────────────────────────────────── */
@@ -10318,6 +10327,7 @@ a.eem-event-editor-card__quicklink:hover { color: #1257d1; }
 	display: flex;
 	flex-wrap: wrap;
 	gap: 16px;
+	margin-top: 12px;
 	margin-bottom: 20px;
 }
 .eem-dm-summary-item {
@@ -10359,6 +10369,14 @@ a.eem-event-editor-card__quicklink:hover { color: #1257d1; }
 }
 .eem-dm-summary-pending::before {
 	background: #ef4444;
+}
+.eem-dm-summary-shavings {
+	background: #f5f3ff;
+	color: #7c3aed;
+	border: 1px solid #ddd6fe;
+}
+.eem-dm-summary-shavings::before {
+	background: #8b5cf6;
 }
 .eem-dm-group-heading {
 	font-size: 15px;
@@ -10486,10 +10504,10 @@ a.eem-event-editor-card__quicklink:hover { color: #1257d1; }
 		align-items: stretch;
 		gap: 10px;
 	}
-	.eem-dm-toolbar-date {
-		flex-wrap: wrap;
+	.eem-dm-toolbar-date-wrap {
+		flex: 1;
 	}
-	.eem-dm-toolbar-date input[type="date"] {
+	.eem-dm-toolbar-date-input {
 		flex: 1;
 		min-width: 0;
 	}

@@ -203,6 +203,10 @@ class EEM_Admin {
 		}
 
 		if ( EEM_Daily_Movement_Page::MENU_SLUG === $page ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			if ( ! empty( $_GET['print'] ) ) {
+				return trim( $classes . ' eem-shell-page eem-shell-page--print eem-shell-page--daily-movement' );
+			}
 			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--daily-movement' );
 		}
 
@@ -1967,6 +1971,10 @@ class EEM_Admin {
 
 			if ( 'equine-event-manager-stall-charts' === $page ) {
 				return 'equine-event-manager-stall-charts';
+			}
+
+			if ( EEM_Daily_Movement_Page::MENU_SLUG === $page ) {
+				return 'equine-event-manager-reports';
 			}
 
 			if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-reports', 'equine-event-manager-settings', 'equine-event-manager-create-order', 'equine-event-manager-collect-payment', 'equine-event-manager-dashboard', 'equine-event-manager-reservation-editor' ), true ) ) {
