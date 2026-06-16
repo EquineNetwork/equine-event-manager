@@ -5741,6 +5741,13 @@ function eemGetNonce() {
 	return el ? el.value : '';
 }
 
+// Format a Y-m-d date string as MM/DD/YYYY (matches the Available Reservation
+// Dates display). Returns the input unchanged if it isn't a Y-m-d string.
+function eemFmtMDY(ymd) {
+	var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(ymd || ''));
+	return m ? (m[2] + '/' + m[3] + '/' + m[1]) : (ymd || '');
+}
+
 function eemShowPackageForm(type) {
 	var form = document.getElementById('eem-' + type + '-package-form');
 	form.style.display = '';
@@ -5848,8 +5855,8 @@ function eemSavePackage(type) {
 				tr.dataset.packageId = pkg.id;
 				tr.innerHTML = '<td class="eem-packages-col-drag"><span class="eem-drag-handle">&#x2630;</span></td>'
 					+ '<td>' + eemEsc(pkg.name) + '</td>'
-					+ '<td>' + eemEsc(pkg.start_date) + '</td>'
-					+ '<td>' + eemEsc(pkg.end_date) + '</td>'
+					+ '<td>' + eemEsc(eemFmtMDY(pkg.start_date)) + '</td>'
+					+ '<td>' + eemEsc(eemFmtMDY(pkg.end_date)) + '</td>'
 					+ '<td>$' + parseFloat(pkg.price).toFixed(2) + '</td>'
 					+ '<td>' + maxDisplay + '</td>'
 					+ '<td class="eem-packages-col-actions">'

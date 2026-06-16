@@ -226,8 +226,8 @@ echo '</div>'; // .eem-stall-nightly-content
 				<tr data-package-id="<?php echo (int) $pkg['id']; ?>">
 					<td class="eem-packages-col-drag"><span class="eem-drag-handle">&#x2630;</span></td>
 					<td><?php echo esc_html( $pkg['name'] ); ?></td>
-					<td><?php echo esc_html( $pkg['start_date'] ); ?></td>
-					<td><?php echo esc_html( $pkg['end_date'] ); ?></td>
+					<td><?php echo esc_html( $pkg['start_date'] ? date_i18n( 'm/d/Y', strtotime( $pkg['start_date'] ) ) : '' ); ?></td>
+					<td><?php echo esc_html( $pkg['end_date'] ? date_i18n( 'm/d/Y', strtotime( $pkg['end_date'] ) ) : '' ); ?></td>
 					<td>$<?php echo esc_html( number_format( (float) $pkg['price'], 2 ) ); ?></td>
 					<td><?php echo (int) $pkg['max_quantity'] > 0 ? (int) $pkg['max_quantity'] : '&mdash;'; ?></td>
 					<td class="eem-packages-col-actions">

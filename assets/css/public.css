@@ -4610,13 +4610,15 @@
 	padding: 15px;
 	border: 0;
 	border-radius: 8px;
-	background: #1668F2;
+	/* Match the "Reserve Now" CTA: brand gradient + bold. */
+	background: linear-gradient(90deg, #1668F2, #26D0B5);
 	color: #fff;
 	font-size: 15px;
+	font-weight: 700;
 }
 .eem-event-page .eem-reservation-submit:hover,
 .eem-event-page .eem-reservation-submit:focus {
-	background: #0d52cc;
+	background: linear-gradient(90deg, #1457cf, #1fb89f);
 	color: #fff;
 }
 
