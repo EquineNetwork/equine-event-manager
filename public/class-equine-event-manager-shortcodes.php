@@ -1819,8 +1819,32 @@ class EEM_Shortcodes {
 			$eem_has_stall_map      = ! empty( $eem_stall_map_snapshot['barns'] );
 			?>
 			<?php if ( $eem_has_stall_map ) : ?>
-				<?php // v4: customers flag a tack stall only in 'customer' mode; 'admin' mode = admin designates on the chart. ?>
-				<?php $this->render_stall_map_picker( $eem_stall_map_snapshot, $stall_picker_reserved, $stall_picker_blocked, ( 'customer' === ( $data['stall_tack_mode'] ?? 'customer' ) ), (int) $stall_per_customer_max ); ?>
+				<?php
+				// "Same stall for all stays?" toggle — only in Both mode with multiple
+				// rate types. Default ON = single shared picker. OFF = per-rate-type
+				// tabs so customers can choose different stalls for different periods.
+				if ( $stall_is_multi ) :
+				?>
+					<div class="eem-same-stall-toggle" data-eem-same-stall-toggle>
+						<label class="eem-same-stall-toggle__label">
+							<input type="checkbox" name="stall_same_for_all" value="1" checked data-eem-same-stall-check />
+							<span><?php esc_html_e( 'Same stall for all stays', 'equine-event-manager' ); ?></span>
+						</label>
+						<div class="eem-same-stall-toggle__tabs" data-eem-rate-tabs hidden>
+							<?php foreach ( $stall_type_options as $rt_key => $rt_label ) : ?>
+								<button type="button" class="eem-same-stall-toggle__tab<?php echo array_key_first( $stall_type_options ) === $rt_key ? ' eem-same-stall-toggle__tab--active' : ''; ?>" data-rate-type="<?php echo esc_attr( $rt_key ); ?>"><?php echo esc_html( $rt_label ); ?></button>
+							<?php endforeach; ?>
+						</div>
+					</div>
+				<?php endif; ?>
+				<?php $this->render_stall_map_picker(
+					$eem_stall_map_snapshot,
+					$stall_picker_reserved,
+					$stall_picker_blocked,
+					( 'customer' === ( $data['stall_tack_mode'] ?? 'customer' ) ),
+					(int) $stall_per_customer_max,
+					$stall_is_multi ? array( 'rate_types' => array_keys( $stall_type_options ) ) : array()
+				); ?>
 			<?php elseif ( ! empty( $stall_picker_rows ) ) : ?>
 				<?php $this->render_stall_picker_grid( $stall_picker_rows, $stall_picker_blocked, $stall_picker_reserved, array(), (string) $stall_map_url, ( 'customer' === ( $data['stall_tack_mode'] ?? 'customer' ) ) ); ?>
 			<?php elseif ( $stall_assignment_enabled && ! empty( $stall_assignment_blocks ) ) : ?>
@@ -1936,6 +1960,7 @@ class EEM_Shortcodes {
 			'hint'           => __( 'Tap available (white) stalls on the facility map. Greyed stalls are taken.', 'equine-event-manager' ),
 			'prefix'         => '#',
 			'zone_surcharge' => array(),
+			'rate_types'     => array(),
 		), $opts );
 		$barns = array();
 		foreach ( ( $snapshot['barns'] ?? array() ) as $barn ) {
@@ -1955,6 +1980,7 @@ class EEM_Shortcodes {
 			'zoneQualified' => (bool) $opts['zone_qualified'],
 			'prefix'        => (string) $opts['prefix'],
 			'zoneSurcharge' => (object) $opts['zone_surcharge'],
+			'rateTypes'     => array_values( array_map( 'strval', $opts['rate_types'] ) ),
 		);
 		?>
 		<div class="eem-map-instance eem-map-inline">
@@ -2014,6 +2040,79 @@ class EEM_Shortcodes {
 			var selected = {}; // unit -> 1
 			var selZone = {};  // unit -> lowercased zone (barn) name, for surcharge
 			var activeBarn = 0;
+
+			// Per-rate-type stall picking (Both pricing mode).
+			var rateTypes = P.rateTypes || [];
+			var perRateMode = false; // toggled by the "Same stall" checkbox
+			var perRateSelected = {}; // { nightly: {}, pkg_1: {}, ... }
+			var perRateZone = {};
+			var activeRateType = rateTypes.length ? rateTypes[0] : '';
+			rateTypes.forEach(function(rt){ perRateSelected[rt] = {}; perRateZone[rt] = {}; });
+			var sameCheck = form.querySelector('[data-eem-same-stall-check]');
+			var rateTabs = form.querySelector('[data-eem-rate-tabs]');
+			function switchToPerRate(){
+				perRateMode = true;
+				if (rateTabs) rateTabs.hidden = false;
+				// Copy current shared selection into the first rate type.
+				var first = rateTypes[0];
+				if (first) {
+					perRateSelected[first] = JSON.parse(JSON.stringify(selected));
+					perRateZone[first] = JSON.parse(JSON.stringify(selZone));
+				}
+				activeRateType = first || '';
+				selected = perRateSelected[activeRateType] || {};
+				selZone = perRateZone[activeRateType] || {};
+				updateRateTabsUI();
+				refreshCellStates();
+				syncForm();
+			}
+			function switchToShared(){
+				perRateMode = false;
+				if (rateTabs) rateTabs.hidden = true;
+				// Merge all per-rate selections into shared.
+				selected = {}; selZone = {};
+				rateTypes.forEach(function(rt){
+					var s = perRateSelected[rt] || {};
+					var z = perRateZone[rt] || {};
+					Object.keys(s).forEach(function(u){ selected[u] = 1; selZone[u] = z[u] || ''; });
+				});
+				refreshCellStates();
+				syncForm();
+			}
+			function switchRateType(rt){
+				if (!perRateMode) return;
+				perRateSelected[activeRateType] = selected;
+				perRateZone[activeRateType] = selZone;
+				activeRateType = rt;
+				selected = perRateSelected[rt] || {};
+				selZone = perRateZone[rt] || {};
+				updateRateTabsUI();
+				refreshCellStates();
+				syncForm();
+			}
+			function updateRateTabsUI(){
+				if (!rateTabs) return;
+				rateTabs.querySelectorAll('[data-rate-type]').forEach(function(btn){
+					btn.classList.toggle('eem-same-stall-toggle__tab--active', btn.getAttribute('data-rate-type') === activeRateType);
+				});
+			}
+			function refreshCellStates(){
+				gridEl.querySelectorAll('.eem-map-stall').forEach(function(cell){
+					var u = cell.getAttribute('data-unit');
+					cell.classList.toggle('is-sel', !!selected[u]);
+				});
+			}
+			if (sameCheck) {
+				sameCheck.addEventListener('change', function(){
+					if (sameCheck.checked) switchToShared(); else switchToPerRate();
+				});
+			}
+			if (rateTabs) {
+				rateTabs.addEventListener('click', function(ev){
+					var btn = ev.target.closest('[data-rate-type]');
+					if (btn) switchRateType(btn.getAttribute('data-rate-type'));
+				});
+			}
 			var didPan = false; // true right after a drag-to-pan, to suppress select
 			var pre = P.prefix || '';
 
@@ -2116,9 +2215,40 @@ class EEM_Shortcodes {
 
 			function syncForm(){
 				var units = Object.keys(selected);
-				// hidden inputs for the checkout POST (RV: "Red Lot 1", stall: "5009")
 				picksEl.innerHTML = '';
-				units.forEach(function(u){ var inp=document.createElement('input'); inp.type='hidden'; inp.name=P.unitField+'[]'; inp.value=u; picksEl.appendChild(inp); });
+				if (perRateMode && rateTypes.length) {
+					// Write per-rate-type hidden inputs.
+					rateTypes.forEach(function(rt){
+						var rtUnits = Object.keys(perRateSelected[rt] || {});
+						rtUnits.forEach(function(u){
+							var inp = document.createElement('input');
+							inp.type = 'hidden';
+							inp.name = P.unitField + '_' + rt + '[]';
+							inp.value = u;
+							picksEl.appendChild(inp);
+						});
+						// Drive per-rate-type qty fields.
+						var qtyField = form.querySelector('[name="stall_qty_' + rt + '"]');
+						if (qtyField && rtUnits.length > 0) {
+							qtyField.value = rtUnits.length;
+							qtyField.dispatchEvent(new Event('input', {bubbles: true}));
+							qtyField.dispatchEvent(new Event('change', {bubbles: true}));
+						}
+					});
+					// Also write the shared field with all combined (for tack stall etc).
+					var allUnits = {};
+					rateTypes.forEach(function(rt){ Object.keys(perRateSelected[rt] || {}).forEach(function(u){ allUnits[u] = 1; }); });
+					Object.keys(allUnits).forEach(function(u){
+						var inp = document.createElement('input');
+						inp.type = 'hidden';
+						inp.name = P.unitField + '[]';
+						inp.value = u;
+						picksEl.appendChild(inp);
+					});
+					units = Object.keys(allUnits);
+				} else {
+					units.forEach(function(u){ var inp=document.createElement('input'); inp.type='hidden'; inp.name=P.unitField+'[]'; inp.value=u; picksEl.appendChild(inp); });
+				}
 				// drive the qty field (= count) so totals recompute via existing listeners
 				var qty = form.querySelector('[name="'+P.qtyField+'"]');
 				if (qty){ qty.value = units.length; qty.dispatchEvent(new Event('input',{bubbles:true})); qty.dispatchEvent(new Event('change',{bubbles:true})); }
@@ -2771,6 +2901,8 @@ class EEM_Shortcodes {
 			$stall_items   = array();
 			$stall_qty_sum = 0;
 			$stay_options  = $this->get_enabled_stay_type_options( $data, 'stall' );
+			$per_rate_units = array();
+			$same_for_all   = ! empty( $_POST['stall_same_for_all'] );
 			foreach ( $stay_options as $st_key => $st_label ) {
 				$post_key = 'stall_qty_' . $st_key;
 				$qty      = isset( $_POST[ $post_key ] ) ? absint( $_POST[ $post_key ] ) : 0;
@@ -2782,12 +2914,20 @@ class EEM_Shortcodes {
 					'stay_type' => $this->sanitize_stay_type_value( $st_key ),
 					'qty'       => $qty,
 				);
+				if ( ! $same_for_all ) {
+					$rt_field = 'preferred_stall_units_' . $st_key;
+					$rt_units = isset( $_POST[ $rt_field ] ) ? wp_unslash( $_POST[ $rt_field ] ) : array();
+					$per_rate_units[ $st_key ] = $this->sanitize_preferred_stall_units( $rt_units, $data );
+				}
 			}
 			if ( ! empty( $stall_items ) ) {
 				$stall_payload['stall_items']          = $stall_items;
 				$stall_payload['stall_qty']            = $stall_qty_sum;
 				$stall_payload['stall_billable_quantity'] = $stall_qty_sum + absint( $stall_payload['tack_stall_qty'] );
 				$stall_payload['stall_stay_type']      = $stall_items[0]['stay_type'];
+			}
+			if ( ! empty( $per_rate_units ) ) {
+				$stall_payload['per_rate_stall_units'] = $per_rate_units;
 			}
 		}
 
@@ -4272,7 +4412,13 @@ class EEM_Shortcodes {
 
 			$stall_notes = $notes;
 
-			if ( ! empty( $submission['preferred_stall_units'] ) ) {
+			if ( ! empty( $submission['per_rate_stall_units'] ) ) {
+				foreach ( $submission['per_rate_stall_units'] as $rt_key => $rt_units ) {
+					if ( ! empty( $rt_units ) ) {
+						$stall_notes = trim( $stall_notes . "\nAssigned Stall Units (" . sanitize_text_field( $rt_key ) . "): " . implode( ', ', array_map( 'sanitize_text_field', (array) $rt_units ) ) );
+					}
+				}
+			} elseif ( ! empty( $submission['preferred_stall_units'] ) ) {
 				$stall_notes = trim( $stall_notes . "\nAssigned Stall Units: " . implode( ', ', array_map( 'sanitize_text_field', (array) $submission['preferred_stall_units'] ) ) );
 			}
 
@@ -4350,19 +4496,26 @@ class EEM_Shortcodes {
 					)
 				) || $inserted;
 
+				$row_order_id = (int) $wpdb->insert_id;
 				if ( 0 === $si_row_idx ) {
-					$stall_order_row_id = (int) $wpdb->insert_id;
-					if ( $stall_order_row_id > 0 && ! empty( $submission['preferred_stall_units'] ) ) {
-						$checkout_stall_units = array_values( array_filter( array_map( 'sanitize_text_field', (array) $submission['preferred_stall_units'] ) ) );
-						if ( ! empty( $checkout_stall_units ) ) {
-							EEM_Stall_Status_Repo::create_occupied(
-								absint( $reservation_id ),
-								$stall_order_row_id,
-								$checkout_stall_units,
-								(string) $si_row['arrival_date'],
-								(string) $si_row['departure_date']
-							);
-						}
+					$stall_order_row_id = $row_order_id;
+				}
+				if ( $row_order_id > 0 ) {
+					$row_units = array();
+					if ( ! empty( $submission['per_rate_stall_units'][ $si_row['stay_type'] ] ) ) {
+						$row_units = (array) $submission['per_rate_stall_units'][ $si_row['stay_type'] ];
+					} elseif ( 0 === $si_row_idx && ! empty( $submission['preferred_stall_units'] ) ) {
+						$row_units = (array) $submission['preferred_stall_units'];
+					}
+					$checkout_stall_units = array_values( array_filter( array_map( 'sanitize_text_field', $row_units ) ) );
+					if ( ! empty( $checkout_stall_units ) ) {
+						EEM_Stall_Status_Repo::create_occupied(
+							absint( $reservation_id ),
+							$row_order_id,
+							$checkout_stall_units,
+							(string) $si_row['arrival_date'],
+							(string) $si_row['departure_date']
+						);
 					}
 				}
 			}
