@@ -204,8 +204,19 @@ class EEM_Shortcodes {
 		$stall_rows_raw             = $cfg->get( 'stall_rows' );
 		$stall_picker_rows          = is_array( $stall_rows_raw ) ? $stall_rows_raw : array();
 		$stall_picker_blocked       = array();
-		foreach ( (array) $cfg->get( 'blocked_stalls' ) as $eem_blk ) {
-			$stall_picker_blocked[ (string) $eem_blk ] = true;
+		// Merge BOTH blocked-stall sources, mirroring the RV blocked-lot path
+		// below: the editor's "Blocked Stall Numbers" field (config 'blocked_stalls')
+		// AND stalls blocked from the admin "By Location" map (post-meta
+		// '_en_stall_chart_blocked_stall_units'). Reading only the config key left
+		// map-blocked stalls un-greyed on the customer picker.
+		foreach ( array_merge(
+			(array) $cfg->get( 'blocked_stalls' ),
+			(array) get_post_meta( (int) $reservation_id, '_en_stall_chart_blocked_stall_units', true )
+		) as $eem_blk ) {
+			$eem_blk = (string) $eem_blk;
+			if ( '' !== $eem_blk ) {
+				$stall_picker_blocked[ $eem_blk ] = true;
+			}
 		}
 		$stall_picker_reserved      = array();
 		foreach ( array_keys( $this->get_stall_assignment_occupancy_map( $reservation_id, $data ) ) as $eem_occ ) {

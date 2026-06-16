@@ -3504,6 +3504,19 @@ class EEM_Admin {
 				}
 			}
 		}
+		// Also fold in the editor's canonical "Blocked Stall Numbers" field, which
+		// lives in the config table (key 'blocked_stalls') post postmeta-decouple,
+		// NOT in the legacy '_en_blocked_stalls' post-meta. Without this, a stall
+		// blocked in the editor stayed un-greyed on the By Location map.
+		$cfg_blocked = EEM_Reservation_Config::for( $reservation_id )->get( 'blocked_stalls' );
+		if ( is_array( $cfg_blocked ) ) {
+			foreach ( $cfg_blocked as $label ) {
+				$label = (string) $label;
+				if ( '' !== $label ) {
+					$labels[ $label ] = true;
+				}
+			}
+		}
 		return array_keys( $labels );
 	}
 
