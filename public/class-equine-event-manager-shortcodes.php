@@ -8852,12 +8852,7 @@ RV Lot: " . $rv_lot['name'] );
 	 * @return string
 	 */
 	private function format_package_option_label( array $pkg ): string {
-		$name  = (string) ( $pkg['name'] ?? '' );
-		$start = $this->format_date_label( (string) ( $pkg['start_date'] ?? '' ) );
-		$end   = $this->format_date_label( (string) ( $pkg['end_date'] ?? '' ) );
-		if ( '' !== $start && '' !== $end ) {
-			return sprintf( '%s (%s – %s)', $name, $start, $end );
-		}
+		$name = (string) ( $pkg['name'] ?? '' );
 		return '' !== $name ? $name : __( 'Package', 'equine-event-manager' );
 	}
 
@@ -11511,11 +11506,13 @@ RV Lot: " . $rv_lot['name'] );
 				var arrival = form.querySelector('[name="' + section + '_arrival_date"]');
 				var departure = form.querySelector('[name="' + section + '_departure_date"]');
 				var rawStayType = getFieldValue(form, section + '_stay_type');
-				var stayType = (rawStayType === 'weekend' || rawStayType === 'weekly') ? rawStayType : 'nightly';
+				var isPackage = rawStayType && rawStayType.indexOf('pkg_') === 0;
+				var stayType = (rawStayType === 'weekend' || rawStayType === 'weekly' || isPackage) ? rawStayType : 'nightly';
 				var minDate;
 				var maxDate;
 				var packageStart;
 				var packageEnd;
+				var pkgData = isPackage ? eemPackageFor(form, section, rawStayType) : null;
 				var stayDetailsHelp = controls ? controls.querySelector('.eem-section-stay-controls__help') : null;
 				var nightlySummary = controls ? (controls.dataset.nightlySummary || '') : '';
 				var weekendSummary = controls ? (controls.dataset.weekendSummary || '') : '';
@@ -11532,10 +11529,15 @@ RV Lot: " . $rv_lot['name'] );
 				if (!getFieldValue(form, section + '_stay_type') && form.querySelector('[name="' + section + '_stay_type"][data-default-stay-type]')) {
 					form.querySelector('[name="' + section + '_stay_type"]').value = form.querySelector('[name="' + section + '_stay_type"]').dataset.defaultStayType;
 					rawStayType = getFieldValue(form, section + '_stay_type');
-					stayType = (rawStayType === 'weekend' || rawStayType === 'weekly') ? rawStayType : 'nightly';
+					isPackage = rawStayType && rawStayType.indexOf('pkg_') === 0;
+					stayType = (rawStayType === 'weekend' || rawStayType === 'weekly' || isPackage) ? rawStayType : 'nightly';
+					pkgData = isPackage ? eemPackageFor(form, section, rawStayType) : null;
 				}
 
-				if (stayType === 'weekend') {
+				if (isPackage && pkgData) {
+					packageStart = pkgData.start_date || '';
+					packageEnd = pkgData.end_date || '';
+				} else if (stayType === 'weekend') {
 					packageStart = controls.dataset.weekendStartDate || '';
 					packageEnd = controls.dataset.weekendEndDate || controls.dataset.weekendStartDate || '';
 				} else if (stayType === 'weekly') {
@@ -11546,13 +11548,14 @@ RV Lot: " . $rv_lot['name'] );
 					packageEnd = '';
 				}
 
-				minDate = (stayType === 'weekend' || stayType === 'weekly') ? packageStart : (form.dataset.nightlyStartDate || getDateFieldBoundary(arrival, departure, 'min'));
-				maxDate = (stayType === 'weekend' || stayType === 'weekly') ? packageEnd : (form.dataset.nightlyEndDate || getDateFieldBoundary(arrival, departure, 'max'));
+				var isFixedDateType = stayType === 'weekend' || stayType === 'weekly' || (isPackage && pkgData);
+				minDate = isFixedDateType ? packageStart : (form.dataset.nightlyStartDate || getDateFieldBoundary(arrival, departure, 'min'));
+				maxDate = isFixedDateType ? packageEnd : (form.dataset.nightlyEndDate || getDateFieldBoundary(arrival, departure, 'max'));
 
-				if (stayType === 'weekend' || stayType === 'weekly') {
-					var packageSummary = stayType === 'weekly' ? weeklySummary : weekendSummary;
+				if (isFixedDateType) {
+					var packageSummary = isPackage ? '' : (stayType === 'weekly' ? weeklySummary : weekendSummary);
 
-					if (stayDetailsHelp && packageSummary) {
+					if (stayDetailsHelp) {
 						stayDetailsHelp.textContent = packageSummary;
 					}
 
@@ -11566,6 +11569,12 @@ RV Lot: " . $rv_lot['name'] );
 
 					if (weekendSummaryWrap) {
 						weekendSummaryWrap.hidden = false;
+						if (isPackage && pkgData) {
+							var arrLabel = weekendSummaryWrap.querySelector('[data-weekend-arrival-label]');
+							var depLabel = weekendSummaryWrap.querySelector('[data-weekend-departure-label]');
+							if (arrLabel) { arrLabel.textContent = eemFormatDateLabel(packageStart); }
+							if (depLabel) { depLabel.textContent = eemFormatDateLabel(packageEnd); }
+						}
 					}
 
 					if (packageStart) {
@@ -11649,6 +11658,16 @@ RV Lot: " . $rv_lot['name'] );
 
 				nightCount = getSelectedNightCount(arrivalDate, departureDate);
 				summaryNode.textContent = formatStayNightCountLabel(nightCount);
+			}
+
+			function eemFormatDateLabel(dateStr) {
+				var parts, months, d;
+				if (!dateStr) { return ''; }
+				parts = String(dateStr).split('-');
+				if (parts.length !== 3) { return dateStr; }
+				months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+				d = parseInt(parts[2], 10);
+				return months[parseInt(parts[1], 10) - 1] + ' ' + d + ', ' + parts[0];
 			}
 
 			function getSelectedNightCount(arrivalDate, departureDate) {

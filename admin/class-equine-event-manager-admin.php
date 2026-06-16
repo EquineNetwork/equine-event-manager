@@ -10379,7 +10379,15 @@ class EEM_Admin {
 			$this->redirect_to_order_notice( $order_key, 'manual_payment_failed', __( 'Please choose either Cash or Check when marking an order paid.', 'equine-event-manager' ) );
 		}
 
-		$updated = $this->orders_repository->mark_order_paid_manually( $order_key, $method_map[ $method ] );
+		$payment_label = $method_map[ $method ];
+		if ( 'check' === $method ) {
+			$check_number = isset( $_GET['check_number'] ) ? sanitize_text_field( wp_unslash( $_GET['check_number'] ) ) : '';
+			if ( '' !== $check_number ) {
+				$payment_label .= ' #' . $check_number;
+			}
+		}
+
+		$updated = $this->orders_repository->mark_order_paid_manually( $order_key, $payment_label );
 
 		if ( ! $updated ) {
 			$this->redirect_to_order_notice( $order_key, 'manual_payment_failed', __( 'The order could not be marked paid.', 'equine-event-manager' ) );

@@ -3351,7 +3351,7 @@
 			var pendingPkgs = eemPendingPackageTypes();
 			if (pendingPkgs.length) {
 				eemDispatchSave._pkgFlushed = true;
-				Promise.all(pendingPkgs.map(function (type) { return eemSavePackage(type); }))
+				Promise.all(pendingPkgs.map(function (type) { return eemSavePackage(type, true); }))
 					.then(function () { eemDispatchSave(kind); }, function () { eemDispatchSave(kind); });
 				return;
 			}
@@ -5824,10 +5824,50 @@ function eemPendingPackageTypes() {
 	});
 }
 
-function eemSavePackage(type) {
+function eemCheckPackageDateOverlap(type, startDate, endDate, editingId) {
+	var tbody = document.getElementById('eem-' + type + '-packages-tbody');
+	if (!tbody) return [];
+	var rows = tbody.querySelectorAll('tr[data-package-id]');
+	var overlaps = [];
+	var newStart = new Date(startDate + 'T00:00:00');
+	var newEnd = new Date(endDate + 'T00:00:00');
+	rows.forEach(function (row) {
+		if (editingId && row.dataset.packageId === editingId) return;
+		var cells = row.querySelectorAll('td');
+		var name = cells[1] ? cells[1].textContent.trim() : '';
+		var rowStartText = cells[2] ? cells[2].textContent.trim() : '';
+		var rowEndText = cells[3] ? cells[3].textContent.trim() : '';
+		var parts = rowStartText.split('/');
+		if (parts.length !== 3) return;
+		var rs = new Date(parts[2] + '-' + parts[0] + '-' + parts[1] + 'T00:00:00');
+		parts = rowEndText.split('/');
+		if (parts.length !== 3) return;
+		var re = new Date(parts[2] + '-' + parts[0] + '-' + parts[1] + 'T00:00:00');
+		if (newStart < re && newEnd > rs) {
+			overlaps.push(name || 'Unnamed');
+		}
+	});
+	return overlaps;
+}
+
+function eemSavePackage(type, skipOverlapCheck) {
 	var form = document.getElementById('eem-' + type + '-package-form');
 	var editingId = form.querySelector('#eem-' + type + '-pkg-editing-id').value;
 	var isEdit = editingId !== '';
+
+	var startDate = form.querySelector('#eem-' + type + '-pkg-start').value;
+	var endDate = form.querySelector('#eem-' + type + '-pkg-end').value;
+
+	if (!skipOverlapCheck && startDate && endDate) {
+		var overlaps = eemCheckPackageDateOverlap(type, startDate, endDate, isEdit ? editingId : '');
+		if (overlaps.length > 0) {
+			var msg = 'This package\'s dates overlap with: ' + overlaps.join(', ') + '.\n\n'
+				+ 'Overlapping packages allow customers to choose between options for the same dates '
+				+ '(e.g. a weekend rate alongside a full-week rate).\n\n'
+				+ 'Continue saving?';
+			if (!confirm(msg)) return Promise.resolve();
+		}
+	}
 
 	var fd = new FormData();
 	fd.append('action', isEdit ? 'eem_stay_package_update' : 'eem_stay_package_add');
@@ -5835,8 +5875,8 @@ function eemSavePackage(type) {
 	fd.append('reservation_id', eemGetReservationId());
 	fd.append('type', type);
 	fd.append('name', form.querySelector('#eem-' + type + '-pkg-name').value);
-	fd.append('start_date', form.querySelector('#eem-' + type + '-pkg-start').value);
-	fd.append('end_date', form.querySelector('#eem-' + type + '-pkg-end').value);
+	fd.append('start_date', startDate);
+	fd.append('end_date', endDate);
 	fd.append('price', form.querySelector('#eem-' + type + '-pkg-price').value || '0');
 	fd.append('max_quantity', form.querySelector('#eem-' + type + '-pkg-max-qty').value || '0');
 	if (isEdit) fd.append('package_id', editingId);
@@ -7415,6 +7455,32 @@ function duplicateReservationAjax(target) {
 		document.querySelectorAll('[data-eem-collect-panel]').forEach(function (p) {
 			p.hidden = p.getAttribute('data-eem-collect-panel') !== tab;
 		});
+	});
+
+	/* Paid Cash tab — update the Record Payment link's method param + show/hide check # field. */
+	document.addEventListener('change', function (ev) {
+		if (ev.target.id !== 'eem-cp-cash-method') { return; }
+		var btn = document.getElementById('eem-cp-cash-btn');
+		var checkWrap = document.getElementById('eem-cp-check-number-wrap');
+		if (btn) {
+			var href = btn.getAttribute('href');
+			btn.setAttribute('href', href.replace(/([?&])method=[^&]*/, '$1method=' + encodeURIComponent(ev.target.value)));
+		}
+		if (checkWrap) {
+			checkWrap.hidden = ev.target.value !== 'check';
+		}
+	});
+
+	/* Append check_number to the Record Payment link before navigation. */
+	document.addEventListener('click', function (ev) {
+		var btn = ev.target.closest('#eem-cp-cash-btn');
+		if (!btn) { return; }
+		var method = document.getElementById('eem-cp-cash-method');
+		var checkInput = document.getElementById('eem-cp-check-number');
+		if (method && method.value === 'check' && checkInput && checkInput.value.trim()) {
+			var href = btn.getAttribute('href').replace(/([&?])check_number=[^&]*/, '');
+			btn.setAttribute('href', href + '&check_number=' + encodeURIComponent(checkInput.value.trim()));
+		}
 	});
 })();
 

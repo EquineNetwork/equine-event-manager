@@ -720,13 +720,13 @@ a.eem-btn:focus {
    in-place rule change. */
 .eem-btn-primary,
 a.eem-btn-primary {
-	background: var(--eem-electric);
+	background: var(--eem-navy);
 	color: var(--eem-text-on-navy);
 }
 
 .eem-btn-primary:hover,
 a.eem-btn-primary:hover {
-	background: var(--eem-electric-hover);
+	background: var(--eem-electric);
 	color: var(--eem-text-on-navy);
 }
 
@@ -9047,6 +9047,8 @@ table.eem-export-history td { padding:11px 14px; font-size:13px; color:#1d2327; 
 .eem-co-payment-tab:hover { color: var(--eem-navy); background: #e9ebec; }
 .eem-co-payment-tab.is-active { color: var(--eem-electric); border-bottom-color: var(--eem-electric); background: #fff; }
 .eem-co-btn-block { width: 100%; justify-content: center; margin-top: 12px; }
+.eem-co-cash-field { margin-bottom: 12px; }
+.eem-co-cash-field__label { display: block; font-size: 13px; font-weight: 600; color: var(--eem-navy); margin-bottom: 4px; }
 .eem-co-collect-link { text-decoration: none; }
 
 /* Responsive */

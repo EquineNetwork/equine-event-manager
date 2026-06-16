@@ -390,6 +390,7 @@ class EEM_Collect_Payment_Page {
 			<div class="eem-co-payment-tabs" role="tablist">
 				<button type="button" class="eem-co-payment-tab is-active" data-eem-action="collect-payment-tab" data-tab="link" role="tab" aria-selected="true"><?php esc_html_e( 'Send Link', 'equine-event-manager' ); ?></button>
 				<button type="button" class="eem-co-payment-tab" data-eem-action="collect-payment-tab" data-tab="charge" role="tab" aria-selected="false"><?php esc_html_e( 'Charge Card', 'equine-event-manager' ); ?></button>
+				<button type="button" class="eem-co-payment-tab" data-eem-action="collect-payment-tab" data-tab="cash" role="tab" aria-selected="false"><?php esc_html_e( 'Paid Cash', 'equine-event-manager' ); ?></button>
 			</div>
 			<div class="eem-card-body eem-co-payment-panel" data-eem-collect-panel="link">
 				<?php
@@ -468,6 +469,35 @@ class EEM_Collect_Payment_Page {
 					</div>
 					<a class="eem-btn eem-btn-secondary eem-co-btn-block" href="<?php echo esc_url( $detail_url ); ?>"><?php esc_html_e( 'Go to Order — record payment', 'equine-event-manager' ); ?></a>
 				<?php endif; ?>
+			</div>
+			<div class="eem-card-body eem-co-payment-panel" data-eem-collect-panel="cash" hidden>
+				<p class="eem-field-hint">
+					<?php esc_html_e( 'Record an offline payment (cash, check, or other) for this order. The order will be marked as paid.', 'equine-event-manager' ); ?>
+				</p>
+				<div class="eem-co-cash-field">
+					<span class="eem-co-cash-field__label"><?php esc_html_e( 'Payment Method', 'equine-event-manager' ); ?></span>
+					<select id="eem-cp-cash-method" class="eem-field-select" style="width:100%">
+						<option value="cash"><?php esc_html_e( 'Cash', 'equine-event-manager' ); ?></option>
+						<option value="check"><?php esc_html_e( 'Check', 'equine-event-manager' ); ?></option>
+					</select>
+				</div>
+				<div class="eem-co-cash-field" id="eem-cp-check-number-wrap" hidden>
+					<span class="eem-co-cash-field__label"><?php esc_html_e( 'Check #', 'equine-event-manager' ); ?></span>
+					<input type="text" id="eem-cp-check-number" class="eem-field-input" style="width:100%" placeholder="<?php esc_attr_e( 'Check number', 'equine-event-manager' ); ?>" />
+				</div>
+				<div class="eem-co-cash-field">
+					<span class="eem-co-cash-field__label"><?php esc_html_e( 'Amount Received', 'equine-event-manager' ); ?></span>
+					<input type="text" id="eem-cp-cash-amount" class="eem-field-input" inputmode="decimal" style="width:100%" value="<?php echo esc_attr( '$' . number_format( $total_due, 2, '.', '' ) ); ?>" />
+				</div>
+				<?php
+				$cash_url = wp_nonce_url(
+					admin_url( 'admin-post.php?action=equine_event_manager_mark_order_paid&order_key=' . rawurlencode( $order_key ) ),
+					'equine_event_manager_mark_order_paid_' . $order_key
+				);
+				?>
+				<a id="eem-cp-cash-btn" class="eem-btn eem-btn-primary eem-co-btn-block" href="<?php echo esc_url( $cash_url . '&method=cash' ); ?>">
+					<?php esc_html_e( 'Record Payment', 'equine-event-manager' ); ?>
+				</a>
 			</div>
 		</section>
 		<?php
