@@ -500,10 +500,54 @@ class EEM_Venue {
 	 */
 	public static function snapshot_reservation_layout( int $reservation_id ): array {
 		$out = array();
+		$cfg = ( class_exists( 'EEM_Reservation_Config' ) && EEM_Reservation_Config::table_exists() )
+			? EEM_Reservation_Config::for( $reservation_id )
+			: null;
 		foreach ( self::LAYOUT_META_KEYS as $key ) {
-			$out[ $key ] = get_post_meta( $reservation_id, $key, true );
+			// Post-decouple the map/rows/zones live in the config table, NOT post
+			// meta — read there first so Save Layout captures the live map. Fall
+			// back to legacy post-meta for pre-decouple reservations.
+			$val = null;
+			if ( $cfg ) {
+				$val = $cfg->get( self::config_key_for_meta( $key ), null );
+			}
+			if ( null === $val || '' === $val || array() === $val ) {
+				$val = get_post_meta( $reservation_id, $key, true );
+			}
+			$out[ $key ] = $val;
 		}
 		return $out;
+	}
+
+	/**
+	 * Map a LAYOUT_META_KEYS post-meta key (`_en_stall_map`) to its canonical
+	 * config-table short key (`stall_map`).
+	 *
+	 * @param string $meta_key Post-meta key.
+	 * @return string Config short key.
+	 */
+	private static function config_key_for_meta( string $meta_key ): string {
+		return ( 0 === strpos( $meta_key, '_en_' ) ) ? substr( $meta_key, 4 ) : $meta_key;
+	}
+
+	/**
+	 * Normalize a stored layout value: JSON-string blobs (e.g. a saved `"[]"`)
+	 * decode to arrays so the config layer re-encodes them consistently.
+	 *
+	 * @param mixed $value Raw layout value.
+	 * @return mixed
+	 */
+	private static function normalize_layout_value( $value ) {
+		if ( is_string( $value ) ) {
+			$trim = trim( $value );
+			if ( '' !== $trim && ( '{' === $trim[0] || '[' === $trim[0] ) ) {
+				$decoded = json_decode( $trim, true );
+				if ( null !== $decoded ) {
+					return $decoded;
+				}
+			}
+		}
+		return $value;
 	}
 
 	/**
@@ -582,11 +626,21 @@ class EEM_Venue {
 		if ( null === $layout || $target_reservation_id <= 0 ) {
 			return false;
 		}
-		$data = is_array( $layout['layout'] ?? null ) ? $layout['layout'] : array();
+		$data       = is_array( $layout['layout'] ?? null ) ? $layout['layout'] : array();
+		$cfg_values = array();
 		foreach ( self::LAYOUT_META_KEYS as $key ) {
 			if ( array_key_exists( $key, $data ) ) {
-				update_post_meta( $target_reservation_id, $key, $data[ $key ] );
+				$value = self::normalize_layout_value( $data[ $key ] );
+				// Write to BOTH the canonical config table (what the editor + map
+				// builder read post-decouple) and legacy post-meta (back-compat).
+				// Writing only post-meta is why a loaded layout never appeared.
+				update_post_meta( $target_reservation_id, $key, $value );
+				$cfg_values[ self::config_key_for_meta( $key ) ] = $value;
 			}
+		}
+		if ( ! empty( $cfg_values ) && class_exists( 'EEM_Reservation_Config' ) && EEM_Reservation_Config::table_exists() ) {
+			EEM_Reservation_Config::for( $target_reservation_id )->set_many( $cfg_values )->save();
+			EEM_Reservation_Config::flush_cache( $target_reservation_id );
 		}
 		return true;
 	}
