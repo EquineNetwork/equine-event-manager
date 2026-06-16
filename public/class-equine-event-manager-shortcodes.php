@@ -2165,6 +2165,14 @@ class EEM_Shortcodes {
 			function unitOf(label){ return P.zoneQualified ? (P.barns[activeBarn].name + ' ' + label) : label; }
 			function statusOf(u){ if (blocked[u]) return 'blocked'; if (reserved[u]) return 'reserved'; return 'available'; }
 			function selCount(){ return Object.keys(selected).length; }
+			function getMapCap(){
+				if (rateTypes.length) {
+					var rt = perRateMode ? activeRateType : rateTypes[0];
+					var q = form.querySelector('[name="stall_qty_' + rt + '"]');
+					if (q) { var v = parseInt(q.value, 10); if (v > 0) return v; }
+				}
+				return P.maxPer || 0;
+			}
 
 			function renderGrid(){
 				var g = P.barns[activeBarn] ? P.barns[activeBarn].grid : [];
@@ -2270,6 +2278,18 @@ class EEM_Shortcodes {
 				// drive the qty field (= count) so totals recompute via existing listeners
 				var qty = form.querySelector('[name="'+P.qtyField+'"]');
 				if (qty){ qty.value = units.length; qty.dispatchEvent(new Event('input',{bubbles:true})); qty.dispatchEvent(new Event('change',{bubbles:true})); }
+				// Shared mode: push the shared count to every per-rate-type qty stepper
+				// so Nightly / Week 1 / Week 2 all reflect the map selection.
+				if (!perRateMode && rateTypes.length) {
+					rateTypes.forEach(function(rt){
+						var rtQty = form.querySelector('[name="stall_qty_' + rt + '"]');
+						if (rtQty && units.length > 0) {
+							rtQty.value = units.length;
+							rtQty.dispatchEvent(new Event('input', {bubbles: true}));
+							rtQty.dispatchEvent(new Event('change', {bubbles: true}));
+						}
+					});
+				}
 				var txt = units.length ? units.length + ' ' + <?php echo wp_json_encode( esc_html__( 'selected', 'equine-event-manager' ) ); ?> + ': ' + units.map(function(v){return pre+v;}).join(', ') : <?php echo wp_json_encode( esc_html__( 'None selected yet', 'equine-event-manager' ) ); ?>;
 				if (summary) summary.textContent = txt;
 				if (footEl) footEl.innerHTML = '<strong>' + units.length + '</strong> ' + <?php echo wp_json_encode( esc_html__( 'selected', 'equine-event-manager' ) ); ?>;
@@ -2334,7 +2354,7 @@ class EEM_Shortcodes {
 				var u = s.getAttribute('data-unit');
 				if (selected[u]){ delete selected[u]; delete selZone[u]; s.classList.remove('is-sel'); }
 				else {
-					if (P.maxPer > 0 && selCount() >= P.maxPer){ if (summary){ summary.innerHTML = '<span class="eem-map-warn">' + <?php echo wp_json_encode( esc_html__( 'Limit reached', 'equine-event-manager' ) ); ?> + '</span>'; } return; }
+					var cap = getMapCap(); if (cap > 0 && selCount() >= cap){ if (summary){ summary.innerHTML = '<span class="eem-map-warn">' + <?php echo wp_json_encode( esc_html__( 'Limit reached', 'equine-event-manager' ) ); ?> + '</span>'; } return; }
 					selected[u]=1; s.classList.add('is-sel');
 					selZone[u] = ((P.barns[activeBarn] && P.barns[activeBarn].name) || '').toLowerCase().trim();
 				}
