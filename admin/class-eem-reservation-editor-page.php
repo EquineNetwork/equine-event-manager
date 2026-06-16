@@ -1027,13 +1027,25 @@ class EEM_Reservation_Editor_Page {
 				}
 			}
 
+			// ── Always persist meta FIRST so toggle changes are never lost ──
+			$_POST['equine_event_manager_reservation_meta_nonce'] = wp_create_nonce( 'equine_event_manager_save_reservation_meta' );
+			$refreshed = get_post( $reservation_id );
+
+			$eem_diff_before = $cpt->get_meta_values( $reservation_id );
+			$cpt->save_meta( $reservation_id, $refreshed );
+			EEM_Reservations_CPT::log_reservation_edit_diff(
+				$reservation_id,
+				$eem_diff_before,
+				$cpt->get_meta_values( $reservation_id )
+			);
+			EEM_Reservation_Config::flush_cache( $reservation_id );
+			$cfg = EEM_Reservation_Config::for( $reservation_id );
+
 			// C7.X.16 Issue I — per-section publish-gate validation.
-			// Runs ONLY when the resulting status is `publish` (covers
-			// save_kind='publish' AND save_kind='update' which both
-			// land in publish state; save_kind='save_draft' skips per
-			// Whitney's "Drafts allowed to be incomplete" rule).
-			// Defense in depth — client-side mirror in admin.js gives
-			// immediate UX; this server gate is the source of truth.
+			// Meta is already saved above so toggle changes persist even
+			// when this gate fires. Warning is included in the final
+			// success response so the page reloads showing persisted state.
+			$pe_summary = '';
 			if ( 'publish' === $new_status ) {
 				// Layout context the candidate meta doesn't carry — stall/RV row
 				// counts + RV mode — so the gate can require ≥1 defined row when
@@ -1064,39 +1076,19 @@ class EEM_Reservation_Editor_Page {
 				);
 				$publish_errors = self::validate_for_publish( $candidate, $reservation_id, $publish_ctx );
 				if ( ! empty( $publish_errors ) ) {
-					$first_key  = array_key_first( $publish_errors );
-					$count      = count( $publish_errors );
-					$summary    = 1 === $count
-						? $publish_errors[ $first_key ]
+					$pe_first_key = array_key_first( $publish_errors );
+					$pe_count     = count( $publish_errors );
+					$pe_summary   = 1 === $pe_count
+						? $publish_errors[ $pe_first_key ]
 						: sprintf(
 							/* translators: %d: number of sections needing attention */
-							_n( '%d section needs attention before publishing.', '%d sections need attention before publishing.', $count, 'equine-event-manager' ),
-							$count
+							_n( '%d section needs attention before publishing.', '%d sections need attention before publishing.', $pe_count, 'equine-event-manager' ),
+							$pe_count
 						);
-					wp_send_json_error( array(
-						'message'       => $summary,
-						'errors'        => $publish_errors,
-						'first_section' => $first_key,
-						'count'         => $count,
-						'code'          => 'publish_validation_failed',
-					), 422 );
 				}
 			}
 
-			$_POST['equine_event_manager_reservation_meta_nonce'] = wp_create_nonce( 'equine_event_manager_save_reservation_meta' );
-			$refreshed = get_post( $reservation_id );
-
-			// CLEANUP #26 — snapshot the reservation's scalar meta before save_meta
-			// so the post-save diff can log a "Field: old → new" Activity Log entry.
-			$eem_diff_before = $cpt->get_meta_values( $reservation_id );
-			$cpt->save_meta( $reservation_id, $refreshed );
-			EEM_Reservations_CPT::log_reservation_edit_diff(
-				$reservation_id,
-				$eem_diff_before,
-				$cpt->get_meta_values( $reservation_id )
-			);
-			EEM_Reservation_Config::flush_cache( $reservation_id );
-			$cfg = EEM_Reservation_Config::for( $reservation_id );
+			// (save_meta already ran above the publish gate)
 		}
 
 		// ── Stay Packages pricing mode (stored in reservation_config) ──
@@ -1277,14 +1269,19 @@ class EEM_Reservation_Editor_Page {
 		// render() page-load, and on_tec_event_save() (FIX 2 expansion, 2.3.44).
 		self::apply_mirror( $reservation_id );
 
-		wp_send_json_success( array(
+		$save_response = array(
 			'reservation_id' => $reservation_id,
 			'post_status'    => $new_status,
 			'primary_action' => 'publish' === $new_status ? 'update' : 'draft',
 			'message'        => 'publish' === $new_status
 				? __( 'Reservation published.', 'equine-event-manager' )
 				: __( 'Draft saved.', 'equine-event-manager' ),
-		) );
+		);
+		if ( ! empty( $pe_summary ) ) {
+			$save_response['message'] = $pe_summary;
+			$save_response['warning'] = true;
+		}
+		wp_send_json_success( $save_response );
 	}
 
 	/**

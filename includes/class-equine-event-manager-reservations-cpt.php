@@ -1501,18 +1501,6 @@ class EEM_Reservations_CPT {
 			$errors[] = __( 'No event source is connected. Connect the GEMS for WordPress plugin (or add an External Feed URL) in Settings > Integrations before saving this reservation.', 'equine-event-manager' );
 		}
 
-		if ( ! empty( $data['checkin_checkout_enabled'] ) && ( empty( $data['checkin_time'] ) || empty( $data['checkout_time'] ) ) ) {
-			$errors[] = __( 'Check-In/Check-Out is turned on, so both a check-in time and check-out time are required before saving.', 'equine-event-manager' );
-		}
-
-		if ( ! empty( $data['stall_schedule_enabled'] ) && ( empty( $data['stalls_open_at'] ) || empty( $data['stalls_close_at'] ) ) ) {
-			$errors[] = __( 'Schedule Stall Reservations is turned on, so both stall open and stall close date/time are required before saving.', 'equine-event-manager' );
-		}
-
-		if ( ! empty( $data['rv_schedule_enabled'] ) && ( empty( $data['rv_open_at'] ) || empty( $data['rv_close_at'] ) ) ) {
-			$errors[] = __( 'Schedule RV Reservations is turned on, so both RV open and RV close date/time are required before saving.', 'equine-event-manager' );
-		}
-
 		return $errors;
 	}
 
@@ -1592,12 +1580,24 @@ class EEM_Reservations_CPT {
 		$defaults = $this->get_default_meta_values();
 		$values   = array();
 
-		foreach ( $defaults as $key => $default ) {
-			// CLEANUP #44 — section toggles resolve new-first, legacy-fallback;
-			// all other fields read `_en_<field>` directly (helper handles both).
-			$value = self::read_section_enabled_raw( $post_id, $key );
+		// Primary source: reservation_config table (postmeta decouple).
+		// When the table exists, its row is the authoritative store for all
+		// columns it contains. Post meta is the fallback for keys NOT in
+		// the table and for reservations that predate the table.
+		$cfg     = null;
+		$cfg_row = array();
+		if ( EEM_Reservation_Config::table_exists() ) {
+			$cfg     = EEM_Reservation_Config::for( (int) $post_id );
+			$cfg_row = $cfg->all();
+		}
 
-			$values[ $key ] = '' === $value ? $default : $value;
+		foreach ( $defaults as $key => $default ) {
+			if ( ! empty( $cfg_row ) && array_key_exists( $key, $cfg_row ) && null !== $cfg_row[ $key ] ) {
+				$values[ $key ] = $cfg_row[ $key ];
+			} else {
+				$value = self::read_section_enabled_raw( $post_id, $key );
+				$values[ $key ] = '' === $value ? $default : $value;
+			}
 		}
 
 		if ( ! metadata_exists( 'post', $post_id, '_en_use_global_event_source' ) ) {
