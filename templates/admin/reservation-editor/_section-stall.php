@@ -580,7 +580,18 @@ $context = 'stall';
 require EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_layout-template-bar.php';
 
 // ── v4 Stall Mapping — native Map Builder (drives "Pick from layout") ──
+// Seed from the config snapshot, falling back to the canonical post-meta
+// (_en_stall_map) that the Stall Chart + Save Map use. Without the fallback a
+// map saved before the config-sync fix rendered on the chart but showed empty
+// in this builder.
 $stall_map_snap  = ( isset( $data['stall_map'] ) && is_array( $data['stall_map'] ) ) ? $data['stall_map'] : array();
+if ( empty( $stall_map_snap['barns'] ) ) {
+	$stall_pm_rid = (int) ( $data['_reservation_id'] ?? get_the_ID() );
+	$stall_pm_snap = $stall_pm_rid > 0 ? EEM_Stall_Map_Importer::get_for_reservation( $stall_pm_rid ) : array();
+	if ( ! empty( $stall_pm_snap['barns'] ) ) {
+		$stall_map_snap = $stall_pm_snap;
+	}
+}
 $stall_map_kind  = EEM_Stall_Map_Importer::snapshot_of_kind( $stall_map_snap, 'stall' );
 $stall_seed      = array();
 foreach ( ( $stall_map_kind['barns'] ?? array() ) as $smk_barn ) {

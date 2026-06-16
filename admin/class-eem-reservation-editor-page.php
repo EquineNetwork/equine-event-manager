@@ -1394,6 +1394,17 @@ class EEM_Reservation_Editor_Page {
 
 		EEM_Stall_Map_Importer::save_to_reservation( $reservation_id, $snapshot, $meta_key );
 
+		// Keep the config table in sync with the canonical post-meta snapshot.
+		// The Stall Chart reads post-meta (_en_stall_map / _en_rv_map) via the
+		// importer, but the Edit Reservation map builder SEEDS from the config
+		// table (stall_map / rv_map). Writing only post-meta left the builder
+		// showing an empty/stale map even though the chart rendered it correctly.
+		if ( class_exists( 'EEM_Reservation_Config' ) && EEM_Reservation_Config::table_exists() ) {
+			$cfg_key = ( 'rv' === $target ) ? 'rv_map' : 'stall_map';
+			EEM_Reservation_Config::for( $reservation_id )->set( $cfg_key, $snapshot )->save();
+			EEM_Reservation_Config::flush_cache( $reservation_id );
+		}
+
 		$per   = EEM_Stall_Map_Importer::barn_stall_counts( $snapshot );
 		$barns_out = array();
 		foreach ( $per as $name => $count ) {

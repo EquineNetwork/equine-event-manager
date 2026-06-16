@@ -380,6 +380,16 @@ $rv_zones      = ( is_array( $rv_zones_meta ) && ! empty( $rv_zones_meta ) )
 // names so the admin only fills in pricing — merging any saved pricing matched
 // by zone name. The names become read-only (they come from the map).
 $rv_map_zones_snap = ( isset( $data['rv_map'] ) && is_array( $data['rv_map'] ) ) ? $data['rv_map'] : array();
+// Fall back to the canonical post-meta (_en_rv_map) the RV chart + Save Map use,
+// so a map saved before the config-sync fix still seeds the builder.
+if ( empty( $rv_map_zones_snap['barns'] ) && class_exists( 'EEM_Stall_Map_Importer' ) ) {
+	$rv_pm_rid  = (int) ( $data['_reservation_id'] ?? get_the_ID() );
+	$rv_pm_snap = $rv_pm_rid > 0 ? EEM_Stall_Map_Importer::get_for_reservation( $rv_pm_rid, EEM_Stall_Map_Importer::RV_META_KEY ) : array();
+	if ( ! empty( $rv_pm_snap['barns'] ) ) {
+		$rv_map_zones_snap = $rv_pm_snap;
+		$data['rv_map']    = $rv_pm_snap; // keep the later seed read (line ~509) consistent
+	}
+}
 $rv_map_connected  = ! empty( $rv_map_zones_snap['barns'] );
 if ( $rv_map_connected && class_exists( 'EEM_Stall_Map_Importer' ) ) {
 	$saved_pricing = array(); // lowercase zone name => [nightly, weekend]
