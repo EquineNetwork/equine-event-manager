@@ -5732,8 +5732,13 @@ function eemShowPackageForm(type) {
 	form.style.display = '';
 	form.querySelector('#eem-' + type + '-pkg-editing-id').value = '';
 	form.querySelector('#eem-' + type + '-pkg-name').value = '';
-	form.querySelector('#eem-' + type + '-pkg-start').value = '';
-	form.querySelector('#eem-' + type + '-pkg-end').value = '';
+	// Default Start/End to this section's available (event) date window so a new
+	// package starts pre-filled with the event dates instead of blank.
+	var section = form.closest('.eem-reservation-editor-section') || document;
+	var availStart = section.querySelector('input[name="en_reservation[available_start_date]"]');
+	var availEnd = section.querySelector('input[name="en_reservation[available_end_date]"]');
+	form.querySelector('#eem-' + type + '-pkg-start').value = availStart ? availStart.value : '';
+	form.querySelector('#eem-' + type + '-pkg-end').value = availEnd ? availEnd.value : '';
 	form.querySelector('#eem-' + type + '-pkg-price').value = '';
 	form.querySelector('#eem-' + type + '-pkg-max-qty').value = '';
 	form.querySelector('#eem-' + type + '-pkg-name').focus();

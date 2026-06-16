@@ -10608,6 +10608,10 @@ a.eem-dm-view-tab.active:visited {
 }
 
 /* ─── Stay Packages table + inline form ─────────────────────────────────────── */
+/* Breathing room above the packages table so its header/empty-state isn't
+   crammed against the Pricing Mode hint/border directly above it. */
+.eem-stall-packages-content,
+.eem-rv-packages-content { padding-top: 16px; }
 .eem-packages-table-wrap { margin-bottom: 12px; }
 .eem-packages-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .eem-packages-table thead th {
