@@ -5768,6 +5768,8 @@ function eemShowPackageForm(type) {
 	form.querySelector('#eem-' + type + '-pkg-end').value = availEnd ? availEnd.value : '';
 	form.querySelector('#eem-' + type + '-pkg-price').value = '';
 	form.querySelector('#eem-' + type + '-pkg-max-qty').value = '';
+	var empty = document.getElementById('eem-' + type + '-packages-empty');
+	if (empty) empty.style.display = 'none';
 	form.querySelector('#eem-' + type + '-pkg-name').focus();
 }
 
@@ -5971,16 +5973,25 @@ function eemSavePackageInline(input) {
 	});
 })();
 
+function eemCancelPackageForm(type) {
+	document.getElementById('eem-' + type + '-package-form').style.display = 'none';
+	var tbody = document.getElementById('eem-' + type + '-packages-tbody');
+	var empty = document.getElementById('eem-' + type + '-packages-empty');
+	if (empty && tbody && tbody.querySelectorAll('.eem-pkg-row').length === 0) {
+		empty.style.display = '';
+	}
+}
+
 (function () {
 	document.addEventListener('click', function (e) {
 		var saveBtn = e.target.closest('#eem-stall-pkg-save');
 		if (saveBtn) { eemSavePackage('stall'); return; }
 		var cancelBtn = e.target.closest('#eem-stall-pkg-cancel');
-		if (cancelBtn) { document.getElementById('eem-stall-package-form').style.display = 'none'; return; }
+		if (cancelBtn) { eemCancelPackageForm('stall'); return; }
 		var rvSave = e.target.closest('#eem-rv-pkg-save');
 		if (rvSave) { eemSavePackage('rv'); return; }
 		var rvCancel = e.target.closest('#eem-rv-pkg-cancel');
-		if (rvCancel) { document.getElementById('eem-rv-package-form').style.display = 'none'; return; }
+		if (rvCancel) { eemCancelPackageForm('rv'); return; }
 	});
 })();
 
