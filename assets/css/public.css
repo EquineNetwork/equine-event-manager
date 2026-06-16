@@ -4364,6 +4364,9 @@
 	font-size: 14px;
 	color: #031B4E;
 }
+.eem-event-page .eem-reservation-form select {
+	padding-right: 36px;
+}
 .eem-event-page .eem-reservation-form input::placeholder,
 .eem-event-page .eem-reservation-form textarea::placeholder {
 	color: #B0BDD4;
