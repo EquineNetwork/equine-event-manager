@@ -7067,6 +7067,13 @@ input.eem-zone-price-in:focus { border-color: var(--eem-electric); box-shadow: 0
 .eem-zone-add-btn svg { width: 13px; height: 13px; color: var(--eem-electric); }
 
 
+/* ── Add-on block (title → help → table layout) ── */
+.eem-addon-block { margin-top: 16px; padding: 16px; background: var(--eem-bg-muted); border: 1px solid var(--eem-border); border-radius: var(--eem-radius); }
+.eem-addon-block__header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.eem-addon-block__title { margin: 0; font-size: 14px; font-weight: 600; color: var(--eem-navy); }
+.eem-addon-block__help { margin: 2px 0 0; font-size: 12px; color: var(--eem-text-muted); }
+.eem-addon-block__hint { margin: 0 0 8px; font-size: 12px; color: var(--eem-text-muted); line-height: 1.5; }
+
 /* ── Repeating rows (add-ons tables — restyled to match package-row pattern) ── */
 .eem-repeat-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; margin-bottom: 10px; }
 /* Per-add-on zone pills (RV add-ons) — click-to-toggle styled checkboxes; none
