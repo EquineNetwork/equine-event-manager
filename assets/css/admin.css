@@ -10633,8 +10633,8 @@ a.eem-dm-view-tab.active:visited {
 .eem-packages-col-drag { width: 30px; text-align: center; }
 .eem-drag-handle { cursor: grab; color: var(--eem-slate); font-size: 16px; }
 .eem-packages-col-actions { white-space: nowrap; text-align: right; }
-.eem-btn-sm { padding: 3px 10px; font-size: 12px; border: 1px solid var(--eem-border); border-radius: var(--eem-radius); background: #fff; cursor: pointer; color: var(--eem-navy); }
-.eem-btn-sm:hover { background: var(--eem-bg-muted); }
+.eem-btn-sm:not(.eem-btn-primary):not(.eem-btn-electric) { padding: 3px 10px; font-size: 12px; border: 1px solid var(--eem-border); border-radius: var(--eem-radius); background: #fff; cursor: pointer; color: var(--eem-navy); }
+.eem-btn-sm:not(.eem-btn-primary):not(.eem-btn-electric):hover { background: var(--eem-bg-muted); }
 .eem-btn-sm--danger { color: var(--eem-red, #d63638); border-color: var(--eem-red, #d63638); }
 .eem-btn-sm--danger:hover { background: #fef0f0; }
 /* Icon-only row actions (Edit = pencil, Delete = trash) for the packages table. */
