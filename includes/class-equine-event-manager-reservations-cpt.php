@@ -763,8 +763,18 @@ class EEM_Reservations_CPT {
 
 		// Postmeta decouple: write to relational table (primary) with
 		// postmeta fallback when the table doesn't exist yet.
+		//
+		// CRITICAL: use the dirty-update path (set_many()->save() → upsert_dirty),
+		// NOT insert_from_values() which does a full-row $wpdb->replace(). The main
+		// editor form only submits the scalar/section-enabled fields enumerated in
+		// get_default_meta_values(); columns owned by their own AJAX endpoints —
+		// the map snapshot (`stall_map`, `stall_map_id`, `stall_map_file_id`),
+		// the `stall_rows` builder, RV zones, etc. — are NOT in $data. A full-row
+		// replace() wiped every such column on every save (lost maps + layouts).
+		// The dirty-update path UPDATEs only the columns present in $data and
+		// leaves the separately-managed columns untouched.
 		if ( EEM_Reservation_Config::table_exists() ) {
-			EEM_Reservation_Config::insert_from_values( $post_id, $data );
+			EEM_Reservation_Config::for( $post_id )->set_many( $data )->save();
 			EEM_Reservation_Config::flush_cache( $post_id );
 		} else {
 			foreach ( $data as $key => $value ) {
