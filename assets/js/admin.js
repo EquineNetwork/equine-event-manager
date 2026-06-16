@@ -5899,20 +5899,12 @@ function eemSavePackage(type, skipOverlapCheck) {
 				var div = document.createElement('div');
 				div.className = 'eem-pkg-row';
 				div.dataset.packageId = pkg.id;
-				div.dataset.pkgName = pkg.name;
-				div.dataset.pkgStart = pkg.start_date;
-				div.dataset.pkgEnd = pkg.end_date;
-				div.dataset.pkgPrice = parseFloat(pkg.price).toFixed(2);
-				div.dataset.pkgMaxQty = String(maxInt || 0);
-				div.innerHTML = '<span class="eem-drag-handle">&#x2630;</span>'
-					+ '<span class="eem-pkg-name">' + eemEsc(pkg.name) + '</span>'
-					+ '<span class="eem-pkg-dates">' + eemEsc(startFmt + ' – ' + endFmt) + '</span>'
-					+ '<span class="eem-pkg-price">$' + parseFloat(pkg.price).toFixed(2) + '</span>'
-					+ maxChip
-					+ '<div class="eem-pkg-actions">'
-					+ '<button type="button" class="eem-pkg-edit-btn" data-eem-action="' + type + '-package-edit" data-package-id="' + pkg.id + '" title="Edit"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>'
-					+ '<button type="button" class="eem-row-card-delete" data-eem-action="' + type + '-package-delete" data-package-id="' + pkg.id + '" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>'
-					+ '</div>';
+				div.innerHTML = '<input type="text" class="eem-pkg-name-input" value="' + eemEsc(pkg.name) + '" data-field="name" placeholder="Package name">'
+					+ '<input type="date" class="eem-pkg-date-input" value="' + eemEsc(pkg.start_date || '') + '" data-field="start_date">'
+					+ '<span class="eem-pkg-sep">&ndash;</span>'
+					+ '<input type="date" class="eem-pkg-date-input" value="' + eemEsc(pkg.end_date || '') + '" data-field="end_date">'
+					+ '<div class="eem-pkg-price-wrap"><span class="eem-pkg-price-sym">$</span><input type="number" step="0.01" min="0" class="eem-pkg-price-input" value="' + parseFloat(pkg.price).toFixed(2) + '" data-field="price"></div>'
+					+ '<button type="button" class="eem-row-card-delete" data-eem-action="' + type + '-package-delete" data-package-id="' + pkg.id + '" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>';
 				tbody.appendChild(div);
 
 				var empty = document.getElementById('eem-' + type + '-packages-empty');
@@ -5931,6 +5923,53 @@ function eemEsc(str) {
 	d.textContent = str;
 	return d.innerHTML;
 }
+
+function eemSavePackageInline(input) {
+	var row = input.closest('.eem-pkg-row');
+	if (!row) return;
+	var pkgId = row.dataset.packageId;
+	var type = row.closest('.eem-stall-packages-content') ? 'stall' : 'rv';
+
+	var nameVal = row.querySelector('[data-field="name"]').value.trim();
+	var startVal = row.querySelector('[data-field="start_date"]').value;
+	var endVal = row.querySelector('[data-field="end_date"]').value;
+	var priceVal = row.querySelector('[data-field="price"]').value || '0';
+
+	if (!nameVal) return;
+
+	var fd = new FormData();
+	fd.append('action', 'eem_stay_package_update');
+	fd.append('_wpnonce', eemGetNonce());
+	fd.append('reservation_id', eemGetReservationId());
+	fd.append('type', type);
+	fd.append('package_id', pkgId);
+	fd.append('name', nameVal);
+	fd.append('start_date', startVal);
+	fd.append('end_date', endVal);
+	fd.append('price', priceVal);
+	fd.append('max_quantity', '0');
+
+	fetch(ajaxurl, { method: 'POST', body: fd, credentials: 'same-origin' })
+		.then(function (r) { return r.json(); })
+		.then(function (resp) {
+			if (resp.success) {
+				input.style.borderColor = '';
+			} else {
+				input.style.borderColor = 'var(--eem-red, #d63638)';
+			}
+		});
+}
+
+(function () {
+	var _pkgTimer = null;
+	document.addEventListener('change', function (e) {
+		var row = e.target.closest('.eem-pkg-row');
+		if (row && row.dataset.packageId && (e.target.classList.contains('eem-pkg-name-input') || e.target.classList.contains('eem-pkg-date-input') || e.target.classList.contains('eem-pkg-price-input'))) {
+			clearTimeout(_pkgTimer);
+			_pkgTimer = setTimeout(function () { eemSavePackageInline(e.target); }, 150);
+		}
+	});
+})()
 
 (function () {
 	document.addEventListener('click', function (e) {

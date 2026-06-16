@@ -10613,36 +10613,50 @@ a.eem-dm-view-tab.active:visited {
 /* Group the whole Stay Packages block (table + empty state + Add Package +
    inline form) into one subtly-shaded panel so the options read as a unit,
    set apart from the Pricing Mode toggle above it. */
+.eem-stall-nightly-content,
+.eem-rv-nightly-content { margin-bottom: 16px; }
 .eem-stall-packages-content,
 .eem-rv-packages-content {
 	margin-top: 14px;
+	margin-bottom: 18px;
 	padding: 16px 18px 18px;
 	background: var(--eem-bg-muted, #f6f8fb);
 	border: 1px solid var(--eem-border);
 	border-radius: var(--eem-radius);
 }
-/* ── Package card rows (matching .eem-zone-row pattern) ── */
-.eem-packages-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+/* ── Package rows (zone-row pattern: soft blue border, inline inputs) ── */
+.eem-packages-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
 .eem-pkg-row {
-	display: flex; align-items: center; gap: 10px; padding: 10px 12px;
-	border: 1px solid #8c8f94; border-radius: 4px; background: #fff; flex-wrap: wrap;
+	display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+	border: 1.5px solid #D9E2F2; border-radius: 6px; background: #fff;
 }
-.eem-drag-handle { cursor: grab; color: var(--eem-slate); font-size: 16px; flex-shrink: 0; }
-.eem-pkg-name { font-weight: 600; color: var(--eem-navy); font-size: 13px; white-space: nowrap; }
-.eem-pkg-dates { font-size: 12px; color: var(--eem-text-muted); white-space: nowrap; }
-.eem-pkg-price { font-weight: 600; color: var(--eem-navy); font-size: 13px; white-space: nowrap; }
-.eem-pkg-max-chip {
-	font-size: 11px; font-weight: 600; color: var(--eem-slate); background: var(--eem-bg-muted);
-	padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+input.eem-pkg-name-input {
+	flex: 1 1 180px; min-width: 120px; margin: 0; padding: 7px 10px;
+	border: 1.5px solid #D9E2F2; border-radius: var(--eem-radius-sm);
+	font-size: 13px; font-family: inherit; color: var(--eem-text); background: #fff; outline: none;
 }
-.eem-pkg-actions { display: flex; align-items: center; gap: 6px; margin-left: auto; flex-shrink: 0; }
-.eem-pkg-edit-btn {
-	width: 32px; height: 32px; border-radius: var(--eem-radius, 3px);
-	border: 1px solid var(--eem-border); background: #fff; color: var(--eem-slate);
-	cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+input.eem-pkg-name-input:focus { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
+input.eem-pkg-date-input {
+	width: 130px; flex-shrink: 0; margin: 0; padding: 7px 8px;
+	border: 1.5px solid #D9E2F2; border-radius: var(--eem-radius-sm);
+	font-size: 13px; font-family: inherit; color: var(--eem-text); background: #fff; outline: none;
 }
-.eem-pkg-edit-btn svg { width: 14px; height: 14px; }
-.eem-pkg-edit-btn:hover { background: var(--eem-bg-muted); color: var(--eem-navy); border-color: var(--eem-navy); }
+input.eem-pkg-date-input:focus { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
+.eem-pkg-sep { color: var(--eem-text-muted); font-size: 13px; flex-shrink: 0; }
+.eem-pkg-price-wrap {
+	display: flex; align-items: stretch; border: 1.5px solid #D9E2F2;
+	border-radius: var(--eem-radius, 3px); overflow: hidden; flex-shrink: 0;
+}
+.eem-pkg-price-sym {
+	display: flex; align-items: center; padding: 0 8px;
+	background: #FAFBFE; border: none; border-right: 1.5px solid #D9E2F2;
+	font-size: 13px; color: var(--eem-slate); font-weight: 600;
+}
+input.eem-pkg-price-input {
+	width: 80px; margin: 0; padding: 7px 8px; border: none;
+	font-size: 13px; font-family: inherit; color: var(--eem-text); background: #fff; outline: none;
+}
+input.eem-pkg-price-input:focus { box-shadow: inset 0 0 0 1px var(--eem-electric); }
 .eem-btn-sm:not(.eem-btn-primary):not(.eem-btn-electric) { padding: 3px 10px; font-size: 12px; border: 1px solid var(--eem-border); border-radius: var(--eem-radius); background: #fff; cursor: pointer; color: var(--eem-navy); }
 .eem-btn-sm:not(.eem-btn-primary):not(.eem-btn-electric):hover { background: var(--eem-bg-muted); }
 .eem-btn-sm--danger { color: var(--eem-red, #d63638); border-color: var(--eem-red, #d63638); }

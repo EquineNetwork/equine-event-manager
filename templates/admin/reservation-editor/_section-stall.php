@@ -145,22 +145,16 @@ echo '</div>'; // .eem-stall-nightly-content
 <div id="eem-stall-packages-list-wrap"<?php echo $show_packages ? '' : ' style="display:none"'; ?>>
 	<div class="eem-packages-list" id="eem-stall-packages-tbody">
 		<?php foreach ( $stall_packages as $pkg ) :
-			$_start_fmt = $pkg['start_date'] ? date_i18n( 'm/d', strtotime( $pkg['start_date'] ) ) : '';
-			$_end_fmt   = $pkg['end_date'] ? date_i18n( 'm/d/Y', strtotime( $pkg['end_date'] ) ) : '';
-			$_max_label = (int) $pkg['max_quantity'] > 0 ? sprintf( 'Max %d', (int) $pkg['max_quantity'] ) : '';
+			$_price_fmt = number_format( (float) $pkg['price'], 2, '.', '' );
+			$_max_qty   = (int) $pkg['max_quantity'];
 		?>
-		<div class="eem-pkg-row" data-package-id="<?php echo (int) $pkg['id']; ?>" data-pkg-name="<?php echo esc_attr( $pkg['name'] ); ?>" data-pkg-start="<?php echo esc_attr( $pkg['start_date'] ); ?>" data-pkg-end="<?php echo esc_attr( $pkg['end_date'] ); ?>" data-pkg-price="<?php echo esc_attr( number_format( (float) $pkg['price'], 2, '.', '' ) ); ?>" data-pkg-max-qty="<?php echo esc_attr( (string) ( (int) $pkg['max_quantity'] ) ); ?>">
-			<span class="eem-drag-handle">&#x2630;</span>
-			<span class="eem-pkg-name"><?php echo esc_html( $pkg['name'] ); ?></span>
-			<span class="eem-pkg-dates"><?php echo esc_html( $_start_fmt . ' – ' . $_end_fmt ); ?></span>
-			<span class="eem-pkg-price">$<?php echo esc_html( number_format( (float) $pkg['price'], 2 ) ); ?></span>
-			<?php if ( $_max_label ) : ?>
-			<span class="eem-pkg-max-chip"><?php echo esc_html( $_max_label ); ?></span>
-			<?php endif; ?>
-			<div class="eem-pkg-actions">
-				<button type="button" class="eem-pkg-edit-btn" data-eem-action="stall-package-edit" data-package-id="<?php echo (int) $pkg['id']; ?>" title="<?php esc_attr_e( 'Edit', 'equine-event-manager' ); ?>"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
-				<button type="button" class="eem-row-card-delete" data-eem-action="stall-package-delete" data-package-id="<?php echo (int) $pkg['id']; ?>" title="<?php esc_attr_e( 'Delete', 'equine-event-manager' ); ?>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
-			</div>
+		<div class="eem-pkg-row" data-package-id="<?php echo (int) $pkg['id']; ?>">
+			<input type="text" class="eem-pkg-name-input" value="<?php echo esc_attr( $pkg['name'] ); ?>" data-field="name" placeholder="<?php esc_attr_e( 'Package name', 'equine-event-manager' ); ?>">
+			<input type="date" class="eem-pkg-date-input" value="<?php echo esc_attr( $pkg['start_date'] ); ?>" data-field="start_date">
+			<span class="eem-pkg-sep">&ndash;</span>
+			<input type="date" class="eem-pkg-date-input" value="<?php echo esc_attr( $pkg['end_date'] ); ?>" data-field="end_date">
+			<div class="eem-pkg-price-wrap"><span class="eem-pkg-price-sym">$</span><input type="number" step="0.01" min="0" class="eem-pkg-price-input" value="<?php echo esc_attr( $_price_fmt ); ?>" data-field="price"></div>
+			<button type="button" class="eem-row-card-delete" data-eem-action="stall-package-delete" data-package-id="<?php echo (int) $pkg['id']; ?>" title="<?php esc_attr_e( 'Delete', 'equine-event-manager' ); ?>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
 		</div>
 		<?php endforeach; ?>
 		<div class="eem-empty-cta eem-packages-empty" id="eem-stall-packages-empty"<?php echo empty( $stall_packages ) ? '' : ' style="display:none"'; ?>>
