@@ -562,14 +562,22 @@ ob_start();
 	$r_zone_id   = isset( $row['zone_id'] )    ? (string) $row['zone_id']   : '';
 	$is_b2b      = ( 'back-to-back' === $r_layout );
 	?>
-	<div class="eem-row-card" data-row-index="<?php echo (int) $ri; ?>">
+	<div class="eem-row-card eem-row-card--inline" data-row-index="<?php echo (int) $ri; ?>">
+		<input type="hidden" name="eem_rv_rows[<?php echo (int) $ri; ?>][layout]" value="one-sided">
 		<div class="eem-row-card-top">
-			<div class="eem-row-card-field">
+			<div class="eem-row-card-field" style="flex:2 1 160px">
 				<span class="eem-row-card-field-label"><?php esc_html_e( 'Row Name', 'equine-event-manager' ); ?></span>
 				<input type="text" name="eem_rv_rows[<?php echo (int) $ri; ?>][name]" value="<?php echo esc_attr( $r_name ); ?>" data-eem-input-action="rv-row-input">
 			</div>
-			<input type="hidden" name="eem_rv_rows[<?php echo (int) $ri; ?>][layout]" value="one-sided">
-			<div class="eem-row-card-field eem-row-card-field-layout">
+			<div class="eem-row-card-field" style="flex:1 1 100px">
+				<span class="eem-row-card-field-label"><?php esc_html_e( 'First Lot', 'equine-event-manager' ); ?></span>
+				<input type="text" name="eem_rv_rows[<?php echo (int) $ri; ?>][first]" value="<?php echo esc_attr( $r_first ); ?>" data-role="first" data-eem-input-action="rv-row-input">
+			</div>
+			<div class="eem-row-card-field" style="flex:1 1 100px">
+				<span class="eem-row-card-field-label"><?php esc_html_e( 'Last Lot', 'equine-event-manager' ); ?></span>
+				<input type="text" name="eem_rv_rows[<?php echo (int) $ri; ?>][last]" value="<?php echo esc_attr( $r_last ); ?>" data-role="last" data-eem-input-action="rv-row-input">
+			</div>
+			<div class="eem-row-card-field eem-row-card-field-layout" style="flex:1 1 120px">
 				<span class="eem-row-card-field-label"><?php esc_html_e( 'Zone', 'equine-event-manager' ); ?></span>
 				<select name="eem_rv_rows[<?php echo (int) $ri; ?>][zone_id]" data-eem-input-action="rv-row-input" data-field="zone_id">
 					<option value=""><?php esc_html_e( 'Unassigned', 'equine-event-manager' ); ?></option>
@@ -583,16 +591,6 @@ ob_start();
 			<button class="eem-row-card-delete" type="button" title="<?php esc_attr_e( 'Delete row', 'equine-event-manager' ); ?>" data-eem-action="rv-delete-row">
 				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
 			</button>
-		</div>
-		<div class="eem-row-card-one-sided">
-			<div class="eem-row-card-field">
-				<span class="eem-row-card-field-label"><?php esc_html_e( 'First Lot Label', 'equine-event-manager' ); ?></span>
-				<input type="text" name="eem_rv_rows[<?php echo (int) $ri; ?>][first]" value="<?php echo esc_attr( $r_first ); ?>" data-role="first" data-eem-input-action="rv-row-input">
-			</div>
-			<div class="eem-row-card-field">
-				<span class="eem-row-card-field-label"><?php esc_html_e( 'Last Lot Label', 'equine-event-manager' ); ?></span>
-				<input type="text" name="eem_rv_rows[<?php echo (int) $ri; ?>][last]" value="<?php echo esc_attr( $r_last ); ?>" data-role="last" data-eem-input-action="rv-row-input">
-			</div>
 		</div>
 		<div>
 			<div class="eem-row-card-preview-label"><?php esc_html_e( 'Preview', 'equine-event-manager' ); ?> <span class="eem-row-card-count"></span></div>

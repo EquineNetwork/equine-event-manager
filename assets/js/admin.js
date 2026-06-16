@@ -6834,7 +6834,7 @@ function rvAddRow() {
 	if (!list) return;
 	var idx  = list.querySelectorAll('.eem-row-card').length;
 	var card = document.createElement('div');
-	card.className   = 'eem-row-card';
+	card.className   = 'eem-row-card eem-row-card--inline';
 	card.dataset.rowIndex = idx;
 	/* Build zone options from current zone list */
 	var zoneOpts = '<option value="">Unassigned</option>';
@@ -6844,15 +6844,13 @@ function rvAddRow() {
 		zoneOpts  += '<option value="' + zi + '">' + name + '</option>';
 	});
 	card.innerHTML =
+		'<input type="hidden" name="eem_rv_rows[' + idx + '][layout]" value="one-sided">' +
 		'<div class="eem-row-card-top">' +
-			'<div class="eem-row-card-field"><span class="eem-row-card-field-label">Row Name</span><input type="text" name="eem_rv_rows[' + idx + '][name]" value="" data-eem-input-action="rv-row-input"></div>' +
-			'<input type="hidden" name="eem_rv_rows[' + idx + '][layout]" value="one-sided">' +
-			'<div class="eem-row-card-field eem-row-card-field-layout"><span class="eem-row-card-field-label">Zone</span><select name="eem_rv_rows[' + idx + '][zone_id]" data-eem-input-action="rv-row-input" data-field="zone_id">' + zoneOpts + '</select></div>' +
+			'<div class="eem-row-card-field" style="flex:2 1 160px"><span class="eem-row-card-field-label">Row Name</span><input type="text" name="eem_rv_rows[' + idx + '][name]" value="" data-eem-input-action="rv-row-input"></div>' +
+			'<div class="eem-row-card-field" style="flex:1 1 100px"><span class="eem-row-card-field-label">First Lot</span><input type="text" name="eem_rv_rows[' + idx + '][first]" value="" data-role="first" data-eem-input-action="rv-row-input"></div>' +
+			'<div class="eem-row-card-field" style="flex:1 1 100px"><span class="eem-row-card-field-label">Last Lot</span><input type="text" name="eem_rv_rows[' + idx + '][last]" value="" data-role="last" data-eem-input-action="rv-row-input"></div>' +
+			'<div class="eem-row-card-field eem-row-card-field-layout" style="flex:1 1 120px"><span class="eem-row-card-field-label">Zone</span><select name="eem_rv_rows[' + idx + '][zone_id]" data-eem-input-action="rv-row-input" data-field="zone_id">' + zoneOpts + '</select></div>' +
 			'<button class="eem-row-card-delete" type="button" title="Delete row" data-eem-action="rv-delete-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>' +
-		'</div>' +
-		'<div class="eem-row-card-one-sided">' +
-			'<div class="eem-row-card-field"><span class="eem-row-card-field-label">First Lot Label</span><input type="text" name="eem_rv_rows[' + idx + '][first]" value="" data-role="first" data-eem-input-action="rv-row-input"></div>' +
-			'<div class="eem-row-card-field"><span class="eem-row-card-field-label">Last Lot Label</span><input type="text" name="eem_rv_rows[' + idx + '][last]" value="" data-role="last" data-eem-input-action="rv-row-input"></div>' +
 		'</div>' +
 		'<div><div class="eem-row-card-preview-label">Preview <span class="eem-row-card-count"></span></div><div class="eem-stall-row-layout"></div></div>';
 	list.appendChild(card);
