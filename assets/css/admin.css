@@ -10275,31 +10275,14 @@ a.eem-event-editor-card__quicklink:hover { color: #1257d1; }
 	text-transform: uppercase;
 	letter-spacing: 0.05em;
 }
-.eem-dm-toolbar-date-wrap {
-	display: flex;
-	align-items: stretch;
+.eem-dm-cell-order a {
+	color: var(--eem-electric, #1668F2);
+	text-decoration: none;
+	font-weight: 500;
 }
-input.eem-dm-toolbar-date-input {
-	border-top-right-radius: 0;
-	border-bottom-right-radius: 0;
-	border-right: none;
-	height: 40px;
-	box-sizing: border-box;
-	margin: 0;
-}
-.eem-dm-toolbar-go {
-	border-top-left-radius: 0;
-	border-bottom-left-radius: 0;
-	border-top-right-radius: var(--eem-radius, 3px);
-	border-bottom-right-radius: var(--eem-radius, 3px);
-	border-left: none;
-	white-space: nowrap;
-	height: 40px;
-	box-sizing: border-box;
-	margin: 0;
-	padding-top: 0;
-	padding-bottom: 0;
-	line-height: 40px;
+.eem-dm-cell-order a:hover {
+	color: var(--eem-navy, #031B4E);
+	text-decoration: none;
 }
 
 /* ── View tabs (Today / All Days) — underline style matching stall chart view tabs */
@@ -10541,13 +10524,6 @@ a.eem-dm-view-tab.active:visited {
 	}
 	.eem-dm-toolbar-group select {
 		width: 100%;
-	}
-	.eem-dm-toolbar-date-wrap {
-		width: 100%;
-	}
-	.eem-dm-toolbar-date-input {
-		flex: 1;
-		min-width: 0;
 	}
 	.eem-dm-view-tabs {
 		padding: 0 14px;

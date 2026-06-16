@@ -59,20 +59,25 @@ class EEM_Daily_Movement_Page {
 		$report_date = '';
 
 		if ( $reservation_id > 0 ) {
-			if ( 'all' === $view ) {
-				$reports = EEM_Daily_Movement_Service::build_all_dates_report( $reservation_id );
-			} elseif ( '' !== $date ) {
+			if ( '' !== $date ) {
 				$reports     = array( EEM_Daily_Movement_Service::build_date_report( $reservation_id, $date ) );
 				$report_date = $date;
-			} else {
+				$view        = 'date';
+			} elseif ( 'today' === $view ) {
 				$today       = wp_date( 'Y-m-d' );
 				$reports     = array( EEM_Daily_Movement_Service::build_date_report( $reservation_id, $today ) );
 				$report_date = $today;
+			} else {
+				$reports = EEM_Daily_Movement_Service::build_all_dates_report( $reservation_id );
+				$view    = 'all';
 			}
 		}
 
+		$available_dates   = $reservation_id > 0 ? EEM_Daily_Movement_Service::get_available_dates( $reservation_id ) : array();
 		$reservation_title = $reservation_id > 0 ? get_the_title( $reservation_id ) : '';
 		$totals            = self::compute_totals( $reports );
+
+		$order_map = self::build_order_map( $reports );
 
 		$print_url = add_query_arg( array(
 			'page'           => self::MENU_SLUG,
@@ -97,7 +102,7 @@ class EEM_Daily_Movement_Page {
 		) );
 
 		self::render_stat_cards( $totals );
-		self::render_toolbar( $reservations, $reservation_id, $date );
+		self::render_toolbar( $reservations, $reservation_id, $date, $available_dates );
 		self::render_view_tabs( $reservation_id, $view, $date );
 
 		if ( empty( $reservations ) ) {
@@ -107,7 +112,7 @@ class EEM_Daily_Movement_Page {
 		} else {
 			self::render_print_header( $reservation_title, $reports, $view, $report_date );
 			foreach ( $reports as $report ) {
-				self::render_date_section( $report, 'all' === $view );
+				self::render_date_section( $report, 'all' === $view, $order_map );
 			}
 		}
 
@@ -140,15 +145,17 @@ class EEM_Daily_Movement_Page {
 		$report_date = '';
 
 		if ( $reservation_id > 0 ) {
-			if ( 'all' === $view ) {
-				$reports = EEM_Daily_Movement_Service::build_all_dates_report( $reservation_id );
-			} elseif ( '' !== $date ) {
+			if ( '' !== $date ) {
 				$reports     = array( EEM_Daily_Movement_Service::build_date_report( $reservation_id, $date ) );
 				$report_date = $date;
-			} else {
+				$view        = 'date';
+			} elseif ( 'today' === $view ) {
 				$today       = wp_date( 'Y-m-d' );
 				$reports     = array( EEM_Daily_Movement_Service::build_date_report( $reservation_id, $today ) );
 				$report_date = $today;
+			} else {
+				$reports = EEM_Daily_Movement_Service::build_all_dates_report( $reservation_id );
+				$view    = 'all';
 			}
 		}
 
@@ -389,14 +396,16 @@ class EEM_Daily_Movement_Page {
 	}
 
 	/**
-	 * Render the toolbar: reservation selector + date picker + Go on one row.
+	 * Render the toolbar: reservation selector + date dropdown.
 	 *
-	 * @param WP_Post[] $reservations Available reservations.
+	 * @param WP_Post[] $reservations   Available reservations.
 	 * @param int       $reservation_id Selected reservation ID.
-	 * @param string    $date Selected date.
+	 * @param string    $date           Selected date (Y-m-d).
+	 * @param string[]  $available_dates All dates with movement for the reservation.
 	 * @return void
 	 */
-	private static function render_toolbar( array $reservations, int $reservation_id, string $date ): void {
+	private static function render_toolbar( array $reservations, int $reservation_id, string $date, array $available_dates = array() ): void {
+		$base_url = admin_url( 'admin.php?page=' . self::MENU_SLUG . '&reservation_id=' . $reservation_id );
 		?>
 		<div class="eem-dm-toolbar">
 			<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>" class="eem-dm-toolbar-form">
@@ -415,10 +424,14 @@ class EEM_Daily_Movement_Page {
 
 				<div class="eem-dm-toolbar-group">
 					<label class="eem-dm-toolbar-label" for="eem-dm-date"><?php esc_html_e( 'Date', 'equine-event-manager' ); ?></label>
-					<div class="eem-dm-toolbar-date-wrap">
-						<input type="date" name="date" id="eem-dm-date" class="eem-field-input eem-dm-toolbar-date-input" value="<?php echo esc_attr( $date ); ?>">
-						<button type="submit" class="eem-btn eem-btn-electric eem-dm-toolbar-go"><?php esc_html_e( 'Go', 'equine-event-manager' ); ?></button>
-					</div>
+					<select name="date" id="eem-dm-date" class="eem-field-select" onchange="this.form.submit()">
+						<option value=""><?php esc_html_e( 'All Days', 'equine-event-manager' ); ?></option>
+						<?php foreach ( $available_dates as $d ) : ?>
+							<option value="<?php echo esc_attr( $d ); ?>" <?php selected( $date, $d ); ?>>
+								<?php echo esc_html( EEM_Daily_Movement_Service::format_display_date( $d ) ); ?>
+							</option>
+						<?php endforeach; ?>
+					</select>
 				</div>
 			</form>
 		</div>
@@ -483,11 +496,12 @@ class EEM_Daily_Movement_Page {
 	/**
 	 * Render a single date's movement section.
 	 *
-	 * @param array $report     Report data from the service.
-	 * @param bool  $show_date  Whether to show the date heading.
+	 * @param array                        $report    Report data from the service.
+	 * @param bool                         $show_date Whether to show the date heading.
+	 * @param array<string, array|null>    $order_map Order key → order data map.
 	 * @return void
 	 */
-	private static function render_date_section( array $report, bool $show_date ): void {
+	private static function render_date_section( array $report, bool $show_date, array $order_map = array() ): void {
 		?>
 		<div class="eem-dm-date-section">
 			<?php if ( $show_date ) : ?>
@@ -513,12 +527,12 @@ class EEM_Daily_Movement_Page {
 
 			<?php if ( ! empty( $report['arriving'] ) ) : ?>
 				<h4 class="eem-dm-group-heading"><?php esc_html_e( 'Arriving', 'equine-event-manager' ); ?></h4>
-				<?php self::render_table( $report['arriving'] ); ?>
+				<?php self::render_table( $report['arriving'], $order_map ); ?>
 			<?php endif; ?>
 
 			<?php if ( ! empty( $report['departing'] ) ) : ?>
 				<h4 class="eem-dm-group-heading"><?php esc_html_e( 'Departing', 'equine-event-manager' ); ?></h4>
-				<?php self::render_table( $report['departing'] ); ?>
+				<?php self::render_table( $report['departing'], $order_map ); ?>
 			<?php endif; ?>
 		</div>
 		<?php
@@ -527,10 +541,11 @@ class EEM_Daily_Movement_Page {
 	/**
 	 * Render the movement data table.
 	 *
-	 * @param array $rows Shaped movement rows.
+	 * @param array                     $rows      Shaped movement rows.
+	 * @param array<string, array|null> $order_map Order key → order data map.
 	 * @return void
 	 */
-	private static function render_table( array $rows ): void {
+	private static function render_table( array $rows, array $order_map = array() ): void {
 		usort( $rows, function ( $a, $b ) {
 			$a_stalls = implode( ',', $a['stall_numbers'] );
 			$b_stalls = implode( ',', $b['stall_numbers'] );
@@ -542,6 +557,7 @@ class EEM_Daily_Movement_Page {
 				<tr>
 					<th><?php esc_html_e( 'Stall #', 'equine-event-manager' ); ?></th>
 					<th><?php esc_html_e( 'Customer', 'equine-event-manager' ); ?></th>
+					<th><?php esc_html_e( 'Order #', 'equine-event-manager' ); ?></th>
 					<th><?php esc_html_e( 'Dates', 'equine-event-manager' ); ?></th>
 					<th><?php esc_html_e( 'Shavings', 'equine-event-manager' ); ?></th>
 					<th><?php esc_html_e( 'Status', 'equine-event-manager' ); ?></th>
@@ -549,10 +565,24 @@ class EEM_Daily_Movement_Page {
 				</tr>
 			</thead>
 			<tbody>
-				<?php foreach ( $rows as $row ) : ?>
+				<?php foreach ( $rows as $row ) :
+					$order_key = isset( $row['order_key'] ) ? (string) $row['order_key'] : '';
+					$order     = '' !== $order_key && isset( $order_map[ $order_key ] ) ? $order_map[ $order_key ] : null;
+				?>
 					<tr>
 						<td class="eem-dm-cell-stall"><?php echo esc_html( implode( ', ', $row['stall_numbers'] ) ?: '—' ); ?></td>
 						<td><?php echo esc_html( $row['customer_name'] ); ?></td>
+						<td class="eem-dm-cell-order">
+							<?php if ( $order ) :
+								$order_number = isset( $order['order_number'] ) ? (string) $order['order_number'] : '';
+								$display      = EEM_Orders_List_Page::format_order_number_display( $order_number );
+								$url          = EEM_Orders_List_Page::order_detail_url( $order_key );
+							?>
+								<a href="<?php echo esc_url( $url ); ?>"><?php echo esc_html( $display ); ?></a>
+							<?php else : ?>
+								—
+							<?php endif; ?>
+						</td>
 						<td class="eem-dm-cell-dates">
 							<?php
 							echo esc_html(
@@ -595,5 +625,39 @@ class EEM_Daily_Movement_Page {
 		$class = 'eem-dm-status-' . sanitize_html_class( $status );
 
 		return '<span class="eem-dm-status ' . esc_attr( $class ) . '">' . esc_html( $label ) . '</span>';
+	}
+
+	/**
+	 * Collect unique order keys from reports and batch-resolve to grouped orders.
+	 *
+	 * @param array[] $reports Report arrays from the service.
+	 * @return array<string, array|null> Order key → grouped order (or null).
+	 */
+	private static function build_order_map( array $reports ): array {
+		$keys = array();
+		foreach ( $reports as $report ) {
+			foreach ( array_merge( $report['arriving'] ?? array(), $report['departing'] ?? array() ) as $row ) {
+				$k = isset( $row['order_key'] ) ? (string) $row['order_key'] : '';
+				if ( '' !== $k ) {
+					$keys[ $k ] = true;
+				}
+			}
+		}
+
+		if ( empty( $keys ) ) {
+			return array();
+		}
+
+		require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-orders-repository.php';
+		$repo   = new EEM_Orders_Repository();
+		$orders = $repo->get_orders_by_keys( array_keys( $keys ) );
+		$map    = array();
+		foreach ( $orders as $order ) {
+			$k = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
+			if ( '' !== $k ) {
+				$map[ $k ] = $order;
+			}
+		}
+		return $map;
 	}
 }
