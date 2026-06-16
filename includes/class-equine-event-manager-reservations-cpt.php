@@ -1611,6 +1611,14 @@ class EEM_Reservations_CPT {
 
 		$values['event_source'] = $this->get_effective_event_source( $values );
 
+		// Expose the reservation ID for section templates that need it (e.g. Stay Packages query).
+		$values['_reservation_id'] = (int) $post_id;
+
+		// Stay Packages pricing mode (stored in wp_eem_reservation_config, not post meta).
+		$cfg = EEM_Reservation_Config::for( (int) $post_id );
+		$values['stall_pricing_mode'] = $cfg->get( 'stall_pricing_mode' ) ?: 'nightly';
+		$values['rv_pricing_mode']    = $cfg->get( 'rv_pricing_mode' ) ?: 'nightly';
+
 		// Scenario B (V1 #4): resolve the inventory-type / customer-selection pair
 		// (new keys win; else derived from the legacy mode for pre-migration
 		// reservations) and re-derive the legacy selection_mode from the pair so

@@ -1094,6 +1094,18 @@ class EEM_Reservation_Editor_Page {
 			$cfg = EEM_Reservation_Config::for( $reservation_id );
 		}
 
+		// ── Stay Packages pricing mode (stored in reservation_config) ──
+		if ( isset( $_POST['en_reservation']['stall_pricing_mode'] ) ) {
+			$spm = in_array( $_POST['en_reservation']['stall_pricing_mode'], array( 'nightly', 'packages' ), true )
+				? $_POST['en_reservation']['stall_pricing_mode'] : 'nightly';
+			$cfg->set( 'stall_pricing_mode', $spm )->save();
+		}
+		if ( isset( $_POST['en_reservation']['rv_pricing_mode'] ) ) {
+			$rpm = in_array( $_POST['en_reservation']['rv_pricing_mode'], array( 'nightly', 'packages' ), true )
+				? $_POST['en_reservation']['rv_pricing_mode'] : 'nightly';
+			$cfg->set( 'rv_pricing_mode', $rpm )->save();
+		}
+
 		// ── C8 mapped-layout meta (not routed through en_reservation[]) ──
 
 		// Stall rows — update whenever the row builder was on the page (sentinel
@@ -1543,5 +1555,178 @@ class EEM_Reservation_Editor_Page {
 		</div>
 		<?php
 		eem_render_page_close();
+	}
+
+	/* ─────────────────────────────────────────────────────────────────────────
+	 * Stay Packages CRUD AJAX handlers.
+	 * Each operates independently of the bulk form save.
+	 * ───────────────────────────────────────────────────────────────────────── */
+
+	/**
+	 * Add a new stay package.
+	 *
+	 * @return void Sends JSON response.
+	 */
+	public static function ajax_stay_package_add(): void {
+		check_ajax_referer( 'eem_reservation_editor', '_wpnonce' );
+
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+
+		$reservation_id = (int) ( $_POST['reservation_id'] ?? 0 );
+		if ( ! $reservation_id || 'en_reservation' !== get_post_type( $reservation_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid reservation.', 'equine-event-manager' ) ), 400 );
+		}
+
+		$name       = sanitize_text_field( wp_unslash( $_POST['name'] ?? '' ) );
+		$start_date = sanitize_text_field( $_POST['start_date'] ?? '' );
+		$end_date   = sanitize_text_field( $_POST['end_date'] ?? '' );
+		$price      = (float) ( $_POST['price'] ?? 0 );
+		$max_qty    = (int) ( $_POST['max_quantity'] ?? 0 );
+		$type       = sanitize_key( $_POST['type'] ?? 'stall' );
+
+		if ( '' === $name || '' === $start_date || '' === $end_date ) {
+			wp_send_json_error( array( 'message' => __( 'Name, start date, and end date are required.', 'equine-event-manager' ) ), 422 );
+		}
+
+		if ( strtotime( $end_date ) <= strtotime( $start_date ) ) {
+			wp_send_json_error( array( 'message' => __( 'End date must be after start date.', 'equine-event-manager' ) ), 422 );
+		}
+
+		// Overlap check (strict: start < other_end AND end > other_start).
+		$existing = EEM_Stay_Packages_Repo::get_packages( $reservation_id, $type );
+		foreach ( $existing as $pkg ) {
+			if ( strtotime( $start_date ) < strtotime( $pkg['end_date'] ) && strtotime( $end_date ) > strtotime( $pkg['start_date'] ) ) {
+				wp_send_json_error( array( 'message' => sprintf(
+					/* translators: %s: overlapping package name */
+					__( 'Dates overlap with "%s".', 'equine-event-manager' ),
+					$pkg['name']
+				) ), 422 );
+			}
+		}
+
+		$sort_order = count( $existing );
+
+		$id = EEM_Stay_Packages_Repo::insert( array(
+			'reservation_id' => $reservation_id,
+			'type'           => $type,
+			'name'           => $name,
+			'start_date'     => $start_date,
+			'end_date'       => $end_date,
+			'price'          => $price,
+			'sort_order'     => $sort_order,
+			'max_quantity'   => $max_qty,
+		) );
+
+		if ( ! $id ) {
+			wp_send_json_error( array( 'message' => __( 'Database error.', 'equine-event-manager' ) ), 500 );
+		}
+
+		wp_send_json_success( array(
+			'package' => EEM_Stay_Packages_Repo::get( $id ),
+		) );
+	}
+
+	/**
+	 * Update an existing stay package.
+	 *
+	 * @return void
+	 */
+	public static function ajax_stay_package_update(): void {
+		check_ajax_referer( 'eem_reservation_editor', '_wpnonce' );
+
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+
+		$package_id     = (int) ( $_POST['package_id'] ?? 0 );
+		$reservation_id = (int) ( $_POST['reservation_id'] ?? 0 );
+
+		$pkg = EEM_Stay_Packages_Repo::get( $package_id );
+		if ( ! $pkg || (int) $pkg['reservation_id'] !== $reservation_id ) {
+			wp_send_json_error( array( 'message' => __( 'Package not found.', 'equine-event-manager' ) ), 404 );
+		}
+
+		$data = array();
+		if ( isset( $_POST['name'] ) )         $data['name']         = sanitize_text_field( wp_unslash( $_POST['name'] ) );
+		if ( isset( $_POST['start_date'] ) )   $data['start_date']   = sanitize_text_field( $_POST['start_date'] );
+		if ( isset( $_POST['end_date'] ) )     $data['end_date']     = sanitize_text_field( $_POST['end_date'] );
+		if ( isset( $_POST['price'] ) )        $data['price']        = (float) $_POST['price'];
+		if ( isset( $_POST['max_quantity'] ) ) $data['max_quantity'] = (int) $_POST['max_quantity'];
+
+		$s = $data['start_date'] ?? $pkg['start_date'];
+		$e = $data['end_date']   ?? $pkg['end_date'];
+		if ( strtotime( $e ) <= strtotime( $s ) ) {
+			wp_send_json_error( array( 'message' => __( 'End date must be after start date.', 'equine-event-manager' ) ), 422 );
+		}
+
+		// Overlap check excluding self.
+		$existing = EEM_Stay_Packages_Repo::get_packages( $reservation_id, $pkg['type'] );
+		foreach ( $existing as $other ) {
+			if ( (int) $other['id'] === $package_id ) continue;
+			if ( strtotime( $s ) < strtotime( $other['end_date'] ) && strtotime( $e ) > strtotime( $other['start_date'] ) ) {
+				wp_send_json_error( array( 'message' => sprintf(
+					__( 'Dates overlap with "%s".', 'equine-event-manager' ),
+					$other['name']
+				) ), 422 );
+			}
+		}
+
+		EEM_Stay_Packages_Repo::update( $package_id, $data );
+
+		wp_send_json_success( array(
+			'package' => EEM_Stay_Packages_Repo::get( $package_id ),
+		) );
+	}
+
+	/**
+	 * Delete a stay package.
+	 *
+	 * @return void
+	 */
+	public static function ajax_stay_package_delete(): void {
+		check_ajax_referer( 'eem_reservation_editor', '_wpnonce' );
+
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+
+		$package_id     = (int) ( $_POST['package_id'] ?? 0 );
+		$reservation_id = (int) ( $_POST['reservation_id'] ?? 0 );
+
+		$pkg = EEM_Stay_Packages_Repo::get( $package_id );
+		if ( ! $pkg || (int) $pkg['reservation_id'] !== $reservation_id ) {
+			wp_send_json_error( array( 'message' => __( 'Package not found.', 'equine-event-manager' ) ), 404 );
+		}
+
+		EEM_Stay_Packages_Repo::delete( $package_id );
+
+		wp_send_json_success();
+	}
+
+	/**
+	 * Reorder stay packages (drag & drop).
+	 *
+	 * @return void
+	 */
+	public static function ajax_stay_package_reorder(): void {
+		check_ajax_referer( 'eem_reservation_editor', '_wpnonce' );
+
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+
+		$reservation_id = (int) ( $_POST['reservation_id'] ?? 0 );
+		$order_raw      = $_POST['order'] ?? array();
+		$ordered_ids    = array_map( 'intval', (array) $order_raw );
+
+		if ( ! $reservation_id || empty( $ordered_ids ) ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid parameters.', 'equine-event-manager' ) ), 400 );
+		}
+
+		EEM_Stay_Packages_Repo::reorder( $reservation_id, $ordered_ids );
+
+		wp_send_json_success();
 	}
 }

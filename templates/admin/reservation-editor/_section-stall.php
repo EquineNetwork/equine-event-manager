@@ -36,8 +36,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_partial-field-row.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_partial-toggle-label-row.php';
-require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_partial-stay-type-pair.php';
-
 // Format helpers
 $fmt_dt = function ( $v ) {
 	if ( '' === (string) $v ) return '';
@@ -48,12 +46,11 @@ $fmt_dt = function ( $v ) {
 $fmt_money = function ( $v ) { return number_format( (float) $v, 2, '.', '' ); };
 
 // Initial state
-$nightly_on   = ! empty( $data['stall_nightly_enabled'] );
-$weekend_on   = ! empty( $data['stall_weekend_enabled'] );
-$weekly_on    = ! empty( $data['stall_weekly_enabled'] );
 $schedule_on  = ! empty( $data['stall_schedule_enabled'] );
 $eb_on        = ! empty( $data['stall_early_bird_enabled'] );
 $shavings_on  = ! empty( $data['required_shavings_enabled'] );
+$stall_pricing_mode = isset( $data['stall_pricing_mode'] ) ? (string) $data['stall_pricing_mode'] : 'nightly';
+$stall_packages     = EEM_Stay_Packages_Repo::get_packages( (int) ( $data['_reservation_id'] ?? get_the_ID() ), 'stall' );
 // Tack Stall mode — 'customer' (on: buyers flag a tack stall at checkout, for
 // the shavings exclusion) or 'off'. The actual tack assignment is done by the
 // admin on the Stall Chart ("Mark as Tack Stall"). The legacy 'admin' value is
@@ -85,59 +82,38 @@ eem_render_editor_field_row( array(
 	),
 ) );
 
-// 3. Stay Types pair
+// 3a. Pricing Mode radio (above stay-type toggles)
+$is_packages_mode = ( 'packages' === $stall_pricing_mode );
 ob_start();
-eem_render_editor_stay_type_pair( array(
-	'group_label'      => __( 'Stall stay types', 'equine-event-manager' ),
-	'group_slug'       => 'stall-stay',
-	'nightly_name'     => 'stall_nightly_enabled',
-	'nightly_label'    => __( 'Nightly', 'equine-event-manager' ),
-	'nightly_on'       => $nightly_on,
-	'nightly_controls' => array( 'row-stall-rate-nightly', 'row-stall-eb-nightly' ),
-	'weekend_name'     => 'stall_weekend_enabled',
-	'weekend_label'    => __( 'Weekend Rate', 'equine-event-manager' ),
-	'weekend_on'       => $weekend_on,
-	'weekend_controls' => array( 'row-stall-weekend-dates', 'row-stall-rate-weekend', 'row-stall-eb-weekend' ),
-	'weekly_name'      => 'stall_weekly_enabled',
-	'weekly_label'     => __( 'Weekly Rate', 'equine-event-manager' ),
-	'weekly_on'        => $weekly_on,
-	'weekly_controls'  => array( 'row-stall-weekly-dates', 'row-stall-rate-weekly', 'row-stall-eb-weekly' ),
-) );
-$stay_html = ob_get_clean();
+?>
+<div class="eem-mode-btns">
+	<button type="button"
+		class="eem-mode-btn<?php echo ! $is_packages_mode ? ' active' : ''; ?>"
+		data-pricing-mode="nightly"
+		data-eem-action="toggle-stall-pricing-mode">
+		<?php esc_html_e( 'Nightly Rate', 'equine-event-manager' ); ?>
+	</button>
+	<button type="button"
+		class="eem-mode-btn<?php echo $is_packages_mode ? ' active' : ''; ?>"
+		data-pricing-mode="packages"
+		data-eem-action="toggle-stall-pricing-mode">
+		<?php esc_html_e( 'Stay Packages', 'equine-event-manager' ); ?>
+	</button>
+</div>
+<input type="hidden" name="en_reservation[stall_pricing_mode]" id="eem-stall-pricing-mode-input" value="<?php echo esc_attr( $stall_pricing_mode ); ?>">
+<?php
+$pricing_mode_html = (string) ob_get_clean();
 eem_render_editor_field_row( array(
-	'label'        => __( 'Stay Types', 'equine-event-manager' ),
-	'label_sub'    => __( 'Enable one or both', 'equine-event-manager' ),
-	'control_html' => $stay_html,
-	'hint'         => __( 'Weekend Rate and Weekly Rate each use their own package dates configured below.', 'equine-event-manager' ),
+	'label'        => __( 'Pricing Mode', 'equine-event-manager' ),
+	'label_sub'    => __( 'How customers pay for stalls', 'equine-event-manager' ),
+	'control_html' => $pricing_mode_html,
+	'hint'         => __( 'Nightly Rate: single price per night with date picker. Stay Packages: named packages with fixed dates and prices.', 'equine-event-manager' ),
 ) );
 
-// 4. Weekend Package Dates (conditional)
-eem_render_editor_field_row( array(
-	'label'        => __( 'Weekend Package Dates', 'equine-event-manager' ),
-	'row_id'       => 'row-stall-weekend-dates',
-	'is_hidden'    => ! $weekend_on,
-	'control_html' => sprintf(
-		'<div class="eem-date-range"><span style="font-size:12px;color:#6B7A99;padding-top:9px">%s</span><input class="eem-field-input" type="date" name="en_reservation[stall_weekend_package_start_date]" value="%s" style="width:160px" /><span style="font-size:12px;color:#6B7A99;padding-top:9px">%s</span><input class="eem-field-input" type="date" name="en_reservation[stall_weekend_package_end_date]" value="%s" style="width:160px" /></div>',
-		esc_html__( 'Start', 'equine-event-manager' ),
-		esc_attr( (string) $data['stall_weekend_package_start_date'] ),
-		esc_html__( 'End', 'equine-event-manager' ),
-		esc_attr( (string) $data['stall_weekend_package_end_date'] )
-	),
-) );
-
-// 4b. Weekly Package Dates (conditional)
-eem_render_editor_field_row( array(
-	'label'        => __( 'Weekly Package Dates', 'equine-event-manager' ),
-	'row_id'       => 'row-stall-weekly-dates',
-	'is_hidden'    => ! $weekly_on,
-	'control_html' => sprintf(
-		'<div class="eem-date-range"><span style="font-size:12px;color:#6B7A99;padding-top:9px">%s</span><input class="eem-field-input" type="date" name="en_reservation[stall_weekly_package_start_date]" value="%s" style="width:160px" /><span style="font-size:12px;color:#6B7A99;padding-top:9px">%s</span><input class="eem-field-input" type="date" name="en_reservation[stall_weekly_package_end_date]" value="%s" style="width:160px" /></div>',
-		esc_html__( 'Start', 'equine-event-manager' ),
-		esc_attr( (string) ( $data['stall_weekly_package_start_date'] ?? '' ) ),
-		esc_html__( 'End', 'equine-event-manager' ),
-		esc_attr( (string) ( $data['stall_weekly_package_end_date'] ?? '' ) )
-	),
-) );
+// ── Nightly-mode content (hidden when pricing mode = packages) ──
+echo '<div class="eem-stall-nightly-content" id="eem-stall-nightly-content"' . ( $is_packages_mode ? ' style="display:none"' : '' ) . '>';
+// Hidden mirror — always-on nightly when in nightly mode (backend still checks this key)
+echo '<input type="hidden" name="en_reservation[stall_nightly_enabled]" value="1">';
 
 // 5. Reservation Schedule toggle
 ob_start();
@@ -175,34 +151,12 @@ eem_render_editor_field_row( array(
 	),
 ) );
 
-// 9 + 10. Nightly + Weekend rates (conditional on stay-type)
-// UX polish 2.3.23: rates + EB + shavings now appear before inventory controls
-// so the admin's mental flow is: pricing → then "how many / which mode?".
+// 9. Nightly Rate
 eem_render_editor_field_row( array(
 	'label'        => __( 'Stall Nightly Rate', 'equine-event-manager' ),
-	'row_id'       => 'row-stall-rate-nightly',
-	'is_hidden'    => ! $nightly_on,
 	'control_html' => sprintf(
 		'<div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[stall_nightly_rate]" value="%s" /></div>',
 		esc_attr( $fmt_money( $data['stall_nightly_rate'] ) )
-	),
-) );
-eem_render_editor_field_row( array(
-	'label'        => __( 'Stall Weekend Rate', 'equine-event-manager' ),
-	'row_id'       => 'row-stall-rate-weekend',
-	'is_hidden'    => ! $weekend_on,
-	'control_html' => sprintf(
-		'<div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[stall_weekend_rate]" value="%s" /></div>',
-		esc_attr( $fmt_money( $data['stall_weekend_rate'] ) )
-	),
-) );
-eem_render_editor_field_row( array(
-	'label'        => __( 'Stall Weekly Rate', 'equine-event-manager' ),
-	'row_id'       => 'row-stall-rate-weekly',
-	'is_hidden'    => ! $weekly_on,
-	'control_html' => sprintf(
-		'<div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[stall_weekly_rate]" value="%s" /></div>',
-		esc_attr( $fmt_money( $data['stall_weekly_rate'] ?? '0.00' ) )
 	),
 ) );
 
@@ -213,7 +167,7 @@ eem_render_editor_toggle_label_row( array(
 	'subsection' => 'stall-eb',
 	'label'      => __( 'Enable stall early bird pricing', 'equine-event-manager' ),
 	'is_enabled' => $eb_on,
-	'controls'   => array( 'row-stall-eb-cutoff', 'row-stall-eb-nightly', 'row-stall-eb-weekend', 'row-stall-eb-weekly' ),
+	'controls'   => array( 'row-stall-eb-cutoff', 'row-stall-eb-nightly' ),
 ) );
 $eb_html = ob_get_clean();
 eem_render_editor_field_row( array(
@@ -234,30 +188,89 @@ eem_render_editor_field_row( array(
 eem_render_editor_field_row( array(
 	'label'        => __( 'Early Bird Nightly Rate', 'equine-event-manager' ),
 	'row_id'       => 'row-stall-eb-nightly',
-	'is_hidden'    => ! ( $eb_on && $nightly_on ),
+	'is_hidden'    => ! $eb_on,
 	'control_html' => sprintf(
 		'<div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[stall_early_bird_nightly_rate]" value="%s" /></div>',
 		esc_attr( $fmt_money( $data['stall_early_bird_nightly_rate'] ) )
 	),
 ) );
-eem_render_editor_field_row( array(
-	'label'        => __( 'Early Bird Weekend Rate', 'equine-event-manager' ),
-	'row_id'       => 'row-stall-eb-weekend',
-	'is_hidden'    => ! ( $eb_on && $weekend_on ),
-	'control_html' => sprintf(
-		'<div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[stall_early_bird_weekend_rate]" value="%s" /></div>',
-		esc_attr( $fmt_money( $data['stall_early_bird_weekend_rate'] ) )
-	),
-) );
-eem_render_editor_field_row( array(
-	'label'        => __( 'Early Bird Weekly Rate', 'equine-event-manager' ),
-	'row_id'       => 'row-stall-eb-weekly',
-	'is_hidden'    => ! ( $eb_on && $weekly_on ),
-	'control_html' => sprintf(
-		'<div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[stall_early_bird_weekly_rate]" value="%s" /></div>',
-		esc_attr( $fmt_money( $data['stall_early_bird_weekly_rate'] ?? '0.00' ) )
-	),
-) );
+
+echo '</div>'; // .eem-stall-nightly-content
+
+// ── Packages-mode content (hidden when pricing mode = nightly) ──
+?>
+<div class="eem-stall-packages-content" id="eem-stall-packages-content"<?php echo $is_packages_mode ? '' : ' style="display:none"'; ?>>
+	<div class="eem-packages-table-wrap">
+		<table class="eem-packages-table" id="eem-stall-packages-table">
+			<thead>
+				<tr>
+					<th class="eem-packages-col-drag"></th>
+					<th><?php esc_html_e( 'Name', 'equine-event-manager' ); ?></th>
+					<th><?php esc_html_e( 'Start Date', 'equine-event-manager' ); ?></th>
+					<th><?php esc_html_e( 'End Date', 'equine-event-manager' ); ?></th>
+					<th><?php esc_html_e( 'Price', 'equine-event-manager' ); ?></th>
+					<th><?php esc_html_e( 'Max Qty', 'equine-event-manager' ); ?></th>
+					<th class="eem-packages-col-actions"></th>
+				</tr>
+			</thead>
+			<tbody id="eem-stall-packages-tbody">
+				<?php foreach ( $stall_packages as $pkg ) : ?>
+				<tr data-package-id="<?php echo (int) $pkg['id']; ?>">
+					<td class="eem-packages-col-drag"><span class="eem-drag-handle">&#x2630;</span></td>
+					<td><?php echo esc_html( $pkg['name'] ); ?></td>
+					<td><?php echo esc_html( $pkg['start_date'] ); ?></td>
+					<td><?php echo esc_html( $pkg['end_date'] ); ?></td>
+					<td>$<?php echo esc_html( number_format( (float) $pkg['price'], 2 ) ); ?></td>
+					<td><?php echo (int) $pkg['max_quantity'] > 0 ? (int) $pkg['max_quantity'] : '&mdash;'; ?></td>
+					<td class="eem-packages-col-actions">
+						<button type="button" class="eem-btn-sm" data-eem-action="stall-package-edit" data-package-id="<?php echo (int) $pkg['id']; ?>"><?php esc_html_e( 'Edit', 'equine-event-manager' ); ?></button>
+						<button type="button" class="eem-btn-sm eem-btn-sm--danger" data-eem-action="stall-package-delete" data-package-id="<?php echo (int) $pkg['id']; ?>"><?php esc_html_e( 'Delete', 'equine-event-manager' ); ?></button>
+					</td>
+				</tr>
+				<?php endforeach; ?>
+			</tbody>
+		</table>
+		<?php if ( empty( $stall_packages ) ) : ?>
+		<p class="eem-packages-empty" id="eem-stall-packages-empty"><?php esc_html_e( 'No packages yet. Click "+ Add Package" to create one.', 'equine-event-manager' ); ?></p>
+		<?php endif; ?>
+	</div>
+
+	<div class="eem-package-inline-form" id="eem-stall-package-form" style="display:none">
+		<div class="eem-package-form-fields">
+			<div class="eem-package-form-field">
+				<label><?php esc_html_e( 'Name', 'equine-event-manager' ); ?></label>
+				<input type="text" class="eem-field-input" id="eem-stall-pkg-name" placeholder="<?php esc_attr_e( 'e.g. Week 1, Full Event', 'equine-event-manager' ); ?>">
+			</div>
+			<div class="eem-package-form-field">
+				<label><?php esc_html_e( 'Start Date', 'equine-event-manager' ); ?></label>
+				<input type="date" class="eem-field-input" id="eem-stall-pkg-start">
+			</div>
+			<div class="eem-package-form-field">
+				<label><?php esc_html_e( 'End Date', 'equine-event-manager' ); ?></label>
+				<input type="date" class="eem-field-input" id="eem-stall-pkg-end">
+			</div>
+			<div class="eem-package-form-field">
+				<label><?php esc_html_e( 'Price', 'equine-event-manager' ); ?></label>
+				<div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input type="number" step="0.01" min="0" class="eem-price-input" id="eem-stall-pkg-price"></div>
+			</div>
+			<div class="eem-package-form-field">
+				<label><?php esc_html_e( 'Max Qty', 'equine-event-manager' ); ?></label>
+				<input type="number" min="0" step="1" class="eem-field-input" id="eem-stall-pkg-max-qty" placeholder="<?php esc_attr_e( 'Unlimited', 'equine-event-manager' ); ?>" style="max-width:100px">
+			</div>
+		</div>
+		<div class="eem-package-form-actions">
+			<button type="button" class="eem-btn eem-btn-primary eem-btn-sm" id="eem-stall-pkg-save"><?php esc_html_e( 'Save', 'equine-event-manager' ); ?></button>
+			<button type="button" class="eem-btn eem-btn-ghost eem-btn-sm" id="eem-stall-pkg-cancel"><?php esc_html_e( 'Cancel', 'equine-event-manager' ); ?></button>
+		</div>
+		<input type="hidden" id="eem-stall-pkg-editing-id" value="">
+	</div>
+
+	<button type="button" class="eem-btn-add" id="eem-stall-pkg-add-btn" data-eem-action="stall-package-add">
+		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+		<?php esc_html_e( 'Add Package', 'equine-event-manager' ); ?>
+	</button>
+</div>
+<?php
 
 // 15. Required Shavings toggle
 ob_start();

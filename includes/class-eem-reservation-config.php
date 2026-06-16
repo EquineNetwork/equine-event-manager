@@ -801,6 +801,9 @@ class EEM_Reservation_Config {
 			'stall_map_id'                   => 'bigint(20)',
 			'rv_lot_map_id'                  => 'bigint(20)',
 			'event_pre_entries_enabled'      => 'tinyint(1)',
+			// Stay Packages pricing mode.
+			'stall_pricing_mode'             => 'varchar(20)',
+			'rv_pricing_mode'                => 'varchar(20)',
 		);
 	}
 

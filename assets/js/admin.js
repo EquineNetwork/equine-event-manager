@@ -2624,6 +2624,33 @@
 			}
 		},
 
+		/* Stay Packages — pricing mode toggle */
+		'toggle-stall-pricing-mode': function (target) {
+			eemTogglePricingMode(target, 'stall');
+		},
+		'toggle-rv-pricing-mode': function (target) {
+			eemTogglePricingMode(target, 'rv');
+		},
+		/* Stay Packages — CRUD */
+		'stall-package-add': function () {
+			eemShowPackageForm('stall');
+		},
+		'stall-package-edit': function (target) {
+			eemEditPackage(target, 'stall');
+		},
+		'stall-package-delete': function (target) {
+			eemDeletePackage(target, 'stall');
+		},
+		'rv-package-add': function () {
+			eemShowPackageForm('rv');
+		},
+		'rv-package-edit': function (target) {
+			eemEditPackage(target, 'rv');
+		},
+		'rv-package-delete': function (target) {
+			eemDeletePackage(target, 'rv');
+		},
+
 		/* C8 — Stall row builder */
 		'stall-add-row': function () {
 			stallAddRow();
@@ -5674,6 +5701,162 @@ function syncStallLegacyMode() {
 		legacy.value = (inv.value === 'numbered' && sel.value === 'pick_layout') ? 'exact_map' : 'quantity';
 	}
 }
+
+/* ─── Stay Packages ─────────────────────────────────────────────────────────── */
+
+function eemTogglePricingMode(btn, type) {
+	var mode = btn.dataset.pricingMode;
+	var wrap = btn.closest('.eem-mode-btns');
+	wrap.querySelectorAll('.eem-mode-btn').forEach(function (b) { b.classList.remove('active'); });
+	btn.classList.add('active');
+	document.getElementById('eem-' + type + '-pricing-mode-input').value = mode;
+
+	var nightlyEl = document.getElementById('eem-' + type + '-nightly-content');
+	var pkgEl = document.getElementById('eem-' + type + '-packages-content');
+	if (nightlyEl) nightlyEl.style.display = mode === 'nightly' ? '' : 'none';
+	if (pkgEl) pkgEl.style.display = mode === 'packages' ? '' : 'none';
+}
+
+function eemGetReservationId() {
+	var el = document.querySelector('[data-eem-reservation-id]');
+	return el ? parseInt(el.getAttribute('data-eem-reservation-id'), 10) : 0;
+}
+
+function eemGetNonce() {
+	var el = document.querySelector('input[name="_eem_editor_nonce"]');
+	return el ? el.value : '';
+}
+
+function eemShowPackageForm(type) {
+	var form = document.getElementById('eem-' + type + '-package-form');
+	form.style.display = '';
+	form.querySelector('#eem-' + type + '-pkg-editing-id').value = '';
+	form.querySelector('#eem-' + type + '-pkg-name').value = '';
+	form.querySelector('#eem-' + type + '-pkg-start').value = '';
+	form.querySelector('#eem-' + type + '-pkg-end').value = '';
+	form.querySelector('#eem-' + type + '-pkg-price').value = '';
+	form.querySelector('#eem-' + type + '-pkg-max-qty').value = '';
+	form.querySelector('#eem-' + type + '-pkg-name').focus();
+}
+
+function eemEditPackage(target, type) {
+	var row = target.closest('tr');
+	var pkgId = row.dataset.packageId;
+	var cells = row.querySelectorAll('td');
+	var form = document.getElementById('eem-' + type + '-package-form');
+	form.style.display = '';
+	form.querySelector('#eem-' + type + '-pkg-editing-id').value = pkgId;
+	form.querySelector('#eem-' + type + '-pkg-name').value = cells[1].textContent.trim();
+	form.querySelector('#eem-' + type + '-pkg-start').value = cells[2].textContent.trim();
+	form.querySelector('#eem-' + type + '-pkg-end').value = cells[3].textContent.trim();
+	form.querySelector('#eem-' + type + '-pkg-price').value = cells[4].textContent.replace('$', '').trim();
+	var maxQty = cells[5].textContent.trim();
+	form.querySelector('#eem-' + type + '-pkg-max-qty').value = maxQty === '—' ? '' : maxQty;
+	form.querySelector('#eem-' + type + '-pkg-name').focus();
+}
+
+function eemDeletePackage(target, type) {
+	var row = target.closest('tr');
+	var pkgId = row.dataset.packageId;
+	if (!confirm(EEM.i18n.confirmDelete || 'Delete this package?')) return;
+
+	var fd = new FormData();
+	fd.append('action', 'eem_stay_package_delete');
+	fd.append('_wpnonce', eemGetNonce());
+	fd.append('reservation_id', eemGetReservationId());
+	fd.append('package_id', pkgId);
+
+	fetch(ajaxurl, { method: 'POST', body: fd, credentials: 'same-origin' })
+		.then(function (r) { return r.json(); })
+		.then(function (resp) {
+			if (resp.success) {
+				row.remove();
+				var tbody = document.getElementById('eem-' + type + '-packages-tbody');
+				if (!tbody.children.length) {
+					var empty = document.getElementById('eem-' + type + '-packages-empty');
+					if (empty) empty.style.display = '';
+				}
+			} else {
+				alert(resp.data && resp.data.message ? resp.data.message : 'Error');
+			}
+		});
+}
+
+function eemSavePackage(type) {
+	var form = document.getElementById('eem-' + type + '-package-form');
+	var editingId = form.querySelector('#eem-' + type + '-pkg-editing-id').value;
+	var isEdit = editingId !== '';
+
+	var fd = new FormData();
+	fd.append('action', isEdit ? 'eem_stay_package_update' : 'eem_stay_package_add');
+	fd.append('_wpnonce', eemGetNonce());
+	fd.append('reservation_id', eemGetReservationId());
+	fd.append('type', type);
+	fd.append('name', form.querySelector('#eem-' + type + '-pkg-name').value);
+	fd.append('start_date', form.querySelector('#eem-' + type + '-pkg-start').value);
+	fd.append('end_date', form.querySelector('#eem-' + type + '-pkg-end').value);
+	fd.append('price', form.querySelector('#eem-' + type + '-pkg-price').value || '0');
+	fd.append('max_quantity', form.querySelector('#eem-' + type + '-pkg-max-qty').value || '0');
+	if (isEdit) fd.append('package_id', editingId);
+
+	fetch(ajaxurl, { method: 'POST', body: fd, credentials: 'same-origin' })
+		.then(function (r) { return r.json(); })
+		.then(function (resp) {
+			if (resp.success) {
+				var pkg = resp.data.package;
+				var tbody = document.getElementById('eem-' + type + '-packages-tbody');
+				var maxDisplay = parseInt(pkg.max_quantity, 10) > 0 ? pkg.max_quantity : '—';
+
+				if (isEdit) {
+					var existing = tbody.querySelector('tr[data-package-id="' + editingId + '"]');
+					if (existing) existing.remove();
+				}
+
+				var tr = document.createElement('tr');
+				tr.dataset.packageId = pkg.id;
+				tr.innerHTML = '<td class="eem-packages-col-drag"><span class="eem-drag-handle">&#x2630;</span></td>'
+					+ '<td>' + eemEsc(pkg.name) + '</td>'
+					+ '<td>' + eemEsc(pkg.start_date) + '</td>'
+					+ '<td>' + eemEsc(pkg.end_date) + '</td>'
+					+ '<td>$' + parseFloat(pkg.price).toFixed(2) + '</td>'
+					+ '<td>' + maxDisplay + '</td>'
+					+ '<td class="eem-packages-col-actions">'
+					+ '<button type="button" class="eem-btn-sm" data-eem-action="' + type + '-package-edit" data-package-id="' + pkg.id + '">Edit</button>'
+					+ '<button type="button" class="eem-btn-sm eem-btn-sm--danger" data-eem-action="' + type + '-package-delete" data-package-id="' + pkg.id + '">Delete</button>'
+					+ '</td>';
+				tbody.appendChild(tr);
+
+				var empty = document.getElementById('eem-' + type + '-packages-empty');
+				if (empty) empty.style.display = 'none';
+
+				form.style.display = 'none';
+				if (EEM.showSaveToast) EEM.showSaveToast('Package saved');
+			} else {
+				alert(resp.data && resp.data.message ? resp.data.message : 'Error');
+			}
+		});
+}
+
+function eemEsc(str) {
+	var d = document.createElement('div');
+	d.textContent = str;
+	return d.innerHTML;
+}
+
+(function () {
+	document.addEventListener('click', function (e) {
+		var saveBtn = e.target.closest('#eem-stall-pkg-save');
+		if (saveBtn) { eemSavePackage('stall'); return; }
+		var cancelBtn = e.target.closest('#eem-stall-pkg-cancel');
+		if (cancelBtn) { document.getElementById('eem-stall-package-form').style.display = 'none'; return; }
+		var rvSave = e.target.closest('#eem-rv-pkg-save');
+		if (rvSave) { eemSavePackage('rv'); return; }
+		var rvCancel = e.target.closest('#eem-rv-pkg-cancel');
+		if (rvCancel) { document.getElementById('eem-rv-package-form').style.display = 'none'; return; }
+	});
+})();
+
+/* ─── End Stay Packages ─────────────────────────────────────────────────────── */
 
 /* Stall Inventory Type toggle (quantity_only / numbered). Drives the Stall Row
    Builder + inventory-input visibility and enables/disables Pick-from-layout. */

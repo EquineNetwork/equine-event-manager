@@ -280,6 +280,11 @@ class EEM_Activator {
 			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-025-drop-native-event-postmeta.php';
 			eem_mig_025_drop_native_event_postmeta();
 		}
+
+		if ( ! get_option( 'eem_mig_026_stay_packages_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-026-stay-packages.php';
+			eem_mig_026_stay_packages();
+		}
 	}
 
 	/**

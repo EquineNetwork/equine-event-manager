@@ -10605,3 +10605,35 @@ a.eem-dm-view-tab.active:visited {
 
 	@page { margin: 10mm 8mm; size: letter portrait; }
 }
+
+/* ─── Stay Packages table + inline form ─────────────────────────────────────── */
+.eem-packages-table-wrap { margin-bottom: 12px; }
+.eem-packages-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.eem-packages-table thead th {
+	text-align: left; padding: 6px 10px; font-weight: 600; font-size: 11px;
+	color: var(--eem-slate); text-transform: uppercase; letter-spacing: 0.04em;
+	border-bottom: 1px solid var(--eem-border);
+}
+.eem-packages-table tbody td { padding: 8px 10px; border-bottom: 1px solid var(--eem-border); }
+.eem-packages-table tbody tr:last-child td { border-bottom: none; }
+.eem-packages-col-drag { width: 30px; text-align: center; }
+.eem-drag-handle { cursor: grab; color: var(--eem-slate); font-size: 16px; }
+.eem-packages-col-actions { white-space: nowrap; text-align: right; }
+.eem-btn-sm { padding: 3px 10px; font-size: 12px; border: 1px solid var(--eem-border); border-radius: var(--eem-radius); background: #fff; cursor: pointer; color: var(--eem-navy); }
+.eem-btn-sm:hover { background: var(--eem-bg-muted); }
+.eem-btn-sm--danger { color: var(--eem-red, #d63638); border-color: var(--eem-red, #d63638); }
+.eem-btn-sm--danger:hover { background: #fef0f0; }
+.eem-packages-empty { color: var(--eem-slate); font-size: 13px; padding: 16px 0; text-align: center; }
+
+.eem-package-inline-form {
+	background: var(--eem-bg-muted); border: 1px solid var(--eem-border);
+	border-radius: var(--eem-radius); padding: 14px 16px; margin-bottom: 12px;
+}
+.eem-package-form-fields {
+	display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 10px;
+}
+.eem-package-form-field { display: flex; flex-direction: column; gap: 4px; }
+.eem-package-form-field label { font-size: 11px; font-weight: 600; color: var(--eem-slate); text-transform: uppercase; letter-spacing: 0.04em; }
+.eem-package-form-field .eem-field-input,
+.eem-package-form-field .eem-price-input { font-size: 13px; }
+.eem-package-form-actions { display: flex; gap: 8px; }

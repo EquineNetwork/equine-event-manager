@@ -31,6 +31,7 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-venue.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-sheet-entries.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-stall-map-importer.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-stall-status-repo.php';
+require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-stay-packages-repo.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-events.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-gems-client.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'admin/class-equine-event-manager-admin.php';
@@ -158,6 +159,12 @@ add_action( 'save_post_en_event', array( 'EEM_Reservation_Source_Resolver', 'on_
 add_action( 'wp_ajax_eem_reservation_editor_unlink_event', array( 'EEM_Reservation_Editor_Page', 'ajax_unlink_event' ) );
 add_action( 'wp_ajax_eem_reservation_editor_trash',        array( 'EEM_Reservation_Editor_Page', 'ajax_trash' ) );
 add_action( 'wp_ajax_eem_map_builder_save',                array( 'EEM_Reservation_Editor_Page', 'ajax_map_builder_save' ) );
+
+// Stay Packages CRUD (immediate save per package, not bulk form).
+add_action( 'wp_ajax_eem_stay_package_add',     array( 'EEM_Reservation_Editor_Page', 'ajax_stay_package_add' ) );
+add_action( 'wp_ajax_eem_stay_package_update',  array( 'EEM_Reservation_Editor_Page', 'ajax_stay_package_update' ) );
+add_action( 'wp_ajax_eem_stay_package_delete',  array( 'EEM_Reservation_Editor_Page', 'ajax_stay_package_delete' ) );
+add_action( 'wp_ajax_eem_stay_package_reorder', array( 'EEM_Reservation_Editor_Page', 'ajax_stay_package_reorder' ) );
 
 // Redirect legacy WP CPT edit URL (`post.php?post=N&action=edit`) to the
 // new editor for `en_reservation` posts. Catches bookmarked URLs +

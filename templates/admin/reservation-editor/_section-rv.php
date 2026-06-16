@@ -28,19 +28,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_partial-field-row.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_partial-toggle-label-row.php';
-require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_partial-stay-type-pair.php';
-
 $fmt_dt    = function ( $v ) { if ( '' === (string) $v ) return ''; if ( preg_match( '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/', (string) $v ) ) return substr( (string) $v, 0, 16 ); $ts = strtotime( (string) $v ); return $ts ? gmdate( 'Y-m-d\TH:i', $ts ) : ''; };
 $fmt_money = function ( $v ) { return number_format( (float) $v, 2, '.', '' ); };
-
-$nightly_on   = ! empty( $data['rv_nightly_enabled'] );
-$weekend_on   = ! empty( $data['rv_weekend_enabled'] );
-$weekly_on    = ! empty( $data['rv_weekly_enabled'] );
 $schedule_on  = ! empty( $data['rv_schedule_enabled'] );
 $eb_on        = ! empty( $data['rv_early_bird_enabled'] );
 $rv_addons_on = ! empty( $data['rv_addons_enabled'] );
 
 $rv_addons = isset( $data['rv_addons'] ) ? (array) $data['rv_addons'] : array();
+
+$rv_pricing_mode = isset( $data['rv_pricing_mode'] ) ? (string) $data['rv_pricing_mode'] : 'nightly';
+$rv_packages     = EEM_Stay_Packages_Repo::get_packages( (int) ( $data['_reservation_id'] ?? get_the_ID() ), 'rv' );
+$is_rv_packages  = ( 'packages' === $rv_pricing_mode );
 
 ?>
 <input type="hidden" name="en_reservation[rv_enabled]" data-eem-section-enabled="rv" value="<?php echo ! empty( $data['rv_enabled'] ) ? '1' : '0'; ?>" />
@@ -67,57 +65,37 @@ eem_render_editor_field_row( array(
 	),
 ) );
 
-// 3. Stay Types
+// 3a. Pricing Mode radio
 ob_start();
-eem_render_editor_stay_type_pair( array(
-	'group_label'      => __( 'RV stay types', 'equine-event-manager' ),
-	'group_slug'       => 'rv-stay',
-	'nightly_name'     => 'rv_nightly_enabled',
-	'nightly_on'       => $nightly_on,
-	'nightly_controls' => array( 'row-rv-rate-nightly', 'row-rv-eb-nightly' ),
-	'weekend_name'     => 'rv_weekend_enabled',
-	'weekend_on'       => $weekend_on,
-	'weekend_controls' => array( 'row-rv-weekend-dates', 'row-rv-rate-weekend', 'row-rv-eb-weekend' ),
-	'weekly_name'      => 'rv_weekly_enabled',
-	'weekly_label'     => __( 'Weekly Rate', 'equine-event-manager' ),
-	'weekly_on'        => $weekly_on,
-	'weekly_controls'  => array( 'row-rv-weekly-dates', 'row-rv-rate-weekly', 'row-rv-eb-weekly' ),
-) );
-$stay = ob_get_clean();
+?>
+<div class="eem-mode-btns">
+	<button type="button"
+		class="eem-mode-btn<?php echo ! $is_rv_packages ? ' active' : ''; ?>"
+		data-pricing-mode="nightly"
+		data-eem-action="toggle-rv-pricing-mode">
+		<?php esc_html_e( 'Nightly Rate', 'equine-event-manager' ); ?>
+	</button>
+	<button type="button"
+		class="eem-mode-btn<?php echo $is_rv_packages ? ' active' : ''; ?>"
+		data-pricing-mode="packages"
+		data-eem-action="toggle-rv-pricing-mode">
+		<?php esc_html_e( 'Stay Packages', 'equine-event-manager' ); ?>
+	</button>
+</div>
+<input type="hidden" name="en_reservation[rv_pricing_mode]" id="eem-rv-pricing-mode-input" value="<?php echo esc_attr( $rv_pricing_mode ); ?>">
+<?php
+$pricing_mode_html = (string) ob_get_clean();
 eem_render_editor_field_row( array(
-	'label'        => __( 'Stay Types', 'equine-event-manager' ),
-	'label_sub'    => __( 'Enable one or both', 'equine-event-manager' ),
-	'control_html' => $stay,
-	'hint'         => __( 'Weekend Rate and Weekly Rate each use their own package dates configured below.', 'equine-event-manager' ),
+	'label'        => __( 'Pricing Mode', 'equine-event-manager' ),
+	'label_sub'    => __( 'How customers pay for RV lots', 'equine-event-manager' ),
+	'control_html' => $pricing_mode_html,
+	'hint'         => __( 'Nightly Rate: single price per night with date picker. Stay Packages: named packages with fixed dates and prices.', 'equine-event-manager' ),
 ) );
 
-// 4. Weekend Package Dates
-eem_render_editor_field_row( array(
-	'label'        => __( 'Weekend Package Dates', 'equine-event-manager' ),
-	'row_id'       => 'row-rv-weekend-dates',
-	'is_hidden'    => ! $weekend_on,
-	'control_html' => sprintf(
-		'<div class="eem-date-range"><span style="font-size:12px;color:#6B7A99;padding-top:9px">%s</span><input class="eem-field-input" type="date" name="en_reservation[rv_weekend_package_start_date]" value="%s" style="width:160px" /><span style="font-size:12px;color:#6B7A99;padding-top:9px">%s</span><input class="eem-field-input" type="date" name="en_reservation[rv_weekend_package_end_date]" value="%s" style="width:160px" /></div>',
-		esc_html__( 'Start', 'equine-event-manager' ),
-		esc_attr( (string) $data['rv_weekend_package_start_date'] ),
-		esc_html__( 'End', 'equine-event-manager' ),
-		esc_attr( (string) $data['rv_weekend_package_end_date'] )
-	),
-) );
-
-// 4b. Weekly Package Dates (conditional)
-eem_render_editor_field_row( array(
-	'label'        => __( 'Weekly Package Dates', 'equine-event-manager' ),
-	'row_id'       => 'row-rv-weekly-dates',
-	'is_hidden'    => ! $weekly_on,
-	'control_html' => sprintf(
-		'<div class="eem-date-range"><span style="font-size:12px;color:#6B7A99;padding-top:9px">%s</span><input class="eem-field-input" type="date" name="en_reservation[rv_weekly_package_start_date]" value="%s" style="width:160px" /><span style="font-size:12px;color:#6B7A99;padding-top:9px">%s</span><input class="eem-field-input" type="date" name="en_reservation[rv_weekly_package_end_date]" value="%s" style="width:160px" /></div>',
-		esc_html__( 'Start', 'equine-event-manager' ),
-		esc_attr( (string) ( $data['rv_weekly_package_start_date'] ?? '' ) ),
-		esc_html__( 'End', 'equine-event-manager' ),
-		esc_attr( (string) ( $data['rv_weekly_package_end_date'] ?? '' ) )
-	),
-) );
+// ── Nightly-mode content (hidden when pricing mode = packages) ──
+echo '<div class="eem-rv-nightly-content" id="eem-rv-nightly-content"' . ( $is_rv_packages ? ' style="display:none"' : '' ) . '>';
+// Hidden mirror — always-on nightly when in nightly mode (backend still checks this key)
+echo '<input type="hidden" name="en_reservation[rv_nightly_enabled]" value="1">';
 
 // 5. Reservation Schedule toggle
 ob_start();
@@ -155,36 +133,14 @@ eem_render_editor_field_row( array(
 	),
 ) );
 
-// 9 + 10. Nightly + Weekend rates
-// UX polish 2.3.23: rates + EB now appear before inventory controls so the
-// admin's mental flow is: pricing → then "how many / which mode?".
+// 9. RV Nightly Rate
 eem_render_editor_field_row( array(
 	'label'        => __( 'RV Nightly Rate', 'equine-event-manager' ),
-	'row_id'       => 'row-rv-rate-nightly',
-	'is_hidden'    => ! $nightly_on,
 	'control_html' => sprintf(
 		'<div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[rv_nightly_rate]" value="%s" /></div>',
 		esc_attr( $fmt_money( $data['rv_nightly_rate'] ) )
 	),
 	'hint'         => __( 'Base nightly rate. Lot zones below may add tier-specific pricing.', 'equine-event-manager' ),
-) );
-eem_render_editor_field_row( array(
-	'label'        => __( 'RV Weekend Rate', 'equine-event-manager' ),
-	'row_id'       => 'row-rv-rate-weekend',
-	'is_hidden'    => ! $weekend_on,
-	'control_html' => sprintf(
-		'<div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[rv_weekend_rate]" value="%s" /></div>',
-		esc_attr( $fmt_money( $data['rv_weekend_rate'] ) )
-	),
-) );
-eem_render_editor_field_row( array(
-	'label'        => __( 'RV Weekly Rate', 'equine-event-manager' ),
-	'row_id'       => 'row-rv-rate-weekly',
-	'is_hidden'    => ! $weekly_on,
-	'control_html' => sprintf(
-		'<div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[rv_weekly_rate]" value="%s" /></div>',
-		esc_attr( $fmt_money( $data['rv_weekly_rate'] ?? '0.00' ) )
-	),
 ) );
 
 // 11. Early Bird toggle
@@ -194,7 +150,7 @@ eem_render_editor_toggle_label_row( array(
 	'subsection' => 'rv-eb',
 	'label'      => __( 'Enable RV early bird pricing', 'equine-event-manager' ),
 	'is_enabled' => $eb_on,
-	'controls'   => array( 'row-rv-eb-cutoff', 'row-rv-eb-nightly', 'row-rv-eb-weekend', 'row-rv-eb-weekly' ),
+	'controls'   => array( 'row-rv-eb-cutoff', 'row-rv-eb-nightly' ),
 ) );
 $eb = ob_get_clean();
 eem_render_editor_field_row( array(
@@ -214,30 +170,89 @@ eem_render_editor_field_row( array(
 eem_render_editor_field_row( array(
 	'label'        => __( 'Early Bird Nightly Rate', 'equine-event-manager' ),
 	'row_id'       => 'row-rv-eb-nightly',
-	'is_hidden'    => ! ( $eb_on && $nightly_on ),
+	'is_hidden'    => ! $eb_on,
 	'control_html' => sprintf(
 		'<div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[rv_early_bird_nightly_rate]" value="%s" /></div>',
 		esc_attr( $fmt_money( $data['rv_early_bird_nightly_rate'] ) )
 	),
 ) );
-eem_render_editor_field_row( array(
-	'label'        => __( 'Early Bird Weekend Rate', 'equine-event-manager' ),
-	'row_id'       => 'row-rv-eb-weekend',
-	'is_hidden'    => ! ( $eb_on && $weekend_on ),
-	'control_html' => sprintf(
-		'<div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[rv_early_bird_weekend_rate]" value="%s" /></div>',
-		esc_attr( $fmt_money( $data['rv_early_bird_weekend_rate'] ) )
-	),
-) );
-eem_render_editor_field_row( array(
-	'label'        => __( 'Early Bird Weekly Rate', 'equine-event-manager' ),
-	'row_id'       => 'row-rv-eb-weekly',
-	'is_hidden'    => ! ( $eb_on && $weekly_on ),
-	'control_html' => sprintf(
-		'<div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[rv_early_bird_weekly_rate]" value="%s" /></div>',
-		esc_attr( $fmt_money( $data['rv_early_bird_weekly_rate'] ?? '0.00' ) )
-	),
-) );
+
+echo '</div>'; // .eem-rv-nightly-content
+
+// ── Packages-mode content (hidden when pricing mode = nightly) ──
+?>
+<div class="eem-rv-packages-content" id="eem-rv-packages-content"<?php echo $is_rv_packages ? '' : ' style="display:none"'; ?>>
+	<div class="eem-packages-table-wrap">
+		<table class="eem-packages-table" id="eem-rv-packages-table">
+			<thead>
+				<tr>
+					<th class="eem-packages-col-drag"></th>
+					<th><?php esc_html_e( 'Name', 'equine-event-manager' ); ?></th>
+					<th><?php esc_html_e( 'Start Date', 'equine-event-manager' ); ?></th>
+					<th><?php esc_html_e( 'End Date', 'equine-event-manager' ); ?></th>
+					<th><?php esc_html_e( 'Price', 'equine-event-manager' ); ?></th>
+					<th><?php esc_html_e( 'Max Qty', 'equine-event-manager' ); ?></th>
+					<th class="eem-packages-col-actions"></th>
+				</tr>
+			</thead>
+			<tbody id="eem-rv-packages-tbody">
+				<?php foreach ( $rv_packages as $pkg ) : ?>
+				<tr data-package-id="<?php echo (int) $pkg['id']; ?>">
+					<td class="eem-packages-col-drag"><span class="eem-drag-handle">&#x2630;</span></td>
+					<td><?php echo esc_html( $pkg['name'] ); ?></td>
+					<td><?php echo esc_html( $pkg['start_date'] ); ?></td>
+					<td><?php echo esc_html( $pkg['end_date'] ); ?></td>
+					<td>$<?php echo esc_html( number_format( (float) $pkg['price'], 2 ) ); ?></td>
+					<td><?php echo (int) $pkg['max_quantity'] > 0 ? (int) $pkg['max_quantity'] : '&mdash;'; ?></td>
+					<td class="eem-packages-col-actions">
+						<button type="button" class="eem-btn-sm" data-eem-action="rv-package-edit" data-package-id="<?php echo (int) $pkg['id']; ?>"><?php esc_html_e( 'Edit', 'equine-event-manager' ); ?></button>
+						<button type="button" class="eem-btn-sm eem-btn-sm--danger" data-eem-action="rv-package-delete" data-package-id="<?php echo (int) $pkg['id']; ?>"><?php esc_html_e( 'Delete', 'equine-event-manager' ); ?></button>
+					</td>
+				</tr>
+				<?php endforeach; ?>
+			</tbody>
+		</table>
+		<?php if ( empty( $rv_packages ) ) : ?>
+		<p class="eem-packages-empty" id="eem-rv-packages-empty"><?php esc_html_e( 'No packages yet. Click "+ Add Package" to create one.', 'equine-event-manager' ); ?></p>
+		<?php endif; ?>
+	</div>
+
+	<div class="eem-package-inline-form" id="eem-rv-package-form" style="display:none">
+		<div class="eem-package-form-fields">
+			<div class="eem-package-form-field">
+				<label><?php esc_html_e( 'Name', 'equine-event-manager' ); ?></label>
+				<input type="text" class="eem-field-input" id="eem-rv-pkg-name" placeholder="<?php esc_attr_e( 'e.g. Week 1, Full Event', 'equine-event-manager' ); ?>">
+			</div>
+			<div class="eem-package-form-field">
+				<label><?php esc_html_e( 'Start Date', 'equine-event-manager' ); ?></label>
+				<input type="date" class="eem-field-input" id="eem-rv-pkg-start">
+			</div>
+			<div class="eem-package-form-field">
+				<label><?php esc_html_e( 'End Date', 'equine-event-manager' ); ?></label>
+				<input type="date" class="eem-field-input" id="eem-rv-pkg-end">
+			</div>
+			<div class="eem-package-form-field">
+				<label><?php esc_html_e( 'Price', 'equine-event-manager' ); ?></label>
+				<div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input type="number" step="0.01" min="0" class="eem-price-input" id="eem-rv-pkg-price"></div>
+			</div>
+			<div class="eem-package-form-field">
+				<label><?php esc_html_e( 'Max Qty', 'equine-event-manager' ); ?></label>
+				<input type="number" min="0" step="1" class="eem-field-input" id="eem-rv-pkg-max-qty" placeholder="<?php esc_attr_e( 'Unlimited', 'equine-event-manager' ); ?>" style="max-width:100px">
+			</div>
+		</div>
+		<div class="eem-package-form-actions">
+			<button type="button" class="eem-btn eem-btn-primary eem-btn-sm" id="eem-rv-pkg-save"><?php esc_html_e( 'Save', 'equine-event-manager' ); ?></button>
+			<button type="button" class="eem-btn eem-btn-ghost eem-btn-sm" id="eem-rv-pkg-cancel"><?php esc_html_e( 'Cancel', 'equine-event-manager' ); ?></button>
+		</div>
+		<input type="hidden" id="eem-rv-pkg-editing-id" value="">
+	</div>
+
+	<button type="button" class="eem-btn-add" id="eem-rv-pkg-add-btn" data-eem-action="rv-package-add">
+		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+		<?php esc_html_e( 'Add Package', 'equine-event-manager' ); ?>
+	</button>
+</div>
+<?php
 
 // v2 #5 — group the interdependent RV layout cluster (Inventory Mode → Available
 // → Max → Zones → Lot Rows → Blocked → Map) in a shaded panel, mirroring the
@@ -436,7 +451,6 @@ ob_start();
 		$_palette  = array( '#DC2626', '#2563EB', '#16A34A', '#CA8A04', '#9333EA', '#EA580C' );
 		$z_color   = $_palette[ $zi % count( $_palette ) ];
 		$z_night   = isset( $zone['nightly'] )        ? $fmt_money( $zone['nightly'] )                : '0.00';
-		$z_weekend = isset( $zone['weekend'] )        ? $fmt_money( $zone['weekend'] )                : '0.00';
 		?>
 		<div class="eem-zone-row" data-zone-index="<?php echo (int) $zi; ?>">
 			<div class="eem-zone-color-swatch" style="background:<?php echo esc_attr( $z_color ); ?>"></div>
@@ -444,10 +458,6 @@ ob_start();
 			<div class="eem-zone-price-group">
 				<span class="eem-zone-price-label"><?php esc_html_e( '+ Nightly', 'equine-event-manager' ); ?></span>
 				<div class="eem-zone-price-wrap"><span class="eem-zone-price-sym">$</span><input class="eem-zone-price-in" type="number" step="0.01" min="0" name="eem_rv_zones[<?php echo (int) $zi; ?>][nightly]" value="<?php echo esc_attr( $z_night ); ?>" data-eem-input-action="rv-zone-input"></div>
-			</div>
-			<div class="eem-zone-price-group">
-				<span class="eem-zone-price-label"><?php esc_html_e( '+ Weekend', 'equine-event-manager' ); ?></span>
-				<div class="eem-zone-price-wrap"><span class="eem-zone-price-sym">$</span><input class="eem-zone-price-in" type="number" step="0.01" min="0" name="eem_rv_zones[<?php echo (int) $zi; ?>][weekend]" value="<?php echo esc_attr( $z_weekend ); ?>" data-eem-input-action="rv-zone-input"></div>
 			</div>
 			<button class="eem-row-card-delete" type="button" title="<?php esc_attr_e( 'Delete zone', 'equine-event-manager' ); ?>" data-eem-action="rv-delete-zone">
 				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
@@ -470,10 +480,6 @@ ob_start();
 	<div class="eem-zone-price-group">
 		<span class="eem-zone-price-label"><?php esc_html_e( '+ Nightly', 'equine-event-manager' ); ?></span>
 		<div class="eem-zone-price-wrap"><span class="eem-zone-price-sym">$</span><input class="eem-zone-price-in" type="number" step="0.01" min="0" name="eem_rv_zones[__index__][nightly]" value="0.00" data-eem-input-action="rv-zone-input"></div>
-	</div>
-	<div class="eem-zone-price-group">
-		<span class="eem-zone-price-label"><?php esc_html_e( '+ Weekend', 'equine-event-manager' ); ?></span>
-		<div class="eem-zone-price-wrap"><span class="eem-zone-price-sym">$</span><input class="eem-zone-price-in" type="number" step="0.01" min="0" name="eem_rv_zones[__index__][weekend]" value="0.00" data-eem-input-action="rv-zone-input"></div>
 	</div>
 	<button class="eem-row-card-delete" type="button" title="<?php esc_attr_e( 'Delete zone', 'equine-event-manager' ); ?>" data-eem-action="rv-delete-zone">
 		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
@@ -704,7 +710,7 @@ $rv_addon_zone_pills = function ( $field_name, array $selected ) use ( $rv_addon
 ?>
 <div id="rv-addons-table-wrap" <?php echo $rv_addons_on ? '' : 'style="display:none"'; ?>>
 	<p class="eem-field-help eem-rv-addons-help">
-		<?php esc_html_e( 'Add-on prices are charged in addition to the RV rate the customer selects. "Per Night" is multiplied by the number of nights for a Nightly stay; "Weekend" is a flat charge applied once for a Weekend Rate stay. Fill in only the rate(s) you offer.', 'equine-event-manager' ); ?>
+		<?php esc_html_e( 'Add-on prices are charged per night in addition to the RV rate the customer selects. Fill in only the rate(s) you offer.', 'equine-event-manager' ); ?>
 		<?php if ( $rv_addon_has_zones ) : ?>
 			<br><?php esc_html_e( 'Leave Zones empty to offer an add-on for every zone, or pick specific zones to restrict it (e.g. Sewer Hookup only for Red Lot).', 'equine-event-manager' ); ?>
 		<?php endif; ?>
@@ -714,7 +720,6 @@ $rv_addon_zone_pills = function ( $field_name, array $selected ) use ( $rv_addon
 			<tr>
 				<th><?php esc_html_e( 'Add-On', 'equine-event-manager' ); ?></th>
 				<th style="width:120px"><?php esc_html_e( 'Per Night', 'equine-event-manager' ); ?></th>
-				<th style="width:120px"><?php esc_html_e( 'Weekend', 'equine-event-manager' ); ?></th>
 				<?php if ( $rv_addon_has_zones ) : ?>
 					<th style="width:170px"><?php esc_html_e( 'Zones', 'equine-event-manager' ); ?></th>
 				<?php endif; ?>
@@ -725,13 +730,11 @@ $rv_addon_zone_pills = function ( $field_name, array $selected ) use ( $rv_addon
 			<?php foreach ( $rv_addons as $idx => $addon ) :
 				$a_name    = isset( $addon['name'] ) ? (string) $addon['name'] : '';
 				$a_price   = isset( $addon['price'] ) ? (float) $addon['price'] : 0.0;
-				$a_weekend = isset( $addon['weekend_price'] ) ? (float) $addon['weekend_price'] : 0.0;
 				$a_zones   = ( isset( $addon['zones'] ) && is_array( $addon['zones'] ) ) ? array_map( 'strval', $addon['zones'] ) : array();
 				?>
 				<tr>
 					<td><input class="eem-repeat-input" type="text" name="en_reservation[rv_addons][<?php echo (int) $idx; ?>][name]" value="<?php echo esc_attr( $a_name ); ?>" /></td>
 					<td><div class="eem-repeat-price-wrap"><span class="eem-repeat-price-sym">$</span><input class="eem-repeat-price-in" type="number" step="0.01" min="0" name="en_reservation[rv_addons][<?php echo (int) $idx; ?>][price]" value="<?php echo esc_attr( $fmt_money( $a_price ) ); ?>" /></div></td>
-					<td><div class="eem-repeat-price-wrap"><span class="eem-repeat-price-sym">$</span><input class="eem-repeat-price-in" type="number" step="0.01" min="0" name="en_reservation[rv_addons][<?php echo (int) $idx; ?>][weekend_price]" value="<?php echo esc_attr( $fmt_money( $a_weekend ) ); ?>" /></div></td>
 					<?php if ( $rv_addon_has_zones ) : ?>
 						<td><?php echo $rv_addon_zone_pills( 'en_reservation[rv_addons][' . (int) $idx . '][zones][]', $a_zones ); // phpcs:ignore -- pre-escaped ?></td>
 					<?php endif; ?>
@@ -747,7 +750,6 @@ $rv_addon_zone_pills = function ( $field_name, array $selected ) use ( $rv_addon
 	<template id="eem-rv-addons-row-template"><tr>
 		<td><input class="eem-repeat-input" type="text" name="en_reservation[rv_addons][__index__][name]" value="" placeholder="<?php esc_attr_e( 'Add-on name', 'equine-event-manager' ); ?>" /></td>
 		<td><div class="eem-repeat-price-wrap"><span class="eem-repeat-price-sym">$</span><input class="eem-repeat-price-in" type="number" step="0.01" min="0" name="en_reservation[rv_addons][__index__][price]" value="0.00" /></div></td>
-		<td><div class="eem-repeat-price-wrap"><span class="eem-repeat-price-sym">$</span><input class="eem-repeat-price-in" type="number" step="0.01" min="0" name="en_reservation[rv_addons][__index__][weekend_price]" value="0.00" /></div></td>
 		<?php if ( $rv_addon_has_zones ) : ?>
 			<td><?php echo $rv_addon_zone_pills( 'en_reservation[rv_addons][__index__][zones][]', array() ); // phpcs:ignore -- pre-escaped ?></td>
 		<?php endif; ?>
