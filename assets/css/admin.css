@@ -10628,6 +10628,15 @@ a.eem-dm-view-tab.active:visited {
 .eem-btn-sm:hover { background: var(--eem-bg-muted); }
 .eem-btn-sm--danger { color: var(--eem-red, #d63638); border-color: var(--eem-red, #d63638); }
 .eem-btn-sm--danger:hover { background: #fef0f0; }
+/* Icon-only row actions (Edit = pencil, Delete = trash) for the packages table. */
+.eem-page .eem-btn-icon {
+	display: inline-flex; align-items: center; justify-content: center;
+	width: 30px; height: 30px; padding: 0; margin-left: 4px;
+	border: 1px solid var(--eem-border); border-radius: var(--eem-radius);
+	background: #fff; color: var(--eem-slate); cursor: pointer; vertical-align: middle;
+}
+.eem-page .eem-btn-icon:hover { background: var(--eem-bg-muted); color: var(--eem-navy); border-color: var(--eem-navy); }
+.eem-page .eem-btn-icon--danger:hover { background: #fef0f0; color: var(--eem-red, #d63638); border-color: var(--eem-red, #d63638); }
 /* Scoped under .eem-page so it beats the `.eem-page p { padding:0 }` reset
    (specificity 0,2,0 > the reset's 0,1,1). Without this the empty-state padding
    never rendered — the reset won every time. */

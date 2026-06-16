@@ -5784,7 +5784,10 @@ function eemEditPackage(target, type) {
 function eemDeletePackage(target, type) {
 	var row = target.closest('tr');
 	var pkgId = row.dataset.packageId;
-	if (!confirm(EEM.i18n.confirmDelete || 'Delete this package?')) return;
+	// Safe i18n access — EEM.i18n may be undefined; the old `EEM.i18n.confirmDelete`
+	// threw a TypeError here, which silently killed the whole delete handler.
+	var confirmMsg = (window.EEM && EEM.i18n && EEM.i18n.confirmDelete) || 'Delete this package?';
+	if (!confirm(confirmMsg)) return;
 
 	var fd = new FormData();
 	fd.append('action', 'eem_stay_package_delete');
@@ -5860,8 +5863,8 @@ function eemSavePackage(type) {
 					+ '<td>$' + parseFloat(pkg.price).toFixed(2) + '</td>'
 					+ '<td>' + maxDisplay + '</td>'
 					+ '<td class="eem-packages-col-actions">'
-					+ '<button type="button" class="eem-btn-sm" data-eem-action="' + type + '-package-edit" data-package-id="' + pkg.id + '">Edit</button>'
-					+ '<button type="button" class="eem-btn-sm eem-btn-sm--danger" data-eem-action="' + type + '-package-delete" data-package-id="' + pkg.id + '">Delete</button>'
+					+ '<button type="button" class="eem-btn-icon" data-eem-action="' + type + '-package-edit" data-package-id="' + pkg.id + '" aria-label="Edit package" title="Edit"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>'
+					+ '<button type="button" class="eem-btn-icon eem-btn-icon--danger" data-eem-action="' + type + '-package-delete" data-package-id="' + pkg.id + '" aria-label="Delete package" title="Delete"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>'
 					+ '</td>';
 				tbody.appendChild(tr);
 
