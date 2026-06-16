@@ -1093,12 +1093,12 @@ class EEM_Reservation_Editor_Page {
 
 		// ── Stay Packages pricing mode (stored in reservation_config) ──
 		if ( isset( $_POST['en_reservation']['stall_pricing_mode'] ) ) {
-			$spm = in_array( $_POST['en_reservation']['stall_pricing_mode'], array( 'nightly', 'packages' ), true )
+			$spm = in_array( $_POST['en_reservation']['stall_pricing_mode'], array( 'nightly', 'packages', 'both' ), true )
 				? $_POST['en_reservation']['stall_pricing_mode'] : 'nightly';
 			$cfg->set( 'stall_pricing_mode', $spm )->save();
 		}
 		if ( isset( $_POST['en_reservation']['rv_pricing_mode'] ) ) {
-			$rpm = in_array( $_POST['en_reservation']['rv_pricing_mode'], array( 'nightly', 'packages' ), true )
+			$rpm = in_array( $_POST['en_reservation']['rv_pricing_mode'], array( 'nightly', 'packages', 'both' ), true )
 				? $_POST['en_reservation']['rv_pricing_mode'] : 'nightly';
 			$cfg->set( 'rv_pricing_mode', $rpm )->save();
 		}
