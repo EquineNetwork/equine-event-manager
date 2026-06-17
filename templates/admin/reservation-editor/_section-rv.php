@@ -32,9 +32,6 @@ $fmt_dt    = function ( $v ) { if ( '' === (string) $v ) return ''; if ( preg_ma
 $fmt_money = function ( $v ) { return number_format( (float) $v, 2, '.', '' ); };
 $schedule_on  = ! empty( $data['rv_schedule_enabled'] );
 $eb_on        = ! empty( $data['rv_early_bird_enabled'] );
-$rv_addons_on = ! empty( $data['rv_addons_enabled'] );
-
-$rv_addons = isset( $data['rv_addons'] ) ? (array) $data['rv_addons'] : array();
 
 $rv_pricing_mode = isset( $data['rv_pricing_mode'] ) ? (string) $data['rv_pricing_mode'] : 'nightly';
 $rv_packages     = EEM_Stay_Packages_Repo::get_packages( (int) ( $data['_reservation_id'] ?? get_the_ID() ), 'rv' );
@@ -549,94 +546,5 @@ eem_render_editor_field_row( array(
 ?>
 </div>
 </div><!-- .eem-layout-group -->
-<?php
-// ── RV Add-Ons ──
-// Row names available to restrict an add-on to. Empty list = the
-// Zones column is hidden (no rows defined yet → add-ons apply to everything).
-$rv_addon_zone_names = array();
-foreach ( (array) $rv_rows as $rvr ) {
-	$zn = isset( $rvr['name'] ) ? trim( (string) $rvr['name'] ) : '';
-	if ( '' !== $zn ) {
-		$rv_addon_zone_names[] = $zn;
-	}
-}
-$rv_addon_has_zones = ! empty( $rv_addon_zone_names );
-$rv_addon_zone_pills = function ( $field_name, array $selected ) use ( $rv_addon_zone_names ) {
-	$sel  = array_map( 'strtolower', array_map( 'trim', $selected ) );
-	$html = '<div class="eem-zone-pills">';
-	foreach ( $rv_addon_zone_names as $zn ) {
-		$is = in_array( strtolower( $zn ), $sel, true );
-		$html .= '<label class="eem-zone-pill"><input type="checkbox" name="' . esc_attr( $field_name ) . '" value="' . esc_attr( $zn ) . '"' . ( $is ? ' checked' : '' ) . '><span>' . esc_html( $zn ) . '</span></label>';
-	}
-	$html .= '</div>';
-	return $html;
-};
-?>
-<div class="eem-addon-block">
-	<div class="eem-addon-block__header">
-		<div>
-			<h4 class="eem-addon-block__title"><?php esc_html_e( 'RV Add-Ons', 'equine-event-manager' ); ?></h4>
-			<p class="eem-addon-block__help"><?php esc_html_e( 'Optional hookups customers can add', 'equine-event-manager' ); ?></p>
-		</div>
-		<?php
-		eem_render_editor_toggle_label_row( array(
-			'name'       => 'rv_addons_enabled',
-			'subsection' => 'rv-addons',
-			'label'      => __( 'Enable RV add-ons', 'equine-event-manager' ),
-			'is_enabled' => $rv_addons_on,
-			'controls'   => array( 'rv-addons-table-wrap' ),
-		) );
-		?>
-	</div>
-	<div id="rv-addons-table-wrap" <?php echo $rv_addons_on ? '' : 'style="display:none"'; ?>>
-		<p class="eem-addon-block__hint">
-			<?php esc_html_e( 'Add-on prices are charged per night in addition to the RV rate the customer selects. Fill in only the rate(s) you offer.', 'equine-event-manager' ); ?>
-			<?php if ( $rv_addon_has_zones ) : ?>
-				<br><?php esc_html_e( 'Leave Zones empty to offer an add-on for every zone, or pick specific zones to restrict it (e.g. Sewer Hookup only for Red Lot).', 'equine-event-manager' ); ?>
-			<?php endif; ?>
-		</p>
-		<table class="eem-repeat-table">
-			<thead>
-				<tr>
-					<th><?php esc_html_e( 'Add-On', 'equine-event-manager' ); ?></th>
-					<th style="width:120px"><?php esc_html_e( 'Per Night', 'equine-event-manager' ); ?></th>
-					<?php if ( $rv_addon_has_zones ) : ?>
-						<th style="width:170px"><?php esc_html_e( 'Zones', 'equine-event-manager' ); ?></th>
-					<?php endif; ?>
-					<th style="width:40px"></th>
-				</tr>
-			</thead>
-			<tbody id="eem-rv-addons-rows">
-				<?php foreach ( $rv_addons as $idx => $addon ) :
-					$a_name    = isset( $addon['name'] ) ? (string) $addon['name'] : '';
-					$a_price   = isset( $addon['price'] ) ? (float) $addon['price'] : 0.0;
-					$a_zones   = ( isset( $addon['zones'] ) && is_array( $addon['zones'] ) ) ? array_map( 'strval', $addon['zones'] ) : array();
-					?>
-					<tr>
-						<td><input class="eem-repeat-input" type="text" name="en_reservation[rv_addons][<?php echo (int) $idx; ?>][name]" value="<?php echo esc_attr( $a_name ); ?>" /></td>
-						<td><div class="eem-repeat-price-wrap"><span class="eem-repeat-price-sym">$</span><input class="eem-repeat-price-in" type="number" step="0.01" min="0" name="en_reservation[rv_addons][<?php echo (int) $idx; ?>][price]" value="<?php echo esc_attr( $fmt_money( $a_price ) ); ?>" /></div></td>
-						<?php if ( $rv_addon_has_zones ) : ?>
-							<td><?php echo $rv_addon_zone_pills( 'en_reservation[rv_addons][' . (int) $idx . '][zones][]', $a_zones ); // phpcs:ignore -- pre-escaped ?></td>
-						<?php endif; ?>
-						<td><button class="eem-btn-delete" type="button" aria-label="<?php esc_attr_e( 'Delete', 'equine-event-manager' ); ?>" data-eem-action="reservation-editor-remove-repeating-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
-					</tr>
-				<?php endforeach; ?>
-			</tbody>
-		</table>
-		<button class="eem-btn-add" type="button" data-eem-action="reservation-editor-add-repeating-row" data-eem-repeating-template="eem-rv-addons-row-template" data-eem-repeating-tbody="eem-rv-addons-rows">
-			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-			<?php esc_html_e( 'Add RV Add-On', 'equine-event-manager' ); ?>
-		</button>
-		<template id="eem-rv-addons-row-template"><tr>
-			<td><input class="eem-repeat-input" type="text" name="en_reservation[rv_addons][__index__][name]" value="" placeholder="<?php esc_attr_e( 'Add-on name', 'equine-event-manager' ); ?>" /></td>
-			<td><div class="eem-repeat-price-wrap"><span class="eem-repeat-price-sym">$</span><input class="eem-repeat-price-in" type="number" step="0.01" min="0" name="en_reservation[rv_addons][__index__][price]" value="0.00" /></div></td>
-			<?php if ( $rv_addon_has_zones ) : ?>
-				<td><?php echo $rv_addon_zone_pills( 'en_reservation[rv_addons][__index__][zones][]', array() ); // phpcs:ignore -- pre-escaped ?></td>
-			<?php endif; ?>
-			<td><button class="eem-btn-delete" type="button" aria-label="<?php esc_attr_e( 'Delete', 'equine-event-manager' ); ?>" data-eem-action="reservation-editor-remove-repeating-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
-		</tr></template>
-	</div>
-</div>
-<?php
 
 

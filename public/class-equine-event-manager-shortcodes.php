@@ -977,34 +977,7 @@ class EEM_Shortcodes {
 											}
 										}
 										?>
-									<?php if ( ! empty( $rv_addon_options ) ) : ?>
-										<p class="eem-reservation-help eem-rv-addon-help">
-											<?php esc_html_e( 'Add-on prices are charged in addition to your RV rate — per night for a Nightly stay, or once for a Weekend Rate stay.', 'equine-event-manager' ); ?>
-										</p>
-									<?php endif; ?>
-									<?php
-									foreach ( $rv_addon_options as $addon_key => $addon ) :
-										// data-eem-addon-zones drives the customer-side zone filter:
-										// empty = every zone; otherwise the add-on only shows when a
-										// picked lot is in one of these (lowercased) zones.
-										$addon_zone_attr = strtolower( implode( '|', ( isset( $addon['zones'] ) && is_array( $addon['zones'] ) ) ? $addon['zones'] : array() ) );
-										?>
-										<div class="eem-rv-addon-wrap" data-eem-addon-zones="<?php echo esc_attr( $addon_zone_attr ); ?>">
-											<?php
-											$this->render_checkbox_product_line_item(
-												$addon['name'],
-												$addon['description'],
-												'rv_addon_' . $addon_key,
-												'eem-product-line-item--rv-addon',
-												array(
-													'dynamic_price_type' => 'rv_addon',
-													'dynamic_price_key'  => $addon_key,
-													'disabled'           => true,
-												)
-											);
-											?>
-										</div>
-									<?php endforeach; ?>
+									<?php // RV Add-Ons removed (Slice 6) — premium amenities are now map surcharges. ?>
 									</div>
 									<div class="eem-section-subtotal" aria-live="polite">
 										<span><?php esc_html_e( 'RV Subtotal', 'equine-event-manager' ); ?></span>
@@ -1452,12 +1425,7 @@ class EEM_Shortcodes {
 								<strong data-eem-total="pre_entry_<?php echo esc_attr( $pre_entry_key ); ?>_subtotal">$0.00</strong>
 							</div>
 						<?php endforeach; ?>
-						<?php foreach ( $rv_addon_options as $addon_key => $addon ) : ?>
-							<div class="eem-payment-summary-row" data-eem-summary-row="rv_addon_<?php echo esc_attr( $addon_key ); ?>_subtotal" hidden>
-								<span><?php echo esc_html( $addon['name'] ); ?> <?php esc_html_e( 'Add-On', 'equine-event-manager' ); ?></span>
-								<strong data-eem-total="rv_addon_<?php echo esc_attr( $addon_key ); ?>_subtotal">$0.00</strong>
-							</div>
-						<?php endforeach; ?>
+						<?php // RV Add-On summary rows removed (Slice 6). ?>
 						<div class="eem-payment-summary-row" data-eem-summary-row="fees" hidden>
 							<span><?php echo esc_html( ! empty( $data['convenience_fee_label'] ) ? $data['convenience_fee_label'] : __( 'Non-Refundable Convenience Fee', 'equine-event-manager' ) ); ?></span>
 							<strong data-eem-total="fees">$0.00</strong>
@@ -9709,53 +9677,20 @@ RV Lot: " . $rv_lot['name'] );
 	}
 
 	/**
-	 * Get the enabled RV add-on options.
+	 * RV Add-Ons are REMOVED (RV surcharge Slice 6, 2026-06-17). Real RV spots
+	 * have fixed amenities (50-amp vs 30-amp, full-hookup vs electric-only) the
+	 * customer chooses by picking a spot — they aren't optional bolt-ons. Premium
+	 * amenities are now modeled as map surcharges (priced areas/units). This stub
+	 * returns an empty set so every former consumer (customer renderer, pricing
+	 * matrix, submission collection, checkout insert, receipt/email breakdown)
+	 * yields nothing. General Add-Ons (pet fee, extra vehicle) are unaffected —
+	 * see get_enabled_general_addon_options().
 	 *
-	 * @param array $data Reservation setup data.
-	 * @return array<string, array<string, string>>
+	 * @param array $data Reservation setup data (unused; retained for call-site compat).
+	 * @return array<string, array<string, string>> Always empty.
 	 */
 	private function get_enabled_rv_addon_options( $data ) {
-		if ( empty( $data['rv_addons_enabled'] ) ) {
-			return array();
-		}
-
-		$options = array();
-		$addons  = isset( $data['rv_addons'] ) && is_array( $data['rv_addons'] ) ? $data['rv_addons'] : array();
-
-		foreach ( $addons as $addon_key => $addon ) {
-			if ( ! is_array( $addon ) ) {
-				continue;
-			}
-
-			$name        = isset( $addon['name'] ) ? sanitize_text_field( $addon['name'] ) : '';
-			$description = isset( $addon['description'] ) ? sanitize_text_field( $addon['description'] ) : '';
-			// 2.3.83 — `price` = per-night rate; `weekend_price` = flat Weekend Rate
-			// charge. Legacy single-rate rows map onto the new keys.
-			$price = isset( $addon['price'] ) ? $this->sanitize_money_value( $addon['price'] ) : '';
-			if ( '' === $price ) {
-				$price = isset( $addon['nightly_rate'] ) ? $this->sanitize_money_value( $addon['nightly_rate'] ) : '0.00';
-			}
-			$weekend_price = isset( $addon['weekend_price'] ) ? $this->sanitize_money_value( $addon['weekend_price'] ) : '';
-			if ( '' === $weekend_price ) {
-				$weekend_price = isset( $addon['weekend_rate'] ) ? $this->sanitize_money_value( $addon['weekend_rate'] ) : '0.00';
-			}
-
-			if ( '' === $name ) {
-				continue;
-			}
-
-			$zones = ( isset( $addon['zones'] ) && is_array( $addon['zones'] ) ) ? array_values( array_map( 'strval', $addon['zones'] ) ) : array();
-
-			$options[ (string) $addon_key ] = array(
-				'name'          => $name,
-				'description'   => $description,
-				'price'         => '' !== $price ? $price : '0.00',
-				'weekend_price' => '' !== $weekend_price ? $weekend_price : '0.00',
-				'zones'         => $zones,
-			);
-		}
-
-		return $options;
+		return array();
 	}
 
 	/**
