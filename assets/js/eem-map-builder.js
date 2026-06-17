@@ -174,12 +174,16 @@
 					var tabAmt = (z.surcharge && z.surcharge.nightly) ? Number(z.surcharge.nightly) : 0;
 					var areaAmt = (carea && carea.surcharge && carea.surcharge.nightly) ? Number(carea.surcharge.nightly) : 0;
 					var effAmt = tabAmt + areaAmt;
-					if (carea || tabAmt > 0) {
+					var tabPkgAmt = pkgAmtOf(z.surcharge);
+					var areaPkgAmt = carea ? pkgAmtOf(carea.surcharge) : 0;
+					var effPkg = tabPkgAmt + areaPkgAmt;
+					if (carea || tabAmt > 0 || tabPkgAmt > 0) {
 						d.classList.add('has-surcharge');
 						d.style.setProperty('--eem-mb-area', (carea && carea.color) ? carea.color : '#16a34a');
 						var tparts = [];
 						if (carea) { tparts.push(carea.name); }
-						if (effAmt > 0) { tparts.push('+$' + effAmt.toFixed(2) + '/night'); }
+						var amtLabel = surLabel(effAmt, effPkg);
+						if ('$0' !== amtLabel) { tparts.push(amtLabel); }
 						d.title = tparts.join(' ');
 					}
 					d.textContent = cell.label;
@@ -302,10 +306,36 @@
 		z.grid.forEach(function (row) { row.forEach(function (cl) { if (cl.type === 'stall' && cl.area) { used[cl.area] = 1; } }); });
 		z.areas = z.areas.filter(function (a) { return used[a.id]; });
 	}
+	// Live Stay Packages for the active builder target (rv/stall), read from the
+	// editor's rendered package rows. Empty when the reservation has no packages —
+	// the package surcharge input only appears when there's a package to price.
+	function pkgList() {
+		var t = (B && B.overlay && B.overlay.__eemTarget) || 'rv';
+		var rows = document.querySelectorAll('#eem-' + t + '-packages-tbody .eem-pkg-row[data-package-id]');
+		var out = [];
+		Array.prototype.forEach.call(rows, function (r) {
+			var nm = r.querySelector('.eem-pkg-name-input');
+			out.push({ id: r.getAttribute('data-package-id'), name: (nm && nm.value) ? nm.value : '' });
+		});
+		return out;
+	}
+	function hasPkgs() { return pkgList().length > 0; }
+	// The single flat "+$/package" amount lives under the reserved `_all` wildcard
+	// key (per the "flat per-package" decision — one package surcharge, not a matrix).
+	function pkgAmtOf(sur) { return (sur && sur.packages && sur.packages._all) ? Number(sur.packages._all) : 0; }
+	function setPkgAmt(sur, amt) {
+		// PHP serialises an empty packages map as a JSON array ([]), which hydrates
+		// into a JS Array. Setting a named prop on an Array works in memory but is
+		// dropped by JSON.stringify on save — coerce to a plain object first.
+		if (!sur.packages || Array.isArray(sur.packages)) { sur.packages = {}; }
+		if (amt > 0) { sur.packages._all = amt; } else { delete sur.packages._all; }
+	}
+
 	function applySurcharge() {
 		if (!B.sel) { toast('Drag a block of cells first'); return; }
 		var name = B.sur.name.trim(); if (!name) { toast('Name the area first'); return; }
 		var amt = Math.max(0, parseFloat(B.sur.amount || '0') || 0);
+		var pkgAmt = Math.max(0, parseFloat(B.sur.pkg || '0') || 0);
 		var z = Z(), s = B.sel;
 		var r1 = Math.min(s.r1, s.r2), r2 = Math.max(s.r1, s.r2), c1 = Math.min(s.c1, s.c2), c2 = Math.max(s.c1, s.c2);
 		z.areas = z.areas || [];
@@ -313,25 +343,35 @@
 		for (var i = 0; i < z.areas.length; i++) { if (z.areas[i].name.toLowerCase() === name.toLowerCase()) { area = z.areas[i]; break; } }
 		if (!area) { area = { id: uniqueAreaId(z, areaSlug(name)), name: name, color: '#16a34a', surcharge: { nightly: amt, packages: {} } }; z.areas.push(area); }
 		else { area.name = name; area.surcharge = area.surcharge || { nightly: 0, packages: {} }; area.surcharge.nightly = amt; }
+		setPkgAmt(area.surcharge, pkgAmt);
 		snapshot();
 		var n = 0;
 		for (var r = r1; r <= r2; r++) { for (var c = c1; c <= c2; c++) { var cell = z.grid[r][c]; if (cell.type === 'stall') { cell.area = area.id; n++; } } }
 		pruneAreas(z);
-		toast('Assigned “' + name + '” (+$' + amt.toFixed(2) + '/night) to ' + n + ' ' + noun(true));
+		toast('Assigned “' + name + '” (' + surLabel(amt, pkgAmt) + ') to ' + n + ' ' + noun(true));
 		B.sel = null; render(); renderControls();
 	}
 	// Whole-tab surcharge — applies to every sellable cell on the active tab and
 	// stacks with any painted-area amount ("most layers add").
 	function applyTabSurcharge() {
 		var z = Z();
-		var el = q('#eem-mb-surtab');
+		var el = q('#eem-mb-surtab'), pel = q('#eem-mb-surtabpkg');
 		var amt = Math.max(0, parseFloat((el && el.value) || '0') || 0);
+		var pkgAmt = Math.max(0, parseFloat((pel && pel.value) || '0') || 0);
 		snapshot();
 		z.surcharge = z.surcharge || { nightly: 0, packages: {} };
 		z.surcharge.nightly = amt;
-		if (amt > 0) { toast('Whole “' + z.name + '” tab now +$' + amt.toFixed(2) + '/night'); }
+		setPkgAmt(z.surcharge, pkgAmt);
+		if (amt > 0 || pkgAmt > 0) { toast('Whole “' + z.name + '” tab now ' + surLabel(amt, pkgAmt)); }
 		else { toast('Cleared tab surcharge from “' + z.name + '”'); }
 		render(); renderControls();
+	}
+	// Human-readable surcharge summary, e.g. "+$5.00/night, +$100.00/pkg".
+	function surLabel(nightly, pkg) {
+		var parts = [];
+		if (nightly > 0) { parts.push('+$' + nightly.toFixed(2) + '/night'); }
+		if (pkg > 0) { parts.push('+$' + pkg.toFixed(2) + '/pkg'); }
+		return parts.length ? parts.join(', ') : '$0';
 	}
 	function clearSurcharge() {
 		if (!B.sel) { toast('Drag a block of cells first'); return; }
@@ -434,17 +474,30 @@
 		} else if (B.tool === 'surcharge') {
 			var zsur = Z();
 			var tabSur = (zsur.surcharge && zsur.surcharge.nightly) ? Number(zsur.surcharge.nightly) : 0;
+			var tabPkg = pkgAmtOf(zsur.surcharge);
+			// Only surface the package surcharge input when the reservation actually
+			// sells Stay Packages for this target.
+			var showPkg = hasPkgs();
+			var areaPkgField = showPkg
+				? '<label class="eem-mb-tc">+ $/pkg <input type="number" id="eem-mb-surpkg" class="eem-mb-num" value="' + escapeAttr(B.sur.pkg) + '" min="0" step="0.01" placeholder="0.00"></label>'
+				: '';
+			var tabPkgField = showPkg
+				? '<label class="eem-mb-tc">+ $/pkg <input type="number" id="eem-mb-surtabpkg" class="eem-mb-num" value="' + (tabPkg ? escapeAttr(String(tabPkg)) : '') + '" min="0" step="0.01" placeholder="0.00"></label>'
+				: '';
 			p.innerHTML =
 				'<label class="eem-mb-tc">Area <input type="text" id="eem-mb-surname" class="eem-mb-input" value="' + escapeAttr(B.sur.name) + '" placeholder="Paddocks, Premium…"></label>' +
 				'<label class="eem-mb-tc">+ $/night <input type="number" id="eem-mb-suramt" class="eem-mb-num" value="' + escapeAttr(B.sur.amount) + '" min="0" step="0.01" placeholder="0.00"></label>' +
+				areaPkgField +
 				'<button type="button" class="eem-mb-apply" id="eem-mb-surapply">Assign to selection</button>' +
 				'<button type="button" class="eem-mb-apply eem-mb-apply-ghost" id="eem-mb-surclear">Clear</button>' +
 				'<span class="eem-mb-tc-sep" aria-hidden="true"></span>' +
 				'<label class="eem-mb-tc">Whole “' + escapeHtml(zsur.name) + '” + $/night <input type="number" id="eem-mb-surtab" class="eem-mb-num" value="' + (tabSur ? escapeAttr(String(tabSur)) : '') + '" min="0" step="0.01" placeholder="0.00"></label>' +
+				tabPkgField +
 				'<button type="button" class="eem-mb-apply" id="eem-mb-surtabapply">Apply to tab</button>' +
 				'<span class="eem-mb-selmeta">No selection</span>';
 			q('#eem-mb-surname').addEventListener('input', function (e) { B.sur.name = e.target.value; });
 			q('#eem-mb-suramt').addEventListener('input', function (e) { B.sur.amount = e.target.value; });
+			if (q('#eem-mb-surpkg')) { q('#eem-mb-surpkg').addEventListener('input', function (e) { B.sur.pkg = e.target.value; }); }
 			q('#eem-mb-surapply').addEventListener('click', applySurcharge);
 			q('#eem-mb-surclear').addEventListener('click', clearSurcharge);
 			q('#eem-mb-surtabapply').addEventListener('click', applyTabSurcharge);
@@ -649,7 +702,7 @@
 				return { name: b.name || (cap(zoneNoun(false))), grid: grid, areas: (b.areas || []), surcharge: (b.surcharge || null) };
 			});
 		}
-		B.active = 0; B.sel = null; B.tool = 'fill'; B.history = []; B.future = []; B.dirty = false; B.zoom = 1; B.fill = { start: nextStartLabel(), step: 1, dir: 'lr' }; B.lm = { name: 'Wash Rack' }; B.sur = { name: '', amount: '' }; B.unit = { label: '' };
+		B.active = 0; B.sel = null; B.tool = 'fill'; B.history = []; B.future = []; B.dirty = false; B.zoom = 1; B.fill = { start: nextStartLabel(), step: 1, dir: 'lr' }; B.lm = { name: 'Wash Rack' }; B.sur = { name: '', amount: '', pkg: '' }; B.unit = { label: '' };
 	}
 
 	function open(target) {

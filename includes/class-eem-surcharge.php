@@ -116,13 +116,24 @@ class EEM_Surcharge {
 	/**
 	 * Flat per-package surcharge for a given Stay Package id.
 	 *
+	 * Resolution order: a specific package-id amount wins; otherwise the reserved
+	 * `_all` wildcard (the single "flat per-package" amount that applies to every
+	 * package) is used; otherwise zero. Package ids are integers, so `_all` never
+	 * collides with a real id.
+	 *
 	 * @param array  $surcharge Canonical surcharge.
 	 * @param string $pkg_id    Package identifier.
 	 * @return float
 	 */
 	public static function for_package( array $surcharge, string $pkg_id ): float {
 		$pkg_id = sanitize_key( $pkg_id );
-		return isset( $surcharge['packages'][ $pkg_id ] ) ? (float) $surcharge['packages'][ $pkg_id ] : 0.0;
+		if ( isset( $surcharge['packages'][ $pkg_id ] ) ) {
+			return (float) $surcharge['packages'][ $pkg_id ];
+		}
+		if ( isset( $surcharge['packages']['_all'] ) ) {
+			return (float) $surcharge['packages']['_all'];
+		}
+		return 0.0;
 	}
 
 	/**

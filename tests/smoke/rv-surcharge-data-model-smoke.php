@@ -38,6 +38,13 @@ $check( 'nightly() reader', 5.5 === EEM_Surcharge::nightly( $s ) );
 $check( 'for_package() reader', 100.0 === EEM_Surcharge::for_package( $s, 'pkg_a' ) );
 $check( 'for_package() missing → 0', 0.0 === EEM_Surcharge::for_package( $s, 'nope' ) );
 
+// Wildcard _all: a single flat per-package amount applies to every package id,
+// while a specific package-id amount overrides it (the "flat per-package" UI).
+$w = EEM_Surcharge::sanitize( array( 'packages' => array( '_all' => 50, '7' => 80 ) ) );
+$check( 'for_package() falls back to _all wildcard', 50.0 === EEM_Surcharge::for_package( $w, '999' ) );
+$check( 'for_package() specific id overrides _all', 80.0 === EEM_Surcharge::for_package( $w, '7' ) );
+$check( 'add() stacks _all wildcard 50+25=75', 75.0 === EEM_Surcharge::add( $w, array( 'packages' => array( '_all' => 25 ) ) )['packages']['_all'] );
+
 $sum = EEM_Surcharge::add(
 	array( 'nightly' => 5, 'packages' => array( 'wk' => 100 ) ),
 	array( 'nightly' => 10, 'packages' => array( 'wk' => 40, 'we' => 20 ) )
