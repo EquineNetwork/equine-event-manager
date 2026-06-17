@@ -177,9 +177,15 @@
 					var tabPkgAmt = pkgAmtOf(z.surcharge);
 					var areaPkgAmt = carea ? pkgAmtOf(carea.surcharge) : 0;
 					var effPkg = tabPkgAmt + areaPkgAmt;
-					if (carea || tabAmt > 0 || tabPkgAmt > 0) {
+					// Green tint + $ marks a lot that carries its OWN (painted-area)
+					// premium. A whole-tab price is shown by the tab's green $ icon, not
+					// by tinting every lot — otherwise every lot looks individually
+					// priced and "Remove surcharge" appears to do nothing.
+					if (carea) {
 						d.classList.add('has-surcharge');
-						d.style.setProperty('--eem-mb-area', (carea && carea.color) ? carea.color : '#16a34a');
+						d.style.setProperty('--eem-mb-area', carea.color || '#16a34a');
+					}
+					if (effAmt > 0 || effPkg > 0) {
 						var tparts = [];
 						if (carea) { tparts.push(carea.name); }
 						var amtLabel = surLabel(effAmt, effPkg);
@@ -438,9 +444,17 @@
 		var exNight = ex ? EEM_num(ex.surcharge && ex.surcharge.nightly) : 0;
 		var exPkg = ex ? pkgAmtOf(ex.surcharge) : 0;
 		var showPkg = hasPkgs();
+		// Pre-fill the name: an existing area's name wins; otherwise, when a single
+		// lot/unit is selected, seed it with that lot's title so the admin doesn't
+		// retype "Pasture #1" etc.
+		var defName = ex ? ex.name : '';
+		if (!defName && info.sellable === 1) {
+			var ss = normSel(); var sc = ss && z.grid[ss.r1] && z.grid[ss.r1][ss.c1];
+			if (sc && sc.type === 'stall' && sc.label) { defName = sc.label; }
+		}
 		var body =
 			'<label class="eem-mb-fl">Name <span class="eem-mb-fl-opt">(optional)</span>' +
-				'<input type="text" class="eem-mb-input eem-mb-input-wide" id="eem-sm-name" value="' + escapeAttr(ex ? ex.name : '') + '" placeholder="Paddocks, Premium, Lakefront…"></label>' +
+				'<input type="text" class="eem-mb-input eem-mb-input-wide" id="eem-sm-name" value="' + escapeAttr(defName) + '" placeholder="Paddocks, Premium, Lakefront…"></label>' +
 			'<label class="eem-mb-fl">+ $ / night' +
 				'<input type="number" class="eem-mb-num" id="eem-sm-night" min="0" step="0.01" value="' + (exNight ? escapeAttr(String(exNight)) : '') + '" placeholder="0.00"></label>' +
 			(showPkg ? '<label class="eem-mb-fl">+ $ / package' +
@@ -757,7 +771,7 @@
 	}
 
 	function tool(name, label, path, id) {
-		return '<button type="button" class="eem-mb-tool' + (name === 'fill' ? ' active' : '') + '" data-tool="' + name + '"' + (id ? ' id="' + id + '"' : '') + '><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' + path + '</svg>' + label + '</button>';
+		return '<button type="button" class="eem-mb-tool' + (name === 'select' ? ' active' : '') + '" data-tool="' + name + '"' + (id ? ' id="' + id + '"' : '') + '><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' + path + '</svg>' + label + '</button>';
 	}
 	function act(name, label, path, id) {
 		return '<button type="button" class="eem-mb-tool" data-act="' + name + '"' + (id ? ' id="' + id + '"' : '') + '><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' + path + '</svg>' + label + '</button>';
@@ -783,7 +797,7 @@
 				return { name: b.name || (cap(zoneNoun(false))), grid: grid, areas: (b.areas || []), surcharge: (b.surcharge || null) };
 			});
 		}
-		B.active = 0; B.sel = null; B.tool = 'fill'; B.history = []; B.future = []; B.dirty = false; B.zoom = 1; B.fill = { start: nextStartLabel(), step: 1, dir: 'lr' }; B.lm = { name: 'Wash Rack' };
+		B.active = 0; B.sel = null; B.tool = 'select'; B.history = []; B.future = []; B.dirty = false; B.zoom = 1; B.fill = { start: nextStartLabel(), step: 1, dir: 'lr' }; B.lm = { name: 'Wash Rack' };
 	}
 
 	function open(target) {
