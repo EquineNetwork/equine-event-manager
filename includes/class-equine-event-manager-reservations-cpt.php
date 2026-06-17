@@ -1045,8 +1045,19 @@ class EEM_Reservations_CPT {
 			return;
 		}
 
+		// Cheap pre-check FIRST: read the linked-event id straight from post-meta
+		// instead of hydrating the full reservation config. Hydration loads the
+		// large stall/RV map JSON, and doing that for every selected row during a
+		// bulk Move-to-Trash exhausts PHP memory (the list crashed with a fatal).
+		// No linked event (the common case, and every unlinked draft) → nothing to
+		// clear, so return before touching the config at all.
+		$event_id = absint( get_post_meta( $post_id, '_en_event_id', true ) );
+		if ( ! $event_id || ! in_array( get_post_type( $event_id ), array( 'tribe_events', EEM_Events::EVENT_POST_TYPE ), true ) ) {
+			$this->debug_log( 'cleanup skipped: no linked event (cheap post-meta check).' );
+			return;
+		}
+
 		$event_source = $this->get_effective_event_source_for_reservation( $post_id );
-		$event_id     = absint( EEM_Reservation_Config::for( $post_id )->get( 'event_id', 0 ) );
 		$shortcode    = $this->get_reservation_shortcode( $post_id );
 
 		$this->debug_log(
