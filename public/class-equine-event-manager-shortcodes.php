@@ -885,23 +885,32 @@ class EEM_Shortcodes {
 									<div class="eem-product-list">
 										<?php $this->render_product_list_header(); ?>
 										<?php
-										$this->render_product_line_item(
-											__( 'RV Spots', 'equine-event-manager' ),
-											'',
-											'rv_qty',
-											'',
-											array(
-												'dynamic_price_type' => 'rv',
-												'early_bird_active'  => $rv_early_bird_active,
-												'max_quantity'       => ! empty( $data['rv_lot_selection_enabled'] ) && '' !== (string) $rv_default_lot && isset( $status['rv_lot_inventory'][ (string) $rv_default_lot ]['remaining'] ) ? $status['rv_lot_inventory'][ (string) $rv_default_lot ]['remaining'] : $status['rv_inventory_remaining'],
-											)
-										);
+										// Slice 5: in Quantity mode (NOT pick-from-layout), if RV rows
+										// (tiers) are defined, render one priced stepper per tier instead
+										// of the single "RV Spots" stepper. Each tier carries a per-night
+										// surcharge and is capped at its row's range size.
+										$eem_rv_mode  = EEM_Reservations_CPT::resolve_rv_pair( (int) $reservation_id )['selection_mode'];
+										$eem_rv_tiers = ( 'exact_map' !== $eem_rv_mode ) ? $this->get_rv_tiers( $data, (int) $reservation_id ) : array();
+										if ( ! empty( $eem_rv_tiers ) ) {
+											$this->render_rv_tier_steppers( $eem_rv_tiers, (int) $reservation_id, $rv_early_bird_active );
+										} else {
+											$this->render_product_line_item(
+												__( 'RV Spots', 'equine-event-manager' ),
+												'',
+												'rv_qty',
+												'',
+												array(
+													'dynamic_price_type' => 'rv',
+													'early_bird_active'  => $rv_early_bird_active,
+													'max_quantity'       => ! empty( $data['rv_lot_selection_enabled'] ) && '' !== (string) $rv_default_lot && isset( $status['rv_lot_inventory'][ (string) $rv_default_lot ]['remaining'] ) ? $status['rv_lot_inventory'][ (string) $rv_default_lot ]['remaining'] : $status['rv_inventory_remaining'],
+												)
+											);
+										}
 										?>
 										<?php
 										// v4 RV spatial picker — Mapped + Pick-from-layout with a connected
 										// RV map. Renders below the qty stepper and drives rv_qty (mirrors the
 										// stall picker). Lots are zone-qualified ("Red Lot 1").
-										$eem_rv_mode = EEM_Reservations_CPT::resolve_rv_pair( (int) $reservation_id )['selection_mode'];
 										if ( 'exact_map' === $eem_rv_mode ) {
 											$eem_rv_map_snapshot = EEM_Stall_Map_Importer::get_for_reservation( (int) $reservation_id, EEM_Stall_Map_Importer::RV_META_KEY );
 											if ( ! empty( $eem_rv_map_snapshot['barns'] ) ) {
@@ -2678,6 +2687,10 @@ class EEM_Shortcodes {
 		}
 
 		$submission     = $this->sanitize_submission( $data );
+		// Slice 5: resolve Quantity-mode RV tier selections into an authoritative
+		// rv_qty + per-tier surcharge sum (capacity-clamped) BEFORE validation and
+		// pricing run, so both see the corrected, never-oversold figure.
+		$submission     = $this->resolve_rv_tier_submission( $submission, $data, (int) $reservation_id );
 		$errors         = $this->validate_submission( $submission, $status, $data );
 		$is_send_link   = ( 'manual' === $submission['invoice_type'] && 'send_payment_link' === $submission['invoice_action_mode'] );
 		$is_show_bill   = ( 'manual' === $submission['invoice_type'] && 'add_to_show_bill' === $submission['invoice_action_mode'] );
@@ -2853,6 +2866,8 @@ class EEM_Shortcodes {
 			'rv_qty'                  => isset( $_POST['rv_qty'] ) ? absint( $_POST['rv_qty'] ) : 0,
 			// v4 RV spatial picker: zone-qualified lots the customer tapped ("Red Lot 1").
 			'preferred_rv_lots'       => isset( $_POST['preferred_rv_lots'] ) ? array_values( array_filter( array_map( 'sanitize_text_field', (array) wp_unslash( $_POST['preferred_rv_lots'] ) ) ) ) : array(),
+			// Slice 5: per-tier quantities in Quantity mode, keyed by RV row index.
+			'rv_tier_qty'             => ( isset( $_POST['rv_tier_qty'] ) && is_array( $_POST['rv_tier_qty'] ) ) ? array_map( 'absint', (array) wp_unslash( $_POST['rv_tier_qty'] ) ) : array(),
 			'billing_address_1'       => isset( $_POST['billing_address_1'] ) ? sanitize_text_field( wp_unslash( $_POST['billing_address_1'] ) ) : '',
 			'billing_address_2'       => isset( $_POST['billing_address_2'] ) ? sanitize_text_field( wp_unslash( $_POST['billing_address_2'] ) ) : '',
 			'billing_city'            => isset( $_POST['billing_city'] ) ? sanitize_text_field( wp_unslash( $_POST['billing_city'] ) ) : '',
@@ -4069,7 +4084,12 @@ class EEM_Shortcodes {
 		// v4 RV map picker: each picked lot also carries its zone's surcharge on
 		// top of the base rate. Summed server-side (source of truth) from the
 		// picked zone-qualified units so the charge matches the displayed total.
-		$rv_zone_surcharge_sum        = $this->get_rv_zone_surcharge_for_units( $data, (array) ( $submission['preferred_rv_lots'] ?? array() ), (string) $submission['rv_stay_type'] );
+		// Slice 5: Quantity-mode tier orders carry their per-night surcharge sum
+		// (already capacity-clamped in resolve_rv_tier_submission); pick-from-layout
+		// orders resolve it from the picked lots' map surcharge.
+		$rv_zone_surcharge_sum        = ( null !== ( $submission['rv_tier_surcharge_sum'] ?? null ) )
+			? (float) $submission['rv_tier_surcharge_sum']
+			: $this->get_rv_zone_surcharge_for_units( $data, (array) ( $submission['preferred_rv_lots'] ?? array() ), (string) $submission['rv_stay_type'] );
 		$rv_subtotal                  = ( $status['rv_open'] && absint( $submission['rv_qty'] ) > 0 ) ? ( ( absint( $submission['rv_qty'] ) * $rv_unit_price + $rv_zone_surcharge_sum ) * $rv_night_count ) : 0;
 
 		if ( $status['rv_open'] && absint( $submission['rv_qty'] ) > 0 ) {
@@ -4612,6 +4632,20 @@ RV Lot: " . $rv_lot['name'] );
 			// read, so the picked lots show on the Stall & RV Charts page.
 			if ( ! empty( $submission['preferred_rv_lots'] ) ) {
 				$rv_notes = trim( $rv_notes . "\nAssigned RV Lots: " . implode( ', ', array_map( 'sanitize_text_field', (array) $submission['preferred_rv_lots'] ) ) );
+			}
+
+			// Slice 5: Quantity-mode tier selection — the canonical "RV Tiers:" note
+			// the per-tier sold-count + surcharge recompute read back.
+			if ( ! empty( $submission['rv_tier_selection'] ) && is_array( $submission['rv_tier_selection'] ) ) {
+				$rv_tier_bits = array();
+				foreach ( $submission['rv_tier_selection'] as $rv_tier_name => $rv_tier_q ) {
+					if ( (int) $rv_tier_q > 0 ) {
+						$rv_tier_bits[] = sanitize_text_field( (string) $rv_tier_name ) . ' ×' . (int) $rv_tier_q;
+					}
+				}
+				if ( ! empty( $rv_tier_bits ) ) {
+					$rv_notes = trim( $rv_notes . "\nRV Tiers: " . implode( ', ', $rv_tier_bits ) );
+				}
 			}
 
 			if ( ! empty( $rv_addon_labels ) ) {
@@ -6016,10 +6050,6 @@ RV Lot: " . $rv_lot['name'] );
 		$raw   = $this->get_order_component_note_value( $order, 'rv', 'Assigned RV Lots' );
 		$units = array_values( array_filter( array_map( 'trim', explode( ',', (string) $raw ) ), 'strlen' ) );
 
-		if ( empty( $units ) ) {
-			return 0.0;
-		}
-
 		$stay_type        = ! empty( $order['rv_stay_type'] ) ? sanitize_key( $order['rv_stay_type'] ) : 'nightly';
 		$reservation_data = $this->get_reservation_data( $reservation_id );
 
@@ -6027,19 +6057,39 @@ RV Lot: " . $rv_lot['name'] );
 			return 0.0;
 		}
 
-		$per_unit_sum = $this->get_rv_zone_surcharge_for_units( $reservation_data, $units, $stay_type );
-
-		if ( $per_unit_sum <= 0 ) {
-			return 0.0;
-		}
-
-		$stay_units = $this->get_billable_stay_units(
+		$stay_units = max( 1, (int) $this->get_billable_stay_units(
 			isset( $order['rv_arrival_date'] ) ? $order['rv_arrival_date'] : '',
 			isset( $order['rv_departure_date'] ) ? $order['rv_departure_date'] : '',
 			$stay_type
-		);
+		) );
 
-		return $per_unit_sum * max( 1, (int) $stay_units );
+		// Pick-from-layout orders: premium comes from the picked lots' map surcharge.
+		if ( ! empty( $units ) ) {
+			$per_unit_sum = $this->get_rv_zone_surcharge_for_units( $reservation_data, $units, $stay_type );
+			return $per_unit_sum > 0 ? $per_unit_sum * $stay_units : 0.0;
+		}
+
+		// Quantity-mode tier orders (Slice 5): premium comes from the per-tier
+		// nightly surcharge recorded on the "RV Tiers:" note, summed by tier.
+		$tier_qty = $this->parse_rv_tiers_note(
+			$this->get_order_component_note_value( $order, 'rv', 'RV Tiers' )
+		);
+		if ( empty( $tier_qty ) ) {
+			return 0.0;
+		}
+		$tier_surcharge = array();
+		foreach ( $this->get_rv_tiers( $reservation_data, $reservation_id ) as $tier ) {
+			$tier_surcharge[ strtolower( $tier['name'] ) ] = (float) $tier['nightly_surcharge'];
+		}
+		$per_unit_sum = 0.0;
+		foreach ( $tier_qty as $name => $qty ) {
+			$key = strtolower( $name );
+			if ( isset( $tier_surcharge[ $key ] ) ) {
+				$per_unit_sum += $tier_surcharge[ $key ] * (int) $qty;
+			}
+		}
+
+		return $per_unit_sum > 0 ? $per_unit_sum * $stay_units : 0.0;
 	}
 
 	/**
@@ -9568,6 +9618,199 @@ RV Lot: " . $rv_lot['name'] );
 	}
 
 	/**
+	 * Build the RV tier list for Quantity mode (Slice 5). Each RV row defines a
+	 * priced tier: a name, a capacity (the count of lots in its First..Last range),
+	 * and a per-night surcharge added on top of the base RV rate. Rows without a
+	 * resolvable range (capacity 0) are skipped — they can't be sold by quantity.
+	 *
+	 * The row UI only exposes a nightly surcharge, so the per-rate-type surcharge
+	 * object carries only `nightly`; package stays fall back to 0 (no per-tier
+	 * package field exists). Tier identity for persistence is the row name.
+	 *
+	 * @param array $data           Reservation setup data.
+	 * @param int   $reservation_id  Reservation post ID — used to load rv_rows from
+	 *                               the config table when the customer-side meta
+	 *                               array doesn't surface them (config/meta divergence).
+	 * @return array<int, array{index:int,name:string,capacity:int,nightly_surcharge:float,surcharge:array}>
+	 */
+	private function get_rv_tiers( array $data, int $reservation_id = 0 ): array {
+		$rows = ( isset( $data['rv_rows'] ) && is_array( $data['rv_rows'] ) ) ? $data['rv_rows'] : array();
+		// The customer-facing reservation meta doesn't include rv_rows (it lives in
+		// the config table); fall back to the config row when given an id.
+		if ( empty( $rows ) && $reservation_id > 0 && class_exists( 'EEM_Reservation_Config' ) ) {
+			$cfg_rows = EEM_Reservation_Config::for( $reservation_id )->get( 'rv_rows' );
+			if ( is_array( $cfg_rows ) ) {
+				$rows = $cfg_rows;
+			}
+		}
+		if ( empty( $rows ) ) {
+			return array();
+		}
+
+		$tiers = array();
+		foreach ( $rows as $index => $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			$first = isset( $row['first'] ) ? (string) $row['first'] : '';
+			$last  = isset( $row['last'] ) ? (string) $row['last'] : '';
+			if ( '' === $first || '' === $last ) {
+				continue;
+			}
+			$capacity = count( $this->expand_stall_label_range( $first, $last ) );
+			if ( $capacity < 1 ) {
+				continue;
+			}
+			$surcharge = class_exists( 'EEM_Surcharge' )
+				? EEM_Surcharge::sanitize( isset( $row['surcharge'] ) ? $row['surcharge'] : ( $row['nightly_surcharge'] ?? 0 ) )
+				: array( 'nightly' => (float) ( $row['nightly_surcharge'] ?? 0 ), 'packages' => array() );
+			$name = isset( $row['name'] ) ? trim( (string) $row['name'] ) : '';
+			if ( '' === $name ) {
+				/* translators: %d: tier number. */
+				$name = sprintf( __( 'Tier %d', 'equine-event-manager' ), (int) $index + 1 );
+			}
+			// Strip commas so the persisted "RV Tiers:" note parses cleanly.
+			$name = str_replace( ',', ' ', $name );
+
+			$tiers[] = array(
+				'index'             => (int) $index,
+				'name'              => $name,
+				'capacity'          => (int) $capacity,
+				'nightly_surcharge' => class_exists( 'EEM_Surcharge' ) ? (float) EEM_Surcharge::nightly( $surcharge ) : (float) ( $row['nightly_surcharge'] ?? 0 ),
+				'surcharge'         => $surcharge,
+			);
+		}
+
+		return $tiers;
+	}
+
+	/**
+	 * Sum how many RV spots have already been sold per tier across this
+	 * reservation's existing orders (Slice 5). Reads the canonical "RV Tiers:"
+	 * note line each tier order persists, keyed by tier name. Used to compute the
+	 * per-tier remaining capacity the customer steppers cap against.
+	 *
+	 * @param int $reservation_id Reservation post ID.
+	 * @return array<string,int> Tier name (lowercased) => sold count.
+	 */
+	private function get_rv_tier_sold_map( int $reservation_id ): array {
+		$sold = array();
+		$reservation_id = absint( $reservation_id );
+		if ( $reservation_id < 1 || ! class_exists( 'EEM_Orders_Repository' ) ) {
+			return $sold;
+		}
+
+		$orders = array_filter(
+			( new EEM_Orders_Repository() )->get_orders( '', 'date', 'asc' ),
+			function ( $order ) use ( $reservation_id ) {
+				return absint( isset( $order['reservation_id'] ) ? $order['reservation_id'] : 0 ) === $reservation_id;
+			}
+		);
+
+		foreach ( (array) $orders as $order ) {
+			$raw = $this->get_order_component_note_value( $order, 'rv', 'RV Tiers' );
+			foreach ( $this->parse_rv_tiers_note( $raw ) as $tier_name => $qty ) {
+				$key          = strtolower( $tier_name );
+				$sold[ $key ] = ( isset( $sold[ $key ] ) ? $sold[ $key ] : 0 ) + (int) $qty;
+			}
+		}
+
+		return $sold;
+	}
+
+	/**
+	 * Parse a stored "RV Tiers:" note value ("Red Lot ×2, Premium ×1") into a
+	 * name => qty map. Tolerates the ASCII 'x' as well as the '×' sign.
+	 *
+	 * @param string $raw Raw note value (after the "RV Tiers:" label).
+	 * @return array<string,int> Tier name => quantity.
+	 */
+	private function parse_rv_tiers_note( $raw ): array {
+		$out = array();
+		$raw = trim( (string) $raw );
+		if ( '' === $raw ) {
+			return $out;
+		}
+		if ( preg_match_all( '/\s*(.+?)\s*(?:×|x)\s*(\d+)\s*(?:,|$)/u', $raw, $matches, PREG_SET_ORDER ) ) {
+			foreach ( $matches as $m ) {
+				$name = trim( $m[1] );
+				$qty  = (int) $m[2];
+				if ( '' !== $name && $qty > 0 ) {
+					$out[ $name ] = ( isset( $out[ $name ] ) ? $out[ $name ] : 0 ) + $qty;
+				}
+			}
+		}
+		return $out;
+	}
+
+	/**
+	 * Resolve a Quantity-mode RV tier submission into an authoritative rv_qty and
+	 * per-tier surcharge sum (Slice 5). Each tier quantity is clamped to its
+	 * remaining capacity so a tier can never be oversold, even if the client sent
+	 * an inflated value. Adds three keys to $submission:
+	 *   - rv_qty                → recomputed total across tiers
+	 *   - rv_tier_selection     → [tier name => clamped qty] for the persisted note
+	 *   - rv_tier_surcharge_sum → Σ qty × per-night surcharge (null when N/A)
+	 * No-op when not in Quantity mode, no tiers are defined, or no tier qty posted.
+	 *
+	 * @param array $submission     Sanitized submission.
+	 * @param array $data           Reservation setup data.
+	 * @param int   $reservation_id Reservation post ID.
+	 * @return array Mutated submission.
+	 */
+	private function resolve_rv_tier_submission( array $submission, array $data, int $reservation_id ): array {
+		$submission['rv_tier_selection']     = array();
+		$submission['rv_tier_surcharge_sum'] = null;
+
+		$tier_qty = ( isset( $submission['rv_tier_qty'] ) && is_array( $submission['rv_tier_qty'] ) ) ? $submission['rv_tier_qty'] : array();
+		if ( empty( $tier_qty ) ) {
+			return $submission;
+		}
+
+		if ( class_exists( 'EEM_Reservations_CPT' ) ) {
+			$mode = EEM_Reservations_CPT::resolve_rv_pair( $reservation_id )['selection_mode'];
+			if ( 'exact_map' === $mode ) {
+				return $submission; // pick-from-layout handles its own surcharge
+			}
+		}
+
+		$tiers = $this->get_rv_tiers( $data, $reservation_id );
+		if ( empty( $tiers ) ) {
+			return $submission;
+		}
+
+		$sold          = $this->get_rv_tier_sold_map( $reservation_id );
+		$total_qty     = 0;
+		$surcharge_sum = 0.0;
+		$selection     = array();
+
+		foreach ( $tiers as $tier ) {
+			$idx = (int) $tier['index'];
+			$q   = isset( $tier_qty[ $idx ] ) ? absint( $tier_qty[ $idx ] ) : 0;
+			if ( $q < 1 ) {
+				continue;
+			}
+			$key       = strtolower( $tier['name'] );
+			$remaining = max( 0, (int) $tier['capacity'] - ( isset( $sold[ $key ] ) ? (int) $sold[ $key ] : 0 ) );
+			if ( $q > $remaining ) {
+				$q = $remaining; // never oversell a tier
+			}
+			if ( $q < 1 ) {
+				continue;
+			}
+			$selection[ $tier['name'] ] = $q;
+			$surcharge_sum             += $q * (float) $tier['nightly_surcharge'];
+			$total_qty                 += $q;
+		}
+
+		$submission['rv_qty']                = $total_qty;
+		$submission['rv_tier_selection']     = $selection;
+		$submission['rv_tier_surcharge_sum'] = $surcharge_sum;
+
+		return $submission;
+	}
+
+	/**
 	 * Resolve the distinct (lowercased) zone names of a set of picked RV lots,
 	 * from the RV map. Used to gate per-zone add-on availability.
 	 *
@@ -10050,6 +10293,105 @@ RV Lot: " . $rv_lot['name'] );
 				<?php $this->render_quantity_control( $name, $args['max_quantity'] ); ?>
 			</div>
 		</div>
+		<?php
+	}
+
+	/**
+	 * Render the RV per-tier quantity steppers (Slice 5) for Quantity mode. One
+	 * stepper per RV row/tier — each labeled with its name and premium delta,
+	 * capped at the tier's remaining capacity (range size minus already-sold).
+	 *
+	 * The block emits a hidden `rv_qty` mirror (sum of all tier quantities) plus
+	 * the `rv_surcharge_nightly` / `rv_surcharge_weekend` hidden fields the totals
+	 * JS already reads for pick-mode surcharge — so the existing live-total formula
+	 * and the Slice 7 base/premium split work unchanged. The scoped script keeps
+	 * all three in sync as the customer adjusts steppers and clamps each tier to
+	 * its max.
+	 *
+	 * @param array $tiers          Tier list from get_rv_tiers().
+	 * @param int   $reservation_id Reservation post ID (for sold-count lookup).
+	 * @param bool  $early_bird     Whether the early-bird badge should show.
+	 * @return void
+	 */
+	private function render_rv_tier_steppers( array $tiers, int $reservation_id, bool $early_bird = false ): void {
+		$sold = $this->get_rv_tier_sold_map( $reservation_id );
+
+		?>
+		<div class="eem-rv-tiers" data-eem-rv-tiers>
+			<?php foreach ( $tiers as $tier ) :
+				$key       = strtolower( $tier['name'] );
+				$remaining = max( 0, (int) $tier['capacity'] - ( isset( $sold[ $key ] ) ? (int) $sold[ $key ] : 0 ) );
+				$surcharge = (float) $tier['nightly_surcharge'];
+				?>
+				<div class="eem-product-line-item eem-product-line-item--rv-tier"
+					data-rv-tier-index="<?php echo (int) $tier['index']; ?>"
+					data-rv-tier-surcharge="<?php echo esc_attr( number_format( $surcharge, 2, '.', '' ) ); ?>"
+					data-rv-tier-remaining="<?php echo (int) $remaining; ?>">
+					<div class="eem-product-line-item__content">
+						<div class="eem-product-line-item__title">
+							<span class="eem-product-line-item__title-text"><?php echo esc_html( $tier['name'] ); ?></span>
+							<?php if ( $surcharge > 0 ) : ?>
+								<span class="eem-rate-badge eem-rate-badge--inline">+<?php echo esc_html( $this->format_money( $surcharge ) ); ?><?php esc_html_e( '/night', 'equine-event-manager' ); ?></span>
+							<?php endif; ?>
+							<?php if ( $early_bird ) : ?>
+								<span class="eem-rate-badge eem-rate-badge--inline"><?php esc_html_e( 'Early Bird Rate', 'equine-event-manager' ); ?></span>
+							<?php endif; ?>
+						</div>
+						<div class="eem-product-line-item__description">
+							<?php
+							if ( $remaining > 0 ) {
+								/* translators: 1: remaining count, 2: total capacity. */
+								echo esc_html( sprintf( _n( '%1$d of %2$d available', '%1$d of %2$d available', $remaining, 'equine-event-manager' ), $remaining, (int) $tier['capacity'] ) );
+							} else {
+								esc_html_e( 'Sold out', 'equine-event-manager' );
+							}
+							?>
+						</div>
+					</div>
+					<div class="eem-product-line-item__qty">
+						<?php $this->render_quantity_control( 'rv_tier_qty[' . (int) $tier['index'] . ']', $remaining ); ?>
+					</div>
+				</div>
+			<?php endforeach; ?>
+			<input type="hidden" name="rv_qty" value="0" data-eem-rv-tier-total>
+			<input type="hidden" name="rv_surcharge_nightly" value="0" data-eem-rv-tier-surcharge="nightly">
+			<input type="hidden" name="rv_surcharge_weekend" value="0" data-eem-rv-tier-surcharge="weekend">
+		</div>
+		<script>
+		(function(){
+			var wrap = document.currentScript.previousElementSibling;
+			if ( ! wrap || ! wrap.hasAttribute( 'data-eem-rv-tiers' ) ) { return; }
+			var form = wrap.closest( 'form' );
+			var qtyMirror = wrap.querySelector( '[data-eem-rv-tier-total]' );
+			var surNightly = wrap.querySelector( '[data-eem-rv-tier-surcharge="nightly"]' );
+			var surWeekend = wrap.querySelector( '[data-eem-rv-tier-surcharge="weekend"]' );
+			function recompute() {
+				var totalQty = 0, surSum = 0;
+				wrap.querySelectorAll( '.eem-product-line-item--rv-tier' ).forEach( function( row ) {
+					var input = row.querySelector( 'input[type="number"]' );
+					if ( ! input ) { return; }
+					var max = parseInt( row.getAttribute( 'data-rv-tier-remaining' ), 10 ) || 0;
+					var q = parseInt( input.value, 10 ); if ( isNaN( q ) || q < 0 ) { q = 0; }
+					if ( q > max ) { q = max; input.value = max; }
+					var sur = parseFloat( row.getAttribute( 'data-rv-tier-surcharge' ) ) || 0;
+					totalQty += q;
+					surSum += q * sur;
+				} );
+				qtyMirror.value = totalQty;
+				// Per-unit surcharge sum (the totals JS multiplies by billable nights).
+				surNightly.value = surSum.toFixed( 2 );
+				surWeekend.value = surSum.toFixed( 2 );
+				// Nudge the live-total recalc (listens on input/change at form level).
+				qtyMirror.dispatchEvent( new Event( 'input', { bubbles: true } ) );
+			}
+			wrap.addEventListener( 'input', recompute );
+			wrap.addEventListener( 'change', recompute );
+			wrap.addEventListener( 'click', function( e ) {
+				if ( e.target.closest( '[data-eem-quantity-step]' ) ) { setTimeout( recompute, 0 ); }
+			} );
+			recompute();
+		})();
+		</script>
 		<?php
 	}
 
