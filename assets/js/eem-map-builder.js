@@ -203,14 +203,20 @@
 		B.zones.forEach(function (z, i) {
 			var b = document.createElement('button');
 			b.type = 'button';
+			var tabPriced = !!(z.surcharge && (EEM_num(z.surcharge.nightly) > 0 || pkgAmtOf(z.surcharge) > 0));
 			b.className = 'eem-mb-tab' + (i === B.active ? ' active' : '');
-			b.innerHTML = escapeHtml(z.name) + (B.zones.length > 1 ? ' <span class="x" aria-label="Delete">&times;</span>' : '');
+			b.innerHTML = escapeHtml(z.name) +
+				' <span class="eem-mb-tab-price' + (tabPriced ? ' on' : '') + '" data-tabprice="1" title="Price the whole ' + escapeAttr(z.name) + '" aria-label="Price the whole ' + escapeAttr(z.name) + '">$</span>' +
+				(B.zones.length > 1 ? ' <span class="x" aria-label="Delete">&times;</span>' : '');
 			b.onclick = function (ev) {
 				if (ev.target.classList.contains('x')) {
 					mbConfirm('Delete ' + zoneNoun(false) + ' “' + z.name + '”? This removes its ' + countStalls(z) + ' ' + noun(true) + '.', function () {
 						snapshot(); B.zones.splice(i, 1); B.active = Math.max(0, B.active - (i <= B.active ? 1 : 0)); B.sel = null; render(); renderControls(); notifyZones();
 					});
 					return;
+				}
+				if (ev.target.getAttribute('data-tabprice')) {
+					B.active = i; render(); openTabSurchargeModal(); return;
 				}
 				B.active = i; B.sel = null; render(); renderControls();
 			};
@@ -331,41 +337,6 @@
 		if (amt > 0) { sur.packages._all = amt; } else { delete sur.packages._all; }
 	}
 
-	function applySurcharge() {
-		if (!B.sel) { toast('Drag a block of cells first'); return; }
-		var name = B.sur.name.trim(); if (!name) { toast('Name the area first'); return; }
-		var amt = Math.max(0, parseFloat(B.sur.amount || '0') || 0);
-		var pkgAmt = Math.max(0, parseFloat(B.sur.pkg || '0') || 0);
-		var z = Z(), s = B.sel;
-		var r1 = Math.min(s.r1, s.r2), r2 = Math.max(s.r1, s.r2), c1 = Math.min(s.c1, s.c2), c2 = Math.max(s.c1, s.c2);
-		z.areas = z.areas || [];
-		var area = null;
-		for (var i = 0; i < z.areas.length; i++) { if (z.areas[i].name.toLowerCase() === name.toLowerCase()) { area = z.areas[i]; break; } }
-		if (!area) { area = { id: uniqueAreaId(z, areaSlug(name)), name: name, color: '#16a34a', surcharge: { nightly: amt, packages: {} } }; z.areas.push(area); }
-		else { area.name = name; area.surcharge = area.surcharge || { nightly: 0, packages: {} }; area.surcharge.nightly = amt; }
-		setPkgAmt(area.surcharge, pkgAmt);
-		snapshot();
-		var n = 0;
-		for (var r = r1; r <= r2; r++) { for (var c = c1; c <= c2; c++) { var cell = z.grid[r][c]; if (cell.type === 'stall') { cell.area = area.id; n++; } } }
-		pruneAreas(z);
-		toast('Assigned “' + name + '” (' + surLabel(amt, pkgAmt) + ') to ' + n + ' ' + noun(true));
-		B.sel = null; render(); renderControls();
-	}
-	// Whole-tab surcharge — applies to every sellable cell on the active tab and
-	// stacks with any painted-area amount ("most layers add").
-	function applyTabSurcharge() {
-		var z = Z();
-		var el = q('#eem-mb-surtab'), pel = q('#eem-mb-surtabpkg');
-		var amt = Math.max(0, parseFloat((el && el.value) || '0') || 0);
-		var pkgAmt = Math.max(0, parseFloat((pel && pel.value) || '0') || 0);
-		snapshot();
-		z.surcharge = z.surcharge || { nightly: 0, packages: {} };
-		z.surcharge.nightly = amt;
-		setPkgAmt(z.surcharge, pkgAmt);
-		if (amt > 0 || pkgAmt > 0) { toast('Whole “' + z.name + '” tab now ' + surLabel(amt, pkgAmt)); }
-		else { toast('Cleared tab surcharge from “' + z.name + '”'); }
-		render(); renderControls();
-	}
 	// Human-readable surcharge summary, e.g. "+$5.00/night, +$100.00/pkg".
 	function surLabel(nightly, pkg) {
 		var parts = [];
@@ -373,47 +344,177 @@
 		if (pkg > 0) { parts.push('+$' + pkg.toFixed(2) + '/pkg'); }
 		return parts.length ? parts.join(', ') : '$0';
 	}
-	function clearSurcharge() {
-		if (!B.sel) { toast('Drag a block of cells first'); return; }
-		var z = Z(), s = B.sel;
-		var r1 = Math.min(s.r1, s.r2), r2 = Math.max(s.r1, s.r2), c1 = Math.min(s.c1, s.c2), c2 = Math.max(s.c1, s.c2);
-		snapshot();
-		for (var r = r1; r <= r2; r++) { for (var c = c1; c <= c2; c++) { if (z.grid[r][c].type === 'stall' && z.grid[r][c].area) { delete z.grid[r][c].area; } } }
-		pruneAreas(z);
-		toast('Cleared surcharge from selection'); B.sel = null; render(); renderControls();
+
+	// ---- selection helpers (the "select → act" model) ----
+	// Normalised selection rect, or null when nothing is selected.
+	function normSel() {
+		if (!B.sel) { return null; }
+		var s = B.sel;
+		return { r1: Math.min(s.r1, s.r2), r2: Math.max(s.r1, s.r2), c1: Math.min(s.c1, s.c2), c2: Math.max(s.c1, s.c2) };
+	}
+	// Run cb(cell, r, c) over each sellable (stall) cell in the selection.
+	function eachSelStall(z, cb) {
+		var s = normSel(); if (!s) { return; }
+		for (var r = s.r1; r <= s.r2; r++) { for (var c = s.c1; c <= s.c2; c++) {
+			var cell = z.grid[r] && z.grid[r][c];
+			if (cell && cell.type === 'stall') { cb(cell, r, c); }
+		} }
+	}
+	// {sellable: int, hasSur: bool, isUnit: bool} describing the current selection.
+	function selInfo() {
+		var z = Z(), n = 0, hasSur = false, isUnit = false;
+		eachSelStall(z, function (cell) {
+			n++;
+			if (cell.area) { hasSur = true; }
+			if ((cell.w && cell.w > 1) || (cell.h && cell.h > 1)) { isUnit = true; }
+		});
+		return { sellable: n, hasSur: hasSur, isUnit: isUnit };
+	}
+	// The first painted area found on the selection (for pre-filling the modal).
+	function selArea(z) {
+		var found = null;
+		eachSelStall(z, function (cell) { if (!found && cell.area) { found = findArea(z, cell.area); } });
+		return found;
 	}
 
-	// ---- multi-cell unit (Slice 3) — merge a block into ONE sellable unit ----
-	function applyUnit() {
-		if (!B.sel) { toast('Drag a block of cells first'); return; }
-		var label = B.unit.label.trim(); if (!label) { toast('Give the unit a number first'); return; }
-		var z = Z(), s = B.sel;
-		var r1 = Math.min(s.r1, s.r2), r2 = Math.max(s.r1, s.r2), c1 = Math.min(s.c1, s.c2), c2 = Math.max(s.c1, s.c2);
-		var w = c2 - c1 + 1, h = r2 - r1 + 1;
-		if (w < 2 && h < 2) { toast('Select 2 or more cells to merge into one unit'); return; }
+	// ---- surcharge apply / remove (driven by the modal, not inline inputs) ----
+	function applySurchargeToSel(name, nightly, pkg) {
+		var z = Z(); if (!normSel()) { return; }
+		z.areas = z.areas || [];
+		var area = null;
+		for (var i = 0; i < z.areas.length; i++) { if (z.areas[i].name.toLowerCase() === name.toLowerCase()) { area = z.areas[i]; break; } }
+		if (!area) { area = { id: uniqueAreaId(z, areaSlug(name)), name: name, color: '#16a34a', surcharge: { nightly: nightly, packages: {} } }; z.areas.push(area); }
+		else { area.name = name; area.surcharge = area.surcharge || { nightly: 0, packages: {} }; area.surcharge.nightly = nightly; }
+		setPkgAmt(area.surcharge, pkg);
+		snapshot();
+		var n = 0;
+		eachSelStall(z, function (cell) { cell.area = area.id; n++; });
+		pruneAreas(z);
+		toast('Priced ' + n + ' ' + noun(true) + ' — “' + name + '” (' + surLabel(nightly, pkg) + ')');
+		render(); renderControls();
+	}
+	function removeSurchargeFromSel() {
+		var z = Z(); if (!normSel()) { return; }
+		snapshot();
+		var n = 0;
+		eachSelStall(z, function (cell) { if (cell.area) { delete cell.area; n++; } });
+		pruneAreas(z);
+		toast(n ? ('Removed surcharge from ' + n + ' ' + noun(true)) : 'No surcharge on the selection');
+		render(); renderControls();
+	}
+
+	// ---- multi-cell unit — merge a block into ONE sellable unit ----
+	function combineUnit(label) {
+		var z = Z(), s = normSel(); if (!s) { return; }
+		var w = s.c2 - s.c1 + 1, h = s.r2 - s.r1 + 1;
+		if (w < 2 && h < 2) { toast('Select 2 or more ' + noun(true) + ' to combine into one'); return; }
 		snapshot();
 		// Carry any surcharge area already on a selected cell onto the merged unit.
 		var area = '';
-		for (var ar = r1; ar <= r2; ar++) { for (var ac = c1; ac <= c2; ac++) { if (z.grid[ar][ac].type === 'stall' && z.grid[ar][ac].area) { area = z.grid[ar][ac].area; } } }
-		// Clear the block, then make the top-left cell the single spanning unit.
-		for (var r = r1; r <= r2; r++) { for (var c = c1; c <= c2; c++) { z.grid[r][c] = { type: 'gap', label: '' }; } }
+		eachSelStall(z, function (cell) { if (cell.area) { area = cell.area; } });
+		for (var r = s.r1; r <= s.r2; r++) { for (var c = s.c1; c <= s.c2; c++) { z.grid[r][c] = { type: 'gap', label: '' }; } }
 		var anchor = { type: 'stall', label: label, w: w, h: h };
 		if (area) { anchor.area = area; }
-		z.grid[r1][c1] = anchor;
+		z.grid[s.r1][s.c1] = anchor;
 		pruneAreas(z);
-		toast('Merged into one unit “' + label + '” (' + (w * h) + ' cells, counts as 1 lot)');
-		B.unit.label = ''; B.sel = null; render(); renderControls();
+		B.fill.start = nextStartLabel(); // a numbered unit advances the Fill counter
+		toast('Combined into one unit “' + label + '” (' + (w * h) + ' cells, counts as 1 lot)');
+		B.sel = { r1: s.r1, c1: s.c1, r2: s.r1, c2: s.c1 }; render(); renderControls();
 	}
 	function splitUnit() {
-		if (!B.sel) { toast('Select a merged unit first'); return; }
-		var z = Z(), s = B.sel;
-		var r1 = Math.min(s.r1, s.r2), c1 = Math.min(s.c1, s.c2);
-		var cell = z.grid[r1] && z.grid[r1][c1];
-		if (!cell || cell.type !== 'stall' || !(((cell.w || 1) > 1) || ((cell.h || 1) > 1))) { toast('Select a merged unit to split it back'); return; }
+		var z = Z(), s = normSel(); if (!s) { toast('Select a unit first'); return; }
+		var cell = z.grid[s.r1] && z.grid[s.r1][s.c1];
+		if (!cell || cell.type !== 'stall' || !(((cell.w || 1) > 1) || ((cell.h || 1) > 1))) { toast('Select a combined unit to split it back'); return; }
 		snapshot();
 		delete cell.w; delete cell.h;
-		toast('Split unit back into a single cell'); B.sel = null; render(); renderControls();
+		toast('Split unit back into single ' + noun(true)); B.sel = null; render(); renderControls();
 	}
+
+	// ---- modals (Assign Surcharge / Combine Unit / Whole-tab surcharge) ----
+	function openSurchargeModal() {
+		var z = Z(); var info = selInfo();
+		if (!info.sellable) { toast('Select one or more ' + noun(true) + ' first'); return; }
+		var ex = selArea(z);
+		var exNight = ex ? EEM_num(ex.surcharge && ex.surcharge.nightly) : 0;
+		var exPkg = ex ? pkgAmtOf(ex.surcharge) : 0;
+		var showPkg = hasPkgs();
+		var body =
+			'<label class="eem-mb-fl">Name <span class="eem-mb-fl-opt">(optional)</span>' +
+				'<input type="text" class="eem-mb-input eem-mb-input-wide" id="eem-sm-name" value="' + escapeAttr(ex ? ex.name : '') + '" placeholder="Paddocks, Premium, Lakefront…"></label>' +
+			'<label class="eem-mb-fl">+ $ / night' +
+				'<input type="number" class="eem-mb-num" id="eem-sm-night" min="0" step="0.01" value="' + (exNight ? escapeAttr(String(exNight)) : '') + '" placeholder="0.00"></label>' +
+			(showPkg ? '<label class="eem-mb-fl">+ $ / package' +
+				'<input type="number" class="eem-mb-num" id="eem-sm-pkg" min="0" step="0.01" value="' + (exPkg ? escapeAttr(String(exPkg)) : '') + '" placeholder="0.00"></label>' : '');
+		mbForm({
+			title: 'Assign Surcharge',
+			subtitle: info.sellable + ' ' + noun(info.sellable !== 1) + ' selected',
+			bodyHtml: body,
+			primaryLabel: 'Save surcharge',
+			secondaryLabel: info.hasSur ? 'Remove surcharge' : '',
+			onPrimary: function (card) {
+				var name = (card.querySelector('#eem-sm-name').value || '').trim();
+				var night = Math.max(0, parseFloat(card.querySelector('#eem-sm-night').value || '0') || 0);
+				var pkgEl = card.querySelector('#eem-sm-pkg');
+				var pkg = pkgEl ? Math.max(0, parseFloat(pkgEl.value || '0') || 0) : 0;
+				if (night <= 0 && pkg <= 0) { toast('Enter a $/night or $/package amount'); return false; }
+				applySurchargeToSel(name || 'Premium', night, pkg);
+			},
+			onSecondary: function () { removeSurchargeFromSel(); }
+		});
+	}
+	function openUnitModal() {
+		var info = selInfo();
+		if (info.sellable < 2) { toast('Select 2 or more ' + noun(true) + ' to combine'); return; }
+		mbForm({
+			title: 'Combine into one unit',
+			subtitle: info.sellable + ' ' + noun(true) + ' → 1 sellable unit',
+			bodyHtml: '<label class="eem-mb-fl">Unit title <span class="eem-mb-fl-opt">(a number or a name)</span>' +
+				'<input type="text" class="eem-mb-input eem-mb-input-wide" id="eem-um-label" placeholder="161, Pasture #1, Barn A…"></label>',
+			primaryLabel: 'Combine',
+			onPrimary: function (card) {
+				var label = (card.querySelector('#eem-um-label').value || '').trim();
+				if (!label) { toast('Give the unit a title'); return false; }
+				combineUnit(label);
+			}
+		});
+	}
+	function openTabSurchargeModal() {
+		var z = Z();
+		var night = EEM_num(z.surcharge && z.surcharge.nightly);
+		var pkg = pkgAmtOf(z.surcharge);
+		var showPkg = hasPkgs();
+		var has = night > 0 || pkg > 0;
+		var body =
+			'<label class="eem-mb-fl">+ $ / night' +
+				'<input type="number" class="eem-mb-num" id="eem-tm-night" min="0" step="0.01" value="' + (night ? escapeAttr(String(night)) : '') + '" placeholder="0.00"></label>' +
+			(showPkg ? '<label class="eem-mb-fl">+ $ / package' +
+				'<input type="number" class="eem-mb-num" id="eem-tm-pkg" min="0" step="0.01" value="' + (pkg ? escapeAttr(String(pkg)) : '') + '" placeholder="0.00"></label>' : '');
+		mbForm({
+			title: 'Price the whole “' + z.name + '”',
+			subtitle: 'Applies to every ' + noun(false) + ' on this tab (stacks with area prices)',
+			bodyHtml: body,
+			primaryLabel: 'Save',
+			secondaryLabel: has ? 'Remove tab price' : '',
+			onPrimary: function (card) {
+				var n = Math.max(0, parseFloat(card.querySelector('#eem-tm-night').value || '0') || 0);
+				var pEl = card.querySelector('#eem-tm-pkg');
+				var p = pEl ? Math.max(0, parseFloat(pEl.value || '0') || 0) : 0;
+				setTabSurcharge(n, p);
+			},
+			onSecondary: function () { setTabSurcharge(0, 0); }
+		});
+	}
+	function setTabSurcharge(nightly, pkg) {
+		var z = Z();
+		snapshot();
+		z.surcharge = z.surcharge || { nightly: 0, packages: {} };
+		z.surcharge.nightly = nightly;
+		setPkgAmt(z.surcharge, pkg);
+		if (nightly > 0 || pkg > 0) { toast('Whole “' + z.name + '” now ' + surLabel(nightly, pkg)); }
+		else { toast('Removed tab price from “' + z.name + '”'); }
+		render(); renderControls();
+	}
+	function EEM_num(v) { return v ? Number(v) : 0; }
 
 	// ---- erase / clear / resize ----
 	function eraseCell(r, c) { Z().grid[r][c] = { type: 'gap', label: '' }; }
@@ -471,45 +572,25 @@
 				'<span class="eem-mb-selmeta">No selection</span>';
 			q('#eem-mb-lmname').addEventListener('input', function (e) { B.lm.name = e.target.value; });
 			q('#eem-mb-lmapply').addEventListener('click', applyLandmark);
-		} else if (B.tool === 'surcharge') {
-			var zsur = Z();
-			var tabSur = (zsur.surcharge && zsur.surcharge.nightly) ? Number(zsur.surcharge.nightly) : 0;
-			var tabPkg = pkgAmtOf(zsur.surcharge);
-			// Only surface the package surcharge input when the reservation actually
-			// sells Stay Packages for this target.
-			var showPkg = hasPkgs();
-			var areaPkgField = showPkg
-				? '<label class="eem-mb-tc">+ $/pkg <input type="number" id="eem-mb-surpkg" class="eem-mb-num" value="' + escapeAttr(B.sur.pkg) + '" min="0" step="0.01" placeholder="0.00"></label>'
-				: '';
-			var tabPkgField = showPkg
-				? '<label class="eem-mb-tc">+ $/pkg <input type="number" id="eem-mb-surtabpkg" class="eem-mb-num" value="' + (tabPkg ? escapeAttr(String(tabPkg)) : '') + '" min="0" step="0.01" placeholder="0.00"></label>'
-				: '';
-			p.innerHTML =
-				'<label class="eem-mb-tc">Area <input type="text" id="eem-mb-surname" class="eem-mb-input" value="' + escapeAttr(B.sur.name) + '" placeholder="Paddocks, Premium…"></label>' +
-				'<label class="eem-mb-tc">+ $/night <input type="number" id="eem-mb-suramt" class="eem-mb-num" value="' + escapeAttr(B.sur.amount) + '" min="0" step="0.01" placeholder="0.00"></label>' +
-				areaPkgField +
-				'<button type="button" class="eem-mb-apply" id="eem-mb-surapply">Assign to selection</button>' +
-				'<button type="button" class="eem-mb-apply eem-mb-apply-ghost" id="eem-mb-surclear">Clear</button>' +
-				'<span class="eem-mb-tc-sep" aria-hidden="true"></span>' +
-				'<label class="eem-mb-tc">Whole “' + escapeHtml(zsur.name) + '” + $/night <input type="number" id="eem-mb-surtab" class="eem-mb-num" value="' + (tabSur ? escapeAttr(String(tabSur)) : '') + '" min="0" step="0.01" placeholder="0.00"></label>' +
-				tabPkgField +
-				'<button type="button" class="eem-mb-apply" id="eem-mb-surtabapply">Apply to tab</button>' +
-				'<span class="eem-mb-selmeta">No selection</span>';
-			q('#eem-mb-surname').addEventListener('input', function (e) { B.sur.name = e.target.value; });
-			q('#eem-mb-suramt').addEventListener('input', function (e) { B.sur.amount = e.target.value; });
-			if (q('#eem-mb-surpkg')) { q('#eem-mb-surpkg').addEventListener('input', function (e) { B.sur.pkg = e.target.value; }); }
-			q('#eem-mb-surapply').addEventListener('click', applySurcharge);
-			q('#eem-mb-surclear').addEventListener('click', clearSurcharge);
-			q('#eem-mb-surtabapply').addEventListener('click', applyTabSurcharge);
-		} else if (B.tool === 'unit') {
-			p.innerHTML =
-				'<label class="eem-mb-tc">Number <input type="text" id="eem-mb-unitlabel" class="eem-mb-input" value="' + escapeAttr(B.unit.label) + '" placeholder="1, P1, Paddock 1…"></label>' +
-				'<button type="button" class="eem-mb-apply" id="eem-mb-unitapply">Make one unit</button>' +
-				'<button type="button" class="eem-mb-apply eem-mb-apply-ghost" id="eem-mb-unitsplit">Split back</button>' +
-				'<span class="eem-mb-selmeta">No selection</span>';
-			q('#eem-mb-unitlabel').addEventListener('input', function (e) { B.unit.label = e.target.value; });
-			q('#eem-mb-unitapply').addEventListener('click', applyUnit);
-			q('#eem-mb-unitsplit').addEventListener('click', splitUnit);
+		} else if (B.tool === 'select') {
+			// Select → act. Drag a block (or click one lot/unit); the action bar
+			// offers Surcharge / Combine / Remove. All detail lives in modals so the
+			// toolbar stays clean.
+			var info = selInfo();
+			if (!info.sellable) {
+				p.innerHTML = '<span class="eem-mb-selhint">Drag to select ' + noun(true) + ' — then price, combine, or clear them. Click a unit to edit it.</span>';
+			} else {
+				p.innerHTML =
+					'<span class="eem-mb-selcount">' + info.sellable + ' ' + noun(info.sellable !== 1) + ' selected</span>' +
+					'<button type="button" class="eem-mb-apply" id="eem-mb-act-sur">$ Surcharge</button>' +
+					(info.sellable >= 2 ? '<button type="button" class="eem-mb-apply" id="eem-mb-act-unit">Combine into Unit</button>' : '') +
+					(info.isUnit ? '<button type="button" class="eem-mb-apply eem-mb-apply-ghost" id="eem-mb-act-split">Split Unit</button>' : '') +
+					(info.hasSur ? '<button type="button" class="eem-mb-apply eem-mb-apply-ghost" id="eem-mb-act-rem">Remove Surcharge</button>' : '');
+				q('#eem-mb-act-sur').addEventListener('click', openSurchargeModal);
+				if (q('#eem-mb-act-unit')) { q('#eem-mb-act-unit').addEventListener('click', openUnitModal); }
+				if (q('#eem-mb-act-split')) { q('#eem-mb-act-split').addEventListener('click', splitUnit); }
+				if (q('#eem-mb-act-rem')) { q('#eem-mb-act-rem').addEventListener('click', removeSurchargeFromSel); }
+			}
 		} else {
 			p.innerHTML = '';
 		}
@@ -530,7 +611,7 @@
 		var cur = z.grid[r][c].type === 'gap' ? '' : z.grid[r][c].label;
 		cellEl.innerHTML = '<input class="eem-mb-celledit" value="' + escapeAttr(cur) + '">';
 		var inp = cellEl.querySelector('input'); inp.focus(); inp.select();
-		var commit = function () { var v = inp.value.trim(); snapshot(); z.grid[r][c] = v ? { type: 'stall', label: v } : { type: 'gap', label: '' }; render(); };
+		var commit = function () { var v = inp.value.trim(); snapshot(); z.grid[r][c] = v ? { type: 'stall', label: v } : { type: 'gap', label: '' }; B.fill.start = nextStartLabel(); render(); };
 		inp.addEventListener('blur', commit);
 		inp.addEventListener('keydown', function (ev) {
 			if (ev.key === 'Enter') { ev.preventDefault(); inp.blur(); }
@@ -576,8 +657,6 @@
 						tool('fill', 'Fill', '<path d="M4 7h6M4 12h10M4 17h7"/><path d="M16 5l4 4-9 9-4 1 1-4 8-10z"/>') +
 						tool('label', 'Label', '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/>') +
 						tool('landmark', 'Landmark', '<path d="M20.6 13.4 13.4 20.6a2 2 0 01-2.8 0L3 13V3h10l7.6 7.6a2 2 0 010 2.8z"/><circle cx="8" cy="8" r="1.4"/>') +
-						tool('surcharge', 'Surcharge', '<path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>') +
-						tool('unit', 'Unit', '<path d="M8 3H5a2 2 0 00-2 2v3"/><path d="M16 3h3a2 2 0 012 2v3"/><path d="M21 16v3a2 2 0 01-2 2h-3"/><path d="M3 16v3a2 2 0 002 2h3"/>') +
 						tool('erase', 'Erase', '<path d="M7 21h10M5 13l6-6 8 8-6 6H9l-4-4z"/>') +
 						tool('pan', 'Pan', '<path d="M5 9l-3 3 3 3"/><path d="M9 5l3-3 3 3"/><path d="M15 19l-3 3-3-3"/><path d="M19 9l3 3-3 3"/><path d="M2 12h20"/><path d="M12 2v20"/>') +
 						act('clear', 'Clear', '<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/>') +
@@ -668,11 +747,10 @@
 	// editor — "select something to change a label".
 	function onUp() {
 		if (B.pan) { if (B.pan.el) { B.pan.el.style.cursor = 'grab'; } B.pan = null; return; }
-		if (B.drag && !B.drag.erase && B.tool === 'select' && !B.drag.moved && B.sel) {
-			var r = B.sel.r1, c = B.sel.c1; B.drag = null; startLabelEdit(r, c); return;
-		}
-		if (B.overlay) { updateSelMeta(); }
 		B.drag = null;
+		// Refresh the select-mode action bar once a selection (click or drag) settles.
+		if (B.tool === 'select') { renderControls(); return; }
+		if (B.overlay) { updateSelMeta(); }
 	}
 
 	function tool(name, label, path, id) {
@@ -702,7 +780,7 @@
 				return { name: b.name || (cap(zoneNoun(false))), grid: grid, areas: (b.areas || []), surcharge: (b.surcharge || null) };
 			});
 		}
-		B.active = 0; B.sel = null; B.tool = 'fill'; B.history = []; B.future = []; B.dirty = false; B.zoom = 1; B.fill = { start: nextStartLabel(), step: 1, dir: 'lr' }; B.lm = { name: 'Wash Rack' }; B.sur = { name: '', amount: '', pkg: '' }; B.unit = { label: '' };
+		B.active = 0; B.sel = null; B.tool = 'fill'; B.history = []; B.future = []; B.dirty = false; B.zoom = 1; B.fill = { start: nextStartLabel(), step: 1, dir: 'lr' }; B.lm = { name: 'Wash Rack' };
 	}
 
 	function open(target) {
@@ -785,6 +863,40 @@
 	}
 	function mbPrompt(message, value, cb) { mbDialog({ message: message, input: true, value: value, confirmText: 'OK', onConfirm: function (v) { if (v) { cb(v); } } }); }
 	function mbConfirm(message, cb) { mbDialog({ message: message, input: false, confirmText: 'Continue', onConfirm: function () { cb(); } }); }
+	// Rich form modal: a title, an optional subtitle, arbitrary body HTML, a primary
+	// action and an optional destructive secondary action. onPrimary(card) returning
+	// false keeps the modal open (validation failed). Used by the surcharge / unit /
+	// tab-price flows so the builder toolbar stays clean.
+	function mbForm(opts) {
+		var o = document.createElement('div');
+		o.className = 'eem-mb-dialog';
+		o.innerHTML =
+			'<div class="eem-mb-dialog-card eem-mb-form-card">' +
+				'<div class="eem-mb-form-title">' + escapeHtml(opts.title || '') + '</div>' +
+				(opts.subtitle ? '<div class="eem-mb-form-sub">' + escapeHtml(opts.subtitle) + '</div>' : '') +
+				'<div class="eem-mb-form-body">' + (opts.bodyHtml || '') + '</div>' +
+				'<div class="eem-mb-dialog-actions">' +
+					(opts.secondaryLabel ? '<button type="button" class="eem-mb-btn eem-mb-btn-danger eem-mb-form-secondary">' + escapeHtml(opts.secondaryLabel) + '</button>' : '') +
+					'<span class="eem-mb-form-spacer"></span>' +
+					'<button type="button" class="eem-mb-btn eem-mb-form-cancel">Cancel</button>' +
+					'<button type="button" class="eem-mb-btn eem-mb-btn-primary eem-mb-form-ok">' + escapeHtml(opts.primaryLabel || 'Save') + '</button>' +
+				'</div>' +
+			'</div>';
+		(B.overlay || document.body).appendChild(o);
+		var card = o.querySelector('.eem-mb-dialog-card');
+		function close() { if (o.parentNode) { o.parentNode.removeChild(o); } }
+		o.querySelector('.eem-mb-form-cancel').addEventListener('click', close);
+		o.querySelector('.eem-mb-form-ok').addEventListener('click', function () { if (opts.onPrimary && opts.onPrimary(card) === false) { return; } close(); });
+		var sec = o.querySelector('.eem-mb-form-secondary');
+		if (sec) { sec.addEventListener('click', function () { if (opts.onSecondary) { opts.onSecondary(card); } close(); }); }
+		o.addEventListener('mousedown', function (e) { if (e.target === o) { close(); } });
+		o.addEventListener('keydown', function (e) {
+			if (e.key === 'Escape') { close(); }
+			if (e.key === 'Enter' && e.target.tagName === 'INPUT') { e.preventDefault(); if (opts.onPrimary && opts.onPrimary(card) === false) { return; } close(); }
+		});
+		var f = o.querySelector('input'); if (f) { f.focus(); f.select(); }
+		requestAnimationFrame(function () { o.classList.add('open'); });
+	}
 
 	// ---- customer-view preview ----
 	var preview = { overlay: null, active: 0, picked: {} };

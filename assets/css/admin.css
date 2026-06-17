@@ -9427,7 +9427,26 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 .eem-mb-dialog-msg { font-size: 14.5px; color: var(--eem-navy, #031B4E); font-weight: 600; margin-bottom: 14px; }
 .eem-mb-dialog-input { width: 100%; padding: 9px 11px; border: 1.5px solid var(--eem-border, #D9E2F2); border-radius: var(--eem-radius, 3px); font-size: 14px; color: var(--eem-text, #1d2327); margin-bottom: 16px; }
 .eem-mb-dialog-input:focus { outline: none; border-color: var(--eem-electric, #1668F2); }
-.eem-mb-dialog-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.eem-mb-dialog-actions { display: flex; justify-content: flex-end; gap: 10px; align-items: center; }
+/* Select-mode action bar (drag a block → Surcharge / Combine / Remove). */
+.eem-mb-selhint { font-size: 12px; color: var(--eem-text-muted, #8c8f94); font-weight: 500; }
+.eem-mb-selcount { font-size: 12.5px; font-weight: 700; color: var(--eem-navy, #031B4E); margin-right: 4px; }
+/* Per-tab "price the whole tab" $ icon. */
+.eem-mb-tab-price { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; margin-left: 6px; border-radius: 999px; font-size: 12px; font-weight: 800; line-height: 1; color: var(--eem-text-secondary, #6B7A99); background: var(--eem-border, #D9E2F2); }
+.eem-mb-tab-price:hover { background: var(--eem-electric, #1668F2); color: #fff; }
+.eem-mb-tab-price.on { background: #16a34a; color: #fff; }
+/* Rich form modal (Assign Surcharge / Combine Unit / Tab price). */
+.eem-mb-form-card { max-width: 460px; }
+.eem-mb-form-title { font-size: 16px; font-weight: 700; color: var(--eem-navy, #031B4E); }
+.eem-mb-form-sub { font-size: 12.5px; color: var(--eem-text-muted, #8c8f94); margin-top: 3px; margin-bottom: 14px; }
+.eem-mb-form-body { display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; }
+.eem-mb-fl { display: flex; flex-direction: column; gap: 5px; font-size: 12.5px; font-weight: 600; color: var(--eem-navy, #031B4E); }
+.eem-mb-fl input { width: 100%; padding: 9px 11px; border: 1.5px solid var(--eem-border, #D9E2F2); border-radius: var(--eem-radius, 3px); font-size: 14px; color: var(--eem-text, #1d2327); }
+.eem-mb-fl input:focus { outline: none; border-color: var(--eem-electric, #1668F2); }
+.eem-mb-fl-opt { font-weight: 400; color: var(--eem-text-muted, #8c8f94); }
+.eem-mb-form-spacer { flex: 1; }
+.eem-mb-btn-danger { color: #b3261e; border-color: #f0c9c6; background: var(--eem-surface, #fff); }
+.eem-mb-btn-danger:hover { background: #fdecea; }
 
 /* Map Builder — customer-view preview overlay. */
 .eem-mb-preview-overlay { z-index: 100005; }
