@@ -58,6 +58,21 @@ class EEM_Order_Detail_Page {
 	const MENU_SLUG = 'equine-event-manager-order';
 
 	/**
+	 * Lazily-instantiated EEM_Shortcodes helper used to recompute the RV
+	 * premium-lot surcharge for the informational breakout line.
+	 *
+	 * @var EEM_Shortcodes|null
+	 */
+	private $shortcodes_helper = null;
+
+	/**
+	 * Per-request memo of recomputed RV surcharge totals, keyed by order_key.
+	 *
+	 * @var array<string, float>
+	 */
+	private $rv_surcharge_cache = array();
+
+	/**
 	 * Register Order Detail as a HIDDEN submenu page (parent=null) — same
 	 * pattern as EEM_Orders_List_Page::register_customer_profile_stub().
 	 * The page is reachable only via direct URL, never sidebar nav.
@@ -489,6 +504,39 @@ class EEM_Order_Detail_Page {
 	 * @param string               $event_title
 	 * @return void
 	 */
+	/**
+	 * Recompute the RV premium-lot surcharge baked into the order's RV subtotal,
+	 * for display as an informational breakout line. Delegates to the canonical
+	 * EEM_Shortcodes recompute so the figure matches the receipt / email exactly.
+	 * Result is memoized per order_key for the lifetime of this request.
+	 *
+	 * @param array $order Grouped order payload.
+	 * @return float Premium-lot surcharge included in the RV subtotal.
+	 */
+	private function rv_surcharge_total( array $order ): float {
+		if ( ! class_exists( 'EEM_Shortcodes' ) ) {
+			return 0.0;
+		}
+
+		$key = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
+
+		if ( '' !== $key && isset( $this->rv_surcharge_cache[ $key ] ) ) {
+			return $this->rv_surcharge_cache[ $key ];
+		}
+
+		if ( null === $this->shortcodes_helper ) {
+			$this->shortcodes_helper = new EEM_Shortcodes();
+		}
+
+		$total = $this->shortcodes_helper->get_order_rv_surcharge_total( $order );
+
+		if ( '' !== $key ) {
+			$this->rv_surcharge_cache[ $key ] = $total;
+		}
+
+		return $total;
+	}
+
 	private function render_rv_card( array $order, $event_title ) {
 		$qty = isset( $order['rv_quantity'] ) ? (int) $order['rv_quantity'] : 0;
 		if ( $qty <= 0 ) {
@@ -529,6 +577,10 @@ class EEM_Order_Detail_Page {
 				<?php endif; ?>
 				<?php if ( '' !== $rv_addons ) : ?>
 					<tr><td><?php esc_html_e( 'RV Add-Ons', 'equine-event-manager' ); ?></td><td><?php echo esc_html( $rv_addons ); ?></td></tr>
+				<?php endif; ?>
+				<?php $rv_surcharge = $this->rv_surcharge_total( $order ); ?>
+				<?php if ( $rv_surcharge > 0 ) : ?>
+					<tr><td><?php esc_html_e( 'Includes RV Premium Lots', 'equine-event-manager' ); ?></td><td><?php echo esc_html( '$' . number_format_i18n( $rv_surcharge, 2 ) ); ?></td></tr>
 				<?php endif; ?>
 				<tr class="eem-detail-table__subtotal"><td><?php esc_html_e( 'RV Subtotal', 'equine-event-manager' ); ?></td><td><?php echo esc_html( '$' . number_format_i18n( $subtotal, 2 ) ); ?></td></tr>
 			</table>
@@ -701,6 +753,10 @@ class EEM_Order_Detail_Page {
 							<?php endif; ?>
 						</div>
 						<div class="eem-order-summary__line"><span><?php esc_html_e( 'RV Subtotal', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $rv_subtotal, 2 ) ); ?></span></div>
+						<?php $rv_summary_surcharge = $this->rv_surcharge_total( $order ); ?>
+						<?php if ( $rv_summary_surcharge > 0 ) : ?>
+							<div class="eem-order-summary__line"><span><?php esc_html_e( 'Includes RV Premium Lots', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $rv_summary_surcharge, 2 ) ); ?></span></div>
+						<?php endif; ?>
 						<div class="eem-order-summary__section-subtotal"><span><?php esc_html_e( 'Section Total', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $rv_subtotal, 2 ) ); ?></span></div>
 					</div>
 				<?php endif; ?>

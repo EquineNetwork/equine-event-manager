@@ -4952,7 +4952,9 @@ RV Lot: " . $rv_lot['name'] );
 		$general_addons     = $this->extract_general_addon_breakdown_from_notes( $order['notes'] );
 		$group_charges      = $this->extract_group_charge_breakdown_from_notes( $order['notes'] );
 		$rv_addon_total     = array_sum( wp_list_pluck( $rv_addon_breakdown, 'subtotal' ) );
-		$rv_base_subtotal   = max( 0, (float) $order['rv_subtotal'] - $rv_addon_total );
+		// v4 premium-lot surcharge baked into rv_subtotal — split out for its own line.
+		$rv_surcharge_total = $this->get_order_rv_surcharge_total( $order );
+		$rv_base_subtotal   = max( 0, (float) $order['rv_subtotal'] - $rv_addon_total - $rv_surcharge_total );
 		$stall_nights       = $this->get_night_count_label( $this->get_billable_stay_units( $order['stall_arrival_date'], $order['stall_departure_date'], $order['stall_stay_type'] ) );
 		$rv_nights          = $this->get_night_count_label( $this->get_billable_stay_units( $order['rv_arrival_date'], $order['rv_departure_date'], $order['rv_stay_type'] ) );
 		$rv_addon_labels    = $this->parse_rv_addon_labels( isset( $order['rv_type'] ) ? $order['rv_type'] : '' );
@@ -5038,6 +5040,9 @@ RV Lot: " . $rv_lot['name'] );
 		if ( (float) $rv_base_subtotal > 0 ) {
 			$payment_rows[] = array( 'label' => __( 'RV Subtotal', 'equine-event-manager' ), 'amount' => (float) $rv_base_subtotal );
 		}
+		if ( (float) $rv_surcharge_total > 0 ) {
+			$payment_rows[] = array( 'label' => __( 'RV Premium Lots', 'equine-event-manager' ), 'amount' => (float) $rv_surcharge_total );
+		}
 		foreach ( $rv_addon_breakdown as $addon_row ) {
 			if ( (float) $addon_row['subtotal'] <= 0 ) { continue; }
 			$payment_rows[] = array( 'label' => sprintf( __( '%s Add-On', 'equine-event-manager' ), $addon_row['label'] ), 'amount' => (float) $addon_row['subtotal'] );
@@ -5087,6 +5092,13 @@ RV Lot: " . $rv_lot['name'] );
 					$rv_nights
 				),
 				'amount' => (float) $rv_base_subtotal,
+			);
+		}
+
+		if ( (float) $rv_surcharge_total > 0 && absint( $order['rv_quantity'] ) > 0 ) {
+			$receipt_lines[] = array(
+				'label'  => __( 'RV Premium Lots', 'equine-event-manager' ),
+				'amount' => (float) $rv_surcharge_total,
 			);
 		}
 
@@ -5267,7 +5279,11 @@ RV Lot: " . $rv_lot['name'] );
 		$group_charges      = $this->extract_group_charge_breakdown_from_notes( $order['notes'] );
 		$group_rider_names  = $this->extract_group_rider_names_from_notes( $order['notes'] );
 		$rv_addon_total     = array_sum( wp_list_pluck( $rv_addon_breakdown, 'subtotal' ) );
-		$rv_base_subtotal   = max( 0, (float) $order['rv_subtotal'] - $rv_addon_total );
+		// The v4 map picker's premium-lot surcharge is baked into rv_subtotal; pull
+		// it out so it shows as its own line, leaving the RV Reservation line at the
+		// base rate. The two add back to the stored subtotal, so totals are unchanged.
+		$rv_surcharge_total = $this->get_order_rv_surcharge_total( $order );
+		$rv_base_subtotal   = max( 0, (float) $order['rv_subtotal'] - $rv_addon_total - $rv_surcharge_total );
 
 		$stall_qty = absint( $order['stall_quantity'] );
 		$rv_qty    = absint( $order['rv_quantity'] );
@@ -5326,6 +5342,17 @@ RV Lot: " . $rv_lot['name'] );
 				'units'   => $units_label( $order['rv_stay_type'], $rv_units ),
 				'rate'    => $rate( (float) $rv_base_subtotal, $rv_qty * max( 1, $rv_units ) ),
 				'total'   => '$' . number_format_i18n( (float) $rv_base_subtotal, 2 ),
+			);
+		}
+
+		if ( (float) $rv_surcharge_total > 0 && $rv_qty > 0 ) {
+			$line_items[] = array(
+				'section' => __( 'RV Premium', 'equine-event-manager' ),
+				'desc'    => __( 'Premium Lots', 'equine-event-manager' ),
+				'qty'     => (string) $rv_qty,
+				'units'   => $units_label( $order['rv_stay_type'], $rv_units ),
+				'rate'    => $rate( (float) $rv_surcharge_total, $rv_qty * max( 1, $rv_units ) ),
+				'total'   => '$' . number_format_i18n( (float) $rv_surcharge_total, 2 ),
 			);
 		}
 
@@ -5521,7 +5548,9 @@ RV Lot: " . $rv_lot['name'] );
 		$group_rider_count  = $this->extract_group_rider_count_from_notes( $order['notes'] );
 		$group_rider_names  = $this->extract_group_rider_names_from_notes( $order['notes'] );
 		$rv_addon_total     = array_sum( wp_list_pluck( $rv_addon_breakdown, 'subtotal' ) );
-		$rv_base_subtotal   = max( 0, (float) $order['rv_subtotal'] - $rv_addon_total );
+		// v4 premium-lot surcharge baked into rv_subtotal — split out for its own line.
+		$rv_surcharge_total = $this->get_order_rv_surcharge_total( $order );
+		$rv_base_subtotal   = max( 0, (float) $order['rv_subtotal'] - $rv_addon_total - $rv_surcharge_total );
 
 		$stall_units = $this->get_billable_stay_units( $order['stall_arrival_date'], $order['stall_departure_date'], $order['stall_stay_type'] );
 		$rv_units    = $this->get_billable_stay_units( $order['rv_arrival_date'], $order['rv_departure_date'], $order['rv_stay_type'] );
@@ -5543,6 +5572,9 @@ RV Lot: " . $rv_lot['name'] );
 		}
 		if ( (float) $rv_base_subtotal > 0 ) {
 			$totals[] = array( 'label' => __( 'RV Reservation', 'equine-event-manager' ), 'value' => $money( $rv_base_subtotal ) );
+		}
+		if ( (float) $rv_surcharge_total > 0 ) {
+			$totals[] = array( 'label' => __( 'RV Premium Lots', 'equine-event-manager' ), 'value' => $money( $rv_surcharge_total ) );
 		}
 		foreach ( $rv_addon_breakdown as $addon_row ) {
 			if ( (float) $addon_row['subtotal'] <= 0 ) {
@@ -5985,6 +6017,61 @@ RV Lot: " . $rv_lot['name'] );
 		}
 
 		return $breakdown;
+	}
+
+	/**
+	 * Recompute the RV premium-lot surcharge baked into a persisted order's RV
+	 * subtotal (the v4 map picker's per-zone amounts).
+	 *
+	 * The order stores its picked lots on the "Assigned RV Lots" note and the
+	 * linked reservation id; we resolve the same per-unit surcharge the customer
+	 * checkout used (EEM_Stall_Map_Importer::surcharge_for_unit via
+	 * get_rv_zone_surcharge_for_units) and multiply by the billable stay units so
+	 * the figure matches what was charged. Used to surface the surcharge as its
+	 * own line on the receipt / confirmation email / Order Detail without changing
+	 * the stored totals.
+	 *
+	 * @param array $order Grouped order payload.
+	 * @return float Premium-lot surcharge included in the order's RV subtotal.
+	 */
+	public function get_order_rv_surcharge_total( array $order ): float {
+		$reservation_id = ! empty( $order['reservation_id'] ) ? absint( $order['reservation_id'] ) : 0;
+
+		if ( ! $reservation_id ) {
+			return 0.0;
+		}
+
+		// Split on COMMAS only — RV lot labels are zone-qualified and contain
+		// spaces ("Blue Lot Pasture #1"), so the whitespace-splitting
+		// parse_assigned_units_string() would shred them. Checkout stores the picks
+		// comma-joined (implode( ', ', $preferred_rv_lots )).
+		$raw   = $this->get_order_component_note_value( $order, 'rv', 'Assigned RV Lots' );
+		$units = array_values( array_filter( array_map( 'trim', explode( ',', (string) $raw ) ), 'strlen' ) );
+
+		if ( empty( $units ) ) {
+			return 0.0;
+		}
+
+		$stay_type        = ! empty( $order['rv_stay_type'] ) ? sanitize_key( $order['rv_stay_type'] ) : 'nightly';
+		$reservation_data = $this->get_reservation_data( $reservation_id );
+
+		if ( empty( $reservation_data ) || ! is_array( $reservation_data ) ) {
+			return 0.0;
+		}
+
+		$per_unit_sum = $this->get_rv_zone_surcharge_for_units( $reservation_data, $units, $stay_type );
+
+		if ( $per_unit_sum <= 0 ) {
+			return 0.0;
+		}
+
+		$stay_units = $this->get_billable_stay_units(
+			isset( $order['rv_arrival_date'] ) ? $order['rv_arrival_date'] : '',
+			isset( $order['rv_departure_date'] ) ? $order['rv_departure_date'] : '',
+			$stay_type
+		);
+
+		return $per_unit_sum * max( 1, (int) $stay_units );
 	}
 
 	/**
