@@ -332,6 +332,7 @@ class EEM_Plugin {
 		add_action( 'admin_menu', array( $this->admin, 'register_menu' ), 20 );
 		add_filter( 'parent_file', array( $this->admin, 'filter_parent_file' ) );
 		add_filter( 'submenu_file', array( $this->admin, 'filter_submenu_file' ) );
+		add_action( 'admin_footer', array( $this->admin, 'print_admin_menu_open_fix' ) );
 		add_action( 'admin_post_equine_event_manager_export_report', array( $this->admin, 'handle_report_export' ) );
 		add_action( 'admin_post_equine_event_manager_export_order_csv', array( $this->admin, 'handle_order_export' ) );
 		add_action( 'admin_post_equine_event_manager_print_order', array( $this->admin, 'handle_order_print' ) );

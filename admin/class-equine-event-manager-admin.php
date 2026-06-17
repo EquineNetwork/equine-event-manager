@@ -1963,35 +1963,34 @@ class EEM_Admin {
 		if ( isset( $_GET['page'] ) ) {
 			$page = sanitize_key( wp_unslash( $_GET['page'] ) );
 
-			if ( 'equine-event-manager-order' === $page ) {
-				return 'equine-event-manager-orders';
+			// Map every HIDDEN EEM admin page (registered with parent '' / null —
+			// no visible sidebar entry) to the VISIBLE submenu slug it belongs
+			// under, so WP highlights the right item + keeps the menu open. The
+			// earlier bug pointed the reservation editor + overview at
+			// `edit.php?post_type=en_reservation`, which is NOT a registered
+			// submenu (the visible item is `equine-event-manager-reservations`),
+			// so nothing matched and the menu collapsed. Keep these in sync with
+			// the add_submenu_page() slugs in register_menu().
+			$hidden_to_parent = array(
+				'equine-event-manager-order'                => 'equine-event-manager-orders',
+				'equine-event-manager-order-refund'         => 'equine-event-manager-orders',
+				'equine-event-manager-create-order'         => 'equine-event-manager-orders',
+				'equine-event-manager-collect-payment'      => 'equine-event-manager-orders',
+				'equine-event-manager-reservation-editor'   => EEM_Reservations_List_Page::MENU_SLUG,
+				'equine-event-manager-reservation-overview' => EEM_Reservations_List_Page::MENU_SLUG,
+				EEM_Daily_Movement_Page::MENU_SLUG          => 'equine-event-manager-reports',
+				EEM_Event_Editor_Page::MENU_SLUG            => EEM_Events_List_Page::MENU_SLUG,
+				EEM_Venue_Editor_Page::MENU_SLUG            => EEM_Venues_Page::MENU_SLUG,
+				EEM_Producer_Editor_Page::MENU_SLUG         => EEM_Producers_Page::MENU_SLUG,
+			);
+
+			if ( isset( $hidden_to_parent[ $page ] ) ) {
+				return $hidden_to_parent[ $page ];
 			}
 
-			if ( 'equine-event-manager-order-refund' === $page ) {
-				return 'equine-event-manager-orders';
-			}
-
-			if ( 'equine-event-manager-reservation-overview' === $page ) {
-				return 'edit.php?post_type=en_reservation';
-			}
-
-			if ( 'equine-event-manager-stall-charts' === $page ) {
-				return 'equine-event-manager-stall-charts';
-			}
-
-			if ( EEM_Daily_Movement_Page::MENU_SLUG === $page ) {
-				return 'equine-event-manager-reports';
-			}
-
-			// The full-page Reservation editor is a hidden page (not a visible
-			// submenu item), so returning its own slug leaves the Event Manager
-			// menu with no "current" submenu and WP collapses it. Point it at the
-			// visible Reservations item so the menu stays open + highlighted.
-			if ( 'equine-event-manager-reservation-editor' === $page ) {
-				return 'edit.php?post_type=en_reservation';
-			}
-
-			if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-reports', 'equine-event-manager-settings', 'equine-event-manager-create-order', 'equine-event-manager-collect-payment', 'equine-event-manager-dashboard' ), true ) ) {
+			// Visible EEM pages self-highlight — return their own slug so WP marks
+			// the matching sidebar item current.
+			if ( 0 === strpos( $page, 'equine-event-manager' ) ) {
 				return $page;
 			}
 
@@ -2018,6 +2017,54 @@ class EEM_Admin {
 		}
 
 		return $submenu_file;
+	}
+
+	/**
+	 * Force the Event Manager top-level menu to stay open + highlighted on every
+	 * EEM admin screen.
+	 *
+	 * WordPress collapses a top-level menu on pages registered as HIDDEN submenus
+	 * (parent '' / null) — the reservation editor, Order Detail, Create Order,
+	 * Collect Payment, the branded Event/Venue/Producer editors, etc. The
+	 * `parent_file` filter resolves to the correct slug at render time, yet core
+	 * still emits `wp-not-current-submenu` for these pages (verified empirically:
+	 * identical parent_file opens the menu on a VISIBLE page but not on a hidden
+	 * one). This tiny footer script makes the open-state deterministic so admins
+	 * never lose their place in the sidebar. The `submenu_file` filter handles the
+	 * child-item highlight; this only handles the parent open-state.
+	 *
+	 * @return void
+	 */
+	public function print_admin_menu_open_fix(): void {
+		if ( ! $this->is_eem_admin_screen() ) {
+			return;
+		}
+		?>
+		<script>
+		( function () {
+			var li = document.querySelector( '#adminmenu li.toplevel_page_<?php echo esc_js( self::MENU_SLUG ); ?>' );
+			if ( ! li ) { return; }
+			li.classList.remove( 'wp-not-current-submenu' );
+			if ( li.className.indexOf( 'wp-menu-open' ) === -1 ) {
+				li.classList.add( 'wp-has-current-submenu', 'wp-menu-open' );
+			}
+		}() );
+		</script>
+		<?php
+	}
+
+	/**
+	 * Whether the current admin screen belongs to the Event Manager menu — a
+	 * `?page=equine-event-manager*` page OR one of the plugin's CPT edit screens.
+	 *
+	 * @return bool
+	 */
+	private function is_eem_admin_screen(): bool {
+		if ( isset( $_GET['page'] ) && 0 === strpos( sanitize_key( wp_unslash( $_GET['page'] ) ), 'equine-event-manager' ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return true;
+		}
+		$screen = get_current_screen();
+		return $screen && in_array( $screen->post_type, array( 'en_reservation', 'en_event', 'en_venue', 'en_producer', 'en_entry', 'en_division' ), true );
 	}
 
 
