@@ -2206,16 +2206,20 @@ class EEM_Shortcodes {
 			function renderGrid(){
 				var g = P.barns[activeBarn] ? P.barns[activeBarn].grid : [];
 				var rows = g.length, cols = rows ? g[0].length : 0;
-				gridEl.style.gridTemplateColumns = 'repeat(' + cols + ', var(--eem-map-chip, 40px))';
-				gridEl.style.gridTemplateRows = 'repeat(' + rows + ', var(--eem-map-chip, 40px))';
 				gridEl.innerHTML = '';
 				var used = g.map(function(r){ return r.map(function(){ return false; }); });
+				// Track which rows/cols are actually covered by a sellable lot or a
+				// landmark span. Pure-aisle rows/cols (no stall, no landmark over them)
+				// get collapsed to a thin track instead of a full chip, so big
+				// facilities don't render with huge empty gaps between sections.
+				var rowCov = []; for (var ri=0; ri<rows; ri++){ rowCov.push(false); }
+				var colCov = []; for (var ci=0; ci<cols; ci++){ colCov.push(false); }
 				for (var r=0;r<rows;r++){ for (var c=0;c<cols;c++){
 					if (used[r][c]) continue;
 					var cell = g[r][c];
 					if (cell.type === 'gap'){ used[r][c]=true; continue; }
 					if (cell.type === 'stall'){
-						used[r][c]=true;
+						used[r][c]=true; rowCov[r]=true; colCov[c]=true;
 						var unit = unitOf(cell.label);
 						var st = statusOf(unit);
 						var d = document.createElement('div');
@@ -2231,7 +2235,7 @@ class EEM_Shortcodes {
 					var label=cell.label, w=1, h=1, ok=true;
 					while (c+w<cols && g[r][c+w].type==='landmark' && g[r][c+w].label===label && !used[r][c+w]) w++;
 					while (r+h<rows && ok){ for (var k=0;k<w;k++){ var cc=g[r+h][c+k]; if(!(cc.type==='landmark'&&cc.label===label&&!used[r+h][c+k])){ ok=false; break; } } if(ok) h++; }
-					for (var i=0;i<h;i++) for (var j=0;j<w;j++) used[r+i][c+j]=true;
+					for (var i=0;i<h;i++) for (var j=0;j<w;j++){ used[r+i][c+j]=true; rowCov[r+i]=true; colCov[c+j]=true; }
 					var lm = document.createElement('div');
 					lm.className = 'eem-map-cell eem-map-land';
 					lm.style.gridColumn = (c+1) + ' / span ' + w;
@@ -2240,6 +2244,10 @@ class EEM_Shortcodes {
 					lm.textContent = label;
 					gridEl.appendChild(lm);
 				}}
+				// Build explicit tracks: covered = full chip, aisle = thin 12px.
+				var chip = 'var(--eem-map-chip, 40px)', aisle = '12px';
+				gridEl.style.gridTemplateColumns = colCov.map(function(v){ return v ? chip : aisle; }).join(' ');
+				gridEl.style.gridTemplateRows = rowCov.map(function(v){ return v ? chip : aisle; }).join(' ');
 			}
 
 			function renderTabs(){
