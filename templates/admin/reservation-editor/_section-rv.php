@@ -398,9 +398,8 @@ foreach ( ( $rv_map_snap['barns'] ?? array() ) as $rv_seed_barn ) {
 ob_start();
 ?>
 <div class="eem-stall-map-connect" data-eem-rv-map data-eem-rv-map-total="<?php echo (int) ( ! empty( $rv_map_snap['barns'] ) ? EEM_Stall_Map_Importer::count_stalls( $rv_map_snap ) : 0 ); ?>">
-	<div class="eem-stall-map-row">
-		<button type="button" class="eem-btn-add" data-eem-action="open-map-builder" data-target="rv"><?php echo ! empty( $rv_map_snap['barns'] ) ? esc_html__( 'Edit Map', 'equine-event-manager' ) : esc_html__( 'Build Map', 'equine-event-manager' ); ?></button>
-	</div>
+	<?php // The inline RV Map Builder below is always visible in Pick-from-layout
+	// mode, so the separate "Edit Map" button is unnecessary. ?>
 	<div class="eem-stall-map-status" data-eem-rv-map-status>
 		<?php
 		if ( ! empty( $rv_map_snap['barns'] ) ) {
@@ -487,38 +486,18 @@ eem_render_editor_field_row( array(
 	'is_hidden'    => $rv_is_pick,
 ) );
 
-// v2 Venues Slice 3 — Save Layout / Load Layout to the reservation's venue
-// (combined layout — same action as the stall builder's bar).
-$context = 'rv';
-require EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_layout-template-bar.php';
+// v2 Venues Slice 3 — Save/Load Layout buttons now live in the RV Map Builder's
+// legend bar (data-eem-action="venue-save-layout"/"venue-load-layout"), handled
+// by the same delegated venue-layouts.js. The standalone card below the builder
+// was removed for a cleaner editor.
 
-// ── Blocked RV Lots tag-select ──
-ob_start();
+// ── Blocked RV Lots ──
+// The standalone tag-select field was removed; blocking now lives in the Map
+// Builder's Block tool + search (eem-map-builder.js reads/writes this hidden
+// input live, persisted on Update Reservation through the existing meta path).
 ?>
-<div class="eem-tag-select" id="eem-blocked-rv-lots-select">
-	<div class="eem-tag-select-input" data-eem-action="tag-open">
-		<input type="hidden" name="eem_blocked_rv_lots" value="<?php echo esc_attr( implode( ',', array_map( 'strval', $blocked_rv_lots ) ) ); ?>">
-		<?php foreach ( $blocked_rv_lots as $bl_val ) : ?>
-		<span class="eem-tag-chip" data-value="<?php echo esc_attr( (string) $bl_val ); ?>">
-			<?php echo esc_html( (string) $bl_val ); ?>
-			<button type="button" class="eem-tag-chip-remove" data-eem-action="tag-remove" aria-label="<?php esc_attr_e( 'Remove', 'equine-event-manager' ); ?>">&#xd7;</button>
-		</span>
-		<?php endforeach; ?>
-		<input class="eem-tag-search" type="text" placeholder="<?php esc_attr_e( 'Type a lot label…', 'equine-event-manager' ); ?>" data-eem-input-action="tag-search" data-eem-tag-target="eem-blocked-rv-lots-select">
-	</div>
-	<div class="eem-tag-dropdown" id="eem-blocked-rv-lots-dropdown">
-		<div class="eem-tag-dropdown-empty" style="display:none"><?php esc_html_e( 'No matching lots.', 'equine-event-manager' ); ?></div>
-	</div>
-</div>
-<span class="eem-field-hint"><?php esc_html_e( 'Type a lot label to filter, then click to block it. Click × on a chip to unblock.', 'equine-event-manager' ); ?></span>
+<input type="hidden" name="eem_blocked_rv_lots" id="eem-blocked-rv-lots-input" value="<?php echo esc_attr( implode( ',', array_map( 'strval', $blocked_rv_lots ) ) ); ?>">
 <?php
-$blocked_rv_html = (string) ob_get_clean();
-eem_render_editor_field_row( array(
-	'label'        => __( 'Blocked RV Lots', 'equine-event-manager' ),
-	'label_sub'    => __( 'Hold back from reservation', 'equine-event-manager' ),
-	'row_id'       => 'row-rv-blocked-lots',
-	'control_html' => $blocked_rv_html,
-) );
 
 // ── RV Lot Map file upload (parallel to Stall Map; new in 2.3.23) ──
 ob_start();

@@ -560,9 +560,9 @@ eem_render_editor_field_row( array(
 	'is_hidden'    => $stall_is_pick,
 ) );
 
-// v2 Venues Slice 3 — Save Layout / Load Layout to the reservation's venue.
-$context = 'stall';
-require EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_layout-template-bar.php';
+// v2 Venues Slice 3 — Save/Load Layout buttons now live in the Stall Map
+// Builder's legend bar (handled by the same delegated venue-layouts.js); the
+// standalone card was removed for a cleaner editor.
 
 // ── v4 Stall Mapping — native Map Builder (drives "Pick from layout") ──
 // Seed from the config snapshot, falling back to the canonical post-meta
@@ -618,33 +618,13 @@ eem_render_editor_field_row( array(
 	'is_hidden'    => ! $stall_is_pick,
 ) );
 
-// ── Blocked Stall Numbers tag-select ──
-ob_start();
+// ── Blocked Stall Numbers ──
+// The standalone tag-select field was removed; blocking now lives in the Map
+// Builder's Block tool + search (eem-map-builder.js reads/writes this hidden
+// input live, persisted on Update Reservation through the existing meta path).
 ?>
-<div class="eem-tag-select" id="eem-blocked-stalls-select">
-	<input type="hidden" name="eem_blocked_stalls" value="<?php echo esc_attr( implode( ',', array_map( 'strval', $blocked_stalls ) ) ); ?>">
-	<div class="eem-tag-select-input" data-eem-action="tag-open">
-		<?php foreach ( $blocked_stalls as $bs_val ) : ?>
-		<span class="eem-tag-chip" data-value="<?php echo esc_attr( (string) $bs_val ); ?>">
-			<?php echo esc_html( (string) $bs_val ); ?>
-			<button type="button" class="eem-tag-chip-remove" data-eem-action="tag-remove" aria-label="<?php esc_attr_e( 'Remove', 'equine-event-manager' ); ?>">&#xd7;</button>
-		</span>
-		<?php endforeach; ?>
-		<input class="eem-tag-search" type="text" placeholder="<?php esc_attr_e( 'Type a stall number…', 'equine-event-manager' ); ?>" data-eem-input-action="tag-search" data-eem-tag-target="eem-blocked-stalls-select">
-	</div>
-	<div class="eem-tag-dropdown" id="eem-blocked-stalls-dropdown">
-		<div class="eem-tag-dropdown-empty" style="display:none"><?php esc_html_e( 'No matching stall numbers.', 'equine-event-manager' ); ?></div>
-	</div>
-</div>
-<span class="eem-field-hint"><?php esc_html_e( 'Type a stall number to filter, then click to block it. Click × on a chip to unblock.', 'equine-event-manager' ); ?></span>
+<input type="hidden" name="eem_blocked_stalls" id="eem-blocked-stalls-input" value="<?php echo esc_attr( implode( ',', array_map( 'strval', $blocked_stalls ) ) ); ?>">
 <?php
-$blocked_html = (string) ob_get_clean();
-eem_render_editor_field_row( array(
-	'label'        => __( 'Blocked Stall Numbers', 'equine-event-manager' ),
-	'label_sub'    => __( 'Hold back from reservation', 'equine-event-manager' ),
-	'row_id'       => 'row-stall-blocked',
-	'control_html' => $blocked_html,
-) );
 
 // ── Stall Map file upload ──
 ob_start();

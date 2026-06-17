@@ -9317,7 +9317,12 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 .eem-mb-btn-primary:hover { background: var(--eem-electric-hover, #1355cc); }
 .eem-mb-legend { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; padding: 10px 20px; border-bottom: 1px solid var(--eem-border, #D9E2F2); font-size: 12.5px; }
 .eem-mb-lg { display: inline-flex; align-items: center; gap: 7px; font-weight: 600; color: var(--eem-navy, #031B4E); }
-.eem-mb-flow { margin-left: auto; color: var(--eem-text-muted, #8c8f94); font-size: 12px; }
+.eem-mb-flow { margin-left: auto; display: inline-flex; align-items: center; gap: 12px; color: var(--eem-text-muted, #8c8f94); font-size: 12px; }
+/* Flat blue icon buttons for Load/Save Layout — no border/background, electric
+   blue icon + label (Whitney feedback). */
+.eem-mb-iconbtn { display: inline-flex; align-items: center; gap: 6px; border: 0; background: transparent; color: var(--eem-electric, #1668F2); font-weight: 600; font-size: 13px; padding: 6px 8px; border-radius: var(--eem-radius, 3px); cursor: pointer; }
+.eem-mb-iconbtn:hover { background: color-mix(in srgb, var(--eem-electric, #1668F2) 10%, #fff); color: var(--eem-electric-hover, #1355cc); }
+.eem-mb-iconbtn svg { display: block; }
 .eem-mb-sw { display: inline-block; width: 13px; height: 13px; border-radius: 2px; border: 1px solid var(--eem-border, #D9E2F2); }
 .eem-mb-sw.stall { background: #fff; }
 .eem-mb-sw.gap { background: #eef1f6; }
@@ -9338,6 +9343,9 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 .eem-mb-tab.active { background: var(--eem-surface, #fff); color: var(--eem-navy, #031B4E); border-color: var(--eem-border-card, #c3c4c7); border-bottom: 1px solid var(--eem-surface, #fff); }
 .eem-mb-tab .x { margin-left: 8px; color: var(--eem-text-muted, #8c8f94); font-weight: 700; }
 .eem-mb-tab .x:hover { color: #c00; }
+/* Rename/settings pencil — flat electric-blue glyph (brand color). */
+.eem-mb-tab-edit { margin-left: 8px; color: var(--eem-electric, #1668F2); font-weight: 700; cursor: pointer; }
+.eem-mb-tab-edit:hover { color: var(--eem-electric-hover, #1355cc); }
 .eem-mb-tab-add { border: 1px dashed var(--eem-border-card, #c3c4c7); background: transparent; color: var(--eem-electric, #1668F2); font-weight: 600; font-size: 13px; padding: 8px 12px; border-radius: var(--eem-radius, 3px); margin-left: 4px; cursor: pointer; }
 .eem-mb-gridbar { display: flex; align-items: center; gap: 16px; padding: 11px 16px; border-bottom: 1px solid var(--eem-border, #D9E2F2); flex-wrap: wrap; color: var(--eem-text-secondary, #6B7A99); font-size: 12.5px; }
 .eem-mb-step { display: inline-flex; align-items: center; gap: 7px; font-weight: 600; color: var(--eem-navy, #031B4E); }
@@ -9400,7 +9408,19 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 .eem-mb-cell.has-surcharge { background: color-mix(in srgb, var(--eem-mb-area, #16a34a) 16%, #fff); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--eem-mb-area, #16a34a) 55%, #fff); }
 .eem-mb-cell.has-surcharge.stall:hover { background: color-mix(in srgb, var(--eem-mb-area, #16a34a) 26%, #fff); }
 .eem-mb-cell.has-surcharge.sel { box-shadow: inset 0 0 0 2px var(--eem-electric, #1668F2); }
-.eem-mb-cell.has-surcharge::after { content: '$'; position: absolute; top: 0; right: 2px; font-size: 9px; font-weight: 700; line-height: 1; color: var(--eem-mb-area, #16a34a); }
+.eem-mb-cell.has-surcharge::after { content: '$'; position: absolute; top: 3px; right: 4px; font-size: 9px; font-weight: 700; line-height: 1; color: var(--eem-mb-area, #16a34a); }
+/* Whole-zone surcharge: every lot reads as premium — faint blue tint + inset
+   corner $ (kept off the border per Whitney feedback). */
+.eem-mb-cell.stall.zone-premium { background: color-mix(in srgb, var(--eem-electric, #1668F2) 8%, #fff); }
+.eem-mb-cell.stall.zone-premium:hover { background: color-mix(in srgb, var(--eem-electric, #1668F2) 16%, #fff); }
+.eem-mb-cell.stall.zone-premium::after { content: '$'; position: absolute; top: 3px; right: 4px; font-size: 9px; font-weight: 700; line-height: 1; color: var(--eem-electric, #1668F2); }
+/* Blocked lot/stall — red hatch + struck label (held back from reservation). */
+.eem-mb-cell.stall.blocked { background-image: repeating-linear-gradient(45deg, rgba(220,38,38,0.16) 0, rgba(220,38,38,0.16) 5px, rgba(220,38,38,0.04) 5px, rgba(220,38,38,0.04) 10px); box-shadow: inset 0 0 0 1px rgba(220,38,38,0.55); color: #b3261e; text-decoration: line-through; }
+.eem-mb-cell.stall.blocked:hover { background-color: rgba(220,38,38,0.10); }
+.eem-mb-cell.stall.blocked::after { content: ''; }
+/* Block-tool search highlight — amber wash so matching lots read clearly as
+   "search found", distinct from the blue selection ring. */
+.eem-mb-cell.stall.search-hit { background-color: rgba(245,158,11,0.22); box-shadow: inset 0 0 0 2px rgba(245,158,11,0.9); }
 .eem-mb-apply-ghost { background: var(--eem-surface, #fff); color: var(--eem-navy, #031B4E); border-color: var(--eem-border, #d4d8e0); font-weight: 500; }
 .eem-mb-apply-ghost:hover { background: var(--eem-info-bg, #EEF4FF); }
 /* A merged multi-cell unit (one sellable paddock/lot) fills its spanned tracks
