@@ -1423,6 +1423,10 @@ class EEM_Shortcodes {
 							<span><?php esc_html_e( 'RV Reservations Subtotal', 'equine-event-manager' ); ?></span>
 							<strong data-eem-total="rv_subtotal">$0.00</strong>
 						</div>
+						<div class="eem-payment-summary-row" data-eem-summary-row="rv_surcharge" hidden>
+							<span><?php esc_html_e( 'RV Premium Lots', 'equine-event-manager' ); ?></span>
+							<strong data-eem-total="rv_surcharge">$0.00</strong>
+						</div>
 						<?php if ( $group_grounds_fee_enabled ) : ?>
 							<div class="eem-payment-summary-row" data-eem-summary-row="group_rider_grounds_fee_subtotal" hidden>
 								<span><?php esc_html_e( 'Rider Grounds Fee', 'equine-event-manager' ); ?></span>
@@ -11766,6 +11770,7 @@ RV Lot: " . $rv_lot['name'] );
 				   (the map picker writes the summed nightly/weekend surcharge to the
 				   hidden inputs). Server recomputes the same sum authoritatively. */
 				var rvZoneSurcharge = parseCurrency(getFieldValue(form, rvStayType === 'weekend' ? 'rv_surcharge_weekend' : 'rv_surcharge_nightly'));
+				var rvSurchargeTotal = rvZoneSurcharge * rvUnits; // premium-lots portion, shown as its own summary line
 				var rvSubtotal = (rvQty * rvRate + rvZoneSurcharge) * rvUnits;
 				var generalAddonsSubtotal = 0;
 				var stallSectionSubtotal = stallSubtotal + requiredShavingsSubtotal;
@@ -11807,7 +11812,11 @@ RV Lot: " . $rv_lot['name'] );
 				setTotal(form, 'stall_subtotal', stallSubtotal);
 				setTotal(form, 'stall_section_subtotal', stallSectionSubtotal);
 				setTotal(form, 'required_shavings_subtotal', requiredShavingsSubtotal);
-				setTotal(form, 'rv_subtotal', rvSubtotal);
+				// Premium-lots portion gets its own summary line; the RV subtotal row
+				// shows the base. The two add back to rvSubtotal so the grand total is
+				// unchanged.
+				setTotal(form, 'rv_subtotal', rvSubtotal - rvSurchargeTotal);
+				setTotal(form, 'rv_surcharge', rvSurchargeTotal);
 				setTotal(form, 'rv_section_subtotal', rvSubtotal);
 				setTotal(form, 'general_addons_subtotal', generalAddonsSubtotal);
 				setTotal(form, 'pre_entries_subtotal', preEntriesSubtotal);
@@ -11831,7 +11840,8 @@ RV Lot: " . $rv_lot['name'] );
 				setReadonlyQuantity(form, 'group_rider_deposit', groupRiderCount);
 				toggleSummaryRow(form, 'stall_subtotal', stallSubtotal > 0);
 				toggleSummaryRow(form, 'required_shavings_subtotal', requiredShavingsEnabled && stallQty > 0 && requiredShavingsQty > 0);
-				toggleSummaryRow(form, 'rv_subtotal', rvSubtotal > 0);
+				toggleSummaryRow(form, 'rv_subtotal', (rvSubtotal - rvSurchargeTotal) > 0);
+				toggleSummaryRow(form, 'rv_surcharge', rvSurchargeTotal > 0);
 				toggleSummaryRow(form, 'group_rider_grounds_fee_subtotal', groupGroundsFeeSubtotal > 0);
 				toggleSummaryRow(form, 'group_rider_deposit_subtotal', groupDepositSubtotal > 0);
 				Object.keys(generalAddonPricingMatrix || {}).forEach(function(addonKey) {
