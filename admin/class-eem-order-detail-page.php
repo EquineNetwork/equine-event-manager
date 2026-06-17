@@ -73,6 +73,13 @@ class EEM_Order_Detail_Page {
 	private $rv_surcharge_cache = array();
 
 	/**
+	 * Per-request memo of recomputed stall surcharge totals, keyed by order_key.
+	 *
+	 * @var array<string, float>
+	 */
+	private $stall_surcharge_cache = array();
+
+	/**
 	 * Register Order Detail as a HIDDEN submenu page (parent=null) — same
 	 * pattern as EEM_Orders_List_Page::register_customer_profile_stub().
 	 * The page is reachable only via direct URL, never sidebar nav.
@@ -471,6 +478,10 @@ class EEM_Order_Detail_Page {
 				<?php if ( $additional > 0 ) : ?>
 					<tr><td><?php esc_html_e( 'Additional Shavings', 'equine-event-manager' ); ?></td><td><?php echo esc_html( sprintf( _n( '%d bag', '%d bags', $additional, 'equine-event-manager' ), $additional ) ); ?></td></tr>
 				<?php endif; ?>
+				<?php $stall_surcharge = $this->stall_surcharge_total( $order ); ?>
+				<?php if ( $stall_surcharge > 0 ) : ?>
+					<tr><td><?php esc_html_e( 'Includes Stall Premium', 'equine-event-manager' ); ?></td><td><?php echo esc_html( '$' . number_format_i18n( $stall_surcharge, 2 ) ); ?></td></tr>
+				<?php endif; ?>
 				<tr class="eem-detail-table__subtotal"><td><?php esc_html_e( 'Stall Subtotal', 'equine-event-manager' ); ?></td><td><?php echo esc_html( '$' . number_format_i18n( $subtotal, 2 ) ); ?></td></tr>
 			</table>
 			<div class="eem-stall-assignment">
@@ -532,6 +543,37 @@ class EEM_Order_Detail_Page {
 
 		if ( '' !== $key ) {
 			$this->rv_surcharge_cache[ $key ] = $total;
+		}
+
+		return $total;
+	}
+
+	/**
+	 * Stall twin of rv_surcharge_total — informational "Stall Premium" breakout
+	 * recomputed via the canonical EEM_Shortcodes helper. Memoized per order_key.
+	 *
+	 * @param array $order Grouped order payload.
+	 * @return float Premium surcharge included in the stall subtotal.
+	 */
+	private function stall_surcharge_total( array $order ): float {
+		if ( ! class_exists( 'EEM_Shortcodes' ) ) {
+			return 0.0;
+		}
+
+		$key = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
+
+		if ( '' !== $key && isset( $this->stall_surcharge_cache[ $key ] ) ) {
+			return $this->stall_surcharge_cache[ $key ];
+		}
+
+		if ( null === $this->shortcodes_helper ) {
+			$this->shortcodes_helper = new EEM_Shortcodes();
+		}
+
+		$total = $this->shortcodes_helper->get_order_stall_surcharge_total( $order );
+
+		if ( '' !== $key ) {
+			$this->stall_surcharge_cache[ $key ] = $total;
 		}
 
 		return $total;
@@ -741,6 +783,10 @@ class EEM_Order_Detail_Page {
 							<?php endif; ?>
 						</div>
 						<div class="eem-order-summary__line"><span><?php esc_html_e( 'Stall Subtotal', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $stall_subtotal, 2 ) ); ?></span></div>
+						<?php $stall_summary_surcharge = $this->stall_surcharge_total( $order ); ?>
+						<?php if ( $stall_summary_surcharge > 0 ) : ?>
+							<div class="eem-order-summary__line"><span><?php esc_html_e( 'Includes Stall Premium', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $stall_summary_surcharge, 2 ) ); ?></span></div>
+						<?php endif; ?>
 						<div class="eem-order-summary__section-subtotal"><span><?php esc_html_e( 'Section Total', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $stall_subtotal, 2 ) ); ?></span></div>
 					</div>
 				<?php endif; ?>

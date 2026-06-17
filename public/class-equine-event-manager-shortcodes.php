@@ -1397,6 +1397,10 @@ class EEM_Shortcodes {
 							<span><?php esc_html_e( 'Stall Subtotal', 'equine-event-manager' ); ?></span>
 							<strong data-eem-total="stall_subtotal">$0.00</strong>
 						</div>
+						<div class="eem-payment-summary-row" data-eem-summary-row="stall_surcharge" hidden>
+							<span><?php esc_html_e( 'Stall Premium', 'equine-event-manager' ); ?></span>
+							<strong data-eem-total="stall_surcharge">$0.00</strong>
+						</div>
 						<div class="eem-payment-summary-row" data-eem-summary-row="required_shavings_subtotal" hidden>
 							<span><?php esc_html_e( 'Required Shavings Subtotal', 'equine-event-manager' ); ?></span>
 							<strong data-eem-total="required_shavings_subtotal">$0.00</strong>
@@ -1773,17 +1777,26 @@ class EEM_Shortcodes {
 
 				endforeach;
 			else :
-				$this->render_product_line_item(
-					__( 'Stalls', 'equine-event-manager' ),
-					$stall_product_description,
-					'stall_qty',
-					'',
-					array(
-						'dynamic_price_type' => 'stall',
-						'early_bird_active'  => $stall_early_bird_active,
-						'max_quantity'       => $stall_stepper_max,
-					)
-				);
+				// Slice 9: in Quantity mode (NOT pick-from-layout), if stall rows
+				// (tiers) are defined, render one priced stepper per tier instead of
+				// the single "Stalls" stepper — each capped at its row's range size.
+				$eem_stall_mode_pre = $this->get_resolved_stall_selection_mode( $reservation_id, $data );
+				$eem_stall_tiers    = ( 'exact_map' !== $eem_stall_mode_pre ) ? $this->get_stall_tiers( $data, (int) $reservation_id ) : array();
+				if ( ! empty( $eem_stall_tiers ) ) {
+					$this->render_stall_tier_steppers( $eem_stall_tiers, (int) $reservation_id, $stall_early_bird_active );
+				} else {
+					$this->render_product_line_item(
+						__( 'Stalls', 'equine-event-manager' ),
+						$stall_product_description,
+						'stall_qty',
+						'',
+						array(
+							'dynamic_price_type' => 'stall',
+							'early_bird_active'  => $stall_early_bird_active,
+							'max_quantity'       => $stall_stepper_max,
+						)
+					);
+				}
 			endif;
 			?>
 			<?php if ( ! empty( $data['required_shavings_enabled'] ) ) : ?>
@@ -1850,14 +1863,59 @@ class EEM_Shortcodes {
 						</div>
 					</div>
 				<?php endif; ?>
-				<?php $this->render_stall_map_picker(
-					$eem_stall_map_snapshot,
-					$stall_picker_reserved,
-					$stall_picker_blocked,
-					( 'customer' === ( $data['stall_tack_mode'] ?? 'customer' ) ),
-					(int) $stall_per_customer_max,
-					$stall_is_multi ? array( 'rate_types' => array_keys( $stall_type_options ) ) : array()
-				); ?>
+				<?php
+					// Slice 9: stall surcharge now lives on the MAP (whole-tab + painted
+					// areas), mirroring the RV picker. Build a per-tab badge map + an
+					// authoritative per-unit map (keyed by BARE label, since stall picks
+					// aren't zone-qualified) the picker JS reads; the server recomputes
+					// the identical sum via get_stall_zone_surcharge_for_units.
+					$eem_stall_zone_surcharge = array();
+					$eem_stall_unit_surcharge = array();
+					if ( class_exists( 'EEM_Surcharge' ) ) {
+						foreach ( ( $eem_stall_map_snapshot['barns'] ?? array() ) as $eem_sb ) {
+							$eem_sb_name = (string) ( $eem_sb['name'] ?? '' );
+							$eem_sb_tab  = EEM_Surcharge::sanitize( $eem_sb['surcharge'] ?? array() );
+							$eem_sb_key  = strtolower( trim( $eem_sb_name ) );
+							if ( '' !== $eem_sb_key ) {
+								$eem_sb_tab_nightly = EEM_Surcharge::nightly( $eem_sb_tab );
+								$eem_stall_zone_surcharge[ $eem_sb_key ] = array(
+									'nightly' => $eem_sb_tab_nightly,
+									'weekend' => $eem_sb_tab_nightly,
+								);
+							}
+							foreach ( (array) ( $eem_sb['grid'] ?? array() ) as $eem_sb_row ) {
+								foreach ( (array) $eem_sb_row as $eem_sb_cell ) {
+									if ( is_array( $eem_sb_cell ) && 'stall' === ( $eem_sb_cell['type'] ?? '' ) && '' !== (string) ( $eem_sb_cell['label'] ?? '' ) ) {
+										$eem_sb_label = (string) $eem_sb_cell['label'];
+										if ( isset( $eem_stall_unit_surcharge[ $eem_sb_label ] ) ) {
+											continue; // bare-label fallback: first barn wins
+										}
+										$eem_sb_sur = EEM_Stall_Map_Importer::surcharge_for_unit( $eem_stall_map_snapshot, $eem_sb_name, $eem_sb_label );
+										$eem_stall_unit_surcharge[ $eem_sb_label ] = array(
+											'nightly' => EEM_Surcharge::nightly( $eem_sb_sur ),
+											'pkg'     => EEM_Surcharge::for_package( $eem_sb_sur, '_all' ),
+										);
+									}
+								}
+							}
+						}
+					}
+					$eem_stall_picker_opts = array(
+						'surcharge_field' => 'stall',
+						'zone_surcharge'  => $eem_stall_zone_surcharge,
+						'unit_surcharge'  => $eem_stall_unit_surcharge,
+					);
+					if ( $stall_is_multi ) {
+						$eem_stall_picker_opts['rate_types'] = array_keys( $stall_type_options );
+					}
+					$this->render_stall_map_picker(
+						$eem_stall_map_snapshot,
+						$stall_picker_reserved,
+						$stall_picker_blocked,
+						( 'customer' === ( $data['stall_tack_mode'] ?? 'customer' ) ),
+						(int) $stall_per_customer_max,
+						$eem_stall_picker_opts
+					); ?>
 			<?php elseif ( ! empty( $stall_picker_rows ) ) : ?>
 				<?php $this->render_stall_picker_grid( $stall_picker_rows, $stall_picker_blocked, $stall_picker_reserved, array(), (string) $stall_map_url, ( 'customer' === ( $data['stall_tack_mode'] ?? 'customer' ) ) ); ?>
 			<?php elseif ( $stall_assignment_enabled && ! empty( $stall_assignment_blocks ) ) : ?>
@@ -2037,8 +2095,9 @@ class EEM_Shortcodes {
 				// currently-selected stay type (per-night for Nightly, flat per-package
 				// for a Stay Package). The totals JS reads it; server recomputes
 				// authoritatively via get_rv_zone_surcharge_for_units. ?>
-				<input type="hidden" name="rv_surcharge_nightly" value="0" data-eem-map-surcharge="nightly">
-				<input type="hidden" name="rv_surcharge_weekend" value="0" data-eem-map-surcharge="weekend">
+				<?php $eem_sur_prefix = ! empty( $opts['surcharge_field'] ) ? preg_replace( '/[^a-z_]/', '', (string) $opts['surcharge_field'] ) : 'rv'; ?>
+				<input type="hidden" name="<?php echo esc_attr( $eem_sur_prefix ); ?>_surcharge_nightly" value="0" data-eem-map-surcharge="nightly">
+				<input type="hidden" name="<?php echo esc_attr( $eem_sur_prefix ); ?>_surcharge_weekend" value="0" data-eem-map-surcharge="weekend">
 			<?php endif; ?>
 			<script type="application/json" data-eem-map-payload><?php echo wp_json_encode( $payload ); // phpcs:ignore ?></script>
 		</div>
@@ -2691,6 +2750,7 @@ class EEM_Shortcodes {
 		// rv_qty + per-tier surcharge sum (capacity-clamped) BEFORE validation and
 		// pricing run, so both see the corrected, never-oversold figure.
 		$submission     = $this->resolve_rv_tier_submission( $submission, $data, (int) $reservation_id );
+		$submission     = $this->resolve_stall_tier_submission( $submission, $data, (int) $reservation_id );
 		$errors         = $this->validate_submission( $submission, $status, $data );
 		$is_send_link   = ( 'manual' === $submission['invoice_type'] && 'send_payment_link' === $submission['invoice_action_mode'] );
 		$is_show_bill   = ( 'manual' === $submission['invoice_type'] && 'add_to_show_bill' === $submission['invoice_action_mode'] );
@@ -2939,6 +2999,8 @@ class EEM_Shortcodes {
 			'stall_arrival_date'      => isset( $_POST['stall_arrival_date'] ) ? sanitize_text_field( wp_unslash( $_POST['stall_arrival_date'] ) ) : '',
 			'stall_departure_date'    => isset( $_POST['stall_departure_date'] ) ? sanitize_text_field( wp_unslash( $_POST['stall_departure_date'] ) ) : '',
 			'stall_qty'               => isset( $_POST['stall_qty'] ) ? absint( $_POST['stall_qty'] ) : 0,
+			// Slice 9: per-tier quantities in Quantity mode, keyed by stall row index.
+			'stall_tier_qty'          => ( isset( $_POST['stall_tier_qty'] ) && is_array( $_POST['stall_tier_qty'] ) ) ? array_map( 'absint', (array) wp_unslash( $_POST['stall_tier_qty'] ) ) : array(),
 			'tack_stall_qty'          => 0,
 			'additional_shavings_qty' => 0,
 			'preferred_stall_units'   => $this->sanitize_preferred_stall_units( isset( $_POST['preferred_stall_units'] ) ? wp_unslash( $_POST['preferred_stall_units'] ) : array(), $data ),
@@ -4072,6 +4134,15 @@ class EEM_Shortcodes {
 			$stall_night_count = $this->get_billable_stay_units( $submission['stall_arrival_date'], $submission['stall_departure_date'], $submission['stall_stay_type'] );
 			$stall_subtotal    = ( $status['stalls_open'] && $stall_qty_total > 0 ) ? ( $stall_qty_total * $stall_unit_price * $stall_night_count ) : 0;
 		}
+		// Slice 9: stall premium surcharge — per-unit map/tier surcharge × nights,
+		// mirroring the RV path. Tier orders carry a pre-clamped sum; pick-from-layout
+		// orders resolve it from the picked stalls' map surcharge.
+		$stall_zone_surcharge_sum = ( null !== ( $submission['stall_tier_surcharge_sum'] ?? null ) )
+			? (float) $submission['stall_tier_surcharge_sum']
+			: $this->get_stall_zone_surcharge_for_units( $data, (array) ( $submission['preferred_stall_units'] ?? array() ), (string) $submission['stall_stay_type'], (int) $reservation_id );
+		if ( $status['stalls_open'] && $stall_zone_surcharge_sum > 0 ) {
+			$stall_subtotal += $stall_zone_surcharge_sum * max( 1, (int) $stall_night_count );
+		}
 		$additional_shavings_subtotal = ! empty( $data['additional_shavings_enabled'] ) ? ( absint( $submission['additional_shavings_qty'] ) * (float) $data['additional_shavings_price'] ) : 0;
 		$group_rider_count            = ( ! empty( $data['group_reservations_enabled'] ) && ! empty( $submission['group_reservation_enabled'] ) ) ? absint( $submission['group_rider_count'] ) : 0;
 		$group_rider_grounds_fee_subtotal = ( ! empty( $data['group_rider_grounds_fee_enabled'] ) && $group_rider_count > 0 ) ? $group_rider_count * (float) $data['group_rider_grounds_fee_amount'] : 0.0;
@@ -5036,6 +5107,10 @@ RV Lot: " . $rv_lot['name'] );
 		if ( (float) $stall_breakdown['base_subtotal'] > 0 ) {
 			$payment_rows[] = array( 'label' => __( 'Stall Subtotal', 'equine-event-manager' ), 'amount' => (float) $stall_breakdown['base_subtotal'] );
 		}
+		$eem_stall_sur = $this->get_order_stall_surcharge_total( $order );
+		if ( (float) $eem_stall_sur > 0 ) {
+			$payment_rows[] = array( 'label' => __( 'Stall Premium', 'equine-event-manager' ), 'amount' => (float) $eem_stall_sur );
+		}
 		if ( (float) $stall_breakdown['required_shavings_subtotal'] > 0 ) {
 			$payment_rows[] = array( 'label' => __( 'Required Shavings', 'equine-event-manager' ), 'amount' => (float) $stall_breakdown['required_shavings_subtotal'] );
 		}
@@ -5071,6 +5146,13 @@ RV Lot: " . $rv_lot['name'] );
 					$stall_nights
 				),
 				'amount' => (float) $stall_breakdown['base_subtotal'],
+			);
+		}
+
+		if ( (float) $eem_stall_sur > 0 && absint( $order['stall_quantity'] ) > 0 ) {
+			$receipt_lines[] = array(
+				'label'  => __( 'Stall Premium', 'equine-event-manager' ),
+				'amount' => (float) $eem_stall_sur,
 			);
 		}
 
@@ -5324,6 +5406,19 @@ RV Lot: " . $rv_lot['name'] );
 			);
 		}
 
+		// Slice 9: stall premium surcharge as its own line (base above excludes it).
+		$stall_surcharge_total = $this->get_order_stall_surcharge_total( $order );
+		if ( (float) $stall_surcharge_total > 0 && $stall_qty > 0 ) {
+			$line_items[] = array(
+				'section' => __( 'Stall Premium', 'equine-event-manager' ),
+				'desc'    => __( 'Premium Stalls', 'equine-event-manager' ),
+				'qty'     => (string) $stall_qty,
+				'units'   => $units_label( $order['stall_stay_type'], $stall_units ),
+				'rate'    => $rate( (float) $stall_surcharge_total, $stall_qty * max( 1, $stall_units ) ),
+				'total'   => '$' . number_format_i18n( (float) $stall_surcharge_total, 2 ),
+			);
+		}
+
 		if ( (float) $stall_breakdown['required_shavings_subtotal'] > 0 ) {
 			$shav_qty = absint( $order['required_shavings_qty'] );
 			$line_items[] = array(
@@ -5565,6 +5660,10 @@ RV Lot: " . $rv_lot['name'] );
 		$totals = array();
 		if ( (float) $stall_breakdown['base_subtotal'] > 0 ) {
 			$totals[] = array( 'label' => __( 'Stall Reservation', 'equine-event-manager' ), 'value' => $money( $stall_breakdown['base_subtotal'] ) );
+		}
+		$stall_surcharge_total = $this->get_order_stall_surcharge_total( $order );
+		if ( (float) $stall_surcharge_total > 0 ) {
+			$totals[] = array( 'label' => __( 'Stall Premium', 'equine-event-manager' ), 'value' => $money( $stall_surcharge_total ) );
 		}
 		if ( (float) $stall_breakdown['required_shavings_subtotal'] > 0 ) {
 			$totals[] = array( 'label' => __( 'Required Shavings', 'equine-event-manager' ), 'value' => $money( $stall_breakdown['required_shavings_subtotal'] ) );
@@ -5919,7 +6018,11 @@ RV Lot: " . $rv_lot['name'] );
 			$additional_shavings_qty      = absint( $order['additional_shavings_qty'] );
 			$required_shavings_subtotal   = $required_shavings_qty * $required_price;
 			$additional_shavings_subtotal = $additional_shavings_qty * $additional_price;
-			$base_subtotal                = max( 0, (float) $order['stall_subtotal'] - $required_shavings_subtotal - $additional_shavings_subtotal );
+			// Slice 9: the persisted stall_subtotal also includes the premium
+			// surcharge, so subtract it here to keep base_subtotal premium-free
+			// (the rows path above already excludes it). The receipt/email adds the
+			// premium back as its own "Stall Premium" line.
+			$base_subtotal                = max( 0, (float) $order['stall_subtotal'] - $required_shavings_subtotal - $additional_shavings_subtotal - $this->get_order_stall_surcharge_total( $order ) );
 		}
 
 		return array(
@@ -6079,6 +6182,65 @@ RV Lot: " . $rv_lot['name'] );
 		}
 		$tier_surcharge = array();
 		foreach ( $this->get_rv_tiers( $reservation_data, $reservation_id ) as $tier ) {
+			$tier_surcharge[ strtolower( $tier['name'] ) ] = (float) $tier['nightly_surcharge'];
+		}
+		$per_unit_sum = 0.0;
+		foreach ( $tier_qty as $name => $qty ) {
+			$key = strtolower( $name );
+			if ( isset( $tier_surcharge[ $key ] ) ) {
+				$per_unit_sum += $tier_surcharge[ $key ] * (int) $qty;
+			}
+		}
+
+		return $per_unit_sum > 0 ? $per_unit_sum * $stay_units : 0.0;
+	}
+
+	/**
+	 * Stall twin of get_order_rv_surcharge_total (Slice 9). Recomputes the premium
+	 * surcharge baked into a persisted order's stall subtotal — from the picked
+	 * stalls' map surcharge ("Assigned Stall Units" note) or, for Quantity-mode
+	 * tier orders, the per-tier nightly surcharge ("Stall Tiers:" note). Surfaced
+	 * as a "Stall Premium" line on the receipt / email / Order Detail.
+	 *
+	 * @param array $order Grouped order payload.
+	 * @return float Premium surcharge included in the stall subtotal.
+	 */
+	public function get_order_stall_surcharge_total( array $order ): float {
+		$reservation_id = ! empty( $order['reservation_id'] ) ? absint( $order['reservation_id'] ) : 0;
+		if ( ! $reservation_id ) {
+			return 0.0;
+		}
+
+		$raw   = $this->get_order_component_note_value( $order, 'stall', 'Assigned Stall Units' );
+		$units = array_values( array_filter( array_map( 'trim', explode( ',', (string) $raw ) ), 'strlen' ) );
+
+		$stay_type        = ! empty( $order['stall_stay_type'] ) ? sanitize_key( $order['stall_stay_type'] ) : 'nightly';
+		$reservation_data = $this->get_reservation_data( $reservation_id );
+		if ( empty( $reservation_data ) || ! is_array( $reservation_data ) ) {
+			return 0.0;
+		}
+
+		$stay_units = max( 1, (int) $this->get_billable_stay_units(
+			isset( $order['stall_arrival_date'] ) ? $order['stall_arrival_date'] : '',
+			isset( $order['stall_departure_date'] ) ? $order['stall_departure_date'] : '',
+			$stay_type
+		) );
+
+		// Pick-from-layout orders: premium from the picked stalls' map surcharge.
+		if ( ! empty( $units ) ) {
+			$per_unit_sum = $this->get_stall_zone_surcharge_for_units( $reservation_data, $units, $stay_type, $reservation_id );
+			return $per_unit_sum > 0 ? $per_unit_sum * $stay_units : 0.0;
+		}
+
+		// Quantity-mode tier orders: premium from the "Stall Tiers:" note.
+		$tier_qty = $this->parse_rv_tiers_note(
+			$this->get_order_component_note_value( $order, 'stall', 'Stall Tiers' )
+		);
+		if ( empty( $tier_qty ) ) {
+			return 0.0;
+		}
+		$tier_surcharge = array();
+		foreach ( $this->get_stall_tiers( $reservation_data, $reservation_id ) as $tier ) {
 			$tier_surcharge[ strtolower( $tier['name'] ) ] = (float) $tier['nightly_surcharge'];
 		}
 		$per_unit_sum = 0.0;
@@ -9578,32 +9740,69 @@ RV Lot: " . $rv_lot['name'] );
 	 * @return float Total surcharge (per night) across the picked lots.
 	 */
 	private function get_rv_zone_surcharge_for_units( array $data, array $units, string $stay_type ): float {
-		if ( empty( $units ) ) {
-			return 0.0;
-		}
-		// Slice 4: surcharge now lives ON THE MAP — a whole-tab amount + painted
-		// area amounts that stack ("most layers add"), each carrying a per-night
-		// figure and a flat per-package figure. The authoritative per-lot value is
-		// resolved by EEM_Stall_Map_Importer::surcharge_for_unit(). The returned
-		// sum is a PER-UNIT figure that the caller multiplies by the billable stay
-		// units (nights for a Nightly stay, 1 for a package / weekend), so:
-		//   - Nightly stay  → per-night surcharge × nights
-		//   - Package stay   → flat per-package surcharge × 1
 		$snap = ( isset( $data['rv_map'] ) && is_array( $data['rv_map'] ) ) ? $data['rv_map'] : array();
-		if ( empty( $snap['barns'] ) || ! class_exists( 'EEM_Surcharge' ) || ! class_exists( 'EEM_Stall_Map_Importer' ) ) {
+		return $this->sum_map_surcharge_for_units( $snap, $units, $stay_type );
+	}
+
+	/**
+	 * Stall twin of get_rv_zone_surcharge_for_units (Slice 9). Sums the per-unit
+	 * map surcharge for a set of picked stall units against the stall map snapshot.
+	 *
+	 * @param array  $data           Reservation setup data.
+	 * @param array  $units          Picked stall units (preferred_stall_units).
+	 * @param string $stay_type      Stay type.
+	 * @param int    $reservation_id Reservation id — loads the stall map via the
+	 *                               importer when $data doesn't surface it (the
+	 *                               customer meta omits stall_map, same divergence
+	 *                               as rv_rows).
+	 * @return float Per-unit surcharge sum (caller multiplies by billable nights).
+	 */
+	private function get_stall_zone_surcharge_for_units( array $data, array $units, string $stay_type, int $reservation_id = 0 ): float {
+		$snap = ( isset( $data['stall_map'] ) && is_array( $data['stall_map'] ) && ! empty( $data['stall_map']['barns'] ) ) ? $data['stall_map'] : array();
+		if ( empty( $snap['barns'] ) && $reservation_id > 0 && class_exists( 'EEM_Stall_Map_Importer' ) ) {
+			$loaded = EEM_Stall_Map_Importer::get_for_reservation( $reservation_id );
+			if ( ! empty( $loaded['barns'] ) ) {
+				$snap = EEM_Stall_Map_Importer::snapshot_of_kind( $loaded, 'stall' );
+			}
+		}
+		return $this->sum_map_surcharge_for_units( $snap, $units, $stay_type );
+	}
+
+	/**
+	 * Sum the resolved map surcharge for a set of picked units against a map
+	 * snapshot. Surcharge lives ON THE MAP — a whole-tab amount + painted-area
+	 * amounts that stack ("most layers add"), resolved per unit by
+	 * EEM_Stall_Map_Importer::surcharge_for_unit(). The returned figure is PER-UNIT;
+	 * the caller multiplies by billable stay units (nights for Nightly, 1 for a
+	 * package / weekend). Units are matched both zone-qualified ("Barn Label", how
+	 * the RV picker stores them) and by bare label ("Label", how the stall picker
+	 * stores them).
+	 *
+	 * @param array  $snap      Map snapshot ({barns:[{name,grid,surcharge,areas}]}).
+	 * @param array  $units     Picked unit strings.
+	 * @param string $stay_type Stay type ('pkg_*' → flat per-package, else per-night).
+	 * @return float Per-unit surcharge sum.
+	 */
+	private function sum_map_surcharge_for_units( array $snap, array $units, string $stay_type ): float {
+		if ( empty( $units ) || empty( $snap['barns'] ) || ! class_exists( 'EEM_Surcharge' ) || ! class_exists( 'EEM_Stall_Map_Importer' ) ) {
 			return 0.0;
 		}
 		$is_package = is_string( $stay_type ) && 0 === strpos( $stay_type, 'pkg_' );
-		// Build a unit => resolved surcharge-amount map for the current stay type.
+		// Build a unit => resolved surcharge-amount map for the current stay type,
+		// keyed BOTH by "Barn Label" (RV picks) and bare "Label" (stall picks).
 		$value_of_unit = array();
 		foreach ( ( $snap['barns'] ?? array() ) as $barn ) {
 			$bname = (string) ( $barn['name'] ?? '' );
 			foreach ( (array) ( $barn['grid'] ?? array() ) as $row ) {
 				foreach ( (array) $row as $cell ) {
 					if ( is_array( $cell ) && 'stall' === ( $cell['type'] ?? '' ) && '' !== (string) ( $cell['label'] ?? '' ) ) {
-						$sur  = EEM_Stall_Map_Importer::surcharge_for_unit( $snap, $bname, (string) $cell['label'] );
-						$amt  = $is_package ? EEM_Surcharge::for_package( $sur, $stay_type ) : EEM_Surcharge::nightly( $sur );
-						$value_of_unit[ $bname . ' ' . (string) $cell['label'] ] = (float) $amt;
+						$label = (string) $cell['label'];
+						$sur   = EEM_Stall_Map_Importer::surcharge_for_unit( $snap, $bname, $label );
+						$amt   = $is_package ? (float) EEM_Surcharge::for_package( $sur, $stay_type ) : (float) EEM_Surcharge::nightly( $sur );
+						$value_of_unit[ $bname . ' ' . $label ] = $amt;
+						if ( ! isset( $value_of_unit[ $label ] ) ) {
+							$value_of_unit[ $label ] = $amt; // bare-label fallback (first barn wins)
+						}
 					}
 				}
 			}
@@ -9806,6 +10005,164 @@ RV Lot: " . $rv_lot['name'] );
 		$submission['rv_qty']                = $total_qty;
 		$submission['rv_tier_selection']     = $selection;
 		$submission['rv_tier_surcharge_sum'] = $surcharge_sum;
+
+		return $submission;
+	}
+
+	/**
+	 * Stall twin of get_rv_tiers (Slice 9). Builds priced tiers from stall_rows for
+	 * Quantity mode — name + capacity (range size) + per-night surcharge. Reads
+	 * stall_rows from the config table when the customer meta omits it.
+	 *
+	 * @param array $data           Reservation setup data.
+	 * @param int   $reservation_id Reservation post ID (config-table fallback).
+	 * @return array<int, array{index:int,name:string,capacity:int,nightly_surcharge:float,surcharge:array}>
+	 */
+	private function get_stall_tiers( array $data, int $reservation_id = 0 ): array {
+		$rows = ( isset( $data['stall_rows'] ) && is_array( $data['stall_rows'] ) ) ? $data['stall_rows'] : array();
+		if ( empty( $rows ) && $reservation_id > 0 && class_exists( 'EEM_Reservation_Config' ) ) {
+			$cfg_rows = EEM_Reservation_Config::for( $reservation_id )->get( 'stall_rows' );
+			if ( is_array( $cfg_rows ) ) {
+				$rows = $cfg_rows;
+			}
+		}
+		if ( empty( $rows ) ) {
+			return array();
+		}
+
+		$tiers = array();
+		foreach ( $rows as $index => $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			// Stall rows may be one-sided (first/last) or back-to-back (top_/bot_).
+			$ranges = array();
+			if ( '' !== (string) ( $row['first'] ?? '' ) && '' !== (string) ( $row['last'] ?? '' ) ) {
+				$ranges[] = array( (string) $row['first'], (string) $row['last'] );
+			}
+			if ( '' !== (string) ( $row['top_first'] ?? '' ) && '' !== (string) ( $row['top_last'] ?? '' ) ) {
+				$ranges[] = array( (string) $row['top_first'], (string) $row['top_last'] );
+			}
+			if ( '' !== (string) ( $row['bot_first'] ?? '' ) && '' !== (string) ( $row['bot_last'] ?? '' ) ) {
+				$ranges[] = array( (string) $row['bot_first'], (string) $row['bot_last'] );
+			}
+			if ( empty( $ranges ) ) {
+				continue;
+			}
+			$capacity = 0;
+			foreach ( $ranges as $r ) {
+				$capacity += count( $this->expand_stall_label_range( $r[0], $r[1] ) );
+			}
+			if ( $capacity < 1 ) {
+				continue;
+			}
+			$surcharge = class_exists( 'EEM_Surcharge' )
+				? EEM_Surcharge::sanitize( isset( $row['surcharge'] ) ? $row['surcharge'] : ( $row['nightly_surcharge'] ?? 0 ) )
+				: array( 'nightly' => (float) ( $row['nightly_surcharge'] ?? 0 ), 'packages' => array() );
+			$name = isset( $row['name'] ) ? trim( (string) $row['name'] ) : '';
+			if ( '' === $name ) {
+				/* translators: %d: tier number. */
+				$name = sprintf( __( 'Tier %d', 'equine-event-manager' ), (int) $index + 1 );
+			}
+			$name = str_replace( ',', ' ', $name );
+
+			$tiers[] = array(
+				'index'             => (int) $index,
+				'name'              => $name,
+				'capacity'          => (int) $capacity,
+				'nightly_surcharge' => class_exists( 'EEM_Surcharge' ) ? (float) EEM_Surcharge::nightly( $surcharge ) : (float) ( $row['nightly_surcharge'] ?? 0 ),
+				'surcharge'         => $surcharge,
+			);
+		}
+
+		return $tiers;
+	}
+
+	/**
+	 * Stall twin of get_rv_tier_sold_map — per-tier sold counts from the
+	 * "Stall Tiers:" notes across this reservation's orders.
+	 *
+	 * @param int $reservation_id Reservation post ID.
+	 * @return array<string,int> Tier name (lowercased) => sold count.
+	 */
+	private function get_stall_tier_sold_map( int $reservation_id ): array {
+		$sold = array();
+		$reservation_id = absint( $reservation_id );
+		if ( $reservation_id < 1 || ! class_exists( 'EEM_Orders_Repository' ) ) {
+			return $sold;
+		}
+		$orders = array_filter(
+			( new EEM_Orders_Repository() )->get_orders( '', 'date', 'asc' ),
+			function ( $order ) use ( $reservation_id ) {
+				return absint( isset( $order['reservation_id'] ) ? $order['reservation_id'] : 0 ) === $reservation_id;
+			}
+		);
+		foreach ( (array) $orders as $order ) {
+			$raw = $this->get_order_component_note_value( $order, 'stall', 'Stall Tiers' );
+			foreach ( $this->parse_rv_tiers_note( $raw ) as $tier_name => $qty ) {
+				$key          = strtolower( $tier_name );
+				$sold[ $key ] = ( isset( $sold[ $key ] ) ? $sold[ $key ] : 0 ) + (int) $qty;
+			}
+		}
+		return $sold;
+	}
+
+	/**
+	 * Stall twin of resolve_rv_tier_submission — capacity-clamped stall_qty +
+	 * per-tier surcharge sum, plus the persisted selection. No-op outside
+	 * Quantity mode / when no tiers or no tier qty posted.
+	 *
+	 * @param array $submission     Sanitized submission.
+	 * @param array $data           Reservation setup data.
+	 * @param int   $reservation_id Reservation post ID.
+	 * @return array Mutated submission.
+	 */
+	private function resolve_stall_tier_submission( array $submission, array $data, int $reservation_id ): array {
+		$submission['stall_tier_selection']     = array();
+		$submission['stall_tier_surcharge_sum'] = null;
+
+		$tier_qty = ( isset( $submission['stall_tier_qty'] ) && is_array( $submission['stall_tier_qty'] ) ) ? $submission['stall_tier_qty'] : array();
+		if ( empty( $tier_qty ) ) {
+			return $submission;
+		}
+
+		$mode = $this->get_resolved_stall_selection_mode( $reservation_id, $data );
+		if ( 'exact_map' === $mode ) {
+			return $submission; // pick-from-layout handles its own surcharge
+		}
+
+		$tiers = $this->get_stall_tiers( $data, $reservation_id );
+		if ( empty( $tiers ) ) {
+			return $submission;
+		}
+
+		$sold          = $this->get_stall_tier_sold_map( $reservation_id );
+		$total_qty     = 0;
+		$surcharge_sum = 0.0;
+		$selection     = array();
+
+		foreach ( $tiers as $tier ) {
+			$idx = (int) $tier['index'];
+			$q   = isset( $tier_qty[ $idx ] ) ? absint( $tier_qty[ $idx ] ) : 0;
+			if ( $q < 1 ) {
+				continue;
+			}
+			$key       = strtolower( $tier['name'] );
+			$remaining = max( 0, (int) $tier['capacity'] - ( isset( $sold[ $key ] ) ? (int) $sold[ $key ] : 0 ) );
+			if ( $q > $remaining ) {
+				$q = $remaining;
+			}
+			if ( $q < 1 ) {
+				continue;
+			}
+			$selection[ $tier['name'] ] = $q;
+			$surcharge_sum             += $q * (float) $tier['nightly_surcharge'];
+			$total_qty                 += $q;
+		}
+
+		$submission['stall_qty']                = $total_qty;
+		$submission['stall_tier_selection']     = $selection;
+		$submission['stall_tier_surcharge_sum'] = $surcharge_sum;
 
 		return $submission;
 	}
@@ -10382,6 +10739,97 @@ RV Lot: " . $rv_lot['name'] );
 				surNightly.value = surSum.toFixed( 2 );
 				surWeekend.value = surSum.toFixed( 2 );
 				// Nudge the live-total recalc (listens on input/change at form level).
+				qtyMirror.dispatchEvent( new Event( 'input', { bubbles: true } ) );
+			}
+			wrap.addEventListener( 'input', recompute );
+			wrap.addEventListener( 'change', recompute );
+			wrap.addEventListener( 'click', function( e ) {
+				if ( e.target.closest( '[data-eem-quantity-step]' ) ) { setTimeout( recompute, 0 ); }
+			} );
+			recompute();
+		})();
+		</script>
+		<?php
+	}
+
+	/**
+	 * Stall twin of render_rv_tier_steppers (Slice 9). One priced stepper per stall
+	 * row/tier in Quantity mode — capped at the tier's remaining capacity. Emits a
+	 * hidden stall_qty mirror + the stall_surcharge_nightly/weekend hidden fields
+	 * the totals JS reads, so the existing live-total + Slice-9 base/premium split
+	 * work unchanged.
+	 *
+	 * @param array $tiers          Tier list from get_stall_tiers().
+	 * @param int   $reservation_id Reservation post ID (for sold-count lookup).
+	 * @param bool  $early_bird     Whether the early-bird badge should show.
+	 * @return void
+	 */
+	private function render_stall_tier_steppers( array $tiers, int $reservation_id, bool $early_bird = false ): void {
+		$sold = $this->get_stall_tier_sold_map( $reservation_id );
+
+		?>
+		<div class="eem-stall-tiers" data-eem-stall-tiers>
+			<?php foreach ( $tiers as $tier ) :
+				$key       = strtolower( $tier['name'] );
+				$remaining = max( 0, (int) $tier['capacity'] - ( isset( $sold[ $key ] ) ? (int) $sold[ $key ] : 0 ) );
+				$surcharge = (float) $tier['nightly_surcharge'];
+				?>
+				<div class="eem-product-line-item eem-product-line-item--stall-tier"
+					data-stall-tier-index="<?php echo (int) $tier['index']; ?>"
+					data-stall-tier-surcharge="<?php echo esc_attr( number_format( $surcharge, 2, '.', '' ) ); ?>"
+					data-stall-tier-remaining="<?php echo (int) $remaining; ?>">
+					<div class="eem-product-line-item__content">
+						<div class="eem-product-line-item__title">
+							<span class="eem-product-line-item__title-text"><?php echo esc_html( $tier['name'] ); ?></span>
+							<?php if ( $surcharge > 0 ) : ?>
+								<span class="eem-rate-badge eem-rate-badge--inline">+<?php echo esc_html( $this->format_money( $surcharge ) ); ?><?php esc_html_e( '/night', 'equine-event-manager' ); ?></span>
+							<?php endif; ?>
+							<?php if ( $early_bird ) : ?>
+								<span class="eem-rate-badge eem-rate-badge--inline"><?php esc_html_e( 'Early Bird Rate', 'equine-event-manager' ); ?></span>
+							<?php endif; ?>
+						</div>
+						<div class="eem-product-line-item__description">
+							<?php
+							if ( $remaining > 0 ) {
+								/* translators: 1: remaining count, 2: total capacity. */
+								echo esc_html( sprintf( _n( '%1$d of %2$d available', '%1$d of %2$d available', $remaining, 'equine-event-manager' ), $remaining, (int) $tier['capacity'] ) );
+							} else {
+								esc_html_e( 'Sold out', 'equine-event-manager' );
+							}
+							?>
+						</div>
+					</div>
+					<div class="eem-product-line-item__qty">
+						<?php $this->render_quantity_control( 'stall_tier_qty[' . (int) $tier['index'] . ']', $remaining ); ?>
+					</div>
+				</div>
+			<?php endforeach; ?>
+			<input type="hidden" name="stall_qty" value="0" data-eem-stall-tier-total>
+			<input type="hidden" name="stall_surcharge_nightly" value="0" data-eem-stall-tier-surcharge="nightly">
+			<input type="hidden" name="stall_surcharge_weekend" value="0" data-eem-stall-tier-surcharge="weekend">
+		</div>
+		<script>
+		(function(){
+			var wrap = document.currentScript.previousElementSibling;
+			if ( ! wrap || ! wrap.hasAttribute( 'data-eem-stall-tiers' ) ) { return; }
+			var qtyMirror = wrap.querySelector( '[data-eem-stall-tier-total]' );
+			var surNightly = wrap.querySelector( '[data-eem-stall-tier-surcharge="nightly"]' );
+			var surWeekend = wrap.querySelector( '[data-eem-stall-tier-surcharge="weekend"]' );
+			function recompute() {
+				var totalQty = 0, surSum = 0;
+				wrap.querySelectorAll( '.eem-product-line-item--stall-tier' ).forEach( function( row ) {
+					var input = row.querySelector( 'input[type="number"]' );
+					if ( ! input ) { return; }
+					var max = parseInt( row.getAttribute( 'data-stall-tier-remaining' ), 10 ) || 0;
+					var q = parseInt( input.value, 10 ); if ( isNaN( q ) || q < 0 ) { q = 0; }
+					if ( q > max ) { q = max; input.value = max; }
+					var sur = parseFloat( row.getAttribute( 'data-stall-tier-surcharge' ) ) || 0;
+					totalQty += q;
+					surSum += q * sur;
+				} );
+				qtyMirror.value = totalQty;
+				surNightly.value = surSum.toFixed( 2 );
+				surWeekend.value = surSum.toFixed( 2 );
 				qtyMirror.dispatchEvent( new Event( 'input', { bubbles: true } ) );
 			}
 			wrap.addEventListener( 'input', recompute );
@@ -12117,6 +12565,12 @@ RV Lot: " . $rv_lot['name'] );
 					stallQty = getNumberFieldValue(form, 'stall_qty');
 					stallSubtotal = stallQty * stallRate * stallUnits;
 				}
+				/* Slice 9: stall premium surcharge — mirror RV. The stall map/tier
+				   picker writes the per-unit summed surcharge to the hidden inputs;
+				   fold it into the subtotal, then split it onto its own summary line. */
+				var stallZoneSurcharge = parseCurrency(getFieldValue(form, stallStayType === 'weekend' ? 'stall_surcharge_weekend' : 'stall_surcharge_nightly'));
+				var stallSurchargeTotal = stallZoneSurcharge * stallUnits;
+				stallSubtotal += stallSurchargeTotal;
 				var rvQty = getNumberFieldValue(form, 'rv_qty');
 				var rvAddonSubtotals = {};
 				var generalAddonSubtotals = {};
@@ -12173,7 +12627,10 @@ RV Lot: " . $rv_lot['name'] );
 				var tax = taxRate > 0 ? Math.round(subtotal * (taxRate / 100) * 100) / 100 : 0;
 				total = subtotal + fees + tax;
 
-				setTotal(form, 'stall_subtotal', stallSubtotal);
+				// Premium portion shows on its own line; the stall subtotal row shows
+				// the base. The two add back to stallSubtotal so the total is unchanged.
+				setTotal(form, 'stall_subtotal', stallSubtotal - stallSurchargeTotal);
+				setTotal(form, 'stall_surcharge', stallSurchargeTotal);
 				setTotal(form, 'stall_section_subtotal', stallSectionSubtotal);
 				setTotal(form, 'required_shavings_subtotal', requiredShavingsSubtotal);
 				// Premium-lots portion gets its own summary line; the RV subtotal row
@@ -12202,7 +12659,8 @@ RV Lot: " . $rv_lot['name'] );
 				setReadonlyQuantity(form, 'required_shavings', requiredShavingsQty);
 				setReadonlyQuantity(form, 'group_rider_grounds_fee', groupRiderCount);
 				setReadonlyQuantity(form, 'group_rider_deposit', groupRiderCount);
-				toggleSummaryRow(form, 'stall_subtotal', stallSubtotal > 0);
+				toggleSummaryRow(form, 'stall_subtotal', (stallSubtotal - stallSurchargeTotal) > 0);
+				toggleSummaryRow(form, 'stall_surcharge', stallSurchargeTotal > 0);
 				toggleSummaryRow(form, 'required_shavings_subtotal', requiredShavingsEnabled && stallQty > 0 && requiredShavingsQty > 0);
 				toggleSummaryRow(form, 'rv_subtotal', (rvSubtotal - rvSurchargeTotal) > 0);
 				toggleSummaryRow(form, 'rv_surcharge', rvSurchargeTotal > 0);
