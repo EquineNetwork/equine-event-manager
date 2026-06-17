@@ -336,11 +336,17 @@ class EEM_Stall_Map_Importer {
 				$name = sprintf( __( 'Zone %d', 'equine-event-manager' ), count( $out ) + 1 );
 			}
 			$out[] = array(
-				'name' => $name,
-				'kind' => $kind,
-				'rows' => count( $grid ),
-				'cols' => $cols,
-				'grid' => $grid,
+				'name'      => $name,
+				'kind'      => $kind,
+				'rows'      => count( $grid ),
+				'cols'      => $cols,
+				'grid'      => $grid,
+				// Slice 3 surcharge owners: a tab-level surcharge applied to every
+				// cell in the barn, plus a registry of painted areas (cell subsets)
+				// each with its own per-rate-type surcharge. Stacked at pricing time
+				// by {@see self::surcharge_for_unit()}.
+				'surcharge' => EEM_Surcharge::sanitize( isset( $barn['surcharge'] ) ? $barn['surcharge'] : array() ),
+				'areas'     => self::sanitize_areas( ( isset( $barn['areas'] ) && is_array( $barn['areas'] ) ) ? $barn['areas'] : array() ),
 			);
 		}
 		return array(
@@ -363,11 +369,98 @@ class EEM_Stall_Map_Importer {
 		$type  = isset( $cell['type'] ) ? (string) $cell['type'] : 'gap';
 		$label = isset( $cell['label'] ) ? sanitize_text_field( (string) $cell['label'] ) : '';
 		if ( 'stall' === $type && '' !== $label ) {
-			return array( 'type' => 'stall', 'label' => $label );
+			$out = array( 'type' => 'stall', 'label' => $label );
+			// Slice 3: a stall/lot cell may belong to a painted surcharge area and
+			// may be the anchor of a multi-cell unit (paddock) spanning w×h cells.
+			if ( isset( $cell['area'] ) && '' !== (string) $cell['area'] ) {
+				$out['area'] = sanitize_key( (string) $cell['area'] );
+			}
+			$w = isset( $cell['w'] ) ? (int) $cell['w'] : 1;
+			$h = isset( $cell['h'] ) ? (int) $cell['h'] : 1;
+			if ( $w > 1 ) {
+				$out['w'] = $w;
+			}
+			if ( $h > 1 ) {
+				$out['h'] = $h;
+			}
+			return $out;
 		}
 		if ( 'landmark' === $type && '' !== $label ) {
 			return array( 'type' => 'landmark', 'label' => $label );
 		}
 		return array( 'type' => 'gap', 'label' => '' );
+	}
+
+	/**
+	 * Sanitise the per-barn painted-area registry. Each area is a named, colored
+	 * subset of cells carrying its own per-rate-type surcharge.
+	 *
+	 * @param array $areas Raw areas from the builder payload.
+	 * @return array<int,array{id:string,name:string,color:string,surcharge:array}>
+	 */
+	private static function sanitize_areas( array $areas ): array {
+		$out = array();
+		foreach ( $areas as $area ) {
+			if ( ! is_array( $area ) ) {
+				continue;
+			}
+			$id = isset( $area['id'] ) ? sanitize_key( (string) $area['id'] ) : '';
+			if ( '' === $id ) {
+				continue;
+			}
+			$out[] = array(
+				'id'        => $id,
+				'name'      => isset( $area['name'] ) ? sanitize_text_field( (string) $area['name'] ) : '',
+				'color'     => isset( $area['color'] ) ? ( sanitize_hex_color( (string) $area['color'] ) ?: '' ) : '',
+				'surcharge' => EEM_Surcharge::sanitize( isset( $area['surcharge'] ) ? $area['surcharge'] : array() ),
+			);
+		}
+		return $out;
+	}
+
+	/**
+	 * Effective per-rate-type surcharge for one sellable unit (stall/lot), stacking
+	 * the barn's tab-level surcharge with the painted area the cell belongs to
+	 * ("most layers add"). Returns the canonical EEM_Surcharge value.
+	 *
+	 * @param array  $snapshot  Map snapshot.
+	 * @param string $barn_name Barn/zone name (case-insensitive match).
+	 * @param string $label     Stall/lot label.
+	 * @return array{nightly:float,packages:array<string,float>}
+	 */
+	public static function surcharge_for_unit( array $snapshot, string $barn_name, string $label ): array {
+		$barn = null;
+		$bn   = strtolower( trim( $barn_name ) );
+		foreach ( ( $snapshot['barns'] ?? array() ) as $candidate ) {
+			if ( is_array( $candidate ) && strtolower( trim( (string) ( $candidate['name'] ?? '' ) ) ) === $bn ) {
+				$barn = $candidate;
+				break;
+			}
+		}
+		if ( ! $barn ) {
+			return EEM_Surcharge::zero();
+		}
+
+		$total = EEM_Surcharge::sanitize( $barn['surcharge'] ?? array() ); // Tab-level.
+
+		// Resolve the cell's painted area, then stack that area's surcharge.
+		$area_id = '';
+		foreach ( ( $barn['grid'] ?? array() ) as $row ) {
+			foreach ( (array) $row as $cell ) {
+				if ( is_array( $cell ) && 'stall' === ( $cell['type'] ?? '' ) && (string) ( $cell['label'] ?? '' ) === (string) $label ) {
+					$area_id = isset( $cell['area'] ) ? (string) $cell['area'] : '';
+					break 2;
+				}
+			}
+		}
+		if ( '' !== $area_id ) {
+			foreach ( ( $barn['areas'] ?? array() ) as $area ) {
+				if ( is_array( $area ) && (string) ( $area['id'] ?? '' ) === $area_id ) {
+					$total = EEM_Surcharge::add( $total, $area['surcharge'] ?? array() );
+					break;
+				}
+			}
+		}
+		return $total;
 	}
 }
