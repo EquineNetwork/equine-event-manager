@@ -1216,7 +1216,11 @@ class EEM_Reservation_Editor_Page {
 			$rv_rows_clean = array();
 			foreach ( (array) $rv_rows_raw as $row ) {
 				if ( ! is_array( $row ) ) continue;
+				// Per-rate-type surcharge object (Slice 2). Accepts a future
+				// per-rate `surcharge` array or the legacy single nightly field.
+				$rv_row_surcharge = EEM_Surcharge::sanitize( isset( $row['surcharge'] ) ? $row['surcharge'] : ( $row['nightly_surcharge'] ?? 0 ) );
 				$rv_rows_clean[] = array(
+					'surcharge'         => $rv_row_surcharge,
 					'name'              => sanitize_text_field( (string) ( $row['name']              ?? '' ) ),
 					'layout'            => 'one-sided',
 					'first'             => sanitize_text_field( (string) ( $row['first']             ?? '' ) ),

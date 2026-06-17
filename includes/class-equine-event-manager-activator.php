@@ -290,6 +290,11 @@ class EEM_Activator {
 			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-027-rv-zones-to-rows.php';
 			update_option( 'eem_mig_027_rv_zones_to_rows_complete', 1, false );
 		}
+
+		if ( ! get_option( 'eem_mig_028_rv_row_surcharge_object_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-028-rv-row-surcharge-object.php';
+			update_option( 'eem_mig_028_rv_row_surcharge_object_complete', 1, false );
+		}
 	}
 
 	/**
