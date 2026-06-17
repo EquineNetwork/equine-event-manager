@@ -5307,8 +5307,12 @@
 				var smapApplyLevel = function (level) {
 					level = level || container._eemSmapLevel || 'fit';
 					container._eemSmapLevel = level;
-					var fit = smapFitPx();
-					var px = level === '2x' ? Math.round(fit * 2) : level === '3x' ? Math.round(fit * 3) : fit;
+					// +/− step the chip px around a fixed default; no-arg (barn switch)
+					// keeps the current px; first load lands on SMAP_BASE (fixed size).
+					var px = container._eemSmapChip || SMAP_BASE;
+					if ( level === 'in' ) { px = Math.min( 80, Math.round( px * 1.2 ) ); }
+					else if ( level === 'out' ) { px = Math.max( SMAP_MIN, Math.round( px / 1.2 ) ); }
+					else if ( level === 'reset' ) { px = SMAP_BASE; }
 					container._eemSmapChip = px;
 					applySmapZoom(px);
 					smapSetActive(level);

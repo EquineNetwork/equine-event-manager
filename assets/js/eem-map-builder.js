@@ -109,14 +109,14 @@
 	}
 	// Discrete zoom presets: Fit (whole facility), 2x or 3x of Fit.
 	function mbApplyLevel(level) {
-		level = level || B.mbLevel || 'fit';
-		B.mbLevel = level;
-		var fit = mbFitFactor();
-		B.zoom = level === '2x' ? fit * 2 : level === '3x' ? fit * 3 : fit;
+		// +/− step the chip size around the fixed 1× default; 'reset' / unknown
+		// (e.g. on load) returns to 1× so the map always opens at a readable size.
+		var z0 = B.zoom || 1;
+		B.zoom = level === 'in' ? Math.min(ZMAX, z0 * 1.2) : level === 'out' ? Math.max(ZMIN, z0 / 1.2) : level === 'reset' ? 1 : z0;
 		render();
 		mbSetActive(level);
 	}
-	function fitZoom() { mbApplyLevel('fit'); }
+	function fitZoom() { mbApplyLevel('reset'); }
 
 	function render() {
 		var z = Z();
@@ -401,7 +401,7 @@
 							'<span class="eem-mb-step">Rows <button type="button" data-resize="row" data-d="-1">−</button><span id="eem-mb-rowval">0</span><button type="button" data-resize="row" data-d="1">+</button></span>' +
 							'<span class="eem-mb-step">Cols <button type="button" data-resize="col" data-d="-1">−</button><span id="eem-mb-colval">0</span><button type="button" data-resize="col" data-d="1">+</button></span>' +
 							'<span class="eem-mb-controls" id="eem-mb-controls"></span>' +
-							'<span class="eem-mb-zoom">' + '<button type="button" data-zoom="fit" title="Fit the whole facility">Fit</button>' + '<button type="button" data-zoom="2x" title="2× detail">2×</button>' + '<button type="button" data-zoom="3x" title="3× detail">3×</button>' + '</span>' +
+							'<span class="eem-mb-zoom">' + '<button type="button" data-zoom="out" title="Zoom out" aria-label="Zoom out">&minus;</button>' + '<button type="button" data-zoom="reset" title="Reset zoom">Zoom</button>' + '<button type="button" data-zoom="in" title="Zoom in" aria-label="Zoom in">+</button>' + '</span>' +
 						'</div>' +
 						'<div class="eem-mb-gridscroll"><div class="eem-mb-grid" id="eem-mb-grid"></div></div>' +
 					'</div>' +

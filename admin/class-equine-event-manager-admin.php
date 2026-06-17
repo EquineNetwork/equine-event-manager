@@ -3111,9 +3111,9 @@ class EEM_Admin {
 
 			<div class="eem-smap-zoombar">
 				<span class="eem-smap-zoom" data-eem-smap-zoom>
-					<button type="button" data-zoom="fit" title="<?php esc_attr_e( 'Fit the whole facility', 'equine-event-manager' ); ?>"><?php esc_html_e( 'Fit', 'equine-event-manager' ); ?></button>
-					<button type="button" data-zoom="2x" title="<?php esc_attr_e( '2× detail', 'equine-event-manager' ); ?>">2&times;</button>
-					<button type="button" data-zoom="3x" title="<?php esc_attr_e( '3× detail', 'equine-event-manager' ); ?>">3&times;</button>
+					<button type="button" data-zoom="out" title="<?php esc_attr_e( 'Zoom out', 'equine-event-manager' ); ?>" aria-label="<?php esc_attr_e( 'Zoom out', 'equine-event-manager' ); ?>">&minus;</button>
+					<button type="button" data-zoom="reset" title="<?php esc_attr_e( 'Reset zoom', 'equine-event-manager' ); ?>"><?php esc_html_e( 'Zoom', 'equine-event-manager' ); ?></button>
+					<button type="button" data-zoom="in" title="<?php esc_attr_e( 'Zoom in', 'equine-event-manager' ); ?>" aria-label="<?php esc_attr_e( 'Zoom in', 'equine-event-manager' ); ?>">+</button>
 				</span>
 			</div>
 
@@ -4431,13 +4431,13 @@ class EEM_Admin {
 				}
 			}
 
-			// RV zone names
-			$rv_zones      = $cfg->get( 'rv_zones' );
+			// RV zone names (derived from row names since zones collapsed onto rows)
+			$rv_rows_list  = $cfg->get( 'rv_rows' );
 			$rv_zone_names = array();
-			if ( is_array( $rv_zones ) ) {
-				foreach ( $rv_zones as $zone ) {
-					if ( isset( $zone['name'] ) && '' !== (string) $zone['name'] ) {
-						$rv_zone_names[] = (string) $zone['name'];
+			if ( is_array( $rv_rows_list ) ) {
+				foreach ( $rv_rows_list as $rr ) {
+					if ( isset( $rr['name'] ) && '' !== (string) $rr['name'] ) {
+						$rv_zone_names[] = (string) $rr['name'];
 					}
 				}
 			}

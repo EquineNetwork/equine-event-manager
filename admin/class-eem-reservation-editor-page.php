@@ -675,13 +675,6 @@ class EEM_Reservation_Editor_Page {
 			$rv_row_count = isset( $ctx['rv_row_count'] ) ? (int) $ctx['rv_row_count'] : null;
 			if ( ! $rv_has_map && ( null === $rv_row_count || $rv_row_count < 1 ) ) {
 				$err['rv'] = __( 'RV Reservations: "Pick from layout" requires a connected RV Map. Connect your RV sheet under "Interactive RV Map," or switch Customer Selection to "Quantity."', 'equine-event-manager' );
-			} elseif ( ! $rv_has_map ) {
-				// Legacy lot-rows path — keep the zone checks.
-				if ( isset( $ctx['rv_zone_count'] ) && (int) $ctx['rv_zone_count'] < 1 ) {
-					$err['rv'] = __( 'RV Reservations: "Mapped" lots need at least one pricing zone. Add a zone under "RV Lot Zones," then assign your lot rows to it.', 'equine-event-manager' );
-				} elseif ( isset( $ctx['rv_rows_with_zone'] ) && (int) $ctx['rv_rows_with_zone'] < 1 ) {
-					$err['rv'] = __( 'RV Reservations: no lot row is assigned to a zone, so customers see no available lots. Assign at least one lot row to a zone.', 'equine-event-manager' );
-				}
 			}
 		}
 
@@ -1056,12 +1049,9 @@ class EEM_Reservation_Editor_Page {
 				// does so the gate sees what actually gets persisted.
 				$stall_rows_raw = ( isset( $_POST['eem_stall_rows'] ) && is_array( $_POST['eem_stall_rows'] ) ) ? wp_unslash( $_POST['eem_stall_rows'] ) : array();
 				$rv_rows_raw  = ( isset( $_POST['eem_rv_rows'] ) && is_array( $_POST['eem_rv_rows'] ) ) ? wp_unslash( $_POST['eem_rv_rows'] ) : array();
-				$rv_zones_raw = ( isset( $_POST['eem_rv_zones'] ) && is_array( $_POST['eem_rv_zones'] ) ) ? wp_unslash( $_POST['eem_rv_zones'] ) : array();
 				$publish_ctx  = array(
 					'stall_row_count'      => self::count_usable_rows( $stall_rows_raw ),
 					'rv_row_count'         => self::count_usable_rows( $rv_rows_raw ),
-					'rv_zone_count'        => self::count_valid_zones( $rv_zones_raw ),
-					'rv_rows_with_zone'    => self::count_usable_rows_with_zone( $rv_rows_raw ),
 					'stall_dupe_labels'    => self::find_duplicate_labels( $stall_rows_raw ),
 					'rv_dupe_labels'       => self::find_duplicate_labels( $rv_rows_raw ),
 					'stall_inventory_type' => isset( $_POST['stall_inventory_type'] ) ? EEM_Reservations_CPT::sanitize_stall_inventory_type( wp_unslash( $_POST['stall_inventory_type'] ) ) : '',
@@ -1158,6 +1148,14 @@ class EEM_Reservation_Editor_Page {
 			$cfg->set( 'stall_inventory_type', $inv_type );
 			$cfg->set( 'stall_customer_selection', $cust_sel );
 			$cfg->set( 'stall_selection_mode', EEM_Reservations_CPT::derive_stall_selection_mode( $inv_type, $cust_sel ) );
+				// Mirror the resolved pair to post meta so readers that still
+				// resolve from post meta (resolve_stall_pair, WP_Query meta_query)
+				// stay in sync with the authoritative config table — otherwise a
+				// saved value gets clobbered by stale post meta on the next render.
+				$eem_stall_rid = $cfg->id();
+				update_post_meta( $eem_stall_rid, '_en_stall_inventory_type', $inv_type );
+				update_post_meta( $eem_stall_rid, '_en_stall_customer_selection', $cust_sel );
+				update_post_meta( $eem_stall_rid, '_en_stall_selection_mode', EEM_Reservations_CPT::derive_stall_selection_mode( $inv_type, $cust_sel ) );
 		}
 
 		// v4 RV two-control — the editor posts rv_inventory_type (bulk|mapped) +
@@ -1179,6 +1177,13 @@ class EEM_Reservation_Editor_Page {
 			$cfg->set( 'rv_inventory_type', $rv_inv_type );
 			$cfg->set( 'rv_customer_selection', $rv_cust_sel );
 			$cfg->set( 'rv_selection_mode', EEM_Reservations_CPT::derive_rv_selection_mode( $rv_inv_type, $rv_cust_sel ) );
+				// Mirror the resolved pair to post meta (resolve_rv_pair / WP_Query
+				// read it) so the freshly saved value isn't clobbered by stale post
+				// meta on reload — the "Pick from layout reverts to Quantity" bug.
+				$eem_rv_rid = $cfg->id();
+				update_post_meta( $eem_rv_rid, '_en_rv_inventory_type', $rv_inv_type );
+				update_post_meta( $eem_rv_rid, '_en_rv_customer_selection', $rv_cust_sel );
+				update_post_meta( $eem_rv_rid, '_en_rv_selection_mode', EEM_Reservations_CPT::derive_rv_selection_mode( $rv_inv_type, $rv_cust_sel ) );
 		}
 
 		// Max stalls per customer — Enforced at checkout (C10 scope) — zero/empty = unlimited.
@@ -1205,41 +1210,18 @@ class EEM_Reservation_Editor_Page {
 
 		// RV zones
 		// RV zones — same "delete them all must clear" sentinel logic as stall rows.
-		if ( isset( $_POST['eem_rv_zones_present'] ) || ( isset( $_POST['eem_rv_zones'] ) && is_array( $_POST['eem_rv_zones'] ) ) ) {
-			$rv_zones_raw = ( isset( $_POST['eem_rv_zones'] ) && is_array( $_POST['eem_rv_zones'] ) ) ? wp_unslash( $_POST['eem_rv_zones'] ) : array();
-			$rv_zones_clean = array();
-			foreach ( (array) $rv_zones_raw as $zone ) {
-				if ( ! is_array( $zone ) ) continue;
-				$rv_zones_clean[] = array(
-					'name'          => sanitize_text_field( (string) ( $zone['name']          ?? '' ) ),
-					'color'         => sanitize_text_field( (string) ( $zone['color']         ?? '#1668F2' ) ),
-					'nightly'       => number_format( (float) ( $zone['nightly']              ?? 0 ), 2, '.', '' ),
-					'weekend'       => number_format( (float) ( $zone['weekend']              ?? 0 ), 2, '.', '' ),
-					'available_qty' => absint( $zone['available_qty'] ?? 0 ),
-				);
-			}
-			$cfg->set( 'rv_zones', $rv_zones_clean );
-		}
-
-		// RV rows
+		// RV rows (surcharge lives directly on each row — zones collapsed 2.7.384)
 		if ( isset( $_POST['eem_rv_rows'] ) && is_array( $_POST['eem_rv_rows'] ) ) {
 			$rv_rows_raw = wp_unslash( $_POST['eem_rv_rows'] );
 			$rv_rows_clean = array();
 			foreach ( (array) $rv_rows_raw as $row ) {
 				if ( ! is_array( $row ) ) continue;
-				// V1 zone model: each row has a single zone_id (the zone the whole row belongs to).
-				// Lots in a row without a zone_id are unavailable to customers at checkout.
-				// See: docs/c10-contracts.md
 				$rv_rows_clean[] = array(
-					'name'      => sanitize_text_field( (string) ( $row['name']      ?? '' ) ),
-					'layout'    => in_array( (string) ( $row['layout'] ?? '' ), array( 'one-sided', 'back-to-back' ), true ) ? (string) $row['layout'] : 'one-sided',
-					'first'     => sanitize_text_field( (string) ( $row['first']     ?? '' ) ),
-					'last'      => sanitize_text_field( (string) ( $row['last']      ?? '' ) ),
-					'top_first' => sanitize_text_field( (string) ( $row['top_first'] ?? '' ) ),
-					'top_last'  => sanitize_text_field( (string) ( $row['top_last']  ?? '' ) ),
-					'bot_first' => sanitize_text_field( (string) ( $row['bot_first'] ?? '' ) ),
-					'bot_last'  => sanitize_text_field( (string) ( $row['bot_last']  ?? '' ) ),
-					'zone_id'   => sanitize_text_field( (string) ( $row['zone_id']   ?? '' ) ),
+					'name'              => sanitize_text_field( (string) ( $row['name']              ?? '' ) ),
+					'layout'            => 'one-sided',
+					'first'             => sanitize_text_field( (string) ( $row['first']             ?? '' ) ),
+					'last'              => sanitize_text_field( (string) ( $row['last']              ?? '' ) ),
+					'nightly_surcharge' => number_format( (float) ( $row['nightly_surcharge']        ?? 0 ), 2, '.', '' ),
 				);
 			}
 			$cfg->set( 'rv_rows', $rv_rows_clean );

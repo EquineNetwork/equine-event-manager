@@ -922,16 +922,29 @@ class EEM_Shortcodes {
 														$eem_rv_blocked[ $eem_brl ] = true;
 													}
 												}
-												// Per-zone surcharge map (lowercased zone name => nightly/weekend)
+												// Per-zone surcharge map (lowercased row name => nightly surcharge)
 												// so the picker can add each picked lot's surcharge to the total.
 												$eem_rv_zone_surcharge = array();
-												foreach ( ( isset( $data['rv_zones'] ) && is_array( $data['rv_zones'] ) ? $data['rv_zones'] : array() ) as $eem_rvz ) {
-													$eem_rvz_name = isset( $eem_rvz['name'] ) ? strtolower( trim( (string) $eem_rvz['name'] ) ) : '';
-													if ( '' !== $eem_rvz_name ) {
-														$eem_rv_zone_surcharge[ $eem_rvz_name ] = array(
-															'nightly' => isset( $eem_rvz['nightly'] ) ? (float) $eem_rvz['nightly'] : 0.0,
-															'weekend' => isset( $eem_rvz['weekend'] ) ? (float) $eem_rvz['weekend'] : 0.0,
+												foreach ( ( isset( $data['rv_rows'] ) && is_array( $data['rv_rows'] ) ? $data['rv_rows'] : array() ) as $eem_rvr ) {
+													$eem_rvr_name = isset( $eem_rvr['name'] ) ? strtolower( trim( (string) $eem_rvr['name'] ) ) : '';
+													if ( '' !== $eem_rvr_name ) {
+														$s = isset( $eem_rvr['nightly_surcharge'] ) ? (float) $eem_rvr['nightly_surcharge'] : 0.0;
+														$eem_rv_zone_surcharge[ $eem_rvr_name ] = array(
+															'nightly' => $s,
+															'weekend' => $s,
 														);
+													}
+												}
+												// Legacy fallback for pre-migration data
+												if ( empty( $eem_rv_zone_surcharge ) ) {
+													foreach ( ( isset( $data['rv_zones'] ) && is_array( $data['rv_zones'] ) ? $data['rv_zones'] : array() ) as $eem_rvz ) {
+														$eem_rvz_name = isset( $eem_rvz['name'] ) ? strtolower( trim( (string) $eem_rvz['name'] ) ) : '';
+														if ( '' !== $eem_rvz_name ) {
+															$eem_rv_zone_surcharge[ $eem_rvz_name ] = array(
+																'nightly' => isset( $eem_rvz['nightly'] ) ? (float) $eem_rvz['nightly'] : 0.0,
+																'weekend' => isset( $eem_rvz['weekend'] ) ? (float) $eem_rvz['weekend'] : 0.0,
+															);
+														}
 													}
 												}
 												$this->render_stall_map_picker(
@@ -1827,7 +1840,10 @@ class EEM_Shortcodes {
 				?>
 					<div class="eem-stall-assign-card" data-eem-same-stall-toggle>
 						<div class="eem-stall-assign-card__head">
-							<strong class="eem-stall-assign-card__title"><?php esc_html_e( 'Stall Assignments', 'equine-event-manager' ); ?></strong>
+							<div class="eem-stall-assign-card__head-left">
+								<strong class="eem-stall-assign-card__title"><?php esc_html_e( 'Stall Assignments', 'equine-event-manager' ); ?></strong>
+								<p class="eem-stall-assign-card__hint" data-eem-assign-hint><?php esc_html_e( 'Select stalls on the map below. They will apply to all stay types.', 'equine-event-manager' ); ?></p>
+							</div>
 							<label class="eem-stall-assign-card__check-label">
 								<input type="checkbox" name="stall_same_for_all" value="1" checked data-eem-same-stall-check />
 								<span><?php esc_html_e( 'Same stall for all stays', 'equine-event-manager' ); ?></span>
@@ -1841,7 +1857,6 @@ class EEM_Shortcodes {
 								</button>
 							<?php endforeach; ?>
 						</div>
-						<p class="eem-stall-assign-card__hint" data-eem-assign-hint><?php esc_html_e( 'Select stalls on the map below. They will apply to all stay types.', 'equine-event-manager' ); ?></p>
 					</div>
 				<?php endif; ?>
 				<?php $this->render_stall_map_picker(
@@ -2224,7 +2239,7 @@ class EEM_Shortcodes {
 					// than Blue Lot before they pick.
 					var sc = zoneSurcharge(b.name);
 					if (sc > 0) { var badge = document.createElement('span'); badge.className = 'eem-map-tab-surcharge'; badge.textContent = '+' + money(sc); t.appendChild(badge); }
-					t.onclick = function(){ activeBarn=i; renderTabs(); renderGrid(); fitZoom(); };
+					t.onclick = function(){ activeBarn=i; renderTabs(); renderGrid(); applyZoom(); };
 					tabsEl.appendChild(t);
 				});
 			}
@@ -2367,7 +2382,7 @@ class EEM_Shortcodes {
 					var k = b.getAttribute('data-eem-map-zoom');
 					if (k === 'in'){ zoom = Math.min(1.8, zoom + 0.2); applyZoom(); }
 					else if (k === 'out'){ zoom = Math.max(0.5, zoom - 0.2); applyZoom(); }
-					else { fitZoom(); }
+					else { zoom = 1; applyZoom(); }
 				});
 			});
 
@@ -2407,7 +2422,7 @@ class EEM_Shortcodes {
 			}
 
 			// Inline init — the map is always visible (no modal).
-			renderTabs(); renderGrid(); applyZoom(); fitZoom(); syncForm();
+			renderTabs(); renderGrid(); applyZoom(); syncForm();
 
 			// This inline script runs mid-parse, before the RV add-on section below
 			// it exists, so the initial zone filter found nothing. Re-run it once the
@@ -9418,18 +9433,28 @@ RV Lot: " . $rv_lot['name'] );
 		if ( empty( $units ) ) {
 			return 0.0;
 		}
-		$rate_key = 'weekend' === $stay_type ? 'weekend' : 'nightly';
-		$surcharge_by_zone = array(); // lowercased zone name => surcharge
-		foreach ( ( isset( $data['rv_zones'] ) && is_array( $data['rv_zones'] ) ? $data['rv_zones'] : array() ) as $zone ) {
-			$zname = isset( $zone['name'] ) ? strtolower( trim( (string) $zone['name'] ) ) : '';
-			if ( '' !== $zname ) {
-				$surcharge_by_zone[ $zname ] = isset( $zone[ $rate_key ] ) ? (float) $zone[ $rate_key ] : 0.0;
+		// Surcharge lives on rv_rows (each row name = zone). Build a map of
+		// lowercased row name => nightly_surcharge.
+		$surcharge_by_zone = array();
+		foreach ( ( isset( $data['rv_rows'] ) && is_array( $data['rv_rows'] ) ? $data['rv_rows'] : array() ) as $row ) {
+			$rname = isset( $row['name'] ) ? strtolower( trim( (string) $row['name'] ) ) : '';
+			if ( '' !== $rname ) {
+				$surcharge_by_zone[ $rname ] = isset( $row['nightly_surcharge'] ) ? (float) $row['nightly_surcharge'] : 0.0;
+			}
+		}
+		// Legacy fallback: if rv_rows has no surcharges, check rv_zones (pre-migration data).
+		if ( empty( $surcharge_by_zone ) ) {
+			foreach ( ( isset( $data['rv_zones'] ) && is_array( $data['rv_zones'] ) ? $data['rv_zones'] : array() ) as $zone ) {
+				$zname = isset( $zone['name'] ) ? strtolower( trim( (string) $zone['name'] ) ) : '';
+				if ( '' !== $zname ) {
+					$surcharge_by_zone[ $zname ] = isset( $zone['nightly'] ) ? (float) $zone['nightly'] : 0.0;
+				}
 			}
 		}
 		if ( empty( $surcharge_by_zone ) ) {
 			return 0.0;
 		}
-		$zone_of_unit = array(); // "Zone Label" => lowercased zone name
+		$zone_of_unit = array();
 		$snap = ( isset( $data['rv_map'] ) && is_array( $data['rv_map'] ) ) ? $data['rv_map'] : array();
 		foreach ( ( $snap['barns'] ?? array() ) as $barn ) {
 			$bname = (string) ( $barn['name'] ?? '' );

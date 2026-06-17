@@ -121,7 +121,7 @@ eem_render_editor_field_row( array(
 		'<div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[rv_nightly_rate]" value="%s" /></div>',
 		esc_attr( $fmt_money( $data['rv_nightly_rate'] ) )
 	),
-	'hint'         => __( 'Base nightly rate. Lot zones below may add tier-specific pricing.', 'equine-event-manager' ),
+	'hint'         => __( 'Base nightly rate. Row surcharges below are added on top of this rate.', 'equine-event-manager' ),
 ) );
 echo '</div>'; // .eem-rv-nightly-content
 ?>
@@ -351,54 +351,21 @@ eem_render_editor_field_row( array(
 ) );
 
 // ── RV Mapped-content wrapper opens here (C8) ──
-// Load meta from $data (pre-populated by get_meta_values()) or fall back to seeded zones / rows.
+// Load rows from $data (pre-populated by get_meta_values()).
 // NOTE: use $data, NOT a direct post-meta call with get_the_ID() — on custom admin pages
 // (admin.php?page=...) the global $post is not set by WordPress, so that function returns 0.
-// 2.3.82: seed zones/rows removed — a new reservation starts with empty RV lot
-// pricing + an empty RV Row Builder. Admins add their own.
-$rv_zones_meta = isset( $data['rv_zones'] ) ? $data['rv_zones'] : array();
-$rv_zones      = ( is_array( $rv_zones_meta ) && ! empty( $rv_zones_meta ) )
-	? $rv_zones_meta
-	: array();
 
-// v4 RV two-control: when an RV map is connected, the ZONES are the sheet's tabs
-// (Red Lot, Yellow Lot, Blue Lot). Auto-populate the zone list from the tab
-// names so the admin only fills in pricing — merging any saved pricing matched
-// by zone name. The names become read-only (they come from the map).
+// v4 RV map connection check (for map builder section visibility).
 $rv_map_zones_snap = ( isset( $data['rv_map'] ) && is_array( $data['rv_map'] ) ) ? $data['rv_map'] : array();
-// Fall back to the canonical post-meta (_en_rv_map) the RV chart + Save Map use,
-// so a map saved before the config-sync fix still seeds the builder.
 if ( empty( $rv_map_zones_snap['barns'] ) && class_exists( 'EEM_Stall_Map_Importer' ) ) {
 	$rv_pm_rid  = (int) ( $data['_reservation_id'] ?? get_the_ID() );
 	$rv_pm_snap = $rv_pm_rid > 0 ? EEM_Stall_Map_Importer::get_for_reservation( $rv_pm_rid, EEM_Stall_Map_Importer::RV_META_KEY ) : array();
 	if ( ! empty( $rv_pm_snap['barns'] ) ) {
 		$rv_map_zones_snap = $rv_pm_snap;
-		$data['rv_map']    = $rv_pm_snap; // keep the later seed read (line ~509) consistent
+		$data['rv_map']    = $rv_pm_snap;
 	}
 }
-$rv_map_connected  = ! empty( $rv_map_zones_snap['barns'] );
-if ( $rv_map_connected && class_exists( 'EEM_Stall_Map_Importer' ) ) {
-	$saved_pricing = array(); // lowercase zone name => [nightly, weekend]
-	foreach ( (array) $rv_zones as $sz ) {
-		$sz_name = isset( $sz['name'] ) ? strtolower( trim( (string) $sz['name'] ) ) : '';
-		if ( '' !== $sz_name ) {
-			$saved_pricing[ $sz_name ] = array(
-				'nightly' => isset( $sz['nightly'] ) ? $sz['nightly'] : '0.00',
-				'weekend' => isset( $sz['weekend'] ) ? $sz['weekend'] : '0.00',
-			);
-		}
-	}
-	$rv_zones = array();
-	foreach ( EEM_Stall_Map_Importer::barn_names( $rv_map_zones_snap ) as $tab_name ) {
-		$tab_name = (string) $tab_name;
-		$key      = strtolower( trim( $tab_name ) );
-		$rv_zones[] = array(
-			'name'    => $tab_name,
-			'nightly' => isset( $saved_pricing[ $key ]['nightly'] ) ? $saved_pricing[ $key ]['nightly'] : '0.00',
-			'weekend' => isset( $saved_pricing[ $key ]['weekend'] ) ? $saved_pricing[ $key ]['weekend'] : '0.00',
-		);
-	}
-}
+$rv_map_connected = ! empty( $rv_map_zones_snap['barns'] );
 
 $rv_rows_meta = isset( $data['rv_rows'] ) ? $data['rv_rows'] : array();
 $rv_rows      = ( is_array( $rv_rows_meta ) && ! empty( $rv_rows_meta ) )
@@ -412,96 +379,13 @@ $blocked_rv_lots      = is_array( $blocked_rv_lots_meta ) ? $blocked_rv_lots_met
 $rv_lot_map_id   = (int) ( isset( $data['rv_lot_map_id'] ) ? $data['rv_lot_map_id'] : 0 );
 $rv_lot_map_url  = $rv_lot_map_id ? wp_get_attachment_url( $rv_lot_map_id ) : '';
 $rv_lot_map_name = $rv_lot_map_id ? basename( (string) get_attached_file( $rv_lot_map_id ) ) : '';
-
-/**
- * V1 ZONE MODEL (2.3.22, 2026-05-30):
- * Each rv_row has a single zone_id field. All lots in a row belong to that zone.
- * C10 ENFORCEMENT CONTRACT: rows with no zone_id = lots in that row are UNAVAILABLE.
- * See: docs/c10-contracts.md
- *
- * V2 BACKLOG — RV Painting and Advanced Inventory (deferred from V1, 2026-05-30):
- *
- * The following features were considered for V1 but deferred to V2 to ship a
- * coherent, simple inventory model for the June 12, 2026 test-ready milestone:
- *
- * - Per-lot painting: admin clicks individual lots to assign them to zones,
- *   useful when a row contains lots from multiple zones (e.g., premium corner
- *   spots vs. standard interior). V1 assigns zones at row level only.
- *
- * - Per-lot color dots: visual indicator of zone membership at lot granularity.
- *
- * - Per-zone Avail Qty (admin-entered): separate inventory cap independent of
- *   configured lots. V1 uses row count as inventory truth (computed from rows).
- *
- * - Bulk-with-zones mode: quantity per zone without row builder. V1 has only
- *   Bulk (no zones) and Mapped (rows with zone dropdowns).
- *
- * See docs/c10-contracts.md V2 BACKLOG section for full design conversation history.
- */
 ?>
 <div id="eem-rv-mapped-content"
 	style="<?php echo $rv_is_mapped ? '' : 'display:none;'; ?>">
 <?php
 
-// ── RV Lot Zones (nightly / weekend / available_qty) ──
-ob_start();
-?>
-<div class="eem-zone-list" id="eem-lot-zones-list">
-	<?php foreach ( $rv_zones as $zi => $zone ) :
-		$z_name    = isset( $zone['name'] )          ? (string) $zone['name']                        : '';
-		// Zone swatch color is computed from position index using the canonical auto-palette
-		// (matches getZoneColor() in admin.js). Stored 'color' field is no longer used — color
-		// is never saved to meta. Do NOT use $data['rv_zones'][N]['color'] here.
-		$_palette  = array( '#DC2626', '#2563EB', '#16A34A', '#CA8A04', '#9333EA', '#EA580C' );
-		$z_color   = $_palette[ $zi % count( $_palette ) ];
-		$z_night   = isset( $zone['nightly'] )        ? $fmt_money( $zone['nightly'] )                : '0.00';
-		?>
-		<div class="eem-zone-row" data-zone-index="<?php echo (int) $zi; ?>">
-			<div class="eem-zone-color-swatch" style="background:<?php echo esc_attr( $z_color ); ?>"></div>
-			<input class="eem-zone-name-input" type="text" name="eem_rv_zones[<?php echo (int) $zi; ?>][name]" value="<?php echo esc_attr( $z_name ); ?>" placeholder="<?php esc_attr_e( 'Zone name', 'equine-event-manager' ); ?>" data-eem-input-action="rv-zone-input"<?php echo $rv_map_connected ? ' title="' . esc_attr__( 'Renaming this zone renames its tab on the RV map', 'equine-event-manager' ) . '"' : ''; ?>>
-			<div class="eem-zone-price-group">
-				<span class="eem-zone-price-label"><?php esc_html_e( '+ Nightly', 'equine-event-manager' ); ?></span>
-				<div class="eem-zone-price-wrap"><span class="eem-zone-price-sym">$</span><input class="eem-zone-price-in" type="number" step="0.01" min="0" name="eem_rv_zones[<?php echo (int) $zi; ?>][nightly]" value="<?php echo esc_attr( $z_night ); ?>" data-eem-input-action="rv-zone-input"></div>
-			</div>
-			<button class="eem-row-card-delete" type="button" title="<?php esc_attr_e( 'Delete zone', 'equine-event-manager' ); ?>" data-eem-action="rv-delete-zone">
-				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-			</button>
-		</div>
-	<?php endforeach; ?>
-</div>
-<button class="eem-zone-add-btn" type="button" data-eem-action="rv-add-zone">
-	<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-	<?php esc_html_e( 'Add Zone', 'equine-event-manager' ); ?>
-</button>
-<?php if ( $rv_map_connected ) : ?>
-<span class="eem-field-hint" style="display:block;margin-top:8px"><?php esc_html_e( 'Zones and your RV Map tabs stay in sync — add or rename a zone here and its tab appears on the map below to draw. Set the pricing for each.', 'equine-event-manager' ); ?></span>
-<?php endif; ?>
-<template id="eem-lot-zone-row-template">
-<div class="eem-zone-row" data-zone-index="__index__">
-	<!-- Swatch color is set by rvAddZone() in admin.js using getZoneColor(newIndex). -->
-	<div class="eem-zone-color-swatch" style="background:#9CA3AF"></div>
-	<input class="eem-zone-name-input" type="text" name="eem_rv_zones[__index__][name]" value="" placeholder="<?php esc_attr_e( 'Zone name', 'equine-event-manager' ); ?>" data-eem-input-action="rv-zone-input">
-	<div class="eem-zone-price-group">
-		<span class="eem-zone-price-label"><?php esc_html_e( '+ Nightly', 'equine-event-manager' ); ?></span>
-		<div class="eem-zone-price-wrap"><span class="eem-zone-price-sym">$</span><input class="eem-zone-price-in" type="number" step="0.01" min="0" name="eem_rv_zones[__index__][nightly]" value="0.00" data-eem-input-action="rv-zone-input"></div>
-	</div>
-	<button class="eem-row-card-delete" type="button" title="<?php esc_attr_e( 'Delete zone', 'equine-event-manager' ); ?>" data-eem-action="rv-delete-zone">
-		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-	</button>
-</div>
-</template>
-<?php
-$zones_html = (string) ob_get_clean();
-eem_render_editor_field_row( array(
-	'label'        => __( 'RV Lot Zones', 'equine-event-manager' ),
-	'label_sub'    => __( 'Pricing tiers — every lot belongs to a zone', 'equine-event-manager' ),
-	'row_id'       => 'row-rv-zones',
-	'control_html' => $zones_html . '<span class="eem-field-hint" style="display:block;margin-bottom:12px">' . esc_html__( 'Zone prices are added to the base RV rate. Total = base rate + zone surcharge.', 'equine-event-manager' ) . '</span>',
-) );
-
 // ── v4 RV Mapping — native RV Map Builder (its OWN map slot, separate from the
-// stall map). Every tab is an RV zone; every numbered cell an RV lot. Ordered
-// after RV Lot Zones per the editor field order. ──
+// stall map). Every tab is an RV zone; every numbered cell an RV lot. ──
 $rv_map_snap = ( isset( $data['rv_map'] ) && is_array( $data['rv_map'] ) ) ? $data['rv_map'] : array();
 $rv_seed     = array();
 foreach ( ( $rv_map_snap['barns'] ?? array() ) as $rv_seed_barn ) {
@@ -546,21 +430,12 @@ eem_render_editor_field_row( array(
 ob_start();
 ?>
 <div class="eem-row-builder-summary" style="margin-bottom:10px" id="eem-rv-row-summary"></div>
-<?php // Sentinel: lets the save handler clear zones when all are deleted (same
-// "delete-all no-ops" fix as stall rows). ?>
-<input type="hidden" name="eem_rv_zones_present" value="1">
 <div class="eem-row-builder" id="eem-rv-row-builder-list">
 <?php foreach ( $rv_rows as $ri => $row ) :
-	$r_name      = isset( $row['name'] )      ? (string) $row['name']      : '';
-	$r_layout    = isset( $row['layout'] )     ? (string) $row['layout']    : 'one-sided';
-	$r_first     = isset( $row['first'] )      ? (string) $row['first']     : '';
-	$r_last      = isset( $row['last'] )       ? (string) $row['last']      : '';
-	$r_top_first = isset( $row['top_first'] )  ? (string) $row['top_first'] : '';
-	$r_top_last  = isset( $row['top_last'] )   ? (string) $row['top_last']  : '';
-	$r_bot_first = isset( $row['bot_first'] )  ? (string) $row['bot_first'] : '';
-	$r_bot_last  = isset( $row['bot_last'] )   ? (string) $row['bot_last']  : '';
-	$r_zone_id   = isset( $row['zone_id'] )    ? (string) $row['zone_id']   : '';
-	$is_b2b      = ( 'back-to-back' === $r_layout );
+	$r_name       = isset( $row['name'] )              ? (string) $row['name']              : '';
+	$r_first      = isset( $row['first'] )             ? (string) $row['first']             : '';
+	$r_last       = isset( $row['last'] )              ? (string) $row['last']              : '';
+	$r_surcharge  = isset( $row['nightly_surcharge'] ) ? $fmt_money( $row['nightly_surcharge'] ) : '0.00';
 	?>
 	<div class="eem-row-card eem-row-card--inline" data-row-index="<?php echo (int) $ri; ?>">
 		<input type="hidden" name="eem_rv_rows[<?php echo (int) $ri; ?>][layout]" value="one-sided">
@@ -577,16 +452,9 @@ ob_start();
 				<span class="eem-row-card-field-label"><?php esc_html_e( 'Last Lot', 'equine-event-manager' ); ?></span>
 				<input type="text" name="eem_rv_rows[<?php echo (int) $ri; ?>][last]" value="<?php echo esc_attr( $r_last ); ?>" data-role="last" data-eem-input-action="rv-row-input">
 			</div>
-			<div class="eem-row-card-field eem-row-card-field-layout" style="flex:1 1 120px">
-				<span class="eem-row-card-field-label"><?php esc_html_e( 'Zone', 'equine-event-manager' ); ?></span>
-				<select name="eem_rv_rows[<?php echo (int) $ri; ?>][zone_id]" data-eem-input-action="rv-row-input" data-field="zone_id">
-					<option value=""><?php esc_html_e( 'Unassigned', 'equine-event-manager' ); ?></option>
-					<?php foreach ( $rv_zones as $zi => $zone ) :
-						$z_name_opt = isset( $zone['name'] ) ? (string) $zone['name'] : '';
-						?>
-						<option value="<?php echo esc_attr( (string) $zi ); ?>"<?php selected( $r_zone_id, (string) $zi ); ?>><?php echo esc_html( $z_name_opt ); ?></option>
-					<?php endforeach; ?>
-				</select>
+			<div class="eem-row-card-field" style="flex:1 1 120px">
+				<span class="eem-row-card-field-label"><?php esc_html_e( '+ Nightly Surcharge', 'equine-event-manager' ); ?></span>
+				<div class="eem-zone-price-wrap"><span class="eem-zone-price-sym">$</span><input class="eem-zone-price-in" type="number" step="0.01" min="0" name="eem_rv_rows[<?php echo (int) $ri; ?>][nightly_surcharge]" value="<?php echo esc_attr( $r_surcharge ); ?>" data-eem-input-action="rv-row-input"></div>
 			</div>
 			<button class="eem-row-card-delete" type="button" title="<?php esc_attr_e( 'Delete row', 'equine-event-manager' ); ?>" data-eem-action="rv-delete-row">
 				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
@@ -603,7 +471,7 @@ ob_start();
 	<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
 	<?php esc_html_e( 'Add Row', 'equine-event-manager' ); ?>
 </button>
-<span class="eem-field-hint"><?php esc_html_e( 'Each row must be assigned to a zone. Rows without a zone assignment are unavailable to customers at checkout.', 'equine-event-manager' ); ?></span>
+<span class="eem-field-hint"><?php esc_html_e( 'Each row name becomes a tab on the customer map. The surcharge is added to the base RV rate per night for lots in that row.', 'equine-event-manager' ); ?></span>
 <?php
 $rv_rows_html = (string) ob_get_clean();
 eem_render_editor_field_row( array(
@@ -677,11 +545,11 @@ eem_render_editor_field_row( array(
 </div><!-- .eem-layout-group -->
 <?php
 // ── RV Add-Ons ──
-// Zone names available to restrict an add-on to (RV map mode). Empty list = the
-// Zones column is hidden (no zones defined yet → add-ons apply to everything).
+// Row names available to restrict an add-on to. Empty list = the
+// Zones column is hidden (no rows defined yet → add-ons apply to everything).
 $rv_addon_zone_names = array();
-foreach ( (array) $rv_zones as $rvz ) {
-	$zn = isset( $rvz['name'] ) ? trim( (string) $rvz['name'] ) : '';
+foreach ( (array) $rv_rows as $rvr ) {
+	$zn = isset( $rvr['name'] ) ? trim( (string) $rvr['name'] ) : '';
 	if ( '' !== $zn ) {
 		$rv_addon_zone_names[] = $zn;
 	}
