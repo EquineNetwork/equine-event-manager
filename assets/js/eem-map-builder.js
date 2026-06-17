@@ -747,9 +747,12 @@
 	// editor — "select something to change a label".
 	function onUp() {
 		if (B.pan) { if (B.pan.el) { B.pan.el.style.cursor = 'grab'; } B.pan = null; return; }
+		// Only a real GRID interaction sets B.drag. Rebuild the action bar then —
+		// NOT on every document mouseup, or clicking an action-bar button would
+		// destroy that button (re-render) before its own click handler can fire.
+		var wasGridDrag = !!B.drag;
 		B.drag = null;
-		// Refresh the select-mode action bar once a selection (click or drag) settles.
-		if (B.tool === 'select') { renderControls(); return; }
+		if (wasGridDrag && B.tool === 'select') { renderControls(); return; }
 		if (B.overlay) { updateSelMeta(); }
 	}
 
