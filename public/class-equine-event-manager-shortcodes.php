@@ -922,28 +922,37 @@ class EEM_Shortcodes {
 														$eem_rv_blocked[ $eem_brl ] = true;
 													}
 												}
-												// Per-zone surcharge map (lowercased row name => nightly surcharge)
-												// so the picker can add each picked lot's surcharge to the total.
+												// Slice 4: surcharge now lives on the MAP. Build (a) a per-tab
+												// badge map (whole-tab surcharge, shown on each tab so customers
+												// see "Red Lot +$5" before picking) and (b) the authoritative
+												// per-lot map {unit => {nightly, pkg}} resolved via
+												// surcharge_for_unit (stacks tab + painted-area amounts). The
+												// picker adds the figure matching the selected stay type; the
+												// server recomputes the identical sum (get_rv_zone_surcharge_for_units).
 												$eem_rv_zone_surcharge = array();
-												foreach ( ( isset( $data['rv_rows'] ) && is_array( $data['rv_rows'] ) ? $data['rv_rows'] : array() ) as $eem_rvr ) {
-													$eem_rvr_name = isset( $eem_rvr['name'] ) ? strtolower( trim( (string) $eem_rvr['name'] ) ) : '';
-													if ( '' !== $eem_rvr_name ) {
-														$s = isset( $eem_rvr['nightly_surcharge'] ) ? (float) $eem_rvr['nightly_surcharge'] : 0.0;
-														$eem_rv_zone_surcharge[ $eem_rvr_name ] = array(
-															'nightly' => $s,
-															'weekend' => $s,
-														);
-													}
-												}
-												// Legacy fallback for pre-migration data
-												if ( empty( $eem_rv_zone_surcharge ) ) {
-													foreach ( ( isset( $data['rv_zones'] ) && is_array( $data['rv_zones'] ) ? $data['rv_zones'] : array() ) as $eem_rvz ) {
-														$eem_rvz_name = isset( $eem_rvz['name'] ) ? strtolower( trim( (string) $eem_rvz['name'] ) ) : '';
-														if ( '' !== $eem_rvz_name ) {
-															$eem_rv_zone_surcharge[ $eem_rvz_name ] = array(
-																'nightly' => isset( $eem_rvz['nightly'] ) ? (float) $eem_rvz['nightly'] : 0.0,
-																'weekend' => isset( $eem_rvz['weekend'] ) ? (float) $eem_rvz['weekend'] : 0.0,
+												$eem_rv_unit_surcharge = array();
+												if ( class_exists( 'EEM_Surcharge' ) ) {
+													foreach ( ( $eem_rv_map_snapshot['barns'] ?? array() ) as $eem_rvb ) {
+														$eem_rvb_name = (string) ( $eem_rvb['name'] ?? '' );
+														$eem_rvb_tab  = EEM_Surcharge::sanitize( $eem_rvb['surcharge'] ?? array() );
+														$eem_rvb_key  = strtolower( trim( $eem_rvb_name ) );
+														if ( '' !== $eem_rvb_key ) {
+															$eem_rvb_tab_nightly = EEM_Surcharge::nightly( $eem_rvb_tab );
+															$eem_rv_zone_surcharge[ $eem_rvb_key ] = array(
+																'nightly' => $eem_rvb_tab_nightly,
+																'weekend' => $eem_rvb_tab_nightly,
 															);
+														}
+														foreach ( (array) ( $eem_rvb['grid'] ?? array() ) as $eem_rvb_row ) {
+															foreach ( (array) $eem_rvb_row as $eem_rvb_cell ) {
+																if ( is_array( $eem_rvb_cell ) && 'stall' === ( $eem_rvb_cell['type'] ?? '' ) && '' !== (string) ( $eem_rvb_cell['label'] ?? '' ) ) {
+																	$eem_rvb_sur = EEM_Stall_Map_Importer::surcharge_for_unit( $eem_rv_map_snapshot, $eem_rvb_name, (string) $eem_rvb_cell['label'] );
+																	$eem_rv_unit_surcharge[ $eem_rvb_name . ' ' . (string) $eem_rvb_cell['label'] ] = array(
+																		'nightly' => EEM_Surcharge::nightly( $eem_rvb_sur ),
+																		'pkg'     => EEM_Surcharge::for_package( $eem_rvb_sur, '_all' ),
+																	);
+																}
+															}
 														}
 													}
 												}
@@ -962,6 +971,7 @@ class EEM_Shortcodes {
 														'hint'           => __( 'Tap available (white) lots on the RV map. Greyed lots are taken.', 'equine-event-manager' ),
 														'prefix'         => '',
 														'zone_surcharge' => $eem_rv_zone_surcharge,
+														'unit_surcharge' => $eem_rv_unit_surcharge,
 													)
 												);
 											}
@@ -1982,6 +1992,7 @@ class EEM_Shortcodes {
 			'hint'           => __( 'Tap available (white) stalls on the facility map. Greyed stalls are taken.', 'equine-event-manager' ),
 			'prefix'         => '#',
 			'zone_surcharge' => array(),
+			'unit_surcharge' => array(),
 			'rate_types'     => array(),
 		), $opts );
 		$barns = array();
@@ -2002,6 +2013,7 @@ class EEM_Shortcodes {
 			'zoneQualified' => (bool) $opts['zone_qualified'],
 			'prefix'        => (string) $opts['prefix'],
 			'zoneSurcharge' => (object) $opts['zone_surcharge'],
+			'unitSurcharge' => (object) $opts['unit_surcharge'],
 			'rateTypes'     => array_values( array_map( 'strval', $opts['rate_types'] ) ),
 		);
 		?>
@@ -2039,9 +2051,11 @@ class EEM_Shortcodes {
 				</div>
 			<?php endif; ?>
 			<div data-eem-map-picks hidden></div>
-			<?php if ( ! empty( $opts['zone_surcharge'] ) ) : ?>
-				<?php // Per-night zone-surcharge sums for the picked lots; the totals JS adds
-				// the one matching the RV stay type. Server recomputes authoritatively. ?>
+			<?php if ( ! empty( $opts['unit_surcharge'] ) || ! empty( $opts['zone_surcharge'] ) ) : ?>
+				<?php // Per-lot surcharge sum for the picked lots, resolved for the
+				// currently-selected stay type (per-night for Nightly, flat per-package
+				// for a Stay Package). The totals JS reads it; server recomputes
+				// authoritatively via get_rv_zone_surcharge_for_units. ?>
 				<input type="hidden" name="rv_surcharge_nightly" value="0" data-eem-map-surcharge="nightly">
 				<input type="hidden" name="rv_surcharge_weekend" value="0" data-eem-map-surcharge="weekend">
 			<?php endif; ?>
@@ -2332,17 +2346,32 @@ class EEM_Shortcodes {
 				});
 			}
 
-			// Sum each picked lot's per-night zone surcharge (nightly + weekend) and
-			// write the hidden inputs the totals JS reads. Server recomputes the same
-			// sum authoritatively, so the displayed + charged amounts stay in lockstep.
+			// Resolve a single picked lot's surcharge for the CURRENT stay type:
+			// its flat per-package amount when a Stay Package (pkg_*) is selected,
+			// otherwise its per-night amount. Each lot's figure already stacks the
+			// whole-tab + painted-area amounts (resolved server-side via
+			// surcharge_for_unit and shipped in P.unitSurcharge).
+			function unitSurchargeFor(unit){
+				var u = (P.unitSurcharge || {})[unit];
+				if (!u) return 0;
+				var st = ((form.querySelector('[name="rv_stay_type"]') || {}).value) || '';
+				var isPkg = st.indexOf('pkg_') === 0;
+				return (+(isPkg ? u.pkg : u.nightly)) || 0;
+			}
+			// Sum each picked lot's surcharge for the current stay type and write the
+			// hidden inputs the totals JS reads. The totals JS multiplies by billable
+			// stay units (nights for Nightly, 1 for a package) so a per-night figure
+			// scales with the stay and a flat package figure is added once. Server
+			// recomputes the same sum authoritatively, so displayed + charged match.
 			function syncSurcharge(units){
-				var zs = P.zoneSurcharge || {};
 				var nNight = root.querySelector('[data-eem-map-surcharge="nightly"]');
 				var nWeek  = root.querySelector('[data-eem-map-surcharge="weekend"]');
 				if (!nNight || !nWeek) return;
-				var sumN = 0, sumW = 0;
-				units.forEach(function(u){ var z = zs[selZone[u]]; if (z){ sumN += (+z.nightly || 0); sumW += (+z.weekend || 0); } });
-				nNight.value = sumN.toFixed(2); nWeek.value = sumW.toFixed(2);
+				var sum = 0;
+				units.forEach(function(u){ sum += unitSurchargeFor(u); });
+				// Both fields carry the current-stay-type sum; the totals JS picks one
+				// by stay type but they are equal, so either branch is correct.
+				nNight.value = sum.toFixed(2); nWeek.value = sum.toFixed(2);
 				// Nudge the qty field so the existing totals listener recomputes.
 				var qty = form.querySelector('[name="'+P.qtyField+'"]');
 				if (qty){ qty.dispatchEvent(new Event('input',{bubbles:true})); }
@@ -2414,11 +2443,13 @@ class EEM_Shortcodes {
 			// existing total listeners are bound to).
 			if (tackSel){ tackSel.addEventListener('change', function(){ var q = form.querySelector('[name="'+P.qtyField+'"]'); if (q){ q.dispatchEvent(new Event('input',{bubbles:true})); q.dispatchEvent(new Event('change',{bubbles:true})); } }); }
 
-			// Re-render the tab surcharges when the RV stay type flips (nightly vs
-			// weekend surcharges can differ).
-			if (P.zoneSurcharge && Object.keys(P.zoneSurcharge).length) {
+			// Re-render the tab surcharges + re-sum the picked-lot surcharge when the
+			// RV stay type flips — a Nightly stay uses the per-night figure, a Stay
+			// Package uses the flat per-package figure, so the hidden totals must be
+			// recomputed for the new stay type.
+			if ((P.zoneSurcharge && Object.keys(P.zoneSurcharge).length) || (P.unitSurcharge && Object.keys(P.unitSurcharge).length)) {
 				var stayField = form.querySelector('[name="rv_stay_type"]');
-				if (stayField) { stayField.addEventListener('change', function(){ renderTabs(); }); }
+				if (stayField) { stayField.addEventListener('change', function(){ renderTabs(); syncSurcharge(Object.keys(selected)); }); }
 			}
 
 			// Inline init — the map is always visible (no modal).
@@ -9433,44 +9464,37 @@ RV Lot: " . $rv_lot['name'] );
 		if ( empty( $units ) ) {
 			return 0.0;
 		}
-		// Surcharge lives on rv_rows (each row name = zone). Build a map of
-		// lowercased row name => nightly_surcharge.
-		$surcharge_by_zone = array();
-		foreach ( ( isset( $data['rv_rows'] ) && is_array( $data['rv_rows'] ) ? $data['rv_rows'] : array() ) as $row ) {
-			$rname = isset( $row['name'] ) ? strtolower( trim( (string) $row['name'] ) ) : '';
-			if ( '' !== $rname ) {
-				$surcharge_by_zone[ $rname ] = isset( $row['nightly_surcharge'] ) ? (float) $row['nightly_surcharge'] : 0.0;
-			}
-		}
-		// Legacy fallback: if rv_rows has no surcharges, check rv_zones (pre-migration data).
-		if ( empty( $surcharge_by_zone ) ) {
-			foreach ( ( isset( $data['rv_zones'] ) && is_array( $data['rv_zones'] ) ? $data['rv_zones'] : array() ) as $zone ) {
-				$zname = isset( $zone['name'] ) ? strtolower( trim( (string) $zone['name'] ) ) : '';
-				if ( '' !== $zname ) {
-					$surcharge_by_zone[ $zname ] = isset( $zone['nightly'] ) ? (float) $zone['nightly'] : 0.0;
-				}
-			}
-		}
-		if ( empty( $surcharge_by_zone ) ) {
+		// Slice 4: surcharge now lives ON THE MAP — a whole-tab amount + painted
+		// area amounts that stack ("most layers add"), each carrying a per-night
+		// figure and a flat per-package figure. The authoritative per-lot value is
+		// resolved by EEM_Stall_Map_Importer::surcharge_for_unit(). The returned
+		// sum is a PER-UNIT figure that the caller multiplies by the billable stay
+		// units (nights for a Nightly stay, 1 for a package / weekend), so:
+		//   - Nightly stay  → per-night surcharge × nights
+		//   - Package stay   → flat per-package surcharge × 1
+		$snap = ( isset( $data['rv_map'] ) && is_array( $data['rv_map'] ) ) ? $data['rv_map'] : array();
+		if ( empty( $snap['barns'] ) || ! class_exists( 'EEM_Surcharge' ) || ! class_exists( 'EEM_Stall_Map_Importer' ) ) {
 			return 0.0;
 		}
-		$zone_of_unit = array();
-		$snap = ( isset( $data['rv_map'] ) && is_array( $data['rv_map'] ) ) ? $data['rv_map'] : array();
+		$is_package = is_string( $stay_type ) && 0 === strpos( $stay_type, 'pkg_' );
+		// Build a unit => resolved surcharge-amount map for the current stay type.
+		$value_of_unit = array();
 		foreach ( ( $snap['barns'] ?? array() ) as $barn ) {
 			$bname = (string) ( $barn['name'] ?? '' );
 			foreach ( (array) ( $barn['grid'] ?? array() ) as $row ) {
 				foreach ( (array) $row as $cell ) {
 					if ( is_array( $cell ) && 'stall' === ( $cell['type'] ?? '' ) && '' !== (string) ( $cell['label'] ?? '' ) ) {
-						$zone_of_unit[ $bname . ' ' . (string) $cell['label'] ] = strtolower( trim( $bname ) );
+						$sur  = EEM_Stall_Map_Importer::surcharge_for_unit( $snap, $bname, (string) $cell['label'] );
+						$amt  = $is_package ? EEM_Surcharge::for_package( $sur, $stay_type ) : EEM_Surcharge::nightly( $sur );
+						$value_of_unit[ $bname . ' ' . (string) $cell['label'] ] = (float) $amt;
 					}
 				}
 			}
 		}
 		$total = 0.0;
 		foreach ( $units as $unit ) {
-			$zn = isset( $zone_of_unit[ (string) $unit ] ) ? $zone_of_unit[ (string) $unit ] : '';
-			if ( '' !== $zn && isset( $surcharge_by_zone[ $zn ] ) ) {
-				$total += $surcharge_by_zone[ $zn ];
+			if ( isset( $value_of_unit[ (string) $unit ] ) ) {
+				$total += $value_of_unit[ (string) $unit ];
 			}
 		}
 		return $total;
