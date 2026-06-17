@@ -4531,6 +4531,22 @@ a.eem-btn-ghost:hover {
 	font-size: 18px;
 }
 
+.eem-order-payment-banner__actions {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-shrink: 0;
+}
+
+/* Mark-as-Paid modal — Cash/Check method radios sit inline. */
+.eem-order-mark-paid-method {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	margin-right: 16px;
+	font-size: 13.5px;
+}
+
 .eem-order-payment-banner__title {
 	font-family: var(--eem-font-display);
 	font-size: 14px;

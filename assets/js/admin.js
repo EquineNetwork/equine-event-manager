@@ -1842,6 +1842,86 @@
 		});
 	}
 
+	/* Order Detail — Mark as Paid (manual cash/check). Mirrors the cancel modal:
+	   AJAX POST → toast + reload. The Check-number row shows only for Check. */
+	function openOrderMarkPaidModal() {
+		var modal = document.getElementById('eem-order-mark-paid-modal');
+		if (!modal) return;
+		var errEl = modal.querySelector('[data-eem-order-mark-paid-error]');
+		if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
+		modal.classList.add('open');
+		modal.setAttribute('aria-hidden', 'false');
+		closeAllDropdowns();
+	}
+
+	function closeOrderMarkPaidModal() {
+		var modal = document.getElementById('eem-order-mark-paid-modal');
+		if (!modal) return;
+		modal.classList.remove('open');
+		modal.setAttribute('aria-hidden', 'true');
+	}
+
+	function syncOrderMarkPaidCheckRow() {
+		var modal = document.getElementById('eem-order-mark-paid-modal');
+		if (!modal) return;
+		var checked = modal.querySelector('input[name="method"]:checked');
+		var row = modal.querySelector('[data-eem-mark-paid-check-row]');
+		if (row) { row.hidden = !checked || checked.value !== 'check'; }
+	}
+
+	function showOrderMarkPaidError(message) {
+		var modal = document.getElementById('eem-order-mark-paid-modal');
+		if (!modal) return;
+		var errEl = modal.querySelector('[data-eem-order-mark-paid-error]');
+		if (!errEl) { window.alert(message); return; }
+		errEl.textContent = message;
+		errEl.hidden = false;
+	}
+
+	function submitOrderMarkPaidForm() {
+		var modal = document.getElementById('eem-order-mark-paid-modal');
+		if (!modal) return;
+		var form = modal.querySelector('[data-eem-order-mark-paid-form]');
+		if (!form) return;
+
+		var errEl = modal.querySelector('[data-eem-order-mark-paid-error]');
+		if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
+
+		var confirmBtn = modal.querySelector('[data-eem-action="order-mark-paid-confirm"]');
+		if (confirmBtn) confirmBtn.disabled = true;
+
+		fetch(window.ajaxurl || '/wp-admin/admin-ajax.php', {
+			method: 'POST',
+			credentials: 'same-origin',
+			body: new FormData(form)
+		}).then(function (response) {
+			return response.json().catch(function () { return { success: false, data: { message: 'Unexpected server response.' } }; });
+		}).then(function (json) {
+			if (confirmBtn) confirmBtn.disabled = false;
+			if (!json || !json.success) {
+				showOrderMarkPaidError((json && json.data && json.data.message) ? json.data.message : 'Could not mark the order paid.');
+				return;
+			}
+			if (window.EEM && typeof window.EEM.showSaveToast === 'function') {
+				var msg = 'Order marked paid';
+				if (json.data && json.data.payment_label) { msg += ' (' + json.data.payment_label + ')'; }
+				window.EEM.showSaveToast(msg + '.');
+			}
+			setTimeout(function () { window.location.reload(); }, 700);
+		}).catch(function () {
+			if (confirmBtn) confirmBtn.disabled = false;
+			showOrderMarkPaidError('Network error. Please try again.');
+		});
+	}
+
+	// Method radios use `change` (not the click dispatcher, which preventDefaults
+	// and would fight the native radio toggle).
+	document.addEventListener('change', function (ev) {
+		if (ev.target && ev.target.closest && ev.target.closest('[data-eem-mark-paid-method]')) {
+			syncOrderMarkPaidCheckRow();
+		}
+	});
+
 	/* v2 — Orders-list bulk Cancel. Lean sequential queue over the
 	   eem_order_bulk_cancel_step endpoint (no multi-state modal). */
 	var _bulkCancelKeys = [];
@@ -2564,6 +2644,16 @@
 		},
 		'order-cancel-single-confirm': function () {
 			submitOrderCancelForm();
+		},
+		/* Order Detail — Mark as Paid (manual cash/check). */
+		'order-mark-paid': function () {
+			openOrderMarkPaidModal();
+		},
+		'order-mark-paid-close': function () {
+			closeOrderMarkPaidModal();
+		},
+		'order-mark-paid-confirm': function () {
+			submitOrderMarkPaidForm();
 		},
 		/* C13.C.4b — Remove-discount modal (Order Detail Order Summary). */
 		'order-remove-discount-open': function () {

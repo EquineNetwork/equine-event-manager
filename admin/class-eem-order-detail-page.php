@@ -205,6 +205,7 @@ class EEM_Order_Detail_Page {
 		<?php $this->render_refund_modal( $order ); ?>
 
 		<?php $this->render_cancel_modal( $order ); ?>
+		<?php $this->render_mark_paid_modal( $order ); ?>
 
 		<?php $this->render_remove_discount_modal( $order ); ?>
 
@@ -407,9 +408,16 @@ class EEM_Order_Detail_Page {
 				isset( $order['order_key'] ) ? (string) $order['order_key'] : ''
 			);
 			?>
-			<a class="eem-btn eem-btn-collect-banner" href="<?php echo esc_url( $collect_url ); ?>">
-				<?php esc_html_e( 'Collect Payment', 'equine-event-manager' ); ?>
-			</a>
+			<div class="eem-order-payment-banner__actions">
+				<a class="eem-btn eem-btn-collect-banner" href="<?php echo esc_url( $collect_url ); ?>">
+					<?php esc_html_e( 'Collect Payment', 'equine-event-manager' ); ?>
+				</a>
+				<?php // Mark a cash / check (in-person) payment without running a card. Only the
+				// states the manual-payment path accepts (unpaid / invoice-sent). ?>
+				<?php if ( in_array( $status_slug, array( 'unpaid', 'invoice-sent' ), true ) ) : ?>
+					<a class="eem-btn eem-btn-ghost eem-btn-mark-paid" href="#" data-eem-action="order-mark-paid"><?php esc_html_e( 'Mark as Paid', 'equine-event-manager' ); ?></a>
+				<?php endif; ?>
+			</div>
 		</div>
 		<?php
 	}
@@ -907,6 +915,14 @@ class EEM_Order_Detail_Page {
 		$card_brand = preg_match( '/Card Brand:\s*(.+)/i', $card_notes, $m ) ? trim( $m[1] ) : '';
 		$card_last4 = preg_match( '/Card Last4:\s*(.+)/i', $card_notes, $m ) ? trim( $m[1] ) : '';
 
+		// Manual (cash/check) payments record the method in the component notes —
+		// surface it as the Processor value instead of the generic gateway label.
+		$manual_method = preg_match( '/Manual Payment Method:\s*(.+)/i', $card_notes, $m ) ? trim( $m[1] ) : '';
+		if ( '' !== $manual_method ) {
+			/* translators: %s: cash/check method label, e.g. "Cash" or "Check #1042" */
+			$gateway = sprintf( __( 'Manual — %s', 'equine-event-manager' ), $manual_method );
+		}
+
 		?>
 		<div class="eem-card eem-order-card">
 			<div class="eem-order-card__header">
@@ -1171,6 +1187,67 @@ class EEM_Order_Detail_Page {
 				<footer class="eem-modal-foot eem-modal-foot--split">
 					<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="order-cancel-single-close"><?php esc_html_e( 'Keep order', 'equine-event-manager' ); ?></button>
 					<button type="button" class="eem-btn eem-btn-delete" data-eem-action="order-cancel-single-confirm"><?php esc_html_e( 'Cancel order', 'equine-event-manager' ); ?></button>
+				</footer>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Mark-as-paid modal — records a manual cash / check (in-person) payment on an
+	 * unpaid order without running a card. Mirrors the AJAX-modal pattern of the
+	 * Cancel/Refund modals; the confirm posts to the eem_order_mark_paid_single
+	 * handler, which calls EEM_Orders_Repository::mark_order_paid_manually(). Only
+	 * rendered for the outstanding states the manual-payment path accepts.
+	 *
+	 * @param array<string, mixed> $order Grouped order payload.
+	 * @return void
+	 */
+	private function render_mark_paid_modal( array $order ) {
+		$status_slug = isset( $order['status_slug'] ) ? (string) $order['status_slug'] : '';
+		if ( ! in_array( $status_slug, array( 'unpaid', 'invoice-sent' ), true ) ) {
+			return;
+		}
+		$order_key = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
+		$amount    = isset( $order['total'] ) ? (float) $order['total'] : 0.0;
+		?>
+		<div class="eem-modal" id="eem-order-mark-paid-modal" role="dialog" aria-modal="true" aria-labelledby="eem-order-mark-paid-title" aria-hidden="true">
+			<div class="eem-modal-card">
+				<header class="eem-modal-head">
+					<h2 class="eem-modal-title" id="eem-order-mark-paid-title"><?php esc_html_e( 'Mark as Paid', 'equine-event-manager' ); ?></h2>
+					<button type="button" class="eem-modal-close" data-eem-action="order-mark-paid-close" aria-label="<?php esc_attr_e( 'Close', 'equine-event-manager' ); ?>">&times;</button>
+				</header>
+				<form class="eem-modal-body" method="post" data-eem-order-mark-paid-form>
+					<?php wp_nonce_field( 'eem_mark_paid_single_' . $order_key, '_eem_mark_paid_single_nonce' ); ?>
+					<input type="hidden" name="action" value="eem_order_mark_paid_single" />
+					<input type="hidden" name="order_key" value="<?php echo esc_attr( $order_key ); ?>" />
+
+					<p class="eem-order-refund-summary">
+						<?php
+						printf(
+							/* translators: 1: order total amount */
+							esc_html__( 'Record a cash or check payment of %1$s collected in person. This marks the order Paid and is logged to the activity history. It does NOT run a card.', 'equine-event-manager' ),
+							'<strong>' . esc_html( '$' . number_format_i18n( $amount, 2 ) ) . '</strong>'
+						);
+						?>
+					</p>
+
+					<div class="eem-field-row">
+						<span class="eem-field-label"><?php esc_html_e( 'Payment method', 'equine-event-manager' ); ?></span>
+						<label class="eem-order-mark-paid-method"><input type="radio" name="method" value="cash" checked data-eem-mark-paid-method /> <?php esc_html_e( 'Cash', 'equine-event-manager' ); ?></label>
+						<label class="eem-order-mark-paid-method"><input type="radio" name="method" value="check" data-eem-mark-paid-method /> <?php esc_html_e( 'Check', 'equine-event-manager' ); ?></label>
+					</div>
+
+					<div class="eem-field-row" data-eem-mark-paid-check-row hidden>
+						<label class="eem-field-label" for="eem-order-mark-paid-check"><?php esc_html_e( 'Check number (optional)', 'equine-event-manager' ); ?></label>
+						<input type="text" class="eem-field-input" id="eem-order-mark-paid-check" name="check_number" maxlength="40" placeholder="<?php esc_attr_e( 'e.g. 1042', 'equine-event-manager' ); ?>" />
+					</div>
+
+					<div class="eem-order-refund-error" data-eem-order-mark-paid-error hidden></div>
+				</form>
+				<footer class="eem-modal-foot eem-modal-foot--split">
+					<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="order-mark-paid-close"><?php esc_html_e( 'Cancel', 'equine-event-manager' ); ?></button>
+					<button type="button" class="eem-btn eem-btn-primary" data-eem-action="order-mark-paid-confirm"><?php esc_html_e( 'Mark as Paid', 'equine-event-manager' ); ?></button>
 				</footer>
 			</div>
 		</div>

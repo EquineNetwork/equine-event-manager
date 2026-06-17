@@ -348,6 +348,7 @@ class EEM_Plugin {
 		// v2 — order cancellation (single + bulk step). Cancel is terminal,
 		// frees inventory, and emails the customer; independent of refunds.
 		add_action( 'wp_ajax_eem_order_cancel_single', array( $this->admin, 'handle_ajax_cancel_single' ) );
+		add_action( 'wp_ajax_eem_order_mark_paid_single', array( $this->admin, 'handle_ajax_mark_paid_single' ) );
 		add_action( 'wp_ajax_eem_order_bulk_cancel_step', array( $this->admin, 'handle_ajax_bulk_cancel_step' ) );
 		// v1 #7 — bulk "Send Payment Link" step endpoint (sequential per-order).
 		add_action( 'wp_ajax_eem_order_bulk_send_link_step', array( $this->admin, 'handle_ajax_bulk_send_link_step' ) );

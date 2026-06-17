@@ -8960,6 +8960,72 @@ class EEM_Admin {
 	}
 
 	/**
+	 * AJAX endpoint: mark a single unpaid order paid for a manual cash / check
+	 * (in-person) payment. Mirrors handle_ajax_cancel_single; delegates the actual
+	 * state change to EEM_Orders_Repository::mark_order_paid_manually() (which sets
+	 * gateway=manual, writes the Invoice-Paid notes, and fires the
+	 * eem_order_payment_status_changed hook → activity log).
+	 *
+	 * @return void
+	 */
+	public function handle_ajax_mark_paid_single() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'code' => 'capability', 'message' => __( 'You do not have permission to record payments.', 'equine-event-manager' ) ), 403 );
+		}
+
+		$order_key = isset( $_POST['order_key'] ) ? sanitize_text_field( wp_unslash( $_POST['order_key'] ) ) : '';
+		$nonce     = isset( $_POST['_eem_mark_paid_single_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['_eem_mark_paid_single_nonce'] ) ) : '';
+
+		if ( '' === $order_key || ! wp_verify_nonce( $nonce, 'eem_mark_paid_single_' . $order_key ) ) {
+			wp_send_json_error( array( 'code' => 'nonce', 'message' => __( 'Security check failed. Please reload and try again.', 'equine-event-manager' ) ), 400 );
+		}
+
+		$method       = isset( $_POST['method'] ) ? sanitize_key( wp_unslash( $_POST['method'] ) ) : '';
+		$check_number = isset( $_POST['check_number'] ) ? sanitize_text_field( wp_unslash( $_POST['check_number'] ) ) : '';
+
+		$method_map = array(
+			'cash'  => __( 'Cash', 'equine-event-manager' ),
+			'check' => __( 'Check', 'equine-event-manager' ),
+		);
+		if ( ! isset( $method_map[ $method ] ) ) {
+			wp_send_json_error( array( 'code' => 'method', 'message' => __( 'Please choose either Cash or Check.', 'equine-event-manager' ) ), 400 );
+		}
+
+		$payment_label = $method_map[ $method ];
+		if ( 'check' === $method && '' !== $check_number ) {
+			$payment_label .= ' #' . $check_number;
+		}
+
+		$order = $this->orders_repository->get_order( $order_key );
+		if ( ! is_array( $order ) ) {
+			wp_send_json_error( array( 'code' => 'not_found', 'message' => __( 'Order not found.', 'equine-event-manager' ) ), 404 );
+		}
+		if ( ! isset( $order['status_slug'] ) || ! in_array( $order['status_slug'], array( 'unpaid', 'invoice-sent' ), true ) ) {
+			wp_send_json_error( array( 'code' => 'not_unpaid', 'message' => __( 'Only unpaid orders can be marked paid manually.', 'equine-event-manager' ) ), 409 );
+		}
+
+		$updated = $this->orders_repository->mark_order_paid_manually( $order_key, $payment_label );
+		if ( ! $updated ) {
+			wp_send_json_error( array( 'code' => 'mark_failed', 'message' => __( 'The order could not be marked paid. Please reload and try again.', 'equine-event-manager' ) ), 400 );
+		}
+
+		$status_css        = EEM_Orders_List_Page::status_slug_to_css_class( 'paid' );
+		$status_badge_html = sprintf(
+			'<span class="eem-status-badge eem-status-%1$s">%2$s</span>',
+			esc_attr( $status_css ),
+			esc_html__( 'Paid', 'equine-event-manager' )
+		);
+
+		wp_send_json_success( array(
+			'new_status_slug'   => 'paid',
+			'new_status_label'  => __( 'Paid', 'equine-event-manager' ),
+			'new_status_css'    => $status_css,
+			'status_badge_html' => $status_badge_html,
+			'payment_label'     => $payment_label,
+		) );
+	}
+
+	/**
 	 * AJAX endpoint: bulk-cancel single step. Processes ONE order from a bulk
 	 * batch; the JS layer calls it sequentially per selected order so a per-order
 	 * failure doesn't halt the batch (mirrors the bulk-refund step contract).
