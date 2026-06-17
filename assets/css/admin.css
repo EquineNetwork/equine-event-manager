@@ -9394,6 +9394,14 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
    spanned grid tracks) so the label is centred across the block, never clipped. */
 .eem-mb-cell.landmark { width: auto; height: auto; background: #fff7e6; color: var(--eem-warn-text, #b45309); font-size: 10.5px; }
 .eem-mb-cell.sel { box-shadow: inset 0 0 0 2px var(--eem-electric, #1668F2); z-index: 3; }
+/* Slice 3 — a stall/lot cell painted into a surcharge area: a light tint of the
+   area color (default green) + a $ marker, so premium spots read at a glance. */
+.eem-mb-cell.has-surcharge { background: color-mix(in srgb, var(--eem-mb-area, #16a34a) 16%, #fff); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--eem-mb-area, #16a34a) 55%, #fff); }
+.eem-mb-cell.has-surcharge.stall:hover { background: color-mix(in srgb, var(--eem-mb-area, #16a34a) 26%, #fff); }
+.eem-mb-cell.has-surcharge.sel { box-shadow: inset 0 0 0 2px var(--eem-electric, #1668F2); }
+.eem-mb-cell.has-surcharge::after { content: '$'; position: absolute; top: 0; right: 2px; font-size: 9px; font-weight: 700; line-height: 1; color: var(--eem-mb-area, #16a34a); }
+.eem-mb-apply-ghost { background: var(--eem-surface, #fff); color: var(--eem-navy, #031B4E); border-color: var(--eem-border, #d4d8e0); font-weight: 500; }
+.eem-mb-apply-ghost:hover { background: var(--eem-info-bg, #EEF4FF); }
 .eem-mb-cell.dup { background: #fdecec; color: #c0392b; box-shadow: inset 0 0 0 2px #e74c3c; z-index: 2; }
 .eem-mb-lmlabel { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; pointer-events: none; text-align: center; line-height: 1.15; padding: 2px; }
 .eem-mb-cell.vert .eem-mb-lmlabel { writing-mode: vertical-rl; transform: rotate(180deg); }

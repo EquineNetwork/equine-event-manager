@@ -22,6 +22,7 @@
 		history: [], future: [],
 		fill: { start: '1', step: 1, dir: 'lr' },
 		lm: { name: 'Wash Rack' },
+		sur: { name: '', amount: '' },
 		target: 'stall', overlay: null, dirty: false,
 		inline: false, host: null, zoom: 1
 	};
@@ -157,6 +158,13 @@
 					d.className = 'eem-mb-cell stall';
 					if (inSel(r, c)) { d.classList.add('sel'); }
 					if (dups[cell.label]) { d.classList.add('dup'); }
+					var carea = cell.area ? findArea(z, cell.area) : null;
+					if (carea) {
+						d.classList.add('has-surcharge');
+						d.style.setProperty('--eem-mb-area', carea.color || '#16a34a');
+						var camt = (carea.surcharge && carea.surcharge.nightly) ? Number(carea.surcharge.nightly) : 0;
+						d.title = carea.name + (camt > 0 ? ' (+$' + camt.toFixed(2) + '/night)' : '');
+					}
 					d.textContent = cell.label;
 				} else {
 					d.className = 'eem-mb-cell gap';
@@ -266,6 +274,45 @@
 		toast('Added "' + name + '"'); B.sel = null; render(); renderControls();
 	}
 
+	// ---- surcharge areas (Slice 3) — paint a named, priced region onto cells ----
+	function areaSlug(name) { var s = String(name).toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^_+|_+$/g, ''); return s || 'area'; }
+	function findArea(z, id) { if (!z.areas) { return null; } for (var i = 0; i < z.areas.length; i++) { if (z.areas[i].id === id) { return z.areas[i]; } } return null; }
+	function uniqueAreaId(z, base) { var id = base, n = 2; while (findArea(z, id)) { id = base + '_' + n; n++; } return id; }
+	// Drop areas no cell references anymore so the registry never leaks orphans.
+	function pruneAreas(z) {
+		if (!z.areas || !z.areas.length) { return; }
+		var used = {};
+		z.grid.forEach(function (row) { row.forEach(function (cl) { if (cl.type === 'stall' && cl.area) { used[cl.area] = 1; } }); });
+		z.areas = z.areas.filter(function (a) { return used[a.id]; });
+	}
+	function applySurcharge() {
+		if (!B.sel) { toast('Drag a block of cells first'); return; }
+		var name = B.sur.name.trim(); if (!name) { toast('Name the area first'); return; }
+		var amt = Math.max(0, parseFloat(B.sur.amount || '0') || 0);
+		var z = Z(), s = B.sel;
+		var r1 = Math.min(s.r1, s.r2), r2 = Math.max(s.r1, s.r2), c1 = Math.min(s.c1, s.c2), c2 = Math.max(s.c1, s.c2);
+		z.areas = z.areas || [];
+		var area = null;
+		for (var i = 0; i < z.areas.length; i++) { if (z.areas[i].name.toLowerCase() === name.toLowerCase()) { area = z.areas[i]; break; } }
+		if (!area) { area = { id: uniqueAreaId(z, areaSlug(name)), name: name, color: '#16a34a', surcharge: { nightly: amt, packages: {} } }; z.areas.push(area); }
+		else { area.name = name; area.surcharge = area.surcharge || { nightly: 0, packages: {} }; area.surcharge.nightly = amt; }
+		snapshot();
+		var n = 0;
+		for (var r = r1; r <= r2; r++) { for (var c = c1; c <= c2; c++) { var cell = z.grid[r][c]; if (cell.type === 'stall') { cell.area = area.id; n++; } } }
+		pruneAreas(z);
+		toast('Assigned “' + name + '” (+$' + amt.toFixed(2) + '/night) to ' + n + ' ' + noun(true));
+		B.sel = null; render(); renderControls();
+	}
+	function clearSurcharge() {
+		if (!B.sel) { toast('Drag a block of cells first'); return; }
+		var z = Z(), s = B.sel;
+		var r1 = Math.min(s.r1, s.r2), r2 = Math.max(s.r1, s.r2), c1 = Math.min(s.c1, s.c2), c2 = Math.max(s.c1, s.c2);
+		snapshot();
+		for (var r = r1; r <= r2; r++) { for (var c = c1; c <= c2; c++) { if (z.grid[r][c].type === 'stall' && z.grid[r][c].area) { delete z.grid[r][c].area; } } }
+		pruneAreas(z);
+		toast('Cleared surcharge from selection'); B.sel = null; render(); renderControls();
+	}
+
 	// ---- erase / clear / resize ----
 	function eraseCell(r, c) { Z().grid[r][c] = { type: 'gap', label: '' }; }
 	function clearGrid() {
@@ -322,6 +369,17 @@
 				'<span class="eem-mb-selmeta">No selection</span>';
 			q('#eem-mb-lmname').addEventListener('input', function (e) { B.lm.name = e.target.value; });
 			q('#eem-mb-lmapply').addEventListener('click', applyLandmark);
+		} else if (B.tool === 'surcharge') {
+			p.innerHTML =
+				'<label class="eem-mb-tc">Area <input type="text" id="eem-mb-surname" class="eem-mb-input" value="' + escapeAttr(B.sur.name) + '" placeholder="Paddocks, Premium…"></label>' +
+				'<label class="eem-mb-tc">+ $/night <input type="number" id="eem-mb-suramt" class="eem-mb-num" value="' + escapeAttr(B.sur.amount) + '" min="0" step="0.01" placeholder="0.00"></label>' +
+				'<button type="button" class="eem-mb-apply" id="eem-mb-surapply">Assign Surcharge</button>' +
+				'<button type="button" class="eem-mb-apply eem-mb-apply-ghost" id="eem-mb-surclear">Clear</button>' +
+				'<span class="eem-mb-selmeta">No selection</span>';
+			q('#eem-mb-surname').addEventListener('input', function (e) { B.sur.name = e.target.value; });
+			q('#eem-mb-suramt').addEventListener('input', function (e) { B.sur.amount = e.target.value; });
+			q('#eem-mb-surapply').addEventListener('click', applySurcharge);
+			q('#eem-mb-surclear').addEventListener('click', clearSurcharge);
 		} else {
 			p.innerHTML = '';
 		}
@@ -388,6 +446,7 @@
 						tool('fill', 'Fill', '<path d="M4 7h6M4 12h10M4 17h7"/><path d="M16 5l4 4-9 9-4 1 1-4 8-10z"/>') +
 						tool('label', 'Label', '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/>') +
 						tool('landmark', 'Landmark', '<path d="M20.6 13.4 13.4 20.6a2 2 0 01-2.8 0L3 13V3h10l7.6 7.6a2 2 0 010 2.8z"/><circle cx="8" cy="8" r="1.4"/>') +
+						tool('surcharge', 'Surcharge', '<path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>') +
 						tool('erase', 'Erase', '<path d="M7 21h10M5 13l6-6 8 8-6 6H9l-4-4z"/>') +
 						tool('pan', 'Pan', '<path d="M5 9l-3 3 3 3"/><path d="M9 5l3-3 3 3"/><path d="M15 19l-3 3-3-3"/><path d="M19 9l3 3-3 3"/><path d="M2 12h20"/><path d="M12 2v20"/>') +
 						act('clear', 'Clear', '<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/>') +
@@ -501,12 +560,18 @@
 			B.zones = [{ name: cap(zoneNoun(false)) + ' 1', grid: mkGrid(10, 20) }];
 		} else {
 			B.zones = barns.map(function (b) {
-				var grid = (b.grid || []).map(function (row) { return (row || []).map(function (c) { return { type: (c && c.type) || 'gap', label: (c && c.label) || '' }; }); });
+				var grid = (b.grid || []).map(function (row) { return (row || []).map(function (c) {
+					var cell = { type: (c && c.type) || 'gap', label: (c && c.label) || '' };
+					if (c && c.area) { cell.area = c.area; }            // painted surcharge area (Slice 3)
+					if (c && c.w && c.w > 1) { cell.w = c.w; }          // multi-cell unit span
+					if (c && c.h && c.h > 1) { cell.h = c.h; }
+					return cell;
+				}); });
 				if (!grid.length) { grid = mkGrid(10, 20); }
-				return { name: b.name || (cap(zoneNoun(false))), grid: grid };
+				return { name: b.name || (cap(zoneNoun(false))), grid: grid, areas: (b.areas || []), surcharge: (b.surcharge || null) };
 			});
 		}
-		B.active = 0; B.sel = null; B.tool = 'fill'; B.history = []; B.future = []; B.dirty = false; B.zoom = 1; B.fill = { start: nextStartLabel(), step: 1, dir: 'lr' }; B.lm = { name: 'Wash Rack' };
+		B.active = 0; B.sel = null; B.tool = 'fill'; B.history = []; B.future = []; B.dirty = false; B.zoom = 1; B.fill = { start: nextStartLabel(), step: 1, dir: 'lr' }; B.lm = { name: 'Wash Rack' }; B.sur = { name: '', amount: '' };
 	}
 
 	function open(target) {
@@ -680,7 +745,7 @@
 
 	// ---- serialize + save ----
 	function serializeBarns() {
-		return B.zones.map(function (z) { return { name: z.name, grid: z.grid }; });
+		return B.zones.map(function (z) { return { name: z.name, grid: z.grid, areas: z.areas || [], surcharge: z.surcharge || null }; });
 	}
 	function save() {
 		var nonceInput = document.querySelector('input[name="_eem_editor_nonce"]');

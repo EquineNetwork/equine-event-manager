@@ -389,7 +389,14 @@ $rv_lot_map_name = $rv_lot_map_id ? basename( (string) get_attached_file( $rv_lo
 $rv_map_snap = ( isset( $data['rv_map'] ) && is_array( $data['rv_map'] ) ) ? $data['rv_map'] : array();
 $rv_seed     = array();
 foreach ( ( $rv_map_snap['barns'] ?? array() ) as $rv_seed_barn ) {
-	$rv_seed[] = array( 'name' => (string) ( $rv_seed_barn['name'] ?? '' ), 'grid' => ( $rv_seed_barn['grid'] ?? array() ) );
+	$rv_seed[] = array(
+		'name'      => (string) ( $rv_seed_barn['name'] ?? '' ),
+		'grid'      => ( $rv_seed_barn['grid'] ?? array() ),
+		// Slice 3: carry the painted-area registry + tab surcharge so the builder
+		// re-opens with the surcharge work intact (cell.area travels inside grid).
+		'areas'     => ( $rv_seed_barn['areas'] ?? array() ),
+		'surcharge' => ( $rv_seed_barn['surcharge'] ?? null ),
+	);
 }
 ob_start();
 ?>
