@@ -169,11 +169,18 @@
 					if (inSel(r, c)) { d.classList.add('sel'); }
 					if (dups[cell.label]) { d.classList.add('dup'); }
 					var carea = cell.area ? findArea(z, cell.area) : null;
-					if (carea) {
+					// Effective surcharge stacks the whole-tab amount with any painted
+					// area amount on this cell ("most layers add").
+					var tabAmt = (z.surcharge && z.surcharge.nightly) ? Number(z.surcharge.nightly) : 0;
+					var areaAmt = (carea && carea.surcharge && carea.surcharge.nightly) ? Number(carea.surcharge.nightly) : 0;
+					var effAmt = tabAmt + areaAmt;
+					if (carea || tabAmt > 0) {
 						d.classList.add('has-surcharge');
-						d.style.setProperty('--eem-mb-area', carea.color || '#16a34a');
-						var camt = (carea.surcharge && carea.surcharge.nightly) ? Number(carea.surcharge.nightly) : 0;
-						d.title = carea.name + (camt > 0 ? ' (+$' + camt.toFixed(2) + '/night)' : '');
+						d.style.setProperty('--eem-mb-area', (carea && carea.color) ? carea.color : '#16a34a');
+						var tparts = [];
+						if (carea) { tparts.push(carea.name); }
+						if (effAmt > 0) { tparts.push('+$' + effAmt.toFixed(2) + '/night'); }
+						d.title = tparts.join(' ');
 					}
 					d.textContent = cell.label;
 				} else {
@@ -313,6 +320,19 @@
 		toast('Assigned “' + name + '” (+$' + amt.toFixed(2) + '/night) to ' + n + ' ' + noun(true));
 		B.sel = null; render(); renderControls();
 	}
+	// Whole-tab surcharge — applies to every sellable cell on the active tab and
+	// stacks with any painted-area amount ("most layers add").
+	function applyTabSurcharge() {
+		var z = Z();
+		var el = q('#eem-mb-surtab');
+		var amt = Math.max(0, parseFloat((el && el.value) || '0') || 0);
+		snapshot();
+		z.surcharge = z.surcharge || { nightly: 0, packages: {} };
+		z.surcharge.nightly = amt;
+		if (amt > 0) { toast('Whole “' + z.name + '” tab now +$' + amt.toFixed(2) + '/night'); }
+		else { toast('Cleared tab surcharge from “' + z.name + '”'); }
+		render(); renderControls();
+	}
 	function clearSurcharge() {
 		if (!B.sel) { toast('Drag a block of cells first'); return; }
 		var z = Z(), s = B.sel;
@@ -412,16 +432,22 @@
 			q('#eem-mb-lmname').addEventListener('input', function (e) { B.lm.name = e.target.value; });
 			q('#eem-mb-lmapply').addEventListener('click', applyLandmark);
 		} else if (B.tool === 'surcharge') {
+			var zsur = Z();
+			var tabSur = (zsur.surcharge && zsur.surcharge.nightly) ? Number(zsur.surcharge.nightly) : 0;
 			p.innerHTML =
 				'<label class="eem-mb-tc">Area <input type="text" id="eem-mb-surname" class="eem-mb-input" value="' + escapeAttr(B.sur.name) + '" placeholder="Paddocks, Premium…"></label>' +
 				'<label class="eem-mb-tc">+ $/night <input type="number" id="eem-mb-suramt" class="eem-mb-num" value="' + escapeAttr(B.sur.amount) + '" min="0" step="0.01" placeholder="0.00"></label>' +
-				'<button type="button" class="eem-mb-apply" id="eem-mb-surapply">Assign Surcharge</button>' +
+				'<button type="button" class="eem-mb-apply" id="eem-mb-surapply">Assign to selection</button>' +
 				'<button type="button" class="eem-mb-apply eem-mb-apply-ghost" id="eem-mb-surclear">Clear</button>' +
+				'<span class="eem-mb-tc-sep" aria-hidden="true"></span>' +
+				'<label class="eem-mb-tc">Whole “' + escapeHtml(zsur.name) + '” + $/night <input type="number" id="eem-mb-surtab" class="eem-mb-num" value="' + (tabSur ? escapeAttr(String(tabSur)) : '') + '" min="0" step="0.01" placeholder="0.00"></label>' +
+				'<button type="button" class="eem-mb-apply" id="eem-mb-surtabapply">Apply to tab</button>' +
 				'<span class="eem-mb-selmeta">No selection</span>';
 			q('#eem-mb-surname').addEventListener('input', function (e) { B.sur.name = e.target.value; });
 			q('#eem-mb-suramt').addEventListener('input', function (e) { B.sur.amount = e.target.value; });
 			q('#eem-mb-surapply').addEventListener('click', applySurcharge);
 			q('#eem-mb-surclear').addEventListener('click', clearSurcharge);
+			q('#eem-mb-surtabapply').addEventListener('click', applyTabSurcharge);
 		} else if (B.tool === 'unit') {
 			p.innerHTML =
 				'<label class="eem-mb-tc">Number <input type="text" id="eem-mb-unitlabel" class="eem-mb-input" value="' + escapeAttr(B.unit.label) + '" placeholder="1, P1, Paddock 1…"></label>' +

@@ -9344,6 +9344,7 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 .eem-mb-step button { width: 24px; height: 24px; border: 1px solid var(--eem-border-card, #c3c4c7); background: var(--eem-surface, #fff); border-radius: var(--eem-radius, 3px); font-weight: 700; color: var(--eem-navy, #031B4E); line-height: 1; cursor: pointer; }
 .eem-mb-controls { display: inline-flex; align-items: center; gap: 13px; flex-wrap: wrap; }
 .eem-mb-tc { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--eem-navy, #031B4E); }
+.eem-mb-tc-sep { width: 1px; align-self: stretch; min-height: 24px; background: var(--eem-border, #D9E2F2); margin: 0 2px; }
 .eem-mb-input { width: 80px; padding: 6px 8px; border: 1.5px solid var(--eem-border, #D9E2F2); border-radius: var(--eem-radius, 3px); font-size: 12.5px; color: var(--eem-text, #1d2327); }
 .eem-mb-input-wide { width: 180px; }
 .eem-mb-num { width: 68px; padding: 6px 8px; border: 1.5px solid var(--eem-border, #D9E2F2); border-radius: var(--eem-radius, 3px); font-size: 12.5px; color: var(--eem-text, #1d2327); }
