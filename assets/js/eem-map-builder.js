@@ -23,6 +23,7 @@
 		fill: { start: '1', step: 1, dir: 'lr' },
 		lm: { name: 'Wash Rack' },
 		sur: { name: '', amount: '' },
+		unit: { label: '' },
 		target: 'stall', overlay: null, dirty: false,
 		inline: false, host: null, zoom: 1
 	};
@@ -156,6 +157,15 @@
 					var lab = document.createElement('span'); lab.className = 'eem-mb-lmlabel'; lab.textContent = cell.label; d.appendChild(lab);
 				} else if (cell.type === 'stall') {
 					d.className = 'eem-mb-cell stall';
+					// A merged unit (w/h > 1) spans its block as ONE sellable cell;
+					// the covered cells are consumed so they don't render separately.
+					var uw = (cell.w && cell.w > 1) ? cell.w : 1, uh = (cell.h && cell.h > 1) ? cell.h : 1;
+					if (uw > 1 || uh > 1) {
+						for (var ur = r; ur < r + uh; ur++) { for (var uc = c; uc < c + uw; uc++) { consumed[ur + ',' + uc] = 1; } }
+						d.style.gridColumn = (c + 1) + ' / span ' + uw;
+						d.style.gridRow = (r + 1) + ' / span ' + uh;
+						d.classList.add('unit');
+					}
 					if (inSel(r, c)) { d.classList.add('sel'); }
 					if (dups[cell.label]) { d.classList.add('dup'); }
 					var carea = cell.area ? findArea(z, cell.area) : null;
@@ -313,6 +323,38 @@
 		toast('Cleared surcharge from selection'); B.sel = null; render(); renderControls();
 	}
 
+	// ---- multi-cell unit (Slice 3) — merge a block into ONE sellable unit ----
+	function applyUnit() {
+		if (!B.sel) { toast('Drag a block of cells first'); return; }
+		var label = B.unit.label.trim(); if (!label) { toast('Give the unit a number first'); return; }
+		var z = Z(), s = B.sel;
+		var r1 = Math.min(s.r1, s.r2), r2 = Math.max(s.r1, s.r2), c1 = Math.min(s.c1, s.c2), c2 = Math.max(s.c1, s.c2);
+		var w = c2 - c1 + 1, h = r2 - r1 + 1;
+		if (w < 2 && h < 2) { toast('Select 2 or more cells to merge into one unit'); return; }
+		snapshot();
+		// Carry any surcharge area already on a selected cell onto the merged unit.
+		var area = '';
+		for (var ar = r1; ar <= r2; ar++) { for (var ac = c1; ac <= c2; ac++) { if (z.grid[ar][ac].type === 'stall' && z.grid[ar][ac].area) { area = z.grid[ar][ac].area; } } }
+		// Clear the block, then make the top-left cell the single spanning unit.
+		for (var r = r1; r <= r2; r++) { for (var c = c1; c <= c2; c++) { z.grid[r][c] = { type: 'gap', label: '' }; } }
+		var anchor = { type: 'stall', label: label, w: w, h: h };
+		if (area) { anchor.area = area; }
+		z.grid[r1][c1] = anchor;
+		pruneAreas(z);
+		toast('Merged into one unit “' + label + '” (' + (w * h) + ' cells, counts as 1 lot)');
+		B.unit.label = ''; B.sel = null; render(); renderControls();
+	}
+	function splitUnit() {
+		if (!B.sel) { toast('Select a merged unit first'); return; }
+		var z = Z(), s = B.sel;
+		var r1 = Math.min(s.r1, s.r2), c1 = Math.min(s.c1, s.c2);
+		var cell = z.grid[r1] && z.grid[r1][c1];
+		if (!cell || cell.type !== 'stall' || !(((cell.w || 1) > 1) || ((cell.h || 1) > 1))) { toast('Select a merged unit to split it back'); return; }
+		snapshot();
+		delete cell.w; delete cell.h;
+		toast('Split unit back into a single cell'); B.sel = null; render(); renderControls();
+	}
+
 	// ---- erase / clear / resize ----
 	function eraseCell(r, c) { Z().grid[r][c] = { type: 'gap', label: '' }; }
 	function clearGrid() {
@@ -380,6 +422,15 @@
 			q('#eem-mb-suramt').addEventListener('input', function (e) { B.sur.amount = e.target.value; });
 			q('#eem-mb-surapply').addEventListener('click', applySurcharge);
 			q('#eem-mb-surclear').addEventListener('click', clearSurcharge);
+		} else if (B.tool === 'unit') {
+			p.innerHTML =
+				'<label class="eem-mb-tc">Number <input type="text" id="eem-mb-unitlabel" class="eem-mb-input" value="' + escapeAttr(B.unit.label) + '" placeholder="1, P1, Paddock 1…"></label>' +
+				'<button type="button" class="eem-mb-apply" id="eem-mb-unitapply">Make one unit</button>' +
+				'<button type="button" class="eem-mb-apply eem-mb-apply-ghost" id="eem-mb-unitsplit">Split back</button>' +
+				'<span class="eem-mb-selmeta">No selection</span>';
+			q('#eem-mb-unitlabel').addEventListener('input', function (e) { B.unit.label = e.target.value; });
+			q('#eem-mb-unitapply').addEventListener('click', applyUnit);
+			q('#eem-mb-unitsplit').addEventListener('click', splitUnit);
 		} else {
 			p.innerHTML = '';
 		}
@@ -447,6 +498,7 @@
 						tool('label', 'Label', '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/>') +
 						tool('landmark', 'Landmark', '<path d="M20.6 13.4 13.4 20.6a2 2 0 01-2.8 0L3 13V3h10l7.6 7.6a2 2 0 010 2.8z"/><circle cx="8" cy="8" r="1.4"/>') +
 						tool('surcharge', 'Surcharge', '<path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>') +
+						tool('unit', 'Unit', '<path d="M8 3H5a2 2 0 00-2 2v3"/><path d="M16 3h3a2 2 0 012 2v3"/><path d="M21 16v3a2 2 0 01-2 2h-3"/><path d="M3 16v3a2 2 0 002 2h3"/>') +
 						tool('erase', 'Erase', '<path d="M7 21h10M5 13l6-6 8 8-6 6H9l-4-4z"/>') +
 						tool('pan', 'Pan', '<path d="M5 9l-3 3 3 3"/><path d="M9 5l3-3 3 3"/><path d="M15 19l-3 3-3-3"/><path d="M19 9l3 3-3 3"/><path d="M2 12h20"/><path d="M12 2v20"/>') +
 						act('clear', 'Clear', '<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/>') +
@@ -571,7 +623,7 @@
 				return { name: b.name || (cap(zoneNoun(false))), grid: grid, areas: (b.areas || []), surcharge: (b.surcharge || null) };
 			});
 		}
-		B.active = 0; B.sel = null; B.tool = 'fill'; B.history = []; B.future = []; B.dirty = false; B.zoom = 1; B.fill = { start: nextStartLabel(), step: 1, dir: 'lr' }; B.lm = { name: 'Wash Rack' }; B.sur = { name: '', amount: '' };
+		B.active = 0; B.sel = null; B.tool = 'fill'; B.history = []; B.future = []; B.dirty = false; B.zoom = 1; B.fill = { start: nextStartLabel(), step: 1, dir: 'lr' }; B.lm = { name: 'Wash Rack' }; B.sur = { name: '', amount: '' }; B.unit = { label: '' };
 	}
 
 	function open(target) {

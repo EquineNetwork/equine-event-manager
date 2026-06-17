@@ -9402,6 +9402,10 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 .eem-mb-cell.has-surcharge::after { content: '$'; position: absolute; top: 0; right: 2px; font-size: 9px; font-weight: 700; line-height: 1; color: var(--eem-mb-area, #16a34a); }
 .eem-mb-apply-ghost { background: var(--eem-surface, #fff); color: var(--eem-navy, #031B4E); border-color: var(--eem-border, #d4d8e0); font-weight: 500; }
 .eem-mb-apply-ghost:hover { background: var(--eem-info-bg, #EEF4FF); }
+/* A merged multi-cell unit (one sellable paddock/lot) fills its spanned tracks
+   and carries a solid border so it reads as a single block, not separate cells. */
+.eem-mb-cell.stall.unit { width: auto; height: auto; box-shadow: inset 0 0 0 2px var(--eem-navy, #031B4E); }
+.eem-mb-cell.stall.unit.has-surcharge { box-shadow: inset 0 0 0 2px var(--eem-mb-area, #16a34a); }
 .eem-mb-cell.dup { background: #fdecec; color: #c0392b; box-shadow: inset 0 0 0 2px #e74c3c; z-index: 2; }
 .eem-mb-lmlabel { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; pointer-events: none; text-align: center; line-height: 1.15; padding: 2px; }
 .eem-mb-cell.vert .eem-mb-lmlabel { writing-mode: vertical-rl; transform: rotate(180deg); }
