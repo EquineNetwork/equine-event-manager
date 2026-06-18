@@ -511,9 +511,7 @@ class EEM_Daily_Movement_Page {
 	private static function render_date_section( array $report, bool $show_date, array $order_map = array() ): void {
 		?>
 		<div class="eem-dm-date-section">
-			<?php if ( $show_date ) : ?>
-				<h3 class="eem-dm-date-heading"><?php echo esc_html( $report['date_display'] ); ?></h3>
-			<?php endif; ?>
+			<h3 class="eem-dm-date-heading"><?php echo esc_html( $report['date_display'] ); ?></h3>
 
 			<div class="eem-dm-summary">
 				<span class="eem-dm-summary-item eem-dm-summary-arriving">
