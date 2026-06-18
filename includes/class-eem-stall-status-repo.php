@@ -379,6 +379,58 @@ class EEM_Stall_Status_Repo {
 	}
 
 	/**
+	 * Whole-stay transition: move EVERY status row for an order (all stalls, all
+	 * nights) to $new_status. Drives the admin Check In / Check Out actions where
+	 * one click applies to the customer's entire stay (hotel-style front desk).
+	 * Rows already at/ahead of $new_status are skipped by the per-row transition
+	 * guard, so re-clicking is harmless. Returns the resolved status the order now
+	 * sits at plus success/failed counts.
+	 *
+	 * @param int    $order_id   Order row ID.
+	 * @param string $new_status Target status (checked_in / checked_out / needs_cleaning).
+	 * @param int    $user_id    Acting user.
+	 * @return array{success:int, failed:int, errors:array<int,string>, status:string}
+	 */
+	public static function transition_order_all_nights( int $order_id, string $new_status, int $user_id ): array {
+		global $wpdb;
+		$table = $wpdb->prefix . 'eem_stall_status';
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT reservation_id, stall_unit, night_date FROM {$table} WHERE order_id = %d",
+				$order_id
+			),
+			ARRAY_A
+		) ?: array();
+
+		$success = 0;
+		$failed  = 0;
+		$errors  = array();
+
+		foreach ( $rows as $r ) {
+			$result = self::transition( (int) $r['reservation_id'], $r['stall_unit'], $r['night_date'], $new_status, $user_id );
+			if ( $result['success'] ) {
+				$success++;
+			} else {
+				$failed++;
+				$errors[] = $r['stall_unit'] . ': ' . $result['message'];
+			}
+		}
+
+		// Resolve the order's effective status (MIN across rows = least-advanced).
+		$effective = $wpdb->get_var(
+			$wpdb->prepare( "SELECT MIN(status) FROM {$table} WHERE order_id = %d", $order_id )
+		);
+
+		return array(
+			'success' => $success,
+			'failed'  => $failed,
+			'errors'  => $errors,
+			'status'  => (string) ( $effective ?: 'occupied' ),
+		);
+	}
+
+	/**
 	 * Delete status rows when stall assignments are removed (e.g. order cancelled).
 	 *
 	 * Also deletes related log entries.
