@@ -7804,9 +7804,13 @@ a.eem-btn--ghost:focus    { color: #1d2327; }
 .eem-stall-chart-view-select { min-width: 230px; }
 /* Filter bar below the Daily Movement bar — Show + View dropdowns side by side
    (matches the Daily Movement page's Reservation/Date filter bar). */
-.eem-stall-chart-filter-bar { display: flex; flex-wrap: wrap; gap: 18px; margin-bottom: 14px; }
+.eem-stall-chart-filter-bar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 18px; margin-bottom: 14px; }
 .eem-scf-group { display: flex; flex-direction: column; gap: 5px; }
 .eem-scf-group .eem-stall-chart-view-select { min-width: 200px; }
+/* Action buttons pushed to the end of the filter row, bottom-aligned with the dropdowns. */
+.eem-scf-actions { margin-left: auto; display: flex; gap: 10px; }
+/* Second header action (Edit Reservation) sits to the right of Change Event. */
+.eem-header-action-edit { margin-left: 8px; }
 .eem-stall-chart-view-tabs { display: flex; gap: 0; background: #fff; padding: 0 18px; border-bottom: 1px solid #dcdcde; }
 .eem-stall-chart-view-tab { padding: 14px 22px 12px; font-size: 14px; font-weight: 600; color: #6B7A99; cursor: pointer; border-bottom: 3px solid transparent; font-family: inherit; transition: color .15s, border-color .15s; display: flex; align-items: center; gap: 8px; background: none; border-left: none; border-right: none; border-top: none; }
 .eem-stall-chart-view-tab:hover { color: #031B4E; }

@@ -2558,6 +2558,9 @@ class EEM_Admin {
 				<button class="eem-header-action-change" type="button" id="eem-stall-chart-change-btn" data-eem-action="stall-chart-change-event">
 					<?php esc_html_e( 'Change Event', 'equine-event-manager' ); ?>
 				</button>
+				<a class="eem-header-action-change eem-header-action-edit" href="<?php echo esc_url( get_edit_post_link( $reservation_id, '' ) ); ?>">
+					<?php esc_html_e( 'Edit Reservation', 'equine-event-manager' ); ?>
+				</a>
 			</header>
 
 			<div class="eem-stall-chart-body">
@@ -2689,6 +2692,16 @@ class EEM_Admin {
 							<?php endif; ?>
 						</select>
 					</div>
+					<div class="eem-scf-actions">
+						<button class="eem-btn eem-btn--primary" type="button" data-eem-action="stall-chart-auto-assign-all">
+							<?php esc_html_e( 'Generate Assignments', 'equine-event-manager' ); ?>
+						</button>
+						<button class="eem-btn eem-btn--ghost" type="button"
+							data-eem-action="stall-chart-print"
+							data-print-url="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-stall-chart-print&reservation_id=' . $reservation_id . '&view=' . ( 'customer' === $tab ? 'customer' : 'location' ) ) ); ?>">
+							<?php esc_html_e( 'Print View', 'equine-event-manager' ); ?>
+						</button>
+					</div>
 				</div>
 
 				<!-- Stats Bar (3 metric cards) -->
@@ -2704,23 +2717,6 @@ class EEM_Admin {
 					<div class="eem-stall-chart-stat-card">
 						<div class="eem-stall-chart-stat-label"><?php esc_html_e( 'Orders on Chart', 'equine-event-manager' ); ?></div>
 						<div class="eem-stall-chart-stat-value"><?php echo esc_html( number_format_i18n( $grid['order_count'] ) ); ?></div>
-					</div>
-				</div>
-
-				<!-- Action Bar -->
-				<div class="eem-stall-chart-action-bar">
-					<div class="eem-stall-chart-action-bar-btns">
-						<button class="eem-btn eem-btn--primary" type="button" data-eem-action="stall-chart-auto-assign-all">
-							<?php esc_html_e( 'Generate Assignments', 'equine-event-manager' ); ?>
-						</button>
-						<button class="eem-btn eem-btn--ghost" type="button"
-							data-eem-action="stall-chart-print"
-							data-print-url="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-stall-chart-print&reservation_id=' . $reservation_id . '&view=' . ( 'customer' === $tab ? 'customer' : 'location' ) ) ); ?>">
-							<?php esc_html_e( 'Print View', 'equine-event-manager' ); ?>
-						</button>
-						<a class="eem-btn eem-btn--ghost" href="<?php echo esc_url( get_edit_post_link( $reservation_id, '' ) ); ?>">
-							<?php esc_html_e( 'Edit Reservation', 'equine-event-manager' ); ?>
-						</a>
 					</div>
 				</div>
 
