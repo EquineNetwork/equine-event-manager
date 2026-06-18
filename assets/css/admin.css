@@ -7754,7 +7754,9 @@ input.eem-event-search-input:focus {
 .eem-stall-chart-body { padding: 18px 22px 40px; background: #fff; }
 /* Daily Movement bar — matches the Daily Movement page overview (pale-blue
    band, navy title, per-date columns with electric-blue ↓↑ arrows). */
-.eem-stall-chart-dm-bar { background: #f0f4fb; border: 1px solid #d9e2f2; border-radius: 4px; padding: 14px 18px; margin-bottom: 12px; }
+/* Full-bleed: cancel the .eem-stall-chart-body 18px/22px padding so the bar
+   spans edge-to-edge and sits flush under the header (matches the DM page). */
+.eem-stall-chart-dm-bar { background: #f0f4fb; border: 0; border-bottom: 1px solid #d9e2f2; border-radius: 0; padding: 16px 22px; margin: -18px -22px 18px; }
 .eem-stall-chart-dm-title { font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 700; color: #031b4e; margin-bottom: 12px; }
 .eem-stall-chart-dm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px 24px; }
 .eem-scd-date { font-size: 13px; font-weight: 700; color: #031b4e; margin-bottom: 5px; }
