@@ -8492,6 +8492,10 @@ body.eem-shell-page--print #wpbody { margin-top: 0; }
 body.eem-shell-page--print #wpbody-content { padding: 0; float: none; }
 body.eem-shell-page--print #wpwrap { background: #fff; }
 body.eem-shell-page--print .wrap { margin: 0; }
+/* The admin bar is hidden above, but WP keeps html.wp-toolbar's 32px top
+   padding reserved for it — that leaves a blank band at the top of the print
+   page. Zero it for print views. */
+html.wp-toolbar:has( body.eem-shell-page--print ) { padding-top: 0; }
 
 /* ── 2. Print-view component styles ── */
 
@@ -10727,13 +10731,23 @@ a.eem-dm-view-tab.active:visited {
 }
 .eem-dm-status-trigger:hover .eem-dm-status {
 	filter: brightness( 0.97 );
+	box-shadow: 0 1px 4px rgba( 22, 104, 242, 0.18 );
 }
-.eem-dm-status-caret {
-	font-size: 10px;
-	color: var(--eem-slate, #64748b);
-	transition: transform 0.12s ease;
+/* Caret variant: the chevron sits INSIDE the status pill (matching the Stall
+   Chart name chips) — faint until hover, in the pill's own color. */
+.eem-dm-status--caret {
+	gap: 5px;
 }
-.eem-dm-status-menu.open .eem-dm-status-caret {
+.eem-dm-status--caret .eem-occ-chevron {
+	color: currentColor;
+	opacity: 0.35;
+	transition: opacity 0.12s ease, transform 0.12s ease;
+}
+.eem-dm-status-trigger:hover .eem-occ-chevron {
+	opacity: 1;
+}
+.eem-dm-status-menu.open .eem-occ-chevron {
+	opacity: 1;
 	transform: rotate( 180deg );
 }
 .eem-dm-status-options {

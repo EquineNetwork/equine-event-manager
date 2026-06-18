@@ -2032,7 +2032,8 @@ class EEM_Admin {
 				'equine-event-manager-collect-payment'      => 'equine-event-manager-orders',
 				'equine-event-manager-reservation-editor'   => EEM_Reservations_List_Page::MENU_SLUG,
 				'equine-event-manager-reservation-overview' => EEM_Reservations_List_Page::MENU_SLUG,
-				EEM_Daily_Movement_Page::MENU_SLUG          => 'equine-event-manager-reports',
+				// Daily Movement is its own visible submenu item now (below Reports),
+				// so it self-highlights via the fall-through below — not mapped here.
 				EEM_Event_Editor_Page::MENU_SLUG            => EEM_Events_List_Page::MENU_SLUG,
 				EEM_Venue_Editor_Page::MENU_SLUG            => EEM_Venues_Page::MENU_SLUG,
 				EEM_Producer_Editor_Page::MENU_SLUG         => EEM_Producers_Page::MENU_SLUG,

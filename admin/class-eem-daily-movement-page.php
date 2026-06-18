@@ -718,8 +718,10 @@ class EEM_Daily_Movement_Page {
 							var key = res.data.status_key;
 							var chip = menuEl.querySelector( '.eem-dm-status' );
 							if ( chip ) {
-								chip.className = 'eem-dm-status eem-dm-status-' + key;
-								chip.textContent = res.data.label;
+								// Preserve the chevron child; swap only the color class + label.
+								chip.className = 'eem-dm-status eem-dm-status--caret eem-dm-status-' + key;
+								var lbl = chip.querySelector( '.eem-dm-status-label' );
+								if ( lbl ) { lbl.textContent = res.data.label; }
 							}
 							// Re-mark the current option.
 							menuEl.querySelectorAll( '.eem-dm-status-option' ).forEach( function ( b ) {
@@ -765,8 +767,7 @@ class EEM_Daily_Movement_Page {
 		?>
 		<div class="eem-dm-status-menu">
 			<button type="button" class="eem-dm-status-trigger" data-eem-action="dm-status-menu" aria-haspopup="true" aria-expanded="false">
-				<?php echo wp_kses_post( self::status_badge( $display ) ); ?>
-				<span class="eem-dm-status-caret" aria-hidden="true">▾</span>
+				<?php echo wp_kses_post( self::status_badge( $display, true ) ); ?>
 			</button>
 			<ul class="eem-dm-status-options" role="menu">
 				<?php foreach ( $options as $val => $label ) : ?>
@@ -788,12 +789,14 @@ class EEM_Daily_Movement_Page {
 	}
 
 	/**
-	 * Render a status badge.
+	 * Render a status badge (bordered pill matching the Stall Chart name chips).
 	 *
-	 * @param string $status Status key.
+	 * @param string $status     Status key.
+	 * @param bool   $with_caret When true, wraps the label in a span and appends a
+	 *                           chevron so the pill reads as a dropdown trigger.
 	 * @return string HTML for the badge.
 	 */
-	private static function status_badge( string $status ): string {
+	private static function status_badge( string $status, bool $with_caret = false ): string {
 		$labels = array(
 			'not_checked_in' => __( 'Not Checked In', 'equine-event-manager' ),
 			'occupied'       => __( 'Not Checked In', 'equine-event-manager' ),
@@ -808,7 +811,13 @@ class EEM_Daily_Movement_Page {
 		$label = $labels[ $status ] ?? ucwords( str_replace( '_', ' ', $status ) );
 		$class = 'eem-dm-status-' . sanitize_html_class( $status );
 
-		return '<span class="eem-dm-status ' . esc_attr( $class ) . '">' . esc_html( $label ) . '</span>';
+		if ( ! $with_caret ) {
+			return '<span class="eem-dm-status ' . esc_attr( $class ) . '">' . esc_html( $label ) . '</span>';
+		}
+
+		$chevron = '<svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>';
+		return '<span class="eem-dm-status eem-dm-status--caret ' . esc_attr( $class ) . '">'
+			. '<span class="eem-dm-status-label">' . esc_html( $label ) . '</span>' . $chevron . '</span>';
 	}
 
 	/**
