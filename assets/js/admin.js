@@ -2098,6 +2098,48 @@
 		}).catch(function () { btn.disabled = false; window.alert('Network error. Please try again.'); });
 	}
 
+	/* Add-discount modal (Order Detail). */
+	function addDiscountModal() { return document.getElementById('eem-order-add-discount-modal'); }
+	function openAddDiscountModal() {
+		var m = addDiscountModal();
+		if (!m) { return; }
+		var errEl = m.querySelector('[data-eem-add-discount-error]');
+		if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
+		m.classList.add('open');
+		m.setAttribute('aria-hidden', 'false');
+	}
+	function closeAddDiscountModal() {
+		var m = addDiscountModal();
+		if (!m) { return; }
+		m.classList.remove('open');
+		m.setAttribute('aria-hidden', 'true');
+	}
+	function submitAddDiscountForm() {
+		var m = addDiscountModal();
+		if (!m) { return; }
+		var form = m.querySelector('[data-eem-add-discount-form]');
+		if (!form) { return; }
+		var errEl = m.querySelector('[data-eem-add-discount-error]');
+		if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
+		var confirmBtn = m.querySelector('[data-eem-action="order-add-discount-confirm"]');
+		if (confirmBtn) { confirmBtn.disabled = true; }
+		fetch(window.ajaxurl || '/wp-admin/admin-ajax.php', {
+			method: 'POST', credentials: 'same-origin', body: new FormData(form)
+		}).then(function (r) { return r.json().catch(function () { return { success: false, data: { message: 'Unexpected server response.' } }; }); }).then(function (json) {
+			if (confirmBtn) { confirmBtn.disabled = false; }
+			if (!json || !json.success) {
+				var msg = (json && json.data && json.data.message) ? json.data.message : 'Could not apply the discount.';
+				if (errEl) { errEl.textContent = msg; errEl.hidden = false; }
+				return;
+			}
+			if (window.EEM && window.EEM.showSaveToast) { window.EEM.showSaveToast((json.data && json.data.message) || 'Discount applied.'); }
+			setTimeout(function () { window.location.reload(); }, 600);
+		}).catch(function () {
+			if (confirmBtn) { confirmBtn.disabled = false; }
+			if (errEl) { errEl.textContent = 'Network error. Please try again.'; errEl.hidden = false; }
+		});
+	}
+
 	/* v2 — Orders-list bulk Cancel. Lean sequential queue over the
 	   eem_order_bulk_cancel_step endpoint (no multi-state modal). */
 	var _bulkCancelKeys = [];
@@ -2844,6 +2886,16 @@
 		},
 		'order-add-items-confirm': function () {
 			submitOrderAddItemsForm();
+		},
+		/* Add-discount modal (Order Detail Order Summary). */
+		'order-add-discount-open': function () {
+			openAddDiscountModal();
+		},
+		'order-add-discount-close': function () {
+			closeAddDiscountModal();
+		},
+		'order-add-discount-confirm': function () {
+			submitAddDiscountForm();
 		},
 		/* C13.C.4b — Remove-discount modal (Order Detail Order Summary). */
 		'order-remove-discount-open': function () {

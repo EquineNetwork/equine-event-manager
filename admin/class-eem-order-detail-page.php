@@ -210,6 +210,7 @@ class EEM_Order_Detail_Page {
 		<?php $this->render_add_items_modal( $order ); ?>
 
 		<?php $this->render_remove_discount_modal( $order ); ?>
+		<?php $this->render_add_discount_modal( $order ); ?>
 
 		<?php
 		eem_render_page_close();
@@ -900,6 +901,10 @@ class EEM_Order_Detail_Page {
 							<button type="button" class="eem-order-summary__discount-remove" data-eem-action="order-remove-discount-open"><?php esc_html_e( 'Remove', 'equine-event-manager' ); ?></button>
 						</div>
 					</div>
+				<?php elseif ( ! isset( $order['status_slug'] ) || 'cancelled' !== $order['status_slug'] ) : ?>
+					<div class="eem-order-summary__add-discount">
+						<button type="button" class="eem-link-btn" data-eem-action="order-add-discount-open"><?php esc_html_e( '+ Add Discount', 'equine-event-manager' ); ?></button>
+					</div>
 				<?php endif; ?>
 				<div class="eem-order-summary__grand-total">
 					<span class="eem-order-summary__grand-label"><?php esc_html_e( 'Total', 'equine-event-manager' ); ?></span>
@@ -1520,6 +1525,138 @@ class EEM_Order_Detail_Page {
 		wp_send_json_success( array(
 			'requires_reload' => true,
 			'message'         => __( 'Discount removed.', 'equine-event-manager' ),
+		) );
+	}
+
+	/**
+	 * Add-discount modal — type (dollar/percent) + value + required reason. Only
+	 * rendered when the order has no discount yet and isn't cancelled.
+	 *
+	 * @param array<string, mixed> $order
+	 * @return void
+	 */
+	private function render_add_discount_modal( array $order ) {
+		$order_key = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
+		if ( '' === $order_key || ! class_exists( 'EEM_Order_Adjustments_Repo' ) ) {
+			return;
+		}
+		if ( null !== EEM_Order_Adjustments_Repo::get_discount( $order_key ) ) {
+			return; // already has a discount.
+		}
+		if ( isset( $order['status_slug'] ) && 'cancelled' === $order['status_slug'] ) {
+			return;
+		}
+		?>
+		<div class="eem-modal" id="eem-order-add-discount-modal" role="dialog" aria-modal="true" aria-labelledby="eem-order-add-discount-title" aria-hidden="true">
+			<div class="eem-modal-card">
+				<header class="eem-modal-head">
+					<h2 class="eem-modal-title" id="eem-order-add-discount-title"><?php esc_html_e( 'Add Discount', 'equine-event-manager' ); ?></h2>
+					<button type="button" class="eem-modal-close" data-eem-action="order-add-discount-close" aria-label="<?php esc_attr_e( 'Close', 'equine-event-manager' ); ?>">&times;</button>
+				</header>
+				<form class="eem-modal-body" method="post" data-eem-add-discount-form>
+					<?php wp_nonce_field( 'eem_add_discount_' . $order_key, '_eem_add_discount_nonce' ); ?>
+					<input type="hidden" name="action" value="eem_order_add_discount" />
+					<input type="hidden" name="order_key" value="<?php echo esc_attr( $order_key ); ?>" />
+					<p class="eem-order-refund-summary"><?php esc_html_e( 'Discounts apply to the order subtotal. A reason is required and recorded in the Activity Log.', 'equine-event-manager' ); ?></p>
+					<div class="eem-field-row eem-field-row--split">
+						<div>
+							<label class="eem-field-label" for="eem-add-discount-type"><?php esc_html_e( 'Type', 'equine-event-manager' ); ?></label>
+							<select class="eem-field-input" id="eem-add-discount-type" name="discount_type">
+								<option value="dollar"><?php esc_html_e( 'Dollar ($)', 'equine-event-manager' ); ?></option>
+								<option value="percent"><?php esc_html_e( 'Percent (%)', 'equine-event-manager' ); ?></option>
+							</select>
+						</div>
+						<div>
+							<label class="eem-field-label" for="eem-add-discount-value"><?php esc_html_e( 'Amount', 'equine-event-manager' ); ?></label>
+							<input type="number" class="eem-field-input" id="eem-add-discount-value" name="discount_value" min="0" step="0.01" placeholder="0.00" />
+						</div>
+					</div>
+					<div class="eem-field-row">
+						<label class="eem-field-label" for="eem-add-discount-reason"><?php esc_html_e( 'Reason', 'equine-event-manager' ); ?> <span class="eem-req">*</span></label>
+						<input type="text" class="eem-field-input" id="eem-add-discount-reason" name="discount_reason" maxlength="200" placeholder="<?php esc_attr_e( 'e.g. Repeat-customer courtesy', 'equine-event-manager' ); ?>" />
+					</div>
+					<div class="eem-order-refund-error" data-eem-add-discount-error hidden></div>
+				</form>
+				<footer class="eem-modal-foot eem-modal-foot--split">
+					<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="order-add-discount-close"><?php esc_html_e( 'Cancel', 'equine-event-manager' ); ?></button>
+					<button type="button" class="eem-btn eem-btn-primary" data-eem-action="order-add-discount-confirm"><?php esc_html_e( 'Apply discount', 'equine-event-manager' ); ?></button>
+				</footer>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * AJAX — apply a discount to an order (type + value + required reason). The
+	 * discount amount is resolved against the order's stall + RV + custom-item
+	 * subtotal and persisted via the adjustments repo; an order_discount_applied
+	 * Activity Log entry records it. Capability + nonce gated.
+	 *
+	 * @return void
+	 */
+	public static function ajax_add_discount(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+
+		$order_key = isset( $_POST['order_key'] ) ? sanitize_text_field( wp_unslash( $_POST['order_key'] ) ) : '';
+		check_ajax_referer( 'eem_add_discount_' . $order_key, '_eem_add_discount_nonce' );
+
+		$type   = isset( $_POST['discount_type'] ) ? sanitize_text_field( wp_unslash( $_POST['discount_type'] ) ) : 'dollar';
+		$type   = ( 'percent' === $type ) ? 'percent' : 'dollar';
+		$value  = isset( $_POST['discount_value'] ) ? round( (float) wp_unslash( $_POST['discount_value'] ), 2 ) : 0.0;
+		$reason = isset( $_POST['discount_reason'] ) ? sanitize_text_field( wp_unslash( $_POST['discount_reason'] ) ) : '';
+
+		if ( '' === trim( $reason ) ) {
+			wp_send_json_error( array( 'message' => __( 'A reason is required.', 'equine-event-manager' ), 'code' => 'reason_required' ), 422 );
+		}
+		if ( $value <= 0 ) {
+			wp_send_json_error( array( 'message' => __( 'Enter a discount amount greater than zero.', 'equine-event-manager' ), 'code' => 'value_required' ), 422 );
+		}
+		if ( '' === $order_key || ! class_exists( 'EEM_Order_Adjustments_Repo' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Order not found.', 'equine-event-manager' ) ), 404 );
+		}
+		if ( null !== EEM_Order_Adjustments_Repo::get_discount( $order_key ) ) {
+			wp_send_json_error( array( 'message' => __( 'This order already has a discount. Remove it first to change it.', 'equine-event-manager' ), 'code' => 'discount_exists' ), 409 );
+		}
+
+		$order = ( new EEM_Orders_Repository() )->get_order( $order_key );
+		if ( ! is_array( $order ) ) {
+			wp_send_json_error( array( 'message' => __( 'Order not found.', 'equine-event-manager' ) ), 404 );
+		}
+
+		$subtotal = (float) ( $order['stall_subtotal'] ?? 0 ) + (float) ( $order['rv_subtotal'] ?? 0 );
+		$customs  = EEM_Order_Adjustments_Repo::get_custom_items( $order_key );
+		foreach ( $customs as $ci ) {
+			$subtotal += (float) $ci['amount'];
+		}
+		if ( 'percent' === $type && $value > 100 ) {
+			wp_send_json_error( array( 'message' => __( 'A percentage discount cannot exceed 100%.', 'equine-event-manager' ), 'code' => 'value_too_large' ), 422 );
+		}
+
+		$discount_id = EEM_Order_Adjustments_Repo::set_discount( $order_key, $type, $value, $reason, $subtotal );
+		if ( false === $discount_id ) {
+			wp_send_json_error( array( 'message' => __( 'The discount could not be applied. Please try again.', 'equine-event-manager' ) ), 500 );
+		}
+
+		if ( class_exists( 'EEM_Activity_Log' ) ) {
+			$resolved = EEM_Order_Adjustments_Repo::resolve_discount_amount( $type, $value, $subtotal );
+			EEM_Activity_Log::write(
+				'order_discount_applied',
+				array(
+					'order_key'       => $order_key,
+					'discount_type'   => $type,
+					'discount_value'  => $value,
+					'discount_amount' => $resolved,
+					'reason'          => $reason,
+				),
+				array( 'actor_type' => 'admin', 'actor_id' => get_current_user_id() )
+			);
+		}
+
+		wp_send_json_success( array(
+			'requires_reload' => true,
+			'message'         => __( 'Discount applied.', 'equine-event-manager' ),
 		) );
 	}
 

@@ -368,6 +368,7 @@ class EEM_Plugin {
 		// existing order at any time. Handler lives on the Order Detail page.
 		add_action( 'wp_ajax_eem_order_add_items', array( 'EEM_Order_Detail_Page', 'ajax_add_items' ) );
 		add_action( 'wp_ajax_eem_order_remove_custom_item', array( 'EEM_Order_Detail_Page', 'ajax_remove_custom_item' ) );
+		add_action( 'wp_ajax_eem_order_add_discount', array( 'EEM_Order_Detail_Page', 'ajax_add_discount' ) );
 
 		// C14 — admin Collect Payment Stripe charge (two-step: create intent →
 		// confirm). Capability + nonce gated; reuses the Stripe REST primitives on
