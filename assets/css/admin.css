@@ -7752,7 +7752,17 @@ input.eem-event-search-input:focus {
 
 /* ── Stats bar ── */
 .eem-stall-chart-body { padding: 18px 22px 40px; background: #fff; }
-.eem-stall-chart-stats-bar { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+/* Daily Movement bar — matches the Daily Movement page overview (pale-blue
+   band, navy title, per-date columns with electric-blue ↓↑ arrows). */
+.eem-stall-chart-dm-bar { background: #f0f4fb; border: 1px solid #d9e2f2; border-radius: 4px; padding: 14px 18px; margin-bottom: 12px; }
+.eem-stall-chart-dm-title { font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 700; color: #031b4e; margin-bottom: 12px; }
+.eem-stall-chart-dm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px 24px; }
+.eem-scd-date { font-size: 13px; font-weight: 700; color: #031b4e; margin-bottom: 5px; }
+.eem-scd-vals span { display: block; font-size: 12.5px; font-weight: 600; line-height: 1.7; color: #1d2327; }
+.eem-scd-arr { color: #15803d; }
+.eem-scd-dep { color: #b45309; }
+
+.eem-stall-chart-stats-bar { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 14px; }
 .eem-stall-chart-stat-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 4px; padding: 14px 18px; }
 .eem-stall-chart-stat-label { font-size: 10.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: #8c8f94; margin-bottom: 8px; }
 .eem-stall-chart-stat-value { font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700; color: #031B4E; }

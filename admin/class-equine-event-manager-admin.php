@@ -2648,30 +2648,28 @@ class EEM_Admin {
 			? $this->build_stall_map_overlay_state( $order_rows, $rv_blocked, 'rv_units', false )
 			: array();
 		?>
-				<!-- Stats Bar -->
-				<div class="eem-stall-chart-stats-bar">
-					<div class="eem-stall-chart-stat-card eem-stall-chart-stat-card--wide">
-						<div class="eem-stall-chart-stat-label"><?php esc_html_e( 'Daily Movement', 'equine-event-manager' ); ?></div>
-						<div class="eem-stall-chart-stat-daily">
-							<?php if ( ! empty( $grid['movement_summary'] ) ) : ?>
-								<?php foreach ( $grid['movement_summary'] as $date_key => $movement ) : ?>
-									<div>
-										<span><?php echo esc_html( isset( $date_cols[ $date_key ] ) ? $date_cols[ $date_key ] : $date_key ); ?>:</span>
-										<?php
-										echo esc_html( sprintf(
-											/* translators: 1: arriving count, 2: departing count */
-											__( 'Arriving %1$s, Departing %2$s', 'equine-event-manager' ),
-											number_format_i18n( $movement['arriving'] ),
-											number_format_i18n( $movement['departing'] )
-										) );
-										?>
+				<!-- Daily Movement bar (matches the Daily Movement page overview) -->
+				<div class="eem-stall-chart-dm-bar">
+					<div class="eem-stall-chart-dm-title"><?php esc_html_e( 'Daily Movement', 'equine-event-manager' ); ?></div>
+					<div class="eem-stall-chart-dm-grid">
+						<?php if ( ! empty( $grid['movement_summary'] ) ) : ?>
+							<?php foreach ( $grid['movement_summary'] as $date_key => $movement ) : ?>
+								<div class="eem-scd-day">
+									<div class="eem-scd-date"><?php echo esc_html( isset( $date_cols[ $date_key ] ) ? $date_cols[ $date_key ] : $date_key ); ?></div>
+									<div class="eem-scd-vals">
+										<span class="eem-scd-arr"><?php echo esc_html( sprintf( /* translators: %s: arriving count */ __( '↓ %s Arriving', 'equine-event-manager' ), number_format_i18n( $movement['arriving'] ) ) ); ?></span>
+										<span class="eem-scd-dep"><?php echo esc_html( sprintf( /* translators: %s: departing count */ __( '↑ %s Departing', 'equine-event-manager' ), number_format_i18n( $movement['departing'] ) ) ); ?></span>
 									</div>
-								<?php endforeach; ?>
-							<?php else : ?>
-								<div><?php echo esc_html( $reservation_dates ? $reservation_dates : $reservation_title ); ?></div>
-							<?php endif; ?>
-						</div>
+								</div>
+							<?php endforeach; ?>
+						<?php else : ?>
+							<div class="eem-scd-day"><div class="eem-scd-date"><?php echo esc_html( $reservation_dates ? $reservation_dates : $reservation_title ); ?></div></div>
+						<?php endif; ?>
 					</div>
+				</div>
+
+				<!-- Stats Bar (3 metric cards) -->
+				<div class="eem-stall-chart-stats-bar">
 					<div class="eem-stall-chart-stat-card">
 						<div class="eem-stall-chart-stat-label"><?php esc_html_e( 'Stall Units', 'equine-event-manager' ); ?></div>
 						<div class="eem-stall-chart-stat-value"><?php echo esc_html( number_format_i18n( $stall_count ) ); ?></div>
