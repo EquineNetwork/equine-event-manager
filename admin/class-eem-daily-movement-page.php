@@ -188,7 +188,15 @@ class EEM_Daily_Movement_Page {
 		<head>
 			<meta charset="<?php bloginfo( 'charset' ); ?>">
 			<meta name="viewport" content="width=device-width, initial-scale=1">
-			<title><?php echo esc_html( $reservation_title . ' — ' . __( 'Daily Movement', 'equine-event-manager' ) ); ?></title>
+			<?php
+			// Default PDF/print filename comes from the document title. Format
+			// "Daily Movement - {Event}" per Whitney; falls back to just the label
+			// when the reservation has no title.
+			$dm_print_title = '' !== $reservation_title
+				? __( 'Daily Movement', 'equine-event-manager' ) . ' - ' . $reservation_title
+				: __( 'Daily Movement', 'equine-event-manager' );
+			?>
+			<title><?php echo esc_html( $dm_print_title ); ?></title>
 			<link rel="preconnect" href="https://fonts.googleapis.com">
 			<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 			<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -327,6 +335,11 @@ class EEM_Daily_Movement_Page {
 					</div>
 				<?php endforeach; ?>
 			</div>
+			<script>
+				// Force the document title so the print / Save-as-PDF default filename is
+				// "Daily Movement - {Event}" even if the admin chrome set its own title.
+				document.title = <?php echo wp_json_encode( $dm_print_title ); ?>;
+			</script>
 		</body>
 		</html>
 		<?php
