@@ -117,7 +117,6 @@ class EEM_Admin {
 		add_action( 'admin_menu', array( $this, 'normalize_event_manager_submenu_order' ), 1001 );
 		add_action( 'admin_head', array( $this, 'print_category_submenu_nesting_css' ) );
 		add_action( 'admin_footer', array( $this, 'print_category_submenu_nesting_js' ) );
-		add_action( 'admin_footer', array( $this, 'print_reports_flyout_js' ) );
 		add_action( 'admin_menu', array( $this, 'maybe_remove_disabled_native_event_menu_items' ), 999 );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_backend_shell_styles' ) );
 		add_action( 'admin_footer', array( $this, 'print_reservations_list_toolbar_normalizer' ) );
@@ -586,6 +585,7 @@ class EEM_Admin {
 			'equine-event-manager-customers',
 			EEM_Notifications_Page::MENU_SLUG,
 			'equine-event-manager-reports',
+			EEM_Daily_Movement_Page::MENU_SLUG, // Directly below Reports (Whitney 2026-06-17).
 			'equine-event-manager-settings',
 		);
 		$existing = $submenu[ self::MENU_SLUG ];
@@ -817,49 +817,6 @@ class EEM_Admin {
 				li.classList.add('eem-cat-subitem');
 				fly.appendChild(li);
 			}
-		})();
-		</script>
-		<?php
-	}
-
-	/**
-	 * Print footer JS that nests "Daily Movement" as a flyout sub-item under Reports.
-	 * Reuses the same `.eem-cat-flyout` CSS from the Category nesting (already loaded).
-	 *
-	 * @return void
-	 */
-	public function print_reports_flyout_js() {
-		$dm_slug = EEM_Daily_Movement_Page::MENU_SLUG;
-		?>
-		<script id="eem-reports-flyout-js">
-		(function () {
-			var reportsLink = document.querySelector('#adminmenu a[href*="page=equine-event-manager-reports"]');
-			if (!reportsLink) { return; }
-			var reportsLi = reportsLink.closest('li');
-			if (!reportsLi) { return; }
-			reportsLi.classList.add('eem-cat-parent');
-			var fly = document.createElement('ul');
-			fly.className = 'eem-cat-flyout';
-			var li = document.createElement('li');
-			var a = document.createElement('a');
-			a.href = '<?php echo esc_url( admin_url( 'admin.php?page=' . $dm_slug ) ); ?>';
-			a.textContent = '<?php echo esc_js( __( 'Daily Movement', 'equine-event-manager' ) ); ?>';
-			<?php
-			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			$current_page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
-			if ( $dm_slug === $current_page ) :
-			?>
-			li.classList.add('current');
-			var topMenu = reportsLi.closest('li.menu-top');
-			if (topMenu) {
-				topMenu.classList.remove('wp-not-current-submenu');
-				topMenu.classList.add('wp-has-current-submenu', 'wp-menu-open');
-				reportsLi.classList.add('current');
-			}
-			<?php endif; ?>
-			li.appendChild(a);
-			fly.appendChild(li);
-			reportsLi.appendChild(fly);
 		})();
 		</script>
 		<?php
@@ -1311,8 +1268,10 @@ class EEM_Admin {
 			array( new EEM_Reports_Page(), 'render' )
 		);
 
+		// Daily Movement is its own top-level submenu item, registered directly
+		// after Reports so it sits immediately below it (Whitney 2026-06-17).
 		add_submenu_page(
-			null,
+			self::MENU_SLUG,
 			__( 'Daily Movement', 'equine-event-manager' ),
 			__( 'Daily Movement', 'equine-event-manager' ),
 			'manage_options',
