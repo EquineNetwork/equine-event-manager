@@ -767,7 +767,11 @@ class EEM_Daily_Movement_Page {
 		?>
 		<div class="eem-dm-status-menu">
 			<button type="button" class="eem-dm-status-trigger" data-eem-action="dm-status-menu" aria-haspopup="true" aria-expanded="false">
-				<?php echo wp_kses_post( self::status_badge( $display, true ) ); ?>
+				<?php
+				// status_badge() returns self-escaped markup incl. an inline <svg>
+				// chevron; wp_kses_post would strip the SVG, so echo it directly.
+				echo self::status_badge( $display, true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+				?>
 			</button>
 			<ul class="eem-dm-status-options" role="menu">
 				<?php foreach ( $options as $val => $label ) : ?>
