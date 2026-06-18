@@ -125,6 +125,7 @@ class EEM_Admin {
 		add_action( 'all_admin_notices', array( $this, 'render_native_content_list_banner' ) );
 		add_action( 'wp_ajax_eem_move_stall_assignment', array( $this, 'ajax_move_stall_assignment' ) );
 		add_action( 'wp_ajax_eem_assign_order_to_unit', array( $this, 'ajax_assign_order_to_unit' ) );
+		add_action( 'wp_ajax_eem_order_check_status', array( $this, 'ajax_order_check_status' ) );
 		add_action( 'wp_ajax_eem_toggle_tack_stall', array( $this, 'ajax_toggle_tack_stall' ) );
 		add_action( 'wp_ajax_eem_stall_map_action', array( $this, 'ajax_stall_map_action' ) );
 		add_action( 'wp_ajax_eem_group_rename', array( $this, 'ajax_group_rename' ) );
@@ -6143,6 +6144,61 @@ class EEM_Admin {
 				: __( 'Stall assigned.', 'equine-event-manager' ),
 			'unit'    => $unit,
 			'kind'    => $kind,
+		) );
+	}
+
+	/**
+	 * AJAX: transition a whole order's stay to checked-in or checked-out.
+	 *
+	 * Backs the clickable status chips on the Daily Movement board and the
+	 * Stall Charts customer modal — one click applies the new status to every
+	 * stall-night the order holds (hotel-style front desk). The component row
+	 * id (wp_en_stall_reservations.id) is the key wp_eem_stall_status rows are
+	 * grouped under; a per-id nonce guards each chip.
+	 *
+	 * @return void
+	 */
+	public function ajax_order_check_status(): void {
+		$status_order_id = isset( $_POST['status_order_id'] ) ? absint( wp_unslash( $_POST['status_order_id'] ) ) : 0;
+		check_ajax_referer( 'eem_order_check_status_' . $status_order_id, '_wpnonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+
+		$target = isset( $_POST['target'] ) ? sanitize_key( wp_unslash( $_POST['target'] ) ) : '';
+		if ( ! in_array( $target, array( 'checked_in', 'checked_out' ), true ) ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid status target.', 'equine-event-manager' ) ), 400 );
+		}
+		if ( $status_order_id < 1 ) {
+			wp_send_json_error( array( 'message' => __( 'Missing order reference.', 'equine-event-manager' ) ), 400 );
+		}
+
+		if ( ! class_exists( 'EEM_Stall_Status_Repo' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-stall-status-repo.php';
+		}
+
+		$result = EEM_Stall_Status_Repo::transition_order_all_nights( $status_order_id, $target, get_current_user_id() );
+
+		if ( empty( $result['success'] ) && ! empty( $result['failed'] ) ) {
+			wp_send_json_error( array(
+				'message' => __( 'Could not update check-in status.', 'equine-event-manager' ),
+				'errors'  => $result['errors'],
+			), 409 );
+		}
+
+		$labels = array(
+			'occupied'       => __( 'Not Checked In', 'equine-event-manager' ),
+			'checked_in'     => __( 'Checked In', 'equine-event-manager' ),
+			'checked_out'    => __( 'Checked Out', 'equine-event-manager' ),
+			'needs_cleaning' => __( 'Needs Cleaning', 'equine-event-manager' ),
+		);
+		$status = (string) ( $result['status'] ?? 'occupied' );
+
+		wp_send_json_success( array(
+			'status'     => $status,
+			'status_key' => 'occupied' === $status ? 'not_checked_in' : $status,
+			'label'      => $labels[ $status ] ?? ucwords( str_replace( '_', ' ', $status ) ),
 		) );
 	}
 

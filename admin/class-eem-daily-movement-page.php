@@ -116,6 +116,7 @@ class EEM_Daily_Movement_Page {
 			foreach ( $reports as $report ) {
 				self::render_date_section( $report, 'all' === $view, $order_map );
 			}
+			self::render_check_toggle_script();
 		}
 
 		eem_render_page_close();
@@ -587,10 +588,10 @@ class EEM_Daily_Movement_Page {
 					<th><?php esc_html_e( 'Stall #', 'equine-event-manager' ); ?></th>
 					<th><?php esc_html_e( 'Customer', 'equine-event-manager' ); ?></th>
 					<th><?php esc_html_e( 'Order #', 'equine-event-manager' ); ?></th>
-					<th><?php esc_html_e( 'Dates', 'equine-event-manager' ); ?></th>
+					<th><?php esc_html_e( 'Arrival', 'equine-event-manager' ); ?></th>
+					<th><?php esc_html_e( 'Departure', 'equine-event-manager' ); ?></th>
 					<th><?php esc_html_e( 'Shavings', 'equine-event-manager' ); ?></th>
 					<th><?php esc_html_e( 'Status', 'equine-event-manager' ); ?></th>
-					<th><?php esc_html_e( 'Notes', 'equine-event-manager' ); ?></th>
 				</tr>
 			</thead>
 			<tbody>
@@ -612,28 +613,99 @@ class EEM_Daily_Movement_Page {
 								—
 							<?php endif; ?>
 						</td>
-						<td class="eem-dm-cell-dates">
-							<?php
-							echo esc_html(
-								EEM_Daily_Movement_Service::format_display_date( $row['arrival_date'] )
-								. ' → '
-								. EEM_Daily_Movement_Service::format_display_date( $row['departure_date'] )
-							);
-							?>
-						</td>
+						<td class="eem-dm-cell-dates"><?php echo esc_html( EEM_Daily_Movement_Service::format_display_date( $row['arrival_date'] ) ?: '—' ); ?></td>
+						<td class="eem-dm-cell-dates"><?php echo esc_html( EEM_Daily_Movement_Service::format_display_date( $row['departure_date'] ) ?: '—' ); ?></td>
 						<td class="eem-dm-cell-shavings"><?php echo esc_html( $row['shavings'] > 0 ? (string) $row['shavings'] : '—' ); ?></td>
 						<td class="eem-dm-cell-status">
 							<?php
 							// Departing rows read "Departing" (the row is leaving this day),
 							// not the underlying check-in flag.
-							echo wp_kses_post( self::status_badge( 'departing' === $context ? 'departing' : $row['check_in_status'] ) );
+							$dm_status = 'departing' === $context ? 'departing' : $row['check_in_status'];
+							// Decide the next clickable action: arriving/not-in → Check In;
+							// departing or already-in → Check Out; checked-out → no action.
+							$dm_target = '';
+							if ( 'departing' === $context || 'checked_in' === $row['check_in_status'] ) {
+								$dm_target = 'checked_out';
+							} elseif ( in_array( $row['check_in_status'], array( 'not_checked_in', 'occupied' ), true ) ) {
+								$dm_target = 'checked_in';
+							}
+							$dm_sid = isset( $row['status_order_id'] ) ? (int) $row['status_order_id'] : 0;
+							if ( '' !== $dm_target && $dm_sid > 0 ) {
+								printf(
+									'<button type="button" class="eem-dm-status-btn" data-eem-action="dm-check-toggle" data-status-order-id="%d" data-target="%s" data-nonce="%s" title="%s">%s</button>',
+									$dm_sid,
+									esc_attr( $dm_target ),
+									esc_attr( wp_create_nonce( 'eem_order_check_status_' . $dm_sid ) ),
+									esc_attr( 'checked_in' === $dm_target ? __( 'Click to mark Checked In', 'equine-event-manager' ) : __( 'Click to mark Checked Out', 'equine-event-manager' ) ),
+									wp_kses_post( self::status_badge( $dm_status ) )
+								);
+							} else {
+								echo wp_kses_post( self::status_badge( $dm_status ) );
+							}
 							?>
 						</td>
-						<td class="eem-dm-cell-notes"><?php echo esc_html( $row['special_instructions'] ); ?></td>
 					</tr>
 				<?php endforeach; ?>
 			</tbody>
 		</table>
+		<?php
+	}
+
+	/**
+	 * Emit the delegated click handler for the check-in/out status chips.
+	 *
+	 * Each chip posts its component-row id + target status to the
+	 * eem_order_check_status AJAX action and swaps its own label/class on
+	 * success — no page reload, hotel-front-desk style. Output once per page.
+	 *
+	 * @return void
+	 */
+	private static function render_check_toggle_script(): void {
+		?>
+		<script>
+		( function () {
+			var labels = {
+				not_checked_in: <?php echo wp_json_encode( __( 'Not Checked In', 'equine-event-manager' ) ); ?>,
+				checked_in:     <?php echo wp_json_encode( __( 'Checked In', 'equine-event-manager' ) ); ?>,
+				checked_out:    <?php echo wp_json_encode( __( 'Checked Out', 'equine-event-manager' ) ); ?>
+			};
+			document.addEventListener( 'click', function ( e ) {
+				var btn = e.target.closest( '[data-eem-action="dm-check-toggle"]' );
+				if ( ! btn || btn.disabled ) { return; }
+				e.preventDefault();
+				var sid = btn.getAttribute( 'data-status-order-id' );
+				var target = btn.getAttribute( 'data-target' );
+				var nonce = btn.getAttribute( 'data-nonce' );
+				btn.disabled = true;
+				var body = new URLSearchParams();
+				body.append( 'action', 'eem_order_check_status' );
+				body.append( 'status_order_id', sid );
+				body.append( 'target', target );
+				body.append( '_wpnonce', nonce );
+				fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: body } )
+					.then( function ( r ) { return r.json(); } )
+					.then( function ( res ) {
+						btn.disabled = false;
+						if ( ! res || ! res.success ) { return; }
+						var chip = btn.querySelector( '.eem-dm-status' );
+						var key = res.data.status_key;
+						if ( chip ) {
+							chip.className = 'eem-dm-status eem-dm-status-' + key;
+							chip.textContent = res.data.label;
+						}
+						// After check-in the next click should check-out; after
+						// check-out the chip is terminal for this board.
+						if ( 'checked_in' === key ) {
+							btn.setAttribute( 'data-target', 'checked_out' );
+						} else if ( 'checked_out' === key ) {
+							btn.setAttribute( 'data-eem-action', '' );
+							btn.classList.add( 'eem-dm-status-btn--done' );
+						}
+					} )
+					.catch( function () { btn.disabled = false; } );
+			} );
+		} )();
+		</script>
 		<?php
 	}
 

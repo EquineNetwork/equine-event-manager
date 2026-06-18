@@ -144,6 +144,9 @@ class EEM_Daily_Movement_Service {
 
 		return array(
 			'order_key'            => self::extract_note_value( $notes, 'Submission token' ),
+			// Component row id (wp_en_stall_reservations.id) — the key wp_eem_stall_status
+			// uses, so the check-in/out chips can transition this order's whole stay.
+			'status_order_id'      => (int) ( $row['id'] ?? 0 ),
 			'customer_name'        => (string) ( $row['customer_name'] ?? '' ),
 			'stall_numbers'        => self::extract_stall_numbers( $notes ),
 			'arrival_date'         => (string) ( $row['arrival_date'] ?? '' ),
