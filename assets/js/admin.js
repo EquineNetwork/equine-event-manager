@@ -4848,20 +4848,17 @@
 		var barnTabsWrap = document.getElementById('eem-sc-barn-tabs');
 		var zoneTabsWrap = document.getElementById('eem-sc-zone-tabs');
 		if (barnTabsWrap) {
-			var hasBarnOptions = barnTabsWrap.querySelectorAll('button').length > 1;
-			barnTabsWrap.style.display = (inv === 'stalls' && hasBarnOptions) ? '' : 'none';
+			var hasBarnOptions = barnTabsWrap.querySelectorAll('option').length > 1;
+			barnTabsWrap.style.display = (inv !== 'rv' && hasBarnOptions) ? '' : 'none';
 		}
 		if (zoneTabsWrap) {
-			var hasZoneOptions = zoneTabsWrap.querySelectorAll('button').length > 1;
-			zoneTabsWrap.style.display = (inv === 'rv' && hasZoneOptions) ? '' : 'none';
+			var hasZoneOptions = zoneTabsWrap.querySelectorAll('option').length > 1;
+			zoneTabsWrap.style.display = (inv !== 'stalls' && hasZoneOptions) ? '' : 'none';
 		}
 
 		// 6. Reset barn + zone filters to "all" when the inventory mode changes.
-		document.querySelectorAll('.eem-stall-chart-barn-tab').forEach(function (b) {
-			b.classList.toggle('active', b.getAttribute('data-barn') === 'all');
-		});
-		document.querySelectorAll('.eem-stall-chart-zone-tab').forEach(function (b) {
-			b.classList.toggle('active', b.getAttribute('data-zone') === 'all');
+		document.querySelectorAll('.eem-loc-barn-select').forEach(function (sel) {
+			sel.value = 'all';
 		});
 		document.querySelectorAll('#eem-sc-loc-stalls [data-barn]').forEach(function (row) {
 			if (!row.classList.contains('eem-stall-chart-barn-tab') && !row.classList.contains('eem-stall-chart-zone-tab')) {
@@ -5004,7 +5001,7 @@
 
 		// Barn filter tabs
 		var barnTab = t.closest('[data-eem-action="stall-chart-filter-barn"]');
-		if (barnTab) {
+		if (barnTab && barnTab.tagName !== 'SELECT') {
 			ev.preventDefault();
 			var barn = barnTab.getAttribute('data-barn');
 			document.querySelectorAll('.eem-stall-chart-barn-tab').forEach(function (b) { b.classList.remove('active'); });
@@ -5018,7 +5015,7 @@
 
 		// Zone filter tabs (RV lots)
 		var zoneTab = t.closest('[data-eem-action="stall-chart-filter-zone"]');
-		if (zoneTab) {
+		if (zoneTab && zoneTab.tagName !== 'SELECT') {
 			ev.preventDefault();
 			var zone = zoneTab.getAttribute('data-zone');
 			document.querySelectorAll('.eem-stall-chart-zone-tab').forEach(function (b) { b.classList.remove('active'); });
@@ -5207,8 +5204,9 @@
 			return;
 		}
 
-		// Click an Available pill while in destination mode → open scope modal
-		var availPill = t.closest('[data-eem-action="stall-available-click"]');
+		// Click an Available pill (map view) OR a readiness cell (By Location list)
+		// while in destination mode → open the move scope modal.
+		var availPill = t.closest('[data-eem-action="stall-available-click"]') || t.closest('[data-eem-action="loc-cell-status"]');
 		if (availPill && document.body.classList.contains('destination-mode')) {
 			ev.preventDefault();
 			// v1 #4: only allow dropping onto a destination of the SAME kind.
@@ -5915,7 +5913,7 @@
 
 	// Initialise stall chart inv/tab state from URL params on page load.
 	document.addEventListener('DOMContentLoaded', function () {
-		if (!document.querySelector('[data-eem-action="sc-inv-switch"]')) return;
+		if (!document.querySelector('[data-eem-action="sc-inv-select"]')) return;
 		try {
 			var params  = new URLSearchParams(window.location.search);
 			var initInv = params.get('inv') || 'all';
@@ -8580,4 +8578,179 @@ function duplicateReservationAjax(target) {
 
 		closeAllMenus();
 	});
+})();
+
+/* ── By Location readiness grid — per-cell status change (Available / Cleaning) ──
+   Gated to the stall charts page. One shared floating menu, positioned on the
+   clicked cell. Posts to eem_stall_cell_status_set. */
+(function () {
+	if (!document.body || !document.body.classList.contains('eem-shell-page--stall-charts')) { return; }
+	var ajaxUrl = (window.ajaxurl || '/wp-admin/admin-ajax.php');
+	var menu = null;
+	var activeCell = null;
+
+	var LABELS = { available: 'Available', cleaning: 'Cleaning' };
+
+	function buildMenu() {
+		if (menu) { return menu; }
+		menu = document.createElement('ul');
+		menu.className = 'eem-loc-status-menu';
+		menu.setAttribute('role', 'menu');
+		menu.hidden = true;
+		menu.innerHTML =
+			'<li><button type="button" class="eem-loc-status-option" data-target="available">Available</button></li>' +
+			'<li><button type="button" class="eem-loc-status-option" data-target="needs_cleaning">Cleaning</button></li>';
+		document.body.appendChild(menu);
+		return menu;
+	}
+
+	function closeMenu() {
+		if (menu) { menu.hidden = true; }
+		activeCell = null;
+	}
+
+	function openMenu(cell) {
+		buildMenu();
+		activeCell = cell;
+		menu.hidden = false;
+		var r = cell.getBoundingClientRect();
+		var w = menu.offsetWidth, h = menu.offsetHeight;
+		var left = Math.max(8, Math.min(r.left, window.innerWidth - w - 8));
+		var top = r.bottom + 4;
+		if (top + h + 8 > window.innerHeight) { top = Math.max(8, r.top - h - 4); }
+		menu.style.left = left + 'px';
+		menu.style.top = top + 'px';
+	}
+
+	// Select-all checkbox toggles every row checkbox within its table.
+	document.addEventListener('change', function (e) {
+		var all = e.target.closest ? e.target.closest('.eem-loc-select-all') : null;
+		if (all) {
+			var wrap = all.closest('.eem-loc-readiness');
+			if (!wrap) { return; }
+			var boxes = wrap.querySelectorAll('.eem-loc-select');
+			for (var i = 0; i < boxes.length; i++) { boxes[i].checked = all.checked; }
+			return;
+		}
+
+		// Barn dropdown (stalls): filter rows in the stalls section by data-barn.
+		var barnSel = e.target.closest ? e.target.closest('[data-eem-action="stall-chart-filter-barn"]') : null;
+		if (barnSel) {
+			var barn = barnSel.value;
+			document.querySelectorAll('#eem-sc-loc-stalls [data-barn]').forEach(function (row) {
+				if (row.classList.contains('eem-stall-chart-barn-tab') || row.classList.contains('eem-stall-chart-zone-tab')) { return; }
+				row.style.display = (barn === 'all' || row.getAttribute('data-barn') === barn) ? '' : 'none';
+			});
+			return;
+		}
+
+		// Zone dropdown (RV): filter rows in the RV section by data-zone.
+		var zoneSel = e.target.closest ? e.target.closest('[data-eem-action="stall-chart-filter-zone"]') : null;
+		if (zoneSel) {
+			var zone = zoneSel.value;
+			document.querySelectorAll('#eem-sc-loc-rv [data-zone]').forEach(function (row) {
+				if (row.classList.contains('eem-stall-chart-barn-tab') || row.classList.contains('eem-stall-chart-zone-tab')) { return; }
+				row.style.display = (zone === 'all' || row.getAttribute('data-zone') === zone) ? '' : 'none';
+			});
+			return;
+		}
+	});
+
+	function runBulk(btn) {
+		var row = btn.closest('.eem-stall-chart-filter-row');
+		if (!row) { return; }
+		var sel = row.querySelector('.eem-loc-bulk-select');
+		var target = sel ? sel.value : '';
+		if (!target) { return; }
+		// The bulk control lives in the LIST sub-view; find its visible readiness table.
+		var list = btn.closest('#eem-sc-list') || document;
+		var wraps = list.querySelectorAll('.eem-loc-readiness');
+		var wrap = null;
+		for (var i = 0; i < wraps.length; i++) {
+			if (wraps[i].offsetParent !== null) { wrap = wraps[i]; break; }
+		}
+		if (!wrap) { return; }
+		var checked = wrap.querySelectorAll('.eem-loc-select:checked');
+		if (!checked.length) { return; }
+		var stalls = [];
+		for (var j = 0; j < checked.length; j++) { stalls.push(checked[j].getAttribute('data-stall') || ''); }
+		var dates = (wrap.getAttribute('data-dates') || '').split(',').filter(Boolean);
+		var body = new URLSearchParams();
+		body.append('action', 'eem_stall_bulk_status_set');
+		body.append('reservation_id', wrap.getAttribute('data-reservation-id') || '');
+		body.append('target', target);
+		body.append('_wpnonce', wrap.getAttribute('data-nonce') || '');
+		stalls.forEach(function (s) { body.append('stalls[]', s); });
+		dates.forEach(function (d) { body.append('dates[]', d); });
+		fetch(ajaxUrl, { method: 'POST', credentials: 'same-origin', body: body })
+			.then(function (r) { return r.json(); })
+			.then(function (res) {
+				if (!res || !res.success) { return; }
+				for (var k = 0; k < checked.length; k++) {
+					var stallVal = checked[k].getAttribute('data-stall');
+					var rowEl = wrap.querySelector('tr[data-stall="' + (window.CSS && CSS.escape ? CSS.escape(stallVal) : stallVal) + '"]');
+					if (!rowEl) { continue; }
+					var cells = rowEl.querySelectorAll('.eem-loc-cell[data-eem-action="loc-cell-status"]');
+					for (var m = 0; m < cells.length; m++) {
+						cells[m].className = 'eem-loc-cell eem-loc-cell--' + res.data.status_key;
+						cells[m].setAttribute('data-status', res.data.status_key);
+						var lbl = cells[m].querySelector('.eem-loc-cell__label');
+						if (lbl) { lbl.textContent = res.data.label; }
+					}
+					checked[k].checked = false;
+				}
+				var sa = wrap.querySelector('.eem-loc-select-all');
+				if (sa) { sa.checked = false; }
+				if (sel) { sel.value = ''; }
+			})
+			.catch(function () {});
+	}
+
+	document.addEventListener('click', function (e) {
+		var bulk = e.target.closest ? e.target.closest('.eem-loc-bulk-apply') : null;
+		if (bulk) { e.preventDefault(); runBulk(bulk); return; }
+
+		var cell = e.target.closest ? e.target.closest('[data-eem-action="loc-cell-status"]') : null;
+		if (cell) {
+			// In destination-mode this cell is a MOVE TARGET, not a readiness toggle —
+			// let the move flow's destination handler own the click.
+			if (document.body.classList.contains('destination-mode')) { return; }
+			e.preventDefault();
+			if (activeCell === cell && menu && !menu.hidden) { closeMenu(); return; }
+			openMenu(cell);
+			return;
+		}
+
+		var opt = e.target.closest ? e.target.closest('.eem-loc-status-option') : null;
+		if (opt && activeCell) {
+			e.preventDefault();
+			var target = opt.getAttribute('data-target');
+			var wrap = activeCell.closest('.eem-loc-readiness');
+			if (!wrap) { closeMenu(); return; }
+			var body = new URLSearchParams();
+			body.append('action', 'eem_stall_cell_status_set');
+			body.append('reservation_id', wrap.getAttribute('data-reservation-id') || '');
+			body.append('stall_unit', activeCell.getAttribute('data-stall') || '');
+			body.append('night_date', activeCell.getAttribute('data-date') || '');
+			body.append('target', target);
+			body.append('_wpnonce', wrap.getAttribute('data-nonce') || '');
+			var cellEl = activeCell;
+			closeMenu();
+			fetch(ajaxUrl, { method: 'POST', credentials: 'same-origin', body: body })
+				.then(function (r) { return r.json(); })
+				.then(function (res) {
+					if (!res || !res.success) { return; }
+					cellEl.className = 'eem-loc-cell eem-loc-cell--' + res.data.status_key;
+					cellEl.setAttribute('data-status', res.data.status_key);
+					var lbl = cellEl.querySelector('.eem-loc-cell__label');
+					if (lbl) { lbl.textContent = res.data.label; }
+				})
+				.catch(function () {});
+			return;
+		}
+
+		closeMenu();
+	});
+	window.addEventListener('scroll', closeMenu, true);
+	window.addEventListener('resize', closeMenu);
 })();

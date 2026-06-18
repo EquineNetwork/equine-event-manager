@@ -7838,11 +7838,20 @@ a.eem-btn--ghost:focus    { color: #1d2327; }
 
 /* ── Filter row ── */
 .eem-stall-chart-filter-row { padding: 12px 22px; margin: 0 -22px; border-top: 0; border-bottom: 1px solid #dcdcde; background: #f8fafc; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.eem-loc-bulk { display: flex; align-items: center; gap: 8px; }
+/* Reusable: inline-toolbar variant of the canonical .eem-field-select — same
+   chrome as the Show/View dropdowns, but auto width instead of 100% so several
+   can sit side-by-side in a filter row. Lock this in for other list pages. */
+select.eem-field-select--auto { width: auto; }
+.eem-loc-bulk-select { min-width: 150px; }
+.eem-loc-barn-select { min-width: 160px; }
 .eem-stall-chart-barn-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
 .eem-stall-chart-barn-tab { padding: 6px 14px; border-radius: 4px; font-size: 12.5px; font-weight: 500; color: #1d2327; cursor: pointer; border: 1px solid #c3c4c7; background: #fff; font-family: inherit; }
 .eem-stall-chart-barn-tab:hover { background: #f6f7f7; border-color: #8c8f94; }
 .eem-stall-chart-barn-tab.active { background: #1668F2; color: #fff; border-color: #1668F2; }
-.eem-stall-chart-filter-search { position: relative; flex: 1; min-width: 200px; max-width: 380px; }
+/* Reusable filter-row search: fixed-width box pinned to the right end of the row.
+   Locked style — reuse on other admin list pages (margin-left:auto pushes it last). */
+.eem-stall-chart-filter-search { position: relative; flex: 0 0 auto; margin-left: auto; width: 300px; max-width: 100%; min-width: 200px; }
 .eem-stall-chart-filter-search svg { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); width: 13px; height: 13px; color: #8c8f94; }
 .eem-stall-chart-search-input { width: 100%; padding: 6px 10px 6px 25px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 13px; font-family: inherit; color: #1d2327; background: #fff; outline: none; }
 .eem-stall-chart-search-input:focus { border-color: #1668F2; box-shadow: 0 0 0 2px rgba(22,104,242,.12); }
@@ -7873,7 +7882,7 @@ a.eem-btn--ghost:focus    { color: #1d2327; }
 .eem-rv-chart-table thead th,
 .eem-cust-chart-table thead th { padding: 11px 14px; font-size: 13px; font-weight: 600; color: #1d2327; text-align: left; white-space: nowrap; }
 .eem-chart-date-col { text-align: center; min-width: 130px; }
-.eem-chart-barn-row td { background: #f3f4f5; padding: 9px 14px; font-size: 13px; font-weight: 600; color: #031B4E; border-bottom: 1px solid #dcdcde; border-top: 1px solid #dcdcde; }
+tr.eem-chart-barn-row td { background: #f8fafc; padding: 9px 22px; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #031b4e; border-bottom: 1px solid #dcdcde; border-top: 1px solid #dcdcde; }
 .eem-chart-stall-row { border-bottom: 1px solid #dcdcde; }
 .eem-chart-stall-row:hover { background: #f6f7f7; }
 .eem-stall-chart-table td,
@@ -7902,7 +7911,27 @@ a.eem-btn--ghost:focus    { color: #1d2327; }
 .eem-stall-chart-table tbody td:last-child,
 .eem-rv-chart-table thead th:last-child,
 .eem-rv-chart-table tbody td:last-child { padding-right: 22px; }
-.eem-chart-unit-num { font-weight: 700; color: #031B4E; font-size: 13.5px; min-width: 130px; white-space: nowrap; }
+.eem-chart-unit-num { font-weight: 700; color: #031B4E; font-size: 13.5px; min-width: 70px; white-space: nowrap; }
+
+/* ── By Location readiness grid (Occupied / Available / Cleaning) ── */
+.eem-loc-check-col { width: 36px; text-align: center; }
+.eem-loc-check-col input { cursor: pointer; }
+.eem-loc-cell-td { white-space: nowrap; }
+.eem-loc-cell { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; border: 1px solid; font-size: 12px; font-weight: 700; font-family: inherit; line-height: 1.5; cursor: pointer; white-space: nowrap; background: #fff; }
+.eem-loc-cell .eem-occ-chevron { width: 12px; height: 12px; flex-shrink: 0; opacity: .7; }
+.eem-loc-cell--occupied { background: #eaf1fe; border-color: #b9d2fb; color: #031b4e; }
+.eem-loc-cell--available { background: #e8f5ee; border-color: #b6e0c7; color: #15803d; }
+.eem-loc-cell--cleaning { background: #f5f3ff; border-color: #ddd6fe; color: #7c3aed; }
+.eem-loc-cell--blocked { background: #f3f4f5; border-color: #e2e4e7; color: #64748b; cursor: default; }
+.eem-loc-cell:hover:not(.eem-loc-cell--blocked) { filter: brightness(0.97); }
+/* Floating readiness picker (one shared menu, positioned on click). */
+.eem-loc-status-menu { position: fixed; z-index: 100000; min-width: 150px; margin: 0; padding: 5px; list-style: none; background: #fff; border: 1px solid #dcdcde; border-radius: 8px; box-shadow: 0 8px 26px rgba(3,27,78,.18); }
+.eem-loc-status-menu[hidden] { display: none; }
+.eem-loc-status-option { display: flex; width: 100%; align-items: center; gap: 8px; padding: 8px 10px; border: 0; border-radius: 6px; background: transparent; color: #1d2327; font-size: 13px; font-weight: 600; font-family: inherit; text-align: left; cursor: pointer; }
+.eem-loc-status-option:hover { background: #f6f7f7; }
+.eem-loc-status-option::before { content: ""; width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.eem-loc-status-option[data-target="available"]::before { background: #15803d; }
+.eem-loc-status-option[data-target="needs_cleaning"]::before { background: #7c3aed; }
 .eem-chart-block-name { color: #50575e; font-size: 13px; white-space: nowrap; }
 .eem-chart-cell-wrap { display: flex; justify-content: center; }
 
@@ -8074,11 +8103,23 @@ body.eem-assign-mode .eem-chart-status--available[data-eem-action="assign-order-
  * .mockups/stall_map_admin.html; rendered client-side by EEM.renderStallMaps().
  * ────────────────────────────────────────────────────────────────────────── */
 .eem-smap { --eem-smap-chip: 40px; --eem-smap-gap: 4px; padding: 0 18px 4px; }
-.eem-smap-barn-stats { display: flex; flex-wrap: wrap; gap: 10px; padding: 14px 0 6px; }
-.eem-smap-barn-stat { flex: 1 1 200px; background: #F8FAFD; border: 1px solid var(--eem-line, #d9e2ec); border-radius: var(--eem-radius-lg, 6px); padding: 10px 14px; }
-.eem-smap-barn-stat-name { font-weight: 700; color: var(--eem-navy, #031B4E); font-size: 13px; margin-bottom: 4px; }
-.eem-smap-barn-stat-nums { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--eem-muted, #5f6f85); }
-.eem-smap-barn-stat-nums strong { color: var(--eem-navy, #031B4E); }
+/* Full-bleed light-blue band (matches the Daily Movement bar). Bleeds to the card
+   edge: -40px cancels .eem-smap's 18px side padding + the chart body's 22px, then
+   22px padding pulls the text back in line with the section-divider header above. */
+.eem-smap-barn-stats { display: flex; flex-wrap: wrap; gap: 10px 28px; padding: 14px 22px; margin: 0 -40px 12px; background: #f0f4fb; border-bottom: 1px solid #d9e2f2; }
+.eem-smap-barn-stat { flex: 1 1 200px; background: transparent; border: 0; border-radius: 0; padding: 0; }
+.eem-smap-barn-stat-name { font-weight: 700; color: var(--eem-navy, #031B4E); font-size: 13px; margin-bottom: 6px; }
+/* Metric row styled like the Daily Movement summary: navy bold text with a small
+   status-colored dot before each figure. */
+.eem-smap-barn-stat-nums { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; }
+.eem-smap-stat { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: var(--eem-navy, #031B4E); white-space: nowrap; }
+.eem-smap-stat strong { font-weight: 700; }
+.eem-smap-stat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.eem-smap-stat-dot--total { background: #6B7A99; }
+.eem-smap-stat-dot--avail { background: #15803d; }
+.eem-smap-stat-dot--assigned { background: #1668F2; }
+.eem-smap-stat-dot--tack { background: #b45309; }
+.eem-smap-stat-dot--blocked { background: #b91c1c; }
 .eem-smap-stat-avail strong { color: #16A34A; }
 .eem-smap-stat-resv strong { color: #2b4a78; }
 .eem-smap-stat-tack strong { color: #B5790F; }
@@ -8185,6 +8226,12 @@ input.eem-group-manage-input { flex: 0 1 280px; margin: 0; padding: 7px 10px; bo
 	.eem-stall-chart-view-tabs { overflow-x: auto; flex-wrap: nowrap; }
 	.eem-stall-chart-view-tab { padding: 10px 16px; font-size: 12.5px; }
 	.eem-stall-chart-filter-row { flex-wrap: wrap; align-items: stretch; padding: 10px 12px; gap: 8px; }
+	/* Let the Barn + Zone dropdowns share one row on phones instead of stacking. */
+	#eem-sc-barn-tabs, #eem-sc-zone-tabs { flex: 1 1 45%; min-width: 0; }
+	#eem-sc-barn-tabs .eem-loc-barn-select, #eem-sc-zone-tabs .eem-loc-barn-select { width: 100%; min-width: 0; }
+	/* Mobile chart body padding is 12px (not 22px), so the summary band bleeds
+	   18px (smap) + 12px (body) = 30px to reach the card edge. */
+	.eem-smap-barn-stats { margin: 0 -30px 12px; }
 	/* Search spans its own row; the group/tack toggles share the next row. */
 	.eem-stall-chart-filter-search { flex: 1 1 100%; }
 	.eem-stall-chart-group-toggle { flex: 1 1 0; min-width: 0; justify-content: center; padding: 8px 6px; font-size: 11.5px; gap: 4px; white-space: nowrap; }
@@ -8567,14 +8614,17 @@ body.destination-mode .eem-occ-pill--blocked { opacity: 0.5; pointer-events: non
 	display: flex;
 	align-items: center;
 	gap: 8px;
-	padding: 10px 18px;
-	background: var(--eem-bg-secondary);
-	border-top: 1px solid var(--eem-border-light);
-	border-bottom: 1px solid var(--eem-border-light);
+	padding: 10px 22px;
+	margin: 0 -22px;
+	background: #f8fafc;
+	border-top: 1px solid #dcdcde;
+	border-bottom: 1px solid #dcdcde;
 	font-family: var(--eem-font-heading);
-	font-size: 13px;
-	font-weight: 700;
-	color: var(--eem-brand-dark);
+	font-size: 12px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: #031b4e;
 }
 .eem-sc-section-divider svg {
 	width: 14px;
@@ -8608,6 +8658,12 @@ body.eem-shell-page--print #wpcontent { margin-left: 0; }
 body.eem-shell-page--print #wpbody { margin-top: 0; }
 body.eem-shell-page--print #wpbody-content { padding: 0; float: none; }
 body.eem-shell-page--print #wpwrap { background: #fff; }
+/* Force the whole admin shell white so WP's default gray body background never
+   shows as an empty box below the print content. */
+body.eem-shell-page--print,
+body.eem-shell-page--print #wpcontent,
+body.eem-shell-page--print #wpbody,
+body.eem-shell-page--print #wpbody-content { background: #fff; }
 body.eem-shell-page--print .wrap { margin: 0; }
 /* The admin bar is hidden above, but WP keeps html.wp-toolbar's 32px top
    padding reserved for it — that leaves a blank band at the top of the print
@@ -8650,19 +8706,22 @@ html.wp-toolbar:has( body.eem-shell-page--print ) { padding-top: 0; }
 /* Daily Movement card — soft-blue info accent (DEC-D) */
 .pv-movement { background: #F0F4FB; border: 1px solid #D9E2F2; border-radius: 4px; padding: 12px 16px; margin-bottom: 18px; }
 .pv-movement-title { font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 700; color: #031B4E; margin-bottom: 10px; }
-.pv-movement-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.pv-movement-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
 .pv-movement-date { font-size: 12.5px; font-weight: 700; color: #031B4E; margin-bottom: 4px; }
 .pv-movement-vals { font-size: 12.5px; color: #1d2327; }
 .pv-movement-vals span { display: block; font-weight: 500; }
 
 /* Section band — thick navy top border (DEC-B) */
-.pv-section-band { background: #fff; border-top: 3px solid #031B4E; padding: 14px 0 10px; font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 700; color: #031B4E; margin: 18px 0 0; }
+/* Section header band — the canonical light-blue style (#f0f4fb) shared with the
+   Daily Movement bar + live section dividers. Icon sits before the title. */
+.pv-section-band { background: #f0f4fb; border: 1px solid #d9e2f2; padding: 12px 14px; font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 700; color: #031B4E; margin: 18px 0 0; display: flex; align-items: center; gap: 8px; }
+.pv-section-band svg { width: 16px; height: 16px; flex-shrink: 0; color: #031B4E; }
 
 /* Tables */
-.pv-table-wrap { border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden; margin-bottom: 18px; }
+.pv-table-wrap { border: 1px solid #d9e2f2; border-top: 0; border-radius: 0; overflow: hidden; margin-bottom: 18px; }
 .pv-table { width: 100%; border-collapse: collapse; background: #fff; }
-.pv-table thead tr { background: #f3f4f5; border-bottom: 1px solid #dcdcde; }
-.pv-table thead th { padding: 10px 12px; font-size: 13px; font-weight: 600; color: #1d2327; text-align: left; }
+.pv-table thead tr { background: #f0f4fb; border-bottom: 1px solid #d9e2f2; }
+.pv-table thead th { padding: 10px 12px; font-size: 13px; font-weight: 600; color: #031B4E; text-align: left; }
 .pv-table thead th.c { text-align: center; }
 .pv-table tbody tr { border-bottom: 1px solid #f0f0f1; }
 .pv-table tbody tr:last-child { border-bottom: none; }
@@ -8685,12 +8744,29 @@ html.wp-toolbar:has( body.eem-shell-page--print ) { padding-top: 0; }
 
 /* Occupancy pills — light-fill variants (DEC-J) */
 .pv-occ { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11.5px; font-weight: 600; border: 1px solid; }
-.pv-occ-res { background: #EEF4FF; color: #1668F2; border-color: #c0d8ff; }
-.pv-occ-avail { background: #F0FDF4; color: #15803d; border-color: #bbf7d0; }
-.pv-occ-block { background: #FEF2F2; color: #b91c1c; border-color: #fecaca; }
+.pv-occ-res,
+.pv-occ-occupied { background: #EEF4FF; color: #1668F2; border-color: #c0d8ff; }
+.pv-occ-avail,
+.pv-occ-available { background: #F0FDF4; color: #15803d; border-color: #bbf7d0; }
+.pv-occ-block,
+.pv-occ-blocked { background: #FEF2F2; color: #b91c1c; border-color: #fecaca; }
+/* Cleaning / turnover — purple (status standard). */
+.pv-occ-cleaning { background: #f5f3ff; color: #7c3aed; border-color: #ddd6fe; }
+/* Neutral gray — generic empty. */
+.pv-occ-none { background: #f1f5f9; color: #64748b; border-color: #e2e8f0; }
+/* Check-in status standard: Checked In = blue, Checked Out = amber,
+   Pending Arrival = red. (Available reuses .pv-occ-available green.) */
+.pv-occ-ci-in { background: #EEF4FF; color: #1668F2; border-color: #c0d8ff; }
+.pv-occ-ci-out { background: #FEF6E7; color: #b45309; border-color: #fde68a; }
+.pv-occ-ci-pending { background: #FEF2F2; color: #b91c1c; border-color: #fecaca; }
+/* Always green — the By Customer "Available" status (never faded in print). */
+.pv-occ-ci-avail { background: #F0FDF4; color: #15803d; border-color: #bbf7d0; }
 
 /* Barn header rows (DEC-H) */
-.pv-barn-header td { background: #f3f4f5; padding: 9px 12px; font-size: 13px; font-weight: 600; color: #031B4E; border-top: 1px solid #dcdcde; border-bottom: 1px solid #dcdcde; }
+.pv-barn-header td { background: #f0f4fb; padding: 9px 12px; font-size: 13px; font-weight: 700; color: #031B4E; border-bottom: 1px solid #d9e2f2; }
+/* Per-barn column-header row (Stall / dates) sits directly under the barn name. */
+.pv-barn-colhead th { background: #f0f4fb; padding: 9px 12px; font-size: 13px; font-weight: 600; color: #031B4E; text-align: left; border-bottom: 1px solid #d9e2f2; }
+.pv-barn-colhead th.c { text-align: center; }
 .pv-barn-header td .pv-occ-count { float: right; background: #fff; color: #031B4E; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; border: 1px solid #c3c4c7; }
 .pv-barn-sub { font-weight: 400; color: #6B7A99; font-size: 12.5px; margin-left: 8px; }
 
@@ -8705,7 +8781,7 @@ html.wp-toolbar:has( body.eem-shell-page--print ) { padding-top: 0; }
 	.pv-body { padding: 14px; }
 	.pv-event { font-size: 18px; }
 	.pv-meta { gap: 10px; font-size: 12px; }
-	.pv-movement-grid { grid-template-columns: 1fr; gap: 10px; }
+	.pv-movement-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
 	.pv-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 	.pv-table { min-width: 640px; font-size: 12px; }
 	.pv-occ { font-size: 10.5px; padding: 2px 8px; }
@@ -8724,21 +8800,31 @@ html.wp-toolbar:has( body.eem-shell-page--print ) { padding-top: 0; }
 	.pv-event { font-size: 16px; }
 	.pv-meta { font-size: 10.5px; gap: 14px; }
 	.pv-movement { padding: 9px 12px; margin-bottom: 10px; }
+	.pv-movement-grid { grid-template-columns: repeat(3, 1fr); gap: 12px; }
 	.pv-movement-title { font-size: 11px; margin-bottom: 6px; }
 	.pv-movement-date { font-size: 10.5px; }
 	.pv-movement-vals { font-size: 10.5px; }
-	.pv-section-band { font-size: 13px; padding: 10px 0 7px; margin-top: 10px; border-top-width: 2.5px; }
-	.pv-table-wrap { margin-bottom: 10px; break-inside: avoid; }
+	.pv-section-band { font-size: 13px; padding: 9px 12px; margin-top: 10px; }
+	/* Let big tables flow across pages — only KEEP rows intact, never the whole table. */
+	.pv-table-wrap { margin-bottom: 10px; }
 	.pv-table td, .pv-table th { padding: 5px 8px; font-size: 10px; }
 	.pv-table thead th { font-size: 10px; }
-	.pv-table tbody tr { break-inside: avoid; }
+	/* Each data row stays whole; a section band / barn name / column header never
+	   gets orphaned at the bottom of a page — they stick to the rows that follow. */
+	.pv-table tbody tr { break-inside: avoid; page-break-inside: avoid; }
+	.pv-section-band { break-inside: avoid; page-break-inside: avoid; break-after: avoid; page-break-after: avoid; }
+	.pv-barn-header, .pv-barn-colhead { break-inside: avoid; page-break-inside: avoid; break-after: avoid; page-break-after: avoid; }
+	.pv-movement { break-inside: avoid; page-break-inside: avoid; }
 	.pv-stall-num { font-size: 10.5px; }
 	.pv-customer { font-size: 10.5px; }
 	.pv-order { font-size: 9.5px; }
 	.pv-occ { font-size: 9px; padding: 1.5px 7px; }
-	/* Don't flood the page with green "Available" pills — render free nights as
-	   faint plain text so occupied (Reserved) cells stand out on paper. */
-	.pv-occ-avail { background: transparent; border-color: transparent; color: #b6bdca; font-weight: 400; padding: 1.5px 2px; }
+	/* Available is always green (status standard) — keep the green pill on paper. */
+	.pv-occ-avail,
+	.pv-occ-available { background: #F0FDF4; color: #15803d; border-color: #bbf7d0; font-weight: 600; padding: 1.5px 7px; }
+	/* Start every new barn on a fresh page (the first barn stays on the opening page). */
+	.pv-barn-header { break-before: page; page-break-before: always; }
+	.pv-table tbody tr.pv-barn-header:first-child { break-before: auto; page-break-before: auto; }
 	.pv-barn-header td { padding: 5px 8px; font-size: 10px; }
 	.pv-checkbox { width: 11px; height: 11px; }
 	.pv-section-by-customer { break-before: auto; }
@@ -10627,29 +10713,34 @@ a.eem-dm-view-tab.active:visited {
 	display: none;
 }
 .eem-dm-date-section {
-	padding: 20px 22px 0;
+	padding: 18px 0 0;
 	margin-bottom: 0;
 }
 .eem-dm-date-section + .eem-dm-date-section {
-	border-top: 1px solid var(--eem-border, #dcdcde);
+	border-top: 0;
 }
+/* Date heading + summary form one full-bleed light-blue header band (the -22px
+   margins cancel the .eem-dm-date-section side padding). */
+/* Date heading + summary = one FULL-BLEED light-blue band (touches both card
+   edges); only top/bottom rules, content inset 22px so the title lines up with
+   the summary icons. */
 .eem-dm-date-heading {
-	font-size: 14px;
+	font-size: 15px;
 	font-weight: 700;
-	color: var(--eem-navy, #1e293b);
-	margin: 0 0 8px;
-	padding-bottom: 5px;
-	border-bottom: 1.5px solid var(--eem-electric, #3b82f6);
+	color: var(--eem-navy, #031B4E);
+	padding: 10px 22px 5px !important;
+	background: #f0f4fb;
+	border-top: 1px solid #d9e2f2;
 }
-/* Per-date summary stats — one navy row, an icon per metric (matches the
-   Daily Movement overview palette). */
 .eem-dm-summary {
 	display: flex;
 	flex-wrap: nowrap;
 	align-items: center;
 	gap: 28px;
-	margin-top: 12px;
-	margin-bottom: 20px;
+	margin: 0 0 16px;
+	padding: 2px 22px 12px;
+	background: #f0f4fb;
+	border-bottom: 1px solid #d9e2f2;
 	overflow-x: auto;
 }
 .eem-dm-summary-item {
@@ -10666,10 +10757,14 @@ a.eem-dm-view-tab.active:visited {
 	color: var(--eem-electric, #1d4ed8);
 }
 .eem-dm-group-heading {
-	font-size: 15px;
+	font-size: 13px;
 	font-weight: 700;
-	color: var(--eem-navy, #1e293b);
-	margin: 20px 0 8px;
+	color: #031B4E;
+	background: #f0f4fb;
+	border-top: 1px solid #d9e2f2;
+	border-bottom: 1px solid #d9e2f2;
+	margin: 14px 0 0;
+	padding: 5px 22px !important;
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
 }
@@ -10722,10 +10817,16 @@ a.eem-dm-view-tab.active:visited {
 	table-layout: fixed;
 	border-collapse: collapse;
 	background: var(--eem-white, #fff);
-	border: 1px solid var(--eem-border, #dcdcde);
-	border-radius: var(--eem-radius, 3px);
+	/* Full-bleed (top/bottom rules only, no side border or radius) so it matches
+	   the full-bleed bands above; cell content is inset to line up. */
+	border-top: 1px solid var(--eem-border, #dcdcde);
+	border-bottom: 1px solid var(--eem-border, #dcdcde);
+	border-radius: 0;
 	margin-bottom: 16px;
 }
+/* Line the first/last cells up with the 22px band-text inset. */
+.eem-dm-table th:first-child, .eem-dm-table td:first-child { padding-left: 22px; }
+.eem-dm-table th:last-child, .eem-dm-table td:last-child { padding-right: 22px; }
 /* Shared column widths (must total 100%): Stall, Customer, Order #, Arrival,
    Departure, Shavings, Status. */
 .eem-dm-table th:nth-child(1), .eem-dm-table td:nth-child(1) { width: 14%; }
@@ -10739,13 +10840,14 @@ a.eem-dm-view-tab.active:visited {
 /* Status cell hosts the dropdown menu — must not clip it. */
 .eem-dm-table td.eem-dm-cell-status { overflow: visible; }
 .eem-dm-table thead th {
-	background: var(--eem-gray-50, #f8fafc);
-	border-bottom: 2px solid var(--eem-border, #dcdcde);
+	background: #f0f4fb;
+	border-top: 1px solid #d9e2f2;
+	border-bottom: 1px solid #d9e2f2;
 	padding: 10px 12px;
 	text-align: left;
 	font-size: 12px;
 	font-weight: 600;
-	color: var(--eem-slate, #64748b);
+	color: var(--eem-navy, #031B4E);
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
 }
@@ -11014,9 +11116,11 @@ a.eem-dm-view-tab.active:visited {
 	.eem-dm-summary { gap: 8px; margin-bottom: 10px; }
 	.eem-dm-summary-item { font-size: 10px; padding: 2px 7px; }
 	.eem-dm-table { margin-bottom: 8px; }
+	.eem-dm-table thead { display: table-header-group; }
 	.eem-dm-table thead th { font-size: 10px; padding: 5px 8px; }
 	.eem-dm-table tbody td { font-size: 11px; padding: 5px 8px; }
-	.eem-dm-table tbody tr { break-inside: avoid; }
+	.eem-dm-table tbody tr { break-inside: avoid; page-break-inside: avoid; }
+	.eem-dm-date-heading, .eem-dm-group-heading { break-inside: avoid; page-break-inside: avoid; break-after: avoid; page-break-after: avoid; }
 	.eem-dm-status { font-size: 9.5px; padding: 1.5px 6px; }
 
 	@page { margin: 10mm 8mm; size: letter portrait; }

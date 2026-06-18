@@ -240,8 +240,8 @@ class EEM_Daily_Movement_Page {
 				.dm-pv-toolbar h1{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:#031B4E}
 				.dm-pv-toolbar-actions{display:flex;gap:8px}
 				.dm-pv-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;font-size:13px;font-weight:600;border-radius:6px;border:none;cursor:pointer;text-decoration:none}
-				.dm-pv-btn--primary{background:#3b82f6;color:#fff}
-				.dm-pv-btn--primary:hover{background:#2563eb}
+				.dm-pv-btn--primary{background:#1668F2;color:#fff}
+				.dm-pv-btn--primary:hover{background:#1257d1}
 				.dm-pv-btn--outline{background:#fff;color:#1e293b;border:1px solid #d1d5db}
 				.dm-pv-btn--outline:hover{background:#f9fafb}
 				a.dm-pv-btn--outline{color:#1e293b}
@@ -253,8 +253,8 @@ class EEM_Daily_Movement_Page {
 				.dm-pv-meta strong{color:#031B4E;font-weight:600}
 				.dm-pv-body{padding:0 28px 24px;max-width:1000px;margin:0 auto}
 				.dm-pv-date-section{margin-bottom:24px}
-				.dm-pv-date-heading{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#031B4E;padding-bottom:3px;border-bottom:1.5px solid #3b82f6;margin:4px 0 6px}
-				.dm-pv-summary{display:flex;gap:24px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+				.dm-pv-date-heading{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#031B4E;background:#f0f4fb;border:1px solid #d9e2f2;border-bottom:0;padding:10px 12px 5px;margin:14px 0 0}
+				.dm-pv-summary{display:flex;gap:24px;flex-wrap:wrap;align-items:center;background:#f0f4fb;border:1px solid #d9e2f2;border-top:0;padding:0 12px 10px;margin:0 0 14px}
 				.dm-pv-stat{font-size:12px;font-weight:600;color:#031b4e;white-space:nowrap}
 				.dm-pv-stat-icon{font-weight:700;color:#1d4ed8;margin-right:5px}
 				.dm-pv-chip{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
@@ -267,7 +267,7 @@ class EEM_Daily_Movement_Page {
 				.dm-pv-chip--pending::before{background:#ef4444}
 				.dm-pv-chip--shavings{background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe}
 				.dm-pv-chip--shavings::before{background:#8b5cf6}
-				.dm-pv-group-heading{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;margin:14px 0 6px}
+				.dm-pv-group-heading{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#031B4E;background:#f0f4fb;border:1px solid #d9e2f2;border-bottom:0;padding:7px 12px;margin:14px 0 0}
 				table.dm-pv-table{width:100%;border-collapse:collapse;table-layout:fixed}
 				.dm-pv-table th:nth-child(1),.dm-pv-table td:nth-child(1){width:14%}
 				.dm-pv-table th:nth-child(2),.dm-pv-table td:nth-child(2){width:20%}
@@ -276,7 +276,7 @@ class EEM_Daily_Movement_Page {
 				.dm-pv-table th:nth-child(5),.dm-pv-table td:nth-child(5){width:15%}
 				.dm-pv-table th:nth-child(6),.dm-pv-table td:nth-child(6){width:10%}
 				.dm-pv-table th:nth-child(7),.dm-pv-table td:nth-child(7){width:15%}
-				.dm-pv-table th{text-align:left;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;padding:6px 10px;border-bottom:1px solid #e5e7eb}
+				.dm-pv-table th{text-align:left;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#031B4E;padding:6px 10px;background:#f0f4fb;border:1px solid #d9e2f2}
 				.dm-pv-table td{padding:8px 10px;border-bottom:1px solid #f1f5f9;font-size:12.5px;vertical-align:top}
 				.dm-pv-table tbody tr:last-child td{border-bottom:none}
 				.dm-pv-cell-stall{font-weight:700;white-space:nowrap}
@@ -302,6 +302,11 @@ class EEM_Daily_Movement_Page {
 					.dm-pv-table th{font-size:9.5px;padding:4px 8px}
 					.dm-pv-chip{font-size:10px;padding:1px 6px}
 					.dm-pv-status{font-size:9.5px;padding:1px 5px}
+					/* Clean breakpoints: keep each row whole, never orphan a date /
+					   group heading, and repeat the column header on every page. */
+					.dm-pv-table tbody tr{break-inside:avoid;page-break-inside:avoid}
+					.dm-pv-table thead{display:table-header-group}
+					.dm-pv-date-heading,.dm-pv-group-heading{break-inside:avoid;page-break-inside:avoid;break-after:avoid;page-break-after:avoid}
 					/* Flat status/summary pills in print — colored dot + text only, no
 					   filled background or soft border (those warm fills read as an
 					   orange "halo" on the printout). */

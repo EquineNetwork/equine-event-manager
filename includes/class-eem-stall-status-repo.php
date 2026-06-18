@@ -197,6 +197,130 @@ class EEM_Stall_Status_Repo {
 		return $status;
 	}
 
+	/* ─────────────────────────────────────────────────────────────────────────
+	 * Per-stall-night READINESS (By Location grid): Occupied / Cleaning / Available.
+	 * The wp_eem_stall_status row's status drives a cell's readiness; absence of a
+	 * row falls back to assignment-derived occupancy. Distinct from per-ORDER
+	 * customer check-in (wp_eem_order_checkin) which answers "is the person here?".
+	 * ──────────────────────────────────────────────────────────────────────── */
+
+	/**
+	 * Build a status map for the whole reservation: [stall_unit][night_date] => status.
+	 *
+	 * @param int $reservation_id Reservation post ID.
+	 * @return array<string, array<string, string>>
+	 */
+	public static function get_status_map( int $reservation_id ): array {
+		global $wpdb;
+		$table = $wpdb->prefix . 'eem_stall_status';
+		$rows  = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT stall_unit, night_date, status FROM {$table} WHERE reservation_id = %d",
+				$reservation_id
+			),
+			ARRAY_A
+		) ?: array();
+
+		$map = array();
+		foreach ( $rows as $r ) {
+			$map[ (string) $r['stall_unit'] ][ (string) $r['night_date'] ] = (string) $r['status'];
+		}
+		return $map;
+	}
+
+	/**
+	 * Directly set (upsert) the readiness status for one stall on one night.
+	 * Override write — admins set Available / Cleaning regardless of the
+	 * forward-only chain. A new row gets order_id 0 (manual / no occupant).
+	 *
+	 * @param int    $reservation_id Reservation post ID.
+	 * @param string $stall_unit     Stall/lot label.
+	 * @param string $night_date     Y-m-d.
+	 * @param string $status         Target status.
+	 * @param int    $user_id        Acting user.
+	 * @return string The stored status.
+	 */
+	public static function set_cell_status( int $reservation_id, string $stall_unit, string $night_date, string $status, int $user_id ): string {
+		global $wpdb;
+		$table = $wpdb->prefix . 'eem_stall_status';
+
+		$wpdb->query(
+			$wpdb->prepare(
+				"INSERT INTO {$table} ( reservation_id, order_id, stall_unit, night_date, status, updated_by, updated_at )
+				 VALUES ( %d, %d, %s, %s, %s, %d, %s )
+				 ON DUPLICATE KEY UPDATE status = VALUES(status), updated_by = VALUES(updated_by), updated_at = VALUES(updated_at)",
+				$reservation_id,
+				0,
+				$stall_unit,
+				$night_date,
+				$status,
+				$user_id,
+				current_time( 'mysql' )
+			)
+		);
+
+		return $status;
+	}
+
+	/**
+	 * Bulk-set the readiness status for many stalls across many nights.
+	 *
+	 * @param int      $reservation_id Reservation post ID.
+	 * @param string[] $stall_units    Stall labels to update.
+	 * @param string[] $night_dates    Nights to update (each stall × each night).
+	 * @param string   $status         Target status.
+	 * @param int      $user_id        Acting user.
+	 * @return int Number of cell writes performed.
+	 */
+	public static function bulk_set_status( int $reservation_id, array $stall_units, array $night_dates, string $status, int $user_id ): int {
+		$written = 0;
+		foreach ( $stall_units as $unit ) {
+			$unit = sanitize_text_field( (string) $unit );
+			if ( '' === $unit ) {
+				continue;
+			}
+			foreach ( $night_dates as $date ) {
+				$date = (string) $date;
+				if ( '' === $date || ! strtotime( $date ) ) {
+					continue;
+				}
+				self::set_cell_status( $reservation_id, $unit, $date, $status, $user_id );
+				$written++;
+			}
+		}
+		return $written;
+	}
+
+	/**
+	 * Flip every stall-night row for an order to 'needs_cleaning' — the turnover
+	 * auto-step fired when the customer is marked Checked Out. Resolves the order
+	 * by (reservation_id, order_number) → wp_en_stall_reservations.id.
+	 *
+	 * @param int    $reservation_id Reservation post ID.
+	 * @param string $order_number   The order's human number.
+	 * @param int    $user_id        Acting user.
+	 * @return int Rows flipped.
+	 */
+	public static function mark_order_stalls_needs_cleaning( int $reservation_id, string $order_number, int $user_id ): int {
+		global $wpdb;
+		$table = $wpdb->prefix . 'eem_stall_status';
+		$sr    = $wpdb->prefix . 'en_stall_reservations';
+
+		return (int) $wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$table} ss
+				 INNER JOIN {$sr} sr ON sr.id = ss.order_id
+				 SET ss.status = 'needs_cleaning', ss.updated_by = %d, ss.updated_at = %s
+				 WHERE sr.reservation_id = %d AND sr.order_number = %s
+				   AND ss.status NOT IN ( 'needs_cleaning', 'clean', 'available' )",
+				$user_id,
+				current_time( 'mysql' ),
+				$reservation_id,
+				$order_number
+			)
+		);
+	}
+
 	/**
 	 * Get the current status for a single stall on a single night.
 	 *

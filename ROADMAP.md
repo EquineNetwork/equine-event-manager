@@ -1,5 +1,50 @@
 # Equine Event Manager — Roadmap & To-Do
 
+---
+
+## 🔖 SESSION HANDOFF — 2026-06-18 (v2.7.466, branch `v4-stall-mapping`)
+
+**Picking up on the laptop?** `git checkout v4-stall-mapping && git pull`. All this work is on
+`v4-stall-mapping`, NOT `main` — it depends on prior branch commits (the per-stall-night readiness
+store etc.). Don't try to put it on `main` without merging the whole branch.
+
+**What this session shipped (Stall & RV Charts + Daily Movement + all Print Views):**
+- **By Location – List → readiness grid.** Per-stall-night status (`wp_eem_stall_status`):
+  Occupied (shows customer name) / Available / Cleaning. Click a cell to change; bulk-update
+  dropdown + Apply; Barn/Zone filter dropdown. Auto-flip to Cleaning on customer check-out.
+  Stores via `EEM_Stall_Status_Repo` (`get_status_map` / `set_cell_status` / `bulk_set_status` /
+  `mark_order_stalls_needs_cleaning`). AJAX: `eem_stall_cell_status_set`, `eem_stall_bulk_status_set`.
+- **Restored "move customer to another stall"** on the readiness grid (occupied cells re-open the
+  existing cell-action menu → destination-mode → scope modal → `eem_move_stall_assignment`).
+- **Map view regression fixed** — `EEM.renderStallMaps()` init guard pointed at the renamed
+  `sc-inv-select` action; maps render again. Added Stall Units / RV Lots section dividers + a
+  full-bleed light-blue summary band styled like Daily Movement (status-colored dots).
+- **Menu** — Events + Producers now appear ONLY when Native Events is the *active* event source
+  (`get_default_event_source() === 'native'`); TEC/GEMS collapse the menu to Venues only.
+- **Print Views — full rework.** Filter bar mirrors the live screen: SHOW (All/Stalls/RV) + VIEW
+  (By Location / By Customer); 3-way rows toggle Assigned only / All Stalls / All RV. By Location
+  tables: dropped Customer + Order # cols, occupied night pills show the customer name; barn name
+  row moved ABOVE the per-barn column header; page-break per new barn; clean row breakpoints.
+  By Customer: SHOW-variant columns (Customer · Arrival · Departure · Barn · Stall # · RV Lot ·
+  RV Lot # · Status) — Order # was added then removed per Whitney; check-in Status pill.
+- **Status color standard (everywhere):** Checked In = blue, Available = green (always),
+  Pending Arrival = red, Checked Out = amber, Cleaning = purple.
+- **"New set style" light-blue band (`#f0f4fb` + `#d9e2f2` borders, navy text)** applied to all
+  print section bands, all table headers (print + Daily Movement), the DM print "Print/Save PDF"
+  button fixed off-brand `#3b82f6` → brand `#1668F2`.
+
+**Known follow-ups / watch-outs:**
+- RV lot name/number split keys on the **last space** in the lot label (`"Zone 2 8"` → `Zone 2` / `8`).
+  Verify against real GEMS lot labels — non-`name<space>number` labels could split wrong.
+- Reservation **5990 RV map is corrupted** (do-not-touch per memory); verify maps on **NTR 6519**.
+- Task #229 still open: **critical error when trashing a draft reservation** (deferred all session).
+- A dead `$or_num` assignment remains in the print By Customer loop (harmless; tidy when convenient).
+- All verification this session was via browser/print-preview on Local; no smoke tests were added
+  for the new readiness store / print rework — worth backfilling.
+
+---
+
+
 **Canonical, version-controlled to-do list.** Last updated 2026-06-13 · plugin at **v2.7.281**
 · branch `v4-stall-mapping`. **v1 is complete and launch-ready.** Authoritative decision history
 lives in `CLAUDE.md`; deep architecture in `docs/ARCHITECTURE-DATA-OWNERSHIP.md`,
