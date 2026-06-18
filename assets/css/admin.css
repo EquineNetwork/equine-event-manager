@@ -3616,6 +3616,14 @@ a.eem-status-tab.is-active {
 	width: 100%;
 	margin: 0;
 }
+/* Producer dropdown is compact (not full-width) — matches the Orders/Reservations
+   left-side filter controls. */
+.eem-events-toolbar-form .eem-list-toolbar-left { flex: 0 0 auto; }
+.eem-events-toolbar-form select.eem-toolbar-select { width: 240px; max-width: 100%; }
+/* Search field + button grouped together, right-aligned, same height. */
+.eem-events-toolbar-form .eem-list-toolbar-right { margin-left: auto; gap: 6px; }
+.eem-events-toolbar-form .eem-search-wrap { flex: 0 0 auto; width: 240px; max-width: 100%; }
+.eem-events-toolbar-form .eem-item-count { flex: 0 0 auto; color: var(--eem-text-muted); font-size: 13px; }
 
 /* C7.X.15 Issue 5 — `select.` prefix ties WP core forms.css. */
 select.eem-toolbar-select {
