@@ -5180,6 +5180,22 @@
 			return;
 		}
 
+		// #219 — Order-context assign: click an Available unit → confirm modal.
+		var assignPill = t.closest('[data-eem-action="assign-order-unit"]');
+		var assignCtx  = (window.eemStallChart || {}).assignContext;
+		if (assignPill && assignCtx) {
+			ev.preventDefault();
+			var aKind = assignPill.getAttribute('data-kind') || 'stall';
+			if (aKind !== assignCtx.kind) {
+				if (window.EEM && window.EEM.showSaveToast) {
+					window.EEM.showSaveToast('This order needs ' + (assignCtx.kind === 'rv' ? 'an RV lot' : 'a stall') + '.', { variant: 'error' });
+				}
+				return;
+			}
+			openAssignOrderModal(assignCtx, assignPill.getAttribute('data-stall') || '');
+			return;
+		}
+
 		// Change Event — show typeahead
 		var changeBtn = t.closest('[data-eem-action="stall-chart-change-event"]');
 		if (changeBtn) {
@@ -5209,6 +5225,111 @@
 		if (menu2 && menu2.classList.contains('open') && !menu2.contains(t)) {
 			menu2.classList.remove('open');
 			window._eemActivePill = null;
+		}
+	});
+
+	/* #219 — Order-context assignment: banner + confirm modal. */
+
+	function eemFmtDate(iso) {
+		if (!iso) { return ''; }
+		var p = String(iso).split('-');
+		if (p.length !== 3) { return iso; }
+		return p[1] + '/' + p[2] + '/' + p[0];
+	}
+
+	// On load: if we arrived from an order's Assign button, mark assign mode and
+	// drop a banner above the chart so the admin knows to click an open unit.
+	(function initAssignMode() {
+		var ctx = (window.eemStallChart || {}).assignContext;
+		if (!ctx) { return; }
+		document.body.classList.add('eem-assign-mode');
+		var host = document.querySelector('.eem-stall-chart-tab-panel') || document.querySelector('.eem-stall-chart-dynamic') || document.querySelector('#eem-stall-chart-dynamic');
+		if (!host || document.getElementById('eem-assign-banner')) { return; }
+		var noun = ctx.kind === 'rv' ? 'RV lot' : 'stall';
+		var dates = (ctx.arrival || ctx.departure) ? (' for ' + eemFmtDate(ctx.arrival) + (ctx.departure ? ' – ' + eemFmtDate(ctx.departure) : '')) : '';
+		var banner = document.createElement('div');
+		banner.id = 'eem-assign-banner';
+		banner.className = 'eem-assign-banner';
+		banner.innerHTML = '<strong>Assigning ' + (ctx.customer || 'this customer') + '</strong> &mdash; click an available ' + noun + dates + ' to place them.';
+		host.parentNode.insertBefore(banner, host);
+	})();
+
+	function openAssignOrderModal(ctx, unit) {
+		var existing = document.getElementById('eem-assign-order-modal');
+		if (existing) { existing.parentNode.removeChild(existing); }
+		var noun = ctx.kind === 'rv' ? 'RV Lot' : 'Stall';
+		var dates = (ctx.arrival || ctx.departure)
+			? (eemFmtDate(ctx.arrival) + (ctx.departure ? ' – ' + eemFmtDate(ctx.departure) : ''))
+			: 'the reservation period';
+		var overlay = document.createElement('div');
+		overlay.className = 'eem-modal';
+		overlay.id = 'eem-assign-order-modal';
+		overlay.setAttribute('role', 'dialog');
+		overlay.setAttribute('aria-modal', 'true');
+		overlay.innerHTML =
+			'<div class="eem-modal-card">' +
+				'<header class="eem-modal-head"><h2 class="eem-modal-title">Assign ' + noun + '</h2>' +
+				'<button type="button" class="eem-modal-close" data-eem-action="assign-order-close" aria-label="Close">&times;</button></header>' +
+				'<div class="eem-modal-body">' +
+					'<p class="eem-order-refund-summary">Assign <strong>' + (ctx.customer || 'this customer') + '</strong> to <strong>' + noun + ' ' + unit + '</strong> for <strong>' + dates + '</strong>?</p>' +
+					'<div class="eem-order-refund-error" data-eem-assign-order-error hidden></div>' +
+				'</div>' +
+				'<footer class="eem-modal-foot eem-modal-foot--split">' +
+					'<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="assign-order-close">Cancel</button>' +
+					'<button type="button" class="eem-btn eem-btn-primary" data-eem-action="assign-order-confirm" data-unit="' + unit + '">Assign ' + noun + '</button>' +
+				'</footer>' +
+			'</div>';
+		document.body.appendChild(overlay);
+		overlay.classList.add('open');
+	}
+
+	document.addEventListener('click', function (ev) {
+		var t = ev.target;
+		if (!t || !t.closest) { return; }
+
+		if (t.closest('[data-eem-action="assign-order-close"]')) {
+			ev.preventDefault();
+			var m = document.getElementById('eem-assign-order-modal');
+			if (m) { m.parentNode.removeChild(m); }
+			return;
+		}
+
+		var confirmA = t.closest('[data-eem-action="assign-order-confirm"]');
+		if (confirmA) {
+			ev.preventDefault();
+			var ctx = (window.eemStallChart || {}).assignContext;
+			var cfg = window.eemStallChart || {};
+			if (!ctx) { return; }
+			var unit = confirmA.getAttribute('data-unit') || '';
+			var errEl = document.querySelector('[data-eem-assign-order-error]');
+			if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
+			confirmA.disabled = true;
+			var body = new URLSearchParams();
+			body.set('action', 'eem_assign_order_to_unit');
+			body.set('_wpnonce', cfg.assignNonce || '');
+			body.set('order_key', ctx.orderKey || '');
+			body.set('unit', unit);
+			body.set('kind', ctx.kind || 'stall');
+			fetch((cfg.ajaxUrl || window.ajaxurl || '/wp-admin/admin-ajax.php'), {
+				method: 'POST', credentials: 'same-origin',
+				headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+				body: body.toString()
+			}).then(function (r) { return r.json().catch(function () { return { success: false }; }); }).then(function (resp) {
+				confirmA.disabled = false;
+				if (resp && resp.success) {
+					if (window.EEM && window.EEM.showSaveToast) {
+						window.EEM.showSaveToast((resp.data && resp.data.message) || 'Assigned.', { variant: 'success' });
+					}
+					setTimeout(function () { window.location.reload(); }, 600);
+				} else {
+					var msg = (resp && resp.data && resp.data.message) || 'Could not assign.';
+					if (errEl) { errEl.textContent = msg; errEl.hidden = false; }
+				}
+			}).catch(function () {
+				confirmA.disabled = false;
+				if (errEl) { errEl.textContent = 'Network error. Please try again.'; errEl.hidden = false; }
+			});
+			return;
 		}
 	});
 

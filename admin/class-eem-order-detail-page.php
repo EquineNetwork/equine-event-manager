@@ -455,7 +455,14 @@ class EEM_Order_Detail_Page {
 		$res_id     = isset( $order['reservation_id'] ) ? (int) $order['reservation_id'] : 0;
 		$charts_url = $res_id > 0
 			? add_query_arg(
-				array( 'page' => 'equine-event-manager-stall-charts', 'reservation_id' => $res_id ),
+				array(
+					'page'           => 'equine-event-manager-stall-charts',
+					'reservation_id' => $res_id,
+					// Order-context assign flow (#219): carries this order so the
+					// chart shows the assign banner + click-to-assign modal.
+					'assign_order'   => isset( $order['order_key'] ) ? (string) $order['order_key'] : '',
+					'assign_kind'    => 'stall',
+				),
 				admin_url( 'admin.php' )
 			)
 			: '';
@@ -644,7 +651,12 @@ class EEM_Order_Detail_Page {
 			$rv_res_id     = isset( $order['reservation_id'] ) ? (int) $order['reservation_id'] : 0;
 			$rv_charts_url = $rv_res_id > 0
 				? add_query_arg(
-					array( 'page' => 'equine-event-manager-stall-charts', 'reservation_id' => $rv_res_id ),
+					array(
+						'page'           => 'equine-event-manager-stall-charts',
+						'reservation_id' => $rv_res_id,
+						'assign_order'   => isset( $order['order_key'] ) ? (string) $order['order_key'] : '',
+						'assign_kind'    => 'rv',
+					),
 					admin_url( 'admin.php' )
 				)
 				: '';

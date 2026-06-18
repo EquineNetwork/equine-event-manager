@@ -124,6 +124,7 @@ class EEM_Admin {
 		add_action( 'all_admin_notices', array( $this, 'render_reservations_list_banner' ) );
 		add_action( 'all_admin_notices', array( $this, 'render_native_content_list_banner' ) );
 		add_action( 'wp_ajax_eem_move_stall_assignment', array( $this, 'ajax_move_stall_assignment' ) );
+		add_action( 'wp_ajax_eem_assign_order_to_unit', array( $this, 'ajax_assign_order_to_unit' ) );
 		add_action( 'wp_ajax_eem_toggle_tack_stall', array( $this, 'ajax_toggle_tack_stall' ) );
 		add_action( 'wp_ajax_eem_stall_map_action', array( $this, 'ajax_stall_map_action' ) );
 		add_action( 'wp_ajax_eem_group_rename', array( $this, 'ajax_group_rename' ) );
@@ -3737,12 +3738,36 @@ class EEM_Admin {
 		// Localize AJAX endpoints + nonces for move and auto-assign functionality.
 		$nonce             = wp_create_nonce( 'eem_stall_chart_move' );
 		$auto_assign_nonce = wp_create_nonce( 'eem_auto_assign' );
+		$assign_nonce      = wp_create_nonce( 'eem_stall_chart_assign' );
+
+		// Order-context assignment: when the admin arrived from an Order Detail
+		// "Assign Stalls / RV Lots" button (?assign_order=KEY&assign_kind=stall|rv),
+		// resolve that order so the client can show the assign banner + drive the
+		// click-to-assign modal (#219).
+		$assign_ctx       = null;
+		$assign_order_key = isset( $_GET['assign_order'] ) ? sanitize_text_field( wp_unslash( $_GET['assign_order'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( '' !== $assign_order_key ) {
+			$assign_order = $this->orders_repository->get_order( $assign_order_key );
+			if ( $assign_order && absint( $assign_order['reservation_id'] ) === absint( $reservation_id ) ) {
+				$assign_kind = ( isset( $_GET['assign_kind'] ) && 'rv' === sanitize_key( wp_unslash( $_GET['assign_kind'] ) ) ) ? 'rv' : 'stall'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				$assign_ctx  = array(
+					'orderKey'    => $assign_order_key,
+					'kind'        => $assign_kind,
+					'customer'    => (string) $assign_order['customer_name'],
+					'arrival'     => (string) ( 'rv' === $assign_kind ? $assign_order['rv_arrival_date'] : $assign_order['stall_arrival_date'] ),
+					'departure'   => (string) ( 'rv' === $assign_kind ? $assign_order['rv_departure_date'] : $assign_order['stall_departure_date'] ),
+					'orderNumber' => $this->format_order_number_display( (string) ( $assign_order['order_number'] ?? '' ) ),
+				);
+			}
+		}
 		?>
 		<script>
 			window.eemStallChart = window.eemStallChart || {};
 			window.eemStallChart.ajaxUrl   = <?php echo wp_json_encode( admin_url( 'admin-ajax.php' ) ); ?>;
 			window.eemStallChart.moveNonce = <?php echo wp_json_encode( $nonce ); ?>;
 			window.eemStallChart.autoAssignNonce = <?php echo wp_json_encode( $auto_assign_nonce ); ?>;
+			window.eemStallChart.assignNonce = <?php echo wp_json_encode( $assign_nonce ); ?>;
+			window.eemStallChart.assignContext = <?php echo $assign_ctx ? wp_json_encode( $assign_ctx ) : 'null'; ?>;
 			window.eemStallChart.reservationId = <?php echo (int) $reservation_id; ?>;
 		</script>
 		<?php
@@ -6011,6 +6036,113 @@ class EEM_Admin {
 	}
 
 	/**
+	 * AJAX: assign an order's customer to a specific available unit (the
+	 * order-context flow — admin arrives from an Order Detail "Assign Stalls" /
+	 * "Assign RV Lots" button, clicks an available unit, confirms in a modal).
+	 *
+	 * Unlike ajax_move_stall_assignment this is a fresh ADD (no source unit): the
+	 * chosen unit is appended to the order's flat "Assigned Stall Units" / "Assigned
+	 * RV Lots" note (deduped), with the other component preserved. Capability +
+	 * nonce gated, behind the per-reservation assignment lock, with a flat-level
+	 * conflict check so the same unit isn't double-booked by another order.
+	 *
+	 * @return void
+	 */
+	public function ajax_assign_order_to_unit() {
+		check_ajax_referer( 'eem_stall_chart_assign', '_wpnonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+
+		$order_key = isset( $_POST['order_key'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['order_key'] ) ) : '';
+		$unit      = isset( $_POST['unit'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['unit'] ) ) : '';
+		$kind      = ( isset( $_POST['kind'] ) && 'rv' === sanitize_key( wp_unslash( $_POST['kind'] ) ) ) ? 'rv' : 'stall';
+		$is_rv     = ( 'rv' === $kind );
+		$note_comp = $is_rv ? 'rv' : 'stall';
+		$assign_lbl = $is_rv ? 'Assigned RV Lots' : 'Assigned Stall Units';
+		$unit_noun = $is_rv ? __( 'lot', 'equine-event-manager' ) : __( 'stall', 'equine-event-manager' );
+
+		if ( '' === $order_key || '' === $unit ) {
+			wp_send_json_error( array( 'message' => __( 'Missing required parameters.', 'equine-event-manager' ) ), 400 );
+		}
+
+		$order = $this->orders_repository->get_order( $order_key );
+		if ( ! $order ) {
+			wp_send_json_error( array( 'message' => __( 'Order not found.', 'equine-event-manager' ) ), 404 );
+		}
+
+		$reservation_id = isset( $order['reservation_id'] ) ? absint( $order['reservation_id'] ) : 0;
+		if ( ! $this->acquire_assignment_lock( $reservation_id ) ) {
+			$this->send_assignment_lock_busy();
+		}
+
+		// Validate the unit is part of the chart, not blocked, and not already held
+		// by a different order.
+		if ( $reservation_id > 0 ) {
+			$config       = $this->get_stall_chart_config( $reservation_id );
+			$blocked_pool = $is_rv ? ( $config['blocked_rv_lots'] ?? array() ) : ( $config['blocked_stall_units'] ?? array() );
+			$unit_pool    = $is_rv ? ( $config['rv_lot_names'] ?? array() ) : ( $config['stall_units'] ?? array() );
+			if ( ! in_array( $unit, (array) $unit_pool, true ) ) {
+				$this->release_assignment_lock( $reservation_id );
+				wp_send_json_error( array( 'message' => sprintf( /* translators: %s: stall/lot noun */ __( 'That %s is not part of this chart.', 'equine-event-manager' ), $unit_noun ) ), 409 );
+			}
+			if ( in_array( $unit, (array) $blocked_pool, true ) ) {
+				$this->release_assignment_lock( $reservation_id );
+				wp_send_json_error( array( 'message' => sprintf( /* translators: %s: stall/lot noun */ __( 'That %s is blocked.', 'equine-event-manager' ), $unit_noun ) ), 409 );
+			}
+			$other_orders = array_filter(
+				$this->orders_repository->get_orders( '', 'date', 'asc' ),
+				function ( $o ) use ( $reservation_id, $order_key ) {
+					return absint( isset( $o['reservation_id'] ) ? $o['reservation_id'] : 0 ) === absint( $reservation_id )
+						&& ( ! isset( $o['order_key'] ) || (string) $o['order_key'] !== (string) $order_key );
+				}
+			);
+			foreach ( $other_orders as $other ) {
+				$other_units = $this->parse_assigned_units_string( $this->get_order_component_note_value( $other, $note_comp, $assign_lbl ) );
+				if ( in_array( (string) $unit, array_map( 'strval', (array) $other_units ), true ) ) {
+					$this->release_assignment_lock( $reservation_id );
+					wp_send_json_error( array( 'message' => sprintf( /* translators: %s: stall/lot noun */ __( 'That %s is already assigned to another order.', 'equine-event-manager' ), $unit_noun ) ), 409 );
+				}
+			}
+		}
+
+		// Append the unit to this order's flat assignment (deduped), preserving the
+		// other component's existing assignment.
+		$current = $this->parse_assigned_units_string( $this->get_order_component_note_value( $order, $note_comp, $assign_lbl ) );
+		$current = array_map( 'strval', (array) $current );
+		if ( ! in_array( (string) $unit, $current, true ) ) {
+			$current[] = (string) $unit;
+		}
+		$new_csv = implode( ', ', array_filter( $current ) );
+
+		if ( $is_rv ) {
+			$preserved_stall = $this->parse_assigned_units_string( $this->get_order_component_note_value( $order, 'stall', 'Assigned Stall Units' ) );
+			$stall_csv = implode( ', ', array_filter( array_map( 'strval', (array) $preserved_stall ) ) );
+			$rv_csv    = $new_csv;
+		} else {
+			$preserved_rv = $this->parse_assigned_units_string( $this->get_order_component_note_value( $order, 'rv', 'Assigned RV Lots' ) );
+			$stall_csv = $new_csv;
+			$rv_csv    = implode( ', ', array_filter( array_map( 'strval', (array) $preserved_rv ) ) );
+		}
+
+		$ok = $this->orders_repository->update_order_unit_assignments( $order_key, $stall_csv, $rv_csv );
+		$this->release_assignment_lock( $reservation_id );
+
+		if ( ! $ok ) {
+			wp_send_json_error( array( 'message' => __( 'Could not save the assignment.', 'equine-event-manager' ) ), 500 );
+		}
+
+		wp_send_json_success( array(
+			'message' => $is_rv
+				? __( 'RV lot assigned.', 'equine-event-manager' )
+				: __( 'Stall assigned.', 'equine-event-manager' ),
+			'unit'    => $unit,
+			'kind'    => $kind,
+		) );
+	}
+
+	/**
 	 * AJAX: auto-assign unassigned bulk stalls/RV lots to available inventory.
 	 *
 	 * Drives both the action-bar "Generate Assignments" / issues-card
@@ -6172,7 +6304,8 @@ class EEM_Admin {
 							<?php elseif ( $eem_blocked ) : ?>
 								<span class="eem-chart-status eem-chart-status--blocked"><?php esc_html_e( 'Blocked', 'equine-event-manager' ); ?></span>
 							<?php else : ?>
-								<span class="eem-chart-status eem-chart-status--available"><?php esc_html_e( 'Available', 'equine-event-manager' ); ?></span>
+								<?php // data-* let the order-context assign flow (#219) click this row's unit. ?>
+								<span class="eem-chart-status eem-chart-status--available" data-eem-action="assign-order-unit" data-kind="<?php echo esc_attr( $kind ); ?>" data-stall="<?php echo esc_attr( (string) $row['unit'] ); ?>"><?php esc_html_e( 'Available', 'equine-event-manager' ); ?></span>
 							<?php endif; ?>
 						</td>
 						<td class="eem-chart-customer-cell">
