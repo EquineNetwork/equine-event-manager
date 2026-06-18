@@ -2470,8 +2470,13 @@ class EEM_Admin {
 		$config            = $this->get_stall_chart_config( $reservation_id );
 		$inv               = isset( $_GET['inv'] ) ? sanitize_key( wp_unslash( $_GET['inv'] ) ) : 'all';
 		$inv               = in_array( $inv, array( 'all', 'stalls', 'rv' ), true ) ? $inv : 'all';
-		$tab               = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'location';
-		$tab               = in_array( $tab, array( 'location', 'customer' ), true ) ? $tab : 'location';
+		// View model: 'customer' (default), 'list' (By Location matrix table) and
+		// 'map' (By Location spatial map). Legacy 'location' maps to 'list'.
+		$tab               = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'customer';
+		if ( 'location' === $tab ) {
+			$tab = 'list';
+		}
+		$tab               = in_array( $tab, array( 'customer', 'list', 'map' ), true ) ? $tab : 'customer';
 		$reservation_title = get_the_title( $reservation_id );
 		$screen_title      = sprintf(
 			/* translators: %s: reservation title. */
@@ -2587,7 +2592,14 @@ class EEM_Admin {
 	 * @param string $tab            Active view tab (location|customer).
 	 * @return void
 	 */
-	private function render_stall_chart_dynamic_region( int $reservation_id, array $config, string $inv = 'all', string $tab = 'location' ): void {
+	private function render_stall_chart_dynamic_region( int $reservation_id, array $config, string $inv = 'all', string $tab = 'customer' ): void {
+		// Normalize the view: legacy 'location' → 'list'; anything unknown → customer.
+		if ( 'location' === $tab ) {
+			$tab = 'list';
+		}
+		if ( ! in_array( $tab, array( 'customer', 'list', 'map' ), true ) ) {
+			$tab = 'customer';
+		}
 		$grid              = $this->build_stall_chart_grid( $reservation_id, $config );
 		$order_rows        = $this->build_stall_chart_rows( $reservation_id, $config );
 		$date_cols         = $grid['date_columns'];
@@ -2732,56 +2744,61 @@ class EEM_Admin {
 							</div>
 						</div>
 
-						<!-- VIEW TABS (By Location / By Customer) -->
-						<div class="eem-stall-chart-view-tabs" id="eem-stall-chart-view-tabs" role="tablist">
-							<button class="eem-stall-chart-view-tab<?php echo 'location' === $tab ? ' active' : ''; ?>" type="button"
-								data-eem-action="stall-chart-switch-view"
-								data-view="location"
-								role="tab"
-								aria-selected="<?php echo 'location' === $tab ? 'true' : 'false'; ?>"
-								aria-controls="eem-stall-chart-panel-location">
-								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-								<?php esc_html_e( 'By Location', 'equine-event-manager' ); ?>
-							</button>
-							<button class="eem-stall-chart-view-tab<?php echo 'customer' === $tab ? ' active' : ''; ?>" type="button"
-								data-eem-action="stall-chart-switch-view"
-								data-view="customer"
-								role="tab"
-								aria-selected="<?php echo 'customer' === $tab ? 'true' : 'false'; ?>"
-								aria-controls="eem-stall-chart-panel-customer">
-								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-								<?php esc_html_e( 'By Customer', 'equine-event-manager' ); ?>
-							</button>
+						<!-- VIEW SELECTOR (full-width bar): By Customer / By Location – List / – Map -->
+						<?php $eem_has_any_map = ( $has_stall_map || $has_rv_map ); ?>
+						<div class="eem-stall-chart-view-bar">
+							<label class="eem-stall-chart-view-label" for="eem-sc-view-select"><?php esc_html_e( 'View', 'equine-event-manager' ); ?></label>
+							<select id="eem-sc-view-select" class="eem-field-select eem-stall-chart-view-select" data-eem-action="stall-chart-view-select">
+								<option value="customer" <?php selected( $tab, 'customer' ); ?>><?php esc_html_e( 'By Customer', 'equine-event-manager' ); ?></option>
+								<option value="list" <?php selected( $tab, 'list' ); ?>><?php esc_html_e( 'By Location – List', 'equine-event-manager' ); ?></option>
+								<?php if ( $eem_has_any_map ) : ?>
+								<option value="map" <?php selected( $tab, 'map' ); ?>><?php esc_html_e( 'By Location – Map', 'equine-event-manager' ); ?></option>
+								<?php endif; ?>
+							</select>
+						</div>
+						<?php // Hidden legacy tab buttons removed — the select above replaces them. ?>
+						<div class="eem-stall-chart-view-tabs" id="eem-stall-chart-view-tabs" role="tablist" hidden>
 						</div>
 
-						<!-- BY LOCATION PANEL -->
-						<div class="eem-stall-chart-tab-panel<?php echo 'location' === $tab ? ' active' : ''; ?>" id="eem-stall-chart-panel-location" role="tabpanel"<?php echo 'customer' === $tab ? ' style="display:none"' : ''; ?>>
+						<!-- BY LOCATION PANEL (hosts both List + Map sub-views) -->
+						<div class="eem-stall-chart-tab-panel<?php echo 'customer' !== $tab ? ' active' : ''; ?>" id="eem-stall-chart-panel-location" role="tabpanel"<?php echo 'customer' === $tab ? ' style="display:none"' : ''; ?>>
+
+							<!-- ── MAP sub-view (spatial facility map only) ── -->
+							<div id="eem-sc-maps"<?php echo 'map' === $tab ? '' : ' style="display:none"'; ?>>
+								<?php
+								// v4 Stall Mapping: spatial facility maps. Wrapped in
+								// data-inv-section so the All/Stalls/RV toggle hides them
+								// client-side too (the JS filter keys off data-inv-section).
+								if ( $has_stall_map ) :
+									?>
+									<div data-inv-section="stalls"<?php echo 'rv' === $inv ? ' style="display:none"' : ''; ?>>
+										<?php $this->render_stall_map_location_view( $reservation_id, $stall_map_snapshot, $stall_map_overlay, 'stall' ); ?>
+									</div>
+									<?php
+								endif;
+								if ( $has_rv_map ) :
+									?>
+									<div data-inv-section="rv"<?php echo 'stalls' === $inv ? ' style="display:none"' : ''; ?>>
+										<?php $this->render_stall_map_location_view( $reservation_id, $rv_map_snapshot, $rv_map_overlay, 'rv' ); ?>
+									</div>
+									<?php
+								endif;
+								if ( ! $has_stall_map && ! $has_rv_map ) :
+									?>
+									<p class="eem-stall-chart-empty-note"><?php esc_html_e( 'No facility map is configured for this reservation yet.', 'equine-event-manager' ); ?></p>
+									<?php
+								endif;
+								?>
+							</div>
+
+							<!-- ── LIST sub-view (matrix table only) ── -->
+							<div id="eem-sc-list"<?php echo 'list' === $tab ? '' : ' style="display:none"'; ?>>
 
 							<!-- Tip banner -->
 							<div class="eem-stall-chart-help">
 								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
 								<span><strong><?php esc_html_e( 'Tip:', 'equine-event-manager' ); ?></strong> <?php esc_html_e( 'Each unit shows its status and who\'s assigned. Click a customer name to open their order. Use Generate Assignments to auto-fill open units, or open an order and click Assign Stalls / Assign RV Lots to place a customer manually.', 'equine-event-manager' ); ?></span>
 							</div>
-
-							<?php
-							// v4 Stall Mapping: spatial facility maps. Wrapped in
-							// data-inv-section so the All/Stalls/RV toggle hides them
-							// client-side too (the JS filter keys off data-inv-section).
-							if ( $has_stall_map ) :
-								?>
-								<div data-inv-section="stalls"<?php echo 'rv' === $inv ? ' style="display:none"' : ''; ?>>
-									<?php $this->render_stall_map_location_view( $reservation_id, $stall_map_snapshot, $stall_map_overlay, 'stall' ); ?>
-								</div>
-								<?php
-							endif;
-							if ( $has_rv_map ) :
-								?>
-								<div data-inv-section="rv"<?php echo 'stalls' === $inv ? ' style="display:none"' : ''; ?>>
-									<?php $this->render_stall_map_location_view( $reservation_id, $rv_map_snapshot, $rv_map_overlay, 'rv' ); ?>
-								</div>
-								<?php
-							endif;
-							?>
 
 							<!-- FILTER ROW -->
 							<div class="eem-stall-chart-filter-row">
@@ -2878,10 +2895,12 @@ class EEM_Admin {
 								<?php endif; ?>
 							</div>
 
+							</div><!-- /#eem-sc-list -->
+
 						</div><!-- /panel-location -->
 
 						<!-- BY CUSTOMER PANEL -->
-						<div class="eem-stall-chart-tab-panel<?php echo 'customer' === $tab ? ' active' : ''; ?>" id="eem-stall-chart-panel-customer" role="tabpanel"<?php echo 'location' === $tab ? ' style="display:none"' : ''; ?>>
+						<div class="eem-stall-chart-tab-panel<?php echo 'customer' === $tab ? ' active' : ''; ?>" id="eem-stall-chart-panel-customer" role="tabpanel"<?php echo 'customer' !== $tab ? ' style="display:none"' : ''; ?>>
 
 							<!-- Tip banner -->
 							<div class="eem-stall-chart-help">

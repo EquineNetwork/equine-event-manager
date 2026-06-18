@@ -4815,11 +4815,22 @@
 			btn.setAttribute('aria-selected', v === tab ? 'true' : 'false');
 		});
 
-		// 3. Show / hide main panels.
+		// 3. Show / hide main panels + the By-Location sub-views.
+		//    tab: 'customer' | 'list' (matrix table) | 'map' (spatial map).
+		//    Legacy 'location' is treated as 'list'.
+		if (tab === 'location') { tab = 'list'; }
+		var isLoc     = (tab === 'list' || tab === 'map');
 		var locPanel  = document.getElementById('eem-stall-chart-panel-location');
 		var custPanel = document.getElementById('eem-stall-chart-panel-customer');
-		if (locPanel)  locPanel.style.display  = tab === 'location' ? '' : 'none';
-		if (custPanel) custPanel.style.display = tab === 'customer'  ? '' : 'none';
+		if (locPanel)  locPanel.style.display  = isLoc ? '' : 'none';
+		if (custPanel) custPanel.style.display = tab === 'customer' ? '' : 'none';
+		var mapsWrap = document.getElementById('eem-sc-maps');
+		var listWrap = document.getElementById('eem-sc-list');
+		if (mapsWrap) mapsWrap.style.display = tab === 'map'  ? '' : 'none';
+		if (listWrap) listWrap.style.display = tab === 'list' ? '' : 'none';
+		// Keep the view <select> in sync (e.g. when state is set programmatically).
+		var viewSelect = document.getElementById('eem-sc-view-select');
+		if (viewSelect && viewSelect.value !== tab) { viewSelect.value = tab; }
 
 		// 4. Show / hide every stall-kind and RV-kind block within the location
 		//    panel — both the spatial maps AND the matrix tables carry
@@ -4937,6 +4948,14 @@
 			}
 		});
 	}
+
+	// View selector (By Customer / By Location – List / – Map): swap the visible
+	// panel client-side, mirroring the old tab buttons.
+	document.addEventListener('change', function (ev) {
+		var sel = ev.target.closest && ev.target.closest('[data-eem-action="stall-chart-view-select"]');
+		if (!sel) return;
+		eemScApplyState(window._eemScInv || 'all', sel.value || 'customer');
+	});
 
 	document.addEventListener('click', function (ev) {
 		var t = ev.target;
@@ -5891,9 +5910,10 @@
 		try {
 			var params  = new URLSearchParams(window.location.search);
 			var initInv = params.get('inv') || 'all';
-			var initTab = params.get('tab') || 'location';
+			var initTab = params.get('tab') || 'customer';
 			if (['all', 'stalls', 'rv'].indexOf(initInv) === -1) initInv = 'all';
-			if (['location', 'customer'].indexOf(initTab) === -1) initTab = 'location';
+			if (initTab === 'location') initTab = 'list';
+			if (['customer', 'list', 'map'].indexOf(initTab) === -1) initTab = 'customer';
 			eemScApplyState(initInv, initTab);
 			if (EEM.renderStallMaps) EEM.renderStallMaps();
 		} catch (e) { /* ignore */ }

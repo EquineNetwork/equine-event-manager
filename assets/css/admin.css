@@ -7786,6 +7786,10 @@ a.eem-btn--ghost:focus    { color: #1d2327; }
 
 /* ── View tabs card ── */
 .eem-stall-chart-view-tabs-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden; margin-bottom: 14px; }
+/* Full-width view selector bar (By Customer / By Location – List / – Map). */
+.eem-stall-chart-view-bar { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid #dcdcde; background: #f8fafc; }
+.eem-stall-chart-view-label { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #64748b; }
+.eem-stall-chart-view-select { min-width: 230px; }
 .eem-stall-chart-view-tabs { display: flex; gap: 0; background: #fff; padding: 0 18px; border-bottom: 1px solid #dcdcde; }
 .eem-stall-chart-view-tab { padding: 14px 22px 12px; font-size: 14px; font-weight: 600; color: #6B7A99; cursor: pointer; border-bottom: 3px solid transparent; font-family: inherit; transition: color .15s, border-color .15s; display: flex; align-items: center; gap: 8px; background: none; border-left: none; border-right: none; border-top: none; }
 .eem-stall-chart-view-tab:hover { color: #031B4E; }
