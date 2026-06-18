@@ -431,6 +431,58 @@ class EEM_Stall_Status_Repo {
 	}
 
 	/**
+	 * Set EVERY status row for an order (all stalls, all nights) to an exact
+	 * status, bypassing the forward-only transition guard so staff can correct
+	 * mistakes (e.g. revert Checked Out → Checked In, or back to occupied). Drives
+	 * the Daily Movement status dropdown where each pick is an explicit target,
+	 * not a one-way step. Rows already at the target are no-ops.
+	 *
+	 * @param int    $order_id   Order row ID (wp_en_stall_reservations.id).
+	 * @param string $new_status Exact target status (occupied / checked_in / checked_out).
+	 * @param int    $user_id    Acting user.
+	 * @return array{success:int, failed:int, errors:array<int,string>, status:string}
+	 */
+	public static function set_order_status_all_nights( int $order_id, string $new_status, int $user_id ): array {
+		global $wpdb;
+		$table = $wpdb->prefix . 'eem_stall_status';
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT reservation_id, stall_unit, night_date FROM {$table} WHERE order_id = %d",
+				$order_id
+			),
+			ARRAY_A
+		) ?: array();
+
+		$success = 0;
+		$failed  = 0;
+		$errors  = array();
+
+		foreach ( $rows as $r ) {
+			// is_override = true → skip the forward-only TRANSITIONS guard so the
+			// status can move in any direction.
+			$result = self::transition( (int) $r['reservation_id'], $r['stall_unit'], $r['night_date'], $new_status, $user_id, true );
+			if ( $result['success'] ) {
+				$success++;
+			} else {
+				$failed++;
+				$errors[] = $r['stall_unit'] . ': ' . $result['message'];
+			}
+		}
+
+		$effective = $wpdb->get_var(
+			$wpdb->prepare( "SELECT MIN(status) FROM {$table} WHERE order_id = %d", $order_id )
+		);
+
+		return array(
+			'success' => $success,
+			'failed'  => $failed,
+			'errors'  => $errors,
+			'status'  => (string) ( $effective ?: 'occupied' ),
+		);
+	}
+
+	/**
 	 * Delete status rows when stall assignments are removed (e.g. order cancelled).
 	 *
 	 * Also deletes related log entries.

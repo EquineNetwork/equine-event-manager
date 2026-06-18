@@ -10615,6 +10615,8 @@ a.eem-dm-view-tab.active:visited {
 .eem-dm-table th:nth-child(6), .eem-dm-table td:nth-child(6) { width: 10%; }
 .eem-dm-table th:nth-child(7), .eem-dm-table td:nth-child(7) { width: 15%; }
 .eem-dm-table td { overflow: hidden; text-overflow: ellipsis; }
+/* Status cell hosts the dropdown menu — must not clip it. */
+.eem-dm-table td.eem-dm-cell-status { overflow: visible; }
 .eem-dm-table thead th {
 	background: var(--eem-gray-50, #f8fafc);
 	border-bottom: 2px solid var(--eem-border, #dcdcde);
@@ -10704,9 +10706,17 @@ a.eem-dm-view-tab.active:visited {
 .eem-dm-status-departing::before {
 	background: #f59e0b;
 }
-/* Clickable status chip wrapper (Daily Movement board). The chip inside keeps
-   its own color; the button is a transparent, cursor-pointer affordance. */
-.eem-dm-status-btn {
+/* Status chip dropdown (Daily Movement board). The trigger shows the current
+   status chip + a caret; the menu lets staff pick any status explicitly so a
+   mis-click is reversible. */
+.eem-dm-status-menu {
+	position: relative;
+	display: inline-block;
+}
+.eem-dm-status-trigger {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
 	background: none;
 	border: 0;
 	padding: 0;
@@ -10715,14 +10725,54 @@ a.eem-dm-view-tab.active:visited {
 	font: inherit;
 	line-height: 1;
 }
-.eem-dm-status-btn:hover .eem-dm-status {
+.eem-dm-status-trigger:hover .eem-dm-status {
 	filter: brightness( 0.97 );
 }
-.eem-dm-status-btn--done {
-	cursor: default;
+.eem-dm-status-caret {
+	font-size: 10px;
+	color: var(--eem-slate, #64748b);
+	transition: transform 0.12s ease;
 }
-.eem-dm-status-btn--done:hover .eem-dm-status {
-	filter: none;
+.eem-dm-status-menu.open .eem-dm-status-caret {
+	transform: rotate( 180deg );
+}
+.eem-dm-status-options {
+	/* Fixed positioning so the menu escapes the card's overflow:hidden clip
+	   (JS sets top/left from the trigger's bounding rect on open). */
+	position: fixed;
+	z-index: 100000;
+	min-width: 150px;
+	margin: 0;
+	padding: 4px;
+	list-style: none;
+	background: var(--eem-white, #fff);
+	border: 1px solid var(--eem-border, #dcdcde);
+	border-radius: var(--eem-radius, 3px);
+	box-shadow: 0 6px 18px rgba( 3, 27, 78, 0.12 );
+	display: none;
+}
+.eem-dm-status-menu.open .eem-dm-status-options {
+	display: block;
+}
+.eem-dm-status-option {
+	display: block;
+	width: 100%;
+	text-align: left;
+	background: none;
+	border: 0;
+	padding: 7px 10px;
+	border-radius: var(--eem-radius, 3px);
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--eem-navy, #1e293b);
+	cursor: pointer;
+}
+.eem-dm-status-option:hover {
+	background: var(--eem-gray-50, #f1f5f9);
+}
+.eem-dm-status-option.is-current {
+	font-weight: 700;
+	color: var(--eem-electric, #1d4ed8);
 }
 .eem-dm-status-needs_cleaning {
 	background: #fefce8;

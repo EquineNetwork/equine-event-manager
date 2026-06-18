@@ -6167,7 +6167,8 @@ class EEM_Admin {
 		}
 
 		$target = isset( $_POST['target'] ) ? sanitize_key( wp_unslash( $_POST['target'] ) ) : '';
-		if ( ! in_array( $target, array( 'checked_in', 'checked_out' ), true ) ) {
+		// 'occupied' is the stored value for "Not Checked In".
+		if ( ! in_array( $target, array( 'occupied', 'checked_in', 'checked_out' ), true ) ) {
 			wp_send_json_error( array( 'message' => __( 'Invalid status target.', 'equine-event-manager' ) ), 400 );
 		}
 		if ( $status_order_id < 1 ) {
@@ -6178,7 +6179,9 @@ class EEM_Admin {
 			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-stall-status-repo.php';
 		}
 
-		$result = EEM_Stall_Status_Repo::transition_order_all_nights( $status_order_id, $target, get_current_user_id() );
+		// Direct set (override) so staff can pick any status, including reverting a
+		// mistaken check-out back to checked-in / not-checked-in.
+		$result = EEM_Stall_Status_Repo::set_order_status_all_nights( $status_order_id, $target, get_current_user_id() );
 
 		if ( empty( $result['success'] ) && ! empty( $result['failed'] ) ) {
 			wp_send_json_error( array(

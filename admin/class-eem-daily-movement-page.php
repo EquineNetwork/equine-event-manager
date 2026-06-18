@@ -588,24 +588,9 @@ class EEM_Daily_Movement_Page {
 							// Departing rows read "Departing" (the row is leaving this day),
 							// not the underlying check-in flag.
 							$dm_status = 'departing' === $context ? 'departing' : $row['check_in_status'];
-							// Decide the next clickable action: arriving/not-in → Check In;
-							// departing or already-in → Check Out; checked-out → no action.
-							$dm_target = '';
-							if ( 'departing' === $context || 'checked_in' === $row['check_in_status'] ) {
-								$dm_target = 'checked_out';
-							} elseif ( in_array( $row['check_in_status'], array( 'not_checked_in', 'occupied' ), true ) ) {
-								$dm_target = 'checked_in';
-							}
-							$dm_sid = isset( $row['status_order_id'] ) ? (int) $row['status_order_id'] : 0;
-							if ( '' !== $dm_target && $dm_sid > 0 ) {
-								printf(
-									'<button type="button" class="eem-dm-status-btn" data-eem-action="dm-check-toggle" data-status-order-id="%d" data-target="%s" data-nonce="%s" title="%s">%s</button>',
-									$dm_sid,
-									esc_attr( $dm_target ),
-									esc_attr( wp_create_nonce( 'eem_order_check_status_' . $dm_sid ) ),
-									esc_attr( 'checked_in' === $dm_target ? __( 'Click to mark Checked In', 'equine-event-manager' ) : __( 'Click to mark Checked Out', 'equine-event-manager' ) ),
-									wp_kses_post( self::status_badge( $dm_status ) )
-								);
+							$dm_sid    = isset( $row['status_order_id'] ) ? (int) $row['status_order_id'] : 0;
+							if ( $dm_sid > 0 ) {
+								echo self::render_status_menu( $dm_status, $row['check_in_status'], $dm_sid ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- builds escaped markup internally.
 							} else {
 								echo wp_kses_post( self::status_badge( $dm_status ) );
 							}
@@ -672,49 +657,134 @@ class EEM_Daily_Movement_Page {
 		?>
 		<script>
 		( function () {
-			var labels = {
-				not_checked_in: <?php echo wp_json_encode( __( 'Not Checked In', 'equine-event-manager' ) ); ?>,
-				checked_in:     <?php echo wp_json_encode( __( 'Checked In', 'equine-event-manager' ) ); ?>,
-				checked_out:    <?php echo wp_json_encode( __( 'Checked Out', 'equine-event-manager' ) ); ?>
-			};
+			function closeAllMenus() {
+				document.querySelectorAll( '.eem-dm-status-menu.open' ).forEach( function ( m ) {
+					m.classList.remove( 'open' );
+					var t = m.querySelector( '.eem-dm-status-trigger' );
+					if ( t ) { t.setAttribute( 'aria-expanded', 'false' ); }
+				} );
+			}
 			document.addEventListener( 'click', function ( e ) {
-				var btn = e.target.closest( '[data-eem-action="dm-check-toggle"]' );
-				if ( ! btn || btn.disabled ) { return; }
-				e.preventDefault();
-				var sid = btn.getAttribute( 'data-status-order-id' );
-				var target = btn.getAttribute( 'data-target' );
-				var nonce = btn.getAttribute( 'data-nonce' );
-				btn.disabled = true;
-				var body = new URLSearchParams();
-				body.append( 'action', 'eem_order_check_status' );
-				body.append( 'status_order_id', sid );
-				body.append( 'target', target );
-				body.append( '_wpnonce', nonce );
-				fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: body } )
-					.then( function ( r ) { return r.json(); } )
-					.then( function ( res ) {
-						btn.disabled = false;
-						if ( ! res || ! res.success ) { return; }
-						var chip = btn.querySelector( '.eem-dm-status' );
-						var key = res.data.status_key;
-						if ( chip ) {
-							chip.className = 'eem-dm-status eem-dm-status-' + key;
-							chip.textContent = res.data.label;
+				// Open / close a status menu.
+				var trigger = e.target.closest( '[data-eem-action="dm-status-menu"]' );
+				if ( trigger ) {
+					e.preventDefault();
+					var menu = trigger.closest( '.eem-dm-status-menu' );
+					var wasOpen = menu.classList.contains( 'open' );
+					closeAllMenus();
+					if ( ! wasOpen ) {
+						menu.classList.add( 'open' );
+						trigger.setAttribute( 'aria-expanded', 'true' );
+						// Position the fixed menu from the trigger's rect so it escapes
+						// the card's overflow clip; flip up if it would overflow below.
+						var list = menu.querySelector( '.eem-dm-status-options' );
+						if ( list ) {
+							var rect = trigger.getBoundingClientRect();
+							var w = list.offsetWidth;
+							var h = list.offsetHeight;
+							var left = Math.max( 8, rect.right - w );
+							var top = rect.bottom + 4;
+							if ( top + h + 8 > window.innerHeight ) {
+								top = Math.max( 8, rect.top - h - 4 );
+							}
+							list.style.left = left + 'px';
+							list.style.top = top + 'px';
 						}
-						// After check-in the next click should check-out; after
-						// check-out the chip is terminal for this board.
-						if ( 'checked_in' === key ) {
-							btn.setAttribute( 'data-target', 'checked_out' );
-						} else if ( 'checked_out' === key ) {
-							btn.setAttribute( 'data-eem-action', '' );
-							btn.classList.add( 'eem-dm-status-btn--done' );
-						}
-					} )
-					.catch( function () { btn.disabled = false; } );
+					}
+					return;
+				}
+
+				// Pick a status from the menu.
+				var opt = e.target.closest( '[data-eem-action="dm-status-pick"]' );
+				if ( opt ) {
+					e.preventDefault();
+					if ( opt.disabled ) { return; }
+					var menuEl = opt.closest( '.eem-dm-status-menu' );
+					var sid = opt.getAttribute( 'data-status-order-id' );
+					var target = opt.getAttribute( 'data-target' );
+					var nonce = opt.getAttribute( 'data-nonce' );
+					var body = new URLSearchParams();
+					body.append( 'action', 'eem_order_check_status' );
+					body.append( 'status_order_id', sid );
+					body.append( 'target', target );
+					body.append( '_wpnonce', nonce );
+					opt.disabled = true;
+					fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: body } )
+						.then( function ( r ) { return r.json(); } )
+						.then( function ( res ) {
+							opt.disabled = false;
+							closeAllMenus();
+							if ( ! res || ! res.success ) { return; }
+							var key = res.data.status_key;
+							var chip = menuEl.querySelector( '.eem-dm-status' );
+							if ( chip ) {
+								chip.className = 'eem-dm-status eem-dm-status-' + key;
+								chip.textContent = res.data.label;
+							}
+							// Re-mark the current option.
+							menuEl.querySelectorAll( '.eem-dm-status-option' ).forEach( function ( b ) {
+								b.classList.toggle( 'is-current', b.getAttribute( 'data-target' ) === target );
+							} );
+						} )
+						.catch( function () { opt.disabled = false; } );
+					return;
+				}
+
+				// Click anywhere else closes open menus.
+				closeAllMenus();
 			} );
 		} )();
 		</script>
 		<?php
+	}
+
+	/**
+	 * Render the check-in/out status as a dropdown menu.
+	 *
+	 * The trigger shows the current status badge; the menu lets staff pick any
+	 * status explicitly (Not Checked In / Checked In / Checked Out) so a mistaken
+	 * pick is reversible — no one-way toggle. The displayed badge may read
+	 * "Departing" (a derived label) while the real stored status is in $real.
+	 *
+	 * @param string $display Badge status to display (may be 'departing').
+	 * @param string $real    Real stored check-in status for the order.
+	 * @param int    $sid     Component-row id (wp_en_stall_reservations.id).
+	 * @return string HTML.
+	 */
+	private static function render_status_menu( string $display, string $real, int $sid ): string {
+		$nonce   = wp_create_nonce( 'eem_order_check_status_' . $sid );
+		$options = array(
+			'occupied'    => __( 'Not Checked In', 'equine-event-manager' ),
+			'checked_in'  => __( 'Checked In', 'equine-event-manager' ),
+			'checked_out' => __( 'Checked Out', 'equine-event-manager' ),
+		);
+		// Map the real status to its option key ('not_checked_in' stores as 'occupied').
+		$current_key = ( 'not_checked_in' === $real ) ? 'occupied' : $real;
+
+		ob_start();
+		?>
+		<div class="eem-dm-status-menu">
+			<button type="button" class="eem-dm-status-trigger" data-eem-action="dm-status-menu" aria-haspopup="true" aria-expanded="false">
+				<?php echo wp_kses_post( self::status_badge( $display ) ); ?>
+				<span class="eem-dm-status-caret" aria-hidden="true">▾</span>
+			</button>
+			<ul class="eem-dm-status-options" role="menu">
+				<?php foreach ( $options as $val => $label ) : ?>
+					<li role="none">
+						<button type="button" role="menuitem"
+							class="eem-dm-status-option<?php echo $current_key === $val ? ' is-current' : ''; ?>"
+							data-eem-action="dm-status-pick"
+							data-status-order-id="<?php echo esc_attr( (string) $sid ); ?>"
+							data-target="<?php echo esc_attr( $val ); ?>"
+							data-nonce="<?php echo esc_attr( $nonce ); ?>">
+							<?php echo esc_html( $label ); ?>
+						</button>
+					</li>
+				<?php endforeach; ?>
+			</ul>
+		</div>
+		<?php
+		return (string) ob_get_clean();
 	}
 
 	/**
