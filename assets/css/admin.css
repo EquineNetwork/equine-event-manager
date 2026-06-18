@@ -4766,6 +4766,11 @@ a.eem-btn-collect-banner:focus {
 	font-style: italic;
 }
 
+/* Blue CTA button under the assignment block (replaced the italic text link). */
+.eem-stall-assignment__action {
+	margin-top: 10px;
+}
+
 /* ── ORDER SUMMARY sidebar (right column) ── */
 .eem-order-summary__body {
 	padding: 12px;

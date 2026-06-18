@@ -507,11 +507,11 @@ class EEM_Order_Detail_Page {
 					<?php endif; ?>
 				</div>
 				<?php if ( '' !== $charts_url ) : ?>
-					<div class="eem-stall-assignment__note">
-						<a href="<?php echo esc_url( $charts_url ); ?>"><?php
+					<div class="eem-stall-assignment__action">
+						<a class="eem-btn eem-btn-primary" href="<?php echo esc_url( $charts_url ); ?>"><?php
 							echo '' !== $assigned
-								? esc_html__( 'Manage assignment on the Stall & RV Charts page', 'equine-event-manager' )
-								: esc_html__( 'Assign stalls on the Stall & RV Charts page', 'equine-event-manager' );
+								? esc_html__( 'Manage Stall Assignment', 'equine-event-manager' )
+								: esc_html__( 'Assign Stalls', 'equine-event-manager' );
 						?></a>
 					</div>
 				<?php endif; ?>
@@ -639,6 +639,23 @@ class EEM_Order_Detail_Page {
 				<?php endif; ?>
 				<tr class="eem-detail-table__subtotal"><td><?php esc_html_e( 'RV Subtotal', 'equine-event-manager' ); ?></td><td><?php echo esc_html( '$' . number_format_i18n( $subtotal, 2 ) ); ?></td></tr>
 			</table>
+			<?php
+			// Deep-link to this reservation's Stall & RV Charts page for RV-lot assignment.
+			$rv_res_id     = isset( $order['reservation_id'] ) ? (int) $order['reservation_id'] : 0;
+			$rv_charts_url = $rv_res_id > 0
+				? add_query_arg(
+					array( 'page' => 'equine-event-manager-stall-charts', 'reservation_id' => $rv_res_id ),
+					admin_url( 'admin.php' )
+				)
+				: '';
+			?>
+			<?php if ( '' !== $rv_charts_url ) : ?>
+				<div class="eem-stall-assignment">
+					<div class="eem-stall-assignment__action">
+						<a class="eem-btn eem-btn-primary" href="<?php echo esc_url( $rv_charts_url ); ?>"><?php esc_html_e( 'Assign RV Lots', 'equine-event-manager' ); ?></a>
+					</div>
+				</div>
+			<?php endif; ?>
 		</div>
 		<?php
 	}
