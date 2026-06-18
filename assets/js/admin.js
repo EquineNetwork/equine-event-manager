@@ -5826,7 +5826,8 @@
 		var toggle = t.closest('[data-eem-action="group-manage-toggle"]');
 		if (toggle) {
 			ev.preventDefault();
-			var panel = toggle.parentNode.querySelector('.eem-group-manage-panel');
+			var gmWrap = toggle.closest('[data-eem-group-manage]') || toggle.parentNode;
+			var panel = gmWrap.querySelector('.eem-group-manage-panel');
 			if (panel) {
 				var open = panel.hasAttribute('hidden');
 				if (open) { panel.removeAttribute('hidden'); } else { panel.setAttribute('hidden', ''); }

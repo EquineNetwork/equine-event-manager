@@ -2889,26 +2889,6 @@ class EEM_Admin {
 								<span><strong><?php esc_html_e( 'Tip:', 'equine-event-manager' ); ?></strong> <?php esc_html_e( 'Click any customer name to open the customer profile, or click an order number to view the order.', 'equine-event-manager' ); ?></span>
 							</div>
 
-							<!-- Filter row -->
-							<div class="eem-stall-chart-filter-row">
-								<div class="eem-stall-chart-filter-search">
-									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-									<input type="search" id="eem-stall-chart-cust-search" class="eem-search-input eem-stall-chart-search-input" placeholder="<?php esc_attr_e( 'Search', 'equine-event-manager' ); ?>" />
-								</div>
-								<?php // V1 D2 — filters the list to orders that carry a Group Name. ?>
-								<button type="button" class="eem-stall-chart-group-toggle" data-eem-action="stall-chart-toggle-groups" aria-pressed="false">
-									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-									<?php esc_html_e( 'Show by group', 'equine-event-manager' ); ?>
-								</button>
-								<?php // V1 #5 — filters the list to orders that have a tack stall. ?>
-								<button type="button" class="eem-stall-chart-group-toggle eem-stall-chart-tack-toggle" data-eem-action="stall-chart-toggle-tack" aria-pressed="false">
-									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-									<?php esc_html_e( 'Tack Stalls', 'equine-event-manager' ); ?>
-								</button>
-								<span class="eem-stall-chart-filter-hint"><?php esc_html_e( 'Search by customer, order, stall, or RV lot.', 'equine-event-manager' ); ?></span>
-							</div>
-							<p class="eem-stall-chart-empty-note" hidden><?php esc_html_e( 'No assignment rows match this search.', 'equine-event-manager' ); ?></p>
-
 							<?php
 							// v4 Slice 6 — group reconciliation. Distinct group names across
 							// this reservation's orders, with an inline rename so the admin can
@@ -2921,13 +2901,34 @@ class EEM_Admin {
 								}
 							}
 							uksort( $eem_group_counts, 'strcasecmp' );
-							if ( ! empty( $eem_group_counts ) ) :
+							$eem_has_groups = ! empty( $eem_group_counts );
 							?>
-							<div class="eem-group-manage" data-eem-group-manage data-reservation-id="<?php echo (int) $reservation_id; ?>">
-								<button type="button" class="eem-stall-chart-group-toggle" data-eem-action="group-manage-toggle" aria-expanded="false">
-									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-									<?php esc_html_e( 'Manage Groups', 'equine-event-manager' ); ?>
-								</button>
+							<!-- Filter row (Manage Groups joins the toolbar inline when groups exist) -->
+							<div<?php echo $eem_has_groups ? ' data-eem-group-manage data-reservation-id="' . (int) $reservation_id . '"' : ''; ?>>
+								<div class="eem-stall-chart-filter-row">
+									<div class="eem-stall-chart-filter-search">
+										<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+										<input type="search" id="eem-stall-chart-cust-search" class="eem-search-input eem-stall-chart-search-input" placeholder="<?php esc_attr_e( 'Search', 'equine-event-manager' ); ?>" />
+									</div>
+									<?php // V1 D2 — filters the list to orders that carry a Group Name. ?>
+									<button type="button" class="eem-stall-chart-group-toggle" data-eem-action="stall-chart-toggle-groups" aria-pressed="false">
+										<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+										<?php esc_html_e( 'Show by group', 'equine-event-manager' ); ?>
+									</button>
+									<?php if ( $eem_has_groups ) : ?>
+									<button type="button" class="eem-stall-chart-group-toggle" data-eem-action="group-manage-toggle" aria-expanded="false">
+										<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+										<?php esc_html_e( 'Manage Groups', 'equine-event-manager' ); ?>
+									</button>
+									<?php endif; ?>
+									<?php // V1 #5 — filters the list to orders that have a tack stall. ?>
+									<button type="button" class="eem-stall-chart-group-toggle eem-stall-chart-tack-toggle" data-eem-action="stall-chart-toggle-tack" aria-pressed="false">
+										<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+										<?php esc_html_e( 'Tack Stalls', 'equine-event-manager' ); ?>
+									</button>
+									<span class="eem-stall-chart-filter-hint"><?php esc_html_e( 'Search by customer, order, stall, or RV lot.', 'equine-event-manager' ); ?></span>
+								</div>
+								<?php if ( $eem_has_groups ) : ?>
 								<div class="eem-group-manage-panel" hidden>
 									<p class="eem-group-manage-hint"><?php esc_html_e( 'Rename a group to merge misspelled variants — every order in the group is updated. The admin-set name is the source of truth.', 'equine-event-manager' ); ?></p>
 									<?php foreach ( $eem_group_counts as $eem_gname => $eem_gcount ) : ?>
@@ -2938,8 +2939,9 @@ class EEM_Admin {
 									</div>
 									<?php endforeach; ?>
 								</div>
+								<?php endif; ?>
 							</div>
-							<?php endif; ?>
+							<p class="eem-stall-chart-empty-note" hidden><?php esc_html_e( 'No assignment rows match this search.', 'equine-event-manager' ); ?></p>
 
 							<?php $this->render_stall_chart_order_count_table( $order_rows, $date_cols, $inv ); ?>
 
