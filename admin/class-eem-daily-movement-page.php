@@ -182,6 +182,7 @@ class EEM_Daily_Movement_Page {
 		}
 
 		$reservation_title = $reservation_id > 0 ? get_the_title( $reservation_id ) : '';
+		$order_map         = self::build_order_map( $reports );
 
 		$back_url = add_query_arg( array(
 			'page'           => self::MENU_SLUG,
@@ -235,13 +236,17 @@ class EEM_Daily_Movement_Page {
 				.dm-pv-btn--outline:hover{background:#f9fafb}
 				a.dm-pv-btn--outline{color:#1e293b}
 				a.dm-pv-btn--outline:hover{color:#1e293b;text-decoration:none}
-				.dm-pv-header{text-align:center;padding:24px 24px 16px}
-				.dm-pv-header h2{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;margin-bottom:4px}
-				.dm-pv-header p{font-size:13px;color:#6B7A99}
-				.dm-pv-body{padding:0 24px 24px}
+				.dm-pv-header{padding:22px 28px 0;max-width:1000px;margin:0 auto}
+				.dm-pv-header-inner{margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid #031B4E}
+				.dm-pv-header h2{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;margin-bottom:6px}
+				.dm-pv-meta{font-size:13px;color:#4a5a7a;display:flex;gap:24px;flex-wrap:wrap}
+				.dm-pv-meta strong{color:#031B4E;font-weight:600}
+				.dm-pv-body{padding:0 28px 24px;max-width:1000px;margin:0 auto}
 				.dm-pv-date-section{margin-bottom:24px}
 				.dm-pv-date-heading{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#031B4E;padding-bottom:3px;border-bottom:1.5px solid #3b82f6;margin:4px 0 6px}
-				.dm-pv-summary{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+				.dm-pv-summary{display:flex;gap:24px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+				.dm-pv-stat{font-size:12px;font-weight:600;color:#031b4e;white-space:nowrap}
+				.dm-pv-stat-icon{font-weight:700;color:#1d4ed8;margin-right:5px}
 				.dm-pv-chip{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
 				.dm-pv-chip::before{content:'';display:inline-block;width:5px;height:5px;border-radius:50%}
 				.dm-pv-chip--arriving{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
@@ -268,8 +273,9 @@ class EEM_Daily_Movement_Page {
 				.dm-pv-status--checked_in{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
 				.dm-pv-status--checked_in::before{background:#22c55e}
 				.dm-pv-status--checked_out{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
-				.dm-pv-status--departing{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
 				.dm-pv-status--checked_out::before{background:#3b82f6}
+				.dm-pv-status--departing{background:#fffbeb;color:#b45309;border:1px solid #fde68a}
+				.dm-pv-status--departing::before{background:#f59e0b}
 				@media print{
 					.dm-pv-toolbar{display:none}
 					body{font-size:11px}
@@ -301,22 +307,27 @@ class EEM_Daily_Movement_Page {
 				</div>
 			</div>
 			<div class="dm-pv-header">
-				<h2><?php echo esc_html( $reservation_title ); ?></h2>
-				<?php if ( '' !== $date_label ) : ?>
-					<p><?php echo esc_html( $date_label ); ?> &middot; <?php printf( esc_html__( 'Printed %s', 'equine-event-manager' ), esc_html( wp_date( 'F j, Y g:i A' ) ) ); ?></p>
-				<?php endif; ?>
+				<div class="dm-pv-header-inner">
+					<h2><?php echo esc_html( $reservation_title ); ?></h2>
+					<div class="dm-pv-meta">
+						<?php if ( '' !== $date_label ) : ?>
+							<span><strong><?php esc_html_e( 'View:', 'equine-event-manager' ); ?></strong> <?php echo esc_html( $date_label ); ?></span>
+						<?php endif; ?>
+						<span><strong><?php esc_html_e( 'Printed:', 'equine-event-manager' ); ?></strong> <?php echo esc_html( wp_date( 'F j, Y g:i A' ) ); ?></span>
+					</div>
+				</div>
 			</div>
 			<div class="dm-pv-body">
 				<?php foreach ( $reports as $report ) : ?>
 					<div class="dm-pv-date-section">
 						<div class="dm-pv-date-heading"><?php echo esc_html( $report['date_display'] ); ?></div>
+						<?php $psum = $report['summary']; ?>
 						<div class="dm-pv-summary">
-							<span class="dm-pv-chip dm-pv-chip--arriving"><?php printf( esc_html__( '%d Arriving', 'equine-event-manager' ), $report['summary']['arriving'] ); ?></span>
-							<span class="dm-pv-chip dm-pv-chip--departing"><?php printf( esc_html__( '%d Departing', 'equine-event-manager' ), $report['summary']['departing'] ); ?></span>
-							<span class="dm-pv-chip dm-pv-chip--pending"><?php printf( esc_html__( '%d Not Yet Checked In', 'equine-event-manager' ), $report['summary']['not_yet_checked_in'] ); ?></span>
-							<?php if ( ( $report['summary']['shavings_total'] ?? 0 ) > 0 ) : ?>
-								<span class="dm-pv-chip dm-pv-chip--shavings"><?php printf( esc_html__( '%d Bags Shavings', 'equine-event-manager' ), $report['summary']['shavings_total'] ); ?></span>
-							<?php endif; ?>
+							<span class="dm-pv-stat"><span class="dm-pv-stat-icon">↓</span><?php printf( esc_html__( '%d Arriving', 'equine-event-manager' ), (int) ( $psum['arriving'] ?? 0 ) ); ?></span>
+							<span class="dm-pv-stat"><span class="dm-pv-stat-icon">✓</span><?php printf( esc_html__( '%d Checked In', 'equine-event-manager' ), (int) ( $psum['checked_in'] ?? 0 ) ); ?></span>
+							<span class="dm-pv-stat"><span class="dm-pv-stat-icon">↑</span><?php printf( esc_html__( '%d Departing', 'equine-event-manager' ), (int) ( $psum['departing'] ?? 0 ) ); ?></span>
+							<span class="dm-pv-stat"><span class="dm-pv-stat-icon">✓</span><?php printf( esc_html__( '%d Checked Out', 'equine-event-manager' ), (int) ( $psum['departed'] ?? 0 ) ); ?></span>
+							<span class="dm-pv-stat"><span class="dm-pv-stat-icon">◆</span><?php printf( esc_html__( '%d Bags Shavings', 'equine-event-manager' ), (int) ( $psum['shavings_total'] ?? 0 ) ); ?></span>
 						</div>
 						<?php
 						foreach ( array( 'arriving', 'departing' ) as $group ) :
@@ -334,24 +345,30 @@ class EEM_Daily_Movement_Page {
 									<tr>
 										<th><?php esc_html_e( 'Stall #', 'equine-event-manager' ); ?></th>
 										<th><?php esc_html_e( 'Customer', 'equine-event-manager' ); ?></th>
-										<th><?php esc_html_e( 'Dates', 'equine-event-manager' ); ?></th>
+										<th><?php esc_html_e( 'Order #', 'equine-event-manager' ); ?></th>
+										<th><?php esc_html_e( 'Arrival', 'equine-event-manager' ); ?></th>
+										<th><?php esc_html_e( 'Departure', 'equine-event-manager' ); ?></th>
 										<th><?php esc_html_e( 'Shavings', 'equine-event-manager' ); ?></th>
 										<th><?php esc_html_e( 'Status', 'equine-event-manager' ); ?></th>
-										<th><?php esc_html_e( 'Notes', 'equine-event-manager' ); ?></th>
 									</tr>
 								</thead>
 								<tbody>
-									<?php foreach ( $rows as $row ) : ?>
+									<?php foreach ( $rows as $row ) :
+										$ok    = isset( $row['order_key'] ) ? (string) $row['order_key'] : '';
+										$ord   = '' !== $ok && isset( $order_map[ $ok ] ) ? $order_map[ $ok ] : null;
+										$ordnum = $ord && isset( $ord['order_number'] ) ? EEM_Orders_List_Page::format_order_number_display( (string) $ord['order_number'] ) : '—';
+									?>
 										<tr>
 											<td class="dm-pv-cell-stall"><?php echo esc_html( implode( ', ', $row['stall_numbers'] ) ?: '—' ); ?></td>
 											<td><?php echo esc_html( $row['customer_name'] ); ?></td>
-											<td class="dm-pv-cell-dates"><?php echo esc_html( EEM_Daily_Movement_Service::format_display_date( $row['arrival_date'] ) . ' → ' . EEM_Daily_Movement_Service::format_display_date( $row['departure_date'] ) ); ?></td>
+											<td><?php echo esc_html( $ordnum ); ?></td>
+											<td class="dm-pv-cell-dates"><?php echo esc_html( EEM_Daily_Movement_Service::format_display_date( $row['arrival_date'] ) ?: '—' ); ?></td>
+											<td class="dm-pv-cell-dates"><?php echo esc_html( EEM_Daily_Movement_Service::format_display_date( $row['departure_date'] ) ?: '—' ); ?></td>
 											<td class="dm-pv-cell-shavings"><?php echo esc_html( $row['shavings'] > 0 ? (string) $row['shavings'] : '—' ); ?></td>
 											<td>
 												<?php
 												// A row in the Departing list is leaving this day — its status
-												// reads "Departing" (one of: Not Checked In / Checked In / Departing),
-												// not the underlying check-in flag.
+												// reads "Departing", not the underlying check-in flag.
 												if ( 'departing' === $group ) {
 													$s  = 'departing';
 													$sl = __( 'Departing', 'equine-event-manager' );
@@ -362,7 +379,6 @@ class EEM_Daily_Movement_Page {
 												?>
 												<span class="dm-pv-status dm-pv-status--<?php echo esc_attr( $s ); ?>"><?php echo esc_html( $sl ); ?></span>
 											</td>
-											<td class="dm-pv-cell-notes"><?php echo esc_html( $row['special_instructions'] ); ?></td>
 										</tr>
 									<?php endforeach; ?>
 								</tbody>
