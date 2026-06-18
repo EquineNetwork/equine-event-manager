@@ -101,9 +101,11 @@ class EEM_Daily_Movement_Page {
 			'actions' => $print_btn,
 		) );
 
-		self::render_stat_cards( $totals );
+		// Reservation/date selector + view tabs go ABOVE the metric cards so it's
+		// clear the metrics reflect the current selection (all days vs one day).
 		self::render_toolbar( $reservations, $reservation_id, $date, $available_dates );
 		self::render_view_tabs( $reservation_id, $view, $date );
+		self::render_stat_cards( $totals );
 
 		if ( empty( $reservations ) ) {
 			echo '<div class="eem-dm-empty"><p>' . esc_html__( 'No published reservations yet. Create and publish a reservation to see movement data.', 'equine-event-manager' ) . '</p></div>';
@@ -218,7 +220,7 @@ class EEM_Daily_Movement_Page {
 				.dm-pv-header p{font-size:13px;color:#6B7A99}
 				.dm-pv-body{padding:0 24px 24px}
 				.dm-pv-date-section{margin-bottom:24px}
-				.dm-pv-date-heading{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:#031B4E;padding-bottom:6px;border-bottom:2px solid #3b82f6;margin-bottom:8px}
+				.dm-pv-date-heading{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#031B4E;padding-bottom:3px;border-bottom:1.5px solid #3b82f6;margin:4px 0 6px}
 				.dm-pv-summary{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap}
 				.dm-pv-chip{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
 				.dm-pv-chip::before{content:'';display:inline-block;width:5px;height:5px;border-radius:50%}
@@ -246,15 +248,21 @@ class EEM_Daily_Movement_Page {
 				.dm-pv-status--checked_in{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
 				.dm-pv-status--checked_in::before{background:#22c55e}
 				.dm-pv-status--checked_out{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+				.dm-pv-status--departing{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
 				.dm-pv-status--checked_out::before{background:#3b82f6}
 				@media print{
 					.dm-pv-toolbar{display:none}
 					body{font-size:11px}
+					.dm-pv-date-heading{font-size:12px;margin:2px 0 5px}
 					.dm-pv-header h2{font-size:18px}
 					.dm-pv-table td{padding:5px 8px;font-size:11px}
 					.dm-pv-table th{font-size:9.5px;padding:4px 8px}
 					.dm-pv-chip{font-size:10px;padding:1px 6px}
 					.dm-pv-status{font-size:9.5px;padding:1px 5px}
+					/* Flat status/summary pills in print — colored dot + text only, no
+					   filled background or soft border (those warm fills read as an
+					   orange "halo" on the printout). */
+					.dm-pv-chip,.dm-pv-status{background:transparent !important;border-color:transparent !important}
 					@page{margin:10mm 8mm;size:letter portrait}
 					*{-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}
 				}
@@ -321,8 +329,16 @@ class EEM_Daily_Movement_Page {
 											<td class="dm-pv-cell-shavings"><?php echo esc_html( $row['shavings'] > 0 ? (string) $row['shavings'] : '—' ); ?></td>
 											<td>
 												<?php
-												$s  = $row['check_in_status'];
-												$sl = $status_labels[ $s ] ?? ucwords( str_replace( '_', ' ', $s ) );
+												// A row in the Departing list is leaving this day — its status
+												// reads "Departing" (one of: Not Checked In / Checked In / Departing),
+												// not the underlying check-in flag.
+												if ( 'departing' === $group ) {
+													$s  = 'departing';
+													$sl = __( 'Departing', 'equine-event-manager' );
+												} else {
+													$s  = $row['check_in_status'];
+													$sl = $status_labels[ $s ] ?? ucwords( str_replace( '_', ' ', $s ) );
+												}
 												?>
 												<span class="dm-pv-status dm-pv-status--<?php echo esc_attr( $s ); ?>"><?php echo esc_html( $sl ); ?></span>
 											</td>
@@ -540,12 +556,12 @@ class EEM_Daily_Movement_Page {
 
 			<?php if ( ! empty( $report['arriving'] ) ) : ?>
 				<h4 class="eem-dm-group-heading"><?php esc_html_e( 'Arriving', 'equine-event-manager' ); ?></h4>
-				<?php self::render_table( $report['arriving'], $order_map ); ?>
+				<?php self::render_table( $report['arriving'], $order_map, 'arriving' ); ?>
 			<?php endif; ?>
 
 			<?php if ( ! empty( $report['departing'] ) ) : ?>
 				<h4 class="eem-dm-group-heading"><?php esc_html_e( 'Departing', 'equine-event-manager' ); ?></h4>
-				<?php self::render_table( $report['departing'], $order_map ); ?>
+				<?php self::render_table( $report['departing'], $order_map, 'departing' ); ?>
 			<?php endif; ?>
 		</div>
 		<?php
@@ -558,7 +574,7 @@ class EEM_Daily_Movement_Page {
 	 * @param array<string, array|null> $order_map Order key → order data map.
 	 * @return void
 	 */
-	private static function render_table( array $rows, array $order_map = array() ): void {
+	private static function render_table( array $rows, array $order_map = array(), string $context = '' ): void {
 		usort( $rows, function ( $a, $b ) {
 			$a_stalls = implode( ',', $a['stall_numbers'] );
 			$b_stalls = implode( ',', $b['stall_numbers'] );
@@ -607,7 +623,11 @@ class EEM_Daily_Movement_Page {
 						</td>
 						<td class="eem-dm-cell-shavings"><?php echo esc_html( $row['shavings'] > 0 ? (string) $row['shavings'] : '—' ); ?></td>
 						<td class="eem-dm-cell-status">
-							<?php echo wp_kses_post( self::status_badge( $row['check_in_status'] ) ); ?>
+							<?php
+							// Departing rows read "Departing" (the row is leaving this day),
+							// not the underlying check-in flag.
+							echo wp_kses_post( self::status_badge( 'departing' === $context ? 'departing' : $row['check_in_status'] ) );
+							?>
 						</td>
 						<td class="eem-dm-cell-notes"><?php echo esc_html( $row['special_instructions'] ); ?></td>
 					</tr>
@@ -629,6 +649,7 @@ class EEM_Daily_Movement_Page {
 			'occupied'       => __( 'Not Checked In', 'equine-event-manager' ),
 			'checked_in'     => __( 'Checked In', 'equine-event-manager' ),
 			'checked_out'    => __( 'Checked Out', 'equine-event-manager' ),
+			'departing'      => __( 'Departing', 'equine-event-manager' ),
 			'needs_cleaning' => __( 'Needs Cleaning', 'equine-event-manager' ),
 			'clean'          => __( 'Clean', 'equine-event-manager' ),
 			'available'      => __( 'Available', 'equine-event-manager' ),

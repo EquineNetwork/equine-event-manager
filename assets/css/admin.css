@@ -10407,12 +10407,12 @@ a.eem-dm-view-tab.active:visited {
 	border-top: 1px solid var(--eem-border, #dcdcde);
 }
 .eem-dm-date-heading {
-	font-size: 16px;
+	font-size: 14px;
 	font-weight: 700;
 	color: var(--eem-navy, #1e293b);
-	margin: 0 0 12px;
-	padding-bottom: 8px;
-	border-bottom: 2px solid var(--eem-electric, #3b82f6);
+	margin: 0 0 8px;
+	padding-bottom: 5px;
+	border-bottom: 1.5px solid var(--eem-electric, #3b82f6);
 }
 .eem-dm-summary {
 	display: flex;
@@ -10564,6 +10564,14 @@ a.eem-dm-view-tab.active:visited {
 	border: 1px solid #bfdbfe;
 }
 .eem-dm-status-checked_out::before {
+	background: #3b82f6;
+}
+.eem-dm-status-departing {
+	background: #eff6ff;
+	color: #1d4ed8;
+	border: 1px solid #bfdbfe;
+}
+.eem-dm-status-departing::before {
 	background: #3b82f6;
 }
 .eem-dm-status-needs_cleaning {
