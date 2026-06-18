@@ -364,6 +364,10 @@ class EEM_Plugin {
 		// (logged to the Activity Log). Handler lives on the Order Detail page.
 		add_action( 'wp_ajax_eem_order_remove_discount', array( 'EEM_Order_Detail_Page', 'ajax_remove_discount' ) );
 
+		// Order Edit P3 — add inventory (stall/RV) or a custom line item to an
+		// existing order at any time. Handler lives on the Order Detail page.
+		add_action( 'wp_ajax_eem_order_add_items', array( 'EEM_Order_Detail_Page', 'ajax_add_items' ) );
+
 		// C14 — admin Collect Payment Stripe charge (two-step: create intent →
 		// confirm). Capability + nonce gated; reuses the Stripe REST primitives on
 		// EEM_Shortcodes. Admin-only (no nopriv).

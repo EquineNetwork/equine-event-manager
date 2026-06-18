@@ -207,6 +207,8 @@ class EEM_Order_Detail_Page {
 		<?php $this->render_cancel_modal( $order ); ?>
 		<?php $this->render_mark_paid_modal( $order ); ?>
 
+		<?php $this->render_add_items_modal( $order ); ?>
+
 		<?php $this->render_remove_discount_modal( $order ); ?>
 
 		<?php
@@ -338,6 +340,9 @@ class EEM_Order_Detail_Page {
 		<a class="eem-btn eem-btn-ghost" href="<?php echo esc_url( $back_url ); ?>"><?php esc_html_e( 'Back to Orders', 'equine-event-manager' ); ?></a>
 		<?php if ( '' !== $reservation_url ) : ?>
 			<a class="eem-btn eem-btn-ghost" href="<?php echo esc_url( $reservation_url ); ?>"><?php esc_html_e( 'Edit Reservation', 'equine-event-manager' ); ?></a>
+		<?php endif; ?>
+		<?php if ( ! isset( $order['status_slug'] ) || 'cancelled' !== $order['status_slug'] ) : ?>
+			<a class="eem-btn eem-btn-primary" href="#" data-eem-action="order-add-items"><?php esc_html_e( 'Add Items', 'equine-event-manager' ); ?></a>
 		<?php endif; ?>
 		<?php if ( '' !== $receipt_pdf_url ) : ?>
 			<a class="eem-btn eem-btn-ghost" href="<?php echo esc_url( $receipt_pdf_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Download Receipt', 'equine-event-manager' ); ?></a>
@@ -1298,6 +1303,126 @@ class EEM_Order_Detail_Page {
 	}
 
 	/**
+	 * Add-Items modal — adds reservation inventory (stalls / RV lots) or a custom
+	 * line item to the order at any time (Order Edit). The "Item type" select is
+	 * populated from the reservation's enabled sections (via
+	 * EEM_Shortcodes::get_addable_inventory) plus an always-present Custom Line
+	 * Item option. Per-stay-type rates + the available date window are embedded as
+	 * data attributes so the client can show a live base-price preview; the
+	 * authoritative price is recomputed server-side on submit.
+	 *
+	 * Not rendered for cancelled orders.
+	 *
+	 * @param array<string, mixed> $order Grouped order payload.
+	 * @return void
+	 */
+	private function render_add_items_modal( array $order ) {
+		if ( isset( $order['status_slug'] ) && 'cancelled' === $order['status_slug'] ) {
+			return;
+		}
+		$order_key      = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
+		$reservation_id = isset( $order['reservation_id'] ) ? (int) $order['reservation_id'] : 0;
+		if ( '' === $order_key ) {
+			return;
+		}
+
+		$inventory = ( $reservation_id > 0 && class_exists( 'EEM_Shortcodes' ) )
+			? ( new EEM_Shortcodes() )->get_addable_inventory( $reservation_id )
+			: array( 'stall' => null, 'rv' => null, 'available_start' => '', 'available_end' => '' );
+
+		// Prefill billing dates from the order's existing section, else the
+		// reservation's available window.
+		$default_arrival   = (string) ( $order['stall_arrival_date'] ?? $order['rv_arrival_date'] ?? $inventory['available_start'] ?? '' );
+		$default_departure = (string) ( $order['stall_departure_date'] ?? $order['rv_departure_date'] ?? $inventory['available_end'] ?? '' );
+		?>
+		<div class="eem-modal" id="eem-order-add-items-modal" role="dialog" aria-modal="true" aria-labelledby="eem-order-add-items-title" aria-hidden="true">
+			<div class="eem-modal-card">
+				<header class="eem-modal-head">
+					<h2 class="eem-modal-title" id="eem-order-add-items-title"><?php esc_html_e( 'Add Items', 'equine-event-manager' ); ?></h2>
+					<button type="button" class="eem-modal-close" data-eem-action="order-add-items-close" aria-label="<?php esc_attr_e( 'Close', 'equine-event-manager' ); ?>">&times;</button>
+				</header>
+				<form class="eem-modal-body" method="post" data-eem-add-items-form
+					data-default-arrival="<?php echo esc_attr( $default_arrival ); ?>"
+					data-default-departure="<?php echo esc_attr( $default_departure ); ?>">
+					<?php wp_nonce_field( 'eem_add_items_' . $order_key, '_eem_add_items_nonce' ); ?>
+					<input type="hidden" name="action" value="eem_order_add_items" />
+					<input type="hidden" name="order_key" value="<?php echo esc_attr( $order_key ); ?>" />
+
+					<p class="eem-order-refund-summary"><?php esc_html_e( 'Add inventory or a custom charge to this order. New charges are added to the balance due and logged to the activity history.', 'equine-event-manager' ); ?></p>
+
+					<div class="eem-field-row">
+						<label class="eem-field-label" for="eem-add-items-type"><?php esc_html_e( 'Item type', 'equine-event-manager' ); ?></label>
+						<select class="eem-field-input" id="eem-add-items-type" name="item_type" data-eem-add-items-type>
+							<?php foreach ( array( 'stall', 'rv' ) as $section ) : ?>
+								<?php if ( ! empty( $inventory[ $section ] ) ) : ?>
+									<option value="<?php echo esc_attr( $section ); ?>"
+										data-rates="<?php echo esc_attr( wp_json_encode( $inventory[ $section ]['rates'] ) ); ?>"
+										data-staytypes="<?php echo esc_attr( wp_json_encode( $inventory[ $section ]['stay_types'] ) ); ?>">
+										<?php echo esc_html( $inventory[ $section ]['label'] ); ?>
+									</option>
+								<?php endif; ?>
+							<?php endforeach; ?>
+							<option value="custom"><?php esc_html_e( 'Custom Line Item', 'equine-event-manager' ); ?></option>
+						</select>
+					</div>
+
+					<?php // Inventory fields (stall / rv) — hidden when item type is custom. ?>
+					<div data-eem-add-items-inventory>
+						<div class="eem-field-row" data-eem-add-items-staytype-row>
+							<label class="eem-field-label" for="eem-add-items-staytype"><?php esc_html_e( 'Stay type', 'equine-event-manager' ); ?></label>
+							<select class="eem-field-input" id="eem-add-items-staytype" name="stay_type" data-eem-add-items-staytype>
+								<?php
+								// Seeded from the first section's options; refreshed by JS on type change.
+								$first = ! empty( $inventory['stall'] ) ? $inventory['stall'] : ( ! empty( $inventory['rv'] ) ? $inventory['rv'] : null );
+								if ( $first ) :
+									foreach ( $first['stay_types'] as $value => $label ) :
+										?><option value="<?php echo esc_attr( $value ); ?>"><?php echo esc_html( $label ); ?></option><?php
+									endforeach;
+								endif;
+								?>
+							</select>
+						</div>
+						<div class="eem-field-row">
+							<label class="eem-field-label" for="eem-add-items-qty"><?php esc_html_e( 'Quantity', 'equine-event-manager' ); ?></label>
+							<input type="number" class="eem-field-input" id="eem-add-items-qty" name="qty" min="1" step="1" value="1" data-eem-add-items-qty />
+						</div>
+						<div class="eem-field-row eem-field-row--split">
+							<div>
+								<label class="eem-field-label" for="eem-add-items-arrival"><?php esc_html_e( 'Arrival', 'equine-event-manager' ); ?></label>
+								<input type="date" class="eem-field-input" id="eem-add-items-arrival" name="arrival" value="<?php echo esc_attr( $default_arrival ); ?>" data-eem-add-items-arrival />
+							</div>
+							<div>
+								<label class="eem-field-label" for="eem-add-items-departure"><?php esc_html_e( 'Departure', 'equine-event-manager' ); ?></label>
+								<input type="date" class="eem-field-input" id="eem-add-items-departure" name="departure" value="<?php echo esc_attr( $default_departure ); ?>" data-eem-add-items-departure />
+							</div>
+						</div>
+						<p class="eem-order-add-items-preview" data-eem-add-items-preview></p>
+					</div>
+
+					<?php // Custom line item fields — hidden unless item type is custom. ?>
+					<div data-eem-add-items-custom hidden>
+						<div class="eem-field-row">
+							<label class="eem-field-label" for="eem-add-items-desc"><?php esc_html_e( 'Description', 'equine-event-manager' ); ?> <span class="eem-req">*</span></label>
+							<input type="text" class="eem-field-input" id="eem-add-items-desc" name="description" maxlength="200" placeholder="<?php esc_attr_e( 'e.g. Late fee', 'equine-event-manager' ); ?>" />
+						</div>
+						<div class="eem-field-row">
+							<label class="eem-field-label" for="eem-add-items-amount"><?php esc_html_e( 'Amount', 'equine-event-manager' ); ?> <span class="eem-req">*</span></label>
+							<input type="number" class="eem-field-input" id="eem-add-items-amount" name="amount" step="0.01" placeholder="0.00" />
+						</div>
+					</div>
+
+					<div class="eem-order-refund-error" data-eem-add-items-error hidden></div>
+				</form>
+				<footer class="eem-modal-foot eem-modal-foot--split">
+					<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="order-add-items-close"><?php esc_html_e( 'Cancel', 'equine-event-manager' ); ?></button>
+					<button type="button" class="eem-btn eem-btn-primary" data-eem-action="order-add-items-confirm"><?php esc_html_e( 'Add to order', 'equine-event-manager' ); ?></button>
+				</footer>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
 	 * AJAX — remove an order's discount with a required fresh reason.
 	 *
 	 * Capability + nonce gated. Validates the reason is non-empty, removes the
@@ -1361,6 +1486,154 @@ class EEM_Order_Detail_Page {
 			'requires_reload' => true,
 			'message'         => __( 'Discount removed.', 'equine-event-manager' ),
 		) );
+	}
+
+	/**
+	 * AJAX — add an item to an existing order at any time (Order Edit).
+	 *
+	 * Supports three item types:
+	 *   - 'stall' / 'rv' — adds $qty units of the reservation's inventory at the
+	 *     base rate, priced via EEM_Shortcodes::price_base_rate_addition() and
+	 *     persisted via EEM_Orders_Repository::add_component_quantity() (bumps an
+	 *     existing component row or clones a new one). amount_paid is left
+	 *     untouched so the addition surfaces as balance due.
+	 *   - 'custom' — adds a free-form custom line item (description + amount) via
+	 *     the order adjustments repo.
+	 *
+	 * Capability + nonce gated. Logs an order_item_added Activity Log entry and
+	 * responds with requires_reload so the client refreshes the recomputed total.
+	 *
+	 * @return void
+	 */
+	public static function ajax_add_items(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+
+		$order_key = isset( $_POST['order_key'] ) ? sanitize_text_field( wp_unslash( $_POST['order_key'] ) ) : '';
+		check_ajax_referer( 'eem_add_items_' . $order_key, '_eem_add_items_nonce' );
+
+		if ( '' === $order_key ) {
+			wp_send_json_error( array( 'message' => __( 'Order not found.', 'equine-event-manager' ) ), 404 );
+		}
+
+		$repo  = new EEM_Orders_Repository();
+		$order = $repo->get_order( $order_key );
+		if ( ! is_array( $order ) ) {
+			wp_send_json_error( array( 'message' => __( 'Order not found.', 'equine-event-manager' ) ), 404 );
+		}
+		if ( isset( $order['status_slug'] ) && 'cancelled' === $order['status_slug'] ) {
+			wp_send_json_error( array( 'message' => __( 'Cannot add items to a cancelled order.', 'equine-event-manager' ) ), 422 );
+		}
+
+		$item_type = isset( $_POST['item_type'] ) ? sanitize_key( wp_unslash( $_POST['item_type'] ) ) : '';
+
+		/* ---- Custom line item ---- */
+		if ( 'custom' === $item_type ) {
+			$description = isset( $_POST['description'] ) ? sanitize_text_field( wp_unslash( $_POST['description'] ) ) : '';
+			$amount      = isset( $_POST['amount'] ) ? round( (float) wp_unslash( $_POST['amount'] ), 2 ) : 0.0;
+			if ( '' === trim( $description ) ) {
+				wp_send_json_error( array( 'message' => __( 'A description is required.', 'equine-event-manager' ), 'code' => 'description_required' ), 422 );
+			}
+			if ( abs( $amount ) < 0.005 ) {
+				wp_send_json_error( array( 'message' => __( 'Enter a non-zero amount.', 'equine-event-manager' ), 'code' => 'amount_required' ), 422 );
+			}
+			if ( ! class_exists( 'EEM_Order_Adjustments_Repo' ) ) {
+				wp_send_json_error( array( 'message' => __( 'Custom line items are unavailable.', 'equine-event-manager' ) ), 500 );
+			}
+			$inserted = EEM_Order_Adjustments_Repo::insert_custom_item( $order_key, $description, $amount );
+			if ( false === $inserted ) {
+				wp_send_json_error( array( 'message' => __( 'The line item could not be added. Please try again.', 'equine-event-manager' ) ), 500 );
+			}
+
+			self::log_item_added( $order_key, array(
+				'item_type'   => 'custom',
+				'description' => $description,
+				'amount'      => $amount,
+			) );
+
+			wp_send_json_success( array(
+				'requires_reload' => true,
+				'message'         => __( 'Line item added.', 'equine-event-manager' ),
+			) );
+		}
+
+		/* ---- Stall / RV inventory ---- */
+		if ( 'stall' === $item_type || 'rv' === $item_type ) {
+			$reservation_id = isset( $order['reservation_id'] ) ? (int) $order['reservation_id'] : 0;
+			if ( $reservation_id < 1 ) {
+				wp_send_json_error( array(
+					'message' => __( 'This order is not linked to a reservation, so inventory cannot be priced. Add a custom line item instead.', 'equine-event-manager' ),
+					'code'    => 'no_reservation',
+				), 422 );
+			}
+
+			$qty       = isset( $_POST['qty'] ) ? max( 1, (int) wp_unslash( $_POST['qty'] ) ) : 0;
+			$stay_type = isset( $_POST['stay_type'] ) ? sanitize_text_field( wp_unslash( $_POST['stay_type'] ) ) : '';
+			$arrival   = isset( $_POST['arrival'] ) ? sanitize_text_field( wp_unslash( $_POST['arrival'] ) ) : '';
+			$departure = isset( $_POST['departure'] ) ? sanitize_text_field( wp_unslash( $_POST['departure'] ) ) : '';
+			if ( $qty < 1 ) {
+				wp_send_json_error( array( 'message' => __( 'Enter a quantity of at least 1.', 'equine-event-manager' ), 'code' => 'qty_required' ), 422 );
+			}
+
+			if ( ! class_exists( 'EEM_Shortcodes' ) ) {
+				wp_send_json_error( array( 'message' => __( 'Pricing engine unavailable.', 'equine-event-manager' ) ), 500 );
+			}
+			$priced = ( new EEM_Shortcodes() )->price_base_rate_addition( $reservation_id, $item_type, $qty, $stay_type, $arrival, $departure );
+			if ( (float) $priced['unit_price'] <= 0.0 ) {
+				wp_send_json_error( array(
+					'message' => __( 'No base rate is configured for that stay type on this reservation.', 'equine-event-manager' ),
+					'code'    => 'no_rate',
+				), 422 );
+			}
+
+			$ok = $repo->add_component_quantity( $order_key, $item_type, $qty, $priced );
+			if ( ! $ok ) {
+				wp_send_json_error( array( 'message' => __( 'The item could not be added. Please try again.', 'equine-event-manager' ) ), 500 );
+			}
+
+			self::log_item_added( $order_key, array(
+				'item_type'  => $item_type,
+				'qty'        => $qty,
+				'stay_type'  => (string) $priced['stay_type'],
+				'unit_price' => (float) $priced['unit_price'],
+				'nights'     => (int) $priced['nights'],
+				'subtotal'   => (float) $priced['subtotal'],
+			) );
+
+			wp_send_json_success( array(
+				'requires_reload' => true,
+				'message'         => sprintf(
+					/* translators: 1: quantity, 2: item label */
+					__( 'Added %1$d × %2$s.', 'equine-event-manager' ),
+					$qty,
+					'rv' === $item_type ? __( 'RV Lot', 'equine-event-manager' ) : __( 'Stall', 'equine-event-manager' )
+				),
+			) );
+		}
+
+		wp_send_json_error( array( 'message' => __( 'Unknown item type.', 'equine-event-manager' ), 'code' => 'bad_type' ), 422 );
+	}
+
+	/**
+	 * Write an order_item_added Activity Log entry for an Order-Edit addition.
+	 *
+	 * @param string               $order_key Order key the item was added to.
+	 * @param array<string, mixed> $payload   Item descriptor (type + amounts).
+	 * @return void
+	 */
+	private static function log_item_added( string $order_key, array $payload ): void {
+		if ( ! class_exists( 'EEM_Activity_Log' ) ) {
+			return;
+		}
+		EEM_Activity_Log::write(
+			'order_item_added',
+			array_merge( array( 'order_key' => $order_key ), $payload ),
+			array(
+				'actor_type' => 'admin',
+				'actor_id'   => get_current_user_id(),
+			)
+		);
 	}
 
 	/**

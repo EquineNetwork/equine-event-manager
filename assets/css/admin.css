@@ -5376,6 +5376,27 @@ a.eem-btn-collect-banner:focus {
 	margin-top: 8px;
 }
 
+/* Order Edit P3 — Add-Items modal: split date row + base-price preview. */
+.eem-field-row--split {
+	display: flex;
+	gap: 12px;
+}
+
+.eem-field-row--split > div {
+	flex: 1 1 0;
+	min-width: 0;
+}
+
+.eem-order-add-items-preview {
+	margin: 4px 0 0;
+	font-size: 13px;
+	color: var(--eem-muted, #646970);
+}
+
+.eem-order-add-items-preview:empty {
+	display: none;
+}
+
 /* Per-component refund line in Payment Details > Refund History
    (rendered by handle_ajax_refund_single's refund_history_html fragment). */
 .eem-order-payment__refund-line {

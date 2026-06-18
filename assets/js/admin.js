@@ -1922,6 +1922,155 @@
 		}
 	});
 
+	/* ---- Order Edit P3 — Add-Items modal ---- */
+
+	function addItemsModal() {
+		return document.getElementById('eem-order-add-items-modal');
+	}
+
+	function openOrderAddItemsModal() {
+		var modal = addItemsModal();
+		if (!modal) return;
+		var errEl = modal.querySelector('[data-eem-add-items-error]');
+		if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
+		syncOrderAddItemsType();
+		modal.classList.add('open');
+		modal.setAttribute('aria-hidden', 'false');
+		closeAllDropdowns();
+	}
+
+	function closeOrderAddItemsModal() {
+		var modal = addItemsModal();
+		if (!modal) return;
+		modal.classList.remove('open');
+		modal.setAttribute('aria-hidden', 'true');
+	}
+
+	function showOrderAddItemsError(message) {
+		var modal = addItemsModal();
+		if (!modal) return;
+		var errEl = modal.querySelector('[data-eem-add-items-error]');
+		if (!errEl) { window.alert(message); return; }
+		errEl.textContent = message;
+		errEl.hidden = false;
+	}
+
+	// Number of billable nights from the two date inputs (min 1).
+	function addItemsNights(modal) {
+		var a = modal.querySelector('[data-eem-add-items-arrival]');
+		var d = modal.querySelector('[data-eem-add-items-departure]');
+		if (!a || !d || !a.value || !d.value) return 1;
+		var ms = Date.parse(d.value) - Date.parse(a.value);
+		if (isNaN(ms) || ms <= 0) return 1;
+		return Math.max(1, Math.round(ms / 86400000));
+	}
+
+	// Show inventory vs custom field groups + repopulate the stay-type select
+	// from the selected section's data-staytypes, then refresh the preview.
+	function syncOrderAddItemsType() {
+		var modal = addItemsModal();
+		if (!modal) return;
+		var typeSel = modal.querySelector('[data-eem-add-items-type]');
+		var inv = modal.querySelector('[data-eem-add-items-inventory]');
+		var custom = modal.querySelector('[data-eem-add-items-custom]');
+		if (!typeSel) return;
+		var isCustom = typeSel.value === 'custom';
+		if (inv) inv.hidden = isCustom;
+		if (custom) custom.hidden = !isCustom;
+
+		if (!isCustom) {
+			var opt = typeSel.options[typeSel.selectedIndex];
+			var stayTypes = {};
+			try { stayTypes = JSON.parse(opt.getAttribute('data-staytypes') || '{}'); } catch (e) { stayTypes = {}; }
+			var staySel = modal.querySelector('[data-eem-add-items-staytype]');
+			if (staySel) {
+				var prev = staySel.value;
+				staySel.innerHTML = '';
+				Object.keys(stayTypes).forEach(function (val) {
+					var o = document.createElement('option');
+					o.value = val;
+					o.textContent = stayTypes[val];
+					staySel.appendChild(o);
+				});
+				if (prev && stayTypes[prev]) staySel.value = prev;
+			}
+		}
+		syncOrderAddItemsPreview();
+	}
+
+	function syncOrderAddItemsPreview() {
+		var modal = addItemsModal();
+		if (!modal) return;
+		var typeSel = modal.querySelector('[data-eem-add-items-type]');
+		var preview = modal.querySelector('[data-eem-add-items-preview]');
+		if (!typeSel || !preview) return;
+		if (typeSel.value === 'custom') { preview.textContent = ''; return; }
+
+		var opt = typeSel.options[typeSel.selectedIndex];
+		var rates = {};
+		try { rates = JSON.parse(opt.getAttribute('data-rates') || '{}'); } catch (e) { rates = {}; }
+		var staySel = modal.querySelector('[data-eem-add-items-staytype]');
+		var qtyEl = modal.querySelector('[data-eem-add-items-qty]');
+		var stay = staySel ? staySel.value : '';
+		var rate = rates[stay] ? parseFloat(rates[stay]) : 0;
+		var qty = qtyEl ? Math.max(1, parseInt(qtyEl.value, 10) || 1) : 1;
+		var nights = addItemsNights(modal);
+		var subtotal = rate * qty * nights;
+		if (rate <= 0) {
+			preview.textContent = 'No base rate configured for that stay type.';
+			return;
+		}
+		preview.textContent = 'Base charge: $' + subtotal.toFixed(2) +
+			' (' + qty + ' × $' + rate.toFixed(2) + ' × ' + nights + ' night' + (nights === 1 ? '' : 's') +
+			'). Fees & tax calculated on save.';
+	}
+
+	function submitOrderAddItemsForm() {
+		var modal = addItemsModal();
+		if (!modal) return;
+		var form = modal.querySelector('[data-eem-add-items-form]');
+		if (!form) return;
+		var errEl = modal.querySelector('[data-eem-add-items-error]');
+		if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
+		var confirmBtn = modal.querySelector('[data-eem-action="order-add-items-confirm"]');
+		if (confirmBtn) confirmBtn.disabled = true;
+
+		fetch(window.ajaxurl || '/wp-admin/admin-ajax.php', {
+			method: 'POST',
+			credentials: 'same-origin',
+			body: new FormData(form)
+		}).then(function (response) {
+			return response.json().catch(function () { return { success: false, data: { message: 'Unexpected server response.' } }; });
+		}).then(function (json) {
+			if (confirmBtn) confirmBtn.disabled = false;
+			if (!json || !json.success) {
+				showOrderAddItemsError((json && json.data && json.data.message) ? json.data.message : 'Could not add the item.');
+				return;
+			}
+			if (window.EEM && typeof window.EEM.showSaveToast === 'function') {
+				window.EEM.showSaveToast((json.data && json.data.message) ? json.data.message : 'Item added.');
+			}
+			setTimeout(function () { window.location.reload(); }, 700);
+		}).catch(function () {
+			if (confirmBtn) confirmBtn.disabled = false;
+			showOrderAddItemsError('Network error. Please try again.');
+		});
+	}
+
+	// Live preview + type-switch on change within the Add-Items modal.
+	document.addEventListener('change', function (ev) {
+		var t = ev.target;
+		if (!t || !t.closest) return;
+		if (t.closest('[data-eem-add-items-type]')) { syncOrderAddItemsType(); return; }
+		if (t.closest('[data-eem-add-items-inventory]')) { syncOrderAddItemsPreview(); }
+	});
+	document.addEventListener('input', function (ev) {
+		var t = ev.target;
+		if (t && t.closest && t.closest('[data-eem-add-items-inventory]')) {
+			syncOrderAddItemsPreview();
+		}
+	});
+
 	/* v2 — Orders-list bulk Cancel. Lean sequential queue over the
 	   eem_order_bulk_cancel_step endpoint (no multi-state modal). */
 	var _bulkCancelKeys = [];
@@ -2654,6 +2803,16 @@
 		},
 		'order-mark-paid-confirm': function () {
 			submitOrderMarkPaidForm();
+		},
+		/* Order Edit P3 — Add-Items modal (Order Detail header). */
+		'order-add-items': function () {
+			openOrderAddItemsModal();
+		},
+		'order-add-items-close': function () {
+			closeOrderAddItemsModal();
+		},
+		'order-add-items-confirm': function () {
+			submitOrderAddItemsForm();
 		},
 		/* C13.C.4b — Remove-discount modal (Order Detail Order Summary). */
 		'order-remove-discount-open': function () {

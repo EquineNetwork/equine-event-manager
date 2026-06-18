@@ -4305,6 +4305,62 @@ class EEM_Shortcodes {
 	}
 
 	/**
+	 * Describe the inventory that can be added to an order at any time (Order
+	 * Edit). For each section the reservation has enabled (stall / RV), returns
+	 * the enabled stay-type options, the base unit rate per stay type, and the
+	 * reservation's available date window so the Add-Items UI can prefill a
+	 * billing period. Custom line items are always addable and need no config,
+	 * so they're represented by a flat flag rather than a section entry.
+	 *
+	 * @param int $reservation_id Reservation post ID.
+	 * @return array{stall:?array{label:string,stay_types:array<string,string>,rates:array<string,float>},rv:?array{label:string,stay_types:array<string,string>,rates:array<string,float>},available_start:string,available_end:string}
+	 */
+	public function get_addable_inventory( int $reservation_id ): array {
+		$out = array(
+			'stall'           => null,
+			'rv'              => null,
+			'available_start' => '',
+			'available_end'   => '',
+		);
+
+		if ( $reservation_id < 1 ) {
+			return $out;
+		}
+
+		$data = $this->get_reservation_data( $reservation_id );
+		if ( ! is_array( $data ) || empty( $data ) ) {
+			return $out;
+		}
+
+		$out['available_start'] = isset( $data['available_start_date'] ) ? (string) $data['available_start_date'] : '';
+		$out['available_end']   = isset( $data['available_end_date'] ) ? (string) $data['available_end_date'] : '';
+
+		foreach ( array( 'stall', 'rv' ) as $section ) {
+			if ( empty( $data[ $section . 's_enabled' ] ) && empty( $data[ $section . '_enabled' ] ) ) {
+				continue;
+			}
+
+			$stay_types = $this->get_enabled_stay_type_options( $data, $section );
+			if ( empty( $stay_types ) ) {
+				continue;
+			}
+
+			$rates = array();
+			foreach ( array_keys( $stay_types ) as $stay_type_value ) {
+				$rates[ $stay_type_value ] = (float) $this->get_current_rate( $data, $section, (string) $stay_type_value );
+			}
+
+			$out[ $section ] = array(
+				'label'      => ( 'rv' === $section ) ? __( 'RV Lot', 'equine-event-manager' ) : __( 'Stall', 'equine-event-manager' ),
+				'stay_types' => $stay_types,
+				'rates'      => $rates,
+			);
+		}
+
+		return $out;
+	}
+
+	/**
 	 * Keep legacy shared stay selection reservations from fatalling.
 	 *
 	 * The UI option was removed, but older reservation records may still have the
