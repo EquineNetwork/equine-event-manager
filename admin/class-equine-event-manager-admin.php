@@ -2758,7 +2758,7 @@ class EEM_Admin {
 							<!-- Tip banner -->
 							<div class="eem-stall-chart-help">
 								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-								<span><strong><?php esc_html_e( 'Tip:', 'equine-event-manager' ); ?></strong> <?php esc_html_e( 'Click any customer name to view their order or move them to a different stall. A dashed outline means the placement is auto-suggested and not saved yet — Generate Assignments saves it.', 'equine-event-manager' ); ?></span>
+								<span><strong><?php esc_html_e( 'Tip:', 'equine-event-manager' ); ?></strong> <?php esc_html_e( 'Each unit shows its status and who\'s assigned. Click a customer name to open their order. Use Generate Assignments to auto-fill open units, or open an order and click Assign Stalls / Assign RV Lots to place a customer manually.', 'equine-event-manager' ); ?></span>
 							</div>
 
 							<?php
@@ -2939,7 +2939,7 @@ class EEM_Admin {
 							</div>
 							<?php endif; ?>
 
-							<?php $this->render_stall_chart_order_count_table( $order_rows, $date_cols ); ?>
+							<?php $this->render_stall_chart_order_count_table( $order_rows, $date_cols, $inv ); ?>
 
 						</div><!-- /panel-customer -->
 
@@ -6315,7 +6315,22 @@ class EEM_Admin {
 							<?php endif; ?>
 						</td>
 						<td class="eem-chart-customer-cell">
-							<?php echo null !== $eem_occ && '' !== (string) $eem_occ['label'] ? esc_html( $eem_occ['label'] ) : '<span class="eem-chart-customer-empty">—</span>'; ?>
+							<?php
+							if ( null !== $eem_occ && '' !== (string) $eem_occ['label'] ) {
+								$eem_occ_key = isset( $eem_occ['order_key'] ) ? (string) $eem_occ['order_key'] : '';
+								if ( '' !== $eem_occ_key ) {
+									printf(
+										'<a class="eem-chart-cust-link" href="%s">%s</a>',
+										esc_url( admin_url( 'admin.php?page=equine-event-manager-order&order_key=' . rawurlencode( $eem_occ_key ) ) ),
+										esc_html( $eem_occ['label'] )
+									);
+								} else {
+									echo esc_html( $eem_occ['label'] );
+								}
+							} else {
+								echo '<span class="eem-chart-customer-empty">—</span>';
+							}
+							?>
 						</td>
 						<?php
 						$eem_arr = ( null !== $eem_occ && ! empty( $eem_occ['arrival'] ) && strtotime( (string) $eem_occ['arrival'] ) ) ? date_i18n( 'M j, Y', strtotime( (string) $eem_occ['arrival'] ) ) : '';
@@ -6389,7 +6404,10 @@ class EEM_Admin {
 	 * @param array $date_columns Date columns.
 	 * @return void
 	 */
-	private function render_stall_chart_order_count_table( $rows, $date_columns ) {
+	private function render_stall_chart_order_count_table( $rows, $date_columns, $inv = 'all' ) {
+		$inv        = in_array( $inv, array( 'stalls', 'rv' ), true ) ? $inv : 'all';
+		$show_stall = ( 'rv' !== $inv );   // Stalls + All show the stall-assignment column.
+		$show_rv    = ( 'stalls' !== $inv ); // RV + All show the RV-lot column.
 		?>
 		<div class="eem-chart-table-scroll">
 			<table class="eem-cust-chart-table">
@@ -6400,8 +6418,14 @@ class EEM_Admin {
 						<?php foreach ( $date_columns as $date_label ) : ?>
 							<th class="eem-chart-date-col"><?php echo esc_html( $date_label ); ?></th>
 						<?php endforeach; ?>
-						<th><?php esc_html_e( 'Stall Assignments', 'equine-event-manager' ); ?></th>
-						<th><?php esc_html_e( 'RV Lots', 'equine-event-manager' ); ?></th>
+						<?php if ( $show_stall ) : ?>
+							<th><?php esc_html_e( 'Stall Assignments', 'equine-event-manager' ); ?></th>
+						<?php endif; ?>
+						<?php if ( $show_rv ) : ?>
+							<th><?php esc_html_e( 'RV Lots', 'equine-event-manager' ); ?></th>
+						<?php endif; ?>
+						<th class="eem-chart-date-from-col"><?php esc_html_e( 'Arrival', 'equine-event-manager' ); ?></th>
+						<th class="eem-chart-date-to-col"><?php esc_html_e( 'Departure', 'equine-event-manager' ); ?></th>
 					</tr>
 				</thead>
 				<tbody>
@@ -6446,8 +6470,30 @@ class EEM_Admin {
 									<?php echo esc_html( $count > 0 ? number_format_i18n( $count ) : '—' ); ?>
 								</td>
 							<?php endforeach; ?>
-							<td class="eem-chart-stall-assignment"><?php echo ! empty( $row['stall_units'] ) ? wp_kses_post( $this->render_assignment_summary_chips( $row['stall_units'], 'stall' ) ) : '<span class="eem-chart-dash">—</span>'; ?><?php if ( ! empty( $row['tack_units'] ) ) : ?><div class="eem-chart-tack-note" title="<?php esc_attr_e( 'Tack stall(s)', 'equine-event-manager' ); ?>"><span class="eem-chart-tack-note__dot" aria-hidden="true"></span><?php echo esc_html( sprintf( /* translators: %s: comma-separated tack stall numbers */ __( 'Tack: %s', 'equine-event-manager' ), implode( ', ', array_map( 'strval', (array) $row['tack_units'] ) ) ) ); ?></div><?php endif; ?></td>
-							<td class="eem-chart-rv-assignment"><?php echo ! empty( $row['rv_units'] ) ? wp_kses_post( $this->render_assignment_summary_chips( $row['rv_units'], 'rv' ) ) : '<span class="eem-chart-dash">—</span>'; ?></td>
+							<?php if ( $show_stall ) : ?>
+								<td class="eem-chart-stall-assignment"><?php echo ! empty( $row['stall_units'] ) ? wp_kses_post( $this->render_assignment_summary_chips( $row['stall_units'], 'stall' ) ) : '<span class="eem-chart-dash">—</span>'; ?><?php if ( ! empty( $row['tack_units'] ) ) : ?><div class="eem-chart-tack-note" title="<?php esc_attr_e( 'Tack stall(s)', 'equine-event-manager' ); ?>"><span class="eem-chart-tack-note__dot" aria-hidden="true"></span><?php echo esc_html( sprintf( /* translators: %s: comma-separated tack stall numbers */ __( 'Tack: %s', 'equine-event-manager' ), implode( ', ', array_map( 'strval', (array) $row['tack_units'] ) ) ) ); ?></div><?php endif; ?></td>
+							<?php endif; ?>
+							<?php if ( $show_rv ) : ?>
+								<td class="eem-chart-rv-assignment"><?php echo ! empty( $row['rv_units'] ) ? wp_kses_post( $this->render_assignment_summary_chips( $row['rv_units'], 'rv' ) ) : '<span class="eem-chart-dash">—</span>'; ?></td>
+							<?php endif; ?>
+							<?php
+							// Arrival / Departure — pick the component dates matching the active
+							// tab; All falls back to whichever component the order has.
+							if ( 'rv' === $inv ) {
+								$eem_ca = (string) $row['rv_arrival'];
+								$eem_cd = (string) $row['rv_departure'];
+							} elseif ( 'stalls' === $inv ) {
+								$eem_ca = (string) $row['stall_arrival'];
+								$eem_cd = (string) $row['stall_departure'];
+							} else {
+								$eem_ca = '' !== (string) $row['stall_arrival'] ? (string) $row['stall_arrival'] : (string) $row['rv_arrival'];
+								$eem_cd = '' !== (string) $row['stall_departure'] ? (string) $row['stall_departure'] : (string) $row['rv_departure'];
+							}
+							$eem_ca = ( '' !== $eem_ca && strtotime( $eem_ca ) ) ? date_i18n( 'M j, Y', strtotime( $eem_ca ) ) : '';
+							$eem_cd = ( '' !== $eem_cd && strtotime( $eem_cd ) ) ? date_i18n( 'M j, Y', strtotime( $eem_cd ) ) : '';
+							?>
+							<td class="eem-chart-date-cell"><?php echo '' !== $eem_ca ? esc_html( $eem_ca ) : '<span class="eem-chart-dash">—</span>'; ?></td>
+							<td class="eem-chart-date-cell"><?php echo '' !== $eem_cd ? esc_html( $eem_cd ) : '<span class="eem-chart-dash">—</span>'; ?></td>
 						</tr>
 					<?php endforeach; ?>
 				</tbody>
@@ -6806,6 +6852,12 @@ class EEM_Admin {
 				'tack_units'       => array_values( array_map( 'strval', (array) $this->parse_assigned_units_string(
 					$this->get_order_component_note_value( $order, 'stall', 'Tack Stalls' )
 				) ) ),
+				// Trip dates per component — surfaced as Arrival/Departure columns in
+				// the By-Customer table (tab-aware).
+				'stall_arrival'    => (string) $order['stall_arrival_date'],
+				'stall_departure'  => (string) $order['stall_departure_date'],
+				'rv_arrival'       => (string) $order['rv_arrival_date'],
+				'rv_departure'     => (string) $order['rv_departure_date'],
 			);
 		}
 
