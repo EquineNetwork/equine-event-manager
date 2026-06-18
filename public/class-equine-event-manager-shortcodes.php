@@ -4249,6 +4249,62 @@ class EEM_Shortcodes {
 	}
 
 	/**
+	 * Price a base-rate quantity addition for Order Edit ("add quantity now,
+	 * assign later"). Returns the pre-tax subtotal for adding $qty units of a
+	 * section at the reservation's BASE rate (no specific unit → no surcharge),
+	 * plus the convenience-fee config + tax rate so the caller can fold the
+	 * addition into an existing order's per-component fee/tax. Mirrors the exact
+	 * rate × qty × nights math used by calculate_submission_totals.
+	 *
+	 * @param int    $reservation_id Reservation post ID.
+	 * @param string $section        'stall' | 'rv'.
+	 * @param int    $qty            Units being added.
+	 * @param string $stay_type      Stay type (nightly/weekend/weekly/package key).
+	 * @param string $arrival        Y-m-d arrival (the order's section arrival).
+	 * @param string $departure      Y-m-d departure.
+	 * @return array{subtotal:float,unit_price:float,nights:int,tax_rate:float,fee_enabled:bool,fee_type:string,fee_value:float,stay_type:string}
+	 */
+	public function price_base_rate_addition( int $reservation_id, string $section, int $qty, string $stay_type, string $arrival = '', string $departure = '' ): array {
+		$section = ( 'rv' === $section ) ? 'rv' : 'stall';
+		$qty     = max( 0, $qty );
+		$out     = array(
+			'subtotal'    => 0.0,
+			'unit_price'  => 0.0,
+			'nights'      => 0,
+			'tax_rate'    => 0.0,
+			'fee_enabled' => false,
+			'fee_type'    => 'none',
+			'fee_value'   => 0.0,
+			'stay_type'   => $stay_type,
+		);
+
+		if ( $qty < 1 || $reservation_id < 1 ) {
+			return $out;
+		}
+
+		$data = $this->get_reservation_data( $reservation_id );
+		if ( ! is_array( $data ) || empty( $data ) ) {
+			return $out;
+		}
+
+		$stay_type         = '' !== $stay_type ? $stay_type : 'nightly';
+		$rate              = (float) $this->get_current_rate( $data, $section, $stay_type );
+		$nights            = max( 1, (int) $this->get_billable_stay_units( $arrival, $departure, $stay_type ) );
+		$out['unit_price'] = $rate;
+		$out['nights']     = $nights;
+		$out['subtotal']   = $qty * $rate * $nights;
+		$out['tax_rate']   = class_exists( 'EEM_Settings_Repo' ) ? (float) EEM_Settings_Repo::get_tax_rate_for_reservation( $reservation_id ) : 0.0;
+		$out['fee_enabled']= ! empty( $data['convenience_fee_enabled'] );
+		$out['fee_type']   = isset( $data['convenience_fee_type'] ) ? (string) $data['convenience_fee_type'] : 'none';
+		$out['fee_value']  = isset( $data['convenience_fee_value'] ) ? (float) $data['convenience_fee_value'] : 0.0;
+		$out['stay_type']  = $stay_type;
+		$out['arrival']    = $arrival;
+		$out['departure']  = $departure;
+
+		return $out;
+	}
+
+	/**
 	 * Keep legacy shared stay selection reservations from fatalling.
 	 *
 	 * The UI option was removed, but older reservation records may still have the

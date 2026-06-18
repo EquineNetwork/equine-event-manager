@@ -3,7 +3,7 @@
  * Plugin Name:       Equine Event Manager
  * Plugin URI:        https://github.com/EquineNetwork/equine-event-manager
  * Description:       Event reservation management for stalls, RV spaces, and add-on bookings — multi-event with stall-chart visualization, payment processor support (Stripe + Authorize.net), and CSV / receipt export.
- * Version:           2.7.417
+ * Version:           2.7.418
  * Requires at least: 6.0
  * Tested up to:      6.8
  * Requires PHP:      7.4
@@ -27,7 +27,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'EQUINE_EVENT_MANAGER_VERSION', '2.7.417' );
+define( 'EQUINE_EVENT_MANAGER_VERSION', '2.7.418' );
 
 define( 'EQUINE_EVENT_MANAGER_FILE', __FILE__ );
 

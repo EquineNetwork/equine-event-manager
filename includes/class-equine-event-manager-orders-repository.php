@@ -552,6 +552,161 @@ class EEM_Orders_Repository {
 	}
 
 	/**
+	 * Order Edit: add base-rate quantity to an order's section component (extra
+	 * stalls / RV), creating the component row if the order doesn't have that
+	 * section yet. The addition raises the order total without touching
+	 * amount_paid, so the order's amount_due becomes the added amount — to be
+	 * settled via Collect Payment / Mark as Paid / Send Payment Link.
+	 *
+	 * $priced comes from EEM_Shortcodes::price_base_rate_addition() and carries the
+	 * pre-tax subtotal + the fee config + tax rate so per-component fee/tax fold in
+	 * correctly (flat fee unchanged on bump, % fee scales; tax = rate × subtotal).
+	 *
+	 * @param string $order_key Order key.
+	 * @param string $section   'stall' | 'rv'.
+	 * @param int    $add_qty   Units to add.
+	 * @param array  $priced    Pricing payload from price_base_rate_addition().
+	 * @return bool True on success.
+	 */
+	public function add_component_quantity( $order_key, $section, $add_qty, array $priced ) {
+		global $wpdb;
+
+		$section = ( 'rv' === $section ) ? 'rv' : 'stall';
+		$add_qty = max( 0, (int) $add_qty );
+		if ( $add_qty < 1 ) {
+			return false;
+		}
+
+		$added_subtotal = max( 0.0, (float) ( $priced['subtotal'] ?? 0 ) );
+		if ( $added_subtotal <= 0 ) {
+			return false;
+		}
+
+		$order = $this->get_order( $order_key );
+		if ( ! is_array( $order ) ) {
+			return false;
+		}
+
+		$table   = $wpdb->prefix . ( 'rv' === $section ? 'en_rv_reservations' : 'en_stall_reservations' );
+		$qty_col = ( 'rv' === $section ) ? 'rv_qty' : 'stall_qty';
+
+		$tax_rate  = (float) ( $priced['tax_rate'] ?? 0 );
+		$added_tax = $tax_rate > 0 ? round( $added_subtotal * ( $tax_rate / 100 ), 2 ) : 0.0;
+
+		$fee_enabled = ! empty( $priced['fee_enabled'] );
+		$fee_type    = (string) ( $priced['fee_type'] ?? 'none' );
+		$fee_value   = (float) ( $priced['fee_value'] ?? 0 );
+		$calc_fee    = static function ( $subtotal ) use ( $fee_enabled, $fee_type, $fee_value ) {
+			if ( ! $fee_enabled ) {
+				return 0.0;
+			}
+			if ( 'flat' === $fee_type ) {
+				return (float) $fee_value;
+			}
+			if ( 'percentage' === $fee_type ) {
+				return round( $subtotal * ( $fee_value / 100 ), 2 );
+			}
+			return 0.0;
+		};
+
+		// Existing component of this section → bump it.
+		$existing = null;
+		foreach ( (array) $order['components'] as $component ) {
+			if ( $section === $component['table'] ) {
+				$existing = $component;
+				break;
+			}
+		}
+
+		if ( $existing ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table from a known section.
+			$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM `{$table}` WHERE id = %d", (int) $existing['row_id'] ), ARRAY_A );
+			if ( ! $row ) {
+				return false;
+			}
+			$new_subtotal = (float) $row['subtotal'] + $added_subtotal;
+			$new_fee      = $calc_fee( $new_subtotal );
+			$new_tax      = (float) $row['tax'] + $added_tax;
+			$ok           = $this->update_component_fields(
+				$section,
+				(int) $existing['row_id'],
+				array(
+					$qty_col          => (int) $row[ $qty_col ] + $add_qty,
+					'subtotal'        => number_format( $new_subtotal, 2, '.', '' ),
+					'convenience_fee' => number_format( $new_fee, 2, '.', '' ),
+					'tax'             => number_format( $new_tax, 2, '.', '' ),
+					'total'           => number_format( $new_subtotal + $new_fee, 2, '.', '' ),
+				),
+				array( '%d', '%s', '%s', '%s', '%s' )
+			);
+			$this->cached_orders = null;
+			return (bool) $ok;
+		}
+
+		// No row for this section yet → create one, cloning identity from the
+		// order's existing component so it groups into the same order (the group
+		// key keys off the Submission token / event+customer+created composite).
+		$sister = isset( $order['components'][0] ) ? $order['components'][0] : null;
+		if ( ! $sister ) {
+			return false;
+		}
+		$sister_table = $wpdb->prefix . ( 'rv' === $sister['table'] ? 'en_rv_reservations' : 'en_stall_reservations' );
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table from a known section.
+		$sister_row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM `{$sister_table}` WHERE id = %d", (int) $sister['row_id'] ), ARRAY_A );
+		if ( ! $sister_row ) {
+			return false;
+		}
+
+		$new_fee   = $calc_fee( $added_subtotal );
+		$sister_notes = (string) ( $sister_row['notes'] ?? '' );
+		$token        = $this->extract_submission_token_from_notes( $sister_notes );
+		$rid          = $this->extract_reservation_id_from_notes( $sister_notes );
+		$notes        = '';
+		if ( '' !== $token ) {
+			$notes = $this->upsert_note_line( $notes, 'Submission token', $token );
+		}
+		if ( $rid > 0 ) {
+			$notes = $this->upsert_note_line( $notes, 'Reservation setup ID', (string) $rid );
+		}
+
+		$arrival   = '' !== (string) ( $priced['arrival'] ?? '' ) ? $priced['arrival'] : ( $sister_row['arrival_date'] ?? null );
+		$departure = '' !== (string) ( $priced['departure'] ?? '' ) ? $priced['departure'] : ( $sister_row['departure_date'] ?? null );
+
+		$inserted = $wpdb->insert(
+			$table,
+			array(
+				'event_source'      => $sister_row['event_source'] ?? '',
+				'event_id'          => isset( $sister_row['event_id'] ) ? $sister_row['event_id'] : null,
+				'reservation_id'    => (int) ( $sister_row['reservation_id'] ?? 0 ),
+				'external_event_id' => $sister_row['external_event_id'] ?? '',
+				'customer_name'     => $sister_row['customer_name'] ?? '',
+				'email'             => $sister_row['email'] ?? '',
+				'phone'             => $sister_row['phone'] ?? '',
+				$qty_col            => $add_qty,
+				'stay_type'         => (string) ( $priced['stay_type'] ?? ( $sister_row['stay_type'] ?? '' ) ),
+				'arrival_date'      => $arrival,
+				'departure_date'    => $departure,
+				'unit_price'        => number_format( (float) ( $priced['unit_price'] ?? 0 ), 2, '.', '' ),
+				'subtotal'          => number_format( $added_subtotal, 2, '.', '' ),
+				'convenience_fee'   => number_format( $new_fee, 2, '.', '' ),
+				'tax'               => number_format( $added_tax, 2, '.', '' ),
+				'tax_rate'          => $tax_rate,
+				'total'             => number_format( $added_subtotal + $new_fee, 2, '.', '' ),
+				'amount_paid'       => 0,
+				'payment_status'    => 'unpaid',
+				'payment_gateway'   => '',
+				'order_number'      => $sister_row['order_number'] ?? '',
+				'transaction_id'    => '',
+				'notes'             => $notes,
+				'created_at'        => $sister_row['created_at'] ?? current_time( 'mysql' ),
+			)
+		);
+
+		$this->cached_orders = null;
+		return (bool) $inserted;
+	}
+
+	/**
 	 * Cancel an order: set every component's payment_status to 'cancelled',
 	 * record the cancellation reason + timestamp in the notes, and emit the
 	 * status-change telemetry/activity-log event. Cancellation is terminal and
