@@ -10587,10 +10587,11 @@ a.eem-dm-view-tab.active:visited {
    Daily Movement block — ↓ Arriving / ↑ Departing per date). */
 .eem-dm-overview {
 	background: #f0f4fb;
-	border: 1px solid #d9e2f2;
-	border-radius: var(--eem-radius, 3px);
+	border: 0;
+	border-bottom: 1px solid #d9e2f2;
+	border-radius: 0;
 	padding: 14px 18px;
-	margin-bottom: 18px;
+	margin-bottom: 0;
 }
 .eem-dm-overview-title {
 	font-family: 'Space Grotesk', sans-serif;
@@ -10601,8 +10602,8 @@ a.eem-dm-view-tab.active:visited {
 }
 .eem-dm-overview-grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-	gap: 14px;
+	grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+	gap: 14px 24px;
 }
 .eem-dm-overview-date {
 	font-size: 13px;
@@ -10612,12 +10613,17 @@ a.eem-dm-view-tab.active:visited {
 }
 .eem-dm-overview-vals span {
 	display: block;
-	font-size: 13px;
-	font-weight: 500;
+	font-size: 12.5px;
+	font-weight: 600;
+	line-height: 1.7;
 	color: var(--eem-navy, #1d2327);
 }
-.eem-dm-overview-arr { color: #15803d; }
-.eem-dm-overview-dep { color: #b45309; }
+.eem-dm-overview-arr  { color: #15803d; }
+.eem-dm-overview-in   { color: #15803d; }
+.eem-dm-overview-wait { color: #dc2626; }
+.eem-dm-overview-dep  { color: #b45309; }
+.eem-dm-overview-out  { color: #1d4ed8; }
+.eem-dm-overview-bags { color: #7c3aed; }
 
 .eem-dm-table {
 	width: 100%;

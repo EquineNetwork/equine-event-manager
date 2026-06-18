@@ -62,18 +62,52 @@ class EEM_Daily_Movement_Service {
 			ARRAY_A
 		);
 
+		// Order-level effective status (MIN across all the order's nights) — matches
+		// the whole-stay check-in/out model where one click moves the entire order.
+		$order_status_sub = "(SELECT order_id, MIN(status) AS status FROM {$status_table} GROUP BY order_id)";
+
+		// Occupying the date (arrival <= date <= departure), not yet checked in.
 		$not_checked_in_count = (int) $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(*) FROM {$table} sr
-				 LEFT JOIN {$status_subquery} ss ON ss.order_id = sr.id
+				 LEFT JOIN {$order_status_sub} os ON os.order_id = sr.id
 				 WHERE sr.reservation_id = %d
 				   AND sr.arrival_date <= %s
 				   AND sr.departure_date >= %s
 				   AND sr.trashed_at IS NULL
-				   AND (ss.status IS NULL OR ss.status = 'occupied')",
-				$date,
+				   AND (os.status IS NULL OR os.status = 'occupied')",
 				$reservation_id,
 				$date,
+				$date
+			)
+		);
+
+		// Occupying the date and checked in (arrived, not yet departed).
+		$checked_in_count = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$table} sr
+				 LEFT JOIN {$order_status_sub} os ON os.order_id = sr.id
+				 WHERE sr.reservation_id = %d
+				   AND sr.arrival_date <= %s
+				   AND sr.departure_date >= %s
+				   AND sr.trashed_at IS NULL
+				   AND os.status = 'checked_in'",
+				$reservation_id,
+				$date,
+				$date
+			)
+		);
+
+		// Departing on the date and already checked out (departed).
+		$departed_count = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$table} sr
+				 LEFT JOIN {$order_status_sub} os ON os.order_id = sr.id
+				 WHERE sr.reservation_id = %d
+				   AND sr.departure_date = %s
+				   AND sr.trashed_at IS NULL
+				   AND os.status = 'checked_out'",
+				$reservation_id,
 				$date
 			)
 		);
@@ -92,7 +126,9 @@ class EEM_Daily_Movement_Service {
 			'summary'   => array(
 				'arriving'           => count( $arriving ),
 				'departing'          => count( $departing ),
+				'checked_in'         => $checked_in_count,
 				'not_yet_checked_in' => $not_checked_in_count,
+				'departed'           => $departed_count,
 				'shavings_total'     => $shavings_total,
 			),
 			'arriving'  => $shaped_arriving,

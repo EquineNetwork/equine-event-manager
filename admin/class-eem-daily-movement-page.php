@@ -101,18 +101,20 @@ class EEM_Daily_Movement_Page {
 			'actions' => $print_btn,
 		) );
 
-		// Reservation/date selector + view tabs go ABOVE the metric cards so it's
-		// clear the metrics reflect the current selection (all days vs one day).
+		// Daily Movement overview sits directly below the header, above the
+		// filters — it reflects the current selection (event + All Days / Today /
+		// a specific day), matching the detail below.
+		if ( ! empty( $reports ) ) {
+			self::render_movement_overview( $reports );
+		}
+
 		self::render_toolbar( $reservations, $reservation_id, $date, $available_dates );
-		self::render_view_tabs( $reservation_id, $view, $date );
-		self::render_stat_cards( $totals );
 
 		if ( empty( $reservations ) ) {
 			echo '<div class="eem-dm-empty"><p>' . esc_html__( 'No published reservations yet. Create and publish a reservation to see movement data.', 'equine-event-manager' ) . '</p></div>';
 		} elseif ( empty( $reports ) || ( 1 === count( $reports ) && 0 === $totals['arriving'] && 0 === $totals['departing'] ) ) {
 			echo '<div class="eem-dm-empty"><p>' . esc_html__( 'No movement data for the selected date. Try "All Days" to see all activity.', 'equine-event-manager' ) . '</p></div>';
 		} else {
-			self::render_movement_overview( $reports );
 			self::render_print_header( $reservation_title, $reports, $view, $report_date );
 			foreach ( $reports as $report ) {
 				self::render_date_section( $report, 'all' === $view, $order_map );
@@ -455,9 +457,12 @@ class EEM_Daily_Movement_Page {
 
 				<div class="eem-dm-toolbar-group">
 					<label class="eem-dm-toolbar-label" for="eem-dm-date"><?php esc_html_e( 'Date', 'equine-event-manager' ); ?></label>
+					<?php $today = wp_date( 'Y-m-d' ); ?>
 					<select name="date" id="eem-dm-date" class="eem-field-select" onchange="this.form.submit()">
 						<option value=""><?php esc_html_e( 'All Days', 'equine-event-manager' ); ?></option>
+						<option value="<?php echo esc_attr( $today ); ?>" <?php selected( $date, $today ); ?>><?php esc_html_e( 'Today', 'equine-event-manager' ); ?></option>
 						<?php foreach ( $available_dates as $d ) : ?>
+							<?php if ( $d === $today ) { continue; } ?>
 							<option value="<?php echo esc_attr( $d ); ?>" <?php selected( $date, $d ); ?>>
 								<?php echo esc_html( date_i18n( 'l, F j', strtotime( $d ) ) ); ?>
 							</option>
@@ -465,35 +470,6 @@ class EEM_Daily_Movement_Page {
 					</select>
 				</div>
 			</form>
-		</div>
-		<?php
-	}
-
-	/**
-	 * Render the Today / All Days filter tabs.
-	 *
-	 * @param int    $reservation_id Selected reservation ID.
-	 * @param string $view Current view.
-	 * @param string $date Selected date.
-	 * @return void
-	 */
-	private static function render_view_tabs( int $reservation_id, string $view, string $date ): void {
-		$is_today = ( 'today' === $view );
-		$is_all   = ( 'all' === $view && '' === $date );
-		$base     = admin_url( 'admin.php?page=' . self::MENU_SLUG . '&reservation_id=' . $reservation_id );
-		?>
-		<div class="eem-dm-view-tabs">
-			<a class="eem-dm-view-tab<?php echo $is_all ? ' active' : ''; ?>" href="<?php echo esc_url( $base . '&view=all' ); ?>">
-				<?php esc_html_e( 'All Days', 'equine-event-manager' ); ?>
-			</a>
-			<a class="eem-dm-view-tab<?php echo $is_today ? ' active' : ''; ?>" href="<?php echo esc_url( $base . '&view=today' ); ?>">
-				<?php esc_html_e( 'Today', 'equine-event-manager' ); ?>
-			</a>
-			<?php if ( '' !== $date && ! $is_all ) : ?>
-				<a class="eem-dm-view-tab active" href="<?php echo esc_url( $base . '&date=' . urlencode( $date ) ); ?>">
-					<?php echo esc_html( EEM_Daily_Movement_Service::format_display_date( $date ) ); ?>
-				</a>
-			<?php endif; ?>
 		</div>
 		<?php
 	}
@@ -664,28 +640,27 @@ class EEM_Daily_Movement_Page {
 	 * @return void
 	 */
 	private static function render_movement_overview( array $reports ): void {
-		if ( count( $reports ) < 2 ) {
-			return;
-		}
 		?>
 		<div class="eem-dm-overview">
 			<div class="eem-dm-overview-title"><?php esc_html_e( 'Daily Movement', 'equine-event-manager' ); ?></div>
 			<div class="eem-dm-overview-grid">
-				<?php foreach ( $reports as $report ) : ?>
+				<?php foreach ( $reports as $report ) :
+					$s = isset( $report['summary'] ) ? $report['summary'] : array();
+				?>
 					<div class="eem-dm-overview-day">
 						<div class="eem-dm-overview-date">
 							<?php echo esc_html( $report['date_display'] ?? $report['date'] ); ?>
 						</div>
 						<div class="eem-dm-overview-vals">
 							<span class="eem-dm-overview-arr"><?php echo esc_html( sprintf(
-								/* translators: %d: count of arriving customers */
+								/* translators: %d: arriving count */
 								__( '↓ %d Arriving', 'equine-event-manager' ),
-								(int) ( $report['summary']['arriving'] ?? 0 )
+								(int) ( $s['arriving'] ?? 0 )
 							) ); ?></span>
 							<span class="eem-dm-overview-dep"><?php echo esc_html( sprintf(
-								/* translators: %d: count of departing customers */
+								/* translators: %d: departing count */
 								__( '↑ %d Departing', 'equine-event-manager' ),
-								(int) ( $report['summary']['departing'] ?? 0 )
+								(int) ( $s['departing'] ?? 0 )
 							) ); ?></span>
 						</div>
 					</div>
