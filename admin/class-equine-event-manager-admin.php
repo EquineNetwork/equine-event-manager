@@ -6328,7 +6328,13 @@ class EEM_Admin {
 							$current_block = $block;
 							?>
 							<tr class="eem-chart-barn-row" data-barn="<?php echo esc_attr( sanitize_html_class( strtolower( $block ) ) ); ?>">
-								<td colspan="<?php echo esc_attr( (string) ( 4 + count( $date_columns ) ) ); ?>">
+								<?php
+								// Columns: Stall + Block + Status + Customer + Arrival + Departure
+								// (= 6) plus one per date column. The header band must span them
+								// all or it leaves a gap under the trailing date columns.
+								$eem_barn_colspan = 6 + count( $date_columns );
+								?>
+								<td colspan="<?php echo esc_attr( (string) $eem_barn_colspan ); ?>">
 									<?php echo esc_html( $block ); ?>
 								</td>
 							</tr>
