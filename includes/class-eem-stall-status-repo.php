@@ -75,6 +75,23 @@ class EEM_Stall_Status_Repo {
 			KEY idx_status (reservation_id, night_date, status)
 		) {$charset_collate};";
 
+		// Per-ORDER customer check-in status (one row per order, covering the
+		// whole party — stalls AND RV). "Is the customer here?" — checking in
+		// releases their units. Keyed by (reservation_id, order_number) which is
+		// the only identifier shared between Daily Movement and the Stall Charts
+		// By-Customer table. Absence of a row = 'occupied' (Pending Arrival).
+		$checkin_table = $wpdb->prefix . 'eem_order_checkin';
+		$checkin_sql   = "CREATE TABLE {$checkin_table} (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			reservation_id bigint(20) unsigned NOT NULL,
+			order_number varchar(40) NOT NULL,
+			status varchar(20) NOT NULL DEFAULT 'occupied',
+			updated_by bigint(20) unsigned NOT NULL DEFAULT 0,
+			updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY  (id),
+			UNIQUE KEY uq_order (reservation_id, order_number)
+		) {$charset_collate};";
+
 		$log_sql = "CREATE TABLE {$log_table} (
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 			stall_status_id bigint(20) unsigned NOT NULL,
@@ -91,6 +108,93 @@ class EEM_Stall_Status_Repo {
 
 		dbDelta( $status_sql );
 		dbDelta( $log_sql );
+		dbDelta( $checkin_sql );
+	}
+
+	/**
+	 * Allowed per-order customer check-in statuses (the three the UI exposes).
+	 */
+	const CHECKIN_STATUSES = array( 'occupied', 'checked_in', 'checked_out' );
+
+	/**
+	 * Read one order's customer check-in status. Absence = 'occupied'
+	 * (Pending Arrival).
+	 *
+	 * @param int    $reservation_id Reservation post ID.
+	 * @param string $order_number   The order's human number (e.g. "09020").
+	 * @return string occupied|checked_in|checked_out
+	 */
+	public static function get_order_checkin( int $reservation_id, string $order_number ): string {
+		global $wpdb;
+		$table = $wpdb->prefix . 'eem_order_checkin';
+		$val   = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT status FROM {$table} WHERE reservation_id = %d AND order_number = %s",
+				$reservation_id,
+				$order_number
+			)
+		);
+		return $val ? (string) $val : 'occupied';
+	}
+
+	/**
+	 * Batch-read every stored check-in status for a reservation.
+	 *
+	 * @param int $reservation_id Reservation post ID.
+	 * @return array<string, string> order_number → status (only stored rows).
+	 */
+	public static function get_order_checkin_map( int $reservation_id ): array {
+		global $wpdb;
+		$table = $wpdb->prefix . 'eem_order_checkin';
+		$rows  = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT order_number, status FROM {$table} WHERE reservation_id = %d",
+				$reservation_id
+			),
+			ARRAY_A
+		) ?: array();
+
+		$map = array();
+		foreach ( $rows as $r ) {
+			$map[ (string) $r['order_number'] ] = (string) $r['status'];
+		}
+		return $map;
+	}
+
+	/**
+	 * Set one order's customer check-in status (upsert). Any direction allowed —
+	 * a mistaken check-out can be reverted. 'occupied' is the Pending Arrival
+	 * baseline.
+	 *
+	 * @param int    $reservation_id Reservation post ID.
+	 * @param string $order_number   The order's human number.
+	 * @param string $status         Target status (must be in CHECKIN_STATUSES).
+	 * @param int    $user_id        Acting user.
+	 * @return string The stored status (unchanged input when invalid).
+	 */
+	public static function set_order_checkin( int $reservation_id, string $order_number, string $status, int $user_id ): string {
+		if ( ! in_array( $status, self::CHECKIN_STATUSES, true ) ) {
+			return self::get_order_checkin( $reservation_id, $order_number );
+		}
+
+		global $wpdb;
+		$table = $wpdb->prefix . 'eem_order_checkin';
+
+		// Upsert on the (reservation_id, order_number) unique key.
+		$wpdb->query(
+			$wpdb->prepare(
+				"INSERT INTO {$table} ( reservation_id, order_number, status, updated_by, updated_at )
+				 VALUES ( %d, %s, %s, %d, %s )
+				 ON DUPLICATE KEY UPDATE status = VALUES(status), updated_by = VALUES(updated_by), updated_at = VALUES(updated_at)",
+				$reservation_id,
+				$order_number,
+				$status,
+				$user_id,
+				current_time( 'mysql' )
+			)
+		);
+
+		return $status;
 	}
 
 	/**

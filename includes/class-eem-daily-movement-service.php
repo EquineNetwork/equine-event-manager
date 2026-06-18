@@ -25,21 +25,23 @@ class EEM_Daily_Movement_Service {
 	 */
 	public static function build_date_report( int $reservation_id, string $date ): array {
 		global $wpdb;
-		$table        = $wpdb->prefix . 'en_stall_reservations';
-		$status_table = $wpdb->prefix . 'eem_stall_status';
+		$table         = $wpdb->prefix . 'en_stall_reservations';
+		$checkin_table = $wpdb->prefix . 'eem_order_checkin';
 
-		$status_subquery = "(SELECT order_id, MIN(status) AS status FROM {$status_table} WHERE night_date = %s GROUP BY order_id)";
+		// Per-ORDER customer check-in status — one value per order (keyed by
+		// reservation_id + order_number), the same store the Stall Charts
+		// By-Customer table writes. Absence of a row = 'occupied' (Pending Arrival).
+		$checkin_join = "LEFT JOIN {$checkin_table} oc ON oc.reservation_id = sr.reservation_id AND oc.order_number = sr.order_number";
 
 		$arriving = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT sr.id, sr.customer_name, sr.arrival_date, sr.departure_date, sr.notes,
+				"SELECT sr.id, sr.order_number, sr.customer_name, sr.arrival_date, sr.departure_date, sr.notes,
 				        sr.required_shavings_qty, sr.additional_shavings_qty,
-				        ss.status AS live_status
+				        COALESCE( oc.status, 'occupied' ) AS live_status
 				 FROM {$table} sr
-				 LEFT JOIN {$status_subquery} ss ON ss.order_id = sr.id
+				 {$checkin_join}
 				 WHERE sr.reservation_id = %d AND sr.arrival_date = %s AND sr.trashed_at IS NULL
 				 ORDER BY sr.customer_name ASC",
-				$date,
 				$reservation_id,
 				$date
 			),
@@ -48,34 +50,29 @@ class EEM_Daily_Movement_Service {
 
 		$departing = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT sr.id, sr.customer_name, sr.arrival_date, sr.departure_date, sr.notes,
+				"SELECT sr.id, sr.order_number, sr.customer_name, sr.arrival_date, sr.departure_date, sr.notes,
 				        sr.required_shavings_qty, sr.additional_shavings_qty,
-				        ss.status AS live_status
+				        COALESCE( oc.status, 'occupied' ) AS live_status
 				 FROM {$table} sr
-				 LEFT JOIN {$status_subquery} ss ON ss.order_id = sr.id
+				 {$checkin_join}
 				 WHERE sr.reservation_id = %d AND sr.departure_date = %s AND sr.trashed_at IS NULL
 				 ORDER BY sr.customer_name ASC",
-				$date,
 				$reservation_id,
 				$date
 			),
 			ARRAY_A
 		);
 
-		// Order-level effective status (MIN across all the order's nights) — matches
-		// the whole-stay check-in/out model where one click moves the entire order.
-		$order_status_sub = "(SELECT order_id, MIN(status) AS status FROM {$status_table} GROUP BY order_id)";
-
 		// Occupying the date (arrival <= date <= departure), not yet checked in.
 		$not_checked_in_count = (int) $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(*) FROM {$table} sr
-				 LEFT JOIN {$order_status_sub} os ON os.order_id = sr.id
+				 {$checkin_join}
 				 WHERE sr.reservation_id = %d
 				   AND sr.arrival_date <= %s
 				   AND sr.departure_date >= %s
 				   AND sr.trashed_at IS NULL
-				   AND (os.status IS NULL OR os.status = 'occupied')",
+				   AND ( oc.status IS NULL OR oc.status = 'occupied' )",
 				$reservation_id,
 				$date,
 				$date
@@ -86,12 +83,12 @@ class EEM_Daily_Movement_Service {
 		$checked_in_count = (int) $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(*) FROM {$table} sr
-				 LEFT JOIN {$order_status_sub} os ON os.order_id = sr.id
+				 {$checkin_join}
 				 WHERE sr.reservation_id = %d
 				   AND sr.arrival_date <= %s
 				   AND sr.departure_date >= %s
 				   AND sr.trashed_at IS NULL
-				   AND os.status = 'checked_in'",
+				   AND oc.status = 'checked_in'",
 				$reservation_id,
 				$date,
 				$date
@@ -102,11 +99,11 @@ class EEM_Daily_Movement_Service {
 		$departed_count = (int) $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(*) FROM {$table} sr
-				 LEFT JOIN {$order_status_sub} os ON os.order_id = sr.id
+				 {$checkin_join}
 				 WHERE sr.reservation_id = %d
 				   AND sr.departure_date = %s
 				   AND sr.trashed_at IS NULL
-				   AND os.status = 'checked_out'",
+				   AND oc.status = 'checked_out'",
 				$reservation_id,
 				$date
 			)
@@ -180,9 +177,11 @@ class EEM_Daily_Movement_Service {
 
 		return array(
 			'order_key'            => self::extract_note_value( $notes, 'Submission token' ),
-			// Component row id (wp_en_stall_reservations.id) — the key wp_eem_stall_status
-			// uses, so the check-in/out chips can transition this order's whole stay.
+			// Component row id (wp_en_stall_reservations.id) — kept for back-compat.
 			'status_order_id'      => (int) ( $row['id'] ?? 0 ),
+			// The order's human number — the key the per-order check-in store uses,
+			// shared with the Stall Charts By-Customer table.
+			'order_number'         => (string) ( $row['order_number'] ?? '' ),
 			'customer_name'        => (string) ( $row['customer_name'] ?? '' ),
 			'stall_numbers'        => self::extract_stall_numbers( $notes ),
 			'arrival_date'         => (string) ( $row['arrival_date'] ?? '' ),

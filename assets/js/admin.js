@@ -8499,3 +8499,85 @@ function duplicateReservationAjax(target) {
 		sortBy(table, key, type, dir);
 	});
 })();
+
+/* ── Per-order check-in status dropdown (Stall & RV Charts By-Customer) ──
+   Mirrors the Daily Movement page chip, posting to eem_order_checkin_set so the
+   one per-order status stays in sync across both screens. Gated to the stall
+   charts page so it never double-fires with the Daily Movement inline handler
+   (which owns the same .eem-dm-status-menu markup there). */
+(function () {
+	if (!document.body || !document.body.classList.contains('eem-shell-page--stall-charts')) { return; }
+	var ajaxUrl = (window.ajaxurl || '/wp-admin/admin-ajax.php');
+
+	function closeAllMenus() {
+		document.querySelectorAll('.eem-dm-status-menu.open').forEach(function (m) {
+			m.classList.remove('open');
+			var t = m.querySelector('.eem-dm-status-trigger');
+			if (t) { t.setAttribute('aria-expanded', 'false'); }
+		});
+	}
+
+	document.addEventListener('click', function (e) {
+		var trigger = e.target.closest ? e.target.closest('[data-eem-checkin] [data-eem-action="dm-status-menu"]') : null;
+		if (trigger) {
+			e.preventDefault();
+			var menu = trigger.closest('.eem-dm-status-menu');
+			var wasOpen = menu.classList.contains('open');
+			closeAllMenus();
+			if (!wasOpen) {
+				menu.classList.add('open');
+				trigger.setAttribute('aria-expanded', 'true');
+				var list = menu.querySelector('.eem-dm-status-options');
+				if (list) {
+					var rect = trigger.getBoundingClientRect();
+					var w = list.offsetWidth, h = list.offsetHeight;
+					var left = Math.max(8, rect.right - w);
+					var top = rect.bottom + 4;
+					if (top + h + 8 > window.innerHeight) { top = Math.max(8, rect.top - h - 4); }
+					list.style.left = left + 'px';
+					list.style.top = top + 'px';
+				}
+			}
+			return;
+		}
+
+		var opt = e.target.closest ? e.target.closest('[data-eem-checkin] [data-eem-action="dm-status-pick"]') : null;
+		if (opt) {
+			e.preventDefault();
+			if (opt.disabled) { return; }
+			var menuEl = opt.closest('.eem-dm-status-menu');
+			var rid = opt.getAttribute('data-reservation-id');
+			var onum = opt.getAttribute('data-order-number');
+			var target = opt.getAttribute('data-target');
+			var nonce = opt.getAttribute('data-nonce');
+			var body = new URLSearchParams();
+			body.append('action', 'eem_order_checkin_set');
+			body.append('reservation_id', rid);
+			body.append('order_number', onum);
+			body.append('target', target);
+			body.append('_wpnonce', nonce);
+			opt.disabled = true;
+			fetch(ajaxUrl, { method: 'POST', credentials: 'same-origin', body: body })
+				.then(function (r) { return r.json(); })
+				.then(function (res) {
+					opt.disabled = false;
+					closeAllMenus();
+					if (!res || !res.success) { return; }
+					var key = res.data.status_key;
+					var chip = menuEl.querySelector('.eem-dm-status');
+					if (chip) {
+						chip.className = 'eem-dm-status eem-dm-status--caret eem-dm-status-' + (key === 'not_checked_in' ? 'occupied' : key);
+						var lbl = chip.querySelector('.eem-dm-status-label');
+						if (lbl) { lbl.textContent = res.data.label; }
+					}
+					menuEl.querySelectorAll('.eem-dm-status-option').forEach(function (b) {
+						b.classList.toggle('is-current', b.getAttribute('data-target') === target);
+					});
+				})
+				.catch(function () { opt.disabled = false; });
+			return;
+		}
+
+		closeAllMenus();
+	});
+})();

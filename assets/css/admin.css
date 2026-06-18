@@ -7764,6 +7764,13 @@ input.eem-event-search-input:focus {
 .eem-scd-arr { color: #15803d; }
 .eem-scd-dep { color: #b45309; }
 
+/* Stats row inside the Daily Movement bar (Stall Units / RV Lots / Orders) */
+.eem-stall-chart-dm-stats { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; padding-top: 14px; border-top: 1px solid #d9e2f2; }
+.eem-scs-card { flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #d9e2f2; border-radius: 6px; padding: 10px 14px; }
+.eem-scs-icon { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 6px; background: #e6eefc; color: #1668f2; font-size: 16px; line-height: 1; }
+.eem-scs-num { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; color: #031b4e; line-height: 1; }
+.eem-scs-label { font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #64748b; margin-left: 2px; }
+
 .eem-stall-chart-stats-bar { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 14px; }
 .eem-stall-chart-stat-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 4px; padding: 14px 18px; }
 .eem-stall-chart-stat-label { font-size: 10.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: #8c8f94; margin-bottom: 8px; }
@@ -7797,21 +7804,23 @@ a.eem-btn--ghost:hover,
 a.eem-btn--ghost:focus    { color: #1d2327; }
 
 /* ── View tabs card ── */
-.eem-stall-chart-view-tabs-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden; margin-bottom: 14px; }
+/* Transparent wrapper — no inner card chrome, no overflow clip, so the search
+   bar + table inside can bleed full-width to match the Show/View bar above. */
+.eem-stall-chart-view-tabs-card { background: transparent; border: 0; border-radius: 0; overflow: visible; margin: 0; }
 /* Full-width view selector bar (By Customer / By Location – List / – Map). */
 .eem-stall-chart-view-bar { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid #dcdcde; background: #f8fafc; }
 .eem-stall-chart-view-label { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #64748b; }
 .eem-stall-chart-view-select { min-width: 230px; }
 /* Filter bar below the Daily Movement bar — Show + View dropdowns side by side
    (matches the Daily Movement page's Reservation/Date filter bar). */
-.eem-stall-chart-filter-bar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 18px; margin-bottom: 14px; }
+.eem-stall-chart-filter-bar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 18px; background: #f8fafc; border-bottom: 1px solid #dcdcde; padding: 14px 22px; margin: -18px -22px 0; }
 .eem-scf-group { display: flex; flex-direction: column; gap: 5px; }
 .eem-scf-group .eem-stall-chart-view-select { min-width: 200px; }
 /* Action buttons pushed to the end of the filter row, bottom-aligned with the dropdowns. */
 .eem-scf-actions { margin-left: auto; display: flex; gap: 10px; }
 /* Second header action (Edit Reservation) sits to the right of Change Event. */
-.eem-header-action-edit { margin-left: 8px; }
-.eem-stall-chart-view-tabs { display: flex; gap: 0; background: #fff; padding: 0 18px; border-bottom: 1px solid #dcdcde; }
+.eem-header-actions { display: flex; gap: 10px; }
+.eem-stall-chart-view-tabs { display: flex; gap: 0; background: #fff; padding: 0 18px; }
 .eem-stall-chart-view-tab { padding: 14px 22px 12px; font-size: 14px; font-weight: 600; color: #6B7A99; cursor: pointer; border-bottom: 3px solid transparent; font-family: inherit; transition: color .15s, border-color .15s; display: flex; align-items: center; gap: 8px; background: none; border-left: none; border-right: none; border-top: none; }
 .eem-stall-chart-view-tab:hover { color: #031B4E; }
 .eem-stall-chart-view-tab.active { color: #1668F2; border-bottom-color: #1668F2; }
@@ -7828,7 +7837,7 @@ a.eem-btn--ghost:focus    { color: #1d2327; }
 .eem-stall-chart-help svg { width: 14px; height: 14px; color: #1668F2; flex-shrink: 0; }
 
 /* ── Filter row ── */
-.eem-stall-chart-filter-row { padding: 12px 18px; border-bottom: 1px solid #dcdcde; background: #f3f4f5; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.eem-stall-chart-filter-row { padding: 12px 22px; margin: 0 -22px; border-top: 0; border-bottom: 1px solid #dcdcde; background: #f8fafc; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .eem-stall-chart-barn-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
 .eem-stall-chart-barn-tab { padding: 6px 14px; border-radius: 4px; font-size: 12.5px; font-weight: 500; color: #1d2327; cursor: pointer; border: 1px solid #c3c4c7; background: #fff; font-family: inherit; }
 .eem-stall-chart-barn-tab:hover { background: #f6f7f7; border-color: #8c8f94; }
@@ -7845,7 +7854,13 @@ a.eem-btn--ghost:focus    { color: #1d2327; }
 .eem-stall-chart-no-data { font-size: 13px; color: #6B7A99; padding: 28px 20px; margin: 0; text-align: center; }
 
 /* ── Occupancy table ── */
-.eem-chart-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.eem-chart-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -22px; }
+/* Full-bleed table: header + rows span the full card width; gutter-align the
+   first/last cells with the 22px page padding so text lines up with the bands. */
+.eem-cust-chart-table thead th:first-child,
+.eem-cust-chart-table tbody td:first-child { padding-left: 22px; }
+.eem-cust-chart-table thead th:last-child,
+.eem-cust-chart-table tbody td:last-child { padding-right: 22px; }
 .eem-stall-chart-table,
 .eem-rv-chart-table,
 .eem-cust-chart-table { width: 100%; border-collapse: collapse; min-width: 500px; }
@@ -7864,6 +7879,16 @@ a.eem-btn--ghost:focus    { color: #1d2327; }
 .eem-stall-chart-table td,
 .eem-rv-chart-table td,
 .eem-cust-chart-table td { padding: 11px 14px; font-size: 13.5px; color: #1d2327; vertical-align: middle; }
+/* By-Customer table matches the Daily Movement table: f8fafc header with a 2px
+   bottom rule, uppercase slate header labels, 1px row dividers, navy body text. */
+.eem-cust-chart-table thead tr { background: #f8fafc; border-bottom: 2px solid #dcdcde; }
+.eem-cust-chart-table thead th { padding: 10px 12px; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; }
+.eem-cust-chart-table tbody tr { border-bottom: 1px solid #dcdcde; }
+.eem-cust-chart-table tbody td { padding: 10px 12px; font-size: 14px; color: #1e293b; }
+.eem-cust-chart-table thead th:first-child,
+.eem-cust-chart-table tbody td:first-child { padding-left: 22px; }
+.eem-cust-chart-table thead th:last-child,
+.eem-cust-chart-table tbody td:last-child { padding-right: 22px; }
 .eem-chart-unit-num { font-weight: 700; color: #031B4E; font-size: 13.5px; min-width: 130px; white-space: nowrap; }
 .eem-chart-block-name { color: #50575e; font-size: 13px; white-space: nowrap; }
 .eem-chart-cell-wrap { display: flex; justify-content: center; }
@@ -7943,10 +7968,30 @@ body.eem-assign-mode .eem-chart-status--available[data-eem-action="assign-order-
 .eem-occ-badge--group { background: var(--eem-group-color, #475569); }
 
 /* ── Customer night count table ── */
-.eem-cust-chart-table tbody tr { border-bottom: 1px solid #f0f0f1; }
+.eem-cust-chart-table tbody tr { border-bottom: 1px solid #dcdcde; }
 .eem-cust-chart-table tbody tr:hover { background: #f6f7f7; }
 .eem-chart-cust-link { color: #031B4E; font-weight: 700; font-size: 13.5px; text-decoration: none; }
 .eem-chart-cust-link:hover { color: #1668F2; }
+/* Customer cell: name + inline hover icons (note / group) replacing inline boxes. */
+.eem-chart-cust-cell { display: inline-flex; align-items: center; gap: 7px; }
+.eem-chart-cust-icon { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 5px; cursor: default; outline: none; }
+.eem-chart-cust-icon svg { width: 14px; height: 14px; }
+.eem-chart-cust-icon--note { color: #b45309; background: var(--eem-warn-bg, #fef6e7); }
+.eem-chart-cust-icon--group { color: var(--eem-group-color, var(--eem-electric, #1668f2)); background: var(--eem-info-bg, #eaf1fe); }
+/* Hover/focus popover tip. */
+.eem-chart-cust-tip { position: absolute; bottom: calc(100% + 7px); left: 50%; transform: translateX(-50%); z-index: 50; min-width: 150px; max-width: 280px; width: max-content; padding: 7px 10px; background: #031b4e; color: #fff; font-size: 11.5px; font-weight: 500; line-height: 1.45; border-radius: 6px; box-shadow: 0 6px 18px rgba(3,27,78,.28); white-space: normal; opacity: 0; visibility: hidden; transition: opacity .12s ease; pointer-events: none; }
+.eem-chart-cust-tip strong { font-weight: 700; }
+.eem-chart-cust-tip::after { content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: #031b4e; }
+.eem-chart-cust-icon:hover .eem-chart-cust-tip,
+.eem-chart-cust-icon:focus .eem-chart-cust-tip { opacity: 1; visibility: visible; }
+/* Split Arrival/Departure cell — shown only when a customer's stall and RV
+   legs have different dates (All view). */
+.eem-chart-date-split { display: flex; flex-direction: column; gap: 2px; }
+.eem-chart-date-split__row { display: inline-flex; align-items: baseline; gap: 6px; white-space: nowrap; }
+.eem-chart-date-split__lbl { font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #64748b; min-width: 32px; }
+/* Per-order check-in status column (synced with Daily Movement). */
+.eem-chart-status-col { white-space: nowrap; }
+.eem-cust-chart-table td.eem-chart-checkin-cell { overflow: visible; }
 /* V1 Scenario F: special-requests note under the customer name (by-customer view). */
 .eem-chart-cust-note { margin-top: 3px; font-size: 11.5px; line-height: 1.4; color: var(--eem-warn-text); background: var(--eem-warn-bg); border-left: 2px solid var(--eem-warn-border); border-radius: 0 var(--eem-radius) var(--eem-radius) 0; padding: 3px 8px; max-width: 280px; }
 .eem-chart-cust-note__label { font-weight: 700; }
@@ -8099,7 +8144,9 @@ body.eem-assign-mode .eem-chart-status--available[data-eem-action="assign-order-
 .eem-group-manage { margin: 0 18px 14px; }
 .eem-group-manage-panel { margin-top: 10px; padding: 14px 16px; background: #F8FAFD; border: 1px solid var(--eem-line, #d9e2ec); border-radius: var(--eem-radius-lg, 6px); }
 .eem-group-manage-panel[hidden] { display: none; }
-.eem-group-manage-hint { margin: 0 0 10px; font-size: 12.5px; color: var(--eem-muted, #5f6f85); }
+/* Selector must out-specify `.eem-page p { margin: 0 }` (0,1,1) or the bottom
+   margin is wiped to 0 — hence the .eem-page p.<class> compound. */
+.eem-page p.eem-group-manage-hint { margin: 0 0 12px; font-size: 12.5px; color: var(--eem-muted, #5f6f85); }
 .eem-group-manage-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 .eem-group-manage-row:last-child { margin-bottom: 0; }
 input.eem-group-manage-input { flex: 0 1 280px; margin: 0; padding: 7px 10px; border: 1px solid var(--eem-line, #d9e2ec); border-radius: var(--eem-radius, 3px); font-size: 13px; }
@@ -8124,13 +8171,45 @@ input.eem-group-manage-input { flex: 0 1 280px; margin: 0; padding: 7px 10px; bo
 	.eem-stall-chart-stat-value { font-size: 22px; }
 	.eem-stall-chart-view-tabs { overflow-x: auto; flex-wrap: nowrap; }
 	.eem-stall-chart-view-tab { padding: 10px 16px; font-size: 12.5px; }
-	.eem-stall-chart-filter-row { flex-direction: column; align-items: stretch; padding: 10px 12px; gap: 8px; }
+	.eem-stall-chart-filter-row { flex-wrap: wrap; align-items: stretch; padding: 10px 12px; gap: 8px; }
+	/* Search spans its own row; the group/tack toggles share the next row. */
+	.eem-stall-chart-filter-search { flex: 1 1 100%; }
+	.eem-stall-chart-group-toggle { flex: 1 1 0; min-width: 0; justify-content: center; padding: 8px 6px; font-size: 11.5px; gap: 4px; white-space: nowrap; }
 	.eem-stall-chart-barn-tabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
 	.eem-stall-chart-barn-tab { flex-shrink: 0; }
 	.eem-stall-chart-filter-search { max-width: 100%; }
 	.eem-stall-chart-filter-hint { display: none; }
 	.eem-stall-chart-action-bar { flex-direction: column; align-items: stretch; }
 	.eem-stall-chart-action-bar-btns { flex-wrap: wrap; }
+
+	/* Header action buttons (Change Event / Edit Reservation) drop to their own
+	   full-width row under the title. */
+	.eem-header-actions { width: 100%; }
+	.eem-header-actions .eem-header-action-change { flex: 1; text-align: center; }
+
+	/* DM bar tracks the 12px mobile gutter (not the 22px desktop bleed). */
+	.eem-stall-chart-dm-bar { margin: -12px -12px 18px; padding: 14px 12px; }
+	/* Metric cards: 2 per row instead of one overflowing strip. */
+	.eem-scs-card { flex: 1 1 calc(50% - 5px); }
+
+	/* Show + View dropdowns share one row (50/50); the Generate/Print actions
+	   wrap to a full-width row below. */
+	.eem-stall-chart-filter-bar { flex-wrap: wrap; align-items: stretch; gap: 12px; margin: -12px -12px 0; padding: 12px; }
+	.eem-scf-group { flex: 1 1 calc(50% - 6px); min-width: 0; }
+	.eem-scf-group .eem-stall-chart-view-select { min-width: 0; width: 100%; }
+	.eem-scf-actions { flex: 1 1 100%; margin-left: 0; }
+	.eem-scf-actions .eem-btn { flex: 1; justify-content: center; }
+
+	/* Search toolbar + full-bleed table track the 12px mobile gutter so content
+	   isn't flush against the screen edge. */
+	.eem-stall-chart-filter-row { margin: 0 -12px; padding: 12px; }
+	.eem-chart-table-scroll { margin: 0 -12px; }
+	.eem-cust-chart-table thead th:first-child,
+	.eem-cust-chart-table tbody td:first-child { padding-left: 12px; min-width: 170px; }
+	.eem-cust-chart-table thead th:last-child,
+	.eem-cust-chart-table tbody td:last-child { padding-right: 12px; }
+	/* Customer names stay on one line instead of stacking. */
+	.eem-cust-chart-table .eem-chart-cust-link { white-space: nowrap; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

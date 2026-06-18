@@ -24,6 +24,14 @@ class EEM_Daily_Movement_Page {
 	 *
 	 * @return void
 	 */
+	/**
+	 * The reservation being rendered — used by the per-order check-in status
+	 * menu (keyed by reservation_id + order_number).
+	 *
+	 * @var int
+	 */
+	private static int $current_reservation_id = 0;
+
 	public static function render(): void {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( ! empty( $_GET['print'] ) ) {
@@ -70,6 +78,8 @@ class EEM_Daily_Movement_Page {
 		if ( 0 === $reservation_id && ! empty( $reservations ) ) {
 			$reservation_id = (int) $reservations[0]->ID;
 		}
+
+		self::$current_reservation_id = $reservation_id;
 
 		$reports     = array();
 		$report_date = '';
@@ -199,8 +209,8 @@ class EEM_Daily_Movement_Page {
 		}
 
 		$status_labels = array(
-			'not_checked_in' => __( 'Not Checked In', 'equine-event-manager' ),
-			'occupied'       => __( 'Not Checked In', 'equine-event-manager' ),
+			'not_checked_in' => __( 'Pending Arrival', 'equine-event-manager' ),
+			'occupied'       => __( 'Pending Arrival', 'equine-event-manager' ),
 			'checked_in'     => __( 'Checked In', 'equine-event-manager' ),
 			'checked_out'    => __( 'Checked Out', 'equine-event-manager' ),
 		);
@@ -627,9 +637,9 @@ class EEM_Daily_Movement_Page {
 							// Departing rows read "Departing" (the row is leaving this day),
 							// not the underlying check-in flag.
 							$dm_status = 'departing' === $context ? 'departing' : $row['check_in_status'];
-							$dm_sid    = isset( $row['status_order_id'] ) ? (int) $row['status_order_id'] : 0;
-							if ( $dm_sid > 0 ) {
-								echo self::render_status_menu( $dm_status, $row['check_in_status'], $dm_sid ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- builds escaped markup internally.
+							$dm_onum   = isset( $row['order_number'] ) ? (string) $row['order_number'] : '';
+							if ( '' !== $dm_onum && self::$current_reservation_id > 0 ) {
+								echo self::render_status_menu( $dm_status, $row['check_in_status'], $dm_onum ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- builds escaped markup internally.
 							} else {
 								echo wp_kses_post( self::status_badge( $dm_status ) );
 							}
@@ -739,12 +749,14 @@ class EEM_Daily_Movement_Page {
 					e.preventDefault();
 					if ( opt.disabled ) { return; }
 					var menuEl = opt.closest( '.eem-dm-status-menu' );
-					var sid = opt.getAttribute( 'data-status-order-id' );
+					var rid = opt.getAttribute( 'data-reservation-id' );
+					var onum = opt.getAttribute( 'data-order-number' );
 					var target = opt.getAttribute( 'data-target' );
 					var nonce = opt.getAttribute( 'data-nonce' );
 					var body = new URLSearchParams();
-					body.append( 'action', 'eem_order_check_status' );
-					body.append( 'status_order_id', sid );
+					body.append( 'action', 'eem_order_checkin_set' );
+					body.append( 'reservation_id', rid );
+					body.append( 'order_number', onum );
 					body.append( 'target', target );
 					body.append( '_wpnonce', nonce );
 					opt.disabled = true;
@@ -787,15 +799,16 @@ class EEM_Daily_Movement_Page {
 	 * pick is reversible — no one-way toggle. The displayed badge may read
 	 * "Departing" (a derived label) while the real stored status is in $real.
 	 *
-	 * @param string $display Badge status to display (may be 'departing').
-	 * @param string $real    Real stored check-in status for the order.
-	 * @param int    $sid     Component-row id (wp_en_stall_reservations.id).
+	 * @param string $display      Badge status to display (may be 'departing').
+	 * @param string $real         Real stored check-in status for the order.
+	 * @param string $order_number The order's human number (per-order store key).
 	 * @return string HTML.
 	 */
-	private static function render_status_menu( string $display, string $real, int $sid ): string {
-		$nonce   = wp_create_nonce( 'eem_order_check_status_' . $sid );
+	private static function render_status_menu( string $display, string $real, string $order_number ): string {
+		$reservation_id = self::$current_reservation_id;
+		$nonce   = wp_create_nonce( 'eem_order_checkin_' . $reservation_id . '_' . $order_number );
 		$options = array(
-			'occupied'    => __( 'Not Checked In', 'equine-event-manager' ),
+			'occupied'    => __( 'Pending Arrival', 'equine-event-manager' ),
 			'checked_in'  => __( 'Checked In', 'equine-event-manager' ),
 			'checked_out' => __( 'Checked Out', 'equine-event-manager' ),
 		);
@@ -804,7 +817,7 @@ class EEM_Daily_Movement_Page {
 
 		ob_start();
 		?>
-		<div class="eem-dm-status-menu">
+		<div class="eem-dm-status-menu" data-eem-checkin>
 			<button type="button" class="eem-dm-status-trigger" data-eem-action="dm-status-menu" aria-haspopup="true" aria-expanded="false">
 				<?php
 				// status_badge() returns self-escaped markup incl. an inline <svg>
@@ -818,7 +831,8 @@ class EEM_Daily_Movement_Page {
 						<button type="button" role="menuitem"
 							class="eem-dm-status-option<?php echo $current_key === $val ? ' is-current' : ''; ?>"
 							data-eem-action="dm-status-pick"
-							data-status-order-id="<?php echo esc_attr( (string) $sid ); ?>"
+							data-reservation-id="<?php echo esc_attr( (string) $reservation_id ); ?>"
+							data-order-number="<?php echo esc_attr( $order_number ); ?>"
 							data-target="<?php echo esc_attr( $val ); ?>"
 							data-nonce="<?php echo esc_attr( $nonce ); ?>">
 							<?php echo esc_html( $label ); ?>
@@ -841,8 +855,8 @@ class EEM_Daily_Movement_Page {
 	 */
 	private static function status_badge( string $status, bool $with_caret = false ): string {
 		$labels = array(
-			'not_checked_in' => __( 'Not Checked In', 'equine-event-manager' ),
-			'occupied'       => __( 'Not Checked In', 'equine-event-manager' ),
+			'not_checked_in' => __( 'Pending Arrival', 'equine-event-manager' ),
+			'occupied'       => __( 'Pending Arrival', 'equine-event-manager' ),
 			'checked_in'     => __( 'Checked In', 'equine-event-manager' ),
 			'checked_out'    => __( 'Checked Out', 'equine-event-manager' ),
 			'departing'      => __( 'Departing', 'equine-event-manager' ),

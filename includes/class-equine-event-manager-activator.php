@@ -305,6 +305,11 @@ class EEM_Activator {
 			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-030-stall-status-backfill.php';
 			eem_mig_030_stall_status_backfill();
 		}
+
+		if ( ! get_option( 'eem_mig_031_order_checkin_backfill_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-031-order-checkin-backfill.php';
+			eem_mig_031_order_checkin_backfill();
+		}
 	}
 
 	/**
