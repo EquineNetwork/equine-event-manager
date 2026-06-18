@@ -2829,16 +2829,22 @@ class EEM_Admin {
 							</div>
 							<p class="eem-stall-chart-empty-note" hidden><?php esc_html_e( 'No assignment rows match this search.', 'equine-event-manager' ); ?></p>
 
-							<?php if ( ! empty( $grid['stall_rows'] ) && ! empty( $grid['rv_rows'] ) && 'all' === $inv ) : ?>
-								<!-- Section divider: Stall Units (only in "All" mode when both types present) -->
-								<div class="eem-sc-section-divider">
-									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-									<?php esc_html_e( 'Stall Units', 'equine-event-manager' ); ?>
-								</div>
-							<?php endif; ?>
-
+							<?php
+							// Show the section-label dividers only when BOTH unit types
+							// exist (so a stalls-only or RV-only reservation isn't labelled).
+							// Each divider lives INSIDE its section div so the All/Stalls/RV
+							// filter hides the divider together with its table — otherwise the
+							// "RV Lots" header orphaned at the bottom of the Stalls tab.
+							$eem_show_section_dividers = ! empty( $grid['stall_rows'] ) && ! empty( $grid['rv_rows'] );
+							?>
 							<!-- STALL SECTION: hidden when inv=rv -->
 							<div id="eem-sc-loc-stalls" data-inv-section="stalls"<?php echo 'rv' === $inv ? ' style="display:none"' : ''; ?>>
+								<?php if ( $eem_show_section_dividers ) : ?>
+									<div class="eem-sc-section-divider">
+										<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+										<?php esc_html_e( 'Stall Units', 'equine-event-manager' ); ?>
+									</div>
+								<?php endif; ?>
 								<?php if ( ! empty( $grid['stall_rows'] ) ) : ?>
 									<?php
 									// Barn/Row names are optional. When every stall row is unnamed the
@@ -2854,16 +2860,14 @@ class EEM_Admin {
 								<?php endif; ?>
 							</div>
 
-							<?php if ( ! empty( $grid['stall_rows'] ) && ! empty( $grid['rv_rows'] ) && 'all' === $inv ) : ?>
-								<!-- Section divider: RV Lots (only in "All" mode when both types present) -->
-								<div class="eem-sc-section-divider">
-									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-									<?php esc_html_e( 'RV Lots', 'equine-event-manager' ); ?>
-								</div>
-							<?php endif; ?>
-
 							<!-- RV SECTION: hidden when inv=stalls -->
 							<div id="eem-sc-loc-rv" data-inv-section="rv"<?php echo 'stalls' === $inv ? ' style="display:none"' : ''; ?>>
+								<?php if ( $eem_show_section_dividers ) : ?>
+									<div class="eem-sc-section-divider">
+										<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+										<?php esc_html_e( 'RV Lots', 'equine-event-manager' ); ?>
+									</div>
+								<?php endif; ?>
 								<?php if ( ! empty( $grid['rv_rows'] ) ) : ?>
 									<?php $this->render_stall_chart_matrix_table( $grid['rv_rows'], $date_cols, __( 'RV Lot', 'equine-event-manager' ), '', $rv_zone_map, 'rv' ); ?>
 								<?php else : ?>
@@ -5395,6 +5399,19 @@ class EEM_Admin {
 				if ( $unit_suggested ) {
 					$unsaved_order_keys[ $order['order_key'] ] = true;
 				}
+				// Date-independent occupant so the By-Location Status / Customer
+				// columns work even when the reservation has no per-night date
+				// columns (the cell-based occupancy below only fills when dates exist).
+				if ( isset( $stall_rows[ $unit ] ) ) {
+					$stall_rows[ $unit ]['occupant'] = array(
+						'label'        => $order['customer_name'],
+						'order_key'    => $order['order_key'],
+						'order_number' => (string) $order['order_number'],
+						'is_tack'      => isset( $tack_lookup[ (string) $unit ] ),
+						'suggested'    => $unit_suggested,
+						'group_name'   => $group_name,
+					);
+				}
 				foreach ( $stall_dates as $date_key ) {
 					if ( isset( $stall_rows[ $unit ]['cells'][ $date_key ] ) ) {
 						$stall_rows[ $unit ]['cells'][ $date_key ] = array(
@@ -5463,6 +5480,17 @@ class EEM_Admin {
 				$rv_unit_suggested = ! isset( $saved_rv_set[ (string) $unit ] );
 				if ( $rv_unit_suggested ) {
 					$unsaved_order_keys[ $order['order_key'] ] = true;
+				}
+				// Date-independent occupant (see stall loop note above).
+				if ( isset( $rv_rows[ $unit ] ) ) {
+					$rv_rows[ $unit ]['occupant'] = array(
+						'label'        => $order['customer_name'],
+						'order_key'    => $order['order_key'],
+						'order_number' => (string) $order['order_number'],
+						'is_tack'      => false,
+						'suggested'    => $rv_unit_suggested,
+						'group_name'   => $group_name,
+					);
 				}
 				foreach ( $rv_dates as $date_key ) {
 					if ( isset( $rv_rows[ $unit ]['cells'][ $date_key ] ) ) {
@@ -6084,6 +6112,8 @@ class EEM_Admin {
 						<?php if ( $show_secondary_column ) : ?>
 							<th><?php echo esc_html( $secondary_label ); ?></th>
 						<?php endif; ?>
+						<th class="eem-chart-status-col"><?php esc_html_e( 'Status', 'equine-event-manager' ); ?></th>
+						<th class="eem-chart-customer-col"><?php esc_html_e( 'Customer', 'equine-event-manager' ); ?></th>
 						<?php foreach ( $date_columns as $date_label ) : ?>
 							<th class="eem-chart-date-col"><?php echo esc_html( $date_label ); ?></th>
 						<?php endforeach; ?>
@@ -6098,7 +6128,7 @@ class EEM_Admin {
 							$current_block = $block;
 							?>
 							<tr class="eem-chart-barn-row" data-barn="<?php echo esc_attr( sanitize_html_class( strtolower( $block ) ) ); ?>">
-								<td colspan="<?php echo esc_attr( (string) ( 2 + count( $date_columns ) ) ); ?>">
+								<td colspan="<?php echo esc_attr( (string) ( 4 + count( $date_columns ) ) ); ?>">
 									<?php echo esc_html( $block ); ?>
 								</td>
 							</tr>
@@ -6116,6 +6146,38 @@ class EEM_Admin {
 						<?php if ( $show_secondary_column ) : ?>
 							<td class="eem-chart-block-name"><?php echo esc_html( $row['block'] ); ?></td>
 						<?php endif; ?>
+						<?php
+						// Status / Customer columns — derive from the date-independent
+						// row occupant, falling back to a scan of the per-night cells.
+						$eem_occ = ( isset( $row['occupant'] ) && is_array( $row['occupant'] ) ) ? $row['occupant'] : null;
+						$eem_blocked = false;
+						if ( null === $eem_occ ) {
+							foreach ( (array) ( $row['cells'] ?? array() ) as $eem_c ) {
+								if ( isset( $eem_c['type'] ) && 'occupied' === $eem_c['type'] ) {
+									$eem_occ = array(
+										'label'     => $eem_c['label'] ?? '',
+										'suggested' => ! empty( $eem_c['suggested'] ),
+									);
+									break;
+								}
+								if ( isset( $eem_c['type'] ) && 'blocked' === $eem_c['type'] ) {
+									$eem_blocked = true;
+								}
+							}
+						}
+						?>
+						<td class="eem-chart-status-cell">
+							<?php if ( null !== $eem_occ ) : ?>
+								<span class="eem-chart-status eem-chart-status--occupied"><?php esc_html_e( 'Occupied', 'equine-event-manager' ); ?></span>
+							<?php elseif ( $eem_blocked ) : ?>
+								<span class="eem-chart-status eem-chart-status--blocked"><?php esc_html_e( 'Blocked', 'equine-event-manager' ); ?></span>
+							<?php else : ?>
+								<span class="eem-chart-status eem-chart-status--available"><?php esc_html_e( 'Available', 'equine-event-manager' ); ?></span>
+							<?php endif; ?>
+						</td>
+						<td class="eem-chart-customer-cell">
+							<?php echo null !== $eem_occ && '' !== (string) $eem_occ['label'] ? esc_html( $eem_occ['label'] ) : '<span class="eem-chart-customer-empty">—</span>'; ?>
+						</td>
 						<?php foreach ( array_keys( $date_columns ) as $date_key ) : ?>
 							<?php $cell = isset( $row['cells'][ $date_key ] ) ? $row['cells'][ $date_key ] : array( 'type' => 'available', 'label' => __( 'Available', 'equine-event-manager' ) ); ?>
 							<td>
