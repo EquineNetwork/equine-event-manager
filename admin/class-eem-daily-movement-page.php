@@ -112,6 +112,7 @@ class EEM_Daily_Movement_Page {
 		} elseif ( empty( $reports ) || ( 1 === count( $reports ) && 0 === $totals['arriving'] && 0 === $totals['departing'] ) ) {
 			echo '<div class="eem-dm-empty"><p>' . esc_html__( 'No movement data for the selected date. Try "All Days" to see all activity.', 'equine-event-manager' ) . '</p></div>';
 		} else {
+			self::render_movement_overview( $reports );
 			self::render_print_header( $reservation_title, $reports, $view, $report_date );
 			foreach ( $reports as $report ) {
 				self::render_date_section( $report, 'all' === $view, $order_map );
@@ -648,6 +649,49 @@ class EEM_Daily_Movement_Page {
 				<?php endforeach; ?>
 			</tbody>
 		</table>
+		<?php
+	}
+
+	/**
+	 * Render the at-a-glance multi-day movement overview panel.
+	 *
+	 * Mirrors the Stall Chart print view's "Daily Movement" block — one column
+	 * per date with ↓ Arriving / ↑ Departing counts — so on-the-ground staff get
+	 * a single-glance picture of the whole event's turnover above the detail
+	 * tables. Only worth showing when there are multiple dates.
+	 *
+	 * @param array[] $reports Per-date movement reports.
+	 * @return void
+	 */
+	private static function render_movement_overview( array $reports ): void {
+		if ( count( $reports ) < 2 ) {
+			return;
+		}
+		?>
+		<div class="eem-dm-overview">
+			<div class="eem-dm-overview-title"><?php esc_html_e( 'Daily Movement', 'equine-event-manager' ); ?></div>
+			<div class="eem-dm-overview-grid">
+				<?php foreach ( $reports as $report ) : ?>
+					<div class="eem-dm-overview-day">
+						<div class="eem-dm-overview-date">
+							<?php echo esc_html( $report['date_display'] ?? $report['date'] ); ?>
+						</div>
+						<div class="eem-dm-overview-vals">
+							<span class="eem-dm-overview-arr"><?php echo esc_html( sprintf(
+								/* translators: %d: count of arriving customers */
+								__( '↓ %d Arriving', 'equine-event-manager' ),
+								(int) ( $report['summary']['arriving'] ?? 0 )
+							) ); ?></span>
+							<span class="eem-dm-overview-dep"><?php echo esc_html( sprintf(
+								/* translators: %d: count of departing customers */
+								__( '↑ %d Departing', 'equine-event-manager' ),
+								(int) ( $report['summary']['departing'] ?? 0 )
+							) ); ?></span>
+						</div>
+					</div>
+				<?php endforeach; ?>
+			</div>
+		</div>
 		<?php
 	}
 

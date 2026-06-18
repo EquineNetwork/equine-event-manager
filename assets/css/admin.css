@@ -10583,6 +10583,42 @@ a.eem-dm-view-tab.active:visited {
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
 }
+/* At-a-glance multi-day movement overview (mirrors the Stall Chart print view's
+   Daily Movement block — ↓ Arriving / ↑ Departing per date). */
+.eem-dm-overview {
+	background: #f0f4fb;
+	border: 1px solid #d9e2f2;
+	border-radius: var(--eem-radius, 3px);
+	padding: 14px 18px;
+	margin-bottom: 18px;
+}
+.eem-dm-overview-title {
+	font-family: 'Space Grotesk', sans-serif;
+	font-size: 13px;
+	font-weight: 700;
+	color: var(--eem-navy, #031b4e);
+	margin-bottom: 12px;
+}
+.eem-dm-overview-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+	gap: 14px;
+}
+.eem-dm-overview-date {
+	font-size: 13px;
+	font-weight: 700;
+	color: var(--eem-navy, #031b4e);
+	margin-bottom: 5px;
+}
+.eem-dm-overview-vals span {
+	display: block;
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--eem-navy, #1d2327);
+}
+.eem-dm-overview-arr { color: #15803d; }
+.eem-dm-overview-dep { color: #b45309; }
+
 .eem-dm-table {
 	width: 100%;
 	/* Fixed layout so the Arriving + Departing tables (separate <table>s) share
