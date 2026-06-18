@@ -117,6 +117,7 @@ class EEM_Admin {
 		add_action( 'admin_menu', array( $this, 'normalize_event_manager_submenu_order' ), 1001 );
 		add_action( 'admin_head', array( $this, 'print_category_submenu_nesting_css' ) );
 		add_action( 'admin_footer', array( $this, 'print_category_submenu_nesting_js' ) );
+		add_action( 'admin_footer', array( $this, 'print_events_subnav_nesting_js' ) );
 		add_action( 'admin_menu', array( $this, 'maybe_remove_disabled_native_event_menu_items' ), 999 );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_backend_shell_styles' ) );
 		add_action( 'admin_footer', array( $this, 'print_reservations_list_toolbar_normalizer' ) );
@@ -823,6 +824,84 @@ class EEM_Admin {
 	}
 
 	/**
+	 * Print footer JS that nests the "Venues" and "Producers" top-level submenu
+	 * rows as hover sub-items under "Events" when Native Events is enabled
+	 * (Whitney 2026-06-17). Reuses the same `.eem-cat-flyout` mechanism as the
+	 * Category nesting — each moved row keeps its own Categories flyout, so the
+	 * result is Events ▸ {Categories, Venues ▸ Categories, Producers ▸ Categories}.
+	 * Must run AFTER print_category_submenu_nesting_js (which builds the per-row
+	 * Categories flyouts) so the moved rows carry their children along. No-op when
+	 * native events are disabled (Venues then stays a top-level item).
+	 *
+	 * @return void
+	 */
+	public function print_events_subnav_nesting_js() {
+		if ( ! EEM_Events::is_native_events_enabled() ) {
+			return;
+		}
+		$events_slug = 'page=' . EEM_Events_List_Page::MENU_SLUG;
+		$move_slugs  = array(
+			'page=' . EEM_Venues_Page::MENU_SLUG,
+			'page=' . EEM_Producers_Page::MENU_SLUG,
+		);
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$current_page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		$on_child     = in_array( $current_page, array( EEM_Venues_Page::MENU_SLUG, EEM_Producers_Page::MENU_SLUG ), true );
+		?>
+		<script id="eem-events-subnav-nesting-js">
+		(function () {
+			var eventsSlug = <?php echo wp_json_encode( $events_slug ); ?>;
+			var moveSlugs  = <?php echo wp_json_encode( $move_slugs ); ?>;
+			var onChild    = <?php echo $on_child ? 'true' : 'false'; ?>;
+
+			// Locate the Events row + its Event Manager submenu <ul>.
+			var eventsLink = null, links = document.querySelectorAll('#adminmenu .wp-submenu a');
+			for (var i = 0; i < links.length; i++) {
+				if ((links[i].getAttribute('href') || '').indexOf(eventsSlug) > -1) { eventsLink = links[i]; break; }
+			}
+			if (!eventsLink) { return; }
+			var eventsLi = eventsLink.closest('li');
+			var submenu  = eventsLink.closest('ul.wp-submenu');
+			if (!eventsLi || !submenu) { return; }
+
+			eventsLi.classList.add('eem-cat-parent');
+			var fly = eventsLi.querySelector(':scope > ul.eem-cat-flyout');
+			if (!fly) {
+				fly = document.createElement('ul');
+				fly.className = 'eem-cat-flyout';
+				eventsLi.appendChild(fly);
+			}
+
+			// Move each top-level Venues / Producers row into the Events flyout.
+			moveSlugs.forEach(function (slug) {
+				var rows = submenu.querySelectorAll(':scope > li > a');
+				for (var j = 0; j < rows.length; j++) {
+					if ((rows[j].getAttribute('href') || '').indexOf(slug) > -1) {
+						var li = rows[j].closest('li');
+						if (li && li.parentElement === submenu) {
+							li.classList.add('eem-cat-subitem');
+							fly.appendChild(li);
+						}
+						break;
+					}
+				}
+			});
+
+			// Keep the Events top row open/highlighted when on a moved child page.
+			if (onChild) {
+				var topMenu = eventsLi.closest('li.menu-top');
+				if (topMenu) {
+					topMenu.classList.remove('wp-not-current-submenu');
+					topMenu.classList.add('wp-has-current-submenu', 'wp-menu-open');
+				}
+				eventsLi.classList.add('current');
+			}
+		})();
+		</script>
+		<?php
+	}
+
+	/**
 	 * Bounce the raw WP `edit-tags.php` term list and `term.php` term editor for
 	 * the three managed category taxonomies (en_event_category / en_venue_category
 	 * / en_producer_category) to the branded EEM_Term_Categories_Page. The term
@@ -1241,6 +1320,20 @@ class EEM_Admin {
 				array( 'EEM_Term_Categories_Page', 'render' )
 			);
 
+		} else {
+			// Native Events OFF: Events + Producers + all Categories stay hidden,
+			// but Venues remains a top-level item — it backs the facility-layout
+			// templates feature (Stall & RV Charts), which is event-source-agnostic
+			// (Whitney 2026-06-17). When native is ON, Venues + Producers nest as
+			// hover sub-items under Events via print_events_subnav_nesting_js().
+			add_submenu_page(
+				self::MENU_SLUG,
+				__( 'Venues', 'equine-event-manager' ),
+				__( 'Venues', 'equine-event-manager' ),
+				'manage_options',
+				EEM_Venues_Page::MENU_SLUG,
+				array( 'EEM_Venues_Page', 'render' )
+			);
 		}
 
 		// "Sheets & Results" = the draw-sheet / result PDF manager.
