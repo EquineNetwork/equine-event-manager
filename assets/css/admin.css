@@ -4829,6 +4829,20 @@ a.eem-btn-collect-banner:focus {
 	font-size: 13px;
 }
 
+/* Custom line item remove (×) control. */
+.eem-order-summary__line-right { display: inline-flex; align-items: center; gap: 8px; }
+.eem-line-remove {
+	border: none;
+	background: none;
+	color: var(--eem-text-muted);
+	font-size: 18px;
+	line-height: 1;
+	cursor: pointer;
+	padding: 0 2px;
+	border-radius: var(--eem-radius);
+}
+.eem-line-remove:hover { color: var(--eem-danger); }
+
 .eem-order-summary__line:last-child {
 	border-bottom: none;
 }

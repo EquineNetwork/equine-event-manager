@@ -236,6 +236,31 @@ class EEM_Order_Adjustments_Repo {
 	}
 
 	/**
+	 * Delete a single custom line item by its row id (scoped to the order + kind so
+	 * a stray id can't remove another order's adjustment or a discount row).
+	 *
+	 * @param string $order_key Order key the item belongs to.
+	 * @param int    $id        Adjustment row id.
+	 * @return bool True when a row was deleted.
+	 */
+	public static function delete_custom_item( string $order_key, int $id ): bool {
+		global $wpdb;
+
+		$order_key = trim( $order_key );
+		if ( '' === $order_key || $id < 1 ) {
+			return false;
+		}
+
+		$deleted = $wpdb->delete(
+			self::table(),
+			array( 'id' => $id, 'order_key' => $order_key, 'kind' => self::KIND_CUSTOM_ITEM ),
+			array( '%d', '%s', '%s' )
+		);
+
+		return (bool) $deleted;
+	}
+
+	/**
 	 * Fetch all custom line items for an order.
 	 *
 	 * @param string $order_key Order key.

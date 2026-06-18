@@ -2071,6 +2071,33 @@
 		}
 	});
 
+	// Remove a single custom line item (× on the Order Summary line).
+	function submitRemoveCustomItem(t) {
+		var btn = (t && t.closest) ? t.closest('[data-eem-action="order-remove-custom-item"]') : null;
+		if (!btn) { return; }
+		var desc = btn.getAttribute('data-item-desc') || 'this line item';
+		if (!window.confirm('Remove "' + desc + '" from this order?')) { return; }
+		btn.disabled = true;
+		var body = new URLSearchParams();
+		body.set('action', 'eem_order_remove_custom_item');
+		body.set('_wpnonce', btn.getAttribute('data-nonce') || '');
+		body.set('order_key', btn.getAttribute('data-order-key') || '');
+		body.set('item_id', btn.getAttribute('data-item-id') || '');
+		fetch(window.ajaxurl || '/wp-admin/admin-ajax.php', {
+			method: 'POST', credentials: 'same-origin',
+			headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+			body: body.toString()
+		}).then(function (r) { return r.json().catch(function () { return { success: false }; }); }).then(function (json) {
+			if (json && json.success) {
+				if (window.EEM && window.EEM.showSaveToast) { window.EEM.showSaveToast((json.data && json.data.message) || 'Line item removed.'); }
+				setTimeout(function () { window.location.reload(); }, 500);
+			} else {
+				btn.disabled = false;
+				window.alert((json && json.data && json.data.message) || 'Could not remove the line item.');
+			}
+		}).catch(function () { btn.disabled = false; window.alert('Network error. Please try again.'); });
+	}
+
 	/* v2 — Orders-list bulk Cancel. Lean sequential queue over the
 	   eem_order_bulk_cancel_step endpoint (no multi-state modal). */
 	var _bulkCancelKeys = [];
@@ -2803,6 +2830,10 @@
 		},
 		'order-mark-paid-confirm': function () {
 			submitOrderMarkPaidForm();
+		},
+		/* Remove a single custom line item from an order. */
+		'order-remove-custom-item': function (t) {
+			submitRemoveCustomItem(t);
 		},
 		/* Order Edit P3 — Add-Items modal (Order Detail header). */
 		'order-add-items': function () {

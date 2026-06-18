@@ -878,7 +878,13 @@ class EEM_Order_Detail_Page {
 							<span class="eem-order-summary__section-badge eem-order-summary__section-badge--addon"><?php echo esc_html( sprintf( _n( '%d item', '%d items', count( $custom_items ), 'equine-event-manager' ), count( $custom_items ) ) ); ?></span>
 						</div>
 						<?php foreach ( $custom_items as $item ) : ?>
-							<div class="eem-order-summary__line"><span><?php echo esc_html( $item['description'] ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( (float) $item['amount'], 2 ) ); ?></span></div>
+							<div class="eem-order-summary__line eem-order-summary__line--removable">
+								<span><?php echo esc_html( $item['description'] ); ?></span>
+								<span class="eem-order-summary__line-right">
+									<?php echo esc_html( '$' . number_format_i18n( (float) $item['amount'], 2 ) ); ?>
+									<button type="button" class="eem-line-remove" data-eem-action="order-remove-custom-item" data-item-id="<?php echo esc_attr( (string) $item['id'] ); ?>" data-item-desc="<?php echo esc_attr( $item['description'] ); ?>" data-order-key="<?php echo esc_attr( $order_key ); ?>" data-nonce="<?php echo esc_attr( wp_create_nonce( 'eem_remove_custom_item_' . $order_key ) ); ?>" aria-label="<?php esc_attr_e( 'Remove line item', 'equine-event-manager' ); ?>" title="<?php esc_attr_e( 'Remove line item', 'equine-event-manager' ); ?>">&times;</button>
+								</span>
+							</div>
 						<?php endforeach; ?>
 						<div class="eem-order-summary__section-subtotal"><span><?php esc_html_e( 'Section Total', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $custom_items_total, 2 ) ); ?></span></div>
 					</div>
@@ -1514,6 +1520,51 @@ class EEM_Order_Detail_Page {
 		wp_send_json_success( array(
 			'requires_reload' => true,
 			'message'         => __( 'Discount removed.', 'equine-event-manager' ),
+		) );
+	}
+
+	/**
+	 * AJAX — remove a single custom line item from an order.
+	 *
+	 * Capability + per-order nonce gated. Deletes the adjustment row via the
+	 * adjustments repo (scoped to order_key + kind so a stray id can't touch
+	 * another order), logs an order_custom_item_removed Activity Log entry, and
+	 * responds with requires_reload so the recomputed total refreshes.
+	 *
+	 * @return void
+	 */
+	public static function ajax_remove_custom_item(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+
+		$order_key = isset( $_POST['order_key'] ) ? sanitize_text_field( wp_unslash( $_POST['order_key'] ) ) : '';
+		check_ajax_referer( 'eem_remove_custom_item_' . $order_key, '_wpnonce' );
+
+		$item_id = isset( $_POST['item_id'] ) ? absint( wp_unslash( $_POST['item_id'] ) ) : 0;
+		if ( '' === $order_key || $item_id < 1 ) {
+			wp_send_json_error( array( 'message' => __( 'Missing required parameters.', 'equine-event-manager' ) ), 400 );
+		}
+		if ( ! class_exists( 'EEM_Order_Adjustments_Repo' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Custom line items are unavailable.', 'equine-event-manager' ) ), 500 );
+		}
+
+		$removed = EEM_Order_Adjustments_Repo::delete_custom_item( $order_key, $item_id );
+		if ( ! $removed ) {
+			wp_send_json_error( array( 'message' => __( 'The line item could not be removed (it may have already been deleted).', 'equine-event-manager' ) ), 404 );
+		}
+
+		if ( class_exists( 'EEM_Activity_Log' ) ) {
+			EEM_Activity_Log::write(
+				'order_custom_item_removed',
+				array( 'order_key' => $order_key, 'item_id' => $item_id ),
+				array( 'actor_type' => 'admin', 'actor_id' => get_current_user_id() )
+			);
+		}
+
+		wp_send_json_success( array(
+			'requires_reload' => true,
+			'message'         => __( 'Line item removed.', 'equine-event-manager' ),
 		) );
 	}
 
