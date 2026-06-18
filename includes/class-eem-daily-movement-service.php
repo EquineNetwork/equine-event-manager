@@ -297,6 +297,62 @@ class EEM_Daily_Movement_Service {
 	}
 
 	/**
+	 * Map each reservation to its booking date window (earliest arrival → latest
+	 * departure across the stall + RV tables). Source-agnostic — derived from the
+	 * actual bookings rather than per-source event meta. Reservations with no
+	 * bookings are absent from the map.
+	 *
+	 * @return array<int, array{start:string, end:string}> Keyed by reservation_id.
+	 */
+	public static function get_reservation_windows(): array {
+		global $wpdb;
+		$stall = $wpdb->prefix . 'en_stall_reservations';
+		$rv    = $wpdb->prefix . 'en_rv_reservations';
+
+		$rows = $wpdb->get_results(
+			"SELECT reservation_id, MIN(arrival_date) AS start_date, MAX(departure_date) AS end_date FROM (
+			   SELECT reservation_id, arrival_date, departure_date FROM {$stall} WHERE reservation_id > 0 AND trashed_at IS NULL
+			   UNION ALL
+			   SELECT reservation_id, arrival_date, departure_date FROM {$rv} WHERE reservation_id > 0 AND trashed_at IS NULL
+			 ) AS combined
+			 WHERE arrival_date > '0000-00-00'
+			 GROUP BY reservation_id",
+			ARRAY_A
+		); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- table names internal, no user input.
+
+		$map = array();
+		foreach ( (array) $rows as $r ) {
+			$map[ (int) $r['reservation_id'] ] = array(
+				'start' => (string) $r['start_date'],
+				'end'   => (string) $r['end_date'],
+			);
+		}
+		return $map;
+	}
+
+	/**
+	 * Whether a reservation is "active" today within a ±N-day buffer around its
+	 * booking window — i.e. today is in [start − $buffer_days, end + $buffer_days].
+	 *
+	 * @param array{start:string, end:string}|null $window     Window from get_reservation_windows().
+	 * @param string                               $today      Today in Y-m-d.
+	 * @param int                                  $buffer_days Days of slack on each side.
+	 * @return bool
+	 */
+	public static function is_reservation_active( ?array $window, string $today, int $buffer_days = 1 ): bool {
+		if ( empty( $window ) || empty( $window['start'] ) || empty( $window['end'] ) ) {
+			return false;
+		}
+		$today_ts = strtotime( $today );
+		$start_ts = strtotime( $window['start'] . ' -' . $buffer_days . ' days' );
+		$end_ts   = strtotime( $window['end'] . ' +' . $buffer_days . ' days' );
+		if ( false === $today_ts || false === $start_ts || false === $end_ts ) {
+			return false;
+		}
+		return $today_ts >= $start_ts && $today_ts <= $end_ts;
+	}
+
+	/**
 	 * Format a Y-m-d date string for display.
 	 *
 	 * @param string $date Date in Y-m-d format.

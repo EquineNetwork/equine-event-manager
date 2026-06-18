@@ -51,6 +51,22 @@ class EEM_Daily_Movement_Page {
 			'order'          => 'ASC',
 		) );
 
+		// Only show reservations whose booking window is active today (±1 day) so
+		// long-past and far-future events don't clog the dropdown. The currently
+		// selected reservation is always kept so a deep-linked URL still works.
+		$today    = wp_date( 'Y-m-d' );
+		$windows  = EEM_Daily_Movement_Service::get_reservation_windows();
+		$selected = $reservation_id;
+		$reservations = array_values( array_filter(
+			$reservations,
+			static function ( $res ) use ( $windows, $today, $selected ) {
+				if ( (int) $res->ID === (int) $selected ) {
+					return true;
+				}
+				return EEM_Daily_Movement_Service::is_reservation_active( $windows[ (int) $res->ID ] ?? null, $today, 1 );
+			}
+		) );
+
 		if ( 0 === $reservation_id && ! empty( $reservations ) ) {
 			$reservation_id = (int) $reservations[0]->ID;
 		}
