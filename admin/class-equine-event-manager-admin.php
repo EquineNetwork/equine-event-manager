@@ -5435,6 +5435,8 @@ class EEM_Admin {
 						'is_tack'      => isset( $tack_lookup[ (string) $unit ] ),
 						'suggested'    => $unit_suggested,
 						'group_name'   => $group_name,
+						'arrival'      => (string) $order['stall_arrival_date'],
+						'departure'    => (string) $order['stall_departure_date'],
 					);
 				}
 				foreach ( $stall_dates as $date_key ) {
@@ -5515,6 +5517,8 @@ class EEM_Admin {
 						'is_tack'      => false,
 						'suggested'    => $rv_unit_suggested,
 						'group_name'   => $group_name,
+						'arrival'      => (string) $order['rv_arrival_date'],
+						'departure'    => (string) $order['rv_departure_date'],
 					);
 				}
 				foreach ( $rv_dates as $date_key ) {
@@ -6246,6 +6250,8 @@ class EEM_Admin {
 						<?php endif; ?>
 						<th class="eem-chart-status-col"><?php esc_html_e( 'Status', 'equine-event-manager' ); ?></th>
 						<th class="eem-chart-customer-col"><?php esc_html_e( 'Customer', 'equine-event-manager' ); ?></th>
+						<th class="eem-chart-date-from-col"><?php esc_html_e( 'Arrival', 'equine-event-manager' ); ?></th>
+						<th class="eem-chart-date-to-col"><?php esc_html_e( 'Departure', 'equine-event-manager' ); ?></th>
 						<?php foreach ( $date_columns as $date_label ) : ?>
 							<th class="eem-chart-date-col"><?php echo esc_html( $date_label ); ?></th>
 						<?php endforeach; ?>
@@ -6311,6 +6317,12 @@ class EEM_Admin {
 						<td class="eem-chart-customer-cell">
 							<?php echo null !== $eem_occ && '' !== (string) $eem_occ['label'] ? esc_html( $eem_occ['label'] ) : '<span class="eem-chart-customer-empty">—</span>'; ?>
 						</td>
+						<?php
+						$eem_arr = ( null !== $eem_occ && ! empty( $eem_occ['arrival'] ) && strtotime( (string) $eem_occ['arrival'] ) ) ? date_i18n( 'M j, Y', strtotime( (string) $eem_occ['arrival'] ) ) : '';
+						$eem_dep = ( null !== $eem_occ && ! empty( $eem_occ['departure'] ) && strtotime( (string) $eem_occ['departure'] ) ) ? date_i18n( 'M j, Y', strtotime( (string) $eem_occ['departure'] ) ) : '';
+						?>
+						<td class="eem-chart-date-cell"><?php echo '' !== $eem_arr ? esc_html( $eem_arr ) : '<span class="eem-chart-customer-empty">—</span>'; ?></td>
+						<td class="eem-chart-date-cell"><?php echo '' !== $eem_dep ? esc_html( $eem_dep ) : '<span class="eem-chart-customer-empty">—</span>'; ?></td>
 						<?php foreach ( array_keys( $date_columns ) as $date_key ) : ?>
 							<?php $cell = isset( $row['cells'][ $date_key ] ) ? $row['cells'][ $date_key ] : array( 'type' => 'available', 'label' => __( 'Available', 'equine-event-manager' ) ); ?>
 							<td>

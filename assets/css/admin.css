@@ -7766,7 +7766,12 @@ a.eem-btn--ghost:focus    { color: #1d2327; }
 .eem-stall-chart-view-tab { padding: 14px 22px 12px; font-size: 14px; font-weight: 600; color: #6B7A99; cursor: pointer; border-bottom: 3px solid transparent; font-family: inherit; transition: color .15s, border-color .15s; display: flex; align-items: center; gap: 8px; background: none; border-left: none; border-right: none; border-top: none; }
 .eem-stall-chart-view-tab:hover { color: #031B4E; }
 .eem-stall-chart-view-tab.active { color: #1668F2; border-bottom-color: #1668F2; }
+/* Kill the WP-core button focus ring that made the active tab read as a big
+   bordered button; keep an accessible underline-only focus cue. */
+.eem-stall-chart-view-tab:focus { outline: none; box-shadow: none; }
+.eem-stall-chart-view-tab:focus-visible { color: #1668F2; border-bottom-color: #1668F2; }
 .eem-stall-chart-view-tab svg { width: 14px; height: 14px; }
+.eem-chart-date-cell { font-size: 13px; color: #50575e; white-space: nowrap; }
 .eem-stall-chart-tab-panel { display: block; }
 
 /* ── Help / tip banner ── */
@@ -7810,7 +7815,7 @@ a.eem-btn--ghost:focus    { color: #1d2327; }
 .eem-stall-chart-table td,
 .eem-rv-chart-table td,
 .eem-cust-chart-table td { padding: 11px 14px; font-size: 13.5px; color: #1d2327; vertical-align: middle; }
-.eem-chart-unit-num { font-weight: 700; color: #031B4E; font-size: 13.5px; width: 60px; }
+.eem-chart-unit-num { font-weight: 700; color: #031B4E; font-size: 13.5px; min-width: 130px; white-space: nowrap; }
 .eem-chart-block-name { color: #50575e; font-size: 13px; white-space: nowrap; }
 .eem-chart-cell-wrap { display: flex; justify-content: center; }
 
