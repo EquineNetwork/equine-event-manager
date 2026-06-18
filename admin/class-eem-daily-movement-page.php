@@ -513,21 +513,13 @@ class EEM_Daily_Movement_Page {
 		<div class="eem-dm-date-section">
 			<h3 class="eem-dm-date-heading"><?php echo esc_html( $report['date_display'] ); ?></h3>
 
+			<?php $sm = $report['summary']; ?>
 			<div class="eem-dm-summary">
-				<span class="eem-dm-summary-item eem-dm-summary-arriving">
-					<?php printf( esc_html__( '%d Arriving', 'equine-event-manager' ), $report['summary']['arriving'] ); ?>
-				</span>
-				<span class="eem-dm-summary-item eem-dm-summary-departing">
-					<?php printf( esc_html__( '%d Departing', 'equine-event-manager' ), $report['summary']['departing'] ); ?>
-				</span>
-				<span class="eem-dm-summary-item eem-dm-summary-pending">
-					<?php printf( esc_html__( '%d Not Yet Checked In', 'equine-event-manager' ), $report['summary']['not_yet_checked_in'] ); ?>
-				</span>
-				<?php if ( ( $report['summary']['shavings_total'] ?? 0 ) > 0 ) : ?>
-					<span class="eem-dm-summary-item eem-dm-summary-shavings">
-						<?php printf( esc_html__( '%d Bags Shavings', 'equine-event-manager' ), $report['summary']['shavings_total'] ); ?>
-					</span>
-				<?php endif; ?>
+				<span class="eem-dm-summary-item"><span class="eem-dm-summary-icon" aria-hidden="true">↓</span><?php printf( esc_html__( '%d Arriving', 'equine-event-manager' ), (int) ( $sm['arriving'] ?? 0 ) ); ?></span>
+				<span class="eem-dm-summary-item"><span class="eem-dm-summary-icon" aria-hidden="true">✓</span><?php printf( esc_html__( '%d Checked In', 'equine-event-manager' ), (int) ( $sm['checked_in'] ?? 0 ) ); ?></span>
+				<span class="eem-dm-summary-item"><span class="eem-dm-summary-icon" aria-hidden="true">↑</span><?php printf( esc_html__( '%d Departing', 'equine-event-manager' ), (int) ( $sm['departing'] ?? 0 ) ); ?></span>
+				<span class="eem-dm-summary-item"><span class="eem-dm-summary-icon" aria-hidden="true">✓</span><?php printf( esc_html__( '%d Checked Out', 'equine-event-manager' ), (int) ( $sm['departed'] ?? 0 ) ); ?></span>
+				<span class="eem-dm-summary-item"><span class="eem-dm-summary-icon" aria-hidden="true">◆</span><?php printf( esc_html__( '%d Bags Shavings', 'equine-event-manager' ), (int) ( $sm['shavings_total'] ?? 0 ) ); ?></span>
 			</div>
 
 			<?php if ( ! empty( $report['arriving'] ) ) : ?>
@@ -640,7 +632,6 @@ class EEM_Daily_Movement_Page {
 	private static function render_movement_overview( array $reports ): void {
 		?>
 		<div class="eem-dm-overview">
-			<div class="eem-dm-overview-title"><?php esc_html_e( 'Daily Movement', 'equine-event-manager' ); ?></div>
 			<div class="eem-dm-overview-grid">
 				<?php foreach ( $reports as $report ) :
 					$s = isset( $report['summary'] ) ? $report['summary'] : array();

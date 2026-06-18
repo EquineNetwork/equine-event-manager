@@ -10520,60 +10520,29 @@ a.eem-dm-view-tab.active:visited {
 	padding-bottom: 5px;
 	border-bottom: 1.5px solid var(--eem-electric, #3b82f6);
 }
+/* Per-date summary stats — one navy row, an icon per metric (matches the
+   Daily Movement overview palette). */
 .eem-dm-summary {
 	display: flex;
-	flex-wrap: wrap;
-	gap: 16px;
+	flex-wrap: nowrap;
+	align-items: center;
+	gap: 28px;
 	margin-top: 12px;
 	margin-bottom: 20px;
+	overflow-x: auto;
 }
 .eem-dm-summary-item {
 	display: inline-flex;
 	align-items: center;
-	gap: 6px;
-	padding: 3px 9px;
-	border-radius: 20px;
-	font-size: 11.5px;
+	gap: 7px;
+	font-size: 13px;
 	font-weight: 600;
+	color: var(--eem-navy, #031b4e);
+	white-space: nowrap;
 }
-.eem-dm-summary-item::before {
-	content: '';
-	display: inline-block;
-	width: 6px;
-	height: 6px;
-	border-radius: 50%;
-}
-.eem-dm-summary-arriving {
-	background: #f0fdf4;
-	color: #15803d;
-	border: 1px solid #bbf7d0;
-}
-.eem-dm-summary-arriving::before {
-	background: #22c55e;
-}
-.eem-dm-summary-departing {
-	background: #fefce8;
-	color: #a16207;
-	border: 1px solid #fde68a;
-}
-.eem-dm-summary-departing::before {
-	background: #eab308;
-}
-.eem-dm-summary-pending {
-	background: #fef2f2;
-	color: #dc2626;
-	border: 1px solid #fecaca;
-}
-.eem-dm-summary-pending::before {
-	background: #ef4444;
-}
-.eem-dm-summary-shavings {
-	background: #f5f3ff;
-	color: #7c3aed;
-	border: 1px solid #ddd6fe;
-}
-.eem-dm-summary-shavings::before {
-	background: #8b5cf6;
+.eem-dm-summary-icon {
+	font-weight: 700;
+	color: var(--eem-electric, #1d4ed8);
 }
 .eem-dm-group-heading {
 	font-size: 15px;
