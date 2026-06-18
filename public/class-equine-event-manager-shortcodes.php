@@ -4286,6 +4286,7 @@ class EEM_Shortcodes {
 		if ( ! is_array( $data ) || empty( $data ) ) {
 			return $out;
 		}
+		$data = $this->overlay_config_rates( $data, $reservation_id );
 
 		$stay_type         = '' !== $stay_type ? $stay_type : 'nightly';
 		$rate              = (float) $this->get_current_rate( $data, $section, $stay_type );
@@ -4331,6 +4332,7 @@ class EEM_Shortcodes {
 		if ( ! is_array( $data ) || empty( $data ) ) {
 			return $out;
 		}
+		$data = $this->overlay_config_rates( $data, $reservation_id );
 
 		$out['available_start'] = isset( $data['available_start_date'] ) ? (string) $data['available_start_date'] : '';
 		$out['available_end']   = isset( $data['available_end_date'] ) ? (string) $data['available_end_date'] : '';
@@ -4358,6 +4360,45 @@ class EEM_Shortcodes {
 		}
 
 		return $out;
+	}
+
+	/**
+	 * Overlay canonical base-rate fields from the reservation config table onto a
+	 * post-meta-derived $data array. get_reservation_meta() already overlays
+	 * pricing_mode + packages from config, but NOT the base nightly/weekend/weekly
+	 * rates — so reservations built purely through the v4 config builder (which
+	 * writes rates to the config table without mirroring them to post-meta) read a
+	 * stale $0 rate. Reading the rate fields from config keeps Order-Edit pricing
+	 * in lock-step with the canonical store the v4 builder writes to. For
+	 * reservations whose post-meta and config rates already agree (older records)
+	 * this is a no-op. Config values are only applied when present and non-empty,
+	 * so a reservation without a config row falls back to the post-meta value.
+	 *
+	 * @param array $data           Post-meta-derived reservation data.
+	 * @param int   $reservation_id Reservation post ID.
+	 * @return array The data array with config base rates overlaid.
+	 */
+	private function overlay_config_rates( array $data, int $reservation_id ): array {
+		if ( $reservation_id < 1 || ! class_exists( 'EEM_Reservation_Config' ) ) {
+			return $data;
+		}
+		$cfg  = EEM_Reservation_Config::for( $reservation_id );
+		$keys = array(
+			'stall_nightly_rate', 'stall_weekend_rate', 'stall_weekly_rate',
+			'rv_nightly_rate', 'rv_weekend_rate', 'rv_weekly_rate',
+			'stall_early_bird_enabled', 'stall_early_bird_cutoff',
+			'stall_early_bird_nightly_rate', 'stall_early_bird_weekend_rate', 'stall_early_bird_weekly_rate',
+			'rv_early_bird_enabled', 'rv_early_bird_cutoff',
+			'rv_early_bird_nightly_rate', 'rv_early_bird_weekend_rate', 'rv_early_bird_weekly_rate',
+		);
+		foreach ( $keys as $key ) {
+			$value = $cfg->get( $key );
+			if ( null !== $value && '' !== $value ) {
+				$data[ $key ] = $value;
+			}
+		}
+
+		return $data;
 	}
 
 	/**
