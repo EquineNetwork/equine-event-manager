@@ -258,7 +258,14 @@ class EEM_Daily_Movement_Page {
 				.dm-pv-chip--shavings{background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe}
 				.dm-pv-chip--shavings::before{background:#8b5cf6}
 				.dm-pv-group-heading{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;margin:14px 0 6px}
-				table.dm-pv-table{width:100%;border-collapse:collapse}
+				table.dm-pv-table{width:100%;border-collapse:collapse;table-layout:fixed}
+				.dm-pv-table th:nth-child(1),.dm-pv-table td:nth-child(1){width:14%}
+				.dm-pv-table th:nth-child(2),.dm-pv-table td:nth-child(2){width:20%}
+				.dm-pv-table th:nth-child(3),.dm-pv-table td:nth-child(3){width:11%}
+				.dm-pv-table th:nth-child(4),.dm-pv-table td:nth-child(4){width:15%}
+				.dm-pv-table th:nth-child(5),.dm-pv-table td:nth-child(5){width:15%}
+				.dm-pv-table th:nth-child(6),.dm-pv-table td:nth-child(6){width:10%}
+				.dm-pv-table th:nth-child(7),.dm-pv-table td:nth-child(7){width:15%}
 				.dm-pv-table th{text-align:left;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;padding:6px 10px;border-bottom:1px solid #e5e7eb}
 				.dm-pv-table td{padding:8px 10px;border-bottom:1px solid #f1f5f9;font-size:12.5px;vertical-align:top}
 				.dm-pv-table tbody tr:last-child td{border-bottom:none}
