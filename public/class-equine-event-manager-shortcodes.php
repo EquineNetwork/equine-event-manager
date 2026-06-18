@@ -4641,6 +4641,10 @@ class EEM_Shortcodes {
 						'tax'                       => $row_tax,
 						'tax_rate'                  => (float) $totals['tax_rate'],
 						'total'                     => $row_subtotal + $row_fee,
+						// amount_paid = gross collected; set only when the order is
+						// created already paid (gateway charge at checkout), else 0 so
+						// the balance is correctly outstanding (Order Edit foundation).
+						'amount_paid'               => ( 'paid' === $payment_status ) ? ( $row_subtotal + $row_fee + (float) $row_tax ) : 0,
 						'payment_status'            => $payment_status,
 						'payment_gateway'           => $payment_gateway,
 						'order_number'              => $order_number,
@@ -4748,6 +4752,8 @@ RV Lot: " . $rv_lot['name'] );
 					'tax'               => (float) $eem_rv_tax,
 					'tax_rate'          => (float) $totals['tax_rate'],
 					'total'             => $rv_subtotal + $rv_fee,
+					// amount_paid = gross collected; set only when created already paid.
+					'amount_paid'       => ( 'paid' === $payment_status ) ? ( $rv_subtotal + $rv_fee + (float) $eem_rv_tax ) : 0,
 					'payment_status'    => $payment_status,
 					'payment_gateway'   => $payment_gateway,
 					'order_number'      => $order_number,

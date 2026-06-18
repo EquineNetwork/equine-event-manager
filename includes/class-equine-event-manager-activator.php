@@ -295,6 +295,11 @@ class EEM_Activator {
 			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-028-rv-row-surcharge-object.php';
 			update_option( 'eem_mig_028_rv_row_surcharge_object_complete', 1, false );
 		}
+
+		if ( ! get_option( 'eem_mig_029_amount_paid_column_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-029-amount-paid-column.php';
+			eem_mig_029_amount_paid_column();
+		}
 	}
 
 	/**
@@ -361,6 +366,7 @@ class EEM_Activator {
 			tax decimal(10,2) NOT NULL DEFAULT 0.00,
 			tax_rate decimal(6,3) NOT NULL DEFAULT 0.000,
 			total decimal(10,2) NOT NULL DEFAULT 0.00,
+			amount_paid decimal(10,2) NOT NULL DEFAULT 0.00,
 			payment_status varchar(50) NOT NULL DEFAULT 'pending',
 			payment_gateway varchar(50) NOT NULL DEFAULT '',
 			order_number varchar(20) NOT NULL DEFAULT '',
@@ -400,6 +406,7 @@ class EEM_Activator {
 			tax decimal(10,2) NOT NULL DEFAULT 0.00,
 			tax_rate decimal(6,3) NOT NULL DEFAULT 0.000,
 			total decimal(10,2) NOT NULL DEFAULT 0.00,
+			amount_paid decimal(10,2) NOT NULL DEFAULT 0.00,
 			payment_status varchar(50) NOT NULL DEFAULT 'pending',
 			payment_gateway varchar(50) NOT NULL DEFAULT '',
 			order_number varchar(20) NOT NULL DEFAULT '',

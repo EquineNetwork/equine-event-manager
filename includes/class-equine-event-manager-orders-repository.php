@@ -426,16 +426,30 @@ class EEM_Orders_Repository {
 
 		$updated_any = false;
 
+		// A transition INTO 'paid' records the gross collected amount so
+		// "amount due = total - amount_paid" is correct (Order Edit foundation).
+		$mark_paid = ( 'paid' === $new_status_slug );
+
 		foreach ( $order['components'] as $component ) {
+			$fields = array(
+				'payment_status'  => $new_status_slug,
+				'transaction_id'  => sanitize_text_field( $transaction_id ),
+				'payment_gateway' => sanitize_key( $payment_gateway ? $payment_gateway : $component['payment_gateway'] ),
+			);
+			$formats = array( '%s', '%s', '%s' );
+
+			if ( $mark_paid ) {
+				$component_charged     = ( isset( $component['total'] ) ? (float) $component['total'] : 0.0 )
+					+ ( isset( $component['tax'] ) ? (float) $component['tax'] : 0.0 );
+				$fields['amount_paid'] = number_format( max( 0.0, $component_charged ), 2, '.', '' );
+				$formats[]             = '%s';
+			}
+
 			$updated_any = $this->update_component_fields(
 				$component['table'],
 				$component['row_id'],
-				array(
-					'payment_status'  => $new_status_slug,
-					'transaction_id'  => sanitize_text_field( $transaction_id ),
-					'payment_gateway' => sanitize_key( $payment_gateway ? $payment_gateway : $component['payment_gateway'] ),
-				),
-				array( '%s', '%s', '%s' )
+				$fields,
+				$formats
 			) || $updated_any;
 		}
 
@@ -493,6 +507,13 @@ class EEM_Orders_Repository {
 			$notes = $this->upsert_note_line( $notes, 'Manual Payment Method', $payment_method );
 			$notes = $this->upsert_note_line( $notes, 'Manual Payment Recorded At', $paid_at );
 
+			// amount_paid = the GROSS amount charged for this row = total + tax
+			// (the `total` column is pre-tax). Makes "amount due = total - amount_paid"
+			// correct so later-added items bill as a balance instead of being masked
+			// by the paid status (Order Edit foundation).
+			$component_charged = ( isset( $component['total'] ) ? (float) $component['total'] : 0.0 )
+				+ ( isset( $component['tax'] ) ? (float) $component['tax'] : 0.0 );
+
 			$updated_any = $this->update_component_fields(
 				$component['table'],
 				$component['row_id'],
@@ -500,9 +521,10 @@ class EEM_Orders_Repository {
 					'payment_status'  => 'paid',
 					'transaction_id'  => '',
 					'payment_gateway' => 'manual',
+					'amount_paid'     => number_format( max( 0.0, $component_charged ), 2, '.', '' ),
 					'notes'           => $notes,
 				),
-				array( '%s', '%s', '%s', '%s' )
+				array( '%s', '%s', '%s', '%s', '%s' )
 			) || $updated_any;
 		}
 
@@ -1274,6 +1296,7 @@ class EEM_Orders_Repository {
 			$order_map[ $group_key ]['tax']                     += isset( $row['tax'] ) ? (float) $row['tax'] : 0.0;
 			$order_map[ $group_key ]['tax_rate']                = max( (float) $order_map[ $group_key ]['tax_rate'], isset( $row['tax_rate'] ) ? (float) $row['tax_rate'] : 0.0 );
 			$order_map[ $group_key ]['total']                   += (float) $row['total'] + ( isset( $row['tax'] ) ? (float) $row['tax'] : 0.0 );
+			$order_map[ $group_key ]['amount_paid']             += isset( $row['amount_paid'] ) ? (float) $row['amount_paid'] : 0.0;
 			$order_map[ $group_key ]['arrival_date']            = $row['arrival_date'];
 			$order_map[ $group_key ]['departure_date']          = $row['departure_date'];
 			$order_map[ $group_key ]['stay_type']               = $row['stay_type'];
@@ -1308,6 +1331,7 @@ class EEM_Orders_Repository {
 			$order_map[ $group_key ]['tax']               += isset( $row['tax'] ) ? (float) $row['tax'] : 0.0;
 			$order_map[ $group_key ]['tax_rate']          = max( (float) $order_map[ $group_key ]['tax_rate'], isset( $row['tax_rate'] ) ? (float) $row['tax_rate'] : 0.0 );
 			$order_map[ $group_key ]['total']             += (float) $row['total'] + ( isset( $row['tax'] ) ? (float) $row['tax'] : 0.0 );
+			$order_map[ $group_key ]['amount_paid']       += isset( $row['amount_paid'] ) ? (float) $row['amount_paid'] : 0.0;
 			$order_map[ $group_key ]['arrival_date']       = $row['arrival_date'];
 			$order_map[ $group_key ]['departure_date']     = $row['departure_date'];
 			$order_map[ $group_key ]['stay_type']          = $row['stay_type'];
@@ -1330,6 +1354,11 @@ class EEM_Orders_Repository {
 			$status                   = $this->get_order_status_display( $order['payment_status'], $order['notes'] );
 			$order['status_label']    = $status['label'];
 			$order['status_slug']     = $status['slug'];
+			// Baseline balance = component total (incl. tax) − gross collected.
+			// Order-level adjustments (custom items / discount) are layered in by the
+			// display consumers (Order Detail / Collect Payment), which recompute the
+			// precise amount_due against this order's amount_paid.
+			$order['amount_due']      = max( 0.0, (float) $order['total'] - (float) $order['amount_paid'] );
 			unset( $order['type_labels'] );
 		}
 		unset( $order );
@@ -1912,6 +1941,9 @@ class EEM_Orders_Repository {
 			'tax'                     => 0.0,
 			'tax_rate'                => 0.0,
 			'total'                   => 0.0,
+			// Order Edit: gross collected across components + computed balance.
+			'amount_paid'             => 0.0,
+			'amount_due'              => 0.0,
 			'payment_status'          => isset( $row['payment_status'] ) ? $row['payment_status'] : 'pending',
 			'created_at'              => isset( $row['created_at'] ) ? $row['created_at'] : '',
 			'arrival_date'            => isset( $row['arrival_date'] ) ? $row['arrival_date'] : '',
@@ -1958,6 +1990,12 @@ class EEM_Orders_Repository {
 			'refunded_amount'       => isset( $row['refunded_amount'] ) ? (float) $row['refunded_amount'] : 0.0,
 			'notes'                 => isset( $row['notes'] ) ? (string) $row['notes'] : '',
 			'total'                 => isset( $row['total'] ) ? (float) $row['total'] : 0.0,
+			// Per-row tax (proportionally allocated, CLEANUP #9). The `total` column
+			// is pre-tax, so the amount actually CHARGED for this row is total + tax.
+			'tax'                   => isset( $row['tax'] ) ? (float) $row['tax'] : 0.0,
+			// Gross amount collected on this component (mig-029). 0 for rows loaded
+			// before the column existed (treated as nothing collected → full due).
+			'amount_paid'           => isset( $row['amount_paid'] ) ? (float) $row['amount_paid'] : 0.0,
 		);
 	}
 
