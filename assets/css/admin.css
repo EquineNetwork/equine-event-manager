@@ -3605,6 +3605,18 @@ a.eem-status-tab.is-active {
 	flex-shrink: 0;
 }
 
+/* Events list toolbar wraps its controls in a <form>; make that form the flex
+   row (it would otherwise default to display:block and stack the producer
+   filter, search field, and button vertically). */
+.eem-events-toolbar-form {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+	width: 100%;
+	margin: 0;
+}
+
 /* C7.X.15 Issue 5 — `select.` prefix ties WP core forms.css. */
 select.eem-toolbar-select {
 	margin: 0;
