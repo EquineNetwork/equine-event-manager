@@ -359,7 +359,7 @@ class EEM_Events_List_Page {
 				<div class="eem-list-toolbar-right">
 					<span class="eem-search-wrap eem-search-wrap--attached">
 						<svg class="eem-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-						<input class="eem-search-input" type="search" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="<?php esc_attr_e( 'Search events…', 'equine-event-manager' ); ?>" />
+						<input class="eem-search-input" type="search" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="<?php esc_attr_e( 'Search', 'equine-event-manager' ); ?>" />
 					</span>
 					<button type="submit" class="eem-toolbar-btn eem-search-btn"><?php esc_html_e( 'Search Events', 'equine-event-manager' ); ?></button>
 				</div>

@@ -2539,7 +2539,7 @@ class EEM_Admin {
 					</div>
 					<div class="eem-header-typeahead" id="eem-header-typeahead" style="display:none">
 						<input class="eem-header-event-search" type="text" id="eem-header-event-input"
-							placeholder="<?php esc_attr_e( 'Search events…', 'equine-event-manager' ); ?>"
+							placeholder="<?php esc_attr_e( 'Search', 'equine-event-manager' ); ?>"
 							autocomplete="off"
 							data-eem-input-action="stall-chart-filter-events">
 						<div class="eem-header-event-options" id="eem-stall-chart-event-results"></div>
