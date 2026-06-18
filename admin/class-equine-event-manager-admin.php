@@ -2668,6 +2668,29 @@ class EEM_Admin {
 					</div>
 				</div>
 
+				<!-- Filter bar (Inventory + View dropdowns) directly below the DM bar -->
+				<?php $eem_has_any_map = ( $has_stall_map || $has_rv_map ); ?>
+				<div class="eem-stall-chart-filter-bar">
+					<div class="eem-scf-group">
+						<label class="eem-stall-chart-view-label" for="eem-sc-inv-select"><?php esc_html_e( 'Show', 'equine-event-manager' ); ?></label>
+						<select id="eem-sc-inv-select" class="eem-field-select eem-stall-chart-view-select" data-eem-action="sc-inv-select">
+							<option value="all" <?php selected( $inv, 'all' ); ?>><?php esc_html_e( 'All', 'equine-event-manager' ); ?></option>
+							<option value="stalls" <?php selected( $inv, 'stalls' ); ?>><?php esc_html_e( 'Stalls', 'equine-event-manager' ); ?></option>
+							<option value="rv" <?php selected( $inv, 'rv' ); ?>><?php esc_html_e( 'RV', 'equine-event-manager' ); ?></option>
+						</select>
+					</div>
+					<div class="eem-scf-group">
+						<label class="eem-stall-chart-view-label" for="eem-sc-view-select"><?php esc_html_e( 'View', 'equine-event-manager' ); ?></label>
+						<select id="eem-sc-view-select" class="eem-field-select eem-stall-chart-view-select" data-eem-action="stall-chart-view-select">
+							<option value="customer" <?php selected( $tab, 'customer' ); ?>><?php esc_html_e( 'By Customer', 'equine-event-manager' ); ?></option>
+							<option value="list" <?php selected( $tab, 'list' ); ?>><?php esc_html_e( 'By Location – List', 'equine-event-manager' ); ?></option>
+							<?php if ( $eem_has_any_map ) : ?>
+							<option value="map" <?php selected( $tab, 'map' ); ?>><?php esc_html_e( 'By Location – Map', 'equine-event-manager' ); ?></option>
+							<?php endif; ?>
+						</select>
+					</div>
+				</div>
+
 				<!-- Stats Bar (3 metric cards) -->
 				<div class="eem-stall-chart-stats-bar">
 					<div class="eem-stall-chart-stat-card">
@@ -2724,37 +2747,9 @@ class EEM_Admin {
 					<!-- Tabbed View Card -->
 					<div class="eem-stall-chart-view-tabs-card" id="eem-stall-chart-view-tabs-card">
 
-						<!-- INVENTORY TOGGLE BAR (top) -->
-						<div class="eem-sc-inv-bar">
-							<div class="eem-sc-inv-toggle" role="group" aria-label="<?php esc_attr_e( 'Inventory type', 'equine-event-manager' ); ?>">
-								<button class="eem-sc-inv-btn<?php echo 'all' === $inv ? ' active' : ''; ?>" type="button"
-									data-eem-action="sc-inv-switch" data-inv="all">
-									<?php esc_html_e( 'All', 'equine-event-manager' ); ?>
-								</button>
-								<button class="eem-sc-inv-btn<?php echo 'stalls' === $inv ? ' active' : ''; ?>" type="button"
-									data-eem-action="sc-inv-switch" data-inv="stalls">
-									<?php esc_html_e( 'Stalls', 'equine-event-manager' ); ?>
-								</button>
-								<button class="eem-sc-inv-btn<?php echo 'rv' === $inv ? ' active' : ''; ?>" type="button"
-									data-eem-action="sc-inv-switch" data-inv="rv">
-									<?php esc_html_e( 'RV', 'equine-event-manager' ); ?>
-								</button>
-							</div>
-						</div>
-
-						<!-- VIEW SELECTOR (full-width bar): By Customer / By Location – List / – Map -->
-						<?php $eem_has_any_map = ( $has_stall_map || $has_rv_map ); ?>
-						<div class="eem-stall-chart-view-bar">
-							<label class="eem-stall-chart-view-label" for="eem-sc-view-select"><?php esc_html_e( 'View', 'equine-event-manager' ); ?></label>
-							<select id="eem-sc-view-select" class="eem-field-select eem-stall-chart-view-select" data-eem-action="stall-chart-view-select">
-								<option value="customer" <?php selected( $tab, 'customer' ); ?>><?php esc_html_e( 'By Customer', 'equine-event-manager' ); ?></option>
-								<option value="list" <?php selected( $tab, 'list' ); ?>><?php esc_html_e( 'By Location – List', 'equine-event-manager' ); ?></option>
-								<?php if ( $eem_has_any_map ) : ?>
-								<option value="map" <?php selected( $tab, 'map' ); ?>><?php esc_html_e( 'By Location – Map', 'equine-event-manager' ); ?></option>
-								<?php endif; ?>
-							</select>
-						</div>
-						<?php // Hidden legacy tab buttons removed — the select above replaces them. ?>
+						<?php // Inventory (Show) + View dropdowns now live in the filter bar
+						// directly below the Daily Movement bar. The hidden tablist keeps
+						// the legacy id for any external references. ?>
 						<div class="eem-stall-chart-view-tabs" id="eem-stall-chart-view-tabs" role="tablist" hidden>
 						</div>
 

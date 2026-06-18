@@ -4803,10 +4803,12 @@
 
 	/* ── Stall Chart DETAIL: centralised inv/tab state ── */
 	function eemScApplyState(inv, tab) {
-		// 1. Inventory toggle buttons active state.
+		// 1. Inventory toggle buttons active state (legacy) + sync the Show select.
 		document.querySelectorAll('[data-eem-action="sc-inv-switch"]').forEach(function (btn) {
 			btn.classList.toggle('active', btn.getAttribute('data-inv') === inv);
 		});
+		var invSelect = document.getElementById('eem-sc-inv-select');
+		if (invSelect && invSelect.value !== inv) { invSelect.value = inv; }
 
 		// 2. View tab buttons active state.
 		document.querySelectorAll('[data-eem-action="stall-chart-switch-view"]').forEach(function (btn) {
@@ -4955,6 +4957,13 @@
 		var sel = ev.target.closest && ev.target.closest('[data-eem-action="stall-chart-view-select"]');
 		if (!sel) return;
 		eemScApplyState(window._eemScInv || 'all', sel.value || 'customer');
+	});
+
+	// Inventory selector (All / Stalls / RV): mirrors the old segmented toggle.
+	document.addEventListener('change', function (ev) {
+		var sel = ev.target.closest && ev.target.closest('[data-eem-action="sc-inv-select"]');
+		if (!sel) return;
+		eemScApplyState(sel.value || 'all', window._eemScTab || 'customer');
 	});
 
 	document.addEventListener('click', function (ev) {
