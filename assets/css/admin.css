@@ -7874,7 +7874,7 @@ a.eem-btn--ghost:focus    { color: #1d2327; }
 .eem-cust-chart-table thead th { padding: 11px 14px; font-size: 13px; font-weight: 600; color: #1d2327; text-align: left; white-space: nowrap; }
 .eem-chart-date-col { text-align: center; min-width: 130px; }
 .eem-chart-barn-row td { background: #f3f4f5; padding: 9px 14px; font-size: 13px; font-weight: 600; color: #031B4E; border-bottom: 1px solid #dcdcde; border-top: 1px solid #dcdcde; }
-.eem-chart-stall-row { border-bottom: 1px solid #f0f0f1; }
+.eem-chart-stall-row { border-bottom: 1px solid #dcdcde; }
 .eem-chart-stall-row:hover { background: #f6f7f7; }
 .eem-stall-chart-table td,
 .eem-rv-chart-table td,
@@ -7889,6 +7889,19 @@ a.eem-btn--ghost:focus    { color: #1d2327; }
 .eem-cust-chart-table tbody td:first-child { padding-left: 22px; }
 .eem-cust-chart-table thead th:last-child,
 .eem-cust-chart-table tbody td:last-child { padding-right: 22px; }
+/* By-Location (matrix) tables share the same DM-matching header + row styling. */
+.eem-stall-chart-table thead tr,
+.eem-rv-chart-table thead tr { background: #f8fafc; border-bottom: 2px solid #dcdcde; }
+.eem-stall-chart-table thead th,
+.eem-rv-chart-table thead th { font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; }
+.eem-stall-chart-table thead th:first-child,
+.eem-stall-chart-table tbody td:first-child,
+.eem-rv-chart-table thead th:first-child,
+.eem-rv-chart-table tbody td:first-child { padding-left: 22px; }
+.eem-stall-chart-table thead th:last-child,
+.eem-stall-chart-table tbody td:last-child,
+.eem-rv-chart-table thead th:last-child,
+.eem-rv-chart-table tbody td:last-child { padding-right: 22px; }
 .eem-chart-unit-num { font-weight: 700; color: #031B4E; font-size: 13.5px; min-width: 130px; white-space: nowrap; }
 .eem-chart-block-name { color: #50575e; font-size: 13px; white-space: nowrap; }
 .eem-chart-cell-wrap { display: flex; justify-content: center; }

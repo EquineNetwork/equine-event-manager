@@ -2796,12 +2796,6 @@ class EEM_Admin {
 							<!-- ── LIST sub-view (matrix table only) ── -->
 							<div id="eem-sc-list"<?php echo 'list' === $tab ? '' : ' style="display:none"'; ?>>
 
-							<!-- Tip banner -->
-							<div class="eem-stall-chart-help">
-								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-								<span><strong><?php esc_html_e( 'Tip:', 'equine-event-manager' ); ?></strong> <?php esc_html_e( 'Each unit shows its status and who\'s assigned. Click a customer name to open their order. Use Generate Assignments to auto-fill open units, or open an order and click Assign Stalls / Assign RV Lots to place a customer manually.', 'equine-event-manager' ); ?></span>
-							</div>
-
 							<!-- FILTER ROW -->
 							<div class="eem-stall-chart-filter-row">
 
@@ -2847,14 +2841,8 @@ class EEM_Admin {
 									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
 									<input type="search" id="eem-stall-chart-search" class="eem-search-input eem-stall-chart-search-input" placeholder="<?php esc_attr_e( 'Search', 'equine-event-manager' ); ?>" />
 								</div>
-								<span class="eem-stall-chart-filter-hint"><?php esc_html_e( 'Search by customer name, stall number, RV lot, or block title.', 'equine-event-manager' ); ?></span>
 							</div>
 
-							<!-- Tip banner -->
-							<div class="eem-stall-chart-help">
-								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-								<span><strong><?php esc_html_e( 'Tip:', 'equine-event-manager' ); ?></strong> <?php esc_html_e( 'Click any customer name to open the customer profile, or click an order number to view the order.', 'equine-event-manager' ); ?></span>
-							</div>
 							<p class="eem-stall-chart-empty-note" hidden><?php esc_html_e( 'No assignment rows match this search.', 'equine-event-manager' ); ?></p>
 
 							<?php
@@ -5459,6 +5447,7 @@ class EEM_Admin {
 						'is_tack'      => isset( $tack_lookup[ (string) $unit ] ),
 						'suggested'    => $unit_suggested,
 						'group_name'   => $group_name,
+						'special_requests' => $special_requests,
 						'arrival'      => (string) $order['stall_arrival_date'],
 						'departure'    => (string) $order['stall_departure_date'],
 					);
@@ -5541,6 +5530,7 @@ class EEM_Admin {
 						'is_tack'      => false,
 						'suggested'    => $rv_unit_suggested,
 						'group_name'   => $group_name,
+						'special_requests' => $special_requests,
 						'arrival'      => (string) $order['rv_arrival_date'],
 						'departure'    => (string) $order['rv_departure_date'],
 					);
@@ -6490,22 +6480,33 @@ class EEM_Admin {
 							<?php endif; ?>
 						</td>
 						<td class="eem-chart-customer-cell">
-							<?php
-							if ( null !== $eem_occ && '' !== (string) $eem_occ['label'] ) {
-								$eem_occ_key = isset( $eem_occ['order_key'] ) ? (string) $eem_occ['order_key'] : '';
-								if ( '' !== $eem_occ_key ) {
-									printf(
-										'<a class="eem-chart-cust-link" href="%s">%s</a>',
-										esc_url( admin_url( 'admin.php?page=equine-event-manager-order&order_key=' . rawurlencode( $eem_occ_key ) ) ),
-										esc_html( $eem_occ['label'] )
-									);
-								} else {
-									echo esc_html( $eem_occ['label'] );
-								}
-							} else {
-								echo '<span class="eem-chart-customer-empty">—</span>';
-							}
+							<?php if ( null !== $eem_occ && '' !== (string) $eem_occ['label'] ) :
+								$eem_occ_key   = isset( $eem_occ['order_key'] ) ? (string) $eem_occ['order_key'] : '';
+								$eem_occ_group = isset( $eem_occ['group_name'] ) ? trim( (string) $eem_occ['group_name'] ) : '';
+								$eem_occ_note  = isset( $eem_occ['special_requests'] ) ? trim( (string) $eem_occ['special_requests'] ) : '';
 							?>
+							<div class="eem-chart-cust-cell">
+								<?php if ( '' !== $eem_occ_key ) : ?>
+									<a class="eem-chart-cust-link" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-order&order_key=' . rawurlencode( $eem_occ_key ) ) ); ?>"><?php echo esc_html( $eem_occ['label'] ); ?></a>
+								<?php else : ?>
+									<?php echo esc_html( $eem_occ['label'] ); ?>
+								<?php endif; ?>
+								<?php if ( '' !== $eem_occ_group ) : ?>
+									<span class="eem-chart-cust-icon eem-chart-cust-icon--group" style="--eem-group-color:<?php echo esc_attr( $this->group_color_for( $eem_occ_group ) ); ?>" tabindex="0" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: group name */ __( 'Group: %s', 'equine-event-manager' ), $eem_occ_group ) ); ?>">
+										<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+										<span class="eem-chart-cust-tip"><?php echo esc_html( $eem_occ_group ); ?></span>
+									</span>
+								<?php endif; ?>
+								<?php if ( '' !== $eem_occ_note ) : ?>
+									<span class="eem-chart-cust-icon eem-chart-cust-icon--note" tabindex="0" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: special requests */ __( 'Special requests: %s', 'equine-event-manager' ), $eem_occ_note ) ); ?>">
+										<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
+										<span class="eem-chart-cust-tip"><strong><?php esc_html_e( 'Special requests:', 'equine-event-manager' ); ?></strong> <?php echo esc_html( $eem_occ_note ); ?></span>
+									</span>
+								<?php endif; ?>
+							</div>
+							<?php else : ?>
+								<span class="eem-chart-customer-empty">—</span>
+							<?php endif; ?>
 						</td>
 						<?php
 						$eem_arr = ( null !== $eem_occ && ! empty( $eem_occ['arrival'] ) && strtotime( (string) $eem_occ['arrival'] ) ) ? date_i18n( 'M j, Y', strtotime( (string) $eem_occ['arrival'] ) ) : '';
