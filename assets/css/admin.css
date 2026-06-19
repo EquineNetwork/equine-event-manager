@@ -1581,10 +1581,13 @@ input.eem-price-input:focus {
    ───────────────────────────────────────────────────────────── */
 .eem-filter-tabs {
 	display: flex;
-	background: #f0f0f1;
+	/* White bordered segmented control so it reads as a distinct control on the
+	   #f0f4fb toolbar (was a flat #f0f0f1 block that washed out against it). */
+	background: var(--eem-surface);
+	border: 1px solid #d9e2f2;
 	border-radius: var(--eem-radius);
 	padding: 2px;
-	gap: 1px;
+	gap: 2px;
 }
 
 /* `a.` chain wins specificity (0,2,0) against the global
@@ -1596,11 +1599,12 @@ input.eem-price-input:focus {
    naturally. */
 .eem-filter-tab,
 a.eem-filter-tab {
-	padding: 5px 12px;
+	padding: 5px 13px;
 	border-radius: var(--eem-radius-sm);
 	font-size: 12.5px;
-	font-weight: 500;
-	color: #50575e;
+	font-weight: 600;
+	/* Darker readable navy-slate instead of the washed-out #50575e. */
+	color: #3c434a;
 	cursor: pointer;
 	white-space: nowrap;
 	border: none;
@@ -1609,12 +1613,26 @@ a.eem-filter-tab {
 	text-decoration: none;
 }
 
+/* Hover affordance — color + subtle tint, no underline (house convention). */
+.eem-filter-tab:hover,
+a.eem-filter-tab:hover,
+.eem-filter-tab:focus,
+a.eem-filter-tab:focus {
+	color: var(--eem-electric);
+	background: #f0f4fb;
+	text-decoration: none;
+}
+
+/* Active = solid electric blue + white (the brand "selected" cue), so the
+   current tab is unmistakable instead of a faint white-on-white pill. */
 .eem-filter-tab.active,
-a.eem-filter-tab.active {
-	background: var(--eem-surface);
-	color: var(--eem-text);
-	font-weight: 600;
-	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+a.eem-filter-tab.active,
+.eem-filter-tab.active:hover,
+a.eem-filter-tab.active:hover {
+	background: var(--eem-electric);
+	color: #fff;
+	font-weight: 700;
+	box-shadow: none;
 }
 
 /* C5.5: removed dead .eem-type-chips + .eem-type-chip (base, .inactive, --stall/--rv/--addon/--group variants) + .eem-type-chip-dot — verified zero markup/JS uses (Orders filter switched to Type dropdown in C5.F-toolbar). */
@@ -1934,8 +1952,9 @@ th.sorted-desc .eem-sort-icon span:first-child {
 	align-items: center;
 	justify-content: space-between;
 	padding: 12px 14px;
-	border-top: 1px solid #dcdcde;
-	background: var(--eem-bg-alt);
+	/* No top border + transparent so it blends into the footer band it sits in
+	   (Whitney 2026-06-19) — was an extra #dcdcde line + own bg-alt fill. */
+	background: transparent;
 	flex-wrap: wrap;
 	gap: var(--eem-space-2);
 }
@@ -2108,9 +2127,9 @@ th.sorted-desc .eem-sort-icon span:first-child {
 	}
 
 	.eem-filter-tab.active {
-		background: var(--eem-navy);
-		color: var(--eem-text-on-navy);
-		border-color: var(--eem-navy);
+		background: var(--eem-electric);
+		color: #fff;
+		border-color: var(--eem-electric);
 		box-shadow: none;
 	}
 
@@ -3960,8 +3979,9 @@ a.eem-res-name:focus {
 	align-items: center;
 	justify-content: space-between;
 	padding: 12px 16px;
-	border-top: 1px solid #dcdcde;
-	background: var(--eem-bg-alt);
+	/* No top border (Whitney 2026-06-19); footer shares the column-header row
+	   color (#f8fafc) so it reads as part of the table chrome. */
+	background: var(--eem-gray-50, #f8fafc);
 	flex-wrap: wrap;
 	gap: 8px;
 }
