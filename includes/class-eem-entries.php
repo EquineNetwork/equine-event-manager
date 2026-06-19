@@ -483,13 +483,10 @@ class EEM_Entries {
 					</select>
 				</div>
 				<div class="eem-list-toolbar-right">
-					<span class="eem-item-count" data-eem-entries-count><?php
-						echo esc_html( sprintf(
-							/* translators: %d: division count. */
-							_n( '%d division', '%d divisions', count( $rows ), 'equine-event-manager' ),
-							count( $rows )
-						) );
-					?></span>
+					<div class="eem-search-wrap">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+						<input class="eem-search-input" type="search" placeholder="<?php esc_attr_e( 'Search', 'equine-event-manager' ); ?>" data-eem-input-action="entries-search" aria-label="<?php esc_attr_e( 'Search divisions', 'equine-event-manager' ); ?>">
+					</div>
 				</div>
 			</div>
 			<?php
@@ -503,13 +500,11 @@ class EEM_Entries {
 						<th class="eem-sortable" data-eem-sort="event" data-eem-sort-type="text"><?php esc_html_e( 'Event', 'equine-event-manager' ); ?><span class="eem-sort-ind" aria-hidden="true"></span></th>
 						<th class="eem-sortable" data-eem-sort="price" data-eem-sort-type="num"><?php esc_html_e( 'Price', 'equine-event-manager' ); ?><span class="eem-sort-ind" aria-hidden="true"></span></th>
 						<th class="eem-sortable" data-eem-sort="entered" data-eem-sort-type="num"><?php esc_html_e( 'Entered / Spots', 'equine-event-manager' ); ?><span class="eem-sort-ind" aria-hidden="true"></span></th>
-						<th class="eem-sortable" data-eem-sort="status" data-eem-sort-type="text"><?php esc_html_e( 'Status', 'equine-event-manager' ); ?><span class="eem-sort-ind" aria-hidden="true"></span></th>
-						<th><?php esc_html_e( 'Actions', 'equine-event-manager' ); ?></th>
 					</tr>
 				</thead>
 				<tbody>
 					<?php if ( empty( $rows ) ) : ?>
-						<tr><td colspan="6" class="eem-table-empty">
+						<tr><td colspan="4" class="eem-table-empty">
 							<?php
 							printf(
 								/* translators: %s: New Division link */
@@ -530,38 +525,26 @@ class EEM_Entries {
 								data-sort-price="<?php echo esc_attr( '' !== $r['price'] ? (string) (float) $r['price'] : '-1' ); ?>"
 								data-sort-entered="<?php echo esc_attr( (string) $r['entered'] ); ?>"
 								data-sort-status="<?php echo esc_attr( empty( $r['is_pub'] ) ? '0' : ( 'past' === $r['ev_status'] ? '1' : ( 'ongoing' === $r['ev_status'] ? '2' : '3' ) ) ); ?>">
-								<td><a class="eem-res-name" href="<?php echo esc_url( $detail_url ); ?>"><?php echo esc_html( $r['name'] ); ?></a></td>
-								<td><?php echo '' !== $r['event'] ? esc_html( $r['event'] ) : '<span class="eem-orders-count is-zero">' . esc_html__( '— not connected —', 'equine-event-manager' ) . '</span>'; ?></td>
+								<td>
+									<a class="eem-res-name" href="<?php echo esc_url( $detail_url ); ?>"><?php echo esc_html( $r['name'] ); ?></a>
+									<?php if ( empty( $r['is_pub'] ) ) : ?>
+										<span class="eem-res-status eem-res-status--draft"><?php esc_html_e( 'Draft', 'equine-event-manager' ); ?></span>
+									<?php endif; ?>
+								</td>
+								<td><?php echo '' !== $r['event'] ? esc_html( $r['event'] ) : '<span class="eem-entries-unconnected" title="' . esc_attr__( 'This division has no linked event, so it does not appear on any customer reservation page.', 'equine-event-manager' ) . '">' . esc_html__( 'Not connected', 'equine-event-manager' ) . '</span>'; ?></td>
 								<td><?php echo '' !== $r['price'] ? esc_html( '$' . number_format( (float) $r['price'], 2 ) ) : '<span class="eem-orders-count is-zero">—</span>'; ?></td>
 								<td>
-									<?php
-									echo wp_kses_post( self::entered_spots_html( (int) $r['entered'], (int) $r['spots_int'], (int) $r['oversold'] ) );
-									if ( $r['oversold'] > 0 ) {
-										echo ' <span class="eem-status-badge eem-status-refunded">' . esc_html(
+									<a class="eem-entries-entered-link" href="<?php echo esc_url( $detail_url ); ?>" title="<?php esc_attr_e( 'View entrants', 'equine-event-manager' ); ?>"><?php echo wp_kses_post( self::entered_spots_html( (int) $r['entered'], (int) $r['spots_int'], (int) $r['oversold'] ) ); ?></a>
+									<?php if ( $r['oversold'] > 0 ) : ?>
+										<span class="eem-status-badge eem-status-oversold"><?php echo esc_html(
 											/* translators: %d: count oversold by. */
 											sprintf( __( 'oversold by %d', 'equine-event-manager' ), $r['oversold'] )
-										) . '</span>';
-									}
-									?>
+										); ?></span>
+									<?php endif; ?>
 								</td>
-								<td>
-								<?php
-								$eem_div_status_labels = array(
-									'scheduled' => __( 'Scheduled', 'equine-event-manager' ),
-									'ongoing'   => __( 'Ongoing', 'equine-event-manager' ),
-									'past'      => __( 'Past', 'equine-event-manager' ),
-								);
-								$eem_div_status = isset( $eem_div_status_labels[ $r['ev_status'] ] ) ? (string) $r['ev_status'] : 'scheduled';
-								?>
-								<span class="eem-res-status eem-res-status--<?php echo esc_attr( $eem_div_status ); ?>"><?php echo esc_html( $eem_div_status_labels[ $eem_div_status ] ); ?></span>
-								<?php if ( empty( $r['is_pub'] ) ) : ?>
-									<span class="eem-res-status eem-res-status--draft"><?php esc_html_e( 'Draft', 'equine-event-manager' ); ?></span>
-								<?php endif; ?>
-							</td>
-								<td><a class="eem-btn eem-btn-sm" href="<?php echo esc_url( $edit_url ); ?>"><?php esc_html_e( 'Edit', 'equine-event-manager' ); ?></a></td>
 							</tr>
 						<?php endforeach; ?>
-						<tr class="eem-entries-empty-filtered" hidden><td colspan="6" class="eem-table-empty"><?php esc_html_e( 'No divisions for this event.', 'equine-event-manager' ); ?></td></tr>
+						<tr class="eem-entries-empty-filtered" hidden><td colspan="4" class="eem-table-empty"><?php esc_html_e( 'No divisions for this event.', 'equine-event-manager' ); ?></td></tr>
 					<?php endif; ?>
 				</tbody>
 			</table>
@@ -584,38 +567,48 @@ class EEM_Entries {
 					$edit_url   = self::editor_url( $r['id'] );
 					$detail_url = self::detail_url( $r['id'] );
 					?>
-					<div class="eem-mobile-card" data-eem-event-id="<?php echo esc_attr( (string) $r['rid'] ); ?>">
+					<div class="eem-mobile-card" data-eem-event-id="<?php echo esc_attr( (string) $r['rid'] ); ?>" data-search-name="<?php echo esc_attr( strtolower( $r['name'] ) ); ?>" data-sort-entered="<?php echo esc_attr( (string) $r['entered'] ); ?>">
 						<div class="eem-mobile-card-top">
-							<a class="eem-mobile-card-id" href="<?php echo esc_url( $detail_url ); ?>"><?php echo esc_html( $r['name'] ); ?></a>
+							<a class="eem-mobile-card-id" href="<?php echo esc_url( $detail_url ); ?>"><?php echo esc_html( $r['name'] ); ?><?php if ( empty( $r['is_pub'] ) ) : ?> <span class="eem-res-status eem-res-status--draft"><?php esc_html_e( 'Draft', 'equine-event-manager' ); ?></span><?php endif; ?></a>
 							<span class="eem-mobile-card-meta"><?php echo '' !== $r['price'] ? esc_html( '$' . number_format( (float) $r['price'], 2 ) ) : '—'; ?></span>
 						</div>
-						<div class="eem-mobile-card-sub"><?php echo '' !== $r['event'] ? esc_html( $r['event'] ) : esc_html__( '— not connected —', 'equine-event-manager' ); ?></div>
+						<div class="eem-mobile-card-sub"><?php echo '' !== $r['event'] ? esc_html( $r['event'] ) : '<span class="eem-entries-unconnected">' . esc_html__( 'Not connected', 'equine-event-manager' ) . '</span>'; ?></div>
 						<div class="eem-mobile-card-bottom">
 							<div class="eem-mobile-card-badges">
-								<span class="eem-mobile-card-metric"><?php echo wp_kses_post( self::entered_spots_html( (int) $r['entered'], (int) $r['spots_int'], (int) $r['oversold'] ) ); ?></span>
+								<a class="eem-mobile-card-metric eem-entries-entered-link" href="<?php echo esc_url( $detail_url ); ?>"><?php echo wp_kses_post( self::entered_spots_html( (int) $r['entered'], (int) $r['spots_int'], (int) $r['oversold'] ) ); ?></a>
 								<?php if ( $r['oversold'] > 0 ) : ?>
-									<span class="eem-status-badge eem-status-refunded"><?php echo esc_html( sprintf( /* translators: %d: count oversold by. */ __( 'oversold by %d', 'equine-event-manager' ), $r['oversold'] ) ); ?></span>
-								<?php endif; ?>
-								<?php
-								$eem_div_status_labels = array(
-									'scheduled' => __( 'Scheduled', 'equine-event-manager' ),
-									'ongoing'   => __( 'Ongoing', 'equine-event-manager' ),
-									'past'      => __( 'Past', 'equine-event-manager' ),
-								);
-								$eem_div_status = isset( $eem_div_status_labels[ $r['ev_status'] ] ) ? (string) $r['ev_status'] : 'scheduled';
-								?>
-								<span class="eem-res-status eem-res-status--<?php echo esc_attr( $eem_div_status ); ?>"><?php echo esc_html( $eem_div_status_labels[ $eem_div_status ] ); ?></span>
-								<?php if ( empty( $r['is_pub'] ) ) : ?>
-									<span class="eem-res-status eem-res-status--draft"><?php esc_html_e( 'Draft', 'equine-event-manager' ); ?></span>
+									<span class="eem-status-badge eem-status-oversold"><?php echo esc_html( sprintf( /* translators: %d: count oversold by. */ __( 'oversold by %d', 'equine-event-manager' ), $r['oversold'] ) ); ?></span>
 								<?php endif; ?>
 							</div>
-							<a class="eem-btn eem-btn-sm" href="<?php echo esc_url( $edit_url ); ?>"><?php esc_html_e( 'Edit', 'equine-event-manager' ); ?></a>
 						</div>
 					</div>
 				<?php endforeach; ?>
 				<div class="eem-mobile-card eem-mobile-card--empty eem-entries-mobile-empty" hidden><?php esc_html_e( 'No divisions for this event.', 'equine-event-manager' ); ?></div>
 			<?php endif; ?>
 		</div>
+		<?php if ( ! empty( $rows ) ) :
+			$eem_total_entrants = array_sum( array_map( static function ( $r ) { return (int) $r['entered']; }, $rows ) );
+			?>
+			<div class="eem-table-footer">
+				<span class="eem-table-footer-info">
+					<span data-eem-entries-count><?php
+						echo esc_html( sprintf(
+							/* translators: %d: division count. */
+							_n( '%d division', '%d divisions', count( $rows ), 'equine-event-manager' ),
+							count( $rows )
+						) );
+					?></span>
+					<span class="eem-table-footer-sep" aria-hidden="true">·</span>
+					<span data-eem-entries-entrants><?php
+						echo esc_html( sprintf(
+							/* translators: %d: total entrant count across listed divisions. */
+							_n( '%d total entrant', '%d total entrants', $eem_total_entrants, 'equine-event-manager' ),
+							$eem_total_entrants
+						) );
+					?></span>
+				</span>
+			</div>
+		<?php endif; ?>
 		<?php
 		eem_render_page_close( array( 'wrap' => true ) );
 	}
@@ -942,7 +935,7 @@ class EEM_Entries {
 						eem_render_editor_field_row( array(
 							'label'        => __( 'Price', 'equine-event-manager' ),
 							'label_sub'    => __( 'Entry fee per spot', 'equine-event-manager' ),
-							'control_html' => '<div class="eem-price-wrap"><span class="eem-price-prefix">$</span><input class="eem-field-input eem-price-input" type="number" min="0" step="0.01" id="eem-division-price" value="' . esc_attr( $price_val ) . '" placeholder="0.00"></div>',
+							'control_html' => '<div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" min="0" step="0.01" id="eem-division-price" value="' . esc_attr( $price_val ) . '" placeholder="0.00"></div>',
 						) );
 						eem_render_editor_field_row( array(
 							'label'        => __( 'Spots', 'equine-event-manager' ),
@@ -961,7 +954,7 @@ class EEM_Entries {
 						eem_render_editor_field_row( array(
 							'label'        => __( 'Description', 'equine-event-manager' ),
 							'label_sub'    => __( 'Optional intro shown above the division on the customer page', 'equine-event-manager' ),
-							'control_html' => '<textarea class="eem-field-input" id="eem-entry-description" rows="3" placeholder="' . esc_attr__( 'e.g. Pre-purchase your division entry below.', 'equine-event-manager' ) . '">' . esc_textarea( $description ) . '</textarea>',
+							'control_html' => '<textarea class="eem-field-textarea" id="eem-entry-description" rows="3" placeholder="' . esc_attr__( 'e.g. Pre-purchase your division entry below.', 'equine-event-manager' ) . '">' . esc_textarea( $description ) . '</textarea>',
 						) );
 						$eem_desc_body = (string) ob_get_clean();
 

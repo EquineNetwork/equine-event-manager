@@ -8442,28 +8442,42 @@ function duplicateReservationAjax(target) {
 	function applyFilter(table) {
 		var sel = document.querySelector('[data-eem-input-action="entries-filter-event"]');
 		var val = sel ? sel.value : '';
+		var searchEl = document.querySelector('[data-eem-input-action="entries-search"]');
+		var q = (searchEl && searchEl.value ? searchEl.value : '').trim().toLowerCase();
 		var shown = 0;
+		var entrants = 0;
 		dataRows(table).forEach(function (tr) {
-			var match = (val === '' || tr.getAttribute('data-eem-event-id') === val);
+			var evMatch = (val === '' || tr.getAttribute('data-eem-event-id') === val);
+			var nm = (tr.getAttribute('data-sort-name') || '');
+			var qMatch = (q === '' || nm.indexOf(q) !== -1);
+			var match = evMatch && qMatch;
 			tr.hidden = !match;
-			if (match) { shown++; }
+			if (match) { shown++; entrants += (parseInt(tr.getAttribute('data-sort-entered'), 10) || 0); }
 		});
 		var empty = table.querySelector('.eem-entries-empty-filtered');
 		if (empty) { empty.hidden = (shown !== 0); }
-		var count = document.querySelector('[data-eem-entries-count]');
-		if (count) { count.textContent = shown + (shown === 1 ? ' division' : ' divisions'); }
-		// Mobile cards mirror the same event filter (they replace the table <768).
+		updateFooter(shown, entrants);
+		// Mobile cards mirror the same event filter + search (they replace the table <768).
 		var mobile = document.querySelector('.eem-entries-mobile');
 		if (mobile) {
 			var mShown = 0;
 			Array.prototype.slice.call(mobile.querySelectorAll('.eem-mobile-card[data-eem-event-id]')).forEach(function (card) {
-				var m = (val === '' || card.getAttribute('data-eem-event-id') === val);
+				var em = (val === '' || card.getAttribute('data-eem-event-id') === val);
+				var cn = (card.getAttribute('data-search-name') || '');
+				var cm = (q === '' || cn.indexOf(q) !== -1);
+				var m = em && cm;
 				card.hidden = !m;
 				if (m) { mShown++; }
 			});
 			var mEmpty = mobile.querySelector('.eem-entries-mobile-empty');
 			if (mEmpty) { mEmpty.hidden = (mShown !== 0); }
 		}
+	}
+	function updateFooter(divisions, entrants) {
+		var c = document.querySelector('[data-eem-entries-count]');
+		if (c) { c.textContent = divisions + (divisions === 1 ? ' division' : ' divisions'); }
+		var e = document.querySelector('[data-eem-entries-entrants]');
+		if (e) { e.textContent = entrants + (entrants === 1 ? ' total entrant' : ' total entrants'); }
 	}
 	function sortBy(table, key, type, dir) {
 		var tbody = table.querySelector('tbody');
@@ -8482,6 +8496,11 @@ function duplicateReservationAjax(target) {
 	}
 	document.addEventListener('change', function (e) {
 		if (e.target && e.target.matches && e.target.matches('[data-eem-input-action="entries-filter-event"]')) {
+			var t = tableEl(); if (t) { applyFilter(t); }
+		}
+	});
+	document.addEventListener('input', function (e) {
+		if (e.target && e.target.matches && e.target.matches('[data-eem-input-action="entries-search"]')) {
 			var t = tableEl(); if (t) { applyFilter(t); }
 		}
 	});

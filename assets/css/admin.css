@@ -1430,6 +1430,7 @@ input.eem-price-input:focus {
 .eem-status-partial             { background: var(--eem-badge-amber-bg); color: var(--eem-badge-amber-text); border: 1px solid var(--eem-badge-amber-border); }
 .eem-status-invoice             { background: var(--eem-badge-blue-bg);  color: var(--eem-badge-blue-text);  border: 1px solid var(--eem-badge-blue-border); }
 .eem-status-refunded            { background: var(--eem-badge-red-bg);   color: var(--eem-badge-red-text);   border: 1px solid var(--eem-badge-red-border); }
+.eem-status-oversold            { background: var(--eem-badge-red-bg);   color: var(--eem-badge-red-text);   border: 1px solid var(--eem-badge-red-border); }
 .eem-status-cancelled           { background: var(--eem-badge-gray-bg);  color: var(--eem-badge-gray-text);  border: 1px solid var(--eem-badge-gray-border); }
 
 /* Reservation lifecycle (RES-4) */
@@ -3942,7 +3943,7 @@ a.eem-res-name:focus {
 .eem-entered-count { color: var(--eem-electric); }
 .eem-entered-count.is-oversold { color: #dc2626; }
 .eem-entered-sep { color: var(--eem-text-muted); font-weight: 400; margin: 0 3px; }
-.eem-spots-count { color: #15803d; }
+.eem-spots-count { color: var(--eem-navy, #031B4E); }
 
 /* Orders count cell. Zero counts dim per RES-5. Mockup lines 115-116. */
 .eem-orders-count {
@@ -10208,6 +10209,24 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 .eem-sort-ind { display: inline-block; width: 0; height: 0; margin-left: 6px; vertical-align: middle; opacity: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; }
 .eem-entries-table th.is-sorted-asc  .eem-sort-ind { opacity: 1; border-bottom: 5px solid currentColor; }
 .eem-entries-table th.is-sorted-desc .eem-sort-ind { opacity: 1; border-top: 5px solid currentColor; }
+/* Entered/Spots value links to the entrants detail view (the inner number keeps
+   its red coloring on oversold; the link only adds a pointer + subtle hover). */
+.eem-entries-entered-link { text-decoration: none; cursor: pointer; }
+.eem-entries-entered-link:hover { opacity: 0.7; }
+/* "Not connected" cue — division has no linked event, so it's inert on the
+   customer side. Amber chip to flag it without alarming red. */
+.eem-entries-unconnected {
+	display: inline-block;
+	padding: 2px 9px;
+	border-radius: 999px;
+	font-size: 11.5px;
+	font-weight: 600;
+	background: var(--eem-badge-amber-bg);
+	color: var(--eem-badge-amber-text);
+	border: 1px solid var(--eem-badge-amber-border);
+}
+/* Footer with multiple stats (division count · total entrants). */
+.eem-table-footer-sep { margin: 0 8px; color: var(--eem-text-muted, #94a3b8); }
 
 /* ── Notifications page (v2) ──
    The page body has padding:0 (list pages self-pad via their toolbar/table),
