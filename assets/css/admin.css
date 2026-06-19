@@ -6219,6 +6219,19 @@ a.eem-dashboard-qa-btn:focus {
 }
 .eem-dashboard-feature-stat  { font-size: 13px; color: var(--eem-text-secondary); }
 .eem-dashboard-feature-alert { font-size: 12.5px; font-weight: 600; color: #a16207; }
+/* Today's Movement + Facility status cards (DS-1.B follow-up). */
+.eem-dashboard-card-body { padding: 14px 18px; }
+.eem-dashboard-card-empty { font-size: 13px; color: var(--eem-text-secondary); margin: 0; }
+.eem-today-move-event { font-size: 13px; font-weight: 600; color: var(--eem-navy, #031B4E); margin-bottom: 10px; }
+.eem-today-move-stats { display: flex; gap: 10px; }
+.eem-today-move-stat { flex: 1; display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: var(--eem-radius); background: #f8fafc; border: 1px solid #eef2f7; }
+.eem-today-move-num { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; line-height: 1; }
+.eem-today-move-lbl { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--eem-text-secondary); }
+.eem-today-move-stat--arriving .eem-today-move-num { color: #1668F2; }
+.eem-today-move-stat--departing .eem-today-move-num { color: #b45309; }
+.eem-facility-clean { display: flex; align-items: baseline; gap: 8px; }
+.eem-facility-clean-num { font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700; color: #b45309; line-height: 1; }
+.eem-facility-clean-lbl { font-size: 12.5px; color: var(--eem-text-secondary); }
 .eem-dashboard-tw-row {
 	display: flex;
 	justify-content: space-between;

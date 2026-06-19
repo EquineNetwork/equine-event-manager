@@ -42,7 +42,8 @@ class EEM_Dashboard_Page {
 		$range = EEM_Dashboard_Repo::sanitize_range( isset( $_GET['range'] ) ? wp_unslash( $_GET['range'] ) : '' );
 		$repo  = new EEM_Dashboard_Repo();
 
-		$kpi_cards       = $repo->kpi_cards( $range );
+		$facility_clean  = $repo->facility_cleaning_count();
+		$today_movement  = $repo->today_movement();
 		$upcoming        = $repo->upcoming_reservations();
 		$upcoming_events = $repo->upcoming_events();
 		$attention      = $repo->attention_items();
@@ -76,8 +77,6 @@ class EEM_Dashboard_Page {
 		?>
 		<div class="eem-dashboard-body">
 			<?php self::render_setup_checklist(); ?>
-			<?php self::render_range_filter( $range ); ?>
-			<?php self::render_kpi_grid( $kpi_cards ); ?>
 
 			<div class="eem-dashboard-grid">
 				<div class="eem-dashboard-main">
@@ -91,6 +90,8 @@ class EEM_Dashboard_Page {
 				</div>
 				<div class="eem-dashboard-side">
 					<?php self::render_quick_actions_card(); ?>
+					<?php self::render_today_movement_card( $today_movement ); ?>
+					<?php self::render_facility_card( $facility_clean ); ?>
 					<?php self::render_addons_card( $general_addons ); ?>
 					<?php self::render_entries_card( isset( $addons['entries'] ) ? $addons['entries'] : array() ); ?>
 					<?php self::render_sheets_card( isset( $addons['sheets'] ) ? $addons['sheets'] : array() ); ?>
@@ -457,10 +458,78 @@ class EEM_Dashboard_Page {
 						<span class="eem-dashboard-qa-icon eem-dashboard-qi-<?php echo esc_attr( $tile['icon'] ); ?>"><?php echo EEM_Dashboard_Icons::svg( $tile['icon_key'] ); ?></span>
 						<div>
 							<div class="eem-dashboard-qa-label"><?php echo esc_html( $tile['label'] ); ?></div>
-							<div class="eem-dashboard-qa-sub"><?php echo esc_html( $tile['sub'] ); ?></div>
 						</div>
 					</a>
 				<?php endforeach; ?>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Today's Movement card — arriving / departing today across the event(s)
+	 * active right now. Links to the Daily Movement page.
+	 *
+	 * @param array{active:bool,label:string,arriving:int,departing:int,date:string,reservation_id:int} $move
+	 * @return void
+	 */
+	private static function render_today_movement_card( array $move ) {
+		$dm_url = admin_url( 'admin.php?page=' . EEM_Daily_Movement_Page::MENU_SLUG . ( $move['reservation_id'] > 0 ? '&reservation_id=' . (int) $move['reservation_id'] : '' ) );
+		?>
+		<div class="eem-card eem-dashboard-card">
+			<div class="eem-card-header">
+				<div class="eem-card-title"><?php echo EEM_Dashboard_Icons::svg( 'calendar' ); ?> <?php esc_html_e( "Today's Movement", 'equine-event-manager' ); ?></div>
+				<a class="eem-card-link" href="<?php echo esc_url( $dm_url ); ?>"><?php esc_html_e( 'View', 'equine-event-manager' ); ?> &rarr;</a>
+			</div>
+			<div class="eem-dashboard-card-body">
+				<?php if ( $move['active'] ) : ?>
+					<?php if ( '' !== $move['label'] ) : ?>
+						<div class="eem-today-move-event"><?php echo esc_html( $move['label'] ); ?></div>
+					<?php endif; ?>
+					<div class="eem-today-move-stats">
+						<div class="eem-today-move-stat eem-today-move-stat--arriving">
+							<span class="eem-today-move-num"><?php echo esc_html( number_format_i18n( $move['arriving'] ) ); ?></span>
+							<span class="eem-today-move-lbl"><?php esc_html_e( 'Arriving', 'equine-event-manager' ); ?></span>
+						</div>
+						<div class="eem-today-move-stat eem-today-move-stat--departing">
+							<span class="eem-today-move-num"><?php echo esc_html( number_format_i18n( $move['departing'] ) ); ?></span>
+							<span class="eem-today-move-lbl"><?php esc_html_e( 'Departing', 'equine-event-manager' ); ?></span>
+						</div>
+					</div>
+				<?php else : ?>
+					<p class="eem-dashboard-card-empty"><?php esc_html_e( 'No events are active today.', 'equine-event-manager' ); ?></p>
+				<?php endif; ?>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Facility card — how many stalls + RV lots are flagged for cleaning right
+	 * now. Links to the Facility Cleaning report print view.
+	 *
+	 * @param int $count Units needing cleaning.
+	 * @return void
+	 */
+	private static function render_facility_card( int $count ) {
+		$report_url = admin_url( 'admin.php?page=equine-event-manager-reports&eem_report_print=cleaning' );
+		?>
+		<div class="eem-card eem-dashboard-card">
+			<div class="eem-card-header">
+				<div class="eem-card-title"><?php echo EEM_Dashboard_Icons::svg( 'grid' ); ?> <?php esc_html_e( 'Facility', 'equine-event-manager' ); ?></div>
+				<?php if ( $count > 0 ) : ?>
+					<a class="eem-card-link" href="<?php echo esc_url( $report_url ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Worksheet', 'equine-event-manager' ); ?> &rarr;</a>
+				<?php endif; ?>
+			</div>
+			<div class="eem-dashboard-card-body">
+				<?php if ( $count > 0 ) : ?>
+					<div class="eem-facility-clean">
+						<span class="eem-facility-clean-num"><?php echo esc_html( number_format_i18n( $count ) ); ?></span>
+						<span class="eem-facility-clean-lbl"><?php echo esc_html( _n( 'stall / lot needs cleaning', 'stalls / lots need cleaning', $count, 'equine-event-manager' ) ); ?></span>
+					</div>
+				<?php else : ?>
+					<p class="eem-dashboard-card-empty"><?php esc_html_e( 'All clean — nothing flagged for cleaning.', 'equine-event-manager' ); ?></p>
+				<?php endif; ?>
 			</div>
 		</div>
 		<?php

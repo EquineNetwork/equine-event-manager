@@ -1045,6 +1045,63 @@ class EEM_Dashboard_Repo {
 		return array( 'items' => $items, 'reservations' => $res );
 	}
 
+	/**
+	 * Count of distinct stalls + RV lots currently flagged "needs cleaning"
+	 * across all reservations. Powers the Dashboard Facility card.
+	 *
+	 * @return int
+	 */
+	public function facility_cleaning_count(): int {
+		global $wpdb;
+		$table = $wpdb->prefix . 'eem_stall_status';
+		return (int) $wpdb->get_var( "SELECT COUNT(DISTINCT reservation_id, stall_unit) FROM {$table} WHERE status = 'needs_cleaning'" ); // phpcs:ignore WordPress.DB
+	}
+
+	/**
+	 * Today's movement aggregated across every reservation active today (±1 day):
+	 * how many customers are arriving and departing. Powers the Dashboard
+	 * "Today's Movement" card.
+	 *
+	 * @return array{active:bool,label:string,arriving:int,departing:int,date:string,reservation_id:int}
+	 */
+	public function today_movement(): array {
+		if ( ! class_exists( 'EEM_Daily_Movement_Service' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-daily-movement-service.php';
+		}
+		$today    = current_time( 'Y-m-d' );
+		$windows  = EEM_Daily_Movement_Service::get_reservation_windows();
+		$arriving = 0;
+		$departing = 0;
+		$active   = array();
+
+		foreach ( $windows as $rid => $win ) {
+			if ( ! EEM_Daily_Movement_Service::is_reservation_active( $win, $today, 1 ) ) {
+				continue;
+			}
+			$report     = EEM_Daily_Movement_Service::build_date_report( (int) $rid, $today );
+			$arriving  += (int) ( $report['summary']['arriving'] ?? 0 );
+			$departing += (int) ( $report['summary']['departing'] ?? 0 );
+			$active[]   = (int) $rid;
+		}
+
+		$label = '';
+		if ( 1 === count( $active ) ) {
+			$label = (string) get_the_title( $active[0] );
+		} elseif ( count( $active ) > 1 ) {
+			/* translators: %d: number of events active today */
+			$label = sprintf( _n( '%d active event', '%d active events', count( $active ), 'equine-event-manager' ), count( $active ) );
+		}
+
+		return array(
+			'active'         => ! empty( $active ),
+			'label'          => $label,
+			'arriving'       => $arriving,
+			'departing'      => $departing,
+			'date'           => $today,
+			'reservation_id' => 1 === count( $active ) ? $active[0] : 0,
+		);
+	}
+
 	public static function addons_summary(): array {
 		global $wpdb;
 
