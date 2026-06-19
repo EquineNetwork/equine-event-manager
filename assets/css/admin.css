@@ -7029,6 +7029,13 @@ a.eem-reservation-editor-meta-change-link:hover {
 .eem-sched-group__hint {
 	margin: 6px 0 0;
 }
+/* Regular rate + inline Early Bird rate, side by side (revealed when Early Bird
+   is on via the EB toggle's data-controls). */
+.eem-rate-inline-pair { display: flex; gap: 18px; align-items: flex-end; flex-wrap: wrap; }
+.eem-eb-inline { display: flex; flex-direction: column; gap: 4px; }
+.eem-eb-inline__label { font-size: 12px; font-weight: 600; color: var(--eem-text-secondary); }
+.eem-eb-inline.eem-row--hidden { display: none; }
+
 /* Gated toggle (e.g. Early Bird requires Schedule on) — dimmed + non-interactive
    until the required toggle is enabled. */
 .eem-toggle-label-row--disabled {
