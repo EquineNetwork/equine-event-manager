@@ -288,13 +288,13 @@ class EEM_Orders_List_Page {
 					<input type="hidden" name="billing" value="<?php echo esc_attr( $billing ); ?>" />
 					<?php if ( '' !== $event )  : ?><input type="hidden" name="event" value="<?php echo esc_attr( $event ); ?>" /><?php endif; ?>
 					<?php if ( '' !== $search ) : ?><input type="hidden" name="s"     value="<?php echo esc_attr( $search ); ?>" /><?php endif; ?>
-					<select class="eem-toolbar-select" name="type">
+					<?php // Single-select filter auto-submits on change (no Filter button) — matches the event filter. ?>
+					<select class="eem-toolbar-select" name="type" onchange="this.form.submit()">
 						<option value=""><?php esc_html_e( 'All Types', 'equine-event-manager' ); ?></option>
 						<?php foreach ( $type_keys as $key ) : ?>
 							<option value="<?php echo esc_attr( $key ); ?>" <?php selected( $type, $key ); ?>><?php echo esc_html( $type_labels[ $key ] ); ?></option>
 						<?php endforeach; ?>
 					</select>
-					<button type="submit" class="eem-toolbar-btn"><?php esc_html_e( 'Filter', 'equine-event-manager' ); ?></button>
 				</form>
 			</div>
 			<div class="eem-list-toolbar-right">

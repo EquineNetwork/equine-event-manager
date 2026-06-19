@@ -74,6 +74,7 @@ class EEM_Reservations_List_Page {
 				'eem_reservation_duplicate'     => wp_create_nonce( 'eem_reservation_duplicate' ),
 				'eem_reservation_trash'         => wp_create_nonce( 'eem_reservation_trash' ),
 				'eem_reservation_restore'       => wp_create_nonce( 'eem_reservation_restore' ),
+				'eem_reservation_set_draft'     => wp_create_nonce( 'eem_reservation_set_draft' ),
 				'eem_reservation_delete_permanently' => wp_create_nonce( 'eem_reservation_delete_permanently' ), // C7.X.16 Issue G
 				'eem_reservation_export_roster' => wp_create_nonce( 'eem_reservation_export_roster' ),
 				'eem_reservation_quick_edit'    => wp_create_nonce( 'eem_reservation_quick_edit' ),         // FIX 5 (2.3.42)
@@ -150,7 +151,7 @@ class EEM_Reservations_List_Page {
 		         data-eem-reservations-list JS hook moves to the status-tabs
 		         strip (canonical Reservations marker that survives the rewrap). */ ?>
 		<?php $this->render_action_notice(); ?>
-		<?php $this->render_status_tabs( $active_tab, $counts ); ?>
+		<?php $this->render_status_tabs( $active_tab, $counts, $search, $date_filter ); ?>
 		<?php $this->render_toolbar( $search, $date_filter, $page['total'], $active_tab ); ?>
 		<?php $this->render_desktop_table( $page['items'], $orderby, $order, $active_tab ); ?>
 		<?php $this->render_mobile_cards( $page['items'], $active_tab ); ?>
@@ -179,6 +180,8 @@ class EEM_Reservations_List_Page {
 			'duplicated'            => array( 'type' => 'success', 'text' => __( 'Reservation duplicated as draft.', 'equine-event-manager' ) ),
 			'trashed'               => array( 'type' => 'success', 'text' => __( 'Reservation moved to Trash.', 'equine-event-manager' ) ),
 			'restored'              => array( 'type' => 'success', 'text' => __( 'Reservation restored from Trash.', 'equine-event-manager' ) ),
+			'reservation_set_draft' => array( 'type' => 'success', 'text' => __( 'Reservation switched to Draft.', 'equine-event-manager' ) ),
+			'set_draft_failed'      => array( 'type' => 'error',   'text' => __( 'Could not switch the reservation to Draft.', 'equine-event-manager' ) ),
 			'deleted-permanently'   => array( 'type' => 'success', 'text' => __( 'Reservation permanently deleted.', 'equine-event-manager' ) ),
 			'bulk_trashed'          => array( 'type' => 'success', 'text' => sprintf(
 				/* translators: %d: number of reservations moved to trash */
@@ -407,6 +410,42 @@ class EEM_Reservations_List_Page {
 		);
 
 		self::redirect_with_notice( 'restored' );
+	}
+
+	/**
+	 * Revert a published reservation back to draft (unpublish) from the list
+	 * row menu. Only acts on currently-published reservations; logs the
+	 * lifecycle change to the activity log.
+	 *
+	 * @return void  Redirects + exits.
+	 */
+	public static function handle_set_draft() {
+		$reservation_id = self::check_action_request( 'eem_reservation_set_draft' );
+
+		if ( 'publish' !== get_post_status( $reservation_id ) ) {
+			// Already a draft / other status — nothing to do; bounce back quietly.
+			self::redirect_with_notice( 'reservation_set_draft' );
+		}
+
+		$result = wp_update_post( array(
+			'ID'          => $reservation_id,
+			'post_status' => 'draft',
+		), true );
+		if ( is_wp_error( $result ) || 0 === $result ) {
+			self::redirect_with_notice( 'set_draft_failed' );
+		}
+
+		EEM_Activity_Log::write(
+			'reservation_set_draft',
+			array( 'reservation_id' => $reservation_id ),
+			array(
+				'reservation_id' => $reservation_id,
+				'actor_type'     => 'admin',
+				'actor_id'       => get_current_user_id(),
+			)
+		);
+
+		self::redirect_with_notice( 'reservation_set_draft' );
 	}
 
 	/**
@@ -1089,31 +1128,52 @@ class EEM_Reservations_List_Page {
 	 * @param array<string, int> $counts
 	 * @return void
 	 */
-	private function render_status_tabs( $active_tab, array $counts ) {
+	private function render_status_tabs( $active_tab, array $counts, $search = '', $date_filter = '' ) {
 		$tabs = array(
 			'all'     => EEM_Reservations_List_Repo::tab_label( 'all' ),
 			'publish' => EEM_Reservations_List_Repo::tab_label( 'publish' ),
 			'draft'   => EEM_Reservations_List_Repo::tab_label( 'draft' ),
 			'trash'   => EEM_Reservations_List_Repo::tab_label( 'trash' ),
 		);
+		$date_options = $this->get_date_filter_options();
 		?>
-		<nav class="eem-status-tabs" data-eem-reservations-list aria-label="<?php esc_attr_e( 'Filter by status', 'equine-event-manager' ); ?>">
-			<?php
-			$first = true;
-			foreach ( $tabs as $id => $label ) :
-				$is_active = ( $id === $active_tab );
-				$count     = isset( $counts[ $id ] ) ? (int) $counts[ $id ] : 0;
-				?>
-				<?php if ( ! $first ) : ?><span class="eem-status-tab-sep" aria-hidden="true">|</span><?php endif; ?>
-				<a class="eem-status-tab<?php echo $is_active ? ' is-active' : ''; ?>"
-				   href="<?php echo esc_url( self::url( array( 'status' => $id ) ) ); ?>"
-				   <?php echo $is_active ? ' aria-current="page"' : ''; ?>>
-					<?php echo esc_html( $label ); ?>
-					<span class="eem-status-tab-count">(<?php echo esc_html( number_format_i18n( $count ) ); ?>)</span>
-				</a>
-				<?php $first = false; ?>
-			<?php endforeach; ?>
-		</nav>
+		<?php // Row 1 of the toolbar — date filter (left) + status pills (right),
+		// mirroring the Orders event-filter + billing-tabs row. ?>
+		<div class="eem-list-toolbar">
+			<div class="eem-list-toolbar-left">
+				<form method="get" class="eem-date-filter-form">
+					<input type="hidden" name="page" value="<?php echo esc_attr( self::MENU_SLUG ); ?>" />
+					<input type="hidden" name="status" value="<?php echo esc_attr( $active_tab ); ?>" />
+					<?php if ( '' !== $search ) : ?>
+						<input type="hidden" name="s" value="<?php echo esc_attr( $search ); ?>" />
+					<?php endif; ?>
+					<?php // Single-select filter auto-submits on change (no Filter button) — matches the Orders event filter + Daily Movement. ?>
+					<select class="eem-toolbar-select" name="eem_date" data-eem-choices data-eem-choices-search="<?php esc_attr_e( 'Search dates…', 'equine-event-manager' ); ?>" onchange="this.form.submit()">
+						<option value=""><?php esc_html_e( 'All dates', 'equine-event-manager' ); ?></option>
+						<?php foreach ( $date_options as $value => $label ) : ?>
+							<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $date_filter, $value ); ?>><?php echo esc_html( $label ); ?></option>
+						<?php endforeach; ?>
+					</select>
+				</form>
+			</div>
+			<div class="eem-list-toolbar-right">
+				<nav class="eem-filter-tabs" data-eem-reservations-list role="tablist" aria-label="<?php esc_attr_e( 'Filter by status', 'equine-event-manager' ); ?>">
+					<?php
+					foreach ( $tabs as $id => $label ) :
+						$is_active = ( $id === $active_tab );
+						$count     = isset( $counts[ $id ] ) ? (int) $counts[ $id ] : 0;
+						?>
+						<a class="eem-filter-tab<?php echo $is_active ? ' active' : ''; ?>"
+						   href="<?php echo esc_url( self::url( array( 'status' => $id ) ) ); ?>"
+						   role="tab" aria-selected="<?php echo $is_active ? 'true' : 'false'; ?>"
+						   <?php echo $is_active ? 'aria-current="page"' : ''; ?>>
+							<?php echo esc_html( $label ); ?>
+							<span class="eem-filter-tab-count"><?php echo esc_html( number_format_i18n( $count ) ); ?></span>
+						</a>
+					<?php endforeach; ?>
+				</nav>
+			</div>
+		</div>
 		<?php
 	}
 
@@ -1140,7 +1200,6 @@ class EEM_Reservations_List_Page {
 	 * @return void
 	 */
 	private function render_toolbar( $search, $date_filter, $total, $active_tab ) {
-		$date_options = $this->get_date_filter_options();
 		?>
 		<div class="eem-list-toolbar eem-toolbar-controls">
 			<div class="eem-list-toolbar-left">
@@ -1172,20 +1231,7 @@ class EEM_Reservations_List_Page {
 						<button type="submit" class="eem-toolbar-btn eem-toolbar-btn--danger"><?php esc_html_e( 'Empty Trash', 'equine-event-manager' ); ?></button>
 					</form>
 				<?php endif; ?>
-				<form method="get" class="eem-date-filter-form">
-					<input type="hidden" name="page" value="<?php echo esc_attr( self::MENU_SLUG ); ?>" />
-					<input type="hidden" name="status" value="<?php echo esc_attr( $active_tab ); ?>" />
-					<?php if ( '' !== $search ) : ?>
-						<input type="hidden" name="s" value="<?php echo esc_attr( $search ); ?>" />
-					<?php endif; ?>
-					<select class="eem-toolbar-select" name="eem_date" data-eem-choices data-eem-choices-search="<?php esc_attr_e( 'Search dates…', 'equine-event-manager' ); ?>">
-						<option value=""><?php esc_html_e( 'All dates', 'equine-event-manager' ); ?></option>
-						<?php foreach ( $date_options as $value => $label ) : ?>
-							<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $date_filter, $value ); ?>><?php echo esc_html( $label ); ?></option>
-						<?php endforeach; ?>
-					</select>
-					<button type="submit" class="eem-toolbar-btn"><?php esc_html_e( 'Filter', 'equine-event-manager' ); ?></button>
-				</form>
+				<?php // Date filter moved to row 1 (beside the status tabs) — see render_status_tabs(). ?>
 			</div>
 			<div class="eem-list-toolbar-right">
 				<form method="get" class="eem-search-form" role="search">
@@ -1390,7 +1436,7 @@ class EEM_Reservations_List_Page {
 					?><span class="eem-orders-count is-zero"><?php echo esc_html( number_format_i18n( $orders_count ) ); ?></span><?php
 				endif;
 			?></td>
-			<td><?php $this->render_row_actions( $id, $has_stall_chart, $is_trashed, $frontend_url, (int) $orders_count ); ?></td>
+			<td><?php $this->render_row_actions( $id, $has_stall_chart, $is_trashed, $frontend_url, (int) $orders_count, ( 'publish' === get_post_status( $post ) ) ); ?></td>
 		</tr>
 		<?php
 	}
@@ -1479,9 +1525,10 @@ class EEM_Reservations_List_Page {
 	 * @param bool   $is_trashed
 	 * @param string $frontend_url     Pre-resolved front-end URL (may be '').
 	 * @param int    $orders_count     Order count for the Email disabled-state check.
+	 * @param bool   $is_published     True when the reservation is published (enables "Move to Draft").
 	 * @return void
 	 */
-	private function render_row_actions( $reservation_id, $has_stall_chart, $is_trashed = false, $frontend_url = '', $orders_count = 0 ) {
+	private function render_row_actions( $reservation_id, $has_stall_chart, $is_trashed = false, $frontend_url = '', $orders_count = 0, $is_published = false ) {
 		$stall_chart_url = add_query_arg(
 			array(
 				'page'           => 'equine-event-manager-stall-charts',
@@ -1548,6 +1595,14 @@ class EEM_Reservations_List_Page {
 								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
 								<?php esc_html_e( 'Email Customers', 'equine-event-manager' ); ?>
 							</span>
+						<?php endif; ?>
+						<?php /* Revert a published reservation to draft (unpublish) without
+						        opening the editor. Shown only when published. */ ?>
+						<?php if ( $is_published ) : ?>
+							<button type="button" class="eem-row-dd-item" data-eem-action="reservation-set-draft" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" role="menuitem">
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+								<?php esc_html_e( 'Move to Draft', 'equine-event-manager' ); ?>
+							</button>
 						<?php endif; ?>
 					<?php endif; ?>
 				</div>

@@ -2718,6 +2718,10 @@
 		'reservation-restore': function (target) {
 			submitReservationAction(target, 'eem_reservation_restore', 'eem_reservation_restore');
 		},
+		'reservation-set-draft': function (target) {
+			if (!window.confirm('Move this reservation back to Draft? It will no longer be publicly visible.')) return;
+			submitReservationAction(target, 'eem_reservation_set_draft', 'eem_reservation_set_draft');
+		},
 		/* C7.X.17 Issue D3 — typed-confirm modal replaces the simple window.confirm.
 		   openDeletePermanentlyModal handles the modal, typed-title validation,
 		   and submits with confirmation_title extra field when confirmed. */

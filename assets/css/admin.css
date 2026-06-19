@@ -54,6 +54,10 @@
 	--eem-border: #D9E2F2;
 	--eem-border-soft: #f0f0f1;
 	--eem-border-card: #c3c4c7;
+	/* Canonical form-control border (selects, inputs, search, Choices, buttons)
+	   — one gray plugin-wide so no control reads "washed out" next to another.
+	   Normalized 2026-06-19. */
+	--eem-control-border: #8c8f94;
 	--eem-text: #1d2327;
 	--eem-text-on-navy: #ffffff;
 	--eem-text-on-navy-soft: #90aed4;
@@ -95,6 +99,21 @@
 	--eem-type-group-text: #15803d;
 	--eem-type-group-border: #bbf7d0;
 
+	/* ── Canonical badge palette (badge sweep 2026-06-19) ──────────────────
+	   ONE value per semantic color, used by EVERY badge family (type + status)
+	   so green is always the same green, amber the same amber, etc. The
+	   --eem-type-* tokens above already equal these values (stall=blue, rv=
+	   purple, addon=orange, group=green); the status families now reference
+	   these instead of their old off-shades. Badges are borderless-or-bordered
+	   per family but share these colors. No state dots. */
+	--eem-badge-green-bg: #F0FDF4;  --eem-badge-green-text: #15803d;  --eem-badge-green-border: #bbf7d0;
+	--eem-badge-amber-bg: #FFFBEB;  --eem-badge-amber-text: #b45309;  --eem-badge-amber-border: #fde68a;
+	--eem-badge-red-bg:   #FEF2F2;  --eem-badge-red-text:   #b91c1c;  --eem-badge-red-border:   #fecaca;
+	--eem-badge-blue-bg:  #EEF4FF;  --eem-badge-blue-text:  #1668F2;  --eem-badge-blue-border:  #c0d8ff;
+	--eem-badge-gray-bg:  #F8FAFC;  --eem-badge-gray-text:  #64748b;  --eem-badge-gray-border:  #e2e8f0;
+	--eem-badge-purple-bg: #F5F3FF; --eem-badge-purple-text: #6d28d9; --eem-badge-purple-border: #ddd6fe;
+	--eem-badge-orange-bg: #FFF7ED; --eem-badge-orange-text: #c2410c; --eem-badge-orange-border: #fed7aa;
+
 	/* Typography */
 	--eem-font-display: 'Space Grotesk', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 	--eem-font-ui: 'IBM Plex Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
@@ -119,7 +138,7 @@
 	--eem-select-height: 38px;
 
 	/* Borders */
-	--eem-border-input: 1.5px solid var(--eem-border);
+	--eem-border-input: 1px solid var(--eem-control-border);
 	--eem-border-card-rule: 1px solid var(--eem-border-card);
 	--eem-focus-ring: 0 0 0 2px rgba(22, 104, 242, 0.1);
 
@@ -1371,48 +1390,31 @@ input.eem-price-input:focus {
 .eem-status-badge {
 	display: inline-flex;
 	align-items: center;
-	gap: 5px;
 	padding: 3px 9px;
 	border-radius: 20px;
 	font-size: 11.5px;
 	font-weight: 600;
 	white-space: nowrap;
 }
+/* Badge sweep 2026-06-19: state dot removed — the pill color carries status. */
 
-.eem-status-badge::before {
-	content: '';
-	width: 6px;
-	height: 6px;
-	border-radius: 50%;
-	flex-shrink: 0;
-}
-
-.eem-status-paid                { background: #F0FDF4; color: #15803d; border: 1px solid #bbf7d0; }
-.eem-status-paid::before        { background: #22c55e; }
-.eem-status-unpaid              { background: var(--eem-warn-bg); color: var(--eem-warn-text); border: 1px solid var(--eem-warn-border); }
-.eem-status-unpaid::before      { background: #f59e0b; }
-.eem-status-partial             { background: var(--eem-warn-bg); color: var(--eem-warn-text); border: 1px solid var(--eem-warn-border); }
-.eem-status-partial::before     { background: #f59e0b; }
-.eem-status-invoice             { background: #EFF6FF; color: #1d4ed8; border: 1px solid #bfdbfe; }
-.eem-status-invoice::before     { background: #3b82f6; }
-.eem-status-refunded            { background: #FFF1F2; color: #be123c; border: 1px solid #fecdd3; }
-.eem-status-refunded::before    { background: #f43f5e; }
-.eem-status-cancelled           { background: #F8FAFC; color: #64748b; border: 1px solid #e2e8f0; }
-.eem-status-cancelled::before   { background: #94a3b8; }
+/* Badge sweep 2026-06-19: all status colors reference the canonical --eem-badge-*
+   palette; state dots removed (the pill color carries the status). */
+.eem-status-paid                { background: var(--eem-badge-green-bg); color: var(--eem-badge-green-text); border: 1px solid var(--eem-badge-green-border); }
+.eem-status-unpaid              { background: var(--eem-badge-amber-bg); color: var(--eem-badge-amber-text); border: 1px solid var(--eem-badge-amber-border); }
+.eem-status-partial             { background: var(--eem-badge-amber-bg); color: var(--eem-badge-amber-text); border: 1px solid var(--eem-badge-amber-border); }
+.eem-status-invoice             { background: var(--eem-badge-blue-bg);  color: var(--eem-badge-blue-text);  border: 1px solid var(--eem-badge-blue-border); }
+.eem-status-refunded            { background: var(--eem-badge-red-bg);   color: var(--eem-badge-red-text);   border: 1px solid var(--eem-badge-red-border); }
+.eem-status-cancelled           { background: var(--eem-badge-gray-bg);  color: var(--eem-badge-gray-text);  border: 1px solid var(--eem-badge-gray-border); }
 
 /* Reservation lifecycle (RES-4) */
-.eem-status-active              { background: #F0FDF4; color: #15803d; border: 1px solid #bbf7d0; }
-.eem-status-active::before      { background: #22c55e; }
-.eem-status-draft               { background: var(--eem-warn-bg); color: var(--eem-warn-text); border: 1px solid var(--eem-warn-border); }
-.eem-status-draft::before       { background: #f59e0b; }
-.eem-status-archived            { background: #F8FAFC; color: #64748b; border: 1px solid #e2e8f0; }
-.eem-status-archived::before    { background: #94a3b8; }
-.eem-status-trashed             { background: #FFF1F2; color: var(--eem-error-text); border: 1px solid var(--eem-error-border); }
-.eem-status-trashed::before     { background: var(--eem-error-accent); }
+.eem-status-active              { background: var(--eem-badge-green-bg); color: var(--eem-badge-green-text); border: 1px solid var(--eem-badge-green-border); }
+.eem-status-draft               { background: var(--eem-badge-amber-bg); color: var(--eem-badge-amber-text); border: 1px solid var(--eem-badge-amber-border); }
+.eem-status-archived            { background: var(--eem-badge-gray-bg);  color: var(--eem-badge-gray-text);  border: 1px solid var(--eem-badge-gray-border); }
+.eem-status-trashed             { background: var(--eem-badge-red-bg);   color: var(--eem-badge-red-text);   border: 1px solid var(--eem-badge-red-border); }
 /* Event lifecycle badges (Events list Status column) — Upcoming=blue,
    Ongoing reuses .eem-status-active (green), Past reuses .eem-status-archived. */
-.eem-status-upcoming            { background: #EEF4FF; color: #1668F2; border: 1px solid #c0d8ff; }
-.eem-status-upcoming::before    { background: #1668F2; }
+.eem-status-upcoming            { background: var(--eem-badge-blue-bg);  color: var(--eem-badge-blue-text);  border: 1px solid var(--eem-badge-blue-border); }
 
 /* Type badges — stall/rv/addon/group, no dot, color-tinted bg only */
 .eem-type-badge {
@@ -1561,7 +1563,7 @@ input.eem-price-input:focus {
 .eem-search-input {
 	width: 100%;
 	padding: 6px 10px 6px 25px;
-	border: 1px solid var(--eem-text-muted);
+	border: 1px solid var(--eem-control-border);
 	border-radius: var(--eem-radius);
 	font-size: 13px;
 	font-family: var(--eem-font-ui);
@@ -1637,6 +1639,16 @@ a.eem-filter-tab.active:hover {
 	box-shadow: none;
 }
 
+/* Per-tab count (Reservations status pills) — inherits the tab color via
+   opacity so it reads muted on inactive (navy) and soft-white on the active
+   electric pill, with no per-state color rules. */
+.eem-filter-tab-count {
+	margin-left: 5px;
+	font-weight: 600;
+	opacity: 0.6;
+}
+
+
 /* C5.5: removed dead .eem-type-chips + .eem-type-chip (base, .inactive, --stall/--rv/--addon/--group variants) + .eem-type-chip-dot — verified zero markup/JS uses (Orders filter switched to Type dropdown in C5.F-toolbar). */
 
 /* C5.5: removed dead .eem-bulk-action-bar (+ select, button, button:hover, button:disabled) + .eem-bulk-selected-count — verified zero markup/JS uses (Orders dropped the bulk-action-bar primitive in C5.F-toolbar). */
@@ -1646,7 +1658,7 @@ a.eem-filter-tab.active:hover {
 select.eem-list-select {
 	margin: 0;
 	padding: 6px 28px 6px 10px;
-	border: 1px solid var(--eem-text-muted);
+	border: 1px solid var(--eem-control-border);
 	border-radius: var(--eem-radius);
 	font-size: 13px;
 	font-family: var(--eem-font-ui);
@@ -1953,9 +1965,11 @@ th.sorted-desc .eem-sort-icon span:first-child {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	padding: 12px 14px;
-	/* No top border + transparent so it blends into the footer band it sits in
-	   (Whitney 2026-06-19) — was an extra #dcdcde line + own bg-alt fill. */
+	/* No own padding — it sits inside .eem-table-footer, which provides the
+	   padding. Its own padding stacked on the footer's made the Orders footer
+	   taller than the text-only Reservations footer (Whitney 2026-06-19).
+	   No top border + transparent so it blends into the footer band. */
+	padding: 0;
 	background: transparent;
 	flex-wrap: wrap;
 	gap: var(--eem-space-2);
@@ -3655,7 +3669,7 @@ a.eem-status-tab.is-active {
 select.eem-toolbar-select {
 	margin: 0;
 	padding: 5px 28px 5px 10px;
-	border: 1px solid var(--eem-text-muted);
+	border: 1px solid var(--eem-control-border);
 	border-radius: var(--eem-radius);
 	font-size: 13px;
 	font-family: var(--eem-font-ui);
@@ -3706,7 +3720,7 @@ input.eem-search-input {
 
 .eem-toolbar-btn {
 	padding: 5px 14px;
-	border: 1px solid var(--eem-text-muted);
+	border: 1px solid var(--eem-control-border);
 	border-radius: var(--eem-radius);
 	font-size: 13px;
 	font-family: var(--eem-font-ui);
@@ -3864,48 +3878,36 @@ a.eem-res-name:focus {
 }
 
 /* Lifecycle status pill with state dot. Mockup lines 103-112. */
+/* Badge sweep 2026-06-19: shape normalized to match .eem-status-badge /
+   .eem-type-badge — normal case (was UPPERCASE), weight 600, radius 20 — so
+   every badge in the plugin reads identically. */
 .eem-res-status {
 	display: inline-flex;
 	align-items: center;
-	gap: 5px;
 	padding: 3px 9px;
-	border-radius: 12px;
-	font-size: 11px;
-	font-weight: 700;
-	letter-spacing: 0.05em;
-	text-transform: uppercase;
+	border-radius: 20px;
+	font-size: 11.5px;
+	font-weight: 600;
 	font-family: var(--eem-font-ui);
 	line-height: 1.4;
 	white-space: nowrap;
 }
 
-.eem-res-status::before {
-	content: '';
-	width: 6px;
-	height: 6px;
-	border-radius: 50%;
-	flex-shrink: 0;
-}
-
-.eem-res-status--active   { background: #dcfce7; color: #15803d; }
-.eem-res-status--active::before   { background: #16a34a; }
-.eem-res-status--draft    { background: #fef3c7; color: #a16207; }
-.eem-res-status--draft::before    { background: #ca8a04; }
-.eem-res-status--archived { background: #e5e7eb; color: #52525b; }
-.eem-res-status--archived::before { background: #71717a; }
-.eem-res-status--trashed  { background: #fee2e2; color: #b91c1c; }
-.eem-res-status--trashed::before  { background: #dc2626; }
+/* Badge sweep 2026-06-19: dots removed; colors reference the canonical
+   --eem-badge-* palette so the reservation status pills match the order status
+   pills + type badges exactly (the green here now equals the Group green). */
+.eem-res-status--active   { background: var(--eem-badge-green-bg); color: var(--eem-badge-green-text); border: 1px solid var(--eem-badge-green-border); }
+.eem-res-status--draft    { background: var(--eem-badge-amber-bg); color: var(--eem-badge-amber-text); border: 1px solid var(--eem-badge-amber-border); }
+.eem-res-status--archived { background: var(--eem-badge-gray-bg);  color: var(--eem-badge-gray-text);  border: 1px solid var(--eem-badge-gray-border); }
+.eem-res-status--trashed  { background: var(--eem-badge-red-bg);   color: var(--eem-badge-red-text);   border: 1px solid var(--eem-badge-red-border); }
 /* Derived event-timing pills (Entries / Divisions) — computed at render time
    from the linked event's start/end dates (no stored status). Scheduled = the
    event hasn't started (blue), Ongoing = happening now (green), Past = ended
    (muted slate). Replaces the old Published/Draft status per Whitney 2026-06-14
    ("'published' should not be a status for entries — just scheduled/ongoing/past"). */
-.eem-res-status--scheduled { background: #dbeafe; color: #1d4ed8; }
-.eem-res-status--scheduled::before { background: #2563eb; }
-.eem-res-status--ongoing   { background: #dcfce7; color: #15803d; }
-.eem-res-status--ongoing::before   { background: #16a34a; }
-.eem-res-status--past     { background: #e5e7eb; color: #52525b; }
-.eem-res-status--past::before     { background: #94a3b8; }
+.eem-res-status--scheduled { background: var(--eem-badge-blue-bg);  color: var(--eem-badge-blue-text);  border: 1px solid var(--eem-badge-blue-border); }
+.eem-res-status--ongoing   { background: var(--eem-badge-green-bg); color: var(--eem-badge-green-text); border: 1px solid var(--eem-badge-green-border); }
+.eem-res-status--past      { background: var(--eem-badge-gray-bg);  color: var(--eem-badge-gray-text);  border: 1px solid var(--eem-badge-gray-border); }
 
 /* Entries/Divisions "Entered / Spots" cell — make the numbers legible at a
    glance (Whitney 2026-06-14): ENTERED in electric blue (red when oversold),
@@ -3981,6 +3983,12 @@ a.eem-res-name:focus {
 	align-items: center;
 	justify-content: space-between;
 	padding: 12px 16px;
+	/* Fixed min-height (box-sizing:border-box so padding is included) so the
+	   footer is the SAME height on every list page whether or not the 28px
+	   pagination buttons are present — text-only footers no longer read shorter
+	   than paginated ones (Whitney 2026-06-19). */
+	min-height: 53px;
+	box-sizing: border-box;
 	/* No top border (Whitney 2026-06-19); footer shares the column-header row
 	   color (#f8fafc) so it reads as part of the table chrome. */
 	background: var(--eem-gray-50, #f8fafc);
@@ -5025,16 +5033,19 @@ a.eem-btn-collect-banner:focus {
 }
 
 /* C6.A.2: per-section type badge + Section Total row inside summary. */
+/* Badge sweep 2026-06-19: shape normalized to the canonical badge (normal case,
+   weight 600, radius 20, 11.5px) — was uppercase/700/radius-10. */
 .eem-order-summary__section-badge {
 	display: inline-flex;
 	align-items: center;
-	padding: 2px 8px;
-	border-radius: 10px;
-	font-size: 10px;
-	font-weight: 700;
-	letter-spacing: 0.04em;
-	text-transform: uppercase;
+	padding: 3px 9px;
+	border-radius: 20px;
+	font-size: 11.5px;
+	font-weight: 600;
 	line-height: 1.4;
+	/* Title-case the count label ("1 night" → "1 Night") to match the card
+	   nights badge — not the old shouty uppercase. */
+	text-transform: capitalize;
 }
 
 /* C6.A.3 palette alignment: sidebar section badges share the canonical
@@ -5042,21 +5053,21 @@ a.eem-btn-collect-banner:focus {
    and sidebar section badges label the same concepts — single source of
    truth for stall/rv/addon color identity. */
 .eem-order-summary__section-badge--stall {
-	background: #EEF4FF;
-	color: #1668F2;
-	border: 1px solid #c0d8ff;
+	background: var(--eem-badge-blue-bg);
+	color: var(--eem-badge-blue-text);
+	border: 1px solid var(--eem-badge-blue-border);
 }
 
 .eem-order-summary__section-badge--rv {
-	background: #F5F3FF;
-	color: #6d28d9;
-	border: 1px solid #ddd6fe;
+	background: var(--eem-badge-purple-bg);
+	color: var(--eem-badge-purple-text);
+	border: 1px solid var(--eem-badge-purple-border);
 }
 
 .eem-order-summary__section-badge--addon {
-	background: #FFF7ED;
-	color: #c2410c;
-	border: 1px solid #fed7aa;
+	background: var(--eem-badge-orange-bg);
+	color: var(--eem-badge-orange-text);
+	border: 1px solid var(--eem-badge-orange-border);
 }
 
 /* C6.A.3: text-transform: uppercase + letter-spacing removed to match
@@ -5825,7 +5836,7 @@ select.eem-dashboard-range-select {
 	margin: 0;
 	min-height: var(--eem-select-height);
 	padding: 4px 32px 4px 12px;
-	border: 1px solid var(--eem-text-muted);
+	border: 1px solid var(--eem-control-border);
 	border-radius: var(--eem-radius);
 	background: var(--eem-surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center;
 	font-size: 13px;
@@ -9324,7 +9335,7 @@ table.eem-export-history td { padding:11px 22px; font-size:13px; color:#1d2327; 
 .eem-cp-muted { color: var(--eem-text-muted); }
 
 /* Internal notes */
-.eem-cp-notes-input { width: 100%; min-height: 70px; padding: 9px 12px; border: 1px solid var(--eem-text-muted); border-radius: var(--eem-radius); font-family: 'IBM Plex Sans', sans-serif; font-size: 13px; color: var(--eem-text); resize: vertical; background: var(--eem-surface); }
+.eem-cp-notes-input { width: 100%; min-height: 70px; padding: 9px 12px; border: 1px solid var(--eem-control-border); border-radius: var(--eem-radius); font-family: 'IBM Plex Sans', sans-serif; font-size: 13px; color: var(--eem-text); resize: vertical; background: var(--eem-surface); }
 .eem-cp-notes-input:focus { outline: none; border-color: var(--eem-electric); box-shadow: 0 0 0 1px var(--eem-electric); }
 .eem-cp-notes-actions { margin-top: var(--eem-space-2); display: flex; justify-content: flex-end; }
 

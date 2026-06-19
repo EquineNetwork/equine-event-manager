@@ -20,7 +20,9 @@
 	min-height: 38px;
 	padding: 4px 28px 4px 10px;
 	background: #fff;
-	border: 1px solid var( --eem-border, #d9e2f2 );
+	/* Normalized 2026-06-19 — canonical control border (was the washed-out
+	   --eem-border #d9e2f2) so Choices selects match native selects/inputs. */
+	border: 1px solid var( --eem-control-border, #8c8f94 );
 	border-radius: var( --eem-radius, 3px );
 	font-size: 13px;
 	color: var( --eem-text, #1d2327 );
@@ -56,6 +58,13 @@
 
 .eem-choices .choices__list--single .choices__item {
 	color: var( --eem-text, #1d2327 );
+}
+/* The "All events" / "All dates" default option is a Choices placeholder, which
+   the vendor CSS fades to opacity:.5 (gray). Show it full-strength dark text so
+   it matches the native selects' default option (Whitney 2026-06-19). */
+.eem-choices .choices__list--single .choices__placeholder {
+	color: var( --eem-text, #1d2327 );
+	opacity: 1;
 }
 
 /* Dropdown panel. Widen past the (compact) control so long event names show

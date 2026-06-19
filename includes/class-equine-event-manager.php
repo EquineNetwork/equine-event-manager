@@ -291,6 +291,7 @@ class EEM_Plugin {
 		add_action( 'admin_post_eem_reservation_duplicate',       array( 'EEM_Reservations_List_Page', 'handle_duplicate' ) );
 		add_action( 'admin_post_eem_reservation_trash',           array( 'EEM_Reservations_List_Page', 'handle_trash' ) );
 		add_action( 'admin_post_eem_reservation_restore',         array( 'EEM_Reservations_List_Page', 'handle_restore' ) );
+		add_action( 'admin_post_eem_reservation_set_draft',       array( 'EEM_Reservations_List_Page', 'handle_set_draft' ) );
 		add_action( 'admin_post_eem_reservation_delete_permanently', array( 'EEM_Reservations_List_Page', 'handle_delete_permanently' ) ); // C7.X.16 Issue G
 		add_action( 'admin_post_eem_reservation_export_roster',   array( 'EEM_Reservations_List_Page', 'handle_export_roster' ) );
 		add_action( 'admin_post_eem_reservations_bulk',           array( 'EEM_Reservations_List_Page', 'handle_bulk' ) );
