@@ -15,7 +15,10 @@
 
 **Where we left off / pick up here (in priority order):**
 - ✅ **#229 — critical error when trashing a draft reservation — DONE (2026-06-18, verified on laptop @ 2.7.467).** Could not reproduce on current code; trashing drafts (list-row Trash + editor Trash button) works clean. The "critical error" was the migration-recursion crash that took down every admin page on the stale-DB upgrade path — fixed in 2.7.467 (commit 6b7f1e8). Verified + approved by Whitney in-browser.
-- **#234 — backfill smoke coverage** for the new readiness store + print rework + move-customer flow.
+- ✅ **#234 — backfill smoke coverage — DONE (2026-06-18, @ 2.7.467).** Two new green smokes:
+  `stall-status-readiness-smoke.php` (17) covers `EEM_Stall_Status_Repo` set/bulk/needs-cleaning
+  with canonical read-back; `print-view-show-view-smoke.php` (17) covers the print VIEW/SHOW/all_rv
+  variants. Move-customer flow already covered by stall-per-night-move + rv-night-move smokes.
 - ✅ **#235 — RV lot name/number split verified CORRECT (2026-06-18, on NTR 6519's real data).** The last-space split (`strrpos(' ')`, admin lines 4265 + 6805) is the exact inverse of label construction (`zone . ' ' . num`, admin:5300); `num` from `expand_label_range()` never has an internal space, so single- AND multi-word zone names plus prefixed/padded lots (Y1, A-01) all round-trip. NTR 6519: 25/25 labels correct, 0 mismatches. Only breaks on externally-sourced labels not built by this path (no-space `A12`, non-numeric tail) — not a real risk. No code change.
 
 **What this session shipped (Stall & RV Charts + Daily Movement + all Print Views):**
@@ -176,9 +179,23 @@ succeeded; the last launch gate is cleared.
     Root cause was the migration-recursion crash (commit 6b7f1e8) that 500'd every admin page on
     the stale-DB upgrade path, not a trash-specific bug. Verified clean on the laptop (list-row
     Trash + editor Trash button), approved by Whitney.
-0b. **Backfill smoke coverage (#234)** for the readiness store (`EEM_Stall_Status_Repo`:
-    `set_cell_status` / `bulk_set_status` / `mark_order_stalls_needs_cleaning`), the print-view
-    rework (SHOW/VIEW/rows variants), and the restored move-customer flow.
+0b. ✅ **DONE (2026-06-18, @ 2.7.467) — backfill smoke coverage (#234).** `stall-status-readiness-smoke.php`
+    (17 assertions: `set_cell_status` / `bulk_set_status` / `mark_order_stalls_needs_cleaning` with
+    canonical read-back) + `print-view-show-view-smoke.php` (17: VIEW/SHOW/all_rv variants). Move-customer
+    flow already covered by stall-per-night-move + rv-night-move smokes. Commit 2e442bd.
+
+0d. **NEW — fix latent `stall_rows`-drop in the postmeta→table migration backfill.** Discovered while
+    recovering data 2026-06-18: on a fresh OLD-DB upgrade (running migration 016 against current code),
+    the backfill carries `rv_rows` but `stall_rows` comes through empty (migration 005 `split-back-to-back`
+    transform is the suspect). Same bug *class* as the 2.7.467 recursion fix — would bite any production
+    site upgrading across this version range. Did NOT affect Whitney's imported desktop DB (016 already
+    ran there with old code). Repro fixture saved in `.dev-fixtures/`. Medium priority — pre-launch.
+
+0e. **NEW — pre-existing smoke drift (2 files).** `print-view-assigned-only-smoke.php` (6 fail) +
+    `rv-night-move-smoke.php` (1 fail) use brittle *exact-string* source-presence assertions that broke
+    when the print/move code was reformatted (aligned `=` signs); `print-view-assigned-only` also picks
+    the known-corrupt **reservation 5990** in its fixture-finder. Fixes: loosen the string matches (regex,
+    not exact `strpos`) and skip 5990 in fixture selection. Low priority — test-only, not product code.
 0c. ✅ **DONE (2026-06-18) — RV lot name/number split verified CORRECT on NTR 6519.** The last-space
     split (admin 4265 + 6805) is the exact inverse of label construction (`zone . ' ' . num`,
     admin:5300); `num` from `expand_label_range()` has no internal space, so single/multi-word zones
