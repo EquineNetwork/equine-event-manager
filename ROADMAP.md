@@ -2,11 +2,21 @@
 
 ---
 
-## 🔖 SESSION HANDOFF — 2026-06-18 (v2.7.466, branch `v4-stall-mapping`)
+## 🔖 SESSION HANDOFF — 2026-06-18 (v2.7.466, on `main`)
 
-**Picking up on the laptop?** `git checkout v4-stall-mapping && git pull`. All this work is on
-`v4-stall-mapping`, NOT `main` — it depends on prior branch commits (the per-stall-night readiness
-store etc.). Don't try to put it on `main` without merging the whole branch.
+**Picking up on the laptop? START HERE:**
+1. **Setting the laptop up for the first time?** Read **`docs/LAPTOP-SETUP.md`** — it has the exact
+   recipe to mirror the desktop dev workflow (clone repo + Local Export/Import + symlink the plugin
+   so Claude's edits preview live). Tell laptop-Claude: *"read docs/LAPTOP-SETUP.md and walk me
+   through it."* The DB (reservations/orders/maps) is NOT in git — it comes over via Local Export.
+2. **Already set up?** `git checkout main` then `git pull`. Everything is on **`main`** now —
+   the `v4-stall-mapping` branch was merged (fast-forward) and pushed; `main` is the source of truth
+   and is 1 commit ahead (the laptop-setup doc). No branch juggling needed.
+
+**Where we left off / pick up here (in priority order):**
+- **#229 — critical error when trashing a draft reservation** (deferred this whole session; first up).
+- **#234 — backfill smoke coverage** for the new readiness store + print rework + move-customer flow.
+- **#235 — verify RV lot name/number split against real GEMS labels** (test on **NTR 6519**, NOT 5990).
 
 **What this session shipped (Stall & RV Charts + Daily Movement + all Print Views):**
 - **By Location – List → readiness grid.** Per-stall-night status (`wp_eem_stall_status`):
@@ -40,13 +50,15 @@ store etc.). Don't try to put it on `main` without merging the whole branch.
 - Task #229 still open: **critical error when trashing a draft reservation** (deferred all session).
 - A dead `$or_num` assignment remains in the print By Customer loop (harmless; tidy when convenient).
 - All verification this session was via browser/print-preview on Local; no smoke tests were added
-  for the new readiness store / print rework — worth backfilling.
+  for the new readiness store / print rework — worth backfilling (task #234).
+- 6-dates-per-row Daily Movement print grid was applied but **not browser-verified** — confirm on
+  the laptop once Local is up (print preview the Daily Movement page).
 
 ---
 
 
-**Canonical, version-controlled to-do list.** Last updated 2026-06-13 · plugin at **v2.7.281**
-· branch `v4-stall-mapping`. **v1 is complete and launch-ready.** Authoritative decision history
+**Canonical, version-controlled to-do list.** Last updated 2026-06-18 · plugin at **v2.7.466**
+· on `main`. **v1 is complete and launch-ready.** Authoritative decision history
 lives in `CLAUDE.md`; deep architecture in `docs/ARCHITECTURE-DATA-OWNERSHIP.md`,
 `docs/ARCHITECTURE-VENUES.md`, and `docs/WORKPLAN-postmeta-decouple.md`.
 
@@ -157,6 +169,17 @@ succeeded; the last launch gate is cleared.
 ---
 
 ## 🔧 OPEN FOLLOW-UPS (actionable; no launch blocker)
+
+**Immediate (carried from the 2026-06-18 Stall Charts / print session — do these first):**
+
+0a. **Fix critical error when trashing a draft reservation (#229).** Reproducible; deferred the
+    entire 06-18 session. Highest priority — it's a real error path.
+0b. **Backfill smoke coverage (#234)** for the readiness store (`EEM_Stall_Status_Repo`:
+    `set_cell_status` / `bulk_set_status` / `mark_order_stalls_needs_cleaning`), the print-view
+    rework (SHOW/VIEW/rows variants), and the restored move-customer flow.
+0c. **Verify RV lot name/number split against real GEMS labels (#235).** The split keys on the last
+    space in the lot label (`"Zone 2 8"` → `Zone 2` / `8`); non-`name<space>number` labels could
+    split wrong. Test on **NTR 6519** (NOT 5990 — its RV map is corrupted).
 
 1. **Entry-aware Dashboard headline metrics.** Entry/division revenue **already flows into Total
    Revenue / Total Orders / This Week** (entries fold into the order subtotal at checkout —
