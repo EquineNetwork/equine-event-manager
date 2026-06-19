@@ -795,6 +795,9 @@ class EEM_Reservation_Config {
 			// Cancellation.
 			'cancellation_enabled'           => 'tinyint(1)',
 			'cancellation_policy_override'   => 'longtext',
+			// Required Documents (line-item list lives in json_keys()).
+			'required_documents_enabled'     => 'tinyint(1)',
+			'required_documents_description' => 'text',
 			// Tack + limits.
 			'stall_tack_mode'                => 'varchar(32)',
 			'stall_max_per_customer'         => 'varchar(10)',
@@ -825,6 +828,7 @@ class EEM_Reservation_Config {
 			'stall_chart_blocked_rv_units',
 			'rv_lots',
 			'general_addons',
+			'required_documents',
 			'rv_lot_zones',
 			'rv_addons',
 			'stall_map',

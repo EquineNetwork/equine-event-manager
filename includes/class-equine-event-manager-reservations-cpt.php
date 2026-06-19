@@ -47,6 +47,7 @@ class EEM_Reservations_CPT {
 		'group_reservations_enabled' => 'group',
 		'convenience_fee_enabled'    => 'fees',
 		'venue_agreement_enabled'    => 'agreement',
+		'required_documents_enabled' => 'requireddocs',
 	);
 
 	/**
@@ -129,6 +130,7 @@ class EEM_Reservations_CPT {
 		'group_reservations_enabled' => 'Group Reservations',
 		'convenience_fee_enabled'    => 'Convenience Fee',
 		'venue_agreement_enabled'    => 'Venue Agreement',
+		'required_documents_enabled' => 'Required Documents',
 		'event_day_enabled'          => 'Event Day Info',
 		'stall_nightly_rate'         => 'Stall Nightly Rate',
 		'stall_weekend_rate'         => 'Stall Weekend Rate',
@@ -1411,6 +1413,12 @@ class EEM_Reservations_CPT {
 			'venue_agreement_link_label'      => isset( $source['venue_agreement_link_label'] ) ? sanitize_text_field( $source['venue_agreement_link_label'] ) : '',
 			'venue_agreement_text'            => isset( $source['venue_agreement_text'] ) ? sanitize_textarea_field( $source['venue_agreement_text'] ) : '',
 			'general_addons_enabled'          => ( isset( $source['general_addons_enabled'] ) && '1' === (string) $source['general_addons_enabled'] ) ? 1 : 0,
+			// Required Documents — section toggle + description + repeatable
+			// line items (each: name + required-before-checkout flag). Customer
+			// uploads attach per-order downstream; this is the admin-defined list.
+			'required_documents_enabled'      => ( isset( $source['required_documents_enabled'] ) && '1' === (string) $source['required_documents_enabled'] ) ? 1 : 0,
+			'required_documents_description'  => isset( $source['required_documents_description'] ) ? sanitize_textarea_field( $source['required_documents_description'] ) : '',
+			'required_documents'              => isset( $source['required_documents'] ) && is_array( $source['required_documents'] ) ? $this->sanitize_required_documents( $source['required_documents'] ) : ( isset( $existing['required_documents'] ) ? (array) $existing['required_documents'] : array() ),
 			'group_reservations_enabled'      => isset( $source['group_reservations_enabled'] ) ? 1 : 0,
 			// C7.C.1.4.A Decision N1 — NEW meta keys for mockup-canonical
 			// group section (line 958-970). Non-destructive additive
@@ -1915,6 +1923,9 @@ class EEM_Reservations_CPT {
 			'group_rider_deposit_enabled'     => 0,
 			'group_rider_deposit_amount'      => '0.00',
 			'general_addons'                  => array(),
+			'required_documents_enabled'      => 0,
+			'required_documents_description'  => '',
+			'required_documents'              => array(),
 			'rv_lot_zones'                    => array(),
 			// C7.X.5 + C7.X.6 — Event Day + Cancellation defaults.
 			'event_day_enabled'               => 1,
@@ -2349,6 +2360,32 @@ class EEM_Reservations_CPT {
 			);
 		}
 
+		return array_values( $sanitized );
+	}
+
+	/**
+	 * Sanitize submitted Required Documents rows. Each row: a name (admin-defined
+	 * requirement, e.g. "Coggins") and a required-before-checkout flag. Rows with
+	 * a blank name are dropped.
+	 *
+	 * @param array $docs Raw document rows.
+	 * @return array<int,array{name:string,required:int}>
+	 */
+	private function sanitize_required_documents( $docs ) {
+		$sanitized = array();
+		foreach ( (array) $docs as $doc ) {
+			if ( ! is_array( $doc ) ) {
+				continue;
+			}
+			$name = isset( $doc['name'] ) ? sanitize_text_field( $doc['name'] ) : '';
+			if ( '' === $name ) {
+				continue;
+			}
+			$sanitized[] = array(
+				'name'     => $name,
+				'required' => ( isset( $doc['required'] ) && '1' === (string) $doc['required'] ) ? 1 : 0,
+			);
+		}
 		return array_values( $sanitized );
 	}
 
