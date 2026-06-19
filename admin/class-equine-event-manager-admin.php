@@ -567,7 +567,7 @@ class EEM_Admin {
 		// maybe_redirect_old_list bounce handles accidental hits).
 		// DS-1.B.4: Dashboard pinned to position 0 (above Orders).
 		// Menu order (Whitney 2026-06-13, Events moved up): Dashboard, Orders,
-		// Events, Reservations, Stall & RV Charts, Entries, Sheets & Results,
+		// Events, Reservations, Stall & RV Charts, Daily Movement, Entries, Sheets & Results,
 		// Venues, Producers, Customers, Notifications, Reports, Settings. Each
 		// native Categories child immediately follows its parent (Events/Venues/
 		// Producers) so the hover-reveal nesting works — the Categories rows are
@@ -582,6 +582,7 @@ class EEM_Admin {
 			'equine-event-manager-event-categories',
 			'equine-event-manager-reservations',
 			'equine-event-manager-stall-charts',
+			EEM_Daily_Movement_Page::MENU_SLUG, // Directly below Stall & RV Charts (Whitney 2026-06-18).
 			'equine-event-manager-entries',
 			EEM_Sheets_Results_Page::MENU_SLUG,
 			EEM_Venues_Page::MENU_SLUG,
@@ -591,7 +592,6 @@ class EEM_Admin {
 			'equine-event-manager-customers',
 			EEM_Notifications_Page::MENU_SLUG,
 			'equine-event-manager-reports',
-			EEM_Daily_Movement_Page::MENU_SLUG, // Directly below Reports (Whitney 2026-06-17).
 			'equine-event-manager-settings',
 		);
 		$existing = $submenu[ self::MENU_SLUG ];
@@ -2039,7 +2039,7 @@ class EEM_Admin {
 				'equine-event-manager-collect-payment'      => 'equine-event-manager-orders',
 				'equine-event-manager-reservation-editor'   => EEM_Reservations_List_Page::MENU_SLUG,
 				'equine-event-manager-reservation-overview' => EEM_Reservations_List_Page::MENU_SLUG,
-				// Daily Movement is its own visible submenu item now (below Reports),
+				// Daily Movement is its own visible submenu item now (below Stall & RV Charts),
 				// so it self-highlights via the fall-through below — not mapped here.
 				EEM_Event_Editor_Page::MENU_SLUG            => EEM_Events_List_Page::MENU_SLUG,
 				EEM_Venue_Editor_Page::MENU_SLUG            => EEM_Venues_Page::MENU_SLUG,

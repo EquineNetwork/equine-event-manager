@@ -112,7 +112,6 @@ class EEM_Daily_Movement_Page {
 			'date'           => $date,
 			'print'          => '1',
 		), admin_url( 'admin.php' ) );
-		$print_btn = '<a href="' . esc_url( $print_url ) . '" target="_blank" class="eem-btn eem-btn-outline">' . esc_html__( 'Print View', 'equine-event-manager' ) . '</a>';
 
 		eem_render_page_open( array(
 			'title'      => __( 'Daily Movement', 'equine-event-manager' ),
@@ -124,7 +123,6 @@ class EEM_Daily_Movement_Page {
 				),
 				array( 'label' => __( 'Daily Movement', 'equine-event-manager' ) ),
 			),
-			'actions' => $print_btn,
 		) );
 
 		// Daily Movement overview sits directly below the header, above the
@@ -134,8 +132,17 @@ class EEM_Daily_Movement_Page {
 			self::render_movement_overview( $reports );
 		}
 
-		self::render_toolbar( $reservations, $reservation_id, $date, $available_dates );
+		self::render_toolbar( $reservations, $reservation_id, $date, $available_dates, $print_url );
 
+		// Close the top card (header + overview + toolbar) HERE so the per-day
+		// date sections render OUTSIDE the page-wrap and float as their own
+		// cards on the page background, instead of being enclosed by the page
+		// frame. We hand-close .eem-page-body + .eem-page-wrap (mirroring
+		// eem_render_page_close, which only emits closing markup) and close
+		// .eem-page ourselves at the end.
+		echo '</div><!-- /.eem-page-body --></div><!-- /.eem-page-wrap -->';
+
+		echo '<div class="eem-dm-sections">';
 		if ( empty( $reservations ) ) {
 			echo '<div class="eem-dm-empty"><p>' . esc_html__( 'No published reservations yet. Create and publish a reservation to see movement data.', 'equine-event-manager' ) . '</p></div>';
 		} elseif ( empty( $reports ) || ( 1 === count( $reports ) && 0 === $totals['arriving'] && 0 === $totals['departing'] ) ) {
@@ -147,8 +154,9 @@ class EEM_Daily_Movement_Page {
 			}
 			self::render_check_toggle_script();
 		}
+		echo '</div><!-- /.eem-dm-sections -->';
 
-		eem_render_page_close();
+		echo '</div><!-- /.eem-page -->';
 	}
 
 	/**
@@ -235,7 +243,7 @@ class EEM_Daily_Movement_Page {
 			<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 			<style>
 				*{box-sizing:border-box;margin:0;padding:0}
-				body{font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;font-size:13px;color:#1e293b;background:#fff}
+				body{font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;font-size:13px;color:#1e293b;background:#f0f0f1}
 				.dm-pv-toolbar{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;background:#f1f5f9;border-bottom:1px solid #e5e7eb}
 				.dm-pv-toolbar h1{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:#031B4E}
 				.dm-pv-toolbar-actions{display:flex;gap:8px}
@@ -252,9 +260,9 @@ class EEM_Daily_Movement_Page {
 				.dm-pv-meta{font-size:13px;color:#4a5a7a;display:flex;gap:24px;flex-wrap:wrap}
 				.dm-pv-meta strong{color:#031B4E;font-weight:600}
 				.dm-pv-body{padding:0 28px 24px;max-width:1000px;margin:0 auto}
-				.dm-pv-date-section{margin-bottom:24px}
-				.dm-pv-date-heading{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#031B4E;background:#f0f4fb;border:1px solid #d9e2f2;border-bottom:0;padding:10px 12px 5px;margin:14px 0 0}
-				.dm-pv-summary{display:flex;gap:24px;flex-wrap:wrap;align-items:center;background:#f0f4fb;border:1px solid #d9e2f2;border-top:0;padding:0 12px 10px;margin:0 0 14px}
+				.dm-pv-date-section{background:#fff;border:1px solid #e2e4e7;border-radius:3px;overflow:hidden;margin-bottom:14px}
+				.dm-pv-date-heading{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#031B4E;background:#fff;padding:12px 16px 6px;margin:0}
+				.dm-pv-summary{display:flex;gap:24px;flex-wrap:wrap;align-items:center;background:#fff;padding:2px 16px 12px;margin:0}
 				.dm-pv-stat{font-size:12px;font-weight:600;color:#031b4e;white-space:nowrap}
 				.dm-pv-stat-icon{font-weight:700;color:#1d4ed8;margin-right:5px}
 				.dm-pv-chip{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
@@ -267,7 +275,10 @@ class EEM_Daily_Movement_Page {
 				.dm-pv-chip--pending::before{background:#ef4444}
 				.dm-pv-chip--shavings{background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe}
 				.dm-pv-chip--shavings::before{background:#8b5cf6}
-				.dm-pv-group-heading{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#031B4E;background:#f0f4fb;border:1px solid #d9e2f2;border-bottom:0;padding:7px 12px;margin:14px 0 0}
+				.dm-pv-group-heading{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;padding:7px 16px;margin:0}
+				.dm-pv-group-icon{font-weight:700}
+				.dm-pv-group-heading--arriving{color:#1668F2;background:#f0f4fb;border-top:1px solid #d9e2f2;border-bottom:1px solid #d9e2f2}
+				.dm-pv-group-heading--departing{color:#b45309;background:#fdf4e7;border-top:1px solid #f3e2c4;border-bottom:1px solid #f3e2c4}
 				table.dm-pv-table{width:100%;border-collapse:collapse;table-layout:fixed}
 				.dm-pv-table th:nth-child(1),.dm-pv-table td:nth-child(1){width:14%}
 				.dm-pv-table th:nth-child(2),.dm-pv-table td:nth-child(2){width:20%}
@@ -276,7 +287,7 @@ class EEM_Daily_Movement_Page {
 				.dm-pv-table th:nth-child(5),.dm-pv-table td:nth-child(5){width:15%}
 				.dm-pv-table th:nth-child(6),.dm-pv-table td:nth-child(6){width:10%}
 				.dm-pv-table th:nth-child(7),.dm-pv-table td:nth-child(7){width:15%}
-				.dm-pv-table th{text-align:left;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#031B4E;padding:6px 10px;background:#f0f4fb;border:1px solid #d9e2f2}
+				.dm-pv-table th{text-align:left;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#031B4E;padding:6px 10px;background:#f8fafc;border-top:1px solid #d9e2f2;border-bottom:1px solid #d9e2f2}
 				.dm-pv-table td{padding:8px 10px;border-bottom:1px solid #f1f5f9;font-size:12.5px;vertical-align:top}
 				.dm-pv-table tbody tr:last-child td{border-bottom:none}
 				.dm-pv-cell-stall{font-weight:700;white-space:nowrap}
@@ -361,7 +372,7 @@ class EEM_Daily_Movement_Page {
 								return strnatcasecmp( implode( ',', $a['stall_numbers'] ), implode( ',', $b['stall_numbers'] ) );
 							} );
 						?>
-							<div class="dm-pv-group-heading"><?php echo esc_html( ucfirst( $group ) ); ?></div>
+							<div class="dm-pv-group-heading dm-pv-group-heading--<?php echo esc_attr( $group ); ?>"><span class="dm-pv-group-icon"><?php echo 'arriving' === $group ? '&darr;' : '&uarr;'; ?></span><?php echo esc_html( ucfirst( $group ) ); ?></div>
 							<table class="dm-pv-table">
 								<thead>
 									<tr>
@@ -491,7 +502,7 @@ class EEM_Daily_Movement_Page {
 	 * @param string[]  $available_dates All dates with movement for the reservation.
 	 * @return void
 	 */
-	private static function render_toolbar( array $reservations, int $reservation_id, string $date, array $available_dates = array() ): void {
+	private static function render_toolbar( array $reservations, int $reservation_id, string $date, array $available_dates = array(), string $print_url = '' ): void {
 		$base_url = admin_url( 'admin.php?page=' . self::MENU_SLUG . '&reservation_id=' . $reservation_id );
 		?>
 		<div class="eem-dm-toolbar">
@@ -524,6 +535,9 @@ class EEM_Daily_Movement_Page {
 					</select>
 				</div>
 			</form>
+			<?php if ( '' !== $print_url ) : ?>
+				<a href="<?php echo esc_url( $print_url ); ?>" target="_blank" class="eem-btn eem-btn--primary eem-dm-toolbar-print"><?php esc_html_e( 'Print View', 'equine-event-manager' ); ?></a>
+			<?php endif; ?>
 		</div>
 		<?php
 	}
@@ -567,22 +581,29 @@ class EEM_Daily_Movement_Page {
 		<div class="eem-dm-date-section">
 			<h3 class="eem-dm-date-heading"><?php echo esc_html( $report['date_display'] ); ?></h3>
 
-			<?php $sm = $report['summary']; ?>
+			<?php
+			$sm        = $report['summary'];
+			$dm_arr    = (int) ( $sm['arriving'] ?? 0 );
+			$dm_ci     = (int) ( $sm['checked_in'] ?? 0 );
+			$dm_dep    = (int) ( $sm['departing'] ?? 0 );
+			$dm_co     = (int) ( $sm['departed'] ?? 0 );
+			$dm_bags   = (int) ( $sm['shavings_total'] ?? 0 );
+			?>
 			<div class="eem-dm-summary">
-				<span class="eem-dm-summary-item"><span class="eem-dm-summary-icon" aria-hidden="true">↓</span><?php printf( esc_html__( '%d Arriving', 'equine-event-manager' ), (int) ( $sm['arriving'] ?? 0 ) ); ?></span>
-				<span class="eem-dm-summary-item"><span class="eem-dm-summary-icon" aria-hidden="true">✓</span><?php printf( esc_html__( '%d Checked In', 'equine-event-manager' ), (int) ( $sm['checked_in'] ?? 0 ) ); ?></span>
-				<span class="eem-dm-summary-item"><span class="eem-dm-summary-icon" aria-hidden="true">↑</span><?php printf( esc_html__( '%d Departing', 'equine-event-manager' ), (int) ( $sm['departing'] ?? 0 ) ); ?></span>
-				<span class="eem-dm-summary-item"><span class="eem-dm-summary-icon" aria-hidden="true">✓</span><?php printf( esc_html__( '%d Checked Out', 'equine-event-manager' ), (int) ( $sm['departed'] ?? 0 ) ); ?></span>
-				<span class="eem-dm-summary-item"><span class="eem-dm-summary-icon" aria-hidden="true">◆</span><?php printf( esc_html__( '%d Bags Shavings', 'equine-event-manager' ), (int) ( $sm['shavings_total'] ?? 0 ) ); ?></span>
+				<span class="eem-dm-summary-item<?php echo 0 === $dm_arr ? ' is-zero' : ''; ?>"><span class="eem-dm-summary-icon" aria-hidden="true">↓</span><?php printf( esc_html__( '%d Arriving', 'equine-event-manager' ), $dm_arr ); ?></span>
+				<span class="eem-dm-summary-item<?php echo 0 === $dm_ci ? ' is-zero' : ''; ?>"><span class="eem-dm-summary-icon" aria-hidden="true">✓</span><?php printf( esc_html__( '%d Checked In', 'equine-event-manager' ), $dm_ci ); ?></span>
+				<span class="eem-dm-summary-item<?php echo 0 === $dm_dep ? ' is-zero' : ''; ?>"><span class="eem-dm-summary-icon" aria-hidden="true">↑</span><?php printf( esc_html__( '%d Departing', 'equine-event-manager' ), $dm_dep ); ?></span>
+				<span class="eem-dm-summary-item<?php echo 0 === $dm_co ? ' is-zero' : ''; ?>"><span class="eem-dm-summary-icon" aria-hidden="true">✓</span><?php printf( esc_html__( '%d Checked Out', 'equine-event-manager' ), $dm_co ); ?></span>
+				<span class="eem-dm-summary-item<?php echo 0 === $dm_bags ? ' is-zero' : ''; ?>"><span class="eem-dm-summary-icon" aria-hidden="true">◆</span><?php printf( esc_html__( '%d Bags Shavings', 'equine-event-manager' ), $dm_bags ); ?></span>
 			</div>
 
 			<?php if ( ! empty( $report['arriving'] ) ) : ?>
-				<h4 class="eem-dm-group-heading"><?php esc_html_e( 'Arriving', 'equine-event-manager' ); ?></h4>
+				<h4 class="eem-dm-group-heading eem-dm-group-heading--arriving"><span class="eem-dm-group-icon" aria-hidden="true">↓</span><?php esc_html_e( 'Arriving', 'equine-event-manager' ); ?></h4>
 				<?php self::render_table( $report['arriving'], $order_map, 'arriving' ); ?>
 			<?php endif; ?>
 
 			<?php if ( ! empty( $report['departing'] ) ) : ?>
-				<h4 class="eem-dm-group-heading"><?php esc_html_e( 'Departing', 'equine-event-manager' ); ?></h4>
+				<h4 class="eem-dm-group-heading eem-dm-group-heading--departing"><span class="eem-dm-group-icon" aria-hidden="true">↑</span><?php esc_html_e( 'Departing', 'equine-event-manager' ); ?></h4>
 				<?php self::render_table( $report['departing'], $order_map, 'departing' ); ?>
 			<?php endif; ?>
 		</div>
@@ -603,6 +624,7 @@ class EEM_Daily_Movement_Page {
 			return strnatcasecmp( $a_stalls, $b_stalls );
 		} );
 		?>
+		<div class="eem-dm-table-wrap">
 		<table class="eem-dm-table">
 			<thead>
 				<tr>
@@ -654,6 +676,7 @@ class EEM_Daily_Movement_Page {
 				<?php endforeach; ?>
 			</tbody>
 		</table>
+		</div>
 		<?php
 	}
 
@@ -684,12 +707,12 @@ class EEM_Daily_Movement_Page {
 							<?php echo esc_html( $report['date_display'] ?? $report['date'] ); ?>
 						</div>
 						<div class="eem-dm-overview-vals">
-							<span class="eem-dm-stat<?php echo 0 === $arr ? ' is-zero' : ''; ?>">
+							<span class="eem-dm-stat eem-dm-stat--arr<?php echo 0 === $arr ? ' is-zero' : ''; ?>">
 								<span class="eem-dm-stat-icon" aria-hidden="true">&darr;</span>
 								<span class="eem-dm-stat-num"><?php echo esc_html( number_format_i18n( $arr ) ); ?></span>
 								<span class="eem-dm-stat-label"><?php esc_html_e( 'Arriving', 'equine-event-manager' ); ?></span>
 							</span>
-							<span class="eem-dm-stat<?php echo 0 === $dep ? ' is-zero' : ''; ?>">
+							<span class="eem-dm-stat eem-dm-stat--dep<?php echo 0 === $dep ? ' is-zero' : ''; ?>">
 								<span class="eem-dm-stat-icon" aria-hidden="true">&uarr;</span>
 								<span class="eem-dm-stat-num"><?php echo esc_html( number_format_i18n( $dep ) ); ?></span>
 								<span class="eem-dm-stat-label"><?php esc_html_e( 'Departing', 'equine-event-manager' ); ?></span>

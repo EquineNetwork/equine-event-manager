@@ -10630,6 +10630,17 @@ a.eem-event-editor-card__quicklink:hover { color: #1257d1; }
 .eem-shell-page--daily-movement .eem-page-body {
 	padding: 0;
 }
+/* The page-wrap now holds ONLY the top card (header + overview + toolbar) —
+   the date sections render outside it (see render()). Give it the same subtle
+   border as the day cards so the top reads as its own card. */
+.eem-shell-page--daily-movement .eem-page-wrap {
+	border: 1px solid #e2e4e7;
+	border-radius: var(--eem-radius);
+}
+/* Date sections float below the top card on the page background. */
+.eem-shell-page--daily-movement .eem-dm-sections {
+	padding: 14px 0 0;
+}
 
 /* ── Stat cards strip ──────────────────────────────────────────────── */
 .eem-dm-stats {
@@ -10643,8 +10654,19 @@ a.eem-event-editor-card__quicklink:hover { color: #1257d1; }
 /* ── Toolbar / filter bar ──────────────────────────────────────────── */
 .eem-dm-toolbar {
 	padding: 14px 22px;
-	border-bottom: 1px solid var(--eem-border, #dcdcde);
-	background: var(--eem-gray-50, #f8fafc);
+	background: #f0f4fb;
+	display: flex;
+	align-items: flex-end;
+	gap: 16px;
+}
+.eem-dm-toolbar-form {
+	flex: 1 1 auto;
+}
+/* Print View lives at the end of the filter row (set filters, then print). */
+.eem-dm-toolbar-print {
+	flex: 0 0 auto;
+	margin-left: auto;
+	white-space: nowrap;
 }
 .eem-dm-toolbar-form {
 	display: flex;
@@ -10656,6 +10678,9 @@ a.eem-event-editor-card__quicklink:hover { color: #1257d1; }
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
+	/* Grow to fill the row; when the toolbar wraps to stack (tablet/phone),
+	   each group takes a full row so the selects go full width. */
+	flex: 1 1 240px;
 }
 .eem-dm-toolbar-label {
 	font-size: 11px;
@@ -10712,35 +10737,40 @@ a.eem-dm-view-tab.active:visited {
 .eem-dm-print-header {
 	display: none;
 }
+/* Each day is a full-bleed white card; the #f0f0f1 page background shows in the
+   gaps between cards. Cards carry top/bottom borders (the page-wrap frames
+   left/right), so each day reads as its own bordered card edge-to-edge. */
+.eem-dm-sections {
+	background: #f0f0f1;
+	padding: 14px 0;
+}
 .eem-dm-date-section {
-	padding: 18px 0 0;
+	background: #fff;
+	border: 1px solid #e2e4e7;
+	border-radius: var(--eem-radius);
+	overflow: hidden;
+	margin: 0 0 14px;
+}
+.eem-dm-date-section:last-child {
 	margin-bottom: 0;
 }
-.eem-dm-date-section + .eem-dm-date-section {
-	border-top: 0;
-}
-/* Date heading + summary form one full-bleed light-blue header band (the -22px
-   margins cancel the .eem-dm-date-section side padding). */
-/* Date heading + summary = one FULL-BLEED light-blue band (touches both card
-   edges); only top/bottom rules, content inset 22px so the title lines up with
-   the summary icons. */
+/* Date heading + metric summary = the card's WHITE header. The colored
+   Arriving/Departing bands + tables follow inside the same card. */
 .eem-dm-date-heading {
 	font-size: 15px;
 	font-weight: 700;
 	color: var(--eem-navy, #031B4E);
-	padding: 10px 22px 5px !important;
-	background: #f0f4fb;
-	border-top: 1px solid #d9e2f2;
+	padding: 12px 18px 6px !important;
+	background: #fff;
 }
 .eem-dm-summary {
 	display: flex;
 	flex-wrap: nowrap;
 	align-items: center;
-	gap: 28px;
-	margin: 0 0 16px;
-	padding: 2px 22px 12px;
-	background: #f0f4fb;
-	border-bottom: 1px solid #d9e2f2;
+	gap: 22px;
+	margin: 0;
+	padding: 2px 18px 12px;
+	background: #fff;
 	overflow-x: auto;
 }
 .eem-dm-summary-item {
@@ -10752,26 +10782,48 @@ a.eem-dm-view-tab.active:visited {
 	color: var(--eem-navy, #031b4e);
 	white-space: nowrap;
 }
+/* Middot separators between metrics (gap + ::after margin keep them centered). */
 .eem-dm-summary-icon {
 	font-weight: 700;
 	color: var(--eem-electric, #1d4ed8);
 }
+/* Zero metrics recede so the day's real movement reads first. */
+.eem-dm-summary-item.is-zero {
+	opacity: 0.45;
+}
+.eem-dm-summary-item.is-zero .eem-dm-summary-icon {
+	color: #a7aaad;
+}
+/* Arriving = blue band, Departing = amber band — colored icon + text + tint so
+   the two halves of the day's table stand apart. Bands sit flush (margin 0). */
 .eem-dm-group-heading {
-	font-size: 13px;
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	font-size: 12px;
 	font-weight: 700;
-	color: #031B4E;
-	background: #f0f4fb;
-	border-top: 1px solid #d9e2f2;
-	border-bottom: 1px solid #d9e2f2;
-	margin: 14px 0 0;
+	margin: 0;
 	padding: 5px 22px !important;
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
 }
+.eem-dm-group-icon { font-weight: 700; }
+.eem-dm-group-heading--arriving {
+	color: var(--eem-electric, #1668F2);
+	background: #f0f4fb;
+	border-top: 1px solid #d9e2f2;
+	border-bottom: 1px solid #d9e2f2;
+}
+.eem-dm-group-heading--departing {
+	color: #b45309;
+	background: #fdf4e7;
+	border-top: 1px solid #f3e2c4;
+	border-bottom: 1px solid #f3e2c4;
+}
 /* At-a-glance multi-day movement overview (mirrors the Stall Chart print view's
    Daily Movement block — ↓ Arriving / ↑ Departing per date). */
 .eem-dm-overview {
-	background: #f0f4fb;
+	background: var(--eem-gray-50, #f8fafc);
 	border: 0;
 	border-bottom: 1px solid #d9e2f2;
 	border-radius: 0;
@@ -10821,6 +10873,10 @@ a.eem-dm-view-tab.active:visited {
 	color: var(--eem-electric);
 	font-weight: 700;
 }
+/* Arriving = electric blue, Departing = amber. */
+.eem-dm-stat--dep .eem-dm-stat-icon {
+	color: #d97706;
+}
 .eem-dm-stat-num {
 	font-weight: 700;
 	color: var(--eem-navy, #1d2327);
@@ -10837,8 +10893,17 @@ a.eem-dm-view-tab.active:visited {
 	color: #a7aaad;
 }
 
+/* Horizontal-scroll wrapper: rows never wrap — staff scroll right to read a
+   full row on narrow screens (Whitney 2026-06-18). */
+.eem-dm-table-wrap {
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+}
 .eem-dm-table {
 	width: 100%;
+	/* Keeps columns wide enough that cells don't wrap; the wrapper scrolls when
+	   the viewport is narrower than this. */
+	min-width: 820px;
 	/* Fixed layout so the Arriving + Departing tables (separate <table>s) share
 	   identical column geometry — columns line up across both. */
 	table-layout: fixed;
@@ -10847,9 +10912,11 @@ a.eem-dm-view-tab.active:visited {
 	/* Full-bleed (top/bottom rules only, no side border or radius) so it matches
 	   the full-bleed bands above; cell content is inset to line up. */
 	border-top: 1px solid var(--eem-border, #dcdcde);
-	border-bottom: 1px solid var(--eem-border, #dcdcde);
 	border-radius: 0;
-	margin-bottom: 16px;
+}
+.eem-dm-table th,
+.eem-dm-table td {
+	white-space: nowrap;
 }
 /* Line the first/last cells up with the 22px band-text inset. */
 .eem-dm-table th:first-child, .eem-dm-table td:first-child { padding-left: 22px; }
@@ -10867,7 +10934,7 @@ a.eem-dm-view-tab.active:visited {
 /* Status cell hosts the dropdown menu — must not clip it. */
 .eem-dm-table td.eem-dm-cell-status { overflow: visible; }
 .eem-dm-table thead th {
-	background: #f0f4fb;
+	background: var(--eem-gray-50, #f8fafc);
 	border-top: 1px solid #d9e2f2;
 	border-bottom: 1px solid #d9e2f2;
 	padding: 10px 12px;
@@ -11058,7 +11125,12 @@ a.eem-dm-view-tab.active:visited {
 @media (max-width: 782px) {
 	.eem-dm-stats { gap: 8px; padding: 12px 14px; }
 	.eem-dm-stats .eem-stat-card { flex: 1 1 calc(50% - 4px); min-width: 0; }
-	.eem-dm-toolbar { padding: 12px 14px; }
+	/* Toolbar stacks: selects then Print View, each full width. */
+	.eem-dm-toolbar {
+		padding: 12px 14px;
+		flex-direction: column;
+		align-items: stretch;
+	}
 	.eem-dm-toolbar-form {
 		flex-direction: column;
 		align-items: stretch;
@@ -11066,9 +11138,15 @@ a.eem-dm-view-tab.active:visited {
 	}
 	.eem-dm-toolbar-group {
 		width: 100%;
+		flex: 0 0 auto; /* don't stretch vertically in the column */
 	}
 	.eem-dm-toolbar-group select {
 		width: 100%;
+	}
+	.eem-dm-toolbar-print {
+		margin-left: 0;
+		width: 100%;
+		text-align: center;
 	}
 	.eem-dm-view-tabs {
 		padding: 0 14px;
@@ -11077,20 +11155,28 @@ a.eem-dm-view-tab.active:visited {
 		padding: 10px 16px;
 		font-size: 13px;
 	}
-	.eem-dm-date-section { padding: 16px 14px 0; }
-	.eem-dm-table {
-		display: block;
-		overflow-x: auto;
-		-webkit-overflow-scrolling: touch;
-	}
+	.eem-dm-sections { padding: 10px 0; }
+	.eem-dm-date-section { padding: 0; }
+	/* Metric row stays on ONE line and scrolls horizontally (no wrap). */
 	.eem-dm-summary {
-		flex-wrap: wrap;
-		gap: 6px;
+		flex-wrap: nowrap;
+		gap: 16px;
+		overflow-x: auto;
 	}
-	.eem-dm-summary-item {
-		font-size: 10.5px;
-		padding: 2px 7px;
+	/* 3 metric cards per row (smaller) so the overview takes less height. */
+	.eem-dm-overview { padding: 12px 12px; }
+	.eem-dm-overview-grid {
+		grid-template-columns: repeat(3, 1fr);
+		gap: 8px;
 	}
+	.eem-dm-overview-day { padding: 10px 10px; }
+	.eem-dm-overview-date {
+		font-size: 12px;
+		padding-bottom: 7px;
+		margin-bottom: 7px;
+	}
+	.eem-dm-overview-vals { gap: 4px; }
+	.eem-dm-stat { font-size: 11px; gap: 5px; }
 }
 
 /* ── Daily Movement: print ───────────────────────────────────────── */
@@ -11137,10 +11223,11 @@ a.eem-dm-view-tab.active:visited {
 		color: #6B7A99;
 	}
 
-	.eem-dm-date-section { padding: 12px 0 0; }
-	.eem-dm-date-heading { font-size: 14px; border-bottom-width: 1.5px; margin-bottom: 8px; padding-bottom: 6px; }
-	.eem-dm-group-heading { font-size: 11px; margin: 12px 0 4px; }
-	.eem-dm-summary { gap: 8px; margin-bottom: 10px; }
+	.eem-dm-sections { padding: 10px 0; }
+	.eem-dm-date-section { padding: 0; }
+	.eem-dm-date-heading { font-size: 14px; }
+	.eem-dm-group-heading { font-size: 11px; margin: 0; }
+	.eem-dm-summary { gap: 8px; margin: 0; }
 	.eem-dm-summary-item { font-size: 10px; padding: 2px 7px; }
 	.eem-dm-table { margin-bottom: 8px; }
 	.eem-dm-table thead { display: table-header-group; }
