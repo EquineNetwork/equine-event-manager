@@ -26,14 +26,18 @@ $skip = static function ( string $label ) use ( &$skipped ): void {
 };
 
 // --- source-presence: toggle + filter logic --------------------------------
-$src = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-equine-event-manager-admin.php' );
+// Collapse runs of spaces/tabs to a single space so these substring checks
+// survive cosmetic re-alignment (e.g. aligned `=` columns) — exact-string
+// matches against raw source drift the moment someone reformats. (0e fix.)
+$src = preg_replace( '/[ \t]+/', ' ', (string) file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-equine-event-manager-admin.php' ) );
 $check( 'print page reads a rows param', false !== strpos( $src, "\$pv_rows = isset( \$_GET['rows'] )" ) );
 $check( 'rows param defaults to assigned', false !== strpos( $src, "? sanitize_key( wp_unslash( \$_GET['rows'] ) ) : 'assigned'" ) );
 $check( 'assigned-only flag computed', false !== strpos( $src, "\$assigned_only = ( 'assigned' === \$pv_rows )" ) );
 $check( 'row_has_content helper defined', false !== strpos( $src, '$row_has_content = static function' ) );
-$check( 'By Location skips empty barns in assigned mode', false !== strpos( $src, 'if ( $assigned_only && 0 === $content_count )' ) );
-$check( 'stall row skip in assigned mode', false !== strpos( $src, 'if ( $assigned_only && ! $row_has_content( $stall_row ) )' ) );
-$check( 'rv row skip in assigned mode', false !== strpos( $src, 'if ( $assigned_only && ! $row_has_content( $rv_row ) )' ) );
+// Per-inventory split (stall_assigned_only / rv_assigned_only) since the print rework.
+$check( 'By Location skips empty barns in assigned mode', false !== strpos( $src, 'if ( $stall_assigned_only && 0 === $content_count )' ) );
+$check( 'stall row skip in assigned mode', false !== strpos( $src, 'if ( $stall_assigned_only && ! $row_has_content( $stall_row ) )' ) );
+$check( 'rv row skip in assigned mode', false !== strpos( $src, 'if ( $rv_assigned_only && ! $row_has_content( $rv_row ) )' ) );
 $check( '"Assigned only" toggle button rendered', false !== strpos( $src, 'Assigned only' ) );
 $check( '"All stalls" toggle button rendered', false !== strpos( $src, 'All stalls' ) );
 $check( 'assigned-only empty-state note rendered', false !== strpos( $src, 'pv-empty-note' ) );
@@ -47,7 +51,11 @@ if ( $admins ) { wp_set_current_user( $admins[0]->ID ); }
 $repo   = new EEM_Orders_Repository();
 $target = 0;
 $reservations = get_posts( array( 'post_type' => 'en_reservation', 'post_status' => 'publish', 'numberposts' => 50, 'fields' => 'ids' ) );
+// Reservation 5990's RV map is known-corrupt (do-not-test fixture) — its row
+// counts are nonsense and would fail the assigned<all comparison. Skip it. (0e fix.)
+$skip_fixtures = array( 5990 );
 foreach ( $reservations as $cand_id ) {
+	if ( in_array( (int) $cand_id, $skip_fixtures, true ) ) { continue; }
 	if ( '1' !== (string) get_post_meta( $cand_id, '_en_stalls_enabled', true ) ) { continue; }
 	foreach ( $repo->get_orders() as $o ) {
 		if ( (int) ( $o['reservation_id'] ?? 0 ) !== (int) $cand_id ) { continue; }
