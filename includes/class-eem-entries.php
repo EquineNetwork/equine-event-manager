@@ -142,8 +142,8 @@ class EEM_Entries {
 		// Visible list page under the Orders menu.
 		add_submenu_page(
 			'equine-event-manager-orders',
-			__( 'Entries', 'equine-event-manager' ),
-			__( 'Entries', 'equine-event-manager' ),
+			__( 'Event Entries', 'equine-event-manager' ),
+			__( 'Event Entries', 'equine-event-manager' ),
 			'manage_options',
 			self::LIST_SLUG,
 			array( __CLASS__, 'render_list' )
@@ -262,27 +262,21 @@ class EEM_Entries {
 			$left_tone = 'orange';
 		}
 		?>
-		<div class="eem-dashboard-kpi-grid eem-division-stat-grid">
-			<div class="eem-dashboard-kpi-card eem-dashboard-kpi-card--blue">
-				<div class="eem-dashboard-kpi-label"><?php esc_html_e( 'Entered', 'equine-event-manager' ); ?></div>
-				<div class="eem-dashboard-kpi-value"><?php echo esc_html( (string) $entered ); ?></div>
+		<div class="eem-stall-chart-dm-stats eem-division-stat-grid">
+			<div class="eem-scs-card">
+				<span class="eem-scs-icon" aria-hidden="true">&#10003;</span>
+				<span class="eem-scs-num"><?php echo esc_html( (string) $entered ); ?></span>
+				<span class="eem-scs-label"><?php esc_html_e( 'Entered', 'equine-event-manager' ); ?></span>
 			</div>
-			<div class="eem-dashboard-kpi-card eem-dashboard-kpi-card--green">
-				<div class="eem-dashboard-kpi-label"><?php esc_html_e( 'Spots', 'equine-event-manager' ); ?></div>
-				<div class="eem-dashboard-kpi-value"><?php echo esc_html( $spots_int > 0 ? (string) $spots_int : __( 'Unlimited', 'equine-event-manager' ) ); ?></div>
+			<div class="eem-scs-card">
+				<span class="eem-scs-icon" aria-hidden="true">&#9638;</span>
+				<span class="eem-scs-num"><?php echo esc_html( $spots_int > 0 ? (string) $spots_int : __( 'Unlimited', 'equine-event-manager' ) ); ?></span>
+				<span class="eem-scs-label"><?php esc_html_e( 'Spots', 'equine-event-manager' ); ?></span>
 			</div>
-			<div class="eem-dashboard-kpi-card eem-dashboard-kpi-card--<?php echo esc_attr( $left_tone ); ?>">
-				<div class="eem-dashboard-kpi-label"><?php esc_html_e( 'Spots Left', 'equine-event-manager' ); ?></div>
-				<div class="eem-dashboard-kpi-value"><?php echo esc_html( null === $left ? '—' : (string) $left ); ?></div>
-				<?php if ( $oversold > 0 ) : ?>
-					<div class="eem-dashboard-kpi-sub eem-dashboard-kpi-tone--down"><?php
-						echo esc_html( sprintf(
-							/* translators: %d: count oversold by. */
-							__( 'Oversold by %d', 'equine-event-manager' ),
-							$oversold
-						) );
-					?></div>
-				<?php endif; ?>
+			<div class="eem-scs-card">
+				<span class="eem-scs-icon" aria-hidden="true">&#9711;</span>
+				<span class="eem-scs-num"><?php echo esc_html( null === $left ? '—' : (string) $left ); ?></span>
+				<span class="eem-scs-label"><?php esc_html_e( 'Spots Left', 'equine-event-manager' ); ?><?php if ( $oversold > 0 ) : ?><br><span class="eem-scs-oversold"><?php echo esc_html( sprintf( /* translators: %d: count oversold by. */ __( 'Oversold by %d', 'equine-event-manager' ), $oversold ) ); ?></span><?php endif; ?></span>
 			</div>
 		</div>
 

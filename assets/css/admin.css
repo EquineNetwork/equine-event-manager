@@ -8022,11 +8022,12 @@ input.eem-event-search-input:focus {
 .eem-scd-dep { color: #b45309; }
 
 /* Stats row inside the Daily Movement bar (Stall Units / RV Lots / Orders) */
-.eem-stall-chart-dm-stats { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; padding-top: 14px; border-top: 1px solid #d9e2f2; }
+.eem-stall-chart-dm-stats { display: flex; flex-wrap: wrap; gap: 10px; }
 .eem-scs-card { flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #d9e2f2; border-radius: 6px; padding: 10px 14px; }
 .eem-scs-icon { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 6px; background: #e6eefc; color: #1668f2; font-size: 16px; line-height: 1; }
 .eem-scs-num { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; color: #031b4e; line-height: 1; }
 .eem-scs-label { font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #64748b; margin-left: 2px; }
+.eem-scs-oversold { color: #b91c1c; }
 
 .eem-stall-chart-stats-bar { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 14px; }
 .eem-stall-chart-stat-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 4px; padding: 14px 18px; }
