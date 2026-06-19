@@ -7029,6 +7029,18 @@ a.eem-reservation-editor-meta-change-link:hover {
 .eem-sched-group__hint {
 	margin: 6px 0 0;
 }
+/* Gated toggle (e.g. Early Bird requires Schedule on) — dimmed + non-interactive
+   until the required toggle is enabled. */
+.eem-toggle-label-row--disabled {
+	opacity: 0.45;
+	pointer-events: none;
+}
+/* Hint shown when a dependent toggle is blocked by its requirement. */
+.eem-requires-hint {
+	margin: 6px 0 0;
+	color: var(--eem-badge-amber-text);
+	font-style: italic;
+}
 .eem-sched-fields {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
@@ -7440,7 +7452,7 @@ input.eem-zone-price-in:focus { border-color: var(--eem-electric); box-shadow: 0
 .eem-repeat-table tbody tr { border: none; background: transparent; }
 .eem-repeat-table td { padding: 4px 8px 4px 0; vertical-align: middle; }
 .eem-repeat-table td:last-child { padding-right: 0; }
-input.eem-repeat-input { margin: 0; padding: 0 10px; height: var(--eem-select-height); box-sizing: border-box; border: 1px solid var(--eem-control-border); border-radius: var(--eem-radius-sm); font-size: 13px; font-family: inherit; color: var(--eem-text); background: #fff; width: 100%; outline: none; }
+input.eem-repeat-input { margin: 0; padding: 0 10px; height: var(--eem-select-height); min-height: var(--eem-select-height); line-height: normal; box-sizing: border-box; border: 1px solid var(--eem-control-border); border-radius: var(--eem-radius-sm); font-size: 13px; font-family: inherit; color: var(--eem-text); background: #fff; width: 100%; outline: none; }
 input.eem-repeat-input:focus { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
 .eem-repeat-price-wrap { display: flex; align-items: stretch; height: var(--eem-select-height); box-sizing: border-box; border: 1px solid var(--eem-control-border); border-radius: var(--eem-radius); overflow: hidden; background: #fff; }
 .eem-repeat-price-wrap:focus-within { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
@@ -11679,14 +11691,14 @@ a.eem-dm-view-tab.active:visited {
 }
 input.eem-pkg-name-input {
 	flex: 1 1 180px; min-width: 120px; margin: 0; padding: 0 10px;
-	height: var(--eem-select-height); box-sizing: border-box;
+	height: var(--eem-select-height); min-height: var(--eem-select-height); line-height: normal; box-sizing: border-box;
 	border: 1px solid var(--eem-control-border); border-radius: var(--eem-radius-sm);
 	font-size: 13px; font-family: inherit; color: var(--eem-text); background: #fff; outline: none;
 }
 input.eem-pkg-name-input:focus { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
 input.eem-pkg-date-input {
 	width: 150px; flex-shrink: 0; margin: 0; padding: 0 8px;
-	height: var(--eem-select-height); box-sizing: border-box;
+	height: var(--eem-select-height); min-height: var(--eem-select-height); line-height: normal; box-sizing: border-box;
 	border: 1px solid var(--eem-control-border); border-radius: var(--eem-radius-sm);
 	font-size: 13px; font-family: inherit; color: var(--eem-text); background: #fff; outline: none;
 }

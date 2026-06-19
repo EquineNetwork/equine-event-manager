@@ -66,6 +66,10 @@ if ( ! function_exists( 'eem_render_editor_toggle_label_row' ) ) {
 			'label'      => '',
 			'is_enabled' => false,
 			'controls'   => array(),
+			// Optional: subsection slug of another toggle this one depends on.
+			// When that toggle is OFF, JS disables + forces this one off
+			// (e.g. Early Bird requires the Schedule toggle to be on).
+			'requires'   => '',
 		);
 		$args = array_merge( $defaults, $args );
 		if ( '' === $args['name'] || '' === $args['subsection'] || '' === $args['label'] ) {
@@ -89,7 +93,7 @@ if ( ! function_exists( 'eem_render_editor_toggle_label_row' ) ) {
 		// now lives exclusively on the inner `.eem-toggle` via the
 		// `eem-toggle--on/--off` class.
 		?>
-		<div class="eem-toggle-label-row" data-eem-action="reservation-editor-toggle-switch-row" data-controls="<?php echo esc_attr( $controls_attr ); ?>" data-eem-subsection="<?php echo esc_attr( $args['subsection'] ); ?>">
+		<div class="eem-toggle-label-row" data-eem-action="reservation-editor-toggle-switch-row" data-controls="<?php echo esc_attr( $controls_attr ); ?>" data-eem-subsection="<?php echo esc_attr( $args['subsection'] ); ?>"<?php echo '' !== $args['requires'] ? ' data-eem-requires="' . esc_attr( $args['requires'] ) . '"' : ''; ?>>
 			<div class="eem-toggle <?php echo esc_attr( $toggle_state_class ); ?>" aria-hidden="true"></div>
 			<input type="hidden" name="en_reservation[<?php echo esc_attr( $args['name'] ); ?>]" data-eem-subsection-enabled="<?php echo esc_attr( $args['subsection'] ); ?>" value="<?php echo esc_attr( $hidden_value ); ?>" />
 			<span><?php echo esc_html( $args['label'] ); ?></span>

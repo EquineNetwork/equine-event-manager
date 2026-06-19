@@ -1784,6 +1784,17 @@ class EEM_Reservations_CPT {
 			$values['rv_schedule_enabled'] = 1;
 		}
 
+		// Early Bird pricing requires a reservation schedule window — the cutoff
+		// only makes sense inside an open→close window. Force it off when the
+		// matching schedule toggle is off (mirrors the JS gate so the rule holds
+		// even if the request bypasses the UI).
+		if ( empty( $values['stall_schedule_enabled'] ) ) {
+			$values['stall_early_bird_enabled'] = 0;
+		}
+		if ( empty( $values['rv_schedule_enabled'] ) ) {
+			$values['rv_early_bird_enabled'] = 0;
+		}
+
 		// 2.3.48 — legacy inference only; an explicitly-stored 0 (toggle turned
 		// OFF) must survive reload even though the uploaded agreement file_id
 		// persists.

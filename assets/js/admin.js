@@ -4322,6 +4322,9 @@
 		if (tlr) {
 			ev.preventDefault();
 			ev.stopPropagation();
+			// Gated toggle (e.g. Early Bird requires Schedule on): ignore clicks
+			// while disabled.
+			if (tlr.classList.contains('eem-toggle-label-row--disabled')) return;
 			var ti = tlr.querySelector('.eem-toggle');
 			if (!ti) return;
 			var turningOnT = ti.classList.contains('eem-toggle--off');
@@ -4330,9 +4333,34 @@
 			var hi = tlr.querySelector('input[type="hidden"][data-eem-subsection-enabled]');
 			if (hi) hi.value = turningOnT ? '1' : '0';
 			eemApplyControlsById(tlr);
+			eemApplyToggleDeps();
 			return;
 		}
 	});
+
+	/* Toggle dependencies (data-eem-requires): a toggle that names another
+	   toggle's subsection slug is disabled + forced off whenever that required
+	   toggle is off. Used so Early Bird can't be enabled without a reservation
+	   schedule. Shows the sibling .eem-requires-hint when blocked. */
+	function eemApplyToggleDeps() {
+		document.querySelectorAll('[data-eem-action="reservation-editor-toggle-switch-row"][data-eem-requires]').forEach(function (dep) {
+			var reqSlug = dep.getAttribute('data-eem-requires');
+			var reqRow = document.querySelector('[data-eem-action="reservation-editor-toggle-switch-row"][data-eem-subsection="' + reqSlug + '"]');
+			var reqHidden = reqRow ? reqRow.querySelector('input[type="hidden"][data-eem-subsection-enabled]') : null;
+			var reqOn = !!(reqHidden && reqHidden.value === '1');
+			dep.classList.toggle('eem-toggle-label-row--disabled', !reqOn);
+			if (!reqOn) {
+				var ti = dep.querySelector('.eem-toggle');
+				var hi = dep.querySelector('input[type="hidden"][data-eem-subsection-enabled]');
+				if (ti) { ti.classList.remove('eem-toggle--on'); ti.classList.add('eem-toggle--off'); }
+				if (hi) hi.value = '0';
+				eemApplyControlsById(dep);
+			}
+			var group = dep.closest('.eem-sched-group');
+			var hint = group ? group.querySelector('.eem-requires-hint') : null;
+			if (hint) hint.hidden = reqOn;
+		});
+	}
 
 	/* Fee-mode pill triplet — mockup line 158 .fee-modes / .fee-mode-btn */
 	function eemApplyFeeModeVisibility() {
@@ -6028,6 +6056,7 @@
 	   fee-mode visibility, cancellation override state ── */
 	document.addEventListener('DOMContentLoaded', function () {
 		document.querySelectorAll('[data-eem-action="reservation-editor-toggle-switch-row"], [data-eem-action="reservation-editor-toggle-stay-type"]').forEach(eemApplyControlsById);
+		eemApplyToggleDeps();
 		eemApplyFeeModeVisibility();
 		var ct = document.getElementById('en_cancellation_policy_override');
 		if (ct) {
