@@ -7170,6 +7170,15 @@ input.eem-zone-price-in:focus { border-color: var(--eem-electric); box-shadow: 0
 
 /* ── Repeating rows (add-ons tables — restyled to match package-row pattern) ── */
 .eem-repeat-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; margin-bottom: 10px; }
+/* CSS toggle switch (native checkbox styled as a switch) for repeatable rows —
+   e.g. Required Documents "Required at checkout". Submits natively, no JS. */
+.eem-switch { position: relative; display: inline-flex; align-items: center; cursor: pointer; }
+.eem-switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+.eem-switch-track { width: 38px; height: 22px; border-radius: 999px; background: #c3c4c7; transition: background 0.15s ease; position: relative; flex-shrink: 0; }
+.eem-switch-track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: transform 0.15s ease; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+.eem-switch input:checked + .eem-switch-track { background: #1668F2; }
+.eem-switch input:checked + .eem-switch-track::after { transform: translateX(16px); }
+.eem-switch input:focus-visible + .eem-switch-track { outline: 2px solid #1668F2; outline-offset: 2px; }
 /* Per-add-on zone pills (RV add-ons) — click-to-toggle styled checkboxes; none
    checked = all zones. Cleaner than a native multi-select (no ⌘/Ctrl-click). */
 .eem-zone-pills { display: flex; flex-wrap: wrap; gap: 5px; }

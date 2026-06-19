@@ -45,13 +45,22 @@ $rd_docs = isset( $data['required_documents'] ) && is_array( $data['required_doc
 			</tr>
 		</thead>
 		<tbody id="eem-required-docs-rows">
-			<?php foreach ( (array) $rd_docs as $idx => $doc ) :
+			<?php
+			// Always show at least one editable row so the line-item table is
+			// visible (not just the Add button) on a fresh section.
+			$rd_rows = ! empty( $rd_docs ) ? $rd_docs : array( array( 'name' => '', 'required' => 0 ) );
+			foreach ( (array) $rd_rows as $idx => $doc ) :
 				$d_name = isset( $doc['name'] ) ? (string) $doc['name'] : '';
 				$d_req  = ! empty( $doc['required'] );
 				?>
 				<tr>
 					<td><input class="eem-repeat-input" type="text" name="en_reservation[required_documents][<?php echo (int) $idx; ?>][name]" value="<?php echo esc_attr( $d_name ); ?>" placeholder="<?php esc_attr_e( 'e.g. Coggins, Health Certificate', 'equine-event-manager' ); ?>" /></td>
-					<td style="text-align:center"><input type="checkbox" class="eem-repeat-check" name="en_reservation[required_documents][<?php echo (int) $idx; ?>][required]" value="1" <?php checked( $d_req ); ?> /></td>
+					<td style="text-align:center">
+						<label class="eem-switch">
+							<input type="checkbox" name="en_reservation[required_documents][<?php echo (int) $idx; ?>][required]" value="1" <?php checked( $d_req ); ?> />
+							<span class="eem-switch-track" aria-hidden="true"></span>
+						</label>
+					</td>
 					<td><button class="eem-btn-delete" type="button" aria-label="<?php esc_attr_e( 'Delete', 'equine-event-manager' ); ?>" data-eem-action="reservation-editor-remove-repeating-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
 				</tr>
 			<?php endforeach; ?>
@@ -63,7 +72,12 @@ $rd_docs = isset( $data['required_documents'] ) && is_array( $data['required_doc
 	</button>
 	<template id="eem-required-docs-row-template"><tr>
 		<td><input class="eem-repeat-input" type="text" name="en_reservation[required_documents][__index__][name]" value="" placeholder="<?php esc_attr_e( 'e.g. Coggins, Health Certificate', 'equine-event-manager' ); ?>" /></td>
-		<td style="text-align:center"><input type="checkbox" class="eem-repeat-check" name="en_reservation[required_documents][__index__][required]" value="1" /></td>
+		<td style="text-align:center">
+			<label class="eem-switch">
+				<input type="checkbox" name="en_reservation[required_documents][__index__][required]" value="1" />
+				<span class="eem-switch-track" aria-hidden="true"></span>
+			</label>
+		</td>
 		<td><button class="eem-btn-delete" type="button" aria-label="<?php esc_attr_e( 'Delete', 'equine-event-manager' ); ?>" data-eem-action="reservation-editor-remove-repeating-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
 	</tr></template>
 </div>
