@@ -1111,17 +1111,17 @@
 	/* Size to content so a small map is a compact modal; cap tall maps at 92vh
 	   (the scroll area handles overflow). */
 	height: auto; max-height: min(92vh, 920px);
-	border-radius: 14px; display: flex; flex-direction: column; overflow: hidden;
+	border-radius: 6px; display: flex; flex-direction: column; overflow: hidden;
 	box-shadow: 0 30px 80px rgba(0,0,0,.4);
 }
 .eem-map-modal-head { display: flex; align-items: center; gap: 12px; padding: 16px 18px; border-bottom: 1px solid #e2e8f0; font-size: 17px; color: #031B4E; }
-.eem-map-close { appearance: none; border: 0; background: #eef2f7; border-radius: 8px; width: 34px; height: 34px; font-size: 18px; cursor: pointer; color: #18212f; }
+.eem-map-close { appearance: none; border: 0; background: #eef2f7; border-radius: 3px; width: 34px; height: 34px; font-size: 18px; cursor: pointer; color: #18212f; }
 .eem-map-close:hover { background: #dde5ee; color: #031B4E; } /* brand-neutral, not the theme's pink */
 /* ── Inline facility-map picker (replaces the modal) ── */
-.eem-map-inline .eem-map-pick { border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; background: #fff; margin-top: 10px; }
+.eem-map-inline .eem-map-pick { border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; background: #fff; margin-top: 10px; }
 .eem-map-inline-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
 .eem-map-inline .eem-map-tabs { padding: 0; }
-.eem-map-zoom { display: inline-flex; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; flex: none; }
+.eem-map-zoom { display: inline-flex; border: 1px solid #8c8f94; border-radius: 3px; overflow: hidden; flex: none; }
 .eem-map-zoom-btn { appearance: none; border: 0; border-left: 1px solid #e2e8f0; background: #fff; color: #031B4E; font-weight: 700; font-size: 14px; padding: 7px 12px; cursor: pointer; line-height: 1; }
 .eem-map-zoom-btn:first-child { border-left: 0; }
 /* Scope hover under .eem-event-page so the brand blue wins over the theme's
@@ -1129,7 +1129,7 @@
 .eem-event-page .eem-map-zoom-btn:hover,
 .eem-event-page .eem-map-zoom-btn:focus { background: #eef4ff; color: #1668F2; }
 .eem-map-inline .eem-map-legend { padding: 6px 0 10px; border: 0; }
-.eem-map-inline .eem-map-scroll { max-height: 460px; overflow: auto; padding: 14px; background: #fbfcfe; border: 1px solid #e2e8f0; border-radius: 10px; -webkit-overflow-scrolling: touch; min-width: 0; max-width: 100%; cursor: grab; }
+.eem-map-inline .eem-map-scroll { max-height: 460px; overflow: auto; padding: 14px; background: #fbfcfe; border: 1px solid #e2e8f0; border-radius: 6px; -webkit-overflow-scrolling: touch; min-width: 0; max-width: 100%; cursor: grab; }
 .eem-map-inline .eem-map-scroll.is-panning { cursor: grabbing; }
 .eem-map-inline .eem-map-scroll.is-panning .eem-map-stall { cursor: grabbing; }
 /* "Map zoom": zoom only resizes the chips INSIDE this capped viewport; the card
@@ -1137,13 +1137,13 @@
    the flex/grid column chain (which was stretching the card + clipping the bar). */
 .eem-map-instance, .eem-map-inline .eem-map-pick { min-width: 0; max-width: 100%; }
 .eem-map-inline .eem-map-summary { margin-top: 10px; font-size: 14px; color: #2b3648; font-weight: 600; }
-.eem-stall-assign-card { margin: 16px 0 8px; background: #EFF4FB; border: 1px solid #D9E2F2; border-radius: 8px; padding: 12px 16px; }
+.eem-stall-assign-card { margin: 16px 0 8px; background: #EFF4FB; border: 1px solid #D9E2F2; border-radius: 6px; padding: 12px 16px; }
 .eem-stall-assign-card__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .eem-stall-assign-card__head-left { display: flex; flex-direction: column; gap: 2px; }
 .eem-stall-assign-card__title { font-size: 12px; font-weight: 700; color: #031B4E; letter-spacing: 0.05em; text-transform: uppercase; }
 .eem-event-page .eem-stall-assign-card__check-label { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #031B4E; cursor: pointer; line-height: 1; white-space: nowrap; flex-shrink: 0; margin-top: 2px; }
 .eem-stall-assign-card__check-label input[type="checkbox"] { width: 16px; height: 16px; min-width: 16px; accent-color: #1668F2; cursor: pointer; margin: 0; border-radius: 3px; }
-.eem-stall-assign-card__list { display: none; margin-top: 12px; border-radius: 8px; overflow: hidden; border: 1px solid #D9E2F2; }
+.eem-stall-assign-card__list { display: none; margin-top: 12px; border-radius: 6px; overflow: hidden; border: 1px solid #D9E2F2; }
 .eem-stall-assign-card__list.is-active { display: block; }
 .eem-event-page .eem-stall-assign-row { appearance: none; display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 14px; background: #fff; border: none; border-bottom: 1px solid #eef1f6; font-size: 14px; color: #031B4E; cursor: pointer; transition: background 0.15s; }
 .eem-stall-assign-row:last-child { border-bottom: none; }
@@ -1154,7 +1154,7 @@
 .eem-stall-assign-row.is-active .eem-stall-assign-row__value { color: rgba(255,255,255,.7); }
 .eem-stall-assign-card__hint { margin: 0; font-size: 13px; color: #5f6f85; line-height: 1.3; }
 .eem-map-tabs { display: flex; gap: 4px; padding: 10px 18px 0; flex-wrap: wrap; }
-.eem-map-tab { appearance: none; border: 1px solid #e2e8f0; border-bottom: 0; background: #f6f9fd; color: #5f6f85; font-weight: 700; font-size: 13px; padding: 8px 14px; border-radius: 8px 8px 0 0; cursor: pointer; }
+.eem-map-tab { appearance: none; border: 1px solid #e2e8f0; border-bottom: 0; background: #f6f9fd; color: #5f6f85; font-weight: 700; font-size: 13px; padding: 8px 14px; border-radius: 6px 6px 0 0; cursor: pointer; }
 .eem-map-tab.active { background: #fff; color: #031B4E; box-shadow: inset 0 -2px 0 #1668F2; }
 /* Zone surcharge badge on the tab so customers see one zone costs more. */
 .eem-map-tab-surcharge { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 999px; background: #eef4ff; color: #1668F2; font-size: 11px; font-weight: 800; vertical-align: middle; }
@@ -1176,12 +1176,12 @@
 .eem-event-page .eem-map-tab { border: 1px solid #e2e8f0; border-bottom: 0; background: #f6f9fd; color: #5f6f85; font-family: inherit; font-size: 13px; }
 .eem-event-page .eem-map-tab.active { border-color: #e2e8f0; background: #fff; color: #031B4E; box-shadow: inset 0 -2px 0 #1668F2; }
 .eem-event-page .eem-map-tab-surcharge { font-family: inherit; }
-.eem-event-page .eem-map-zoom { border: 1px solid #cbd5e1; }
+.eem-event-page .eem-map-zoom { border: 1px solid #8c8f94; }
 .eem-event-page .eem-map-zoom-btn { border: 0; border-left: 1px solid #e2e8f0; background: #fff; color: #031B4E; font-family: inherit; font-size: 14px; }
 .eem-event-page .eem-map-zoom-btn:first-child { border-left: 0; }
 .eem-map-legend { display: flex; gap: 14px; flex-wrap: wrap; padding: 10px 18px; border-bottom: 1px solid #e2e8f0; font-size: 12px; color: #5f6f85; }
 .eem-map-legend span { display: inline-flex; align-items: center; gap: 6px; }
-.eem-map-sw { width: 14px; height: 14px; border-radius: 4px; border: 1px solid #cbd5e1; display: inline-block; }
+.eem-map-sw { width: 14px; height: 14px; border-radius: 3px; border: 1px solid #cbd5e1; display: inline-block; }
 .eem-map-sw--avail { background: #fff; border-color: #b9c6da; }
 .eem-map-sw--sel { background: #1668F2; border-color: #1668F2; }
 .eem-map-sw--res { background: #cbd5e1; border-color: #cbd5e1; }
@@ -1192,7 +1192,7 @@
 .eem-map-cell { width: var(--eem-map-chip, 40px); height: var(--eem-map-chip, 40px); }
 /* Label scales with the chip so multi-digit stall numbers never overflow when
    zoomed out (clamped so it stays legible at normal zoom). */
-.eem-map-stall { display: flex; align-items: center; justify-content: center; font-size: clamp(6px, calc(var(--eem-map-chip, 40px) * 0.28), 12px); font-weight: 700; border: 1px solid #b9c6da; border-radius: 5px; background: #fff; color: #031B4E; cursor: pointer; user-select: none; line-height: 1; overflow: hidden; }
+.eem-map-stall { display: flex; align-items: center; justify-content: center; font-size: clamp(6px, calc(var(--eem-map-chip, 40px) * 0.28), 12px); font-weight: 700; border: 1px solid #b9c6da; border-radius: 3px; background: #fff; color: #031B4E; cursor: pointer; user-select: none; line-height: 1; overflow: hidden; }
 .eem-map-stall:hover { background: #eaf0ff; border-color: #1668F2; }
 .eem-map-stall.is-reserved { background: #cbd5e1; border-color: #cbd5e1; color: #7c8ba0; cursor: not-allowed; }
 .eem-map-stall.is-blocked { background: repeating-linear-gradient(45deg,#9aa6b6,#9aa6b6 3px,#8593a5 3px,#8593a5 6px); border-color: #9aa6b6; color: transparent; cursor: not-allowed; }
@@ -1201,11 +1201,11 @@
    and the admin Preview look identical. */
 /* width/height:auto so a merged landmark fills its full grid span (e.g. 5x3)
    instead of being clamped to one chip by .eem-map-cell — matches the Preview. */
-.eem-map-land { display: flex; align-items: center; justify-content: center; text-align: center; width: auto; height: auto; font-size: clamp(7px, calc(var(--eem-map-chip, 40px) * 0.22), 11px); font-weight: 700; letter-spacing: .02em; color: #b45309; background: #fff7e6; border: 1px solid #fde4bf; border-radius: 5px; padding: 2px; line-height: 1.15; overflow: hidden; }
+.eem-map-land { display: flex; align-items: center; justify-content: center; text-align: center; width: auto; height: auto; font-size: clamp(7px, calc(var(--eem-map-chip, 40px) * 0.22), 11px); font-weight: 700; letter-spacing: .02em; color: #b45309; background: #fff7e6; border: 1px solid #fde4bf; border-radius: 3px; padding: 2px; line-height: 1.15; overflow: hidden; }
 .eem-map-foot { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-top: 1px solid #e2e8f0; background: #fff; font-size: 14px; }
 .eem-map-warn { color: #b93742; font-weight: 700; }
-.eem-map-btn-ghost { appearance: none; border: 0; border-radius: 8px; background: #eef2f7; color: #18212f; font-weight: 700; font-size: 14px; padding: 11px 18px; cursor: pointer; }
-.eem-map-btn-done { appearance: none; border: 0; border-radius: 8px; background: #031B4E; color: #fff; font-weight: 700; font-size: 14px; padding: 11px 18px; cursor: pointer; }
+.eem-map-btn-ghost { appearance: none; border: 0; border-radius: 3px; background: #eef2f7; color: #18212f; font-weight: 700; font-size: 14px; padding: 11px 18px; cursor: pointer; }
+.eem-map-btn-done { appearance: none; border: 0; border-radius: 3px; background: #031B4E; color: #fff; font-weight: 700; font-size: 14px; padding: 11px 18px; cursor: pointer; }
 @media (max-width: 680px) {
 	.eem-map-modal-card { width: 100vw; height: 100vh; max-height: 100vh; border-radius: 0; }
 	.eem-map-scroll { padding: 10px; }
@@ -2292,7 +2292,7 @@
 	width: 100%;
 	min-height: 42px;
 	padding: 9px 11px;
-	border: 1px solid #cbd5e1;
+	border: 1px solid #8c8f94;
 	border-radius: 3px;
 	background: #fff;
 	font: inherit;
@@ -2373,7 +2373,7 @@
 	align-items: center;
 	min-height: 42px;
 	padding: 9px 11px;
-	border: 1px solid #cbd5e1;
+	border: 1px solid #8c8f94;
 	border-radius: 3px;
 	background: #f8fafc;
 }
@@ -2393,7 +2393,7 @@
 	display: grid;
 	gap: 6px;
 	padding: 12px 14px;
-	border: 1px solid #cbd5e1;
+	border: 1px solid #8c8f94;
 	border-radius: 3px;
 	background: #f8fafc;
 }
@@ -2422,7 +2422,7 @@
 	align-items: center;
 	gap: 10px;
 	padding: 0 12px;
-	border: 1px solid #cbd5e1;
+	border: 1px solid #8c8f94;
 	border-radius: 3px;
 	background: #fff;
 }
@@ -2617,7 +2617,7 @@
 .eem-stripe-card-element {
 	min-height: 44px;
 	padding: 12px 14px;
-	border: 1px solid #cbd5e1;
+	border: 1px solid #8c8f94;
 	border-radius: 3px;
 	background: #fff;
 	cursor: text;
