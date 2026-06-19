@@ -2662,22 +2662,7 @@ class EEM_Admin {
 		?>
 				<!-- Daily Movement bar (matches the Daily Movement page overview) -->
 				<div class="eem-stall-chart-dm-bar">
-					<div class="eem-stall-chart-dm-title"><?php esc_html_e( 'Daily Movement', 'equine-event-manager' ); ?></div>
-					<div class="eem-stall-chart-dm-grid">
-						<?php if ( ! empty( $grid['movement_summary'] ) ) : ?>
-							<?php foreach ( $grid['movement_summary'] as $date_key => $movement ) : ?>
-								<div class="eem-scd-day">
-									<div class="eem-scd-date"><?php echo esc_html( isset( $date_cols[ $date_key ] ) ? $date_cols[ $date_key ] : $date_key ); ?></div>
-									<div class="eem-scd-vals">
-										<span class="eem-scd-arr"><?php echo esc_html( sprintf( /* translators: %s: arriving count */ __( '↓ %s Arriving', 'equine-event-manager' ), number_format_i18n( $movement['arriving'] ) ) ); ?></span>
-										<span class="eem-scd-dep"><?php echo esc_html( sprintf( /* translators: %s: departing count */ __( '↑ %s Departing', 'equine-event-manager' ), number_format_i18n( $movement['departing'] ) ) ); ?></span>
-									</div>
-								</div>
-							<?php endforeach; ?>
-						<?php else : ?>
-							<div class="eem-scd-day"><div class="eem-scd-date"><?php echo esc_html( $reservation_dates ? $reservation_dates : $reservation_title ); ?></div></div>
-						<?php endif; ?>
-					</div>
+					<?php // Daily Movement bar removed (Whitney 2026-06-18): the dedicated Daily Movement page owns that view; only the Total/Available stat cards remain here. ?>
 					<?php
 					$eem_avail_stalls = max( 0, $stall_count - (int) ( $grid['peak_stalls_used'] ?? 0 ) );
 					$eem_avail_rv     = max( 0, $rv_count - (int) ( $grid['peak_rv_used'] ?? 0 ) );
@@ -3937,6 +3922,16 @@ class EEM_Admin {
 			$by_barn[ $barn ][] = $row;
 		}
 
+		// Group RV rows by zone for the By Location section. RV rows carry a generic
+		// "RV Lot" block; the real zone comes from the lot→zone map. Rows with no
+		// mapped zone fall under '' (rendered with the section heading, no band).
+		$rv_zone_map = (array) ( $config['rv_zone_map'] ?? array() );
+		$by_zone     = array();
+		foreach ( (array) ( $grid['rv_rows'] ?? array() ) as $row ) {
+			$zone               = (string) ( $rv_zone_map[ $row['unit'] ] ?? '' );
+			$by_zone[ $zone ][] = $row;
+		}
+
 		// Assigned/blocked row counts — drive the assigned-only empty-state note.
 		$assigned_stall_count = 0;
 		foreach ( $grid['stall_rows'] as $row ) {
@@ -4004,6 +3999,7 @@ class EEM_Admin {
 
 			<!-- ── Event header ── -->
 			<div class="pv-header">
+				<div class="pv-report-type"><?php esc_html_e( 'Stall & RV Chart', 'equine-event-manager' ); ?></div>
 				<div class="pv-event"><?php echo esc_html( $reservation_title ); ?></div>
 				<div class="pv-meta">
 					<?php if ( $reservation_dates ) : ?>
@@ -4013,33 +4009,7 @@ class EEM_Admin {
 				</div>
 			</div>
 
-			<!-- ── Daily Movement ── -->
-			<?php if ( ! empty( $grid['movement_summary'] ) ) : ?>
-			<div class="pv-movement">
-				<div class="pv-movement-title"><?php esc_html_e( 'Daily Movement', 'equine-event-manager' ); ?></div>
-				<div class="pv-movement-grid">
-					<?php foreach ( $grid['movement_summary'] as $date_key => $movement ) : ?>
-						<div class="pv-movement-day">
-							<div class="pv-movement-date">
-								<?php echo esc_html( isset( $date_cols[ $date_key ] ) ? $date_cols[ $date_key ] : $date_key ); ?>
-							</div>
-							<div class="pv-movement-vals">
-								<span><?php echo esc_html( sprintf(
-									/* translators: %d: count of arriving customers */
-									__( '↓ %d Arriving', 'equine-event-manager' ),
-									(int) $movement['arriving']
-								) ); ?></span>
-								<span><?php echo esc_html( sprintf(
-									/* translators: %d: count of departing customers */
-									__( '↑ %d Departing', 'equine-event-manager' ),
-									(int) $movement['departing']
-								) ); ?></span>
-							</div>
-						</div>
-					<?php endforeach; ?>
-				</div>
-			</div>
-			<?php endif; ?>
+			<?php // Daily Movement removed (Whitney 2026-06-18): the dedicated Daily Movement page owns that view. ?>
 
 			<!-- ══════════════════════════════════════════════════════ -->
 			<!-- BY LOCATION                                           -->
@@ -4162,48 +4132,85 @@ class EEM_Admin {
 			<?php else : ?>
 			<div class="pv-table-wrap">
 				<table class="pv-table">
-					<thead>
-						<tr>
-							<th style="width:100px"><?php esc_html_e( 'RV Lot', 'equine-event-manager' ); ?></th>
-							<?php foreach ( $date_cols as $date_label ) : ?>
-								<th class="c"><?php echo esc_html( $date_label ); ?></th>
-							<?php endforeach; ?>
-						</tr>
-					</thead>
 					<tbody>
-						<?php foreach ( $grid['rv_rows'] as $rv_row ) : ?>
+						<?php foreach ( $by_zone as $zone_name => $zone_rows ) : ?>
 							<?php
-							// Assigned-only: drop purely-available RV lots (keep occupied + blocked).
-							if ( $rv_assigned_only && ! $row_has_content( $rv_row ) ) {
+							// Count lots with at least one occupied cell, and (for the
+							// assigned-only skip) those with any occupied OR blocked cell.
+							$occ_count     = 0;
+							$content_count = 0;
+							$total_count   = count( $zone_rows );
+							foreach ( $zone_rows as $zr ) {
+								if ( $row_has_content( $zr ) ) {
+									$content_count++;
+								}
+								foreach ( (array) ( $zr['cells'] ?? array() ) as $cell ) {
+									if ( 'occupied' === ( $cell['type'] ?? '' ) ) {
+										$occ_count++;
+										break;
+									}
+								}
+							}
+							// Assigned-only: drop zones with nothing to show.
+							if ( $rv_assigned_only && 0 === $content_count ) {
 								continue;
 							}
 							?>
-							<tr>
-								<td class="pv-stall-num"><?php echo esc_html( $rv_row['unit'] ); ?></td>
-								<?php foreach ( $date_cols as $date_key => $date_label ) : ?>
-									<?php
-									$cell      = ( $rv_row['cells'] ?? array() )[ $date_key ] ?? array( 'type' => 'available' );
-									$cell_type = $cell['type'] ?? 'available';
-									$stored    = isset( $pv_status_map[ $rv_row['unit'] ][ $date_key ] ) ? (string) $pv_status_map[ $rv_row['unit'] ][ $date_key ] : '';
-									if ( '' !== $stored ) {
-										$disp = $this->readiness_display( $stored );
-									} elseif ( 'occupied' === $cell_type ) {
-										$disp = array( 'key' => 'occupied', 'label' => __( 'Occupied', 'equine-event-manager' ) );
-									} elseif ( 'blocked' === $cell_type ) {
-										$disp = array( 'key' => 'blocked', 'label' => __( 'Blocked', 'equine-event-manager' ) );
-									} else {
-										$disp = array( 'key' => 'available', 'label' => __( 'Available', 'equine-event-manager' ) );
-									}
-									$pill_cls = 'pv-occ-' . $disp['key'];
-									// Occupied cells carry the customer NAME; other states show the word.
-									$occ_name  = ( 'occupied' === $disp['key'] && '' !== (string) ( $cell['label'] ?? '' ) ) ? self::format_customer_last_first( (string) $cell['label'] ) : '';
-									$pill_text = '' !== $occ_name ? $occ_name : $disp['label'];
-									?>
-									<td class="pv-night-cell">
-										<span class="pv-occ <?php echo esc_attr( $pill_cls ); ?>"><?php echo esc_html( $pill_text ); ?></span>
-									</td>
+							<?php if ( '' !== (string) $zone_name ) : ?>
+							<tr class="pv-barn-header">
+								<td colspan="<?php echo esc_attr( $by_loc_colspan ); ?>">
+									<?php echo esc_html( $zone_name ); ?>
+									<span class="pv-occ-count">
+										<?php echo esc_html( sprintf(
+											/* translators: 1: occupied count, 2: total lot count */
+											__( '%1$d of %2$d occupied', 'equine-event-manager' ),
+											$occ_count,
+											$total_count
+										) ); ?>
+									</span>
+								</td>
+							</tr>
+							<?php endif; ?>
+							<tr class="pv-barn-colhead">
+								<th style="width:100px"><?php esc_html_e( 'RV Lot', 'equine-event-manager' ); ?></th>
+								<?php foreach ( $date_cols as $date_label ) : ?>
+									<th class="c"><?php echo esc_html( $date_label ); ?></th>
 								<?php endforeach; ?>
 							</tr>
+							<?php foreach ( $zone_rows as $rv_row ) : ?>
+								<?php
+								// Assigned-only: drop purely-available RV lots (keep occupied + blocked).
+								if ( $rv_assigned_only && ! $row_has_content( $rv_row ) ) {
+									continue;
+								}
+								?>
+								<tr>
+									<td class="pv-stall-num"><?php echo esc_html( $rv_row['unit'] ); ?></td>
+									<?php foreach ( $date_cols as $date_key => $date_label ) : ?>
+										<?php
+										$cell      = ( $rv_row['cells'] ?? array() )[ $date_key ] ?? array( 'type' => 'available' );
+										$cell_type = $cell['type'] ?? 'available';
+										$stored    = isset( $pv_status_map[ $rv_row['unit'] ][ $date_key ] ) ? (string) $pv_status_map[ $rv_row['unit'] ][ $date_key ] : '';
+										if ( '' !== $stored ) {
+											$disp = $this->readiness_display( $stored );
+										} elseif ( 'occupied' === $cell_type ) {
+											$disp = array( 'key' => 'occupied', 'label' => __( 'Occupied', 'equine-event-manager' ) );
+										} elseif ( 'blocked' === $cell_type ) {
+											$disp = array( 'key' => 'blocked', 'label' => __( 'Blocked', 'equine-event-manager' ) );
+										} else {
+											$disp = array( 'key' => 'available', 'label' => __( 'Available', 'equine-event-manager' ) );
+										}
+										$pill_cls = 'pv-occ-' . $disp['key'];
+										// Occupied cells carry the customer NAME; other states show the word.
+										$occ_name  = ( 'occupied' === $disp['key'] && '' !== (string) ( $cell['label'] ?? '' ) ) ? self::format_customer_last_first( (string) $cell['label'] ) : '';
+										$pill_text = '' !== $occ_name ? $occ_name : $disp['label'];
+										?>
+										<td class="pv-night-cell">
+											<span class="pv-occ <?php echo esc_attr( $pill_cls ); ?>"><?php echo esc_html( $pill_text ); ?></span>
+										</td>
+									<?php endforeach; ?>
+								</tr>
+							<?php endforeach; ?>
 						<?php endforeach; ?>
 					</tbody>
 				</table>
@@ -6554,11 +6561,13 @@ class EEM_Admin {
 					$current_block = null;
 					foreach ( $rows as $row ) :
 						$block = (string) $row['block'];
-						if ( $show_secondary_column && $block !== $current_block ) :
-							$current_block = $block;
+						// Stalls group by barn ($block); RV groups by its zone (from $zone_map), so RV lots get zone divider rows too.
+							$eem_group = ( 'rv' === $kind && '' !== (string) ( $zone_map[ $row['unit'] ] ?? '' ) ) ? (string) $zone_map[ $row['unit'] ] : $block;
+							if ( ( $show_secondary_column || ( 'rv' === $kind && '' !== $eem_group ) ) && $eem_group !== $current_block ) :
+							$current_block = $eem_group; $eem_group_slug = sanitize_html_class( strtolower( $eem_group ) );
 							?>
-							<tr class="eem-chart-barn-row" data-barn="<?php echo esc_attr( sanitize_html_class( strtolower( $block ) ) ); ?>">
-								<td colspan="<?php echo esc_attr( (string) $eem_col_count ); ?>"><?php echo esc_html( $block ); ?></td>
+							<tr class="eem-chart-barn-row" data-barn="<?php echo esc_attr( $eem_group_slug ); ?>"<?php echo 'rv' === $kind ? ' data-zone="' . esc_attr( $eem_group_slug ) . '"' : ''; ?>>
+								<td colspan="<?php echo esc_attr( (string) $eem_col_count ); ?>"><?php echo esc_html( $eem_group ); ?></td>
 							</tr>
 							<?php
 						endif;

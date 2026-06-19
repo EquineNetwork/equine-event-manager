@@ -256,6 +256,7 @@ class EEM_Daily_Movement_Page {
 				a.dm-pv-btn--outline:hover{color:#1e293b;text-decoration:none}
 				.dm-pv-header{padding:22px 28px 0;max-width:1000px;margin:0 auto}
 				.dm-pv-header-inner{margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid #031B4E}
+				.dm-pv-report-type{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#1668F2;margin-bottom:4px}
 				.dm-pv-header h2{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;margin-bottom:6px}
 				.dm-pv-meta{font-size:13px;color:#4a5a7a;display:flex;gap:24px;flex-wrap:wrap}
 				.dm-pv-meta strong{color:#031B4E;font-weight:600}
@@ -290,6 +291,7 @@ class EEM_Daily_Movement_Page {
 				.dm-pv-table th{text-align:left;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#031B4E;padding:6px 10px;background:#f8fafc;border-top:1px solid #d9e2f2;border-bottom:1px solid #d9e2f2}
 				.dm-pv-table td{padding:8px 10px;border-bottom:1px solid #f1f5f9;font-size:12.5px;vertical-align:top}
 				.dm-pv-table tbody tr:last-child td{border-bottom:none}
+				.dm-pv-table tbody tr:nth-child(even) td{background:#f8fafc}
 				.dm-pv-cell-stall{font-weight:700;white-space:nowrap}
 				.dm-pv-cell-dates{white-space:nowrap;color:#475569;font-size:12px}
 				.dm-pv-cell-shavings{text-align:center}
@@ -306,7 +308,7 @@ class EEM_Daily_Movement_Page {
 				.dm-pv-status--departing::before{background:#f59e0b}
 				@media print{
 					.dm-pv-toolbar{display:none}
-					body{font-size:11px}
+					body{font-size:11px;background:#fff}
 					.dm-pv-date-heading{font-size:12px;margin:2px 0 5px}
 					.dm-pv-header h2{font-size:18px}
 					.dm-pv-table td{padding:5px 8px;font-size:11px}
@@ -341,6 +343,7 @@ class EEM_Daily_Movement_Page {
 			</div>
 			<div class="dm-pv-header">
 				<div class="dm-pv-header-inner">
+					<div class="dm-pv-report-type"><?php esc_html_e( 'Daily Movement', 'equine-event-manager' ); ?></div>
 					<h2><?php echo esc_html( $reservation_title ); ?></h2>
 					<div class="dm-pv-meta">
 						<?php if ( '' !== $date_label ) : ?>
