@@ -16,7 +16,7 @@
 **Where we left off / pick up here (in priority order):**
 - ✅ **#229 — critical error when trashing a draft reservation — DONE (2026-06-18, verified on laptop @ 2.7.467).** Could not reproduce on current code; trashing drafts (list-row Trash + editor Trash button) works clean. The "critical error" was the migration-recursion crash that took down every admin page on the stale-DB upgrade path — fixed in 2.7.467 (commit 6b7f1e8). Verified + approved by Whitney in-browser.
 - **#234 — backfill smoke coverage** for the new readiness store + print rework + move-customer flow.
-- **#235 — verify RV lot name/number split against real GEMS labels** (test on **NTR 6519**, NOT 5990).
+- ✅ **#235 — RV lot name/number split verified CORRECT (2026-06-18, on NTR 6519's real data).** The last-space split (`strrpos(' ')`, admin lines 4265 + 6805) is the exact inverse of label construction (`zone . ' ' . num`, admin:5300); `num` from `expand_label_range()` never has an internal space, so single- AND multi-word zone names plus prefixed/padded lots (Y1, A-01) all round-trip. NTR 6519: 25/25 labels correct, 0 mismatches. Only breaks on externally-sourced labels not built by this path (no-space `A12`, non-numeric tail) — not a real risk. No code change.
 
 **What this session shipped (Stall & RV Charts + Daily Movement + all Print Views):**
 - **By Location – List → readiness grid.** Per-stall-night status (`wp_eem_stall_status`):
@@ -179,9 +179,11 @@ succeeded; the last launch gate is cleared.
 0b. **Backfill smoke coverage (#234)** for the readiness store (`EEM_Stall_Status_Repo`:
     `set_cell_status` / `bulk_set_status` / `mark_order_stalls_needs_cleaning`), the print-view
     rework (SHOW/VIEW/rows variants), and the restored move-customer flow.
-0c. **Verify RV lot name/number split against real GEMS labels (#235).** The split keys on the last
-    space in the lot label (`"Zone 2 8"` → `Zone 2` / `8`); non-`name<space>number` labels could
-    split wrong. Test on **NTR 6519** (NOT 5990 — its RV map is corrupted).
+0c. ✅ **DONE (2026-06-18) — RV lot name/number split verified CORRECT on NTR 6519.** The last-space
+    split (admin 4265 + 6805) is the exact inverse of label construction (`zone . ' ' . num`,
+    admin:5300); `num` from `expand_label_range()` has no internal space, so single/multi-word zones
+    and prefixed/padded lots all round-trip. NTR 6519: 25/25 correct. Only breaks on labels NOT
+    built by this path (externally-sourced no-space / non-numeric-tail) — not a real risk. No code change.
 
 1. **Entry-aware Dashboard headline metrics.** Entry/division revenue **already flows into Total
    Revenue / Total Orders / This Week** (entries fold into the order subtotal at checkout —
