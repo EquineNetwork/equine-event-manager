@@ -188,13 +188,6 @@ class EEM_Venues_Page {
 		eem_render_page_open( array(
 			'title'      => __( 'Venues', 'equine-event-manager' ),
 			'subtitle'   => __( 'Manage the facilities where your events are held. Each venue can store facility templates for stall &amp; RV layouts.', 'equine-event-manager' ),
-			'meta'       => sprintf(
-				'<div class="eem-page-meta-links"><a href="%s">%s</a><a href="%s">%s</a></div>',
-				esc_url( admin_url( 'edit.php?post_type=en_event' ) ),
-				esc_html__( 'View Events', 'equine-event-manager' ),
-				esc_url( admin_url( 'edit.php?post_type=en_producer' ) ),
-				esc_html__( 'View Producers', 'equine-event-manager' )
-			),
 			'actions'    => sprintf(
 				'<a class="eem-btn eem-btn-electric" href="%s">+ %s</a>',
 				esc_url( admin_url( 'post-new.php?post_type=en_venue' ) ),
@@ -203,7 +196,6 @@ class EEM_Venues_Page {
 			'breadcrumb' => array( array( 'label' => __( 'Venues', 'equine-event-manager' ) ) ),
 		) );
 
-		self::render_stats( $stat_total, $stat_published, $stat_in_use, $stat_site, $stat_templates );
 		self::render_status_tabs( $status, $counts );
 		self::render_toolbar( $search, $total );
 		self::render_table( $page_rows, $orderby, $order, $status, $search );
@@ -296,11 +288,10 @@ class EEM_Venues_Page {
 			<div class="eem-list-toolbar-right">
 				<form class="eem-search-form" role="search" method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>">
 					<input type="hidden" name="page" value="<?php echo esc_attr( self::MENU_SLUG ); ?>" />
-					<span class="eem-search-wrap eem-search-wrap--attached">
+					<span class="eem-search-wrap">
 						<svg class="eem-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
 						<input class="eem-search-input" type="search" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="<?php esc_attr_e( 'Search', 'equine-event-manager' ); ?>" />
 					</span>
-					<button type="submit" class="eem-toolbar-btn eem-search-btn"><?php esc_html_e( 'Search Venues', 'equine-event-manager' ); ?></button>
 				</form>
 				<span class="eem-item-count"><?php
 					echo esc_html( sprintf(

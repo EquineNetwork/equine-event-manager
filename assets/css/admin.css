@@ -9248,7 +9248,7 @@ table.eem-export-history td { padding:11px 14px; font-size:13px; color:#1d2327; 
    .eem-pagination, .eem-mobile-card*; net-new is the toolbar + cell links +
    the disabled page button + ellipsis.
    ============================================================================ */
-.eem-customers-toolbar { padding: 14px 18px; border-bottom: 1px solid var(--eem-border-card); background: var(--eem-surface); }
+.eem-customers-toolbar { padding: 14px 18px; border-bottom: 1px solid var(--eem-border-card); background: #f0f4fb; }
 .eem-customers-toolbar .eem-search-wrap { max-width: 360px; }
 .eem-customers-table-wrap { overflow-x: auto; }
 .eem-customers-name { color: var(--eem-navy); font-weight: 700; text-decoration: none; }
@@ -10157,7 +10157,7 @@ a.eem-event-editor-card__quicklink:hover { color: #1257d1; }
 	flex-wrap: wrap;
 	padding: 16px 22px;
 	border-bottom: 1px solid var(--eem-border-card);
-	background: #f9f9fa;
+	background: #f0f4fb;
 }
 .eem-sr-selector-label {
 	font-size: 13px;
