@@ -1650,19 +1650,21 @@ select.eem-list-select:focus {
 }
 
 .eem-table thead tr {
-	border-bottom: 1px solid #dcdcde;
-	background: var(--eem-bg-alt);
+	border-bottom: 1px solid #d9e2f2;
+	background: var(--eem-gray-50, #f8fafc);
 }
 
-/* Mixed-case column headers per mockup line 72 — earlier draft of
-   this rule had text-transform:uppercase + letter-spacing + tiny
-   muted text, which didn't match the mockup spec at all (mockup is
-   normal 13px/600/#1d2327). Corrected in c4-polish-1. */
+/* House-style column headers (locked 2026-06-18, Whitney): small, uppercase,
+   navy, on the #f8fafc header row — matching the Daily Movement table + all
+   print views. This intentionally overrides the earlier c4-polish-1 mixed-case
+   mockup match; uppercase data-table headers are now the standard for every list. */
 .eem-table thead th {
 	padding: 10px 14px;
-	font-size: 13px;
+	font-size: 12px;
 	font-weight: 600;
-	color: var(--eem-text);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--eem-navy, #031B4E);
 	text-align: left;
 	white-space: nowrap;
 }
@@ -3587,7 +3589,8 @@ a.eem-status-tab.is-active {
 	align-items: center;
 	gap: 8px;
 	flex-wrap: wrap;
-	background: var(--eem-bg-alt);
+	/* Standard filter/search-bar blue across the whole plugin (locked 2026-06-18). */
+	background: #f0f4fb;
 }
 
 .eem-list-toolbar-left {
@@ -8314,8 +8317,10 @@ input.eem-group-manage-input { flex: 0 1 280px; margin: 0; padding: 7px 10px; bo
 .eem-sc-list-table thead tr { border-bottom: 1px solid var(--eem-border); background: #f8fafc; }
 .eem-sc-list-table thead th {
 	padding: 11px 14px;
-	font-size: 13px;
+	font-size: 12px;
 	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
 	color: var(--eem-navy);
 	text-align: left;
 	white-space: nowrap;
