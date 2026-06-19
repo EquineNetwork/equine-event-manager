@@ -248,8 +248,8 @@ class EEM_Customers_List_Page {
 		$first = ( $paged - 1 ) * (int) $data['per_page'] + 1;
 		$last  = min( $total, $paged * (int) $data['per_page'] );
 		?>
-		<div class="eem-pagination">
-			<div class="eem-pagination-info"><?php
+		<div class="eem-table-footer">
+			<div class="eem-table-footer-info"><?php
 				echo esc_html( sprintf(
 					/* translators: 1: first row, 2: last row, 3: total */
 					__( 'Showing %1$s–%2$s of %3$s', 'equine-event-manager' ),

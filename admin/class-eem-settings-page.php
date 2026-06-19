@@ -246,7 +246,7 @@ class EEM_Settings_Page {
 					</div>
 				</div>
 				<div class="eem-settings-save-bar">
-					<button type="submit" class="eem-btn eem-btn-primary"><?php esc_html_e( 'Save Features', 'equine-event-manager' ); ?></button>
+					<button type="submit" class="eem-btn eem-btn-electric"><?php esc_html_e( 'Save Features', 'equine-event-manager' ); ?></button>
 				</div>
 			</section>
 		</form>
@@ -328,7 +328,7 @@ class EEM_Settings_Page {
 					</p>
 				</div>
 				<div class="eem-settings-save-bar">
-					<button type="submit" class="eem-btn eem-btn-primary"><?php esc_html_e( 'Save Changes', 'equine-event-manager' ); ?></button>
+					<button type="submit" class="eem-btn eem-btn-electric"><?php esc_html_e( 'Save Changes', 'equine-event-manager' ); ?></button>
 				</div>
 			</section>
 		</form>
@@ -642,7 +642,7 @@ class EEM_Settings_Page {
 			</script>
 
 			<div class="eem-settings-save-bar">
-				<button type="submit" class="eem-btn eem-btn-primary">
+				<button type="submit" class="eem-btn eem-btn-electric">
 					<?php esc_html_e( 'Save Payment Settings', 'equine-event-manager' ); ?>
 				</button>
 			</div>
@@ -793,7 +793,7 @@ class EEM_Settings_Page {
 			</section>
 
 			<div class="eem-settings-save-bar">
-				<button type="submit" class="eem-btn eem-btn-primary">
+				<button type="submit" class="eem-btn eem-btn-electric">
 					<?php esc_html_e( 'Save Branding Settings', 'equine-event-manager' ); ?>
 				</button>
 			</div>
@@ -1067,7 +1067,7 @@ class EEM_Settings_Page {
 			</section>
 
 			<div class="eem-settings-save-bar">
-				<button type="submit" class="eem-btn eem-btn-primary">
+				<button type="submit" class="eem-btn eem-btn-electric">
 					<?php esc_html_e( 'Save Integrations Settings', 'equine-event-manager' ); ?>
 				</button>
 			</div>
@@ -1108,7 +1108,7 @@ class EEM_Settings_Page {
 			<?php $this->render_communications_policies_section( $policies ); ?>
 
 			<div class="eem-settings-save-bar">
-				<button type="submit" class="eem-btn eem-btn-primary">
+				<button type="submit" class="eem-btn eem-btn-electric">
 					<?php esc_html_e( 'Save Communications Settings', 'equine-event-manager' ); ?>
 				</button>
 			</div>
