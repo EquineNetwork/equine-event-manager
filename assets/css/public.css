@@ -1865,7 +1865,7 @@
 .eem-venue-map-card__image {
 	display: block;
 	width: 100%;
-	border-radius: 14px;
+	border-radius: 6px;
 	border: 1px solid #dbe4f0;
 }
 .eem-reservation-form {
@@ -1894,7 +1894,23 @@
 .eem-reservation-section__title {
 	margin: 0;
 	min-width: 0;
+	display: flex;
+	align-items: center;
+	gap: 10px;
 }
+/* Bright-blue icon chip in each section header (mirrors admin section chips). */
+.eem-reservation-section__icon {
+	flex: 0 0 auto;
+	width: 32px;
+	height: 32px;
+	border-radius: 6px;
+	background: #e6eefc;
+	color: #1668F2;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+.eem-reservation-section__icon svg { width: 18px; height: 18px; }
 .eem-reservation-section-heading {
 	display: flex;
 	justify-content: space-between;
@@ -1941,6 +1957,9 @@
 	max-width: none !important;
 	width: auto !important;
 	transform: none !important;
+	display: flex !important;
+	align-items: center !important;
+	gap: 10px !important;
 }
 .eem-event-page .eem-reservation-section-heading,
 .eem-event-page .eem-reservation-section-heading--collapsible,
@@ -1984,7 +2003,7 @@
 	gap: 18px;
 	padding: 16px 18px;
 	border: 1px solid #dbe4f0;
-	border-radius: 16px;
+	border-radius: 6px;
 	background: #f8fbff;
 }
 .eem-group-reservation-toggle__copy {
@@ -2053,7 +2072,7 @@
 	padding: 10px 14px;
 	margin-bottom: 12px;
 	border: 1px solid #cbd5e1;
-	border-radius: 10px;
+	border-radius: 6px;
 	background: #f6f9fd;
 	cursor: pointer;
 	font-weight: 700;
@@ -2078,7 +2097,7 @@
 	gap: 12px;
 	padding: 16px 18px;
 	border: 1px solid #dbe4f0;
-	border-radius: 16px;
+	border-radius: 6px;
 	background: #ffffff;
 }
 .eem-group-rider-card h4 {
@@ -2110,7 +2129,7 @@
 	align-items: center;
 	width: 44px;
 	height: 24px;
-	border-radius: 8px;
+	border-radius: 6px;
 	background: #D9E2F2;
 	transition: background 0.2s ease;
 }
@@ -2355,7 +2374,7 @@
 	min-height: 42px;
 	padding: 9px 11px;
 	border: 1px solid #cbd5e1;
-	border-radius: 4px;
+	border-radius: 3px;
 	background: #f8fafc;
 }
 .eem-stay-night-field strong {
@@ -2375,7 +2394,7 @@
 	gap: 6px;
 	padding: 12px 14px;
 	border: 1px solid #cbd5e1;
-	border-radius: 4px;
+	border-radius: 3px;
 	background: #f8fafc;
 }
 .eem-weekend-package-field span {
@@ -2404,7 +2423,7 @@
 	gap: 10px;
 	padding: 0 12px;
 	border: 1px solid #cbd5e1;
-	border-radius: 4px;
+	border-radius: 3px;
 	background: #fff;
 }
 .eem-phone-field__flag {
@@ -2479,7 +2498,7 @@
 	width: 100%;
 	max-width: none;
 	border: 1px solid #e2e8f0;
-	border-radius: 4px;
+	border-radius: 3px;
 	overflow: hidden;
 	background: #fff;
 }
@@ -2534,14 +2553,14 @@
 	gap: 12px;
 	padding: 20px;
 	border: 1px solid #dbe4f0;
-	border-radius: 16px;
+	border-radius: 6px;
 	background: #f8fafc;
 }
 .eem-venue-agreement-card {
 	margin-top: 14px;
 	padding: 18px 20px;
 	border: 1px solid #f5cf69;
-	border-radius: 14px;
+	border-radius: 6px;
 	background: #fff8e1;
 	color: #5f4b16;
 }
@@ -2599,7 +2618,7 @@
 	min-height: 44px;
 	padding: 12px 14px;
 	border: 1px solid #cbd5e1;
-	border-radius: 4px;
+	border-radius: 3px;
 	background: #fff;
 	cursor: text;
 }
@@ -2701,7 +2720,7 @@
 	padding: .875rem 1rem;
 	border: 1px solid #dfe7f0;
 	border-left: 4px solid #8ca3bb;
-	border-radius: 8px;
+	border-radius: 6px;
 	background: #ffffff;
 	color: #334155;
 	box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
@@ -2740,7 +2759,7 @@
 	.eem-venue-map-card,
 	.eem-invoice-mode-card {
 		padding: 20px;
-		border-radius: 20px;
+		border-radius: 6px;
 	}
 	.eem-event-details-card__facts {
 		gap: 12px 18px;
@@ -2840,17 +2859,17 @@
 	}
 	.eem-reservation-event-media-card {
 		padding: 16px;
-		border-radius: 18px;
+		border-radius: 6px;
 	}
 	.eem-reservation-event-media-card__visual {
 		min-height: 280px;
-		border-radius: 16px;
+		border-radius: 6px;
 	}
 	.eem-event-details-card,
 	.eem-venue-map-card {
 		margin-bottom: 18px;
 		padding: 18px 16px;
-		border-radius: 18px;
+		border-radius: 6px;
 	}
 	.eem-reservation-form-wrap .eem-event-details-card__title {
 		font-size: 24px !important;
@@ -2869,7 +2888,7 @@
 	.eem-group-reservation-toggle,
 	.eem-group-rider-card,
 	.eem-invoice-mode-card {
-		border-radius: 18px;
+		border-radius: 6px;
 	}
 	.eem-reservation-form {
 		gap: 18px;
@@ -2900,13 +2919,13 @@
 	.eem-stay-night-field__value,
 	.eem-weekend-package-field {
 		min-height: 48px;
-		border-radius: 12px;
+		border-radius: 6px;
 	}
 	.eem-reservation-form textarea {
 		min-height: 132px;
 	}
 	.eem-payment-summary {
-		border-radius: 14px;
+		border-radius: 6px;
 	}
 	.eem-payment-summary-row {
 		flex-direction: column;
@@ -2962,7 +2981,7 @@
 	.eem-group-reservation-toggle,
 	.eem-group-rider-card {
 		padding: 18px 16px;
-		border-radius: 20px;
+		border-radius: 6px;
 	}
 	.eem-reservation-grid,
 	.eem-reservation-grid--two,
@@ -3012,7 +3031,7 @@
 	.eem-group-reservation-toggle,
 	.eem-group-rider-card,
 	.eem-payment-sidebar__inner {
-		border-radius: 22px;
+		border-radius: 6px;
 		box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
 	}
 	.eem-reservation-section {
@@ -3046,7 +3065,7 @@
 	.eem-stripe-card-element,
 	.eem-stay-night-field__value,
 	.eem-weekend-package-field {
-		border-radius: 14px;
+		border-radius: 6px;
 	}
 	.eem-reservation-form-wrap .eem-event-details-card__title {
 		font-size: 22px !important;
@@ -3084,7 +3103,7 @@
 	}
 	.eem-reservation-event-media-card {
 		padding: 14px;
-		border-radius: 16px;
+		border-radius: 6px;
 	}
 	.eem-event-details-card,
 	.eem-venue-map-card,
@@ -3093,7 +3112,7 @@
 	.eem-group-rider-card,
 	.eem-payment-sidebar__inner {
 		padding: 16px 14px;
-		border-radius: 20px;
+		border-radius: 6px;
 	}
 	.eem-event-details-card__eyebrow,
 	.eem-payment-summary-row,
@@ -3133,7 +3152,7 @@
 	.eem-group-reservation-toggle,
 	.eem-group-rider-card,
 	.eem-payment-sidebar__inner {
-		border-radius: 22px;
+		border-radius: 6px;
 	}
 	.eem-reservation-form input,
 	.eem-reservation-form select,
@@ -3150,10 +3169,10 @@
 	}
 	.eem-reservation-submit,
 	.eem-reservation-submit--secondary {
-		border-radius: 16px;
+		border-radius: 6px;
 	}
 	.eem-payment-summary {
-		border-radius: 18px;
+		border-radius: 6px;
 	}
 }
 @media (max-width: 600px) {
@@ -3167,7 +3186,7 @@
 	.eem-group-rider-card,
 	.eem-payment-sidebar__inner {
 		padding: 16px 14px;
-		border-radius: 20px;
+		border-radius: 6px;
 	}
 	.eem-reservation-form {
 		gap: 18px;
@@ -3334,7 +3353,7 @@
 	.eem-payment-checkout-block,
 	.eem-payment-card-field-wrap {
 		padding: 14px 12px !important;
-		border-radius: 16px !important;
+		border-radius: 6px !important;
 	}
 	.eem-reservation-form {
 		gap: 16px;
@@ -3357,7 +3376,7 @@
 	.eem-invoice-mode-actions .eem-inline-toggle-control,
 	.eem-invoice-mode-actions [data-eem-invoice-action] {
 		min-height: 48px !important;
-		border-radius: 12px !important;
+		border-radius: 6px !important;
 		font-size: 16px !important;
 	}
 	.eem-reservation-form textarea {
@@ -3402,7 +3421,7 @@
 .eem-invoice-mode-card,
 .eem-payment-sidebar__inner {
 	border: 1px solid var(--eem-app-border);
-	border-radius: 24px;
+	border-radius: 6px;
 	background: var(--eem-app-surface);
 	box-shadow: var(--eem-app-shadow);
 }
@@ -3410,7 +3429,7 @@
 	gap: 12px;
 	padding: 18px 16px;
 	border: 1px solid var(--eem-app-border);
-	border-radius: 22px;
+	border-radius: 6px;
 	background: #ffffff;
 	box-shadow: var(--eem-app-shadow-soft);
 }
@@ -3459,7 +3478,7 @@
 .eem-reservation-submit,
 .eem-reservation-submit--secondary {
 	min-height: 50px;
-	border-radius: 14px;
+	border-radius: 6px;
 }
 .eem-reservation-submit,
 .eem-reservation-submit--secondary,
@@ -3468,7 +3487,7 @@
 	width: 100%;
 }
 .eem-payment-summary {
-	border-radius: 18px;
+	border-radius: 6px;
 }
 .eem-payment-summary-row {
 	flex-direction: column;
@@ -3673,7 +3692,7 @@
 .eem-reservation-section--payment .eem-payment-card-field-wrap {
 	padding: 16px;
 	border: 1px solid #D9E2F2;
-	border-radius: 8px;
+	border-radius: 6px;
 	background: #FAFBFE;
 }
 .eem-reservation-section--payment .eem-payment-card-field-wrap {
@@ -3907,7 +3926,7 @@
 .eem-event-page .hero-img-col img {
 	width: 100%;
 	height: auto;
-	border-radius: 8px;
+	border-radius: 6px;
 	max-width: 360px;
 	display: block;
 }
@@ -3915,7 +3934,7 @@
 	width: 100%;
 	max-width: 360px;
 	aspect-ratio: 480 / 620;
-	border-radius: 12px;
+	border-radius: 6px;
 	background: #E8EEF9;
 	display: flex;
 	align-items: center;
@@ -3940,7 +3959,7 @@
 }
 .eem-event-page .tag {
 	padding: 4px 11px;
-	border-radius: 20px;
+	border-radius: 6px;
 	font-size: 11px;
 	font-weight: 600;
 	letter-spacing: .07em;
@@ -4026,7 +4045,7 @@
 	background: #1668F2;
 	color: #fff;
 	padding: 12px 26px;
-	border-radius: 8px;
+	border-radius: 6px;
 	font-size: 14px;
 	font-weight: 700;
 	cursor: pointer;
@@ -4040,7 +4059,7 @@
 	color: #031B4E;
 	border: 1.5px solid #D9E2F2;
 	padding: 11px 20px;
-	border-radius: 8px;
+	border-radius: 6px;
 	font-size: 14px;
 	font-weight: 500;
 	cursor: pointer;
@@ -4177,7 +4196,7 @@
 	color: #fff;
 	border: none;
 	padding: 13px 24px;
-	border-radius: 8px;
+	border-radius: 6px;
 	font-size: 14px;
 	font-weight: 700;
 	cursor: pointer;
@@ -4244,7 +4263,7 @@
 .eem-event-page .agreement-notice {
 	background: #FFFBEB;
 	border: 1px solid #fbbf24;
-	border-radius: 8px;
+	border-radius: 6px;
 }
 /* 2.3.58 — the Venue Agreement link must be Electric Blue (mockup line 273),
    not the host theme's default link color. Scoped to win over theme <a> rules. */
@@ -4279,7 +4298,7 @@
    target so it wins. */
 .eem-event-page .eem-phone-field {
 	border: 1.5px solid #D9E2F2;
-	border-radius: 8px;
+	border-radius: 6px;
 	padding: 0 13px;
 	min-height: 44px;
 	background: #fff;
@@ -4318,7 +4337,7 @@
 	display: block;
 	background: #fff;
 	border: 1px solid #D9E2F2;
-	border-radius: 8px;
+	border-radius: 6px;
 	margin-bottom: 16px;
 	padding: 0;
 	overflow: hidden;
@@ -4393,7 +4412,7 @@
 	min-height: 44px;
 	padding: 10px 13px;
 	border: 1.5px solid #D9E2F2;
-	border-radius: 8px;
+	border-radius: 6px;
 	font-size: 14px;
 	color: #031B4E;
 }
@@ -4419,7 +4438,7 @@
 	box-sizing: border-box;
 	padding: 10px 13px;
 	border: 1.5px solid #D9E2F2;
-	border-radius: 8px;
+	border-radius: 6px;
 	background: #FAFBFE;
 }
 
@@ -4465,7 +4484,7 @@
    __sticky to .order-card so the navy header band sits flush to the edges. */
 .eem-event-page .eem-reservation-summary-card.order-card {
 	border: 1px solid #D9E2F2;
-	border-radius: 8px;
+	border-radius: 6px;
 	overflow: hidden;
 	background: #fff;
 }
@@ -4539,7 +4558,7 @@
 	gap: 7px;
 	background: #EEF7F5;
 	border: 1px solid #b3e4da;
-	border-radius: 8px;
+	border-radius: 6px;
 	padding: 9px 12px;
 	font-size: 12px;
 	color: #0a5c4a;
@@ -4559,7 +4578,7 @@
 	color: #fff;
 	border: 0;
 	padding: 12px;
-	border-radius: 8px;
+	border-radius: 6px;
 	font-size: 14px;
 	font-weight: 700;
 	cursor: pointer;
@@ -4650,7 +4669,7 @@
 	width: 100%;
 	padding: 15px;
 	border: 0;
-	border-radius: 8px;
+	border-radius: 6px;
 	background: #031B4E;
 	color: #fff;
 	font-size: 15px;
@@ -4715,7 +4734,7 @@
 	margin-top: 14px;
 	padding: 14px 16px;
 	border: 1px solid #D9E2F2;
-	border-radius: 8px;
+	border-radius: 6px;
 	background: #fff;
 }
 .eem-event-page .eem-cancellation-policy__title {
@@ -4746,7 +4765,7 @@
 .eem-event-page .eem-group-rider-card {
 	background: #FAFBFE;
 	border: 1px solid #D9E2F2;
-	border-radius: 8px;
+	border-radius: 6px;
 	padding: 14px 16px;
 }
 .eem-event-page .eem-group-rider-card h4 {
@@ -4890,7 +4909,7 @@ a.eem-event-list-row__btn--results:focus {
 	background: #f0f0f1;
 	color: #6B7A99;
 	padding: 2px 7px;
-	border-radius: 10px;
+	border-radius: 6px;
 }
 .eem-sr-public-tab.is-active .eem-sr-public-tab-count { background: #EEF4FF; color: #1668F2; }
 
@@ -4941,7 +4960,7 @@ a.eem-event-list-row__btn--results:focus {
 	color: #8c8f94;
 	background: #f3f4f5;
 	padding: 3px 9px;
-	border-radius: 10px;
+	border-radius: 6px;
 	white-space: nowrap;
 }
 .eem-sr-pub-empty {
@@ -4963,7 +4982,7 @@ a.eem-event-list-row__btn--results:focus {
 .eem-event-card {
 	background: #fff;
 	border: 1px solid #e5e7eb;
-	border-radius: 8px;
+	border-radius: 6px;
 	overflow: hidden;
 	display: flex;
 	flex-direction: column;
@@ -5069,7 +5088,7 @@ a.eem-event-list-row__btn--results:focus {
 	gap: 8px;
 	padding: 14px 16px;
 	border: 1px solid #dbe4f0;
-	border-radius: 12px;
+	border-radius: 6px;
 	background: #f8fbff;
 }
 .eem-required-doc-row.is-uploaded {
@@ -5123,7 +5142,7 @@ a.eem-event-list-row__btn--results:focus {
 	align-items: center;
 	padding: 8px 16px;
 	border: 1px solid #1668F2;
-	border-radius: 8px;
+	border-radius: 6px;
 	color: #1668F2;
 	font-weight: 600;
 	font-size: 14px;

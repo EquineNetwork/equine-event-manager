@@ -515,7 +515,7 @@ class EEM_Shortcodes {
 					<div class="eem-reservation-workspace page-body">
 						<div class="eem-reservation-workspace__main form-col">
 					<div class="eem-reservation-section">
-						<h4 class="eem-reservation-section__title"><?php esc_html_e( 'Contact Information', 'equine-event-manager' ); ?></h4>
+						<h4 class="eem-reservation-section__title"><span class="eem-reservation-section__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span><?php esc_html_e( 'Contact Information', 'equine-event-manager' ); ?></h4>
 						<div class="eem-reservation-grid eem-reservation-grid--two">
 							<label>
 								<span><?php esc_html_e( 'First Name', 'equine-event-manager' ); ?> <strong>*</strong></span>
@@ -563,7 +563,7 @@ class EEM_Shortcodes {
 
 					<?php if ( $data['stalls_enabled'] || $data['rv_enabled'] ) : ?>
 						<div class="eem-reservation-section eem-reservation-section--instructions">
-							<h4 class="eem-reservation-section__title"><?php esc_html_e( 'Stay Details', 'equine-event-manager' ); ?></h4>
+							<h4 class="eem-reservation-section__title"><span class="eem-reservation-section__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span><?php esc_html_e( 'Stay Details', 'equine-event-manager' ); ?></h4>
 							<?php if ( $reservation_description ) : ?>
 								<p class="eem-reservation-help"><?php echo esc_html( $reservation_description ); ?></p>
 							<?php endif; ?>
@@ -652,7 +652,7 @@ class EEM_Shortcodes {
 					<?php if ( $data['stalls_enabled'] ) : ?>
 						<div class="eem-reservation-section" data-eem-section="stall">
 							<div class="eem-reservation-section-heading eem-reservation-section-heading--collapsible">
-								<h4 class="eem-reservation-section__title"><?php esc_html_e( 'Stall Reservations', 'equine-event-manager' ); ?></h4>
+								<h4 class="eem-reservation-section__title"><span class="eem-reservation-section__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg></span><?php esc_html_e( 'Stall Reservations', 'equine-event-manager' ); ?></h4>
 								<label class="eem-reservation-section-toggle" aria-label="<?php esc_attr_e( 'Toggle Stall Reservations section', 'equine-event-manager' ); ?>">
 									<input type="checkbox" checked data-eem-section-collapse-toggle />
 									<span class="eem-reservation-section-toggle__track" aria-hidden="true"></span>
@@ -766,7 +766,7 @@ class EEM_Shortcodes {
 					<?php if ( $data['rv_enabled'] ) : ?>
 						<div class="eem-reservation-section" data-eem-section="rv">
 							<div class="eem-reservation-section-heading eem-reservation-section-heading--collapsible">
-								<h4 class="eem-reservation-section__title"><?php esc_html_e( 'RV Reservations', 'equine-event-manager' ); ?></h4>
+								<h4 class="eem-reservation-section__title"><span class="eem-reservation-section__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="1" y="6" width="15" height="12" rx="2"/><path d="M16 9h4l3 3v6h-7"/><circle cx="6" cy="20" r="2"/><circle cx="18" cy="20" r="2"/></svg></span><?php esc_html_e( 'RV Reservations', 'equine-event-manager' ); ?></h4>
 								<label class="eem-reservation-section-toggle" aria-label="<?php esc_attr_e( 'Toggle RV Reservations section', 'equine-event-manager' ); ?>">
 									<input type="checkbox" checked data-eem-section-collapse-toggle />
 									<span class="eem-reservation-section-toggle__track" aria-hidden="true"></span>
@@ -1004,7 +1004,7 @@ class EEM_Shortcodes {
 					<?php if ( ! empty( $general_addon_options ) ) : ?>
 						<div class="eem-reservation-section" data-eem-section="addons">
 							<div class="eem-reservation-section-heading eem-reservation-section-heading--collapsible">
-								<h4 class="eem-reservation-section__title"><?php esc_html_e( 'Add-Ons', 'equine-event-manager' ); ?></h4>
+								<h4 class="eem-reservation-section__title"><span class="eem-reservation-section__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span><?php esc_html_e( 'Add-Ons', 'equine-event-manager' ); ?></h4>
 								<label class="eem-reservation-section-toggle" aria-label="<?php esc_attr_e( 'Toggle Add-Ons section', 'equine-event-manager' ); ?>">
 									<input type="checkbox" checked data-eem-section-collapse-toggle />
 									<span class="eem-reservation-section-toggle__track" aria-hidden="true"></span>
@@ -1043,7 +1043,7 @@ class EEM_Shortcodes {
 					<?php if ( ! empty( $pre_entry_options ) ) : ?>
 						<div class="eem-reservation-section" data-eem-section="pre-entries">
 							<div class="eem-reservation-section-heading eem-reservation-section-heading--collapsible">
-								<h4 class="eem-reservation-section__title"><?php esc_html_e( 'Event Pre-Entries', 'equine-event-manager' ); ?></h4>
+								<h4 class="eem-reservation-section__title"><span class="eem-reservation-section__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z"/><path d="M13 6v12"/></svg></span><?php esc_html_e( 'Event Pre-Entries', 'equine-event-manager' ); ?></h4>
 								<label class="eem-reservation-section-toggle" aria-label="<?php esc_attr_e( 'Toggle Event Pre-Entries section', 'equine-event-manager' ); ?>">
 									<input type="checkbox" checked data-eem-section-collapse-toggle />
 									<span class="eem-reservation-section-toggle__track" aria-hidden="true"></span>
@@ -1099,7 +1099,7 @@ class EEM_Shortcodes {
 					<?php if ( $group_reservations_enabled ) : ?>
 						<div class="eem-reservation-section eem-reservation-section--group-reservation" data-eem-section="group">
 							<div class="eem-reservation-section-heading eem-reservation-section-heading--collapsible">
-								<h4 class="eem-reservation-section__title"><?php esc_html_e( 'Group Reservation', 'equine-event-manager' ); ?></h4>
+								<h4 class="eem-reservation-section__title"><span class="eem-reservation-section__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><?php esc_html_e( 'Group Reservation', 'equine-event-manager' ); ?></h4>
 								<label class="eem-reservation-section-toggle" aria-label="<?php esc_attr_e( 'Turn on group reservation', 'equine-event-manager' ); ?>">
 									<?php // Enabled in the editor → ON by default on the front so customers
 									// don't miss it. The customer can switch it off if they aren't a group. ?>
@@ -1192,7 +1192,7 @@ class EEM_Shortcodes {
 							data-reservation-id="<?php echo esc_attr( (int) $reservation_id ); ?>"
 							data-nonce="<?php echo esc_attr( $eem_doc_nonce ); ?>">
 							<input type="hidden" name="required_documents_session" value="<?php echo esc_attr( $eem_doc_session ); ?>" />
-							<h4 class="eem-reservation-section__title"><?php esc_html_e( 'Required Documents', 'equine-event-manager' ); ?></h4>
+							<h4 class="eem-reservation-section__title"><span class="eem-reservation-section__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></span><?php esc_html_e( 'Required Documents', 'equine-event-manager' ); ?></h4>
 							<?php if ( '' !== $eem_doc_desc ) : ?>
 								<small class="eem-reservation-help"><?php echo esc_html( $eem_doc_desc ); ?></small>
 							<?php endif; ?>
@@ -1289,7 +1289,7 @@ class EEM_Shortcodes {
 						<?php // 2.3.66 — title is a direct child of the section so it gets the
 						// standard header band (uppercase + bottom border) like every other
 						// card; the description + textarea live in the body label below. ?>
-						<h4 class="eem-reservation-section__title"><?php esc_html_e( 'Special Requests', 'equine-event-manager' ); ?></h4>
+						<h4 class="eem-reservation-section__title"><span class="eem-reservation-section__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><?php esc_html_e( 'Special Requests', 'equine-event-manager' ); ?></h4>
 						<label class="eem-special-requests-field">
 							<?php if ( $special_requests_description ) : ?>
 								<small class="eem-reservation-help"><?php echo esc_html( $special_requests_description ); ?></small>
@@ -1319,7 +1319,7 @@ class EEM_Shortcodes {
 								</div>
 							</div>
 						<?php endif; ?>
-						<h4 class="eem-reservation-section__title"<?php echo $is_admin_invoice ? ' data-eem-invoice-billing-block hidden style="display:none;"' : ''; ?>><?php esc_html_e( 'Billing & Payment', 'equine-event-manager' ); ?></h4>
+						<h4 class="eem-reservation-section__title"<?php echo $is_admin_invoice ? ' data-eem-invoice-billing-block hidden style="display:none;"' : ''; ?>><span class="eem-reservation-section__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg></span><?php esc_html_e( 'Billing & Payment', 'equine-event-manager' ); ?></h4>
 								<div class="eem-payment-checkout-block<?php echo $is_admin_invoice ? ' eem-payment-checkout-block--admin-invoice' : ''; ?>"<?php echo $is_admin_invoice ? ' data-eem-invoice-billing-block hidden style="display:none;"' : ''; ?>>
 							<h4 class="eem-checkout-subsection-title"><?php esc_html_e( 'Billing Details', 'equine-event-manager' ); ?></h4>
 							<div class="eem-reservation-grid eem-reservation-grid--two">
