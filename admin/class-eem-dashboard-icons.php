@@ -103,6 +103,9 @@ class EEM_Dashboard_Icons {
 			'truck' => '<rect x="1" y="6" width="15" height="12" rx="2"/><path d="M16 9h4l3 3v6h-7"/><circle cx="6" cy="20" r="2"/><circle cx="18" cy="20" r="2"/>',
 			// Agreement (mockup line 1059) — file with single line (variant of file-text).
 			'file' => '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/>',
+			// Required Documents — paperclip (customers attach/upload files).
+			// Distinct from Agreement's plain 'file' glyph (Whitney 2026-06-19).
+			'paperclip' => '<path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>',
 			// Cancellation Policy (mockup line 1097) — shield with X.
 			'shield-x' => '<path d="M12 22s-8-4.5-8-11.8A8 8 0 0112 2a8 8 0 018 8.2c0 7.3-8 11.8-8 11.8z"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/>',
 

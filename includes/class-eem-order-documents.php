@@ -255,6 +255,119 @@ class EEM_Order_Documents {
 		add_action( 'wp_ajax_nopriv_eem_upload_required_doc', array( __CLASS__, 'ajax_upload' ) );
 		add_action( 'wp_ajax_eem_download_required_doc', array( __CLASS__, 'ajax_download' ) );
 		add_action( 'wp_ajax_nopriv_eem_download_required_doc', array( __CLASS__, 'ajax_download' ) );
+		// Pre-order staging (customer uploads on the reservation form before an
+		// order exists; files are re-keyed onto the order at creation).
+		add_action( 'wp_ajax_eem_stage_required_doc', array( __CLASS__, 'ajax_stage' ) );
+		add_action( 'wp_ajax_nopriv_eem_stage_required_doc', array( __CLASS__, 'ajax_stage' ) );
+	}
+
+	/**
+	 * Build the storage key used for documents staged before an order exists.
+	 * The token is a per-form-render random string carried in a hidden field;
+	 * on order creation reassign_pending() rewrites these rows to the order_key.
+	 *
+	 * @param string $token Per-render session token.
+	 * @return string Pending key, or '' when the token is invalid.
+	 */
+	public static function pending_key( string $token ): string {
+		$token = preg_replace( '/[^A-Za-z0-9]/', '', $token );
+		return '' !== $token ? 'pending:' . $token : '';
+	}
+
+	/**
+	 * The list of requirement names a reservation defines (non-empty names only).
+	 *
+	 * @param int $reservation_id Reservation post ID.
+	 * @return array<int,string>
+	 */
+	public static function requirement_names( int $reservation_id ): array {
+		$names = array();
+		if ( $reservation_id > 0 && class_exists( 'EEM_Reservation_Config' ) ) {
+			$docs = (array) EEM_Reservation_Config::for( $reservation_id )->get( 'required_documents', array() );
+			foreach ( $docs as $d ) {
+				if ( is_array( $d ) && '' !== trim( (string) ( $d['name'] ?? '' ) ) ) {
+					$names[] = (string) $d['name'];
+				}
+			}
+		}
+		return $names;
+	}
+
+	/**
+	 * Re-key every staged document for $token onto the real $order_key once the
+	 * order has been created. Skips any pair that already has a real upload
+	 * (ON DUPLICATE would otherwise be needed; we delete the staged dupe instead).
+	 *
+	 * @param string $token     Per-render session token from the form.
+	 * @param string $order_key Newly created order's bearer key.
+	 * @return int Number of rows moved onto the order.
+	 */
+	public static function reassign_pending( string $token, string $order_key ): int {
+		$pending = self::pending_key( $token );
+		$order_key = sanitize_text_field( $order_key );
+		if ( '' === $pending || '' === $order_key ) {
+			return 0;
+		}
+		global $wpdb;
+		$table = $wpdb->prefix . 'eem_order_documents';
+
+		// Drop any staged rows whose (order_key, requirement) target already
+		// exists for the real order, so the UPDATE can't trip the UNIQUE key.
+		$existing = self::get_for_order( $order_key );
+		if ( $existing ) {
+			$dir = self::storage_dir();
+			foreach ( array_keys( $existing ) as $req ) {
+				$staged = self::get( $pending, (string) $req );
+				if ( $staged ) {
+					if ( '' !== $dir && ! empty( $staged['file_name'] ) && is_file( $dir . $staged['file_name'] ) ) {
+						wp_delete_file( $dir . $staged['file_name'] );
+					}
+					$wpdb->delete( $table, array( 'order_key' => $pending, 'requirement' => (string) $req ), array( '%s', '%s' ) ); // phpcs:ignore WordPress.DB
+				}
+			}
+		}
+
+		return (int) $wpdb->query( $wpdb->prepare( // phpcs:ignore WordPress.DB
+			"UPDATE {$table} SET order_key = %s WHERE order_key = %s",
+			$order_key,
+			$pending
+		) );
+	}
+
+	/**
+	 * AJAX: stage an uploaded required document before the order exists. Expects
+	 * reservation_id, session (token), requirement, nonce (eem_stage_required_doc),
+	 * and $_FILES['file']. Authorized by the reservation actually defining the
+	 * requirement (no order/login required — this is the public checkout form).
+	 *
+	 * @return void
+	 */
+	public static function ajax_stage(): void {
+		check_ajax_referer( 'eem_stage_required_doc', 'nonce' );
+		$reservation_id = isset( $_POST['reservation_id'] ) ? absint( wp_unslash( $_POST['reservation_id'] ) ) : 0;
+		$token          = isset( $_POST['session'] ) ? sanitize_text_field( wp_unslash( $_POST['session'] ) ) : '';
+		$requirement    = isset( $_POST['requirement'] ) ? sanitize_text_field( wp_unslash( $_POST['requirement'] ) ) : '';
+		$pending        = self::pending_key( $token );
+
+		if ( '' === $pending ) {
+			wp_send_json_error( array( 'message' => __( 'Missing upload session.', 'equine-event-manager' ) ), 400 );
+		}
+		if ( ! in_array( $requirement, self::requirement_names( $reservation_id ), true ) ) {
+			wp_send_json_error( array( 'message' => __( 'Unknown document requirement.', 'equine-event-manager' ) ), 400 );
+		}
+		if ( empty( $_FILES['file'] ) || ! is_array( $_FILES['file'] ) ) {
+			wp_send_json_error( array( 'message' => __( 'No file received.', 'equine-event-manager' ) ), 400 );
+		}
+
+		$err = self::store( $pending, $requirement, $_FILES['file'], get_current_user_id() ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- handled in store()/validate_upload().
+		if ( '' !== $err ) {
+			wp_send_json_error( array( 'message' => $err ), 400 );
+		}
+		$row = self::get( $pending, $requirement );
+		wp_send_json_success( array(
+			'requirement'   => $requirement,
+			'original_name' => $row ? (string) $row['original_name'] : '',
+		) );
 	}
 
 	/**

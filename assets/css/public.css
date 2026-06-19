@@ -5053,3 +5053,89 @@ a.eem-event-list-row__btn--results:focus {
 		gap: 16px;
 	}
 }
+
+/* Required Documents — customer upload rows on the reservation form. */
+.eem-required-docs-list {
+	display: grid;
+	gap: 12px;
+}
+.eem-required-doc-row {
+	display: grid;
+	gap: 8px;
+	padding: 14px 16px;
+	border: 1px solid #dbe4f0;
+	border-radius: 12px;
+	background: #f8fbff;
+}
+.eem-required-doc-row.is-uploaded {
+	border-color: #16a34a;
+	background: #f0fdf4;
+}
+.eem-required-doc-row.is-error {
+	border-color: #dc2626;
+	background: #fef2f2;
+}
+.eem-required-doc-row__head {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+.eem-required-doc-row__name {
+	font-weight: 600;
+	color: #0f172a;
+}
+.eem-required-doc-row__req {
+	font-size: 11px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: .04em;
+	color: #b91c1c;
+	background: #fee2e2;
+	padding: 2px 8px;
+	border-radius: 999px;
+}
+.eem-required-doc-row__control {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+.eem-required-doc-row__upload {
+	position: relative;
+	display: inline-flex;
+	cursor: pointer;
+}
+.eem-required-doc-row__upload input[type="file"] {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	opacity: 0;
+	cursor: pointer;
+}
+.eem-required-doc-row__btn {
+	display: inline-flex;
+	align-items: center;
+	padding: 8px 16px;
+	border: 1px solid #1668F2;
+	border-radius: 8px;
+	color: #1668F2;
+	font-weight: 600;
+	font-size: 14px;
+	background: #fff;
+}
+.eem-required-doc-row__upload:hover .eem-required-doc-row__btn {
+	background: #1668F2;
+	color: #fff;
+}
+.eem-required-doc-row__status {
+	font-size: 13px;
+	color: #475569;
+}
+.eem-required-doc-row.is-uploaded .eem-required-doc-row__status {
+	color: #15803d;
+	font-weight: 600;
+}
+.eem-required-doc-row.is-error .eem-required-doc-row__status {
+	color: #b91c1c;
+}

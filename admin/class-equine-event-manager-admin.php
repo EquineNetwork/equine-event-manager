@@ -4436,9 +4436,9 @@ class EEM_Admin {
 					<thead>
 						<tr>
 							<th class="sortable" data-eem-action="sc-sort" data-sort-key="title"><?php esc_html_e( 'Reservation', 'equine-event-manager' ); ?> <span class="sort-icon">&#8597;</span></th>
+							<th><?php esc_html_e( 'Availability', 'equine-event-manager' ); ?></th>
 							<th><?php esc_html_e( 'Barns', 'equine-event-manager' ); ?></th>
 							<th><?php esc_html_e( 'RV Lots', 'equine-event-manager' ); ?></th>
-							<th><?php esc_html_e( 'Actions', 'equine-event-manager' ); ?></th>
 						</tr>
 					</thead>
 					<tbody id="eem-sc-list-tbody">
@@ -4455,12 +4455,13 @@ class EEM_Admin {
 								<?php if ( ! empty( $row['dates'] ) ) : ?>
 									<div class="eem-sc-res-dates res-dates"><?php echo wp_kses_post( $row['dates'] ); ?></div>
 								<?php endif; ?>
-								<?php if ( ! empty( $row['stat_text'] ) ) : ?>
-									<div class="eem-sc-chart-stats chart-stats">
+							</td>
+							<td>
+								<?php if ( ! empty( $row['stats'] ) ) : ?>
+									<div class="eem-sc-availability">
 										<?php foreach ( $row['stats'] as $stat ) : ?>
-											<span class="eem-sc-chart-stat chart-stat">
-												<span class="eem-sc-stat-dot stat-dot" style="background:<?php echo esc_attr( $stat['color'] ); ?>"></span>
-												<?php echo esc_html( $stat['label'] ); ?>
+											<span class="eem-sc-avail-stat eem-sc-avail-stat--<?php echo esc_attr( $stat['tone'] ); ?>">
+												<?php if ( isset( $stat['count'] ) && null !== $stat['count'] ) : ?><strong><?php echo esc_html( number_format_i18n( (int) $stat['count'] ) ); ?></strong> <?php endif; ?><?php echo esc_html( $stat['name'] ); ?>
 											</span>
 										<?php endforeach; ?>
 									</div>
@@ -4487,18 +4488,6 @@ class EEM_Admin {
 								<?php else : ?>
 									<span class="eem-sc-empty-dash">—</span>
 								<?php endif; ?>
-							</td>
-							<td>
-								<div class="eem-sc-actions-cell">
-									<a class="eem-sc-action-btn eem-sc-action-btn--primary"
-									   href="<?php echo esc_url( $chart_url ); ?>">
-										<?php echo esc_html( $btn_label ); ?>
-									</a>
-									<a class="eem-sc-action-btn eem-sc-action-btn--ghost"
-									   href="<?php echo esc_url( $edit_url ); ?>">
-										<?php esc_html_e( 'Edit Reservation', 'equine-event-manager' ); ?>
-									</a>
-								</div>
 							</td>
 						</tr>
 					<?php endforeach; ?>
@@ -4538,12 +4527,18 @@ class EEM_Admin {
 									<?php endforeach; ?>
 								</div>
 							<?php endif; ?>
+							<?php if ( ! empty( $row['stats'] ) ) : ?>
+								<div class="eem-sc-availability">
+									<?php foreach ( $row['stats'] as $stat ) : ?>
+										<span class="eem-sc-avail-stat eem-sc-avail-stat--<?php echo esc_attr( $stat['tone'] ); ?>">
+											<?php if ( isset( $stat['count'] ) && null !== $stat['count'] ) : ?><strong><?php echo esc_html( number_format_i18n( (int) $stat['count'] ) ); ?></strong> <?php endif; ?><?php echo esc_html( $stat['name'] ); ?>
+										</span>
+									<?php endforeach; ?>
+								</div>
+							<?php endif; ?>
 						</div>
 						<div class="eem-sc-mob-card-bottom">
-							<a class="eem-sc-action-btn eem-sc-action-btn--primary" href="<?php echo esc_url( $chart_url ); ?>">
-								<?php echo esc_html( $btn_label ); ?>
-							</a>
-							<a class="eem-sc-action-btn eem-sc-action-btn--ghost" href="<?php echo esc_url( $edit_url ); ?>">
+							<a class="eem-btn eem-btn-ghost" href="<?php echo esc_url( $edit_url ); ?>">
 								<?php esc_html_e( 'Edit Reservation', 'equine-event-manager' ); ?>
 							</a>
 						</div>
@@ -4683,23 +4678,17 @@ class EEM_Admin {
 					}
 				}
 
+				// tone drives a theme color class at render time (no hardcoded hex):
+				// available = green, reserved = electric blue (a count, not an error),
+				// blocked = gray. Badge-sweep palette (2026-06-19).
 				$stats = array(
-					array(
-						'color' => '#22c55e',
-						'label' => sprintf( '%d Available', $available_count ),
-					),
-					array(
-						'color' => '#dc2626',
-						'label' => sprintf( '%d Reserved', $reserved_count ),
-					),
-					array(
-						'color' => '#94a3b8',
-						'label' => sprintf( '%d Blocked', $blocked_count ),
-					),
+					array( 'tone' => 'available', 'count' => (int) $available_count, 'name' => __( 'Available', 'equine-event-manager' ) ),
+					array( 'tone' => 'reserved',  'count' => (int) $reserved_count,  'name' => __( 'Reserved', 'equine-event-manager' ) ),
+					array( 'tone' => 'blocked',   'count' => (int) $blocked_count,   'name' => __( 'Blocked', 'equine-event-manager' ) ),
 				);
 			} else {
 				$stats = array(
-					array( 'color' => '#94a3b8', 'label' => __( 'Not yet configured', 'equine-event-manager' ) ),
+					array( 'tone' => 'none', 'count' => null, 'name' => __( 'Not yet configured', 'equine-event-manager' ) ),
 				);
 			}
 

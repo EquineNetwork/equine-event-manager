@@ -1164,6 +1164,127 @@ class EEM_Shortcodes {
 						</div>
 					<?php endif; ?>
 
+					<?php
+					// Required Documents — customer uploads (Coggins, health certs,
+					// etc.). Files are staged under a per-render session token before
+					// the order exists, then re-keyed onto the order at creation
+					// (see EEM_Order_Documents::reassign_pending). Skipped for the
+					// admin invoice context (admins upload from the Order Detail page).
+					$eem_req_docs = array();
+					if ( ! $is_admin_invoice && ! empty( $data['required_documents_enabled'] ) ) {
+						foreach ( (array) ( $data['required_documents'] ?? array() ) as $eem_rd ) {
+							if ( is_array( $eem_rd ) && '' !== trim( (string) ( $eem_rd['name'] ?? '' ) ) ) {
+								$eem_req_docs[] = array(
+									'name'     => trim( (string) $eem_rd['name'] ),
+									'required' => ! empty( $eem_rd['required'] ),
+								);
+							}
+						}
+					}
+					if ( $eem_req_docs ) :
+						$eem_doc_session = wp_generate_password( 24, false );
+						$eem_doc_nonce   = wp_create_nonce( 'eem_stage_required_doc' );
+						$eem_doc_desc    = trim( (string) ( $data['required_documents_description'] ?? '' ) );
+						?>
+						<div class="eem-reservation-section eem-reservation-section--required-docs"
+							data-eem-required-docs
+							data-ajax-url="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>"
+							data-reservation-id="<?php echo esc_attr( (int) $reservation_id ); ?>"
+							data-nonce="<?php echo esc_attr( $eem_doc_nonce ); ?>">
+							<input type="hidden" name="required_documents_session" value="<?php echo esc_attr( $eem_doc_session ); ?>" />
+							<h4 class="eem-reservation-section__title"><?php esc_html_e( 'Required Documents', 'equine-event-manager' ); ?></h4>
+							<?php if ( '' !== $eem_doc_desc ) : ?>
+								<small class="eem-reservation-help"><?php echo esc_html( $eem_doc_desc ); ?></small>
+							<?php endif; ?>
+							<div class="eem-required-docs-list">
+								<?php foreach ( $eem_req_docs as $eem_rd ) : ?>
+									<div class="eem-required-doc-row" data-doc-name="<?php echo esc_attr( $eem_rd['name'] ); ?>" data-doc-required="<?php echo $eem_rd['required'] ? '1' : '0'; ?>">
+										<div class="eem-required-doc-row__head">
+											<span class="eem-required-doc-row__name"><?php echo esc_html( $eem_rd['name'] ); ?></span>
+											<?php if ( $eem_rd['required'] ) : ?>
+												<span class="eem-required-doc-row__req"><?php esc_html_e( 'Required', 'equine-event-manager' ); ?></span>
+											<?php endif; ?>
+										</div>
+										<div class="eem-required-doc-row__control">
+											<label class="eem-required-doc-row__upload">
+												<input type="file" accept=".pdf,.jpg,.jpeg,.png,.heic,.webp" data-eem-doc-input />
+												<span class="eem-required-doc-row__btn"><?php esc_html_e( 'Choose File', 'equine-event-manager' ); ?></span>
+											</label>
+											<span class="eem-required-doc-row__status" aria-live="polite"></span>
+										</div>
+									</div>
+								<?php endforeach; ?>
+							</div>
+						</div>
+						<script>
+						(function(){
+							var sec = document.querySelector('[data-eem-required-docs]');
+							if ( ! sec || sec.dataset.eemDocsBound ) { return; }
+							sec.dataset.eemDocsBound = '1';
+							var ajaxUrl = sec.getAttribute('data-ajax-url');
+							var nonce   = sec.getAttribute('data-nonce');
+							var rid     = sec.getAttribute('data-reservation-id');
+							var sessEl  = sec.querySelector('input[name="required_documents_session"]');
+							var session = sessEl ? sessEl.value : '';
+							var form    = sec.closest('form');
+							var T = {
+								uploading: <?php echo wp_json_encode( __( 'Uploading…', 'equine-event-manager' ) ); ?>,
+								failed:    <?php echo wp_json_encode( __( 'Upload failed. Please try again.', 'equine-event-manager' ) ); ?>,
+								required:  <?php echo wp_json_encode( __( 'This document is required.', 'equine-event-manager' ) ); ?>
+							};
+							sec.querySelectorAll('.eem-required-doc-row').forEach(function(row){
+								var input  = row.querySelector('[data-eem-doc-input]');
+								var status = row.querySelector('.eem-required-doc-row__status');
+								var name   = row.getAttribute('data-doc-name');
+								if ( ! input ) { return; }
+								input.addEventListener('change', function(){
+									if ( ! input.files || ! input.files.length ) { return; }
+									var file = input.files[0];
+									row.classList.remove('is-error');
+									status.textContent = T.uploading;
+									var fd = new FormData();
+									fd.append('action', 'eem_stage_required_doc');
+									fd.append('nonce', nonce);
+									fd.append('reservation_id', rid);
+									fd.append('session', session);
+									fd.append('requirement', name);
+									fd.append('file', file);
+									fetch(ajaxUrl, { method:'POST', body:fd, credentials:'same-origin' })
+										.then(function(r){ return r.json(); })
+										.then(function(res){
+											if ( res && res.success ) {
+												row.classList.add('is-uploaded');
+												status.textContent = '✓ ' + ((res.data && res.data.original_name) || file.name);
+											} else {
+												row.classList.add('is-error');
+												status.textContent = (res && res.data && res.data.message) ? res.data.message : T.failed;
+											}
+										})
+										.catch(function(){ row.classList.add('is-error'); status.textContent = T.failed; });
+								});
+							});
+							if ( form ) {
+								form.addEventListener('submit', function(e){
+									var missing = false;
+									sec.querySelectorAll('.eem-required-doc-row').forEach(function(row){
+										if ( row.getAttribute('data-doc-required') === '1' && ! row.classList.contains('is-uploaded') ) {
+											missing = true;
+											row.classList.add('is-error');
+											var st = row.querySelector('.eem-required-doc-row__status');
+											if ( st && ! st.textContent ) { st.textContent = T.required; }
+										}
+									});
+									if ( missing ) {
+										e.preventDefault();
+										e.stopImmediatePropagation();
+										sec.scrollIntoView({ behavior:'smooth', block:'center' });
+									}
+								}, true);
+							}
+						})();
+						</script>
+					<?php endif; ?>
+
 					<div class="eem-reservation-section eem-reservation-section--special-requests">
 						<?php // 2.3.66 — title is a direct child of the section so it gets the
 						// standard header band (uppercase + bottom border) like every other
@@ -2941,6 +3062,9 @@ class EEM_Shortcodes {
 			'invoice_type'            => $this->sanitize_invoice_type( isset( $_POST['en_invoice_type'] ) ? wp_unslash( $_POST['en_invoice_type'] ) : 'customer' ),
 			'invoice_action_mode'     => $this->sanitize_invoice_action_mode( isset( $_POST['en_invoice_action_mode'] ) ? wp_unslash( $_POST['en_invoice_action_mode'] ) : 'charge_now' ),
 			'submission_token'        => isset( $_POST['en_submission_token'] ) ? sanitize_text_field( wp_unslash( $_POST['en_submission_token'] ) ) : '',
+			// Required Documents pre-order staging token (files uploaded on the
+			// form before the order existed; re-keyed onto the order at creation).
+			'required_documents_session' => isset( $_POST['required_documents_session'] ) ? sanitize_text_field( wp_unslash( $_POST['required_documents_session'] ) ) : '',
 			'stripe_payment_intent_id' => isset( $_POST['stripe_payment_intent_id'] ) ? sanitize_text_field( wp_unslash( $_POST['stripe_payment_intent_id'] ) ) : '',
 			'authorize_card_number'    => isset( $_POST['authorize_card_number'] ) ? preg_replace( '/[^0-9]/', '', wp_unslash( $_POST['authorize_card_number'] ) ) : '',
 			'authorize_exp_month'      => isset( $_POST['authorize_exp_month'] ) ? sanitize_text_field( wp_unslash( $_POST['authorize_exp_month'] ) ) : '',
@@ -3150,6 +3274,26 @@ class EEM_Shortcodes {
 
 		if ( '' === ( $submission['submission_token'] ?? '' ) ) {
 			$errors[] = __( 'We could not verify this reservation request. Please refresh the page and try again.', 'equine-event-manager' );
+		}
+
+		// Required Documents — block checkout when a document flagged "required at
+		// checkout" has no staged upload for this form session.
+		if ( ! empty( $data['required_documents_enabled'] ) && class_exists( 'EEM_Order_Documents' ) ) {
+			$eem_pending = EEM_Order_Documents::pending_key( (string) ( $submission['required_documents_session'] ?? '' ) );
+			$eem_staged  = '' !== $eem_pending ? EEM_Order_Documents::get_for_order( $eem_pending ) : array();
+			foreach ( (array) ( $data['required_documents'] ?? array() ) as $eem_doc ) {
+				if ( ! is_array( $eem_doc ) ) {
+					continue;
+				}
+				$eem_doc_name = trim( (string) ( $eem_doc['name'] ?? '' ) );
+				if ( '' === $eem_doc_name || empty( $eem_doc['required'] ) ) {
+					continue;
+				}
+				if ( empty( $eem_staged[ $eem_doc_name ] ) ) {
+					/* translators: %s: required document name. */
+					$errors[] = sprintf( __( 'Please upload the required document: %s.', 'equine-event-manager' ), $eem_doc_name );
+				}
+			}
 		}
 
 		if ( ! empty( $data['group_reservations_enabled'] ) && ! empty( $submission['group_reservation_enabled'] ) ) {
@@ -4927,6 +5071,17 @@ RV Lot: " . $rv_lot['name'] );
 
 			if ( $saved_order && ! empty( $saved_order['order_key'] ) ) {
 				$order_repository->auto_assign_units_for_order( $saved_order['order_key'] );
+
+				// Required Documents — move any files the customer staged on the
+				// reservation form (keyed by a pre-order session token) onto the
+				// real order so they appear on the order + hosted page. The token
+				// rides along in the form POST.
+				if ( class_exists( 'EEM_Order_Documents' ) && ! empty( $submission['required_documents_session'] ) ) {
+					EEM_Order_Documents::reassign_pending(
+						(string) $submission['required_documents_session'],
+						(string) $saved_order['order_key']
+					);
+				}
 
 				// Divisions rework Slice 2 — write the entrants ledger for any
 				// Division (en_entry) the customer entered. The ledger is the
@@ -7523,8 +7678,122 @@ RV Lot: " . $rv_lot['name'] );
 
 		nocache_headers();
 		// build_receipt_html returns a fully-escaped, self-contained HTML document.
-		echo $this->build_receipt_html( $order, false ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		$html = $this->build_receipt_html( $order, false );
+		// Hosted (web) view only — append a Required Documents upload card so the
+		// customer can add/replace their docs after checkout. The PDF path above
+		// never reaches here, so the receipt PDF stays document-only.
+		$docs_html = $this->build_hosted_docs_section_html( $order );
+		if ( '' !== $docs_html && false !== strpos( $html, '</body>' ) ) {
+			$html = str_replace( '</body>', $docs_html . '</body>', $html );
+		}
+		echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		exit;
+	}
+
+	/**
+	 * Build the customer-facing Required Documents upload card appended to the
+	 * hosted order page. Returns '' when the reservation defines no required
+	 * documents. Self-contained markup (own <style> + <script>) because the
+	 * hosted receipt is a standalone HTML document. Uploads dispatch to the
+	 * shared eem_upload_required_doc endpoint authorized by the order_key.
+	 *
+	 * @param array<string,mixed> $order Grouped order payload.
+	 * @return string
+	 */
+	private function build_hosted_docs_section_html( array $order ): string {
+		if ( ! class_exists( 'EEM_Order_Documents' ) ) {
+			return '';
+		}
+		$order_key      = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
+		$reservation_id = isset( $order['reservation_id'] ) ? (int) $order['reservation_id'] : 0;
+		if ( '' === $order_key || $reservation_id <= 0 ) {
+			return '';
+		}
+		$enabled = class_exists( 'EEM_Reservation_Config' )
+			? ! empty( EEM_Reservation_Config::for( $reservation_id )->get( 'required_documents_enabled', 0 ) )
+			: false;
+		$names = EEM_Order_Documents::requirement_names( $reservation_id );
+		if ( ! $enabled || empty( $names ) ) {
+			return '';
+		}
+		$uploaded = EEM_Order_Documents::get_for_order( $order_key );
+		$nonce    = wp_create_nonce( 'eem_required_doc' );
+		$ajax_url = admin_url( 'admin-ajax.php' );
+
+		ob_start();
+		?>
+		<div class="eem-hosted-docs" data-eem-hosted-docs
+			data-ajax-url="<?php echo esc_url( $ajax_url ); ?>"
+			data-order-key="<?php echo esc_attr( $order_key ); ?>"
+			data-nonce="<?php echo esc_attr( $nonce ); ?>">
+			<style>
+				.eem-hosted-docs{max-width:720px;margin:24px auto;padding:0 20px;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;}
+				.eem-hosted-docs__card{border:1px solid #e2e8f0;border-radius:12px;background:#fff;overflow:hidden;}
+				.eem-hosted-docs__head{padding:16px 20px;border-bottom:1px solid #e2e8f0;font-weight:700;color:#0f172a;font-size:16px;}
+				.eem-hosted-docs__body{padding:8px 20px 16px;}
+				.eem-hdoc-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 0;border-bottom:1px solid #f1f5f9;}
+				.eem-hdoc-row:last-child{border-bottom:none;}
+				.eem-hdoc-row__main{flex:1 1 220px;display:flex;flex-direction:column;gap:2px;min-width:0;}
+				.eem-hdoc-row__name{font-weight:600;color:#0f172a;}
+				.eem-hdoc-row__file{font-size:13px;color:#475569;}
+				.eem-hdoc-row__missing{color:#94a3b8;font-style:italic;}
+				.eem-hdoc-row__up{position:relative;display:inline-flex;cursor:pointer;}
+				.eem-hdoc-row__up input[type=file]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;}
+				.eem-hdoc-row__btn{display:inline-flex;align-items:center;padding:8px 16px;border:1px solid #1668F2;border-radius:8px;color:#1668F2;font-weight:600;font-size:14px;background:#fff;}
+				.eem-hdoc-row__up:hover .eem-hdoc-row__btn{background:#1668F2;color:#fff;}
+				.eem-hdoc-row__status{font-size:12.5px;color:#475569;flex-basis:100%;}
+			</style>
+			<div class="eem-hosted-docs__card">
+				<div class="eem-hosted-docs__head"><?php esc_html_e( 'Required Documents', 'equine-event-manager' ); ?></div>
+				<div class="eem-hosted-docs__body">
+					<?php foreach ( $names as $req ) :
+						$row = isset( $uploaded[ $req ] ) ? $uploaded[ $req ] : null;
+						$dl  = $row ? EEM_Order_Documents::download_url( $order_key, $req ) : '';
+						?>
+						<div class="eem-hdoc-row" data-doc-name="<?php echo esc_attr( $req ); ?>">
+							<div class="eem-hdoc-row__main">
+								<span class="eem-hdoc-row__name"><?php echo esc_html( $req ); ?></span>
+								<span class="eem-hdoc-row__file" data-doc-file>
+									<?php if ( $row ) : ?>
+										<a href="<?php echo esc_url( $dl ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( (string) $row['original_name'] ); ?></a>
+									<?php else : ?>
+										<em class="eem-hdoc-row__missing"><?php esc_html_e( 'Not uploaded yet', 'equine-event-manager' ); ?></em>
+									<?php endif; ?>
+								</span>
+							</div>
+							<label class="eem-hdoc-row__up">
+								<input type="file" accept=".pdf,.jpg,.jpeg,.png,.heic,.webp" data-eem-doc-input />
+								<span class="eem-hdoc-row__btn"><?php echo $row ? esc_html__( 'Replace', 'equine-event-manager' ) : esc_html__( 'Upload', 'equine-event-manager' ); ?></span>
+							</label>
+							<span class="eem-hdoc-row__status" aria-live="polite"></span>
+						</div>
+					<?php endforeach; ?>
+				</div>
+			</div>
+			<script>
+			(function(){
+				var card=document.querySelector('[data-eem-hosted-docs]');
+				if(!card)return;
+				var url=card.getAttribute('data-ajax-url'),ok=card.getAttribute('data-order-key'),n=card.getAttribute('data-nonce');
+				var T={u:<?php echo wp_json_encode( __( 'Uploading…', 'equine-event-manager' ) ); ?>,f:<?php echo wp_json_encode( __( 'Upload failed. Please try again.', 'equine-event-manager' ) ); ?>,r:<?php echo wp_json_encode( __( 'Replace', 'equine-event-manager' ) ); ?>};
+				card.querySelectorAll('.eem-hdoc-row').forEach(function(row){
+					var inp=row.querySelector('[data-eem-doc-input]'),st=row.querySelector('.eem-hdoc-row__status'),fc=row.querySelector('[data-doc-file]'),bt=row.querySelector('.eem-hdoc-row__btn'),name=row.getAttribute('data-doc-name');
+					if(!inp)return;
+					inp.addEventListener('change',function(){
+						if(!inp.files||!inp.files.length)return;
+						var file=inp.files[0];st.textContent=T.u;
+						var fd=new FormData();fd.append('action','eem_upload_required_doc');fd.append('nonce',n);fd.append('order_key',ok);fd.append('requirement',name);fd.append('file',file);
+						fetch(url,{method:'POST',body:fd,credentials:'same-origin'}).then(function(r){return r.json();}).then(function(res){
+							if(res&&res.success){st.textContent='';if(bt)bt.textContent=T.r;if(fc){var a=document.createElement('a');a.href=res.data.download_url;a.target='_blank';a.rel='noopener noreferrer';a.textContent=res.data.original_name||file.name;fc.innerHTML='';fc.appendChild(a);}}
+							else{st.textContent=(res&&res.data&&res.data.message)?res.data.message:T.f;}
+						}).catch(function(){st.textContent=T.f;});
+					});
+				});
+			})();
+			</script>
+		</div>
+		<?php
+		return (string) ob_get_clean();
 	}
 
 	/**
@@ -8823,6 +9092,13 @@ RV Lot: " . $rv_lot['name'] );
 			'event_day_bring'                 => '',
 			'event_day_parking'               => '',
 			'event_day_contact'               => '',
+			// Required Documents (customer uploads Coggins / health certs etc.).
+			// Resolved through read_section_enabled_raw for the enabled toggle
+			// (maps to _eem_section_enabled_requireddocs); the list + description
+			// read from their _en_ keys.
+			'required_documents_enabled'      => 0,
+			'required_documents_description'  => '',
+			'required_documents'              => array(),
 		);
 
 		$defaults['rv_addons'] = array();
@@ -8859,6 +9135,22 @@ RV Lot: " . $rv_lot['name'] );
 			$data['stall_inventory_type']     = $stall_pair['inventory_type'];
 			$data['stall_customer_selection'] = $stall_pair['customer_selection'];
 			$data['stall_selection_mode']     = $stall_pair['selection_mode'];
+		}
+
+		// Required Documents — these live in the relational config table
+		// (dedicated columns + JSON), which is authoritative once migration 016
+		// has run. The postmeta defaults loop above reads the legacy _en_ keys,
+		// which are empty for table-backed reservations, so source them from the
+		// config so the customer form + the publish/checkout gate see the real
+		// list (matches EEM_Order_Documents authorization + the order surfaces).
+		if ( class_exists( 'EEM_Reservation_Config' ) ) {
+			$eem_cfg = EEM_Reservation_Config::for( (int) $reservation_id );
+			$data['required_documents_enabled']     = ! empty( $eem_cfg->get( 'required_documents_enabled', $data['required_documents_enabled'] ) ) ? 1 : 0;
+			$data['required_documents_description'] = (string) $eem_cfg->get( 'required_documents_description', $data['required_documents_description'] );
+			$eem_rd_list = $eem_cfg->get( 'required_documents', null );
+			if ( is_array( $eem_rd_list ) ) {
+				$data['required_documents'] = $eem_rd_list;
+			}
 		}
 
 		if ( ! metadata_exists( 'post', $reservation_id, '_en_use_global_event_source' ) ) {

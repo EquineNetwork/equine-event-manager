@@ -189,6 +189,8 @@ class EEM_Order_Detail_Page {
 
 		<?php $this->render_special_instructions_card( $reservation_id ); ?>
 
+		<?php $this->render_required_documents_card( $order, $reservation_id ); ?>
+
 		<?php
 		/*
 		 * SAVE BAR — DEFERRED to C7 per CLEANUP #33.
@@ -1096,6 +1098,129 @@ class EEM_Order_Detail_Page {
 				</div>
 			</div>
 		</div>
+		<?php
+	}
+
+	/**
+	 * Required Documents card — lists every document the reservation defines
+	 * and lets the admin upload (or replace) a file on the customer's behalf.
+	 * Uploaded files stream through the authenticated download endpoint.
+	 *
+	 * Renders only when the reservation has the Required Documents section
+	 * enabled with at least one named requirement. Uploads dispatch to the
+	 * shared `eem_upload_required_doc` AJAX endpoint keyed by the order_key.
+	 *
+	 * @param array<string,mixed> $order          Order row.
+	 * @param int                 $reservation_id Owning reservation post ID.
+	 * @return void
+	 */
+	private function render_required_documents_card( array $order, int $reservation_id ): void {
+		if ( ! class_exists( 'EEM_Order_Documents' ) || $reservation_id <= 0 ) {
+			return;
+		}
+		$order_key = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
+		if ( '' === $order_key ) {
+			return;
+		}
+		$enabled = class_exists( 'EEM_Reservation_Config' )
+			? ! empty( EEM_Reservation_Config::for( $reservation_id )->get( 'required_documents_enabled', 0 ) )
+			: false;
+		$names = EEM_Order_Documents::requirement_names( $reservation_id );
+		if ( ! $enabled || empty( $names ) ) {
+			return;
+		}
+		$uploaded = EEM_Order_Documents::get_for_order( $order_key );
+		$nonce    = wp_create_nonce( 'eem_required_doc' );
+		?>
+		<div class="eem-order-full-width">
+			<div class="eem-card eem-order-card eem-order-docs"
+				data-eem-order-docs
+				data-ajax-url="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>"
+				data-order-key="<?php echo esc_attr( $order_key ); ?>"
+				data-nonce="<?php echo esc_attr( $nonce ); ?>">
+				<div class="eem-order-card__header">
+					<div class="eem-order-card__title"><?php echo EEM_Dashboard_Icons::svg( 'paperclip' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- self-authored inline SVG. ?> <?php esc_html_e( 'Required Documents', 'equine-event-manager' ); ?></div>
+				</div>
+				<div class="eem-order-docs__body">
+					<?php foreach ( $names as $req ) :
+						$row = isset( $uploaded[ $req ] ) ? $uploaded[ $req ] : null;
+						$dl  = $row ? EEM_Order_Documents::download_url( $order_key, $req ) : '';
+						?>
+						<div class="eem-order-doc-row<?php echo $row ? ' is-uploaded' : ''; ?>" data-doc-name="<?php echo esc_attr( $req ); ?>">
+							<div class="eem-order-doc-row__main">
+								<span class="eem-order-doc-row__name"><?php echo esc_html( $req ); ?></span>
+								<span class="eem-order-doc-row__file" data-doc-file>
+									<?php if ( $row ) : ?>
+										<a href="<?php echo esc_url( $dl ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( (string) $row['original_name'] ); ?></a>
+									<?php else : ?>
+										<em class="eem-order-doc-row__missing"><?php esc_html_e( 'Not uploaded', 'equine-event-manager' ); ?></em>
+									<?php endif; ?>
+								</span>
+							</div>
+							<label class="eem-order-doc-row__upload">
+								<input type="file" accept=".pdf,.jpg,.jpeg,.png,.heic,.webp" data-eem-doc-input />
+								<span class="eem-btn eem-btn-ghost eem-order-doc-row__btn"><?php echo $row ? esc_html__( 'Replace', 'equine-event-manager' ) : esc_html__( 'Upload', 'equine-event-manager' ); ?></span>
+							</label>
+							<span class="eem-order-doc-row__status" aria-live="polite"></span>
+						</div>
+					<?php endforeach; ?>
+				</div>
+			</div>
+		</div>
+		<script>
+		(function(){
+			var card = document.querySelector('[data-eem-order-docs]');
+			if ( ! card || card.dataset.eemDocsBound ) { return; }
+			card.dataset.eemDocsBound = '1';
+			var ajaxUrl = card.getAttribute('data-ajax-url');
+			var orderKey = card.getAttribute('data-order-key');
+			var nonce = card.getAttribute('data-nonce');
+			var T = {
+				uploading: <?php echo wp_json_encode( __( 'Uploading…', 'equine-event-manager' ) ); ?>,
+				failed:    <?php echo wp_json_encode( __( 'Upload failed. Please try again.', 'equine-event-manager' ) ); ?>
+			};
+			card.querySelectorAll('.eem-order-doc-row').forEach(function(row){
+				var input = row.querySelector('[data-eem-doc-input]');
+				var status = row.querySelector('.eem-order-doc-row__status');
+				var fileCell = row.querySelector('[data-doc-file]');
+				var btn = row.querySelector('.eem-order-doc-row__btn');
+				var name = row.getAttribute('data-doc-name');
+				if ( ! input ) { return; }
+				input.addEventListener('change', function(){
+					if ( ! input.files || ! input.files.length ) { return; }
+					var file = input.files[0];
+					status.textContent = T.uploading;
+					var fd = new FormData();
+					fd.append('action', 'eem_upload_required_doc');
+					fd.append('nonce', nonce);
+					fd.append('order_key', orderKey);
+					fd.append('requirement', name);
+					fd.append('file', file);
+					fetch(ajaxUrl, { method:'POST', body:fd, credentials:'same-origin' })
+						.then(function(r){ return r.json(); })
+						.then(function(res){
+							if ( res && res.success ) {
+								row.classList.add('is-uploaded');
+								status.textContent = '';
+								if ( btn ) { btn.textContent = <?php echo wp_json_encode( __( 'Replace', 'equine-event-manager' ) ); ?>; }
+								if ( fileCell ) {
+									var a = document.createElement('a');
+									a.href = res.data.download_url;
+									a.target = '_blank';
+									a.rel = 'noopener noreferrer';
+									a.textContent = res.data.original_name || file.name;
+									fileCell.innerHTML = '';
+									fileCell.appendChild(a);
+								}
+							} else {
+								status.textContent = (res && res.data && res.data.message) ? res.data.message : T.failed;
+							}
+						})
+						.catch(function(){ status.textContent = T.failed; });
+				});
+			});
+		})();
+		</script>
 		<?php
 	}
 

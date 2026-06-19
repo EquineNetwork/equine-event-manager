@@ -914,7 +914,7 @@ class EEM_Reservation_Editor_Page {
 			array( 'key' => 'group',        'title' => __( 'Group Reservations',      'equine-event-manager' ), 'icon_tone' => 'green',  'icon_key' => 'users',     'enable_toggle' => true,  'collapsed' => true  ),
 			array( 'key' => 'fees',         'title' => __( 'Convenience Fee',         'equine-event-manager' ), 'icon_tone' => 'orange', 'icon_key' => 'dollar',    'enable_toggle' => true,  'collapsed' => true  ),
 			array( 'key' => 'venuemap',     'title' => __( 'Venue Map',               'equine-event-manager' ), 'icon_tone' => 'teal',   'icon_key' => 'map-pin',   'enable_toggle' => true,  'collapsed' => true  ),
-			array( 'key' => 'requireddocs', 'title' => __( 'Required Documents',       'equine-event-manager' ), 'icon_tone' => 'navy',   'icon_key' => 'file',      'enable_toggle' => true,  'collapsed' => true  ),
+			array( 'key' => 'requireddocs', 'title' => __( 'Required Documents',       'equine-event-manager' ), 'icon_tone' => 'navy',   'icon_key' => 'paperclip', 'enable_toggle' => true,  'collapsed' => true  ),
 			array( 'key' => 'agreement',    'title' => __( 'Agreement',               'equine-event-manager' ), 'icon_tone' => 'navy',   'icon_key' => 'file',      'enable_toggle' => true,  'collapsed' => true  ),
 			array( 'key' => 'cancellation', 'title' => __( 'Cancellation Policy',     'equine-event-manager' ), 'icon_tone' => 'red',    'icon_key' => 'shield-x',  'enable_toggle' => true,  'collapsed' => true  ),
 		);
