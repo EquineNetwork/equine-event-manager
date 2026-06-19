@@ -14,7 +14,7 @@
    and is 1 commit ahead (the laptop-setup doc). No branch juggling needed.
 
 **Where we left off / pick up here (in priority order):**
-- **#229 — critical error when trashing a draft reservation** (deferred this whole session; first up).
+- ✅ **#229 — critical error when trashing a draft reservation — DONE (2026-06-18, verified on laptop @ 2.7.467).** Could not reproduce on current code; trashing drafts (list-row Trash + editor Trash button) works clean. The "critical error" was the migration-recursion crash that took down every admin page on the stale-DB upgrade path — fixed in 2.7.467 (commit 6b7f1e8). Verified + approved by Whitney in-browser.
 - **#234 — backfill smoke coverage** for the new readiness store + print rework + move-customer flow.
 - **#235 — verify RV lot name/number split against real GEMS labels** (test on **NTR 6519**, NOT 5990).
 
@@ -47,7 +47,7 @@
 - RV lot name/number split keys on the **last space** in the lot label (`"Zone 2 8"` → `Zone 2` / `8`).
   Verify against real GEMS lot labels — non-`name<space>number` labels could split wrong.
 - Reservation **5990 RV map is corrupted** (do-not-touch per memory); verify maps on **NTR 6519**.
-- Task #229 still open: **critical error when trashing a draft reservation** (deferred all session).
+- ✅ Task #229 RESOLVED (2026-06-18, @ 2.7.467): critical error when trashing a draft reservation. Root cause was the migration-recursion crash (commit 6b7f1e8), not a trash-specific bug; trashing drafts verified clean on the laptop.
 - A dead `$or_num` assignment remains in the print By Customer loop (harmless; tidy when convenient).
 - All verification this session was via browser/print-preview on Local; no smoke tests were added
   for the new readiness store / print rework — worth backfilling (task #234).
@@ -172,8 +172,10 @@ succeeded; the last launch gate is cleared.
 
 **Immediate (carried from the 2026-06-18 Stall Charts / print session — do these first):**
 
-0a. **Fix critical error when trashing a draft reservation (#229).** Reproducible; deferred the
-    entire 06-18 session. Highest priority — it's a real error path.
+0a. ✅ **DONE (2026-06-18, @ 2.7.467) — critical error when trashing a draft reservation (#229).**
+    Root cause was the migration-recursion crash (commit 6b7f1e8) that 500'd every admin page on
+    the stale-DB upgrade path, not a trash-specific bug. Verified clean on the laptop (list-row
+    Trash + editor Trash button), approved by Whitney.
 0b. **Backfill smoke coverage (#234)** for the readiness store (`EEM_Stall_Status_Repo`:
     `set_cell_status` / `bulk_set_status` / `mark_order_stalls_needs_cleaning`), the print-view
     rework (SHOW/VIEW/rows variants), and the restored move-customer flow.
