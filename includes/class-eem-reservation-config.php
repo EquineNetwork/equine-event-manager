@@ -1008,7 +1008,26 @@ class EEM_Reservation_Config {
 		if ( is_array( $value ) ) {
 			return wp_json_encode( $value );
 		}
-		return (string) $value;
+
+		$value = (string) $value;
+
+		// Bound the value to the column's declared varchar/char width. Without
+		// this, a single oversized legacy value (e.g. a pre-sanitizer
+		// 'YYYY-MM-DDTHH:MM' datetime sitting in a varchar(10) time column)
+		// makes $wpdb->replace() reject the ENTIRE row, silently dropping every
+		// other column with it — that is how the postmeta→table backfill
+		// (migration 016) lost `stall_rows` on reservations carrying
+		// unsanitized check-in/out values. Truncating here keeps the row (and
+		// the map) intact; the stray field self-heals to its sanitized form on
+		// the next save. See ROADMAP follow-up "0d".
+		if ( preg_match( '/^(?:var)?char\((\d+)\)/i', $type, $m ) ) {
+			$width = (int) $m[1];
+			if ( $width > 0 && mb_strlen( $value ) > $width ) {
+				$value = mb_substr( $value, 0, $width );
+			}
+		}
+
+		return $value;
 	}
 
 	/**
