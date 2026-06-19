@@ -2739,7 +2739,7 @@ class EEM_Admin {
 						</select>
 					</div>
 					<div class="eem-scf-actions">
-						<button class="eem-btn eem-btn--primary" type="button" data-eem-action="stall-chart-auto-assign-all">
+						<button class="eem-btn eem-btn-electric" type="button" data-eem-action="stall-chart-auto-assign-all">
 							<?php esc_html_e( 'Generate Assignments', 'equine-event-manager' ); ?>
 						</button>
 						<button class="eem-btn eem-btn--ghost" type="button"
@@ -3011,7 +3011,7 @@ class EEM_Admin {
 								) );
 								?>
 							</span>
-							<button class="eem-btn eem-btn--primary eem-stall-chart-issues-auto-all" type="button" data-eem-action="stall-chart-auto-assign-all">
+							<button class="eem-btn eem-btn-electric eem-stall-chart-issues-auto-all" type="button" data-eem-action="stall-chart-auto-assign-all">
 								<?php esc_html_e( 'Auto-Assign All', 'equine-event-manager' ); ?>
 							</button>
 						</div>
@@ -3778,7 +3778,7 @@ class EEM_Admin {
 				<div class="scope-modal-footer">
 					<span class="scope-modal__error" id="eem-scope-modal-error" style="display:none;"></span>
 					<button type="button" class="eem-btn eem-btn--ghost" data-eem-action="close-scope-modal"><?php esc_html_e( 'Cancel', 'equine-event-manager' ); ?></button>
-					<button type="button" class="eem-btn eem-btn--primary" data-eem-action="confirm-move"><?php esc_html_e( 'Move', 'equine-event-manager' ); ?></button>
+					<button type="button" class="eem-btn eem-btn-electric" data-eem-action="confirm-move"><?php esc_html_e( 'Move', 'equine-event-manager' ); ?></button>
 				</div>
 			</div>
 		</div>
