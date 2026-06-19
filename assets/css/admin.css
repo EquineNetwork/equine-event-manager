@@ -54,6 +54,9 @@
 	--eem-border: #D9E2F2;
 	--eem-border-soft: #f0f0f1;
 	--eem-border-card: #c3c4c7;
+	/* Lightest surface tint — table footers, group-header bands, inline panels.
+	   Real token for the value previously inlined as a var() fallback. */
+	--eem-gray-50: #f8fafc;
 	/* Canonical form-control border (selects, inputs, search, Choices, buttons)
 	   — one gray plugin-wide so no control reads "washed out" next to another.
 	   Normalized 2026-06-19. */
@@ -10602,7 +10605,7 @@ a.eem-event-editor-card__quicklink:hover { color: #1257d1; }
 	align-items: center;
 	justify-content: space-between;
 	padding: 10px 18px;
-	background: #f9f9fa;
+	background: var(--eem-gray-50);
 	border-bottom: 1px solid #e5e7eb;
 	border-top: 1px solid #e5e7eb;
 	gap: 10px;
@@ -10620,7 +10623,7 @@ a.eem-event-editor-card__quicklink:hover { color: #1257d1; }
 	font-size: 11px;
 	font-weight: 600;
 	color: var(--eem-text-secondary);
-	background: #e5e7eb;
+	background: var(--eem-border-soft);
 	padding: 2px 8px;
 	border-radius: 10px;
 }
@@ -10716,7 +10719,7 @@ a.eem-event-editor-card__quicklink:hover { color: #1257d1; }
 
 /* Inline add-file panel */
 .eem-sr-add-panel {
-	background: #f9f9fa;
+	background: var(--eem-gray-50);
 	border: 1px dashed var(--eem-border-card);
 	border-radius: var(--eem-radius);
 	padding: 16px 18px;
