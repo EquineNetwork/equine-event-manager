@@ -10788,27 +10788,54 @@ a.eem-dm-view-tab.active:visited {
 .eem-dm-overview-grid {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-	gap: 14px 24px;
+	gap: 14px;
+}
+/* Each day reads as its own card on the pale-blue band. */
+.eem-dm-overview-day {
+	background: #fff;
+	border: 1px solid #dce3ee;
+	border-radius: var(--eem-radius);
+	padding: 14px 16px;
 }
 .eem-dm-overview-date {
-	font-size: 13px;
+	font-size: 14px;
 	font-weight: 700;
 	color: var(--eem-navy, #031b4e);
-	margin-bottom: 5px;
+	padding-bottom: 10px;
+	margin-bottom: 10px;
+	border-bottom: 1px solid #eceff4;
 }
-.eem-dm-overview-vals span {
-	display: block;
-	font-size: 12.5px;
-	font-weight: 600;
-	line-height: 1.7;
+.eem-dm-overview-vals {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+/* Stat row: electric-blue icon, bold dark count, muted label. */
+.eem-dm-stat {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+	font-size: 13px;
+}
+.eem-dm-stat-icon {
+	color: var(--eem-electric);
+	font-weight: 700;
+}
+.eem-dm-stat-num {
+	font-weight: 700;
 	color: var(--eem-navy, #1d2327);
+	min-width: 10px;
 }
-.eem-dm-overview-arr  { color: #15803d; }
-.eem-dm-overview-in   { color: #15803d; }
-.eem-dm-overview-wait { color: #dc2626; }
-.eem-dm-overview-dep  { color: #b45309; }
-.eem-dm-overview-out  { color: #1d4ed8; }
-.eem-dm-overview-bags { color: #7c3aed; }
+.eem-dm-stat-label {
+	color: #646970;
+}
+/* Zero counts dim the whole row (icon included). */
+.eem-dm-stat.is-zero {
+	opacity: 0.45;
+}
+.eem-dm-stat.is-zero .eem-dm-stat-icon {
+	color: #a7aaad;
+}
 
 .eem-dm-table {
 	width: 100%;

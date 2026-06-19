@@ -675,21 +675,25 @@ class EEM_Daily_Movement_Page {
 				<?php foreach ( $reports as $report ) :
 					$s = isset( $report['summary'] ) ? $report['summary'] : array();
 				?>
+					<?php
+						$arr = (int) ( $s['arriving'] ?? 0 );
+						$dep = (int) ( $s['departing'] ?? 0 );
+					?>
 					<div class="eem-dm-overview-day">
 						<div class="eem-dm-overview-date">
 							<?php echo esc_html( $report['date_display'] ?? $report['date'] ); ?>
 						</div>
 						<div class="eem-dm-overview-vals">
-							<span class="eem-dm-overview-arr"><?php echo esc_html( sprintf(
-								/* translators: %d: arriving count */
-								__( '↓ %d Arriving', 'equine-event-manager' ),
-								(int) ( $s['arriving'] ?? 0 )
-							) ); ?></span>
-							<span class="eem-dm-overview-dep"><?php echo esc_html( sprintf(
-								/* translators: %d: departing count */
-								__( '↑ %d Departing', 'equine-event-manager' ),
-								(int) ( $s['departing'] ?? 0 )
-							) ); ?></span>
+							<span class="eem-dm-stat<?php echo 0 === $arr ? ' is-zero' : ''; ?>">
+								<span class="eem-dm-stat-icon" aria-hidden="true">&darr;</span>
+								<span class="eem-dm-stat-num"><?php echo esc_html( number_format_i18n( $arr ) ); ?></span>
+								<span class="eem-dm-stat-label"><?php esc_html_e( 'Arriving', 'equine-event-manager' ); ?></span>
+							</span>
+							<span class="eem-dm-stat<?php echo 0 === $dep ? ' is-zero' : ''; ?>">
+								<span class="eem-dm-stat-icon" aria-hidden="true">&uarr;</span>
+								<span class="eem-dm-stat-num"><?php echo esc_html( number_format_i18n( $dep ) ); ?></span>
+								<span class="eem-dm-stat-label"><?php esc_html_e( 'Departing', 'equine-event-manager' ); ?></span>
+							</span>
 						</div>
 					</div>
 				<?php endforeach; ?>
