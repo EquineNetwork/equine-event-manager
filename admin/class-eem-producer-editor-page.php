@@ -234,7 +234,7 @@ class EEM_Producer_Editor_Page {
 		<div class="eem-event-editor-grid">
 			<label class="eem-event-editor-field eem-event-editor-field--full">
 				<span class="eem-event-editor-field__label"><?php esc_html_e( 'Name', 'equine-event-manager' ); ?></span>
-				<input type="text" name="producer[title]" value="<?php echo esc_attr( $d['title'] ); ?>" class="regular-text" />
+				<input type="text" name="producer[title]" value="<?php echo esc_attr( $d['title'] ); ?>" class="eem-field-input" />
 			</label>
 		</div>
 		<?php
@@ -250,19 +250,19 @@ class EEM_Producer_Editor_Page {
 		<div class="eem-event-editor-grid">
 			<label class="eem-event-editor-field">
 				<span class="eem-event-editor-field__label"><?php esc_html_e( 'Primary Contact', 'equine-event-manager' ); ?></span>
-				<input type="text" name="producer[contact_name]" value="<?php echo esc_attr( $d['contact_name'] ); ?>" class="regular-text" />
+				<input type="text" name="producer[contact_name]" value="<?php echo esc_attr( $d['contact_name'] ); ?>" class="eem-field-input" />
 			</label>
 			<label class="eem-event-editor-field">
 				<span class="eem-event-editor-field__label"><?php esc_html_e( 'Email', 'equine-event-manager' ); ?></span>
-				<input type="email" name="producer[email]" value="<?php echo esc_attr( $d['email'] ); ?>" class="regular-text" />
+				<input type="email" name="producer[email]" value="<?php echo esc_attr( $d['email'] ); ?>" class="eem-field-input" />
 			</label>
 			<label class="eem-event-editor-field">
 				<span class="eem-event-editor-field__label"><?php esc_html_e( 'Phone', 'equine-event-manager' ); ?></span>
-				<input type="text" name="producer[phone]" value="<?php echo esc_attr( $d['phone'] ); ?>" class="regular-text" />
+				<input type="text" name="producer[phone]" value="<?php echo esc_attr( $d['phone'] ); ?>" class="eem-field-input" />
 			</label>
 			<label class="eem-event-editor-field">
 				<span class="eem-event-editor-field__label"><?php esc_html_e( 'Website', 'equine-event-manager' ); ?></span>
-				<input type="url" name="producer[website]" value="<?php echo esc_attr( $d['website'] ); ?>" class="regular-text" />
+				<input type="url" name="producer[website]" value="<?php echo esc_attr( $d['website'] ); ?>" class="eem-field-input" />
 			</label>
 		</div>
 		<?php
@@ -278,7 +278,7 @@ class EEM_Producer_Editor_Page {
 		<div class="eem-event-editor-grid">
 			<label class="eem-event-editor-field eem-event-editor-field--full">
 				<span class="eem-event-editor-field__label"><?php esc_html_e( 'Description', 'equine-event-manager' ); ?></span>
-				<textarea name="producer[description]" rows="6" class="large-text"><?php echo esc_textarea( $d['description'] ); ?></textarea>
+				<textarea name="producer[description]" rows="6" class="eem-field-textarea"><?php echo esc_textarea( $d['description'] ); ?></textarea>
 			</label>
 		</div>
 		<?php

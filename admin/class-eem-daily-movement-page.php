@@ -539,7 +539,7 @@ class EEM_Daily_Movement_Page {
 				</div>
 			</form>
 			<?php if ( '' !== $print_url ) : ?>
-				<a href="<?php echo esc_url( $print_url ); ?>" target="_blank" class="eem-btn eem-btn--primary eem-dm-toolbar-print"><?php esc_html_e( 'Print View', 'equine-event-manager' ); ?></a>
+				<a href="<?php echo esc_url( $print_url ); ?>" target="_blank" class="eem-btn eem-btn-secondary eem-dm-toolbar-print"><?php esc_html_e( 'Print View', 'equine-event-manager' ); ?></a>
 			<?php endif; ?>
 		</div>
 		<?php

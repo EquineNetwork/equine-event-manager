@@ -239,7 +239,7 @@ class EEM_Venue_Editor_Page {
 		<div class="eem-event-editor-grid">
 			<label class="eem-event-editor-field eem-event-editor-field--full">
 				<span class="eem-event-editor-field__label"><?php esc_html_e( 'Name', 'equine-event-manager' ); ?></span>
-				<input type="text" name="venue[title]" value="<?php echo esc_attr( $d['title'] ); ?>" class="regular-text" />
+				<input type="text" name="venue[title]" value="<?php echo esc_attr( $d['title'] ); ?>" class="eem-field-input" />
 			</label>
 		</div>
 		<?php
@@ -256,39 +256,39 @@ class EEM_Venue_Editor_Page {
 		<div class="eem-event-editor-grid">
 			<label class="eem-event-editor-field eem-event-editor-field--full">
 				<span class="eem-event-editor-field__label"><?php esc_html_e( 'Address Line 1', 'equine-event-manager' ); ?></span>
-				<input type="text" name="venue[address_1]" value="<?php echo esc_attr( $d['address_1'] ); ?>" class="regular-text" />
+				<input type="text" name="venue[address_1]" value="<?php echo esc_attr( $d['address_1'] ); ?>" class="eem-field-input" />
 			</label>
 			<label class="eem-event-editor-field eem-event-editor-field--full">
 				<span class="eem-event-editor-field__label"><?php esc_html_e( 'Address Line 2', 'equine-event-manager' ); ?></span>
-				<input type="text" name="venue[address_2]" value="<?php echo esc_attr( $d['address_2'] ); ?>" class="regular-text" />
+				<input type="text" name="venue[address_2]" value="<?php echo esc_attr( $d['address_2'] ); ?>" class="eem-field-input" />
 			</label>
 			<label class="eem-event-editor-field">
 				<span class="eem-event-editor-field__label"><?php esc_html_e( 'City', 'equine-event-manager' ); ?></span>
-				<input type="text" name="venue[city]" value="<?php echo esc_attr( $d['city'] ); ?>" class="regular-text" />
+				<input type="text" name="venue[city]" value="<?php echo esc_attr( $d['city'] ); ?>" class="eem-field-input" />
 			</label>
 			<label class="eem-event-editor-field">
 				<span class="eem-event-editor-field__label"><?php esc_html_e( 'State', 'equine-event-manager' ); ?></span>
-				<input type="text" name="venue[state]" value="<?php echo esc_attr( $d['state'] ); ?>" class="regular-text" />
+				<input type="text" name="venue[state]" value="<?php echo esc_attr( $d['state'] ); ?>" class="eem-field-input" />
 			</label>
 			<label class="eem-event-editor-field">
 				<span class="eem-event-editor-field__label"><?php esc_html_e( 'Postal Code', 'equine-event-manager' ); ?></span>
-				<input type="text" name="venue[postal_code]" value="<?php echo esc_attr( $d['postal_code'] ); ?>" class="regular-text" />
+				<input type="text" name="venue[postal_code]" value="<?php echo esc_attr( $d['postal_code'] ); ?>" class="eem-field-input" />
 			</label>
 			<label class="eem-event-editor-field">
 				<span class="eem-event-editor-field__label"><?php esc_html_e( 'Phone', 'equine-event-manager' ); ?></span>
-				<input type="text" name="venue[phone]" value="<?php echo esc_attr( $d['phone'] ); ?>" class="regular-text" />
+				<input type="text" name="venue[phone]" value="<?php echo esc_attr( $d['phone'] ); ?>" class="eem-field-input" />
 			</label>
 			<label class="eem-event-editor-field eem-event-editor-field--full">
 				<span class="eem-event-editor-field__label"><?php esc_html_e( 'Website', 'equine-event-manager' ); ?></span>
-				<input type="url" name="venue[website]" value="<?php echo esc_attr( $d['website'] ); ?>" class="regular-text" />
+				<input type="url" name="venue[website]" value="<?php echo esc_attr( $d['website'] ); ?>" class="eem-field-input" />
 			</label>
 			<label class="eem-event-editor-field">
 				<span class="eem-event-editor-field__label"><?php esc_html_e( 'Latitude', 'equine-event-manager' ); ?></span>
-				<input type="text" name="venue[lat]" value="<?php echo esc_attr( $d['lat'] ); ?>" class="regular-text" placeholder="<?php esc_attr_e( 'Auto-filled from address', 'equine-event-manager' ); ?>" />
+				<input type="text" name="venue[lat]" value="<?php echo esc_attr( $d['lat'] ); ?>" class="eem-field-input" placeholder="<?php esc_attr_e( 'Auto-filled from address', 'equine-event-manager' ); ?>" />
 			</label>
 			<label class="eem-event-editor-field">
 				<span class="eem-event-editor-field__label"><?php esc_html_e( 'Longitude', 'equine-event-manager' ); ?></span>
-				<input type="text" name="venue[lng]" value="<?php echo esc_attr( $d['lng'] ); ?>" class="regular-text" placeholder="<?php esc_attr_e( 'Auto-filled from address', 'equine-event-manager' ); ?>" />
+				<input type="text" name="venue[lng]" value="<?php echo esc_attr( $d['lng'] ); ?>" class="eem-field-input" placeholder="<?php esc_attr_e( 'Auto-filled from address', 'equine-event-manager' ); ?>" />
 			</label>
 			<p class="eem-event-editor-field eem-event-editor-field--full eem-event-editor-field__description" style="margin:0;">
 				<?php
@@ -313,7 +313,7 @@ class EEM_Venue_Editor_Page {
 		<div class="eem-event-editor-grid">
 			<label class="eem-event-editor-field eem-event-editor-field--full">
 				<span class="eem-event-editor-field__label"><?php esc_html_e( 'Description', 'equine-event-manager' ); ?></span>
-				<textarea name="venue[description]" rows="6" class="large-text"><?php echo esc_textarea( $d['description'] ); ?></textarea>
+				<textarea name="venue[description]" rows="6" class="eem-field-textarea"><?php echo esc_textarea( $d['description'] ); ?></textarea>
 			</label>
 		</div>
 		<?php
@@ -389,8 +389,8 @@ class EEM_Venue_Editor_Page {
 								<li class="eem-venue-layouts__row" data-layout-id="<?php echo esc_attr( (string) $layout['id'] ); ?>">
 									<span class="eem-venue-layouts__name"><?php echo esc_html( (string) $layout['name'] ); ?></span>
 									<span class="eem-venue-layouts__actions">
-										<button type="button" class="button-link" data-eem-action="venue-layout-rename"><?php esc_html_e( 'Rename', 'equine-event-manager' ); ?></button>
-										<button type="button" class="button-link button-link-delete" data-eem-action="venue-layout-delete"><?php esc_html_e( 'Delete', 'equine-event-manager' ); ?></button>
+										<button type="button" class="eem-btn eem-btn-secondary eem-btn-sm" data-eem-action="venue-layout-rename"><?php esc_html_e( 'Rename', 'equine-event-manager' ); ?></button>
+										<button type="button" class="eem-btn eem-btn-danger eem-btn-sm" data-eem-action="venue-layout-delete"><?php esc_html_e( 'Delete', 'equine-event-manager' ); ?></button>
 									</span>
 								</li>
 							<?php endforeach; ?>

@@ -413,14 +413,14 @@ class EEM_Collect_Payment_Page {
 					}
 					?>
 				</p>
-				<a class="eem-btn eem-btn-primary eem-co-btn-block" href="<?php echo esc_url( $send_link_url ); ?>"><?php esc_html_e( 'Send Payment Link', 'equine-event-manager' ); ?></a>
+				<a class="eem-btn eem-btn-electric eem-co-btn-block" href="<?php echo esc_url( $send_link_url ); ?>"><?php esc_html_e( 'Send Payment Link', 'equine-event-manager' ); ?></a>
 			</div>
 			<div class="eem-card-body eem-co-payment-panel" data-eem-collect-panel="charge" hidden>
 				<?php if ( $stripe_ready ) : ?>
 					<p class="eem-field-hint"><?php esc_html_e( 'Enter the card to charge the balance directly. Card details are tokenized by Stripe in the browser — they never reach the server.', 'equine-event-manager' ); ?></p>
 					<div id="eem-cp-card-element" class="eem-cp-card-element"></div>
 					<div id="eem-cp-charge-error" class="eem-cp-charge-error" role="alert"></div>
-					<button type="button" id="eem-cp-charge-btn" class="eem-btn eem-btn-primary eem-co-btn-block">
+					<button type="button" id="eem-cp-charge-btn" class="eem-btn eem-btn-electric eem-co-btn-block">
 						<?php
 						/* translators: %s: amount to charge */
 						echo esc_html( sprintf( __( 'Charge $%s', 'equine-event-manager' ), number_format_i18n( $total_due, 2 ) ) );
@@ -453,7 +453,7 @@ class EEM_Collect_Payment_Page {
 						</div>
 					</div>
 					<div id="eem-cp-charge-error" class="eem-cp-charge-error" role="alert"></div>
-					<button type="button" id="eem-cp-an-charge-btn" class="eem-btn eem-btn-primary eem-co-btn-block">
+					<button type="button" id="eem-cp-an-charge-btn" class="eem-btn eem-btn-electric eem-co-btn-block">
 						<?php
 						/* translators: %s: amount to charge */
 						echo esc_html( sprintf( __( 'Charge $%s', 'equine-event-manager' ), number_format_i18n( $total_due, 2 ) ) );
@@ -495,7 +495,7 @@ class EEM_Collect_Payment_Page {
 					'equine_event_manager_mark_order_paid_' . $order_key
 				);
 				?>
-				<a id="eem-cp-cash-btn" class="eem-btn eem-btn-primary eem-co-btn-block" href="<?php echo esc_url( $cash_url . '&method=cash' ); ?>">
+				<a id="eem-cp-cash-btn" class="eem-btn eem-btn-electric eem-co-btn-block" href="<?php echo esc_url( $cash_url . '&method=cash' ); ?>">
 					<?php esc_html_e( 'Record Payment', 'equine-event-manager' ); ?>
 				</a>
 			</div>

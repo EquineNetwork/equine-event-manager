@@ -472,13 +472,13 @@ class EEM_Create_Order_Page {
 				<p class="eem-field-hint"><?php esc_html_e( 'Email the customer a secure link to pay their balance online. No card details needed here.', 'equine-event-manager' ); ?></p>
 				<label class="eem-field-label" for="eem-co-invoice-msg" style="display:block;margin:10px 0 5px"><?php esc_html_e( 'Personal message', 'equine-event-manager' ); ?> <span class="eem-field-optional">(<?php esc_html_e( 'optional', 'equine-event-manager' ); ?>)</span></label>
 				<textarea class="eem-field-textarea" id="eem-co-invoice-msg" name="invoice_message" rows="2" placeholder="<?php esc_attr_e( 'Add a personal note that will appear in the email body…', 'equine-event-manager' ); ?>"></textarea>
-				<button type="button" class="eem-btn eem-btn-primary eem-co-btn-block" data-eem-action="create-order-send-link" disabled>
+				<button type="button" class="eem-btn eem-btn-electric eem-co-btn-block" data-eem-action="create-order-send-link" disabled>
 					<?php echo self::icon( 'send' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static inline SVG. ?> <?php esc_html_e( 'Send Payment Link', 'equine-event-manager' ); ?>
 				</button>
 			</div>
 			<div class="eem-card-body eem-co-payment-panel" data-eem-co-payment-panel="charge" hidden>
 				<p class="eem-field-hint"><?php esc_html_e( 'Creates the order, then takes you to the secured Collect Payment page to enter the card.', 'equine-event-manager' ); ?></p>
-				<button type="button" class="eem-btn eem-btn-primary eem-co-btn-block" data-eem-action="create-order-charge" disabled>
+				<button type="button" class="eem-btn eem-btn-electric eem-co-btn-block" data-eem-action="create-order-charge" disabled>
 					<?php echo self::icon( 'card' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static inline SVG. ?> <?php esc_html_e( 'Create Order & Collect Payment', 'equine-event-manager' ); ?>
 				</button>
 			</div>
