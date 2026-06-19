@@ -20,3 +20,6 @@ composer.phar
 # Local logs and scratch.
 *.log
 .scratch/
+
+# Local dev DB snapshots / fixtures — contain customer data, never commit
+.dev-fixtures/

@@ -1596,10 +1596,20 @@ class EEM_Reservations_CPT {
 	 * for the AJAX pre-validate rationale (callers need the merged
 	 * existing-with-defaults shape to pass into sanitize).
 	 *
-	 * @param int $post_id Post ID.
+	 * @param int  $post_id         Post ID.
+	 * @param bool $prefer_postmeta When true, read raw values from post meta
+	 *                              ONLY and never consult EEM_Reservation_Config.
+	 *                              This is the Phase-1 postmeta reader, used by
+	 *                              (a) the one-time config-table backfill migration
+	 *                              (016), which runs before any table row exists,
+	 *                              and (b) EEM_Reservation_Config::hydrate()'s
+	 *                              fallback for reservations lacking a table row.
+	 *                              Both callers MUST pass true to break the
+	 *                              otherwise-infinite mutual recursion
+	 *                              get_meta_values() ↔ Config::for() ↔ hydrate().
 	 * @return array
 	 */
-	public function get_meta_values( $post_id ) {
+	public function get_meta_values( $post_id, bool $prefer_postmeta = false ) {
 		$defaults = $this->get_default_meta_values();
 		$values   = array();
 
@@ -1607,9 +1617,13 @@ class EEM_Reservations_CPT {
 		// When the table exists, its row is the authoritative store for all
 		// columns it contains. Post meta is the fallback for keys NOT in
 		// the table and for reservations that predate the table.
+		//
+		// $prefer_postmeta short-circuits the table read so this method is a
+		// pure postmeta reader — see the @param docblock for why that is
+		// required to avoid mutual recursion with Config::for().
 		$cfg     = null;
 		$cfg_row = array();
-		if ( EEM_Reservation_Config::table_exists() ) {
+		if ( ! $prefer_postmeta && EEM_Reservation_Config::table_exists() ) {
 			$cfg     = EEM_Reservation_Config::for( (int) $post_id );
 			$cfg_row = $cfg->all();
 		}
@@ -1638,9 +1652,17 @@ class EEM_Reservations_CPT {
 		$values['_reservation_id'] = (int) $post_id;
 
 		// Stay Packages pricing mode (stored in wp_eem_reservation_config, not post meta).
-		$cfg = EEM_Reservation_Config::for( (int) $post_id );
-		$values['stall_pricing_mode'] = $cfg->get( 'stall_pricing_mode' ) ?: 'nightly';
-		$values['rv_pricing_mode']    = $cfg->get( 'rv_pricing_mode' ) ?: 'nightly';
+		// These are table-only fields with no postmeta equivalent (introduced with
+		// Stay Packages, migration 026); in postmeta-only mode they default to
+		// 'nightly', which is correct for pre-Stay-Packages reservations.
+		if ( $prefer_postmeta ) {
+			$values['stall_pricing_mode'] = 'nightly';
+			$values['rv_pricing_mode']    = 'nightly';
+		} else {
+			$cfg = EEM_Reservation_Config::for( (int) $post_id );
+			$values['stall_pricing_mode'] = $cfg->get( 'stall_pricing_mode' ) ?: 'nightly';
+			$values['rv_pricing_mode']    = $cfg->get( 'rv_pricing_mode' ) ?: 'nightly';
+		}
 
 		// Scenario B (V1 #4): resolve the inventory-type / customer-selection pair
 		// (new keys win; else derived from the legacy mode for pre-migration

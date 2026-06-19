@@ -243,8 +243,13 @@ class EEM_Reservation_Config {
 			return;
 		}
 
-		$cpt          = self::get_cpt_instance();
-		$this->data   = $cpt->get_meta_values( $this->reservation_id );
+		// Postmeta fallback for reservations with no table row yet. Pass
+		// $prefer_postmeta=true so get_meta_values() reads postmeta directly
+		// instead of calling back into Config::for() — otherwise this fallback
+		// would recurse infinitely (hydrate → get_meta_values → Config::for →
+		// hydrate …). See EEM_Reservations_CPT::get_meta_values() docblock.
+		$cpt            = self::get_cpt_instance();
+		$this->data     = $cpt->get_meta_values( $this->reservation_id, true );
 		$this->hydrated = true;
 	}
 

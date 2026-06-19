@@ -59,8 +59,14 @@ function eem_mig_016_reservation_config_table(): void {
 			continue;
 		}
 
-		// Hydrate from postmeta via the existing method.
-		$values = $cpt->get_meta_values( $rid );
+		// Hydrate from postmeta ONLY. The second arg ($prefer_postmeta=true) is
+		// mandatory here: the default get_meta_values() path reads through
+		// EEM_Reservation_Config::for(), but this migration runs *before* the
+		// table has a row for $rid — so that path would recurse infinitely
+		// (get_meta_values → Config::for → hydrate → get_meta_values …) until
+		// the stack overflows. Reading postmeta directly is also correct: this
+		// backfill's whole job is to copy the postmeta values into the table.
+		$values = $cpt->get_meta_values( $rid, true );
 
 		// Build the relational row from the hydrated values.
 		EEM_Reservation_Config::insert_from_values( $rid, $values );
