@@ -4304,7 +4304,7 @@ class EEM_Admin {
 					$em = '<span class="pv-customer-empty">&mdash;</span>';
 					?>
 					<tr>
-						<td class="pv-customer"><?php echo esc_html( self::format_customer_last_first( (string) ( $or['customer_name'] ?? '' ) ) ); ?></td>
+						<td class="pv-customer"><?php echo esc_html( self::format_customer_last_first( (string) ( $or['customer_name'] ?? '' ) ) ); ?><span class="pv-customer-order"><?php echo wp_kses_post( $or_num ); ?></span></td>
 						<td><?php echo '' !== $arr_disp ? esc_html( $arr_disp ) : $em; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
 						<td><?php echo '' !== $dep_disp ? esc_html( $dep_disp ) : $em; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
 						<?php if ( 'rv' !== $pv_show ) : ?>
@@ -6760,7 +6760,6 @@ class EEM_Admin {
 				<thead>
 					<tr>
 						<th><?php esc_html_e( 'Customer', 'equine-event-manager' ); ?></th>
-						<th><?php esc_html_e( 'Order', 'equine-event-manager' ); ?></th>
 						<th class="eem-chart-date-from-col"><?php esc_html_e( 'Arrival', 'equine-event-manager' ); ?></th>
 						<th class="eem-chart-date-to-col"><?php esc_html_e( 'Departure', 'equine-event-manager' ); ?></th>
 						<?php if ( $show_stall ) : ?>
@@ -6789,29 +6788,28 @@ class EEM_Admin {
 						);
 						?>
 						<tr data-stall-chart-search="<?php echo esc_attr( strtolower( implode( ' ', array_filter( $search_parts ) ) ) ); ?>" data-stall-chart-block="" data-has-stalls="<?php echo ! empty( $row['stall_units'] ) ? '1' : '0'; ?>" data-has-rv="<?php echo ! empty( $row['rv_units'] ) ? '1' : '0'; ?>" data-group="<?php echo esc_attr( $eem_row_group ); ?>" data-has-tack="<?php echo ! empty( $row['tack_units'] ) ? '1' : '0'; ?>">
+							<?php $eem_order_url = admin_url( 'admin.php?page=equine-event-manager-order&order_key=' . rawurlencode( $row['order_key'] ) ); ?>
 							<td>
 								<div class="eem-chart-cust-cell">
-									<a class="eem-chart-cust-link" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-order&order_key=' . rawurlencode( $row['order_key'] ) ) ); ?>">
-										<?php echo esc_html( self::format_customer_last_first( (string) $row['customer_name'] ) ); ?>
-									</a>
-								<?php if ( '' !== $eem_row_group ) : ?>
-									<span class="eem-chart-cust-icon eem-chart-cust-icon--group" style="--eem-group-color:<?php echo esc_attr( $this->group_color_for( $eem_row_group ) ); ?>" tabindex="0" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: group name */ __( 'Group: %s', 'equine-event-manager' ), $eem_row_group ) ); ?>">
-										<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-										<span class="eem-chart-cust-tip"><?php echo esc_html( $eem_row_group ); ?></span>
-									</span>
-								<?php endif; ?>
-								<?php if ( '' !== $eem_row_note ) : ?>
-									<span class="eem-chart-cust-icon eem-chart-cust-icon--note" tabindex="0" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: special requests */ __( 'Special requests: %s', 'equine-event-manager' ), $eem_row_note ) ); ?>">
-										<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
-										<span class="eem-chart-cust-tip"><strong><?php esc_html_e( 'Special requests:', 'equine-event-manager' ); ?></strong> <?php echo esc_html( $eem_row_note ); ?></span>
-									</span>
-								<?php endif; ?>
+									<div class="eem-chart-cust-cell__row">
+										<a class="eem-chart-cust-link" href="<?php echo esc_url( $eem_order_url ); ?>">
+											<?php echo esc_html( self::format_customer_last_first( (string) $row['customer_name'] ) ); ?>
+										</a>
+									<?php if ( '' !== $eem_row_group ) : ?>
+										<span class="eem-chart-cust-icon eem-chart-cust-icon--group" style="--eem-group-color:<?php echo esc_attr( $this->group_color_for( $eem_row_group ) ); ?>" tabindex="0" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: group name */ __( 'Group: %s', 'equine-event-manager' ), $eem_row_group ) ); ?>">
+											<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+											<span class="eem-chart-cust-tip"><?php echo esc_html( $eem_row_group ); ?></span>
+										</span>
+									<?php endif; ?>
+									<?php if ( '' !== $eem_row_note ) : ?>
+										<span class="eem-chart-cust-icon eem-chart-cust-icon--note" tabindex="0" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: special requests */ __( 'Special requests: %s', 'equine-event-manager' ), $eem_row_note ) ); ?>">
+											<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
+											<span class="eem-chart-cust-tip"><strong><?php esc_html_e( 'Special requests:', 'equine-event-manager' ); ?></strong> <?php echo esc_html( $eem_row_note ); ?></span>
+										</span>
+									<?php endif; ?>
+									</div>
+									<a class="eem-chart-cust-order" href="<?php echo esc_url( $eem_order_url ); ?>"><?php echo esc_html( $this->format_order_number_display( (string) $row['order_number'] ) ); ?></a>
 								</div>
-							</td>
-							<td class="eem-chart-order-num">
-								<a class="eem-chart-order-link" href="<?php echo esc_url( admin_url( 'admin.php?page=equine-event-manager-order&order_key=' . rawurlencode( $row['order_key'] ) ) ); ?>">
-									<?php echo esc_html( $this->format_order_number_display( (string) $row['order_number'] ) ); ?>
-								</a>
 							</td>
 							<?php
 							// Arrival / Departure cells. In the All view, if the stall and RV legs of
