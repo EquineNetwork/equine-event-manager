@@ -6054,9 +6054,33 @@
 
 	/* ── On page load: initial visibility for ID-based controls,
 	   fee-mode visibility, cancellation override state ── */
+	/* Early-bird cutoff must stay inside the open→close schedule window: mirror
+	   the open/close datetime values onto the cutoff input's min/max + clamp the
+	   current value (Whitney 2026-06-19). */
+	function eemSyncEbCutoffBounds(type) {
+		var open   = document.querySelector('[data-eem-sched-open="' + type + '"]');
+		var close  = document.querySelector('[data-eem-sched-close="' + type + '"]');
+		var cutoff = document.querySelector('[data-eem-eb-cutoff="' + type + '"]');
+		if (!cutoff) return;
+		if (open)  { if (open.value)  cutoff.setAttribute('min', open.value);  else cutoff.removeAttribute('min'); }
+		if (close) { if (close.value) cutoff.setAttribute('max', close.value); else cutoff.removeAttribute('max'); }
+		if (cutoff.value) {
+			if (open && open.value && cutoff.value < open.value)   cutoff.value = open.value;
+			if (close && close.value && cutoff.value > close.value) cutoff.value = close.value;
+		}
+	}
+	document.addEventListener('change', function (ev) {
+		var t = ev.target;
+		if (!t || !t.getAttribute) return;
+		if (t.hasAttribute && t.hasAttribute('data-eem-sched-open'))  { eemSyncEbCutoffBounds(t.getAttribute('data-eem-sched-open')); }
+		else if (t.hasAttribute && t.hasAttribute('data-eem-sched-close')) { eemSyncEbCutoffBounds(t.getAttribute('data-eem-sched-close')); }
+	});
+
 	document.addEventListener('DOMContentLoaded', function () {
 		document.querySelectorAll('[data-eem-action="reservation-editor-toggle-switch-row"], [data-eem-action="reservation-editor-toggle-stay-type"]').forEach(eemApplyControlsById);
 		eemApplyToggleDeps();
+		eemSyncEbCutoffBounds('stall');
+		eemSyncEbCutoffBounds('rv');
 		eemApplyFeeModeVisibility();
 		var ct = document.getElementById('en_cancellation_policy_override');
 		if (ct) {

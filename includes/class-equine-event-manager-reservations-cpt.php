@@ -1795,6 +1795,29 @@ class EEM_Reservations_CPT {
 			$values['rv_early_bird_enabled'] = 0;
 		}
 
+		// Early Bird cutoff must fall inside the open→close schedule window — clamp
+		// it in (mirrors the JS min/max gate; guards against UI bypass / a window
+		// edited narrower than an existing cutoff).
+		foreach ( array(
+			array( 'cut' => 'stall_early_bird_cutoff', 'open' => 'stalls_open_at', 'close' => 'stalls_close_at' ),
+			array( 'cut' => 'rv_early_bird_cutoff',    'open' => 'rv_open_at',     'close' => 'rv_close_at' ),
+		) as $eem_eb ) {
+			$eem_cut = isset( $values[ $eem_eb['cut'] ] ) ? trim( (string) $values[ $eem_eb['cut'] ] ) : '';
+			if ( '' === $eem_cut ) {
+				continue;
+			}
+			$eem_open  = isset( $values[ $eem_eb['open'] ] ) ? trim( (string) $values[ $eem_eb['open'] ] ) : '';
+			$eem_close = isset( $values[ $eem_eb['close'] ] ) ? trim( (string) $values[ $eem_eb['close'] ] ) : '';
+			$eem_cut_ts = strtotime( $eem_cut );
+			if ( '' !== $eem_open && $eem_cut_ts && strtotime( $eem_open ) > $eem_cut_ts ) {
+				$values[ $eem_eb['cut'] ] = $eem_open;
+				$eem_cut_ts               = strtotime( $eem_open );
+			}
+			if ( '' !== $eem_close && $eem_cut_ts && strtotime( $eem_close ) < $eem_cut_ts ) {
+				$values[ $eem_eb['cut'] ] = $eem_close;
+			}
+		}
+
 		// 2.3.48 — legacy inference only; an explicitly-stored 0 (toggle turned
 		// OFF) must survive reload even though the uploaded agreement file_id
 		// persists.
