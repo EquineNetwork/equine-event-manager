@@ -14,8 +14,18 @@
    and is 1 commit ahead (the laptop-setup doc). No branch juggling needed.
 
 **Where we left off / pick up here (in priority order):**
+- **#236 — update the laptop's Local site plugin to the latest from GitHub `main`.** MUST be done
+  from a Claude Code session that is actually ON the laptop (the desktop app / `claude` CLI in a
+  terminal) — a Claude Code *web* session runs in a cloud container with NO access to the Local
+  site (`en-event-manager.local` does not resolve from there, no WP install, no DB; verified
+  2026-06-19). Just have laptop-Claude `git pull` in the Local plugin folder, or use the WP admin
+  Plugins → Update now (the bundled GitHub updater pulls `main`).
 - **#229 — critical error when trashing a draft reservation** (deferred this whole session; first up).
 - **#234 — backfill smoke coverage** for the new readiness store + print rework + move-customer flow.
+  IN PROGRESS (draft PR #3, branch `claude/trusting-bardeen-ktdf1k`): 3 smoke files written —
+  `stall-readiness-store-smoke.php`, `print-view-show-view-smoke.php`, `move-stall-assignment-smoke.php`.
+  Authored in a web session (no WP runtime) so they are syntax-checked only; RUN them on Local via
+  `wp eval-file tests/smoke/<file>` and merge PR #3 once green.
 - **#235 — verify RV lot name/number split against real GEMS labels** (test on **NTR 6519**, NOT 5990).
 
 **What this session shipped (Stall & RV Charts + Daily Movement + all Print Views):**
