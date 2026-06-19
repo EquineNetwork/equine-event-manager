@@ -32,6 +32,7 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-venue.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-sheet-entries.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-stall-map-importer.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-stall-status-repo.php';
+require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-order-documents.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-stay-packages-repo.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-events.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-gems-client.php';
@@ -256,6 +257,7 @@ class EEM_Plugin {
 		EEM_Venue_Editor_Page::register();
 		EEM_Producer_Editor_Page::register();
 		EEM_Sheets_Results_Page::register();
+		EEM_Order_Documents::register();
 		EEM_PWA::init();
 		// C7.C.1 — meta-box registration retired. The Reservation Editor
 		// is now a custom render page (EEM_Reservation_Editor_Page); the

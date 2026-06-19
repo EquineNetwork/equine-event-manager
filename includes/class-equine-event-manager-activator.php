@@ -59,6 +59,7 @@ class EEM_Activator {
 		}
 		if ( class_exists( 'EEM_Stall_Status_Repo' ) ) {
 			EEM_Stall_Status_Repo::create_tables();
+			EEM_Order_Documents::create_table();
 		}
 		self::maybe_refresh_native_event_rewrite_rules();
 		self::run_one_time_migrations();
