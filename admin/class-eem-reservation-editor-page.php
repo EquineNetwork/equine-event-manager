@@ -301,7 +301,7 @@ class EEM_Reservation_Editor_Page {
 								: ( $current_tec_event_id ? get_permalink( $current_tec_event_id ) : '' );
 							if ( $eem_event_permalink ) :
 								?>
-								<a class="eem-btn-primary eem-header-action-view"
+								<a class="eem-btn eem-btn-electric eem-header-action-view"
 									href="<?php echo esc_url( $eem_event_permalink ); ?>"
 									target="_blank"
 									rel="noopener noreferrer">

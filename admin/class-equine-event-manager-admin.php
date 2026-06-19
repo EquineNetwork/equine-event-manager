@@ -405,7 +405,21 @@ class EEM_Admin {
 			return;
 		}
 
-		$ver = defined( 'EQUINE_EVENT_MANAGER_VERSION' ) ? EQUINE_EVENT_MANAGER_VERSION : false;
+		// Asset version = plugin version + the newest mtime of the core admin
+		// assets, so the ?ver cache-buster changes on EVERY CSS/JS edit (the
+		// plugin-version constant alone froze the buster between releases — see
+		// the 2026-06-19 cache investigation). No more hard-refresh required.
+		$ver = defined( 'EQUINE_EVENT_MANAGER_VERSION' ) ? EQUINE_EVENT_MANAGER_VERSION : '0';
+		$eem_asset_mtime = 0;
+		foreach ( array( 'assets/css/admin.css', 'assets/css/admin-legacy.css', 'assets/js/admin.js', 'assets/css/eem-choices.css' ) as $eem_asset_rel ) {
+			$eem_asset_path = EQUINE_EVENT_MANAGER_PATH . $eem_asset_rel;
+			if ( file_exists( $eem_asset_path ) ) {
+				$eem_asset_mtime = max( $eem_asset_mtime, (int) filemtime( $eem_asset_path ) );
+			}
+		}
+		if ( $eem_asset_mtime > 0 ) {
+			$ver .= '.' . $eem_asset_mtime;
+		}
 
 		// DS-1.A: Google Fonts (Space Grotesk + IBM Plex Sans) — load
 		// from the Google Fonts CDN. admin.css's `--eem-font-display` and

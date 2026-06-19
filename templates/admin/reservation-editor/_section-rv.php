@@ -172,76 +172,51 @@ echo '</div>'; // .eem-rv-nightly-content
 // ── Nightly-mode options (schedule + early bird — hidden when pricing mode = packages only) ──
 echo '<div class="eem-rv-nightly-options" id="eem-rv-nightly-options"' . ( ! $show_rv_nightly ? ' style="display:none"' : '' ) . '>';
 
-// 5. Reservation Schedule toggle
-ob_start();
+// 5–7. Reservation Schedule — grouped (mirrors Stall).
+echo '<div class="eem-sched-group">';
 eem_render_editor_toggle_label_row( array(
 	'name'       => 'rv_schedule_enabled',
 	'subsection' => 'rv-schedule',
 	'label'      => __( 'Schedule RV Reservations', 'equine-event-manager' ),
 	'is_enabled' => $schedule_on,
-	'controls'   => array( 'row-rv-open', 'row-rv-close' ),
+	'controls'   => array( 'row-rv-schedule-fields' ),
 ) );
-$sched = ob_get_clean();
-eem_render_editor_field_row( array(
-	'label'        => __( 'Reservation Schedule', 'equine-event-manager' ),
-	'control_html' => $sched,
-	'hint'         => __( 'Open and close RV reservations on specific dates and times.', 'equine-event-manager' ),
-) );
+echo '<p class="eem-field-hint eem-sched-group__hint">' . esc_html__( 'Open and close RV reservations on specific dates and times.', 'equine-event-manager' ) . '</p>';
+echo '<div class="eem-sched-fields' . ( $schedule_on ? '' : ' eem-row--hidden' ) . '" id="row-rv-schedule-fields">';
+printf(
+	'<div class="eem-sched-field"><span class="eem-sched-field__label">%s</span><input class="eem-field-input" type="datetime-local" name="en_reservation[rv_open_at]" value="%s" /></div>',
+	esc_html__( 'RV Open Date/Time', 'equine-event-manager' ),
+	esc_attr( $fmt_dt( $data['rv_open_at'] ) )
+);
+printf(
+	'<div class="eem-sched-field"><span class="eem-sched-field__label">%s</span><input class="eem-field-input" type="datetime-local" name="en_reservation[rv_close_at]" value="%s" /></div>',
+	esc_html__( 'RV Close Date/Time', 'equine-event-manager' ),
+	esc_attr( $fmt_dt( $data['rv_close_at'] ) )
+);
+echo '</div></div>';
 
-// 6 + 7. Open / Close
-eem_render_editor_field_row( array(
-	'label'        => __( 'RV Open Date/Time', 'equine-event-manager' ),
-	'row_id'       => 'row-rv-open',
-	'is_hidden'    => ! $schedule_on,
-	'control_html' => sprintf(
-		'<input class="eem-field-input" type="datetime-local" name="en_reservation[rv_open_at]" value="%s" style="max-width:260px" />',
-		esc_attr( $fmt_dt( $data['rv_open_at'] ) )
-	),
-) );
-eem_render_editor_field_row( array(
-	'label'        => __( 'RV Close Date/Time', 'equine-event-manager' ),
-	'row_id'       => 'row-rv-close',
-	'is_hidden'    => ! $schedule_on,
-	'control_html' => sprintf(
-		'<input class="eem-field-input" type="datetime-local" name="en_reservation[rv_close_at]" value="%s" style="max-width:260px" />',
-		esc_attr( $fmt_dt( $data['rv_close_at'] ) )
-	),
-) );
-
-// 11. Early Bird toggle
-ob_start();
+// 11–13. Early Bird — grouped (mirrors Stall).
+echo '<div class="eem-sched-group">';
 eem_render_editor_toggle_label_row( array(
 	'name'       => 'rv_early_bird_enabled',
 	'subsection' => 'rv-eb',
 	'label'      => __( 'Enable Early Bird Pricing', 'equine-event-manager' ),
 	'is_enabled' => $eb_on,
-	'controls'   => array( 'row-rv-eb-cutoff', 'row-rv-eb-nightly' ),
+	'controls'   => array( 'row-rv-eb-fields' ),
 ) );
-$eb = ob_get_clean();
-eem_render_editor_field_row( array(
-	'label'        => __( 'Early Bird Pricing', 'equine-event-manager' ),
-	'control_html' => $eb,
-	'hint'         => __( 'Offer a discounted nightly rate before a cutoff date.', 'equine-event-manager' ),
-) );
-
-eem_render_editor_field_row( array(
-	'label'        => __( 'Early Bird Cutoff', 'equine-event-manager' ),
-	'row_id'       => 'row-rv-eb-cutoff',
-	'is_hidden'    => ! $eb_on,
-	'control_html' => sprintf(
-		'<input class="eem-field-input" type="datetime-local" name="en_reservation[rv_early_bird_cutoff]" value="%s" style="max-width:260px" />',
-		esc_attr( $fmt_dt( $data['rv_early_bird_cutoff'] ) )
-	),
-) );
-eem_render_editor_field_row( array(
-	'label'        => __( 'Early Bird Nightly Rate', 'equine-event-manager' ),
-	'row_id'       => 'row-rv-eb-nightly',
-	'is_hidden'    => ! $eb_on,
-	'control_html' => sprintf(
-		'<div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[rv_early_bird_nightly_rate]" value="%s" /></div>',
-		esc_attr( $fmt_money( $data['rv_early_bird_nightly_rate'] ) )
-	),
-) );
+echo '<p class="eem-field-hint eem-sched-group__hint">' . esc_html__( 'Offer a discounted nightly rate before a cutoff date.', 'equine-event-manager' ) . '</p>';
+echo '<div class="eem-sched-fields' . ( $eb_on ? '' : ' eem-row--hidden' ) . '" id="row-rv-eb-fields">';
+printf(
+	'<div class="eem-sched-field"><span class="eem-sched-field__label">%s</span><input class="eem-field-input" type="datetime-local" name="en_reservation[rv_early_bird_cutoff]" value="%s" /></div>',
+	esc_html__( 'Early Bird Cutoff', 'equine-event-manager' ),
+	esc_attr( $fmt_dt( $data['rv_early_bird_cutoff'] ) )
+);
+printf(
+	'<div class="eem-sched-field"><span class="eem-sched-field__label">%s</span><div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[rv_early_bird_nightly_rate]" value="%s" /></div></div>',
+	esc_html__( 'Early Bird Nightly Rate', 'equine-event-manager' ),
+	esc_attr( $fmt_money( $data['rv_early_bird_nightly_rate'] ) )
+);
+echo '</div></div>';
 
 echo '</div>'; // .eem-rv-nightly-options
 

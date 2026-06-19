@@ -72,8 +72,8 @@ eem_render_editor_field_row( array(
 	),
 ) );
 
-// 3.6 Grounds Fee — toggle + amount on same row.
-ob_start();
+// 3.6 Grounds Fee — grouped: borderless toggle + hint + revealed amount.
+echo '<div class="eem-sched-group">';
 eem_render_editor_toggle_label_row( array(
 	'name'       => 'group_rider_grounds_fee_enabled',
 	'subsection' => 'grounds-fee',
@@ -81,20 +81,17 @@ eem_render_editor_toggle_label_row( array(
 	'is_enabled' => $grounds_on,
 	'controls'   => array( 'group-grounds-amt-inline' ),
 ) );
-$grounds_toggle_html = (string) ob_get_clean();
-$grounds_amt_html = sprintf(
-	'<div id="group-grounds-amt-inline" class="eem-inline-amt"%s><div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" name="en_reservation[group_rider_grounds_fee_amount]" id="en_group_rider_grounds_fee_amount" type="number" step="0.01" min="0" value="%s" /></div></div>',
-	$grounds_on ? '' : ' style="display:none"',
+echo '<p class="eem-field-hint eem-sched-group__hint">' . esc_html__( 'Charge a grounds fee for each rider.', 'equine-event-manager' ) . '</p>';
+printf(
+	'<div class="eem-sched-fields eem-sched-fields--inline%1$s" id="group-grounds-amt-inline"><div class="eem-sched-field"><span class="eem-sched-field__label">%2$s</span><div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" name="en_reservation[group_rider_grounds_fee_amount]" id="en_group_rider_grounds_fee_amount" type="number" step="0.01" min="0" value="%3$s" /></div></div></div>',
+	$grounds_on ? '' : ' eem-row--hidden',
+	esc_html__( 'Grounds Fee Amount', 'equine-event-manager' ),
 	esc_attr( number_format( $grounds_amt, 2, '.', '' ) )
 );
-eem_render_editor_field_row( array(
-	'label'        => __( 'Grounds Fee', 'equine-event-manager' ),
-	'label_sub'    => __( 'Charge a grounds fee for each rider', 'equine-event-manager' ),
-	'control_html' => $grounds_toggle_html . $grounds_amt_html,
-) );
+echo '</div>';
 
-// 3.9 Deposit — toggle + amount on same row.
-ob_start();
+// 3.9 Deposit — grouped: borderless toggle + hint + revealed amount.
+echo '<div class="eem-sched-group">';
 eem_render_editor_toggle_label_row( array(
 	'name'       => 'group_rider_deposit_enabled',
 	'subsection' => 'deposit',
@@ -102,14 +99,11 @@ eem_render_editor_toggle_label_row( array(
 	'is_enabled' => $deposit_on,
 	'controls'   => array( 'group-deposit-amt-inline' ),
 ) );
-$deposit_toggle_html = (string) ob_get_clean();
-$deposit_amt_html = sprintf(
-	'<div id="group-deposit-amt-inline" class="eem-inline-amt"%s><div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" name="en_reservation[group_rider_deposit_amount]" id="en_group_rider_deposit_amount" type="number" step="0.01" min="0" value="%s" /></div></div>',
-	$deposit_on ? '' : ' style="display:none"',
+echo '<p class="eem-field-hint eem-sched-group__hint">' . esc_html__( 'Require a deposit for each rider.', 'equine-event-manager' ) . '</p>';
+printf(
+	'<div class="eem-sched-fields eem-sched-fields--inline%1$s" id="group-deposit-amt-inline"><div class="eem-sched-field"><span class="eem-sched-field__label">%2$s</span><div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" name="en_reservation[group_rider_deposit_amount]" id="en_group_rider_deposit_amount" type="number" step="0.01" min="0" value="%3$s" /></div></div></div>',
+	$deposit_on ? '' : ' eem-row--hidden',
+	esc_html__( 'Deposit Amount', 'equine-event-manager' ),
 	esc_attr( number_format( $deposit_amt, 2, '.', '' ) )
 );
-eem_render_editor_field_row( array(
-	'label'        => __( 'Deposit', 'equine-event-manager' ),
-	'label_sub'    => __( 'Require a deposit for each rider', 'equine-event-manager' ),
-	'control_html' => $deposit_toggle_html . $deposit_amt_html,
-) );
+echo '</div>';

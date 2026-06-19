@@ -193,82 +193,62 @@ echo '</div>'; // .eem-stall-nightly-content
 // ── Nightly-mode options (schedule + early bird — hidden when pricing mode = packages only) ──
 echo '<div class="eem-stall-nightly-options" id="eem-stall-nightly-options"' . ( ! $show_nightly ? ' style="display:none"' : '' ) . '>';
 
-// 5. Reservation Schedule toggle
-ob_start();
+// 5–7. Reservation Schedule — grouped: borderless toggle (the group header) +
+// hint + a 2-up date window the toggle reveals. Replaces the old bordered
+// toggle row + redundant "Reservation Schedule" label + two stacked date rows.
+echo '<div class="eem-sched-group">';
 eem_render_editor_toggle_label_row( array(
 	'name'       => 'stall_schedule_enabled',
 	'subsection' => 'stall-schedule',
 	'label'      => __( 'Schedule Stall Reservations', 'equine-event-manager' ),
 	'is_enabled' => $schedule_on,
-	'controls'   => array( 'row-stall-open', 'row-stall-close' ),
+	'controls'   => array( 'row-stall-schedule-fields' ),
 ) );
-$sched_html = ob_get_clean();
-eem_render_editor_field_row( array(
-	'label'        => __( 'Reservation Schedule', 'equine-event-manager' ),
-	'control_html' => $sched_html,
-	'hint'         => __( 'Open and close stall reservations on specific dates and times.', 'equine-event-manager' ),
-) );
+echo '<p class="eem-field-hint eem-sched-group__hint">' . esc_html__( 'Open and close stall reservations on specific dates and times.', 'equine-event-manager' ) . '</p>';
+echo '<div class="eem-sched-fields' . ( $schedule_on ? '' : ' eem-row--hidden' ) . '" id="row-stall-schedule-fields">';
+printf(
+	'<div class="eem-sched-field"><span class="eem-sched-field__label">%s</span><input class="eem-field-input" type="datetime-local" name="en_reservation[stalls_open_at]" value="%s" /></div>',
+	esc_html__( 'Stalls Open Date/Time', 'equine-event-manager' ),
+	esc_attr( $fmt_dt( $data['stalls_open_at'] ) )
+);
+printf(
+	'<div class="eem-sched-field"><span class="eem-sched-field__label">%s</span><input class="eem-field-input" type="datetime-local" name="en_reservation[stalls_close_at]" value="%s" /></div>',
+	esc_html__( 'Stalls Close Date/Time', 'equine-event-manager' ),
+	esc_attr( $fmt_dt( $data['stalls_close_at'] ) )
+);
+echo '</div>'; // /.eem-sched-fields
+echo '</div>'; // /.eem-sched-group
 
-// 6 + 7. Stalls Open / Close datetimes
-eem_render_editor_field_row( array(
-	'label'        => __( 'Stalls Open Date/Time', 'equine-event-manager' ),
-	'row_id'       => 'row-stall-open',
-	'is_hidden'    => ! $schedule_on,
-	'control_html' => sprintf(
-		'<input class="eem-field-input" type="datetime-local" name="en_reservation[stalls_open_at]" value="%s" style="max-width:260px" />',
-		esc_attr( $fmt_dt( $data['stalls_open_at'] ) )
-	),
-) );
-eem_render_editor_field_row( array(
-	'label'        => __( 'Stalls Close Date/Time', 'equine-event-manager' ),
-	'row_id'       => 'row-stall-close',
-	'is_hidden'    => ! $schedule_on,
-	'control_html' => sprintf(
-		'<input class="eem-field-input" type="datetime-local" name="en_reservation[stalls_close_at]" value="%s" style="max-width:260px" />',
-		esc_attr( $fmt_dt( $data['stalls_close_at'] ) )
-	),
-) );
-
-// 11. Early Bird Pricing toggle
-ob_start();
+// 11–14. Early Bird Pricing — grouped: borderless toggle header + hint + a 2-up
+// (Cutoff + Nightly Rate) window the toggle reveals.
+echo '<div class="eem-sched-group">';
 eem_render_editor_toggle_label_row( array(
 	'name'       => 'stall_early_bird_enabled',
 	'subsection' => 'stall-eb',
 	'label'      => __( 'Enable Early Bird Pricing', 'equine-event-manager' ),
 	'is_enabled' => $eb_on,
-	'controls'   => array( 'row-stall-eb-cutoff', 'row-stall-eb-nightly' ),
+	'controls'   => array( 'row-stall-eb-fields' ),
 ) );
-$eb_html = ob_get_clean();
-eem_render_editor_field_row( array(
-	'label'        => __( 'Early Bird Pricing', 'equine-event-manager' ),
-	'control_html' => $eb_html,
-	'hint'         => __( 'Offer a discounted nightly rate before a cutoff date.', 'equine-event-manager' ),
-) );
-
-// 12 + 13 + 14. Early Bird cutoff + rates
-eem_render_editor_field_row( array(
-	'label'        => __( 'Early Bird Cutoff', 'equine-event-manager' ),
-	'row_id'       => 'row-stall-eb-cutoff',
-	'is_hidden'    => ! $eb_on,
-	'control_html' => sprintf(
-		'<input class="eem-field-input" type="datetime-local" name="en_reservation[stall_early_bird_cutoff]" value="%s" style="max-width:260px" />',
-		esc_attr( $fmt_dt( $data['stall_early_bird_cutoff'] ) )
-	),
-) );
-eem_render_editor_field_row( array(
-	'label'        => __( 'Early Bird Nightly Rate', 'equine-event-manager' ),
-	'row_id'       => 'row-stall-eb-nightly',
-	'is_hidden'    => ! $eb_on,
-	'control_html' => sprintf(
-		'<div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[stall_early_bird_nightly_rate]" value="%s" /></div>',
-		esc_attr( $fmt_money( $data['stall_early_bird_nightly_rate'] ) )
-	),
-) );
+echo '<p class="eem-field-hint eem-sched-group__hint">' . esc_html__( 'Offer a discounted nightly rate before a cutoff date.', 'equine-event-manager' ) . '</p>';
+echo '<div class="eem-sched-fields' . ( $eb_on ? '' : ' eem-row--hidden' ) . '" id="row-stall-eb-fields">';
+printf(
+	'<div class="eem-sched-field"><span class="eem-sched-field__label">%s</span><input class="eem-field-input" type="datetime-local" name="en_reservation[stall_early_bird_cutoff]" value="%s" /></div>',
+	esc_html__( 'Early Bird Cutoff', 'equine-event-manager' ),
+	esc_attr( $fmt_dt( $data['stall_early_bird_cutoff'] ) )
+);
+printf(
+	'<div class="eem-sched-field"><span class="eem-sched-field__label">%s</span><div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[stall_early_bird_nightly_rate]" value="%s" /></div></div>',
+	esc_html__( 'Early Bird Nightly Rate', 'equine-event-manager' ),
+	esc_attr( $fmt_money( $data['stall_early_bird_nightly_rate'] ) )
+);
+echo '</div>'; // /.eem-sched-fields
+echo '</div>'; // /.eem-sched-group
 
 echo '</div>'; // .eem-stall-nightly-options
 
-// 15. Required Shavings toggle
-ob_start();
+// 15–17. Required Shavings — grouped: borderless toggle header + hint + a 2-up
+// (Bags Per Stall + Price Per Bag) window the toggle reveals.
+echo '<div class="eem-sched-group">';
 eem_render_editor_toggle_label_row( array(
 	'name'       => 'required_shavings_enabled',
 	'subsection' => 'stall-shavings',
@@ -276,33 +256,24 @@ eem_render_editor_toggle_label_row( array(
 	'is_enabled' => $shavings_on,
 	'controls'   => array( 'row-stall-shavings-details' ),
 ) );
-$shav_html = ob_get_clean();
-eem_render_editor_field_row( array(
-	'label'        => __( 'Required Shavings', 'equine-event-manager' ),
-	'control_html' => $shav_html,
-	'hint'         => __( 'Automatically add shavings to each stall reservation.', 'equine-event-manager' ),
-) );
+echo '<p class="eem-field-hint eem-sched-group__hint">' . esc_html__( 'Automatically add shavings to each stall reservation.', 'equine-event-manager' ) . '</p>';
+echo '<div class="eem-sched-fields eem-sched-fields--inline' . ( $shavings_on ? '' : ' eem-row--hidden' ) . '" id="row-stall-shavings-details">';
+printf(
+	'<div class="eem-sched-field"><span class="eem-sched-field__label">%s</span><div class="eem-price-wrap" style="max-width:110px"><span class="eem-price-symbol">#</span><input class="eem-price-input" type="number" min="0" step="1" name="en_reservation[required_shavings_per_stall]" value="%s" /></div></div>',
+	esc_html__( 'Bags Per Stall', 'equine-event-manager' ),
+	esc_attr( (string) ( $data['required_shavings_per_stall'] ?? '0' ) )
+);
+printf(
+	'<div class="eem-sched-field"><span class="eem-sched-field__label">%s</span><div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[required_shavings_price]" value="%s" /></div></div>',
+	esc_html__( 'Price Per Bag', 'equine-event-manager' ),
+	esc_attr( $fmt_money( $data['required_shavings_price'] ) )
+);
+echo '</div>'; // /.eem-sched-fields
+echo '</div>'; // /.eem-sched-group
 
 // T1 — the Tack Stalls control moved DOWN to render under Blocked Stall Numbers
 // (it governs which physical stall numbers are tack), so it is emitted later in
 // this file rather than here next to Required Shavings.
-
-// 16 + 17. Shavings qty + price (combined single row)
-eem_render_editor_field_row( array(
-	'label'        => __( 'Bags Per Stall / Price', 'equine-event-manager' ),
-	'row_id'       => 'row-stall-shavings-details',
-	'is_hidden'    => ! $shavings_on,
-	'control_html' => sprintf(
-		'<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">'
-		. '<div style="display:flex;align-items:center;gap:6px"><label style="font-size:13px;color:#64748b;white-space:nowrap">%s</label><input class="eem-field-input" type="number" min="0" step="1" name="en_reservation[required_shavings_per_stall]" value="%s" style="max-width:80px" /></div>'
-		. '<div style="display:flex;align-items:center;gap:6px"><label style="font-size:13px;color:#64748b;white-space:nowrap">%s</label><div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[required_shavings_price]" value="%s" /></div></div>'
-		. '</div>',
-		esc_html__( 'Bags', 'equine-event-manager' ),
-		esc_attr( (string) ( $data['required_shavings_per_stall'] ?? '0' ) ),
-		esc_html__( 'Price per bag', 'equine-event-manager' ),
-		esc_attr( $fmt_money( $data['required_shavings_price'] ) )
-	),
-) );
 
 // Inventory Mode (C8) — UX polish 2.3.23: moved below pricing/shavings so the
 // inventory cluster (Mode → Available qty → Max per customer → Row builder) appears

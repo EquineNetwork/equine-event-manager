@@ -1128,8 +1128,9 @@ a.eem-btn-add:hover {
 	/* Top matches the field-row rhythm — the first .eem-field-row inside has its
 	   own top padding zeroed, so the panel supplies the breathing room. */
 	padding: var(--eem-space-4) var(--eem-space-4) var(--eem-space-2);
-	background: var(--eem-bg);
-	border: 1px solid var(--eem-border);
+	/* Soft fill groups the cluster — no border, matching the pricing /
+	   schedule grouped panels (Whitney 2026-06-19). */
+	background: var(--eem-bg-muted, #f6f8fb);
 	border-radius: var(--eem-radius);
 }
 .eem-layout-group .eem-field-row:last-child {
@@ -1201,6 +1202,12 @@ select.eem-field-select {
 	width: 100%;
 	outline: none;
 }
+/* Canonical single-line field height — matches selects + affix fields so every
+   control lines up (global, 2026-06-19). Textareas keep auto height. */
+input.eem-field-input {
+	height: var(--eem-select-height);
+	box-sizing: border-box;
+}
 
 input.eem-field-input:focus,
 textarea.eem-field-textarea:focus,
@@ -1259,20 +1266,36 @@ select.eem-field-select {
    the now-stretched chip. Took the optional aesthetic alignments too
    (1.5px → 1px border, background shade, padding +1px, focus box-
    shadow) for a single pass to mockup canon. */
+/* ── LOCKED prefix-affix design (2026-06-19, GLOBAL FINAL) ───────────────────
+   THE standard for any input with a $/% prefix or suffix: ONE bordered field
+   at the canonical control height (--eem-select-height). The symbol sits in a
+   blue-filled segment (#f0f4fb) with NAVY text, divided from a borderless white
+   input. The wrap owns the outer border + focus ring. Applies to
+   .eem-price-wrap (here), .eem-pct-wrap, .eem-repeat-price-wrap,
+   .eem-pkg-price-wrap. Reuse this shape for all future prefix/suffix fields. */
 .eem-price-wrap {
 	display: flex;
 	align-items: stretch;
 	max-width: 180px;
+	height: var(--eem-select-height);
+	box-sizing: border-box;
+	border: 1px solid var(--eem-control-border);
+	border-radius: var(--eem-radius);
+	background: #fff;
+	overflow: hidden;
+}
+.eem-price-wrap:focus-within {
+	border-color: var(--eem-electric);
+	box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12);
 }
 
 .eem-price-symbol {
-	padding: 8px 10px;
-	background: #f3f4f5;
-	border: 1px solid #8c8f94;
-	border-right: none;
-	border-radius: var(--eem-radius) 0 0 var(--eem-radius);
+	padding: 0 11px;
+	background: #f0f4fb;
+	border: none;
+	border-right: 1px solid var(--eem-control-border);
 	font-size: 13px;
-	color: var(--eem-text-secondary);
+	color: var(--eem-navy);
 	font-weight: 600;
 	display: flex;
 	align-items: center;
@@ -1291,21 +1314,21 @@ select.eem-field-select {
    when chasing a cascade winner). */
 input.eem-price-input {
 	margin: 0; /* C7.X.15 Issue 3 — reset WP core forms.css margin */
-	padding: 8px 12px;
-	border: 1px solid #8c8f94;
-	border-radius: 0 var(--eem-radius) var(--eem-radius) 0;
+	padding: 0 12px;
+	height: 100%;
+	border: none;
+	border-radius: 0;
 	font-size: 13.5px;
 	font-family: var(--eem-font-ui);
 	color: var(--eem-navy);
-	background: var(--eem-surface);
+	background: transparent;
 	min-width: 0;
 	flex: 1;
 	outline: none;
 }
 
 input.eem-price-input:focus {
-	border-color: var(--eem-electric);
-	box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12);
+	box-shadow: none;
 }
 
 /* Date range */
@@ -1366,10 +1389,12 @@ input.eem-price-input:focus {
 	background: var(--eem-surface);
 }
 
+/* Active segment = electric blue + white — the standard "selected" cue
+   plugin-wide (matches the list filter tabs). Standardized 2026-06-19. */
 .eem-mode-btn.active {
-	border-color: var(--eem-navy);
-	background: var(--eem-navy);
-	color: var(--eem-text-on-navy);
+	border-color: var(--eem-electric);
+	background: var(--eem-electric);
+	color: #fff;
 }
 
 /* V1 #4 (Scenario B): disabled mode button — e.g. "Pick from layout" when the
@@ -6472,6 +6497,37 @@ a.eem-dashboard-qa-btn:focus {
 .eem-reservation-editor-section {
 	overflow: hidden;
 }
+
+/* ── FLAT SECTIONS (one form, fewer layers) ─────────────────────────────────
+   Every editor section drops its card chrome (border / radius / shadow) + the
+   card-header line + the double horizontal inset, so it reads as a flat band
+   inside the single editor panel — header (icon + title + enable toggle) over
+   its fields, divided from the next section by a hairline. Toggles + collapse
+   are unchanged (they live in the header). */
+/* Compound .eem-card.eem-reservation-editor-section (0,2,0) so it beats the
+   duplicate global `.eem-card { border }` (0,1,0) that's defined LATER in the
+   file (Reports block) and would otherwise re-apply the card border. */
+.eem-reservation-editor-section.eem-card {
+	border: none;
+	border-radius: 0;
+	box-shadow: none;
+	background: transparent;
+	border-bottom: 1px solid #e2e4e7; /* visible section divider */
+	padding: 14px 0;
+}
+.eem-reservation-editor-section.eem-card:last-child {
+	border-bottom: none;
+}
+.eem-reservation-editor-section .eem-section-header {
+	background: transparent;
+	border-bottom: none;
+	padding: 0 0 6px;
+}
+.eem-reservation-editor-section .eem-section-body {
+	padding: 6px 0 0;
+}
+/* (Publish-validation highlight still works on the flat section via the
+   existing .eem-section-invalid box-shadow ring + header tint above.) */
 .eem-section-header {
 	display: flex;
 	align-items: center;
@@ -6482,8 +6538,10 @@ a.eem-dashboard-qa-btn:focus {
 	cursor: pointer;
 	user-select: none;
 }
+/* Flat sections: no header border — the section's own hairline divider is the
+   only separator (this rule otherwise stacked a 2nd line on expanded sections). */
 .eem-section-header.is-open {
-	border-bottom: 1px solid var(--eem-border-soft);
+	border-bottom: none;
 }
 .eem-section-header-left {
 	display: flex;
@@ -6881,6 +6939,54 @@ a.eem-reservation-editor-meta-change-link:hover {
 	user-select: none;
 	transition: border-color 0.15s ease;
 }
+
+/* ── Scheduled-feature group (Reservation Schedule, etc.) ────────────────────
+   One soft panel: borderless toggle as the header + hint + a 2-up date window
+   the toggle reveals. Cleaner than a bordered toggle + redundant label + two
+   stacked full-width date rows. */
+.eem-sched-group {
+	margin: 14px 0;
+	padding: 16px 18px;
+	background: var(--eem-bg-muted, #f6f8fb);
+	border-radius: var(--eem-radius);
+}
+/* Toggle is the group header — no box around it here. */
+.eem-sched-group .eem-toggle-label-row {
+	border: none;
+	background: transparent;
+	padding: 0;
+	max-width: none;
+}
+.eem-sched-group__hint {
+	margin: 6px 0 0;
+}
+.eem-sched-fields {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 16px;
+	margin-top: 14px;
+}
+/* Inline variant — for small paired fields (e.g. Bags / Price) that shouldn't
+   stretch to half-width each; they sit content-width, close together. */
+.eem-sched-fields--inline {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 28px;
+}
+.eem-sched-field {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-width: 0;
+}
+.eem-sched-field__label {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--eem-navy);
+}
+@media (max-width: 600px) {
+	.eem-sched-fields { grid-template-columns: 1fr; }
+}
 .eem-toggle-label-row:hover {
 	border-color: var(--eem-electric);
 }
@@ -6913,47 +7019,57 @@ a.eem-reservation-editor-meta-change-link:hover {
 .eem-fee-mode-btn:hover {
 	border-color: var(--eem-electric);
 }
+/* Solid electric active — matches .eem-mode-btn (the standardized segment cue). */
 .eem-fee-mode-btn--active {
 	border-color: var(--eem-electric);
-	background: #EEF4FF;
-	color: var(--eem-electric);
+	background: var(--eem-electric);
+	color: #fff;
 	font-weight: 600;
 }
 
 /* Percentage input variant — % symbol on RIGHT (mockup line 164).
    Inverts .eem-price-wrap which puts $ on the LEFT. */
+/* Suffix variant of the locked affix design — % sits in a blue navy segment
+   on the right. */
 .eem-pct-wrap {
 	display: flex;
 	align-items: stretch;
 	max-width: 160px;
+	height: var(--eem-select-height);
+	box-sizing: border-box;
+	border: 1px solid var(--eem-control-border);
+	border-radius: var(--eem-radius);
+	background: #fff;
+	overflow: hidden;
 }
-/* C7.X.13 — `input.` prefix ties WP core forms.css (same fix as
-   .eem-price-input above; see audit-trail comment there). */
+.eem-pct-wrap:focus-within {
+	border-color: var(--eem-electric);
+	box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12);
+}
 input.eem-pct-input {
-	margin: 0; /* C7.X.15 Issue 3 — reset WP core forms.css margin */
-	padding: 8px 12px;
-	border: 1px solid #8c8f94;
-	border-radius: var(--eem-radius) 0 0 var(--eem-radius); /* C7.X.18 Issue A2: was 4px hardcoded */
+	margin: 0;
+	padding: 0 12px;
+	height: 100%;
+	border: none;
+	border-radius: 0;
 	font-size: 13.5px;
 	font-family: inherit;
 	color: var(--eem-text);
-	background: #fff;
+	background: transparent;
 	min-width: 0;
 	flex: 1;
 	outline: none;
 }
 input.eem-pct-input:focus {
-	border-color: var(--eem-electric);
-	box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12);
+	box-shadow: none;
 }
 .eem-pct-symbol {
-	padding: 8px 10px;
-	background: #f3f4f5;
-	border: 1px solid #8c8f94;
-	border-left: none;
-	border-radius: 0 4px 4px 0;
+	padding: 0 11px;
+	background: #f0f4fb;
+	border: none;
+	border-left: 1px solid var(--eem-control-border);
 	font-size: 13px;
-	color: var(--eem-text-muted);
+	color: var(--eem-navy);
 	font-weight: 600;
 	display: flex;
 	align-items: center;
@@ -7015,7 +7131,8 @@ input.eem-pct-input:focus {
    padding-bottom: 90px prevents content being obscured by the
    fixed .eem-sticky-save bar (mockup line 67: padding:18px 22px 90px). */
 .eem-edit-body { padding: 18px 22px 90px; background: #fff; }
-.eem-edit-main { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+/* gap:0 — flat sections are separated by their own hairline divider, not a gap. */
+.eem-edit-main { display: flex; flex-direction: column; gap: 0; min-width: 0; }
 
 /* 2.3.56 — Hard-gate panel shown when a reservation has no linked event yet.
    The event picker lives in the header above; this panel is the body prompt. */
@@ -7255,10 +7372,11 @@ input.eem-zone-price-in:focus { border-color: var(--eem-electric); box-shadow: 0
 .eem-repeat-table td { padding: 10px 12px; vertical-align: middle; }
 input.eem-repeat-input { margin: 0; padding: 7px 10px; border: 1.5px solid #D9E2F2; border-radius: var(--eem-radius-sm); font-size: 13px; font-family: inherit; color: var(--eem-text); background: #fff; width: 100%; outline: none; }
 input.eem-repeat-input:focus { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
-.eem-repeat-price-wrap { display: flex; align-items: stretch; border: 1.5px solid #D9E2F2; border-radius: var(--eem-radius, 3px); overflow: hidden; }
-.eem-repeat-price-sym { padding: 0 8px; background: #FAFBFE; border: none; border-right: 1.5px solid #D9E2F2; font-size: 13px; color: var(--eem-slate); font-weight: 600; display: flex; align-items: center; }
-input.eem-repeat-price-in { margin: 0; padding: 7px 10px; border: none; font-size: 13px; font-family: inherit; color: var(--eem-text); background: #fff; width: 90px; outline: none; }
-input.eem-repeat-price-in:focus { box-shadow: inset 0 0 0 1px var(--eem-electric); }
+.eem-repeat-price-wrap { display: flex; align-items: stretch; height: var(--eem-select-height); box-sizing: border-box; border: 1px solid var(--eem-control-border); border-radius: var(--eem-radius); overflow: hidden; background: #fff; }
+.eem-repeat-price-wrap:focus-within { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
+.eem-repeat-price-sym { padding: 0 11px; background: #f0f4fb; border: none; border-right: 1px solid var(--eem-control-border); font-size: 13px; color: var(--eem-navy); font-weight: 600; display: flex; align-items: center; }
+input.eem-repeat-price-in { margin: 0; padding: 0 10px; height: 100%; border: none; font-size: 13px; font-family: inherit; color: var(--eem-text); background: transparent; width: 90px; outline: none; }
+input.eem-repeat-price-in:focus { box-shadow: none; }
 .eem-btn-delete { width: 30px; height: 30px; border-radius: var(--eem-radius); border: 1px solid #fecaca; background: #fef2f2; color: #b91c1c; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .eem-btn-delete svg { width: 13px; height: 13px; }
 .eem-btn-delete:hover { background: #fee2e2; }
@@ -7576,8 +7694,9 @@ input.eem-event-search-input:focus {
 	width: 32px;
 	height: 32px;
 	border-radius: var(--eem-radius, 3px);
-	border: 1.5px solid #fecaca;
-	background: #fef2f2;
+	/* Borderless red icon button — tint on hover (locked 2026-06-19). */
+	border: none;
+	background: transparent;
 	color: #b91c1c;
 	cursor: pointer;
 	display: flex;
@@ -11420,43 +11539,50 @@ a.eem-dm-view-tab.active:visited {
 	margin-top: 14px;
 	margin-bottom: 18px;
 	padding: 16px 18px 18px;
+	/* Soft fill groups the pricing cluster — no border (locked 2026-06-19). */
 	background: var(--eem-bg-muted, #f6f8fb);
-	border: 1px solid var(--eem-border);
 	border-radius: var(--eem-radius);
 }
 /* ── Package rows (zone-row pattern: soft blue border, inline inputs) ── */
 .eem-packages-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
+/* Borderless row — only the inputs carry borders (locked 2026-06-19). All
+   controls share a fixed 36px height so the name / date / price fields line up
+   exactly. */
 .eem-pkg-row {
-	display: flex; align-items: center; gap: 10px; padding: 10px 14px;
-	border: 1.5px solid #D9E2F2; border-radius: 6px; background: #fff;
+	display: flex; align-items: center; gap: 10px;
 }
 input.eem-pkg-name-input {
-	flex: 1 1 180px; min-width: 120px; margin: 0; padding: 7px 10px;
-	border: 1.5px solid #D9E2F2; border-radius: var(--eem-radius-sm);
+	flex: 1 1 180px; min-width: 120px; margin: 0; padding: 0 10px;
+	height: var(--eem-select-height); box-sizing: border-box;
+	border: 1px solid var(--eem-control-border); border-radius: var(--eem-radius-sm);
 	font-size: 13px; font-family: inherit; color: var(--eem-text); background: #fff; outline: none;
 }
 input.eem-pkg-name-input:focus { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
 input.eem-pkg-date-input {
-	width: 130px; flex-shrink: 0; margin: 0; padding: 7px 8px;
-	border: 1.5px solid #D9E2F2; border-radius: var(--eem-radius-sm);
+	width: 150px; flex-shrink: 0; margin: 0; padding: 0 8px;
+	height: var(--eem-select-height); box-sizing: border-box;
+	border: 1px solid var(--eem-control-border); border-radius: var(--eem-radius-sm);
 	font-size: 13px; font-family: inherit; color: var(--eem-text); background: #fff; outline: none;
 }
 input.eem-pkg-date-input:focus { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
 .eem-pkg-sep { color: var(--eem-text-muted); font-size: 13px; flex-shrink: 0; }
 .eem-pkg-price-wrap {
-	display: flex; align-items: stretch; border: 1.5px solid #D9E2F2;
-	border-radius: var(--eem-radius, 3px); overflow: hidden; flex-shrink: 0;
+	display: flex; align-items: stretch; flex-shrink: 0;
+	height: var(--eem-select-height); box-sizing: border-box;
+	border: 1px solid var(--eem-control-border);
+	border-radius: var(--eem-radius); overflow: hidden; background: #fff;
 }
+.eem-pkg-price-wrap:focus-within { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
 .eem-pkg-price-sym {
-	display: flex; align-items: center; padding: 0 8px;
-	background: #FAFBFE; border: none; border-right: 1.5px solid #D9E2F2;
-	font-size: 13px; color: var(--eem-slate); font-weight: 600;
+	display: flex; align-items: center; padding: 0 11px;
+	background: #f0f4fb; border: none; border-right: 1px solid var(--eem-control-border);
+	font-size: 13px; color: var(--eem-navy); font-weight: 600;
 }
 input.eem-pkg-price-input {
-	width: 80px; margin: 0; padding: 7px 8px; border: none;
-	font-size: 13px; font-family: inherit; color: var(--eem-text); background: #fff; outline: none;
+	width: 80px; margin: 0; padding: 0 10px; border: none; height: 100%;
+	font-size: 13px; font-family: inherit; color: var(--eem-text); background: transparent; outline: none;
 }
-input.eem-pkg-price-input:focus { box-shadow: inset 0 0 0 1px var(--eem-electric); }
+input.eem-pkg-price-input:focus { box-shadow: none; }
 .eem-btn-sm:not(.eem-btn-primary):not(.eem-btn-electric) { padding: 3px 10px; font-size: 12px; border: 1px solid var(--eem-border); border-radius: var(--eem-radius); background: #fff; cursor: pointer; color: var(--eem-navy); }
 .eem-btn-sm:not(.eem-btn-primary):not(.eem-btn-electric):hover { background: var(--eem-bg-muted); }
 .eem-btn-sm--danger { color: var(--eem-red, #d63638); border-color: var(--eem-red, #d63638); }
