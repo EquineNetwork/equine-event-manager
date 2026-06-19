@@ -35,6 +35,27 @@ class EEM_Reports_Page {
 	public static function register(): void {
 		add_action( 'admin_post_eem_reports_export', array( __CLASS__, 'handle_export' ) );
 		add_action( 'admin_post_eem_reports_download', array( __CLASS__, 'download_cached' ) );
+		add_action( 'admin_post_eem_reports_clear', array( __CLASS__, 'clear_history' ) );
+	}
+
+	/**
+	 * Clear the export history: delete every cached export file and empty the
+	 * history table. Cap + nonce gated; redirects back with a notice.
+	 *
+	 * @return void
+	 */
+	public static function clear_history(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to do this.', 'equine-event-manager' ) );
+		}
+		check_admin_referer( self::NONCE_ACTION );
+
+		global $wpdb;
+		( new EEM_Report_Exporter() )->purge_all();
+		$wpdb->query( "DELETE FROM {$wpdb->prefix}en_report_exports" ); // phpcs:ignore WordPress.DB
+
+		wp_safe_redirect( add_query_arg( array( 'page' => self::MENU_SLUG, 'eem_notice' => 'history_cleared' ), admin_url( 'admin.php' ) ) );
+		exit;
 	}
 
 	/**
@@ -50,6 +71,13 @@ class EEM_Reports_Page {
 	public function render(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'equine-event-manager' ) );
+		}
+
+		// PDF buttons open a standalone print view (Daily Movement pattern): the
+		// admin clicks Print / Save PDF from the browser. CSV still downloads.
+		if ( ! empty( $_GET['eem_report_print'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only render.
+			$this->render_print_view();
+			return;
 		}
 
 		$filters = self::read_filters( $_GET ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only filter state.
@@ -119,6 +147,8 @@ class EEM_Reports_Page {
 		$notice = isset( $_GET['eem_notice'] ) ? sanitize_key( wp_unslash( $_GET['eem_notice'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( 'export_failed' === $notice ) {
 			echo '<div class="eem-admin-notice eem-admin-notice--error">' . esc_html__( 'That report could not be exported. Please try again.', 'equine-event-manager' ) . '</div>';
+		} elseif ( 'history_cleared' === $notice ) {
+			echo '<div class="eem-admin-notice eem-admin-notice--success">' . esc_html__( 'Export history cleared.', 'equine-event-manager' ) . '</div>';
 		}
 	}
 
@@ -131,9 +161,10 @@ class EEM_Reports_Page {
 		return array(
 			array( 'slug' => 'orders', 'tone' => 'orders', 'title' => __( 'Orders', 'equine-event-manager' ), 'desc' => __( 'Every order with customer, items, payment status, totals. Best for transactional bookkeeping.', 'equine-event-manager' ) ),
 			array( 'slug' => 'reservations', 'tone' => 'reservations', 'title' => __( 'Reservations', 'equine-event-manager' ), 'desc' => __( 'Event-level summary: dates, total orders, total revenue, occupancy %, capacity used.', 'equine-event-manager' ) ),
-			array( 'slug' => 'revenue', 'tone' => 'revenue', 'title' => __( 'Revenue', 'equine-event-manager' ), 'desc' => __( 'Revenue breakdown by date, reservation, payment method. Includes refunds + convenience fees + tax.', 'equine-event-manager' ) ),
 			array( 'slug' => 'stall_occupancy', 'tone' => 'occupancy', 'title' => __( 'Stall Occupancy', 'equine-event-manager' ), 'desc' => __( 'Stall + RV lot utilization per event. Capacity, fill rate, booked counts.', 'equine-event-manager' ) ),
 			array( 'slug' => 'shavings', 'tone' => 'shavings', 'title' => __( 'Shavings', 'equine-event-manager' ), 'desc' => __( 'Bedding worksheet per event: required + additional bags per order, with per-event totals for the barn.', 'equine-event-manager' ) ),
+			array( 'slug' => 'cleaning', 'tone' => 'occupancy', 'title' => __( 'Facility Cleaning', 'equine-event-manager' ), 'desc' => __( 'Stalls + RV lots flagged for cleaning, grouped by barn/zone with per-barn and total counts. Turnover worksheet for facilities.', 'equine-event-manager' ) ),
+			array( 'slug' => 'revenue', 'tone' => 'revenue', 'title' => __( 'Revenue', 'equine-event-manager' ), 'desc' => __( 'Revenue breakdown by date, reservation, payment method. Includes refunds + convenience fees + tax.', 'equine-event-manager' ) ),
 			array( 'slug' => 'customer_list', 'tone' => 'customers', 'title' => __( 'Customer List', 'equine-event-manager' ), 'desc' => __( 'All customers with contact info + order count + lifetime value. Good for marketing.', 'equine-event-manager' ) ),
 			array( 'slug' => 'refund_log', 'tone' => 'refunds', 'title' => __( 'Refund Log', 'equine-event-manager' ), 'desc' => __( 'Refunds with amount, date, reason, and section. For reconciliation.', 'equine-event-manager' ) ),
 		);
@@ -163,10 +194,30 @@ class EEM_Reports_Page {
 	 * @return void
 	 */
 	private function export_form( string $slug, string $format, string $label, array $filters, string $class = 'btn-export' ): void {
-		// PDFs open inline in a new tab (no "insecure download blocked"); CSVs download.
-		$target = ( 'pdf' === $format ) ? ' target="_blank"' : '';
+		// PDF = open a standalone print view in a new tab (admin prints / saves from
+		// the browser). CSV = POST to admin-post, which streams a file download.
+		if ( 'pdf' === $format ) {
+			$print_url = add_query_arg(
+				array_merge(
+					array( 'page' => self::MENU_SLUG, 'eem_report_print' => $slug ),
+					array_filter( array(
+						'reservation_id' => $filters['reservation_id'] ? (string) $filters['reservation_id'] : '',
+						'date_from'      => (string) ( $filters['date_from'] ?? '' ),
+						'date_to'        => (string) ( $filters['date_to'] ?? '' ),
+						'status'         => (string) ( $filters['status'] ?? '' ),
+					) )
+				),
+				admin_url( 'admin.php' )
+			);
+			?>
+			<a class="<?php echo esc_attr( $class ); ?> btn-export--pdf" href="<?php echo esc_url( $print_url ); ?>" target="_blank" rel="noopener">
+				<span class="format-label"><?php echo esc_html( $label ); ?></span>
+			</a>
+			<?php
+			return;
+		}
 		?>
-		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="eem-export-form"<?php echo $target; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static string. ?>>
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="eem-export-form">
 			<input type="hidden" name="action" value="eem_reports_export">
 			<?php wp_nonce_field( self::NONCE_ACTION ); ?>
 			<input type="hidden" name="report" value="<?php echo esc_attr( $slug ); ?>">
@@ -293,8 +344,12 @@ class EEM_Reports_Page {
 		}
 		$exporter = new EEM_Report_Exporter();
 		?>
-		<div class="eem-section-title"><?php esc_html_e( 'Export history', 'equine-event-manager' ); ?></div>
-		<div class="eem-card">
+		<?php $clear_url = wp_nonce_url( admin_url( 'admin-post.php?action=eem_reports_clear' ), self::NONCE_ACTION ); ?>
+		<div class="eem-section-title eem-export-history-head">
+			<span><?php esc_html_e( 'Export history', 'equine-event-manager' ); ?></span>
+			<a class="eem-btn-clear-history" href="<?php echo esc_url( $clear_url ); ?>" onclick="return confirm('<?php echo esc_js( __( 'Clear all export history and delete the cached files? This cannot be undone.', 'equine-event-manager' ) ); ?>');"><?php esc_html_e( 'Clear history', 'equine-event-manager' ); ?></a>
+		</div>
+		<div class="eem-card eem-export-history-card">
 			<div class="eem-card-body">
 				<table class="eem-export-history">
 					<thead><tr>
@@ -439,6 +494,140 @@ class EEM_Reports_Page {
 		$exporter->purge_old();
 
 		return array( 'path' => $path, 'filename' => $filename );
+	}
+
+	/**
+	 * Standalone report print view (Daily Movement pattern): a full HTML document
+	 * with no WP admin chrome, the locked print-view styling, and a Print / Save PDF
+	 * toolbar. Triggered by ?eem_report_print=<slug>. Reuses the same {headers,rows}
+	 * report data the CSV export uses; if the report supplies a `groups` array, the
+	 * rows render grouped (amber band per group) with per-group + grand totals.
+	 *
+	 * @return void
+	 */
+	private function render_print_view(): void {
+		$slug = sanitize_key( wp_unslash( $_GET['eem_report_print'] ?? '' ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only render.
+		if ( ! in_array( $slug, EEM_Reports_Repo::REPORTS, true ) ) {
+			wp_die( esc_html__( 'Unknown report.', 'equine-event-manager' ) );
+		}
+
+		$repo   = new EEM_Reports_Repo();
+		$norm   = $repo->normalize_filters( self::read_filters( $_GET ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$report = $repo->get_report( $slug, $norm );
+		$meta   = self::pdf_meta( $norm );
+
+		$headers   = isset( $report['headers'] ) && is_array( $report['headers'] ) ? $report['headers'] : array();
+		$rows      = isset( $report['rows'] ) && is_array( $report['rows'] ) ? $report['rows'] : array();
+		$groups    = isset( $report['groups'] ) && is_array( $report['groups'] ) ? $report['groups'] : array();
+		$title     = (string) ( $report['title'] ?? __( 'Report', 'equine-event-manager' ) );
+		$total_lbl = isset( $report['total_label'] ) ? (string) $report['total_label'] : '';
+		$colspan   = max( 1, count( $headers ) );
+		$doc_title = $title . ' — ' . ( $norm['reservation_id'] > 0 ? get_the_title( $norm['reservation_id'] ) : __( 'All reservations', 'equine-event-manager' ) );
+
+		// Renders one <tr> from a flat row array aligned to $headers.
+		$render_row = static function ( array $row ) use ( $headers ): void {
+			echo '<tr>';
+			for ( $i = 0; $i < count( $headers ); $i++ ) {
+				echo '<td>' . esc_html( (string) ( $row[ $i ] ?? '' ) ) . '</td>';
+			}
+			echo '</tr>';
+		};
+		?>
+		<!DOCTYPE html>
+		<html <?php language_attributes(); ?>>
+		<head>
+			<meta charset="<?php bloginfo( 'charset' ); ?>">
+			<meta name="viewport" content="width=device-width, initial-scale=1">
+			<title><?php echo esc_html( $doc_title ); ?></title>
+			<style>
+				*{box-sizing:border-box}
+				body{font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1d2327;background:#f0f0f1;margin:0;padding:0;font-size:12px}
+				.rpt-pv-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 24px;background:#f1f5f9;border-bottom:1px solid #e5e7eb;position:sticky;top:0;z-index:10}
+				.rpt-pv-toolbar-title{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:#031B4E}
+				.rpt-pv-toolbar-actions{display:flex;gap:8px}
+				.rpt-pv-btn{font:inherit;font-weight:600;font-size:13px;padding:8px 16px;border-radius:3px;border:1px solid #c3c4c7;background:#fff;color:#1d2327;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+				.rpt-pv-btn--primary{background:#1668F2;border-color:#1668F2;color:#fff}
+				.rpt-pv-body{padding:24px}
+				.rpt-pv-doc{max-width:1000px;margin:0 auto;background:#fff;border:1px solid #e2e4e7;border-radius:3px;overflow:hidden}
+				.rpt-pv-head{padding:20px 22px;border-bottom:2px solid #031B4E}
+				.rpt-pv-report-type{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#1668F2;margin-bottom:4px}
+				.rpt-pv-title{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:#031B4E;margin:0}
+				.rpt-pv-meta{font-size:12px;color:#50575e;margin-top:6px}
+				.rpt-pv-table{width:100%;border-collapse:collapse}
+				.rpt-pv-table th{text-align:left;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#031B4E;padding:6px 12px;background:#f8fafc;border-top:1px solid #d9e2f2;border-bottom:1px solid #d9e2f2}
+				.rpt-pv-table td{padding:7px 12px;font-size:11px;color:#1d2327;border-bottom:1px solid #f0f0f1}
+				.rpt-pv-table tbody tr:nth-child(even) td{background:#f8fafc}
+				.rpt-pv-group td{background:#fdf4e7;color:#b45309;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;font-size:11px;border-top:1px solid #f3e2c4;border-bottom:1px solid #f3e2c4}
+				.rpt-pv-group td .rpt-pv-group-count{font-weight:600;color:#92400e}
+				.rpt-pv-total{padding:12px 22px;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#031B4E;border-top:1px solid #d9e2f2;background:#f8fafc}
+				.rpt-pv-empty{padding:28px 22px;text-align:center;color:#646970}
+				@media print{
+					.rpt-pv-toolbar{display:none}
+					body{background:#fff;padding:0}
+					.rpt-pv-doc{border:0;border-radius:0;max-width:none}
+					*{-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}
+				}
+			</style>
+		</head>
+		<body>
+			<div class="rpt-pv-toolbar">
+				<div class="rpt-pv-toolbar-title"><?php echo esc_html( $title ); ?></div>
+				<div class="rpt-pv-toolbar-actions">
+					<button type="button" class="rpt-pv-btn rpt-pv-btn--primary" onclick="window.print()"><?php esc_html_e( 'Print / Save PDF', 'equine-event-manager' ); ?></button>
+					<button type="button" class="rpt-pv-btn" onclick="window.close()"><?php esc_html_e( 'Close', 'equine-event-manager' ); ?></button>
+				</div>
+			</div>
+			<div class="rpt-pv-body">
+			<div class="rpt-pv-doc">
+				<div class="rpt-pv-head">
+					<div class="rpt-pv-report-type"><?php esc_html_e( 'Report', 'equine-event-manager' ); ?></div>
+					<h1 class="rpt-pv-title"><?php echo esc_html( $title ); ?></h1>
+					<div class="rpt-pv-meta"><?php echo esc_html( $meta['subtitle'] ); ?> &nbsp;·&nbsp; <?php echo esc_html( $meta['generated'] ); ?></div>
+				</div>
+				<?php if ( empty( $rows ) && empty( $groups ) ) : ?>
+					<div class="rpt-pv-empty"><?php esc_html_e( 'No data matches the current filters.', 'equine-event-manager' ); ?></div>
+				<?php else : ?>
+					<table class="rpt-pv-table">
+						<thead>
+							<tr><?php foreach ( $headers as $h ) : ?><th><?php echo esc_html( (string) $h ); ?></th><?php endforeach; ?></tr>
+						</thead>
+						<tbody>
+							<?php if ( ! empty( $groups ) ) : ?>
+								<?php foreach ( $groups as $group ) : ?>
+									<tr class="rpt-pv-group">
+										<td colspan="<?php echo esc_attr( $colspan ); ?>">
+											<?php echo esc_html( (string) ( $group['label'] ?? '' ) ); ?>
+											<span class="rpt-pv-group-count"><?php echo esc_html( sprintf( /* translators: %d: unit count */ _n( '%d unit', '%d units', (int) ( $group['count'] ?? 0 ), 'equine-event-manager' ), (int) ( $group['count'] ?? 0 ) ) ); ?></span>
+										</td>
+									</tr>
+									<?php foreach ( (array) ( $group['rows'] ?? array() ) as $row ) : ?>
+										<?php $render_row( (array) $row ); ?>
+									<?php endforeach; ?>
+								<?php endforeach; ?>
+							<?php else : ?>
+								<?php foreach ( $rows as $row ) : ?>
+									<?php $render_row( (array) $row ); ?>
+								<?php endforeach; ?>
+							<?php endif; ?>
+						</tbody>
+					</table>
+					<div class="rpt-pv-total">
+						<?php
+						if ( '' !== $total_lbl ) {
+							echo esc_html( $total_lbl );
+						} else {
+							echo esc_html( sprintf( /* translators: %s: row count */ _n( '%s row', '%s rows', count( $rows ), 'equine-event-manager' ), number_format_i18n( count( $rows ) ) ) );
+						}
+						?>
+					</div>
+				<?php endif; ?>
+			</div>
+			</div>
+			<script>document.title = <?php echo wp_json_encode( $doc_title ); ?>;</script>
+		</body>
+		</html>
+		<?php
+		exit;
 	}
 
 	/**

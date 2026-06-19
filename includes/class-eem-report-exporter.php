@@ -328,4 +328,29 @@ class EEM_Report_Exporter {
 
 		return $deleted;
 	}
+
+	/**
+	 * Delete every cached export file regardless of age. Used by the "Clear
+	 * history" action on the Reports page (which also empties the history table).
+	 *
+	 * @return int Files deleted.
+	 */
+	public function purge_all(): int {
+		$dir = $this->cache_dir();
+		if ( '' === $dir ) {
+			return 0;
+		}
+
+		$deleted = 0;
+		foreach ( (array) glob( $dir . 'eem-*' ) as $file ) {
+			if ( ! is_file( $file ) ) {
+				continue;
+			}
+			if ( wp_delete_file( $file ) || ! file_exists( $file ) ) {
+				$deleted++;
+			}
+		}
+
+		return $deleted;
+	}
 }

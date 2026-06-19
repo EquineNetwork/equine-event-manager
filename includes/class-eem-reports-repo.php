@@ -37,7 +37,7 @@ class EEM_Reports_Repo {
 	 *
 	 * @var array<int,string>
 	 */
-	const REPORTS = array( 'orders', 'reservations', 'revenue', 'stall_occupancy', 'shavings', 'customer_list', 'refund_log' );
+	const REPORTS = array( 'orders', 'reservations', 'revenue', 'stall_occupancy', 'shavings', 'customer_list', 'refund_log', 'cleaning' );
 
 	/**
 	 * Orders repository.
@@ -175,6 +175,8 @@ class EEM_Reports_Repo {
 				return $this->customer_list_report( $filters );
 			case 'refund_log':
 				return $this->refund_log_report( $filters );
+			case 'cleaning':
+				return $this->cleaning_report( $filters );
 			default:
 				return array( 'title' => '', 'slug' => $slug, 'headers' => array(), 'rows' => array() );
 		}
@@ -650,6 +652,92 @@ class EEM_Reports_Repo {
 				__( 'Transaction', 'equine-event-manager' ),
 			),
 			'rows'    => $rows,
+		);
+	}
+
+	/**
+	 * Report 7 — Cleaning: stalls + RV lots currently flagged "needs cleaning",
+	 * grouped by barn/zone with a per-group count and a grand total. A turnover
+	 * worksheet for facilities staff — they print it and walk the rows. Only
+	 * units needing cleaning are listed (not the whole inventory).
+	 *
+	 * @param array $filters Filters (only reservation_id applies — cleaning is
+	 *                       current-state, so date/status filters are ignored).
+	 * @return array{title:string,slug:string,headers:array,rows:array,groups:array,total_label:string}
+	 */
+	public function cleaning_report( array $filters ): array {
+		global $wpdb;
+		$table   = $wpdb->prefix . 'eem_stall_status';
+		$rid     = absint( $filters['reservation_id'] ?? 0 );
+		$all     = ( 0 === $rid );
+
+		// Distinct units with at least one night flagged needs_cleaning.
+		if ( $all ) {
+			$found = $wpdb->get_results( "SELECT DISTINCT reservation_id, stall_unit FROM {$table} WHERE status = 'needs_cleaning'", ARRAY_A ); // phpcs:ignore WordPress.DB
+		} else {
+			$found = $wpdb->get_results( $wpdb->prepare( "SELECT DISTINCT reservation_id, stall_unit FROM {$table} WHERE status = 'needs_cleaning' AND reservation_id = %d", $rid ), ARRAY_A ); // phpcs:ignore WordPress.DB
+		}
+
+		// Bucket units by reservation so each reservation's location map is built once.
+		$by_res = array();
+		foreach ( (array) $found as $r ) {
+			$by_res[ (int) $r['reservation_id'] ][] = (string) $r['stall_unit'];
+		}
+
+		$admin       = class_exists( 'EEM_Admin' ) ? new EEM_Admin( true ) : null;
+		$status_lbl  = __( 'Needs Cleaning', 'equine-event-manager' );
+		$groups      = array();
+		$rows        = array();
+		$grand_total = 0;
+
+		foreach ( $by_res as $res_id => $units ) {
+			$maps       = $admin ? $admin->get_unit_location_maps( $res_id ) : array( 'stall_barn' => array(), 'rv_zone' => array() );
+			$stall_barn = (array) ( $maps['stall_barn'] ?? array() );
+			$rv_zone    = (array) ( $maps['rv_zone'] ?? array() );
+			$res_title  = get_the_title( $res_id );
+
+			// Resolve each unit's barn/zone, then group.
+			$res_groups = array();
+			foreach ( $units as $unit ) {
+				if ( isset( $stall_barn[ $unit ] ) && '' !== $stall_barn[ $unit ] ) {
+					$loc = $stall_barn[ $unit ];
+				} elseif ( isset( $rv_zone[ $unit ] ) && '' !== $rv_zone[ $unit ] ) {
+					$loc = $rv_zone[ $unit ];
+				} else {
+					$loc = __( 'Unassigned', 'equine-event-manager' );
+				}
+				$res_groups[ $loc ][] = $unit;
+			}
+
+			ksort( $res_groups, SORT_NATURAL | SORT_FLAG_CASE );
+			foreach ( $res_groups as $loc => $loc_units ) {
+				natsort( $loc_units );
+				$loc_units = array_values( $loc_units );
+				$label     = $all ? $res_title . ' — ' . $loc : $loc;
+
+				$group_rows = array();
+				foreach ( $loc_units as $unit ) {
+					$row          = array( $unit, $loc, $status_lbl );
+					$rows[]       = $row;
+					$group_rows[] = $row;
+				}
+				$grand_total += count( $loc_units );
+				$groups[]     = array( 'label' => $label, 'count' => count( $loc_units ), 'rows' => $group_rows );
+			}
+		}
+
+		return array(
+			'title'       => __( 'Facility Cleaning', 'equine-event-manager' ),
+			'slug'        => 'cleaning',
+			'headers'     => array(
+				__( 'Stall / Lot', 'equine-event-manager' ),
+				__( 'Barn / Zone', 'equine-event-manager' ),
+				__( 'Status', 'equine-event-manager' ),
+			),
+			'rows'        => $rows,
+			'groups'      => $groups,
+			/* translators: %s: number of units needing cleaning. */
+			'total_label' => sprintf( _n( '%s unit needs cleaning', '%s units need cleaning', $grand_total, 'equine-event-manager' ), number_format_i18n( $grand_total ) ),
 		);
 	}
 

@@ -9181,16 +9181,31 @@ select.eem-filter-select { padding-right:32px; appearance:none; cursor:pointer; 
 .eem-report-card-title { font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:700; color:#031B4E; margin-bottom:3px; }
 .eem-report-card-desc { font-size:12.5px; color:#50575e; line-height:1.5; }
 .eem-report-card-actions { display:flex; gap:8px; }
-.eem-export-form { flex:1; display:flex; }
-.eem-report-card-actions .btn-export { width:100%; display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:8px 12px; background:#fff; border:1px solid #c3c4c7; color:#1d2327; border-radius:var(--eem-radius); font-size:13px; font-weight:600; cursor:pointer; }
+/* CSV (form-wrapped) and PDF (bare anchor) are equal-width flex items. */
+.eem-export-form,
+.eem-report-card-actions > .btn-export { flex:1 1 0; display:flex; }
+.eem-report-card-actions .btn-export { width:100%; display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:8px 12px; background:#fff; border:1px solid #c3c4c7; color:#1d2327; border-radius:var(--eem-radius); font-size:13px; font-weight:600; cursor:pointer; text-decoration:none; }
 .eem-report-card-actions .btn-export:hover { background:#f6f7f7; border-color:#1668F2; color:#1668F2; }
+/* PDF opens the print view — primary electric-blue treatment. */
+.eem-report-card-actions .btn-export--pdf { background:#1668F2; border-color:#1668F2; color:#fff; }
+.eem-report-card-actions a.btn-export--pdf:link,
+.eem-report-card-actions a.btn-export--pdf:visited { color:#fff; }
+.eem-report-card-actions .btn-export--pdf:hover { background:#1257d1; border-color:#1257d1; color:#fff; }
 .eem-report-card-actions .btn-export svg { width:12px; height:12px; }
 .format-label { font-weight:700; letter-spacing:.02em; }
+/* Section-title row carries the Clear-history action on the right. */
+.eem-export-history-head { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.eem-btn-clear-history { font-size:12px; font-weight:600; color:#b42318; text-decoration:none; }
+.eem-btn-clear-history:hover { color:#912018; }
+/* Full-bleed blue header bar: card-body padding:0 so the thead spans the card
+   edges; th/td get their own inset padding. Headers = house uppercase navy. */
+.eem-export-history-card .eem-card-body { padding:0; }
 table.eem-export-history { width:100%; border-collapse:collapse; }
-table.eem-export-history thead tr { background:#f3f4f5; border-bottom:1px solid #dcdcde; }
-table.eem-export-history thead th { padding:10px 14px; font-size:13px; font-weight:600; color:#1d2327; text-align:left; }
+table.eem-export-history thead tr { background:#f0f4fb; border-bottom:1px solid #d9e2f2; }
+table.eem-export-history thead th { padding:11px 22px; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; color:var(--eem-navy,#031B4E); text-align:left; }
 table.eem-export-history tbody tr { border-bottom:1px solid #f0f0f1; }
-table.eem-export-history td { padding:11px 14px; font-size:13px; color:#1d2327; }
+table.eem-export-history tbody tr:last-child { border-bottom:none; }
+table.eem-export-history td { padding:11px 22px; font-size:13px; color:#1d2327; }
 .eem-btn-download { display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border-radius:var(--eem-radius); font-size:12px; font-weight:600; background:#fff; color:#1d2327; border:1px solid #c3c4c7; text-decoration:none; white-space:nowrap; }
 .eem-btn-download:hover { background:#f6f7f7; border-color:#1668F2; color:#1668F2; }
 .eem-expired-link { font-size:12px; color:#8c8f94; font-style:italic; }

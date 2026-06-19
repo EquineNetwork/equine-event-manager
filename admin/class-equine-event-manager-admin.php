@@ -204,6 +204,11 @@ class EEM_Admin {
 		}
 
 		if ( 'equine-event-manager-reports' === $page ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			if ( ! empty( $_GET['eem_report_print'] ) ) {
+				// Print view — WP chrome hidden via CSS (mirrors Daily Movement).
+				return trim( $classes . ' eem-shell-page eem-shell-page--print eem-shell-page--reports' );
+			}
 			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--reports' );
 		}
 
@@ -5408,6 +5413,30 @@ class EEM_Admin {
 			$sum += ord( $group_name[ $i ] );
 		}
 		return $palette[ $sum % count( $palette ) ];
+	}
+
+	/**
+	 * Public accessor: per-reservation unit→location label maps, for consumers
+	 * outside the chart UI (e.g. the Cleaning report). Reuses the exact same
+	 * config + grid builders the charts and print views use, so the barn/zone
+	 * mapping stays in lock-step.
+	 *
+	 * @param int $reservation_id Reservation post ID.
+	 * @return array{stall_barn:array<string,string>,rv_zone:array<string,string>}
+	 */
+	public function get_unit_location_maps( int $reservation_id ): array {
+		$config = $this->get_stall_chart_config( $reservation_id );
+		$grid   = $this->build_stall_chart_grid( $reservation_id, $config );
+
+		$stall_barn = array();
+		foreach ( (array) ( $grid['stall_rows'] ?? array() ) as $row ) {
+			$stall_barn[ (string) $row['unit'] ] = (string) ( $row['block'] ?? '' );
+		}
+
+		return array(
+			'stall_barn' => $stall_barn,
+			'rv_zone'    => (array) ( $config['rv_zone_map'] ?? array() ),
+		);
 	}
 
 	private function build_stall_chart_grid( $reservation_id, $config ) {
