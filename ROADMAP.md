@@ -184,18 +184,22 @@ succeeded; the last launch gate is cleared.
     canonical read-back) + `print-view-show-view-smoke.php` (17: VIEW/SHOW/all_rv variants). Move-customer
     flow already covered by stall-per-night-move + rv-night-move smokes. Commit 2e442bd.
 
-0d. **NEW — fix latent `stall_rows`-drop in the postmeta→table migration backfill.** Discovered while
-    recovering data 2026-06-18: on a fresh OLD-DB upgrade (running migration 016 against current code),
-    the backfill carries `rv_rows` but `stall_rows` comes through empty (migration 005 `split-back-to-back`
-    transform is the suspect). Same bug *class* as the 2.7.467 recursion fix — would bite any production
-    site upgrading across this version range. Did NOT affect Whitney's imported desktop DB (016 already
-    ran there with old code). Repro fixture saved in `.dev-fixtures/`. Medium priority — pre-launch.
+0d. ✅ **DONE (2026-06-18, @ 2.7.468, commit 5fb5217) — config backfill dropped `stall_rows` on oversized
+    varchar.** ROOT CAUSE was NOT migration 005 (innocent). It was `insert_from_values()` using
+    `$wpdb->replace()`, which fails ATOMICALLY when any one field is invalid for its column: a legacy
+    unsanitized `_en_checkin_time` datetime (`YYYY-MM-DDTHH:MM`, 16 chars) overflowed `checkin_time
+    varchar(10)`, so the WHOLE row was rejected — silently dropping `stall_rows` + every other column.
+    RV survived only because migration 027 re-creates the row with rv_rows. **This is what actually ate
+    the 'Super Sort' (res 43) stall map on Whitney's live desktop DB** — res 43 had a datetime check-in,
+    6519 did not. Fix: `cast_for_db()` truncates varchar/char to declared width so one oversized field
+    can't fail the row; stray field self-heals on next save. Smoke: `config-oversized-varchar-smoke.php`
+    (8). NOTE: res 43's map is recoverable from `.dev-fixtures/db-snapshot-2.3.46-premigration.sql` if Whitney wants it.
 
-0e. **NEW — pre-existing smoke drift (2 files).** `print-view-assigned-only-smoke.php` (6 fail) +
-    `rv-night-move-smoke.php` (1 fail) use brittle *exact-string* source-presence assertions that broke
-    when the print/move code was reformatted (aligned `=` signs); `print-view-assigned-only` also picks
-    the known-corrupt **reservation 5990** in its fixture-finder. Fixes: loosen the string matches (regex,
-    not exact `strpos`) and skip 5990 in fixture selection. Low priority — test-only, not product code.
+0e. ✅ **DONE (2026-06-18, commit 50ceca8) — repaired drifted smokes.** `print-view-assigned-only` +
+    `rv-night-move`: whitespace-normalized source before substring checks (survives `=`-alignment),
+    updated to the per-inventory print vars (`stall_assigned_only`/`rv_assigned_only`) + refactored
+    matrix-caller signature, and skip known-corrupt reservation 5990 in the fixture finder. Both green
+    (10/0 +1 skip, 18/0).
 0c. ✅ **DONE (2026-06-18) — RV lot name/number split verified CORRECT on NTR 6519.** The last-space
     split (admin 4265 + 6805) is the exact inverse of label construction (`zone . ' ' . num`,
     admin:5300); `num` from `expand_label_range()` has no internal space, so single/multi-word zones
