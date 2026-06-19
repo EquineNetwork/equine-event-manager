@@ -166,6 +166,13 @@ class EEM_Order_Detail_Page {
 
 		$this->render_payment_banner( $order, $status_slug );
 
+		// Close the top card (header + payment banner) so the order content floats
+		// as its own white cards on the gray page background (matches Dashboard).
+		// Hand-close .eem-page-body + .eem-page-wrap, wrap the rest in a gray
+		// sections container, and close .eem-page ourselves at the end.
+		echo '</div><!-- /.eem-page-body --></div><!-- /.eem-page-wrap -->';
+		echo '<div class="eem-order-detail-sections">';
+
 		?>
 		<div class="eem-order-body">
 			<div class="eem-order-main">
@@ -202,6 +209,8 @@ class EEM_Order_Detail_Page {
 
 		<?php $this->render_activity_log( $order, $reservation_id ); ?>
 
+		<?php echo '</div><!-- /.eem-order-detail-sections -->'; ?>
+
 		<?php $this->render_refund_modal( $order ); ?>
 
 		<?php $this->render_cancel_modal( $order ); ?>
@@ -213,7 +222,7 @@ class EEM_Order_Detail_Page {
 		<?php $this->render_add_discount_modal( $order ); ?>
 
 		<?php
-		eem_render_page_close();
+		echo '</div><!-- /.eem-page -->';
 	}
 
 	/**
@@ -328,8 +337,7 @@ class EEM_Order_Detail_Page {
 	 * @return string  Pre-escaped HTML safe for shell's wp_kses_post() pass.
 	 */
 	private function build_header_actions_html( array $order, $reservation_id ) {
-		$back_url        = EEM_Orders_List_Page::url();
-		$reservation_url = $reservation_id > 0 ? EEM_Reservation_Editor_Page::url( (int) $reservation_id ) : '';
+		$back_url = EEM_Orders_List_Page::url();
 
 		// C12 — hosted receipt links (token-bearer order_key).
 		$order_key        = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
@@ -338,13 +346,12 @@ class EEM_Order_Detail_Page {
 
 		ob_start();
 		?>
-		<a class="eem-btn eem-btn-ghost" href="<?php echo esc_url( $back_url ); ?>"><?php esc_html_e( 'Back to Orders', 'equine-event-manager' ); ?></a>
-		<?php if ( '' !== $reservation_url ) : ?>
-			<a class="eem-btn eem-btn-ghost" href="<?php echo esc_url( $reservation_url ); ?>"><?php esc_html_e( 'Edit Reservation', 'equine-event-manager' ); ?></a>
-		<?php endif; ?>
+		<?php // Add Items is the primary action and leads the row (Whitney 2026-06-19).
+		// Edit Reservation button removed per the same pass. ?>
 		<?php if ( ! isset( $order['status_slug'] ) || 'cancelled' !== $order['status_slug'] ) : ?>
-			<a class="eem-btn eem-btn-primary" href="#" data-eem-action="order-add-items"><?php esc_html_e( 'Add Items', 'equine-event-manager' ); ?></a>
+			<a class="eem-btn eem-btn-electric" href="#" data-eem-action="order-add-items"><?php esc_html_e( 'Add Items', 'equine-event-manager' ); ?></a>
 		<?php endif; ?>
+		<a class="eem-btn eem-btn-ghost" href="<?php echo esc_url( $back_url ); ?>"><?php esc_html_e( 'Back to Orders', 'equine-event-manager' ); ?></a>
 		<?php if ( '' !== $receipt_pdf_url ) : ?>
 			<a class="eem-btn eem-btn-ghost" href="<?php echo esc_url( $receipt_pdf_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Download Receipt', 'equine-event-manager' ); ?></a>
 		<?php endif; ?>
@@ -472,7 +479,7 @@ class EEM_Order_Detail_Page {
 		<div class="eem-card eem-order-card">
 			<div class="eem-order-card__header">
 				<div>
-					<div class="eem-order-card__title"><?php esc_html_e( 'Stall Reservation', 'equine-event-manager' ); ?></div>
+					<div class="eem-order-card__title"><?php echo EEM_Dashboard_Icons::svg( 'grid' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- self-authored inline SVG. ?> <?php esc_html_e( 'Stall Reservation', 'equine-event-manager' ); ?></div>
 					<?php if ( '' !== $event_title ) : ?>
 						<div class="eem-order-card__subtitle"><?php echo esc_html( $event_title ); ?></div>
 					<?php endif; ?>
@@ -516,7 +523,7 @@ class EEM_Order_Detail_Page {
 				</div>
 				<?php if ( '' !== $charts_url ) : ?>
 					<div class="eem-stall-assignment__action">
-						<a class="eem-btn eem-btn-primary" href="<?php echo esc_url( $charts_url ); ?>"><?php
+						<a class="eem-btn eem-btn-electric" href="<?php echo esc_url( $charts_url ); ?>"><?php
 							echo '' !== $assigned
 								? esc_html__( 'Manage Stall Assignment', 'equine-event-manager' )
 								: esc_html__( 'Assign Stalls', 'equine-event-manager' );
@@ -617,7 +624,7 @@ class EEM_Order_Detail_Page {
 		<div class="eem-card eem-order-card">
 			<div class="eem-order-card__header">
 				<div>
-					<div class="eem-order-card__title"><?php esc_html_e( 'RV Reservation', 'equine-event-manager' ); ?></div>
+					<div class="eem-order-card__title"><?php echo EEM_Dashboard_Icons::svg( 'truck' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- self-authored inline SVG. ?> <?php esc_html_e( 'RV Reservation', 'equine-event-manager' ); ?></div>
 					<?php if ( '' !== $event_title ) : ?>
 						<div class="eem-order-card__subtitle"><?php echo esc_html( $event_title ); ?></div>
 					<?php endif; ?>
@@ -665,7 +672,7 @@ class EEM_Order_Detail_Page {
 			<?php if ( '' !== $rv_charts_url ) : ?>
 				<div class="eem-stall-assignment">
 					<div class="eem-stall-assignment__action">
-						<a class="eem-btn eem-btn-primary" href="<?php echo esc_url( $rv_charts_url ); ?>"><?php esc_html_e( 'Assign RV Lots', 'equine-event-manager' ); ?></a>
+						<a class="eem-btn eem-btn-electric" href="<?php echo esc_url( $rv_charts_url ); ?>"><?php esc_html_e( 'Assign RV Lots', 'equine-event-manager' ); ?></a>
 					</div>
 				</div>
 			<?php endif; ?>
@@ -707,7 +714,7 @@ class EEM_Order_Detail_Page {
 		<div class="eem-card eem-order-card">
 			<div class="eem-order-card__header">
 				<div>
-					<div class="eem-order-card__title"><?php esc_html_e( 'Add-Ons', 'equine-event-manager' ); ?></div>
+					<div class="eem-order-card__title"><?php echo EEM_Dashboard_Icons::svg( 'package' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- self-authored inline SVG. ?> <?php esc_html_e( 'Add-Ons', 'equine-event-manager' ); ?></div>
 					<div class="eem-order-card__subtitle"><?php esc_html_e( 'Additional products included in this order', 'equine-event-manager' ); ?></div>
 				</div>
 			</div>
@@ -752,7 +759,7 @@ class EEM_Order_Detail_Page {
 		<div class="eem-card eem-order-card">
 			<div class="eem-order-card__header">
 				<div>
-					<div class="eem-order-card__title"><?php esc_html_e( 'Group Reservation', 'equine-event-manager' ); ?></div>
+					<div class="eem-order-card__title"><?php echo EEM_Dashboard_Icons::svg( 'users' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- self-authored inline SVG. ?> <?php esc_html_e( 'Group Reservation', 'equine-event-manager' ); ?></div>
 					<div class="eem-order-card__subtitle"><?php esc_html_e( 'Group rider details captured on this reservation', 'equine-event-manager' ); ?></div>
 				</div>
 			</div>
@@ -814,7 +821,7 @@ class EEM_Order_Detail_Page {
 		?>
 		<div class="eem-card eem-order-card">
 			<div class="eem-order-card__header">
-				<div class="eem-order-card__title"><?php esc_html_e( 'Order Summary', 'equine-event-manager' ); ?></div>
+				<div class="eem-order-card__title"><?php echo EEM_Dashboard_Icons::svg( 'file-text' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- self-authored inline SVG. ?> <?php esc_html_e( 'Order Summary', 'equine-event-manager' ); ?></div>
 			</div>
 			<div class="eem-order-summary__body">
 				<?php if ( $stall_subtotal > 0 ) : ?>
@@ -971,7 +978,7 @@ class EEM_Order_Detail_Page {
 		?>
 		<div class="eem-card eem-order-card">
 			<div class="eem-order-card__header">
-				<div class="eem-order-card__title"><?php esc_html_e( 'Payment Details', 'equine-event-manager' ); ?></div>
+				<div class="eem-order-card__title"><?php echo EEM_Dashboard_Icons::svg( 'card' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- self-authored inline SVG. ?> <?php esc_html_e( 'Payment Details', 'equine-event-manager' ); ?></div>
 			</div>
 			<div class="eem-order-payment__body">
 				<?php if ( '' !== $customer_name ) : ?>
@@ -1078,7 +1085,7 @@ class EEM_Order_Detail_Page {
 		<div class="eem-order-full-width">
 			<div class="eem-card eem-order-card">
 				<div class="eem-order-card__header">
-					<div class="eem-order-card__title"><?php esc_html_e( 'Special Instructions', 'equine-event-manager' ); ?></div>
+					<div class="eem-order-card__title"><?php echo EEM_Dashboard_Icons::svg( 'file' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- self-authored inline SVG. ?> <?php esc_html_e( 'Special Instructions', 'equine-event-manager' ); ?></div>
 				</div>
 				<div class="eem-order-instructions__body">
 					<?php if ( $has ) : ?>
@@ -1920,7 +1927,7 @@ class EEM_Order_Detail_Page {
 		<div class="eem-order-activity" data-eem-activity-section>
 			<div class="eem-order-activity__toggle" data-eem-action="activity-toggle" role="button" tabindex="0" aria-expanded="true">
 				<div class="eem-order-activity__toggle-left">
-					<span class="eem-order-activity__title"><?php esc_html_e( 'Activity Log', 'equine-event-manager' ); ?></span>
+					<span class="eem-order-activity__title"><?php echo EEM_Dashboard_Icons::svg( 'clock' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- self-authored inline SVG. ?> <?php esc_html_e( 'Activity Log', 'equine-event-manager' ); ?></span>
 					<span class="eem-order-activity__count" data-eem-activity-count><?php
 						echo esc_html( sprintf(
 							/* translators: %s: number of activity log entries */

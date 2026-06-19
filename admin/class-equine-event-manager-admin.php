@@ -190,6 +190,13 @@ class EEM_Admin {
 			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--editor' );
 		}
 
+		// Order Detail keeps --orders (legacy carve-outs) AND adds --order-detail
+		// so it can take the floating-cards-on-gray treatment without affecting
+		// the Orders LIST (which shares --orders and stays single-frame).
+		if ( 'equine-event-manager-order' === $page ) {
+			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--orders eem-shell-page--order-detail' );
+		}
+
 		if ( in_array( $page, array( self::MENU_SLUG, 'equine-event-manager-orders', 'equine-event-manager-order', 'equine-event-manager-order-refund' ), true ) ) {
 			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--orders' );
 		}

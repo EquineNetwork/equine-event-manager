@@ -6585,7 +6585,10 @@ body.eem-shell-page--reservations #posts-filter > table.wp-list-table tbody stro
 
 body.eem-shell-page--reports .postbox,
 body.eem-shell-page--overview .postbox,
-body.eem-shell-page--orders .eem-card,
+/* Order Detail floating cards (.eem-order-card) own their 3px radius from the
+   polish pass — excluded here so this legacy 8px !important no longer overrides
+   them. Remediated (not extended) per CLAUDE.md hygiene rule #7. */
+body.eem-shell-page--orders .eem-card:not(.eem-order-card),
 body.eem-shell-page--orders .postbox,
 body.eem-shell-page--header .postbox.eem-card {
 	border-radius: 8px !important;

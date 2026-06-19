@@ -329,7 +329,9 @@ body.eem-shell-page a:active,
 
 .eem-page-header {
 	padding: 14px 18px;
-	border-bottom: 1px solid #dcdcde;
+	/* No bottom border (Whitney 2026-06-19) — it doubled up with the page-wrap's
+	   bottom border on the top card; toolbar bg / card edges separate the title
+	   band on every page. */
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -4671,6 +4673,61 @@ a.eem-btn-collect-banner:focus {
 	gap: 14px;
 }
 
+/* ── Order Detail floating-cards treatment (matches Dashboard) ──────────────
+   Header + payment banner = the top card (page-wrap); the order content floats
+   as white cards on the gray page background below. Scoped to --order-detail so
+   the Orders LIST (shares --orders) keeps its single-frame layout. */
+.eem-shell-page--order-detail .eem-page-body { padding: 0; }
+.eem-shell-page--order-detail .eem-page-wrap {
+	border: 1px solid #e2e4e7;
+	border-radius: var(--eem-radius);
+	/* overflow:visible so the header "More" dropdown isn't clipped by the top
+	   card (the base .eem-page-wrap uses overflow:hidden for corner clipping;
+	   the only full-bleed child here is the payment banner, whose 3px corner
+	   overhang is negligible). */
+	overflow: visible;
+}
+/* Gray container; flex-column gap provides the gaps between the body grid,
+   Special Instructions, and Activity Log. No side padding so the cards span the
+   full top-card width (the screen-edge gap comes from .eem-page). */
+.eem-order-detail-sections {
+	background: #f0f0f1;
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	padding: 14px 0 18px;
+}
+.eem-shell-page--order-detail .eem-order-body { padding: 0; }
+.eem-shell-page--order-detail .eem-order-full-width { padding: 0; }
+/* Activity Log becomes a floating card too (was a full-bleed top-bordered band). */
+.eem-shell-page--order-detail .eem-order-activity {
+	border: 1px solid #e2e4e7;
+	border-radius: var(--eem-radius);
+	overflow: hidden;
+}
+/* Match card borders + radius to the Dashboard edge (3px, #e2e4e7). */
+.eem-shell-page--order-detail .eem-order-card {
+	border-color: #e2e4e7;
+	border-radius: var(--eem-radius);
+}
+/* The "More" toggle is a <button> (siblings are <a>); pin its border to the
+   ghost gray and kill the focus/active darkening so it matches the row. */
+.eem-order-detail-more .eem-btn-ghost,
+.eem-order-detail-more .eem-btn-ghost:hover,
+.eem-order-detail-more .eem-btn-ghost:focus,
+.eem-order-detail-more .eem-btn-ghost:active {
+	border-color: var(--eem-border-card);
+	box-shadow: none;
+	outline: none;
+}
+/* Always open the header More menu DOWNWARD — the top card is overflow:visible
+   so there's room below, and flipping up clips it against the top of the page.
+   Overrides the JS-added --flip-up class (higher specificity). */
+.eem-order-detail-more.eem-row-menu-wrap--flip-up .eem-row-dropdown {
+	top: calc(100% + 4px);
+	bottom: auto;
+}
+
 /* Inner cards inside the body grid (Stall/RV/Add-On/Group/Summary/Payment). */
 .eem-order-card {
 	background: var(--eem-surface);
@@ -4695,6 +4752,16 @@ a.eem-btn-collect-banner:focus {
 	font-weight: 700;
 	color: var(--eem-navy);
 	line-height: 1.3;
+	display: flex;
+	align-items: center;
+	gap: 7px;
+}
+/* Card icon indicator — electric blue, matching the Dashboard .eem-card-title. */
+.eem-order-card__title svg {
+	width: 15px;
+	height: 15px;
+	color: var(--eem-electric);
+	flex-shrink: 0;
 }
 
 .eem-order-card__subtitle {
@@ -4721,7 +4788,7 @@ a.eem-btn-collect-banner:focus {
 }
 
 .eem-detail-table tr {
-	border-bottom: 1px solid var(--eem-border-soft);
+	border-bottom: 1px solid #e2e4e7;
 }
 
 .eem-detail-table tr:last-child {
@@ -4734,20 +4801,22 @@ a.eem-btn-collect-banner:focus {
 	vertical-align: top;
 }
 
+/* Label column: small-uppercase NAVY on the standard #f8fafc (house data-table
+   header style) — was washed-out muted gray on a pale fill. */
 .eem-detail-table td:first-child {
 	font-size: 11px;
 	font-weight: 600;
 	letter-spacing: 0.05em;
 	text-transform: uppercase;
-	color: var(--eem-text-secondary);
+	color: var(--eem-navy);
 	width: 42%;
-	background: var(--eem-bg-alt);
-	border-right: 1px solid var(--eem-border-soft);
+	background: var(--eem-gray-50, #f8fafc);
+	border-right: 1px solid #e2e4e7;
 }
 
 .eem-detail-table td:last-child {
-	font-weight: 500;
-	color: var(--eem-text);
+	font-weight: 600;
+	color: var(--eem-navy);
 }
 
 .eem-detail-table__subtotal td {
@@ -4769,8 +4838,8 @@ a.eem-btn-collect-banner:focus {
 /* Stall assignment readout (read-only badge — interactive grid in C8). */
 .eem-stall-assignment {
 	padding: 12px 16px;
-	border-top: 1px solid var(--eem-border-soft);
-	background: var(--eem-bg-alt);
+	border-top: 1px solid #d9e2f2;
+	background: #f0f4fb;
 }
 
 .eem-stall-assignment__label {
@@ -4812,10 +4881,6 @@ a.eem-btn-collect-banner:focus {
 }
 
 /* Blue CTA button under the assignment block (replaced the italic text link). */
-.eem-stall-assignment__action {
-	margin-top: 10px;
-}
-
 /* ── ORDER SUMMARY sidebar (right column) ── */
 .eem-order-summary__body {
 	padding: 12px;
@@ -4936,7 +5001,10 @@ a.eem-btn-collect-banner:focus {
 	justify-content: space-between;
 	align-items: center;
 	padding: 13px 14px;
-	border: 2px solid var(--eem-navy);
+	/* Filled light-blue panel (not a heavy navy border) to make the total stand
+	   out — Whitney 2026-06-19. */
+	background: #f0f4fb;
+	border: 1px solid #d9e2f2;
 	border-radius: var(--eem-radius);
 	margin-top: 4px;
 }
@@ -5167,6 +5235,15 @@ a.eem-btn-collect-banner:focus {
 	font-size: 15px;
 	font-weight: 700;
 	color: var(--eem-navy);
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+}
+.eem-order-activity__title svg {
+	width: 15px;
+	height: 15px;
+	color: var(--eem-electric);
+	flex-shrink: 0;
 }
 
 .eem-order-activity__count {
@@ -5338,15 +5415,21 @@ a.eem-btn-collect-banner:focus {
 	.eem-detail-table tr {
 		display: flex;
 		flex-direction: column;
-		border-bottom: 1px solid var(--eem-border-soft);
+		border-bottom: 1px solid #e2e4e7;
 	}
 	.eem-detail-table td {
 		width: 100%;
 		border: none;
 		padding: 3px 12px;
 	}
+	/* Reset the desktop td:first-child width (42%) + border-right (#e2e4e7) —
+	   both carry (0,1,1) specificity and otherwise leak past the mobile td rule,
+	   leaving the label cell half-width with a stray vertical divider instead of
+	   stacking full-width above the value. */
 	.eem-detail-table td:first-child {
+		width: 100%;
 		background: none;
+		border-right: none;
 		font-size: 10px;
 		color: var(--eem-text-secondary);
 		padding-top: 8px;
