@@ -3,18 +3,17 @@
  * DS-1.B smoke — Admin Dashboard render against .mockups/dashboard_page.html.
  *
  *   [1]  Class + route + sidebar visibility
- *   [2]  Range filter renders all 5 options with correct default
- *   [3]  KPI grid — 4 cards, each with value + label + sub
- *   [4]  Em-dash placeholders (CLEANUP #37/#38/#39) preserve "—" not "0"
+ *   ([2] Range filter + [3] KPI grid removed — feature rework 2.7.483)
+ *   [4]  Stall metrics wired to live data (CLEANUP #38)
  *   [5]  Upcoming Reservations content density
- *   [6]  Needs Attention content density + 6 rows
+ *   [6]  Needs Attention content density + rows
  *   [7]  Recent Orders — 5-digit #NNNNN via canonical helper + status pill
  *   [8]  Quick Actions — 4 tiles + correct href routing per kickoff
- *   [9]  Revenue chart — bars + total
+ *   ([9] Revenue chart card removed — 2026-06-19)
  *   [10] This Week — 5 rows
  *   [11] CLEANUP entries #37/#38/#39/#40 present
  *   [12] CSS — Dashboard component selectors shipped + anchor umbrella coverage
- *   [13] JS — dashboard-range-change handler shipped
+ *   ([13] Range-filter JS handler removed — feature rework 2.7.483)
  *
  * @package EEM_Plugin
  */
@@ -62,41 +61,11 @@ ob_start();
 EEM_Dashboard_Page::render();
 $html = ob_get_clean();
 
-// ── [2] Range filter ────────────────────────────────────────────────
-echo "\n[2] Range filter\n";
-ds1b_ok( 'range select rendered with dashboard-range-change action',
-	str_contains( $html, 'data-eem-action="dashboard-range-change"' ),
-	$pass, $fail, $log );
-foreach ( array( 'last-7' => 'Last 7 days', 'last-30' => 'Last 30 days', 'last-90' => 'Last 90 days', 'this-year' => 'This year', 'all-time' => 'All time' ) as $val => $label ) {
-	ds1b_ok( "range option '{$label}' (value={$val}) present",
-		str_contains( $html, 'value="' . $val . '"' ) && str_contains( $html, $label ),
-		$pass, $fail, $log );
-}
-ds1b_ok( 'last-30 is selected by default',
-	(bool) preg_match( '/value="last-30"\s+selected/', $html ),
-	$pass, $fail, $log );
+// [2] Range filter + [3] KPI grid removed from the Dashboard (feature rework
+// 2.7.483; revenue card removed 2026-06-19) — assertions pruned.
 
-// ── [3] KPI grid — 4 cards with value + label + sub ─────────────────
-echo "\n[3] KPI grid\n";
-ds1b_ok( 'KPI grid container present', str_contains( $html, 'eem-dashboard-kpi-grid' ), $pass, $fail, $log );
-foreach ( array( 'blue', 'orange', 'green', 'red' ) as $tone ) {
-	ds1b_ok( "KPI card tone {$tone} present",
-		str_contains( $html, 'eem-dashboard-kpi-card--' . $tone ),
-		$pass, $fail, $log );
-}
-ds1b_ok( 'KPI label "Total Revenue" rendered',        str_contains( $html, 'Total Revenue' ),        $pass, $fail, $log );
-ds1b_ok( 'KPI label "Outstanding Payments" rendered', str_contains( $html, 'Outstanding Payments' ), $pass, $fail, $log );
-ds1b_ok( 'KPI label "Total Orders" rendered',         str_contains( $html, 'Total Orders' ),         $pass, $fail, $log );
-ds1b_ok( 'KPI label "Unassigned Stalls" rendered',    str_contains( $html, 'Unassigned Stalls' ),    $pass, $fail, $log );
-ds1b_ok( 'KPI value class rendered', substr_count( $html, 'eem-dashboard-kpi-value' ) >= 4, $pass, $fail, $log );
-ds1b_ok( 'KPI sub class rendered',   substr_count( $html, 'eem-dashboard-kpi-sub'   ) >= 4, $pass, $fail, $log );
-
-// ── [4] Stall metrics — WIRED to live data (CLEANUP #37/#38/#39 resolved) ──
+// ── [4] Stall metrics — WIRED to live data (CLEANUP #38 resolved) ──
 echo "\n[4] Stall metrics wired to live data\n";
-// Unassigned Stalls KPI now renders a numeric count (was an em-dash placeholder).
-ds1b_ok( 'Unassigned Stalls KPI renders a numeric value (wired, CLEANUP #37)',
-	(bool) preg_match( '/Unassigned Stalls.*?eem-dashboard-kpi-value">\d/s', $html ),
-	$pass, $fail, $log );
 // Stall progress now renders a real "N / N" assigned/total pair (was "— / —").
 ds1b_ok( 'Stall progress shows numeric "N / N" (wired, CLEANUP #38)',
 	( ! str_contains( $html, '— / —' ) ) && (bool) preg_match( '#>\s*\d+\s*/\s*\d+\s*<#s', $html ),
@@ -190,18 +159,7 @@ ds1b_ok( 'Quick Actions "Create Order" tile routes via create_order_url',
 	$pass, $fail, $log );
 
 // ── [9] Revenue chart ───────────────────────────────────────────────
-echo "\n[9] Revenue chart\n";
-ds1b_ok( 'Revenue chart title rendered', str_contains( $html, 'Revenue by Reservation' ), $pass, $fail, $log );
-ds1b_ok( 'Revenue chart total label rendered',
-	str_contains( $html, 'Total collected (all time)' ),
-	$pass, $fail, $log );
-// Chart bars OR empty-state, depending on seed data.
-$bars_count = substr_count( $html, 'eem-dashboard-rev-bar-wrap' );
-ds1b_ok( 'Revenue chart renders bars OR empty-state',
-	$bars_count >= 1 || str_contains( $html, 'No revenue recorded yet' ),
-	$pass, $fail, $log,
-	'bars rendered: ' . $bars_count
-);
+// [9] Revenue chart card removed (Dashboard polish 2026-06-19) — no assertions.
 
 // ── [10] This Week ──────────────────────────────────────────────────
 echo "\n[10] This Week\n";
@@ -221,8 +179,6 @@ ds1b_ok( 'CLEANUP #40 (C11-dependent agreement row) present',                   
 
 // ── [12] CSS — Dashboard component selectors + anchor umbrella ──────
 echo "\n[12] CSS coverage\n";
-ds1b_ok( '.eem-dashboard-kpi-grid CSS shipped',     str_contains( $css_src, '.eem-dashboard-kpi-grid' ),    $pass, $fail, $log );
-ds1b_ok( '.eem-dashboard-rev-bar CSS shipped',      str_contains( $css_src, '.eem-dashboard-rev-bar' ),     $pass, $fail, $log );
 ds1b_ok( '.eem-dashboard-qa-btn CSS shipped',       str_contains( $css_src, '.eem-dashboard-qa-btn' ),      $pass, $fail, $log );
 ds1b_ok( '.eem-dashboard-attention-row CSS shipped',str_contains( $css_src, '.eem-dashboard-attention-row' ),$pass, $fail, $log );
 // Anchor umbrella from DS-1.A.1 still in place (Dashboard buttons inherit).
@@ -235,15 +191,11 @@ echo "\n[14] Icon-density (DS-1.B.1)\n";
 $svg_count = substr_count( $html, '<svg' );
 // Icon count is partly data-driven (one icon per attention row + per upcoming
 // reservation), so it varies below the mockup's 22 as conditions clear. Assert a
-// robust structural floor (4 KPI + 4 quick-action + card-header + >=1 each list).
+// robust structural floor (4 quick-action + card-header icons + >=1 each list).
 ds1b_ok( "Render contains >=15 inline <svg tags (data-driven; mockup max 22), actual={$svg_count}",
 	$svg_count >= 15,
 	$pass, $fail, $log );
-// Each KPI card carries an icon inside its label.
-preg_match_all( '#<div class="eem-dashboard-kpi-card[^"]*">.*?<div class="eem-dashboard-kpi-label">(.*?)</div>#s', $html, $kpi_blocks );
-ds1b_ok( 'every KPI card label contains an <svg',
-	! empty( $kpi_blocks[1] ) && count( array_filter( $kpi_blocks[1], function( $h ) { return false !== strpos( $h, '<svg' ); } ) ) === count( $kpi_blocks[1] ),
-	$pass, $fail, $log );
+// (KPI grid removed — KPI-label icon assertion pruned.)
 // Every Quick Action tile carries an icon.
 preg_match_all( '#<span class="eem-dashboard-qa-icon[^"]*">(.*?)</span>#s', $html, $qa_blocks );
 ds1b_ok( 'every Quick Action tile icon container contains an <svg',
@@ -256,8 +208,8 @@ ds1b_ok( 'every attention row icon container contains an <svg',
 	$pass, $fail, $log );
 // Card titles carry icons.
 preg_match_all( '#<div class="eem-card-title">(.*?)</div>#s', $html, $title_blocks );
-ds1b_ok( 'every card title contains an <svg (6 cards: Upcoming/Attention/Recent/Quick/Revenue/ThisWeek)',
-	count( $title_blocks[1] ) >= 6 && count( array_filter( $title_blocks[1], function( $h ) { return false !== strpos( $h, '<svg' ); } ) ) === count( $title_blocks[1] ),
+ds1b_ok( 'every card title contains an <svg (Upcoming/Attention/Recent/Quick/ThisWeek + side cards)',
+	count( $title_blocks[1] ) >= 5 && count( array_filter( $title_blocks[1], function( $h ) { return false !== strpos( $h, '<svg' ); } ) ) === count( $title_blocks[1] ),
 	$pass, $fail, $log );
 // SVG bodies are non-empty (path/line/rect/polyline/circle/polygon present).
 ds1b_ok( 'rendered SVGs contain non-empty path data (path|line|rect|circle|polyline|polygon)',
@@ -283,22 +235,11 @@ ds1b_ok( 'greeting NO LONGER renders (removed v2.7.23)',
 ds1b_ok( 'subtitle leads with date + upcoming reservation count',
 	(bool) preg_match( '/\d{4} · \d+ reservations? coming up in the next 30 days/', $html ),
 	$pass, $fail, $log );
-// Trend delta — either ↑/↓ N% on Total Revenue OR "—" fallback when no prior data.
-ds1b_ok( 'Total Revenue KPI carries trend delta (↑/↓ N% or —)',
-	(bool) preg_match( '/Total Revenue.*?eem-dashboard-kpi-tone--(up|down|flat|warn)/s', $html ),
-	$pass, $fail, $log );
-ds1b_ok( 'Total Orders KPI carries trend delta (↑/↓ N or —)',
-	(bool) preg_match( '/Total Orders.*?eem-dashboard-kpi-tone--(up|down|flat|warn)/s', $html ),
-	$pass, $fail, $log );
+// KPI trend-delta assertions removed with the KPI grid (feature rework 2.7.483).
 
-// ── [13] JS — range-change handler ──────────────────────────────────
-echo "\n[13] JS — range filter handler\n";
-ds1b_ok( 'dashboard-range-change handler present in admin.js',
-	str_contains( $js_src, 'dashboard-range-change' ),
-	$pass, $fail, $log );
-ds1b_ok( 'handler rebuilds URL with ?range= param',
-	str_contains( $js_src, "searchParams.set('range'" ) || str_contains( $js_src, 'searchParams.set("range"' ),
-	$pass, $fail, $log );
+// [13] Range-filter JS handler removed with the range filter (feature rework
+// 2.7.483) — assertions pruned. (Dead handler may remain in admin.js; flagged
+// for a later code-cleanup pass, separate from this smoke file.)
 
 // ── [17] DS-1.B.2 regression guards ────────────────────────────────
 echo "\n[17] DS-1.B.2 — anchor umbrella + padding + chart bar + qa tints\n";
@@ -314,34 +255,15 @@ ds1b_ok( '.eem-card-link:hover NO LONGER uses text-decoration: underline',
 	$pass, $fail, $log );
 
 // DS-1.B.3 (final): dashboard-body horizontal padding must MIRROR
-// page-header horizontal padding at every breakpoint so card box
-// left-edge === page title text left-edge.
-ds1b_ok( '.eem-dashboard-body desktop padding = 18px horizontal (matches .eem-page-header desktop)',
-	(bool) preg_match( '/^\.eem-dashboard-body\s*\{\s*padding:\s*18px\s+18px/m', $css_src ),
-	$pass, $fail, $log );
-ds1b_ok( '.eem-dashboard-body tablet padding = 14px horizontal (matches .eem-page-header @1024 override)',
-	(bool) preg_match( '/@media\s*\(\s*max-width:\s*1024px\s*\)\s*\{[\s\S]*?\.eem-dashboard-body\s*\{\s*padding:\s*14px\s+14px/', $css_src ),
-	$pass, $fail, $log );
-ds1b_ok( '.eem-dashboard-body mobile padding = 14px horizontal (matches .eem-page-header @767 override)',
-	(bool) preg_match( '/@media\s*\(\s*max-width:\s*767px\s*\)\s*\{[\s\S]*?\.eem-dashboard-body\s*\{\s*padding:\s*12px\s+14px/', $css_src ),
-	$pass, $fail, $log );
-// Parity guard — extract page-header padding at desktop and dashboard-body padding at desktop, confirm horizontal values match.
-preg_match( '/^\.eem-page-header\s*\{\s*padding:\s*\d+px\s+(\d+)px/m', $css_src, $hdr_m );
-preg_match( '/^\.eem-dashboard-body\s*\{\s*padding:\s*\d+px\s+(\d+)px/m', $css_src, $body_m );
-ds1b_ok( "desktop padding parity: page-header horizontal ({$hdr_m[1]}px) == dashboard-body horizontal ({$body_m[1]}px)",
-	isset( $hdr_m[1] ) && isset( $body_m[1] ) && $hdr_m[1] === $body_m[1],
+// Dashboard polish (2026-06-19): the body now renders OUTSIDE the page-wrap and
+// its cards float edge-to-edge with the header CARD (0 horizontal padding),
+// mirroring the Daily Movement `.eem-dm-sections` treatment — they no longer
+// align to the page title text. Desktop horizontal padding is 0 by design.
+ds1b_ok( '.eem-dashboard-body desktop padding = 0 horizontal (cards span full header-card width)',
+	(bool) preg_match( '/^\.eem-dashboard-body\s*\{\s*padding:\s*\d+px\s+0\s/m', $css_src ),
 	$pass, $fail, $log );
 
-// Rev-chart bar — wrap stretches to fill the 90px container so % heights resolve.
-ds1b_ok( '.eem-dashboard-rev-bar-wrap uses align-self:stretch (chart bar height bug fix)',
-	(bool) preg_match( '/\.eem-dashboard-rev-bar-wrap\s*\{[^}]*align-self\s*:\s*stretch/s', $css_src ),
-	$pass, $fail, $log );
-ds1b_ok( '.eem-dashboard-rev-bar-wrap uses justify-content:flex-end (children stack from bottom)',
-	(bool) preg_match( '/\.eem-dashboard-rev-bar-wrap\s*\{[^}]*justify-content\s*:\s*flex-end/s', $css_src ),
-	$pass, $fail, $log );
-ds1b_ok( '.eem-dashboard-rev-bars retains explicit 90px height',
-	(bool) preg_match( '/\.eem-dashboard-rev-bars\s*\{[^}]*height\s*:\s*90px/s', $css_src ),
-	$pass, $fail, $log );
+// Revenue chart card removed (Dashboard polish 2026-06-19) — no rev-bar assertions.
 
 // Quick Actions tints — verify the deeper local values shipped (not the pale shared tokens).
 ds1b_ok( '.eem-dashboard-qi-blue uses deepened tint #DBE9FE (not the pale --eem-info-bg)',

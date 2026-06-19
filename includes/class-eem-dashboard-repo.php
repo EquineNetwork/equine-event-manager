@@ -695,48 +695,6 @@ class EEM_Dashboard_Repo {
 	}
 
 	/**
-	 * Revenue chart — top 5 reservations by total revenue (all time).
-	 *
-	 * @return array{bars: array<int, array<string, mixed>>, total_label: string, total_value: string}
-	 */
-	public function revenue_chart() {
-		$orders = $this->all_orders();
-		$by_res = array();
-		$grand  = 0.0;
-		foreach ( $orders as $o ) {
-			$slug = (string) ( $o['status_slug'] ?? '' );
-			if ( 'paid' !== $slug && 'partially-paid' !== $slug ) {
-				continue;
-			}
-			$key   = (string) ( $o['reservation_title'] ?? __( '(no event)', 'equine-event-manager' ) );
-			$amt   = (float) ( $o['total'] ?? 0 );
-			$grand += $amt;
-			if ( ! isset( $by_res[ $key ] ) ) {
-				$by_res[ $key ] = 0.0;
-			}
-			$by_res[ $key ] += $amt;
-		}
-		arsort( $by_res );
-		$top = array_slice( $by_res, 0, 5, true );
-		$max = $top ? max( $top ) : 0.0;
-
-		$bars = array();
-		foreach ( $top as $label => $amount ) {
-			$bars[] = array(
-				'label'   => self::short_event_label( $label ),
-				'value'   => self::format_currency_short( $amount ),
-				'pct'     => $max > 0 ? max( 4, (int) round( ( $amount / $max ) * 100 ) ) : 0,
-			);
-		}
-
-		return array(
-			'bars'        => $bars,
-			'total_label' => __( 'Total collected (all time)', 'equine-event-manager' ),
-			'total_value' => self::format_currency( $grand ),
-		);
-	}
-
-	/**
 	 * This Week summary — 5 rows. Row 5 (Stalls assigned) is em-dash per
 	 * CLEANUP #39.
 	 *
@@ -813,34 +771,6 @@ class EEM_Dashboard_Repo {
 	 */
 	public static function format_currency( $amount ) {
 		return '$' . number_format_i18n( (float) $amount, 2 );
-	}
-
-	/**
-	 * Short form for chart bar labels — "$6.4k" / "$820".
-	 *
-	 * @param float $amount
-	 * @return string
-	 */
-	public static function format_currency_short( $amount ) {
-		$amount = (float) $amount;
-		if ( $amount >= 1000 ) {
-			return '$' . number_format_i18n( $amount / 1000, 1 ) . 'k';
-		}
-		return '$' . number_format_i18n( $amount, 0 );
-	}
-
-	/**
-	 * Truncate event names to ~10 chars for chart labels.
-	 *
-	 * @param string $name
-	 * @return string
-	 */
-	public static function short_event_label( $name ) {
-		$name = (string) $name;
-		if ( strlen( $name ) <= 12 ) {
-			return $name;
-		}
-		return rtrim( substr( $name, 0, 11 ) ) . '…';
 	}
 
 	/**

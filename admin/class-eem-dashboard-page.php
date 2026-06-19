@@ -48,7 +48,6 @@ class EEM_Dashboard_Page {
 		$upcoming_events = $repo->upcoming_events();
 		$attention      = $repo->attention_items();
 		$recent_orders  = $repo->recent_orders();
-		$revenue_chart  = $repo->revenue_chart();
 		$this_week      = $repo->this_week();
 		$addons         = EEM_Dashboard_Repo::addons_summary();
 		$general_addons = $repo->general_addons_summary();
@@ -74,10 +73,20 @@ class EEM_Dashboard_Page {
 			'actions'    => $header_actions,
 		) );
 
+		// The setup-checklist prompt renders INSIDE the page-wrap, flush under the
+		// header — structurally the same as the Order Detail "Payment Outstanding"
+		// banner (header + banner share one top card). It reads as a connected
+		// cream band, not a separate floating card.
+		self::render_setup_checklist();
+
+		// Now close the top card so the remaining dashboard cards render OUTSIDE
+		// the page-wrap and float as their own white cards on the gray page
+		// background. Mirrors the Daily Movement treatment: hand-close
+		// .eem-page-body + .eem-page-wrap, then close .eem-page ourselves below.
+		echo '</div><!-- /.eem-page-body --></div><!-- /.eem-page-wrap -->';
+
 		?>
 		<div class="eem-dashboard-body">
-			<?php self::render_setup_checklist(); ?>
-
 			<div class="eem-dashboard-grid">
 				<div class="eem-dashboard-main">
 					<?php // Order (Whitney 2026-06-14): Needs Attention first, then Upcoming Events (Native Events only), then Upcoming Reservations, then Recent Orders. ?>
@@ -95,14 +104,13 @@ class EEM_Dashboard_Page {
 					<?php self::render_addons_card( $general_addons ); ?>
 					<?php self::render_entries_card( isset( $addons['entries'] ) ? $addons['entries'] : array() ); ?>
 					<?php self::render_sheets_card( isset( $addons['sheets'] ) ? $addons['sheets'] : array() ); ?>
-					<?php self::render_revenue_chart_card( $revenue_chart ); ?>
 					<?php self::render_this_week_card( $this_week ); ?>
 				</div>
 			</div>
 		</div>
 		<?php
 
-		eem_render_page_close();
+		echo '</div><!-- /.eem-page -->';
 	}
 
 	/**
@@ -147,6 +155,7 @@ class EEM_Dashboard_Page {
 		?>
 		<section class="eem-setup-checklist" data-eem-setup-checklist data-eem-dismiss-nonce="<?php echo esc_attr( $nonce ); ?>">
 			<header class="eem-setup-checklist__head">
+				<span class="eem-setup-checklist__head-icon" aria-hidden="true">!</span>
 				<div>
 					<h2 class="eem-setup-checklist__title"><?php esc_html_e( 'Finish setting up your plugin', 'equine-event-manager' ); ?></h2>
 					<p class="eem-setup-checklist__sub"><?php echo esc_html( $sub ); ?></p>
@@ -266,23 +275,23 @@ class EEM_Dashboard_Page {
 									<span class="eem-dashboard-res-tag eem-dashboard-tag-<?php echo esc_attr( $tag ); ?>"><?php echo esc_html( ucfirst( $tag ) ); ?></span>
 								<?php endforeach; ?>
 							</div>
-							<div class="eem-dashboard-stall-progress">
-								<div class="eem-dashboard-stall-progress-label">
-									<span><?php esc_html_e( 'Stall assignments', 'equine-event-manager' ); ?></span>
-									<span class="eem-dashboard-stall-progress-count">
-										<?php // CLEANUP #38: wire to real query at C8 close. ?>
-										<?php echo esc_html( $row['stall_progress']['assigned'] ?? '0' ); ?> / <?php echo esc_html( $row['stall_progress']['total'] ?? '0' ); ?>
-									</span>
-								</div>
-								<div class="eem-dashboard-stall-progress-bar">
-									<div class="eem-dashboard-stall-progress-fill eem-dashboard-fill-<?php echo esc_attr( $row['stall_progress']['tone'] ?? 'green' ); ?>" style="width:<?php echo (int) ( $row['stall_progress']['pct'] ?? 0 ); ?>%"></div>
-								</div>
-							</div>
 						</div>
 						<div class="eem-dashboard-res-right">
 							<div class="eem-dashboard-res-orders"><?php echo esc_html( (string) $row['orders'] ); ?></div>
 							<div class="eem-dashboard-res-orders-label"><?php esc_html_e( 'orders', 'equine-event-manager' ); ?></div>
 							<div class="eem-dashboard-res-revenue"><?php echo esc_html( $row['revenue'] ); ?></div>
+							<?php
+							// Stall assignment count, surfaced as a compact stat (no
+							// progress bar) — only when the reservation has stalls.
+							$stall_total = (int) ( $row['stall_progress']['total'] ?? 0 );
+							if ( $stall_total > 0 ) :
+								$stall_assigned = (int) ( $row['stall_progress']['assigned'] ?? 0 );
+							?>
+								<div class="eem-dashboard-res-stalls">
+									<strong><?php echo esc_html( $stall_assigned . ' / ' . $stall_total ); ?></strong>
+									<?php esc_html_e( 'stalls', 'equine-event-manager' ); ?>
+								</div>
+							<?php endif; ?>
 						</div>
 					</a>
 				<?php endforeach; ?>
@@ -530,42 +539,6 @@ class EEM_Dashboard_Page {
 				<?php else : ?>
 					<p class="eem-dashboard-card-empty"><?php esc_html_e( 'All clean — nothing flagged for cleaning.', 'equine-event-manager' ); ?></p>
 				<?php endif; ?>
-			</div>
-		</div>
-		<?php
-	}
-
-	/**
-	 * Revenue by Reservation chart — 5 bars (or N<5), all Electric Blue
-	 * per DEC-6.
-	 *
-	 * @param array{bars: array<int, array<string, mixed>>, total_label: string, total_value: string} $chart
-	 * @return void
-	 */
-	private static function render_revenue_chart_card( array $chart ) {
-		?>
-		<div class="eem-card eem-dashboard-card">
-			<div class="eem-card-header">
-				<div class="eem-card-title"><?php echo EEM_Dashboard_Icons::svg( 'bar-chart' ); ?> <?php esc_html_e( 'Revenue by Reservation', 'equine-event-manager' ); ?></div>
-			</div>
-			<div class="eem-dashboard-rev-chart">
-				<?php if ( empty( $chart['bars'] ) ) : ?>
-					<div class="eem-dashboard-empty"><?php esc_html_e( 'No revenue recorded yet — paid and partially-paid orders will appear here.', 'equine-event-manager' ); ?></div>
-				<?php else : ?>
-					<div class="eem-dashboard-rev-bars">
-						<?php foreach ( $chart['bars'] as $bar ) : ?>
-							<div class="eem-dashboard-rev-bar-wrap">
-								<div class="eem-dashboard-rev-bar-val"><?php echo esc_html( $bar['value'] ); ?></div>
-								<div class="eem-dashboard-rev-bar" style="height:<?php echo (int) $bar['pct']; ?>%" title="<?php echo esc_attr( $bar['label'] ); ?>"></div>
-								<div class="eem-dashboard-rev-bar-label"><?php echo esc_html( $bar['label'] ); ?></div>
-							</div>
-						<?php endforeach; ?>
-					</div>
-				<?php endif; ?>
-				<div class="eem-dashboard-rev-total">
-					<span class="eem-dashboard-rev-total-label"><?php echo esc_html( $chart['total_label'] ); ?></span>
-					<span class="eem-dashboard-rev-total-val"><?php echo esc_html( $chart['total_value'] ); ?></span>
-				</div>
 			</div>
 		</div>
 		<?php
