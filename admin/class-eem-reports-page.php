@@ -198,14 +198,10 @@ class EEM_Reports_Page {
 			'cancelled'    => __( 'Cancelled', 'equine-event-manager' ),
 		);
 		?>
-		<div class="eem-card">
-			<div class="eem-card-header">
-				<div class="eem-card-title"><?php esc_html_e( 'Filters', 'equine-event-manager' ); ?> <span class="eem-filters-applied-pill"><?php esc_html_e( 'Applies to all reports below', 'equine-event-manager' ); ?></span></div>
-			</div>
-			<div class="eem-card-body">
+		<div class="eem-card eem-reports-filter-card">
 				<form method="get" class="eem-reports-filter-form" id="eem-reports-filters">
 					<input type="hidden" name="page" value="<?php echo esc_attr( self::MENU_SLUG ); ?>">
-					<div class="eem-filter-grid">
+					<div class="eem-reports-filter-row">
 						<div class="eem-filter-group">
 							<label class="eem-filter-label" for="eem-filter-reservation"><?php esc_html_e( 'Reservation', 'equine-event-manager' ); ?></label>
 							<select class="eem-filter-select" id="eem-filter-reservation" name="reservation_id">
@@ -216,22 +212,6 @@ class EEM_Reports_Page {
 							</select>
 						</div>
 						<div class="eem-filter-group">
-							<label class="eem-filter-label" for="eem-filter-preset"><?php esc_html_e( 'Date range', 'equine-event-manager' ); ?></label>
-							<select class="eem-filter-select" id="eem-filter-preset" name="date_preset" data-eem-date-preset>
-								<option value="last-30"><?php esc_html_e( 'Last 30 days', 'equine-event-manager' ); ?></option>
-								<option value="last-7"><?php esc_html_e( 'Last 7 days', 'equine-event-manager' ); ?></option>
-								<option value="last-90"><?php esc_html_e( 'Last 90 days', 'equine-event-manager' ); ?></option>
-								<option value="this-year"><?php esc_html_e( 'This year', 'equine-event-manager' ); ?></option>
-								<option value="all"><?php esc_html_e( 'All time', 'equine-event-manager' ); ?></option>
-								<option value="custom" selected><?php esc_html_e( 'Custom range', 'equine-event-manager' ); ?></option>
-							</select>
-							<div class="eem-daterange-inputs">
-								<input class="eem-filter-input" type="date" name="date_from" value="<?php echo esc_attr( $filters['date_from'] ); ?>" data-eem-date-input>
-								<span class="eem-daterange-sep"><?php esc_html_e( 'to', 'equine-event-manager' ); ?></span>
-								<input class="eem-filter-input" type="date" name="date_to" value="<?php echo esc_attr( $filters['date_to'] ); ?>" data-eem-date-input>
-							</div>
-						</div>
-						<div class="eem-filter-group">
 							<label class="eem-filter-label" for="eem-filter-status"><?php esc_html_e( 'Order status', 'equine-event-manager' ); ?></label>
 							<select class="eem-filter-select" id="eem-filter-status" name="status">
 								<?php foreach ( $statuses as $val => $label ) : ?>
@@ -240,12 +220,31 @@ class EEM_Reports_Page {
 							</select>
 						</div>
 					</div>
-					<div class="eem-filter-footer">
-						<a class="eem-filter-reset" href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::MENU_SLUG ) ); ?>"><?php esc_html_e( 'Reset filters', 'equine-event-manager' ); ?></a>
-						<button class="eem-btn eem-btn-electric" type="submit"><?php esc_html_e( 'Apply', 'equine-event-manager' ); ?></button>
+					<div class="eem-reports-filter-row eem-reports-filter-row--actions">
+						<div class="eem-filter-group eem-filter-group--daterange">
+							<label class="eem-filter-label" for="eem-filter-preset"><?php esc_html_e( 'Date range', 'equine-event-manager' ); ?></label>
+							<div class="eem-daterange-controls">
+								<select class="eem-filter-select" id="eem-filter-preset" name="date_preset" data-eem-date-preset>
+									<option value="last-30"><?php esc_html_e( 'Last 30 days', 'equine-event-manager' ); ?></option>
+									<option value="last-7"><?php esc_html_e( 'Last 7 days', 'equine-event-manager' ); ?></option>
+									<option value="last-90"><?php esc_html_e( 'Last 90 days', 'equine-event-manager' ); ?></option>
+									<option value="this-year"><?php esc_html_e( 'This year', 'equine-event-manager' ); ?></option>
+									<option value="all"><?php esc_html_e( 'All time', 'equine-event-manager' ); ?></option>
+									<option value="custom" selected><?php esc_html_e( 'Custom range', 'equine-event-manager' ); ?></option>
+								</select>
+								<div class="eem-daterange-inputs">
+									<input class="eem-filter-input" type="date" name="date_from" value="<?php echo esc_attr( $filters['date_from'] ); ?>" data-eem-date-input>
+									<span class="eem-daterange-sep"><?php esc_html_e( 'to', 'equine-event-manager' ); ?></span>
+									<input class="eem-filter-input" type="date" name="date_to" value="<?php echo esc_attr( $filters['date_to'] ); ?>" data-eem-date-input>
+								</div>
+							</div>
+						</div>
+						<div class="eem-reports-filter-actions">
+							<a class="eem-filter-reset" href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::MENU_SLUG ) ); ?>"><?php esc_html_e( 'Reset filters', 'equine-event-manager' ); ?></a>
+							<button class="eem-btn eem-btn-electric" type="submit"><?php esc_html_e( 'Apply', 'equine-event-manager' ); ?></button>
+						</div>
 					</div>
 				</form>
-			</div>
 		</div>
 		<?php
 	}

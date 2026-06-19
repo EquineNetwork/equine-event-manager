@@ -9143,14 +9143,28 @@ select.eem-zip-select { flex:1; min-width:240px; padding:9px 32px 9px 12px; bord
 .eem-filters-applied-pill { font-size:11px; background:#EEF4FF; color:#1668F2; border:1px solid #c0d8ff; padding:3px 9px; border-radius:10px; font-weight:600; display:inline-block; vertical-align:middle; }
 .eem-filter-grid { display:grid; grid-template-columns:1fr 1.4fr 1fr; gap:14px; margin-bottom:14px; }
 .eem-filter-group { display:flex; flex-direction:column; gap:5px; }
-.eem-filter-label { font-size:12.5px; font-weight:600; color:#1d2327; }
-select.eem-filter-select, input.eem-filter-input { padding:8px 12px; border:1px solid #8c8f94; border-radius:var(--eem-radius); font-size:13.5px; color:#1d2327; background:#fff; width:100%; min-height:0; margin:0; /* C7.X.15 Issue 3 — reset WP core forms.css margin:0 1px */ }
+.eem-filter-label { font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; color:var(--eem-navy,#031B4E); }
+select.eem-filter-select, input.eem-filter-input { box-sizing:border-box; height:var(--eem-select-height); min-height:var(--eem-select-height); padding:0 12px; border:1px solid #8c8f94; border-radius:var(--eem-radius); font-size:13.5px; color:#1d2327; background:#fff; width:100%; margin:0; /* C7.X.15 Issue 3 — reset WP core forms.css margin:0 1px */ }
 select.eem-filter-select { padding-right:32px; appearance:none; cursor:pointer; }
 .eem-daterange-inputs { display:flex; align-items:center; gap:8px; }
 .eem-daterange-sep { font-size:12px; color:#50575e; flex-shrink:0; }
 .eem-filter-footer { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding-top:10px; border-top:1px solid #f0f0f1; }
 .eem-filter-reset { color:#50575e; font-size:12.5px; font-weight:600; }
 .eem-filter-reset:hover { color:#1668F2; }
+/* Reports filter card: two full-bleed blue rows (row 1 = Reservation + Order
+   status; row 2 = Date range + Reset/Apply). The form sits directly in the
+   bordered card (no card-body) so the rows bleed edge-to-edge. Locked 2026-06-18. */
+.eem-reports-filter-form { margin:0; }
+/* Edge-to-edge: drop top/side borders + rounded corners AND pull out past the
+   .eem-reports-body padding (18px 22px) so the blue bleeds to the page-wrap
+   edges and sits flush under the page header. Bottom border stays as a divider. */
+.eem-reports-filter-card { border-top:0; border-left:0; border-right:0; border-radius:0; margin:-18px -22px 18px; }
+.eem-reports-filter-row { display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap; background:#f0f4fb; padding:14px 18px; }
+.eem-reports-filter-row + .eem-reports-filter-row { border-top:1px solid #d9e2f2; }
+.eem-reports-filter-row .eem-filter-group { flex:1 1 200px; }
+.eem-reports-filter-actions { margin-left:auto; display:flex; align-items:center; gap:16px; flex-shrink:0; }
+.eem-daterange-controls { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.eem-daterange-controls .eem-filter-select { width:auto; min-width:150px; }
 .eem-section-title { font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:700; color:#031B4E; margin:18px 0 10px; }
 .eem-report-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:20px; }
 .eem-report-card { background:#fff; border:1px solid #e5e7eb; border-radius:var(--eem-radius); padding:16px; display:flex; flex-direction:column; justify-content:space-between; gap:14px; }
