@@ -516,9 +516,10 @@ class EEM_Reports_Page {
 		$report = $repo->get_report( $slug, $norm );
 		$meta   = self::pdf_meta( $norm );
 
-		$headers   = isset( $report['headers'] ) && is_array( $report['headers'] ) ? $report['headers'] : array();
-		$rows      = isset( $report['rows'] ) && is_array( $report['rows'] ) ? $report['rows'] : array();
-		$groups    = isset( $report['groups'] ) && is_array( $report['groups'] ) ? $report['groups'] : array();
+		$headers      = isset( $report['headers'] ) && is_array( $report['headers'] ) ? $report['headers'] : array();
+		$rows         = isset( $report['rows'] ) && is_array( $report['rows'] ) ? $report['rows'] : array();
+		$groups       = isset( $report['groups'] ) && is_array( $report['groups'] ) ? $report['groups'] : array();
+		$event_header = isset( $report['event_header'] ) ? (string) $report['event_header'] : '';
 		$title     = (string) ( $report['title'] ?? __( 'Report', 'equine-event-manager' ) );
 		$total_lbl = isset( $report['total_label'] ) ? (string) $report['total_label'] : '';
 		$colspan   = max( 1, count( $headers ) );
@@ -552,7 +553,8 @@ class EEM_Reports_Page {
 				.rpt-pv-head{padding:20px 22px;border-bottom:2px solid #031B4E}
 				.rpt-pv-report-type{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#1668F2;margin-bottom:4px}
 				.rpt-pv-title{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:#031B4E;margin:0}
-				.rpt-pv-meta{font-size:12px;color:#50575e;margin-top:6px}
+				.rpt-pv-event{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;color:#031B4E;margin-top:6px}
+				.rpt-pv-meta{font-size:12px;color:#50575e;margin-top:4px}
 				.rpt-pv-table{width:100%;border-collapse:collapse}
 				.rpt-pv-table th{text-align:left;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#031B4E;padding:6px 12px;background:#f8fafc;border-top:1px solid #d9e2f2;border-bottom:1px solid #d9e2f2}
 				.rpt-pv-table td{padding:7px 12px;font-size:11px;color:#1d2327;border-bottom:1px solid #f0f0f1}
@@ -566,6 +568,7 @@ class EEM_Reports_Page {
 					body{background:#fff;padding:0}
 					.rpt-pv-doc{border:0;border-radius:0;max-width:none}
 					*{-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}
+					@page{size:landscape}
 				}
 			</style>
 		</head>
@@ -582,6 +585,9 @@ class EEM_Reports_Page {
 				<div class="rpt-pv-head">
 					<div class="rpt-pv-report-type"><?php esc_html_e( 'Report', 'equine-event-manager' ); ?></div>
 					<h1 class="rpt-pv-title"><?php echo esc_html( $title ); ?></h1>
+					<?php if ( '' !== $event_header ) : ?>
+						<div class="rpt-pv-event"><?php echo esc_html( $event_header ); ?></div>
+					<?php endif; ?>
 					<div class="rpt-pv-meta"><?php echo esc_html( $meta['subtitle'] ); ?> &nbsp;·&nbsp; <?php echo esc_html( $meta['generated'] ); ?></div>
 				</div>
 				<?php if ( empty( $rows ) && empty( $groups ) ) : ?>

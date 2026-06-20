@@ -199,12 +199,12 @@ class EEM_Reports_Repo {
 	 * @return array
 	 */
 	public function orders_report( array $filters ): array {
-		$rows = array();
+		$rows          = array();
+		$event_names   = array();
+		$event_dates   = array();
 		foreach ( $this->get_filtered_orders( $filters ) as $o ) {
 			$rows[] = array(
 				sprintf( '#%05d', absint( $o['order_number'] ) ),
-				(string) ( $o['event_name'] ?? '' ),
-				(string) ( $o['event_dates'] ?? '' ),
 				(string) ( $o['customer_name'] ?? '' ),
 				(string) ( $o['email'] ?? '' ),
 				(string) ( $o['phone'] ?? '' ),
@@ -219,15 +219,36 @@ class EEM_Reports_Repo {
 				(string) ( $o['status_label'] ?? ( $o['payment_status'] ?? '' ) ),
 				(string) ( $o['created_at'] ?? '' ),
 			);
+			$name = (string) ( $o['event_name'] ?? '' );
+			if ( '' !== $name ) {
+				$event_names[ $name ] = true;
+			}
+			$dates = (string) ( $o['event_dates'] ?? '' );
+			if ( '' !== $dates ) {
+				$event_dates[ $dates ] = true;
+			}
+		}
+
+		// Collapse unique event names + dates for the print-view header line.
+		$unique_names = array_keys( $event_names );
+		$unique_dates = array_keys( $event_dates );
+		$event_header = '';
+		if ( 1 === count( $unique_names ) ) {
+			$event_header = $unique_names[0];
+			if ( 1 === count( $unique_dates ) ) {
+				$event_header .= '  ·  ' . $unique_dates[0];
+			}
+		} elseif ( count( $unique_names ) > 1 ) {
+			/* translators: %d: number of events. */
+			$event_header = sprintf( _n( '%d event', '%d events', count( $unique_names ), 'equine-event-manager' ), count( $unique_names ) );
 		}
 
 		return array(
-			'title'   => __( 'Orders', 'equine-event-manager' ),
-			'slug'    => 'orders',
-			'headers' => array(
+			'title'        => __( 'Orders', 'equine-event-manager' ),
+			'slug'         => 'orders',
+			'event_header' => $event_header,
+			'headers'      => array(
 				__( 'Order #', 'equine-event-manager' ),
-				__( 'Event', 'equine-event-manager' ),
-				__( 'Event Dates', 'equine-event-manager' ),
 				__( 'Customer', 'equine-event-manager' ),
 				__( 'Email', 'equine-event-manager' ),
 				__( 'Phone', 'equine-event-manager' ),
@@ -242,7 +263,7 @@ class EEM_Reports_Repo {
 				__( 'Status', 'equine-event-manager' ),
 				__( 'Created', 'equine-event-manager' ),
 			),
-			'rows'    => $rows,
+			'rows'         => $rows,
 		);
 	}
 
