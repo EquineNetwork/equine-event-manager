@@ -2,15 +2,22 @@
 
 ---
 
-## 🔖 SESSION HANDOFF — 2026-06-19 (v2.7.527, on `main`)
+## 🔖 SESSION HANDOFF — 2026-06-20 (v2.7.527, on `main`)
 
 **v1 is complete and live.** The sessions since 2.7.466 have been a deep visual/UX polish pass
 plus a batch of targeted Order-Detail / receipt / Stall-Chart / frontend features on top of v1.
-**Latest (2.7.521–527):** Additional Shavings feature shipped end-to-end (see below). Reports
-cleanup continuing — Customer List, Refund Log still to do this session.
+**Latest (2.7.521–527):** Additional Shavings feature shipped end-to-end (see below).
 
-**NEXT UP:** Continue Reports cleanup — Customer List report, Refund Log report, then any
-remaining report print-column / view decisions.
+**⚠️ ACTIVE HOLD — NEW MOCKUPS INCOMING:** Whitney is having claude.ai generate fresh mockups
+for every page. Do NOT implement tasks #33–#45 (page redesigns) until those mockups are
+delivered here. When they arrive, implement each one directly into the plugin.
+
+**NEXT UP (while waiting for mockups):**
+1. Reports cleanup — Customer List report + Refund Log report (no mockup dependency).
+2. MED-4 concurrency fix (Auth.net double-charge) — needs sign-off + live test before touching.
+3. LOW-3/4 — minor; low priority.
+
+**Version bump rule (STANDING — do NOT bump version without explicit user approval each time).**
 
 **Open admin money-path items: MED-4 (Auth.net double-charge window — needs live test) + LOW-3/4.**
 
