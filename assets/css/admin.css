@@ -4915,9 +4915,23 @@ a.eem-btn-collect-banner:focus {
 /* Stall assignment readout (read-only badge — interactive grid in C8). */
 .eem-stall-assignment {
 	padding: 12px 16px;
-	border-top: 1px solid #d9e2f2;
-	background: #f0f4fb;
+	border-top: 1px solid var(--eem-border-soft, #e2e4e7);
+	background: #fff;
 }
+
+/* Check-In / Check-Out action button — state-colored so the customer's
+   on-site status reads at a glance. In = green, Out = amber, Re-check = electric. */
+.eem-btn-checkin {
+	color: #fff;
+	border: 1px solid transparent;
+}
+.eem-btn-checkin--in { background: #15803d; border-color: #15803d; }
+.eem-btn-checkin--in:hover { background: #126b34; border-color: #126b34; color: #fff; }
+.eem-btn-checkin--out { background: #b45309; border-color: #b45309; }
+.eem-btn-checkin--out:hover { background: #973f07; border-color: #973f07; color: #fff; }
+.eem-btn-checkin--re { background: var(--eem-electric); border-color: var(--eem-electric); }
+.eem-btn-checkin--re:hover { background: var(--eem-electric-hover, #1257cc); border-color: var(--eem-electric-hover, #1257cc); color: #fff; }
+a.eem-btn-checkin:link, a.eem-btn-checkin:visited, a.eem-btn-checkin:hover, a.eem-btn-checkin:focus { color: #fff; }
 
 .eem-stall-assignment__label {
 	font-size: 10.5px;
@@ -4934,13 +4948,18 @@ a.eem-btn-collect-banner:focus {
 	color: var(--eem-navy);
 }
 
+/* Breathing room above the Assign/Manage button so it isn't crowding the
+   assigned-units line. */
+.eem-stall-assignment__action {
+	margin-top: 10px;
+}
+
 .eem-stall-assignment__badge {
 	display: inline-block;
-	padding: 3px 10px;
-	background: var(--eem-electric);
-	color: var(--eem-text-on-navy);
-	border-radius: var(--eem-radius);
-	font-size: 12.5px;
+	padding: 0;
+	background: none;
+	color: var(--eem-navy);
+	font-size: 14px;
 	font-weight: 700;
 }
 
@@ -5349,12 +5368,34 @@ a.eem-btn-collect-banner:focus {
 .eem-order-doc-row__missing {
 	color: var(--eem-text-secondary);
 }
-.eem-order-doc-row__upload {
+.eem-order-doc-row__actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+/* Uniform sizing across the three action controls (Take Photo / Upload /
+   Mark Satisfied) so the row reads as one consistent button group. */
+.eem-order-doc-row__actions .eem-btn,
+.eem-order-doc-row__actions .eem-order-doc-row__btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	height: 32px;
+	padding: 0 12px;
+	font-size: 12.5px;
+	line-height: 1;
+	border-radius: var(--eem-radius);
+	white-space: nowrap;
+}
+.eem-order-doc-row__upload,
+.eem-order-doc-row__cam {
 	position: relative;
 	display: inline-flex;
 	cursor: pointer;
 }
-.eem-order-doc-row__upload input[type="file"] {
+.eem-order-doc-row__upload input[type="file"],
+.eem-order-doc-row__cam input[type="file"] {
 	position: absolute;
 	inset: 0;
 	width: 100%;
@@ -5362,10 +5403,43 @@ a.eem-btn-collect-banner:focus {
 	opacity: 0;
 	cursor: pointer;
 }
+/* Primary "Mark Satisfied" — electric, signals the quick in-person path. */
+.eem-order-doc-row__satisfy.is-primary {
+	background: var(--eem-electric);
+	border: 1px solid var(--eem-electric);
+	color: #fff;
+}
+.eem-order-doc-row__satisfy.is-primary:hover {
+	background: var(--eem-electric-hover, #1257cc);
+	border-color: var(--eem-electric-hover, #1257cc);
+}
+/* Satisfied toggle — electric blue in both states (Mark Satisfied / Satisfied). */
+.eem-order-doc-row__satisfy.is-satisfied {
+	background: var(--eem-electric);
+	border: 1px solid var(--eem-electric);
+	color: #fff;
+}
+.eem-order-doc-row__satisfy.is-satisfied:hover {
+	background: var(--eem-electric-hover, #1257cc);
+	border-color: var(--eem-electric-hover, #1257cc);
+}
+/* Satisfied-in-person state cue. */
+.eem-order-doc-row.is-satisfied .eem-order-doc-row__satisfied-note {
+	color: #15803d;
+	font-weight: 600;
+}
+.eem-order-doc-row.is-satisfied .eem-order-doc-row__satisfied-note::before {
+	content: '✓ ';
+}
 .eem-order-doc-row__status {
 	font-size: 12.5px;
 	color: var(--eem-text-secondary);
 	flex-basis: 100%;
+}
+
+/* Outstanding-documents banner reuses the amber payment-banner chrome. */
+.eem-order-docs-banner {
+	margin-top: 10px;
 }
 
 /* ── ACTIVITY LOG placeholder (C6.E will flesh out) ── */
@@ -8298,15 +8372,21 @@ tr.eem-chart-barn-row td { background: #fdf4e7; padding: 9px 22px; font-size: 12
 .eem-chart-customer-empty { color: #a7aaad; font-weight: 400; }
 
 /* #219 — Order-context assignment banner + clickable Available pills. */
+/* Assign-mode banner — full-bleed, bold electric so it clearly signals the
+   active "click a unit to place this order" mode and sits right above the
+   units it refers to (Whitney 2026-06-20). */
 .eem-assign-banner {
-	margin: 0 0 14px;
-	padding: 12px 16px;
-	background: #EFF4FF;
-	border: 1px solid #c7dafe;
-	border-left: 4px solid var(--eem-electric, #1668F2);
-	border-radius: var(--eem-radius);
-	color: #1d2327;
+	margin: 0 -22px;
+	padding: 14px 22px;
+	background: var(--eem-electric, #1668F2);
+	border: none;
+	border-radius: 0;
+	color: #fff;
 	font-size: 14px;
+}
+.eem-assign-banner strong { color: #fff; }
+@media (max-width: 767px) {
+	.eem-assign-banner { margin: 0 -12px; padding: 14px 12px; }
 }
 body.eem-assign-mode .eem-chart-status--available[data-eem-action="assign-order-unit"] {
 	cursor: pointer;
@@ -8334,7 +8414,10 @@ body.eem-assign-mode .eem-chart-status--available[data-eem-action="assign-order-
 .eem-occ-pill--suggested { background: #FFF8EC; color: #92600A; border-style: dashed; border-color: #E5A823; font-style: italic; }
 .eem-occ-pill--suggested .eem-occ-chevron { color: #92600A; }
 /* Unsaved auto-suggested layout banner (above the chart card). */
-.eem-stall-chart-unsaved-banner { display: flex; align-items: flex-start; gap: 10px; margin: 0 0 16px; padding: 12px 16px; background: #FFF8EC; border: 1px solid #F2D9A0; border-radius: var(--eem-radius); font-size: 13px; line-height: 1.5; color: #6B4A0A; }
+/* Full-bleed: cancel the .eem-stall-chart-body 22px side padding (matches the
+   .eem-stall-chart-dm-bar pattern) so the notice spans edge-to-edge with no
+   border or outer gap. */
+.eem-stall-chart-unsaved-banner { display: flex; align-items: flex-start; gap: 10px; margin: 0 -22px 0px; padding: 12px 22px; background: #FFF8EC; border: none; border-radius: 0; font-size: 13px; line-height: 1.5; color: #6B4A0A; }
 .eem-stall-chart-unsaved-banner svg { width: 16px; height: 16px; color: #E5A823; flex-shrink: 0; margin-top: 1px; }
 .eem-stall-chart-unsaved-banner strong { color: #6B4A0A; }
 /* Inline link-style button (e.g. "Generate Assignments" inside the banner copy).
@@ -8571,6 +8654,7 @@ input.eem-group-manage-input { flex: 0 1 280px; margin: 0; padding: 7px 10px; bo
 }
 @media (max-width: 767px) {
 	.eem-stall-chart-body { padding: 12px; }
+	.eem-stall-chart-unsaved-banner { margin: 0 -12px 12px; padding: 12px; }
 	.eem-stall-chart-stats-bar { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
 	.eem-stall-chart-stat-card { padding: 10px 12px; }
 	.eem-stall-chart-stat-value { font-size: 22px; }

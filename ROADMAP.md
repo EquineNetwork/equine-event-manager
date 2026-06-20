@@ -2,7 +2,63 @@
 
 ---
 
-## 🔖 SESSION HANDOFF — 2026-06-18 (v2.7.466, on `main`)
+## 🔖 SESSION HANDOFF — 2026-06-20 (v2.7.515, on `main`)
+
+**v1 is complete and live.** The sessions since 2.7.466 have been a deep visual/UX polish pass
+plus a batch of targeted Order-Detail / receipt / Stall-Chart / frontend features on top of v1.
+There is **no open task on the active list** — pick the next thread from the
+**RECOMMENDED EXECUTION ORDER** below (next up: inventory/concurrency audit → financial-security
+audit → mobile/PWA polish) unless Whitney directs otherwise.
+
+**What the recent sessions shipped (2.7.466 → 2.7.515), newest first:**
+- **Order Detail (2.7.510, 2.7.515):** editable arrival/departure dates (refund on shorter stay
+  via the refund engine, balance-due on longer); status-aware payment footer (Order Total /
+  Amount Paid / Balance Due) + balance-driven Payment-Outstanding banner; per-unit **Rate** row on
+  the stall/RV cards; Order Summary section labels (Stalls Subtotal / Fees Total / Custom Items
+  Total) + empty Add-Ons hidden; **Check-In / Check-Out** action button (green/amber/electric,
+  synced with Daily Movement via `wp_eem_order_checkin`); assigned stalls/RV lots now render on the
+  order (read from component notes — the old `stall_units_csv` field was never populated); Print
+  Receipt button (auto-print) replacing Download Receipt.
+- **Required Documents (2.7.484–486, 493, 2.7.515):** admin-defined required-doc list on Edit
+  Reservation; order-attached upload storage + endpoints; per-doc **Take Photo** (camera capture),
+  Upload/Replace, and **Mark Satisfied** (in-person verify, mig-033 `satisfied` columns); amber
+  "Documents Outstanding" banner on the order; removed the docs card from the customer receipt.
+- **Customer receipt (2.7.515):** totals now match Order Detail (custom line items + discount +
+  Amount Paid + Balance Due); **"Stay Assignments"** block (assigned stalls/RV lots); Emogrifier
+  path unchanged.
+- **Stall & RV Charts (2.7.515):** "Assign Stalls" lands in **By Location – Map**; clicking an
+  available stall in assign-mode places the pending order directly + redirects back to the order;
+  full-bleed bold-electric assign banner above the units; map chips load at **30px**; full-bleed
+  unsaved-suggestion notice. Mockup `.mockups/stall_chart_detail.html` rebuilt to current state.
+- **Edit Reservation — Early Bird (2.7.504–509):** per-package Early Bird discounted price (stalls
+  + rv, mig-032); EB gated on the Schedule toggle; EB cutoff constrained to the open→close window;
+  Schedule + Early Bird reordered above Pricing Mode with inline EB rate inputs; package column
+  titles + `$` prefix.
+- **Frontend customer event page (2.7.501–503, 2.7.515):** electric primary CTA + navy-outline
+  secondary; card-header titles = bare bright-blue icon + navy uppercase, left-aligned; Reserve
+  Now / Complete Reservation buttons bright blue; radius + input-border standardization.
+- **Admin house-style sweep (2.7.469–500):** Daily Movement, Stall Charts list, Reports (filter
+  restructure + PDF-as-print-view + Facility Cleaning report + export history), Dashboard (Today's
+  Movement + Facility cards), Orders / Order Detail / Reservations / Entries-Divisions / Sheets /
+  Customers / Settings — blue filter bars, floating cards on gray, electric major-action CTAs,
+  plugin-wide badge sweep, legacy-button consolidation to `.eem-btn-electric`.
+- **Reports (2.7.511–514, parallel chat):** orders print header (event + dates) + landscape;
+  independent print_columns vs CSV column sets; trimmed print columns.
+- **Stability (2.7.467–468):** broke an infinite recursion in the reservation-config
+  migration/hydration; fixed config backfill silently dropping `stall_rows` on oversized varchar.
+
+**Known watch-outs (still current):**
+- Reservation **5990's RV map is corrupted** (do-not-touch per memory) — test maps on **NTR 6519**.
+- The Order-Detail Rate row exposes a pre-existing data quirk on heavily-edited test orders: a
+  stored component `subtotal` can drift from `unit_price × qty × nights` after repeated Add-Items /
+  date edits (e.g. #90801 shows $121 vs rate-implied $135). Real cleanly-created orders reconcile;
+  worth a hardening pass on the Add-Items subtotal recompute if it recurs.
+- RV lot name/number split still keys on the **last space** in the label — verify against real GEMS
+  labels if odd splits appear.
+
+---
+
+### Previous handoff — 2026-06-18 (v2.7.466)
 
 **Picking up on the laptop? START HERE:**
 1. **Setting the laptop up for the first time?** Read **`docs/LAPTOP-SETUP.md`** — it has the exact
@@ -60,7 +116,7 @@
 ---
 
 
-**Canonical, version-controlled to-do list.** Last updated 2026-06-18 · plugin at **v2.7.466**
+**Canonical, version-controlled to-do list.** Last updated 2026-06-20 · plugin at **v2.7.515**
 · on `main`. **v1 is complete and launch-ready.** Authoritative decision history
 lives in `CLAUDE.md`; deep architecture in `docs/ARCHITECTURE-DATA-OWNERSHIP.md`,
 `docs/ARCHITECTURE-VENUES.md`, and `docs/WORKPLAN-postmeta-decouple.md`.

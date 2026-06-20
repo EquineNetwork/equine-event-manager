@@ -6120,20 +6120,80 @@ RV Lot: " . $rv_lot['name'] );
 		}
 		$net_paid = max( 0, $eem_order_total - $refunded_total );
 
+		// ── Order-level adjustments (custom line items + discount) so the receipt
+		// reflects the live order state, and the Amount Paid / Balance Due flow
+		// that mirrors the admin Order Detail summary. ──
+		$eem_order_key = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
+		$receipt_custom_items = array();
+		$receipt_custom_total = 0.0;
+		$receipt_discount_amt = 0.0;
+		$receipt_discount_rsn = '';
+		if ( '' !== $eem_order_key && class_exists( 'EEM_Order_Adjustments_Repo' ) ) {
+			$eem_adj = EEM_Order_Adjustments_Repo::get_for_order( $eem_order_key );
+			foreach ( (array) ( $eem_adj['custom_items'] ?? array() ) as $eem_ci ) {
+				$receipt_custom_items[] = array(
+					'label' => (string) ( $eem_ci['description'] ?? '' ),
+					'value' => $money( (float) ( $eem_ci['amount'] ?? 0 ) ),
+				);
+			}
+			$receipt_custom_total = (float) ( $eem_adj['custom_items_total'] ?? 0 );
+			if ( isset( $eem_adj['discount'] ) && is_array( $eem_adj['discount'] ) ) {
+				$receipt_discount_amt = (float) ( $eem_adj['discount']['amount'] ?? 0 );
+				$receipt_discount_rsn = (string) ( $eem_adj['discount']['reason'] ?? '' );
+			}
+		}
+		$receipt_grand_total = round( $eem_order_total + $receipt_custom_total - $receipt_discount_amt, 2 );
+		// Amount actually collected (mig-029). Legacy 'paid' rows with no recorded
+		// amount_paid count their component total as collected.
+		$receipt_amount_paid = isset( $order['amount_paid'] ) ? (float) $order['amount_paid'] : 0.0;
+		$eem_status_slug     = isset( $order['status_slug'] ) ? (string) $order['status_slug'] : '';
+		if ( $receipt_amount_paid <= 0.005 && 'paid' === $eem_status_slug ) {
+			$receipt_amount_paid = $eem_order_total;
+		}
+		$receipt_balance_due = round( max( 0.0, $receipt_grand_total - $receipt_amount_paid ), 2 );
+		$receipt_has_balance = ! $is_cancelled && ! $is_fully_refunded && ! $is_partial_refunded && $receipt_balance_due > 0.005;
+
+		// Assigned stall units / RV lots (from the order's component notes) so the
+		// customer sees where they're placed on the receipt.
+		$receipt_stall_units = '';
+		$receipt_rv_units    = '';
+		$eem_assign_sources  = array();
+		foreach ( (array) ( $order['components'] ?? array() ) as $eem_ac ) {
+			$eem_assign_sources[] = (string) ( $eem_ac['notes'] ?? '' );
+		}
+		$eem_assign_sources[] = (string) ( $order['notes'] ?? '' );
+		foreach ( $eem_assign_sources as $eem_src ) {
+			if ( '' === $receipt_stall_units && preg_match( '/Assigned Stall Units:\s*(.+)/i', $eem_src, $eem_sm ) ) {
+				$receipt_stall_units = trim( $eem_sm[1] );
+			}
+			if ( '' === $receipt_rv_units && preg_match( '/Assigned RV Lots:\s*(.+)/i', $eem_src, $eem_rvm ) ) {
+				$receipt_rv_units = trim( $eem_rvm[1] );
+			}
+		}
+		$receipt_assignments = array();
+		if ( '' !== $receipt_stall_units ) {
+			$receipt_assignments[] = array( 'label' => __( 'Stalls', 'equine-event-manager' ), 'value' => $receipt_stall_units, 'nights' => '' );
+		}
+		if ( '' !== $receipt_rv_units ) {
+			$receipt_assignments[] = array( 'label' => __( 'RV Lots', 'equine-event-manager' ), 'value' => $receipt_rv_units, 'nights' => '' );
+		}
+
 		$ctx = array(
 			'logo_url'            => $for_pdf ? $this->get_company_logo_data_uri() : $this->get_company_logo_url( 'medium' ),
 			'order_number'        => sprintf( '#%05d', absint( $order['order_number'] ) ),
 			'event_title'         => $event_label,
 			'event_sub'           => implode( '  ·  ', $sub_parts ),
 			'payment_date'        => $paid_ts ? date_i18n( 'm-d-Y', $paid_ts ) : '',
-			'amount_paid'         => $money( $order['total'] ),
+			// Header "amount" badge: shows the balance due when one is outstanding,
+			// else the collected total.
+			'amount_paid'         => $receipt_has_balance ? $money( $receipt_balance_due ) : $money( $receipt_grand_total ),
 			'customer_name'       => isset( $order['customer_name'] ) ? trim( (string) $order['customer_name'] ) : '',
 			'reservation_type'    => ! empty( $order['type_labels'] ) && is_array( $order['type_labels'] ) ? implode( ', ', $order['type_labels'] ) : '',
 			'customer_email'      => $this->get_order_customer_email( $order ),
 			'customer_phone'      => isset( $order['phone'] ) ? $this->format_phone_label( (string) $order['phone'] ) : '',
 			'billing_address'     => trim( (string) $this->get_billing_details_from_order_notes( $order['notes'] ) ),
-			// Assignments are admin-assigned post-checkout (Bulk mode); omit until set.
-			'assignments'         => array(),
+			// Assigned stall units / RV lots parsed from the order notes.
+			'assignments'         => $receipt_assignments,
 			'cards'               => $cards,
 			'line_items'          => $this->build_order_line_items( $order, false ),
 			'special_requests'    => trim( (string) $this->get_special_requests_from_order_notes( $order['notes'] ) ),
@@ -6142,7 +6202,14 @@ RV Lot: " . $rv_lot['name'] );
 			'fee'                 => (float) $order['fees'] > 0 ? $money( $order['fees'] ) : '',
 			'tax'                 => (float) $order['tax'] > 0 ? $money( $order['tax'] ) : '',
 			'tax_rate_label'      => $tax_rate_value > 0 ? rtrim( rtrim( number_format( $tax_rate_value, 3 ), '0' ), '.' ) . '%' : '',
-			'grand_total'         => $money( $order['total'] ),
+			'grand_total'         => $money( $receipt_grand_total ),
+			// Order-level adjustment lines + Amount Paid / Balance Due flow.
+			'custom_items'        => $receipt_custom_items,
+			'discount_amount'     => $receipt_discount_amt > 0.005 ? $money( $receipt_discount_amt ) : '',
+			'discount_reason'     => $receipt_discount_rsn,
+			'amount_paid_val'     => $money( $receipt_amount_paid ),
+			'balance_due'         => $money( $receipt_balance_due ),
+			'has_balance'         => $receipt_has_balance,
 			'cancellation_policy' => trim( (string) ( $reservation_data['cancellation_policy_override'] ?? '' ) ),
 			'support_phone'       => $support_phone ? $this->format_phone_label( $support_phone ) : '',
 			'support_email'       => $support_email,
@@ -7679,13 +7746,9 @@ RV Lot: " . $rv_lot['name'] );
 		nocache_headers();
 		// build_receipt_html returns a fully-escaped, self-contained HTML document.
 		$html = $this->build_receipt_html( $order, false );
-		// Hosted (web) view only — append a Required Documents upload card so the
-		// customer can add/replace their docs after checkout. The PDF path above
-		// never reaches here, so the receipt PDF stays document-only.
-		$docs_html = $this->build_hosted_docs_section_html( $order );
-		if ( '' !== $docs_html && false !== strpos( $html, '</body>' ) ) {
-			$html = str_replace( '</body>', $docs_html . '</body>', $html );
-		}
+		// Required Documents are an admin/check-in concern, not part of the
+		// customer-facing receipt — the upload card was removed from this page
+		// (Whitney 2026-06-20). Docs are managed on the admin Order Detail screen.
 		// Print view (admin "Print Receipt" button) — open straight into the
 		// browser print dialog. Docs upload card is suppressed in the markup
 		// above only for PDF; here it's harmless but print CSS hides it.

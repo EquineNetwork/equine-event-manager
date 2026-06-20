@@ -1937,6 +1937,47 @@
 		});
 	}
 
+	/* Order Detail — quick Check-In / Check-Out. Posts to the shared
+	   eem_order_checkin_set endpoint (same store as Daily Movement) and reloads
+	   so the button label + any status surfaces re-render. */
+	function submitOrderCheckin(btn) {
+		if (!btn) return;
+		var rid = btn.getAttribute('data-reservation-id');
+		var orderNumber = btn.getAttribute('data-order-number');
+		var target = btn.getAttribute('data-target');
+		var nonce = btn.getAttribute('data-nonce');
+		if (!rid || !orderNumber || !target || !nonce) return;
+		btn.disabled = true;
+		var fd = new FormData();
+		fd.append('action', 'eem_order_checkin_set');
+		fd.append('reservation_id', rid);
+		fd.append('order_number', orderNumber);
+		fd.append('target', target);
+		fd.append('_wpnonce', nonce);
+		fetch(window.ajaxurl || '/wp-admin/admin-ajax.php', {
+			method: 'POST', credentials: 'same-origin', body: fd
+		}).then(function (r) {
+			return r.json().catch(function () { return { success: false }; });
+		}).then(function (json) {
+			if (json && json.success) {
+				if (window.EEM && typeof window.EEM.showSaveToast === 'function') {
+					window.EEM.showSaveToast((json.data && json.data.label) ? json.data.label : 'Updated.');
+				}
+				setTimeout(function () { window.location.reload(); }, 500);
+			} else {
+				btn.disabled = false;
+				if (window.EEM && typeof window.EEM.showSaveToast === 'function') {
+					window.EEM.showSaveToast((json && json.data && json.data.message) ? json.data.message : 'Could not update check-in.', { variant: 'error', sub: '' });
+				}
+			}
+		}).catch(function () {
+			btn.disabled = false;
+			if (window.EEM && typeof window.EEM.showSaveToast === 'function') {
+				window.EEM.showSaveToast('Network error. Please try again.', { variant: 'error', sub: '' });
+			}
+		});
+	}
+
 	/* v2 — Single-order Cancel modal (Order Detail page). Cancel is terminal:
 	   frees inventory + emails the customer. Reloads on success so the status
 	   badge, More menu, and payment banner all re-render correctly. */
@@ -3026,6 +3067,10 @@
 		},
 		'order-edit-dates-confirm': function () {
 			submitEditDatesForm();
+		},
+		/* Order Detail — quick Check-In / Check-Out (shared with Daily Movement). */
+		'order-checkin-set': function (target) {
+			submitOrderCheckin(target);
 		},
 		/* v2 — Single-order Cancel modal (Order Detail page). */
 		'order-cancel-single': function () {
@@ -5579,7 +5624,15 @@
 		banner.id = 'eem-assign-banner';
 		banner.className = 'eem-assign-banner';
 		banner.innerHTML = '<strong>Assigning ' + (ctx.customer || 'this customer') + '</strong> &mdash; click an available ' + noun + dates + ' to place them.';
-		host.parentNode.insertBefore(banner, host);
+		// Place the banner directly above the "Stall Units" / "RV Lots" divider
+		// (the row of units to click). Falls back to above the chart host when no
+		// divider is present (e.g. the By Customer table view).
+		var divider = document.querySelector('.eem-sc-section-divider');
+		if (divider && divider.parentNode) {
+			divider.parentNode.insertBefore(banner, divider);
+		} else {
+			host.parentNode.insertBefore(banner, host);
+		}
 	})();
 
 	function openAssignOrderModal(ctx, unit) {
@@ -5852,6 +5905,12 @@
 				window.EEM.showSaveToast(data.message || (resp && resp.success ? 'Updated.' : 'Could not update the stall.'),
 					{ variant: (resp && resp.success) ? 'success' : 'error', sub: '' });
 			}
+			// In an assign-order flow: once the pending order is placed, send the
+			// admin back to that order's detail page (#26).
+			var aCtx = (window.eemStallChart || {}).assignContext;
+			if (resp && resp.success && op === 'assign' && aCtx && aCtx.returnUrl && orderKey && orderKey === aCtx.orderKey) {
+				setTimeout(function () { window.location.href = aCtx.returnUrl; }, 700);
+			}
 		}).catch(function () {
 			if (window.EEM && window.EEM.showSaveToast) {
 				window.EEM.showSaveToast('Could not reach the server.', { variant: 'error', sub: '' });
@@ -5962,6 +6021,18 @@
 					ev.stopPropagation();
 					var pEl = container.querySelector('[data-eem-smap-payload]');
 					var p; try { p = JSON.parse(pEl.textContent); } catch (e) { return; }
+					// Assign-mode: clicking an AVAILABLE stall places the pending
+					// order directly (reuses the map's own assign action), instead
+					// of opening the generic customer-search popup.
+					var aCtx = (window.eemStallChart || {}).assignContext;
+					if (aCtx && aCtx.orderKey && aCtx.kind !== 'rv') {
+						var aLabel = cell.getAttribute('data-eem-smap-stall');
+						var aState = (p.state && p.state[aLabel]) ? p.state[aLabel] : { s: 'available' };
+						if ((aState.s || 'available') === 'available') {
+							eemSmapAction(container, 'assign', aLabel, aCtx.orderKey);
+							return;
+						}
+					}
 					eemSmapOpenPop(container, cell, p);
 				});
 			}
@@ -5975,7 +6046,7 @@
 				// SMAP_MIN low (12) so a large facility map can shrink far enough to
 				// show EVERY chip on load without horizontal/vertical scroll — the
 				// customer should see the whole layout the moment the page loads.
-				var SMAP_BASE = 40, SMAP_MIN = 12;
+				var SMAP_BASE = 30, SMAP_MIN = 12;
 				var applySmapZoom = function (px) {
 					container.style.setProperty('--eem-smap-chip', px + 'px');
 					// Below ~24px a 4-digit stall number is illegible — switch the grid

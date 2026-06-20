@@ -3806,6 +3806,8 @@ class EEM_Admin {
 					'arrival'     => (string) ( 'rv' === $assign_kind ? $assign_order['rv_arrival_date'] : $assign_order['stall_arrival_date'] ),
 					'departure'   => (string) ( 'rv' === $assign_kind ? $assign_order['rv_departure_date'] : $assign_order['stall_departure_date'] ),
 					'orderNumber' => $this->format_order_number_display( (string) ( $assign_order['order_number'] ?? '' ) ),
+					// Where to send the admin back after they place this order.
+					'returnUrl'   => EEM_Order_Detail_Page::url( $assign_order_key ),
 				);
 			}
 		}

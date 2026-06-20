@@ -63,6 +63,9 @@ class EEM_Order_Documents {
 			original_name varchar(255) NOT NULL,
 			mime varchar(100) NOT NULL DEFAULT '',
 			file_size bigint(20) unsigned NOT NULL DEFAULT 0,
+			satisfied tinyint(1) NOT NULL DEFAULT 0,
+			satisfied_by bigint(20) unsigned NOT NULL DEFAULT 0,
+			satisfied_at datetime NULL DEFAULT NULL,
 			uploaded_by bigint(20) unsigned NOT NULL DEFAULT 0,
 			uploaded_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			PRIMARY KEY  (id),
@@ -220,6 +223,101 @@ class EEM_Order_Documents {
 	}
 
 	/**
+	 * A requirement is fulfilled when it has an uploaded file OR has been marked
+	 * satisfied in person by an admin.
+	 *
+	 * @param array<string,mixed>|null $row Document row (or null when no row).
+	 * @return bool
+	 */
+	public static function is_fulfilled( ?array $row ): bool {
+		if ( ! is_array( $row ) ) {
+			return false;
+		}
+		$has_file = ! empty( $row['file_name'] );
+		return $has_file || ! empty( $row['satisfied'] );
+	}
+
+	/**
+	 * Mark a requirement satisfied in person (no file). Upserts the row,
+	 * preserving any existing uploaded file. Admin-only callers.
+	 *
+	 * @param string $order_key   Order bearer key.
+	 * @param string $requirement Requirement name.
+	 * @param int    $user_id     Acting admin user id.
+	 * @return bool True on success.
+	 */
+	public static function mark_satisfied( string $order_key, string $requirement, int $user_id ): bool {
+		global $wpdb;
+		$order_key   = sanitize_text_field( $order_key );
+		$requirement = sanitize_text_field( $requirement );
+		if ( '' === $order_key || '' === $requirement ) {
+			return false;
+		}
+		$table = $wpdb->prefix . 'eem_order_documents';
+		$result = $wpdb->query( $wpdb->prepare( // phpcs:ignore WordPress.DB
+			"INSERT INTO {$table} ( order_key, requirement, file_name, original_name, mime, file_size, satisfied, satisfied_by, satisfied_at, uploaded_by, uploaded_at )
+			 VALUES ( %s, %s, '', '', '', 0, 1, %d, %s, %d, %s )
+			 ON DUPLICATE KEY UPDATE satisfied = 1, satisfied_by = VALUES(satisfied_by), satisfied_at = VALUES(satisfied_at)",
+			$order_key,
+			$requirement,
+			$user_id,
+			current_time( 'mysql' ),
+			$user_id,
+			current_time( 'mysql' )
+		) );
+		return false !== $result;
+	}
+
+	/**
+	 * Undo an in-person "satisfied" mark. If the row also carries an uploaded
+	 * file the file is preserved (only the satisfied flag clears); if the row is
+	 * satisfied-only it is deleted so the requirement returns to outstanding.
+	 *
+	 * @param string $order_key   Order bearer key.
+	 * @param string $requirement Requirement name.
+	 * @return bool True on success.
+	 */
+	public static function unmark_satisfied( string $order_key, string $requirement ): bool {
+		global $wpdb;
+		$order_key   = sanitize_text_field( $order_key );
+		$requirement = sanitize_text_field( $requirement );
+		$table       = $wpdb->prefix . 'eem_order_documents';
+		$row         = self::get( $order_key, $requirement );
+		if ( ! $row ) {
+			return true;
+		}
+		if ( ! empty( $row['file_name'] ) ) {
+			return false !== $wpdb->update( $table, array( 'satisfied' => 0, 'satisfied_by' => 0, 'satisfied_at' => null ), array( 'order_key' => $order_key, 'requirement' => $requirement ), array( '%d', '%d', '%s' ), array( '%s', '%s' ) );
+		}
+		return false !== $wpdb->delete( $table, array( 'order_key' => $order_key, 'requirement' => $requirement ), array( '%s', '%s' ) );
+	}
+
+	/**
+	 * Names of the reservation's required documents that are NOT yet fulfilled
+	 * (no upload and not marked satisfied) for this order. Empty array = all
+	 * requirements met (or none defined).
+	 *
+	 * @param string $order_key      Order bearer key.
+	 * @param int    $reservation_id Owning reservation post id.
+	 * @return array<int,string>
+	 */
+	public static function outstanding_requirements( string $order_key, int $reservation_id ): array {
+		$names = self::requirement_names( $reservation_id );
+		if ( empty( $names ) ) {
+			return array();
+		}
+		$have        = self::get_for_order( $order_key );
+		$outstanding = array();
+		foreach ( $names as $req ) {
+			$row = isset( $have[ $req ] ) ? $have[ $req ] : null;
+			if ( ! self::is_fulfilled( $row ) ) {
+				$outstanding[] = $req;
+			}
+		}
+		return $outstanding;
+	}
+
+	/**
 	 * Stream a stored file to the browser (inline). Caller MUST authorize first.
 	 *
 	 * @param string $order_key   Order bearer key.
@@ -259,6 +357,52 @@ class EEM_Order_Documents {
 		// order exists; files are re-keyed onto the order at creation).
 		add_action( 'wp_ajax_eem_stage_required_doc', array( __CLASS__, 'ajax_stage' ) );
 		add_action( 'wp_ajax_nopriv_eem_stage_required_doc', array( __CLASS__, 'ajax_stage' ) );
+		// In-person "mark satisfied" / undo — admin-only (no nopriv variant).
+		add_action( 'wp_ajax_eem_mark_doc_satisfied', array( __CLASS__, 'ajax_mark_satisfied' ) );
+	}
+
+	/**
+	 * AJAX: admin marks a required document satisfied in person, or undoes it.
+	 * Admin-only (manage_options). Expects order_key, requirement, nonce
+	 * (eem_required_doc), and satisfied ('1' = mark, '0' = undo).
+	 *
+	 * @return void
+	 */
+	public static function ajax_mark_satisfied(): void {
+		check_ajax_referer( 'eem_required_doc', 'nonce' );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+		$order_key   = isset( $_POST['order_key'] ) ? sanitize_text_field( wp_unslash( $_POST['order_key'] ) ) : '';
+		$requirement = isset( $_POST['requirement'] ) ? sanitize_text_field( wp_unslash( $_POST['requirement'] ) ) : '';
+		$satisfied   = isset( $_POST['satisfied'] ) && '1' === (string) $_POST['satisfied'];
+		if ( '' === $order_key || '' === $requirement ) {
+			wp_send_json_error( array( 'message' => __( 'Missing order or document reference.', 'equine-event-manager' ) ), 400 );
+		}
+
+		$user_id = get_current_user_id();
+		$ok      = $satisfied
+			? self::mark_satisfied( $order_key, $requirement, $user_id )
+			: self::unmark_satisfied( $order_key, $requirement );
+
+		if ( ! $ok ) {
+			wp_send_json_error( array( 'message' => __( 'Could not update the document. Please try again.', 'equine-event-manager' ) ), 500 );
+		}
+
+		if ( class_exists( 'EEM_Activity_Log' ) ) {
+			$current_user = wp_get_current_user();
+			EEM_Activity_Log::write(
+				$satisfied ? 'order_doc_satisfied' : 'order_doc_unsatisfied',
+				array( 'order_key' => $order_key, 'requirement' => $requirement ),
+				array( 'actor_type' => 'user', 'actor_id' => (int) $user_id, 'actor_label' => $current_user ? $current_user->display_name : '' )
+			);
+		}
+
+		$actor = wp_get_current_user();
+		wp_send_json_success( array(
+			'satisfied'    => $satisfied,
+			'satisfied_by' => $actor ? $actor->display_name : '',
+		) );
 	}
 
 	/**

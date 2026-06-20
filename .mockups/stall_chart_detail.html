@@ -6,312 +6,206 @@
 <title>Equine Event Manager – Stall &amp; RV Chart – 2026 Southeast Region Super Sort</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
+/* ─────────────────────────────────────────────────────────────────────────────
+   Stall & RV Chart – detail page (admin.php?page=equine-event-manager-stall-charts&reservation_id=N)
+   Curated mockup reflecting the LIVE page as of 2026-06-19. All component values
+   pulled from assets/css/admin.css. Brand tokens: electric #1668F2, navy #031B4E,
+   control border #8c8f94, radius 3px.
+   ───────────────────────────────────────────────────────────────────────────── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
 svg{flex-shrink:0}
-
-/* Universal hover convention — color only, NEVER underline */
 a{text-decoration:none}
 a:hover{text-decoration:none}
 
-/* ── WP SHELL ── */
+/* ── WP SHELL STUB ── */
 .wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;position:sticky;top:0;z-index:200}
 .wp-admin-bar span{font-size:13px;color:#c3c4c7;cursor:pointer}
 .wp-admin-bar span.site{color:#fff;font-weight:600}
 .wp-body{display:flex;flex:1}
 .wp-sidebar{width:160px;min-width:160px;background:#1d2327;min-height:calc(100vh - 32px)}
-.wp-sidebar-item{padding:8px 12px;font-size:13px;color:#c3c4c7;cursor:pointer;display:flex;align-items:center;gap:8px;border-left:3px solid transparent}
-.wp-sidebar-item:hover{background:#2c3338;color:#fff}
-.wp-sidebar-item.active{background:#1668F2;color:#fff;border-left-color:#90c4ff}
+.wp-sidebar-item{padding:8px 12px;font-size:13px;color:#c3c4c7;cursor:pointer}
 .wp-sidebar-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 0}
 .wp-sidebar-label{padding:8px 12px 4px;font-size:10px;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
 .wp-sidebar-sub{padding:6px 12px 6px 28px;font-size:13px;color:#c3c4c7;cursor:pointer}
-.wp-sidebar-sub:hover{color:#fff}
 .wp-sidebar-sub.active{color:#90c4ff;font-weight:600}
-
-/* ── CONTENT ── */
 .wp-content{flex:1;padding:12px 20px 40px;min-width:0}
 
-/* Logo + breadcrumb */
+/* ── Breadcrumb + logo ── */
 .breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
 .breadcrumb-logo-box{width:160px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb;flex-shrink:0}
 .breadcrumb-sep{font-size:13px;color:#8c8f94}
 .breadcrumb-page{font-size:13px;color:#031B4E;font-weight:600}
-.breadcrumb-page a{color:#031B4E;font-weight:600;text-decoration:none}
-.breadcrumb-page a:hover{color:#1668F2;text-decoration:none}
+.breadcrumb-page a{color:#031B4E;font-weight:600}
+.breadcrumb-page a:hover{color:#1668F2}
 
-/* ── PLUGIN-WRAP (single bordered card per VIS-3) ── */
+/* ── PLUGIN-WRAP (single bordered card) ── */
 .plugin-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
 
 /* PAGE HEADER inside wrap */
-.plugin-header{padding:18px 22px;border-bottom:1px solid #dcdcde;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.eem-stall-chart-header,.plugin-header{padding:18px 22px;border-bottom:1px solid #dcdcde;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .plugin-header-left{flex:1;min-width:0}
-.plugin-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;line-height:1.2;margin-bottom:4px}
-.plugin-header-meta{font-size:13px;color:#6B7A99;margin-top:4px}
-.header-change-btn{background:#fff;border:1px solid #c3c4c7;color:#1d2327;padding:6px 12px;border-radius:4px;font-size:12.5px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap;flex-shrink:0}
-.header-change-btn:hover{border-color:#8c8f94;background:#f6f7f7}
-.header-typeahead{margin-top:10px}
-.header-event-search{width:100%;max-width:420px;padding:8px 12px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;outline:none;box-sizing:border-box}
-.header-event-search:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
-.header-event-options{width:100%;max-width:420px;border:1px solid #dcdcde;border-radius:4px;background:#fff;margin-top:4px;overflow:hidden}
-.header-event-option{padding:10px 12px;cursor:pointer;border-bottom:1px solid #f0f0f1}
-.header-event-option:last-child{border-bottom:none}
-.header-event-option:hover,.header-event-option.is-current{background:#f3f4f5}
-.header-event-option-name{font-size:13px;font-weight:600;color:#031B4E;display:block}
-.header-event-option-dates{font-size:11.5px;color:#6B7A99;display:block;margin-top:2px}
-.header-event-option-tag{display:inline-block;font-size:10px;font-weight:700;color:#1668F2;background:#EEF4FF;border-radius:3px;padding:1px 5px;margin-left:5px;vertical-align:middle;text-transform:uppercase;letter-spacing:.3px}
-.header-event-option-empty{padding:10px 12px;font-size:13px;color:#8c8f94}
-.header-cancel-btn{background:none;border:none;color:#6B7A99;font-size:12.5px;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;padding:0;margin-top:6px;display:inline-block}
-.header-cancel-btn:hover{color:#1d2327}
+.plugin-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;line-height:1.2}
+.eem-header-actions{display:flex;gap:8px;flex-shrink:0;align-items:center}
+.eem-header-action-change{background:#fff;border:1px solid #c3c4c7;color:#1d2327;padding:6px 12px;border-radius:4px;font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center}
+.eem-header-action-change:hover{border-color:#8c8f94;background:#f6f7f7;color:#1d2327}
 
 /* ── BODY ── */
-.chart-body{padding:18px 22px;background:#fff}
+.eem-stall-chart-body{padding:18px 22px;background:#fff}
 
-/* ── STATS BAR ── */
-.stats-bar{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:12px;margin-bottom:14px}
-.stat-card{background:#fff;border:1px solid #e5e7eb;border-radius:4px;padding:14px 18px}
-.stat-label{font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#8c8f94;margin-bottom:8px}
-.stat-value{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:#031B4E}
-.stat-daily{font-size:13px;color:#4a5a7a;line-height:1.8}
-.stat-daily span{font-weight:600;color:#031B4E}
+/* ── DAILY-MOVEMENT BAR + KPI STAT CARDS ── */
+.eem-stall-chart-dm-bar{background:#f8fafc;border:0;border-bottom:1px solid #d9e2f2;border-radius:0;padding:16px 22px;margin:-18px -22px 18px}
+.eem-stall-chart-dm-stats{display:flex;flex-wrap:wrap;gap:10px}
+.eem-scs-card{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #d9e2f2;border-radius:6px;padding:10px 14px}
+.eem-scs-icon{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:6px;background:#e6eefc;color:#1668f2;font-size:16px;line-height:1}
+.eem-scs-num{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031b4e;line-height:1}
+.eem-scs-label{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#64748b;margin-left:2px}
 
-/* ── VIEW TABS (live inside the content-card header per audit revision) ── */
-.view-tabs{display:flex;gap:0;background:#fff;padding:0 18px}
-.view-tab{padding:14px 22px 12px;font-size:14px;font-weight:600;color:#6B7A99;cursor:pointer;border-bottom:3px solid transparent;font-family:'IBM Plex Sans',sans-serif;transition:color .15s,border-color .15s;display:flex;align-items:center;gap:8px;background:none;border-left:none;border-right:none;border-top:none}
-.view-tab:hover{color:#031B4E}
-.view-tab.active{color:#1668F2;border-bottom-color:#1668F2}
-.view-tab svg{width:14px;height:14px}
-.view-tabs-card{background:#fff;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden;margin-bottom:14px}
-.view-tabs-card .view-tabs{border-bottom:1px solid #dcdcde}
+/* ── FILTER BAR (Show + View dropdowns + actions) ── */
+.eem-stall-chart-filter-bar{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 18px;background:#f0f4fb;border-bottom:1px solid #dcdcde;padding:14px 22px;margin:-18px -22px 0}
+.eem-scf-group{display:flex;flex-direction:column;gap:5px}
+.eem-stall-chart-view-label{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#64748b}
+.eem-field-select{padding:7px 10px;border:1px solid #8c8f94;border-radius:3px;font-size:13px;font-family:inherit;color:#1d2327;background:#fff;outline:none;line-height:1.4}
+.eem-field-select:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
+.eem-field-select--auto{width:auto}
+.eem-stall-chart-view-select{min-width:200px}
+.eem-scf-actions{margin-left:auto;display:flex;gap:10px}
 
-/* ── INVENTORY TOGGLE BAR (2.3.38) ── */
-.inv-bar{padding:14px 18px 0;background:#fff;display:flex;align-items:center;gap:12px}
-.inv-toggle{display:inline-flex;border:1px solid #dcdcde;border-radius:4px;overflow:hidden}
-.inv-btn{padding:7px 18px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;border:none;border-right:1px solid #dcdcde;cursor:pointer;transition:background .12s,color .12s;line-height:1}
-.inv-btn:last-child{border-right:none}
-.inv-btn:hover{background:#f6f7f7}
-.inv-btn.active{background:#1668F2;color:#fff}
+/* ── BUTTONS ── */
+.eem-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:4px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap;border:1px solid;text-decoration:none}
+.eem-btn-electric{background:#1668F2;color:#fff;border-color:#1668F2}
+.eem-btn-electric:hover{background:#1257d1;border-color:#1257d1;color:#fff}
+.eem-btn--ghost{background:#fff;color:#1d2327;border-color:#c3c4c7}
+.eem-btn--ghost:hover{background:#f6f7f7;color:#1d2327}
+.eem-btn-secondary{background:#fff;color:#031B4E;border-color:#c3c4c7}
+.eem-btn-secondary:hover{background:#f6f7f7}
 
-/* ── SECTION DIVIDER (between stalls and RV in All+Location view) ── */
-.section-divider{display:flex;align-items:center;gap:8px;padding:10px 18px;background:#f3f4f5;border-top:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#031B4E}
-.section-divider svg{width:14px;height:14px;flex-shrink:0}
+/* ── FULL-BLEED NOTICE BANNERS ── */
+/* Amber "unsaved suggestion" notice — edge-to-edge, no border/radius */
+.eem-stall-chart-unsaved-banner{display:flex;align-items:flex-start;gap:10px;margin:0 -22px 0;padding:12px 22px;background:#FFF8EC;border:none;border-radius:0;font-size:13px;line-height:1.5;color:#6B4A0A}
+.eem-stall-chart-unsaved-banner svg{width:16px;height:16px;color:#E5A823;flex-shrink:0;margin-top:1px}
+.eem-stall-chart-unsaved-banner strong{color:#6B4A0A}
+/* Bold ELECTRIC-BLUE assign banner — full-bleed, white text, sits above the units */
+.eem-assign-banner{margin:0 -22px;padding:14px 22px;background:#1668F2;border:none;border-radius:0;color:#fff;font-size:14px}
+.eem-assign-banner strong{color:#fff}
 
-/* ── ACTION BAR ── */
-.action-bar{background:#fff;border:1px solid #e5e7eb;border-radius:4px;padding:12px 18px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.action-bar-btns{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap;border:1px solid;text-decoration:none}
-.btn svg{width:13px;height:13px;flex-shrink:0}
-.btn-primary{background:#1668F2;color:#fff;border-color:#1668F2}
-.btn-primary:hover{background:#1257d1;border-color:#1257d1;color:#fff}
-.btn-ghost{background:#fff;color:#1d2327;border-color:#c3c4c7}
-.btn-ghost:hover{background:#f6f7f7;color:#1d2327}
+/* ── SECTION DIVIDERS (Stall Units / RV Lots) ── */
+.eem-sc-section-divider{display:flex;align-items:center;gap:8px;padding:10px 22px;margin:0 -22px;background:#f8fafc;border-top:1px solid #dcdcde;border-bottom:1px solid #dcdcde;font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#031b4e}
+.eem-sc-section-divider svg{width:14px;height:14px;flex-shrink:0}
 
-/* ── MAIN CONTENT CARD ── */
-.content-card{background:#fff;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden;margin-bottom:14px}
-.content-card-header{padding:14px 18px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.content-card-title{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:#031B4E}
+/* ── BY LOCATION – LIST: toolbar + tables ── */
+.eem-stall-chart-filter-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 0 16px}
+.eem-loc-bulk{display:flex;align-items:center;gap:8px}
+.eem-loc-bulk-select{min-width:150px}
+.eem-stall-chart-filter-search{position:relative;flex:0 0 auto;margin-left:auto;width:300px;max-width:100%;min-width:200px}
+.eem-stall-chart-filter-search svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:#8c8f94}
+.eem-stall-chart-search-input{width:100%;padding:6px 10px 6px 25px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:inherit;color:#1d2327;background:#fff;outline:none}
+.eem-stall-chart-search-input:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
+.eem-chart-table-scroll{overflow-x:auto;margin:0 -22px}
+.eem-stall-chart-table{width:100%;border-collapse:collapse;min-width:600px}
+.eem-stall-chart-table thead tr{background:#f3f4f5;border-bottom:1px solid #dcdcde}
+.eem-stall-chart-table thead th{padding:11px 14px;font-size:13px;font-weight:600;color:#1d2327;text-align:left;white-space:nowrap}
+.eem-stall-chart-table thead th:first-child{padding-left:22px}
+.eem-stall-chart-table td{padding:11px 14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
+.eem-stall-chart-table td:first-child{padding-left:22px}
+.eem-stall-chart-table tbody tr{border-bottom:1px solid #dcdcde}
+.eem-loc-check-col{width:34px}
+.eem-chart-unit-num{font-weight:700;color:#031B4E}
+tr.eem-chart-barn-row td{background:#fdf4e7;padding:9px 22px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#b45309;border-bottom:1px solid #f3e2c4;border-top:1px solid #f3e2c4}
+.eem-loc-cell-td{white-space:nowrap}
+.eem-loc-cell{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;border:1px solid;font-size:12px;font-weight:700;font-family:inherit;line-height:1.5;cursor:pointer;white-space:nowrap;background:#fff}
+.eem-loc-cell .eem-occ-chevron{width:12px;height:12px;flex-shrink:0;opacity:.7}
+.eem-loc-cell--occupied{background:#eaf1fe;border-color:#b9d2fb;color:#031b4e}
+.eem-loc-cell--available{background:#e8f5ee;border-color:#b6e0c7;color:#15803d}
+.eem-loc-cell--cleaning{background:#f5f3ff;border-color:#ddd6fe;color:#7c3aed}
+.eem-loc-cell--blocked{background:#f3f4f5;border-color:#e2e4e7;color:#64748b;cursor:default}
 
-/* Tip banner (flush inside content card, below header, above filter row) */
-.chart-help{display:flex;align-items:center;gap:10px;padding:11px 18px;background:#F0F4FB;border-bottom:1px solid #D9E2F2;font-size:13px;color:#031B4E;font-family:'IBM Plex Sans',sans-serif}
-.chart-help svg{width:14px;height:14px;color:#1668F2;flex-shrink:0}
-.chart-help strong{font-weight:600}
+/* ── BY LOCATION – MAP (eem-smap) ── */
+.eem-smap{--eem-smap-chip:30px;--eem-smap-gap:4px;padding:0 18px 4px}
+.eem-smap-barn-stats{display:flex;flex-wrap:wrap;gap:14px 24px;padding:14px 0 4px}
+.eem-smap-barn-stat{flex:1 1 200px;padding:0}
+.eem-smap-barn-stat-name{font-weight:700;color:#031B4E;font-size:13px;margin-bottom:6px}
+.eem-smap-barn-stat-nums{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:13px}
+.eem-smap-stat{display:inline-flex;align-items:center;gap:6px}
+.eem-smap-stat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.eem-smap-stat-dot--total{background:#6B7A99}
+.eem-smap-stat-dot--avail{background:#15803d}
+.eem-smap-stat-dot--assigned{background:#1668F2}
+.eem-smap-stat-dot--tack{background:#b45309}
+.eem-smap-stat-dot--blocked{background:#b91c1c}
+.eem-smap-barn-tabs{display:flex;gap:4px;flex-wrap:wrap;padding:10px 0 0}
+.eem-smap-barn-tab{appearance:none;border:1px solid #d9e2ec;border-bottom:0;background:#f6f9fd;color:#5f6f85;font-weight:700;font-size:13px;padding:8px 14px;border-radius:6px 6px 0 0;cursor:pointer}
+.eem-smap-barn-tab.active{background:#fff;color:#031B4E;box-shadow:inset 0 -2px 0 #1668F2}
+.eem-smap-legend{display:flex;gap:14px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid #d9e2ec;font-size:12px;color:#5f6f85;align-items:center}
+.eem-smap-legend span{display:inline-flex;align-items:center;gap:6px}
+.eem-smap-legend-hint{margin-left:auto;color:#8995a8}
+.eem-smap-sw{width:14px;height:14px;border-radius:3px;border:1px solid #d9e2ec;display:inline-block}
+.eem-smap-sw--avail{background:#fff;border-color:#b9c6da}
+.eem-smap-sw--resv{background:#dbe4f3;border-color:#bcccea}
+.eem-smap-sw--tack{background:#fff5e6;border-color:#E8A33D}
+.eem-smap-sw--block{background:#9aa6b6;border-color:#9aa6b6}
+.eem-smap-zoombar{display:flex;justify-content:flex-end;padding:8px 0 2px}
+.eem-smap-zoom{display:inline-flex;border:1px solid #d9e2ec;border-radius:3px;overflow:hidden}
+.eem-smap-zoom button{border:0;border-left:1px solid #d9e2ec;background:#fff;color:#031B4E;font-weight:700;font-size:13px;padding:5px 12px;line-height:1;cursor:pointer}
+.eem-smap-zoom button:first-child{border-left:0}
+.eem-smap-zoom button:hover{background:#eef4ff}
+.eem-smap-scroll{overflow:auto;padding:12px 0 6px}
+/* 30px chips on load — admin.js drives --eem-smap-chip from the zoom control */
+.eem-smap-grid{display:grid;grid-template-columns:repeat(10,var(--eem-smap-chip));gap:1px;width:max-content;background:#D9E2F2;border:1px solid #D9E2F2}
+.eem-smap-stall{position:relative;display:flex;align-items:center;justify-content:center;width:var(--eem-smap-chip);height:var(--eem-smap-chip);font-size:clamp(5px,calc(var(--eem-smap-chip) * .32),13px);font-weight:700;border:0;background:#fff;color:#031B4E;cursor:pointer;user-select:none;line-height:1;overflow:hidden}
+.eem-smap-stall:hover{outline:2px solid #1668F2;outline-offset:-1px;z-index:1}
+.eem-smap-stall.is-reserved{background:#dbe4f3;color:#2b4a78}
+.eem-smap-stall.is-blocked{background:repeating-linear-gradient(45deg,#9aa6b6,#9aa6b6 3px,#8593a5 3px,#8593a5 6px);color:#fff}
+.eem-smap-stall.is-tack{background:#fff5e6;color:#9a6a14}
+.eem-smap-cell--gap{background:#eef1f6;background-image:repeating-linear-gradient(45deg,transparent,transparent 5px,#e2e7ef 5px,#e2e7ef 6px)}
+.eem-smap-land{grid-column:span 2;display:flex;align-items:center;justify-content:center;text-align:center;height:var(--eem-smap-chip);font-size:clamp(7px,calc(var(--eem-smap-chip) * .22),11px);font-weight:700;color:#b45309;background:#fff7e6;border:0;padding:2px;line-height:1.15;overflow:hidden}
 
-/* Filter row */
-.filter-row{padding:12px 18px;border-bottom:1px solid #dcdcde;background:#f3f4f5;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-.barn-tabs{display:flex;gap:6px;flex-wrap:wrap}
-.barn-tab{padding:6px 14px;border-radius:4px;font-size:12.5px;font-weight:500;color:#1d2327;cursor:pointer;border:1px solid #c3c4c7;background:#fff;font-family:'IBM Plex Sans',sans-serif}
-.barn-tab:hover{background:#f6f7f7;border-color:#8c8f94}
-.barn-tab.active{background:#1668F2;color:#fff;border-color:#1668F2}
-.filter-search{position:relative;flex:1;min-width:200px;max-width:380px}
-.filter-search svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:#8c8f94}
-.filter-search input{width:100%;padding:6px 10px 6px 28px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;outline:none}
-.filter-search input:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
-.filter-search input::placeholder{color:#b0b0b0}
-.filter-hint{font-size:12px;color:#8c8f94;white-space:nowrap}
+/* ── BY CUSTOMER table ── */
+.eem-cust-chart-table{width:100%;border-collapse:collapse;min-width:700px}
+.eem-cust-chart-table thead tr{background:#f8fafc;border-bottom:2px solid #dcdcde}
+.eem-cust-chart-table thead th{padding:10px 12px;font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.04em;text-align:left;white-space:nowrap}
+.eem-cust-chart-table thead th:first-child{padding-left:22px}
+.eem-cust-chart-table tbody tr{border-bottom:1px solid #dcdcde}
+.eem-cust-chart-table tbody tr:hover{background:#f6f7f7}
+.eem-cust-chart-table tbody td{padding:10px 12px;font-size:14px;color:#1e293b;vertical-align:middle}
+.eem-cust-chart-table tbody td:first-child{padding-left:22px}
+.eem-chart-cust-cell{display:flex;flex-direction:column;gap:1px}
+.eem-chart-cust-cell__row{display:flex;align-items:center;gap:6px}
+.eem-chart-cust-link{color:#031B4E;font-weight:600}
+.eem-chart-cust-link:hover{color:#1668F2}
+.eem-chart-cust-order{color:#6B7A99;font-weight:600;font-size:11.5px;line-height:1.3}
+.eem-chart-cust-order:hover{color:#1668F2}
+.eem-chart-cust-icon--note{color:#6B7A99;display:inline-flex;cursor:help}
+.eem-chart-cust-icon--note svg{width:14px;height:14px}
+.eem-chart-dash{color:#94a3b8}
+.eem-chart-status-col{text-align:left}
 
-/* ── STALL CHART TABLE ── */
-.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
-.stall-table,.cust-table,.rv-table{width:100%;border-collapse:collapse}
-.stall-table{min-width:600px}
-.cust-table{min-width:700px}
-.rv-table{min-width:500px}
-.stall-table thead tr,.cust-table thead tr,.rv-table thead tr{background:#f3f4f5;border-bottom:1px solid #dcdcde}
-.stall-table thead th,.cust-table thead th,.rv-table thead th{padding:11px 14px;font-size:13px;font-weight:600;color:#1d2327;text-align:left;white-space:nowrap}
-.stall-table thead th.date-col,.rv-table thead th.date-col,.cust-table thead th.center{text-align:center;min-width:130px}
-.stall-table thead th.sortable{cursor:pointer;color:#1668F2}
-.stall-table thead th.sortable:hover{color:#1257d1}
-.sort-icon{display:inline-flex;flex-direction:column;gap:1px;margin-left:4px;vertical-align:middle;opacity:.5}
-.sort-icon span{display:block;width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent}
-.sort-icon span:first-child{border-bottom:4px solid currentColor}
-.sort-icon span:last-child{border-top:4px solid currentColor}
+/* Check-in status menu chip (Pending Arrival / Checked In / Checked Out) */
+.eem-dm-status{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap}
+.eem-dm-status::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%}
+.eem-dm-status-occupied{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
+.eem-dm-status-occupied::before{background:#ef4444}
+.eem-dm-status-checked_in{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
+.eem-dm-status-checked_in::before{background:#22c55e}
+.eem-dm-status-checked_out{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+.eem-dm-status-checked_out::before{background:#3b82f6}
+.eem-dm-status-trigger{display:inline-flex;align-items:center;gap:4px;background:none;border:0;padding:0;margin:0;cursor:pointer;font:inherit;line-height:1}
+.eem-dm-status--caret{gap:5px}
+.eem-dm-status--caret .eem-occ-chevron{width:12px;height:12px;color:currentColor;opacity:.35}
+.eem-dm-status-trigger:hover .eem-occ-chevron{opacity:1}
 
-/* Barn group header row (mixed-case section break per AUDIT-C8-11) */
-.barn-group-row td{background:#f3f4f5;padding:9px 14px;font-size:13px;font-weight:600;color:#031B4E;border-bottom:1px solid #dcdcde;border-top:1px solid #dcdcde}
-.barn-group-row td span{font-weight:400;color:#6B7A99;margin-left:8px;font-size:12.5px}
+/* View pane visibility (mockup toggling only) */
+.sc-view{display:none}
+.sc-view.active{display:block}
 
-/* Stall rows */
-.stall-table tbody tr.stall-row,.rv-table tbody tr,.cust-table tbody tr{border-bottom:1px solid #f0f0f1}
-.stall-table tbody tr.stall-row:hover,.rv-table tbody tr:hover,.cust-table tbody tr:hover{background:#f6f7f7}
-.stall-table td,.cust-table td,.rv-table td{padding:11px 14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
-.stall-num{font-weight:700;color:#031B4E;font-size:13.5px;width:60px}
-.block-name{color:#50575e;font-size:13px;white-space:nowrap}
-
-/* Occupancy cells */
-.cell-wrap{display:flex;justify-content:center}
-.occ-pill{display:inline-flex;align-items:center;gap:4px;padding:4px 11px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap;border:1px solid;font-family:'IBM Plex Sans',sans-serif}
-.occ-reserved{background:#EEF4FF;color:#1668F2;border-color:#c0d8ff;cursor:pointer;padding-right:8px;transition:filter .12s,box-shadow .12s}
-.occ-reserved:hover{filter:brightness(.96);box-shadow:0 1px 4px rgba(22,104,242,.18)}
-.occ-reserved .occ-chevron{width:11px;height:11px;color:#1668F2;opacity:.3;transition:opacity .12s;flex-shrink:0}
-.occ-reserved:hover .occ-chevron{opacity:1}
-.occ-available{background:#F0FDF4;color:#15803d;border-color:#bbf7d0}
-.occ-blocked{background:#FEF2F2;color:#b91c1c;border-color:#fecaca;cursor:default}
-
-/* Customer Night Count cells */
-.cust-link{color:#031B4E;font-weight:700;font-size:13.5px}
-.cust-link:hover{color:#1668F2}
-.order-num{font-size:12.5px}
-.order-link{color:#031B4E;font-weight:600;font-size:12.5px;font-family:'IBM Plex Sans',sans-serif}
-.order-link:hover{color:#1668F2}
-.night-count{text-align:center;font-weight:600;color:#031B4E}
-.night-count.zero{color:#c3c4c7}
-.night-count.has-nights{background:#EEF4FF;border-radius:4px;color:#1668F2}
-.stall-assignment{font-size:13px;color:#031B4E;font-weight:500}
-.rv-assignment{font-size:13px;color:#6d28d9;font-weight:500}
-.dash{color:#8c8f94}
-.rv-lot-name{font-weight:600;color:#031B4E}
-
-/* ── ASSIGNMENT ISSUES (option A — neutral card framing, red semantic accents only) ── */
-.issues-card{background:#fff;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden;margin-bottom:14px}
-.issues-header{background:#f3f4f5;padding:12px 18px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.issues-header svg{width:16px;height:16px;color:#b91c1c;flex-shrink:0}
-.issues-header-title{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#b91c1c}
-.issues-header-count{background:#FEF2F2;color:#b91c1c;border:1px solid #fecaca;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px}
-.auto-assign-all-btn{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:#1668F2;color:#fff;border:1px solid #1668F2;border-radius:4px;font-size:12.5px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
-.auto-assign-all-btn:hover{background:#1257d1;border-color:#1257d1}
-.auto-assign-all-btn svg{width:13px;height:13px;color:#fff}
-.issues-body{padding:14px 18px}
-.issue-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:4px;border:1px solid #f0f0f1;background:#fff;margin-bottom:6px;gap:12px}
-.issue-row:last-child{margin-bottom:0}
-.issue-row:hover{background:#f6f7f7;border-color:#dcdcde}
-.issue-text{font-size:13px;color:#1d2327;flex:1}
-.issue-text strong{color:#b91c1c;font-weight:700}
-.issue-actions{display:flex;align-items:center;gap:10px;flex-shrink:0}
-.issue-auto-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:#1668F2;color:#fff;border:1px solid #1668F2;border-radius:4px;font-size:11.5px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap}
-.issue-auto-btn:hover{background:#1257d1;border-color:#1257d1}
-.issue-auto-btn svg{width:11px;height:11px;color:#fff}
-.issue-view-link{font-size:11.5px;color:#1668F2;font-weight:600;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
-.issue-view-link:hover{color:#1257d1}
-.issue-view-link svg{width:11px;height:11px}
-
-/* ── CELL ACTION POPOVER (click a customer pill to see actions) ── */
-.cell-action-menu{position:absolute;z-index:120;background:#fff;border:1px solid #c3c4c7;border-radius:6px;box-shadow:0 8px 24px rgba(3,27,78,.18);padding:6px;display:none;min-width:200px;font-family:'IBM Plex Sans',sans-serif}
-.cell-action-menu.open{display:flex;flex-direction:column;gap:2px}
-.menu-title-wrap{padding:8px 12px 6px;border-bottom:1px solid #f0f0f1;margin-bottom:4px}
-.menu-title{font-size:13px;font-weight:600;color:#031B4E;line-height:1.3;margin-bottom:2px}
-.menu-subtitle{font-size:11.5px;color:#6B7A99}
-.menu-subtitle a{color:#031B4E;font-weight:600}
-.menu-subtitle a:hover{color:#1668F2}
-.cell-action-menu button{display:flex;align-items:center;gap:8px;padding:9px 12px;background:#fff;border:none;border-radius:4px;font-size:13px;font-weight:500;color:#1d2327;cursor:pointer;text-align:left;font-family:inherit;width:100%}
-.cell-action-menu button:hover{background:#f6f7f7;color:#1d2327}
-.cell-action-menu button svg{width:13px;height:13px;flex-shrink:0;color:#6B7A99}
-.cell-action-menu button:hover svg{color:#1668F2}
-
-/* Destination-select banner mode */
-.destination-banner{display:none;position:fixed;top:0;left:0;right:0;z-index:300;padding:12px 18px;background:#1668F2;color:#fff;font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;font-weight:600;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 2px 8px rgba(22,104,242,.25)}
-.destination-banner.active{display:flex}
-body.destination-mode{padding-top:48px}
-.destination-banner-msg{flex:1;display:flex;align-items:center;gap:10px}
-.destination-banner-msg svg{width:18px;height:18px}
-.destination-banner-cancel{background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.3);padding:6px 14px;border-radius:4px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}
-.destination-banner-cancel:hover{background:rgba(255,255,255,.28)}
-body.destination-mode .occ-pill.occ-available{outline:2px dashed #1668F2;outline-offset:-2px;cursor:pointer;background:#EEF4FF;color:#1668F2;font-weight:600;animation:destPulse 1.4s ease-in-out infinite}
-body.destination-mode .occ-pill.occ-available:hover{background:#1668F2;color:#fff;outline-color:#1668F2}
-body.destination-mode .occ-pill.occ-reserved,
-body.destination-mode .occ-pill.occ-blocked{opacity:.5}
-@keyframes destPulse{0%,100%{box-shadow:0 0 0 2px #1668F2}50%{box-shadow:0 0 0 4px rgba(22,104,242,.45)}}
-
-/* ── MOVE SCOPE MODAL (single-night vs all-nights) ── */
-.scope-modal-overlay{position:fixed;inset:0;background:rgba(3,27,78,.5);z-index:400;display:none;align-items:center;justify-content:center;padding:20px;font-family:'IBM Plex Sans',sans-serif}
-.scope-modal-overlay.open{display:flex}
-.scope-modal{background:#fff;border-radius:6px;box-shadow:0 16px 48px rgba(3,27,78,.25);max-width:440px;width:100%;overflow:hidden}
-.scope-modal-header{padding:16px 20px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;justify-content:space-between;gap:12px}
-.scope-modal-title{font-size:15px;font-weight:700;color:#031B4E;font-family:'Space Grotesk',sans-serif}
-.scope-modal-close{background:none;border:none;font-size:22px;color:#6B7A99;cursor:pointer;line-height:1;padding:0 4px}
-.scope-modal-close:hover{color:#031B4E}
-.scope-modal-body{padding:18px 20px}
-.scope-modal-section{margin-bottom:18px}
-.scope-modal-section:last-child{margin-bottom:0}
-.scope-modal-section-label{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6B7A99;margin-bottom:8px}
-.scope-modal-current{font-size:13px;color:#031B4E;line-height:1.6;padding:10px 12px;background:#f3f4f5;border-radius:4px;border:1px solid #dcdcde}
-.scope-modal-current strong{font-weight:600}
-.scope-radio{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #dcdcde;border-radius:4px;cursor:pointer;margin-bottom:8px;transition:border-color .12s,background .12s}
-.scope-radio:hover{border-color:#1668F2;background:#f6f7f7}
-.scope-radio input[type="radio"]{cursor:pointer;accent-color:#1668F2}
-.scope-radio:has(input:checked){border-color:#1668F2;background:#EEF4FF}
-.scope-radio-label{font-size:13px;color:#031B4E;font-weight:500}
-.scope-modal-footer{padding:14px 20px;background:#f3f4f5;border-top:1px solid #dcdcde;display:flex;justify-content:flex-end;gap:10px}
-.scope-modal-btn-ghost{background:#fff;color:#1d2327;border:1px solid #c3c4c7;padding:8px 18px;border-radius:4px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer}
-.scope-modal-btn-ghost:hover{background:#f6f7f7}
-.scope-modal-btn-primary{background:#1668F2;color:#fff;border:1px solid #1668F2;padding:8px 18px;border-radius:4px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer}
-.scope-modal-btn-primary:hover{background:#1257d1;border-color:#1257d1}
-
-/* ── TAB PANELS ── */
-.tab-panel{display:none}
-.tab-panel.active{display:block}
-
-/* ════ TABLET ════ */
-@media(max-width:960px){
+@media (max-width:860px){
   .wp-sidebar{display:none}
-  .wp-content{padding:10px 14px 40px}
-  .stats-bar{grid-template-columns:1fr 1fr}
-}
-
-/* ════ MOBILE ════ */
-@media(max-width:767px){
-  .wp-admin-bar span:not(.site):not(:first-child):not(:last-child){display:none}
-  .wp-content{padding:8px 10px 32px}
-  .breadcrumb-logo-box{width:120px;height:30px;font-size:10px}
-  .plugin-header{padding:14px;flex-direction:column;align-items:stretch;gap:10px}
-  .plugin-title{font-size:18px}
-  .chart-body{padding:12px}
-  .stats-bar{grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
-  .stat-card{padding:10px 12px}
-  .stat-value{font-size:22px}
-  .stat-daily{font-size:12px}
-  .view-tabs{overflow-x:auto;flex-wrap:nowrap;white-space:nowrap}
-  .view-tab{padding:10px 16px;font-size:12.5px}
-  .action-bar{flex-direction:column;align-items:stretch;gap:8px;padding:12px}
-  .action-bar-btns{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%}
-  .btn-primary{grid-column:1 / -1;justify-content:center}
-  .btn-ghost{justify-content:center}
-  .chart-help{padding:10px 14px;font-size:12.5px}
-  .filter-row{flex-direction:column;align-items:stretch;padding:10px 12px;gap:8px}
-  .barn-tabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;padding-bottom:2px}
-  .barn-tab{flex-shrink:0}
-  .filter-search{max-width:100%}
-  .filter-hint{display:none}
-  .stall-table th,.stall-table td,.cust-table th,.cust-table td,.rv-table th,.rv-table td{padding:8px 10px;font-size:12.5px}
-  .occ-pill{font-size:11px;padding:3px 8px}
-  .stall-num{font-size:12.5px}
-  .issue-row{flex-direction:column;align-items:stretch;gap:8px;padding:10px 12px}
-  .issue-actions{justify-content:flex-end;flex-wrap:wrap;gap:8px}
-  .issue-auto-btn,.issue-view-link{flex:1;justify-content:center;text-align:center}
-  .auto-assign-all-btn{width:100%;justify-content:center;margin-left:0}
-  .cell-action-menu{min-width:auto;width:calc(100vw - 32px);left:16px!important;max-width:320px}
-  .destination-banner{flex-direction:column;align-items:stretch;padding:10px 14px;gap:8px;font-size:12.5px}
-  .destination-banner-cancel{align-self:flex-end}
-  body.destination-mode{padding-top:88px}
-  .scope-modal{max-width:calc(100vw - 24px);margin:12px}
-  .scope-modal-header{padding:14px 16px}
-  .scope-modal-body{padding:14px 16px}
-  .scope-modal-footer{padding:12px 16px;flex-direction:column-reverse;gap:8px}
-  .scope-modal-footer button{width:100%;text-align:center}
-}
-
-@media(max-width:390px){
-  .stats-bar{grid-template-columns:1fr}
-  .stat-value{font-size:20px}
-  .occ-pill{font-size:10.5px;padding:2px 7px}
+  .eem-stall-chart-dm-bar{margin:-12px -12px 18px;padding:14px 12px}
+  .eem-scs-card{flex:1 1 calc(50% - 5px)}
+  .eem-stall-chart-filter-bar{align-items:stretch;margin:-12px -12px 0;padding:12px}
+  .eem-scf-group{flex:1 1 calc(50% - 6px);min-width:0}
+  .eem-scf-actions{flex:1 1 100%;margin-left:0}
+  .eem-stall-chart-filter-search{flex:1 1 100%;margin-left:0}
 }
 </style>
 </head>
@@ -330,13 +224,12 @@ body.destination-mode .occ-pill.occ-blocked{opacity:.5}
     <div class="wp-sidebar-item">Dashboard</div>
     <div class="wp-sidebar-item">Media</div>
     <div class="wp-sidebar-item">Posts</div>
-    <div class="wp-sidebar-item">Pages</div>
     <div class="wp-sidebar-sep"></div>
     <div class="wp-sidebar-label">Event Manager</div>
+    <div class="wp-sidebar-sub">Dashboard</div>
     <div class="wp-sidebar-sub">Orders</div>
     <div class="wp-sidebar-sub">Reservations</div>
     <div class="wp-sidebar-sub active">Stall &amp; RV Charts</div>
-    <div class="wp-sidebar-sub">Invoicing</div>
     <div class="wp-sidebar-sub">Reports</div>
     <div class="wp-sidebar-sub">Settings</div>
   </nav>
@@ -345,517 +238,451 @@ body.destination-mode .occ-pill.occ-blocked{opacity:.5}
 
     <!-- Breadcrumb -->
     <div class="breadcrumb">
-      <div class="breadcrumb-logo-box">Plugin Logo</div>
+      <img class="breadcrumb-logo-box" src="Equine Event Manager Logo.png" alt="Equine Event Manager">
       <span class="breadcrumb-sep">/</span>
       <span class="breadcrumb-page"><a href="admin.php?page=equine-event-manager-stall-charts">Stall &amp; RV Charts</a></span>
       <span class="breadcrumb-sep">/</span>
       <span class="breadcrumb-page">2026 Southeast Region Super Sort</span>
     </div>
 
-    <!-- PLUGIN-WRAP (single bordered card per VIS-3) -->
+    <!-- PLUGIN-WRAP (single bordered card) -->
     <div class="plugin-wrap">
 
-      <!-- PAGE HEADER inside wrap -->
-      <header class="plugin-header">
+      <!-- PAGE HEADER inside wrap: title + Change Event + Edit Reservation -->
+      <header class="eem-stall-chart-header">
         <div class="plugin-header-left">
-          <h1 class="plugin-title" id="header-event-name">Perry, GA &#8211; 2026 Southeast Region Super Sort</h1>
-          <div class="plugin-header-meta" id="header-meta">Stall Chart for Reservation #44 &nbsp;&middot;&nbsp; May 8 &#8211; 10, 2026</div>
-          <!-- Inline typeahead — shown when Change Event clicked -->
-          <div class="header-typeahead" id="header-typeahead" style="display:none">
-            <input class="header-event-search" type="text" id="header-event-input" placeholder="Search events&#8230;" oninput="filterEventOptions(this.value)" autocomplete="off">
-            <div class="header-event-options" id="header-event-options"></div>
-            <button class="header-cancel-btn" type="button" onclick="cancelChangeEvent()">Cancel</button>
-          </div>
+          <h1 class="plugin-title">Stall &amp; RV Chart &#8211; 2026 Southeast Region Super Sort</h1>
         </div>
-        <button class="header-change-btn" type="button" id="header-change-btn" onclick="changeLinkedEvent()">Change Event</button>
+        <div class="eem-header-actions">
+          <button class="eem-header-action-change" type="button">Change Event</button>
+          <a class="eem-header-action-change eem-header-action-edit" href="post.php?post=5990&amp;action=edit">Edit Reservation</a>
+        </div>
       </header>
 
-      <div class="chart-body">
+      <div class="eem-stall-chart-body">
 
-        <!-- Stats Bar -->
-        <div class="stats-bar">
-          <div class="stat-card">
-            <div class="stat-label">Daily Movement</div>
-            <div class="stat-daily">
-              <div><span>May 7:</span> Arriving 22, Departing 0</div>
-              <div><span>May 8:</span> Arriving 0, Departing 0</div>
-              <div><span>May 9:</span> Arriving 0, Departing 23</div>
+        <!-- ══ KPI STAT CARDS (Daily Movement bar) ══ -->
+        <div class="eem-stall-chart-dm-bar">
+          <div class="eem-stall-chart-dm-stats">
+            <div class="eem-scs-card">
+              <span class="eem-scs-icon" aria-hidden="true">&#9638;</span>
+              <span class="eem-scs-num">730</span>
+              <span class="eem-scs-label">Total Stalls</span>
             </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Stall Units</div>
-            <div class="stat-value">101</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">RV Lots</div>
-            <div class="stat-value">1</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Orders on Chart</div>
-            <div class="stat-value">23</div>
-          </div>
-        </div>
-
-        <!-- View Tabs were here — now moved INSIDE the content card below per audit revision -->
-
-        <!-- Action Bar -->
-        <div class="action-bar">
-          <div class="action-bar-btns">
-            <button class="btn btn-primary">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-              Generate Assignments
-            </button>
-            <a class="btn btn-ghost" href="stall_chart_print_view.html" target="_blank">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-              Print View
-            </a>
-            <a class="btn btn-ghost" href="admin.php?page=equine-event-manager-reservation&amp;reservation_id=42">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              Edit Reservation
-            </a>
-          </div>
-        </div>
-
-        <!-- ══════════════════ TABBED VIEW CARD (2.3.38: inv toggle + merged RV panel) ══════════════════ -->
-        <div class="view-tabs-card" id="view-tabs-card">
-
-          <!-- INVENTORY TOGGLE BAR (top) -->
-          <div class="inv-bar">
-            <div class="inv-toggle" role="group" aria-label="Inventory type">
-              <button class="inv-btn active" onclick="switchInv('all', this)">All</button>
-              <button class="inv-btn" onclick="switchInv('stalls', this)">Stalls</button>
-              <button class="inv-btn" onclick="switchInv('rv', this)">RV</button>
+            <div class="eem-scs-card">
+              <span class="eem-scs-icon" aria-hidden="true">&#9638;</span>
+              <span class="eem-scs-num">730</span>
+              <span class="eem-scs-label">Available Stalls</span>
             </div>
-          </div>
-
-          <!-- VIEW TABS (By Location / By Customer) -->
-          <div class="view-tabs">
-            <button class="view-tab active" onclick="switchView('location', this)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-              By Location
-            </button>
-            <button class="view-tab" onclick="switchView('customer', this)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-              By Customer
-            </button>
-          </div>
-
-          <!-- ─── BY LOCATION PANEL ─── -->
-          <div class="tab-panel active" id="panel-location">
-
-            <!-- Tip banner -->
-            <div class="chart-help">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              <span><strong>Tip:</strong> Click any customer name to view their order or move them to a different stall.</span>
+            <div class="eem-scs-card">
+              <span class="eem-scs-icon" aria-hidden="true">&#11041;</span>
+              <span class="eem-scs-num">71</span>
+              <span class="eem-scs-label">Total RV Lots</span>
             </div>
-
-            <!-- Filter row (barn tabs shown in "All" / "Stalls" mode) -->
-            <div class="filter-row">
-              <div class="barn-tabs" id="barn-tabs">
-                <button class="barn-tab active" onclick="filterBarn('all', this)">All Barns</button>
-                <button class="barn-tab" onclick="filterBarn('red', this)">Red Barn</button>
-                <button class="barn-tab" onclick="filterBarn('blue', this)">Blue Barn</button>
-                <button class="barn-tab" onclick="filterBarn('yellow', this)">Yellow Barn</button>
-              </div>
-              <div class="filter-search">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input type="text" placeholder="Search">
-              </div>
-              <span class="filter-hint">Search by customer name, stall number, RV lot, or block title.</span>
-            </div>
-
-            <!-- Section divider: Stall Units (shown in "All" mode when both types present) -->
-            <div class="section-divider" id="divider-stalls">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-              Stall Units
-            </div>
-
-            <!-- STALL SECTION -->
-            <div id="loc-stalls">
-              <div class="table-scroll">
-                <table class="stall-table">
-                  <thead>
-                    <tr>
-                      <th class="sortable">Stall <span class="sort-icon"><span></span><span></span></span></th>
-                      <th>Block</th>
-                      <th class="date-col">May 7</th>
-                      <th class="date-col">May 8</th>
-                      <th class="date-col">May 9</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <!-- Red Barn -->
-                    <tr class="barn-group-row" data-barn="red"><td colspan="5">Red Barn <span>· Stalls 100–120</span></td></tr>
-                    <tr class="stall-row" data-barn="red"><td class="stall-num">100</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00028" onclick="togglePillActions(event, this, 'Whitney Mitchell', '00028')">Whitney Mitchell<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00028" onclick="togglePillActions(event, this, 'Whitney Mitchell', '00028')">Whitney Mitchell<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
-                    <tr class="stall-row" data-barn="red"><td class="stall-num">101</td><td class="block-name">Red Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
-                    <!-- Blue Barn -->
-                    <tr class="barn-group-row" data-barn="blue"><td colspan="5">Blue Barn <span>· Stalls 121–160</span></td></tr>
-                    <tr class="stall-row" data-barn="blue"><td class="stall-num">121</td><td class="block-name">Blue Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00029" onclick="togglePillActions(event, this, 'Devon Lacroix', '00029')">Devon Lacroix<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td></tr>
-                    <tr class="stall-row" data-barn="blue"><td class="stall-num">123</td><td class="block-name">Blue Barn</td><td><div class="cell-wrap"><span class="occ-pill occ-blocked">Blocked</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-blocked">Blocked</span></div></td><td><div class="cell-wrap"><span class="occ-pill occ-blocked">Blocked</span></div></td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div><!-- /loc-stalls -->
-
-            <!-- Section divider: RV Lots (shown in "All" mode when both types present) -->
-            <div class="section-divider" id="divider-rv">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-              RV Lots
-            </div>
-
-            <!-- RV SECTION -->
-            <div id="loc-rv">
-              <div class="table-scroll">
-                <table class="rv-table">
-                  <thead>
-                    <tr>
-                      <th>RV Lot</th>
-                      <th class="date-col">May 7</th>
-                      <th class="date-col">May 8</th>
-                      <th class="date-col">May 9</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr class="stall-row" data-zone="red-lot">
-                      <td class="rv-lot-name">Red Lot</td>
-                      <td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00020" onclick="togglePillActions(event, this, 'Whitney Mitchell', '00020')">Whitney Mitchell<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td>
-                      <td><div class="cell-wrap"><span class="occ-pill occ-reserved" data-order="00020" onclick="togglePillActions(event, this, 'Whitney Mitchell', '00020')">Whitney Mitchell<svg class="occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></div></td>
-                      <td><div class="cell-wrap"><span class="occ-pill occ-available">Available</span></div></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div><!-- /loc-rv -->
-
-          </div><!-- /panel-location -->
-
-          <!-- ─── BY CUSTOMER PANEL ─── -->
-          <div class="tab-panel" id="panel-customer" style="display:none">
-
-            <!-- Tip banner -->
-            <div class="chart-help">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              <span><strong>Tip:</strong> Click any customer name to open the customer profile, or click an order number to view the order.</span>
-            </div>
-
-            <!-- Filter row -->
-            <div class="filter-row">
-              <div class="filter-search">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input type="text" placeholder="Search">
-              </div>
-              <span class="filter-hint">Search by customer, order, stall, or RV lot.</span>
-            </div>
-
-            <!-- Customer Night Count table -->
-            <div class="table-scroll">
-              <table class="cust-table">
-                <thead>
-                  <tr>
-                    <th>Customer</th>
-                    <th>Order</th>
-                    <th class="center">May 7</th>
-                    <th class="center">May 8</th>
-                    <th class="center">May 9</th>
-                    <th>Stall Assignments</th>
-                    <th>RV Lots</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr data-has-stalls="1" data-has-rv="0"><td><a class="cust-link" href="#">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="#">#00028</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">100, 101</td><td class="dash">—</td></tr>
-                  <tr data-has-stalls="0" data-has-rv="1"><td><a class="cust-link" href="#">Whitney Mitchell</a></td><td class="order-num"><a class="order-link" href="#">#00020</a></td><td class="night-count has-nights">1</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="dash">—</td><td class="rv-assignment">Red Lot</td></tr>
-                  <tr data-has-stalls="1" data-has-rv="0"><td><a class="cust-link" href="#">Devon Lacroix</a></td><td class="order-num"><a class="order-link" href="#">#00029</a></td><td class="night-count zero">—</td><td class="night-count has-nights">1</td><td class="night-count zero">—</td><td class="stall-assignment">121</td><td class="dash">—</td></tr>
-                </tbody>
-              </table>
-            </div>
-
-          </div><!-- /panel-customer -->
-
-        </div><!-- /view-tabs-card -->
-
-        <!-- Assignment Issues -->
-        <div class="issues-card">
-          <div class="issues-header">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            <span class="issues-header-title">Assignment Issues</span>
-            <span class="issues-header-count">5 issues</span>
-            <button class="auto-assign-all-btn" onclick="autoAssignAll()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-              Auto-Assign All
-            </button>
-          </div>
-          <div class="issues-body">
-            <div class="issue-row">
-              <span class="issue-text">Order <strong>#00007</strong> (Whitney Mitchell) still has 1 unassigned RV lot(s).</span>
-              <div class="issue-actions">
-                <button class="issue-auto-btn" onclick="autoAssignOrder('00007')">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                  Auto-Assign
-                </button>
-                <a class="issue-view-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00007">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                  View Order
-                </a>
-              </div>
-            </div>
-            <div class="issue-row">
-              <span class="issue-text">Order <strong>#00008</strong> (Whitney Mitchell) still has 1 unassigned RV lot(s).</span>
-              <div class="issue-actions">
-                <button class="issue-auto-btn" onclick="autoAssignOrder('00008')">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                  Auto-Assign
-                </button>
-                <a class="issue-view-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00008">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                  View Order
-                </a>
-              </div>
-            </div>
-            <div class="issue-row">
-              <span class="issue-text">Order <strong>#00009</strong> (Jane Doe) still has 1 unassigned RV lot(s).</span>
-              <div class="issue-actions">
-                <button class="issue-auto-btn" onclick="autoAssignOrder('00009')">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                  Auto-Assign
-                </button>
-                <a class="issue-view-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00009">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                  View Order
-                </a>
-              </div>
-            </div>
-            <div class="issue-row">
-              <span class="issue-text">Order <strong>#00010</strong> (Whitney Mitchell) still has 1 unassigned RV lot(s).</span>
-              <div class="issue-actions">
-                <button class="issue-auto-btn" onclick="autoAssignOrder('00010')">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                  Auto-Assign
-                </button>
-                <a class="issue-view-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00010">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                  View Order
-                </a>
-              </div>
-            </div>
-            <div class="issue-row">
-              <span class="issue-text">Order <strong>#00020</strong> (James Hartwell) still has 1 unassigned RV lot(s).</span>
-              <div class="issue-actions">
-                <button class="issue-auto-btn" onclick="autoAssignOrder('00020')">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                  Auto-Assign
-                </button>
-                <a class="issue-view-link" href="admin.php?page=equine-event-manager-order&amp;order_id=00020">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                  View Order
-                </a>
-              </div>
+            <div class="eem-scs-card">
+              <span class="eem-scs-icon" aria-hidden="true">&#11041;</span>
+              <span class="eem-scs-num">71</span>
+              <span class="eem-scs-label">Available RV Lots</span>
             </div>
           </div>
         </div>
 
-      </div><!-- /chart-body -->
+        <!-- ══ CONTROLS ROW: Show + View dropdowns + actions ══ -->
+        <div class="eem-stall-chart-filter-bar">
+          <div class="eem-scf-group">
+            <label class="eem-stall-chart-view-label" for="sc-inv-select">Show</label>
+            <select id="sc-inv-select" class="eem-field-select eem-stall-chart-view-select">
+              <option value="all" selected>All</option>
+              <option value="stalls">Stalls</option>
+              <option value="rv">RV</option>
+            </select>
+          </div>
+          <div class="eem-scf-group">
+            <label class="eem-stall-chart-view-label" for="sc-view-select">View</label>
+            <select id="sc-view-select" class="eem-field-select eem-stall-chart-view-select" onchange="scShowView(this.value)">
+              <option value="customer" selected>By Customer</option>
+              <option value="list">By Location &#8211; List</option>
+              <option value="map">By Location &#8211; Map</option>
+            </select>
+          </div>
+          <div class="eem-scf-actions">
+            <button class="eem-btn eem-btn-electric" type="button">Generate Assignments</button>
+            <button class="eem-btn eem-btn--ghost" type="button">Print View</button>
+          </div>
+        </div>
 
-    </div><!-- /plugin-wrap -->
+        <!-- ══ FULL-BLEED AMBER UNSAVED-SUGGESTION NOTICE ══ -->
+        <div class="eem-stall-chart-unsaved-banner">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span><strong>1 order</strong> has a suggested stall that isn&#8217;t saved yet. Review the assignment below, then use <strong>Generate Assignments</strong> to lock it in.</span>
+        </div>
 
+        <!-- ══ FULL-BLEED ELECTRIC-BLUE ASSIGN BANNER (sits directly above Stall Units) ══ -->
+        <div class="eem-assign-banner">
+          <strong>Assigning Order Edit Test (Stall)</strong> &#8212; click an available stall for <strong>Jul 9 &#8211; Jul 12</strong> to place them.
+        </div>
+
+        <!-- ══════════ VIEW PANES (mockup toggles via the View dropdown) ══════════ -->
+
+        <!-- ───── BY CUSTOMER (default active) ───── -->
+        <section class="sc-view active" data-view="customer">
+          <div class="eem-chart-table-scroll">
+            <table class="eem-cust-chart-table">
+              <thead>
+                <tr>
+                  <th>Customer</th>
+                  <th>Arrival</th>
+                  <th>Departure</th>
+                  <th>Barn</th>
+                  <th>Stall #</th>
+                  <th>Lot Name</th>
+                  <th>RV Lot #</th>
+                  <th class="eem-chart-status-col">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Checked In -->
+                <tr>
+                  <td>
+                    <div class="eem-chart-cust-cell">
+                      <div class="eem-chart-cust-cell__row">
+                        <a class="eem-chart-cust-link" href="admin.php?page=equine-event-manager-order&amp;order_key=abc">(Stall), Order Edit Test</a>
+                      </div>
+                      <a class="eem-chart-cust-order" href="admin.php?page=equine-event-manager-order&amp;order_key=abc">#90801</a>
+                    </div>
+                  </td>
+                  <td>Jun 26, 2026</td>
+                  <td>Jun 27, 2026</td>
+                  <td>Montcrief</td>
+                  <td>5043, 5046, 5045</td>
+                  <td><span class="eem-chart-dash">&#8212;</span></td>
+                  <td><span class="eem-chart-dash">&#8212;</span></td>
+                  <td>
+                    <div class="eem-dm-status-menu">
+                      <button type="button" class="eem-dm-status-trigger" aria-haspopup="true">
+                        <span class="eem-dm-status eem-dm-status--caret eem-dm-status-checked_in"><span class="eem-dm-status-label">Checked In</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <!-- Pending Arrival, with special-request note icon -->
+                <tr>
+                  <td>
+                    <div class="eem-chart-cust-cell">
+                      <div class="eem-chart-cust-cell__row">
+                        <a class="eem-chart-cust-link" href="admin.php?page=equine-event-manager-order&amp;order_key=def">Thompson, Emma</a>
+                        <span class="eem-chart-cust-icon eem-chart-cust-icon--note" tabindex="0" aria-label="Special requests: Close to parking — limited mobility">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
+                        </span>
+                      </div>
+                      <a class="eem-chart-cust-order" href="admin.php?page=equine-event-manager-order&amp;order_key=def">#09020</a>
+                    </div>
+                  </td>
+                  <td>Jun 26, 2026</td>
+                  <td>Jun 28, 2026</td>
+                  <td>Montcrief</td>
+                  <td>5038</td>
+                  <td><span class="eem-chart-dash">&#8212;</span></td>
+                  <td><span class="eem-chart-dash">&#8212;</span></td>
+                  <td>
+                    <div class="eem-dm-status-menu">
+                      <button type="button" class="eem-dm-status-trigger" aria-haspopup="true">
+                        <span class="eem-dm-status eem-dm-status--caret eem-dm-status-occupied"><span class="eem-dm-status-label">Pending Arrival</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <!-- Checked Out -->
+                <tr>
+                  <td>
+                    <div class="eem-chart-cust-cell">
+                      <div class="eem-chart-cust-cell__row">
+                        <a class="eem-chart-cust-link" href="admin.php?page=equine-event-manager-order&amp;order_key=ghi">Reyes, Marcus</a>
+                      </div>
+                      <a class="eem-chart-cust-order" href="admin.php?page=equine-event-manager-order&amp;order_key=ghi">#00128</a>
+                    </div>
+                  </td>
+                  <td>Jun 25, 2026</td>
+                  <td>Jun 27, 2026</td>
+                  <td><span class="eem-chart-dash">&#8212;</span></td>
+                  <td><span class="eem-chart-dash">&#8212;</span></td>
+                  <td>RV Row B</td>
+                  <td>B-14</td>
+                  <td>
+                    <div class="eem-dm-status-menu">
+                      <button type="button" class="eem-dm-status-trigger" aria-haspopup="true">
+                        <span class="eem-dm-status eem-dm-status--caret eem-dm-status-checked_out"><span class="eem-dm-status-label">Checked Out</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <!-- RV + stall, Pending -->
+                <tr>
+                  <td>
+                    <div class="eem-chart-cust-cell">
+                      <div class="eem-chart-cust-cell__row">
+                        <a class="eem-chart-cust-link" href="admin.php?page=equine-event-manager-order&amp;order_key=jkl">Okafor, Dana</a>
+                      </div>
+                      <a class="eem-chart-cust-order" href="admin.php?page=equine-event-manager-order&amp;order_key=jkl">#00131</a>
+                    </div>
+                  </td>
+                  <td>Jun 26, 2026</td>
+                  <td>Jun 29, 2026</td>
+                  <td>Burnett</td>
+                  <td>2210, 2211</td>
+                  <td>Premium Zone</td>
+                  <td>P-03</td>
+                  <td>
+                    <div class="eem-dm-status-menu">
+                      <button type="button" class="eem-dm-status-trigger" aria-haspopup="true">
+                        <span class="eem-dm-status eem-dm-status--caret eem-dm-status-occupied"><span class="eem-dm-status-label">Pending Arrival</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ───── BY LOCATION – LIST ───── -->
+        <section class="sc-view" data-view="list">
+          <!-- Toolbar: Bulk update + Apply, All Barns, All Zones, Search -->
+          <div class="eem-stall-chart-filter-row">
+            <div class="eem-loc-bulk">
+              <select class="eem-field-select eem-field-select--auto eem-loc-bulk-select" aria-label="Bulk status">
+                <option value="">Bulk update</option>
+                <option value="available">Mark Available</option>
+                <option value="needs_cleaning">Mark Cleaning</option>
+              </select>
+              <button type="button" class="eem-btn eem-btn-secondary">Apply</button>
+            </div>
+            <select class="eem-field-select eem-field-select--auto eem-loc-barn-select" aria-label="Filter by barn">
+              <option value="all">All Barns</option>
+              <option value="burnett">Burnett</option>
+              <option value="montcrief">Montcrief</option>
+              <option value="premium">Premium</option>
+            </select>
+            <select class="eem-field-select eem-field-select--auto eem-loc-barn-select" aria-label="Filter by zone">
+              <option value="all">All Zones</option>
+              <option value="premiumzone">Premium Zone</option>
+              <option value="zone2">Zone 2</option>
+            </select>
+            <div class="eem-stall-chart-filter-search">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="search" class="eem-stall-chart-search-input" placeholder="Search">
+            </div>
+          </div>
+
+          <!-- STALL UNITS section -->
+          <div class="eem-sc-section-divider">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            Stall Units
+          </div>
+          <div class="eem-chart-table-scroll">
+            <table class="eem-stall-chart-table eem-loc-table">
+              <thead>
+                <tr>
+                  <th class="eem-loc-check-col"><input type="checkbox" aria-label="Select all stalls"></th>
+                  <th>Stall</th>
+                  <th>Barn</th>
+                  <th>Jul 9</th>
+                  <th>Jul 10</th>
+                  <th>Jul 11</th>
+                  <th>Jul 12</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="eem-chart-barn-row"><td colspan="7">Montcrief</td></tr>
+                <tr class="eem-chart-stall-row">
+                  <td class="eem-loc-check-col"><input type="checkbox" aria-label="Select 5001"></td>
+                  <td class="eem-chart-unit-num">5001</td>
+                  <td>Montcrief</td>
+                  <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--cleaning"><span class="eem-loc-cell__label">Cleaning</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                  <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                  <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                  <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                </tr>
+                <tr class="eem-chart-stall-row">
+                  <td class="eem-loc-check-col"><input type="checkbox" aria-label="Select 5002"></td>
+                  <td class="eem-chart-unit-num">5002</td>
+                  <td>Montcrief</td>
+                  <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--occupied"><span class="eem-loc-cell__label">Assigned</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                  <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--occupied"><span class="eem-loc-cell__label">Assigned</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                  <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                  <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                </tr>
+                <tr class="eem-chart-stall-row">
+                  <td class="eem-loc-check-col"><input type="checkbox" aria-label="Select 5003"></td>
+                  <td class="eem-chart-unit-num">5003</td>
+                  <td>Montcrief</td>
+                  <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                  <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                  <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                  <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                </tr>
+                <tr class="eem-chart-barn-row"><td colspan="7">Burnett</td></tr>
+                <tr class="eem-chart-stall-row">
+                  <td class="eem-loc-check-col"><input type="checkbox" aria-label="Select 2210"></td>
+                  <td class="eem-chart-unit-num">2210</td>
+                  <td>Burnett</td>
+                  <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                  <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                  <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                  <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--blocked"><span class="eem-loc-cell__label">Blocked</span></button></td>
+                </tr>
+                <tr class="eem-chart-stall-row">
+                  <td class="eem-loc-check-col"><input type="checkbox" aria-label="Select 2211"></td>
+                  <td class="eem-chart-unit-num">2211</td>
+                  <td>Burnett</td>
+                  <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                  <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                  <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                  <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- RV LOTS section -->
+          <div class="eem-sc-section-divider">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 17h13V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1z"/><path d="M16 10h3l2 3v4h-5"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="17.5" cy="17.5" r="1.5"/></svg>
+            RV Lots
+          </div>
+          <div class="eem-chart-table-scroll">
+            <table class="eem-stall-chart-table eem-loc-table">
+              <thead>
+                <tr>
+                  <th class="eem-loc-check-col"><input type="checkbox" aria-label="Select all lots"></th>
+                  <th>Lot</th>
+                  <th>Zone</th>
+                  <th>Jul 9</th>
+                  <th>Jul 10</th>
+                  <th>Jul 11</th>
+                  <th>Jul 12</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="eem-chart-barn-row"><td colspan="7">Premium Zone</td></tr>
+                <tr class="eem-chart-stall-row">
+                  <td class="eem-loc-check-col"><input type="checkbox" aria-label="Select P-03"></td>
+                  <td class="eem-chart-unit-num">P-03</td>
+                  <td>Premium Zone</td>
+                  <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--occupied"><span class="eem-loc-cell__label">Assigned</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                  <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--occupied"><span class="eem-loc-cell__label">Assigned</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                  <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                  <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                </tr>
+                <tr class="eem-chart-stall-row">
+                  <td class="eem-loc-check-col"><input type="checkbox" aria-label="Select B-14"></td>
+                  <td class="eem-chart-unit-num">B-14</td>
+                  <td>RV Row B</td>
+                  <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                  <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                  <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                  <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ───── BY LOCATION – MAP ───── -->
+        <section class="sc-view" data-view="map">
+          <div class="eem-smap" data-eem-smap data-eem-smap-kind="stall">
+            <!-- Per-barn stat line -->
+            <div class="eem-smap-barn-stats">
+              <div class="eem-smap-barn-stat">
+                <div class="eem-smap-barn-stat-name">Montcrief</div>
+                <div class="eem-smap-barn-stat-nums">
+                  <span class="eem-smap-stat"><i class="eem-smap-stat-dot eem-smap-stat-dot--total"></i><strong>300</strong> total</span>
+                  <span class="eem-smap-stat"><i class="eem-smap-stat-dot eem-smap-stat-dot--avail"></i><strong>254</strong> avail</span>
+                  <span class="eem-smap-stat"><i class="eem-smap-stat-dot eem-smap-stat-dot--assigned"></i><strong>46</strong> assigned</span>
+                  <span class="eem-smap-stat"><i class="eem-smap-stat-dot eem-smap-stat-dot--tack"></i><strong>0</strong> tack</span>
+                  <span class="eem-smap-stat"><i class="eem-smap-stat-dot eem-smap-stat-dot--blocked"></i><strong>0</strong> blocked</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Barn tabs (rendered by admin.js from the map payload) -->
+            <div class="eem-smap-barn-tabs">
+              <button type="button" class="eem-smap-barn-tab active">Montcrief</button>
+              <button type="button" class="eem-smap-barn-tab">Burnett</button>
+              <button type="button" class="eem-smap-barn-tab">Premium</button>
+            </div>
+
+            <!-- Legend -->
+            <div class="eem-smap-legend">
+              <span><i class="eem-smap-sw eem-smap-sw--avail"></i> Available</span>
+              <span><i class="eem-smap-sw eem-smap-sw--resv"></i> Assigned</span>
+              <span><i class="eem-smap-sw eem-smap-sw--tack"></i> Tack</span>
+              <span><i class="eem-smap-sw eem-smap-sw--block"></i> Blocked</span>
+              <span class="eem-smap-legend-hint">Click any stall to assign, mark tack, or block.</span>
+            </div>
+
+            <!-- Zoom control -->
+            <div class="eem-smap-zoombar">
+              <span class="eem-smap-zoom" data-eem-smap-zoom>
+                <button type="button" data-zoom="out" title="Zoom out" aria-label="Zoom out">&minus;</button>
+                <button type="button" data-zoom="reset" title="Reset zoom">Zoom</button>
+                <button type="button" data-zoom="in" title="Zoom in" aria-label="Zoom in">+</button>
+              </span>
+            </div>
+
+            <!-- Spatial grid (live: admin.js injects chips from JSON into [data-eem-smap-grid];
+                 sample chips shown here at the 30px default with mixed statuses + landmarks) -->
+            <div class="eem-smap-scroll" data-eem-smap-scroll>
+              <div class="eem-smap-grid" data-eem-smap-grid>
+                <div class="eem-smap-land">Office</div>
+                <button type="button" class="eem-smap-stall">5001</button>
+                <button type="button" class="eem-smap-stall">5002</button>
+                <button type="button" class="eem-smap-stall">5003</button>
+                <button type="button" class="eem-smap-stall is-reserved">5004</button>
+                <button type="button" class="eem-smap-stall is-reserved">5005</button>
+                <button type="button" class="eem-smap-stall">5006</button>
+                <button type="button" class="eem-smap-stall">5007</button>
+                <div class="eem-smap-land">Lobby</div>
+                <button type="button" class="eem-smap-stall">5008</button>
+                <button type="button" class="eem-smap-stall is-reserved">5009</button>
+                <button type="button" class="eem-smap-stall is-reserved">5010</button>
+                <button type="button" class="eem-smap-stall is-blocked">5011</button>
+                <button type="button" class="eem-smap-stall is-tack">5012</button>
+                <button type="button" class="eem-smap-stall">5013</button>
+                <button type="button" class="eem-smap-stall">5014</button>
+                <div class="eem-smap-cell eem-smap-cell--gap"></div>
+                <button type="button" class="eem-smap-stall">5015</button>
+                <button type="button" class="eem-smap-stall is-reserved">5016</button>
+                <button type="button" class="eem-smap-stall">5017</button>
+                <button type="button" class="eem-smap-stall">5018</button>
+                <button type="button" class="eem-smap-stall is-tack">5019</button>
+                <button type="button" class="eem-smap-stall">5020</button>
+                <button type="button" class="eem-smap-stall">5021</button>
+                <button type="button" class="eem-smap-stall">5022</button>
+                <button type="button" class="eem-smap-stall is-blocked">5023</button>
+                <button type="button" class="eem-smap-stall">5024</button>
+                <button type="button" class="eem-smap-stall">5025</button>
+                <button type="button" class="eem-smap-stall is-reserved">5026</button>
+                <button type="button" class="eem-smap-stall">5027</button>
+                <button type="button" class="eem-smap-stall">5028</button>
+                <button type="button" class="eem-smap-stall">5029</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div><!-- /.eem-stall-chart-body -->
+    </div><!-- /.plugin-wrap -->
   </main>
 </div>
 
-<!-- Cell action menu (re-positioned on each pill click) -->
-<div class="cell-action-menu" id="cell-action-menu">
-  <div class="menu-title-wrap">
-    <div class="menu-title" id="cell-action-menu-title">—</div>
-    <div class="menu-subtitle" id="cell-action-menu-subtitle">—</div>
-  </div>
-  <button onclick="enterDestinationMode()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
-    Move to different stall
-  </button>
-  <button onclick="viewActiveOrder()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-    View order
-  </button>
-</div>
-
-<!-- Destination-Select Banner -->
-<div class="destination-banner" id="destination-banner">
-  <div class="destination-banner-msg">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-    <span><strong>Click any green &ldquo;Available&rdquo; cell</strong> to move <strong id="destination-customer-name">—</strong> there. Or press Cancel to keep the current assignment.</span>
-  </div>
-  <button class="destination-banner-cancel" onclick="cancelDestinationMode()">Cancel</button>
-</div>
-
-<!-- Move scope-confirmation modal -->
-<div class="scope-modal-overlay" id="scope-modal" onclick="if(event.target===this)closeScopeModal()">
-  <div class="scope-modal">
-    <div class="scope-modal-header">
-      <div class="scope-modal-title" id="scope-modal-title">Move customer</div>
-      <button class="scope-modal-close" onclick="closeScopeModal()" aria-label="Close">×</button>
-    </div>
-    <div class="scope-modal-body">
-      <div class="scope-modal-section">
-        <div class="scope-modal-section-label">Currently assigned</div>
-        <div class="scope-modal-current" id="scope-modal-current">—</div>
-      </div>
-      <div class="scope-modal-section">
-        <div class="scope-modal-section-label">Move:</div>
-        <label class="scope-radio">
-          <input type="radio" name="move-scope" value="this-night" checked>
-          <span class="scope-radio-label">Just this night</span>
-        </label>
-        <label class="scope-radio">
-          <input type="radio" name="move-scope" value="all-nights">
-          <span class="scope-radio-label">All nights</span>
-        </label>
-      </div>
-    </div>
-    <div class="scope-modal-footer">
-      <button class="scope-modal-btn-ghost" onclick="closeScopeModal()">Cancel</button>
-      <button class="scope-modal-btn-primary" onclick="confirmMove()">Move</button>
-    </div>
-  </div>
-</div>
-
 <script>
-/* ── View tab switching (By Location vs By Customer) ── */
-function switchView(val, el){
-  document.getElementById('panel-stall').classList.toggle('active', val==='stall');
-  document.getElementById('panel-customer').classList.toggle('active', val==='customer');
-  if(el){
-    document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
-    el.classList.add('active');
-  }
-  document.body.dataset.activeView = val;
-}
-
-/* ── Barn filter ── */
-function filterBarn(barn, el){
-  document.querySelectorAll('.barn-tab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
-  document.querySelectorAll('[data-barn]').forEach(row => {
-    row.style.display = (barn === 'all' || row.dataset.barn === barn) ? '' : 'none';
+/* View switching only — mirrors the live page's SHOW/VIEW dropdown behavior at
+   the mockup level (the real page re-renders each view via AJAX). */
+function scShowView(view){
+  document.querySelectorAll('.sc-view').forEach(function(s){
+    s.classList.toggle('active', s.getAttribute('data-view') === view);
   });
-}
-
-/* ── Cell action menu (popover for customer pills) ── */
-function togglePillActions(e, pillEl, customerName, orderId){
-  e.stopPropagation();
-  if (document.body.classList.contains('destination-mode')) return;
-
-  const menu = document.getElementById('cell-action-menu');
-  if (menu.classList.contains('open') && window._activePillEl === pillEl){
-    closeCellMenu();
-    return;
-  }
-  document.getElementById('cell-action-menu-title').textContent = customerName;
-  document.getElementById('cell-action-menu-subtitle').innerHTML =
-    'Order <a href="admin.php?page=equine-event-manager-order&amp;order_id=' + orderId + '" onclick="event.stopPropagation()">#' + orderId + '</a>';
-  window._popoverCustomer = customerName;
-  window._popoverOrderId = orderId;
-  window._popoverSourcePill = pillEl;
-  window._activePillEl = pillEl;
-
-  const rect = pillEl.getBoundingClientRect();
-  menu.style.left = (rect.left + window.scrollX) + 'px';
-  menu.style.top = (rect.bottom + window.scrollY + 6) + 'px';
-  menu.classList.add('open');
-}
-
-function closeCellMenu(){
-  document.getElementById('cell-action-menu').classList.remove('open');
-  window._activePillEl = null;
-}
-
-document.addEventListener('click', function(e){
-  const menu = document.getElementById('cell-action-menu');
-  if (menu.classList.contains('open') && !menu.contains(e.target)){
-    closeCellMenu();
-  }
-});
-
-function viewActiveOrder(){
-  if (window._popoverOrderId){
-    window.open('admin.php?page=equine-event-manager-order&order_id=' + window._popoverOrderId, '_blank');
-  }
-  closeCellMenu();
-}
-
-/* ── Destination select mode ── */
-function enterDestinationMode(){
-  document.body.classList.add('destination-mode');
-  document.getElementById('destination-customer-name').textContent = window._popoverCustomer || '—';
-  document.getElementById('destination-banner').classList.add('active');
-  closeCellMenu();
-}
-function cancelDestinationMode(){
-  document.body.classList.remove('destination-mode');
-  document.getElementById('destination-banner').classList.remove('active');
-}
-
-/* ── Scope modal ── */
-function closeScopeModal(){
-  document.getElementById('scope-modal').classList.remove('open');
-}
-function confirmMove(){
-  closeScopeModal();
-  cancelDestinationMode();
-}
-
-/* Stubs for primary actions (mockup only) */
-function autoAssignAll(){ /* C8 implementation */ }
-function autoAssignOrder(id){ /* C8 implementation */ }
-
-/* ── Linked Event header typeahead ── */
-var _linkedEvents = [
-  {id:'perry-2026', name:'Perry, GA – 2026 Southeast Region Super Sort', dates:'May 8–10, 2026', current:true},
-  {id:'patriot-2026', name:'The Patriot Fort Worth – 2026', dates:'March 5–15, 2026', current:false},
-  {id:'aqha-2026', name:'AQHA World Show 2026', dates:'November 7–22, 2026', current:false},
-  {id:'wcss-2026', name:'Western Canadian Super Show 2026', dates:'June 12–15, 2026', current:false},
-  {id:'wyo-2026', name:'Wyoming State Fair 2026', dates:'August 28 – September 7, 2026', current:false}
-];
-
-function changeLinkedEvent(){
-  document.getElementById('header-change-btn').style.display = 'none';
-  document.getElementById('header-typeahead').style.display = '';
-  var input = document.getElementById('header-event-input');
-  input.value = '';
-  filterEventOptions('');
-  input.focus();
-}
-
-function cancelChangeEvent(){
-  document.getElementById('header-typeahead').style.display = 'none';
-  document.getElementById('header-change-btn').style.display = '';
-}
-
-function selectLinkedEvent(eventId){
-  var ev = null;
-  for(var i=0;i<_linkedEvents.length;i++){ if(_linkedEvents[i].id===eventId){ ev=_linkedEvents[i]; break; } }
-  if(!ev) return;
-  _linkedEvents.forEach(function(e){ e.current = false; });
-  ev.current = true;
-  document.getElementById('header-event-name').textContent = ev.name;
-  document.getElementById('header-meta').innerHTML = 'Stall Chart for Reservation #44 &nbsp;&middot;&nbsp; ' + ev.dates;
-  cancelChangeEvent();
-}
-
-function filterEventOptions(query){
-  var container = document.getElementById('header-event-options');
-  if(!container) return;
-  var q = query.toLowerCase();
-  var results = _linkedEvents.filter(function(ev){
-    return !q || ev.name.toLowerCase().indexOf(q) !== -1 || ev.dates.toLowerCase().indexOf(q) !== -1;
-  });
-  if(!results.length){
-    container.innerHTML = '<div class="header-event-option-empty">No matching events.</div>';
-    return;
-  }
-  container.innerHTML = results.map(function(ev){
-    var tag = ev.current ? ' <span class="header-event-option-tag">Current</span>' : '';
-    return '<div class="header-event-option' + (ev.current?' is-current':'') + '" onclick="selectLinkedEvent(\'' + ev.id + '\')"><span class="header-event-option-name">' + ev.name + '</span><span class="header-event-option-dates">' + ev.dates + tag + '</span></div>';
-  }).join('');
 }
 </script>
-
 </body>
 </html>

@@ -316,6 +316,11 @@ class EEM_Activator {
 			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-032-package-early-bird-price.php';
 			eem_mig_032_package_early_bird_price();
 		}
+
+		if ( ! get_option( 'eem_mig_033_doc_satisfied_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-033-doc-satisfied.php';
+			eem_mig_033_doc_satisfied();
+		}
 	}
 
 	/**

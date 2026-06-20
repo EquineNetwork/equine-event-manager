@@ -252,7 +252,7 @@ $eem_footer_right = trim( $c( 'order_number' ) . ( $c( 'event_title' ) ? '  ·  
   <?php $assignments = (array) $c( 'assignments', array() ); ?>
   <?php if ( ! empty( $assignments ) ) : ?>
     <div class="assignments">
-      <div class="assignments-title"><?php esc_html_e( 'Your Assignments', 'equine-event-manager' ); ?></div>
+      <div class="assignments-title"><?php esc_html_e( 'Stay Assignments', 'equine-event-manager' ); ?></div>
       <table><tbody>
         <?php foreach ( $assignments as $row ) : ?>
           <tr>
@@ -380,10 +380,20 @@ $eem_footer_right = trim( $c( 'order_number' ) . ( $c( 'event_title' ) ? '  ·  
         <?php if ( $c( 'tax' ) ) : ?>
           <tr><td class="tl"><?php echo esc_html( sprintf( /* translators: %s: tax rate, e.g. 7.5%%. */ __( 'Sales Tax (%s)', 'equine-event-manager' ), $c( 'tax_rate_label' ) ) ); ?></td><td class="tv"><?php echo esc_html( $c( 'tax' ) ); ?></td></tr>
         <?php endif; ?>
+        <?php foreach ( (array) $c( 'custom_items', array() ) as $eem_ci ) : ?>
+          <tr><td class="tl"><?php echo esc_html( $eem_ci['label'] ); ?></td><td class="tv"><?php echo esc_html( $eem_ci['value'] ); ?></td></tr>
+        <?php endforeach; ?>
+        <?php if ( $c( 'discount_amount' ) ) : ?>
+          <tr><td class="tl"><?php echo esc_html( $c( 'discount_reason' ) ? sprintf( /* translators: %s: discount reason. */ __( 'Discount (%s)', 'equine-event-manager' ), $c( 'discount_reason' ) ) : __( 'Discount', 'equine-event-manager' ) ); ?></td><td class="tv">&minus;<?php echo esc_html( $c( 'discount_amount' ) ); ?></td></tr>
+        <?php endif; ?>
         <?php if ( $c( 'is_refunded' ) && $c( 'refunded_amount' ) ) : ?>
           <tr class="grand"><td class="tl"><?php esc_html_e( 'Order Total', 'equine-event-manager' ); ?></td><td class="tv"><?php echo esc_html( $c( 'grand_total' ) ); ?></td></tr>
           <tr class="refunded-row"><td class="tl"><?php esc_html_e( 'Refunded', 'equine-event-manager' ); ?></td><td class="tv">&minus;<?php echo esc_html( $c( 'refunded_amount' ) ); ?></td></tr>
           <tr class="grand"><td class="tl"><?php esc_html_e( 'Net Paid', 'equine-event-manager' ); ?></td><td class="tv"><?php echo esc_html( $c( 'net_paid' ) ); ?></td></tr>
+        <?php elseif ( $c( 'has_balance' ) ) : ?>
+          <tr class="grand"><td class="tl"><?php esc_html_e( 'Order Total', 'equine-event-manager' ); ?></td><td class="tv"><?php echo esc_html( $c( 'grand_total' ) ); ?></td></tr>
+          <tr><td class="tl"><?php esc_html_e( 'Amount Paid', 'equine-event-manager' ); ?></td><td class="tv">&minus;<?php echo esc_html( $c( 'amount_paid_val' ) ); ?></td></tr>
+          <tr class="grand"><td class="tl"><?php esc_html_e( 'Balance Due', 'equine-event-manager' ); ?></td><td class="tv"><?php echo esc_html( $c( 'balance_due' ) ); ?></td></tr>
         <?php else : ?>
           <tr class="grand"><td class="tl"><?php esc_html_e( 'Total Amount Paid', 'equine-event-manager' ); ?></td><td class="tv"><?php echo esc_html( $c( 'grand_total' ) ); ?></td></tr>
         <?php endif; ?>

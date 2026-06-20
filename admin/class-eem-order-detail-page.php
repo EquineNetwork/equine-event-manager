@@ -165,6 +165,7 @@ class EEM_Order_Detail_Page {
 		) );
 
 		$this->render_payment_banner( $order, $status_slug );
+		$this->render_docs_outstanding_banner( $order, $reservation_id );
 
 		// Close the top card (header + payment banner) so the order content floats
 		// as its own white cards on the gray page background (matches Dashboard).
@@ -343,6 +344,18 @@ class EEM_Order_Detail_Page {
 	private function build_header_actions_html( array $order, $reservation_id ) {
 		$back_url = EEM_Orders_List_Page::url();
 
+		// Customer check-in state (shared with Daily Movement via the
+		// wp_eem_order_checkin store). Drives the quick Check-In / Check-Out
+		// button that replaces "Back to Orders" in the action row.
+		$order_number   = isset( $order['order_number'] ) ? (string) $order['order_number'] : '';
+		$checkin_status = '';
+		if ( (int) $reservation_id > 0 && '' !== $order_number ) {
+			if ( ! class_exists( 'EEM_Stall_Status_Repo' ) ) {
+				require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-stall-status-repo.php';
+			}
+			$checkin_status = EEM_Stall_Status_Repo::get_order_checkin( (int) $reservation_id, $order_number );
+		}
+
 		// C12 — hosted receipt links (token-bearer order_key).
 		$order_key        = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
 		$receipt_view_url = '' !== $order_key ? add_query_arg( array( 'eem_receipt' => $order_key ), home_url( '/' ) ) : '';
@@ -357,7 +370,32 @@ class EEM_Order_Detail_Page {
 		<?php if ( ! isset( $order['status_slug'] ) || 'cancelled' !== $order['status_slug'] ) : ?>
 			<a class="eem-btn eem-btn-electric" href="#" data-eem-action="order-add-items"><?php esc_html_e( 'Add Items', 'equine-event-manager' ); ?></a>
 		<?php endif; ?>
-		<a class="eem-btn eem-btn-ghost" href="<?php echo esc_url( $back_url ); ?>"><?php esc_html_e( 'Back to Orders', 'equine-event-manager' ); ?></a>
+		<?php
+		// Quick check-in / check-out toggle (replaces Back to Orders — the
+		// breadcrumb still links back). Label + target advance with state:
+		// pending → Check In, checked-in → Check Out, checked-out → Re-Check In.
+		if ( (int) $reservation_id > 0 && '' !== $order_number ) :
+			if ( 'checked_in' === $checkin_status ) {
+				$ci_label = __( 'Check Out', 'equine-event-manager' );
+				$ci_target = 'checked_out';
+				$ci_class = 'eem-btn-checkin eem-btn-checkin--out';
+			} elseif ( 'checked_out' === $checkin_status ) {
+				$ci_label = __( 'Re-Check In', 'equine-event-manager' );
+				$ci_target = 'checked_in';
+				$ci_class = 'eem-btn-checkin eem-btn-checkin--re';
+			} else {
+				$ci_label = __( 'Check In', 'equine-event-manager' );
+				$ci_target = 'checked_in';
+				$ci_class = 'eem-btn-checkin eem-btn-checkin--in';
+			}
+			$ci_nonce = wp_create_nonce( 'eem_order_checkin_' . (int) $reservation_id . '_' . $order_number );
+			?>
+			<button type="button" class="eem-btn <?php echo esc_attr( $ci_class ); ?>" data-eem-action="order-checkin-set"
+				data-reservation-id="<?php echo esc_attr( (string) (int) $reservation_id ); ?>"
+				data-order-number="<?php echo esc_attr( $order_number ); ?>"
+				data-target="<?php echo esc_attr( $ci_target ); ?>"
+				data-nonce="<?php echo esc_attr( $ci_nonce ); ?>"><?php echo esc_html( $ci_label ); ?></button>
+		<?php endif; ?>
 		<?php if ( '' !== $receipt_print_url ) : ?>
 			<a class="eem-btn eem-btn-ghost" href="<?php echo esc_url( $receipt_print_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Print Receipt', 'equine-event-manager' ); ?></a>
 		<?php endif; ?>
@@ -450,6 +488,64 @@ class EEM_Order_Detail_Page {
 	}
 
 	/**
+	 * Outstanding required-documents banner — amber, mirrors the Payment
+	 * Outstanding banner. Renders when the reservation requires documents and
+	 * one or more are neither uploaded nor marked satisfied for this order, so
+	 * the stall office knows check-in is blocked on paperwork.
+	 *
+	 * @param array<string, mixed> $order
+	 * @param int                  $reservation_id
+	 * @return void
+	 */
+	private function render_docs_outstanding_banner( array $order, int $reservation_id ): void {
+		if ( ! class_exists( 'EEM_Order_Documents' ) || $reservation_id <= 0 ) {
+			return;
+		}
+		$order_key = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
+		if ( '' === $order_key ) {
+			return;
+		}
+		$enabled = class_exists( 'EEM_Reservation_Config' )
+			? ! empty( EEM_Reservation_Config::for( $reservation_id )->get( 'required_documents_enabled', 0 ) )
+			: false;
+		if ( ! $enabled ) {
+			return;
+		}
+		$outstanding = EEM_Order_Documents::outstanding_requirements( $order_key, $reservation_id );
+		if ( empty( $outstanding ) ) {
+			return;
+		}
+		$count = count( $outstanding );
+		?>
+		<div class="eem-order-payment-banner eem-order-docs-banner" role="status">
+			<div class="eem-order-payment-banner__left">
+				<div class="eem-order-payment-banner__icon" aria-hidden="true">!</div>
+				<div class="eem-order-payment-banner__content">
+					<div class="eem-order-payment-banner__title"><?php esc_html_e( 'Documents Outstanding', 'equine-event-manager' ); ?></div>
+					<div class="eem-order-payment-banner__meta">
+						<?php
+						echo esc_html(
+							sprintf(
+								/* translators: 1: count, 2: comma-separated document names */
+								_n(
+									'%1$d required document is missing: %2$s. Check-in may be blocked until it is provided.',
+									'%1$d required documents are missing: %2$s. Check-in may be blocked until they are provided.',
+									$count,
+									'equine-event-manager'
+								),
+								$count,
+								implode( ', ', $outstanding )
+							)
+						);
+						?>
+					</div>
+				</div>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
 	 * Stall Reservation card — visible only when the order includes a
 	 * stall component.
 	 *
@@ -471,6 +567,8 @@ class EEM_Order_Detail_Page {
 		$additional = isset( $order['additional_shavings_qty'] ) ? (int) $order['additional_shavings_qty'] : 0;
 		$assigned  = $this->extract_assigned_stalls( $order );
 		$subtotal  = isset( $order['stall_subtotal'] ) ? (float) $order['stall_subtotal'] : 0.0;
+		// Per-unit rate (so the card's math is visible): unit_price × qty × nights.
+		$unit_price = $this->component_unit_price( $order, 'stall' );
 
 		// Deep-link to this reservation's Stall & RV Charts page, where stalls are
 		// assigned / auto-assigned. (The page accepts ?reservation_id=N.)
@@ -480,6 +578,10 @@ class EEM_Order_Detail_Page {
 				array(
 					'page'           => 'equine-event-manager-stall-charts',
 					'reservation_id' => $res_id,
+					// Land in the By Location – Map view (Whitney 2026-06-20), the
+					// spatial assign surface where clicking an available stall places
+					// the pending order directly.
+					'tab'            => 'map',
 					// Order-context assign flow (#219): carries this order so the
 					// chart shows the assign banner + click-to-assign modal.
 					'assign_order'   => isset( $order['order_key'] ) ? (string) $order['order_key'] : '',
@@ -524,6 +626,29 @@ class EEM_Order_Detail_Page {
 					<tr><td><?php esc_html_e( 'Departure Date', 'equine-event-manager' ); ?></td><td><?php echo esc_html( $this->format_long_date( $departure ) ); ?></td></tr>
 				<?php endif; ?>
 				<tr><td><?php esc_html_e( 'Stall Quantity', 'equine-event-manager' ); ?></td><td><?php echo esc_html( (string) $qty ); ?></td></tr>
+				<?php if ( $unit_price > 0 ) : ?>
+					<tr><td><?php esc_html_e( 'Rate', 'equine-event-manager' ); ?></td><td><?php
+						echo esc_html(
+							$nights > 0
+								? sprintf(
+									/* translators: 1: rate, 2: stall qty, 3: "stall(s)", 4: nights, 5: "night(s)" */
+									__( '$%1$s × %2$d %3$s × %4$d %5$s', 'equine-event-manager' ),
+									number_format_i18n( $unit_price, 2 ),
+									$qty,
+									_n( 'stall', 'stalls', $qty, 'equine-event-manager' ),
+									$nights,
+									_n( 'night', 'nights', $nights, 'equine-event-manager' )
+								)
+								: sprintf(
+									/* translators: 1: rate, 2: stall qty, 3: "stall(s)" */
+									__( '$%1$s × %2$d %3$s', 'equine-event-manager' ),
+									number_format_i18n( $unit_price, 2 ),
+									$qty,
+									_n( 'stall', 'stalls', $qty, 'equine-event-manager' )
+								)
+						);
+					?></td></tr>
+				<?php endif; ?>
 				<?php if ( $required > 0 ) : ?>
 					<tr><td><?php esc_html_e( 'Required Shavings', 'equine-event-manager' ); ?></td><td><?php echo esc_html( sprintf( _n( '%d bag', '%d bags', $required, 'equine-event-manager' ), $required ) ); ?></td></tr>
 				<?php endif; ?>
@@ -538,13 +663,11 @@ class EEM_Order_Detail_Page {
 			</table>
 			<div class="eem-stall-assignment">
 				<div class="eem-stall-assignment__label"><?php esc_html_e( 'Assigned Stall Units', 'equine-event-manager' ); ?></div>
-				<div class="eem-stall-assignment__value">
-					<?php if ( '' !== $assigned ) : ?>
+				<?php if ( '' !== $assigned ) : ?>
+					<div class="eem-stall-assignment__value">
 						<span class="eem-stall-assignment__badge"><?php echo esc_html( $assigned ); ?></span>
-					<?php else : ?>
-						<span class="eem-stall-assignment__none"><?php esc_html_e( '— not yet assigned —', 'equine-event-manager' ); ?></span>
-					<?php endif; ?>
-				</div>
+					</div>
+				<?php endif; ?>
 				<?php if ( '' !== $charts_url ) : ?>
 					<div class="eem-stall-assignment__action">
 						<a class="eem-btn eem-btn-electric" href="<?php echo esc_url( $charts_url ); ?>"><?php
@@ -643,6 +766,7 @@ class EEM_Order_Detail_Page {
 		$nights    = $this->compute_nights( $arrival, $departure );
 		$rv_addons = isset( $order['rv_type'] ) && is_array( $order['rv_type'] ) ? implode( ', ', $order['rv_type'] ) : '';
 		$subtotal  = isset( $order['rv_subtotal'] ) ? (float) $order['rv_subtotal'] : 0.0;
+		$unit_price = $this->component_unit_price( $order, 'rv' );
 
 		?>
 		<div class="eem-card eem-order-card">
@@ -673,6 +797,29 @@ class EEM_Order_Detail_Page {
 					<tr><td><?php esc_html_e( 'Nights', 'equine-event-manager' ); ?></td><td><?php echo esc_html( sprintf( _n( '%d Night', '%d Nights', $nights, 'equine-event-manager' ), $nights ) ); ?></td></tr>
 				<?php endif; ?>
 				<tr><td><?php esc_html_e( 'RV Quantity', 'equine-event-manager' ); ?></td><td><?php echo esc_html( (string) $qty ); ?></td></tr>
+				<?php if ( $unit_price > 0 ) : ?>
+					<tr><td><?php esc_html_e( 'Rate', 'equine-event-manager' ); ?></td><td><?php
+						echo esc_html(
+							$nights > 0
+								? sprintf(
+									/* translators: 1: rate, 2: lot qty, 3: "lot(s)", 4: nights, 5: "night(s)" */
+									__( '$%1$s × %2$d %3$s × %4$d %5$s', 'equine-event-manager' ),
+									number_format_i18n( $unit_price, 2 ),
+									$qty,
+									_n( 'lot', 'lots', $qty, 'equine-event-manager' ),
+									$nights,
+									_n( 'night', 'nights', $nights, 'equine-event-manager' )
+								)
+								: sprintf(
+									/* translators: 1: rate, 2: lot qty, 3: "lot(s)" */
+									__( '$%1$s × %2$d %3$s', 'equine-event-manager' ),
+									number_format_i18n( $unit_price, 2 ),
+									$qty,
+									_n( 'lot', 'lots', $qty, 'equine-event-manager' )
+								)
+						);
+					?></td></tr>
+				<?php endif; ?>
 				<?php if ( '' !== $arrival ) : ?>
 					<tr><td><?php esc_html_e( 'Arrival Date', 'equine-event-manager' ); ?></td><td><?php echo esc_html( $this->format_long_date( $arrival ) ); ?></td></tr>
 				<?php endif; ?>
@@ -704,9 +851,20 @@ class EEM_Order_Detail_Page {
 				: '';
 			?>
 			<?php if ( '' !== $rv_charts_url ) : ?>
+				<?php $assigned_rv = $this->extract_assigned_rv_lots( $order ); ?>
 				<div class="eem-stall-assignment">
+					<div class="eem-stall-assignment__label"><?php esc_html_e( 'Assigned RV Lots', 'equine-event-manager' ); ?></div>
+					<?php if ( '' !== $assigned_rv ) : ?>
+						<div class="eem-stall-assignment__value">
+							<span class="eem-stall-assignment__badge"><?php echo esc_html( $assigned_rv ); ?></span>
+						</div>
+					<?php endif; ?>
 					<div class="eem-stall-assignment__action">
-						<a class="eem-btn eem-btn-electric" href="<?php echo esc_url( $rv_charts_url ); ?>"><?php esc_html_e( 'Assign RV Lots', 'equine-event-manager' ); ?></a>
+						<a class="eem-btn eem-btn-electric" href="<?php echo esc_url( $rv_charts_url ); ?>"><?php
+							echo '' !== $assigned_rv
+								? esc_html__( 'Manage RV Assignment', 'equine-event-manager' )
+								: esc_html__( 'Assign RV Lots', 'equine-event-manager' );
+						?></a>
 					</div>
 				</div>
 			<?php endif; ?>
@@ -858,7 +1016,7 @@ class EEM_Order_Detail_Page {
 				<div class="eem-order-card__title"><?php echo EEM_Dashboard_Icons::svg( 'file-text' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- self-authored inline SVG. ?> <?php esc_html_e( 'Order Summary', 'equine-event-manager' ); ?></div>
 			</div>
 			<div class="eem-order-summary__body">
-				<?php if ( $stall_subtotal > 0 ) : ?>
+				<?php if ( $stall_subtotal > 0.005 ) : ?>
 					<div class="eem-order-summary__section">
 						<div class="eem-order-summary__section-header">
 							<span class="eem-order-summary__section-title"><?php esc_html_e( 'Stall Reservation', 'equine-event-manager' ); ?></span>
@@ -866,15 +1024,14 @@ class EEM_Order_Detail_Page {
 								<span class="eem-order-summary__section-badge eem-order-summary__section-badge--stall"><?php echo esc_html( sprintf( _n( '%d night', '%d nights', $stall_nights, 'equine-event-manager' ), $stall_nights ) ); ?></span>
 							<?php endif; ?>
 						</div>
-						<div class="eem-order-summary__line"><span><?php esc_html_e( 'Stall Subtotal', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $stall_subtotal, 2 ) ); ?></span></div>
 						<?php $stall_summary_surcharge = $this->stall_surcharge_total( $order ); ?>
 						<?php if ( $stall_summary_surcharge > 0 ) : ?>
 							<div class="eem-order-summary__line"><span><?php esc_html_e( 'Includes Stall Premium', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $stall_summary_surcharge, 2 ) ); ?></span></div>
 						<?php endif; ?>
-						<div class="eem-order-summary__section-subtotal"><span><?php esc_html_e( 'Section Total', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $stall_subtotal, 2 ) ); ?></span></div>
+						<div class="eem-order-summary__section-subtotal"><span><?php esc_html_e( 'Stalls Subtotal', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $stall_subtotal, 2 ) ); ?></span></div>
 					</div>
 				<?php endif; ?>
-				<?php if ( $rv_subtotal > 0 ) : ?>
+				<?php if ( $rv_subtotal > 0.005 ) : ?>
 					<div class="eem-order-summary__section">
 						<div class="eem-order-summary__section-header">
 							<span class="eem-order-summary__section-title"><?php esc_html_e( 'RV Reservation', 'equine-event-manager' ); ?></span>
@@ -882,15 +1039,14 @@ class EEM_Order_Detail_Page {
 								<span class="eem-order-summary__section-badge eem-order-summary__section-badge--rv"><?php echo esc_html( sprintf( _n( '%d night', '%d nights', $rv_nights, 'equine-event-manager' ), $rv_nights ) ); ?></span>
 							<?php endif; ?>
 						</div>
-						<div class="eem-order-summary__line"><span><?php esc_html_e( 'RV Subtotal', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $rv_subtotal, 2 ) ); ?></span></div>
 						<?php $rv_summary_surcharge = $this->rv_surcharge_total( $order ); ?>
 						<?php if ( $rv_summary_surcharge > 0 ) : ?>
 							<div class="eem-order-summary__line"><span><?php esc_html_e( 'Includes RV Premium Lots', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $rv_summary_surcharge, 2 ) ); ?></span></div>
 						<?php endif; ?>
-						<div class="eem-order-summary__section-subtotal"><span><?php esc_html_e( 'Section Total', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $rv_subtotal, 2 ) ); ?></span></div>
+						<div class="eem-order-summary__section-subtotal"><span><?php esc_html_e( 'RV Subtotal', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $rv_subtotal, 2 ) ); ?></span></div>
 					</div>
 				<?php endif; ?>
-				<?php if ( $addon_subtotal > 0 ) : ?>
+				<?php if ( $addon_subtotal > 0.005 ) : ?>
 					<div class="eem-order-summary__section">
 						<div class="eem-order-summary__section-header">
 							<span class="eem-order-summary__section-title"><?php esc_html_e( 'Add-Ons', 'equine-event-manager' ); ?></span>
@@ -901,7 +1057,7 @@ class EEM_Order_Detail_Page {
 						<?php if ( $addon_qty > 0 ) : ?>
 							<div class="eem-order-summary__line"><span><?php echo esc_html( sprintf( __( 'Shavings (×%d)', 'equine-event-manager' ), $addon_qty ) ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $addon_subtotal, 2 ) ); ?></span></div>
 						<?php endif; ?>
-						<div class="eem-order-summary__section-subtotal"><span><?php esc_html_e( 'Section Total', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $addon_subtotal, 2 ) ); ?></span></div>
+						<div class="eem-order-summary__section-subtotal"><span><?php esc_html_e( 'Add-Ons Total', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $addon_subtotal, 2 ) ); ?></span></div>
 					</div>
 				<?php endif; ?>
 				<?php if ( $fees > 0 ) : ?>
@@ -910,7 +1066,7 @@ class EEM_Order_Detail_Page {
 							<span class="eem-order-summary__section-title"><?php esc_html_e( 'Fees', 'equine-event-manager' ); ?></span>
 						</div>
 						<div class="eem-order-summary__line"><span><?php esc_html_e( 'Non-Refundable Convenience Fee', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $fees, 2 ) ); ?></span></div>
-						<div class="eem-order-summary__section-subtotal"><span><?php esc_html_e( 'Section Total', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $fees, 2 ) ); ?></span></div>
+						<div class="eem-order-summary__section-subtotal"><span><?php esc_html_e( 'Fees Total', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $fees, 2 ) ); ?></span></div>
 					</div>
 				<?php endif; ?>
 				<?php if ( ! empty( $custom_items ) ) : ?>
@@ -928,7 +1084,7 @@ class EEM_Order_Detail_Page {
 								</span>
 							</div>
 						<?php endforeach; ?>
-						<div class="eem-order-summary__section-subtotal"><span><?php esc_html_e( 'Section Total', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $custom_items_total, 2 ) ); ?></span></div>
+						<div class="eem-order-summary__section-subtotal"><span><?php esc_html_e( 'Custom Items Total', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $custom_items_total, 2 ) ); ?></span></div>
 					</div>
 				<?php endif; ?>
 				<?php if ( is_array( $discount ) && $discount_amount > 0 ) : ?>
@@ -986,6 +1142,28 @@ class EEM_Order_Detail_Page {
 			</div>
 		</div>
 		<?php
+	}
+
+	/**
+	 * The stored per-unit rate (unit_price) for a section's first component row.
+	 * Used to surface the rate on the reservation card so the line math
+	 * (rate × qty × nights = subtotal) is visible. Returns 0.0 when absent.
+	 *
+	 * @param array<string, mixed> $order
+	 * @param string               $component 'stall' | 'rv'
+	 * @return float
+	 */
+	private function component_unit_price( array $order, string $component ): float {
+		foreach ( (array) ( isset( $order['components'] ) ? $order['components'] : array() ) as $c ) {
+			if ( isset( $c['table'] ) && $component === $c['table'] ) {
+				$repo = new EEM_Orders_Repository();
+				$raw  = $repo->get_component_row( $component, (int) $c['row_id'] );
+				if ( is_array( $raw ) && isset( $raw['unit_price'] ) ) {
+					return (float) $raw['unit_price'];
+				}
+			}
+		}
+		return 0.0;
 	}
 
 	/**
@@ -1256,24 +1434,40 @@ class EEM_Order_Detail_Page {
 				</div>
 				<div class="eem-order-docs__body">
 					<?php foreach ( $names as $req ) :
-						$row = isset( $uploaded[ $req ] ) ? $uploaded[ $req ] : null;
-						$dl  = $row ? EEM_Order_Documents::download_url( $order_key, $req ) : '';
+						$row          = isset( $uploaded[ $req ] ) ? $uploaded[ $req ] : null;
+						$has_file     = $row && ! empty( $row['file_name'] );
+						$is_satisfied = $row && ! empty( $row['satisfied'] );
+						$dl           = $has_file ? EEM_Order_Documents::download_url( $order_key, $req ) : '';
+						$state_class  = $has_file ? ' is-uploaded' : ( $is_satisfied ? ' is-satisfied' : '' );
 						?>
-						<div class="eem-order-doc-row<?php echo $row ? ' is-uploaded' : ''; ?>" data-doc-name="<?php echo esc_attr( $req ); ?>">
+						<div class="eem-order-doc-row<?php echo esc_attr( $state_class ); ?>" data-doc-name="<?php echo esc_attr( $req ); ?>">
 							<div class="eem-order-doc-row__main">
 								<span class="eem-order-doc-row__name"><?php echo esc_html( $req ); ?></span>
 								<span class="eem-order-doc-row__file" data-doc-file>
-									<?php if ( $row ) : ?>
+									<?php if ( $has_file ) : ?>
 										<a href="<?php echo esc_url( $dl ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( (string) $row['original_name'] ); ?></a>
+									<?php elseif ( $is_satisfied ) : ?>
+										<span class="eem-order-doc-row__satisfied-note"><?php esc_html_e( 'Verified in person', 'equine-event-manager' ); ?></span>
 									<?php else : ?>
-										<em class="eem-order-doc-row__missing"><?php esc_html_e( 'Not uploaded', 'equine-event-manager' ); ?></em>
+										<em class="eem-order-doc-row__missing"><?php esc_html_e( 'Not provided', 'equine-event-manager' ); ?></em>
 									<?php endif; ?>
 								</span>
 							</div>
-							<label class="eem-order-doc-row__upload">
-								<input type="file" accept=".pdf,.jpg,.jpeg,.png,.heic,.webp" data-eem-doc-input />
-								<span class="eem-btn eem-btn-ghost eem-order-doc-row__btn"><?php echo $row ? esc_html__( 'Replace', 'equine-event-manager' ) : esc_html__( 'Upload', 'equine-event-manager' ); ?></span>
-							</label>
+							<div class="eem-order-doc-row__actions">
+								<label class="eem-order-doc-row__cam">
+									<input type="file" accept="image/*" capture="environment" data-eem-doc-input />
+									<span class="eem-btn eem-btn-ghost eem-btn-sm eem-order-doc-row__btn"><?php esc_html_e( 'Take Photo', 'equine-event-manager' ); ?></span>
+								</label>
+								<label class="eem-order-doc-row__upload">
+									<input type="file" accept=".pdf,.jpg,.jpeg,.png,.heic,.webp" data-eem-doc-input />
+									<span class="eem-btn eem-btn-ghost eem-btn-sm eem-order-doc-row__btn"><?php echo $has_file ? esc_html__( 'Replace', 'equine-event-manager' ) : esc_html__( 'Upload', 'equine-event-manager' ); ?></span>
+								</label>
+								<?php if ( $is_satisfied ) : ?>
+									<button type="button" class="eem-btn eem-btn-sm eem-order-doc-row__satisfy is-satisfied" data-eem-doc-satisfy="0"><?php esc_html_e( 'Satisfied ✓', 'equine-event-manager' ); ?></button>
+								<?php else : ?>
+									<button type="button" class="eem-btn eem-btn-sm eem-order-doc-row__satisfy is-primary" data-eem-doc-satisfy="1"><?php esc_html_e( 'Mark Satisfied', 'equine-event-manager' ); ?></button>
+								<?php endif; ?>
+							</div>
 							<span class="eem-order-doc-row__status" aria-live="polite"></span>
 						</div>
 					<?php endforeach; ?>
@@ -1290,47 +1484,65 @@ class EEM_Order_Detail_Page {
 			var nonce = card.getAttribute('data-nonce');
 			var T = {
 				uploading: <?php echo wp_json_encode( __( 'Uploading…', 'equine-event-manager' ) ); ?>,
+				saving:    <?php echo wp_json_encode( __( 'Saving…', 'equine-event-manager' ) ); ?>,
 				failed:    <?php echo wp_json_encode( __( 'Upload failed. Please try again.', 'equine-event-manager' ) ); ?>
 			};
 			card.querySelectorAll('.eem-order-doc-row').forEach(function(row){
-				var input = row.querySelector('[data-eem-doc-input]');
 				var status = row.querySelector('.eem-order-doc-row__status');
-				var fileCell = row.querySelector('[data-doc-file]');
-				var btn = row.querySelector('.eem-order-doc-row__btn');
 				var name = row.getAttribute('data-doc-name');
-				if ( ! input ) { return; }
-				input.addEventListener('change', function(){
-					if ( ! input.files || ! input.files.length ) { return; }
-					var file = input.files[0];
-					status.textContent = T.uploading;
-					var fd = new FormData();
-					fd.append('action', 'eem_upload_required_doc');
-					fd.append('nonce', nonce);
-					fd.append('order_key', orderKey);
-					fd.append('requirement', name);
-					fd.append('file', file);
-					fetch(ajaxUrl, { method:'POST', body:fd, credentials:'same-origin' })
-						.then(function(r){ return r.json(); })
-						.then(function(res){
-							if ( res && res.success ) {
-								row.classList.add('is-uploaded');
-								status.textContent = '';
-								if ( btn ) { btn.textContent = <?php echo wp_json_encode( __( 'Replace', 'equine-event-manager' ) ); ?>; }
-								if ( fileCell ) {
-									var a = document.createElement('a');
-									a.href = res.data.download_url;
-									a.target = '_blank';
-									a.rel = 'noopener noreferrer';
-									a.textContent = res.data.original_name || file.name;
-									fileCell.innerHTML = '';
-									fileCell.appendChild(a);
+
+				// Upload + camera-capture inputs (both carry data-eem-doc-input).
+				row.querySelectorAll('[data-eem-doc-input]').forEach(function(input){
+					input.addEventListener('change', function(){
+						if ( ! input.files || ! input.files.length ) { return; }
+						var file = input.files[0];
+						status.textContent = T.uploading;
+						var fd = new FormData();
+						fd.append('action', 'eem_upload_required_doc');
+						fd.append('nonce', nonce);
+						fd.append('order_key', orderKey);
+						fd.append('requirement', name);
+						fd.append('file', file);
+						fetch(ajaxUrl, { method:'POST', body:fd, credentials:'same-origin' })
+							.then(function(r){ return r.json(); })
+							.then(function(res){
+								if ( res && res.success ) {
+									// Reload so the row state + outstanding-docs banner re-render.
+									window.location.reload();
+								} else {
+									status.textContent = (res && res.data && res.data.message) ? res.data.message : T.failed;
 								}
-							} else {
-								status.textContent = (res && res.data && res.data.message) ? res.data.message : T.failed;
-							}
-						})
-						.catch(function(){ status.textContent = T.failed; });
+							})
+							.catch(function(){ status.textContent = T.failed; });
+					});
 				});
+
+				// Mark Satisfied / Undo (in-person verification, no file).
+				var satisfyBtn = row.querySelector('[data-eem-doc-satisfy]');
+				if ( satisfyBtn ) {
+					satisfyBtn.addEventListener('click', function(){
+						var to = satisfyBtn.getAttribute('data-eem-doc-satisfy');
+						status.textContent = T.saving;
+						satisfyBtn.disabled = true;
+						var fd = new FormData();
+						fd.append('action', 'eem_mark_doc_satisfied');
+						fd.append('nonce', nonce);
+						fd.append('order_key', orderKey);
+						fd.append('requirement', name);
+						fd.append('satisfied', to);
+						fetch(ajaxUrl, { method:'POST', body:fd, credentials:'same-origin' })
+							.then(function(r){ return r.json(); })
+							.then(function(res){
+								if ( res && res.success ) {
+									window.location.reload();
+								} else {
+									satisfyBtn.disabled = false;
+									status.textContent = (res && res.data && res.data.message) ? res.data.message : T.failed;
+								}
+							})
+							.catch(function(){ satisfyBtn.disabled = false; status.textContent = T.failed; });
+					});
+				}
 			});
 		})();
 		</script>
@@ -2384,14 +2596,41 @@ class EEM_Order_Detail_Page {
 	 * @return string
 	 */
 	private function extract_assigned_stalls( array $order ) {
+		return $this->extract_assigned_units( $order, 'Assigned Stall Units' );
+	}
+
+	/**
+	 * Comma-joined assigned RV lots for the order, parsed from the
+	 * "Assigned RV Lots:" component-note line. '' when none assigned.
+	 *
+	 * @param array<string, mixed> $order
+	 * @return string
+	 */
+	private function extract_assigned_rv_lots( array $order ) {
+		return $this->extract_assigned_units( $order, 'Assigned RV Lots' );
+	}
+
+	/**
+	 * Shared parser: pull a comma-separated unit list from the given
+	 * component-note label (the canonical store the Stall/RV Chart assign flow
+	 * writes), prefixing each with '#'. Returns '' when nothing is assigned.
+	 *
+	 * @param array<string, mixed> $order
+	 * @param string               $note_label e.g. 'Assigned Stall Units' | 'Assigned RV Lots'
+	 * @return string
+	 */
+	private function extract_assigned_units( array $order, string $note_label ): string {
 		$units = array();
 		if ( ! empty( $order['components'] ) && is_array( $order['components'] ) ) {
+			$pattern = '/' . preg_quote( $note_label, '/' ) . ':\s*(.+)/i';
 			foreach ( $order['components'] as $component ) {
-				if ( ! is_array( $component ) || empty( $component['stall_units_csv'] ) ) {
+				if ( ! is_array( $component ) || empty( $component['notes'] ) ) {
 					continue;
 				}
-				$raw = (string) $component['stall_units_csv'];
-				foreach ( explode( ',', $raw ) as $unit ) {
+				if ( ! preg_match( $pattern, (string) $component['notes'], $m ) ) {
+					continue;
+				}
+				foreach ( explode( ',', trim( $m[1] ) ) as $unit ) {
 					$u = trim( $unit );
 					if ( '' !== $u ) {
 						$units[] = '#' . ltrim( $u, '#' );

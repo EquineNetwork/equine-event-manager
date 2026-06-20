@@ -1898,19 +1898,30 @@
 	align-items: center;
 	gap: 10px;
 }
-/* Bright-blue icon chip in each section header (mirrors admin section chips). */
+/* Bare bright-blue icon in each section header (no chip background). */
 .eem-reservation-section__icon {
 	flex: 0 0 auto;
-	width: 32px;
-	height: 32px;
-	border-radius: 6px;
-	background: #e6eefc;
 	color: #1668F2;
+	background: none;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
 }
-.eem-reservation-section__icon svg { width: 18px; height: 18px; }
+.eem-reservation-section__icon svg { width: 20px; height: 20px; }
+/* Theme-hardening: force the bright-blue icon (no chip) regardless of any host
+   theme svg/color rule. Some sections (collapsible headings) otherwise render a
+   muted/gray icon under Elementor-based themes. */
+.eem-event-page .eem-reservation-section__icon {
+	color: #1668F2 !important;
+	background: none !important;
+	width: auto !important;
+	height: auto !important;
+	border-radius: 0 !important;
+}
+.eem-event-page .eem-reservation-section__icon svg {
+	color: #1668F2 !important;
+	stroke: #1668F2 !important;
+}
 .eem-reservation-section-heading {
 	display: flex;
 	justify-content: space-between;
@@ -4370,6 +4381,12 @@
 	text-transform: uppercase;
 	color: #031B4E;
 }
+/* Keep the icon + title text together on the LEFT (the shared header rule
+   uses space-between for collapsible headings; non-collapsible titles must
+   left-align so the icon sits beside the text). */
+.eem-event-page .eem-reservation-section > .eem-reservation-section__title {
+	justify-content: flex-start;
+}
 
 /* Body — collapsible sections wrap content in __body; non-collapsible
    sections inset their direct children with horizontal margin so the
@@ -4574,12 +4591,12 @@
 	width: 100%;
 	box-sizing: border-box;
 	text-align: center;
-	background: #031B4E;
+	background: #1668F2;
 	color: #fff;
 	border: 0;
-	padding: 12px;
+	padding: 14px;
 	border-radius: 6px;
-	font-size: 14px;
+	font-size: 15px;
 	font-weight: 700;
 	cursor: pointer;
 	text-decoration: none;
@@ -4593,7 +4610,7 @@
 	text-decoration: none;
 }
 .eem-event-page .order-reserve-btn:hover {
-	background: #1668F2;
+	background: #1355cc;
 }
 .eem-event-page .order-secure {
 	text-align: center;
@@ -4670,7 +4687,7 @@
 	padding: 15px;
 	border: 0;
 	border-radius: 6px;
-	background: #031B4E;
+	background: #1668F2;
 	color: #fff;
 	font-size: 15px;
 	font-weight: 700;
@@ -4678,7 +4695,7 @@
 }
 .eem-event-page .eem-reservation-submit:hover,
 .eem-event-page .eem-reservation-submit:focus {
-	background: #1668F2;
+	background: #1355cc;
 	color: #fff;
 }
 
