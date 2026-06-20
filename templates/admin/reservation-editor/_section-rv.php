@@ -168,7 +168,6 @@ eem_render_editor_field_row( array(
 		esc_attr( $fmt_money( $data['rv_early_bird_nightly_rate'] ) ),
 		esc_html__( 'Standard', 'equine-event-manager' )
 	),
-	'hint'         => __( 'Base nightly rate. Row surcharges below are added on top of this rate.', 'equine-event-manager' ),
 ) );
 echo '</div>'; // .eem-rv-nightly-content
 ?>
