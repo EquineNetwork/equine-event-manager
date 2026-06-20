@@ -435,28 +435,30 @@ class EEM_Reports_Repo {
 	}
 
 	/**
-	 * Stall Occupancy — per-day usage grid for a single reservation.
+	 * Stall Occupancy — per-day summary for a single reservation.
 	 *
-	 * Columns: Customer, Phone, Stalls, Arrival, Departure, [one col per event date].
-	 * Each date cell shows how many stalls that customer had in use that day
-	 * (arrival_date ≤ date ≤ departure_date). A TOTALS row is prepended so the
-	 * facility can see the per-day peak at a glance. Rows sorted by customer name.
+	 * One row per calendar date in the event's range. Columns: Date, Stalls In Use,
+	 * Stall Capacity, Occupancy %. "Stalls in use" on a given day = sum of
+	 * stall_quantity across all orders whose arrival_date ≤ date ≤ departure_date.
+	 * A TOTALS row (peak day + total stall-nights) is prepended for the facility.
 	 *
 	 * @param array $filters Normalized filters (reservation_id > 0 guaranteed).
 	 * @return array
 	 */
 	private function stall_occupancy_daily( array $filters ): array {
-		$rid         = $filters['reservation_id'];
-		$order_data  = array();
-		$min_date    = null;
-		$max_date    = null;
+		$rid      = $filters['reservation_id'];
+		$capacity = $this->stall_capacity_for_reservation( $rid );
+
+		// Collect per-order stall + date data.
+		$order_data = array();
+		$min_date   = null;
+		$max_date   = null;
 
 		foreach ( $this->get_filtered_orders( $filters ) as $o ) {
 			$stalls = absint( $o['stall_quantity'] ?? 0 );
 			if ( $stalls <= 0 ) {
 				continue;
 			}
-
 			$arrival   = isset( $o['stall_arrival_date'] ) && '' !== (string) $o['stall_arrival_date']
 				? (string) $o['stall_arrival_date'] : '';
 			$departure = isset( $o['stall_departure_date'] ) && '' !== (string) $o['stall_departure_date']
@@ -470,21 +472,11 @@ class EEM_Reports_Repo {
 			}
 
 			$order_data[] = array(
-				'customer'  => (string) ( $o['customer_name'] ?? '' ),
-				'phone'     => (string) ( $o['phone'] ?? '' ),
 				'stalls'    => $stalls,
 				'arrival'   => $arrival,
 				'departure' => $departure,
 			);
 		}
-
-		// Sort by customer name.
-		usort(
-			$order_data,
-			static function ( $a, $b ) {
-				return strcasecmp( $a['customer'], $b['customer'] );
-			}
-		);
 
 		// Build event_header from reservation title + date range.
 		$res_title    = (string) get_the_title( $rid );
@@ -494,25 +486,20 @@ class EEM_Reports_Repo {
 				. ' – ' . date_i18n( 'M j, Y', strtotime( $max_date ) );
 		}
 
-		// No arrival/departure dates recorded yet.
+		$headers = array(
+			__( 'Date', 'equine-event-manager' ),
+			__( 'Stalls In Use', 'equine-event-manager' ),
+			__( 'Stall Capacity', 'equine-event-manager' ),
+			__( 'Occupancy %', 'equine-event-manager' ),
+		);
+
 		if ( null === $min_date || null === $max_date ) {
 			return array(
 				'title'        => __( 'Stall Occupancy', 'equine-event-manager' ),
 				'slug'         => 'stall_occupancy',
 				'event_header' => $event_header,
-				'headers'      => array(
-					__( 'Customer', 'equine-event-manager' ),
-					__( 'Phone', 'equine-event-manager' ),
-					__( 'Stalls', 'equine-event-manager' ),
-					__( 'Arrival', 'equine-event-manager' ),
-					__( 'Departure', 'equine-event-manager' ),
-				),
-				'rows'         => array_map(
-					static function ( $od ) {
-						return array( $od['customer'], $od['phone'], (string) $od['stalls'], '—', '—' );
-					},
-					$order_data
-				),
+				'headers'      => $headers,
+				'rows'         => array(),
 			);
 		}
 
@@ -525,59 +512,49 @@ class EEM_Reports_Repo {
 			$current->modify( '+1 day' );
 		}
 
-		// Fixed column headers + one header per date (e.g. "Jun 26").
-		$headers = array(
-			__( 'Customer', 'equine-event-manager' ),
-			__( 'Phone', 'equine-event-manager' ),
-			__( 'Stalls', 'equine-event-manager' ),
-			__( 'Arrival', 'equine-event-manager' ),
-			__( 'Departure', 'equine-event-manager' ),
-		);
-		foreach ( $dates as $d ) {
-			$headers[] = date_i18n( 'M j', strtotime( $d ) );
-		}
+		// For each date, count stalls in use across all orders.
+		$rows        = array();
+		$peak        = 0;
+		$stall_nights = 0;
 
-		// Build data rows and accumulate per-day totals.
-		$day_totals  = array_fill( 0, count( $dates ), 0 );
-		$total_stalls = 0;
-		$rows         = array();
-
-		foreach ( $order_data as $od ) {
-			$row = array(
-				$od['customer'],
-				$od['phone'],
-				(string) $od['stalls'],
-				'' !== $od['arrival'] ? date_i18n( 'M j', strtotime( $od['arrival'] ) ) : '—',
-				'' !== $od['departure'] ? date_i18n( 'M j', strtotime( $od['departure'] ) ) : '—',
-			);
-
-			foreach ( $dates as $i => $date ) {
-				$in_use = (
+		foreach ( $dates as $date ) {
+			$in_use = 0;
+			foreach ( $order_data as $od ) {
+				if (
 					'' !== $od['arrival'] &&
 					'' !== $od['departure'] &&
 					$date >= $od['arrival'] &&
 					$date <= $od['departure']
-				) ? $od['stalls'] : 0;
-
-				$day_totals[ $i ] += $in_use;
-				$row[]             = $in_use > 0 ? (string) $in_use : '';
+				) {
+					$in_use += $od['stalls'];
+				}
 			}
 
-			$total_stalls += $od['stalls'];
-			$rows[]        = $row;
+			$pct     = $capacity > 0 ? round( $in_use / $capacity * 100, 1 ) . '%' : '—';
+			$rows[]  = array(
+				date_i18n( 'D, M j', strtotime( $date ) ),
+				(string) $in_use,
+				$capacity > 0 ? (string) $capacity : '—',
+				$pct,
+			);
+
+			if ( $in_use > $peak ) {
+				$peak = $in_use;
+			}
+			$stall_nights += $in_use;
 		}
 
-		// Totals row — pinned at top in the print view.
-		$totals_row = array(
-			__( 'TOTALS', 'equine-event-manager' ),
-			'',
-			(string) $total_stalls,
-			'',
-			'',
+		// Summary row pinned at top: peak day usage + total stall-nights.
+		$peak_pct    = $capacity > 0 ? round( $peak / $capacity * 100, 1 ) . '%' : '—';
+		$totals_row  = array(
+			/* translators: %d: number of days. */
+			sprintf( _n( 'TOTALS (%d day)', 'TOTALS (%d days)', count( $dates ), 'equine-event-manager' ), count( $dates ) ),
+			/* translators: %d: peak stall count. */
+			sprintf( __( 'Peak: %d', 'equine-event-manager' ), $peak ),
+			$capacity > 0 ? (string) $capacity : '—',
+			/* translators: %s: peak occupancy percentage. */
+			sprintf( __( 'Peak: %s', 'equine-event-manager' ), $peak_pct ),
 		);
-		foreach ( $day_totals as $t ) {
-			$totals_row[] = (string) $t;
-		}
 
 		return array(
 			'title'             => __( 'Stall Occupancy', 'equine-event-manager' ),
