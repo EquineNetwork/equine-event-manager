@@ -126,6 +126,37 @@ a:hover{text-decoration:none}
 
 /* ── BY LOCATION – LIST: toolbar + tables ── */
 .eem-stall-chart-filter-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 0 16px}
+/* ★ Quick-filter chips (facility floor lenses) */
+.eem-quick-filters{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:0 0 14px}
+.eem-qf-label{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#64748b;margin-right:2px}
+.eem-qf-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 13px;border-radius:999px;border:1px solid #d9e2ec;background:#fff;color:#1d2327;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;line-height:1.2}
+.eem-qf-chip:hover{background:#f6f7f7;border-color:#8c8f94}
+.eem-qf-chip.active{background:#031B4E;border-color:#031B4E;color:#fff}
+.eem-qf-count{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#f5f3ff;color:#7c3aed;font-size:11px;font-weight:700}
+.eem-qf-chip.active .eem-qf-count{background:rgba(255,255,255,.22);color:#fff}
+.eem-dm-link{margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:#1668F2}
+.eem-dm-link:hover{color:#1257d1}
+.eem-dm-link svg{width:13px;height:13px}
+/* ★ Today-column emphasis */
+.eem-loc-table th.is-today{background:#eaf1fe;color:#1257d1;box-shadow:inset 0 -2px 0 #1668F2}
+.eem-loc-table td.is-today{background:#f5f9ff}
+tr.eem-chart-barn-row td.is-today{background:#eaf1fe}
+.eem-today-tag{display:inline-block;margin-left:6px;font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#1668F2;background:#dbe9ff;border-radius:3px;padding:1px 5px;vertical-align:1px}
+/* ★ Cleaning accountability / checkout-cause line under a status cell (#5 + #2) */
+.eem-loc-meta{margin-top:4px;font-size:11px;color:#94a3b8;line-height:1.3;white-space:nowrap}
+.eem-loc-meta strong{color:#64748b;font-weight:600}
+.eem-loc-meta--clean strong{color:#7c3aed}
+/* ★ Checkout→cleaning info note (#2) */
+.eem-auto-note{display:flex;align-items:center;gap:7px;padding:9px 22px;margin:0 -22px;background:#f5f3ff;border-bottom:1px solid #e6e0fb;font-size:12.5px;color:#5b3aa8}
+.eem-auto-note svg{width:14px;height:14px;color:#7c3aed;flex-shrink:0}
+/* ★ Floor/phone: focus on TODAY — hide future-day columns + checkbox, enlarge today's tap target */
+@media(max-width:640px){
+  .eem-col-check,.eem-col-future{display:none}
+  .eem-loc-table .eem-loc-cell{width:100%;justify-content:space-between;padding:10px 14px;font-size:13.5px}
+  .eem-quick-filters{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;padding-bottom:6px}
+  .eem-qf-chip{flex-shrink:0}
+  .eem-dm-link{margin-left:0;flex-shrink:0}
+}
 .eem-loc-bulk{display:flex;align-items:center;gap:8px}
 .eem-loc-bulk-select{min-width:150px}
 .eem-stall-chart-filter-search{position:relative;flex:0 0 auto;margin-left:auto;width:300px;max-width:100%;min-width:200px}
@@ -519,8 +550,25 @@ tr.eem-chart-barn-row td:first-child{padding-left:22px;font-family:'Space Grotes
             </div>
           </div>
 
+          <!-- ★ Quick-filter chips + link out to the dedicated Daily Movement page -->
+          <div class="eem-quick-filters">
+            <span class="eem-qf-label">Quick view</span>
+            <button type="button" class="eem-qf-chip active" data-qf="all" onclick="scQuickFilter('all',this)">All</button>
+            <button type="button" class="eem-qf-chip" data-qf="cleaning" onclick="scQuickFilter('cleaning',this)">Needs cleaning <span class="eem-qf-count">4</span></button>
+            <button type="button" class="eem-qf-chip" data-qf="available" onclick="scQuickFilter('available',this)">Available</button>
+            <button type="button" class="eem-qf-chip" data-qf="blocked" onclick="scQuickFilter('blocked',this)">Blocked</button>
+            <a class="eem-dm-link" href="admin.php?page=equine-event-manager-daily-movement">View Daily Movement
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </a>
+          </div>
+
           <!-- STALL UNITS section -->
           <div data-inv-section="stalls">
+            <!-- ★ Checkout auto-flags the stall for cleaning (#2) -->
+            <div class="eem-auto-note">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><polyline points="21 4 21 9 16 9"/></svg>
+              <span>When a customer is checked out, their stall is automatically flagged <strong>Cleaning</strong> and appears under <strong>Needs cleaning</strong>.</span>
+            </div>
             <div class="eem-sc-section-divider">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
               Stall Units
@@ -529,57 +577,57 @@ tr.eem-chart-barn-row td:first-child{padding-left:22px;font-family:'Space Grotes
               <table class="eem-stall-chart-table eem-loc-table">
                 <thead>
                   <tr>
-                    <th class="eem-loc-check-col"><input type="checkbox" aria-label="Select all stalls"></th>
+                    <th class="eem-loc-check-col eem-col-check"><input type="checkbox" aria-label="Select all stalls"></th>
                     <th>Stall</th>
                     <th>Barn</th>
-                    <th>Jul 9</th>
-                    <th>Jul 10</th>
-                    <th>Jul 11</th>
-                    <th>Jul 12</th>
+                    <th class="is-today">Jul 9 <span class="eem-today-tag">Today</span></th>
+                    <th class="eem-col-future">Jul 10</th>
+                    <th class="eem-col-future">Jul 11</th>
+                    <th class="eem-col-future">Jul 12</th>
                   </tr>
                 </thead>
                 <tbody>
                   <!-- Barn header row carries its own per-day metrics -->
                   <tr class="eem-chart-barn-row">
                     <td colspan="3">Montcrief</td>
-                    <td class="eem-day-metric"><span class="eem-dm-avail">251</span><span class="eem-dm-unit">avail</span><span class="eem-dm-flag eem-dm-flag--clean">3 to clean</span></td>
-                    <td class="eem-day-metric"><span class="eem-dm-avail">248</span><span class="eem-dm-unit">avail</span><span class="eem-dm-flag eem-dm-flag--clean">3 to clean</span></td>
-                    <td class="eem-day-metric"><span class="eem-dm-avail">270</span><span class="eem-dm-unit">avail</span><span class="eem-dm-flag eem-dm-flag--clean">2 to clean</span></td>
-                    <td class="eem-day-metric"><span class="eem-dm-avail">295</span><span class="eem-dm-unit">avail</span></td>
+                    <td class="eem-day-metric is-today"><span class="eem-dm-avail">251</span><span class="eem-dm-unit">avail</span><span class="eem-dm-flag eem-dm-flag--clean">3 to clean</span></td>
+                    <td class="eem-day-metric eem-col-future"><span class="eem-dm-avail">248</span><span class="eem-dm-unit">avail</span><span class="eem-dm-flag eem-dm-flag--clean">3 to clean</span></td>
+                    <td class="eem-day-metric eem-col-future"><span class="eem-dm-avail">270</span><span class="eem-dm-unit">avail</span><span class="eem-dm-flag eem-dm-flag--clean">2 to clean</span></td>
+                    <td class="eem-day-metric eem-col-future"><span class="eem-dm-avail">295</span><span class="eem-dm-unit">avail</span></td>
                   </tr>
-                  <tr class="eem-chart-stall-row">
-                    <td class="eem-loc-check-col"><input type="checkbox" aria-label="Select 5001"></td>
+                  <tr class="eem-chart-stall-row" data-today="cleaning">
+                    <td class="eem-loc-check-col eem-col-check"><input type="checkbox" aria-label="Select 5001"></td>
                     <td class="eem-chart-unit-num">5001</td>
                     <td>Montcrief</td>
-                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--cleaning"><span class="eem-loc-cell__label">Cleaning</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
-                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
-                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
-                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                    <td class="eem-loc-cell-td is-today"><button type="button" class="eem-loc-cell eem-loc-cell--cleaning"><span class="eem-loc-cell__label">Cleaning</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button><div class="eem-loc-meta eem-loc-meta--clean"><strong>Checked out</strong> 7:55a → flagged</div></td>
+                    <td class="eem-loc-cell-td eem-col-future"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button><div class="eem-loc-meta"><strong>Cleaned</strong> 8:42a · Maria</div></td>
+                    <td class="eem-loc-cell-td eem-col-future"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                    <td class="eem-loc-cell-td eem-col-future"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
                   </tr>
-                  <tr class="eem-chart-stall-row">
-                    <td class="eem-loc-check-col"><input type="checkbox" aria-label="Select 5002"></td>
+                  <tr class="eem-chart-stall-row" data-today="assigned">
+                    <td class="eem-loc-check-col eem-col-check"><input type="checkbox" aria-label="Select 5002"></td>
                     <td class="eem-chart-unit-num">5002</td>
                     <td>Montcrief</td>
-                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--occupied"><span class="eem-loc-cell__label">Assigned</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
-                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--occupied"><span class="eem-loc-cell__label">Assigned</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
-                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
-                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                    <td class="eem-loc-cell-td is-today"><button type="button" class="eem-loc-cell eem-loc-cell--occupied"><span class="eem-loc-cell__label">Assigned</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                    <td class="eem-loc-cell-td eem-col-future"><button type="button" class="eem-loc-cell eem-loc-cell--occupied"><span class="eem-loc-cell__label">Assigned</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                    <td class="eem-loc-cell-td eem-col-future"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                    <td class="eem-loc-cell-td eem-col-future"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
                   </tr>
                   <tr class="eem-chart-barn-row">
                     <td colspan="3">Burnett</td>
-                    <td class="eem-day-metric"><span class="eem-dm-avail">180</span><span class="eem-dm-unit">avail</span><span class="eem-dm-flag eem-dm-flag--clean">1 to clean</span><span class="eem-dm-flag eem-dm-flag--block">1 blocked</span></td>
-                    <td class="eem-day-metric"><span class="eem-dm-avail">178</span><span class="eem-dm-unit">avail</span><span class="eem-dm-flag eem-dm-flag--clean">1 to clean</span><span class="eem-dm-flag eem-dm-flag--block">1 blocked</span></td>
-                    <td class="eem-day-metric"><span class="eem-dm-avail">185</span><span class="eem-dm-unit">avail</span><span class="eem-dm-flag eem-dm-flag--clean">1 to clean</span><span class="eem-dm-flag eem-dm-flag--block">1 blocked</span></td>
-                    <td class="eem-day-metric"><span class="eem-dm-avail">198</span><span class="eem-dm-unit">avail</span><span class="eem-dm-flag eem-dm-flag--block">2 blocked</span></td>
+                    <td class="eem-day-metric is-today"><span class="eem-dm-avail">180</span><span class="eem-dm-unit">avail</span><span class="eem-dm-flag eem-dm-flag--clean">1 to clean</span><span class="eem-dm-flag eem-dm-flag--block">1 blocked</span></td>
+                    <td class="eem-day-metric eem-col-future"><span class="eem-dm-avail">178</span><span class="eem-dm-unit">avail</span><span class="eem-dm-flag eem-dm-flag--clean">1 to clean</span><span class="eem-dm-flag eem-dm-flag--block">1 blocked</span></td>
+                    <td class="eem-day-metric eem-col-future"><span class="eem-dm-avail">185</span><span class="eem-dm-unit">avail</span><span class="eem-dm-flag eem-dm-flag--clean">1 to clean</span><span class="eem-dm-flag eem-dm-flag--block">1 blocked</span></td>
+                    <td class="eem-day-metric eem-col-future"><span class="eem-dm-avail">198</span><span class="eem-dm-unit">avail</span><span class="eem-dm-flag eem-dm-flag--block">2 blocked</span></td>
                   </tr>
-                  <tr class="eem-chart-stall-row">
-                    <td class="eem-loc-check-col"><input type="checkbox" aria-label="Select 2210"></td>
+                  <tr class="eem-chart-stall-row" data-today="available">
+                    <td class="eem-loc-check-col eem-col-check"><input type="checkbox" aria-label="Select 2210"></td>
                     <td class="eem-chart-unit-num">2210</td>
                     <td>Burnett</td>
-                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
-                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
-                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
-                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--blocked"><span class="eem-loc-cell__label">Blocked</span></button></td>
+                    <td class="eem-loc-cell-td is-today"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                    <td class="eem-loc-cell-td eem-col-future"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                    <td class="eem-loc-cell-td eem-col-future"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                    <td class="eem-loc-cell-td eem-col-future"><button type="button" class="eem-loc-cell eem-loc-cell--blocked"><span class="eem-loc-cell__label">Blocked</span></button></td>
                   </tr>
                 </tbody>
               </table>
@@ -596,40 +644,40 @@ tr.eem-chart-barn-row td:first-child{padding-left:22px;font-family:'Space Grotes
               <table class="eem-stall-chart-table eem-loc-table">
                 <thead>
                   <tr>
-                    <th class="eem-loc-check-col"><input type="checkbox" aria-label="Select all lots"></th>
+                    <th class="eem-loc-check-col eem-col-check"><input type="checkbox" aria-label="Select all lots"></th>
                     <th>Lot</th>
                     <th>Zone</th>
-                    <th>Jul 9</th>
-                    <th>Jul 10</th>
-                    <th>Jul 11</th>
-                    <th>Jul 12</th>
+                    <th class="is-today">Jul 9 <span class="eem-today-tag">Today</span></th>
+                    <th class="eem-col-future">Jul 10</th>
+                    <th class="eem-col-future">Jul 11</th>
+                    <th class="eem-col-future">Jul 12</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr class="eem-chart-barn-row">
                     <td colspan="3">Premium Zone</td>
-                    <td class="eem-day-metric"><span class="eem-dm-avail">38</span><span class="eem-dm-unit">avail</span></td>
-                    <td class="eem-day-metric"><span class="eem-dm-avail">37</span><span class="eem-dm-unit">avail</span></td>
-                    <td class="eem-day-metric"><span class="eem-dm-avail">39</span><span class="eem-dm-unit">avail</span></td>
-                    <td class="eem-day-metric"><span class="eem-dm-avail">40</span><span class="eem-dm-unit">avail</span></td>
+                    <td class="eem-day-metric is-today"><span class="eem-dm-avail">38</span><span class="eem-dm-unit">avail</span></td>
+                    <td class="eem-day-metric eem-col-future"><span class="eem-dm-avail">37</span><span class="eem-dm-unit">avail</span></td>
+                    <td class="eem-day-metric eem-col-future"><span class="eem-dm-avail">39</span><span class="eem-dm-unit">avail</span></td>
+                    <td class="eem-day-metric eem-col-future"><span class="eem-dm-avail">40</span><span class="eem-dm-unit">avail</span></td>
                   </tr>
-                  <tr class="eem-chart-stall-row">
-                    <td class="eem-loc-check-col"><input type="checkbox" aria-label="Select P-03"></td>
+                  <tr class="eem-chart-stall-row" data-today="assigned">
+                    <td class="eem-loc-check-col eem-col-check"><input type="checkbox" aria-label="Select P-03"></td>
                     <td class="eem-chart-unit-num">P-03</td>
                     <td>Premium Zone</td>
-                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--occupied"><span class="eem-loc-cell__label">Assigned</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
-                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--occupied"><span class="eem-loc-cell__label">Assigned</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
-                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
-                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                    <td class="eem-loc-cell-td is-today"><button type="button" class="eem-loc-cell eem-loc-cell--occupied"><span class="eem-loc-cell__label">Assigned</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                    <td class="eem-loc-cell-td eem-col-future"><button type="button" class="eem-loc-cell eem-loc-cell--occupied"><span class="eem-loc-cell__label">Assigned</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                    <td class="eem-loc-cell-td eem-col-future"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                    <td class="eem-loc-cell-td eem-col-future"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
                   </tr>
-                  <tr class="eem-chart-stall-row">
-                    <td class="eem-loc-check-col"><input type="checkbox" aria-label="Select B-14"></td>
+                  <tr class="eem-chart-stall-row" data-today="available">
+                    <td class="eem-loc-check-col eem-col-check"><input type="checkbox" aria-label="Select B-14"></td>
                     <td class="eem-chart-unit-num">B-14</td>
                     <td>RV Row B</td>
-                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
-                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
-                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
-                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                    <td class="eem-loc-cell-td is-today"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                    <td class="eem-loc-cell-td eem-col-future"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                    <td class="eem-loc-cell-td eem-col-future"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                    <td class="eem-loc-cell-td eem-col-future"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
                   </tr>
                 </tbody>
               </table>
@@ -812,6 +860,16 @@ function scShowView(view){
   var sel = document.getElementById('sc-view-select');
   if(sel && sel.value !== view){ sel.value = view; }
   try { localStorage.setItem('eem_sc_view', view); } catch(e){}
+}
+
+/* ── Quick-filter chips (By Location list): filter stall rows by TODAY's status ── */
+function scQuickFilter(status, el){
+  document.querySelectorAll('.eem-qf-chip').forEach(function(c){ c.classList.remove('active'); });
+  if(el){ el.classList.add('active'); }
+  document.querySelectorAll('.eem-chart-stall-row').forEach(function(row){
+    var t = row.getAttribute('data-today');
+    row.style.display = (status === 'all' || t === status) ? '' : 'none';
+  });
 }
 
 /* ── Boot: restore both axes (defaults: Stalls + By Customer) ── */
