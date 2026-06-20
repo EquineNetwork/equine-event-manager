@@ -150,6 +150,23 @@ tr.eem-chart-barn-row td{background:#fdf4e7;padding:9px 22px;font-size:12px;font
 .eem-loc-cell--available{background:#e8f5ee;border-color:#b6e0c7;color:#15803d}
 .eem-loc-cell--cleaning{background:#f5f3ff;border-color:#ddd6fe;color:#7c3aed}
 .eem-loc-cell--blocked{background:#f3f4f5;border-color:#e2e4e7;color:#64748b;cursor:default}
+/* ★ Per-day metrics rows (By Location – List) — at-a-glance availability/cleaning per day */
+.eem-chart-day-metrics td{background:#fbfdff;border-bottom:1px solid #eef2f7;padding:8px 14px;vertical-align:middle;white-space:nowrap}
+.eem-chart-day-metrics td:first-child{padding-left:22px}
+.eem-chart-day-metrics--all td{background:#f0f4fb;border-bottom:1px solid #d9e2f2}
+.eem-day-metrics-label{font-size:12px;font-weight:600;color:#031B4E}
+.eem-day-metrics-label .eem-dm-key{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:#64748b;margin-right:10px}
+.eem-day-metrics-label .eem-dm-key:last-child{margin-right:0}
+.eem-day-metrics-label .eem-dm-key i{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
+.eem-day-metric{white-space:nowrap}
+.eem-dm-pip{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;font-weight:700;margin-right:9px;font-family:'Space Grotesk',sans-serif}
+.eem-dm-pip:last-child{margin-right:0}
+.eem-dm-pip i{width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block}
+.eem-dm-pip--avail{color:#15803d}.eem-dm-pip--avail i{background:#15803d}
+.eem-dm-pip--assigned{color:#1668F2}.eem-dm-pip--assigned i{background:#1668F2}
+.eem-dm-pip--clean{color:#7c3aed}.eem-dm-pip--clean i{background:#7c3aed}
+.eem-dm-pip--block{color:#64748b}.eem-dm-pip--block i{background:#9aa6b6}
+.eem-dm-pip--zero{color:#cbd3dd}.eem-dm-pip--zero i{background:#e2e7ef}
 
 /* ── BY LOCATION – MAP (eem-smap) ── */
 .eem-smap{--eem-smap-chip:30px;--eem-smap-gap:4px;padding:0 18px 4px}
@@ -529,7 +546,27 @@ tr.eem-chart-barn-row td{background:#fdf4e7;padding:9px 22px;font-size:12px;font
                   </tr>
                 </thead>
                 <tbody>
+                  <!-- ★ All-barns per-day totals (doubles as the color key) -->
+                  <tr class="eem-chart-day-metrics eem-chart-day-metrics--all">
+                    <td colspan="3" class="eem-day-metrics-label">
+                      <span class="eem-dm-key"><i style="background:#15803d"></i>Avail</span>
+                      <span class="eem-dm-key"><i style="background:#1668F2"></i>Assigned</span>
+                      <span class="eem-dm-key"><i style="background:#7c3aed"></i>Cleaning</span>
+                      <span class="eem-dm-key"><i style="background:#9aa6b6"></i>Blocked</span>
+                    </td>
+                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail"><i></i>431</span><span class="eem-dm-pip eem-dm-pip--assigned"><i></i>64</span><span class="eem-dm-pip eem-dm-pip--clean"><i></i>4</span><span class="eem-dm-pip eem-dm-pip--block"><i></i>1</span></td>
+                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail"><i></i>426</span><span class="eem-dm-pip eem-dm-pip--assigned"><i></i>69</span><span class="eem-dm-pip eem-dm-pip--clean"><i></i>4</span><span class="eem-dm-pip eem-dm-pip--block"><i></i>1</span></td>
+                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail"><i></i>455</span><span class="eem-dm-pip eem-dm-pip--assigned"><i></i>41</span><span class="eem-dm-pip eem-dm-pip--clean"><i></i>3</span><span class="eem-dm-pip eem-dm-pip--block"><i></i>1</span></td>
+                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail"><i></i>493</span><span class="eem-dm-pip eem-dm-pip--assigned"><i></i>5</span><span class="eem-dm-pip eem-dm-pip--clean eem-dm-pip--zero"><i></i>0</span><span class="eem-dm-pip eem-dm-pip--block"><i></i>2</span></td>
+                  </tr>
                   <tr class="eem-chart-barn-row"><td colspan="7">Montcrief</td></tr>
+                  <tr class="eem-chart-day-metrics">
+                    <td colspan="3" class="eem-day-metrics-label">Montcrief</td>
+                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail"><i></i>251</span><span class="eem-dm-pip eem-dm-pip--assigned"><i></i>46</span><span class="eem-dm-pip eem-dm-pip--clean"><i></i>3</span><span class="eem-dm-pip eem-dm-pip--block eem-dm-pip--zero"><i></i>0</span></td>
+                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail"><i></i>248</span><span class="eem-dm-pip eem-dm-pip--assigned"><i></i>49</span><span class="eem-dm-pip eem-dm-pip--clean"><i></i>3</span><span class="eem-dm-pip eem-dm-pip--block eem-dm-pip--zero"><i></i>0</span></td>
+                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail"><i></i>270</span><span class="eem-dm-pip eem-dm-pip--assigned"><i></i>28</span><span class="eem-dm-pip eem-dm-pip--clean"><i></i>2</span><span class="eem-dm-pip eem-dm-pip--block eem-dm-pip--zero"><i></i>0</span></td>
+                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail"><i></i>295</span><span class="eem-dm-pip eem-dm-pip--assigned"><i></i>5</span><span class="eem-dm-pip eem-dm-pip--clean eem-dm-pip--zero"><i></i>0</span><span class="eem-dm-pip eem-dm-pip--block eem-dm-pip--zero"><i></i>0</span></td>
+                  </tr>
                   <tr class="eem-chart-stall-row">
                     <td class="eem-loc-check-col"><input type="checkbox" aria-label="Select 5001"></td>
                     <td class="eem-chart-unit-num">5001</td>
@@ -549,6 +586,13 @@ tr.eem-chart-barn-row td{background:#fdf4e7;padding:9px 22px;font-size:12px;font
                     <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
                   </tr>
                   <tr class="eem-chart-barn-row"><td colspan="7">Burnett</td></tr>
+                  <tr class="eem-chart-day-metrics">
+                    <td colspan="3" class="eem-day-metrics-label">Burnett</td>
+                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail"><i></i>180</span><span class="eem-dm-pip eem-dm-pip--assigned"><i></i>18</span><span class="eem-dm-pip eem-dm-pip--clean"><i></i>1</span><span class="eem-dm-pip eem-dm-pip--block"><i></i>1</span></td>
+                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail"><i></i>178</span><span class="eem-dm-pip eem-dm-pip--assigned"><i></i>20</span><span class="eem-dm-pip eem-dm-pip--clean"><i></i>1</span><span class="eem-dm-pip eem-dm-pip--block"><i></i>1</span></td>
+                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail"><i></i>185</span><span class="eem-dm-pip eem-dm-pip--assigned"><i></i>13</span><span class="eem-dm-pip eem-dm-pip--clean"><i></i>1</span><span class="eem-dm-pip eem-dm-pip--block"><i></i>1</span></td>
+                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail"><i></i>198</span><span class="eem-dm-pip eem-dm-pip--assigned eem-dm-pip--zero"><i></i>0</span><span class="eem-dm-pip eem-dm-pip--clean eem-dm-pip--zero"><i></i>0</span><span class="eem-dm-pip eem-dm-pip--block"><i></i>2</span></td>
+                  </tr>
                   <tr class="eem-chart-stall-row">
                     <td class="eem-loc-check-col"><input type="checkbox" aria-label="Select 2210"></td>
                     <td class="eem-chart-unit-num">2210</td>
@@ -583,7 +627,26 @@ tr.eem-chart-barn-row td{background:#fdf4e7;padding:9px 22px;font-size:12px;font
                   </tr>
                 </thead>
                 <tbody>
+                  <!-- ★ All-zones per-day totals -->
+                  <tr class="eem-chart-day-metrics eem-chart-day-metrics--all">
+                    <td colspan="3" class="eem-day-metrics-label">
+                      <span class="eem-dm-key"><i style="background:#15803d"></i>Avail</span>
+                      <span class="eem-dm-key"><i style="background:#1668F2"></i>Assigned</span>
+                      <span class="eem-dm-key"><i style="background:#9aa6b6"></i>Blocked</span>
+                    </td>
+                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail"><i></i>68</span><span class="eem-dm-pip eem-dm-pip--assigned"><i></i>3</span><span class="eem-dm-pip eem-dm-pip--block eem-dm-pip--zero"><i></i>0</span></td>
+                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail"><i></i>67</span><span class="eem-dm-pip eem-dm-pip--assigned"><i></i>4</span><span class="eem-dm-pip eem-dm-pip--block eem-dm-pip--zero"><i></i>0</span></td>
+                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail"><i></i>69</span><span class="eem-dm-pip eem-dm-pip--assigned"><i></i>2</span><span class="eem-dm-pip eem-dm-pip--block eem-dm-pip--zero"><i></i>0</span></td>
+                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail"><i></i>71</span><span class="eem-dm-pip eem-dm-pip--assigned eem-dm-pip--zero"><i></i>0</span><span class="eem-dm-pip eem-dm-pip--block eem-dm-pip--zero"><i></i>0</span></td>
+                  </tr>
                   <tr class="eem-chart-barn-row"><td colspan="7">Premium Zone</td></tr>
+                  <tr class="eem-chart-day-metrics">
+                    <td colspan="3" class="eem-day-metrics-label">Premium Zone</td>
+                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail"><i></i>38</span><span class="eem-dm-pip eem-dm-pip--assigned"><i></i>2</span><span class="eem-dm-pip eem-dm-pip--block eem-dm-pip--zero"><i></i>0</span></td>
+                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail"><i></i>37</span><span class="eem-dm-pip eem-dm-pip--assigned"><i></i>3</span><span class="eem-dm-pip eem-dm-pip--block eem-dm-pip--zero"><i></i>0</span></td>
+                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail"><i></i>39</span><span class="eem-dm-pip eem-dm-pip--assigned"><i></i>1</span><span class="eem-dm-pip eem-dm-pip--block eem-dm-pip--zero"><i></i>0</span></td>
+                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail"><i></i>40</span><span class="eem-dm-pip eem-dm-pip--assigned eem-dm-pip--zero"><i></i>0</span><span class="eem-dm-pip eem-dm-pip--block eem-dm-pip--zero"><i></i>0</span></td>
+                  </tr>
                   <tr class="eem-chart-stall-row">
                     <td class="eem-loc-check-col"><input type="checkbox" aria-label="Select P-03"></td>
                     <td class="eem-chart-unit-num">P-03</td>
