@@ -9155,6 +9155,7 @@ RV Lot: " . $rv_lot['name'] );
 			'additional_shavings_enabled'     => 0,
 			'additional_shavings_description' => '',
 			'additional_shavings_price'       => '0.00',
+			'additional_shavings_products'    => array(),
 			'reservation_description'         => '',
 			'event_details_summary'           => '',
 			'venue_name'                      => '',
@@ -9387,6 +9388,17 @@ RV Lot: " . $rv_lot['name'] );
 		$data['rv_packages'] = ( in_array( $data['rv_pricing_mode'], array( 'packages', 'both' ), true ) && class_exists( 'EEM_Stay_Packages_Repo' ) )
 			? EEM_Stay_Packages_Repo::get_packages( (int) $reservation_id, 'rv' )
 			: array();
+
+		// Additional Shavings products live in the config table (not post meta),
+		// so they must be read explicitly via EEM_Reservation_Config.
+		if ( class_exists( 'EEM_Reservation_Config' ) ) {
+			$shav_cfg = EEM_Reservation_Config::for( (int) $reservation_id );
+			$data['additional_shavings_enabled'] = ! empty( $shav_cfg->get( 'additional_shavings_enabled' ) ) ? 1 : 0;
+			$shav_products = $shav_cfg->get( 'additional_shavings_products', null );
+			if ( is_array( $shav_products ) ) {
+				$data['additional_shavings_products'] = $shav_products;
+			}
+		}
 
 		return $data;
 	}
