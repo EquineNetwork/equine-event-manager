@@ -7440,6 +7440,57 @@ input.eem-pct-input:focus {
 /* gap:0 — flat sections are separated by their own hairline divider, not a gap. */
 .eem-edit-main { display: flex; flex-direction: column; gap: 0; min-width: 0; }
 
+/* ── Reservation editor — field + bordered form card ─────────────────────────
+   Brings the editor in line with the plugin's design language (mockup
+   edit_reservation_page.html): the form is ONE bordered white card (not split
+   into per-section cards) sitting on a #F7F9FC field, sections separated by
+   full-bleed hairline dividers. Scoped to the reservation-editor body class so
+   the shared .eem-plugin-wrap / .eem-edit-body on the other editor pages
+   (producer / venue / event / sheets) are untouched. */
+body.eem-shell-page--reservation-editor .eem-plugin-wrap {
+	background: #F7F9FC;
+	padding: 0;
+	border: none;
+	border-radius: 0;
+	overflow: visible;
+}
+/* Title header is a white band clipped directly under the breadcrumb topbar
+   (matches the white page-header on every other page); the #F7F9FC field starts
+   below it where the form card floats. */
+body.eem-shell-page--reservation-editor .eem-plugin-header {
+	background: #fff;
+	border-bottom: 1px solid #e2e8f4;
+	padding: 18px 24px;
+	margin: 0;
+}
+body.eem-shell-page--reservation-editor .eem-edit-body {
+	background: #fff;
+	border: 1px solid #e2e8f4;
+	border-radius: 10px;
+	overflow: hidden;
+	padding: 0;
+	margin: 20px 24px 90px;
+}
+/* Save-bar clearance lives on the field wrapper above, not inside the card. */
+body.eem-shell-page--reservation-editor .eem-reservation-editor-body {
+	padding-bottom: 0;
+}
+/* Sections: no padding of their own — the header / body supply the 18px inset so
+   dividers run full-bleed across the card (mockup .eem-card + .eem-card). */
+body.eem-shell-page--reservation-editor .eem-reservation-editor-section.eem-card {
+	padding: 0;
+	border-bottom: 1px solid #e2e8f4;
+}
+body.eem-shell-page--reservation-editor .eem-reservation-editor-section.eem-card:last-child {
+	border-bottom: none;
+}
+body.eem-shell-page--reservation-editor .eem-reservation-editor-section .eem-section-header {
+	padding: 13px 18px;
+}
+body.eem-shell-page--reservation-editor .eem-reservation-editor-section .eem-section-body {
+	padding: 16px 18px;
+}
+
 /* 2.3.56 — Hard-gate panel shown when a reservation has no linked event yet.
    The event picker lives in the header above; this panel is the body prompt. */
 .eem-reservation-link-gate {
