@@ -53,7 +53,7 @@
 	--eem-surface: #FFFFFF;
 	--eem-border: #D9E2F2;
 	--eem-border-soft: #f0f0f1;
-	--eem-border-card: #c3c4c7;
+	--eem-border-card: #e2e8f4;
 	/* Lightest surface tint — table footers, group-header bands, inline panels.
 	   Real token for the value previously inlined as a var() fallback. */
 	--eem-gray-50: #f8fafc;
@@ -98,9 +98,9 @@
 	--eem-type-addon-bg: #FFF7ED;
 	--eem-type-addon-text: #c2410c;
 	--eem-type-addon-border: #fed7aa;
-	--eem-type-group-bg: #F0FDF4;
-	--eem-type-group-text: #15803d;
-	--eem-type-group-border: #bbf7d0;
+	--eem-type-group-bg: #eef2ff;
+	--eem-type-group-text: #4338ca;
+	--eem-type-group-border: #c7d2fe;
 
 	/* ── Canonical badge palette (badge sweep 2026-06-19) ──────────────────
 	   ONE value per semantic color, used by EVERY badge family (type + status)
@@ -138,7 +138,7 @@
 	   control across the whole plugin (Whitney 2026-06-13: one set style for all
 	   pages — raised 29px → 38px to match the Choices.js dropdowns + text inputs).
 	   Do NOT diverge per page; change this token, not a per-page rule. */
-	--eem-select-height: 38px;
+	--eem-select-height: 36px;
 
 	/* Borders */
 	--eem-border-input: 1px solid var(--eem-control-border);
@@ -184,13 +184,25 @@ body.eem-shell-page {
 	color: var(--eem-text);
 	font-size: 14px;
 	line-height: 1.5;
-	/* Mirrors the mockup's `.wp-content { padding: 12px 20px 40px }`
-	   (settings_page.html line 28). Our submenu callbacks render
-	   `.eem-page` directly inside `#wpbody-content` (no `.wrap`
-	   wrapper), so we own the page-area padding ourselves. This is
-	   what gives the breadcrumb its left inset and the page-wrap /
-	   settings card the breathing room on both sides of the viewport. */
-	padding: 12px 20px 40px;
+	/* Full-bleed shell (global, 2026-06-20 — Whitney): the plugin's design
+	   language is a white topbar + white page-header band over a #F7F9FC field,
+	   with content living in its own cards. No boxed page-wrap, no WP gray
+	   gutter. Each region (breadcrumb/header/body) owns its own chrome below. */
+	padding: 0;
+}
+
+/* Paint the whole WP content column the mockup field color (#F7F9FC) and remove
+   the default left gutter so our white bands sit flush to the admin menu — no
+   ugly WP gray showing around the page. Scoped to our shell body class so the
+   rest of wp-admin is untouched. */
+body.eem-shell-page #wpcontent,
+body.eem-shell-page #wpbody,
+body.eem-shell-page #wpbody-content,
+body.eem-shell-page .wrap {
+	background: #F7F9FC;
+}
+body.eem-shell-page #wpcontent {
+	padding-left: 0;
 }
 
 /* Normalize headings inside our pages without overriding WP's defaults */
@@ -271,9 +283,30 @@ body.eem-shell-page a:active,
 .eem-breadcrumb {
 	display: flex;
 	align-items: center;
+	justify-content: space-between;
 	gap: var(--eem-space-2);
-	margin: 0 0 10px;
-	flex-wrap: wrap;
+	margin: 0;
+	flex-wrap: nowrap;
+	/* White topbar band, full-bleed, with the logo+breadcrumb left and any
+	   topbar actions right (mockup app-topbar). */
+	background: #fff;
+	border-bottom: 1px solid #e2e8f4;
+	padding: 0 24px;
+	height: 56px;
+}
+
+.eem-breadcrumb-left {
+	display: flex;
+	align-items: center;
+	gap: var(--eem-space-2);
+	min-width: 0;
+}
+
+.eem-breadcrumb-actions {
+	display: flex;
+	align-items: center;
+	gap: var(--eem-space-2);
+	flex-shrink: 0;
 }
 
 /* Breadcrumb logo — actual plugin PNG, not a text tile.
@@ -342,18 +375,21 @@ body.eem-shell-page a:active,
 /* ─────────────────────────────────────────────────────────────
    Page wrap — main content card that holds list / editor / detail screens
    ───────────────────────────────────────────────────────────── */
+/* Page-wrap is dissolved in the full-bleed shell — it no longer draws a card.
+   It's just a transparent grouping element; content cards (.eem-card,
+   .eem-list-card, etc.) supply their own chrome over the #F7F9FC field. */
 .eem-page-wrap {
-	background: var(--eem-surface);
-	border: var(--eem-border-card-rule);
-	border-radius: var(--eem-radius);
-	overflow: hidden;
+	background: transparent;
+	border: none;
+	border-radius: 0;
+	overflow: visible;
 }
 
 .eem-page-header {
-	padding: 14px 18px;
-	/* No bottom border (Whitney 2026-06-19) — it doubled up with the page-wrap's
-	   bottom border on the top card; toolbar bg / card edges separate the title
-	   band on every page. */
+	/* White header band with a bottom border (mockup app-page-header). */
+	background: #fff;
+	border-bottom: 1px solid #e2e8f4;
+	padding: 18px 24px;
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -389,7 +425,9 @@ body.eem-shell-page a:active,
 }
 
 .eem-page-body {
-	padding: 0;
+	/* The #F7F9FC field where content cards live (mockup app-content). */
+	background: #F7F9FC;
+	padding: 20px 24px 48px;
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -1043,8 +1081,8 @@ a.eem-btn-collect {
 	display: inline-flex;
 	align-items: center;
 	gap: 5px;
-	padding: 5px 10px;
-	border-radius: var(--eem-radius);
+	padding: 5px 11px;
+	border-radius: 7px;
 	font-size: 12px;
 	font-weight: 600;
 	font-family: var(--eem-font-ui);
@@ -1058,8 +1096,9 @@ a.eem-btn-collect {
 
 .eem-btn-collect:hover,
 a.eem-btn-collect:hover {
-	background: #FFEDD5;
-	color: var(--eem-type-addon-text);
+	background: #c2410c;
+	color: #fff;
+	border-color: #c2410c;
 	text-decoration: none;
 }
 
@@ -1444,8 +1483,8 @@ input.eem-price-input:focus {
    palette; state dots removed (the pill color carries the status). */
 .eem-status-paid                { background: var(--eem-badge-green-bg); color: var(--eem-badge-green-text); border: 1px solid var(--eem-badge-green-border); }
 .eem-status-unpaid              { background: var(--eem-badge-amber-bg); color: var(--eem-badge-amber-text); border: 1px solid var(--eem-badge-amber-border); }
-.eem-status-partial             { background: var(--eem-badge-amber-bg); color: var(--eem-badge-amber-text); border: 1px solid var(--eem-badge-amber-border); }
-.eem-status-invoice             { background: var(--eem-badge-blue-bg);  color: var(--eem-badge-blue-text);  border: 1px solid var(--eem-badge-blue-border); }
+.eem-status-partial             { background: #fef2f2; color: #9a3412; border: 1px solid #fca5a5; }
+.eem-status-invoice             { background: #f0fdfa; color: #0f766e; border: 1px solid #99f6e4; }
 .eem-status-refunded            { background: var(--eem-badge-red-bg);   color: var(--eem-badge-red-text);   border: 1px solid var(--eem-badge-red-border); }
 .eem-status-oversold            { background: var(--eem-badge-red-bg);   color: var(--eem-badge-red-text);   border: 1px solid var(--eem-badge-red-border); }
 .eem-status-cancelled           { background: var(--eem-badge-gray-bg);  color: var(--eem-badge-gray-text);  border: 1px solid var(--eem-badge-gray-border); }
@@ -1463,8 +1502,8 @@ input.eem-price-input:focus {
 .eem-type-badge {
 	display: inline-flex;
 	align-items: center;
-	padding: 2px 7px;
-	border-radius: var(--eem-radius-sm);
+	padding: 2px 8px;
+	border-radius: 20px;
 	font-size: 11px;
 	font-weight: 600;
 	white-space: nowrap;
@@ -1605,9 +1644,9 @@ input.eem-price-input:focus {
 
 .eem-search-input {
 	width: 100%;
-	padding: 6px 10px 6px 25px;
-	border: 1px solid var(--eem-control-border);
-	border-radius: var(--eem-radius);
+	padding: 6px 10px 6px 28px;
+	border: 1.5px solid #d0daea;
+	border-radius: 7px;
 	font-size: 13px;
 	font-family: var(--eem-font-ui);
 	color: var(--eem-text);
@@ -1621,6 +1660,7 @@ input.eem-price-input:focus {
 
 .eem-search-input:focus {
 	border-color: var(--eem-electric);
+	box-shadow: 0 0 0 3px rgba(22,104,242,.1);
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -1628,12 +1668,9 @@ input.eem-price-input:focus {
    ───────────────────────────────────────────────────────────── */
 .eem-filter-tabs {
 	display: flex;
-	/* White bordered segmented control so it reads as a distinct control on the
-	   #f0f4fb toolbar (was a flat #f0f0f1 block that washed out against it). */
-	background: var(--eem-surface);
-	border: 1px solid #d9e2f2;
-	border-radius: var(--eem-radius);
-	padding: 2px;
+	background: #f0f4fb;
+	border-radius: 8px;
+	padding: 3px;
 	gap: 2px;
 }
 
@@ -1646,12 +1683,11 @@ input.eem-price-input:focus {
    naturally. */
 .eem-filter-tab,
 a.eem-filter-tab {
-	padding: 5px 13px;
-	border-radius: var(--eem-radius-sm);
-	font-size: 12.5px;
-	font-weight: 600;
-	/* Darker readable navy-slate instead of the washed-out #50575e. */
-	color: #3c434a;
+	padding: 5px 12px;
+	border-radius: 6px;
+	font-size: 13px;
+	font-weight: 500;
+	color: #64748b;
 	cursor: pointer;
 	white-space: nowrap;
 	border: none;
@@ -1660,26 +1696,25 @@ a.eem-filter-tab {
 	text-decoration: none;
 }
 
-/* Hover affordance — color + subtle tint, no underline (house convention). */
+/* Hover affordance — darken text, no underline. */
 .eem-filter-tab:hover,
 a.eem-filter-tab:hover,
 .eem-filter-tab:focus,
 a.eem-filter-tab:focus {
-	color: var(--eem-electric);
-	background: #f0f4fb;
+	color: #0d1b3e;
+	background: transparent;
 	text-decoration: none;
 }
 
-/* Active = solid electric blue + white (the brand "selected" cue), so the
-   current tab is unmistakable instead of a faint white-on-white pill. */
+/* Active = white pill floating within the gray bar. */
 .eem-filter-tab.active,
 a.eem-filter-tab.active,
 .eem-filter-tab.active:hover,
 a.eem-filter-tab.active:hover {
-	background: var(--eem-electric);
-	color: #fff;
-	font-weight: 700;
-	box-shadow: none;
+	background: #fff;
+	color: #0d1b3e;
+	font-weight: 600;
+	box-shadow: 0 1px 3px rgba(13,27,62,.08);
 }
 
 /* Per-tab count (Reservations status pills) — inherits the tab color via
@@ -1725,8 +1760,8 @@ select.eem-list-select:focus {
 }
 
 .eem-table thead tr {
-	border-bottom: 1px solid #d9e2f2;
-	background: var(--eem-gray-50, #f8fafc);
+	border-bottom: 1px solid #e2e8f4;
+	background: #F7F9FC;
 }
 
 /* House-style column headers (locked 2026-06-18, Whitney): small, uppercase,
@@ -1735,11 +1770,11 @@ select.eem-list-select:focus {
    mockup match; uppercase data-table headers are now the standard for every list. */
 .eem-table thead th {
 	padding: 10px 14px;
-	font-size: 12px;
-	font-weight: 600;
+	font-size: 11px;
+	font-weight: 700;
 	text-transform: uppercase;
-	letter-spacing: 0.04em;
-	color: var(--eem-navy, #031B4E);
+	letter-spacing: 0.05em;
+	color: #94a3b8;
 	text-align: left;
 	white-space: nowrap;
 }
@@ -1753,7 +1788,7 @@ select.eem-list-select:focus {
 }
 
 .eem-table tbody tr {
-	border-bottom: 1px solid var(--eem-border-soft);
+	border-bottom: 1px solid #f0f4fb;
 }
 
 .eem-table tbody tr:last-child {
@@ -1761,12 +1796,12 @@ select.eem-list-select:focus {
 }
 
 .eem-table tbody tr:hover {
-	background: #f6f7f7;
+	background: #fafbfe;
 }
 
 .eem-table td {
 	padding: 12px 14px;
-	font-size: 13.5px;
+	font-size: 13px;
 	color: var(--eem-text);
 	vertical-align: middle;
 }
@@ -1862,12 +1897,12 @@ th.sorted-desc .eem-sort-icon span:first-child {
 }
 
 .eem-action-icon-btn {
-	width: 28px;
-	height: 28px;
-	border-radius: var(--eem-radius);
-	border: 1px solid var(--eem-border-card);
+	width: 30px;
+	height: 30px;
+	border-radius: 7px;
+	border: 1.5px solid #e2e8f4;
 	background: var(--eem-surface);
-	color: var(--eem-text-secondary);
+	color: #94a3b8;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -1876,8 +1911,8 @@ th.sorted-desc .eem-sort-icon span:first-child {
 }
 
 .eem-action-icon-btn:hover {
-	background: #f0f0f1;
-	color: var(--eem-text);
+	border-color: var(--eem-electric);
+	color: var(--eem-electric);
 }
 
 .eem-action-icon-btn svg {
@@ -1886,24 +1921,25 @@ th.sorted-desc .eem-sort-icon span:first-child {
 }
 
 .eem-meatballs-btn {
-	width: 28px;
-	height: 28px;
-	border-radius: var(--eem-radius);
-	border: 1px solid var(--eem-border-card);
+	width: 30px;
+	height: 30px;
+	border-radius: 7px;
+	border: 1.5px solid #e2e8f4;
 	background: var(--eem-surface);
-	color: #50575e;
+	color: #94a3b8;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	cursor: pointer;
-	font-size: 15px;
-	letter-spacing: 0.05em;
+	font-size: 16px;
+	letter-spacing: 1px;
 	line-height: 1;
 	padding: 0;
 }
 
 .eem-meatballs-btn:hover {
-	background: #f0f0f1;
+	border-color: var(--eem-electric);
+	color: var(--eem-electric);
 }
 
 /* Meatballs dropdown panel */
@@ -1918,12 +1954,12 @@ th.sorted-desc .eem-sort-icon span:first-child {
 	top: calc(100% + 4px);
 	right: 0;
 	background: var(--eem-surface);
-	border: 1px solid var(--eem-border-card);
-	border-radius: var(--eem-radius);
-	box-shadow: var(--eem-shadow-dropdown);
-	min-width: 190px;
+	border: 1px solid #e2e8f4;
+	border-radius: 10px;
+	box-shadow: 0 8px 24px rgba(13,27,62,.12);
+	min-width: 200px;
 	z-index: var(--eem-z-dropdown);
-	overflow: hidden;
+	padding: 5px;
 }
 
 /* C5.G.2: open-state lives on the wrap, not the dropdown.
@@ -1951,28 +1987,22 @@ th.sorted-desc .eem-sort-icon span:first-child {
 	display: flex;
 	align-items: center;
 	gap: 9px;
-	padding: 9px 14px;
+	padding: 7px 9px;
 	font-size: 13px;
 	color: var(--eem-text);
 	cursor: pointer;
-	border-bottom: 1px solid var(--eem-border-soft);
+	border: none;
+	border-radius: 6px;
 	white-space: nowrap;
 	background: transparent;
-	border-left: none;
-	border-right: none;
-	border-top: none;
 	font-family: var(--eem-font-ui);
 	width: 100%;
 	text-align: left;
 	text-decoration: none;
 }
 
-.eem-row-dd-item:last-child {
-	border-bottom: none;
-}
-
 .eem-row-dd-item:hover {
-	background: #f6f7f7;
+	background: #f0f5ff;
 	text-decoration: none;
 }
 
@@ -1984,15 +2014,15 @@ th.sorted-desc .eem-sort-icon span:first-child {
 }
 
 .eem-row-dd-danger {
-	color: var(--eem-error-text);
+	color: #dc2626;
 }
 
 .eem-row-dd-danger svg {
-	color: #fca5a5;
+	color: #dc2626;
 }
 
 .eem-row-dd-danger:hover {
-	background: var(--eem-error-bg);
+	background: #fef2f2;
 }
 
 .eem-row-dd-divider {
@@ -2030,24 +2060,25 @@ th.sorted-desc .eem-sort-icon span:first-child {
 }
 
 .eem-page-btn {
-	width: 28px;
-	height: 28px;
-	border-radius: var(--eem-radius);
-	border: 1px solid var(--eem-border-card);
+	min-width: 30px;
+	height: 30px;
+	padding: 0 8px;
+	border-radius: 6px;
+	border: 1px solid #e2e8f4;
 	background: var(--eem-surface);
-	color: #50575e;
+	color: #0d1b3e;
 	font-size: 13px;
 	font-weight: 500;
 	cursor: pointer;
-	display: flex;
+	display: inline-flex;
 	align-items: center;
 	justify-content: center;
 	font-family: var(--eem-font-ui);
-	padding: 0;
 }
 
 .eem-page-btn:hover {
-	background: #f0f0f1;
+	border-color: var(--eem-electric);
+	color: var(--eem-electric);
 }
 
 .eem-page-btn.active {
@@ -2075,10 +2106,9 @@ th.sorted-desc .eem-sort-icon span:first-child {
 
 .eem-mobile-card {
 	background: var(--eem-surface);
-	border: 1px solid #dcdcde;
-	border-radius: var(--eem-radius);
-	padding: 14px;
-	margin-bottom: 8px;
+	border: 1px solid #e2e8f4;
+	border-radius: 8px;
+	padding: 13px 14px;
 }
 
 /* Inline metric chip inside a mobile card's badge row (entered/spots, sent
@@ -3599,9 +3629,26 @@ a.eem-settings-nav-item:focus {
    Mockup line 43: `.plugin-wrap`. */
 .eem-list-card {
 	background: var(--eem-surface);
-	border: 1px solid #c3c4c7;
-	border-radius: var(--eem-radius);
+	border: 1px solid #e2e8f4;
+	border-radius: 10px;
 	overflow: hidden;
+}
+
+/* Full-bleed shell (2026-06-20): list pages that don't yet have an explicit
+   .eem-list-card wrapper (v2/secondary pages) still get a card around their
+   table so it doesn't float bare on the #F7F9FC field. Pages WITH the explicit
+   wrapper (Orders, Reservations) zero this out so there's no double border —
+   the wrapper owns the chrome and the inner table is flush. */
+.eem-desktop-table {
+	background: var(--eem-surface);
+	border: 1px solid #e2e8f4;
+	border-radius: 10px;
+	overflow: hidden;
+}
+.eem-list-card > .eem-desktop-table {
+	border: none;
+	border-radius: 0;
+	overflow: visible;
 }
 
 /* Status tabs strip (CONV-style filter tabs at top of card).
@@ -3661,14 +3708,17 @@ a.eem-status-tab.is-active {
    different shape inherited from C1.3 dashboard toolbars. (Mockup spec
    was #fafafa; bumped via the variable to #f3f4f5 in c4-polish-1.) */
 .eem-list-toolbar {
-	padding: 12px 16px;
-	border-bottom: 1px solid #dcdcde;
 	display: flex;
 	align-items: center;
 	gap: 8px;
 	flex-wrap: wrap;
-	/* Standard filter/search-bar blue across the whole plugin (locked 2026-06-18). */
-	background: #f0f4fb;
+	/* Full-bleed shell (2026-06-20): toolbar rows sit transparent on the #F7F9FC
+	   field above the table card. Their selects/buttons/search carry their own
+	   white chrome. Each row gets bottom spacing before the next row / the card. */
+	background: transparent;
+	border-bottom: none;
+	padding: 0;
+	margin-bottom: 10px;
 }
 
 .eem-list-toolbar-left {
@@ -3712,12 +3762,12 @@ a.eem-status-tab.is-active {
 select.eem-toolbar-select {
 	margin: 0;
 	padding: 5px 28px 5px 10px;
-	border: 1px solid var(--eem-control-border);
-	border-radius: var(--eem-radius);
+	border: 1.5px solid #d0daea;
+	border-radius: 7px;
 	font-size: 13px;
 	font-family: var(--eem-font-ui);
 	color: var(--eem-text);
-	background: var(--eem-surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 8px center;
+	background: var(--eem-surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 8px center;
 	appearance: none;
 	cursor: pointer;
 }
@@ -3763,8 +3813,8 @@ input.eem-search-input {
 
 .eem-toolbar-btn {
 	padding: 5px 14px;
-	border: 1px solid var(--eem-control-border);
-	border-radius: var(--eem-radius);
+	border: 1.5px solid #d0daea;
+	border-radius: 7px;
 	font-size: 13px;
 	font-family: var(--eem-font-ui);
 	color: var(--eem-text);
@@ -3774,7 +3824,9 @@ input.eem-search-input {
 }
 
 .eem-toolbar-btn:hover:not(:disabled) {
-	background: #f6f7f7;
+	background: #f0f5ff;
+	border-color: var(--eem-electric);
+	color: var(--eem-electric);
 }
 
 .eem-toolbar-btn:disabled {
@@ -4025,18 +4077,11 @@ a.eem-res-name:focus {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	padding: 12px 16px;
-	/* Fixed min-height (box-sizing:border-box so padding is included) so the
-	   footer is the SAME height on every list page whether or not the 28px
-	   pagination buttons are present — text-only footers no longer read shorter
-	   than paginated ones (Whitney 2026-06-19). */
-	min-height: 53px;
-	box-sizing: border-box;
-	/* No top border (Whitney 2026-06-19); footer shares the column-header row
-	   color (#f8fafc) so it reads as part of the table chrome. */
-	background: var(--eem-gray-50, #f8fafc);
+	padding: 14px 18px;
+	border-top: 1px solid #f0f4fb;
+	background: #fff;
 	flex-wrap: wrap;
-	gap: 8px;
+	gap: 14px;
 }
 
 .eem-table-footer-info {
@@ -12417,6 +12462,42 @@ a.eem-event-editor-card__quicklink:hover { color: #1257d1; }
 	gap: 16px;
 	padding: 20px 24px 48px;
 	background: #F7F9FC;
+}
+
+/* ── Orders list — full-bleed shell ──────────────────────────────────────
+   Mockup (orders_page.html): white header band with bottom border, toolbar
+   rows sitting transparent on a #F7F9FC field, and ONLY the table + footer
+   forming a bordered white card. Mirrors the daily-movement full-bleed pattern
+   — the shared .eem-page-wrap card is dissolved; each region owns its chrome. */
+.eem-shell-page--orders .eem-page-wrap {
+	background: #F7F9FC;
+	border: none;
+	border-radius: 0;
+	overflow: visible;
+}
+.eem-shell-page--orders .eem-page-header {
+	background: #fff;
+	border-bottom: 1px solid #e2e8f4;
+	padding: 18px 24px;
+}
+.eem-shell-page--orders .eem-page-body {
+	background: #F7F9FC;
+	padding: 20px 24px 48px;
+}
+/* Toolbar rows are transparent on the field; their selects/buttons/search
+   carry their own white chrome. Each row gets bottom spacing before the card. */
+.eem-shell-page--orders .eem-list-toolbar {
+	background: transparent;
+	border-bottom: none;
+	padding: 0;
+	margin-bottom: 10px;
+}
+/* The table + footer card. */
+.eem-shell-page--orders .eem-list-card {
+	border: 1px solid #e2e8f4;
+	border-radius: 10px;
+	overflow: hidden;
+	background: #fff;
 }
 
 /* ── Today Hero card ────────────────────────────────────────────────── */

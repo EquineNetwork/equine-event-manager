@@ -151,9 +151,11 @@ class EEM_Orders_List_Page {
 		         CSS (admin-legacy.css .eem-orders-toolbar { display: grid })
 		         is mooted by the rewrite. */ ?>
 		<?php $this->render_toolbar( $billing, $type, $event, $search, $page['total'] ); ?>
-		<?php $this->render_desktop_table( $page['items'], $orderby, $order, $billing ); ?>
-		<?php $this->render_mobile_cards( $page['items'] ); ?>
-		<?php $this->render_table_footer( $page, $billing, $type, $event, $search ); ?>
+		<div class="eem-list-card">
+			<?php $this->render_desktop_table( $page['items'], $orderby, $order, $billing ); ?>
+			<?php $this->render_mobile_cards( $page['items'] ); ?>
+			<?php $this->render_table_footer( $page, $billing, $type, $event, $search ); ?>
+		</div>
 		<?php
 
 		eem_render_page_close( array( 'wrap' => true ) );
@@ -343,6 +345,7 @@ class EEM_Orders_List_Page {
 						<th><?php esc_html_e( 'Event',    'equine-event-manager' ); ?></th>
 						<th><?php esc_html_e( 'Type',     'equine-event-manager' ); ?></th>
 						<?php $this->render_sortable_th( 'status', __( 'Status', 'equine-event-manager' ), $orderby, $order, $billing ); ?>
+						<?php $this->render_sortable_th( 'total',  __( 'Amount', 'equine-event-manager' ), $orderby, $order, $billing ); ?>
 						<?php $this->render_sortable_th( 'date',   __( 'Date',   'equine-event-manager' ), $orderby, $order, $billing ); ?>
 						<th><?php esc_html_e( 'Actions',  'equine-event-manager' ); ?></th>
 					</tr>
@@ -466,6 +469,7 @@ class EEM_Orders_List_Page {
 				<?php endif; ?>
 			</td>
 			<td><span class="eem-status-badge eem-status-<?php echo esc_attr( $status_css ); ?>"><?php echo esc_html( $status_label ); ?></span></td>
+			<td><span class="eem-amount-val"><?php echo esc_html( isset( $order['total'] ) ? '$' . number_format( (float) $order['total'], 2 ) : '—' ); ?></span></td>
 			<td><span class="eem-date-val"><?php echo esc_html( $date_label ); ?></span></td>
 			<td><?php $this->render_row_action_cell( $order, 'desktop' ); ?></td>
 		</tr>
@@ -519,9 +523,6 @@ class EEM_Orders_List_Page {
 					<?php esc_html_e( 'Collect', 'equine-event-manager' ); ?>
 				</a>
 			<?php endif; ?>
-			<button type="button" class="eem-action-icon-btn" data-eem-action="order-print-receipt" data-order-key="<?php echo esc_attr( $order_key ); ?>" title="<?php esc_attr_e( 'Print Receipt', 'equine-event-manager' ); ?>" aria-label="<?php esc_attr_e( 'Print Receipt', 'equine-event-manager' ); ?>">
-				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-			</button>
 			<div class="eem-row-menu-wrap">
 				<button type="button" class="eem-more-btn" data-eem-action="dropdown-toggle" aria-haspopup="menu" aria-expanded="false" aria-controls="<?php echo esc_attr( $menu_id ); ?>" title="<?php esc_attr_e( 'More actions', 'equine-event-manager' ); ?>">···</button>
 				<div class="eem-row-dropdown" id="<?php echo esc_attr( $menu_id ); ?>" role="menu">
@@ -764,7 +765,7 @@ class EEM_Orders_List_Page {
 	// C6.A: promoted to public static so EEM_Order_Detail_Page can share the same "May 8, 2026" label format.
 	public static function format_date_label( $mysql_datetime ) {
 		$ts = '' === $mysql_datetime ? 0 : strtotime( $mysql_datetime );
-		return $ts ? date_i18n( __( 'M j, Y', 'equine-event-manager' ), $ts ) : '';
+		return $ts ? date_i18n( __( 'D, M j', 'equine-event-manager' ), $ts ) : '';
 	}
 
 	/**

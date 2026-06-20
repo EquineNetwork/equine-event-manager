@@ -50,8 +50,8 @@ class EEM_Orders_List_Repo {
 	public static function billing_tabs() {
 		return array(
 			'all'       => __( 'All',       'equine-event-manager' ),
-			'paid'      => __( 'Paid',      'equine-event-manager' ),
 			'unpaid'    => __( 'Unpaid',    'equine-event-manager' ),
+			'paid'      => __( 'Paid',      'equine-event-manager' ),
 			'refunded'  => __( 'Refunded',  'equine-event-manager' ),
 			'cancelled' => __( 'Cancelled', 'equine-event-manager' ),
 			// v1 #9 — soft-deleted orders. Special tab: not a payment status, it

@@ -153,9 +153,11 @@ class EEM_Reservations_List_Page {
 		<?php $this->render_action_notice(); ?>
 		<?php $this->render_status_tabs( $active_tab, $counts, $search, $date_filter ); ?>
 		<?php $this->render_toolbar( $search, $date_filter, $page['total'], $active_tab ); ?>
-		<?php $this->render_desktop_table( $page['items'], $orderby, $order, $active_tab ); ?>
-		<?php $this->render_mobile_cards( $page['items'], $active_tab ); ?>
-		<?php $this->render_table_footer( $page ); ?>
+		<div class="eem-list-card">
+			<?php $this->render_desktop_table( $page['items'], $orderby, $order, $active_tab ); ?>
+			<?php $this->render_mobile_cards( $page['items'], $active_tab ); ?>
+			<?php $this->render_table_footer( $page ); ?>
+		</div>
 		<?php $this->render_email_customers_modal(); ?>
 		<?php
 
