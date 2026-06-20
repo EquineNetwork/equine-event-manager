@@ -178,9 +178,6 @@ class EEM_Reports_Page {
 	 */
 	private function filter_hidden_inputs( array $filters ): void {
 		printf( '<input type="hidden" name="reservation_id" value="%d" data-eem-export-filter="reservation_id">', absint( $filters['reservation_id'] ) );
-		printf( '<input type="hidden" name="date_from" value="%s" data-eem-export-filter="date_from">', esc_attr( $filters['date_from'] ) );
-		printf( '<input type="hidden" name="date_to" value="%s" data-eem-export-filter="date_to">', esc_attr( $filters['date_to'] ) );
-		printf( '<input type="hidden" name="status" value="%s" data-eem-export-filter="status">', esc_attr( $filters['status'] ) );
 	}
 
 	/**
@@ -198,15 +195,11 @@ class EEM_Reports_Page {
 		// the browser). CSV = POST to admin-post, which streams a file download.
 		if ( 'pdf' === $format ) {
 			$print_url = add_query_arg(
-				array_merge(
-					array( 'page' => self::MENU_SLUG, 'eem_report_print' => $slug ),
-					array_filter( array(
-						'reservation_id' => $filters['reservation_id'] ? (string) $filters['reservation_id'] : '',
-						'date_from'      => (string) ( $filters['date_from'] ?? '' ),
-						'date_to'        => (string) ( $filters['date_to'] ?? '' ),
-						'status'         => (string) ( $filters['status'] ?? '' ),
-					) )
-				),
+				array_filter( array(
+					'page'           => self::MENU_SLUG,
+					'eem_report_print' => $slug,
+					'reservation_id' => $filters['reservation_id'] ? (string) $filters['reservation_id'] : '',
+				) ),
 				admin_url( 'admin.php' )
 			);
 			?>
@@ -239,63 +232,26 @@ class EEM_Reports_Page {
 	 * @return void
 	 */
 	private function render_filters_card( array $reservations, array $filters ): void {
-		$statuses = array(
-			''             => __( 'All statuses', 'equine-event-manager' ),
-			'paid'         => __( 'Paid', 'equine-event-manager' ),
-			'unpaid'       => __( 'Unpaid', 'equine-event-manager' ),
-			'invoice_sent' => __( 'Invoice Sent', 'equine-event-manager' ),
-			'partial'      => __( 'Partial', 'equine-event-manager' ),
-			'refunded'     => __( 'Refunded', 'equine-event-manager' ),
-			'cancelled'    => __( 'Cancelled', 'equine-event-manager' ),
-		);
 		?>
 		<div class="eem-card eem-reports-filter-card">
-				<form method="get" class="eem-reports-filter-form" id="eem-reports-filters">
-					<input type="hidden" name="page" value="<?php echo esc_attr( self::MENU_SLUG ); ?>">
-					<div class="eem-reports-filter-row">
-						<div class="eem-filter-group">
-							<label class="eem-filter-label" for="eem-filter-reservation"><?php esc_html_e( 'Reservation', 'equine-event-manager' ); ?></label>
-							<select class="eem-filter-select" id="eem-filter-reservation" name="reservation_id">
-								<option value="0"><?php esc_html_e( 'All reservations', 'equine-event-manager' ); ?></option>
-								<?php foreach ( $reservations as $r ) : ?>
-									<option value="<?php echo esc_attr( $r->ID ); ?>" <?php selected( $filters['reservation_id'], $r->ID ); ?>><?php echo esc_html( get_the_title( $r ) ); ?></option>
-								<?php endforeach; ?>
-							</select>
-						</div>
-						<div class="eem-filter-group">
-							<label class="eem-filter-label" for="eem-filter-status"><?php esc_html_e( 'Order status', 'equine-event-manager' ); ?></label>
-							<select class="eem-filter-select" id="eem-filter-status" name="status">
-								<?php foreach ( $statuses as $val => $label ) : ?>
-									<option value="<?php echo esc_attr( $val ); ?>" <?php selected( $filters['status'], $val ); ?>><?php echo esc_html( $label ); ?></option>
-								<?php endforeach; ?>
-							</select>
-						</div>
+			<form method="get" class="eem-reports-filter-form" id="eem-reports-filters">
+				<input type="hidden" name="page" value="<?php echo esc_attr( self::MENU_SLUG ); ?>">
+				<div class="eem-reports-filter-row">
+					<div class="eem-filter-group">
+						<label class="eem-filter-label" for="eem-filter-reservation"><?php esc_html_e( 'Reservation', 'equine-event-manager' ); ?></label>
+						<select class="eem-filter-select" id="eem-filter-reservation" name="reservation_id" data-eem-export-filter="reservation_id">
+							<option value="0"><?php esc_html_e( 'All reservations', 'equine-event-manager' ); ?></option>
+							<?php foreach ( $reservations as $r ) : ?>
+								<option value="<?php echo esc_attr( $r->ID ); ?>" <?php selected( $filters['reservation_id'], $r->ID ); ?>><?php echo esc_html( get_the_title( $r ) ); ?></option>
+							<?php endforeach; ?>
+						</select>
 					</div>
-					<div class="eem-reports-filter-row eem-reports-filter-row--actions">
-						<div class="eem-filter-group eem-filter-group--daterange">
-							<label class="eem-filter-label" for="eem-filter-preset"><?php esc_html_e( 'Date range', 'equine-event-manager' ); ?></label>
-							<div class="eem-daterange-controls">
-								<select class="eem-filter-select" id="eem-filter-preset" name="date_preset" data-eem-date-preset>
-									<option value="last-30"><?php esc_html_e( 'Last 30 days', 'equine-event-manager' ); ?></option>
-									<option value="last-7"><?php esc_html_e( 'Last 7 days', 'equine-event-manager' ); ?></option>
-									<option value="last-90"><?php esc_html_e( 'Last 90 days', 'equine-event-manager' ); ?></option>
-									<option value="this-year"><?php esc_html_e( 'This year', 'equine-event-manager' ); ?></option>
-									<option value="all"><?php esc_html_e( 'All time', 'equine-event-manager' ); ?></option>
-									<option value="custom" selected><?php esc_html_e( 'Custom range', 'equine-event-manager' ); ?></option>
-								</select>
-								<div class="eem-daterange-inputs">
-									<input class="eem-filter-input" type="date" name="date_from" value="<?php echo esc_attr( $filters['date_from'] ); ?>" data-eem-date-input>
-									<span class="eem-daterange-sep"><?php esc_html_e( 'to', 'equine-event-manager' ); ?></span>
-									<input class="eem-filter-input" type="date" name="date_to" value="<?php echo esc_attr( $filters['date_to'] ); ?>" data-eem-date-input>
-								</div>
-							</div>
-						</div>
-						<div class="eem-reports-filter-actions">
-							<a class="eem-filter-reset" href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::MENU_SLUG ) ); ?>"><?php esc_html_e( 'Reset filters', 'equine-event-manager' ); ?></a>
-							<button class="eem-btn eem-btn-electric" type="submit"><?php esc_html_e( 'Apply', 'equine-event-manager' ); ?></button>
-						</div>
+					<div class="eem-reports-filter-actions">
+						<a class="eem-filter-reset" href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::MENU_SLUG ) ); ?>"><?php esc_html_e( 'Reset', 'equine-event-manager' ); ?></a>
+						<button class="eem-btn eem-btn-electric" type="submit"><?php esc_html_e( 'Apply', 'equine-event-manager' ); ?></button>
 					</div>
-				</form>
+				</div>
+			</form>
 		</div>
 		<?php
 	}
@@ -394,9 +350,6 @@ class EEM_Reports_Page {
 	public static function read_filters( array $src ): array {
 		return array(
 			'reservation_id' => isset( $src['reservation_id'] ) ? absint( $src['reservation_id'] ) : 0,
-			'date_from'      => isset( $src['date_from'] ) ? sanitize_text_field( wp_unslash( $src['date_from'] ) ) : '',
-			'date_to'        => isset( $src['date_to'] ) ? sanitize_text_field( wp_unslash( $src['date_to'] ) ) : '',
-			'status'         => isset( $src['status'] ) ? sanitize_key( wp_unslash( $src['status'] ) ) : '',
 		);
 	}
 
@@ -680,14 +633,10 @@ class EEM_Reports_Page {
 	 * @return array{subtitle:string,generated:string}
 	 */
 	private static function pdf_meta( array $norm ): array {
-		$scope  = $norm['reservation_id'] > 0 ? get_the_title( $norm['reservation_id'] ) : __( 'All reservations', 'equine-event-manager' );
-		$range  = ( '' !== $norm['date_from'] || '' !== $norm['date_to'] )
-			? trim( ( '' !== $norm['date_from'] ? $norm['date_from'] : '…' ) . ' – ' . ( '' !== $norm['date_to'] ? $norm['date_to'] : '…' ) )
-			: __( 'All time', 'equine-event-manager' );
-		$status = '' !== $norm['status'] ? ucwords( str_replace( '_', ' ', $norm['status'] ) ) : __( 'All statuses', 'equine-event-manager' );
+		$scope = $norm['reservation_id'] > 0 ? get_the_title( $norm['reservation_id'] ) : __( 'All reservations', 'equine-event-manager' );
 
 		return array(
-			'subtitle'  => $scope . '  ·  ' . $range . '  ·  ' . $status,
+			'subtitle'  => (string) $scope,
 			/* translators: %s: date/time. */
 			'generated' => sprintf( __( 'Generated %s', 'equine-event-manager' ), date_i18n( get_option( 'date_format' ) . ' g:i a' ) ),
 		);

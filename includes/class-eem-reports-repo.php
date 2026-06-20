@@ -60,16 +60,8 @@ class EEM_Reports_Repo {
 	 * @return array{reservation_id:int,date_from:string,date_to:string,status:string}
 	 */
 	public function normalize_filters( array $filters ): array {
-		$valid_date = static function ( $v ) {
-			$v = is_string( $v ) ? trim( $v ) : '';
-			return ( '' !== $v && preg_match( '/^\d{4}-\d{2}-\d{2}$/', $v ) ) ? $v : '';
-		};
-
 		return array(
 			'reservation_id' => isset( $filters['reservation_id'] ) ? absint( $filters['reservation_id'] ) : 0,
-			'date_from'      => isset( $filters['date_from'] ) ? $valid_date( $filters['date_from'] ) : '',
-			'date_to'        => isset( $filters['date_to'] ) ? $valid_date( $filters['date_to'] ) : '',
-			'status'         => isset( $filters['status'] ) ? sanitize_key( $filters['status'] ) : '',
 		);
 	}
 
@@ -85,12 +77,6 @@ class EEM_Reports_Repo {
 
 		foreach ( $this->orders_repo->get_orders( '', 'date', 'desc', '' ) as $order ) {
 			if ( $filters['reservation_id'] > 0 && absint( isset( $order['reservation_id'] ) ? $order['reservation_id'] : 0 ) !== $filters['reservation_id'] ) {
-				continue;
-			}
-			if ( ! $this->order_in_date_range( $order, $filters['date_from'], $filters['date_to'] ) ) {
-				continue;
-			}
-			if ( '' !== $filters['status'] && 'all' !== $filters['status'] && ! $this->order_matches_status( $order, $filters['status'] ) ) {
 				continue;
 			}
 			$out[] = $order;

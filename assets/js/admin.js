@@ -8024,100 +8024,25 @@ function duplicateReservationAjax(target) {
 
 })();
 
-/* ===== C15.D — Reports filter UX (date presets, custom-flip, localStorage,
-   live export-filter sync). Self-contained; only runs on the Reports page. ===== */
+/* ===== C15.D — Reports filter UX. Syncs reservation select to all export
+   form hidden inputs so exports always use the currently selected reservation. ===== */
 (function () {
 	'use strict';
-
 	function ready(fn) {
-		if (document.readyState !== 'loading') { fn(); }
-		else { document.addEventListener('DOMContentLoaded', fn); }
+		if (document.readyState !== 'loading') { fn(); } else { document.addEventListener('DOMContentLoaded', fn); }
 	}
-
 	ready(function () {
 		var form = document.getElementById('eem-reports-filters');
 		if (!form) { return; }
-
-		var STORAGE_KEY  = 'eem_reports_filter_state';
-		var preset       = form.querySelector('[data-eem-date-preset]');
-		var dateInputs   = Array.prototype.slice.call(form.querySelectorAll('[data-eem-date-input]'));
-		var fromInput    = dateInputs[0] || null;
-		var toInput      = dateInputs[1] || null;
-		var resSelect    = form.querySelector('[name="reservation_id"]');
-		var statusSelect = form.querySelector('[name="status"]');
-
-		function pad(n) { return (n < 10 ? '0' : '') + n; }
-		function ymd(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
-
-		function currentState() {
-			return {
-				reservation_id: resSelect ? resSelect.value : '0',
-				date_preset: preset ? preset.value : 'custom',
-				date_from: fromInput ? fromInput.value : '',
-				date_to: toInput ? toInput.value : '',
-				status: statusSelect ? statusSelect.value : ''
-			};
-		}
-
-		// Push the live filter state into every export form's hidden inputs +
-		// persist to localStorage, so an export uses what's on screen now.
+		var resSelect = form.querySelector('[name="reservation_id"]');
 		function syncExports() {
-			var s = currentState();
-			Array.prototype.forEach.call(document.querySelectorAll('[data-eem-export-filter]'), function (inp) {
-				var key = inp.getAttribute('data-eem-export-filter');
-				if (Object.prototype.hasOwnProperty.call(s, key)) { inp.value = s[key]; }
+			var val = resSelect ? resSelect.value : '0';
+			Array.prototype.forEach.call(document.querySelectorAll('[data-eem-export-filter="reservation_id"]'), function (inp) {
+				inp.value = val;
 			});
-			try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch (e) {}
 		}
-
-		function applyPreset(val) {
-			if (val === 'custom') { syncExports(); return; }
-			if (val === 'all') {
-				if (fromInput) { fromInput.value = ''; }
-				if (toInput) { toInput.value = ''; }
-				syncExports();
-				return;
-			}
-			var to = new Date();
-			var from = new Date();
-			if (val === 'last-7') { from.setDate(to.getDate() - 6); }
-			else if (val === 'last-30') { from.setDate(to.getDate() - 29); }
-			else if (val === 'last-90') { from.setDate(to.getDate() - 89); }
-			else if (val === 'this-year') { from = new Date(to.getFullYear(), 0, 1); }
-			if (fromInput) { fromInput.value = ymd(from); }
-			if (toInput) { toInput.value = ymd(to); }
-			syncExports();
-		}
-
-		function flipToCustom() {
-			if (preset) { preset.value = 'custom'; }
-			syncExports();
-		}
-
-		function restore() {
-			// Honor explicit URL filters over any saved state.
-			if (/[?&](reservation_id|date_from|date_to|status)=/.test(window.location.search)) { syncExports(); return; }
-			var raw = null;
-			try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) {}
-			if (!raw) { syncExports(); return; }
-			var s = null;
-			try { s = JSON.parse(raw); } catch (e) {}
-			if (s && typeof s === 'object') {
-				if (resSelect && s.reservation_id != null) { resSelect.value = s.reservation_id; }
-				if (preset && s.date_preset) { preset.value = s.date_preset; }
-				if (fromInput && s.date_from != null) { fromInput.value = s.date_from; }
-				if (toInput && s.date_to != null) { toInput.value = s.date_to; }
-				if (statusSelect && s.status != null) { statusSelect.value = s.status; }
-			}
-			syncExports();
-		}
-
-		if (preset) { preset.addEventListener('change', function () { applyPreset(preset.value); }); }
-		dateInputs.forEach(function (inp) { inp.addEventListener('change', flipToCustom); });
 		if (resSelect) { resSelect.addEventListener('change', syncExports); }
-		if (statusSelect) { statusSelect.addEventListener('change', syncExports); }
-
-		restore();
+		syncExports();
 	});
 })();
 
