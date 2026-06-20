@@ -1001,6 +1001,50 @@ class EEM_Shortcodes {
 						</div>
 					<?php endif; ?>
 
+					<?php if ( ! empty( $data['additional_shavings_enabled'] ) && ! empty( $data['additional_shavings_products'] ) && is_array( $data['additional_shavings_products'] ) ) : ?>
+						<div class="eem-reservation-section" data-eem-section="shavings">
+							<div class="eem-reservation-section-heading eem-reservation-section-heading--collapsible">
+								<h4 class="eem-reservation-section__title"><span class="eem-reservation-section__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span><?php esc_html_e( 'Additional Shavings', 'equine-event-manager' ); ?></h4>
+								<label class="eem-reservation-section-toggle" aria-label="<?php esc_attr_e( 'Toggle Additional Shavings section', 'equine-event-manager' ); ?>">
+									<input type="checkbox" checked data-eem-section-collapse-toggle />
+									<span class="eem-reservation-section-toggle__track" aria-hidden="true"></span>
+								</label>
+							</div>
+							<div class="eem-reservation-section__body" data-eem-section-collapse-body>
+								<?php if ( ! empty( $data['additional_shavings_description'] ) ) : ?>
+									<p class="eem-reservation-help"><?php echo esc_html( $data['additional_shavings_description'] ); ?></p>
+								<?php else : ?>
+									<p class="eem-reservation-help"><?php esc_html_e( 'Optional shavings products available for purchase.', 'equine-event-manager' ); ?></p>
+								<?php endif; ?>
+								<div class="eem-product-list">
+									<?php $this->render_product_list_header(); ?>
+									<?php foreach ( $data['additional_shavings_products'] as $shav_idx => $shav_product ) :
+										$shav_name  = isset( $shav_product['name'] ) ? (string) $shav_product['name'] : '';
+										$shav_price = isset( $shav_product['price'] ) ? (float) $shav_product['price'] : 0.0;
+										if ( '' === $shav_name ) { continue; }
+										$this->render_product_line_item(
+											$shav_name,
+											'',
+											'additional_shavings[' . (int) $shav_idx . '][qty]',
+											'eem-product-line-item--additional-shavings',
+											array(
+												'static_price'        => $shav_price,
+												'static_price_suffix' => __( '/bag', 'equine-event-manager' ),
+											)
+										);
+										?>
+										<input type="hidden" name="additional_shavings[<?php echo (int) $shav_idx; ?>][name]" value="<?php echo esc_attr( $shav_name ); ?>" />
+										<input type="hidden" name="additional_shavings[<?php echo (int) $shav_idx; ?>][price]" value="<?php echo esc_attr( number_format( $shav_price, 2, '.', '' ) ); ?>" />
+									<?php endforeach; ?>
+								</div>
+								<div class="eem-section-subtotal" aria-live="polite">
+									<span><?php esc_html_e( 'Shavings Subtotal', 'equine-event-manager' ); ?></span>
+									<strong data-eem-total="additional_shavings_subtotal">$0.00</strong>
+								</div>
+							</div>
+						</div>
+					<?php endif; ?>
+
 					<?php if ( ! empty( $general_addon_options ) ) : ?>
 						<div class="eem-reservation-section" data-eem-section="addons">
 							<div class="eem-reservation-section-heading eem-reservation-section-heading--collapsible">
@@ -1933,26 +1977,6 @@ class EEM_Shortcodes {
 					'eem-product-line-item--required-shavings'
 				);
 				?>
-			<?php endif; ?>
-			<?php if ( ! empty( $data['additional_shavings_enabled'] ) && ! empty( $data['additional_shavings_products'] ) && is_array( $data['additional_shavings_products'] ) ) : ?>
-				<?php foreach ( $data['additional_shavings_products'] as $shav_idx => $shav_product ) :
-					$shav_name  = isset( $shav_product['name'] ) ? (string) $shav_product['name'] : '';
-					$shav_price = isset( $shav_product['price'] ) ? (float) $shav_product['price'] : 0.0;
-					if ( '' === $shav_name ) { continue; }
-					$this->render_product_line_item(
-						$shav_name . ' - ' . $this->format_money( $shav_price ) . __( '/bag', 'equine-event-manager' ),
-						'',
-						'additional_shavings[' . (int) $shav_idx . '][qty]',
-						'eem-product-line-item--additional-shavings',
-						array(
-							'static_price'        => $shav_price,
-							'static_price_suffix' => __( '/bag', 'equine-event-manager' ),
-						)
-					);
-					?>
-					<input type="hidden" name="additional_shavings[<?php echo (int) $shav_idx; ?>][name]" value="<?php echo esc_attr( $shav_name ); ?>" />
-					<input type="hidden" name="additional_shavings[<?php echo (int) $shav_idx; ?>][price]" value="<?php echo esc_attr( number_format( $shav_price, 2, '.', '' ) ); ?>" />
-				<?php endforeach; ?>
 			<?php endif; ?>
 		</div>
 		<?php
