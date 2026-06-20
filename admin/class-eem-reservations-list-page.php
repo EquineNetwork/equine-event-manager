@@ -75,6 +75,7 @@ class EEM_Reservations_List_Page {
 				'eem_reservation_trash'         => wp_create_nonce( 'eem_reservation_trash' ),
 				'eem_reservation_restore'       => wp_create_nonce( 'eem_reservation_restore' ),
 				'eem_reservation_set_draft'     => wp_create_nonce( 'eem_reservation_set_draft' ),
+				'eem_reservation_set_published' => wp_create_nonce( 'eem_reservation_set_published' ),
 				'eem_reservation_delete_permanently' => wp_create_nonce( 'eem_reservation_delete_permanently' ), // C7.X.16 Issue G
 				'eem_reservation_export_roster' => wp_create_nonce( 'eem_reservation_export_roster' ),
 				'eem_reservation_quick_edit'    => wp_create_nonce( 'eem_reservation_quick_edit' ),         // FIX 5 (2.3.42)
@@ -184,6 +185,8 @@ class EEM_Reservations_List_Page {
 			'restored'              => array( 'type' => 'success', 'text' => __( 'Reservation restored from Trash.', 'equine-event-manager' ) ),
 			'reservation_set_draft' => array( 'type' => 'success', 'text' => __( 'Reservation switched to Draft.', 'equine-event-manager' ) ),
 			'set_draft_failed'      => array( 'type' => 'error',   'text' => __( 'Could not switch the reservation to Draft.', 'equine-event-manager' ) ),
+			'reservation_set_published' => array( 'type' => 'success', 'text' => __( 'Reservation published.', 'equine-event-manager' ) ),
+			'set_published_failed'  => array( 'type' => 'error',   'text' => __( 'Could not publish the reservation.', 'equine-event-manager' ) ),
 			'deleted-permanently'   => array( 'type' => 'success', 'text' => __( 'Reservation permanently deleted.', 'equine-event-manager' ) ),
 			'bulk_trashed'          => array( 'type' => 'success', 'text' => sprintf(
 				/* translators: %d: number of reservations moved to trash */
@@ -448,6 +451,42 @@ class EEM_Reservations_List_Page {
 		);
 
 		self::redirect_with_notice( 'reservation_set_draft' );
+	}
+
+	/**
+	 * Publish a draft reservation from the list row menu. Mirrors
+	 * handle_set_draft() — only acts on currently-unpublished reservations and
+	 * logs the lifecycle change to the activity log.
+	 *
+	 * @return void  Redirects + exits.
+	 */
+	public static function handle_set_published() {
+		$reservation_id = self::check_action_request( 'eem_reservation_set_published' );
+
+		if ( 'publish' === get_post_status( $reservation_id ) ) {
+			// Already published — nothing to do; bounce back quietly.
+			self::redirect_with_notice( 'reservation_set_published' );
+		}
+
+		$result = wp_update_post( array(
+			'ID'          => $reservation_id,
+			'post_status' => 'publish',
+		), true );
+		if ( is_wp_error( $result ) || 0 === $result ) {
+			self::redirect_with_notice( 'set_published_failed' );
+		}
+
+		EEM_Activity_Log::write(
+			'reservation_set_published',
+			array( 'reservation_id' => $reservation_id ),
+			array(
+				'reservation_id' => $reservation_id,
+				'actor_type'     => 'admin',
+				'actor_id'       => get_current_user_id(),
+			)
+		);
+
+		self::redirect_with_notice( 'reservation_set_published' );
 	}
 
 	/**
@@ -1406,7 +1445,9 @@ class EEM_Reservations_List_Page {
 			<td class="eem-col-cb"><input type="checkbox" name="reservation_ids[]" value="<?php echo esc_attr( $id ); ?>" aria-label="<?php echo esc_attr( sprintf( __( 'Select %s', 'equine-event-manager' ), $event_title ) ); ?>" /></td>
 			<td>
 				<a class="eem-res-name" href="<?php echo esc_url( $edit_url ); ?>"><?php echo esc_html( $event_title ); ?></a>
-				<?php $this->render_row_action_links( $id, $edit_url, $frontend_url, $is_trashed, get_the_title( $id ) ); ?>
+				<?php /* Hover row-action text links retired 2026-06-20 — all row actions
+				        now live in the meatball dropdown (render_row_actions), matching
+				        the reservations_page.html mockup. */ ?>
 			</td>
 			<td><span class="eem-event-dates"><?php echo esc_html( $dates !== '' ? $dates : '—' ); ?></span></td>
 			<td><?php $this->render_type_badges( $badges ); ?></td>
@@ -1475,45 +1516,6 @@ class EEM_Reservations_List_Page {
 	}
 
 	/**
-	 * FIX 3 (2.3.43) — WP-native hover-revealed row action text links rendered
-	 * under the reservation title in the Reservation column.  Published/draft rows
-	 * show Edit | Quick Edit | Duplicate | Trash | View; trashed rows show
-	 * Restore | Delete Permanently.  Visibility is CSS-controlled via
-	 * `tr:hover .eem-row-actions { visibility: visible }`.
-	 *
-	 * @param int    $reservation_id
-	 * @param string $edit_url
-	 * @param string $frontend_url    Resolved front-end URL (may be '' if none).
-	 * @param bool   $is_trashed
-	 * @param string $res_title       Raw post_title for the typed-confirm data attr.
-	 * @return void
-	 */
-	private function render_row_action_links( int $reservation_id, string $edit_url, string $frontend_url, bool $is_trashed, string $res_title ): void {
-		?>
-		<div class="eem-row-actions">
-		<?php if ( $is_trashed ) : ?>
-			<span><a href="#" data-eem-action="reservation-restore" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>"><?php esc_html_e( 'Restore', 'equine-event-manager' ); ?></a></span>
-			<span class="eem-row-action-sep" aria-hidden="true">|</span>
-			<span class="eem-row-action-danger"><a href="#" data-eem-action="reservation-delete-permanently" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" data-reservation-title="<?php echo esc_attr( $res_title ); ?>"><?php esc_html_e( 'Delete Permanently', 'equine-event-manager' ); ?></a></span>
-		<?php else : ?>
-			<span><a href="<?php echo esc_url( $edit_url ); ?>"><?php esc_html_e( 'Edit', 'equine-event-manager' ); ?></a></span>
-			<span class="eem-row-action-sep" aria-hidden="true">|</span>
-			<?php // 2.3.65 — Quick Edit removed: reservation Name + Slug now always inherit
-			// the linked event name (no admin override), so the inline name/slug editor
-			// has nothing left to edit. Editing the name is no longer possible by design. ?>
-			<span><a href="#" data-eem-action="reservation-duplicate-ajax" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>"><?php esc_html_e( 'Duplicate', 'equine-event-manager' ); ?></a></span>
-			<span class="eem-row-action-sep" aria-hidden="true">|</span>
-			<span class="eem-row-action-danger"><a href="#" data-eem-action="reservation-trash" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>"><?php esc_html_e( 'Trash', 'equine-event-manager' ); ?></a></span>
-			<?php if ( '' !== $frontend_url ) : ?>
-				<span class="eem-row-action-sep" aria-hidden="true">|</span>
-				<span><a href="<?php echo esc_url( $frontend_url ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'View', 'equine-event-manager' ); ?></a></span>
-			<?php endif; ?>
-		<?php endif; ?>
-		</div>
-		<?php
-	}
-
-	/**
 	 * FIX 4 (2.3.43) — Secondary actions meatballs: View on frontend (lazy URL
 	 * cache), View orders, Email customers (disabled when 0 orders).  Primary
 	 * CRUD (Edit/Quick Edit/Duplicate/Trash) has moved to WP-native row-action
@@ -1546,21 +1548,14 @@ class EEM_Reservations_List_Page {
 			),
 			admin_url( 'admin.php' )
 		);
-		$menu_id = 'eem-res-menu-' . $reservation_id;
+		$menu_id  = 'eem-res-menu-' . $reservation_id;
+		$edit_url = EEM_Reservation_Editor_Page::url( $reservation_id );
 		?>
 		<div class="eem-actions-cell">
-			<?php if ( $has_stall_chart ) : ?>
-				<a class="eem-action-icon-btn eem-action-icon-btn--stall-chart" href="<?php echo esc_url( $stall_chart_url ); ?>" title="<?php esc_attr_e( 'Stall Chart', 'equine-event-manager' ); ?>" aria-label="<?php esc_attr_e( 'Stall Chart', 'equine-event-manager' ); ?>">
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-				</a>
-			<?php endif; ?>
 			<div class="eem-row-menu-wrap">
 				<button type="button" class="eem-more-btn" data-eem-action="dropdown-toggle" aria-haspopup="menu" aria-expanded="false" aria-controls="<?php echo esc_attr( $menu_id ); ?>" title="<?php esc_attr_e( 'More actions', 'equine-event-manager' ); ?>">···</button>
 				<div class="eem-row-dropdown" id="<?php echo esc_attr( $menu_id ); ?>" role="menu">
 					<?php if ( $is_trashed ) : ?>
-						<?php /* Trashed rows: secondary meatball mirrors the row-action links — Restore +
-						        Delete Permanently.  Both also appear in the hover row actions; the meatball
-						        provides access on touch devices where hover is unreliable. */ ?>
 						<button type="button" class="eem-row-dd-item" data-eem-action="reservation-restore" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" role="menuitem">
 							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
 							<?php esc_html_e( 'Restore', 'equine-event-manager' ); ?>
@@ -1570,8 +1565,23 @@ class EEM_Reservations_List_Page {
 							<?php esc_html_e( 'Delete Permanently', 'equine-event-manager' ); ?>
 						</button>
 					<?php else : ?>
-						<?php /* FIX 4 (2.3.43) — Secondary actions only.  Primary CRUD (Edit / Quick Edit /
-						        Duplicate / Trash) has moved to hover row-action text links. */ ?>
+						<?php /* Full action menu (mockup reservations_page.html): all row
+						        actions live in this dropdown — the hover text links + the
+						        standalone Stall Chart icon were retired. */ ?>
+						<a class="eem-row-dd-item" href="<?php echo esc_url( $edit_url ); ?>" role="menuitem">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+							<?php esc_html_e( 'Edit', 'equine-event-manager' ); ?>
+						</a>
+						<button type="button" class="eem-row-dd-item" data-eem-action="reservation-duplicate-ajax" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" role="menuitem">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+							<?php esc_html_e( 'Duplicate', 'equine-event-manager' ); ?>
+						</button>
+						<?php if ( $has_stall_chart ) : ?>
+							<a class="eem-row-dd-item" href="<?php echo esc_url( $stall_chart_url ); ?>" role="menuitem">
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+								<?php esc_html_e( 'Stall Chart', 'equine-event-manager' ); ?>
+							</a>
+						<?php endif; ?>
 						<?php if ( '' !== $frontend_url ) : ?>
 							<a class="eem-row-dd-item" href="<?php echo esc_url( $frontend_url ); ?>" target="_blank" rel="noopener" role="menuitem">
 								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
@@ -1598,14 +1608,21 @@ class EEM_Reservations_List_Page {
 								<?php esc_html_e( 'Email Customers', 'equine-event-manager' ); ?>
 							</span>
 						<?php endif; ?>
-						<?php /* Revert a published reservation to draft (unpublish) without
-						        opening the editor. Shown only when published. */ ?>
 						<?php if ( $is_published ) : ?>
 							<button type="button" class="eem-row-dd-item" data-eem-action="reservation-set-draft" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" role="menuitem">
 								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
 								<?php esc_html_e( 'Move to Draft', 'equine-event-manager' ); ?>
 							</button>
+						<?php else : ?>
+							<button type="button" class="eem-row-dd-item" data-eem-action="reservation-set-published" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" role="menuitem">
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+								<?php esc_html_e( 'Publish', 'equine-event-manager' ); ?>
+							</button>
 						<?php endif; ?>
+						<button type="button" class="eem-row-dd-item eem-row-dd-danger" data-eem-action="reservation-trash" data-reservation-id="<?php echo esc_attr( $reservation_id ); ?>" role="menuitem">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+							<?php esc_html_e( 'Move to Trash', 'equine-event-manager' ); ?>
+						</button>
 					<?php endif; ?>
 				</div>
 			</div>

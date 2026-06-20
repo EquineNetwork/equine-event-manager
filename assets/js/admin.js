@@ -408,17 +408,21 @@
 		closeAllDropdowns();
 		if (!isOpen) {
 			host.classList.add('open');
-			// getBoundingClientRect() forces a synchronous reflow so the
-			// display:block from .open is already included in the measurement.
+			// The dropdown is position:fixed (escapes the card's overflow:hidden
+			// so it's never clipped). Position it from the button's viewport rect:
+			// open downward by default; flip above the button only when there isn't
+			// room below in the VIEWPORT (not the card) and there IS room above.
 			var drop = host.querySelector('.eem-row-dropdown');
 			if (drop) {
-				var dropRect   = drop.getBoundingClientRect();
-				var clipEl     = host.closest('.eem-page-wrap') || host.closest('.eem-card');
-				var bottomBound = clipEl
-					? Math.min( clipEl.getBoundingClientRect().bottom, window.innerHeight )
-					: window.innerHeight;
-				if (dropRect.bottom > bottomBound) {
-					host.classList.add('eem-row-menu-wrap--flip-up');
+				var btnRect  = trigger.getBoundingClientRect();
+				var dropRect = drop.getBoundingClientRect();
+				drop.style.right = 'auto';
+				drop.style.left  = Math.max(8, btnRect.right - dropRect.width) + 'px';
+				var below = btnRect.bottom + 4;
+				if (below + dropRect.height > window.innerHeight && btnRect.top - dropRect.height - 4 > 0) {
+					drop.style.top = (btnRect.top - dropRect.height - 4) + 'px';
+				} else {
+					drop.style.top = below + 'px';
 				}
 			}
 		}
@@ -2803,7 +2807,9 @@
 		document.querySelectorAll('.eem-dropdown.open, .eem-row-menu-wrap.open')
 			.forEach(function (host) {
 				host.classList.remove('open');
-				host.classList.remove('eem-row-menu-wrap--flip-up'); /* C7.X.18 Issue C */
+				host.classList.remove('eem-row-menu-wrap--flip-up'); /* legacy, unused */
+				var drop = host.querySelector('.eem-row-dropdown');
+				if (drop) { drop.style.top = ''; drop.style.left = ''; drop.style.right = ''; }
 			});
 	}
 
@@ -2925,6 +2931,10 @@
 		'reservation-set-draft': function (target) {
 			if (!window.confirm('Move this reservation back to Draft? It will no longer be publicly visible.')) return;
 			submitReservationAction(target, 'eem_reservation_set_draft', 'eem_reservation_set_draft');
+		},
+		'reservation-set-published': function (target) {
+			if (!window.confirm('Publish this reservation? It will become publicly visible.')) return;
+			submitReservationAction(target, 'eem_reservation_set_published', 'eem_reservation_set_published');
 		},
 		/* C7.X.17 Issue D3 — typed-confirm modal replaces the simple window.confirm.
 		   openDeletePermanentlyModal handles the modal, typed-title validation,

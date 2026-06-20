@@ -1717,10 +1717,26 @@ a.eem-filter-tab.active:hover {
 /* Per-tab count (Reservations status pills) — inherits the tab color via
    opacity so it reads muted on inactive (navy) and soft-white on the active
    electric pill, with no per-state color rules. */
+/* Count pill inside each filter tab (mockup .tab-count): gray pill on inactive
+   tabs, soft-blue pill on the active tab. */
 .eem-filter-tab-count {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 18px;
+	height: 18px;
 	margin-left: 5px;
-	font-weight: 600;
-	opacity: 0.6;
+	padding: 0 5px;
+	background: #e2e8f4;
+	color: #64748b;
+	border-radius: 20px;
+	font-size: 11px;
+	font-weight: 700;
+}
+.eem-filter-tab.active .eem-filter-tab-count,
+a.eem-filter-tab.active .eem-filter-tab-count {
+	background: #dbe9ff;
+	color: var(--eem-electric);
 }
 
 
@@ -1945,11 +1961,12 @@ th.sorted-desc .eem-sort-icon span:first-child {
 	display: inline-block;
 }
 
+/* Fixed-positioned so the menu escapes the table card's overflow:hidden and is
+   never clipped by the card/footer. admin.js toggleDropdown() sets top/left from
+   the button's viewport rect (mockup .row-dropdown pattern). */
 .eem-row-dropdown {
 	display: none;
-	position: absolute;
-	top: calc(100% + 4px);
-	right: 0;
+	position: fixed;
 	background: var(--eem-surface);
 	border: 1px solid #e2e8f4;
 	border-radius: 10px;
@@ -4012,16 +4029,33 @@ a.eem-res-name:focus {
 .eem-spots-count { color: var(--eem-navy, #031B4E); }
 
 /* Orders count cell. Zero counts dim per RES-5. Mockup lines 115-116. */
+/* Orders-count pill (mockup .orders-count): soft-blue rounded pill linking to
+   the reservation's orders; muted gray when zero. */
 .eem-orders-count {
-	font-size: 14px;
-	font-weight: 600;
-	color: var(--eem-navy);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 24px;
+	height: 24px;
+	padding: 0 8px;
+	background: #f0f5ff;
+	color: var(--eem-electric);
+	border-radius: 12px;
+	font-size: 12px;
+	font-weight: 700;
 	font-family: var(--eem-font-ui);
+	text-decoration: none;
+}
+
+a.eem-orders-count:hover {
+	background: #dbe9ff;
+	color: #0d4fc2;
 }
 
 .eem-orders-count.is-zero {
-	color: #8c8f94;
-	font-weight: 400;
+	background: #F7F9FC;
+	color: #94a3b8;
+	font-weight: 700;
 }
 
 /* Row actions cell — wraps the conditional Stall Chart icon + meatballs. */
@@ -4093,10 +4127,11 @@ a.eem-res-name:focus {
 }
 
 .eem-mobile-res-card {
+	position: relative;
 	background: var(--eem-surface);
-	border: 1px solid #dcdcde;
-	border-radius: var(--eem-radius);
-	padding: 14px;
+	border: 1px solid #e2e8f4;
+	border-radius: 8px;
+	padding: 13px 14px;
 	margin-bottom: 8px;
 }
 
@@ -4139,7 +4174,11 @@ a.eem-mob-res-name:focus {
 	align-items: center;
 }
 
+/* Meatball pinned to the card's top-right corner (mockup .mob-card .row-menu-wrap). */
 .eem-mob-res-actions {
+	position: absolute;
+	top: 10px;
+	right: 10px;
 	display: flex;
 	gap: 5px;
 }
