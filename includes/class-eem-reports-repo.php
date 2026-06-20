@@ -37,7 +37,7 @@ class EEM_Reports_Repo {
 	 *
 	 * @var array<int,string>
 	 */
-	const REPORTS = array( 'orders', 'reservations', 'revenue', 'stall_occupancy', 'shavings', 'customer_list', 'refund_log', 'cleaning' );
+	const REPORTS = array( 'orders', 'reservations', 'revenue', 'stall_occupancy', 'rv_occupancy', 'shavings', 'customer_list', 'refund_log', 'cleaning' );
 
 	/**
 	 * Orders repository.
@@ -163,6 +163,8 @@ class EEM_Reports_Repo {
 				return $this->refund_log_report( $filters );
 			case 'cleaning':
 				return $this->cleaning_report( $filters );
+			case 'rv_occupancy':
+				return $this->rv_occupancy_report( $filters );
 			default:
 				return array( 'title' => '', 'slug' => $slug, 'headers' => array(), 'rows' => array() );
 		}
@@ -559,6 +561,214 @@ class EEM_Reports_Repo {
 		return array(
 			'title'             => __( 'Stall Occupancy', 'equine-event-manager' ),
 			'slug'              => 'stall_occupancy',
+			'event_header'      => $event_header,
+			'headers'           => $headers,
+			'rows'              => array_merge( array( $totals_row ), $rows ),
+			'summary_row_count' => 1,
+		);
+	}
+
+	/**
+	 * Report — RV Occupancy: daily RV spot utilization for a single reservation.
+	 *
+	 * Dispatches to the per-day or per-event-summary view depending on whether a
+	 * specific reservation is selected.
+	 *
+	 * @param array $filters Filters (reservation_id).
+	 * @return array{title:string,slug:string,headers:array,rows:array}
+	 */
+	public function rv_occupancy_report( array $filters ): array {
+		$rid = absint( $filters['reservation_id'] ?? 0 );
+		if ( $rid > 0 ) {
+			return $this->rv_occupancy_daily( $filters );
+		}
+		return $this->rv_occupancy_summary( $filters );
+	}
+
+	/**
+	 * RV Occupancy — per-event summary row for "All reservations" view.
+	 *
+	 * @param array $filters Filters.
+	 * @return array{title:string,slug:string,headers:array,rows:array}
+	 */
+	private function rv_occupancy_summary( array $filters ): array {
+		$headers = array(
+			__( 'Reservation', 'equine-event-manager' ),
+			__( 'Event Dates', 'equine-event-manager' ),
+			__( 'RV Spots In Use', 'equine-event-manager' ),
+			__( 'RV Capacity', 'equine-event-manager' ),
+			__( 'Occupancy %', 'equine-event-manager' ),
+		);
+
+		$buckets = array();
+		foreach ( $this->get_filtered_orders( $filters ) as $o ) {
+			$qty = absint( $o['rv_quantity'] ?? 0 );
+			if ( $qty <= 0 ) {
+				continue;
+			}
+			$rid = absint( $o['reservation_id'] ?? 0 );
+			$key = $rid > 0 ? (string) $rid : 'r:' . (string) ( $o['event_name'] ?? '' );
+			if ( ! isset( $buckets[ $key ] ) ) {
+				$title = $rid > 0 ? (string) get_the_title( $rid ) : (string) ( $o['event_name'] ?? '' );
+				$buckets[ $key ] = array(
+					'title'      => $title,
+					'rid'        => $rid,
+					'in_use'     => 0,
+					'min_date'   => null,
+					'max_date'   => null,
+				);
+			}
+			$buckets[ $key ]['in_use'] += $qty;
+			$arr = isset( $o['rv_arrival_date'] ) && '' !== (string) $o['rv_arrival_date'] ? (string) $o['rv_arrival_date'] : '';
+			$dep = isset( $o['rv_departure_date'] ) && '' !== (string) $o['rv_departure_date'] ? (string) $o['rv_departure_date'] : '';
+			if ( '' !== $arr && ( null === $buckets[ $key ]['min_date'] || $arr < $buckets[ $key ]['min_date'] ) ) {
+				$buckets[ $key ]['min_date'] = $arr;
+			}
+			if ( '' !== $dep && ( null === $buckets[ $key ]['max_date'] || $dep > $buckets[ $key ]['max_date'] ) ) {
+				$buckets[ $key ]['max_date'] = $dep;
+			}
+		}
+
+		$rows = array();
+		foreach ( $buckets as $b ) {
+			$rv_cap  = $b['rid'] > 0 ? $this->rv_capacity_for_reservation( $b['rid'] ) : 0;
+			$pct     = $rv_cap > 0 ? round( $b['in_use'] / $rv_cap * 100, 1 ) . '%' : '—';
+			$dates   = '';
+			if ( null !== $b['min_date'] && null !== $b['max_date'] ) {
+				$dates = date_i18n( 'M j', strtotime( $b['min_date'] ) ) . ' – ' . date_i18n( 'M j, Y', strtotime( $b['max_date'] ) );
+			}
+			$rows[] = array(
+				$b['title'],
+				$dates,
+				(string) $b['in_use'],
+				$rv_cap > 0 ? (string) $rv_cap : '—',
+				$pct,
+			);
+		}
+
+		return array(
+			'title'   => __( 'RV Occupancy', 'equine-event-manager' ),
+			'slug'    => 'rv_occupancy',
+			'headers' => $headers,
+			'rows'    => $rows,
+		);
+	}
+
+	/**
+	 * RV Occupancy — per-day rows for a single reservation.
+	 *
+	 * @param array $filters Filters (reservation_id must be > 0).
+	 * @return array{title:string,slug:string,headers:array,rows:array}
+	 */
+	private function rv_occupancy_daily( array $filters ): array {
+		$rid      = $filters['reservation_id'];
+		$capacity = $this->rv_capacity_for_reservation( $rid );
+
+		$order_data = array();
+		$min_date   = null;
+		$max_date   = null;
+
+		foreach ( $this->get_filtered_orders( $filters ) as $o ) {
+			$qty = absint( $o['rv_quantity'] ?? 0 );
+			if ( $qty <= 0 ) {
+				continue;
+			}
+			$arrival   = isset( $o['rv_arrival_date'] ) && '' !== (string) $o['rv_arrival_date']
+				? (string) $o['rv_arrival_date'] : '';
+			$departure = isset( $o['rv_departure_date'] ) && '' !== (string) $o['rv_departure_date']
+				? (string) $o['rv_departure_date'] : '';
+
+			if ( '' !== $arrival && ( null === $min_date || $arrival < $min_date ) ) {
+				$min_date = $arrival;
+			}
+			if ( '' !== $departure && ( null === $max_date || $departure > $max_date ) ) {
+				$max_date = $departure;
+			}
+
+			$order_data[] = array(
+				'qty'       => $qty,
+				'arrival'   => $arrival,
+				'departure' => $departure,
+			);
+		}
+
+		$res_title    = (string) get_the_title( $rid );
+		$event_header = $res_title;
+		if ( null !== $min_date && null !== $max_date ) {
+			$event_header .= '  ·  ' . date_i18n( 'M j', strtotime( $min_date ) )
+				. ' – ' . date_i18n( 'M j, Y', strtotime( $max_date ) );
+		}
+
+		$headers = array(
+			__( 'Date', 'equine-event-manager' ),
+			__( 'RV Spots In Use', 'equine-event-manager' ),
+			__( 'RV Capacity', 'equine-event-manager' ),
+			__( 'Occupancy %', 'equine-event-manager' ),
+		);
+
+		if ( null === $min_date || null === $max_date ) {
+			return array(
+				'title'        => __( 'RV Occupancy', 'equine-event-manager' ),
+				'slug'         => 'rv_occupancy',
+				'event_header' => $event_header,
+				'headers'      => $headers,
+				'rows'         => array(),
+			);
+		}
+
+		$dates   = array();
+		$current = new DateTime( $min_date );
+		$end     = new DateTime( $max_date );
+		while ( $current <= $end ) {
+			$dates[] = $current->format( 'Y-m-d' );
+			$current->modify( '+1 day' );
+		}
+
+		$rows      = array();
+		$peak      = 0;
+		$rv_nights = 0;
+
+		foreach ( $dates as $date ) {
+			$in_use = 0;
+			foreach ( $order_data as $od ) {
+				if (
+					'' !== $od['arrival'] &&
+					'' !== $od['departure'] &&
+					$date >= $od['arrival'] &&
+					$date <= $od['departure']
+				) {
+					$in_use += $od['qty'];
+				}
+			}
+
+			$pct    = $capacity > 0 ? round( $in_use / $capacity * 100, 1 ) . '%' : '—';
+			$rows[] = array(
+				date_i18n( 'D, M j', strtotime( $date ) ),
+				(string) $in_use,
+				$capacity > 0 ? (string) $capacity : '—',
+				$pct,
+			);
+
+			if ( $in_use > $peak ) {
+				$peak = $in_use;
+			}
+			$rv_nights += $in_use;
+		}
+
+		$peak_pct   = $capacity > 0 ? round( $peak / $capacity * 100, 1 ) . '%' : '—';
+		$totals_row = array(
+			/* translators: %d: number of days. */
+			sprintf( _n( 'TOTALS (%d day)', 'TOTALS (%d days)', count( $dates ), 'equine-event-manager' ), count( $dates ) ),
+			/* translators: %d: peak RV spot count. */
+			sprintf( __( 'Peak: %d', 'equine-event-manager' ), $peak ),
+			$capacity > 0 ? (string) $capacity : '—',
+			/* translators: %s: peak occupancy percentage. */
+			sprintf( __( 'Peak: %s', 'equine-event-manager' ), $peak_pct ),
+		);
+
+		return array(
+			'title'             => __( 'RV Occupancy', 'equine-event-manager' ),
+			'slug'              => 'rv_occupancy',
 			'event_header'      => $event_header,
 			'headers'           => $headers,
 			'rows'              => array_merge( array( $totals_row ), $rows ),
