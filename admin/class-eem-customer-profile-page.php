@@ -182,6 +182,29 @@ class EEM_Customer_Profile_Page {
 	}
 
 	/**
+	 * Render a card section header: a blue icon chip + title, plus optional
+	 * right-aligned actions markup. Matches the blue card-title icon treatment on
+	 * Order Detail / Dashboard.
+	 *
+	 * @param string $icon_key EEM_Dashboard_Icons glyph key.
+	 * @param string $title    Already-translated section title.
+	 * @param string $actions  Optional caller-escaped actions HTML (right side).
+	 * @return void
+	 */
+	private static function section_header( string $icon_key, string $title, string $actions = '' ): void {
+		$icon = class_exists( 'EEM_Dashboard_Icons' ) ? EEM_Dashboard_Icons::svg( $icon_key ) : '';
+		?>
+		<section class="eem-section-header">
+			<div class="eem-section-header-left">
+				<span class="eem-section-icon eem-section-icon--blue"><?php echo $icon; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- self-authored inline SVG. ?></span>
+				<h2 class="eem-section-title"><?php echo esc_html( $title ); ?></h2>
+			</div>
+			<?php echo $actions; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- caller-built escaped markup. ?>
+		</section>
+		<?php
+	}
+
+	/**
 	 * KPI stats grid (4 cards).
 	 *
 	 * @param array<string,mixed> $s Stats payload.
@@ -240,7 +263,7 @@ class EEM_Customer_Profile_Page {
 	private static function render_details( array $p ): void {
 		$billing = $p['billing'];
 		?>
-		<section class="eem-section-header"><h2 class="eem-section-title"><?php esc_html_e( 'Customer Details', 'equine-event-manager' ); ?></h2></section>
+		<?php self::section_header( 'users', __( 'Customer Details', 'equine-event-manager' ) ); ?>
 		<section class="eem-cp-section eem-cp-details-grid">
 			<div class="eem-cp-detail">
 				<div class="eem-cp-detail-label"><?php esc_html_e( 'Contact', 'equine-event-manager' ); ?></div>
@@ -290,7 +313,7 @@ class EEM_Customer_Profile_Page {
 	 */
 	private static function render_notes( array $p ): void {
 		?>
-		<section class="eem-section-header"><h2 class="eem-section-title"><?php esc_html_e( 'Internal Notes', 'equine-event-manager' ); ?></h2></section>
+		<?php self::section_header( 'file-text', __( 'Internal Notes', 'equine-event-manager' ) ); ?>
 		<section class="eem-cp-section eem-cp-notes"
 			data-eem-customer-note
 			data-eem-email="<?php echo esc_attr( $p['email'] ); ?>"
@@ -317,12 +340,14 @@ class EEM_Customer_Profile_Page {
 			: admin_url( 'admin.php?page=equine-event-manager-orders' );
 		$count = count( $orders );
 		?>
-		<section class="eem-section-header">
-			<h2 class="eem-section-title"><?php esc_html_e( 'Order History', 'equine-event-manager' ); ?></h2>
-			<div class="eem-section-actions">
-				<a class="eem-btn eem-btn-ghost" href="<?php echo esc_url( $view_all ); ?>"><?php esc_html_e( 'View All Orders', 'equine-event-manager' ); ?></a>
-			</div>
-		</section>
+		<?php
+		$order_actions = sprintf(
+			'<div class="eem-section-actions"><a class="eem-btn eem-btn-ghost" href="%s">%s</a></div>',
+			esc_url( $view_all ),
+			esc_html__( 'View All Orders', 'equine-event-manager' )
+		);
+		self::section_header( 'package', __( 'Order History', 'equine-event-manager' ), $order_actions );
+		?>
 		<section class="eem-cp-section eem-cp-table-section">
 			<div class="eem-table-wrap">
 				<table class="eem-table">
@@ -389,7 +414,7 @@ class EEM_Customer_Profile_Page {
 	 */
 	private static function render_reservation_history( array $reservations ): void {
 		?>
-		<section class="eem-section-header"><h2 class="eem-section-title"><?php esc_html_e( 'Reservation History', 'equine-event-manager' ); ?></h2></section>
+		<?php self::section_header( 'calendar', __( 'Reservation History', 'equine-event-manager' ) ); ?>
 		<section class="eem-cp-section eem-cp-table-section">
 			<div class="eem-table-wrap">
 				<table class="eem-table">
@@ -447,7 +472,7 @@ class EEM_Customer_Profile_Page {
 			$entries = array_map( array( 'EEM_Order_Telemetry', 'enrich_entry_for_render' ), $entries );
 		}
 		?>
-		<section class="eem-section-header"><h2 class="eem-section-title"><?php esc_html_e( 'Activity Log', 'equine-event-manager' ); ?></h2></section>
+		<?php self::section_header( 'clock', __( 'Activity Log', 'equine-event-manager' ) ); ?>
 		<section class="eem-cp-section eem-cp-activity">
 			<?php
 			if ( function_exists( 'eem_render_activity_log' ) ) {

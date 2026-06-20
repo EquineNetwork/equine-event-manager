@@ -611,7 +611,7 @@ body.eem-shell-page a:active,
 .eem-section-icon {
 	width: 28px;
 	height: 28px;
-	border-radius: var(--eem-radius);
+	border-radius: 7px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -6845,7 +6845,7 @@ a.eem-dashboard-qa-btn:focus {
 .eem-section-icon {
 	width: 28px;
 	height: 28px;
-	border-radius: var(--eem-radius);
+	border-radius: 7px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -10914,6 +10914,37 @@ table.eem-export-history td { padding:11px 22px; font-size:13px; color:#1d2327; 
 .eem-cp-activity { padding: 0; }
 .eem-cp-activity { padding: var(--eem-space-3) 18px var(--eem-space-4); border-bottom: none; }
 
+/* ── Separate cards (mockup customer_profile_page.html) ──────────────────────
+   Each Title + body pair reads as ONE bordered white card with a 16px gap to
+   the next, instead of flat stacked bands. The title <section.eem-section-header>
+   is the card top and the immediately-following <section.eem-cp-section> is the
+   card bottom; they join into a single rounded border. The KPI stats section has
+   no title and is transparent so its four stat cards stand alone. Scoped to the
+   customer-profile body class so the shared .eem-section-header is untouched
+   elsewhere. */
+.eem-shell-page--customer .eem-section-header {
+	background: #fff;
+	border: 1px solid #e2e8f4;
+	border-bottom: 1px solid #f0f4fb;
+	border-radius: 10px 10px 0 0;
+	margin-top: 16px;
+	padding: 13px 18px;
+	align-items: center;
+}
+.eem-shell-page--customer .eem-section-header + .eem-cp-section {
+	background: #fff;
+	border: 1px solid #e2e8f4;
+	border-top: none;
+	border-bottom: 1px solid #e2e8f4;
+	border-radius: 0 0 10px 10px;
+	overflow: hidden;
+}
+.eem-shell-page--customer .eem-cp-stats {
+	background: transparent;
+	border: none;
+	padding: 0;
+}
+
 /* Header meta line (email · phone · since) */
 .eem-cp-subtitle { font-size: 12.5px; color: var(--eem-text-secondary); }
 .eem-cp-subtitle a { color: var(--eem-navy); font-weight: 600; }
@@ -10922,7 +10953,7 @@ table.eem-export-history td { padding:11px 22px; font-size:13px; color:#1d2327; 
 
 /* KPI stats grid */
 .eem-cp-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--eem-space-3); }
-.eem-cp-stat-card { background: var(--eem-bg); border: 1px solid #e8eaf0; border-radius: var(--eem-radius-lg); padding: 14px 16px; }
+.eem-cp-stat-card { background: var(--eem-bg); border: 1px solid #e2e8f4; border-radius: var(--eem-radius-lg); padding: 16px 18px; }
 .eem-cp-stat-card--electric { border-color: var(--eem-info-border); background: var(--eem-info-bg); }
 .eem-cp-stat-card--electric .eem-cp-stat-value { color: var(--eem-electric); }
 .eem-cp-stat-card--teal { border-color: #a7e8d8; background: #E6FAF5; }
