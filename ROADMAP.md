@@ -142,6 +142,12 @@ API/native last.*
 3. **Mobile-experience + PWA polish — CUSTOMER *and* ADMIN (tablet + phone)** — customers buy on
    phones during sellouts AND admins run this on the fly ringside; both surfaces must be VERY
    responsive. Doable now (the PWA also gives "app feel" while native is months out).
+   → **Spec: `docs/PWA-FACILITY-SPEC.md`** (2026-06-20). Expanded into a **two-role** build: full
+   **Admin** (everything incl. money) + a NEW scoped, **PII-free Facility-staff** login (`eem_manage_stalls`)
+   that sees only its event's stalls/RV lots + status/cleaning and checks guests in/out — no customer,
+   order, or money data. Mobile-first / fewest-taps is the north star; online-only writes (preserves the
+   #1 oversell protection). Build order: (1) Facility role + scoped ops view → (2) fewest-taps mobile pass
+   → (3) PWA wrapper. Open decisions: check-in per-party vs per-unit; scope by event vs venue.
 4. **Venue Slice 2** — `en_venue` → canonical-table write-through (finishes the venue thread).
 5. ✅ **Repo cleanup — delete dead docs** (dead dev docs removed 2.7.317).
 6. **Entry-aware Dashboard headline metrics** — small additive admin visibility.
