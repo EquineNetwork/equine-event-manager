@@ -593,6 +593,7 @@ body.eem-shell-page a:active,
 .eem-section-icon--green  { background: #F0FDF4;               color: var(--eem-success-accent); }
 .eem-section-icon--purple { background: var(--eem-type-rv-bg); color: #7c3aed; }
 .eem-section-icon--orange { background: var(--eem-type-addon-bg); color: var(--eem-type-addon-text); }
+.eem-section-icon--amber  { background: #FFFBEB;               color: #b45309; }
 .eem-section-icon--teal   { background: #F0FDFA;               color: var(--eem-success-text); }
 .eem-section-icon--pink   { background: #FFF1F2;               color: #be185d; }
 .eem-section-icon--navy   { background: var(--eem-info-bg);    color: var(--eem-navy); }
@@ -6767,6 +6768,7 @@ a.eem-dashboard-qa-btn:focus {
 .eem-section-icon--green  { background: #F0FDF4;                 color: #15803d; }
 .eem-section-icon--purple { background: var(--eem-type-rv-bg);    color: #6d28d9; }
 .eem-section-icon--navy   { background: var(--eem-info-bg);      color: var(--eem-navy); }
+.eem-section-icon--amber  { background: #FFFBEB;                 color: #b45309; }
 .eem-section-icon--red    { background: #FEF2F2;                 color: #b91c1c; }
 .eem-section-title {
 	font-family: var(--eem-font-display);
