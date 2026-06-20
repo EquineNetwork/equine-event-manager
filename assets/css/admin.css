@@ -2756,18 +2756,18 @@ th.sorted-desc .eem-sort-icon span:first-child {
    Active nav row gets a 3px electric border-left + soft blue background.
    Do NOT split this into two floating cards — the mockup specifies one
    unified panel with an internal divider. */
+
 .eem-settings {
 	display: grid;
 	grid-template-columns: 200px 1fr;
 	gap: 0;
 	background: var(--eem-surface);
-	/* Intentional departure from mockup line 38 (which specifies
-	   `border: 1px solid #c3c4c7; border-radius: 4px;`). Confirmed
-	   via DevTools that the legacy admin shell wrapping `.eem-page`
-	   already provides the visual containment we want for the
-	   settings card; adding the mockup's border+radius on top double-
-	   frames the panel. overflow:hidden retained so the nav rail
-	   and content panel stay contained within the grid bounds. */
+	/* Bordered white card holding the nav rail + content panel, floating on the
+	   #F7F9FC field below the white header band (which is clipped to the topbar,
+	   like every other page). The global shell dissolved the old .eem-page-wrap
+	   containment, so the card border lives here now. */
+	border: 1px solid #e2e8f4;
+	border-radius: 10px;
 	overflow: hidden;
 	align-items: stretch;
 }
