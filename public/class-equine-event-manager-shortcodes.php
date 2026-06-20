@@ -1934,6 +1934,26 @@ class EEM_Shortcodes {
 				);
 				?>
 			<?php endif; ?>
+			<?php if ( ! empty( $data['additional_shavings_enabled'] ) && ! empty( $data['additional_shavings_products'] ) && is_array( $data['additional_shavings_products'] ) ) : ?>
+				<?php foreach ( $data['additional_shavings_products'] as $shav_idx => $shav_product ) :
+					$shav_name  = isset( $shav_product['name'] ) ? (string) $shav_product['name'] : '';
+					$shav_price = isset( $shav_product['price'] ) ? (float) $shav_product['price'] : 0.0;
+					if ( '' === $shav_name ) { continue; }
+					$this->render_product_line_item(
+						$shav_name . ' - ' . $this->format_money( $shav_price ) . __( '/bag', 'equine-event-manager' ),
+						'',
+						'additional_shavings[' . (int) $shav_idx . '][qty]',
+						'eem-product-line-item--additional-shavings',
+						array(
+							'static_price'        => $shav_price,
+							'static_price_suffix' => __( '/bag', 'equine-event-manager' ),
+						)
+					);
+					?>
+					<input type="hidden" name="additional_shavings[<?php echo (int) $shav_idx; ?>][name]" value="<?php echo esc_attr( $shav_name ); ?>" />
+					<input type="hidden" name="additional_shavings[<?php echo (int) $shav_idx; ?>][price]" value="<?php echo esc_attr( number_format( $shav_price, 2, '.', '' ) ); ?>" />
+				<?php endforeach; ?>
+			<?php endif; ?>
 		</div>
 		<?php
 		// 2.3.83 — the exact-stall map (C10.D "Pick Your Stalls" picker AND the
@@ -3126,7 +3146,8 @@ class EEM_Shortcodes {
 			// Slice 9: per-tier quantities in Quantity mode, keyed by stall row index.
 			'stall_tier_qty'          => ( isset( $_POST['stall_tier_qty'] ) && is_array( $_POST['stall_tier_qty'] ) ) ? array_map( 'absint', (array) wp_unslash( $_POST['stall_tier_qty'] ) ) : array(),
 			'tack_stall_qty'          => 0,
-			'additional_shavings_qty' => 0,
+			'additional_shavings_qty'   => 0,
+			'additional_shavings_items' => array(),
 			'preferred_stall_units'   => $this->sanitize_preferred_stall_units( isset( $_POST['preferred_stall_units'] ) ? wp_unslash( $_POST['preferred_stall_units'] ) : array(), $data ),
 			// V1 #5d — optional customer-designated tack stall (MAPPED/pick mode
 			// only; operational, no price change). A single label, validated
@@ -3140,6 +3161,29 @@ class EEM_Shortcodes {
 		$stall_payload['selected_stall_units']    = array_values( $stall_payload['preferred_stall_units'] );
 		$stall_payload['selected_stall_labels']   = array_values( $stall_payload['preferred_stall_units'] );
 		$stall_payload['stall_billable_quantity'] = absint( $stall_payload['stall_qty'] ) + absint( $stall_payload['tack_stall_qty'] );
+
+		// Parse per-type additional shavings submitted by the customer.
+		if ( ! empty( $data['additional_shavings_enabled'] ) && isset( $_POST['additional_shavings'] ) && is_array( $_POST['additional_shavings'] ) ) {
+			$raw_shav      = wp_unslash( $_POST['additional_shavings'] );
+			$shav_items    = array();
+			$shav_total    = 0;
+			$cfg_products  = is_array( $data['additional_shavings_products'] ) ? $data['additional_shavings_products'] : array();
+			foreach ( $cfg_products as $idx => $cfg_product ) {
+				$qty    = isset( $raw_shav[ $idx ]['qty'] ) ? absint( $raw_shav[ $idx ]['qty'] ) : 0;
+				if ( $qty <= 0 ) { continue; }
+				$name   = isset( $cfg_product['name'] ) ? sanitize_text_field( $cfg_product['name'] ) : '';
+				$price  = isset( $cfg_product['price'] ) ? (float) $cfg_product['price'] : 0.0;
+				$shav_items[]  = array(
+					'name'     => $name,
+					'qty'      => $qty,
+					'price'    => $price,
+					'subtotal' => round( $qty * $price, 2 ),
+				);
+				$shav_total += $qty;
+			}
+			$stall_payload['additional_shavings_items'] = $shav_items;
+			$stall_payload['additional_shavings_qty']   = $shav_total;
+		}
 
 		$stall_payload = apply_filters( 'eem_submission_data', $stall_payload, $data, $this );
 
@@ -4287,7 +4331,13 @@ class EEM_Shortcodes {
 		if ( $status['stalls_open'] && $stall_zone_surcharge_sum > 0 ) {
 			$stall_subtotal += $stall_zone_surcharge_sum * max( 1, (int) $stall_night_count );
 		}
-		$additional_shavings_subtotal = ! empty( $data['additional_shavings_enabled'] ) ? ( absint( $submission['additional_shavings_qty'] ) * (float) $data['additional_shavings_price'] ) : 0;
+		// Sum subtotals across per-type items; each item already has price×qty baked in.
+		$additional_shavings_subtotal = 0.0;
+		if ( ! empty( $data['additional_shavings_enabled'] ) && ! empty( $submission['additional_shavings_items'] ) ) {
+			foreach ( (array) $submission['additional_shavings_items'] as $_shav_item ) {
+				$additional_shavings_subtotal += (float) ( $_shav_item['subtotal'] ?? 0 );
+			}
+		}
 		$group_rider_count            = ( ! empty( $data['group_reservations_enabled'] ) && ! empty( $submission['group_reservation_enabled'] ) ) ? absint( $submission['group_rider_count'] ) : 0;
 		$group_rider_grounds_fee_subtotal = ( ! empty( $data['group_rider_grounds_fee_enabled'] ) && $group_rider_count > 0 ) ? $group_rider_count * (float) $data['group_rider_grounds_fee_amount'] : 0.0;
 		$group_rider_deposit_subtotal = ( ! empty( $data['group_rider_deposit_enabled'] ) && $group_rider_count > 0 ) ? $group_rider_count * (float) $data['group_rider_deposit_amount'] : 0.0;
@@ -4930,8 +4980,9 @@ class EEM_Shortcodes {
 						'stay_type'                 => $si_row['stay_type'],
 						'arrival_date'              => $si_row['arrival_date'],
 						'departure_date'            => $si_row['departure_date'],
-						'required_shavings_qty'     => ( 0 === $si_row_idx ) ? $required_shavings : 0,
-						'additional_shavings_qty'   => ( 0 === $si_row_idx ) ? $submission['additional_shavings_qty'] : 0,
+						'required_shavings_qty'      => ( 0 === $si_row_idx ) ? $required_shavings : 0,
+						'additional_shavings_qty'    => ( 0 === $si_row_idx ) ? $submission['additional_shavings_qty'] : 0,
+						'additional_shavings_items'  => ( 0 === $si_row_idx && ! empty( $submission['additional_shavings_items'] ) ) ? wp_json_encode( $submission['additional_shavings_items'] ) : null,
 						'unit_price'                => $si_row['unit_price'],
 						'subtotal'                  => $row_subtotal,
 						'convenience_fee'           => $row_fee,
@@ -9482,8 +9533,8 @@ RV Lot: " . $rv_lot['name'] );
 			'stall_inventory_remaining' => $stall_remaining,
 			'stalls_sold_out'           => $stalls_sold_out,
 			'stalls_bookable'           => $stalls_open && ! $stalls_sold_out,
-			'shavings_open'             => false,
-			'shavings_bookable'         => false,
+			'shavings_open'             => ! empty( $data['additional_shavings_enabled'] ) && ! empty( $data['additional_shavings_products'] ),
+			'shavings_bookable'         => ! empty( $data['additional_shavings_enabled'] ) && ! empty( $data['additional_shavings_products'] ),
 			'rv_inventory_total'        => $rv_total,
 			'rv_inventory_sold'         => $inventory['rv_sold'],
 			'rv_inventory_remaining'    => $rv_remaining,

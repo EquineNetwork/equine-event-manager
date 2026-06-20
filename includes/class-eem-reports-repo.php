@@ -788,8 +788,21 @@ class EEM_Reports_Repo {
 	 * @return array{title:string,slug:string,headers:array,rows:array}
 	 */
 	public function shavings_report( array $filters ): array {
-		// Collect shavings-bearing orders keyed by event so we can sort + subtotal.
-		$events = array();
+		$rid = absint( $filters['reservation_id'] ?? 0 );
+		if ( $rid > 0 ) {
+			return $this->shavings_daily( $filters );
+		}
+		return $this->shavings_summary( $filters );
+	}
+
+	/**
+	 * Shavings — per-event summary row for "All reservations" view.
+	 *
+	 * @param array $filters Filters.
+	 * @return array{title:string,slug:string,headers:array,rows:array}
+	 */
+	private function shavings_summary( array $filters ): array {
+		$buckets = array();
 		foreach ( $this->get_filtered_orders( $filters ) as $o ) {
 			$req = absint( $o['required_shavings_qty'] ?? 0 );
 			$add = absint( $o['additional_shavings_qty'] ?? 0 );
@@ -798,106 +811,24 @@ class EEM_Reports_Repo {
 			}
 			$rid = absint( $o['reservation_id'] ?? 0 );
 			$key = $rid > 0 ? (string) $rid : 'r:' . (string) ( $o['event_name'] ?? '' );
-			if ( ! isset( $events[ $key ] ) ) {
-				$title = (string) ( $o['reservation_title'] ?? ( $o['event_name'] ?? '' ) );
-				if ( '' === trim( $title ) && $rid > 0 ) {
-					// Fall back to the reservation's own post title so the Event
-					// column is never blank on the report.
-					$title = (string) get_the_title( $rid );
-				}
+			if ( ! isset( $buckets[ $key ] ) ) {
+				$title = $rid > 0 ? (string) get_the_title( $rid ) : (string) ( $o['event_name'] ?? '' );
 				if ( '' === trim( $title ) ) {
 					$title = __( '(Unlinked reservation)', 'equine-event-manager' );
 				}
-				$events[ $key ] = array(
-					'title'  => $title,
-					'dates'  => (string) ( $o['event_dates'] ?? '' ),
-					'orders' => array(),
-				);
+				$buckets[ $key ] = array( 'title' => $title, 'req' => 0, 'add' => 0 );
 			}
-			$events[ $key ]['orders'][] = array(
-				'number'   => absint( $o['order_number'] ?? 0 ),
-				'customer' => (string) ( $o['customer_name'] ?? '' ),
-				'phone'    => (string) ( $o['phone'] ?? '' ),
-				'stalls'   => absint( $o['stall_quantity'] ?? 0 ),
-				'req'      => $req,
-				'add'      => $add,
-				'status'   => (string) ( $o['status_label'] ?? ( $o['payment_status'] ?? '' ) ),
-			);
+			$buckets[ $key ]['req'] += $req;
+			$buckets[ $key ]['add'] += $add;
 		}
 
-		// Sort events by title for a stable, scannable worksheet.
-		uasort(
-			$events,
-			static function ( $a, $b ) {
-				return strcasecmp( $a['title'], $b['title'] );
-			}
-		);
-
-		$rows        = array();
-		$grand_req   = 0;
-		$grand_add   = 0;
-		$multi_event = count( $events ) > 1;
-
-		foreach ( $events as $event ) {
-			$orders = $event['orders'];
-			usort(
-				$orders,
-				static function ( $a, $b ) {
-					return strcasecmp( $a['customer'], $b['customer'] );
-				}
-			);
-
-			$event_req = 0;
-			$event_add = 0;
-			foreach ( $orders as $row ) {
-				$rows[]     = array(
-					$event['title'],
-					$event['dates'],
-					sprintf( '#%05d', $row['number'] ),
-					$row['customer'],
-					$row['phone'],
-					(string) $row['stalls'],
-					(string) $row['req'],
-					(string) $row['add'],
-					(string) ( $row['req'] + $row['add'] ),
-					$row['status'],
-				);
-				$event_req += $row['req'];
-				$event_add += $row['add'];
-			}
-
-			// Per-event subtotal row.
+		$rows = array();
+		foreach ( $buckets as $b ) {
 			$rows[] = array(
-				/* translators: %s: event/reservation name. */
-				sprintf( __( '%s — Subtotal', 'equine-event-manager' ), $event['title'] ),
-				'',
-				'',
-				'',
-				'',
-				'',
-				(string) $event_req,
-				(string) $event_add,
-				(string) ( $event_req + $event_add ),
-				'',
-			);
-
-			$grand_req += $event_req;
-			$grand_add += $event_add;
-		}
-
-		// Grand total across all events (only meaningful when more than one).
-		if ( $multi_event && ! empty( $rows ) ) {
-			$rows[] = array(
-				__( 'All Events — Total', 'equine-event-manager' ),
-				'',
-				'',
-				'',
-				'',
-				'',
-				(string) $grand_req,
-				(string) $grand_add,
-				(string) ( $grand_req + $grand_add ),
-				'',
+				$b['title'],
+				(string) $b['req'],
+				(string) $b['add'],
+				(string) ( $b['req'] + $b['add'] ),
 			);
 		}
 
@@ -905,18 +836,133 @@ class EEM_Reports_Repo {
 			'title'   => __( 'Shavings', 'equine-event-manager' ),
 			'slug'    => 'shavings',
 			'headers' => array(
-				__( 'Event', 'equine-event-manager' ),
-				__( 'Event Dates', 'equine-event-manager' ),
-				__( 'Order #', 'equine-event-manager' ),
-				__( 'Customer', 'equine-event-manager' ),
-				__( 'Phone', 'equine-event-manager' ),
-				__( 'Stalls', 'equine-event-manager' ),
+				__( 'Reservation', 'equine-event-manager' ),
 				__( 'Required Bags', 'equine-event-manager' ),
 				__( 'Additional Bags', 'equine-event-manager' ),
 				__( 'Total Bags', 'equine-event-manager' ),
-				__( 'Status', 'equine-event-manager' ),
 			),
 			'rows'    => $rows,
+		);
+	}
+
+	/**
+	 * Shavings — per-day rows for a single reservation.
+	 *
+	 * Each row = one calendar day within the event date range.
+	 * Required bags = orders whose stall stay covers that day × bags_per_stall.
+	 * Additional bags = orders whose stall stay covers that day × additional_shavings_qty.
+	 * A navy TOTALS row is pinned at the top showing event totals.
+	 *
+	 * @param array $filters Filters (reservation_id must be > 0).
+	 * @return array{title:string,slug:string,headers:array,rows:array}
+	 */
+	private function shavings_daily( array $filters ): array {
+		$rid        = $filters['reservation_id'];
+		$order_data = array();
+		$min_date   = null;
+		$max_date   = null;
+
+		foreach ( $this->get_filtered_orders( $filters ) as $o ) {
+			$req = absint( $o['required_shavings_qty'] ?? 0 );
+			$add = absint( $o['additional_shavings_qty'] ?? 0 );
+			if ( $req <= 0 && $add <= 0 ) {
+				continue;
+			}
+			$arrival   = isset( $o['stall_arrival_date'] ) && '' !== (string) $o['stall_arrival_date']
+				? (string) $o['stall_arrival_date'] : '';
+			$departure = isset( $o['stall_departure_date'] ) && '' !== (string) $o['stall_departure_date']
+				? (string) $o['stall_departure_date'] : '';
+
+			if ( '' !== $arrival && ( null === $min_date || $arrival < $min_date ) ) {
+				$min_date = $arrival;
+			}
+			if ( '' !== $departure && ( null === $max_date || $departure > $max_date ) ) {
+				$max_date = $departure;
+			}
+
+			$order_data[] = array(
+				'req'       => $req,
+				'add'       => $add,
+				'arrival'   => $arrival,
+				'departure' => $departure,
+			);
+		}
+
+		$res_title    = (string) get_the_title( $rid );
+		$event_header = $res_title;
+		if ( null !== $min_date && null !== $max_date ) {
+			$event_header .= '  ·  ' . date_i18n( 'M j', strtotime( $min_date ) )
+				. ' – ' . date_i18n( 'M j, Y', strtotime( $max_date ) );
+		}
+
+		$headers = array(
+			__( 'Date', 'equine-event-manager' ),
+			__( 'Required Bags', 'equine-event-manager' ),
+			__( 'Additional Bags', 'equine-event-manager' ),
+			__( 'Total Bags', 'equine-event-manager' ),
+		);
+
+		if ( null === $min_date || null === $max_date ) {
+			return array(
+				'title'        => __( 'Shavings', 'equine-event-manager' ),
+				'slug'         => 'shavings',
+				'event_header' => $event_header,
+				'headers'      => $headers,
+				'rows'         => array(),
+			);
+		}
+
+		$dates   = array();
+		$current = new DateTime( $min_date );
+		$end     = new DateTime( $max_date );
+		while ( $current <= $end ) {
+			$dates[] = $current->format( 'Y-m-d' );
+			$current->modify( '+1 day' );
+		}
+
+		$rows          = array();
+		$total_req     = 0;
+		$total_add     = 0;
+
+		foreach ( $dates as $date ) {
+			$day_req = 0;
+			$day_add = 0;
+			foreach ( $order_data as $od ) {
+				if (
+					'' !== $od['arrival'] &&
+					'' !== $od['departure'] &&
+					$date >= $od['arrival'] &&
+					$date <= $od['departure']
+				) {
+					$day_req += $od['req'];
+					$day_add += $od['add'];
+				}
+			}
+			$rows[] = array(
+				date_i18n( 'D, M j', strtotime( $date ) ),
+				(string) $day_req,
+				(string) $day_add,
+				(string) ( $day_req + $day_add ),
+			);
+			$total_req += $day_req;
+			$total_add += $day_add;
+		}
+
+		$totals_row = array(
+			/* translators: %d: number of days. */
+			sprintf( _n( 'TOTALS (%d day)', 'TOTALS (%d days)', count( $dates ), 'equine-event-manager' ), count( $dates ) ),
+			(string) $total_req,
+			(string) $total_add,
+			(string) ( $total_req + $total_add ),
+		);
+
+		return array(
+			'title'             => __( 'Shavings', 'equine-event-manager' ),
+			'slug'              => 'shavings',
+			'event_header'      => $event_header,
+			'headers'           => $headers,
+			'rows'              => array_merge( array( $totals_row ), $rows ),
+			'summary_row_count' => 1,
 		);
 	}
 
