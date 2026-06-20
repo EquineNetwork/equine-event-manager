@@ -148,6 +148,8 @@ API/native last.*
    order, or money data. Mobile-first / fewest-taps is the north star; online-only writes (preserves the
    #1 oversell protection). Build order: (1) Facility role + scoped ops view → (2) fewest-taps mobile pass
    → (3) PWA wrapper. Open decisions: check-in per-party vs per-unit; scope by event vs venue.
+   → **#45 (NEW): strict mobile polish on EVERY page + EVERY print view** — exhaustive per-page touch/responsive
+   pass (see "Active page redesigns + strict mobile polish" section below). Feeds step (2) of this item.
 4. **Venue Slice 2** — `en_venue` → canonical-table write-through (finishes the venue thread).
 5. ✅ **Repo cleanup — delete dead docs** (dead dev docs removed 2.7.317).
 6. **Entry-aware Dashboard headline metrics** — small additive admin visibility.
@@ -234,6 +236,38 @@ field, invisible to structured reporting. Now fully structured.
 - `includes/class-eem-reports-repo.php` — shavings_report() per-day + summary + per-type note section
 - `admin/class-eem-reports-page.php` — note_sections renderer support
 - `assets/css/admin.css` — amber icon tone for the editor section chip
+
+---
+
+## 🎨 Active page redesigns + strict mobile polish (from 2026-06-20 drafts)
+
+Two page redesigns Whitney delivered as mockup drafts (`stall_chart_detail.DRAFTA`, `daily_movement_page.DRAFT`),
+plus a new exhaustive mobile-polish goal. Tracked as tasks #33–#45. **⚠️ Coordination:** the parallel
+chat is in Daily Movement / Shavings — do Stall Charts first, hold #33 until that lands, to avoid
+`admin.php` / `admin.css` / `admin.js` merge conflicts. **⚠️ #41/#42 need backend data** (per-day
+availability counts; cleaning timestamps + who-cleaned) — confirm what's stored before building.
+
+**Daily Movement**
+- [ ] **#33** — compact per-day overview rail (replace the tall metric cards); tappable to filter Date. *(CSS/markup)*
+
+**Stall Charts — DRAFT A** (focused "Show" + floor/tablet polish)
+- [ ] **#34 (SC-1)** — "Show" as a segmented control (Stalls / RV / Both); default **Stalls** (not All)
+- [ ] **#35 (SC-2)** — "Show" collapses the whole page to the chosen inventory (KPIs, By-Customer cols+rows, By-Location sections, Map)
+- [ ] **#36 (SC-3)** — sticky Show + View, remembered **per user** (per-user meta)
+- [ ] **#37 (SC-4)** — auto-hide RV (option + KPI cards) when the event has no RV inventory
+- [ ] **#38 (SC-5)** — "Available" KPI cards green emphasis *(CSS)*
+- [ ] **#39 (SC-6)** — quick-filter chips (All / Needs cleaning + count / Available / Blocked) + "View Daily Movement →" link
+- [ ] **#40 (SC-7)** — Today-column emphasis (highlight + "Today" tag)
+- [ ] **#41 (SC-8)** — per-day availability metrics in barn header rows (avail / N-to-clean / N-blocked) ⚠️ *needs data*
+- [ ] **#42 (SC-9)** — cleaning accountability meta ("Checked out 7:55a → flagged", "Cleaned 8:42a · Maria") ⚠️ *needs data*
+- [ ] **#43 (SC-10)** — checkout→cleaning auto-note banner *(markup/CSS)*
+- [ ] **#44 (SC-11)** — mobile/floor focus (hide future-day columns + checkbox on phones; enlarge today's target) *(CSS)*
+
+**Strict mobile polish (NEW — Whitney 2026-06-20)**
+- [ ] **#45** — a dedicated, **exhaustive** mobile/touch pass over **every single page** (admin + customer)
+  **AND every print view**: responsive layout, big tap targets, zero horizontal overflow, readable density
+  on phone + tablet, fewest-taps flows. Enumerate a page-by-page checklist at kickoff. Part of execution-order
+  #3 (Mobile/PWA); pairs with the PWA wrapper + facility role (`docs/PWA-FACILITY-SPEC.md`).
 
 ---
 
