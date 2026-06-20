@@ -48,11 +48,11 @@
 	   dividers (e.g. .eem-settings-nav) or empty-state placeholders
 	   with dashed borders (e.g. .eem-logo-upload). Those have
 	   different visual roles and stay at their own values. */
-	--eem-bg-alt: #f3f4f5;
+	--eem-bg-alt: #F7F9FC;
 	--eem-bg-hover: #fafbff;
 	--eem-surface: #FFFFFF;
 	--eem-border: #D9E2F2;
-	--eem-border-soft: #f0f0f1;
+	--eem-border-soft: #f0f4fb;
 	--eem-border-card: #e2e8f4;
 	/* Lightest surface tint — table footers, group-header bands, inline panels.
 	   Real token for the value previously inlined as a var() fallback. */
@@ -132,7 +132,7 @@
 	/* Corner radius */
 	--eem-radius-sm: 2px;
 	--eem-radius: 3px;       /* form inputs, buttons, chips — C7.X.17 Issue A: token-level change from 4px */
-	--eem-radius-lg: 6px;    /* cards, modals */
+	--eem-radius-lg: 10px;   /* cards (mockup .card border-radius:10px, global 2026-06-20) */
 
 	/* THE canonical control height for EVERY dropdown / select / filter / toolbar
 	   control across the whole plugin (Whitney 2026-06-13: one set style for all
@@ -424,8 +424,14 @@ body.eem-shell-page a:active,
 	flex-wrap: wrap;
 }
 
-.eem-page-body {
-	/* The #F7F9FC field where content cards live (mockup app-content). */
+/* The #F7F9FC content field where cards live (mockup app-content). This is the
+   ONE global source for content-field padding — every page's field wrapper is
+   listed here, so changing the gutter happens in a single place. Pages whose
+   field renders OUTSIDE .eem-page-wrap use a sibling wrapper (.eem-dashboard-body,
+   .eem-order-detail-sections); they share the exact same padding. */
+.eem-page-body,
+.eem-dashboard-body,
+.eem-order-detail-sections {
 	background: #F7F9FC;
 	padding: 20px 24px 48px;
 }
@@ -466,15 +472,6 @@ body.eem-shell-page a:active,
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Responsive — tablet
-   ───────────────────────────────────────────────────────────── */
-@media (max-width: 1024px) {
-	.eem-page-header {
-		padding: 12px 14px;
-	}
-}
-
-/* ─────────────────────────────────────────────────────────────
    Responsive — mobile
    ───────────────────────────────────────────────────────────── */
 @media (max-width: 767px) {
@@ -482,7 +479,7 @@ body.eem-shell-page a:active,
 		flex-direction: column;
 		align-items: flex-start;
 		gap: var(--eem-space-3);
-		padding: 12px 14px;
+		padding: 14px;
 	}
 
 	.eem-page-actions {
@@ -529,7 +526,7 @@ body.eem-shell-page a:active,
 .eem-card {
 	background: var(--eem-surface);
 	border: var(--eem-border-card-rule);
-	border-radius: var(--eem-radius);
+	border-radius: var(--eem-radius-lg);
 	overflow: hidden;
 }
 
@@ -4147,18 +4144,26 @@ a.eem-mob-res-name:focus {
 	gap: 5px;
 }
 
-/* Tablet — drop WP sidebar at 960px (handled by WP itself; we trim our
-   own page padding here). */
+/* Tablet — keep the page full-bleed (header/banner bands span edge to edge);
+   the card field supplies its own gutters. */
 @media (max-width: 960px) {
 	.eem-page {
-		padding: 10px 14px 40px;
+		padding: 0 0 40px;
 	}
 }
 
 /* Mobile — swap desktop table for card list at <768px. Mockup lines 161-189. */
 @media (max-width: 767px) {
+	/* Full-bleed page: header / breadcrumb / banner bands span edge to edge.
+	   The card field (page-body / sections wrappers) supplies a tighter 14px
+	   gutter on mobile per the mockup (.app-content padding:14px 14px 40px). */
 	.eem-page {
-		padding: 8px 10px 32px;
+		padding: 0 0 32px;
+	}
+	.eem-page-body,
+	.eem-dashboard-body,
+	.eem-order-detail-sections {
+		padding: 14px 14px 40px;
 	}
 
 	/* C5.5: removed dead mobile override for .eem-page-header--standalone (parent rule already deleted above). */
@@ -4643,7 +4648,7 @@ a.eem-btn-ghost:hover {
 /* ── PAYMENT OUTSTANDING BANNER (conditional, inside .eem-page-wrap) ── */
 .eem-order-payment-banner {
 	background: #FFF7ED;
-	border-bottom: 1px solid #fed7aa;
+	border-top: 1px solid #fed7aa;
 	padding: 14px 20px;
 	display: flex;
 	align-items: center;
@@ -4751,7 +4756,7 @@ a.eem-btn-collect-banner:focus {
 .eem-order-body {
 	padding: 16px 20px;
 	display: grid;
-	grid-template-columns: 1fr 320px;
+	grid-template-columns: 1fr 300px;
 	gap: 16px;
 	align-items: start;
 }
@@ -4759,14 +4764,14 @@ a.eem-btn-collect-banner:focus {
 .eem-order-main {
 	display: flex;
 	flex-direction: column;
-	gap: 14px;
+	gap: 16px;
 	min-width: 0;
 }
 
 .eem-order-side {
 	display: flex;
 	flex-direction: column;
-	gap: 14px;
+	gap: 16px;
 }
 
 /* ── Order Detail floating-cards treatment (matches Dashboard) ──────────────
@@ -4786,12 +4791,20 @@ a.eem-btn-collect-banner:focus {
 /* Gray container; flex-column gap provides the gaps between the body grid,
    Special Instructions, and Activity Log. No side padding so the cards span the
    full top-card width (the screen-edge gap comes from .eem-page). */
+/* The cards field below the full-bleed banners. Background + gutter padding come
+   from the GLOBAL grouped field rule; only the flex stacking is page-specific. */
 .eem-order-detail-sections {
-	background: #f0f0f1;
 	display: flex;
 	flex-direction: column;
-	gap: 14px;
-	padding: 14px 0 18px;
+	gap: 16px;
+}
+/* Banners live in page-body and must read as full-bleed bands flush to the
+   header above — kill the field padding here (the cards field below supplies
+   its own gutters). `body.` prefix raises specificity to (0,2,1) so this beats
+   the `.eem-shell-page--orders .eem-page-body` padding rule, since the order
+   detail page carries BOTH the --orders and --order-detail body classes. */
+body.eem-shell-page--order-detail .eem-page-body {
+	padding: 0;
 }
 .eem-shell-page--order-detail .eem-order-body { padding: 0; }
 .eem-shell-page--order-detail .eem-order-full-width { padding: 0; }
@@ -4803,8 +4816,8 @@ a.eem-btn-collect-banner:focus {
 }
 /* Match card borders + radius to the Dashboard edge (3px, #e2e4e7). */
 .eem-shell-page--order-detail .eem-order-card {
-	border-color: #e2e4e7;
-	border-radius: var(--eem-radius);
+	border-color: var(--eem-border-card);
+	border-radius: var(--eem-radius-lg);
 }
 /* The "More" toggle is a <button> (siblings are <a>); pin its border to the
    ghost gray and kill the focus/active darkening so it matches the row. */
@@ -4827,8 +4840,8 @@ a.eem-btn-collect-banner:focus {
 /* Inner cards inside the body grid (Stall/RV/Add-On/Group/Summary/Payment). */
 .eem-order-card {
 	background: var(--eem-surface);
-	border: 1px solid var(--eem-border-soft);
-	border-radius: var(--eem-radius);
+	border: 1px solid var(--eem-border-card);
+	border-radius: var(--eem-radius-lg);
 	overflow: hidden;
 }
 
@@ -4911,7 +4924,7 @@ a.eem-btn-collect-banner:focus {
 }
 
 .eem-detail-table tr {
-	border-bottom: 1px solid #e2e4e7;
+	border-bottom: 1px solid #f0f4fb;
 }
 
 .eem-detail-table tr:last-child {
@@ -4928,13 +4941,13 @@ a.eem-btn-collect-banner:focus {
    header style) — was washed-out muted gray on a pale fill. */
 .eem-detail-table td:first-child {
 	font-size: 11px;
-	font-weight: 600;
+	font-weight: 700;
 	letter-spacing: 0.05em;
 	text-transform: uppercase;
-	color: var(--eem-navy);
+	color: var(--eem-text-secondary);
 	width: 42%;
-	background: var(--eem-gray-50, #f8fafc);
-	border-right: 1px solid #e2e4e7;
+	background: #F7F9FC;
+	border-right: 1px solid #f0f4fb;
 }
 
 .eem-detail-table td:last-child {
@@ -4943,13 +4956,14 @@ a.eem-btn-collect-banner:focus {
 }
 
 .eem-detail-table__subtotal td {
-	background: #F8FAFF;
-	border-top: 2px solid #c0d8ff;
+	background: #f0f5ff;
+	border-top: 2px solid #bfdbfe;
 }
 
 .eem-detail-table__subtotal td:first-child {
 	color: var(--eem-navy);
 	font-weight: 700;
+	background: #f0f5ff;
 }
 
 .eem-detail-table__subtotal td:last-child {
@@ -5030,7 +5044,7 @@ a.eem-btn-checkin:link, a.eem-btn-checkin:visited, a.eem-btn-checkin:hover, a.ee
 
 .eem-order-summary__section {
 	border: 1px solid var(--eem-border-soft);
-	border-radius: var(--eem-radius);
+	border-radius: 8px;
 	overflow: hidden;
 	margin-bottom: 10px;
 }
@@ -5143,11 +5157,10 @@ a.eem-btn-checkin:link, a.eem-btn-checkin:visited, a.eem-btn-checkin:hover, a.ee
 	justify-content: space-between;
 	align-items: center;
 	padding: 13px 14px;
-	/* Filled light-blue panel (not a heavy navy border) to make the total stand
-	   out — Whitney 2026-06-19. */
-	background: #f0f4fb;
-	border: 1px solid #d9e2f2;
-	border-radius: var(--eem-radius);
+	/* Filled light-blue panel (mockup .grand-total). */
+	background: #f0f5ff;
+	border: 1px solid #bfdbfe;
+	border-radius: 8px;
 	margin-top: 4px;
 }
 
@@ -5238,8 +5251,8 @@ a.eem-btn-checkin:link, a.eem-btn-checkin:visited, a.eem-btn-checkin:hover, a.ee
 	justify-content: space-between;
 	align-items: center;
 	padding: 9px 12px;
-	background: #F8FAFF;
-	border-top: 1px solid #c0d8ff;
+	background: #f0f5ff;
+	border-top: 1px solid #bfdbfe;
 	font-size: 13px;
 	font-weight: 700;
 	color: var(--eem-navy);
@@ -6044,31 +6057,13 @@ a.eem-btn-checkin:link, a.eem-btn-checkin:visited, a.eem-btn-checkin:hover, a.ee
    bars, this-week summary rows.
    ═════════════════════════════════════════════════════════════════════════ */
 
-/* DS-1.B.3 (final): horizontal padding MUST mirror .eem-page-header
-   horizontal padding at every breakpoint so card box left-edge ===
-   page title text left-edge. Desktop both = 18px. Tablet (≤1024px)
-   page-header drops to 14px horizontal (line 354-357) — dashboard-
-   body must follow. Mobile (≤767px) both = 14px (override at the
-   bottom of this file). Earlier DS-1.B.2 fix matched at desktop
-   but missed the tablet breakpoint, leaving a 4px mismatch in the
-   768-1024 zone that surfaced on Whitney's window width. */
-/* The dashboard body renders OUTSIDE the page-wrap (see render()) so its cards
-   float as their own white cards on the gray page background instead of sharing
-   one white frame. Mirrors the Daily Movement `.eem-dm-sections` treatment.
-   No top/side padding: cards span the full header width (page-wrap edges) and
-   sit flush under the header card with no gray gap above the first card. The
-   gaps BETWEEN cards come from each card's own margin-bottom / grid gap. */
-.eem-dashboard-body { padding: 14px 0 18px; background: #F7F9FC; }
-
-/* Page-wrap now holds ONLY the header band — give it the same subtle card
-   border as the floating cards so the top reads as its own card, and drop the
-   body padding so the header fills it cleanly. */
+/* Dashboard field (.eem-dashboard-body) gets its #F7F9FC background + gutter
+   from the GLOBAL grouped field rule (see .eem-page-body group). No per-page
+   padding/background here. The empty .eem-page-body inside the dissolved
+   page-wrap is collapsed so it adds no gap above the dashboard field. */
 .eem-shell-page--dashboard .eem-page-body {
 	padding: 0;
-}
-.eem-shell-page--dashboard .eem-page-wrap {
-	border: 1px solid #e2e8f4;
-	border-radius: 10px;
+	background: transparent;
 }
 /* Match the floating cards to the mockup canonical border (#e2e8f4).
    Also apply the mockup's 10px card radius (Whitney: "mockup wins" 2026-06-20)
@@ -6592,11 +6587,8 @@ a.eem-dashboard-qa-btn:focus {
 
 /* Responsive */
 @media (max-width: 1024px) {
-	/* Cards float edge-to-edge with the header card (0 horizontal padding) at
-	   every breakpoint; the screen-edge gap comes from .eem-page's own padding.
-	   Without this the tablet body added 14px on top of .eem-page, leaving the
-	   floating cards narrower + more inset than the header card. */
-	.eem-dashboard-body { padding: 14px 0; }
+	/* Dashboard-body padding comes from the GLOBAL grouped field rule at every
+	   breakpoint — only the responsive grid columns are page-specific here. */
 	.eem-dashboard-kpi-grid { grid-template-columns: repeat(2, 1fr); }
 	.eem-dashboard-grid { grid-template-columns: 1fr; }
 	.eem-dashboard-side {
@@ -6606,7 +6598,6 @@ a.eem-dashboard-qa-btn:focus {
 	}
 }
 @media (max-width: 767px) {
-	.eem-dashboard-body { padding: 12px 0; }
 	.eem-dashboard-kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
 	.eem-dashboard-kpi-card { padding: 12px 14px; }
 	.eem-dashboard-kpi-value { font-size: 22px; }
@@ -12464,41 +12455,11 @@ a.eem-event-editor-card__quicklink:hover { color: #1257d1; }
 	background: #F7F9FC;
 }
 
-/* ── Orders list — full-bleed shell ──────────────────────────────────────
-   Mockup (orders_page.html): white header band with bottom border, toolbar
-   rows sitting transparent on a #F7F9FC field, and ONLY the table + footer
-   forming a bordered white card. Mirrors the daily-movement full-bleed pattern
-   — the shared .eem-page-wrap card is dissolved; each region owns its chrome. */
-.eem-shell-page--orders .eem-page-wrap {
-	background: #F7F9FC;
-	border: none;
-	border-radius: 0;
-	overflow: visible;
-}
-.eem-shell-page--orders .eem-page-header {
-	background: #fff;
-	border-bottom: 1px solid #e2e8f4;
-	padding: 18px 24px;
-}
-.eem-shell-page--orders .eem-page-body {
-	background: #F7F9FC;
-	padding: 20px 24px 48px;
-}
-/* Toolbar rows are transparent on the field; their selects/buttons/search
-   carry their own white chrome. Each row gets bottom spacing before the card. */
-.eem-shell-page--orders .eem-list-toolbar {
-	background: transparent;
-	border-bottom: none;
-	padding: 0;
-	margin-bottom: 10px;
-}
-/* The table + footer card. */
-.eem-shell-page--orders .eem-list-card {
-	border: 1px solid #e2e8f4;
-	border-radius: 10px;
-	overflow: hidden;
-	background: #fff;
-}
+/* Orders list full-bleed shell is now entirely handled by the GLOBAL shell
+   primitives (.eem-page-wrap dissolved, .eem-page-header white band,
+   .eem-page-body field, .eem-list-toolbar transparent, .eem-list-card). The
+   former .eem-shell-page--orders duplicate block was removed 2026-06-20 so
+   spacing lives in ONE place — change the global rules, every page follows. */
 
 /* ── Today Hero card ────────────────────────────────────────────────── */
 .eem-dm-hero {
