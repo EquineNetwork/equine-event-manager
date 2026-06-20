@@ -154,18 +154,14 @@ tr.eem-chart-barn-row td{background:#fdf4e7;padding:9px 22px;font-size:12px;font
 .eem-chart-day-metrics td{background:#fbfdff;border-bottom:1px solid #eef2f7;padding:8px 14px;vertical-align:middle;white-space:nowrap}
 .eem-chart-day-metrics td:first-child{padding-left:22px}
 .eem-chart-day-metrics--all td{background:#f0f4fb;border-bottom:1px solid #d9e2f2}
-.eem-day-metrics-label{font-size:12px;font-weight:700;color:#031B4E}
-.eem-day-metrics-label .eem-dm-key{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin-right:14px}
-.eem-day-metrics-label .eem-dm-key:last-child{margin-right:0}
-.eem-day-metric{white-space:nowrap}
-/* numbers only, color-coded — no dots */
-.eem-dm-pip{display:inline-block;font-size:13.5px;font-weight:700;margin-right:15px;font-family:'Space Grotesk',sans-serif}
-.eem-dm-pip:last-child{margin-right:0}
-.eem-dm-pip--avail,.eem-dm-key--avail{color:#15803d}
-.eem-dm-pip--assigned,.eem-dm-key--assigned{color:#1668F2}
-.eem-dm-pip--clean,.eem-dm-key--clean{color:#7c3aed}
-.eem-dm-pip--block,.eem-dm-key--block{color:#64748b}
-.eem-dm-pip--zero{color:#cbd3dd}
+.eem-day-metrics-label{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#64748b}
+/* Available = hero number; cleaning/blocked surface only when there's something to act on */
+.eem-day-metric{white-space:nowrap;text-transform:none}
+.eem-dm-avail{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:#15803d}
+.eem-dm-unit{font-size:11px;font-weight:600;color:#94a3b8;margin-left:3px}
+.eem-dm-flag{display:inline-block;margin-left:8px;font-size:11.5px;font-weight:700;padding:1px 9px;border-radius:999px;vertical-align:1px}
+.eem-dm-flag--clean{background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe}
+.eem-dm-flag--block{background:#f3f4f5;color:#64748b;border:1px solid #e2e4e7}
 
 /* ── BY LOCATION – MAP (eem-smap) ── */
 .eem-smap{--eem-smap-chip:30px;--eem-smap-gap:4px;padding:0 18px 4px}
@@ -545,26 +541,21 @@ tr.eem-chart-barn-row td{background:#fdf4e7;padding:9px 22px;font-size:12px;font
                   </tr>
                 </thead>
                 <tbody>
-                  <!-- ★ All-barns per-day totals (doubles as the color key) -->
+                  <!-- ★ All-barns per-day totals -->
                   <tr class="eem-chart-day-metrics eem-chart-day-metrics--all">
-                    <td colspan="3" class="eem-day-metrics-label">
-                      <span class="eem-dm-key eem-dm-key--avail">Avail</span>
-                      <span class="eem-dm-key eem-dm-key--assigned">Assigned</span>
-                      <span class="eem-dm-key eem-dm-key--clean">Cleaning</span>
-                      <span class="eem-dm-key eem-dm-key--block">Blocked</span>
-                    </td>
-                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail">431</span><span class="eem-dm-pip eem-dm-pip--assigned">64</span><span class="eem-dm-pip eem-dm-pip--clean">4</span><span class="eem-dm-pip eem-dm-pip--block">1</span></td>
-                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail">426</span><span class="eem-dm-pip eem-dm-pip--assigned">69</span><span class="eem-dm-pip eem-dm-pip--clean">4</span><span class="eem-dm-pip eem-dm-pip--block">1</span></td>
-                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail">455</span><span class="eem-dm-pip eem-dm-pip--assigned">41</span><span class="eem-dm-pip eem-dm-pip--clean">3</span><span class="eem-dm-pip eem-dm-pip--block">1</span></td>
-                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail">493</span><span class="eem-dm-pip eem-dm-pip--assigned">5</span><span class="eem-dm-pip eem-dm-pip--clean eem-dm-pip--zero">0</span><span class="eem-dm-pip eem-dm-pip--block">2</span></td>
+                    <td colspan="3" class="eem-day-metrics-label">All barns</td>
+                    <td class="eem-day-metric"><span class="eem-dm-avail">431</span><span class="eem-dm-unit">avail</span><span class="eem-dm-flag eem-dm-flag--clean">4 to clean</span><span class="eem-dm-flag eem-dm-flag--block">1 blocked</span></td>
+                    <td class="eem-day-metric"><span class="eem-dm-avail">426</span><span class="eem-dm-unit">avail</span><span class="eem-dm-flag eem-dm-flag--clean">4 to clean</span><span class="eem-dm-flag eem-dm-flag--block">1 blocked</span></td>
+                    <td class="eem-day-metric"><span class="eem-dm-avail">455</span><span class="eem-dm-unit">avail</span><span class="eem-dm-flag eem-dm-flag--clean">3 to clean</span><span class="eem-dm-flag eem-dm-flag--block">1 blocked</span></td>
+                    <td class="eem-day-metric"><span class="eem-dm-avail">493</span><span class="eem-dm-unit">avail</span><span class="eem-dm-flag eem-dm-flag--block">2 blocked</span></td>
                   </tr>
                   <!-- Barn header row carries its own per-day metrics (no duplicate name row) -->
                   <tr class="eem-chart-barn-row">
                     <td colspan="3">Montcrief</td>
-                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail">251</span><span class="eem-dm-pip eem-dm-pip--assigned">46</span><span class="eem-dm-pip eem-dm-pip--clean">3</span><span class="eem-dm-pip eem-dm-pip--block eem-dm-pip--zero">0</span></td>
-                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail">248</span><span class="eem-dm-pip eem-dm-pip--assigned">49</span><span class="eem-dm-pip eem-dm-pip--clean">3</span><span class="eem-dm-pip eem-dm-pip--block eem-dm-pip--zero">0</span></td>
-                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail">270</span><span class="eem-dm-pip eem-dm-pip--assigned">28</span><span class="eem-dm-pip eem-dm-pip--clean">2</span><span class="eem-dm-pip eem-dm-pip--block eem-dm-pip--zero">0</span></td>
-                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail">295</span><span class="eem-dm-pip eem-dm-pip--assigned">5</span><span class="eem-dm-pip eem-dm-pip--clean eem-dm-pip--zero">0</span><span class="eem-dm-pip eem-dm-pip--block eem-dm-pip--zero">0</span></td>
+                    <td class="eem-day-metric"><span class="eem-dm-avail">251</span><span class="eem-dm-unit">avail</span><span class="eem-dm-flag eem-dm-flag--clean">3 to clean</span></td>
+                    <td class="eem-day-metric"><span class="eem-dm-avail">248</span><span class="eem-dm-unit">avail</span><span class="eem-dm-flag eem-dm-flag--clean">3 to clean</span></td>
+                    <td class="eem-day-metric"><span class="eem-dm-avail">270</span><span class="eem-dm-unit">avail</span><span class="eem-dm-flag eem-dm-flag--clean">2 to clean</span></td>
+                    <td class="eem-day-metric"><span class="eem-dm-avail">295</span><span class="eem-dm-unit">avail</span></td>
                   </tr>
                   <tr class="eem-chart-stall-row">
                     <td class="eem-loc-check-col"><input type="checkbox" aria-label="Select 5001"></td>
@@ -586,10 +577,10 @@ tr.eem-chart-barn-row td{background:#fdf4e7;padding:9px 22px;font-size:12px;font
                   </tr>
                   <tr class="eem-chart-barn-row">
                     <td colspan="3">Burnett</td>
-                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail">180</span><span class="eem-dm-pip eem-dm-pip--assigned">18</span><span class="eem-dm-pip eem-dm-pip--clean">1</span><span class="eem-dm-pip eem-dm-pip--block">1</span></td>
-                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail">178</span><span class="eem-dm-pip eem-dm-pip--assigned">20</span><span class="eem-dm-pip eem-dm-pip--clean">1</span><span class="eem-dm-pip eem-dm-pip--block">1</span></td>
-                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail">185</span><span class="eem-dm-pip eem-dm-pip--assigned">13</span><span class="eem-dm-pip eem-dm-pip--clean">1</span><span class="eem-dm-pip eem-dm-pip--block">1</span></td>
-                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail">198</span><span class="eem-dm-pip eem-dm-pip--assigned eem-dm-pip--zero">0</span><span class="eem-dm-pip eem-dm-pip--clean eem-dm-pip--zero">0</span><span class="eem-dm-pip eem-dm-pip--block">2</span></td>
+                    <td class="eem-day-metric"><span class="eem-dm-avail">180</span><span class="eem-dm-unit">avail</span><span class="eem-dm-flag eem-dm-flag--clean">1 to clean</span><span class="eem-dm-flag eem-dm-flag--block">1 blocked</span></td>
+                    <td class="eem-day-metric"><span class="eem-dm-avail">178</span><span class="eem-dm-unit">avail</span><span class="eem-dm-flag eem-dm-flag--clean">1 to clean</span><span class="eem-dm-flag eem-dm-flag--block">1 blocked</span></td>
+                    <td class="eem-day-metric"><span class="eem-dm-avail">185</span><span class="eem-dm-unit">avail</span><span class="eem-dm-flag eem-dm-flag--clean">1 to clean</span><span class="eem-dm-flag eem-dm-flag--block">1 blocked</span></td>
+                    <td class="eem-day-metric"><span class="eem-dm-avail">198</span><span class="eem-dm-unit">avail</span><span class="eem-dm-flag eem-dm-flag--block">2 blocked</span></td>
                   </tr>
                   <tr class="eem-chart-stall-row">
                     <td class="eem-loc-check-col"><input type="checkbox" aria-label="Select 2210"></td>
@@ -625,24 +616,20 @@ tr.eem-chart-barn-row td{background:#fdf4e7;padding:9px 22px;font-size:12px;font
                   </tr>
                 </thead>
                 <tbody>
-                  <!-- ★ All-zones per-day totals (doubles as the color key) -->
+                  <!-- ★ All-zones per-day totals -->
                   <tr class="eem-chart-day-metrics eem-chart-day-metrics--all">
-                    <td colspan="3" class="eem-day-metrics-label">
-                      <span class="eem-dm-key eem-dm-key--avail">Avail</span>
-                      <span class="eem-dm-key eem-dm-key--assigned">Assigned</span>
-                      <span class="eem-dm-key eem-dm-key--block">Blocked</span>
-                    </td>
-                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail">68</span><span class="eem-dm-pip eem-dm-pip--assigned">3</span><span class="eem-dm-pip eem-dm-pip--block eem-dm-pip--zero">0</span></td>
-                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail">67</span><span class="eem-dm-pip eem-dm-pip--assigned">4</span><span class="eem-dm-pip eem-dm-pip--block eem-dm-pip--zero">0</span></td>
-                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail">69</span><span class="eem-dm-pip eem-dm-pip--assigned">2</span><span class="eem-dm-pip eem-dm-pip--block eem-dm-pip--zero">0</span></td>
-                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail">71</span><span class="eem-dm-pip eem-dm-pip--assigned eem-dm-pip--zero">0</span><span class="eem-dm-pip eem-dm-pip--block eem-dm-pip--zero">0</span></td>
+                    <td colspan="3" class="eem-day-metrics-label">All zones</td>
+                    <td class="eem-day-metric"><span class="eem-dm-avail">68</span><span class="eem-dm-unit">avail</span></td>
+                    <td class="eem-day-metric"><span class="eem-dm-avail">67</span><span class="eem-dm-unit">avail</span></td>
+                    <td class="eem-day-metric"><span class="eem-dm-avail">69</span><span class="eem-dm-unit">avail</span></td>
+                    <td class="eem-day-metric"><span class="eem-dm-avail">71</span><span class="eem-dm-unit">avail</span></td>
                   </tr>
                   <tr class="eem-chart-barn-row">
                     <td colspan="3">Premium Zone</td>
-                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail">38</span><span class="eem-dm-pip eem-dm-pip--assigned">2</span><span class="eem-dm-pip eem-dm-pip--block eem-dm-pip--zero">0</span></td>
-                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail">37</span><span class="eem-dm-pip eem-dm-pip--assigned">3</span><span class="eem-dm-pip eem-dm-pip--block eem-dm-pip--zero">0</span></td>
-                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail">39</span><span class="eem-dm-pip eem-dm-pip--assigned">1</span><span class="eem-dm-pip eem-dm-pip--block eem-dm-pip--zero">0</span></td>
-                    <td class="eem-day-metric"><span class="eem-dm-pip eem-dm-pip--avail">40</span><span class="eem-dm-pip eem-dm-pip--assigned eem-dm-pip--zero">0</span><span class="eem-dm-pip eem-dm-pip--block eem-dm-pip--zero">0</span></td>
+                    <td class="eem-day-metric"><span class="eem-dm-avail">38</span><span class="eem-dm-unit">avail</span></td>
+                    <td class="eem-day-metric"><span class="eem-dm-avail">37</span><span class="eem-dm-unit">avail</span></td>
+                    <td class="eem-day-metric"><span class="eem-dm-avail">39</span><span class="eem-dm-unit">avail</span></td>
+                    <td class="eem-day-metric"><span class="eem-dm-avail">40</span><span class="eem-dm-unit">avail</span></td>
                   </tr>
                   <tr class="eem-chart-stall-row">
                     <td class="eem-loc-check-col"><input type="checkbox" aria-label="Select P-03"></td>
