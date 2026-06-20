@@ -509,11 +509,12 @@ class EEM_Reports_Page {
 			);
 		}
 
-		$colspan = max( 1, count( $headers ) );
+		$colspan          = max( 1, count( $headers ) );
+		$summary_row_count = isset( $report['summary_row_count'] ) ? absint( $report['summary_row_count'] ) : 0;
 
-		// Renders one <tr> from a flat row array aligned to $headers.
-		$render_row = static function ( array $row ) use ( $headers ): void {
-			echo '<tr>';
+		// Renders one <tr>; $is_summary adds the totals highlight class.
+		$render_row = static function ( array $row, bool $is_summary = false ) use ( $headers ): void {
+			echo $is_summary ? '<tr class="rpt-pv-summary">' : '<tr>';
 			foreach ( $headers as $i => $_ ) {
 				echo '<td>' . esc_html( (string) ( $row[ $i ] ?? '' ) ) . '</td>';
 			}
@@ -545,6 +546,7 @@ class EEM_Reports_Page {
 				.rpt-pv-table th{text-align:left;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#031B4E;padding:6px 12px;background:#f8fafc;border-top:1px solid #d9e2f2;border-bottom:1px solid #d9e2f2}
 				.rpt-pv-table td{padding:7px 12px;font-size:11px;color:#1d2327;border-bottom:1px solid #f0f0f1}
 				.rpt-pv-table tbody tr:nth-child(even) td{background:#f8fafc}
+				.rpt-pv-summary td{background:#031B4E!important;color:#fff!important;font-weight:700;font-size:11px}
 				.rpt-pv-group td{background:#fdf4e7;color:#b45309;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;font-size:11px;border-top:1px solid #f3e2c4;border-bottom:1px solid #f3e2c4}
 				.rpt-pv-group td .rpt-pv-group-count{font-weight:600;color:#92400e}
 				.rpt-pv-total{padding:12px 22px;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#031B4E;border-top:1px solid #d9e2f2;background:#f8fafc}
@@ -597,8 +599,8 @@ class EEM_Reports_Page {
 									<?php endforeach; ?>
 								<?php endforeach; ?>
 							<?php else : ?>
-								<?php foreach ( $rows as $row ) : ?>
-									<?php $render_row( (array) $row ); ?>
+								<?php foreach ( $rows as $idx => $row ) : ?>
+									<?php $render_row( (array) $row, $idx < $summary_row_count ); ?>
 								<?php endforeach; ?>
 							<?php endif; ?>
 						</tbody>

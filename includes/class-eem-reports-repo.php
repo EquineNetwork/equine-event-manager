@@ -371,6 +371,22 @@ class EEM_Reports_Repo {
 	 * @return array
 	 */
 	public function stall_occupancy_report( array $filters ): array {
+		// When a specific reservation is selected, build the per-day usage grid.
+		// When "All reservations" is selected, fall back to the per-event summary.
+		if ( $filters['reservation_id'] > 0 ) {
+			return $this->stall_occupancy_daily( $filters );
+		}
+
+		return $this->stall_occupancy_summary( $filters );
+	}
+
+	/**
+	 * Stall Occupancy — per-event summary (used when no specific reservation filtered).
+	 *
+	 * @param array $filters Normalized filters.
+	 * @return array
+	 */
+	private function stall_occupancy_summary( array $filters ): array {
 		$agg = array();
 		foreach ( $this->get_filtered_orders( $filters ) as $o ) {
 			$rid = absint( $o['reservation_id'] ?? 0 );
@@ -415,6 +431,161 @@ class EEM_Reports_Repo {
 				__( 'RV Booked', 'equine-event-manager' ),
 			),
 			'rows'    => $rows,
+		);
+	}
+
+	/**
+	 * Stall Occupancy — per-day usage grid for a single reservation.
+	 *
+	 * Columns: Customer, Phone, Stalls, Arrival, Departure, [one col per event date].
+	 * Each date cell shows how many stalls that customer had in use that day
+	 * (arrival_date ≤ date ≤ departure_date). A TOTALS row is prepended so the
+	 * facility can see the per-day peak at a glance. Rows sorted by customer name.
+	 *
+	 * @param array $filters Normalized filters (reservation_id > 0 guaranteed).
+	 * @return array
+	 */
+	private function stall_occupancy_daily( array $filters ): array {
+		$rid         = $filters['reservation_id'];
+		$order_data  = array();
+		$min_date    = null;
+		$max_date    = null;
+
+		foreach ( $this->get_filtered_orders( $filters ) as $o ) {
+			$stalls = absint( $o['stall_quantity'] ?? 0 );
+			if ( $stalls <= 0 ) {
+				continue;
+			}
+
+			$arrival   = isset( $o['stall_arrival_date'] ) && '' !== (string) $o['stall_arrival_date']
+				? (string) $o['stall_arrival_date'] : '';
+			$departure = isset( $o['stall_departure_date'] ) && '' !== (string) $o['stall_departure_date']
+				? (string) $o['stall_departure_date'] : '';
+
+			if ( '' !== $arrival && ( null === $min_date || $arrival < $min_date ) ) {
+				$min_date = $arrival;
+			}
+			if ( '' !== $departure && ( null === $max_date || $departure > $max_date ) ) {
+				$max_date = $departure;
+			}
+
+			$order_data[] = array(
+				'customer'  => (string) ( $o['customer_name'] ?? '' ),
+				'phone'     => (string) ( $o['phone'] ?? '' ),
+				'stalls'    => $stalls,
+				'arrival'   => $arrival,
+				'departure' => $departure,
+			);
+		}
+
+		// Sort by customer name.
+		usort(
+			$order_data,
+			static function ( $a, $b ) {
+				return strcasecmp( $a['customer'], $b['customer'] );
+			}
+		);
+
+		// Build event_header from reservation title + date range.
+		$res_title    = (string) get_the_title( $rid );
+		$event_header = $res_title;
+		if ( null !== $min_date && null !== $max_date ) {
+			$event_header .= '  ·  ' . date_i18n( 'M j', strtotime( $min_date ) )
+				. ' – ' . date_i18n( 'M j, Y', strtotime( $max_date ) );
+		}
+
+		// No arrival/departure dates recorded yet.
+		if ( null === $min_date || null === $max_date ) {
+			return array(
+				'title'        => __( 'Stall Occupancy', 'equine-event-manager' ),
+				'slug'         => 'stall_occupancy',
+				'event_header' => $event_header,
+				'headers'      => array(
+					__( 'Customer', 'equine-event-manager' ),
+					__( 'Phone', 'equine-event-manager' ),
+					__( 'Stalls', 'equine-event-manager' ),
+					__( 'Arrival', 'equine-event-manager' ),
+					__( 'Departure', 'equine-event-manager' ),
+				),
+				'rows'         => array_map(
+					static function ( $od ) {
+						return array( $od['customer'], $od['phone'], (string) $od['stalls'], '—', '—' );
+					},
+					$order_data
+				),
+			);
+		}
+
+		// Build the full date range as Y-m-d strings.
+		$dates   = array();
+		$current = new DateTime( $min_date );
+		$end     = new DateTime( $max_date );
+		while ( $current <= $end ) {
+			$dates[] = $current->format( 'Y-m-d' );
+			$current->modify( '+1 day' );
+		}
+
+		// Fixed column headers + one header per date (e.g. "Jun 26").
+		$headers = array(
+			__( 'Customer', 'equine-event-manager' ),
+			__( 'Phone', 'equine-event-manager' ),
+			__( 'Stalls', 'equine-event-manager' ),
+			__( 'Arrival', 'equine-event-manager' ),
+			__( 'Departure', 'equine-event-manager' ),
+		);
+		foreach ( $dates as $d ) {
+			$headers[] = date_i18n( 'M j', strtotime( $d ) );
+		}
+
+		// Build data rows and accumulate per-day totals.
+		$day_totals  = array_fill( 0, count( $dates ), 0 );
+		$total_stalls = 0;
+		$rows         = array();
+
+		foreach ( $order_data as $od ) {
+			$row = array(
+				$od['customer'],
+				$od['phone'],
+				(string) $od['stalls'],
+				'' !== $od['arrival'] ? date_i18n( 'M j', strtotime( $od['arrival'] ) ) : '—',
+				'' !== $od['departure'] ? date_i18n( 'M j', strtotime( $od['departure'] ) ) : '—',
+			);
+
+			foreach ( $dates as $i => $date ) {
+				$in_use = (
+					'' !== $od['arrival'] &&
+					'' !== $od['departure'] &&
+					$date >= $od['arrival'] &&
+					$date <= $od['departure']
+				) ? $od['stalls'] : 0;
+
+				$day_totals[ $i ] += $in_use;
+				$row[]             = $in_use > 0 ? (string) $in_use : '';
+			}
+
+			$total_stalls += $od['stalls'];
+			$rows[]        = $row;
+		}
+
+		// Totals row — pinned at top in the print view.
+		$totals_row = array(
+			__( 'TOTALS', 'equine-event-manager' ),
+			'',
+			(string) $total_stalls,
+			'',
+			'',
+		);
+		foreach ( $day_totals as $t ) {
+			$totals_row[] = (string) $t;
+		}
+
+		return array(
+			'title'             => __( 'Stall Occupancy', 'equine-event-manager' ),
+			'slug'              => 'stall_occupancy',
+			'event_header'      => $event_header,
+			'headers'           => $headers,
+			'rows'              => array_merge( array( $totals_row ), $rows ),
+			'summary_row_count' => 1,
 		);
 	}
 
