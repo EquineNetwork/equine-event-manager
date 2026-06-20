@@ -9685,6 +9685,19 @@ class EEM_Admin {
 			wp_send_json_error( array( 'code' => 'not_found', 'message' => __( 'Order not found.', 'equine-event-manager' ) ), 404 );
 		}
 
+		// Concurrency hardening (INVENTORY-CONCURRENCY-REPORT MED-3): serialize the
+		// read-modify-write of dates/subtotals under the per-reservation assignment
+		// lock so two concurrent Edit-Dates calls — or a fast double-submit — can't
+		// lose-update or double-apply the charge delta. The rows are (re-)read below
+		// INSIDE the lock; a duplicate submit re-reads the now-updated stored dates,
+		// so its delta computes to 0 and nothing is added twice. The refund branch's
+		// engine uses a different lock key (`eem_refund_…` vs `eem_checkout_…`), so
+		// holding both never deadlocks.
+		$lock_rid = isset( $order['reservation_id'] ) ? (int) $order['reservation_id'] : 0;
+		if ( ! $this->acquire_assignment_lock( $lock_rid ) ) {
+			$this->send_assignment_lock_busy();
+		}
+
 		// Gather this section's component rows.
 		$rows = array();
 		foreach ( (array) ( isset( $order['components'] ) ? $order['components'] : array() ) as $c ) {
@@ -9813,6 +9826,8 @@ class EEM_Admin {
 			/* translators: %s: amount added to balance due */
 			$msg = sprintf( __( 'Dates updated; $%s added to balance due.', 'equine-event-manager' ), number_format( $balance_added, 2 ) );
 		}
+
+		$this->release_assignment_lock( $lock_rid );
 
 		wp_send_json_success( array(
 			'requires_reload' => true,

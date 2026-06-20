@@ -2243,8 +2243,11 @@
 		}).then(function (response) {
 			return response.json().catch(function () { return { success: false, data: { message: 'Unexpected server response.' } }; });
 		}).then(function (json) {
-			if (confirmBtn) confirmBtn.disabled = false;
 			if (!json || !json.success) {
+				// Re-enable only on failure; on success the button stays disabled
+				// through the reload so a fast second click can't dup the line item
+				// (INVENTORY-CONCURRENCY-REPORT LOW-5).
+				if (confirmBtn) confirmBtn.disabled = false;
 				showOrderAddItemsError((json && json.data && json.data.message) ? json.data.message : 'Could not add the item.');
 				return;
 			}
