@@ -671,7 +671,14 @@ class EEM_Order_Detail_Page {
 						<span class="eem-stall-assignment__badge"><?php echo esc_html( $assigned ); ?></span>
 					</div>
 				<?php endif; ?>
-				<?php if ( '' !== $charts_url ) : ?>
+				<?php
+				// Only offer the assign/manage button when the reservation actually
+				// has stall inventory configured — otherwise the chart is a dead-end
+				// "No facility map / no units" page (Whitney 2026-06-20).
+				$stalls_configured = $res_id > 0 && class_exists( 'EEM_Reservations_CPT' )
+					&& EEM_Reservations_CPT::section_enabled( $res_id, 'stalls_enabled' );
+				?>
+				<?php if ( '' !== $charts_url && $stalls_configured ) : ?>
 					<div class="eem-stall-assignment__action">
 						<a class="eem-btn eem-btn-electric" href="<?php echo esc_url( $charts_url ); ?>"><?php
 							echo '' !== $assigned
@@ -866,13 +873,21 @@ class EEM_Order_Detail_Page {
 							<span class="eem-stall-assignment__badge"><?php echo esc_html( $assigned_rv ); ?></span>
 						</div>
 					<?php endif; ?>
-					<div class="eem-stall-assignment__action">
-						<a class="eem-btn eem-btn-electric" href="<?php echo esc_url( $rv_charts_url ); ?>"><?php
-							echo '' !== $assigned_rv
-								? esc_html__( 'Manage RV Assignment', 'equine-event-manager' )
-								: esc_html__( 'Assign RV Lots', 'equine-event-manager' );
-						?></a>
-					</div>
+					<?php
+					// Only offer the assign/manage button when the reservation has RV
+					// inventory configured (Whitney 2026-06-20).
+					$rv_configured = $rv_res_id > 0 && class_exists( 'EEM_Reservations_CPT' )
+						&& EEM_Reservations_CPT::section_enabled( $rv_res_id, 'rv_enabled' );
+					?>
+					<?php if ( $rv_configured ) : ?>
+						<div class="eem-stall-assignment__action">
+							<a class="eem-btn eem-btn-electric" href="<?php echo esc_url( $rv_charts_url ); ?>"><?php
+								echo '' !== $assigned_rv
+									? esc_html__( 'Manage RV Assignment', 'equine-event-manager' )
+									: esc_html__( 'Assign RV Lots', 'equine-event-manager' );
+							?></a>
+						</div>
+					<?php endif; ?>
 				</div>
 			<?php endif; ?>
 		</div>
