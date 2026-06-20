@@ -552,6 +552,9 @@ class EEM_Reports_Page {
 				.rpt-pv-group td .rpt-pv-group-count{font-weight:600;color:#92400e}
 				.rpt-pv-total{padding:12px 22px;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#031B4E;border-top:1px solid #d9e2f2;background:#f8fafc}
 				.rpt-pv-empty{padding:28px 22px;text-align:center;color:#646970}
+				.rpt-pv-note-section{margin-top:24px;padding-top:16px;border-top:1px solid #d9e2f2}
+				.rpt-pv-note-section__label{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#031B4E;margin-bottom:8px;padding:0 0 0 2px}
+				.rpt-pv-table--note{margin-top:4px}
 				@page{size:landscape}
 				@media print{
 					.rpt-pv-toolbar{display:none}
@@ -616,6 +619,32 @@ class EEM_Reports_Page {
 						?>
 					</div>
 				<?php endif; ?>
+				<?php
+				// note_sections: optional array of supplementary sub-tables rendered below
+				// the main table (e.g. a per-type breakdown for the Shavings report).
+				// Each entry: [ 'label' => string, 'headers' => string[], 'rows' => array[] ].
+				$note_sections = isset( $report['note_sections'] ) && is_array( $report['note_sections'] ) ? $report['note_sections'] : array();
+				foreach ( $note_sections as $ns ) :
+					if ( empty( $ns['rows'] ) ) { continue; }
+					$ns_headers = isset( $ns['headers'] ) && is_array( $ns['headers'] ) ? $ns['headers'] : array();
+					$ns_label   = isset( $ns['label'] ) ? (string) $ns['label'] : '';
+				?>
+				<div class="rpt-pv-note-section">
+					<?php if ( '' !== $ns_label ) : ?>
+						<div class="rpt-pv-note-section__label"><?php echo esc_html( $ns_label ); ?></div>
+					<?php endif; ?>
+					<table class="rpt-pv-table rpt-pv-table--note">
+						<?php if ( ! empty( $ns_headers ) ) : ?>
+						<thead><tr><?php foreach ( $ns_headers as $h ) : ?><th><?php echo esc_html( (string) $h ); ?></th><?php endforeach; ?></tr></thead>
+						<?php endif; ?>
+						<tbody>
+							<?php foreach ( $ns['rows'] as $ns_row ) : ?>
+								<tr><?php foreach ( (array) $ns_row as $cell ) : ?><td><?php echo esc_html( (string) $cell ); ?></td><?php endforeach; ?></tr>
+							<?php endforeach; ?>
+						</tbody>
+					</table>
+				</div>
+				<?php endforeach; ?>
 			</div>
 			</div>
 			<script>document.title = <?php echo wp_json_encode( $doc_title ); ?>;</script>

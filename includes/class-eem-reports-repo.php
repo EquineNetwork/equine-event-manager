@@ -857,10 +857,33 @@ class EEM_Reports_Repo {
 	 * @return array{title:string,slug:string,headers:array,rows:array}
 	 */
 	private function shavings_daily( array $filters ): array {
+		global $wpdb;
+
 		$rid        = $filters['reservation_id'];
 		$order_data = array();
 		$min_date   = null;
 		$max_date   = null;
+
+		// Per-type breakdown: sum qty per product name from additional_shavings_items JSON.
+		$type_totals = array();
+		$sr_table    = $wpdb->prefix . 'en_stall_reservations';
+		$raw_items   = $wpdb->get_col( $wpdb->prepare( // phpcs:ignore WordPress.DB
+			"SELECT additional_shavings_items FROM {$sr_table} WHERE reservation_id = %d AND additional_shavings_items IS NOT NULL AND additional_shavings_items != ''",
+			$rid
+		) );
+		foreach ( $raw_items as $json ) {
+			$items = json_decode( (string) $json, true );
+			if ( ! is_array( $items ) ) {
+				continue;
+			}
+			foreach ( $items as $item ) {
+				$name = isset( $item['name'] ) ? (string) $item['name'] : '';
+				$qty  = isset( $item['qty'] ) ? absint( $item['qty'] ) : 0;
+				if ( '' !== $name && $qty > 0 ) {
+					$type_totals[ $name ] = ( $type_totals[ $name ] ?? 0 ) + $qty;
+				}
+			}
+		}
 
 		foreach ( $this->get_filtered_orders( $filters ) as $o ) {
 			$req = absint( $o['required_shavings_qty'] ?? 0 );
@@ -956,6 +979,24 @@ class EEM_Reports_Repo {
 			(string) ( $total_req + $total_add ),
 		);
 
+		// Build per-type note section if any additional shavings by type were sold.
+		$note_sections = array();
+		if ( ! empty( $type_totals ) ) {
+			arsort( $type_totals );
+			$type_rows = array();
+			foreach ( $type_totals as $name => $qty ) {
+				$type_rows[] = array( $name, (string) $qty );
+			}
+			$note_sections[] = array(
+				'label'   => __( 'Additional Shavings — By Type', 'equine-event-manager' ),
+				'headers' => array(
+					__( 'Product', 'equine-event-manager' ),
+					__( 'Bags Sold', 'equine-event-manager' ),
+				),
+				'rows'    => $type_rows,
+			);
+		}
+
 		return array(
 			'title'             => __( 'Shavings', 'equine-event-manager' ),
 			'slug'              => 'shavings',
@@ -963,6 +1004,7 @@ class EEM_Reports_Repo {
 			'headers'           => $headers,
 			'rows'              => array_merge( array( $totals_row ), $rows ),
 			'summary_row_count' => 1,
+			'note_sections'     => $note_sections,
 		);
 	}
 

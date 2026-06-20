@@ -2,17 +2,15 @@
 
 ---
 
-## 🔖 SESSION HANDOFF — 2026-06-19 (v2.7.520, on `main`)
+## 🔖 SESSION HANDOFF — 2026-06-19 (v2.7.527, on `main`)
 
 **v1 is complete and live.** The sessions since 2.7.466 have been a deep visual/UX polish pass
 plus a batch of targeted Order-Detail / receipt / Stall-Chart / frontend features on top of v1.
-**Latest (2.7.516–520):** Reports cleanup session — print column sets (orders/stall occupancy/RV
-occupancy), filter simplification to reservation-only, RV Occupancy report added, and Additional
-Shavings feature scoped (in progress — see "Additional Shavings" item below).
+**Latest (2.7.521–527):** Additional Shavings feature shipped end-to-end (see below). Reports
+cleanup continuing — Customer List, Refund Log still to do this session.
 
-**NEXT UP THIS SESSION:** Build the **Additional Shavings** feature end-to-end (Edit Reservation
-card → customer event page → order storage migration → shavings report rebuild). See the
-"Additional Shavings" section under ACTIVE WORK below.
+**NEXT UP:** Continue Reports cleanup — Customer List report, Refund Log report, then any
+remaining report print-column / view decisions.
 
 **Open admin money-path items: MED-4 (Auth.net double-charge window — needs live test) + LOW-3/4.**
 
@@ -196,42 +194,30 @@ that can move real money twice — payment path, change one-at-a-time + live Aut
 
 ---
 
-## 🚧 ACTIVE WORK — Additional Shavings feature (scoped 2026-06-19)
+## ✅ Additional Shavings feature — SHIPPED (2.7.521–527, 2026-06-19)
 
-**Problem:** Shavings sold as add-ons currently land in the free-text General Add-Ons field, making
-them invisible to structured reporting. Required shavings (per-stall auto-calculated) are already
-structured; additional shavings bags need to match.
+**Problem solved:** Shavings sold as add-ons previously landed in the free-text General Add-Ons
+field, invisible to structured reporting. Now fully structured.
 
-**Design (locked):**
-- Required shavings: unchanged — N bags per stall, one price, facility-chosen type, auto-calculated.
-- Additional shavings: admin defines named types + price per bag (e.g. Large Flake $12, Mini Flake
-  $10). Customer buys flat quantities of any type — no stall tie, no per-stall math. Multiple types
-  in one order are fine.
-- Anything in this card is semantically "shavings bags" for all reporting purposes.
+**Design:**
+- Required shavings: unchanged — N bags per stall, one price, auto-calculated.
+- Additional shavings: admin defines named product types + price/bag on the Edit Reservation
+  "Additional Shavings" card (repeater: Name / Price/bag). Customer buys flat qty of any type.
+  No stall tie. Multiple types in one order allowed.
+- Customer event page: dedicated "Additional Shavings" section card above General Add-Ons with
+  optional helper text. Each product is a qty picker. Required shavings stay in the stall card.
 
-**Files touched + migration:**
-1. **`includes/migrations/eem-mig-034-additional-shavings-items.php`** — new `additional_shavings_items`
-   TEXT (JSON) column on `wp_en_stall_reservations`. Existing `additional_shavings_qty` stays for
-   backward compat (total bags); new column holds per-type breakdown `[{name,qty,price,subtotal},…]`.
-2. **`includes/class-equine-event-manager-activator.php`** — register migration 034; add column to
-   CREATE TABLE schema.
-3. **`admin/class-equine-event-manager-admin.php`** — new "Additional Shavings" card rendered above
-   General Add-Ons in the Edit Reservation editor. Toggle + repeater of `{Name, Price/bag}` rows.
-   Saves to `_en_additional_shavings_enabled` + `_en_additional_shavings_products` (JSON) on the
-   reservation post. Uses the standard `.eem-repeater` pattern matching General Add-Ons UI.
-4. **`public/class-equine-event-manager-shortcodes.php`** — customer event page: when
-   `_en_additional_shavings_enabled` is on, render each product as a qty-picker row in the Stall
-   section (below required shavings, above the tack-stall note). Submit collects
-   `additional_shavings[0][qty]`, `additional_shavings[0][index]`, etc. Server-side: validate,
-   price, write `additional_shavings_items` JSON + update `additional_shavings_qty` total +
-   `additional_shavings_subtotal` on the stall reservation row.
-5. **`includes/class-eem-reports-repo.php`** — rebuild `shavings_report()` as per-day rows (bags
-   sold each day of the event: stall stay covers that date) + per-event totals at top (navy TOTALS
-   row). Columns: Date / Required Bags / Additional Bags / Total Bags. Per-event summary (all
-   reservations): one row per event. Uses `additional_shavings_items` for type breakdown in a
-   separate "by type" summary block.
-
-**Status:** ⏳ IN PROGRESS (Edit Reservation card → customer page → migration → reports)
+**Files shipped:**
+- `includes/migrations/eem-mig-034-additional-shavings-items.php` — `additional_shavings_items` JSON column on `wp_en_stall_reservations`
+- `includes/migrations/eem-mig-035-shavings-products-column.php` — `additional_shavings_products` column on `wp_eem_reservation_config`
+- `includes/class-equine-event-manager-activator.php` — registered mig-034 + mig-035; schema updated
+- `includes/class-eem-reservation-config.php` — column + json_keys registered
+- `admin/class-eem-reservation-editor-page.php` + `templates/admin/reservation-editor/_section-shavings.php` — editor card
+- `includes/class-equine-event-manager-reservations-cpt.php` — sanitize + SECTION_ENABLED_MAP
+- `public/class-equine-event-manager-shortcodes.php` — customer page card, POST parse, DB write, shavings_open fix
+- `includes/class-eem-reports-repo.php` — shavings_report() per-day + summary + per-type note section
+- `admin/class-eem-reports-page.php` — note_sections renderer support
+- `assets/css/admin.css` — amber icon tone for the editor section chip
 
 ---
 
