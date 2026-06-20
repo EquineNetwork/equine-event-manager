@@ -40,6 +40,7 @@ function eem_mig_026_stay_packages(): void {
 		start_date date NOT NULL,
 		end_date date NOT NULL,
 		price decimal(10,2) NOT NULL DEFAULT 0.00,
+		early_bird_price decimal(10,2) NULL DEFAULT NULL,
 		sort_order int NOT NULL DEFAULT 0,
 		max_quantity int NOT NULL DEFAULT 0,
 		created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -11711,6 +11711,20 @@ input.eem-pkg-date-input {
 }
 input.eem-pkg-date-input:focus { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
 .eem-pkg-sep { color: var(--eem-text-muted); font-size: 13px; flex-shrink: 0; }
+/* Per-package Early Bird price column — hidden until the section's Early Bird
+   toggle adds .eem-pkg-eb-on to the packages wrap. */
+.eem-pkg-eb-wrap { display: none; }
+.eem-pkg-eb-on .eem-pkg-eb-wrap { display: flex; }
+.eem-pkg-price-sym--eb { font-size: 10.5px; font-weight: 700; letter-spacing: .02em; }
+
+/* Column titles above the package rows (widths mirror the row inputs). */
+.eem-pkg-header { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.eem-pkg-h { font-size: 12px; font-weight: 600; color: var(--eem-text-secondary); }
+.eem-pkg-h--name { flex: 1 1 180px; min-width: 120px; }
+.eem-pkg-h--date { width: 150px; flex-shrink: 0; }
+.eem-pkg-h--sep  { width: 9px; flex-shrink: 0; }
+.eem-pkg-h--price { width: 110px; flex-shrink: 0; }
+.eem-pkg-h--del  { width: 30px; flex-shrink: 0; }
 .eem-pkg-price-wrap {
 	display: flex; align-items: stretch; flex-shrink: 0;
 	height: var(--eem-select-height); box-sizing: border-box;

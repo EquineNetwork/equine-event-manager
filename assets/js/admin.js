@@ -4334,6 +4334,7 @@
 			if (hi) hi.value = turningOnT ? '1' : '0';
 			eemApplyControlsById(tlr);
 			eemApplyToggleDeps();
+			eemApplyPkgEbVisibility();
 			return;
 		}
 	});
@@ -4359,6 +4360,22 @@
 			var group = dep.closest('.eem-sched-group');
 			var hint = group ? group.querySelector('.eem-requires-hint') : null;
 			if (hint) hint.hidden = reqOn;
+		});
+	}
+
+	/* Per-package Early Bird price column shows only when that section's Early Bird
+	   toggle is on (class on the packages wrap; CSS reveals .eem-pkg-eb-wrap). */
+	function eemApplyPkgEbVisibility() {
+		[['stall', 'eem-stall-packages-list-wrap'], ['rv', 'eem-rv-packages-list-wrap']].forEach(function (pair) {
+			var tog = document.querySelector('[data-eem-action="reservation-editor-toggle-switch-row"][data-eem-subsection="' + pair[0] + '-eb"]');
+			var on = false;
+			if (tog) {
+				var inner = tog.querySelector('.eem-toggle');
+				var hid = tog.querySelector('input[data-eem-subsection-enabled]');
+				on = (inner && inner.classList.contains('eem-toggle--on')) || (hid && hid.value === '1');
+			}
+			var wrap = document.getElementById(pair[1]);
+			if (wrap) wrap.classList.toggle('eem-pkg-eb-on', !!on);
 		});
 	}
 
@@ -6079,6 +6096,7 @@
 	document.addEventListener('DOMContentLoaded', function () {
 		document.querySelectorAll('[data-eem-action="reservation-editor-toggle-switch-row"], [data-eem-action="reservation-editor-toggle-stay-type"]').forEach(eemApplyControlsById);
 		eemApplyToggleDeps();
+		eemApplyPkgEbVisibility();
 		eemSyncEbCutoffBounds('stall');
 		eemSyncEbCutoffBounds('rv');
 		eemApplyFeeModeVisibility();
@@ -6309,6 +6327,8 @@ function eemShowPackageForm(type) {
 	form.querySelector('#eem-' + type + '-pkg-start').value = availStart ? availStart.value : '';
 	form.querySelector('#eem-' + type + '-pkg-end').value = availEnd ? availEnd.value : '';
 	form.querySelector('#eem-' + type + '-pkg-price').value = '';
+	var ebEl = form.querySelector('#eem-' + type + '-pkg-eb-price');
+	if (ebEl) ebEl.value = '';
 	form.querySelector('#eem-' + type + '-pkg-max-qty').value = '';
 	var empty = document.getElementById('eem-' + type + '-packages-empty');
 	if (empty) empty.style.display = 'none';
@@ -6421,6 +6441,8 @@ function eemSavePackage(type, skipOverlapCheck) {
 	fd.append('start_date', startDate);
 	fd.append('end_date', endDate);
 	fd.append('price', form.querySelector('#eem-' + type + '-pkg-price').value || '0');
+	var ebField = form.querySelector('#eem-' + type + '-pkg-eb-price');
+	fd.append('early_bird_price', (ebField && ebField.value !== '') ? ebField.value : '');
 	fd.append('max_quantity', form.querySelector('#eem-' + type + '-pkg-max-qty').value || '0');
 	if (isEdit) fd.append('package_id', editingId);
 
@@ -6448,6 +6470,7 @@ function eemSavePackage(type, skipOverlapCheck) {
 					+ '<span class="eem-pkg-sep">&ndash;</span>'
 					+ '<input type="date" class="eem-pkg-date-input" value="' + eemEsc(pkg.end_date || '') + '" data-field="end_date">'
 					+ '<div class="eem-pkg-price-wrap"><span class="eem-pkg-price-sym">$</span><input type="number" step="0.01" min="0" class="eem-pkg-price-input" value="' + parseFloat(pkg.price).toFixed(2) + '" data-field="price"></div>'
+					+ '<div class="eem-pkg-price-wrap eem-pkg-eb-wrap" title="Early Bird Price"><span class="eem-pkg-price-sym">$</span><input type="number" step="0.01" min="0" class="eem-pkg-price-input" value="' + ((pkg.early_bird_price !== null && pkg.early_bird_price !== "" && typeof pkg.early_bird_price !== "undefined") ? parseFloat(pkg.early_bird_price).toFixed(2) : "") + '" data-field="early_bird_price"></div>'
 					+ '<button type="button" class="eem-row-card-delete" data-eem-action="' + type + '-package-delete" data-package-id="' + pkg.id + '" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>';
 				tbody.appendChild(div);
 
@@ -6478,6 +6501,8 @@ function eemSavePackageInline(input) {
 	var startVal = row.querySelector('[data-field="start_date"]').value;
 	var endVal = row.querySelector('[data-field="end_date"]').value;
 	var priceVal = row.querySelector('[data-field="price"]').value || '0';
+	var ebEl = row.querySelector('[data-field="early_bird_price"]');
+	var ebVal = ebEl ? ebEl.value : '';
 
 	if (!nameVal) return;
 
@@ -6491,6 +6516,7 @@ function eemSavePackageInline(input) {
 	fd.append('start_date', startVal);
 	fd.append('end_date', endVal);
 	fd.append('price', priceVal);
+	fd.append('early_bird_price', ebVal);
 	fd.append('max_quantity', '0');
 
 	fetch(ajaxurl, { method: 'POST', body: fd, credentials: 'same-origin' })

@@ -1598,6 +1598,7 @@ class EEM_Reservation_Editor_Page {
 		$start_date = sanitize_text_field( $_POST['start_date'] ?? '' );
 		$end_date   = sanitize_text_field( $_POST['end_date'] ?? '' );
 		$price      = (float) ( $_POST['price'] ?? 0 );
+		$eb_price   = ( isset( $_POST['early_bird_price'] ) && '' !== $_POST['early_bird_price'] ) ? (float) $_POST['early_bird_price'] : null;
 		$max_qty    = (int) ( $_POST['max_quantity'] ?? 0 );
 		$type       = sanitize_key( $_POST['type'] ?? 'stall' );
 
@@ -1630,6 +1631,7 @@ class EEM_Reservation_Editor_Page {
 			'start_date'     => $start_date,
 			'end_date'       => $end_date,
 			'price'          => $price,
+			'early_bird_price' => $eb_price,
 			'sort_order'     => $sort_order,
 			'max_quantity'   => $max_qty,
 		) );
@@ -1668,6 +1670,7 @@ class EEM_Reservation_Editor_Page {
 		if ( isset( $_POST['start_date'] ) )   $data['start_date']   = sanitize_text_field( $_POST['start_date'] );
 		if ( isset( $_POST['end_date'] ) )     $data['end_date']     = sanitize_text_field( $_POST['end_date'] );
 		if ( isset( $_POST['price'] ) )        $data['price']        = (float) $_POST['price'];
+		if ( isset( $_POST['early_bird_price'] ) ) $data['early_bird_price'] = ( '' === $_POST['early_bird_price'] ) ? null : (float) $_POST['early_bird_price'];
 		if ( isset( $_POST['max_quantity'] ) ) $data['max_quantity'] = (int) $_POST['max_quantity'];
 
 		$s = $data['start_date'] ?? $pkg['start_date'];

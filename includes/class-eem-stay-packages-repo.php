@@ -80,10 +80,11 @@ class EEM_Stay_Packages_Repo {
 				'start_date'     => sanitize_text_field( $data['start_date'] ?? '' ),
 				'end_date'       => sanitize_text_field( $data['end_date'] ?? '' ),
 				'price'          => (float) ( $data['price'] ?? 0 ),
+				'early_bird_price' => ( isset( $data['early_bird_price'] ) && '' !== $data['early_bird_price'] && null !== $data['early_bird_price'] ) ? (float) $data['early_bird_price'] : null,
 				'sort_order'     => (int) ( $data['sort_order'] ?? 0 ),
 				'max_quantity'   => (int) ( $data['max_quantity'] ?? 0 ),
 			),
-			array( '%d', '%s', '%s', '%s', '%s', '%f', '%d', '%d' )
+			array( '%d', '%s', '%s', '%s', '%s', '%f', '%f', '%d', '%d' )
 		);
 
 		return false !== $result ? (int) $wpdb->insert_id : false;
@@ -118,6 +119,13 @@ class EEM_Stay_Packages_Repo {
 		if ( isset( $data['price'] ) ) {
 			$update['price'] = (float) $data['price'];
 			$formats[]       = '%f';
+		}
+		if ( array_key_exists( 'early_bird_price', $data ) ) {
+			$eb = $data['early_bird_price'];
+			// null = clear the early-bird price (wpdb writes NULL; the %f format is
+			// ignored for null values).
+			$update['early_bird_price'] = ( '' === $eb || null === $eb ) ? null : (float) $eb;
+			$formats[]                  = '%f';
 		}
 		if ( isset( $data['sort_order'] ) ) {
 			$update['sort_order'] = (int) $data['sort_order'];

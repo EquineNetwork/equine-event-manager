@@ -182,16 +182,26 @@ echo '<input type="hidden" name="en_reservation[stall_nightly_enabled]" value="1
 eem_render_editor_field_row( array(
 	'label'        => __( 'Stall Nightly Rate', 'equine-event-manager' ),
 	'control_html' => sprintf(
-		'<div class="eem-rate-inline-pair"><div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[stall_nightly_rate]" value="%1$s" /></div><div class="eem-eb-inline%3$s" id="eem-stall-eb-nightly-row"><span class="eem-eb-inline__label">%2$s</span><div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[stall_early_bird_nightly_rate]" value="%4$s" /></div></div></div>',
+		'<div class="eem-rate-inline-pair"><div class="eem-eb-inline"><span class="eem-eb-inline__label">%5$s</span><div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[stall_nightly_rate]" value="%1$s" /></div></div><div class="eem-eb-inline%3$s" id="eem-stall-eb-nightly-row"><span class="eem-eb-inline__label">%2$s</span><div class="eem-price-wrap"><span class="eem-price-symbol">$</span><input class="eem-price-input" type="number" step="0.01" min="0" name="en_reservation[stall_early_bird_nightly_rate]" value="%4$s" /></div></div></div>',
 		esc_attr( $fmt_money( $data['stall_nightly_rate'] ) ),
 		esc_html__( 'Early Bird', 'equine-event-manager' ),
 		( $eb_on && $schedule_on ) ? '' : ' eem-row--hidden',
-		esc_attr( $fmt_money( $data['stall_early_bird_nightly_rate'] ) )
+		esc_attr( $fmt_money( $data['stall_early_bird_nightly_rate'] ) ),
+		esc_html__( 'Standard', 'equine-event-manager' )
 	),
 ) );
 echo '</div>'; // .eem-stall-nightly-content
 ?>
-<div id="eem-stall-packages-list-wrap"<?php echo $show_packages ? '' : ' style="display:none"'; ?>>
+<div id="eem-stall-packages-list-wrap" class="<?php echo ( $eb_on && $schedule_on ) ? 'eem-pkg-eb-on' : ''; ?>"<?php echo $show_packages ? '' : ' style="display:none"'; ?>>
+	<div class="eem-pkg-header">
+		<span class="eem-pkg-h eem-pkg-h--name"><?php esc_html_e( 'Title', 'equine-event-manager' ); ?></span>
+		<span class="eem-pkg-h eem-pkg-h--date"><?php esc_html_e( 'Start Date', 'equine-event-manager' ); ?></span>
+		<span class="eem-pkg-h eem-pkg-h--sep"></span>
+		<span class="eem-pkg-h eem-pkg-h--date"><?php esc_html_e( 'End Date', 'equine-event-manager' ); ?></span>
+		<span class="eem-pkg-h eem-pkg-h--price"><?php esc_html_e( 'Standard', 'equine-event-manager' ); ?></span>
+		<span class="eem-pkg-h eem-pkg-h--price eem-pkg-eb-wrap"><?php esc_html_e( 'Early Bird', 'equine-event-manager' ); ?></span>
+		<span class="eem-pkg-h eem-pkg-h--del"></span>
+	</div>
 	<div class="eem-packages-list" id="eem-stall-packages-tbody">
 		<?php foreach ( $stall_packages as $pkg ) :
 			$_price_fmt = number_format( (float) $pkg['price'], 2, '.', '' );
@@ -203,6 +213,7 @@ echo '</div>'; // .eem-stall-nightly-content
 			<span class="eem-pkg-sep">&ndash;</span>
 			<input type="date" class="eem-pkg-date-input" value="<?php echo esc_attr( $pkg['end_date'] ); ?>" data-field="end_date">
 			<div class="eem-pkg-price-wrap"><span class="eem-pkg-price-sym">$</span><input type="number" step="0.01" min="0" class="eem-pkg-price-input" value="<?php echo esc_attr( $_price_fmt ); ?>" data-field="price"></div>
+			<div class="eem-pkg-price-wrap eem-pkg-eb-wrap" title="<?php esc_attr_e( 'Early Bird Price', 'equine-event-manager' ); ?>"><span class="eem-pkg-price-sym">$</span><input type="number" step="0.01" min="0" class="eem-pkg-price-input" value="<?php echo esc_attr( ( null !== $pkg['early_bird_price'] && '' !== (string) $pkg['early_bird_price'] ) ? number_format( (float) $pkg['early_bird_price'], 2, '.', '' ) : '' ); ?>" data-field="early_bird_price"></div>
 			<button type="button" class="eem-row-card-delete" data-eem-action="stall-package-delete" data-package-id="<?php echo (int) $pkg['id']; ?>" title="<?php esc_attr_e( 'Delete', 'equine-event-manager' ); ?>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
 		</div>
 		<?php endforeach; ?>
@@ -222,6 +233,7 @@ echo '</div>'; // .eem-stall-nightly-content
 			<span class="eem-pkg-sep">&ndash;</span>
 			<input type="date" class="eem-pkg-date-input" id="eem-stall-pkg-end">
 			<div class="eem-pkg-price-wrap"><span class="eem-pkg-price-sym">$</span><input type="number" step="0.01" min="0" class="eem-pkg-price-input" id="eem-stall-pkg-price"></div>
+			<div class="eem-pkg-price-wrap eem-pkg-eb-wrap" title="<?php esc_attr_e( 'Early Bird Price', 'equine-event-manager' ); ?>"><span class="eem-pkg-price-sym">$</span><input type="number" step="0.01" min="0" class="eem-pkg-price-input" id="eem-stall-pkg-eb-price"></div>
 			<input type="number" min="0" step="1" class="eem-pkg-name-input" id="eem-stall-pkg-max-qty" placeholder="<?php esc_attr_e( 'Unlimited', 'equine-event-manager' ); ?>" style="max-width:100px">
 		</div>
 		<div class="eem-package-form-actions">

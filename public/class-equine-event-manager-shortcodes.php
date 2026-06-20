@@ -9925,6 +9925,11 @@ RV Lot: " . $rv_lot['name'] );
 		// get_billable_stay_units returns 1 for a package stay type).
 		$pkg = $this->find_package_for_stay_type( (array) $data, (string) $type, $stay_type );
 		if ( null !== $pkg ) {
+			// Per-package Early Bird: use the package's discounted price when the
+			// section's early-bird window is active and an early-bird price is set.
+			if ( isset( $pkg['early_bird_price'] ) && '' !== (string) $pkg['early_bird_price'] && null !== $pkg['early_bird_price'] && $this->is_early_bird_active( (array) $data, (string) $type ) ) {
+				return (float) $pkg['early_bird_price'];
+			}
 			return (float) ( $pkg['price'] ?? 0 );
 		}
 
@@ -10041,15 +10046,25 @@ RV Lot: " . $rv_lot['name'] );
 	 * @return array<string, array<string, float>>
 	 */
 	private function get_package_price_map( array $data, string $type ): array {
+		$eb_active = $this->is_early_bird_active( $data, $type );
 		$map = array();
 		foreach ( ( $data[ $type . '_packages' ] ?? array() ) as $pkg ) {
 			if ( ! is_array( $pkg ) || empty( $pkg['id'] ) ) {
 				continue;
 			}
+			$eb_price = ( isset( $pkg['early_bird_price'] ) && '' !== (string) $pkg['early_bird_price'] && null !== $pkg['early_bird_price'] )
+				? (float) $pkg['early_bird_price']
+				: null;
 			$map[ 'pkg_' . (int) $pkg['id'] ] = array(
-				'price' => (float) ( $pkg['price'] ?? 0 ),
-				'start' => (string) ( $pkg['start_date'] ?? '' ),
-				'end'   => (string) ( $pkg['end_date'] ?? '' ),
+				// When early bird is active and the package has an EB price, that IS
+				// the effective price the customer pays (server agrees — see
+				// get_current_rate); the live total reads this 'price'.
+				'price'     => ( $eb_active && null !== $eb_price ) ? $eb_price : (float) ( $pkg['price'] ?? 0 ),
+				'reg_price' => (float) ( $pkg['price'] ?? 0 ),
+				'eb_price'  => $eb_price,
+				'eb_active' => $eb_active,
+				'start'     => (string) ( $pkg['start_date'] ?? '' ),
+				'end'       => (string) ( $pkg['end_date'] ?? '' ),
 			);
 		}
 		return $map;
