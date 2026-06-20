@@ -243,10 +243,11 @@ class EEM_Reports_Repo {
 		}
 
 		return array(
-			'title'        => __( 'Orders', 'equine-event-manager' ),
-			'slug'         => 'orders',
-			'event_header' => $event_header,
-			'headers'      => array(
+			'title'         => __( 'Orders', 'equine-event-manager' ),
+			'slug'          => 'orders',
+			'event_header'  => $event_header,
+			'print_columns' => array( 0, 1, 3, 5, 6, 7, 8, 9, 10, 11, 12 ),
+			'headers'       => array(
 				__( 'Order #', 'equine-event-manager' ),
 				__( 'Customer', 'equine-event-manager' ),
 				__( 'Email', 'equine-event-manager' ),
