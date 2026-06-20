@@ -5044,28 +5044,25 @@
 		}
 	});
 
-	/* ── Stall Charts LIST PAGE — search filtering (2.3.25) ── */
+	/* ── Stall Charts LIST PAGE — search filtering ── */
 	document.addEventListener('input', function (ev) {
 		var t = ev.target;
 		if (!t || t.getAttribute('data-eem-input-action') !== 'sc-list-search') return;
 		var q = (t.value || '').toLowerCase().trim();
 		var rows  = document.querySelectorAll('#eem-sc-list-tbody tr[data-sc-title]');
-		var cards = document.querySelectorAll('.eem-sc-mobile-card[data-sc-title]');
-		rows.forEach(function (row) {
-			row.classList.toggle('eem-sc-hidden', q.length > 0 && row.getAttribute('data-sc-title').indexOf(q) === -1);
-		});
-		cards.forEach(function (card) {
-			card.classList.toggle('eem-sc-hidden', q.length > 0 && card.getAttribute('data-sc-title').indexOf(q) === -1);
-		});
-
-		// Show the "No reservations match your filters" state when the search
-		// hides every row (2.3.50).
+		var cards = document.querySelectorAll('.eem-sc-mob-card[data-sc-title]');
 		var anyVisible = false;
 		rows.forEach(function (row) {
-			if (!row.classList.contains('eem-sc-hidden')) anyVisible = true;
+			var hit = !q || row.getAttribute('data-sc-title').indexOf(q) !== -1;
+			row.style.display = hit ? '' : 'none';
+			if (hit) anyVisible = true;
+		});
+		cards.forEach(function (card) {
+			var hit = !q || card.getAttribute('data-sc-title').indexOf(q) !== -1;
+			card.style.display = hit ? '' : 'none';
 		});
 		var noMatch = document.getElementById('eem-sc-no-match');
-		if (noMatch) noMatch.style.display = (q.length > 0 && !anyVisible) ? '' : 'none';
+		if (noMatch) noMatch.style.display = (!anyVisible && q.length > 0) ? '' : 'none';
 	});
 
 	/* ── Stall Chart DETAIL: centralised inv/tab state ── */

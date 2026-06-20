@@ -4421,7 +4421,7 @@ class EEM_Admin {
 			)
 		);
 		?>
-		<div class="eem-stall-charts-list">
+		<div class="eem-sc-list">
 
 			<?php if ( $invalid_reservation_id > 0 ) : ?>
 			<div class="notice notice-warning is-dismissible">
@@ -4430,32 +4430,28 @@ class EEM_Admin {
 			<?php endif; ?>
 
 			<!-- Toolbar -->
-			<div class="eem-list-toolbar eem-sc-list-toolbar toolbar eem-toolbar-controls">
-				<div class="eem-list-toolbar-left toolbar-left">
-					<select class="toolbar-select eem-toolbar-select eem-sc-date-filter" id="eem-sc-date-filter" data-eem-input-action="sc-list-date-filter">
-						<option value="all"><?php esc_html_e( 'All dates', 'equine-event-manager' ); ?></option>
-						<?php foreach ( $date_options as $date_key => $date_label ) : ?>
-							<option value="<?php echo esc_attr( $date_key ); ?>"><?php echo esc_html( $date_label ); ?></option>
-						<?php endforeach; ?>
-					</select>
-					<div class="eem-search-wrap search-wrap">
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-						<input class="eem-search-input" type="search" placeholder="<?php esc_attr_e( 'Search', 'equine-event-manager' ); ?>" data-eem-input-action="sc-list-search">
-					</div>
+			<div class="eem-sc-list-toolbar">
+				<select class="eem-sc-date-select" id="eem-sc-date-filter" data-eem-input-action="sc-list-date-filter">
+					<option value="all"><?php esc_html_e( 'All dates', 'equine-event-manager' ); ?></option>
+					<?php foreach ( $date_options as $date_key => $date_label ) : ?>
+						<option value="<?php echo esc_attr( $date_key ); ?>"><?php echo esc_html( $date_label ); ?></option>
+					<?php endforeach; ?>
+				</select>
+				<div class="eem-sc-search-wrap">
+					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+					<input class="eem-sc-search-input" type="search" placeholder="<?php esc_attr_e( 'Search reservations…', 'equine-event-manager' ); ?>" data-eem-input-action="sc-list-search">
 				</div>
-				<div class="eem-list-toolbar-right toolbar-right">
-					<span class="eem-list-count item-count" id="eem-sc-list-count">
-						<?php
-						echo esc_html(
-							sprintf(
-								/* translators: %d: number of reservations */
-								_n( '%d reservation', '%d reservations', count( $rows ), 'equine-event-manager' ),
-								count( $rows )
-							)
-						);
-						?>
-					</span>
-				</div>
+				<span class="eem-sc-count" id="eem-sc-list-count">
+					<?php
+					echo esc_html(
+						sprintf(
+							/* translators: %d: number of reservations */
+							_n( '%d reservation', '%d reservations', count( $rows ), 'equine-event-manager' ),
+							count( $rows )
+						)
+					);
+					?>
+				</span>
 			</div>
 
 			<?php if ( empty( $rows ) ) : ?>
@@ -4471,105 +4467,112 @@ class EEM_Admin {
 			</div>
 			<?php else : ?>
 
-			<!-- Desktop table -->
-			<div class="eem-sc-list-desktop">
-				<table class="eem-sc-list-table">
-					<thead>
-						<tr>
-							<th class="sortable" data-eem-action="sc-sort" data-sort-key="title"><?php esc_html_e( 'Reservation', 'equine-event-manager' ); ?> <span class="sort-icon">&#8597;</span></th>
-							<th><?php esc_html_e( 'Availability', 'equine-event-manager' ); ?></th>
-							<th><?php esc_html_e( 'Barns', 'equine-event-manager' ); ?></th>
-							<th><?php esc_html_e( 'RV Lots', 'equine-event-manager' ); ?></th>
-						</tr>
-					</thead>
-					<tbody id="eem-sc-list-tbody">
-					<?php foreach ( $rows as $row ) :
-						$chart_url = admin_url( 'admin.php?page=equine-event-manager-stall-charts&reservation_id=' . absint( $row['id'] ) );
-						$edit_url  = admin_url( 'admin.php?page=equine-event-manager-reservation-editor&reservation_id=' . absint( $row['id'] ) );
-						$btn_label = __( 'View Chart', 'equine-event-manager' );
-						?>
-						<tr data-sc-title="<?php echo esc_attr( strtolower( $row['title'] ) ); ?>">
-							<td>
-								<a class="eem-sc-res-name" href="<?php echo esc_url( $chart_url ); ?>">
-									<?php echo esc_html( $row['title'] ); ?>
-								</a>
-								<?php if ( ! empty( $row['dates'] ) ) : ?>
-									<div class="eem-sc-res-dates res-dates"><?php echo wp_kses_post( $row['dates'] ); ?></div>
-								<?php endif; ?>
-							</td>
-							<td>
-								<?php if ( ! empty( $row['stats'] ) ) : ?>
-									<div class="eem-sc-availability">
-										<?php foreach ( $row['stats'] as $stat ) : ?>
-											<span class="eem-sc-avail-stat eem-sc-avail-stat--<?php echo esc_attr( $stat['tone'] ); ?>">
-												<?php if ( isset( $stat['count'] ) && null !== $stat['count'] ) : ?><strong><?php echo esc_html( number_format_i18n( (int) $stat['count'] ) ); ?></strong> <?php endif; ?><?php echo esc_html( $stat['name'] ); ?>
-											</span>
-										<?php endforeach; ?>
-									</div>
-								<?php endif; ?>
-							</td>
-							<td>
-								<?php if ( ! empty( $row['barn_names'] ) ) : ?>
-									<div class="eem-sc-barn-tags">
-										<?php foreach ( $row['barn_names'] as $barn ) : ?>
-											<span class="eem-sc-barn-tag"><?php echo esc_html( $barn ); ?></span>
-										<?php endforeach; ?>
-									</div>
-								<?php else : ?>
-									<span class="eem-sc-empty-dash">—</span>
-								<?php endif; ?>
-							</td>
-							<td>
-								<?php if ( ! empty( $row['rv_zone_names'] ) ) : ?>
-									<div class="eem-sc-barn-tags">
-										<?php foreach ( $row['rv_zone_names'] as $zone ) : ?>
-											<span class="eem-sc-rv-lot-tag"><?php echo esc_html( $zone ); ?></span>
-										<?php endforeach; ?>
-									</div>
-								<?php else : ?>
-									<span class="eem-sc-empty-dash">—</span>
-								<?php endif; ?>
-							</td>
-						</tr>
-					<?php endforeach; ?>
-					</tbody>
-				</table>
-			</div>
+			<!-- Content card: desktop table + mobile cards + pagination -->
+			<div class="eem-sc-content-card-list">
 
-			<!-- Mobile cards -->
-			<div class="eem-sc-list-mobile">
-				<?php foreach ( $rows as $row ) :
-					$chart_url = admin_url( 'admin.php?page=equine-event-manager-stall-charts&reservation_id=' . absint( $row['id'] ) );
-					$edit_url  = admin_url( 'admin.php?page=equine-event-manager-reservation-editor&reservation_id=' . absint( $row['id'] ) );
-					$btn_label = __( 'View Chart', 'equine-event-manager' );
-					?>
-					<div class="eem-sc-mobile-card"
-						 data-sc-title="<?php echo esc_attr( strtolower( $row['title'] ) ); ?>">
-						<div class="eem-sc-mob-card-top">
+				<!-- Desktop table -->
+				<div class="eem-sc-tbl-wrap">
+					<table class="eem-sc-tbl">
+						<thead>
+							<tr>
+								<th><?php esc_html_e( 'Reservation', 'equine-event-manager' ); ?> <span class="sort-icon">&#8597;</span></th>
+								<th><?php esc_html_e( 'Availability', 'equine-event-manager' ); ?></th>
+								<th><?php esc_html_e( 'Barns', 'equine-event-manager' ); ?></th>
+								<th><?php esc_html_e( 'RV Lots', 'equine-event-manager' ); ?></th>
+							</tr>
+						</thead>
+						<tbody id="eem-sc-list-tbody">
+						<?php foreach ( $rows as $row ) :
+							$chart_url     = admin_url( 'admin.php?page=equine-event-manager-stall-charts&reservation_id=' . absint( $row['id'] ) );
+							$edit_url      = admin_url( 'admin.php?page=equine-event-manager-reservation-editor&reservation_id=' . absint( $row['id'] ) );
+							$not_configured = empty( $row['stats'] );
+							?>
+							<tr data-sc-title="<?php echo esc_attr( strtolower( $row['title'] ) ); ?>">
+								<td>
+									<a class="eem-sc-res-link" href="<?php echo esc_url( $chart_url ); ?>">
+										<?php echo esc_html( $row['title'] ); ?>
+									</a>
+									<?php if ( ! empty( $row['dates'] ) ) : ?>
+										<div class="eem-sc-res-dates"><?php echo wp_kses_post( $row['dates'] ); ?></div>
+									<?php endif; ?>
+								</td>
+								<td>
+									<?php if ( $not_configured ) : ?>
+										<span class="eem-sc-not-configured">
+											<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+											<?php esc_html_e( 'Not yet configured', 'equine-event-manager' ); ?>
+										</span>
+									<?php else : ?>
+										<div class="eem-sc-avail-stats">
+											<?php foreach ( $row['stats'] as $stat ) : ?>
+												<span class="eem-sc-avail-stat eem-sc-avail-stat--<?php echo esc_attr( $stat['tone'] ); ?>">
+													<?php if ( isset( $stat['count'] ) && null !== $stat['count'] ) : ?><strong><?php echo esc_html( number_format_i18n( (int) $stat['count'] ) ); ?></strong> <?php endif; ?><?php echo esc_html( $stat['name'] ); ?>
+												</span>
+											<?php endforeach; ?>
+										</div>
+									<?php endif; ?>
+								</td>
+								<td>
+									<?php if ( ! empty( $row['barn_names'] ) ) : ?>
+										<div class="eem-sc-tags">
+											<?php foreach ( $row['barn_names'] as $barn ) : ?>
+												<span class="eem-sc-barn-tag"><?php echo esc_html( $barn ); ?></span>
+											<?php endforeach; ?>
+										</div>
+									<?php else : ?>
+										<span class="eem-sc-cell-muted">—</span>
+									<?php endif; ?>
+								</td>
+								<td>
+									<?php if ( ! empty( $row['rv_zone_names'] ) ) : ?>
+										<div class="eem-sc-tags">
+											<?php foreach ( $row['rv_zone_names'] as $zone ) : ?>
+												<span class="eem-sc-rv-tag"><?php echo esc_html( $zone ); ?></span>
+											<?php endforeach; ?>
+										</div>
+									<?php else : ?>
+										<span class="eem-sc-cell-muted">—</span>
+									<?php endif; ?>
+								</td>
+							</tr>
+						<?php endforeach; ?>
+						</tbody>
+					</table>
+				</div>
+
+				<!-- Mobile cards -->
+				<div class="eem-sc-mobile-cards" id="eem-sc-mobile">
+					<?php foreach ( $rows as $row ) :
+						$chart_url      = admin_url( 'admin.php?page=equine-event-manager-stall-charts&reservation_id=' . absint( $row['id'] ) );
+						$edit_url       = admin_url( 'admin.php?page=equine-event-manager-reservation-editor&reservation_id=' . absint( $row['id'] ) );
+						$not_configured = empty( $row['stats'] );
+						?>
+						<div class="eem-sc-mob-card" data-sc-title="<?php echo esc_attr( strtolower( $row['title'] ) ); ?>">
 							<a class="eem-sc-mob-res-name" href="<?php echo esc_url( $chart_url ); ?>">
 								<?php echo esc_html( $row['title'] ); ?>
 							</a>
-						</div>
-						<div class="eem-sc-mob-card-body">
 							<?php if ( ! empty( $row['dates'] ) ) : ?>
-								<div class="eem-sc-mob-card-dates"><?php echo esc_html( $row['dates'] ); ?></div>
+								<div class="eem-sc-mob-dates"><?php echo esc_html( $row['dates'] ); ?></div>
 							<?php endif; ?>
-							<?php if ( ! empty( $row['barn_names'] ) ) : ?>
-								<div class="eem-sc-barn-tags" style="margin-bottom:6px">
+							<?php if ( ! empty( $row['barn_names'] ) || ! empty( $row['rv_zone_names'] ) ) : ?>
+								<div class="eem-sc-tags eem-sc-mob-tags">
 									<?php foreach ( $row['barn_names'] as $barn ) : ?>
 										<span class="eem-sc-barn-tag"><?php echo esc_html( $barn ); ?></span>
 									<?php endforeach; ?>
-								</div>
-							<?php endif; ?>
-							<?php if ( ! empty( $row['rv_zone_names'] ) ) : ?>
-								<div class="eem-sc-barn-tags" style="margin-bottom:6px">
 									<?php foreach ( $row['rv_zone_names'] as $zone ) : ?>
-										<span class="eem-sc-rv-lot-tag"><?php echo esc_html( $zone ); ?></span>
+										<span class="eem-sc-rv-tag"><?php echo esc_html( $zone ); ?></span>
 									<?php endforeach; ?>
 								</div>
 							<?php endif; ?>
-							<?php if ( ! empty( $row['stats'] ) ) : ?>
-								<div class="eem-sc-availability">
+							<?php if ( $not_configured ) : ?>
+								<div class="eem-sc-mob-avail">
+									<span class="eem-sc-not-configured">
+										<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+										<?php esc_html_e( 'Not yet configured', 'equine-event-manager' ); ?>
+									</span>
+								</div>
+							<?php else : ?>
+								<div class="eem-sc-avail-stats eem-sc-mob-avail">
 									<?php foreach ( $row['stats'] as $stat ) : ?>
 										<span class="eem-sc-avail-stat eem-sc-avail-stat--<?php echo esc_attr( $stat['tone'] ); ?>">
 											<?php if ( isset( $stat['count'] ) && null !== $stat['count'] ) : ?><strong><?php echo esc_html( number_format_i18n( (int) $stat['count'] ) ); ?></strong> <?php endif; ?><?php echo esc_html( $stat['name'] ); ?>
@@ -4577,42 +4580,46 @@ class EEM_Admin {
 									<?php endforeach; ?>
 								</div>
 							<?php endif; ?>
-						</div>
-						<div class="eem-sc-mob-card-bottom">
-							<a class="eem-btn eem-btn-ghost" href="<?php echo esc_url( $edit_url ); ?>">
+							<a class="eem-sc-mob-edit-btn" href="<?php echo esc_url( $edit_url ); ?>">
+								<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
 								<?php esc_html_e( 'Edit Reservation', 'equine-event-manager' ); ?>
 							</a>
 						</div>
-					</div>
-				<?php endforeach; ?>
-			</div>
-
-			<!-- No-match state (shown by JS when the search filter hides every row) -->
-			<div class="eem-empty-state eem-sc-no-match" id="eem-sc-no-match" style="display:none;padding:48px 24px;text-align:center;">
-				<p style="font-size:13px;color:#6B7A99;margin:0;line-height:1.6;"><?php esc_html_e( 'No reservations match your filters.', 'equine-event-manager' ); ?></p>
-			</div>
-
-			<!-- Pagination row -->
-			<div class="pagination-row eem-sc-pagination-row">
-				<span class="pagination-info"><?php
-					echo esc_html( sprintf(
-						/* translators: 1: first item, 2: last item, 3: total */
-						__( 'Showing %1$d&ndash;%2$d of %3$d reservations', 'equine-event-manager' ),
-						count( $rows ) > 0 ? 1 : 0,
-						count( $rows ),
-						count( $rows )
-					) );
-				?></span>
-				<div class="pagination">
-					<button type="button" class="page-btn" disabled aria-label="<?php esc_attr_e( 'Previous page', 'equine-event-manager' ); ?>">&lsaquo;</button>
-					<button type="button" class="page-btn page-btn--active active" aria-current="page">1</button>
-					<button type="button" class="page-btn" disabled aria-label="<?php esc_attr_e( 'Next page', 'equine-event-manager' ); ?>">&rsaquo;</button>
+					<?php endforeach; ?>
 				</div>
-			</div>
+
+				<!-- No-match state -->
+				<div class="eem-sc-no-match" id="eem-sc-no-match" style="display:none">
+					<?php esc_html_e( 'No reservations match your filters.', 'equine-event-manager' ); ?>
+				</div>
+
+				<!-- Pagination -->
+				<div class="eem-sc-pagination-row">
+					<span class="eem-sc-pagination-info">
+						<?php
+						echo esc_html(
+							sprintf(
+								/* translators: 1: first item, 2: last item, 3: total */
+								__( 'Showing %1$d–%2$d of %3$d reservations', 'equine-event-manager' ),
+								count( $rows ) > 0 ? 1 : 0,
+								count( $rows ),
+								count( $rows )
+							)
+						);
+						?>
+					</span>
+					<div class="eem-sc-pagination">
+						<button type="button" class="eem-sc-page-btn" disabled aria-label="<?php esc_attr_e( 'Previous page', 'equine-event-manager' ); ?>">&lsaquo;</button>
+						<button type="button" class="eem-sc-page-btn eem-sc-page-btn--active" aria-current="page">1</button>
+						<button type="button" class="eem-sc-page-btn" disabled aria-label="<?php esc_attr_e( 'Next page', 'equine-event-manager' ); ?>">&rsaquo;</button>
+					</div>
+				</div>
+
+			</div><!-- /.eem-sc-content-card-list -->
 
 			<?php endif; // end empty check ?>
 
-		</div><!-- /.eem-stall-charts-list -->
+		</div><!-- /.eem-sc-list -->
 		<?php
 		eem_render_page_close();
 	}

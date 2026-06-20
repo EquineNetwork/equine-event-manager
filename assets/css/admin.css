@@ -9105,6 +9105,251 @@ body.destination-mode .eem-occ-pill--blocked { opacity: 0.5; pointer-events: non
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   STALL CHART LIST — 2026 redesign
+   Mockup: .mockups/stall_charts_page.html. Scoped under
+   .eem-shell-page--stall-charts .eem-page-body (list page only; detail page
+   does not use .eem-page-header / .eem-page-body).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* List page: style the page-header band as the mockup's .app-page-header */
+.eem-shell-page--stall-charts .eem-page-header {
+	background: #fff;
+	border-bottom: 1px solid #e2e8f4;
+	padding: 18px 24px;
+	display: block;
+}
+.eem-shell-page--stall-charts .eem-page-header .eem-page-title {
+	font-size: 22px;
+	font-weight: 700;
+	color: #0d1b3e;
+	letter-spacing: -0.02em;
+}
+.eem-shell-page--stall-charts .eem-page-header .eem-page-subtitle {
+	font-size: 13px;
+	color: #64748b;
+	margin-top: 3px;
+}
+
+/* List page content body: gray field with padding */
+.eem-shell-page--stall-charts .eem-page-body {
+	background: #F7F9FC;
+	padding: 20px 24px 48px;
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+/* Outer list wrapper */
+.eem-sc-list { display: contents; }
+
+/* ── Toolbar ── */
+.eem-sc-list-toolbar {
+	background: #fff;
+	border: 1px solid #e2e8f4;
+	border-radius: 10px;
+	padding: 12px 16px;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+.eem-sc-date-select {
+	font-family: inherit;
+	font-size: 13px;
+	color: #0d1b3e;
+	background: #F7F9FC;
+	border: 1.5px solid #d0daea;
+	border-radius: 7px;
+	padding: 8px 28px 8px 10px;
+	appearance: none;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 8px center;
+	cursor: pointer;
+	min-height: 36px;
+}
+select.eem-sc-date-select:focus { outline: none; border-color: #1668F2; box-shadow: 0 0 0 3px rgba(22,104,242,.1); }
+.eem-sc-search-wrap {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	background: #F7F9FC;
+	border: 1.5px solid #d0daea;
+	border-radius: 7px;
+	padding: 0 10px;
+	min-width: 220px;
+	min-height: 36px;
+}
+.eem-sc-search-wrap svg { color: #94a3b8; flex-shrink: 0; }
+.eem-sc-search-input {
+	border: 0;
+	outline: none;
+	padding: 7px 0;
+	font-size: 13px;
+	font-family: inherit;
+	background: transparent;
+	flex: 1;
+	color: #0d1b3e;
+}
+input.eem-sc-search-input:focus { outline: none; }
+.eem-sc-count { font-size: 13px; color: #64748b; margin-left: auto; white-space: nowrap; }
+
+/* ── Content card ── */
+.eem-sc-content-card-list {
+	background: #fff;
+	border: 1px solid #e2e8f4;
+	border-radius: 10px;
+	overflow: hidden;
+}
+
+/* ── Desktop table ── */
+.eem-sc-tbl-wrap { overflow-x: auto; }
+.eem-sc-tbl { width: 100%; border-collapse: collapse; }
+.eem-sc-tbl thead tr { border-bottom: 1px solid #e2e8f4; background: #fff; }
+.eem-sc-tbl th {
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: .06em;
+	text-transform: uppercase;
+	color: #94a3b8;
+	padding: 10px 20px;
+	text-align: left;
+	white-space: nowrap;
+}
+.eem-sc-tbl th:first-child { padding-left: 20px; }
+.eem-sc-tbl th:last-child  { padding-right: 20px; }
+.eem-sc-tbl td { padding: 14px 20px; border-bottom: 1px solid #f0f4fb; vertical-align: middle; }
+.eem-sc-tbl tbody tr:last-child td { border-bottom: none; }
+.eem-sc-tbl tbody tr:hover td { background: #fafbfe; }
+
+/* Reservation name cell */
+a.eem-sc-res-link { font-size: 14px; font-weight: 700; color: #0d1b3e; display: block; text-decoration: none; }
+a.eem-sc-res-link:hover,
+a.eem-sc-res-link:focus { color: #1668F2; text-decoration: none; }
+.eem-sc-res-dates { font-size: 12px; color: #64748b; margin-top: 2px; }
+
+/* Availability stats */
+.eem-sc-avail-stats { display: flex; flex-wrap: wrap; gap: 14px; }
+.eem-sc-avail-stat { font-size: 12px; color: #64748b; white-space: nowrap; }
+.eem-sc-avail-stat strong { font-size: 14px; font-weight: 700; margin-right: 2px; }
+.eem-sc-avail-stat--available strong { color: #15803d; }
+.eem-sc-avail-stat--reserved  strong { color: #1668F2; }
+.eem-sc-avail-stat--blocked   strong { color: #94a3b8; }
+
+/* Not-yet-configured badge */
+.eem-sc-not-configured {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	font-size: 12px;
+	color: #94a3b8;
+	font-style: italic;
+}
+
+/* Tag chips */
+.eem-sc-tags { display: flex; gap: 5px; flex-wrap: wrap; }
+.eem-sc-barn-tag {
+	padding: 3px 9px;
+	border-radius: 6px;
+	font-size: 11px;
+	font-weight: 600;
+	background: #f0f5ff;
+	color: #1668F2;
+	border: 1px solid #d0e0fb;
+}
+.eem-sc-rv-tag {
+	padding: 3px 9px;
+	border-radius: 6px;
+	font-size: 11px;
+	font-weight: 600;
+	background: #f5f3ff;
+	color: #6d28d9;
+	border: 1px solid #ddd6fe;
+}
+.eem-sc-cell-muted { color: #94a3b8; font-size: 13px; }
+
+/* ── Mobile cards ── */
+.eem-sc-mobile-cards { display: none; padding: 12px; }
+.eem-sc-mob-card {
+	background: #fff;
+	border: 1px solid #e2e8f4;
+	border-radius: 8px;
+	padding: 14px;
+	margin-bottom: 8px;
+}
+.eem-sc-mob-card:last-child { margin-bottom: 0; }
+a.eem-sc-mob-res-name {
+	font-size: 15px;
+	font-weight: 700;
+	color: #0d1b3e;
+	display: block;
+	margin-bottom: 2px;
+	text-decoration: none;
+}
+a.eem-sc-mob-res-name:hover,
+a.eem-sc-mob-res-name:focus { color: #1668F2; text-decoration: none; }
+.eem-sc-mob-dates { font-size: 12px; color: #64748b; margin-bottom: 10px; }
+.eem-sc-mob-tags  { margin-bottom: 8px; }
+.eem-sc-mob-avail { margin-bottom: 12px; }
+a.eem-sc-mob-edit-btn,
+a.eem-sc-mob-edit-btn:link,
+a.eem-sc-mob-edit-btn:visited {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 7px 14px;
+	border-radius: 7px;
+	font-size: 12px;
+	font-weight: 600;
+	color: #0d1b3e;
+	background: #F7F9FC;
+	border: 1px solid #d0daea;
+	text-decoration: none;
+}
+a.eem-sc-mob-edit-btn:hover,
+a.eem-sc-mob-edit-btn:focus { background: #e8eef8; color: #0d1b3e; text-decoration: none; }
+
+/* ── No-match state ── */
+.eem-sc-no-match { padding: 48px 24px; text-align: center; color: #64748b; font-size: 13px; }
+
+/* ── Pagination ── */
+.eem-sc-pagination-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 12px 20px;
+	border-top: 1px solid #f0f4fb;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+.eem-sc-pagination-info { font-size: 13px; color: #64748b; }
+.eem-sc-pagination { display: flex; gap: 4px; }
+.eem-sc-page-btn {
+	border: 1px solid #d0daea;
+	background: #fff;
+	border-radius: 6px;
+	padding: 4px 10px;
+	font-size: 13px;
+	cursor: pointer;
+	color: #64748b;
+	min-width: 28px;
+	font-family: inherit;
+}
+.eem-sc-page-btn--active { background: #1668F2; color: #fff; border-color: #1668F2; }
+.eem-sc-page-btn:disabled { opacity: .4; cursor: default; }
+
+/* ── Responsive ── */
+@media ( max-width: 900px ) {
+	.eem-shell-page--stall-charts .eem-page-body { padding: 14px 14px 40px; }
+	.eem-sc-list-toolbar { padding: 10px 12px; }
+	.eem-sc-tbl-wrap { display: none; }
+	.eem-sc-mobile-cards { display: block; }
+}
+@media ( max-width: 600px ) {
+	.eem-sc-search-wrap { min-width: unset; flex: 1; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    STALL CHART DETAIL — 2026 redesign (Chunk 1: chrome)
    Mockup: .mockups/stall_chart_detail.html. New visual vocabulary layered over
    the existing functional page. Map builder + its JS are untouched.
