@@ -8,16 +8,34 @@
 plus a batch of targeted Order-Detail / receipt / Stall-Chart / frontend features on top of v1.
 **Latest (2.7.521–527):** Additional Shavings feature shipped end-to-end (see below).
 
-**⚠️ ACTIVE HOLD — NEW MOCKUPS INCOMING:** Whitney is having claude.ai generate fresh mockups
-for every page. Do NOT implement tasks #33–#45 (page redesigns) until those mockups are
-delivered here. When they arrive, implement each one directly into the plugin.
-
-**NEXT UP (while waiting for mockups):**
-1. Reports cleanup — Customer List report + Refund Log report (no mockup dependency).
-2. MED-4 concurrency fix (Auth.net double-charge) — needs sign-off + live test before touching.
-3. LOW-3/4 — minor; low priority.
-
 **Version bump rule (STANDING — do NOT bump version without explicit user approval each time).**
+
+**All 40 mockups updated to current plugin state (v2.7.527) — committed df05bbe. Ready to send to claude.ai for redesign.**
+
+---
+
+## ✅ Done this session
+- Additional Shavings feature (mig-034/035, editor card, customer page, reports)
+- Concurrency hardening: MED-3 + LOW-5 fixed
+- All 40 mockups refreshed to reflect current plugin state
+
+## 🟡 Do next (no mockup needed)
+- [ ] Reports — visual verify Customer List + Refund Log render correctly in browser
+- [ ] MED-4 — Auth.net double-charge fix on Collect Payment *(needs Whitney sign-off + live test)*
+- [ ] LOW-3/4 — Minor Stripe recheck + mark-paid duplicate note *(low priority)*
+
+## 🎨 Page redesigns
+- [ ] Update all pages to match new mockups Whitney is working on
+
+## 🔵 Strategic (v2+)
+- [ ] PWA + Facility staff role (`docs/PWA-FACILITY-SPEC.md`)
+- [ ] Venue Slice 2 — canonical table write-through
+- [ ] Entry-aware Dashboard metrics
+- [ ] Sheets & Results — CSV / Google Sheets
+- [ ] Event Entries — competition management
+- [ ] Full WordPress-independence — extract reservation/event identity out of `wp_posts`
+- [ ] Global Handicaps API integration
+- [ ] Native mobile app (after WordPress-independence)
 
 **Open admin money-path items: MED-4 (Auth.net double-charge window — needs live test) + LOW-3/4.**
 
