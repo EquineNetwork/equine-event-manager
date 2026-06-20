@@ -105,6 +105,19 @@ class EEM_Daily_Movement_Page {
 
 		$order_map = self::build_order_map( $reports );
 
+		// Always fetch all dates for the hero + day rail regardless of current filter.
+		$all_rail_reports = array();
+		if ( $reservation_id > 0 ) {
+			$all_rail_reports = EEM_Daily_Movement_Service::build_all_dates_report( $reservation_id );
+		}
+
+		// Today's specific report for the hero card.
+		$today_str    = wp_date( 'Y-m-d' );
+		$today_report = null;
+		if ( $reservation_id > 0 ) {
+			$today_report = EEM_Daily_Movement_Service::build_date_report( $reservation_id, $today_str );
+		}
+
 		$print_url = add_query_arg( array(
 			'page'           => self::MENU_SLUG,
 			'reservation_id' => $reservation_id,
@@ -125,12 +138,9 @@ class EEM_Daily_Movement_Page {
 			),
 		) );
 
-		// Daily Movement overview sits directly below the header, above the
-		// filters — it reflects the current selection (event + All Days / Today /
-		// a specific day), matching the detail below.
-		if ( ! empty( $reports ) ) {
-			self::render_movement_overview( $reports );
-		}
+		// Today Hero + Day Rail replace the old per-date mini-card overview grid.
+		self::render_today_hero( $today_report, $reservation_title, $all_rail_reports );
+		self::render_day_rail( $all_rail_reports, $date, $reservation_id );
 
 		self::render_toolbar( $reservations, $reservation_id, $date, $available_dates, $print_url );
 
@@ -155,6 +165,8 @@ class EEM_Daily_Movement_Page {
 			self::render_check_toggle_script();
 		}
 		echo '</div><!-- /.eem-dm-sections -->';
+
+		self::render_note_modal();
 
 		echo '</div><!-- /.eem-page -->';
 	}
@@ -592,12 +604,24 @@ class EEM_Daily_Movement_Page {
 			$dm_co     = (int) ( $sm['departed'] ?? 0 );
 			$dm_bags   = (int) ( $sm['shavings_total'] ?? 0 );
 			?>
+			<?php
+			$stats = array(
+				array( 'icon' => '↓', 'num' => $dm_arr,  'label' => __( 'Arriving', 'equine-event-manager' ),     'zero' => 0 === $dm_arr ),
+				array( 'icon' => '✓', 'num' => $dm_ci,   'label' => __( 'Checked In', 'equine-event-manager' ),   'zero' => 0 === $dm_ci ),
+				array( 'icon' => '↑', 'num' => $dm_dep,  'label' => __( 'Departing', 'equine-event-manager' ),    'zero' => 0 === $dm_dep ),
+				array( 'icon' => '✓', 'num' => $dm_co,   'label' => __( 'Checked Out', 'equine-event-manager' ),  'zero' => 0 === $dm_co ),
+				array( 'icon' => '◆', 'num' => $dm_bags, 'label' => __( 'Bags Shavings', 'equine-event-manager' ), 'zero' => 0 === $dm_bags ),
+			);
+			?>
 			<div class="eem-dm-summary">
-				<span class="eem-dm-summary-item<?php echo 0 === $dm_arr ? ' is-zero' : ''; ?>"><span class="eem-dm-summary-icon" aria-hidden="true">↓</span><?php printf( esc_html__( '%d Arriving', 'equine-event-manager' ), $dm_arr ); ?></span>
-				<span class="eem-dm-summary-item<?php echo 0 === $dm_ci ? ' is-zero' : ''; ?>"><span class="eem-dm-summary-icon" aria-hidden="true">✓</span><?php printf( esc_html__( '%d Checked In', 'equine-event-manager' ), $dm_ci ); ?></span>
-				<span class="eem-dm-summary-item<?php echo 0 === $dm_dep ? ' is-zero' : ''; ?>"><span class="eem-dm-summary-icon" aria-hidden="true">↑</span><?php printf( esc_html__( '%d Departing', 'equine-event-manager' ), $dm_dep ); ?></span>
-				<span class="eem-dm-summary-item<?php echo 0 === $dm_co ? ' is-zero' : ''; ?>"><span class="eem-dm-summary-icon" aria-hidden="true">✓</span><?php printf( esc_html__( '%d Checked Out', 'equine-event-manager' ), $dm_co ); ?></span>
-				<span class="eem-dm-summary-item<?php echo 0 === $dm_bags ? ' is-zero' : ''; ?>"><span class="eem-dm-summary-icon" aria-hidden="true">◆</span><?php printf( esc_html__( '%d Bags Shavings', 'equine-event-manager' ), $dm_bags ); ?></span>
+			<?php foreach ( $stats as $i => $st ) : ?>
+				<?php if ( $i > 0 ) : ?><div class="eem-dm-summary-divider"></div><?php endif; ?>
+				<div class="eem-dm-summary-stat<?php echo $st['zero'] ? ' is-zero' : ''; ?>">
+					<span class="eem-dm-summary-icon" aria-hidden="true"><?php echo esc_html( $st['icon'] ); ?></span>
+					<span class="eem-dm-summary-num"><?php echo (int) $st['num']; ?></span>
+					<span class="eem-dm-summary-label"><?php echo esc_html( $st['label'] ); ?></span>
+				</div>
+			<?php endforeach; ?>
 			</div>
 
 			<?php if ( ! empty( $report['arriving'] ) ) : ?>
@@ -638,6 +662,7 @@ class EEM_Daily_Movement_Page {
 					<th><?php esc_html_e( 'Departure', 'equine-event-manager' ); ?></th>
 					<th><?php esc_html_e( 'Shavings', 'equine-event-manager' ); ?></th>
 					<th><?php esc_html_e( 'Status', 'equine-event-manager' ); ?></th>
+					<th><?php esc_html_e( 'Notes', 'equine-event-manager' ); ?></th>
 				</tr>
 			</thead>
 			<tbody>
@@ -675,11 +700,212 @@ class EEM_Daily_Movement_Page {
 							}
 							?>
 						</td>
+						<td class="eem-dm-cell-notes-col">
+							<?php
+							$special  = isset( $row['special_instructions'] ) ? (string) $row['special_instructions'] : '';
+							$has_note = '' !== $special;
+							?>
+							<button type="button"
+								class="eem-dm-note-btn<?php echo $has_note ? ' has-note' : ''; ?>"
+								data-note="<?php echo esc_attr( $special ); ?>"
+								data-stall="<?php echo esc_attr( implode( ', ', $row['stall_numbers'] ) ); ?>"
+								data-customer="<?php echo esc_attr( $row['customer_name'] ); ?>"
+								title="<?php echo $has_note ? esc_attr__( 'View note', 'equine-event-manager' ) : esc_attr__( 'Add note', 'equine-event-manager' ); ?>"
+								data-eem-action="dm-open-note">
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+							</button>
+						</td>
 					</tr>
 				<?php endforeach; ?>
 			</tbody>
 		</table>
 		</div>
+		<?php
+	}
+
+	/**
+	 * Render the Today Hero card — large blue gradient card with today's metrics.
+	 *
+	 * Replaces the old per-date mini-card overview grid. Shows live counts for
+	 * arriving, checked-in, departing, checked-out, bags today, and bags this week.
+	 *
+	 * @param array|null $today_report Report data for today from the service, or null.
+	 * @param string     $event_name   Reservation/event title.
+	 * @param array[]    $all_reports  All-dates report for the current reservation.
+	 * @return void
+	 */
+	private static function render_today_hero( ?array $today_report, string $event_name, array $all_reports ): void {
+		$today_str   = wp_date( 'Y-m-d' );
+		$today_label = wp_date( 'D, M j' );
+
+		// Today's metrics.
+		$sm          = isset( $today_report['summary'] ) ? $today_report['summary'] : array();
+		$arriving    = (int) ( $sm['arriving'] ?? 0 );
+		$checked_in  = (int) ( $sm['checked_in'] ?? 0 );
+		$departing   = (int) ( $sm['departing'] ?? 0 );
+		$checked_out = (int) ( $sm['departed'] ?? 0 );
+		$bags_today  = (int) ( $sm['shavings_total'] ?? 0 );
+
+		// Bags this week = sum of shavings from all reports in current Mon–Sun week.
+		$week_start = strtotime( 'monday this week', strtotime( $today_str ) );
+		$week_end   = strtotime( 'sunday this week', strtotime( $today_str ) );
+		$bags_week  = 0;
+		foreach ( $all_reports as $r ) {
+			$rts = strtotime( $r['date'] ?? '' );
+			if ( $rts >= $week_start && $rts <= $week_end ) {
+				$bags_week += (int) ( $r['summary']['shavings_total'] ?? 0 );
+			}
+		}
+		?>
+		<div class="eem-dm-hero">
+			<div class="eem-dm-hero-top">
+				<div>
+					<div class="eem-dm-hero-label"><?php printf( esc_html__( 'Today — %s', 'equine-event-manager' ), esc_html( $today_label ) ); ?></div>
+					<?php if ( '' !== $event_name ) : ?>
+						<div class="eem-dm-hero-sublabel"><?php echo esc_html( $event_name ); ?></div>
+					<?php endif; ?>
+				</div>
+				<div class="eem-dm-hero-week">
+					<div class="eem-dm-hero-week-num"><?php echo (int) $bags_week; ?></div>
+					<div class="eem-dm-hero-week-label"><?php esc_html_e( 'Bags this week', 'equine-event-manager' ); ?></div>
+				</div>
+			</div>
+			<div class="eem-dm-hero-metrics">
+				<div class="eem-dm-hero-metric">
+					<span class="eem-dm-hero-icon" aria-hidden="true">&darr;</span>
+					<div class="eem-dm-hero-num<?php echo 0 === $arriving ? ' is-zero' : ''; ?>"><?php echo $arriving; ?></div>
+					<div class="eem-dm-hero-mlabel"><?php esc_html_e( 'Arriving', 'equine-event-manager' ); ?></div>
+				</div>
+				<div class="eem-dm-hero-metric">
+					<span class="eem-dm-hero-icon" aria-hidden="true">&#10003;</span>
+					<div class="eem-dm-hero-num<?php echo 0 === $checked_in ? ' is-zero' : ''; ?>"><?php echo $checked_in; ?></div>
+					<div class="eem-dm-hero-mlabel"><?php esc_html_e( 'Checked In', 'equine-event-manager' ); ?></div>
+				</div>
+				<div class="eem-dm-hero-metric">
+					<span class="eem-dm-hero-icon" aria-hidden="true">&uarr;</span>
+					<div class="eem-dm-hero-num<?php echo 0 === $departing ? ' is-zero' : ''; ?>"><?php echo $departing; ?></div>
+					<div class="eem-dm-hero-mlabel"><?php esc_html_e( 'Departing', 'equine-event-manager' ); ?></div>
+				</div>
+				<div class="eem-dm-hero-metric">
+					<span class="eem-dm-hero-icon" aria-hidden="true">&#10003;</span>
+					<div class="eem-dm-hero-num<?php echo 0 === $checked_out ? ' is-zero' : ''; ?>"><?php echo $checked_out; ?></div>
+					<div class="eem-dm-hero-mlabel"><?php esc_html_e( 'Checked Out', 'equine-event-manager' ); ?></div>
+				</div>
+				<div class="eem-dm-hero-metric eem-dm-hero-metric--shavings">
+					<span class="eem-dm-hero-icon" aria-hidden="true">&#9645;</span>
+					<div class="eem-dm-hero-num"><?php echo $bags_today; ?></div>
+					<div class="eem-dm-hero-mlabel"><?php esc_html_e( 'Bags Today', 'equine-event-manager' ); ?></div>
+				</div>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Render the Day Rail — scrollable grid of date-navigation pills.
+	 *
+	 * Each pill links to that date's filtered view and shows arriving/departing
+	 * counts. Today and the currently selected date are visually highlighted.
+	 * An alert dot appears when there are pending arrivals not yet checked in.
+	 *
+	 * @param array[]  $all_reports   All-dates report for the current reservation.
+	 * @param string   $selected_date Currently selected date (Y-m-d), or '' for All Days.
+	 * @param int      $reservation_id Current reservation ID.
+	 * @return void
+	 */
+	private static function render_day_rail( array $all_reports, string $selected_date, int $reservation_id ): void {
+		if ( empty( $all_reports ) ) {
+			return;
+		}
+		$today    = wp_date( 'Y-m-d' );
+		$base_url = admin_url( 'admin.php?page=' . self::MENU_SLUG . '&reservation_id=' . $reservation_id . '&date=' );
+		?>
+		<div class="eem-dm-day-rail">
+			<?php foreach ( $all_reports as $r ) :
+				$d           = $r['date'] ?? '';
+				$sm          = $r['summary'] ?? array();
+				$arr         = (int) ( $sm['arriving'] ?? 0 );
+				$dep         = (int) ( $sm['departing'] ?? 0 );
+				$is_today    = $d === $today;
+				$is_selected = $d === $selected_date;
+				$has_alert   = (int) ( $sm['not_yet_checked_in'] ?? 0 ) > 0;
+				$classes     = 'eem-dm-day-pill';
+				if ( $is_today )    { $classes .= ' today'; }
+				if ( $is_selected ) { $classes .= ' selected'; }
+				$url        = esc_url( $base_url . urlencode( $d ) );
+				$date_label = esc_html( date_i18n( 'D, M j', strtotime( $d ) ) );
+			?>
+				<a href="<?php echo $url; ?>" class="<?php echo esc_attr( $classes ); ?>">
+					<?php if ( $has_alert ) : ?>
+						<span class="eem-dm-day-pill-alert" title="<?php esc_attr_e( 'Pending arrivals not checked in', 'equine-event-manager' ); ?>"></span>
+					<?php endif; ?>
+					<span class="eem-dm-day-pill-date"><?php echo $date_label; ?></span>
+					<span class="eem-dm-day-pill-moves">
+						<span class="eem-dm-day-pill-move arr<?php echo 0 === $arr ? ' zero' : ''; ?>">&#8595;<?php echo $arr; ?></span>
+						<span class="eem-dm-day-pill-move dep<?php echo 0 === $dep ? ' zero' : ''; ?>">&#8593;<?php echo $dep; ?></span>
+					</span>
+				</a>
+			<?php endforeach; ?>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Render the note modal and its inline JS handler.
+	 *
+	 * The modal opens when a note button in the movement table is clicked. It
+	 * displays the row's special_instructions as read-only context. The Save
+	 * button is intentionally disabled — note persistence is UI-only for now.
+	 *
+	 * @return void
+	 */
+	private static function render_note_modal(): void {
+		?>
+		<div class="eem-dm-note-overlay" id="eem-dm-note-modal" role="dialog" aria-modal="true" aria-labelledby="eem-dm-note-title">
+			<div class="eem-dm-note-dialog">
+				<div class="eem-dm-note-head">
+					<div>
+						<div class="eem-dm-note-title" id="eem-dm-note-title"></div>
+						<div class="eem-dm-note-sub"></div>
+					</div>
+					<button type="button" class="eem-dm-note-close" data-eem-action="dm-close-note" aria-label="<?php esc_attr_e( 'Close', 'equine-event-manager' ); ?>">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+					</button>
+				</div>
+				<textarea class="eem-dm-note-textarea" id="eem-dm-note-text" placeholder="<?php esc_attr_e( 'Add a note for barn staff…', 'equine-event-manager' ); ?>" rows="4"></textarea>
+				<div class="eem-dm-note-foot">
+					<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="dm-close-note"><?php esc_html_e( 'Cancel', 'equine-event-manager' ); ?></button>
+					<button type="button" class="eem-btn eem-btn-electric" id="eem-dm-note-save" disabled><?php esc_html_e( 'Save Note', 'equine-event-manager' ); ?></button>
+				</div>
+			</div>
+		</div>
+		<script>
+		( function () {
+			function openNote( btn ) {
+				var stall    = btn.getAttribute( 'data-stall' ) || '';
+				var customer = btn.getAttribute( 'data-customer' ) || '';
+				var note     = btn.getAttribute( 'data-note' ) || '';
+				document.querySelector( '.eem-dm-note-title' ).textContent = stall || customer;
+				document.querySelector( '.eem-dm-note-sub' ).textContent   = stall ? customer : '';
+				document.getElementById( 'eem-dm-note-text' ).value        = note;
+				document.getElementById( 'eem-dm-note-modal' ).classList.add( 'open' );
+				setTimeout( function () { document.getElementById( 'eem-dm-note-text' ).focus(); }, 50 );
+			}
+			function closeNote() {
+				document.getElementById( 'eem-dm-note-modal' ).classList.remove( 'open' );
+			}
+			document.addEventListener( 'click', function ( e ) {
+				var openBtn = e.target.closest( '[data-eem-action="dm-open-note"]' );
+				if ( openBtn ) { openNote( openBtn ); return; }
+				var closeBtn = e.target.closest( '[data-eem-action="dm-close-note"]' );
+				if ( closeBtn ) { closeNote(); return; }
+				if ( e.target === document.getElementById( 'eem-dm-note-modal' ) ) { closeNote(); }
+			} );
+			document.addEventListener( 'keydown', function ( e ) {
+				if ( 'Escape' === e.key ) { closeNote(); }
+			} );
+		} )();
+		</script>
 		<?php
 	}
 

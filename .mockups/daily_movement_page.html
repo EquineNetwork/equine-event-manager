@@ -3,507 +3,681 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Equine Event Manager – Daily Movement</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#1668F2">
+<title>Daily Movement — Equine Event Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-/* ─────────────────────────────────────────────────────────────────────────────
-   Daily Movement – admin page (admin.php?page=equine-event-manager-daily-movement)
-   Updated 2026-06-20 to match EEM_Daily_Movement_Page::render() current output.
-
-   Page architecture (confirmed live):
-     • Breadcrumb (logo / Reports / Daily Movement) ABOVE the bordered card.
-     • .eem-page-wrap = ONE bordered card holding: header → stat cards strip →
-       toolbar. The card closes after the toolbar so the per-day date sections
-       float as their own white cards on the #f0f0f1 bg BELOW it.
-     • Stat cards strip (.eem-dm-stats): 5 aggregate KPI cards — Arriving,
-       Departing, Checked In, Not Yet Checked In, Shavings Required.
-       (NOT a per-day overview grid — that was the old mockup design.)
-     • .eem-dm-sections = per-day cards (date heading + metric summary row, then
-       colored Arriving (blue) / Departing (amber) band headings + tables).
-     • Each Status cell has a click-to-open status menu (Pending Arrival /
-       Checked In / Checked Out); live uses position:fixed + AJAX; here anchored
-       under the trigger for static preview. One menu shown open.
-   ───────────────────────────────────────────────────────────────────────────── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
+html{-webkit-text-size-adjust:100%}
+body{font-family:'IBM Plex Sans',sans-serif;background:#F7F9FC;color:#0d1b3e;font-size:15px;line-height:1.5;min-height:100vh}
 svg{flex-shrink:0}
-a{text-decoration:none}
-a:hover{text-decoration:none}
+button{font-family:inherit;cursor:pointer}
 
-/* ── WP SHELL STUB ── */
-.wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;position:sticky;top:0;z-index:200}
-.wp-admin-bar span{font-size:13px;color:#c3c4c7;cursor:pointer}
-.wp-admin-bar span.site{color:#fff;font-weight:600}
-.wp-body{display:flex;flex:1}
-.wp-sidebar{width:160px;min-width:160px;background:#1d2327;min-height:calc(100vh - 32px)}
-.wp-sidebar-label{padding:8px 12px 4px;font-size:10px;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
-.wp-sidebar-sub{padding:6px 12px 6px 28px;font-size:13px;color:#c3c4c7;cursor:pointer}
-.wp-sidebar-sub.active{color:#90c4ff;font-weight:600}
-.wp-content{flex:1;padding:12px 20px 40px;min-width:0}
+/* ── APP SHELL ── */
+.app-topbar{
+  background:#fff;border-bottom:1px solid #e2e8f4;
+  padding:0 24px;height:56px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:200;
+}
+.app-topbar-left{display:flex;align-items:center;gap:10px}
+.app-logo{display:flex;align-items:center;gap:8px}
+.app-logo-img{width:32px;height:32px;border-radius:6px;background:linear-gradient(135deg,#1668F2,#0d4fc2);display:flex;align-items:center;justify-content:center}
+.app-logo-name{font-size:14px;font-weight:700;color:#0d1b3e;letter-spacing:-.01em}
+.app-logo-name span{font-weight:400;color:#64748b}
+.app-sep{font-size:14px;color:#c8d4e8;margin:0 2px}
+.app-bc{font-size:13px;color:#64748b}
+.app-bc a{color:#1668F2;text-decoration:none}
+.app-bc-cur{font-size:13px;font-weight:600;color:#0d1b3e}
 
-/* ── Breadcrumb + logo ── */
-.eem-breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
-.eem-breadcrumb-logo{flex-shrink:0}
-.eem-breadcrumb-logo-box{width:160px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb}
-.eem-breadcrumb-sep{font-size:13px;color:#8c8f94}
-.eem-breadcrumb-segment{font-size:13px;color:#031B4E;font-weight:600}
-a.eem-breadcrumb-segment{color:#1668F2}
-a.eem-breadcrumb-segment:hover{color:#031B4E}
+.app-topbar-right{display:flex;align-items:center;gap:10px}
+.last-updated{font-size:12px;color:#94a3b8;display:flex;align-items:center;gap:5px}
+.last-updated-dot{width:6px;height:6px;border-radius:50%;background:#22c55e;display:inline-block}
+.refresh-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:6px 12px;border-radius:7px;
+  font-size:12px;font-weight:600;color:#1668F2;
+  background:#f0f5ff;border:1px solid #d0e0fb;
+}
+.refresh-btn:hover{background:#e0ecff}
+.app-print-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 16px;border-radius:8px;
+  font-size:13px;font-weight:600;color:#0d1b3e;
+  background:#F7F9FC;border:1px solid #d0daea;
+}
+.app-print-btn:hover{background:#e8eef8}
 
-/* ── PAGE SHELL (page-wrap = single bordered card; sections sit below it) ── */
-.eem-page{display:block}
-.eem-page-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
-.eem-page-header{padding:18px 22px;border-bottom:1px solid #dcdcde;background:#fff}
-.eem-page-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;line-height:1.2}
-.eem-page-subtitle{font-size:13px;color:#64748b;margin-top:4px}
-.eem-page-body{background:#fff}
+/* ── PAGE HEADER ── */
+.app-page-header{
+  background:#fff;border-bottom:1px solid #e2e8f4;
+  padding:20px 24px 16px;
+  display:flex;align-items:flex-start;justify-content:space-between;
+}
+.app-page-title{font-size:22px;font-weight:700;color:#0d1b3e;letter-spacing:-.02em}
+.app-page-sub{font-size:13px;color:#64748b;margin-top:3px}
+.print-today-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 16px;border-radius:8px;
+  font-size:13px;font-weight:600;color:#1668F2;
+  background:#f0f5ff;border:1px solid #d0e0fb;
+  white-space:nowrap;
+}
+.print-today-btn:hover{background:#e0ecff}
 
-/* ── FIELD / BUTTON PRIMITIVES ── */
-.eem-field-select{padding:7px 10px;border:1px solid #8c8f94;border-radius:3px;font-size:13px;font-family:inherit;color:#1d2327;background:#fff;outline:none;line-height:1.4;width:100%}
-.eem-field-select:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
-.eem-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:4px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap;border:1px solid;text-decoration:none}
-.eem-btn-secondary{background:#fff;color:#031B4E;border-color:#c3c4c7}
-.eem-btn-secondary:hover{background:#f6f7f7}
+/* ── CONTENT ── */
+.app-content{padding:20px 24px 48px;display:flex;flex-direction:column;gap:16px}
 
-/* ── STAT CARDS STRIP (.eem-dm-stats) ── */
-/* Five aggregate KPI cards rendered by render_stat_cards().
-   Sits between the page header and the toolbar, still inside .eem-page-wrap. */
-.eem-dm-stats{display:flex;flex-wrap:wrap;gap:0;border-bottom:1px solid #dcdcde}
-.eem-stat-card{flex:1 1 0;min-width:120px;padding:18px 20px;border-right:1px solid #dcdcde;background:#fff}
-.eem-stat-card:last-child{border-right:none}
-.eem-stat-card-label{font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
-.eem-stat-card-num{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;line-height:1.1}
-.eem-stat-card-num span{font-size:14px;font-weight:500;color:#64748b}
+/* ── TODAY HERO ── */
+.today-hero{
+  background:linear-gradient(135deg,#1668F2 0%,#0d4fc2 100%);
+  border-radius:12px;padding:20px 24px;
+  box-shadow:0 4px 20px rgba(22,104,242,.25);
+}
+.today-hero-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.today-hero-label{font-size:16px;font-weight:700;letter-spacing:-.01em;color:#fff}
+.today-hero-sublabel{font-size:13px;color:rgba(255,255,255,.8);margin-top:3px}
+.today-week-total{text-align:right}
+.today-week-total-num{font-size:18px;font-weight:700;color:#00e5ee}
+.today-week-total-label{font-size:11px;color:rgba(0,229,238,.75)}
+.today-metrics{display:flex;flex-wrap:wrap;gap:0}
+.today-metric{flex:1 1 110px;padding:0 20px;border-right:1px solid rgba(255,255,255,.12)}
+.today-metric:first-child{padding-left:0}
+.today-metric:last-child{border-right:none}
+.today-metric-icon{font-size:15px;margin-bottom:2px;display:block;color:rgba(255,255,255,.7)}
+.today-metric-num{font-size:38px;font-weight:700;color:#fff;line-height:1;letter-spacing:-.03em}
+.today-metric-num.zero{color:rgba(255,255,255,.3)}
+.today-metric-label{font-size:13px;color:rgba(255,255,255,.7);margin-top:4px;font-weight:500}
+.today-metric.shavings .today-metric-num{color:#00e5ee}
+.today-metric.shavings .today-metric-label{color:rgba(0,229,238,.75)}
+.today-metric.shavings .today-metric-icon{color:#00e5ee}
 
-/* ── TOOLBAR (reservation + date picker + Print View) ── */
-.eem-dm-toolbar{padding:14px 22px;background:#f0f4fb;display:flex;align-items:flex-end;gap:16px}
-.eem-dm-toolbar-form{flex:1 1 auto;display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end}
-.eem-dm-toolbar-group{display:flex;flex-direction:column;gap:4px;flex:1 1 240px}
-.eem-dm-toolbar-label{font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.05em}
-.eem-dm-toolbar-print{flex:0 0 auto;margin-left:auto;white-space:nowrap}
+/* ── DAY RAIL ── */
+.day-rail{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:8px}
+.day-pill{
+  background:#fff;border:1.5px solid #e2e8f4;border-radius:10px;
+  padding:11px 14px;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  transition:border-color .12s,box-shadow .12s;
+  -webkit-tap-highlight-color:transparent;
+  min-height:52px;position:relative;
+}
+.day-pill:hover,.day-pill:focus{border-color:#1668F2;box-shadow:0 0 0 3px rgba(22,104,242,.1);outline:none}
+.day-pill.today{border-color:#1668F2;background:#f0f5ff}
+.day-pill-date{font-size:13px;font-weight:700;color:#0d1b3e;white-space:nowrap}
+.day-pill-moves{display:flex;gap:10px;align-items:center}
+.day-pill-move{font-size:13px;font-weight:700;display:inline-flex;align-items:center;gap:3px}
+.day-pill-move.arr{color:#1668F2}
+.day-pill-move.dep{color:#d97706}
+.day-pill-move.zero{color:#c8d4e8}
+/* Unactioned indicator dot */
+.day-pill-alert{
+  position:absolute;top:8px;right:8px;
+  width:8px;height:8px;border-radius:50%;background:#ef4444;
+  box-shadow:0 0 0 2px #fff;
+}
 
-/* ── DATE SECTIONS (one white card per day on the #f0f0f1 bg) ── */
-.eem-dm-sections{background:#f0f0f1;padding:14px 0}
-.eem-dm-date-section{background:#fff;border:1px solid #e2e4e7;border-radius:3px;overflow:hidden;margin:0 0 14px}
-.eem-dm-date-section:last-child{margin-bottom:0}
-.eem-dm-date-heading{font-size:15px;font-weight:700;color:#031B4E;padding:12px 18px 6px;background:#fff}
-.eem-dm-summary{display:flex;flex-wrap:nowrap;align-items:center;gap:22px;margin:0;padding:2px 18px 12px;background:#fff;overflow-x:auto}
-.eem-dm-summary-item{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:#031b4e;white-space:nowrap}
-.eem-dm-summary-icon{font-weight:700;color:#1d4ed8}
-.eem-dm-summary-item.is-zero{opacity:.45}
-.eem-dm-summary-item.is-zero .eem-dm-summary-icon{color:#a7aaad}
+/* ── TOOLBAR ── */
+.app-toolbar{
+  background:#fff;border:1px solid #e2e8f4;border-radius:10px;
+  padding:14px 18px;display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;
+}
+.app-field-group{display:flex;flex-direction:column;gap:5px;flex:1 1 200px}
+.app-field-label{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#94a3b8}
+.app-select{
+  font-family:'IBM Plex Sans',sans-serif;font-size:14px;color:#0d1b3e;
+  background:#F7F9FC;border:1.5px solid #d0daea;border-radius:8px;
+  padding:10px 32px 10px 12px;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;
+  cursor:pointer;width:100%;min-height:44px;
+}
+.app-select:focus{outline:none;border-color:#1668F2;box-shadow:0 0 0 3px rgba(22,104,242,.1)}
 
-/* ── ARRIVING (blue) / DEPARTING (amber) group band headings ── */
-.eem-dm-group-heading{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;margin:0;padding:5px 22px;text-transform:uppercase;letter-spacing:.04em}
-.eem-dm-group-icon{font-weight:700}
-.eem-dm-group-heading--arriving{color:#1668F2;background:#f0f4fb;border-top:1px solid #d9e2f2;border-bottom:1px solid #d9e2f2}
-.eem-dm-group-heading--departing{color:#b45309;background:#fdf4e7;border-top:1px solid #f3e2c4;border-bottom:1px solid #f3e2c4}
+/* ── DAY SECTIONS ── */
+.day-section{background:#fff;border:1px solid #e2e8f4;border-radius:10px;overflow:hidden}
+.day-section-header{padding:16px 20px 0}
+.day-section-date{font-size:17px;font-weight:700;color:#0d1b3e;letter-spacing:-.01em}
+
+/* ── SUMMARY BAR ── */
+.summary-bar{
+  display:flex;flex-wrap:nowrap;gap:0;
+  padding:10px 20px 14px;border-bottom:1px solid #f0f4fb;
+  overflow-x:auto;-webkit-overflow-scrolling:touch;
+}
+.summary-bar::-webkit-scrollbar{display:none}
+.summary-stat{display:flex;align-items:center;gap:6px;padding:4px 16px;min-height:44px;flex-shrink:0}
+.summary-stat:first-child{padding-left:0}
+.summary-stat:last-child{padding-right:0}
+.summary-stat-divider{width:1px;height:24px;background:#e2e8f4;align-self:center;flex-shrink:0}
+.summary-stat-num{font-size:22px;font-weight:700;color:#0d1b3e;line-height:1;white-space:nowrap}
+.summary-stat-num.zero{color:#c8d4e8}
+.summary-stat-icon{font-size:16px;color:#1668F2}
+.summary-stat-icon.zero{color:#c8d4e8}
+.summary-stat-label{font-size:13px;color:#64748b;font-weight:500;white-space:nowrap}
+.summary-stat-label.zero{color:#c8d4e8}
+.summary-stat.shavings .summary-stat-icon{color:#1668F2}
+.summary-stat.shavings .summary-stat-num{color:#0d1b3e}
+
+/* ── GROUP HEADINGS ── */
+.group-heading{
+  display:flex;align-items:center;gap:8px;padding:9px 20px;
+  font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+}
+.group-heading--arr{background:#f0f5ff;border-top:1px solid #dce8fb;border-bottom:1px solid #dce8fb;color:#1668F2}
+.group-heading--dep{background:#fdf4e7;border-top:1px solid #f3e2c4;border-bottom:1px solid #f3e2c4;color:#b45309}
 
 /* ── TABLE ── */
-.eem-dm-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
-.eem-dm-table{width:100%;min-width:820px;table-layout:fixed;border-collapse:collapse;background:#fff;border-top:1px solid #dcdcde;border-radius:0}
-.eem-dm-table th,.eem-dm-table td{white-space:nowrap}
-.eem-dm-table th:first-child,.eem-dm-table td:first-child{padding-left:22px}
-.eem-dm-table th:last-child,.eem-dm-table td:last-child{padding-right:22px}
-.eem-dm-table th:nth-child(1),.eem-dm-table td:nth-child(1){width:14%}
-.eem-dm-table th:nth-child(2),.eem-dm-table td:nth-child(2){width:20%}
-.eem-dm-table th:nth-child(3),.eem-dm-table td:nth-child(3){width:11%}
-.eem-dm-table th:nth-child(4),.eem-dm-table td:nth-child(4){width:15%}
-.eem-dm-table th:nth-child(5),.eem-dm-table td:nth-child(5){width:15%}
-.eem-dm-table th:nth-child(6),.eem-dm-table td:nth-child(6){width:10%}
-.eem-dm-table th:nth-child(7),.eem-dm-table td:nth-child(7){width:15%}
-.eem-dm-table td{overflow:hidden;text-overflow:ellipsis}
-.eem-dm-table td.eem-dm-cell-status{overflow:visible}
-.eem-dm-table thead th{background:#f8fafc;border-top:1px solid #d9e2f2;border-bottom:1px solid #d9e2f2;padding:10px 12px;text-align:left;font-size:12px;font-weight:600;color:#031B4E;text-transform:uppercase;letter-spacing:.04em}
-.eem-dm-table tbody td{padding:10px 12px;border-bottom:1px solid #dcdcde;font-size:14px;color:#1e293b;vertical-align:top}
-.eem-dm-table tbody tr:last-child td{border-bottom:none}
-.eem-dm-table tbody tr:nth-child(even) td{background:#f8fafc}
-.eem-dm-cell-stall{font-weight:600;white-space:nowrap}
-.eem-dm-cell-dates{white-space:nowrap;font-size:13px;color:#64748b}
-.eem-dm-cell-shavings{text-align:center}
-.eem-dm-cell-order a{color:#1668F2;text-decoration:none;font-weight:500}
-.eem-dm-cell-order a:hover{color:#031B4E}
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tbl-wrap::-webkit-scrollbar{height:3px}
+.tbl-wrap::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);border-radius:2px}
+.tbl{width:100%;min-width:750px;border-collapse:collapse;table-layout:auto}
+.tbl th{
+  font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:#94a3b8;padding:10px 16px;text-align:left;border-bottom:1px solid #f0f4fb;background:#fff;
+  white-space:nowrap;
+}
+.tbl th:first-child,.tbl td:first-child{padding-left:20px}
+.tbl th:last-child,.tbl td:last-child{padding-right:20px}
+.tbl td{font-size:14px;color:#0d1b3e;padding:14px 16px;border-bottom:1px solid #f7f9fc;vertical-align:middle;white-space:nowrap}
+.tbl tbody tr:last-child td{border-bottom:none}
+.tbl tbody tr:hover td{background:#fafbfe}
+.tbl th:nth-child(1),.tbl td:nth-child(1){width:100px}
+.tbl th:nth-child(2),.tbl td:nth-child(2){width:160px}
+.tbl th:nth-child(3),.tbl td:nth-child(3){width:80px}
+.tbl th:nth-child(4),.tbl td:nth-child(4){width:110px}
+.tbl th:nth-child(5),.tbl td:nth-child(5){width:110px}
+.tbl th:nth-child(6),.tbl td:nth-child(6){width:80px;text-align:center}
+.tbl th:nth-child(7),.tbl td:nth-child(7){width:150px}
+.tbl th:nth-child(8),.tbl td:nth-child(8){width:60px;min-width:60px;text-align:center}
+.tbl th:nth-child(6){text-align:center}
+.cell-stall{font-weight:700;font-size:14px}
+.cell-stall a{color:#1668F2;text-decoration:none;font-weight:700}
+.cell-stall a:hover{text-decoration:underline}
+.cell-muted{color:#94a3b8;font-size:13px}
+.cell-date{font-size:13px;color:#64748b}
 
-/* ── STATUS CHIPS ── */
-.eem-dm-status{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap}
-.eem-dm-status::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%}
-.eem-dm-status-not_checked_in,.eem-dm-status-occupied{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
-.eem-dm-status-not_checked_in::before,.eem-dm-status-occupied::before{background:#ef4444}
-.eem-dm-status-checked_in{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
-.eem-dm-status-checked_in::before{background:#22c55e}
-.eem-dm-status-checked_out{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
-.eem-dm-status-checked_out::before{background:#3b82f6}
-.eem-dm-status-departing{background:#fffbeb;color:#b45309;border:1px solid #fde68a}
-.eem-dm-status-departing::before{background:#f59e0b}
+/* ── NOTE BUTTON + MODAL ── */
+.note-btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:32px;height:32px;min-width:32px;border-radius:7px;
+  background:none;border:1.5px solid #e2e8f4;color:#94a3b8;
+  transition:all .12s;position:relative;flex-shrink:0;
+}
+.note-btn:hover{border-color:#1668F2;color:#1668F2;background:#f0f5ff}
+.note-btn.has-note{border-color:#d0e0fb;background:#f0f5ff;color:#1668F2}
+.note-btn.has-note::after{
+  content:'';position:absolute;top:-3px;right:-3px;
+  width:8px;height:8px;border-radius:50%;background:#1668F2;border:2px solid #fff;
+}
 
-/* ── STATUS MENU (click-to-open dropdown in the Status cell) ── */
-.eem-dm-status-menu{position:relative;display:inline-block}
-.eem-dm-status-trigger{display:inline-flex;align-items:center;gap:4px;background:none;border:0;padding:0;margin:0;cursor:pointer;font:inherit;line-height:1}
-.eem-dm-status-trigger:hover .eem-dm-status{filter:brightness(.97);box-shadow:0 1px 4px rgba(22,104,242,.18)}
-.eem-dm-status--caret{gap:5px}
-.eem-occ-chevron{width:11px;height:11px;color:currentColor;opacity:.35;transition:opacity .12s ease,transform .12s ease}
-.eem-dm-status-trigger:hover .eem-occ-chevron{opacity:1}
-.eem-dm-status-menu.open .eem-occ-chevron{opacity:1;transform:rotate(180deg)}
-/* Live uses position:fixed + JS coords to escape card overflow clip; in this
-   static mockup we anchor under the trigger so the open state previews. */
-.eem-dm-status-options{position:absolute;top:calc(100% + 4px);right:0;z-index:100000;min-width:150px;margin:0;padding:4px;list-style:none;background:#fff;border:1px solid #dcdcde;border-radius:3px;box-shadow:0 6px 18px rgba(3,27,78,.12);display:none}
-.eem-dm-status-menu.open .eem-dm-status-options{display:block}
-.eem-dm-status-option{display:block;width:100%;text-align:left;background:none;border:0;padding:7px 10px;border-radius:3px;font-size:13px;font-weight:500;color:#1e293b;cursor:pointer}
-.eem-dm-status-option:hover{background:#f1f5f9}
-.eem-dm-status-option.is-current{font-weight:700;color:#1d4ed8}
+/* Note modal */
+.modal-overlay{
+  display:none;position:fixed;inset:0;background:rgba(13,27,62,.35);
+  z-index:500;align-items:center;justify-content:center;padding:20px;
+  backdrop-filter:blur(2px);
+}
+.modal-overlay.open{display:flex}
+.modal{
+  background:#fff;border-radius:14px;padding:24px;width:100%;max-width:440px;
+  box-shadow:0 20px 60px rgba(13,27,62,.2);
+}
+.modal-title{font-size:16px;font-weight:700;color:#0d1b3e;margin-bottom:4px}
+.modal-sub{font-size:13px;color:#64748b;margin-bottom:16px}
+.modal-textarea{
+  width:100%;min-height:100px;padding:12px;
+  border:1.5px solid #d0daea;border-radius:8px;
+  font-family:'IBM Plex Sans',sans-serif;font-size:14px;color:#0d1b3e;
+  resize:vertical;line-height:1.5;background:#F7F9FC;
+}
+.modal-textarea:focus{outline:none;border-color:#1668F2;box-shadow:0 0 0 3px rgba(22,104,242,.1)}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.modal-cancel{padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;background:#F7F9FC;border:1px solid #d0daea;color:#64748b}
+.modal-cancel:hover{background:#e8eef8}
+.modal-save{padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;background:#1668F2;border:none;color:#fff}
+.modal-save:hover{background:#0d4fc2}
 
-/* ── responsive ── */
-@media (max-width:782px){
-  .eem-dm-stats{flex-direction:column}
-  .eem-stat-card{border-right:none;border-bottom:1px solid #dcdcde}
-  .eem-stat-card:last-child{border-bottom:none}
-  .eem-dm-toolbar{padding:12px 14px;flex-direction:column;align-items:stretch}
-  .eem-dm-toolbar-form{flex-direction:column;align-items:stretch;gap:10px}
-  .eem-dm-toolbar-group{width:100%;flex:0 0 auto}
-  .eem-dm-toolbar-print{margin-left:0;width:100%;text-align:center;justify-content:center}
+/* ── STATUS BADGES + DROPDOWN ── */
+.status-menu{position:relative;display:inline-block}
+.status-trigger{display:inline-flex;align-items:center;background:none;border:0;padding:0;cursor:pointer;line-height:1}
+.status-chip{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:7px 12px;border-radius:8px;
+  font-size:13px;font-weight:600;white-space:nowrap;min-height:36px;
+}
+.status-chip::before{content:'';width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.status-chip svg{width:13px;height:13px;opacity:.4;transition:opacity .1s,transform .12s}
+.status-trigger:hover .status-chip svg{opacity:1}
+.status-menu.open .status-chip svg{opacity:1;transform:rotate(180deg)}
+.s-pending{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
+.s-pending::before{background:#ef4444}
+.s-checked_in{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
+.s-checked_in::before{background:#22c55e}
+.s-checked_out{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+.s-checked_out::before{background:#3b82f6}
+.s-departing{background:#fffbeb;color:#b45309;border:1px solid #fde68a}
+.s-departing::before{background:#f59e0b}
+.status-options{
+  position:absolute;top:calc(100% + 5px);right:0;z-index:9999;
+  min-width:165px;padding:5px;list-style:none;
+  background:#fff;border:1px solid #e2e8f4;border-radius:10px;
+  box-shadow:0 8px 24px rgba(13,27,62,.12);display:none;
+}
+.status-menu.open .status-options{display:block}
+.status-option{
+  display:block;width:100%;text-align:left;
+  background:none;border:0;padding:11px 14px;border-radius:7px;
+  font-size:14px;font-weight:500;color:#0d1b3e;min-height:44px;
+}
+.status-option:hover{background:#f0f5ff;color:#1668F2}
+.status-option.is-current{font-weight:700;color:#1668F2}
+
+/* ── PRINT STYLES ── */
+@media print{
+  .app-topbar,.app-page-header .print-today-btn,.day-rail,.app-toolbar,
+  .refresh-btn,.app-print-btn,.note-btn,.status-chip svg,
+  .modal-overlay{display:none!important}
+  body{background:#fff;font-size:12px}
+  .today-hero{background:#0d1b3e!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;border-radius:6px;padding:14px}
+  .today-metric-num{font-size:24px}
+  .day-section{break-inside:avoid;border:1px solid #ddd;margin-bottom:12px}
+  .app-content{padding:12px 0;gap:10px}
+  .tbl td,.tbl th{padding:8px 12px;font-size:11px}
+}
+
+@media(max-width:900px){
+  .today-metric-num{font-size:30px}
+  .app-content{padding:14px 14px 40px}
+  .app-topbar{padding:0 14px}
+  .app-page-header{padding:16px 14px 12px;flex-wrap:wrap;gap:10px}
+  .today-metric{padding:0 12px}
+  .last-updated-text{display:none}
+  .app-sep,.app-bc,.app-bc-cur{display:none}
+  .icon-btn{
+    width:40px;height:40px;padding:0;border-radius:8px;
+    display:inline-flex;align-items:center;justify-content:center;
+  }
+  .icon-btn .btn-label{display:none}
+  .refresh-btn.icon-btn{background:#f0f5ff;border-color:#d0e0fb}
+  .app-print-btn.icon-btn{background:#F7F9FC;border-color:#d0daea}
+}
+@media(max-width:600px){
+  .app-topbar{height:48px;padding:0 12px}
+  .app-logo img{height:24px}
+  .day-rail{grid-template-columns:repeat(2,1fr)}
+  .summary-stat-num{font-size:18px}
+  .today-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .today-metric{flex:unset;padding:8px 0;border-right:none;border-bottom:1px solid rgba(255,255,255,.1)}
+  .today-metric:last-child{border-bottom:none}
+  .today-metric-num{font-size:28px}
+  .today-hero{padding:14px 16px}
+  .today-hero-top{margin-bottom:12px}
 }
 </style>
 </head>
 <body>
 
-<!-- ══════════════ WP ADMIN SHELL STUB ══════════════ -->
-<div class="wp-admin-bar"><span class="site">⊞ Equine Network Dev</span><span>＋ New</span><span style="margin-left:auto">Howdy, admin</span></div>
-<div class="wp-body">
-  <nav class="wp-sidebar">
-    <div class="wp-sidebar-label">Event Manager</div>
-    <div class="wp-sidebar-sub">Dashboard</div>
-    <div class="wp-sidebar-sub">Events</div>
-    <div class="wp-sidebar-sub">Reservations</div>
-    <div class="wp-sidebar-sub">Stall &amp; RV Charts</div>
-    <div class="wp-sidebar-sub active">Daily Movement</div>
-    <div class="wp-sidebar-sub">Entries</div>
-    <div class="wp-sidebar-sub">Orders</div>
-    <div class="wp-sidebar-sub">Reports</div>
-    <div class="wp-sidebar-sub">Settings</div>
-  </nav>
-  <main class="wp-content">
+<!-- App topbar -->
+<div class="app-topbar">
+  <div class="app-topbar-left">
+    <div class="app-logo">
+      <img src="logo.png" alt="Equine Event Manager" style="height:32px;width:auto;display:block;">
+    </div>
+    <span class="app-sep">/</span>
+    <span class="app-bc"><a href="#">Reports</a></span>
+    <span class="app-sep">/</span>
+    <span class="app-bc-cur">Daily Movement</span>
+  </div>
+  <div class="app-topbar-right">
+    <span class="last-updated"><span class="last-updated-dot"></span><span class="last-updated-text">Updated 2 min ago</span></span>
+    <button class="refresh-btn icon-btn" aria-label="Refresh" title="Refresh" onclick="document.querySelector('.last-updated-text').textContent='Updated just now'">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+      <span class="btn-label">Refresh</span>
+    </button>
+    <button class="app-print-btn icon-btn" aria-label="Print All" title="Print All" onclick="window.print()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      <span class="btn-label">Print All</span>
+    </button>
+  </div>
+</div>
 
-    <!-- ══════════════ BREADCRUMB ══════════════ -->
-    <nav class="eem-breadcrumb" aria-label="Breadcrumb">
-      <a class="eem-breadcrumb-logo" href="#" aria-label="Equine Event Manager dashboard">
-        <span class="eem-breadcrumb-logo-box">Plugin Logo</span>
-      </a>
-      <span class="eem-breadcrumb-sep" aria-hidden="true">/</span>
-      <a class="eem-breadcrumb-segment" href="#">Reports</a>
-      <span class="eem-breadcrumb-sep" aria-hidden="true">/</span>
-      <span class="eem-breadcrumb-segment" aria-current="page">Daily Movement</span>
-    </nav>
+<!-- Page header -->
+<div class="app-page-header">
+  <div>
+    <div class="app-page-title">Daily Movement</div>
+    <div class="app-page-sub">Arrivals, departures, and check-in status for on-the-ground staff.</div>
+  </div>
+  <button class="print-today-btn" onclick="window.print()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+    Print Today
+  </button>
+</div>
 
-    <!-- ══════════════ PAGE ══════════════ -->
-    <div class="eem-page">
+<div class="app-content">
 
-      <!-- ── Single bordered card: header → stat cards → toolbar ── -->
-      <div class="eem-page-wrap">
-        <header class="eem-page-header">
-          <h1 class="eem-page-title">Daily Movement</h1>
-          <p class="eem-page-subtitle">Arrivals, departures, and check-in status for on-the-ground staff.</p>
-        </header>
-        <div class="eem-page-body">
+  <!-- TODAY HERO -->
+  <div class="today-hero">
+    <div class="today-hero-top">
+      <div>
+        <div class="today-hero-label">Today — Mon, Jun 15</div>
+        <div class="today-hero-sublabel">2026 Southeast Region Super Sort</div>
+      </div>
+      <div class="today-week-total">
+        <div class="today-week-total-num">34</div>
+        <div class="today-week-total-label">Bags this week</div>
+      </div>
+    </div>
+    <div class="today-metrics">
+      <div class="today-metric">
+        <span class="today-metric-icon">↓</span>
+        <div class="today-metric-num">1</div>
+        <div class="today-metric-label">Arriving</div>
+      </div>
+      <div class="today-metric">
+        <span class="today-metric-icon">✓</span>
+        <div class="today-metric-num zero">0</div>
+        <div class="today-metric-label">Checked In</div>
+      </div>
+      <div class="today-metric">
+        <span class="today-metric-icon">↑</span>
+        <div class="today-metric-num zero">0</div>
+        <div class="today-metric-label">Departing</div>
+      </div>
+      <div class="today-metric">
+        <span class="today-metric-icon">✓</span>
+        <div class="today-metric-num zero">0</div>
+        <div class="today-metric-label">Checked Out</div>
+      </div>
+      <div class="today-metric shavings">
+        <span class="today-metric-icon">▭</span>
+        <div class="today-metric-num">2</div>
+        <div class="today-metric-label">Bags Today</div>
+      </div>
+    </div>
+  </div>
 
-          <!-- ── Aggregate KPI stat cards (render_stat_cards) ── -->
-          <!-- 5 cards: Arriving / Departing / Checked In / Not Yet Checked In / Shavings Required -->
-          <div class="eem-dm-stats">
-            <div class="eem-stat-card">
-              <div class="eem-stat-card-label">Arriving</div>
-              <div class="eem-stat-card-num" style="color:#15803d;">4</div>
-            </div>
-            <div class="eem-stat-card">
-              <div class="eem-stat-card-label">Departing</div>
-              <div class="eem-stat-card-num" style="color:#a16207;">4</div>
-            </div>
-            <div class="eem-stat-card">
-              <div class="eem-stat-card-label">Checked In</div>
-              <div class="eem-stat-card-num" style="color:#1d4ed8;">1</div>
-            </div>
-            <div class="eem-stat-card">
-              <div class="eem-stat-card-label">Not Yet Checked In</div>
-              <div class="eem-stat-card-num" style="color:#dc2626;">3</div>
-            </div>
-            <div class="eem-stat-card">
-              <div class="eem-stat-card-label">Shavings Required</div>
-              <div class="eem-stat-card-num" style="color:#7c3aed;">16 <span>bags</span></div>
-            </div>
-          </div>
+  <!-- DAY RAIL -->
+  <div class="day-rail">
+    <button class="day-pill today" onclick="eemDmSelectDay('mon-jun-15')">
+      <span class="day-pill-date">Mon, Jun 15</span>
+      <span class="day-pill-moves">
+        <span class="day-pill-move arr">↓1</span>
+        <span class="day-pill-move dep zero">↑0</span>
+      </span>
+    </button>
+    <button class="day-pill" onclick="eemDmSelectDay('tue-jun-16')">
+      <div class="day-pill-alert" title="Pending arrivals not checked in"></div>
+      <span class="day-pill-date">Tue, Jun 16</span>
+      <span class="day-pill-moves">
+        <span class="day-pill-move arr">↓2</span>
+        <span class="day-pill-move dep">↑1</span>
+      </span>
+    </button>
+    <button class="day-pill" onclick="eemDmSelectDay('wed-jun-17')">
+      <span class="day-pill-date">Wed, Jun 17</span>
+      <span class="day-pill-moves">
+        <span class="day-pill-move arr">↓1</span>
+        <span class="day-pill-move dep zero">↑0</span>
+      </span>
+    </button>
+    <button class="day-pill" onclick="eemDmSelectDay('thu-jun-18')">
+      <div class="day-pill-alert" title="Pending arrivals not checked in"></div>
+      <span class="day-pill-date">Thu, Jun 18</span>
+      <span class="day-pill-moves">
+        <span class="day-pill-move arr zero">↓0</span>
+        <span class="day-pill-move dep">↑3</span>
+      </span>
+    </button>
+    <button class="day-pill" onclick="eemDmSelectDay('fri-jun-26')">
+      <span class="day-pill-date">Fri, Jun 26</span>
+      <span class="day-pill-moves">
+        <span class="day-pill-move arr">↓1</span>
+        <span class="day-pill-move dep zero">↑0</span>
+      </span>
+    </button>
+    <button class="day-pill" onclick="eemDmSelectDay('sat-jun-27')">
+      <span class="day-pill-date">Sat, Jun 27</span>
+      <span class="day-pill-moves">
+        <span class="day-pill-move arr zero">↓0</span>
+        <span class="day-pill-move dep">↑1</span>
+      </span>
+    </button>
+    <button class="day-pill" onclick="eemDmSelectDay('wed-jul-8')">
+      <span class="day-pill-date">Wed, Jul 8</span>
+      <span class="day-pill-moves">
+        <span class="day-pill-move arr">↓1</span>
+        <span class="day-pill-move dep zero">↑0</span>
+      </span>
+    </button>
+    <button class="day-pill" onclick="eemDmSelectDay('fri-jul-10')">
+      <span class="day-pill-date">Fri, Jul 10</span>
+      <span class="day-pill-moves">
+        <span class="day-pill-move arr">↓1</span>
+        <span class="day-pill-move dep zero">↑0</span>
+      </span>
+    </button>
+    <button class="day-pill" onclick="eemDmSelectDay('sun-jul-12')">
+      <span class="day-pill-date">Sun, Jul 12</span>
+      <span class="day-pill-moves">
+        <span class="day-pill-move arr zero">↓0</span>
+        <span class="day-pill-move dep">↑2</span>
+      </span>
+    </button>
+  </div>
 
-          <!-- ── Toolbar: reservation + date dropdown + Print View ── -->
-          <div class="eem-dm-toolbar">
-            <form class="eem-dm-toolbar-form" onsubmit="return false">
-              <div class="eem-dm-toolbar-group">
-                <label class="eem-dm-toolbar-label" for="dm-reservation">Reservation</label>
-                <select id="dm-reservation" class="eem-field-select">
-                  <option selected>2026 Southeast Region Super Sort</option>
-                  <option>2026 Spring Classic Barrel Race</option>
-                </select>
-              </div>
-              <div class="eem-dm-toolbar-group">
-                <label class="eem-dm-toolbar-label" for="dm-date">Date</label>
-                <select id="dm-date" class="eem-field-select">
-                  <option selected>All Days</option>
-                  <option>Today</option>
-                  <option>Monday, June 15</option>
-                  <option>Tuesday, June 16</option>
-                  <option>Wednesday, June 17</option>
-                  <option>Thursday, June 18</option>
-                </select>
-              </div>
-            </form>
-            <a href="#" target="_blank" class="eem-btn eem-btn-secondary eem-dm-toolbar-print">Print View</a>
-          </div>
+  <!-- TOOLBAR -->
+  <div class="app-toolbar">
+    <div class="app-field-group">
+      <label class="app-field-label">Reservation</label>
+      <select class="app-select"><option>2026 Southeast Region Super Sort</option></select>
+    </div>
+    <div class="app-field-group">
+      <label class="app-field-label">Date</label>
+      <select class="app-select" id="eem-dm-date">
+        <option value="">All Days</option>
+        <option value="mon-jun-15">Mon, Jun 15</option>
+        <option value="tue-jun-16">Tue, Jun 16</option>
+        <option value="wed-jun-17">Wed, Jun 17</option>
+        <option value="thu-jun-18">Thu, Jun 18</option>
+      </select>
+    </div>
+  </div>
 
-        </div><!-- /.eem-page-body -->
-      </div><!-- /.eem-page-wrap -->
+  <!-- DAY 1: Mon, Jun 15 -->
+  <div class="day-section">
+    <div class="day-section-header"><div class="day-section-date">Mon, Jun 15</div></div>
+    <div class="summary-bar">
+      <div class="summary-stat"><span class="summary-stat-icon">↓</span><span class="summary-stat-num">1</span><span class="summary-stat-label">Arriving</span></div>
+      <div class="summary-stat-divider"></div>
+      <div class="summary-stat"><span class="summary-stat-icon">✓</span><span class="summary-stat-num">1</span><span class="summary-stat-label">Checked In</span></div>
+      <div class="summary-stat-divider"></div>
+      <div class="summary-stat"><span class="summary-stat-icon zero">↑</span><span class="summary-stat-num zero">0</span><span class="summary-stat-label zero">Departing</span></div>
+      <div class="summary-stat-divider"></div>
+      <div class="summary-stat"><span class="summary-stat-icon zero">✓</span><span class="summary-stat-num zero">0</span><span class="summary-stat-label zero">Checked Out</span></div>
+      <div class="summary-stat-divider"></div>
+      <div class="summary-stat shavings"><span class="summary-stat-icon">▭</span><span class="summary-stat-num">2</span><span class="summary-stat-label">Bags Shavings</span></div>
+    </div>
+    <div class="group-heading group-heading--arr">↓ Arriving</div>
+    <div class="tbl-wrap"><table class="tbl">
+      <thead><tr><th>Stall #</th><th>Customer</th><th>Order #</th><th>Arrival</th><th>Departure</th><th>Shavings</th><th>Status</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="cell-stall"><a href="#">14</a></td>
+          <td>Martinez, Rosa</td>
+          <td class="cell-muted">—</td>
+          <td class="cell-date">Mon, Jun 15</td>
+          <td class="cell-date">Tue, Jun 16</td>
+          <td style="text-align:center">2</td>
+          <td><div class="status-menu"><button type="button" class="status-trigger" data-eem-action="dm-status-menu" aria-haspopup="true" aria-expanded="false"><span class="status-chip s-checked_in"><span>Checked In</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></button><ul class="status-options" role="menu"><li><button type="button" class="status-option" role="menuitem">Pending Arrival</button></li><li><button type="button" class="status-option is-current" role="menuitem">Checked In</button></li><li><button type="button" class="status-option" role="menuitem">Checked Out</button></li></ul></div></td>
+          <td><button class="note-btn has-note" onclick="openNote('Stall 14','Martinez, Rosa')" title="View note"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></button></td>
+        </tr>
+      </tbody>
+    </table></div>
+  </div>
 
-      <!-- ══════════════ PER-DAY DATE SECTIONS (float on page bg) ══════════════ -->
-      <div class="eem-dm-sections">
+  <!-- DAY 2: Tue, Jun 16 -->
+  <div class="day-section">
+    <div class="day-section-header"><div class="day-section-date">Tue, Jun 16</div></div>
+    <div class="summary-bar">
+      <div class="summary-stat"><span class="summary-stat-icon">↓</span><span class="summary-stat-num">2</span><span class="summary-stat-label">Arriving</span></div>
+      <div class="summary-stat-divider"></div>
+      <div class="summary-stat"><span class="summary-stat-icon">✓</span><span class="summary-stat-num">1</span><span class="summary-stat-label">Checked In</span></div>
+      <div class="summary-stat-divider"></div>
+      <div class="summary-stat"><span class="summary-stat-icon">↑</span><span class="summary-stat-num">1</span><span class="summary-stat-label">Departing</span></div>
+      <div class="summary-stat-divider"></div>
+      <div class="summary-stat"><span class="summary-stat-icon zero">✓</span><span class="summary-stat-num zero">0</span><span class="summary-stat-label zero">Checked Out</span></div>
+      <div class="summary-stat-divider"></div>
+      <div class="summary-stat shavings"><span class="summary-stat-icon">▭</span><span class="summary-stat-num">8</span><span class="summary-stat-label">Bags Shavings</span></div>
+    </div>
+    <div class="group-heading group-heading--arr">↓ Arriving</div>
+    <div class="tbl-wrap"><table class="tbl">
+      <thead><tr><th>Stall #</th><th>Customer</th><th>Order #</th><th>Arrival</th><th>Departure</th><th>Shavings</th><th>Status</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="cell-stall"><a href="#">1, 2, 3, 4</a></td>
+          <td>Wilson, Jake</td>
+          <td class="cell-muted">—</td>
+          <td class="cell-date">Tue, Jun 16</td>
+          <td class="cell-date">Thu, Jun 18</td>
+          <td style="text-align:center">4</td>
+          <td><div class="status-menu"><button type="button" class="status-trigger" data-eem-action="dm-status-menu" aria-haspopup="true" aria-expanded="false"><span class="status-chip s-pending"><span>Pending Arrival</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></button><ul class="status-options" role="menu"><li><button type="button" class="status-option is-current" role="menuitem">Pending Arrival</button></li><li><button type="button" class="status-option" role="menuitem">Checked In</button></li><li><button type="button" class="status-option" role="menuitem">Checked Out</button></li></ul></div></td>
+          <td><button class="note-btn" onclick="openNote('Stalls 1-4','Wilson, Jake')" title="Add note"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></button></td>
+        </tr>
+        <tr>
+          <td class="cell-stall"><a href="#">8, 9</a></td>
+          <td>Anderson, Beth</td>
+          <td class="cell-muted">—</td>
+          <td class="cell-date">Tue, Jun 16</td>
+          <td class="cell-date">Thu, Jun 18</td>
+          <td style="text-align:center">2</td>
+          <td><div class="status-menu"><button type="button" class="status-trigger" data-eem-action="dm-status-menu" aria-haspopup="true" aria-expanded="false"><span class="status-chip s-checked_in"><span>Checked In</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></button><ul class="status-options" role="menu"><li><button type="button" class="status-option" role="menuitem">Pending Arrival</button></li><li><button type="button" class="status-option is-current" role="menuitem">Checked In</button></li><li><button type="button" class="status-option" role="menuitem">Checked Out</button></li></ul></div></td>
+          <td><button class="note-btn" onclick="openNote('Stalls 8-9','Anderson, Beth')" title="Add note"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></button></td>
+        </tr>
+      </tbody>
+    </table></div>
+    <div class="group-heading group-heading--dep">↑ Departing</div>
+    <div class="tbl-wrap"><table class="tbl">
+      <thead><tr><th>Stall #</th><th>Customer</th><th>Order #</th><th>Arrival</th><th>Departure</th><th>Shavings</th><th>Status</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="cell-stall"><a href="#">14</a></td>
+          <td>Martinez, Rosa</td>
+          <td class="cell-muted">—</td>
+          <td class="cell-date">Mon, Jun 15</td>
+          <td class="cell-date">Tue, Jun 16</td>
+          <td style="text-align:center">2</td>
+          <td><div class="status-menu"><button type="button" class="status-trigger" data-eem-action="dm-status-menu" aria-haspopup="true" aria-expanded="false"><span class="status-chip s-departing"><span>Departing</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></button><ul class="status-options" role="menu"><li><button type="button" class="status-option" role="menuitem">Pending Arrival</button></li><li><button type="button" class="status-option" role="menuitem">Checked In</button></li><li><button type="button" class="status-option is-current" role="menuitem">Checked Out</button></li></ul></div></td>
+          <td><button class="note-btn has-note" onclick="openNote('Stall 14','Martinez, Rosa')" title="View note"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></button></td>
+        </tr>
+      </tbody>
+    </table></div>
+  </div>
 
-        <!-- ── Day 1: Mon, Jun 15 — status menu shown OPEN ── -->
-        <div class="eem-dm-date-section">
-          <h3 class="eem-dm-date-heading">Mon, Jun 15</h3>
-          <div class="eem-dm-summary">
-            <span class="eem-dm-summary-item"><span class="eem-dm-summary-icon" aria-hidden="true">↓</span>1 Arriving</span>
-            <span class="eem-dm-summary-item is-zero"><span class="eem-dm-summary-icon" aria-hidden="true">✓</span>0 Checked In</span>
-            <span class="eem-dm-summary-item is-zero"><span class="eem-dm-summary-icon" aria-hidden="true">↑</span>0 Departing</span>
-            <span class="eem-dm-summary-item is-zero"><span class="eem-dm-summary-icon" aria-hidden="true">✓</span>0 Checked Out</span>
-            <span class="eem-dm-summary-item"><span class="eem-dm-summary-icon" aria-hidden="true">◆</span>2 Bags Shavings</span>
-          </div>
+  <!-- DAY 3: Thu, Jun 18 -->
+  <div class="day-section">
+    <div class="day-section-header"><div class="day-section-date">Thu, Jun 18</div></div>
+    <div class="summary-bar">
+      <div class="summary-stat"><span class="summary-stat-icon zero">↓</span><span class="summary-stat-num zero">0</span><span class="summary-stat-label zero">Arriving</span></div>
+      <div class="summary-stat-divider"></div>
+      <div class="summary-stat"><span class="summary-stat-icon">✓</span><span class="summary-stat-num">1</span><span class="summary-stat-label">Checked In</span></div>
+      <div class="summary-stat-divider"></div>
+      <div class="summary-stat"><span class="summary-stat-icon">↑</span><span class="summary-stat-num">3</span><span class="summary-stat-label">Departing</span></div>
+      <div class="summary-stat-divider"></div>
+      <div class="summary-stat"><span class="summary-stat-icon">✓</span><span class="summary-stat-num">1</span><span class="summary-stat-label">Checked Out</span></div>
+      <div class="summary-stat-divider"></div>
+      <div class="summary-stat shavings"><span class="summary-stat-icon">▭</span><span class="summary-stat-num">6</span><span class="summary-stat-label">Bags Shavings</span></div>
+    </div>
+    <div class="group-heading group-heading--dep">↑ Departing</div>
+    <div class="tbl-wrap"><table class="tbl">
+      <thead><tr><th>Stall #</th><th>Customer</th><th>Order #</th><th>Arrival</th><th>Departure</th><th>Shavings</th><th>Status</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="cell-stall"><a href="#">1, 2, 3, 4</a></td>
+          <td>Wilson, Jake</td>
+          <td class="cell-muted">—</td>
+          <td class="cell-date">Tue, Jun 16</td>
+          <td class="cell-date">Thu, Jun 18</td>
+          <td style="text-align:center">4</td>
+          <td><div class="status-menu"><button type="button" class="status-trigger" data-eem-action="dm-status-menu" aria-haspopup="true" aria-expanded="false"><span class="status-chip s-departing"><span>Departing</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></button><ul class="status-options" role="menu"><li><button type="button" class="status-option" role="menuitem">Pending Arrival</button></li><li><button type="button" class="status-option" role="menuitem">Checked In</button></li><li><button type="button" class="status-option is-current" role="menuitem">Checked Out</button></li></ul></div></td>
+          <td><button class="note-btn" onclick="openNote('Stalls 1-4','Wilson, Jake')" title="Add note"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></button></td>
+        </tr>
+        <tr>
+          <td class="cell-stall"><a href="#">8, 9</a></td>
+          <td>Anderson, Beth</td>
+          <td class="cell-muted">—</td>
+          <td class="cell-date">Tue, Jun 16</td>
+          <td class="cell-date">Thu, Jun 18</td>
+          <td style="text-align:center">2</td>
+          <td><div class="status-menu"><button type="button" class="status-trigger" data-eem-action="dm-status-menu" aria-haspopup="true" aria-expanded="false"><span class="status-chip s-departing"><span>Departing</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></button><ul class="status-options" role="menu"><li><button type="button" class="status-option" role="menuitem">Pending Arrival</button></li><li><button type="button" class="status-option" role="menuitem">Checked In</button></li><li><button type="button" class="status-option is-current" role="menuitem">Checked Out</button></li></ul></div></td>
+          <td><button class="note-btn" onclick="openNote('Stalls 8-9','Anderson, Beth')" title="Add note"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></button></td>
+        </tr>
+        <tr>
+          <td class="cell-stall"><a href="#">18, 19, 20</a></td>
+          <td>Lee, David</td>
+          <td class="cell-muted">—</td>
+          <td class="cell-date">Wed, Jun 17</td>
+          <td class="cell-date">Thu, Jun 18</td>
+          <td style="text-align:center" class="cell-muted">—</td>
+          <td><div class="status-menu"><button type="button" class="status-trigger" data-eem-action="dm-status-menu" aria-haspopup="true" aria-expanded="false"><span class="status-chip s-checked_out"><span>Checked Out</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></button><ul class="status-options" role="menu"><li><button type="button" class="status-option" role="menuitem">Pending Arrival</button></li><li><button type="button" class="status-option" role="menuitem">Checked In</button></li><li><button type="button" class="status-option is-current" role="menuitem">Checked Out</button></li></ul></div></td>
+          <td><button class="note-btn" onclick="openNote('Stalls 18-20','Lee, David')" title="Add note"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></button></td>
+        </tr>
+      </tbody>
+    </table></div>
+  </div>
 
-          <h4 class="eem-dm-group-heading eem-dm-group-heading--arriving"><span class="eem-dm-group-icon" aria-hidden="true">↓</span>Arriving</h4>
-          <div class="eem-dm-table-wrap">
-            <table class="eem-dm-table">
-              <thead><tr><th>Stall #</th><th>Customer</th><th>Order #</th><th>Arrival</th><th>Departure</th><th>Shavings</th><th>Status</th></tr></thead>
-              <tbody>
-                <tr>
-                  <td class="eem-dm-cell-stall">14</td>
-                  <td>Martinez, Rosa</td>
-                  <td class="eem-dm-cell-order"><a href="#">#00154</a></td>
-                  <td class="eem-dm-cell-dates">Mon, Jun 15</td>
-                  <td class="eem-dm-cell-dates">Tue, Jun 16</td>
-                  <td class="eem-dm-cell-shavings">2</td>
-                  <td class="eem-dm-cell-status">
-                    <!-- Status menu — open for preview -->
-                    <div class="eem-dm-status-menu open" data-eem-checkin>
-                      <button type="button" class="eem-dm-status-trigger" data-eem-action="dm-status-menu" aria-haspopup="true" aria-expanded="true">
-                        <span class="eem-dm-status eem-dm-status--caret eem-dm-status-occupied"><span class="eem-dm-status-label">Pending Arrival</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
-                      </button>
-                      <ul class="eem-dm-status-options" role="menu">
-                        <li role="none"><button type="button" role="menuitem" class="eem-dm-status-option is-current" data-eem-action="dm-status-pick" data-target="occupied">Pending Arrival</button></li>
-                        <li role="none"><button type="button" role="menuitem" class="eem-dm-status-option" data-eem-action="dm-status-pick" data-target="checked_in">Checked In</button></li>
-                        <li role="none"><button type="button" role="menuitem" class="eem-dm-status-option" data-eem-action="dm-status-pick" data-target="checked_out">Checked Out</button></li>
-                      </ul>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+</div><!-- /.app-content -->
 
-        <!-- ── Day 2: Tue, Jun 16 — Arriving + Departing groups ── -->
-        <div class="eem-dm-date-section">
-          <h3 class="eem-dm-date-heading">Tue, Jun 16</h3>
-          <div class="eem-dm-summary">
-            <span class="eem-dm-summary-item"><span class="eem-dm-summary-icon" aria-hidden="true">↓</span>2 Arriving</span>
-            <span class="eem-dm-summary-item is-zero"><span class="eem-dm-summary-icon" aria-hidden="true">✓</span>0 Checked In</span>
-            <span class="eem-dm-summary-item"><span class="eem-dm-summary-icon" aria-hidden="true">↑</span>1 Departing</span>
-            <span class="eem-dm-summary-item is-zero"><span class="eem-dm-summary-icon" aria-hidden="true">✓</span>0 Checked Out</span>
-            <span class="eem-dm-summary-item"><span class="eem-dm-summary-icon" aria-hidden="true">◆</span>8 Bags Shavings</span>
-          </div>
-
-          <h4 class="eem-dm-group-heading eem-dm-group-heading--arriving"><span class="eem-dm-group-icon" aria-hidden="true">↓</span>Arriving</h4>
-          <div class="eem-dm-table-wrap">
-            <table class="eem-dm-table">
-              <thead><tr><th>Stall #</th><th>Customer</th><th>Order #</th><th>Arrival</th><th>Departure</th><th>Shavings</th><th>Status</th></tr></thead>
-              <tbody>
-                <tr>
-                  <td class="eem-dm-cell-stall">1, 2, 3, 4</td>
-                  <td>Wilson, Jake</td>
-                  <td class="eem-dm-cell-order"><a href="#">#00156</a></td>
-                  <td class="eem-dm-cell-dates">Tue, Jun 16</td>
-                  <td class="eem-dm-cell-dates">Thu, Jun 18</td>
-                  <td class="eem-dm-cell-shavings">4</td>
-                  <td class="eem-dm-cell-status">
-                    <div class="eem-dm-status-menu" data-eem-checkin>
-                      <button type="button" class="eem-dm-status-trigger" data-eem-action="dm-status-menu" aria-haspopup="true" aria-expanded="false">
-                        <span class="eem-dm-status eem-dm-status--caret eem-dm-status-occupied"><span class="eem-dm-status-label">Pending Arrival</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
-                      </button>
-                      <ul class="eem-dm-status-options" role="menu">
-                        <li role="none"><button type="button" role="menuitem" class="eem-dm-status-option is-current" data-eem-action="dm-status-pick" data-target="occupied">Pending Arrival</button></li>
-                        <li role="none"><button type="button" role="menuitem" class="eem-dm-status-option" data-eem-action="dm-status-pick" data-target="checked_in">Checked In</button></li>
-                        <li role="none"><button type="button" role="menuitem" class="eem-dm-status-option" data-eem-action="dm-status-pick" data-target="checked_out">Checked Out</button></li>
-                      </ul>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td class="eem-dm-cell-stall">8, 9</td>
-                  <td>Anderson, Beth</td>
-                  <td class="eem-dm-cell-order"><a href="#">#00155</a></td>
-                  <td class="eem-dm-cell-dates">Tue, Jun 16</td>
-                  <td class="eem-dm-cell-dates">Thu, Jun 18</td>
-                  <td class="eem-dm-cell-shavings">2</td>
-                  <td class="eem-dm-cell-status">
-                    <div class="eem-dm-status-menu" data-eem-checkin>
-                      <button type="button" class="eem-dm-status-trigger" data-eem-action="dm-status-menu" aria-haspopup="true" aria-expanded="false">
-                        <span class="eem-dm-status eem-dm-status--caret eem-dm-status-checked_out"><span class="eem-dm-status-label">Checked Out</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
-                      </button>
-                      <ul class="eem-dm-status-options" role="menu">
-                        <li role="none"><button type="button" role="menuitem" class="eem-dm-status-option" data-eem-action="dm-status-pick" data-target="occupied">Pending Arrival</button></li>
-                        <li role="none"><button type="button" role="menuitem" class="eem-dm-status-option" data-eem-action="dm-status-pick" data-target="checked_in">Checked In</button></li>
-                        <li role="none"><button type="button" role="menuitem" class="eem-dm-status-option is-current" data-eem-action="dm-status-pick" data-target="checked_out">Checked Out</button></li>
-                      </ul>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <h4 class="eem-dm-group-heading eem-dm-group-heading--departing"><span class="eem-dm-group-icon" aria-hidden="true">↑</span>Departing</h4>
-          <div class="eem-dm-table-wrap">
-            <table class="eem-dm-table">
-              <thead><tr><th>Stall #</th><th>Customer</th><th>Order #</th><th>Arrival</th><th>Departure</th><th>Shavings</th><th>Status</th></tr></thead>
-              <tbody>
-                <tr>
-                  <td class="eem-dm-cell-stall">14</td>
-                  <td>Martinez, Rosa</td>
-                  <td class="eem-dm-cell-order"><a href="#">#00154</a></td>
-                  <td class="eem-dm-cell-dates">Mon, Jun 15</td>
-                  <td class="eem-dm-cell-dates">Tue, Jun 16</td>
-                  <td class="eem-dm-cell-shavings">2</td>
-                  <td class="eem-dm-cell-status">
-                    <div class="eem-dm-status-menu" data-eem-checkin>
-                      <button type="button" class="eem-dm-status-trigger" data-eem-action="dm-status-menu" aria-haspopup="true" aria-expanded="false">
-                        <span class="eem-dm-status eem-dm-status--caret eem-dm-status-departing"><span class="eem-dm-status-label">Departing</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
-                      </button>
-                      <ul class="eem-dm-status-options" role="menu">
-                        <li role="none"><button type="button" role="menuitem" class="eem-dm-status-option is-current" data-eem-action="dm-status-pick" data-target="occupied">Pending Arrival</button></li>
-                        <li role="none"><button type="button" role="menuitem" class="eem-dm-status-option" data-eem-action="dm-status-pick" data-target="checked_in">Checked In</button></li>
-                        <li role="none"><button type="button" role="menuitem" class="eem-dm-status-option" data-eem-action="dm-status-pick" data-target="checked_out">Checked Out</button></li>
-                      </ul>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- ── Day 3: Thu, Jun 18 — Checked In row + Departing group ── -->
-        <div class="eem-dm-date-section">
-          <h3 class="eem-dm-date-heading">Thu, Jun 18</h3>
-          <div class="eem-dm-summary">
-            <span class="eem-dm-summary-item is-zero"><span class="eem-dm-summary-icon" aria-hidden="true">↓</span>0 Arriving</span>
-            <span class="eem-dm-summary-item"><span class="eem-dm-summary-icon" aria-hidden="true">✓</span>1 Checked In</span>
-            <span class="eem-dm-summary-item"><span class="eem-dm-summary-icon" aria-hidden="true">↑</span>3 Departing</span>
-            <span class="eem-dm-summary-item"><span class="eem-dm-summary-icon" aria-hidden="true">✓</span>1 Checked Out</span>
-            <span class="eem-dm-summary-item"><span class="eem-dm-summary-icon" aria-hidden="true">◆</span>6 Bags Shavings</span>
-          </div>
-
-          <h4 class="eem-dm-group-heading eem-dm-group-heading--departing"><span class="eem-dm-group-icon" aria-hidden="true">↑</span>Departing</h4>
-          <div class="eem-dm-table-wrap">
-            <table class="eem-dm-table">
-              <thead><tr><th>Stall #</th><th>Customer</th><th>Order #</th><th>Arrival</th><th>Departure</th><th>Shavings</th><th>Status</th></tr></thead>
-              <tbody>
-                <tr>
-                  <td class="eem-dm-cell-stall">1, 2, 3, 4</td>
-                  <td>Wilson, Jake</td>
-                  <td class="eem-dm-cell-order"><a href="#">#00156</a></td>
-                  <td class="eem-dm-cell-dates">Tue, Jun 16</td>
-                  <td class="eem-dm-cell-dates">Thu, Jun 18</td>
-                  <td class="eem-dm-cell-shavings">4</td>
-                  <td class="eem-dm-cell-status">
-                    <div class="eem-dm-status-menu" data-eem-checkin>
-                      <button type="button" class="eem-dm-status-trigger" data-eem-action="dm-status-menu" aria-haspopup="true" aria-expanded="false">
-                        <span class="eem-dm-status eem-dm-status--caret eem-dm-status-departing"><span class="eem-dm-status-label">Departing</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
-                      </button>
-                      <ul class="eem-dm-status-options" role="menu">
-                        <li role="none"><button type="button" role="menuitem" class="eem-dm-status-option is-current" data-eem-action="dm-status-pick" data-target="occupied">Pending Arrival</button></li>
-                        <li role="none"><button type="button" role="menuitem" class="eem-dm-status-option" data-eem-action="dm-status-pick" data-target="checked_in">Checked In</button></li>
-                        <li role="none"><button type="button" role="menuitem" class="eem-dm-status-option" data-eem-action="dm-status-pick" data-target="checked_out">Checked Out</button></li>
-                      </ul>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td class="eem-dm-cell-stall">18, 19, 20</td>
-                  <td>Lee, David</td>
-                  <td class="eem-dm-cell-order"><a href="#">#00153</a></td>
-                  <td class="eem-dm-cell-dates">Wed, Jun 17</td>
-                  <td class="eem-dm-cell-dates">Thu, Jun 18</td>
-                  <td class="eem-dm-cell-shavings">—</td>
-                  <td class="eem-dm-cell-status">
-                    <div class="eem-dm-status-menu" data-eem-checkin>
-                      <button type="button" class="eem-dm-status-trigger" data-eem-action="dm-status-menu" aria-haspopup="true" aria-expanded="false">
-                        <span class="eem-dm-status eem-dm-status--caret eem-dm-status-checked_in"><span class="eem-dm-status-label">Checked In</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
-                      </button>
-                      <ul class="eem-dm-status-options" role="menu">
-                        <li role="none"><button type="button" role="menuitem" class="eem-dm-status-option" data-eem-action="dm-status-pick" data-target="occupied">Pending Arrival</button></li>
-                        <li role="none"><button type="button" role="menuitem" class="eem-dm-status-option is-current" data-eem-action="dm-status-pick" data-target="checked_in">Checked In</button></li>
-                        <li role="none"><button type="button" role="menuitem" class="eem-dm-status-option" data-eem-action="dm-status-pick" data-target="checked_out">Checked Out</button></li>
-                      </ul>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-      </div><!-- /.eem-dm-sections -->
-
-    </div><!-- /.eem-page -->
-
-  </main>
+<!-- Note modal -->
+<div class="modal-overlay" id="note-modal" onclick="if(event.target===this)closeNote()">
+  <div class="modal">
+    <div class="modal-title" id="note-modal-title">Note</div>
+    <div class="modal-sub" id="note-modal-sub"></div>
+    <textarea class="modal-textarea" id="note-modal-text" placeholder="Add a note for barn staff…"></textarea>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeNote()">Cancel</button>
+      <button class="modal-save" onclick="closeNote()">Save Note</button>
+    </div>
+  </div>
 </div>
 
 <script>
-/* Minimal status-menu toggle. Live page uses position:fixed + JS coords + an
-   AJAX call to eem_order_checkin_set; here we just open/close + swap is-current. */
-(function () {
-  function closeAll() {
-    document.querySelectorAll('.eem-dm-status-menu.open').forEach(function (m) {
+function eemDmSelectDay(day){
+  var sel=document.getElementById('eem-dm-date');
+  if(sel){sel.value=day;}
+}
+function openNote(stall,customer){
+  document.getElementById('note-modal-title').textContent=stall;
+  document.getElementById('note-modal-sub').textContent=customer;
+  document.getElementById('note-modal').classList.add('open');
+  setTimeout(function(){document.getElementById('note-modal-text').focus();},50);
+}
+function closeNote(){
+  document.getElementById('note-modal').classList.remove('open');
+}
+(function(){
+  function closeAll(){
+    document.querySelectorAll('.status-menu.open').forEach(function(m){
       m.classList.remove('open');
-      var t = m.querySelector('.eem-dm-status-trigger');
-      if (t) t.setAttribute('aria-expanded', 'false');
+      var t=m.querySelector('.status-trigger');
+      if(t)t.setAttribute('aria-expanded','false');
     });
   }
-  document.addEventListener('click', function (e) {
-    var trigger = e.target.closest('[data-eem-action="dm-status-menu"]');
-    if (trigger) {
+  document.addEventListener('click',function(e){
+    var trigger=e.target.closest('[data-eem-action="dm-status-menu"]');
+    if(trigger){
       e.preventDefault();
-      var menu = trigger.closest('.eem-dm-status-menu');
-      var wasOpen = menu.classList.contains('open');
+      var menu=trigger.closest('.status-menu');
+      var wasOpen=menu.classList.contains('open');
       closeAll();
-      if (!wasOpen) { menu.classList.add('open'); trigger.setAttribute('aria-expanded', 'true'); }
+      if(!wasOpen){menu.classList.add('open');trigger.setAttribute('aria-expanded','true');}
       return;
     }
-    var opt = e.target.closest('[data-eem-action="dm-status-pick"]');
-    if (opt) {
-      e.preventDefault();
-      var menuEl = opt.closest('.eem-dm-status-menu');
-      var target = opt.getAttribute('data-target');
-      var label = opt.textContent.trim();
-      var chip = menuEl.querySelector('.eem-dm-status');
-      if (chip) {
-        chip.className = 'eem-dm-status eem-dm-status--caret eem-dm-status-' + target;
-        var lbl = chip.querySelector('.eem-dm-status-label');
-        if (lbl) lbl.textContent = label;
-      }
-      menuEl.querySelectorAll('.eem-dm-status-option').forEach(function (b) {
-        b.classList.toggle('is-current', b.getAttribute('data-target') === target);
-      });
-      closeAll();
-      return;
-    }
-    closeAll();
+    if(!e.target.closest('.modal'))closeAll();
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'){closeAll();closeNote();}
   });
 })();
 </script>
-
 </body>
 </html>

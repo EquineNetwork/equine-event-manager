@@ -11210,6 +11210,266 @@ a.eem-event-editor-card__quicklink:hover { color: #1257d1; }
 	padding: 14px 0 0;
 }
 
+/* ── Today Hero card ────────────────────────────────────────────────── */
+.eem-dm-hero {
+	background: linear-gradient(135deg, #1668F2 0%, #0d4fc2 100%);
+	border-radius: var(--eem-radius);
+	padding: 20px 24px;
+	box-shadow: 0 4px 20px rgba(22, 104, 242, 0.22);
+	margin-bottom: 0;
+}
+.eem-dm-hero-top {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	margin-bottom: 18px;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+.eem-dm-hero-label {
+	font-size: 16px;
+	font-weight: 700;
+	color: #fff;
+	letter-spacing: -0.01em;
+}
+.eem-dm-hero-sublabel {
+	font-size: 13px;
+	color: rgba(255,255,255,0.8);
+	margin-top: 3px;
+}
+.eem-dm-hero-week {
+	text-align: right;
+}
+.eem-dm-hero-week-num {
+	font-size: 22px;
+	font-weight: 700;
+	color: #00e5ee;
+	line-height: 1;
+}
+.eem-dm-hero-week-label {
+	font-size: 11px;
+	color: rgba(0,229,238,0.75);
+	margin-top: 2px;
+}
+.eem-dm-hero-metrics {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0;
+}
+.eem-dm-hero-metric {
+	flex: 1 1 110px;
+	padding: 0 20px;
+	border-right: 1px solid rgba(255,255,255,0.12);
+}
+.eem-dm-hero-metric:first-child { padding-left: 0; }
+.eem-dm-hero-metric:last-child  { border-right: none; }
+.eem-dm-hero-icon {
+	font-size: 14px;
+	color: rgba(255,255,255,0.7);
+	display: block;
+	margin-bottom: 2px;
+}
+.eem-dm-hero-num {
+	font-size: 38px;
+	font-weight: 700;
+	color: #fff;
+	line-height: 1;
+	letter-spacing: -0.03em;
+}
+.eem-dm-hero-num.is-zero {
+	color: rgba(255,255,255,0.3);
+}
+.eem-dm-hero-mlabel {
+	font-size: 13px;
+	color: rgba(255,255,255,0.7);
+	margin-top: 4px;
+	font-weight: 500;
+}
+.eem-dm-hero-metric--shavings .eem-dm-hero-num    { color: #00e5ee; }
+.eem-dm-hero-metric--shavings .eem-dm-hero-mlabel { color: rgba(0,229,238,0.75); }
+.eem-dm-hero-metric--shavings .eem-dm-hero-icon   { color: #00e5ee; }
+
+/* ── Day Rail ───────────────────────────────────────────────────── */
+.eem-dm-day-rail {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+	gap: 8px;
+}
+a.eem-dm-day-pill,
+a.eem-dm-day-pill:visited {
+	background: #fff;
+	border: 1.5px solid #e2e8f4;
+	border-radius: var(--eem-radius);
+	padding: 11px 14px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	min-height: 52px;
+	position: relative;
+	text-decoration: none;
+	transition: border-color 0.12s, box-shadow 0.12s;
+	-webkit-tap-highlight-color: transparent;
+}
+a.eem-dm-day-pill:hover,
+a.eem-dm-day-pill:focus {
+	border-color: #1668F2;
+	box-shadow: 0 0 0 3px rgba(22,104,242,0.1);
+	outline: none;
+	text-decoration: none;
+}
+a.eem-dm-day-pill.today {
+	border-color: #1668F2;
+	background: #f0f5ff;
+}
+a.eem-dm-day-pill.selected {
+	border-color: #1668F2;
+	background: #f0f5ff;
+}
+.eem-dm-day-pill-alert {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: #ef4444;
+	box-shadow: 0 0 0 2px #fff;
+}
+.eem-dm-day-pill-date {
+	font-size: 13px;
+	font-weight: 700;
+	color: #0d1b3e;
+	white-space: nowrap;
+}
+.eem-dm-day-pill-moves {
+	display: flex;
+	gap: 10px;
+	align-items: center;
+}
+.eem-dm-day-pill-move {
+	font-size: 13px;
+	font-weight: 700;
+	display: inline-flex;
+	align-items: center;
+	gap: 2px;
+}
+.eem-dm-day-pill-move.arr  { color: #1668F2; }
+.eem-dm-day-pill-move.dep  { color: #d97706; }
+.eem-dm-day-pill-move.zero { color: #c8d4e8; }
+
+/* ── Note button ────────────────────────────────────────────────── */
+.eem-dm-note-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	min-width: 32px;
+	border-radius: 7px;
+	background: none;
+	border: 1.5px solid #e2e8f4;
+	color: #94a3b8;
+	cursor: pointer;
+	transition: all 0.12s;
+	position: relative;
+	flex-shrink: 0;
+}
+.eem-dm-note-btn:hover {
+	border-color: #1668F2;
+	color: #1668F2;
+	background: #f0f5ff;
+}
+.eem-dm-note-btn.has-note {
+	border-color: #d0e0fb;
+	background: #f0f5ff;
+	color: #1668F2;
+}
+.eem-dm-note-btn.has-note::after {
+	content: '';
+	position: absolute;
+	top: -3px;
+	right: -3px;
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: #1668F2;
+	border: 2px solid #fff;
+}
+
+/* ── Note modal ─────────────────────────────────────────────────── */
+.eem-dm-note-overlay {
+	display: none;
+	position: fixed;
+	inset: 0;
+	background: rgba(13,27,62,0.35);
+	z-index: 100100;
+	align-items: center;
+	justify-content: center;
+	padding: 20px;
+	backdrop-filter: blur(2px);
+}
+.eem-dm-note-overlay.open { display: flex; }
+.eem-dm-note-dialog {
+	background: #fff;
+	border-radius: 14px;
+	padding: 24px;
+	width: 100%;
+	max-width: 440px;
+	box-shadow: 0 20px 60px rgba(13,27,62,0.2);
+}
+.eem-dm-note-head {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	margin-bottom: 14px;
+}
+.eem-dm-note-title {
+	font-size: 16px;
+	font-weight: 700;
+	color: #0d1b3e;
+}
+.eem-dm-note-sub {
+	font-size: 13px;
+	color: #64748b;
+	margin-top: 2px;
+}
+.eem-dm-note-close {
+	background: none;
+	border: 0;
+	cursor: pointer;
+	color: #94a3b8;
+	padding: 2px;
+	display: flex;
+	align-items: center;
+}
+.eem-dm-note-close:hover { color: #0d1b3e; }
+textarea.eem-dm-note-textarea {
+	width: 100%;
+	min-height: 100px;
+	padding: 12px;
+	border: 1.5px solid #d0daea;
+	border-radius: 8px;
+	font-family: inherit;
+	font-size: 14px;
+	color: #0d1b3e;
+	resize: vertical;
+	line-height: 1.5;
+	background: #F7F9FC;
+	box-sizing: border-box;
+}
+textarea.eem-dm-note-textarea:focus {
+	outline: none;
+	border-color: #1668F2;
+	box-shadow: 0 0 0 3px rgba(22,104,242,0.1);
+}
+.eem-dm-note-foot {
+	display: flex;
+	gap: 8px;
+	justify-content: flex-end;
+	margin-top: 14px;
+}
+
 /* ── Stat cards strip ──────────────────────────────────────────────── */
 .eem-dm-stats {
 	display: flex;
@@ -11335,11 +11595,13 @@ a.eem-dm-view-tab.active:visited {
 	display: flex;
 	flex-wrap: nowrap;
 	align-items: center;
-	gap: 22px;
+	gap: 0;
 	margin: 0;
-	padding: 2px 18px 12px;
+	padding: 8px 20px 12px;
 	background: #fff;
+	border-bottom: 1px solid #f0f4fb;
 	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
 }
 .eem-dm-summary-item {
 	display: inline-flex;
@@ -11362,6 +11624,42 @@ a.eem-dm-view-tab.active:visited {
 .eem-dm-summary-item.is-zero .eem-dm-summary-icon {
 	color: #a7aaad;
 }
+
+/* New summary bar structure (with dividers) */
+.eem-dm-summary-stat {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 4px 16px;
+	min-height: 44px;
+	flex-shrink: 0;
+}
+.eem-dm-summary-stat:first-child { padding-left: 0; }
+.eem-dm-summary-stat:last-child  { padding-right: 0; }
+.eem-dm-summary-divider {
+	width: 1px;
+	height: 24px;
+	background: #e2e8f4;
+	align-self: center;
+	flex-shrink: 0;
+}
+.eem-dm-summary-num {
+	font-size: 22px;
+	font-weight: 700;
+	color: #0d1b3e;
+	line-height: 1;
+	white-space: nowrap;
+}
+.eem-dm-summary-label {
+	font-size: 13px;
+	color: #64748b;
+	font-weight: 500;
+	white-space: nowrap;
+}
+.eem-dm-summary-stat.is-zero .eem-dm-summary-num   { color: #c8d4e8; }
+.eem-dm-summary-stat.is-zero .eem-dm-summary-icon  { color: #c8d4e8; }
+.eem-dm-summary-stat.is-zero .eem-dm-summary-label { color: #c8d4e8; }
+
 /* Arriving = blue band, Departing = amber band — colored icon + text + tint so
    the two halves of the day's table stand apart. Bands sit flush (margin 0). */
 .eem-dm-group-heading {
@@ -11491,13 +11789,15 @@ a.eem-dm-view-tab.active:visited {
 .eem-dm-table th:last-child, .eem-dm-table td:last-child { padding-right: 22px; }
 /* Shared column widths (must total 100%): Stall, Customer, Order #, Arrival,
    Departure, Shavings, Status. */
-.eem-dm-table th:nth-child(1), .eem-dm-table td:nth-child(1) { width: 14%; }
-.eem-dm-table th:nth-child(2), .eem-dm-table td:nth-child(2) { width: 20%; }
-.eem-dm-table th:nth-child(3), .eem-dm-table td:nth-child(3) { width: 11%; }
-.eem-dm-table th:nth-child(4), .eem-dm-table td:nth-child(4) { width: 15%; }
-.eem-dm-table th:nth-child(5), .eem-dm-table td:nth-child(5) { width: 15%; }
-.eem-dm-table th:nth-child(6), .eem-dm-table td:nth-child(6) { width: 10%; }
-.eem-dm-table th:nth-child(7), .eem-dm-table td:nth-child(7) { width: 15%; }
+/* 8 columns: Stall, Customer, Order #, Arrival, Departure, Shavings, Status, Notes */
+.eem-dm-table th:nth-child(1), .eem-dm-table td:nth-child(1) { width: 12%; }
+.eem-dm-table th:nth-child(2), .eem-dm-table td:nth-child(2) { width: 18%; }
+.eem-dm-table th:nth-child(3), .eem-dm-table td:nth-child(3) { width: 10%; }
+.eem-dm-table th:nth-child(4), .eem-dm-table td:nth-child(4) { width: 13%; }
+.eem-dm-table th:nth-child(5), .eem-dm-table td:nth-child(5) { width: 13%; }
+.eem-dm-table th:nth-child(6), .eem-dm-table td:nth-child(6) { width: 8%; text-align: center; }
+.eem-dm-table th:nth-child(7), .eem-dm-table td:nth-child(7) { width: 18%; }
+.eem-dm-table th:nth-child(8), .eem-dm-table td:nth-child(8) { width: 8%; text-align: center; }
 .eem-dm-table td { overflow: hidden; text-overflow: ellipsis; }
 /* Status cell hosts the dropdown menu — must not clip it. */
 .eem-dm-table td.eem-dm-cell-status { overflow: visible; }
@@ -11749,6 +12049,25 @@ a.eem-dm-view-tab.active:visited {
 	}
 	.eem-dm-overview-vals { gap: 4px; }
 	.eem-dm-stat { font-size: 11px; gap: 5px; }
+	/* Hero + Day Rail responsive */
+	.eem-dm-hero { padding: 14px 16px; }
+	.eem-dm-hero-metrics {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 10px;
+	}
+	.eem-dm-hero-metric {
+		flex: unset;
+		padding: 8px 0;
+		border-right: none;
+		border-bottom: 1px solid rgba(255,255,255,0.1);
+	}
+	.eem-dm-hero-metric:last-child { border-bottom: none; }
+	.eem-dm-hero-num { font-size: 28px; }
+	.eem-dm-day-rail { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+	.eem-dm-hero-num { font-size: 24px; }
 }
 
 /* ── Daily Movement: print ───────────────────────────────────────── */
@@ -11764,6 +12083,10 @@ a.eem-dm-view-tab.active:visited {
 	.eem-dm-toolbar,
 	.eem-dm-view-tabs,
 	.eem-dm-stats,
+	.eem-dm-hero,
+	.eem-dm-day-rail,
+	.eem-dm-note-btn,
+	.eem-dm-note-overlay,
 	.notice,
 	.update-nag,
 	#screen-meta,
