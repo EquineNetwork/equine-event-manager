@@ -11470,37 +11470,46 @@ textarea.eem-dm-note-textarea:focus {
 	margin-top: 14px;
 }
 
-/* ── Stat cards strip ──────────────────────────────────────────────── */
-.eem-dm-stats {
-	display: flex;
-	gap: 12px;
-	flex-wrap: wrap;
-	padding: 16px 22px;
-	border-bottom: 1px solid var(--eem-border, #dcdcde);
+/* Print Today button — page header action, triggers window.print(). */
+.eem-dm-print-today {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 8px 16px;
+	border-radius: 8px;
+	font-size: 13px;
+	font-weight: 600;
+	color: #1668F2;
+	background: #f0f5ff;
+	border: 1px solid #d0e0fb;
+	white-space: nowrap;
+	cursor: pointer;
 }
+.eem-dm-print-today:hover { background: #e0ecff; }
 
 /* ── Toolbar / filter bar ──────────────────────────────────────────── */
 .eem-dm-toolbar {
-	padding: 14px 22px;
-	background: #f0f4fb;
+	padding: 14px 18px;
+	background: #fff;
+	border: 1px solid #e2e8f4;
+	border-radius: var(--eem-radius);
 	display: flex;
+	flex-wrap: wrap;
 	align-items: flex-end;
-	gap: 16px;
+	gap: 14px;
 }
 .eem-dm-toolbar-form {
 	flex: 1 1 auto;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 14px;
+	align-items: flex-end;
 }
 /* Print View lives at the end of the filter row (set filters, then print). */
 .eem-dm-toolbar-print {
 	flex: 0 0 auto;
 	margin-left: auto;
 	white-space: nowrap;
-}
-.eem-dm-toolbar-form {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 16px;
-	align-items: flex-end;
 }
 .eem-dm-toolbar-group {
 	display: flex;
@@ -11527,34 +11536,6 @@ textarea.eem-dm-note-textarea:focus {
 	text-decoration: none;
 }
 
-/* ── View tabs (Today / All Days) — underline style matching stall chart view tabs */
-.eem-dm-view-tabs {
-	display: flex;
-	gap: 0;
-	padding: 0 22px;
-	border-bottom: 1px solid var(--eem-border, #dcdcde);
-	background: #fff;
-}
-a.eem-dm-view-tab,
-a.eem-dm-view-tab:visited {
-	padding: 14px 22px 12px;
-	font-size: 14px;
-	font-weight: 600;
-	color: #6B7A99;
-	cursor: pointer;
-	border-bottom: 3px solid transparent;
-	text-decoration: none;
-	transition: color .15s, border-color .15s;
-}
-a.eem-dm-view-tab:hover {
-	color: #031B4E;
-	text-decoration: none;
-}
-a.eem-dm-view-tab.active,
-a.eem-dm-view-tab.active:visited {
-	color: #1668F2;
-	border-bottom-color: #1668F2;
-}
 
 /* ── Content area ──────────────────────────────────────────────────── */
 .eem-dm-empty {
@@ -11585,47 +11566,30 @@ a.eem-dm-view-tab.active:visited {
 /* Date heading + metric summary = the card's WHITE header. The colored
    Arriving/Departing bands + tables follow inside the same card. */
 .eem-dm-date-heading {
-	font-size: 15px;
+	font-size: 17px;
 	font-weight: 700;
-	color: var(--eem-navy, #031B4E);
-	padding: 12px 18px 6px !important;
+	color: #0d1b3e;
+	letter-spacing: -0.01em;
+	padding: 16px 20px 0;
 	background: #fff;
 }
 .eem-dm-summary {
 	display: flex;
 	flex-wrap: nowrap;
-	align-items: center;
 	gap: 0;
-	margin: 0;
-	padding: 8px 20px 12px;
+	padding: 10px 20px 14px;
 	background: #fff;
 	border-bottom: 1px solid #f0f4fb;
 	overflow-x: auto;
 	-webkit-overflow-scrolling: touch;
 }
-.eem-dm-summary-item {
-	display: inline-flex;
-	align-items: center;
-	gap: 7px;
-	font-size: 13px;
-	font-weight: 600;
-	color: var(--eem-navy, #031b4e);
-	white-space: nowrap;
-}
-/* Middot separators between metrics (gap + ::after margin keep them centered). */
+.eem-dm-summary::-webkit-scrollbar { display: none; }
 .eem-dm-summary-icon {
-	font-weight: 700;
-	color: var(--eem-electric, #1d4ed8);
-}
-/* Zero metrics recede so the day's real movement reads first. */
-.eem-dm-summary-item.is-zero {
-	opacity: 0.45;
-}
-.eem-dm-summary-item.is-zero .eem-dm-summary-icon {
-	color: #a7aaad;
+	font-size: 16px;
+	color: #1668F2;
 }
 
-/* New summary bar structure (with dividers) */
+/* Summary bar structure (icon + num + label with dividers) */
 .eem-dm-summary-stat {
 	display: inline-flex;
 	align-items: center;
@@ -11665,20 +11629,20 @@ a.eem-dm-view-tab.active:visited {
 .eem-dm-group-heading {
 	display: flex;
 	align-items: center;
-	gap: 7px;
+	gap: 8px;
 	font-size: 12px;
 	font-weight: 700;
 	margin: 0;
-	padding: 5px 22px !important;
+	padding: 9px 20px;
 	text-transform: uppercase;
-	letter-spacing: 0.04em;
+	letter-spacing: 0.06em;
 }
 .eem-dm-group-icon { font-weight: 700; }
 .eem-dm-group-heading--arriving {
-	color: var(--eem-electric, #1668F2);
-	background: #f0f4fb;
-	border-top: 1px solid #d9e2f2;
-	border-bottom: 1px solid #d9e2f2;
+	color: #1668F2;
+	background: #f0f5ff;
+	border-top: 1px solid #dce8fb;
+	border-bottom: 1px solid #dce8fb;
 }
 .eem-dm-group-heading--departing {
 	color: #b45309;
@@ -11686,79 +11650,6 @@ a.eem-dm-view-tab.active:visited {
 	border-top: 1px solid #f3e2c4;
 	border-bottom: 1px solid #f3e2c4;
 }
-/* At-a-glance multi-day movement overview (mirrors the Stall Chart print view's
-   Daily Movement block — ↓ Arriving / ↑ Departing per date). */
-.eem-dm-overview {
-	background: var(--eem-gray-50, #f8fafc);
-	border: 0;
-	border-bottom: 1px solid #d9e2f2;
-	border-radius: 0;
-	padding: 14px 18px;
-	margin-bottom: 0;
-}
-.eem-dm-overview-title {
-	font-family: 'Space Grotesk', sans-serif;
-	font-size: 13px;
-	font-weight: 700;
-	color: var(--eem-navy, #031b4e);
-	margin-bottom: 12px;
-}
-.eem-dm-overview-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-	gap: 14px;
-}
-/* Each day reads as its own card on the pale-blue band. */
-.eem-dm-overview-day {
-	background: #fff;
-	border: 1px solid #dce3ee;
-	border-radius: var(--eem-radius);
-	padding: 14px 16px;
-}
-.eem-dm-overview-date {
-	font-size: 14px;
-	font-weight: 700;
-	color: var(--eem-navy, #031b4e);
-	padding-bottom: 10px;
-	margin-bottom: 10px;
-	border-bottom: 1px solid #eceff4;
-}
-.eem-dm-overview-vals {
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
-}
-/* Stat row: electric-blue icon, bold dark count, muted label. */
-.eem-dm-stat {
-	display: flex;
-	align-items: baseline;
-	gap: 8px;
-	font-size: 13px;
-}
-.eem-dm-stat-icon {
-	color: var(--eem-electric);
-	font-weight: 700;
-}
-/* Arriving = electric blue, Departing = amber. */
-.eem-dm-stat--dep .eem-dm-stat-icon {
-	color: #d97706;
-}
-.eem-dm-stat-num {
-	font-weight: 700;
-	color: var(--eem-navy, #1d2327);
-	min-width: 10px;
-}
-.eem-dm-stat-label {
-	color: #646970;
-}
-/* Zero counts dim the whole row (icon included). */
-.eem-dm-stat.is-zero {
-	opacity: 0.45;
-}
-.eem-dm-stat.is-zero .eem-dm-stat-icon {
-	color: #a7aaad;
-}
-
 /* Horizontal-scroll wrapper: rows never wrap — staff scroll right to read a
    full row on narrow screens (Whitney 2026-06-18). */
 .eem-dm-table-wrap {
@@ -11995,8 +11886,6 @@ a.eem-dm-view-tab.active:visited {
 
 /* ── Daily Movement: responsive ──────────────────────────────────── */
 @media (max-width: 782px) {
-	.eem-dm-stats { gap: 8px; padding: 12px 14px; }
-	.eem-dm-stats .eem-stat-card { flex: 1 1 calc(50% - 4px); min-width: 0; }
 	/* Toolbar stacks: selects then Print View, each full width. */
 	.eem-dm-toolbar {
 		padding: 12px 14px;
@@ -12010,7 +11899,7 @@ a.eem-dm-view-tab.active:visited {
 	}
 	.eem-dm-toolbar-group {
 		width: 100%;
-		flex: 0 0 auto; /* don't stretch vertically in the column */
+		flex: 0 0 auto;
 	}
 	.eem-dm-toolbar-group select {
 		width: 100%;
@@ -12020,35 +11909,8 @@ a.eem-dm-view-tab.active:visited {
 		width: 100%;
 		text-align: center;
 	}
-	.eem-dm-view-tabs {
-		padding: 0 14px;
-	}
-	a.eem-dm-view-tab {
-		padding: 10px 16px;
-		font-size: 13px;
-	}
 	.eem-dm-sections { padding: 10px 0; }
 	.eem-dm-date-section { padding: 0; }
-	/* Metric row stays on ONE line and scrolls horizontally (no wrap). */
-	.eem-dm-summary {
-		flex-wrap: nowrap;
-		gap: 16px;
-		overflow-x: auto;
-	}
-	/* 3 metric cards per row (smaller) so the overview takes less height. */
-	.eem-dm-overview { padding: 12px 12px; }
-	.eem-dm-overview-grid {
-		grid-template-columns: repeat(3, 1fr);
-		gap: 8px;
-	}
-	.eem-dm-overview-day { padding: 10px 10px; }
-	.eem-dm-overview-date {
-		font-size: 12px;
-		padding-bottom: 7px;
-		margin-bottom: 7px;
-	}
-	.eem-dm-overview-vals { gap: 4px; }
-	.eem-dm-stat { font-size: 11px; gap: 5px; }
 	/* Hero + Day Rail responsive */
 	.eem-dm-hero { padding: 14px 16px; }
 	.eem-dm-hero-metrics {
@@ -12080,9 +11942,8 @@ a.eem-dm-view-tab.active:visited {
 	#wpfooter,
 	.eem-breadcrumb,
 	.eem-page-header,
+	.eem-dm-print-today,
 	.eem-dm-toolbar,
-	.eem-dm-view-tabs,
-	.eem-dm-stats,
 	.eem-dm-hero,
 	.eem-dm-day-rail,
 	.eem-dm-note-btn,
@@ -12123,7 +11984,6 @@ a.eem-dm-view-tab.active:visited {
 	.eem-dm-date-heading { font-size: 14px; }
 	.eem-dm-group-heading { font-size: 11px; margin: 0; }
 	.eem-dm-summary { gap: 8px; margin: 0; }
-	.eem-dm-summary-item { font-size: 10px; padding: 2px 7px; }
 	.eem-dm-table { margin-bottom: 8px; }
 	.eem-dm-table thead { display: table-header-group; }
 	.eem-dm-table thead th { font-size: 10px; padding: 5px 8px; }
