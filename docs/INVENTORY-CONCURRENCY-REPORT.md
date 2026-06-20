@@ -218,3 +218,42 @@ This directly validates the "ton of traffic, no overbooking" claim end-to-end ra
 - Admin paths: `ajax_stall_map_action:3104` · `ajax_move_stall_assignment:5582` · `ajax_auto_assign:5755` ·
   `handle_generate_stall_assignments:10123` · `handle_update_order_assignments:4766`
 - Entries ledger schema (no UNIQUE): `includes/class-eem-division-entries.php:60-73`
+
+---
+
+## ADDENDUM — 2026-06-20 · plugin v2.7.515 · re-audit of admin & newer write paths
+
+The original audit was done at v2.7.281. ~230 versions of new admin write paths have landed since
+(editable order dates, click-to-assign, per-order check-in, custom line items / discount, admin
+Collect Payment). This addendum re-audits those paths. **The customer-checkout oversell guarantee
+(§2) and all stall/RV assignment paths remain fully locked + re-checked — no new oversell exposure.**
+The new gaps cluster in the admin *money* paths. Nothing is HIGH (each needs near-simultaneous admin
+action or a double-submit; Auth.net's Duplicate Window is a partial backstop).
+
+### Confirmed still-safe (re-verified at v2.7.515)
+- `ajax_stall_map_action` (`admin.php:3359`) — assignment lock + in-lock cross-order conflict
+  re-check before assign (`:3473-3484`) and block (`:3421-3430`). No oversell.
+- `ajax_move_stall_assignment` (`:6013`) — lock + in-lock per-date destination conflict scan.
+- `ajax_assign_order_to_unit` (`:6183`, the new order-context "click an available unit" flow) —
+  lock + nonce + cap + in-lock conflict check.
+- `EEM_Refund_Engine::process_amount_refund` (`refund-engine.php:118`) — per-order `GET_LOCK`,
+  remaining-balance read + `exceeds_remaining` guard run inside the lock. The new **Edit-Dates
+  refund branch routes through this** guarded method, so the refund half is protected.
+- `ajax_order_checkin_set` (`:6347`) → `set_order_checkin` (`stall-status-repo.php:175`) —
+  `INSERT … ON DUPLICATE KEY UPDATE` on the `(reservation_id, order_number)` unique key. Idempotent.
+
+### New risk-register rows
+
+| ID | Sev | What | Where | Fix |
+|---|---|---|---|---|
+| MED-3 | MED | **Edit-Dates "charge" branch** mutates `subtotal`/`total`/`tax`/`payment_status` with **no lock** and no idempotency token → lost-update vs a concurrent Edit-Dates or Add-Items on the same rows; a fast double-POST adds the delta twice. Admin-only, no money moves on this branch (raises Balance Due only). | `admin.php` `handle_ajax_edit_dates:9654`, charge branch `:9756-9781`, date write `:9723-9731` | Wrap the handler in `acquire_assignment_lock($reservation_id)` and **re-`get_order` inside the lock** before computing new subtotals (same pattern as the stall handlers; different lock key than the refund engine → no self-deadlock). Optionally add a one-shot edit token. |
+| MED-4 | MED | **Admin Collect Payment (Auth.net)** `already_paid` check is **non-atomic** vs the live charge — two requests can both pass the `payment_status==='paid'` read and both fire an Auth.net authCapture for the same balance → real double-*charge* on a double-click. Sibling of customer-side MED-1. Backstop today = Auth.net Duplicate Window (~120s). | `shortcodes.php` `ajax_collect_payment_authorize_charge:8284` (check `:8296` vs charge `:8314`, mark `:8320`) | Per-order `GET_LOCK` around read→charge→mark; re-read `payment_status` in-lock; refuse if paid. Belt-and-suspenders: Auth.net idempotency / tighter `duplicateWindow`. **PAYMENT PATH — change one-at-a-time + verify live (CLAUDE.md).** |
+| LOW-3 | LOW | Stripe `ajax_collect_payment_confirm` has no already-paid recheck (re-marks/re-logs only; a PaymentIntent can only succeed once → no 2nd charge). | `shortcodes.php:8192` | Add already-paid short-circuit + lock for symmetry. |
+| LOW-4 | LOW | `handle_ajax_mark_paid_single` status recheck non-atomic → duplicate "paid" write/note (no card charged — cash/check). | `admin.php:9925-9929` | Recheck in a short lock / confirm `mark_order_paid_manually` is idempotent. |
+| LOW-5 | LOW | Add-discount/custom-item double-submit windows. Discount self-heals (`set_discount` delete-then-insert → single row). Custom items are an unconditional INSERT → a double-submit dups the line item. | `class-eem-order-detail-page.php:2121/2249`, `order-adjustments-repo.php:153` | Disable-on-submit / dedup window for custom items. |
+| LOW-6 | LOW | `add_component_quantity` **adds** the priced delta onto the stored subtotal; never re-derives `unit_price × qty × nights`, so a pre-existing stored-vs-rate drift (the #90801 case: stored $121 vs rate-implied $135) carries forward and compounds. Data-integrity, not concurrency. | `orders-repository.php` `add_component_quantity:595`, existing-row branch `:645-668` | Recompute the full row as `unit_price × new_qty × nights` after bumping qty (overwrites any intentional manual price override — decide if overrides are supported first), OR a one-time reconciliation for rows where `subtotal != unit_price × qty × nights`. |
+
+**Recommended next action (needs Whitney sign-off — payment-adjacent):** harden **MED-3** and **MED-4**
+with the same per-order `GET_LOCK` + in-lock recheck the assignment/refund code already uses. MED-4 is
+the only one that can move real money twice; do it one-at-a-time with a live Auth.net test per the
+CLAUDE.md payment rule. LOW-6 is the data-drift quirk behind the #90801 rate-vs-subtotal mismatch.
