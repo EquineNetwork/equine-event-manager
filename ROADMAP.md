@@ -2,13 +2,17 @@
 
 ---
 
-## 🔖 SESSION HANDOFF — 2026-06-20 (v2.7.515, on `main`)
+## 🔖 SESSION HANDOFF — 2026-06-20 (v2.7.520, on `main`)
 
 **v1 is complete and live.** The sessions since 2.7.466 have been a deep visual/UX polish pass
 plus a batch of targeted Order-Detail / receipt / Stall-Chart / frontend features on top of v1.
-There is **no open task on the active list** — pick the next thread from the
-**RECOMMENDED EXECUTION ORDER** below (next up: inventory/concurrency audit → financial-security
-audit → mobile/PWA polish) unless Whitney directs otherwise.
+**Latest (2.7.516–520):** the **inventory/concurrency re-audit** (execution-order #1) ran — see the
+"🔒 Concurrency hardening" section below + the ADDENDUM in `docs/INVENTORY-CONCURRENCY-REPORT.md`.
+Core checkout + stall/RV assignment paths confirmed safe; MED-3 + LOW-5 hardened, LOW-6 closed as
+not-a-bug. **Open admin money-path items remain: MED-4 (Auth.net double-charge window — needs live
+test) + LOW-3/4.** Otherwise pick the next thread from the **RECOMMENDED EXECUTION ORDER** below
+(next up after the audit: financial-security audit → mobile/PWA polish) unless Whitney directs.
+*(A parallel chat has been working Reports — print columns / stall-occupancy — landing 2.7.511–519.)*
 
 **What the recent sessions shipped (2.7.466 → 2.7.515), newest first:**
 - **Order Detail (2.7.510, 2.7.515):** editable arrival/departure dates (refund on shorter stay
